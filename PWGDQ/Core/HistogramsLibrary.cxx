@@ -249,9 +249,6 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Run2_centrFT0C_Corr2REFetagap_ev", "Run2_centrFT0C_Corr2REFetagap_ev, --s--", true, 9, std::array<double, 10>{0.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0}.data(), VarManager::kCentFT0C, 250, std::array<double, 2>{-1.0, 1.0}.data(), VarManager::kCORR2REFetagap, 0, nullptr, -1, "", "", "", VarManager::kCORR2REFetagap, VarManager::kM11REFetagap);
       hm->AddHistogram(histClass, "Run2_centrFT0C_Corr4REF_ev", "Run2_centrFT0C_Corr4REF_ev, --s--", true, 9, std::array<double, 10>{0.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0}.data(), VarManager::kCentFT0C, 250, std::array<double, 2>{-1.0, 1.0}.data(), VarManager::kCORR4REF, 0, nullptr, -1, "", "", "", VarManager::kCORR4REF, VarManager::kM1111REF);
       hm->AddHistogram(histClass, "Run2_centrFT0C_Corr2Corr4REF_ev", "Run2_centrFT0C_Corr2Corr4REF_ev, --s--", true, 9, std::array<double, 10>{0.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0}.data(), VarManager::kCentFT0C, 250, std::array<double, 2>{-1.0, 1.0}.data(), VarManager::kCORR2CORR4REF, 0, nullptr, -1, "", "", "", VarManager::kCORR2CORR4REF, VarManager::kM11M1111REF);
-      hm->AddHistogram(histClass, "Corr2REFerrorsetagap", "", 4, std::array<int, 4>{VarManager::kCentFT0C, VarManager::kCORR2REFetagapw, VarManager::kCORR2REFetagapsquaredw, VarManager::kM11REFetagap}.data(), std::array<int, 4>{100, 5000, 5000, 5000}.data(), std::array<double, 4>{0.0, -5000.0, 0.0, 0.0}.data(), std::array<double, 4>{100.0, 5000.0, 100.0, 300000.0}.data(), nullptr, -1, true, true);
-      hm->AddHistogram(histClass, "Corr2REFerrors", "", 4, std::array<int, 4>{VarManager::kCentFT0C, VarManager::kCORR2REFw, VarManager::kCORR2REFsquaredw, VarManager::kM11REF}.data(), std::array<int, 4>{100, 10000, 10000, 10000}.data(), std::array<double, 4>{0.0, -40000.0, 0.0, 0.0}.data(), std::array<double, 4>{100.0, 40000.0, 100.0, 6000000.0}.data(), nullptr, -1, true, true);
-      hm->AddHistogram(histClass, "Corr4REFerrors", "", 4, std::array<int, 4>{VarManager::kCentFT0C, VarManager::kCORR4REFw, VarManager::kCORR4REFsquaredw, VarManager::kM1111REF}.data(), std::array<int, 4>{100, 100000, 100000, 100000}.data(), std::array<double, 4>{0.0, -30000000.0, 0.0, 0.0}.data(), std::array<double, 4>{100.0, 90000000.0, 40000.0, 9000000000000.0}.data(), nullptr, -1, true, true);
       if (subGroupStr.Contains("cross")) {
         hm->AddHistogram(histClass, "Q1ZNACXX_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 4000, -2, 2, VarManager::kQ1ZNACXX);
         hm->AddHistogram(histClass, "Q1ZNACYY_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 4000, -2, 2, VarManager::kQ1ZNACYY);
@@ -1006,8 +1003,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "U2Q2_CentFT0C_ev2", "mass vs. centrality vs. U2Q2_event2", false, 125, 0.0, 5.0, VarManager::kMass, 9, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kU2Q2Ev2);
       }
       if (subGroupStr.Contains("metest")) {
-        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V2ME_SP", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV2ME_SP, VarManager::kWV2ME_SP);
-        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V2ME_EP", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV2ME_EP, VarManager::kWV2ME_EP);
+        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V2ME_SP", "Mass_Pt_CentFT0C_V2ME_SP", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV2ME_SP, VarManager::kWV2ME_SP);
+        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V2ME_EP", "Mass_Pt_CentFT0C_V2ME_EP", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV2ME_EP, VarManager::kWV2ME_EP);
       }
       if (subGroupStr.Contains("dimuon-polarization-he")) {
         int varspTHE[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaHE, VarManager::kPhiHE};
@@ -1158,8 +1155,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V3", "", 6, varV3, bins, minBins, maxBins, 0, -1, kTRUE);
       }
       if (subGroupStr.Contains("flow-ccdb")) {
-        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V2SPwR", "Mass_Pt_CentFT0C_V2SPwR, --s--", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV2SP, VarManager::kWV2SP);
-        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V2EPwR", "Mass_Pt_CentFT0C_V2EPwR, --s--", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV2EP, VarManager::kWV2EP);
+        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V2SPwR", "Mass_Pt_CentFT0C_V2SPwR", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV2SP, VarManager::kWV2SP);
+        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V2EPwR", "Mass_Pt_CentFT0C_V2EPwR", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV2EP, VarManager::kWV2EP);
       }
       if (subGroupStr.Contains("cumulant")) {
         int var[4] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C};
@@ -1358,6 +1355,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "TauzProj", "", false, 4000, -0.5, 0.5, VarManager::kVertexingTauzProjected);
       hm->AddHistogram(histClass, "TauxyProj", "", false, 4000, -0.5, 0.5, VarManager::kVertexingTauxyProjected);
       hm->AddHistogram(histClass, "CosPointingAngle", "", false, 100, 0.0, 1.0, VarManager::kCosPointingAngle);
+      hm->AddHistogram(histClass, "DCAxyzBetweenProngs", "", false, 100, 0.0, 1.0, VarManager::kKFDCAxyzBetweenProngs);
     }
     if (subGroupStr.Contains("multidimentional-vertexing-histograms")) {
       hm->AddHistogram(histClass, "Mass_Tauxy", "", false, 75, 4.0, 7.0, VarManager::kPairMass, 40, -0.0, 0.02, VarManager::kVertexingTauxy);

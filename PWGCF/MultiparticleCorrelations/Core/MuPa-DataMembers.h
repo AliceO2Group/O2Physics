@@ -37,8 +37,8 @@ TProfile* fBasePro = NULL; //!<! keeps flags relevant for the whole analysis
 
 // *) Task configuration:
 struct TaskConfiguration {
-  TString fTaskName = "";                          // task name - this one is used to get the right weights
-                                                   // programatically for this analysis
+  TString fTaskIsConfiguredFromJson = "no";        // the trick to ensure that settings from JSON are taken into account, even if only one configurable is misconfigured, when everything dies silently
+  TString fTaskName = "";                          // task name - this one is used to get the right weights programatically for this analysis
   TString fRunNumber = "";                         // over which run number this task is executed
   Bool_t fRunNumberIsDetermined = kFALSE;          // ensures that run number is determined in process() and propagated to already booked objects only once
   Bool_t fDryRun = kFALSE;                         // book all histos and run without storing and calculating anything
@@ -74,6 +74,8 @@ struct EventByEventQuantities {
                                        // Use configurable cfReferenceMultiplicityEstimator[eReferenceMultiplicityEstimator]" to define what is this multiplicity, by default it is "TBI 20241123 I do not know yet which estimator is best for ref. mult."
   Float_t fCentrality = 0.;            // event-by-event centrality. Value of the default centrality estimator, set via configurable cfCentralityEstimator
   Float_t fOccupancy = 0.;             // event-by-event occupancy. Value of the default occupancy estimator, set via configurable cfOccupancyEstimator
+  Float_t fInteractionRate = 0.;       // event-by-event interaction rate
+  Float_t fCurrentRunDuration = 0.;    // how many seconds after start of run this collision was taken, i.e. seconds after start of run (SOR)
 } ebye;                                // "ebye" is a common label for objects in this struct
 
 // *) QA:
@@ -188,15 +190,15 @@ struct Qvector {
 
 // *) Multiparticle correlations (standard, isotropic, same harmonic):
 struct MultiparticleCorrelations {
-  TList* fCorrelationsList = NULL;                                                                     // list to hold all correlations objects
-  TProfile* fCorrelationsFlagsPro = NULL;                                                              // profile to hold all flags for correlations
-  Bool_t fCalculateCorrelations = kTRUE;                                                               // calculate and store integrated correlations
-  TProfile* fCorrelationsPro[4][gMaxHarmonic][eAsFunctionOf_N] = {{{NULL}}};                           //! multiparticle correlations
-                                                                                                       //  [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=gMaxHarmonic]
-                                                                                                       //  [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy]
-  Bool_t fCalculateCorrelationsAsFunctionOf[eAsFunctionOf_N] = {true, true, true, false, false, true}; //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy]
-                                                                                                       //  As of 20241111, 3=pT and 4=eta are not implemented, see void CalculateKineCorrelations(...)
-} mupa;                                                                                                // "mupa" is a common label for objects in this struct
+  TList* fCorrelationsList = NULL;                                           // list to hold all correlations objects
+  TProfile* fCorrelationsFlagsPro = NULL;                                    // profile to hold all flags for correlations
+  Bool_t fCalculateCorrelations = kTRUE;                                     // calculate and store integrated correlations
+  TProfile* fCorrelationsPro[4][gMaxHarmonic][eAsFunctionOf_N] = {{{NULL}}}; //! multiparticle correlations
+                                                                             //  [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=gMaxHarmonic]
+                                                                             //  [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy]
+  Bool_t fCalculateCorrelationsAsFunctionOf[eAsFunctionOf_N] = {false};      //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy, ...]
+                                                                             //  As of 20241111, 3=pT and 4=eta are not implemented, see void CalculateKineCorrelations(...)
+} mupa;                                                                      // "mupa" is a common label for objects in this struct
 
 // *) Particle weights:
 struct ParticleWeights {
@@ -266,16 +268,16 @@ struct InternalValidation {
 
 // *) Test0:
 struct Test0 {
-  TList* fTest0List = NULL;                                                                      // list to hold all objects for Test0
-  TProfile* fTest0FlagsPro = NULL;                                                               // store all flags for Test0
-  Bool_t fCalculateTest0 = kFALSE;                                                               // calculate or not Test0
-  TProfile* fTest0Pro[gMaxCorrelator][gMaxIndex][eAsFunctionOf_N] = {{{NULL}}};                  //! [order][index][0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta]
-  TString* fTest0Labels[gMaxCorrelator][gMaxIndex] = {{NULL}};                                   // all labels: k-p'th order is stored in k-1'th index. So yes, I also store 1-p
-  Bool_t fCalculateTest0AsFunctionOf[eAsFunctionOf_N] = {true, true, true, false, false, false}; //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy]
-  TString fFileWithLabels = "";                                                                  // path to external ROOT file which specifies all labels of interest
-  Bool_t fUseDefaultLabels = kFALSE;                                                             // use default labels hardwired in GetDefaultObjArrayWithLabels()
-  TH1I* fTest0LabelsPlaceholder = NULL;                                                          // store all Test0 labels in this histogram
-} t0;                                                                                            // "t0" labels an instance of this group of histograms
+  TList* fTest0List = NULL;                                                     // list to hold all objects for Test0
+  TProfile* fTest0FlagsPro = NULL;                                              // store all flags for Test0
+  Bool_t fCalculateTest0 = kFALSE;                                              // calculate or not Test0
+  TProfile* fTest0Pro[gMaxCorrelator][gMaxIndex][eAsFunctionOf_N] = {{{NULL}}}; //! [order][index][0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta]
+  TString* fTest0Labels[gMaxCorrelator][gMaxIndex] = {{NULL}};                  // all labels: k-p'th order is stored in k-1'th index. So yes, I also store 1-p
+  Bool_t fCalculateTest0AsFunctionOf[eAsFunctionOf_N] = {false};                //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy, ...]
+  TString fFileWithLabels = "";                                                 // path to external ROOT file which specifies all labels of interest
+  Bool_t fUseDefaultLabels = kFALSE;                                            // use default labels hardwired in GetDefaultObjArrayWithLabels()
+  TH1I* fTest0LabelsPlaceholder = NULL;                                         // store all Test0 labels in this histogram
+} t0;                                                                           // "t0" labels an instance of this group of histograms
 
 // *) Results:
 struct Results {                                   // This is in addition also sort of "abstract" interface, which defines common binning, etc., for other groups of histograms.
@@ -285,12 +287,12 @@ struct Results {                                   // This is in addition also s
   TProfile* fResultsPro[eAsFunctionOf_N] = {NULL}; //!<! example histogram to store some results + "abstract" interface, which defines common binning, etc., for other groups of histograms.
 
   // Remark: These settings apply to following categories fCorrelationsPro, fNestedLoopsPro, fTest0Pro, and fResultsHist
-  Float_t fResultsProFixedLengthBins[eAsFunctionOf_N][3] = {{0.}};                                                         // [nBins,min,max]
-  TArrayF* fResultsProVariableLengthBins[eAsFunctionOf_N] = {NULL};                                                        // here for each variable in eAsFunctionOf I specify array holding bin boundaries
-  Bool_t fUseResultsProVariableLengthBins[eAsFunctionOf_N] = {kFALSE};                                                     // use or not variable-length bins
-  TString fResultsProVariableLengthBinsString[eAsFunctionOf_N] = {""};                                                     // TBI 20241110 this one is obsolete, can be removed
-  TString fResultsProXaxisTitle[eAsFunctionOf_N] = {"integrated", "multiplicity", "centrality", "pt", "eta", "occupancy"}; // keep ordering in sync with enum eAsFunctionOf
-  TString fResultsProRawName[eAsFunctionOf_N] = {"int", "mult", "cent", "pt", "eta", "occu"};                              // this is how it appears simplified in the hist name when saved to the file
-} res;                                                                                                                     // "res" labels an instance of this group of histograms
+  Float_t fResultsProFixedLengthBins[eAsFunctionOf_N][3] = {{0.}};     // [nBins,min,max]
+  TArrayF* fResultsProVariableLengthBins[eAsFunctionOf_N] = {NULL};    // here for each variable in eAsFunctionOf I specify array holding bin boundaries
+  Bool_t fUseResultsProVariableLengthBins[eAsFunctionOf_N] = {kFALSE}; // use or not variable-length bins
+  TString fResultsProVariableLengthBinsString[eAsFunctionOf_N] = {""}; // TBI 20241110 this one is obsolete, can be removed
+  TString fResultsProXaxisTitle[eAsFunctionOf_N] = {""};               // keep ordering in sync with enum eAsFunctionOf
+  TString fResultsProRawName[eAsFunctionOf_N] = {""};                  // this is how it appears simplified in the hist name when saved to the file
+} res;                                                                 // "res" labels an instance of this group of histograms
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
