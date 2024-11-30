@@ -175,7 +175,7 @@ struct HfTaskDirectedFlowCharmHadrons {
       return;
     }
 
-    if (!collision.triggerevent()) { // for selecting only callibrated events
+    if (!collision.triggereventsp()) { // for selecting only callibrated events
       return;
     }
 
