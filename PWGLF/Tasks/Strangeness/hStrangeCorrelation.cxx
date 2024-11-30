@@ -464,7 +464,7 @@ struct correlateStrangeness {
         continue;
 
       static_for<7, 8>([&](auto i) {
-      constexpr int index = i.value;  
+      constexpr int index = i.value;
       if (bitcheck(doCorrelation, i)) {
       if (!mixing)
         histos.fill(HIST("sameEvent/TriggerParticles") + HIST(particlenames[index]), trigg.pt(), mult);
