@@ -42,9 +42,9 @@ enum class DileptonAnalysisType : int {
   kHFll = 6,
 };
 enum class DileptonPrefilterBit : int {
-  kMee = 0,             // reject tracks from pi0 dalitz decays at very low mass where S/B > 1
-  kPhiV = 1,            // reject tracks from photon conversions
-  kFakeMatchITSTPC = 2, // reject tracks from photon conversions misreconstructed as ITS-TPC matched track
+  kMee = 0,                // reject tracks from pi0 dalitz decays at very low mass where S/B > 1
+  kPhiV = 1,               // reject tracks from photon conversions
+  kSplitOrMergedTrack = 2, // reject split or marged tracks
 };
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
@@ -236,16 +236,20 @@ inline float getPhivPair(float pxpos, float pypos, float pzpos, float pxneg, flo
   std::array<float, 3> arr_ele{pxneg, pyneg, pzneg};
   std::array<double, 3> pos_x_ele{0, 0, 0};
   // LOGF(info, "Q1 = %d , Q2 = %d", cpos, cneg);
+  float ptpos = std::sqrt(std::pow(pxpos, 2) + std::pow(pypos, 2));
+  float ptneg = std::sqrt(std::pow(pxneg, 2) + std::pow(pyneg, 2));
 
   if (cpos * cneg > 0) { // Like Sign
     if (bz < 0) {
-      if (cpos > 0) {
+      // if (cpos > 0) {
+      if (cpos * ptpos > cneg * ptneg) {
         pos_x_ele = RecoDecay::crossProd(arr_pos, arr_ele);
       } else {
         pos_x_ele = RecoDecay::crossProd(arr_ele, arr_pos);
       }
     } else {
-      if (cpos > 0) {
+      // if (cpos > 0) {
+      if (cpos * ptpos > cneg * ptneg) {
         pos_x_ele = RecoDecay::crossProd(arr_ele, arr_pos);
       } else {
         pos_x_ele = RecoDecay::crossProd(arr_pos, arr_ele);
@@ -253,13 +257,15 @@ inline float getPhivPair(float pxpos, float pypos, float pzpos, float pxneg, flo
     }
   } else { // Unlike Sign
     if (bz > 0) {
-      if (cpos > 0) {
+      // if (cpos > 0) {
+      if (cpos * ptpos > cneg * ptneg) {
         pos_x_ele = RecoDecay::crossProd(arr_pos, arr_ele);
       } else {
         pos_x_ele = RecoDecay::crossProd(arr_ele, arr_pos);
       }
     } else {
-      if (cpos > 0) {
+      // if (cpos > 0) {
+      if (cpos * ptpos > cneg * ptneg) {
         pos_x_ele = RecoDecay::crossProd(arr_ele, arr_pos);
       } else {
         pos_x_ele = RecoDecay::crossProd(arr_pos, arr_ele);
