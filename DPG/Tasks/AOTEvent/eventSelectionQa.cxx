@@ -337,13 +337,13 @@ struct EventSelectionQaTask {
   {
     bool isINT1period = 0;
     if (!applySelection) {
-      auto first_bc = bcs.iteratorAt(0);
-      EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", first_bc.timestamp());
+      auto firstBC = bcs.iteratorAt(0);
+      EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", firstBC.timestamp());
       applySelection = par->GetSelection(0);
       for (int i = 0; i < kNsel; i++) {
         histos.get<TH1>(HIST("hSelMask"))->SetBinContent(i + 1, applySelection[i]);
       }
-      isINT1period = first_bc.runNumber() <= 136377 || (first_bc.runNumber() >= 144871 && first_bc.runNumber() <= 159582);
+      isINT1period = firstBC.runNumber() <= 136377 || (firstBC.runNumber() >= 144871 && firstBC.runNumber() <= 159582);
     }
 
     // bc-based event selection qa
@@ -451,10 +451,10 @@ struct EventSelectionQaTask {
 
       if (bc.has_fdd()) {
         auto fdd = bc.fdd();
-        for (auto amplitude : fdd.chargeA()) {
+        for (const auto& amplitude : fdd.chargeA()) {
           multFDA += amplitude;
         }
-        for (auto amplitude : fdd.chargeC()) {
+        for (const auto& amplitude : fdd.chargeC()) {
           multFDC += amplitude;
         }
       }
@@ -591,7 +591,7 @@ struct EventSelectionQaTask {
         }
 
         std::vector<uint16_t> closestVec;
-        for (auto orbit : itsDeadMapOrbits) {
+        for (const auto& orbit : itsDeadMapOrbits) {
           itsDeadMap->getMapAtOrbit(orbit, closestVec);
           for (size_t iel = 0; iel < closestVec.size(); iel++) {
             uint16_t w1 = closestVec.at(iel);
@@ -655,12 +655,12 @@ struct EventSelectionQaTask {
           break;
         }
         deltaIndex++;
-        const auto& bc_past = bcs.iteratorAt(bc.globalIndex() - deltaIndex);
-        deltaBC = globalBC - bc_past.globalBC();
+        const auto& bcPast = bcs.iteratorAt(bc.globalIndex() - deltaIndex);
+        deltaBC = globalBC - bcPast.globalBC();
         if (deltaBC < maxDeltaBC) {
-          pastActivityFT0 |= bc_past.has_ft0();
-          pastActivityFV0 |= bc_past.has_fv0a();
-          pastActivityFDD |= bc_past.has_fdd();
+          pastActivityFT0 |= bcPast.has_ft0();
+          pastActivityFV0 |= bcPast.has_fv0a();
+          pastActivityFDD |= bcPast.has_fdd();
         }
       }
 
@@ -762,7 +762,7 @@ struct EventSelectionQaTask {
         histos.fill(HIST("hOrbitFV0"), orbit - minOrbit);
         histos.fill(HIST("hBcFV0"), localBC);
         float multV0A = 0;
-        for (auto amplitude : bc.fv0a().amplitude()) {
+        for (const auto& amplitude : bc.fv0a().amplitude()) {
           multV0A += amplitude;
         }
         histos.fill(HIST("hMultV0Aall"), multV0A);
@@ -806,11 +806,11 @@ struct EventSelectionQaTask {
 
         auto fdd = bc.fdd();
         float multFDA = 0;
-        for (auto amplitude : fdd.chargeA()) {
+        for (const auto& amplitude : fdd.chargeA()) {
           multFDA += amplitude;
         }
         float multFDC = 0;
-        for (auto amplitude : fdd.chargeC()) {
+        for (const auto& amplitude : fdd.chargeC()) {
           multFDC += amplitude;
         }
         histos.fill(HIST("hMultFDAall"), multFDA);
@@ -931,7 +931,7 @@ struct EventSelectionQaTask {
         int trackBcDiff = bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS;
         if (!track.isPVContributor())
           continue;
-        if (fabs(track.eta()) < 0.8 && track.tpcNClsFound() > 80 && track.tpcNClsCrossedRows() > 100)
+        if (std::fabs(track.eta()) < 0.8 && track.tpcNClsFound() > 80 && track.tpcNClsCrossedRows() > 100)
           nContributorsAfterEtaTPCCuts++;
         if (!track.hasTPC())
           histos.fill(HIST("hITStrackBcDiff"), trackBcDiff);
@@ -1008,7 +1008,7 @@ struct EventSelectionQaTask {
       // FV0
       float multV0A = 0;
       if (foundBC.has_fv0a()) {
-        for (auto amplitude : foundBC.fv0a().amplitude()) {
+        for (const auto& amplitude : foundBC.fv0a().amplitude()) {
           multV0A += amplitude;
         }
       }
@@ -1017,10 +1017,10 @@ struct EventSelectionQaTask {
       float multFDC = 0;
       if (foundBC.has_fdd()) {
         auto fdd = foundBC.fdd();
-        for (auto amplitude : fdd.chargeA()) {
+        for (const auto& amplitude : fdd.chargeA()) {
           multFDA += amplitude;
         }
-        for (auto amplitude : fdd.chargeC()) {
+        for (const auto& amplitude : fdd.chargeC()) {
           multFDC += amplitude;
         }
       }
@@ -1142,12 +1142,12 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hNcolMCVsBcInTF"), bcInTF);
     }
 
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       int32_t mcColIdFromCollision = col.mcCollisionId();
       // check if collision is built from tracks originating from different MC collisions
       bool isCollisionAmbiguous = 0;
       const auto& colPvTracks = pvTracks.sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
-      for (auto& track : colPvTracks) {
+      for (const auto& track : colPvTracks) {
         int32_t mcPartId = track.mcParticleId();
         int32_t mcColId = mcPartId >= 0 ? mcParts.iteratorAt(mcPartId).mcCollisionId() : -1;
         if (mcColId < 0 || mcColIdFromCollision != mcColId) {
