@@ -206,7 +206,7 @@ struct TOFCalibConfig {
     const std::string nameShiftPos = metadataInfo.isMC() ? mTimeShiftCCDBPathPosMC : mTimeShiftCCDBPathPos;
     updateTimeShift(nameShiftPos, true);
     const std::string nameShiftNeg = metadataInfo.isMC() ? mTimeShiftCCDBPathNegMC : mTimeShiftCCDBPathNeg;
-    updateTimeShift(nameShiftNeg, true);
+    updateTimeShift(nameShiftNeg, false);
 
     // Calibration object is defined
     LOG(info) << "Parametrization at init time:";
