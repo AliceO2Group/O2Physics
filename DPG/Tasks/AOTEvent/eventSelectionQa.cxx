@@ -9,8 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file eventSelectionQa.cxx
+/// \brief Event selection QA task
+///
+/// \author Evgeny Kryshen <evgeny.kryshen@cern.ch>
+
 #include <map>
 #include <vector>
+#include <string>
 #include <unordered_map>
 
 #include "Framework/runDataProcessing.h"
@@ -24,6 +30,9 @@
 #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
+#include "DataFormatsITSMFT/NoiseMap.h" // missing include in TimeDeadMap.h
+#include "DataFormatsITSMFT/TimeDeadMap.h"
+#include "ITSMFTReconstruction/ChipMappingITS.h"
 #include "TH1F.h"
 #include "TH2F.h"
 
@@ -59,7 +68,6 @@ struct EventSelectionQaTask {
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternC;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB;
-
   SliceCache cache;
   Partition<aod::Tracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
 
@@ -335,13 +343,13 @@ struct EventSelectionQaTask {
   {
     bool isINT1period = 0;
     if (!applySelection) {
-      auto first_bc = bcs.iteratorAt(0);
-      EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", first_bc.timestamp());
+      auto firstBC = bcs.iteratorAt(0);
+      EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", firstBC.timestamp());
       applySelection = par->GetSelection(0);
       for (int i = 0; i < kNsel; i++) {
         histos.get<TH1>(HIST("hSelMask"))->SetBinContent(i + 1, applySelection[i]);
       }
-      isINT1period = first_bc.runNumber() <= 136377 || (first_bc.runNumber() >= 144871 && first_bc.runNumber() <= 159582);
+      isINT1period = firstBC.runNumber() <= 136377 || (firstBC.runNumber() >= 144871 && firstBC.runNumber() <= 159582);
     }
 
     // bc-based event selection qa
@@ -449,10 +457,10 @@ struct EventSelectionQaTask {
 
       if (bc.has_fdd()) {
         auto fdd = bc.fdd();
-        for (auto amplitude : fdd.chargeA()) {
+        for (const auto& amplitude : fdd.chargeA()) {
           multFDA += amplitude;
         }
-        for (auto amplitude : fdd.chargeC()) {
+        for (const auto& amplitude : fdd.chargeC()) {
           multFDC += amplitude;
         }
       }
@@ -564,11 +572,49 @@ struct EventSelectionQaTask {
         bcPatternC = ~beamPatternA & beamPatternC;
         bcPatternB = beamPatternA & beamPatternC;
 
-        // fill once per DF
+        // fill once
         for (int i = 0; i < nBCsPerOrbit; i++) {
           histos.fill(HIST("hBcA"), i, bcPatternA[i] ? 1. : 0.);
           histos.fill(HIST("hBcB"), i, bcPatternB[i] ? 1. : 0.);
           histos.fill(HIST("hBcC"), i, bcPatternC[i] ? 1. : 0.);
+        }
+
+        // fill ITS dead maps
+        std::map<std::string, std::string> metadata;
+        metadata["runNumber"] = Form("%d", run);
+        o2::itsmft::TimeDeadMap* itsDeadMap = ccdb->getSpecific<o2::itsmft::TimeDeadMap>("ITS/Calib/TimeDeadMap", (tsSOR + tsEOR) / 2, metadata);
+
+        std::vector<uint64_t> itsDeadMapOrbits = itsDeadMap->getEvolvingMapKeys(); // roughly every second, ~350 TFs = 350x32 orbits
+        std::vector<double> itsDeadMapOrbitsDouble(itsDeadMapOrbits.begin(), itsDeadMapOrbits.end());
+        const AxisSpec axisItsDeadMapOrbits{itsDeadMapOrbitsDouble};
+
+        for (int l = 0; l < o2::itsmft::ChipMappingITS::NLayers; l++) {
+          int nChips = o2::itsmft::ChipMappingITS::getNChipsOnLayer(l);
+          double idFirstChip = o2::itsmft::ChipMappingITS::getFirstChipsOnLayer(l);
+          // int nStaves = o2::itsmft::ChipMappingITS::getNStavesOnLr(l);
+          // double idFirstStave = o2::itsmft::ChipMappingITS::getFirstStavesOnLr(l);
+          histos.add(Form("hDeadChipsVsOrbitL%d", l), Form(";orbit; chip; Layer %d", l), kTH2C, {axisItsDeadMapOrbits, {nChips, idFirstChip, idFirstChip + nChips}});
+        }
+
+        std::vector<uint16_t> closestVec;
+        for (const auto& orbit : itsDeadMapOrbits) {
+          itsDeadMap->getMapAtOrbit(orbit, closestVec);
+          for (size_t iel = 0; iel < closestVec.size(); iel++) {
+            uint16_t w1 = closestVec.at(iel);
+            bool isLastInSequence = (w1 & 0x8000) == 0;
+            uint16_t w2 = isLastInSequence ? w1 + 1 : closestVec.at(iel + 1);
+            int chipId1 = w1 & 0x7FFF;
+            int chipId2 = w2 & 0x7FFF;
+            for (int chipId = chipId1; chipId < chipId2; chipId++) {
+              histos.fill(HIST("hDeadChipsVsOrbitL0"), orbit, chipId, 1);
+              histos.fill(HIST("hDeadChipsVsOrbitL1"), orbit, chipId, 1);
+              histos.fill(HIST("hDeadChipsVsOrbitL2"), orbit, chipId, 1);
+              histos.fill(HIST("hDeadChipsVsOrbitL3"), orbit, chipId, 1);
+              histos.fill(HIST("hDeadChipsVsOrbitL4"), orbit, chipId, 1);
+              histos.fill(HIST("hDeadChipsVsOrbitL5"), orbit, chipId, 1);
+              histos.fill(HIST("hDeadChipsVsOrbitL6"), orbit, chipId, 1);
+            }
+          }
         }
       }
 
@@ -615,12 +661,12 @@ struct EventSelectionQaTask {
           break;
         }
         deltaIndex++;
-        const auto& bc_past = bcs.iteratorAt(bc.globalIndex() - deltaIndex);
-        deltaBC = globalBC - bc_past.globalBC();
+        const auto& bcPast = bcs.iteratorAt(bc.globalIndex() - deltaIndex);
+        deltaBC = globalBC - bcPast.globalBC();
         if (deltaBC < maxDeltaBC) {
-          pastActivityFT0 |= bc_past.has_ft0();
-          pastActivityFV0 |= bc_past.has_fv0a();
-          pastActivityFDD |= bc_past.has_fdd();
+          pastActivityFT0 |= bcPast.has_ft0();
+          pastActivityFV0 |= bcPast.has_fv0a();
+          pastActivityFDD |= bcPast.has_fdd();
         }
       }
 
@@ -722,7 +768,7 @@ struct EventSelectionQaTask {
         histos.fill(HIST("hOrbitFV0"), orbit - minOrbit);
         histos.fill(HIST("hBcFV0"), localBC);
         float multV0A = 0;
-        for (auto amplitude : bc.fv0a().amplitude()) {
+        for (const auto& amplitude : bc.fv0a().amplitude()) {
           multV0A += amplitude;
         }
         histos.fill(HIST("hMultV0Aall"), multV0A);
@@ -766,11 +812,11 @@ struct EventSelectionQaTask {
 
         auto fdd = bc.fdd();
         float multFDA = 0;
-        for (auto amplitude : fdd.chargeA()) {
+        for (const auto& amplitude : fdd.chargeA()) {
           multFDA += amplitude;
         }
         float multFDC = 0;
-        for (auto amplitude : fdd.chargeC()) {
+        for (const auto& amplitude : fdd.chargeC()) {
           multFDC += amplitude;
         }
         histos.fill(HIST("hMultFDAall"), multFDA);
@@ -891,7 +937,7 @@ struct EventSelectionQaTask {
         int trackBcDiff = bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS;
         if (!track.isPVContributor())
           continue;
-        if (fabs(track.eta()) < 0.8 && track.tpcNClsFound() > 80 && track.tpcNClsCrossedRows() > 100)
+        if (std::fabs(track.eta()) < 0.8 && track.tpcNClsFound() > 80 && track.tpcNClsCrossedRows() > 100)
           nContributorsAfterEtaTPCCuts++;
         if (!track.hasTPC())
           histos.fill(HIST("hITStrackBcDiff"), trackBcDiff);
@@ -968,7 +1014,7 @@ struct EventSelectionQaTask {
       // FV0
       float multV0A = 0;
       if (foundBC.has_fv0a()) {
-        for (auto amplitude : foundBC.fv0a().amplitude()) {
+        for (const auto& amplitude : foundBC.fv0a().amplitude()) {
           multV0A += amplitude;
         }
       }
@@ -977,10 +1023,10 @@ struct EventSelectionQaTask {
       float multFDC = 0;
       if (foundBC.has_fdd()) {
         auto fdd = foundBC.fdd();
-        for (auto amplitude : fdd.chargeA()) {
+        for (const auto& amplitude : fdd.chargeA()) {
           multFDA += amplitude;
         }
-        for (auto amplitude : fdd.chargeC()) {
+        for (const auto& amplitude : fdd.chargeC()) {
           multFDC += amplitude;
         }
       }
@@ -1070,7 +1116,7 @@ struct EventSelectionQaTask {
     } // collisions
 
     // TVX efficiency after TF and ITS ROF border cuts
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       if (!col.selection_bit(kNoTimeFrameBorder) || !col.selection_bit(kNoITSROFrameBorder))
         continue;
 
@@ -1102,12 +1148,12 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hNcolMCVsBcInTF"), bcInTF);
     }
 
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       int32_t mcColIdFromCollision = col.mcCollisionId();
       // check if collision is built from tracks originating from different MC collisions
       bool isCollisionAmbiguous = 0;
       const auto& colPvTracks = pvTracks.sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
-      for (auto& track : colPvTracks) {
+      for (const auto& track : colPvTracks) {
         int32_t mcPartId = track.mcParticleId();
         int32_t mcColId = mcPartId >= 0 ? mcParts.iteratorAt(mcPartId).mcCollisionId() : -1;
         if (mcColId < 0 || mcColIdFromCollision != mcColId) {
