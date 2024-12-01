@@ -53,7 +53,7 @@ struct EventSelectionQaTask {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  bool* applySelection = NULL;
+
   static const int32_t nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
   int32_t lastRun = -1;
   int64_t nOrbits = 1;                             // number of orbits, setting 1 for unanchored MC
@@ -336,14 +336,17 @@ struct EventSelectionQaTask {
     aod::FDDs const&)
   {
     bool isINT1period = 0;
-    if (!applySelection) {
+
+    int run = bcs.iteratorAt(0).runNumber();
+    if (run != lastRun) {
+      lastRun = run;
       auto firstBC = bcs.iteratorAt(0);
       EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", firstBC.timestamp());
-      applySelection = par->GetSelection(0);
+      bool* applySelection = par->GetSelection(0);
       for (int i = 0; i < kNsel; i++) {
         histos.get<TH1>(HIST("hSelMask"))->SetBinContent(i + 1, applySelection[i]);
       }
-      isINT1period = firstBC.runNumber() <= 136377 || (firstBC.runNumber() >= 144871 && firstBC.runNumber() <= 159582);
+      isINT1period = run <= 136377 || (run >= 144871 && run <= 159582);
     }
 
     // bc-based event selection qa
