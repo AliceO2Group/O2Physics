@@ -1,7 +1,7 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_EFFICIENCY_CALCULATOR_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_EFFICIENCY_CALCULATOR_H_
 
-#include "Framework/EndOfStreamContext.h"
+#include "Framework/CallbackService.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/InitContext.h"
 #include "CCDB/BasicCCDBManager.h"
@@ -27,7 +27,7 @@ class EfficiencyCalculator
     ccdb.setCaching(true);
     ccdb.setLocalObjectValidityChecking();
 
-    hEff = loadEfficiencyFromCCDB();
+    hEff = loadEfficiencyFromCCDB(1732467686456);
   }
 
   auto doMCTruth(int pdg, auto particles) -> void
@@ -41,13 +41,18 @@ class EfficiencyCalculator
     }
   }
 
-  auto saveAfterProcess(InitContext& ic) -> void
+  auto saveOnStop(InitContext& ic) -> void
   {
-    auto& callbacks = ic.services().get<CallbackService>();
-    callbacks.set<o2::framework::CallbackService::Id::EndOfStream>([this](EndOfStreamContext&) {
-      LOG(info) << "### callback: EndOfStream";
-      save();
-    });
+    if (!shouldSaveOnStop) {
+      shouldSaveOnStop = true;
+
+      auto& callbacks = ic.services().get<CallbackService>();
+      callbacks.set<o2::framework::CallbackService::Id::Stop>([this]() {
+        save();
+      });
+    } else {
+      LOG(warn) << "[EFFICIENCY] Save on stop is already set up";
+    }
   }
 
   auto getWeight(auto const& particle) const -> float
@@ -70,14 +75,13 @@ class EfficiencyCalculator
 
     LOG(debug) << "[EFFICIENCY] Found histogram: " << output->GetTitle();
 
-    // long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    // long oneYear = now + (365LL * 24 * 60 * 60 * 1000);
+    std::map<string, string> metadata{};
     // metadata["runNumber"] = runNumber;
 
-    std::map<string, string> metadata;
-    // TODO: modify lifetime to be indefinite
-    // TODO: add more metadata
-    if (ccdbApi.storeAsTFileAny(output, ccdbPath, metadata) != 0) {
+    long now{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
+    long oneYear{365LL * 24 * 60 * 60 * 1000};
+
+    if (ccdbApi.storeAsTFileAny(output, ccdbPath, metadata, now, now + oneYear) != 0) {
       LOG(fatal) << "[EFFICIENCY] Histogram save failed";
       return;
     }
@@ -104,11 +108,11 @@ class EfficiencyCalculator
 
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> hMCTruth;
 
-  auto loadEfficiencyFromCCDB() -> std::optional<TH1*>
-  {
-    auto now{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
+  bool shouldSaveOnStop{false};
 
-    auto hEff{ccdb.getForTimeStamp<TH1>(ccdbPath, now)};
+  auto loadEfficiencyFromCCDB(long timestamp) -> std::optional<TH1*>
+  {
+    auto hEff{ccdb.getForTimeStamp<TH1>(ccdbPath, timestamp)};
     if (!hEff || hEff->IsZombie()) {
       LOGF(fatal, "[EFFICIENCY] Could not load histogram from %s", ccdbPath);
       return {};
