@@ -12,7 +12,6 @@
 // O2:
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/CCDB/ctpRateFetcher.h"
-// #include "Common/CCDB/ctpRateFetcher.cxx" // TBI 20241126 if I include instead only .h file, linker fails, check this further
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
