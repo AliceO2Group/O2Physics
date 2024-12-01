@@ -24,6 +24,9 @@
 #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
+#include "DataFormatsITSMFT/NoiseMap.h" // missing include in TimeDeadMap.h
+#include "DataFormatsITSMFT/TimeDeadMap.h"
+#include "ITSMFTReconstruction/ChipMappingITS.h"
 #include "TH1F.h"
 #include "TH2F.h"
 
@@ -59,7 +62,7 @@ struct EventSelectionQaTask {
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternC;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB;
-
+  o2::itsmft::TimeDeadMap* itsDeadMap = nullptr;
   SliceCache cache;
   Partition<aod::Tracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
 
@@ -564,11 +567,49 @@ struct EventSelectionQaTask {
         bcPatternC = ~beamPatternA & beamPatternC;
         bcPatternB = beamPatternA & beamPatternC;
 
-        // fill once per DF
+        // fill once
         for (int i = 0; i < nBCsPerOrbit; i++) {
           histos.fill(HIST("hBcA"), i, bcPatternA[i] ? 1. : 0.);
           histos.fill(HIST("hBcB"), i, bcPatternB[i] ? 1. : 0.);
           histos.fill(HIST("hBcC"), i, bcPatternC[i] ? 1. : 0.);
+        }
+
+        // fill ITS dead maps
+        std::map<std::string, std::string> metadata;
+        metadata["runNumber"] = Form("%d", run);
+        itsDeadMap = ccdb->getSpecific<o2::itsmft::TimeDeadMap>("ITS/Calib/TimeDeadMap", (tsSOR + tsEOR) / 2, metadata);
+
+        std::vector<uint64_t> itsDeadMapOrbits = itsDeadMap->getEvolvingMapKeys(); // roughly every second, ~350 TFs = 350x32 orbits
+        std::vector<double> itsDeadMapOrbitsDouble(itsDeadMapOrbits.begin(), itsDeadMapOrbits.end());
+        const AxisSpec axisItsDeadMapOrbits{itsDeadMapOrbitsDouble};
+
+        for (int l = 0; l < o2::itsmft::ChipMappingITS::NLayers; l++) {
+          int nChips = o2::itsmft::ChipMappingITS::getNChipsOnLayer(l);
+          double idFirstChip = o2::itsmft::ChipMappingITS::getFirstChipsOnLayer(l);
+          // int nStaves = o2::itsmft::ChipMappingITS::getNStavesOnLr(l);
+          // double idFirstStave = o2::itsmft::ChipMappingITS::getFirstStavesOnLr(l);
+          histos.add(Form("hDeadChipsVsOrbitL%d", l), Form(";orbit; chip; Layer %d", l), kTH2C, {axisItsDeadMapOrbits, {nChips, idFirstChip, idFirstChip + nChips}});
+        }
+
+        std::vector<uint16_t> closestVec;
+        for (auto orbit : itsDeadMapOrbits) {
+          itsDeadMap->getMapAtOrbit(orbit, closestVec);
+          for (size_t iel = 0; iel < closestVec.size(); iel++) {
+            uint16_t w1 = closestVec.at(iel);
+            bool isLastInSequence = (w1 & 0x8000) == 0;
+            uint16_t w2 = isLastInSequence ? w1 + 1 : closestVec.at(iel + 1);
+            int chipId1 = w1 & 0x7FFF;
+            int chipId2 = w2 & 0x7FFF;
+            for (int chipId = chipId1; chipId < chipId2; chipId++) {
+              histos.fill(HIST("hDeadChipsVsOrbitL0"), orbit, chipId, 1);
+              histos.fill(HIST("hDeadChipsVsOrbitL1"), orbit, chipId, 1);
+              histos.fill(HIST("hDeadChipsVsOrbitL2"), orbit, chipId, 1);
+              histos.fill(HIST("hDeadChipsVsOrbitL3"), orbit, chipId, 1);
+              histos.fill(HIST("hDeadChipsVsOrbitL4"), orbit, chipId, 1);
+              histos.fill(HIST("hDeadChipsVsOrbitL5"), orbit, chipId, 1);
+              histos.fill(HIST("hDeadChipsVsOrbitL6"), orbit, chipId, 1);
+            }
+          }
         }
       }
 
@@ -1080,6 +1121,13 @@ struct EventSelectionQaTask {
         continue;
 
       histos.fill(HIST("hNcontribAccFromData"), nContrib);
+    }
+
+    // ITS deadzone checks
+    std::vector<uint16_t> closestVec;
+    for (auto& bc : bcs) {
+      uint64_t orbit = bc.globalBC() / nBCsPerOrbit;
+      itsDeadMap->getMapAtOrbit(orbit, closestVec);
     }
   }
   PROCESS_SWITCH(EventSelectionQaTask, processRun3, "Process Run3 event selection QA", false);
