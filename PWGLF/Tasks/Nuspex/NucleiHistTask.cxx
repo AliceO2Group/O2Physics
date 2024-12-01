@@ -689,7 +689,6 @@ struct NucleiHistTask {
       float nSigmaTriton = track.tpcNSigmaTr();
       float nSigmaHe3 = track.tpcNSigmaHe();
       float nSigmaHe4 = track.tpcNSigmaAl();
-      
 
       spectra_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows());
       spectra_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
