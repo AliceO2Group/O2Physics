@@ -745,27 +745,27 @@ struct NucleiHistTask {
 
       if (enable_pT_shift_pion_tpc_nSigma) {
         float nSigmaPion_shift = Pion_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaPion += nSigmaPion_shift;
+        nSigmaPion -= nSigmaPion_shift;
       }
       if (enable_pT_shift_proton_tpc_nSigma) {
         float nSigmaProton_shift = Proton_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaProton += nSigmaProton_shift;
+        nSigmaProton -= nSigmaProton_shift;
       }
       if (enable_pT_shift_deuteron_tpc_nSigma) {
         float nSigmaDeuteron_shift = Deuteron_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaDeut += nSigmaDeuteron_shift;
+        nSigmaDeut -= nSigmaDeuteron_shift;
       }
       if (enable_pT_shift_triton_tpc_nSigma) {
         float nSigmaTriton_shift = Triton_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaTriton += nSigmaTriton_shift;
+        nSigmaTriton -= nSigmaTriton_shift;
       }
       if (enable_pT_shift_He3_tpc_nSigma) {
         float nSigmaHe3_shift = He3_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaHe3 += nSigmaHe3_shift;
+        nSigmaHe3 -= nSigmaHe3_shift;
       }
       if (enable_pT_shift_He4_tpc_nSigma) {
         float nSigmaHe4_shift = He4_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaHe4 += nSigmaHe4_shift;
+        nSigmaHe4 -= nSigmaHe4_shift;
       }
 
       if (track.sign() > 0) {
@@ -1445,27 +1445,27 @@ struct NucleiHistTask {
 
       if (enable_pT_shift_pion_tpc_nSigma) {
         float nSigmaPion_shift = Pion_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaPion += nSigmaPion_shift;
+        nSigmaPion -= nSigmaPion_shift;
       }
       if (enable_pT_shift_proton_tpc_nSigma) {
         float nSigmaProton_shift = Proton_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaProton += nSigmaProton_shift;
+        nSigmaProton -= nSigmaProton_shift;
       }
       if (enable_pT_shift_deuteron_tpc_nSigma) {
         float nSigmaDeuteron_shift = Deuteron_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaDeut += nSigmaDeuteron_shift;
+        nSigmaDeut -= nSigmaDeuteron_shift;
       }
       if (enable_pT_shift_triton_tpc_nSigma) {
         float nSigmaTriton_shift = Triton_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaTriton += nSigmaTriton_shift;
+        nSigmaTriton -= nSigmaTriton_shift;
       }
       if (enable_pT_shift_He3_tpc_nSigma) {
         float nSigmaHe3_shift = He3_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaHe3 += nSigmaHe3_shift;
+        nSigmaHe3 -= nSigmaHe3_shift;
       }
       if (enable_pT_shift_He4_tpc_nSigma) {
         float nSigmaHe4_shift = He4_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaHe4 += nSigmaHe4_shift;
+        nSigmaHe4 -= nSigmaHe4_shift;
       }
 
       if (track.sign() > 0) {
@@ -2006,27 +2006,27 @@ struct NucleiHistTask {
 
       if (enable_pT_shift_pion_tpc_nSigma) {
         float nSigmaPion_shift = Pion_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaPion += nSigmaPion_shift;
+        nSigmaPion -= nSigmaPion_shift;
       }
       if (enable_pT_shift_proton_tpc_nSigma) {
         float nSigmaProton_shift = Proton_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaProton += nSigmaProton_shift;
+        nSigmaProton -= nSigmaProton_shift;
       }
       if (enable_pT_shift_deuteron_tpc_nSigma) {
         float nSigmaDeuteron_shift = Deuteron_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaDeuteron += nSigmaDeuteron_shift;
+        nSigmaDeuteron -= nSigmaDeuteron_shift;
       }
       if (enable_pT_shift_triton_tpc_nSigma) {
         float nSigmaTriton_shift = Triton_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaTriton += nSigmaTriton_shift;
+        nSigmaTriton -= nSigmaTriton_shift;
       }
       if (enable_pT_shift_He3_tpc_nSigma) {
         float nSigmaHe3_shift = He3_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaHe3 += nSigmaHe3_shift;
+        nSigmaHe3 -= nSigmaHe3_shift;
       }
       if (enable_pT_shift_He4_tpc_nSigma) {
         float nSigmaHe4_shift = He4_Tpc_nSigma_shift->Eval(momentum);
-        nSigmaHe4 += nSigmaHe4_shift;
+        nSigmaHe4 -= nSigmaHe4_shift;
       }
 
       if (track.sign() > 0) {
