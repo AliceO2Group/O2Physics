@@ -860,7 +860,7 @@ struct fwdMuonsUPC {
 
   // PROCESS FUNCTION
   void processData(CandidatesFwd const& eventCandidates,
-                   o2::aod::UDZdcsReduced& const ZDCs,
+                   o2::aod::UDZdcsReduced& ZDCs,
                    ForwardTracks const& fwdTracks)
   {
 
