@@ -84,6 +84,7 @@ DECLARE_SOA_TABLE(DiMu, "AOD", "DIMU",
 namespace recodimu
 {
 // dimuon
+DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Rap, rap, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
@@ -112,7 +113,7 @@ DECLARE_SOA_COLUMN(GenPhin, gen_phin, float);
 namespace o2::aod
 {
 DECLARE_SOA_TABLE(recoDiMu, "AOD", "RECODIMU",
-                  recodimu::Pt, recodimu::Rap, recodimu::Phi,
+                  recodimu::M, recodimu::Pt, recodimu::Rap, recodimu::Phi,
                   recodimu::PhiAv, recodimu::PhiCh,
                   recodimu::Ptp, recodimu::Etap, recodimu::Phip,
                   recodimu::Ptn, recodimu::Etan, recodimu::Phin,
@@ -795,7 +796,7 @@ struct fwdMuonsUPC {
 
     // store the event to save it into a tree
     if (tr1.sign() > 0) {
-      dimuReco(p.Pt(), p.Rapidity(), p.Phi(),
+      dimuReco(p.M(), p.Pt(), p.Rapidity(), p.Phi(),
                phiAverage, phiCharge,
                p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
                p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
@@ -804,7 +805,7 @@ struct fwdMuonsUPC {
                p1Mc.Pt(), p1Mc.PseudoRapidity(), p1Mc.Phi(),
                p2Mc.Pt(), p2Mc.PseudoRapidity(), p2Mc.Phi());
     } else {
-      dimuReco(p.Pt(), p.Rapidity(), p.Phi(),
+      dimuReco(p.M(), p.Pt(), p.Rapidity(), p.Phi(),
                phiAverage, phiCharge,
                p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
                p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
