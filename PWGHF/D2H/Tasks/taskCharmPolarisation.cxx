@@ -1223,7 +1223,7 @@ struct TaskPolarisationCharmHadrons {
       // random
       float cosThetaStarRandom = -10.f;
 
-      int8_t nMuons = 0u;
+      int8_t nMuons{0u};
       if constexpr (doMc) {
         nMuons = candidate.nTracksDecayed();
       }
