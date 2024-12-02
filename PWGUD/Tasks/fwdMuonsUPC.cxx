@@ -101,7 +101,7 @@ DECLARE_SOA_COLUMN(Phin, phin, float);
 
 namespace o2::aod
 {
-DECLARE_SOA_TABLE(genDiMu, "AOD", "GENDIMU",
+DECLARE_SOA_TABLE(GenDimu, "AOD", "GENDIMU",
                   gendimu::M, gendimu::Pt, gendimu::Rap, gendimu::Phi,
                   gendimu::PhiAv, gendimu::PhiCh,
                   gendimu::Ptp, gendimu::Etap, gendimu::Phip,
@@ -140,7 +140,7 @@ DECLARE_SOA_COLUMN(GenPhin, gen_phin, float);
 
 namespace o2::aod
 {
-DECLARE_SOA_TABLE(recoDiMu, "AOD", "RECODIMU",
+DECLARE_SOA_TABLE(RecoDimu, "AOD", "RECODIMU",
                   recodimu::M, recodimu::Pt, recodimu::Rap, recodimu::Phi,
                   recodimu::PhiAv, recodimu::PhiCh,
                   recodimu::Ptp, recodimu::Etap, recodimu::Phip,
@@ -174,8 +174,8 @@ struct fwdMuonsUPC {
   using CompleteFwdTracks = soa::Join<ForwardTracks, o2::aod::UDMcFwdTrackLabels>;
 
   Produces<o2::aod::DiMu> dimuSel;
-  Produces<o2::aod::genDiMu> dimuGen;
-  Produces<o2::aod::recoDiMu> dimuReco;
+  Produces<o2::aod::GenDimu> dimuGen;
+  Produces<o2::aod::RecoDimu> dimuReco;
 
   // defining histograms using histogram registry: different histos for the different process functions
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
