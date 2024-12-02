@@ -54,7 +54,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct HfTaskFlow {
-  SliceCache cache;
 
   //  configurables for processing options
   Configurable<bool> doReferenceFlow{"doReferenceFlow", false, "Flag to know if reference flow should be done"};
@@ -153,6 +152,8 @@ struct HfTaskFlow {
   Preslice<aod::McParticles> mcTruthPerCol = aod::mcparticle::mcCollisionId;
   // Do I have to adapt this preslice to MC ? How does it work exactly ?
   // Preslice<aod::Tracks> mcRecPerCol = aod::track::collisionId;
+
+  SliceCache cache;
 
   //  configurables for containers
   ConfigurableAxis axisVertex{"axisVertex", {14, -7, 7}, "vertex axis for histograms"};
