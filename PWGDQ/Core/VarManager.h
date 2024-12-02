@@ -4346,7 +4346,6 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
                               : ROOT::Math::XYZVectorF(v2_vp.Px(), v2_vp.Py(), v2_vp.Pz()).Cross(ROOT::Math::XYZVectorF(v1_vp.Px(), v1_vp.Py(), v1_vp.Pz())));
   auto vRef = p12_vp.Cross(p12_vp_projXZ);
   values[kPhiVP] = std::acos(vDimu.Dot(vRef) / (vRef.R() * vDimu.R()));
-  
 }
 
 template <typename T>
