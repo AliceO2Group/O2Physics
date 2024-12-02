@@ -282,7 +282,7 @@ struct pidTofQaMc {
   {
     switch (pdgSign.value) {
       case 0:
-        if (abs(particle.pdgCode()) != PDGs[mcID]) {
+        if (std::abs(particle.pdgCode()) != PDGs[mcID]) {
           return;
         }
         break;
@@ -459,7 +459,7 @@ struct pidTofQaMc {
 
     switch (pdgSign.value) {
       case 0:
-        if (abs(particle.pdgCode()) != PDGs[mcID]) {
+        if (std::abs(particle.pdgCode()) != PDGs[mcID]) {
           return;
         }
         break;
@@ -554,7 +554,7 @@ struct pidTofQaMc {
 
     switch (pdgSign.value) {
       case 0:
-        if (abs(particle.pdgCode()) != PDGs[mcID]) {
+        if (std::abs(particle.pdgCode()) != PDGs[mcID]) {
           return;
         }
         break;
