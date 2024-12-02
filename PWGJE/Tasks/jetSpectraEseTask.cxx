@@ -54,7 +54,7 @@ struct JetSpectraEseTask {
   Configurable<float> jetR{"jetR", 0.2, "jet resolution parameter"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0, "vertex z cut"};
   Configurable<std::vector<float>> centRange{"centRange", {30, 50}, "centrality region of interest"};
-  Configurable<double> leadingJetPtCut{"fLeadingJetPtCut", 5.0, "leading jet pT cut"};
+  Configurable<double> leadingJetPtCut{"leadingJetPtCut", 5.0, "leading jet pT cut"};
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
@@ -63,7 +63,7 @@ struct JetSpectraEseTask {
 
   Configurable<bool> cfgEvSelOccupancy{"cfgEvSelOccupancy", false, "Flag for occupancy cut"};
   Configurable<std::vector<int>> cfgCutOccupancy{"cfgCutOccupancy", {0, 500}, "Occupancy cut"};
-  Configurable<std::vector<float>> cfgOccupancyPtCut{"cfgPtCut", {0, 100}, "pT cut"};
+  Configurable<std::vector<float>> cfgOccupancyPtCut{"cfgOccupancyPtCut", {0, 100}, "pT cut"};
 
   Configurable<int> cfgnTotalSystem{"cfgnTotalSystem", 7, "total qvector number // look in Qvector table for this number"};
   Configurable<int> cfgnCorrLevel{"cfgnCorrLevel", 3, "QVector step: 0 = no corr, 1 = rect, 2 = twist, 3 = full"};
@@ -92,8 +92,8 @@ struct JetSpectraEseTask {
                      TPCneg,
                      TPCall };
 
-  static constexpr std::size_t scN1 = 5;
-  static constexpr std::size_t scN2 = 3;
+  static constexpr std::size_t EPSeq = 5;
+  static constexpr std::size_t CosEPSeq = 3;
 
   void init(o2::framework::InitContext&)
   {
@@ -198,16 +198,16 @@ struct JetSpectraEseTask {
     registry.fill(HIST("hEventCounter"), counter++);
     registry.fill(HIST("hRho"), collision.rho());
     for (auto const& jet : jets) {
-      float jetpT_bkgsub = jet.pt() - (collision.rho() * jet.area());
+      float jetpTbkgsub = jet.pt() - (collision.rho() * jet.area());
       registry.fill(HIST("hJetPt"), jet.pt());
-      registry.fill(HIST("hJetPt_bkgsub"), jetpT_bkgsub);
+      registry.fill(HIST("hJetPt_bkgsub"), jetpTbkgsub);
       registry.fill(HIST("hJetEta"), jet.eta());
       registry.fill(HIST("hJetPhi"), jet.phi());
       registry.fill(HIST("hJetArea"), jet.area());
 
       float dPhi = RecoDecay::constrainAngle(jet.phi() - vPsi2, -o2::constants::math::PI);
       registry.fill(HIST("hdPhi"), dPhi);
-      registry.fill(HIST("hCentJetPtdPhiq2"), collision.centrality(), jetpT_bkgsub, dPhi, qPerc[0]);
+      registry.fill(HIST("hCentJetPtdPhiq2"), collision.centrality(), jetpTbkgsub, dPhi, qPerc[0]);
     }
     registry.fill(HIST("hEventCounter"), counter++);
 
@@ -305,44 +305,44 @@ struct JetSpectraEseTask {
     else
       return true;
   }
-  static constexpr const char* cosList[] = {"hCosPsi2AmC", "hCosPsi2AmB", "hCosPsi2BmC"};
+  static constexpr const char* CosList[] = {"hCosPsi2AmC", "hCosPsi2AmB", "hCosPsi2BmC"};
   template <bool Fill, typename EPCol>
   float procEP(EPCol const& vec)
   {
     constexpr std::array<float, 2> AmpCut{1e-8, 0.0};
-    auto computeEP = [&ampCut](std::vector<float> vec, auto det) { return vec[2] > AmpCut[det] ? 0.5 * std::atan2(vec[1], vec[0]) : 999.; };
+    auto computeEP = [&AmpCut](std::vector<float> vec, auto det) { return vec[2] > AmpCut[det] ? 0.5 * std::atan2(vec[1], vec[0]) : 999.; };
     std::map<std::string, float> epMap;
-    epMap["FT0A"] = computeEP(QVecNoESE<DetID::FT0A, fill>(vec), 0);
+    epMap["FT0A"] = computeEP(qVecNoESE<DetID::FT0A, Fill>(vec), 0);
     if constexpr (Fill) {
-      epMap["FT0C"] = computeEP(QVecNoESE<DetID::FT0C, false>(vec), 0);
-      epMap["FV0A"] = computeEP(QVecNoESE<DetID::FV0A, false>(vec), 0);
-      epMap["TPCpos"] = computeEP(QVecNoESE<DetID::TPCpos, false>(vec), 1);
-      epMap["TPCneg"] = computeEP(QVecNoESE<DetID::TPCneg, false>(vec), 1);
-      fillEP(std::make_index_sequence<scN1>{}, vec, epMap);
+      epMap["FT0C"] = computeEP(qVecNoESE<DetID::FT0C, false>(vec), 0);
+      epMap["FV0A"] = computeEP(qVecNoESE<DetID::FV0A, false>(vec), 0);
+      epMap["TPCpos"] = computeEP(qVecNoESE<DetID::TPCpos, false>(vec), 1);
+      epMap["TPCneg"] = computeEP(qVecNoESE<DetID::TPCneg, false>(vec), 1);
+      fillEP(std::make_index_sequence<EPSeq>{}, vec, epMap);
       auto cosPsi = [](float psiX, float psiY) { return (static_cast<double>(psiX) == 999. || static_cast<double>(psiY) == 999.) ? 999. : std::cos(2.0 * (psiX - psiY)); };
       std::array<float, 3> epCorrContainer{};
       epCorrContainer[0] = cosPsi(epMap[cfgEPRefA], epMap[cfgEPRefC]);
       epCorrContainer[1] = cosPsi(epMap[cfgEPRefA], epMap[cfgEPRefB]);
       epCorrContainer[2] = cosPsi(epMap[cfgEPRefB], epMap[cfgEPRefC]);
-      fillEPCos(std::make_index_sequence<scN2>{}, vec, epCorrContainer);
+      fillEPCos(std::make_index_sequence<CosEPSeq>{}, vec, epCorrContainer);
     }
     return epMap["FT0A"];
   }
   template <std::size_t... Idx, typename collision>
   void fillEPCos(const std::index_sequence<Idx...>&, const collision& col, const std::array<float, 3>& Corr)
   {
-    (registry.fill(HIST(cosList[Idx]), col.centrality(), Corr[Idx], col.qPERCFT0C()[0]), ...);
+    (registry.fill(HIST(CosList[Idx]), col.centrality(), Corr[Idx], col.qPERCFT0C()[0]), ...);
   }
-  static constexpr const char* epList[] = {"hPsi2FT0A", "hPsi2FV0A", "hPsi2FT0C", "hPsi2TPCpos", "hPsi2TPCneg"};
+  static constexpr const char* EpList[] = {"hPsi2FT0A", "hPsi2FV0A", "hPsi2FT0C", "hPsi2TPCpos", "hPsi2TPCneg"};
   template <std::size_t... Idx, typename collision>
   void fillEP(const std::index_sequence<Idx...>&, const collision& col, const std::map<std::string, float>& epMap)
   {
-    (registry.fill(HIST(epList[Idx]), col.centrality(), epMap.at(std::string(RemovePrefix(epList[Idx])))), ...);
+    (registry.fill(HIST(EpList[Idx]), col.centrality(), epMap.at(std::string(RemovePrefix(EpList[Idx])))), ...);
   }
   constexpr std::string_view RemovePrefix(std::string_view str)
   {
-    constexpr std::string_view prefix = "hPsi2";
-    return str.substr(prefix.size());
+    constexpr std::string_view Prefix = "hPsi2";
+    return str.substr(Prefix.size());
   }
 
   constexpr int detIDN(const DetID id)
@@ -367,26 +367,26 @@ struct JetSpectraEseTask {
   }
 
   template <DetID id, bool fill, typename Col>
-  std::vector<float> QVecNoESE(Col collision)
+  std::vector<float> qVecNoESE(Col collision)
   {
     const int nmode = 2;
-    int DetId = detIDN(id);
-    int DetInd = DetId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
+    int detId = detIDN(id);
+    int detInd = detId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
     if constexpr (fill) {
-      if (collision.qvecAmp()[DetInd] > 1e-8) {
-        registry.fill(HIST("hQvecUncorV2"), collision.centrality(), collision.qvecRe()[DetInd], collision.qvecIm()[DetInd]);
-        registry.fill(HIST("hQvecRectrV2"), collision.centrality(), collision.qvecRe()[DetInd + 1], collision.qvecIm()[DetInd + 1]);
-        registry.fill(HIST("hQvecTwistV2"), collision.centrality(), collision.qvecRe()[DetInd + 2], collision.qvecIm()[DetInd + 2]);
-        registry.fill(HIST("hQvecFinalV2"), collision.centrality(), collision.qvecRe()[DetInd + 3], collision.qvecIm()[DetInd + 3]);
-        registry.fill(HIST("hEPUncorV2"), collision.centrality(), 0.5 * std::atan2(collision.qvecIm()[DetInd], collision.qvecRe()[DetInd]));
-        registry.fill(HIST("hEPRectrV2"), collision.centrality(), 0.5 * std::atan2(collision.qvecIm()[DetInd + 1], collision.qvecRe()[DetInd + 1]));
-        registry.fill(HIST("hEPTwistV2"), collision.centrality(), 0.5 * std::atan2(collision.qvecIm()[DetInd + 2], collision.qvecRe()[DetInd + 2]));
+      if (collision.qvecAmp()[detInd] > 1e-8) {
+        registry.fill(HIST("hQvecUncorV2"), collision.centrality(), collision.qvecRe()[detInd], collision.qvecIm()[detInd]);
+        registry.fill(HIST("hQvecRectrV2"), collision.centrality(), collision.qvecRe()[detInd + 1], collision.qvecIm()[detInd + 1]);
+        registry.fill(HIST("hQvecTwistV2"), collision.centrality(), collision.qvecRe()[detInd + 2], collision.qvecIm()[detInd + 2]);
+        registry.fill(HIST("hQvecFinalV2"), collision.centrality(), collision.qvecRe()[detInd + 3], collision.qvecIm()[detInd + 3]);
+        registry.fill(HIST("hEPUncorV2"), collision.centrality(), 0.5 * std::atan2(collision.qvecIm()[detInd], collision.qvecRe()[detInd]));
+        registry.fill(HIST("hEPRectrV2"), collision.centrality(), 0.5 * std::atan2(collision.qvecIm()[detInd + 1], collision.qvecRe()[detInd + 1]));
+        registry.fill(HIST("hEPTwistV2"), collision.centrality(), 0.5 * std::atan2(collision.qvecIm()[detInd + 2], collision.qvecRe()[detInd + 2]));
       }
     }
     std::vector<float> qVec{};
-    qVec.push_back(collision.qvecRe()[DetInd + cfgnCorrLevel]);
-    qVec.push_back(collision.qvecIm()[DetInd + cfgnCorrLevel]);
-    qVec.push_back(collision.qvecAmp()[DetId]);
+    qVec.push_back(collision.qvecRe()[detInd + cfgnCorrLevel]);
+    qVec.push_back(collision.qvecIm()[detInd + cfgnCorrLevel]);
+    qVec.push_back(collision.qvecAmp()[detId]);
     return qVec;
   }
 };
