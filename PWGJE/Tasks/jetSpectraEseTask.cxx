@@ -96,7 +96,6 @@ struct JetSpectraEseTask {
   // static constexpr std::size_t CosEPSeq = 3;
   static constexpr std::make_index_sequence<5> EPSeq = {};
   static constexpr std::make_index_sequence<3> CosEPSeq = {};
-  
 
   void init(o2::framework::InitContext&)
   {
