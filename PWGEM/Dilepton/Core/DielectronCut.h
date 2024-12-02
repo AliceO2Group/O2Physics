@@ -128,14 +128,8 @@ class DielectronCut : public TNamed
     }
 
     if (mApplyPhiV) {
-      if (mMaxPhivPairMeeDep) {
-        if ((phiv < mMinPhivPair || mMaxPhivPairMeeDep(v12.M()) < phiv) ^ mSelectPC) {
-          return false;
-        }
-      } else {
-        if ((!(mMinPhivPair < phiv && phiv < mMaxPhivPair) && !(mMinMeeForPhivPair < v12.M() && v12.M() < mMaxMeeForPhivPair)) ^ mSelectPC) {
-          return false;
-        }
+      if (((mMinPhivPair < phiv && phiv < mMaxPhivPair) && v12.M() < mMaxMeePhiVDep(phiv)) ^ mSelectPC) {
+        return false;
       }
     }
 
@@ -158,70 +152,6 @@ class DielectronCut : public TNamed
       return false;
     }
 
-    return true;
-  }
-
-  template <typename TTrack1, typename TTrack2>
-  bool IsSelectedPair_PrefilterULS(TTrack1 const& t1, TTrack2 const& t2, const float bz) const
-  {
-    // don't move this function into IsSelectedPair.
-    if (!IsSelectedPair_PrefilterULS_Mee(t1, t2, bz)) {
-      return false;
-    }
-    if (!IsSelectedPair_PrefilterULS_PhiV(t1, t2, bz)) {
-      return false;
-    }
-    return true;
-  }
-
-  template <typename TTrack1, typename TTrack2>
-  bool IsSelectedPair_PrefilterULS_Mee(TTrack1 const& t1, TTrack2 const& t2, const float /*bz*/) const
-  {
-    // don't move this function into IsSelectedPair.
-    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
-    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
-    ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-    if (mMinMee_uls < v12.M() && v12.M() < mMaxMee_uls) {
-      return false;
-    }
-    return true;
-  }
-
-  template <typename TTrack1, typename TTrack2>
-  bool IsSelectedPair_PrefilterULS_PhiV(TTrack1 const& t1, TTrack2 const& t2, const float bz) const
-  {
-    // don't move this function into IsSelectedPair.
-    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
-    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
-    ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-    float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), bz);
-    if (v12.M() < mMaxMee_phiv_uls && mMaxPhiV_uls < phiv) {
-      return false;
-    }
-    return true;
-  }
-
-  template <typename TTrack1, typename TTrack2>
-  bool IsSelectedPair_PrefilterLS(TTrack1 const& t1, TTrack2 const& t2, const float bz) const
-  {
-    // don't move this function into IsSelectedPair.
-    if (!IsSelectedPair_PrefilterLS_PhiV(t1, t2, bz)) {
-      return false;
-    }
-    return true;
-  }
-
-  template <typename TTrack1, typename TTrack2>
-  bool IsSelectedPair_PrefilterLS_PhiV(TTrack1 const& t1, TTrack2 const& t2, const float bz) const
-  {
-    // don't move this function into IsSelectedPair.
-    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
-    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
-    ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-    float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), bz);
-    if (v12.M() < phiv * mSlope_phiv_ls + mIntercept_phiv_ls || v12.M() < (M_PI - phiv) * mSlope_phiv_ls + mIntercept_phiv_ls) {
-      return false;
-    }
     return true;
   }
 
@@ -472,13 +402,10 @@ class DielectronCut : public TNamed
   void SetPairDCARange(float min = 0.f, float max = 1e10f); // 3D DCA in sigma
   void SetMeeRange(float min = 0.f, float max = 0.5);
   void SetPairOpAng(float minOpAng = 0.f, float maxOpAng = 1e10f);
-  void SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut);
-  void SetPhivPairRange(float min_phiv, float max_phiv, float min_mee, float max_mee);
+  void SetMaxMeePhiVDep(std::function<float(float)> phivDepCut, float min_phiv, float max_phiv);
   void SelectPhotonConversion(bool flag);
   void SetMindEtadPhi(bool flag, float min_deta, float min_dphi);
   void SetRequireDifferentSides(bool flag);
-  void SetPrefilterPhiV(float max_mee_uls, float max_phiv_uls, float max_mee_ls, float max_phiv_ls);
-  void SetPrefilterMee(float min_mee_uls, float max_mee_uls);
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
@@ -537,19 +464,13 @@ class DielectronCut : public TNamed
   float mMinPairY{-1e10f}, mMaxPairY{1e10f};      // range in rapidity
   float mMinPairDCA3D{0.f}, mMaxPairDCA3D{1e10f}; // range in 3D DCA in sigma
   float mMinPhivPair{0.f}, mMaxPhivPair{+3.2};
-  float mMinMeeForPhivPair{0.f}, mMaxMeeForPhivPair{1e10f};
-  std::function<float(float)> mMaxPhivPairMeeDep{}; // max phiv as a function of mee
-  bool mSelectPC{false};                            // flag to select photon conversion used in mMaxPhivPairMeeDep
-  bool mApplydEtadPhi{false};                       // flag to apply deta, dphi cut between 2 tracks
+  std::function<float(float)> mMaxMeePhiVDep{}; // max mee as a function of phiv
+  bool mSelectPC{false};                        // flag to select photon conversion used in mMaxPhivPairMeeDep
+  bool mApplydEtadPhi{false};                   // flag to apply deta, dphi cut between 2 tracks
   float mMinDeltaEta{0.f};
   float mMinDeltaPhi{0.f};
   float mMinOpAng{0.f}, mMaxOpAng{1e10f};
   bool mRequireDiffSides{false}; // flag to require 2 tracks to be from different sides. (A-C combination). If one wants 2 tracks to be in the same side (A-A or C-C), one can simply use track eta cut.
-
-  // only for prefilter
-  float mMinMee_uls{0.f}, mMaxMee_uls{0.f};
-  float mMaxMee_phiv_uls{0.f}, mMaxPhiV_uls{0.f};     // rectangle
-  float mSlope_phiv_ls{0.f}, mIntercept_phiv_ls{0.f}; // mee > phiv * slope + intercept
 
   // kinematic cuts
   float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};        // range in pT

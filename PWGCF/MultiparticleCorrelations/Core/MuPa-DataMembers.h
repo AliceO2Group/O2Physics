@@ -41,6 +41,7 @@ struct TaskConfiguration {
   TString fTaskName = "";                          // task name - this one is used to get the right weights programatically for this analysis
   TString fRunNumber = "";                         // over which run number this task is executed
   Bool_t fRunNumberIsDetermined = kFALSE;          // ensures that run number is determined in process() and propagated to already booked objects only once
+  int64_t fRunTime[eRunTime_N] = {0};              // stores permanently start of run, end of run, and run duration
   Bool_t fDryRun = kFALSE;                         // book all histos and run without storing and calculating anything
   Bool_t fVerbose = kFALSE;                        // print additional info during debugging, but not for simply utility function or function calls per particle (see next)
   Bool_t fVerboseUtility = kFALSE;                 // print additional info during debugging also for simply utility function, but not for function calls per particle (see next)
@@ -275,7 +276,8 @@ struct Test0 {
   TString* fTest0Labels[gMaxCorrelator][gMaxIndex] = {{NULL}};                  // all labels: k-p'th order is stored in k-1'th index. So yes, I also store 1-p
   Bool_t fCalculateTest0AsFunctionOf[eAsFunctionOf_N] = {false};                //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy, ...]
   TString fFileWithLabels = "";                                                 // path to external ROOT file which specifies all labels of interest
-  Bool_t fUseDefaultLabels = kFALSE;                                            // use default labels hardwired in GetDefaultObjArrayWithLabels()
+  Bool_t fUseDefaultLabels = kFALSE;                                            // use default labels hardwired in GetDefaultObjArrayWithLabels(), the choice is made with cfWhichDefaultLabels
+  TString fWhichDefaultLabels = "";                                             // only for testing purposes, select one set of default labels, see GetDefaultObjArrayWithLabels for supported options
   TH1I* fTest0LabelsPlaceholder = NULL;                                         // store all Test0 labels in this histogram
 } t0;                                                                           // "t0" labels an instance of this group of histograms
 
