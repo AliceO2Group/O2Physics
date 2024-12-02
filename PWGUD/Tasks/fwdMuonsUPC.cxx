@@ -20,6 +20,7 @@
 #include <unordered_map>
 
 #include "Framework/runDataProcessing.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "CCDB/BasicCCDBManager.h"
@@ -27,7 +28,6 @@
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "TSystem.h"
 #include "TMath.h"
@@ -38,7 +38,7 @@ namespace dimu
 {
 // dimuon
 DECLARE_SOA_COLUMN(M, m, float);
-DECLARE_SOA_COLUMN(E, energy, float);
+DECLARE_SOA_COLUMN(Energy, energy, float);
 DECLARE_SOA_COLUMN(Px, px, float);
 DECLARE_SOA_COLUMN(Py, py, float);
 DECLARE_SOA_COLUMN(Pz, pz, float);
@@ -48,14 +48,14 @@ DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(PhiAv, phiAv, float);
 DECLARE_SOA_COLUMN(PhiCh, phiCh, float);
 // tracks positive (p) and negative (n)
-DECLARE_SOA_COLUMN(Ep, energyp, float);
+DECLARE_SOA_COLUMN(EnergyP, energyP, float);
 DECLARE_SOA_COLUMN(Pxp, pxp, float);
 DECLARE_SOA_COLUMN(Pyp, pyp, float);
 DECLARE_SOA_COLUMN(Pzp, pzp, float);
 DECLARE_SOA_COLUMN(Ptp, ptp, float);
 DECLARE_SOA_COLUMN(Etap, etap, float);
 DECLARE_SOA_COLUMN(Phip, phip, float);
-DECLARE_SOA_COLUMN(En, energyn, float);
+DECLARE_SOA_COLUMN(EnergyN, energyN, float);
 DECLARE_SOA_COLUMN(Pxn, pxn, float);
 DECLARE_SOA_COLUMN(Pyn, pyn, float);
 DECLARE_SOA_COLUMN(Pzn, pzn, float);
@@ -73,17 +73,46 @@ DECLARE_SOA_COLUMN(Nclass, nclass, int);
 namespace o2::aod
 {
 DECLARE_SOA_TABLE(DiMu, "AOD", "DIMU",
-                  dimu::M, dimu::E, dimu::Px, dimu::Py, dimu::Pz, dimu::Pt, dimu::Rap, dimu::Phi,
+                  dimu::M, dimu::Energy, dimu::Px, dimu::Py, dimu::Pz, dimu::Pt, dimu::Rap, dimu::Phi,
                   dimu::PhiAv, dimu::PhiCh,
-                  dimu::Ep, dimu::Pxp, dimu::Pyp, dimu::Pzp, dimu::Ptp, dimu::Etap, dimu::Phip,
-                  dimu::En, dimu::Pxn, dimu::Pyn, dimu::Pzn, dimu::Ptn, dimu::Etan, dimu::Phin,
+                  dimu::EnergyP, dimu::Pxp, dimu::Pyp, dimu::Pzp, dimu::Ptp, dimu::Etap, dimu::Phip,
+                  dimu::EnergyN, dimu::Pxn, dimu::Pyn, dimu::Pzn, dimu::Ptn, dimu::Etan, dimu::Phin,
                   dimu::Tzna, dimu::Ezna, dimu::Tznc, dimu::Eznc, dimu::Nclass);
+} // namespace o2::aod
+
+// for saving tree with info on gen MC
+namespace gendimu
+{
+// dimuon
+DECLARE_SOA_COLUMN(M, m, float);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Rap, rap, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(PhiAv, phiAv, float);
+DECLARE_SOA_COLUMN(PhiCh, phiCh, float);
+// tracks positive (p) and negative (n)
+DECLARE_SOA_COLUMN(Ptp, ptp, float);
+DECLARE_SOA_COLUMN(Etap, etap, float);
+DECLARE_SOA_COLUMN(Phip, phip, float);
+DECLARE_SOA_COLUMN(Ptn, ptn, float);
+DECLARE_SOA_COLUMN(Etan, etan, float);
+DECLARE_SOA_COLUMN(Phin, phin, float);
+} // namespace gendimu
+
+namespace o2::aod
+{
+DECLARE_SOA_TABLE(GenDimu, "AOD", "GENDIMU",
+                  gendimu::M, gendimu::Pt, gendimu::Rap, gendimu::Phi,
+                  gendimu::PhiAv, gendimu::PhiCh,
+                  gendimu::Ptp, gendimu::Etap, gendimu::Phip,
+                  gendimu::Ptn, gendimu::Etan, gendimu::Phin);
 } // namespace o2::aod
 
 // for saving tree with info on reco MC
 namespace recodimu
 {
 // dimuon
+DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Rap, rap, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
@@ -97,22 +126,22 @@ DECLARE_SOA_COLUMN(Ptn, ptn, float);
 DECLARE_SOA_COLUMN(Etan, etan, float);
 DECLARE_SOA_COLUMN(Phin, phin, float);
 // gen info dimuon
-DECLARE_SOA_COLUMN(GenPt, gen_pt, float);
-DECLARE_SOA_COLUMN(GenRap, gen_rap, float);
-DECLARE_SOA_COLUMN(GenPhi, gen_phi, float);
+DECLARE_SOA_COLUMN(GenPt, genPt, float);
+DECLARE_SOA_COLUMN(GenRap, genRap, float);
+DECLARE_SOA_COLUMN(GenPhi, genPhi, float);
 // gen info trks
-DECLARE_SOA_COLUMN(GenPtp, gen_ptp, float);
-DECLARE_SOA_COLUMN(GenEtap, gen_etap, float);
-DECLARE_SOA_COLUMN(GenPhip, gen_phip, float);
-DECLARE_SOA_COLUMN(GenPtn, gen_ptn, float);
-DECLARE_SOA_COLUMN(GenEtan, gen_etan, float);
-DECLARE_SOA_COLUMN(GenPhin, gen_phin, float);
+DECLARE_SOA_COLUMN(GenPtp, genPtp, float);
+DECLARE_SOA_COLUMN(GenEtap, genEtap, float);
+DECLARE_SOA_COLUMN(GenPhip, genPhip, float);
+DECLARE_SOA_COLUMN(GenPtn, genPtn, float);
+DECLARE_SOA_COLUMN(GenEtan, genEtan, float);
+DECLARE_SOA_COLUMN(GenPhin, genPhin, float);
 } // namespace recodimu
 
 namespace o2::aod
 {
-DECLARE_SOA_TABLE(recoDiMu, "AOD", "RECODIMU",
-                  recodimu::Pt, recodimu::Rap, recodimu::Phi,
+DECLARE_SOA_TABLE(RecoDimu, "AOD", "RECODIMU",
+                  recodimu::M, recodimu::Pt, recodimu::Rap, recodimu::Phi,
                   recodimu::PhiAv, recodimu::PhiCh,
                   recodimu::Ptp, recodimu::Etap, recodimu::Phip,
                   recodimu::Ptn, recodimu::Etan, recodimu::Phin,
@@ -138,24 +167,26 @@ const float kPtMin = 0.;
 struct fwdMuonsUPC {
 
   // a pdg object
-  TDatabasePDG* pdg = nullptr;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   using CandidatesFwd = soa::Join<o2::aod::UDCollisions, o2::aod::UDCollisionsSelsFwd>;
   using ForwardTracks = soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTracksExtra>;
   using CompleteFwdTracks = soa::Join<ForwardTracks, o2::aod::UDMcFwdTrackLabels>;
 
   Produces<o2::aod::DiMu> dimuSel;
-  Produces<o2::aod::recoDiMu> dimuReco;
+  Produces<o2::aod::GenDimu> dimuGen;
+  Produces<o2::aod::RecoDimu> dimuReco;
 
   // defining histograms using histogram registry: different histos for the different process functions
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry reg0n0n{"reg0n0n", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry regXn0n{"regXn0n", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry regXnXn{"regXnXn", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry McGenRegistry{"McGenRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry McRecoRegistry{"McRecoRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry mcGenRegistry{"mcGenRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry mcRecoRegistry{"mcRecoRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // CONFIGURABLES
+  static constexpr double Pi = o2::constants::math::PI;
   // pT of muon pairs
   Configurable<int> nBinsPt{"nBinsPt", 250, "N bins in pT histo"};
   Configurable<float> lowPt{"lowPt", 0., "lower limit in pT histo"};
@@ -174,8 +205,8 @@ struct fwdMuonsUPC {
   Configurable<float> highRapidity{"highRapidity", -2., "upper limit in rapidity histo"};
   // phi of muon pairs
   Configurable<int> nBinsPhi{"nBinsPhi", 600, "N bins in phi histo"};
-  Configurable<float> lowPhi{"lowPhi", -TMath::Pi(), "lower limit in phi histo"};
-  Configurable<float> highPhi{"highPhi", TMath::Pi(), "upper limit in phi histo"};
+  Configurable<float> lowPhi{"lowPhi", -Pi, "lower limit in phi histo"};
+  Configurable<float> highPhi{"highPhi", Pi, "upper limit in phi histo"};
   // pT of single muons
   Configurable<int> nBinsPtSingle{"nBinsPtSingle", 500, "N bins in pT histo single muon"};
   Configurable<float> lowPtSingle{"lowPtSingle", 0., "lower limit in pT histo single muon"};
@@ -186,8 +217,8 @@ struct fwdMuonsUPC {
   Configurable<float> highEtaSingle{"highEtaSingle", -2., "upper limit in eta histo single muon"};
   // phi of single muons
   Configurable<int> nBinsPhiSingle{"nBinsPhiSingle", 600, "N bins in phi histo single muon"};
-  Configurable<float> lowPhiSingle{"lowPhiSingle", -TMath::Pi(), "lower limit in phi histo single muon"};
-  Configurable<float> highPhiSingle{"highPhiSingle", TMath::Pi(), "upper limit in phi histo single muon"};
+  Configurable<float> lowPhiSingle{"lowPhiSingle", -Pi, "lower limit in phi histo single muon"};
+  Configurable<float> highPhiSingle{"highPhiSingle", Pi, "upper limit in phi histo single muon"};
   // ZDC
   Configurable<int> nBinsZDCen{"nBinsZDCen", 200, "N bins in ZN energy"};
   Configurable<float> lowEnZN{"lowEnZN", -50., "lower limit in ZN energy histo"};
@@ -195,9 +226,6 @@ struct fwdMuonsUPC {
 
   void init(InitContext&)
   {
-    // PDG
-    pdg = TDatabasePDG::Instance();
-
     // binning of pT axis fr fit
     std::vector<double> ptFitBinning = {
       0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10,
@@ -264,56 +292,52 @@ struct fwdMuonsUPC {
     regXnXn.add("hPtFit", "Transverse momentum of muon pairs - XnXn;;#counts", kTH1D, {axisPtFit});
 
     // gen MC
-    McGenRegistry.add("hMass", "Invariant mass of muon pairs;;#counts", kTH1D, {axisMass});
-    McGenRegistry.add("hPt", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPt});
-    McGenRegistry.add("hEta", "Pseudorapidty of muon pairs;;#counts", kTH1D, {axisEta});
-    McGenRegistry.add("hRapidity", "Rapidty of muon pairs;;#counts", kTH1D, {axisRapidity});
-    McGenRegistry.add("hPhi", "#varphi of muon pairs;;#counts", kTH1D, {axisPhi});
-    McGenRegistry.add("hPtTrkPos", "Pt of positive muons;;#counts", kTH1D, {axisPtSingle});
-    McGenRegistry.add("hPtTrkNeg", "Pt of negative muons;;#counts", kTH1D, {axisPtSingle});
-    McGenRegistry.add("hEtaTrkPos", "#eta of positive muons;;#counts", kTH1D, {axisEtaSingle});
-    McGenRegistry.add("hEtaTrkNeg", "#eta of negative muons;;#counts", kTH1D, {axisEtaSingle});
-    McGenRegistry.add("hPhiTrkPos", "#varphi of positive muons;;#counts", kTH1D, {axisPhiSingle});
-    McGenRegistry.add("hPhiTrkNeg", "#varphi of negative muons;;#counts", kTH1D, {axisPhiSingle});
-    McGenRegistry.add("hPhiCharge", "#phi #it{charge}", kTH1D, {axisPhi});
-    McGenRegistry.add("hPhiAverage", "#phi #it{average}", kTH1D, {axisPhi});
+    mcGenRegistry.add("hMass", "Invariant mass of muon pairs;;#counts", kTH1D, {axisMass});
+    mcGenRegistry.add("hPt", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPt});
+    mcGenRegistry.add("hEta", "Pseudorapidty of muon pairs;;#counts", kTH1D, {axisEta});
+    mcGenRegistry.add("hRapidity", "Rapidty of muon pairs;;#counts", kTH1D, {axisRapidity});
+    mcGenRegistry.add("hPhi", "#varphi of muon pairs;;#counts", kTH1D, {axisPhi});
+    mcGenRegistry.add("hPtTrkPos", "Pt of positive muons;;#counts", kTH1D, {axisPtSingle});
+    mcGenRegistry.add("hPtTrkNeg", "Pt of negative muons;;#counts", kTH1D, {axisPtSingle});
+    mcGenRegistry.add("hEtaTrkPos", "#eta of positive muons;;#counts", kTH1D, {axisEtaSingle});
+    mcGenRegistry.add("hEtaTrkNeg", "#eta of negative muons;;#counts", kTH1D, {axisEtaSingle});
+    mcGenRegistry.add("hPhiTrkPos", "#varphi of positive muons;;#counts", kTH1D, {axisPhiSingle});
+    mcGenRegistry.add("hPhiTrkNeg", "#varphi of negative muons;;#counts", kTH1D, {axisPhiSingle});
+    mcGenRegistry.add("hPhiCharge", "#phi #it{charge}", kTH1D, {axisPhi});
+    mcGenRegistry.add("hPhiAverage", "#phi #it{average}", kTH1D, {axisPhi});
 
     // reco MC
-    McRecoRegistry.add("hMass", "Invariant mass of muon pairs;;#counts", kTH1D, {axisMass});
-    McRecoRegistry.add("hPt", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPt});
-    McRecoRegistry.add("hPtFit", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPtFit});
-    McRecoRegistry.add("hEta", "Pseudorapidty of muon pairs;;#counts", kTH1D, {axisEta});
-    McRecoRegistry.add("hRapidity", "Rapidty of muon pairs;;#counts", kTH1D, {axisRapidity});
-    McRecoRegistry.add("hPhi", "#varphi of muon pairs;;#counts", kTH1D, {axisPhi});
-    McRecoRegistry.add("hCharge", "Charge;;;#counts", kTH1D, {{5, -2.5, 2.5}});
-    McRecoRegistry.add("hContrib", "hContrib;;#counts", kTH1D, {{6, -0.5, 5.5}});
-    McRecoRegistry.add("hEvSign", "Sum of the charges of all the tracks in each event;;#counts", kTH1D, {{5, -2.5, 2.5}});
-    McRecoRegistry.add("hPtTrkPos", "Pt of positive muons;;#counts", kTH1D, {axisPtSingle});
-    McRecoRegistry.add("hPtTrkNeg", "Pt of negative muons;;#counts", kTH1D, {axisPtSingle});
-    McRecoRegistry.add("hEtaTrkPos", "#eta of positive muons;;#counts", kTH1D, {axisEtaSingle});
-    McRecoRegistry.add("hEtaTrkNeg", "#eta of negative muons;;#counts", kTH1D, {axisEtaSingle});
-    McRecoRegistry.add("hPhiTrkPos", "#varphi of positive muons;;#counts", kTH1D, {axisPhiSingle});
-    McRecoRegistry.add("hPhiTrkNeg", "#varphi of negative muons;;#counts", kTH1D, {axisPhiSingle});
-    McRecoRegistry.add("hSameSign", "hSameSign;;#counts", kTH1D, {{6, -0.5, 5.5}});
-    McRecoRegistry.add("hPhiCharge", "#phi #it{charge}", kTH1D, {axisPhi});
-    McRecoRegistry.add("hPhiAverage", "#phi #it{average}", kTH1D, {axisPhi});
+    mcRecoRegistry.add("hMass", "Invariant mass of muon pairs;;#counts", kTH1D, {axisMass});
+    mcRecoRegistry.add("hPt", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPt});
+    mcRecoRegistry.add("hPtFit", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPtFit});
+    mcRecoRegistry.add("hEta", "Pseudorapidty of muon pairs;;#counts", kTH1D, {axisEta});
+    mcRecoRegistry.add("hRapidity", "Rapidty of muon pairs;;#counts", kTH1D, {axisRapidity});
+    mcRecoRegistry.add("hPhi", "#varphi of muon pairs;;#counts", kTH1D, {axisPhi});
+    mcRecoRegistry.add("hCharge", "Charge;;;#counts", kTH1D, {{5, -2.5, 2.5}});
+    mcRecoRegistry.add("hContrib", "hContrib;;#counts", kTH1D, {{6, -0.5, 5.5}});
+    mcRecoRegistry.add("hEvSign", "Sum of the charges of all the tracks in each event;;#counts", kTH1D, {{5, -2.5, 2.5}});
+    mcRecoRegistry.add("hPtTrkPos", "Pt of positive muons;;#counts", kTH1D, {axisPtSingle});
+    mcRecoRegistry.add("hPtTrkNeg", "Pt of negative muons;;#counts", kTH1D, {axisPtSingle});
+    mcRecoRegistry.add("hEtaTrkPos", "#eta of positive muons;;#counts", kTH1D, {axisEtaSingle});
+    mcRecoRegistry.add("hEtaTrkNeg", "#eta of negative muons;;#counts", kTH1D, {axisEtaSingle});
+    mcRecoRegistry.add("hPhiTrkPos", "#varphi of positive muons;;#counts", kTH1D, {axisPhiSingle});
+    mcRecoRegistry.add("hPhiTrkNeg", "#varphi of negative muons;;#counts", kTH1D, {axisPhiSingle});
+    mcRecoRegistry.add("hSameSign", "hSameSign;;#counts", kTH1D, {{6, -0.5, 5.5}});
+    mcRecoRegistry.add("hPhiCharge", "#phi #it{charge}", kTH1D, {axisPhi});
+    mcRecoRegistry.add("hPhiAverage", "#phi #it{average}", kTH1D, {axisPhi});
 
     // corr gen-reco
-    McRecoRegistry.add("hPtcorr", "gen pT vs reco pT", kTH2D, {axisPt, axisPt});
-    McRecoRegistry.add("hRapcorr", "gen rapidity vs reco rapidity", kTH2D, {axisRapidity, axisRapidity});
-    McRecoRegistry.add("hPhicorr", "gen #phi vs reco #phi", kTH2D, {axisPhi, axisPhi});
+    mcRecoRegistry.add("hPtcorr", "gen pT vs reco pT", kTH2D, {axisPt, axisPt});
+    mcRecoRegistry.add("hRapcorr", "gen rapidity vs reco rapidity", kTH2D, {axisRapidity, axisRapidity});
+    mcRecoRegistry.add("hPhicorr", "gen #phi vs reco #phi", kTH2D, {axisPhi, axisPhi});
   }
 
   // FUNCTIONS
 
   // retrieve particle mass (GeV/c^2) from TDatabasePDG
-  float particleMass(TDatabasePDG* pdg, int pid)
+  float particleMass(int pid)
   {
-    auto mass = 0.;
-    TParticlePDG* pdgparticle = pdg->GetParticle(pid);
-    if (pdgparticle != nullptr) {
-      mass = pdgparticle->Mass();
-    }
+    auto mass = pdg->Mass(pid);
     return mass;
   }
 
@@ -382,10 +406,10 @@ struct fwdMuonsUPC {
 
   // function that fills a map with the collision id of each udcollision as key
   // and a ZDCinfo struct with the ZDC information
-  void collectCandZDCInfo(std::unordered_map<int32_t, ZDCinfo>& zdcPerCand, o2::aod::UDZdcsReduced& ZDCs)
+  void collectCandZDCInfo(std::unordered_map<int32_t, ZDCinfo>& zdcPerCand, o2::aod::UDZdcsReduced const& ZDCs)
   {
 
-    for (auto& zdc : ZDCs) {
+    for (const auto& zdc : ZDCs) {
       int32_t candId = zdc.udCollisionId();
       if (candId < 0) {
         continue;
@@ -415,7 +439,7 @@ struct fwdMuonsUPC {
     float rAbs = fwdTrack.rAtAbsorberEnd();
     float pDca = fwdTrack.pDca();
     TLorentzVector p;
-    auto mMu = particleMass(pdg, 13);
+    auto mMu = particleMass(13);
     p.SetXYZM(fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), mMu);
     float eta = p.Eta();
     float pt = p.Pt();
@@ -464,7 +488,7 @@ struct fwdMuonsUPC {
   // used for real data
   void processCand(CandidatesFwd::iterator const& cand,
                    ForwardTracks::iterator const& tr1, ForwardTracks::iterator const& tr2,
-                   ZDCinfo& zdc)
+                   ZDCinfo const& zdc)
   {
     // V0 selection
     const auto& ampsV0A = cand.amplitudesV0A();
@@ -499,7 +523,7 @@ struct fwdMuonsUPC {
 
     // form Lorentz vectors
     TLorentzVector p1, p2;
-    auto mMu = particleMass(pdg, 13);
+    auto mMu = particleMass(13);
     p1.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), mMu);
     p2.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), mMu);
     TLorentzVector p = p1 + p2;
@@ -527,47 +551,47 @@ struct fwdMuonsUPC {
     computePhiAnis(p1, p2, tr1.sign(), phiAverage, phiCharge);
 
     // zdc info
-    if (TMath::Abs(zdc.timeA) < 10)
+    if (std::abs(zdc.timeA) < 10)
       registry.fill(HIST("hTimeZNA"), zdc.timeA);
-    if (TMath::Abs(zdc.timeC) < 10)
+    if (std::abs(zdc.timeC) < 10)
       registry.fill(HIST("hTimeZNC"), zdc.timeC);
     registry.fill(HIST("hEnergyZN"), zdc.enA, zdc.enC);
 
     // divide the events in neutron classes
-    bool neutron_A = false;
-    bool neutron_C = false;
+    bool neutronA = false;
+    bool neutronC = false;
     int znClass = -1;
 
-    if (TMath::Abs(zdc.timeA) < 2)
-      neutron_A = true;
-    if (TMath::Abs(zdc.timeC) < 2)
-      neutron_C = true;
+    if (std::abs(zdc.timeA) < 2)
+      neutronA = true;
+    if (std::abs(zdc.timeC) < 2)
+      neutronC = true;
 
     if (std::isinf(zdc.timeC))
-      neutron_C = false;
+      neutronC = false;
     if (std::isinf(zdc.timeA))
-      neutron_A = false;
+      neutronA = false;
 
     // fill the histos in neutron classes and assign neutron class label
     // 0n0n
-    if (neutron_C == false && neutron_A == false) {
+    if (neutronC == false && neutronA == false) {
       znClass = 1;
       reg0n0n.fill(HIST("hMass"), p.M());
       reg0n0n.fill(HIST("hPt"), p.Pt());
       reg0n0n.fill(HIST("hPtFit"), p.Pt());
       reg0n0n.fill(HIST("hEta"), p.Eta());
       reg0n0n.fill(HIST("hRapidity"), p.Rapidity());
-    } else if (neutron_A ^ neutron_C) { // Xn0n + 0nXn
-      if (neutron_A)
+    } else if (neutronA ^ neutronC) { // Xn0n + 0nXn
+      if (neutronA)
         znClass = 2;
-      else if (neutron_C)
+      else if (neutronC)
         znClass = 3;
       regXn0n.fill(HIST("hMass"), p.M());
       regXn0n.fill(HIST("hPt"), p.Pt());
       regXn0n.fill(HIST("hPtFit"), p.Pt());
       regXn0n.fill(HIST("hEta"), p.Eta());
       regXn0n.fill(HIST("hRapidity"), p.Rapidity());
-    } else if (neutron_A && neutron_C) { // XnXn
+    } else if (neutronA && neutronC) { // XnXn
       znClass = 4;
       regXnXn.fill(HIST("hMass"), p.M());
       regXnXn.fill(HIST("hPt"), p.Pt());
@@ -624,7 +648,7 @@ struct fwdMuonsUPC {
 
     // create Lorentz vectors
     TLorentzVector p1, p2;
-    auto mMu = particleMass(pdg, 13);
+    auto mMu = particleMass(13);
     p1.SetXYZM(McPart1.px(), McPart1.py(), McPart1.pz(), mMu);
     p2.SetXYZM(McPart2.px(), McPart2.py(), McPart2.pz(), mMu);
     TLorentzVector p = p1 + p2;
@@ -649,22 +673,35 @@ struct fwdMuonsUPC {
     // compute phi for azimuth anisotropy
     float phiAverage = 0;
     float phiCharge = 0;
-    computePhiAnis(p1, p2, McPart1.pdgCode(), phiAverage, phiCharge);
+    computePhiAnis(p1, p2, -McPart1.pdgCode(), phiAverage, phiCharge);
 
     // fill the histos
-    McGenRegistry.fill(HIST("hPtTrkPos"), p1.Pt());
-    McGenRegistry.fill(HIST("hPtTrkNeg"), p2.Pt());
-    McGenRegistry.fill(HIST("hEtaTrkPos"), p1.Eta());
-    McGenRegistry.fill(HIST("hEtaTrkNeg"), p2.Eta());
-    McGenRegistry.fill(HIST("hPhiTrkPos"), p1.Phi());
-    McGenRegistry.fill(HIST("hPhiTrkNeg"), p2.Phi());
-    McGenRegistry.fill(HIST("hMass"), p.M());
-    McGenRegistry.fill(HIST("hPt"), p.Pt());
-    McGenRegistry.fill(HIST("hEta"), p.Eta());
-    McGenRegistry.fill(HIST("hRapidity"), p.Rapidity());
-    McGenRegistry.fill(HIST("hPhi"), p.Phi());
-    McGenRegistry.fill(HIST("hPhiAverage"), phiAverage);
-    McGenRegistry.fill(HIST("hPhiCharge"), phiCharge);
+    mcGenRegistry.fill(HIST("hPtTrkPos"), p1.Pt());
+    mcGenRegistry.fill(HIST("hPtTrkNeg"), p2.Pt());
+    mcGenRegistry.fill(HIST("hEtaTrkPos"), p1.Eta());
+    mcGenRegistry.fill(HIST("hEtaTrkNeg"), p2.Eta());
+    mcGenRegistry.fill(HIST("hPhiTrkPos"), p1.Phi());
+    mcGenRegistry.fill(HIST("hPhiTrkNeg"), p2.Phi());
+    mcGenRegistry.fill(HIST("hMass"), p.M());
+    mcGenRegistry.fill(HIST("hPt"), p.Pt());
+    mcGenRegistry.fill(HIST("hEta"), p.Eta());
+    mcGenRegistry.fill(HIST("hRapidity"), p.Rapidity());
+    mcGenRegistry.fill(HIST("hPhi"), p.Phi());
+    mcGenRegistry.fill(HIST("hPhiAverage"), phiAverage);
+    mcGenRegistry.fill(HIST("hPhiCharge"), phiCharge);
+
+    // store the event to save it into a tree
+    if (McPart1.pdgCode() < 0) {
+      dimuGen(p.M(), p.Pt(), p.Rapidity(), p.Phi(),
+              phiAverage, phiCharge,
+              p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
+              p2.Pt(), p2.PseudoRapidity(), p2.Phi());
+    } else {
+      dimuGen(p.M(), p.Pt(), p.Rapidity(), p.Phi(),
+              phiAverage, phiCharge,
+              p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
+              p1.Pt(), p1.PseudoRapidity(), p1.Phi());
+    }
   }
 
   // function that processes MC reco candidates
@@ -706,7 +743,7 @@ struct fwdMuonsUPC {
 
     // form Lorentz vectors
     TLorentzVector p1, p2;
-    auto mMu = particleMass(pdg, 13);
+    auto mMu = particleMass(13);
     p1.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), mMu);
     p2.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), mMu);
     TLorentzVector p = p1 + p2;
@@ -742,7 +779,7 @@ struct fwdMuonsUPC {
     // compute gen phi for azimuth anisotropy
     float phiGenAverage = 0;
     float phiGenCharge = 0;
-    computePhiAnis(p1, p2, McPart1.pdgCode(), phiGenAverage, phiGenCharge);
+    computePhiAnis(p1, p2, -McPart1.pdgCode(), phiGenAverage, phiGenCharge);
 
     // print info in case of problems
     if (tr1.sign() * McPart1.pdgCode() > 0 || tr2.sign() * McPart2.pdgCode() > 0) {
@@ -754,48 +791,48 @@ struct fwdMuonsUPC {
 
     // fill the histos
     // reco info
-    McRecoRegistry.fill(HIST("hContrib"), cand.numContrib());
-    McRecoRegistry.fill(HIST("hPtTrkPos"), p1.Pt());
-    McRecoRegistry.fill(HIST("hPtTrkNeg"), p2.Pt());
-    McRecoRegistry.fill(HIST("hEtaTrkPos"), p1.Eta());
-    McRecoRegistry.fill(HIST("hEtaTrkNeg"), p2.Eta());
-    McRecoRegistry.fill(HIST("hPhiTrkPos"), p1.Phi());
-    McRecoRegistry.fill(HIST("hPhiTrkNeg"), p2.Phi());
-    McRecoRegistry.fill(HIST("hEvSign"), cand.netCharge());
-    McRecoRegistry.fill(HIST("hMass"), p.M());
-    McRecoRegistry.fill(HIST("hPt"), p.Pt());
-    McRecoRegistry.fill(HIST("hPtFit"), p.Pt());
-    McRecoRegistry.fill(HIST("hEta"), p.Eta());
-    McRecoRegistry.fill(HIST("hRapidity"), p.Rapidity());
-    McRecoRegistry.fill(HIST("hPhi"), p.Phi());
-    McRecoRegistry.fill(HIST("hCharge"), tr1.sign());
-    McRecoRegistry.fill(HIST("hCharge"), tr2.sign());
-    McRecoRegistry.fill(HIST("hPhiAverage"), phiAverage);
-    McRecoRegistry.fill(HIST("hPhiCharge"), phiCharge);
+    mcRecoRegistry.fill(HIST("hContrib"), cand.numContrib());
+    mcRecoRegistry.fill(HIST("hPtTrkPos"), p1.Pt());
+    mcRecoRegistry.fill(HIST("hPtTrkNeg"), p2.Pt());
+    mcRecoRegistry.fill(HIST("hEtaTrkPos"), p1.Eta());
+    mcRecoRegistry.fill(HIST("hEtaTrkNeg"), p2.Eta());
+    mcRecoRegistry.fill(HIST("hPhiTrkPos"), p1.Phi());
+    mcRecoRegistry.fill(HIST("hPhiTrkNeg"), p2.Phi());
+    mcRecoRegistry.fill(HIST("hEvSign"), cand.netCharge());
+    mcRecoRegistry.fill(HIST("hMass"), p.M());
+    mcRecoRegistry.fill(HIST("hPt"), p.Pt());
+    mcRecoRegistry.fill(HIST("hPtFit"), p.Pt());
+    mcRecoRegistry.fill(HIST("hEta"), p.Eta());
+    mcRecoRegistry.fill(HIST("hRapidity"), p.Rapidity());
+    mcRecoRegistry.fill(HIST("hPhi"), p.Phi());
+    mcRecoRegistry.fill(HIST("hCharge"), tr1.sign());
+    mcRecoRegistry.fill(HIST("hCharge"), tr2.sign());
+    mcRecoRegistry.fill(HIST("hPhiAverage"), phiAverage);
+    mcRecoRegistry.fill(HIST("hPhiCharge"), phiCharge);
 
     // gen info (of reco events)
-    McGenRegistry.fill(HIST("hPtTrkPos"), p1Mc.Pt());
-    McGenRegistry.fill(HIST("hPtTrkNeg"), p2Mc.Pt());
-    McGenRegistry.fill(HIST("hEtaTrkPos"), p1Mc.Eta());
-    McGenRegistry.fill(HIST("hEtaTrkNeg"), p2Mc.Eta());
-    McGenRegistry.fill(HIST("hPhiTrkPos"), p1Mc.Phi());
-    McGenRegistry.fill(HIST("hPhiTrkNeg"), p2Mc.Phi());
-    McGenRegistry.fill(HIST("hMass"), pMc.M());
-    McGenRegistry.fill(HIST("hPt"), pMc.Pt());
-    McGenRegistry.fill(HIST("hEta"), pMc.Eta());
-    McGenRegistry.fill(HIST("hRapidity"), pMc.Rapidity());
-    McGenRegistry.fill(HIST("hPhi"), pMc.Phi());
-    McGenRegistry.fill(HIST("hPhiAverage"), phiGenAverage);
-    McGenRegistry.fill(HIST("hPhiCharge"), phiGenCharge);
+    mcGenRegistry.fill(HIST("hPtTrkPos"), p1Mc.Pt());
+    mcGenRegistry.fill(HIST("hPtTrkNeg"), p2Mc.Pt());
+    mcGenRegistry.fill(HIST("hEtaTrkPos"), p1Mc.Eta());
+    mcGenRegistry.fill(HIST("hEtaTrkNeg"), p2Mc.Eta());
+    mcGenRegistry.fill(HIST("hPhiTrkPos"), p1Mc.Phi());
+    mcGenRegistry.fill(HIST("hPhiTrkNeg"), p2Mc.Phi());
+    mcGenRegistry.fill(HIST("hMass"), pMc.M());
+    mcGenRegistry.fill(HIST("hPt"), pMc.Pt());
+    mcGenRegistry.fill(HIST("hEta"), pMc.Eta());
+    mcGenRegistry.fill(HIST("hRapidity"), pMc.Rapidity());
+    mcGenRegistry.fill(HIST("hPhi"), pMc.Phi());
+    mcGenRegistry.fill(HIST("hPhiAverage"), phiGenAverage);
+    mcGenRegistry.fill(HIST("hPhiCharge"), phiGenCharge);
 
     // reco-gen correlations
-    McRecoRegistry.fill(HIST("hPtcorr"), p.Pt(), pMc.Pt());
-    McRecoRegistry.fill(HIST("hRapcorr"), p.Eta(), pMc.Eta());
-    McRecoRegistry.fill(HIST("hPhicorr"), p.Phi(), pMc.Phi());
+    mcRecoRegistry.fill(HIST("hPtcorr"), p.Pt(), pMc.Pt());
+    mcRecoRegistry.fill(HIST("hRapcorr"), p.Rapidity(), pMc.Rapidity());
+    mcRecoRegistry.fill(HIST("hPhicorr"), p.Phi(), pMc.Phi());
 
     // store the event to save it into a tree
     if (tr1.sign() > 0) {
-      dimuReco(p.Pt(), p.Rapidity(), p.Phi(),
+      dimuReco(p.M(), p.Pt(), p.Rapidity(), p.Phi(),
                phiAverage, phiCharge,
                p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
                p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
@@ -804,7 +841,7 @@ struct fwdMuonsUPC {
                p1Mc.Pt(), p1Mc.PseudoRapidity(), p1Mc.Phi(),
                p2Mc.Pt(), p2Mc.PseudoRapidity(), p2Mc.Phi());
     } else {
-      dimuReco(p.Pt(), p.Rapidity(), p.Phi(),
+      dimuReco(p.M(), p.Pt(), p.Rapidity(), p.Phi(),
                phiAverage, phiCharge,
                p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
                p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
@@ -817,7 +854,7 @@ struct fwdMuonsUPC {
 
   // PROCESS FUNCTION
   void processData(CandidatesFwd const& eventCandidates,
-                   o2::aod::UDZdcsReduced& ZDCs,
+                   o2::aod::UDZdcsReduced const& ZDCs,
                    ForwardTracks const& fwdTracks)
   {
 
