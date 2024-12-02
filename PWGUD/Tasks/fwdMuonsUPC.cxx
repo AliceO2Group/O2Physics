@@ -186,7 +186,7 @@ struct fwdMuonsUPC {
   HistogramRegistry mcRecoRegistry{"mcRecoRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // CONFIGURABLES
-  static constexpr double pi = o2::constants::math::PI;
+  static constexpr double Pi = o2::constants::math::PI;
   // pT of muon pairs
   Configurable<int> nBinsPt{"nBinsPt", 250, "N bins in pT histo"};
   Configurable<float> lowPt{"lowPt", 0., "lower limit in pT histo"};
@@ -205,8 +205,8 @@ struct fwdMuonsUPC {
   Configurable<float> highRapidity{"highRapidity", -2., "upper limit in rapidity histo"};
   // phi of muon pairs
   Configurable<int> nBinsPhi{"nBinsPhi", 600, "N bins in phi histo"};
-  Configurable<float> lowPhi{"lowPhi", -pi, "lower limit in phi histo"};
-  Configurable<float> highPhi{"highPhi", pi, "upper limit in phi histo"};
+  Configurable<float> lowPhi{"lowPhi", -Pi, "lower limit in phi histo"};
+  Configurable<float> highPhi{"highPhi", Pi, "upper limit in phi histo"};
   // pT of single muons
   Configurable<int> nBinsPtSingle{"nBinsPtSingle", 500, "N bins in pT histo single muon"};
   Configurable<float> lowPtSingle{"lowPtSingle", 0., "lower limit in pT histo single muon"};
@@ -217,8 +217,8 @@ struct fwdMuonsUPC {
   Configurable<float> highEtaSingle{"highEtaSingle", -2., "upper limit in eta histo single muon"};
   // phi of single muons
   Configurable<int> nBinsPhiSingle{"nBinsPhiSingle", 600, "N bins in phi histo single muon"};
-  Configurable<float> lowPhiSingle{"lowPhiSingle", -pi, "lower limit in phi histo single muon"};
-  Configurable<float> highPhiSingle{"highPhiSingle", pi, "upper limit in phi histo single muon"};
+  Configurable<float> lowPhiSingle{"lowPhiSingle", -Pi, "lower limit in phi histo single muon"};
+  Configurable<float> highPhiSingle{"highPhiSingle", Pi, "upper limit in phi histo single muon"};
   // ZDC
   Configurable<int> nBinsZDCen{"nBinsZDCen", 200, "N bins in ZN energy"};
   Configurable<float> lowEnZN{"lowEnZN", -50., "lower limit in ZN energy histo"};
