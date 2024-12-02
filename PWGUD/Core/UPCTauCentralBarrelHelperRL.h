@@ -160,6 +160,12 @@ int enumMyParticle(int valuePDG)
   }
 }
 
+float pt(float px, float py)
+// Just a simple function to return pt
+{
+  return std::sqrt(px * px + py * py);
+}
+
 float momentum(float px, float py, float pz)
 // Just a simple function to return momentum
 {
