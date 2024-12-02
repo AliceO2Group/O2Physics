@@ -10,6 +10,8 @@
 // or submit itself to any jurisdiction.
 
 /// \file taskFlow.cxx
+/// \brief HF-h correlations in TPC-TPC and TPC-MFT 
+/// \author Alexian Lejeune <alexian.lejeune@cern.ch>, Czech Technical University in Prague
 /// \author Katarina Krizkova Gajdosova <katarina.gajdosova@cern.ch>, CERN
 /// \author Maja Kabus <maja.kabus@cern.ch>, CERN
 
