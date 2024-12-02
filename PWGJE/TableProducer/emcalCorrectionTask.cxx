@@ -838,9 +838,9 @@ struct EmcalCorrectionTask {
       // Also smear the time to account for the broader time resolution in data than in MC
       timesmear = normalgaus(rdgen) * (1.6 + 9.5 * TMath::Exp(-3. * cellEnergy)); // Parameters extracted from LHC22o (pp), but also usable for other periods
     } else {                                                                      // data
-      if (cellEnergy < 0.3)                                                       // Cells with tless than 300 MeV cannot be the leading cell in the cluster, so their time does not require precise calibration
+      if (cellEnergy < 0.3) {                                                     // Cells with tless than 300 MeV cannot be the leading cell in the cluster, so their time does not require precise calibration
         timeshift = 0.;
-      else if (cellType == o2::emcal::ChannelType_t::HIGH_GAIN) {            // High gain cells -> Low energies
+      } else if (cellType == o2::emcal::ChannelType_t::HIGH_GAIN) {          // High gain cells -> Low energies
         if (cellEnergy < 4.)                                                 // Low energy regime
           timeshift = 0.57284 + 0.82194 * TMath::Log(1.30651 * cellEnergy);  // Parameters extracted from LHC22o (pp), but also usable for other periods
         else                                                                 // Medium energy regime
