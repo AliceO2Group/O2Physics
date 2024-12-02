@@ -597,8 +597,8 @@ struct pidTofQaMc {
                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
                          aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
                          aod::McTrackLabels, aod::pidTOFbeta>& tracks,
-               aod::McParticles& mcParticles,
-               aod::McCollisions&)
+               aod::McParticles const& mcParticles,
+               aod::McCollisions const&)
   {
     for (const auto& collision : collisions) {
       if (collision.numContrib() < nMinNumberOfContributors) {
