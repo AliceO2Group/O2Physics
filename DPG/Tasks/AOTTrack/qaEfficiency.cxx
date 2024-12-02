@@ -349,7 +349,6 @@ struct QaEfficiency {
     hPtGeneratedRecoEv[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/generated_reco_ev", PDGs[histogramIndex]), "Generated Reco Ev. " + tagPt, kTH1D, {axisPt});
     hPtmotherGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/generated_mother", PDGs[histogramIndex]), "Generated Mother " + tagPt, kTH1D, {axisPt});
 
-
     // Prm
     hPtItsPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/its", PDGs[histogramIndex]), "ITS tracks (primaries) " + tagPt, kTH1D, {axisPt});
     hPtItsTpcPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (primaries) " + tagPt, kTH1D, {axisPt});
