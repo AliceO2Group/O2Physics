@@ -406,7 +406,7 @@ struct fwdMuonsUPC {
 
   // function that fills a map with the collision id of each udcollision as key
   // and a ZDCinfo struct with the ZDC information
-  void collectCandZDCInfo(std::unordered_map<int32_t, ZDCinfo>& zdcPerCand, o2::aod::UDZdcsReduced& ZDCs)
+  void collectCandZDCInfo(std::unordered_map<int32_t, ZDCinfo>& zdcPerCand, o2::aod::UDZdcsReduced const& ZDCs)
   {
 
     for (const auto& zdc : ZDCs) {
@@ -488,7 +488,7 @@ struct fwdMuonsUPC {
   // used for real data
   void processCand(CandidatesFwd::iterator const& cand,
                    ForwardTracks::iterator const& tr1, ForwardTracks::iterator const& tr2,
-                   ZDCinfo& zdc)
+                   ZDCinfo const& zdc)
   {
     // V0 selection
     const auto& ampsV0A = cand.amplitudesV0A();
@@ -854,7 +854,7 @@ struct fwdMuonsUPC {
 
   // PROCESS FUNCTION
   void processData(CandidatesFwd const& eventCandidates,
-                   o2::aod::UDZdcsReduced& ZDCs,
+                   o2::aod::UDZdcsReduced const& ZDCs,
                    ForwardTracks const& fwdTracks)
   {
 
