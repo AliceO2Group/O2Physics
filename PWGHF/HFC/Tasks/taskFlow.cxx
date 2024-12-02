@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file taskFlow.cxx
-/// \brief HF-h correlations in TPC-TPC and TPC-MFT 
+/// \brief HF-h correlations in TPC-TPC and TPC-MFT
 /// \author Alexian Lejeune <alexian.lejeune@cern.ch>, Czech Technical University in Prague
 /// \author Katarina Krizkova Gajdosova <katarina.gajdosova@cern.ch>, CERN
 /// \author Maja Kabus <maja.kabus@cern.ch>, CERN
@@ -54,6 +54,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct HfTaskFlow {
+  SliceCache cache;
 
   //  configurables for processing options
   Configurable<bool> doReferenceFlow{"doReferenceFlow", false, "Flag to know if reference flow should be done"};
@@ -81,7 +82,6 @@ struct HfTaskFlow {
 
   Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
-  SliceCache cache;
 
   // =========================
   //      using declarations : DATA
