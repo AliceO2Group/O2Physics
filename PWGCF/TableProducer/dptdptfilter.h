@@ -352,8 +352,6 @@ float particleMaxDCAxy = 999.9f;
 float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
 
-TDatabasePDG* fPDG = nullptr;
-
 inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
 {
   if (triggstr.empty() || triggstr == "MB") {
@@ -1107,14 +1105,9 @@ void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
   }
 }
 
-template <typename ParticleObject>
-inline float getCharge(ParticleObject& particle)
+inline float getCharge(float pdgCharge)
 {
-  float charge = 0.0;
-  TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
-  if (pdgparticle != nullptr) {
-    charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0);
-  }
+  float charge = (pdgCharge / 3 >= 1) ? 1.0 : ((pdgCharge / 3 <= -1) ? -1.0 : 0);
   return charge;
 }
 
@@ -1129,15 +1122,13 @@ inline bool acceptParticle(ParticleObject& particle, MCCollisionObject const&)
     return false;
   }
 
-  float charge = getCharge(particle);
-
   if (particle.isPhysicalPrimary()) {
     if ((particle.mcCollisionId() == 0) && traceCollId0) {
       LOGF(info, "Particle %d passed isPhysicalPrimary", particle.globalIndex());
     }
 
     if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
-      return (charge != 0) ? true : false;
+      return true;
     }
   } else {
     if ((particle.mcCollisionId() == 0) && traceCollId0) {

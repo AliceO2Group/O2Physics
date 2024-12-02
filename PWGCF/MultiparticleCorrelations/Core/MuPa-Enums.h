@@ -306,4 +306,11 @@ enum eSpecificCuts {
   eSpecificCuts_N
 };
 
+enum eRunTime {
+  eStartOfRun = 0, // in abs. seconds since Unix epoch
+  eEndOfRun,       // in abs. seconds since Unix epoch
+  eDurationInSec,  // in seconds
+  eRunTime_N
+};
+
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_
