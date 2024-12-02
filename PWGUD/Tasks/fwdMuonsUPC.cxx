@@ -827,7 +827,7 @@ struct fwdMuonsUPC {
 
     // reco-gen correlations
     mcRecoRegistry.fill(HIST("hPtcorr"), p.Pt(), pMc.Pt());
-    mcRecoRegistry.fill(HIST("hRapcorr"), p.Eta(), pMc.Eta());
+    mcRecoRegistry.fill(HIST("hRapcorr"), p.Rapidity(), pMc.Rapidity());
     mcRecoRegistry.fill(HIST("hPhicorr"), p.Phi(), pMc.Phi());
 
     // store the event to save it into a tree
