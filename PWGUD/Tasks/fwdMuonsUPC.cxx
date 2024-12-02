@@ -28,7 +28,7 @@
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-//#include "TDatabasePDG.h"
+// #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "TSystem.h"
 #include "TMath.h"
@@ -228,7 +228,7 @@ struct fwdMuonsUPC {
   void init(InitContext&)
   {
     // PDG
-    //pdg = TDatabasePDG::Instance();
+    // pdg = TDatabasePDG::Instance();
 
     // binning of pT axis fr fit
     std::vector<double> ptFitBinning = {
@@ -343,10 +343,10 @@ struct fwdMuonsUPC {
   {
     auto mass = pdg->Mass(pid);
 
-    //auto pdgparticle = pdg->GetParticle(pid);
-    //if (pdgparticle != nullptr) {
-    //  mass = pdgparticle->Mass();
-    //}
+    // auto pdgparticle = pdg->GetParticle(pid);
+    // if (pdgparticle != nullptr) {
+    //   mass = pdgparticle->Mass();
+    // }
     return mass;
   }
 
