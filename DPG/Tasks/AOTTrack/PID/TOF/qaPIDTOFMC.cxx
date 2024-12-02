@@ -239,8 +239,8 @@ struct pidTofQaMc {
     hNSigmaMC[mcID * Np + massID] = histos.add<TH2>(Form("nsigmaMC/%s/%s", pName[mcID], pName[massID]), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
     if (checkPrimaries) {
       hNSigmaMCprm[mcID * Np + massID] = histos.add<TH2>(Form("nsigmaMCprm/%s/%s", pName[mcID], pName[massID]), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
-      hNSigmaMCprm[mcID * Np + massID] = histos.add<TH2>(Form("nsigmaMCstr/%s/%s", pName[mcID], pName[massID]), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
-      hNSigmaMCprm[mcID * Np + massID] = histos.add<TH2>(Form("nsigmaMCmat/%s/%s", pName[mcID], pName[massID]), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
+      hNSigmaMCstr[mcID * Np + massID] = histos.add<TH2>(Form("nsigmaMCstr/%s/%s", pName[mcID], pName[massID]), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
+      hNSigmaMCmat[mcID * Np + massID] = histos.add<TH2>(Form("nsigmaMCmat/%s/%s", pName[mcID], pName[massID]), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
     }
   }
 
