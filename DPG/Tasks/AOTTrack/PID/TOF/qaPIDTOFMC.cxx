@@ -27,169 +27,43 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
+static constexpr int Np = 9;
+static constexpr int NpNp = Np * Np;
+
+std::array<std::shared_ptr<TH1>, Np> hParticlePt;
+std::array<std::shared_ptr<TH1>, Np> hParticleP;
+std::array<std::shared_ptr<TH1>, Np> hParticleEta;
+
+std::array<std::shared_ptr<TH1>, Np> hTrackPt;
+std::array<std::shared_ptr<TH1>, Np> hTrackP;
+std::array<std::shared_ptr<TH1>, Np> hTrackEta;
+std::array<std::shared_ptr<TH1>, Np> hTrackLength;
+
+std::array<std::shared_ptr<TH2>, Np> hSignalMC;
+std::array<std::shared_ptr<TH2>, Np> hSignalMCprm;
+std::array<std::shared_ptr<TH2>, Np> hSignalMCstr;
+std::array<std::shared_ptr<TH2>, Np> hSignalMCmat;
+
+std::array<std::shared_ptr<TH2>, Np> hNSigma;
+std::array<std::shared_ptr<TH2>, Np> hNSigmaprm;
+std::array<std::shared_ptr<TH2>, Np> hNSigmastr;
+std::array<std::shared_ptr<TH2>, Np> hNSigmamat;
+
+std::array<std::shared_ptr<TH2>, NpNp> hNSigmaMC;
+std::array<std::shared_ptr<TH2>, NpNp> hNSigmaMCprm;
+std::array<std::shared_ptr<TH2>, NpNp> hNSigmaMCstr;
+std::array<std::shared_ptr<TH2>, NpNp> hNSigmaMCmat;
+
+std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTime;
+std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTimeprm;
+std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTimestr;
+std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTimemat;
+
 /// Task to produce the TOF QA plots
 struct pidTofQaMc {
   SliceCache cache;
-
-  static constexpr int Np = 9;
-  static constexpr int NpNp = Np * Np;
-  static constexpr std::string_view hparticlept[Np] = {"particlept/El", "particlept/Mu", "particlept/Pi",
-                                                       "particlept/Ka", "particlept/Pr", "particlept/De",
-                                                       "particlept/Tr", "particlept/He", "particlept/Al"};
-  static constexpr std::string_view hparticlep[Np] = {"particlep/El", "particlep/Mu", "particlep/Pi",
-                                                      "particlep/Ka", "particlep/Pr", "particlep/De",
-                                                      "particlep/Tr", "particlep/He", "particlep/Al"};
-  static constexpr std::string_view hparticleeta[Np] = {"particleeta/El", "particleeta/Mu", "particleeta/Pi",
-                                                        "particleeta/Ka", "particleeta/Pr", "particleeta/De",
-                                                        "particleeta/Tr", "particleeta/He", "particleeta/Al"};
-  static constexpr std::string_view htrackpt[Np] = {"trackpt/El", "trackpt/Mu", "trackpt/Pi",
-                                                    "trackpt/Ka", "trackpt/Pr", "trackpt/De",
-                                                    "trackpt/Tr", "trackpt/He", "trackpt/Al"};
-  static constexpr std::string_view htrackp[Np] = {"trackp/El", "trackp/Mu", "trackp/Pi",
-                                                   "trackp/Ka", "trackp/Pr", "trackp/De",
-                                                   "trackp/Tr", "trackp/He", "trackp/Al"};
-  static constexpr std::string_view htracketa[Np] = {"tracketa/El", "tracketa/Mu", "tracketa/Pi",
-                                                     "tracketa/Ka", "tracketa/Pr", "tracketa/De",
-                                                     "tracketa/Tr", "tracketa/He", "tracketa/Al"};
-  static constexpr std::string_view htracklength[Np] = {"tracklength/El", "tracklength/Mu", "tracklength/Pi",
-                                                        "tracklength/Ka", "tracklength/Pr", "tracklength/De",
-                                                        "tracklength/Tr", "tracklength/He", "tracklength/Al"};
-  // Signal
-  static constexpr std::string_view hsignalMC[Np] = {"signalMC/El", "signalMC/Mu", "signalMC/Pi",
-                                                     "signalMC/Ka", "signalMC/Pr", "signalMC/De",
-                                                     "signalMC/Tr", "signalMC/He", "signalMC/Al"};
-  static constexpr std::string_view hsignalMCprm[Np] = {"signalMCprm/El", "signalMCprm/Mu", "signalMCprm/Pi",
-                                                        "signalMCprm/Ka", "signalMCprm/Pr", "signalMCprm/De",
-                                                        "signalMCprm/Tr", "signalMCprm/He", "signalMCprm/Al"};
-  static constexpr std::string_view hsignalMCstr[Np] = {"signalMCstr/El", "signalMCstr/Mu", "signalMCstr/Pi",
-                                                        "signalMCstr/Ka", "signalMCstr/Pr", "signalMCstr/De",
-                                                        "signalMCstr/Tr", "signalMCstr/He", "signalMCstr/Al"};
-  static constexpr std::string_view hsignalMCmat[Np] = {"signalMCmat/El", "signalMCmat/Mu", "signalMCmat/Pi",
-                                                        "signalMCmat/Ka", "signalMCmat/Pr", "signalMCmat/De",
-                                                        "signalMCmat/Tr", "signalMCmat/He", "signalMCmat/Al"};
-  // Nsigma
-  static constexpr std::string_view hnsigma[Np] = {"nsigma/El", "nsigma/Mu", "nsigma/Pi",
-                                                   "nsigma/Ka", "nsigma/Pr", "nsigma/De",
-                                                   "nsigma/Tr", "nsigma/He", "nsigma/Al"};
-  static constexpr std::string_view hnsigmaprm[Np] = {"nsigmaprm/El", "nsigmaprm/Mu", "nsigmaprm/Pi",
-                                                      "nsigmaprm/Ka", "nsigmaprm/Pr", "nsigmaprm/De",
-                                                      "nsigmaprm/Tr", "nsigmaprm/He", "nsigmaprm/Al"};
-  static constexpr std::string_view hnsigmastr[Np] = {"nsigmastr/El", "nsigmastr/Mu", "nsigmastr/Pi",
-                                                      "nsigmastr/Ka", "nsigmastr/Pr", "nsigmastr/De",
-                                                      "nsigmastr/Tr", "nsigmastr/He", "nsigmastr/Al"};
-  static constexpr std::string_view hnsigmamat[Np] = {"nsigmamat/El", "nsigmamat/Mu", "nsigmamat/Pi",
-                                                      "nsigmamat/Ka", "nsigmamat/Pr", "nsigmamat/De",
-                                                      "nsigmamat/Tr", "nsigmamat/He", "nsigmamat/Al"};
-  static constexpr std::string_view hnsigmaMC[NpNp] = {"nsigmaMC/El/El", "nsigmaMC/El/Mu", "nsigmaMC/El/Pi",
-                                                       "nsigmaMC/El/Ka", "nsigmaMC/El/Pr", "nsigmaMC/El/De",
-                                                       "nsigmaMC/El/Tr", "nsigmaMC/El/He", "nsigmaMC/El/Al",
-                                                       "nsigmaMC/Mu/El", "nsigmaMC/Mu/Mu", "nsigmaMC/Mu/Pi",
-                                                       "nsigmaMC/Mu/Ka", "nsigmaMC/Mu/Pr", "nsigmaMC/Mu/De",
-                                                       "nsigmaMC/Mu/Tr", "nsigmaMC/Mu/He", "nsigmaMC/Mu/Al",
-                                                       "nsigmaMC/Pi/El", "nsigmaMC/Pi/Mu", "nsigmaMC/Pi/Pi",
-                                                       "nsigmaMC/Pi/Ka", "nsigmaMC/Pi/Pr", "nsigmaMC/Pi/De",
-                                                       "nsigmaMC/Pi/Tr", "nsigmaMC/Pi/He", "nsigmaMC/Pi/Al",
-                                                       "nsigmaMC/Ka/El", "nsigmaMC/Ka/Mu", "nsigmaMC/Ka/Pi",
-                                                       "nsigmaMC/Ka/Ka", "nsigmaMC/Ka/Pr", "nsigmaMC/Ka/De",
-                                                       "nsigmaMC/Ka/Tr", "nsigmaMC/Ka/He", "nsigmaMC/Ka/Al",
-                                                       "nsigmaMC/Pr/El", "nsigmaMC/Pr/Mu", "nsigmaMC/Pr/Pi",
-                                                       "nsigmaMC/Pr/Ka", "nsigmaMC/Pr/Pr", "nsigmaMC/Pr/De",
-                                                       "nsigmaMC/Pr/Tr", "nsigmaMC/Pr/He", "nsigmaMC/Pr/Al",
-                                                       "nsigmaMC/De/El", "nsigmaMC/De/Mu", "nsigmaMC/De/Pi",
-                                                       "nsigmaMC/De/Ka", "nsigmaMC/De/Pr", "nsigmaMC/De/De",
-                                                       "nsigmaMC/De/Tr", "nsigmaMC/De/He", "nsigmaMC/De/Al",
-                                                       "nsigmaMC/Tr/El", "nsigmaMC/Tr/Mu", "nsigmaMC/Tr/Pi",
-                                                       "nsigmaMC/Tr/Ka", "nsigmaMC/Tr/Pr", "nsigmaMC/Tr/De",
-                                                       "nsigmaMC/Tr/Tr", "nsigmaMC/Tr/He", "nsigmaMC/Tr/Al",
-                                                       "nsigmaMC/He/El", "nsigmaMC/He/Mu", "nsigmaMC/He/Pi",
-                                                       "nsigmaMC/He/Ka", "nsigmaMC/He/Pr", "nsigmaMC/He/De",
-                                                       "nsigmaMC/He/Tr", "nsigmaMC/He/He", "nsigmaMC/He/Al",
-                                                       "nsigmaMC/Al/El", "nsigmaMC/Al/Mu", "nsigmaMC/Al/Pi",
-                                                       "nsigmaMC/Al/Ka", "nsigmaMC/Al/Pr", "nsigmaMC/Al/De",
-                                                       "nsigmaMC/Al/Tr", "nsigmaMC/Al/He", "nsigmaMC/Al/Al"};
-  static constexpr std::string_view hnsigmaMCstr[NpNp] = {"nsigmaMCstr/El/El", "nsigmaMCstr/El/Mu", "nsigmaMCstr/El/Pi",
-                                                          "nsigmaMCstr/El/Ka", "nsigmaMCstr/El/Pr", "nsigmaMCstr/El/De",
-                                                          "nsigmaMCstr/El/Tr", "nsigmaMCstr/El/He", "nsigmaMCstr/El/Al",
-                                                          "nsigmaMCstr/Mu/El", "nsigmaMCstr/Mu/Mu", "nsigmaMCstr/Mu/Pi",
-                                                          "nsigmaMCstr/Mu/Ka", "nsigmaMCstr/Mu/Pr", "nsigmaMCstr/Mu/De",
-                                                          "nsigmaMCstr/Mu/Tr", "nsigmaMCstr/Mu/He", "nsigmaMCstr/Mu/Al",
-                                                          "nsigmaMCstr/Pi/El", "nsigmaMCstr/Pi/Mu", "nsigmaMCstr/Pi/Pi",
-                                                          "nsigmaMCstr/Pi/Ka", "nsigmaMCstr/Pi/Pr", "nsigmaMCstr/Pi/De",
-                                                          "nsigmaMCstr/Pi/Tr", "nsigmaMCstr/Pi/He", "nsigmaMCstr/Pi/Al",
-                                                          "nsigmaMCstr/Ka/El", "nsigmaMCstr/Ka/Mu", "nsigmaMCstr/Ka/Pi",
-                                                          "nsigmaMCstr/Ka/Ka", "nsigmaMCstr/Ka/Pr", "nsigmaMCstr/Ka/De",
-                                                          "nsigmaMCstr/Ka/Tr", "nsigmaMCstr/Ka/He", "nsigmaMCstr/Ka/Al",
-                                                          "nsigmaMCstr/Pr/El", "nsigmaMCstr/Pr/Mu", "nsigmaMCstr/Pr/Pi",
-                                                          "nsigmaMCstr/Pr/Ka", "nsigmaMCstr/Pr/Pr", "nsigmaMCstr/Pr/De",
-                                                          "nsigmaMCstr/Pr/Tr", "nsigmaMCstr/Pr/He", "nsigmaMCstr/Pr/Al",
-                                                          "nsigmaMCstr/De/El", "nsigmaMCstr/De/Mu", "nsigmaMCstr/De/Pi",
-                                                          "nsigmaMCstr/De/Ka", "nsigmaMCstr/De/Pr", "nsigmaMCstr/De/De",
-                                                          "nsigmaMCstr/De/Tr", "nsigmaMCstr/De/He", "nsigmaMCstr/De/Al",
-                                                          "nsigmaMCstr/Tr/El", "nsigmaMCstr/Tr/Mu", "nsigmaMCstr/Tr/Pi",
-                                                          "nsigmaMCstr/Tr/Ka", "nsigmaMCstr/Tr/Pr", "nsigmaMCstr/Tr/De",
-                                                          "nsigmaMCstr/Tr/Tr", "nsigmaMCstr/Tr/He", "nsigmaMCstr/Tr/Al",
-                                                          "nsigmaMCstr/He/El", "nsigmaMCstr/He/Mu", "nsigmaMCstr/He/Pi",
-                                                          "nsigmaMCstr/He/Ka", "nsigmaMCstr/He/Pr", "nsigmaMCstr/He/De",
-                                                          "nsigmaMCstr/He/Tr", "nsigmaMCstr/He/He", "nsigmaMCstr/He/Al",
-                                                          "nsigmaMCstr/Al/El", "nsigmaMCstr/Al/Mu", "nsigmaMCstr/Al/Pi",
-                                                          "nsigmaMCstr/Al/Ka", "nsigmaMCstr/Al/Pr", "nsigmaMCstr/Al/De",
-                                                          "nsigmaMCstr/Al/Tr", "nsigmaMCstr/Al/He", "nsigmaMCstr/Al/Al"};
-  static constexpr std::string_view hnsigmaMCmat[NpNp] = {"nsigmaMCmat/El/El", "nsigmaMCmat/El/Mu", "nsigmaMCmat/El/Pi",
-                                                          "nsigmaMCmat/El/Ka", "nsigmaMCmat/El/Pr", "nsigmaMCmat/El/De",
-                                                          "nsigmaMCmat/El/Tr", "nsigmaMCmat/El/He", "nsigmaMCmat/El/Al",
-                                                          "nsigmaMCmat/Mu/El", "nsigmaMCmat/Mu/Mu", "nsigmaMCmat/Mu/Pi",
-                                                          "nsigmaMCmat/Mu/Ka", "nsigmaMCmat/Mu/Pr", "nsigmaMCmat/Mu/De",
-                                                          "nsigmaMCmat/Mu/Tr", "nsigmaMCmat/Mu/He", "nsigmaMCmat/Mu/Al",
-                                                          "nsigmaMCmat/Pi/El", "nsigmaMCmat/Pi/Mu", "nsigmaMCmat/Pi/Pi",
-                                                          "nsigmaMCmat/Pi/Ka", "nsigmaMCmat/Pi/Pr", "nsigmaMCmat/Pi/De",
-                                                          "nsigmaMCmat/Pi/Tr", "nsigmaMCmat/Pi/He", "nsigmaMCmat/Pi/Al",
-                                                          "nsigmaMCmat/Ka/El", "nsigmaMCmat/Ka/Mu", "nsigmaMCmat/Ka/Pi",
-                                                          "nsigmaMCmat/Ka/Ka", "nsigmaMCmat/Ka/Pr", "nsigmaMCmat/Ka/De",
-                                                          "nsigmaMCmat/Ka/Tr", "nsigmaMCmat/Ka/He", "nsigmaMCmat/Ka/Al",
-                                                          "nsigmaMCmat/Pr/El", "nsigmaMCmat/Pr/Mu", "nsigmaMCmat/Pr/Pi",
-                                                          "nsigmaMCmat/Pr/Ka", "nsigmaMCmat/Pr/Pr", "nsigmaMCmat/Pr/De",
-                                                          "nsigmaMCmat/Pr/Tr", "nsigmaMCmat/Pr/He", "nsigmaMCmat/Pr/Al",
-                                                          "nsigmaMCmat/De/El", "nsigmaMCmat/De/Mu", "nsigmaMCmat/De/Pi",
-                                                          "nsigmaMCmat/De/Ka", "nsigmaMCmat/De/Pr", "nsigmaMCmat/De/De",
-                                                          "nsigmaMCmat/De/Tr", "nsigmaMCmat/De/He", "nsigmaMCmat/De/Al",
-                                                          "nsigmaMCmat/Tr/El", "nsigmaMCmat/Tr/Mu", "nsigmaMCmat/Tr/Pi",
-                                                          "nsigmaMCmat/Tr/Ka", "nsigmaMCmat/Tr/Pr", "nsigmaMCmat/Tr/De",
-                                                          "nsigmaMCmat/Tr/Tr", "nsigmaMCmat/Tr/He", "nsigmaMCmat/Tr/Al",
-                                                          "nsigmaMCmat/He/El", "nsigmaMCmat/He/Mu", "nsigmaMCmat/He/Pi",
-                                                          "nsigmaMCmat/He/Ka", "nsigmaMCmat/He/Pr", "nsigmaMCmat/He/De",
-                                                          "nsigmaMCmat/He/Tr", "nsigmaMCmat/He/He", "nsigmaMCmat/He/Al",
-                                                          "nsigmaMCmat/Al/El", "nsigmaMCmat/Al/Mu", "nsigmaMCmat/Al/Pi",
-                                                          "nsigmaMCmat/Al/Ka", "nsigmaMCmat/Al/Pr", "nsigmaMCmat/Al/De",
-                                                          "nsigmaMCmat/Al/Tr", "nsigmaMCmat/Al/He", "nsigmaMCmat/Al/Al"};
-  static constexpr std::string_view hnsigmaMCprm[NpNp] = {"nsigmaMCprm/El/El", "nsigmaMCprm/El/Mu", "nsigmaMCprm/El/Pi",
-                                                          "nsigmaMCprm/El/Ka", "nsigmaMCprm/El/Pr", "nsigmaMCprm/El/De",
-                                                          "nsigmaMCprm/El/Tr", "nsigmaMCprm/El/He", "nsigmaMCprm/El/Al",
-                                                          "nsigmaMCprm/Mu/El", "nsigmaMCprm/Mu/Mu", "nsigmaMCprm/Mu/Pi",
-                                                          "nsigmaMCprm/Mu/Ka", "nsigmaMCprm/Mu/Pr", "nsigmaMCprm/Mu/De",
-                                                          "nsigmaMCprm/Mu/Tr", "nsigmaMCprm/Mu/He", "nsigmaMCprm/Mu/Al",
-                                                          "nsigmaMCprm/Pi/El", "nsigmaMCprm/Pi/Mu", "nsigmaMCprm/Pi/Pi",
-                                                          "nsigmaMCprm/Pi/Ka", "nsigmaMCprm/Pi/Pr", "nsigmaMCprm/Pi/De",
-                                                          "nsigmaMCprm/Pi/Tr", "nsigmaMCprm/Pi/He", "nsigmaMCprm/Pi/Al",
-                                                          "nsigmaMCprm/Ka/El", "nsigmaMCprm/Ka/Mu", "nsigmaMCprm/Ka/Pi",
-                                                          "nsigmaMCprm/Ka/Ka", "nsigmaMCprm/Ka/Pr", "nsigmaMCprm/Ka/De",
-                                                          "nsigmaMCprm/Ka/Tr", "nsigmaMCprm/Ka/He", "nsigmaMCprm/Ka/Al",
-                                                          "nsigmaMCprm/Pr/El", "nsigmaMCprm/Pr/Mu", "nsigmaMCprm/Pr/Pi",
-                                                          "nsigmaMCprm/Pr/Ka", "nsigmaMCprm/Pr/Pr", "nsigmaMCprm/Pr/De",
-                                                          "nsigmaMCprm/Pr/Tr", "nsigmaMCprm/Pr/He", "nsigmaMCprm/Pr/Al",
-                                                          "nsigmaMCprm/De/El", "nsigmaMCprm/De/Mu", "nsigmaMCprm/De/Pi",
-                                                          "nsigmaMCprm/De/Ka", "nsigmaMCprm/De/Pr", "nsigmaMCprm/De/De",
-                                                          "nsigmaMCprm/De/Tr", "nsigmaMCprm/De/He", "nsigmaMCprm/De/Al",
-                                                          "nsigmaMCprm/Tr/El", "nsigmaMCprm/Tr/Mu", "nsigmaMCprm/Tr/Pi",
-                                                          "nsigmaMCprm/Tr/Ka", "nsigmaMCprm/Tr/Pr", "nsigmaMCprm/Tr/De",
-                                                          "nsigmaMCprm/Tr/Tr", "nsigmaMCprm/Tr/He", "nsigmaMCprm/Tr/Al",
-                                                          "nsigmaMCprm/He/El", "nsigmaMCprm/He/Mu", "nsigmaMCprm/He/Pi",
-                                                          "nsigmaMCprm/He/Ka", "nsigmaMCprm/He/Pr", "nsigmaMCprm/He/De",
-                                                          "nsigmaMCprm/He/Tr", "nsigmaMCprm/He/He", "nsigmaMCprm/He/Al",
-                                                          "nsigmaMCprm/Al/El", "nsigmaMCprm/Al/Mu", "nsigmaMCprm/Al/Pi",
-                                                          "nsigmaMCprm/Al/Ka", "nsigmaMCprm/Al/Pr", "nsigmaMCprm/Al/De",
-                                                          "nsigmaMCprm/Al/Tr", "nsigmaMCprm/Al/He", "nsigmaMCprm/Al/Al"};
-
   static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
+  static constexpr const char* pName[Np] = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
   static constexpr int PDGs[Np] = {11, 13, 211, 321, 2212, 1000010020, 1000010030, 1000020030};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -207,6 +81,7 @@ struct pidTofQaMc {
   Configurable<int> doAl{"doAl", 0, "Process alpha"};
   ConfigurableAxis binsPt{"binsPt", {2000, 0.f, 20.f}, "Binning of the pT axis"};
   ConfigurableAxis binsNsigma{"binsNsigma", {2000, -50.f, 50.f}, "Binning of the NSigma axis"};
+  ConfigurableAxis binsDelta{"binsDelta", {2000, -500.f, 500.f}, "Binning of the Delta axis"};
   ConfigurableAxis binsSignal{"binsSignal", {6000, 0, 2000}, "Binning of the TPC signal axis"};
   ConfigurableAxis binsLength{"binsLength", {1000, 0, 3000}, "Binning of the Length axis"};
   ConfigurableAxis binsEta{"binsEta", {100, -4, 4}, "Binning of the Eta axis"};
@@ -271,33 +146,38 @@ struct pidTofQaMc {
     const AxisSpec lengthAxis{binsLength, "Track length (cm)"};
     const AxisSpec etaAxis{binsEta, "#it{#eta}"};
     const AxisSpec nSigmaAxis{binsNsigma, Form("N_{#sigma}^{TOF}(%s)", pT[mcID])};
+    const AxisSpec deltaAxis{binsDelta, Form("#Delta^{TOF}(%s)", pT[mcID])};
 
     // Particle info
-    histos.add(hparticlept[mcID].data(), "", kTH1F, {pAxis});
-    histos.add(hparticlep[mcID].data(), "", kTH1F, {pAxis});
-    histos.add(hparticleeta[mcID].data(), "", kTH1F, {pAxis});
+    hParticlePt[mcID] = histos.add<TH1>(Form("particlept/%s", pName[mcID]), pT[mcID], kTH1D, {ptAxis});
+    hParticleP[mcID] = histos.add<TH1>(Form("particlep/%s", pName[mcID]), pT[mcID], kTH1D, {pAxis});
+    hParticleEta[mcID] = histos.add<TH1>(Form("particleeta/%s", pName[mcID]), pT[mcID], kTH1D, {etaAxis});
 
     // Track info
-    histos.add(htrackpt[mcID].data(), "", kTH1F, {pAxis});
-    histos.add(htrackp[mcID].data(), "", kTH1F, {pAxis});
-    histos.add(htracketa[mcID].data(), "", kTH1F, {pAxis});
-    histos.add(htracklength[mcID].data(), "", kTH1F, {pAxis});
+    hTrackPt[mcID] = histos.add<TH1>(Form("trackpt/%s", pName[mcID]), pT[mcID], kTH1D, {ptAxis});
+    hTrackP[mcID] = histos.add<TH1>(Form("trackp/%s", pName[mcID]), pT[mcID], kTH1D, {pAxis});
+    hTrackEta[mcID] = histos.add<TH1>(Form("tracketa/%s", pName[mcID]), pT[mcID], kTH1D, {etaAxis});
+    hTrackLength[mcID] = histos.add<TH1>(Form("tracklength/%s", pName[mcID]), pT[mcID], kTH1D, {lengthAxis});
 
     // NSigma
-    histos.add(hnsigma[mcID].data(), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hsignalMC[mcID].data(), pT[mcID], HistType::kTH2F, {pAxis, signalAxis});
+    hSignalMC[mcID] = histos.add<TH2>(Form("signalMC/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {pAxis, signalAxis});
+    hNSigma[mcID] = histos.add<TH2>(Form("nsigma/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
+    hDeltaMCEvTime[mcID] = histos.add<TH2>(Form("hdeltamcevtime/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
 
     if (!checkPrimaries) {
       return;
     }
+    hSignalMCprm[mcID] = histos.add<TH2>(Form("signalMCprm/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {pAxis, signalAxis});
+    hSignalMCstr[mcID] = histos.add<TH2>(Form("signalMCstr/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {pAxis, signalAxis});
+    hSignalMCmat[mcID] = histos.add<TH2>(Form("signalMCmat/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {pAxis, signalAxis});
 
-    histos.add(hnsigmaprm[mcID].data(), Form("Primary %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmastr[mcID].data(), Form("Secondary %s from decay", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmamat[mcID].data(), Form("Secondary %s from material", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+    hNSigmaprm[mcID] = histos.add<TH2>(Form("nsigmaprm/%s", pName[mcID]), Form("Primary %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+    hNSigmastr[mcID] = histos.add<TH2>(Form("nsigmastr/%s", pName[mcID]), Form("Secondary %s from decay", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+    hNSigmamat[mcID] = histos.add<TH2>(Form("nsigmamat/%s", pName[mcID]), Form("Secondary %s from material", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
 
-    histos.add(hsignalMCprm[mcID].data(), Form("Primary %s", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
-    histos.add(hsignalMCstr[mcID].data(), Form("Secondary %s from decay", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
-    histos.add(hsignalMCmat[mcID].data(), Form("Secondary %s from material", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
+    hDeltaMCEvTimeprm[mcID] = histos.add<TH2>(Form("hdeltamcevtimeprm/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
+    hDeltaMCEvTimestr[mcID] = histos.add<TH2>(Form("hdeltamcevtimestr/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
+    hDeltaMCEvTimemat[mcID] = histos.add<TH2>(Form("hdeltamcevtimemat/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
   }
 
   template <uint8_t mcID, uint8_t massID>
@@ -355,11 +235,11 @@ struct pidTofQaMc {
 
     const AxisSpec nSigmaAxis{binsNsigma, Form("N_{#sigma}^{TOF}(%s)", pT[massID])};
 
-    histos.add(hnsigmaMC[mcID * Np + massID].data(), Form("True %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+    hNSigmaMC[mcID * Np + massID] = histos.add<TH2>(Form("nsigmaMC/%s/%s", pName[mcID], pName[massID]), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
     if (checkPrimaries) {
-      histos.add(hnsigmaMCprm[mcID * Np + massID].data(), Form("True Primary %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
-      histos.add(hnsigmaMCstr[mcID * Np + massID].data(), Form("True Secondary %s from decay", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
-      histos.add(hnsigmaMCmat[mcID * Np + massID].data(), Form("True Secondary %s from material", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+      hNSigmaMCprm[mcID * Np + massID] = histos.add<TH2>(Form("nsigmaMCprm/%s/%s", pName[mcID], pName[massID]), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
+      hNSigmaMCprm[mcID * Np + massID] = histos.add<TH2>(Form("nsigmaMCstr/%s/%s", pName[mcID], pName[massID]), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
+      hNSigmaMCprm[mcID * Np + massID] = histos.add<TH2>(Form("nsigmaMCmat/%s/%s", pName[mcID], pName[massID]), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
     }
   }
 
@@ -468,13 +348,13 @@ struct pidTofQaMc {
         LOG(fatal) << "Can't interpret index";
     }
 
-    histos.fill(HIST(hparticlep[mcID]), particle.p());
-    histos.fill(HIST(hparticlept[mcID]), particle.pt());
-    histos.fill(HIST(hparticleeta[mcID]), particle.eta());
+    hParticlePt[mcID]->Fill(particle.pt());
+    hParticleP[mcID]->Fill(particle.p());
+    hParticleEta[mcID]->Fill(particle.p());
   }
 
-  template <uint8_t mcID, typename T, typename TT>
-  void fillTrackInfoForPdg(const T& track, const TT& particle)
+  template <uint8_t mcID, typename T, typename TT, typename ET>
+  void fillTrackInfoForPdg(const T& track, const TT& particle, const ET& collisionMC)
   {
     switch (mcID) {
       case 0:
@@ -529,17 +409,50 @@ struct pidTofQaMc {
     const float nsigma = o2::aod::pidutils::tofNSigma<mcID>(track);
 
     // Fill for all
-    histos.fill(HIST(hnsigma[mcID]), track.pt(), nsigma);
+    hNSigma[mcID]->Fill(track.pt(), nsigma);
+    float expTime = 0.f;
+    switch (mcID) {
+      case 0:
+        expTime = track.tofExpTimeEl();
+        break;
+      case 1:
+        expTime = track.tofExpTimeMu();
+        break;
+      case 2:
+        expTime = track.tofExpTimePi();
+        break;
+      case 3:
+        expTime = track.tofExpTimeKa();
+        break;
+      case 4:
+        expTime = track.tofExpTimePr();
+        break;
+      case 5:
+        expTime = track.tofExpTimeDe();
+        break;
+      case 6:
+        expTime = track.tofExpTimeTr();
+        break;
+      case 7:
+        expTime = track.tofExpTimeHe();
+        break;
+      case 8:
+        expTime = track.tofExpTimeAl();
+        break;
+      default:
+        break;
+    }
+    hDeltaMCEvTime[mcID]->Fill(track.pt(), track.tofSignal() - expTime - collisionMC.t());
 
     if (checkPrimaries) {
       if (!particle.isPhysicalPrimary()) {
         if (particle.getProcess() == 4) {
-          histos.fill(HIST(hnsigmastr[mcID]), track.pt(), nsigma);
+          hNSigmastr[mcID]->Fill(track.pt(), nsigma);
         } else {
-          histos.fill(HIST(hnsigmamat[mcID]), track.pt(), nsigma);
+          hNSigmamat[mcID]->Fill(track.pt(), nsigma);
         }
       } else {
-        histos.fill(HIST(hnsigmaprm[mcID]), track.pt(), nsigma);
+        hNSigmaprm[mcID]->Fill(track.pt(), nsigma);
       }
     }
 
@@ -564,22 +477,23 @@ struct pidTofQaMc {
     }
 
     // Track info
-    histos.fill(HIST(htrackp[mcID]), track.p());
-    histos.fill(HIST(htrackpt[mcID]), track.pt());
-    histos.fill(HIST(htracketa[mcID]), track.eta());
-    histos.fill(HIST(htracklength[mcID]), track.length());
+    hTrackPt[mcID]->Fill(track.pt());
+    hTrackP[mcID]->Fill(track.p());
+    hTrackEta[mcID]->Fill(track.eta());
+    hTrackLength[mcID]->Fill(track.length());
 
     // PID info
-    histos.fill(HIST(hsignalMC[mcID]), track.p(), track.beta());
+    hSignalMC[mcID]->Fill(track.p(), track.tofBeta());
+
     if (checkPrimaries) {
       if (!particle.isPhysicalPrimary()) {
         if (particle.getProcess() == 4) {
-          histos.fill(HIST(hsignalMCstr[mcID]), track.p(), track.beta());
+          hSignalMCstr[mcID]->Fill(track.p(), track.tofBeta());
         } else {
-          histos.fill(HIST(hsignalMCmat[mcID]), track.p(), track.beta());
+          hSignalMCmat[mcID]->Fill(track.p(), track.tofBeta());
         }
       } else {
-        histos.fill(HIST(hsignalMCprm[mcID]), track.p(), track.beta());
+        hSignalMCprm[mcID]->Fill(track.p(), track.tofBeta());
       }
     }
   }
@@ -659,29 +573,30 @@ struct pidTofQaMc {
 
     const float nsigmaMassID = o2::aod::pidutils::tofNSigma<massID>(track);
 
-    histos.fill(HIST(hnsigmaMC[mcID * Np + massID]), track.pt(), nsigmaMassID);
+    hNSigmaMC[mcID * Np + massID]->Fill(track.pt(), nsigmaMassID);
     if (checkPrimaries) {
       if (!particle.isPhysicalPrimary()) {
         if (particle.getProcess() == 4) {
-          histos.fill(HIST(hnsigmaMCstr[mcID * Np + massID]), track.pt(), nsigmaMassID);
+          hNSigmaMCstr[mcID * Np + massID]->Fill(track.pt(), nsigmaMassID);
         } else {
-          histos.fill(HIST(hnsigmaMCmat[mcID * Np + massID]), track.pt(), nsigmaMassID);
+          hNSigmaMCmat[mcID * Np + massID]->Fill(track.pt(), nsigmaMassID);
         }
       } else {
-        histos.fill(HIST(hnsigmaMCprm[mcID * Np + massID]), track.pt(), nsigmaMassID);
+        hNSigmaMCprm[mcID * Np + massID]->Fill(track.pt(), nsigmaMassID);
       }
     }
   }
 
-  Preslice<aod::Tracks> perCol = aod::track::collisionId;
-  Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
-
-  void process(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions,
-               soa::Join<aod::Tracks, aod::TracksExtra,
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra,
                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
                          aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
-                         aod::McTrackLabels, aod::pidTOFbeta>& tracks,
+                         aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
+  Preslice<Trks> perCol = aod::track::collisionId;
+  Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
+
+  void process(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels> const& collisions,
+               Trks& tracks,
                aod::McParticles& mcParticles,
                aod::McCollisions&)
   {
@@ -689,10 +604,12 @@ struct pidTofQaMc {
       if (collision.numContrib() < nMinNumberOfContributors) {
         return;
       }
+      if (!collision.sel8()) {
+        continue;
+      }
       if (!collision.has_mcCollision()) {
         continue;
       }
-      const auto tracksInCollision = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache);
 
       for (const auto& p : particlesInCollision) {
@@ -701,9 +618,13 @@ struct pidTofQaMc {
         });
       }
 
+      const auto& tracksInCollision = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      // tracksInCollision.bindExternalIndices(&mcParticles);
+      const auto& tracksWithPid = soa::Attach<Trks, aod::TOFBeta>(tracksInCollision);
+      // tracksInCollision.copyIndexBindings(tracksWithPid);
       const float collisionTime_ps = collision.collisionTime() * 1000.f;
       unsigned int nTracksWithTOF = 0;
-      for (const auto& t : tracksInCollision) {
+      for (const auto& t : tracksWithPid) {
         //
         if (!t.hasTOF()) { // Skipping tracks without TOF
           continue;
@@ -715,7 +636,8 @@ struct pidTofQaMc {
         nTracksWithTOF++;
 
         // Fill for all
-        histos.fill(HIST("event/tofbeta"), t.p(), t.beta());
+        const float beta = t.tofBeta();
+        histos.fill(HIST("event/tofbeta"), t.p(), beta);
         if (!t.has_mcParticle()) {
           continue;
         }
@@ -724,14 +646,14 @@ struct pidTofQaMc {
 
         if (checkPrimaries) {
           if (!particle.isPhysicalPrimary()) {
-            // histos.fill(HIST("event/tofbetaSec"), t.p(), t.beta());
+            // histos.fill(HIST("event/tofbetaSec"), t.p(), beta);
             if (particle.getProcess() == 4) {
               histos.fill(HIST("event/tofbetaStr"), t.tpcInnerParam(), t.tpcSignal());
             } else {
               histos.fill(HIST("event/tofbetaMat"), t.tpcInnerParam(), t.tpcSignal());
             }
           } else {
-            histos.fill(HIST("event/tofbetaPrm"), t.p(), t.beta());
+            histos.fill(HIST("event/tofbetaPrm"), t.p(), beta);
           }
         }
 
@@ -740,13 +662,13 @@ struct pidTofQaMc {
           static_for<0, 8>([&](auto j) {
             fillPIDInfoForPdg<i, j>(t, particle);
           });
-          fillTrackInfoForPdg<i>(t, particle);
+          fillTrackInfoForPdg<i>(t, particle, collision.mcCollision());
         });
       } // track loop
       histos.fill(HIST("event/T0"), nTracksWithTOF, collisionTime_ps);
       histos.fill(HIST("event/vertexz"), collision.posZ());
     } // collision loop
-  }   // process()
+  } // process()
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<pidTofQaMc>(cfgc)}; }
