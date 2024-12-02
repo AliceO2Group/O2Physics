@@ -20,6 +20,7 @@
 #include <unordered_map>
 
 #include "Framework/runDataProcessing.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "CCDB/BasicCCDBManager.h"
@@ -27,7 +28,7 @@
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "TDatabasePDG.h"
+//#include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "TSystem.h"
 #include "TMath.h"
@@ -167,7 +168,7 @@ const float kPtMin = 0.;
 struct fwdMuonsUPC {
 
   // a pdg object
-  TDatabasePDG* pdg = nullptr;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   using CandidatesFwd = soa::Join<o2::aod::UDCollisions, o2::aod::UDCollisionsSelsFwd>;
   using ForwardTracks = soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTracksExtra>;
@@ -227,7 +228,7 @@ struct fwdMuonsUPC {
   void init(InitContext&)
   {
     // PDG
-    pdg = TDatabasePDG::Instance();
+    //pdg = TDatabasePDG::Instance();
 
     // binning of pT axis fr fit
     std::vector<double> ptFitBinning = {
@@ -338,13 +339,14 @@ struct fwdMuonsUPC {
   // FUNCTIONS
 
   // retrieve particle mass (GeV/c^2) from TDatabasePDG
-  float particleMass(TDatabasePDG* pdg, int pid)
+  float particleMass(int pid)
   {
-    auto mass = 0.;
-    TParticlePDG* pdgparticle = pdg->GetParticle(pid);
-    if (pdgparticle != nullptr) {
-      mass = pdgparticle->Mass();
-    }
+    auto mass = pdg->Mass(pid);
+
+    //auto pdgparticle = pdg->GetParticle(pid);
+    //if (pdgparticle != nullptr) {
+    //  mass = pdgparticle->Mass();
+    //}
     return mass;
   }
 
@@ -446,7 +448,7 @@ struct fwdMuonsUPC {
     float rAbs = fwdTrack.rAtAbsorberEnd();
     float pDca = fwdTrack.pDca();
     TLorentzVector p;
-    auto mMu = particleMass(pdg, 13);
+    auto mMu = particleMass(13);
     p.SetXYZM(fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), mMu);
     float eta = p.Eta();
     float pt = p.Pt();
@@ -530,7 +532,7 @@ struct fwdMuonsUPC {
 
     // form Lorentz vectors
     TLorentzVector p1, p2;
-    auto mMu = particleMass(pdg, 13);
+    auto mMu = particleMass(13);
     p1.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), mMu);
     p2.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), mMu);
     TLorentzVector p = p1 + p2;
@@ -655,7 +657,7 @@ struct fwdMuonsUPC {
 
     // create Lorentz vectors
     TLorentzVector p1, p2;
-    auto mMu = particleMass(pdg, 13);
+    auto mMu = particleMass(13);
     p1.SetXYZM(McPart1.px(), McPart1.py(), McPart1.pz(), mMu);
     p2.SetXYZM(McPart2.px(), McPart2.py(), McPart2.pz(), mMu);
     TLorentzVector p = p1 + p2;
@@ -750,7 +752,7 @@ struct fwdMuonsUPC {
 
     // form Lorentz vectors
     TLorentzVector p1, p2;
-    auto mMu = particleMass(pdg, 13);
+    auto mMu = particleMass(13);
     p1.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), mMu);
     p2.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), mMu);
     TLorentzVector p = p1 + p2;
