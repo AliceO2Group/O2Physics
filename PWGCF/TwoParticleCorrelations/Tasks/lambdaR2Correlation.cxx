@@ -253,6 +253,8 @@ struct lambdaCorrTableProducer {
     histos.add("Tracks/h1f_tracks_info", "# of tracks", kTH1F, {axisCol});
     histos.add("Tracks/h2f_armpod_before_sel", "Armentros-Podolanski Plot", kTH2F, {axisAlpha, axisQtarm});
     histos.add("Tracks/h2f_armpod_after_sel", "Armentros-Podolanski Plot", kTH2F, {axisAlpha, axisQtarm});
+    histos.add("Tracks/h1f_lambda_pt_vs_invm", "p_{T} vs M_{#Lambda}", kTH2F, {axisV0Mass, axisV0Pt});
+    histos.add("Tracks/h1f_antilambda_pt_vs_invm", "p_{T} vs M_{#bar{#Lambda}}", kTH2F, {axisV0Mass, axisV0Pt});
 
     // QA Lambda
     histos.add("QA/Lambda/h2f_qt_vs_alpha", "Armentros-Podolanski Plot", kTH2F, {axisAlpha, axisQtarm});
@@ -301,7 +303,7 @@ struct lambdaCorrTableProducer {
   }
 
   template <typename C>
-  bool selCol(C const& col)
+  bool sel_collision(C const& col)
   {
     if (col.posZ() < cfg_min_z_vtx || col.posZ() >= cfg_max_z_vtx) {
       return false;
@@ -339,7 +341,7 @@ struct lambdaCorrTableProducer {
   }
 
   template <typename T>
-  bool dauTrackSelection(T const& track)
+  bool dau_track_selection(T const& track)
   {
     if (track.pt() < cfg_pt_min || track.pt() > cfg_pt_max) {
       return false;
@@ -366,7 +368,7 @@ struct lambdaCorrTableProducer {
     auto postrack = v0.template posTrack_as<T>();
     auto negtrack = v0.template negTrack_as<T>();
 
-    if (!dauTrackSelection(postrack) || !dauTrackSelection(negtrack)) {
+    if (!dau_track_selection(postrack) || !dau_track_selection(negtrack)) {
       return false;
     }
 
@@ -551,16 +553,16 @@ struct lambdaCorrTableProducer {
     TObject* obj = reinterpret_cast<TObject*>(ccdb_obj->FindObject(Form("%s", v_cf_str[cfg_cf_hist_type][part].c_str())));
 
     if (obj->InheritsFrom("TH1F")) {
-      TH1F* hist = (TH1F*)obj->Clone();
+      TH1F* hist = reinterpret_cast<TH1F*> obj->Clone();
       int pt_bin = hist->GetXaxis()->FindBin(v0.pt());
       return hist->GetBinContent(pt_bin);
     } else if (obj->InheritsFrom("TH2F")) {
-      TH2F* hist = (TH2F*)obj->Clone();
+      TH2F* hist = reinterpret_cast<TH2F*> obj->Clone();
       int pt_bin = hist->GetXaxis()->FindBin(v0.pt());
       int rap_bin = hist->GetYaxis()->FindBin(v0.yLambda());
       return hist->GetBinContent(pt_bin, rap_bin);
     } else if (obj->InheritsFrom("TH3F")) {
-      TH3F* hist = (TH3F*)obj->Clone();
+      TH3F* hist = reinterpret_cast<TH3F*> obj->Clone();
       int pt_bin = hist->GetXaxis()->FindBin(v0.pt());
       int rap_bin = hist->GetYaxis()->FindBin(v0.yLambda());
       int vz_bin = hist->GetZaxis()->FindBin(col.posZ());
@@ -632,7 +634,7 @@ struct lambdaCorrTableProducer {
     histos.fill(HIST("Events/h1f_collisions_info"), 1.5);
 
     // select collision
-    if (!selCol(collision)) {
+    if (!sel_collision(collision)) {
       return;
     }
 
@@ -690,8 +692,10 @@ struct lambdaCorrTableProducer {
 
       // fill lambda qa
       if (v0type == kLambda) {
+        histos.fill(HIST("Tracks/h1f_lambda_pt_vs_invm"), mass, v0.pt());
         fill_qa_lambda<kLambda>(collision, v0, tracks);
       } else {
+        histos.fill(HIST("Tracks/h1f_antilambda_pt_vs_invm"), mass, v0.pt());
         fill_qa_lambda<kAntiLambda>(collision, v0, tracks);
       }
 
