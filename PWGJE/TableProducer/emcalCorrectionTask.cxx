@@ -183,6 +183,15 @@ struct EmcalCorrectionTask {
 
     LOG(debug) << "Completed init!";
 
+    // Define the cell energy binning
+    std::vector<double> cellEnergyBins;
+    for (int i = 0; i < 51; i++)
+      cellEnergyBins.emplace_back(0.1 * (i - 0) + 0.0); // from 0 to 5 GeV/c, every 0.1 GeV
+    for (int i = 51; i < 76; i++)
+      cellEnergyBins.emplace_back(0.2 * (i - 51) + 5.2); // from 5.2 to 10.0 GeV, every 0.2 GeV
+    for (int i = 76; i < 166; i++)
+      cellEnergyBins.emplace_back(1. * (i - 76) + 11.); // from 11.0 to 100. GeV, every 1 GeV
+
     // Setup QA hists.
     // NOTE: This is not comprehensive.
     using o2HistType = o2::framework::HistType;
@@ -195,7 +204,8 @@ struct EmcalCorrectionTask {
     mHistManager.add("hCellE", "hCellE", o2HistType::kTH1F, {energyAxis});
     mHistManager.add("hCellTowerID", "hCellTowerID", o2HistType::kTH1D, {{20000, 0, 20000}});
     mHistManager.add("hCellEtaPhi", "hCellEtaPhi", o2HistType::kTH2F, {etaAxis, phiAxis});
-    mHistManager.add("hCellTimeEnergy", "hCellTime", o2HistType::kTH2F, {{300, -30, 30}, {200, 0., 20.}});
+    mHistManager.add("hHGCellTimeEnergy", "hCellTime", o2HistType::kTH2F, {{300, -30, 30}, cellEnergyBins}); // Cell time vs energy for high gain cells (low energies)
+    mHistManager.add("hLGCellTimeEnergy", "hCellTime", o2HistType::kTH2F, {{300, -30, 30}, cellEnergyBins}); // Cell time vs energy for low gain cells (high energies)
     // NOTE: Reversed column and row because it's more natural for presentation.
     mHistManager.add("hCellRowCol", "hCellRowCol;Column;Row", o2HistType::kTH2D, {{96, -0.5, 95.5}, {208, -0.5, 207.5}});
     mHistManager.add("hClusterE", "hClusterE", o2HistType::kTH1F, {energyAxis});
@@ -276,7 +286,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType())),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -395,7 +405,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType())),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
         cellLabels.emplace_back(cell.mcParticleIds(), cell.amplitudeA());
@@ -497,7 +507,7 @@ struct EmcalCorrectionTask {
       for (auto& cell : cellsInBC) {
         cellsBC.emplace_back(cell.cellNumber(),
                              cell.amplitude(),
-                             cell.time() + getCellTimeShift(cell.cellNumber(), cell.amplitude()),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), cell.amplitude(), o2::emcal::intToChannelType(cell.cellType())),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -779,7 +789,10 @@ struct EmcalCorrectionTask {
     // For convenience, use the clusterizer stored geometry to get the eta-phi
     for (auto& cell : cellsBC) {
       mHistManager.fill(HIST("hCellE"), cell.getEnergy());
-      mHistManager.fill(HIST("hCellTimeEnergy"), cell.getTimeStamp(), cell.getEnergy());
+      if (cell.getLowGain())
+        mHistManager.fill(HIST("hLGCellTimeEnergy"), cell.getTimeStamp(), cell.getEnergy());
+      else if (cell.getHighGain())
+        mHistManager.fill(HIST("hHGCellTimeEnergy"), cell.getTimeStamp(), cell.getEnergy());
       mHistManager.fill(HIST("hCellTowerID"), cell.getTower());
       auto res = mClusterizers.at(0)->getGeometry()->EtaPhiFromIndex(cell.getTower());
       mHistManager.fill(HIST("hCellEtaPhi"), std::get<0>(res), TVector2::Phi_0_2pi(std::get<1>(res)));
@@ -809,7 +822,7 @@ struct EmcalCorrectionTask {
   // Apply shift of the cell time in data and MC
   // In MC this has to be done to shift the cell time, which is not calibrated to 0 due to the flight time of the particles to the EMCal surface (~15ns)
   // In data this is done to correct for the time walk effect
-  float getCellTimeShift(const int16_t cellID, const float cellEnergy)
+  float getCellTimeShift(const int16_t cellID, const float cellEnergy, const o2::emcal::ChannelType_t cellType)
   {
     if (!applyCellTimeCorrection) {
       return 0.f;
@@ -825,13 +838,18 @@ struct EmcalCorrectionTask {
       // Also smear the time to account for the broader time resolution in data than in MC
       timesmear = normalgaus(rdgen) * (1.6 + 9.5 * TMath::Exp(-3. * cellEnergy)); // Parameters extracted from LHC22o (pp), but also usable for other periods
     } else {                                                                      // data
-      if (cellEnergy < 0.3)                                                       // Cells with tless than 300 MeV cannot be the leading cell in the cluster, so their time does not require precise calibration
+      if (cellEnergy < 0.3) {                                                     // Cells with tless than 300 MeV cannot be the leading cell in the cluster, so their time does not require precise calibration
         timeshift = 0.;
-      else if (cellEnergy < 4.)                                            // Low energy regime
-        timeshift = 0.57284 + 0.82194 * TMath::Log(1.30651 * cellEnergy);  // Parameters extracted from LHC22o (pp), but also usable for other periods
-      else                                                                 // High energy regime
-        timeshift = -0.05858 + 1.50593 * TMath::Log(0.97591 * cellEnergy); // Parameters extracted from LHC22o (pp), but also usable for other periods
+      } else if (cellType == o2::emcal::ChannelType_t::HIGH_GAIN) {          // High gain cells -> Low energies
+        if (cellEnergy < 4.)                                                 // Low energy regime
+          timeshift = 0.57284 + 0.82194 * TMath::Log(1.30651 * cellEnergy);  // Parameters extracted from LHC22o (pp), but also usable for other periods
+        else                                                                 // Medium energy regime
+          timeshift = -0.05858 + 1.50593 * TMath::Log(0.97591 * cellEnergy); // Parameters extracted from LHC22o (pp), but also usable for other periods
+      } else if (cellType == o2::emcal::ChannelType_t::LOW_GAIN) {           // Low gain cells -> High energies
+        timeshift = -0.05858 + 1.50593 * TMath::Log(0.97591 * cellEnergy);   // Parameters extracted from LHC22o (pp), will be updated by LHC24aj input
+      }
     }
+
     LOG(debug) << "Shift the cell time by " << timeshift << " + " << timesmear << " ns";
     return timeshift + timesmear;
   }
