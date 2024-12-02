@@ -79,6 +79,7 @@ struct HfTaskFlow {
   Configurable<double> etaMftTrackMin{"etaMftTrackMin", -5, "Minimum value for the eta of MFT tracks"};
   Configurable<int> nClustersMftTrack{"nClustersMftTrack", 5, "Minimum number of clusters for the reconstruction of MFT tracks"};
 
+  SliceCache cache;
   Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
@@ -152,8 +153,6 @@ struct HfTaskFlow {
   Preslice<aod::McParticles> mcTruthPerCol = aod::mcparticle::mcCollisionId;
   // Do I have to adapt this preslice to MC ? How does it work exactly ?
   // Preslice<aod::Tracks> mcRecPerCol = aod::track::collisionId;
-
-  SliceCache cache;
 
   //  configurables for containers
   ConfigurableAxis axisVertex{"axisVertex", {14, -7, 7}, "vertex axis for histograms"};
