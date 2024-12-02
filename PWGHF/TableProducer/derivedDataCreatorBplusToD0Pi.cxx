@@ -27,6 +27,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 
+#include "PWGLF/DataModel/mcCentrality.h"
+
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -95,7 +97,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   using SelectedCandidatesMl = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfMlBplusToD0Pi>>;
   using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfCandBplusMcRec, aod::HfSelBplusToD0Pi, aod::HfMlBplusToD0Pi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
-  using TypeMcCollisions = aod::McCollisions;
+  using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
   using THfCandDaughters = aod::HfCand2ProngWPid;
   using THfCandDaughtersMl = soa::Join<THfCandDaughters, aod::HfMlD0>;
 
@@ -165,7 +167,8 @@ struct HfDerivedDataCreatorBplusToD0Pi {
       rowMcCollBase(
         mcCollision.posX(),
         mcCollision.posY(),
-        mcCollision.posZ());
+        mcCollision.posZ(),
+        mcCollision.centFT0M());
     }
     if (fillMcCollId) {
       rowMcCollId(

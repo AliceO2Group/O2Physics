@@ -98,6 +98,7 @@ DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! original global index of
                            mccollision::PosX,                                              \
                            mccollision::PosY,                                              \
                            mccollision::PosZ,                                              \
+                           cent::CentFT0M,                                                 \
                            o2::soa::Marker<Marker##_hf_type_>);                            \
                                                                                            \
   using Hf##_hf_type_##McCollBase = Hf##_hf_type_##McCollBases::iterator;                  \
