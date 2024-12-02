@@ -581,7 +581,7 @@ struct EventSelectionQaTask {
         metadata["runNumber"] = Form("%d", run);
         o2::itsmft::TimeDeadMap* itsDeadMap = ccdb->getSpecific<o2::itsmft::TimeDeadMap>("ITS/Calib/TimeDeadMap", (tsSOR + tsEOR) / 2, metadata);
 
-        std::vector<uint64_t> itsDeadMapOrbits = itsDeadMap->getEvolvingMapKeys(); // roughly every second, ~350 TFs = 350x32 orbits
+        auto itsDeadMapOrbits = itsDeadMap->getEvolvingMapKeys(); // roughly every second, ~350 TFs = 350x32 orbits
         std::vector<double> itsDeadMapOrbitsDouble(itsDeadMapOrbits.begin(), itsDeadMapOrbits.end());
         const AxisSpec axisItsDeadMapOrbits{itsDeadMapOrbitsDouble};
 
