@@ -80,6 +80,34 @@ DECLARE_SOA_TABLE(DiMu, "AOD", "DIMU",
                   dimu::Tzna, dimu::Ezna, dimu::Tznc, dimu::Eznc, dimu::Nclass);
 } // namespace o2::aod
 
+// for saving tree with info on gen MC
+namespace gendimu
+{
+// dimuon
+DECLARE_SOA_COLUMN(M, m, float);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Rap, rap, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(PhiAv, phiAv, float);
+DECLARE_SOA_COLUMN(PhiCh, phiCh, float);
+// tracks positive (p) and negative (n)
+DECLARE_SOA_COLUMN(Ptp, ptp, float);
+DECLARE_SOA_COLUMN(Etap, etap, float);
+DECLARE_SOA_COLUMN(Phip, phip, float);
+DECLARE_SOA_COLUMN(Ptn, ptn, float);
+DECLARE_SOA_COLUMN(Etan, etan, float);
+DECLARE_SOA_COLUMN(Phin, phin, float);
+} // namespace gendimu
+
+namespace o2::aod
+{
+DECLARE_SOA_TABLE(genDiMu, "AOD", "GENDIMU",
+                  gendimu::M, gendimu::Pt, gendimu::Rap, gendimu::Phi,
+                  gendimu::PhiAv, gendimu::PhiCh,
+                  gendimu::Ptp, gendimu::Etap, gendimu::Phip,
+                  gendimu::Ptn, gendimu::Etan, gendimu::Phin);
+} // namespace o2::aod
+
 // for saving tree with info on reco MC
 namespace recodimu
 {
@@ -146,6 +174,7 @@ struct fwdMuonsUPC {
   using CompleteFwdTracks = soa::Join<ForwardTracks, o2::aod::UDMcFwdTrackLabels>;
 
   Produces<o2::aod::DiMu> dimuSel;
+  Produces<o2::aod::genDiMu> dimuGen;
   Produces<o2::aod::recoDiMu> dimuReco;
 
   // defining histograms using histogram registry: different histos for the different process functions
@@ -650,7 +679,7 @@ struct fwdMuonsUPC {
     // compute phi for azimuth anisotropy
     float phiAverage = 0;
     float phiCharge = 0;
-    computePhiAnis(p1, p2, McPart1.pdgCode(), phiAverage, phiCharge);
+    computePhiAnis(p1, p2, -McPart1.pdgCode(), phiAverage, phiCharge);
 
     // fill the histos
     McGenRegistry.fill(HIST("hPtTrkPos"), p1.Pt());
@@ -666,6 +695,19 @@ struct fwdMuonsUPC {
     McGenRegistry.fill(HIST("hPhi"), p.Phi());
     McGenRegistry.fill(HIST("hPhiAverage"), phiAverage);
     McGenRegistry.fill(HIST("hPhiCharge"), phiCharge);
+
+    // store the event to save it into a tree
+    if (McPart1.pdgCode() < 0) {
+      dimuGen(p.M(), p.Pt(), p.Rapidity(), p.Phi(),
+               phiAverage, phiCharge,
+               p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
+               p2.Pt(), p2.PseudoRapidity(), p2.Phi());
+    } else {
+      dimuGen(p.M(), p.Pt(), p.Rapidity(), p.Phi(),
+               phiAverage, phiCharge,
+               p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
+               p1.Pt(), p1.PseudoRapidity(), p1.Phi());
+    }
   }
 
   // function that processes MC reco candidates
@@ -743,7 +785,7 @@ struct fwdMuonsUPC {
     // compute gen phi for azimuth anisotropy
     float phiGenAverage = 0;
     float phiGenCharge = 0;
-    computePhiAnis(p1, p2, McPart1.pdgCode(), phiGenAverage, phiGenCharge);
+    computePhiAnis(p1, p2, -McPart1.pdgCode(), phiGenAverage, phiGenCharge);
 
     // print info in case of problems
     if (tr1.sign() * McPart1.pdgCode() > 0 || tr2.sign() * McPart2.pdgCode() > 0) {
