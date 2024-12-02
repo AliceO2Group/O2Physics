@@ -44,7 +44,7 @@ using namespace o2::framework::expressions;
 
 struct JetSpectraEseTask {
   ConfigurableAxis binJetPt{"binJetPt", {200, 0., 200.}, ""};
-  ConfigurableAxis bindPhi{"bindPhi", {100, -TMath::Pi() - 1, TMath::Pi() + 1}, ""};
+  ConfigurableAxis bindPhi{"bindPhi", {100, -o2::constants::math::PI - 1, o2::constants::math::PI + 1}, ""};
   ConfigurableAxis binESE{"binESE", {100, 0, 100}, ""};
   ConfigurableAxis binCos{"binCos", {100, -1.05, 1.05}, ""};
   ConfigurableAxis binOccupancy{"binOccupancy", {5000, 0, 25000}, ""};
@@ -53,7 +53,7 @@ struct JetSpectraEseTask {
   Configurable<float> jetPtMin{"jetPtMin", 5.0, "minimum jet pT cut"};
   Configurable<float> jetR{"jetR", 0.2, "jet resolution parameter"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0, "vertex z cut"};
-  Configurable<std::vector<float>> CentRange{"CentRange", {30, 50}, "centrality region of interest"};
+  Configurable<std::vector<float>> centRange{"centRange", {30, 50}, "centrality region of interest"};
   Configurable<double> leadingJetPtCut{"fLeadingJetPtCut", 5.0, "leading jet pT cut"};
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
@@ -77,9 +77,7 @@ struct JetSpectraEseTask {
   AxisSpec eseAxis = {binESE, "#it{q}_{2}"};
   AxisSpec cosAxis = {binCos, ""};
   AxisSpec occAxis = {binOccupancy, "Occupancy"};
-  AxisSpec QvecAxis = {binQVec, "Q-vector"};
-
-  AxisSpec cosAxis = {binCos, ""};
+  AxisSpec qvecAxis = {binQVec, "Q-vector"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
@@ -94,8 +92,8 @@ struct JetSpectraEseTask {
                      TPCneg,
                      TPCall };
 
-  static constexpr std::size_t N1 = 5;
-  static constexpr std::size_t N2 = 3;
+  static constexpr std::size_t scN1 = 5;
+  static constexpr std::size_t scN2 = 3;
 
   void init(o2::framework::InitContext&)
   {
@@ -126,7 +124,7 @@ struct JetSpectraEseTask {
         registry.addClone("hCosPsi2AmC", "hCosPsi2AmB");
         registry.addClone("hCosPsi2AmC", "hCosPsi2BmC");
 
-        registry.add("hQvecUncorV2", ";Centrality;Q_x;Q_y", {HistType::kTH3F, {{100, 0, 100}, {QvecAxis}, {QvecAxis}}});
+        registry.add("hQvecUncorV2", ";Centrality;Q_x;Q_y", {HistType::kTH3F, {{100, 0, 100}, {qvecAxis}, {qvecAxis}}});
         registry.addClone("hQvecUncorV2", "hQvecRectrV2");
         registry.addClone("hQvecUncorV2", "hQvecTwistV2");
         registry.addClone("hQvecUncorV2", "hQvecFinalV2");
@@ -213,7 +211,7 @@ struct JetSpectraEseTask {
     }
     registry.fill(HIST("hEventCounter"), counter++);
 
-    if (collision.centrality() < CentRange->at(0) || collision.centrality() > CentRange->at(1)) /* for counting */
+    if (collision.centrality() < centRange->at(0) || collision.centrality() > centRange->at(1)) /* for counting */
       return;
     registry.fill(HIST("hEventCounter"), counter++);
   }
@@ -274,7 +272,7 @@ struct JetSpectraEseTask {
       registry.fill(HIST("hDetectorJetPt"), mcdjet.pt());
       registry.fill(HIST("hDetectorJetEta"), mcdjet.eta());
       registry.fill(HIST("hDetectorJetPhi"), mcdjet.phi());
-      for (auto& mcpjet : mcdjet.template matchedJetGeo_as<JetMCPTable>()) {
+      for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<JetMCPTable>()) {
 
         registry.fill(HIST("hPartJetPtMatch"), mcpjet.pt());
         registry.fill(HIST("hPartJetEtaMatch"), mcpjet.eta());
@@ -308,25 +306,25 @@ struct JetSpectraEseTask {
       return true;
   }
   static constexpr const char* cosList[] = {"hCosPsi2AmC", "hCosPsi2AmB", "hCosPsi2BmC"};
-  template <bool fill, typename EPCol>
+  template <bool Fill, typename EPCol>
   float procEP(EPCol const& vec)
   {
-    constexpr std::array<float, 2> ampCut{1e-8, 0.0};
-    auto computeEP = [&ampCut](std::vector<float> vec, auto det) { return vec[2] > ampCut[det] ? 0.5 * std::atan2(vec[1], vec[0]) : 999.; };
+    constexpr std::array<float, 2> AmpCut{1e-8, 0.0};
+    auto computeEP = [&ampCut](std::vector<float> vec, auto det) { return vec[2] > AmpCut[det] ? 0.5 * std::atan2(vec[1], vec[0]) : 999.; };
     std::map<std::string, float> epMap;
     epMap["FT0A"] = computeEP(QVecNoESE<DetID::FT0A, fill>(vec), 0);
-    if constexpr (fill) {
+    if constexpr (Fill) {
       epMap["FT0C"] = computeEP(QVecNoESE<DetID::FT0C, false>(vec), 0);
       epMap["FV0A"] = computeEP(QVecNoESE<DetID::FV0A, false>(vec), 0);
       epMap["TPCpos"] = computeEP(QVecNoESE<DetID::TPCpos, false>(vec), 1);
       epMap["TPCneg"] = computeEP(QVecNoESE<DetID::TPCneg, false>(vec), 1);
-      fillEP(std::make_index_sequence<N1>{}, vec, epMap);
+      fillEP(std::make_index_sequence<scN1>{}, vec, epMap);
       auto cosPsi = [](float psiX, float psiY) { return (static_cast<double>(psiX) == 999. || static_cast<double>(psiY) == 999.) ? 999. : std::cos(2.0 * (psiX - psiY)); };
       std::array<float, 3> epCorrContainer{};
       epCorrContainer[0] = cosPsi(epMap[cfgEPRefA], epMap[cfgEPRefC]);
       epCorrContainer[1] = cosPsi(epMap[cfgEPRefA], epMap[cfgEPRefB]);
       epCorrContainer[2] = cosPsi(epMap[cfgEPRefB], epMap[cfgEPRefC]);
-      fillEPCos(std::make_index_sequence<N2>{}, vec, epCorrContainer);
+      fillEPCos(std::make_index_sequence<scN2>{}, vec, epCorrContainer);
     }
     return epMap["FT0A"];
   }
@@ -339,15 +337,15 @@ struct JetSpectraEseTask {
   template <std::size_t... Idx, typename collision>
   void fillEP(const std::index_sequence<Idx...>&, const collision& col, const std::map<std::string, float>& epMap)
   {
-    (registry.fill(HIST(epList[Idx]), col.centrality(), epMap.at(std::string(removePrefix(epList[Idx])))), ...);
+    (registry.fill(HIST(epList[Idx]), col.centrality(), epMap.at(std::string(RemovePrefix(epList[Idx])))), ...);
   }
-  constexpr std::string_view removePrefix(std::string_view str)
+  constexpr std::string_view RemovePrefix(std::string_view str)
   {
     constexpr std::string_view prefix = "hPsi2";
     return str.substr(prefix.size());
   }
 
-  constexpr int DetIDN(const DetID id)
+  constexpr int detIDN(const DetID id)
   {
     switch (id) {
       case DetID::FT0C:
@@ -372,7 +370,7 @@ struct JetSpectraEseTask {
   std::vector<float> QVecNoESE(Col collision)
   {
     const int nmode = 2;
-    int DetId = DetIDN(id);
+    int DetId = detIDN(id);
     int DetInd = DetId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
     if constexpr (fill) {
       if (collision.qvecAmp()[DetInd] > 1e-8) {
