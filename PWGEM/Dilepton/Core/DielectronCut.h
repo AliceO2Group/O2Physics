@@ -86,7 +86,8 @@ class DielectronCut : public TNamed
     kTPChadrejORTOFreq = 2,
     kTPConly = 3,
     kTOFif = 4,
-    kPIDML = 5
+    kPIDML = 5,
+    kTPChadrejORTOFreq_woTOFif = 6
   };
 
   template <typename T = int, typename TPair>
@@ -127,14 +128,8 @@ class DielectronCut : public TNamed
     }
 
     if (mApplyPhiV) {
-      if (mMaxPhivPairMeeDep) {
-        if ((phiv < mMinPhivPair || mMaxPhivPairMeeDep(v12.M()) < phiv) ^ mSelectPC) {
-          return false;
-        }
-      } else {
-        if ((!(mMinPhivPair < phiv && phiv < mMaxPhivPair) && !(mMinMeeForPhivPair < v12.M() && v12.M() < mMaxMeeForPhivPair)) ^ mSelectPC) {
-          return false;
-        }
+      if (((mMinPhivPair < phiv && phiv < mMaxPhivPair) && v12.M() < mMaxMeePhiVDep(phiv)) ^ mSelectPC) {
+        return false;
       }
     }
 
@@ -142,7 +137,7 @@ class DielectronCut : public TNamed
       return false;
     }
 
-    if (opAng < mMinOpAng || mMaxOpAng < opAng) { // in sigma for pair
+    if (opAng < mMinOpAng || mMaxOpAng < opAng) {
       return false;
     }
 
@@ -285,6 +280,9 @@ class DielectronCut : public TNamed
       case static_cast<int>(PIDSchemes::kPIDML):
         return true; // don't use kPIDML here.
 
+      case static_cast<int>(PIDSchemes::kTPChadrejORTOFreq_woTOFif):
+        return PassTPConlyhadrej(track) || PassTOFreq(track);
+
       case static_cast<int>(PIDSchemes::kUnDef):
         return true;
 
@@ -319,6 +317,17 @@ class DielectronCut : public TNamed
   {
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
     return is_el_included_TPC;
+  }
+
+  template <typename T>
+  bool PassTPConlyhadrej(T const& track) const
+  {
+    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
+    bool is_mu_excluded_TPC = mMuonExclusionTPC ? track.tpcNSigmaMu() < mMinTPCNsigmaMu || mMaxTPCNsigmaMu < track.tpcNSigmaMu() : true;
+    bool is_pi_excluded_TPC = track.tpcInnerParam() < mMaxPinForPionRejectionTPC ? (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi()) : true;
+    bool is_ka_excluded_TPC = track.tpcNSigmaKa() < mMinTPCNsigmaKa || mMaxTPCNsigmaKa < track.tpcNSigmaKa();
+    bool is_pr_excluded_TPC = track.tpcNSigmaPr() < mMinTPCNsigmaPr || mMaxTPCNsigmaPr < track.tpcNSigmaPr();
+    return is_el_included_TPC && is_mu_excluded_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC;
   }
 
   template <typename T>
@@ -393,8 +402,7 @@ class DielectronCut : public TNamed
   void SetPairDCARange(float min = 0.f, float max = 1e10f); // 3D DCA in sigma
   void SetMeeRange(float min = 0.f, float max = 0.5);
   void SetPairOpAng(float minOpAng = 0.f, float maxOpAng = 1e10f);
-  void SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut);
-  void SetPhivPairRange(float min_phiv, float max_phiv, float min_mee, float max_mee);
+  void SetMaxMeePhiVDep(std::function<float(float)> phivDepCut, float min_phiv, float max_phiv);
   void SelectPhotonConversion(bool flag);
   void SetMindEtadPhi(bool flag, float min_deta, float min_dphi);
   void SetRequireDifferentSides(bool flag);
@@ -456,10 +464,9 @@ class DielectronCut : public TNamed
   float mMinPairY{-1e10f}, mMaxPairY{1e10f};      // range in rapidity
   float mMinPairDCA3D{0.f}, mMaxPairDCA3D{1e10f}; // range in 3D DCA in sigma
   float mMinPhivPair{0.f}, mMaxPhivPair{+3.2};
-  float mMinMeeForPhivPair{0.f}, mMaxMeeForPhivPair{1e10f};
-  std::function<float(float)> mMaxPhivPairMeeDep{}; // max phiv as a function of mee
-  bool mSelectPC{false};                            // flag to select photon conversion used in mMaxPhivPairMeeDep
-  bool mApplydEtadPhi{false};                       // flag to apply deta, dphi cut between 2 tracks
+  std::function<float(float)> mMaxMeePhiVDep{}; // max mee as a function of phiv
+  bool mSelectPC{false};                        // flag to select photon conversion used in mMaxPhivPairMeeDep
+  bool mApplydEtadPhi{false};                   // flag to apply deta, dphi cut between 2 tracks
   float mMinDeltaEta{0.f};
   float mMinDeltaPhi{0.f};
   float mMinOpAng{0.f}, mMaxOpAng{1e10f};

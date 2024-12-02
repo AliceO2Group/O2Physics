@@ -1729,8 +1729,8 @@ struct HfTaskFlow {
                               aod::MFTTracks const& mftTracks)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
-      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
+    auto getTracksSize = [&mftTracks, this](FilteredCollisionsWSelMult::iterator const& col) {
+      auto associatedTracks = mftTracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
       auto size = associatedTracks.size();
       return size;
     };

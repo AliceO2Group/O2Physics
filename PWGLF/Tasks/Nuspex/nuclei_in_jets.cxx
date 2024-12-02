@@ -154,6 +154,7 @@ struct nuclei_in_jets {
     registryQC.add("sumPtUE", "sumPtUE", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
     registryQC.add("nJets_found", "nJets_found", HistType::kTH1F, {{10, 0, 10, "#it{n}_{Jet}"}});
     registryQC.add("nJets_selected", "nJets_selected", HistType::kTH1F, {{10, 0, 10, "#it{n}_{Jet}"}});
+    registryQC.add("event_selection_jets", "event_selection_jets", HistType::kTH1F, {{10, 0, 10, "counter"}});
     registryQC.add("dcaxy_vs_pt", "dcaxy_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
     registryQC.add("dcaz_vs_pt", "dcaz_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{z} (cm)"}});
     registryQC.add("jet_ue_overlaps", "jet_ue_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
@@ -264,9 +265,9 @@ struct nuclei_in_jets {
 
     // standard selection
     if (!setDCAselectionPtDep) {
-      if (TMath::Abs(track.dcaXY()) > 0.1)
+      if (TMath::Abs(track.dcaXY()) > max_dcaxy)
         return false;
-      if (TMath::Abs(track.dcaZ()) > 0.1)
+      if (TMath::Abs(track.dcaZ()) > max_dcaz)
         return false;
     }
 
@@ -378,7 +379,7 @@ struct nuclei_in_jets {
     double c = pz * pz * pz * pz - py * py * py * py - px * px * py * py;
     double delta = b * b - 4.0 * a * c;
 
-    // Protection agains delta<0
+    // Protection against delta<0
     if (delta < 0) {
       return;
     }
@@ -440,6 +441,7 @@ struct nuclei_in_jets {
   {
     // Event Counter: before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
+    registryQC.fill(HIST("event_selection_jets"), 0.5); // all events before jet selection
 
     // Event Selection
     if (!collision.sel8())
@@ -591,7 +593,26 @@ struct nuclei_in_jets {
     if (n_jets_selected == 0)
       return;
     registryData.fill(HIST("number_of_events_data"), 3.5);
+    registryQC.fill(HIST("event_selection_jets"), 1.5); // events with pTjet>10 GeV/c selected
     //************************************************************************************************************************************
+
+    // Leading Track
+    double pt_max(0);
+
+    // Loop over Reconstructed Tracks
+    for (auto const& track : tracks) {
+
+      if (!passedTrackSelectionForJetReconstruction(track))
+        continue;
+
+      if (track.pt() > pt_max) {
+        pt_max = track.pt();
+      }
+    }
+    // Event Counter: Skip Events with pt<pt_leading_min
+    if (pt_max < 5.0)
+      return;
+    registryQC.fill(HIST("event_selection_jets"), 2.5); // events with pTleading > 5 GeV/c selected
 
     // Overlaps
     int nOverlaps(0);
@@ -1127,9 +1148,9 @@ struct nuclei_in_jets {
             continue;
         }
         if (!setDCAselectionPtDep) {
-          if (dcaxy > 0.1)
+          if (dcaxy > max_dcaxy)
             continue;
-          if (dcaz > 0.1)
+          if (dcaz > max_dcaz)
             continue;
         }
 
@@ -1228,9 +1249,9 @@ struct nuclei_in_jets {
               continue;
           }
           if (!setDCAselectionPtDep) {
-            if (dcaxy > 0.1)
+            if (dcaxy > max_dcaxy)
               continue;
-            if (dcaz > 0.1)
+            if (dcaz > max_dcaz)
               continue;
           }
 

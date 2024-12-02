@@ -40,6 +40,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -54,6 +55,9 @@
 #include "PWGUD/Core/SGSelector.h"
 #include "Tools/ML/MlResponse.h"
 #include "Tools/ML/model.h"
+
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 
 // constants
 const float ctauXiPDG = 4.91;     // from PDG
@@ -83,6 +87,11 @@ struct quarkoniaToHyperons {
   // master analysis switches
   Configurable<bool> isPP{"isPP", true, "If running on pp collision, switch it on true"};
 
+  // for running over skimmed dataset
+  Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "If running over skimmed data, switch it on true"};
+  Configurable<std::string> cfgSkimmedTrigger{"cfgSkimmedTrigger", "fDoubleXi,fTripleXi,fQuadrupleXi", "(std::string) Comma separated list of triggers of interest"};
+
+  // switch on/off event selections
   Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
   Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
   Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
@@ -97,6 +106,8 @@ struct quarkoniaToHyperons {
   Configurable<bool> buildLaLaBarPairs{"buildLaLaBarPairs", false, "Build Lambda antiLambda from charmonia decay"};
   Configurable<bool> buildXiXiBarPairs{"buildXiXiBarPairs", false, "Build Xi antiXi from charmonia decay"};
   Configurable<bool> buildOmOmBarPairs{"buildOmOmBarPairs", false, "Build Omega antiOmega from charmonia decay"};
+
+  Configurable<bool> buildSameSignPairs{"buildSameSignPairs", false, "If true: build same-sign pairs, otherwise consider only opposite-sign pairs"};
 
   // fast check on occupancy
   Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
@@ -255,9 +266,13 @@ struct quarkoniaToHyperons {
     Configurable<std::string> mVtxPath{"ccdbConfigurations.mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   } ccdbConfigurations;
 
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
   int mRunNumber;
   std::map<std::string, std::string> metadata;
+
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   static constexpr float defaultLifetimeCuts[1][2] = {{30., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
@@ -654,6 +669,11 @@ struct quarkoniaToHyperons {
         histos.add("OmOmBar/h3dInvMassTruePsi2S", "h3dInvMassTruePsi2S", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
       }
     }
+
+    if (cfgSkimmedProcessing) {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
+
     // inspect histogram sizes, please
     histos.print();
   }
@@ -666,6 +686,15 @@ struct quarkoniaToHyperons {
     }
 
     mRunNumber = collision.runNumber();
+    if (cfgSkimmedProcessing) {
+      ccdb->setURL(ccdbConfigurations.ccdburl);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setFatalWhenNull(false);
+
+      zorro.initCCDB(ccdb.service, collision.runNumber(), collision.timestamp(), cfgSkimmedTrigger.value);
+      zorro.populateHistRegistry(histos, collision.runNumber());
+    }
 
     // machine learning initialization if requested
     if (mlConfigurations.calculateK0ShortScores ||
@@ -1272,7 +1301,7 @@ struct quarkoniaToHyperons {
   }
 
   template <typename TV0>
-  void analyseV0Candidate(TV0 v0, float pt, float centrality, uint64_t selMap, std::vector<bool>& selK0ShortIndices, std::vector<bool>& selLambdaIndices, std::vector<bool>& selAntiLambdaIndices, int v0TableOffset)
+  void analyseV0Candidate(TV0 v0, float pt, uint64_t selMap, std::vector<bool>& selK0ShortIndices, std::vector<bool>& selLambdaIndices, std::vector<bool>& selAntiLambdaIndices, int v0TableOffset)
   // precalculate this information so that a check is one mask operation, not many
   {
     bool passK0ShortSelections = false;
@@ -1349,7 +1378,7 @@ struct quarkoniaToHyperons {
         float hyperonDecayLength = std::sqrt(std::pow(hyperon.x() - collision.posX(), 2) + std::pow(hyperon.y() - collision.posY(), 2) + std::pow(hyperon.z() - collision.posZ(), 2)) * o2::constants::physics::MassLambda0 / (hyperon.p() + 1E-10);
         float antiHyperonDecayLength = std::sqrt(std::pow(antiHyperon.x() - collision.posX(), 2) + std::pow(antiHyperon.y() - collision.posY(), 2) + std::pow(antiHyperon.z() - collision.posZ(), 2)) * o2::constants::physics::MassLambda0 / (antiHyperon.p() + 1E-10);
 
-        // Candidates after Xi selections
+        // Candidates after Lambda selections
         histos.fill(HIST("LaLaBar/Lambda/hPosDCAToPV"), hyperon.dcapostopv());
         histos.fill(HIST("LaLaBar/Lambda/hNegDCAToPV"), hyperon.dcapostopv());
         histos.fill(HIST("LaLaBar/Lambda/hDCAV0Daughters"), hyperon.dcaV0daughters());
@@ -1363,7 +1392,7 @@ struct quarkoniaToHyperons {
         histos.fill(HIST("LaLaBar/Lambda/hNegTPCNsigma"), negTrackExtraHyperon.tpcNSigmaPi());
         histos.fill(HIST("LaLaBar/Lambda/h2dPositiveITSvsTPCpts"), posTrackExtraHyperon.tpcCrossedRows(), posTrackExtraHyperon.itsNCls());
         histos.fill(HIST("LaLaBar/Lambda/h2dNegativeITSvsTPCpts"), negTrackExtraHyperon.tpcCrossedRows(), negTrackExtraHyperon.itsNCls());
-        // Candidates after AntiXi selections
+        // Candidates after AntiLambda selections
         histos.fill(HIST("LaLaBar/AntiLambda/hPosDCAToPV"), antiHyperon.dcapostopv());
         histos.fill(HIST("LaLaBar/AntiLambda/hNegDCAToPV"), antiHyperon.dcapostopv());
         histos.fill(HIST("LaLaBar/AntiLambda/hDCAV0Daughters"), antiHyperon.dcaV0daughters());
@@ -1745,7 +1774,8 @@ struct quarkoniaToHyperons {
   void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, v0Candidates const& fullV0s, cascadeCandidates const& fullCascades, dauTracks const&)
   {
     // Fire up CCDB
-    if ((mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
+    if (cfgSkimmedProcessing ||
+        (mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
         (mlConfigurations.useLambdaScores && mlConfigurations.calculateLambdaScores) ||
         (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores)) {
       initCCDB(collision);
@@ -1753,6 +1783,10 @@ struct quarkoniaToHyperons {
 
     if (!IsEventAccepted(collision, true)) {
       return;
+    }
+
+    if (cfgSkimmedProcessing) {
+      zorro.isSelected(collision.globalBC()); /// Just let Zorro do the accounting
     }
 
     float centrality = -1;
@@ -1779,7 +1813,7 @@ struct quarkoniaToHyperons {
         selMap = selMap | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selConsiderAntiLambda);
         selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
 
-        analyseV0Candidate(v0, v0.pt(), centrality, selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices, fullV0s.offset());
+        analyseV0Candidate(v0, v0.pt(), selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices, fullV0s.offset());
       } // end v0 loop
 
       // count the number of K0s, Lambda and AntiLambdas passsing the selections
@@ -1794,8 +1828,14 @@ struct quarkoniaToHyperons {
 
       // Check the number of Lambdas and antiLambdas
       // needs at least 1 of each
-      if (nLambdas >= 1 && nAntiLambdas >= 1) {
+      if (!buildSameSignPairs && nLambdas >= 1 && nAntiLambdas >= 1) { // consider Lambda antiLambda pairs
         buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 0);
+      }
+      if (buildSameSignPairs && nLambdas > 1) { // consider Lambda Lambda pairs
+        buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selLambdaIndices, centrality, selGapSide, 0);
+      }
+      if (buildSameSignPairs && nAntiLambdas > 1) { // consider antiLambda antiLambda pairs
+        buildHyperonAntiHyperonPairs(collision, fullV0s, selAntiLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 0);
       }
     }
 
@@ -1839,8 +1879,14 @@ struct quarkoniaToHyperons {
 
         // Check the number of Lambdas and antiLambdas
         // needs at least 1 of each
-        if (nXis >= 1 && nAntiXis >= 1) {
+        if (!buildSameSignPairs && nXis >= 1 && nAntiXis >= 1) {
           buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selAntiXiIndices, centrality, selGapSide, 1);
+        }
+        if (buildSameSignPairs && nXis > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selXiIndices, centrality, selGapSide, 1);
+        }
+        if (buildSameSignPairs && nAntiXis > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiXiIndices, selAntiXiIndices, centrality, selGapSide, 1);
         }
       }
       if (buildOmOmBarPairs) {
@@ -1849,8 +1895,14 @@ struct quarkoniaToHyperons {
 
         // Check the number of Lambdas and antiLambdas
         // needs at least 1 of each
-        if (nOmegas >= 1 && nAntiOmegas >= 1) {
+        if (!buildSameSignPairs && nOmegas >= 1 && nAntiOmegas >= 1) {
           buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selAntiOmIndices, centrality, selGapSide, 2);
+        }
+        if (buildSameSignPairs && nOmegas > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selOmIndices, centrality, selGapSide, 2);
+        }
+        if (buildSameSignPairs && nAntiOmegas > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiOmIndices, selAntiOmIndices, centrality, selGapSide, 2);
         }
       }
     }
@@ -1861,7 +1913,8 @@ struct quarkoniaToHyperons {
   void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, cascadeMCCandidates const& fullCascades, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
   {
     // Fire up CCDB
-    if ((mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
+    if (cfgSkimmedProcessing ||
+        (mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
         (mlConfigurations.useLambdaScores && mlConfigurations.calculateLambdaScores) ||
         (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores)) {
       initCCDB(collision);
@@ -1869,6 +1922,10 @@ struct quarkoniaToHyperons {
 
     if (!IsEventAccepted(collision, true)) {
       return;
+    }
+
+    if (cfgSkimmedProcessing) {
+      zorro.isSelected(collision.globalBC()); /// Just let Zorro do the accounting
     }
 
     float centrality = -1;
@@ -1906,7 +1963,7 @@ struct quarkoniaToHyperons {
           selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
         }
 
-        analyseV0Candidate(v0, ptmc, centrality, selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices, fullV0s.offset());
+        analyseV0Candidate(v0, ptmc, selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices, fullV0s.offset());
       } // end v0 loop
 
       /// count the number of K0s, Lambda and AntiLambdas passsing the selections
@@ -1919,8 +1976,14 @@ struct quarkoniaToHyperons {
       histos.fill(HIST("LaLaBar/h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
       histos.fill(HIST("LaLaBar/h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
 
-      if (nLambdas >= 1 && nAntiLambdas >= 1) {
+      if (!buildSameSignPairs && nLambdas >= 1 && nAntiLambdas >= 1) { // consider Lambda antiLambda pairs
         buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 0);
+      }
+      if (buildSameSignPairs && nLambdas > 1) { // consider Lambda Lambda pairs
+        buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selLambdaIndices, centrality, selGapSide, 0);
+      }
+      if (buildSameSignPairs && nAntiLambdas > 1) { // consider antiLambda antiLambda pairs
+        buildHyperonAntiHyperonPairs(collision, fullV0s, selAntiLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 0);
       }
     }
 
@@ -1940,7 +2003,6 @@ struct quarkoniaToHyperons {
 
         auto cascadeMC = cascade.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
 
-        float ptmc = RecoDecay::sqrtSumOfSquares(cascadeMC.pxMC(), cascadeMC.pyMC());
         float ymc = 1e-3;
         if (TMath::Abs(cascadeMC.pdgCode()) == 3312)
           ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassXiMinus);
@@ -1976,8 +2038,14 @@ struct quarkoniaToHyperons {
 
         // Check the number of Lambdas and antiLambdas
         // needs at least 1 of each
-        if (nXis >= 1 && nAntiXis >= 1) {
+        if (!buildSameSignPairs && nXis >= 1 && nAntiXis >= 1) {
           buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selAntiXiIndices, centrality, selGapSide, 1);
+        }
+        if (buildSameSignPairs && nXis > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selXiIndices, centrality, selGapSide, 1);
+        }
+        if (buildSameSignPairs && nAntiXis > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiXiIndices, selAntiXiIndices, centrality, selGapSide, 1);
         }
       }
       if (buildOmOmBarPairs) {
@@ -1986,8 +2054,14 @@ struct quarkoniaToHyperons {
 
         // Check the number of Lambdas and antiLambdas
         // needs at least 1 of each
-        if (nOmegas >= 1 && nAntiOmegas >= 1) {
+        if (!buildSameSignPairs && nOmegas >= 1 && nAntiOmegas >= 1) {
           buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selAntiOmIndices, centrality, selGapSide, 2);
+        }
+        if (buildSameSignPairs && nOmegas > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selOmIndices, centrality, selGapSide, 2);
+        }
+        if (buildSameSignPairs && nAntiOmegas > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiOmIndices, selAntiOmIndices, centrality, selGapSide, 2);
         }
       }
     }

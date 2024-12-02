@@ -25,6 +25,7 @@
 /// ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 ///    Nasir Mehdi Malik
+#include <vector>
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/TrackSelection.h"
@@ -60,7 +61,6 @@ using namespace o2::soa;
 
 struct reso2dfmerged {
   //  SliceCache cache;
-
   Configurable<int> nDF{"nDF", 1, "no of combination of collision"};
   Configurable<bool> cpidCut{"cpidCut", 0, "pid cut"};
   Configurable<bool> crejtpc{"crejtpc", 0, "reject electron pion"};
@@ -184,7 +184,7 @@ struct reso2dfmerged {
       const auto& innerVector = vecOfVecOfTuples[i];
 
       histos.fill(HIST("Event/h1d_ft0_mult_percentile"), std::get<3>(tuple));
-      resoCollisionsdf(std::get<0>(tuple), std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple), 0., 0., 0., 0, 0);
+      resoCollisionsdf(0, std::get<0>(tuple), std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
       //  LOGF(info, "collisions: Index = %d ) %f - %f - %f %f %d -- %d", std::get<0>(tuple).globalIndex(),std::get<1>(tuple),std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple).size(),resoCollisionsdf.lastIndex());
 
       for (const auto& tuple : innerVector) {
@@ -239,9 +239,10 @@ struct reso2dfmerged {
 
     if (doprocessTrackDataDF)
       LOG(fatal) << "Disable processTrackDataDF first!";
+
     histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
 
-    resoCollisionsdf(collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0);
+    resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
 
     for (auto& track : tracks) {
       if (isPrimary && !track.isPrimaryTrack())
