@@ -352,7 +352,7 @@ struct HfFemtoDreamProducer {
   {
     const auto vtxZ = col.posZ();
     const auto sizeCand = candidates.size();
-    const auto spher = 2.; // dummy for the moment
+    const auto spher = 2.; // dummy value for the moment
     float mult = 0;
     int multNtr = 0;
     if (isRun3) {
