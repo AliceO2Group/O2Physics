@@ -71,7 +71,7 @@ struct centralityStudy {
   Configurable<float> scaleSignalFV0A{"scaleSignalFV0A", 1.00f, "scale FV0A signal for convenience"};
 
   // _______________________________________
-  // upc rejection criteria 
+  // upc rejection criteria
   // reject low zna/c
   struct : ConfigurableGroup {
     Configurable<float> minZNACsignal{"minZNACsignal", -999999.0f, "min zna/c signal"};
@@ -171,7 +171,7 @@ struct centralityStudy {
       histos.add("hFDDCVsFT0C", "hFDDCVsFT0C", kTH2F, {axisMultFT0C, axisMultFDDC});
     }
 
-    if (doNGlobalTracksVsRawSignals){ 
+    if (doNGlobalTracksVsRawSignals) {
       histos.add("hNGlobalTracksVsFT0A", "hNGlobalTracksVsFT0A", kTH2F, {axisMultFT0A, axisMultGlobalTracks});
       histos.add("hNGlobalTracksVsFT0C", "hNGlobalTracksVsFT0C", kTH2F, {axisMultFT0C, axisMultGlobalTracks});
       histos.add("hNGlobalTracksVsFV0A", "hNGlobalTracksVsFV0A", kTH2F, {axisMultFV0A, axisMultGlobalTracks});
@@ -349,14 +349,14 @@ struct centralityStudy {
       histos.fill(HIST("hNGlobalTracksProfileVsFT0COccupancyVsFT0C"), collision.ft0cOccupancyInTimeRange(), collision.multFT0C(), collision.multNTracksGlobal());
     }
 
-    if(doOccupancyStudyVsRawValues3d){
+    if (doOccupancyStudyVsRawValues3d) {
       histos.fill(HIST("hTrackOccupancyVsNContribsVsFT0C"), collision.trackOccupancyInTimeRange(), collision.multPVTotalContributors(), collision.multFT0C());
       histos.fill(HIST("hTrackOccupancyVsNGlobalTracksVsFT0C"), collision.trackOccupancyInTimeRange(), collision.multNTracksGlobal(), collision.multFT0C());
       histos.fill(HIST("hFT0COccupancyVsNContribsVsFT0C"), collision.ft0cOccupancyInTimeRange(), collision.multPVTotalContributors(), collision.multFT0C());
       histos.fill(HIST("hFT0COccupancyVsNGlobalTracksVsFT0C"), collision.ft0cOccupancyInTimeRange(), collision.multNTracksGlobal(), collision.multFT0C());
     }
-    
-    if(doNGlobalTracksVsRawSignals){
+
+    if (doNGlobalTracksVsRawSignals) {
       histos.fill(HIST("hNGlobalTracksVsFT0A"), collision.multFT0A(), collision.multNTracksGlobal());
       histos.fill(HIST("hNGlobalTracksVsFT0C"), collision.multFT0C(), collision.multNTracksGlobal());
       histos.fill(HIST("hNGlobalTracksVsFV0A"), collision.multFV0A(), collision.multNTracksGlobal());
@@ -383,7 +383,7 @@ struct centralityStudy {
         histos.fill(HIST("hNGlobalTracksProfileVsFT0COccupancyVsCentrality"), collision.ft0cOccupancyInTimeRange(), collision.centFT0C(), collision.multNTracksGlobal());
       }
 
-      if(doOccupancyStudyVsCentrality3d){
+      if (doOccupancyStudyVsCentrality3d) {
         histos.fill(HIST("hTrackOccupancyVsNContribsVsCentrality"), collision.trackOccupancyInTimeRange(), collision.multPVTotalContributors(), collision.centFT0C());
         histos.fill(HIST("hTrackOccupancyVsNGlobalTracksVsCentrality"), collision.trackOccupancyInTimeRange(), collision.multNTracksGlobal(), collision.centFT0C());
         histos.fill(HIST("hFT0COccupancyVsNContribsVsCentrality"), collision.ft0cOccupancyInTimeRange(), collision.multPVTotalContributors(), collision.centFT0C());
