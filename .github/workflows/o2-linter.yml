@@ -25,7 +25,7 @@ jobs:
           # Diff against the common ancestor of the source branch and the main branch.
           readarray -t files < <(git diff --diff-filter d --name-only origin/${{ env.MAIN_BRANCH }}...)
           if [ ${#files[@]} -eq 0 ]; then
-              echo "No files to lint."
+          echo "::notice ::No files to lint."
               exit 0
           fi
           [ ${{ github.event_name }} == 'pull_request' ] && options="-g"
