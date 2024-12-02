@@ -92,8 +92,11 @@ struct JetSpectraEseTask {
                      TPCneg,
                      TPCall };
 
-  static constexpr std::size_t EPSeq = 5;
-  static constexpr std::size_t CosEPSeq = 3;
+  // static constexpr std::size_t EPSeq = 5;
+  // static constexpr std::size_t CosEPSeq = 3;
+  static constexpr std::make_index_sequence<5> EPSeq = {};
+  static constexpr std::make_index_sequence<3> CosEPSeq = {};
+  
 
   void init(o2::framework::InitContext&)
   {
@@ -318,13 +321,13 @@ struct JetSpectraEseTask {
       epMap["FV0A"] = computeEP(qVecNoESE<DetID::FV0A, false>(vec), 0);
       epMap["TPCpos"] = computeEP(qVecNoESE<DetID::TPCpos, false>(vec), 1);
       epMap["TPCneg"] = computeEP(qVecNoESE<DetID::TPCneg, false>(vec), 1);
-      fillEP(std::make_index_sequence<EPSeq>{}, vec, epMap);
+      fillEP(EPSeq, vec, epMap);
       auto cosPsi = [](float psiX, float psiY) { return (static_cast<double>(psiX) == 999. || static_cast<double>(psiY) == 999.) ? 999. : std::cos(2.0 * (psiX - psiY)); };
       std::array<float, 3> epCorrContainer{};
       epCorrContainer[0] = cosPsi(epMap[cfgEPRefA], epMap[cfgEPRefC]);
       epCorrContainer[1] = cosPsi(epMap[cfgEPRefA], epMap[cfgEPRefB]);
       epCorrContainer[2] = cosPsi(epMap[cfgEPRefB], epMap[cfgEPRefC]);
-      fillEPCos(std::make_index_sequence<CosEPSeq>{}, vec, epCorrContainer);
+      fillEPCos(CosEPSeq, vec, epCorrContainer);
     }
     return epMap["FT0A"];
   }
