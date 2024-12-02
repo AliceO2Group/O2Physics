@@ -1167,7 +1167,7 @@ struct QaEfficiency {
 
               // Calculate the decay length
               double decayLength = std::sqrt(std::pow(decayVertex.x() - prodVertex.x(), 2) + std::pow(decayVertex.y() - prodVertex.y(), 2) + std::pow(decayVertex.z() - prodVertex.z(), 2));
-              hdecayLengthmother->Fill(decayLength);
+              hdecaylengthmother->Fill(decayLength);
             }
           }
         }
