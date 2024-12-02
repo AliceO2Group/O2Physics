@@ -19,6 +19,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Framework/runDataProcessing.h"
 
@@ -483,17 +484,17 @@ struct pidTofQaMc {
     hTrackLength[mcID]->Fill(track.length());
 
     // PID info
-    hSignalMC[mcID]->Fill(track.p(), track.tofBeta());
+    hSignalMC[mcID]->Fill(track.p(), track.beta());
 
     if (checkPrimaries) {
       if (!particle.isPhysicalPrimary()) {
         if (particle.getProcess() == 4) {
-          hSignalMCstr[mcID]->Fill(track.p(), track.tofBeta());
+          hSignalMCstr[mcID]->Fill(track.p(), track.beta());
         } else {
-          hSignalMCmat[mcID]->Fill(track.p(), track.tofBeta());
+          hSignalMCmat[mcID]->Fill(track.p(), track.beta());
         }
       } else {
-        hSignalMCprm[mcID]->Fill(track.p(), track.tofBeta());
+        hSignalMCprm[mcID]->Fill(track.p(), track.beta());
       }
     }
   }
@@ -587,16 +588,15 @@ struct pidTofQaMc {
     }
   }
 
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra,
-                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                         aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
-                         aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
-                         aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
-  Preslice<Trks> perCol = aod::track::collisionId;
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
 
   void process(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels> const& collisions,
-               Trks& tracks,
+               soa::Join<aod::Tracks, aod::TracksExtra,
+                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                         aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
+                         aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
+                         aod::McTrackLabels, aod::pidTOFbeta>& tracks,
                aod::McParticles& mcParticles,
                aod::McCollisions&)
   {
@@ -610,6 +610,7 @@ struct pidTofQaMc {
       if (!collision.has_mcCollision()) {
         continue;
       }
+      const auto tracksInCollision = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache);
 
       for (const auto& p : particlesInCollision) {
@@ -618,13 +619,9 @@ struct pidTofQaMc {
         });
       }
 
-      const auto& tracksInCollision = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-      // tracksInCollision.bindExternalIndices(&mcParticles);
-      const auto& tracksWithPid = soa::Attach<Trks, aod::TOFBeta>(tracksInCollision);
-      // tracksInCollision.copyIndexBindings(tracksWithPid);
       const float collisionTime_ps = collision.collisionTime() * 1000.f;
       unsigned int nTracksWithTOF = 0;
-      for (const auto& t : tracksWithPid) {
+      for (const auto& t : tracksInCollision) {
         //
         if (!t.hasTOF()) { // Skipping tracks without TOF
           continue;
@@ -636,7 +633,7 @@ struct pidTofQaMc {
         nTracksWithTOF++;
 
         // Fill for all
-        const float beta = t.tofBeta();
+        const float beta = t.beta();
         histos.fill(HIST("event/tofbeta"), t.p(), beta);
         if (!t.has_mcParticle()) {
           continue;
