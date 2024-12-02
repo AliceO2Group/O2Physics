@@ -699,14 +699,14 @@ struct fwdMuonsUPC {
     // store the event to save it into a tree
     if (McPart1.pdgCode() < 0) {
       dimuGen(p.M(), p.Pt(), p.Rapidity(), p.Phi(),
-               phiAverage, phiCharge,
-               p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
-               p2.Pt(), p2.PseudoRapidity(), p2.Phi());
+              phiAverage, phiCharge,
+              p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
+              p2.Pt(), p2.PseudoRapidity(), p2.Phi());
     } else {
       dimuGen(p.M(), p.Pt(), p.Rapidity(), p.Phi(),
-               phiAverage, phiCharge,
-               p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
-               p1.Pt(), p1.PseudoRapidity(), p1.Phi());
+              phiAverage, phiCharge,
+              p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
+              p1.Pt(), p1.PseudoRapidity(), p1.Phi());
     }
   }
 
