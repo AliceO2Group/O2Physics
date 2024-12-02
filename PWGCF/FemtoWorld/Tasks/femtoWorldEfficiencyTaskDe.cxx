@@ -16,7 +16,8 @@
 /// \author Barbara Chytla, WUT Warsaw, barbara.chytla@cern.ch
 
 // O2 includes
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"

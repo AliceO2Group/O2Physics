@@ -44,7 +44,8 @@
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Index.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 using namespace o2;

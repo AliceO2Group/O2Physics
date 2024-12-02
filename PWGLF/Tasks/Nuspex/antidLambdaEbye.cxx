@@ -35,7 +35,8 @@
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
 #include "Common/Core/PID/TPCPIDResponse.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "DCAFitter/DCAFitterN.h"
 
 #include "TDatabasePDG.h"

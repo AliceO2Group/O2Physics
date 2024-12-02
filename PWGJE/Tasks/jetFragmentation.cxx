@@ -24,7 +24,6 @@
 #include "Framework/RunningWorkflowInfo.h"
 
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 

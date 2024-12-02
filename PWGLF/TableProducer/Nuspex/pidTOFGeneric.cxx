@@ -32,7 +32,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 #include "PID/ParamBase.h"

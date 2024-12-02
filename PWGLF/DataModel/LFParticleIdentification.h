@@ -22,7 +22,7 @@
 // O2 includes
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/Logger.h"
 
