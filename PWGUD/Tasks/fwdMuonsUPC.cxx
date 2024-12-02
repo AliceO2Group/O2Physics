@@ -48,14 +48,14 @@ DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(PhiAv, phiAv, float);
 DECLARE_SOA_COLUMN(PhiCh, phiCh, float);
 // tracks positive (p) and negative (n)
-DECLARE_SOA_COLUMN(EnergyP, energyp, float);
+DECLARE_SOA_COLUMN(EnergyP, energyP, float);
 DECLARE_SOA_COLUMN(Pxp, pxp, float);
 DECLARE_SOA_COLUMN(Pyp, pyp, float);
 DECLARE_SOA_COLUMN(Pzp, pzp, float);
 DECLARE_SOA_COLUMN(Ptp, ptp, float);
 DECLARE_SOA_COLUMN(Etap, etap, float);
 DECLARE_SOA_COLUMN(Phip, phip, float);
-DECLARE_SOA_COLUMN(EnergyN, energyn, float);
+DECLARE_SOA_COLUMN(EnergyN, energyN, float);
 DECLARE_SOA_COLUMN(Pxn, pxn, float);
 DECLARE_SOA_COLUMN(Pyn, pyn, float);
 DECLARE_SOA_COLUMN(Pzn, pzn, float);
@@ -186,6 +186,7 @@ struct fwdMuonsUPC {
   HistogramRegistry mcRecoRegistry{"mcRecoRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // CONFIGURABLES
+  static constexpr double pi = o2::constants::math::PI;
   // pT of muon pairs
   Configurable<int> nBinsPt{"nBinsPt", 250, "N bins in pT histo"};
   Configurable<float> lowPt{"lowPt", 0., "lower limit in pT histo"};
@@ -204,8 +205,8 @@ struct fwdMuonsUPC {
   Configurable<float> highRapidity{"highRapidity", -2., "upper limit in rapidity histo"};
   // phi of muon pairs
   Configurable<int> nBinsPhi{"nBinsPhi", 600, "N bins in phi histo"};
-  Configurable<float> lowPhi{"lowPhi", -TMath::Pi(), "lower limit in phi histo"};
-  Configurable<float> highPhi{"highPhi", TMath::Pi(), "upper limit in phi histo"};
+  Configurable<float> lowPhi{"lowPhi", -pi, "lower limit in phi histo"};
+  Configurable<float> highPhi{"highPhi", pi, "upper limit in phi histo"};
   // pT of single muons
   Configurable<int> nBinsPtSingle{"nBinsPtSingle", 500, "N bins in pT histo single muon"};
   Configurable<float> lowPtSingle{"lowPtSingle", 0., "lower limit in pT histo single muon"};
@@ -216,8 +217,8 @@ struct fwdMuonsUPC {
   Configurable<float> highEtaSingle{"highEtaSingle", -2., "upper limit in eta histo single muon"};
   // phi of single muons
   Configurable<int> nBinsPhiSingle{"nBinsPhiSingle", 600, "N bins in phi histo single muon"};
-  Configurable<float> lowPhiSingle{"lowPhiSingle", -TMath::Pi(), "lower limit in phi histo single muon"};
-  Configurable<float> highPhiSingle{"highPhiSingle", TMath::Pi(), "upper limit in phi histo single muon"};
+  Configurable<float> lowPhiSingle{"lowPhiSingle", -pi, "lower limit in phi histo single muon"};
+  Configurable<float> highPhiSingle{"highPhiSingle", pi, "upper limit in phi histo single muon"};
   // ZDC
   Configurable<int> nBinsZDCen{"nBinsZDCen", 200, "N bins in ZN energy"};
   Configurable<float> lowEnZN{"lowEnZN", -50., "lower limit in ZN energy histo"};
@@ -564,40 +565,40 @@ struct fwdMuonsUPC {
     registry.fill(HIST("hEnergyZN"), zdc.enA, zdc.enC);
 
     // divide the events in neutron classes
-    bool neutron_A = false;
-    bool neutron_C = false;
+    bool neutronA = false;
+    bool neutronC = false;
     int znClass = -1;
 
     if (std::abs(zdc.timeA) < 2)
-      neutron_A = true;
+      neutronA = true;
     if (std::abs(zdc.timeC) < 2)
-      neutron_C = true;
+      neutronC = true;
 
     if (std::isinf(zdc.timeC))
-      neutron_C = false;
+      neutronC = false;
     if (std::isinf(zdc.timeA))
-      neutron_A = false;
+      neutronA = false;
 
     // fill the histos in neutron classes and assign neutron class label
     // 0n0n
-    if (neutron_C == false && neutron_A == false) {
+    if (neutronC == false && neutronA == false) {
       znClass = 1;
       reg0n0n.fill(HIST("hMass"), p.M());
       reg0n0n.fill(HIST("hPt"), p.Pt());
       reg0n0n.fill(HIST("hPtFit"), p.Pt());
       reg0n0n.fill(HIST("hEta"), p.Eta());
       reg0n0n.fill(HIST("hRapidity"), p.Rapidity());
-    } else if (neutron_A ^ neutron_C) { // Xn0n + 0nXn
-      if (neutron_A)
+    } else if (neutronA ^ neutronC) { // Xn0n + 0nXn
+      if (neutronA)
         znClass = 2;
-      else if (neutron_C)
+      else if (neutronC)
         znClass = 3;
       regXn0n.fill(HIST("hMass"), p.M());
       regXn0n.fill(HIST("hPt"), p.Pt());
       regXn0n.fill(HIST("hPtFit"), p.Pt());
       regXn0n.fill(HIST("hEta"), p.Eta());
       regXn0n.fill(HIST("hRapidity"), p.Rapidity());
-    } else if (neutron_A && neutron_C) { // XnXn
+    } else if (neutronA && neutronC) { // XnXn
       znClass = 4;
       regXnXn.fill(HIST("hMass"), p.M());
       regXnXn.fill(HIST("hPt"), p.Pt());
