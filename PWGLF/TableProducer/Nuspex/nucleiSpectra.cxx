@@ -899,7 +899,8 @@ struct nucleiSpectra {
   }
   PROCESS_SWITCH(nucleiSpectra, processMC, "MC analysis", false);
 
-  void processMatching(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&) {
+  void processMatching(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
+  {
     if (!eventSelection(collision)) {
       return;
     }
