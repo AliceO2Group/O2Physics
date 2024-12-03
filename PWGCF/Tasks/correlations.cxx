@@ -27,12 +27,11 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "CommonConstants/MathConstants.h"
+#include "Common/Core/RecoDecay.h"
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/Core/RecoDecay.h"
-
 #include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
