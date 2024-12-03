@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file   ZdcQVectors.cxx
+/// \file   zdcQVectors.cxx
 /// \author Noor Koster
 /// \since  11/2024
 /// \brief  In this task the energy calibration and recentring of Q-vectors constructed in the ZDCs will be done
@@ -131,14 +131,14 @@ struct ZdcQVectors {
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried")
-  O2_DEFINE_CONFIGURABLE(cfgEnergyCal, std::string, "", "ccdb path for energy calibration histos")
-  O2_DEFINE_CONFIGURABLE(cfgMeanv, std::string, "", "ccdb path for mean v histos")
+  O2_DEFINE_CONFIGURABLE(cfgEnergyCal, std::string, "Users/c/ckoster/ZDC/LHC23_zzh_pass4/Energy", "ccdb path for energy calibration histos")
+  O2_DEFINE_CONFIGURABLE(cfgMeanv, std::string, "Users/c/ckoster/ZDC/LHC23_zzh_pass4/vmean", "ccdb path for mean v histos")
 
-  Configurable<std::vector<std::string>> cfgRec1{"cfgRec1", {"", "", "", "", ""}, "ccdb paths for recentering calibration histos iteration 1"};
-  Configurable<std::vector<std::string>> cfgRec2{"cfgRec2", {"", "", "", "", ""}, "ccdb paths for recentering calibration histos iteration 2"};
-  Configurable<std::vector<std::string>> cfgRec3{"cfgRec3", {"", "", "", "", ""}, "ccdb paths for recentering calibration histos iteration 3"};
-  Configurable<std::vector<std::string>> cfgRec4{"cfgRec4", {"", "", "", "", ""}, "ccdb paths for recentering calibration histos iteration 4"};
-  Configurable<std::vector<std::string>> cfgRec5{"cfgRec5", {"", "", "", "", ""}, "ccdb paths for recentering calibration histos iteration 5"};
+  Configurable<std::vector<std::string>> cfgRec1{"cfgRec1", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step1","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step2","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step3","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step4","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step5"}, "ccdb paths for recentering calibration histos iteration 1"};
+  Configurable<std::vector<std::string>> cfgRec2{"cfgRec2", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step1","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step2","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step3","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step4","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step5"}, "ccdb paths for recentering calibration histos iteration 2"};
+  Configurable<std::vector<std::string>> cfgRec3{"cfgRec3", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it3_step1","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it3_step2","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it3_step3","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it3_step4","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it3_step5"}, "ccdb paths for recentering calibration histos iteration 3"};
+  Configurable<std::vector<std::string>> cfgRec4{"cfgRec4", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it4_step1","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it4_step2","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it4_step3","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it4_step4","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it4_step5"}, "ccdb paths for recentering calibration histos iteration 4"};
+  Configurable<std::vector<std::string>> cfgRec5{"cfgRec5", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it5_step1","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it5_step2","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it5_step3","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it5_step4","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it5_step5"}, "ccdb paths for recentering calibration histos iteration 5"};
 
   //  Define output
   HistogramRegistry registry{"Registry"};
@@ -329,39 +329,39 @@ struct ZdcQVectors {
       constexpr int Index = Ind.value;
       int indexRt = Index + 1;
 
-      registry.fill(HIST(SubDir[index]) + HIST("hZNA_Qx_vs_Qy"), q[iteration][indexRt][0], q[iteration][indexRt][1]);
-      registry.fill(HIST(SubDir[index]) + HIST("hZNC_Qx_vs_Qy"), q[iteration][indexRt][2], q[iteration][indexRt][3]);
+      registry.fill(HIST(SubDir[Index]) + HIST("hZNA_Qx_vs_Qy"), q[iteration][indexRt][0], q[iteration][indexRt][1]);
+      registry.fill(HIST(SubDir[Index]) + HIST("hZNC_Qx_vs_Qy"), q[iteration][indexRt][2], q[iteration][indexRt][3]);
 
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXA_QXC_vs_cent"), centrality, q[iteration][indexRt][0] * q[iteration][indexRt][2]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYA_QYC_vs_cent"), centrality, q[iteration][indexRt][1] * q[iteration][indexRt][3]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYA_QXC_vs_cent"), centrality, q[iteration][indexRt][1] * q[iteration][indexRt][2]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXA_QYC_vs_cent"), centrality, q[iteration][indexRt][0] * q[iteration][indexRt][3]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXA_QXC_vs_cent"), centrality, q[iteration][indexRt][0] * q[iteration][indexRt][2]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYA_QYC_vs_cent"), centrality, q[iteration][indexRt][1] * q[iteration][indexRt][3]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYA_QXC_vs_cent"), centrality, q[iteration][indexRt][1] * q[iteration][indexRt][2]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXA_QYC_vs_cent"), centrality, q[iteration][indexRt][0] * q[iteration][indexRt][3]);
 
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXA_vs_cent"), centrality, q[iteration][indexRt][0]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYA_vs_cent"), centrality, q[iteration][indexRt][1]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXC_vs_cent"), centrality, q[iteration][indexRt][2]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYC_vs_cent"), centrality, q[iteration][indexRt][3]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXA_vs_cent"), centrality, q[iteration][indexRt][0]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYA_vs_cent"), centrality, q[iteration][indexRt][1]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXC_vs_cent"), centrality, q[iteration][indexRt][2]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYC_vs_cent"), centrality, q[iteration][indexRt][3]);
 
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXA_vs_vx"), v[0], q[iteration][indexRt][0]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYA_vs_vx"), v[0], q[iteration][indexRt][1]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXC_vs_vx"), v[0], q[iteration][indexRt][2]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYC_vs_vx"), v[0], q[iteration][indexRt][3]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXA_vs_vx"), v[0], q[iteration][indexRt][0]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYA_vs_vx"), v[0], q[iteration][indexRt][1]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXC_vs_vx"), v[0], q[iteration][indexRt][2]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYC_vs_vx"), v[0], q[iteration][indexRt][3]);
 
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXA_vs_vy"), v[1], q[iteration][indexRt][0]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYA_vs_vy"), v[1], q[iteration][indexRt][1]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXC_vs_vy"), v[1], q[iteration][indexRt][2]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYC_vs_vy"), v[1], q[iteration][indexRt][3]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXA_vs_vy"), v[1], q[iteration][indexRt][0]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYA_vs_vy"), v[1], q[iteration][indexRt][1]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXC_vs_vy"), v[1], q[iteration][indexRt][2]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYC_vs_vy"), v[1], q[iteration][indexRt][3]);
 
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXA_vs_vz"), v[2], q[iteration][indexRt][0]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYA_vs_vz"), v[2], q[iteration][indexRt][1]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXC_vs_vz"), v[2], q[iteration][indexRt][2]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYC_vs_vz"), v[2], q[iteration][indexRt][3]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXA_vs_vz"), v[2], q[iteration][indexRt][0]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYA_vs_vz"), v[2], q[iteration][indexRt][1]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXC_vs_vz"), v[2], q[iteration][indexRt][2]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYC_vs_vz"), v[2], q[iteration][indexRt][3]);
 
       // add psi!!
       double psiA = 1.0 * std::atan2(q[iteration][indexRt][2], q[iteration][indexRt][0]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hSPplaneA"), psiA, centrality, 1);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hSPplaneA"), psiA, centrality, 1);
       double psiC = 1.0 * std::atan2(q[iteration][indexRt][3], q[iteration][indexRt][1]);
-      registry.fill(HIST(SubDir[index]) + HIST("QA/hSPplaneC"), psiC, centrality, 1);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hSPplaneC"), psiC, centrality, 1);
 
     });
   }
@@ -448,7 +448,6 @@ struct ZdcQVectors {
       TProfile2D* h = reinterpret_cast<TProfile2D*>(hist);
       TString name = h->GetName();
       int binrunnumber = h->GetXaxis()->FindBin(TString::Format("%d", runnumber));
-      LOGF(info, "Looking for run %i in bin %i", runnumber, binrunnumber); 
       int bin = h->GetYaxis()->FindBin(centrality);
       calibConstant = h->GetBinContent(binrunnumber, bin);
     } else if (hist->InheritsFrom("TProfile")) {
@@ -535,14 +534,15 @@ struct ZdcQVectors {
       }
 
       // load the calibration histos for iteration 0 step 0 (Energy Calibration)
-      loadCalibrations(0, 0, foundBC.timestamp(), cfgEnergyCal, namesEcal);
+      loadCalibrations(0, 0, foundBC.timestamp(), cfgEnergyCal.value, namesEcal);
+
       if (!cal.calibfilesLoaded[0][0]) {
         if (counter < 1) {
           LOGF(info, " --> No Energy calibration files found.. -> Only Energy calibration will be done. ");
         }
       }
       // load the calibrations for the mean v
-      loadCalibrations(0, 1, foundBC.timestamp(), cfgMeanv, vnames);
+      loadCalibrations(0, 1, foundBC.timestamp(), cfgMeanv.value, vnames);
 
       if (!cal.calibfilesLoaded[0][1]) {
         if (counter < 1)
