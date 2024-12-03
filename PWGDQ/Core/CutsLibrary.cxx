@@ -15,6 +15,7 @@
 #include <RtypesCore.h>
 #include <TF1.h>
 #include <vector>
+#include <string>
 #include "AnalysisCompositeCut.h"
 #include "VarManager.h"
 

@@ -264,7 +264,7 @@ struct AnalysisTrackSelection {
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
-          filterMap |= (uint32_t(1) << i);
+          filterMap |= (static_cast<uint32_t>(1) << i);
           if (fConfigQA) {
             fHistMan->FillHistClass(fHistNamesReco[i].Data(), VarManager::fgValues);
           }
@@ -285,19 +285,19 @@ struct AnalysisTrackSelection {
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
           if ((*sig).CheckSignal(false, track.reducedMCTrack())) {
-            mcDecision |= (uint32_t(1) << isig);
+            mcDecision |= (static_cast<uint32_t>(1) << isig);
           }
         }
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
           if ((*sig).CheckSignal(false, track.template mcParticle_as<aod::McParticles_001>())) {
-            mcDecision |= (uint32_t(1) << isig);
+            mcDecision |= (static_cast<uint32_t>(1) << isig);
           }
         }
       }
 
       // fill histograms
       for (unsigned int i = 0; i < fMCSignals.size(); i++) {
-        if (!(mcDecision & (uint32_t(1) << i))) {
+        if (!(mcDecision & (static_cast<uint32_t>(1) << i))) {
           continue;
         }
         for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
@@ -429,7 +429,7 @@ struct AnalysisMuonSelection {
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
-          filterMap |= (uint32_t(1) << i);
+          filterMap |= (static_cast<uint32_t>(1) << i);
           if (fConfigQA) {
             fHistMan->FillHistClass(fHistNamesReco[i].Data(), VarManager::fgValues);
           }
@@ -453,19 +453,19 @@ struct AnalysisMuonSelection {
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
         if constexpr ((TMuonFillMap & VarManager::ObjTypes::ReducedMuon) > 0) {
           if ((*sig).CheckSignal(false, muon.reducedMCTrack())) {
-            mcDecision |= (uint32_t(1) << isig);
+            mcDecision |= (static_cast<uint32_t>(1) << isig);
           }
         }
         if constexpr ((TMuonFillMap & VarManager::ObjTypes::Muon) > 0) {
           if ((*sig).CheckSignal(false, muon.template mcParticle_as<aod::McParticles_001>())) {
-            mcDecision |= (uint32_t(1) << isig);
+            mcDecision |= (static_cast<uint32_t>(1) << isig);
           }
         }
       }
 
       // fill histograms
       for (unsigned int i = 0; i < fMCSignals.size(); i++) {
-        if (!(mcDecision & (uint32_t(1) << i))) {
+        if (!(mcDecision & (static_cast<uint32_t>(1) << i))) {
           continue;
         }
         for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
@@ -767,13 +767,13 @@ struct AnalysisSameEventPairing {
 
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
       if constexpr (TPairType == VarManager::kDecayToEE) {
-        twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected());
+        twoTrackFilter = static_cast<uint32_t>(t1.isBarrelSelected()) & static_cast<uint32_t>(t2.isBarrelSelected());
       }
       if constexpr (TPairType == VarManager::kDecayToMuMu) {
-        twoTrackFilter = uint32_t(t1.isMuonSelected()) & uint32_t(t2.isMuonSelected());
+        twoTrackFilter = static_cast<uint32_t>(t1.isMuonSelected()) & static_cast<uint32_t>(t2.isMuonSelected());
       }
       if constexpr (TPairType == VarManager::kElectronMuon) {
-        twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isMuonSelected());
+        twoTrackFilter = static_cast<uint32_t>(t1.isBarrelSelected()) & static_cast<uint32_t>(t2.isMuonSelected());
       }
       if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
         continue;
@@ -790,12 +790,12 @@ struct AnalysisSameEventPairing {
       for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
         if constexpr (TTrackFillMap & VarManager::ObjTypes::ReducedTrack || TTrackFillMap & VarManager::ObjTypes::ReducedMuon) { // for skimmed DQ model
           if ((*sig).CheckSignal(false, t1.reducedMCTrack(), t2.reducedMCTrack())) {
-            mcDecision |= (uint32_t(1) << isig);
+            mcDecision |= (static_cast<uint32_t>(1) << isig);
           }
         }
         if constexpr (TTrackFillMap & VarManager::ObjTypes::Track || TTrackFillMap & VarManager::ObjTypes::Muon) { // for Framework data model
           if ((*sig).CheckSignal(false, t1.template mcParticle_as<aod::McParticles_001>(), t2.template mcParticle_as<aod::McParticles_001>())) {
-            mcDecision |= (uint32_t(1) << isig);
+            mcDecision |= (static_cast<uint32_t>(1) << isig);
           }
         }
       } // end loop over MC signals
@@ -865,7 +865,7 @@ struct AnalysisSameEventPairing {
               fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][0].Data()), VarManager::fgValues);
             }
             for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
-              if (mcDecision & (uint32_t(1) << isig)) {
+              if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
                 fHistMan->FillHistClass(histNamesMCmatched[icut][isig].Data(), VarManager::fgValues);
                 if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
                   fHistMan->FillHistClass(Form("%s_unambiguous", histNamesMCmatched[icut][isig].Data()), VarManager::fgValues);
@@ -1195,13 +1195,13 @@ struct AnalysisDileptonTrack {
       for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
         if constexpr (TTrackFillMap & VarManager::ObjTypes::ReducedTrack || TTrackFillMap & VarManager::ObjTypes::ReducedMuon) { // for skimmed DQ model
           if ((*sig).CheckSignal(false, lepton1MC, lepton2MC)) {
-            mcDecision |= (uint32_t(1) << isig);
+            mcDecision |= (static_cast<uint32_t>(1) << isig);
           }
         }
       } // end loop over MC signals
 
       for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
-        if (mcDecision & (uint32_t(1) << isig)) {
+        if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
           fHistMan->FillHistClass(Form("DileptonsSelected_matchedMC_%s", fRecMCSignalsNames[isig].Data()), fValuesDilepton);
         }
       }
@@ -1227,7 +1227,7 @@ struct AnalysisDileptonTrack {
         for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
           if constexpr (TTrackFillMap & VarManager::ObjTypes::ReducedTrack || TTrackFillMap & VarManager::ObjTypes::ReducedMuon || TTrackFillMap & VarManager::ObjTypes::ReducedMuon) { // for skimmed DQ model
             if ((*sig).CheckSignal(false, lepton1MC, lepton2MC, trackMC)) {
-              mcDecision |= (uint32_t(1) << isig);
+              mcDecision |= (static_cast<uint32_t>(1) << isig);
             }
           }
         }
@@ -1237,7 +1237,7 @@ struct AnalysisDileptonTrack {
         }
 
         for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
-          if (mcDecision & (uint32_t(1) << isig)) {
+          if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
             fHistMan->FillHistClass(Form("DileptonTrackInvMass_matchedMC_%s", fRecMCSignalsNames[isig].Data()), fValuesTrack);
           }
         }
@@ -1489,8 +1489,8 @@ struct AnalysisDileptonTrackTrack {
         }
 
         // dilepton combinate with two same particles
-        if ((fIsSameTrackCut && (t1.isBarrelSelected() & (uint32_t(1) << 1)) && (t2.isBarrelSelected() & (uint32_t(1) << 1))) ||
-            (!fIsSameTrackCut && (t1.isBarrelSelected() & (uint32_t(1) << 1)) && (t2.isBarrelSelected() & (uint32_t(1) << 2)))) {
+        if ((fIsSameTrackCut && (t1.isBarrelSelected() & (static_cast<uint32_t>(1) << 1)) && (t2.isBarrelSelected() & (static_cast<uint32_t>(1) << 1))) ||
+            (!fIsSameTrackCut && (t1.isBarrelSelected() & (static_cast<uint32_t>(1) << 1)) && (t2.isBarrelSelected() & (static_cast<uint32_t>(1) << 2)))) {
         } else {
           continue;
         }
@@ -1502,7 +1502,7 @@ struct AnalysisDileptonTrackTrack {
         int iCut = 0;
         for (auto cut = fQuadrupletCuts.begin(); cut != fQuadrupletCuts.end(); cut++, iCut++) {
           if (cut->IsSelected(fValuesQuadruplet)) {
-            CutDecision |= (uint32_t(1) << iCut);
+            CutDecision |= (static_cast<uint32_t>(1) << iCut);
             if (fIsSameTrackCut) {
               if (t1.sign() * t2.sign() < 0) {
                 fHistMan->FillHistClass(Form("QuadrupletSEPM_%s", fQuadrupletCutNames[iCut].Data()), fValuesQuadruplet);
@@ -1525,11 +1525,11 @@ struct AnalysisDileptonTrackTrack {
               int isig = 0;
               for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
                 if ((*sig).CheckSignal(true, lepton1MC, lepton2MC, t1.reducedMCTrack(), t2.reducedMCTrack())) {
-                  mcDecision |= (uint32_t(1) << isig);
+                  mcDecision |= (static_cast<uint32_t>(1) << isig);
                 }
               }
               for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
-                if (mcDecision & (uint32_t(1) << isig)) {
+                if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
                   fHistMan->FillHistClass(Form("MCTruthRecQaud_%s_%s", fQuadrupletCutNames[iCut].Data(), fRecMCSignalsNames[isig].Data()), fValuesQuadruplet);
                 }
               }

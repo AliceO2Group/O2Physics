@@ -14,6 +14,9 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <map>
+#include <string>
+#include <memory>
 #include <TH1F.h>
 #include <TH3F.h>
 #include <THashList.h>
@@ -399,7 +402,7 @@ struct AnalysisTrackSelection {
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, iCut++) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
           if (iCut != fConfigPrefilterCutId) {
-            filterMap |= (uint32_t(1) << iCut);
+            filterMap |= (static_cast<uint32_t>(1) << iCut);
           }
           if (iCut == fConfigPrefilterCutId) {
             prefilterSelected = true;
@@ -495,7 +498,7 @@ struct AnalysisMuonSelection {
       iCut = 0;
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, iCut++) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
-          filterMap |= (uint32_t(1) << iCut);
+          filterMap |= (static_cast<uint32_t>(1) << iCut);
           if (fConfigQA) { // TODO: make this compile time
             fHistMan->FillHistClass(Form("TrackMuon_%s", (*cut).GetName()), VarManager::fgValues);
           }
@@ -688,7 +691,7 @@ struct AnalysisEventMixing {
             Form("PairsBarrelMEMM_%s", objArray->At(icut)->GetName())};
           histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
           fTrackHistNames.push_back(names);
-          fTwoTrackFilterMask |= (uint32_t(1) << icut);
+          fTwoTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
         }
       }
     }
@@ -707,7 +710,7 @@ struct AnalysisEventMixing {
             histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
           }
           fMuonHistNames.push_back(names);
-          fTwoMuonFilterMask |= (uint32_t(1) << icut);
+          fTwoMuonFilterMask |= (static_cast<uint32_t>(1) << icut);
         }
       }
     }
@@ -725,8 +728,8 @@ struct AnalysisEventMixing {
               Form("PairsEleMuMEMM_%s_%s", objArrayBarrel->At(icut)->GetName(), objArrayMuon->At(icut)->GetName())};
             histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
             fTrackMuonHistNames.push_back(names);
-            fTwoTrackFilterMask |= (uint32_t(1) << icut);
-            fTwoMuonFilterMask |= (uint32_t(1) << icut);
+            fTwoTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
+            fTwoMuonFilterMask |= (static_cast<uint32_t>(1) << icut);
           }
         }
       }
@@ -756,13 +759,13 @@ struct AnalysisEventMixing {
     for (auto& track1 : tracks1) {
       for (auto& track2 : tracks2) {
         if constexpr (TPairType == VarManager::kDecayToEE) {
-          twoTrackFilter = uint32_t(track1.isBarrelSelected()) & uint32_t(track2.isBarrelSelected()) & fTwoTrackFilterMask;
+          twoTrackFilter = static_cast<uint32_t>(track1.isBarrelSelected()) & static_cast<uint32_t>(track2.isBarrelSelected()) & fTwoTrackFilterMask;
         }
         if constexpr (TPairType == VarManager::kDecayToMuMu) {
-          twoTrackFilter = uint32_t(track1.isMuonSelected()) & uint32_t(track2.isMuonSelected()) & fTwoMuonFilterMask;
+          twoTrackFilter = static_cast<uint32_t>(track1.isMuonSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoMuonFilterMask;
         }
         if constexpr (TPairType == VarManager::kElectronMuon) {
-          twoTrackFilter = uint32_t(track1.isBarrelSelected()) & uint32_t(track2.isMuonSelected()) & fTwoTrackFilterMask;
+          twoTrackFilter = static_cast<uint32_t>(track1.isBarrelSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoTrackFilterMask;
         }
 
         if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
@@ -771,7 +774,7 @@ struct AnalysisEventMixing {
         VarManager::FillPairME<TEventFillMap, TPairType>(track1, track2);
 
         for (unsigned int icut = 0; icut < ncuts; icut++) {
-          if (twoTrackFilter & (uint32_t(1) << icut)) {
+          if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             if (track1.sign() * track2.sign() < 0) {
               fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
               if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
@@ -1030,7 +1033,7 @@ struct AnalysisSameEventPairing {
       if (!cutNames.IsNull()) { // if track cuts
         std::unique_ptr<TObjArray> objArray(cutNames.Tokenize(","));
         for (int icut = 0; icut < objArray->GetEntries(); ++icut) { // loop over track cuts
-          fTwoTrackFilterMask |= (uint32_t(1) << icut);
+          fTwoTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
           // no pair cuts
           names = {
             Form("PairsBarrelSEPM_%s", objArray->At(icut)->GetName()),
@@ -1064,7 +1067,7 @@ struct AnalysisSameEventPairing {
       if (!cutNames.IsNull()) {
         std::unique_ptr<TObjArray> objArray(cutNames.Tokenize(","));
         for (int icut = 0; icut < objArray->GetEntries(); ++icut) { // loop over track cuts
-          fTwoMuonFilterMask |= (uint32_t(1) << icut);
+          fTwoMuonFilterMask |= (static_cast<uint32_t>(1) << icut);
           // no pair cuts
           names = {
             Form("PairsMuonSEPM_%s", objArray->At(icut)->GetName()),
@@ -1100,8 +1103,8 @@ struct AnalysisSameEventPairing {
         std::unique_ptr<TObjArray> objArrayMuon(cutNamesMuon.Tokenize(","));
         if (objArrayBarrel->GetEntries() == objArrayMuon->GetEntries()) {   // one must specify equal number of barrel and muon cuts
           for (int icut = 0; icut < objArrayBarrel->GetEntries(); ++icut) { // loop over track cuts
-            fTwoTrackFilterMask |= (uint32_t(1) << icut);
-            fTwoMuonFilterMask |= (uint32_t(1) << icut);
+            fTwoTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
+            fTwoMuonFilterMask |= (static_cast<uint32_t>(1) << icut);
             // no pair cuts
             names = {
               Form("PairsEleMuSEPM_%s_%s", objArrayBarrel->At(icut)->GetName(), objArrayMuon->At(icut)->GetName()),
@@ -1222,7 +1225,7 @@ struct AnalysisSameEventPairing {
 
       for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
         if constexpr (TPairType == VarManager::kDecayToMuMu) {
-          twoTrackFilter = uint32_t(t1.isMuonSelected()) & uint32_t(t2.isMuonSelected()) & fTwoMuonFilterMask;
+          twoTrackFilter = static_cast<uint32_t>(t1.isMuonSelected()) & static_cast<uint32_t>(t2.isMuonSelected()) & fTwoMuonFilterMask;
         }
 
         if (twoTrackFilter && (t1.sign() != t2.sign())) {
@@ -1240,13 +1243,13 @@ struct AnalysisSameEventPairing {
     bool isFirst = true;
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
       if constexpr (TPairType == VarManager::kDecayToEE || TPairType == VarManager::kDecayToPiPi) {
-        twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected()) & fTwoTrackFilterMask;
+        twoTrackFilter = static_cast<uint32_t>(t1.isBarrelSelected()) & static_cast<uint32_t>(t2.isBarrelSelected()) & fTwoTrackFilterMask;
       }
       if constexpr (TPairType == VarManager::kDecayToMuMu) {
-        twoTrackFilter = uint32_t(t1.isMuonSelected()) & uint32_t(t2.isMuonSelected()) & fTwoMuonFilterMask;
+        twoTrackFilter = static_cast<uint32_t>(t1.isMuonSelected()) & static_cast<uint32_t>(t2.isMuonSelected()) & fTwoMuonFilterMask;
       }
       if constexpr (TPairType == VarManager::kElectronMuon) {
-        twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isMuonSelected()) & fTwoTrackFilterMask;
+        twoTrackFilter = static_cast<uint32_t>(t1.isBarrelSelected()) & static_cast<uint32_t>(t2.isMuonSelected()) & fTwoTrackFilterMask;
       }
       if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
         continue;
@@ -1352,7 +1355,7 @@ struct AnalysisSameEventPairing {
 
       int iCut = 0;
       for (int icut = 0; icut < ncuts; icut++) {
-        if (twoTrackFilter & (uint32_t(1) << icut)) {
+        if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
           if (t1.sign() * t2.sign() < 0) {
             fHistMan->FillHistClass(histNames[iCut][0].Data(), VarManager::fgValues);
             if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
@@ -1753,7 +1756,7 @@ struct AnalysisDileptonHadron {
 
       // loop over hadrons
       for (auto& hadron : tracks) {
-        if (!(uint32_t(hadron.isBarrelSelected()) & (uint32_t(1) << fNHadronCutBit))) {
+        if (!(static_cast<uint32_t>(hadron.isBarrelSelected()) & (static_cast<uint32_t>(1) << fNHadronCutBit))) {
           continue;
         }
 
@@ -1799,7 +1802,7 @@ struct AnalysisDileptonHadron {
       for (auto dilepton : evDileptons) {
         for (auto& track : evTracks) {
 
-          if (!(uint32_t(track.isBarrelSelected()) & (uint32_t(1) << fNHadronCutBit))) {
+          if (!(static_cast<uint32_t>(track.isBarrelSelected()) & (static_cast<uint32_t>(1) << fNHadronCutBit))) {
             continue;
           }
 
@@ -1930,8 +1933,8 @@ struct AnalysisDileptonTrackTrack {
         }
 
         // dilepton combinate with two same particles
-        if ((fIsSameTrackCut && (t1.isBarrelSelected() & (uint32_t(1) << 1)) && (t2.isBarrelSelected() & (uint32_t(1) << 1))) ||
-            (!fIsSameTrackCut && (t1.isBarrelSelected() & (uint32_t(1) << 1)) && (t2.isBarrelSelected() & (uint32_t(1) << 2)))) {
+        if ((fIsSameTrackCut && (t1.isBarrelSelected() & (static_cast<uint32_t>(1) << 1)) && (t2.isBarrelSelected() & (static_cast<uint32_t>(1) << 1))) ||
+            (!fIsSameTrackCut && (t1.isBarrelSelected() & (static_cast<uint32_t>(1) << 1)) && (t2.isBarrelSelected() & (static_cast<uint32_t>(1) << 2)))) {
         } else {
           continue;
         }
