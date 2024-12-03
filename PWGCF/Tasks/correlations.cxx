@@ -321,13 +321,13 @@ struct CorrelationTask {
       if (cfg.mEfficiencyAssociated) {
         efficiencyAssociatedCache.clear();
         efficiencyAssociatedCache.reserve(tracks2.size());
-        for (auto& track : tracks2) {
+        for (const auto& track : tracks2) {
           efficiencyAssociatedCache.push_back(getEfficiencyCorrection(cfg.mEfficiencyAssociated, track.eta(), track.pt(), multiplicity, posZ));
         }
       }
     }
 
-    for (auto& track1 : tracks1) {
+    for (const auto& track1 : tracks1) {
       // LOGF(info, "Track %f | %f | %f  %d %d", track1.eta(), track1.phi(), track1.pt(), track1.isGlobalTrack(), track1.isGlobalTrackSDD());
 
       if constexpr (step <= CorrelationContainer::kCFStepTracked) {
@@ -368,7 +368,7 @@ struct CorrelationTask {
         target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, triggerWeight);
       }
 
-      for (auto& track2 : tracks2) {
+      for (const auto& track2 : tracks2) {
         if constexpr (std::is_same<TTracks1, TTracks2>::value) {
           if (track1.globalIndex() == track2.globalIndex()) {
             // LOGF(info, "Track identical: %f | %f | %f || %f | %f | %f", track1.eta(), track1.phi(), track1.pt(),  track2.eta(), track2.phi(), track2.pt());
@@ -631,7 +631,7 @@ struct CorrelationTask {
   PROCESS_SWITCH(CorrelationTask, processSame2Prong2Prong, "Process same event on derived data", false);
 
   using BinningTypeAOD = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M>;
-  void processMixedAOD(aodCollisions& collisions, aodTracks const& tracks, aod::BCsWithTimestamps const&)
+  void processMixedAOD(aodCollisions const& collisions, aodTracks const& tracks, aod::BCsWithTimestamps const&)
   {
     // NOTE legacy function for O2 integration tests. Full version needs derived data
 
@@ -776,7 +776,7 @@ struct CorrelationTask {
       // mixed->getTriggerHist()->Fill(eventValues, CorrelationContainer::kCFStepReconstructed);
     }
 
-    for (auto& [track1, track2] : combinations(tracks, tracks)) {
+    for (const auto& [track1, track2] : combinations(tracks, tracks)) {
       // LOGF(info, "Combination %d %d", track1.index(), track2.index());
 
       if (cfgTriggerCharge != 0 && cfgTriggerCharge * track1.sign() < 0) {
@@ -838,24 +838,24 @@ struct CorrelationTask {
       if (collisions.size() == 0) {
         return;
       }
-      for (auto& collision : collisions) {
+      for (const auto& collision : collisions) {
         multiplicity = collision.multiplicity();
       }
     }
     // Primaries
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
       if (mcParticle.isPhysicalPrimary() && mcParticle.sign() != 0) {
         same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), GetSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
       }
     }
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       if (cfgVerbosity > 0) {
         LOGF(info, "  Reconstructed collision at vtx-z = %f", collision.posZ());
         LOGF(info, "  which has %d tracks", groupedTracks.size());
       }
 
-      for (auto& track : groupedTracks) {
+      for (const auto& track : groupedTracks) {
         if (track.has_cfMCParticle()) {
           const auto& mcParticle = track.cfMCParticle();
           if (mcParticle.isPhysicalPrimary()) {
@@ -884,7 +884,7 @@ struct CorrelationTask {
       if (collisions.size() == 0) {
         return;
       }
-      for (auto& collision : collisions) {
+      for (const auto& collision : collisions) {
         multiplicity = collision.multiplicity();
       }
       if (cfgVerbosity > 0) {
