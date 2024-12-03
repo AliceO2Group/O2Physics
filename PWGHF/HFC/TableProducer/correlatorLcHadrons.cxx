@@ -612,7 +612,7 @@ struct HfCorrelatorLcHadrons {
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
         }
       } // end inner loop (Tracks)
-    }   // end outer Lc loop
+    } // end outer Lc loop
     registry.fill(HIST("hZvtx"), collision.posZ());
     registry.fill(HIST("hMultT0M"), collision.multFT0M());
   }
@@ -716,7 +716,7 @@ struct HfCorrelatorLcHadrons {
         entryLcHadronRecoInfo(MassLambdaCPlus, true);
         entryLcHadronGenInfo(isLcPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
       } // end inner loop
-    }   // end outer loop
+    } // end outer loop
     registry.fill(HIST("hCountLcHadronPerEvent"), counterLcHadron);
     registry.fill(HIST("hZvtx"), mcCollision.posZ());
   }
