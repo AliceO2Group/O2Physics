@@ -244,6 +244,18 @@ class VarManager : public TObject
     kNTPCpileupZC,
     kNTPCtracksInPast,
     kNTPCtracksInFuture,
+    kNTPCcontribLongA,
+    kNTPCcontribLongC,
+    kNTPCmeanTimeLongA,
+    kNTPCmeanTimeLongC,
+    kNTPCmedianTimeLongA,
+    kNTPCmedianTimeLongC,
+    kNTPCcontribShortA,
+    kNTPCcontribShortC,
+    kNTPCmeanTimeShortA,
+    kNTPCmeanTimeShortC,
+    kNTPCmedianTimeShortA,
+    kNTPCmedianTimeShortC,
     kMCEventGeneratorId,
     kMCEventSubGeneratorId,
     kMCVtxX,
@@ -1473,12 +1485,18 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultAllTracksTPCOnly] = event.multAllTracksTPCOnly();
     values[kMultAllTracksITSTPC] = event.multAllTracksITSTPC();
     if constexpr ((fillMap & ReducedEventMultExtra) > 0) {
-      values[kNTPCpileupContribA] = event.nTPCpileupContribA();
-      values[kNTPCpileupContribC] = event.nTPCpileupContribC();
-      values[kNTPCpileupZA] = event.nTPCpileupZA();
-      values[kNTPCpileupZC] = event.nTPCpileupZC();
-      values[kNTPCtracksInPast] = event.nTPCtracksInPast();
-      values[kNTPCtracksInFuture] = event.nTPCtracksInFuture();
+      values[kNTPCcontribLongA] = event.nTPCoccupContribLongA();
+      values[kNTPCcontribLongC] = event.nTPCoccupContribLongC();
+      values[kNTPCcontribShortA] = event.nTPCoccupContribShortA();
+      values[kNTPCcontribShortC] = event.nTPCoccupContribShortC();
+      values[kNTPCmeanTimeLongA] = event.nTPCoccupMeanTimeLongA();
+      values[kNTPCmeanTimeLongC] = event.nTPCoccupMeanTimeLongC();
+      values[kNTPCmeanTimeShortA] = event.nTPCoccupMeanTimeShortA();
+      values[kNTPCmeanTimeShortC] = event.nTPCoccupMedianTimeShortC();
+      values[kNTPCmedianTimeLongA] = event.nTPCoccupMedianTimeLongA();
+      values[kNTPCmedianTimeLongC] = event.nTPCoccupMedianTimeLongC();
+      values[kNTPCmedianTimeShortA] = event.nTPCoccupMedianTimeShortA();
+      values[kNTPCmedianTimeShortC] = event.nTPCoccupMedianTimeShortC();
     }
   }
   // TODO: need to add EvSels and Cents tables, etc. in case of the central data model
