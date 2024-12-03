@@ -447,13 +447,17 @@ struct upcRhoAnalysis {
     // MC
     MC.add("MC/collisions/hPosXY", ";x (cm);y (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
     MC.add("MC/collisions/hPosZ", ";z (cm);counts", kTH1D, {{400, -20.0, 20.0}});
-    MC.add("MC/collisions/hPdgCode", ";pdg code;counts", kTH1D, {{2001, -1000.5, 1000.5}});
-    MC.add("MC/collisions/hProducedByGenerator", ";produced by generator;counts", kTH1D, {{2, -0.5, 1.5}});
     MC.add("MC/collisions/hNPions", ";number of pions;counts", kTH1D, {{11, -0.5, 10.5}});
 
-    MC.add("MC/tracks/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    MC.add("MC/tracks/hEta", ";#eta;counts", kTH1D, {etaAxis});
-    MC.add("MC/tracks/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    MC.add("MC/tracks/all/hPdgCode", ";pdg code;counts", kTH1D, {{2001, -1000.5, 1000.5}});
+    MC.add("MC/tracks/all/hProducedByGenerator", ";produced by generator;counts", kTH1D, {{2, -0.5, 1.5}});
+    MC.add("MC/tracks/all/hIsPhysicalPrimary", ";is physical primary;counts", kTH1D, {{2, -0.5, 1.5}});
+    MC.add("MC/tracks/all/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    MC.add("MC/tracks/all/hEta", ";#eta;counts", kTH1D, {etaAxis});
+    MC.add("MC/tracks/all/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    MC.add("MC/tracks/pions/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
+    MC.add("MC/tracks/pions/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaAxis, etaAxis});
+    MC.add("MC/tracks/pions/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
 
     MC.add("MC/system/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
     MC.add("MC/system/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
@@ -1060,12 +1064,13 @@ struct upcRhoAnalysis {
     std::vector<TLorentzVector> mcParticles4Vecs;
 
     for (auto const& mcParticle : mcParticles) {
-      MC.fill(HIST("MC/collisions/hPdgCode"), mcParticle.pdgCode());
-      MC.fill(HIST("MC/collisions/hProducedByGenerator"), mcParticle.producedByGenerator());
-      MC.fill(HIST("MC/tracks/hPt"), pt(mcParticle.px(), mcParticle.py()));
-      MC.fill(HIST("MC/tracks/hEta"), eta(mcParticle.px(), mcParticle.py(), mcParticle.pz()));
-      MC.fill(HIST("MC/tracks/hPhi"), phi(mcParticle.px(), mcParticle.py()));
-      if (!mcParticle.producedByGenerator() || std::abs(mcParticle.pdgCode()) != 211)
+      MC.fill(HIST("MC/tracks/all/hPdgCode"), mcParticle.pdgCode());
+      MC.fill(HIST("MC/tracks/all/hProducedByGenerator"), mcParticle.producedByGenerator());
+      MC.fill(HIST("MC/tracks/all/hIsPhysicalPrimary"), mcParticle.isPhysicalPrimary());
+      MC.fill(HIST("MC/tracks/all/hPt"), pt(mcParticle.px(), mcParticle.py()));
+      MC.fill(HIST("MC/tracks/all/hEta"), eta(mcParticle.px(), mcParticle.py(), mcParticle.pz()));
+      MC.fill(HIST("MC/tracks/all/hPhi"), phi(mcParticle.px(), mcParticle.py()));
+      if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.pdgCode()) != 211)
         continue;
       cutMcParticles.push_back(mcParticle);
       TLorentzVector pion4Vec;
@@ -1078,15 +1083,13 @@ struct upcRhoAnalysis {
       return;
     if (tracksTotalChargeMC(cutMcParticles) != 0) // shouldn't happen in theory
       return;
+
     TLorentzVector system = reconstructSystem(mcParticles4Vecs);
     double mass = system.M();
     double pT = system.Pt();
     double pTsquare = pT * pT;
     double rapidity = system.Rapidity();
     double systemPhi = system.Phi() + o2::constants::math::PI;
-
-    if (std::abs(rapidity) > systemYCut)
-      return;
 
     if (do4pi && cutMcParticles.size() == 4) {
       for (int i = 0; i < static_cast<int>(cutMcParticles.size()); i++) {
@@ -1102,6 +1105,12 @@ struct upcRhoAnalysis {
 
     if (cutMcParticles.size() != 2)
       return;
+
+    auto leadingMomentumPion = momentum(cutMcParticles[0].px(), cutMcParticles[0].py(), cutMcParticles[0].pz()) > momentum(cutMcParticles[1].px(), cutMcParticles[1].py(), cutMcParticles[1].pz()) ? cutMcParticles[0] : cutMcParticles[1];
+    auto subleadingMomentumPion = (leadingMomentumPion == cutMcParticles[0]) ? cutMcParticles[1] : cutMcParticles[0];
+    MC.fill(HIST("MC/tracks/pions/hPt"), pt(leadingMomentumPion.px(), leadingMomentumPion.py()), pt(subleadingMomentumPion.px(), subleadingMomentumPion.py()));
+    MC.fill(HIST("MC/tracks/pions/hEta"), eta(leadingMomentumPion.px(), leadingMomentumPion.py(), leadingMomentumPion.pz()), eta(subleadingMomentumPion.px(), subleadingMomentumPion.py(), subleadingMomentumPion.pz()));
+    MC.fill(HIST("MC/tracks/pions/hPhi"), phi(leadingMomentumPion.px(), leadingMomentumPion.py()), phi(subleadingMomentumPion.px(), subleadingMomentumPion.py()));
 
     double phiRandom = getPhiRandom(mcParticles4Vecs);
     double phiCharge = getPhiChargeMC(cutMcParticles, mcParticles4Vecs);
