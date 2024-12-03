@@ -56,6 +56,8 @@ std::array<std::shared_ptr<TH2>, NpNp> hNSigmaMCstr;
 std::array<std::shared_ptr<TH2>, NpNp> hNSigmaMCmat;
 
 std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTime;
+std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTimeTrueGoodEv;
+std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTimeTrueBadEv;
 std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTimeprm;
 std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTimestr;
 std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTimemat;
@@ -64,6 +66,27 @@ std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTimeMC;
 std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTimeMCprm;
 std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTimeMCstr;
 std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTimeMCmat;
+std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTimeMCGoodMatch;
+std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTimeMCBadMatch;
+
+std::array<std::shared_ptr<TH2>, NpNp> hDeltaExpTimeMC;
+
+template <int id>
+double calculateTimeOfFlight(double momentum, double length)
+{
+  static constexpr float mass = pid_constants::sMasses[id];
+  static constexpr float c = o2::constants::physics::LightSpeedCm2PS;
+  // Calculate the Lorentz factor gamma
+  const float gamma = std::sqrt(1 + std::pow(momentum / (mass * c), 2));
+
+  // Calculate velocity
+  double velocity = momentum / (gamma * mass);
+
+  // Calculate time of flight
+  double timeOfFlight = length / velocity;
+
+  return timeOfFlight;
+}
 
 /// Task to produce the TOF QA plots
 struct pidTofQaMc {
@@ -153,6 +176,7 @@ struct pidTofQaMc {
     const AxisSpec etaAxis{binsEta, "#it{#eta}"};
     const AxisSpec nSigmaAxis{binsNsigma, Form("N_{#sigma}^{TOF}(%s)", pT[mcID])};
     const AxisSpec deltaAxis{binsDelta, Form("#Delta^{TOF}(%s)", pT[mcID])};
+    const AxisSpec deltaLengthAxis{binsDelta, Form("t_{exp}(%s)-t_{exp}^{*}(%s)", pT[mcID], pT[mcID])};
 
     // Particle info
     hParticlePt[mcID] = histos.add<TH1>(Form("particlept/%s", pName[mcID]), pT[mcID], kTH1D, {ptAxis});
@@ -169,7 +193,13 @@ struct pidTofQaMc {
     hSignalMC[mcID] = histos.add<TH2>(Form("signalMC/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {pAxis, signalAxis});
     hNSigma[mcID] = histos.add<TH2>(Form("nsigma/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
     hDeltaMCEvTime[mcID] = histos.add<TH2>(Form("deltamcevtime/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
+    hDeltaMCEvTimeTrueGoodEv[mcID] = histos.add<TH2>(Form("deltamcevtimegoodev/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
+    hDeltaMCEvTimeTrueBadEv[mcID] = histos.add<TH2>(Form("deltamcevtimebadev/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
     hDeltaMCEvTimeMC[mcID] = histos.add<TH2>(Form("deltamcevtimeMC/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
+    hDeltaMCEvTimeMCGoodMatch[mcID] = histos.add<TH2>(Form("deltamcevtimeMCgm/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
+    hDeltaMCEvTimeMCBadMatch[mcID] = histos.add<TH2>(Form("deltamcevtimeMCbm/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
+
+    hDeltaExpTimeMC[mcID] = histos.add<TH2>(Form("deltaexptimeMC/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaLengthAxis});
 
     if (!checkPrimaries) {
       return;
@@ -183,10 +213,11 @@ struct pidTofQaMc {
     hNSigmamat[mcID] = histos.add<TH2>(Form("nsigmamat/%s", pName[mcID]), Form("Secondary %s from material", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
 
     hDeltaMCEvTimeprm[mcID] = histos.add<TH2>(Form("deltamcevtimeprm/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
-    hDeltaMCEvTimeMCprm[mcID] = histos.add<TH2>(Form("deltamcevtimeMCprm/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
     hDeltaMCEvTimestr[mcID] = histos.add<TH2>(Form("deltamcevtimestr/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
-    hDeltaMCEvTimeMCstr[mcID] = histos.add<TH2>(Form("deltamcevtimeMCstr/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
     hDeltaMCEvTimemat[mcID] = histos.add<TH2>(Form("deltamcevtimemat/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
+
+    hDeltaMCEvTimeMCprm[mcID] = histos.add<TH2>(Form("deltamcevtimeMCprm/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
+    hDeltaMCEvTimeMCstr[mcID] = histos.add<TH2>(Form("deltamcevtimeMCstr/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
     hDeltaMCEvTimeMCmat[mcID] = histos.add<TH2>(Form("deltamcevtimeMCmat/%s", pName[mcID]), pT[mcID], HistType::kTH2F, {ptAxis, deltaAxis});
   }
 
@@ -266,6 +297,8 @@ struct pidTofQaMc {
     histos.add("event/T0", ";Tracks with TOF;T0 (ps);Counts", HistType::kTH2F, {{1000, 0, 1000}, {1000, -1000, 1000}});
 
     histos.add("event/vertexz", ";Vtx_{z} (cm);Entries", kTH1F, {{100, -20, 20}});
+    histos.add("event/tofbadmatch", "", kTH1F, {ptAxis});
+    histos.add("event/tofgoodmatch", "", kTH1F, {ptAxis});
 
     static_for<0, 8>([&](auto i) {
       static_for<0, 8>([&](auto j) {
@@ -453,17 +486,21 @@ struct pidTofQaMc {
         break;
     }
     const float delta = track.tofSignal() - expTime - particle.mcCollision().t() * 1000.f;
+
     hDeltaMCEvTime[mcID]->Fill(track.pt(), delta);
 
     if (checkPrimaries) {
       if (!particle.isPhysicalPrimary()) {
         if (particle.getProcess() == 4) {
           hNSigmastr[mcID]->Fill(track.pt(), nsigma);
+          hDeltaMCEvTimestr[mcID]->Fill(track.pt(), delta);
         } else {
           hNSigmamat[mcID]->Fill(track.pt(), nsigma);
+          hDeltaMCEvTimemat[mcID]->Fill(track.pt(), delta);
         }
       } else {
         hNSigmaprm[mcID]->Fill(track.pt(), nsigma);
+        hDeltaMCEvTimeprm[mcID]->Fill(track.pt(), delta);
       }
     }
 
@@ -499,15 +536,37 @@ struct pidTofQaMc {
     hSignalMC[mcID]->Fill(track.p(), beta);
     hDeltaMCEvTimeMC[mcID]->Fill(track.pt(), delta);
 
+    if (track.mcMask() & (0x1 << 15) && track.mcMask() & (0x1 << 13)) {
+      hDeltaMCEvTimeMCBadMatch[mcID]->Fill(track.pt(), delta);
+    } else {
+      hDeltaMCEvTimeMCGoodMatch[mcID]->Fill(track.pt(), delta);
+    }
+
+    // Check that the track collision and the particle collisions match
+    if (particle.isPhysicalPrimary()) {
+      if (track.template collision_as<Colls>().mcCollision().globalIndex() != particle.mcCollision().globalIndex()) {
+        hDeltaMCEvTimeTrueBadEv[mcID]->Fill(track.pt(), delta);
+      } else {
+        hDeltaMCEvTimeTrueGoodEv[mcID]->Fill(track.pt(), delta);
+      }
+    }
+
+    const float mcExpTime = calculateTimeOfFlight<mcID>(track.tpcInnerParam(), track.length());
+    // const float mcExpTime = calculateTimeOfFlight<mcID>(particle.p(), track.length());
+    hDeltaExpTimeMC[mcID]->Fill(track.pt(), expTime - mcExpTime);
+
     if (checkPrimaries) {
       if (!particle.isPhysicalPrimary()) {
         if (particle.getProcess() == 4) {
           hSignalMCstr[mcID]->Fill(track.p(), beta);
+          hDeltaMCEvTimeMCstr[mcID]->Fill(track.pt(), delta);
         } else {
           hSignalMCmat[mcID]->Fill(track.p(), beta);
+          hDeltaMCEvTimeMCmat[mcID]->Fill(track.pt(), delta);
         }
       } else {
         hSignalMCprm[mcID]->Fill(track.p(), beta);
+        hDeltaMCEvTimeMCprm[mcID]->Fill(track.pt(), delta);
       }
     }
   }
@@ -606,10 +665,11 @@ struct pidTofQaMc {
                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
                          aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
                          aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels, aod::pidTOFbeta>;
+  using Colls = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
   Preslice<Trks> perCol = aod::track::collisionId;
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
 
-  void process(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels> const& collisions,
+  void process(Colls const& collisions,
                Trks& tracks,
                aod::McParticles& mcParticles,
                aod::McCollisions&)
@@ -638,46 +698,54 @@ struct pidTofQaMc {
       // tracksInCollision.copyIndexBindings(tracksWithPid);
       const float collisionTime_ps = collision.collisionTime() * 1000.f;
       unsigned int nTracksWithTOF = 0;
-      for (const auto& t : tracksInCollision) {
+      for (const auto& track : tracksInCollision) {
         //
-        if (!t.hasTOF()) { // Skipping tracks without TOF
+        if (!track.hasTOF()) { // Skipping tracks without TOF
           continue;
         }
-        if (t.eta() < minEta || t.eta() > maxEta) {
+        if (track.eta() < minEta || track.eta() > maxEta) {
           continue;
         }
 
         nTracksWithTOF++;
 
         // Fill for all
-        // const float beta = t.tofBeta();
-        const float beta = t.beta();
-        histos.fill(HIST("event/tofbeta"), t.p(), beta);
-        if (!t.has_mcParticle()) {
+        // const float beta = track.tofBeta();
+        const float beta = track.beta();
+        histos.fill(HIST("event/tofbeta"), track.p(), beta);
+        if (!track.has_mcParticle()) {
           continue;
         }
 
-        const auto& particle = t.mcParticle();
+        std::bitset<16> bits(track.mcMask());
+        // LOG(info) << "Using bitset: " << bits;
+        if (bits[15]) {
+          histos.fill(HIST("event/tofbadmatch"), track.pt());
+        } else {
+          histos.fill(HIST("event/tofgoodmatch"), track.pt());
+        }
+
+        const auto& particle = track.mcParticle();
 
         if (checkPrimaries) {
           if (!particle.isPhysicalPrimary()) {
-            // histos.fill(HIST("event/tofbetaSec"), t.p(), beta);
+            // histos.fill(HIST("event/tofbetaSec"), track.p(), beta);
             if (particle.getProcess() == 4) {
-              histos.fill(HIST("event/tofbetaStr"), t.tpcInnerParam(), t.tpcSignal());
+              histos.fill(HIST("event/tofbetaStr"), track.tpcInnerParam(), track.tpcSignal());
             } else {
-              histos.fill(HIST("event/tofbetaMat"), t.tpcInnerParam(), t.tpcSignal());
+              histos.fill(HIST("event/tofbetaMat"), track.tpcInnerParam(), track.tpcSignal());
             }
           } else {
-            histos.fill(HIST("event/tofbetaPrm"), t.p(), beta);
+            histos.fill(HIST("event/tofbetaPrm"), track.p(), beta);
           }
         }
 
         // Fill with PDG codes
         static_for<0, 8>([&](auto i) {
           static_for<0, 8>([&](auto j) {
-            fillPIDInfoForPdg<i, j>(t, particle);
+            fillPIDInfoForPdg<i, j>(track, particle);
           });
-          fillTrackInfoForPdg<i>(t, particle);
+          fillTrackInfoForPdg<i>(track, particle);
         });
       } // track loop
       histos.fill(HIST("event/T0"), nTracksWithTOF, collisionTime_ps);
