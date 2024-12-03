@@ -15,6 +15,9 @@
 #include "VarManager.h"
 #include "CommonConstants/MathConstants.h"
 
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
 void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* histClass, const char* groupName, const char* subGroupName)
 {
   //
