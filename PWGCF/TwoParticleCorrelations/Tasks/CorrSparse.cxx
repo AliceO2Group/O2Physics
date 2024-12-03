@@ -45,7 +45,7 @@ struct CorrSparse {
   Configurable<float> cfgCutChi2prTPCcls = {"chi2cut", 2.5, "Chi2 cut. Default 2.5"};
 
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
-  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -constants::math::PIHalf, constants::math::PIHalf * 3}, "delta phi axis for histograms"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -2, 2}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt associated axis for histograms"};
@@ -64,7 +64,7 @@ struct CorrSparse {
     // Make histograms to check the distributions after cuts
     registry.add("deltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // check to see the delta eta and delta phi distribution
     registry.add("deltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
-    registry.add("Phi", "Phi", {HistType::kTH1D, {{72, -constants::math::PIHalf, constants::math::PI * 2, "Phi"}}});
+    registry.add("Phi", "Phi", {HistType::kTH1D, {{72, 0, PI * 2, "Phi"}}});
     registry.add("Eta", "Eta", {HistType::kTH1D, {{40, -2, 2, "Eta"}}});
     registry.add("pT", "pT", {HistType::kTH1D, {axisPtTrigger}});
     registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
@@ -105,9 +105,9 @@ struct CorrSparse {
   void fillCorrelations(TTracks tracks1, TTracks tracks2, float posZ, int system, float Nch) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     // loop over all tracks
-    for (auto& track1 : tracks1) {
+    for (auto const& track1 : tracks1) {
 
-      for (auto& track2 : tracks2) {
+      for (auto const& track2 : tracks2) {
         if (track1 == track2) {
           continue;
         }
