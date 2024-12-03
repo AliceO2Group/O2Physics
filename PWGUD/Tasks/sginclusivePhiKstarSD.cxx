@@ -976,7 +976,11 @@ struct SGResonanceAnalyzer {
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {10, 0, 100}, "multiplicity percentile for bin"};
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
+<<<<<<< HEAD
   void mixprocess(UDCollisionsFull1 const& collisions, udtracksfull const& /*track*/)
+=======
+  void mixprocess(UDCollisionsFull1 const& collisions, udtracksfull const& track)
+>>>>>>> 27bc84459 (mixed event and rotational bkg added)
   {
     TLorentzVector v0;
     TLorentzVector v1;
