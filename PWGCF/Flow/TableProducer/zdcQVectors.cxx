@@ -326,8 +326,8 @@ struct ZDCQvectors {
 
     static constexpr std::string_view SubDir[] = {"step1/", "step2/", "step3/", "step4/", "step5/"};
     static_for<0, 4>([&](auto Ind) {
-      constexpr int index = Ind.value;
-      int indexRt = index + 1;
+      constexpr int Index = Ind.value;
+      int indexRt = Index + 1;
 
       registry.fill(HIST(SubDir[index]) + HIST("hZNA_Qx_vs_Qy"), q[iteration][indexRt][0], q[iteration][indexRt][1]);
       registry.fill(HIST(SubDir[index]) + HIST("hZNC_Qx_vs_Qy"), q[iteration][indexRt][2], q[iteration][indexRt][3]);
