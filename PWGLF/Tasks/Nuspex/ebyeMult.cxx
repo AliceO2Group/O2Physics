@@ -9,6 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+<<<<<<< Updated upstream
+=======
+// \file EbyeMult.cxx
+// \brief task for the measurement of multiplicity distributions for ebye analyses
+// \author mario.ciacco@cern.ch
+
+>>>>>>> Stashed changes
 // TODO: also vs. V0M
 #include <vector>
 #include <utility>
@@ -29,7 +36,6 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 
-#include "TDatabasePDG.h"
 #include "TFormula.h"
 
 using namespace o2;
@@ -86,7 +92,7 @@ enum PartTypes {
   kOther = 8
 };
 
-struct ebyeMult {
+struct EbyeMult {
   std::vector<CandidateTrack> candidateTracks;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   CandidateEvent candidateEvent;
@@ -96,10 +102,10 @@ struct ebyeMult {
   uint8_t nTrackletsColl;
 
   ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
-  ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
+  ConfigurableAxis zVtxAxis{"zVtxAxis", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
   ConfigurableAxis multAxis{"multAxis", {100, 0.f, 100.f}, "Binning for the multiplicity axis"};
   ConfigurableAxis multFt0Axis{"multFt0Axis", {100, 0.f, 100.f}, "Binning for the ft0 multiplicity axis"};
-  Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
+  Configurable<std::string> genName{"genName", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
 
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
@@ -108,8 +114,8 @@ struct ebyeMult {
   Configurable<float> ptMax{"ptMax", 10.f, "maximum pT (GeV/c)"};
 
   Configurable<float> trackNcrossedRows{"trackNcrossedRows", 70, "Minimum number of crossed TPC rows"};
-  Configurable<float> trackNclusItsCut{"trackNclusITScut", 2, "Minimum number of ITS clusters"};
-  Configurable<float> trackNclusTpcCut{"trackNclusTPCcut", 60, "Minimum number of TPC clusters"};
+  Configurable<float> trackNclusITScut{"trackNclusITScut", 2, "Minimum number of ITS clusters"};
+  Configurable<float> trackNclusTPCcut{"trackNclusTPCcut", 60, "Minimum number of TPC clusters"};
   Configurable<float> trackChi2Cut{"trackChi2Cut", 4.f, "Maximum chi2/ncls in TPC"};
   Configurable<LabeledArray<float>> cfgDcaSels{"cfgDcaSels", {dcaSels, 1, 3, particleName, dcaSelsNames}, "DCA selections"};
 
@@ -154,8 +160,8 @@ struct ebyeMult {
     if (!(track.itsClusterMap() & 0x01) && !(track.itsClusterMap() & 0x02)) {
       return false;
     }
-    if (track.itsNCls() < trackNclusItsCut ||
-        track.tpcNClsFound() < trackNclusTpcCut ||
+    if (track.itsNCls() < trackNclusITScut ||
+        track.tpcNClsFound() < trackNclusTPCcut ||
         track.tpcNClsCrossedRows() < trackNcrossedRows ||
         track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
         track.tpcChi2NCl() > trackChi2Cut ||
@@ -236,17 +242,17 @@ struct ebyeMult {
     auto fv0c = fv0cs.rawIteratorAt(id);
     float multFV0A = 0;
     float multFV0C = 0;
-    for (float amplitude : fv0a.amplitude()) {
+    for (float const& amplitude : fv0a.amplitude()) {
       multFV0A += amplitude;
     }
 
-    for (float amplitude : fv0c.amplitude()) {
+    for (float const& amplitude : fv0c.amplitude()) {
       multFV0C += amplitude;
     }
 
     float v0m = -1;
     auto scaleMC = [](float x, float pars[6]) {
-      return pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
+      return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
     };
 
     if (Run2V0MInfo.mMCScale != nullptr) {
@@ -434,7 +440,7 @@ struct ebyeMult {
   {
     int nParticles = 0;
     auto mcParticles_thisCollision = mcParticles.sliceBy(perCollisionMcParts, collisionId);
-    for (auto& mcPart : mcParticles_thisCollision) {
+    for (auto const& mcPart : mcParticles_thisCollision) {
       auto genEta = mcPart.eta();
       if (std::abs(genEta) > etaMax) {
         continue;
@@ -481,7 +487,7 @@ struct ebyeMult {
     int nParticles = 0;
     int partInAcc = 0;
     auto particles_thisCollision = particles.sliceBy(perCollisionMcParts, collision.globalIndex());
-    for (auto& particle : particles_thisCollision) {
+    for (auto const& particle : particles_thisCollision) {
       if (((particle.flags() & 0x8) && (doprocessMcRun2)) || (particle.flags() & 0x2))
         continue;
       if (!particle.isPhysicalPrimary() /* && !particle.has_mothers() */)
@@ -529,13 +535,13 @@ struct ebyeMult {
 
       fillRecoEvent(collision, tracks, cV0M);
 
-      for (auto t : candidateTracks) {
+      for (auto const& t : candidateTracks) {
         histos.fill(HIST("RecTracks"), nTrackletsColl, t.pt, t.dcaxypv);
         histos.fill(HIST("RecTracksV0M"), cV0M, t.pt, t.dcaxypv);
       }
     }
   }
-  PROCESS_SWITCH(ebyeMult, processRun2, "process (Run 2)", false);
+  PROCESS_SWITCH(EbyeMult, processRun2, "process (Run 2)", false);
 
   void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, TracksFull const& tracks, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
   {
@@ -570,11 +576,11 @@ struct ebyeMult {
       }
     }
   }
-  PROCESS_SWITCH(ebyeMult, processMcRun2, "process mc (Run 2)", false);
+  PROCESS_SWITCH(EbyeMult, processMcRun2, "process mc (Run 2)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ebyeMult>(cfgc)};
+    adaptAnalysisTask<EbyeMult>(cfgc)};
 }
