@@ -76,29 +76,6 @@ DECLARE_SOA_COLUMN(TauxyBcandidate, tauxyBcandidate, float);
 DECLARE_SOA_COLUMN(TauzBcandidate, tauzBcandidate, float);
 DECLARE_SOA_COLUMN(CosPBcandidate, cosPBcandidate, float);
 DECLARE_SOA_COLUMN(Chi2Bcandidate, chi2Bcandidate, float);
-
-// Xcandidate columns
-DECLARE_SOA_COLUMN(massXcandidate, MXcandidate, float);
-DECLARE_SOA_COLUMN(pTXcandidate, PtXcandidate, float);
-DECLARE_SOA_COLUMN(rapidityXcandidate, YXcandidate, float);
-DECLARE_SOA_COLUMN(etaXcandidate, EtaXcandidate, float);
-DECLARE_SOA_COLUMN(massJpsicandidate, MJpsicandidate, float);
-DECLARE_SOA_COLUMN(massDipioncandidate, MDipioncandidate, float);
-DECLARE_SOA_COLUMN(pTJpsicandidate, PtJpsicandidate, float);
-DECLARE_SOA_COLUMN(pTDipioncandidate, PtDipioncandidate, float);
-DECLARE_SOA_COLUMN(massDiff, Q, float);
-DECLARE_SOA_COLUMN(angDistPion1, DeltaR1, float);
-DECLARE_SOA_COLUMN(angDistPion2, DeltaR2, float);
-DECLARE_SOA_COLUMN(cosDileptonDipion, CosDileptonDipion, float);
-DECLARE_SOA_COLUMN(dcaxyPion1, DcaXYPion1, float);
-DECLARE_SOA_COLUMN(dcazPion1, DcaZPion1, float);
-DECLARE_SOA_COLUMN(dcaxyPion2, DcaXYPion2, float);
-DECLARE_SOA_COLUMN(dcazPion2, DcaZPion2, float);
-DECLARE_SOA_COLUMN(pTPion1, PtPion1, float);
-DECLARE_SOA_COLUMN(pTPion2, PtPion2, float);
-DECLARE_SOA_COLUMN(dileptonSign, DileptonSign, int);
-DECLARE_SOA_COLUMN(ditrackSign, DitrackSign, int);
-
 } // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);
@@ -107,7 +84,6 @@ DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "DQANATRKCUTS", dqanalysisflags::IsBar
 DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsPrefilterVetoed);
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate);
-DECLARE_SOA_TABLE(XCandidates, "AOD", "DQX3872", dqanalysisflags::massXcandidate, dqanalysisflags::pTXcandidate, dqanalysisflags::rapidityXcandidate, dqanalysisflags::etaXcandidate, dqanalysisflags::massJpsicandidate, dqanalysisflags::massDipioncandidate, dqanalysisflags::pTJpsicandidate, dqanalysisflags::pTDipioncandidate, dqanalysisflags::massDiff, dqanalysisflags::angDistPion1, dqanalysisflags::angDistPion2, dqanalysisflags::cosDileptonDipion, dqanalysisflags::dcaxyPion1, dqanalysisflags::dcazPion1, dqanalysisflags::dcaxyPion2, dqanalysisflags::dcazPion2, dqanalysisflags::pTPion1, dqanalysisflags::pTPion2, dqanalysisflags::dileptonSign, dqanalysisflags::ditrackSign);
 } // namespace o2::aod
 
 // Declarations of various short names
@@ -1849,35 +1825,32 @@ struct AnalysisDileptonHadron {
 struct AnalysisDileptonTrackTrack {
   OutputObj<THashList> fOutputList{"output"};
 
-  Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "pionPIDCut1", "Comma separated list of barrel track cuts"}; // used for select the tracks from SelectedTracks
+  Configurable<std::string> fConfigTrackCut1{"cfgTrackCut1", "pionPIDCut1", "track1 cut"}; // used for select the tracks from SelectedTracks
+  Configurable<std::string> fConfigTrackCut2{"cfgTrackCut2", "pionPIDCut2", "track2 cut"}; // used for select the tracks from SelectedTracks
   Configurable<std::string> fConfigDileptonCut{"cfgDiLeptonCut", "pairJpsi2", "Dilepton cut"};
-  Configurable<std::string> fConfigDitrackCut{"cfgDiTrackCut", "DipionPairCut1", "Track-Track cut"};
-  Configurable<std::string> fConfigQuadrupletCut{"cfgQuadrupletCut", "pairX3872Cut1", "Dilepton-Track-Track cut"};
+  Configurable<std::string> fConfigQuadrupletCuts{"cfgQuadrupletCuts", "pairX3872Cut1", "Comma separated list of Dilepton-Track-Track cut"};
   Configurable<std::string> fConfigAddDileptonHistogram{"cfgAddDileptonHistogram", "barrel", "Comma separated list of histograms"};
-  Configurable<std::string> fConfigAddDitrackHistogram{"cfgAddDitrackHistogram", "barrel", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddQuadrupletHistogram{"cfgAddQuadrupletHistogram", "xtojpsipipi", "Comma separated list of histograms"};
 
-  Produces<aod::XCandidates> XTable;
+  Produces<aod::DileptonTrackTrackCandidates> DileptonTrackTrackTable;
 
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
-  Filter dileptonFilter = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 4.0f;
+  Filter dileptonFilter = aod::reducedpair::sign == 0;
   Filter filterBarrelTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
 
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
 
   // use some values array to avoid mixing up the quantities
-  float* fValuesDitrack;
   float* fValuesQuadruplet;
   HistogramManager* fHistMan;
 
-  uint32_t fDileptonFilter = 0;
-  uint32_t fHadronFilter = 0;
-  int fIsUnlikeSignDilepton = 0;
-  int fIsUnlikeSignDitrack = 0;
+  // cut name setting
+  TString fTrackCutName1;
+  TString fTrackCutName2;
+  bool fIsSameTrackCut = false; 
   AnalysisCompositeCut fDileptonCut;
-  AnalysisCompositeCut fDitrackCut;
-  AnalysisCompositeCut fQuadrupletCut;
-  std::vector<TString> fTrackCutNames;
+  std::vector<TString> fQuadrupletCutNames;
+  std::vector<AnalysisCompositeCut> fQuadrupletCuts;
 
   void init(o2::framework::InitContext& context)
   {
@@ -1885,7 +1858,6 @@ struct AnalysisDileptonTrackTrack {
       return;
     }
 
-    fValuesDitrack = new float[VarManager::kNVars];
     fValuesQuadruplet = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
@@ -1893,41 +1865,45 @@ struct AnalysisDileptonTrackTrack {
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     // define cuts
-    TString configTrackCutNamesStr = fConfigTrackCuts.value;
+    fTrackCutName1 = fConfigTrackCut1.value;
+    fTrackCutName2 = fConfigTrackCut2.value;
+    if (fTrackCutName1 == fTrackCutName2) {
+      fIsSameTrackCut = true;
+    }
     TString configDileptonCutNamesStr = fConfigDileptonCut.value;
     fDileptonCut = *dqcuts::GetCompositeCut(configDileptonCutNamesStr.Data());
-    TString configDitrackCutNamesStr = fConfigDitrackCut.value;
-    fDitrackCut = *dqcuts::GetCompositeCut(configDitrackCutNamesStr.Data());
-    TString configQuadruletCutNamesStr = fConfigQuadrupletCut.value;
-    fQuadrupletCut = *dqcuts::GetCompositeCut(configQuadruletCutNamesStr.Data());
+    TString configQuadruletCutNamesStr = fConfigQuadrupletCuts.value;
+    std::unique_ptr<TObjArray> objArray(configQuadruletCutNamesStr.Tokenize(","));
+    for (Int_t icut = 0; icut < objArray->GetEntries(); ++icut) {
+      TString cutName = objArray->At(icut)->GetName();
+      fQuadrupletCutNames.push_back(cutName);
+      fQuadrupletCuts.push_back(*dqcuts::GetCompositeCut(cutName.Data()));
+    }
 
     if (!context.mOptions.get<bool>("processDummy")) {
-      // define histograms for dilepton
-      DefineHistograms(fHistMan, Form("DileptonsSelectedUS_%s", configDileptonCutNamesStr.Data()), fConfigAddDileptonHistogram);
-      DefineHistograms(fHistMan, Form("DileptonsSelectedLS_%s", configDileptonCutNamesStr.Data()), fConfigAddDileptonHistogram);
-      if (!configTrackCutNamesStr.IsNull()) {
-        std::unique_ptr<TObjArray> objArray(configTrackCutNamesStr.Tokenize(","));
-        for (Int_t icut = 0; icut < objArray->GetEntries(); ++icut) {
-          TString cutName = objArray->At(icut)->GetName();
-          fTrackCutNames.push_back(cutName);
-          DefineHistograms(fHistMan, Form("DitrackSelected_%s_%s", configDitrackCutNamesStr.Data(), cutName.Data()), fConfigAddDitrackHistogram);
-          DefineHistograms(fHistMan, Form("QuadrupletSEUSUS_%s_%s_%s", configDileptonCutNamesStr.Data(), configDitrackCutNamesStr.Data(), cutName.Data()), fConfigAddQuadrupletHistogram);
-          DefineHistograms(fHistMan, Form("QuadrupletSEUSLS_%s_%s_%s", configDileptonCutNamesStr.Data(), configDitrackCutNamesStr.Data(), cutName.Data()), fConfigAddQuadrupletHistogram);
-          DefineHistograms(fHistMan, Form("QuadrupletSELSUS_%s_%s_%s", configDileptonCutNamesStr.Data(), configDitrackCutNamesStr.Data(), cutName.Data()), fConfigAddQuadrupletHistogram);
-          DefineHistograms(fHistMan, Form("QuadrupletSELSLS_%s_%s_%s", configDileptonCutNamesStr.Data(), configDitrackCutNamesStr.Data(), cutName.Data()), fConfigAddQuadrupletHistogram);
-        } // loop over track cuts
+      DefineHistograms(fHistMan, Form("Dileptons_%s", configDileptonCutNamesStr.Data()), fConfigAddDileptonHistogram);
+      if (!configQuadruletCutNamesStr.IsNull()) {
+        for (Int_t icut = 0; icut < fQuadrupletCutNames.size(); ++icut) {
+          if (fIsSameTrackCut) {
+            DefineHistograms(fHistMan, Form("QuadrupletSEPM_%s", fQuadrupletCutNames[icut].Data()), fConfigAddQuadrupletHistogram);
+          } else {
+            DefineHistograms(fHistMan, Form("QuadrupletSEPM_%s", fQuadrupletCutNames[icut].Data()), fConfigAddQuadrupletHistogram);
+            DefineHistograms(fHistMan, Form("QuadrupletSEMP_%s", fQuadrupletCutNames[icut].Data()), fConfigAddQuadrupletHistogram);
+          }
+          DefineHistograms(fHistMan, Form("QuadrupletSEPP_%s", fQuadrupletCutNames[icut].Data()), fConfigAddQuadrupletHistogram);
+          DefineHistograms(fHistMan, Form("QuadrupletSEMM_%s", fQuadrupletCutNames[icut].Data()), fConfigAddQuadrupletHistogram);
+        }
       }
     }
 
     VarManager::SetUseVars(fHistMan->GetUsedVars());
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
+
   // Template function to run pair - track - track combinations
   template <int TCandidateType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
   void runDileptonTrackTrack(TEvent const& event, TTracks const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons)
   {
-    VarManager::ResetValues(0, VarManager::kNVars, fValuesDitrack);
-    VarManager::FillEvent<TEventFillMap>(event, fValuesDitrack);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesQuadruplet);
     VarManager::FillEvent<TEventFillMap>(event, fValuesQuadruplet);
 
@@ -1935,29 +1911,11 @@ struct AnalysisDileptonTrackTrack {
 
     // loop over dileptons
     for (auto dilepton : dileptons) {
-      fDileptonFilter = 0;
-      fIsUnlikeSignDilepton = 0;
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesQuadruplet);
 
-      // Check that the dilepton has zero charge
-      if (dilepton.sign() == 0) {
-        fIsUnlikeSignDilepton = 1;
-      }
-
       // apply the dilepton cut
-      if (fDileptonCut.IsSelected(fValuesQuadruplet)) {
-        fDileptonFilter = 1;
-        if (fIsUnlikeSignDilepton == 1) {
-          fHistMan->FillHistClass(Form("DileptonsSelectedUS_%s", fDileptonCut.GetName()), fValuesQuadruplet);
-        } else {
-          fHistMan->FillHistClass(Form("DileptonsSelectedLS_%s", fDileptonCut.GetName()), fValuesQuadruplet);
-        }
-      }
-
-      // pass the dilepton without cut
-      if (fDileptonFilter == 0) {
-        continue;
-      }
+      if (!fDileptonCut.IsSelected(fValuesQuadruplet)) continue;
+      fHistMan->FillHistClass(Form("Dileptons_%s", fDileptonCut.GetName()), fValuesQuadruplet);
 
       // get the index of the electron legs
       int indexLepton1 = dilepton.index0Id();
@@ -1970,45 +1928,47 @@ struct AnalysisDileptonTrackTrack {
           continue;
         }
 
-        // fill variables
-        VarManager::FillPair<VarManager::kDecayToPiPi, TTrackFillMap>(t1, t2, fValuesDitrack);
-        if constexpr (TCandidateType == VarManager::kChictoJpsiEE) {
-          VarManager::FillPair<VarManager::kDecayToEE, TTrackFillMap>(t1, t2, fValuesDitrack);
+        // dilepton combinate with two same particles
+        if ((fIsSameTrackCut && (t1.isBarrelSelected() & (uint32_t(1) << 1)) && (t2.isBarrelSelected() & (uint32_t(1) << 1))) || 
+          (!fIsSameTrackCut && (t1.isBarrelSelected() & (uint32_t(1) << 1)) && (t2.isBarrelSelected() & (uint32_t(1) << 2)))) {
+        } else {
+          continue;
         }
+
+        // fill variables
         VarManager::FillDileptonTrackTrack<TCandidateType>(dilepton, t1, t2, fValuesQuadruplet);
 
-        if (t1.sign() * t2.sign() > 0) {
-          fIsUnlikeSignDitrack = 0;
-        } else {
-          fIsUnlikeSignDitrack = 1;
-        }
-
-        int iTrackCut = 0;
-        for (auto cutname = fTrackCutNames.begin(); cutname != fTrackCutNames.end(); cutname++, iTrackCut++) {
-          // apply the DiTrack cut
-          if (fDitrackCut.IsSelected(fValuesDitrack)) {
-            // apply the Track cut
-            if (t1.isBarrelSelected() & (uint32_t(1) << (iTrackCut + 1)) && t2.isBarrelSelected() & (uint32_t(1) << (iTrackCut + 1))) {
-              fHistMan->FillHistClass(Form("DitrackSelected_%s_%s", fDitrackCut.GetName(), (*cutname).Data()), fValuesDitrack);
-              if (fQuadrupletCut.IsSelected(fValuesQuadruplet)) {
-                XTable(fValuesQuadruplet[VarManager::kQuadMass], fValuesQuadruplet[VarManager::kQuadPt], fValuesQuadruplet[VarManager::kRap], fValuesQuadruplet[VarManager::kQuadEta], fValuesQuadruplet[VarManager::kPairMass], fValuesQuadruplet[VarManager::kDitrackMass], fValuesQuadruplet[VarManager::kPairPt], fValuesQuadruplet[VarManager::kDitrackPt], fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2], fValuesQuadruplet[VarManager::kCosthetaDileptonDitrack], fValuesQuadruplet[VarManager::kTrackDCAxyProng1], fValuesQuadruplet[VarManager::kTrackDCAzProng1], fValuesQuadruplet[VarManager::kTrackDCAxyProng2], fValuesQuadruplet[VarManager::kTrackDCAzProng2], fValuesQuadruplet[VarManager::kPt1], fValuesQuadruplet[VarManager::kPt2], dilepton.sign(), t1.sign() + t2.sign());
-                if (fIsUnlikeSignDilepton) {
-                  if (fIsUnlikeSignDitrack) {
-                    fHistMan->FillHistClass(Form("QuadrupletSEUSUS_%s_%s_%s", fDileptonCut.GetName(), fDitrackCut.GetName(), (*cutname).Data()), fValuesQuadruplet);
-                  } else {
-                    fHistMan->FillHistClass(Form("QuadrupletSEUSLS_%s_%s_%s", fDileptonCut.GetName(), fDitrackCut.GetName(), (*cutname).Data()), fValuesQuadruplet);
-                  }
-                } else {
-                  if (fIsUnlikeSignDitrack) {
-                    fHistMan->FillHistClass(Form("QuadrupletSELSUS_%s_%s_%s", fDileptonCut.GetName(), fDitrackCut.GetName(), (*cutname).Data()), fValuesQuadruplet);
-                  } else {
-                    fHistMan->FillHistClass(Form("QuadrupletSELSLS_%s_%s_%s", fDileptonCut.GetName(), fDitrackCut.GetName(), (*cutname).Data()), fValuesQuadruplet);
-                  }
-                }
+        int iCut = 0;
+        uint32_t CutDecision = 0;
+        for (auto cutname = fQuadrupletCutNames.begin(); cutname != fQuadrupletCutNames.end(); cutname++, iCut++) {
+          // apply dilepton-track-track cut
+          if (fQuadrupletCuts[iCut].IsSelected(fValuesQuadruplet)) {
+            CutDecision |= (1 << iCut);
+            if (fIsSameTrackCut) {
+              if (t1.sign() * t2.sign() < 0) {
+                fHistMan->FillHistClass(Form("QuadrupletSEPM_%s", fQuadrupletCutNames[iCut].Data()), fValuesQuadruplet);
+              }
+            } else {
+              if ((t1.sign() < 0) && (t2.sign() > 0)) {
+                fHistMan->FillHistClass(Form("QuadrupletSEMP_%s", fQuadrupletCutNames[iCut].Data()), fValuesQuadruplet);
+              } else if ((t1.sign() > 0) && (t2.sign() < 0)) {
+                fHistMan->FillHistClass(Form("QuadrupletSEPM_%s", fQuadrupletCutNames[iCut].Data()), fValuesQuadruplet);
               }
             }
-          } // check if the Ditrack cut is selected
-        } // loop over hadron cuts
+            if ((t1.sign() > 0) && (t2.sign() > 0)) {
+              fHistMan->FillHistClass(Form("QuadrupletSEPP_%s", fQuadrupletCutNames[iCut].Data()), fValuesQuadruplet);
+            } else if ((t1.sign() < 0) && (t2.sign() < 0)) {
+              fHistMan->FillHistClass(Form("QuadrupletSEMM_%s", fQuadrupletCutNames[iCut].Data()), fValuesQuadruplet);
+            }
+          }
+        } // loop over dilepton-track-track cuts
+
+        // table to be written out for ML analysis
+        if (!CutDecision) continue;
+        DileptonTrackTrackTable(fValuesQuadruplet[VarManager::kQuadMass], fValuesQuadruplet[VarManager::kQuadPt], fValuesQuadruplet[VarManager::kQuadEta], fValuesQuadruplet[VarManager::kQuadPhi], fValuesQuadruplet[VarManager::kRap], 
+                      fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2], 
+                      dilepton.mass(), dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.sign(),
+                      fValuesQuadruplet[VarManager::kDitrackMass], fValuesQuadruplet[VarManager::kDitrackPt], t1.pt(), t2.pt(), t1.eta(), t2.eta(), t1.phi(), t2.phi(), t1.sign(), t2.sign());
       }
     }
   }
