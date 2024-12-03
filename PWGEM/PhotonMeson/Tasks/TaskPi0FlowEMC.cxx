@@ -39,6 +39,7 @@
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Qvectors.h"
+#include "CommonConstants/MathConstants.h"
 
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsEMCAL/Constants.h"
@@ -77,7 +78,7 @@ enum CentralityEstimator { None = 0,
                            NCentralityEstimators
 };
 
-struct EMfTaskPi0Flow {
+struct EMTaskPi0FlowEMC {
   // configurable for flow
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<int> qvecDetector{"qvecDetector", 0, "Detector for Q vector estimation (FT0M: 0, FT0A: 1, FT0C: 2, TPC Pos: 3, TPC Neg: 4, TPC Tot: 5)"};
@@ -89,7 +90,7 @@ struct EMfTaskPi0Flow {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<bool> cfgDoRotation{"cfgDoRotation", true, "Flag to enable rotation background method"};
   Configurable<int> cfgDownsampling{"cfgDownsampling", 1, "Calculate rotation background only for every <value> collision"};
-  Configurable<float> cfgRotAngle{"cfgRotAngle", M_PI / 2., "Angle used for the rotation method"};
+  Configurable<float> cfgRotAngle{"cfgRotAngle", o2::constants::math::PIHalf, "Angle used for the rotation method"};
   Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
 
   // configurable axis
@@ -120,24 +121,24 @@ struct EMfTaskPi0Flow {
     Configurable<float> cfgMinCent{"cfgMinCent", 0, "min. centrality (%)"};
     Configurable<float> cfgMaxCent{"cfgMaxCent", 90, "max. centrality (%)"};
     Configurable<bool> onlyKeepWeightedEvents{"onlyKeepWeightedEvents", false, "flag to keep only weighted events (for JJ MCs) and remove all MB events (with weight = 1)"};
-    Configurable<bool> enableQA{"enableQA", false, "flag to turn QA plots on/off"};
+    Configurable<bool> cfgEnableQA{"cfgEnableQA", false, "flag to turn QA plots on/off"};
   } eventcuts;
 
   EMCPhotonCut fEMCCut;
   struct : ConfigurableGroup {
     std::string prefix = "emccut_group";
-    Configurable<float> EMC_minTime{"EMC_minTime", -25., "Minimum cluster time for EMCal time cut"};
-    Configurable<float> EMC_maxTime{"EMC_maxTime", +30., "Maximum cluster time for EMCal time cut"};
-    Configurable<float> EMC_minM02{"EMC_minM02", 0.1, "Minimum M02 for EMCal M02 cut"};
-    Configurable<float> EMC_maxM02{"EMC_maxM02", 0.7, "Maximum M02 for EMCal M02 cut"};
-    Configurable<float> EMC_minE{"EMC_minE", 0.7, "Minimum cluster energy for EMCal energy cut"};
-    Configurable<int> EMC_minNCell{"EMC_minNCell", 1, "Minimum number of cells per cluster for EMCal NCell cut"};
-    Configurable<std::vector<float>> EMC_TM_Eta{"EMC_TM_Eta", {0.01f, 4.07f, -2.5f}, "|eta| <= [0]+(pT+[1])^[2] for EMCal track matching"};
-    Configurable<std::vector<float>> EMC_TM_Phi{"EMC_TM_Phi", {0.015f, 3.65f, -2.f}, "|phi| <= [0]+(pT+[1])^[2] for EMCal track matching"};
-    Configurable<float> EMC_Eoverp{"EMC_Eoverp", 1.75, "Minimum cluster energy over track momentum for EMCal track matching"};
-    Configurable<bool> EMC_UseExoticCut{"EMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
-    Configurable<bool> EMC_UseTM{"EMC_UseTM", false, "flag to use EMCal track matching cut or not"};
-    Configurable<bool> enableQA{"enableQA", false, "flag to turn QA plots on/off"};
+    Configurable<float> cfgEMC_minTime{"cfgEMC_minTime", -25., "Minimum cluster time for EMCal time cut"};
+    Configurable<float> cfgEMC_maxTime{"cfgEMC_maxTime", +30., "Maximum cluster time for EMCal time cut"};
+    Configurable<float> cfgEMC_minM02{"cfgEMC_minM02", 0.1, "Minimum M02 for EMCal M02 cut"};
+    Configurable<float> cfgEMC_maxM02{"cfgEMC_maxM02", 0.7, "Maximum M02 for EMCal M02 cut"};
+    Configurable<float> cfgEMC_minE{"cfgEMC_minE", 0.7, "Minimum cluster energy for EMCal energy cut"};
+    Configurable<int> cfgEMC_minNCell{"cfgEMC_minNCell", 1, "Minimum number of cells per cluster for EMCal NCell cut"};
+    Configurable<std::vector<float>> cfgEMC_TM_Eta{"cfgEMC_TM_Eta", {0.01f, 4.07f, -2.5f}, "|eta| <= [0]+(pT+[1])^[2] for EMCal track matching"};
+    Configurable<std::vector<float>> cfgEMC_TM_Phi{"cfgEMC_TM_Phi", {0.015f, 3.65f, -2.f}, "|phi| <= [0]+(pT+[1])^[2] for EMCal track matching"};
+    Configurable<float> cfgEMC_Eoverp{"cfgEMC_Eoverp", 1.75, "Minimum cluster energy over track momentum for EMCal track matching"};
+    Configurable<bool> cfgEMC_UseExoticCut{"cfgEMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
+    Configurable<bool> cfgEMC_UseTM{"cfgEMC_UseTM", false, "flag to use EMCal track matching cut or not"};
+    Configurable<bool> cfgEnableQA{"cfgEnableQA", false, "flag to turn QA plots on/off"};
   } emccuts;
 
   struct : ConfigurableGroup {
@@ -146,17 +147,17 @@ struct EMfTaskPi0Flow {
     Configurable<bool> enableTanThetadPhi{"enableTanThetadPhi", false, "flag to turn cut opening angle in delta theta delta phi on/off"};
     Configurable<float> minTanThetadPhi{"minTanThetadPhi", 4., "apply min opening angle in delta theta delta phi to cut on late conversion"};
     Configurable<float> maxEnergyAsymmetry{"maxEnergyAsymmetry", 1., "apply max energy asymmetry for meson candidate"};
-    Configurable<bool> enableQA{"enableQA", false, "flag to turn QA plots on/off"};
+    Configurable<bool> cfgEnableQA{"cfgEnableQA", false, "flag to turn QA plots on/off"};
     ConfigurableAxis thConfigAxisTanThetaPhi{"thConfigAxisTanThetaPhi", {180, -90.f, 90.f}, ""};
   } mesonConfig;
 
   struct : ConfigurableGroup {
     std::string prefix = "event-mixing";
-    ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-    ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f}, "Mixing bins - centrality"};
-    ConfigurableAxis ConfEPBins{"ConfEPBins", {8, -M_PI / 2, +M_PI / 2}, "Mixing bins - event plane angle"};
-    ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, 0, 100, 500, 1000, 2000}, "Mixing bins - occupancy"};
-    Configurable<int> ConfMixingDepth{"ConfMixingDepth", 2, "Mixing depth"};
+    ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+    ConfigurableAxis cfgCentBins{"cfgCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f}, "Mixing bins - centrality"};
+    ConfigurableAxis cfgEPBins{"cfgEPBins", {8, o2::constants::math::PIHalf, o2::constants::math::PIHalf}, "Mixing bins - event plane angle"};
+    ConfigurableAxis cfgOccupancyBins{"cfgOccupancyBins", {VARIABLE_WIDTH, 0, 100, 500, 1000, 2000}, "Mixing bins - occupancy"};
+    Configurable<int> cfgMixingDepth{"cfgMixingDepth", 2, "Mixing depth"};
   } mixingConfig;
 
   struct : ConfigurableGroup {
@@ -169,7 +170,7 @@ struct EMfTaskPi0Flow {
   EventPlaneHelper epHelper;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  Filter clusterFilter = aod::skimmedcluster::time >= emccuts.EMC_minTime && aod::skimmedcluster::time <= emccuts.EMC_maxTime && aod::skimmedcluster::m02 >= emccuts.EMC_minM02 && aod::skimmedcluster::m02 <= emccuts.EMC_maxM02 && skimmedcluster::e >= emccuts.EMC_minE;
+  Filter clusterFilter = aod::skimmedcluster::time >= emccuts.cfgEMC_minTime && aod::skimmedcluster::time <= emccuts.cfgEMC_maxTime && aod::skimmedcluster::m02 >= emccuts.cfgEMC_minM02 && aod::skimmedcluster::m02 <= emccuts.cfgEMC_maxM02 && skimmedcluster::e >= emccuts.cfgEMC_minE;
   Filter collisionFilter = aod::evsel::sel8 && nabs(aod::collision::posZ) <= eventcuts.cfgZvtxMax && aod::evsel::trackOccupancyInTimeRange <= eventcuts.cfgTrackOccupancyMax && aod::evsel::trackOccupancyInTimeRange >= eventcuts.cfgTrackOccupancyMin && aod::evsel::ft0cOccupancyInTimeRange <= eventcuts.cfgFT0COccupancyMax && aod::evsel::ft0cOccupancyInTimeRange >= eventcuts.cfgFT0COccupancyMin;
   using FilteredEMCalPhotons = soa::Filtered<soa::Join<aod::EMCEMEventIds, aod::SkimEMCClusters>>;
   using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::SkimEMCClusters>;
@@ -185,7 +186,7 @@ struct EMfTaskPi0Flow {
   TH1D* h1SP_Resolution = nullptr;
   float epsilon = 1.e-8;
 
-  void DefineEMEventCut()
+  void defineEMEventCut()
   {
     fEMEventCut = EMPhotonEventCut("fEMEventCut", "fEMEventCut");
     fEMEventCut.SetRequireSel8(eventcuts.cfgRequireSel8);
@@ -200,26 +201,26 @@ struct EMfTaskPi0Flow {
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
   }
 
-  void DefineEMCCut()
+  void defineEMCCut()
   {
     fEMCCut = EMCPhotonCut("fEMCCut", "fEMCCut");
-    const float a = emccuts.EMC_TM_Eta->at(0);
-    const float b = emccuts.EMC_TM_Eta->at(1);
-    const float c = emccuts.EMC_TM_Eta->at(2);
+    const float a = emccuts.cfgEMC_TM_Eta->at(0);
+    const float b = emccuts.cfgEMC_TM_Eta->at(1);
+    const float c = emccuts.cfgEMC_TM_Eta->at(2);
 
-    const float d = emccuts.EMC_TM_Phi->at(0);
-    const float e = emccuts.EMC_TM_Phi->at(1);
-    const float f = emccuts.EMC_TM_Phi->at(2);
+    const float d = emccuts.cfgEMC_TM_Phi->at(0);
+    const float e = emccuts.cfgEMC_TM_Phi->at(1);
+    const float f = emccuts.cfgEMC_TM_Phi->at(2);
     LOGF(info, "EMCal track matching parameters : a = %f, b = %f, c = %f, d = %f, e = %f, f = %f", a, b, c, d, e, f);
-    fEMCCut.SetTrackMatchingEta([a, b, c](float pT) { return a + pow(pT + b, c); });
-    fEMCCut.SetTrackMatchingPhi([d, e, f](float pT) { return d + pow(pT + e, f); });
-    fEMCCut.SetMinEoverP(emccuts.EMC_Eoverp);
+    fEMCCut.SetTrackMatchingEta([a, b, c](float pT) { return a + std::pow(pT + b, c); });
+    fEMCCut.SetTrackMatchingPhi([d, e, f](float pT) { return d + std::pow(pT + e, f); });
+    fEMCCut.SetMinEoverP(emccuts.cfgEMC_Eoverp);
 
-    fEMCCut.SetMinE(emccuts.EMC_minE);
-    fEMCCut.SetMinNCell(emccuts.EMC_minNCell);
-    fEMCCut.SetM02Range(emccuts.EMC_minM02, emccuts.EMC_maxM02);
-    fEMCCut.SetTimeRange(emccuts.EMC_minTime, emccuts.EMC_maxTime);
-    fEMCCut.SetUseExoticCut(emccuts.EMC_UseExoticCut);
+    fEMCCut.SetMinE(emccuts.cfgEMC_minE);
+    fEMCCut.SetMinNCell(emccuts.cfgEMC_minNCell);
+    fEMCCut.SetM02Range(emccuts.cfgEMC_minM02, emccuts.cfgEMC_maxM02);
+    fEMCCut.SetTimeRange(emccuts.cfgEMC_minTime, emccuts.cfgEMC_maxTime);
+    fEMCCut.SetUseExoticCut(emccuts.cfgEMC_UseExoticCut);
   }
 
   void init(InitContext&)
@@ -228,9 +229,9 @@ struct EMfTaskPi0Flow {
       LOG(info) << "Harmonic was set to " << harmonic << " but can only be 2 or 3!";
     }
 
-    DefineEMEventCut();
-    DefineEMCCut();
-    fEMCCut.SetUseTM(emccuts.EMC_UseTM); // disables TM
+    defineEMEventCut();
+    defineEMCCut();
+    fEMCCut.SetUseTM(emccuts.cfgEMC_UseTM); // disables TM
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&registry);
 
     // Load EMCal geometry
@@ -251,7 +252,7 @@ struct EMfTaskPi0Flow {
     const AxisSpec thAxisEta{160, -0.8, 0.8, "#eta"};
     const AxisSpec thAxisPhi{72, 0, 2 * 3.14159, "phi"};
     const AxisSpec thAxisNCell{17664, 0.5, +17664.5, "#it{N}_{cell}"};
-    const AxisSpec thAxisPsi{360 / harmonic.value, -(1. / static_cast<float>(harmonic.value)) * M_PI, (1. / static_cast<float>(harmonic.value)) * M_PI, Form("#Psi_{%d}", harmonic.value)};
+    const AxisSpec thAxisPsi{360 / harmonic.value, -(1. / static_cast<float>(harmonic.value)) * pi_v, (1. / static_cast<float>(harmonic.value)) * pi_v, Form("#Psi_{%d}", harmonic.value)};
     const AxisSpec thAxisCN{8, 0.5, 8.5, "#it{c}_{n}"};
     const AxisSpec thAxisSN{8, 0.5, 8.5, "#it{s}_{n}"};
 
@@ -307,7 +308,7 @@ struct EMfTaskPi0Flow {
       registry.add("epReso/hEpCosCoefficientsTPCTots", "hEpCosCoefficientsTPCTots; centrality; c_{n}", HistType::kTProfile2D, {thnAxisCent, thAxisCN});
       registry.add("epReso/hEpSinCoefficientsTPCTots", "hEpSinCoefficientsTPCTots; centrality; s_{n}", HistType::kTProfile2D, {thnAxisCent, thAxisSN});
     }
-    if (eventcuts.enableQA) {
+    if (eventcuts.cfgEnableQA) {
       auto hCollisionEMCCheck = registry.add<TH1>("hCollisionEMCCheck", "collision counter;;Counts", kTH1D, {{7, 0.5, 7.5}}, false);
       hCollisionEMCCheck->GetXaxis()->SetBinLabel(1, "all");
       hCollisionEMCCheck->GetXaxis()->SetBinLabel(2, "EMC MB Readout");
@@ -322,12 +323,12 @@ struct EMfTaskPi0Flow {
       registry.add("LED/hNCell", "hNCell", HistType::kTH1D, {thAxisNCell});
     }
 
-    if (emccuts.enableQA) {
+    if (emccuts.cfgEnableQA) {
       registry.add("hEClusterBefore", "Histo for cluster energy before cuts", HistType::kTH1D, {thAxisClusterEnergy});
       registry.add("hEClusterAfter", "Histo for cluster energy after cuts", HistType::kTH1D, {thAxisClusterEnergy});
     }
 
-    if (mesonConfig.enableQA) {
+    if (mesonConfig.cfgEnableQA) {
       registry.add("hInvMassPt", "Histo for inv pair mass vs pt", HistType::kTH2D, {thnAxisInvMass, thnAxisPt});
       registry.add("hTanThetaPhi", "Histo for identification of conversion cluster", HistType::kTH2D, {thnAxisInvMass, thAxisTanThetaPhi});
       registry.add("hAlphaPt", "Histo of meson asymmetry vs pT", HistType::kTH2D, {thAxisAlpha, thnAxisPt});
@@ -502,7 +503,7 @@ struct EMfTaskPi0Flow {
   bool isQvecGood(std::vector<float> const& QVecs)
   {
     bool isgood = true;
-    for (auto& QVec : QVecs) {
+    for (const auto& QVec : QVecs) {
       if (std::fabs(QVec) > 20.f) {
         isgood = false;
         break;
@@ -511,7 +512,7 @@ struct EMfTaskPi0Flow {
     return isgood;
   }
 
-  bool IsTooCloseToEdge(const int cellID, const int DistanceToBorder = 1)
+  bool isTooCloseToEdge(const int cellID, const int DistanceToBorder = 1)
   {
     if (DistanceToBorder <= 0) {
       return false;
@@ -548,7 +549,7 @@ struct EMfTaskPi0Flow {
 
   /// \brief Calculate background using rotation background method
   template <typename TPhotons>
-  void RotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, CollsWithQvecs::iterator const& collision)
+  void rotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, CollsWithQvecs::iterator const& collision)
   {
     // if less than 3 clusters are present skip event since we need at least 3 clusters
     if (photons_coll.size() < 3) {
@@ -567,7 +568,7 @@ struct EMfTaskPi0Flow {
 
     try {
       iCellID_photon1 = emcalGeom->GetAbsCellIdFromEtaPhi(photon1.Eta(), photon1.Phi());
-      if (IsTooCloseToEdge(iCellID_photon1, cfgDistanceToEdge.value)) {
+      if (isTooCloseToEdge(iCellID_photon1, cfgDistanceToEdge.value)) {
         iCellID_photon1 = -1;
       }
     } catch (o2::emcal::InvalidPositionException& e) {
@@ -575,7 +576,7 @@ struct EMfTaskPi0Flow {
     }
     try {
       iCellID_photon2 = emcalGeom->GetAbsCellIdFromEtaPhi(photon2.Eta(), photon2.Phi());
-      if (IsTooCloseToEdge(iCellID_photon2, cfgDistanceToEdge.value)) {
+      if (isTooCloseToEdge(iCellID_photon2, cfgDistanceToEdge.value)) {
         iCellID_photon2 = -1;
       }
     } catch (o2::emcal::InvalidPositionException& e) {
@@ -609,7 +610,7 @@ struct EMfTaskPi0Flow {
           if (mesonConfig.enableTanThetadPhi) {
             float dTheta = photon1.Theta() - photon3.Theta();
             float dPhi = photon1.Phi() - photon3.Phi();
-            if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(atan(dTheta / dPhi)))) {
+            if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
               registry.fill(HIST("hSparseBkgFlow"), mother1.M(), mother1.Pt(), cent, scalprodCand1);
             }
           } else {
@@ -632,7 +633,7 @@ struct EMfTaskPi0Flow {
           if (mesonConfig.enableTanThetadPhi) {
             float dTheta = photon2.Theta() - photon3.Theta();
             float dPhi = photon2.Phi() - photon3.Phi();
-            if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(atan(dTheta / dPhi)))) {
+            if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
               registry.fill(HIST("hSparseBkgFlow"), mother2.M(), mother2.Pt(), cent, scalprodCand2);
             }
           } else {
@@ -671,11 +672,11 @@ struct EMfTaskPi0Flow {
   // Pi0 from EMCal
   void processEMCal(CollsWithQvecs const& collisions, EMCalPhotons const& clusters)
   {
-    int NColl = 1;
+    int nColl = 1;
     for (const auto& collision : collisions) {
       auto photons_per_collision = clusters.sliceBy(perCollision_emc, collision.globalIndex());
 
-      if (eventcuts.enableQA) {
+      if (eventcuts.cfgEnableQA) {
         // TODO: check EMCal NCells in collisions without EMC Readout
         registry.fill(HIST("hCollisionEMCCheck"), 1.); // all
         if (collision.alias_bit(kTVXinEMC) == true) {
@@ -691,7 +692,7 @@ struct EMfTaskPi0Flow {
             registry.fill(HIST("hCollisionEMCCheck"), 3.); // has EMC cluster
             registry.fill(HIST("hCollisionEMCCheck"), 6.); // has no EMC read out and clusters
             registry.fill(HIST("LED/hMult"), collision.multFT0C());
-            for (auto& photon : photons_per_collision) {
+            for (const auto& photon : photons_per_collision) {
               registry.fill(HIST("LED/hClusterEtaPhi"), photon.phi(), photon.eta());
               registry.fill(HIST("LED/clusterTimeVsE"), photon.time(), photon.e());
               registry.fill(HIST("LED/hNCell"), photon.nCells());
@@ -724,8 +725,8 @@ struct EMfTaskPi0Flow {
       registry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
       registry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
 
-      if (emccuts.enableQA) {
-        for (auto& photon : photons_per_collision) {
+      if (emccuts.cfgEnableQA) {
+        for (const auto& photon : photons_per_collision) {
           registry.fill(HIST("hEClusterBefore"), photon.e()); // before cuts
           if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(photon))) {
             continue;
@@ -733,7 +734,7 @@ struct EMfTaskPi0Flow {
           registry.fill(HIST("hEClusterAfter"), photon.e()); // accepted after cuts
         }
       }
-      for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons_per_collision, photons_per_collision))) {
+      for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons_per_collision, photons_per_collision))) {
         if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fEMCCut.IsSelected<EMCalPhotons::iterator>(g2))) {
           continue;
         }
@@ -749,8 +750,8 @@ struct EMfTaskPi0Flow {
           continue;
         }
         if (cfgDoRotation) {
-          if (NColl % cfgDownsampling.value == 0) {
-            RotationBackground<EMCalPhotons>(vMeson, v1, v2, photons_per_collision, g1.globalIndex(), g2.globalIndex(), collision);
+          if (nColl % cfgDownsampling.value == 0) {
+            rotationBackground<EMCalPhotons>(vMeson, v1, v2, photons_per_collision, g1.globalIndex(), g2.globalIndex(), collision);
           }
         }
         if (thnConfigAxisInvMass.value[1] > vMeson.M() || thnConfigAxisInvMass.value.back() < vMeson.M()) {
@@ -761,12 +762,12 @@ struct EMfTaskPi0Flow {
           registry.fill(HIST("hClusterCuts"), 4);
           continue;
         }
-        if (mesonConfig.enableQA) {
+        if (mesonConfig.cfgEnableQA) {
           registry.fill(HIST("hInvMassPt"), vMeson.M(), vMeson.Pt());
-          registry.fill(HIST("hTanThetaPhi"), vMeson.M(), getAngleDegree(atan(dTheta / dPhi)));
+          registry.fill(HIST("hTanThetaPhi"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
           registry.fill(HIST("hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
         }
-        if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(atan(dTheta / dPhi)))) {
+        if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
           registry.fill(HIST("hClusterCuts"), 5);
           continue;
         }
@@ -774,15 +775,15 @@ struct EMfTaskPi0Flow {
         runFlowAnalysis(collision, vMeson);
       }
       if (cfgDoRotation) {
-        if (NColl % cfgDownsampling.value == 0) {
-          NColl = 1; // reset counter
+        if (nColl % cfgDownsampling.value == 0) {
+          nColl = 1; // reset counter
         } else {
-          NColl++;
+          nColl++;
         }
       }
     }
   }
-  PROCESS_SWITCH(EMfTaskPi0Flow, processEMCal, "Process EMCal Pi0 candidates", true);
+  PROCESS_SWITCH(EMTaskPi0FlowEMC, processEMCal, "Process EMCal Pi0 candidates", true);
 
   // Pi0 from EMCal
   void processEMCalMixed(FilteredCollsWithQvecs const& collisions, FilteredEMCalPhotons const& clusters)
@@ -794,12 +795,12 @@ struct EMfTaskPi0Flow {
       };
 
     using BinningType = FlexibleBinningPolicy<std::tuple<decltype(getClustersSize)>, aod::collision::PosZ, aod::cent::CentFT0C, emevent::EP2FT0M<emevent::Q2xFT0M, emevent::Q2yFT0M>>;
-    BinningType binningWithLambda{{getClustersSize}, {mixingConfig.ConfVtxBins, mixingConfig.ConfCentBins, mixingConfig.ConfEPBins}, true};
+    BinningType binningWithLambda{{getClustersSize}, {mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins, mixingConfig.cfgEPBins}, true};
 
     auto clustersTuple = std::make_tuple(clusters);
-    SameKindPair<FilteredCollsWithQvecs, FilteredEMCalPhotons, BinningType> pair{binningWithLambda, mixingConfig.ConfMixingDepth, -1, collisions, clustersTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+    SameKindPair<FilteredCollsWithQvecs, FilteredEMCalPhotons, BinningType> pair{binningWithLambda, mixingConfig.cfgMixingDepth, -1, collisions, clustersTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
-    for (auto& [c1, clusters1, c2, clusters2] : pair) {
+    for (const auto& [c1, clusters1, c2, clusters2] : pair) {
       if (!(fEMEventCut.IsSelected(c1)) || !(fEMEventCut.IsSelected(c2))) {
         // general event selection
         continue;
@@ -817,7 +818,7 @@ struct EMfTaskPi0Flow {
         continue;
       }
       initCCDB(c1);
-      for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(clusters1, clusters2))) {
+      for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(clusters1, clusters2))) {
         if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fEMCCut.IsSelected<EMCalPhotons::iterator>(g2))) {
           continue;
         }
@@ -842,12 +843,12 @@ struct EMfTaskPi0Flow {
           registry.fill(HIST("hClusterCuts"), 4);
           continue;
         }
-        if (mesonConfig.enableQA) {
+        if (mesonConfig.cfgEnableQA) {
           registry.fill(HIST("hInvMassPt"), vMeson.M(), vMeson.Pt());
-          registry.fill(HIST("hTanThetaPhi"), vMeson.M(), getAngleDegree(atan(dTheta / dPhi)));
+          registry.fill(HIST("hTanThetaPhi"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
           registry.fill(HIST("hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
         }
-        if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(atan(dTheta / dPhi)))) {
+        if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
           registry.fill(HIST("hClusterCuts"), 5);
           continue;
         }
@@ -856,7 +857,7 @@ struct EMfTaskPi0Flow {
       }
     }
   }
-  PROCESS_SWITCH(EMfTaskPi0Flow, processEMCalMixed, "Process EMCal Pi0 mixed event candidates", false);
+  PROCESS_SWITCH(EMTaskPi0FlowEMC, processEMCalMixed, "Process EMCal Pi0 mixed event candidates", false);
 
   // Resolution
   void processResolution(CollsWithQvecs::iterator const& collision)
@@ -976,11 +977,11 @@ struct EMfTaskPi0Flow {
       }
     }
   }
-  PROCESS_SWITCH(EMfTaskPi0Flow, processResolution, "Process resolution", false);
+  PROCESS_SWITCH(EMTaskPi0FlowEMC, processResolution, "Process resolution", false);
 
-}; // End struct EMfTaskPi0Flow
+}; // End struct EMTaskPi0FlowEMC
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<EMfTaskPi0Flow>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<EMTaskPi0FlowEMC>(cfgc)};
 }
