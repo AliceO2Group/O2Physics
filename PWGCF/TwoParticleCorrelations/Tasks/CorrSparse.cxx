@@ -38,11 +38,6 @@ struct CorrSparse {
   Configurable<float> cfgPtCutMin = {"minpt", 0.2, "Minimum accepted track pT. Default 0.2 GeV"};
   Configurable<float> cfgPtCutMax = {"maxpt", 5.0, "Maximum accepted track pT. Default 5.0 GeV"};
   Configurable<float> cfgEtaCut = {"etacut", 0.8, "Eta cut. Default 0.8"};
-  Configurable<float> cfgDCAzCut = {"dcacut", 0.3, "DCA z cut. Default 0.3 cm"};
-  Configurable<float> cfgDCAxyCut = {"dcacutxy", 0.3, "DCA xy cut. Default 0.2 cm"};
-  Configurable<float> cfgDCAxySigmaCut = {"dcacutxysigma", 1, "DCA xy sigma cut. Default 0.3"};
-
-  Configurable<float> cfgCutChi2prTPCcls = {"chi2cut", 2.5, "Chi2 cut. Default 2.5"};
 
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
@@ -59,12 +54,12 @@ struct CorrSparse {
   {
     LOGF(info, "Starting init");
     registry.add("Yield", "pT vs eta vs Nch", {HistType::kTH3F, {{40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}, {100, 0, 100, "Nch"}}}); // check to see total number of tracks
-    registry.add("etaphi_Trigger", "eta vs phi vs Nch", {HistType::kTH3F, {{100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}, {100, 0, 100, "Nch"}}});
+    registry.add("etaphi_Trigger", "eta vs phi vs Nch", {HistType::kTH3F, {{100, -2, 2, "#eta"}, {200, 0, TwoPI, "#varphi"}, {100, 0, 100, "Nch"}}});
 
     // Make histograms to check the distributions after cuts
     registry.add("deltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // check to see the delta eta and delta phi distribution
     registry.add("deltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
-    registry.add("Phi", "Phi", {HistType::kTH1D, {{72, 0, PI * 2, "Phi"}}});
+    registry.add("Phi", "Phi", {HistType::kTH1D, {{72, 0, TwoPI, "Phi"}}});
     registry.add("Eta", "Eta", {HistType::kTH1D, {{40, -2, 2, "Eta"}}});
     registry.add("pT", "pT", {HistType::kTH1D, {axisPtTrigger}});
     registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
