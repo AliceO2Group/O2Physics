@@ -79,8 +79,8 @@ struct HfTaskCorrelationLcHadrons {
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<bool> selNoSameBunchPileUpColl{"selNoSameBunchPileUpColl", true, "Flag for rejecting the collisions associated with the same bunch crossing"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
-  Configurable<std::vector<double>> mlOutputPrompt{"mlScorePrompt", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt"};
-  Configurable<std::vector<double>> mlOutputBkg{"mlScoreBkg", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for bkg"};
+  Configurable<std::vector<double>> mlOutputPrompt{"mlOutputPrompt", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt"};
+  Configurable<std::vector<double>> mlOutputBkg{"mlOutputBkg", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for bkg"};
   // Pt ranges for correlation plots: the default values are those embedded in hf_cuts_lc_to_p_k_pi (i.e. the mass Pt bins), but can be redefined via json files
   Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{vecBinsPtCorrelations}, "Pt bin limits for correlation plots"};
   Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "Pt bin limits for assoc particle efficiency"};
@@ -117,20 +117,13 @@ struct HfTaskCorrelationLcHadrons {
   Configurable<std::string> fdEffCcdbPath{"fdEffCcdbPath", "", "CCDB path for trigger efficiency"};
   Configurable<int64_t> timestampCcdb{"timestampCcdb", -1, "timestamp of the efficiency files used to query in CCDB"};
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  // configurable axis definition
-  ConfigurableAxis binsMassLc{"binsMassLc", {200, 1.98, 2.58}, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
-  ConfigurableAxis binsBdtScore{"binsBdtScore", {100, 0., 1.}, "Bdt output scores"};
-  ConfigurableAxis binsEta{"binsEta", {100, -2., 2.}, "#it{#eta}"};
-  ConfigurableAxis binsPhi{"binsPhi", {64, -PIHalf, 3. * PIHalf}, "#it{#varphi}"};
-  ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 8000.}, "Multiplicity as FT0M signal amplitude"};
-  ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
 
-  Service<ccdb::BasicCCDBManager> ccdb;
   std::shared_ptr<TH1> mEfficiencyPrompt = nullptr;
   std::shared_ptr<TH1> mEfficiencyFD = nullptr;
   std::shared_ptr<TH1> mEfficiencyAssociated = nullptr;
 
   HfHelper hfHelper;
+  Service<ccdb::BasicCCDBManager> ccdb;
 
   enum CandidateStep { kCandidateStepMcGenAll = 0,
                        kCandidateStepMcGenLcToPKPi,
@@ -148,6 +141,14 @@ struct HfTaskCorrelationLcHadrons {
 
   Filter lcFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
+
+  // configurable axis definition
+  ConfigurableAxis binsMassLc{"binsMassLc", {200, 1.98, 2.58}, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
+  ConfigurableAxis binsBdtScore{"binsBdtScore", {100, 0., 1.}, "Bdt output scores"};
+  ConfigurableAxis binsEta{"binsEta", {100, -2., 2.}, "#it{#eta}"};
+  ConfigurableAxis binsPhi{"binsPhi", {64, -PIHalf, 3. * PIHalf}, "#it{#varphi}"};
+  ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 8000.}, "Multiplicity as FT0M signal amplitude"};
+  ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
