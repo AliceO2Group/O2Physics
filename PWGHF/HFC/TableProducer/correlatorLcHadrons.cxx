@@ -610,7 +610,7 @@ struct HfCorrelatorLcHadrons {
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
         }
       } // end inner loop (Tracks)
-    } // end outer Lc loop
+    }   // end outer Lc loop
     registry.fill(HIST("hZvtx"), collision.posZ());
     registry.fill(HIST("hMultFT0M"), collision.multFT0M());
   }
@@ -690,7 +690,7 @@ struct HfCorrelatorLcHadrons {
           correlationStatus = true;
         }
         if ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particle.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton)) {
-            continue;
+          continue;
         }
         if (!particleAssoc.isPhysicalPrimary()) {
           continue;
@@ -713,7 +713,7 @@ struct HfCorrelatorLcHadrons {
         entryLcHadronRecoInfo(MassLambdaCPlus, true);
         entryLcHadronGenInfo(isLcPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
       } // end inner loop
-    } // end outer loop
+    }   // end outer loop
     registry.fill(HIST("hCountLcHadronPerEvent"), counterLcHadron);
     registry.fill(HIST("hZvtx"), mcCollision.posZ());
   }
