@@ -124,9 +124,9 @@ struct AngularCorrelationsInJets {
   int mRunNumber;
 
   using FullTracksRun2 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime, aod::TrackSelection,
-                                   aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta>;
+                                   aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl/* , aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFTr, aod::pidTOFAl */>;
   using FullTracksRun3 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection, aod::TrackSelectionExtension,
-                                   aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta>;
+                                   aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl/* , aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFTr, aod::pidTOFAl */>;
   using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
 
   Filter prelimTrackCuts = (aod::track::itsChi2NCl < fMaxChi2ITS &&
@@ -308,7 +308,7 @@ struct AngularCorrelationsInJets {
   }
 
   template <class T>
-  bool selectTrack(T const& track)
+  bool selectTrack(T const& track) // preliminary track selections
   {
     if (track.tpcNClsCrossedRows() < fMinRatioCrossedRowsTPC * track.tpcNClsFindable() ||
         track.tpcNClsCrossedRows() < fMinNCrossedRowsTPC ||
@@ -324,6 +324,21 @@ struct AngularCorrelationsInJets {
       }
     }
     return true;
+  }
+
+  template <class T>
+  bool singleSpeciesTPCNSigma(T const& track, int species)
+  { // reject any track that has nsigma < 3 for more than 1 species
+    if (track.tpcNSigmaStoreEl() < 3.0 || track.tpcNSigmaStoreMu() < 3.0 || track.tpcNSigmaStorePi() < 3.0 || track.tpcNSigmaStoreKa() < 3.0 || track.tpcNSigmaStoreTr() < 3.0 || track.tpcNSigmaStoreAl() < 3.0)
+      return false;
+    switch species {
+      case 1: // (anti)proton
+        return (track.tpcNSigmaPr() < 3.0 && track.tpcNSigmaDe() > 3.0 && track.tpcNSigmaHe() > 3.0);
+      case 2: // (anti)deuteron
+        return (track.tpcNSigmaDe() < 3.0 && track.tpcNSigmaPr() > 3.0 && track.tpcNSigmaHe() > 3.0);
+      case 3: // (anti)helium-3
+        return (track.tpcNSigmaHe() < 3.0 && track.tpcNSigmaDe() > 3.0 && track.tpcNSigmaPr() > 3.0);
+    }
   }
 
   template <typename T>
@@ -343,11 +358,13 @@ struct AngularCorrelationsInJets {
       registryData.fill(HIST("hTOFnsigmaProtonCF"), track.pt(), track.tofNSigmaPr());
 
       // nsigma
-      double tofNsigma = (track.hasTOF() || track.pt() < fProtonTPCTOFpT) ? track.tofNSigmaPr() : 0;
+      double tofNsigma = track.hasTOF() ? track.tofNSigmaPr() : 999;
+      if ((track.pt() < fProtonTPCTOFpT && (TMath::Abs(track.tpcNSigmaPr()) > fProtonNsigma)) || (track.pt() > fProtonTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaPr()*track.tpcNSigmaPr() + tofNsigma*tofNsigma) > fProtonNsigma)))
       if (TMath::Sqrt(track.tpcNSigmaPr()*track.tpcNSigmaPr() + tofNsigma*tofNsigma) > fProtonNsigma)
         return false;
-      }
-    } else { // for yields
+      if (!singleSpeciesTPCNSigma(track, 1))
+        return false;
+      } else { // for yields
       // DCA
       if (TMath::Abs(track.dcaXY()) > fProtonDCAxyYield)
         return false;
@@ -391,10 +408,11 @@ struct AngularCorrelationsInJets {
       registryData.fill(HIST("hTOFnsigmaAntiprotonCF"), track.pt(), track.tofNSigmaPr());
 
       // nsigma
-      double tofNsigma = (track.hasTOF() || track.pt() < fAntiprotonTPCTOFpT) ? track.tofNSigmaPr() : 0;
-      if (TMath::Sqrt(track.tpcNSigmaPr() * track.tpcNSigmaPr() + tofNsigma * tofNsigma) > fAntiprotonNsigma)
+      double tofNsigma = track.hasTOF() ? track.tofNSigmaPr() : 999;
+      if ((track.pt() < fAntiprotonTPCTOFpT && (TMath::Abs(track.tpcNSigmaPr()) > fAntiprotonNsigma)) || (track.pt() > fAntiprotonTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaPr()*track.tpcNSigmaPr() + tofNsigma*tofNsigma) > fAntiprotonNsigma)))
         return false;
-      }
+      if (!singleSpeciesTPCNSigma(track, 1))
+        return false;
     } else { // for yields
       // DCA
       if (TMath::Abs(track.dcaXY()) > fAntiprotonDCAxyYield)
@@ -439,10 +457,11 @@ struct AngularCorrelationsInJets {
         registryData.fill(HIST("hTOFnsigmaNucleiCF"), track.pt(), track.tofNSigmaDe());
 
         // nsigma
-        double tofNsigma = (track.hasTOF() || track.pt() < fNucleiTPCTOFpT) ? track.tofNSigmaDe() : 0;
-        if (TMath::Sqrt(track.tpcNSigmaDe() * track.tpcNSigmaDe() + tofNsigma * tofNsigma) > fNucleiNsigma)
+        double tofNsigma = track.hasTOF() ? track.tofNSigmaDe() : 999;
+        if ((track.pt() < fNucleiTPCTOFpT && (TMath::Abs(track.tpcNSigmaDe()) > fNucleiNsigma)) || (track.pt() > fNucleiTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaDe()*track.tpcNSigmaDe() + tofNsigma*tofNsigma) > fNucleiNsigma)))
           return false;
-        }
+        if (!singleSpeciesTPCNSigma(track, 2))
+          return false;
       } else { // for yields
         // DCA
         if (TMath::Abs(track.dcaXY()) > fNucleiDCAxyYield)
@@ -478,10 +497,11 @@ struct AngularCorrelationsInJets {
         registryData.fill(HIST("hTOFnsigmaNucleiCF"), track.pt(), track.tofNSigmaHe());
 
         // nsigma
-        double tofNsigma = (track.hasTOF() || track.pt() < fNucleiTPCTOFpT) ? track.tofNSigmaHe() : 0;
-        if (TMath::Sqrt(track.tpcNSigmaHe() * track.tpcNSigmaHe() + tofNsigma*tofNsigma) > fNucleiNsigma)
+        double tofNsigma = track.hasTOF() ? track.tofNSigmaHe() : 999;
+        if ((track.pt() < fNucleiTPCTOFpT && (TMath::Abs(track.tpcNSigmaHe()) > fNucleiNsigma)) || (track.pt() > fNucleiTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaHe()*track.tpcNSigmaHe() + tofNsigma*tofNsigma) > fNucleiNsigma)))
           return false;
-        }
+        if (!singleSpeciesTPCNSigma(track, 3))
+          return false;
       } else { // for yields
         // DCA
         if (TMath::Abs(track.dcaXY()) > fNucleiDCAxyYield)
@@ -528,8 +548,10 @@ struct AngularCorrelationsInJets {
         registryData.fill(HIST("hTOFnsigmaAntinucleiCF"), track.pt(), track.tofNSigmaDe());
 
         // nsigma
-        double tofNsigma = (track.hasTOF() || track.pt() < fAntinucleiTPCTOFpT) ? track.tofNSigmaDe() : 0;
-        if (TMath::Sqrt(track.tpcNSigmaDe()*track.tpcNSigmaDe() + tofNsigma*tofNsigma) > fAntinucleiNsigma)
+        double tofNsigma = track.hasTOF() ? track.tofNSigmaDe() : 999;
+        if ((track.pt() < fAntinucleiTPCTOFpT && (TMath::Abs(track.tpcNSigmaDe()) > fAntinucleiNsigma)) || (track.pt() > fAntinucleiTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaDe()*track.tpcNSigmaDe() + tofNsigma*tofNsigma) > fAntinucleiNsigma)))
+          return false;
+        if (!singleSpeciesTPCNSigma(track, 2))
           return false;
       } else { // for yields
         // DCA
@@ -564,10 +586,11 @@ struct AngularCorrelationsInJets {
         registryData.fill(HIST("hTOFnsigmaAntinucleiCF"), track.pt(), track.tofNSigmaHe());
 
         // nsigma
-        double tofNsigma = (track.hasTOF() || track.pt() < fAntinucleiTPCTOFpT) ? track.tofNSigmaHe() : 0; // is 0 fine or should I choose something bigger to make up for probably decreased accuracy
-        if (TMath::Sqrt(track.tpcNSigmaHe()*track.tpcNSigmaHe() + tofNsigma*tofNsigma) > fAntinucleiNsigma) // is this fine or do I need to take different pT ranges into account like for the yield?
+        double tofNsigma = track.hasTOF() ? track.tofNSigmaHe() : 999;
+        if ((track.pt() < fAntinucleiTPCTOFpT && (TMath::Abs(track.tpcNSigmaHe()) > fAntinucleiNsigma)) || (track.pt() > fAntinucleiTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaHe()*track.tpcNSigmaHe() + tofNsigma*tofNsigma) > fAntinucleiNsigma)))
           return false;
-
+        if (!singleSpeciesTPCNSigma(track, 3))
+          return false;
       } else { // for yields
         // DCA
         if (TMath::Abs(track.dcaXY()) > fAntinucleiDCAxyYield)
@@ -594,7 +617,7 @@ struct AngularCorrelationsInJets {
     return true;
   }
 
-  void setTrackBuffer(const auto& tempBuffer, auto& buffer)
+  void setTrackBuffer(const auto& tempBuffer, auto& buffer) // refresh track buffer
   {
     for (const auto& pair : tempBuffer) {
       if (static_cast<int>(buffer.size()) == fBufferSize) {
@@ -606,7 +629,7 @@ struct AngularCorrelationsInJets {
     }
   }
 
-  void fillMixedEventDeltas(const auto& track, const auto& buffer, int particleType, const TVector3 jetAxis)
+  void fillMixedEventDeltas(const auto& track, const auto& buffer, int particleType, const TVector3 jetAxis) // correlate tracks from current event with tracks from buffer, i.e. other events
   {
     if (buffer.size() == 0)
       return;
