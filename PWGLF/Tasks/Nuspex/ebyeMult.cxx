@@ -8,14 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-//
-// ebyeMult.cxx
-//
-// This task creates the basic histograms to carry out the multiplicity
-// measurements for LF e-by-e analyses
-//
-// author: mario.ciacco@cern.ch
+
+/// \file ebyeMult.cxx
+/// \brief task to carry out multiplicity measurements for lf ebye analyses
+/// \author Mario Ciacco <mario.ciacco@cern.ch>
 
 #include <string>
 #include <utility>
