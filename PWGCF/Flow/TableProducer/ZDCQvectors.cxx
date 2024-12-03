@@ -9,7 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// In this task the energy calibration and recentring of Q-vectors constructed in the ZDCs will be done
+/// \file   flowSP.cxx
+/// \author Noor Koster
+/// \since  11/2024
+/// \brief  In this task the energy calibration and recentring of Q-vectors constructed in the ZDCs will be done
 
 #include <stdlib.h>
 #include <cmath>
@@ -172,12 +175,12 @@ struct ZDCQvectors {
     for (int step = 0; step < 6; step++) {
       registry.add<TH2>(Form("step%i/QA/hSPplaneA", step), "hSPplaneA", kTH2D, {{100, -4, 4}, axisCent10});
       registry.add<TH2>(Form("step%i/QA/hSPplaneC", step), "hSPplaneC", kTH2D, {{100, -4, 4}, axisCent10});
-      for (const char* side : sides) {
+      for (const auto& side : sides) {
         hQxvsQy[step] = registry.add<TH2>(Form("step%i/hZN%s_Qx_vs_Qy", step, side), Form("hZN%s_Qx_vs_Qy", side), kTH2F, {axisQ, axisQ});
       }
       int i = 0;
-      for (const char* COORD1 : capCOORDS) {
-        for (const char* COORD2 : capCOORDS) {
+      for (const auto& COORD1 : capCOORDS) {
+        for (const auto& COORD2 : capCOORDS) {
           // Now we get: <XX> <XY> & <YX> <YY> vs. Centrality
           hCOORDcorrelations[step][i] = registry.add<TProfile>(Form("step%i/QA/hQ%sA_Q%sC_vs_cent", step, COORD1, COORD2), Form("hQ%sA_Q%sC_vs_cent", COORD1, COORD2), kTProfile, {axisCent10});
           i++;
@@ -186,8 +189,8 @@ struct ZDCQvectors {
 
       // Add histograms for each step in the calibration process.
       // Sides is {A,C} and capcoords is {X,Y}
-      for (const char* side : sides) {
-        for (const char* coord : capCOORDS) {
+      for (const auto& side : sides) {
+        for (const auto& coord : capCOORDS) {
           registry.add(Form("step%i/QA/hQ%s%s_vs_cent", step, coord, side), Form("hQ%s%s_vs_cent", coord, side), {HistType::kTProfile, {axisCent10}});
           registry.add(Form("step%i/QA/hQ%s%s_vs_vx", step, coord, side), Form("hQ%s%s_vs_vx", coord, side), {HistType::kTProfile, {axisVx}});
           registry.add(Form("step%i/QA/hQ%s%s_vs_vy", step, coord, side), Form("hQ%s%s_vs_vy", coord, side), {HistType::kTProfile, {axisVy}});
@@ -613,7 +616,7 @@ struct ZDCQvectors {
         int calibtower = 0;
         std::vector<int> towersNocom = {1, 2, 3, 4, 6, 7, 8, 9};
 
-        for (int tower : towersNocom) {
+        for (const auto& tower : towersNocom) {
           if (meanEZN[tower] > 0) {
             double ecommon = (tower > 4) ? meanEZN[5] : meanEZN[0];
             e[calibtower] = eZN[calibtower] * (0.25 * ecommon) / meanEZN[tower];
