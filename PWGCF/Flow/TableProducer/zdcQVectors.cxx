@@ -109,7 +109,7 @@ bool isSelected = false;
 
 using namespace o2::analysis::qvectortask;
 
-struct zdcQVectors {
+Struct ZdcQVectors {
 
   Produces<aod::SPTableZDC> spTableZDC;
 
@@ -719,5 +719,5 @@ struct zdcQVectors {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<zdcQVectors>(cfgc)};
+    adaptAnalysisTask<ZdcQVectors>(cfgc)};
 }
