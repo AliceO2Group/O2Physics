@@ -8,6 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+//
+// ebyeMult.cxx
+//
+// This task creates the basic histograms to carry out the multiplicity
+// measurements for LF e-by-e analyses
+//
+// author: mario.ciacco@cern.ch
 
 #include <string>
 #include <utility>
@@ -64,7 +72,7 @@ struct CandidateEvent {
   int nTklRec = -1;
 };
 
-struct tagRun2V0MCalibration {
+struct TagRun2V0MCalibration {
   bool mCalibrationStored = false;
   TH1* mhVtxAmpCorrV0A = nullptr;
   TH1* mhVtxAmpCorrV0C = nullptr;
@@ -91,7 +99,7 @@ struct EbyeMult {
   CandidateEvent candidateEvent;
 
   int mRunNumber;
-  float d_bz;
+  float dBz;
   uint8_t nTrackletsColl;
 
   ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
@@ -224,8 +232,8 @@ struct EbyeMult {
       o2::base::Propagator::initFieldFromGRP(grpmag);
     }
     // Fetch magnetic field from ccdb for current collision
-    d_bz = o2::base::Propagator::Instance()->getNominalBz();
-    LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kG";
+    dBz = o2::base::Propagator::Instance()->getNominalBz();
+    LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << dBz << " kG";
     mRunNumber = bc.runNumber();
   }
 
@@ -263,7 +271,7 @@ struct EbyeMult {
   {
 
     mRunNumber = 0;
-    d_bz = 0;
+    dBz = 0;
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -432,8 +440,8 @@ struct EbyeMult {
   void fillMcGen(aod::McParticles const& mcParticles, aod::McTrackLabels const& /*mcLab*/, uint64_t const& collisionId, float const& centrality)
   {
     int nParticles = 0;
-    auto mcParticles_thisCollision = mcParticles.sliceBy(perCollisionMcParts, collisionId);
-    for (auto const& mcPart : mcParticles_thisCollision) {
+    auto mcParticlesThisCollision = mcParticles.sliceBy(perCollisionMcParts, collisionId);
+    for (auto const& mcPart : mcParticlesThisCollision) {
       auto genEta = mcPart.eta();
       if (std::abs(genEta) > etaMax) {
         continue;
@@ -479,8 +487,8 @@ struct EbyeMult {
 
     int nParticles = 0;
     int partInAcc = 0;
-    auto particles_thisCollision = particles.sliceBy(perCollisionMcParts, collision.globalIndex());
-    for (auto const& particle : particles_thisCollision) {
+    auto particlesThisCollision = particles.sliceBy(perCollisionMcParts, collision.globalIndex());
+    for (auto const& particle : particlesThisCollision) {
       if (((particle.flags() & 0x8) && (doprocessMcRun2)) || (particle.flags() & 0x2))
         continue;
       if (!particle.isPhysicalPrimary() /* && !particle.has_mothers() */)
