@@ -9,7 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-
 // TODO: also vs. V0M
 #include <vector>
 #include <utility>
@@ -385,7 +384,7 @@ struct ebyeMult {
   template <class C, class T>
   void fillMcEvent(C const& collision, T const& tracks, float const& centrality, aod::McParticles const&, aod::McTrackLabels const& mcLabels)
   {
-    fillRecoEvent<C, T>(collision, tracks , centrality);
+    fillRecoEvent<C, T>(collision, tracks, centrality);
 
     int nTracks{0};
     for (auto& candidateTrack : candidateTracks) {
@@ -504,7 +503,7 @@ struct ebyeMult {
     return -1;
   }
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels> const& collisions, TracksFull const& tracks , aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, BCsWithRun2Info const&)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels> const& collisions, TracksFull const& tracks, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, BCsWithRun2Info const&)
   {
 
     for (const auto& collision : collisions) {
@@ -538,7 +537,7 @@ struct ebyeMult {
   }
   PROCESS_SWITCH(ebyeMult, processRun2, "process (Run 2)", false);
 
-  void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, TracksFull const& tracks , aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
+  void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, TracksFull const& tracks, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
   {
 
     for (const auto& collision : collisions) { // TODO: fill numerator for trigger efficiency
