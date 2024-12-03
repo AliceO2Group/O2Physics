@@ -16,6 +16,7 @@
 #define PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
 
 #include <cmath>
+#include <vector>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/Centrality.h"

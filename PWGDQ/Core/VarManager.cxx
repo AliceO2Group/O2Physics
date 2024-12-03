@@ -9,6 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 #include <cmath>
+#include <iostream>
+#include <vector>
+#include <map>
 #include "PWGDQ/Core/VarManager.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
