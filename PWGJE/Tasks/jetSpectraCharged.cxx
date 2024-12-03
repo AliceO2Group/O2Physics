@@ -56,7 +56,6 @@ struct JetSpectraChargedTask {
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> centralityMin{"centralityMin", -999.0, "minimum centrality"};
   Configurable<float> centralityMax{"centralityMax", 999.0, "maximum centrality"};
-  Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.4}, "jet resolution parameters"};
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum eta acceptance for tracks"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks"};
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum pT acceptance for tracks"};
@@ -87,11 +86,10 @@ struct JetSpectraChargedTask {
     AxisSpec centralityAxis = {1200, -10., 110., "Centrality"};
     AxisSpec trackPtAxis = {200, -0.5, 199.5, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec trackEtaAxis = {nBinsEta, trackEtaMin, trackEtaMax, "#eta"};
-
+    AxisSpec PhiAxis = {160, -1.0, 7.0, "#varphi"};
     AxisSpec jetPtAxis = {200, 0., 200., "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec jetPtAxisRhoAreaSub = {400, -200., 200., "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec jetEtaAxis = {nBinsEta, jetEtaMin, jetEtaMax, "#eta"};
-    AxisSpec PhiAxis = {160, -1.0, 7.0, "#varphi"};
 
     if (doprocessCollisions) {
       registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
@@ -240,14 +238,13 @@ struct JetSpectraChargedTask {
       registry.fill(HIST("h3_jet_pt_jet_eta_jet_phi"), jet.pt(), jet.eta(), jet.phi(), weight);
     }
 
-
     for (auto& constituent : jet.template tracks_as<aod::JetTracks>()) {
       registry.fill(HIST("h2_jet_pt_track_pt"), jet.pt(), constituent.pt(), weight);
     }
   }
 
   template <typename TJets>
-  void fillRhoAreaSubtractedHistograms(TJets const& jet, float centrality, float occupancy, float rho, float weight = 1.0)
+  void fillRhoAreaSubtractedHistograms(TJets const& jet, float centrality, float rho, float weight = 1.0)
   {
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       registry.fill(HIST("h_jet_pt_rhoareasubtracted"), jet.pt() - (rho * jet.area()), weight);
@@ -405,7 +402,9 @@ struct JetSpectraChargedTask {
   }
   PROCESS_SWITCH(JetSpectraChargedTask, processTracksWeighted, "QA for charged tracks weighted", false);
 
-  void processJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, aod::JetTracks const&)
+  void processJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, 
+                       soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, 
+                       aod::JetTracks const&)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
@@ -438,7 +437,7 @@ struct JetSpectraChargedTask {
         continue;
       }
       nJets++;
-      fillRhoAreaSubtractedHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.rho());
+      fillRhoAreaSubtractedHistograms(jet, collision.centrality(), collision.rho());
     }
     registry.fill(HIST("h2_occupancy_njets_rhoareasubtracted"), collision.trackOccupancyInTimeRange(), nJets);
     
@@ -461,7 +460,7 @@ struct JetSpectraChargedTask {
         continue;
       }
       nJets++;
-      fillRhoAreaSubtractedHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.rho());
+      fillRhoAreaSubtractedHistograms(jet, collision.centrality(), collision.rho());
     }
     registry.fill(HIST("h2_occupancy_njets_rhoareasubtracted"), collision.trackOccupancyInTimeRange(), nJets);
   }
