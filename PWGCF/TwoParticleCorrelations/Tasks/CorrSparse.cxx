@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file CorrSparse.cxx
+/// \brief Provides a sparse with usefull two particle correlation info
+/// \author Thor Jensen (djt288@alumni.ku.dk)
+
 #include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
