@@ -227,7 +227,7 @@ using JetParticlesSubLc = JMcParticleLcSubs;
 using McCollisionsLc = o2::soa::Join<HfLcMcCollBases, JLcMcCollisionIds>;
 using CandidatesLcMCP = o2::soa::Join<HfLcPBases, JLcPIds>;
 
-using CollisionsBplus = o2::soa::Join<HfBplusCollBases, JBplusCollisionIds>; // fix this!!
+using CollisionsBplus = o2::soa::Join<HfBplusCollBases, JBplusCollisionIds>;
 using CandidatesBplusData = o2::soa::Join<HfBplusBases, HfBplusPars, HfBplusParEs, HfBplusParD0s, HfBplusMls, HfBplusMlD0s, JBplusIds>;
 using CandidatesBplusMCD = o2::soa::Join<HfBplusBases, HfBplusPars, HfBplusParEs, HfBplusParD0s, HfBplusMls, HfBplusMlD0s, HfBplusMcs, JBplusIds>;
 using JetTracksSubBplus = JTrackBplusSubs;

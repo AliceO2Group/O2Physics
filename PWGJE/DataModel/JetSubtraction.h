@@ -69,7 +69,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfBplusBases, "_0");
 
 namespace bkgbplusmc
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCandBplusMcGen, "_0"); // fix this!!
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfBplusPBases, "_0");
 } // namespace bkgbplusmc
 
 namespace bkgdielectron

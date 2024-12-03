@@ -245,7 +245,7 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
       return false;
     }
   } else if constexpr (isBplusCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_bplus::DecayType::BplusToD0Pi) { // check this!!
+    if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_bplus::DecayType::BplusToD0Pi) {
       return true;
     } else {
       return false;
@@ -263,7 +263,7 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
       return false;
     }
   } else if constexpr (isBplusMcCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchGen()) == 1 << o2::aod::hf_cand_bplus::DecayType::BplusToD0Pi) { // check this!!
+    if (std::abs(candidate.flagMcMatchGen()) == 1 << o2::aod::hf_cand_bplus::DecayType::BplusToD0Pi) {
       return true;
     } else {
       return false;
