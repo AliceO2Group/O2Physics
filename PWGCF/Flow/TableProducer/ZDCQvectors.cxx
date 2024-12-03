@@ -71,45 +71,34 @@ namespace o2::analysis::qvectortask
 int counter = 0;
 
 // step0 -> Energy calib
-std::shared_ptr<TProfile2D> ZN_Energy[10] = {{nullptr}};
-std::shared_ptr<TH2> hQx_vs_Qy[6] = {{nullptr}};
+std::shared_ptr<TProfile2D> energyZN[10] = {{nullptr}};
+std::shared_ptr<TH2> hQxvsQy[6] = {{nullptr}};
 
 // <XX> <XY> <YX> and <YY>
-std::shared_ptr<TProfile> COORD_correlations[6][4] = {{nullptr}};
-std::vector<TProfile2D*> hZN_mean(10, nullptr); // Get from calibration file
-
-// step1: 4D large bins
-std::vector<THnSparseD*> mean_10perCent_v(4, nullptr); // hQXA, hQYA, hQXC, hQYC
-
-// step2: Small bins 1D
-std::vector<TProfile*> mean_cent_Run(4, nullptr); // hQXA, hQYA, hQXC, hQYC
-std::vector<TProfile*> mean_vx_Run(4, nullptr);   // hQXA, hQYA, hQXC, hQYC
-std::vector<TProfile*> mean_vy_Run(4, nullptr);   // hQXA, hQYA, hQXC, hQYC
-std::vector<TProfile*> mean_vz_Run(4, nullptr);   // hQXA, hQYA, hQXC, hQYC
+std::shared_ptr<TProfile> hCOORDcorrelations[6][4] = {{nullptr}};
 
 // Define histogrm names here to use same names for creating and later uploading and retrieving data from ccdb
 // Energy calibration:
-std::vector<TString> names_Ecal(10, "");
+std::vector<TString> namesEcal(10, "");
 std::vector<std::vector<TString>> names(5, std::vector<TString>()); //(1x 4d 4x 1d)
 std::vector<TString> vnames = {"hvertex_vx", "hvertex_vy"};
 
 // https://alice-notes.web.cern.ch/system/files/notes/analysis/620/017-May-31-analysis_note-ALICE_analysis_note_v2.pdf
-std::vector<double> ZDC_px = {-1.75, 1.75, -1.75, 1.75};
-std::vector<double> ZDC_py = {-1.75, -1.75, 1.75, 1.75};
+std::vector<double> pxZDC = {-1.75, 1.75, -1.75, 1.75};
+std::vector<double> pyZDC = {-1.75, -1.75, 1.75, 1.75};
 double alphaZDC = 0.395;
 
 // step 0 tm 5 A&C
 std::vector<std::vector<std::vector<double>>> q(6, std::vector<std::vector<double>>(7, std::vector<double>(4, 0.0))); // 5 iterations with 5 steps, each with 4 values
 
 // for energy calibration
-std::vector<double> EZN(8);      // uncalibrated energy for the 2x4 towers (a1, a2, a3, a4, c1, c2, c3, c4)
+std::vector<double> eZN(8);      // uncalibrated energy for the 2x4 towers (a1, a2, a3, a4, c1, c2, c3, c4)
 std::vector<double> meanEZN(10); // mean energies from calibration histos (common A, t1-4 A,common C, t1-4C)
 std::vector<double> e(8, 0.);    // calibrated energies (a1, a2, a3, a4, c1, c2, c3, c4))
 
 //  Define variables needed to do the recentring steps.
 double centrality = 0;
 int runnumber = 0;
-int lastRunnumber = 0;
 std::vector<double> v(3, 0); // vx, vy, vz
 bool isSelected = false;
 
@@ -117,16 +106,16 @@ bool isSelected = false;
 
 using namespace o2::analysis::qvectortask;
 
-struct ZDCqvectors {
+struct ZDCQvectors {
 
   Produces<aod::SPTableZDC> SPtableZDC;
 
   ConfigurableAxis axisCent{"axisCent", {90, 0, 90}, "Centrality axis in 1% bins"};
   ConfigurableAxis axisCent10{"axisCent10", {9, 0, 90}, "Centrality axis in 10% bins"};
   ConfigurableAxis axisQ{"axisQ", {100, -2, 2}, "Q vector (xy) in ZDC"};
-  ConfigurableAxis axisVx_big{"axisVx_big", {3, -0.01, 0.01}, "for Pos X of collision"};
-  ConfigurableAxis axisVy_big{"axisVy_big", {3, -0.01, 0.01}, "for Pos Y of collision"};
-  ConfigurableAxis axisVz_big{"axisVz_big", {3, -10, 10}, "for Pos Z of collision"};
+  ConfigurableAxis axisVxBig{"axisVxBig", {3, -0.01, 0.01}, "for Pos X of collision"};
+  ConfigurableAxis axisVyBig{"axisVyBig", {3, -0.01, 0.01}, "for Pos Y of collision"};
+  ConfigurableAxis axisVzBig{"axisVzBig", {3, -10, 10}, "for Pos Z of collision"};
   ConfigurableAxis axisVx{"axisVx", {10, -0.01, 0.01}, "for Pos X of collision"};
   ConfigurableAxis axisVy{"axisVy", {10, -0.01, 0.01}, "for Pos Y of collision"};
   ConfigurableAxis axisVz{"axisVz", {10, -10, 1}, "for vz of collision"};
@@ -171,13 +160,12 @@ struct ZDCqvectors {
     ccdb->setCreatedNotAfter(now);
 
     std::vector<const char*> sides = {"A", "C"};
-    std::vector<const char*> coords = {"x", "y", "z"};
-    std::vector<const char*> COORDS = {"X", "Y"};
+    std::vector<const char*> capCOORDS = {"X", "Y"};
 
     // Tower mean energies vs. centrality used for tower gain equalisation
     for (int tower = 0; tower < 10; tower++) {
-      names_Ecal[tower] = TString::Format("hZN%s_mean_t%i_cent", sides[(tower < 5) ? 0 : 1], tower % 5);
-      ZN_Energy[tower] = registry.add<TProfile2D>(Form("Energy/%s", names_Ecal[tower].Data()), Form("%s", names_Ecal[tower].Data()), kTProfile2D, {{1, 0, 1}, axisCent});
+      namesEcal[tower] = TString::Format("hZN%s_mean_t%i_cent", sides[(tower < 5) ? 0 : 1], tower % 5);
+      energyZN[tower] = registry.add<TProfile2D>(Form("Energy/%s", namesEcal[tower].Data()), Form("%s", namesEcal[tower].Data()), kTProfile2D, {{1, 0, 1}, axisCent});
     }
 
     // Qx_vs_Qy for each step for ZNA and ZNC
@@ -185,21 +173,21 @@ struct ZDCqvectors {
       registry.add<TH2>(Form("step%i/QA/hSPplaneA", step), "hSPplaneA", kTH2D, {{100, -4, 4}, axisCent10});
       registry.add<TH2>(Form("step%i/QA/hSPplaneC", step), "hSPplaneC", kTH2D, {{100, -4, 4}, axisCent10});
       for (const char* side : sides) {
-        hQx_vs_Qy[step] = registry.add<TH2>(Form("step%i/hZN%s_Qx_vs_Qy", step, side), Form("hZN%s_Qx_vs_Qy", side), kTH2F, {axisQ, axisQ});
+        hQxvsQy[step] = registry.add<TH2>(Form("step%i/hZN%s_Qx_vs_Qy", step, side), Form("hZN%s_Qx_vs_Qy", side), kTH2F, {axisQ, axisQ});
       }
       int i = 0;
-      for (const char* COORD1 : COORDS) {
-        for (const char* COORD2 : COORDS) {
+      for (const char* COORD1 : capCOORDS) {
+        for (const char* COORD2 : capCOORDS) {
           // Now we get: <XX> <XY> & <YX> <YY> vs. Centrality
-          COORD_correlations[step][i] = registry.add<TProfile>(Form("step%i/QA/hQ%sA_Q%sC_vs_cent", step, COORD1, COORD2), Form("hQ%sA_Q%sC_vs_cent", COORD1, COORD2), kTProfile, {axisCent10});
+          hCOORDcorrelations[step][i] = registry.add<TProfile>(Form("step%i/QA/hQ%sA_Q%sC_vs_cent", step, COORD1, COORD2), Form("hQ%sA_Q%sC_vs_cent", COORD1, COORD2), kTProfile, {axisCent10});
           i++;
         }
       }
 
       // Add histograms for each step in the calibration process.
-      // Sides is {A,C} and coords is {X,Y}
+      // Sides is {A,C} and capcoords is {X,Y}
       for (const char* side : sides) {
-        for (const char* coord : COORDS) {
+        for (const char* coord : capCOORDS) {
           registry.add(Form("step%i/QA/hQ%s%s_vs_cent", step, coord, side), Form("hQ%s%s_vs_cent", coord, side), {HistType::kTProfile, {axisCent10}});
           registry.add(Form("step%i/QA/hQ%s%s_vs_vx", step, coord, side), Form("hQ%s%s_vs_vx", coord, side), {HistType::kTProfile, {axisVx}});
           registry.add(Form("step%i/QA/hQ%s%s_vs_vy", step, coord, side), Form("hQ%s%s_vs_vy", coord, side), {HistType::kTProfile, {axisVy}});
@@ -207,7 +195,7 @@ struct ZDCqvectors {
 
           if (step == 1 || step == 5) {
             TString name = TString::Format("hQ%s%s_mean_Cent_V_run", coord, side);
-            registry.add(Form("step%i/%s", step, name.Data()), Form("hQ%s%s_mean_Cent_V_run", coord, side), {HistType::kTHnSparseD, {axisCent10, axisVx_big, axisVy_big, axisVz_big, axisQ}});
+            registry.add(Form("step%i/%s", step, name.Data()), Form("hQ%s%s_mean_Cent_V_run", coord, side), {HistType::kTHnSparseD, {axisCent10, axisVxBig, axisVyBig, axisVzBig, axisQ}});
             if (step == 1)
               names[step - 1].push_back(name);
           }
@@ -231,7 +219,7 @@ struct ZDCqvectors {
             registry.add<TProfile>(Form("step%i/%s", step, name.Data()), Form("hQ%s%s_mean_vz_run", coord, side), kTProfile, {axisVz});
             names[step - 1].push_back(name);
           }
-        } // end of COORDS
+        } // end of capCOORDS
       } // end of sides
     } // end of sum over steps
 
@@ -367,10 +355,10 @@ struct ZDCqvectors {
       registry.fill(HIST(subdir[index]) + HIST("QA/hQYC_vs_vz"), v[2], q[iteration][index_rt][3]);
 
       // add psi!!
-      double Psi_A = 1.0 * TMath::ATan2(q[iteration][index_rt][2], q[iteration][index_rt][0]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hSPplaneA"), Psi_A, centrality, 1);
-      double Psi_C = 1.0 * TMath::ATan2(q[iteration][index_rt][3], q[iteration][index_rt][1]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hSPplaneC"), Psi_C, centrality, 1);
+      double psiA = 1.0 * std::atan2(q[iteration][index_rt][2], q[iteration][index_rt][0]);
+      registry.fill(HIST(subdir[index]) + HIST("QA/hSPplaneA"), psiA, centrality, 1);
+      double psiC = 1.0 * std::atan2(q[iteration][index_rt][3], q[iteration][index_rt][1]);
+      registry.fill(HIST(subdir[index]) + HIST("QA/hSPplaneC"), psiC, centrality, 1);
 
     });
   }
@@ -456,10 +444,10 @@ struct ZDCqvectors {
       // needed for energy calibration!
       TProfile2D* h = reinterpret_cast<TProfile2D*>(hist);
       TString name = h->GetName();
-      int binrunnumber = h->GetXaxis()->FindBin(TString::Format("%i", runnumber));
+      int binrunnumber = h->GetXaxis()->FindBin(TString::Format("%d", runnumber));
+      LOGF(info, "Looking for run %i in bin %i", runnumber, binrunnumber); 
       int bin = h->GetYaxis()->FindBin(centrality);
       calibConstant = h->GetBinContent(binrunnumber, bin);
-
     } else if (hist->InheritsFrom("TProfile")) {
       TProfile* h = reinterpret_cast<TProfile*>(hist);
       TString name = h->GetName();
@@ -518,7 +506,6 @@ struct ZDCqvectors {
 
     if (cent < 0 || cent > 90) {
       SPtableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
-      lastRunnumber = runnumber;
       return;
     }
 
@@ -528,7 +515,6 @@ struct ZDCqvectors {
 
     if (!foundBC.has_zdc()) {
       SPtableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
-      lastRunnumber = runnumber;
       return;
     }
 
@@ -540,22 +526,21 @@ struct ZDCqvectors {
 
       const auto& zdcCol = foundBC.zdc();
 
-      // Get the raw energies EZN[8] (not the common A,C)
+      // Get the raw energies eZN[8] (not the common A,C)
       for (int tower = 0; tower < 8; tower++) {
-        EZN[tower] = (tower < 4) ? zdcCol.energySectorZNA()[tower] : zdcCol.energySectorZNC()[tower % 4];
+        eZN[tower] = (tower < 4) ? zdcCol.energySectorZNA()[tower] : zdcCol.energySectorZNC()[tower % 4];
       }
 
       // load the calibration histos for iteration 0 step 0 (Energy Calibration)
-      if (runnumber != lastRunnumber)
-        loadCalibrations(0, 0, foundBC.timestamp(), cfgEnergyCal, names_Ecal);
+      loadCalibrations(0, 0, foundBC.timestamp(), cfgEnergyCal, namesEcal);
       if (!cal.calibfilesLoaded[0][0]) {
         if (counter < 1) {
           LOGF(info, " --> No Energy calibration files found.. -> Only Energy calibration will be done. ");
         }
       }
       // load the calibrations for the mean v
-      if (runnumber != lastRunnumber)
-        loadCalibrations(0, 1, foundBC.timestamp(), cfgMeanv, vnames);
+      loadCalibrations(0, 1, foundBC.timestamp(), cfgMeanv, vnames);
+
       if (!cal.calibfilesLoaded[0][1]) {
         if (counter < 1)
           LOGF(warning, " --> No mean V found.. -> THis wil lead to wrong axis for vx, vy (will be created in vmean/)");
@@ -570,9 +555,9 @@ struct ZDCqvectors {
       bool isZNChit = true;
 
       for (int i = 0; i < 8; ++i) {
-        if (i < 4 && EZN[i] <= 0)
+        if (i < 4 && eZN[i] <= 0)
           isZNAhit = false;
-        if (i > 3 && EZN[i] <= 0)
+        if (i > 3 && eZN[i] <= 0)
           isZNChit = false;
       }
 
@@ -585,16 +570,16 @@ struct ZDCqvectors {
       for (int tower = 0; tower < 5; tower++) {
         if (tower == 0) {
           if (isZNAhit)
-            ZN_Energy[tower]->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNA(), 1);
+            energyZN[tower]->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNA(), 1);
           if (isZNChit)
-            ZN_Energy[tower + 5]->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNC(), 1);
+            energyZN[tower + 5]->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNC(), 1);
           LOGF(debug, "Common A tower filled with: %i, %.2f, %.2f", runnumber, cent, zdcCol.energyCommonZNA());
         } else {
           if (isZNAhit)
-            ZN_Energy[tower]->Fill(Form("%d", runnumber), cent, EZN[tower - 1], 1);
+            energyZN[tower]->Fill(Form("%d", runnumber), cent, eZN[tower - 1], 1);
           if (isZNChit)
-            ZN_Energy[tower + 5]->Fill(Form("%d", runnumber), cent, EZN[tower - 1 + 4], 1);
-          LOGF(debug, "Tower ZNC[%i] filled with: %i, %.2f, %.2f", tower, runnumber, cent, EZN[tower - 1 + 4]);
+            energyZN[tower + 5]->Fill(Form("%d", runnumber), cent, eZN[tower - 1 + 4], 1);
+          LOGF(debug, "Tower ZNC[%i] filled with: %i, %.2f, %.2f", tower, runnumber, cent, eZN[tower - 1 + 4]);
         }
       }
 
@@ -602,14 +587,12 @@ struct ZDCqvectors {
       if (!isZNAhit || !isZNChit) {
         counter++;
         SPtableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
-        lastRunnumber = runnumber;
         return;
       }
 
       if (!cal.calibfilesLoaded[0][0]) {
         counter++;
         SPtableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
-        lastRunnumber = runnumber;
         return;
       }
 
@@ -623,26 +606,26 @@ struct ZDCqvectors {
         // Now start gain equalisation!
         // Fill the list with calibration constants.
         for (int tower = 0; tower < 10; tower++) {
-          meanEZN[tower] = getCorrection<TProfile2D>(0, 0, names_Ecal[tower].Data());
+          meanEZN[tower] = getCorrection<TProfile2D>(0, 0, namesEcal[tower].Data());
         }
 
         // Use the calibration constants but now only loop over towers 1-4
         int calibtower = 0;
-        std::vector<int> towers_nocom = {1, 2, 3, 4, 6, 7, 8, 9};
+        std::vector<int> towersNocom = {1, 2, 3, 4, 6, 7, 8, 9};
 
-        for (int tower : towers_nocom) {
+        for (int tower : towersNocom) {
           if (meanEZN[tower] > 0) {
             double ecommon = (tower > 4) ? meanEZN[5] : meanEZN[0];
-            e[calibtower] = EZN[calibtower] * (0.25 * ecommon) / meanEZN[tower];
+            e[calibtower] = eZN[calibtower] * (0.25 * ecommon) / meanEZN[tower];
           }
           calibtower++;
         }
 
         for (int i = 0; i < 4; i++) {
           float bincenter = i + .5;
-          registry.fill(HIST("QA/ZNA_Energy"), bincenter, EZN[i]);
+          registry.fill(HIST("QA/ZNA_Energy"), bincenter, eZN[i]);
           registry.fill(HIST("QA/ZNA_Energy"), bincenter + 4, e[i]);
-          registry.fill(HIST("QA/ZNC_Energy"), bincenter, EZN[i + 4]);
+          registry.fill(HIST("QA/ZNC_Energy"), bincenter, eZN[i + 4]);
           registry.fill(HIST("QA/ZNC_Energy"), bincenter + 4, e[i + 4]);
         }
 
@@ -652,8 +635,8 @@ struct ZDCqvectors {
           int sector = tower % 4;
           double energy = std::pow(e[tower], alphaZDC);
           sumZN[side] += energy;
-          xEnZN[side] += (side == 0) ? ZDC_px[sector] * energy : -1.0 * ZDC_px[sector] * energy;
-          yEnZN[side] += ZDC_py[sector] * energy;
+          xEnZN[side] += (side == 0) ? pxZDC[sector] * energy : -1.0 * pxZDC[sector] * energy;
+          yEnZN[side] += pyZDC[sector] * energy;
         }
 
         // "QXA", "QYA", "QXC", "QYC"
@@ -671,24 +654,22 @@ struct ZDCqvectors {
           v[1] = v[1] - getCorrection<TProfile>(0, 1, vnames[1].Data());
         }
 
-        if (runnumber != lastRunnumber) {
           for (int iteration = 1; iteration < 6; iteration++) {
-            std::vector<std::string> ccdb_dirs;
+            std::vector<std::string> ccdbDirs;
             if (iteration == 1)
-              ccdb_dirs = cfgRec1.value;
+              ccdbDirs = cfgRec1.value;
             if (iteration == 2)
-              ccdb_dirs = cfgRec2.value;
+              ccdbDirs = cfgRec2.value;
             if (iteration == 3)
-              ccdb_dirs = cfgRec3.value;
+              ccdbDirs = cfgRec3.value;
             if (iteration == 4)
-              ccdb_dirs = cfgRec4.value;
+              ccdbDirs = cfgRec4.value;
             if (iteration == 5)
-              ccdb_dirs = cfgRec5.value;
+              ccdbDirs = cfgRec5.value;
 
             for (int step = 0; step < 5; step++) {
-              loadCalibrations(iteration, step, foundBC.timestamp(), (ccdb_dirs)[step], names[step]);
+              loadCalibrations(iteration, step, foundBC.timestamp(), (ccdbDirs)[step], names[step]);
             }
-          }
         }
 
         if (cal.atIteration == 0) {
@@ -696,7 +677,6 @@ struct ZDCqvectors {
             LOGF(warning, "Calibation files missing!!! Output created with q-vectors right after energy gain eq. !!");
           fillAllRegistries(0, 0);
           SPtableZDC(runnumber, centrality, v[0], v[1], v[2], q[0][0][0], q[0][0][1], q[0][0][2], q[0][0][3], true, 0, 0);
-          lastRunnumber = runnumber;
           counter++;
           return;
         } else {
@@ -726,7 +706,6 @@ struct ZDCqvectors {
           fillAllRegistries(cal.atIteration, cal.atStep + 1);
           registry.fill(HIST("QA/centrality_after"), centrality);
           SPtableZDC(runnumber, centrality, v[0], v[1], v[2], q[cal.atIteration][cal.atStep][0], q[cal.atIteration][cal.atStep][1], q[cal.atIteration][cal.atStep][2], q[cal.atIteration][cal.atStep][3], true, cal.atIteration, cal.atStep);
-          lastRunnumber = runnumber;
           counter++;
           return;
         }
@@ -737,5 +716,5 @@ struct ZDCqvectors {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ZDCqvectors>(cfgc)};
+    adaptAnalysisTask<ZDCQvectors>(cfgc)};
 }
