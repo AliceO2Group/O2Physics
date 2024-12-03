@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file dptdptEfficiencyAndQc.cxx
+/// \file dptDptEfficiencyAndQc.cxx
 /// \brief Provides efficiency extraction and QC for track cuts and PID
 /// \author victor.gonzalez.sebastian@gmail.com
 
