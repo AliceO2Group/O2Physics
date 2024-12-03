@@ -542,7 +542,7 @@ void fillHFCollisionTable(T const& collision, U const& /*candidates*/, V& HFColl
 template <typename T, typename U>
 void fillD0McCollisionTable(T const& mcCollision, U& D0McCollisionTable, int32_t& D0McCollisionTableIndex)
 {
-  D0McCollisionTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
+  D0McCollisionTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.centFT0M());
   D0McCollisionTableIndex = D0McCollisionTable.lastIndex();
 }
 
