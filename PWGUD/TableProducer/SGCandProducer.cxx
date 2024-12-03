@@ -285,6 +285,7 @@ struct SGCandProducer {
 
 struct McSGCandProducer {
   // MC tables
+  Configurable<bool> verboseInfoMC{"verboseInfoMC", false, "Print general info to terminal; default it false."};
   Produces<aod::UDMcCollisions> outputMcCollisions;
   Produces<aod::UDMcParticles> outputMcParticles;
   Produces<aod::UDMcCollsLabels> outputMcCollsLabels;
@@ -378,7 +379,7 @@ struct McSGCandProducer {
         auto oldmids = mcpart.mothersIds();
         for (auto oldmid : oldmids) {
           auto m = McParts.rawIteratorAt(oldmid);
-          if (verboseInfo)
+          if (verboseInfoMC)
             LOGF(debug, "    m %d", m.globalIndex());
           if (mcPartIsSaved.find(oldmid) != mcPartIsSaved.end()) {
             newval = mcPartIsSaved[oldmid];
@@ -397,7 +398,7 @@ struct McSGCandProducer {
           }
           newdids[ii] = newval;
         }
-        if (verboseInfo)
+        if (verboseInfoMC)
           LOGF(debug, " ms %i ds %i", oldmids.size(), olddids.size());
 
         // update UDMcParticles
@@ -480,13 +481,13 @@ struct McSGCandProducer {
                  UDCCs const& sgcands, UDTCs const& udtracks,
                  CCs const& /*collisions*/, BCs const& /*bcs*/, TCs const& /*tracks*/)
   {
-    if (verboseInfo) {
+    if (verboseInfoMC) {
       LOGF(info, "Number of McCollisions %d", mccols.size());
       LOGF(info, "Number of SG candidates %d", sgcands.size());
       LOGF(info, "Number of UD tracks %d", udtracks.size());
     }
     if (sgcands.size() <= 0) {
-      if (verboseInfo)
+      if (verboseInfoMC)
         LOGF(info, "No DG candidates to save!");
       return;
     }
@@ -528,7 +529,7 @@ struct McSGCandProducer {
         //  colId = -1;
         mcsgId = -1;
       }
-      if (verboseInfo)
+      if (verboseInfoMC)
         LOGF(info, "\nStart of loop mcsgId %d mccolId %d", mcsgId, mccolId);
 
       // two cases to consider
@@ -536,7 +537,7 @@ struct McSGCandProducer {
       // 2. mccolId < mcdgId: the event to process is an MC event of interest without reconstructed dgcand. In this case only the Mc tables are updated
       if ((!sgcandAtEnd && !mccolAtEnd && (mcsgId <= mccolId)) || mccolAtEnd) {
         // this is case 1.
-        if (verboseInfo)
+        if (verboseInfoMC)
           LOGF(info, "Doing case 1 with mcsgId %d", mcsgId);
 
         // update UDMcCollisions and UDMcColsLabels (for each UDCollision -> UDMcCollisions)
@@ -548,7 +549,7 @@ struct McSGCandProducer {
         // McParticles are saved
         if (mcsgId >= 0) {
           if (mcColIsSaved.find(mcsgId) == mcColIsSaved.end()) {
-            if (verboseInfo)
+            if (verboseInfoMC)
               LOGF(info, "  Saving McCollision %d", mcsgId);
             // update UDMcCollisions
             auto sgcandMcCol = sgcand.collision_as<CCs>().mcCollision();
@@ -569,7 +570,7 @@ struct McSGCandProducer {
         } else {
           // If the sgcand has no associated McCollision then only the McParticles which are associated
           // with the tracks of the sgcand are saved
-          if (verboseInfo)
+          if (verboseInfoMC)
             LOGF(info, "  Saving McCollision %d", -1);
 
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
@@ -600,12 +601,12 @@ struct McSGCandProducer {
         }
       } else {
         // this is case 2.
-        if (verboseInfo)
+        if (verboseInfoMC)
           LOGF(info, "Doing case 2");
 
         // update UDMcCollisions and UDMcParticles
         if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
-          if (verboseInfo)
+          if (verboseInfoMC)
             LOGF(info, "  Saving McCollision %d", mccolId);
           // update UDMcCollisions
           updateUDMcCollisions(mccol, globBC);
@@ -626,7 +627,7 @@ struct McSGCandProducer {
       }
 
       goon = !sgcandAtEnd || !mccolAtEnd;
-      if (verboseInfo)
+      if (verboseInfoMC)
         LOGF(info, "End of loop mcsgId %d mccolId %d", mcsgId, mccolId);
     }
   }
@@ -634,7 +635,7 @@ struct McSGCandProducer {
   void processDummy(aod::Collisions const& /*collisions*/)
   {
     // do nothing
-    if (verboseInfo)
+    if (verboseInfoMC)
       LOGF(info, "Running dummy process function!");
   }
   PROCESS_SWITCH(McSGCandProducer, processDummy, "Dummy function", true);
