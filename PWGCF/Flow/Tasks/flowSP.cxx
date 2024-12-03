@@ -317,30 +317,34 @@ struct flowSP {
       double qxC = collision.qxC();
       double qyC = collision.qyC();
 
-      double psi_A = 1.0 * std::atan2(qyA, qxA);
-      registry.fill(HIST("hSPplaneA"), psi_A, 1);
+      double psiA = 1.0 * std::atan2(qyA, qxA);
+      registry.fill(HIST("hSPplaneA"), psiA, 1);
 
-      double psi_C = 1.0 * std::atan2(qyC, qxC);
-      registry.fill(HIST("hSPplaneC"), psi_C, 1);
+      double psiC = 1.0 * std::atan2(qyC, qxC);
+      registry.fill(HIST("hSPplaneC"), psiC, 1);
 
-      registry.fill(HIST("hSPplaneA-C"), psi_A - psi_C, 1);
+      registry.fill(HIST("hSPplaneA-C"), psiA - psiC, 1);
 
-      registry.fill(HIST("hCosdPhi"), centrality, std::cos(psi_A - psi_C));
-      if (std::cos(psi_A - psi_C) < 0)
-        registry.fill(HIST("hSPlaneRes"), centrality, std::sqrt(-1. * std::cos(psi_A - psi_C)));
+      registry.fill(HIST("hCosdPhi"), centrality, std::cos(psiA - psiC));
+      if (std::cos(psiA - psiC) < 0)
+        registry.fill(HIST("hSPlaneRes"), centrality, std::sqrt(-1. * std::cos(psiA - psiC)));
 
-      registry.fill(HIST("hSindPhi"), centrality, std::sin(psi_A - psi_C));
+      registry.fill(HIST("hSindPhi"), centrality, std::sin(psiA - psiC));
 
       auto qxAqxC = qxA * qxC;
       auto qyAqyC = qyA * qyC;
 
-      for (auto& track : tracks) {
+      for (const auto& track : tracks) {
         if (!trackSelected(track, field))
           continue;
 
-        bool pos = false;  
+        bool pos; 
         if (track.sign() == 0.0) continue;
-        if (track.sign()>0) pos=true; 
+        if (track.sign()>0) {
+          pos=true;
+        } else {
+          pos=false;
+        }
 
         // constrain angle to 0 -> [0,0+2pi]
         auto phi = RecoDecay::constrainAngle(track.phi(), 0); 
@@ -361,10 +365,10 @@ struct flowSP {
         auto oddv1_dev = ux * (qxA - qxC)/std::sqrt(std::abs(qxAqxC)) + uy * (qyA - qyC)/std::sqrt(std::abs(qyAqyC));
         auto evenv1_dev = ux * (qxA + qxC)/std::sqrt(std::abs(qxAqxC)) + uy * (qyA + qyC)/std::sqrt(std::abs(qyAqyC));
         
-        double v1A = std::cos(phi - psi_A);
-        double v1C = std::cos(phi - psi_C);
+        double v1A = std::cos(phi - psiA);
+        double v1C = std::cos(phi - psiC);
 
-        double v1AC = std::cos(phi - (psi_A - psi_C));
+        double v1AC = std::cos(phi - (psiA - psiC));
 
         registry.fill(HIST("v1_eta"), track.eta(), (1. / std::sqrt(2)) * (v1A - v1C));
         registry.fill(HIST("v1A_eta"), track.eta(), (v1A));
@@ -391,9 +395,9 @@ struct flowSP {
           registry.fill(HIST("v1_eta_even_dev_neg"), track.eta(), evenv1_dev);
         }
 
-        double v2A = std::cos(2 * (phi - psi_A));
-        double v2C = std::cos(2 * (phi - psi_C));
-        double v2AC = std::cos(2 * (phi - (psi_A - psi_C)));
+        double v2A = std::cos(2 * (phi - psiA));
+        double v2C = std::cos(2 * (phi - psiC));
+        double v2AC = std::cos(2 * (phi - (psiA - psiC)));
 
         registry.fill(HIST("v2_cent"), centrality, (1. / std::sqrt(2)) * (v2A - v2C));
         registry.fill(HIST("v2A_cent"), centrality, (v2A));
