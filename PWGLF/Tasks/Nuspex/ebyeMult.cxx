@@ -390,44 +390,44 @@ struct EbyeMult {
     fillRecoEvent<C, T>(collision, tracks, centrality);
 
     int nTracks{0};
-    for (auto& candidateTrack : candidateTracks) {
-      candidateTrack.isreco = true;
+    for (int iT{0}; iT < static_cast<int>(candidateTracks.size()); ++iT) {
+      candidateTracks[iT].isreco = true;
 
-      auto mcLab = mcLabels.rawIteratorAt(candidateTrack.globalIndex);
+      auto mcLab = mcLabels.rawIteratorAt(candidateTracks[iT].globalIndex);
       if (mcLab.has_mcParticle()) {
         auto mcTrack = mcLab.template mcParticle_as<aod::McParticles>();
         if (((mcTrack.flags() & 0x8) && (doprocessMcRun2)) || (mcTrack.flags() & 0x2))
           continue;
         if (!mcTrack.isPhysicalPrimary()) {
           if (mcTrack.has_mothers()) { // sec WD
-            histos.fill(HIST("SecWDTracks"), nTrackletsColl, candidateTrack.pt, candidateTrack.dcaxypv);
-            histos.fill(HIST("SecWDTracksV0M"), centrality, candidateTrack.pt, candidateTrack.dcaxypv);
+            histos.fill(HIST("SecWDTracks"), nTrackletsColl, candidateTracks[iT].pt, candidateTracks[iT].dcaxypv);
+            histos.fill(HIST("SecWDTracksV0M"), centrality, candidateTracks[iT].pt, candidateTracks[iT].dcaxypv);
           } else { // from material
-            histos.fill(HIST("SecTracks"), nTrackletsColl, candidateTrack.pt, candidateTrack.dcaxypv);
-            histos.fill(HIST("SecTracksV0M"), centrality, candidateTrack.pt, candidateTrack.dcaxypv);
+            histos.fill(HIST("SecTracks"), nTrackletsColl, candidateTracks[iT].pt, candidateTracks[iT].dcaxypv);
+            histos.fill(HIST("SecTracksV0M"), centrality, candidateTracks[iT].pt, candidateTracks[iT].dcaxypv);
           }
         }
-        if (std::abs(candidateTrack.dcaxypv) > cfgDcaSels->get("dcaxy")) { // TODO: add pt dependent cut
+        if (std::abs(candidateTracks[iT].dcaxypv) > cfgDcaSels->get("dcaxy")) { // TODO: add pt dependent cut
           ++nTracks;
         }
 
         if (mcTrack.isPhysicalPrimary()) { // primary
-          histos.fill(HIST("PrimTracks"), nTrackletsColl, candidateTrack.pt, candidateTrack.dcaxypv);
-          histos.fill(HIST("PrimTracksV0M"), centrality, candidateTrack.pt, candidateTrack.dcaxypv);
+          histos.fill(HIST("PrimTracks"), nTrackletsColl, candidateTracks[iT].pt, candidateTracks[iT].dcaxypv);
+          histos.fill(HIST("PrimTracksV0M"), centrality, candidateTracks[iT].pt, candidateTracks[iT].dcaxypv);
         }
 
-        if (std::abs(candidateTrack.dcaxypv) > cfgDcaSels->get("dcaxy"))
+        if (std::abs(candidateTracks[iT].dcaxypv) > cfgDcaSels->get("dcaxy"))
           continue;
         int partType = getPartType(mcTrack.pdgCode());
         if (mcTrack.isPhysicalPrimary()) { // primary
-          histos.fill(HIST("RecPart"), nTrackletsColl, candidateTrack.pt, partType);
-          histos.fill(HIST("RecPartV0M"), centrality, candidateTrack.pt, partType);
+          histos.fill(HIST("RecPart"), nTrackletsColl, candidateTracks[iT].pt, partType);
+          histos.fill(HIST("RecPartV0M"), centrality, candidateTracks[iT].pt, partType);
         }
         auto genPt = std::hypot(mcTrack.px(), mcTrack.py());
-        candidateTrack.pdgcode = mcTrack.pdgCode();
-        candidateTrack.genpt = genPt;
-        candidateTrack.geneta = mcTrack.eta();
-        candidateTrack.mcIndex = mcTrack.globalIndex();
+        candidateTracks[iT].pdgcode = mcTrack.pdgCode();
+        candidateTracks[iT].genpt = genPt;
+        candidateTracks[iT].geneta = mcTrack.eta();
+        candidateTracks[iT].mcIndex = mcTrack.globalIndex();
       }
     }
     candidateEvent.nTrkRec = nTracks;
