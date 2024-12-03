@@ -45,7 +45,7 @@ using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct FlowSp {
+struct FlowSP {
 
   O2_DEFINE_CONFIGURABLE(cfgDCAxy, float, 0.2, "Cut on DCA in the transverse direction (cm)");
   O2_DEFINE_CONFIGURABLE(cfgDCAz, float, 2, "Cut on DCA in the longitudinal direction (cm)");
@@ -362,8 +362,8 @@ struct FlowSp {
         auto oddv1 = ux * (qxA - qxC) + uy * (qyA - qyC);
         auto evenv1 = ux * (qxA + qxC) + uy * (qyA + qyC);
 
-        auto oddv1_dev = ux * (qxA - qxC)/std::sqrt(std::abs(qxAqxC)) + uy * (qyA - qyC)/std::sqrt(std::abs(qyAqyC));
-        auto evenv1_dev = ux * (qxA + qxC)/std::sqrt(std::abs(qxAqxC)) + uy * (qyA + qyC)/std::sqrt(std::abs(qyAqyC));
+        auto oddv1Dev = ux * (qxA - qxC)/std::sqrt(std::abs(qxAqxC)) + uy * (qyA - qyC)/std::sqrt(std::abs(qyAqyC));
+        auto evenv1Dev = ux * (qxA + qxC)/std::sqrt(std::abs(qxAqxC)) + uy * (qyA + qyC)/std::sqrt(std::abs(qyAqyC));
         
         double v1A = std::cos(phi - psiA);
         double v1C = std::cos(phi - psiC);
@@ -378,21 +378,21 @@ struct FlowSp {
         registry.fill(HIST("v1_eta_odd"), track.eta(), oddv1);
         registry.fill(HIST("v1_eta_even"), track.eta(), evenv1);
 
-        registry.fill(HIST("v1_eta_odd_dev"), track.eta(), oddv1_dev);
-        registry.fill(HIST("v1_eta_even_dev"), track.eta(), evenv1_dev);
+        registry.fill(HIST("v1_eta_odd_dev"), track.eta(), oddv1Dev);
+        registry.fill(HIST("v1_eta_even_dev"), track.eta(), evenv1Dev);
 
         if(pos){
           registry.fill(HIST("v1_eta_odd_pos"), track.eta(), oddv1);
           registry.fill(HIST("v1_eta_even_pos"), track.eta(), evenv1);
 
-          registry.fill(HIST("v1_eta_odd_dev_pos"), track.eta(), oddv1_dev);
-          registry.fill(HIST("v1_eta_even_dev_pos"), track.eta(), evenv1_dev);
+          registry.fill(HIST("v1_eta_odd_dev_pos"), track.eta(), oddv1Dev);
+          registry.fill(HIST("v1_eta_even_dev_pos"), track.eta(), evenv1Dev);
         } else { 
           registry.fill(HIST("v1_eta_odd_neg"), track.eta(), oddv1);
           registry.fill(HIST("v1_eta_even_neg"), track.eta(), evenv1);
 
-          registry.fill(HIST("v1_eta_odd_dev_neg"), track.eta(), oddv1_dev);
-          registry.fill(HIST("v1_eta_even_dev_neg"), track.eta(), evenv1_dev);
+          registry.fill(HIST("v1_eta_odd_dev_neg"), track.eta(), oddv1Dev);
+          registry.fill(HIST("v1_eta_even_dev_neg"), track.eta(), evenv1Dev);
         }
 
         double v2A = std::cos(2 * (phi - psiA));
@@ -417,6 +417,6 @@ struct FlowSp {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<FlowSp>(cfgc),
+    adaptAnalysisTask<FlowSP>(cfgc),
   };
 }
