@@ -78,7 +78,7 @@ enum CentralityEstimator { None = 0,
                            NCentralityEstimators
 };
 
-struct EMTaskPi0FlowEMC {
+struct TaskPi0FlowEMC {
   // configurable for flow
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<int> qvecDetector{"qvecDetector", 0, "Detector for Q vector estimation (FT0M: 0, FT0A: 1, FT0C: 2, TPC Pos: 3, TPC Neg: 4, TPC Tot: 5)"};
@@ -90,7 +90,7 @@ struct EMTaskPi0FlowEMC {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<bool> cfgDoRotation{"cfgDoRotation", true, "Flag to enable rotation background method"};
   Configurable<int> cfgDownsampling{"cfgDownsampling", 1, "Calculate rotation background only for every <value> collision"};
-  Configurable<float> cfgRotAngle{"cfgRotAngle", o2::constants::math::PIHalf, "Angle used for the rotation method"};
+  Configurable<float> cfgRotAngle{"cfgRotAngle", M_PI/2., "Angle used for the rotation method"};
   Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
 
   // configurable axis
@@ -103,7 +103,7 @@ struct EMTaskPi0FlowEMC {
 
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
-    std::string prefix = "eventcut_group";
+    std::string prefix = "eventcuts";
     Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
     Configurable<bool> cfgRequireSel8{"cfgRequireSel8", true, "require sel8 in event cut"};
     Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND in event cut"};
@@ -126,23 +126,23 @@ struct EMTaskPi0FlowEMC {
 
   EMCPhotonCut fEMCCut;
   struct : ConfigurableGroup {
-    std::string prefix = "emccut_group";
-    Configurable<float> cfgEMC_minTime{"cfgEMC_minTime", -25., "Minimum cluster time for EMCal time cut"};
-    Configurable<float> cfgEMC_maxTime{"cfgEMC_maxTime", +30., "Maximum cluster time for EMCal time cut"};
-    Configurable<float> cfgEMC_minM02{"cfgEMC_minM02", 0.1, "Minimum M02 for EMCal M02 cut"};
-    Configurable<float> cfgEMC_maxM02{"cfgEMC_maxM02", 0.7, "Maximum M02 for EMCal M02 cut"};
-    Configurable<float> cfgEMC_minE{"cfgEMC_minE", 0.7, "Minimum cluster energy for EMCal energy cut"};
-    Configurable<int> cfgEMC_minNCell{"cfgEMC_minNCell", 1, "Minimum number of cells per cluster for EMCal NCell cut"};
-    Configurable<std::vector<float>> cfgEMC_TM_Eta{"cfgEMC_TM_Eta", {0.01f, 4.07f, -2.5f}, "|eta| <= [0]+(pT+[1])^[2] for EMCal track matching"};
-    Configurable<std::vector<float>> cfgEMC_TM_Phi{"cfgEMC_TM_Phi", {0.015f, 3.65f, -2.f}, "|phi| <= [0]+(pT+[1])^[2] for EMCal track matching"};
-    Configurable<float> cfgEMC_Eoverp{"cfgEMC_Eoverp", 1.75, "Minimum cluster energy over track momentum for EMCal track matching"};
-    Configurable<bool> cfgEMC_UseExoticCut{"cfgEMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
-    Configurable<bool> cfgEMC_UseTM{"cfgEMC_UseTM", false, "flag to use EMCal track matching cut or not"};
+    std::string prefix = "emccuts";
+    Configurable<float> cfgEMCminTime{"cfgEMCminTime", -25., "Minimum cluster time for EMCal time cut"};
+    Configurable<float> cfgEMCmaxTime{"cfgEMCmaxTime", +30., "Maximum cluster time for EMCal time cut"};
+    Configurable<float> cfgEMCminM02{"cfgEMCminM02", 0.1, "Minimum M02 for EMCal M02 cut"};
+    Configurable<float> cfgEMCmaxM02{"cfgEMCmaxM02", 0.7, "Maximum M02 for EMCal M02 cut"};
+    Configurable<float> cfgEMCminE{"cfgEMCminE", 0.7, "Minimum cluster energy for EMCal energy cut"};
+    Configurable<int> cfgEMCminNCell{"cfgEMCminNCell", 1, "Minimum number of cells per cluster for EMCal NCell cut"};
+    Configurable<std::vector<float>> cfgEMCTMEta{"cfgEMCTMEta", {0.01f, 4.07f, -2.5f}, "|eta| <= [0]+(pT+[1])^[2] for EMCal track matching"};
+    Configurable<std::vector<float>> cfgEMCTMPhi{"cfgEMCTMPhi", {0.015f, 3.65f, -2.f}, "|phi| <= [0]+(pT+[1])^[2] for EMCal track matching"};
+    Configurable<float> cfgEMCEoverp{"cfgEMCEoverp", 1.75, "Minimum cluster energy over track momentum for EMCal track matching"};
+    Configurable<bool> cfgEMCUseExoticCut{"cfgEMCUseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
+    Configurable<bool> cfgEMCUseTM{"cfgEMCUseTM", false, "flag to use EMCal track matching cut or not"};
     Configurable<bool> cfgEnableQA{"cfgEnableQA", false, "flag to turn QA plots on/off"};
   } emccuts;
 
   struct : ConfigurableGroup {
-    std::string prefix = "meson";
+    std::string prefix = "mesonConfig";
     Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle. Default value one EMCal cell"};
     Configurable<bool> enableTanThetadPhi{"enableTanThetadPhi", false, "flag to turn cut opening angle in delta theta delta phi on/off"};
     Configurable<float> minTanThetadPhi{"minTanThetadPhi", 4., "apply min opening angle in delta theta delta phi to cut on late conversion"};
@@ -152,7 +152,7 @@ struct EMTaskPi0FlowEMC {
   } mesonConfig;
 
   struct : ConfigurableGroup {
-    std::string prefix = "event-mixing";
+    std::string prefix = "mixingConfig";
     ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
     ConfigurableAxis cfgCentBins{"cfgCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f}, "Mixing bins - centrality"};
     ConfigurableAxis cfgEPBins{"cfgEPBins", {8, o2::constants::math::PIHalf, o2::constants::math::PIHalf}, "Mixing bins - event plane angle"};
@@ -161,7 +161,7 @@ struct EMTaskPi0FlowEMC {
   } mixingConfig;
 
   struct : ConfigurableGroup {
-    std::string prefix = "correction";
+    std::string prefix = "correctionConfig";
     Configurable<std::string> cfgSpresoPath{"cfgSpresoPath", "Users/m/mhemmer/EM/Flow/Resolution", "Path to SP resolution file"};
     Configurable<int> cfgApplySPresolution{"cfgApplySPresolution", 0, "Apply resolution correction"};
   } correctionConfig;
@@ -170,20 +170,20 @@ struct EMTaskPi0FlowEMC {
   EventPlaneHelper epHelper;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  Filter clusterFilter = aod::skimmedcluster::time >= emccuts.cfgEMC_minTime && aod::skimmedcluster::time <= emccuts.cfgEMC_maxTime && aod::skimmedcluster::m02 >= emccuts.cfgEMC_minM02 && aod::skimmedcluster::m02 <= emccuts.cfgEMC_maxM02 && skimmedcluster::e >= emccuts.cfgEMC_minE;
+  Filter clusterFilter = aod::skimmedcluster::time >= emccuts.cfgEMCminTime && aod::skimmedcluster::time <= emccuts.cfgEMCmaxTime && aod::skimmedcluster::m02 >= emccuts.cfgEMCminM02 && aod::skimmedcluster::m02 <= emccuts.cfgEMCmaxM02 && skimmedcluster::e >= emccuts.cfgEMCminE;
   Filter collisionFilter = aod::evsel::sel8 && nabs(aod::collision::posZ) <= eventcuts.cfgZvtxMax && aod::evsel::trackOccupancyInTimeRange <= eventcuts.cfgTrackOccupancyMax && aod::evsel::trackOccupancyInTimeRange >= eventcuts.cfgTrackOccupancyMin && aod::evsel::ft0cOccupancyInTimeRange <= eventcuts.cfgFT0COccupancyMax && aod::evsel::ft0cOccupancyInTimeRange >= eventcuts.cfgFT0COccupancyMin;
   using FilteredEMCalPhotons = soa::Filtered<soa::Join<aod::EMCEMEventIds, aod::SkimEMCClusters>>;
   using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::SkimEMCClusters>;
   using FilteredCollsWithQvecs = soa::Filtered<soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>>;
   using CollsWithQvecs = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 
-  Preslice<EMCalPhotons> perCollision_emc = aod::emccluster::emeventId;
-  Preslice<FilteredEMCalPhotons> perCollision_emc_filtered = aod::emccluster::emeventId;
+  Preslice<EMCalPhotons> perCollisionEMC = aod::emccluster::emeventId;
+  Preslice<FilteredEMCalPhotons> perCollisionEMCFiltered = aod::emccluster::emeventId;
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   o2::emcal::Geometry* emcalGeom;
-  TH1D* h1SP_Resolution = nullptr;
+  TH1D* h1SPResolution = nullptr;
   float epsilon = 1.e-8;
 
   void defineEMEventCut()
@@ -204,23 +204,23 @@ struct EMTaskPi0FlowEMC {
   void defineEMCCut()
   {
     fEMCCut = EMCPhotonCut("fEMCCut", "fEMCCut");
-    const float a = emccuts.cfgEMC_TM_Eta->at(0);
-    const float b = emccuts.cfgEMC_TM_Eta->at(1);
-    const float c = emccuts.cfgEMC_TM_Eta->at(2);
+    const float a = emccuts.cfgEMCTMEta->at(0);
+    const float b = emccuts.cfgEMCTMEta->at(1);
+    const float c = emccuts.cfgEMCTMEta->at(2);
 
-    const float d = emccuts.cfgEMC_TM_Phi->at(0);
-    const float e = emccuts.cfgEMC_TM_Phi->at(1);
-    const float f = emccuts.cfgEMC_TM_Phi->at(2);
+    const float d = emccuts.cfgEMCTMPhi->at(0);
+    const float e = emccuts.cfgEMCTMPhi->at(1);
+    const float f = emccuts.cfgEMCTMPhi->at(2);
     LOGF(info, "EMCal track matching parameters : a = %f, b = %f, c = %f, d = %f, e = %f, f = %f", a, b, c, d, e, f);
     fEMCCut.SetTrackMatchingEta([a, b, c](float pT) { return a + std::pow(pT + b, c); });
     fEMCCut.SetTrackMatchingPhi([d, e, f](float pT) { return d + std::pow(pT + e, f); });
-    fEMCCut.SetMinEoverP(emccuts.cfgEMC_Eoverp);
+    fEMCCut.SetMinEoverP(emccuts.cfgEMCEoverp);
 
-    fEMCCut.SetMinE(emccuts.cfgEMC_minE);
-    fEMCCut.SetMinNCell(emccuts.cfgEMC_minNCell);
-    fEMCCut.SetM02Range(emccuts.cfgEMC_minM02, emccuts.cfgEMC_maxM02);
-    fEMCCut.SetTimeRange(emccuts.cfgEMC_minTime, emccuts.cfgEMC_maxTime);
-    fEMCCut.SetUseExoticCut(emccuts.cfgEMC_UseExoticCut);
+    fEMCCut.SetMinE(emccuts.cfgEMCminE);
+    fEMCCut.SetMinNCell(emccuts.cfgEMCminNCell);
+    fEMCCut.SetM02Range(emccuts.cfgEMCminM02, emccuts.cfgEMCmaxM02);
+    fEMCCut.SetTimeRange(emccuts.cfgEMCminTime, emccuts.cfgEMCmaxTime);
+    fEMCCut.SetUseExoticCut(emccuts.cfgEMCUseExoticCut);
   }
 
   void init(InitContext&)
@@ -231,7 +231,7 @@ struct EMTaskPi0FlowEMC {
 
     defineEMEventCut();
     defineEMCCut();
-    fEMCCut.SetUseTM(emccuts.cfgEMC_UseTM); // disables TM
+    fEMCCut.SetUseTM(emccuts.cfgEMCUseTM); // disables TM
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&registry);
 
     // Load EMCal geometry
@@ -252,7 +252,7 @@ struct EMTaskPi0FlowEMC {
     const AxisSpec thAxisEta{160, -0.8, 0.8, "#eta"};
     const AxisSpec thAxisPhi{72, 0, 2 * 3.14159, "phi"};
     const AxisSpec thAxisNCell{17664, 0.5, +17664.5, "#it{N}_{cell}"};
-    const AxisSpec thAxisPsi{360 / harmonic.value, -(1. / static_cast<float>(harmonic.value)) * pi_v, (1. / static_cast<float>(harmonic.value)) * pi_v, Form("#Psi_{%d}", harmonic.value)};
+    const AxisSpec thAxisPsi{360 / harmonic.value, -(1. / static_cast<float>(harmonic.value)) * std::numbers::pi_v<float>, (1. / static_cast<float>(harmonic.value)) * std::numbers::pi_v<float>, Form("#Psi_{%d}", harmonic.value)};
     const AxisSpec thAxisCN{8, 0.5, 8.5, "#it{c}_{n}"};
     const AxisSpec thAxisSN{8, 0.5, 8.5, "#it{s}_{n}"};
 
@@ -347,7 +347,7 @@ struct EMTaskPi0FlowEMC {
   void initCCDB(TCollision const& collision)
   {
     if (correctionConfig.cfgApplySPresolution.value) {
-      h1SP_Resolution = ccdb->getForTimeStamp<TH1D>(correctionConfig.cfgSpresoPath.value, collision.timestamp());
+      h1SPResolution = ccdb->getForTimeStamp<TH1D>(correctionConfig.cfgSpresoPath.value, collision.timestamp());
     }
   }
 
@@ -558,8 +558,8 @@ struct EMTaskPi0FlowEMC {
 
     auto [xQVec, yQVec] = getQvec(collision, qvecDetector);
     float cent = getCentrality(collision);
-    int iCellID_photon1 = 0;
-    int iCellID_photon2 = 0;
+    int iCellIDPhoton1 = 0;
+    int iCellIDPhoton = 0;
 
     ROOT::Math::AxisAngle rotationAxis(meson.Vect(), cfgRotAngle.value);
     ROOT::Math::Rotation3D rotationMatrix(rotationAxis);
@@ -567,23 +567,23 @@ struct EMTaskPi0FlowEMC {
     photon2 = rotationMatrix * photon2;
 
     try {
-      iCellID_photon1 = emcalGeom->GetAbsCellIdFromEtaPhi(photon1.Eta(), photon1.Phi());
-      if (isTooCloseToEdge(iCellID_photon1, cfgDistanceToEdge.value)) {
-        iCellID_photon1 = -1;
+      iCellIDPhoton1 = emcalGeom->GetAbsCellIdFromEtaPhi(photon1.Eta(), photon1.Phi());
+      if (isTooCloseToEdge(iCellIDPhoton1, cfgDistanceToEdge.value)) {
+        iCellIDPhoton1 = -1;
       }
     } catch (o2::emcal::InvalidPositionException& e) {
-      iCellID_photon1 = -1;
+      iCellIDPhoton1 = -1;
     }
     try {
-      iCellID_photon2 = emcalGeom->GetAbsCellIdFromEtaPhi(photon2.Eta(), photon2.Phi());
-      if (isTooCloseToEdge(iCellID_photon2, cfgDistanceToEdge.value)) {
-        iCellID_photon2 = -1;
+      iCellIDPhoton = emcalGeom->GetAbsCellIdFromEtaPhi(photon2.Eta(), photon2.Phi());
+      if (isTooCloseToEdge(iCellIDPhoton, cfgDistanceToEdge.value)) {
+        iCellIDPhoton = -1;
       }
     } catch (o2::emcal::InvalidPositionException& e) {
-      iCellID_photon2 = -1;
+      iCellIDPhoton = -1;
     }
 
-    if (iCellID_photon1 == -1 && iCellID_photon2 == -1) {
+    if (iCellIDPhoton1 == -1 && iCellIDPhoton == -1) {
       return;
     }
     for (const auto& photon : photons_coll) {
@@ -595,7 +595,7 @@ struct EMTaskPi0FlowEMC {
         continue;
       }
       ROOT::Math::PtEtaPhiMVector photon3(photon.pt(), photon.eta(), photon.phi(), 0.);
-      if (iCellID_photon1 > 0) {
+      if (iCellIDPhoton1 > 0) {
         ROOT::Math::PtEtaPhiMVector mother1 = photon1 + photon3;
         float openingAngle1 = std::acos(photon1.Vect().Dot(photon3.Vect()) / (photon1.P() * photon3.P()));
         float cosNPhi1 = std::cos(harmonic * mother1.Phi());
@@ -603,7 +603,7 @@ struct EMTaskPi0FlowEMC {
         float scalprodCand1 = cosNPhi1 * xQVec + sinNPhi1 * yQVec;
 
         if (correctionConfig.cfgApplySPresolution.value) {
-          scalprodCand1 = scalprodCand1 / h1SP_Resolution->GetBinContent(h1SP_Resolution->FindBin(cent + epsilon));
+          scalprodCand1 = scalprodCand1 / h1SPResolution->GetBinContent(h1SPResolution->FindBin(cent + epsilon));
         }
 
         if (openingAngle1 > mesonConfig.minOpenAngle && thnConfigAxisInvMass.value[1] <= mother1.M() && thnConfigAxisInvMass.value.back() >= mother1.M() && thnConfigAxisPt.value[1] <= mother1.Pt() && thnConfigAxisPt.value.back() >= mother1.Pt()) {
@@ -618,7 +618,7 @@ struct EMTaskPi0FlowEMC {
           }
         }
       }
-      if (iCellID_photon2 > 0) {
+      if (iCellIDPhoton > 0) {
         ROOT::Math::PtEtaPhiMVector mother2 = photon2 + photon3;
         float openingAngle2 = std::acos(photon2.Vect().Dot(photon3.Vect()) / (photon2.P() * photon3.P()));
         float cosNPhi2 = std::cos(harmonic * mother2.Phi());
@@ -626,7 +626,7 @@ struct EMTaskPi0FlowEMC {
         float scalprodCand2 = cosNPhi2 * xQVec + sinNPhi2 * yQVec;
 
         if (correctionConfig.cfgApplySPresolution.value) {
-          scalprodCand2 = scalprodCand2 / h1SP_Resolution->GetBinContent(h1SP_Resolution->FindBin(cent + epsilon));
+          scalprodCand2 = scalprodCand2 / h1SPResolution->GetBinContent(h1SPResolution->FindBin(cent + epsilon));
         }
 
         if (openingAngle2 > mesonConfig.minOpenAngle && thnConfigAxisInvMass.value[1] <= mother2.M() && thnConfigAxisInvMass.value.back() >= mother2.M() && thnConfigAxisPt.value[1] <= mother2.Pt() && thnConfigAxisPt.value.back() >= mother2.Pt()) {
@@ -662,7 +662,7 @@ struct EMTaskPi0FlowEMC {
     float scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
 
     if (correctionConfig.cfgApplySPresolution.value) {
-      scalprodCand = scalprodCand / h1SP_Resolution->GetBinContent(h1SP_Resolution->FindBin(cent + epsilon));
+      scalprodCand = scalprodCand / h1SPResolution->GetBinContent(h1SPResolution->FindBin(cent + epsilon));
     }
 
     fillThn(massCand, ptCand, cent, scalprodCand);
@@ -674,25 +674,25 @@ struct EMTaskPi0FlowEMC {
   {
     int nColl = 1;
     for (const auto& collision : collisions) {
-      auto photons_per_collision = clusters.sliceBy(perCollision_emc, collision.globalIndex());
+      auto photonsPerCollision = clusters.sliceBy(perCollisionEMC, collision.globalIndex());
 
       if (eventcuts.cfgEnableQA) {
         // TODO: check EMCal NCells in collisions without EMC Readout
         registry.fill(HIST("hCollisionEMCCheck"), 1.); // all
         if (collision.alias_bit(kTVXinEMC) == true) {
           registry.fill(HIST("hCollisionEMCCheck"), 2.); // has EMC read out
-          if (photons_per_collision.size() > 0) {
+          if (photonsPerCollision.size() > 0) {
             registry.fill(HIST("hCollisionEMCCheck"), 3.); // has EMC cluster
             registry.fill(HIST("hCollisionEMCCheck"), 4.); // has EMC read out and clusters
           } else {
             registry.fill(HIST("hCollisionEMCCheck"), 5.); // has EMC read out but no clusters
           }
         } else {
-          if (photons_per_collision.size() > 0) {
+          if (photonsPerCollision.size() > 0) {
             registry.fill(HIST("hCollisionEMCCheck"), 3.); // has EMC cluster
             registry.fill(HIST("hCollisionEMCCheck"), 6.); // has no EMC read out and clusters
             registry.fill(HIST("LED/hMult"), collision.multFT0C());
-            for (const auto& photon : photons_per_collision) {
+            for (const auto& photon : photonsPerCollision) {
               registry.fill(HIST("LED/hClusterEtaPhi"), photon.phi(), photon.eta());
               registry.fill(HIST("LED/clusterTimeVsE"), photon.time(), photon.e());
               registry.fill(HIST("LED/hNCell"), photon.nCells());
@@ -726,7 +726,7 @@ struct EMTaskPi0FlowEMC {
       registry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
 
       if (emccuts.cfgEnableQA) {
-        for (const auto& photon : photons_per_collision) {
+        for (const auto& photon : photonsPerCollision) {
           registry.fill(HIST("hEClusterBefore"), photon.e()); // before cuts
           if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(photon))) {
             continue;
@@ -734,7 +734,7 @@ struct EMTaskPi0FlowEMC {
           registry.fill(HIST("hEClusterAfter"), photon.e()); // accepted after cuts
         }
       }
-      for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons_per_collision, photons_per_collision))) {
+      for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photonsPerCollision, photonsPerCollision))) {
         if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fEMCCut.IsSelected<EMCalPhotons::iterator>(g2))) {
           continue;
         }
@@ -751,7 +751,7 @@ struct EMTaskPi0FlowEMC {
         }
         if (cfgDoRotation) {
           if (nColl % cfgDownsampling.value == 0) {
-            rotationBackground<EMCalPhotons>(vMeson, v1, v2, photons_per_collision, g1.globalIndex(), g2.globalIndex(), collision);
+            rotationBackground<EMCalPhotons>(vMeson, v1, v2, photonsPerCollision, g1.globalIndex(), g2.globalIndex(), collision);
           }
         }
         if (thnConfigAxisInvMass.value[1] > vMeson.M() || thnConfigAxisInvMass.value.back() < vMeson.M()) {
@@ -783,7 +783,7 @@ struct EMTaskPi0FlowEMC {
       }
     }
   }
-  PROCESS_SWITCH(EMTaskPi0FlowEMC, processEMCal, "Process EMCal Pi0 candidates", true);
+  PROCESS_SWITCH(TaskPi0FlowEMC, processEMCal, "Process EMCal Pi0 candidates", true);
 
   // Pi0 from EMCal
   void processEMCalMixed(FilteredCollsWithQvecs const& collisions, FilteredEMCalPhotons const& clusters)
@@ -857,7 +857,7 @@ struct EMTaskPi0FlowEMC {
       }
     }
   }
-  PROCESS_SWITCH(EMTaskPi0FlowEMC, processEMCalMixed, "Process EMCal Pi0 mixed event candidates", false);
+  PROCESS_SWITCH(TaskPi0FlowEMC, processEMCalMixed, "Process EMCal Pi0 mixed event candidates", false);
 
   // Resolution
   void processResolution(CollsWithQvecs::iterator const& collision)
@@ -977,11 +977,11 @@ struct EMTaskPi0FlowEMC {
       }
     }
   }
-  PROCESS_SWITCH(EMTaskPi0FlowEMC, processResolution, "Process resolution", false);
+  PROCESS_SWITCH(TaskPi0FlowEMC, processResolution, "Process resolution", false);
 
-}; // End struct EMTaskPi0FlowEMC
+}; // End struct TaskPi0FlowEMC
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<EMTaskPi0FlowEMC>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<TaskPi0FlowEMC>(cfgc)};
 }

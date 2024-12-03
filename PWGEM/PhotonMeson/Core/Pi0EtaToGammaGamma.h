@@ -11,8 +11,10 @@
 //
 // ========================
 //
-// This code loops over photons and makes pairs for neutral mesons analyses.
-//    Please write to: daiki.sekihata@cern.ch
+/// \file Pi0EtaToGammaGamma.h
+/// \brief This code loops over photons and makes pairs for neutral mesons analyses.
+///
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
 #ifndef PWGEM_PHOTONMESON_CORE_PI0ETATOGAMMAGAMMA_H_
 #define PWGEM_PHOTONMESON_CORE_PI0ETATOGAMMAGAMMA_H_
@@ -269,7 +271,7 @@ struct Pi0EtaToGammaGamma {
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       mRunNumber = collision.runNumber();
@@ -425,8 +427,8 @@ struct Pi0EtaToGammaGamma {
     fEMCCut.SetM02Range(emccuts.EMC_minM02, emccuts.EMC_maxM02);
     fEMCCut.SetTimeRange(emccuts.EMC_minTime, emccuts.EMC_maxTime);
 
-    fEMCCut.SetTrackMatchingEta([a, b, c](float pT) { return a + pow(pT + b, c); });
-    fEMCCut.SetTrackMatchingPhi([d, e, f](float pT) { return d + pow(pT + e, f); });
+    fEMCCut.SetTrackMatchingEta([a, b, c](float pT) { return a + std::pow(pT + b, c); });
+    fEMCCut.SetTrackMatchingPhi([d, e, f](float pT) { return d + std::pow(pT + e, f); });
 
     fEMCCut.SetMinEoverP(emccuts.EMC_Eoverp);
     fEMCCut.SetUseExoticCut(emccuts.EMC_UseExoticCut);
@@ -510,7 +512,7 @@ struct Pi0EtaToGammaGamma {
       return;
     }
 
-    for (auto& photon : photons_coll) {
+    for (const auto& photon : photons_coll) {
       if (photon.globalIndex() == ig1 || photon.globalIndex() == ig2) {
         // only combine rotated photons with other photons
         continue;
@@ -526,10 +528,10 @@ struct Pi0EtaToGammaGamma {
       float openingAngle1 = std::acos(photon1.Vect().Dot(photon3.Vect()) / (photon1.P() * photon3.P()));
       float openingAngle2 = std::acos(photon2.Vect().Dot(photon3.Vect()) / (photon2.P() * photon3.P()));
 
-      if (openingAngle1 > emccuts.minOpenAngle && abs(mother1.Rapidity()) < maxY && iCellID_photon1 > 0) {
+      if (openingAngle1 > emccuts.minOpenAngle &&  std::abs(mother1.Rapidity()) < maxY && iCellID_photon1 > 0) {
         fRegistry.fill(HIST("Pair/rotation/hs"), mother1.M(), mother1.Pt(), eventWeight);
       }
-      if (openingAngle2 > emccuts.minOpenAngle && abs(mother2.Rapidity()) < maxY && iCellID_photon2 > 0) {
+      if (openingAngle2 > emccuts.minOpenAngle && std::abs(mother2.Rapidity()) < maxY && iCellID_photon2 > 0) {
         fRegistry.fill(HIST("Pair/rotation/hs"), mother2.M(), mother2.Pt(), eventWeight);
       }
     }
@@ -558,14 +560,14 @@ struct Pi0EtaToGammaGamma {
                   TPreslice1 const& perCollision1, TPreslice2 const& perCollision2,
                   TCut1 const& cut1, TCut2 const& cut2)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       initCCDB(collision);
       int ndiphoton = 0;
       if ((pairtype == PairType::kPHOSPHOS || pairtype == PairType::kPCMPHOS) && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
         continue;
       }
 
-      if (eventcuts.onlyKeepWeightedEvents && fabs(collision.weight() - 1.) < 1E-10) {
+      if (eventcuts.onlyKeepWeightedEvents && std::fabs(collision.weight() - 1.) < 1E-10) {
         continue;
       }
 
@@ -621,7 +623,7 @@ struct Pi0EtaToGammaGamma {
         auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
         auto photons2_per_collision = photons2.sliceBy(perCollision2, collision.globalIndex());
 
-        for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_per_collision, photons2_per_collision))) {
+        for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_per_collision, photons2_per_collision))) {
           if (!cut1.template IsSelected<TSubInfos1>(g1) || !cut2.template IsSelected<TSubInfos2>(g2)) {
             continue;
           }
@@ -629,7 +631,7 @@ struct Pi0EtaToGammaGamma {
           ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          if (abs(v12.Rapidity()) > maxY) {
+          if (std::abs(v12.Rapidity()) > maxY) {
             continue;
           }
 
@@ -657,7 +659,7 @@ struct Pi0EtaToGammaGamma {
         auto positrons_per_collision = positrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
         auto electrons_per_collision = electrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
 
-        for (auto& g1 : photons1_per_collision) {
+        for (const auto& g1 : photons1_per_collision) {
           if (!cut1.template IsSelected<TSubInfos1>(g1)) {
             continue;
           }
@@ -665,7 +667,7 @@ struct Pi0EtaToGammaGamma {
           auto ele1 = g1.template negTrack_as<TSubInfos1>();
           ROOT::Math::PtEtaPhiMVector v_gamma(g1.pt(), g1.eta(), g1.phi(), 0.);
 
-          for (auto& [pos2, ele2] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
+          for (const auto& [pos2, ele2] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
 
             if (pos2.trackId() == ele2.trackId()) { // this is protection against pairing identical 2 tracks.
               continue;
@@ -686,7 +688,7 @@ struct Pi0EtaToGammaGamma {
             ROOT::Math::PtEtaPhiMVector v_ele(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ee = v_pos + v_ele;
             ROOT::Math::PtEtaPhiMVector veeg = v_gamma + v_pos + v_ele;
-            if (abs(veeg.Rapidity()) > maxY) {
+            if (std::abs(veeg.Rapidity()) > maxY) {
               continue;
             }
 
@@ -709,14 +711,14 @@ struct Pi0EtaToGammaGamma {
         auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
         auto photons2_per_collision = photons2.sliceBy(perCollision2, collision.globalIndex());
 
-        for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_per_collision, photons2_per_collision))) {
+        for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_per_collision, photons2_per_collision))) {
           if (!cut1.template IsSelected<TSubInfos1>(g1) || !cut2.template IsSelected<TSubInfos2>(g2)) {
             continue;
           }
           ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          if (abs(v12.Rapidity()) > maxY) {
+          if (std::abs(v12.Rapidity()) > maxY) {
             continue;
           }
 
@@ -750,7 +752,7 @@ struct Pi0EtaToGammaGamma {
       auto collisionIds2_in_mixing_pool = emh2->GetCollisionIdsFromEventPool(key_bin);
 
       if constexpr (pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) { // same kinds pairing
-        for (auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
+        for (const auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
 
@@ -761,12 +763,12 @@ struct Pi0EtaToGammaGamma {
           auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
 
-          for (auto& g1 : selected_photons1_in_this_event) {
-            for (auto& g2 : photons1_from_event_pool) {
+          for (const auto& g1 : selected_photons1_in_this_event) {
+            for (const auto& g2 : photons1_from_event_pool) {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-              if (abs(v12.Rapidity()) > maxY) {
+              if (std::abs(v12.Rapidity()) > maxY) {
                 continue;
               }
 
@@ -776,7 +778,7 @@ struct Pi0EtaToGammaGamma {
         } // end of loop over mixed event pool
 
       } else { // [photon1 from event1, photon2 from event2] and [photon1 from event2, photon2 from event1]
-        for (auto& mix_dfId_collisionId : collisionIds2_in_mixing_pool) {
+        for (const auto& mix_dfId_collisionId : collisionIds2_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
 
@@ -787,22 +789,22 @@ struct Pi0EtaToGammaGamma {
           auto photons2_from_event_pool = emh2->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), nll = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons2_from_event_pool.size());
 
-          for (auto& g1 : selected_photons1_in_this_event) {
-            for (auto& g2 : photons2_from_event_pool) {
+          for (const auto& g1 : selected_photons1_in_this_event) {
+            for (const auto& g2 : photons2_from_event_pool) {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
               if constexpr (pairtype == PairType::kPCMDalitzEE || pairtype == PairType::kPCMDalitzMuMu) { //[photon from event1, dilepton from event2] and [photon from event2, dilepton from event1]
                 v2.SetM(g2.mass());
               }
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-              if (abs(v12.Rapidity()) > maxY) {
+              if (std::abs(v12.Rapidity()) > maxY) {
                 continue;
               }
               fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), collision.weight());
             }
           }
         } // end of loop over mixed event pool
-        for (auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
+        for (const auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
 
@@ -813,15 +815,15 @@ struct Pi0EtaToGammaGamma {
           auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), nll = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons2_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
 
-          for (auto& g1 : selected_photons2_in_this_event) {
-            for (auto& g2 : photons1_from_event_pool) {
+          for (const auto& g1 : selected_photons2_in_this_event) {
+            for (const auto& g2 : photons1_from_event_pool) {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
               if constexpr (pairtype == PairType::kPCMDalitzEE || pairtype == PairType::kPCMDalitzMuMu) { //[photon from event1, dilepton from event2] and [photon from event2, dilepton from event1]
                 v1.SetM(g1.mass());
               }
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-              if (abs(v12.Rapidity()) > maxY) {
+              if (std::abs(v12.Rapidity()) > maxY) {
                 continue;
               }
               fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), collision.weight());
