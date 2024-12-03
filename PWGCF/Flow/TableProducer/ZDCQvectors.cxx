@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file   flowSP.cxx
+/// \file   ZDCQvectors.cxx
 /// \author Noor Koster
 /// \since  11/2024
 /// \brief  In this task the energy calibration and recentring of Q-vectors constructed in the ZDCs will be done
@@ -65,7 +65,7 @@ using namespace o2::aod::track;
 using namespace o2::aod::evsel;
 
 // define my.....
-using myCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+using UsedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
 namespace o2::analysis::qvectortask
@@ -111,7 +111,7 @@ using namespace o2::analysis::qvectortask;
 
 struct ZDCQvectors {
 
-  Produces<aod::SPTableZDC> SPtableZDC;
+  Produces<aod::SPTableZDC> spTableZDC;
 
   ConfigurableAxis axisCent{"axisCent", {90, 0, 90}, "Centrality axis in 1% bins"};
   ConfigurableAxis axisCent10{"axisCent10", {9, 0, 90}, "Centrality axis in 10% bins"};
@@ -324,44 +324,44 @@ struct ZDCQvectors {
     registry.fill(HIST("step0/QA/hQXC_vs_vz"), v[2], q[0][0][2]);
     registry.fill(HIST("step0/QA/hQYC_vs_vz"), v[2], q[0][0][3]);
 
-    static constexpr std::string_view subdir[] = {"step1/", "step2/", "step3/", "step4/", "step5/"};
-    static_for<0, 4>([&](auto ind) {
-      constexpr int index = ind.value;
-      int index_rt = index + 1;
+    static constexpr std::string_view SubDir[] = {"step1/", "step2/", "step3/", "step4/", "step5/"};
+    static_for<0, 4>([&](auto Ind) {
+      constexpr int index = Ind.value;
+      int indexRt = index + 1;
 
-      registry.fill(HIST(subdir[index]) + HIST("hZNA_Qx_vs_Qy"), q[iteration][index_rt][0], q[iteration][index_rt][1]);
-      registry.fill(HIST(subdir[index]) + HIST("hZNC_Qx_vs_Qy"), q[iteration][index_rt][2], q[iteration][index_rt][3]);
+      registry.fill(HIST(SubDir[index]) + HIST("hZNA_Qx_vs_Qy"), q[iteration][indexRt][0], q[iteration][indexRt][1]);
+      registry.fill(HIST(SubDir[index]) + HIST("hZNC_Qx_vs_Qy"), q[iteration][indexRt][2], q[iteration][indexRt][3]);
 
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQXA_QXC_vs_cent"), centrality, q[iteration][index_rt][0] * q[iteration][index_rt][2]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQYA_QYC_vs_cent"), centrality, q[iteration][index_rt][1] * q[iteration][index_rt][3]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQYA_QXC_vs_cent"), centrality, q[iteration][index_rt][1] * q[iteration][index_rt][2]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQXA_QYC_vs_cent"), centrality, q[iteration][index_rt][0] * q[iteration][index_rt][3]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXA_QXC_vs_cent"), centrality, q[iteration][indexRt][0] * q[iteration][indexRt][2]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYA_QYC_vs_cent"), centrality, q[iteration][indexRt][1] * q[iteration][indexRt][3]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYA_QXC_vs_cent"), centrality, q[iteration][indexRt][1] * q[iteration][indexRt][2]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXA_QYC_vs_cent"), centrality, q[iteration][indexRt][0] * q[iteration][indexRt][3]);
 
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQXA_vs_cent"), centrality, q[iteration][index_rt][0]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQYA_vs_cent"), centrality, q[iteration][index_rt][1]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQXC_vs_cent"), centrality, q[iteration][index_rt][2]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQYC_vs_cent"), centrality, q[iteration][index_rt][3]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXA_vs_cent"), centrality, q[iteration][indexRt][0]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYA_vs_cent"), centrality, q[iteration][indexRt][1]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXC_vs_cent"), centrality, q[iteration][indexRt][2]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYC_vs_cent"), centrality, q[iteration][indexRt][3]);
 
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQXA_vs_vx"), v[0], q[iteration][index_rt][0]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQYA_vs_vx"), v[0], q[iteration][index_rt][1]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQXC_vs_vx"), v[0], q[iteration][index_rt][2]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQYC_vs_vx"), v[0], q[iteration][index_rt][3]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXA_vs_vx"), v[0], q[iteration][indexRt][0]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYA_vs_vx"), v[0], q[iteration][indexRt][1]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXC_vs_vx"), v[0], q[iteration][indexRt][2]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYC_vs_vx"), v[0], q[iteration][indexRt][3]);
 
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQXA_vs_vy"), v[1], q[iteration][index_rt][0]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQYA_vs_vy"), v[1], q[iteration][index_rt][1]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQXC_vs_vy"), v[1], q[iteration][index_rt][2]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQYC_vs_vy"), v[1], q[iteration][index_rt][3]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXA_vs_vy"), v[1], q[iteration][indexRt][0]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYA_vs_vy"), v[1], q[iteration][indexRt][1]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXC_vs_vy"), v[1], q[iteration][indexRt][2]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYC_vs_vy"), v[1], q[iteration][indexRt][3]);
 
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQXA_vs_vz"), v[2], q[iteration][index_rt][0]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQYA_vs_vz"), v[2], q[iteration][index_rt][1]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQXC_vs_vz"), v[2], q[iteration][index_rt][2]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hQYC_vs_vz"), v[2], q[iteration][index_rt][3]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXA_vs_vz"), v[2], q[iteration][indexRt][0]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYA_vs_vz"), v[2], q[iteration][indexRt][1]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQXC_vs_vz"), v[2], q[iteration][indexRt][2]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hQYC_vs_vz"), v[2], q[iteration][indexRt][3]);
 
       // add psi!!
-      double psiA = 1.0 * std::atan2(q[iteration][index_rt][2], q[iteration][index_rt][0]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hSPplaneA"), psiA, centrality, 1);
-      double psiC = 1.0 * std::atan2(q[iteration][index_rt][3], q[iteration][index_rt][1]);
-      registry.fill(HIST(subdir[index]) + HIST("QA/hSPplaneC"), psiC, centrality, 1);
+      double psiA = 1.0 * std::atan2(q[iteration][indexRt][2], q[iteration][indexRt][0]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hSPplaneA"), psiA, centrality, 1);
+      double psiC = 1.0 * std::atan2(q[iteration][indexRt][3], q[iteration][indexRt][1]);
+      registry.fill(HIST(SubDir[index]) + HIST("QA/hSPplaneC"), psiC, centrality, 1);
 
     });
   }
@@ -495,7 +495,7 @@ struct ZDCQvectors {
     fillCommonRegistry(iteration);
   }
 
-  void process(myCollisions::iterator const& collision,
+  void process(UsedCollisions::iterator const& collision,
                BCsRun3 const& /*bcs*/,
                aod::Zdcs const& /*zdcs*/)
   {
@@ -508,7 +508,7 @@ struct ZDCQvectors {
     auto cent = collision.centFT0C();
 
     if (cent < 0 || cent > 90) {
-      SPtableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
+      spTableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
       return;
     }
 
@@ -517,7 +517,7 @@ struct ZDCQvectors {
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
 
     if (!foundBC.has_zdc()) {
-      SPtableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
+      spTableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
       return;
     }
 
@@ -589,13 +589,13 @@ struct ZDCQvectors {
       // if ZNA or ZNC not hit correctly.. do not use event in q-vector calculation
       if (!isZNAhit || !isZNChit) {
         counter++;
-        SPtableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
+        spTableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
         return;
       }
 
       if (!cal.calibfilesLoaded[0][0]) {
         counter++;
-        SPtableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
+        spTableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
         return;
       }
 
@@ -679,7 +679,7 @@ struct ZDCQvectors {
           if (counter < 1)
             LOGF(warning, "Calibation files missing!!! Output created with q-vectors right after energy gain eq. !!");
           fillAllRegistries(0, 0);
-          SPtableZDC(runnumber, centrality, v[0], v[1], v[2], q[0][0][0], q[0][0][1], q[0][0][2], q[0][0][3], true, 0, 0);
+          spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0][0][0], q[0][0][1], q[0][0][2], q[0][0][3], true, 0, 0);
           counter++;
           return;
         } else {
@@ -708,7 +708,7 @@ struct ZDCQvectors {
             LOGF(info, "Output created with q-vectors at iteration %i and step %i!!!!", cal.atIteration, cal.atStep + 1);
           fillAllRegistries(cal.atIteration, cal.atStep + 1);
           registry.fill(HIST("QA/centrality_after"), centrality);
-          SPtableZDC(runnumber, centrality, v[0], v[1], v[2], q[cal.atIteration][cal.atStep][0], q[cal.atIteration][cal.atStep][1], q[cal.atIteration][cal.atStep][2], q[cal.atIteration][cal.atStep][3], true, cal.atIteration, cal.atStep);
+          spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[cal.atIteration][cal.atStep][0], q[cal.atIteration][cal.atStep][1], q[cal.atIteration][cal.atStep][2], q[cal.atIteration][cal.atStep][3], true, cal.atIteration, cal.atStep);
           counter++;
           return;
         }
