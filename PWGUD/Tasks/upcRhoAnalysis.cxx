@@ -303,7 +303,7 @@ struct upcRhoAnalysis {
     System.add("system/cut/0n0n/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     System.add("system/cut/0n0n/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptCutAxis});
     System.add("system/cut/0n0n/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
-    System.add("system/cut/0n0n/like-sign/positive/hPhiL", ";#phi;counts", kTH1D, {phiAsymmAxis});
+    System.add("system/cut/0n0n/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0n0n/like-sign/positive/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0n0n/like-sign/positive/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0n0n/like-sign/positive/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
