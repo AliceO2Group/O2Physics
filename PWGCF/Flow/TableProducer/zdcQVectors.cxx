@@ -134,11 +134,11 @@ struct ZdcQVectors {
   O2_DEFINE_CONFIGURABLE(cfgEnergyCal, std::string, "Users/c/ckoster/ZDC/LHC23_zzh_pass4/Energy", "ccdb path for energy calibration histos")
   O2_DEFINE_CONFIGURABLE(cfgMeanv, std::string, "Users/c/ckoster/ZDC/LHC23_zzh_pass4/vmean", "ccdb path for mean v histos")
 
-  Configurable<std::vector<std::string>> cfgRec1{"cfgRec1", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step1","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step2","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step3","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step4","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step5"}, "ccdb paths for recentering calibration histos iteration 1"};
-  Configurable<std::vector<std::string>> cfgRec2{"cfgRec2", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step1","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step2","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step3","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step4","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step5"}, "ccdb paths for recentering calibration histos iteration 2"};
-  Configurable<std::vector<std::string>> cfgRec3{"cfgRec3", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it3_step1","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it3_step2","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it3_step3","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it3_step4","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it3_step5"}, "ccdb paths for recentering calibration histos iteration 3"};
-  Configurable<std::vector<std::string>> cfgRec4{"cfgRec4", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it4_step1","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it4_step2","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it4_step3","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it4_step4","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it4_step5"}, "ccdb paths for recentering calibration histos iteration 4"};
-  Configurable<std::vector<std::string>> cfgRec5{"cfgRec5", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it5_step1","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it5_step2","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it5_step3","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it5_step4","Users/c/ckoster/ZDC/LHC23_zzh_pass4/it5_step5"}, "ccdb paths for recentering calibration histos iteration 5"};
+  Configurable<std::vector<std::string>> cfgRec1{"cfgRec1", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step1", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step2", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step3", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step4", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step5"}, "ccdb paths for recentering calibration histos iteration 1"};
+  Configurable<std::vector<std::string>> cfgRec2{"cfgRec2", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step1", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step2", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step3", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step4", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step5"}, "ccdb paths for recentering calibration histos iteration 2"};
+  Configurable<std::vector<std::string>> cfgRec3{"cfgRec3", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it3_step1", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it3_step2", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it3_step3", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it3_step4", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it3_step5"}, "ccdb paths for recentering calibration histos iteration 3"};
+  Configurable<std::vector<std::string>> cfgRec4{"cfgRec4", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it4_step1", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it4_step2", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it4_step3", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it4_step4", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it4_step5"}, "ccdb paths for recentering calibration histos iteration 4"};
+  Configurable<std::vector<std::string>> cfgRec5{"cfgRec5", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it5_step1", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it5_step2", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it5_step3", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it5_step4", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it5_step5"}, "ccdb paths for recentering calibration histos iteration 5"};
 
   //  Define output
   HistogramRegistry registry{"Registry"};
@@ -362,7 +362,6 @@ struct ZdcQVectors {
       registry.fill(HIST(SubDir[Index]) + HIST("QA/hSPplaneA"), psiA, centrality, 1);
       double psiC = 1.0 * std::atan2(q[iteration][indexRt][3], q[iteration][indexRt][1]);
       registry.fill(HIST(SubDir[Index]) + HIST("QA/hSPplaneC"), psiC, centrality, 1);
-
     });
   }
 
@@ -520,199 +519,199 @@ struct ZdcQVectors {
       return;
     }
 
-      v[0] = collision.posX();
-      v[1] = collision.posY();
-      v[2] = collision.posZ();
-      centrality = cent;
-      runnumber = foundBC.runNumber();
+    v[0] = collision.posX();
+    v[1] = collision.posY();
+    v[2] = collision.posZ();
+    centrality = cent;
+    runnumber = foundBC.runNumber();
 
-      const auto& zdcCol = foundBC.zdc();
+    const auto& zdcCol = foundBC.zdc();
 
-      // Get the raw energies eZN[8] (not the common A,C)
-      for (int tower = 0; tower < 8; tower++) {
-        eZN[tower] = (tower < 4) ? zdcCol.energySectorZNA()[tower] : zdcCol.energySectorZNC()[tower % 4];
+    // Get the raw energies eZN[8] (not the common A,C)
+    for (int tower = 0; tower < 8; tower++) {
+      eZN[tower] = (tower < 4) ? zdcCol.energySectorZNA()[tower] : zdcCol.energySectorZNC()[tower % 4];
+    }
+
+    // load the calibration histos for iteration 0 step 0 (Energy Calibration)
+    loadCalibrations(0, 0, foundBC.timestamp(), cfgEnergyCal.value, namesEcal);
+
+    if (!cal.calibfilesLoaded[0][0]) {
+      if (counter < 1) {
+        LOGF(info, " --> No Energy calibration files found.. -> Only Energy calibration will be done. ");
       }
+    }
+    // load the calibrations for the mean v
+    loadCalibrations(0, 1, foundBC.timestamp(), cfgMeanv.value, vnames);
 
-      // load the calibration histos for iteration 0 step 0 (Energy Calibration)
-      loadCalibrations(0, 0, foundBC.timestamp(), cfgEnergyCal.value, namesEcal);
-
-      if (!cal.calibfilesLoaded[0][0]) {
-        if (counter < 1) {
-          LOGF(info, " --> No Energy calibration files found.. -> Only Energy calibration will be done. ");
-        }
-      }
-      // load the calibrations for the mean v
-      loadCalibrations(0, 1, foundBC.timestamp(), cfgMeanv.value, vnames);
-
-      if (!cal.calibfilesLoaded[0][1]) {
-        if (counter < 1)
-          LOGF(warning, " --> No mean V found.. -> THis wil lead to wrong axis for vx, vy (will be created in vmean/)");
-        registry.get<TProfile>(HIST("vmean/hvertex_vx"))->Fill(Form("%d", runnumber), v[0]);
-        registry.get<TProfile>(HIST("vmean/hvertex_vy"))->Fill(Form("%d", runnumber), v[1]);
-      }
-
+    if (!cal.calibfilesLoaded[0][1]) {
       if (counter < 1)
-        LOGF(info, "=====================> .....Start Energy Calibration..... <=====================");
+        LOGF(warning, " --> No mean V found.. -> THis wil lead to wrong axis for vx, vy (will be created in vmean/)");
+      registry.get<TProfile>(HIST("vmean/hvertex_vx"))->Fill(Form("%d", runnumber), v[0]);
+      registry.get<TProfile>(HIST("vmean/hvertex_vy"))->Fill(Form("%d", runnumber), v[1]);
+    }
 
-      bool isZNAhit = true;
-      bool isZNChit = true;
+    if (counter < 1)
+      LOGF(info, "=====================> .....Start Energy Calibration..... <=====================");
 
-      for (int i = 0; i < 8; ++i) {
-        if (i < 4 && eZN[i] <= 0)
-          isZNAhit = false;
-        if (i > 3 && eZN[i] <= 0)
-          isZNChit = false;
-      }
+    bool isZNAhit = true;
+    bool isZNChit = true;
 
-      if (zdcCol.energyCommonZNA() <= 0)
+    for (int i = 0; i < 8; ++i) {
+      if (i < 4 && eZN[i] <= 0)
         isZNAhit = false;
-      if (zdcCol.energyCommonZNC() <= 0)
+      if (i > 3 && eZN[i] <= 0)
         isZNChit = false;
+    }
 
-      // Fill to get mean energy per tower in 1% centrality bins
-      for (int tower = 0; tower < 5; tower++) {
-        if (tower == 0) {
-          if (isZNAhit)
-            energyZN[tower]->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNA(), 1);
-          if (isZNChit)
-            energyZN[tower + 5]->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNC(), 1);
-          LOGF(debug, "Common A tower filled with: %i, %.2f, %.2f", runnumber, cent, zdcCol.energyCommonZNA());
-        } else {
-          if (isZNAhit)
-            energyZN[tower]->Fill(Form("%d", runnumber), cent, eZN[tower - 1], 1);
-          if (isZNChit)
-            energyZN[tower + 5]->Fill(Form("%d", runnumber), cent, eZN[tower - 1 + 4], 1);
-          LOGF(debug, "Tower ZNC[%i] filled with: %i, %.2f, %.2f", tower, runnumber, cent, eZN[tower - 1 + 4]);
-        }
+    if (zdcCol.energyCommonZNA() <= 0)
+      isZNAhit = false;
+    if (zdcCol.energyCommonZNC() <= 0)
+      isZNChit = false;
+
+    // Fill to get mean energy per tower in 1% centrality bins
+    for (int tower = 0; tower < 5; tower++) {
+      if (tower == 0) {
+        if (isZNAhit)
+          energyZN[tower]->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNA(), 1);
+        if (isZNChit)
+          energyZN[tower + 5]->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNC(), 1);
+        LOGF(debug, "Common A tower filled with: %i, %.2f, %.2f", runnumber, cent, zdcCol.energyCommonZNA());
+      } else {
+        if (isZNAhit)
+          energyZN[tower]->Fill(Form("%d", runnumber), cent, eZN[tower - 1], 1);
+        if (isZNChit)
+          energyZN[tower + 5]->Fill(Form("%d", runnumber), cent, eZN[tower - 1 + 4], 1);
+        LOGF(debug, "Tower ZNC[%i] filled with: %i, %.2f, %.2f", tower, runnumber, cent, eZN[tower - 1 + 4]);
       }
+    }
 
-      // if ZNA or ZNC not hit correctly.. do not use event in q-vector calculation
-      if (!isZNAhit || !isZNChit) {
-        counter++;
-        spTableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
-        return;
+    // if ZNA or ZNC not hit correctly.. do not use event in q-vector calculation
+    if (!isZNAhit || !isZNChit) {
+      counter++;
+      spTableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
+      return;
+    }
+
+    if (!cal.calibfilesLoaded[0][0]) {
+      counter++;
+      spTableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
+      return;
+    }
+
+    if (counter < 1)
+      LOGF(info, "files for step 0 (energy Calibraton) are open!");
+
+    if (counter < 1) {
+      LOGF(info, "=====================> .....Start Calculating Q-Vectors..... <=====================");
+    }
+
+    // Now start gain equalisation!
+    // Fill the list with calibration constants.
+    for (int tower = 0; tower < 10; tower++) {
+      meanEZN[tower] = getCorrection<TProfile2D>(0, 0, namesEcal[tower].Data());
+    }
+
+    // Use the calibration constants but now only loop over towers 1-4
+    int calibtower = 0;
+    std::vector<int> towersNocom = {1, 2, 3, 4, 6, 7, 8, 9};
+
+    for (const auto& tower : towersNocom) {
+      if (meanEZN[tower] > 0) {
+        double ecommon = (tower > 4) ? meanEZN[5] : meanEZN[0];
+        e[calibtower] = eZN[calibtower] * (0.25 * ecommon) / meanEZN[tower];
       }
+      calibtower++;
+    }
 
-      if (!cal.calibfilesLoaded[0][0]) {
-        counter++;
-        spTableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
-        return;
+    for (int i = 0; i < 4; i++) {
+      float bincenter = i + .5;
+      registry.fill(HIST("QA/ZNA_Energy"), bincenter, eZN[i]);
+      registry.fill(HIST("QA/ZNA_Energy"), bincenter + 4, e[i]);
+      registry.fill(HIST("QA/ZNC_Energy"), bincenter, eZN[i + 4]);
+      registry.fill(HIST("QA/ZNC_Energy"), bincenter + 4, e[i + 4]);
+    }
+
+    // Now calculate Q-vector
+    for (int tower = 0; tower < 8; tower++) {
+      int side = (tower > 3) ? 1 : 0;
+      int sector = tower % 4;
+      double energy = std::pow(e[tower], alphaZDC);
+      sumZN[side] += energy;
+      xEnZN[side] += (side == 0) ? pxZDC[sector] * energy : -1.0 * pxZDC[sector] * energy;
+      yEnZN[side] += pyZDC[sector] * energy;
+    }
+
+    // "QXA", "QYA", "QXC", "QYC"
+    for (int i = 0; i < 2; ++i) {
+      if (sumZN[i] > 0) {
+        q[0][0][i * 2] = xEnZN[i] / sumZN[i];     // for QXA[0] and QXC[2]
+        q[0][0][i * 2 + 1] = yEnZN[i] / sumZN[i]; // for QYA[1] and QYC[3]
       }
+    }
 
-        if (counter < 1)
-          LOGF(info, "files for step 0 (energy Calibraton) are open!");
+    if (cal.calibfilesLoaded[0][1]) {
+      if (counter < 1)
+        LOGF(info, "=====================> Setting v to vmean!");
+      v[0] = v[0] - getCorrection<TProfile>(0, 1, vnames[0].Data());
+      v[1] = v[1] - getCorrection<TProfile>(0, 1, vnames[1].Data());
+    }
 
-        if (counter < 1) {
-          LOGF(info, "=====================> .....Start Calculating Q-Vectors..... <=====================");
-        }
+    for (int iteration = 1; iteration < 6; iteration++) {
+      std::vector<std::string> ccdbDirs;
+      if (iteration == 1)
+        ccdbDirs = cfgRec1.value;
+      if (iteration == 2)
+        ccdbDirs = cfgRec2.value;
+      if (iteration == 3)
+        ccdbDirs = cfgRec3.value;
+      if (iteration == 4)
+        ccdbDirs = cfgRec4.value;
+      if (iteration == 5)
+        ccdbDirs = cfgRec5.value;
 
-        // Now start gain equalisation!
-        // Fill the list with calibration constants.
-        for (int tower = 0; tower < 10; tower++) {
-          meanEZN[tower] = getCorrection<TProfile2D>(0, 0, namesEcal[tower].Data());
-        }
+      for (int step = 0; step < 5; step++) {
+        loadCalibrations(iteration, step, foundBC.timestamp(), (ccdbDirs)[step], names[step]);
+      }
+    }
 
-        // Use the calibration constants but now only loop over towers 1-4
-        int calibtower = 0;
-        std::vector<int> towersNocom = {1, 2, 3, 4, 6, 7, 8, 9};
-
-        for (const auto& tower : towersNocom) {
-          if (meanEZN[tower] > 0) {
-            double ecommon = (tower > 4) ? meanEZN[5] : meanEZN[0];
-            e[calibtower] = eZN[calibtower] * (0.25 * ecommon) / meanEZN[tower];
-          }
-          calibtower++;
-        }
-
-        for (int i = 0; i < 4; i++) {
-          float bincenter = i + .5;
-          registry.fill(HIST("QA/ZNA_Energy"), bincenter, eZN[i]);
-          registry.fill(HIST("QA/ZNA_Energy"), bincenter + 4, e[i]);
-          registry.fill(HIST("QA/ZNC_Energy"), bincenter, eZN[i + 4]);
-          registry.fill(HIST("QA/ZNC_Energy"), bincenter + 4, e[i + 4]);
-        }
-
-        // Now calculate Q-vector
-        for (int tower = 0; tower < 8; tower++) {
-          int side = (tower > 3) ? 1 : 0;
-          int sector = tower % 4;
-          double energy = std::pow(e[tower], alphaZDC);
-          sumZN[side] += energy;
-          xEnZN[side] += (side == 0) ? pxZDC[sector] * energy : -1.0 * pxZDC[sector] * energy;
-          yEnZN[side] += pyZDC[sector] * energy;
-        }
-
-        // "QXA", "QYA", "QXC", "QYC"
-        for (int i = 0; i < 2; ++i) {
-          if (sumZN[i] > 0) {
-            q[0][0][i * 2] = xEnZN[i] / sumZN[i];     // for QXA[0] and QXC[2]
-            q[0][0][i * 2 + 1] = yEnZN[i] / sumZN[i]; // for QYA[1] and QYC[3]
-          }
-        }
-
-        if (cal.calibfilesLoaded[0][1]) {
-          if (counter < 1)
-            LOGF(info, "=====================> Setting v to vmean!");
-          v[0] = v[0] - getCorrection<TProfile>(0, 1, vnames[0].Data());
-          v[1] = v[1] - getCorrection<TProfile>(0, 1, vnames[1].Data());
-        }
-
-          for (int iteration = 1; iteration < 6; iteration++) {
-            std::vector<std::string> ccdbDirs;
-            if (iteration == 1)
-              ccdbDirs = cfgRec1.value;
-            if (iteration == 2)
-              ccdbDirs = cfgRec2.value;
-            if (iteration == 3)
-              ccdbDirs = cfgRec3.value;
-            if (iteration == 4)
-              ccdbDirs = cfgRec4.value;
-            if (iteration == 5)
-              ccdbDirs = cfgRec5.value;
-
-            for (int step = 0; step < 5; step++) {
-              loadCalibrations(iteration, step, foundBC.timestamp(), (ccdbDirs)[step], names[step]);
-            }
-        }
-
-        if (cal.atIteration == 0) {
-          if (counter < 1)
-            LOGF(warning, "Calibation files missing!!! Output created with q-vectors right after energy gain eq. !!");
-          fillAllRegistries(0, 0);
-          spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0][0][0], q[0][0][1], q[0][0][2], q[0][0][3], true, 0, 0);
-          counter++;
-          return;
-        } else {
-          for (int iteration = 1; iteration <= cal.atIteration; iteration++) {
-            for (int step = 0; step < cal.atStep + 1; step++) {
-              if (cal.calibfilesLoaded[iteration][step]) {
-                for (int i = 0; i < 4; i++) {
-                  if (step == 0) {
-                    if (iteration == 1) {
-                      q[iteration][step + 1][i] = q[0][0][i] - getCorrection<THnSparse>(iteration, step, names[step][i].Data());
-                    } else {
-                      q[iteration][step + 1][i] = q[iteration - 1][5][i] - getCorrection<THnSparse>(iteration, step, names[step][i].Data());
-                    }
-                  } else {
-                    q[iteration][step + 1][i] = q[iteration][step][i] - getCorrection<TProfile>(iteration, step, names[step][i].Data());
-                  }
+    if (cal.atIteration == 0) {
+      if (counter < 1)
+        LOGF(warning, "Calibation files missing!!! Output created with q-vectors right after energy gain eq. !!");
+      fillAllRegistries(0, 0);
+      spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0][0][0], q[0][0][1], q[0][0][2], q[0][0][3], true, 0, 0);
+      counter++;
+      return;
+    } else {
+      for (int iteration = 1; iteration <= cal.atIteration; iteration++) {
+        for (int step = 0; step < cal.atStep + 1; step++) {
+          if (cal.calibfilesLoaded[iteration][step]) {
+            for (int i = 0; i < 4; i++) {
+              if (step == 0) {
+                if (iteration == 1) {
+                  q[iteration][step + 1][i] = q[0][0][i] - getCorrection<THnSparse>(iteration, step, names[step][i].Data());
+                } else {
+                  q[iteration][step + 1][i] = q[iteration - 1][5][i] - getCorrection<THnSparse>(iteration, step, names[step][i].Data());
                 }
               } else {
-                if (counter < 1)
-                  LOGF(warning, "Something went wrong in calibration loop! File not loaded but bool set to tue");
-              } // end of (cal.calibLoaded)
-            } // end of step
-          } // end of iteration
+                q[iteration][step + 1][i] = q[iteration][step][i] - getCorrection<TProfile>(iteration, step, names[step][i].Data());
+              }
+            }
+          } else {
+            if (counter < 1)
+              LOGF(warning, "Something went wrong in calibration loop! File not loaded but bool set to tue");
+          } // end of (cal.calibLoaded)
+        } // end of step
+      } // end of iteration
 
-          if (counter < 1)
-            LOGF(info, "Output created with q-vectors at iteration %i and step %i!!!!", cal.atIteration, cal.atStep + 1);
-          fillAllRegistries(cal.atIteration, cal.atStep + 1);
-          registry.fill(HIST("QA/centrality_after"), centrality);
-          spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[cal.atIteration][cal.atStep][0], q[cal.atIteration][cal.atStep][1], q[cal.atIteration][cal.atStep][2], q[cal.atIteration][cal.atStep][3], true, cal.atIteration, cal.atStep);
-          counter++;
-          return;
-        }
-        LOGF(warning, "We return without saving table... -> THis is a problem");
+      if (counter < 1)
+        LOGF(info, "Output created with q-vectors at iteration %i and step %i!!!!", cal.atIteration, cal.atStep + 1);
+      fillAllRegistries(cal.atIteration, cal.atStep + 1);
+      registry.fill(HIST("QA/centrality_after"), centrality);
+      spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[cal.atIteration][cal.atStep][0], q[cal.atIteration][cal.atStep][1], q[cal.atIteration][cal.atStep][2], q[cal.atIteration][cal.atStep][3], true, cal.atIteration, cal.atStep);
+      counter++;
+      return;
+    }
+    LOGF(warning, "We return without saving table... -> THis is a problem");
   } // end of process
 };
 
@@ -721,3 +720,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<ZdcQVectors>(cfgc)};
 }
+ 
