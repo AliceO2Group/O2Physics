@@ -19,6 +19,9 @@
 #include <TH1F.h>
 #include <THashList.h>
 #include <TString.h>
+#include <cstdio>
+#include <string>
+#include <memory>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
