@@ -331,19 +331,14 @@ struct flowSP {
 
       registry.fill(HIST("hSindPhi"), centrality, std::sin(psi_A - psi_C));
 
-      auto QxAQxC = qxA * qxC;
-      auto QyAQyC = qyA * qyC;
-
-      auto QxyAC = QxAQxC + QyAQyC;
-      auto QxCQyA = qxA * qyC;
-      auto QxAQyC = qxC * qyA;
+      auto qxAqxC = qxA * qxC;
+      auto qyAqyC = qyA * qyC;
 
       for (auto& track : tracks) {
         if (!trackSelected(track, field))
           continue;
 
         bool pos = false;  
-
         if (track.sign() == 0.0) continue;
         if (track.sign()>0) pos=true; 
 
@@ -363,8 +358,8 @@ struct flowSP {
         auto oddv1 = ux * (qxA - qxC) + uy * (qyA - qyC);
         auto evenv1 = ux * (qxA + qxC) + uy * (qyA + qyC);
 
-        auto oddv1_dev = ux * (qxA - qxC)/std::sqrt(std::abs(QxAQxC)) + uy * (qyA - qyC)/std::sqrt(std::abs(QyAQyC));
-        auto evenv1_dev = ux * (qxA + qxC)/std::sqrt(std::abs(QxAQxC)) + uy * (qyA + qyC)/std::sqrt(std::abs(QyAQyC));
+        auto oddv1_dev = ux * (qxA - qxC)/std::sqrt(std::abs(qxAqxC)) + uy * (qyA - qyC)/std::sqrt(std::abs(qyAqyC));
+        auto evenv1_dev = ux * (qxA + qxC)/std::sqrt(std::abs(qxAqxC)) + uy * (qyA + qyC)/std::sqrt(std::abs(qyAqyC));
         
         double v1A = std::cos(phi - psi_A);
         double v1C = std::cos(phi - psi_C);
