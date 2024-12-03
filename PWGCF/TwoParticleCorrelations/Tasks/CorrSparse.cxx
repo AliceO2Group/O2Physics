@@ -69,7 +69,7 @@ struct CorrSparse {
   void fillYield(TCollision collision, float centrality, TTracks tracks) // function to fill the yield and etaphi histograms.
   {
     registry.fill(HIST("Nch"), tracks.size());
-    for (auto& track1 : tracks) {
+    for (auto const& track1 : tracks) {
       registry.fill(HIST("Yield"), track1.pt(), track1.eta(), track1.size());
       registry.fill(HIST("etaphi_Trigger"), track1.eta(), track1.phi(), track1.size());
       registry.fill(HIST("Phi"), track1.phi());
@@ -149,9 +149,9 @@ struct CorrSparse {
     pair{bindingOnVtxAndMult, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   // the process for filling the mixed events
-  void processMixed(aodCollisions& collisions, aodTracks const& tracks)
+  void processMixed(aodCollisions const& collisions, aodTracks const& tracks)
   {
-    for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
+    for (auto const& [collision1, tracks1, collision2, tracks2] : pair) {
 
       if (fillCollision(collision1, collision1.centFT0C()) == false) {
         continue;
