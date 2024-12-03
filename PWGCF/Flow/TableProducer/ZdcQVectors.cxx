@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file   zdcQVectors.cxx
+/// \file   ZdcQVectors.cxx
 /// \author Noor Koster
 /// \since  11/2024
 /// \brief  In this task the energy calibration and recentring of Q-vectors constructed in the ZDCs will be done
@@ -109,7 +109,7 @@ bool isSelected = false;
 
 using namespace o2::analysis::qvectortask;
 
-Struct ZdcQVectors {
+struct ZdcQVectors {
 
   Produces<aod::SPTableZDC> spTableZDC;
 
