@@ -535,11 +535,7 @@ struct PhotonHBT {
     fDielectronCut.SetMeeRange(dielectroncuts.cfg_min_mass, dielectroncuts.cfg_max_mass);
     fDielectronCut.SetPairPtRange(dielectroncuts.cfg_min_pair_pt, dielectroncuts.cfg_max_pair_pt);
     fDielectronCut.SetPairYRange(dielectroncuts.cfg_min_pair_y, dielectroncuts.cfg_max_pair_y);
-    if (dielectroncuts.cfg_apply_phiv_meedep) {
-      fDielectronCut.SetMaxPhivPairMeeDep([&](float mll) { return (mll - dielectroncuts.cfg_phiv_intercept) / dielectroncuts.cfg_phiv_slope; });
-    } else {
-      fDielectronCut.SetPhivPairRange(dielectroncuts.cfg_min_phiv, dielectroncuts.cfg_max_phiv, dielectroncuts.cfg_min_mee_for_phiv, dielectroncuts.cfg_max_mee_for_phiv);
-    }
+    fDielectronCut.SetMaxMeePhiVDep([&](float phiv) { return dielectroncuts.cfg_phiv_intercept + phiv * dielectroncuts.cfg_phiv_slope; }, dielectroncuts.cfg_min_phiv, dielectroncuts.cfg_max_phiv);
     fDielectronCut.SetPairDCARange(dielectroncuts.cfg_min_pair_dca3d, dielectroncuts.cfg_max_pair_dca3d); // in sigma
     fDielectronCut.ApplyPhiV(dielectroncuts.cfg_apply_phiv);
     fDielectronCut.ApplyPrefilter(dielectroncuts.cfg_apply_pf);

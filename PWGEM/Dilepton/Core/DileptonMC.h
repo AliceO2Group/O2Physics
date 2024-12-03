@@ -65,7 +65,7 @@ using namespace o2::aod::pwgem::dilepton::utils::pairutil;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
-using MyMCElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit, aod::EMPrimaryElectronMCLabels>;
+using MyMCElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit, aod::EMPrimaryElectronsPrefilterBitPi0, aod::EMPrimaryElectronMCLabels>;
 using MyMCElectron = MyMCElectrons::iterator;
 using FilteredMyMCElectrons = soa::Filtered<MyMCElectrons>;
 using FilteredMyMCElectron = FilteredMyMCElectrons::iterator;
@@ -128,6 +128,7 @@ struct DileptonMC {
     Configurable<bool> cfgRequireNoCollInTimeRangeStrict{"cfgRequireNoCollInTimeRangeStrict", false, "require no collision in time range strict"};
     Configurable<bool> cfgRequireNoCollInITSROFStandard{"cfgRequireNoCollInITSROFStandard", false, "require no collision in time range standard"};
     Configurable<bool> cfgRequireNoCollInITSROFStrict{"cfgRequireNoCollInITSROFStrict", false, "require no collision in time range strict"};
+    Configurable<bool> cfgRequireNoHighMultCollInPrevRof{"cfgRequireNoHighMultCollInPrevRof", false, "require no HM collision in previous ITS ROF"};
   } eventcuts;
 
   DielectronCut fDielectronCut;
@@ -141,27 +142,27 @@ struct DileptonMC {
     Configurable<float> cfg_max_pair_y{"cfg_max_pair_y", +0.8, "max pair rapidity"};
     Configurable<float> cfg_min_pair_dca3d{"cfg_min_pair_dca3d", 0.0, "min pair dca3d in sigma"};
     Configurable<float> cfg_max_pair_dca3d{"cfg_max_pair_dca3d", 1e+10, "max pair dca3d in sigma"};
-    Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", true, "flag to apply phiv cut"};
     Configurable<bool> cfg_apply_pf{"cfg_apply_pf", false, "flag to apply phiv prefilter"};
-    Configurable<bool> cfg_apply_phiv_meedep{"cfg_apply_phiv_meedep", true, "flag to apply mee-dependent phiv cut"};
+    Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", true, "flag to apply phiv cut"};
     Configurable<float> cfg_phiv_slope{"cfg_phiv_slope", 0.0185, "slope for m vs. phiv"};
     Configurable<float> cfg_phiv_intercept{"cfg_phiv_intercept", -0.0280, "intercept for m vs. phiv"};
     Configurable<float> cfg_min_phiv{"cfg_min_phiv", 0.0, "min phiv (constant)"};
     Configurable<float> cfg_max_phiv{"cfg_max_phiv", 3.2, "max phiv (constant)"};
-    Configurable<float> cfg_min_mee_for_phiv{"cfg_min_mee_for_phiv", 0.0, "min mee for phiv (constant)"};
-    Configurable<float> cfg_max_mee_for_phiv{"cfg_max_mee_for_phiv", 1e+10, "max mee for phiv (constant)"};
     Configurable<bool> cfg_apply_detadphi{"cfg_apply_detadphi", false, "flag to apply deta-dphi elliptic cut"};
     Configurable<float> cfg_min_deta{"cfg_min_deta", 0.02, "min deta between 2 electrons (elliptic cut)"};
     Configurable<float> cfg_min_dphi{"cfg_min_dphi", 0.2, "min dphi between 2 electrons (elliptic cut)"};
-    Configurable<bool> cfg_apply_detadphi_geom{"cfg_apply_detadphi_geom", false, "flag to apply generator deta-dphi elliptic cut"};
-    Configurable<float> cfg_min_deta_geom{"cfg_min_deta_geom", 0.02, "geometrical min deta between 2 electrons (elliptic cut)"};
-    Configurable<float> cfg_min_dphi_geom{"cfg_min_dphi_geom", 0.2, "geometrical min dphi between 2 electrons (elliptic cut)"};
+    Configurable<bool> cfg_apply_dzrdphi_geom{"cfg_apply_dzrdphi_geom", false, "flag to apply generator dz-rdphi elliptic cut"};
+    Configurable<float> cfg_min_dz_geom{"cfg_min_dz_geom", 5, "geometrical min deta between 2 electrons (elliptic cut)"};
+    Configurable<float> cfg_min_rdphi_geom{"cfg_min_rdphi_geom", 20, "geometrical min dphi between 2 electrons (elliptic cut)"};
     Configurable<float> cfg_min_opang{"cfg_min_opang", 0.0, "min opening angle"};
     Configurable<float> cfg_max_opang{"cfg_max_opang", 6.4, "max opening angle"};
     Configurable<bool> cfg_require_diff_sides{"cfg_require_diff_sides", false, "flag to require 2 tracks are from different sides."};
-    Configurable<float> cfg_x_to_go{"cfg_x_to_go", -1, "x (cm) to be propagated in local coordinate"};
+
+    Configurable<bool> cfg_apply_cuts_from_prefilter{"cfg_apply_cuts_from_prefilter", false, "flag to apply phiv cut inherited from prefilter"};
+    Configurable<uint16_t> cfg_prefilter_bits{"cfg_prefilter_bits", 0, "prefilter bits [kNone : 0, kMee : 1, kPhiV : 2, kSplitOrMergedTrack : 4] Please consider logical-OR among them."}; // see PairUtilities.h
 
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.2, "min pT for single track"};
+    Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
     Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.8, "max eta for single track"};
     Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +0.8, "max eta for single track"};
     Configurable<float> cfg_min_phi_track{"cfg_min_phi_track", 0.f, "max phi for single track"};
@@ -183,6 +184,7 @@ struct DileptonMC {
     Configurable<float> cfg_max_p_its_cluster_size{"cfg_max_p_its_cluster_size", 0.0, "max p to apply ITS cluster size cut"};
     Configurable<float> cfg_min_rel_diff_pin{"cfg_min_rel_diff_pin", -1e+10, "min rel. diff. between pin and ppv"};
     Configurable<float> cfg_max_rel_diff_pin{"cfg_max_rel_diff_pin", +1e+10, "max rel. diff. between pin and ppv"};
+    Configurable<float> cfg_x_to_go{"cfg_x_to_go", -1, "x (cm) to be propagated in local coordinate"};
 
     Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3, kTOFif = 4, kPIDML = 5]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
@@ -228,6 +230,7 @@ struct DileptonMC {
 
     Configurable<uint> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.1, "min pT for single track"};
+    Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
     Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -4.0, "min eta for single track"};
     Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", -2.5, "max eta for single track"};
     Configurable<float> cfg_min_phi_track{"cfg_min_phi_track", 0.f, "max phi for single track"};
@@ -356,8 +359,8 @@ struct DileptonMC {
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/NonPromptPsi2S/");
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      fRegistry.add("Pair/sm/Photon/hGeomDeltaEtaDeltaPhi", Form("difference in #eta-#varphi plane between 2 tracks at X = %2.1f cm;#Delta#varphi (rad.);#Delta#eta;", dielectroncuts.cfg_x_to_go.value), kTH2D, {{90, -M_PI, M_PI}, {100, -0.5, +0.5}}, true);
       fRegistry.add("Pair/sm/Photon/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 1.0f}}, true);
+      fRegistry.add("Pair/sm/Photon/hMvsRxy", "m_{ee} vs. r_{xy};r_{xy}^{true} (cm);m_{ee} (GeV/c^{2})", kTH2F, {{100, 0, 100}, {100, 0.0f, 1.0f}}, true);
       fRegistry.add("Pair/sm/Pi0/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 1.0f}}, true);
     }
 
@@ -546,11 +549,7 @@ struct DileptonMC {
     fDielectronCut.SetPairPtRange(dielectroncuts.cfg_min_pair_pt, dielectroncuts.cfg_max_pair_pt);
     fDielectronCut.SetPairYRange(dielectroncuts.cfg_min_pair_y, dielectroncuts.cfg_max_pair_y);
     fDielectronCut.SetPairDCARange(dielectroncuts.cfg_min_pair_dca3d, dielectroncuts.cfg_max_pair_dca3d); // in sigma
-    if (dielectroncuts.cfg_apply_phiv_meedep) {
-      fDielectronCut.SetMaxPhivPairMeeDep([&](float mll) { return (mll - dielectroncuts.cfg_phiv_intercept) / dielectroncuts.cfg_phiv_slope; });
-    } else {
-      fDielectronCut.SetPhivPairRange(dielectroncuts.cfg_min_phiv, dielectroncuts.cfg_max_phiv, dielectroncuts.cfg_min_mee_for_phiv, dielectroncuts.cfg_max_mee_for_phiv);
-    }
+    fDielectronCut.SetMaxMeePhiVDep([&](float phiv) { return dielectroncuts.cfg_phiv_intercept + phiv * dielectroncuts.cfg_phiv_slope; }, dielectroncuts.cfg_min_phiv, dielectroncuts.cfg_max_phiv);
     fDielectronCut.ApplyPhiV(dielectroncuts.cfg_apply_phiv);
     fDielectronCut.ApplyPrefilter(dielectroncuts.cfg_apply_pf);
     fDielectronCut.SetMindEtadPhi(dielectroncuts.cfg_apply_detadphi, dielectroncuts.cfg_min_deta, dielectroncuts.cfg_min_dphi);
@@ -558,7 +557,7 @@ struct DileptonMC {
     fDielectronCut.SetRequireDifferentSides(dielectroncuts.cfg_require_diff_sides);
 
     // for track
-    fDielectronCut.SetTrackPtRange(dielectroncuts.cfg_min_pt_track, 1e+10f);
+    fDielectronCut.SetTrackPtRange(dielectroncuts.cfg_min_pt_track, dielectroncuts.cfg_max_pt_track);
     fDielectronCut.SetTrackEtaRange(-dielectroncuts.cfg_max_eta_track, +dielectroncuts.cfg_max_eta_track);
     fDielectronCut.SetTrackPhiRange(-dielectroncuts.cfg_max_phi_track, +dielectroncuts.cfg_max_phi_track);
     fDielectronCut.SetMinNClustersTPC(dielectroncuts.cfg_min_ncluster_tpc);
@@ -626,7 +625,7 @@ struct DileptonMC {
 
     // for track
     fDimuonCut.SetTrackType(dimuoncuts.cfg_track_type);
-    fDimuonCut.SetTrackPtRange(dimuoncuts.cfg_min_pt_track, 1e10f);
+    fDimuonCut.SetTrackPtRange(dimuoncuts.cfg_min_pt_track, dimuoncuts.cfg_max_pt_track);
     fDimuonCut.SetTrackEtaRange(dimuoncuts.cfg_min_eta_track, dimuoncuts.cfg_max_eta_track);
     fDimuonCut.SetTrackPhiRange(dimuoncuts.cfg_min_phi_track, dimuoncuts.cfg_max_phi_track);
     fDimuonCut.SetNClustersMFT(dimuoncuts.cfg_min_ncluster_mft, 10);
@@ -712,8 +711,6 @@ struct DileptonMC {
       return false;
     }
 
-    float deta_geom = 999.f;
-    float dphi_geom = 999.f;
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
         if (!cut.template IsSelectedTrack<false, true>(t1, collision) || !cut.template IsSelectedTrack<false, true>(t2, collision)) {
@@ -727,13 +724,17 @@ struct DileptonMC {
       if (!cut.template IsSelectedPair(t1, t2, d_bz)) {
         return false;
       }
+      // if (!cut.template IsSelectedPair_PrefilterULS(t1, t2, d_bz) || !cut.template IsSelectedPair_PrefilterLS(t1, t2, d_bz)) {
+      //   return false;
+      // }
 
       if (dielectroncuts.cfg_x_to_go > 0.f) {
         auto track_par_cov1 = getTrackParCov(t1);
         track_par_cov1.setPID(o2::track::PID::Electron);
         o2::base::Propagator::Instance()->propagateToX(track_par_cov1, dielectroncuts.cfg_x_to_go, d_bz, o2::base::PropagatorImpl<float>::MAX_SIN_PHI, o2::base::PropagatorImpl<float>::MAX_STEP, matCorr);
         auto xyz1 = track_par_cov1.getXYZGlo();
-        float eta1 = RecoDecay::eta(std::array{xyz1.X(), xyz1.Y(), xyz1.Z()});
+        float z1 = xyz1.Z();
+        // float eta1 = RecoDecay::eta(std::array{xyz1.X(), xyz1.Y(), xyz1.Z()});
         float phi1 = RecoDecay::phi(std::array{xyz1.X(), xyz1.Y()});
         o2::math_utils::bringTo02Pi(phi1);
 
@@ -741,14 +742,16 @@ struct DileptonMC {
         track_par_cov2.setPID(o2::track::PID::Electron);
         o2::base::Propagator::Instance()->propagateToX(track_par_cov2, dielectroncuts.cfg_x_to_go, d_bz, o2::base::PropagatorImpl<float>::MAX_SIN_PHI, o2::base::PropagatorImpl<float>::MAX_STEP, matCorr);
         auto xyz2 = track_par_cov2.getXYZGlo();
-        float eta2 = RecoDecay::eta(std::array{xyz2.X(), xyz2.Y(), xyz2.Z()});
+        float z2 = xyz2.Z();
+        // float eta2 = RecoDecay::eta(std::array{xyz2.X(), xyz2.Y(), xyz2.Z()});
         float phi2 = RecoDecay::phi(std::array{xyz2.X(), xyz2.Y()});
         o2::math_utils::bringTo02Pi(phi2);
 
-        float deta_geom = t1.sign() * t1.pt() > t2.sign() * t2.pt() ? eta1 - eta2 : eta2 - eta1;
+        float dz_geom = t1.sign() * t1.pt() > t2.sign() * t2.pt() ? z1 - z2 : z2 - z1;
         float dphi_geom = t1.sign() * t1.pt() > t2.sign() * t2.pt() ? phi1 - phi2 : phi2 - phi1;
         o2::math_utils::bringToPMPi(dphi_geom);
-        if (dielectroncuts.cfg_apply_detadphi_geom && std::pow(deta_geom / dielectroncuts.cfg_min_deta_geom, 2) + std::pow(dphi_geom / dielectroncuts.cfg_min_dphi_geom, 2) < 1.f) {
+        float rdphi_geom = dielectroncuts.cfg_x_to_go * dphi_geom;
+        if (dielectroncuts.cfg_apply_dzrdphi_geom && std::pow(dz_geom / dielectroncuts.cfg_min_dz_geom, 2) + std::pow(rdphi_geom / dielectroncuts.cfg_min_rdphi_geom, 2) < 1.f) {
           return false;
         }
       }
@@ -955,7 +958,8 @@ struct DileptonMC {
               fRegistry.fill(HIST("Pair/sm/Photon/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
               if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
                 fRegistry.fill(HIST("Pair/sm/Photon/hMvsPhiV"), phiv, v12.M());
-                fRegistry.fill(HIST("Pair/sm/Photon/hGeomDeltaEtaDeltaPhi"), dphi_geom, deta_geom, weight);
+                float rxy_gen = std::sqrt(std::pow(t1mc.vx(), 2) + std::pow(t1mc.vy(), 2));
+                fRegistry.fill(HIST("Pair/sm/Photon/hMvsRxy"), rxy_gen, v12.M());
               }
               break;
             default:
@@ -1058,6 +1062,10 @@ struct DileptonMC {
   Filter trackFilter_electron = dielectroncuts.cfg_min_phi_track < o2::aod::track::phi && o2::aod::track::phi < dielectroncuts.cfg_max_phi_track && o2::aod::track::tpcChi2NCl < dielectroncuts.cfg_max_chi2tpc && o2::aod::track::itsChi2NCl < dielectroncuts.cfg_max_chi2its && nabs(o2::aod::track::dcaXY) < dielectroncuts.cfg_max_dcaxy && nabs(o2::aod::track::dcaZ) < dielectroncuts.cfg_max_dcaz;
   Filter pidFilter_electron = (dielectroncuts.cfg_min_TPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < dielectroncuts.cfg_max_TPCNsigmaEl) && (o2::aod::pidtpc::tpcNSigmaPi < dielectroncuts.cfg_min_TPCNsigmaPi || dielectroncuts.cfg_max_TPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
   Filter ttcaFilter_electron = ifnode(dielectroncuts.enableTTCA.node(), o2::aod::emprimaryelectron::isAssociatedToMPC == true || o2::aod::emprimaryelectron::isAssociatedToMPC == false, o2::aod::emprimaryelectron::isAssociatedToMPC == true);
+  Filter prefilter_electron = ifnode(dielectroncuts.cfg_apply_cuts_from_prefilter.node() && dielectroncuts.cfg_prefilter_bits.node() >= static_cast<uint16_t>(1),
+                                     ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kMee))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbpi0 & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kMee))) <= static_cast<uint16_t>(0), true) &&
+                                       ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrack))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbpi0 & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrack))) <= static_cast<uint16_t>(0), true),
+                                     o2::aod::emprimaryelectron::pfbpi0 >= static_cast<uint16_t>(0));
 
   Preslice<MyMCMuons> perCollision_muon = aod::emprimarymuon::emeventId;
   Filter trackFilter_muon = o2::aod::fwdtrack::trackType == dimuoncuts.cfg_track_type && dimuoncuts.cfg_min_phi_track < o2::aod::fwdtrack::phi && o2::aod::fwdtrack::phi < dimuoncuts.cfg_max_phi_track;
@@ -1640,12 +1648,16 @@ struct DileptonMC {
       if (!cut.template IsSelectedPair<is_wo_acc>(t1, t2, d_bz)) {
         return false;
       }
+      // if (!cut.template IsSelectedPair_PrefilterULS(t1, t2, d_bz) || !cut.template IsSelectedPair_PrefilterLS(t1, t2, d_bz)) {
+      //   return false;
+      // }
       if (dielectroncuts.cfg_x_to_go > 0.f) {
         auto track_par_cov1 = getTrackParCov(t1);
         track_par_cov1.setPID(o2::track::PID::Electron);
         o2::base::Propagator::Instance()->propagateToX(track_par_cov1, dielectroncuts.cfg_x_to_go, d_bz, o2::base::PropagatorImpl<float>::MAX_SIN_PHI, o2::base::PropagatorImpl<float>::MAX_STEP, matCorr);
         auto xyz1 = track_par_cov1.getXYZGlo();
-        float eta1 = RecoDecay::eta(std::array{xyz1.X(), xyz1.Y(), xyz1.Z()});
+        float z1 = xyz1.Z();
+        // float eta1 = RecoDecay::eta(std::array{xyz1.X(), xyz1.Y(), xyz1.Z()});
         float phi1 = RecoDecay::phi(std::array{xyz1.X(), xyz1.Y()});
         o2::math_utils::bringTo02Pi(phi1);
 
@@ -1653,14 +1665,16 @@ struct DileptonMC {
         track_par_cov2.setPID(o2::track::PID::Electron);
         o2::base::Propagator::Instance()->propagateToX(track_par_cov2, dielectroncuts.cfg_x_to_go, d_bz, o2::base::PropagatorImpl<float>::MAX_SIN_PHI, o2::base::PropagatorImpl<float>::MAX_STEP, matCorr);
         auto xyz2 = track_par_cov2.getXYZGlo();
-        float eta2 = RecoDecay::eta(std::array{xyz2.X(), xyz2.Y(), xyz2.Z()});
+        float z2 = xyz2.Z();
+        // float eta2 = RecoDecay::eta(std::array{xyz2.X(), xyz2.Y(), xyz2.Z()});
         float phi2 = RecoDecay::phi(std::array{xyz2.X(), xyz2.Y()});
         o2::math_utils::bringTo02Pi(phi2);
 
-        float deta_geom = t1.sign() * t1.pt() > t2.sign() * t2.pt() ? eta1 - eta2 : eta2 - eta1;
+        float dz_geom = t1.sign() * t1.pt() > t2.sign() * t2.pt() ? z1 - z2 : z2 - z1;
         float dphi_geom = t1.sign() * t1.pt() > t2.sign() * t2.pt() ? phi1 - phi2 : phi2 - phi1;
         o2::math_utils::bringToPMPi(dphi_geom);
-        if (dielectroncuts.cfg_apply_detadphi_geom && std::pow(deta_geom / dielectroncuts.cfg_min_deta_geom, 2) + std::pow(dphi_geom / dielectroncuts.cfg_min_dphi_geom, 2) < 1.f) {
+        float rdphi_geom = dielectroncuts.cfg_x_to_go * dphi_geom;
+        if (dielectroncuts.cfg_apply_dzrdphi_geom && std::pow(dz_geom / dielectroncuts.cfg_min_dz_geom, 2) + std::pow(rdphi_geom / dielectroncuts.cfg_min_rdphi_geom, 2) < 1.f) {
           return false;
         }
       }
@@ -1790,7 +1804,7 @@ struct DileptonMC {
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), leptonM2);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      if (t1.pt() < dielectroncuts.cfg_min_pt_track || t2.pt() < dielectroncuts.cfg_min_pt_track) {
+      if ((t1.pt() < dielectroncuts.cfg_min_pt_track || dielectroncuts.cfg_max_pt_track < t1.pt()) || (t2.pt() < dielectroncuts.cfg_min_pt_track || dielectroncuts.cfg_max_pt_track < t2.pt())) {
         return false;
       }
       if ((t1.eta() < dielectroncuts.cfg_min_eta_track || dielectroncuts.cfg_max_eta_track < t1.eta()) || (t2.eta() < dielectroncuts.cfg_min_eta_track || dielectroncuts.cfg_max_eta_track < t2.eta())) {
@@ -1801,7 +1815,7 @@ struct DileptonMC {
       }
       return true;
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-      if (t1.pt() < dimuoncuts.cfg_min_pt_track || t2.pt() < dimuoncuts.cfg_min_pt_track) {
+      if ((t1.pt() < dimuoncuts.cfg_min_pt_track || dimuoncuts.cfg_max_pt_track < t1.pt()) || (t2.pt() < dimuoncuts.cfg_min_pt_track || dimuoncuts.cfg_max_pt_track < t2.pt())) {
         return false;
       }
       if ((t1.eta() < dimuoncuts.cfg_min_eta_track || dimuoncuts.cfg_max_eta_track < t1.eta()) || (t2.eta() < dimuoncuts.cfg_min_eta_track || dimuoncuts.cfg_max_eta_track < t2.eta())) {

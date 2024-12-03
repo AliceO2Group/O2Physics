@@ -27,6 +27,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 
+#include "PWGLF/DataModel/mcCentrality.h"
+
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -41,23 +43,23 @@ using namespace o2::analysis::hf_derived;
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorLcToPKPi {
   // Candidates
-  Produces<o2::aod::Hf3PBases> rowCandidateBase;
-  Produces<o2::aod::Hf3PPars> rowCandidatePar;
-  Produces<o2::aod::Hf3PParEs> rowCandidateParE;
-  Produces<o2::aod::Hf3PSels> rowCandidateSel;
-  Produces<o2::aod::Hf3PMls> rowCandidateMl;
-  Produces<o2::aod::Hf3PIds> rowCandidateId;
-  Produces<o2::aod::Hf3PMcs> rowCandidateMc;
+  Produces<o2::aod::HfLcBases> rowCandidateBase;
+  Produces<o2::aod::HfLcPars> rowCandidatePar;
+  Produces<o2::aod::HfLcParEs> rowCandidateParE;
+  Produces<o2::aod::HfLcSels> rowCandidateSel;
+  Produces<o2::aod::HfLcMls> rowCandidateMl;
+  Produces<o2::aod::HfLcIds> rowCandidateId;
+  Produces<o2::aod::HfLcMcs> rowCandidateMc;
   // Collisions
-  Produces<o2::aod::Hf3PCollBases> rowCollBase;
-  Produces<o2::aod::Hf3PCollIds> rowCollId;
+  Produces<o2::aod::HfLcCollBases> rowCollBase;
+  Produces<o2::aod::HfLcCollIds> rowCollId;
   // MC collisions
-  Produces<o2::aod::Hf3PMcCollBases> rowMcCollBase;
-  Produces<o2::aod::Hf3PMcCollIds> rowMcCollId;
-  Produces<o2::aod::Hf3PMcRCollIds> rowMcRCollId;
+  Produces<o2::aod::HfLcMcCollBases> rowMcCollBase;
+  Produces<o2::aod::HfLcMcCollIds> rowMcCollId;
+  Produces<o2::aod::HfLcMcRCollIds> rowMcRCollId;
   // MC particles
-  Produces<o2::aod::Hf3PPBases> rowParticleBase;
-  Produces<o2::aod::Hf3PPIds> rowParticleId;
+  Produces<o2::aod::HfLcPBases> rowParticleBase;
+  Produces<o2::aod::HfLcPIds> rowParticleId;
 
   // Switches for filling tables
   Configurable<bool> fillCandidateBase{"fillCandidateBase", true, "Fill candidate base properties"};
@@ -91,7 +93,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   using SelectedCandidatesMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi>>;
   using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfMlLcToPKPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-  using TypeMcCollisions = aod::McCollisions;
+  using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_lc::isSelLcToPKPi >= 1 || aod::hf_sel_candidate_lc::isSelLcToPiKP >= 1;
   Filter filterMcGenMatching = nabs(aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::LcToPKPi));
@@ -159,7 +161,8 @@ struct HfDerivedDataCreatorLcToPKPi {
       rowMcCollBase(
         mcCollision.posX(),
         mcCollision.posY(),
-        mcCollision.posZ());
+        mcCollision.posZ(),
+        mcCollision.centFT0M());
     }
     if (fillMcCollId) {
       rowMcCollId(

@@ -15,7 +15,10 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
-
+// std
+#include <memory>
+#include <string>
+#include <vector>
 // ROOT
 #include <TPDGCode.h>
 // O2
@@ -506,6 +509,7 @@ struct HfCandidateCreatorDstarExpressions {
 
   // Configuration
   o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
+  o2::framework::Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
 
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
@@ -552,6 +556,7 @@ struct HfCandidateCreatorDstarExpressions {
     int8_t signDstar = 0, signD0 = 0;
     int8_t flagDstar = 0, flagD0 = 0;
     int8_t originDstar = 0, originD0 = 0;
+    int8_t nKinkedTracksDstar = 0, nKinkedTracksD0 = 0;
 
     // Match reconstructed candidates.
     for (const auto& rowCandidateDstar : *rowsCandidateDstar) {
@@ -581,15 +586,22 @@ struct HfCandidateCreatorDstarExpressions {
           }
         }
         if (fromBkg) {
-          rowsMcMatchRecDstar(flagDstar, originDstar, -1.f, 0);
+          rowsMcMatchRecDstar(flagDstar, originDstar, -1.f, 0, 0);
           continue;
         }
       }
 
-      // D*± → D0(bar) π±
-      indexRecDstar = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2);
-      // D0(bar) → π± K∓
-      indexRecD0 = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersofD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0);
+      if (matchKinkedDecayTopology) {
+        // D*± → D0(bar) π±
+        indexRecDstar = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughtersDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2, &nKinkedTracksDstar);
+        // D0(bar) → π± K∓
+        indexRecD0 = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughtersofD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 1, &nKinkedTracksD0);
+      } else {
+        // D*± → D0(bar) π±
+        indexRecDstar = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2);
+        // D0(bar) → π± K∓
+        indexRecD0 = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersofD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0);
+      }
 
       if (indexRecDstar > -1) {
         flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
@@ -609,11 +621,11 @@ struct HfCandidateCreatorDstarExpressions {
       }
       if (originDstar == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        rowsMcMatchRecDstar(flagDstar, originDstar, bHadMother.pt(), bHadMother.pdgCode());
+        rowsMcMatchRecDstar(flagDstar, originDstar, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracksDstar);
       } else {
-        rowsMcMatchRecDstar(flagDstar, originDstar, -1.f, 0);
+        rowsMcMatchRecDstar(flagDstar, originDstar, -1.f, 0, nKinkedTracksDstar);
       }
-      rowsMcMatchRecD0(flagD0, originD0, -1.f, 0);
+      rowsMcMatchRecD0(flagD0, originD0, -1.f, 0, nKinkedTracksD0);
     }
 
     for (const auto& mcCollision : mcCollisions) {

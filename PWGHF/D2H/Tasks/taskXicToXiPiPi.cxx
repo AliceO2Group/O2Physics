@@ -68,12 +68,7 @@ struct HfTaskXicToXiPiPi {
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= selectionFlagXic);
 
-  HistogramRegistry registry{
-    "registry",
-    {{"hPtCand", "#Xi^{#plus}_{c} candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{400, 0., 40.}}}},
-     {"hPtProng0", "#Xi^{#plus}_{c} candidates;prong 0 (#Xi^{#minus}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}}},
-     {"hPtProng1", "#Xi^{#plus}_{c} candidates;prong 1 (#pi^{#plus}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 20.}}}},
-     {"hPtProng2", "#Xi^{#plus}_{c} candidates;prong 2 (#pi^{#plus}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 20.}}}}}};
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
@@ -89,7 +84,7 @@ struct HfTaskXicToXiPiPi {
     }
 
     static const AxisSpec axisMassXic = {300, 1.8, 3.0, "inv. mass (GeV/#it{c}^{2})"};
-    static const AxisSpec axisMassXiRes = {300, 1.0, 2.0, "inv. mass (GeV/#it{c}^{2})"};
+    static const AxisSpec axisMassXiRes = {300, 1.4, 2.7, "inv. mass (GeV/#it{c}^{2})"};
     static const AxisSpec axisPt = {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"};
     static const AxisSpec axisDecLength = {binsDecLength};
     static const AxisSpec axisErrDecLength = {binsErrDecLength};
@@ -98,44 +93,49 @@ struct HfTaskXicToXiPiPi {
     static const AxisSpec axisSV = {binsSV};
     static const AxisSpec axisChi2 = {binsChi2};
 
-    // candidate
-    registry.add("hPt", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 20.}}});
-    registry.add("hEta", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
-    registry.add("hRapidity", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
-    registry.add("hCPA", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, axisPt}});
-    registry.add("hCPAxy", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate cosine of pointing angle xy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, axisPt}});
-    registry.add("hMass", "#Xi^{#plus}_{c} candidates;inv. mass #Xi^{#mp} #pi^{#pm} #pi^{#pm} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisMassXic, axisPt}});
-    registry.add("hDecLength", "#Xi^{#plus}_{c} candidates;decay length (cm);entries", {HistType::kTH2F, {axisDecLength, axisPt}});
-    registry.add("hErrDecLength", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate decay length error (cm);entries", {HistType::kTH2F, {axisErrDecLength, axisPt}});
-    registry.add("hDecLengthXY", "#Xi^{#plus}_{c} candidates;decay length xy (cm);entries", {HistType::kTH2F, {axisDecLength, axisPt}});
-    registry.add("hErrDecLengthXY", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate decay length xy error (cm);entries", {HistType::kTH2F, {axisErrDecLength, axisPt}});
-    registry.add("hSVx", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate secondary vertex position x (cm);entries", {HistType::kTH2F, {axisSV, axisPt}});
-    registry.add("hSVy", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate secondary vertex position y (cm);entries", {HistType::kTH2F, {axisSV, axisPt}});
-    registry.add("hSVz", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate secondary vertex position z (cm);entries", {HistType::kTH2F, {axisSV, axisPt}});
-    // daughters
-    registry.add("hCPAXi", "#Xi^{#plus}_{c} candidates;#Xi^{#minus} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, axisPt}});
-    registry.add("hCPAxyXi", "#Xi^{#plus}_{c} candidates;#Xi^{#minus} candidate cosine of pointing angle xy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, axisPt}});
-    registry.add("hCPALambda", "#Xi^{#plus}_{c} candidates;#Lambda candidate cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, axisPt}});
-    registry.add("hCPAxyLambda", "#Xi^{#plus}_{c} candidates;#Lambda candidate cosine of pointing angle xy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, axisPt}});
-    registry.add("hPtProng0vsPt", "#Xi^{#plus}_{c} candidates;#Xi^{#mp} #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{200, 0., 20.}, axisPt}});
-    registry.add("hPtProng1vsPt", "#Xi^{#plus}_{c} candidates;prong 1 (#pi^{#pm}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{200, 0., 20.}, axisPt}});
-    registry.add("hPtProng2vsPt", "#Xi^{#plus}_{c} candidates;prong 2 (#pi^{#pm}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{200, 0., 20.}, axisPt}});
-    registry.add("hd0Prong0", "#Xi^{#plus}_{c} candidates;prong 0 (#Xi^{#mp}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisDCA, axisPt}});
-    registry.add("hd0Prong1", "#Xi^{#plus}_{c} candidates;prong 1 (#pi^{#pm}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisDCA, axisPt}});
-    registry.add("hd0Prong2", "#Xi^{#plus}_{c} candidates;prong 2 (#pi^{#pm}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisDCA, axisPt}});
-    registry.add("hImpParErr", "#Xi^{#plus}_{c} candidates;prongs impact parameter error (cm);entries", {HistType::kTH2F, {axisImpParErr, axisPt}});
-    registry.add("hChi2PCA", "#Xi^{#plus}_{c} candidates (matched);sum of distances of the secondary vertex to its prongs;entries", {HistType::kTH2F, {{240, -0.01, 0.5}, axisPt}});
-    registry.add("hMassXiPi1", "#Xi^{#plus}_{c} candidates;inv. mass #Xi^{#mp} #pi^{#pm} (prong 1) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisMassXiRes, axisPt}});
-    registry.add("hMassXiPi2", "#Xi^{#plus}_{c} candidates;inv. mass #Xi^{#mp} #pi^{#pm} (prong 2) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisMassXiRes, axisPt}});
-
-    if (doprocessWithKFParticle || doprocessWithKFParticleAndML) {
-      registry.add("hChi2geoXi", "#Xi^{#plus}_{c} candidates;#Xi^{#mp} #chi^{2}_{geo};entries", {HistType::kTH2F, {axisChi2, axisPt}});
-      registry.add("hChi2geoLam", "#Xi^{#plus}_{c} candidates;#Lambda #chi^{2}_{geo};entries", {HistType::kTH2F, {axisChi2, axisPt}});
-      registry.add("hChi2topoToPV", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate #chi^{2}_{topo} to PV;entries", {HistType::kTH2F, {axisChi2, axisPt}});
-      registry.add("hChi2topoXiToXicPlus", "#Xi^{#plus}_{c} candidates;#Xi^{#mp} candidate #chi^{2}_{topo} to #Xi^{#plus}_{c};entries", {HistType::kTH2F, {axisChi2, axisPt}});
+    if (doprocessWithDCAFitter || doprocessWithKFParticle || doprocessWithDCAFitterAndML || doprocessWithKFParticleAndML) {
+      // candidate
+      registry.add("hPt", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{400, 0., 40.}}});
+      registry.add("hEta", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
+      registry.add("hRapidity", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
+      registry.add("hCPA", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, axisPt}});
+      registry.add("hCPAxy", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate cosine of pointing angle xy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, axisPt}});
+      registry.add("hMass", "#Xi^{#plus}_{c} candidates;inv. mass #Xi^{#mp} #pi^{#pm} #pi^{#pm} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisMassXic, axisPt}});
+      registry.add("hDecLength", "#Xi^{#plus}_{c} candidates;decay length (cm);entries", {HistType::kTH2F, {axisDecLength, axisPt}});
+      registry.add("hErrDecLength", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate decay length error (cm);entries", {HistType::kTH2F, {axisErrDecLength, axisPt}});
+      registry.add("hDecLengthXY", "#Xi^{#plus}_{c} candidates;decay length xy (cm);entries", {HistType::kTH2F, {axisDecLength, axisPt}});
+      registry.add("hErrDecLengthXY", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate decay length xy error (cm);entries", {HistType::kTH2F, {axisErrDecLength, axisPt}});
+      registry.add("hSVx", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate secondary vertex position x (cm);entries", {HistType::kTH2F, {axisSV, axisPt}});
+      registry.add("hSVy", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate secondary vertex position y (cm);entries", {HistType::kTH2F, {axisSV, axisPt}});
+      registry.add("hSVz", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate secondary vertex position z (cm);entries", {HistType::kTH2F, {axisSV, axisPt}});
+      // daughters
+      registry.add("hPtProng0", "#Xi^{#plus}_{c} candidates;prong 0 (#Xi^{#mp}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 20.}}});
+      registry.add("hPtProng1", "#Xi^{#plus}_{c} candidates;prong 1 (#pi^{#plus}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 20.}}});
+      registry.add("hPtProng2", "#Xi^{#plus}_{c} candidates;prong 2 (#pi^{#plus}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 20.}}});
+      registry.add("hPtProng0vsPt", "#Xi^{#plus}_{c} candidates;prong 0 (#Xi^{#mp}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{200, 0., 20.}, axisPt}});
+      registry.add("hPtProng1vsPt", "#Xi^{#plus}_{c} candidates;prong 1 (#pi^{#pm}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{200, 0., 20.}, axisPt}});
+      registry.add("hPtProng2vsPt", "#Xi^{#plus}_{c} candidates;prong 2 (#pi^{#pm}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{200, 0., 20.}, axisPt}});
+      registry.add("hCPAXi", "#Xi^{#plus}_{c} candidates;#Xi^{#minus} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, axisPt}});
+      registry.add("hCPAxyXi", "#Xi^{#plus}_{c} candidates;#Xi^{#minus} candidate cosine of pointing angle xy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, axisPt}});
+      registry.add("hCPALambda", "#Xi^{#plus}_{c} candidates;#Lambda candidate cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, axisPt}});
+      registry.add("hCPAxyLambda", "#Xi^{#plus}_{c} candidates;#Lambda candidate cosine of pointing angle xy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, axisPt}});
+      registry.add("hd0Prong0", "#Xi^{#plus}_{c} candidates;prong 0 (#Xi^{#mp}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisDCA, axisPt}});
+      registry.add("hd0Prong1", "#Xi^{#plus}_{c} candidates;prong 1 (#pi^{#pm}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisDCA, axisPt}});
+      registry.add("hd0Prong2", "#Xi^{#plus}_{c} candidates;prong 2 (#pi^{#pm}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisDCA, axisPt}});
+      registry.add("hImpParErr", "#Xi^{#plus}_{c} candidates;prongs impact parameter error (cm);entries", {HistType::kTH2F, {axisImpParErr, axisPt}});
+      registry.add("hChi2PCA", "#Xi^{#plus}_{c} candidates (matched);sum of distances of the secondary vertex to its prongs;entries", {HistType::kTH2F, {{240, -0.01, 0.5}, axisPt}});
+      registry.add("hMassXiPi1", "#Xi^{#plus}_{c} candidates;inv. mass #Xi^{#mp} #pi^{#pm} (prong 1) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisMassXiRes, axisPt}});
+      registry.add("hMassXiPi2", "#Xi^{#plus}_{c} candidates;inv. mass #Xi^{#mp} #pi^{#pm} (prong 2) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisMassXiRes, axisPt}});
+      // KFParticle
+      if (doprocessWithKFParticle || doprocessWithKFParticleAndML) {
+        registry.add("hChi2geoXi", "#Xi^{#plus}_{c} candidates;#Xi^{#mp} #chi^{2}_{geo};entries", {HistType::kTH2F, {axisChi2, axisPt}});
+        registry.add("hChi2geoLam", "#Xi^{#plus}_{c} candidates;#Lambda #chi^{2}_{geo};entries", {HistType::kTH2F, {axisChi2, axisPt}});
+        registry.add("hChi2topoToPV", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate #chi^{2}_{topo} to PV;entries", {HistType::kTH2F, {axisChi2, axisPt}});
+        registry.add("hChi2topoXiToXicPlus", "#Xi^{#plus}_{c} candidates;#Xi^{#mp} candidate #chi^{2}_{topo} to #Xi^{#plus}_{c};entries", {HistType::kTH2F, {axisChi2, axisPt}});
+      }
     }
 
-    if (doprocessMcWithKFParticle || doprocessMcWithDCAFitter || doprocessMcWithKFParticleAndML || doprocessMcWithDCAFitterAndML) {
+    if (doprocessMcWithDCAFitter || doprocessMcWithKFParticle || doprocessMcWithDCAFitterAndML || doprocessMcWithKFParticleAndML) {
       // MC reconstructed
       registry.add("hPtGenSig", "#Xi^{#plus}_{c} candidates (gen+rec);candidate #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
       registry.add("hPtRecSig", "#Xi^{#plus}_{c} candidates (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
@@ -198,8 +198,8 @@ struct HfTaskXicToXiPiPi {
       registry.add("hMassXiPi1RecBg", "#Xi^{#plus}_{c} candidates (unmatched);inv. mass #Xi^{#mp} #pi^{#pm} (prong 1) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{300, 1.0, 2.0}, axisPt}});
       registry.add("hMassXiPi2RecSig", "#Xi^{#plus}_{c} candidates (matched);inv. mass #Xi^{#mp} #pi^{#pm} (prong 2) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{300, 1.0, 2.0}, axisPt}});
       registry.add("hMassXiPi2RecBg", "#Xi^{#plus}_{c} candidates (unmatched);inv. mass #Xi^{#mp} #pi^{#pm} (prong 2) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{300, 1.0, 2.0}, axisPt}});
-
-      if (doprocessMcWithKFParticle || doprocessMcWithDCAFitterAndML) {
+      // MC reconstructed with KFParticle
+      if (doprocessMcWithKFParticle || doprocessMcWithKFParticleAndML) {
         registry.add("hChi2topoToPVRecSig", "#Xi^{#plus}_{c} candidates (matched);#Xi^{#plus}_{c} candidate #chi^{2}_{topo} to PV;entries", {HistType::kTH2F, {axisChi2, axisPt}});
         registry.add("hChi2topoToPVRecBg", "#Xi^{#plus}_{c} candidates (unmatched);#Xi^{#plus}_{c} candidate #chi^{2}_{topo} to PV;entries", {HistType::kTH2F, {axisChi2, axisPt}});
         registry.add("hChi2geoXiRecSig", "#Xi^{#plus}_{c} candidates (matched);#Xi^{#mp} #chi^{2}_{geo};entries", {HistType::kTH2F, {axisChi2, axisPt}});
@@ -209,7 +209,6 @@ struct HfTaskXicToXiPiPi {
         registry.add("hChi2topoXiToXicPlusRecSig", "#Xi^{#plus}_{c} candidates (matched);#Xi^{#mp} candidate #chi^{2}_{topo} to #Xi^{#plus}_{c};entries", {HistType::kTH2F, {axisChi2, axisPt}});
         registry.add("hChi2topoXiToXicPlusRecBg", "#Xi^{#plus}_{c} candidates (unmatched);#Xi^{#mp} candidate #chi^{2}_{topo} to #Xi^{#plus}_{c};entries", {HistType::kTH2F, {axisChi2, axisPt}});
       }
-
       // MC generated
       registry.add("hPtProng0Gen", "MC particles (generated);prong 0 (#Xi^{#mp}) #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{300, 0., 30.}, axisPt}});
       registry.add("hPtProng1Gen", "MC particles (generated);prong 1 (#pi^{#pm}) #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{200, 0., 20.}, axisPt}});
@@ -262,7 +261,6 @@ struct HfTaskXicToXiPiPi {
         registry.add("hXicToXiPiPiVars", "THnSparse for Xic", HistType::kTHnSparseF, {thnAxisPt, thnAxisMass, thnAxisChi2PCA, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA});
       }
     } // enable THnSpare
-
   } // end init
 
   /// Fill THnSpare depending on whether ML selection is used
@@ -282,10 +280,10 @@ struct HfTaskXicToXiPiPi {
         outputBkg = candidate.mlProbXicToXiPiPi()[0];
         outputPrompt = candidate.mlProbXicToXiPiPi()[1];
       }
-      registry.get<THnSparse>(HIST("hXicToXiPiPiVarsWithML"))->Fill(candidate.pt(), candidate.invMassXic(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), outputBkg, outputPrompt);
+      registry.get<THnSparse>(HIST("hXicToXiPiPiVarsWithML"))->Fill(candidate.pt(), candidate.invMassXicPlus(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), outputBkg, outputPrompt);
     } else {
       // without ML information
-      registry.get<THnSparse>(HIST("hXicToXiPiPiVars"))->Fill(candidate.pt(), candidate.invMassXic(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa());
+      registry.get<THnSparse>(HIST("hXicToXiPiPiVars"))->Fill(candidate.pt(), candidate.invMassXicPlus(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa());
     }
   }
 
@@ -311,7 +309,7 @@ struct HfTaskXicToXiPiPi {
 
       auto ptCandXic = candidate.pt();
 
-      registry.fill(HIST("hPtCand"), ptCandXic);
+      registry.fill(HIST("hPt"), ptCandXic);
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
       registry.fill(HIST("hPtProng2"), candidate.ptProng2());
@@ -319,7 +317,7 @@ struct HfTaskXicToXiPiPi {
       registry.fill(HIST("hRapidity"), yCandXic, ptCandXic);
       registry.fill(HIST("hCPA"), candidate.cpa(), ptCandXic);
       registry.fill(HIST("hCPAxy"), candidate.cpaXY(), ptCandXic);
-      registry.fill(HIST("hMass"), candidate.invMassXic(), ptCandXic);
+      registry.fill(HIST("hMass"), candidate.invMassXicPlus(), ptCandXic);
       registry.fill(HIST("hDecLength"), candidate.decayLength(), ptCandXic);
       registry.fill(HIST("hErrDecLength"), candidate.errorDecayLength(), ptCandXic);
       registry.fill(HIST("hDecLengthXY"), candidate.decayLengthXY(), ptCandXic);
@@ -400,7 +398,7 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hSVzRecSig"), candidate.zSecondaryVertex(), ptCandXic);
         registry.fill(HIST("hCPARecSig"), candidate.cpa(), ptCandXic);
         registry.fill(HIST("hCPAxyRecSig"), candidate.cpaXY(), ptCandXic);
-        registry.fill(HIST("hMassRecSig"), candidate.invMassXic(), ptCandXic);
+        registry.fill(HIST("hMassRecSig"), candidate.invMassXicPlus(), ptCandXic);
         registry.fill(HIST("hDecLengthRecSig"), candidate.decayLength(), ptCandXic);
         registry.fill(HIST("hErrDecLengthRecSig"), candidate.errorDecayLength(), ptCandXic);
         registry.fill(HIST("hDecLengthXYRecSig"), candidate.decayLengthXY(), ptCandXic);
@@ -439,7 +437,7 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hSVzRecBg"), candidate.zSecondaryVertex(), ptCandXic);
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), ptCandXic);
         registry.fill(HIST("hCPAxyRecBg"), candidate.cpaXY(), ptCandXic);
-        registry.fill(HIST("hMassRecBg"), candidate.invMassXic(), ptCandXic);
+        registry.fill(HIST("hMassRecBg"), candidate.invMassXicPlus(), ptCandXic);
         registry.fill(HIST("hDecLengthRecBg"), candidate.decayLength(), ptCandXic);
         registry.fill(HIST("hErrDecLengthRecBg"), candidate.errorDecayLength(), ptCandXic);
         registry.fill(HIST("hDecLengthXYRecBg"), candidate.decayLengthXY(), ptCandXic);
@@ -467,11 +465,11 @@ struct HfTaskXicToXiPiPi {
 
       if (checkDecayTypeMc) {
         if (TESTBIT(flagMcMatchRecXic, hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi)) {
-          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi, candidate.invMassXic(), ptCandXic);
+          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi, candidate.invMassXicPlus(), ptCandXic);
         } else if (TESTBIT(flagMcMatchRecXic, hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
-          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi, candidate.invMassXic(), ptCandXic);
+          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi, candidate.invMassXicPlus(), ptCandXic);
         } else {
-          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xic_to_xi_pi_pi::DecayType::NDecayType, candidate.invMassXic(), ptCandXic);
+          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xic_to_xi_pi_pi::DecayType::NDecayType, candidate.invMassXicPlus(), ptCandXic);
         }
       }
       // fill THnSparse

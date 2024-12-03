@@ -53,7 +53,7 @@ struct ueCharged {
     selectedTracks.SetRequireTPCRefit(true);
     // selectedTracks.SetRequireGoldenChi2(true);
     selectedTracks.SetMinNCrossedRowsTPC(70);
-    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.4f);
+    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
     selectedTracks.SetMaxChi2PerClusterTPC(4.f);
     selectedTracks.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
     selectedTracks.SetMaxChi2PerClusterITS(36.f);
@@ -70,7 +70,7 @@ struct ueCharged {
     selectedTracks.SetRequireTPCRefit(true);
     // selectedTracks.SetRequireGoldenChi2(true);
     selectedTracks.SetMinNCrossedRowsTPC(70);
-    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.4f);
+    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
     selectedTracks.SetMaxChi2PerClusterTPC(4.f);
     selectedTracks.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
     selectedTracks.SetMaxChi2PerClusterITS(36.f);
@@ -86,7 +86,6 @@ struct ueCharged {
   float DeltaPhi(float phia, float phib, float rangeMin, float rangeMax);
   // Configurable for event selection
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
-  Configurable<bool> timeEvsel{"timeEvsel", true, "TPC Time frame boundary cut"};
   Configurable<bool> piluprejection{"piluprejection", true, "Pileup rejection"};
   Configurable<bool> goodzvertex{"goodzvertex", true, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference."};
 
@@ -431,21 +430,16 @@ void ueCharged::processMeas(const C& collision, const T& tracks)
 
   ue.fill(HIST("hCounter"), 1);
 
-  if (timeEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
-    return;
-  }
-
-  ue.fill(HIST("hCounter"), 2);
   if (piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
     return;
   }
 
-  ue.fill(HIST("hCounter"), 3);
+  ue.fill(HIST("hCounter"), 2);
   if (goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
     return;
   }
 
-  ue.fill(HIST("hCounter"), 4);
+  ue.fill(HIST("hCounter"), 3);
 
   ue.fill(HIST("hStat"), collision.size());
   auto vtxZ = collision.posZ();
@@ -454,7 +448,7 @@ void ueCharged::processMeas(const C& collision, const T& tracks)
     return;
   }
 
-  ue.fill(HIST("hCounter"), 5);
+  ue.fill(HIST("hCounter"), 4);
 
   ue.fill(HIST("hvtxZ"), vtxZ);
 
@@ -726,28 +720,26 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks, const P& part
   phiArrayTrue.clear();
   indexArrayTrue.clear();
 
-  if (!collision.sel8()) {
+  if (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
     return;
   }
   ue.fill(HIST("hCounter"), 1);
-  // TODO:Implement time frame selection (only if MC includes this effect)
-  ue.fill(HIST("hCounter"), 2);
 
   if (piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
     return;
   }
+  ue.fill(HIST("hCounter"), 2);
 
-  ue.fill(HIST("hCounter"), 3);
   if (goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
     return;
   }
-  ue.fill(HIST("hCounter"), 4);
+  ue.fill(HIST("hCounter"), 3);
 
   // only PS
   if ((std::abs(collision.posZ()) >= 10.f)) {
     return;
   }
-  ue.fill(HIST("hCounter"), 5);
+  ue.fill(HIST("hCounter"), 4);
 
   ue.fill(HIST(pNumDenTruePS[0]), flPtTrue, ue_true[0]);
   ue.fill(HIST(pSumPtTruePS[0]), flPtTrue, ue_true[3]);

@@ -79,6 +79,7 @@ struct HfCorrelatorDsHadronsSelCollision {
     bool isSel8 = true;
     bool isNosameBunchPileUp = true;
     if (doSelDsCollision) {
+      isDsFound = false; // if candidate table is empty for-loop is not performed
       for (const auto& candidate : candidates) {
         if (std::abs(hfHelper.yDs(candidate)) > yCandMax || candidate.pt() < ptCandMin) {
           isDsFound = false;
@@ -89,9 +90,11 @@ struct HfCorrelatorDsHadronsSelCollision {
       }
     }
     if (useSel8) {
+      isSel8 = false;
       isSel8 = collision.sel8();
     }
     if (selNoSameBunchPileUpColl) {
+      isNosameBunchPileUp = false;
       isNosameBunchPileUp = static_cast<bool>(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
     }
     isSelColl = isDsFound && isSel8 && isNosameBunchPileUp;
@@ -139,8 +142,8 @@ struct HfCorrelatorDsHadrons {
   Produces<aod::DsCandGenInfo> entryDsCandGenInfo;
   Produces<aod::TrackRecoInfo> entryTrackRecoInfo;
   Produces<aod::HfcRedCollisions> collReduced;
-  Produces<aod::DsCandReduced> candReduced;
-  Produces<aod::AssocTrackRed> assocTrackReduced;
+  Produces<aod::DsCandReduceds> candReduced;
+  Produces<aod::AssocTrackReds> assocTrackReduced;
 
   Configurable<bool> fillHistoData{"fillHistoData", true, "Flag for filling histograms in data processes"};
   Configurable<bool> fillHistoMcRec{"fillHistoMcRec", true, "Flag for filling histograms in MC Rec processes"};

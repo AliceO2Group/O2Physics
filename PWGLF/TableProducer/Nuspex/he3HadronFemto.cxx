@@ -82,13 +82,13 @@ namespace
 constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 
-constexpr float he3Mass = o2::constants::physics::MassHelium3;
-constexpr float protonMass = o2::constants::physics::MassProton;
-constexpr float pionchargedMass = o2::constants::physics::MassPiPlus;
+// constexpr float he3Mass = o2::constants::physics::MassHelium3;
+// constexpr float protonMass = o2::constants::physics::MassProton;
+// constexpr float pionchargedMass = o2::constants::physics::MassPiPlus;
 constexpr int li4PDG = 1000030040;
 constexpr int prPDG = 2212;
 constexpr int hePDG = 1000020030;
-constexpr int pichargedPDG = 211;
+// constexpr int pichargedPDG = 211;
 
 enum Selections {
   kNoCuts = 0,
@@ -592,16 +592,15 @@ struct he3hadronfemto {
     he3Hadcand.trackIDHe3 = trackHe3.globalIndex();
     he3Hadcand.trackIDHad = trackHad.globalIndex();
 
-    o2::pid::tof::Beta<typename Ttracks::iterator> responseBeta;
     if (trackHe3.hasTOF()) {
-      float beta = responseBeta.GetBeta(trackHe3);
+      float beta = o2::pid::tof::Beta::GetBeta(trackHe3);
       beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
       bool heliumPID = trackHe3.pidForTracking() == o2::track::PID::Helium3 || trackHe3.pidForTracking() == o2::track::PID::Alpha;
       float correctedTPCinnerParamHe3 = (heliumPID && setting_compensatePIDinTracking) ? trackHe3.tpcInnerParam() / 2.f : trackHe3.tpcInnerParam();
       he3Hadcand.massTOFHe3 = correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
     }
     if (trackHad.hasTOF()) {
-      float beta = responseBeta.GetBeta(trackHad);
+      float beta = o2::pid::tof::Beta::GetBeta(trackHad);
       beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
       he3Hadcand.massTOFHad = trackHad.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
     }
