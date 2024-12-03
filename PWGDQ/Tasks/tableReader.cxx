@@ -642,7 +642,7 @@ struct AnalysisEventMixing {
   o2::parameters::GRPMagField* grpmag = nullptr;
   TH1D* ResoFlowSP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
   TH1D* ResoFlowEP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
-  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
 
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   Filter filterTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
@@ -930,7 +930,7 @@ struct AnalysisSameEventPairing {
   o2::base::MatLayerCylSet* lut = nullptr;
   TH1D* ResoFlowSP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
   TH1D* ResoFlowEP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
-  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
 
   OutputObj<THashList> fOutputList{"output"};
   Configurable<string> fConfigTrackCuts{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
@@ -1847,7 +1847,7 @@ struct AnalysisDileptonTrackTrack {
   // cut name setting
   TString fTrackCutName1;
   TString fTrackCutName2;
-  bool fIsSameTrackCut = false; 
+  bool fIsSameTrackCut = false;
   AnalysisCompositeCut fDileptonCut;
   std::vector<TString> fQuadrupletCutNames;
   std::vector<AnalysisCompositeCut> fQuadrupletCuts;
@@ -1914,7 +1914,8 @@ struct AnalysisDileptonTrackTrack {
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesQuadruplet);
 
       // apply the dilepton cut
-      if (!fDileptonCut.IsSelected(fValuesQuadruplet)) continue;
+      if (!fDileptonCut.IsSelected(fValuesQuadruplet))
+        continue;
       fHistMan->FillHistClass(Form("Dileptons_%s", fDileptonCut.GetName()), fValuesQuadruplet);
 
       // get the index of the electron legs
@@ -1929,8 +1930,8 @@ struct AnalysisDileptonTrackTrack {
         }
 
         // dilepton combinate with two same particles
-        if ((fIsSameTrackCut && (t1.isBarrelSelected() & (uint32_t(1) << 1)) && (t2.isBarrelSelected() & (uint32_t(1) << 1))) || 
-          (!fIsSameTrackCut && (t1.isBarrelSelected() & (uint32_t(1) << 1)) && (t2.isBarrelSelected() & (uint32_t(1) << 2)))) {
+        if ((fIsSameTrackCut && (t1.isBarrelSelected() & (uint32_t(1) << 1)) && (t2.isBarrelSelected() & (uint32_t(1) << 1))) ||
+            (!fIsSameTrackCut && (t1.isBarrelSelected() & (uint32_t(1) << 1)) && (t2.isBarrelSelected() & (uint32_t(1) << 2)))) {
         } else {
           continue;
         }
@@ -1964,11 +1965,12 @@ struct AnalysisDileptonTrackTrack {
         } // loop over dilepton-track-track cuts
 
         // table to be written out for ML analysis
-        if (!CutDecision) continue;
-        DileptonTrackTrackTable(fValuesQuadruplet[VarManager::kQuadMass], fValuesQuadruplet[VarManager::kQuadPt], fValuesQuadruplet[VarManager::kQuadEta], fValuesQuadruplet[VarManager::kQuadPhi], fValuesQuadruplet[VarManager::kRap], 
-                      fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2], 
-                      dilepton.mass(), dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.sign(),
-                      fValuesQuadruplet[VarManager::kDitrackMass], fValuesQuadruplet[VarManager::kDitrackPt], t1.pt(), t2.pt(), t1.eta(), t2.eta(), t1.phi(), t2.phi(), t1.sign(), t2.sign());
+        if (!CutDecision)
+          continue;
+        DileptonTrackTrackTable(fValuesQuadruplet[VarManager::kQuadMass], fValuesQuadruplet[VarManager::kQuadPt], fValuesQuadruplet[VarManager::kQuadEta], fValuesQuadruplet[VarManager::kQuadPhi], fValuesQuadruplet[VarManager::kRap],
+                                fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2],
+                                dilepton.mass(), dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.sign(),
+                                fValuesQuadruplet[VarManager::kDitrackMass], fValuesQuadruplet[VarManager::kDitrackPt], t1.pt(), t2.pt(), t1.eta(), t2.eta(), t1.phi(), t2.phi(), t1.sign(), t2.sign());
       }
     }
   }

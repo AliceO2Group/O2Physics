@@ -4531,7 +4531,7 @@ void VarManager::FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T
 
 //__________________________________________________________________
 template <int candidateType, typename T1, typename T2, typename T3>
-void VarManager::FillQaudMC(T1 const& dilepton, T2 const& track1, T3 const& track2, float* values) 
+void VarManager::FillQaudMC(T1 const& dilepton, T2 const& track1, T3 const& track2, float* values)
 {
   if (!values) {
     values = fgValues;
