@@ -88,10 +88,3 @@ struct JetMatchingSub {
   }
   PROCESS_SWITCH(JetMatchingSub, processJets, "Perform jet matching", true);
 };
-
-/*using BplusChargedJetMatching = JetMatchingSub<soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents>,
-                                               soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents>,
-                                               aod::BplusChargedJetsMatchedToBplusChargedEventWiseSubtractedJets,
-                                               aod::BplusChargedEventWiseSubtractedJetsMatchedToBplusChargedJets,
-                                               aod::JTrackBplusSubs,
-                                               aod::CandidatesBplusData>;*/

@@ -246,7 +246,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
   DECLARE_CAND_3P_TABLES(_hf_type_, _hf_description_, _hf_namespace_)
 
 DECLARE_2P_TABLES(D0, "D0", d0, 2);
-DECLARE_3P_TABLES(3P, "3P", 3p, 3);
+DECLARE_3P_TABLES(Lc, "LC", lc, 3);
 DECLARE_3P_TABLES(Bplus, "BP", bplus, 4);
 
 // ================
@@ -560,7 +560,7 @@ DECLARE_SOA_TABLE_STAGED(HfBplusMcs, "HFBPMC", //! Table with MC candidate info
 // PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep Pt, Eta, Phi instead
 // XY: CpaXY, DecayLengthXY, ErrorDecayLengthXY
 // normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
-DECLARE_SOA_TABLE_STAGED(Hf3PPars, "HF3PPAR", //! Table with candidate properties used for selection
+DECLARE_SOA_TABLE_STAGED(HfLcPars, "HFLCPAR", //! Table with candidate properties used for selection
                          hf_cand::Chi2PCA,
                          hf_cand::NProngsContributorsPV,
                          hf_cand_par::Cpa,
@@ -593,9 +593,9 @@ DECLARE_SOA_TABLE_STAGED(Hf3PPars, "HF3PPAR", //! Table with candidate propertie
                          hf_cand_par::NSigTofPr2,
                          hf_cand_par::NSigTpcTofPi2,
                          hf_cand_par::NSigTpcTofPr2,
-                         o2::soa::Marker<Marker3P>);
+                         o2::soa::Marker<MarkerLc>);
 
-DECLARE_SOA_TABLE_STAGED(Hf3PParEs, "HF3PPARE", //! Table with additional candidate properties used for selection
+DECLARE_SOA_TABLE_STAGED(HfLcParEs, "HFLCPARE", //! Table with additional candidate properties used for selection
                          hf_cand::XSecondaryVertex,
                          hf_cand::YSecondaryVertex,
                          hf_cand::ZSecondaryVertex,
@@ -618,21 +618,21 @@ DECLARE_SOA_TABLE_STAGED(Hf3PParEs, "HF3PPARE", //! Table with additional candid
                          hf_cand::ErrorImpactParameter1,
                          hf_cand::ErrorImpactParameter2,
                          hf_cand_par::Ct,
-                         o2::soa::Marker<Marker3P>);
+                         o2::soa::Marker<MarkerLc>);
 
-DECLARE_SOA_TABLE_STAGED(Hf3PSels, "HF3PSEL", //! Table with candidate selection flags
+DECLARE_SOA_TABLE_STAGED(HfLcSels, "HFLCSEL", //! Table with candidate selection flags
                          hf_cand_sel::CandidateSelFlag,
-                         o2::soa::Marker<Marker3P>);
+                         o2::soa::Marker<MarkerLc>);
 
-DECLARE_SOA_TABLE_STAGED(Hf3PMls, "HF3PML", //! Table with candidate selection ML scores
+DECLARE_SOA_TABLE_STAGED(HfLcMls, "HFLCML", //! Table with candidate selection ML scores
                          hf_cand_mc::MlScores,
-                         o2::soa::Marker<Marker3P>);
+                         o2::soa::Marker<MarkerLc>);
 
-DECLARE_SOA_TABLE_STAGED(Hf3PMcs, "HF3PMC", //! Table with MC candidate info
+DECLARE_SOA_TABLE_STAGED(HfLcMcs, "HFLCMC", //! Table with MC candidate info
                          hf_cand_mc::FlagMcMatchRec,
                          hf_cand_mc::OriginMcRec,
                          hf_cand_mc::IsCandidateSwapped,
-                         o2::soa::Marker<Marker3P>);
+                         o2::soa::Marker<MarkerLc>);
 
 } // namespace o2::aod
 
