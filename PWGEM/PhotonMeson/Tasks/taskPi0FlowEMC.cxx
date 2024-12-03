@@ -90,7 +90,7 @@ struct TaskPi0FlowEMC {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<bool> cfgDoRotation{"cfgDoRotation", true, "Flag to enable rotation background method"};
   Configurable<int> cfgDownsampling{"cfgDownsampling", 1, "Calculate rotation background only for every <value> collision"};
-  Configurable<float> cfgRotAngle{"cfgRotAngle", M_PI/2., "Angle used for the rotation method"};
+  Configurable<float> cfgRotAngle{"cfgRotAngle", M_PI / 2., "Angle used for the rotation method"};
   Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
 
   // configurable axis
