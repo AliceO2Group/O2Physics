@@ -12,7 +12,7 @@
 /// \file   flowSP.cxx
 /// \author Noor Koster
 /// \since  01/12/2024
-/// \brief  task to evaluate flow with respect to spectator plane. 
+/// \brief  task to evaluate flow with respect to spectator plane.
 
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPObject.h>
@@ -262,10 +262,10 @@ struct FlowSP {
 
     registry.fill(HIST("hEventCount"), 8.5);
 
-    if(centrality > cfgCentMax || centrality < cfgCentMin)
-      return 0; 
+    if (centrality > cfgCentMax || centrality < cfgCentMin)
+      return 0;
 
-      registry.fill(HIST("hEventCount"), 9.5);
+    registry.fill(HIST("hEventCount"), 9.5);
 
     return 1;
   }
@@ -338,16 +338,17 @@ struct FlowSP {
         if (!trackSelected(track, field))
           continue;
 
-        bool pos; 
-        if (track.sign() == 0.0) continue;
-        if (track.sign()>0) {
-          pos=true;
+        bool pos;
+        if (track.sign() == 0.0)
+          continue;
+        if (track.sign() > 0) {
+          pos = true;
         } else {
-          pos=false;
+          pos = false;
         }
 
         // constrain angle to 0 -> [0,0+2pi]
-        auto phi = RecoDecay::constrainAngle(track.phi(), 0); 
+        auto phi = RecoDecay::constrainAngle(track.phi(), 0);
 
         auto ux = std::cos(phi);
         auto uy = std::sin(phi);
@@ -362,9 +363,9 @@ struct FlowSP {
         auto oddv1 = ux * (qxA - qxC) + uy * (qyA - qyC);
         auto evenv1 = ux * (qxA + qxC) + uy * (qyA + qyC);
 
-        auto oddv1Dev = ux * (qxA - qxC)/std::sqrt(std::abs(qxAqxC)) + uy * (qyA - qyC)/std::sqrt(std::abs(qyAqyC));
-        auto evenv1Dev = ux * (qxA + qxC)/std::sqrt(std::abs(qxAqxC)) + uy * (qyA + qyC)/std::sqrt(std::abs(qyAqyC));
-        
+        auto oddv1Dev = ux * (qxA - qxC) / std::sqrt(std::abs(qxAqxC)) + uy * (qyA - qyC) / std::sqrt(std::abs(qyAqyC));
+        auto evenv1Dev = ux * (qxA + qxC) / std::sqrt(std::abs(qxAqxC)) + uy * (qyA + qyC) / std::sqrt(std::abs(qyAqyC));
+
         double v1A = std::cos(phi - psiA);
         double v1C = std::cos(phi - psiC);
 
@@ -381,13 +382,13 @@ struct FlowSP {
         registry.fill(HIST("v1_eta_odd_dev"), track.eta(), oddv1Dev);
         registry.fill(HIST("v1_eta_even_dev"), track.eta(), evenv1Dev);
 
-        if(pos){
+        if (pos) {
           registry.fill(HIST("v1_eta_odd_pos"), track.eta(), oddv1);
           registry.fill(HIST("v1_eta_even_pos"), track.eta(), evenv1);
 
           registry.fill(HIST("v1_eta_odd_dev_pos"), track.eta(), oddv1Dev);
           registry.fill(HIST("v1_eta_even_dev_pos"), track.eta(), evenv1Dev);
-        } else { 
+        } else {
           registry.fill(HIST("v1_eta_odd_neg"), track.eta(), oddv1);
           registry.fill(HIST("v1_eta_even_neg"), track.eta(), evenv1);
 
