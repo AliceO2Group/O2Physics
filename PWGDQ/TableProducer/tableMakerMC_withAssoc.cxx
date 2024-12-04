@@ -532,7 +532,7 @@ struct TableMakerMC {
         multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
                collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
         multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
-                0, 0, 0.0, 0.0, 0, 0);
+                0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0.0, 0.0);
       }
 
       // add an element for this collision into the map
