@@ -132,6 +132,32 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "TPCpileupZC", "TPC pileup Z, C-side", false, 200, -50.0, 50.0, VarManager::kNTPCpileupZC);
         hm->AddHistogram(histClass, "TPCpileupNcontribA", "TPC pileup n-contributors, A-side", false, 300, 0.0, 3000.0, VarManager::kNTPCpileupContribA);
         hm->AddHistogram(histClass, "TPCpileupNcontribC", "TPC pileup n-contributors, C-side", false, 300, 0.0, 3000.0, VarManager::kNTPCpileupContribC);
+        hm->AddHistogram(histClass, "TPCoccupContribLongA", "TPC occupancy from pileup, n-contrib, A-side, long time range", false, 100, 0.0, 10000.0, VarManager::kNTPCcontribLongA);
+        hm->AddHistogram(histClass, "TPCoccupContribLongAvsTime", "TPC occupancy from pileup, n-contrib, A-side, long time range", true, 1000, 0.0, 1000.0, VarManager::kTimeFromSOR, 10, 0.0, 10000.0, VarManager::kNTPCcontribLongA);
+        hm->AddHistogram(histClass, "TPCoccupContribLongAvsContribPV", "TPC occupancy from pileup, n-contrib, A-side, long time range, vs n.contrib", false, 100, 0.0, 5000.0, VarManager::kVtxNcontribReal, 100, 0.0, 10000.0, VarManager::kNTPCcontribLongA);
+        hm->AddHistogram(histClass, "TPCoccupContribLongC", "TPC occupancy from pileup, n-contrib, C-side, long time range", false, 100, 0.0, 10000.0, VarManager::kNTPCcontribLongC);
+        hm->AddHistogram(histClass, "TPCoccupContribLongCvsTime", "TPC occupancy from pileup, n-contrib, C-side, long time range", true, 1000, 0.0, 1000.0, VarManager::kTimeFromSOR, 10, 0.0, 10000.0, VarManager::kNTPCcontribLongC);
+        hm->AddHistogram(histClass, "TPCoccupContribLongCvsContribPV", "TPC occupancy from pileup, n-contrib, C-side, long time range, vs n.contrib", false, 100, 0.0, 5000.0, VarManager::kVtxNcontribReal, 100, 0.0, 10000.0, VarManager::kNTPCcontribLongC);
+        hm->AddHistogram(histClass, "TPCoccupContribLongAvsC", "TPC occupancy from pileup, n-contrib, A-side vs C-side, long time range", false, 100, 0.0, 10000.0, VarManager::kNTPCcontribLongA, 100, 0.0, 10000.0, VarManager::kNTPCcontribLongC);
+        hm->AddHistogram(histClass, "TPCoccupMeanTimeLongA", "TPC occupancy from pileup, mean time, A-side, long time range", false, 100, -100.0, 100.0, VarManager::kNTPCmeanTimeLongA);
+        hm->AddHistogram(histClass, "TPCoccupMeanTimeLongC", "TPC occupancy from pileup, mean time, C-side, long time range", false, 100, -100.0, 100.0, VarManager::kNTPCmeanTimeLongC);
+        hm->AddHistogram(histClass, "TPCoccupMeanTimeLongAvsC", "TPC occupancy from pileup, mean time, A-side vs C-side, long time range", false, 100, -100.0, 100.0, VarManager::kNTPCmeanTimeLongA, 100, -100.0, 100.0, VarManager::kNTPCmeanTimeLongC);
+        hm->AddHistogram(histClass, "TPCoccupMedianTimeLongA", "TPC occupancy from pileup, median time, A-side, long time range", false, 100, -100.0, 100.0, VarManager::kNTPCmedianTimeLongA);
+        hm->AddHistogram(histClass, "TPCoccupMedianTimeLongC", "TPC occupancy from pileup, median time, C-side, long time range", false, 100, -100.0, 100.0, VarManager::kNTPCmedianTimeLongC);
+        hm->AddHistogram(histClass, "TPCoccupMedianTimeLongAvsC", "TPC occupancy from pileup, median time, A-side vs C-side, long time range", false, 100, -100.0, 100.0, VarManager::kNTPCmedianTimeLongA, 100, -100.0, 100.0, VarManager::kNTPCmedianTimeLongC);
+        hm->AddHistogram(histClass, "TPCoccupContribShortA", "TPC occupancy from pileup, n-contrib, A-side, short time range", false, 100, 0.0, 7000.0, VarManager::kNTPCcontribShortA);
+        hm->AddHistogram(histClass, "TPCoccupContribShortAvsTime", "TPC occupancy from pileup, n-contrib, A-side, short time range", true, 1000, 0.0, 1000.0, VarManager::kTimeFromSOR, 10, 0.0, 10000.0, VarManager::kNTPCcontribShortA);
+        hm->AddHistogram(histClass, "TPCoccupContribShortAvsContribPV", "TPC occupancy from pileup, n-contrib, A-side, short time range, vs n.contrib", false, 100, 0.0, 5000.0, VarManager::kVtxNcontribReal, 100, 0.0, 7000.0, VarManager::kNTPCcontribShortA);
+        hm->AddHistogram(histClass, "TPCoccupContribShortC", "TPC occupancy from pileup, n-contrib, C-side, short time range", false, 100, 0.0, 7000.0, VarManager::kNTPCcontribShortC);
+        hm->AddHistogram(histClass, "TPCoccupContribShortCvsTime", "TPC occupancy from pileup, n-contrib, C-side, short time range", true, 1000, 0.0, 1000.0, VarManager::kTimeFromSOR, 10, 0.0, 10000.0, VarManager::kNTPCcontribShortC);
+        hm->AddHistogram(histClass, "TPCoccupContribShortAvsC", "TPC occupancy from pileup, n-contrib, A-side vs C-side, short time range", false, 100, 0.0, 7000.0, VarManager::kNTPCcontribShortA, 100, 0.0, 7000.0, VarManager::kNTPCcontribShortC);
+        hm->AddHistogram(histClass, "TPCoccupContribShortCvsContribPV", "TPC occupancy from pileup, n-contrib, C-side, short time range, vs n.contrib", false, 100, 0.0, 5000.0, VarManager::kVtxNcontribReal, 100, 0.0, 7000.0, VarManager::kNTPCcontribShortC);
+        hm->AddHistogram(histClass, "TPCoccupMeanTimeShortA", "TPC occupancy from pileup, mean time, A-side, short time range", false, 100, -20.0, 20.0, VarManager::kNTPCmeanTimeShortA);
+        hm->AddHistogram(histClass, "TPCoccupMeanTimeShortC", "TPC occupancy from pileup, mean time, C-side, short time range", false, 100, -20.0, 20.0, VarManager::kNTPCmeanTimeShortC);
+        hm->AddHistogram(histClass, "TPCoccupMeanTimeShortAvsC", "TPC occupancy from pileup, mean time, A-side vs C-side, short time range", false, 100, -20.0, 20.0, VarManager::kNTPCmeanTimeShortA, 100, -20.0, 20.0, VarManager::kNTPCmeanTimeShortC);
+        hm->AddHistogram(histClass, "TPCoccupMedianTimeShortA", "TPC occupancy from pileup, median time, A-side, short time range", false, 100, -20.0, 20.0, VarManager::kNTPCmedianTimeShortA);
+        hm->AddHistogram(histClass, "TPCoccupMedianTimeShortC", "TPC occupancy from pileup, median time, C-side, short time range", false, 100, -20.0, 20.0, VarManager::kNTPCmedianTimeShortC);
+        hm->AddHistogram(histClass, "TPCoccupMedianTimeShortAvsC", "TPC occupancy from pileup, median time, A-side vs C-side, short time range", false, 100, -20.0, 20.0, VarManager::kNTPCmedianTimeShortA, 100, -20.0, 20.0, VarManager::kNTPCmedianTimeShortC);
       }
     }
     if (subGroupStr.Contains("ftmulpbpb")) {
