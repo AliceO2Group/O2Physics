@@ -18,6 +18,7 @@
 #include <TString.h>
 #include "PWGDQ/Core/HistogramManager.h"
 #include "PWGDQ/Core/VarManager.h"
+#include "CommonConstants/MathConstants.h"
 
 namespace o2::aod
 {
