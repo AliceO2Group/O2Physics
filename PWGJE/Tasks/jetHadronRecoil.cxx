@@ -444,7 +444,7 @@ struct JetHadronRecoil {
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
     fillHistograms(jets, jetsWTA, tracks);
   }
-  PROCESS_SWITCH(hJetAnalysis, processData, "process data", true);
+  PROCESS_SWITCH(JetHadronRecoil, processData, "process data", true);
 
   void processMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                   soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToCharged1MCDetectorLevelJets>> const& jets,
@@ -460,7 +460,7 @@ struct JetHadronRecoil {
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
     fillHistograms(jets, jetsWTA, tracks);
   }
-  PROCESS_SWITCH(hJetAnalysis, processMCD, "process MC detector level", false);
+  PROCESS_SWITCH(JetHadronRecoil, processMCD, "process MC detector level", false);
 
   void processMCDWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
                           aod::JMcCollisions const&,
@@ -477,7 +477,7 @@ struct JetHadronRecoil {
     registry.fill(HIST("hZvtxSelected"), collision.posZ(), collision.mcCollision().weight());
     fillHistograms(jets, jetsWTA, tracks, collision.mcCollision().weight());
   }
-  PROCESS_SWITCH(hJetAnalysis, processMCDWeighted, "process MC detector level with event weights", false);
+  PROCESS_SWITCH(JetHadronRecoil, processMCDWeighted, "process MC detector level with event weights", false);
 
   void processMCP(aod::JetMcCollision const& collision,
                   soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToCharged1MCParticleLevelJets>> const& jets,
@@ -490,7 +490,7 @@ struct JetHadronRecoil {
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
     fillMCPHistograms(jets, jetsWTA, particles);
   }
-  PROCESS_SWITCH(hJetAnalysis, processMCP, "process MC particle level", false);
+  PROCESS_SWITCH(JetHadronRecoil, processMCP, "process MC particle level", false);
 
   void processMCPWeighted(aod::JetMcCollision const& collision,
                           soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToCharged1MCParticleLevelJets>> const& jets,
@@ -503,7 +503,7 @@ struct JetHadronRecoil {
     registry.fill(HIST("hZvtxSelected"), collision.posZ(), collision.weight());
     fillMCPHistograms(jets, jetsWTA, particles, collision.weight());
   }
-  PROCESS_SWITCH(hJetAnalysis, processMCPWeighted, "process MC particle level with event weights", false);
+  PROCESS_SWITCH(JetHadronRecoil, processMCPWeighted, "process MC particle level with event weights", false);
 
   void processJetsMCPMCDMatched(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
                                 soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
@@ -526,7 +526,7 @@ struct JetHadronRecoil {
       fillMatchedHistograms(mcdjet, mcdjetsWTA, mcpjetsWTACut, mcpjets);
     }
   }
-  PROCESS_SWITCH(hJetAnalysis, processJetsMCPMCDMatched, "process MC matched (inc jets)", false);
+  PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatched, "process MC matched (inc jets)", false);
 
   void processJetsMCPMCDMatchedWeighted(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
                                         soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetEventWeights>> const& mcdjets,
@@ -549,7 +549,7 @@ struct JetHadronRecoil {
       fillMatchedHistograms(mcdjet, mcdjetsWTA, mcpjetsWTACut, mcpjets, mcdjet.eventWeight());
     }
   }
-  PROCESS_SWITCH(hJetAnalysis, processJetsMCPMCDMatchedWeighted, "process MC matched with event weights (inc jets)", false);
+  PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatchedWeighted, "process MC matched with event weights (inc jets)", false);
 
   void processRecoilJetsMCPMCDMatched(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
                                       soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
@@ -581,7 +581,7 @@ struct JetHadronRecoil {
       }
     }
   }
-  PROCESS_SWITCH(hJetAnalysis, processRecoilJetsMCPMCDMatched, "process MC matched (recoil jets)", false);
+  PROCESS_SWITCH(JetHadronRecoil, processRecoilJetsMCPMCDMatched, "process MC matched (recoil jets)", false);
 
   void processRecoilJetsMCPMCDMatchedWeighted(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
                                               soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetEventWeights>> const& mcdjets,
@@ -613,7 +613,7 @@ struct JetHadronRecoil {
       }
     }
   }
-  PROCESS_SWITCH(hJetAnalysis, processRecoilJetsMCPMCDMatchedWeighted, "process MC matched with event weights (recoil jets)", false);
+  PROCESS_SWITCH(JetHadronRecoil, processRecoilJetsMCPMCDMatchedWeighted, "process MC matched with event weights (recoil jets)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetHadronRecoil>(cfgc, TaskName{"hJetAnalysis"})}; }
