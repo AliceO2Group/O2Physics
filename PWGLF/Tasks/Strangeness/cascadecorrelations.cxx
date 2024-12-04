@@ -35,6 +35,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "EventFiltering/Zorro.h"
 
 #include <TFile.h>
 #include <TList.h>
@@ -57,6 +58,11 @@ using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCo
 using FullTracksExtWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
 using FullTracksExtIUWithPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
 
+using myCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+using myCollisionsMult = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults>;
+using myCascades = soa::Filtered<aod::CascDataExtSelected>;
+Zorro zorro;
+
 // Add a column to the cascdataext table: IsSelected.
 // 0 = not selected, 1 = Xi, 2 = both, 3 = Omega
 namespace o2::aod
@@ -71,15 +77,24 @@ using CascDataExtSelected = soa::Join<CascDataExt, CascadeFlags>;
 } // namespace o2::aod
 
 struct cascadeSelector {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   Produces<aod::CascadeFlags> cascflags;
 
   // Configurables
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "CCDB url"};
+  Configurable<bool> useTrigger{"useTrigger", false, "Use trigger selection on skimmed data"};
+  Configurable<std::string> triggerList{"triggerList", "fDoubleXi, fDoubleOmega, fOmegaXi", "List of triggers used to select events"};
+  Configurable<bool> doTFBorderCut{"doTFBorderCut", true, "Switch to apply TimeframeBorderCut event selection"};
+  Configurable<bool> doSel8{"doSel8", true, "Switch to apply sel8 event selection"};
+
+  // Tracklevel
   Configurable<float> tpcNsigmaBachelor{"tpcNsigmaBachelor", 3, "TPC NSigma bachelor"};
   Configurable<float> tpcNsigmaProton{"tpcNsigmaProton", 3, "TPC NSigma proton <- lambda"};
   Configurable<float> tpcNsigmaPion{"tpcNsigmaPion", 3, "TPC NSigma pion <- lambda"};
   Configurable<int> minTPCCrossedRows{"minTPCCrossedRows", 80, "min N TPC crossed rows"}; // TODO: finetune! 80 > 159/2, so no split tracks?
   Configurable<int> minITSClusters{"minITSClusters", 4, "minimum number of ITS clusters"};
-  // Configurable<float> etaTracks{"etaTracks", 0.8, "min/max of eta for tracks"}
+  Configurable<float> etaTracks{"etaTracks", 1.0, "min/max of eta for tracks"};
 
   // Selection criteria - compatible with core wagon autodetect - copied from cascadeanalysis.cxx
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -132,23 +147,50 @@ struct cascadeSelector {
       {"hITSnClustersPos", "hITSnClustersPos", {HistType::kTH3F, {{8, -0.5, 7.5, "number of ITS clusters"}, invMassAxis, ptAxis}}},
       {"hITSnClustersNeg", "hITSnClustersNeg", {HistType::kTH3F, {{8, -0.5, 7.5, "number of ITS clusters"}, invMassAxis, ptAxis}}},
       {"hITSnClustersBach", "hITSnClustersBach", {HistType::kTH3F, {{8, -0.5, 7.5, "number of ITS clusters"}, invMassAxis, ptAxis}}},
+
+      {"hTriggerQA", "hTriggerQA", {HistType::kTH1F, {{2, -0.5, 1.5, "Trigger y/n"}}}},
     },
   };
 
   // Keep track of which selections the candidates pass
   void init(InitContext const&)
   {
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+
     auto h = registry.add<TH1>("hSelectionStatus", "hSelectionStatus", HistType::kTH1I, {{10, 0, 10, "status"}});
     h->GetXaxis()->SetBinLabel(1, "All");
     h->GetXaxis()->SetBinLabel(2, "nTPC OK");
     h->GetXaxis()->SetBinLabel(3, "nITS OK");
     h->GetXaxis()->SetBinLabel(4, "Topo OK");
-    h->GetXaxis()->SetBinLabel(5, "V0 PID OK");
-    h->GetXaxis()->SetBinLabel(6, "Bach PID OK");
+    h->GetXaxis()->SetBinLabel(5, "Track eta OK");
+    h->GetXaxis()->SetBinLabel(6, "V0 PID OK");
+    h->GetXaxis()->SetBinLabel(7, "Bach PID OK");
   }
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, FullTracksExtIUWithPID const&)
+  void process(myCollisions::iterator const& collision, aod::CascDataExt const& Cascades, FullTracksExtIUWithPID const&, aod::BCsWithTimestamps const&)
   {
+    bool evSel = true;
+    if (useTrigger) {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerList);
+      bool eventTrigger = zorro.isSelected(bc.globalBC());
+      if (eventTrigger) {
+        registry.fill(HIST("hTriggerQA"), 1);
+      } else {
+        registry.fill(HIST("hTriggerQA"), 0);
+        evSel = false;
+      }
+    }
+
+    if ((doSel8 && !collision.sel8()) || (doTFBorderCut && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
+      evSel = false; // do not skip the collision - this will lead to the cascadeFlag table having less entries than the Cascade table, and therefor not joinable.
+    }
+
     for (auto& casc : Cascades) {
+      if (!evSel) {
+        cascflags(0);
+        continue;
+      }
 
       // these are the tracks:
       auto bachTrack = casc.bachelor_as<FullTracksExtIUWithPID>();
@@ -211,6 +253,12 @@ struct cascadeSelector {
       registry.fill(HIST("hSelectionStatus"), 3); // passes topo
       registry.fill(HIST("hMassXi3"), casc.mXi(), casc.pt());
 
+      if (TMath::Abs(posTrack.eta()) > etaTracks || TMath::Abs(negTrack.eta()) > etaTracks || TMath::Abs(bachTrack.eta()) > etaTracks) {
+        cascflags(0);
+        continue;
+      }
+      registry.fill(HIST("hSelectionStatus"), 4); // passes track eta
+
       // TODO: TOF (for pT > 2 GeV per track?)
 
       //// TPC PID ////
@@ -238,7 +286,7 @@ struct cascadeSelector {
           continue;
         }
       }
-      registry.fill(HIST("hSelectionStatus"), 4); // fails at V0 daughters PID
+      registry.fill(HIST("hSelectionStatus"), 5); // passes V0 daughters PID
       registry.fill(HIST("hMassXi4"), casc.mXi(), casc.pt());
 
       // Bachelor check
@@ -246,38 +294,44 @@ struct cascadeSelector {
         if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor) {
           // consistent with both!
           cascflags(2);
-          registry.fill(HIST("hSelectionStatus"), 5); // passes bach PID
+          registry.fill(HIST("hSelectionStatus"), 6); // passes bach PID
           registry.fill(HIST("hMassXi5"), casc.mXi(), casc.pt());
           continue;
         }
         cascflags(1);
-        registry.fill(HIST("hSelectionStatus"), 5); // passes bach PID
+        registry.fill(HIST("hSelectionStatus"), 6); // passes bach PID
         registry.fill(HIST("hMassXi5"), casc.mXi(), casc.pt());
         continue;
       } else if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor) {
         cascflags(3);
-        registry.fill(HIST("hSelectionStatus"), 5); // passes bach PID
+        registry.fill(HIST("hSelectionStatus"), 6); // passes bach PID
         continue;
       }
       // if we reach here, the bachelor was neither pion nor kaon
       cascflags(0);
     } // cascade loop
-  }   // process
+  } // process
 };    // struct
 
 struct cascadeCorrelations {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
+  // Configurables
   Configurable<float> maxRapidity{"maxRapidity", 0.5, "|y| < maxRapidity"};
   Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
   Configurable<int> nMixedEvents{"nMixedEvents", 10, "Number of events to be mixed"};
   Configurable<bool> doEfficiencyCorrection{"doEfficiencyCorrection", true, "flag to do efficiency corrections"};
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "CCDB url"};
+  Configurable<bool> useTrigger{"useTrigger", false, "Use trigger selection on skimmed data"};
+  Configurable<std::string> triggerList{"triggerList", "fDoubleXi, fDoubleOmega, fOmegaXi", "List of triggers used to select events"};
   Configurable<std::string> efficiencyCCDBPath{"efficiencyCCDBPath", "Users/r/rspijker/test/EffTest", "Path of the efficiency corrections"};
+  Configurable<bool> doTFBorderCut{"doTFBorderCut", true, "Switch to apply TimeframeBorderCut event selection"};
+  Configurable<bool> doSel8{"doSel8", true, "Switch to apply sel8 event selection"};
 
   AxisSpec invMassAxis = {1000, 1.0f, 2.0f, "Inv. Mass (GeV/c^{2})"};
-  AxisSpec deltaPhiAxis = {180, -PI / 2, 1.5 * PI, "#Delta#varphi"}; // 180 is divisible by 18 (tpc sectors) and 20 (run 2 binning)
-  AxisSpec deltaYAxis = {40, -2*maxRapidity, 2*maxRapidity, "#Delta y"}; // TODO: narrower range?
+  AxisSpec deltaPhiAxis = {180, -PI / 2, 1.5 * PI, "#Delta#varphi"};         // 180 is divisible by 18 (tpc sectors) and 20 (run 2 binning)
+  AxisSpec deltaYAxis = {40, -2 * maxRapidity, 2 * maxRapidity, "#Delta y"}; // TODO: narrower range?
   AxisSpec ptAxis = {150, 0, 15, "#it{p}_{T}"};
   AxisSpec selectionFlagAxis = {4, -0.5f, 3.5f, "Selection flag of casc candidate"};
   AxisSpec vertexAxis = {200, -10.0f, 10.0f, "cm"};
@@ -304,6 +358,8 @@ struct cascadeCorrelations {
       hEffOmegaMin = static_cast<TH1D*>(effList->FindObject("hOmegaMinEff"));
       hEffOmegaPlus = static_cast<TH1D*>(effList->FindObject("hOmegaPlusEff"));
     }
+
+    zorroSummary.setObject(zorro.getZorroSummary());
   }
 
   double getEfficiency(TH1D* h, double pT)
@@ -323,6 +379,9 @@ struct cascadeCorrelations {
       // efficiency corrected inv mass
       {"hMassXiEffCorrected", "hMassXiEffCorrected", {HistType::kTHnSparseF, {invMassAxis, ptAxis, rapidityAxis, vertexAxis, multiplicityAxis}}, true},
       {"hMassOmegaEffCorrected", "hMassOmegaEffCorrected", {HistType::kTHnSparseF, {invMassAxis, ptAxis, rapidityAxis, vertexAxis, multiplicityAxis}}, true},
+
+      // trigger QA
+      {"hTriggerQA", "hTriggerQA", {HistType::kTH1F, {{2, -0.5, 1.5, "Trigger y/n"}}}},
 
       // basic selection variables
       {"hV0Radius", "hV0Radius", {HistType::kTH1F, {{1000, 0.0f, 100.0f, "cm"}}}},
@@ -379,17 +438,25 @@ struct cascadeCorrelations {
   // cascade filter
   Filter Selector = aod::cascadeflags::isSelected > 0;
 
-  // Mixed events setup:
-  using myCascades = soa::Filtered<aod::CascDataExtSelected>;
-  using myCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults>;
-
   SliceCache cache;
   ConfigurableAxis axisVtxZ{"axisVtxZ", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100, 1000}, "Mixing bins - multiplicity"};
+  // ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100, 1000}, "Mixing bins - multiplicity"};
 
-  void processSameEvent(myCollisions::iterator const& collision, myCascades const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
+  void processSameEvent(myCollisionsMult::iterator const& collision, myCascades const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
-    if (!collision.sel8()) {
+    if (useTrigger) {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerList);
+      bool eventTrigger = zorro.isSelected(bc.globalBC());
+      if (eventTrigger) {
+        registry.fill(HIST("hTriggerQA"), 1);
+      } else {
+        registry.fill(HIST("hTriggerQA"), 0);
+        return;
+      }
+    }
+
+    if ((doSel8 && !collision.sel8()) || (doTFBorderCut && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
       return;
     }
 
@@ -589,14 +656,15 @@ struct cascadeCorrelations {
     } // correlations
   }   // process same event
 
-  void processMixedEvent(myCollisions const& /*collisions*/, myCascades const& /*Cascades*/,
+  void processMixedEvent(myCollisionsMult const& /*collisions*/, myCascades const& /*Cascades*/,
                          aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
   {
     // mixed events
-    using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
-    BinningType colBinning{{axisVtxZ, axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
-    // Preslice<aod::CascDataExtSelected> collisionSliceCascades = aod::CascDataExtSelected::collisionId;
-    SameKindPair<myCollisions, myCascades, BinningType> pair{colBinning, nMixedEvents, -1, &cache};
+    // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
+    // BinningType colBinning{{axisVtxZ, axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    using BinningType = ColumnBinningPolicy<aod::collision::PosZ>;
+    BinningType colBinning{{axisVtxZ}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    SameKindPair<myCollisionsMult, myCascades, BinningType> pair{colBinning, nMixedEvents, -1, &cache};
 
     for (auto& [col1, cascades1, col2, cascades2] : pair) {
       if (!col1.sel8() || !col2.sel8())
