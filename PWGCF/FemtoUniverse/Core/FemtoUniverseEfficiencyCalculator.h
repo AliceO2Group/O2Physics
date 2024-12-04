@@ -102,39 +102,40 @@ class EfficiencyCalculator
         for (uint8_t i{0}; i < hOutput.size(); i++) {
           const auto& output{hOutput[i]};
           if (isHistogramEmpty(output)) {
-            LOG(error) << std::format("[EFFICIENCY] Histogram {} is empty - save aborted", i + 1);
+            LOGF(error, log("Histogram %s is empty - save aborted"), i + 1);
             return;
           }
-          LOG(debug) << std::format("[EFFICIENCY] Found histogram {}: {}", i + 1, output->GetTitle());
+          LOGF(debug, log("Found histogram %d: %s"), i + 1, output->GetTitle());
 
           std::map<string, string> metadata{};
           // metadata["runNumber"] = runNumber;
+
           long now{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
           long oneYear{365LL * 24 * 60 * 60 * 1000};
 
           if (ccdbApi.storeAsTFileAny(output, ccdbPath, metadata, now, now + oneYear) == 0) {
-            LOG(info) << "[EFFICIENCY] Histogram saved successfully";
+            LOGF(info, log("Histogram saved successfully"));
           } else {
-            LOG(fatal) << "[EFFICIENCY] Histogram save failed";
+            LOGF(fatal, log("Histogram save failed"));
           }
         }
       });
     } else {
-      LOG(warn) << "[EFFICIENCY] Save on stop is already set up";
+      LOGF(warn, log("Save on stop is already set up"));
     }
   }
 
   template <uint8_t N>
     requires IsOneOrTwo<N>
-  auto getWeight(auto const& particle) const -> float
+  auto getWeight(auto const& particle) -> float
   {
-    assert(hLoaded && "[EFFICIENCY] Called `getWeight` without loaded histogram from CCDB");
-
     auto weight{1.0f};
     if (auto hEff{hLoaded[N - 1]}) {
       auto bin{hEff->FindBin(particle.pt())};
       auto eff{hEff->GetBinContent(bin)};
       weight /= eff > 0 ? eff : 1.0f;
+    } else {
+      LOGF(error, log("Called `getWeight` with empty histogram from CCDB"));
     }
     return weight;
   }
@@ -154,6 +155,11 @@ class EfficiencyCalculator
   }
 
  private:
+  auto log(const std::string& msg) -> const std::string
+  {
+    return std::format("[EFFICIENCY] {}", msg);
+  }
+
   auto isHistogramEmpty(TH1* hist) -> bool
   {
     if (!hist) {
@@ -174,11 +180,11 @@ class EfficiencyCalculator
   {
     auto hEff{ccdb.getForTimeStamp<TH1>(ccdbPath, timestamp)};
     if (!hEff || hEff->IsZombie()) {
-      LOGF(fatal, "[EFFICIENCY] Could not load histogram from %s", ccdbPath);
+      LOGF(fatal, log("Could not load histogram from %s"), ccdbPath);
       return nullptr;
     }
 
-    LOG(info) << std::format("[EFFICIENCY] Histogram {} loaded from ", hEff->GetTitle(), ccdbPath);
+    LOGF(info, log("Histogram \"%s\" loaded from \"%s\""), hEff->GetTitle(), ccdbPath);
     return hEff;
   }
 
