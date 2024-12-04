@@ -43,8 +43,11 @@
 #include "Math/Vector3D.h"
 #include "Math/GenVector/Boost.h"
 #include <vector>
+<<<<<<< HEAD
 #include <altivec.h>
 >>>>>>> 236e9ce6d ( mixed event and rotational bkg added)
+=======
+>>>>>>> 66433cf15 (c++ related error removed)
 
 using namespace std;
 using namespace o2;
