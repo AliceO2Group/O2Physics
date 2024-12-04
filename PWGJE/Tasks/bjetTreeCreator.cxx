@@ -293,12 +293,12 @@ struct BJetTreeCreator {
 
     if (doprocessMCJetsForGNN) {
       //+jet
-      registry.add("h_jet_pt", "jet_pt;#it{p}_{T}^{ch jet} (GeV/#it{c});Entries", {HistType::kTH1F, {{100, 0., 200.}}});
-      registry.add("h_jet_eta", "jet_eta;#it{#eta}_{ch jet};Entries", {HistType::kTH1F, {{100, -2., 2.}}});
-      registry.add("h_jet_phi", "jet_phi;#it{#phi}_{ch jet};Entries", {HistType::kTH1F, {{100, 0., 2. * M_PI}}});
+      registry.add("h_jet_pt", "jet_pt;#it{p}_{T}^{ch jet} (GeV/#it{c});Entries", {HistType::kTH1F, {{200, 0., 200.}}});
+      registry.add("h_jet_eta", "jet_eta;#it{#eta}_{ch jet};Entries", {HistType::kTH1F, {{200, -2., 2.}}});
+      registry.add("h_jet_phi", "jet_phi;#it{#phi}_{ch jet};Entries", {HistType::kTH1F, {{200, 0., 2. * M_PI}}});
       registry.add("h_jet_flav", "jet_flav;jet flavor;Entries", {HistType::kTH1F, {{4, 0., 4.}}});
       registry.add("h_n_trks", "n_trks;#it{n}_{tracks};Entries", {HistType::kTH1F, {{50, 0., 50.}}});
-      registry.add("h_jet_mass", "jet_mass;#it{m}_{jet} (GeV/#it{c}^2);Entries", {HistType::kTH1F, {{100, 0., 50.}}});
+      registry.add("h_jet_mass", "jet_mass;#it{m}_{jet} (GeV/#it{c}^2);Entries", {HistType::kTH1F, {{200, 0., 50.}}});
       auto h_jet_flav = registry.get<TH1>(HIST("h_jet_flav"));
       h_jet_flav->GetXaxis()->SetBinLabel(1, "no mcparticle"); // 0
       h_jet_flav->GetXaxis()->SetBinLabel(2, "c-jet");         // 1
@@ -306,21 +306,20 @@ struct BJetTreeCreator {
       h_jet_flav->GetXaxis()->SetBinLabel(4, "lf-jet");        // 3
       registry.add("h_n_vertices", "n_vertices;#it{n}_{vertex};Entries", {HistType::kTH1F, {{50, 0., 50.}}});
       //+trk
-      registry.add("h_trk_pt", "trk_pt;#it{p}_{T} (GeV/#it{c});Entries", {HistType::kTH1F, {{100, 0., 100.}}});
-      registry.add("h_trk_eta", "trk_eta;#it{#eta};Entries", {HistType::kTH1F, {{100, -2., 2.}}});
-      registry.add("h_trk_phi", "trk_phi;#it{#phi};Entries", {HistType::kTH1F, {{100, 0., 2. * M_PI}}});
+      registry.add("h_trk_pt", "trk_pt;#it{p}_{T} (GeV/#it{c});Entries", {HistType::kTH1F, {{200, 0., 100.}}});
+      registry.add("h_trk_eta", "trk_eta;#it{#eta};Entries", {HistType::kTH1F, {{200, -2., 2.}}});
+      registry.add("h_trk_phi", "trk_phi;#it{#phi};Entries", {HistType::kTH1F, {{200, 0., 2. * M_PI}}});
       registry.add("h_trk_charge", "trk_charge;#it{q};Entries", {HistType::kTH1F, {{3, -1.5, 1.5}}});
-      registry.add("h_trk_dcaxy", "trk_dcaxy;#it{DCA}_{xy} (cm);Entries", {HistType::kTH1F, {{100, -0.1, 0.1}}});
-      registry.add("h_trk_dcaxyz", "trk_dcaxyz;#it{DCA}_{xyz} (cm);Entries", {HistType::kTH1F, {{100, -0.1, 0.1}}});
-      registry.add("h_trk_sigmadcaxy", "trk_sigmadcaxy;#it{#sigma}_{#it{DCA}_{xy}} (cm);Entries", {HistType::kTH1F, {{100, 0., 0.1}}});
-      registry.add("h_trk_sigmadcaxyz", "trk_sigmadcaxyz;#it{#sigma}_{#it{DCA}_{xyz}} (cm);Entries", {HistType::kTH1F, {{100, 0., 0.1}}});
+      registry.add("h_trk_dcaxy", "trk_dcaxy;#it{DCA}_{xy} (cm);Entries", {HistType::kTH1F, {{200, -0.1, 0.1}}});
+      registry.add("h_trk_dcaxyz", "trk_dcaxyz;#it{DCA}_{xyz} (cm);Entries", {HistType::kTH1F, {{200, -0.1, 0.1}}});
+      registry.add("h_trk_sigmadcaxy", "trk_sigmadcaxy;#it{#sigma}_{#it{DCA}_{xy}} (cm);Entries", {HistType::kTH1F, {{200, 0., 0.1}}});
+      registry.add("h_trk_sigmadcaxyz", "trk_sigmadcaxyz;#it{#sigma}_{#it{DCA}_{xyz}} (cm);Entries", {HistType::kTH1F, {{200, 0., 0.1}}});
       registry.add("h_trk_itsncls", "trk_itsncls;ITS NCls;Entries", {HistType::kTH1F, {{10, 0., 10.}}});
       registry.add("h_trk_tpcncls", "trk_tpcncls;TPC NCls (Found);Entries", {HistType::kTH1F, {{200, 0., 200.}}});
       registry.add("h_trk_tpcncrs", "trk_tpcncrs;TPC NCrossedRows;Entries", {HistType::kTH1F, {{200, 0., 200.}}});
-      registry.add("h_trk_itschi2ncl", "trk_itschi2ncl;ITS #it{#chi}^{2}/ndf;Entries", {HistType::kTH1F, {{100, 0., 20.}}});
-      registry.add("h_trk_tpcchi2ncl", "trk_tpcchi2ncl;TPC #it{#chi}^{2}/ndf;Entries", {HistType::kTH1F, {{100, 0., 10.}}});
-      registry.add("h_jtrack_counter", "jtrack counter", {HistType::kTH1F, {{1, 0., 1.}}});
-      registry.add("h2_trk_jtrackpt_vs_origtrackpt", "JTracks::pt vs Tracks::pt", {HistType::kTH2F, {{100, 0., 100.}, {100, 0., 100.}}});
+      registry.add("h_trk_itschi2ncl", "trk_itschi2ncl;ITS #it{#chi}^{2}/ndf;Entries", {HistType::kTH1F, {{200, 0., 20.}}});
+      registry.add("h_trk_tpcchi2ncl", "trk_tpcchi2ncl;TPC #it{#chi}^{2}/ndf;Entries", {HistType::kTH1F, {{200, 0., 10.}}});
+      registry.add("h2_trk_jtrackpt_vs_origtrackpt", "JTracks::pt vs Tracks::pt", {HistType::kTH2F, {{200, 0., 100.}, {200, 0., 100.}}});
       registry.add("h_trk_vtx_index", "trk_vtx_index;Vertex index;Entries", {HistType::kTH1F, {{20, 0., 20.}}});
       registry.add("h_trk_origin", "trk_origin;Track origin;Entries", {HistType::kTH1F, {{5, 0., 5.}}});
       auto h_trk_origin = registry.get<TH1>(HIST("h_trk_origin"));
@@ -733,6 +732,10 @@ struct BJetTreeCreator {
         } else {
           jetFlavor = jettaggingutilities::getJetFlavorHadron(mcpjet, mcParticlesPerColl);
         }
+      }
+
+      if ((jetFlavor != JetTaggingSpecies::charm && jetFlavor != JetTaggingSpecies::beauty) && (static_cast<double>(std::rand()) / RAND_MAX < getReductionFactor(analysisJet.pt()))) {
+        continue;
       }
 
       float eventWeight = analysisJet.eventWeight();
