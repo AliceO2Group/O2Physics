@@ -47,9 +47,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // Shorthand notations
-using filtered_Coll = soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::EvSels>>::iterator;
-using filtered_Coll_PartLevel = soa::Filtered<aod::JetMcCollisions>::iterator;
-using filtered_Coll_DetLevel_to_GetWeight = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos, aod::EvSels>>::iterator;
+using filtered_Coll = soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator;
+using filtered_Coll_PartLevel = soa::Filtered<aod::JetMcCollisions, aod::BkgChargedMcRhos>::iterator;
+using filtered_Coll_DetLevel_to_GetWeight = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator;
 
 using filtered_Jets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
 using filtered_Jets_DetLevel = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>>;
@@ -96,8 +96,8 @@ struct jetHadronRecoil_OO {
   // Axes specification
   AxisSpec pT{hist_jetPt, 0.0, hist_jetPt * 1.0, "#it{p}_{T} (GeV/#it{c})"};
   AxisSpec jet_pT_corr{hist_jetPt + 20, -20., hist_jetPt * 1.0, "#it{p}_{T, jet}^{ch, corr} (GeV/#it{c})"};
-  AxisSpec phi_angle{40, 0.0, TMath::TwoPi(), "#varphi (rad)"};
-  AxisSpec deltaPhi_angle{52, 0.0, TMath::Pi(), "#Delta#varphi (rad)"};
+  AxisSpec phi_angle{40, 0.0, constants::math::TwoPI, "#varphi (rad)"};
+  AxisSpec deltaPhi_angle{52, 0.0, constants::math::PI, "#Delta#varphi (rad)"};
   AxisSpec pseudorap{40, -1., 1., "#eta"};
   AxisSpec rhoArea{60, 0.0, 30., "#rho #times #A_{jet}"};
 
@@ -272,9 +272,8 @@ struct jetHadronRecoil_OO {
     }
   }
 
-  /// \TODO: Currently, we don't have possibility to estimate bgkd for particle MC. Nima told that it could be added
-  template </*typename C, */ typename Jets, typename Particles>
-  void fillMCPHistograms(/*C const& collision, */ Jets const& jets, Particles const& particles, float weight = 1.)
+  template <typename Collision, typename Jets, typename Particles>
+  void fillMCPHistograms(Collision const& collision, Jets const& jets, Particles const& particles, float weight = 1.)
   {
     bool bSig_Ev = false;
     std::vector<double> phi_of_TT_cand;
@@ -324,7 +323,7 @@ struct jetHadronRecoil_OO {
       if (jet.pt() > pTHatMax * pTHat)
         continue;
 
-      spectra.fill(HIST("hJetPtEtaPhiRhoArea_Part"), jet.pt(), jet.eta(), jet.phi(), /*collision.rho() */ jet.area(), weight);
+      spectra.fill(HIST("hJetPtEtaPhiRhoArea_Part"), jet.pt(), jet.eta(), jet.phi(), collision.rho() * jet.area(), weight);
 
       if (nTT > 0) {
 
@@ -332,23 +331,23 @@ struct jetHadronRecoil_OO {
 
         if (bSig_Ev) {
 
-          spectra.fill(HIST("hDPhi_JetPt_Corr_TTSig_Part"), dphi, jet.pt() /* - collision.rho() * jet.area()*/, weight);
+          spectra.fill(HIST("hDPhi_JetPt_Corr_TTSig_Part"), dphi, jet.pt() - collision.rho() * jet.area(), weight);
           spectra.fill(HIST("hDPhi_JetPt_TTSig_Part"), dphi, jet.pt(), weight);
-          spectra.fill(HIST("hDPhi_JetPt_RhoArea_TTSig_Part"), dphi, jet.pt(), /*collision.rho() */ jet.area(), weight);
+          spectra.fill(HIST("hDPhi_JetPt_RhoArea_TTSig_Part"), dphi, jet.pt(), collision.rho() * jet.area(), weight);
 
           if (bRecoil) {
-            spectra.fill(HIST("hRecoil_JetPt_Corr_TTSig_Part"), jet.pt() /*- collision.rho() * jet.area()*/, weight);
+            spectra.fill(HIST("hRecoil_JetPt_Corr_TTSig_Part"), jet.pt() - collision.rho() * jet.area(), weight);
             spectra.fill(HIST("hRecoil_JetPt_TTSig_Part"), jet.pt(), weight);
           }
 
         } else {
 
-          spectra.fill(HIST("hDPhi_JetPt_Corr_TTRef_Part"), dphi, jet.pt() /*- collision.rho() * jet.area()*/, weight);
+          spectra.fill(HIST("hDPhi_JetPt_Corr_TTRef_Part"), dphi, jet.pt() - collision.rho() * jet.area(), weight);
           spectra.fill(HIST("hDPhi_JetPt_TTRef_Part"), dphi, jet.pt(), weight);
-          spectra.fill(HIST("hDPhi_JetPt_RhoArea_TTRef_Part"), dphi, jet.pt(), /*collision.rho() */ jet.area(), weight);
+          spectra.fill(HIST("hDPhi_JetPt_RhoArea_TTRef_Part"), dphi, jet.pt(), collision.rho() * jet.area(), weight);
 
           if (bRecoil) {
-            spectra.fill(HIST("hRecoil_JetPt_Corr_TTRef_Part"), jet.pt() /*- collision.rho() * jet.area()*/, weight);
+            spectra.fill(HIST("hRecoil_JetPt_Corr_TTRef_Part"), jet.pt() - collision.rho() * jet.area(), weight);
             spectra.fill(HIST("hRecoil_JetPt_TTRef_Part"), jet.pt(), weight);
           }
         }
@@ -514,16 +513,16 @@ struct jetHadronRecoil_OO {
   template <typename Collision>
   bool skipEvent(const Collision& coll)
   {
-    /// \TODO: Do need !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits) flag to skip an event?
-    return !coll.selection_bit(aod::evsel::kNoTimeFrameBorder) || !jetderiveddatautilities::selectCollision(coll, eventSelection);
+    /// \brief: trigger cut is needed for pp data
+    return !jetderiveddatautilities::selectCollision(coll, eventSelection) || !jetderiveddatautilities::selectTrigger(coll, triggerMaskBits);
   }
 
   template <typename Jet>
   std::tuple<double, bool> isRecoilJet(const Jet& jet,
                                        double phi_TT)
   {
-    double dphi = fabs(TVector2::Phi_mpi_pi(jet.phi() - phi_TT));
-    return {dphi, (TMath::Pi() - recoilRegion) < dphi};
+    double dphi = fabs(RecoDecay::constrainAngle(jet.phi() - phi_TT, -constants::math::PI));
+    return {dphi, (constants::math::PI - recoilRegion) < dphi};
   }
 
   double getPhiTT(const std::vector<double>& phi_of_TT_cand)
