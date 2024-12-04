@@ -33,10 +33,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct CorrSparse {
-  Configurable<float> cfgZVtxCut = {"zvtxcut", 10.0, "Vertex z cut. Default 10 cm"};
-  Configurable<float> cfgPtCutMin = {"minpt", 0.2, "Minimum accepted track pT. Default 0.2 GeV"};
-  Configurable<float> cfgPtCutMax = {"maxpt", 5.0, "Maximum accepted track pT. Default 5.0 GeV"};
-  Configurable<float> cfgEtaCut = {"etacut", 0.8, "Eta cut. Default 0.8"};
+  Configurable<float> cfgZVtxCut = {"cfgZVtxCut", 10.0, "Vertex z cut. Default 10 cm"};
+  Configurable<float> cfgPtCutMin = {"cfgPtCutMin", 0.2, "Minimum accepted track pT. Default 0.2 GeV"};
+  Configurable<float> cfgPtCutMax = {"cfgPtCutMax", 5.0, "Maximum accepted track pT. Default 5.0 GeV"};
+  Configurable<float> cfgEtaCut = {"cfgEtaCut", 0.8, "Eta cut. Default 0.8"};
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -2, 2}, "delta eta axis for histograms"};
@@ -127,10 +127,10 @@ struct CorrSparse {
 
   // define the filtered collisions and tracks
 
-  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
-  void processSame(aodCollisions::iterator const& collision, aodTracks const& tracks)
+  void processSame(AodCollisions::iterator const& collision, AodTracks const& tracks)
   {
     const auto centrality = collision.centFT0C();
 
@@ -147,13 +147,13 @@ struct CorrSparse {
 
   ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>
     bindingOnVtxAndMult{{vtxBinsEdges, multBinsEdges}, true}; // true is for 'ignore overflows' (true by default)
-  SameKindPair<aodCollisions,
-               aodTracks,
+  SameKindPair<AodCollisions,
+               AodTracks,
                ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>>
     pair{bindingOnVtxAndMult, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   // the process for filling the mixed events
-  void processMixed(aodCollisions const& collisions, aodTracks const& tracks)
+  void processMixed(AodCollisions const& collisions, AodTracks const& tracks)
   {
     for (auto const& [collision1, tracks1, collision2, tracks2] : pair) {
 
