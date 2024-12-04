@@ -137,7 +137,7 @@ struct skimmerGammaCalo {
       historeg.fill(HIST("hCaloClusterEOut"), emccluster.energy());
       historeg.fill(HIST("hCaloClusterFilter"), 4);
 
-      tableGammaEMCReco(emccluster.collisionId(), emccluster.energy(), emccluster.eta(), emccluster.phi(), emccluster.m02(),
+      tableGammaEMCReco(emccluster.collisionId(), emccluster.definition(), emccluster.energy(), emccluster.eta(), emccluster.phi(), emccluster.m02(),
                         emccluster.nCells(), emccluster.time(), emccluster.isExotic(), vEta, vPhi, vP, vPt);
     }
   }
