@@ -34,20 +34,6 @@
 #include "PWGUD/Core/UPCHelpers.h"
 
 #include "Common/DataModel/PIDResponse.h"
-<<<<<<< HEAD
-=======
-#include <TString.h>
-#include "TLorentzVector.h"
-#include <TMath.h>
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "Math/GenVector/Boost.h"
-#include <vector>
-<<<<<<< HEAD
-#include <altivec.h>
->>>>>>> 236e9ce6d ( mixed event and rotational bkg added)
-=======
->>>>>>> 66433cf15 (c++ related error removed)
 
 using namespace std;
 using namespace o2;
@@ -605,7 +591,12 @@ struct SGResonanceAnalyzer {
               }
             }
           }
-          if (kstar && selectionPIDKaon1(t0) && std::abs(t0.tpcNSigmaPi()) > 3.0 && selectionPIDPion1(t1) && std::abs(t1.tpcNSigmaKa()) > 3.0) {
+	}
+	for(auto& [t0, t1] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks, tracks))){
+	  if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
+	    continue;
+	  if(t0.globalIndex() == t1.globalIndex()) continue;
+	  if (kstar && selectionPIDKaon1(t0) && selectionPIDPion1(t1)) {
             // Apply kaon hypothesis and create pairs
             v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
             v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
@@ -670,7 +661,12 @@ struct SGResonanceAnalyzer {
               }
             }
           }
-          if (kstar && selectionPIDKaon1(t0) && std::abs(t0.tpcNSigmaPi()) > 3.0 && selectionPIDPion1(t1) && std::abs(t1.tpcNSigmaKa()) > 3.0) {
+	}
+	for(auto& [t0, t1] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks, tracks))){
+	  if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
+	    continue;
+	  if(t0.globalIndex() == t1.globalIndex()) continue;
+	  if (kstar && selectionPIDKaon1(t0) && selectionPIDPion1(t1)) {
             // Apply kaon hypothesis and create pairs
             v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
             v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
@@ -734,8 +730,13 @@ struct SGResonanceAnalyzer {
               }
             }
           }
-          if (kstar && selectionPIDKaon1(t0) && std::abs(t0.tpcNSigmaPi()) > 3.0 && selectionPIDPion1(t1) && std::abs(t1.tpcNSigmaKa()) > 3.0) {
-            // Apply kaon hypothesis and create pairs
+	}
+	for(auto& [t0, t1] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks, tracks))){
+	  if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
+	    continue;
+	  if(t0.globalIndex() == t1.globalIndex()) continue;
+	  if (kstar && selectionPIDKaon1(t0) && selectionPIDPion1(t1)) {
+	// Apply kaon hypothesis and create pairs
             v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
             v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
             v01 = v0 + v1;
@@ -770,6 +771,7 @@ struct SGResonanceAnalyzer {
     for (auto& [t0, t1] : combinations(tracks, tracks)) {
       if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
         continue;
+      
       if (phi && selectionPIDKaon1(t0) && selectionPIDKaon1(t1)) {
         // Apply kaon hypothesis and create pairs
         v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
@@ -828,7 +830,12 @@ struct SGResonanceAnalyzer {
           }
         }
       }
-      if (rho && selectionPIDPion1(t0) && selectionPIDPion1(t1)) {
+    }
+    for (auto& [t0, t1] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks, tracks))){
+      if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
+        continue;
+      if(t0.globalIndex() == t1.globalIndex()) continue;
+      if (rho && selectionPIDProton(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDPion1(t1)) {
         v0.SetXYZM(t0.px(), t0.py(), t0.pz(), mproton);
         v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
         v01 = v0 + v1;
@@ -856,7 +863,7 @@ struct SGResonanceAnalyzer {
           }
         }
       }
-      if (kstar && selectionPIDKaon1(t0) && std::abs(t0.tpcNSigmaPi()) > 3.0 && selectionPIDPion1(t1) && std::abs(t1.tpcNSigmaKa()) > 3.0) {
+      if (kstar && selectionPIDKaon1(t0)  && selectionPIDPion1(t1)) {
         v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
         v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
         v01 = v0 + v1;
@@ -965,11 +972,7 @@ struct SGResonanceAnalyzer {
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {10, 0, 100}, "multiplicity percentile for bin"};
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
-<<<<<<< HEAD
   void mixprocess(UDCollisionsFull1 const& collisions, udtracksfull const& /*track*/)
-=======
-  void mixprocess(UDCollisionsFull1 const& collisions, udtracksfull const& track)
->>>>>>> 27bc84459 (mixed event and rotational bkg added)
   {
     TLorentzVector v0;
     TLorentzVector v1;
@@ -986,9 +989,9 @@ struct SGResonanceAnalyzer {
         continue;
       auto posThisColl = posTracks->sliceByCached(aod::udtrack::udCollisionId, collision1.globalIndex(), cache);
       auto negThisColl = negTracks->sliceByCached(aod::udtrack::udCollisionId, collision2.globalIndex(), cache);
-      for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posThisColl, negThisColl))) {
-        if (!trackselector(track1, parameters) || !trackselector(track2, parameters))
-          continue;
+      //      for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posThisColl, negThisColl))) {
+      for (auto& [track1, track2] : o2::soa::combinations(posThisColl, negThisColl)) {
+        if (!trackselector(track1, parameters) || !trackselector(track2, parameters))  continue;
         if (selectionPIDKaon1(track1) && selectionPIDKaon1(track2)) {
           v0.SetXYZM(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassKaonCharged);
           v1.SetXYZM(track2.px(), track2.py(), track2.pz(), o2::constants::physics::MassKaonCharged);
@@ -1006,7 +1009,11 @@ struct SGResonanceAnalyzer {
             }
           }
         }
-        if (selectionPIDKaon1(track1) && std::abs(track1.tpcNSigmaPi()) > 3.0 && selectionPIDPion1(track2) && std::abs(track2.tpcNSigmaKa()) > 3.0) {
+      }
+      for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posThisColl, negThisColl))) {
+	if (!trackselector(track1, parameters) || !trackselector(track2, parameters))  continue;
+	if(track1.globalIndex() == track2.globalIndex()) continue;
+        if (selectionPIDKaon1(track1) && selectionPIDPion1(track2)) {
           v0.SetXYZM(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassKaonCharged);
           v1.SetXYZM(track2.px(), track2.py(), track2.pz(), o2::constants::physics::MassPionCharged);
           v01 = v0 + v1;
