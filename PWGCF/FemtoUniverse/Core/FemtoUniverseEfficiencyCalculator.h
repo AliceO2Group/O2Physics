@@ -93,7 +93,7 @@ class EfficiencyCalculator
     }
   }
 
-  auto saveOnStop(InitContext& ic) -> void
+  auto saveOnStop(InitContext& ic) -> EfficiencyCalculator&
   {
     if (!shouldSaveOnStop) {
       shouldSaveOnStop = true;
@@ -124,6 +124,8 @@ class EfficiencyCalculator
     } else {
       LOGF(warn, log("Save on stop is already set up"));
     }
+
+    return *this;
   }
 
   template <uint8_t N>
