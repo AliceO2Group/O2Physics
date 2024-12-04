@@ -9,7 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// author: Noor Koster noor.koster@cern.ch
+/// \file   flowSP.cxx
+/// \author Noor Koster
+/// \since  01/12/2024
+/// \brief  task to evaluate flow with respect to spectator plane.
 
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPObject.h>
@@ -30,6 +33,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Qvectors.h"
+#include "Common/Core/RecoDecay.h"
 
 #include "PWGCF/DataModel/SPTableZDC.h"
 #include "TF1.h"
@@ -41,7 +45,7 @@ using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct flowAnalysisSP {
+struct FlowSP {
 
   O2_DEFINE_CONFIGURABLE(cfgDCAxy, float, 0.2, "Cut on DCA in the transverse direction (cm)");
   O2_DEFINE_CONFIGURABLE(cfgDCAz, float, 2, "Cut on DCA in the longitudinal direction (cm)");
@@ -53,6 +57,8 @@ struct flowAnalysisSP {
   O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried");
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, true, "Bool to enable Additional Event Cut");
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, true, "Bool to enable Additional Track Cut");
+  O2_DEFINE_CONFIGURABLE(cfgCentMax, float, 60, "Maximum cenrality for selected events");
+  O2_DEFINE_CONFIGURABLE(cfgCentMin, float, 10, "Minimum cenrality for selected events");
 
   O2_DEFINE_CONFIGURABLE(cfgDoubleTrackFunction, bool, true, "Include track cut at low pt");
   O2_DEFINE_CONFIGURABLE(cfgTrackCutSize, float, 0.06, "Spread of track cut");
@@ -67,8 +73,8 @@ struct flowAnalysisSP {
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
-  using myCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::SPTableZDC, aod::Qvectors>>;
-  using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
+  using UsedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::SPTableZDC, aod::Qvectors>>;
+  using UsedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
 
   //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -118,6 +124,22 @@ struct flowAnalysisSP {
     registry.add<TProfile>("v1C_eta", "", kTProfile, {{10, -.8, .8}});
     registry.add<TProfile>("v1AC_eta", "", kTProfile, {{10, -.8, .8}});
 
+    registry.add<TProfile>("v1_eta_odd", "", kTProfile, {{10, -.8, .8}});
+    registry.add<TProfile>("v1_eta_even", "", kTProfile, {{10, -.8, .8}});
+
+    registry.add<TProfile>("v1_eta_odd_dev", "", kTProfile, {{10, -.8, .8}});
+    registry.add<TProfile>("v1_eta_even_dev", "", kTProfile, {{10, -.8, .8}});
+
+    registry.add<TProfile>("v1_eta_odd_dev_pos", "", kTProfile, {{10, -.8, .8}});
+    registry.add<TProfile>("v1_eta_even_dev_pos", "", kTProfile, {{10, -.8, .8}});
+    registry.add<TProfile>("v1_eta_odd_pos", "", kTProfile, {{10, -.8, .8}});
+    registry.add<TProfile>("v1_eta_even_pos", "", kTProfile, {{10, -.8, .8}});
+
+    registry.add<TProfile>("v1_eta_odd_dev_neg", "", kTProfile, {{10, -.8, .8}});
+    registry.add<TProfile>("v1_eta_even_dev_neg", "", kTProfile, {{10, -.8, .8}});
+    registry.add<TProfile>("v1_eta_odd_neg", "", kTProfile, {{10, -.8, .8}});
+    registry.add<TProfile>("v1_eta_even_neg", "", kTProfile, {{10, -.8, .8}});
+
     registry.add<TProfile>("v2_cent", "", kTProfile, {{80, 0, 80}});
     registry.add<TProfile>("v2A_cent", "", kTProfile, {{80, 0, 80}});
     registry.add<TProfile>("v2C_cent", "", kTProfile, {{80, 0, 80}});
@@ -133,7 +155,8 @@ struct flowAnalysisSP {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(7, "kNoCollInTimeRangeStandard");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(8, "kIsVertexITSTPC");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(9, "after Mult cuts");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(10, "isSelected");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(10, "after Cent cuts");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(11, "isSelected");
 
     if (cfgUseAdditionalEventCut) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
@@ -217,7 +240,7 @@ struct flowAnalysisSP {
     float vtxz = -999;
     if (collision.numContrib() > 1) {
       vtxz = collision.posZ();
-      float zRes = TMath::Sqrt(collision.covZZ());
+      float zRes = std::sqrt(collision.covZZ());
       if (zRes > 0.25 && collision.numContrib() < 20)
         vtxz = -999;
     }
@@ -239,6 +262,11 @@ struct flowAnalysisSP {
 
     registry.fill(HIST("hEventCount"), 8.5);
 
+    if (centrality > cfgCentMax || centrality < cfgCentMin)
+      return 0;
+
+    registry.fill(HIST("hEventCount"), 9.5);
+
     return 1;
   }
 
@@ -247,14 +275,14 @@ struct flowAnalysisSP {
   {
     double phimodn = track.phi();
     if (field < 0) // for negative polarity field
-      phimodn = TMath::TwoPi() - phimodn;
+      phimodn = o2::constants::math::TwoPI - phimodn;
     if (track.sign() < 0) // for negative charge
-      phimodn = TMath::TwoPi() - phimodn;
+      phimodn = o2::constants::math::TwoPI - phimodn;
     if (phimodn < 0)
       LOGF(warning, "phi < 0: %g", phimodn);
 
-    phimodn += TMath::Pi() / 18.0; // to center gap in the middle
-    phimodn = fmod(phimodn, TMath::Pi() / 9.0);
+    phimodn += o2::constants::math::PI / 18.0; // to center gap in the middle
+    phimodn = fmod(phimodn, o2::constants::math::PI / 9.0);
     registry.fill(HIST("pt_phi_bef"), track.pt(), phimodn);
     if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt()))
       return false; // reject track
@@ -262,7 +290,7 @@ struct flowAnalysisSP {
     return true;
   }
 
-  void process(myCollisions::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
+  void process(UsedCollisions::iterator const& collision, aod::BCsWithTimestamps const&, UsedTracks const& tracks)
   {
     // Hier sum over collisions and get ZDC data.
     registry.fill(HIST("hEventCount"), .5);
@@ -280,7 +308,7 @@ struct flowAnalysisSP {
       return;
 
     if (collision.isSelected()) {
-      registry.fill(HIST("hEventCount"), 9.5);
+      registry.fill(HIST("hEventCount"), 10.5);
 
       registry.fill(HIST("hCent"), centrality);
 
@@ -289,38 +317,90 @@ struct flowAnalysisSP {
       double qxC = collision.qxC();
       double qyC = collision.qyC();
 
-      double Psi_A = 1.0 * TMath::ATan2(qyA, qxA);
-      registry.fill(HIST("hSPplaneA"), Psi_A, 1);
+      double psiA = 1.0 * std::atan2(qyA, qxA);
+      registry.fill(HIST("hSPplaneA"), psiA, 1);
 
-      double Psi_C = 1.0 * TMath::ATan2(qyC, qxC);
-      registry.fill(HIST("hSPplaneC"), Psi_C, 1);
+      double psiC = 1.0 * std::atan2(qyC, qxC);
+      registry.fill(HIST("hSPplaneC"), psiC, 1);
 
-      registry.fill(HIST("hSPplaneA-C"), Psi_A - Psi_C, 1);
+      registry.fill(HIST("hSPplaneA-C"), psiA - psiC, 1);
 
-      registry.fill(HIST("hCosdPhi"), centrality, TMath::Cos(Psi_A - Psi_C));
-      if (TMath::Cos(Psi_A - Psi_C) < 0)
-        registry.fill(HIST("hSPlaneRes"), centrality, TMath::Sqrt(-1. * TMath::Cos(Psi_A - Psi_C)));
-      registry.fill(HIST("hSindPhi"), centrality, TMath::Sin(Psi_A - Psi_C));
+      registry.fill(HIST("hCosdPhi"), centrality, std::cos(psiA - psiC));
+      if (std::cos(psiA - psiC) < 0)
+        registry.fill(HIST("hSPlaneRes"), centrality, std::sqrt(-1. * std::cos(psiA - psiC)));
 
-      for (auto& track : tracks) {
+      registry.fill(HIST("hSindPhi"), centrality, std::sin(psiA - psiC));
+
+      auto qxAqxC = qxA * qxC;
+      auto qyAqyC = qyA * qyC;
+
+      for (const auto& track : tracks) {
         if (!trackSelected(track, field))
           continue;
 
-        double v1A = TMath::Cos(track.phi() - Psi_A);
-        double v1C = TMath::Cos(track.phi() - Psi_C);
+        bool pos;
+        if (track.sign() == 0.0)
+          continue;
+        if (track.sign() > 0) {
+          pos = true;
+        } else {
+          pos = false;
+        }
 
-        double v1AC = TMath::Cos(track.phi() - (Psi_A - Psi_C));
+        // constrain angle to 0 -> [0,0+2pi]
+        auto phi = RecoDecay::constrainAngle(track.phi(), 0);
 
-        registry.fill(HIST("v1_eta"), track.eta(), (1. / TMath::Sqrt(2)) * (v1A - v1C));
+        auto ux = std::cos(phi);
+        auto uy = std::sin(phi);
+
+        auto uxQxA = ux * qxA;
+        auto uyQyA = uy * qyA;
+        auto uxyQxyA = uxQxA + uyQyA;
+        auto uxQxC = ux * qxC;
+        auto uyQyC = uy * qyC;
+        auto uxyQxyC = uxQxC + uyQyC;
+
+        auto oddv1 = ux * (qxA - qxC) + uy * (qyA - qyC);
+        auto evenv1 = ux * (qxA + qxC) + uy * (qyA + qyC);
+
+        auto oddv1Dev = ux * (qxA - qxC) / std::sqrt(std::abs(qxAqxC)) + uy * (qyA - qyC) / std::sqrt(std::abs(qyAqyC));
+        auto evenv1Dev = ux * (qxA + qxC) / std::sqrt(std::abs(qxAqxC)) + uy * (qyA + qyC) / std::sqrt(std::abs(qyAqyC));
+
+        double v1A = std::cos(phi - psiA);
+        double v1C = std::cos(phi - psiC);
+
+        double v1AC = std::cos(phi - (psiA - psiC));
+
+        registry.fill(HIST("v1_eta"), track.eta(), (1. / std::sqrt(2)) * (v1A - v1C));
         registry.fill(HIST("v1A_eta"), track.eta(), (v1A));
         registry.fill(HIST("v1C_eta"), track.eta(), (v1C));
         registry.fill(HIST("v1AC_eta"), track.eta(), (v1AC));
 
-        double v2A = TMath::Cos(2 * (track.phi() - Psi_A));
-        double v2C = TMath::Cos(2 * (track.phi() - Psi_C));
-        double v2AC = TMath::Cos(2 * (track.phi() - (Psi_A - Psi_C)));
+        registry.fill(HIST("v1_eta_odd"), track.eta(), oddv1);
+        registry.fill(HIST("v1_eta_even"), track.eta(), evenv1);
 
-        registry.fill(HIST("v2_cent"), centrality, (1. / TMath::Sqrt(2)) * (v2A - v2C));
+        registry.fill(HIST("v1_eta_odd_dev"), track.eta(), oddv1Dev);
+        registry.fill(HIST("v1_eta_even_dev"), track.eta(), evenv1Dev);
+
+        if (pos) {
+          registry.fill(HIST("v1_eta_odd_pos"), track.eta(), oddv1);
+          registry.fill(HIST("v1_eta_even_pos"), track.eta(), evenv1);
+
+          registry.fill(HIST("v1_eta_odd_dev_pos"), track.eta(), oddv1Dev);
+          registry.fill(HIST("v1_eta_even_dev_pos"), track.eta(), evenv1Dev);
+        } else {
+          registry.fill(HIST("v1_eta_odd_neg"), track.eta(), oddv1);
+          registry.fill(HIST("v1_eta_even_neg"), track.eta(), evenv1);
+
+          registry.fill(HIST("v1_eta_odd_dev_neg"), track.eta(), oddv1Dev);
+          registry.fill(HIST("v1_eta_even_dev_neg"), track.eta(), evenv1Dev);
+        }
+
+        double v2A = std::cos(2 * (phi - psiA));
+        double v2C = std::cos(2 * (phi - psiC));
+        double v2AC = std::cos(2 * (phi - (psiA - psiC)));
+
+        registry.fill(HIST("v2_cent"), centrality, (1. / std::sqrt(2)) * (v2A - v2C));
         registry.fill(HIST("v2A_cent"), centrality, (v2A));
         registry.fill(HIST("v2C_cent"), centrality, (v2C));
         registry.fill(HIST("v2AC_cent"), centrality, (v2AC));
@@ -338,6 +418,6 @@ struct flowAnalysisSP {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<flowAnalysisSP>(cfgc),
+    adaptAnalysisTask<FlowSP>(cfgc),
   };
 }
