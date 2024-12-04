@@ -418,12 +418,14 @@ struct ebyeMaker {
       } else {
         LOGF(fatal, "Calibration information from V0M for run %d corrupted", bc.runNumber());
       }
-      Run2CL0Info.mhVtxAmpCorr = getccdb("hVtx_fnSPDClusters0_Normalized");
-      Run2CL0Info.mhMultSelCalib = getccdb("hMultSelCalib_CL0");
-      if ((Run2CL0Info.mhVtxAmpCorr != nullptr) && (Run2CL0Info.mhMultSelCalib != nullptr)) {
-        Run2CL0Info.mCalibrationStored = true;
-      } else {
-        LOGF(fatal, "Calibration information from CL0 multiplicity for run %d corrupted", bc.runNumber());
+      if (doprocessRun2) {
+        Run2CL0Info.mhVtxAmpCorr = getccdb("hVtx_fnSPDClusters0_Normalized");
+        Run2CL0Info.mhMultSelCalib = getccdb("hMultSelCalib_CL0");
+        if ((Run2CL0Info.mhVtxAmpCorr != nullptr) && (Run2CL0Info.mhMultSelCalib != nullptr)) {
+          Run2CL0Info.mCalibrationStored = true;
+        } else {
+          LOGF(fatal, "Calibration information from CL0 multiplicity for run %d corrupted", bc.runNumber());
+        }
       }
     } else {
       auto grpmagPath{"GLO/Config/GRPMagField"};
