@@ -88,13 +88,14 @@ struct prefilterDielectron {
   DielectronCut fDielectronCut;
   struct : ConfigurableGroup {
     std::string prefix = "dielectroncut_group";
-    Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass for prefilter ULS"};                                                // region to be rejected
-    Configurable<float> cfg_max_mass{"cfg_max_mass", 0.02, "max mass for prefilter ULS"};                                               // region to be rejected
-    Configurable<bool> cfg_apply_dzrdphi_geom{"cfg_apply_dzrdphi_geom", false, "flag to apply generator dz-rdphi elliptic cut"};        // region to be rejected
-    Configurable<float> cfg_min_dz_geom{"cfg_min_dz_geom", 5, "geometrical min dz between 2 electrons (elliptic cut) in cm"};           // region to be rejected
-    Configurable<float> cfg_min_rdphi_geom{"cfg_min_rdphi_geom", 20, "geometrical min rdphi between 2 electrons (elliptic cut) in cm"}; // region to be rejected
+    Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass for prefilter ULS"};                                                        // region to be rejected
+    Configurable<float> cfg_max_mass{"cfg_max_mass", 0.0, "max mass for prefilter ULS"};                                                        // region to be rejected
+    Configurable<bool> cfg_apply_dzrdphi_geom_uls{"cfg_apply_dzrdphi_geom_uls", false, "flag to apply generator dz-rdphi elliptic cut in ULS"}; // region to be rejected
+    Configurable<bool> cfg_apply_dzrdphi_geom_ls{"cfg_apply_dzrdphi_geom_ls", false, "flag to apply generator dz-rdphi elliptic cut in LS"};    // region to be rejected
+    Configurable<float> cfg_min_dz_geom{"cfg_min_dz_geom", 5, "geometrical min dz between 2 electrons (elliptic cut) in cm"};                   // region to be rejected
+    Configurable<float> cfg_min_rdphi_geom{"cfg_min_rdphi_geom", 20, "geometrical min rdphi between 2 electrons (elliptic cut) in cm"};         // region to be rejected
 
-    Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", true, "flag to apply phiv cut"};               // region to be rejected
+    Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", false, "flag to apply phiv cut"};              // region to be rejected
     Configurable<float> cfg_phiv_slope{"cfg_phiv_slope", 0.0185, "slope for m vs. phiv"};              // region to be rejected
     Configurable<float> cfg_phiv_intercept{"cfg_phiv_intercept", -0.0280, "intercept for m vs. phiv"}; // region to be rejected
     Configurable<float> cfg_min_phiv{"cfg_min_phiv", -1.f, "min phiv"};                                // region to be rejected
@@ -379,7 +380,7 @@ struct prefilterDielectron {
         continue;
       }
 
-      if (dielectroncuts.cfg_x_to_go > 0.f && dielectroncuts.cfg_apply_dzrdphi_geom) {
+      if (dielectroncuts.cfg_x_to_go > 0.f && (dielectroncuts.cfg_apply_dzrdphi_geom_uls || dielectroncuts.cfg_apply_dzrdphi_geom_ls)) {
         propagateElectron(posTracks_per_coll);
         propagateElectron(negTracks_per_coll);
       }
@@ -420,10 +421,10 @@ struct prefilterDielectron {
           map_pfb[ele.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kPhiV);
         }
 
-        // if (dielectroncuts.cfg_x_to_go > 0.f && dielectroncuts.cfg_apply_dzrdphi_geom && std::pow(dz_geom / dielectroncuts.cfg_min_dz_geom, 2) + std::pow(rdphi_geom / dielectroncuts.cfg_min_rdphi_geom, 2) < 1.f) {
-        //   map_pfb[pos.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrack);
-        //   map_pfb[ele.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrack);
-        // }
+        if (dielectroncuts.cfg_x_to_go > 0.f && dielectroncuts.cfg_apply_dzrdphi_geom_uls && std::pow(dz_geom / dielectroncuts.cfg_min_dz_geom, 2) + std::pow(rdphi_geom / dielectroncuts.cfg_min_rdphi_geom, 2) < 1.f) {
+          map_pfb[pos.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrack);
+          map_pfb[ele.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrack);
+        }
       }
 
       for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
@@ -450,7 +451,7 @@ struct prefilterDielectron {
         fRegistry.fill(HIST("Pair/before/lspp/hDeltaEtaDeltaPhi"), dphi, deta);
         fRegistry.fill(HIST("Pair/before/lspp/hGeomDeltaZRDeltaPhi"), rdphi_geom, dz_geom);
 
-        if (dielectroncuts.cfg_x_to_go > 0.f && dielectroncuts.cfg_apply_dzrdphi_geom && std::pow(dz_geom / dielectroncuts.cfg_min_dz_geom, 2) + std::pow(rdphi_geom / dielectroncuts.cfg_min_rdphi_geom, 2) < 1.f) {
+        if (dielectroncuts.cfg_x_to_go > 0.f && dielectroncuts.cfg_apply_dzrdphi_geom_ls && std::pow(dz_geom / dielectroncuts.cfg_min_dz_geom, 2) + std::pow(rdphi_geom / dielectroncuts.cfg_min_rdphi_geom, 2) < 1.f) {
           map_pfb[pos1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrack);
           map_pfb[pos2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrack);
         }
@@ -480,7 +481,7 @@ struct prefilterDielectron {
         fRegistry.fill(HIST("Pair/before/lsmm/hDeltaEtaDeltaPhi"), dphi, deta);
         fRegistry.fill(HIST("Pair/before/lsmm/hGeomDeltaZRDeltaPhi"), rdphi_geom, dz_geom);
 
-        if (dielectroncuts.cfg_x_to_go > 0.f && dielectroncuts.cfg_apply_dzrdphi_geom && std::pow(dz_geom / dielectroncuts.cfg_min_dz_geom, 2) + std::pow(rdphi_geom / dielectroncuts.cfg_min_rdphi_geom, 2) < 1.f) {
+        if (dielectroncuts.cfg_x_to_go > 0.f && dielectroncuts.cfg_apply_dzrdphi_geom_ls && std::pow(dz_geom / dielectroncuts.cfg_min_dz_geom, 2) + std::pow(rdphi_geom / dielectroncuts.cfg_min_rdphi_geom, 2) < 1.f) {
           map_pfb[ele1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrack);
           map_pfb[ele2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrack);
         }
