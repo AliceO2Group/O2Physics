@@ -420,7 +420,7 @@ struct FemtoUniversePairTaskTrackD0 {
     eventHisto.fillQA(col);
   }
 
-    void processQAD0D0barSel(o2::aod::FDCollision const& col, FemtoFullParticles const&)
+  void processQAD0D0barSel(o2::aod::FDCollision const& col, FemtoFullParticles const&)
   {
     auto groupPartsD0s = partsD0s->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsD0bars = partsD0bars->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -437,7 +437,6 @@ struct FemtoUniversePairTaskTrackD0 {
       qaRegistry.fill(HIST("QA_D0D0barSelection/hInvMassD0bar"), d0barcand.mAntiLambda());
       qaRegistry.fill(HIST("QA_D0D0barSelection/hPtD0bar"), d0barcand.pt());
     }
-
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackD0, processQAD0D0barSel, "Enable filling QA plots for selected D0/D0bar cand.", true);
 
