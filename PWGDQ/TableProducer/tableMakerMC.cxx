@@ -1231,7 +1231,7 @@ struct TableMakerMC {
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (auto& sig : fMCSignals) {
             if (sig.CheckSignal(true, mctrack)) {
-              mcflags |= (static_cast<uint16_t(1)> << i);
+              mcflags |= (static_cast<uint16_t>(1)> << i);
               if (fDoDetailedQA) {
                 j = 0;
                 for (auto& cut : fTrackCuts) {
