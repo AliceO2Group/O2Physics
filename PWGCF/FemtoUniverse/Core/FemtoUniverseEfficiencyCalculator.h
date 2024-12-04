@@ -41,6 +41,7 @@ class EfficiencyCalculator
     ccdbApi.init(ccdbUrl);
     ccdb.setURL(ccdbUrl);
     ccdb.setLocalObjectValidityChecking();
+    ccdb.setFatalWhenNull(false);
 
     hLoaded[ParticleNo::ONE] = loadEfficiencyFromCCDB(1733060890131);
   }
