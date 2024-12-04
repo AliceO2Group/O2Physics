@@ -74,8 +74,6 @@ DECLARE_SOA_COLUMN(TpcInnerParBach, tpcInnerParBach, float); //! Transverse mome
 DECLARE_SOA_COLUMN(MLambda, mLambda, float);                 //! Daughter lambda mass (GeV/c^2)
 DECLARE_SOA_COLUMN(V0cosPA, v0cosPA, float);                 //! V0 CPA
 DECLARE_SOA_COLUMN(CascCosPa, cascCosPa, float);             //! Cascade CPA
-DECLARE_SOA_COLUMN(DcaV0daughters, dcaV0daughters, float);   //! DCA of V0 daughters
-DECLARE_SOA_COLUMN(Dcav0topv, dcav0topv, float);             //! V0 DCA to PV
 DECLARE_SOA_COLUMN(NSigmaTpcBachKa, nSigmaTpcBachKa, float); //! nSigmaTPC of bachelor with kaon hypothesis
 DECLARE_SOA_COLUMN(NSigmaTofBachKa, nSigmaTofBachKa, float); //! nSigmaTOF of bachelor with kaon hypothesis
 
@@ -125,8 +123,8 @@ DECLARE_SOA_TABLE(PidCascades, "AOD", "PIDCASCADES", //! Table with PID informat
                   pid_studies::V0cosPA,
                   pid_studies::MassXi,
                   pid_studies::CascCosPa,
-                  pid_studies::DcaV0daughters,
-                  pid_studies::Dcav0topv,
+                  pid_studies::DcaV0Daughters,
+                  pid_studies::DcaV0ToPv,
                   pid_studies::NSigmaTpcBachKa,
                   pid_studies::NSigmaTofBachKa,
                   pid_studies::OccupancyFt0c,
