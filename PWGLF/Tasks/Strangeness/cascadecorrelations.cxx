@@ -19,6 +19,8 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <string>
+#include <utility>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -43,7 +45,7 @@
 #include <TProfile.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include <TDatabasePDG.h>
+// #include <TDatabasePDG.h>
 
 using namespace o2;
 using namespace o2::soa;
@@ -58,9 +60,6 @@ using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCo
 using FullTracksExtWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
 using FullTracksExtIUWithPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
 
-using myCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-using myCollisionsMult = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults>;
-using myCascades = soa::Filtered<aod::CascDataExtSelected>;
 Zorro zorro;
 
 // Add a column to the cascdataext table: IsSelected.
@@ -76,13 +75,17 @@ DECLARE_SOA_TABLE(CascadeFlags, "AOD", "CASCADEFLAGS", //!
 using CascDataExtSelected = soa::Join<CascDataExt, CascadeFlags>;
 } // namespace o2::aod
 
-struct cascadeSelector {
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+using MyCollisionsMult = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults>;
+using MyCascades = soa::Filtered<aod::CascDataExtSelected>;
+
+struct CascadeSelector {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   Produces<aod::CascadeFlags> cascflags;
 
   // Configurables
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "CCDB url"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "CCDB url"};
   Configurable<bool> useTrigger{"useTrigger", false, "Use trigger selection on skimmed data"};
   Configurable<std::string> triggerList{"triggerList", "fDoubleXi, fDoubleOmega, fOmegaXi", "List of triggers used to select events"};
   Configurable<bool> doTFBorderCut{"doTFBorderCut", true, "Switch to apply TimeframeBorderCut event selection"};
@@ -155,7 +158,7 @@ struct cascadeSelector {
   // Keep track of which selections the candidates pass
   void init(InitContext const&)
   {
-    ccdb->setURL(ccdburl);
+    ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
 
     auto h = registry.add<TH1>("hSelectionStatus", "hSelectionStatus", HistType::kTH1I, {{10, 0, 10, "status"}});
@@ -167,7 +170,7 @@ struct cascadeSelector {
     h->GetXaxis()->SetBinLabel(6, "V0 PID OK");
     h->GetXaxis()->SetBinLabel(7, "Bach PID OK");
   }
-  void process(myCollisions::iterator const& collision, aod::CascDataExt const& Cascades, FullTracksExtIUWithPID const&, aod::BCsWithTimestamps const&)
+  void process(MyCollisions::iterator const& collision, aod::CascDataExt const& Cascades, FullTracksExtIUWithPID const&, aod::BCsWithTimestamps const&)
   {
     bool evSel = true;
     if (useTrigger) {
@@ -186,7 +189,7 @@ struct cascadeSelector {
       evSel = false; // do not skip the collision - this will lead to the cascadeFlag table having less entries than the Cascade table, and therefor not joinable.
     }
 
-    for (auto& casc : Cascades) {
+    for (auto const& casc : Cascades) {
       if (!evSel) {
         cascflags(0);
         continue;
@@ -311,9 +314,9 @@ struct cascadeSelector {
       cascflags(0);
     } // cascade loop
   } // process
-};    // struct
+}; // struct
 
-struct cascadeCorrelations {
+struct CascadeCorrelations {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
@@ -322,7 +325,7 @@ struct cascadeCorrelations {
   Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
   Configurable<int> nMixedEvents{"nMixedEvents", 10, "Number of events to be mixed"};
   Configurable<bool> doEfficiencyCorrection{"doEfficiencyCorrection", true, "flag to do efficiency corrections"};
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "CCDB url"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "CCDB url"};
   Configurable<bool> useTrigger{"useTrigger", false, "Use trigger selection on skimmed data"};
   Configurable<std::string> triggerList{"triggerList", "fDoubleXi, fDoubleOmega, fOmegaXi", "List of triggers used to select events"};
   Configurable<std::string> efficiencyCCDBPath{"efficiencyCCDBPath", "Users/r/rspijker/test/EffTest", "Path of the efficiency corrections"};
@@ -330,7 +333,7 @@ struct cascadeCorrelations {
   Configurable<bool> doSel8{"doSel8", true, "Switch to apply sel8 event selection"};
 
   AxisSpec invMassAxis = {1000, 1.0f, 2.0f, "Inv. Mass (GeV/c^{2})"};
-  AxisSpec deltaPhiAxis = {180, -PI / 2, 1.5 * PI, "#Delta#varphi"};         // 180 is divisible by 18 (tpc sectors) and 20 (run 2 binning)
+  AxisSpec deltaPhiAxis = {180, -PIHalf, 3 * PIHalf, "#Delta#varphi"};       // 180 is divisible by 18 (tpc sectors) and 20 (run 2 binning)
   AxisSpec deltaYAxis = {40, -2 * maxRapidity, 2 * maxRapidity, "#Delta y"}; // TODO: narrower range?
   AxisSpec ptAxis = {150, 0, 15, "#it{p}_{T}"};
   AxisSpec selectionFlagAxis = {4, -0.5f, 3.5f, "Selection flag of casc candidate"};
@@ -346,7 +349,7 @@ struct cascadeCorrelations {
 
   void init(InitContext const&)
   {
-    ccdb->setURL(ccdburl);
+    ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     if (doEfficiencyCorrection) {
       TList* effList = ccdb->getForTimeStamp<TList>(efficiencyCCDBPath, 1);
@@ -399,7 +402,7 @@ struct cascadeCorrelations {
       {"hSelectionFlag", "hSelectionFlag", {HistType::kTH1I, {selectionFlagAxis}}},
       {"hAutoCorrelation", "hAutoCorrelation", {HistType::kTH1I, {{4, -0.5f, 3.5f, "Types of SS autocorrelation"}}}},
       {"hAutoCorrelationOS", "hAutoCorrelationOS", {HistType::kTH1I, {{2, -1.f, 1.f, "Charge of OS autocorrelated track"}}}},
-      {"hPhi", "hPhi", {HistType::kTH1F, {{180, 0, 2 * PI, "#varphi"}}}},
+      {"hPhi", "hPhi", {HistType::kTH1F, {{180, 0, TwoPI, "#varphi"}}}},
       {"hEta", "hEta", {HistType::kTH1F, {{100, -2, 2, "#eta"}}}},
       {"hRapidityXi", "hRapidityXi", {HistType::kTH1F, {rapidityAxis}}},
       {"hRapidityOmega", "hRapidityOmega", {HistType::kTH1F, {rapidityAxis}}},
@@ -436,13 +439,13 @@ struct cascadeCorrelations {
   };
 
   // cascade filter
-  Filter Selector = aod::cascadeflags::isSelected > 0;
+  Filter cascadeSelector = aod::cascadeflags::isSelected > 0;
 
   SliceCache cache;
   ConfigurableAxis axisVtxZ{"axisVtxZ", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   // ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100, 1000}, "Mixing bins - multiplicity"};
 
-  void processSameEvent(myCollisionsMult::iterator const& collision, myCascades const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
+  void processSameEvent(MyCollisionsMult::iterator const& collision, MyCascades const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
     if (useTrigger) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -462,7 +465,7 @@ struct cascadeCorrelations {
 
     double weight;
     // Some QA on the cascades
-    for (auto& casc : Cascades) {
+    for (auto const& casc : Cascades) {
       if (casc.isSelected() <= 2) { // not exclusively an Omega --> consistent with Xi or both
         if (casc.sign() < 0) {
           registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt());
@@ -521,7 +524,7 @@ struct cascadeCorrelations {
       int negIdAssoc = assoc.negTrackId();
 
       // calculate angular correlations
-      double dphi = RecoDecay::constrainAngle(trigger.phi() - assoc.phi(), -0.5 * PI);
+      double dphi = RecoDecay::constrainAngle(trigger.phi() - assoc.phi(), -PIHalf);
 
       double invMassXiTrigg = trigger.mXi();
       double invMassOmTrigg = trigger.mOmega();
@@ -656,7 +659,7 @@ struct cascadeCorrelations {
     } // correlations
   }   // process same event
 
-  void processMixedEvent(myCollisionsMult const& /*collisions*/, myCascades const& /*Cascades*/,
+  void processMixedEvent(MyCollisionsMult const& /*collisions*/, MyCascades const& /*Cascades*/,
                          aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
   {
     // mixed events
@@ -664,9 +667,9 @@ struct cascadeCorrelations {
     // BinningType colBinning{{axisVtxZ, axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     using BinningType = ColumnBinningPolicy<aod::collision::PosZ>;
     BinningType colBinning{{axisVtxZ}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
-    SameKindPair<myCollisionsMult, myCascades, BinningType> pair{colBinning, nMixedEvents, -1, &cache};
+    SameKindPair<MyCollisionsMult, MyCascades, BinningType> pair{colBinning, nMixedEvents, -1, &cache};
 
-    for (auto& [col1, cascades1, col2, cascades2] : pair) {
+    for (auto const& [col1, cascades1, col2, cascades2] : pair) {
       if (!col1.sel8() || !col2.sel8())
         continue;
       if (TMath::Abs(col1.posZ()) > zVertexCut || TMath::Abs(col2.posZ()) > zVertexCut)
@@ -694,7 +697,7 @@ struct cascadeCorrelations {
           continue;
         }
 
-        double dphi = RecoDecay::constrainAngle(trigger.phi() - assoc.phi(), -0.5 * PI);
+        double dphi = RecoDecay::constrainAngle(trigger.phi() - assoc.phi(), -PIHalf);
 
         double invMassXiTrigg = trigger.mXi();
         double invMassOmTrigg = trigger.mOmega();
@@ -836,17 +839,17 @@ struct cascadeCorrelations {
           }
         } // same sign
       } // correlations
-    }   // collisions
+    } // collisions
   }     // process mixed events
 
-  PROCESS_SWITCH(cascadeCorrelations, processSameEvent, "Process same events", true);
-  PROCESS_SWITCH(cascadeCorrelations, processMixedEvent, "Process mixed events", true);
+  PROCESS_SWITCH(CascadeCorrelations, processSameEvent, "Process same events", true);
+  PROCESS_SWITCH(CascadeCorrelations, processMixedEvent, "Process mixed events", true);
 
-};    // struct
+}; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<cascadeSelector>(cfgc),
-    adaptAnalysisTask<cascadeCorrelations>(cfgc)};
+    adaptAnalysisTask<CascadeSelector>(cfgc),
+    adaptAnalysisTask<CascadeCorrelations>(cfgc)};
 }
