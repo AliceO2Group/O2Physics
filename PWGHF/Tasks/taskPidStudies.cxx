@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file pidStudies.cxx
+/// \file taskPidStudies.cxx
 /// \brief task for studies of PID performance
 ///
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Università and INFN Torino
@@ -49,12 +49,12 @@ DECLARE_SOA_COLUMN(MassAntiLambda, massAntiLambda, float); //! Candidate mass
 DECLARE_SOA_COLUMN(Pt, pt, float);                         //! Transverse momentum of the candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtPos, ptPos, float);                   //! Transverse momentum of positive track (GeV/c)
 DECLARE_SOA_COLUMN(PtNeg, ptNeg, float);                   //! Transverse momentum of negative track (GeV/c)
-DECLARE_SOA_COLUMN(TPCInnerParPos, tpcInnerParPos, float); //! Momentum of positive track at inner wall of TPC (GeV/c)
-DECLARE_SOA_COLUMN(TPCInnerParNeg, tpcInnerParNeg, float); //! Momentum of negative track at inner wall of TPC (GeV/c)
+DECLARE_SOA_COLUMN(TpcInnerParPos, tpcInnerParPos, float); //! Momentum of positive track at inner wall of TPC (GeV/c)
+DECLARE_SOA_COLUMN(TpcInnerParNeg, tpcInnerParNeg, float); //! Momentum of negative track at inner wall of TPC (GeV/c)
 DECLARE_SOA_COLUMN(Radius, radius, float);                 //! Radius
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                       //! Cosine of pointing angle
-DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0Daughters, float); //! DCA between V0 daughters
-DECLARE_SOA_COLUMN(DCAV0ToPV, dcaV0ToPv, float);           //! DCA V0 to PV
+DECLARE_SOA_COLUMN(DcaV0Daughters, dcaV0Daughters, float); //! DCA between V0 daughters
+DECLARE_SOA_COLUMN(DcaV0ToPv, dcaV0ToPv, float);           //! DCA V0 to PV
 DECLARE_SOA_COLUMN(NSigmaTpcPosPi, nSigmaTpcPosPi, float); //! nSigmaTPC of positive track with pion hypothesis
 DECLARE_SOA_COLUMN(NSigmaTpcNegPi, nSigmaTpcNegPi, float); //! nSigmaTPC of negative track with pion hypothesis
 DECLARE_SOA_COLUMN(NSigmaTpcPosPr, nSigmaTpcPosPr, float); //! nSigmaTPC of positive track with proton hypothesis
@@ -70,12 +70,12 @@ DECLARE_SOA_COLUMN(QtArm, qtArm, float);                   //! Armenteros Qt
 DECLARE_SOA_COLUMN(MassOmega, massOmega, float);             //! Candidate mass
 DECLARE_SOA_COLUMN(MassXi, massXi, float);                   //! Candidate mass
 DECLARE_SOA_COLUMN(BachPt, bachPt, float);                   //! Transverse momentum of the bachelor (GeV/c)
-DECLARE_SOA_COLUMN(TPCInnerParBach, tpcInnerParBach, float); //! Transverse momentum of the bachelor (GeV/c)
+DECLARE_SOA_COLUMN(TpcInnerParBach, tpcInnerParBach, float); //! Transverse momentum of the bachelor (GeV/c)
 DECLARE_SOA_COLUMN(MLambda, mLambda, float);                 //! Daughter lambda mass (GeV/c^2)
 DECLARE_SOA_COLUMN(V0cosPA, v0cosPA, float);                 //! V0 CPA
-DECLARE_SOA_COLUMN(CascCosPA, casccosPA, float);             //! Cascade CPA
-DECLARE_SOA_COLUMN(DCAV0daughters, dcaV0daughters, float);   //! DCA of V0 daughters
-DECLARE_SOA_COLUMN(DCAv0topv, dcav0topv, float);             //! V0 DCA to PV
+DECLARE_SOA_COLUMN(CascCosPa, cascCosPa, float);             //! Cascade CPA
+DECLARE_SOA_COLUMN(DcaV0daughters, dcaV0daughters, float);   //! DCA of V0 daughters
+DECLARE_SOA_COLUMN(Dcav0topv, dcav0topv, float);             //! V0 DCA to PV
 DECLARE_SOA_COLUMN(NSigmaTpcBachKa, nSigmaTpcBachKa, float); //! nSigmaTPC of bachelor with kaon hypothesis
 DECLARE_SOA_COLUMN(NSigmaTofBachKa, nSigmaTofBachKa, float); //! nSigmaTOF of bachelor with kaon hypothesis
 
@@ -94,12 +94,12 @@ DECLARE_SOA_TABLE(PidV0s, "AOD", "PIDV0S", //! Table with PID information
                   pid_studies::Pt,
                   pid_studies::PtPos,
                   pid_studies::PtNeg,
-                  pid_studies::TPCInnerParPos,
-                  pid_studies::TPCInnerParNeg,
+                  pid_studies::TpcInnerParPos,
+                  pid_studies::TpcInnerParNeg,
                   pid_studies::Radius,
                   pid_studies::Cpa,
-                  pid_studies::DCAV0Daughters,
-                  pid_studies::DCAV0ToPV,
+                  pid_studies::DcaV0Daughters,
+                  pid_studies::DcaV0ToPv,
                   pid_studies::NSigmaTpcPosPi,
                   pid_studies::NSigmaTpcNegPi,
                   pid_studies::NSigmaTpcPosPr,
@@ -120,13 +120,13 @@ DECLARE_SOA_TABLE(PidCascades, "AOD", "PIDCASCADES", //! Table with PID informat
                   pid_studies::MassOmega,
                   pid_studies::Pt,
                   pid_studies::BachPt,
-                  pid_studies::TPCInnerParBach,
+                  pid_studies::TpcInnerParBach,
                   pid_studies::MLambda,
                   pid_studies::V0cosPA,
                   pid_studies::MassXi,
-                  pid_studies::CascCosPA,
-                  pid_studies::DCAV0daughters,
-                  pid_studies::DCAv0topv,
+                  pid_studies::CascCosPa,
+                  pid_studies::DcaV0daughters,
+                  pid_studies::Dcav0topv,
                   pid_studies::NSigmaTpcBachKa,
                   pid_studies::NSigmaTofBachKa,
                   pid_studies::OccupancyFt0c,
@@ -136,7 +136,7 @@ DECLARE_SOA_TABLE(PidCascades, "AOD", "PIDCASCADES", //! Table with PID informat
                   pid_studies::CandFlag);
 } // namespace o2::aod
 
-struct HfPidStudies {
+struct HfTaskPidStudies {
   Produces<o2::aod::PidV0s> pidV0;
   Produces<o2::aod::PidCascades> pidCascade;
 
@@ -307,9 +307,9 @@ struct HfPidStudies {
   }
 
   void processV0Mc(V0sMcRec const& V0s,
-                 aod::V0MCCores const&,
-                 CollSels const&,
-                 PidTracks const&)
+                   aod::V0MCCores const&,
+                   CollSels const&,
+                   PidTracks const&)
   {
     for (const auto& v0 : V0s) {
       if (isSelectedV0AsK0s(v0) || isSelectedV0AsLambda(v0)) {
@@ -320,7 +320,7 @@ struct HfPidStudies {
       }
     }
   }
-  PROCESS_SWITCH(HfPidStudies, processV0Mc, "Process MC", true);
+  PROCESS_SWITCH(HfTaskPidStudies, processV0Mc, "Process MC", true);
 
   void processV0Data(aod::V0Datas const& V0s,
                      CollSels const&,
@@ -332,7 +332,7 @@ struct HfPidStudies {
       }
     }
   }
-  PROCESS_SWITCH(HfPidStudies, processV0Data, "Process data", false);
+  PROCESS_SWITCH(HfTaskPidStudies, processV0Data, "Process data", false);
 
   void processCascMc(CascsMcRec const& cascades,
                      aod::CascMCCores const&,
@@ -348,7 +348,7 @@ struct HfPidStudies {
       }
     }
   }
-  PROCESS_SWITCH(HfPidStudies, processCascMc, "Process MC", true);
+  PROCESS_SWITCH(HfTaskPidStudies, processCascMc, "Process MC", true);
 
   void processCascData(aod::CascDatas const& cascades,
                        CollSels const&,
@@ -360,10 +360,10 @@ struct HfPidStudies {
       }
     }
   }
-  PROCESS_SWITCH(HfPidStudies, processCascData, "Process data", false);
+  PROCESS_SWITCH(HfTaskPidStudies, processCascData, "Process data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfPidStudies>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskPidStudies>(cfgc)};
 }
