@@ -81,7 +81,6 @@ struct SGResonanceAnalyzer {
 
   Configurable<int> mintrack{"min_track", 1, "min track"};
   Configurable<int> maxtrack{"max_track", 50, "max track"};
-
   Configurable<bool> use_tof{"Use_TOF", true, "TOF PID"};
   Configurable<bool> QA{"QA", true, ""};
   Configurable<bool> rapidity_gap{"rapidity_gap", true, ""};
