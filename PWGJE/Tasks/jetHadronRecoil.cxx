@@ -8,10 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-// h+jet analysis task
 //
-// Authors: Daniel Jones
+/// \file jetHadronRecoil.cxx
+/// \brief Task for analysing hadron triggered events.
+/// \author Daniel Jones <djones22@liverpool.ac.uk>
 
 #include <vector>
 #include <string>
@@ -45,7 +45,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct hJetAnalysis {
+struct JetHadronRecoil {
 
   Configurable<std::string> eventSelections{"eventSelection", "sel8", "choose event selection"};
   Configurable<std::string> trackSelections{"trackSelection", "globalTracks", "set track selections"};
@@ -54,18 +54,18 @@ struct hJetAnalysis {
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum eta acceptance for tracks"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> pt_TTref_min{"pt_TTref_min", 5, "reference minimum trigger track pt"};
-  Configurable<float> pt_TTref_max{"pt_TTref_max", 7, "reference maximum trigger track pt"};
-  Configurable<float> pt_TTsig_min{"pt_TTsig_min", 20, "signal minimum trigger track pt"};
-  Configurable<float> pt_TTsig_max{"pt_TTsig_max", 50, "signal maximum trigger track pt"};
-  Configurable<float> frac_sig{"frac_sig", 0.5, "fraction of events to use for signal"};
+  Configurable<float> ptTTrefMin{"ptTTrefMin", 5, "reference minimum trigger track pt"};
+  Configurable<float> ptTTrefMax{"ptTTrefMax", 7, "reference maximum trigger track pt"};
+  Configurable<float> ptTTsigMin{"ptTTsigMin", 20, "signal minimum trigger track pt"};
+  Configurable<float> ptTTsigMax{"ptTTsigMax", 50, "signal maximum trigger track pt"};
+  Configurable<float> fracSig{"fracSig", 0.5, "fraction of events to use for signal"};
   Configurable<float> jetR{"jetR", 0.4, "jet resolution parameter"};
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
   Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
 
-  Preslice<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents>> PartJetsPerCollision = aod::jet::mcCollisionId;
+  Preslice<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents>> partJetsPerCollision = aod::jet::mcCollisionId;
 
   TRandom3* rand = new TRandom3(0);
 
@@ -79,18 +79,18 @@ struct hJetAnalysis {
                               {"hPtTrack", "Track p_{T};p_{T};entries", {HistType::kTH1F, {{200, 0, 200}}}},
                               {"hEtaTrack", "Track #eta;#eta;entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"hPhiTrack", "Track #phi;#phi;entries", {HistType::kTH1F, {{160, -1.0, 7.0}}}},
-                              {"hReferencePtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, 2 * o2::constants::math::PI}, {150, 0, 150}}}},
-                              {"hSignalPtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, 2 * o2::constants::math::PI}, {150, 0, 150}}}},
+                              {"hReferencePtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
+                              {"hSignalPtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
                               {"hReferencePt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{150, 0, 150}}}},
                               {"hSignalPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{150, 0, 150}}}},
-                              {"hSignalLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, 2 * o2::constants::math::PI}, {150, 0, 150}}}},
-                              {"hReferenceLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, 2 * o2::constants::math::PI}, {150, 0, 150}}}},
+                              {"hSignalLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
+                              {"hReferenceLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
                               {"hJetSignalMultiplicity", "jet multiplicity;N_{jets};entries", {HistType::kTH1F, {{10, 0, 10}}}},
                               {"hJetReferenceMultiplicity", "jet multiplicity;N_{jets};entries", {HistType::kTH1F, {{10, 0, 10}}}},
-                              {"hJetSignalConstituentMultiplicity", "jet constituent multiplicity;p_{T,jet};#Delta#phi;N_{constituents}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, 2 * o2::constants::math::PI}, {50, 0, 50}}}},
-                              {"hJetReferenceConstituentMultiplicity", "jet constituent multiplicity;p_{T,jet};#Delta#phi;N_{constituents}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, 2 * o2::constants::math::PI}, {50, 0, 50}}}},
-                              {"hJetSignalConstituentPt", "jet constituent p_{T};p_{T,jet};#Delta#phi;p_{T,constituent}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, 2 * o2::constants::math::PI}, {150, 0, 150}}}},
-                              {"hJetReferenceConstituentPt", "jet constituent p_{T};p_{T,jet};#Delta#phi;p_{T,constituent}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, 2 * o2::constants::math::PI}, {150, 0, 150}}}},
+                              {"hJetSignalConstituentMultiplicity", "jet constituent multiplicity;p_{T,jet};#Delta#phi;N_{constituents}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, o2::constants::math::TwoPI}, {50, 0, 50}}}},
+                              {"hJetReferenceConstituentMultiplicity", "jet constituent multiplicity;p_{T,jet};#Delta#phi;N_{constituents}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, o2::constants::math::TwoPI}, {50, 0, 50}}}},
+                              {"hJetSignalConstituentPt", "jet constituent p_{T};p_{T,jet};#Delta#phi;p_{T,constituent}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
+                              {"hJetReferenceConstituentPt", "jet constituent p_{T};p_{T,jet};#Delta#phi;p_{T,constituent}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
                               {"hSigEventTriggers", "N_{triggers};events", {HistType::kTH1F, {{10, 0, 10}}}},
                               {"hRefEventTriggers", "N_{triggers};events", {HistType::kTH1F, {{10, 0, 10}}}},
                               {"hJetPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{200, 0, 200}}}},
@@ -107,14 +107,14 @@ struct hJetAnalysis {
                               {"hDeltaRSignalPart", "Particle #DeltaR;#DeltaR;#frac{1}{N_{jets}}#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
                               {"hDeltaRpTSignal", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {50, 0.0, 0.15}}}},
                               {"hDeltaRpTSignalPart", "Particle jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {50, 0.0, 0.15}}}},
-                              {"hDeltaRpTDPhiSignal", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{200, 0, 200}, {100, 0, 2 * o2::constants::math::PI}, {50, 0.0, 0.15}}}},
-                              {"hDeltaRpTDPhiSignalPart", "Particle jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{200, 0, 200}, {100, 0, 2 * o2::constants::math::PI}, {50, 0.0, 0.15}}}},
+                              {"hDeltaRpTDPhiSignal", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{200, 0, 200}, {100, 0, o2::constants::math::TwoPI}, {50, 0.0, 0.15}}}},
+                              {"hDeltaRpTDPhiSignalPart", "Particle jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{200, 0, 200}, {100, 0, o2::constants::math::TwoPI}, {50, 0.0, 0.15}}}},
                               {"hDeltaRReference", "#DeltaR;#DeltaR;#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
                               {"hDeltaRPartReference", "Particle #DeltaR;#DeltaR;#frac{1}{N_{jets}}#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
                               {"hDeltaRpTReference", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {50, 0.0, 0.15}}}},
                               {"hDeltaRpTPartReference", "Particle jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {50, 0.0, 0.15}}}},
-                              {"hDeltaRpTDPhiReference", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{200, 0, 200}, {100, 0, 2 * o2::constants::math::PI}, {50, 0.0, 0.15}}}},
-                              {"hDeltaRpTDPhiReferencePart", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{200, 0, 200}, {100, 0, 2 * o2::constants::math::PI}, {50, 0.0, 0.15}}}},
+                              {"hDeltaRpTDPhiReference", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{200, 0, 200}, {100, 0, o2::constants::math::TwoPI}, {50, 0.0, 0.15}}}},
+                              {"hDeltaRpTDPhiReferencePart", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{200, 0, 200}, {100, 0, o2::constants::math::TwoPI}, {50, 0.0, 0.15}}}},
                               {"hPtMatched", "p_{T} matching;p_{T,det};p_{T,part}", {HistType::kTH2F, {{200, 0, 200}, {200, 0, 200}}}},
                               {"hPhiMatched", "#phi matching;#phi_{det};#phi_{part}", {HistType::kTH2F, {{160, -1.0, 7.0}, {160, -1.0, 7.0}}}},
                               {"hDeltaRMatched", "#DeltaR matching;#DeltaR_{det};#DeltaR_{part}", {HistType::kTH2F, {{50, 0.0, 0.15}, {50, 0.0, 0.15}}}},
@@ -145,70 +145,70 @@ struct hJetAnalysis {
   template <typename T, typename U, typename W>
   void fillHistograms(T const& jets, W const& /*jetsWTA*/, U const& tracks, float weight = 1.0)
   {
-    bool is_sig_col;
-    std::vector<double> phi_TT_ar;
-    double phi_TT = 0;
-    int trig_number = 0;
-    int n_TT = 0;
+    bool isSigCol;
+    std::vector<double> phiTTAr;
+    double phiTT = 0;
+    int trigNumber = 0;
+    int nTT = 0;
     double leadingPT = 0;
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
 
     float dice = rand->Rndm();
-    if (dice < frac_sig)
-      is_sig_col = true;
+    if (dice < fracSig)
+      isSigCol = true;
     else
-      is_sig_col = false;
+      isSigCol = false;
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
       }
-      if (is_sig_col && track.pt() < pt_TTsig_max && track.pt() > pt_TTsig_min) {
-        phi_TT_ar.push_back(track.phi());
-        n_TT++;
+      if (isSigCol && track.pt() < ptTTsigMax && track.pt() > ptTTsigMin) {
+        phiTTAr.push_back(track.phi());
+        nTT++;
       }
-      if (!is_sig_col && track.pt() < pt_TTref_max && track.pt() > pt_TTref_min) {
-        phi_TT_ar.push_back(track.phi());
-        n_TT++;
+      if (!isSigCol && track.pt() < ptTTrefMax && track.pt() > ptTTrefMin) {
+        phiTTAr.push_back(track.phi());
+        nTT++;
       }
       registry.fill(HIST("hPtTrack"), track.pt(), weight);
       registry.fill(HIST("hEtaTrack"), track.eta(), weight);
       registry.fill(HIST("hPhiTrack"), track.phi(), weight);
     }
 
-    if (n_TT > 0) {
-      trig_number = rand->Integer(n_TT);
-      phi_TT = phi_TT_ar[trig_number];
-      if (is_sig_col) {
+    if (nTT > 0) {
+      trigNumber = rand->Integer(nTT);
+      phiTT = phiTTAr[trigNumber];
+      if (isSigCol) {
         registry.fill(HIST("hNtrig"), 1.5, weight);
         registry.fill(HIST("hJetSignalMultiplicity"), jets.size(), weight);
-        registry.fill(HIST("hSigEventTriggers"), n_TT, weight);
+        registry.fill(HIST("hSigEventTriggers"), nTT, weight);
       }
-      if (!is_sig_col) {
+      if (!isSigCol) {
         registry.fill(HIST("hNtrig"), 0.5, weight);
         registry.fill(HIST("hJetReferenceMultiplicity"), jets.size(), weight);
-        registry.fill(HIST("hRefEventTriggers"), n_TT, weight);
+        registry.fill(HIST("hRefEventTriggers"), nTT, weight);
       }
     }
 
-    for (auto& jet : jets) {
+    for (const auto& jet : jets) {
       if (jet.pt() > pTHatMaxMCD * pTHat) {
         continue;
       }
       registry.fill(HIST("hJetPt"), jet.pt(), weight);
       registry.fill(HIST("hJetEta"), jet.eta(), weight);
       registry.fill(HIST("hJetPhi"), jet.phi(), weight);
-      for (auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
+      for (const auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
         double deltaPhi = RecoDecay::constrainAngle(jetWTA.phi() - jet.phi(), -o2::constants::math::PI);
         double deltaEta = jetWTA.eta() - jet.eta();
         double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
         registry.fill(HIST("hDeltaR"), dR, weight);
         registry.fill(HIST("hDeltaRpT"), jet.pt(), dR, weight);
       }
-      if (n_TT > 0) {
-        float dphi = RecoDecay::constrainAngle(jet.phi() - phi_TT);
-        if (is_sig_col) {
-          for (auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
+      if (nTT > 0) {
+        float dphi = RecoDecay::constrainAngle(jet.phi() - phiTT);
+        if (isSigCol) {
+          for (const auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
             double deltaPhi = RecoDecay::constrainAngle(jetWTA.phi() - jet.phi(), -o2::constants::math::PI);
             double deltaEta = jetWTA.eta() - jet.eta();
             double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
@@ -223,7 +223,7 @@ struct hJetAnalysis {
             registry.fill(HIST("hSignalPt"), jet.pt(), weight);
           }
           registry.fill(HIST("hJetSignalConstituentMultiplicity"), jet.pt(), dphi, jet.tracksIds().size(), weight);
-          for (auto& constituent : jet.template tracks_as<U>()) {
+          for (const auto& constituent : jet.template tracks_as<U>()) {
             if (constituent.pt() > leadingPT) {
               leadingPT = constituent.pt();
             }
@@ -231,8 +231,8 @@ struct hJetAnalysis {
           }
           registry.fill(HIST("hSignalLeadingTrack"), jet.pt(), dphi, leadingPT, weight);
         }
-        if (!is_sig_col) {
-          for (auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
+        if (!isSigCol) {
+          for (const auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
             double deltaPhi = RecoDecay::constrainAngle(jetWTA.phi() - jet.phi(), -o2::constants::math::PI);
             double deltaEta = jetWTA.eta() - jet.eta();
             double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
@@ -247,7 +247,7 @@ struct hJetAnalysis {
             registry.fill(HIST("hReferencePt"), jet.pt(), weight);
           }
           registry.fill(HIST("hJetReferenceConstituentMultiplicity"), jet.pt(), dphi, jet.tracksIds().size(), weight);
-          for (auto& constituent : jet.template tracks_as<U>()) {
+          for (const auto& constituent : jet.template tracks_as<U>()) {
             if (constituent.pt() > leadingPT) {
               leadingPT = constituent.pt();
             }
@@ -262,21 +262,21 @@ struct hJetAnalysis {
   template <typename T, typename W, typename U>
   void fillMCPHistograms(T const& jets, W const& /*jetsWTA*/, U const& particles, float weight = 1.0)
   {
-    bool is_sig_col;
-    std::vector<double> phi_TT_ar;
-    double phi_TT = 0;
-    int trig_number = 0;
-    int n_TT = 0;
+    bool isSigCol;
+    std::vector<double> phiTTAr;
+    double phiTT = 0;
+    int trigNumber = 0;
+    int nTT = 0;
     double leadingPT = 0;
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
 
     float dice = rand->Rndm();
-    if (dice < frac_sig)
-      is_sig_col = true;
+    if (dice < fracSig)
+      isSigCol = true;
     else
-      is_sig_col = false;
+      isSigCol = false;
 
-    for (auto& particle : particles) {
+    for (const auto& particle : particles) {
       auto pdgParticle = pdg->GetParticle(particle.pdgCode());
       if (!pdgParticle) {
         continue;
@@ -284,52 +284,52 @@ struct hJetAnalysis {
       if ((pdgParticle->Charge() == 0.0) || (!particle.isPhysicalPrimary())) {
         continue;
       }
-      if (is_sig_col && particle.pt() < pt_TTsig_max && particle.pt() > pt_TTsig_min) {
-        phi_TT_ar.push_back(particle.phi());
-        n_TT++;
+      if (isSigCol && particle.pt() < ptTTsigMax && particle.pt() > ptTTsigMin) {
+        phiTTAr.push_back(particle.phi());
+        nTT++;
       }
-      if (!is_sig_col && particle.pt() < pt_TTref_max && particle.pt() > pt_TTref_min) {
-        phi_TT_ar.push_back(particle.phi());
-        n_TT++;
+      if (!isSigCol && particle.pt() < ptTTrefMax && particle.pt() > ptTTrefMin) {
+        phiTTAr.push_back(particle.phi());
+        nTT++;
       }
       registry.fill(HIST("hPtPart"), particle.pt(), weight);
       registry.fill(HIST("hEtaPart"), particle.eta(), weight);
       registry.fill(HIST("hPhiPart"), particle.phi(), weight);
     }
 
-    if (n_TT > 0) {
-      trig_number = rand->Integer(n_TT);
-      phi_TT = phi_TT_ar[trig_number];
-      if (is_sig_col) {
+    if (nTT > 0) {
+      trigNumber = rand->Integer(nTT);
+      phiTT = phiTTAr[trigNumber];
+      if (isSigCol) {
         registry.fill(HIST("hNtrig"), 1.5, weight);
         registry.fill(HIST("hJetSignalMultiplicity"), jets.size(), weight);
-        registry.fill(HIST("hSigEventTriggers"), n_TT, weight);
+        registry.fill(HIST("hSigEventTriggers"), nTT, weight);
       }
-      if (!is_sig_col) {
+      if (!isSigCol) {
         registry.fill(HIST("hNtrig"), 0.5, weight);
         registry.fill(HIST("hJetReferenceMultiplicity"), jets.size(), weight);
-        registry.fill(HIST("hRefEventTriggers"), n_TT, weight);
+        registry.fill(HIST("hRefEventTriggers"), nTT, weight);
       }
     }
 
-    for (auto& jet : jets) {
+    for (const auto& jet : jets) {
       if (jet.pt() > pTHatMaxMCP * pTHat) {
         continue;
       }
       registry.fill(HIST("hJetPt"), jet.pt(), weight);
       registry.fill(HIST("hJetEta"), jet.eta(), weight);
       registry.fill(HIST("hJetPhi"), jet.phi(), weight);
-      for (auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
+      for (const auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
         double deltaPhi = RecoDecay::constrainAngle(jetWTA.phi() - jet.phi(), -o2::constants::math::PI);
         double deltaEta = jetWTA.eta() - jet.eta();
         double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
         registry.fill(HIST("hDeltaRPart"), dR, weight);
         registry.fill(HIST("hDeltaRpTPart"), jet.pt(), dR, weight);
       }
-      if (n_TT > 0) {
-        float dphi = RecoDecay::constrainAngle(jet.phi() - phi_TT);
-        if (is_sig_col) {
-          for (auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
+      if (nTT > 0) {
+        float dphi = RecoDecay::constrainAngle(jet.phi() - phiTT);
+        if (isSigCol) {
+          for (const auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
             double deltaPhi = RecoDecay::constrainAngle(jetWTA.phi() - jet.phi(), -o2::constants::math::PI);
             double deltaEta = jetWTA.eta() - jet.eta();
             double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
@@ -344,7 +344,7 @@ struct hJetAnalysis {
             registry.fill(HIST("hSignalPt"), jet.pt(), weight);
           }
           registry.fill(HIST("hJetSignalConstituentMultiplicity"), jet.pt(), dphi, jet.tracksIds().size(), weight);
-          for (auto& constituent : jet.template tracks_as<U>()) {
+          for (const auto& constituent : jet.template tracks_as<U>()) {
             if (constituent.pt() > leadingPT) {
               leadingPT = constituent.pt();
             }
@@ -352,8 +352,8 @@ struct hJetAnalysis {
           }
           registry.fill(HIST("hSignalLeadingTrack"), jet.pt(), dphi, leadingPT, weight);
         }
-        if (!is_sig_col) {
-          for (auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
+        if (!isSigCol) {
+          for (const auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
             double deltaPhi = RecoDecay::constrainAngle(jetWTA.phi() - jet.phi(), -o2::constants::math::PI);
             double deltaEta = jetWTA.eta() - jet.eta();
             double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
@@ -368,7 +368,7 @@ struct hJetAnalysis {
             registry.fill(HIST("hReferencePt"), jet.pt(), weight);
           }
           registry.fill(HIST("hJetReferenceConstituentMultiplicity"), jet.pt(), dphi, jet.tracksIds().size(), weight);
-          for (auto& constituent : jet.template tracks_as<U>()) {
+          for (const auto& constituent : jet.template tracks_as<U>()) {
             if (constituent.pt() > leadingPT) {
               leadingPT = constituent.pt();
             }
@@ -403,7 +403,7 @@ struct hJetAnalysis {
     }
 
     if (jetBase.has_matchedJetGeo()) {
-      for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
+      for (const auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
         if (jetTag.pt() > pTHatMaxMCP * pTHat) {
           continue;
         }
@@ -521,7 +521,7 @@ struct hJetAnalysis {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(PartJetsPerCollision, collision.mcCollisionId());
+    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(partJetsPerCollision, collision.mcCollisionId());
     for (const auto& mcdjet : mcdjets) {
       fillMatchedHistograms(mcdjet, mcdjetsWTA, mcpjetsWTACut, mcpjets);
     }
@@ -544,7 +544,7 @@ struct hJetAnalysis {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(PartJetsPerCollision, collision.mcCollisionId());
+    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(partJetsPerCollision, collision.mcCollisionId());
     for (const auto& mcdjet : mcdjets) {
       fillMatchedHistograms(mcdjet, mcdjetsWTA, mcpjetsWTACut, mcpjets, mcdjet.eventWeight());
     }
@@ -567,10 +567,10 @@ struct hJetAnalysis {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(PartJetsPerCollision, collision.mcCollisionId());
+    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(partJetsPerCollision, collision.mcCollisionId());
     bool ishJetEvent = false;
-    for (auto& track : tracks) {
-      if (track.pt() < pt_TTsig_max && track.pt() > pt_TTsig_min) {
+    for (const auto& track : tracks) {
+      if (track.pt() < ptTTsigMax && track.pt() > ptTTsigMin) {
         ishJetEvent = true;
         break;
       }
@@ -599,10 +599,10 @@ struct hJetAnalysis {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(PartJetsPerCollision, collision.mcCollisionId());
+    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(partJetsPerCollision, collision.mcCollisionId());
     bool ishJetEvent = false;
-    for (auto& track : tracks) {
-      if (track.pt() < pt_TTsig_max && track.pt() > pt_TTsig_min) {
+    for (const auto& track : tracks) {
+      if (track.pt() < ptTTsigMax && track.pt() > ptTTsigMin) {
         ishJetEvent = true;
         break;
       }
@@ -616,4 +616,4 @@ struct hJetAnalysis {
   PROCESS_SWITCH(hJetAnalysis, processRecoilJetsMCPMCDMatchedWeighted, "process MC matched with event weights (recoil jets)", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<hJetAnalysis>(cfgc, TaskName{"hJetAnalysis"})}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetHadronRecoil>(cfgc, TaskName{"hJetAnalysis"})}; }
