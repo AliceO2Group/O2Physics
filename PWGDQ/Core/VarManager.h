@@ -977,6 +977,8 @@ class VarManager : public TObject
   static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr, PairCandidateType pairType = kDecayToEE);
   template <typename T1, typename T2, typename T3>
   static void FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
+  template <int candidateType, typename T1, typename T2, typename T3>
+  static void FillQaudMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr);
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
   static void FillPairVertexing(C const& collision, T const& t1, T const& t2, bool propToSV = false, float* values = nullptr);
   template <uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
@@ -1756,11 +1758,11 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   if constexpr ((fillMap & EventFilter) > 0) {
-    values[kIsDoubleGap] = (event.eventFilter() & (uint64_t(1) << kDoubleGap)) > 0;
-    values[kIsSingleGapA] = (event.eventFilter() & (uint64_t(1) << kSingleGapA)) > 0;
-    values[kIsSingleGapC] = (event.eventFilter() & (uint64_t(1) << kSingleGapC)) > 0;
+    values[kIsDoubleGap] = (event.eventFilter() & (static_cast<uint64_t>(1) << kDoubleGap)) > 0;
+    values[kIsSingleGapA] = (event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapA)) > 0;
+    values[kIsSingleGapC] = (event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapC)) > 0;
     values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
-    values[kIsITSUPCMode] = (event.eventFilter() & (uint64_t(1) << kITSUPCMode)) > 0;
+    values[kIsITSUPCMode] = (event.eventFilter() & (static_cast<uint64_t>(1) << kITSUPCMode)) > 0;
   }
 
   if constexpr ((fillMap & ReducedZdc) > 0) {
@@ -4536,6 +4538,40 @@ void VarManager::FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T
     values[kDeltaR2] = sqrt(pow(v1.Eta() - v3.Eta(), 2) + pow(v1.Phi() - v3.Phi(), 2));
     values[kRap] = v123.Rapidity();
   }
+}
+
+//__________________________________________________________________
+template <int candidateType, typename T1, typename T2, typename T3>
+void VarManager::FillQaudMC(T1 const& dilepton, T2 const& track1, T3 const& track2, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  double defaultDileptonMass = 3.096;
+  double hadronMass1 = o2::constants::physics::MassPionCharged;
+  double hadronMass2 = o2::constants::physics::MassPionCharged;
+  if (candidateType == kXtoJpsiPiPi) {
+    defaultDileptonMass = 3.096;
+    hadronMass1 = o2::constants::physics::MassPionCharged;
+    hadronMass2 = o2::constants::physics::MassPionCharged;
+  }
+
+  ROOT::Math::PtEtaPhiMVector v1(dilepton.pt(), dilepton.eta(), dilepton.phi(), defaultDileptonMass);
+  ROOT::Math::PtEtaPhiMVector v2(track1.pt(), track1.eta(), track1.phi(), hadronMass1);
+  ROOT::Math::PtEtaPhiMVector v3(track2.pt(), track2.eta(), track2.phi(), hadronMass2);
+  ROOT::Math::PtEtaPhiMVector v123 = v1 + v2 + v3;
+  ROOT::Math::PtEtaPhiMVector v23 = v2 + v3;
+  values[kQuadMass] = v123.M();
+  values[kQuadDefaultDileptonMass] = v123.M();
+  values[kQuadPt] = v123.Pt();
+  values[kQuadEta] = v123.Eta();
+  values[kQuadPhi] = v123.Phi();
+  values[kQ] = v123.M() - defaultDileptonMass - v23.M();
+  values[kDeltaR1] = sqrt(pow(v1.Eta() - v2.Eta(), 2) + pow(v1.Phi() - v2.Phi(), 2));
+  values[kDeltaR2] = sqrt(pow(v1.Eta() - v3.Eta(), 2) + pow(v1.Phi() - v3.Phi(), 2));
+  values[kDitrackMass] = v23.M();
+  values[kDitrackPt] = v23.Pt();
 }
 
 //__________________________________________________________________
