@@ -89,6 +89,10 @@ struct JetDerivedDataProducerTask {
   Produces<aod::JLcMcCollisionIds> jLcMcCollisionIdsTable;
   Produces<aod::JLcIds> jLcIdsTable;
   Produces<aod::JLcPIds> jLcParticleIdsTable;
+  Produces<aod::JBplusCollisionIds> jBplusCollisionIdsTable;
+  Produces<aod::JBplusMcCollisionIds> jBplusMcCollisionIdsTable;
+  Produces<aod::JBplusIds> jBplusIdsTable;
+  Produces<aod::JBplusPIds> jBplusParticleIdsTable;
   Produces<aod::JV0Ids> jV0IdsTable;
   Produces<aod::JV0McCollisions> jV0McCollisionsTable;
   Produces<aod::JV0McCollisionIds> jV0McCollisionIdsTable;
@@ -429,19 +433,19 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processD0MC, "produces derived index for D0 particles", false);
 
-  void processLcCollisions(aod::Hf3PCollIds::iterator const& LcCollision)
+  void processLcCollisions(aod::HfLcCollIds::iterator const& LcCollision)
   {
     jLcCollisionIdsTable(LcCollision.collisionId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processLcCollisions, "produces derived index for Lc collisions", false);
 
-  void processLcMcCollisions(aod::Hf3PMcCollIds::iterator const& LcMcCollision)
+  void processLcMcCollisions(aod::HfLcMcCollIds::iterator const& LcMcCollision)
   {
     jLcMcCollisionIdsTable(LcMcCollision.mcCollisionId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processLcMcCollisions, "produces derived index for Lc MC collisions", false);
 
-  void processLc(aod::Hf3PIds::iterator const& Lc, aod::Tracks const&)
+  void processLc(aod::HfLcIds::iterator const& Lc, aod::Tracks const&)
   {
     auto JProng0ID = trackCollisionMapping.find({Lc.prong0Id(), Lc.prong0_as<aod::Tracks>().collisionId()});
     auto JProng1ID = trackCollisionMapping.find({Lc.prong1Id(), Lc.prong1_as<aod::Tracks>().collisionId()});
@@ -455,11 +459,43 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processLc, "produces derived index for Lc candidates", false);
 
-  void processLcMC(aod::Hf3PPIds::iterator const& Lc)
+  void processLcMC(aod::HfLcPIds::iterator const& Lc)
   {
     jLcParticleIdsTable(Lc.mcCollisionId(), Lc.mcParticleId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processLcMC, "produces derived index for Lc particles", false);
+
+  void processBplusCollisions(aod::HfBplusCollIds::iterator const& BplusCollision)
+  {
+    jBplusCollisionIdsTable(BplusCollision.collisionId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processBplusCollisions, "produces derived index for Bplus collisions", false);
+
+  void processBplusMcCollisions(aod::HfBplusMcCollIds::iterator const& BplusMcCollision)
+  {
+    jBplusMcCollisionIdsTable(BplusMcCollision.mcCollisionId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processBplusMcCollisions, "produces derived index for Bplus MC collisions", false);
+
+  void processBplus(aod::HfBplusIds::iterator const& Bplus, aod::Tracks const&)
+  {
+    auto JProng0ID = trackCollisionMapping.find({Bplus.prong0Id(), Bplus.prong0_as<aod::Tracks>().collisionId()});
+    auto JProng1ID = trackCollisionMapping.find({Bplus.prong1Id(), Bplus.prong1_as<aod::Tracks>().collisionId()});
+    auto JProng2ID = trackCollisionMapping.find({Bplus.prong2Id(), Bplus.prong2_as<aod::Tracks>().collisionId()});
+    if (withCollisionAssociator) {
+      JProng0ID = trackCollisionMapping.find({Bplus.prong0Id(), Bplus.collisionId()});
+      JProng1ID = trackCollisionMapping.find({Bplus.prong1Id(), Bplus.collisionId()});
+      JProng2ID = trackCollisionMapping.find({Bplus.prong2Id(), Bplus.collisionId()});
+    }
+    jBplusIdsTable(Bplus.collisionId(), JProng0ID->second, JProng1ID->second, JProng2ID->second);
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processBplus, "produces derived index for Bplus candidates", false);
+
+  void processBplusMC(aod::HfBplusPIds::iterator const& Bplus)
+  {
+    jBplusParticleIdsTable(Bplus.mcCollisionId(), Bplus.mcParticleId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processBplusMC, "produces derived index for Bplus particles", false);
 
   void processV0(aod::V0Indices::iterator const& V0, aod::Tracks const&)
   {

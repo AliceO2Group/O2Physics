@@ -163,7 +163,7 @@ struct eventWiseConstituentSubtractorTask {
     analyseHFMc(tracks, candidates, particleSubtractedLcTable);
   }
   PROCESS_SWITCH(eventWiseConstituentSubtractorTask, processLcMcCollisions, "Fill table of subtracted tracks for collisions with Lc MCP candidates", false);
-  /*
+
     void processBplusCollisions(aod::JetCollision const&, soa::Filtered<aod::JetTracks> const& tracks, soa::Join<aod::CandidatesBplusData, aod::BkgBplusRhos> const& candidates)
     {
       analyseHF(tracks, candidates, trackSubtractedBplusTable);
@@ -175,7 +175,7 @@ struct eventWiseConstituentSubtractorTask {
       analyseHFMc(tracks, candidates, particleSubtractedBplusTable);
     }
     PROCESS_SWITCH(eventWiseConstituentSubtractorTask, processBplusMcCollisions, "Fill table of subtracted tracks for collisions with Bplus MCP candidates", false);
-  */
+
   void processDielectronCollisions(aod::JetCollision const&, soa::Filtered<aod::JetTracks> const& tracks, soa::Join<aod::CandidatesDielectronData, aod::BkgDielectronRhos> const& candidates)
   {
     analyseHF(tracks, candidates, trackSubtractedDielectronTable);
