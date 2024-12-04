@@ -169,8 +169,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry mixQaRegistry{"mixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  OutputObj<TH1F> effHist{TH1F("Efficiency_part1", "Efficiency origin/generated ; p_{T} (GeV/c); Efficiency", 100, 0, 4)};
-  EfficiencyCalculator<FemtoUniversePairTaskTrackTrackExtended> effCalc{this, &qaRegistry, trackonefilter.confPDGCodePartOne, effHist.object.get()};
+  OutputObj<TH1F> effHist1{TH1F("Efficiency_part1", "Efficiency origin/generated ; p_{T} (GeV/c); Efficiency", 100, 0, 4)};
+  OutputObj<TH1F> effHist2{TH1F("Efficiency_part2", "Efficiency origin/generated ; p_{T} (GeV/c); Efficiency", 100, 0, 4)};
+  EfficiencyCalculator efficiencyCalculator;
 
   /// @brief Counter for particle swapping
   int fNeventsProcessed = 0;
@@ -308,7 +309,15 @@ struct FemtoUniversePairTaskTrackTrackExtended {
 
   void init(InitContext& ic)
   {
-    effCalc.saveOnStop(ic);
+    efficiencyCalculator
+      .setIsTest(true)
+      .withCCDBPath("Users/d/dkarpins/")
+      .withRegistry(&qaRegistry)
+      .setParticle<1>(trackonefilter.confPDGCodePartOne, effHist1.object.get())
+      .setParticle<2>(tracktwofilter.confPDGCodePartTwo, effHist2.object.get())
+      .init();
+
+    efficiencyCalculator.saveOnStop(ic);
 
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, twotracksconfigs.confIsMC, trackonefilter.confPDGCodePartOne, true); // last true = isDebug
@@ -453,7 +462,11 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           continue;
         }
 
-        float weight = effCalc.getWeight(p1);
+        float weight = efficiencyCalculator.getWeight<1>(p1);
+        if (!confIsSame) {
+          weight *= efficiencyCalculator.getWeight<2>(p2);
+        }
+
         if (swpart)
           sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, weight);
         else
@@ -510,7 +523,11 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           continue;
         }
 
-        // float weight = efficiencyCalculator.getWeight(p1);
+        float weight = efficiencyCalculator.getWeight<1>(p1);
+        if (!confIsSame) {
+          weight *= efficiencyCalculator.getWeight<2>(p2);
+        }
+
         sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D);
       }
     }
@@ -542,8 +559,13 @@ struct FemtoUniversePairTaskTrackTrackExtended {
     for (const auto& col : cols) {
       fillCollision(col);
 
-      auto groupMCTruth{partsOneMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache)};
-      effCalc.doMCTruth(trackonefilter.confPDGCodePartOne, groupMCTruth);
+      auto groupMCTruth1{partsOneMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache)};
+      efficiencyCalculator.doMCTruth<1>(groupMCTruth1);
+
+      if (!confIsSame) {
+        auto groupMCTruth2{partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache)};
+        efficiencyCalculator.doMCTruth<2>(groupMCTruth2);
+      }
 
       auto groupMCReco1 = partsOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
       auto groupMCReco2 = partsTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -551,12 +573,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
       doSameEvent<true>(groupMCReco1, groupMCReco2, parts, col.magField(), col.multNtr());
     }
 
-    std::shared_ptr<TH1> truth{qaRegistry.get<TH1>(HIST("MCTruthTracks_one/hPt"))};
-    std::shared_ptr<TH1> reco{qaRegistry.get<TH1>(HIST("Tracks_one_MC/hPt"))};
-
-    for (int bin{0}; bin < effHist->GetNbinsX(); bin++) {
-      auto denom{truth->GetBinContent(bin)};
-      effHist->SetBinContent(bin, denom == 0 ? 0 : reco->GetBinContent(bin) / denom);
+    efficiencyCalculator.calculate<1>();
+    if (!confIsSame) {
+      efficiencyCalculator.calculate<2>();
     }
 
     LOG(info) << "### PROCESS DONE";

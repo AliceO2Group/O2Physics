@@ -11,31 +11,84 @@
 namespace o2::analysis::femto_universe
 {
 
-template <typename Task>
+template <uint8_t T>
+concept IsOneOrTwo = T == 1 || T == 2;
+
+namespace ParticleNo
+{
+enum ParticleNo {
+  ONE,
+  TWO
+};
+}
+
 class EfficiencyCalculator
 {
  public:
-  EfficiencyCalculator(Task* task, HistogramRegistry* registry, int PDG, TH1F* output) : task(task), registry(registry), PDG(PDG), output(output)
-  {
-    assert(task && "Task cannot be null");
+  o2::ccdb::BasicCCDBManager& ccdb{o2::ccdb::BasicCCDBManager::instance()};
 
-    hMCTruth.init(registry, task->ConfTempFitVarpTBins, task->ConfTempFitVarPDGBins, false, PDG, false);
+  ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
+  ConfigurableAxis ConfTempFitVarPDGBins{"ConfTempFitVarPDGBins", {6000, -2300, 2300}, "Binning of the PDG code in the pT vs. TempFitVar plot"};
+
+  auto init() -> void
+  {
+    assert(registry && "Registry has to be set");
+    assert(ccdbUrl && "CCDB URL has to be set");
+
+    hMCTruth1.init(registry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, false, pdgCode[ParticleNo::ONE], false);
+    hMCTruth2.init(registry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, false, pdgCode[ParticleNo::TWO], false);
 
     ccdbApi.init(ccdbUrl);
     ccdb.setURL(ccdbUrl);
-    ccdb.setCaching(true);
     ccdb.setLocalObjectValidityChecking();
 
-    hEff = loadEfficiencyFromCCDB(1732467686456);
+    hLoaded[ParticleNo::ONE] = loadEfficiencyFromCCDB(1733060890131);
   }
 
-  auto doMCTruth(int pdg, auto particles) -> void
+  auto setIsTest(bool value) -> EfficiencyCalculator&
+  {
+    isTest = value;
+    if (value) {
+      ccdbUrl = "http://ccdb-test.cern.ch:8080";
+    }
+    return *this;
+  }
+
+  auto withRegistry(HistogramRegistry* reg) -> EfficiencyCalculator&
+  {
+    registry = reg;
+    return *this;
+  }
+
+  template <uint8_t N>
+    requires IsOneOrTwo<N>
+  auto setParticle(int pdg, TH1F* outputHist = nullptr) -> EfficiencyCalculator&
+  {
+    pdgCode[N - 1] = pdg;
+    hOutput[N - 1] = outputHist;
+    return *this;
+  }
+
+  auto withCCDBPath(const std::string& path) -> EfficiencyCalculator&
+  {
+    ccdbPath = path + folderPrefix;
+    return *this;
+  }
+
+  template <uint8_t N>
+    requires IsOneOrTwo<N>
+  auto doMCTruth(auto particles) -> void
   {
     for (const auto& particle : particles) {
-      if (static_cast<int>(particle.pidcut()) != pdg) {
+      if (static_cast<int>(particle.pidcut()) != pdgCode[N - 1]) {
         continue;
       }
-      hMCTruth.fillQA<false, false>(particle);
+
+      if constexpr (N == 1) {
+        hMCTruth1.fillQA<false, false>(particle);
+      } else if constexpr (N == 2) {
+        hMCTruth2.fillQA<false, false>(particle);
+      }
     }
   }
 
@@ -43,74 +96,108 @@ class EfficiencyCalculator
   {
     if (!shouldSaveOnStop) {
       shouldSaveOnStop = true;
+
       auto& callbacks = ic.services().get<CallbackService>();
       callbacks.set<o2::framework::CallbackService::Id::Stop>([this]() {
-        save();
+        for (uint8_t i{0}; i < hOutput.size(); i++) {
+          const auto& output{hOutput[i]};
+          if (isHistogramEmpty(output)) {
+            LOG(error) << std::format("[EFFICIENCY] Histogram {} is empty - save aborted", i + 1);
+            return;
+          }
+          LOG(debug) << std::format("[EFFICIENCY] Found histogram {}: {}", i + 1, output->GetTitle());
+
+          std::map<string, string> metadata{};
+          // metadata["runNumber"] = runNumber;
+          long now{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
+          long oneYear{365LL * 24 * 60 * 60 * 1000};
+
+          if (ccdbApi.storeAsTFileAny(output, ccdbPath, metadata, now, now + oneYear) == 0) {
+            LOG(info) << "[EFFICIENCY] Histogram saved successfully";
+          } else {
+            LOG(fatal) << "[EFFICIENCY] Histogram save failed";
+          }
+        }
       });
     } else {
       LOG(warn) << "[EFFICIENCY] Save on stop is already set up";
     }
   }
 
+  template <uint8_t N>
+    requires IsOneOrTwo<N>
   auto getWeight(auto const& particle) const -> float
   {
-    if (auto h{*hEff}) {
-      auto eff = h->GetBinContent(h->FindBin(particle.pt()));
-      return eff > 0 ? 1.0f / eff : 0.0f;
+    assert(hLoaded && "[EFFICIENCY] Called `getWeight` without loaded histogram from CCDB");
+
+    auto weight{1.0f};
+    if (auto hEff{hLoaded[N - 1]}) {
+      auto bin{hEff->FindBin(particle.pt())};
+      auto eff{hEff->GetBinContent(bin)};
+      weight /= eff > 0 ? eff : 1.0f;
     }
-    return 1.0f;
+    return weight;
   }
 
-  auto save() -> void
+  template <uint8_t N>
+    requires IsOneOrTwo<N>
+  auto calculate()
   {
-    if (!output) {
-      LOG(error) << "[EFFICIENCY] No histogram to save";
-      return;
-    }
-    LOG(debug) << "[EFFICIENCY] Found histogram: " << output->GetTitle();
+    std::shared_ptr<TH1> truth{registry->get<TH1>(HIST("MCTruthTracks_one/hPt"))};
+    std::shared_ptr<TH1> reco{registry->get<TH1>(HIST("Tracks_one_MC/hPt"))};
 
-    std::map<string, string> metadata{};
-    // metadata["runNumber"] = runNumber;
-    long now{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
-    long oneYear{365LL * 24 * 60 * 60 * 1000};
-
-    if (ccdbApi.storeAsTFileAny(output, ccdbPath, metadata, now, now + oneYear) == 0) {
-      LOG(info) << "[EFFICIENCY] Histogram saved successfully";
-    } else {
-      LOG(fatal) << "[EFFICIENCY] Histogram save failed";
+    auto hEff{hOutput[N - 1]};
+    for (int bin{0}; bin < hEff->GetNbinsX(); bin++) {
+      auto denom{truth->GetBinContent(bin)};
+      hEff->SetBinContent(bin, denom == 0 ? 0 : reco->GetBinContent(bin) / denom);
     }
   }
 
  private:
-  auto loadEfficiencyFromCCDB(long timestamp) -> std::optional<TH1*>
+  auto isHistogramEmpty(TH1* hist) -> bool
+  {
+    if (!hist) {
+      return true;
+    }
+
+    // check overflow bins as well
+    for (int idx{0}; idx <= hist->GetNbinsX() + 1; idx++) {
+      if (hist->GetBinContent(idx) != 0) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  auto loadEfficiencyFromCCDB(long timestamp) -> TH1*
   {
     auto hEff{ccdb.getForTimeStamp<TH1>(ccdbPath, timestamp)};
     if (!hEff || hEff->IsZombie()) {
       LOGF(fatal, "[EFFICIENCY] Could not load histogram from %s", ccdbPath);
-      return {};
+      return nullptr;
     }
 
-    LOG(info) << "[EFFICIENCY] Histogram " << output->GetTitle() << "loaded from " << ccdbPath;
+    LOG(info) << std::format("[EFFICIENCY] Histogram {} loaded from ", hEff->GetTitle(), ccdbPath);
     return hEff;
   }
 
-  Task* task{};
+  bool isTest{false};
+
   HistogramRegistry* registry{};
 
-  int PDG;
-  TH1* output{};
-  std::optional<TH1*> hEff{};
+  std::array<int, 2> pdgCode;
+  std::array<TH1*, 2> hOutput{};
+  std::array<TH1*, 2> hLoaded{};
+
+  std::string ccdbUrl{"http://alice-ccdb.cern.ch"};
+  std::string ccdbPath{};
+
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> hMCTruth1;
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 2> hMCTruth2;
 
   const std::string folderPrefix{"Efficiency"};
-
   o2::ccdb::CcdbApi ccdbApi;
-  o2::ccdb::BasicCCDBManager& ccdb{o2::ccdb::BasicCCDBManager::instance()};
-
-  // const std::string& ccdbUrl{"http://alice-ccdb.cern.ch"};
-  const std::string ccdbUrl{"http://ccdb-test.cern.ch:8080"};
-  const std::string ccdbPath{"Users/d/dkarpins/" + folderPrefix};
-
-  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> hMCTruth;
 
   bool shouldSaveOnStop{false};
 };
