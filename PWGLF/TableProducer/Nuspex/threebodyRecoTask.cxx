@@ -34,6 +34,10 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "CCDB/BasicCCDBManager.h"
+
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -87,6 +91,10 @@ struct threebodyRecoTask {
   std::vector<unsigned int> filledMothers;
   std::vector<bool> isGoodCollision;
 
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+
   //------------------------------------------------------------------
   Preslice<aod::Vtx3BodyDatas> perCollisionVtx3BodyDatas = o2::aod::vtx3body::collisionId;
 
@@ -124,10 +132,22 @@ struct threebodyRecoTask {
   float lowersignallimit = o2::constants::physics::MassHyperTriton - 3 * mcsigma;
   float uppersignallimit = o2::constants::physics::MassHyperTriton + 3 * mcsigma;
 
+  // CCDB options
+  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> pidPath{"pidPath", "", "Path to the PID response object"};
+
+  // Zorro counting
+  Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
+
   HistogramRegistry registry{
     "registry",
     {
-      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
+      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
       {"hCentFT0C", "hCentFT0C", {HistType::kTH1F, {{100, 0.0f, 100.0f, "FT0C Centrality"}}}},
       {"hCandidatesCounter", "hCandidatesCounter", {HistType::kTH1F, {{12, 0.0f, 12.0f}}}},
       {"hMassHypertriton", "hMassHypertriton", {HistType::kTH1F, {{80, 2.96f, 3.04f}}}},
@@ -192,15 +212,24 @@ struct threebodyRecoTask {
     }
   }
 
-  ConfigurableAxis dcaBinning{"dca-binning", {200, 0.0f, 1.0f}, ""};
-  ConfigurableAxis ptBinning{"pt-binning", {200, 0.0f, 10.0f}, ""};
+  int mRunNumber;
 
   void init(InitContext const&)
   {
+
+    zorroSummary.setObject(zorro.getZorroSummary());
+    mRunNumber = 0;
+
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
+
     registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(1, "total");
     registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(2, "sel8");
     registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(3, "vertexZ");
-    registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(4, "has Candidate");
+    registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(4, "Zorro H3L 3body event");
+    registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(5, "has Candidate");
 
     // Check for selection criteria  !!! TracksIU required !!!
     registry.add("hDiffRVtxProton", "hDiffRVtxProton", HistType::kTH1F, {{100, -10, 10}});     // difference between the radius of decay vertex and minR of proton
@@ -234,6 +263,20 @@ struct threebodyRecoTask {
         registry.get<TH1>(HIST("hTrueHypertritonCounter"))->GetXaxis()->SetBinLabel(i + 1, CandCounterbinLabel[i]);
       }
     }
+  }
+  
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+
+     if (cfgSkimmedProcessing) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fH3L3Body");
+      zorro.populateHistRegistry(registry, bc.runNumber());
+    }
+     
+    mRunNumber = bc.runNumber();
   }
 
   //------------------------------------------------------------------
@@ -533,10 +576,13 @@ struct threebodyRecoTask {
 
   //------------------------------------------------------------------
   // process real data analysis
-  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, FullTracksExtIU const& /*tracks*/)
+  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
     for (auto collision : collisions) {
       Candidates3body.clear();
+
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
       registry.fill(HIST("hEventCounter"), 0.5);
       if (event_sel8_selection && !collision.sel8()) {
         continue;
@@ -548,13 +594,20 @@ struct threebodyRecoTask {
       registry.fill(HIST("hEventCounter"), 2.5);
       registry.fill(HIST("hCentFT0C"), collision.centFT0C());
 
+      if (cfgSkimmedProcessing) {
+        bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+        if (zorroSelected) {
+          registry.fill(HIST("hEventCounter"), 3.5);
+        }
+      }
+
       bool if_hasvtx = false;
       auto d3bodyCands = vtx3bodydatas.sliceBy(perCollisionVtx3BodyDatas, collision.globalIndex());
       for (auto vtx : d3bodyCands) {
         CandidateAnalysis<FullTracksExtIU>(collision, vtx, if_hasvtx);
       }
       if (if_hasvtx)
-        registry.fill(HIST("hEventCounter"), 3.5);
+        registry.fill(HIST("hEventCounter"), 4.5);
       fillHistos();
       resetHistos();
 
@@ -592,13 +645,20 @@ struct threebodyRecoTask {
       registry.fill(HIST("hEventCounter"), 2.5);
       registry.fill(HIST("hCentFT0C"), collision.centFT0C());
 
+      if (cfgSkimmedProcessing) {
+        bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+        if (zorroSelected) {
+          registry.fill(HIST("hEventCounter"), 3.5);
+        }
+      }
+
       bool if_hasvtx = false;
       auto d3bodyCands = vtx3bodydatas.sliceBy(perCollisionVtx3BodyDatas, collision.globalIndex());
       for (auto vtx : d3bodyCands) {
         LikeSignAnalysis<FullTracksExtIU>(collision, vtx, if_hasvtx);
       }
       if (if_hasvtx)
-        registry.fill(HIST("hEventCounter"), 3.5);
+        registry.fill(HIST("hEventCounter"), 4.5);
       fillHistos();
       resetHistos();
 
@@ -684,7 +744,7 @@ struct threebodyRecoTask {
       }
 
       if (if_hasvtx)
-        registry.fill(HIST("hEventCounter"), 3.5);
+        registry.fill(HIST("hEventCounter"), 4.5);
       fillHistos();
       resetHistos();
 
