@@ -32,6 +32,8 @@
 #include "Math/Vector4D.h"
 #include "Math/Vector3D.h"
 #include "Math/GenVector/Boost.h"
+#include <vector>
+#include <altivec.h>
 
 using namespace std;
 using namespace o2;
