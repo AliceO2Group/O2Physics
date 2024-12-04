@@ -34,6 +34,17 @@
 #include "PWGUD/Core/UPCHelpers.h"
 
 #include "Common/DataModel/PIDResponse.h"
+<<<<<<< HEAD
+=======
+#include <TString.h>
+#include "TLorentzVector.h"
+#include <TMath.h>
+#include "Math/Vector4D.h"
+#include "Math/Vector3D.h"
+#include "Math/GenVector/Boost.h"
+#include <vector>
+#include <altivec.h>
+>>>>>>> 236e9ce6d ( mixed event and rotational bkg added)
 
 using namespace std;
 using namespace o2;
