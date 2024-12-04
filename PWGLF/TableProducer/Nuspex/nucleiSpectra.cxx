@@ -707,8 +707,10 @@ struct nucleiSpectra {
             collision.multTPC()});
         }
         if (fillTree) {
-          if (track.pt() < cfgCutPtMinTree || track.pt() > cfgCutPtMaxTree)
-            continue;
+          if (flag & BIT(2)) {
+            if (track.pt() < cfgCutPtMinTree || track.pt() > cfgCutPtMaxTree || track.sign() > 0)
+              continue;
+          }
         }
         nuclei::candidates.emplace_back(NucleusCandidate{
           static_cast<int>(track.globalIndex()), static_cast<int>(track.collisionId()), (1 - 2 * iC) * mTrackParCov.getPt(), mTrackParCov.getEta(), mTrackParCov.getPhi(),
