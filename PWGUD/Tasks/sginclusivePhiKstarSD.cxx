@@ -13,6 +13,14 @@
 // \since  May 2024
 
 #include <cstdlib>
+#include <vector>
+#include <TString.h>
+#include <TLorentzVector.h>
+#include <TMath.h>
+#include "Math/Vector4D.h"
+#include "Math/Vector3D.h"
+#include "Math/GenVector/Boost.h"
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -26,13 +34,6 @@
 #include "PWGUD/Core/UPCHelpers.h"
 
 #include "Common/DataModel/PIDResponse.h"
-#include <TString.h>
-#include "TLorentzVector.h"
-#include <TMath.h>
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "Math/GenVector/Boost.h"
-#include <vector>
 
 using namespace std;
 using namespace o2;
