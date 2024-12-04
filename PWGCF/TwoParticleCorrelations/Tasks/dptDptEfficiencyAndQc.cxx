@@ -74,6 +74,12 @@ enum BeforeAfter {
   kAfter       ///< filling after track selection
 };
 
+/* the configuration of the nsigma axis */
+float minNSigma = -4.05f;
+float maxNSigma = 4.05f;
+float widthNSigmaBin = 0.1f;
+int noOfNSigmaBins = static_cast<int>((maxNSigma - minNSigma) / widthNSigmaBin);
+
 /* the PID selector object to help with the configuration and the id of the selected particles */
 o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
 
@@ -487,17 +493,17 @@ struct PidDataCollectingEngine {
           fhTPCTOFSigmaVsP[ix][isp] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
                                                    HNAMESTRING("toftpcNSigmasVsP%c_%s", whenprefix[ix], mainspnames[isp].c_str()),
                                                    HTITLESTRING("n#sigma to the %s line %s", mainsptitles[isp].c_str(), whentitle[ix].c_str()),
-                                                   kTH3F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", mainsptitles[isp].c_str())}, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", mainsptitles[isp].c_str())}});
+                                                   kTH3F, {pidPAxis, {noOfNSigmaBins, minNSigma, maxNSigma, FORMATSTRING("n#sigma_{TPC}^{%s}", mainsptitles[isp].c_str())}, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", mainsptitles[isp].c_str())}});
         }
         for (uint isp = 0; isp < nallmainsp; ++isp) {
           fhTPCnSigmasVsP[ix][isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
                                                   HNAMESTRING("tpcNSigmasVsP%c_%s", whenprefix[ix], allmainspnames[isp].c_str()),
                                                   HTITLESTRING("TPC n#sigma to the %s line %s", allmainsptitles[isp].c_str(), whentitle[ix].c_str()),
-                                                  kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", allmainsptitles[isp].c_str())}});
+                                                  kTH2F, {pidPAxis, {noOfNSigmaBins, minNSigma, maxNSigma, FORMATSTRING("n#sigma_{TPC}^{%s}", allmainsptitles[isp].c_str())}});
           fhTOFnSigmasVsP[ix][isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
                                                   HNAMESTRING("tofNSigmasVsP%c_%s", whenprefix[ix], allmainspnames[isp].c_str()),
                                                   HTITLESTRING("TOF n#sigma to the %s line %s", allmainsptitles[isp].c_str(), whentitle[ix].c_str()),
-                                                  kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", allmainsptitles[isp].c_str())}});
+                                                  kTH2F, {pidPAxis, {noOfNSigmaBins, minNSigma, maxNSigma, FORMATSTRING("n#sigma_{TOF}^{%s}", allmainsptitles[isp].c_str())}});
         }
       }
     }
@@ -625,11 +631,11 @@ struct PidExtraDataCollectingEngine {
             fhIdTPCnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
                                                            HNAMESTRING("tpcNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), allmainspnames[imainsp].c_str()),
                                                            HTITLESTRING("TPC n#sigma for selected %s to the %s line", tnames[isp].c_str(), allmainsptitles[imainsp].c_str()),
-                                                           kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", mainsptitles[isp].c_str())}});
+                                                           kTH2F, {pidPAxis, {noOfNSigmaBins, minNSigma, maxNSigma, FORMATSTRING("n#sigma_{TPC}^{%s}", mainsptitles[isp].c_str())}});
             fhIdTOFnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
                                                            HNAMESTRING("tofNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), allmainspnames[imainsp].c_str()),
                                                            HTITLESTRING("TOF n#sigma for selected %s to the %s line", tnames[isp].c_str(), allmainsptitles[imainsp].c_str()),
-                                                           kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", mainsptitles[isp].c_str())}});
+                                                           kTH2F, {pidPAxis, {noOfNSigmaBins, minNSigma, maxNSigma, FORMATSTRING("n#sigma_{TOF}^{%s}", mainsptitles[isp].c_str())}});
           }
         }
       }
@@ -732,6 +738,9 @@ struct DptDptEfficiencyAndQc {
 
   Configurable<bool> useCentrality{"useCentrality", false, "Perform the task using centrality/multiplicity classes. Default value: false"};
   Configurable<bool> useTPCInnerWallMomentum{"useTPCInnerWallMomentum", false, "Use the TPC inner wall momentum. Default: false"};
+  Configurable<float> cfgMinNSigma{"cfgMinNSigma", -4.05f, "nsigma axes lowest value. Default: -4.05"};
+  Configurable<float> cfgMaxNSigma{"cfgMaxNSigma", 4.05f, "nsigma axes highest value. Default: 4.05"};
+  Configurable<float> cfgWidthNSigmaBin{"cfgWidthNSigmaBin", 0.1, "nsigma axes bin width. Deafault: 0.1"};
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -822,6 +831,12 @@ struct DptDptEfficiencyAndQc {
         fCentMultMin[0] = 0.0f;
         fCentMultMax[0] = 100.0f;
       }
+      /* configure nsigma axes */
+      minNSigma = cfgMinNSigma.value;
+      maxNSigma = cfgMaxNSigma.value;
+      widthNSigmaBin = cfgWidthNSigmaBin.value;
+      noOfNSigmaBins = static_cast<int>((maxNSigma - minNSigma) / widthNSigmaBin);
+
       bool doBasicAnalysis = doprocessDetectorLevelNotStored || doprocessReconstructedNotStored;
       bool doPidAnalysis = doprocessDetectorLevelNotStoredPID || doprocessReconstructedNotStoredPID;
       bool doPidExtraAnalysis = doprocessDetectorLevelNotStoredPIDExtra || doprocessReconstructedNotStoredPIDExtra;
