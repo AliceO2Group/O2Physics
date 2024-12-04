@@ -118,6 +118,8 @@ struct hJetAnalysis {
                               {"hPtMatched", "p_{T} matching;p_{T,det};p_{T,part}", {HistType::kTH2F, {{200, 0, 200}, {200, 0, 200}}}},
                               {"hPhiMatched", "#phi matching;#phi_{det};#phi_{part}", {HistType::kTH2F, {{160, -1.0, 7.0}, {160, -1.0, 7.0}}}},
                               {"hDeltaRMatched", "#DeltaR matching;#DeltaR_{det};#DeltaR_{part}", {HistType::kTH2F, {{50, 0.0, 0.15}, {50, 0.0, 0.15}}}},
+                              {"hPtMatched1d", "p_{T} matching 1d;p_{T,part}", {HistType::kTH1F, {{200, 0, 200}}}},
+                              {"hDeltaRMatched1d", "#DeltaR matching 1d;#DeltaR_{part}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
                               {"hPtResolution", "p_{T} resolution;p_{T,part};Relative Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -5.0, 5.0}}}},
                               {"hPhiResolution", "#phi resolution;#p{T,part};Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -7.0, 7.0}}}},
                               {"hDeltaRResolution", "#DeltaR Resolution;p_{T,part};Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -0.15, 0.15}}}},
@@ -422,6 +424,8 @@ struct hJetAnalysis {
         registry.fill(HIST("hDeltaRMatched"), dR, dRp, weight);
         registry.fill(HIST("hDeltaRResolution"), jetTag.pt(), dRp - dR, weight);
         registry.fill(HIST("hFullMatching"), jetBase.pt(), jetTag.pt(), jetBase.phi(), jetTag.phi(), dR, dRp, weight);
+        registry.fill(HIST("hPtMatched1d"), jetTag.pt(), weight);
+        registry.fill(HIST("hDeltaRMatched1d"), dRp, weight);
       }
     }
   }
