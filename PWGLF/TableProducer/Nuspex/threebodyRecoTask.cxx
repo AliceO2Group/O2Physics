@@ -264,18 +264,18 @@ struct threebodyRecoTask {
       }
     }
   }
-  
+
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
 
-     if (cfgSkimmedProcessing) {
+    if (cfgSkimmedProcessing) {
       zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fH3L3Body");
       zorro.populateHistRegistry(registry, bc.runNumber());
     }
-     
+
     mRunNumber = bc.runNumber();
   }
 
