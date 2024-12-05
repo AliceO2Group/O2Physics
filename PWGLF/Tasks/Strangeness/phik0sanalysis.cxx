@@ -549,7 +549,7 @@ struct phik0shortanalysis {
 
   // Fill 2D invariant mass histogram for V0 and Phi
   template <bool isMC>
-  void fillInvMass2D(const TLorentzVector V0, const std::vector<TLorentzVector> listPhi, float multiplicity, const std::array<float, 3> weights)
+  void fillInvMass2D(const TLorentzVector& V0, const std::vector<TLorentzVector>& listPhi, float multiplicity, const std::array<float, 3> weights)
   {
     double massV0 = V0.M();
     double ptV0 = V0.Pt();
@@ -582,7 +582,7 @@ struct phik0shortanalysis {
 
   // Fill Phi invariant mass vs Pion nSigmadE/dx histogram
   template <bool isMC>
-  void fillInvMassNSigma(const TLorentzVectorAndPID Pi, const std::vector<TLorentzVector> listPhi, float multiplicity, const std::array<float, 3> weights)
+  void fillInvMassNSigma(const TLorentzVectorAndPID& Pi, const std::vector<TLorentzVector>& listPhi, float multiplicity, const std::array<float, 3> weights)
   {
     float nSigmaTPCPi = Pi.fnSigmaTPC;
     float nSigmaTOFPi = Pi.fnSigmaTOF;
@@ -684,7 +684,8 @@ struct phik0shortanalysis {
             }
           }
 
-          TLorentzVector recK0S(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+          TLorentzVector recK0S;
+          recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
 
           if (std::abs(recK0S.Rapidity()) > cfgyAcceptance)
             continue;
@@ -715,7 +716,8 @@ struct phik0shortanalysis {
           if (!selectionPion(track))
             continue;
 
-          TLorentzVector recPi(track.px(), track.py(), track.pz(), massPi);
+          TLorentzVector recPi;
+          recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
 
           if (std::abs(recPi.Rapidity()) > cfgyAcceptance)
             continue;
@@ -763,7 +765,9 @@ struct phik0shortanalysis {
       if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
         continue;
 
-      TLorentzVector recK0S(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+      TLorentzVector recK0S;
+      recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+
       if (std::abs(recK0S.Rapidity()) > cfgyAcceptance)
         continue;
 
@@ -835,7 +839,9 @@ struct phik0shortanalysis {
       if (!selectionPion(track))
         continue;
 
-      TLorentzVector vecPi(track.px(), track.py(), track.pz(), massPi);
+      TLorentzVector vecPi;
+      vecPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
+
       if (std::abs(vecPi.Rapidity()) > cfgyAcceptance)
         continue;
 
@@ -1001,7 +1007,8 @@ struct phik0shortanalysis {
           if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
             continue;
 
-          TLorentzVector recK0S(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+          TLorentzVector recK0S;
+          recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
 
           if (std::abs(recK0S.Rapidity()) > cfgyAcceptance)
             continue;
@@ -1037,7 +1044,8 @@ struct phik0shortanalysis {
           if (!selectionPion(track))
             continue;
 
-          TLorentzVector recPi(track.px(), track.py(), track.pz(), massPi);
+          TLorentzVector recPi;
+          recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
 
           if (std::abs(recPi.Rapidity()) > cfgyAcceptance)
             continue;
@@ -1109,7 +1117,9 @@ struct phik0shortanalysis {
       if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
         continue;
 
-      TLorentzVector recK0S(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+      TLorentzVector recK0S;
+      recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+
       if (std::abs(recK0S.Rapidity()) > cfgyAcceptance)
         continue;
 
@@ -1219,7 +1229,9 @@ struct phik0shortanalysis {
       if (!selectionPion(track))
         continue;
 
-      TLorentzVector recPi(track.px(), track.py(), track.pz(), massPi);
+      TLorentzVector recPi;
+      recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
+
       if (std::abs(recPi.Rapidity()) > cfgyAcceptance)
         continue;
 
@@ -1359,7 +1371,8 @@ struct phik0shortanalysis {
           if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
             continue;
 
-          TLorentzVector recK0S(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+          TLorentzVector recK0S;
+          recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
 
           if (std::abs(recK0S.Rapidity()) > cfgyAcceptance)
             continue;
@@ -1390,7 +1403,8 @@ struct phik0shortanalysis {
           if (!selectionPion(track))
             continue;
 
-          TLorentzVector recPi(track.px(), track.py(), track.pz(), massPi);
+          TLorentzVector recPi;
+          recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
 
           if (std::abs(recPi.Rapidity()) > cfgyAcceptance)
             continue;
@@ -1441,7 +1455,9 @@ struct phik0shortanalysis {
       if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
         continue;
 
-      TLorentzVector recK0S(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+      TLorentzVector recK0S;
+      recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+
       if (std::abs(recK0S.Rapidity()) > cfgyAcceptance)
         continue;
 
@@ -1514,7 +1530,9 @@ struct phik0shortanalysis {
       if (!selectionPion(track))
         continue;
 
-      TLorentzVector vecPi(track.px(), track.py(), track.pz(), massPi);
+      TLorentzVector vecPi;
+      vecPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
+
       if (std::abs(vecPi.Rapidity()) > cfgyAcceptance)
         continue;
 
