@@ -735,7 +735,6 @@ struct tofSpectra {
     const auto& nsigmaTPC = o2::aod::pidutils::tpcNSigma<id>(track);
     // const auto id = track.sign() > 0 ? id : id + Np;
     const float multiplicity = getMultiplicity(collision);
-
     if (multiplicityEstimator == MultCodes::kNoMultiplicity) {
       if (track.sign() > 0) {
         histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTPC);
@@ -1345,6 +1344,15 @@ struct tofSpectra {
       if (!isTrackSelected<true>(track, collision)) {
         continue;
       }
+      if (std::abs(track.rapidity(PID::getMass(2))) > trkselOptions.cfgCutY) {
+      return;
+    }
+    if (std::abs(track.rapidity(PID::getMass(3))) > trkselOptions.cfgCutY) {
+      return;
+    }
+    if (std::abs(track.rapidity(PID::getMass(4))) > trkselOptions.cfgCutY) {
+      return;
+    }
       if (includeCentralityToTracks) {
 
         if (track.sign() > 0) {
