@@ -128,7 +128,7 @@ struct GfwPidflow {
     for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Pr08Gap22_pt_%i", i + 1), "Pr08Gap22_pTDiff"));
     oba->Add(new TNamed("ChFull24", "ChFull24"));
-    for(Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("ChFull24_pt_%i", i + 1), "ChFull24_pTDiff"));
 
     fFC->SetName("FlowContainer");
