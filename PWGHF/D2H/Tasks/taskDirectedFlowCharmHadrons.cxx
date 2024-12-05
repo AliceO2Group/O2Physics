@@ -43,15 +43,18 @@ using namespace o2::hf_evsel;
 
 enum DecayChannel { DplusToPiKPi = 0,
                     D0ToPiK,
-                    D0ToKPi };
+                    D0ToKPi,
+                    DstarToD0Pi };
 
 struct HfTaskDirectedFlowCharmHadrons {
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
+  Configurable<bool> selectionFlagDstar{"selectionFlagDstar", false, "Selection Flag for Dstar"};
   Configurable<int> selectionFlag{"selectionFlag", 1, "Selection Flag for hadron (e.g. 1 for skimming, 3 for topo. and kine., 7 for PID)"};
   Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality accepted in SP computation"};
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality accepted in SP computation"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
   Configurable<bool> direct{"direct", false, "Flag to calculate direct v1 odd and even"};
+  Configurable<bool> userap{"userap", false, "Flag to fill rapidity vs eta "};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indices of BDT scores to be stored. Two indexes max."};
 
@@ -68,11 +71,14 @@ struct HfTaskDirectedFlowCharmHadrons {
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
   using CandD0DataWMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
   using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
+  using CandDstarDataWMl = soa::Filtered<soa::Join<aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfMlDstarToD0Pi>>;
+  using CandDstarData = soa::Filtered<soa::Join<aod::HfCandDstars, aod::HfSelDstarToD0Pi>>;
   using CollsWithQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::SPCalibrationTables>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
   Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
   Filter filterSelectD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
+  Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstar;
 
   Partition<CandD0Data> selectedD0ToPiK = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag;
   Partition<CandD0Data> selectedD0ToKPi = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
@@ -91,7 +97,7 @@ struct HfTaskDirectedFlowCharmHadrons {
   {
 
     /// check process functions
-    std::array<int, 4> processes = {doprocessDplusStd, doprocessDplusMl, doprocessD0Std, doprocessD0Ml};
+    std::array<int, 6> processes = {doprocessDplusStd, doprocessDplusMl, doprocessD0Std, doprocessD0Ml, doprocessDstarStd, doprocessDstarMl};
     const int nProcesses = std::accumulate(processes.begin(), processes.end(), 0);
     if (nProcesses > 1) {
       LOGP(fatal, "Only one process function should be enabled at a time, please check your configuration");
@@ -201,9 +207,12 @@ struct HfTaskDirectedFlowCharmHadrons {
 
     for (const auto& candidate : candidates) {
       double massCand = 0.;
+      double rapCand = 0.;
+      double signDstarCand = 0.0;
       std::vector<double> outputMl = {-999., -999.};
       if constexpr (std::is_same_v<T1, CandDplusData> || std::is_same_v<T1, CandDplusDataWMl>) {
         massCand = hfHelper.invMassDplusToPiKPi(candidate);
+        rapCand = hfHelper.yDplus(candidate);
         if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
             outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
@@ -227,6 +236,19 @@ struct HfTaskDirectedFlowCharmHadrons {
           default:
             break;
         }
+      } else if constexpr (std::is_same_v<T1, CandDstarData> || std::is_same_v<T1, CandDstarDataWMl>) {
+        signDstarCand = candidate.signSoftPi();
+        if (candidate.signSoftPi() > 0) {
+          massCand = std::abs(candidate.invMassDstar() - candidate.invMassD0());
+          rapCand = candidate.y(candidate.invMassDstar());
+        } else if (candidate.signSoftPi() < 0) {
+          massCand = std::abs(candidate.invMassAntiDstar() - candidate.invMassD0Bar());
+          rapCand = candidate.y(candidate.invMassAntiDstar());
+        }
+        if constexpr (std::is_same_v<T1, CandDstarDataWMl>) {
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+            outputMl[iclass] = candidate.mlProbDstarToD0Pi()[classMl->at(iclass)];
+        }
       }
 
       auto trackprong0 = candidate.template prong0_as<Trk>();
@@ -237,6 +259,12 @@ struct HfTaskDirectedFlowCharmHadrons {
       double phiCand = candidate.phi();
       double cosNPhi = std::cos(phiCand);
       double sinNPhi = std::sin(phiCand);
+
+      if (userap)
+        etaCand = rapCand;
+
+      if (selectionFlagDstar)
+        sign = signDstarCand;
 
       auto ux = cosNPhi; // real part of candidate q vector
       auto uy = sinNPhi; // imaginary part of candidate q vector
@@ -315,6 +343,24 @@ struct HfTaskDirectedFlowCharmHadrons {
     runFlowAnalysis<DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
   }
   PROCESS_SWITCH(HfTaskDirectedFlowCharmHadrons, processDplusStd, "Process Dplus candidates with rectangular cuts", true);
+
+  // Dstar with ML
+  void processDstarMl(CollsWithQvecs::iterator const& collision,
+                      CandDstarDataWMl const& candidatesDstar,
+                      TracksWithExtra const& tracks)
+  {
+    runFlowAnalysis<DecayChannel::DstarToD0Pi>(collision, candidatesDstar, tracks);
+  }
+  PROCESS_SWITCH(HfTaskDirectedFlowCharmHadrons, processDstarMl, "Process Dstar candidates with ML", false);
+
+  // Dstar with rectangular cuts
+  void processDstarStd(CollsWithQvecs::iterator const& collision,
+                       CandDstarData const& candidatesDstar,
+                       TracksWithExtra const& tracks)
+  {
+    runFlowAnalysis<DecayChannel::DstarToD0Pi>(collision, candidatesDstar, tracks);
+  }
+  PROCESS_SWITCH(HfTaskDirectedFlowCharmHadrons, processDstarStd, "Process Dstar candidates with rectangular cuts", true);
 
 }; // End struct HfTaskDirectedFlowCharmHadrons
 

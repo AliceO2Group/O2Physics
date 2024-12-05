@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \brief
+/// \file upcTauCentralBarrelRL.cxx
+/// \brief Personal task to analyze tau events from UPC collisions
 /// \author Roman Lavicka, roman.lavicka@cern.ch
 /// \since  12.07.2022
 
@@ -40,8 +40,7 @@
 
 // ROOT headers
 #include "TLorentzVector.h"
-#include "TEfficiency.h"
-#include "TF1.h"
+#include "TPDGCode.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -132,7 +131,7 @@ struct UpcTauCentralBarrelRL {
     ConfigurableAxis axisMomWide{"axisMomWide", {1000, 0., 10.}, "Momentum (GeV/c), wider range"};
     ConfigurableAxis axisMomSigned{"axisMomSigned", {800, -2., 2.}, "Signed momentum (GeV/c)"};
     ConfigurableAxis axisPt{"axisPt", {400, 0., 2.}, "Transversal momentum (GeV/c)"};
-    ConfigurableAxis axisPhi{"axisPhi", {64, -2 * o2::constants::math::PI, 2 * o2::constants::math::PI}, "Azimuthal angle (a.y.)"};
+    ConfigurableAxis axisPhi{"axisPhi", {64, -o2::constants::math::TwoPI, o2::constants::math::TwoPI}, "Azimuthal angle (a.y.)"};
     ConfigurableAxis axisModPhi{"axisModPhi", {400, 0., .4}, "Track fmod(#phi,#pi/9)"};
     ConfigurableAxis axisEta{"axisEta", {50, -1.2, 1.2}, "Pseudorapidity (a.u.)"};
     ConfigurableAxis axisRap{"axisRap", {50, -1.2, 1.2}, "Rapidity (a.u.)"};
@@ -644,7 +643,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventSixTracks/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.axisPt});
       histos.add("EventSixTracks/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.axisPhi});
       histos.add("EventSixTracks/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {confAxis.axisRap});
-      histos.add("EventSixTracks//hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.axisInvMassWide, confAxis.axisPt});
+      histos.add("EventSixTracks/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.axisInvMassWide, confAxis.axisPt});
       histos.add("EventSixTracks/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {confAxis.axisMom, confAxis.axisTPCdEdx});
 
       histos.add("EventSixTracks/SixPions/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.axisInvMass});
@@ -670,6 +669,22 @@ struct UpcTauCentralBarrelRL {
       histos.add("Events/Truth/hNmuons", ";Number of muons in a collision (-);Number of events (-)", HistType::kTH1D, {confAxis.axisNparticles});
       histos.add("Events/Truth/hNpions", ";Number of pions in a collision (-);Number of events (-)", HistType::kTH1D, {confAxis.axisNparticles});
       histos.add("Events/Truth/hNphysPartVsNwoutMotherParts", ";Number of physical primary particles (-);Number of particles without mother(-)", HistType::kTH2D, {confAxis.axisNparticles, confAxis.axisNparticles});
+      histos.add("Tracks/Truth/hTauP", ";Tau #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.axisMom});
+      histos.add("Tracks/Truth/hTauPt", ";Tau #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.axisPt});
+      histos.add("Tracks/Truth/hTauPhi", ";Tau #phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.axisPhi});
+      histos.add("Tracks/Truth/hTauEta", ";Tau #eta (-);Number of events (-)", HistType::kTH1D, {confAxis.axisEta});
+      histos.add("Tracks/Truth/hElectronP", ";Electron #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.axisMom});
+      histos.add("Tracks/Truth/hElectronPt", ";Electron #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.axisPt});
+      histos.add("Tracks/Truth/hElectronPhi", ";Electron #phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.axisPhi});
+      histos.add("Tracks/Truth/hElectronEta", ";Electron #eta (-);Number of events (-)", HistType::kTH1D, {confAxis.axisEta});
+      histos.add("Tracks/Truth/hMuonP", ";Muon #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.axisMom});
+      histos.add("Tracks/Truth/hMuonPt", ";Muon #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.axisPt});
+      histos.add("Tracks/Truth/hMuonPhi", ";Muon #phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.axisPhi});
+      histos.add("Tracks/Truth/hMuonEta", ";Muon #eta (-);Number of events (-)", HistType::kTH1D, {confAxis.axisEta});
+      histos.add("Tracks/Truth/hPionP", ";Pion #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.axisMom});
+      histos.add("Tracks/Truth/hPionPt", ";Pion #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.axisPt});
+      histos.add("Tracks/Truth/hPionPhi", ";Pion #phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.axisPhi});
+      histos.add("Tracks/Truth/hPionEta", ";Pion #eta (-);Number of events (-)", HistType::kTH1D, {confAxis.axisEta});
     }
 
   } // end init
@@ -779,10 +794,10 @@ struct UpcTauCentralBarrelRL {
     if (eta(track.px(), track.py(), track.pz()) < -0.8 || eta(track.px(), track.py(), track.pz()) > 0.8)
       return false;
     // kPrimaryTracks
-    if (abs(track.dcaZ()) > 2.0)
+    if (std::abs(track.dcaZ()) > 2.0)
       return false;
-    float maxDCA = 0.0105f + 0.0350f / pow(track.pt(), 1.1f);
-    if (abs(track.dcaXY()) > maxDCA)
+    float maxDCA = 0.0105f + 0.0350f / std::pow(track.pt(), 1.1f);
+    if (std::abs(track.dcaXY()) > maxDCA)
       return false;
     // kQualityTrack
     // ITS
@@ -876,8 +891,8 @@ struct UpcTauCentralBarrelRL {
     daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
     daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
     mother = daug[0] + daug[1];
-    pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(211), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-    pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(211), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+    pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(kPiPlus), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+    pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(kPiMinus), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
     motherOfPions = pion[0] + pion[1];
     if (cutTauEvent.cutOppositeCharge && (trkDaug1.sign() * trkDaug2.sign() > 0))
       return false;
@@ -998,11 +1013,11 @@ struct UpcTauCentralBarrelRL {
       daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
       daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       mother = daug[0] + daug[1];
-      pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(211), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-      pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(211), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(kPiPlus), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+      pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(kPiMinus), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       motherOfPions = pion[0] + pion[1];
-      muon[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(13), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-      muon[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(13), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      muon[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(kMuonPlus), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+      muon[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(kMuonMinus), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       motherOfMuons = muon[0] + muon[1];
       const auto acoplanarity = calculateAcoplanarity(daug[0].Phi(), daug[1].Phi());
       if (cutTauEvent.applyTauEventSelection && !selectedTauEvent(trkDaug1, trkDaug2)) {
@@ -1614,10 +1629,10 @@ struct UpcTauCentralBarrelRL {
       const auto& trkDaug2 = reconstructedBarrelTracks.iteratorAt(vecPVidx[1]);
       daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
       daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-      pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(211), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-      pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(211), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-      muon[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(13), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-      muon[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(13), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(kPiPlus), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+      pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(kPiMinus), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      muon[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(kMuonPlus), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+      muon[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(kMuonMinus), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       if (cutTauEvent.applyTauEventSelection && !selectedTauEvent(trkDaug1, trkDaug2)) {
         return;
       }
@@ -2081,6 +2096,82 @@ struct UpcTauCentralBarrelRL {
     histos.get<TH2>(HIST("Events/FIT/hTimeFV0AvsFT0A"))->Fill(reconstructedCollision.timeFV0A(), reconstructedCollision.timeFT0A());
   }
 
+  void fillTruthHistograms(aod::UDMcParticles const& particles)
+  {
+    histos.get<TH1>(HIST("Events/Truth/hCountCollisions"))->Fill(1);
+    histos.get<TH1>(HIST("Events/Truth/hNparticles"))->Fill(particles.size());
+    histos.get<TH2>(HIST("Events/Truth/hNphysPartVsNwoutMotherParts"))->Fill(countPhysicalPrimary(particles), countParticlesWithoutMother(particles));
+
+    int countElectrons = 0;
+    int countMuons = 0;
+    int countPions = 0;
+
+    for (const auto& particle : particles) {
+      histos.get<TH1>(HIST("Events/Truth/hPDGcodesAll"))->Fill(particle.pdgCode());
+      //        if (!particle.isPhysicalPrimary()) continue;
+      if (particle.has_mothers())
+        continue;
+      histos.get<TH1>(HIST("Events/Truth/hPDGcodesNoMother"))->Fill(particle.pdgCode());
+      histos.get<TH1>(HIST("Tracks/Truth/hTauPt"))->Fill(pt(particle.px(), particle.py()));
+      histos.get<TH1>(HIST("Tracks/Truth/hTauP"))->Fill(momentum(particle.px(), particle.py(), particle.pz()));
+      histos.get<TH1>(HIST("Tracks/Truth/hTauPhi"))->Fill(phi(particle.px(), particle.py()));
+      histos.get<TH1>(HIST("Tracks/Truth/hTauEta"))->Fill(eta(particle.px(), particle.py(), particle.pz()));
+      const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
+      histos.get<TH1>(HIST("Events/Truth/hNtauDaughters"))->Fill(daughters.size());
+      for (const auto& daughter : daughters) {
+        histos.get<TH1>(HIST("Events/Truth/hPDGcodesTauDaughters"))->Fill(daughter.pdgCode());
+        if (enumMyParticle(daughter.pdgCode()) == P_ELECTRON) {
+          countElectrons++;
+          histos.get<TH1>(HIST("Tracks/Truth/hElectronPt"))->Fill(pt(daughter.px(), daughter.py()));
+          histos.get<TH1>(HIST("Tracks/Truth/hElectronP"))->Fill(momentum(daughter.px(), daughter.py(), daughter.pz()));
+          histos.get<TH1>(HIST("Tracks/Truth/hElectronPhi"))->Fill(phi(daughter.px(), daughter.py()));
+          histos.get<TH1>(HIST("Tracks/Truth/hElectronEta"))->Fill(eta(daughter.px(), daughter.py(), daughter.pz()));
+        }
+        if (enumMyParticle(daughter.pdgCode()) == P_MUON) {
+          countMuons++;
+          histos.get<TH1>(HIST("Tracks/Truth/hMuonPt"))->Fill(pt(daughter.px(), daughter.py()));
+          histos.get<TH1>(HIST("Tracks/Truth/hMuonP"))->Fill(momentum(daughter.px(), daughter.py(), daughter.pz()));
+          histos.get<TH1>(HIST("Tracks/Truth/hMuonPhi"))->Fill(phi(daughter.px(), daughter.py()));
+          histos.get<TH1>(HIST("Tracks/Truth/hMuonEta"))->Fill(eta(daughter.px(), daughter.py(), daughter.pz()));
+        }
+        if (enumMyParticle(daughter.pdgCode()) == P_PION) {
+          countPions++;
+          histos.get<TH1>(HIST("Tracks/Truth/hPionPt"))->Fill(pt(daughter.px(), daughter.py()));
+          histos.get<TH1>(HIST("Tracks/Truth/hPionP"))->Fill(momentum(daughter.px(), daughter.py(), daughter.pz()));
+          histos.get<TH1>(HIST("Tracks/Truth/hPionPhi"))->Fill(phi(daughter.px(), daughter.py()));
+          histos.get<TH1>(HIST("Tracks/Truth/hPionEta"))->Fill(eta(daughter.px(), daughter.py(), daughter.pz()));
+        }
+      }
+    }
+
+    histos.get<TH1>(HIST("Events/Truth/hNelectrons"))->Fill(countElectrons);
+    histos.get<TH1>(HIST("Events/Truth/hNmuons"))->Fill(countMuons);
+    histos.get<TH1>(HIST("Events/Truth/hNpions"))->Fill(countPions);
+
+    if (countElectrons == 2 && countMuons == 0 && countPions == 0)
+      histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_EE);
+    if (countElectrons == 1 && countMuons == 1 && countPions == 0)
+      histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_EMU);
+    if (countElectrons == 1 && countMuons == 0 && countPions == 1)
+      histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_EPI);
+    if ((countElectrons == 1 && countMuons == 1 && countPions == 0) || (countElectrons == 1 && countMuons == 0 && countPions == 1))
+      histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_EMUPI);
+    if (countElectrons == 0 && countMuons == 2 && countPions == 0)
+      histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_MUMU);
+    if (countElectrons == 0 && countMuons == 1 && countPions == 1)
+      histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_MUPI);
+    if (countElectrons == 0 && countMuons == 0 && countPions == 2)
+      histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_PIPI);
+    if (countElectrons == 0 && countMuons == 0 && countPions == 4)
+      histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_FOURPI);
+    if (countElectrons == 1 && countMuons == 0 && countPions == 3)
+      histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_ETHREEPI);
+    if (countElectrons == 0 && countMuons == 1 && countPions == 3)
+      histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_MUTHREEPI);
+    if (countElectrons == 0 && countMuons == 0 && countPions == 6)
+      histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_SIXPI);
+  }
+
   void processDataDG(FullUDCollision const& reconstructedCollision,
                      FullUDTracks const& reconstructedBarrelTracks)
   {
@@ -2205,64 +2296,12 @@ struct UpcTauCentralBarrelRL {
     }
 
     if (doTruthHistos) {
-      histos.get<TH1>(HIST("Events/Truth/hCountCollisions"))->Fill(1);
-      histos.get<TH1>(HIST("Events/Truth/hNparticles"))->Fill(particles.size());
-      histos.get<TH2>(HIST("Events/Truth/hNphysPartVsNwoutMotherParts"))->Fill(countPhysicalPrimary(particles), countParticlesWithoutMother(particles));
-
-      int countElectrons = 0;
-      int countMuons = 0;
-      int countPions = 0;
-
-      for (const auto& particle : particles) {
-        histos.get<TH1>(HIST("Events/Truth/hPDGcodesAll"))->Fill(particle.pdgCode());
-        //        if (!particle.isPhysicalPrimary()) continue;
-        if (particle.has_mothers())
-          continue;
-        histos.get<TH1>(HIST("Events/Truth/hPDGcodesNoMother"))->Fill(particle.pdgCode());
-        const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
-        histos.get<TH1>(HIST("Events/Truth/hNtauDaughters"))->Fill(daughters.size());
-        for (const auto& daughter : daughters) {
-          histos.get<TH1>(HIST("Events/Truth/hPDGcodesTauDaughters"))->Fill(daughter.pdgCode());
-          if (enumMyParticle(daughter.pdgCode()) == P_ELECTRON)
-            countElectrons++;
-          if (enumMyParticle(daughter.pdgCode()) == P_MUON)
-            countMuons++;
-          if (enumMyParticle(daughter.pdgCode()) == P_PION)
-            countPions++;
-        }
-      }
-
-      histos.get<TH1>(HIST("Events/Truth/hNelectrons"))->Fill(countElectrons);
-      histos.get<TH1>(HIST("Events/Truth/hNmuons"))->Fill(countMuons);
-      histos.get<TH1>(HIST("Events/Truth/hNpions"))->Fill(countPions);
-
-      if (countElectrons == 2)
-        histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_EE);
-      if (countElectrons == 1 && countMuons == 1)
-        histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_EMU);
-      if (countElectrons == 1 && countPions == 1)
-        histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_EPI);
-      if ((countElectrons == 1 && countMuons == 1) || (countElectrons == 1 && countPions == 1))
-        histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_EMUPI);
-      if (countMuons == 2)
-        histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_MUMU);
-      if (countMuons == 1 && countPions == 1)
-        histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_MUPI);
-      if (countPions == 2)
-        histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_PIPI);
-      if (countPions == 4)
-        histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_FOURPI);
-      if (countPions == 3 && countElectrons == 1)
-        histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_ETHREEPI);
-      if (countPions == 3 && countMuons == 1)
-        histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_MUTHREEPI);
-      if (countPions == 6)
-        histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_SIXPI);
+      fillTruthHistograms(particles);
     }
 
   } // end processMCgenDG
 
-  void processTestMC(FullMCSGUDCollision const& reconstructedCollision,
+  void processTestMC(FullMCUDCollision const& reconstructedCollision,
                      FullMCUDTracks const& reconstructedBarrelTracks,
                      aod::UDMcCollisions const&,
                      aod::UDMcParticles const&)

@@ -126,6 +126,8 @@ struct spvector {
   Configurable<float> lfinebinCent{"lfinebinCent", 0.0, "lower bin value in cent fine histograms"};
   Configurable<float> hfinebinCent{"hfinebinCent", 80.0, "higher bin value in cent fine histograms"};
   Configurable<bool> QA{"QA", false, "QA histograms"};
+  Configurable<bool> useShift{"useShift", false, "shift histograms"};
+  Configurable<int> nshift{"nshift", 10, "no. of iterations in shifting"};
   Configurable<bool> ispolarization{"ispolarization", false, "Flag to check polarization"};
   Configurable<bool> finecorrection{"finecorrection", false, "Flag to check fine correction"};
   Configurable<bool> rejbadevent{"rejbadevent", true, "Flag to check bad events"};
@@ -150,6 +152,8 @@ struct spvector {
   Configurable<std::string> ConfRecenterevySp{"ConfRecenterevySp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vy recentere"};
   Configurable<std::string> ConfRecenterevzSp{"ConfRecenterevzSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vz recentere"};
   Configurable<std::string> ConfRecenteresqSp{"ConfRecenteresqSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recenteresq"};
+  Configurable<std::string> ConfShiftC{"ConfShiftC", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift C"};
+  Configurable<std::string> ConfShiftA{"ConfShiftA", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift A"};
 
   // Event selection cuts - Alex
   TF1* fMultPVCutLow = nullptr;
@@ -197,6 +201,8 @@ struct spvector {
     AxisSpec vxfineAxis = {VxfineNbins, lfinebinVx, hfinebinVx, "vxfine"};
     AxisSpec vyfineAxis = {VyfineNbins, lfinebinVy, hfinebinVy, "vyfine"};
     AxisSpec centfineAxis = {CentfineNbins, lfinebinCent, hfinebinCent, "V0M (%) fine"};
+    AxisSpec shiftAxis = {10, 0, 10, "shift"};
+    AxisSpec basisAxis = {2, 0, 2, "basis"};
 
     histos.add("hCentrality", "hCentrality", kTH1F, {{centfineAxis}});
     histos.add("hpQxZDCAC", "hpQxZDCAC", kTProfile, {centfineAxis});
@@ -246,6 +252,8 @@ struct spvector {
     histos.add("ZDCAmp", "ZDCAmp", kTProfile2D, {channelZDCAxis, vzfineAxis});
     histos.add("ZDCAmpCommon", "ZDCAmpCommon", kTProfile2D, {{2, 0.0, 2.0}, vzfineAxis});
     // histos.add("ZDCAmpCommon", "ZDCAmpCommon", kTProfile3D, {{2,0.0,2.0}, vzfineAxis, centfineAxis});
+    histos.add("ShiftZDCC", "ShiftZDCC", kTProfile3D, {centfineAxis, basisAxis, shiftAxis});
+    histos.add("ShiftZDCA", "ShiftZDCA", kTProfile3D, {centfineAxis, basisAxis, shiftAxis});
 
     if (QA) {
       histos.add("Vz", "Vz", kTH1F, {vzfineAxis});
@@ -283,6 +291,8 @@ struct spvector {
   TH2F* hrecenterevySp;
   TH2F* hrecenterevzSp;
   THnF* hrecenteresqSp;
+  TProfile3D* shiftprofileA;
+  TProfile3D* shiftprofileC;
 
   // Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   // Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
@@ -422,6 +432,11 @@ struct spvector {
           qxZDCC = qxZDCC / sumC;
           qyZDCC = qyZDCC / sumC;
         }
+      } else {
+        qxZDCA = qxZDCA;
+        qxZDCC = qxZDCC;
+        qyZDCA = qyZDCA;
+        qyZDCC = qyZDCC;
       }
       if (sumA <= 1e-4 || sumC <= 1e-4) {
         qxZDCA = 0.0;
@@ -653,6 +668,32 @@ struct spvector {
 
       psiZDCC = 1.0 * TMath::ATan2(qyZDCC, qxZDCC);
       psiZDCA = 1.0 * TMath::ATan2(qyZDCA, qxZDCA);
+
+      if (useShift && (currentRunNumber != lastRunNumber)) {
+        shiftprofileC = ccdb->getForTimeStamp<TProfile3D>(ConfShiftC.value, bc.timestamp());
+        shiftprofileA = ccdb->getForTimeStamp<TProfile3D>(ConfShiftA.value, bc.timestamp());
+      }
+      if (useShift) {
+        auto deltapsiZDCC = 0.0;
+        auto deltapsiZDCA = 0.0;
+        for (int ishift = 1; ishift <= nshift; ishift++) {
+          auto coeffshiftxZDCC = shiftprofileC->GetBinContent(shiftprofileC->FindBin(centrality, 0.5, ishift - 0.5));
+          auto coeffshiftyZDCC = shiftprofileC->GetBinContent(shiftprofileC->FindBin(centrality, 1.5, ishift - 0.5));
+          auto coeffshiftxZDCA = shiftprofileA->GetBinContent(shiftprofileA->FindBin(centrality, 0.5, ishift - 0.5));
+          auto coeffshiftyZDCA = shiftprofileA->GetBinContent(shiftprofileA->FindBin(centrality, 1.5, ishift - 0.5));
+          deltapsiZDCC = deltapsiZDCC + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCC * TMath::Cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * TMath::Sin(ishift * 1.0 * psiZDCC)));
+          deltapsiZDCA = deltapsiZDCA + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCA * TMath::Cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * TMath::Sin(ishift * 1.0 * psiZDCA)));
+        }
+        psiZDCC = psiZDCC + deltapsiZDCC;
+        psiZDCA = psiZDCA + deltapsiZDCA;
+      }
+
+      for (int ishift = 1; ishift <= nshift; ishift++) {
+        histos.fill(HIST("ShiftZDCC"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 1.0 * psiZDCC));
+        histos.fill(HIST("ShiftZDCC"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 1.0 * psiZDCC));
+        histos.fill(HIST("ShiftZDCA"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 1.0 * psiZDCA));
+        histos.fill(HIST("ShiftZDCA"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 1.0 * psiZDCA));
+      }
 
       histos.fill(HIST("hpQxZDCAC"), centrality, (qxZDCA * qxZDCC));
       histos.fill(HIST("hpQyZDCAC"), centrality, (qyZDCA * qyZDCC));

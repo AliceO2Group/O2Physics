@@ -1412,12 +1412,8 @@ struct cascadeBuilder {
     KFXi.TransportToDecayVertex();
     KFOmega.TransportToDecayVertex();
 
-    // get DCA of updated daughters at vertex
-    KFParticle kfpBachPionUpd = kfpBachPion;
-    KFParticle kfpV0Upd = kfpV0;
-    kfpBachPionUpd.SetProductionVertex(KFXi);
-    kfpV0Upd.SetProductionVertex(KFXi);
-    cascadecandidate.dcacascdau = kfpBachPionUpd.GetDistanceFromParticle(kfpV0Upd);
+    // get DCA of daughters at vertex
+    cascadecandidate.dcacascdau = kfpBachPion.GetDistanceFromParticle(kfpV0);
     if (cascadecandidate.dcacascdau > dcacascdau)
       return false;
 

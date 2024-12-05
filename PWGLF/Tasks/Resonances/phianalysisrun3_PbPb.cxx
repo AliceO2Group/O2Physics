@@ -79,7 +79,6 @@ struct phianalysisrun3_PbPb {
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> fillOccupancy{"fillOccupancy", true, "fill Occupancy"};
   Configurable<int> cfgOccupancyCut{"cfgOccupancyCut", 2500, "Occupancy cut"};
-  Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.0, "cut TOF beta"};
   Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
   Configurable<bool> additionalEvSel2{"additionalEvSel2", true, "Additional evsel2"};
   Configurable<bool> additionalEvSel3{"additionalEvSel3", true, "Additional evsel3"};
@@ -179,7 +178,7 @@ struct phianalysisrun3_PbPb {
     if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaKa()) < nsigmaCutTOF) {
+    if (candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaKa()) < nsigmaCutTOF) {
       return true;
     }
     return false;
@@ -228,17 +227,17 @@ struct phianalysisrun3_PbPb {
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCFullKa, aod::pidTOFFullKa>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa>>;
 
   // using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::McCollisionLabels>;
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                                    aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTOFbeta,
+                                                    aod::pidTPCFullKa, aod::pidTOFFullKa,
                                                     aod::McTrackLabels>>;
   using CollisionMCTrueTable = aod::McCollisions;
   using TrackMCTrueTable = aod::McParticles;
   using CollisionMCRecTableCentFT0C = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs, aod::EvSels>>;
-  using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using FilTrackMCRecTable = soa::Filtered<TrackMCRecTable>;
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
@@ -582,6 +581,11 @@ struct phianalysisrun3_PbPb {
       if (!collision.sel8() || std::abs(collision.mcCollision().posZ()) > cfgCutVertex) {
         continue;
       }
+      int occupancy = collision.trackOccupancyInTimeRange();
+      if (fillOccupancy && occupancy > cfgOccupancyCut) // occupancy info is available for this collision (*)
+      {
+        continue;
+      }
       multiplicity = collision.centFT0C();
       histos.fill(HIST("Centgen"), multiplicity);
       SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
@@ -629,6 +633,11 @@ struct phianalysisrun3_PbPb {
       return;
     }
     if (std::abs(collision.mcCollision().posZ()) > cfgCutVertex || !collision.sel8()) {
+      return;
+    }
+    int occupancy = collision.trackOccupancyInTimeRange();
+    if (fillOccupancy && occupancy > cfgOccupancyCut) // occupancy info is available for this collision (*)
+    {
       return;
     }
     auto multiplicity = collision.centFT0C();

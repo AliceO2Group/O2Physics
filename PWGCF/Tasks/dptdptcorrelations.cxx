@@ -100,7 +100,7 @@ struct DptDptCorrelationsTask {
     std::vector<TH2F*> fhSum1Pt_vsEtaPhi{nch, nullptr};                           //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
     std::vector<TH3F*> fhN1_vsZEtaPhiPt{nch, nullptr};                            //!<! single particle distribution vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3F*> fhSum1Pt_vsZEtaPhiPt{nch, nullptr};                        //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
-    std::vector<TH3*> fhNuaNue_vsZEtaPhiPt{nch, nullptr};                         //!<! NUA+NUE correction vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the differents species
+    std::vector<TH1*> fhNuaNue{nch, nullptr};                                     //!<! NUA+NUE correction for the differents species
     std::vector<TH2*> fhPtAvg_vsEtaPhi{nch, nullptr};                             //!<! average \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
     std::vector<std::vector<TH2F*>> fhN2_vsPtPt{nch, {nch, nullptr}};             //!<! weighted two particle distribution vs \f${p_T}_1, {p_T}_2\f$ for the different species combinations
     std::vector<std::vector<TH2F*>> fhN2_vsDEtaDPhi{nch, {nch, nullptr}};         //!<! two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
@@ -293,20 +293,32 @@ struct DptDptCorrelationsTask {
       return mass2;
     }
 
-    void storeTrackCorrections(std::vector<TH3*> corrs)
+    void storeTrackCorrections(std::vector<TH1*> corrs)
     {
       LOGF(info, "Stored NUA&NUE corrections for %d track ids", corrs.size());
       for (uint i = 0; i < corrs.size(); ++i) {
-        LOGF(info, "  Stored NUA&NUE corrections %s for track id %d %s", corrs[i] != nullptr ? corrs[i]->GetName() : "nullptr", i, corrs[i] != nullptr ? "yes" : "no");
-        fhNuaNue_vsZEtaPhiPt[i] = corrs[i];
-        if (fhNuaNue_vsZEtaPhiPt[i] != nullptr) {
+        int nDimensions = corrs[i] != nullptr ? corrs[i]->GetDimension() : 0;
+        LOGF(info, "  Stored NUA&NUE corrections %s for track id %d with %d dimensions %s",
+             corrs[i] != nullptr ? corrs[i]->GetName() : "nullptr", i, nDimensions, corrs[i] != nullptr ? "yes" : "no");
+        fhNuaNue[i] = corrs[i];
+        if (fhNuaNue[i] != nullptr) {
           int nbins = 0;
           double avg = 0.0;
-          for (int ix = 0; ix < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsX(); ++ix) {
-            for (int iy = 0; iy < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsY(); ++iy) {
-              for (int iz = 0; iz < fhNuaNue_vsZEtaPhiPt[i]->GetNbinsZ(); ++iz) {
-                nbins++;
-                avg += fhNuaNue_vsZEtaPhiPt[i]->GetBinContent(ix + 1, iy + 1, iz + 1);
+          for (int ix = 0; ix < fhNuaNue[i]->GetNbinsX(); ++ix) {
+            if (nDimensions == 1) {
+              nbins++;
+              avg += fhNuaNue[i]->GetBinContent(ix + 1);
+            } else {
+              for (int iy = 0; iy < fhNuaNue[i]->GetNbinsY(); ++iy) {
+                if (nDimensions == 2) {
+                  nbins++;
+                  avg += fhNuaNue[i]->GetBinContent(ix + 1, iy + 1);
+                } else {
+                  for (int iz = 0; iz < fhNuaNue[i]->GetNbinsZ(); ++iz) {
+                    nbins++;
+                    avg += fhNuaNue[i]->GetBinContent(ix + 1, iy + 1, iz + 1);
+                  }
+                }
               }
             }
           }
@@ -332,8 +344,15 @@ struct DptDptCorrelationsTask {
       std::vector<float>* corr = new std::vector<float>(tracks.size(), 1.0f);
       int index = 0;
       for (auto& t : tracks) {
-        if (fhNuaNue_vsZEtaPhiPt[t.trackacceptedid()] != nullptr) {
-          (*corr)[index] = fhNuaNue_vsZEtaPhiPt[t.trackacceptedid()]->GetBinContent(fhNuaNue_vsZEtaPhiPt[t.trackacceptedid()]->FindFixBin(zvtx, GetEtaPhiIndex(t) + 0.5, t.pt()));
+        if (fhNuaNue[t.trackacceptedid()] != nullptr) {
+          int nDimensions = fhNuaNue[t.trackacceptedid()]->GetDimension();
+          if (nDimensions == 1) {
+            (*corr)[index] = fhNuaNue[t.trackacceptedid()]->GetBinContent(fhNuaNue[t.trackacceptedid()]->FindFixBin(t.pt()));
+          } else if (nDimensions == 2) {
+            (*corr)[index] = fhNuaNue[t.trackacceptedid()]->GetBinContent(fhNuaNue[t.trackacceptedid()]->FindFixBin(t.eta(), t.pt()));
+          } else {
+            (*corr)[index] = fhNuaNue[t.trackacceptedid()]->GetBinContent(fhNuaNue[t.trackacceptedid()]->FindFixBin(zvtx, GetEtaPhiIndex(t) + 0.5, t.pt()));
+          }
         }
         index++;
       }
@@ -690,7 +709,7 @@ struct DptDptCorrelationsTask {
             fhSum1Pt_vsZEtaPhiPt[i]->SetBit(TH1::kIsNotW);
             fhSum1Pt_vsZEtaPhiPt[i]->Sumw2(false);
           }
-          fhNuaNue_vsZEtaPhiPt[i] = nullptr;
+          fhNuaNue[i] = nullptr;
           fhPtAvg_vsEtaPhi[i] = nullptr;
 
           fOutputList->Add(fhN1_vsPt[i]);
@@ -724,7 +743,7 @@ struct DptDptCorrelationsTask {
                                        100, 0.0, 100.0);
           fhSum1Ptnw_vsC[i] = new TProfile(TString::Format("sumPtNw_%s_vsM", tnames[i].c_str()).Data(),
                                            TString::Format("#LT #Sigma p_{t,%s} #GT;Centrality/Multiplicity (%%);#LT #Sigma p_{t,%s} #GT (GeV/c)", tnames[i].c_str(), tnames[i].c_str()).Data(), 100, 0.0, 100.0);
-          fhNuaNue_vsZEtaPhiPt[i] = nullptr;
+          fhNuaNue[i] = nullptr;
           fhPtAvg_vsEtaPhi[i] = nullptr;
           fOutputList->Add(fhN1_vsEtaPhi[i]);
           fOutputList->Add(fhSum1Pt_vsEtaPhi[i]);
@@ -1200,9 +1219,9 @@ struct DptDptCorrelationsTask {
           }
           storePtAverages(ptavgs);
         } else {
-          std::vector<TH3*> corrs{tnames.size(), nullptr};
+          std::vector<TH1*> corrs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
-            corrs[isp] = reinterpret_cast<TH3*>(ccdblst->FindObject(
+            corrs[isp] = reinterpret_cast<TH1*>(ccdblst->FindObject(
               TString::Format("correction_%02d-%02d_%s",
                               static_cast<int>(fCentMultMin[ixDCE]),
                               static_cast<int>(fCentMultMax[ixDCE]),
@@ -1274,9 +1293,9 @@ struct DptDptCorrelationsTask {
           }
           dataCEME[ixDCE]->storePtAverages(ptavgs);
         } else {
-          std::vector<TH3*> corrs{tnames.size(), nullptr};
+          std::vector<TH1*> corrs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
-            corrs[isp] = reinterpret_cast<TH3*>(ccdblst->FindObject(
+            corrs[isp] = reinterpret_cast<TH1*>(ccdblst->FindObject(
               TString::Format("correction_%02d-%02d_%s",
                               static_cast<int>(fCentMultMin[ixDCE]),
                               static_cast<int>(fCentMultMax[ixDCE]),

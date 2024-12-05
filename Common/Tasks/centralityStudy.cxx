@@ -35,6 +35,11 @@ struct centralityStudy {
 
   // Configurables
   Configurable<bool> do2DPlots{"do2DPlots", true, "0 - no, 1 - yes"};
+  Configurable<bool> doOccupancyStudyVsCentrality2d{"doOccupancyStudyVsCentrality2d", true, "0 - no, 1 - yes"};
+  Configurable<bool> doOccupancyStudyVsRawValues2d{"doOccupancyStudyVsRawValues2d", true, "0 - no, 1 - yes"};
+  Configurable<bool> doOccupancyStudyVsCentrality3d{"doOccupancyStudyVsCentrality3d", false, "0 - no, 1 - yes"};
+  Configurable<bool> doOccupancyStudyVsRawValues3d{"doOccupancyStudyVsRawValues3d", false, "0 - no, 1 - yes"};
+  Configurable<bool> doNGlobalTracksVsRawSignals{"doNGlobalTracksVsRawSignals", true, "0 - no, 1 - yes"};
   Configurable<bool> applySel8{"applySel8", true, "0 - no, 1 - yes"};
   Configurable<bool> applyVtxZ{"applyVtxZ", true, "0 - no, 1 - yes"};
 
@@ -86,12 +91,17 @@ struct centralityStudy {
   ConfigurableAxis axisMultFDDA{"axisMultFDDA", {1000, 0, 100000}, "FDDA amplitude"};
   ConfigurableAxis axisMultFDDC{"axisMultFDDC", {1000, 0, 100000}, "FDDC amplitude"};
   ConfigurableAxis axisMultPVContributors{"axisMultPVContributors", {200, 0, 6000}, "Number of PV Contributors"};
+  ConfigurableAxis axisMultGlobalTracks{"axisMultGlobalTracks", {500, 0, 5000}, "Number of global tracks"};
+
+  ConfigurableAxis axisTrackOccupancy{"axisTrackOccupancy", {50, 0, 5000}, "Track occupancy"};
+  ConfigurableAxis axisFT0COccupancy{"axisFT0COccupancy", {50, 0, 80000}, "FT0C occupancy"};
 
   // For one-dimensional plots, where binning is no issue
   ConfigurableAxis axisMultUltraFineFV0A{"axisMultUltraFineFV0A", {60000, 0, 60000}, "FV0A amplitude"};
   ConfigurableAxis axisMultUltraFineFT0M{"axisMultUltraFineFT0M", {50000, 0, 200000}, "FT0M amplitude"};
   ConfigurableAxis axisMultUltraFineFT0C{"axisMultUltraFineFT0C", {60000, 0, 60000}, "FT0C amplitude"};
   ConfigurableAxis axisMultUltraFinePVContributors{"axisMultUltraFinePVContributors", {10000, 0, 10000}, "Number of PV Contributors"};
+  ConfigurableAxis axisMultUltraFineGlobalTracks{"axisMultUltraFineGlobalTracks", {5000, 0, 5000}, "Number of global tracks"};
 
   ConfigurableAxis axisMultITSOnly{"axisMultITSOnly", {200, 0, 6000}, "Number of ITS only tracks"};
   ConfigurableAxis axisMultITSTPC{"axisMultITSTPC", {200, 0, 6000}, "Number of ITSTPC matched tracks"};
@@ -128,10 +138,13 @@ struct centralityStudy {
       histos.add("hFT0C_Collisions", "hFT0C_Collisions", kTH1D, {axisMultUltraFineFT0C});
       histos.add("hFT0M_Collisions", "hFT0M_Collisions", kTH1D, {axisMultUltraFineFT0M});
       histos.add("hFV0A_Collisions", "hFV0A_Collisions", kTH1D, {axisMultUltraFineFV0A});
+      histos.add("hNGlobalTracks", "hNGlobalTracks", kTH1D, {axisMultUltraFineGlobalTracks});
       histos.add("hNPVContributors", "hNPVContributors", kTH1D, {axisMultUltraFinePVContributors});
 
       histos.add("hFT0CvsPVz_Collisions_All", "hFT0CvsPVz_Collisions_All", kTProfile, {axisPVz});
       histos.add("hFT0CvsPVz_Collisions", "hFT0CvsPVz_Collisions", kTProfile, {axisPVz});
+      histos.add("hFV0AvsPVz_Collisions", "hFV0AvsPVz_Collisions", kTProfile, {axisPVz});
+      histos.add("hNGlobalTracksvsPVz_Collisions", "hNGlobalTracksvsPVz_Collisions", kTProfile, {axisPVz});
     }
 
     if (doprocessBCs) {
@@ -139,18 +152,16 @@ struct centralityStudy {
       histos.add("hFT0C_BCs", "hFT0C_BCs", kTH1D, {axisMultUltraFineFT0C});
       histos.add("hFT0M_BCs", "hFT0M_BCs", kTH1D, {axisMultUltraFineFT0M});
       histos.add("hFV0A_BCs", "hFV0A_BCs", kTH1D, {axisMultUltraFineFV0A});
-
       histos.add("hFT0CvsPVz_BCs_All", "hFT0CvsPVz_BCs_All", kTProfile, {axisPVz});
       histos.add("hFT0CvsPVz_BCs", "hFT0CvsPVz_BCs", kTProfile, {axisPVz});
-
       histos.add("hVertexZ_BCvsCO", "hVertexZ_BCvsCO", kTH2D, {axisPVz, axisPVz});
-
       histos.add("hZNAvsFT0C_BCs", "hZNAvsFT0C_BCs", kTH2D, {axisMultFT0C, axisZN});
       histos.add("hZNCvsFT0C_BCs", "hZNCvsFT0C_BCs", kTH2D, {axisMultFT0C, axisZN});
     }
 
     if (do2DPlots) {
       histos.add("hNContribsVsFT0C", "hNContribsVsFT0C", kTH2F, {axisMultFT0C, axisMultPVContributors});
+      histos.add("hNContribsVsFV0A", "hNContribsVsFV0A", kTH2F, {axisMultFV0A, axisMultPVContributors});
       histos.add("hMatchedVsITSOnly", "hMatchedVsITSOnly", kTH2F, {axisMultITSOnly, axisMultITSTPC});
 
       // 2d correlation of fit signals
@@ -158,6 +169,30 @@ struct centralityStudy {
       histos.add("hFV0AVsFT0C", "hFV0AVsFT0C", kTH2F, {axisMultFT0C, axisMultFV0A});
       histos.add("hFDDAVsFT0C", "hFDDAVsFT0C", kTH2F, {axisMultFT0C, axisMultFDDA});
       histos.add("hFDDCVsFT0C", "hFDDCVsFT0C", kTH2F, {axisMultFT0C, axisMultFDDC});
+    }
+
+    if (doNGlobalTracksVsRawSignals) {
+      histos.add("hNGlobalTracksVsFT0A", "hNGlobalTracksVsFT0A", kTH2F, {axisMultFT0A, axisMultGlobalTracks});
+      histos.add("hNGlobalTracksVsFT0C", "hNGlobalTracksVsFT0C", kTH2F, {axisMultFT0C, axisMultGlobalTracks});
+      histos.add("hNGlobalTracksVsFV0A", "hNGlobalTracksVsFV0A", kTH2F, {axisMultFV0A, axisMultGlobalTracks});
+      histos.add("hNGlobalTracksVsFDDA", "hNGlobalTracksVsFDDA", kTH2F, {axisMultFDDA, axisMultGlobalTracks});
+      histos.add("hNGlobalTracksVsFDDC", "hNGlobalTracksVsFDDC", kTH2F, {axisMultFDDC, axisMultGlobalTracks});
+      histos.add("hNGlobalTracksVsZNA", "hNGlobalTracksVsZNA", kTH2F, {axisZN, axisMultGlobalTracks});
+      histos.add("hNGlobalTracksVsZNC", "hNGlobalTracksVsZNC", kTH2F, {axisZN, axisMultGlobalTracks});
+    }
+
+    if (doOccupancyStudyVsRawValues2d) {
+      histos.add("hNcontribsProfileVsTrackOccupancyVsFT0C", "hNcontribsProfileVsTrackOccupancyVsFT0C", kTProfile2D, {axisTrackOccupancy, axisMultFT0C});
+      histos.add("hNGlobalTracksProfileVsTrackOccupancyVsFT0C", "hNGlobalTracksProfileVsTrackOccupancyVsFT0C", kTProfile2D, {axisTrackOccupancy, axisMultFT0C});
+      histos.add("hNcontribsProfileVsFT0COccupancyVsFT0C", "hNcontribsProfileVsFT0COccupancyVsFT0C", kTProfile2D, {axisFT0COccupancy, axisMultFT0C});
+      histos.add("hNGlobalTracksProfileVsFT0COccupancyVsFT0C", "hNGlobalTracksProfileVsFT0COccupancyVsFT0C", kTProfile2D, {axisFT0COccupancy, axisMultFT0C});
+    }
+
+    if (doOccupancyStudyVsRawValues3d) {
+      histos.add("hTrackOccupancyVsNContribsVsFT0C", "hTrackOccupancyVsNContribsVsFT0C", kTH3F, {axisTrackOccupancy, axisMultPVContributors, axisMultFT0C});
+      histos.add("hTrackOccupancyVsNGlobalTracksVsFT0C", "hTrackOccupancyVsNGlobalTracksVsFT0C", kTH3F, {axisTrackOccupancy, axisMultGlobalTracks, axisMultFT0C});
+      histos.add("hFT0COccupancyVsNContribsVsFT0C", "hFT0COccupancyVsNContribsVsFT0C", kTH3F, {axisFT0COccupancy, axisMultPVContributors, axisMultFT0C});
+      histos.add("hFT0COccupancyVsNGlobalTracksVsFT0C", "hFT0COccupancyVsNGlobalTracksVsFT0C", kTH3F, {axisFT0COccupancy, axisMultGlobalTracks, axisMultFT0C});
     }
 
     if (doprocessCollisionsWithCentrality) {
@@ -169,6 +204,20 @@ struct centralityStudy {
       histos.add("hNGlobalTracksVsCentrality", "hNGlobalTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
       histos.add("hPVChi2VsCentrality", "hPVChi2VsCentrality", kTH2F, {axisCentrality, axisPVChi2});
       histos.add("hDeltaTimeVsCentrality", "hDeltaTimeVsCentrality", kTH2F, {axisCentrality, axisDeltaTime});
+
+      if (doOccupancyStudyVsCentrality2d) {
+        histos.add("hNcontribsProfileVsTrackOccupancyVsCentrality", "hNcontribsProfileVsTrackOccupancyVsCentrality", kTProfile2D, {axisTrackOccupancy, axisCentrality});
+        histos.add("hNGlobalTracksProfileVsTrackOccupancyVsCentrality", "hNGlobalTracksProfileVsTrackOccupancyVsCentrality", kTProfile2D, {axisTrackOccupancy, axisCentrality});
+        histos.add("hNcontribsProfileVsFT0COccupancyVsCentrality", "hNcontribsProfileVsFT0COccupancyVsCentrality", kTProfile2D, {axisFT0COccupancy, axisCentrality});
+        histos.add("hNGlobalTracksProfileVsFT0COccupancyVsCentrality", "hNGlobalTracksProfileVsFT0COccupancyVsCentrality", kTProfile2D, {axisFT0COccupancy, axisCentrality});
+      }
+
+      if (doOccupancyStudyVsCentrality3d) {
+        histos.add("hTrackOccupancyVsNContribsVsCentrality", "hTrackOccupancyVsNContribsVsCentrality", kTH3F, {axisTrackOccupancy, axisMultPVContributors, axisCentrality});
+        histos.add("hTrackOccupancyVsNGlobalTracksVsCentrality", "hTrackOccupancyVsNGlobalTracksVsCentrality", kTH3F, {axisTrackOccupancy, axisMultGlobalTracks, axisCentrality});
+        histos.add("hFT0COccupancyVsNContribsVsCentrality", "hFT0COccupancyVsNContribsVsCentrality", kTH3F, {axisFT0COccupancy, axisMultPVContributors, axisCentrality});
+        histos.add("hFT0COccupancyVsNGlobalTracksVsCentrality", "hFT0COccupancyVsNGlobalTracksVsCentrality", kTH3F, {axisFT0COccupancy, axisMultGlobalTracks, axisCentrality});
+      }
     }
   }
 
@@ -274,12 +323,16 @@ struct centralityStudy {
     histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C() * scaleSignalFT0C);
     histos.fill(HIST("hFT0M_Collisions"), (collision.multFT0A() + collision.multFT0C()) * scaleSignalFT0M);
     histos.fill(HIST("hFV0A_Collisions"), collision.multFV0A() * scaleSignalFV0A);
+    histos.fill(HIST("hNGlobalTracks"), collision.multNTracksGlobal());
     histos.fill(HIST("hFT0CvsPVz_Collisions_All"), collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
+    histos.fill(HIST("hFV0AvsPVz_Collisions"), collision.multPVz(), collision.multFV0A() * scaleSignalFV0A);
+    histos.fill(HIST("hNGlobalTracksvsPVz_Collisions"), collision.multPVz(), collision.multNTracksGlobal());
     if (collision.multFT0C() > minFT0CforVertexZ) {
       histos.fill(HIST("hFT0CvsPVz_Collisions"), collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
     }
     if (do2DPlots) {
       histos.fill(HIST("hNContribsVsFT0C"), collision.multFT0C() * scaleSignalFT0C, collision.multPVTotalContributors());
+      histos.fill(HIST("hNContribsVsFV0A"), collision.multFV0A() * scaleSignalFV0A, collision.multPVTotalContributors());
       histos.fill(HIST("hMatchedVsITSOnly"), collision.multNTracksITSOnly(), collision.multNTracksITSTPC());
 
       // correlate also FIT detector signals
@@ -287,6 +340,30 @@ struct centralityStudy {
       histos.fill(HIST("hFV0AVsFT0C"), collision.multFT0C() * scaleSignalFT0C, collision.multFV0A());
       histos.fill(HIST("hFDDAVsFT0C"), collision.multFT0C() * scaleSignalFT0C, collision.multFDDA());
       histos.fill(HIST("hFDDCVsFT0C"), collision.multFT0C() * scaleSignalFT0C, collision.multFDDC());
+    }
+
+    if (doOccupancyStudyVsCentrality2d) {
+      histos.fill(HIST("hNcontribsProfileVsTrackOccupancyVsFT0C"), collision.trackOccupancyInTimeRange(), collision.multFT0C(), collision.multPVTotalContributors());
+      histos.fill(HIST("hNGlobalTracksProfileVsTrackOccupancyVsFT0C"), collision.trackOccupancyInTimeRange(), collision.multFT0C(), collision.multNTracksGlobal());
+      histos.fill(HIST("hNcontribsProfileVsFT0COccupancyVsFT0C"), collision.ft0cOccupancyInTimeRange(), collision.multFT0C(), collision.multPVTotalContributors());
+      histos.fill(HIST("hNGlobalTracksProfileVsFT0COccupancyVsFT0C"), collision.ft0cOccupancyInTimeRange(), collision.multFT0C(), collision.multNTracksGlobal());
+    }
+
+    if (doOccupancyStudyVsRawValues3d) {
+      histos.fill(HIST("hTrackOccupancyVsNContribsVsFT0C"), collision.trackOccupancyInTimeRange(), collision.multPVTotalContributors(), collision.multFT0C());
+      histos.fill(HIST("hTrackOccupancyVsNGlobalTracksVsFT0C"), collision.trackOccupancyInTimeRange(), collision.multNTracksGlobal(), collision.multFT0C());
+      histos.fill(HIST("hFT0COccupancyVsNContribsVsFT0C"), collision.ft0cOccupancyInTimeRange(), collision.multPVTotalContributors(), collision.multFT0C());
+      histos.fill(HIST("hFT0COccupancyVsNGlobalTracksVsFT0C"), collision.ft0cOccupancyInTimeRange(), collision.multNTracksGlobal(), collision.multFT0C());
+    }
+
+    if (doNGlobalTracksVsRawSignals) {
+      histos.fill(HIST("hNGlobalTracksVsFT0A"), collision.multFT0A(), collision.multNTracksGlobal());
+      histos.fill(HIST("hNGlobalTracksVsFT0C"), collision.multFT0C(), collision.multNTracksGlobal());
+      histos.fill(HIST("hNGlobalTracksVsFV0A"), collision.multFV0A(), collision.multNTracksGlobal());
+      histos.fill(HIST("hNGlobalTracksVsFDDA"), collision.multFDDA(), collision.multNTracksGlobal());
+      histos.fill(HIST("hNGlobalTracksVsFDDC"), collision.multFDDC(), collision.multNTracksGlobal());
+      histos.fill(HIST("hNGlobalTracksVsZNA"), collision.multZNA(), collision.multNTracksGlobal());
+      histos.fill(HIST("hNGlobalTracksVsZNC"), collision.multZNC(), collision.multNTracksGlobal());
     }
 
     // if the table has centrality information
@@ -298,10 +375,24 @@ struct centralityStudy {
       histos.fill(HIST("hNITSOnlyTracksVsCentrality"), collision.centFT0C(), collision.multNTracksITSOnly());
       histos.fill(HIST("hNGlobalTracksVsCentrality"), collision.centFT0C(), collision.multNTracksGlobal());
       histos.fill(HIST("hPVChi2VsCentrality"), collision.centFT0C(), collision.multPVChi2());
+
+      if (doOccupancyStudyVsCentrality2d) {
+        histos.fill(HIST("hNcontribsProfileVsTrackOccupancyVsCentrality"), collision.trackOccupancyInTimeRange(), collision.centFT0C(), collision.multPVTotalContributors());
+        histos.fill(HIST("hNGlobalTracksProfileVsTrackOccupancyVsCentrality"), collision.trackOccupancyInTimeRange(), collision.centFT0C(), collision.multNTracksGlobal());
+        histos.fill(HIST("hNcontribsProfileVsFT0COccupancyVsCentrality"), collision.ft0cOccupancyInTimeRange(), collision.centFT0C(), collision.multPVTotalContributors());
+        histos.fill(HIST("hNGlobalTracksProfileVsFT0COccupancyVsCentrality"), collision.ft0cOccupancyInTimeRange(), collision.centFT0C(), collision.multNTracksGlobal());
+      }
+
+      if (doOccupancyStudyVsCentrality3d) {
+        histos.fill(HIST("hTrackOccupancyVsNContribsVsCentrality"), collision.trackOccupancyInTimeRange(), collision.multPVTotalContributors(), collision.centFT0C());
+        histos.fill(HIST("hTrackOccupancyVsNGlobalTracksVsCentrality"), collision.trackOccupancyInTimeRange(), collision.multNTracksGlobal(), collision.centFT0C());
+        histos.fill(HIST("hFT0COccupancyVsNContribsVsCentrality"), collision.ft0cOccupancyInTimeRange(), collision.multPVTotalContributors(), collision.centFT0C());
+        histos.fill(HIST("hFT0COccupancyVsNGlobalTracksVsCentrality"), collision.ft0cOccupancyInTimeRange(), collision.multNTracksGlobal(), collision.centFT0C());
+      }
     }
   }
 
-  void processCollisions(soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections>::iterator const& collision)
+  void processCollisions(soa::Join<aod::Mults, aod::MultsExtra, aod::MultsGlobal, aod::MultSelections>::iterator const& collision)
   {
     genericProcessCollision(collision);
   }

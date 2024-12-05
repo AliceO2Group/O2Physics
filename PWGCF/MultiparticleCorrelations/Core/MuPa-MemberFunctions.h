@@ -370,10 +370,12 @@ void DefaultConfiguration()
   t0.fCalculateTest0AsFunctionOf[AFO_CENTRALITY] = cf_t0.cfCalculateTest0AsFunctionOfCentrality;
   t0.fCalculateTest0AsFunctionOf[AFO_PT] = cf_t0.cfCalculateTest0AsFunctionOfPt;
   t0.fCalculateTest0AsFunctionOf[AFO_ETA] = cf_t0.cfCalculateTest0AsFunctionOfEta;
+  t0.fCalculateTest0AsFunctionOf[AFO_OCCUPANCY] = cf_t0.cfCalculateTest0AsFunctionOfOccupancy;
   t0.fCalculateTest0AsFunctionOf[AFO_INTERACTIONRATE] = cf_t0.cfCalculateTest0AsFunctionOfInteractionRate;
   t0.fCalculateTest0AsFunctionOf[AFO_CURRENTRUNDURATION] = cf_t0.cfCalculateTest0AsFunctionOfCurrentRunDuration;
   t0.fFileWithLabels = TString(cf_t0.cfFileWithLabels);
   t0.fUseDefaultLabels = cf_t0.cfUseDefaultLabels;
+  t0.fWhichDefaultLabels = TString(cf_t0.cfWhichDefaultLabels);
 
   // *) Particle weights:
   pw.fUseWeights[wPHI] = cf_pw.cfUsePhiWeights;
@@ -526,26 +528,21 @@ void DefaultConfiguration()
   qa.fEventHistogramsName2D[eMultiplicity_vs_Centrality] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eCentrality].Data());
   qa.fEventHistogramsName2D[eMultiplicity_vs_Vertex_z] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eVertex_z].Data());
   qa.fEventHistogramsName2D[eMultiplicity_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eOccupancy].Data());
-
   qa.fEventHistogramsName2D[eReferenceMultiplicity_vs_NContributors] = Form("%s_vs_%s", eh.fEventHistogramsName[eReferenceMultiplicity].Data(), eh.fEventHistogramsName[eNContributors].Data());
   qa.fEventHistogramsName2D[eReferenceMultiplicity_vs_Centrality] = Form("%s_vs_%s", eh.fEventHistogramsName[eReferenceMultiplicity].Data(), eh.fEventHistogramsName[eCentrality].Data());
   qa.fEventHistogramsName2D[eReferenceMultiplicity_vs_Vertex_z] = Form("%s_vs_%s", eh.fEventHistogramsName[eReferenceMultiplicity].Data(), eh.fEventHistogramsName[eVertex_z].Data());
   qa.fEventHistogramsName2D[eReferenceMultiplicity_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eReferenceMultiplicity].Data(), eh.fEventHistogramsName[eOccupancy].Data());
-
   qa.fEventHistogramsName2D[eNContributors_vs_Centrality] = Form("%s_vs_%s", eh.fEventHistogramsName[eNContributors].Data(), eh.fEventHistogramsName[eCentrality].Data());
   qa.fEventHistogramsName2D[eNContributors_vs_Vertex_z] = Form("%s_vs_%s", eh.fEventHistogramsName[eNContributors].Data(), eh.fEventHistogramsName[eVertex_z].Data());
   qa.fEventHistogramsName2D[eNContributors_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eNContributors].Data(), eh.fEventHistogramsName[eOccupancy].Data());
-
   qa.fEventHistogramsName2D[eCentrality_vs_Vertex_z] = Form("%s_vs_%s", eh.fEventHistogramsName[eCentrality].Data(), eh.fEventHistogramsName[eVertex_z].Data());
   qa.fEventHistogramsName2D[eCentrality_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eCentrality].Data(), eh.fEventHistogramsName[eOccupancy].Data());
-
   qa.fEventHistogramsName2D[eVertex_z_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eVertex_z].Data(), eh.fEventHistogramsName[eOccupancy].Data());
-
   qa.fEventHistogramsName2D[eCentFT0C_vs_CentNTPV] = Form("%s_vs_%s", qa.fCentralityEstimatorName[eCentFT0C].Data(), qa.fCentralityEstimatorName[eCentNTPV].Data());
   qa.fEventHistogramsName2D[eCentFT0M_vs_CentNTPV] = Form("%s_vs_%s", qa.fCentralityEstimatorName[eCentFT0M].Data(), qa.fCentralityEstimatorName[eCentNTPV].Data());
   qa.fEventHistogramsName2D[eCentRun2V0M_vs_CentRun2SPDTracklets] = Form("%s_vs_%s", qa.fCentralityEstimatorName[eCentRun2V0M].Data(), qa.fCentralityEstimatorName[eCentRun2SPDTracklets].Data());
   qa.fEventHistogramsName2D[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = Form("%s_vs_%s", qa.fOccupancyEstimatorName[eTrackOccupancyInTimeRange].Data(), qa.fOccupancyEstimatorName[eFT0COccupancyInTimeRange].Data());
-  qa.fEventHistogramsName2D[eCurrentRunDuration_vs_InteractionRate] = Form("%s_vs_%s", "CurrentRunDuration", "InteractionRate"); // TBI 20241127 check if this is the permanent formatting for axis titles
+  qa.fEventHistogramsName2D[eCurrentRunDuration_vs_InteractionRate] = Form("%s_vs_%s", ec.fEventCutName[eCurrentRunDuration].Data(), ec.fEventCutName[eInteractionRate].Data());
 
   // ***) Quick insanity check that all names are set:
   for (Int_t t = 0; t < eQAEventHistograms2D_N; t++) {
@@ -574,7 +571,7 @@ void DefaultConfiguration()
 
 Bool_t Alright(TString s)
 {
-  // Simple utility function, which for a string formatted "someName-0" returns false, and for "someName-1" returns true.
+  // Simple utility function, which for a string formatted "0-someName" returns false, and for "1-someName" returns true.
 
   // a) Insanity check on the format;
   // b) Do the thing.
@@ -597,15 +594,15 @@ Bool_t Alright(TString s)
   }
 
   // b) Do the thing:
-  //    Algorithm: I split "someName-0" with respect to "-" as a field separator, and check what is in the 2nd field.
-  if (TString(oa->At(1)->GetName()).EqualTo("0")) {
+  //    Algorithm: I split "0-someName" or "1-someName" with respect to "-" as a field separator, and check what is in the 1st field.
+  if (TString(oa->At(0)->GetName()).EqualTo("0")) {
     delete oa;
     returnValue = kFALSE;
-  } else if (TString(oa->At(1)->GetName()).EqualTo("1")) {
+  } else if (TString(oa->At(0)->GetName()).EqualTo("1")) {
     delete oa;
     returnValue = kTRUE;
   } else {
-    LOGF(fatal, "\033[1;31m%s at line %d : string expected in this function must be formatted as \"someName-0\" or \"someName-1\" => s = %s\033[0m", __FUNCTION__, __LINE__, s.Data());
+    LOGF(fatal, "\033[1;31m%s at line %d : string expected in this function must be formatted as \"0-someName\" or \"1-someName\" => s = %s\033[0m", __FUNCTION__, __LINE__, s.Data());
   }
 
   if (tc.fVerboseUtility) {
@@ -651,8 +648,8 @@ void DefaultBooking()
     // *) Insanity check on the content and ordering of histogram names in the initialization in configurable cfBookEventHistograms:
     // TBI 20240518 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
     for (Int_t name = 0; name < eEventHistograms_N; name++) {
-      // TBI 20240518 I could implement even a strickter EqualTo instead of BeginsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
-      if (!TString(lBookEventHistograms[name]).BeginsWith(eh.fEventHistogramsName[name].Data())) {
+      // TBI 20240518 I could implement even a strickter EqualTo instead of EndsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
+      if (!TString(lBookEventHistograms[name]).EndsWith(eh.fEventHistogramsName[name].Data())) {
         LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookEventHistograms => name = %d, lBookEventHistograms[%d] = \"%s\", eh.fEventHistogramsName[%d] = \"%s\" \033[0m", __FUNCTION__, __LINE__, name, name, TString(lBookEventHistograms[name]).Data(), name, eh.fEventHistogramsName[name].Data());
       }
     }
@@ -695,8 +692,8 @@ void DefaultBooking()
     // *) Insanity check on the content and ordering of particle histograms in the initialization in configurable cfBookParticleHistograms:
     // TBI 20240518 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
     for (Int_t name = 0; name < eParticleHistograms_N; name++) {
-      // TBI 20240518 I could implement even a strickter EqualTo instead of BeginsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
-      if (!TString(lBookParticleHistograms[name]).BeginsWith(ph.fParticleHistogramsName[name].Data())) {
+      // TBI 20240518 I could implement even a strickter EqualTo instead of EndsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
+      if (!TString(lBookParticleHistograms[name]).EndsWith(ph.fParticleHistogramsName[name].Data())) {
         LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookParticleHistograms => name = %d, lBookParticleHistograms[name] = \"%s\", ph.fParticleHistogramsName[name] = \"%s\" \033[0m", __FUNCTION__, __LINE__, name, TString(lBookParticleHistograms[name]).Data(), ph.fParticleHistogramsName[name].Data());
       }
     }
@@ -770,8 +767,8 @@ void DefaultBooking()
     // *) Insanity check on the content and ordering of QA 2D event histograms in the initialization in configurable cfBookQAEventHistograms2D:
     // TBI 20240518 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
     for (Int_t name = 0; name < eQAEventHistograms2D_N; name++) {
-      // TBI 20240518 I could implement even a strickter EqualTo instead of BeginsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
-      if (!TString(lBookQAEventHistograms2D[name]).BeginsWith(qa.fEventHistogramsName2D[name].Data())) {
+      // TBI 20240518 I could implement even a strickter EqualTo instead of EndsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
+      if (!TString(lBookQAEventHistograms2D[name]).EndsWith(qa.fEventHistogramsName2D[name].Data())) {
         LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookQAEventHistograms2D => name = %d, lBookQAEventHistograms2D[name] = \"%s\", qa.fEventHistogramsName2D[name] = \"%s\" \033[0m", __FUNCTION__, __LINE__, name, TString(lBookQAEventHistograms2D[name]).Data(), qa.fEventHistogramsName2D[name].Data());
       }
     }
@@ -869,8 +866,8 @@ void DefaultBinning()
   eh.fEventHistogramsBins[eReferenceMultiplicity][1] = 0.;
   eh.fEventHistogramsBins[eReferenceMultiplicity][2] = 60000.;
 
-  eh.fEventHistogramsBins[eCentrality][0] = 120; // intentionally, because if centrality is not determined, it's set to 105.0 at the moment
-  eh.fEventHistogramsBins[eCentrality][1] = -10.;
+  eh.fEventHistogramsBins[eCentrality][0] = 110; // intentionally, because if centrality is not determined, it's set to 105.0 at the moment
+  eh.fEventHistogramsBins[eCentrality][1] = 0.;
   eh.fEventHistogramsBins[eCentrality][2] = 110.;
 
   eh.fEventHistogramsBins[eVertex_x][0] = 800;
@@ -895,25 +892,25 @@ void DefaultBinning()
 
   if (ec.fsEventCuts[eOccupancyEstimator].EqualTo("TrackOccupancyInTimeRange", TString::kIgnoreCase)) {
     eh.fEventHistogramsBins[eOccupancy][0] = 150;
-    eh.fEventHistogramsBins[eOccupancy][1] = 0.; // It's set to -1 if not meaningful TBI 20241109 check this further
+    eh.fEventHistogramsBins[eOccupancy][1] = 0.;
     eh.fEventHistogramsBins[eOccupancy][2] = 15000.;
   } else if (ec.fsEventCuts[eOccupancyEstimator].EqualTo("FT0COccupancyInTimeRange", TString::kIgnoreCase)) { // keep in sync with values below for 2D QA
     eh.fEventHistogramsBins[eOccupancy][0] = 1000;
-    eh.fEventHistogramsBins[eOccupancy][1] = 0.; // It's set to -1 if not meaningful TBI 20241109 check this further
+    eh.fEventHistogramsBins[eOccupancy][1] = 0.;
     eh.fEventHistogramsBins[eOccupancy][2] = 100000.;
   }
-  // For 2D QA correlation plot, temporarily I set it to maximum of the 2 => TBI 20241114 this can be refined
+  // For 2D QA correlation plot, temporarily I set it to maximum of the two above:
   if (qa.fBookQAEventHistograms2D[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange]) {
-    eh.fEventHistogramsBins[eOccupancy][0] = 600;
-    eh.fEventHistogramsBins[eOccupancy][1] = 0.; // It's set to -1 if not meaningful TBI 20241109 check this further
-    eh.fEventHistogramsBins[eOccupancy][2] = 60000.;
+    eh.fEventHistogramsBins[eOccupancy][0] = 1000; // keep in sync. with definition above
+    eh.fEventHistogramsBins[eOccupancy][1] = 0.;
+    eh.fEventHistogramsBins[eOccupancy][2] = 100000.;
   }
 
-  eh.fEventHistogramsBins[eInteractionRate][0] = 20000; // TBI 20241127 Remember that I do not have configurables for binning of control histograms, only for results histograms
+  eh.fEventHistogramsBins[eInteractionRate][0] = 1000;
   eh.fEventHistogramsBins[eInteractionRate][1] = 0.;
-  eh.fEventHistogramsBins[eInteractionRate][2] = 200.;
+  eh.fEventHistogramsBins[eInteractionRate][2] = 100.;
 
-  eh.fEventHistogramsBins[eCurrentRunDuration][0] = 10000; // TBI 20241128 Remember that I do not have configurables for binning of control histograms, only for results histograms
+  eh.fEventHistogramsBins[eCurrentRunDuration][0] = 10000;
   eh.fEventHistogramsBins[eCurrentRunDuration][1] = 0.;
   eh.fEventHistogramsBins[eCurrentRunDuration][2] = 100000.;
 
@@ -1243,8 +1240,8 @@ void DefaultCuts()
   // *) Insanity check on the content and ordering of event cuts in the initialization in configurable cfUseEventCuts:
   // TBI 20240518 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
   for (Int_t name = 0; name < eEventCuts_N; name++) {
-    // TBI 20240518 I could implement even a strickter EqualTo instead of BeginsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
-    if (!TString(lUseEventCuts[name]).BeginsWith(ec.fEventCutName[name].Data())) {
+    // TBI 20240518 I could implement even a strickter EqualTo instead of EndsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
+    if (!TString(lUseEventCuts[name]).EndsWith(ec.fEventCutName[name].Data())) {
       LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfUseEventCuts => name = %d, lUseEventCuts[name] = \"%s\", ec.fEventCutName[name] = \"%s\" \033[0m", __FUNCTION__, __LINE__, name, TString(lUseEventCuts[name]).Data(), ec.fEventCutName[name].Data());
     }
   }
@@ -1373,8 +1370,8 @@ void DefaultCuts()
   // *) Insanity check on the content and ordering of particle cuts in the initialization in configurable cfUseParticleCuts:
   // TBI 20240518 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
   for (Int_t name = 0; name < eParticleCuts_N; name++) {
-    // TBI 20240518 I could implement even a strickter EqualTo instead of BeginsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
-    if (!TString(lUseParticleCuts[name]).BeginsWith(pc.fParticleCutName[name].Data())) {
+    // TBI 20240518 I could implement even a strickter EqualTo instead of EndsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
+    if (!TString(lUseParticleCuts[name]).EndsWith(pc.fParticleCutName[name].Data())) {
       LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfUseParticleCuts => name = %d, lUseParticleCuts[name] = \"%s\", pc.fParticleCutName[name] = \"%s\" \033[0m", __FUNCTION__, __LINE__, name, TString(lUseParticleCuts[name]).Data(), pc.fParticleCutName[name].Data());
     }
   }
@@ -4052,7 +4049,7 @@ void Preprocess(T1 const& collision, T2 const& bcs)
 template <eRecSim rs, typename T1, typename T2>
 void DetermineRunNumber(T1 const& collision, T2 const&)
 {
-  // Determine a run number.
+  // Determine run number and all related thingies.
   // Make sure in process(...) that this function is called only once.
 
   // TBI 20231018 At the moment I can access run number info only in process(...), but not in init(...)
@@ -4068,12 +4065,33 @@ void DetermineRunNumber(T1 const& collision, T2 const&)
   // a) Determine run number for Run 3 real data:
   if constexpr (rs == eRec) {
 
-    auto bc = collision.template foundBC_as<T2>(); // TBI 20241126 I have the same code snippet at 2 other locations, I shall unify at some point
+    // **) Determine run number:
+    // Get start timestamp and end timemstamp for this run in miliseconds, and convert both of them in seconds:
+    // o see O2/CCDB/src/BasicCCDBManager.cxx, O2/CCDB/include/CCDB/BasicCCDBManager.h
+    // o example usage in O2Physics/PWGLF/TableProducer/Common/zdcSP.cxx
+    auto bc = collision.template foundBC_as<T2>(); // I have the same code snippet at other places, keep in sync.
     tc.fRunNumber = Form("%d", bc.runNumber());
     if (tc.fRunNumber.EqualTo("")) {
-      LOGF(error, "\033[1;33m%s fRunNumber is empty, bc.runNumber() failed...\033[0m", __FUNCTION__);
-      LOGF(fatal, "bc.runNumber() = %d", bc.runNumber());
+      LOGF(error, "\033[1;33m%fRunNumber is empty, bc.runNumber() failed...\033[0m");
+      LOGF(fatal, "\033[1;31m%s at line %d : bc.runNumber() = %d \033[0m", __FUNCTION__, __LINE__, bc.runNumber());
     }
+
+    // **) Determine SoR, EoR, and run duration:
+    auto runDuration = ccdb->getRunDuration(bc.runNumber());                         // this is total run duration, not the current one (see below)
+    tc.fRunTime[eStartOfRun] = std::floor(runDuration.first * 0.001);                // in seconds since Unix epoch
+    tc.fRunTime[eEndOfRun] = std::ceil(runDuration.second * 0.001);                  // in seconds since Unix epoch
+    tc.fRunTime[eDurationInSec] = tc.fRunTime[eEndOfRun] - tc.fRunTime[eStartOfRun]; // yes, this is now run duration in seconds
+
+    if (!(tc.fRunTime[eStartOfRun] > 0)) {
+      LOGF(fatal, "\033[1;31m%s at line %d : tc.fRunTime[eStartOfRun] = %d is not positive\033[0m", __FUNCTION__, __LINE__, tc.fRunTime[eStartOfRun]);
+    }
+    if (!(tc.fRunTime[eEndOfRun] > 0)) {
+      LOGF(fatal, "\033[1;31m%s at line %d : tc.fRunTime[eEndOfRun] = %d is not positive\033[0m", __FUNCTION__, __LINE__, tc.fRunTime[eEndOfRun]);
+    }
+    if (!(tc.fRunTime[eDurationInSec] > 0)) {
+      LOGF(fatal, "\033[1;31m%s at line %d : tc.fRunTime[eDurationInSec] = %d is not positive\033[0m", __FUNCTION__, __LINE__, tc.fRunTime[eDurationInSec]);
+    }
+
   } else {
     // b) Determine run number for the rest. TBI 20241126 differentiate this support as well, e.g. for eRecSim and eSim. But Run 2 and Run 1 most likely will stay as before
     LOGF(fatal, "bc.runNumber() is not validated yet beyond eRec");
@@ -4245,7 +4263,8 @@ void PropagateRunNumber()
 template <eRecSim rs, typename T1, typename T2>
 void CheckCurrentRunNumber(T1 const& collision, T2 const&)
 {
-  // Insanity check for the current run number.
+  // Insanity check for the current run number and related thingies.
+  // Used only during validation.
 
   // a) Support for Run 3 real data;
   // b) The rest. TBI 20241126 differentiate this support as well, e.g. for eRecSim and eSim. But Run 2 and Run 1 most likely will stay as before
@@ -4257,10 +4276,35 @@ void CheckCurrentRunNumber(T1 const& collision, T2 const&)
   // a) Support for Run 3 real data:
   if constexpr (rs == eRec) {
 
-    auto bc = collision.template foundBC_as<T2>(); // TBI 20241126 I have the same code snippet at 2 other locations, I shall unify at some point
+    // **) Check run number:
+    auto bc = collision.template foundBC_as<T2>(); // I have the same code snippet at other places, keep in sync.
     if (!tc.fRunNumber.EqualTo(Form("%d", bc.runNumber()))) {
       LOGF(error, "\033[1;33m%s Run number changed within process(). This most likely indicates that a given masterjob is processing 2 or more different runs in one go.\033[0m", __FUNCTION__);
       LOGF(fatal, "tc.fRunNumber = %s, bc.runNumber() = %d", tc.fRunNumber.Data(), bc.runNumber());
+    }
+
+    // **) Check SoR, EoR, and run duration:
+    auto runDuration = ccdb->getRunDuration(bc.runNumber());    // this is total run duration, not the current one (see below)
+    int64_t startOfRun = std::floor(runDuration.first * 0.001); // in seconds since Unix epoch
+    int64_t endOfRun = std::ceil(runDuration.second * 0.001);   // in seconds since Unix epoch
+    int64_t durationInSec = endOfRun - startOfRun;              // yes, this is now run duration in seconds
+
+    // **) Insanity check on SoR:
+    if (!(tc.fRunTime[eStartOfRun] == startOfRun)) {
+      LOGF(error, "\033[1;33m%s tc.fRunTime[eStartOfRun] changed within process(). This most likely indicates that a given masterjob is processing 2 or more different runs in one go.\033[0m", __FUNCTION__);
+      LOGF(fatal, "tc.fRunTime[eStartOfRun] = %d, startOfRun = %d", tc.fRunTime[eStartOfRun], startOfRun);
+    }
+
+    // **) Insanity check on EoR:
+    if (!(tc.fRunTime[eEndOfRun] == endOfRun)) {
+      LOGF(error, "\033[1;33m%s tc.fRunTime[eEndOfRun] changed within process(). This most likely indicates that a given masterjob is processing 2 or more different runs in one go.\033[0m", __FUNCTION__);
+      LOGF(fatal, "tc.fRunTime[eEndOfRun] = %d, endOfRun = %d", tc.fRunTime[eEndOfRun], endOfRun);
+    }
+
+    // **) Insanity check on run duration:
+    if (!(tc.fRunTime[eDurationInSec] == durationInSec)) {
+      LOGF(error, "\033[1;33m%s tc.fRunTime[eDurationInSec] changed within process(). This most likely indicates that a given masterjob is processing 2 or more different runs in one go.\033[0m", __FUNCTION__);
+      LOGF(fatal, "tc.fRunTime[eDurationInSec] = %d, durationInSec = %d", tc.fRunTime[eDurationInSec], durationInSec);
     }
 
   } else {
@@ -4410,10 +4454,13 @@ void EventCutsCounters(T1 const& collision, T2 const& tracks)
         }
         for (Int_t bin = ec.fEventCutCounterBinNumber[rec_sim]; bin <= eEventCuts_N; bin++) // implemented, but unused cuts in this analysis
         {
-          ec.fEventCutCounterHist[rec_sim][cc]->GetXaxis()->SetBinLabel(bin, "TBI");
+          ec.fEventCutCounterHist[rec_sim][cc]->GetXaxis()->SetBinLabel(bin, Form("binNo = %d (unused cut)", bin));
+          // Remark: I have to write here something concrete as a bin label, if I leave "TBI" for all bin labels here for cuts which were not used,
+          // I get this harmless but annoying warning during merging:
+          //   Warning in <TH1Merger::CheckForDuplicateLabels>: Histogram fEventCutCounterHist[rec][seq] has duplicate labels in the x axis. Bin contents will be merged in a single bin
+          // TBI 20241130 as a better solution, I shall re-define this histogram with the narower range on x-axis...
         }
-        // All cuts which were implemeted, not used, and tagged temporarily with "TBI", simply do not show:
-        // TBI 20240522 re-think if this is really what I want here.
+        // All cuts which were implemeted, but not used I simply do not show (i can always UnZoom x-axis in TBrowser, if I want to see 'em):
         ec.fEventCutCounterHist[rec_sim][cc]->GetXaxis()->SetRangeUser(ec.fEventCutCounterHist[rec_sim][cc]->GetBinLowEdge(1), ec.fEventCutCounterHist[rec_sim][cc]->GetBinLowEdge(ec.fEventCutCounterBinNumber[rec_sim]));
       }
     }
@@ -5423,14 +5470,16 @@ void ParticleCutsCounters(T const& track)
         }
         for (Int_t bin = pc.fParticleCutCounterBinNumber[rec_sim]; bin <= eParticleCuts_N; bin++) // implemented, but unused particle cuts in this analysis
         {
-          pc.fParticleCutCounterHist[rec_sim][cc]->GetXaxis()->SetBinLabel(bin, "TBI");
+          pc.fParticleCutCounterHist[rec_sim][cc]->GetXaxis()->SetBinLabel(bin, Form("binNo = %d (unused cut)", bin));
+          // Remark: I have to write here something concrete as a bin label, if I leave "TBI" for all bin labels here for cuts which were not used,
+          // I get this harmless but annoying warning during merging:
+          //   Warning in <TH1Merger::CheckForDuplicateLabels>: Histogram fParticleCutCounterHist[rec][seq] has duplicate labels in the x axis. Bin contents will be merged in a single bin
+          // TBI 20241130 as a better solution, I shall re-define this histogram with the narower range on x-axis...
         }
-        // All cuts which were implemeted, not used, and tagged temporarily with "TBI", simply do not show:
-        // TBI 20240522 re-think if this is really what I want here.
+        // All cuts which were implemeted, but not used I simply do not show (i can always UnZoom x-axis in TBrowser, if I want to see 'em).
         pc.fParticleCutCounterHist[rec_sim][cc]->GetXaxis()->SetRangeUser(pc.fParticleCutCounterHist[rec_sim][cc]->GetBinLowEdge(1), pc.fParticleCutCounterHist[rec_sim][cc]->GetBinLowEdge(pc.fParticleCutCounterBinNumber[rec_sim]));
       }
     }
-
     pc.fParticleCutCounterBinLabelingIsDone = kTRUE; // this flag ensures that this specific binning is performed only once, for the first processed particle
     // delete pc.fParticleCutCounterMap[eRec]; // TBI 20240508 if i do not need them later, I could delete here
     // delete pc.fParticleCutCounterMap[eSim];
@@ -8356,27 +8405,72 @@ TH1D* GetHistogramWithCentralityWeights(const char* filePath, const char* runNum
 
 //============================================================
 
-TObjArray* GetDefaultObjArrayWithLabels()
+TObjArray* GetDefaultObjArrayWithLabels(const char* whichDefaultLabels)
 {
   // To speed up testing, I hardwire here some labels and use them directly as they are.
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
 
   // Define TObjArray:
   TObjArray* arr = new TObjArray();
   arr->SetOwner();
 
-  // Define some labels:
-  const Int_t nLabels = 7;
-  TString labels[nLabels] = {"1 -1", "2 -2", "3 -3", "2 1 -1 -2", "3 1 -1 -3", "3 2 -2 -3", "3 2 1 -1 -2 -3"};
+  // Define some labels, depending on the chosen option for whichDefaultLabels:
+  if (TString(whichDefaultLabels).EqualTo("trivial")) {
+    const Int_t nLabels = 1;
+    TString labels[nLabels] = {"2 -2"};
+    for (Int_t l = 0; l < nLabels; l++) {
+      TObjString* objstr = new TObjString(labels[l].Data());
+      arr->Add(objstr);
+    }
+  } else if (TString(whichDefaultLabels).EqualTo("standard")) {
+    const Int_t nLabels = 7;
+    TString labels[nLabels] = {"1 -1", "2 -2", "3 -3", "2 1 -1 -2", "3 1 -1 -3", "3 2 -2 -3", "3 2 1 -1 -2 -3"};
+    for (Int_t l = 0; l < nLabels; l++) {
+      TObjString* objstr = new TObjString(labels[l].Data());
+      arr->Add(objstr);
+    }
+  } else if (TString(whichDefaultLabels).EqualTo("isotropic")) {
+    const Int_t nLabels = 8;
+    TString labels[nLabels] = {"1 -1", "2 -2", "3 -3", "4 -4", "1 1 -1 -1", "2 2 -2 -2", "3 3 -3 -3", "4 4 -4 -4"};
+    for (Int_t l = 0; l < nLabels; l++) {
+      TObjString* objstr = new TObjString(labels[l].Data());
+      arr->Add(objstr);
+    }
+  } else if (TString(whichDefaultLabels).EqualTo("upto8th")) {
+    const Int_t nLabels = 7; // yes, because I do not care about 1-p
+    TString labels[nLabels] = {"1 -1", "1 1 -1", "1 1 -1 -1", "1 1 -1 -1 -1", "1 1 1 -1 -1 -1", "1 1 1 1 -1 -1 -1", "1 1 1 1 -1 -1 -1 -1"};
+    for (Int_t l = 0; l < nLabels; l++) {
+      TObjString* objstr = new TObjString(labels[l].Data());
+      arr->Add(objstr);
+    }
+  } else if (TString(whichDefaultLabels).EqualTo("upto10th")) {
+    const Int_t nLabels = 9; // yes, because I do not care about 1-p
+    TString labels[nLabels] = {"1 -1", "1 1 -1", "1 1 -1 -1", "1 1 -1 -1 -1", "1 1 1 -1 -1 -1", "1 1 1 1 -1 -1 -1", "1 1 1 1 -1 -1 -1 -1", "1 1 1 1 -1 -1 -1 -1 -1", "1 1 1 1 1 -1 -1 -1 -1 -1"};
+    for (Int_t l = 0; l < nLabels; l++) {
+      TObjString* objstr = new TObjString(labels[l].Data());
+      arr->Add(objstr);
+    }
+  } else if (TString(whichDefaultLabels).EqualTo("upto12th")) {
+    const Int_t nLabels = 11; // yes, because I do not care about 1-p
+    TString labels[nLabels] = {"1 -1", "1 1 -1", "1 1 -1 -1", "1 1 -1 -1 -1", "1 1 1 -1 -1 -1", "1 1 1 1 -1 -1 -1", "1 1 1 1 -1 -1 -1 -1", "1 1 1 1 -1 -1 -1 -1 -1", "1 1 1 1 1 -1 -1 -1 -1 -1", "1 1 1 1 1 1 -1 -1 -1 -1 -1", "1 1 1 1 1 1 -1 -1 -1 -1 -1 -1"};
+    for (Int_t l = 0; l < nLabels; l++) {
+      TObjString* objstr = new TObjString(labels[l].Data());
+      arr->Add(objstr);
+    }
+  } else {
+    LOGF(fatal, "\033[1;31m%s at line %d : whichDefaultLabels = %s is not supported yet \033[0m", __FUNCTION__, __LINE__, whichDefaultLabels);
+  }
 
-  // Make a transfer:
-  for (Int_t l = 0; l < nLabels; l++) {
-    TObjString* objstr = new TObjString(labels[l].Data());
-    arr->Add(objstr);
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
   }
 
   return arr;
 
-} // TObjArray* GetDefaultObjArrayWithLabels()
+} // TObjArray* GetDefaultObjArrayWithLabels(const char* whichDefaultLabels)
 
 //============================================================
 
@@ -8684,7 +8778,7 @@ void StoreLabelsInPlaceholder()
   // b) Fetch TObjArray with labels from an external file:
   TObjArray* oa = NULL;
   if (t0.fUseDefaultLabels) {
-    oa = GetDefaultObjArrayWithLabels();
+    oa = GetDefaultObjArrayWithLabels(t0.fWhichDefaultLabels.Data());
   } else {
     oa = GetObjArrayWithLabels(t0.fFileWithLabels.Data());
   }
@@ -10062,20 +10156,7 @@ void DetermineInteractionRate(T1 const& collision, T2 const&)
 
   // a) Determine interaction rate only for eRec:
   if constexpr (rs == eRec) {
-    auto bc = collision.template foundBC_as<T2>(); // TBI 20241126 this seems to works as expected, but check and validate further
-                                                   // cout << bc.runNumber() << endl; // works as expected
-                                                   // cout << bc.timestamp() << endl;  // works as expected
-                                                   // TBI 20241126 I have the same code snippet at 2 other locations, I shall unify at some point
-
-    // Get start timestamp and end timemstamp for this run in miliseconds, and convert both of them in seconds:
-    // o see O2/CCDB/src/BasicCCDBManager.cxx, O2/CCDB/include/CCDB/BasicCCDBManager.h
-    // o example usage in O2Physics/PWGLF/TableProducer/Common/zdcSP.cxx
-    auto runDuration = ccdb->getRunDuration(bc.runNumber()); // this is total run duration, not the current one (see below)
-    int64_t startOfRun = std::floor(runDuration.first * 0.001);
-    int64_t endOfRun = std::ceil(runDuration.second * 0.001);
-    int64_t runDurationInSec = endOfRun - startOfRun; // yes, this is now in seconds
-
-    // From documentation: double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName)
+    auto bc = collision.template foundBC_as<T2>(); // I have the same code snippet at other places, keep in sync.
     double hadronicRate = mRateFetcher.fetch(ccdb.service, static_cast<uint64_t>(bc.timestamp()), static_cast<int>(bc.runNumber()), "ZNC hadronic") * 1.e-3;
     if (hadronicRate > 0.) {
       ebye.fInteractionRate = static_cast<float>(hadronicRate);
@@ -10083,15 +10164,14 @@ void DetermineInteractionRate(T1 const& collision, T2 const&)
       LOGF(fatal, "\033[1;31m%s at line %d : hadronicRate = %f is meaningless \033[0m", __FUNCTION__, __LINE__, hadronicRate);
     }
 
-    // If I feel 2D QA eCurrentRunDuration_vs_InteractionRate , extract still the current run duration:
-    if (qa.fBookQAEventHistograms2D[eCurrentRunDuration_vs_InteractionRate]) { // TBI 20241127 do I check this flag, of pointers, like in FillEventHistograms(...) ?
-      ebye.fCurrentRunDuration = std::floor(bc.timestamp() * 0.001) - startOfRun;
-      if (ebye.fCurrentRunDuration > runDurationInSec) {
-        LOGF(fatal, "\033[1;31m%s at line %d : ebye.fCurrentRunDuration = %d is bigger than runDurationInSec = %d, which is meaningless \033[0m", __FUNCTION__, __LINE__, static_cast<int>(ebye.fCurrentRunDuration), static_cast<int>(runDurationInSec));
+    // If I fill 2D QA histogram eCurrentRunDuration_vs_InteractionRate , extract still the current run duration:
+    if (qa.fBookQAEventHistograms2D[eCurrentRunDuration_vs_InteractionRate]) { // TBI 20241127 do I check this flag, or pointer, like in FillEventHistograms(...) ?
+      ebye.fCurrentRunDuration = std::floor(bc.timestamp() * 0.001) - tc.fRunTime[eStartOfRun];
+      if (ebye.fCurrentRunDuration > tc.fRunTime[eDurationInSec]) {
+        LOGF(fatal, "\033[1;31m%s at line %d : ebye.fCurrentRunDuration = %d is bigger than tc.fRunTime[eDurationInSec] = %d, which is meaningless \033[0m", __FUNCTION__, __LINE__, static_cast<int>(ebye.fCurrentRunDuration), static_cast<int>(tc.fRunTime[eDurationInSec]));
       }
     }
   } else {
-
     ebye.fInteractionRate = -1.;
     ebye.fCurrentRunDuration = -1.;
   }
@@ -10099,7 +10179,7 @@ void DetermineInteractionRate(T1 const& collision, T2 const&)
   // c) Print interaction rate and run duration for the audience...:
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m ebye.fInteractionRate = %f kHz\033[0m", ebye.fInteractionRate);
-    if (qa.fBookQAEventHistograms2D[eCurrentRunDuration_vs_InteractionRate]) { // TBI 20241127 do I check this flag, of pointers, like in FillEventHistograms(...) ?
+    if (qa.fBookQAEventHistograms2D[eCurrentRunDuration_vs_InteractionRate]) { // TBI 20241127 do I check this flag, or pointer, like in FillEventHistograms(...) ?
       LOGF(info, "\033[1;32m ebye.fCurrentRunDuration = %f s (in seconds after SOR)\033[0m", ebye.fCurrentRunDuration);
     }
     ExitFunction(__FUNCTION__);

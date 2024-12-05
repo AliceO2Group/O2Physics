@@ -549,7 +549,7 @@ struct phik0shortanalysis {
 
   // Fill 2D invariant mass histogram for V0 and Phi
   template <bool isMC>
-  void fillInvMass2D(const TLorentzVector& V0, const std::vector<TLorentzVector>& listPhi, float multiplicity, const std::array<float, 3> weights)
+  void fillInvMass2D(const TLorentzVector V0, const std::vector<TLorentzVector> listPhi, float multiplicity, const std::array<float, 3> weights)
   {
     double massV0 = V0.M();
     double ptV0 = V0.Pt();
@@ -582,7 +582,7 @@ struct phik0shortanalysis {
 
   // Fill Phi invariant mass vs Pion nSigmadE/dx histogram
   template <bool isMC>
-  void fillInvMassNSigma(const TLorentzVectorAndPID& Pi, const std::vector<TLorentzVector>& listPhi, float multiplicity, const std::array<float, 3> weights)
+  void fillInvMassNSigma(const TLorentzVectorAndPID Pi, const std::vector<TLorentzVector> listPhi, float multiplicity, const std::array<float, 3> weights)
   {
     float nSigmaTPCPi = Pi.fnSigmaTPC;
     float nSigmaTOFPi = Pi.fnSigmaTOF;
