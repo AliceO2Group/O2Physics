@@ -141,7 +141,11 @@ class CollisonCuts
   void setApplyNoITSROBorderCut(bool applyNoITSROBorderCut) { mApplyNoITSROBorderCut = applyNoITSROBorderCut; }
 
   /// Set the track occupancy in time range cut
-  void setTrackOccupancyInTimeRange(int trackOccupancyInTimeRangeMax, int trackOccupancyInTimeRangeMin) { mtrackOccupancyInTimeRangeMax = trackOccupancyInTimeRangeMax; mtrackOccupancyInTimeRangeMin = trackOccupancyInTimeRangeMin; }
+  void setTrackOccupancyInTimeRange(int trackOccupancyInTimeRangeMax, int trackOccupancyInTimeRangeMin)
+  {
+    mtrackOccupancyInTimeRangeMax = trackOccupancyInTimeRangeMax;
+    mtrackOccupancyInTimeRangeMin = trackOccupancyInTimeRangeMin;
+  }
 
   /// Set the NoCollInTimeRangeStandard cut
   void setApplyCollInTimeRangeStandard(bool applyCollInTimeRangeStandard) { mApplyCollInTimeRangeStandard = applyCollInTimeRangeStandard; }
@@ -218,7 +222,7 @@ class CollisonCuts
         return false;
       }
       auto bc = col.template bc_as<BCsWithRun2Info>();
-      if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted))){
+      if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted))) {
         LOGF(debug, "Offline selection failed (AliEventCuts)");
         return false;
       }
