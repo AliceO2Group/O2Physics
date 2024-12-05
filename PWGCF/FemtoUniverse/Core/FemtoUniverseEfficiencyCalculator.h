@@ -135,7 +135,7 @@ class EfficiencyCalculator
         for (uint8_t i{0}; i < hOutput.size(); i++) {
           const auto& output{hOutput[i]};
           if (isHistogramEmpty(output)) {
-            LOGF(error, log("Histogram %s is empty - save aborted"), i + 1);
+            LOGF(error, log("Histogram %d is empty - save aborted"), i + 1);
             return;
           }
           LOGF(debug, log("Found histogram %d: %s"), i + 1, output->GetTitle());
