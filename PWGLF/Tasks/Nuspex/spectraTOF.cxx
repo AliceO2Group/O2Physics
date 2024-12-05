@@ -1345,14 +1345,14 @@ struct tofSpectra {
         continue;
       }
       if (std::abs(track.rapidity(PID::getMass(2))) > trkselOptions.cfgCutY) {
-      return;
-    }
-    if (std::abs(track.rapidity(PID::getMass(3))) > trkselOptions.cfgCutY) {
-      return;
-    }
-    if (std::abs(track.rapidity(PID::getMass(4))) > trkselOptions.cfgCutY) {
-      return;
-    }
+        return;
+      }
+      if (std::abs(track.rapidity(PID::getMass(3))) > trkselOptions.cfgCutY) {
+        return;
+      }
+      if (std::abs(track.rapidity(PID::getMass(4))) > trkselOptions.cfgCutY) {
+        return;
+      }
       if (includeCentralityToTracks) {
 
         if (track.sign() > 0) {
