@@ -295,6 +295,7 @@ struct HfCorrelatorLcHadrons {
     corrBinning = {{binsZVtx, binsMultiplicity}, true};
   }
 
+  /// Lc-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(SelCollisionsWithLc::iterator const& collision,
                    TracksData const& tracks,
                    CandidatesLcData const& candidates)
