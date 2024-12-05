@@ -29,7 +29,7 @@
 #include "TSystem.h"
 
 // O2 includes
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/ASoAHelpers.h"
