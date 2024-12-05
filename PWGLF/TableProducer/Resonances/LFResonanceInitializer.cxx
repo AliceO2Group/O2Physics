@@ -52,7 +52,7 @@ struct reso2initializer {
   float cXiMass;
   int mRunNumber;
   int multEstimator;
-  float d_bz;
+  float dBz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdg;
 
@@ -76,7 +76,7 @@ struct reso2initializer {
   Configurable<bool> cfgFatalWhenNull{"cfgFatalWhenNull", true, "Fatal when null on ccdb access"};
 
   // Configurables
-  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
+  Configurable<double> dBz_input{"dBz", -999, "bz field, -999 is automatic"};
   Configurable<bool> ConfFillQA{"ConfFillQA", false, "Fill QA histograms"};
   Configurable<bool> ConfBypassCCDB{"ConfBypassCCDB", true, "Bypass loading CCDB part to save CPU time and memory"}; // will be affected to b_z value.
 
@@ -335,7 +335,7 @@ struct reso2initializer {
   template <typename MCColl, typename MCPart>
   bool IsTrueINEL0(MCColl const& /*mccoll*/, MCPart const& mcparts)
   {
-    for (auto& mcparticle : mcparts) {
+    for (auto const& mcparticle : mcparts) {
       if (!mcparticle.isPhysicalPrimary())
         continue;
       auto p = pdg->GetParticle(mcparticle.pdgCode());
@@ -451,7 +451,7 @@ struct reso2initializer {
   void fillTracks(CollisionType const& collision, TrackType const& tracks)
   {
     // Loop over tracks
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       if (!IsTrackSelected<isMC>(collision, track))
         continue;
       reso2trks(resoCollisions.lastIndex(),
@@ -501,7 +501,7 @@ struct reso2initializer {
   void fillV0s(CollisionType const& collision, V0Type const& v0s, TrackType const& tracks)
   {
     int childIDs[2] = {0, 0}; // these IDs are necessary to keep track of the children
-    for (auto& v0 : v0s) {
+    for (auto const& v0 : v0s) {
       if (!IsV0Selected<isMC>(collision, v0, tracks))
         continue;
       childIDs[0] = v0.posTrackId();
@@ -546,7 +546,7 @@ struct reso2initializer {
   void fillCascades(CollisionType const& collision, CascType const& cascades, TrackType const& tracks)
   {
     int childIDs[3] = {0, 0, 0}; // these IDs are necessary to keep track of the children
-    for (auto& casc : cascades) {
+    for (auto const& casc : cascades) {
       if (!IsCascSelected<isMC>(collision, casc, tracks))
         continue;
       childIDs[0] = casc.posTrackId();
@@ -603,7 +603,7 @@ struct reso2initializer {
     // ------ Temporal lambda function to prevent error in build
     auto getMothersIndeces = [&](auto const& theMcParticle) {
       std::vector<int> lMothersIndeces{};
-      for (auto& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
+      for (auto const& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
         LOGF(debug, "   mother index lMother: %d", lMother.globalIndex());
         lMothersIndeces.push_back(lMother.globalIndex());
       }
@@ -611,7 +611,7 @@ struct reso2initializer {
     };
     auto getMothersPDGCodes = [&](auto const& theMcParticle) {
       std::vector<int> lMothersPDGs{};
-      for (auto& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
+      for (auto const& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
         LOGF(debug, "   mother pdgcode lMother: %d", lMother.pdgCode());
         lMothersPDGs.push_back(lMother.pdgCode());
       }
@@ -619,9 +619,9 @@ struct reso2initializer {
     };
     auto getSiblingsIndeces = [&](auto const& theMcParticle) {
       std::vector<int> lSiblingsIndeces{};
-      for (auto& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
+      for (auto const& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
         LOGF(debug, "   mother index lMother: %d", lMother.globalIndex());
-        for (auto& lDaughter : lMother.template daughters_as<aod::McParticles>()) {
+        for (auto const& lDaughter : lMother.template daughters_as<aod::McParticles>()) {
           LOGF(debug, "   daughter index lDaughter: %d", lDaughter.globalIndex());
           if (lDaughter.globalIndex() != 0 && lDaughter.globalIndex() != theMcParticle.globalIndex()) {
             lSiblingsIndeces.push_back(lDaughter.globalIndex());
@@ -675,7 +675,7 @@ struct reso2initializer {
     // ------ Temporal lambda function to prevent error in build
     auto getMothersIndeces = [&](auto const& theMcParticle) {
       std::vector<int> lMothersIndeces{};
-      for (auto& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
+      for (auto const& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
         LOGF(debug, "   mother index lMother: %d", lMother.globalIndex());
         lMothersIndeces.push_back(lMother.globalIndex());
       }
@@ -683,7 +683,7 @@ struct reso2initializer {
     };
     auto getMothersPDGCodes = [&](auto const& theMcParticle) {
       std::vector<int> lMothersPDGs{};
-      for (auto& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
+      for (auto const& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
         LOGF(debug, "   mother pdgcode lMother: %d", lMother.pdgCode());
         lMothersPDGs.push_back(lMother.pdgCode());
       }
@@ -691,7 +691,7 @@ struct reso2initializer {
     };
     auto getDaughtersIndeces = [&](auto const& theMcParticle) {
       std::vector<int> lDaughtersIndeces{};
-      for (auto& lDaughter : theMcParticle.template daughters_as<aod::McParticles>()) {
+      for (auto const& lDaughter : theMcParticle.template daughters_as<aod::McParticles>()) {
         LOGF(debug, "   daughter index lDaughter: %d", lDaughter.globalIndex());
         if (lDaughter.globalIndex() != 0) {
           lDaughtersIndeces.push_back(lDaughter.globalIndex());
@@ -701,7 +701,7 @@ struct reso2initializer {
     };
     auto getDaughtersPDGCodes = [&](auto const& theMcParticle) {
       std::vector<int> lDaughtersPDGs{};
-      for (auto& lDaughter : theMcParticle.template daughters_as<aod::McParticles>()) {
+      for (auto const& lDaughter : theMcParticle.template daughters_as<aod::McParticles>()) {
         LOGF(debug, "   daughter pdgcode lDaughter: %d", lDaughter.pdgCode());
         if (lDaughter.globalIndex() != 0) {
           lDaughtersPDGs.push_back(lDaughter.pdgCode());
@@ -761,7 +761,7 @@ struct reso2initializer {
     // ------ Temporal lambda function to prevent error in build
     auto getMothersIndeces = [&](auto const& theMcParticle) {
       std::vector<int> lMothersIndeces{};
-      for (auto& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
+      for (auto const& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
         LOGF(debug, "   mother index lMother: %d", lMother.globalIndex());
         lMothersIndeces.push_back(lMother.globalIndex());
       }
@@ -769,7 +769,7 @@ struct reso2initializer {
     };
     auto getMothersPDGCodes = [&](auto const& theMcParticle) {
       std::vector<int> lMothersPDGs{};
-      for (auto& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
+      for (auto const& lMother : theMcParticle.template mothers_as<aod::McParticles>()) {
         LOGF(debug, "   mother pdgcode lMother: %d", lMother.pdgCode());
         lMothersPDGs.push_back(lMother.pdgCode());
       }
@@ -777,7 +777,7 @@ struct reso2initializer {
     };
     auto getDaughtersIndeces = [&](auto const& theMcParticle) {
       std::vector<int> lDaughtersIndeces{};
-      for (auto& lDaughter : theMcParticle.template daughters_as<aod::McParticles>()) {
+      for (auto const& lDaughter : theMcParticle.template daughters_as<aod::McParticles>()) {
         LOGF(debug, "   daughter index lDaughter: %d", lDaughter.globalIndex());
         if (lDaughter.globalIndex() != 0) {
           lDaughtersIndeces.push_back(lDaughter.globalIndex());
@@ -787,7 +787,7 @@ struct reso2initializer {
     };
     auto getDaughtersPDGCodes = [&](auto const& theMcParticle) {
       std::vector<int> lDaughtersPDGs{};
-      for (auto& lDaughter : theMcParticle.template daughters_as<aod::McParticles>()) {
+      for (auto const& lDaughter : theMcParticle.template daughters_as<aod::McParticles>()) {
         LOGF(debug, "   daughter pdgcode lDaughter: %d", lDaughter.pdgCode());
         if (lDaughter.globalIndex() != 0) {
           lDaughtersPDGs.push_back(lDaughter.pdgCode());
@@ -844,7 +844,7 @@ struct reso2initializer {
   template <typename SelectedMCPartType, typename TotalMCParts>
   void fillMCParticles(SelectedMCPartType const& mcParts, TotalMCParts const& mcParticles)
   {
-    for (auto& mcPart : mcParts) {
+    for (auto const& mcPart : mcParts) {
       std::vector<int> daughterPDGs;
       if (mcPart.has_daughters()) {
         auto daughter01 = mcParticles.rawIteratorAt(mcPart.daughtersIds()[0] - mcParticles.offset());
@@ -931,7 +931,7 @@ struct reso2initializer {
   {
     cXiMass = pdg->GetParticle(3312)->Mass();
     mRunNumber = 0;
-    d_bz = 0;
+    dBz = 0;
     // Multiplicity estimator selection (0: FT0M, 1: FT0C, 2: FT0A, 99: FV0A)
     if (cfgMultName.value == "FT0M") {
       multEstimator = 0;
@@ -1004,12 +1004,12 @@ struct reso2initializer {
     }
 
     // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) {
-      d_bz = d_bz_input;
+    if (dBz_input > -990) {
+      dBz = dBz_input;
       ;
       o2::parameters::GRPMagField grpmag;
-      if (std::fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      if (std::fabs(dBz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (dBz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
       mRunNumber = bc.runNumber();
@@ -1022,8 +1022,8 @@ struct reso2initializer {
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+      dBz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << dBz << " kZG";
     } else {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
       if (!grpmag) {
@@ -1031,12 +1031,12 @@ struct reso2initializer {
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
       // Fetch magnetic field from ccdb for current collision
-      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+      dBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << dBz << " kZG";
     }
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
-    LOGF(info, "Bz set to %f for run: ", d_bz, mRunNumber);
+    LOGF(info, "Bz set to %f for run: ", dBz, mRunNumber);
   }
 
   void processTrackData(ResoEvents::iterator const& collision,
@@ -1050,7 +1050,7 @@ struct reso2initializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
 
     fillTracks<false>(collision, tracks);
   }
@@ -1066,7 +1066,7 @@ struct reso2initializer {
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
 
     fillTracks<false>(collision, tracks);
   }
@@ -1083,7 +1083,7 @@ struct reso2initializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), GetEvtPl(collision), GetEvtPlRes(collision, EvtPlDetId, EvtPlRefAId), GetEvtPlRes(collision, EvtPlDetId, EvtPlRefBId), GetEvtPlRes(collision, EvtPlRefAId, EvtPlRefBId), d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), GetEvtPl(collision), GetEvtPlRes(collision, EvtPlDetId, EvtPlRefAId), GetEvtPlRes(collision, EvtPlDetId, EvtPlRefBId), GetEvtPlRes(collision, EvtPlRefAId, EvtPlRefBId), dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
 
     fillTracks<false>(collision, tracks);
   }
@@ -1101,7 +1101,7 @@ struct reso2initializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
 
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
@@ -1119,7 +1119,7 @@ struct reso2initializer {
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
 
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
@@ -1139,7 +1139,7 @@ struct reso2initializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
 
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
@@ -1159,7 +1159,7 @@ struct reso2initializer {
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
 
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
@@ -1176,7 +1176,7 @@ struct reso2initializer {
     initCCDB(bc);
     colCuts.fillQA(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
 
     auto mccollision = collision.mcCollision_as<aod::McCollisions>();
     float impactpar = mccollision.impactParameter();
@@ -1199,7 +1199,7 @@ struct reso2initializer {
     initCCDB(bc);
     colCuts.fillQA(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), GetEvtPl(collision), GetEvtPlRes(collision, EvtPlDetId, EvtPlRefAId), GetEvtPlRes(collision, EvtPlDetId, EvtPlRefBId), GetEvtPlRes(collision, EvtPlRefAId, EvtPlRefBId), d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), GetEvtPl(collision), GetEvtPlRes(collision, EvtPlDetId, EvtPlRefAId), GetEvtPlRes(collision, EvtPlDetId, EvtPlRefBId), GetEvtPlRes(collision, EvtPlRefAId, EvtPlRefBId), dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
     fillMCCollision<false>(collision, mcParticles);
 
     // Loop over tracks
@@ -1218,7 +1218,7 @@ struct reso2initializer {
     auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
     fillMCCollision<true>(collision, mcParticles);
 
     // Loop over tracks
@@ -1239,7 +1239,7 @@ struct reso2initializer {
     initCCDB(bc);
     colCuts.fillQA(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
     fillMCCollision<false>(collision, mcParticles);
 
     // Loop over tracks
@@ -1260,7 +1260,7 @@ struct reso2initializer {
     auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
     fillMCCollision<true>(collision, mcParticles);
 
     // Loop over tracks
@@ -1283,7 +1283,7 @@ struct reso2initializer {
     initCCDB(bc);
     colCuts.fillQA(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
     fillMCCollision<false>(collision, mcParticles);
 
     // Loop over tracks
@@ -1307,7 +1307,7 @@ struct reso2initializer {
     auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
     fillMCCollision<true>(collision, mcParticles);
 
     // Loop over tracks
