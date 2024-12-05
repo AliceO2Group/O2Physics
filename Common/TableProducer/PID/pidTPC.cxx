@@ -231,8 +231,7 @@ struct tpcPid {
         LOGP(info, "Initialising TPC PID response for fixed timestamp {} and reco pass {}:", time, recoPass.value);
         ccdb->setTimestamp(time);
         response = ccdb->getSpecific<o2::pid::tpc::Response>(path, time, metadata);
-        headers = ccdbApi.retrieveHeaders(path, metadata, time);
-        networkVersion = headers["NN-Version"];
+        headers = ccdbApi.retrieveHeaders(path, metadata, time);        
         if (!response) {
           LOGF(warning, "Unable to find TPC parametrisation for specified pass name - falling back to latest object");
           response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(path, time);
