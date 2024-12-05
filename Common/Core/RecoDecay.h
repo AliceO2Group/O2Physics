@@ -212,7 +212,7 @@ struct RecoDecay {
   /// \param harmonic  harmonic number
   /// \return value of angle within [minimum, minimum + 2π / harmonic).
   template <typename T, typename U = float>
-  static T constrainAngle(T angle, U minimum = 0.0F, uint harmonic = 1U)
+  static T constrainAngle(T angle, U minimum = 0.0F, unsigned int harmonic = 1U)
   {
     auto period = o2::constants::math::TwoPI;
     if (harmonic != 1U) {
