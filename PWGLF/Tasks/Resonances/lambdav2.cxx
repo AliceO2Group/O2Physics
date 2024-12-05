@@ -241,7 +241,7 @@ struct lambdav2 {
       if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && combPIDKa < nsigmaCutTOFKa) {
         return true;
       }
-    } else if (PID == 2) // proton
+    } else // proton
     {
       auto combPIDPr = TMath::Sqrt(TMath::Abs(candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()));
       if (!candidate.hasTOF() && candidate.tpcInnerParam() < 0.6 && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCPr) {
