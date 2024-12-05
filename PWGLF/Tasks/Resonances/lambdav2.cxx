@@ -360,14 +360,7 @@ struct lambdav2 {
       auto evenv1 = ux * (qxZDCA + qxZDCC) + uy * (qyZDCA + qyZDCC);
 
       if (sign > 0) {
-        if (ispion) { /*
-                       histos.fill(HIST("hpuxQxpvscentpteta"), centrality, track.pt(), track.eta(), uxQxp);
-                       histos.fill(HIST("hpuyQypvscentpteta"), centrality, track.pt(), track.eta(), uyQyp);
-                       histos.fill(HIST("hpuxQxtvscentpteta"), centrality, track.pt(), track.eta(), uxQxt);
-                       histos.fill(HIST("hpuyQytvscentpteta"), centrality, track.pt(), track.eta(), uyQyt);
-
-                       histos.fill(HIST("hpuxyQxytvscentpteta"), centrality, track.pt(), track.eta(), uxyQxyt);
-                       histos.fill(HIST("hpuxyQxypvscentpteta"), centrality, track.pt(), track.eta(), uxyQxyp);*/
+        if (ispion) {
           histos.fill(HIST("hpoddv1vscentpteta"), centrality, track.pt(), track.rapidity(massPi), oddv1);
           histos.fill(HIST("hpevenv1vscentpteta"), centrality, track.pt(), track.rapidity(massPi), evenv1);
         } else if (iskaon) {
@@ -379,14 +372,6 @@ struct lambdav2 {
         }
 
       } else {
-        /*
-        histos.fill(HIST("hpuxQxpvscentptetaneg"), centrality, track.pt(), track.eta(), uxQxp);
-        histos.fill(HIST("hpuyQypvscentptetaneg"), centrality, track.pt(), track.eta(), uyQyp);
-        histos.fill(HIST("hpuxQxtvscentptetaneg"), centrality, track.pt(), track.eta(), uxQxt);
-        histos.fill(HIST("hpuyQytvscentptetaneg"), centrality, track.pt(), track.eta(), uyQyt);
-
-        histos.fill(HIST("hpuxyQxytvscentptetaneg"), centrality, track.pt(), track.eta(), uxyQxyt);
-        histos.fill(HIST("hpuxyQxypvscentptetaneg"), centrality, track.pt(), track.eta(), uxyQxyp);*/
         if (ispion) {
           histos.fill(HIST("hpoddv1vscentptetaneg"), centrality, track.pt(), track.rapidity(massPi), oddv1);
           histos.fill(HIST("hpevenv1vscentptetaneg"), centrality, track.pt(), track.rapidity(massPi), evenv1);
