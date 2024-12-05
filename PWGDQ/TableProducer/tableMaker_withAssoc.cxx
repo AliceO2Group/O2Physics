@@ -542,7 +542,7 @@ struct TableMaker {
     fOccup.oContribShortC.clear();
 
     std::map<int32_t, int64_t> oBC;                      // key: collision index; value: global BC
-    std::map<int64_t, std::vector<int32_t>> oBCreversed; // key: global BC, value: list of collisions attached to this BC
+    std::map<int64_t, std::vector<int64_t>> oBCreversed; // key: global BC, value: list of collisions attached to this BC
     std::map<int32_t, float> oVtxZ;                      // key: collision index; value: vtx-z position
     std::map<int32_t, int32_t> collMultPos;              // key: collision index; value: tpc multiplicity on the A side
     std::map<int32_t, int32_t> collMultNeg;              // key: collision index; value: tpc multiplicity on the C side
@@ -564,7 +564,7 @@ struct TableMaker {
 
       // if more than one collision per bunch, add that collision to the list for that bunch
       if (oBCreversed.find(bc) == oBCreversed.end()) {
-        std::vector<int32_t> evs = {collision.globalIndex()};
+        std::vector<int64_t> evs = {collision.globalIndex()};
         oBCreversed[bc] = evs;
       } else {
         auto& evs = oBCreversed[bc];
