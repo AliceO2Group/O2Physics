@@ -16,7 +16,6 @@
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
-#include <arrow/type_fwd.h>
 #include <vector>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -95,8 +94,12 @@ struct FemtoUniversePairTaskTrackTrackExtended {
 
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsOneMCTruth =
     aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) &&
+    // aod::femtouniverseparticle::pidcut == trackonefilter.ConfPDGCodePartOne &&
+    // aod::femtouniverseparticle::sign == trackonefilter.ConfChargePart1 &&
     aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 &&
     aod::femtouniverseparticle::pt > trackonefilter.confPtLowPart1;
+
+  // && ((aod::femtouniverseparticle::cut & ConfCutPartOne) == ConfCutPartOne);
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 1> trackHistoPartOne;
@@ -169,9 +172,15 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry mixQaRegistry{"mixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  OutputObj<TH1F> effHist1{TH1F("Efficiency_part1", "Efficiency origin/generated ; p_{T} (GeV/c); Efficiency", 100, 0, 4)};
-  OutputObj<TH1F> effHist2{TH1F("Efficiency_part2", "Efficiency origin/generated ; p_{T} (GeV/c); Efficiency", 100, 0, 4)};
-  EfficiencyCalculator efficiencyCalculator;
+  struct : ConfigurableGroup {
+    Configurable<bool> shouldCalculate{"ConfEfficiencyCalculate", false, "Should calculate efficiency"};
+    Configurable<bool> shouldUpload{"ConfEfficiencyUpload", false, "Should upload to CCDB"};
+    Configurable<bool> shouldApplyCorrections{"ConfEfficiencyApplyCorrections", false, "Should apply corrections from efficinecy"};
+
+    OutputObj<TH1F> hEff1{TH1F("Efficiency_part1", "Efficiency origin/generated ; p_{T} (GeV/c); Efficiency", 100, 0, 4)};
+    OutputObj<TH1F> hEff2{TH1F("Efficiency_part2", "Efficiency origin/generated ; p_{T} (GeV/c); Efficiency", 100, 0, 4)};
+  } effConfGroup;
+  EfficiencyCalculator efficiencyCalculator{effConfGroup};
 
   /// @brief Counter for particle swapping
   int fNeventsProcessed = 0;
@@ -311,10 +320,10 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   {
     efficiencyCalculator
       .setIsTest(true)
-      .withCCDBPath("Users/d/dkarpins/")
+      .withCCDBPath("Users/d/dkarpins")
       .withRegistry(&qaRegistry)
-      .setParticle<1>(trackonefilter.confPDGCodePartOne, effHist1.object.get())
-      .setParticle<2>(tracktwofilter.confPDGCodePartTwo, effHist2.object.get())
+      .setParticle<1>(trackonefilter.confPDGCodePartOne)
+      .setParticle<2>(tracktwofilter.confPDGCodePartTwo)
       .saveOnStop(ic)
       .init();
 
@@ -547,6 +556,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackTrackExtended, processSameEvent, "Enable processing same event", true);
 
+
   /// process function for to call doSameEvent with Monte Carlo
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
@@ -577,7 +587,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
       efficiencyCalculator.calculate<2>();
     }
 
-    LOG(info) << "### PROCESS DONE";
+    LOG(info) << "PROCESS SAME EVENT MC";
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackTrackExtended, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 

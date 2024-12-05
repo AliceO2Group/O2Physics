@@ -1,6 +1,8 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_EFFICIENCY_CALCULATOR_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_EFFICIENCY_CALCULATOR_H_
 
+#include "Framework/Configurable.h"
+#include "Framework/AnalysisHelpers.h"
 #include "Framework/CallbackService.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/InitContext.h"
@@ -10,6 +12,18 @@
 
 namespace o2::analysis::femto_universe
 {
+
+template <typename T>
+concept EfficiencyConfGroup =
+  std::is_base_of_v<ConfigurableGroup, T> &&
+  requires(T t) {
+    std::is_same_v<decltype(t.shouldCalculate), Configurable<bool>>;
+    std::is_same_v<decltype(t.shouldUpload), Configurable<bool>>;
+    std::is_same_v<decltype(t.shouldApplyCorrections), Configurable<bool>>;
+    std::is_same_v<decltype(t.hEff1), OutputObj<TH1>>;
+    std::is_same_v<decltype(t.hEff2), OutputObj<TH1>>;
+    // TODO: add ccdbPath, ccdbURL
+  };
 
 template <uint8_t T>
 concept IsOneOrTwo = T == 1 || T == 2;
@@ -27,13 +41,22 @@ class EfficiencyCalculator
  public:
   o2::ccdb::BasicCCDBManager& ccdb{o2::ccdb::BasicCCDBManager::instance()};
 
+  // TODO: setTempFitBins(..., ...)
   ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfTempFitVarPDGBins{"ConfTempFitVarPDGBins", {6000, -2300, 2300}, "Binning of the PDG code in the pT vs. TempFitVar plot"};
 
+  // TODO: shouldUpload(config.ConfEfficiencyUpload), shouldCalculate(config.ConfEfficiencyCalculate)
+  EfficiencyCalculator(const EfficiencyConfGroup auto& config)
+  {
+    hOutput[ParticleNo::ONE] = config.hEff1.object.get();
+    hOutput[ParticleNo::TWO] = config.hEff2.object.get();
+  }
+
   auto init() -> void
   {
-    assert(registry && "Registry has to be set");
-    assert(ccdbUrl && "CCDB URL has to be set");
+    if (!registry) {
+      LOGF(error, log("Registry has to be set"));
+    }
 
     hMCTruth1.init(registry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, false, pdgCode[ParticleNo::ONE], false);
     hMCTruth2.init(registry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, false, pdgCode[ParticleNo::TWO], false);
@@ -43,6 +66,7 @@ class EfficiencyCalculator
     ccdb.setLocalObjectValidityChecking();
     ccdb.setFatalWhenNull(false);
 
+    // TODO: upload and load the actual hist for second particle
     hLoaded[ParticleNo::ONE] = loadEfficiencyFromCCDB(1733060890131);
   }
 
@@ -57,22 +81,30 @@ class EfficiencyCalculator
 
   auto withRegistry(HistogramRegistry* reg) -> EfficiencyCalculator&
   {
+    if (!reg) {
+      LOGF(error, log("Registry value cannot be null"));
+    }
+
     registry = reg;
     return *this;
   }
 
   template <uint8_t N>
     requires IsOneOrTwo<N>
-  auto setParticle(int pdg, TH1F* outputHist = nullptr) -> EfficiencyCalculator&
+  auto setParticle(int pdg) -> EfficiencyCalculator&
   {
     pdgCode[N - 1] = pdg;
-    hOutput[N - 1] = outputHist;
     return *this;
   }
 
   auto withCCDBPath(const std::string& path) -> EfficiencyCalculator&
   {
-    ccdbPath = path + folderPrefix;
+    if (path.empty()) {
+      LOGF(fatal, log("CCDB path cannot be empty"));
+    }
+
+    // TODO: add more distinction in path
+    ccdbPath = std::format("{}/{}", path, folderPrefix);
     return *this;
   }
 
@@ -137,9 +169,8 @@ class EfficiencyCalculator
       auto bin{hEff->FindBin(particle.pt())};
       auto eff{hEff->GetBinContent(bin)};
       weight /= eff > 0 ? eff : 1.0f;
-    } else {
-      LOGF(error, log("Called `getWeight` with empty histogram from CCDB"));
     }
+    // TODO: add warning about potentially empty histogram
     return weight;
   }
 
@@ -149,8 +180,17 @@ class EfficiencyCalculator
   {
     std::shared_ptr<TH1> truth{registry->get<TH1>(HIST("MCTruthTracks_one/hPt"))};
     std::shared_ptr<TH1> reco{registry->get<TH1>(HIST("Tracks_one_MC/hPt"))};
+    if (!truth || !reco) {
+      LOGF(error, log("MC Truth & MC Reco histograms cannot be null"));
+      return;
+    }
 
     auto hEff{hOutput[N - 1]};
+    if (!hEff) {
+      LOGF(error, log("No OutputObj specified for particle %d histogram"), N);
+      return;
+    }
+
     for (int bin{0}; bin < hEff->GetNbinsX(); bin++) {
       auto denom{truth->GetBinContent(bin)};
       hEff->SetBinContent(bin, denom == 0 ? 0 : reco->GetBinContent(bin) / denom);
