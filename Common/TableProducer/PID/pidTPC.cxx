@@ -18,7 +18,11 @@
 /// \brief  Task to produce PID tables for TPC split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, and only for the requested table size ("Full" or "Tiny"). The others are sent empty.
 ///
-
+#include <utility>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 // ROOT includes
 #include "TFile.h"
 #include "TRandom.h"
@@ -40,11 +44,6 @@
 #include "Tools/ML/model.h"
 #include "pidTPCBase.h"
 #include "MetadataHelper.h"
-#include <utility>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
