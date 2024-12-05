@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file dptDptEfficiencyAndQc.cxx
+/// \file NeutronProtonCorrZdc.cxx
 /// \brief Correlations between protons and neutrons in the ZDC
 /// \author Olaf Massen <olaf.massen@cern.ch>
 
@@ -29,7 +29,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct neutronSzdc {
+struct neutronProtonCorrZdc {
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -39,8 +39,8 @@ struct neutronSzdc {
   Configurable<double> cfgZNmax{"cfgZNmax", 350, "Maximum value for ZN signal"};
   Configurable<double> cfgZPmin{"cfgZPmin", -10, "Minimum value for ZP signal"};
   Configurable<double> cfgZPmax{"cfgZPmax", 200, "Maximum value for ZP signal"};
-  Configurable<double> cfgDiffZNmin{"cfgdiffZmin", -20, "Minimum value for the diffZN signal"};
-  Configurable<double> cfgDiffZNmax{"cfgdiffZmax", 40, "Maximum value for the diffZN signal"};
+  Configurable<double> cfgDiffZNmin{"cfgDiffZmin", -20, "Minimum value for the diffZN signal"};
+  Configurable<double> cfgDiffZNmax{"cfgDiffZmax", 40, "Maximum value for the diffZN signal"};
   Configurable<int> cfgNBinsAlpha{"cfgNBinsAlpha", 100, "Number of bins for ZDC asymmetry"};
   Configurable<double> cfgAlphaZmin{"cfgAlphaZmin", -1, "Minimum value for ZDC asymmetry"};
   Configurable<double> cfgAlphaZmax{"cfgAlphaZmax", 1, "Maximum value for ZDC asymmetry"};
@@ -182,7 +182,7 @@ struct neutronSzdc {
       histos.fill(HIST("CentvsZPSignal"), cent, sumZPA + sumZPC);
     }
   }
-  PROCESS_SWITCH(neutronSzdc, processRun3, "Process analysis for Run 3 data", true);
+  PROCESS_SWITCH(neutronProtonCorrZdc, processRun3, "Process analysis for Run 3 data", true);
 
   void processRun2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Run2MatchedSparse, CentralitiesRun2>>::iterator const& collision ,aod::BCsWithTimestamps const&, aod::Zdcs const&)
   {
@@ -241,7 +241,7 @@ struct neutronSzdc {
       histos.fill(HIST("CentvsZPSignal"), cent, sumZPA + sumZPC);
     }
   }
-  PROCESS_SWITCH(neutronSzdc, processRun2, "Process analysis for Run 2 converted data", false);
+  PROCESS_SWITCH(neutronProtonCorrZdc, processRun2, "Process analysis for Run 2 converted data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
