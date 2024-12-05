@@ -9,8 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \brief: hadron-jet correlation analysis for OO collisions
-/// \author: Kotliarov Artem <artem.kotliarov@cern.ch>
+/// \author Kotliarov Artem <artem.kotliarov@cern.ch>, Nuclear Physics Institute of CAS
+/// \file jetHadronRecoil_OO.cxx
+/// \brief hadron-jet correlation analysis for OO collisions
 
 #include <string>
 #include <tuple>
@@ -48,7 +49,7 @@ using namespace o2::framework::expressions;
 
 // Shorthand notations
 using filtered_Coll = soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator;
-using filtered_Coll_PartLevel = soa::Filtered<aod::JetMcCollisions, aod::BkgChargedMcRhos>::iterator;
+using filtered_Coll_PartLevel = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>>::iterator;
 using filtered_Coll_DetLevel_to_GetWeight = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator;
 
 using filtered_Jets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
@@ -465,7 +466,7 @@ struct jetHadronRecoil_OO {
                            aod::JetParticles const& particles)
   {
     spectra.fill(HIST("vertexZ"), collision.posZ());
-    fillMCPHistograms(jets, particles);
+    fillMCPHistograms(collision, jets, particles);
   }
   PROCESS_SWITCH(jetHadronRecoil_OO, processMC_PartLevel, "process MC particle level", false);
 
@@ -475,7 +476,7 @@ struct jetHadronRecoil_OO {
   {
     auto weight = collision.weight();
     spectra.fill(HIST("vertexZ"), collision.posZ(), weight);
-    fillMCPHistograms(jets, particles, weight);
+    fillMCPHistograms(collision, jets, particles, weight);
   }
   PROCESS_SWITCH(jetHadronRecoil_OO, processMC_PartLevel_Weighted, "process MC particle level with event weight", false);
 
@@ -521,7 +522,7 @@ struct jetHadronRecoil_OO {
   std::tuple<double, bool> isRecoilJet(const Jet& jet,
                                        double phi_TT)
   {
-    double dphi = fabs(RecoDecay::constrainAngle(jet.phi() - phi_TT, -constants::math::PI));
+    double dphi = std::fabs(RecoDecay::constrainAngle(jet.phi() - phi_TT, -constants::math::PI));
     return {dphi, (constants::math::PI - recoilRegion) < dphi};
   }
 
