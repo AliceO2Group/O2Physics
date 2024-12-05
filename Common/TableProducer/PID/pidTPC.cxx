@@ -40,6 +40,11 @@
 #include "Tools/ML/model.h"
 #include "pidTPCBase.h"
 #include "MetadataHelper.h"
+#include <utility>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -283,7 +288,7 @@ struct tpcPid {
     }
   }
 
-  Partition<Trks> notTPCStandaloneTracks = (aod::track::tpcNClsFindable > (uint8_t)0) && ((aod::track::itsClusterSizes > (uint32_t)0) || (aod::track::trdPattern > (uint8_t)0) || (aod::track::tofExpMom > 0.f && aod::track::tofChi2 > 0.f)); // To count number of tracks for use in NN array
+  Partition<Trks> notTPCStandaloneTracks = (aod::track::tpcNClsFindable > static_cast<uint8_t>(0)) && ((aod::track::itsClusterSizes > static_cast<uint32_t>(0)) || (aod::track::trdPattern > static_cast<uint8_t>(0)) || (aod::track::tofExpMom > 0.f && aod::track::tofChi2 > 0.f)); // To count number of tracks for use in NN array
   Partition<Trks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
 
   template <typename C, typename T, typename B>
@@ -545,7 +550,7 @@ struct tpcPid {
 
   PROCESS_SWITCH(tpcPid, processStandard, "Creating PID tables without MC TuneOnData", true);
 
-  Partition<TrksMC> mcnotTPCStandaloneTracks = (aod::track::tpcNClsFindable > (uint8_t)0) && ((aod::track::itsClusterSizes > (uint32_t)0) || (aod::track::trdPattern > (uint8_t)0) || (aod::track::tofExpMom > 0.f && aod::track::tofChi2 > 0.f)); // To count number of tracks for use in NN array
+  Partition<TrksMC> mcnotTPCStandaloneTracks = (aod::track::tpcNClsFindable > static_cast<uint8_t>(0)) && ((aod::track::itsClusterSizes > static_cast<uint32_t>(0)) || (aod::track::trdPattern > static_cast<uint8_t>(0)) || (aod::track::tofExpMom > 0.f && aod::track::tofChi2 > 0.f)); // To count number of tracks for use in NN array
   Partition<TrksMC> mctracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
 
   void processMcTuneOnData(CollMC const& collisionsMc, TrksMC const& tracksMc, aod::BCsWithTimestamps const& bcs, aod::McParticles const&)
