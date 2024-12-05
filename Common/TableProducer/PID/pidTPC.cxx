@@ -27,15 +27,19 @@
 // O2 includes
 #include <CCDB/BasicCCDBManager.h>
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "CCDB/CcdbApi.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/EventSelection.h"
 #include "TableHelper.h"
 #include "Tools/ML/model.h"
 #include "pidTPCBase.h"
+#include "MetadataHelper.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -44,6 +48,8 @@ using namespace o2::pid::tpc;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 using namespace o2::ml;
+
+MetadataHelper metadataInfo; // Metadata helper
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
@@ -56,10 +62,10 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 /// Task to produce the response table
 struct tpcPid {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
-  using Coll = soa::Join<aod::Collisions, aod::PIDMults>;
-
+  using Coll = soa::Join<aod::Collisions, aod::PIDMults, aod::EvSels>;
+               
   using TrksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
-  using CollMC = soa::Join<aod::Collisions, aod::PIDMults, aod::McCollisionLabels>;
+  using CollMC = soa::Join<aod::Collisions, aod::PIDMults, aod::McCollisionLabels , aod::EvSels>;
 
   // Tables to produce
   Produces<o2::aod::pidTPCFullEl> tablePIDFullEl;
@@ -90,8 +96,10 @@ struct tpcPid {
   OnnxModel network;
   o2::ccdb::CcdbApi ccdbApi;
   std::map<std::string, std::string> metadata;
+  std::map<std::string, std::string> nullmetadata;
   std::map<std::string, std::string> headers;
   std::vector<int> speciesNetworkFlags = std::vector<int>(9);
+  std::string networkVersion;
 
   // Input parameters
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -187,11 +195,14 @@ struct tpcPid {
     speciesNetworkFlags[7] = useNetworkHe;
     speciesNetworkFlags[8] = useNetworkAl;
 
-    // Initialise metadata object for CCDB calls
+    // Initialise metadata object for CCDB calls from AO2D metadata
     if (recoPass.value == "") {
-      LOGP(info, "Reco pass not specified; CCDB will take latest available object");
+      if (metadataInfo.isFullyDefined()) {
+        metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+        LOGP(info, "Automatically setting reco pass for TPC Response to {} from AO2D", metadata["RecoPassName"]);
+      }
     } else {
-      LOGP(info, "CCDB object will be requested for reconstruction pass {}", recoPass.value);
+      LOGP(info, "Setting reco pass for TPC response to user-defined name {}", recoPass.value);
       metadata["RecoPassName"] = recoPass.value;
     }
 
@@ -215,40 +226,50 @@ struct tpcPid {
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+      ccdbApi.init(url);
       if (time != 0) {
         LOGP(info, "Initialising TPC PID response for fixed timestamp {} and reco pass {}:", time, recoPass.value);
         ccdb->setTimestamp(time);
         response = ccdb->getSpecific<o2::pid::tpc::Response>(path, time, metadata);
+        headers = ccdbApi.retrieveHeaders(path, metadata, time);
+        networkVersion = headers["NN-Version"];
         if (!response) {
           LOGF(warning, "Unable to find TPC parametrisation for specified pass name - falling back to latest object");
           response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(path, time);
+          headers = ccdbApi.retrieveHeaders(path, metadata, time);
+          networkVersion = headers["NN-Version"];
           if (!response) {
             LOGF(fatal, "Unable to find any TPC object corresponding to timestamp {}!", time);
           }
         }
+        LOG(info) << "Successfully retrieved TPC PID object from CCDB for timestamp " << time << ", period " << headers["LPMProductionTag"] << ", recoPass " << headers["RecoPassName"];
+        metadata["RecoPassName"] = headers["RecoPassName"]; // Force pass number for NN request to match retrieved BB        
         response->PrintAll();
       }
     }
-
+    
     /// Neural network init for TPC PID
 
     if (!useNetworkCorrection) {
       return;
     } else {
       /// CCDB and auto-fetching
-      ccdbApi.init(url);
+      
       if (!autofetchNetworks) {
         if (ccdbTimestamp > 0) {
           /// Fetching network for specific timestamp
           LOG(info) << "Fetching network for timestamp: " << ccdbTimestamp.value;
           bool retrieveSuccess = ccdbApi.retrieveBlob(networkPathCCDB.value, ".", metadata, ccdbTimestamp.value, false, networkPathLocally.value);
           headers = ccdbApi.retrieveHeaders(networkPathCCDB.value, metadata, ccdbTimestamp.value);
+          networkVersion = headers["NN-Version"];
+          LOG(info) << "networkVersion"<< networkVersion.data()<<" ::finished";
           if (retrieveSuccess) {
             network.initModel(networkPathLocally.value, enableNetworkOptimizations.value, networkSetNumThreads.value, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0));
             std::vector<float> dummyInput(network.getNumInputNodes(), 1.);
             network.evalModel(dummyInput); /// Init the model evaluations
+            LOGP(info, "Retrieved NN corrections for production tag {}, pass number {}", headers["LPMProductionTag"], headers["RecoPassName"]);
           } else {
-            LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
+            LOG(fatal) << "No valid NN object found matching retrieved Bethe-Bloch parametrisation for pass " << metadata["RecoPassName"] << ". Please ensure that the requested pass has dedicated NN corrections available";   
           }
         } else {
           /// Taking the network from local file
@@ -272,7 +293,7 @@ struct tpcPid {
   template <typename C, typename T, typename B>
   std::vector<float> createNetworkPrediction(C const& collisions, T const& tracks, B const& bcs, const size_t size)
   {
-
+    
     std::vector<float> network_prediction;
 
     auto start_network_total = std::chrono::high_resolution_clock::now();
@@ -280,19 +301,24 @@ struct tpcPid {
       const auto& bc = bcs.begin();
       // Initialise correct TPC response object before NN setup (for NCl normalisation)
       if (useCCDBParam && ccdbTimestamp.value == 0 && !ccdb->isCachedObjectValid(ccdbPath.value, bc.timestamp())) { // Updating parametrisation only if the initial timestamp is 0
-        if (recoPass.value == "") {
+        if (recoPass.value == "") {          
           LOGP(info, "Retrieving latest TPC response object for timestamp {}:", bc.timestamp());
         } else {
           LOGP(info, "Retrieving TPC Response for timestamp {} and recoPass {}:", bc.timestamp(), recoPass.value);
         }
         response = ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata);
+        headers = ccdbApi.retrieveHeaders(ccdbPath.value, metadata, bc.timestamp());
+        networkVersion = headers["NN-Version"];
         if (!response) {
-          LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", recoPass.value);
+          LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", metadata["RecoPassName"]);
+          headers = ccdbApi.retrieveHeaders(ccdbPath.value, nullmetadata, bc.timestamp());
           response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
           if (!response) {
             LOGP(fatal, "Could not find ANY TPC response object for the timestamp {}!", bc.timestamp());
           }
         }
+        LOG(info) << "Successfully retrieved TPC PID object from CCDB for timestamp " << bc.timestamp() << ", period " << headers["LPMProductionTag"] << ", recoPass " << headers["RecoPassName"];
+        metadata["RecoPassName"] = headers["RecoPassName"]; // Force pass number for NN request to match retrieved BB
         response->PrintAll();
       }
 
@@ -300,12 +326,14 @@ struct tpcPid {
         LOG(info) << "Fetching network for timestamp: " << bc.timestamp();
         bool retrieveSuccess = ccdbApi.retrieveBlob(networkPathCCDB.value, ".", metadata, bc.timestamp(), false, networkPathLocally.value);
         headers = ccdbApi.retrieveHeaders(networkPathCCDB.value, metadata, bc.timestamp());
+        networkVersion = headers["NN-Version"];
         if (retrieveSuccess) {
           network.initModel(networkPathLocally.value, enableNetworkOptimizations.value, networkSetNumThreads.value, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0));
           std::vector<float> dummyInput(network.getNumInputNodes(), 1.);
           network.evalModel(dummyInput);
+          LOGP(info, "Retrieved NN corrections for production tag {}, pass number {}, NN-Version number{}", headers["LPMProductionTag"], headers["RecoPassName"],headers["NN-Version"]);
         } else {
-          LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
+          LOG(fatal) << "No valid NN object found matching retrieved Bethe-Bloch parametrisation for pass " << metadata["RecoPassName"] << ". Please ensure that the requested pass has dedicated NN corrections available";
         }
       }
     }
@@ -342,6 +370,9 @@ struct tpcPid {
         track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
         track_properties[counter_track_props + 4] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).multTPC() / 11000. : 1.;
         track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
+        if(input_dimensions == 7  && networkVersion == "2"){
+          track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
+        }
         counter_track_props += input_dimensions;
       }
 
@@ -483,13 +514,16 @@ struct tpcPid {
           LOGP(info, "Retrieving TPC Response for timestamp {} and recoPass {}:", bc.timestamp(), recoPass.value);
         }
         response = ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata);
+        headers = ccdbApi.retrieveHeaders(ccdbPath.value, metadata, bc.timestamp());
         if (!response) {
-          LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", recoPass.value);
+          LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", metadata["RecoPassName"]);
           response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
+          headers = ccdbApi.retrieveHeaders(ccdbPath.value, nullmetadata, bc.timestamp());
           if (!response) {
             LOGP(fatal, "Could not find ANY TPC response object for the timestamp {}!", bc.timestamp());
           }
         }
+        LOG(info) << "Successfully retrieved TPC PID object from CCDB for timestamp " << bc.timestamp() << ", period " << headers["LPMProductionTag"] << ", recoPass " << headers["RecoPassName"];
         response->PrintAll();
       }
 
@@ -573,7 +607,7 @@ struct tpcPid {
         }
         response = ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata);
         if (!response) {
-          LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", recoPass.value);
+          LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", metadata["RecoPassName"]);
           response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
           if (!response) {
             LOGP(fatal, "Could not find ANY TPC response object for the timestamp {}!", bc.timestamp());
@@ -641,4 +675,8 @@ struct tpcPid {
   PROCESS_SWITCH(tpcPid, processMcTuneOnData, "Creating PID tables with MC TuneOnData", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tpcPid>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) 
+{ 
+  metadataInfo.initMetadata(cfgc); // Parse AO2D metadata
+  return WorkflowSpec{adaptAnalysisTask<tpcPid>(cfgc)}; 
+}
