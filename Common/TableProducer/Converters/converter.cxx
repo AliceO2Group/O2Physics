@@ -22,7 +22,6 @@
 // O2 includes
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "Common/DataModel/Multiplicity.h"
 
 // O2Physics includes
 #include "TableHelper.h"
@@ -34,7 +33,6 @@ using namespace o2::zdc;
 // Converts bc_000 into bc_001
 struct bcConverter {
   Produces<aod::BCs_001> bc_001;
-  static constexpr std::string tableTo = "BCs_001";
   void process(aod::BCs_000 const& bcTable) // BC converter is always needed
   {
     for (auto& bc : bcTable) {
@@ -47,7 +45,6 @@ struct bcConverter {
 // Swaps covariance matrix elements if the data is known to be bogus (collision_000 is bogus)
 struct collisionConverter {
   Produces<aod::Collisions_001> Collisions_001;
-  static constexpr std::string tableTo = "Collisions_001";
   Configurable<bool> doNotSwap{"doNotSwap", false, "simple pass-through"};
   Configurable<bool> debug{"debug", false, "flag to save debug histo"};
   Configurable<int> nbins{"nbins", 1, "number of bins in debug histo"};
@@ -55,7 +52,7 @@ struct collisionConverter {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(o2::framework::InitContext& initContext)
   {
-    enableFlagIfTableRequired(initContext, tableTo, doprocessConverter);
+    enableFlagIfTableRequired(initContext, "Collisions_001", doprocessConverter);
     const AxisSpec axisCYYdebug{nbins, -1.0f, +1.0f, ""};
     histos.add("hCYY", "hCYY", kTH1F, {axisCYYdebug});
   }
@@ -116,8 +113,7 @@ struct collisionConverter {
 // Converts FDD table from version 000 to 001
 struct FddConverter {
   Produces<aod::FDDs_001> fdd_001;
-  static constexpr std::string tableTo = "FDDs_001";
-  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, tableTo, doprocessConverter); }
+  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, "FDDs_001", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::FDDs_000 const& fdd_000)
   {
@@ -142,8 +138,7 @@ struct FddConverter {
 
 struct hmpConverter {
   Produces<aod::HMPID_001> HMPID_001;
-  static constexpr std::string tableTo = "HMPID_001";
-  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, tableTo, doprocessConverter); }
+  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, "HMPID_001", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::HMPID_000 const& hmpLegacy, aod::Tracks const&)
   {
@@ -181,8 +176,7 @@ struct hmpConverter {
 // Converts the old McCaloLabels_000 table to the new McCaloLabels_001 table where we have a variable size array for associated MCParticles for each calo cell
 struct caloLabelConverter {
   Produces<aod::McCaloLabels_001> McCaloLabels_001;
-  static constexpr std::string tableTo = "McCaloLabels_001";
-  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, tableTo, doprocessConverter); }
+  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, "McCaloLabels_001", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::McCaloLabels_000 const& mccalolabelTable)
   {
@@ -202,8 +196,7 @@ struct caloLabelConverter {
 // Converts MCParticle table from version 000 to 001
 struct McConverter {
   Produces<aod::StoredMcParticles_001> mcParticles_001;
-  static constexpr std::string tableTo = "StoredMcParticles_001";
-  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, tableTo, doprocessConverter); }
+  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, "StoredMcParticles_001", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::StoredMcParticles_000 const& mcParticles_000)
   {
@@ -236,8 +229,7 @@ struct McConverter {
 
 struct TracksExtraConverter {
   Produces<aod::StoredTracksExtra_001> tracksExtra_001;
-  static constexpr std::string tableTo = "StoredTracksExtra_001";
-  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, tableTo, doprocessConverter); }
+  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, "StoredTracksExtra_001", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::TracksExtra_000 const& tracksExtra_000)
   {
@@ -282,8 +274,7 @@ struct TracksExtraSpawner {
 
 struct zdcConverter {
   Produces<aod::Zdcs_001> Zdcs_001;
-  static constexpr std::string tableTo = "Zdcs_001";
-  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, tableTo, doprocessConverter); }
+  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, "Zdcs_001", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::Zdcs_000 const& zdcLegacy, aod::BCs const&)
   {
@@ -372,8 +363,7 @@ struct zdcConverter {
 
 struct mcCollisionConverter {
   Produces<aod::McCollisions_001> mcCollisions_001;
-  static constexpr std::string tableTo = "McCollisions_001";
-  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, tableTo, doprocessConverter); }
+  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, "McCollisions_001", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::McCollisions_000 const& mcCollisionTable)
   {
@@ -394,8 +384,7 @@ struct mcCollisionConverter {
 
 struct MftTracksConverter {
   Produces<aod::StoredMFTTracks_001> mftTracks_001;
-  static constexpr std::string tableTo = "StoredMFTTracks_001";
-  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, tableTo, doprocessConverter); }
+  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, "StoredMFTTracks_001", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::MFTTracks_000 const& mftTracks_000)
   {
@@ -432,8 +421,7 @@ struct MFTTracksSpawner {
 
 struct V0Converter {
   Produces<aod::V0s_002> v0s_002;
-  static constexpr std::string tableTo = "V0s_002";
-  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, tableTo, doprocessConverter); }
+  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, "V0s_002", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::V0s_001 const& v0s)
   {
@@ -447,8 +435,7 @@ struct V0Converter {
 
 struct WeakDecayIndicesV0 {
   Produces<aod::V0s_001> v0s_001;
-  static constexpr std::string tableTo = "V0s_001";
-  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, tableTo, doprocessConverter); }
+  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, "V0s_001", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::V0s_000 const& v0s, aod::Tracks const&)
   {
@@ -465,8 +452,7 @@ struct WeakDecayIndicesV0 {
 // NOTE These tasks have to be split because for the cascades, V0s and not V0s_000 are needed
 struct WeakDecayIndicesCascades {
   Produces<aod::Cascades_001> cascades_001;
-  static constexpr std::string tableTo = "Cascades_001";
-  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, tableTo, doprocessConverter); }
+  void init(o2::framework::InitContext& initContext) { enableFlagIfTableRequired(initContext, "Cascades_001", doprocessConverter); }
   void process(aod::BCs const&) {} // Dummy processor in case the other is disabled
   void processConverter(aod::V0s const&, aod::Cascades_000 const& cascades, aod::Tracks const&)
   {
@@ -484,79 +470,44 @@ struct WeakDecayIndicesCascades {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{};
+  std::unordered_set<std::string> addedConverters; // Track added converters
+
+  // Check if 'aod-metadata-tables' option is available in the config context
   if (cfgc.options().hasOption("aod-metadata-tables")) {
     const std::vector<std::string> tables = cfgc.options().get<std::vector<std::string>>("aod-metadata-tables");
-    for (auto t : tables) {
-      LOG(info) << "AOD converter: Table " << t << " checking for converters";
-      if (t == "O2bc") {
-        LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
-        workflow.push_back(adaptAnalysisTask<bcConverter>(cfgc));
-        continue;
+
+    // Map of table names to their corresponding converter task functions
+    std::unordered_map<std::string, std::vector<std::function<void()>>> tableToTasks = {
+      {"O2bc", {[&]() { workflow.push_back(adaptAnalysisTask<bcConverter>(cfgc)); }}},
+      {"O2collision", {[&]() { workflow.push_back(adaptAnalysisTask<collisionConverter>(cfgc)); }}},
+      {"O2fdd", {[&]() { workflow.push_back(adaptAnalysisTask<FddConverter>(cfgc)); }}},
+      {"O2hmpid", {[&]() { workflow.push_back(adaptAnalysisTask<hmpConverter>(cfgc)); }}},
+      {"O2mccalolabel", {[&]() { workflow.push_back(adaptAnalysisTask<caloLabelConverter>(cfgc)); }}},
+      {"O2mfttrack", {[&]() { workflow.push_back(adaptAnalysisTask<MftTracksConverter>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<MFTTracksSpawner>(cfgc)); }}},
+      {"O2v0", {[&]() { workflow.push_back(adaptAnalysisTask<WeakDecayIndicesV0>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<V0Converter>(cfgc)); }}},
+      {"O2v0_001", {[&]() { workflow.push_back(adaptAnalysisTask<V0Converter>(cfgc)); }}},
+      {"O2cascades", {[&]() { workflow.push_back(adaptAnalysisTask<WeakDecayIndicesCascades>(cfgc)); }}},
+      {"O2mccollision", {[&]() { workflow.push_back(adaptAnalysisTask<mcCollisionConverter>(cfgc)); }}},
+      {"O2mccollisionlabel", {[&]() { workflow.push_back(adaptAnalysisTask<mcCollisionConverter>(cfgc)); }}},
+      {"O2mcparticle", {[&]() { workflow.push_back(adaptAnalysisTask<McConverter>(cfgc)); }}},
+      {"O2trackextra", {[&]() { workflow.push_back(adaptAnalysisTask<TracksExtraConverter>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<TracksExtraSpawner>(cfgc)); }}},
+      {"O2trackextra_001", {[&]() { workflow.push_back(adaptAnalysisTask<TracksExtraConverter>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<TracksExtraSpawner>(cfgc)); }}},
+      {"O2trackextra_002", {[&]() { workflow.push_back(adaptAnalysisTask<TracksExtraConverter>(cfgc)); }, [&]() { workflow.push_back(adaptAnalysisTask<TracksExtraSpawner>(cfgc)); }}},
+      {"O2zdc", {[&]() { workflow.push_back(adaptAnalysisTask<zdcConverter>(cfgc)); }}},
+    };
+
+    // Iterate through the tables and process based on the mapping
+    for (auto const& table : tables) {
+      LOG(info) << "AOD converter: Table " << table << " checking for converters";
+
+      if (tableToTasks.find(table) != tableToTasks.end()) {
+        for (auto const& task : tableToTasks[table]) {
+          task();
+        }
+        LOG(info) << "  + AOD converter: for table " << table << " adding converter";
+      } else {
+        LOG(info) << "  - AOD converter: for table " << table << " needs no converter";
       }
-      if (t == "O2collision") {
-        LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
-        workflow.push_back(adaptAnalysisTask<collisionConverter>(cfgc));
-        continue;
-      }
-      if (t == "O2fdd") {
-        LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
-        workflow.push_back(adaptAnalysisTask<FddConverter>(cfgc));
-        continue;
-      }
-      if (t == "O2hmpid") {
-        LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
-        workflow.push_back(adaptAnalysisTask<hmpConverter>(cfgc));
-        continue;
-      }
-      if (t == "O2mccalolabel") {
-        LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
-        workflow.push_back(adaptAnalysisTask<caloLabelConverter>(cfgc));
-        continue;
-      }
-      if (t == "O2mfttrack") {
-        LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
-        workflow.push_back(adaptAnalysisTask<MftTracksConverter>(cfgc));
-        workflow.push_back(adaptAnalysisTask<MFTTracksSpawner>(cfgc));
-        continue;
-      }
-      if (t == "O2v0") {
-        LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
-        workflow.push_back(adaptAnalysisTask<WeakDecayIndicesV0>(cfgc));
-        workflow.push_back(adaptAnalysisTask<V0Converter>(cfgc));
-        continue;
-      }
-      if (t == "O2v0_001") {
-        LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
-        workflow.push_back(adaptAnalysisTask<V0Converter>(cfgc));
-        continue;
-      }
-      if (t == "O2cascades") {
-        LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
-        workflow.push_back(adaptAnalysisTask<WeakDecayIndicesCascades>(cfgc));
-        continue;
-      }
-      if (t == "O2mccollision") {
-        LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task mcCollisionConverter";
-        workflow.push_back(adaptAnalysisTask<mcCollisionConverter>(cfgc));
-        continue;
-      }
-      if (t == "O2mcparticle") {
-        LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
-        workflow.push_back(adaptAnalysisTask<McConverter>(cfgc));
-        continue;
-      }
-      if (t == "O2trackextra") {
-        LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
-        workflow.push_back(adaptAnalysisTask<TracksExtraConverter>(cfgc));
-        workflow.push_back(adaptAnalysisTask<TracksExtraSpawner>(cfgc));
-        continue;
-      }
-      if (t == "O2zdc") {
-        LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
-        workflow.push_back(adaptAnalysisTask<zdcConverter>(cfgc));
-        continue;
-      }
-      LOG(info) << "  - AOD converter: Table " << t << " needs no converter";
     }
   } else {
     LOG(warning) << "AOD converter: No tables found in the meta data";
