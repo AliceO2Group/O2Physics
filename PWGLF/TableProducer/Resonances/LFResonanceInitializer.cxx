@@ -189,6 +189,7 @@ struct reso2initializer {
   using ResoV0sMC = soa::Join<ResoV0s, aod::McV0Labels>;
   using ResoCascades = aod::CascDatas;
   using ResoCascadesMC = soa::Join<ResoCascades, aod::McCascLabels>;
+  using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
 
   template <bool isMC, typename CollisionType, typename TrackType>
   bool IsTrackSelected(CollisionType const&, TrackType const& track)
@@ -1057,10 +1058,9 @@ struct reso2initializer {
 
   void processTrackDataRun2(ResoRun2Events::iterator const& collision,
                             soa::Filtered<ResoTracks> const& tracks,
-                            aod::BCsWithTimestamps const&)
+                            BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
-    initCCDB(bc);
+    auto bc = collision.bc_as<BCsWithRun2Info>();
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
@@ -1111,10 +1111,9 @@ struct reso2initializer {
   void processTrackV0DataRun2(ResoRun2Events::iterator const& collision,
                               soa::Filtered<ResoTracks> const& tracks,
                               ResoV0s const& V0s,
-                              aod::BCsWithTimestamps const&)
+                              BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
-    initCCDB(bc);
+    auto bc = collision.bc_as<BCsWithRun2Info>();
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
@@ -1152,10 +1151,9 @@ struct reso2initializer {
                                   soa::Filtered<ResoTracks> const& tracks,
                                   ResoV0s const& V0s,
                                   ResoCascades const& Cascades,
-                                  aod::BCsWithTimestamps const&)
+                                  BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
-    initCCDB(bc);
+    auto bc = collision.bc_as<BCsWithRun2Info>();
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
@@ -1215,10 +1213,9 @@ struct reso2initializer {
   Preslice<aod::McParticles> perMcCollisionRun2 = aod::mcparticle::mcCollisionId;
   void processTrackMCRun2(soa::Join<ResoRun2Events, aod::McCollisionLabels>::iterator const& collision,
                           aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
-                          aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
+                          aod::McParticles const& mcParticles, BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
-    initCCDB(bc);
+    auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
     resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
@@ -1258,10 +1255,9 @@ struct reso2initializer {
   void processTrackV0MCRun2(soa::Join<ResoRun2Events, aod::McCollisionLabels>::iterator const& collision,
                             aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
                             ResoV0sMC const& V0s,
-                            aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
+                            aod::McParticles const& mcParticles, BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
-    initCCDB(bc);
+    auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
     resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
@@ -1306,10 +1302,9 @@ struct reso2initializer {
                                 aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
                                 ResoV0sMC const& V0s,
                                 ResoCascadesMC const& Cascades,
-                                aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
+                                aod::McParticles const& mcParticles, BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
-    initCCDB(bc);
+    auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
     resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp(), collision.trackOccupancyInTimeRange());
