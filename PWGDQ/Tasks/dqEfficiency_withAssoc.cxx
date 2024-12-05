@@ -962,7 +962,7 @@ struct AnalysisPrefilterSelection {
       string trackCuts;
       getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", trackCuts, false);
       TString allTrackCutsStr = trackCuts;
-      
+
       std::unique_ptr<TObjArray> objArray(allTrackCutsStr.Tokenize(","));
       if (objArray == nullptr) {
         LOG(fatal) << " Not getting any track cuts from the barrel-track-selection ";
@@ -1069,7 +1069,7 @@ struct AnalysisPrefilterSelection {
           mymap = ~fPrefilterMap[track.globalIndex()];
           prefilter(mymap);
         } else {
-          prefilter(mymap);  // track did not pass the prefilter selections, so publish just 1's
+          prefilter(mymap); // track did not pass the prefilter selections, so publish just 1's
         }
       }
     }

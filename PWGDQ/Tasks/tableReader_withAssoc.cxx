@@ -850,7 +850,7 @@ struct AnalysisPrefilterSelection {
   Configurable<std::string> fConfigPrefilterTrackCut{"cfgPrefilterTrackCut", "", "Prefilter track cut"};
   Configurable<std::string> fConfigPrefilterPairCut{"cfgPrefilterPairCut", "", "Prefilter pair cut"};
   Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "", "Track cuts for which to run the prefilter"};
-  
+
   std::map<uint32_t, uint32_t> fPrefilterMap;
   AnalysisCompositeCut* fPairCut;
   uint32_t fPrefilterMask;
@@ -883,7 +883,7 @@ struct AnalysisPrefilterSelection {
       LOG(warn) << " No prefilter loose selection specified! Prefilter will not be run";
       runPrefilter = false;
     }
-    
+
     fPrefilterMask = static_cast<uint32_t>(0);
     fPrefilterCutBit = -1;
     if (runPrefilter) {
@@ -892,7 +892,7 @@ struct AnalysisPrefilterSelection {
       string trackCuts;
       getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", trackCuts, false);
       TString allTrackCutsStr = trackCuts;
-      
+
       std::unique_ptr<TObjArray> objArray(allTrackCutsStr.Tokenize(","));
       if (objArray == nullptr) {
         LOG(fatal) << " Not getting any track cuts from the barrel-track-selection ";
@@ -996,7 +996,7 @@ struct AnalysisPrefilterSelection {
           mymap = ~fPrefilterMap[track.globalIndex()];
           prefilter(mymap);
         } else {
-          prefilter(mymap);  // track did not pass the prefilter selections, so publish just 1's
+          prefilter(mymap); // track did not pass the prefilter selections, so publish just 1's
         }
       }
     }
