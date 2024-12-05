@@ -29,7 +29,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct neutronProtonCorrZdc {
+struct NeutronProtonCorrZdc {
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -182,7 +182,7 @@ struct neutronProtonCorrZdc {
       histos.fill(HIST("CentvsZPSignal"), cent, sumZPA + sumZPC);
     }
   }
-  PROCESS_SWITCH(neutronProtonCorrZdc, processRun3, "Process analysis for Run 3 data", true);
+  PROCESS_SWITCH(NeutronProtonCorrZdc, processRun3, "Process analysis for Run 3 data", true);
 
   void processRun2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Run2MatchedSparse, CentralitiesRun2>>::iterator const& collision ,aod::BCsWithTimestamps const&, aod::Zdcs const&)
   {
@@ -241,7 +241,7 @@ struct neutronProtonCorrZdc {
       histos.fill(HIST("CentvsZPSignal"), cent, sumZPA + sumZPC);
     }
   }
-  PROCESS_SWITCH(neutronProtonCorrZdc, processRun2, "Process analysis for Run 2 converted data", false);
+  PROCESS_SWITCH(NeutronProtonCorrZdc, processRun2, "Process analysis for Run 2 converted data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
