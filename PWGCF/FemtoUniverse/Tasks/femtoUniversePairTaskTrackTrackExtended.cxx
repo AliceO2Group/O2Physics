@@ -34,6 +34,7 @@
 
 using namespace o2;
 using namespace o2::analysis::femto_universe;
+using namespace o2::analysis::femto_universe::efficiency;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
@@ -92,10 +93,10 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsOneMCReco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == trackonefilter.confChargePart1 && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confPtLowPart1;
   // && ((aod::femtouniverseparticle::cut & confCutPartOne) == confCutPartOne);
 
-  Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsOneMCTruth =
+  Partition<soa::Join<FilteredFemtoFullParticles, aod::FdMCParticles, aod::FDMCLabels>> partsOneMCTruth =
     aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) &&
-    // aod::femtouniverseparticle::pidcut == trackonefilter.ConfPDGCodePartOne &&
-    // aod::femtouniverseparticle::sign == trackonefilter.ConfChargePart1 &&
+    // aod::femtouniverseMCparticle::pdgMCTruth == trackonefilter.ConfPDGCodePartOne &&
+    // aod::femtouniverseparticle::sign == trackonefilter.ConfChargePart1 && // sign == -128
     aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 &&
     aod::femtouniverseparticle::pt > trackonefilter.confPtLowPart1;
 
@@ -172,14 +173,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry mixQaRegistry{"mixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  struct : ConfigurableGroup {
-    Configurable<bool> shouldCalculate{"ConfEfficiencyCalculate", false, "Should calculate efficiency"};
-    Configurable<bool> shouldUpload{"ConfEfficiencyUpload", false, "Should upload to CCDB"};
-    Configurable<bool> shouldApplyCorrections{"ConfEfficiencyApplyCorrections", false, "Should apply corrections from efficinecy"};
-
-    OutputObj<TH1F> hEff1{TH1F("Efficiency_part1", "Efficiency origin/generated ; p_{T} (GeV/c); Efficiency", 100, 0, 4)};
-    OutputObj<TH1F> hEff2{TH1F("Efficiency_part2", "Efficiency origin/generated ; p_{T} (GeV/c); Efficiency", 100, 0, 4)};
-  } effConfGroup;
+  EFFICIENCY_CONFIGURABLES(effConfGroup);
   EfficiencyCalculator efficiencyCalculator{effConfGroup};
 
   /// @brief Counter for particle swapping
@@ -318,13 +312,17 @@ struct FemtoUniversePairTaskTrackTrackExtended {
 
   void init(InitContext& ic)
   {
+    effConfGroup.hEff1.setObject(new TH1F("Efficiency_part1", "Efficiency origin/generated ; p_{T} (GeV/c); Efficiency", 100, 0, 4));
+    effConfGroup.hEff2.setObject(new TH1F("Efficiency_part2", "Efficiency origin/generated ; p_{T} (GeV/c); Efficiency", 100, 0, 4));
+
+    effConfGroup.hMCTruth1.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, trackonefilter.confPDGCodePartOne, false);
+    effConfGroup.hMCTruth2.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, tracktwofilter.confPDGCodePartTwo, false);
+
     efficiencyCalculator
       .setIsTest(true)
-      .withCCDBPath("Users/d/dkarpins")
       .withRegistry(&qaRegistry)
-      .setParticle<1>(trackonefilter.confPDGCodePartOne)
-      .setParticle<2>(tracktwofilter.confPDGCodePartTwo)
-      .saveOnStop(ic)
+      .withCCDBPath("Users/d/dkarpins")
+      .uploadOnStop(ic)
       .init();
 
     eventHisto.init(&qaRegistry);
@@ -555,7 +553,6 @@ struct FemtoUniversePairTaskTrackTrackExtended {
     doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackTrackExtended, processSameEvent, "Enable processing same event", true);
-
 
   /// process function for to call doSameEvent with Monte Carlo
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)

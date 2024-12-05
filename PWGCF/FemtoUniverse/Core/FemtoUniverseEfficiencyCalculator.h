@@ -10,56 +10,58 @@
 #include "FemtoUniverseParticleHisto.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-namespace o2::analysis::femto_universe
+namespace o2::analysis::femto_universe::efficiency
 {
-
-template <typename T>
-concept EfficiencyConfGroup =
-  std::is_base_of_v<ConfigurableGroup, T> &&
-  requires(T t) {
-    std::is_same_v<decltype(t.shouldCalculate), Configurable<bool>>;
-    std::is_same_v<decltype(t.shouldUpload), Configurable<bool>>;
-    std::is_same_v<decltype(t.shouldApplyCorrections), Configurable<bool>>;
-    std::is_same_v<decltype(t.hEff1), OutputObj<TH1>>;
-    std::is_same_v<decltype(t.hEff2), OutputObj<TH1>>;
-    // TODO: add ccdbPath, ccdbURL
-  };
+#define EFFICIENCY_CONFIGURABLES(name)   \
+  struct : EfficiencyConfigurableGroup { \
+  } name;
 
 template <uint8_t T>
 concept IsOneOrTwo = T == 1 || T == 2;
 
-namespace ParticleNo
-{
-enum ParticleNo {
-  ONE,
-  TWO
+template <uint8_t N>
+  requires IsOneOrTwo<N>
+using MCTruthTrackHisto = FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, N>;
+
+struct EfficiencyConfigurableGroup : ConfigurableGroup {
+  Configurable<bool> shouldCalculate{"ConfEfficiencyCalculate", false, "Should calculate efficiency"};
+  Configurable<bool> shouldApplyCorrections{"ConfEfficiencyApplyCorrections", false, "Should apply corrections from efficinecy"};
+  Configurable<std::string> ccdbUrl{"ConfEfficiencyCCDBUrl", "http://alice-ccdb.cern.ch", "CCDB URL to be used"};
+  Configurable<std::string> ccdbPath{"ConfEfficiencyCCDBPath", "Users/", "CCDB base path where objects should be put"};
+
+  MCTruthTrackHisto<1> hMCTruth1;
+  MCTruthTrackHisto<2> hMCTruth2;
+
+  // TODO: move this to other struct?
+  OutputObj<TH1F> hEff1{"Efficiency part1"};
+  OutputObj<TH1F> hEff2{"Efficiency part2"};
 };
-}
 
 class EfficiencyCalculator
 {
  public:
   o2::ccdb::BasicCCDBManager& ccdb{o2::ccdb::BasicCCDBManager::instance()};
+  EfficiencyConfigurableGroup config{};
 
-  // TODO: setTempFitBins(..., ...)
-  ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
-  ConfigurableAxis ConfTempFitVarPDGBins{"ConfTempFitVarPDGBins", {6000, -2300, 2300}, "Binning of the PDG code in the pT vs. TempFitVar plot"};
-
-  // TODO: shouldUpload(config.ConfEfficiencyUpload), shouldCalculate(config.ConfEfficiencyCalculate)
-  EfficiencyCalculator(const EfficiencyConfGroup auto& config)
+  EfficiencyCalculator(EfficiencyConfigurableGroup& config)
+    : shouldCalculate(config.shouldCalculate.value),
+      shouldApplyCorrections(config.shouldApplyCorrections.value),
+      hOutput({config.hEff1.object, config.hEff2.object}), // TODO: figure out better way
+      hMCTruth1(&config.hMCTruth1),
+      hMCTruth2(&config.hMCTruth2),
+      ccdbUrl(config.ccdbUrl.value),
+      ccdbPath(config.ccdbPath.value)
   {
-    hOutput[ParticleNo::ONE] = config.hEff1.object.get();
-    hOutput[ParticleNo::TWO] = config.hEff2.object.get();
   }
 
   auto init() -> void
   {
-    if (!registry) {
-      LOGF(error, log("Registry has to be set"));
+    if (!hOutput[0]) {
+      LOG(fatal) << "!!hOutput[0];" << !!hOutput[0];
     }
-
-    hMCTruth1.init(registry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, false, pdgCode[ParticleNo::ONE], false);
-    hMCTruth2.init(registry, ConfTempFitVarpTBins, ConfTempFitVarPDGBins, false, pdgCode[ParticleNo::TWO], false);
+    if (!hOutput[1]) {
+      LOG(fatal) << "!!hOutput[1];" << !!hOutput[1];
+    }
 
     ccdbApi.init(ccdbUrl);
     ccdb.setURL(ccdbUrl);
@@ -67,7 +69,7 @@ class EfficiencyCalculator
     ccdb.setFatalWhenNull(false);
 
     // TODO: upload and load the actual hist for second particle
-    hLoaded[ParticleNo::ONE] = loadEfficiencyFromCCDB(1733060890131);
+    hLoaded[0] = loadEfficiencyFromCCDB(1733060890131);
   }
 
   auto setIsTest(bool value) -> EfficiencyCalculator&
@@ -89,14 +91,6 @@ class EfficiencyCalculator
     return *this;
   }
 
-  template <uint8_t N>
-    requires IsOneOrTwo<N>
-  auto setParticle(int pdg) -> EfficiencyCalculator&
-  {
-    pdgCode[N - 1] = pdg;
-    return *this;
-  }
-
   auto withCCDBPath(const std::string& path) -> EfficiencyCalculator&
   {
     if (path.empty()) {
@@ -113,28 +107,24 @@ class EfficiencyCalculator
   auto doMCTruth(auto particles) -> void
   {
     for (const auto& particle : particles) {
-      if (static_cast<int>(particle.pidcut()) != pdgCode[N - 1]) {
-        continue;
-      }
-
       if constexpr (N == 1) {
-        hMCTruth1.fillQA<false, false>(particle);
+        hMCTruth1->fillQA<false, false>(particle);
       } else if constexpr (N == 2) {
-        hMCTruth2.fillQA<false, false>(particle);
+        hMCTruth2->fillQA<false, false>(particle);
       }
     }
   }
 
-  auto saveOnStop(InitContext& ic) -> EfficiencyCalculator&
+  auto uploadOnStop(InitContext& ic) -> EfficiencyCalculator&
   {
-    if (!shouldSaveOnStop) {
-      shouldSaveOnStop = true;
+    if (!shouldUploadOnStop) {
+      shouldUploadOnStop = true;
 
       auto& callbacks = ic.services().get<CallbackService>();
       callbacks.set<o2::framework::CallbackService::Id::Stop>([this]() {
         for (uint8_t i{0}; i < hOutput.size(); i++) {
           const auto& output{hOutput[i]};
-          if (isHistogramEmpty(output)) {
+          if (isHistogramEmpty(output.get())) {
             LOGF(error, log("Histogram %d is empty - save aborted"), i + 1);
             return;
           }
@@ -146,7 +136,7 @@ class EfficiencyCalculator
           long now{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
           long oneYear{365LL * 24 * 60 * 60 * 1000};
 
-          if (ccdbApi.storeAsTFileAny(output, ccdbPath, metadata, now, now + oneYear) == 0) {
+          if (ccdbApi.storeAsTFileAny(output.get(), ccdbPath, metadata, now, now + oneYear) == 0) {
             LOGF(info, log("Histogram saved successfully"));
           } else {
             LOGF(fatal, log("Histogram save failed"));
@@ -165,12 +155,13 @@ class EfficiencyCalculator
   auto getWeight(auto const& particle) -> float
   {
     auto weight{1.0f};
-    if (auto hEff{hLoaded[N - 1]}) {
+    auto hEff{hLoaded[N - 1]};
+
+    if (shouldApplyCorrections && hEff) {
       auto bin{hEff->FindBin(particle.pt())};
       auto eff{hEff->GetBinContent(bin)};
       weight /= eff > 0 ? eff : 1.0f;
     }
-    // TODO: add warning about potentially empty histogram
     return weight;
   }
 
@@ -178,6 +169,10 @@ class EfficiencyCalculator
     requires IsOneOrTwo<N>
   auto calculate()
   {
+    if (!shouldCalculate) {
+      return;
+    }
+
     std::shared_ptr<TH1> truth{registry->get<TH1>(HIST("MCTruthTracks_one/hPt"))};
     std::shared_ptr<TH1> reco{registry->get<TH1>(HIST("Tracks_one_MC/hPt"))};
     if (!truth || !reco) {
@@ -221,6 +216,7 @@ class EfficiencyCalculator
 
   auto loadEfficiencyFromCCDB(long timestamp) -> TH1*
   {
+    // TODO: ccdb.getSpecific<TH1>(ccdbPath, timestamp, metadata);
     auto hEff{ccdb.getForTimeStamp<TH1>(ccdbPath, timestamp)};
     if (!hEff || hEff->IsZombie()) {
       LOGF(fatal, log("Could not load histogram from %s"), ccdbPath);
@@ -233,24 +229,25 @@ class EfficiencyCalculator
 
   bool isTest{false};
 
+  bool shouldUploadOnStop{false};
+  bool shouldCalculate{false};
+  bool shouldApplyCorrections{false};
+
   HistogramRegistry* registry{};
 
-  std::array<int, 2> pdgCode;
-  std::array<TH1*, 2> hOutput{};
+  std::array<std::shared_ptr<TH1>, 2> hOutput{};
   std::array<TH1*, 2> hLoaded{};
 
-  std::string ccdbUrl{"http://alice-ccdb.cern.ch"};
+  MCTruthTrackHisto<1>* hMCTruth1;
+  MCTruthTrackHisto<2>* hMCTruth2;
+
+  std::string ccdbUrl{};
   std::string ccdbPath{};
-
-  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> hMCTruth1;
-  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 2> hMCTruth2;
-
-  const std::string folderPrefix{"Efficiency"};
   o2::ccdb::CcdbApi ccdbApi;
 
-  bool shouldSaveOnStop{false};
+  const std::string folderPrefix{"Efficiency"};
 };
 
-} // namespace o2::analysis::femto_universe
+} // namespace o2::analysis::femto_universe::efficiency
 
 #endif
