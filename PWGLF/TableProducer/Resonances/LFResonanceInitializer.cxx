@@ -204,12 +204,12 @@ struct reso2initializer {
         qaRegistry.fill(HIST("hGoodMCTrackIndices"), 0.5);
     }
     // DCAxy cut
-    if (fabs(track.dcaXY()) > cMaxDCArToPVcut)
+    if (std::fabs(track.dcaXY()) > cMaxDCArToPVcut)
       return false;
     if (ConfFillQA)
       qaRegistry.fill(HIST("hGoodTrackIndices"), 1.5);
     // DCAz cut
-    if (fabs(track.dcaZ()) > cMaxDCAzToPVcut || fabs(track.dcaZ()) < cMinDCAzToPVcut)
+    if (std::fabs(track.dcaZ()) > cMaxDCAzToPVcut || std::fabs(track.dcaZ()) < cMinDCAzToPVcut)
       return false;
     if (ConfFillQA)
       qaRegistry.fill(HIST("hGoodTrackIndices"), 2.5);
@@ -236,9 +236,9 @@ struct reso2initializer {
     if (ConfFillQA)
       qaRegistry.fill(HIST("hGoodV0Indices"), 1.5);
 
-    if (fabs(postrack.dcaXY()) < cMinV0PosDCArToPVcut)
+    if (std::fabs(postrack.dcaXY()) < cMinV0PosDCArToPVcut)
       return false;
-    if (fabs(negtrack.dcaXY()) < cMinV0NegDCArToPVcut)
+    if (std::fabs(negtrack.dcaXY()) < cMinV0NegDCArToPVcut)
       return false;
     if (ConfFillQA)
       qaRegistry.fill(HIST("hGoodV0Indices"), 2.5);
@@ -278,9 +278,9 @@ struct reso2initializer {
     if (ConfFillQA)
       qaRegistry.fill(HIST("hGoodCascIndices"), 1.5);
 
-    if (fabs(trackBach.dcaXY()) < cMinCascBachDCArToPVcut)
+    if (std::fabs(trackBach.dcaXY()) < cMinCascBachDCArToPVcut)
       return false;
-    if (fabs(trackBach.dcaXY()) > cMaxCascBachDCArToPVcut)
+    if (std::fabs(trackBach.dcaXY()) > cMaxCascBachDCArToPVcut)
       return false;
     if (ConfFillQA)
       qaRegistry.fill(HIST("hGoodCascIndices"), 2.5);
@@ -1008,7 +1008,7 @@ struct reso2initializer {
       d_bz = d_bz_input;
       ;
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
