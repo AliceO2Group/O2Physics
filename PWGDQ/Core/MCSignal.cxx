@@ -27,7 +27,8 @@ MCSignal::MCSignal() : TNamed("", ""),
                        fExcludeCommonAncestor(false),
                        fTempAncestorLabel(-1),
                        fDecayChannelIsExclusive(false),
-                       fDecayChannelIsNotExclusive(false)
+                       fDecayChannelIsNotExclusive(false),
+                       fNAncestorDirectProngs(0)
 {
 }
 
@@ -39,7 +40,8 @@ MCSignal::MCSignal(int nProngs, const char* name /*= ""*/, const char* title /*=
                                                                                          fExcludeCommonAncestor(false),
                                                                                          fTempAncestorLabel(-1),
                                                                                          fDecayChannelIsExclusive(false),
-                                                                                         fDecayChannelIsNotExclusive(false)
+                                                                                         fDecayChannelIsNotExclusive(false),
+                                                                                         fNAncestorDirectProngs(0)
 {
   fProngs.reserve(nProngs);
 }
@@ -52,7 +54,8 @@ MCSignal::MCSignal(const char* name, const char* title, std::vector<MCProng> pro
                                                                                                                                                         fExcludeCommonAncestor(excludeCommonAncestor),
                                                                                                                                                         fTempAncestorLabel(-1),
                                                                                                                                                         fDecayChannelIsExclusive(false),
-                                                                                                                                                        fDecayChannelIsNotExclusive(false)
+                                                                                                                                                        fDecayChannelIsNotExclusive(false),
+                                                                                                                                                        fNAncestorDirectProngs(0)
 {
 }
 
@@ -82,6 +85,7 @@ void MCSignal::PrintConfig()
   cout << "Exclude common ancestor combinations: " << fExcludeCommonAncestor << endl;
   cout << "Decay channel is exclusive: " << fDecayChannelIsExclusive << endl;
   cout << "Decay channel is not exclusive: " << fDecayChannelIsNotExclusive << endl;
+  cout << "Decay channel direct prongs for the common ancestor: " << fNAncestorDirectProngs << endl;
   cout << "Printing " << fNProngs << "/" << fProngs.size() << " prongs:" << endl;
   int i = 0;
   for (auto& pr : fProngs) {
