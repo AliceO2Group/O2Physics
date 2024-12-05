@@ -57,8 +57,6 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
   std::swap(workflowOptions, options);
 }
 
-#include "Framework/runDataProcessing.h"
-
 /// Task to produce the response table
 struct tpcPid {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
@@ -246,21 +244,21 @@ struct tpcPid {
         response->PrintAll();
       }
     }
-    
+ 
     /// Neural network init for TPC PID
 
     if (!useNetworkCorrection) {
       return;
     } else {
       /// CCDB and auto-fetching
-      
+
       if (!autofetchNetworks) {
         if (ccdbTimestamp > 0) {
           /// Fetching network for specific timestamp
           LOG(info) << "Fetching network for timestamp: " << ccdbTimestamp.value;
           bool retrieveSuccess = ccdbApi.retrieveBlob(networkPathCCDB.value, ".", metadata, ccdbTimestamp.value, false, networkPathLocally.value);
           headers = ccdbApi.retrieveHeaders(networkPathCCDB.value, metadata, ccdbTimestamp.value);
-          networkVersion = headers["NN-Version"];          
+          networkVersion = headers["NN-Version"];
           if (retrieveSuccess) {
             network.initModel(networkPathLocally.value, enableNetworkOptimizations.value, networkSetNumThreads.value, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0));
             std::vector<float> dummyInput(network.getNumInputNodes(), 1.);
@@ -291,7 +289,7 @@ struct tpcPid {
   template <typename C, typename T, typename B>
   std::vector<float> createNetworkPrediction(C const& collisions, T const& tracks, B const& bcs, const size_t size)
   {
-    
+
     std::vector<float> network_prediction;
 
     auto start_network_total = std::chrono::high_resolution_clock::now();
@@ -673,8 +671,8 @@ struct tpcPid {
   PROCESS_SWITCH(tpcPid, processMcTuneOnData, "Creating PID tables with MC TuneOnData", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) 
-{ 
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   metadataInfo.initMetadata(cfgc); // Parse AO2D metadata
   return WorkflowSpec{adaptAnalysisTask<tpcPid>(cfgc)};
 }
