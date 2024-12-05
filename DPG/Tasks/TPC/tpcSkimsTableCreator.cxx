@@ -222,7 +222,7 @@ struct TreeWriterTpcV0 {
       // Lambda
       if (static_cast<bool>(posTrack.pidbit() & (1 << 2)) && static_cast<bool>(negTrack.pidbit() & (1 << 2))) {
         if (downsampleTsalisCharged(posTrack.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Proton], maxPt4dwnsmplTsalisProtons)) {
-          if (TMath::Abs(posTrack.tofNSigmaPr())<= nSigmaTOFdautrack) {
+          if (TMath::Abs(posTrack.tofNSigmaPr()) <= nSigmaTOFdautrack) {
             fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaPr(), posTrack.tofNSigmaPr(), posTrack.tpcExpSignalPr(posTrack.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr, hadronicRate);
           }
         }
@@ -236,7 +236,7 @@ struct TreeWriterTpcV0 {
           fillSkimmedV0Table(v0, posTrack, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(posTrack.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate);
         }
         if (downsampleTsalisCharged(negTrack.pt(), downsamplingTsalisProtons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Proton], maxPt4dwnsmplTsalisProtons)) {
-          if (TMath::Abs(negTrack.tofNSigmaPr())<= nSigmaTOFdautrack) {
+          if (TMath::Abs(negTrack.tofNSigmaPr()) <= nSigmaTOFdautrack) {
             fillSkimmedV0Table(v0, negTrack, collision, negTrack.tpcNSigmaPr(), negTrack.tofNSigmaPr(), negTrack.tpcExpSignalPr(negTrack.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr, hadronicRate);
           }
         }

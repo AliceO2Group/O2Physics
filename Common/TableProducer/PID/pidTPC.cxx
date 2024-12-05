@@ -244,7 +244,7 @@ struct tpcPid {
         response->PrintAll();
       }
     }
- 
+
     /// Neural network init for TPC PID
 
     if (!useNetworkCorrection) {
@@ -366,7 +366,7 @@ struct tpcPid {
         track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
         track_properties[counter_track_props + 4] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).multTPC() / 11000. : 1.;
         track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
-        if (input_dimensions == 7  && networkVersion == "2") {
+        if (input_dimensions == 7 && networkVersion == "2") {
           track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
         }
         counter_track_props += input_dimensions;
