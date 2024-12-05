@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file NeutronProtonCorrZdc.cxx
+/// \file neutronProtonCorrZdc.cxx
 /// \brief Correlations between protons and neutrons in the ZDC
 /// \author Olaf Massen <olaf.massen@cern.ch>
 
@@ -39,8 +39,8 @@ struct neutronProtonCorrZdc {
   Configurable<double> cfgZNmax{"cfgZNmax", 350, "Maximum value for ZN signal"};
   Configurable<double> cfgZPmin{"cfgZPmin", -10, "Minimum value for ZP signal"};
   Configurable<double> cfgZPmax{"cfgZPmax", 200, "Maximum value for ZP signal"};
-  Configurable<double> cfgDiffZNmin{"cfgDiffZmin", -20, "Minimum value for the diffZN signal"};
-  Configurable<double> cfgDiffZNmax{"cfgDiffZmax", 40, "Maximum value for the diffZN signal"};
+  Configurable<double> cfgDiffZmin{"cfgDiffZmin", -20, "Minimum value for the diffZN signal"};
+  Configurable<double> cfgDiffZmax{"cfgDiffZmax", 40, "Maximum value for the diffZN signal"};
   Configurable<int> cfgNBinsAlpha{"cfgNBinsAlpha", 100, "Number of bins for ZDC asymmetry"};
   Configurable<double> cfgAlphaZmin{"cfgAlphaZmin", -1, "Minimum value for ZDC asymmetry"};
   Configurable<double> cfgAlphaZmax{"cfgAlphaZmax", 1, "Maximum value for ZDC asymmetry"};
