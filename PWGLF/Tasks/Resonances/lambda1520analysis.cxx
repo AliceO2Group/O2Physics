@@ -84,10 +84,10 @@ struct lambda1520analysis {
 
   // Kaon
   // Old PID use case
-  Configurable<vector<double>> kaonTPCPIDpTintv{"kaonTPCPIDpTintv", {999.}, "pT intervals for Kaon TPC PID cuts"};
-  Configurable<vector<double>> kaonTPCPIDcuts{"kaonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
-  Configurable<vector<double>> kaonTOFPIDpTintv{"kaonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
-  Configurable<vector<double>> kaonTOFPIDcuts{"kaonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
+  Configurable<std::vector<double>> kaonTPCPIDpTintv{"kaonTPCPIDpTintv", {999.}, "pT intervals for Kaon TPC PID cuts"};
+  Configurable<std::vector<double>> kaonTPCPIDcuts{"kaonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
+  Configurable<std::vector<double>> kaonTOFPIDpTintv{"kaonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
+  Configurable<std::vector<double>> kaonTOFPIDcuts{"kaonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
   Configurable<double> cMaxTPCnSigmaKaonVETO{"cMaxTPCnSigmaKaonVETO", 3.0, "TPC nSigma VETO cut for Kaon"}; // TPC
 
   // New PID use case
@@ -98,10 +98,10 @@ struct lambda1520analysis {
 
   // Proton
   // Old PID use case
-  Configurable<vector<double>> protonTPCPIDpTintv{"protonTPCPIDpTintv", {999.}, "pT intervals for Kaon TPC PID cuts"};
-  Configurable<vector<double>> protonTPCPIDcuts{"protonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
-  Configurable<vector<double>> protonTOFPIDpTintv{"protonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
-  Configurable<vector<double>> protonTOFPIDcuts{"protonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
+  Configurable<std::vector<double>> protonTPCPIDpTintv{"protonTPCPIDpTintv", {999.}, "pT intervals for Kaon TPC PID cuts"};
+  Configurable<std::vector<double>> protonTPCPIDcuts{"protonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
+  Configurable<std::vector<double>> protonTOFPIDpTintv{"protonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
+  Configurable<std::vector<double>> protonTOFPIDcuts{"protonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
   Configurable<double> cMaxTPCnSigmaProtonVETO{"cMaxTPCnSigmaProtonVETO", 3.0, "TPC nSigma VETO cut for Proton"}; // TPC
 
   // New PID use case
@@ -343,16 +343,16 @@ struct lambda1520analysis {
   bool trackCut(const TrackType track)
   {
     // basic track cuts
-    if (abs(track.pt()) < cMinPtcut)
+    if (std::abs(track.pt()) < cMinPtcut)
       return false;
     if (cDCAr7SigCut) {
-      if (abs(track.dcaXY()) > (0.004f + 0.0130f / (track.pt()))) // 7 - Sigma cut
+      if (std::abs(track.dcaXY()) > (0.004f + 0.0130f / (track.pt()))) // 7 - Sigma cut
         return false;
     } else {
-      if (abs(track.dcaXY()) > cMaxDCArToPVcut)
+      if (std::abs(track.dcaXY()) > cMaxDCArToPVcut)
         return false;
     }
-    if (abs(track.dcaZ()) > cMaxDCAzToPVcut)
+    if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
       return false;
     if (track.itsNCls() < cfgITScluster)
       return false;
@@ -393,17 +393,17 @@ struct lambda1520analysis {
   bool selectionnewPIDProton(const T& candidate)
   {
     if (tof_at_high_pt) {
-      if (candidate.hasTOF() && (abs(candidate.tofNSigmaPr()) < cMaxTOFnSigmaProton)) {
+      if (candidate.hasTOF() && (std::abs(candidate.tofNSigmaPr()) < cMaxTOFnSigmaProton)) {
         return true;
       }
-      if (!candidate.hasTOF() && (abs(candidate.tpcNSigmaPr()) < cMaxTPCnSigmaKaon)) {
+      if (!candidate.hasTOF() && (std::abs(candidate.tpcNSigmaPr()) < cMaxTPCnSigmaKaon)) {
         return true;
       }
     } else {
       bool tpcPIDPassed{false}, tofPIDPassed{false};
-      if (abs(candidate.tpcNSigmaPr()) < cMaxTPCnSigmaProton) {
+      if (std::abs(candidate.tpcNSigmaPr()) < cMaxTPCnSigmaProton) {
         if (cUseRejNsigma) {
-          if (abs(candidate.tpcNSigmaPi()) > cRejNsigmaTpc && abs(candidate.tpcNSigmaKa()) > cRejNsigmaTpc) {
+          if (std::abs(candidate.tpcNSigmaPi()) > cRejNsigmaTpc && std::abs(candidate.tpcNSigmaKa()) > cRejNsigmaTpc) {
             tpcPIDPassed = true;
           }
         } else if (!cUseRejNsigma) {
@@ -416,15 +416,15 @@ struct lambda1520analysis {
       if (candidate.hasTOF()) {
         if ((nsigmaCutCombinedProton > 0) && ((candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < (nsigmaCutCombinedProton * nsigmaCutCombinedProton))) {
           if (cUseRejNsigma) {
-            if (abs(candidate.tofNSigmaPi()) > cRejNsigmaTof && abs(candidate.tofNSigmaKa()) > cRejNsigmaTof) {
+            if (std::abs(candidate.tofNSigmaPi()) > cRejNsigmaTof && std::abs(candidate.tofNSigmaKa()) > cRejNsigmaTof) {
               tofPIDPassed = true;
             }
           } else if (!cUseRejNsigma) {
             tofPIDPassed = true;
           }
-        } else if ((nsigmaCutCombinedProton <= 0) && (abs(candidate.tofNSigmaPr()) < cMaxTOFnSigmaProton)) {
+        } else if ((nsigmaCutCombinedProton <= 0) && (std::abs(candidate.tofNSigmaPr()) < cMaxTOFnSigmaProton)) {
           if (cUseRejNsigma) {
-            if (abs(candidate.tofNSigmaPi()) > cRejNsigmaTof && abs(candidate.tofNSigmaKa()) > cRejNsigmaTof) {
+            if (std::abs(candidate.tofNSigmaPi()) > cRejNsigmaTof && std::abs(candidate.tofNSigmaKa()) > cRejNsigmaTof) {
               tofPIDPassed = true;
             }
           } else if (!cUseRejNsigma) {
@@ -445,17 +445,17 @@ struct lambda1520analysis {
   bool selectionnewPIDKaon(const T& candidate)
   {
     if (tof_at_high_pt) {
-      if (candidate.hasTOF() && (abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon)) {
+      if (candidate.hasTOF() && (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon)) {
         return true;
       }
-      if (!candidate.hasTOF() && (abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon)) {
+      if (!candidate.hasTOF() && (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon)) {
         return true;
       }
     } else {
       bool tpcPIDPassed{false}, tofPIDPassed{false};
-      if (abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
+      if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
         if (cUseRejNsigma) {
-          if (abs(candidate.tpcNSigmaPi()) > cRejNsigmaTpc && abs(candidate.tpcNSigmaPr()) > cRejNsigmaTpc) {
+          if (std::abs(candidate.tpcNSigmaPi()) > cRejNsigmaTpc && std::abs(candidate.tpcNSigmaPr()) > cRejNsigmaTpc) {
             tpcPIDPassed = true;
           }
         } else if (!cUseRejNsigma) {
@@ -468,15 +468,15 @@ struct lambda1520analysis {
       if (candidate.hasTOF()) {
         if ((nsigmaCutCombinedKaon > 0) && ((candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < (nsigmaCutCombinedKaon * nsigmaCutCombinedKaon))) {
           if (cUseRejNsigma) {
-            if (abs(candidate.tofNSigmaPi()) > cRejNsigmaTof && abs(candidate.tofNSigmaPr()) > cRejNsigmaTof) {
+            if (std::abs(candidate.tofNSigmaPi()) > cRejNsigmaTof && std::abs(candidate.tofNSigmaPr()) > cRejNsigmaTof) {
               tofPIDPassed = true;
             }
           } else if (!cUseRejNsigma) {
             tofPIDPassed = true;
           }
-        } else if ((nsigmaCutCombinedKaon <= 0) && (abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon)) {
+        } else if ((nsigmaCutCombinedKaon <= 0) && (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon)) {
           if (cUseRejNsigma) {
-            if (abs(candidate.tofNSigmaPi()) > cRejNsigmaTof && abs(candidate.tofNSigmaPr()) > cRejNsigmaTof) {
+            if (std::abs(candidate.tofNSigmaPi()) > cRejNsigmaTof && std::abs(candidate.tofNSigmaPr()) > cRejNsigmaTof) {
               tofPIDPassed = true;
             }
           } else if (!cUseRejNsigma) {
@@ -497,11 +497,11 @@ struct lambda1520analysis {
   template <typename T>
   bool selectionoldPIDProton(const T& candidate)
   {
-    auto vProtonTPCPIDpTintv = static_cast<vector<double>>(protonTPCPIDpTintv);
+    auto vProtonTPCPIDpTintv = static_cast<std::vector<double>>(protonTPCPIDpTintv);
     vProtonTPCPIDpTintv.insert(vProtonTPCPIDpTintv.begin(), cMinPtcut);
-    auto vProtonTPCPIDcuts = static_cast<vector<double>>(protonTPCPIDcuts);
-    auto vProtonTOFPIDpTintv = static_cast<vector<double>>(protonTOFPIDpTintv);
-    auto vProtonTOFPIDcuts = static_cast<vector<double>>(protonTOFPIDcuts);
+    auto vProtonTPCPIDcuts = static_cast<std::vector<double>>(protonTPCPIDcuts);
+    auto vProtonTOFPIDpTintv = static_cast<std::vector<double>>(protonTOFPIDpTintv);
+    auto vProtonTOFPIDcuts = static_cast<std::vector<double>>(protonTOFPIDcuts);
     auto lengthOfprotonTPCPIDpTintv = static_cast<int>(vProtonTPCPIDpTintv.size());
     auto lengthOfprotonTOFPIDpTintv = static_cast<int>(vProtonTOFPIDpTintv.size());
 
@@ -515,9 +515,9 @@ struct lambda1520analysis {
         } else {
           for (int i = 0; i < lengthOfprotonTOFPIDpTintv; i++) {
             if (candidate.pt() < vProtonTOFPIDpTintv[i]) {
-              if (abs(candidate.tofNSigmaPr()) > vProtonTOFPIDcuts[i])
+              if (std::abs(candidate.tofNSigmaPr()) > vProtonTOFPIDcuts[i])
                 isTrk1Selected = false;
-              if (abs(candidate.tpcNSigmaPr()) > cMaxTPCnSigmaProtonVETO)
+              if (std::abs(candidate.tpcNSigmaPr()) > cMaxTPCnSigmaProtonVETO)
                 isTrk1Selected = false;
             }
           }
@@ -530,7 +530,7 @@ struct lambda1520analysis {
         } else {
           for (int i = 0; i < lengthOfprotonTPCPIDpTintv; i++) {
             if (candidate.pt() > vProtonTPCPIDpTintv[i] && candidate.pt() < vProtonTPCPIDpTintv[i + 1]) {
-              if (abs(candidate.tpcNSigmaPr()) > vProtonTPCPIDcuts[i])
+              if (std::abs(candidate.tpcNSigmaPr()) > vProtonTPCPIDcuts[i])
                 isTrk1Selected = false;
             }
           }
@@ -543,11 +543,11 @@ struct lambda1520analysis {
   template <typename T>
   bool selectionoldPIDKaon(const T& candidate)
   {
-    auto vKaonTPCPIDpTintv = static_cast<vector<double>>(kaonTPCPIDpTintv);
+    auto vKaonTPCPIDpTintv = static_cast<std::vector<double>>(kaonTPCPIDpTintv);
     vKaonTPCPIDpTintv.insert(vKaonTPCPIDpTintv.begin(), cMinPtcut);
-    auto vKaonTPCPIDcuts = static_cast<vector<double>>(kaonTPCPIDcuts);
-    auto vKaonTOFPIDpTintv = static_cast<vector<double>>(kaonTOFPIDpTintv);
-    auto vKaonTOFPIDcuts = static_cast<vector<double>>(kaonTOFPIDcuts);
+    auto vKaonTPCPIDcuts = static_cast<std::vector<double>>(kaonTPCPIDcuts);
+    auto vKaonTOFPIDpTintv = static_cast<std::vector<double>>(kaonTOFPIDpTintv);
+    auto vKaonTOFPIDcuts = static_cast<std::vector<double>>(kaonTOFPIDcuts);
     auto lengthOfkaonTPCPIDpTintv = static_cast<int>(vKaonTPCPIDpTintv.size());
     auto lengthOfkaonTOFPIDpTintv = static_cast<int>(vKaonTOFPIDpTintv.size());
 
@@ -561,9 +561,9 @@ struct lambda1520analysis {
         } else {
           for (int i = 0; i < lengthOfkaonTOFPIDpTintv; i++) {
             if (candidate.pt() < vKaonTOFPIDpTintv[i]) {
-              if (abs(candidate.tofNSigmaKa()) > vKaonTOFPIDcuts[i])
+              if (std::abs(candidate.tofNSigmaKa()) > vKaonTOFPIDcuts[i])
                 isTrk2Selected = false;
-              if (abs(candidate.tpcNSigmaKa()) > cMaxTPCnSigmaKaonVETO)
+              if (std::abs(candidate.tpcNSigmaKa()) > cMaxTPCnSigmaKaonVETO)
                 isTrk2Selected = false;
             }
           }
@@ -576,7 +576,7 @@ struct lambda1520analysis {
         } else {
           for (int i = 0; i < lengthOfkaonTPCPIDpTintv; i++) {
             if (candidate.pt() > vKaonTPCPIDpTintv[i] && candidate.pt() < vKaonTPCPIDpTintv[i + 1]) {
-              if (abs(candidate.tpcNSigmaKa()) > vKaonTPCPIDcuts[i])
+              if (std::abs(candidate.tpcNSigmaKa()) > vKaonTPCPIDcuts[i])
                 isTrk2Selected = false;
             }
           }
@@ -591,27 +591,27 @@ struct lambda1520analysis {
   bool selectionPIDProtonFixed(const T& candidate)
   {
     if (candidate.hasTOF()) {
-      if (candidate.pt() < 1.5 && candidate.hasTOF() && abs(candidate.tpcNSigmaPr()) < 3.0 && abs(candidate.tofNSigmaPr()) < 4.0) {
+      if (candidate.pt() < 1.5 && candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < 3.0 && std::abs(candidate.tofNSigmaPr()) < 4.0) {
         return true;
       }
-      if (candidate.pt() >= 1.5 && candidate.pt() < 2.0 && candidate.hasTOF() && abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -3.0 && candidate.tofNSigmaPr() < 4.0) {
+      if (candidate.pt() >= 1.5 && candidate.pt() < 2.0 && candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -3.0 && candidate.tofNSigmaPr() < 4.0) {
         return true;
       }
-      if (candidate.pt() >= 2.0 && candidate.pt() < 2.5 && candidate.hasTOF() && abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 4.0) {
+      if (candidate.pt() >= 2.0 && candidate.pt() < 2.5 && candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 4.0) {
         return true;
       }
-      if (candidate.pt() >= 2.5 && candidate.pt() < 3.0 && candidate.hasTOF() && abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -1.5 && candidate.tofNSigmaPr() < 3.0) {
+      if (candidate.pt() >= 2.5 && candidate.pt() < 3.0 && candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -1.5 && candidate.tofNSigmaPr() < 3.0) {
         return true;
       }
-      if (candidate.pt() >= 3.0 && candidate.pt() < 4.0 && candidate.hasTOF() && abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -1.0 && candidate.tofNSigmaPr() < 2.0) {
+      if (candidate.pt() >= 3.0 && candidate.pt() < 4.0 && candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -1.0 && candidate.tofNSigmaPr() < 2.0) {
         return true;
       }
     }
     if (!candidate.hasTOF()) {
-      if (candidate.pt() < 0.4 && abs(candidate.tpcNSigmaPr()) < 4.0) {
+      if (candidate.pt() < 0.4 && std::abs(candidate.tpcNSigmaPr()) < 4.0) {
         return true;
       }
-      if (candidate.pt() >= 0.4 && candidate.pt() < 0.5 && abs(candidate.tpcNSigmaPr()) < 3.0) {
+      if (candidate.pt() >= 0.4 && candidate.pt() < 0.5 && std::abs(candidate.tpcNSigmaPr()) < 3.0) {
         return true;
       }
       if (candidate.pt() >= 0.5 && candidate.pt() < 0.7 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 2.5) {
@@ -631,24 +631,24 @@ struct lambda1520analysis {
   bool selectionPIDKaonFixed(const T& candidate)
   {
     if (candidate.hasTOF()) {
-      if (candidate.pt() < 0.8 && candidate.hasTOF() && abs(candidate.tpcNSigmaKa()) < 3.0 && abs(candidate.tofNSigmaKa()) < 4.0) {
+      if (candidate.pt() < 0.8 && candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < 3.0 && std::abs(candidate.tofNSigmaKa()) < 4.0) {
         return true;
       }
-      if (candidate.pt() >= 0.8 && candidate.pt() < 1.3 && candidate.hasTOF() && abs(candidate.tpcNSigmaKa()) < 3.0 && candidate.tofNSigmaKa() > -3.0 && candidate.tofNSigmaKa() < 4.0) {
+      if (candidate.pt() >= 0.8 && candidate.pt() < 1.3 && candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < 3.0 && candidate.tofNSigmaKa() > -3.0 && candidate.tofNSigmaKa() < 4.0) {
         return true;
       }
-      if (candidate.pt() >= 1.3 && candidate.pt() < 1.6 && candidate.hasTOF() && abs(candidate.tpcNSigmaKa()) < 3.0 && candidate.tofNSigmaKa() > -2.0 && candidate.tofNSigmaKa() < 3.0) {
+      if (candidate.pt() >= 1.3 && candidate.pt() < 1.6 && candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < 3.0 && candidate.tofNSigmaKa() > -2.0 && candidate.tofNSigmaKa() < 3.0) {
         return true;
       }
-      if (candidate.pt() >= 1.6 && candidate.pt() < 1.8 && candidate.hasTOF() && abs(candidate.tpcNSigmaKa()) < 3.0 && candidate.tofNSigmaKa() > -1.5 && candidate.tofNSigmaKa() < 2.5) {
+      if (candidate.pt() >= 1.6 && candidate.pt() < 1.8 && candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < 3.0 && candidate.tofNSigmaKa() > -1.5 && candidate.tofNSigmaKa() < 2.5) {
         return true;
       }
-      if (candidate.pt() >= 1.8 && candidate.pt() < 2.5 && candidate.hasTOF() && abs(candidate.tpcNSigmaKa()) < 3.0 && candidate.tofNSigmaKa() > -1.0 && candidate.tofNSigmaKa() < 2.0) {
+      if (candidate.pt() >= 1.8 && candidate.pt() < 2.5 && candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < 3.0 && candidate.tofNSigmaKa() > -1.0 && candidate.tofNSigmaKa() < 2.0) {
         return true;
       }
     }
     if (!candidate.hasTOF()) {
-      if (candidate.pt() < 0.3 && abs(candidate.tpcNSigmaKa()) < 3.0) {
+      if (candidate.pt() < 0.3 && std::abs(candidate.tpcNSigmaKa()) < 3.0) {
         return true;
       }
       if (candidate.pt() >= 0.3 && candidate.pt() < 0.4 && candidate.tpcNSigmaKa() > -2.0 && candidate.tpcNSigmaKa() < 2.5) {
@@ -675,7 +675,7 @@ struct lambda1520analysis {
   {
     auto multiplicity = collision.cent();
 
-    // LOG(info) << "Before pass, Collision index:" << collision.index() << "multiplicity: " << collision.cent() << endl;
+    // LOG(info) << "Before pass, Collision index:" << collision.index() << "multiplicity: " << collision.cent() << std::endl;
 
     auto occupancy_no = collision.trackOccupancyInTimeRange();
     if (applyOccupancyCut && occupancy_no < OccupancyCut) {
@@ -705,7 +705,7 @@ struct lambda1520analysis {
         histos.fill(HIST("TestME/hnTrksMixedE"), dTracks1.size());
       }
     }
-    // LOG(info) << "After pass, Collision index:" << collision.index() << "multiplicity: " << collision.cent() << endl;
+    // LOG(info) << "After pass, Collision index:" << collision.index() << "multiplicity: " << collision.cent() << std::endl;
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance, ldaughter_rot, lresonance_rot;
 
     for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
@@ -737,9 +737,9 @@ struct lambda1520analysis {
       auto trk2NSigmaKaTPC = trk2.tpcNSigmaKa();
       auto trk2NSigmaKaTOF = (isTrk2hasTOF) ? trk2.tofNSigmaKa() : -999.;
 
-      auto deltaEta = abs(trk1.eta() - trk2.eta());
-      auto deltaPhi = abs(trk1.phi() - trk2.phi());
-      deltaPhi = (deltaPhi > Pi()) ? (2 * Pi() - deltaPhi) : deltaPhi;
+      auto deltaEta = std::abs(trk1.eta() - trk2.eta());
+      auto deltaPhi = std::abs(trk1.phi() - trk2.phi());
+      deltaPhi = (deltaPhi > std::Pi()) ? (2 * std::Pi() - deltaPhi) : deltaPhi;
 
       //// QA plots before the selection
       //  --- Track QA all
@@ -880,7 +880,7 @@ struct lambda1520analysis {
         if constexpr (IsData) {
           if (IsCalcRotBkg) {
             for (int i = 0; i < c_nof_rotations; i++) {
-              float theta2 = rn->Uniform(Pi() - Pi() / rotational_cut, Pi() + Pi() / rotational_cut);
+              float theta2 = rn->Uniform(std::Pi() - std::Pi() / rotational_cut, std::Pi() + std::Pi() / rotational_cut);
               ldaughter_rot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa); // for rotated background
               lresonance_rot = lDecayDaughter1 + ldaughter_rot;
               histos.fill(HIST("Result/Data/h3lambda1520InvMassRotation"), multiplicity, lresonance_rot.Pt(), lresonance_rot.M(), occupancy_no);
@@ -924,7 +924,7 @@ struct lambda1520analysis {
 
         // MC
         if constexpr (IsMC) {
-          // LOG(info) << "trk1 pdgcode: " << trk1.pdgCode() << "trk2 pdgcode: " << trk2.pdgCode() << endl;
+          // LOG(info) << "trk1 pdgcode: " << trk1.pdgCode() << "trk2 pdgcode: " << trk2.pdgCode() << std::endl;
 
           if (abs(trk1.pdgCode()) != 2212 || abs(trk2.pdgCode()) != 321)
             continue;
@@ -1054,7 +1054,7 @@ struct lambda1520analysis {
   using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
   void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
-    auto tracksTuple = make_tuple(resotracks);
+    auto tracksTuple = std::make_tuple(resotracks);
     BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
