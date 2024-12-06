@@ -180,7 +180,7 @@ struct he3hadronfemto {
   Configurable<float> setting_cutNsigmaTOF{"setting_cutNsigmaTOF", 3.0f, "Value of the TOF Nsigma cut"};
   Configurable<int> setting_noMixedEvents{"setting_noMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> setting_enableBkgUS{"setting_enableBkgUS", false, "Enable US background"};
-  Configurable<bool> setting_saveallpair{"setting_saveallpairs", true, "Save All Pairs"};
+  Configurable<bool> setting_saveUSandLS{"setting_saveUSandLSs", true, "Save All Pairs"};
   Configurable<bool> setting_isMC{"setting_isMC", false, "Run MC"};
   Configurable<bool> setting_fillMultiplicity{"setting_fillMultiplicity", false, "Fill multiplicity table"};
 
@@ -243,7 +243,6 @@ struct he3hadronfemto {
       {"hHe3Pt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
       {"hHadronPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
       {"h2dEdxHe3candidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
-      {"h2ClSizeCosLamHe3", "; n#sigma_{TPC} ; #LT ITS Cluster Size #GT #LT cos#lambda #GT (^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {120, 0.0f, 15.0f}}}},
       {"h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
       {"h2NsigmaHe3TPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
       {"h2NSigmaHe3ITS_preselection", "NsigmaHe3 ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} ^{3}He", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
@@ -465,20 +464,6 @@ struct he3hadronfemto {
       return false;
     }
 
-    float cosl = 1. / std::cosh(candidate.eta());
-    float meanClsizeIts = 0.f;
-    int nHitsIts = 0;
-    for (int ilayer = 0; ilayer < 7; ilayer++) {
-      float clsizeLayer = (candidate.itsClusterSizes() >> ilayer * 4) & 0b1111;
-      if (clsizeLayer > 0) {
-        nHitsIts++;
-        meanClsizeIts += clsizeLayer;
-      }
-    }
-    float clsizeCoslIts = meanClsizeIts / nHitsIts * cosl;
-    if (clsizeCoslIts < setting_cutClSizeItsHe3) {
-      return false;
-    }
 
     auto nSigmaHe3 = computeNSigmaHe3(candidate);
     m_qaRegistry.fill(HIST("h2NsigmaHe3TPC_preselection"), candidate.sign() * 2 * candidate.pt(), nSigmaHe3);
@@ -497,7 +482,6 @@ struct he3hadronfemto {
     m_qaRegistry.fill(HIST("h2dEdxHe3candidates"), candidate.sign() * correctedTPCinnerParam, candidate.tpcSignal());
     m_qaRegistry.fill(HIST("h2NsigmaHe3TPC"), candidate.sign() * 2 * candidate.pt(), nSigmaHe3);
     m_qaRegistry.fill(HIST("h2NSigmaHe3ITS"), candidate.sign() * 2 * candidate.pt(), ITSnSigmaHe3);
-    m_qaRegistry.fill(HIST("h2ClSizeCosLamHe3"), nSigmaHe3, clsizeCoslIts);
     return true;
   }
 
@@ -660,7 +644,7 @@ struct he3hadronfemto {
           continue;
         }
         
-        if(!setting_saveallpair){
+        if(!setting_saveUSandLS){
         if (!setting_enableBkgUS && (track0.sign() * track1.sign() < 0)) {
           continue;
         }
