@@ -1350,7 +1350,7 @@ struct femtoUniverseProducerTask {
       } else if (sumVec.Phi() >= 0) {
         phiPhi = sumVec.Phi();
       }*/
-      float phiPhi = RecoDecay::constrainAngle(sumVec.Phi(),0);
+      float phiPhi = RecoDecay::constrainAngle(sumVec.Phi(), 0);
       float phiM = sumVec.M();
 
       if (((phiM < ConfPhiSelection.ConfInvMassLowLimitPhi.value) || (phiM > ConfPhiSelection.ConfInvMassUpLimitPhi.value))) {
