@@ -303,7 +303,7 @@ struct HfCorrelatorD0Hadrons {
     registry.fill(HIST("hMultiplicity"), nTracks);
     std::vector<float> outputMlD0 = {-1., -1., -1.};
     std::vector<float> outputMlD0bar = {-1., -1., -1.};
-    
+
     for (const auto& candidate : candidates) {
       if (std::abs(hfHelper.yD0(candidate)) >= yCandMax || candidate.pt() <= ptCandMin || candidate.pt() >= ptTrackMax) {
         continue;
@@ -339,8 +339,8 @@ struct HfCorrelatorD0Hadrons {
           outputMlD0bar[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
         }
       }
-       entryD0CandRecoInfo(hfHelper.invMassD0ToPiK(candidate), hfHelper.invMassD0barToKPi(candidate), candidate.pt(), outputMlD0[0], outputMlD0[2], outputMlD0bar[0], outputMlD0bar[2]);
-       
+      entryD0CandRecoInfo(hfHelper.invMassD0ToPiK(candidate), hfHelper.invMassD0barToKPi(candidate), candidate.pt(), outputMlD0[0], outputMlD0[2], outputMlD0bar[0], outputMlD0bar[2]);
+
       // ========================== Fill general histos ================================
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
@@ -411,7 +411,7 @@ struct HfCorrelatorD0Hadrons {
                           poolBin,
                           correlationStatus);
         entryD0HadronRecoInfo(hfHelper.invMassD0ToPiK(candidate), hfHelper.invMassD0barToKPi(candidate), signalStatus);
-        entryD0HadronMlInfo(outputMlD0[0],outputMlD0[1],outputMlD0[2],outputMlD0bar[0],outputMlD0bar[1],outputMlD0bar[2]);
+        entryD0HadronMlInfo(outputMlD0[0], outputMlD0[1], outputMlD0[2], outputMlD0bar[0], outputMlD0bar[1], outputMlD0bar[2]);
 
       } // end inner loop (tracks)
 
@@ -580,7 +580,7 @@ struct HfCorrelatorD0Hadrons {
                           correlationStatus);
         entryD0HadronRecoInfo(hfHelper.invMassD0ToPiK(candidate), hfHelper.invMassD0barToKPi(candidate), signalStatus);
       } // end inner loop (Tracks)
-    }   // end of outer loop (D0)
+    } // end of outer loop (D0)
     registry.fill(HIST("hZvtx"), collision.posZ());
     registry.fill(HIST("hMultV0M"), collision.multFT0M());
   }
@@ -716,13 +716,13 @@ struct HfCorrelatorD0Hadrons {
         invMassDstar2 = std::sqrt((eKPi + ePion) * (eKPi + ePion) - pSum2);
         std::vector<float> outputMlD0 = {-1., -1., -1.};
         std::vector<float> outputMlD0bar = {-1., -1., -1.};
-        
+
         if (t1.isSelD0() >= selectionFlagD0) {
           if ((std::abs(invMassDstar1 - hfHelper.invMassD0ToPiK(t1)) - softPiMass) < ptSoftPionMax) {
             isSoftPiD0 = true;
           }
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-          outputMlD0[iclass] = t1.mlProbD0()[classMl->at(iclass)];
+            outputMlD0[iclass] = t1.mlProbD0()[classMl->at(iclass)];
           }
         }
         if (t1.isSelD0bar() >= selectionFlagD0bar) {
@@ -730,7 +730,7 @@ struct HfCorrelatorD0Hadrons {
             isSoftPiD0bar = true;
           }
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-          outputMlD0bar[iclass] = t1.mlProbD0bar()[classMl->at(iclass)];
+            outputMlD0bar[iclass] = t1.mlProbD0bar()[classMl->at(iclass)];
           }
         }
 
@@ -752,7 +752,7 @@ struct HfCorrelatorD0Hadrons {
         bool correlationStatus = false;
         entryD0HadronPair(getDeltaPhi(t1.phi(), t2.phi()), t1.eta() - t2.eta(), t1.pt(), t2.pt(), poolBin, correlationStatus);
         entryD0HadronRecoInfo(hfHelper.invMassD0ToPiK(t1), hfHelper.invMassD0barToKPi(t1), signalStatus);
-        entryD0HadronMlInfo(outputMlD0[0],outputMlD0[1],outputMlD0[2],outputMlD0bar[0],outputMlD0bar[1],outputMlD0bar[2]);
+        entryD0HadronMlInfo(outputMlD0[0], outputMlD0[1], outputMlD0[2], outputMlD0bar[0], outputMlD0bar[1], outputMlD0bar[2]);
       }
     }
   }
