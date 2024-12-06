@@ -449,10 +449,10 @@ struct femtoUniverseProducerTask {
 
   void init(InitContext&)
   {
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent) == false) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent) == false) {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent) == true) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent) == true) {
       LOGF(fatal,
            "Cannot enable process Data and process MC at the same time. "
            "Please choose one.");
@@ -820,79 +820,54 @@ struct femtoUniverseProducerTask {
     }
   }
 
-  template <bool isMC, typename CollisionType, typename TrackType>
-  void fillCollisionsCentRun2(CollisionType const& col, TrackType const& tracks)
+  template <bool isMC, typename CollisionType>
+  bool fillCollisionsCentRun2(CollisionType const& col)
   {
     const auto vtxZ = col.posZ();
-    float cent = 0;
-    int multNtr = 0;
-    if (!ConfIsRun3) {
-      cent = col.centRun2V0M();
-      multNtr = col.multNTracksPV();
-    }
-
+    const auto cent = col.centRun2V0M();
+    const auto multNtr = col.multNTracksPV();
+ 
     // check whether the basic event selection criteria are fulfilled
     // if the basic selection is NOT fulfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any
     // particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
-      return;
-    }
-
-    // colCuts.fillQA(col); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
-    if (ConfDoSpher) {
-      outputCollision(vtxZ, cent, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+      return false;
     } else {
       outputCollision(vtxZ, cent, multNtr, 2, mMagField);
+      return true;
     }
   }
 
-  template <bool isMC, typename CollisionType, typename TrackType, typename V0Type, typename CascadeType>
-  void fillCollisionsCentRun3(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s, CascadeType const& fullCascades, double irrate)
+  template <bool isMC, typename CollisionType>
+  bool fillCollisionsCentRun3(CollisionType const& col)
   {
     const auto vtxZ = col.posZ();
-    float cent = 0;
-    int multNtr = 0;
-    if (ConfIsRun3) {
-      multNtr = col.multNTracksPV();
-      cent = col.centFT0C();
-    }
+    const auto multNtr = col.multNTracksPV();
+    const auto cent = col.centFT0C();
 
-    int occupancy = col.trackOccupancyInTimeRange();
     // check whether the basic event selection criteria are fulfilled
     // if the basic selection is NOT fulfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any
     // particle candidates for such collisions
     if (!colCuts.isSelectedRun3(col)) {
-      return;
-    }
-
-    // colCuts.fillQA(col); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
-    if ((col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (occupancy > ConfTPCOccupancyMin && occupancy <= ConfTPCOccupancyMax)) {
-      if (ConfDoSpher) {
-        outputCollision(vtxZ, cent, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+      return false;
+    } else {
+      if ((col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      	outputCollision(vtxZ, cent, multNtr, 2, mMagField);
+        return true;
       } else {
-        outputCollision(vtxZ, cent, multNtr, 2, mMagField);
-      }
-
-      fillCollisionsCentRun3ColExtra<isMC>(col, irrate);
-
-      fillTracks<isMC>(tracks);
-      if (ConfV0Selection.ConfIsFillV0s) {
-        fillV0<isMC>(col, fullV0s, tracks);
-      }
-      if (ConfCascadeSelection.ConfIsFillCascades) {
-        fillCascade<isMC>(col, fullCascades, tracks);
-      }
+	      return false;
+      }      
     }
   }
 
   template <bool isMC, typename CollisionType>
   void fillCollisionsCentRun3ColExtra(CollisionType const& col, double irrate)
   {
-    int occupancy = col.trackOccupancyInTimeRange();
+    const auto occupancy = col.trackOccupancyInTimeRange();
     outputCollExtra(irrate, occupancy);
   }
 
@@ -1782,49 +1757,97 @@ struct femtoUniverseProducerTask {
                          aod::BCsWithTimestamps const&,
                          soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
                          aod::McCollisions const&,
-                         aod::McParticles const&,
-                         soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s,
-                         soa::Join<aod::CascDatas, aod::McCascLabels> const& fullCascades)
+                         aod::McParticles const&)
   {
     // get magnetic field for run
     auto bc = col.bc_as<aod::BCsWithTimestamps>();
     getMagneticFieldTesla(bc);
-    double ir = 0.;
-    ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+    const double ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
 
     // fill the tables
-    fillCollisionsCentRun3<true>(col, tracks, fullV0s, fullCascades, ir);
+    const auto colcheck = fillCollisionsCentRun3<true>(col);
+    if (colcheck) {
+      fillCollisionsCentRun3ColExtra<true>(col, ir);
+      fillTracks<true>(tracks);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processFullMCCent, "Provide MC data with centrality bins", false);
 
   void processTrackCentRun2Data(aod::FemtoFullCollisionCentRun2 const& col,
                                 aod::BCsWithTimestamps const&,
-                                aod::FemtoFullTracks const& tracks)
+                                soa::Filtered<aod::FemtoFullTracks> const& tracks)
   {
     // get magnetic field for run
-    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    auto bc = col.bc_as<aod::BCsWithTimestamps>();
+    getMagneticFieldTesla(bc);
+    const double ir = 0.0; // fetch IR
+
     // fill the tables
-    fillCollisionsCentRun2<false>(col, tracks);
-    fillTracks<false>(tracks);
+    const auto colcheck = fillCollisionsCentRun2<false>(col);
+    if (colcheck) {
+      fillCollisionsCentRun3ColExtra<false>(col, ir);
+      fillTracks<false>(tracks);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackCentRun2Data, "Provide experimental data for Run 2 with centrality for track track", false);
 
   void processTrackCentRun3Data(aod::FemtoFullCollisionCentRun3 const& col,
                                 aod::BCsWithTimestamps const&,
-                                soa::Filtered<aod::FemtoFullTracks> const& tracks,
-                                aod::V0Datas const& fullV0s,
-                                aod::CascDatas const& fullCascades)
+                                soa::Filtered<aod::FemtoFullTracks> const& tracks)
   {
     // get magnetic field for run
     auto bc = col.bc_as<aod::BCsWithTimestamps>();
     getMagneticFieldTesla(bc);
-    double ir = 0.;
-    ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+    const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
 
     // fill the tables
-    fillCollisionsCentRun3<false>(col, tracks, fullV0s, fullCascades, ir);
+    const auto colcheck = fillCollisionsCentRun3<false>(col);
+    if (colcheck) {
+      fillCollisionsCentRun3ColExtra<false>(col, ir);
+      fillTracks<false>(tracks);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackCentRun3Data, "Provide experimental data for Run 3 with centrality for track track", false);
+
+  void processV0CentRun3Data(aod::FemtoFullCollisionCentRun3 const& col,
+                             aod::BCsWithTimestamps const&,
+                             soa::Filtered<aod::FemtoFullTracks> const& tracks,
+                             soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s)
+  {
+    // get magnetic field for run
+    auto bc = col.bc_as<aod::BCsWithTimestamps>();
+    getMagneticFieldTesla(bc);
+    const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+
+    // fill the tables
+    const auto colcheck = fillCollisionsCentRun3<false>(col);
+    if (colcheck) {
+      fillCollisionsCentRun3ColExtra<false>(col, ir);
+      fillTracks<false>(tracks);
+      fillV0<false>(col, fullV0s, tracks);
+    }
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processV0CentRun3Data, "Provide experimental data for Run 3 with centrality for track track", false);
+
+  void processCascadeCentRun3Data(aod::FemtoFullCollisionCentRun3 const& col,
+                                  aod::BCsWithTimestamps const&,
+                                  soa::Filtered<aod::FemtoFullTracks> const& tracks,
+                                  aod::CascDatas const& fullCascades)
+  {
+    // get magnetic field for run
+    auto bc = col.bc_as<aod::BCsWithTimestamps>();
+    getMagneticFieldTesla(bc);
+    const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+
+    // fill the tables
+    const auto colcheck = fillCollisionsCentRun3<false>(col);
+    if (colcheck) {
+      fillCollisionsCentRun3ColExtra<false>(col, ir);
+      fillTracks<false>(tracks);
+      fillCascade<false>(col, fullCascades, tracks);
+    }
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processCascadeCentRun3Data, "Provide experimental data for Run 3 with centrality for track track", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
