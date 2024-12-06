@@ -17,11 +17,9 @@
 
 #include <string>
 #include <vector>
-#include <cmath>
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
-// #include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
@@ -50,7 +48,6 @@ using namespace o2::soa;
 /// Initializer for the resonance candidate producers
 struct reso2initializer {
   SliceCache cache;
-  float cXiMass;
   int mRunNumber;
   int multEstimator;
   float dBz;
@@ -318,7 +315,7 @@ struct reso2initializer {
 
     // Casc mass
     auto cascMass = casc.mXi();
-    if (std::abs(cascMass - cXiMass) > cCascMassResol)
+    if (std::abs(cascMass - MassXiMinus) > cCascMassResol)
       return false;
     if (ConfFillQA)
       qaRegistry.fill(HIST("hGoodCascIndices"), 7.5);
@@ -406,7 +403,7 @@ struct reso2initializer {
     float tempSph = 1.;
     for (int i = 0; i < 360 / 0.1; ++i) {
       float sum = 0., pt = 0.;
-      float phiparm = (M_PI * i * 0.1) / 180.;
+      float phiparm = (PI * i * 0.1) / 180.;
       float nx = std::cos(phiparm);
       float ny = std::sin(phiparm);
       for (auto const& trk : tracks) {
@@ -420,12 +417,12 @@ struct reso2initializer {
         // sum += pt * abs(sin(phiparm - phi));
         sum += std::abs(px * ny - py * nx);
       }
-      float sph = TMath::Power((sum / ptSum), 2);
+      float sph = std::power((sum / ptSum), 2);
       if (sph < tempSph)
         tempSph = sph;
     }
 
-    return TMath::Power(M_PI / 2., 2) * tempSph;
+    return std::power(PIHalf, 2) * tempSph;
   }
 
   template <typename ResoColl>
@@ -881,7 +878,7 @@ struct reso2initializer {
       centrality = CentEst(mccol);
     else
       centrality = mccol.centRun2V0M();
-    bool inVtx10 = (abs(mccol.mcCollision().posZ()) > 10.) ? false : true;
+    bool inVtx10 = (std::abs(mccol.mcCollision().posZ()) > 10.) ? false : true;
     bool isTrueINELgt0 = IsTrueINEL0(mccol, mcparts);
     bool isTriggerTVX = mccol.selection_bit(aod::evsel::kIsTriggerTVX);
     bool isSel8 = mccol.sel8();
@@ -930,7 +927,6 @@ struct reso2initializer {
 
   void init(InitContext&)
   {
-    cXiMass = pdg->GetParticle(3312)->Mass();
     mRunNumber = 0;
     dBz = 0;
     // Multiplicity estimator selection (0: FT0M, 1: FT0C, 2: FT0A, 99: FV0A)
