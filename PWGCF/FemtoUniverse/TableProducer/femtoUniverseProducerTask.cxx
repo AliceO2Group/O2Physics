@@ -297,25 +297,25 @@ struct femtoUniverseProducerTask {
   {
 
     if (mom < 0.3) { // 0.0-0.3
-      if (nabs(nsigmaTPCK) < 3.0) {
+      if (abs(nsigmaTPCK) < 3.0) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 0.45) { // 0.30 - 0.45
-      if (nabs(nsigmaTPCK) < 2.0) {
+      if (abs(nsigmaTPCK) < 2.0) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 0.55) { // 0.45-0.55
-      if (nabs(nsigmaTPCK) < 1.0) {
+      if (abs(nsigmaTPCK) < 1.0) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if ((nabs(nsigmaTOFK) < 3.0) && (nabs(nsigmaTPCK) < 3.0)) {
+      if ((abs(nsigmaTOFK) < 3.0) && (abs(nsigmaTPCK) < 3.0)) {
         {
           return true;
         }
@@ -323,7 +323,7 @@ struct femtoUniverseProducerTask {
         return false;
       }
     } else if (mom > 1.5) { // 1.5 -
-      if ((nabs(nsigmaTOFK) < 2.0) && (nabs(nsigmaTPCK) < 3.0)) {
+      if ((abs(nsigmaTOFK) < 2.0) && (abs(nsigmaTPCK) < 3.0)) {
         return true;
       } else {
         return false;
@@ -337,31 +337,31 @@ struct femtoUniverseProducerTask {
   {
 
     if (mom < 0.3) { // 0.0-0.3
-      if (nabs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value) {
+      if (abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 0.45) { // 0.30 - 0.45
-      if (nabs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value) {
+      if (abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 0.55) { // 0.45-0.55
-      if (nabs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value) {
+      if (abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if ((nabs(nsigmaTOFK) < 3.0) && (nabs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value)) {
+      if ((abs(nsigmaTOFK) < 3.0) && (abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value)) {
         return true;
       } else {
         return false;
       }
     } else if (mom > 1.5) { // 1.5 -
-      if ((nabs(nsigmaTOFK) < 2.0) && (nabs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value)) {
+      if ((abs(nsigmaTOFK) < 2.0) && (abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value)) {
         return true;
       } else {
         return false;
@@ -374,25 +374,25 @@ struct femtoUniverseProducerTask {
   bool IsKaonNSigmaTOFLoose(float mom, float nsigmaTPCK, float nsigmaTOFK)
   {
     if (mom < 0.3) { // 0.0-0.3
-      if (nabs(nsigmaTPCK) < 3.0) {
+      if (abs(nsigmaTPCK) < 3.0) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 0.45) { // 0.30 - 0.45
-      if (nabs(nsigmaTPCK) < 2.0) {
+      if (abs(nsigmaTPCK) < 2.0) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 0.55) { // 0.45-0.55
-      if (nabs(nsigmaTPCK) < 1.0) {
+      if (abs(nsigmaTPCK) < 1.0) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if ((nabs(nsigmaTOFK) < ConfPhiSelection.ConfLooseTOFNSigmaValue.value) && (nabs(nsigmaTPCK) < 3.0)) {
+      if ((abs(nsigmaTOFK) < ConfPhiSelection.ConfLooseTOFNSigmaValue.value) && (abs(nsigmaTPCK) < 3.0)) {
         {
           return true;
         }
@@ -400,7 +400,7 @@ struct femtoUniverseProducerTask {
         return false;
       }
     } else if (mom > 1.5) { // 1.5 -
-      if ((nabs(nsigmaTOFK) < ConfPhiSelection.ConfLooseTOFNSigmaValue.value) && (nabs(nsigmaTPCK) < 3.0)) {
+      if ((abs(nsigmaTOFK) < ConfPhiSelection.ConfLooseTOFNSigmaValue.value) && (abs(nsigmaTPCK) < 3.0)) {
         return true;
       } else {
         return false;
@@ -413,16 +413,16 @@ struct femtoUniverseProducerTask {
   bool IsKaonRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi)
   {
     if (mom < 0.5) {
-      if (nabs(nsigmaTPCPi) < ConfPhiSelection.ConfNsigmaRejectPion.value) {
+      if (abs(nsigmaTPCPi) < ConfPhiSelection.ConfNsigmaRejectPion.value) {
         return true;
-      } else if (nabs(nsigmaTPCPr) < ConfPhiSelection.ConfNsigmaRejectProton.value) {
+      } else if (abs(nsigmaTPCPr) < ConfPhiSelection.ConfNsigmaRejectProton.value) {
         return true;
       }
     }
     if (mom > 0.5) {
-      if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPhiSelection.ConfNsigmaRejectPion.value) {
+      if (hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPhiSelection.ConfNsigmaRejectPion.value) {
         return true;
-      } else if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPhiSelection.ConfNsigmaRejectProton.value) {
+      } else if (hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPhiSelection.ConfNsigmaRejectProton.value) {
         return true;
       } else {
         return false;
@@ -682,7 +682,7 @@ struct femtoUniverseProducerTask {
       int particleOrigin = 99;
       auto motherparticlesMC = particleMC.template mothers_as<aod::McParticles>();
 
-      if (abs(pdgCode) == abs(ConfPDGCodePartOne.value) || abs(pdgCode) == abs(ConfPDGCodePartTwo.value)) {
+      if (std::abs(pdgCode) == abs(ConfPDGCodePartOne.value) || std::abs(pdgCode) == (ConfPDGCodePartTwo.value)) {
         if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary;
         } else if (!motherparticlesMC.empty()) {
@@ -717,7 +717,7 @@ struct femtoUniverseProducerTask {
       auto motherskaon1MC = kaon1MC.template mothers_as<aod::McParticles>();
       auto motherskaon2MC = kaon2MC.template mothers_as<aod::McParticles>();
 
-      if (abs(pdgCode1) == abs(321) || abs(pdgCode2) == abs(-321)) {
+      if (std::abs(pdgCode1) == abs(321) || std::abs(pdgCode2) == abs(-321)) {
         if ((kaon1MC.isPhysicalPrimary() && kaon2MC.isPhysicalPrimary()) && (!motherskaon1MC.empty() && !motherskaon2MC.empty())) {
           for (auto& particleMotherOfNeg : motherskaon1MC) {
             for (auto& particleMotherOfPos : motherskaon2MC) {
@@ -826,7 +826,7 @@ struct femtoUniverseProducerTask {
     const auto vtxZ = col.posZ();
     const auto cent = col.centRun2V0M();
     const auto multNtr = col.multNTracksPV();
- 
+
     // check whether the basic event selection criteria are fulfilled
     // if the basic selection is NOT fulfilled:
     // in case of skimming run - don't store such collisions
@@ -856,9 +856,9 @@ struct femtoUniverseProducerTask {
       return false;
     } else {
       if ((col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
-      	outputCollision(vtxZ, cent, multNtr, 2, mMagField);
+        outputCollision(vtxZ, cent, multNtr, 2, mMagField);
         return true;
-      } else {	      
+      } else {
         return false;
       }
     }
@@ -1332,7 +1332,7 @@ struct femtoUniverseProducerTask {
       sumVec += part2Vec;
 
       float phiEta = sumVec.Eta();
-      if (nabs(phiEta) > 0.8) {
+      if (abs(phiEta) > 0.8) {
         continue;
       }
 
