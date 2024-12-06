@@ -1069,5 +1069,5 @@ struct Lambda1520analysis {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<Lambda1520analysis>(cfgc, TaskName{"Lambda1520analysis"})};
+  return WorkflowSpec{adaptAnalysisTask<Lambda1520analysis>(cfgc)};
 }
