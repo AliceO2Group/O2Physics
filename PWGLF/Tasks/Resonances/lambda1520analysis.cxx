@@ -126,16 +126,19 @@ struct lambda1520analysis {
   Configurable<int> cetaphiBins{"cetaphiBins", 400, "number of eta and phi bins"};
   Configurable<double> cMaxDeltaEtaCut{"cMaxDeltaEtaCut", 0.7, "Maximum deltaEta between daughters"};
   Configurable<double> cMaxDeltaPhiCut{"cMaxDeltaPhiCut", 1.5, "Maximum deltaPhi between daughters"};
+  Configurable<bool> invmass1D{"invmass1D", false, "Invariant mass 1D"};
+  Configurable<bool> cAdditionalMCPlots{"cAdditionalMCPlots", false, "Draw additional plots related to MC"};
+
   TRandom* rn = new TRandom();
 
   /// Figures
-  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 10.0, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 12.0, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 13.0, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 14.0, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.0}, "Binning of the pT axis"};
+  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.25, 1.3, 1.4, 1.5, 1.6, 1.7, 1.75, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.5, 4.6, 4.8, 4.9, 5.0, 5.5, 5.6, 6.0, 6.4, 6.5, 7.0, 7.2, 8.0, 9.0, 9.5, 9.6, 10.0, 11.0, 11.5, 12.0, 13.0, 14.0, 14.4, 15.0, 16.0, 18.0, 19.2, 20.}, "Binning of the pT axis"};
   ConfigurableAxis binsEta{"binsEta", {100, -1, 1}, ""};
-  ConfigurableAxis binsMass{"binsMass", {1700, 1.3, 3.0}, "Invariant Mass (GeV/#it{c}^2)"};
+  ConfigurableAxis binsMass{"binsMass", {500, 1.3, 2.3}, "Invariant Mass (GeV/#it{c}^2)"};
   ConfigurableAxis binsMult{"binsMult", {110, 0.0, 110.0}, "mult_{FT0M}"};
-  ConfigurableAxis binsDCAz{"binsDCAz", {600, -3, 3}, ""};
-  ConfigurableAxis binsDCAxy{"binsDCAxy", {300, -1.5, 1.5}, ""};
-  ConfigurableAxis binsTPCXrows{"binsTPCXrows", {200, 0, 200}, ""};
+  ConfigurableAxis binsDCAz{"binsDCAz", {40, -0.2, 0.2}, ""};
+  ConfigurableAxis binsDCAxy{"binsDCAxy", {40, -0.2, 0.2}, ""};
+  ConfigurableAxis binsTPCXrows{"binsTPCXrows", {100, 60, 160}, ""};
   ConfigurableAxis binsnSigma{"binsnSigma", {130, -6.5, 6.5}, ""};
   ConfigurableAxis binsnTPCSignal{"binsnTPCSignal", {1000, 0, 1000}, ""};
   ConfigurableAxis occupancy_bins{"occupancy_bins", {VARIABLE_WIDTH, 0.0, 100, 500, 600, 1000, 1100, 1500, 1600, 2000, 2100, 2500, 2600, 3000, 3100, 3500, 3600, 4000, 4100, 4500, 4600, 5000, 5100, 9999}, "Binning of the occupancy axis"};
@@ -238,11 +241,12 @@ struct lambda1520analysis {
       histos.add("QA/QAafter/Proton/TPC_Signal_pr_all", "TPC Signal for Proton;#it{p}_{T} (GeV/#it{c});TPC Signal (A.U.)", {HistType::kTH2F, {axisPt, axisTPCSignal}});
 
       //  Mass QA 1D for quick check
-      histos.add("Result/Data/lambda1520invmass", "Invariant mass of #Lambda(1520) K^{#pm}p^{#mp}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});
-      histos.add("Result/Data/antilambda1520invmass", "Invariant mass of #Lambda(1520) K^{#mp}p^{#pm}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});
-      histos.add("Result/Data/lambda1520invmassLSPP", "Invariant mass of #Lambda(1520) Like Sign Method K^{#plus}p^{#plus}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});   // K+ + Pr
-      histos.add("Result/Data/lambda1520invmassLSMM", "Invariant mass of #Lambda(1520) Like Sign Method K^{#minus}p^{#minus}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}}); // K- + anti-Pr
-
+      if (invmass1D) {
+        histos.add("Result/Data/lambda1520invmass", "Invariant mass of #Lambda(1520) K^{#pm}p^{#mp}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});
+        histos.add("Result/Data/antilambda1520invmass", "Invariant mass of #Lambda(1520) K^{#mp}p^{#pm}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});
+        histos.add("Result/Data/lambda1520invmassLSPP", "Invariant mass of #Lambda(1520) Like Sign Method K^{#plus}p^{#plus}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});   // K+ + Pr
+        histos.add("Result/Data/lambda1520invmassLSMM", "Invariant mass of #Lambda(1520) Like Sign Method K^{#minus}p^{#minus}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}}); // K- + anti-Pr
+      }
       // eta phi QA
       if (cfgCutsOnDaughters) {
         histos.add("QAbefore/deltaEta", "deltaEta of kaon and proton candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 3.15}});
@@ -264,20 +268,22 @@ struct lambda1520analysis {
       }
 
       // 3d histogram
-      histos.add("Result/Data/h3lambda1520invmass", "Invariant mass of #Lambda(1520) K^{#pm}p^{#mp}", HistType::kTH3F, {axisMult, axisPt, axisMassLambda1520});
-      histos.add("Result/Data/h3antilambda1520invmass", "Invariant mass of #Lambda(1520) K^{#mp}p^{#pm}", HistType::kTH3F, {axisMult, axisPt, axisMassLambda1520});
-      histos.add("Result/Data/h3lambda1520invmassLSPP", "Invariant mass of #Lambda(1520) Like Sign Method K^{#plus}p^{#plus}", HistType::kTH3F, {axisMult, axisPt, axisMassLambda1520});   // K+ + Pr
-      histos.add("Result/Data/h3lambda1520invmassLSMM", "Invariant mass of #Lambda(1520) Like Sign Method K^{#minus}p^{#minus}", HistType::kTH3F, {axisMult, axisPt, axisMassLambda1520}); // K- + anti-Pr
+      histos.add("Result/Data/h3lambda1520invmass", "Invariant mass of #Lambda(1520) K^{#pm}p^{#mp}", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
+      histos.add("Result/Data/h3antilambda1520invmass", "Invariant mass of #Lambda(1520) K^{#mp}p^{#pm}", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
+      histos.add("Result/Data/h3lambda1520invmassLSPP", "Invariant mass of #Lambda(1520) Like Sign Method K^{#plus}p^{#plus}", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});   // K+ + Pr
+      histos.add("Result/Data/h3lambda1520invmassLSMM", "Invariant mass of #Lambda(1520) Like Sign Method K^{#minus}p^{#minus}", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520}); // K- + anti-Pr
     }
     if (doprocessME) {
-      histos.add("Result/Data/lambda1520invmassME", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});
-      histos.add("Result/Data/h3lambda1520invmassME", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}", HistType::kTH3F, {axisMult, axisPt, axisMassLambda1520});
+      if (invmass1D) {
+        histos.add("Result/Data/lambda1520invmassME", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});
+      }
+      histos.add("Result/Data/h3lambda1520invmassME", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
 
       if (additionalMEPlots) {
         histos.add("Result/Data/lambda1520invmassME_DS", "Invariant mass of #Lambda(1520) mixed event DS", kTH1F, {axisMassLambda1520});
         histos.add("Result/Data/lambda1520invmassME_DSAnti", "Invariant mass of #Lambda(1520) mixed event DSAnti", kTH1F, {axisMassLambda1520});
-        histos.add("Result/Data/h3lambda1520invmassME_DS", "Invariant mass of #Lambda(1520) mixed event DS", kTH3F, {axisMult, axisPt, axisMassLambda1520});
-        histos.add("Result/Data/h3lambda1520invmassME_DSAnti", "Invariant mass of #Lambda(1520) mixed event DSAnti", kTH3F, {axisMult, axisPt, axisMassLambda1520});
+        histos.add("Result/Data/h3lambda1520invmassME_DS", "Invariant mass of #Lambda(1520) mixed event DS", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
+        histos.add("Result/Data/h3lambda1520invmassME_DSAnti", "Invariant mass of #Lambda(1520) mixed event DSAnti", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
       }
     }
 
@@ -287,16 +293,16 @@ struct lambda1520analysis {
       histos.add("Result/Data/hlambda1520invmassUnlikeSignCside", "Invariant mass of #Lambda(1520) Unlike Sign C side", {HistType::kTH1F, {axisMassLambda1520}});
       histos.add("Result/Data/hlambda1520invmassLikeSignCside", "Invariant mass of #Lambda(1520) Like Sign C side", {HistType::kTH1F, {axisMassLambda1520}});
 
-      histos.add("Result/Data/h3lambda1520invmassUnlikeSignAside", "Invariant mass of #Lambda(1520) Unlike Sign A side", HistType::kTH3F, {axisMult, axisPt, axisMassLambda1520});
-      histos.add("Result/Data/h3lambda1520invmassLikeSignAside", "Invariant mass of #Lambda(1520) Like Sign A side", HistType::kTH3F, {axisMult, axisPt, axisMassLambda1520});
-      histos.add("Result/Data/h3lambda1520invmassUnlikeSignCside", "Invariant mass of #Lambda(1520) Unlike Sign C side", HistType::kTH3F, {axisMult, axisPt, axisMassLambda1520});
-      histos.add("Result/Data/h3lambda1520invmassLikeSignCside", "Invariant mass of #Lambda(1520) Like Sign C side", HistType::kTH3F, {axisMult, axisPt, axisMassLambda1520});
+      histos.add("Result/Data/h3lambda1520invmassUnlikeSignAside", "Invariant mass of #Lambda(1520) Unlike Sign A side", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
+      histos.add("Result/Data/h3lambda1520invmassLikeSignAside", "Invariant mass of #Lambda(1520) Like Sign A side", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
+      histos.add("Result/Data/h3lambda1520invmassUnlikeSignCside", "Invariant mass of #Lambda(1520) Unlike Sign C side", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
+      histos.add("Result/Data/h3lambda1520invmassLikeSignCside", "Invariant mass of #Lambda(1520) Like Sign C side", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
       if (doprocessME) {
         histos.add("Result/Data/hlambda1520invmassMixedAside", "Invariant mass of #Lambda(1520) Mixed A side", {HistType::kTH1F, {axisMassLambda1520}});
         histos.add("Result/Data/hlambda1520invmassMixedCside", "Invariant mass of #Lambda(1520) Mixed C side", {HistType::kTH1F, {axisMassLambda1520}});
 
-        histos.add("Result/Data/h3lambda1520invmassMixedAside", "Invariant mass of #Lambda(1520) Mixed A side", HistType::kTH3F, {axisMult, axisPt, axisMassLambda1520});
-        histos.add("Result/Data/h3lambda1520invmassMixedCside", "Invariant mass of #Lambda(1520) Mixed C side", HistType::kTH3F, {axisMult, axisPt, axisMassLambda1520});
+        histos.add("Result/Data/h3lambda1520invmassMixedAside", "Invariant mass of #Lambda(1520) Mixed A side", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
+        histos.add("Result/Data/h3lambda1520invmassMixedCside", "Invariant mass of #Lambda(1520) Mixed C side", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
       }
     }
     //}
@@ -306,10 +312,10 @@ struct lambda1520analysis {
       histos.add("Result/MC/Genantilambda1520pt", "pT distribution of True MC Anti-#Lambda(1520)0", kTH3F, {mcLabelAxis, axisPt, axisMult});
     }
     if (doprocessMC) {
-      histos.add("QA/MC/trkDCAxy_pr", "DCAxy distribution of proton track candidates", HistType::kTH1F, {axisDCAxy});
-      histos.add("QA/MC/trkDCAxy_ka", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {axisDCAxy});
-      histos.add("QA/MC/trkDCAz_pr", "DCAz distribution of proton track candidates", HistType::kTH1F, {axisDCAz});
-      histos.add("QA/MC/trkDCAz_ka", "DCAz distribution of kaon track candidates", HistType::kTH1F, {axisDCAz});
+      histos.add("QA/MC/trkDCAxy_pr", "DCAxy distribution of proton track candidates", HistType::kTH2F, {axisPt, axisDCAxy});
+      histos.add("QA/MC/trkDCAxy_ka", "DCAxy distribution of kaon track candidates", HistType::kTH2F, {axisPt, axisDCAxy});
+      histos.add("QA/MC/trkDCAz_pr", "DCAz distribution of proton track candidates", HistType::kTH2F, {axisPt, axisDCAz});
+      histos.add("QA/MC/trkDCAz_ka", "DCAz distribution of kaon track candidates", HistType::kTH2F, {axisPt, axisDCAz});
       histos.add("QA/MC/TOF_Nsigma_pr_all", "TOF NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Proton};", {HistType::kTH3F, {axisMult, axisPt, pidQAAxis}});
       histos.add("QA/MC/TPC_Nsigma_pr_all", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTH3F, {axisMult, axisPt, pidQAAxis}});
       histos.add("QA/MC/TOF_Nsigma_ka_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH3F, {axisMult, axisPt, pidQAAxis}});
@@ -317,10 +323,12 @@ struct lambda1520analysis {
 
       histos.add("Result/MC/h3lambda1520Recoinvmass", "Invariant mass of Reconstructed MC #Lambda(1520)0", kTH3F, {axisMult, axisPt, axisMassLambda1520});
       histos.add("Result/MC/h3antilambda1520Recoinvmass", "Invariant mass of Reconstructed MC Anti-#Lambda(1520)0", kTH3F, {axisMult, axisPt, axisMassLambda1520});
-      histos.add("Result/MC/lambda1520Reco", "pT distribution of Reconstructed MC #Lambda(1520)0", kTH2F, {axisPt, axisMult});
-      histos.add("Result/MC/antilambda1520Reco", "pT distribution of Reconstructed MC Anti-#Lambda(1520)0", kTH2F, {axisPt, axisMult});
-      histos.add("Result/MC/hlambda1520Recoinvmass", "Inv mass distribution of Reconstructed MC #Lambda(1520)", kTH1F, {axisMassLambda1520});
-      histos.add("Result/MC/hantilambda1520Recoinvmass", "Inv mass distribution of Reconstructed MC Anti-#Lambda(1520)", kTH1F, {axisMassLambda1520});
+      if (cAdditionalMCPlots) {
+        histos.add("Result/MC/lambda1520Reco", "pT distribution of Reconstructed MC #Lambda(1520)0", kTH2F, {axisPt, axisMult});
+        histos.add("Result/MC/antilambda1520Reco", "pT distribution of Reconstructed MC Anti-#Lambda(1520)0", kTH2F, {axisPt, axisMult});
+        histos.add("Result/MC/hlambda1520Recoinvmass", "Inv mass distribution of Reconstructed MC #Lambda(1520)", kTH1F, {axisMassLambda1520});
+        histos.add("Result/MC/hantilambda1520Recoinvmass", "Inv mass distribution of Reconstructed MC Anti-#Lambda(1520)", kTH1F, {axisMassLambda1520});
+      }
     }
 
     // Print output histograms statistics
@@ -926,10 +934,10 @@ struct lambda1520analysis {
             continue;
 
           // Track selection check.
-          histos.fill(HIST("QA/MC/trkDCAxy_pr"), trk1.dcaXY());
-          histos.fill(HIST("QA/MC/trkDCAxy_ka"), trk2.dcaXY());
-          histos.fill(HIST("QA/MC/trkDCAz_pr"), trk1.dcaZ());
-          histos.fill(HIST("QA/MC/trkDCAz_ka"), trk2.dcaZ());
+          histos.fill(HIST("QA/MC/trkDCAxy_pr"), trk1ptPr, trk1.dcaXY());
+          histos.fill(HIST("QA/MC/trkDCAxy_ka"), trk2ptKa, trk2.dcaXY());
+          histos.fill(HIST("QA/MC/trkDCAz_pr"), trk1ptPr, trk1.dcaZ());
+          histos.fill(HIST("QA/MC/trkDCAz_ka"), trk2ptKa, trk2.dcaZ());
 
           histos.fill(HIST("QA/MC/TPC_Nsigma_pr_all"), multiplicity, trk1ptPr, trk1NSigmaPrTPC);
           if (isTrk1hasTOF) {
@@ -942,12 +950,16 @@ struct lambda1520analysis {
 
           // MC histograms
           if (trk1.motherPDG() > 0) {
-            histos.fill(HIST("Result/MC/lambda1520Reco"), lResonance.Pt(), multiplicity);
-            histos.fill(HIST("Result/MC/hlambda1520Recoinvmass"), lResonance.M());
+            if (cAdditionalMCPlots) {
+              histos.fill(HIST("Result/MC/lambda1520Reco"), lResonance.Pt(), multiplicity);
+              histos.fill(HIST("Result/MC/hlambda1520Recoinvmass"), lResonance.M());
+            }
             histos.fill(HIST("Result/MC/h3lambda1520Recoinvmass"), multiplicity, lResonance.Pt(), lResonance.M());
           } else {
-            histos.fill(HIST("Result/MC/antilambda1520Reco"), lResonance.Pt(), multiplicity);
-            histos.fill(HIST("Result/MC/hantilambda1520Recoinvmass"), lResonance.M());
+            if (cAdditionalMCPlots) {
+              histos.fill(HIST("Result/MC/antilambda1520Reco"), lResonance.Pt(), multiplicity);
+              histos.fill(HIST("Result/MC/hantilambda1520Recoinvmass"), lResonance.M());
+            }
             histos.fill(HIST("Result/MC/h3antilambda1520Recoinvmass"), multiplicity, lResonance.Pt(), lResonance.M());
           }
         }
