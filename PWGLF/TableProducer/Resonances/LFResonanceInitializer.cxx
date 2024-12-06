@@ -46,7 +46,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 
 /// Initializer for the resonance candidate producers
-struct ResO2Initializer {
+struct ResonanceInitializer {
   SliceCache cache;
   int mRunNumber;
   int multEstimator;
@@ -65,7 +65,7 @@ struct ResO2Initializer {
   Produces<aod::ResoMCCascades> reso2mccascades;
 
   // CCDB options
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbURL{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
@@ -74,7 +74,7 @@ struct ResO2Initializer {
   Configurable<bool> cfgFatalWhenNull{"cfgFatalWhenNull", true, "Fatal when null on ccdb access"};
 
   // Configurables
-  Configurable<double> dBzInput{"dBz", -999, "bz field, -999 is automatic"};
+  Configurable<double> dBzInput{"dBzInput", -999, "bz field, -999 is automatic"};
   Configurable<bool> cfgFillQA{"cfgFillQA", false, "Fill QA histograms"};
   Configurable<bool> cfgBypassCCDB{"cfgBypassCCDB", true, "Bypass loading CCDB part to save CPU time and memory"}; // will be affected to b_z value.
 
@@ -966,7 +966,7 @@ struct ResO2Initializer {
     colCuts.setApplyPileupRejection(cfgEvtPileupRejection);
     colCuts.setApplyNoITSROBorderCut(cfgEvtNoITSROBorderCut);
     if (!cfgBypassCCDB) {
-      ccdb->setURL(ccdburl.value);
+      ccdb->setURL(ccdbURL.value);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(cfgFatalWhenNull);
@@ -1051,7 +1051,7 @@ struct ResO2Initializer {
 
     fillTracks<false>(collision, tracks);
   }
-  PROCESS_SWITCH(ResO2Initializer, processTrackData, "Process for data", true);
+  PROCESS_SWITCH(ResonanceInitializer, processTrackData, "Process for data", true);
 
   void processTrackDataRun2(ResoRun2Events::iterator const& collision,
                             soa::Filtered<ResoTracks> const& tracks,
@@ -1067,7 +1067,7 @@ struct ResO2Initializer {
 
     fillTracks<false>(collision, tracks);
   }
-  PROCESS_SWITCH(ResO2Initializer, processTrackDataRun2, "Process for data", false);
+  PROCESS_SWITCH(ResonanceInitializer, processTrackDataRun2, "Process for data", false);
 
   void processTrackEPData(soa::Join<ResoEvents, aod::Qvectors>::iterator const& collision,
                           soa::Filtered<ResoTracks> const& tracks,
@@ -1084,7 +1084,7 @@ struct ResO2Initializer {
 
     fillTracks<false>(collision, tracks);
   }
-  PROCESS_SWITCH(ResO2Initializer, processTrackEPData, "Process for data and ep ana", false);
+  PROCESS_SWITCH(ResonanceInitializer, processTrackEPData, "Process for data and ep ana", false);
 
   void processTrackV0Data(ResoEvents::iterator const& collision,
                           soa::Filtered<ResoTracks> const& tracks,
@@ -1103,7 +1103,7 @@ struct ResO2Initializer {
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
   }
-  PROCESS_SWITCH(ResO2Initializer, processTrackV0Data, "Process for data", false);
+  PROCESS_SWITCH(ResonanceInitializer, processTrackV0Data, "Process for data", false);
 
   void processTrackV0DataRun2(ResoRun2Events::iterator const& collision,
                               soa::Filtered<ResoTracks> const& tracks,
@@ -1121,7 +1121,7 @@ struct ResO2Initializer {
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
   }
-  PROCESS_SWITCH(ResO2Initializer, processTrackV0DataRun2, "Process for data", false);
+  PROCESS_SWITCH(ResonanceInitializer, processTrackV0DataRun2, "Process for data", false);
 
   void processTrackV0CascData(ResoEvents::iterator const& collision,
                               soa::Filtered<ResoTracks> const& tracks,
@@ -1142,7 +1142,7 @@ struct ResO2Initializer {
     fillV0s<false>(collision, V0s, tracks);
     fillCascades<false>(collision, Cascades, tracks);
   }
-  PROCESS_SWITCH(ResO2Initializer, processTrackV0CascData, "Process for data", false);
+  PROCESS_SWITCH(ResonanceInitializer, processTrackV0CascData, "Process for data", false);
 
   void processTrackV0CascDataRun2(ResoRun2Events::iterator const& collision,
                                   soa::Filtered<ResoTracks> const& tracks,
@@ -1162,7 +1162,7 @@ struct ResO2Initializer {
     fillV0s<false>(collision, V0s, tracks);
     fillCascades<false>(collision, Cascades, tracks);
   }
-  PROCESS_SWITCH(ResO2Initializer, processTrackV0CascDataRun2, "Process for data", false);
+  PROCESS_SWITCH(ResonanceInitializer, processTrackV0CascDataRun2, "Process for data", false);
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   void processTrackMC(soa::Join<ResoEvents, aod::McCollisionLabels>::iterator const& collision,
@@ -1186,7 +1186,7 @@ struct ResO2Initializer {
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
   }
-  PROCESS_SWITCH(ResO2Initializer, processTrackMC, "Process for MC", false);
+  PROCESS_SWITCH(ResonanceInitializer, processTrackMC, "Process for MC", false);
 
   void processTrackEPMC(soa::Join<ResoEvents, aod::Qvectors, aod::McCollisionLabels>::iterator const& collision,
                         aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
@@ -1205,7 +1205,7 @@ struct ResO2Initializer {
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
   }
-  PROCESS_SWITCH(ResO2Initializer, processTrackEPMC, "Process for MC and ep ana", false);
+  PROCESS_SWITCH(ResonanceInitializer, processTrackEPMC, "Process for MC and ep ana", false);
 
   Preslice<aod::McParticles> perMcCollisionRun2 = aod::mcparticle::mcCollisionId;
   void processTrackMCRun2(soa::Join<ResoRun2Events, aod::McCollisionLabels>::iterator const& collision,
@@ -1225,7 +1225,7 @@ struct ResO2Initializer {
     auto mcParts = selectedMCParticles->sliceBy(perMcCollisionRun2, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
   }
-  PROCESS_SWITCH(ResO2Initializer, processTrackMCRun2, "Process for MC", false);
+  PROCESS_SWITCH(ResonanceInitializer, processTrackMCRun2, "Process for MC", false);
 
   void processTrackV0MC(soa::Join<ResoEvents, aod::McCollisionLabels>::iterator const& collision,
                         aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
@@ -1247,7 +1247,7 @@ struct ResO2Initializer {
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
   }
-  PROCESS_SWITCH(ResO2Initializer, processTrackV0MC, "Process for MC", false);
+  PROCESS_SWITCH(ResonanceInitializer, processTrackV0MC, "Process for MC", false);
 
   void processTrackV0MCRun2(soa::Join<ResoRun2Events, aod::McCollisionLabels>::iterator const& collision,
                             aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
@@ -1268,7 +1268,7 @@ struct ResO2Initializer {
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
   }
-  PROCESS_SWITCH(ResO2Initializer, processTrackV0MCRun2, "Process for MC", false);
+  PROCESS_SWITCH(ResonanceInitializer, processTrackV0MCRun2, "Process for MC", false);
 
   void processTrackV0CascMC(soa::Join<ResoEvents, aod::McCollisionLabels>::iterator const& collision,
                             aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
@@ -1293,7 +1293,7 @@ struct ResO2Initializer {
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
   }
-  PROCESS_SWITCH(ResO2Initializer, processTrackV0CascMC, "Process for MC", false);
+  PROCESS_SWITCH(ResonanceInitializer, processTrackV0CascMC, "Process for MC", false);
 
   void processTrackV0CascMCRun2(soa::Join<ResoRun2Events, aod::McCollisionLabels>::iterator const& collision,
                                 aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
@@ -1317,12 +1317,12 @@ struct ResO2Initializer {
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
   }
-  PROCESS_SWITCH(ResO2Initializer, processTrackV0CascMCRun2, "Process for MC", false);
+  PROCESS_SWITCH(ResonanceInitializer, processTrackV0CascMCRun2, "Process for MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ResO2Initializer>(cfgc, TaskName{"lf-ResO2Initializer"}),
+    adaptAnalysisTask<ResonanceInitializer>(cfgc, TaskName{"lf-ResonanceInitializer"}),
   };
 }
