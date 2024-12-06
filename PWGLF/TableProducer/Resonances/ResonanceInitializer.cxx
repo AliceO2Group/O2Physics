@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file ResonanceInitializer.cxx
+/// \file resonanceInitializer.cxx
 /// \brief Initializes variables for the resonance candidate producers
 ///
 ///
@@ -1323,6 +1323,6 @@ struct ResonanceInitializer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ResonanceInitializer>(cfgc, TaskName{"ResonanceInitializer"}),
+    adaptAnalysisTask<ResonanceInitializer>(cfgc, TaskName{"resonance-initializer"}),
   };
 }
