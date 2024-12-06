@@ -103,6 +103,7 @@ struct FlowGFWOmegaXi {
   O2_DEFINE_CONFIGURABLE(cfgtpccrossoverfindable, int, 1, "minimum number of Ratio crossed rows over findable clusters")
   O2_DEFINE_CONFIGURABLE(cfgcheckDauTPC, bool, true, "check daughter tracks TPC or not")
   O2_DEFINE_CONFIGURABLE(cfgcheckDauTOF, bool, false, "check daughter tracks TOF or not")
+  O2_DEFINE_CONFIGURABLE(cfgcheckCascSign, bool, false, "check cascades sign or not")
   O2_DEFINE_CONFIGURABLE(cfgCasc_rapidity, float, 0.5, "rapidity")
   O2_DEFINE_CONFIGURABLE(cfgtpcNSigmaCascPion, float, 3, "NSigmaCascPion")
   O2_DEFINE_CONFIGURABLE(cfgtpcNSigmaCascProton, float, 3, "NSigmaCascProton")
@@ -183,8 +184,7 @@ struct FlowGFWOmegaXi {
   int nMultBins = 0;
   TAxis* fMultAxis = nullptr;
 
-  int nPhiBins = 60;
-  TAxis* fPhiAxis = new TAxis(nPhiBins, 0, constants::math::TwoPI);
+  TAxis* fPhiAxis = new TAxis(60, 0, constants::math::TwoPI);
 
   TAxis* fOmegaMass = nullptr;
 
@@ -348,8 +348,8 @@ struct FlowGFWOmegaXi {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiLambdaPdpt {2} refN10 {-2}", "Lambda10Gap22a", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiLambdaNdpt {2} refP10 {-2}", "Lambda10Gap22b", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiLambdafulldpt reffull {2 2 -2 -2}", "Xi10Gap24a", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP10 {2} refN10 {-2}", "Ref10Gap22a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("reffull reffull {2 2 -2 -2}", "Ref10Gap24", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP10 {2} refN10 {-2}", "Ref10Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("reffull {2 2 -2 -2}", "Ref10Gap24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiK0sP {2} refN10 {-2}", "K0s10Gap22inta", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiK0sN {2} refP10 {-2}", "K0s10Gap22intb", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiLambdaP {2} refN10 {-2}", "Lambda10Gap22inta", kFALSE));
@@ -678,7 +678,6 @@ struct FlowGFWOmegaXi {
     for (auto& v0 : V0s) {
       auto v0posdau = v0.posTrack_as<DaughterTracks>();
       auto v0negdau = v0.negTrack_as<DaughterTracks>();
-      // check tpc
       int PDGCode = 0;
       // fill QA
       registry.fill(HIST("hqaarm_podobefore"), v0.alpha(), v0.qtarm());
@@ -769,13 +768,17 @@ struct FlowGFWOmegaXi {
         continue;
       }
       int PDGCode = 0;
-      if (casc.sign() < 0 && std::fabs(casc.yOmega()) < cfgCasc_rapidity && std::fabs(bachelor.tpcNSigmaKa()) < cfgtpcNSigmaCascKaon && std::fabs(posdau.tpcNSigmaPr()) < cfgtpcNSigmaCascProton && std::fabs(negdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion && std::fabs(bachelor.tofNSigmaKa()) < cfgtofNSigmaCascKaon && std::fabs(posdau.tofNSigmaPr()) < cfgtofNSigmaCascProton && std::fabs(negdau.tofNSigmaPi()) < cfgtofNSigmaCascPion) {
+      if ((!cfgcheckCascSign || casc.sign() < 0) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
+          (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaKa()) < cfgtpcNSigmaCascKaon && std::fabs(posdau.tpcNSigmaPr()) < cfgtpcNSigmaCascProton && std::fabs(negdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion)) &&
+          (!cfgcheckDauTOF || (std::fabs(bachelor.tofNSigmaKa()) < cfgtofNSigmaCascKaon && std::fabs(posdau.tofNSigmaPr()) < cfgtofNSigmaCascProton && std::fabs(negdau.tofNSigmaPi()) < cfgtofNSigmaCascPion))) {
         registry.fill(HIST("InvMassOmegaMinus_all"), casc.pt(), casc.mOmega(), casc.eta(), cent);
         if (!setCurrentParticleWeights(weff, wacc, casc, vtxz, 4))
           continue;
         PDGCode = kOmegaMinus;
         CandNum_all[3] = CandNum_all[3] + 1;
-      } else if (casc.sign() < 0 && std::fabs(casc.yXi()) < cfgCasc_rapidity && std::fabs(bachelor.tpcNSigmaPi()) < cfgtpcNSigmaCascPion && std::fabs(posdau.tpcNSigmaPr()) < cfgtpcNSigmaCascProton && std::fabs(negdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion && std::fabs(bachelor.tofNSigmaPi()) < cfgtofNSigmaCascPion && std::fabs(posdau.tofNSigmaPr()) < cfgtofNSigmaCascProton && std::fabs(negdau.tofNSigmaPi()) < cfgtofNSigmaCascPion) {
+      } else if ((!cfgcheckCascSign || casc.sign() < 0) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
+                 (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaPi()) < cfgtpcNSigmaCascPion && std::fabs(posdau.tpcNSigmaPr()) < cfgtpcNSigmaCascProton && std::fabs(negdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion)) &&
+                 (!cfgcheckDauTOF || (std::fabs(bachelor.tofNSigmaPi()) < cfgtofNSigmaCascPion && std::fabs(posdau.tofNSigmaPr()) < cfgtofNSigmaCascProton && std::fabs(negdau.tofNSigmaPi()) < cfgtofNSigmaCascPion))) {
         registry.fill(HIST("InvMassXiMinus_all"), casc.pt(), casc.mXi(), casc.eta(), cent);
         if (!setCurrentParticleWeights(weff, wacc, casc, vtxz, 3))
           continue;
@@ -807,6 +810,12 @@ struct FlowGFWOmegaXi {
       if (posdau.tpcNClsFound() < cfgtpcclusters)
         continue;
       if (negdau.tpcNClsFound() < cfgtpcclusters)
+        continue;
+      if (bachelor.tpcNClsFindable() < cfgtpcclufindable)
+        continue;
+      if (posdau.tpcNClsFindable() < cfgtpcclufindable)
+        continue;
+      if (negdau.tpcNClsFindable() < cfgtpcclufindable)
         continue;
       if (bachelor.itsNCls() < cfgitsclusters)
         continue;
