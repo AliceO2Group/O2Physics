@@ -1326,6 +1326,6 @@ struct ResonanceInitializer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ResonanceInitializer>(cfgc, TaskName{"lf-resonance-initializer"}),
+    adaptAnalysisTask<ResonanceInitializer>(cfgc),
   };
 }
