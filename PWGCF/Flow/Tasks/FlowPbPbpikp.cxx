@@ -8,11 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+/// \file FlowPbPbpikp.cxx
+/// \brief PID flow using the generic framework
+/// \author Preet Bhanjan Pati <bhanjanpreet@gmail.com>
 
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <vector>
-#include <iostream>
 #include <utility>
 #include <array>
 #include <string>
@@ -49,6 +51,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace std;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
