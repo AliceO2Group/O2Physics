@@ -373,7 +373,7 @@ struct EbyeMult {
       }
     }
 
-    histos.fill(HIST("QA/nTrklCorrelation"), nTracklets[1], nTracklets[1]);
+    histos.fill(HIST("QA/nTrklCorrelation"), nTracklets[1], nTracklets[0]);
     histos.fill(HIST("QA/nV0MCorrelation"), centrality, nTracklets[0]);
     nTrackletsColl = nTracklets[1];
 
