@@ -57,12 +57,12 @@ DECLARE_SOA_COLUMN(PtD, ptD, float);                          //! Transverse mom
 DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                //! Transverse momentum of Hadron
 DECLARE_SOA_COLUMN(MD, mD, float);                            //! Invariant mass of D0
 DECLARE_SOA_COLUMN(MDbar, mDbar, float);                      //! Invariant mass of D0bar
-DECLARE_SOA_COLUMN(MlScoreBkgD0, mlScoreBkgD0, float);            //! ML background score for D0 selection
-DECLARE_SOA_COLUMN(MlScoreNonPromptD0, mlScoreNonPromptD0, float);      //! ML prompt score for D0 selection
-DECLARE_SOA_COLUMN(MlScorePromptD0, mlScorePromptD0, float);      //! ML prompt score for D0 selection
-DECLARE_SOA_COLUMN(MlScoreBkgD0bar, mlScoreBkgD0bar, float);            //! ML background score for D0 selection
-DECLARE_SOA_COLUMN(MlScoreNonPromptD0bar, mlScoreNonPromptD0bar, float);      //! ML prompt score for D0 selection
-DECLARE_SOA_COLUMN(MlScorePromptD0bar, mlScorePromptD0bar, float);      //! ML prompt score for D0 selection
+DECLARE_SOA_COLUMN(MlScoreBkgD0, mlScoreBkgD0, float);        //! ML background score for D0 selection
+DECLARE_SOA_COLUMN(MlScoreNonPromptD0, mlScoreNonPromptD0, float);       //! ML prompt score for D0 selection
+DECLARE_SOA_COLUMN(MlScorePromptD0, mlScorePromptD0, float);             //! ML prompt score for D0 selection
+DECLARE_SOA_COLUMN(MlScoreBkgD0bar, mlScoreBkgD0bar, float);             //! ML background score for D0 selection
+DECLARE_SOA_COLUMN(MlScoreNonPromptD0bar, mlScoreNonPromptD0bar, float); //! ML prompt score for D0 selection
+DECLARE_SOA_COLUMN(MlScorePromptD0bar, mlScorePromptD0bar, float);       //! ML prompt score for D0 selection
 DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);          //! Tag for D0,D0bar
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                    //! Pool Bin for the MixedEvent
 DECLARE_SOA_COLUMN(IsAutoCorrelated, isAutoCorrelated, bool); //! Correlation Status

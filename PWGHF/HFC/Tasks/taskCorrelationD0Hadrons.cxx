@@ -264,7 +264,7 @@ struct HfTaskCorrelationD0Hadrons {
       registry.fill(HIST("hBdtScorePromptD0bar"), bdtScorePromptD0bar);
       registry.fill(HIST("hBdtScoreBkgD0bar"), bdtScoreBkgD0bar);
     }
-    
+
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
@@ -289,7 +289,7 @@ struct HfTaskCorrelationD0Hadrons {
       if (ptHadron > ptHadronMax) {
         ptHadron = ptHadronMax + 0.5;
       }
-      if (bdtScorePromptD0 < mlOutputPromptD0->at(ptBinD) || bdtScoreBkgD0 > mlOutputBkgD0->at(ptBinD) || 
+      if (bdtScorePromptD0 < mlOutputPromptD0->at(ptBinD) || bdtScoreBkgD0 > mlOutputBkgD0->at(ptBinD) ||
           bdtScorePromptD0bar < mlOutputPromptD0bar->at(ptBinD) || bdtScoreBkgD0bar > mlOutputBkgD0bar->at(ptBinD)) {
         continue;
       }
