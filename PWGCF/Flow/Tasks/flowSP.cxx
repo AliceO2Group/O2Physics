@@ -371,39 +371,39 @@ struct FlowSP {
 
         double v1AC = std::cos(phi - (psiA - psiC));
 
-        registry.fill(HIST("v1_eta"), track.eta(),track.pt(), (1. / std::sqrt(2)) * (v1A - v1C));
-        registry.fill(HIST("v1A_eta"), track.eta(),track.pt(), (v1A));
-        registry.fill(HIST("v1C_eta"), track.eta(),track.pt(), (v1C));
-        registry.fill(HIST("v1AC_eta"), track.eta(),track.pt(), (v1AC));
+        registry.fill(HIST("v1_eta"), track.eta(), track.pt(), (1. / std::sqrt(2)) * (v1A - v1C));
+        registry.fill(HIST("v1A_eta"), track.eta(), track.pt(), (v1A));
+        registry.fill(HIST("v1C_eta"), track.eta(), track.pt(), (v1C));
+        registry.fill(HIST("v1AC_eta"), track.eta(), track.pt(), (v1AC));
 
-        registry.fill(HIST("v1_eta_odd"), track.eta(),track.pt(), oddv1);
-        registry.fill(HIST("v1_eta_even"), track.eta(),track.pt(), evenv1);
+        registry.fill(HIST("v1_eta_odd"), track.eta(), track.pt(), oddv1);
+        registry.fill(HIST("v1_eta_even"), track.eta(), track.pt(), evenv1);
 
-        registry.fill(HIST("v1_eta_odd_dev"), track.eta(),track.pt(), oddv1Dev);
-        registry.fill(HIST("v1_eta_even_dev"), track.eta(),track.pt(), evenv1Dev);
+        registry.fill(HIST("v1_eta_odd_dev"), track.eta(), track.pt(), oddv1Dev);
+        registry.fill(HIST("v1_eta_even_dev"), track.eta(), track.pt(), evenv1Dev);
 
         if (pos) {
-          registry.fill(HIST("v1_eta_odd_pos"), track.eta(),track.pt(), oddv1);
-          registry.fill(HIST("v1_eta_even_pos"), track.eta(),track.pt(), evenv1);
+          registry.fill(HIST("v1_eta_odd_pos"), track.eta(), track.pt(), oddv1);
+          registry.fill(HIST("v1_eta_even_pos"), track.eta(), track.pt(), evenv1);
 
-          registry.fill(HIST("v1_eta_odd_dev_pos"), track.eta(),track.pt(), oddv1Dev);
-          registry.fill(HIST("v1_eta_even_dev_pos"), track.eta(),track.pt(), evenv1Dev);
+          registry.fill(HIST("v1_eta_odd_dev_pos"), track.eta(), track.pt(), oddv1Dev);
+          registry.fill(HIST("v1_eta_even_dev_pos"), track.eta(), track.pt(), evenv1Dev);
         } else {
-          registry.fill(HIST("v1_eta_odd_neg"), track.eta(),track.pt(), oddv1);
-          registry.fill(HIST("v1_eta_even_neg"), track.eta(),track.pt(), evenv1);
+          registry.fill(HIST("v1_eta_odd_neg"), track.eta(), track.pt(), oddv1);
+          registry.fill(HIST("v1_eta_even_neg"), track.eta(), track.pt(), evenv1);
 
-          registry.fill(HIST("v1_eta_odd_dev_neg"), track.eta(),track.pt(), oddv1Dev);
-          registry.fill(HIST("v1_eta_even_dev_neg"), track.eta(),track.pt(), evenv1Dev);
+          registry.fill(HIST("v1_eta_odd_dev_neg"), track.eta(), track.pt(), oddv1Dev);
+          registry.fill(HIST("v1_eta_even_dev_neg"), track.eta(), track.pt(), evenv1Dev);
         }
 
         double v2A = std::cos(2 * (phi - psiA));
         double v2C = std::cos(2 * (phi - psiC));
         double v2AC = std::cos(2 * (phi - (psiA - psiC)));
 
-        registry.fill(HIST("v2_cent"), centrality,track.pt(), (1. / std::sqrt(2)) * (v2A - v2C));
-        registry.fill(HIST("v2A_cent"), centrality,track.pt(), (v2A));
-        registry.fill(HIST("v2C_cent"), centrality,track.pt(), (v2C));
-        registry.fill(HIST("v2AC_cent"), centrality,track.pt(), (v2AC));
+        registry.fill(HIST("v2_cent"), centrality, track.pt(), (1. / std::sqrt(2)) * (v2A - v2C));
+        registry.fill(HIST("v2A_cent"), centrality, track.pt(), (v2A));
+        registry.fill(HIST("v2C_cent"), centrality, track.pt(), (v2C));
+        registry.fill(HIST("v2AC_cent"), centrality, track.pt(), (v2AC));
       }
 
       float qIm = collision.qvecIm()[0];
