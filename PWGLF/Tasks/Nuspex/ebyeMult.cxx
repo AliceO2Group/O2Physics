@@ -495,7 +495,8 @@ struct EbyeMult {
 
       int partType = getPartType(particle.pdgCode());
       if (partType < PartTypes::kOther) {
-        ++nParticles;
+        if (std::abs(particle.eta()) < etaMax)
+          ++nParticles;
         if (std::abs(particle.eta()) < 1.f) {
           ++partInAcc;
         }
@@ -567,7 +568,7 @@ struct EbyeMult {
 
     // search generated INEL > 0 (one charged particle in |eta| < 1)
     for (const auto& mcCollision : mcCollisions) {
-      int mult = genMultINELgtZERO(mcCollision, mcParticles) > 0;
+      int mult = genMultINELgtZERO(mcCollision, mcParticles);
       if (mult > 0) {
         histos.fill(HIST("GenINELgtZERO"), mult);
       }
