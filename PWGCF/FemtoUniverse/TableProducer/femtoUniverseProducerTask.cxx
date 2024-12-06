@@ -17,13 +17,15 @@
 /// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@cern.ch
 
 #include <CCDB/BasicCCDBManager.h>
-#include <TDatabasePDG.h> // FIXME
+#include <TPDGCode.h>
 #include <vector>
 #include <algorithm>
 #include <set>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
@@ -57,6 +59,7 @@ using namespace o2;
 using namespace o2::analysis::femtoUniverse;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 
 namespace o2::aod
 {
@@ -738,8 +741,8 @@ struct femtoUniverseProducerTask {
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
 
-      float mMassOne = TDatabasePDG::Instance()->GetParticle(321)->Mass();  // FIXME: Get from the PDG service of the common header
-      float mMassTwo = TDatabasePDG::Instance()->GetParticle(-321)->Mass(); // FIXME: Get from the PDG service of the common header
+      const auto mMassOne = o2::constants::physics::MassKPlus;  // FIXME: Get from the PDG service of the common header
+      const auto mMassTwo = o2::constants::physics::MassKMinus; // FIXME: Get from the PDG service of the common header
 
       part1Vec.SetPtEtaPhiM(kaon1MC.pt(), kaon1MC.eta(), kaon1MC.phi(), mMassOne);
       part2Vec.SetPtEtaPhiM(kaon2MC.pt(), kaon2MC.eta(), kaon2MC.phi(), mMassTwo);
@@ -1322,8 +1325,8 @@ struct femtoUniverseProducerTask {
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
 
-      float mMassOne = TDatabasePDG::Instance()->GetParticle(321)->Mass();  // FIXME: Get from the PDG service of the common header
-      float mMassTwo = TDatabasePDG::Instance()->GetParticle(-321)->Mass(); // FIXME: Get from the PDG service of the common header
+      const auto mMassOne = o2::constants::physics::MassKPlus;  // FIXME: Get from the PDG service of the common header
+      const auto mMassTwo = o2::constants::physics::MassKMinus; // FIXME: Get from the PDG service of the common header
 
       part1Vec.SetPtEtaPhiM(p1.pt(), p1.eta(), p1.phi(), mMassOne);
       part2Vec.SetPtEtaPhiM(p2.pt(), p2.eta(), p2.phi(), mMassTwo);
@@ -1341,12 +1344,13 @@ struct femtoUniverseProducerTask {
         continue;
       }
 
-      float phiPhi = sumVec.Phi();
+      /*float phiPhi = sumVec.Phi();
       if (sumVec.Phi() < 0) {
-        phiPhi = sumVec.Phi() + 2 * o2::constants::math::PI;
+        phiPhi = sumVec.Phi() + o2::constants::math::TwoPI;
       } else if (sumVec.Phi() >= 0) {
         phiPhi = sumVec.Phi();
-      }
+      }*/
+      float phiPhi = RecoDecay::constrainAngle(sumVec.Phi(),0);
       float phiM = sumVec.M();
 
       if (((phiM < ConfPhiSelection.ConfInvMassLowLimitPhi.value) || (phiM > ConfPhiSelection.ConfInvMassUpLimitPhi.value))) {
