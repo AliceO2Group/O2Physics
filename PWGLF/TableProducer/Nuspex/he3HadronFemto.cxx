@@ -209,8 +209,8 @@ struct he3hadronfemto {
 
   // binning for EM background
   ConfigurableAxis axisVertex{"axisVertex", {30, -10, 10}, "Binning for multiplicity"};
-  ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0., 15., 30., 45., 60., 75., 95., 250.}, "Binning for centrality"};
-  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
+  ConfigurableAxis axisCentrality{"axisCentrality", {40, 0, 100}, "Binning for centrality"};
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   BinningType binningPolicy{{axisVertex, axisCentrality}, true};
   SliceCache cache;
   SameKindPair<CollisionsFull, TrackCandidates, BinningType> m_pair{binningPolicy, setting_noMixedEvents, -1, &cache};
