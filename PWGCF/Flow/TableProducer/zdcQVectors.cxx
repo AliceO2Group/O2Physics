@@ -472,22 +472,22 @@ struct ZdcQVectors {
       std::vector<int> sparsePars;
       THnSparseD* h = reinterpret_cast<THnSparseD*>(hist);
       if (step == 0 && iteration > 0) {
-        //Axis(0) is runnuber, but we don't need this
+        // Axis(0) is runnuber, but we don't need this
         sparsePars.push_back(h->GetAxis(1)->FindBin(centrality));
         sparsePars.push_back(h->GetAxis(2)->FindBin(v[0]));
         sparsePars.push_back(h->GetAxis(3)->FindBin(v[1]));
         sparsePars.push_back(h->GetAxis(4)->FindBin(v[2]));
       }
-    
-      for (std::size_t i = 0; i < sparsePars.size()+1; i++) {
-        h->GetAxis(i+1)->SetRange(sparsePars[i], sparsePars[i]);
+
+      for (std::size_t i = 0; i < sparsePars.size() + 1; i++) {
+        h->GetAxis(i + 1)->SetRange(sparsePars[i], sparsePars[i]);
       }
       calibConstant = h->Projection(5)->GetMean();
 
       if (h->Projection(sparsePars.size())->GetEntries() < cfgMinEntriesSparseBin) {
         LOGF(debug, "1 entry in sparse bin! Not used... (increase binsize)");
         calibConstant = 0;
-        isSelected = false; 
+        isSelected = false;
       }
     }
     return calibConstant;
@@ -510,12 +510,12 @@ struct ZdcQVectors {
     std::vector<double> xEnZN(2, 0.);
     std::vector<double> yEnZN(2, 0.);
 
-    isSelected = true; 
+    isSelected = true;
 
     auto cent = collision.centFT0C();
 
     if (cent < 0 || cent > 90) {
-      isSelected = false; 
+      isSelected = false;
       spTableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
       return;
     }
@@ -525,7 +525,7 @@ struct ZdcQVectors {
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
 
     if (!foundBC.has_zdc()) {
-      isSelected = false; 
+      isSelected = false;
       spTableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
       return;
     }
@@ -600,14 +600,14 @@ struct ZdcQVectors {
     // if ZNA or ZNC not hit correctly.. do not use event in q-vector calculation
     if (!isZNAhit || !isZNChit) {
       counter++;
-      isSelected = false; 
+      isSelected = false;
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
       return;
     }
 
     if (!cal.calibfilesLoaded[0][0]) {
       counter++;
-      isSelected = false; 
+      isSelected = false;
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
       return;
     }
@@ -688,7 +688,8 @@ struct ZdcQVectors {
       }
     }
 
-    if (counter <1) LOGF(info, "We evaluate cal.atIteration=%i and cal.atStep=%i ",cal.atIteration, cal.atStep ); 
+    if (counter < 1)
+      LOGF(info, "We evaluate cal.atIteration=%i and cal.atStep=%i ", cal.atIteration, cal.atStep);
 
     if (cal.atIteration == 0) {
       if (counter < 1)
