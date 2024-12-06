@@ -90,8 +90,8 @@ struct GfwPidflow {
   TAxis* fPtAxis;
   TRandom3* fRndm = new TRandom3(0);
 
-  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::pidBayes, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::pidBayes, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
 
   void init(InitContext const&)
   {
@@ -114,24 +114,24 @@ struct GfwPidflow {
     histos.add("partCount", "", {HistType::kTHnSparseD, {{axisParticles, axisMultiplicity, axisPt}}});
     o2::framework::AxisSpec axis = axisPt;
     int nPtBins = axis.binEdges.size() - 1;
-    double* PtBins = &(axis.binEdges)[0];
-    fPtAxis = new TAxis(nPtBins, PtBins);
+    double* ptBins = &(axis.binEdges)[0];
+    fPtAxis = new TAxis(nPtBins, ptBins);
 
     TObjArray* oba = new TObjArray();
     oba->Add(new TNamed("Ch08Gap22", "Ch08Gap22"));
-    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+    for (std::int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Ch08Gap22_pt_%i", i + 1), "Ch08Gap22_pTDiff"));
     oba->Add(new TNamed("Pi08Gap22", "Pi08Gap22"));
-    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+    for (std::int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Pi08Gap22_pt_%i", i + 1), "Pi08Gap22_pTDiff"));
     oba->Add(new TNamed("Ka08Gap22", "Ka08Gap22"));
-    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+    for (std::int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Ka08Gap22_pt_%i", i + 1), "Ka08Gap22_pTDiff"));
     oba->Add(new TNamed("Pr08Gap22", "Pr08Gap22"));
-    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+    for (std::int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Pr08Gap22_pt_%i", i + 1), "Pr08Gap22_pTDiff"));
     oba->Add(new TNamed("ChFull24", "ChFull24"));
-    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+    for (std::int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("ChFull24_pt_%i", i + 1), "ChFull24_pTDiff"));
 
     fFC->SetName("FlowContainer");
@@ -184,7 +184,7 @@ struct GfwPidflow {
   enum Particles proton = PROTONS;
 
   template <typename TTrack>
-  int GetNsigmaPID(TTrack track)
+  int getNsigmaPID(TTrack track)
   {
     // Computing Nsigma arrays for pion, kaon, and protons
     std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
@@ -206,7 +206,7 @@ struct GfwPidflow {
   }
 
   template <typename TTrack>
-  std::pair<int, int> GetBayesID(TTrack track)
+  std::pair<int, int> getBayesID(TTrack track)
   {
     std::array<int, 3> bayesprobs = {static_cast<int>(track.bayesPi()), static_cast<int>(track.bayesKa()), static_cast<int>(track.bayesPr())};
     int bayesid = -1;
@@ -222,16 +222,16 @@ struct GfwPidflow {
   }
 
   template <typename TTrack>
-  int GetBayesPIDIndex(TTrack track)
+  int getBayesPIDIndex(TTrack track)
   {
     int maxProb[3] = {80, 80, 80};
     int pidID = -1;
-    std::pair<int, int> idprob = GetBayesID(track);
+    std::pair<int, int> idprob = getBayesID(track);
     if (idprob.first == pion || idprob.first == kaon || idprob.first == proton) { // 0 = pion, 1 = kaon, 2 = proton
       pidID = idprob.first;
       float nsigmaTPC[3] = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
       if (idprob.second > maxProb[pidID]) {
-        if (abs(nsigmaTPC[pidID]) > 3)
+        if (std::fabs(nsigmaTPC[pidID]) > 3)
           return 0;
         return pidID + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
       } else {
@@ -242,7 +242,7 @@ struct GfwPidflow {
   }
 
   template <char... chars>
-  void FillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
+  void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -250,22 +250,22 @@ struct GfwPidflow {
       return;
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1)
+      if (std::fabs(val) < 1)
         histos.fill(tarName, cent, val, dnx);
       return;
     }
-    for (Int_t i = 1; i <= fPtAxis->GetNbins(); i++) {
+    for (std::int i = 1; i <= fPtAxis->GetNbins(); i++) {
       dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
       if (dnx == 0)
         continue;
       val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1)
+      if (std::fabs(val) < 1)
         histos.fill(tarName, fPtAxis->GetBinCenter(i), val, dnx);
     }
     return;
   }
 
-  void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
+  void fillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -274,40 +274,40 @@ struct GfwPidflow {
     }
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1) {
-        fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
+      if (std::fabs(val) < 1) {
+        fFC->fillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
       }
       return;
     }
-    for (Int_t i = 1; i <= fPtAxis->GetNbins(); i++) {
+    for (std::int i = 1; i <= fPtAxis->GetNbins(); i++) {
       dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
       if (dnx == 0)
         continue;
       val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1)
-        fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
+      if (std::fabs(val) < 1)
+        fFC->fillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
     }
     return;
   }
 
-  void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
+  void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
   {
-    int Ntot = tracks.size();
-    if (Ntot < 1)
+    int nTot = tracks.size();
+    if (nTot < 1)
       return;
     if (!collision.sel8())
       return;
-    float l_Random = fRndm->Rndm();
+    float lRandom = fRndm->Rndm();
 
     float vtxz = collision.posZ();
     histos.fill(HIST("hVtxZ"), vtxz);
-    histos.fill(HIST("hMult"), Ntot);
+    histos.fill(HIST("hMult"), nTot);
     histos.fill(HIST("hCent"), collision.centFT0C());
     fGFW->Clear();
     const auto cent = collision.centFT0C();
     float weff = 1, wacc = 1;
     int pidIndex;
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       double pt = track.pt();
       histos.fill(HIST("hPhi"), track.phi());
       histos.fill(HIST("hEta"), track.eta());
@@ -317,37 +317,37 @@ struct GfwPidflow {
       histos.fill(HIST("TofTpcNsigma"), kaon, track.tpcNSigmaKa(), track.tofNSigmaKa(), pt);
       histos.fill(HIST("TofTpcNsigma"), proton, track.tpcNSigmaPr(), track.tofNSigmaPr(), pt);
 
-      bool WithinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
-      bool WithinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within RF pT range
+      bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
+      bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within RF pT range
 
-      // pidIndex = GetBayesPIDIndex(track);
-      pidIndex = GetNsigmaPID(track);
-      if (WithinPtRef)
+      // pidIndex = getBayesPIDIndex(track);
+      pidIndex = getNsigmaPID(track);
+      if (withinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1);
-      if (WithinPtPOI)
+      if (withinPtPOI)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 128);
-      if (WithinPtPOI && WithinPtRef)
+      if (withinPtPOI && withinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 256);
       fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 512);
 
       if (pidIndex) {
         histos.fill(HIST("partCount"), pidIndex - 1, cent, pt);
-        if (WithinPtPOI)
+        if (withinPtPOI)
           fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1 << (pidIndex));
-        if (WithinPtPOI && WithinPtRef)
+        if (withinPtPOI && withinPtRef)
           fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1 << (pidIndex + 3));
       }
     }
 
     // Filling c22 with ROOT TProfile
-    FillProfile(corrconfigs.at(0), HIST("c22_gap08"), cent);
-    FillProfile(corrconfigs.at(1), HIST("c22_gap08_pi"), cent);
-    FillProfile(corrconfigs.at(2), HIST("c22_gap08_ka"), cent);
-    FillProfile(corrconfigs.at(3), HIST("c22_gap08_pr"), cent);
-    FillProfile(corrconfigs.at(4), HIST("c24_full"), cent);
+    fillProfile(corrconfigs.at(0), HIST("c22_gap08"), cent);
+    fillProfile(corrconfigs.at(1), HIST("c22_gap08_pi"), cent);
+    fillProfile(corrconfigs.at(2), HIST("c22_gap08_ka"), cent);
+    fillProfile(corrconfigs.at(3), HIST("c22_gap08_pr"), cent);
+    fillProfile(corrconfigs.at(4), HIST("c24_full"), cent);
 
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-      FillFC(corrconfigs.at(l_ind), cent, l_Random);
+      fillFC(corrconfigs.at(l_ind), cent, lRandom);
     }
 
   } // end of process
