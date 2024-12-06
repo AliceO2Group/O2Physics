@@ -464,7 +464,6 @@ struct he3hadronfemto {
       return false;
     }
 
-
     auto nSigmaHe3 = computeNSigmaHe3(candidate);
     m_qaRegistry.fill(HIST("h2NsigmaHe3TPC_preselection"), candidate.sign() * 2 * candidate.pt(), nSigmaHe3);
     if (std::abs(nSigmaHe3) > setting_cutNsigmaTPC) {
@@ -643,14 +642,14 @@ struct he3hadronfemto {
         if (track0 == track1) {
           continue;
         }
-        
-        if(!setting_saveUSandLS){
-        if (!setting_enableBkgUS && (track0.sign() * track1.sign() < 0)) {
-          continue;
-        }
-        if (setting_enableBkgUS && (track0.sign() * track1.sign() > 0)) {
-          continue;
-        }
+
+        if (!setting_saveUSandLS) {
+          if (!setting_enableBkgUS && (track0.sign() * track1.sign() < 0)) {
+            continue;
+          }
+          if (setting_enableBkgUS && (track0.sign() * track1.sign() > 0)) {
+            continue;
+          }
         }
 
         if (!selectTrack(track1) || !selectionPIDHadron(track1)) {
