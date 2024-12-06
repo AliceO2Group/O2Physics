@@ -26,7 +26,7 @@ using namespace o2::framework;
 using namespace o2::soa;
 using namespace o2::constants::physics;
 
-struct lambda1520analysis {
+struct Lambda1520analysis {
   // Define slice per Resocollision
   SliceCache cache;
   Preslice<aod::ResoTracks> perResoCollision = aod::resodaughter::resoCollisionId;
@@ -41,8 +41,8 @@ struct lambda1520analysis {
   Configurable<bool> cEtaAssym{"cEtaAssym", false, "Turn on/off EtaAssym calculation"};
   Configurable<bool> isFilladditionalQA{"isFilladditionalQA", false, "Turn on/off additional QA plots"};
   Configurable<bool> cOldPIDcut{"cOldPIDcut", false, "Switch to turn on/off old PID cut to apply pt dependent cut"};
-  Configurable<bool> FixedPIDcut{"FixedPIDcut", false, "Switch to turn on/off FIXED PID cut to apply pt dependent cut"};
-  Configurable<bool> cRejectPion{"cRejectPion", false, "Switch to turn on/off pion contamination"};
+  Configurable<bool> fixedPIDcut{"fixedPIDcut", false, "Switch to turn on/off FIXED PID cut to apply pt dependent cut"};
+  Configurable<bool> crejectPion{"crejectPion", false, "Switch to turn on/off pion contamination"};
   Configurable<bool> cDCAr7SigCut{"cDCAr7SigCut", false, "Track DCAr 7 Sigma cut to PV Maximum"};
   Configurable<bool> cKinCuts{"cKinCuts", false, "Kinematic Cuts for p-K pair opening angle"};
   Configurable<bool> cTPCNClsFound{"cTPCNClsFound", false, "Switch to turn on/off TPCNClsFound cut"};
@@ -79,7 +79,7 @@ struct lambda1520analysis {
   Configurable<float> cRejNsigmaTpc{"cRejNsigmaTpc", 3.0, "Reject tracks to improve purity of TPC PID"}; // Reject missidentified particles when tpc bands merge
   Configurable<float> cRejNsigmaTof{"cRejNsigmaTof", 3.0, "Reject tracks to improve purity of TOF PID"}; // Reject missidentified particles when tpc bands merge
   Configurable<bool> cUseRejNsigma{"cUseRejNsigma", false, "Switch on/off track rejection method to improve purity"};
-  Configurable<bool> tof_at_high_pt{"tof_at_high_pt", false, "Use TOF at high pT"};
+  Configurable<bool> tofAtHighPt{"tofAtHighPt", false, "Use TOF at high pT"};
   Configurable<bool> cByPassTOF{"cByPassTOF", false, "By pass TOF PID selection"}; // By pass TOF PID selection
 
   // Kaon
@@ -112,8 +112,8 @@ struct lambda1520analysis {
 
   /// Event Mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
-  ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis cfgMultBins{"cfgMultBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - multiplicity"};
 
   // MC Event selection
   Configurable<float> cZvertCutMC{"cZvertCutMC", 10.0, "MC Z-vertex cut"};
@@ -141,14 +141,14 @@ struct lambda1520analysis {
   ConfigurableAxis binsTPCXrows{"binsTPCXrows", {100, 60, 160}, ""};
   ConfigurableAxis binsnSigma{"binsnSigma", {130, -6.5, 6.5}, ""};
   ConfigurableAxis binsnTPCSignal{"binsnTPCSignal", {1000, 0, 1000}, ""};
-  ConfigurableAxis occupancy_bins{"occupancy_bins", {VARIABLE_WIDTH, 0.0, 100, 500, 600, 1000, 1100, 1500, 1600, 2000, 2100, 2500, 2600, 3000, 3100, 3500, 3600, 4000, 4100, 4500, 4600, 5000, 5100, 9999}, "Binning of the occupancy axis"};
+  ConfigurableAxis occupancybins{"occupancybins", {VARIABLE_WIDTH, 0.0, 100, 500, 600, 1000, 1100, 1500, 1600, 2000, 2100, 2500, 2600, 3000, 3100, 3500, 3600, 4000, 4100, 4500, 4600, 5000, 5100, 9999}, "Binning of the occupancy axis"};
   Configurable<bool> applyOccupancyCut{"applyOccupancyCut", false, "Apply occupancy cut"};
-  Configurable<int> OccupancyCut{"OccupancyCut", 1000, "Mimimum Occupancy cut"};
+  Configurable<int> occupancyCut{"occupancyCut", 1000, "Mimimum Occupancy cut"};
 
   // Rotational background
-  Configurable<bool> IsCalcRotBkg{"IsCalcRotBkg", true, "Calculate rotational background"};
-  Configurable<int> rotational_cut{"rotational_cut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
-  Configurable<int> c_nof_rotations{"c_nof_rotations", 3, "Number of random rotations in the rotational background"};
+  Configurable<bool> isCalcRotBkg{"isCalcRotBkg", true, "Calculate rotational background"};
+  Configurable<int> rotationalcut{"rotationalcut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
+  Configurable<int> cNofRotations{"cNofRotations", 3, "Number of random rotations in the rotational background"};
 
   void init(o2::framework::InitContext&)
   {
@@ -163,7 +163,7 @@ struct lambda1520analysis {
     AxisSpec pidQAAxis = {binsnSigma, "#sigma"};
     AxisSpec axisTPCSignal = {binsnTPCSignal, ""};
     AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
-    AxisSpec occupancy_axis = {occupancy_bins, "Occupancy [-40,100]"};
+    AxisSpec occupancyaxis = {occupancybins, "Occupancy [-40,100]"};
 
     if (additionalQAeventPlots) {
       // Test on Mixed event
@@ -264,7 +264,7 @@ struct lambda1520analysis {
       }
 
       if (IsCalcRotBkg) {
-        histos.add("Result/Data/h3lambda1520InvMassRotation", "Invariant mass of #Lambda(1520) rotation", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520, occupancy_axis});
+        histos.add("Result/Data/h3lambda1520InvMassRotation", "Invariant mass of #Lambda(1520) rotation", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520, occupancyaxis});
       }
 
       // 3d histogram
@@ -662,7 +662,7 @@ struct lambda1520analysis {
   }
 
   template <typename T>
-  bool RejectPion(const T& candidate)
+  bool rejectPion(const T& candidate)
   {
     if (candidate.pt() > 1.0 && candidate.pt() < 2.0 && !candidate.hasTOF() && candidate.tpcNSigmaPi() < 2) {
       return false;
@@ -677,8 +677,8 @@ struct lambda1520analysis {
 
     // LOG(info) << "Before pass, Collision index:" << collision.index() << "multiplicity: " << collision.cent() << std::endl;
 
-    auto occupancy_no = collision.trackOccupancyInTimeRange();
-    if (applyOccupancyCut && occupancy_no < OccupancyCut) {
+    auto occupancyNo = collision.trackOccupancyInTimeRange();
+    if (applyOccupancyCut && occupancyNo < OccupancyCut) {
       return;
     }
 
@@ -706,9 +706,9 @@ struct lambda1520analysis {
       }
     }
     // LOG(info) << "After pass, Collision index:" << collision.index() << "multiplicity: " << collision.cent() << std::endl;
-    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance, ldaughter_rot, lresonance_rot;
+    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance, ldaughterRot, lresonanceRot;
 
-    for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
+    for (const auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
       // Full index policy is needed to consider all possible combinations
       if (trk1.index() == trk2.index())
         continue; // We need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
@@ -777,7 +777,7 @@ struct lambda1520analysis {
         continue;
       if (cUseOnlyTOFTrackKa && !isTrk2hasTOF)
         continue;
-      if (cRejectPion && RejectPion(trk2))
+      if (crejectPion && rejectPion(trk2))
         continue;
       if (cOldPIDcut) {
         if (!selectionoldPIDProton(trk1) || !selectionoldPIDKaon(trk2))
@@ -849,7 +849,7 @@ struct lambda1520analysis {
       lDecayDaughter2.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi(), massKa);
       lResonance = lDecayDaughter1 + lDecayDaughter2;
       // Rapidity cut
-      if (abs(lResonance.Rapidity()) > 0.5)
+      if (std::abs(lResonance.Rapidity()) > 0.5)
         continue;
 
       if (cfgCutsOnMother) {
@@ -879,11 +879,11 @@ struct lambda1520analysis {
       if (trk1.sign() * trk2.sign() < 0) {
         if constexpr (IsData) {
           if (IsCalcRotBkg) {
-            for (int i = 0; i < c_nof_rotations; i++) {
-              float theta2 = rn->Uniform(std::Pi() - std::Pi() / rotational_cut, std::Pi() + std::Pi() / rotational_cut);
-              ldaughter_rot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa); // for rotated background
-              lresonance_rot = lDecayDaughter1 + ldaughter_rot;
-              histos.fill(HIST("Result/Data/h3lambda1520InvMassRotation"), multiplicity, lresonance_rot.Pt(), lresonance_rot.M(), occupancy_no);
+            for (int i = 0; i < cNofRotations; i++) {
+              float theta2 = rn->Uniform(std::Pi() - std::Pi() / rotationalcut, std::Pi() + std::Pi() / rotationalcut);
+              ldaughterRot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa); // for rotated background
+              lresonanceRot = lDecayDaughter1 + ldaughterRot;
+              histos.fill(HIST("Result/Data/h3lambda1520InvMassRotation"), multiplicity, lresonanceRot.Pt(), lresonanceRot.M(), occupancyNo);
             }
           }
 
@@ -926,11 +926,11 @@ struct lambda1520analysis {
         if constexpr (IsMC) {
           // LOG(info) << "trk1 pdgcode: " << trk1.pdgCode() << "trk2 pdgcode: " << trk2.pdgCode() << std::endl;
 
-          if (abs(trk1.pdgCode()) != 2212 || abs(trk2.pdgCode()) != 321)
+          if (std::abs(trk1.pdgCode()) != 2212 || std::abs(trk2.pdgCode()) != 321)
             continue;
           if (trk1.motherId() != trk2.motherId()) // Same mother
             continue;
-          if (abs(trk1.motherPDG()) != 102134)
+          if (std::abs(trk1.motherPDG()) != 102134)
             continue;
 
           // Track selection check.
@@ -985,7 +985,7 @@ struct lambda1520analysis {
     }
   }
 
-  void processData(aod::ResoCollision& collision,
+  void processData(aod::ResoCollision const& collision,
                    aod::ResoTracks const& resotracks)
   {
     if (additionalQAeventPlots)
@@ -997,23 +997,23 @@ struct lambda1520analysis {
   void processMC(ResoMCCols::iterator const& collision,
                  soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
-    if (!collision.isInAfterAllCuts() || (abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
+    if (!collision.isInAfterAllCuts() || (std::abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
       return;
     fillHistograms<false, true, false>(collision, resotracks, resotracks);
   }
   PROCESS_SWITCH(lambda1520analysis, processMC, "Process Event for MC Light without partition", false);
 
-  void processMCTrue(ResoMCCols::iterator const& collision, aod::ResoMCParents& resoParents)
+  void processMCTrue(ResoMCCols::iterator const& collision, aod::ResoMCParents const& resoParents)
   {
     auto multiplicity = collision.cent();
     // Not related to the real collisions
-    for (auto& part : resoParents) {     // loop over all MC particles
-      if (abs(part.pdgCode()) != 102134) // Lambda1520(0)
+    for (const auto& part : resoParents) {    // loop over all MC particles
+      if (std::abs(part.pdgCode()) != 102134) // Lambda1520(0)
         continue;
-      if (abs(part.y()) > 0.5) // rapidity cut
+      if (std::abs(part.y()) > 0.5) // rapidity cut
         continue;
-      bool pass1 = abs(part.daughterPDG1()) == 321 || abs(part.daughterPDG2()) == 321;   // At least one decay to Kaon
-      bool pass2 = abs(part.daughterPDG1()) == 2212 || abs(part.daughterPDG2()) == 2212; // At least one decay to Proton
+      bool pass1 = std::abs(part.daughterPDG1()) == 321 || std::abs(part.daughterPDG2()) == 321;   // At least one decay to Kaon
+      bool pass2 = std::abs(part.daughterPDG1()) == 2212 || std::abs(part.daughterPDG2()) == 2212; // At least one decay to Proton
 
       if (!pass1 || !pass2) // If we have both decay products
         continue;
@@ -1052,13 +1052,13 @@ struct lambda1520analysis {
 
   // Processing Event Mixing
   using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
-  void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
+  void processME(o2::aod::ResoCollisions const& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
     BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
-    for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
+    for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (additionalQAeventPlots)
         histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
       fillHistograms<false, false, true>(collision1, tracks1, tracks2);
