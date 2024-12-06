@@ -8,494 +8,314 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \brief this is a code for the elliptic flow of identified hadrons
-/// \author prottay das, preet
-/// \since 29/05/2024
 
-#include <TDatabasePDG.h>
-#include <TDirectory.h>
-#include <TFile.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <THn.h>
-#include <TLorentzVector.h>
-#include <TMath.h>
-#include <TObjArray.h>
-#include <TPDGCode.h>
-#include <iostream>
-
-#include <array>
+#include <CCDB/BasicCCDBManager.h>
 #include <cmath>
-#include <cstdlib>
+#include <vector>
+#include <iostream>
+#include <utility>
+#include <array>
+#include <string>
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/StepTHn.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "CommonConstants/PhysicsConstants.h"
+
+#include "PWGCF/GenericFramework/Core/GFWPowerArray.h"
+#include "PWGCF/GenericFramework/Core/GFW.h"
+#include "PWGCF/GenericFramework/Core/GFWCumulant.h"
+#include "PWGCF/GenericFramework/Core/FlowContainer.h"
+
 #include "ReconstructionDataFormats/Track.h"
+#include "ReconstructionDataFormats/PID.h"
+
+#include <TProfile.h>
+#include <TRandom3.h>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using std::array;
 
-struct v2ellip {
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-  // Connect to ccdb
+struct GfwPidflow {
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
 
-  SliceCache cache;
+  O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 10.0f, "Maximal pT for poi tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for ref tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 3.0f, "Maximal pT for ref tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
+  O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
 
-  // Histograms are defined with HistogramRegistry
-  HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
+  ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
+  ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.20, 1.40, 1.60, 1.80, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00, 3.50, 4.00, 5.00, 6.00, 8.00, 10.00}, "pt axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
+  ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {80, -5, 5}, "nsigmaTPC axis"};
+  ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
+  ConfigurableAxis axisparticles{"axisparticles", {3, 0, 3}, "axis for different hadrons"};
 
-  // Confugrable for QA histograms
-  Configurable<bool> onlyTOF{"onlyTOF", false, "only TOF tracks"};
-  Configurable<bool> onlyTOFHIT{"onlyTOFHIT", false, "accept only TOF hit tracks at high pt"};
-  bool onlyTPC = true;
+  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
-  // Configurables for track selections
-  Configurable<float> cfgCutPT{"cfgCutPT", 0.2f, "PT cut on daughter track"};
-  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta cut on daughter track"};
-  Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
-  Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
-  Configurable<float> nsigmaCutTPCPi{"nsigmacutTPCPi", 3.0, "Value of the TPC Nsigma cut for pions"};
-  Configurable<float> nsigmaCutTPCKa{"nsigmacutTPCKa", 3.0, "Value of the TPC Nsigma cut for kaons"};
-  Configurable<float> nsigmaCutTPCPr{"nsigmacutTPCPr", 3.0, "Value of the TPC Nsigma cut for protons"};
-  Configurable<float> nsigmaCutTOFPi{"nsigmacutTOFPi", 3.0, "Value of the TOF Nsigma cut for pions"};
-  Configurable<float> nsigmaCutTOFKa{"nsigmacutTOFKa", 3.0, "Value of the TOF Nsigma cut for kaons"};
-  Configurable<float> nsigmaCutTOFPr{"nsigmacutTOFPr", 3.0, "Value of the TOF Nsigma cut for protons"};
-  Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the Combined Nsigma cut"};
-  Configurable<bool> ismanualDCAcut{"ismanualDCAcut", true, "ismanualDCAcut"};
-  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
-  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
+  OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // Event selection configurables
-  Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
-  Configurable<bool> TVXEvsel{"TVXEvsel", false, "Triggger selection"};
-  Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
+  GFW* fGFW = new GFW();
+  std::vector<GFW::CorrConfig> corrconfigs;
+  TAxis* fPtAxis;
+  TRandom3* fRndm = new TRandom3(0);
 
-  // Configurable for histograms
-  Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
-  ConfigurableAxis binsMultPlot{"binsCent", {201, -0.5f, 200.5f}, "Binning of the centrality axis for plots"};
+  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
+  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::pidBayes, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
 
   void init(InitContext const&)
   {
-    // Axes
-    AxisSpec vertexZAxis = {nBins, -15., 15., "vrtx_{Z} [cm] for plots"};
-    AxisSpec axisv2ref = {10, 0, 10, "v2_{ref}"};
-    AxisSpec axisv2diff = {14, 0, 14, "v2_{def}"};
-    AxisSpec axisphi = {700, 0, 7, "#phi"};
+    ccdb->setURL(url.value);
+    ccdb->setCaching(true);
+    ccdb->setCreatedNotAfter(nolaterthan.value);
 
-    // Histograms
-    // Event selection
-    rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
-    rEventSelection.add("hmult", "Centrality distribution", kTH1F, {{binsMultPlot}});
+    histos.add("hPhi", "", {HistType::kTH1D, {axisPhi}});
+    histos.add("hEta", "", {HistType::kTH1D, {axisEta}});
+    histos.add("hVtxZ", "", {HistType::kTH1D, {axisVertex}});
+    histos.add("hMult", "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
+    histos.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
+    histos.add("hPt", "", {HistType::kTH1D, {axisPt}});
+    histos.add("c22_gap08", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08_pi", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08_ka", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08_pr", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c24_full", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("TofTpcNsigma", "", {HistType::kTHnSparseD, {{axisparticles, axisNsigmaTPC, axisNsigmaTOF}}});
 
-    // v2 tprofiles for reference and differential flow
-    histos.add("profv2ref", "profv2ref", kTProfile, {axisv2ref});
-    histos.add("profv2diff_pr_10_20", "profv2diff_pr_10_20", kTProfile, {axisv2diff});
-    histos.add("profv2diff_pi_10_20", "profv2diff_pi_10_20", kTProfile, {axisv2diff});
-    histos.add("profv2diff_k_10_20", "profv2diff_k_10_20", kTProfile, {axisv2diff});
+    o2::framework::AxisSpec axis = axisPt;
+    int nPtBins = axis.binEdges.size() - 1;
+    double* PtBins = &(axis.binEdges)[0];
+    fPtAxis = new TAxis(nPtBins, PtBins);
 
-    histos.add("profv2diff_pr_20_30", "profv2diff_pr_20_30", kTProfile, {axisv2diff});
-    histos.add("profv2diff_pi_20_30", "profv2diff_pi_20_30", kTProfile, {axisv2diff});
-    histos.add("profv2diff_k_20_30", "profv2diff_k_20_30", kTProfile, {axisv2diff});
+    TObjArray* oba = new TObjArray();
+    oba->Add(new TNamed("Ch08Gap22", "Ch08Gap22"));
+    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Ch08Gap22_pt_%i", i + 1), "Ch08Gap22_pTDiff"));
+    oba->Add(new TNamed("Pi08Gap22", "Pi08Gap22"));
+    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Pi08Gap22_pt_%i", i + 1), "Pi08Gap22_pTDiff"));
+    oba->Add(new TNamed("Ka08Gap22", "Ka08Gap22"));
+    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Ka08Gap22_pt_%i", i + 1), "Ka08Gap22_pTDiff"));
+    oba->Add(new TNamed("Pr08Gap22", "Pr08Gap22"));
+    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Pr08Gap22_pt_%i", i + 1), "Pr08Gap22_pTDiff"));
+    oba->Add(new TNamed("ChFull24", "ChFull24"));
+    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("ChFull24_pt_%i", i + 1), "ChFull24_pTDiff"));
 
-    histos.add("profv2diff_pr_30_40", "profv2diff_pr_30_40", kTProfile, {axisv2diff});
-    histos.add("profv2diff_pi_30_40", "profv2diff_pi_30_40", kTProfile, {axisv2diff});
-    histos.add("profv2diff_k_30_40", "profv2diff_k_30_40", kTProfile, {axisv2diff});
+    fFC->SetName("FlowContainer");
+    fFC->SetXAxis(fPtAxis);
+    fFC->Initialize(oba, axisMultiplicity, cfgNbootstrap);
+    delete oba;
 
-    histos.add("profv2diff_pr_40_50", "profv2diff_pr_40_50", kTProfile, {axisv2diff});
-    histos.add("profv2diff_pi_40_50", "profv2diff_pi_40_50", kTProfile, {axisv2diff});
-    histos.add("profv2diff_k_40_50", "profv2diff_k_40_50", kTProfile, {axisv2diff});
+    fGFW->AddRegion("refN08", -0.8, -0.4, 1, 1);
+    fGFW->AddRegion("refP08", 0.4, 0.8, 1, 1);
+    fGFW->AddRegion("full", -0.8, 0.8, 1, 512);
 
-    // histogram for phi distribution
-    histos.add("hphi", "hphi", kTH1F, {axisphi});
+    // charged parts
+    fGFW->AddRegion("poiN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 128);
+    fGFW->AddRegion("olN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 256);
+
+    // pion
+    fGFW->AddRegion("poiNpi", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("olNpi", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 16);
+
+    // kaon
+    fGFW->AddRegion("poiNk", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olNk", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 32);
+
+    // proton
+    fGFW->AddRegion("poiNpr", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 8);
+    fGFW->AddRegion("olNpr", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 64);
+
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ch08Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Pi08Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ka08Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Pr08Gap22", kFALSE));
+
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN refN08 | olN {2} refP08 {-2}", "Ch08Gap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNpi refN08 | olNpi {2} refP08 {-2}", "Pi08Gap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNk refN08 | olNk {2} refP08 {-2}", "Ka08Gap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNpr refN08 | olNpr {2} refP08 {-2}", "Pr08Gap22", kTRUE));
+
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
+    fGFW->CreateRegions();
   }
 
-  template <typename T>
-  bool selectionTrack(const T& candidate)
+  template <typename TTrack>
+  std::pair<int, int> GetBayesID(TTrack track)
   {
-    if (ismanualDCAcut && !(candidate.isGlobalTrackWoDCA() && candidate.isPVContributor() && std::abs(candidate.dcaXY()) < cfgCutDCAxy && std::abs(candidate.dcaZ()) < cfgCutDCAz && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
-      return false;
-    }
+    std::array<int, 3> bayesprobs = {static_cast<int>(track.bayesPi()), static_cast<int>(track.bayesKa()), static_cast<int>(track.bayesPr())};
+    int bayesid = -1;
+    int prob = 0;
 
-    return true;
+    for (int i = 0; i < 3; ++i) {
+      if (bayesprobs[i] > prob && bayesprobs[i] > 80) {
+        bayesid = i;
+        prob = bayesprobs[i];
+      }
+    }
+    return std::make_pair(bayesid, prob);
   }
 
-  template <typename T>
-  bool selectionPID(const T& candidate, int PID)
+  template <typename TTrack>
+  int GetBayesPIDIndex(TTrack track)
   {
-    if (candidate.pt() > 0.4) {
-      onlyTPC = false;
-    }
-
-    if (PID == 0) {
-      if (onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < nsigmaCutTOFPi) {
-          return true;
-        }
-      } else if (onlyTOFHIT) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < nsigmaCutTOFPi) {
-          return true;
-        }
-        if (!candidate.hasTOF() &&
-            std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi) {
-          return true;
-        }
-      } else if (onlyTPC) {
-        if (std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi) {
-          return true;
-        }
+    int maxProb[3] = {80, 80, 80};
+    int pidID = -1;
+    std::pair<int, int> idprob = GetBayesID(track);
+    if (idprob.first == 0 || idprob.first == 1 || idprob.first == 2) { // 0 = pion, 1 = kaon, 2 = proton
+      pidID = idprob.first;
+      float nsigmaTPC[3] = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
+      if (idprob.second > maxProb[pidID]) {
+        if (abs(nsigmaTPC[pidID]) > 3)
+          return 0;
+        return pidID + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
       } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (nsigmaCutCombined * nsigmaCutCombined)) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi) {
-          return true;
-        }
-      }
-    } else if (PID == 1) {
-      if (onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < nsigmaCutTOFKa) {
-          return true;
-        }
-      } else if (onlyTOFHIT) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < nsigmaCutTOFKa) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa) {
-          return true;
-        }
-      } else if (onlyTPC) {
-        if (std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (nsigmaCutCombined * nsigmaCutCombined)) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa) {
-          return true;
-        }
-      }
-    } else if (PID == 2) {
-      if (onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPr()) < nsigmaCutTOFPr) {
-          return true;
-        }
-      } else if (onlyTOFHIT) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPr()) < nsigmaCutTOFPr) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCPr) {
-          return true;
-        }
-      } else if (onlyTPC) {
-        if (std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCPr) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < (nsigmaCutCombined * nsigmaCutCombined)) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCPr) {
-          return true;
-        }
+        return 0;
       }
     }
-    return false;
+    return 0;
   }
 
-  // Defining filters for events (event selection)
-  // Processed events will be already fulfilling the event selection
-  // requirements
-
-  Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
-  Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
-  Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
-
-  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelectionExtension>>;
-
-  // Defining partitions for subevents for eta-gap method
-  Partition<TrackCandidates> Atracks = (aod::track::eta > 0.4f) && (aod::track::eta < 0.8f);   // partition for subevent A
-  Partition<TrackCandidates> Btracks = (aod::track::eta < -0.4f) && (aod::track::eta > -0.8f); // partition for subevent B
-
-  array<float, 15> ptbins = {0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0, 3.5, 4.0, 4.5, 5.0};
-
-  void processSE(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
-
+  template <char... chars>
+  void FillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
   {
-    float sum_sinA = 0.0, sum_cosA = 0.0, sum_sinB = 0.0, sum_cosB = 0.0;
-    int multA = 0, multB = 0;
-
-    // Q vector elements
-    array<float, 14> sum_sindsA = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // sin component of Q vector for subevent A
-    array<float, 14> sum_cosdsA = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // cos component of Q vector for subevent A
-    array<float, 14> sum_sindsB = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // sin component of Q vector for subevent B
-    array<float, 14> sum_cosdsB = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // cos component of Q vector for subevent B
-
-    // p vector definitions for subevent A
-    array<float, 14> pn_sumsinA_pr = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // to store ptwise pn vector components for proton
-    array<float, 14> pn_sumcosA_pr = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // to store ptwise pn vector components for proton
-
-    array<float, 14> pn_sumsinA_pi = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // to store ptwise pn vector components for pion
-    array<float, 14> pn_sumcosA_pi = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // to store ptwise pn vector components for pion
-
-    array<float, 14> pn_sumsinA_k = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // to store ptwise pn vector components for kaon
-    array<float, 14> pn_sumcosA_k = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // to store ptwise pn vector components for kaon
-
-    // p vector definitions for subevent B
-    array<float, 14> pn_sumsinB_pr = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // to store ptwise pn vector components for proton
-    array<float, 14> pn_sumcosB_pr = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // to store ptwise pn vector components for proton
-
-    array<float, 14> pn_sumsinB_pi = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // to store ptwise pn vector components for pion
-    array<float, 14> pn_sumcosB_pi = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // to store ptwise pn vector components for pion
-
-    array<float, 14> pn_sumsinB_k = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // to store ptwise pn vector components for kaon
-    array<float, 14> pn_sumcosB_k = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; // to store ptwise pn vector components for kaon
-
-    // POI multiplicities
-    array<int, 14> mpA_pr = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // proton multiplicity for subevent A
-    array<int, 14> mpB_pr = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // proton multiplicity for subevent B
-
-    array<int, 14> mpA_pi = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // pion multiplicity for subevent A
-    array<int, 14> mpB_pi = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // pion multiplicity for subevent B
-
-    array<int, 14> mpA_k = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // kaon multiplicity for subevent A
-    array<int, 14> mpB_k = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // kaon multiplicity for subevent B
-
-    if (!collision.sel8()) {
+    double dnx, val;
+    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    if (dnx == 0)
+      return;
+    if (!corrconf.pTDif) {
+      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      if (TMath::Abs(val) < 1)
+        histos.fill(tarName, cent, val, dnx);
       return;
     }
+    for (Int_t i = 1; i <= fPtAxis->GetNbins(); i++) {
+      dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
+      if (dnx == 0)
+        continue;
+      val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
+      if (TMath::Abs(val) < 1)
+        histos.fill(tarName, fPtAxis->GetBinCenter(i), val, dnx);
+    }
+    return;
+  }
 
-    if (timFrameEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+  void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
+  {
+    double dnx, val;
+    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    if (dnx == 0) {
       return;
     }
-
-    if (TVXEvsel && (!collision.selection_bit(aod::evsel::kIsTriggerTVX))) {
+    if (!corrconf.pTDif) {
+      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      if (TMath::Abs(val) < 1) {
+        fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
+      }
       return;
     }
-
-    float multiplicity = 0.0f;
-    multiplicity = collision.centFT0C();
-
-    // Fill the event counter
-    rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-    rEventSelection.fill(HIST("hmult"), multiplicity);
-
-    auto atrack = Atracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto btrack = Btracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-
-    for (auto track : tracks) {
-      if (!selectionTrack(track)) {
+    for (Int_t i = 1; i <= fPtAxis->GetNbins(); i++) {
+      dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
+      if (dnx == 0)
         continue;
+      val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
+      if (TMath::Abs(val) < 1)
+        fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
+    }
+    return;
+  }
+
+  void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
+  {
+    int Ntot = tracks.size();
+    if (Ntot < 1)
+      return;
+    if (!collision.sel8())
+      return;
+    float l_Random = fRndm->Rndm();
+
+    float vtxz = collision.posZ();
+    histos.fill(HIST("hVtxZ"), vtxz);
+    histos.fill(HIST("hMult"), Ntot);
+    histos.fill(HIST("hCent"), collision.centFT0C());
+    fGFW->Clear();
+    const auto cent = collision.centFT0C();
+    float weff = 1, wacc = 1;
+    int pidIndex;
+    for (auto& track : tracks) {
+      double pt = track.pt();
+      histos.fill(HIST("hPhi"), track.phi());
+      histos.fill(HIST("hEta"), track.eta());
+      histos.fill(HIST("hPt"), pt);
+
+      histos.fill(HIST("TofTpcNsigma"), 0, track.tpcNSigmaPi(), track.tofNSigmaPi());
+      histos.fill(HIST("TofTpcNsigma"), 1, track.tpcNSigmaKa(), track.tofNSigmaKa());
+      histos.fill(HIST("TofTpcNsigma"), 2, track.tpcNSigmaPr(), track.tofNSigmaPr());
+
+      bool WithinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
+      bool WithinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within RF pT range
+
+      pidIndex = GetBayesPIDIndex(track);
+      if (WithinPtRef)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1);
+      if (WithinPtPOI)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 128);
+      if (WithinPtPOI && WithinPtRef)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 256);
+      fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 512);
+
+      if (pidIndex) {
+        if (WithinPtPOI)
+          fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1 << (pidIndex));
+        if (WithinPtPOI && WithinPtRef)
+          fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1 << (pidIndex + 3));
       }
-      if (selectionPID(track, 0) || selectionPID(track, 1) || selectionPID(track, 2)) { // If track pion, kaon or proton
-        histos.fill(HIST("hphi"), track.phi());
-      } else {
-        continue;
-      }
-    } // end of track loop
+    }
 
-    for (auto track1 : atrack) {
-      if (!selectionTrack(track1)) {
-        continue;
-      }
+    // Filling c22 with ROOT TProfile
+    FillProfile(corrconfigs.at(0), HIST("c22_gap08"), cent);
+    FillProfile(corrconfigs.at(1), HIST("c22_gap08_pi"), cent);
+    FillProfile(corrconfigs.at(2), HIST("c22_gap08_ka"), cent);
+    FillProfile(corrconfigs.at(3), HIST("c22_gap08_pr"), cent);
+    FillProfile(corrconfigs.at(4), HIST("c24_full"), cent);
 
-      sum_sinA += TMath::Sin(2.0 * track1.phi()); // sum of sin components of Q vector
-      sum_cosA += TMath::Cos(2.0 * track1.phi()); // sum of cos components of Q vector
-      multA++;                                    // charged particle multiplicity
-
-      if (selectionPID(track1, 0) || selectionPID(track1, 1) || selectionPID(track1, 2)) { // If track  pion, kaon or proton
-        // pt loop for component sums of p vector, POI multiplicities pt wise
-        for (auto pt = 0; pt < 14; pt++) {
-          sum_sindsA[pt] += TMath::Sin(2 * track1.phi());
-          sum_cosdsA[pt] += TMath::Cos(2 * track1.phi());
-
-          if (track1.pt() > ptbins[pt] && track1.pt() <= ptbins[pt + 1] && selectionPID(track1, 0)) { // for pion
-            pn_sumsinA_pi[pt] += TMath::Sin(2 * track1.phi());
-            pn_sumcosA_pi[pt] += TMath::Cos(2 * track1.phi());
-            mpA_pi[pt]++;
-          } else if (track1.pt() > ptbins[pt] && track1.pt() <= ptbins[pt + 1] && selectionPID(track1, 1)) { // for kaon
-            pn_sumsinA_k[pt] += TMath::Sin(2 * track1.phi());
-            pn_sumcosA_k[pt] += TMath::Cos(2 * track1.phi());
-            mpA_k[pt]++;
-          } else if (track1.pt() > ptbins[pt] && track1.pt() <= ptbins[pt + 1] && selectionPID(track1, 2)) { // for proton
-            pn_sumsinA_pr[pt] += TMath::Sin(2 * track1.phi());
-            pn_sumcosA_pr[pt] += TMath::Cos(2 * track1.phi());
-            mpA_pr[pt]++;
-          } else {
-            continue;
-          }
-        } // end of pt loop
-      } else {
-        continue;
-      }
-    } // track loop ends
-
-    for (auto track2 : btrack) {
-      if (!selectionTrack(track2)) {
-        continue;
-      }
-
-      sum_sinB += TMath::Sin(2.0 * track2.phi()); // sum of sin components of Q vector
-      sum_cosB += TMath::Cos(2.0 * track2.phi()); // sum of cos components of Q vector
-      multB++;                                    // charged particle multiplicity
-
-      if (selectionPID(track2, 0) || selectionPID(track2, 1) || selectionPID(track2, 2)) { // If track  pion, kaon or proton
-        // pt loop for component sums of p vector, POI multiplicities pt wise
-        for (auto pt = 0; pt < 14; pt++) {
-          sum_sindsB[pt] += TMath::Sin(2 * track2.phi());
-          sum_cosdsB[pt] += TMath::Cos(2 * track2.phi());
-
-          if (track2.pt() > ptbins[pt] && track2.pt() <= ptbins[pt + 1] && selectionPID(track2, 0)) { // for pion
-            pn_sumsinB_pi[pt] += TMath::Sin(2 * track2.phi());
-            pn_sumcosB_pi[pt] += TMath::Cos(2 * track2.phi());
-            mpB_pi[pt]++;
-          } else if (track2.pt() > ptbins[pt] && track2.pt() <= ptbins[pt + 1] && selectionPID(track2, 1)) { // for kaon
-            pn_sumsinB_k[pt] += TMath::Sin(2 * track2.phi());
-            pn_sumcosB_k[pt] += TMath::Cos(2 * track2.phi());
-            mpB_k[pt]++;
-          } else if (track2.pt() > ptbins[pt] && track2.pt() <= ptbins[pt + 1] && selectionPID(track2, 2)) { // for proton
-            pn_sumsinB_pr[pt] += TMath::Sin(2 * track2.phi());
-            pn_sumcosB_pr[pt] += TMath::Cos(2 * track2.phi());
-            mpB_pr[pt]++;
-          } else {
-            continue;
-          }
-        } // end of pt loop
-      } else {
-        continue;
-      }
-    } // track loop ends
-
-    if (10.0 < multiplicity && multiplicity <= 20.0) {
-      // reference flow
-      if ((multA * multB) != 0) {
-        histos.fill(HIST("profv2ref"), 1, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
-      }
-
-      // pt wise differential flow
-      for (auto pt = 0; pt < 14; pt++) {
-        if ((mpA_pr[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_pr_10_20"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / (mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
-        } // for proton
-        if ((mpA_pi[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_pi_10_20"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / (mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
-        } // for pion
-        if ((mpA_k[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_k_10_20"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / (mpA_k[pt] * multB)), mpA_k[pt] * multB);
-        } // for kaon
-      }
-    } // 10 to 20 percent centrality
-
-    if (20.0 < multiplicity && multiplicity <= 30.0) {
-      // reference flow
-      if ((multA * multB) != 0) {
-        histos.fill(HIST("profv2ref"), 2, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
-      }
-
-      // pt wise differential flow
-      for (auto pt = 0; pt < 14; pt++) {
-        if ((mpA_pr[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_pr_20_30"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / (mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
-        } // for proton
-        if ((mpA_pi[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_pi_20_30"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / (mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
-        } // for pion
-        if ((mpA_k[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_k_20_30"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / (mpA_k[pt] * multB)), mpA_k[pt] * multB);
-        } // for kaon
-      }
-    } // 20 to 30 percent centrality
-
-    if (30.0 < multiplicity && multiplicity <= 40.0) {
-      // reference flow
-      if ((multA * multB) != 0) {
-        histos.fill(HIST("profv2ref"), 3, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
-      }
-
-      // pt wise differential flow
-      for (auto pt = 0; pt < 14; pt++) {
-        if ((mpA_pr[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_pr_30_40"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / (mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
-        } // for proton
-        if ((mpA_pi[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_pi_30_40"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / (mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
-        } // for pion
-        if ((mpA_k[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_k_30_40"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / (mpA_k[pt] * multB)), mpA_k[pt] * multB);
-        } // for kaon
-      }
-    } // 30 to 40 percent centrality
-
-    if (40.0 < multiplicity && multiplicity <= 50.0) {
-      // reference flow
-      if ((multA * multB) != 0) {
-        histos.fill(HIST("profv2ref"), 4, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
-      }
-
-      // pt wise differential flow
-      for (auto pt = 0; pt < 14; pt++) {
-        if ((mpA_pr[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_pr_40_50"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / (mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
-        } // for proton
-        if ((mpA_pi[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_pi_40_50"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / (mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
-        } // for pion
-        if ((mpA_k[pt] * multB) != 0) {
-          histos.fill(HIST("profv2diff_k_40_50"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / (mpA_k[pt] * multB)), mpA_k[pt] * multB);
-        } // for kaon
-      }
-    } // 40 to 50 percent centrality
-
-    if (50.0 < multiplicity && multiplicity <= 60.0) {
-      // reference flow
-      if ((multA * multB) != 0) {
-        histos.fill(HIST("profv2ref"), 5, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
-      }
-    } // 50 to 60 percent centrality
-
-    if (60.0 < multiplicity && multiplicity <= 70.0) {
-      // reference flow
-      if ((multA * multB) != 0) {
-        histos.fill(HIST("profv2ref"), 6, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
-      }
-    } // 60 to 70 percent centrality
-
-    if (70.0 < multiplicity && multiplicity <= 80.0) {
-      // reference flow
-      if ((multA * multB) != 0) {
-        histos.fill(HIST("profv2ref"), 7, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
-      }
-    } // 70 to 80 percent centrality
+    for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
+      FillFC(corrconfigs.at(l_ind), cent, l_Random);
+    }
 
   } // end of process
-
-  PROCESS_SWITCH(v2ellip, processSE, "Process Same event", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<v2ellip>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<GfwPidflow>(cfgc)};
 }

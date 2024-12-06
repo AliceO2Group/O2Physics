@@ -32,6 +32,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   // ///////////////////////////////////////////////
   //   These are the Cuts used in the CEFP Task   //
   //   to select tracks in the event selection    //
+  //                                              //
+  //    see CutsLubrary.h for the description     //
   // ///////////////////////////////////////////////
   if (!nameStr.compare("Electron2022")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
@@ -40,25 +42,15 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
   if (!nameStr.compare("Electron2023")) {
-    cut->AddCut(GetAnalysisCut("jpsiStandardKine4"));
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
-    cut->AddCut(GetAnalysisCut("pidCut_lowP_Corr"));
-
-    AnalysisCompositeCut* pidCut_highP = new AnalysisCompositeCut("pidCut_highP", "pidCut_highP", kFALSE);
-    pidCut_highP->AddCut(GetAnalysisCut("EleInclusion_highP_Corr"));
-    pidCut_highP->AddCut(GetAnalysisCut("PionExclusion_highP_Corr"));
-    cut->AddCut(pidCut_highP);
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug5_noCorr"));
     return cut;
   }
-  if (!nameStr.compare("Electron2023_Tight")) {
-    cut->AddCut(GetAnalysisCut("jpsiStandardKine4"));
-    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
-    cut->AddCut(GetAnalysisCut("pidCut_lowP_Corr"));
-
-    AnalysisCompositeCut* pidCut_highP = new AnalysisCompositeCut("pidCut_highP", "pidCut_highP", kFALSE);
-    pidCut_highP->AddCut(GetAnalysisCut("EleInclusion_highP2_Corr"));
-    pidCut_highP->AddCut(GetAnalysisCut("PionExclusion_highP_Corr"));
-    cut->AddCut(pidCut_highP);
+  if (!nameStr.compare("LowMassElectron2023")) {
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("LooseGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("lmee_pp_502TeV_TOFloose_pionrej"));
     return cut;
   }
   if (!nameStr.compare("MuonLow2022")) {
@@ -66,15 +58,15 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
     return cut;
   }
-  if (!nameStr.compare("MuonLow2023")) {
-    cut->AddCut(GetAnalysisCut("muonLowPt2"));
-    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
-    cut->AddCut(GetAnalysisCut("MCHMID"));
-    return cut;
-  }
   if (!nameStr.compare("MuonHigh2022")) {
     cut->AddCut(GetAnalysisCut("muonHighPt2"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+  if (!nameStr.compare("MuonLow2023")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt2"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts10SigmaPDCA"));
+    cut->AddCut(GetAnalysisCut("MCHMID"));
     return cut;
   }
   if (!nameStr.compare("MuonHigh2023")) {

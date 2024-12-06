@@ -27,6 +27,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 
+#include "PWGLF/DataModel/mcCentrality.h"
+
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -52,12 +54,12 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Produces<o2::aod::HfBplusIds> rowCandidateId;
   Produces<o2::aod::HfBplusMcs> rowCandidateMc;
   // Collisions
-  Produces<o2::aod::HfCollBases> rowCollBase;
-  Produces<o2::aod::HfCollIds> rowCollId;
+  Produces<o2::aod::HfBplusCollBases> rowCollBase;
+  Produces<o2::aod::HfBplusCollIds> rowCollId;
   // MC collisions
-  Produces<o2::aod::HfMcCollBases> rowMcCollBase;
-  Produces<o2::aod::HfMcCollIds> rowMcCollId;
-  Produces<o2::aod::HfMcRCollIds> rowMcRCollId;
+  Produces<o2::aod::HfBplusMcCollBases> rowMcCollBase;
+  Produces<o2::aod::HfBplusMcCollIds> rowMcCollId;
+  Produces<o2::aod::HfBplusMcRCollIds> rowMcRCollId;
   // MC particles
   Produces<o2::aod::HfBplusPBases> rowParticleBase;
   Produces<o2::aod::HfBplusPIds> rowParticleId;
@@ -89,13 +91,13 @@ struct HfDerivedDataCreatorBplusToD0Pi {
 
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
-  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
   using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfCandBplusMcRec, aod::HfSelBplusToD0Pi>>;
   using SelectedCandidatesMl = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfMlBplusToD0Pi>>;
   using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfCandBplusMcRec, aod::HfSelBplusToD0Pi, aod::HfMlBplusToD0Pi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
-  using TypeMcCollisions = aod::McCollisions;
+  using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
   using THfCandDaughters = aod::HfCand2ProngWPid;
   using THfCandDaughtersMl = soa::Join<THfCandDaughters, aod::HfMlD0>;
 
@@ -165,7 +167,8 @@ struct HfDerivedDataCreatorBplusToD0Pi {
       rowMcCollBase(
         mcCollision.posX(),
         mcCollision.posY(),
-        mcCollision.posZ());
+        mcCollision.posZ(),
+        mcCollision.centFT0M());
     }
     if (fillMcCollId) {
       rowMcCollId(

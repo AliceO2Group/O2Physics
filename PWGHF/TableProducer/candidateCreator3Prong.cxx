@@ -404,10 +404,11 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
+      float occupancy = hfEvSel.getOccupancy(collision);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
 
     } /// end loop over collisions
   }
@@ -421,10 +422,11 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
+      float occupancy = hfEvSel.getOccupancy(collision);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
 
     } /// end loop over collisions
   }
@@ -438,10 +440,11 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
+      float occupancy = hfEvSel.getOccupancy(collision);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
 
     } /// end loop over collisions
   }
@@ -456,6 +459,7 @@ struct HfCandidateCreator3ProngExpressions {
 
   // Configuration
   o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
+  o2::framework::Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
 
   bool createDplus{false};
   bool createDs{false};
@@ -526,6 +530,7 @@ struct HfCandidateCreator3ProngExpressions {
     int8_t origin = 0;
     int8_t swapping = 0;
     int8_t channel = 0;
+    int8_t nKinkedTracks = 0;
     std::vector<int> arrDaughIndex;
     std::array<int, 2> arrPDGDaugh;
     std::array<int, 2> arrPDGResonant1 = {kProton, 313};      // Λc± → p± K*
@@ -558,14 +563,18 @@ struct HfCandidateCreator3ProngExpressions {
           }
         }
         if (fromBkg) {
-          rowMcMatchRec(flag, origin, swapping, channel, -1.f, 0);
+          rowMcMatchRec(flag, origin, swapping, channel, -1.f, 0, 0);
           continue;
         }
       }
 
       // D± → π± K∓ π±
       if (createDplus) {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+        if (matchKinkedDecayTopology) {
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks);
+        } else {
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+        }
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::DplusToPiKPi);
         }
@@ -574,10 +583,18 @@ struct HfCandidateCreator3ProngExpressions {
       // Ds± → K± K∓ π± and D± → K± K∓ π±
       if (flag == 0 && createDs) {
         bool isDplus = false;
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+        if (matchKinkedDecayTopology) {
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks);
+        } else {
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+        }
         if (indexRec == -1) {
           isDplus = true;
-          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+          if (matchKinkedDecayTopology) {
+            indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks);
+          } else {
+            indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+          }
         }
         if (indexRec > -1) {
           // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
@@ -603,7 +620,11 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Λc± → p± K∓ π±
       if (flag == 0 && createLc) {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        if (matchKinkedDecayTopology) {
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks);
+        } else {
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        }
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::LcToPKPi);
 
@@ -630,7 +651,11 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Ξc± → p± K∓ π±
       if (flag == 0 && createXic) {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        if (matchKinkedDecayTopology) {
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks);
+        } else {
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        }
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::XicToPKPi);
         }
@@ -643,9 +668,9 @@ struct HfCandidateCreator3ProngExpressions {
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        rowMcMatchRec(flag, origin, swapping, channel, bHadMother.pt(), bHadMother.pdgCode());
+        rowMcMatchRec(flag, origin, swapping, channel, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks);
       } else {
-        rowMcMatchRec(flag, origin, swapping, channel, -1.f, 0);
+        rowMcMatchRec(flag, origin, swapping, channel, -1.f, 0, nKinkedTracks);
       }
     }
 

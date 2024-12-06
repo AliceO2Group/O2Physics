@@ -141,6 +141,7 @@ struct hstrangecorrelationfilter {
   Produces<aod::AssocPions> assocPion;
   Produces<aod::AssocV0s> assocV0;
   Produces<aod::AssocCascades> assocCascades;
+  Produces<aod::AssocHadrons> assocHadrons;
 
   TF1* fK0Mean = new TF1("fK0Mean", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
   TF1* fK0Width = new TF1("fK0Width", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
@@ -314,7 +315,41 @@ struct hstrangecorrelationfilter {
           continue;
       }
 
-      assocPion(
+      assocHadrons(
+        track.collisionId(),
+        track.globalIndex());
+    }
+  }
+
+  void processAssocHadrons(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>> const& tracks)
+  {
+    // Perform basic event selection
+    if (!collision.sel8()) {
+      return;
+    }
+    // No need to correlate stuff that's in far collisions
+    if (TMath::Abs(collision.posZ()) > 10.0) {
+      return;
+    }
+
+    /// _________________________________________________
+    /// Step 1: Populate table with trigger tracks
+    for (auto const& track : tracks) {
+      if (track.eta() > assocEtaMax || track.eta() < assocEtaMin) {
+        continue;
+      }
+      // if (track.sign()= 1 ) {continue;}
+      if (track.pt() > assocPtCutMax || track.pt() < assocPtCutMin) {
+        continue;
+      }
+      if (track.tpcNClsCrossedRows() < minTPCNCrossedRows) {
+        continue; // crossed rows
+      }
+      if (!track.hasITS() && triggerRequireITS) {
+        continue; // skip, doesn't have ITS signal (skips lots of TPC-only!)
+      }
+
+      assocHadrons(
         track.collisionId(),
         track.globalIndex());
     }
@@ -494,6 +529,7 @@ struct hstrangecorrelationfilter {
   PROCESS_SWITCH(hstrangecorrelationfilter, processV0s, "Produce associated V0 tables", true);
   PROCESS_SWITCH(hstrangecorrelationfilter, processAssocPions, "Produce associated Pion tables", true);
   PROCESS_SWITCH(hstrangecorrelationfilter, processCascades, "Produce associated cascade tables", true);
+  PROCESS_SWITCH(hstrangecorrelationfilter, processAssocHadrons, "Produce associated Hadron tables", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
