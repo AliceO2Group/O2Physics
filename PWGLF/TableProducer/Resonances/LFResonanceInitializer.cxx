@@ -46,7 +46,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 
 /// Initializer for the resonance candidate producers
-struct reso2initializer {
+struct ResO2Initializer {
   SliceCache cache;
   int mRunNumber;
   int multEstimator;
@@ -125,7 +125,7 @@ struct reso2initializer {
   Configurable<double> cMinV0CosPA{"cMinV0CosPA", 0.995, "Minimum V0 CosPA to PV"};
 
   /// DCA Selections for Cascades
-  Configurable<int> mincrossedrows_cascbach{"mincrossedrows_cascbach", 70, "min crossed rows for bachelor track from cascade"};
+  Configurable<int> cfgMinCrossedRowsCascBach{"cfgMinCrossedRowsCascBach", 70, "min crossed rows for bachelor track from cascade"};
   Configurable<double> cMinCascBachDCArToPVcut{"cMinCascBachDCArToPVcut", 0.05f, "Cascade Bachelor Track DCAr cut to PV Minimum"};  // Pre-selection
   Configurable<double> cMaxCascBachDCArToPVcut{"cMaxCascBachDCArToPVcut", 999.0f, "Cascade Bachelor Track DCAr cut to PV Maximum"}; // Pre-selection
   Configurable<double> cMaxCascDCAV0Daughters{"cMaxCascDCAV0Daughters", 1.6, "Cascade DCA between V0 daughters Maximum"};
@@ -271,7 +271,7 @@ struct reso2initializer {
     // auto trackNeg = casc.template negTrack_as<TrackType>();
 
     // track cuts
-    if (trackBach.tpcNClsCrossedRows() < mincrossedrows_cascbach)
+    if (trackBach.tpcNClsCrossedRows() < cfgMinCrossedRowsCascBach)
       return false;
     if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodCascIndices"), 1.5);
@@ -426,7 +426,7 @@ struct reso2initializer {
   }
 
   template <typename ResoColl>
-  float GetEvtPl(ResoColl ResoEvents)
+  float getEvtPl(ResoColl ResoEvents)
   {
     float returnValue = -999.0;
     if (ResoEvents.qvecAmp()[evtPlDetId] > 1e-8)
@@ -435,7 +435,7 @@ struct reso2initializer {
   }
 
   template <typename ResoColl>
-  float GetEvtPlRes(ResoColl ResoEvents, int a, int b)
+  float getEvtPlRes(ResoColl ResoEvents, int a, int b)
   {
     float returnValue = -999.0;
     if (ResoEvents.qvecAmp()[a] < 1e-8 || ResoEvents.qvecAmp()[b] < 1e-8)
@@ -632,7 +632,7 @@ struct reso2initializer {
     std::vector<int> mothers = {-1, -1};
     std::vector<int> motherPDGs = {-1, -1};
     int siblings[2] = {0, 0};
-    std::vector<int> siblings_temp = {-1, -1};
+    std::vector<int> siblingsTemp = {-1, -1};
     if (track.has_mcParticle()) {
       //
       // Get the MC particle
@@ -640,16 +640,16 @@ struct reso2initializer {
       if (particle.has_mothers()) {
         mothers = getMothersIndeces(particle);
         motherPDGs = getMothersPDGCodes(particle);
-        siblings_temp = getSiblingsIndeces(particle);
+        siblingsTemp = getSiblingsIndeces(particle);
       }
       while (mothers.size() > 2) {
         mothers.pop_back();
         motherPDGs.pop_back();
       }
-      if (siblings_temp.size() > 0)
-        siblings[0] = siblings_temp[0];
-      if (siblings_temp.size() > 1)
-        siblings[1] = siblings_temp[1];
+      if (siblingsTemp.size() > 0)
+        siblings[0] = siblingsTemp[0];
+      if (siblingsTemp.size() > 1)
+        siblings[1] = siblingsTemp[1];
       reso2mctracks(particle.pdgCode(),
                     mothers[0],
                     motherPDGs[0],
@@ -1013,23 +1013,23 @@ struct reso2initializer {
       return;
     }
 
-    auto run3grp_timestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    auto run3GRPTimestamp = bc.timestamp();
+    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3GRPTimestamp);
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       // Fetch magnetic field from ccdb for current collision
       dBz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << dBz << " kZG";
+      LOG(info) << "Retrieved GRP for timestamp " << run3GRPTimestamp << " with magnetic field of " << dBz << " kZG";
     } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3GRPTimestamp);
       if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3GRPTimestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
       // Fetch magnetic field from ccdb for current collision
       dBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << dBz << " kZG";
+      LOG(info) << "Retrieved GRP for timestamp " << run3GRPTimestamp << " with magnetic field of " << dBz << " kZG";
     }
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
@@ -1051,7 +1051,7 @@ struct reso2initializer {
 
     fillTracks<false>(collision, tracks);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackData, "Process for data", true);
+  PROCESS_SWITCH(ResO2Initializer, processTrackData, "Process for data", true);
 
   void processTrackDataRun2(ResoRun2Events::iterator const& collision,
                             soa::Filtered<ResoTracks> const& tracks,
@@ -1067,7 +1067,7 @@ struct reso2initializer {
 
     fillTracks<false>(collision, tracks);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackDataRun2, "Process for data", false);
+  PROCESS_SWITCH(ResO2Initializer, processTrackDataRun2, "Process for data", false);
 
   void processTrackEPData(soa::Join<ResoEvents, aod::Qvectors>::iterator const& collision,
                           soa::Filtered<ResoTracks> const& tracks,
@@ -1080,11 +1080,11 @@ struct reso2initializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), computeSpherocity(tracks, trackSphMin, trackSphDef), GetEvtPl(collision), GetEvtPlRes(collision, evtPlDetId, evtPlRefAId), GetEvtPlRes(collision, evtPlDetId, evtPlRefBId), GetEvtPlRes(collision, evtPlRefAId, evtPlRefBId), dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), computeSpherocity(tracks, trackSphMin, trackSphDef), getEvtPl(collision), getEvtPlRes(collision, evtPlDetId, evtPlRefAId), getEvtPlRes(collision, evtPlDetId, evtPlRefBId), getEvtPlRes(collision, evtPlRefAId, evtPlRefBId), dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
 
     fillTracks<false>(collision, tracks);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackEPData, "Process for data and ep ana", false);
+  PROCESS_SWITCH(ResO2Initializer, processTrackEPData, "Process for data and ep ana", false);
 
   void processTrackV0Data(ResoEvents::iterator const& collision,
                           soa::Filtered<ResoTracks> const& tracks,
@@ -1103,7 +1103,7 @@ struct reso2initializer {
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackV0Data, "Process for data", false);
+  PROCESS_SWITCH(ResO2Initializer, processTrackV0Data, "Process for data", false);
 
   void processTrackV0DataRun2(ResoRun2Events::iterator const& collision,
                               soa::Filtered<ResoTracks> const& tracks,
@@ -1121,7 +1121,7 @@ struct reso2initializer {
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackV0DataRun2, "Process for data", false);
+  PROCESS_SWITCH(ResO2Initializer, processTrackV0DataRun2, "Process for data", false);
 
   void processTrackV0CascData(ResoEvents::iterator const& collision,
                               soa::Filtered<ResoTracks> const& tracks,
@@ -1142,7 +1142,7 @@ struct reso2initializer {
     fillV0s<false>(collision, V0s, tracks);
     fillCascades<false>(collision, Cascades, tracks);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackV0CascData, "Process for data", false);
+  PROCESS_SWITCH(ResO2Initializer, processTrackV0CascData, "Process for data", false);
 
   void processTrackV0CascDataRun2(ResoRun2Events::iterator const& collision,
                                   soa::Filtered<ResoTracks> const& tracks,
@@ -1162,7 +1162,7 @@ struct reso2initializer {
     fillV0s<false>(collision, V0s, tracks);
     fillCascades<false>(collision, Cascades, tracks);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackV0CascDataRun2, "Process for data", false);
+  PROCESS_SWITCH(ResO2Initializer, processTrackV0CascDataRun2, "Process for data", false);
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   void processTrackMC(soa::Join<ResoEvents, aod::McCollisionLabels>::iterator const& collision,
@@ -1186,7 +1186,7 @@ struct reso2initializer {
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackMC, "Process for MC", false);
+  PROCESS_SWITCH(ResO2Initializer, processTrackMC, "Process for MC", false);
 
   void processTrackEPMC(soa::Join<ResoEvents, aod::Qvectors, aod::McCollisionLabels>::iterator const& collision,
                         aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
@@ -1196,7 +1196,7 @@ struct reso2initializer {
     initCCDB(bc);
     colCuts.fillQA(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), computeSpherocity(tracks, trackSphMin, trackSphDef), GetEvtPl(collision), GetEvtPlRes(collision, evtPlDetId, evtPlRefAId), GetEvtPlRes(collision, evtPlDetId, evtPlRefBId), GetEvtPlRes(collision, evtPlRefAId, evtPlRefBId), dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), computeSpherocity(tracks, trackSphMin, trackSphDef), getEvtPl(collision), getEvtPlRes(collision, evtPlDetId, evtPlRefAId), getEvtPlRes(collision, evtPlDetId, evtPlRefBId), getEvtPlRes(collision, evtPlRefAId, evtPlRefBId), dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
     fillMCCollision<false>(collision, mcParticles);
 
     // Loop over tracks
@@ -1205,7 +1205,7 @@ struct reso2initializer {
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackEPMC, "Process for MC and ep ana", false);
+  PROCESS_SWITCH(ResO2Initializer, processTrackEPMC, "Process for MC and ep ana", false);
 
   Preslice<aod::McParticles> perMcCollisionRun2 = aod::mcparticle::mcCollisionId;
   void processTrackMCRun2(soa::Join<ResoRun2Events, aod::McCollisionLabels>::iterator const& collision,
@@ -1225,7 +1225,7 @@ struct reso2initializer {
     auto mcParts = selectedMCParticles->sliceBy(perMcCollisionRun2, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackMCRun2, "Process for MC", false);
+  PROCESS_SWITCH(ResO2Initializer, processTrackMCRun2, "Process for MC", false);
 
   void processTrackV0MC(soa::Join<ResoEvents, aod::McCollisionLabels>::iterator const& collision,
                         aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
@@ -1247,7 +1247,7 @@ struct reso2initializer {
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackV0MC, "Process for MC", false);
+  PROCESS_SWITCH(ResO2Initializer, processTrackV0MC, "Process for MC", false);
 
   void processTrackV0MCRun2(soa::Join<ResoRun2Events, aod::McCollisionLabels>::iterator const& collision,
                             aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
@@ -1268,7 +1268,7 @@ struct reso2initializer {
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackV0MCRun2, "Process for MC", false);
+  PROCESS_SWITCH(ResO2Initializer, processTrackV0MCRun2, "Process for MC", false);
 
   void processTrackV0CascMC(soa::Join<ResoEvents, aod::McCollisionLabels>::iterator const& collision,
                             aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
@@ -1293,7 +1293,7 @@ struct reso2initializer {
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackV0CascMC, "Process for MC", false);
+  PROCESS_SWITCH(ResO2Initializer, processTrackV0CascMC, "Process for MC", false);
 
   void processTrackV0CascMCRun2(soa::Join<ResoRun2Events, aod::McCollisionLabels>::iterator const& collision,
                                 aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
@@ -1317,12 +1317,12 @@ struct reso2initializer {
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackV0CascMCRun2, "Process for MC", false);
+  PROCESS_SWITCH(ResO2Initializer, processTrackV0CascMCRun2, "Process for MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<reso2initializer>(cfgc, TaskName{"lf-reso2initializer"}),
+    adaptAnalysisTask<ResO2Initializer>(cfgc, TaskName{"lf-ResO2Initializer"}),
   };
 }
