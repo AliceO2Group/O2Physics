@@ -138,7 +138,7 @@ struct eventWiseConstituentSubtractorTask {
       particleSubtractedTable(mcCollision.globalIndex(), trackSubtracted.pt(), trackSubtracted.eta(), trackSubtracted.phi(), trackSubtracted.rap(), trackSubtracted.e(), 211, 1, 1, 1); // everything after phi is artificial and should not be used for analyses
     }
   }
-  PROCESS_SWITCH(eventWiseConstituentSubtractorTask, processMcCollisions, "Fill table of subtracted tracks for Mc collisions", true);
+  PROCESS_SWITCH(eventWiseConstituentSubtractorTask, processMcCollisions, "Fill table of subtracted tracks for Mc collisions", false);
 
   void processD0Collisions(aod::JetCollision const&, soa::Filtered<aod::JetTracks> const& tracks, soa::Join<aod::CandidatesD0Data, aod::BkgD0Rhos> const& candidates)
   {
