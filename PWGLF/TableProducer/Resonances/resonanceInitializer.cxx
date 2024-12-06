@@ -38,11 +38,15 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "CommonConstants/MathConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using namespace o2::constants::physics;
+using namespace o2::constants::math;
 
 /// Initializer for the resonance candidate producers
 struct ResonanceInitializer {
@@ -416,12 +420,12 @@ struct ResonanceInitializer {
         // sum += pt * abs(sin(phiparm - phi));
         sum += std::abs(px * ny - py * nx);
       }
-      float sph = std::power((sum / ptSum), 2);
+      float sph = std::pow((sum / ptSum), 2);
       if (sph < tempSph)
         tempSph = sph;
     }
 
-    return std::power(PIHalf, 2) * tempSph;
+    return std::pow(PIHalf, 2) * tempSph;
   }
 
   template <typename ResoColl>
