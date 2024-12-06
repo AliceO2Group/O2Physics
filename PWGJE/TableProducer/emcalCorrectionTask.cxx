@@ -861,8 +861,8 @@ struct EmcalCorrectionTask {
           timeshift = 1.9;                                      // Parameters extracted from LHC24aj (pp), but also usable for other periods
       }
       LOG(debug) << "Shift the cell time by " << timeshift << " + " << timesmear << " ns";
-      return timeshift + timesmear;
     }
+    return timeshift + timesmear;
   };
 };
 
