@@ -24,8 +24,6 @@
 #include "Framework/Logger.h"
 #include "Common/DataModel/EventSelection.h"
 
-using namespace o2::framework;
-
 namespace o2::analysis
 {
 
