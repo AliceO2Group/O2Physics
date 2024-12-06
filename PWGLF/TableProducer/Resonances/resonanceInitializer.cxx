@@ -8,12 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
+///
 /// \file resonanceInitializer.cxx
 /// \brief Initializes variables for the resonance candidate producers
-///
-///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
+///
 
 #include <string>
 #include <vector>
