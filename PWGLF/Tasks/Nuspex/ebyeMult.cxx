@@ -373,8 +373,8 @@ struct EbyeMult {
       }
     }
 
-    histos.fill(HIST("QA/nTrklCorrelation"), nTracklets[0], nTracklets[1]);
-    histos.fill(HIST("QA/nV0MCorrelation"), nTracklets[0], centrality);
+    histos.fill(HIST("QA/nTrklCorrelation"), nTracklets[1], nTracklets[0]);
+    histos.fill(HIST("QA/nV0MCorrelation"), centrality, nTracklets[0]);
     nTrackletsColl = nTracklets[1];
 
     candidateEvent.nTklRec = nTracklets[0];
@@ -396,7 +396,7 @@ struct EbyeMult {
       auto mcLab = mcLabels.rawIteratorAt(candidateTracks[iT].globalIndex);
       if (mcLab.has_mcParticle()) {
         auto mcTrack = mcLab.template mcParticle_as<aod::McParticles>();
-        if (((mcTrack.flags() & 0x8) && (doprocessMcRun2)) || (mcTrack.flags() & 0x2))
+        if (((mcTrack.flags() & 0x8) && (doprocessMcRun2)) || (mcTrack.flags() & 0x2) || (mcTrack.flags() & 0x1))
           continue;
         if (!mcTrack.isPhysicalPrimary()) {
           if (mcTrack.has_mothers()) { // sec WD
@@ -442,7 +442,7 @@ struct EbyeMult {
       if (std::abs(genEta) > etaMax) {
         continue;
       }
-      if (((mcPart.flags() & 0x8) && (doprocessMcRun2)) || (mcPart.flags() & 0x2))
+      if (((mcPart.flags() & 0x8) && (doprocessMcRun2)) || (mcPart.flags() & 0x2) || (mcPart.flags() & 0x1))
         continue;
       if (!mcPart.isPhysicalPrimary() /* && !mcPart.has_mothers() */)
         continue;
@@ -485,7 +485,7 @@ struct EbyeMult {
     int partInAcc = 0;
     auto particlesThisCollision = particles.sliceBy(perCollisionMcParts, collision.globalIndex());
     for (auto const& particle : particlesThisCollision) {
-      if (((particle.flags() & 0x8) && (doprocessMcRun2)) || (particle.flags() & 0x2))
+      if (((particle.flags() & 0x8) && (doprocessMcRun2)) || (particle.flags() & 0x2) || (particle.flags() & 0x1))
         continue;
       if (!particle.isPhysicalPrimary() /* && !particle.has_mothers() */)
         continue;
