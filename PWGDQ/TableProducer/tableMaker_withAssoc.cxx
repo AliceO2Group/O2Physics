@@ -541,11 +541,11 @@ struct TableMaker {
     fOccup.oContribShortA.clear();
     fOccup.oContribShortC.clear();
 
-    std::map<int32_t, int64_t> oBC;                      // key: collision index; value: global BC
+    std::map<int64_t, int64_t> oBC;                      // key: collision index; value: global BC
     std::map<int64_t, std::vector<int64_t>> oBCreversed; // key: global BC, value: list of collisions attached to this BC
-    std::map<int32_t, float> oVtxZ;                      // key: collision index; value: vtx-z position
-    std::map<int32_t, int32_t> collMultPos;              // key: collision index; value: tpc multiplicity on the A side
-    std::map<int32_t, int32_t> collMultNeg;              // key: collision index; value: tpc multiplicity on the C side
+    std::map<int64_t, float> oVtxZ;                      // key: collision index; value: vtx-z position
+    std::map<int64_t, int32_t> collMultPos;              // key: collision index; value: tpc multiplicity on the A side
+    std::map<int64_t, int32_t> collMultNeg;              // key: collision index; value: tpc multiplicity on the C side
 
     const double bcUS = o2::constants::lhc::LHCBunchSpacingNS / 1000.0;               // BC spacing in micro-seconds
     const double vdrift = 2.5;                                                        // cm / mus
