@@ -17,6 +17,7 @@
 
 #include <string>
 #include <vector>
+#include <cmath>
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
@@ -317,7 +318,7 @@ struct reso2initializer {
 
     // Casc mass
     auto cascMass = casc.mXi();
-    if (abs(cascMass - cXiMass) > cCascMassResol)
+    if (std::abs(cascMass - cXiMass) > cCascMassResol)
       return false;
     if (ConfFillQA)
       qaRegistry.fill(HIST("hGoodCascIndices"), 7.5);
@@ -405,26 +406,26 @@ struct reso2initializer {
     float tempSph = 1.;
     for (int i = 0; i < 360 / 0.1; ++i) {
       float sum = 0., pt = 0.;
-      float phiparm = (TMath::Pi() * i * 0.1) / 180.;
-      float nx = TMath::Cos(phiparm);
-      float ny = TMath::Sin(phiparm);
+      float phiparm = (M_PI * i * 0.1) / 180.;
+      float nx = std::cos(phiparm);
+      float ny = std::sin(phiparm);
       for (auto const& trk : tracks) {
         pt = trk.pt();
         if (spdef == 0) {
           pt = 1.;
         }
         float phi = trk.phi();
-        float px = pt * TMath::Cos(phi);
-        float py = pt * TMath::Sin(phi);
+        float px = pt * std::cos(phi);
+        float py = pt * std::sin(phi);
         // sum += pt * abs(sin(phiparm - phi));
-        sum += TMath::Abs(px * ny - py * nx);
+        sum += std::abs(px * ny - py * nx);
       }
       float sph = TMath::Power((sum / ptSum), 2);
       if (sph < tempSph)
         tempSph = sph;
     }
 
-    return TMath::Power(TMath::Pi() / 2., 2) * tempSph;
+    return TMath::Power(M_PI / 2., 2) * tempSph;
   }
 
   template <typename ResoColl>
