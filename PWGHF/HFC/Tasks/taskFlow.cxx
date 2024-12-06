@@ -11,7 +11,7 @@
 
 /// \file taskFlow.cxx
 /// \brief HF-h correlations in TPC-TPC and TPC-MFT
-/// \author Alexian Lejeune <alexian.lejeune@cern.ch>, Czech Technical University in Prague
+/// \author Alexian Lejeune <alexian.lejeune@cern.ch >, Czech Technical University in Prague
 /// \author Katarina Krizkova Gajdosova <katarina.gajdosova@cern.ch>, CERN
 /// \author Maja Kabus <maja.kabus@cern.ch>, CERN
 
@@ -79,9 +79,9 @@ struct HfTaskFlow {
   Configurable<double> etaMftTrackMin{"etaMftTrackMin", -5, "Minimum value for the eta of MFT tracks"};
   Configurable<int> nClustersMftTrack{"nClustersMftTrack", 5, "Minimum number of clusters for the reconstruction of MFT tracks"};
 
-  SliceCache cache;
   Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
+  SliceCache cache;
 
   // =========================
   //      using declarations : DATA
@@ -1432,7 +1432,8 @@ struct HfTaskFlow {
     //  options are ran at the same time
     //  temporary solution, since other correlation options always have to be ran with h-h, too
     //  TODO: rewrite it in a more intelligent way
-    const auto multiplicity = tracks.size();
+    // const auto multiplicity = tracks.size();
+    const auto multiplicity = collision.multNTracksPV();
     registry.fill(HIST("Data/TpcTpc/HadronHadron/SameEvent/hMultiplicity"), multiplicity);
     registry.fill(HIST("Data/TpcTpc/HadronHadron/SameEvent/hVtxZ"), collision.posZ());
 
@@ -1465,8 +1466,7 @@ struct HfTaskFlow {
       return;
     }
 
-    // const auto multiplicity = candidates.size(); // This in fact gives the number of candidates in the collisions, not the #tracks in the collision where there was a candidate
-    const auto multiplicity = tracks.size();
+    const auto multiplicity = collision.multNTracksPV();
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
     int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hEventCountSame"), bin);
@@ -1495,8 +1495,7 @@ struct HfTaskFlow {
       return;
     }
 
-    // const auto multiplicity = candidates.size();
-    const auto multiplicity = tracks.size();
+    const auto multiplicity = collision.multNTracksPV();
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
     int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hEventCountSame"), bin);
@@ -1519,14 +1518,14 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicityTPC = tracks.size();
+    const auto multiplicity = collision.multNTracksPV();
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
-    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicityTPC));
+    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hEventCountSame"), bin);
 
-    sameTPCMFTChCh->fillEvent(multiplicityTPC, CorrelationContainer::kCFStepReconstructed);
+    sameTPCMFTChCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTChCh, tracks, mftTracks, multiplicityTPC, collision.posZ(), true);
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTChCh, tracks, mftTracks, multiplicity, collision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftChCh, "DATA : Process same-event correlations for TPC-MFT h-h case", false);
 
@@ -1549,8 +1548,7 @@ struct HfTaskFlow {
       return;
     }
 
-    // const auto multiplicity = candidates.size();
-    const auto multiplicity = tracks.size();
+    const auto multiplicity = collision.multNTracksPV();
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
     int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hEventCountSame"), bin);
@@ -1580,8 +1578,7 @@ struct HfTaskFlow {
       return;
     }
 
-    // const auto multiplicityCandidates = candidates.size();
-    const auto multiplicity = tracks.size();
+    const auto multiplicity = collision.multNTracksPV();
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
     int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hEventCountSame"), bin);
@@ -1605,7 +1602,7 @@ struct HfTaskFlow {
     //  return;
     //}
 
-    const auto multiplicity = mcTracks.size();
+    const auto multiplicity = mcCollision.multNTracksPV();
     registry.fill(HIST("MC/Rec/TpcTpc/HadronHadron/SameEvent/hMultiplicity"), multiplicity);
     registry.fill(HIST("MC/Rec/TpcTpc/HadronHadron/SameEvent/hVtxZ"), mcCollision.posZ());
 
@@ -1639,7 +1636,9 @@ struct HfTaskFlow {
     //   return;
     // }
 
+    // TODO : check if I have to get my multiplicity based on multNTracksPV or mcParticles.size()
     const auto multiplicity = mcParticles.size(); // Note: these are all MC particles after selection (not only primary)
+    // const auto multiplicity = collision.multNTracksPV();
     registry.fill(HIST("MC/Gen/TpcTpc/HadronHadron/SameEvent/hMultiplicity"), multiplicity);
     registry.fill(HIST("MC/Gen/TpcTpc/HadronHadron/SameEvent/hVtxZ"), mcCollision.posZ());
 
@@ -1672,13 +1671,19 @@ struct HfTaskFlow {
                               TracksWDcaSel const& tracks)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
-      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache); // it's cached, so slicing/grouping happens only once
-      auto size = associatedTracks.size();
-      return size;
+    // auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
+    //   auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache); // it's cached, so slicing/grouping happens only once
+    //   auto size = associatedTracks.size();
+    //   return size;
+    //  };
+
+    auto getMultiplicity = [&collisions, this](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto multiplicity = collision.numContrib();
+      return multiplicity;
     };
 
-    mixCollisions(collisions, tracks, tracks, getTracksSize, mixedTPCTPCChCh);
+    // mixCollisions(collisions, tracks, tracks, getTracksSize, mixedTPCTPCChCh);
+    mixCollisions(collisions, tracks, tracks, getMultiplicity, mixedTPCTPCChCh);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcTpcChCh, "DATA : Process mixed-event correlations for TPC-TPC h-h case", false);
 
@@ -1691,14 +1696,12 @@ struct HfTaskFlow {
                               HfCandidatesSelD0 const& candidates)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
-      // Still o2::aod::track::collisionId with HF ??? -> I don't think so
-      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
-      auto size = associatedTracks.size();
-      return size;
+    auto getMultiplicity = [&collisions, this](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto multiplicity = collision.numContrib();
+      return multiplicity;
     };
 
-    mixCollisions(collisions, candidates, tracks, getTracksSize, mixedTPCTPCHfCh);
+    mixCollisions(collisions, candidates, tracks, getMultiplicity, mixedTPCTPCHfCh);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcTpcD0Ch, "DATA : Process mixed-event correlations for TPC-TPC D0-h case", false);
 
@@ -1731,13 +1734,18 @@ struct HfTaskFlow {
                               aod::MFTTracks const& mftTracks)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&mftTracks, this](FilteredCollisionsWSelMult::iterator const& col) {
-      auto associatedTracks = mftTracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
-      auto size = associatedTracks.size();
-      return size;
+    // auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
+    //   auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
+    //   auto size = associatedTracks.size();
+    //   return size;
+    // };
+
+    auto getMultiplicity = [&collisions, this](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto multiplicity = collision.numContrib();
+      return multiplicity;
     };
 
-    mixCollisions(collisions, tracks, mftTracks, getTracksSize, mixedTPCMFTChCh);
+    mixCollisions(collisions, tracks, mftTracks, getMultiplicity, mixedTPCMFTChCh);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftChCh, "DATA : Process mixed-event correlations for TPC-MFT h-h case", false);
 
@@ -1751,14 +1759,12 @@ struct HfTaskFlow {
                               TracksWDcaSel const& tracks)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
-      // Still o2::aod::track::collisionId with HF ??? -> I don't think so
-      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
-      auto size = associatedTracks.size();
-      return size;
+    auto getMultiplicity = [&collisions, this](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto multiplicity = collision.numContrib();
+      return multiplicity;
     };
 
-    mixCollisions(collisions, candidates, mftTracks, getTracksSize, mixedTPCMFTHfCh);
+    mixCollisions(collisions, candidates, mftTracks, getMultiplicity, mixedTPCMFTHfCh);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftD0Ch, "DATA : Process mixed-event correlations for TPC-MFT D0-h case", false);
 
@@ -1772,14 +1778,12 @@ struct HfTaskFlow {
   {
 
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&mftTracks, this](FilteredCollisionsWSelMult::iterator const& col) {
-      // Still o2::aod::track::collisionId with HF ??? -> I don't think so
-      auto associatedTracks = mftTracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
-      auto size = associatedTracks.size();
-      return size;
+    auto getMultiplicity = [&collisions, this](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto multiplicity = collision.numContrib();
+      return multiplicity;
     };
 
-    mixCollisions(collisions, candidates, mftTracks, getTracksSize, mixedTPCMFTHfCh);
+    mixCollisions(collisions, candidates, mftTracks, getMultiplicity, mixedTPCMFTHfCh);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftLcCh, "DATA : Process mixed-event correlations for TPC-MFT Lc-h case", false);
 
