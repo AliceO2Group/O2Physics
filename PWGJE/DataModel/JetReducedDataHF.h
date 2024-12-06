@@ -129,16 +129,6 @@ DECLARE_SOA_TABLE_STAGED(JBplusPIds, "JBPPID",
                          jbplusindices::JMcCollisionId,
                          jbplusindices::JMcParticleId);
 
-namespace jdummybplus
-{
-
-DECLARE_SOA_COLUMN(DummyBplus, dummyBplus, bool);
-
-} // namespace jdummybplus
-DECLARE_SOA_TABLE(JDumBplusSels, "AOD", "JDUMBPUSSEL",
-                  jdummybplus::DummyBplus,
-                  o2::soa::Marker<1>);
-
 } // namespace o2::aod
 
 #endif // PWGJE_DATAMODEL_JETREDUCEDDATAHF_H_
