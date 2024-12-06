@@ -74,9 +74,9 @@ struct reso2initializer {
   Configurable<bool> cfgFatalWhenNull{"cfgFatalWhenNull", true, "Fatal when null on ccdb access"};
 
   // Configurables
-  Configurable<double> dBz_input{"dBz", -999, "bz field, -999 is automatic"};
-  Configurable<bool> ConfFillQA{"ConfFillQA", false, "Fill QA histograms"};
-  Configurable<bool> ConfBypassCCDB{"ConfBypassCCDB", true, "Bypass loading CCDB part to save CPU time and memory"}; // will be affected to b_z value.
+  Configurable<double> dBzInput{"dBz", -999, "bz field, -999 is automatic"};
+  Configurable<bool> cfgFillQA{"cfgFillQA", false, "Fill QA histograms"};
+  Configurable<bool> cfgBypassCCDB{"cfgBypassCCDB", true, "Bypass loading CCDB part to save CPU time and memory"}; // will be affected to b_z value.
 
   // Track filter from tpcSkimsTableCreator
   Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
@@ -88,22 +88,22 @@ struct reso2initializer {
 
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
-  Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
-  Configurable<int> ConfEvtOccupancyInTimeRange{"ConfEvtOccupancyInTimeRange", -1, "Evt sel: maximum track occupancy"};
-  Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", false, "Evt sel: check for trigger"};
-  Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", 8, "Evt sel: trigger"};
-  Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", true, "Evt sel: check for offline selection"};
-  Configurable<bool> ConfEvtTriggerTVXSel{"ConfEvtTriggerTVXSel", false, "Evt sel: triggerTVX selection (MB)"};
-  Configurable<bool> ConfEvtTFBorderCut{"ConfEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
-  Configurable<bool> ConfEvtUseITSTPCvertex{"ConfEvtUseITSTPCvertex", false, "Evt sel: use at lease on ITS-TPC track for vertexing"};
-  Configurable<bool> ConfEvtZvertexTimedifference{"ConfEvtZvertexTimedifference", false, "Evt sel: apply Z-vertex time difference"};
-  Configurable<bool> ConfEvtPileupRejection{"ConfEvtPileupRejection", false, "Evt sel: apply pileup rejection"};
-  Configurable<bool> ConfEvtNoITSROBorderCut{"ConfEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
+  Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+  Configurable<int> cfgEvtOccupancyInTimeRange{"cfgEvtOccupancyInTimeRange", -1, "Evt sel: maximum track occupancy"};
+  Configurable<bool> cfgEvtTriggerCheck{"cfgEvtTriggerCheck", false, "Evt sel: check for trigger"};
+  Configurable<int> cfgEvtTriggerSel{"cfgEvtTriggerSel", 8, "Evt sel: trigger"};
+  Configurable<bool> cfgEvtOfflineCheck{"cfgEvtOfflineCheck", true, "Evt sel: check for offline selection"};
+  Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", false, "Evt sel: triggerTVX selection (MB)"};
+  Configurable<bool> cfgEvtTFBorderCut{"cfgEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
+  Configurable<bool> cfgEvtUseITSTPCvertex{"cfgEvtUseITSTPCvertex", false, "Evt sel: use at lease on ITS-TPC track for vertexing"};
+  Configurable<bool> cfgEvtZvertexTimedifference{"cfgEvtZvertexTimedifference", false, "Evt sel: apply Z-vertex time difference"};
+  Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", false, "Evt sel: apply pileup rejection"};
+  Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
 
   Configurable<std::string> cfgMultName{"cfgMultName", "FT0M", "The name of multiplicity estimator"};
 
   // Qvector configuration
-  Configurable<bool> ConfBypassQvec{"ConfBypassQvec", true, "Bypass for qvector task"};
+  Configurable<bool> cfgBypassQvec{"cfgBypassQvec", true, "Bypass for qvector task"};
   Configurable<int> cfgEvtPl{"cfgEvtPl", 40500, "Configuration of three subsystems for the event plane and its resolution, 10000*RefA + 100*RefB + S, where FT0C:0, FT0A:1, FT0M:2, FV0A:3, BPos:5, BNeg:6"};
 
   // Pre-selection cuts
@@ -193,26 +193,26 @@ struct reso2initializer {
   bool IsTrackSelected(CollisionType const&, TrackType const& track)
   {
     // Track selection
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodTrackIndices"), 0.5);
     // MC case can be handled here
     if constexpr (isMC) {
       // MC check
-      if (ConfFillQA)
+      if (cfgFillQA)
         qaRegistry.fill(HIST("hGoodMCTrackIndices"), 0.5);
     }
     // DCAxy cut
     if (std::fabs(track.dcaXY()) > cMaxDCArToPVcut)
       return false;
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodTrackIndices"), 1.5);
     // DCAz cut
     if (std::fabs(track.dcaZ()) > cMaxDCAzToPVcut || std::fabs(track.dcaZ()) < cMinDCAzToPVcut)
       return false;
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodTrackIndices"), 2.5);
 
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodTrackIndices"), 7.5);
     return true;
   }
@@ -221,7 +221,7 @@ struct reso2initializer {
   bool IsV0Selected(CollisionType const&, V0Type const& v0, TrackType const&)
   {
     // V0 selection
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodV0Indices"), 0.5);
 
     auto postrack = v0.template posTrack_as<TrackType>();
@@ -231,29 +231,29 @@ struct reso2initializer {
       return false;
     if (negtrack.tpcNClsCrossedRows() < mincrossedrows)
       return false;
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodV0Indices"), 1.5);
 
     if (std::fabs(postrack.dcaXY()) < cMinV0PosDCArToPVcut)
       return false;
     if (std::fabs(negtrack.dcaXY()) < cMinV0NegDCArToPVcut)
       return false;
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodV0Indices"), 2.5);
 
     if ((v0.v0radius() > cMaxV0Radius) || (v0.v0radius() < cMinV0Radius))
       return false;
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodV0Indices"), 3.5);
     if (v0.v0cosPA() < cMinV0CosPA)
       return false;
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodV0Indices"), 4.5);
 
     // MC case can be handled here
     if constexpr (isMC) {
       // MC check
-      if (ConfFillQA)
+      if (cfgFillQA)
         qaRegistry.fill(HIST("hGoodMCV0Indices"), 0.5);
     }
     return true;
@@ -263,7 +263,7 @@ struct reso2initializer {
   bool IsCascSelected(CollisionType const& collision, CascType const& casc, TrackType const&)
   {
     // V0 selection
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodCascIndices"), 0.5);
 
     auto trackBach = casc.template bachelor_as<TrackType>();
@@ -273,14 +273,14 @@ struct reso2initializer {
     // track cuts
     if (trackBach.tpcNClsCrossedRows() < mincrossedrows_cascbach)
       return false;
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodCascIndices"), 1.5);
 
     if (std::fabs(trackBach.dcaXY()) < cMinCascBachDCArToPVcut)
       return false;
     if (std::fabs(trackBach.dcaXY()) > cMaxCascBachDCArToPVcut)
       return false;
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodCascIndices"), 2.5);
 
     // DCA daugthers
@@ -288,7 +288,7 @@ struct reso2initializer {
       return false;
     if (casc.dcacascdaughters() > cMaxCascDCACascDaughters)
       return false;
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodCascIndices"), 3.5);
 
     // CPA cuts
@@ -296,34 +296,34 @@ struct reso2initializer {
       return false;
     if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cMinCascV0CosPA)
       return false;
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodCascIndices"), 4.5);
 
     // V0 radius
     auto v0radius = casc.v0radius();
     if ((v0radius > cMaxCascV0Radius) || (v0radius < cMinCascV0Radius))
       return false;
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodCascIndices"), 5.5);
 
     // Casc radius
     auto cascradius = casc.cascradius();
     if ((cascradius > cMaxCascRadius) || (cascradius < cMinCascRadius))
       return false;
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodCascIndices"), 6.5);
 
     // Casc mass
     auto cascMass = casc.mXi();
     if (std::abs(cascMass - MassXiMinus) > cCascMassResol)
       return false;
-    if (ConfFillQA)
+    if (cfgFillQA)
       qaRegistry.fill(HIST("hGoodCascIndices"), 7.5);
 
     // MC case can be handled here
     if constexpr (isMC) {
       // MC check
-      if (ConfFillQA)
+      if (cfgFillQA)
         qaRegistry.fill(HIST("hGoodMCCascIndices"), 0.5);
     }
     return true;
@@ -390,7 +390,7 @@ struct reso2initializer {
 
     float ptSum = 0.;
     for (auto const& track : tracks) {
-      if (ConfFillQA) {
+      if (cfgFillQA) {
         qaRegistry.fill(HIST("Phi"), track.phi());
       }
       if (spdef == 0) {
@@ -954,18 +954,18 @@ struct reso2initializer {
 
     // Case selector based on the process.
     if (doprocessTrackDataRun2 || doprocessTrackV0DataRun2 || doprocessTrackV0CascDataRun2 || doprocessTrackMCRun2 || doprocessTrackV0MCRun2 || doprocessTrackV0CascMCRun2) {
-      colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, false);
+      colCuts.setCuts(cfgEvtZvtx, cfgEvtTriggerCheck, cfgEvtTriggerSel, cfgEvtOfflineCheck, false);
     } else if (doprocessTrackData || doprocessTrackV0Data || doprocessTrackV0CascData || doprocessTrackMC || doprocessTrackV0MC || doprocessTrackV0CascMC || doprocessTrackEPData) {
-      colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, true, false, ConfEvtOccupancyInTimeRange);
+      colCuts.setCuts(cfgEvtZvtx, cfgEvtTriggerCheck, cfgEvtTriggerSel, cfgEvtOfflineCheck, true, false, cfgEvtOccupancyInTimeRange);
     }
     colCuts.init(&qaRegistry);
-    colCuts.setTriggerTVX(ConfEvtTriggerTVXSel);
-    colCuts.setApplyTFBorderCut(ConfEvtTFBorderCut);
-    colCuts.setApplyITSTPCvertex(ConfEvtUseITSTPCvertex);
-    colCuts.setApplyZvertexTimedifference(ConfEvtZvertexTimedifference);
-    colCuts.setApplyPileupRejection(ConfEvtPileupRejection);
-    colCuts.setApplyNoITSROBorderCut(ConfEvtNoITSROBorderCut);
-    if (!ConfBypassCCDB) {
+    colCuts.setTriggerTVX(cfgEvtTriggerTVXSel);
+    colCuts.setApplyTFBorderCut(cfgEvtTFBorderCut);
+    colCuts.setApplyITSTPCvertex(cfgEvtUseITSTPCvertex);
+    colCuts.setApplyZvertexTimedifference(cfgEvtZvertexTimedifference);
+    colCuts.setApplyPileupRejection(cfgEvtPileupRejection);
+    colCuts.setApplyNoITSROBorderCut(cfgEvtNoITSROBorderCut);
+    if (!cfgBypassCCDB) {
       ccdb->setURL(ccdburl.value);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
@@ -981,7 +981,7 @@ struct reso2initializer {
       qaRegistry.add("Event/hMCEventIndices", "hMCEventIndices", kTH2D, {centAxis, idxMCAxis});
     }
     AxisSpec idxAxis = {8, 0, 8, "Index"};
-    if (ConfFillQA) {
+    if (cfgFillQA) {
       qaRegistry.add("hGoodTrackIndices", "hGoodTrackIndices", kTH1F, {idxAxis});
       qaRegistry.add("hGoodMCTrackIndices", "hGoodMCTrackIndices", kTH1F, {idxAxis});
       qaRegistry.add("hGoodV0Indices", "hGoodV0Indices", kTH1F, {idxAxis});
@@ -994,15 +994,15 @@ struct reso2initializer {
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc) // Simple copy from LambdaKzeroFinder.cxx
   {
-    if (ConfBypassCCDB)
+    if (cfgBypassCCDB)
       return;
     if (mRunNumber == bc.runNumber()) {
       return;
     }
 
     // In case override, don't proceed, please - no CCDB access required
-    if (dBz_input > -990) {
-      dBz = dBz_input;
+    if (dBzInput > -990) {
+      dBz = dBzInput;
       ;
       o2::parameters::GRPMagField grpmag;
       if (std::fabs(dBz) > 1e-5) {
