@@ -120,19 +120,19 @@ struct GfwPidflow {
 
     TObjArray* oba = new TObjArray();
     oba->Add(new TNamed("Ch08Gap22", "Ch08Gap22"));
-    for (std::int i = 0; i < fPtAxis->GetNbins(); i++)
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Ch08Gap22_pt_%i", i + 1), "Ch08Gap22_pTDiff"));
     oba->Add(new TNamed("Pi08Gap22", "Pi08Gap22"));
-    for (std::int i = 0; i < fPtAxis->GetNbins(); i++)
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Pi08Gap22_pt_%i", i + 1), "Pi08Gap22_pTDiff"));
     oba->Add(new TNamed("Ka08Gap22", "Ka08Gap22"));
-    for (std::int i = 0; i < fPtAxis->GetNbins(); i++)
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Ka08Gap22_pt_%i", i + 1), "Ka08Gap22_pTDiff"));
     oba->Add(new TNamed("Pr08Gap22", "Pr08Gap22"));
-    for (std::int i = 0; i < fPtAxis->GetNbins(); i++)
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Pr08Gap22_pt_%i", i + 1), "Pr08Gap22_pTDiff"));
     oba->Add(new TNamed("ChFull24", "ChFull24"));
-    for (std::int i = 0; i < fPtAxis->GetNbins(); i++)
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("ChFull24_pt_%i", i + 1), "ChFull24_pTDiff"));
 
     fFC->SetName("FlowContainer");
@@ -180,10 +180,6 @@ struct GfwPidflow {
     PROTONS
   };
 
-  enum Particles pion = PIONS;
-  enum Particles kaon = KAONS;
-  enum Particles proton = PROTONS;
-
   template <typename TTrack>
   int getNsigmaPID(TTrack track)
   {
@@ -228,7 +224,7 @@ struct GfwPidflow {
     int maxProb[3] = {80, 80, 80};
     int pidID = -1;
     std::pair<int, int> idprob = getBayesID(track);
-    if (idprob.first == pion || idprob.first == kaon || idprob.first == proton) { // 0 = pion, 1 = kaon, 2 = proton
+    if (idprob.first == PION || idprob.first == KAON || idprob.first == PROTON) { // 0 = pion, 1 = kaon, 2 = proton
       pidID = idprob.first;
       float nsigmaTPC[3] = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
       if (idprob.second > maxProb[pidID]) {
@@ -255,7 +251,7 @@ struct GfwPidflow {
         histos.fill(tarName, cent, val, dnx);
       return;
     }
-    for (std::int i = 1; i <= fPtAxis->GetNbins(); i++) {
+    for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
       dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
       if (dnx == 0)
         continue;
@@ -280,7 +276,7 @@ struct GfwPidflow {
       }
       return;
     }
-    for (std::int i = 1; i <= fPtAxis->GetNbins(); i++) {
+    for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
       dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
       if (dnx == 0)
         continue;
@@ -314,9 +310,9 @@ struct GfwPidflow {
       histos.fill(HIST("hEta"), track.eta());
       histos.fill(HIST("hPt"), pt);
 
-      histos.fill(HIST("TofTpcNsigma"), pion, track.tpcNSigmaPi(), track.tofNSigmaPi(), pt);
-      histos.fill(HIST("TofTpcNsigma"), kaon, track.tpcNSigmaKa(), track.tofNSigmaKa(), pt);
-      histos.fill(HIST("TofTpcNsigma"), proton, track.tpcNSigmaPr(), track.tofNSigmaPr(), pt);
+      histos.fill(HIST("TofTpcNsigma"), PION, track.tpcNSigmaPi(), track.tofNSigmaPi(), pt);
+      histos.fill(HIST("TofTpcNsigma"), KAON, track.tpcNSigmaKa(), track.tofNSigmaKa(), pt);
+      histos.fill(HIST("TofTpcNsigma"), PROTON, track.tpcNSigmaPr(), track.tofNSigmaPr(), pt);
 
       bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within RF pT range
