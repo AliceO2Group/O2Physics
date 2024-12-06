@@ -396,7 +396,7 @@ struct EbyeMult {
       auto mcLab = mcLabels.rawIteratorAt(candidateTracks[iT].globalIndex);
       if (mcLab.has_mcParticle()) {
         auto mcTrack = mcLab.template mcParticle_as<aod::McParticles>();
-        if (((mcTrack.flags() & 0x8) && (doprocessMcRun2)) || (mcTrack.flags() & 0x2) || (particle.flags() & 0x1))
+        if (((mcTrack.flags() & 0x8) && (doprocessMcRun2)) || (mcTrack.flags() & 0x2) || (mcTrack.flags() & 0x1))
           continue;
         if (!mcTrack.isPhysicalPrimary()) {
           if (mcTrack.has_mothers()) { // sec WD
@@ -442,7 +442,7 @@ struct EbyeMult {
       if (std::abs(genEta) > etaMax) {
         continue;
       }
-      if (((mcPart.flags() & 0x8) && (doprocessMcRun2)) || (mcPart.flags() & 0x2) || (particle.flags() & 0x1))
+      if (((mcPart.flags() & 0x8) && (doprocessMcRun2)) || (mcPart.flags() & 0x2) || (mcPart.flags() & 0x1))
         continue;
       if (!mcPart.isPhysicalPrimary() /* && !mcPart.has_mothers() */)
         continue;
