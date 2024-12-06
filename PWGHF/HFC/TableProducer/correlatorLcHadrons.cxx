@@ -619,7 +619,7 @@ struct HfCorrelatorLcHadrons {
   }
   PROCESS_SWITCH(HfCorrelatorLcHadrons, processMcRec, "Process Mc Reco mode", false);
 
-  /// Lc-Hadron correlation pair builder - for Mc gen-level analysis
+  /// Lc-Hadron correlation pair builder - for Mc Gen-level analysis
   void processMcGen(SelCollisionsWithLcMc::iterator const& mcCollision,
                     CandidatesLcMcGen const& mcParticles)
   {
