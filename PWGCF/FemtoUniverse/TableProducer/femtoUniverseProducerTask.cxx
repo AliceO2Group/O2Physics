@@ -420,9 +420,9 @@ struct femtoUniverseProducerTask {
       }
     }
     if (mom > 0.5) {
-      if (hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPhiSelection.ConfNsigmaRejectPion.value) {
+      if (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPhiSelection.ConfNsigmaRejectPion.value) {
         return true;
-      } else if (hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPhiSelection.ConfNsigmaRejectProton.value) {
+      } else if (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPhiSelection.ConfNsigmaRejectProton.value) {
         return true;
       } else {
         return false;
@@ -682,7 +682,7 @@ struct femtoUniverseProducerTask {
       int particleOrigin = 99;
       auto motherparticlesMC = particleMC.template mothers_as<aod::McParticles>();
 
-      if (std::abs(pdgCode) == abs(ConfPDGCodePartOne.value) || std::abs(pdgCode) == (ConfPDGCodePartTwo.value)) {
+      if (std::abs(pdgCode) == std::abs(ConfPDGCodePartOne.value) || std::abs(pdgCode) == std::abs(ConfPDGCodePartTwo.value)) {
         if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary;
         } else if (!motherparticlesMC.empty()) {
@@ -717,7 +717,7 @@ struct femtoUniverseProducerTask {
       auto motherskaon1MC = kaon1MC.template mothers_as<aod::McParticles>();
       auto motherskaon2MC = kaon2MC.template mothers_as<aod::McParticles>();
 
-      if (std::abs(pdgCode1) == abs(321) || std::abs(pdgCode2) == abs(-321)) {
+      if (std::abs(pdgCode1) == std::abs(321) || std::abs(pdgCode2) == std::abs(-321)) {
         if ((kaon1MC.isPhysicalPrimary() && kaon2MC.isPhysicalPrimary()) && (!motherskaon1MC.empty() && !motherskaon2MC.empty())) {
           for (auto& particleMotherOfNeg : motherskaon1MC) {
             for (auto& particleMotherOfPos : motherskaon2MC) {
@@ -1332,7 +1332,7 @@ struct femtoUniverseProducerTask {
       sumVec += part2Vec;
 
       float phiEta = sumVec.Eta();
-      if (abs(phiEta) > 0.8) {
+      if (std::abs(phiEta) > 0.8) {
         continue;
       }
 
