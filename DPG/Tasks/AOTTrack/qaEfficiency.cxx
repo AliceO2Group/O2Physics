@@ -88,7 +88,6 @@ std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTrd;
 std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpc;
 std::array<std::shared_ptr<TH1>, nParticles> hPtGenerated;
 std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedRecoEv;
-std::array<std::shared_ptr<TH1>, nParticles> hPtmotherGenerated; // histogram to store pT of mother
 
 // Pt for primaries
 std::array<std::shared_ptr<TH1>, nParticles> hPtItsPrm;
@@ -104,6 +103,7 @@ std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcStr;
 std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpcStr;
 std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTofStr;
 std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedStr;
+std::array<std::shared_ptr<TH1>, nParticles> hPtmotherGenerated; // histogram to store pT of mother
 
 // Pt for secondaries from material
 std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcMat;
@@ -346,7 +346,6 @@ struct QaEfficiency {
     hPtTrkItsTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC track (reco) " + tagPt, kTH1D, {axisPt});
     hPtGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/generated", PDGs[histogramIndex]), "Generated " + tagPt, kTH1D, {axisPt});
     hPtGeneratedRecoEv[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/generated_reco_ev", PDGs[histogramIndex]), "Generated Reco Ev. " + tagPt, kTH1D, {axisPt});
-    hPtmotherGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/generated_mother", PDGs[histogramIndex]), "Generated Mother " + tagPt, kTH1D, {axisPt});
 
     // Prm
     hPtItsPrm[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/prm/its", PDGs[histogramIndex]), "ITS tracks (primaries) " + tagPt, kTH1D, {axisPt});
@@ -362,6 +361,7 @@ struct QaEfficiency {
     hPtTrkItsTpcStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtItsTpcTofStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated", PDGs[histogramIndex]), "Generated (from weak decays) " + tagPt, kTH1D, {axisPt});
+    hPtmotherGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated_mother", PDGs[histogramIndex]), "Generated Mother " + tagPt, kTH1D, {axisPt});
 
     // Ter
     hPtItsTpcTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (from secondary weak decays) " + tagPt, kTH1D, {axisPt});
@@ -1257,7 +1257,7 @@ struct QaEfficiency {
                 break;
               }
               if (motherIsAccepted) {
-                hPtmotherGenerated[histogramIndex]->Fill(mother.pt()); // Fill generated pT for Lambda
+                hPtmotherGenerated[histogramIndex]->Fill(mother.pt()); // Fill generated pT for mother
               }
             }
           }
