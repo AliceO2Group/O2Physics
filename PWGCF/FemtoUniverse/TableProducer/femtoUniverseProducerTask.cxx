@@ -826,7 +826,7 @@ struct femtoUniverseProducerTask {
     const auto vtxZ = col.posZ();
     const auto cent = col.centRun2V0M();
     const auto multNtr = col.multNTracksPV();
- 
+
     // check whether the basic event selection criteria are fulfilled
     // if the basic selection is NOT fulfilled:
     // in case of skimming run - don't store such collisions
@@ -856,9 +856,9 @@ struct femtoUniverseProducerTask {
       return false;
     } else {
       if ((col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
-      	outputCollision(vtxZ, cent, multNtr, 2, mMagField);
+        outputCollision(vtxZ, cent, multNtr, 2, mMagField);
         return true;
-      } else {	      
+      } else {
         return false;
       }
     }
