@@ -180,7 +180,7 @@ struct he3hadronfemto {
   Configurable<float> setting_cutNsigmaTOF{"setting_cutNsigmaTOF", 3.0f, "Value of the TOF Nsigma cut"};
   Configurable<int> setting_noMixedEvents{"setting_noMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> setting_enableBkgUS{"setting_enableBkgUS", false, "Enable US background"};
-  Configurable<bool> setting_saveUSandLS{"setting_saveUSandLSs", true, "Save All Pairs"};
+  Configurable<bool> setting_saveUSandLS{"setting_saveUSandLS", true, "Save All Pairs"};
   Configurable<bool> setting_isMC{"setting_isMC", false, "Run MC"};
   Configurable<bool> setting_fillMultiplicity{"setting_fillMultiplicity", false, "Fill multiplicity table"};
 
