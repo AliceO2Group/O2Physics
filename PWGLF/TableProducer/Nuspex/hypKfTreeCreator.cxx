@@ -329,7 +329,7 @@ struct hypKfTreeCreator {
   Produces<aod::HypKfMcCascadeTwoThreeCandidates> outputTableMcTwoThree;
   Produces<aod::HypKfCascadeThreeTwoCandidates> outputTableThreeTwo;
   Produces<aod::HypKfMcCascadeThreeTwoCandidates> outputTableMcThreeTwo;
-  PresliceUnsorted<aod::HypKfHypNucs> perMcParticle = aod::hykfhyp::hypKfMcParticleId;
+  PresliceUnsorted<aod::HypKfHypNucs> perMcParticle = aod::hykfhyp::hypKfMcPartId;
 
   Configurable<int> cfgSpecies{"cfgSpecies", 0, "Select species"};
   Configurable<int> cfgNprimDaughters{"cfgNprimDaughters", 0, "Number of primary daughters"};
@@ -354,7 +354,7 @@ struct hypKfTreeCreator {
   }
   //___________________________________________________________________________________________________________________________________________________________
 
-  void processData(aod::HypKfHypNucs const& hypNucs, aod::HypKfCollisions const& hypKfColls, aod::HypKfTracks const& hypKfTrks, aod::HypKfDaughterAddons const& hypKfDAdd, aod::HypKfSubDaughters const& hypKfDSub)
+  void processData(aod::HypKfHypNucs const& hypNucs, aod::HypKfColls const& hypKfColls, aod::HypKfTracks const& hypKfTrks, aod::HypKfDaughtAdds const& hypKfDAdd, aod::HypKfSubDs const& hypKfDSub)
   {
     for (auto& hypNuc : hypNucs) {
       if (std::abs(hypNuc.species()) != cfgSpecies)
@@ -514,12 +514,12 @@ struct hypKfTreeCreator {
   }
   //___________________________________________________________________________________________________________________________________________________________
 
-  void fillCandidate(hyperNucleus& cand, hyperNucleus& hypDaughter, aod::HypKfHypNuc const& hypNuc, aod::HypKfHypNucs const&, aod::HypKfCollisions const&, aod::HypKfTracks const&, aod::HypKfDaughterAddons const&, aod::HypKfSubDaughters const&)
+  void fillCandidate(hyperNucleus& cand, hyperNucleus& hypDaughter, aod::HypKfHypNuc const& hypNuc, aod::HypKfHypNucs const&, aod::HypKfColls const&, aod::HypKfTracks const&, aod::HypKfDaughtAdds const&, aod::HypKfSubDs const&)
   {
     cand.daughterTracks.clear();
     cand.subDaughterMassVec.clear();
-    auto coll = hypNuc.hypKfCollision();
-    auto addOns = hypNuc.addons_as<aod::HypKfDaughterAddons>();
+    auto coll = hypNuc.hypKfColl();
+    auto addOns = hypNuc.addons_as<aod::HypKfDaughtAdds>();
     auto posVec = posVector(addOns);
     cand.Species = std::abs(hypNuc.species());
     cand.IsMatter = hypNuc.isMatter();
@@ -584,20 +584,20 @@ struct hypKfTreeCreator {
       return;
 
     trackCount = 0;
-    auto subDaughters = hypNuc.subDaughters_as<aod::HypKfSubDaughters>();
+    auto subDaughters = hypNuc.subDaughters_as<aod::HypKfSubDs>();
     for (auto& subDaughter : subDaughters) {
       cand.daughterTracks.at(trackCount++).SubMass = subDaughter.subMass();
     }
   }
   //___________________________________________________________________________________________________________________________________________________________
 
-  void processMC(aod::HypKfMcParticles const& mcHypNucs, aod::HypKfHypNucs const& hypNucs, aod::HypKfMcCollisions const&, aod::HypKfCollisions const& hypKfColls, aod::HypKfTracks const& hypKfTrks, aod::HypKfDaughterAddons const& hypKfDAdd, aod::HypKfSubDaughters const& hypKfDSub)
+  void processMC(aod::HypKfMcParts const& mcHypNucs, aod::HypKfHypNucs const& hypNucs, aod::HypKfMcColls const&, aod::HypKfColls const& hypKfColls, aod::HypKfTracks const& hypKfTrks, aod::HypKfDaughtAdds const& hypKfDAdd, aod::HypKfSubDs const& hypKfDSub)
   {
     isMC = true;
     for (auto& mcHypNuc : mcHypNucs) {
       if (std::abs(mcHypNuc.species()) != cfgSpecies)
         continue;
-      auto mcColl = mcHypNuc.hypKfMcCollision();
+      auto mcColl = mcHypNuc.hypKfMcColl();
       const auto mcParticleIdx = mcHypNuc.globalIndex();
       auto hypNucsByMc = hypNucs.sliceBy(perMcParticle, mcParticleIdx);
       hyperNucleus candidate, hypDaughter, dummy;
@@ -620,8 +620,8 @@ struct hypKfTreeCreator {
       candidate.SvyGen = mcHypNuc.svy();
       candidate.SvzGen = mcHypNuc.svz();
       for (auto& hypNuc : hypNucsByMc) {
-        auto coll = hypNuc.hypKfCollision();
-        if (coll.hypKfMcCollisionId() == mcHypNuc.hypKfMcCollisionId()) {
+        auto coll = hypNuc.hypKfColl();
+        if (coll.hypKfMcCollId() == mcHypNuc.hypKfMcCollId()) {
           candidate.CollisionMcTrue = true;
         }
         candidate.IsReconstructed++;

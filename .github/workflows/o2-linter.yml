@@ -24,6 +24,10 @@ jobs:
         run: |
           # Diff against the common ancestor of the source branch and the main branch.
           readarray -t files < <(git diff --diff-filter d --name-only origin/${{ env.MAIN_BRANCH }}...)
+          if [ ${#files[@]} -eq 0 ]; then
+              echo "::notice::No files to lint."
+              exit 0
+          fi
           [ ${{ github.event_name }} == 'pull_request' ] && options="-g"
           # shellcheck disable=SC2086 # Ignore unquoted options.
           python3 Scripts/o2_linter.py $options "${files[@]}"

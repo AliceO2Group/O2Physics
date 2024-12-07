@@ -492,7 +492,7 @@ struct TableMaker {
       multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
              collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
       multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
-              0, 0, 0.0, 0.0, 0, 0);
+              0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0.0, 0.0);
     }
 
     uint64_t trackFilteringTag = 0;

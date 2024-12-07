@@ -79,6 +79,8 @@ struct lambdapolsp {
   Configurable<bool> mycut{"mycut", false, "select tracks based on my cuts"};
   Configurable<bool> tofhit{"tofhit", true, "select tracks based on tof hit"};
   Configurable<bool> globalpt{"globalpt", true, "select tracks based on pt global vs tpc"};
+  Configurable<bool> usefourvectormass{"usefourvectormass", true, "select invariant mass based on four vector"};
+  Configurable<bool> checksign{"checksign", true, "check sign of daughter tracks"};
   Configurable<int> useprofile{"useprofile", 3, "flag to select profile vs Sparse"};
   Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
   Configurable<float> lbinQxy{"lbinQxy", -5.0, "lower bin value in QxQy histograms"};
@@ -408,7 +410,7 @@ struct lambdapolsp {
     return result;
   }
 
-  ROOT::Math::PxPyPzMVector Lambda, Proton, Pion, fourVecDauCM;
+  ROOT::Math::PxPyPzMVector Lambda, Lambdacopy, Proton, Pion, fourVecDauCM;
   // ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm, beamvector;
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY;
   double phiangle = 0.0;
@@ -585,6 +587,14 @@ struct lambdapolsp {
         int LambdaTag = 0;
         int aLambdaTag = 0;
 
+        const auto signpos = postrack.sign();
+        const auto signneg = negtrack.sign();
+
+        if (checksign) {
+          if (signpos < 0 || signneg > 0)
+            continue;
+        }
+
         if (isSelectedV0Daughter(postrack, 0) && isSelectedV0Daughter(negtrack, 1)) {
           LambdaTag = 1;
         }
@@ -608,6 +618,7 @@ struct lambdapolsp {
           Pion = ROOT::Math::PxPyPzMVector(postrack.px(), postrack.py(), postrack.pz(), massPi);
         }
         Lambda = Proton + Pion;
+        Lambdacopy = Proton + Pion;
         Lambda.SetM(massLambda);
 
         ROOT::Math::Boost boost{Lambda.BoostToCM()};
@@ -637,29 +648,41 @@ struct lambdapolsp {
         auto sinThetaStarcosphiphiStar = sinThetaStar * TMath::Cos(2 * GetPhiInRange(Lambda.Phi() - phiangle)); // A2 correction
         auto phiphiStar = GetPhiInRange(Lambda.Phi() - phiangle);
 
+        double candmass = 0.0;
+
         if (LambdaTag) {
-          histos.fill(HIST("hSparseLambdaPolA"), v0.mLambda(), v0.pt(), v0.eta(), PolA, centrality);
-          histos.fill(HIST("hSparseLambdaPolC"), v0.mLambda(), v0.pt(), v0.eta(), PolC, centrality);
+          if (usefourvectormass)
+            candmass = Lambdacopy.M();
+          else
+            candmass = v0.mLambda();
+
+          histos.fill(HIST("hSparseLambdaPolA"), candmass, v0.pt(), v0.eta(), PolA, centrality);
+          histos.fill(HIST("hSparseLambdaPolC"), candmass, v0.pt(), v0.eta(), PolC, centrality);
           if (correction1) {
-            histos.fill(HIST("hSparseLambda_corr1a"), v0.mLambda(), v0.pt(), v0.eta(), sinPhiStar, centrality);
-            histos.fill(HIST("hSparseLambda_corr1b"), v0.mLambda(), v0.pt(), v0.eta(), cosPhiStar, centrality);
-            histos.fill(HIST("hSparseLambda_corr1c"), v0.mLambda(), v0.pt(), v0.eta(), phiphiStar, centrality);
+            histos.fill(HIST("hSparseLambda_corr1a"), candmass, v0.pt(), v0.eta(), sinPhiStar, centrality);
+            histos.fill(HIST("hSparseLambda_corr1b"), candmass, v0.pt(), v0.eta(), cosPhiStar, centrality);
+            histos.fill(HIST("hSparseLambda_corr1c"), candmass, v0.pt(), v0.eta(), phiphiStar, centrality);
             if (correction2) {
-              histos.fill(HIST("hSparseLambda_corr2a"), v0.mLambda(), v0.pt(), v0.eta(), sinThetaStar, centrality);
-              histos.fill(HIST("hSparseLambda_corr2b"), v0.mLambda(), v0.pt(), v0.eta(), sinThetaStarcosphiphiStar, centrality);
+              histos.fill(HIST("hSparseLambda_corr2a"), candmass, v0.pt(), v0.eta(), sinThetaStar, centrality);
+              histos.fill(HIST("hSparseLambda_corr2b"), candmass, v0.pt(), v0.eta(), sinThetaStarcosphiphiStar, centrality);
             }
           }
         }
         if (aLambdaTag) {
-          histos.fill(HIST("hSparseAntiLambdaPolA"), v0.mAntiLambda(), v0.pt(), v0.eta(), PolA, centrality);
-          histos.fill(HIST("hSparseAntiLambdaPolC"), v0.mAntiLambda(), v0.pt(), v0.eta(), PolC, centrality);
+          if (usefourvectormass)
+            candmass = Lambdacopy.M();
+          else
+            candmass = v0.mAntiLambda();
+
+          histos.fill(HIST("hSparseAntiLambdaPolA"), candmass, v0.pt(), v0.eta(), PolA, centrality);
+          histos.fill(HIST("hSparseAntiLambdaPolC"), candmass, v0.pt(), v0.eta(), PolC, centrality);
           if (correction1) {
-            histos.fill(HIST("hSparseAntiLambda_corr1a"), v0.mAntiLambda(), v0.pt(), v0.eta(), sinPhiStar, centrality);
-            histos.fill(HIST("hSparseAntiLambda_corr1b"), v0.mAntiLambda(), v0.pt(), v0.eta(), cosPhiStar, centrality);
-            histos.fill(HIST("hSparseAntiLambda_corr1c"), v0.mAntiLambda(), v0.pt(), v0.eta(), phiphiStar, centrality);
+            histos.fill(HIST("hSparseAntiLambda_corr1a"), candmass, v0.pt(), v0.eta(), sinPhiStar, centrality);
+            histos.fill(HIST("hSparseAntiLambda_corr1b"), candmass, v0.pt(), v0.eta(), cosPhiStar, centrality);
+            histos.fill(HIST("hSparseAntiLambda_corr1c"), candmass, v0.pt(), v0.eta(), phiphiStar, centrality);
             if (correction2) {
-              histos.fill(HIST("hSparseAntiLambda_corr2a"), v0.mAntiLambda(), v0.pt(), v0.eta(), sinThetaStar, centrality);
-              histos.fill(HIST("hSparseAntiLambda_corr2b"), v0.mAntiLambda(), v0.pt(), v0.eta(), sinThetaStarcosphiphiStar, centrality);
+              histos.fill(HIST("hSparseAntiLambda_corr2a"), candmass, v0.pt(), v0.eta(), sinThetaStar, centrality);
+              histos.fill(HIST("hSparseAntiLambda_corr2b"), candmass, v0.pt(), v0.eta(), sinThetaStarcosphiphiStar, centrality);
             }
           }
         }

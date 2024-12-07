@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file corrSparse.cxx
+/// \brief Provides a sparse with usefull two particle correlation info
+/// \author Thor Jensen (djt288@alumni.ku.dk)
+
 #include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -16,29 +20,25 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
-#include "Common/Core/RecoDecay.h"
 #include "CommonConstants/MathConstants.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
+#include "Common/Core/RecoDecay.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct CorrSparse {
-  Configurable<float> cfgZVtxCut = {"zvtxcut", 10.0, "Vertex z cut. Default 10 cm"};
-  Configurable<float> cfgPtCutMin = {"minpt", 0.2, "Minimum accepted track pT. Default 0.2 GeV"};
-  Configurable<float> cfgPtCutMax = {"maxpt", 5.0, "Maximum accepted track pT. Default 5.0 GeV"};
-  Configurable<float> cfgEtaCut = {"etacut", 0.8, "Eta cut. Default 0.8"};
-  Configurable<float> cfgDCAzCut = {"dcacut", 0.3, "DCA z cut. Default 0.3 cm"};
-  Configurable<float> cfgDCAxyCut = {"dcacutxy", 0.3, "DCA xy cut. Default 0.2 cm"};
-  Configurable<float> cfgDCAxySigmaCut = {"dcacutxysigma", 1, "DCA xy sigma cut. Default 0.3"};
-  Configurable<float> cfgCutChi2prTPCcls = {"chi2cut", 2.5, "Chi2 cut. Default 2.5"};
+  Configurable<float> cfgZVtxCut = {"cfgZVtxCut", 10.0, "Vertex z cut. Default 10 cm"};
+  Configurable<float> cfgPtCutMin = {"cfgPtCutMin", 0.2, "Minimum accepted track pT. Default 0.2 GeV"};
+  Configurable<float> cfgPtCutMax = {"cfgPtCutMax", 5.0, "Maximum accepted track pT. Default 5.0 GeV"};
+  Configurable<float> cfgEtaCut = {"cfgEtaCut", 0.8, "Eta cut. Default 0.8"};
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
-  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -constants::math::PIHalf, constants::math::PIHalf * 3}, "delta phi axis for histograms"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -2, 2}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt associated axis for histograms"};
@@ -51,10 +51,15 @@ struct CorrSparse {
   {
     LOGF(info, "Starting init");
     registry.add("Yield", "pT vs eta vs Nch", {HistType::kTH3F, {{40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}, {100, 0, 100, "Nch"}}}); // check to see total number of tracks
-    registry.add("etaphi_Trigger", "eta vs phi vs Nch", {HistType::kTH3F, {{100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}, {100, 0, 100, "Nch"}}});
+    registry.add("etaphi_Trigger", "eta vs phi vs Nch", {HistType::kTH3F, {{100, -2, 2, "#eta"}, {200, 0, TwoPI, "#varphi"}, {100, 0, 100, "Nch"}}});
 
+    // Make histograms to check the distributions after cuts
     registry.add("deltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // check to see the delta eta and delta phi distribution
     registry.add("deltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
+    registry.add("Phi", "Phi", {HistType::kTH1D, {{72, 0, TwoPI, "Phi"}}});
+    registry.add("Eta", "Eta", {HistType::kTH1D, {{40, -2, 2, "Eta"}}});
+    registry.add("pT", "pT", {HistType::kTH1D, {axisPtTrigger}});
+    registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
 
     registry.add("Sparse_mixed", "", {HistType::kTHnSparseD, {{axisVertex, axisPtTrigger, axisPtAssoc, axisMultiplicity, axisDeltaPhi, axisDeltaEta}}}); // Make the output sparse
     registry.add("Sparse_same", "", {HistType::kTHnSparseD, {{axisVertex, axisPtTrigger, axisPtAssoc, axisMultiplicity, axisDeltaPhi, axisDeltaEta}}});
@@ -63,12 +68,17 @@ struct CorrSparse {
     registry.add("eventcount", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}}); // histogram to see how many events are in the same and mixed event
   }
 
+  // fill multiple histograms
   template <typename TCollision, typename TTracks>
-  void fillYield(TCollision collision, float centrality, TTracks tracks) // function to fill the yield and etaphi histograms. (This is not needed can be removed)
+  void fillYield(TCollision collision, float centrality, TTracks tracks) // function to fill the yield and etaphi histograms.
   {
-    for (auto& track1 : tracks) {
+    registry.fill(HIST("Nch"), tracks.size());
+    for (auto const& track1 : tracks) {
       registry.fill(HIST("Yield"), track1.pt(), track1.eta(), track1.size());
-      registry.fill(HIST("etaphi_Trigger"), track1.size(), track1.phi(), track1.eta());
+      registry.fill(HIST("etaphi_Trigger"), track1.eta(), track1.phi(), track1.size());
+      registry.fill(HIST("Phi"), track1.phi());
+      registry.fill(HIST("Eta"), track1.eta());
+      registry.fill(HIST("pT"), track1.pt());
     }
   }
 
@@ -94,9 +104,8 @@ struct CorrSparse {
           continue;
         }
 
-        float deltaPhi = track1.phi() - track2.phi();
+        float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -PIHalf);
         float deltaEta = track1.eta() - track2.eta();
-        RecoDecay::constrainAngle(deltaPhi, -PIHalf);
 
         // fill the right sparse and histograms
         if (system == 1) {
@@ -110,21 +119,18 @@ struct CorrSparse {
     }
   }
 
-  // make the filters and cuts. I was told not to include chi2 since its not needed for run 3 data.
+  // make the filters and cuts.
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgZVtxCut;
 
-  Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (aod::track::pt > cfgPtCutMin) && (aod::track::pt < cfgPtCutMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true))
-                       //&& (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls)
-                       && (nabs(aod::track::dcaZ) > cfgDCAzCut) && (cfgDCAxySigmaCut * (0.0015f + 0.005f / npow(aod::track::pt, 1.1f)) < nabs(aod::track::dcaXY));
-  //
+  Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (aod::track::pt > cfgPtCutMin) && (aod::track::pt < cfgPtCutMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
 
   // define the filtered collisions and tracks
-  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
-  // process for the same event
-  void processSame(aodCollisions::iterator const& collision, aodTracks const& tracks)
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
+
+  void processSame(AodCollisions::iterator const& collision, AodTracks const& tracks)
   {
     const auto centrality = collision.centFT0C();
 
@@ -141,15 +147,15 @@ struct CorrSparse {
 
   ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>
     bindingOnVtxAndMult{{vtxBinsEdges, multBinsEdges}, true}; // true is for 'ignore overflows' (true by default)
-  SameKindPair<aodCollisions,
-               aodTracks,
+  SameKindPair<AodCollisions,
+               AodTracks,
                ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>>
     pair{bindingOnVtxAndMult, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   // the process for filling the mixed events
-  void processMixed(aodCollisions& collisions, aodTracks const& tracks)
+  void processMixed(AodCollisions const& collisions, AodTracks const& tracks)
   {
-    for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
+    for (auto const& [collision1, tracks1, collision2, tracks2] : pair) {
 
       if (fillCollision(collision1, collision1.centFT0C()) == false) {
         continue;

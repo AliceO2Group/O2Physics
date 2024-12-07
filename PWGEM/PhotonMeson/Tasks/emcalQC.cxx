@@ -76,6 +76,7 @@ struct emcalQC {
   EMCPhotonCut fEMCCut;
   struct : ConfigurableGroup {
     std::string prefix = "emccut_group";
+    Configurable<std::string> clusterDefinition{"clusterDefinition", "kV3Default", "Clusterizer to be selected, e.g. V3Default"};
     Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle"};
     Configurable<float> EMC_minTime{"EMC_minTime", -20., "Minimum cluster time for EMCal time cut"};
     Configurable<float> EMC_maxTime{"EMC_maxTime", +25., "Maximum cluster time for EMCal time cut"};
@@ -115,6 +116,7 @@ struct emcalQC {
     const float f = emccuts.EMC_TM_Phi->at(2);
     LOGF(info, "EMCal track matching parameters : a = %f, b = %f, c = %f, d = %f, e = %f, f = %f", a, b, c, d, e, f);
 
+    fEMCCut.SetClusterizer(emccuts.clusterDefinition);
     fEMCCut.SetMinE(emccuts.EMC_minE);
     fEMCCut.SetMinNCell(emccuts.EMC_minNCell);
     fEMCCut.SetM02Range(emccuts.EMC_minM02, emccuts.EMC_maxM02);
@@ -193,9 +195,13 @@ struct emcalQC {
 
       auto clusters_per_coll = clusters.sliceBy(perCollision, collision.collisionId());
       fRegistry.fill(HIST("Cluster/before/hNgamma"), clusters_per_coll.size(), collision.weight());
-      int ng = 0;
+      int ngBefore = 0;
+      int ngAfter = 0;
       for (auto& cluster : clusters_per_coll) {
         // Fill the cluster properties before applying any cuts
+        if (!fEMCCut.IsSelectedEMCal(EMCPhotonCut::EMCPhotonCuts::kDefinition, cluster))
+          continue;
+        ngBefore++;
         o2::aod::pwgem::photonmeson::utils::clusterhistogram::fillClusterHistograms<0>(&fRegistry, cluster, cfgDo2DQA, collision.weight());
 
         // Apply cuts one by one and fill in hClusterQualityCuts histogram
@@ -205,10 +211,10 @@ struct emcalQC {
         bool survivesIsSelectedEMCalCuts = true;                        // Survives "manual" cuts listed in this task
         bool survivesIsSelectedCuts = fEMCCut.IsSelected<int>(cluster); // Survives the cutlist defines in EMCPhotonCut.h, which is also used in the Pi0Eta task
 
-        for (int icut = 0; icut < static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts); icut++) { // Loop through different cut observables
+        for (int icut = 1; icut < static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts); icut++) { // Loop through different cut observables, start at 1 to ignore ClusterDefinition
           EMCPhotonCut::EMCPhotonCuts specificcut = static_cast<EMCPhotonCut::EMCPhotonCuts>(icut);
           if (!fEMCCut.IsSelectedEMCal(specificcut, cluster)) { // Check whether cluster passes this cluster requirement, if not, fill why in the next row
-            fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), icut + 1, cluster.e(), collision.weight());
+            fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), icut, cluster.e(), collision.weight());
             survivesIsSelectedEMCalCuts = false;
           }
         }
@@ -220,10 +226,11 @@ struct emcalQC {
         if (survivesIsSelectedCuts) {
           o2::aod::pwgem::photonmeson::utils::clusterhistogram::fillClusterHistograms<1>(&fRegistry, cluster, cfgDo2DQA, collision.weight());
           fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), 7., cluster.e(), collision.weight());
-          ng++;
+          ngAfter++;
         }
       }
-      fRegistry.fill(HIST("Cluster/after/hNgamma"), ng, collision.weight());
+      fRegistry.fill(HIST("Cluster/before/hNgamma"), ngBefore, collision.weight());
+      fRegistry.fill(HIST("Cluster/after/hNgamma"), ngAfter, collision.weight());
     } // end of collision loop
   } // end of process
 

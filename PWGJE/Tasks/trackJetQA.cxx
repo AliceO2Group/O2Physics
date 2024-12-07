@@ -171,7 +171,7 @@ struct TrackJetQa {
     histos.add("TrackPar/xyz", "track #it{x}, #it{y}, #it{z} position at dca in local coordinate system", HistType::kTHnSparseD, {axisPt, axisSigma1OverPt, axisTrackX, axisTrackY, axisTrackZ, axisPercentileFT0A, axisPercentileFT0C});
     histos.add("TrackPar/alpha", "rotation angle of local wrt. global coordinate system", HistType::kTHnSparseD, {axisPt, axisSigma1OverPt, axisRotation, axisPercentileFT0A, axisPercentileFT0C});
     histos.add("TrackPar/signed1Pt", "track signed 1/#it{p}_{T}", HistType::kTHnSparseD, {axisPt, axisSigma1OverPt, axisSignedPt, axisPercentileFT0A, axisPercentileFT0C});
-    histos.add("TrackPar/snp", "sinus of track momentum azimuthal angle (snp)", HistType::kTHnSparseD, {axisPt, axisSigma1OverPt, {11, -0.05, 0.5, "snp"}, axisPercentileFT0A, axisPercentileFT0C});
+    histos.add("TrackPar/snp", "sinus of track momentum azimuthal angle (snp)", HistType::kTHnSparseD, {axisPt, axisSigma1OverPt, {11, -0.5, 0.5, "snp"}, axisPercentileFT0A, axisPercentileFT0C});
     histos.add("TrackPar/tgl", "tangent of the track momentum dip angle (tgl)", HistType::kTHnSparseD, {axisPt, axisSigma1OverPt, {200, -1., 1., "tgl"}, axisPercentileFT0A, axisPercentileFT0C});
     histos.add("TrackPar/flags", "track flag;#it{p}_{T} [GeV/c];flag bit", {HistType::kTH2F, {{200, 0, 200}, {64, -0.5, 63.5}}});
     histos.add("TrackPar/dcaXY", "distance of closest approach in #it{xy} plane", HistType::kTHnSparseD, {axisPt, axisSigma1OverPt, axisDcaXY, axisPercentileFT0A, axisPercentileFT0C});

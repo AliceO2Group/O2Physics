@@ -235,6 +235,13 @@ struct TableMaker {
     Configurable<bool> fRefitGlobalMuon{"cfgRefitGlobalMuon", true, "Correct global muon parameters"};
     Configurable<float> fMuonMatchEtaMin{"cfgMuonMatchEtaMin", -4.0f, "Definition of the acceptance of muon tracks to be matched with MFT"};
     Configurable<float> fMuonMatchEtaMax{"cfgMuonMatchEtaMax", -2.5f, "Definition of the acceptance of muon tracks to be matched with MFT"};
+
+    // TPC occupancy related variables
+    Configurable<float> fTPCShortPast{"cfgTPCShortPast", 8.0f, "Time in short past to look for occupancy (micro-seconds)"};
+    Configurable<float> fTPCShortFuture{"cfgTPCShortFuture", 8.0f, "Time in short future to look for occupancy (micro-seconds)"};
+    Configurable<float> fTPCLongPast{"cfgTPCLongPast", 100.0f, "Time in long past to look for occupancy (micro-seconds)"};
+    Configurable<float> fTPCLongFuture{"cfgTPCLongFuture", 100.0f, "Time in long future to look for occupancy (micro-seconds)"};
+    Configurable<bool> fExcludeShort{"cfgTPCExcludeShort", true, "Exclude short term from long term occupancy (micro-seconds)"};
   } fConfigVariousOptions;
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
@@ -272,6 +279,25 @@ struct TableMaker {
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::MFTTrackAssoc> mfttrackIndicesPerCollision = aod::track_association::collisionId;
+
+  Preslice<MyBarrelTracksWithV0Bits> preslice = aod::track::collisionId;
+  Partition<MyBarrelTracksWithV0Bits> tracksPos = (((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor)) && (aod::track::tgl > static_cast<float>(0.05)));
+  Partition<MyBarrelTracksWithV0Bits> tracksNeg = (((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor)) && (aod::track::tgl < static_cast<float>(-0.05)));
+
+  struct {
+    std::map<int32_t, float> oMeanTimeShortA;
+    std::map<int32_t, float> oMeanTimeShortC;
+    std::map<int32_t, float> oMeanTimeLongA;
+    std::map<int32_t, float> oMeanTimeLongC;
+    std::map<int32_t, float> oMedianTimeShortA;
+    std::map<int32_t, float> oMedianTimeShortC;
+    std::map<int32_t, float> oMedianTimeLongA;
+    std::map<int32_t, float> oMedianTimeLongC;
+    std::map<int32_t, int> oContribShortA;
+    std::map<int32_t, int> oContribShortC;
+    std::map<int32_t, int> oContribLongA;
+    std::map<int32_t, int> oContribLongC;
+  } fOccup;
 
   void init(o2::framework::InitContext& context)
   {
@@ -497,8 +523,183 @@ struct TableMaker {
     fStatsList->AddAt(histZorroSel, kStatsZorroSel);
   }
 
+  template <typename TEvents, typename TTracks, typename TBCs>
+  void computeOccupancyEstimators(TEvents const& collisions, TTracks const& /*tracks*/, Preslice<TTracks>& preslice, TBCs const&)
+  {
+
+    // clear the occupancy maps for this time frame
+    fOccup.oMeanTimeLongA.clear();
+    fOccup.oMeanTimeLongC.clear();
+    fOccup.oMeanTimeShortA.clear();
+    fOccup.oMeanTimeShortC.clear();
+    fOccup.oMedianTimeLongA.clear();
+    fOccup.oMedianTimeLongC.clear();
+    fOccup.oMedianTimeShortA.clear();
+    fOccup.oMedianTimeShortC.clear();
+    fOccup.oContribLongA.clear();
+    fOccup.oContribLongC.clear();
+    fOccup.oContribShortA.clear();
+    fOccup.oContribShortC.clear();
+
+    std::map<int64_t, int64_t> oBC;                      // key: collision index; value: global BC
+    std::map<int64_t, std::vector<int64_t>> oBCreversed; // key: global BC, value: list of collisions attached to this BC
+    std::map<int64_t, float> oVtxZ;                      // key: collision index; value: vtx-z position
+    std::map<int64_t, int32_t> collMultPos;              // key: collision index; value: tpc multiplicity on the A side
+    std::map<int64_t, int32_t> collMultNeg;              // key: collision index; value: tpc multiplicity on the C side
+
+    const double bcUS = o2::constants::lhc::LHCBunchSpacingNS / 1000.0;               // BC spacing in micro-seconds
+    const double vdrift = 2.5;                                                        // cm / mus
+    int32_t bcShortPast = std::lrint(fConfigVariousOptions.fTPCShortPast / bcUS);     // (close in time collisions) 8 micro-seconds in BC intervals
+    int32_t bcShortFuture = std::lrint(fConfigVariousOptions.fTPCShortFuture / bcUS); // (close in time collisions) 8 micro-seconds in BC intervals
+    int32_t bcLongPast = std::lrint(fConfigVariousOptions.fTPCLongPast / bcUS);       // (wide time range collisions) past 40 micro-seconds in BC intervals
+    int32_t bcLongFuture = std::lrint(fConfigVariousOptions.fTPCLongFuture / bcUS);   // // (wide time range collisions) future 100 micro-seconds in BC intervals
+
+    // Loop over collisions and extract needed info (BC, vtxZ, multiplicity separately in A and C sides)
+    for (const auto& collision : collisions) {
+
+      auto bcEvSel = collision.template foundBC_as<TBCs>();
+      int64_t bc = bcEvSel.globalBC();
+      oBC[collision.globalIndex()] = bc;
+      oVtxZ[collision.globalIndex()] = collision.posZ();
+
+      // if more than one collision per bunch, add that collision to the list for that bunch
+      if (oBCreversed.find(bc) == oBCreversed.end()) {
+        std::vector<int64_t> evs = {collision.globalIndex()};
+        oBCreversed[bc] = evs;
+      } else {
+        auto& evs = oBCreversed[bc];
+        evs.push_back(collision.globalIndex());
+      }
+
+      // make a slice for this collision and get the number of tracks
+      auto thisCollTrackPos = tracksPos.sliceBy(preslice, collision.globalIndex());
+      auto thisCollTrackNeg = tracksNeg.sliceBy(preslice, collision.globalIndex());
+      collMultPos[collision.globalIndex()] = thisCollTrackPos.size();
+      collMultNeg[collision.globalIndex()] = thisCollTrackNeg.size();
+    }
+
+    // loop over collisions and sum the multiplicity in the past and future
+    for (const auto& [collision, bc] : oBC) {
+
+      int64_t pastShortBC = oBCreversed.lower_bound(bc - bcShortPast)->first;
+      int64_t futureShortBC = oBCreversed.lower_bound(bc + bcShortFuture)->first;
+      int64_t pastLongBC = oBCreversed.lower_bound(bc - bcLongPast)->first;
+      int64_t futureLongBC = oBCreversed.lower_bound(bc + bcLongFuture)->first;
+
+      fOccup.oContribLongA[collision] = 0;
+      fOccup.oContribLongC[collision] = 0;
+      fOccup.oMeanTimeLongA[collision] = 0.0;
+      fOccup.oMeanTimeLongC[collision] = 0.0;
+      fOccup.oContribShortA[collision] = 0;
+      fOccup.oContribShortC[collision] = 0;
+      fOccup.oMeanTimeShortA[collision] = 0.0;
+      fOccup.oMeanTimeShortC[collision] = 0.0;
+      std::map<float, int> oTimeMapShortA;
+      std::map<float, int> oTimeMapShortC;
+      std::map<float, int> oTimeMapLongA;
+      std::map<float, int> oTimeMapLongC;
+      // loop over the BCs in the past and future wrt this one
+      for (auto bcIt = oBCreversed.find(pastLongBC); bcIt != oBCreversed.find(futureLongBC); ++bcIt) {
+        int64_t thisBC = bcIt->first;
+        auto colls = bcIt->second;
+        // delta time due to the different BCs
+        float dt = (thisBC - bc) * bcUS;
+        // check if this collision is also within the short time range
+        bool isShort = (thisBC >= pastShortBC && thisBC < futureShortBC);
+        // loop over all collisions in this BC
+        for (auto& thisColl : colls) {
+          // skip if this is the same collision
+          if (thisColl == collision) {
+            continue;
+          }
+          // compute the delta time due to the difference in longitudinal position
+          float dtDrift = (oVtxZ[thisColl] - oVtxZ[collision]) / vdrift;
+
+          if (!(fConfigVariousOptions.fExcludeShort && isShort)) {
+            // sum the collision multiplicity on A and C sides
+            fOccup.oContribLongA[collision] += collMultPos[thisColl];
+            fOccup.oContribLongC[collision] += collMultNeg[thisColl];
+            // compute the multiplicity weighted average time
+            fOccup.oMeanTimeLongA[collision] += collMultPos[thisColl] * (dt + dtDrift);
+            fOccup.oMeanTimeLongC[collision] += collMultNeg[thisColl] * (dt - dtDrift);
+            // fill the time map
+            oTimeMapLongA[dt + dtDrift] = collMultPos[thisColl];
+            oTimeMapLongC[dt - dtDrift] = collMultNeg[thisColl];
+          }
+
+          if (isShort) {
+            fOccup.oContribShortA[collision] += collMultPos[thisColl];
+            fOccup.oContribShortC[collision] += collMultNeg[thisColl];
+            fOccup.oMeanTimeShortA[collision] += collMultPos[thisColl] * (dt + dtDrift);
+            fOccup.oMeanTimeShortC[collision] += collMultNeg[thisColl] * (dt - dtDrift);
+            oTimeMapShortA[dt + dtDrift] = collMultPos[thisColl];
+            oTimeMapShortC[dt - dtDrift] = collMultNeg[thisColl];
+          }
+        }
+      }
+      // normalize to obtain the mean time
+      if (fOccup.oContribLongA[collision] > 0) {
+        fOccup.oMeanTimeLongA[collision] /= fOccup.oContribLongA[collision];
+      }
+      if (fOccup.oContribLongC[collision] > 0) {
+        fOccup.oMeanTimeLongC[collision] /= fOccup.oContribLongC[collision];
+      }
+      if (fOccup.oContribShortA[collision] > 0) {
+        fOccup.oMeanTimeShortA[collision] /= fOccup.oContribShortA[collision];
+      }
+      if (fOccup.oContribShortC[collision] > 0) {
+        fOccup.oMeanTimeShortC[collision] /= fOccup.oContribShortC[collision];
+      }
+      // iterate over the time maps to obtain the median time
+      fOccup.oMedianTimeLongA[collision] = 0.0;
+      float sumMult = 0.0;
+      if (oTimeMapLongA.size() > 0) {
+        for (auto& [dt, mult] : oTimeMapLongA) {
+          sumMult += mult;
+          if (sumMult > fOccup.oContribLongA[collision] / 2.0) {
+            fOccup.oMedianTimeLongA[collision] = dt;
+            break;
+          }
+        }
+      }
+      fOccup.oMedianTimeLongC[collision] = 0.0;
+      sumMult = 0.0;
+      if (oTimeMapLongC.size() > 0) {
+        for (auto& [dt, mult] : oTimeMapLongC) {
+          sumMult += mult;
+          if (sumMult > fOccup.oContribLongC[collision] / 2.0) {
+            fOccup.oMedianTimeLongC[collision] = dt;
+            break;
+          }
+        }
+      }
+      fOccup.oMedianTimeShortA[collision] = 0.0;
+      sumMult = 0.0;
+      if (oTimeMapShortA.size() > 0) {
+        for (auto& [dt, mult] : oTimeMapShortA) {
+          sumMult += mult;
+          if (sumMult > fOccup.oContribShortA[collision] / 2.0) {
+            fOccup.oMedianTimeShortA[collision] = dt;
+            break;
+          }
+        }
+      }
+      fOccup.oMedianTimeShortC[collision] = 0.0;
+      sumMult = 0.0;
+      if (oTimeMapShortC.size() > 0) {
+        for (auto& [dt, mult] : oTimeMapShortC) {
+          sumMult += mult;
+          if (sumMult > fOccup.oContribShortC[collision] / 2.0) {
+            fOccup.oMedianTimeShortC[collision] = dt;
+            break;
+          }
+        }
+      }
+    } // end loop over collisions
+  }
+
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TBCs, typename TZdcs, typename TTrackAssoc, typename TTracks>
-  void skimCollisions(TEvents const& collisions, TBCs const& /*bcs*/, TZdcs const& /*zdcs*/,
+  void skimCollisions(TEvents const& collisions, TBCs const& bcs, TZdcs const& /*zdcs*/,
                       TTrackAssoc const& trackAssocs, TTracks const& tracks)
   {
     // Skim collisions
@@ -561,6 +762,21 @@ struct TableMaker {
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0 && (TTrackFillMap & VarManager::ObjTypes::Track) > 0 && (TTrackFillMap & VarManager::ObjTypes::TrackDCA) > 0) {
         auto groupedTrackIndices = trackAssocs.sliceBy(trackIndicesPerCollision, collision.globalIndex());
         VarManager::FillEventTrackEstimators<TTrackFillMap>(collision, groupedTrackIndices, tracks);
+      }
+      // Exceptionally fill the TPC occupancy quantities here
+      if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
+        VarManager::fgValues[VarManager::kNTPCcontribLongA] = fOccup.oContribLongA[collision.globalIndex()];
+        VarManager::fgValues[VarManager::kNTPCcontribLongC] = fOccup.oContribLongC[collision.globalIndex()];
+        VarManager::fgValues[VarManager::kNTPCmeanTimeLongA] = fOccup.oMeanTimeLongA[collision.globalIndex()];
+        VarManager::fgValues[VarManager::kNTPCmeanTimeLongC] = fOccup.oMeanTimeLongC[collision.globalIndex()];
+        VarManager::fgValues[VarManager::kNTPCmedianTimeLongA] = fOccup.oMedianTimeLongA[collision.globalIndex()];
+        VarManager::fgValues[VarManager::kNTPCmedianTimeLongC] = fOccup.oMedianTimeLongC[collision.globalIndex()];
+        VarManager::fgValues[VarManager::kNTPCcontribShortA] = fOccup.oContribShortA[collision.globalIndex()];
+        VarManager::fgValues[VarManager::kNTPCcontribShortC] = fOccup.oContribShortC[collision.globalIndex()];
+        VarManager::fgValues[VarManager::kNTPCmeanTimeShortA] = fOccup.oMeanTimeShortA[collision.globalIndex()];
+        VarManager::fgValues[VarManager::kNTPCmeanTimeShortC] = fOccup.oMeanTimeShortC[collision.globalIndex()];
+        VarManager::fgValues[VarManager::kNTPCmedianTimeShortA] = fOccup.oMedianTimeShortA[collision.globalIndex()];
+        VarManager::fgValues[VarManager::kNTPCmedianTimeShortC] = fOccup.oMedianTimeShortC[collision.globalIndex()];
       }
       if (fDoDetailedQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
@@ -637,8 +853,12 @@ struct TableMaker {
                collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
 
         multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
-                VarManager::fgValues[VarManager::kNTPCpileupContribA], VarManager::fgValues[VarManager::kNTPCpileupContribC],
-                VarManager::fgValues[VarManager::kNTPCpileupZA], VarManager::fgValues[VarManager::kNTPCpileupZC], 0, 0);
+                fOccup.oContribLongA[collision.globalIndex()], fOccup.oContribLongC[collision.globalIndex()],
+                fOccup.oMeanTimeLongA[collision.globalIndex()], fOccup.oMeanTimeLongC[collision.globalIndex()],
+                fOccup.oMedianTimeLongA[collision.globalIndex()], fOccup.oMedianTimeLongC[collision.globalIndex()],
+                fOccup.oContribShortA[collision.globalIndex()], fOccup.oContribShortC[collision.globalIndex()],
+                fOccup.oMeanTimeShortA[collision.globalIndex()], fOccup.oMeanTimeShortC[collision.globalIndex()],
+                fOccup.oMedianTimeShortA[collision.globalIndex()], fOccup.oMedianTimeShortC[collision.globalIndex()]);
       }
 
       fCollIndexMap[collision.globalIndex()] = event.lastIndex();
@@ -1148,6 +1368,7 @@ struct TableMaker {
                                        MyBarrelTracksWithV0Bits const& tracksBarrel,
                                        TrackAssoc const& trackAssocs)
   {
+    computeOccupancyEstimators(collisions, tracksBarrel, preslice, bcs);
     fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithV0Bits, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr);
   }
 
