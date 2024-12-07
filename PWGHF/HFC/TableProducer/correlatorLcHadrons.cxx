@@ -188,7 +188,6 @@ struct HfCorrelatorLcHadrons {
 
   HfHelper hfHelper;
   SliceCache cache;
-  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
   int leadingIndex = 0;
   bool correlationStatus = false;
 
@@ -220,6 +219,8 @@ struct HfCorrelatorLcHadrons {
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsMassLc{"binsMassLc", {200, 1.98, 2.58}, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
+
+  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(InitContext&)
