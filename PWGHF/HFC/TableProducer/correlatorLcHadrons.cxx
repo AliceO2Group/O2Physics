@@ -639,7 +639,7 @@ struct HfCorrelatorLcHadrons {
       leadingIndex = findLeadingParticleMcGen(mcParticles, etaTrackMax.value, ptTrackMin.value);
     }
 
-    // Mc gen level
+    // Mc Gen level
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.pdgCode()) != Pdg::kLambdaCPlus) {
         continue;
