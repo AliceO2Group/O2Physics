@@ -761,8 +761,8 @@ struct MeanPtFlucId {
       hist.fill(HIST(Dire[Mode]) + HIST("h_twopart_deno_Mult_var"), nTPC, nPair, nFT0M);
       hist.fill(HIST(Dire[Mode]) + HIST("h_mean_pT_Mult_var"), nTPC, meanPt, nFT0M);
       hist.fill(HIST(Dire[Mode]) + HIST("h_twopart_Mult_var"), nTPC, twopart, nFT0M);
-      hist.fill(HIST(Dire[Mode]) + HIST("p_CheckNCh"), nTPC, checkN_deno_var);
-      hist.fill(HIST(Dire[Mode]) + HIST("h_CheckNCh"), nTPC, checkN_deno_var, nFT0M);
+      hist.fill(HIST(Dire[Mode]) + HIST("p_CheckNCh"), nTPC, checkNDenoVar);
+      hist.fill(HIST(Dire[Mode]) + HIST("h_CheckNCh"), nTPC, checkNDenoVar, nFT0M);
 
       if (N > 2) {
         double nTriplet = (static_cast<double>(N) * (static_cast<double>(N) - 1) * (static_cast<double>(N) - 2));
