@@ -502,7 +502,7 @@ struct EbyeMult {
         }
       }
     }
-    if (partInAcc > 0)
+    if (partInAcc >= 0)
       return nParticles;
     return -1;
   }
@@ -569,7 +569,7 @@ struct EbyeMult {
     // search generated INEL > 0 (one charged particle in |eta| < 1)
     for (const auto& mcCollision : mcCollisions) {
       int mult = genMultINELgtZERO(mcCollision, mcParticles);
-      if (mult > 0) {
+      if (mult >= 0) {
         histos.fill(HIST("GenINELgtZERO"), mult);
       }
     }
