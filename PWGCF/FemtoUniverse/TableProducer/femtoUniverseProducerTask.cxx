@@ -17,13 +17,15 @@
 /// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@cern.ch
 
 #include <CCDB/BasicCCDBManager.h>
-#include <TDatabasePDG.h> // FIXME
+#include <TPDGCode.h>
 #include <vector>
 #include <algorithm>
 #include <set>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
@@ -57,6 +59,7 @@ using namespace o2;
 using namespace o2::analysis::femtoUniverse;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 
 namespace o2::aod
 {
@@ -297,25 +300,25 @@ struct femtoUniverseProducerTask {
   {
 
     if (mom < 0.3) { // 0.0-0.3
-      if (TMath::Abs(nsigmaTPCK) < 3.0) {
+      if (std::abs(nsigmaTPCK) < 3.0) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 0.45) { // 0.30 - 0.45
-      if (TMath::Abs(nsigmaTPCK) < 2.0) {
+      if (std::abs(nsigmaTPCK) < 2.0) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 0.55) { // 0.45-0.55
-      if (TMath::Abs(nsigmaTPCK) < 1.0) {
+      if (std::abs(nsigmaTPCK) < 1.0) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+      if ((std::abs(nsigmaTOFK) < 3.0) && (std::abs(nsigmaTPCK) < 3.0)) {
         {
           return true;
         }
@@ -323,7 +326,7 @@ struct femtoUniverseProducerTask {
         return false;
       }
     } else if (mom > 1.5) { // 1.5 -
-      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+      if ((std::abs(nsigmaTOFK) < 2.0) && (std::abs(nsigmaTPCK) < 3.0)) {
         return true;
       } else {
         return false;
@@ -337,31 +340,31 @@ struct femtoUniverseProducerTask {
   {
 
     if (mom < 0.3) { // 0.0-0.3
-      if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value) {
+      if (std::abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 0.45) { // 0.30 - 0.45
-      if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value) {
+      if (std::abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 0.55) { // 0.45-0.55
-      if (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value) {
+      if (std::abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value)) {
+      if ((std::abs(nsigmaTOFK) < 3.0) && (std::abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value)) {
         return true;
       } else {
         return false;
       }
     } else if (mom > 1.5) { // 1.5 -
-      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value)) {
+      if ((std::abs(nsigmaTOFK) < 2.0) && (std::abs(nsigmaTPCK) < ConfPhiSelection.ConfLooseTPCNSigmaValue.value)) {
         return true;
       } else {
         return false;
@@ -374,25 +377,25 @@ struct femtoUniverseProducerTask {
   bool IsKaonNSigmaTOFLoose(float mom, float nsigmaTPCK, float nsigmaTOFK)
   {
     if (mom < 0.3) { // 0.0-0.3
-      if (TMath::Abs(nsigmaTPCK) < 3.0) {
+      if (std::abs(nsigmaTPCK) < 3.0) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 0.45) { // 0.30 - 0.45
-      if (TMath::Abs(nsigmaTPCK) < 2.0) {
+      if (std::abs(nsigmaTPCK) < 2.0) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 0.55) { // 0.45-0.55
-      if (TMath::Abs(nsigmaTPCK) < 1.0) {
+      if (std::abs(nsigmaTPCK) < 1.0) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if ((TMath::Abs(nsigmaTOFK) < ConfPhiSelection.ConfLooseTOFNSigmaValue.value) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+      if ((std::abs(nsigmaTOFK) < ConfPhiSelection.ConfLooseTOFNSigmaValue.value) && (std::abs(nsigmaTPCK) < 3.0)) {
         {
           return true;
         }
@@ -400,7 +403,7 @@ struct femtoUniverseProducerTask {
         return false;
       }
     } else if (mom > 1.5) { // 1.5 -
-      if ((TMath::Abs(nsigmaTOFK) < ConfPhiSelection.ConfLooseTOFNSigmaValue.value) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+      if ((std::abs(nsigmaTOFK) < ConfPhiSelection.ConfLooseTOFNSigmaValue.value) && (std::abs(nsigmaTPCK) < 3.0)) {
         return true;
       } else {
         return false;
@@ -413,16 +416,16 @@ struct femtoUniverseProducerTask {
   bool IsKaonRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi)
   {
     if (mom < 0.5) {
-      if (TMath::Abs(nsigmaTPCPi) < ConfPhiSelection.ConfNsigmaRejectPion.value) {
+      if (std::abs(nsigmaTPCPi) < ConfPhiSelection.ConfNsigmaRejectPion.value) {
         return true;
-      } else if (TMath::Abs(nsigmaTPCPr) < ConfPhiSelection.ConfNsigmaRejectProton.value) {
+      } else if (std::abs(nsigmaTPCPr) < ConfPhiSelection.ConfNsigmaRejectProton.value) {
         return true;
       }
     }
     if (mom > 0.5) {
-      if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPhiSelection.ConfNsigmaRejectPion.value) {
+      if (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPhiSelection.ConfNsigmaRejectPion.value) {
         return true;
-      } else if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPhiSelection.ConfNsigmaRejectProton.value) {
+      } else if (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPhiSelection.ConfNsigmaRejectProton.value) {
         return true;
       } else {
         return false;
@@ -449,10 +452,10 @@ struct femtoUniverseProducerTask {
 
   void init(InitContext&)
   {
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent) == false) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent) == false) {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent) == true) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent) == true) {
       LOGF(fatal,
            "Cannot enable process Data and process MC at the same time. "
            "Please choose one.");
@@ -682,7 +685,7 @@ struct femtoUniverseProducerTask {
       int particleOrigin = 99;
       auto motherparticlesMC = particleMC.template mothers_as<aod::McParticles>();
 
-      if (abs(pdgCode) == abs(ConfPDGCodePartOne.value) || abs(pdgCode) == abs(ConfPDGCodePartTwo.value)) {
+      if (std::abs(pdgCode) == std::abs(ConfPDGCodePartOne.value) || std::abs(pdgCode) == std::abs(ConfPDGCodePartTwo.value)) {
         if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary;
         } else if (!motherparticlesMC.empty()) {
@@ -717,7 +720,7 @@ struct femtoUniverseProducerTask {
       auto motherskaon1MC = kaon1MC.template mothers_as<aod::McParticles>();
       auto motherskaon2MC = kaon2MC.template mothers_as<aod::McParticles>();
 
-      if (abs(pdgCode1) == abs(321) || abs(pdgCode2) == abs(-321)) {
+      if (std::abs(pdgCode1) == std::abs(321) || std::abs(pdgCode2) == std::abs(-321)) {
         if ((kaon1MC.isPhysicalPrimary() && kaon2MC.isPhysicalPrimary()) && (!motherskaon1MC.empty() && !motherskaon2MC.empty())) {
           for (auto& particleMotherOfNeg : motherskaon1MC) {
             for (auto& particleMotherOfPos : motherskaon2MC) {
@@ -738,8 +741,8 @@ struct femtoUniverseProducerTask {
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
 
-      float mMassOne = TDatabasePDG::Instance()->GetParticle(321)->Mass();  // FIXME: Get from the PDG service of the common header
-      float mMassTwo = TDatabasePDG::Instance()->GetParticle(-321)->Mass(); // FIXME: Get from the PDG service of the common header
+      const auto mMassOne = o2::constants::physics::MassKPlus;  // FIXME: Get from the PDG service of the common header
+      const auto mMassTwo = o2::constants::physics::MassKMinus; // FIXME: Get from the PDG service of the common header
 
       part1Vec.SetPtEtaPhiM(kaon1MC.pt(), kaon1MC.eta(), kaon1MC.phi(), mMassOne);
       part2Vec.SetPtEtaPhiM(kaon2MC.pt(), kaon2MC.eta(), kaon2MC.phi(), mMassTwo);
@@ -820,16 +823,12 @@ struct femtoUniverseProducerTask {
     }
   }
 
-  template <bool isMC, typename CollisionType, typename TrackType>
-  void fillCollisionsCentRun2(CollisionType const& col, TrackType const& tracks)
+  template <bool isMC, typename CollisionType>
+  bool fillCollisionsCentRun2(CollisionType const& col)
   {
     const auto vtxZ = col.posZ();
-    float cent = 0;
-    int multNtr = 0;
-    if (!ConfIsRun3) {
-      cent = col.centRun2V0M();
-      multNtr = col.multNTracksPV();
-    }
+    const auto cent = col.centRun2V0M();
+    const auto multNtr = col.multNTracksPV();
 
     // check whether the basic event selection criteria are fulfilled
     // if the basic selection is NOT fulfilled:
@@ -837,54 +836,33 @@ struct femtoUniverseProducerTask {
     // in case of trigger run - store such collisions but don't store any
     // particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
-      return;
-    }
-
-    // colCuts.fillQA(col); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
-    if (ConfDoSpher) {
-      outputCollision(vtxZ, cent, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+      return false;
     } else {
       outputCollision(vtxZ, cent, multNtr, 2, mMagField);
+      return true;
     }
   }
 
-  template <bool isMC, typename CollisionType, typename TrackType, typename V0Type, typename CascadeType>
-  void fillCollisionsCentRun3(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s, CascadeType const& fullCascades, double irrate)
+  template <bool isMC, typename CollisionType>
+  bool fillCollisionsCentRun3(CollisionType const& col)
   {
     const auto vtxZ = col.posZ();
-    float cent = 0;
-    int multNtr = 0;
-    if (ConfIsRun3) {
-      multNtr = col.multNTracksPV();
-      cent = col.centFT0C();
-    }
+    const auto multNtr = col.multNTracksPV();
+    const auto cent = col.centFT0C();
 
-    int occupancy = col.trackOccupancyInTimeRange();
     // check whether the basic event selection criteria are fulfilled
     // if the basic selection is NOT fulfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any
     // particle candidates for such collisions
     if (!colCuts.isSelectedRun3(col)) {
-      return;
-    }
-
-    // colCuts.fillQA(col); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
-    if ((col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (occupancy > ConfTPCOccupancyMin && occupancy <= ConfTPCOccupancyMax)) {
-      if (ConfDoSpher) {
-        outputCollision(vtxZ, cent, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
-      } else {
+      return false;
+    } else {
+      if ((col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         outputCollision(vtxZ, cent, multNtr, 2, mMagField);
-      }
-
-      fillCollisionsCentRun3ColExtra<isMC>(col, irrate);
-
-      fillTracks<isMC>(tracks);
-      if (ConfV0Selection.ConfIsFillV0s) {
-        fillV0<isMC>(col, fullV0s, tracks);
-      }
-      if (ConfCascadeSelection.ConfIsFillCascades) {
-        fillCascade<isMC>(col, fullCascades, tracks);
+        return true;
+      } else {
+        return false;
       }
     }
   }
@@ -892,7 +870,7 @@ struct femtoUniverseProducerTask {
   template <bool isMC, typename CollisionType>
   void fillCollisionsCentRun3ColExtra(CollisionType const& col, double irrate)
   {
-    int occupancy = col.trackOccupancyInTimeRange();
+    const auto occupancy = col.trackOccupancyInTimeRange();
     outputCollExtra(irrate, occupancy);
   }
 
@@ -1347,8 +1325,8 @@ struct femtoUniverseProducerTask {
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
 
-      float mMassOne = TDatabasePDG::Instance()->GetParticle(321)->Mass();  // FIXME: Get from the PDG service of the common header
-      float mMassTwo = TDatabasePDG::Instance()->GetParticle(-321)->Mass(); // FIXME: Get from the PDG service of the common header
+      const auto mMassOne = o2::constants::physics::MassKPlus;  // FIXME: Get from the PDG service of the common header
+      const auto mMassTwo = o2::constants::physics::MassKMinus; // FIXME: Get from the PDG service of the common header
 
       part1Vec.SetPtEtaPhiM(p1.pt(), p1.eta(), p1.phi(), mMassOne);
       part2Vec.SetPtEtaPhiM(p2.pt(), p2.eta(), p2.phi(), mMassTwo);
@@ -1357,7 +1335,7 @@ struct femtoUniverseProducerTask {
       sumVec += part2Vec;
 
       float phiEta = sumVec.Eta();
-      if (TMath::Abs(phiEta) > 0.8) {
+      if (std::abs(phiEta) > 0.8) {
         continue;
       }
 
@@ -1366,12 +1344,13 @@ struct femtoUniverseProducerTask {
         continue;
       }
 
-      float phiPhi = sumVec.Phi();
+      /*float phiPhi = sumVec.Phi();
       if (sumVec.Phi() < 0) {
-        phiPhi = sumVec.Phi() + 2 * o2::constants::math::PI;
+        phiPhi = sumVec.Phi() + o2::constants::math::TwoPI;
       } else if (sumVec.Phi() >= 0) {
         phiPhi = sumVec.Phi();
-      }
+      }*/
+      float phiPhi = RecoDecay::constrainAngle(sumVec.Phi(), 0);
       float phiM = sumVec.M();
 
       if (((phiM < ConfPhiSelection.ConfInvMassLowLimitPhi.value) || (phiM > ConfPhiSelection.ConfInvMassUpLimitPhi.value))) {
@@ -1782,49 +1761,97 @@ struct femtoUniverseProducerTask {
                          aod::BCsWithTimestamps const&,
                          soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
                          aod::McCollisions const&,
-                         aod::McParticles const&,
-                         soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s,
-                         soa::Join<aod::CascDatas, aod::McCascLabels> const& fullCascades)
+                         aod::McParticles const&)
   {
     // get magnetic field for run
     auto bc = col.bc_as<aod::BCsWithTimestamps>();
     getMagneticFieldTesla(bc);
-    double ir = 0.;
-    ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+    const double ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
 
     // fill the tables
-    fillCollisionsCentRun3<true>(col, tracks, fullV0s, fullCascades, ir);
+    const auto colcheck = fillCollisionsCentRun3<true>(col);
+    if (colcheck) {
+      fillCollisionsCentRun3ColExtra<true>(col, ir);
+      fillTracks<true>(tracks);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processFullMCCent, "Provide MC data with centrality bins", false);
 
   void processTrackCentRun2Data(aod::FemtoFullCollisionCentRun2 const& col,
                                 aod::BCsWithTimestamps const&,
-                                aod::FemtoFullTracks const& tracks)
+                                soa::Filtered<aod::FemtoFullTracks> const& tracks)
   {
     // get magnetic field for run
-    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    auto bc = col.bc_as<aod::BCsWithTimestamps>();
+    getMagneticFieldTesla(bc);
+    const double ir = 0.0; // fetch IR
+
     // fill the tables
-    fillCollisionsCentRun2<false>(col, tracks);
-    fillTracks<false>(tracks);
+    const auto colcheck = fillCollisionsCentRun2<false>(col);
+    if (colcheck) {
+      fillCollisionsCentRun3ColExtra<false>(col, ir);
+      fillTracks<false>(tracks);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackCentRun2Data, "Provide experimental data for Run 2 with centrality for track track", false);
 
   void processTrackCentRun3Data(aod::FemtoFullCollisionCentRun3 const& col,
                                 aod::BCsWithTimestamps const&,
-                                soa::Filtered<aod::FemtoFullTracks> const& tracks,
-                                aod::V0Datas const& fullV0s,
-                                aod::CascDatas const& fullCascades)
+                                soa::Filtered<aod::FemtoFullTracks> const& tracks)
   {
     // get magnetic field for run
     auto bc = col.bc_as<aod::BCsWithTimestamps>();
     getMagneticFieldTesla(bc);
-    double ir = 0.;
-    ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+    const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
 
     // fill the tables
-    fillCollisionsCentRun3<false>(col, tracks, fullV0s, fullCascades, ir);
+    const auto colcheck = fillCollisionsCentRun3<false>(col);
+    if (colcheck) {
+      fillCollisionsCentRun3ColExtra<false>(col, ir);
+      fillTracks<false>(tracks);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackCentRun3Data, "Provide experimental data for Run 3 with centrality for track track", false);
+
+  void processV0CentRun3Data(aod::FemtoFullCollisionCentRun3 const& col,
+                             aod::BCsWithTimestamps const&,
+                             soa::Filtered<aod::FemtoFullTracks> const& tracks,
+                             soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s)
+  {
+    // get magnetic field for run
+    auto bc = col.bc_as<aod::BCsWithTimestamps>();
+    getMagneticFieldTesla(bc);
+    const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+
+    // fill the tables
+    const auto colcheck = fillCollisionsCentRun3<false>(col);
+    if (colcheck) {
+      fillCollisionsCentRun3ColExtra<false>(col, ir);
+      fillTracks<false>(tracks);
+      fillV0<false>(col, fullV0s, tracks);
+    }
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processV0CentRun3Data, "Provide experimental data for Run 3 with centrality for track track", false);
+
+  void processCascadeCentRun3Data(aod::FemtoFullCollisionCentRun3 const& col,
+                                  aod::BCsWithTimestamps const&,
+                                  soa::Filtered<aod::FemtoFullTracks> const& tracks,
+                                  aod::CascDatas const& fullCascades)
+  {
+    // get magnetic field for run
+    auto bc = col.bc_as<aod::BCsWithTimestamps>();
+    getMagneticFieldTesla(bc);
+    const auto ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+
+    // fill the tables
+    const auto colcheck = fillCollisionsCentRun3<false>(col);
+    if (colcheck) {
+      fillCollisionsCentRun3ColExtra<false>(col, ir);
+      fillTracks<false>(tracks);
+      fillCascade<false>(col, fullCascades, tracks);
+    }
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processCascadeCentRun3Data, "Provide experimental data for Run 3 with centrality for track track", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
