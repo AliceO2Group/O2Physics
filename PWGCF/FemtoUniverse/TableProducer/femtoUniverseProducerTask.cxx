@@ -123,6 +123,7 @@ struct femtoUniverseProducerTask {
   Configurable<bool> ConfIsForceGRP{"ConfIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
   Configurable<bool> ConfDoSpher{"ConfDoSpher", false, "Calculate sphericity. If false sphericity will take value of 2."};
+  Configurable<bool> ConfFillCollExt{"ConfFillCollExt", false, "Option to fill collision extended table"};
 
   /// Event cuts
   FemtoUniverseCollisionSelection colCuts;
@@ -722,8 +723,8 @@ struct femtoUniverseProducerTask {
 
       if (std::abs(pdgCode1) == std::abs(321) || std::abs(pdgCode2) == std::abs(-321)) {
         if ((kaon1MC.isPhysicalPrimary() && kaon2MC.isPhysicalPrimary()) && (!motherskaon1MC.empty() && !motherskaon2MC.empty())) {
-          for (auto& particleMotherOfNeg : motherskaon1MC) {
-            for (auto& particleMotherOfPos : motherskaon2MC) {
+          for (auto const& particleMotherOfNeg : motherskaon1MC) {
+            for (auto const& particleMotherOfPos : motherskaon2MC) {
               if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 333) {
                 phiOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary;
               } else {
@@ -808,7 +809,7 @@ struct femtoUniverseProducerTask {
   template <typename CollisionType, typename TrackType>
   void fillMCTruthCollisions(CollisionType const& col, TrackType const& tracks)
   {
-    for (auto& c : col) {
+    for (auto const& c : col) {
       const auto vtxZ = c.posZ();
       float mult = 0;
       int multNtr = 0;
@@ -882,7 +883,7 @@ struct femtoUniverseProducerTask {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
 
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
       if (!trackCuts.isSelectedMinimal(track)) {
@@ -934,7 +935,7 @@ struct femtoUniverseProducerTask {
   {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
-    for (auto& v0 : fullV0s) {
+    for (auto const& v0 : fullV0s) {
       auto postrack = v0.template posTrack_as<TrackType>();
       auto negtrack = v0.template negTrack_as<TrackType>();
       ///\tocheck funnily enough if we apply the filter the
@@ -1285,7 +1286,7 @@ struct femtoUniverseProducerTask {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     // lorentz vectors and filling the tables
-    for (auto& [p1, p2] : combinations(soa::CombinationsFullIndexPolicy(tracks, tracks))) {
+    for (auto const& [p1, p2] : combinations(soa::CombinationsFullIndexPolicy(tracks, tracks))) {
       if (!trackCuts.isSelectedMinimal(p1) || !trackCuts.isSelectedMinimal(p1)) {
         continue;
       }
@@ -1431,7 +1432,7 @@ struct femtoUniverseProducerTask {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;
 
-    for (auto& particle : tracks) {
+    for (auto const& particle : tracks) {
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
 
@@ -1537,7 +1538,7 @@ struct femtoUniverseProducerTask {
   template <bool isMC, typename V0Type, typename TrackType,
             typename CollisionType>
   void fillCollisionsAndTracksAndV0AndPhi(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
-  {    
+  {
     const auto colcheck = fillCollisions<isMC>(col, tracks);
     if (colcheck) {
       fillTracks<isMC>(tracks);
@@ -1677,9 +1678,13 @@ struct femtoUniverseProducerTask {
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    const double ir = 0.0; // fetch IR
     // fill the tables
     const auto colcheck = fillCollisions<false>(col, tracks);
     if (colcheck) {
+      if (ConfFillCollExt) {
+        fillCollisionsCentRun3ColExtra<false>(col, ir);
+      }
       fillTracks<false>(tracks);
     }
   }
@@ -1754,19 +1759,19 @@ struct femtoUniverseProducerTask {
   {
     // recos
     std::set<int> recoMcIds;
-    for (auto& col : collisions) {
+    for (auto const& col : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
       auto groupedV0s = fullV0s.sliceBy(perCollisionV0s, col.globalIndex());
       getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
       fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedV0s);
-      for (auto& track : groupedTracks) {
+      for (auto const& track : groupedTracks) {
         if (trackCuts.isSelectedMinimal(track))
           recoMcIds.insert(track.mcParticleId());
       }
     }
 
     // truth
-    for (auto& mccol : mccols) {
+    for (auto const& mccol : mccols) {
       auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
       auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
       fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                           // fills the reco collisions for mc collision
