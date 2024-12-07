@@ -748,33 +748,33 @@ struct MeanPtFlucId {
     hist.fill(HIST(Dire[Mode]) + HIST("h_Q4"), nTPC, Q4, nFT0M);
 
     if (N > 1) {
-      double mean_pT = Q1 / static_cast<double>(N);
-      double N_pair = (static_cast<double>(N) * (static_cast<double>(N) - 1));
-      double twopart = twopart1 / N_pair;
-      double checkN_deno_var = (1 / std::sqrt(1 - (1 / static_cast<double>(N))));
-      hist.fill(HIST(Dire[Mode]) + HIST("h_mean_pT"), mean_pT);
-      hist.fill(HIST(Dire[Mode]) + HIST("p_mean_pT_Mult_var"), nTPC, mean_pT);
+      double meanPt = Q1 / static_cast<double>(N);
+      double nPair = (static_cast<double>(N) * (static_cast<double>(N) - 1));
+      double twopart = twopart1 / nPair;
+      double checkNDenoVar = (1 / std::sqrt(1 - (1 / static_cast<double>(N))));
+      hist.fill(HIST(Dire[Mode]) + HIST("h_mean_pT"), meanPt);
+      hist.fill(HIST(Dire[Mode]) + HIST("p_mean_pT_Mult_var"), nTPC, meanPt);
 
       hist.fill(HIST(Dire[Mode]) + HIST("h_Q1_var"), nTPC, Q1, nFT0M);
       hist.fill(HIST(Dire[Mode]) + HIST("h_N_var"), nTPC, N, nFT0M);
       hist.fill(HIST(Dire[Mode]) + HIST("h_twopart_nume_Mult_var"), nTPC, twopart1, nFT0M);
-      hist.fill(HIST(Dire[Mode]) + HIST("h_twopart_deno_Mult_var"), nTPC, N_pair, nFT0M);
-      hist.fill(HIST(Dire[Mode]) + HIST("h_mean_pT_Mult_var"), nTPC, mean_pT, nFT0M);
+      hist.fill(HIST(Dire[Mode]) + HIST("h_twopart_deno_Mult_var"), nTPC, nPair, nFT0M);
+      hist.fill(HIST(Dire[Mode]) + HIST("h_mean_pT_Mult_var"), nTPC, meanPt, nFT0M);
       hist.fill(HIST(Dire[Mode]) + HIST("h_twopart_Mult_var"), nTPC, twopart, nFT0M);
       hist.fill(HIST(Dire[Mode]) + HIST("p_CheckNCh"), nTPC, checkN_deno_var);
       hist.fill(HIST(Dire[Mode]) + HIST("h_CheckNCh"), nTPC, checkN_deno_var, nFT0M);
 
       if (N > 2) {
-        double N_triplet = (static_cast<double>(N) * (static_cast<double>(N) - 1) * (static_cast<double>(N) - 2));
-        double threepart = threepart1 / N_triplet;
-        hist.fill(HIST(Dire[Mode]) + HIST("h_mean_pT_Mult_skew"), nTPC, mean_pT, nFT0M);
+        double nTriplet = (static_cast<double>(N) * (static_cast<double>(N) - 1) * (static_cast<double>(N) - 2));
+        double threepart = threepart1 / nTriplet;
+        hist.fill(HIST(Dire[Mode]) + HIST("h_mean_pT_Mult_skew"), nTPC, meanPt, nFT0M);
         hist.fill(HIST(Dire[Mode]) + HIST("h_twopart_Mult_skew"), nTPC, twopart, nFT0M);
         hist.fill(HIST(Dire[Mode]) + HIST("h_threepart_Mult_skew"), nTPC, threepart, nFT0M);
 
         if (N > 3) {
-          double N_quad = (static_cast<double>(N) * (static_cast<double>(N) - 1) * (static_cast<double>(N) - 2) * (static_cast<double>(N) - 3));
-          double fourpart = fourpart1 / N_quad;
-          hist.fill(HIST(Dire[Mode]) + HIST("h_mean_pT_Mult_kurto"), nTPC, mean_pT, nFT0M);
+          double nQuad = (static_cast<double>(N) * (static_cast<double>(N) - 1) * (static_cast<double>(N) - 2) * (static_cast<double>(N) - 3));
+          double fourpart = fourpart1 / nQuad;
+          hist.fill(HIST(Dire[Mode]) + HIST("h_mean_pT_Mult_kurto"), nTPC, meanPt, nFT0M);
           hist.fill(HIST(Dire[Mode]) + HIST("h_twopart_Mult_kurto"), nTPC, twopart, nFT0M);
           hist.fill(HIST(Dire[Mode]) + HIST("h_threepart_Mult_kurto"), nTPC, threepart, nFT0M);
           hist.fill(HIST(Dire[Mode]) + HIST("h_fourpart_Mult_kurto"), nTPC, fourpart, nFT0M);
