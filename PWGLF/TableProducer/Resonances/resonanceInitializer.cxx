@@ -1039,6 +1039,11 @@ struct ResonanceInitializer {
     LOGF(info, "Bz set to %f for run: ", dBz, mRunNumber);
   }
 
+  void processDummy(ResoRun2Events const& collisions)
+  {
+  }
+  PROCESS_SWITCH(ResonanceInitializer, processDummy, "Process for dummy", true);
+
   void processTrackData(ResoEvents::iterator const& collision,
                         soa::Filtered<ResoTracks> const& tracks,
                         aod::BCsWithTimestamps const&)
@@ -1054,7 +1059,7 @@ struct ResonanceInitializer {
 
     fillTracks<false>(collision, tracks);
   }
-  PROCESS_SWITCH(ResonanceInitializer, processTrackData, "Process for data", true);
+  PROCESS_SWITCH(ResonanceInitializer, processTrackData, "Process for data", false);
 
   void processTrackDataRun2(ResoRun2Events::iterator const& collision,
                             soa::Filtered<ResoTracks> const& tracks,
