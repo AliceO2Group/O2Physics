@@ -762,7 +762,7 @@ struct femtoUniverseProducerTask {
   }
 
   template <bool isMC, typename CollisionType, typename TrackType>
-  void fillCollisions(CollisionType const& col, TrackType const& tracks)
+  bool fillCollisions(CollisionType const& col, TrackType const& tracks)
   {
     const auto vtxZ = col.posZ();
     float mult = 0;
@@ -785,22 +785,24 @@ struct femtoUniverseProducerTask {
     // in case of trigger run - store such collisions but don't store any
     // particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
-      return;
-    }
-    if (!ConfIsUsePileUp) {
-      if (ConfDoSpher) {
-        outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
-      } else {
-        outputCollision(vtxZ, mult, multNtr, 2, mMagField);
-      }
+      return false;
     } else {
-      if (ConfDoSpher && (!ConfEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!ConfEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!ConfEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))) {
-        outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+      if (!ConfIsUsePileUp) {
+        if (ConfDoSpher) {
+          outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+        } else {
+          outputCollision(vtxZ, mult, multNtr, 2, mMagField);
+        }
       } else {
-        outputCollision(vtxZ, mult, multNtr, 2, mMagField);
+        if (ConfDoSpher && (!ConfEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!ConfEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!ConfEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))) {
+          outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+        } else {
+          outputCollision(vtxZ, mult, multNtr, 2, mMagField);
+        }
       }
+      colCuts.fillQA(col);
+      return true;
     }
-    colCuts.fillQA(col);
   }
 
   template <typename CollisionType, typename TrackType>
@@ -1535,14 +1537,16 @@ struct femtoUniverseProducerTask {
   template <bool isMC, typename V0Type, typename TrackType,
             typename CollisionType>
   void fillCollisionsAndTracksAndV0AndPhi(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
-  {
-    fillCollisions<isMC>(col, tracks);
-    fillTracks<isMC>(tracks);
-    if (ConfIsActivateV0) {
-      fillV0<isMC>(col, fullV0s, tracks);
-    }
-    if (ConfIsActivatePhi) {
-      fillPhi<isMC>(col, tracks);
+  {    
+    const auto colcheck = fillCollisions<isMC>(col, tracks);
+    if (colcheck) {
+      fillTracks<isMC>(tracks);
+      if (ConfIsActivateV0) {
+        fillV0<isMC>(col, fullV0s, tracks);
+      }
+      if (ConfIsActivatePhi) {
+        fillPhi<isMC>(col, tracks);
+      }
     }
     // if (ConfIsActivateCascade) {
     //   fillCascade<false>(col, fullCascades, tracks);
@@ -1581,9 +1585,11 @@ struct femtoUniverseProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisions<false>(col, tracks);
-    fillTracks<false>(tracks);
-    fillCascade<false>(col, fullCascades, tracks);
+    const auto colcheck = fillCollisions<false>(col, tracks);
+    if (colcheck) {
+      fillTracks<false>(tracks);
+      fillCascade<false>(col, fullCascades, tracks);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackCascadeData, "Provide experimental data for track cascades", false);
 
@@ -1624,8 +1630,10 @@ struct femtoUniverseProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisions<true>(col, tracks);
-    fillTracks<true>(tracks);
+    const auto colcheck = fillCollisions<true>(col, tracks);
+    if (colcheck) {
+      fillTracks<true>(tracks);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMC, "Provide MC data for track analysis", false);
 
@@ -1638,9 +1646,11 @@ struct femtoUniverseProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisions<true>(col, tracks);
-    fillTracks<true>(tracks);
-    fillPhi<true>(col, tracks);
+    const auto colcheck = fillCollisions<true>(col, tracks);
+    if (colcheck) {
+      fillTracks<true>(tracks);
+      fillPhi<true>(col, tracks);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackPhiMC, "Provide MC data for track Phi analysis", false);
 
@@ -1653,9 +1663,11 @@ struct femtoUniverseProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisions<true>(col, tracks);
-    fillTracks<true>(tracks);
+    const auto colcheck = fillCollisions<true>(col, tracks);
+    if (colcheck) {
+      fillTracks<true>(tracks);
     // fillD0mesons<true>(col, tracks, candidates);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackD0MC, "Provide MC data for track D0 analysis", false);
 
@@ -1666,8 +1678,10 @@ struct femtoUniverseProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisions<false>(col, tracks);
-    fillTracks<false>(tracks);
+    const auto colcheck = fillCollisions<false>(col, tracks);
+    if (colcheck) {
+      fillTracks<false>(tracks);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackData,
                  "Provide experimental data for track track", true);
@@ -1680,9 +1694,11 @@ struct femtoUniverseProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisions<false>(col, tracks);
-    fillTracks<false>(tracks);
-    fillPhi<false>(col, tracks);
+    const auto colcheck = fillCollisions<false>(col, tracks);
+    if (colcheck) {
+      fillTracks<false>(tracks);
+      fillPhi<false>(col, tracks);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackPhiData,
                  "Provide experimental data for track phi", false);
@@ -1695,9 +1711,11 @@ struct femtoUniverseProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisions<false>(col, tracks);
-    fillTracks<false>(tracks);
-    fillD0mesons<false>(col, tracks, candidates);
+    const auto colcheck = fillCollisions<false>(col, tracks);
+    if (colcheck) {
+      fillTracks<false>(tracks);
+      fillD0mesons<false>(col, tracks, candidates);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackD0mesonData,
                  "Provide experimental data for track D0 meson", false);
