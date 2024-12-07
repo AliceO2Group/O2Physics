@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// temporary task to produce HF and DQ tables needed when making Lc jet derived data - should become obsolete when tables are able to be prouduced based on a configurable
+// temporary task to produce HF and DQ tables needed when making B+ jet derived data - should become obsolete when tables are able to be prouduced based on a configurable
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
@@ -25,7 +25,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct JetDerivedDataProducerDummyLcTask {
+struct JetDerivedDataProducerDummyTask {
 
   Produces<aod::HfD0CollBases> d0CollisionsTable;
   Produces<aod::HfD0McRCollIds> d0CollisionsMatchingTable;
@@ -38,17 +38,16 @@ struct JetDerivedDataProducerDummyLcTask {
   Produces<aod::HfD0McCollBases> d0McCollisionsTable;
   Produces<aod::HfD0PBases> d0ParticlesTable;
 
-  Produces<aod::HfBplusCollBases> bplusCollisionsTable;
-  Produces<aod::HfBplusMcRCollIds> bplusCollisionsMatchingTable;
-  Produces<aod::HfBplusBases> bplussTable;
-  Produces<aod::HfBplusPars> bplusParsTable;
-  Produces<aod::HfBplusParEs> bplusParExtrasTable;
-  Produces<aod::HfBplusParD0s> bplusParD0sTable;
-  Produces<aod::HfBplusMls> bplusMlsTable;
-  Produces<aod::HfBplusMlD0s> bplusMlD0sTable;
-  Produces<aod::HfBplusMcs> bplusMcsTable;
-  Produces<aod::HfBplusMcCollBases> bplusMcCollisionsTable;
-  Produces<aod::HfBplusPBases> bplusParticlesTable;
+  Produces<aod::HfLcCollBases> lcCollisionsTable;
+  Produces<aod::HfLcMcRCollIds> lcCollisionsMatchingTable;
+  Produces<aod::HfLcBases> lcsTable;
+  Produces<aod::HfLcPars> lcParsTable;
+  Produces<aod::HfLcParEs> lcParExtrasTable;
+  Produces<aod::HfLcSels> lcSelsTable;
+  Produces<aod::HfLcMls> lcMlsTable;
+  Produces<aod::HfLcMcs> lcMcsTable;
+  Produces<aod::HfLcMcCollBases> lcMcCollisionsTable;
+  Produces<aod::HfLcPBases> lcParticlesTable;
 
   Produces<aod::ReducedEvents> dielectronCollisionsTable;
   Produces<aod::Dielectrons> dielectronTable;
@@ -60,11 +59,11 @@ struct JetDerivedDataProducerDummyLcTask {
   void processDummy(aod::JDummys const&)
   {
   }
-  PROCESS_SWITCH(JetDerivedDataProducerDummyLcTask, processDummy, "leaves all tables empty", true);
+  PROCESS_SWITCH(JetDerivedDataProducerDummyTask, processDummy, "leaves all tables empty", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JetDerivedDataProducerDummyLcTask>(cfgc, TaskName{"jet-deriveddata-producer-dummy-lc"})};
+    adaptAnalysisTask<JetDerivedDataProducerDummyTask>(cfgc, TaskName{"jet-deriveddata-producer-dummy"})};
 }

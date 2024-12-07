@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file pidStudies.cxx
+/// \file taskPidStudies.cxx
 /// \brief task for studies of PID performance
 ///
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Università and INFN Torino
@@ -49,8 +49,12 @@ DECLARE_SOA_COLUMN(MassAntiLambda, massAntiLambda, float); //! Candidate mass
 DECLARE_SOA_COLUMN(Pt, pt, float);                         //! Transverse momentum of the candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtPos, ptPos, float);                   //! Transverse momentum of positive track (GeV/c)
 DECLARE_SOA_COLUMN(PtNeg, ptNeg, float);                   //! Transverse momentum of negative track (GeV/c)
+DECLARE_SOA_COLUMN(TpcInnerParPos, tpcInnerParPos, float); //! Momentum of positive track at inner wall of TPC (GeV/c)
+DECLARE_SOA_COLUMN(TpcInnerParNeg, tpcInnerParNeg, float); //! Momentum of negative track at inner wall of TPC (GeV/c)
 DECLARE_SOA_COLUMN(Radius, radius, float);                 //! Radius
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                       //! Cosine of pointing angle
+DECLARE_SOA_COLUMN(DcaV0Daughters, dcaV0Daughters, float); //! DCA between V0 daughters
+DECLARE_SOA_COLUMN(DcaV0ToPv, dcaV0ToPv, float);           //! DCA V0 to PV
 DECLARE_SOA_COLUMN(NSigmaTpcPosPi, nSigmaTpcPosPi, float); //! nSigmaTPC of positive track with pion hypothesis
 DECLARE_SOA_COLUMN(NSigmaTpcNegPi, nSigmaTpcNegPi, float); //! nSigmaTPC of negative track with pion hypothesis
 DECLARE_SOA_COLUMN(NSigmaTpcPosPr, nSigmaTpcPosPr, float); //! nSigmaTPC of positive track with proton hypothesis
@@ -66,10 +70,10 @@ DECLARE_SOA_COLUMN(QtArm, qtArm, float);                   //! Armenteros Qt
 DECLARE_SOA_COLUMN(MassOmega, massOmega, float);             //! Candidate mass
 DECLARE_SOA_COLUMN(MassXi, massXi, float);                   //! Candidate mass
 DECLARE_SOA_COLUMN(BachPt, bachPt, float);                   //! Transverse momentum of the bachelor (GeV/c)
+DECLARE_SOA_COLUMN(TpcInnerParBach, tpcInnerParBach, float); //! Transverse momentum of the bachelor (GeV/c)
+DECLARE_SOA_COLUMN(MLambda, mLambda, float);                 //! Daughter lambda mass (GeV/c^2)
 DECLARE_SOA_COLUMN(V0cosPA, v0cosPA, float);                 //! V0 CPA
-DECLARE_SOA_COLUMN(CascCosPA, casccosPA, float);             //! Cascade CPA
-DECLARE_SOA_COLUMN(DCAV0daughters, dcaV0daughters, float);   //! DCA of V0 daughters
-DECLARE_SOA_COLUMN(DCAv0topv, dcav0topv, float);             //! V0 DCA to PV
+DECLARE_SOA_COLUMN(CascCosPa, cascCosPa, float);             //! Cascade CPA
 DECLARE_SOA_COLUMN(NSigmaTpcBachKa, nSigmaTpcBachKa, float); //! nSigmaTPC of bachelor with kaon hypothesis
 DECLARE_SOA_COLUMN(NSigmaTofBachKa, nSigmaTofBachKa, float); //! nSigmaTOF of bachelor with kaon hypothesis
 
@@ -88,8 +92,12 @@ DECLARE_SOA_TABLE(PidV0s, "AOD", "PIDV0S", //! Table with PID information
                   pid_studies::Pt,
                   pid_studies::PtPos,
                   pid_studies::PtNeg,
+                  pid_studies::TpcInnerParPos,
+                  pid_studies::TpcInnerParNeg,
                   pid_studies::Radius,
                   pid_studies::Cpa,
+                  pid_studies::DcaV0Daughters,
+                  pid_studies::DcaV0ToPv,
                   pid_studies::NSigmaTpcPosPi,
                   pid_studies::NSigmaTpcNegPi,
                   pid_studies::NSigmaTpcPosPr,
@@ -110,11 +118,13 @@ DECLARE_SOA_TABLE(PidCascades, "AOD", "PIDCASCADES", //! Table with PID informat
                   pid_studies::MassOmega,
                   pid_studies::Pt,
                   pid_studies::BachPt,
+                  pid_studies::TpcInnerParBach,
+                  pid_studies::MLambda,
                   pid_studies::V0cosPA,
                   pid_studies::MassXi,
-                  pid_studies::CascCosPA,
-                  pid_studies::DCAV0daughters,
-                  pid_studies::DCAv0topv,
+                  pid_studies::CascCosPa,
+                  pid_studies::DcaV0Daughters,
+                  pid_studies::DcaV0ToPv,
                   pid_studies::NSigmaTpcBachKa,
                   pid_studies::NSigmaTofBachKa,
                   pid_studies::OccupancyFt0c,
@@ -124,7 +134,7 @@ DECLARE_SOA_TABLE(PidCascades, "AOD", "PIDCASCADES", //! Table with PID informat
                   pid_studies::CandFlag);
 } // namespace o2::aod
 
-struct HfPidStudies {
+struct HfTaskPidStudies {
   Produces<o2::aod::PidV0s> pidV0;
   Produces<o2::aod::PidCascades> pidCascade;
 
@@ -134,6 +144,8 @@ struct HfPidStudies {
   Configurable<float> massLambdaMax{"massLambdaMax", 1.3, "Maximum mass for lambda"};
   Configurable<float> massOmegaMin{"massOmegaMin", 1.5, "Minimum mass for omega"};
   Configurable<float> massOmegaMax{"massOmegaMax", 1.8, "Maximum mass for omega"};
+  Configurable<float> qtArmenterosMinForK0{"qtArmenterosMinForK0", 0.12, "Minimum Armenteros' qt for K0"};
+  Configurable<float> qtArmenterosMaxForLambda{"qtArmenterosMaxForLambda", 0.12, "Minimum Armenteros' qt for (anti)Lambda"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to keep"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
@@ -143,6 +155,13 @@ struct HfPidStudies {
   using CollSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
   using V0sMcRec = soa::Join<aod::V0Datas, aod::V0CoreMCLabels>;
   using CascsMcRec = soa::Join<aod::CascDatas, aod::CascCoreMCLabels>;
+
+  void init(InitContext&)
+  {
+    if ((doprocessV0Mc && doprocessV0Data) || (doprocessCascMc && doprocessCascData)) {
+      LOGP(fatal, "Both data and MC process functions were enabled! Please check your configuration!");
+    }
+  }
 
   template <bool isV0, typename Cand>
   void fillTree(Cand const& candidate, const int flag)
@@ -163,8 +182,12 @@ struct HfPidStudies {
         candidate.pt(),
         posTrack.pt(),
         negTrack.pt(),
+        posTrack.tpcInnerParam(),
+        negTrack.tpcInnerParam(),
         candidate.v0radius(),
         candidate.v0cosPA(),
+        candidate.dcaV0daughters(),
+        candidate.dcav0topv(),
         posTrack.tofNSigmaPi(),
         negTrack.tofNSigmaPi(),
         posTrack.tofNSigmaPr(),
@@ -186,6 +209,8 @@ struct HfPidStudies {
         candidate.mOmega(),
         candidate.pt(),
         candidate.bachelorpt(),
+        bachTrack.tpcInnerParam(),
+        candidate.mLambda(),
         candidate.v0cosPA(coll.posX(), coll.posY(), coll.posZ()),
         candidate.mXi(),
         candidate.casccosPA(coll.posX(), coll.posY(), coll.posZ()),
@@ -242,25 +267,78 @@ struct HfPidStudies {
     return aod::pid_studies::Particle::NotMatched;
   }
 
-  void processMc(V0sMcRec const& V0s,
-                 aod::V0MCCores const&,
-                 CascsMcRec const& cascades,
-                 aod::CascMCCores const&,
-                 CollSels const&,
-                 PidTracks const&)
+  template <typename V0Cand>
+  bool isSelectedV0AsK0s(const V0Cand& v0)
+  {
+    if (v0.mK0Short() < massK0Min || v0.mK0Short() > massK0Max) {
+      return false;
+    }
+    if (v0.qtarm() < qtArmenterosMinForK0) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename V0Cand>
+  bool isSelectedV0AsLambda(const V0Cand& v0)
+  {
+    if ((v0.mLambda() < massLambdaMin || v0.mLambda() > massLambdaMax) &&
+        (v0.mAntiLambda() < massLambdaMin || v0.mAntiLambda() > massLambdaMax)) {
+      return false;
+    }
+    if (v0.qtarm() > qtArmenterosMaxForLambda) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename CascCand>
+  bool isSelectedCascAsOmega(const CascCand& casc)
+  {
+    if (casc.mOmega() < massOmegaMin || casc.mOmega() > massOmegaMax) {
+      return false;
+    }
+    if (casc.mLambda() < massLambdaMin || casc.mLambda() > massLambdaMax) {
+      return false;
+    }
+    return true;
+  }
+
+  void processV0Mc(V0sMcRec const& V0s,
+                   aod::V0MCCores const&,
+                   CollSels const&,
+                   PidTracks const&)
   {
     for (const auto& v0 : V0s) {
-      if ((v0.mK0Short() > massK0Min && v0.mK0Short() < massK0Max) ||
-          (v0.mLambda() > massLambdaMin && v0.mLambda() < massLambdaMax) ||
-          (v0.mAntiLambda() > massLambdaMin && v0.mAntiLambda() < massLambdaMax)) {
+      if (isSelectedV0AsK0s(v0) || isSelectedV0AsLambda(v0)) {
         int matched = isMatched(v0);
         if (matched != aod::pid_studies::Particle::NotMatched) {
           fillTree<true>(v0, matched);
         }
       }
     }
+  }
+  PROCESS_SWITCH(HfTaskPidStudies, processV0Mc, "Process MC", true);
+
+  void processV0Data(aod::V0Datas const& V0s,
+                     CollSels const&,
+                     PidTracks const&)
+  {
+    for (const auto& v0 : V0s) {
+      if (isSelectedV0AsK0s(v0) || isSelectedV0AsLambda(v0)) {
+        fillTree<true>(v0, aod::pid_studies::Particle::NotMatched);
+      }
+    }
+  }
+  PROCESS_SWITCH(HfTaskPidStudies, processV0Data, "Process data", false);
+
+  void processCascMc(CascsMcRec const& cascades,
+                     aod::CascMCCores const&,
+                     CollSels const&,
+                     PidTracks const&)
+  {
     for (const auto& casc : cascades) {
-      if (casc.mOmega() > massOmegaMin && casc.mOmega() < massOmegaMax && casc.mLambda() > massLambdaMin && casc.mLambda() < massLambdaMax) {
+      if (isSelectedCascAsOmega(casc)) {
         int matched = isMatched(casc);
         if (matched != aod::pid_studies::Particle::NotMatched) {
           fillTree<false>(casc, matched);
@@ -268,27 +346,22 @@ struct HfPidStudies {
       }
     }
   }
-  PROCESS_SWITCH(HfPidStudies, processMc, "Process MC", true);
+  PROCESS_SWITCH(HfTaskPidStudies, processCascMc, "Process MC", true);
 
-  void processData(aod::V0Datas const& V0s, aod::CascDatas const& cascades, CollSels const&, PidTracks const&)
+  void processCascData(aod::CascDatas const& cascades,
+                       CollSels const&,
+                       PidTracks const&)
   {
-    for (const auto& v0 : V0s) {
-      if ((v0.mK0Short() > massK0Min && v0.mK0Short() < massK0Max) ||
-          (v0.mLambda() > massLambdaMin && v0.mLambda() < massLambdaMax) ||
-          (v0.mAntiLambda() > massLambdaMin && v0.mAntiLambda() < massLambdaMax)) {
-        fillTree<true>(v0, aod::pid_studies::Particle::NotMatched);
-      }
-    }
     for (const auto& casc : cascades) {
-      if (casc.mOmega() > massOmegaMin && casc.mOmega() < massOmegaMax && casc.mLambda() > massLambdaMin && casc.mLambda() < massLambdaMax) {
+      if (isSelectedCascAsOmega(casc)) {
         fillTree<false>(casc, aod::pid_studies::Particle::NotMatched);
       }
     }
   }
-  PROCESS_SWITCH(HfPidStudies, processData, "Process data", false);
+  PROCESS_SWITCH(HfTaskPidStudies, processCascData, "Process data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfPidStudies>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskPidStudies>(cfgc)};
 }
