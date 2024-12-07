@@ -75,6 +75,7 @@ struct HfCorrelatorLcHadronsSelection {
   // filter on selection of Lc and decay channel Lc->PKPi
   Filter lcFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
 
+  /// Code to select collisions with at least one Lc - for real data and data-like analysis
   void processLcSelectionData(SelCollisions::iterator const& collision,
                               CandidatesLcData const& candidates)
   {
