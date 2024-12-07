@@ -413,7 +413,7 @@ class TestPdgCode(TestSpec):
         line = remove_comment_cpp(line)
         if re.search(r"->(GetParticle|Mass)\([+-]?[0-9]+\)", line):
             return False
-        match = re.search(r"[Pp][Dd][Gg][\w]* ={1,2} [+-]?([0-9]+);", line)
+        match = re.search(r"[Pp][Dd][Gg].* !?={1,2} [+-]?([0-9]+)", line)
         if match:
             code = match.group(1)
             if code not in ("0", "1", "999"):
