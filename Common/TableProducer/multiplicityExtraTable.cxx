@@ -245,6 +245,7 @@ struct MultiplicityExtraTable {
         tru(multFDDA), tru(multFDDC), tru(multZNA), tru(multZNC), tru(multZEM1),
         tru(multZEM2), tru(multZPA), tru(multZPC), Tvx, isFV0OrA,
         multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC,
+        bc.timestamp(),
         bc.flags());
     }
   }
