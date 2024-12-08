@@ -104,6 +104,7 @@ struct quarkoniaToHyperons {
   Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", true, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
   Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
 
+  Configurable<bool> buildK0sK0sPairs{"buildK0sK0sPairs", false, "Build K0s K0s from charmonia decay"};
   Configurable<bool> buildLaLaBarPairs{"buildLaLaBarPairs", false, "Build Lambda antiLambda from charmonia decay"};
   Configurable<bool> buildXiXiBarPairs{"buildXiXiBarPairs", false, "Build Xi antiXi from charmonia decay"};
   Configurable<bool> buildOmOmBarPairs{"buildOmOmBarPairs", false, "Build Omega antiOmega from charmonia decay"};
@@ -301,6 +302,10 @@ struct quarkoniaToHyperons {
   ConfigurableAxis axisOmegaMass{"axisOmegaMass", {500, 1.670f, 1.675f}, "Omega mass (GeV/#it{c}^{2})"};
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {200, -10.0f, 10.0f}, "N sigma TPC"};
 
+  // AP plot axes
+  ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
+  ConfigurableAxis axisAPQt{"axisAPQt", {220, 0.0f, 0.5f}, "V0 AP alpha"};
+
   // Track quality axes
   ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
   ConfigurableAxis axisITSclus{"axisITSclus", {7, 0.0f, 7.0f}, "N ITS Clusters"};
@@ -491,6 +496,44 @@ struct quarkoniaToHyperons {
     }
 
     // histograms versus mass
+    if (buildK0sK0sPairs) {
+      histos.add("K0sK0s/h3dMassK0sK0s", "h3dMassK0sK0s", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+      if (!isPP) {
+        // Non-UPC info
+        histos.add("K0sK0s/h3dMassK0sK0sHadronic", "h3dMassK0sK0sHadronic", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        // UPC info
+        histos.add("K0sK0s/h3dMassK0sK0sSGA", "h3dMassK0sK0sSGA", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dMassK0sK0sSGC", "h3dMassK0sK0sSGC", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dMassK0sK0sDG", "h3dMassK0sK0sDG", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+      }
+      histos.add("K0sK0s/h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
+      // QA plot
+      // Candidates after K0s selections
+      histos.add("K0sK0s/K0s/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
+      histos.add("K0sK0s/K0s/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axisDCAtoPV});
+      histos.add("K0sK0s/K0s/hDCAV0Daughters", "hDCAV0Daughters", kTH1F, {axisDCAdau});
+      histos.add("K0sK0s/K0s/hDCAV0ToPV", "hDCAV0ToPV", kTH1F, {axisDCAV0ToPV});
+      histos.add("K0sK0s/K0s/hV0PointingAngle", "hV0PointingAngle", kTH1F, {axisPointingAngle});
+      histos.add("K0sK0s/K0s/hV0Radius", "hV0Radius", kTH1F, {axisRadius});
+      histos.add("K0sK0s/K0s/hV0DecayLength", "hDecayLength", kTH1F, {axisProperLifeTime});
+      histos.add("K0sK0s/K0s/hV0InvMassWindow", "hInvMassWindow", kTH1F, {axisMassWindow});
+      histos.add("K0sK0s/K0s/h2dCompetingMassRej", "h2dCompetingMassRej", kTH2F, {axisLambdaMass, axisK0Mass});
+      histos.add("K0sK0s/K0s/h2dArmenteros", "h2dArmenteros", kTH2F, {axisAPAlpha, axisAPQt});
+      histos.add("K0sK0s/K0s/hPosTPCNsigma", "hPosTPCNsigma", kTH1F, {axisNsigmaTPC});
+      histos.add("K0sK0s/K0s/hNegTPCNsigma", "hNegTPCNsigma", kTH1F, {axisNsigmaTPC});
+      histos.add("K0sK0s/K0s/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+      histos.add("K0sK0s/K0s/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+      if (doMCAssociation) {
+        histos.add("K0sK0s/h3dInvMassTrueEtaC1S", "h3dInvMassTrueEtaC1S", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueJPsi", "h3dInvMassTrueJPsi", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueChiC0", "h3dInvMassTrueChiC0", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueChiC1", "h3dInvMassTrueChiC1", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueHC", "h3dInvMassTrueHC", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueChiC2", "h3dInvMassTrueChiC2", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueEtaC2S", "h3dInvMassTrueEtaC2S", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTruePsi2S", "h3dInvMassTruePsi2S", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+      }
+    }
     if (buildLaLaBarPairs) {
       histos.add("LaLaBar/h3dMassLaLabar", "h3dMassLaLabar", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
       if (!isPP) {
@@ -501,7 +544,6 @@ struct quarkoniaToHyperons {
         histos.add("LaLaBar/h3dMassLaLabarSGC", "h3dMassLaLabarSGC", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
         histos.add("LaLaBar/h3dMassLaLabarDG", "h3dMassLaLabarDG", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
       }
-      histos.add("LaLaBar/h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
       histos.add("LaLaBar/h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
       histos.add("LaLaBar/h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
       // QA plot
@@ -1383,12 +1425,55 @@ struct quarkoniaToHyperons {
         auto posTrackExtraAntiHyperon = antiHyperon.template posTrackExtra_as<dauTracks>();
         auto negTrackExtraAntiHyperon = antiHyperon.template negTrackExtra_as<dauTracks>();
 
+        float hyperonDecayLength = std::sqrt(std::pow(hyperon.x() - collision.posX(), 2) + std::pow(hyperon.y() - collision.posY(), 2) + std::pow(hyperon.z() - collision.posZ(), 2)) * o2::constants::physics::MassKaonNeutral / (hyperon.p() + 1E-10);
+        float antiHyperonDecayLength = std::sqrt(std::pow(antiHyperon.x() - collision.posX(), 2) + std::pow(antiHyperon.y() - collision.posY(), 2) + std::pow(antiHyperon.z() - collision.posZ(), 2)) * o2::constants::physics::MassKaonNeutral / (antiHyperon.p() + 1E-10);
+
+        // Candidates after K0s selections
+        histos.fill(HIST("K0sK0s/K0s/hPosDCAToPV"), hyperon.dcapostopv());
+        histos.fill(HIST("K0sK0s/K0s/hNegDCAToPV"), hyperon.dcanegtopv());
+        histos.fill(HIST("K0sK0s/K0s/hDCAV0Daughters"), hyperon.dcaV0daughters());
+        histos.fill(HIST("K0sK0s/K0s/hDCAV0ToPV"), hyperon.dcav0topv());
+        histos.fill(HIST("K0sK0s/K0s/hV0PointingAngle"), hyperon.v0cosPA());
+        histos.fill(HIST("K0sK0s/K0s/hV0Radius"), hyperon.v0radius());
+        histos.fill(HIST("K0sK0s/K0s/hV0DecayLength"), hyperonDecayLength);
+        histos.fill(HIST("K0sK0s/K0s/hV0InvMassWindow"), hyperon.mK0Short() - pdgDB->Mass(310));
+        histos.fill(HIST("K0sK0s/K0s/h2dCompetingMassRej"), hyperon.mLambda(), hyperon.mK0Short());
+        histos.fill(HIST("K0sK0s/K0s/h2dArmenteros"), hyperon.alpha(), hyperon.qtarm()); // cross-check
+        histos.fill(HIST("K0sK0s/K0s/hPosTPCNsigma"), posTrackExtraHyperon.tpcNSigmaPi());
+        histos.fill(HIST("K0sK0s/K0s/hNegTPCNsigma"), negTrackExtraHyperon.tpcNSigmaPi());
+        histos.fill(HIST("K0sK0s/K0s/h2dPositiveITSvsTPCpts"), posTrackExtraHyperon.tpcCrossedRows(), posTrackExtraHyperon.itsNCls());
+        histos.fill(HIST("K0sK0s/K0s/h2dNegativeITSvsTPCpts"), negTrackExtraHyperon.tpcCrossedRows(), negTrackExtraHyperon.itsNCls());
+        // Candidates after K0s selections
+        histos.fill(HIST("K0sK0s/K0s/hPosDCAToPV"), antiHyperon.dcapostopv());
+        histos.fill(HIST("K0sK0s/K0s/hNegDCAToPV"), antiHyperon.dcanegtopv());
+        histos.fill(HIST("K0sK0s/K0s/hDCAV0Daughters"), antiHyperon.dcaV0daughters());
+        histos.fill(HIST("K0sK0s/K0s/hDCAV0ToPV"), antiHyperon.dcav0topv());
+        histos.fill(HIST("K0sK0s/K0s/hV0PointingAngle"), antiHyperon.v0cosPA());
+        histos.fill(HIST("K0sK0s/K0s/hV0Radius"), antiHyperon.v0radius());
+        histos.fill(HIST("K0sK0s/K0s/hV0DecayLength"), antiHyperonDecayLength);
+        histos.fill(HIST("K0sK0s/K0s/hV0InvMassWindow"), antiHyperon.mK0Short() - pdgDB->Mass(310));
+        histos.fill(HIST("K0sK0s/K0s/h2dCompetingMassRej"), antiHyperon.mLambda(), antiHyperon.mK0Short());
+        histos.fill(HIST("K0sK0s/K0s/h2dArmenteros"), antiHyperon.alpha(), antiHyperon.qtarm()); // cross-check
+        histos.fill(HIST("K0sK0s/K0s/hPosTPCNsigma"), posTrackExtraAntiHyperon.tpcNSigmaPi());
+        histos.fill(HIST("K0sK0s/K0s/hNegTPCNsigma"), negTrackExtraAntiHyperon.tpcNSigmaPi());
+        histos.fill(HIST("K0sK0s/K0s/h2dPositiveITSvsTPCpts"), posTrackExtraAntiHyperon.tpcCrossedRows(), posTrackExtraAntiHyperon.itsNCls());
+        histos.fill(HIST("K0sK0s/K0s/h2dNegativeITSvsTPCpts"), negTrackExtraAntiHyperon.tpcCrossedRows(), negTrackExtraAntiHyperon.itsNCls());
+      }
+    }
+    if (type == 1) {
+      if constexpr (requires { hyperon.mK0Short(); antiHyperon.mK0Short(); }) { // check if v0 information is available
+        auto posTrackExtraHyperon = hyperon.template posTrackExtra_as<dauTracks>();
+        auto negTrackExtraHyperon = hyperon.template negTrackExtra_as<dauTracks>();
+
+        auto posTrackExtraAntiHyperon = antiHyperon.template posTrackExtra_as<dauTracks>();
+        auto negTrackExtraAntiHyperon = antiHyperon.template negTrackExtra_as<dauTracks>();
+
         float hyperonDecayLength = std::sqrt(std::pow(hyperon.x() - collision.posX(), 2) + std::pow(hyperon.y() - collision.posY(), 2) + std::pow(hyperon.z() - collision.posZ(), 2)) * o2::constants::physics::MassLambda0 / (hyperon.p() + 1E-10);
         float antiHyperonDecayLength = std::sqrt(std::pow(antiHyperon.x() - collision.posX(), 2) + std::pow(antiHyperon.y() - collision.posY(), 2) + std::pow(antiHyperon.z() - collision.posZ(), 2)) * o2::constants::physics::MassLambda0 / (antiHyperon.p() + 1E-10);
 
         // Candidates after Lambda selections
         histos.fill(HIST("LaLaBar/Lambda/hPosDCAToPV"), hyperon.dcapostopv());
-        histos.fill(HIST("LaLaBar/Lambda/hNegDCAToPV"), hyperon.dcapostopv());
+        histos.fill(HIST("LaLaBar/Lambda/hNegDCAToPV"), hyperon.dcanegtopv());
         histos.fill(HIST("LaLaBar/Lambda/hDCAV0Daughters"), hyperon.dcaV0daughters());
         histos.fill(HIST("LaLaBar/Lambda/hDCAV0ToPV"), hyperon.dcav0topv());
         histos.fill(HIST("LaLaBar/Lambda/hV0PointingAngle"), hyperon.v0cosPA());
@@ -1416,7 +1501,7 @@ struct quarkoniaToHyperons {
         histos.fill(HIST("LaLaBar/AntiLambda/h2dNegativeITSvsTPCpts"), negTrackExtraAntiHyperon.tpcCrossedRows(), negTrackExtraAntiHyperon.itsNCls());
       }
     }
-    if (type == 1) {
+    if (type == 2) {
       if constexpr (requires { hyperon.dcabachtopv(); antiHyperon.dcabachtopv(); }) { // check if Cascade information is available
         auto bachTrackExtraHyperon = hyperon.template bachTrackExtra_as<dauTracks>();
         auto posTrackExtraHyperon = hyperon.template posTrackExtra_as<dauTracks>();
@@ -1432,7 +1517,7 @@ struct quarkoniaToHyperons {
         // Candidates after Xi selections
         histos.fill(HIST("XiXiBar/Xi/hBachDCAToPV"), hyperon.dcabachtopv());
         histos.fill(HIST("XiXiBar/Xi/hPosDCAToPV"), hyperon.dcapostopv());
-        histos.fill(HIST("XiXiBar/Xi/hNegDCAToPV"), hyperon.dcapostopv());
+        histos.fill(HIST("XiXiBar/Xi/hNegDCAToPV"), hyperon.dcanegtopv());
         histos.fill(HIST("XiXiBar/Xi/hDCACascDaughters"), hyperon.dcacascdaughters());
         histos.fill(HIST("XiXiBar/Xi/hDCAV0Daughters"), hyperon.dcaV0daughters());
         histos.fill(HIST("XiXiBar/Xi/hDCAV0ToPV"), hyperon.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1453,7 +1538,7 @@ struct quarkoniaToHyperons {
         // Candidates after AntiXi selections
         histos.fill(HIST("XiXiBar/AntiXi/hBachDCAToPV"), antiHyperon.dcabachtopv());
         histos.fill(HIST("XiXiBar/AntiXi/hPosDCAToPV"), antiHyperon.dcapostopv());
-        histos.fill(HIST("XiXiBar/AntiXi/hNegDCAToPV"), antiHyperon.dcapostopv());
+        histos.fill(HIST("XiXiBar/AntiXi/hNegDCAToPV"), antiHyperon.dcanegtopv());
         histos.fill(HIST("XiXiBar/AntiXi/hDCACascDaughters"), antiHyperon.dcacascdaughters());
         histos.fill(HIST("XiXiBar/AntiXi/hDCAV0Daughters"), antiHyperon.dcaV0daughters());
         histos.fill(HIST("XiXiBar/AntiXi/hDCAV0ToPV"), antiHyperon.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1473,7 +1558,7 @@ struct quarkoniaToHyperons {
         histos.fill(HIST("XiXiBar/AntiXi/h2dNegativeITSvsTPCpts"), negTrackExtraAntiHyperon.tpcCrossedRows(), negTrackExtraAntiHyperon.itsNCls());
       }
     }
-    if (type == 2) {
+    if (type == 3) {
       if constexpr (requires { hyperon.dcabachtopv(); antiHyperon.dcabachtopv(); }) { // check if Cascade information is available
         auto bachTrackExtraHyperon = hyperon.template bachTrackExtra_as<dauTracks>();
         auto posTrackExtraHyperon = hyperon.template posTrackExtra_as<dauTracks>();
@@ -1489,7 +1574,7 @@ struct quarkoniaToHyperons {
         // Candidates after Omega selections
         histos.fill(HIST("OmOmBar/Omega/hBachDCAToPV"), hyperon.dcabachtopv());
         histos.fill(HIST("OmOmBar/Omega/hPosDCAToPV"), hyperon.dcapostopv());
-        histos.fill(HIST("OmOmBar/Omega/hNegDCAToPV"), hyperon.dcapostopv());
+        histos.fill(HIST("OmOmBar/Omega/hNegDCAToPV"), hyperon.dcanegtopv());
         histos.fill(HIST("OmOmBar/Omega/hDCACascDaughters"), hyperon.dcacascdaughters());
         histos.fill(HIST("OmOmBar/Omega/hDCAV0Daughters"), hyperon.dcaV0daughters());
         histos.fill(HIST("OmOmBar/Omega/hDCAV0ToPV"), hyperon.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1510,7 +1595,7 @@ struct quarkoniaToHyperons {
         // Candidates after AntiOmega selections
         histos.fill(HIST("OmOmBar/AntiOmega/hBachDCAToPV"), antiHyperon.dcabachtopv());
         histos.fill(HIST("OmOmBar/AntiOmega/hPosDCAToPV"), antiHyperon.dcapostopv());
-        histos.fill(HIST("OmOmBar/AntiOmega/hNegDCAToPV"), antiHyperon.dcapostopv());
+        histos.fill(HIST("OmOmBar/AntiOmega/hNegDCAToPV"), antiHyperon.dcanegtopv());
         histos.fill(HIST("OmOmBar/AntiOmega/hDCACascDaughters"), antiHyperon.dcacascdaughters());
         histos.fill(HIST("OmOmBar/AntiOmega/hDCAV0Daughters"), antiHyperon.dcaV0daughters());
         histos.fill(HIST("OmOmBar/AntiOmega/hDCAV0ToPV"), antiHyperon.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1541,10 +1626,12 @@ struct quarkoniaToHyperons {
 
     float invmass = -1;
     if (type == 0)
-      invmass = RecoDecay::m(std::array{std::array{hyperon.px(), hyperon.py(), hyperon.pz()}, std::array{antiHyperon.px(), antiHyperon.py(), antiHyperon.pz()}}, std::array{o2::constants::physics::MassLambda0, o2::constants::physics::MassLambda0Bar});
+      invmass = RecoDecay::m(std::array{std::array{hyperon.px(), hyperon.py(), hyperon.pz()}, std::array{antiHyperon.px(), antiHyperon.py(), antiHyperon.pz()}}, std::array{o2::constants::physics::MassKaonNeutral, o2::constants::physics::MassKaonNeutral});
     if (type == 1)
-      invmass = RecoDecay::m(std::array{std::array{hyperon.px(), hyperon.py(), hyperon.pz()}, std::array{antiHyperon.px(), antiHyperon.py(), antiHyperon.pz()}}, std::array{o2::constants::physics::MassXiMinus, o2::constants::physics::MassXiPlusBar});
+      invmass = RecoDecay::m(std::array{std::array{hyperon.px(), hyperon.py(), hyperon.pz()}, std::array{antiHyperon.px(), antiHyperon.py(), antiHyperon.pz()}}, std::array{o2::constants::physics::MassLambda0, o2::constants::physics::MassLambda0Bar});
     if (type == 2)
+      invmass = RecoDecay::m(std::array{std::array{hyperon.px(), hyperon.py(), hyperon.pz()}, std::array{antiHyperon.px(), antiHyperon.py(), antiHyperon.pz()}}, std::array{o2::constants::physics::MassXiMinus, o2::constants::physics::MassXiPlusBar});
+    if (type == 3)
       invmass = RecoDecay::m(std::array{std::array{hyperon.px(), hyperon.py(), hyperon.pz()}, std::array{antiHyperon.px(), antiHyperon.py(), antiHyperon.pz()}}, std::array{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassOmegaPlusBar});
 
     float rapidity = RecoDecay::y(std::array{hyperon.px() + antiHyperon.px(), hyperon.py() + antiHyperon.py(), hyperon.pz() + antiHyperon.pz()}, invmass);
@@ -1558,6 +1645,62 @@ struct quarkoniaToHyperons {
     // __________________________________________
     // main analysis
     if (type == 0) {
+      if (doMCAssociation) {
+        if constexpr (requires { hyperon.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>(); }) { // check if MC information is available
+          auto hyperonMC = hyperon.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+          auto antiHyperonMC = antiHyperon.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+
+          if (hyperonMC.pdgCodeMother() != antiHyperonMC.pdgCodeMother()) {
+            return;
+          }
+
+          float ptmc = RecoDecay::pt(hyperonMC.pxMC() + antiHyperonMC.pxMC(), hyperonMC.pyMC() + antiHyperonMC.pyMC());
+          float rapiditymc = RecoDecay::y(std::array{hyperonMC.pxMC() + antiHyperonMC.pxMC(), hyperonMC.pyMC() + antiHyperonMC.pyMC(), hyperonMC.pzMC() + antiHyperonMC.pzMC()}, pdgDB->Mass(hyperonMC.pdgCodeMother()));
+
+          if (TMath::Abs(rapiditymc) > rapidityCut)
+            return;
+
+          if (hyperonMC.pdgCodeMother() == 441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // EtaC(1S)
+            histos.fill(HIST("K0sK0s/h3dInvMassTrueEtaC1S"), centrality, ptmc, invmass);
+          }
+          if (hyperonMC.pdgCodeMother() == 443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // J/psi
+            histos.fill(HIST("K0sK0s/h3dInvMassTrueJPsi"), centrality, ptmc, invmass);
+          }
+          if (hyperonMC.pdgCodeMother() == 10441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC0
+            histos.fill(HIST("K0sK0s/h3dInvMassTrueChiC0"), centrality, ptmc, invmass);
+          }
+          if (hyperonMC.pdgCodeMother() == 20443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC1
+            histos.fill(HIST("K0sK0s/h3dInvMassTrueChiC1"), centrality, ptmc, invmass);
+          }
+          if (hyperonMC.pdgCodeMother() == 10443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // hC
+            histos.fill(HIST("K0sK0s/h3dInvMassTrueHC"), centrality, ptmc, invmass);
+          }
+          if (hyperonMC.pdgCodeMother() == 445 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC2
+            histos.fill(HIST("K0sK0s/h3dInvMassTrueChiC2"), centrality, ptmc, invmass);
+          }
+          if (hyperonMC.pdgCodeMother() == 100441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // EtaC(2S)
+            histos.fill(HIST("K0sK0s/h3dInvMassTrueEtaC2S"), centrality, ptmc, invmass);
+          }
+          if (hyperonMC.pdgCodeMother() == 100443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // Psi(2S)
+            histos.fill(HIST("K0sK0s/h3dInvMassTruePsi2S"), centrality, ptmc, invmass);
+          }
+        }
+      }
+
+      histos.fill(HIST("K0sK0s/h3dMassK0sK0s"), centrality, pt, invmass);
+      if (!isPP) { // in case of PbPb data
+        if (gapSide == 0)
+          histos.fill(HIST("K0sK0s/h3dMassK0sK0sSGA"), centrality, pt, invmass);
+        else if (gapSide == 1)
+          histos.fill(HIST("K0sK0s/h3dMassK0sK0sSGC"), centrality, pt, invmass);
+        else if (gapSide == 2)
+          histos.fill(HIST("K0sK0s/h3dMassK0sK0sDG"), centrality, pt, invmass);
+        else
+          histos.fill(HIST("K0sK0s/h3dMassK0sK0sHadronic"), centrality, pt, invmass);
+      }
+      fillQAplot(collision, hyperon, antiHyperon, type);
+    }
+    if (type == 1) {
       if (doMCAssociation) {
         if constexpr (requires { hyperon.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>(); }) { // check if MC information is available
           auto hyperonMC = hyperon.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
@@ -1611,9 +1754,9 @@ struct quarkoniaToHyperons {
         else
           histos.fill(HIST("LaLaBar/h3dMassLaLabarHadronic"), centrality, pt, invmass);
       }
-      fillQAplot(collision, hyperon, antiHyperon, 0);
+      fillQAplot(collision, hyperon, antiHyperon, type);
     }
-    if (type == 1) {
+    if (type == 2) {
       if (doMCAssociation) {
         if constexpr (requires { hyperon.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>(); }) { // check if MC information is available
           auto hyperonMC = hyperon.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
@@ -1667,9 +1810,9 @@ struct quarkoniaToHyperons {
         else
           histos.fill(HIST("XiXiBar/h3dMassXiXibarHadronic"), centrality, pt, invmass);
       }
-      fillQAplot(collision, hyperon, antiHyperon, 1);
+      fillQAplot(collision, hyperon, antiHyperon, type);
     }
-    if (type == 2) {
+    if (type == 3) {
       if (doMCAssociation) {
         if constexpr (requires { hyperon.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>(); }) { // check if MC information is available
           auto hyperonMC = hyperon.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
@@ -1705,7 +1848,7 @@ struct quarkoniaToHyperons {
         else
           histos.fill(HIST("OmOmBar/h3dMassOmOmbarHadronic"), centrality, pt, invmass);
       }
-      fillQAplot(collision, hyperon, antiHyperon, 2);
+      fillQAplot(collision, hyperon, antiHyperon, type);
     }
   }
 
@@ -1804,7 +1947,7 @@ struct quarkoniaToHyperons {
     // __________________________________________
     // perform main analysis
     //
-    if (buildLaLaBarPairs) { // Look at V0s
+    if (buildK0sK0sPairs || buildLaLaBarPairs) { // Look at V0s
       std::vector<bool> selK0ShortIndices(fullV0s.size());
       std::vector<bool> selLambdaIndices(fullV0s.size());
       std::vector<bool> selAntiLambdaIndices(fullV0s.size());
@@ -1829,21 +1972,33 @@ struct quarkoniaToHyperons {
       int nLambdas = std::count(selLambdaIndices.begin(), selLambdaIndices.end(), true);
       int nAntiLambdas = std::count(selAntiLambdaIndices.begin(), selAntiLambdaIndices.end(), true);
 
-      // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
-      histos.fill(HIST("LaLaBar/h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
-      histos.fill(HIST("LaLaBar/h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
-      histos.fill(HIST("LaLaBar/h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
+      if (buildK0sK0sPairs) {
+        // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
+        histos.fill(HIST("K0sK0s/h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
 
-      // Check the number of Lambdas and antiLambdas
-      // needs at least 1 of each
-      if (!buildSameSignPairs && nLambdas >= 1 && nAntiLambdas >= 1) { // consider Lambda antiLambda pairs
-        buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 0);
+        // Check the number of K0Short
+        // needs at least 2 to form K0s-K0s pairs
+        if (nK0Shorts >= 2) { // consider K0s K0s pairs
+          buildHyperonAntiHyperonPairs(collision, fullV0s, selK0ShortIndices, selK0ShortIndices, centrality, selGapSide, 0);
+        }
       }
-      if (buildSameSignPairs && nLambdas > 1) { // consider Lambda Lambda pairs
-        buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selLambdaIndices, centrality, selGapSide, 0);
-      }
-      if (buildSameSignPairs && nAntiLambdas > 1) { // consider antiLambda antiLambda pairs
-        buildHyperonAntiHyperonPairs(collision, fullV0s, selAntiLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 0);
+
+      if (buildLaLaBarPairs) {
+        // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
+        histos.fill(HIST("LaLaBar/h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
+        histos.fill(HIST("LaLaBar/h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
+
+        // Check the number of Lambdas and antiLambdas
+        // needs at least 1 of each
+        if (!buildSameSignPairs && nLambdas >= 1 && nAntiLambdas >= 1) { // consider Lambda antiLambda pairs
+          buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
+        }
+        if (buildSameSignPairs && nLambdas > 1) { // consider Lambda Lambda pairs
+          buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selLambdaIndices, centrality, selGapSide, 1);
+        }
+        if (buildSameSignPairs && nAntiLambdas > 1) { // consider antiLambda antiLambda pairs
+          buildHyperonAntiHyperonPairs(collision, fullV0s, selAntiLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
+        }
       }
     }
 
@@ -1888,13 +2043,13 @@ struct quarkoniaToHyperons {
         // Check the number of Lambdas and antiLambdas
         // needs at least 1 of each
         if (!buildSameSignPairs && nXis >= 1 && nAntiXis >= 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selAntiXiIndices, centrality, selGapSide, 1);
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selAntiXiIndices, centrality, selGapSide, 2);
         }
         if (buildSameSignPairs && nXis > 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selXiIndices, centrality, selGapSide, 1);
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selXiIndices, centrality, selGapSide, 2);
         }
         if (buildSameSignPairs && nAntiXis > 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiXiIndices, selAntiXiIndices, centrality, selGapSide, 1);
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiXiIndices, selAntiXiIndices, centrality, selGapSide, 2);
         }
       }
       if (buildOmOmBarPairs) {
@@ -1904,13 +2059,13 @@ struct quarkoniaToHyperons {
         // Check the number of Lambdas and antiLambdas
         // needs at least 1 of each
         if (!buildSameSignPairs && nOmegas >= 1 && nAntiOmegas >= 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selAntiOmIndices, centrality, selGapSide, 2);
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selAntiOmIndices, centrality, selGapSide, 3);
         }
         if (buildSameSignPairs && nOmegas > 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selOmIndices, centrality, selGapSide, 2);
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selOmIndices, centrality, selGapSide, 3);
         }
         if (buildSameSignPairs && nAntiOmegas > 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiOmIndices, selAntiOmIndices, centrality, selGapSide, 2);
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiOmIndices, selAntiOmIndices, centrality, selGapSide, 3);
         }
       }
     }
@@ -1942,7 +2097,7 @@ struct quarkoniaToHyperons {
 
     // __________________________________________
     // perform main analysis
-    if (buildLaLaBarPairs) { // Look at V0s
+    if (buildK0sK0sPairs || buildLaLaBarPairs) { // Look at V0s
       std::vector<bool> selK0ShortIndices(fullV0s.size());
       std::vector<bool> selLambdaIndices(fullV0s.size());
       std::vector<bool> selAntiLambdaIndices(fullV0s.size());
@@ -1979,19 +2134,31 @@ struct quarkoniaToHyperons {
       int nLambdas = std::count(selLambdaIndices.begin(), selLambdaIndices.end(), true);
       int nAntiLambdas = std::count(selAntiLambdaIndices.begin(), selAntiLambdaIndices.end(), true);
 
-      // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
-      histos.fill(HIST("LaLaBar/h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
-      histos.fill(HIST("LaLaBar/h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
-      histos.fill(HIST("LaLaBar/h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
+      if (buildK0sK0sPairs) {
+        // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
+        histos.fill(HIST("K0sK0s/h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
 
-      if (!buildSameSignPairs && nLambdas >= 1 && nAntiLambdas >= 1) { // consider Lambda antiLambda pairs
-        buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 0);
+        // Check the number of K0Short
+        // needs at least 2 to form K0s-K0s pairs
+        if (nK0Shorts >= 2) { // consider K0s K0s pairs
+          buildHyperonAntiHyperonPairs(collision, fullV0s, selK0ShortIndices, selK0ShortIndices, centrality, selGapSide, 0);
+        }
       }
-      if (buildSameSignPairs && nLambdas > 1) { // consider Lambda Lambda pairs
-        buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selLambdaIndices, centrality, selGapSide, 0);
-      }
-      if (buildSameSignPairs && nAntiLambdas > 1) { // consider antiLambda antiLambda pairs
-        buildHyperonAntiHyperonPairs(collision, fullV0s, selAntiLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 0);
+
+      if (buildLaLaBarPairs) {
+        // fill the histograms with the number of reconstructed Lambda/antiLambda per collision
+        histos.fill(HIST("LaLaBar/h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
+        histos.fill(HIST("LaLaBar/h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
+
+        if (!buildSameSignPairs && nLambdas >= 1 && nAntiLambdas >= 1) { // consider Lambda antiLambda pairs
+          buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
+        }
+        if (buildSameSignPairs && nLambdas > 1) { // consider Lambda Lambda pairs
+          buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selLambdaIndices, centrality, selGapSide, 1);
+        }
+        if (buildSameSignPairs && nAntiLambdas > 1) { // consider antiLambda antiLambda pairs
+          buildHyperonAntiHyperonPairs(collision, fullV0s, selAntiLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
+        }
       }
     }
 
@@ -2047,13 +2214,13 @@ struct quarkoniaToHyperons {
         // Check the number of Lambdas and antiLambdas
         // needs at least 1 of each
         if (!buildSameSignPairs && nXis >= 1 && nAntiXis >= 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selAntiXiIndices, centrality, selGapSide, 1);
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selAntiXiIndices, centrality, selGapSide, 2);
         }
         if (buildSameSignPairs && nXis > 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selXiIndices, centrality, selGapSide, 1);
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selXiIndices, centrality, selGapSide, 2);
         }
         if (buildSameSignPairs && nAntiXis > 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiXiIndices, selAntiXiIndices, centrality, selGapSide, 1);
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiXiIndices, selAntiXiIndices, centrality, selGapSide, 2);
         }
       }
       if (buildOmOmBarPairs) {
@@ -2063,13 +2230,13 @@ struct quarkoniaToHyperons {
         // Check the number of Lambdas and antiLambdas
         // needs at least 1 of each
         if (!buildSameSignPairs && nOmegas >= 1 && nAntiOmegas >= 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selAntiOmIndices, centrality, selGapSide, 2);
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selAntiOmIndices, centrality, selGapSide, 3);
         }
         if (buildSameSignPairs && nOmegas > 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selOmIndices, centrality, selGapSide, 2);
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selOmIndices, centrality, selGapSide, 3);
         }
         if (buildSameSignPairs && nAntiOmegas > 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiOmIndices, selAntiOmIndices, centrality, selGapSide, 2);
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiOmIndices, selAntiOmIndices, centrality, selGapSide, 3);
         }
       }
     }
