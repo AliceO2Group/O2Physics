@@ -64,7 +64,10 @@ struct HfTaskElectronWeakBoson {
   Configurable<float> timeEmcMax{"timeEmcMax", +20., "Maximum EMCcluster timing"};
   Configurable<float> m02Min{"m02Min", 0.1, "Minimum M02"};
   Configurable<float> m02Max{"m02Max", 0.9, "Maximum M02"};
-  Configurable<float> rMatchMax{"rMatchMax", 0.1, "cluster - track matching cut"};
+  Configurable<float> rMatchMax{"rMatchMax", 0.05, "cluster - track matching cut"};
+
+  Configurable<float> rIsolation{"rIsolation", 0.3, "cone radius for isolation cut"};
+  Configurable<float> energyIsolationMax{"energyIsolationMax", 0.1, "isolation cut on energy"};
 
   using SelectedClusters = o2::aod::EMCALClusters;
   // PbPb
@@ -110,6 +113,7 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisCluster{100, 0.0, 200.0, "counts"};
     const AxisSpec axisITSNCls{20, 0.0, 20, "counts"};
     const AxisSpec axisEMCtime{200, -100.0, 100, "EMC time"};
+    const AxisSpec axisIsoEnergy{100, 0, 1, "Isolation energy(GeV/C)"};
 
     // create registrygrams
     registry.add("hZvtx", "Z vertex", kTH1F, {axisZvtx});
@@ -130,12 +134,47 @@ struct HfTaskElectronWeakBoson {
     registry.add("hMatchPhi", "Match in Phi", kTH2F, {{axisPhi}, {axisPhi}});
     registry.add("hMatchEta", "Match in Eta", kTH2F, {{axisEta}, {axisEta}});
     registry.add("hEop", "energy momentum match", kTH2F, {{axisPt}, {axisEop}});
+    registry.add("hEopIsolation", "energy momentum match after isolation", kTH2F, {{axisPt}, {axisEop}});
     registry.add("hEopNsigTPC", "Eop vs. Nsigma", kTH2F, {{axisNsigma}, {axisEop}});
     registry.add("hEMCtime", "EMC timing", kTH1F, {axisEMCtime});
+    registry.add("hIsolationEnergy", "Isolation Energy", kTH2F, {{axisE}, {axisIsoEnergy}});
+  }
+  bool IsIsolatedCluster(const o2::aod::EMCALCluster& cluster,
+                         const SelectedClusters& clusters)
+  {
+    float energySum = 0.0;
+    float isoEnergy = 10.0;
+    float etaAssCluster = cluster.eta();
+    float phiAssCluster = cluster.phi();
+
+    for (const auto& associateCluster : clusters) {
+      // Calculate angular distances
+      double dEta = associateCluster.eta() - etaAssCluster;
+      double dPhi = associateCluster.phi() - phiAssCluster;
+
+      // Normalize φ difference
+      dPhi = RecoDecay::constrainAngle(dPhi, -o2::constants::math::PI);
+
+      // Calculate ΔR
+      double deltaR = std::sqrt(dEta * dEta + dPhi * dPhi);
+
+      // Sum energy within isolation cone
+      if (deltaR < rIsolation) {
+        energySum += associateCluster.energy();
+      }
+    }
+
+    if (energySum > 0) {
+      isoEnergy = energySum / cluster.energy() - 1.0;
+    }
+
+    registry.fill(HIST("hIsolationEnergy"), cluster.energy(), isoEnergy);
+
+    return (isoEnergy < energyIsolationMax);
   }
 
   void process(soa::Filtered<aod::Collisions>::iterator const& collision,
-               SelectedClusters const&,
+               SelectedClusters const& emcClusters,
                TrackEle const& tracks,
                o2::aod::EMCALMatchedTracks const& matchedtracks)
   {
@@ -210,8 +249,8 @@ struct HfTaskElectronWeakBoson {
             double dPhi = match.track_as<TrackEle>().trackPhiEmcal() - phiEmc;
             dPhi = RecoDecay::constrainAngle(dPhi, -o2::constants::math::PI);
 
-            registry.fill(HIST("hMatchPhi"), phiEmc, match.track_as<TrackEle>().phi());
-            registry.fill(HIST("hMatchEta"), etaEmc, match.track_as<TrackEle>().eta());
+            registry.fill(HIST("hMatchPhi"), phiEmc, match.track_as<TrackEle>().trackPhiEmcal());
+            registry.fill(HIST("hMatchEta"), etaEmc, match.track_as<TrackEle>().trackEtaEmcal());
 
             double r = RecoDecay::sqrtSumOfSquares(dPhi, dEta);
             if (r < rMin) {
@@ -223,8 +262,11 @@ struct HfTaskElectronWeakBoson {
             registry.fill(HIST("hEMCtime"), timeEmc);
             registry.fill(HIST("hEnergy"), energyEmc);
 
-            if (r < rMatchMax)
+            if (r > rMatchMax)
               continue;
+
+            const auto& cluster = match.emcalcluster_as<SelectedClusters>();
+            bool isIsolated = IsIsolatedCluster(cluster, emcClusters);
 
             double eop = energyEmc / match.track_as<TrackEle>().p();
             // LOG(info) << "E/p" << eop;
@@ -233,6 +275,10 @@ struct HfTaskElectronWeakBoson {
             registry.fill(HIST("hM20"), match.track_as<TrackEle>().tpcNSigmaEl(), m20Emc);
             if (match.track_as<TrackEle>().tpcNSigmaEl() > nsigTpcMin && match.track_as<TrackEle>().tpcNSigmaEl() < nsigTpcMax) {
               registry.fill(HIST("hEop"), match.track_as<TrackEle>().pt(), eop);
+
+              if (isIsolated) {
+                registry.fill(HIST("hEopIsolation"), match.track_as<TrackEle>().pt(), eop);
+              }
             }
           }
 
