@@ -106,6 +106,7 @@ std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcStr;
 std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpcStr;
 std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTofStr;
 std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedStr;
+std::shared_ptr<TH1> hdecaylengthmother; // histogram to store decaylength of mother
 
 // Pt for secondaries from material
 std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcMat;
@@ -292,6 +293,7 @@ struct QaEfficiency {
       LOG(fatal) << "Can't interpret pdgSign " << pdgSign;
     }
 
+    AxisSpec axisDecayLength{100, 0.0, 10.0, "Decay Length (cm)"};
     AxisSpec axisPt{ptBins, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisP{ptBins, "#it{p} (GeV/#it{c})"};
     if (logPt) {
@@ -337,6 +339,7 @@ struct QaEfficiency {
                                   yMin, yMax);
     const int histogramIndex = id + pdgSign * nSpecies;
     hPtmotherGenerated = histos.add<TH1>("MC/mother/pt/generated", "Generated pT of mother Lambda or Xi", kTH1D, {axisPt});
+    hdecaylengthmother = histos.add<TH1>("MC/mother/decayLength", "Decay Length of mother particle", kTH1D, {axisDecayLength});
 
     // Pt
     hPtIts[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/its", PDGs[histogramIndex]), "ITS tracks " + tagPt, kTH1D, {axisPt});
@@ -365,6 +368,7 @@ struct QaEfficiency {
     hPtTrkItsTpcStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtItsTpcTofStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated", PDGs[histogramIndex]), "Generated (from weak decays) " + tagPt, kTH1D, {axisPt});
+    hdecaylengthmother = histos.add<TH1>(Form("MC/pdg%i/pt/str/decayLength", PDGs[histogramIndex]), "Decay Length of mother particle" + tagPt, kTH1D, {axisPt});
 
     // Ter
     hPtItsTpcTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (from secondary weak decays) " + tagPt, kTH1D, {axisPt});
@@ -1158,7 +1162,9 @@ struct QaEfficiency {
               break;
             }
             if (motherIsAccepted) {
-              break;
+              // Calculate the decay length
+              double decayLength = std::sqrt(std::pow(mother.vx() - mother.mcCollision.posX(), 2) + std::pow(mother.vy() - mother.mcCollision.posY(), 2) + std::pow(mother.vz() - mother.mcCollision.posZ(), 2));
+              hdecaylengthmother->Fill(decayLength);
             }
           }
         }
