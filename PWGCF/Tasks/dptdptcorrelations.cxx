@@ -66,6 +66,7 @@ float deltaphibinwidth = constants::math::TwoPI / deltaphibins;
 float deltaphilow = 0.0 - deltaphibinwidth / 2.0;
 float deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 
+int nNoOfDimensions = 1;         // number of dimensions for the NUA & NUE corrections
 bool processpairs = false;       // process pairs analysis
 bool processmixedevents = false; // process mixed events
 bool ptorder = false;            // consider pt ordering
@@ -295,25 +296,32 @@ struct DptDptCorrelationsTask {
 
     void storeTrackCorrections(std::vector<TH1*> corrs)
     {
+      using namespace correlationstask;
+
       LOGF(info, "Stored NUA&NUE corrections for %d track ids", corrs.size());
       for (uint i = 0; i < corrs.size(); ++i) {
-        int nDimensions = corrs[i] != nullptr ? corrs[i]->GetDimension() : 0;
-        LOGF(info, "  Stored NUA&NUE corrections %s for track id %d with %d dimensions %s",
-             corrs[i] != nullptr ? corrs[i]->GetName() : "nullptr", i, nDimensions, corrs[i] != nullptr ? "yes" : "no");
+        if (corrs[i] != nullptr) {
+          if (nNoOfDimensions != corrs[i]->GetDimension()) {
+            LOGF(fatal, "  Corrections receved dimensions %d for track id %d different than expected %d", corrs[i]->GetDimension(), i, nNoOfDimensions);
+          } else {
+            LOGF(info, "  Storing NUA&NUE corrections %s for track id %d with %d dimensions %s",
+                 corrs[i] != nullptr ? corrs[i]->GetName() : "nullptr", i, nNoOfDimensions, corrs[i] != nullptr ? "yes" : "no");
+          }
+        }
         fhNuaNue[i] = corrs[i];
         if (fhNuaNue[i] != nullptr) {
           int nbins = 0;
           double avg = 0.0;
           for (int ix = 0; ix < fhNuaNue[i]->GetNbinsX(); ++ix) {
-            if (nDimensions == 1) {
+            if (nNoOfDimensions == 1) {
               nbins++;
               avg += fhNuaNue[i]->GetBinContent(ix + 1);
             } else {
               for (int iy = 0; iy < fhNuaNue[i]->GetNbinsY(); ++iy) {
-                if (nDimensions == 2) {
+                if (nNoOfDimensions == 2) {
                   nbins++;
                   avg += fhNuaNue[i]->GetBinContent(ix + 1, iy + 1);
-                } else {
+                } else if (nNoOfDimensions == 3 || nNoOfDimensions == 4) {
                   for (int iz = 0; iz < fhNuaNue[i]->GetNbinsZ(); ++iz) {
                     nbins++;
                     avg += fhNuaNue[i]->GetBinContent(ix + 1, iy + 1, iz + 1);
@@ -338,25 +346,39 @@ struct DptDptCorrelationsTask {
       ccdbstored = true;
     }
 
-    template <typename TrackListObject>
+    template <int nDim, typename TrackListObject>
     std::vector<float>* getTrackCorrections(TrackListObject const& tracks, float zvtx)
     {
       std::vector<float>* corr = new std::vector<float>(tracks.size(), 1.0f);
       int index = 0;
-      for (auto& t : tracks) {
+      for (const auto& t : tracks) {
         if (fhNuaNue[t.trackacceptedid()] != nullptr) {
-          int nDimensions = fhNuaNue[t.trackacceptedid()]->GetDimension();
-          if (nDimensions == 1) {
+          if constexpr (nDim == 1) {
             (*corr)[index] = fhNuaNue[t.trackacceptedid()]->GetBinContent(fhNuaNue[t.trackacceptedid()]->FindFixBin(t.pt()));
-          } else if (nDimensions == 2) {
+          } else if constexpr (nDim == 2) {
             (*corr)[index] = fhNuaNue[t.trackacceptedid()]->GetBinContent(fhNuaNue[t.trackacceptedid()]->FindFixBin(t.eta(), t.pt()));
-          } else {
+          } else if constexpr (nDim == 3) {
             (*corr)[index] = fhNuaNue[t.trackacceptedid()]->GetBinContent(fhNuaNue[t.trackacceptedid()]->FindFixBin(zvtx, GetEtaPhiIndex(t) + 0.5, t.pt()));
           }
         }
         index++;
       }
       return corr;
+    }
+
+    template <typename TrackListObject>
+    std::vector<float>* getTrackCorrections(TrackListObject const& tracks, float zvtx)
+    {
+      using namespace correlationstask;
+
+      if (nNoOfDimensions == 1) {
+        return getTrackCorrections<1>(tracks, zvtx);
+      } else if (nNoOfDimensions == 2) {
+        return getTrackCorrections<2>(tracks, zvtx);
+      } else if (nNoOfDimensions == 3) {
+        return getTrackCorrections<3>(tracks, zvtx);
+      }
+      return getTrackCorrections<4>(tracks, zvtx);
     }
 
     template <typename TrackListObject>
@@ -883,6 +905,7 @@ struct DptDptCorrelationsTask {
   Configurable<bool> cfgProcessPairs{"processpairs", false, "Process pairs: false = no, just singles, true = yes, process pairs"};
   Configurable<bool> cfgProcessME{"processmixedevents", false, "Process mixed events: false = no, just same event, true = yes, also process mixed events"};
   Configurable<bool> cfgPtOrder{"ptorder", false, "enforce pT_1 < pT_2. Defalut: false"};
+  Configurable<int> cfgNoOfDimensions{"cfgNoOfDimensions", 1, "Number of dimensions for the NUA&NUE corrections. Default 1"};
   OutputObj<TList> fOutput{"DptDptCorrelationsData", OutputObjHandlingPolicy::AnalysisObject, OutputObjSourceType::OutputObjSource};
 
   void init(InitContext& initContext)
@@ -925,6 +948,7 @@ struct DptDptCorrelationsTask {
     ptorder = cfgPtOrder.value;
     invmass = cfgDoInvMass.value;
     corrana = cfgDoCorrelations.value;
+    nNoOfDimensions = cfgNoOfDimensions.value;
 
     /* self configure the CCDB access to the input file */
     getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdburl", cfgCCDBUrl, false);
@@ -1171,6 +1195,14 @@ struct DptDptCorrelationsTask {
     return grpo->getNominalL3Field();
   }
 
+  const char* getDimensionStr()
+  {
+    using namespace correlationstask;
+
+    static constexpr std::string_view strDim[] = {"", "2D", "3D", "4D"};
+    return strDim[nNoOfDimensions].data();
+  }
+
   template <bool gen, typename FilterdCollision, typename FilteredTracks>
   void processSame(FilterdCollision const& collision, FilteredTracks const& tracks, uint64_t timestamp = 0)
   {
@@ -1222,7 +1254,8 @@ struct DptDptCorrelationsTask {
           std::vector<TH1*> corrs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
             corrs[isp] = reinterpret_cast<TH1*>(ccdblst->FindObject(
-              TString::Format("correction_%02d-%02d_%s",
+              TString::Format("correction%s_%02d-%02d_%s",
+                              getDimensionStr(),
                               static_cast<int>(fCentMultMin[ixDCE]),
                               static_cast<int>(fCentMultMax[ixDCE]),
                               tnames[isp].c_str())
@@ -1296,7 +1329,8 @@ struct DptDptCorrelationsTask {
           std::vector<TH1*> corrs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
             corrs[isp] = reinterpret_cast<TH1*>(ccdblst->FindObject(
-              TString::Format("correction_%02d-%02d_%s",
+              TString::Format("correction%s_%02d-%02d_%s",
+                              getDimensionStr(),
                               static_cast<int>(fCentMultMin[ixDCE]),
                               static_cast<int>(fCentMultMax[ixDCE]),
                               tnames[isp].c_str())
