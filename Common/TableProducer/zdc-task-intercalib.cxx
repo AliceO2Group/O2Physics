@@ -30,7 +30,6 @@
 #include "Common/DataModel/ZDCInterCalib.h"
 
 #include "TH1F.h"
-#include "TH2F.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -50,6 +49,9 @@ struct zdcInterCalib {
   //
   Configurable<int> nBins{"nBins", 400, "n bins"};
   Configurable<float> MaxZN{"MaxZN", 399.5, "Max ZN signal"};
+  Configurable<bool> TDCcut{"TDCcut", false, "Flag for TDC cut"};
+  Configurable<float> tdcZNmincut{"tdcZNmincut", -3.0, "Min ZN TDC cut"};
+  Configurable<float> tdcZNmaxcut{"tdcZNmaxcut", 3.0, "Max ZN TDC cut"};
   //
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -83,17 +85,25 @@ struct zdcInterCalib {
         double pmcZNC = zdc.energyCommonZNC();
         double pmcZNA = zdc.energyCommonZNA();
         //
-        // double tdcZNC = zdc.zdc.timeZNC();
-        // double tdcZNA = zdc.zdc.timeZNA();
+        double tdcZNC = zdc.timeZNC();
+        double tdcZNA = zdc.timeZNA();
         //
-        bool isZNChit = true, isZNAhit = true;
-        if (pmcZNC < kVeryNegative) {
-          pmcZNC = kVeryNegative;
-          isZNChit = false;
-        }
-        if (pmcZNA < kVeryNegative) {
-          pmcZNA = kVeryNegative;
-          isZNAhit = false;
+        bool isZNChit = true;
+        bool isZNAhit = true;
+        if (!TDCcut) {
+          if (pmcZNC < kVeryNegative) {
+            pmcZNC = kVeryNegative;
+            isZNChit = false;
+          }
+          if (pmcZNA < kVeryNegative) {
+            pmcZNA = kVeryNegative;
+            isZNAhit = false;
+          }
+        } else {
+          if ((tdcZNC < tdcZNmincut) || (tdcZNC > tdcZNmaxcut))
+            isZNChit = false;
+          if ((tdcZNA < tdcZNmincut) || (tdcZNA > tdcZNmaxcut))
+            isZNAhit = false;
         }
         //
         double sumZNC = 0;
@@ -137,7 +147,7 @@ struct zdcInterCalib {
           registry.get<TH1>(HIST("ZNAsumq"))->Fill(sumZNA);
         }
         if (isZNAhit || isZNChit)
-          zTab(pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3], pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3]);
+          zTab(tdcZNA, tdcZNC, pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3], pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3]);
       }
     }
   }
