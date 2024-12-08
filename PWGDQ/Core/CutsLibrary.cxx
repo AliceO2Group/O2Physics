@@ -377,6 +377,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pidElectron_ionut_posEta")) {
+    cut->AddCut(GetAnalysisCut("pidcalib_ele"));
+    cut->AddCut(GetAnalysisCut("jpsiPIDcalibKine_posEta"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pidElectron_ionut_negEta")) {
+    cut->AddCut(GetAnalysisCut("pidcalib_ele"));
+    cut->AddCut(GetAnalysisCut("jpsiPIDcalibKine_negEta"));
+    return cut;
+  }
+
   if (!nameStr.compare("pidPion_ionut")) {
     cut->AddCut(GetAnalysisCut("pidcalib_pion"));
     cut->AddCut(GetAnalysisCut("jpsiStandardKine3"));
@@ -3681,6 +3693,18 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("jpsiStandardKine3")) {
     cut->AddCut(VarManager::kP, 1.2, 1000.0);
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsiPIDcalibKine_posEta")) {
+    cut->AddCut(VarManager::kPin, 1.0, 1000.0);
+    cut->AddCut(VarManager::kEta, 0.0, 0.9);
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsiPIDcalibKine_negEta")) {
+    cut->AddCut(VarManager::kPin, 1.0, 1000.0);
+    cut->AddCut(VarManager::kEta, -0.9, 0.0);
     return cut;
   }
 

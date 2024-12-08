@@ -51,9 +51,12 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA,
+/*using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA,
                                 aod::pidTPCFullEl, aod::pidTPCFullPi,
-                                aod::pidTPCFullKa, aod::pidTPCFullPr>;
+                                aod::pidTPCFullKa, aod::pidTPCFullPr>;*/
+using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
+                                aod::pidTPCFullEl, aod::pidTPCFullPi,
+                                aod::pidTPCFullKa, aod::pidTPCFullPr>;                                
 
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackTPCPID;
 
