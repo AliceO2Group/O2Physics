@@ -123,6 +123,7 @@ struct femtoUniverseProducerTask {
   Configurable<bool> ConfIsForceGRP{"ConfIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
   Configurable<bool> ConfDoSpher{"ConfDoSpher", false, "Calculate sphericity. If false sphericity will take value of 2."};
+  Configurable<bool> ConfFillCollExt{"ConfFillCollExt", false, "Option to fill collision extended table"};
 
   /// Event cuts
   FemtoUniverseCollisionSelection colCuts;
@@ -722,8 +723,8 @@ struct femtoUniverseProducerTask {
 
       if (std::abs(pdgCode1) == std::abs(321) || std::abs(pdgCode2) == std::abs(-321)) {
         if ((kaon1MC.isPhysicalPrimary() && kaon2MC.isPhysicalPrimary()) && (!motherskaon1MC.empty() && !motherskaon2MC.empty())) {
-          for (auto& particleMotherOfNeg : motherskaon1MC) {
-            for (auto& particleMotherOfPos : motherskaon2MC) {
+          for (const auto& particleMotherOfNeg : motherskaon1MC) {
+            for (const auto& particleMotherOfPos : motherskaon2MC) {
               if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 333) {
                 phiOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary;
               } else {
@@ -762,7 +763,7 @@ struct femtoUniverseProducerTask {
   }
 
   template <bool isMC, typename CollisionType, typename TrackType>
-  void fillCollisions(CollisionType const& col, TrackType const& tracks)
+  bool fillCollisions(CollisionType const& col, TrackType const& tracks)
   {
     const auto vtxZ = col.posZ();
     float mult = 0;
@@ -785,28 +786,30 @@ struct femtoUniverseProducerTask {
     // in case of trigger run - store such collisions but don't store any
     // particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
-      return;
-    }
-    if (!ConfIsUsePileUp) {
-      if (ConfDoSpher) {
-        outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
-      } else {
-        outputCollision(vtxZ, mult, multNtr, 2, mMagField);
-      }
+      return false;
     } else {
-      if (ConfDoSpher && (!ConfEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!ConfEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!ConfEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))) {
-        outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+      if (!ConfIsUsePileUp) {
+        if (ConfDoSpher) {
+          outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+        } else {
+          outputCollision(vtxZ, mult, multNtr, 2, mMagField);
+        }
       } else {
-        outputCollision(vtxZ, mult, multNtr, 2, mMagField);
+        if (ConfDoSpher && (!ConfEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!ConfEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!ConfEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))) {
+          outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+        } else {
+          outputCollision(vtxZ, mult, multNtr, 2, mMagField);
+        }
       }
+      colCuts.fillQA(col);
+      return true;
     }
-    colCuts.fillQA(col);
   }
 
   template <typename CollisionType, typename TrackType>
   void fillMCTruthCollisions(CollisionType const& col, TrackType const& tracks)
   {
-    for (auto& c : col) {
+    for (const auto& c : col) {
       const auto vtxZ = c.posZ();
       float mult = 0;
       int multNtr = 0;
@@ -880,7 +883,7 @@ struct femtoUniverseProducerTask {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
       if (!trackCuts.isSelectedMinimal(track)) {
@@ -932,7 +935,7 @@ struct femtoUniverseProducerTask {
   {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
-    for (auto& v0 : fullV0s) {
+    for (const auto& v0 : fullV0s) {
       auto postrack = v0.template posTrack_as<TrackType>();
       auto negtrack = v0.template negTrack_as<TrackType>();
       ///\tocheck funnily enough if we apply the filter the
@@ -1169,7 +1172,7 @@ struct femtoUniverseProducerTask {
     bool isD0D0bar = false;
     uint8_t daughFlag = 0; // flag = 0 (daugh of D0 or D0bar), 1 (daug of D0), -1 (daugh of D0bar)
 
-    for (auto const& hfCand : hfCands) {
+    for (const auto& hfCand : hfCands) {
 
       if (!(hfCand.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
@@ -1283,7 +1286,7 @@ struct femtoUniverseProducerTask {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     // lorentz vectors and filling the tables
-    for (auto& [p1, p2] : combinations(soa::CombinationsFullIndexPolicy(tracks, tracks))) {
+    for (const auto& [p1, p2] : combinations(soa::CombinationsFullIndexPolicy(tracks, tracks))) {
       if (!trackCuts.isSelectedMinimal(p1) || !trackCuts.isSelectedMinimal(p1)) {
         continue;
       }
@@ -1429,7 +1432,7 @@ struct femtoUniverseProducerTask {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;
 
-    for (auto& particle : tracks) {
+    for (const auto& particle : tracks) {
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
 
@@ -1536,13 +1539,15 @@ struct femtoUniverseProducerTask {
             typename CollisionType>
   void fillCollisionsAndTracksAndV0AndPhi(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
   {
-    fillCollisions<isMC>(col, tracks);
-    fillTracks<isMC>(tracks);
-    if (ConfIsActivateV0) {
-      fillV0<isMC>(col, fullV0s, tracks);
-    }
-    if (ConfIsActivatePhi) {
-      fillPhi<isMC>(col, tracks);
+    const auto colcheck = fillCollisions<isMC>(col, tracks);
+    if (colcheck) {
+      fillTracks<isMC>(tracks);
+      if (ConfIsActivateV0) {
+        fillV0<isMC>(col, fullV0s, tracks);
+      }
+      if (ConfIsActivatePhi) {
+        fillPhi<isMC>(col, tracks);
+      }
     }
     // if (ConfIsActivateCascade) {
     //   fillCascade<false>(col, fullCascades, tracks);
@@ -1581,9 +1586,11 @@ struct femtoUniverseProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisions<false>(col, tracks);
-    fillTracks<false>(tracks);
-    fillCascade<false>(col, fullCascades, tracks);
+    const auto colcheck = fillCollisions<false>(col, tracks);
+    if (colcheck) {
+      fillTracks<false>(tracks);
+      fillCascade<false>(col, fullCascades, tracks);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackCascadeData, "Provide experimental data for track cascades", false);
 
@@ -1624,8 +1631,10 @@ struct femtoUniverseProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisions<true>(col, tracks);
-    fillTracks<true>(tracks);
+    const auto colcheck = fillCollisions<true>(col, tracks);
+    if (colcheck) {
+      fillTracks<true>(tracks);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMC, "Provide MC data for track analysis", false);
 
@@ -1638,9 +1647,11 @@ struct femtoUniverseProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisions<true>(col, tracks);
-    fillTracks<true>(tracks);
-    fillPhi<true>(col, tracks);
+    const auto colcheck = fillCollisions<true>(col, tracks);
+    if (colcheck) {
+      fillTracks<true>(tracks);
+      fillPhi<true>(col, tracks);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackPhiMC, "Provide MC data for track Phi analysis", false);
 
@@ -1653,9 +1664,11 @@ struct femtoUniverseProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisions<true>(col, tracks);
-    fillTracks<true>(tracks);
-    // fillD0mesons<true>(col, tracks, candidates);
+    const auto colcheck = fillCollisions<true>(col, tracks);
+    if (colcheck) {
+      fillTracks<true>(tracks);
+      // fillD0mesons<true>(col, tracks, candidates);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackD0MC, "Provide MC data for track D0 analysis", false);
 
@@ -1665,9 +1678,15 @@ struct femtoUniverseProducerTask {
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    const double ir = 0.0; // fetch IR
     // fill the tables
-    fillCollisions<false>(col, tracks);
-    fillTracks<false>(tracks);
+    const auto colcheck = fillCollisions<false>(col, tracks);
+    if (colcheck) {
+      if (ConfFillCollExt) {
+        fillCollisionsCentRun3ColExtra<false>(col, ir);
+      }
+      fillTracks<false>(tracks);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackData,
                  "Provide experimental data for track track", true);
@@ -1680,9 +1699,11 @@ struct femtoUniverseProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisions<false>(col, tracks);
-    fillTracks<false>(tracks);
-    fillPhi<false>(col, tracks);
+    const auto colcheck = fillCollisions<false>(col, tracks);
+    if (colcheck) {
+      fillTracks<false>(tracks);
+      fillPhi<false>(col, tracks);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackPhiData,
                  "Provide experimental data for track phi", false);
@@ -1695,9 +1716,11 @@ struct femtoUniverseProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisions<false>(col, tracks);
-    fillTracks<false>(tracks);
-    fillD0mesons<false>(col, tracks, candidates);
+    const auto colcheck = fillCollisions<false>(col, tracks);
+    if (colcheck) {
+      fillTracks<false>(tracks);
+      fillD0mesons<false>(col, tracks, candidates);
+    }
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackD0mesonData,
                  "Provide experimental data for track D0 meson", false);
@@ -1736,19 +1759,19 @@ struct femtoUniverseProducerTask {
   {
     // recos
     std::set<int> recoMcIds;
-    for (auto& col : collisions) {
+    for (const auto& col : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
       auto groupedV0s = fullV0s.sliceBy(perCollisionV0s, col.globalIndex());
       getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
       fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedV0s);
-      for (auto& track : groupedTracks) {
+      for (const auto& track : groupedTracks) {
         if (trackCuts.isSelectedMinimal(track))
           recoMcIds.insert(track.mcParticleId());
       }
     }
 
     // truth
-    for (auto& mccol : mccols) {
+    for (const auto& mccol : mccols) {
       auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
       auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
       fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                           // fills the reco collisions for mc collision
