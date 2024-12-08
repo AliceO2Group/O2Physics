@@ -209,16 +209,16 @@ using MultZeq = MultZeqs::iterator;
 namespace mult
 {
 // extra BC information
-DECLARE_SOA_COLUMN(MultTVX, multTVX, bool);                            //!
-DECLARE_SOA_COLUMN(MultFV0OrA, multFV0OrA, bool);                      //!
-DECLARE_SOA_COLUMN(MultV0triggerBits, multV0triggerBits, uint8_t);     //!
-DECLARE_SOA_COLUMN(MultT0triggerBits, multT0triggerBits, uint8_t);     //!
-DECLARE_SOA_COLUMN(MultFDDtriggerBits, multFDDtriggerBits, uint8_t);   //!
-DECLARE_SOA_COLUMN(MultTriggerMask, multTriggerMask, uint64_t);        //! CTP trigger mask
-DECLARE_SOA_COLUMN(MultCollidingBC, multCollidingBC, bool);            //! CTP trigger mask
+DECLARE_SOA_COLUMN(MultTVX, multTVX, bool);                          //!
+DECLARE_SOA_COLUMN(MultFV0OrA, multFV0OrA, bool);                    //!
+DECLARE_SOA_COLUMN(MultV0triggerBits, multV0triggerBits, uint8_t);   //!
+DECLARE_SOA_COLUMN(MultT0triggerBits, multT0triggerBits, uint8_t);   //!
+DECLARE_SOA_COLUMN(MultFDDtriggerBits, multFDDtriggerBits, uint8_t); //!
+DECLARE_SOA_COLUMN(MultTriggerMask, multTriggerMask, uint64_t);      //! CTP trigger mask
+DECLARE_SOA_COLUMN(MultCollidingBC, multCollidingBC, bool);          //! CTP trigger mask
 
 DECLARE_SOA_COLUMN(MultFT0PosZ, multFT0PosZ, float);          //! Position along Z computed with the FT0 information within the BC
-DECLARE_SOA_COLUMN(MultFT0PosZValid, multFT0PosZValid, bool); //! Validity of the position along Z computed with the FT0 information 
+DECLARE_SOA_COLUMN(MultFT0PosZValid, multFT0PosZValid, bool); //! Validity of the position along Z computed with the FT0 information
 } // namespace mult
 DECLARE_SOA_TABLE(MultBCs, "AOD", "MULTBC", //!
                   mult::MultFT0A,
