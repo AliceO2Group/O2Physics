@@ -47,6 +47,7 @@ struct TaskConfiguration {
   Bool_t fVerboseUtility = kFALSE;                 // print additional info during debugging also for simply utility function, but not for function calls per particle (see next)
   Bool_t fVerboseForEachParticle = kFALSE;         // print additional info during debugging, also for function calls per particle
   Bool_t fVerboseEventCounter = kTRUE;             // print or not only event counter
+  Bool_t fVerboseEventCut = kTRUE;                 // print or not only which event cut didn't survive
   Bool_t fPlainPrintout = kFALSE;                  // print in color or in plain (use the latter in HL)
   Bool_t fDoAdditionalInsanityChecks = kFALSE;     // do additional insanity checks at run time, at the expense of losing a bit of performance
                                                    // (for instance, check if the run number in the current 'collision' is the same as run number in the first 'collision', etc.)
@@ -183,10 +184,16 @@ struct Qvector {
   TList* fQvectorList = NULL;                                                                                                          // list to hold all Q-vector objects
   TProfile* fQvectorFlagsPro = NULL;                                                                                                   // profile to hold all flags for Q-vector
   Bool_t fCalculateQvectors = kTRUE;                                                                                                   // to calculate or not to calculate Q-vectors, that's a Boolean...
+                                                                                                                                       // Does NOT apply to Qa, Qb, etc., vectors, needed for eta separ.
   TComplex fQ[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}};                                           //! generic Q-vector
   TComplex fQvector[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}};                                     //! "integrated" Q-vector
   TComplex fqvector[eqvectorKine_N][gMaxNoBinsKine][gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{{{TComplex(0., 0.)}}}}; //! "differenttial" q-vector [kine var.][binNo][fMaxHarmonic*fMaxCorrelator+1][fMaxCorrelator+1] = [6*12+1][12+1]
   Int_t fqVectorEntries[eqvectorKine_N][gMaxNoBinsKine] = {{0}};                                                                       // count number of entries in each differential q-vector
+  TComplex fQabVector[2][gMaxHarmonic][gMaxNumberEtaSeparations] = {{{TComplex(0., 0.)}}};                                             //! integrated [-eta or +eta][harmonic][eta separation]
+  Double_t fMab[2][gMaxNumberEtaSeparations] = {{0.}};                                                                                 //! multiplicities in 2 eta separated intervals
+  TH1F* fMabDist[2][2][2][gMaxNumberEtaSeparations] = {{{{NULL}}}};                                                                    // multiplicity distributions in A and B, for each eta separation [ A or B ] [rec or sim] [ before or after cuts ] [ eta separation value ]
+  TComplex fqabVector[2][gMaxNoBinsKine][gMaxHarmonic][gMaxNumberEtaSeparations] = {{{{TComplex(0., 0.)}}}};                           //! differential in pt [-eta or +eta][binNo][harmonic][eta separation]
+  Double_t fmab[2][gMaxNoBinsKine][gMaxNumberEtaSeparations] = {{{0.}}};                                                               //! multiplicities vs pt in 2 eta separated intervals
 } qv;                                                                                                                                  // "qv" is a common label for objects in this struct
 
 // *) Multiparticle correlations (standard, isotropic, same harmonic):
@@ -208,7 +215,7 @@ struct ParticleWeights {
   Bool_t fUseWeights[eWeights_N] = {false};                               // use weights [phi,pt,eta]
   TH1D* fWeightsHist[eWeights_N] = {NULL};                                //!<! particle weights
   Bool_t fUseDiffWeights[eDiffWeights_N] = {false};                       // use differential weights [phipt,phieta]
-  TH1D* fDiffWeightsHist[eDiffWeights_N][fMaxBinsDiffWeights] = {{NULL}}; // histograms holding differential weights [phipt,phieta][bin number]
+  TH1D* fDiffWeightsHist[eDiffWeights_N][gMaxBinsDiffWeights] = {{NULL}}; // histograms holding differential weights [phipt,phieta][bin number]
   TString fFileWithWeights = "";                                          // path to external ROOT file which holds all particle weights
   Bool_t fParticleWeightsAreFetched = kFALSE;                             // ensures that particle weights are fetched only once
 } pw;                                                                     // "pw" labels an instance of this group of histograms
@@ -280,6 +287,28 @@ struct Test0 {
   TString fWhichDefaultLabels = "";                                             // only for testing purposes, select one set of default labels, see GetDefaultObjArrayWithLabels for supported options
   TH1I* fTest0LabelsPlaceholder = NULL;                                         // store all Test0 labels in this histogram
 } t0;                                                                           // "t0" labels an instance of this group of histograms
+
+// *) Eta separations:
+struct EtaSeparations {
+  TList* fEtaSeparationsList;                                                            // list to hold all correlations with eta separations
+  TProfile* fEtaSeparationsFlagsPro;                                                     // profile to hold all flags for correlations with eta separations
+  bool fCalculateEtaSeparations;                                                         // calculate correlations with eta separations
+  bool fCalculateEtaSeparationsAsFunctionOf[eAsFunctionOf_N] = {false};                  //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy, ...]
+  float fEtaSeparationsValues[gMaxNumberEtaSeparations] = {-1.};                         // this array holds eta separation interals for which 2p correlations with eta separation will be calculated
+                                                                                         // See the corresponding cofigurable cfEtaSeparationsValues. If entry is -1, it's ignored
+  bool fEtaSeparationsSkipHarmonics[gMaxHarmonic] = {false};                             // For calculation of 2p correlation with eta separation these harmonics will be skipped
+  TProfile* fEtaSeparationsPro[gMaxHarmonic][gMaxNumberEtaSeparations][eAsFunctionOf_N]; // [harmonic, 0 = v1, 8 = v9][ different eta Separations - see that enum ] [ AFO ]
+} es;
+
+// *) Common cosmetics:
+struct CommonCosmetics {
+  TString srs[2] = {"rec", "sim"};                              // used in the histogram name as index when saved to the file
+  TString srs_long[2] = {"reconstructed", "simulated"};         // used in the histogram title
+  TString sba[2] = {"before", "after"};                         // used in the histogram name as index when saved to the file
+  TString sba_long[2] = {"before cuts", "after cuts"};          // used in the histogram title
+  TString scc[eCutCounter_N] = {"abs", "seq"};                  // used in the histogram name as index when saved to the file
+  TString scc_long[eCutCounter_N] = {"absolute", "sequential"}; // used in the histogram title
+} cc;
 
 // *) Results:
 struct Results {                                   // This is in addition also sort of "abstract" interface, which defines common binning, etc., for other groups of histograms.

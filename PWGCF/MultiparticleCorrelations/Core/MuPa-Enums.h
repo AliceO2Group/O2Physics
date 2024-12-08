@@ -95,8 +95,8 @@ enum eVnPsin { eVn = 0,
 enum eEventHistograms {
   eNumberOfEvents = 0,    // Total events = eNumberOfEvents + eBefore, Selected events = eNumberOfEvents + eAfter
   eTotalMultiplicity,     // TBI 20241123 I define it as tracks.size(), but most likely this I do not need this
-  eMultiplicity,          // see documentation below for ebye.fMultiplicity
-  eReferenceMultiplicity, // see documentation below for ebye.fReferenceMultiplicity
+  eMultiplicity,          // see documentation for ebye.fMultiplicity
+  eReferenceMultiplicity, // see documentation for ebye.fReferenceMultiplicity
   eCentrality,            // default centrality estimator
   eVertex_x,
   eVertex_y,
@@ -118,8 +118,8 @@ enum eEventCuts {
   eSel8,                           // See def. of sel7 in Ref. b) above. Event selection decision based on TVX => use only in Run 3, both for data and MC
                                    // *) As of 20240410, kNoITSROFrameBorder (only in MC) and kNoTimeFrameBorder event selection cuts are part of Sel8
                                    //    See also email from EK from 2024041
-  eMultiplicityEstimator,          // see documentation below for ebye.fMultiplicity
-  eReferenceMultiplicityEstimator, // see documentation below for ebye.fReferenceMultiplicity
+  eMultiplicityEstimator,          // see documentation for ebye.fMultiplicity
+  eReferenceMultiplicityEstimator, // see documentation for ebye.fReferenceMultiplicity
   eCentralityEstimator,            // the default centrality estimator, set via configurable. All supported centrality estimators, for QA, etc, are in enum eCentralityEstimators
   eSelectedEvents,                 // selected events = eNumberOfEvents + eAfter => therefore I do not need a special histogram for it
   eNoSameBunchPileup,              // reject collisions in case of pileup with another collision in the same foundBC (emails from IA on 20240404 and EK on 20240410)
