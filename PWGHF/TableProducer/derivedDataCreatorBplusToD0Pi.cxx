@@ -49,6 +49,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Produces<o2::aod::HfBplusPars> rowCandidatePar;
   Produces<o2::aod::HfBplusParD0s> rowCandidateParD0;
   Produces<o2::aod::HfBplusParEs> rowCandidateParE;
+  Produces<o2::aod::HfBplusSels> rowCandidateSel;
   Produces<o2::aod::HfBplusMls> rowCandidateMl;
   Produces<o2::aod::HfBplusMlD0s> rowCandidateMlD0;
   Produces<o2::aod::HfBplusIds> rowCandidateId;
@@ -69,6 +70,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Configurable<bool> fillCandidatePar{"fillCandidatePar", true, "Fill candidate parameters"};
   Configurable<bool> fillCandidateParD0{"fillCandidateParD0", true, "Fill D0 candidate parameters"};
   Configurable<bool> fillCandidateParE{"fillCandidateParE", true, "Fill candidate extended parameters"};
+  Configurable<bool> fillCandidateSel{"fillCandidateSel", true, "Fill candidate selection flags"};
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
   Configurable<bool> fillCandidateMlD0{"fillCandidateMlD0", true, "Fill D0 candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};
@@ -266,6 +268,10 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         hfHelper.cosThetaStarBplus(candidate),
         ct);
     }
+    if (fillCandidateSel) {
+      rowCandidateSel(
+        BIT(candFlag));
+    }
     if (fillCandidateMl) {
       rowCandidateMl(
         mlScore);
@@ -348,6 +354,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
       reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
       reserveTable(rowCandidateParD0, fillCandidateParD0, sizeTableCand);
       reserveTable(rowCandidateParE, fillCandidateParE, sizeTableCand);
+      reserveTable(rowCandidateSel, fillCandidateSel, sizeTableCand);
       reserveTable(rowCandidateMl, fillCandidateMl, sizeTableCand);
       reserveTable(rowCandidateMlD0, fillCandidateMlD0, sizeTableCand);
       reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
