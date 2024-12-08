@@ -93,6 +93,7 @@ struct quarkoniaToHyperons {
 
   // switch on/off event selections
   Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
+  Configurable<bool> requireTriggerTVX{"requireTriggerTVX", true, "require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level"};
   Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
   Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
   Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "require events with at least one ITS-TPC track"};
@@ -455,18 +456,19 @@ struct quarkoniaToHyperons {
     histos.add("hEventSelection", "hEventSelection", kTH1F, {{20, -0.5f, +19.5f}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "kNoTimeFrameBorder");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(6, "kIsVertexITSTPC");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(7, "kIsGoodZvtxFT0vsPV");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "kNoCollInTimeRangeStd");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeNarrow");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "Below min occup.");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "Above max occup.");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(6, "posZ cut");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(7, "kIsVertexITSTPC");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kIsGoodZvtxFT0vsPV");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTOFmatched");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kIsVertexTRDmatched");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "kNoSameBunchPileup");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeStd");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "kNoCollInTimeRangeNarrow");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "Below min occup.");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "Above max occup.");
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
     histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2F, {axisCentrality, axisNch});
@@ -763,11 +765,11 @@ struct quarkoniaToHyperons {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 1 /* sel8 collisions */);
 
-    if (std::abs(collision.posZ()) > 10.f) {
+    if (requireTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 2 /* vertex-Z selected */);
+      histos.fill(HIST("hEventSelection"), 2 /* FT0 vertex (acceptable FT0C-FT0A time difference) collisions */);
 
     if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return false;
@@ -781,58 +783,64 @@ struct quarkoniaToHyperons {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 4 /* Not at TF border */);
 
+    if (std::abs(collision.posZ()) > 10.f) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 5 /* vertex-Z selected */);
+
     if (requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 5 /* Contains at least one ITS-TPC track */);
+      histos.fill(HIST("hEventSelection"), 6 /* Contains at least one ITS-TPC track */);
 
     if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 6 /* PV position consistency check */);
+      histos.fill(HIST("hEventSelection"), 7 /* PV position consistency check */);
 
     if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 7 /* PV with at least one contributor matched with TOF */);
+      histos.fill(HIST("hEventSelection"), 8 /* PV with at least one contributor matched with TOF */);
 
     if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 8 /* PV with at least one contributor matched with TRD */);
+      histos.fill(HIST("hEventSelection"), 9 /* PV with at least one contributor matched with TRD */);
 
     if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 9 /* Not at same bunch pile-up */);
+      histos.fill(HIST("hEventSelection"), 10 /* Not at same bunch pile-up */);
 
     if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 10 /* No other collision within +/- 10 microseconds */);
+      histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 10 microseconds */);
 
     if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 4 microseconds */);
+      histos.fill(HIST("hEventSelection"), 12 /* No other collision within +/- 4 microseconds */);
 
     if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 12 /* Below min occupancy */);
+      histos.fill(HIST("hEventSelection"), 13 /* Below min occupancy */);
     if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 13 /* Above max occupancy */);
+      histos.fill(HIST("hEventSelection"), 14 /* Above max occupancy */);
 
     return true;
   }
