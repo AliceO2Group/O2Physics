@@ -26,6 +26,9 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <map>
+#include <string>
+#include <vector>
 
 #include <TFile.h>
 #include <TH2F.h>
@@ -391,61 +394,61 @@ struct quarkoniaToHyperons {
   void init(InitContext const&)
   {
     // initialise bit masks
-    maskTopological = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0ToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoV0Radius = (uint64_t(1) << selCosPA) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0ToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoDCANegToPV = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0ToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoDCAPosToPV = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAV0ToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoCosPA = (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0ToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoDCAV0Dau = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0ToPV) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoDCAV0ToPV = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
+    maskTopological = (static_cast<uint64_t>(1) << selCosPA) | (static_cast<uint64_t>(1) << selRadius) | (static_cast<uint64_t>(1) << selDCANegToPV) | (static_cast<uint64_t>(1) << selDCAPosToPV) | (static_cast<uint64_t>(1) << selDCAV0ToPV) | (static_cast<uint64_t>(1) << selDCAV0Dau) | (static_cast<uint64_t>(1) << selRadiusMax);
+    maskTopoNoV0Radius = (static_cast<uint64_t>(1) << selCosPA) | (static_cast<uint64_t>(1) << selDCANegToPV) | (static_cast<uint64_t>(1) << selDCAPosToPV) | (static_cast<uint64_t>(1) << selDCAV0ToPV) | (static_cast<uint64_t>(1) << selDCAV0Dau) | (static_cast<uint64_t>(1) << selRadiusMax);
+    maskTopoNoDCANegToPV = (static_cast<uint64_t>(1) << selCosPA) | (static_cast<uint64_t>(1) << selRadius) | (static_cast<uint64_t>(1) << selDCAPosToPV) | (static_cast<uint64_t>(1) << selDCAV0ToPV) | (static_cast<uint64_t>(1) << selDCAV0Dau) | (static_cast<uint64_t>(1) << selRadiusMax);
+    maskTopoNoDCAPosToPV = (static_cast<uint64_t>(1) << selCosPA) | (static_cast<uint64_t>(1) << selRadius) | (static_cast<uint64_t>(1) << selDCANegToPV) | (static_cast<uint64_t>(1) << selDCAV0ToPV) | (static_cast<uint64_t>(1) << selDCAV0Dau) | (static_cast<uint64_t>(1) << selRadiusMax);
+    maskTopoNoCosPA = (static_cast<uint64_t>(1) << selRadius) | (static_cast<uint64_t>(1) << selDCANegToPV) | (static_cast<uint64_t>(1) << selDCAPosToPV) | (static_cast<uint64_t>(1) << selDCAV0ToPV) | (static_cast<uint64_t>(1) << selDCAV0Dau) | (static_cast<uint64_t>(1) << selRadiusMax);
+    maskTopoNoDCAV0Dau = (static_cast<uint64_t>(1) << selCosPA) | (static_cast<uint64_t>(1) << selRadius) | (static_cast<uint64_t>(1) << selDCANegToPV) | (static_cast<uint64_t>(1) << selDCAPosToPV) | (static_cast<uint64_t>(1) << selDCAV0ToPV) | (static_cast<uint64_t>(1) << selRadiusMax);
+    maskTopoNoDCAV0ToPV = (static_cast<uint64_t>(1) << selCosPA) | (static_cast<uint64_t>(1) << selRadius) | (static_cast<uint64_t>(1) << selDCANegToPV) | (static_cast<uint64_t>(1) << selDCAPosToPV) | (static_cast<uint64_t>(1) << selDCAV0Dau) | (static_cast<uint64_t>(1) << selRadiusMax);
 
-    maskK0ShortSpecific = (uint64_t(1) << selK0ShortRapidity) | (uint64_t(1) << selK0ShortCTau) | (uint64_t(1) << selK0ShortArmenteros) | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selK0ShortMassWindow) | (uint64_t(1) << selLambdaMassRejection);
-    maskLambdaSpecific = (uint64_t(1) << selLambdaRapidity) | (uint64_t(1) << selLambdaCTau) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selLambdaMassWindow) | (uint64_t(1) << selK0ShortMassRejection);
-    maskAntiLambdaSpecific = (uint64_t(1) << selLambdaRapidity) | (uint64_t(1) << selLambdaCTau) | (uint64_t(1) << selConsiderAntiLambda) | (uint64_t(1) << selAntiLambdaMassWindow) | (uint64_t(1) << selK0ShortMassRejection);
+    maskK0ShortSpecific = (static_cast<uint64_t>(1) << selK0ShortRapidity) | (static_cast<uint64_t>(1) << selK0ShortCTau) | (static_cast<uint64_t>(1) << selK0ShortArmenteros) | (static_cast<uint64_t>(1) << selConsiderK0Short) | (static_cast<uint64_t>(1) << selK0ShortMassWindow) | (static_cast<uint64_t>(1) << selLambdaMassRejection);
+    maskLambdaSpecific = (static_cast<uint64_t>(1) << selLambdaRapidity) | (static_cast<uint64_t>(1) << selLambdaCTau) | (static_cast<uint64_t>(1) << selConsiderLambda) | (static_cast<uint64_t>(1) << selLambdaMassWindow) | (static_cast<uint64_t>(1) << selK0ShortMassRejection);
+    maskAntiLambdaSpecific = (static_cast<uint64_t>(1) << selLambdaRapidity) | (static_cast<uint64_t>(1) << selLambdaCTau) | (static_cast<uint64_t>(1) << selConsiderAntiLambda) | (static_cast<uint64_t>(1) << selAntiLambdaMassWindow) | (static_cast<uint64_t>(1) << selK0ShortMassRejection);
 
     // ask for specific TPC/TOF PID selections
     maskTrackProperties = 0;
     if (v0Selections.requirePosITSonly) {
-      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selPosItsOnly) | (uint64_t(1) << selPosGoodITSTrack);
+      maskTrackProperties = maskTrackProperties | (static_cast<uint64_t>(1) << selPosItsOnly) | (static_cast<uint64_t>(1) << selPosGoodITSTrack);
     } else {
-      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selPosGoodTPCTrack) | (uint64_t(1) << selPosGoodITSTrack);
+      maskTrackProperties = maskTrackProperties | (static_cast<uint64_t>(1) << selPosGoodTPCTrack) | (static_cast<uint64_t>(1) << selPosGoodITSTrack);
       // TPC signal is available: ask for positive track PID
       if (v0Selections.TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
-        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDPositivePion);
-        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDPositiveProton);
-        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDPositivePion);
+        maskK0ShortSpecific = maskK0ShortSpecific | (static_cast<uint64_t>(1) << selTPCPIDPositivePion);
+        maskLambdaSpecific = maskLambdaSpecific | (static_cast<uint64_t>(1) << selTPCPIDPositiveProton);
+        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << selTPCPIDPositivePion);
       }
       // TOF PID
       if (v0Selections.TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
-        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaPositivePionK0Short) | (uint64_t(1) << selTOFDeltaTPositivePionK0Short);
+        maskK0ShortSpecific = maskK0ShortSpecific | (static_cast<uint64_t>(1) << selTOFNSigmaPositivePionK0Short) | (static_cast<uint64_t>(1) << selTOFDeltaTPositivePionK0Short);
       if (v0Selections.TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
-        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaPositiveProtonLambda) | (uint64_t(1) << selTOFDeltaTPositiveProtonLambda);
+        maskLambdaSpecific = maskLambdaSpecific | (static_cast<uint64_t>(1) << selTOFNSigmaPositiveProtonLambda) | (static_cast<uint64_t>(1) << selTOFDeltaTPositiveProtonLambda);
       if (v0Selections.TofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
-        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaPositivePionLambda) | (uint64_t(1) << selTOFDeltaTPositivePionLambda);
+        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << selTOFNSigmaPositivePionLambda) | (static_cast<uint64_t>(1) << selTOFDeltaTPositivePionLambda);
     }
     if (v0Selections.requireNegITSonly) {
-      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selNegItsOnly) | (uint64_t(1) << selNegGoodITSTrack);
+      maskTrackProperties = maskTrackProperties | (static_cast<uint64_t>(1) << selNegItsOnly) | (static_cast<uint64_t>(1) << selNegGoodITSTrack);
     } else {
-      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selNegGoodTPCTrack) | (uint64_t(1) << selNegGoodITSTrack);
+      maskTrackProperties = maskTrackProperties | (static_cast<uint64_t>(1) << selNegGoodTPCTrack) | (static_cast<uint64_t>(1) << selNegGoodITSTrack);
       // TPC signal is available: ask for negative track PID
       if (v0Selections.TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
-        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDNegativePion);
-        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDNegativePion);
-        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDNegativeProton);
+        maskK0ShortSpecific = maskK0ShortSpecific | (static_cast<uint64_t>(1) << selTPCPIDNegativePion);
+        maskLambdaSpecific = maskLambdaSpecific | (static_cast<uint64_t>(1) << selTPCPIDNegativePion);
+        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << selTPCPIDNegativeProton);
       }
       // TOF PID
       if (v0Selections.TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
-        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaNegativePionK0Short) | (uint64_t(1) << selTOFDeltaTNegativePionK0Short);
+        maskK0ShortSpecific = maskK0ShortSpecific | (static_cast<uint64_t>(1) << selTOFNSigmaNegativePionK0Short) | (static_cast<uint64_t>(1) << selTOFDeltaTNegativePionK0Short);
       if (v0Selections.TofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
-        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativePionLambda) | (uint64_t(1) << selTOFDeltaTNegativePionLambda);
+        maskLambdaSpecific = maskLambdaSpecific | (static_cast<uint64_t>(1) << selTOFNSigmaNegativePionLambda) | (static_cast<uint64_t>(1) << selTOFDeltaTNegativePionLambda);
       if (v0Selections.TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
-        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativeProtonLambda) | (uint64_t(1) << selTOFDeltaTNegativeProtonLambda);
+        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << selTOFNSigmaNegativeProtonLambda) | (static_cast<uint64_t>(1) << selTOFDeltaTNegativeProtonLambda);
     }
 
     if (v0Selections.skipTPConly) {
-      maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
-      maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
-      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
+      maskK0ShortSpecific = maskK0ShortSpecific | (static_cast<uint64_t>(1) << selPosNotTPCOnly) | (static_cast<uint64_t>(1) << selNegNotTPCOnly);
+      maskLambdaSpecific = maskLambdaSpecific | (static_cast<uint64_t>(1) << selPosNotTPCOnly) | (static_cast<uint64_t>(1) << selNegNotTPCOnly);
+      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << selPosNotTPCOnly) | (static_cast<uint64_t>(1) << selNegNotTPCOnly);
     }
 
     // Primary particle selection, central to analysis
@@ -1961,8 +1964,8 @@ struct quarkoniaToHyperons {
         uint64_t selMap = computeReconstructionBitmap(v0, collision, v0.yLambda(), v0.yK0Short(), v0.pt());
 
         // consider for histograms for all species
-        selMap = selMap | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selConsiderAntiLambda);
-        selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
+        selMap = selMap | (static_cast<uint64_t>(1) << selConsiderK0Short) | (static_cast<uint64_t>(1) << selConsiderLambda) | (static_cast<uint64_t>(1) << selConsiderAntiLambda);
+        selMap = selMap | (static_cast<uint64_t>(1) << selPhysPrimK0Short) | (static_cast<uint64_t>(1) << selPhysPrimLambda) | (static_cast<uint64_t>(1) << selPhysPrimAntiLambda);
 
         analyseV0Candidate(v0, v0.pt(), selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices, fullV0s.offset());
       } // end v0 loop
@@ -2122,8 +2125,8 @@ struct quarkoniaToHyperons {
 
         // consider only associated candidates if asked to do so, disregard association
         if (!doMCAssociation) {
-          selMap = selMap | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selConsiderAntiLambda);
-          selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
+          selMap = selMap | (static_cast<uint64_t>(1) << selConsiderK0Short) | (static_cast<uint64_t>(1) << selConsiderLambda) | (static_cast<uint64_t>(1) << selConsiderAntiLambda);
+          selMap = selMap | (static_cast<uint64_t>(1) << selPhysPrimK0Short) | (static_cast<uint64_t>(1) << selPhysPrimLambda) | (static_cast<uint64_t>(1) << selPhysPrimAntiLambda);
         }
 
         analyseV0Candidate(v0, ptmc, selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices, fullV0s.offset());
