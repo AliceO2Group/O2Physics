@@ -232,7 +232,7 @@ struct prefilterDielectron {
     fRegistry.add("Pair/before/uls/hMvsPt", "m_{ee} vs. p_{T,ee}", kTH2D, {axis_mass, axis_pair_pt}, true);
     fRegistry.add("Pair/before/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2D, {axis_phiv, {200, 0, 1}}, true);
     fRegistry.add("Pair/before/uls/hDeltaEtaDeltaPhi", "#Delta#eta-#Delta#varphi between 2 tracks;#Delta#varphi (rad.);#Delta#eta;", kTH2D, {{180, -M_PI, M_PI}, {100, -1, +1}}, true);
-    fRegistry.add("Pair/before/uls/hGeomDeltaZRDeltaPhi", Form("difference in z-r#varphi plane between 2 tracks at r = %2.1f cm;r#Delta#varphi (cm);#Deltaz (cm);", dielectroncuts.cfg_x_to_go.value), kTH2D, {{200, -100, 100}, {80, -20, 20}}, true);
+    fRegistry.add("Pair/before/uls/hGeomDeltaZRDeltaPhi", Form("difference in z-r#varphi plane between 2 tracks at r = %2.1f cm;r#Delta#varphi (cm);#Deltaz (cm);", dielectroncuts.cfg_x_to_go.value), kTH2D, {{200, -100, 100}, {200, -10, 10}}, true);
     fRegistry.addClone("Pair/before/uls/", "Pair/before/lspp/");
     fRegistry.addClone("Pair/before/uls/", "Pair/before/lsmm/");
     fRegistry.addClone("Pair/before/", "Pair/after/");
