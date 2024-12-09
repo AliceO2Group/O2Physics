@@ -66,7 +66,7 @@ struct NeutronProtonCorrZdc {
     const AxisSpec axisZNSignal{2 * cfgNBinsZN, cfgZNmin, 1.5 * cfgZNmax, "ZN (a.u.)"};
     const AxisSpec axisZPSignal{2 * cfgNBinsZP, cfgZPmin, 1.5 * cfgZPmax, "ZP (a.u.)"};
     const AxisSpec axisAlphaZ{cfgNBinsAlpha, cfgAlphaZmin, cfgAlphaZmax, "#alpha_{spec}"};
-    const AxisSpec axisZDiffSignal{cfgNBinsZN, cfgDiffZNmin, cfgDiffZNmax, "#Delta E"};
+    const AxisSpec axisZDiffSignal{cfgNBinsZN, cfgDiffZmin, cfgDiffZmax, "#Delta E"};
 
     // create histograms
     histos.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
@@ -243,5 +243,5 @@ struct NeutronProtonCorrZdc {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<neutronSzdc>(cfgc)};
+    adaptAnalysisTask<NeutronProtonCorrZdc>(cfgc)};
 }
