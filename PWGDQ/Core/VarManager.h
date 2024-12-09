@@ -3820,10 +3820,10 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
 
         values[VarManager::kVertexingLxy] = (collision.posX() - secondaryVertex[0]) * (collision.posX() - secondaryVertex[0]) +
                                             (collision.posY() - secondaryVertex[1]) * (collision.posY() - secondaryVertex[1]);
-        values[VarManager::kVertexingLxy] = std::sqrt(values[VarManager::kVertexingLxy]);
         values[VarManager::kVertexingLz] = (collision.posZ() - secondaryVertex[2]) * (collision.posZ() - secondaryVertex[2]);
-        values[VarManager::kVertexingLz] = std::sqrt(values[VarManager::kVertexingLz]);
         values[VarManager::kVertexingLxyz] = values[VarManager::kVertexingLxy] + values[VarManager::kVertexingLz];
+        values[VarManager::kVertexingLxy] = std::sqrt(values[VarManager::kVertexingLxy]);
+        values[VarManager::kVertexingLz] = std::sqrt(values[VarManager::kVertexingLz]);
         values[VarManager::kVertexingLxyz] = std::sqrt(values[VarManager::kVertexingLxyz]);
       }
 
