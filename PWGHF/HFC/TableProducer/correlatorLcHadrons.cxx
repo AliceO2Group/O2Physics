@@ -187,7 +187,7 @@ struct HfCorrelatorLcHadrons {
   Configurable<std::vector<double>> efficiencyLc{"efficiencyLc", {1., 1., 1., 1., 1., 1.}, "efficiency values for Lc"};
   Configurable<bool> storeAutoCorrelationFlag{"storeAutoCorrelationFlag", false, "Store flag that indicates if the track is paired to its Lc mother instead of skipping it"};
   Configurable<bool> correlateLcWithLeadingParticle{"correlateLcWithLeadingParticle", false, "Switch for correlation of Lc baryons with leading particle only"};
-  Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{ o2::track::PID::Proton, o2::track::PID::Pion, o2::track::PID::Kaon}, "Trk sel: Particles species for PID, proton, pion, kaon"};
+  Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Proton, o2::track::PID::Pion, o2::track::PID::Kaon}, "Trk sel: Particles species for PID, proton, pion, kaon"};
   Configurable<bool> pidTrkApplied{"pidTrkApplied", false, "Apply PID selection for associated tracks"};
   Configurable<std::vector<float>> pidTPCMax{"pidTPCMax", std::vector<float>{3., 0., 0.}, "maximum nSigma TPC"};
   Configurable<std::vector<float>> pidTOFMax{"pidTOFMax", std::vector<float>{3., 0., 0.}, "maximum nSigma TOF"};
@@ -348,7 +348,7 @@ struct HfCorrelatorLcHadrons {
         efficiencyWeightLc = 1. / efficiencyLc->at(o2::analysis::findBin(binsPtEfficiencyLc, candidate.pt()));
       }
       auto trackPos1 = candidate.template prong0_as<TracksData>(); // positive daughter (negative for the antiparticles)
-      int8_t chargeLc = trackPos1.sign(); //charge of 1st prong will be the charge of Lc candidate
+      int8_t chargeLc = trackPos1.sign();                          // charge of 1st prong will be the charge of Lc candidate
 
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hPtProng0"), candidate.ptProng0());
@@ -365,7 +365,7 @@ struct HfCorrelatorLcHadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMl[iclass] = candidate.mlProbLcToPKPi()[classMl->at(iclass)];
         }
-        entryLcCandRecoInfo(hfHelper.invMassLcToPKPi(candidate), candidate.pt()*chargeLc, outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
+        entryLcCandRecoInfo(hfHelper.invMassLcToPKPi(candidate), candidate.pt() * chargeLc, outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
       }
       if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
         registry.fill(HIST("hMassLcVsPt"), hfHelper.invMassLcToPiKP(candidate), candidate.pt(), efficiencyWeightLc);
@@ -374,7 +374,7 @@ struct HfCorrelatorLcHadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMl[iclass] = candidate.mlProbLcToPiKP()[classMl->at(iclass)];
         }
-        entryLcCandRecoInfo(hfHelper.invMassLcToPiKP(candidate), candidate.pt()*chargeLc, outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
+        entryLcCandRecoInfo(hfHelper.invMassLcToPiKP(candidate), candidate.pt() * chargeLc, outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
       }
 
       // Lc-Hadron correlation dedicated section
@@ -390,7 +390,7 @@ struct HfCorrelatorLcHadrons {
         if (!track.isGlobalTrackWoDCA()) {
           continue;
         }
-          if (pidTrkApplied) {
+        if (pidTrkApplied) {
           if (!passPIDSelection(track, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF))
             continue;
         }
@@ -402,7 +402,7 @@ struct HfCorrelatorLcHadrons {
         if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
           entryLcHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                             track.eta() - candidate.eta(),
-                            candidate.pt()*chargeLc,
+                            candidate.pt() * chargeLc,
                             track.pt() * track.sign(),
                             poolBin,
                             correlationStatus);
@@ -411,24 +411,24 @@ struct HfCorrelatorLcHadrons {
           entryLcHadronMlInfo(outputMl[0], outputMl[1]);
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
           if (fillTrkPID) {
-          entryLcHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
-        }
+            entryLcHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
+          }
         }
         if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
           entryLcHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                             track.eta() - candidate.eta(),
-                            candidate.pt()*chargeLc,
-                            track.pt()*track.sign(),
+                            candidate.pt() * chargeLc,
+                            track.pt() * track.sign(),
                             poolBin,
                             correlationStatus);
           entryLcHadronRecoInfo(hfHelper.invMassLcToPiKP(candidate), false);
           entryLcHadronGenInfo(false, false, 0);
           entryLcHadronMlInfo(outputMl[0], outputMl[1]);
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
-        if (fillTrkPID) {
-          entryLcHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
+          if (fillTrkPID) {
+            entryLcHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
+          }
         }
-}
         if (cntLc == 0) {
           registry.fill(HIST("hTracksBin"), poolBin);
         }
@@ -486,7 +486,7 @@ struct HfCorrelatorLcHadrons {
         efficiencyWeightLc = 1. / efficiencyLc->at(o2::analysis::findBin(binsPtEfficiencyLc, candidate.pt()));
       }
       auto trackPos1 = candidate.template prong0_as<TracksWithMc>(); // positive daughter (negative for the antiparticles)
-      int8_t chargeLc = trackPos1.sign(); //charge of 1st prong will be the charge of Lc candidate
+      int8_t chargeLc = trackPos1.sign();                            // charge of 1st prong will be the charge of Lc candidate
       isLcSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::LcToPKPi);
       isLcPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
       isLcNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
@@ -516,7 +516,7 @@ struct HfCorrelatorLcHadrons {
           registry.fill(HIST("hMassLcMcRecSig"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), efficiencyWeightLc);
           registry.fill(HIST("hMassLcVsPtMcRec"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), efficiencyWeightLc);
           registry.fill(HIST("hSelectionStatusLcToPKPiMcRec"), candidate.isSelLcToPKPi());
-          entryLcCandRecoInfo(hfHelper.invMassLcToPKPi(candidate), candidate.pt()*chargeLc, outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
+          entryLcCandRecoInfo(hfHelper.invMassLcToPKPi(candidate), candidate.pt() * chargeLc, outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
           entryLcCandGenInfo(isLcPrompt);
         }
         if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
@@ -534,7 +534,7 @@ struct HfCorrelatorLcHadrons {
           registry.fill(HIST("hMassLcMcRecSig"), hfHelper.invMassLcToPiKP(candidate), candidate.pt(), efficiencyWeightLc);
           registry.fill(HIST("hMassLcVsPtMcRec"), hfHelper.invMassLcToPiKP(candidate), candidate.pt(), efficiencyWeightLc);
           registry.fill(HIST("hSelectionStatusLcToPiKPMcRec"), candidate.isSelLcToPiKP());
-          entryLcCandRecoInfo(hfHelper.invMassLcToPiKP(candidate), candidate.pt()*chargeLc, outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
+          entryLcCandRecoInfo(hfHelper.invMassLcToPiKP(candidate), candidate.pt() * chargeLc, outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
           entryLcCandGenInfo(isLcPrompt);
         }
       } else {
@@ -594,14 +594,14 @@ struct HfCorrelatorLcHadrons {
         if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
           entryLcHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                             track.eta() - candidate.eta(),
-                            candidate.pt()*chargeLc,
-                            track.pt()*track.sign(),
+                            candidate.pt() * chargeLc,
+                            track.pt() * track.sign(),
                             poolBin,
                             correlationStatus);
           entryLcHadronRecoInfo(hfHelper.invMassLcToPKPi(candidate), isLcSignal);
-                  if (fillTrkPID) {
-          entryLcHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
-        }
+          if (fillTrkPID) {
+            entryLcHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
+          }
           entryLcHadronMlInfo(outputMl[0], outputMl[1]);
           if (track.has_mcParticle()) {
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
@@ -623,14 +623,14 @@ struct HfCorrelatorLcHadrons {
         if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
           entryLcHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                             track.eta() - candidate.eta(),
-                            candidate.pt()*chargeLc,
-                            track.pt()*track.sign(),
+                            candidate.pt() * chargeLc,
+                            track.pt() * track.sign(),
                             poolBin,
                             correlationStatus);
           entryLcHadronRecoInfo(hfHelper.invMassLcToPiKP(candidate), isLcSignal);
-                  if (fillTrkPID) {
-          entryLcHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
-        }
+          if (fillTrkPID) {
+            entryLcHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
+          }
           entryLcHadronMlInfo(outputMl[0], outputMl[1]);
           if (track.has_mcParticle()) {
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
@@ -734,7 +734,7 @@ struct HfCorrelatorLcHadrons {
         }
 
         if (pidTrkApplied && (std::abs(particleAssoc.pdgCode()) != kProton))
-            continue; // proton PID
+          continue; // proton PID
 
         if (!particleAssoc.isPhysicalPrimary()) {
           continue;
@@ -746,15 +746,15 @@ struct HfCorrelatorLcHadrons {
           }
         }
 
-int8_t chargeLc = TDatabasePDG::Instance()->GetParticle(particle.pdgCode())->Charge();  // Retrieve charge
-int8_t chargeAssoc = TDatabasePDG::Instance()->GetParticle(particleAssoc.pdgCode())->Charge();  // Retrieve charge
+        int8_t chargeLc = TDatabasePDG::Instance()->GetParticle(particle.pdgCode())->Charge();         // Retrieve charge
+        int8_t chargeAssoc = TDatabasePDG::Instance()->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
 
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
         registry.fill(HIST("hPtParticleAssocMcGen"), particleAssoc.pt());
         entryLcHadronPair(getDeltaPhi(particleAssoc.phi(), particle.phi()),
                           particleAssoc.eta() - particle.eta(),
-                          particle.pt()*chargeLc,
-                          particleAssoc.pt()*chargeAssoc,
+                          particle.pt() * chargeLc,
+                          particleAssoc.pt() * chargeAssoc,
                           poolBin,
                           correlationStatus);
         entryLcHadronRecoInfo(MassLambdaCPlus, true);
@@ -779,29 +779,29 @@ int8_t chargeAssoc = TDatabasePDG::Instance()->GetParticle(particleAssoc.pdgCode
         if (!assocParticle.isGlobalTrackWoDCA() || std::abs(hfHelper.yLc(trigLc)) > yCandMax) {
           continue;
         }
-        
+
         if (pidTrkApplied) {
           if (!passPIDSelection(assocParticle, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF))
             continue;
         }
 
         auto trackPos1 = trigLc.template prong0_as<TracksData>(); // positive daughter (negative for the antiparticles)
-        int8_t chargeLc = trackPos1.sign(); //charge of 1st prong will be the charge of Lc candidate
+        int8_t chargeLc = trackPos1.sign();                       // charge of 1st prong will be the charge of Lc candidate
 
         std::vector<float> outputMl = {-1., -1., -1.};
         // LcToPKPi and LcToPiKP division
         if (trigLc.isSelLcToPKPi() >= selectionFlagLc) {
           entryLcHadronPair(getDeltaPhi(assocParticle.phi(), trigLc.phi()),
                             assocParticle.eta() - trigLc.eta(),
-                            trigLc.pt()*chargeLc,
-                            assocParticle.pt()*assocParticle.sign(),
+                            trigLc.pt() * chargeLc,
+                            assocParticle.pt() * assocParticle.sign(),
                             poolBin,
                             correlationStatus);
           entryLcHadronRecoInfo(hfHelper.invMassLcToPKPi(trigLc), false);
           entryLcHadronGenInfo(false, false, 0);
-                   if (fillTrkPID) {
-          entryLcHadronPairTrkPID(assocParticle.tpcNSigmaPr(), assocParticle.tpcNSigmaKa(), assocParticle.tpcNSigmaPi(), assocParticle.tofNSigmaPr(), assocParticle.tofNSigmaKa(), assocParticle.tofNSigmaPi());
-        }
+          if (fillTrkPID) {
+            entryLcHadronPairTrkPID(assocParticle.tpcNSigmaPr(), assocParticle.tpcNSigmaKa(), assocParticle.tpcNSigmaPi(), assocParticle.tofNSigmaPr(), assocParticle.tofNSigmaKa(), assocParticle.tofNSigmaPi());
+          }
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = trigLc.mlProbLcToPKPi()[classMl->at(iclass)];
           }
@@ -811,15 +811,15 @@ int8_t chargeAssoc = TDatabasePDG::Instance()->GetParticle(particleAssoc.pdgCode
         if (trigLc.isSelLcToPiKP() >= selectionFlagLc) {
           entryLcHadronPair(getDeltaPhi(assocParticle.phi(), trigLc.phi()),
                             assocParticle.eta() - trigLc.eta(),
-                            trigLc.pt()*chargeLc,
-                            assocParticle.pt()*assocParticle.sign(),
+                            trigLc.pt() * chargeLc,
+                            assocParticle.pt() * assocParticle.sign(),
                             poolBin,
                             correlationStatus);
           entryLcHadronRecoInfo(hfHelper.invMassLcToPiKP(trigLc), false);
           entryLcHadronGenInfo(false, false, 0);
-                   if (fillTrkPID) {
-          entryLcHadronPairTrkPID(assocParticle.tpcNSigmaPr(), assocParticle.tpcNSigmaKa(), assocParticle.tpcNSigmaPi(), assocParticle.tofNSigmaPr(), assocParticle.tofNSigmaKa(), assocParticle.tofNSigmaPi());
-        }
+          if (fillTrkPID) {
+            entryLcHadronPairTrkPID(assocParticle.tpcNSigmaPr(), assocParticle.tpcNSigmaKa(), assocParticle.tpcNSigmaPi(), assocParticle.tofNSigmaPr(), assocParticle.tofNSigmaKa(), assocParticle.tofNSigmaPi());
+          }
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = trigLc.mlProbLcToPiKP()[classMl->at(iclass)];
           }
@@ -898,7 +898,7 @@ int8_t chargeAssoc = TDatabasePDG::Instance()->GetParticle(particleAssoc.pdgCode
             continue;
         }
         auto trackPos1 = candidate.template prong0_as<TracksWithMc>(); // positive daughter (negative for the antiparticles)
-        int8_t chargeLc = trackPos1.sign(); //charge of 1st prong will be the charge of Lc candidate
+        int8_t chargeLc = trackPos1.sign();                            // charge of 1st prong will be the charge of Lc candidate
 
         if (pAssoc.has_mcParticle()) {
           auto mcParticle = pAssoc.template mcParticle_as<aod::McParticles>();
@@ -910,15 +910,15 @@ int8_t chargeAssoc = TDatabasePDG::Instance()->GetParticle(particleAssoc.pdgCode
         if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
           entryLcHadronPair(getDeltaPhi(pAssoc.phi(), candidate.phi()),
                             pAssoc.eta() - candidate.eta(),
-                            candidate.pt()*chargeLc,
-                            pAssoc.pt()*pAssoc.sign(),
+                            candidate.pt() * chargeLc,
+                            pAssoc.pt() * pAssoc.sign(),
                             poolBin,
                             correlationStatus);
           entryLcHadronRecoInfo(hfHelper.invMassLcToPKPi(candidate), isLcSignal);
           entryLcHadronGenInfo(isLcPrompt, isPhysicalPrimary, trackOrigin);
           if (fillTrkPID) {
-          entryLcHadronPairTrkPID(pAssoc.tpcNSigmaPr(), pAssoc.tpcNSigmaKa(), pAssoc.tpcNSigmaPi(), pAssoc.tofNSigmaPr(), pAssoc.tofNSigmaKa(), pAssoc.tofNSigmaPi());
-        }
+            entryLcHadronPairTrkPID(pAssoc.tpcNSigmaPr(), pAssoc.tpcNSigmaKa(), pAssoc.tpcNSigmaPi(), pAssoc.tofNSigmaPr(), pAssoc.tofNSigmaKa(), pAssoc.tofNSigmaPi());
+          }
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = candidate.mlProbLcToPKPi()[classMl->at(iclass)];
           }
@@ -928,15 +928,15 @@ int8_t chargeAssoc = TDatabasePDG::Instance()->GetParticle(particleAssoc.pdgCode
         if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
           entryLcHadronPair(getDeltaPhi(pAssoc.phi(), candidate.phi()),
                             pAssoc.eta() - candidate.eta(),
-                            candidate.pt()*chargeLc,
-                            pAssoc.pt()*pAssoc.sign(),
+                            candidate.pt() * chargeLc,
+                            pAssoc.pt() * pAssoc.sign(),
                             poolBin,
                             correlationStatus);
           entryLcHadronRecoInfo(hfHelper.invMassLcToPiKP(candidate), isLcSignal);
           entryLcHadronGenInfo(isLcPrompt, isPhysicalPrimary, trackOrigin);
           if (fillTrkPID) {
-          entryLcHadronPairTrkPID(pAssoc.tpcNSigmaPr(), pAssoc.tpcNSigmaKa(), pAssoc.tpcNSigmaPi(), pAssoc.tofNSigmaPr(), pAssoc.tofNSigmaKa(), pAssoc.tofNSigmaPi());
-        }
+            entryLcHadronPairTrkPID(pAssoc.tpcNSigmaPr(), pAssoc.tpcNSigmaKa(), pAssoc.tpcNSigmaPi(), pAssoc.tofNSigmaPr(), pAssoc.tofNSigmaKa(), pAssoc.tofNSigmaPi());
+          }
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = candidate.mlProbLcToPiKP()[classMl->at(iclass)];
           }
@@ -976,15 +976,15 @@ int8_t chargeAssoc = TDatabasePDG::Instance()->GetParticle(particleAssoc.pdgCode
         if (pidTrkApplied && (std::abs(particleAssoc.pdgCode()) != kProton)) {
           continue; // proton PID
         }
-        int8_t chargeLc = TDatabasePDG::Instance()->GetParticle(candidate.pdgCode())->Charge();  // Retrieve charge
-        int8_t chargeAssoc = TDatabasePDG::Instance()->GetParticle(particleAssoc.pdgCode())->Charge();  // Retrieve charge
-        
+        int8_t chargeLc = TDatabasePDG::Instance()->GetParticle(candidate.pdgCode())->Charge();        // Retrieve charge
+        int8_t chargeAssoc = TDatabasePDG::Instance()->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
+
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
         bool isLcPrompt = candidate.originMcGen() == RecoDecay::OriginType::Prompt;
         entryLcHadronPair(getDeltaPhi(particleAssoc.phi(), candidate.phi()),
                           particleAssoc.eta() - candidate.eta(),
-                          candidate.pt()*chargeLc,
-                          particleAssoc.pt()*chargeAssoc,
+                          candidate.pt() * chargeLc,
+                          particleAssoc.pt() * chargeAssoc,
                           poolBin,
                           correlationStatus);
         entryLcHadronRecoInfo(MassLambdaCPlus, true);
