@@ -27,7 +27,7 @@
 #include <TDatabasePDG.h> // FIXME
 #include <TPDGCode.h>     // FIXME
 
-#include <vector>   
+#include <vector>
 #include <cmath>
 #include <array>
 #include <cstdlib>
