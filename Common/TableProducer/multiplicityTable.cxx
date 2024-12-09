@@ -629,18 +629,17 @@ struct MultiplicityTable {
           case kMultMCExtras: // MC only (nothing to do)
           {
           } break;
-          case kMFTMults: 
-          {
+          case kMFTMults: {
             // for centrality estimation with the MFT if desired
             // step 1: produce proper grouping
             const uint64_t collIdx = collision.globalIndex();
             auto mftTracksGrouped = mftTracks.sliceBy(perCollisionMFT, collIdx);
             int nTracks = 0;
             for (auto& track : mftTracksGrouped) {
-              if(track.nClusters() >= 5){ // hardcoded on purpose to avoid trouble
+              if (track.nClusters() >= 5) { // hardcoded on purpose to avoid trouble
                 nTracks++;
               }
-            } 
+            }
             mftMults(nTracks);
           } break;
           default: // Default

@@ -46,8 +46,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt0, isInelGt0, //! is INEL > 0
 DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt1, isInelGt1, //! is INEL > 1
                            [](int multPveta1) -> bool { return multPveta1 > 1; });
 
-// forward track counters 
-DECLARE_SOA_COLUMN(MFTNtracks, mftNtracks, int);                       //!
+// forward track counters
+DECLARE_SOA_COLUMN(MFTNtracks, mftNtracks, int); //!
 
 // MC
 DECLARE_SOA_COLUMN(MultMCFT0A, multMCFT0A, int);                       //!
