@@ -341,6 +341,7 @@ struct HfTaskDirectedFlowCharmHadrons {
   }
   // D0 with ML
   void processD0Ml(CollsWithQvecs::iterator const& collision,
+                   CandD0DataWMl const& /*candidatesD0*/,
                    TracksWithExtra const& tracks)
   {
     auto candsD0ToPiKWMl = selectedD0ToPiKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -352,6 +353,7 @@ struct HfTaskDirectedFlowCharmHadrons {
 
   // D0 with rectangular cuts
   void processD0Std(CollsWithQvecs::iterator const& collision,
+                    CandD0Data const& /*candidatesD0*/,
                     TracksWithExtra const& tracks)
   {
     auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);

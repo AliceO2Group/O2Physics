@@ -9,7 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+<<<<<<< HEAD:PWGCF/Flow/Tasks/FlowPbPbpikp.cxx
 /// \file flowPbPbpikp.cxx
+=======
+/// \file flowPbpbPikp.cxx
+>>>>>>> 5b9f1eab610d3879f782c6b06957eb9eb3e1d5ec:PWGCF/Flow/Tasks/flowPbpbPikp.cxx
 /// \brief PID flow using the generic framework
 /// \author Preet Bhanjan Pati <bhanjanpreet@gmail.com>
 
@@ -55,10 +59,14 @@ using namespace std;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
+<<<<<<< HEAD:PWGCF/Flow/Tasks/FlowPbPbpikp.cxx
 struct flowPbPbpikp {
+=======
+struct FlowPbpbPikp {
+>>>>>>> 5b9f1eab610d3879f782c6b06957eb9eb3e1d5ec:PWGCF/Flow/Tasks/flowPbpbPikp.cxx
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<int64_t> noLaterThan{"noLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
@@ -91,14 +99,18 @@ struct flowPbPbpikp {
   TRandom3* fRndm = new TRandom3(0);
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
+<<<<<<< HEAD:PWGCF/Flow/Tasks/FlowPbPbpikp.cxx
   //using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::pidBayes, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
+=======
+  // using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::pidBayes, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
+>>>>>>> 5b9f1eab610d3879f782c6b06957eb9eb3e1d5ec:PWGCF/Flow/Tasks/flowPbpbPikp.cxx
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
 
   void init(InitContext const&)
   {
-    ccdb->setURL(url.value);
+    ccdb->setURL(ccdbUrl.value);
     ccdb->setCaching(true);
-    ccdb->setCreatedNotAfter(nolaterthan.value);
+    ccdb->setCreatedNotAfter(noLaterThan.value);
 
     histos.add("hPhi", "", {HistType::kTH1D, {axisPhi}});
     histos.add("hEta", "", {HistType::kTH1D, {axisEta}});
@@ -352,5 +364,10 @@ struct flowPbPbpikp {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+<<<<<<< HEAD:PWGCF/Flow/Tasks/FlowPbPbpikp.cxx
   return WorkflowSpec{adaptAnalysisTask<flowPbPbpikp>(cfgc)};
 }
+=======
+  return WorkflowSpec{adaptAnalysisTask<FlowPbpbPikp>(cfgc)};
+}
+>>>>>>> 5b9f1eab610d3879f782c6b06957eb9eb3e1d5ec:PWGCF/Flow/Tasks/flowPbpbPikp.cxx
