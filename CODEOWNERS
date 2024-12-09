@@ -43,8 +43,8 @@
 /PWGLF/TableProducer/GlobalEventProperties @alibuild @njacazio @skundu692 @gbencedi @omvazque
 /PWGLF/Tasks/Nuspex         @alibuild @njacazio @skundu692 @fmazzasc @chiarapinto @maciacco
 /PWGLF/TableProducer/Nuspex @alibuild @njacazio @skundu692 @fmazzasc @chiarapinto @maciacco
-/PWGLF/Tasks/Resonances         @alibuild @njacazio @skundu692 @BongHwi @smaff92
-/PWGLF/TableProducer/Resonances @alibuild @njacazio @skundu692 @BongHwi @smaff92
+/PWGLF/Tasks/Resonances         @alibuild @njacazio @skundu692 @dmallick2 @smaff92
+/PWGLF/TableProducer/Resonances @alibuild @njacazio @skundu692 @dmallick2 @smaff92
 /PWGLF/Tasks/Strangeness         @alibuild @njacazio @skundu692 @ercolessi @ChiaraDeMartin95
 /PWGLF/TableProducer/Strangeness @alibuild @njacazio @skundu692 @ercolessi @ChiaraDeMartin95
 
