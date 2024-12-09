@@ -300,11 +300,11 @@ struct DptDptCorrelationsTask {
     {
       using namespace correlationstask;
 
-      LOGF(info, "Stored NUA&NUE corrections for %d track ids", corrs.size());
+      LOGF(info, "Storing NUA&NUE corrections for %d track ids", corrs.size());
       for (uint i = 0; i < corrs.size(); ++i) {
         if (corrs[i] != nullptr) {
           if (nNoOfDimensions != corrs[i]->GetDimension()) {
-            LOGF(fatal, "  Corrections receved dimensions %d for track id %d different than expected %d", corrs[i]->GetDimension(), i, nNoOfDimensions);
+            LOGF(fatal, "  Corrections received dimensions %d for track id %d different than expected %d", corrs[i]->GetDimension(), i, nNoOfDimensions);
           } else {
             LOGF(info, "  Storing NUA&NUE corrections %s for track id %d with %d dimensions %s",
                  corrs[i] != nullptr ? corrs[i]->GetName() : "nullptr", i, nNoOfDimensions, corrs[i] != nullptr ? "yes" : "no");
@@ -332,7 +332,7 @@ struct DptDptCorrelationsTask {
               }
             }
           }
-          LOGF(info, "Average NUA&NUE correction for track id %d: %f", i, avg / nbins);
+          LOGF(info, "  Average NUA&NUE correction for track id %d: %f", i, avg / nbins);
         }
       }
       ccdbstored = true;
@@ -1201,7 +1201,7 @@ struct DptDptCorrelationsTask {
   {
     using namespace correlationstask;
 
-    static constexpr std::string_view kStrDim[] = {"", "2D", "3D", "4D"};
+    static constexpr std::string_view kStrDim[] = {"", "", "2D", "3D", "4D"};
     return kStrDim[nNoOfDimensions].data();
   }
 
@@ -1255,13 +1255,13 @@ struct DptDptCorrelationsTask {
         } else {
           std::vector<TH1*> corrs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
-            corrs[isp] = reinterpret_cast<TH1*>(ccdblst->FindObject(
-              TString::Format("correction%s_%02d-%02d_%s",
-                              getDimensionStr(),
-                              static_cast<int>(fCentMultMin[ixDCE]),
-                              static_cast<int>(fCentMultMax[ixDCE]),
-                              tnames[isp].c_str())
-                .Data()));
+            auto hName = TString::Format("correction%s_%02d-%02d_%s", getDimensionStr(), static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE]), tnames[isp].c_str());
+            corrs[isp] = reinterpret_cast<TH1*>(ccdblst->FindObject(hName.Data()));
+            if (corrs[isp] != nullptr) {
+              LOGF(info, "Loaded %s", corrs[isp]->GetName());
+            } else {
+              LOGF(warning, "No correction histogram for species %d with name %s", isp, hName.Data());
+            }
           }
           storeTrackCorrections(corrs);
           std::vector<TH2*> ptavgs{tnames.size(), nullptr};
@@ -1330,13 +1330,13 @@ struct DptDptCorrelationsTask {
         } else {
           std::vector<TH1*> corrs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
-            corrs[isp] = reinterpret_cast<TH1*>(ccdblst->FindObject(
-              TString::Format("correction%s_%02d-%02d_%s",
-                              getDimensionStr(),
-                              static_cast<int>(fCentMultMin[ixDCE]),
-                              static_cast<int>(fCentMultMax[ixDCE]),
-                              tnames[isp].c_str())
-                .Data()));
+            auto hName = TString::Format("correction%s_%02d-%02d_%s", getDimensionStr(), static_cast<int>(fCentMultMin[ixDCE]), static_cast<int>(fCentMultMax[ixDCE]), tnames[isp].c_str());
+            corrs[isp] = reinterpret_cast<TH1*>(ccdblst->FindObject(hName.Data()));
+            if (corrs[isp] != nullptr) {
+              LOGF(info, "Loaded %s", corrs[isp]->GetName());
+            } else {
+              LOGF(warning, "No correction histogram for species %d with name %s", isp, hName.Data());
+            }
           }
           dataCEME[ixDCE]->storeTrackCorrections(corrs);
           std::vector<TH2*> ptavgs{tnames.size(), nullptr};
