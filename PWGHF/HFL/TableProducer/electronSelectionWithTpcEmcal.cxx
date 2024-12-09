@@ -127,22 +127,6 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<float> tpcNsigmaElectronMin{"tpcNsigmaElectronMin", -0.5f, "min Electron TPCnsigma"};
   Configurable<float> tpcNsigmaElectronMax{"tpcNsigmaElectronMax", 3.0f, "max Electron TPCnsigma"};
 
-  // Track and EMCal Cluster matching cut for Mc Reco
-  Configurable<float> mcRecDeltaEtaMatchMin{"mcRecDeltaEtaMatchMin", -0.013f, "McReco Min Eta distance of EMCAL cluster to its closest track"};
-  Configurable<float> mcRecDeltaEtaMatchMax{"mcRecDeltaEtaMatchMax", 0.0171f, "McReco Max Eta distance of EMCAL cluster to its closest track"};
-  Configurable<float> mcRecDeltaPhiMatchMin{"mcRecDeltaPhiMatchMin", -0.022f, "McReco Min Phi distance of EMCAL cluster to its closest track"};
-  Configurable<float> mcRecDeltaPhiMatchMax{"mcRecDeltaPhiMatchMax", 0.028f, "McReco Max Phi distance of EMCAL cluster to its closest track"};
-
-  Configurable<float> mcRecTimeEmcClusterMax{"mcRecTimeEmcClusterMax", 50.f, "McReco EMCal Cluster time"};
-
-  // Inclusive electron selection cut for Mc Reco
-  Configurable<float> mcRecM02EmcClusterElectronMax{"mcRecM02EmcClusterElectronMax", 0.9f, "MC Reco max Electron EMCal Cluster M02"};
-  Configurable<float> mcRecM02EmcClusterElectronMin{"mcRecM02EmcClusterElectronMin", 0.02f, "MC Reco min Electron  EMCal Cluster M02"};
-  Configurable<float> mcRecM20EmcClusterElectronMax{"mcRecM20EmcClusterElectronMax", 1000.f, "MC Reco max Electron  EMCal Cluster M20"};
-  Configurable<float> mcRecM20EmcClusterElectronMin{"mcRecM20EmcClusterElectronMin", 0.0f, "MC Reco min Electron   EMCal Cluster M20"};
-  Configurable<float> mcRecTpcNsigmaElectronMin{"mcRecTpcNsigmaElectronMin", -0.5f, "MC Reco min Electron TPCnsigma"};
-  Configurable<float> mcRecTpcNsigmaElectronMax{"mcRecTpcNsigmaElectronMax", 3.0f, "MC Reco max Electron TPCnsigma"};
-
   using TableCollisions = o2::soa::Filtered<o2::soa::Join<aod::Collisions, aod::Mults, aod::EvSels>>;
   using TableCollision = TableCollisions::iterator;
   using TableTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::pidTPCFullEl, o2::aod::pidTOFFullEl, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension>;
@@ -449,21 +433,11 @@ struct HfElectronSelectionWithTpcEmcal {
         deltaEtaMatch = matchTrack.trackEtaEmcal() - etaMatchEmcCluster;
 
         // Track and EMCal cluster Matching
-
-        if constexpr (!isMc) {
-          if (std::abs(timeEmcCluster) > timeEmcClusterMax) {
-            continue;
-          }
-          if (deltaPhiMatch < deltaPhiMatchMin || deltaPhiMatch > deltaPhiMatchMax || deltaEtaMatch < deltaEtaMatchMin || deltaEtaMatch > deltaEtaMatchMax) {
-            continue;
-          }
-        } else {
-          if (std::abs(timeEmcCluster) > mcRecTimeEmcClusterMax) {
-            continue;
-          }
-          if (deltaPhiMatch < mcRecDeltaPhiMatchMin || deltaPhiMatch > mcRecDeltaPhiMatchMax || deltaEtaMatch < mcRecDeltaEtaMatchMin || deltaEtaMatch > mcRecDeltaEtaMatchMax) {
-            continue;
-          }
+        if (std::abs(timeEmcCluster) > timeEmcClusterMax) {
+          continue;
+        }
+        if (deltaPhiMatch < deltaPhiMatchMin || deltaPhiMatch > deltaPhiMatchMax || deltaEtaMatch < deltaEtaMatchMin || deltaEtaMatch > deltaEtaMatchMax) {
+          continue;
         }
 
         registry.fill(HIST("hEmcClsTrkEtaPhiDiffTimeEnergy"), deltaEtaMatch, deltaPhiMatch, timeEmcCluster);
@@ -483,14 +457,9 @@ struct HfElectronSelectionWithTpcEmcal {
         registry.fill(HIST("hAfterMatchEnergyLossVsP"), matchTrack.tpcSignal(), pMatchTrack);
         registry.fill(HIST("hAfterMatchEnergyLossVsPt"), matchTrack.tpcSignal(), ptMatchTrack);
         // Apply Electron Identification cuts
-        if constexpr (!isMc) {
-          if ((tpcNsigmaMatchTrack < tpcNsigmaElectronMin || tpcNsigmaMatchTrack > tpcNsigmaElectronMax) || (m02MatchEmcCluster < m02EmcClusterElectronMin || m02MatchEmcCluster > m02EmcClusterElectronMax) || (m20MatchEmcCluster < m20EmcClusterElectronMin || m20MatchEmcCluster > m20EmcClusterElectronMax)) {
-            continue;
-          }
-        } else {
-          if ((tpcNsigmaMatchTrack < mcRecTpcNsigmaElectronMin || tpcNsigmaMatchTrack > mcRecTpcNsigmaElectronMax) || (m02MatchEmcCluster < mcRecM02EmcClusterElectronMin || m02MatchEmcCluster > mcRecM02EmcClusterElectronMax) || (m20MatchEmcCluster < mcRecM20EmcClusterElectronMin || m20MatchEmcCluster > mcRecM20EmcClusterElectronMax)) {
-            continue;
-          }
+
+        if ((tpcNsigmaMatchTrack < tpcNsigmaElectronMin || tpcNsigmaMatchTrack > tpcNsigmaElectronMax) || (m02MatchEmcCluster < m02EmcClusterElectronMin || m02MatchEmcCluster > m02EmcClusterElectronMax) || (m20MatchEmcCluster < m20EmcClusterElectronMin || m20MatchEmcCluster > m20EmcClusterElectronMax)) {
+          continue;
         }
 
         registry.fill(HIST("hPIDAfterPIDCuts"), eop, ptMatchTrack, tpcNsigmaMatchTrack, m02MatchEmcCluster, m20MatchEmcCluster);
