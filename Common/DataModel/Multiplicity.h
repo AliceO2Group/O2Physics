@@ -206,54 +206,42 @@ DECLARE_SOA_TABLE(PVMultZeqs, "AOD", "PVMULTZEQ", //! Multiplicity equalized for
 using MultZeqs = soa::Join<FV0MultZeqs, FT0MultZeqs, FDDMultZeqs, PVMultZeqs>;
 using MultZeq = MultZeqs::iterator;
 
-namespace multBC
+namespace mult
 {
-DECLARE_SOA_COLUMN(MultBCFT0A, multBCFT0A, float); //!
-DECLARE_SOA_COLUMN(MultBCFT0C, multBCFT0C, float); //!
-DECLARE_SOA_COLUMN(MultBCFV0A, multBCFV0A, float); //!
-DECLARE_SOA_COLUMN(MultBCFDDA, multBCFDDA, float); //!
-DECLARE_SOA_COLUMN(MultBCFDDC, multBCFDDC, float); //!
+// extra BC information
+DECLARE_SOA_COLUMN(MultTVX, multTVX, bool);                          //!
+DECLARE_SOA_COLUMN(MultFV0OrA, multFV0OrA, bool);                    //!
+DECLARE_SOA_COLUMN(MultV0triggerBits, multV0triggerBits, uint8_t);   //!
+DECLARE_SOA_COLUMN(MultT0triggerBits, multT0triggerBits, uint8_t);   //!
+DECLARE_SOA_COLUMN(MultFDDtriggerBits, multFDDtriggerBits, uint8_t); //!
+DECLARE_SOA_COLUMN(MultTriggerMask, multTriggerMask, uint64_t);      //! CTP trigger mask
+DECLARE_SOA_COLUMN(MultCollidingBC, multCollidingBC, bool);          //! CTP trigger mask
 
-DECLARE_SOA_COLUMN(MultBCZNA, multBCZNA, float);   //!
-DECLARE_SOA_COLUMN(MultBCZNC, multBCZNC, float);   //!
-DECLARE_SOA_COLUMN(MultBCZEM1, multBCZEM1, float); //!
-DECLARE_SOA_COLUMN(MultBCZEM2, multBCZEM2, float); //!
-DECLARE_SOA_COLUMN(MultBCZPA, multBCZPA, float);   //!
-DECLARE_SOA_COLUMN(MultBCZPC, multBCZPC, float);   //!
-
-DECLARE_SOA_COLUMN(MultBCTVX, multBCTVX, bool);                          //!
-DECLARE_SOA_COLUMN(MultBCFV0OrA, multBCFV0OrA, bool);                    //!
-DECLARE_SOA_COLUMN(MultBCV0triggerBits, multBCV0triggerBits, uint8_t);   //!
-DECLARE_SOA_COLUMN(MultBCT0triggerBits, multBCT0triggerBits, uint8_t);   //!
-DECLARE_SOA_COLUMN(MultBCFDDtriggerBits, multBCFDDtriggerBits, uint8_t); //!
-DECLARE_SOA_COLUMN(MultBCTriggerMask, multBCTriggerMask, uint64_t);      //! CTP trigger mask
-DECLARE_SOA_COLUMN(MultBCColliding, multBCColliding, bool);              //! CTP trigger mask
-
-DECLARE_SOA_COLUMN(MultBCFT0PosZ, multBCFT0PosZ, float);          //! Position along Z computed with the FT0 information within the BC
-DECLARE_SOA_COLUMN(MultBCFT0PosZValid, multBCFT0PosZValid, bool); //! Validity of the position along Z computed with the FT0 information within the BC
-
-} // namespace multBC
+DECLARE_SOA_COLUMN(MultFT0PosZ, multFT0PosZ, float);          //! Position along Z computed with the FT0 information within the BC
+DECLARE_SOA_COLUMN(MultFT0PosZValid, multFT0PosZValid, bool); //! Validity of the position along Z computed with the FT0 information
+} // namespace mult
 DECLARE_SOA_TABLE(MultBCs, "AOD", "MULTBC", //!
-                  multBC::MultBCFT0A,
-                  multBC::MultBCFT0C,
-                  multBC::MultBCFT0PosZ,
-                  multBC::MultBCFT0PosZValid,
-                  multBC::MultBCFV0A,
-                  multBC::MultBCFDDA,
-                  multBC::MultBCFDDC,
-                  multBC::MultBCZNA,
-                  multBC::MultBCZNC,
-                  multBC::MultBCZEM1,
-                  multBC::MultBCZEM2,
-                  multBC::MultBCZPA,
-                  multBC::MultBCZPC,
-                  multBC::MultBCTVX,
-                  multBC::MultBCFV0OrA,
-                  multBC::MultBCV0triggerBits,
-                  multBC::MultBCT0triggerBits,
-                  multBC::MultBCFDDtriggerBits,
-                  multBC::MultBCTriggerMask,
-                  multBC::MultBCColliding,
+                  mult::MultFT0A,
+                  mult::MultFT0C,
+                  mult::MultFT0PosZ,
+                  mult::MultFT0PosZValid,
+                  mult::MultFV0A,
+                  mult::MultFDDA,
+                  mult::MultFDDC,
+                  mult::MultZNA,
+                  mult::MultZNC,
+                  mult::MultZEM1,
+                  mult::MultZEM2,
+                  mult::MultZPA,
+                  mult::MultZPC,
+                  mult::MultTVX,
+                  mult::MultFV0OrA,
+                  mult::MultV0triggerBits,
+                  mult::MultT0triggerBits,
+                  mult::MultFDDtriggerBits,
+                  mult::MultTriggerMask,
+                  mult::MultCollidingBC,
+                  timestamp::Timestamp,
                   bc::Flags);
 using MultBC = MultBCs::iterator;
 
