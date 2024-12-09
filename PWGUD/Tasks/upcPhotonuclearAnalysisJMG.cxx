@@ -580,7 +580,7 @@ struct upcPhotonuclearAnalysisJMG {
           return;
         }
         if (fillCollisionUD(same, reconstructedCollision, centrality) == false) {
-        return;
+          return;
         }
         histos.fill(HIST("eventcount"), -2);
         fillQAUD(reconstructedCollision, centrality, reconstructedTracks);
