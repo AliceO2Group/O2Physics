@@ -8,11 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \file   pidcme.cxx
+
 /// \author ZhengqingWang(zhengqing.wang@cern.ch)
 /// \file   pidcme.cxx
 /// \brief  task to calculate the pikp cme signal and bacground.
 // C++/ROOT includes.
+// o2-linter: disable=name/workflow-file 
 #include <chrono>
 #include <string>
 #include <vector>
@@ -52,7 +53,7 @@ namespace o2::aod
 {
 namespace cme_track_pid_columns
 {
-DECLARE_SOA_COLUMN(NPidFlag, nPid, int8_t); // Flag tracks without proper binning as -1, and indicate type of particle 0->un-Id, 1->pion, 2->kaon, 3->proton
+DECLARE_SOA_COLUMN(NPidFlag, nPidFlag, int8_t); // Flag tracks without proper binning as -1, and indicate type of particle 0->un-Id, 1->pion, 2->kaon, 3->proton
 } // namespace cme_track_pid_columns
 DECLARE_SOA_TABLE(Flags, "AOD", "Flags", cme_track_pid_columns::NPidFlag);
 } // namespace o2::aod
@@ -251,7 +252,7 @@ struct FillPIDcolums {
     }
   }
 };
-
+// o2-linter: disable=name/struct
 struct pidcme {
   HistogramRegistry histosQA{"histosmain", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -317,11 +318,11 @@ struct pidcme {
   Filter collisionFilter = (nabs(aod::collision::posZ) < 10.f);
   Filter ptfilter = aod::track::pt > cfgMinPt;
   Filter etafilter = aod::track::eta < cfgMaxEta;
-  Filter properPIDfilter = aod::cme_track_pid_columns::nPid != -1;
+  Filter properPIDfilter = aod::cme_track_pid_columns::nPidFlag != -1;
 
-  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags>>> tracksSet1 = aod::cme_track_pid_columns::nPid == 1;
-  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags>>> tracksSet2 = aod::cme_track_pid_columns::nPid == 2;
-  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags>>> tracksSet3 = aod::cme_track_pid_columns::nPid == 3;
+  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags>>> tracksSet1 = aod::cme_track_pid_columns::nPidFlag == 1;
+  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags>>> tracksSet2 = aod::cme_track_pid_columns::nPidFlag == 2;
+  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags>>> tracksSet3 = aod::cme_track_pid_columns::nPidFlag == 3;
   void init(InitContext const&)
   {
 
