@@ -76,8 +76,8 @@ using namespace o2::framework::expressions;
 
 using MyCollisions = aod::Collisions;
 using MyBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedToFT0>;
-using MyMUONs = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
-using MyMFTs = aod::MFTTracks;
+using MyMUONs = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels>;
+using MyMFTs = soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>;
 
 using MyCollision = MyCollisions::iterator;
 using MyBC = MyBCs::iterator;
@@ -223,7 +223,7 @@ DECLARE_SOA_TABLE(MuonPair, "AOD", "MUONPAIR",
 
 } // namespace o2::aod
 
-struct match_mft_mch_data {
+struct match_mft_mch_data_mc {
 
   ////  Variables for matching method
   Configurable<int> fMatchingMethod{"cfgMatchingMethod", 0, ""};
@@ -838,7 +838,7 @@ struct match_mft_mch_data {
 
           matching.calcGlobalMuonParams();
 
-          bool isTrue = false; // isCorrectMatching(muontrack1,mfttrack1);
+          bool isTrue = isCorrectMatching(muontrack1, mfttrack1);
 
           tableMatchingParams(matching.getGMPtAtDCA(),
                               matching.getGMEtaAtDCA(),
@@ -867,7 +867,7 @@ struct match_mft_mch_data {
               continue;
             matching.calcGlobalMuonParams();
 
-            bool isTrue = false; // isCorrectMatching(muontrack1,mfttrack1);
+            bool isTrue = isCorrectMatching(muontrack1, mfttrack1);
 
             tableMixMatchingParams(matching.getGMPtAtDCA(),
                                    matching.getGMEtaAtDCA(),
@@ -916,7 +916,7 @@ struct match_mft_mch_data {
             matchingTag.calcGlobalMuonParams();
             if (isGoodTagMatching(matchingTag.getDx(), matchingTag.getDy(), matchingTag.getDeta(), matchingTag.getDphi()) &&
                 isPassMatchingPreselection(matchingTag.getDx(), matchingTag.getDy())) {
-              bool isTrue = false; // isCorrectMatching(tagmuontrack,mfttrack1);
+              bool isTrue = isCorrectMatching(tagmuontrack, mfttrack1);
               tableTagMatchingParams(matchingTag.getGMPtAtDCA(),
                                      matchingTag.getGMEtaAtDCA(),
                                      matchingTag.getGMQ(),
@@ -934,7 +934,7 @@ struct match_mft_mch_data {
               matchingProbe.calcMatchingParams();
               matchingProbe.calcGlobalMuonParams();
               if (isPassMatchingPreselection(matchingProbe.getDx(), matchingProbe.getDy())) {
-                bool isTrue = false; // isCorrectMatching(probemuontrack,mfttrack1);
+                bool isTrue = isCorrectMatching(probemuontrack, mfttrack1);
                 tableProbeMatchingParams(matchingTag.getGMPtAtDCA(),
                                          matchingProbe.getGMPtAtDCA(),
                                          matchingProbe.getGMEtaAtDCA(),
@@ -957,5 +957,5 @@ struct match_mft_mch_data {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<match_mft_mch_data>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<match_mft_mch_data_mc>(cfgc)};
 }
