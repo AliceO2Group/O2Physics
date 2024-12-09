@@ -87,8 +87,8 @@ using MyBarrelTracksWithV0Bits = soa::Join<aod::Tracks, aod::TracksExtra, aod::T
                                            aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::V0Bits>;
 using MyBarrelTracksWithV0BitsNoTOF = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                                                  aod::pidTPCFullEl, aod::pidTPCFullPi,
-                                                  aod::pidTPCFullKa, aod::pidTPCFullPr, aod::V0Bits>;
+                                                aod::pidTPCFullEl, aod::pidTPCFullPi,
+                                                aod::pidTPCFullKa, aod::pidTPCFullPr, aod::V0Bits>;
 using MyBarrelTracksWithDalitzBits = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA,
                                                aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                                aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -1011,8 +1011,7 @@ struct TableMaker {
                        nSigmaEl, track.tpcNSigmaMu(), nSigmaPi, nSigmaKa, nSigmaPr,
                        track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
                        track.trdSignal());
-      }
-      else if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackTPCPID)) {
+      } else if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackTPCPID)) {
         float nSigmaEl = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaEl_Corr] : track.tpcNSigmaEl());
         float nSigmaPi = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPi_Corr] : track.tpcNSigmaPi());
         float nSigmaKa = ((fConfigPostCalibTPC.fConfigComputeTPCpostCalib && fConfigPostCalibTPC.fConfigComputeTPCpostCalibKaon) ? VarManager::fgValues[VarManager::kTPCnSigmaKa_Corr] : track.tpcNSigmaKa());
@@ -1022,7 +1021,7 @@ struct TableMaker {
                        -999.0, -999.0, -999.0, -999.0, -999.0, -999.0,
                        -999.0);
       }
-      
+
       fTrackIndexMap[track.globalIndex()] = trackBasic.lastIndex();
 
       // write the skimmed collision - track association

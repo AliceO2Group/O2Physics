@@ -374,7 +374,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("JpsiPWGSkimmedCuts4")) {
     cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
     cut->AddCut(GetAnalysisCut("electronTrackQualitySkimmed2"));
-    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug9"));    // loose cut
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug9")); // loose cut
     return cut;
   }
 

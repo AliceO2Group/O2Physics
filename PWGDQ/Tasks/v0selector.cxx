@@ -56,7 +56,7 @@ using std::array;
                                 aod::pidTPCFullKa, aod::pidTPCFullPr>;*/
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                 aod::pidTPCFullEl, aod::pidTPCFullPi,
-                                aod::pidTPCFullKa, aod::pidTPCFullPr>;                                
+                                aod::pidTPCFullKa, aod::pidTPCFullPr>;
 
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackTPCPID;
 
