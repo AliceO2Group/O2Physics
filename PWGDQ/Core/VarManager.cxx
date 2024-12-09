@@ -642,6 +642,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingLzOverErr] = "";
   fgVariableNames[kVertexingLxyzOverErr] = "Pair Lxyz/DLxyz";
   fgVariableUnits[kVertexingLxyzOverErr] = "";
+  fgVariableNames[kCosPointingAngle] = "Cos #theta_{pointing}";
+  fgVariableUnits[kCosPointingAngle] = "";
   fgVariableNames[kKFTrack0DCAxyz] = "Daughter0 DCAxyz";
   fgVariableUnits[kKFTrack0DCAxyz] = "cm";
   fgVariableNames[kKFTrack1DCAxyz] = "Daughter1 DCAxyz";
