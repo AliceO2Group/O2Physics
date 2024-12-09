@@ -88,20 +88,33 @@ struct prefilterDielectron {
   DielectronCut fDielectronCut;
   struct : ConfigurableGroup {
     std::string prefix = "dielectroncut_group";
-    Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass for prefilter ULS"};                                                        // region to be rejected
-    Configurable<float> cfg_max_mass{"cfg_max_mass", 0.0, "max mass for prefilter ULS"};                                                        // region to be rejected
+
+    // for mee prefilter
+    Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass for prefilter ULS"}; // region to be rejected
+    Configurable<float> cfg_max_mass{"cfg_max_mass", 0.0, "max mass for prefilter ULS"}; // region to be rejected
+
+    // for phiv prefilter
+    Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", false, "flag to apply phiv cut"};              // region to be rejected
+    Configurable<float> cfg_phiv_slope{"cfg_phiv_slope", 0.0185, "slope for m vs. phiv"};              // region to be rejected
+    Configurable<float> cfg_phiv_intercept{"cfg_phiv_intercept", -0.0280, "intercept for m vs. phiv"}; // region to be rejected
+    Configurable<float> cfg_min_phiv{"cfg_min_phiv", -1.f, "min phiv"};                                // region to be rejected
+    Configurable<float> cfg_max_phiv{"cfg_max_phiv", 3.2, "max phiv"};                                 // region to be rejected
+
+    // for deta-dphi prefilter
+    Configurable<bool> cfg_apply_detadphi_uls{"cfg_apply_detadphi_uls", false, "flag to apply generator deta-dphi elliptic cut in ULS"}; // region to be rejected
+    Configurable<bool> cfg_apply_detadphi_ls{"cfg_apply_detadphi_ls", false, "flag to apply generator deta-dphi elliptic cut in LS"};    // region to be rejected
+    Configurable<float> cfg_min_deta_ls{"cfg_min_deta_ls", 0.04, "deta between 2 electrons (elliptic cut)"};                             // region to be rejected
+    Configurable<float> cfg_min_dphi_ls{"cfg_min_dphi_ls", 0.2, "dphi between 2 electrons (elliptic cut)"};                              // region to be rejected
+    Configurable<float> cfg_min_deta_uls{"cfg_min_deta_uls", 0.04, "deta between 2 electrons (elliptic cut)"};                           // region to be rejected
+    Configurable<float> cfg_min_dphi_uls{"cfg_min_dphi_uls", 0.2, "dphi between 2 electrons (elliptic cut)"};                            // region to be rejected
+
+    // for dz-rdphi prefilter
     Configurable<bool> cfg_apply_dzrdphi_geom_uls{"cfg_apply_dzrdphi_geom_uls", false, "flag to apply generator dz-rdphi elliptic cut in ULS"}; // region to be rejected
     Configurable<bool> cfg_apply_dzrdphi_geom_ls{"cfg_apply_dzrdphi_geom_ls", false, "flag to apply generator dz-rdphi elliptic cut in LS"};    // region to be rejected
     Configurable<float> cfg_min_dz_geom_ls{"cfg_min_dz_geom_ls", 3, "geometrical min dz between 2 electrons (elliptic cut) in cm"};             // region to be rejected
     Configurable<float> cfg_min_rdphi_geom_ls{"cfg_min_rdphi_geom_ls", 10, "geometrical min rdphi between 2 electrons (elliptic cut) in cm"};   // region to be rejected
     Configurable<float> cfg_min_dz_geom_uls{"cfg_min_dz_geom_uls", 3, "geometrical min dz between 2 electrons (elliptic cut) in cm"};           // region to be rejected
     Configurable<float> cfg_min_rdphi_geom_uls{"cfg_min_rdphi_geom_uls", 10, "geometrical min rdphi between 2 electrons (elliptic cut) in cm"}; // region to be rejected
-
-    Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", false, "flag to apply phiv cut"};              // region to be rejected
-    Configurable<float> cfg_phiv_slope{"cfg_phiv_slope", 0.0185, "slope for m vs. phiv"};              // region to be rejected
-    Configurable<float> cfg_phiv_intercept{"cfg_phiv_intercept", -0.0280, "intercept for m vs. phiv"}; // region to be rejected
-    Configurable<float> cfg_min_phiv{"cfg_min_phiv", -1.f, "min phiv"};                                // region to be rejected
-    Configurable<float> cfg_max_phiv{"cfg_max_phiv", 3.2, "max phiv"};                                 // region to be rejected
 
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.2, "min pT for single track"};
     Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
@@ -423,9 +436,14 @@ struct prefilterDielectron {
           map_pfb[ele.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kPhiV);
         }
 
-        if (dielectroncuts.cfg_x_to_go > 0.f && dielectroncuts.cfg_apply_dzrdphi_geom_uls && std::pow(dz_geom / dielectroncuts.cfg_min_dz_geom_uls, 2) + std::pow(rdphi_geom / dielectroncuts.cfg_min_rdphi_geom_uls, 2) < 1.f) {
+        if (dielectroncuts.cfg_apply_detadphi_uls && std::pow(deta / dielectroncuts.cfg_min_deta_uls, 2) + std::pow(dphi / dielectroncuts.cfg_min_dphi_uls, 2) < 1.f) {
           map_pfb[pos.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrackULS);
           map_pfb[ele.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrackULS);
+        }
+
+        if (dielectroncuts.cfg_x_to_go > 0.f && dielectroncuts.cfg_apply_dzrdphi_geom_uls && std::pow(dz_geom / dielectroncuts.cfg_min_dz_geom_uls, 2) + std::pow(rdphi_geom / dielectroncuts.cfg_min_rdphi_geom_uls, 2) < 1.f) {
+          map_pfb[pos.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrackULSGeom);
+          map_pfb[ele.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrackULSGeom);
         }
       }
 
@@ -453,9 +471,14 @@ struct prefilterDielectron {
         fRegistry.fill(HIST("Pair/before/lspp/hDeltaEtaDeltaPhi"), dphi, deta);
         fRegistry.fill(HIST("Pair/before/lspp/hGeomDeltaZRDeltaPhi"), rdphi_geom, dz_geom);
 
-        if (dielectroncuts.cfg_x_to_go > 0.f && dielectroncuts.cfg_apply_dzrdphi_geom_ls && std::pow(dz_geom / dielectroncuts.cfg_min_dz_geom_ls, 2) + std::pow(rdphi_geom / dielectroncuts.cfg_min_rdphi_geom_ls, 2) < 1.f) {
+        if (dielectroncuts.cfg_apply_detadphi_ls && std::pow(deta / dielectroncuts.cfg_min_deta_ls, 2) + std::pow(dphi / dielectroncuts.cfg_min_dphi_ls, 2) < 1.f) {
           map_pfb[pos1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrackLS);
           map_pfb[pos2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrackLS);
+        }
+
+        if (dielectroncuts.cfg_x_to_go > 0.f && dielectroncuts.cfg_apply_dzrdphi_geom_ls && std::pow(dz_geom / dielectroncuts.cfg_min_dz_geom_ls, 2) + std::pow(rdphi_geom / dielectroncuts.cfg_min_rdphi_geom_ls, 2) < 1.f) {
+          map_pfb[pos1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrackLSGeom);
+          map_pfb[pos2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrackLSGeom);
         }
       }
 
@@ -483,9 +506,14 @@ struct prefilterDielectron {
         fRegistry.fill(HIST("Pair/before/lsmm/hDeltaEtaDeltaPhi"), dphi, deta);
         fRegistry.fill(HIST("Pair/before/lsmm/hGeomDeltaZRDeltaPhi"), rdphi_geom, dz_geom);
 
-        if (dielectroncuts.cfg_x_to_go > 0.f && dielectroncuts.cfg_apply_dzrdphi_geom_ls && std::pow(dz_geom / dielectroncuts.cfg_min_dz_geom_ls, 2) + std::pow(rdphi_geom / dielectroncuts.cfg_min_rdphi_geom_ls, 2) < 1.f) {
+        if (dielectroncuts.cfg_apply_detadphi_ls && std::pow(deta / dielectroncuts.cfg_min_deta_ls, 2) + std::pow(dphi / dielectroncuts.cfg_min_dphi_ls, 2) < 1.f) {
           map_pfb[ele1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrackLS);
           map_pfb[ele2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrackLS);
+        }
+
+        if (dielectroncuts.cfg_x_to_go > 0.f && dielectroncuts.cfg_apply_dzrdphi_geom_ls && std::pow(dz_geom / dielectroncuts.cfg_min_dz_geom_ls, 2) + std::pow(rdphi_geom / dielectroncuts.cfg_min_rdphi_geom_ls, 2) < 1.f) {
+          map_pfb[ele1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrackLSGeom);
+          map_pfb[ele2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrackLSGeom);
         }
       }
 
