@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file flowPbPbpikp.cxx
+/// \file flowPbpbPikp.cxx
 /// \brief PID flow using the generic framework
 /// \author Preet Bhanjan Pati <bhanjanpreet@gmail.com>
 
@@ -55,7 +55,7 @@ using namespace std;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct FlowPbPbpikp {
+struct FlowPbpbPikp {
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> noLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
@@ -352,5 +352,5 @@ struct FlowPbPbpikp {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<FlowPbPbpikp>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<FlowPbpbPikp>(cfgc)};
 }
