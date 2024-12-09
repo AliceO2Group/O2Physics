@@ -135,7 +135,7 @@ struct HfTaskElectronWeakBoson {
   }
 
   void process(soa::Filtered<aod::Collisions>::iterator const& collision,
-               SelectedClusters const& emcClusters,
+               SelectedClusters const&,
                TrackEle const& tracks,
                o2::aod::EMCALMatchedTracks const& matchedtracks)
   {
@@ -206,8 +206,8 @@ struct HfTaskElectronWeakBoson {
           // LOG(info) << "tr phi1 = " << track.phi();
           // LOG(info) << "emc phi = " << phiEmc;
           if (nMatch == 0) {
-            double dEta = match.track_as<TrackEle>().eta() - etaEmc;
-            double dPhi = match.track_as<TrackEle>().phi() - phiEmc;
+            double dEta = match.track_as<TrackEle>().trackEtaEmcal() - etaEmc;
+            double dPhi = match.track_as<TrackEle>().trackPhiEmcal() - phiEmc;
             dPhi = RecoDecay::constrainAngle(dPhi, -o2::constants::math::PI);
 
             registry.fill(HIST("hMatchPhi"), phiEmc, match.track_as<TrackEle>().phi());

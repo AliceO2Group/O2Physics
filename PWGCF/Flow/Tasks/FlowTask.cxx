@@ -16,6 +16,9 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <cmath>
 #include <vector>
+#include <unordered_map>
+#include <string>
+#include <memory>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
@@ -59,6 +62,8 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
+  O2_DEFINE_CONFIGURABLE(cfgCutDCAxyppPass3Enabled, bool, false, "switch of ppPass3 DCAxy pt dependent cut")
+  O2_DEFINE_CONFIGURABLE(cfgCutDCAzPtDepEnabled, bool, false, "switch of DCAz pt dependent cut")
   O2_DEFINE_CONFIGURABLE(cfgTrkSelSwitch, bool, false, "switch for self-defined track selection")
   O2_DEFINE_CONFIGURABLE(cfgTrkSelRun3ITSMatch, bool, false, "GlobalTrackRun3ITSMatching::Run3ITSall7Layers selection")
   O2_DEFINE_CONFIGURABLE(cfgRejectionTPCsectorOverlap, bool, true, "rejection for TPC sector overlap")
@@ -75,6 +80,7 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
+  O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgMagnetField, std::string, "GLO/Config/GRPMagField", "CCDB path to Magnet field object")
@@ -84,6 +90,7 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgUseSmallMemory, bool, false, "Use small memory mode")
   Configurable<std::vector<std::string>> cfgUserDefineGFWCorr{"cfgUserDefineGFWCorr", std::vector<std::string>{"refN02 {2} refP02 {-2}", "refN12 {2} refP12 {-2}"}, "User defined GFW CorrelatorConfig"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWName{"cfgUserDefineGFWName", std::vector<std::string>{"Ch02Gap22", "Ch12Gap22"}, "User defined GFW Name"};
+  Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
 
   ConfigurableAxis axisVertex{"axisVertex", {40, -20, 20}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -168,7 +175,7 @@ struct FlowTask {
     registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{5, 0, 5}}});
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "after sel8");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "after strict Pile-up cut");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "after supicious Runs removal");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "after additional event cut");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "after correction loads");
     registry.add("hVtxZ", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
@@ -241,13 +248,15 @@ struct FlowTask {
     // add in FlowContainer to Get boostrap sample automatically
     TObjArray* oba = new TObjArray();
     oba->Add(new TNamed("ChGap22", "ChGap22"));
-    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
-      oba->Add(new TNamed(Form("ChGap22_pt_%i", i + 1), "ChGap22_pTDiff"));
     oba->Add(new TNamed("ChFull22", "ChFull22"));
     oba->Add(new TNamed("ChFull32", "ChFull32"));
     oba->Add(new TNamed("ChFull42", "ChFull42"));
     oba->Add(new TNamed("ChFull24", "ChFull24"));
     oba->Add(new TNamed("ChFull26", "ChFull26"));
+    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("ChFull22_pt_%i", i + 1), "ChFull22_pTDiff"));
+    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("ChFull24_pt_%i", i + 1), "ChFull24_pTDiff"));
     oba->Add(new TNamed("Ch04Gap22", "Ch04Gap22"));
     oba->Add(new TNamed("Ch06Gap22", "Ch06Gap22"));
     oba->Add(new TNamed("Ch08Gap22", "Ch08Gap22"));
@@ -310,13 +319,17 @@ struct FlowTask {
     fGFW->AddRegion("refP10", 0.5, 0.8, 1, 1);
     fGFW->AddRegion("refN12", -0.8, -0.6, 1, 1);
     fGFW->AddRegion("refP12", 0.6, 0.8, 1, 1);
+    fGFW->AddRegion("refN14", -0.8, -0.7, 1, 1);
+    fGFW->AddRegion("refP14", 0.7, 0.8, 1, 1);
     fGFW->AddRegion("refN", -0.8, -0.4, 1, 1);
     fGFW->AddRegion("refP", 0.4, 0.8, 1, 1);
     fGFW->AddRegion("refM", -0.4, 0.4, 1, 1);
     fGFW->AddRegion("poiN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("poiN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poifull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("olN", -0.8, -0.4, 1, 4);
     fGFW->AddRegion("olN10", -0.8, -0.5, 1, 4);
+    fGFW->AddRegion("olfull", -0.8, 0.8, 1, 4);
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {3 -3}", "ChFull32", kFALSE));
@@ -339,7 +352,8 @@ struct FlowTask {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {4} refP10 {-4}", "Ch10Gap42", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN12 {4} refP12 {-4}", "Ch12Gap42", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {2} refP {-2}", "ChGap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN refN | olN {2} refP {-2}", "ChGap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poifull full | olfull {2 -2}", "ChFull22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poifull full | olfull {2 2 -2 -2}", "ChFull24", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN10 refN10 | olN10 {2} refP10 {-2}", "Ch10Gap22", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN10 refN10 | olN10 {3} refP10 {-3}", "Ch10Gap32", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN10 refN10 | olN10 {4} refP10 {-4}", "Ch10Gap42", kTRUE));
@@ -398,6 +412,8 @@ struct FlowTask {
       myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
     }
     myTrackSel.SetMinNClustersTPC(cfgCutTPCclu);
+    if (cfgCutDCAxyppPass3Enabled)
+      myTrackSel.SetMaxDcaXYPtDep([](float pt) { return 0.004f + 0.013f / pt; }); // Tuned on the LHC22f anchored MC LHC23d1d on primary pions. 7 Sigmas of the resolution
   }
 
   template <char... chars>
@@ -535,13 +551,6 @@ struct FlowTask {
       // no collisions in specified time range
       return 0;
     }
-    float vtxz = -999;
-    if (collision.numContrib() > 1) {
-      vtxz = collision.posZ();
-      float zRes = TMath::Sqrt(collision.covZZ());
-      if (zRes > 0.25 && collision.numContrib() < 20)
-        vtxz = -999;
-    }
     auto multNTracksPV = collision.multNTracksPV();
     auto occupancy = collision.trackOccupancyInTimeRange();
     if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh))
@@ -582,6 +591,9 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
+    if (cfgCutDCAzPtDepEnabled && (track.dcaZ() > (0.004f + 0.013f / track.pt())))
+      return false;
+
     if (cfgTrkSelSwitch) {
       return myTrackSel.IsSelected(track);
     } else {
@@ -633,6 +645,15 @@ struct FlowTask {
       return;
     if (tracks.size() < 1)
       return;
+    registry.fill(HIST("hEventCount"), 1.5);
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int currentRunNumber = bc.runNumber();
+    for (auto& ExcludedRun : cfgRunRemoveList.value) {
+      if (currentRunNumber == ExcludedRun) {
+        return;
+      }
+    }
+    registry.fill(HIST("hEventCount"), 2.5);
     if (!cfgUseSmallMemory) {
       registry.fill(HIST("BeforeCut_globalTracks_centT0C"), collision.centFT0C(), tracks.size());
       registry.fill(HIST("BeforeCut_PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV());
@@ -642,9 +663,6 @@ struct FlowTask {
       registry.fill(HIST("BeforeCut_multV0A_multT0A"), collision.multFT0A(), collision.multFV0A());
       registry.fill(HIST("BeforeCut_multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
     }
-    registry.fill(HIST("hEventCount"), 1.5);
-    // place holder for pile-up rejection
-    registry.fill(HIST("hEventCount"), 2.5);
     const auto cent = collision.centFT0C();
     if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent))
       return;
@@ -655,7 +673,6 @@ struct FlowTask {
     registry.fill(HIST("hMult"), tracks.size());
     registry.fill(HIST("hCent"), collision.centFT0C());
     fGFW->Clear();
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (cfgGetInteractionRate) {
       initHadronicRate(bc);
       double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
@@ -699,13 +716,19 @@ struct FlowTask {
         continue;
       if (cfgRejectionTPCsectorOverlap && !RejectionTPCoverlap(track, Magnetfield))
         continue;
-      if (cfgOutputNUAWeights)
-        fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
-      if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
-        continue;
       bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
       bool WithinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
       bool WithinEtaGap08 = (track.eta() >= -0.4) && (track.eta() <= 0.4);
+      if (cfgOutputNUAWeights) {
+        if (cfgOutputNUAWeightsRefPt) {
+          if (WithinPtRef)
+            fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+        } else {
+          fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+        }
+      }
+      if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
+        continue;
       registry.fill(HIST("hPt"), track.pt());
       if (WithinPtRef) {
         registry.fill(HIST("hPhi"), track.phi());

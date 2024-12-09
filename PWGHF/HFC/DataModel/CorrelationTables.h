@@ -97,13 +97,23 @@ DECLARE_SOA_TABLE(DHadronRecoInfo, "AOD", "DHADRONRECOINFO", //! D0-Hadrons pair
 // Note: definition of columns and tables for Lc-Hadron correlation pairs
 namespace hf_correlation_lc_hadron
 {
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);       //! DeltaPhi between Lc and Hadrons
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);       //! DeltaEta between Lc and Hadrons
-DECLARE_SOA_COLUMN(PtLc, ptLc, float);               //! Transverse momentum of Lc
-DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);       //! Transverse momentum of Hadron
-DECLARE_SOA_COLUMN(MLc, mLc, float);                 //! Invariant mass of Lc
-DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int); //! Tag for LcToPKPi/LcToPiKP
-DECLARE_SOA_COLUMN(PoolBin, poolBin, int);           //! Pool Bin for the MixedEvent
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                             //! DeltaPhi between Lc and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                             //! DeltaEta between Lc and Hadrons
+DECLARE_SOA_COLUMN(PtLc, ptLc, float);                                     //! Transverse momentum of Lc
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                             //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(MLc, mLc, float);                                       //! Invariant mass of Lc
+DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);                         //! ML background score for Lc selection
+DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);                   //! ML prompt score for Lc selection
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);                       //! Tag for LcToPKPi/LcToPiKP
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                                 //! Pool Bin for the MixedEvent
+DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, float);                         //! DCA xy of the track
+DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, float);                           //! DCA z of the track
+DECLARE_SOA_COLUMN(TrackTPCNClsCrossedRows, trackTPCNClsCrossedRows, int); //! Number of crossed TPC Rows
+DECLARE_SOA_COLUMN(TrackOrigin, trackOrigin, int);                         //! Number of crossed TPC Rows
+DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                              //! Used in MC-Rec, Lc Signal
+DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool);                              //! Used in MC-Rec, Lc Prompt or Non-Prompt
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);            //! Used in MC-Rec, primary associated particles
+DECLARE_SOA_COLUMN(IsAutoCorrelated, isAutoCorrelated, bool);              //! Correlation Status
 } // namespace hf_correlation_lc_hadron
 
 DECLARE_SOA_TABLE(LcHadronPair, "AOD", "LCHPAIR", //! Lc-Hadrons pairs Informations
@@ -111,11 +121,35 @@ DECLARE_SOA_TABLE(LcHadronPair, "AOD", "LCHPAIR", //! Lc-Hadrons pairs Informati
                   aod::hf_correlation_lc_hadron::DeltaEta,
                   aod::hf_correlation_lc_hadron::PtLc,
                   aod::hf_correlation_lc_hadron::PtHadron,
-                  aod::hf_correlation_lc_hadron::PoolBin);
+                  aod::hf_correlation_lc_hadron::PoolBin,
+                  aod::hf_correlation_lc_hadron::IsAutoCorrelated);
 
 DECLARE_SOA_TABLE(LcHadronRecoInfo, "AOD", "LCHRECOINFO", //! Lc-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_lc_hadron::MLc,
                   aod::hf_correlation_lc_hadron::SignalStatus);
+
+DECLARE_SOA_TABLE(LcHadronGenInfo, "AOD", "LCHGENINFO", //! Lc-Hadrons pairs Generated Information
+                  aod::hf_correlation_lc_hadron::IsPrompt,
+                  aod::hf_correlation_lc_hadron::IsPhysicalPrimary,
+                  aod::hf_correlation_lc_hadron::TrackOrigin);
+
+DECLARE_SOA_TABLE(LcHadronMlInfo, "AOD", "LCHMLINFO", //! Lc-Hadrons pairs Machine Learning Information
+                  aod::hf_correlation_lc_hadron::MlScoreBkg,
+                  aod::hf_correlation_lc_hadron::MlScorePrompt);
+
+DECLARE_SOA_TABLE(LcRecoInfo, "AOD", "LCRECOINFO", //! Lc candidates Reconstructed Information
+                  aod::hf_correlation_lc_hadron::MLc,
+                  aod::hf_correlation_lc_hadron::PtLc,
+                  aod::hf_correlation_lc_hadron::MlScoreBkg,
+                  aod::hf_correlation_lc_hadron::MlScorePrompt);
+
+DECLARE_SOA_TABLE(LcGenInfo, "AOD", "LCGENOINFO", //! Lc candidates Generated Information
+                  aod::hf_correlation_lc_hadron::IsPrompt);
+
+DECLARE_SOA_TABLE(TrkRecInfoLc, "AOD", "TRKRECINFOLC", //! Tracks Reconstructed Information
+                  aod::hf_correlation_lc_hadron::TrackDcaXY,
+                  aod::hf_correlation_lc_hadron::TrackDcaZ,
+                  aod::hf_correlation_lc_hadron::TrackTPCNClsCrossedRows);
 
 // definition of columns and tables for Ds-Hadron correlation pairs
 namespace hf_correlation_ds_hadron
@@ -333,7 +367,7 @@ DECLARE_SOA_TABLE(Dstar, "AOD", "DSTAR", // Only Dstar properties
 // Note: Table for selection of Lc in a collision
 namespace hf_selection_lc_collision
 {
-DECLARE_SOA_COLUMN(LcSel, lcSel, int); //! Selection flag for Lc in a collision
+DECLARE_SOA_COLUMN(LcSel, lcSel, bool); //! Selection flag for Lc in a collision
 } // namespace hf_selection_lc_collision
 
 DECLARE_SOA_TABLE(LcSelection, "AOD", "LCINCOLL", // Selection of Lc in collisions

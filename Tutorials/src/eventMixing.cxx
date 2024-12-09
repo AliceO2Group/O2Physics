@@ -31,7 +31,7 @@ namespace hash
 {
 DECLARE_SOA_COLUMN(Bin, bin, int);
 } // namespace hash
-DECLARE_SOA_TABLE(Hashes, "AOD", "HASH", hash::Bin);
+DECLARE_SOA_TABLE(MixingHashes, "AOD", "HASH", hash::Bin);
 
 } // namespace o2::aod
 
@@ -304,7 +304,7 @@ struct MixedEventsTripleVariousKinds {
 struct HashTask {
   std::vector<float> xBins{-0.064f, -0.062f, -0.060f, 0.066f, 0.068f, 0.070f, 0.072};
   std::vector<float> yBins{-0.320f, -0.301f, -0.300f, 0.330f, 0.340f, 0.350f, 0.360};
-  Produces<aod::Hashes> hashes;
+  Produces<aod::MixingHashes> hashes;
 
   // Calculate hash for an element based on 2 properties and their bins.
   int getHash(const std::vector<float>& xBins, const std::vector<float>& yBins, float colX, float colY)
@@ -341,7 +341,7 @@ struct HashTask {
 
 struct MixedEventsWithHashTask {
   SliceCache cache;
-  using myCollisions = soa::Join<aod::Hashes, aod::Collisions>;
+  using myCollisions = soa::Join<aod::MixingHashes, aod::Collisions>;
   NoBinningPolicy<aod::hash::Bin> hashBin;
   SameKindPair<myCollisions, aod::Tracks, NoBinningPolicy<aod::hash::Bin>> pair{hashBin, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 

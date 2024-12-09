@@ -41,7 +41,7 @@ o2physics_add_dpl_workflow(v0postprocessing
 
 o2physics_add_dpl_workflow(cascadecorrelations
     SOURCES cascadecorrelations.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(non-prompt-cascade

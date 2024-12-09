@@ -10,6 +10,8 @@
 // or submit itself to any jurisdiction.
 
 #include <cmath>
+#include <string>
+#include <vector>
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -20,11 +22,11 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 #include "PWGCF/DataModel/DptDptFiltered.h"
 #include "PWGCF/TableProducer/dptdptfilter.h"
-#include <TDatabasePDG.h>
 #include <TDirectory.h>
 #include <TFolder.h>
 #include <TH1.h>
@@ -69,6 +71,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
   Configurable<bool> cfgTrackCollAssoc{"trackcollassoc", false, "Track collision id association, track-mcparticle-mccollision vs. track-collision-mccollision: true, false. Default false"};
 
   HistogramRegistry histos{"RecoGenHistograms", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  Service<o2::framework::O2DatabasePDG> fPDG;
   typedef enum { kBEFORE = 0,
                  kAFTER } beforeafterselection;
   typedef enum { kPOSITIVE = 0,
@@ -108,7 +111,6 @@ struct CheckGeneratorLevelVsDetectorLevel {
     /* if the system type is not known at this time, we have to put the initialization somewhere else */
     fSystem = getSystemType(cfgSystem);
     fDataType = getDataType(cfgDataType);
-    fPDG = TDatabasePDG::Instance();
 
     AxisSpec deltaEta = {100, -2, 2, "#Delta#eta"};
     AxisSpec deltaPhi = {100, 0, constants::math::TwoPI, "#Delta#varphi (rad)"};
@@ -335,10 +337,10 @@ struct CheckGeneratorLevelVsDetectorLevel {
     size_t nreco = tracks.size();
     size_t ngen = 0;
 
-    for (auto& part : mcParticles) {
+    for (auto const& part : mcParticles) {
       auto pdgpart = fPDG->GetParticle(part.pdgCode());
       if (pdgpart != nullptr) {
-        float charge = (pdgpart->Charge() >= 3) ? 1.0 : ((pdgpart->Charge() <= -3) ? -1.0 : 0.0);
+        float charge = getCharge(pdgpart->Charge());
         if (charge != 0.0) {
           ngen++;
         }
@@ -392,7 +394,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
     for (auto& part : mcParticles) {
       auto pdgpart = fPDG->GetParticle(part.pdgCode());
       if (pdgpart != nullptr) {
-        float charge = (pdgpart->Charge() >= 3) ? 1.0 : ((pdgpart->Charge() <= -3) ? -1.0 : 0.0);
+        float charge = getCharge(pdgpart->Charge());
         if (charge != 0.0) {
           ngen++;
         }
@@ -407,9 +409,9 @@ struct CheckGeneratorLevelVsDetectorLevel {
         if (!(track.collisionId() < 0)) {
           typename CollisionsObject::iterator coll = collisions.iteratorAt(track.collisionId());
           float centormult = -100.0f;
-          if (IsEvtSelected(coll, centormult)) {
+          if (isEventSelected(coll, centormult)) {
             /* TODO: AcceptTrack does not consider PID */
-            if (AcceptTrack<CollisionsObject>(track)) {
+            if (acceptTrack<CollisionsObject>(track)) {
               /* the track has been accepted */
               nreco++;
               LOGF(MATCHRECGENLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.template mcParticle_as<aod::McParticles>().mcCollisionId());

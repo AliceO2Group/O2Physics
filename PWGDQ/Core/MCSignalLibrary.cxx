@@ -11,6 +11,8 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+#include <string>
+
 #include <TPDGCode.h>
 #include "CommonConstants/PhysicsConstants.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
@@ -119,6 +121,11 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Inclusive jpsi", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("Helium3")) {
+    MCProng prong(1, {1000020030}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Helium3", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("nonPromptJpsi")) {
     MCProng prong(2, {443, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Non-prompt jpsi", {prong}, {-1});
@@ -172,6 +179,21 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("Chic012")) {
     MCProng prong(1, {904}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "Inclusive Chic0, Chic1 and Chic2", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("Upsilon1S")) {
+    MCProng prong(1, {553}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Inclusive Upsilon1S", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("Upsilon2S")) {
+    MCProng prong(1, {100553}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Inclusive Upsilon2S", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("Upsilon3S")) {
+    MCProng prong(1, {200553}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Inclusive Upsilon3S", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("allBeautyHadrons")) {
@@ -383,6 +405,11 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("eFromJpsi")) {
     MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Electrons from jpsi decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("anythingFromJpsi")) {
+    MCProng prong(2, {MCProng::kPDGCodeNotAssigned, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Anything from jpsi decays", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromPromptJpsi")) {
@@ -681,6 +708,20 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "ee pairs from j/psi decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
+  if (!nameStr.compare("eeFromJpsiExclusive")) {
+    MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from j/psi decays", {prong, prong}, {1, 1}); // signal at pair level
+    signal->SetDecayChannelIsExclusive(2, true);
+    return signal;
+  }
+  if (!nameStr.compare("eeFromJpsiNotExclusive")) {
+    MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from j/psi decays", {prong, prong}, {1, 1}); // signal at pair level
+    signal->SetDecayChannelIsNotExclusive(2, true);
+    return signal;
+  }
   if (!nameStr.compare("eePrimaryFromPromptJPsi")) {
     MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {503}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
@@ -707,6 +748,21 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("mumuFromPsi2S")) {
     MCProng prong(2, {13, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "mumu pairs from psi2s decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
+  if (!nameStr.compare("mumuFromUpsilon1S")) {
+    MCProng prong(2, {13, 553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "mumu pairs from upsilon1s decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
+  if (!nameStr.compare("mumuFromUpsilon2S")) {
+    MCProng prong(2, {13, 100553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "mumu pairs from upsilon2s decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
+  if (!nameStr.compare("mumuFromUpsilon3S")) {
+    MCProng prong(2, {13, 200553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "mumu pairs from upsilon3s decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
   if (!nameStr.compare("eeFromLMeeLFQ")) {
@@ -1082,6 +1138,22 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     MCProng prongKaon(2, {321, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Kaon and electron pair from B+", {pronge, pronge, prongKaon}, {2, 2, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeKaonFromBplusExclusive")) {
+    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(2, {321, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon and electron pair from B+", {pronge, pronge, prongKaon}, {2, 2, 1});
+    signal->SetDecayChannelIsExclusive(2, true);
+    return signal;
+  }
+
+  if (!nameStr.compare("eeKaonFromBplusNotExclusive")) {
+    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(2, {321, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon and electron pair from B+", {pronge, pronge, prongKaon}, {2, 2, 1});
+    signal->SetDecayChannelIsNotExclusive(2, true);
     return signal;
   }
 
