@@ -405,9 +405,9 @@ struct MultiplicityQa {
   void processFIT(aod::MultBCs const& multsdebug)
   {
     for (auto& mult : multsdebug) {
-      histos.fill(HIST("multiplicityQa/hIsolatedFT0A"), mult.multBCFT0A());
-      histos.fill(HIST("multiplicityQa/hIsolatedFT0C"), mult.multBCFT0C());
-      histos.fill(HIST("multiplicityQa/hIsolatedFT0M"), mult.multBCFT0A() + mult.multBCFT0C());
+      histos.fill(HIST("multiplicityQa/hIsolatedFT0A"), mult.multFT0A());
+      histos.fill(HIST("multiplicityQa/hIsolatedFT0C"), mult.multFT0C());
+      histos.fill(HIST("multiplicityQa/hIsolatedFT0M"), mult.multFT0A() + mult.multFT0C());
     }
   }
 
