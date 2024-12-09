@@ -86,9 +86,9 @@ using MyBarrelTracksWithV0Bits = soa::Join<aod::Tracks, aod::TracksExtra, aod::T
                                            aod::pidTPCFullKa, aod::pidTPCFullPr,
                                            aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::V0Bits>;
-using MyBarrelTracksWithV0BitsForMaps = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                                                  aod::pidTPCFullEl, aod::pidTPCFullPi,
-                                                  aod::pidTPCFullKa, aod::pidTPCFullPr, aod::V0Bits>;
+using MyBarrelTracksWithV0BitsNoTOF = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
+                                                aod::pidTPCFullEl, aod::pidTPCFullPi,
+                                                aod::pidTPCFullKa, aod::pidTPCFullPr, aod::V0Bits>;
 using MyBarrelTracksWithDalitzBits = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA,
                                                aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                                aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -121,7 +121,7 @@ constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes:
 // constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
 constexpr static uint32_t gkTrackFillMapWithV0Bits = gkTrackFillMapWithCov | VarManager::ObjTypes::TrackV0Bits;
-// constexpr static uint32_t gkTrackFillMapWithV0BitsForMaps = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackV0Bits | VarManager::ObjTypes::TrackTPCPID;
+constexpr static uint32_t gkTrackFillMapWithV0BitsNoTOF = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackV0Bits | VarManager::ObjTypes::TrackTPCPID;
 // constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarManager::ObjTypes::DalitzBits;
 // constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
@@ -284,6 +284,10 @@ struct TableMaker {
   Partition<MyBarrelTracksWithV0Bits> tracksPos = (((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor)) && (aod::track::tgl > static_cast<float>(0.05)));
   Partition<MyBarrelTracksWithV0Bits> tracksNeg = (((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor)) && (aod::track::tgl < static_cast<float>(-0.05)));
 
+  Preslice<MyBarrelTracksWithV0BitsNoTOF> presliceNoTOF = aod::track::collisionId;
+  Partition<MyBarrelTracksWithV0BitsNoTOF> tracksPosNoTOF = (((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor)) && (aod::track::tgl > static_cast<float>(0.05)));
+  Partition<MyBarrelTracksWithV0BitsNoTOF> tracksNegNoTOF = (((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor)) && (aod::track::tgl < static_cast<float>(-0.05)));
+
   struct {
     std::map<int32_t, float> oMeanTimeShortA;
     std::map<int32_t, float> oMeanTimeShortC;
@@ -345,7 +349,7 @@ struct TableMaker {
 
     // Check whether we have to define barrel or muon histograms
     bool enableBarrelHistos = (context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnly") ||
-                               context.mOptions.get<bool>("processPbPb") || context.mOptions.get<bool>("processPbPbBarrelOnly") || context.mOptions.get<bool>("processPbPbBarrelOnlyWithV0Bits"));
+                               context.mOptions.get<bool>("processPbPb") || context.mOptions.get<bool>("processPbPbBarrelOnly") || context.mOptions.get<bool>("processPbPbBarrelOnlyWithV0Bits") || context.mOptions.get<bool>("processPbPbBarrelOnlyWithV0BitsNoTOF"));
 
     bool enableMuonHistos = (context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterMuonOnly") || context.mOptions.get<bool>("processPPWithFilterMuonMFT") || context.mOptions.get<bool>("processPPMuonOnly") || context.mOptions.get<bool>("processPPMuonMFT") ||
                              context.mOptions.get<bool>("processPbPb") || context.mOptions.get<bool>("processPbPbMuonOnly") || context.mOptions.get<bool>("processPbPbMuonMFT"));
@@ -524,7 +528,7 @@ struct TableMaker {
   }
 
   template <typename TEvents, typename TTracks, typename TBCs>
-  void computeOccupancyEstimators(TEvents const& collisions, TTracks const& /*tracks*/, Preslice<TTracks>& preslice, TBCs const&)
+  void computeOccupancyEstimators(TEvents const& collisions, Partition<TTracks> const& tracksPos, Partition<TTracks> const& tracksNeg, Preslice<TTracks>& preslice, TBCs const&)
   {
 
     // clear the occupancy maps for this time frame
@@ -1007,7 +1011,17 @@ struct TableMaker {
                        nSigmaEl, track.tpcNSigmaMu(), nSigmaPi, nSigmaKa, nSigmaPr,
                        track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
                        track.trdSignal());
+      } else if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackTPCPID)) {
+        float nSigmaEl = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaEl_Corr] : track.tpcNSigmaEl());
+        float nSigmaPi = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPi_Corr] : track.tpcNSigmaPi());
+        float nSigmaKa = ((fConfigPostCalibTPC.fConfigComputeTPCpostCalib && fConfigPostCalibTPC.fConfigComputeTPCpostCalibKaon) ? VarManager::fgValues[VarManager::kTPCnSigmaKa_Corr] : track.tpcNSigmaKa());
+        float nSigmaPr = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPr_Corr] : track.tpcNSigmaPr());
+        trackBarrelPID(track.tpcSignal(),
+                       nSigmaEl, -999.0, nSigmaPi, nSigmaKa, nSigmaPr,
+                       -999.0, -999.0, -999.0, -999.0, -999.0, -999.0,
+                       -999.0);
       }
+
       fTrackIndexMap[track.globalIndex()] = trackBasic.lastIndex();
 
       // write the skimmed collision - track association
@@ -1368,8 +1382,17 @@ struct TableMaker {
                                        MyBarrelTracksWithV0Bits const& tracksBarrel,
                                        TrackAssoc const& trackAssocs)
   {
-    computeOccupancyEstimators(collisions, tracksBarrel, preslice, bcs);
+    computeOccupancyEstimators(collisions, tracksPos, tracksNeg, preslice, bcs);
     fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithV0Bits, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr);
+  }
+
+  // produce the barrel only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
+  void processPbPbBarrelOnlyWithV0BitsNoTOF(MyEventsWithCentAndMults const& collisions, BCsWithTimestamps const& bcs,
+                                            MyBarrelTracksWithV0BitsNoTOF const& tracksBarrel,
+                                            TrackAssoc const& trackAssocs)
+  {
+    computeOccupancyEstimators(collisions, tracksPosNoTOF, tracksNegNoTOF, presliceNoTOF, bcs);
+    fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithV0BitsNoTOF, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr);
   }
 
   // produce the muon only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
@@ -1408,6 +1431,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processPbPb, "Build full DQ skimmed data model typically for Pb-Pb, w/o event filtering", false);
   PROCESS_SWITCH(TableMaker, processPbPbBarrelOnly, "Build barrel only DQ skimmed data model typically for Pb-Pb, w/o event filtering", false);
   PROCESS_SWITCH(TableMaker, processPbPbBarrelOnlyWithV0Bits, "Build barrel only DQ skimmed data model typically for Pb-Pb, w/ V0 bits, w/o event filtering", false);
+  PROCESS_SWITCH(TableMaker, processPbPbBarrelOnlyWithV0BitsNoTOF, "Build barrel only DQ skimmed data model typically for Pb-Pb, w/ V0 bits, no TOF, w/o event filtering", false);
   PROCESS_SWITCH(TableMaker, processPbPbMuonOnly, "Build muon only DQ skimmed data model typically for Pb-Pb, w/o event filtering", false);
   PROCESS_SWITCH(TableMaker, processPbPbMuonMFT, "Build muon + mft DQ skimmed data model typically for Pb-Pb, w/o event filtering", false);
   PROCESS_SWITCH(TableMaker, processOnlyBCs, "Analyze the BCs to store sampled lumi", false);
