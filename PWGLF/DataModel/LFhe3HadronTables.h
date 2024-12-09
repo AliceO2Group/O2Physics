@@ -125,8 +125,4 @@ DECLARE_SOA_TABLE(he3HadronMult, "AOD", "HE3HADMULT",
 
 } // namespace o2::aod
 
-<<<<<<< HEAD
 #endif // PWGLF_DATAMODEL_LFHE3HADRONTABLES_H_
-=======
-#endif // PWGLF_DATAMODEL_LFHE3HADRONTABLES_H_
-  >>>>>>> 67a95979e(update)
