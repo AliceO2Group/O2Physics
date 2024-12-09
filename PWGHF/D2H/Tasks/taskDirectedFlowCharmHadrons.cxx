@@ -125,6 +125,13 @@ struct HfTaskDirectedFlowCharmHadrons {
       registry.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", HistType::kTHnSparseF, axes, true);
       registry.add("hpoddvscentpteta", "hpoddvscentpteta", HistType::kTHnSparseF, axes, true);
       registry.add("hpevenvscentpteta", "hpevenvscentpteta", HistType::kTHnSparseF, axes, true);
+
+      registry.add("hpQxpvscent", "hpQxpvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+      registry.add("hpQypvscent", "hpQypvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+      registry.add("hpQxtvscent", "hpQxtvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+      registry.add("hpQytvscent", "hpQytvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+      registry.add("hpuxvscentpteta", "hpuxvscentpteta", HistType::kTHnSparseF, axes, true);
+      registry.add("hpuyvscentpteta", "hpuyvscentpteta", HistType::kTHnSparseF, axes, true);
     } else {
       registry.add("hpQxtQxpvscent", "hpQxtQxpvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
       registry.add("hpQytQypvscent", "hpQytQypvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
@@ -134,6 +141,13 @@ struct HfTaskDirectedFlowCharmHadrons {
       registry.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", HistType::kTHnSparseF, axes, true);
       registry.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", HistType::kTHnSparseF, axes, true);
       registry.add("hpuyQytvscentpteta", "hpuyQytvscentpteta", HistType::kTHnSparseF, axes, true);
+
+      registry.add("hpQxpvscent", "hpQxpvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+      registry.add("hpQypvscent", "hpQypvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+      registry.add("hpQxtvscent", "hpQxtvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+      registry.add("hpQytvscent", "hpQytvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+      registry.add("hpuxvscentpteta", "hpuxvscentpteta", HistType::kTHnSparseF, axes, true);
+      registry.add("hpuyvscentpteta", "hpuyvscentpteta", HistType::kTHnSparseF, axes, true);
     }
 
     ccdb->setURL(ccdbUrl);
@@ -198,11 +212,19 @@ struct HfTaskDirectedFlowCharmHadrons {
     // correlations in the denominators for SP calculation
     if (direct) {
       registry.fill(HIST("hpQxytpvscent"), cent, Qxytp);
+      registry.fill(HIST("hpQxpvscent"), cent, qxZDCA);
+      registry.fill(HIST("hpQxtvscent"), cent, qxZDCC);
+      registry.fill(HIST("hpQypvscent"), cent, qyZDCA);
+      registry.fill(HIST("hpQytvscent"), cent, qyZDCC);
     } else {
       registry.fill(HIST("hpQxtQxpvscent"), cent, QxtQxp);
       registry.fill(HIST("hpQytQypvscent"), cent, QytQyp);
       registry.fill(HIST("hpQxpQytvscent"), cent, QxpQyt);
       registry.fill(HIST("hpQxtQypvscent"), cent, QxtQyp);
+      registry.fill(HIST("hpQxpvscent"), cent, qxZDCA);
+      registry.fill(HIST("hpQxtvscent"), cent, qxZDCC);
+      registry.fill(HIST("hpQypvscent"), cent, qyZDCA);
+      registry.fill(HIST("hpQytvscent"), cent, qyZDCC);
     }
 
     for (const auto& candidate : candidates) {
@@ -283,11 +305,18 @@ struct HfTaskDirectedFlowCharmHadrons {
           registry.fill(HIST("hpuxyQxytvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyt, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpoddvscentpteta"), massCand, cent, ptCand, etaCand, oddv1, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpevenvscentpteta"), massCand, cent, ptCand, etaCand, evenv1, sign, outputMl[0], outputMl[1]);
+
+          registry.fill(HIST("hpuxvscentpteta"), massCand, cent, ptCand, etaCand, ux, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpuyvscentpteta"), massCand, cent, ptCand, etaCand, uy, sign, outputMl[0], outputMl[1]);
+
         } else {
           registry.fill(HIST("hpuxQxpvscentpteta"), massCand, cent, ptCand, etaCand, uxQxp, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpuyQypvscentpteta"), massCand, cent, ptCand, etaCand, uyQyp, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpuxQxtvscentpteta"), massCand, cent, ptCand, etaCand, uxQxt, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpuyQytvscentpteta"), massCand, cent, ptCand, etaCand, uyQyt, sign, outputMl[0], outputMl[1]);
+
+          registry.fill(HIST("hpuxvscentpteta"), massCand, cent, ptCand, etaCand, ux, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpuyvscentpteta"), massCand, cent, ptCand, etaCand, uy, sign, outputMl[0], outputMl[1]);
         }
       } else {
         if (direct) {
@@ -295,11 +324,17 @@ struct HfTaskDirectedFlowCharmHadrons {
           registry.fill(HIST("hpuxyQxytvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyt, sign);
           registry.fill(HIST("hpoddvscentpteta"), massCand, cent, ptCand, etaCand, oddv1, sign);
           registry.fill(HIST("hpevenvscentpteta"), massCand, cent, ptCand, etaCand, evenv1, sign);
+
+          registry.fill(HIST("hpuxvscentpteta"), massCand, cent, ptCand, etaCand, ux, sign);
+          registry.fill(HIST("hpuyvscentpteta"), massCand, cent, ptCand, etaCand, uy, sign);
         } else {
           registry.fill(HIST("hpuxQxpvscentpteta"), massCand, cent, ptCand, etaCand, uxQxp, sign);
           registry.fill(HIST("hpuyQypvscentpteta"), massCand, cent, ptCand, etaCand, uyQyp, sign);
           registry.fill(HIST("hpuxQxtvscentpteta"), massCand, cent, ptCand, etaCand, uxQxt, sign);
           registry.fill(HIST("hpuyQytvscentpteta"), massCand, cent, ptCand, etaCand, uyQyt, sign);
+
+          registry.fill(HIST("hpuxvscentpteta"), massCand, cent, ptCand, etaCand, ux, sign);
+          registry.fill(HIST("hpuyvscentpteta"), massCand, cent, ptCand, etaCand, uy, sign);
         }
       }
     }
