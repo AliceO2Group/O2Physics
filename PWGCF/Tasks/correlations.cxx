@@ -11,7 +11,7 @@
 
 /// \file correlations.cxx
 /// \brief task for the correlation calculations with CF-filtered tracks for O2 analysis
-/// \author Jasper Parkkila <jasper.parkkila@cern.ch>
+/// \author Jan Fiete Grosse-Oetringhaus <jan.fiete.grosse-oetringhaus@cern.ch>, Jasper Parkkila <jasper.parkkila@cern.ch>
 // o2-linter: disable=name/workflow-file
 
 #include <experimental/type_traits>
