@@ -702,8 +702,6 @@ struct LfMyV0s {
     registry.add("hprotonPhi", "hprotonPhi", kTH1F, {axisPhi});
 
   }
-  using V0Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentFV0As>;
-
   int N = 0;
   int JetNumbers = 0;
   void processJetV0Analysis(aod::MyCollision const& collision, aod::MyTable const& myv0s, aod::MyTableJet const& myJets)
