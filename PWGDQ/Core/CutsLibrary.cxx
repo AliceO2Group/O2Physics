@@ -371,6 +371,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("JpsiPWGSkimmedCuts4")) {
+    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
+    cut->AddCut(GetAnalysisCut("electronTrackQualitySkimmed2"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug9"));    // loose cut
+    return cut;
+  }
+
   if (!nameStr.compare("pidElectron_ionut")) {
     cut->AddCut(GetAnalysisCut("pidcalib_ele"));
     cut->AddCut(GetAnalysisCut("jpsiStandardKine3"));
@@ -4427,6 +4434,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 4.0);
     cut->AddCut(VarManager::kTPCnSigmaPi, 2.0, 999, false, VarManager::kPin, 3.0, 999.0);
     cut->AddCut(VarManager::kTPCnSigmaPr, 2.0, 999, false, VarManager::kPin, 3.0, 999.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsi_TPCPID_debug9")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -2.5, 4.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi, 1.0, 999, false, VarManager::kPin, 3.0, 999.0);
+    cut->AddCut(VarManager::kTPCnSigmaPr, 2.0, 999);
     return cut;
   }
 
