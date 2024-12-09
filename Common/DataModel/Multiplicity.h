@@ -45,6 +45,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt0, isInelGt0, //! is INEL > 0
                            [](int multPveta1) -> bool { return multPveta1 > 0; });
 DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt1, isInelGt1, //! is INEL > 1
                            [](int multPveta1) -> bool { return multPveta1 > 1; });
+
+// forward track counters
+DECLARE_SOA_COLUMN(MFTNtracks, mftNtracks, int); //!
+
 // MC
 DECLARE_SOA_COLUMN(MultMCFT0A, multMCFT0A, int);                       //!
 DECLARE_SOA_COLUMN(MultMCFT0C, multMCFT0C, int);                       //!
@@ -108,9 +112,12 @@ DECLARE_SOA_TABLE(PVMults, "AOD", "PVMULT", //! Multiplicity from the PV contrib
                   mult::MultNTracksPVetaHalf,
                   mult::IsInelGt0<mult::MultNTracksPVeta1>,
                   mult::IsInelGt1<mult::MultNTracksPVeta1>);
+DECLARE_SOA_TABLE(MFTMults, "AOD", "MFTMULT", //! Multiplicity with MFT
+                  mult::MFTNtracks);
 using BarrelMults = soa::Join<TrackletMults, TPCMults, PVMults>;
 using Mults = soa::Join<BarrelMults, FV0Mults, FT0Mults, FDDMults, ZDCMults>;
 using FT0Mult = FT0Mults::iterator;
+using MFTMult = MFTMults::iterator;
 using Mult = Mults::iterator;
 
 DECLARE_SOA_TABLE(MultsExtra_000, "AOD", "MULTEXTRA", //!
