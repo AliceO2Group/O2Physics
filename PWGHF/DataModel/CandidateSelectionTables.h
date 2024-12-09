@@ -36,13 +36,13 @@ enum SelectionStep {
 
 namespace hf_sel_candidate_d0
 {
-DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int);                   //!
-DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int);             //!
-DECLARE_SOA_COLUMN(IsSelD0D0barRefl, isSelD0Refl, int);      //!
-DECLARE_SOA_COLUMN(IsSelD0D0barRefl, isSelD0barRefl, int);   //!
-DECLARE_SOA_COLUMN(IsRecoHfFlag, isRecoHfFlag, int);         //!
-DECLARE_SOA_COLUMN(IsRecoTopol, isRecoTopol, int);           //!
-DECLARE_SOA_COLUMN(IsRecoCand, isRecoCand, int);             //!
+DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int);               //!
+DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int);         //!
+DECLARE_SOA_COLUMN(IsSelD0Refl, isSelD0Refl, int);       //!
+DECLARE_SOA_COLUMN(IsSelD0barRefl, isSelD0barRefl, int); //!
+DECLARE_SOA_COLUMN(IsRecoHfFlag, isRecoHfFlag, int);     //!
+DECLARE_SOA_COLUMN(IsRecoTopol, isRecoTopol, int);       //!
+DECLARE_SOA_COLUMN(IsRecoCand, isRecoCand, int);         //!
 DECLARE_SOA_COLUMN(IsRecoPid, isRecoPid, int);
 DECLARE_SOA_COLUMN(MlProbD0, mlProbD0, std::vector<float>);       //!
 DECLARE_SOA_COLUMN(MlProbD0bar, mlProbD0bar, std::vector<float>); //!
