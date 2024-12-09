@@ -62,7 +62,7 @@ using namespace constants::math;
 //                   cfcorreff::Correction);
 // } // namespace o2::aod
 
-static constexpr float kcfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
+static constexpr float kCfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
 
 struct CorrelationTask {
   SliceCache cache;
@@ -83,7 +83,7 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgCentBinsForMC, int, 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC steps");
   O2_DEFINE_CONFIGURABLE(cfgTrackBitMask, uint8_t, 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task");
   // Suggested values: Photon: 0.004; K0 and Lambda: 0.005
-  Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {kcfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
+  Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {kCfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
 
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyTrigger, std::string, "", "CCDB path to efficiency object for trigger particles")
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyAssociated, std::string, "", "CCDB path to efficiency object for associated particles")
@@ -144,11 +144,11 @@ struct CorrelationTask {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>;
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>;
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
 
-  using derivedTracks = soa::Filtered<aod::CFTracks>;
-  using derivedCollisions = soa::Filtered<aod::CFCollisions>;
+  using DerivedCollisions = soa::Filtered<aod::CFCollisions>;
+  using DerivedTracks = soa::Filtered<aod::CFTracks>;
 
   void init(o2::framework::InitContext&)
   {
@@ -250,29 +250,29 @@ struct CorrelationTask {
   }
 
   template <class T>
-  using hasInvMass = decltype(std::declval<T&>().invMass());
+  using HasInvMass = decltype(std::declval<T&>().invMass());
   template <class T>
-  using hasPDGCode = decltype(std::declval<T&>().pdgCode());
+  using HasPDGCode = decltype(std::declval<T&>().pdgCode());
 
   template <typename TCollision, typename TTracks1, typename TTracks2>
   void fillQA(const TCollision& collision, float multiplicity, const TTracks1& tracks1, const TTracks2& tracks2)
   {
     for (const auto& track1 : tracks1) {
-      if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value) {
-        if constexpr (std::experimental::is_detected<hasDecay, typename TTracks1::iterator>::value) {
+      if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value) {
+        if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value) {
           if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u)
             continue;
         }
         registry.fill(HIST("invMass"), track1.invMass(), track1.pt(), multiplicity);
         for (const auto& track2 : tracks2) {
-          if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks2::iterator>::value && std::experimental::is_detected<hasDecay, typename TTracks2::iterator>::value) {
+          if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks2::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
             if (doprocessSame2Prong2Prong) {
               registry.fill(HIST("invMassTwoPart"), track1.invMass(), track2.invMass(), track1.pt(), track2.pt(), multiplicity);
             }
           }
         }
       }
-      if constexpr (std::experimental::is_detected<hasPDGCode, typename TTracks1::iterator>::value) {
+      if constexpr (std::experimental::is_detected<HasPDGCode, typename TTracks1::iterator>::value) {
         if (!cfgMcTriggerPDGs->empty() && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), track1->pdgCode()) == cfgMcTriggerPDGs->end())
           continue;
       }
@@ -311,13 +311,13 @@ struct CorrelationTask {
   }
 
   template <class T>
-  using hasSign = decltype(std::declval<T&>().sign());
+  using HasSign = decltype(std::declval<T&>().sign());
   template <class T>
-  using hasDecay = decltype(std::declval<T&>().decay());
+  using HasDecay = decltype(std::declval<T&>().decay());
   template <class T>
-  using hasProng0Id = decltype(std::declval<T&>().cfTrackProng0Id());
+  using HasProng0Id = decltype(std::declval<T&>().cfTrackProng0Id());
   template <class T>
-  using hasProng1Id = decltype(std::declval<T&>().cfTrackProng1Id());
+  using HasProng1Id = decltype(std::declval<T&>().cfTrackProng1Id());
 
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks1, typename TTracks2>
   void fillCorrelations(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight)
@@ -342,17 +342,17 @@ struct CorrelationTask {
         }
       }
 
-      if constexpr (std::experimental::is_detected<hasDecay, typename TTracks1::iterator>::value) {
+      if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value) {
         if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u)
           continue;
       }
 
-      if constexpr (std::experimental::is_detected<hasPDGCode, typename TTracks1::iterator>::value) {
+      if constexpr (std::experimental::is_detected<HasPDGCode, typename TTracks1::iterator>::value) {
         if (!cfgMcTriggerPDGs->empty() && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), track1.pdgCode()) == cfgMcTriggerPDGs->end())
           continue;
       }
 
-      if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value) {
+      if constexpr (std::experimental::is_detected<HasSign, typename TTracks1::iterator>::value) {
         if (cfgTriggerCharge != 0 && cfgTriggerCharge * track1.sign() < 0) {
           continue;
         }
@@ -366,7 +366,7 @@ struct CorrelationTask {
       }
 
       if (cfgMassAxis) {
-        if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value)
+        if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value)
           target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, track1.invMass(), triggerWeight);
         else
           LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
@@ -381,16 +381,16 @@ struct CorrelationTask {
             continue;
           }
         }
-        if constexpr (std::experimental::is_detected<hasPDGCode, typename TTracks2::iterator>::value) {
+        if constexpr (std::experimental::is_detected<HasPDGCode, typename TTracks2::iterator>::value) {
           if (!cfgMcTriggerPDGs->empty() && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), track2.pdgCode()) != cfgMcTriggerPDGs->end())
             continue;
         }
 
-        if constexpr (std::experimental::is_detected<hasProng0Id, typename TTracks1::iterator>::value) {
+        if constexpr (std::experimental::is_detected<HasProng0Id, typename TTracks1::iterator>::value) {
           if (track2.globalIndex() == track1.cfTrackProng0Id()) // do not correlate daughter tracks of the same event
             continue;
         }
-        if constexpr (std::experimental::is_detected<hasProng1Id, typename TTracks1::iterator>::value) {
+        if constexpr (std::experimental::is_detected<HasProng1Id, typename TTracks1::iterator>::value) {
           if (track2.globalIndex() == track1.cfTrackProng1Id()) // do not correlate daughter tracks of the same event
             continue;
         }
@@ -401,37 +401,37 @@ struct CorrelationTask {
           }
         }
 
-        if constexpr (std::experimental::is_detected<hasDecay, typename TTracks2::iterator>::value) {
+        if constexpr (std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
           if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track2.decay()))) == 0u)
             continue;
         }
 
-        if constexpr (std::experimental::is_detected<hasDecay, typename TTracks1::iterator>::value && std::experimental::is_detected<hasDecay, typename TTracks2::iterator>::value) {
+        if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
           if (doprocessSame2Prong2Prong && (track1.decay() == track2.decay() || track1.decay() > 1 || track2.decay() > 1)) {
             continue;
           }
         } // D0 and anti-D0 selection
 
-        if constexpr (std::experimental::is_detected<hasProng0Id, typename TTracks1::iterator>::value) {
-          if constexpr (std::experimental::is_detected<hasProng0Id, typename TTracks2::iterator>::value) {
+        if constexpr (std::experimental::is_detected<HasProng0Id, typename TTracks1::iterator>::value) {
+          if constexpr (std::experimental::is_detected<HasProng0Id, typename TTracks2::iterator>::value) {
             if (track1.cfTrackProng0Id() == track2.cfTrackProng0Id()) {
               continue;
             }
           }
-          if constexpr (std::experimental::is_detected<hasProng1Id, typename TTracks2::iterator>::value) {
+          if constexpr (std::experimental::is_detected<HasProng1Id, typename TTracks2::iterator>::value) {
             if (track1.cfTrackProng0Id() == track2.cfTrackProng1Id()) {
               continue;
             }
           }
         }
 
-        if constexpr (std::experimental::is_detected<hasProng1Id, typename TTracks1::iterator>::value) {
-          if constexpr (std::experimental::is_detected<hasProng0Id, typename TTracks2::iterator>::value) {
+        if constexpr (std::experimental::is_detected<HasProng1Id, typename TTracks1::iterator>::value) {
+          if constexpr (std::experimental::is_detected<HasProng0Id, typename TTracks2::iterator>::value) {
             if (track1.cfTrackProng1Id() == track2.cfTrackProng0Id()) {
               continue;
             }
           }
-          if constexpr (std::experimental::is_detected<hasProng1Id, typename TTracks2::iterator>::value) {
+          if constexpr (std::experimental::is_detected<HasProng1Id, typename TTracks2::iterator>::value) {
             if (track1.cfTrackProng1Id() == track2.cfTrackProng1Id()) {
               continue;
             }
@@ -442,13 +442,13 @@ struct CorrelationTask {
           continue;
         }
 
-        if constexpr (std::experimental::is_detected<hasSign, typename TTracks2::iterator>::value) {
+        if constexpr (std::experimental::is_detected<HasSign, typename TTracks2::iterator>::value) {
           if (cfgAssociatedCharge != 0 && cfgAssociatedCharge * track2.sign() < 0) {
             continue;
           }
         }
 
-        if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value && std::experimental::is_detected<hasSign, typename TTracks2::iterator>::value) {
+        if constexpr (std::experimental::is_detected<HasSign, typename TTracks1::iterator>::value && std::experimental::is_detected<HasSign, typename TTracks2::iterator>::value) {
           if (cfgPairCharge != 0 && cfgPairCharge * track1.sign() * track2.sign() < 0) {
             continue;
           }
@@ -456,7 +456,7 @@ struct CorrelationTask {
 
         if constexpr (std::is_same<TTracks1, TTracks2>::value) {
           if constexpr (step >= CorrelationContainer::kCFStepReconstructed) {
-            if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value && std::experimental::is_detected<hasSign, typename TTracks2::iterator>::value) {
+            if constexpr (std::experimental::is_detected<HasSign, typename TTracks1::iterator>::value && std::experimental::is_detected<HasSign, typename TTracks2::iterator>::value) {
               if (cfg.mPairCuts && mPairCuts.conversionCuts(track1, track2)) {
                 continue;
               }
@@ -478,12 +478,12 @@ struct CorrelationTask {
 
         // last param is the weight
         if (cfgMassAxis && doprocessSame2Prong2Prong) {
-          if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value && std::experimental::is_detected<hasInvMass, typename TTracks2::iterator>::value)
+          if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value && std::experimental::is_detected<HasInvMass, typename TTracks2::iterator>::value)
             target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track2.invMass(), track1.invMass(), associatedWeight);
           else
             LOGF(fatal, "Can not fill mass axis without invMass column. \n no mass for two particles");
         } else if (cfgMassAxis) {
-          if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value)
+          if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value)
             target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track1.invMass(), associatedWeight);
           else
             LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
@@ -537,7 +537,7 @@ struct CorrelationTask {
   }
 
   // Version with explicit nested loop
-  void processSameAOD(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
+  void processSameAOD(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
   {
     // NOTE legacy function for O2 integration tests. Full version needs derived data
 
@@ -560,7 +560,7 @@ struct CorrelationTask {
   }
   PROCESS_SWITCH(CorrelationTask, processSameAOD, "Process same event on AOD", true);
 
-  void processSameDerived(derivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
+  void processSameDerived(DerivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
   {
     BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     if (cfgVerbosity > 0) {
@@ -588,7 +588,7 @@ struct CorrelationTask {
   }
   PROCESS_SWITCH(CorrelationTask, processSameDerived, "Process same event on derived data", false);
 
-  void processSame2ProngDerived(derivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
+  void processSame2ProngDerived(DerivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
   {
     BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     if (cfgVerbosity > 0) {
@@ -612,7 +612,7 @@ struct CorrelationTask {
   }
   PROCESS_SWITCH(CorrelationTask, processSame2ProngDerived, "Process same event on derived data", false);
 
-  void processSame2Prong2Prong(derivedCollisions::iterator const& collision, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
+  void processSame2Prong2Prong(DerivedCollisions::iterator const& collision, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
   {
     BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     if (cfgVerbosity > 0) {
@@ -637,14 +637,14 @@ struct CorrelationTask {
   PROCESS_SWITCH(CorrelationTask, processSame2Prong2Prong, "Process same event on derived data", false);
 
   using BinningTypeAOD = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M>;
-  void processMixedAOD(aodCollisions const& collisions, aodTracks const& tracks, aod::BCsWithTimestamps const&)
+  void processMixedAOD(AodCollisions const& collisions, AodTracks const& tracks, aod::BCsWithTimestamps const&)
   {
     // NOTE legacy function for O2 integration tests. Full version needs derived data
 
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     BinningTypeAOD configurableBinning{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<aodCollisions, aodTracks, BinningTypeAOD> pairs{configurableBinning, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    SameKindPair<AodCollisions, AodTracks, BinningTypeAOD> pairs{configurableBinning, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     int skipID = -1;
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
@@ -680,12 +680,12 @@ struct CorrelationTask {
   PROCESS_SWITCH(CorrelationTask, processMixedAOD, "Process mixed events on AOD", false);
 
   using BinningTypeDerived = ColumnBinningPolicy<aod::collision::PosZ, aod::cfcollision::Multiplicity>;
-  void processMixedDerived(derivedCollisions const& collisions, derivedTracks const& tracks)
+  void processMixedDerived(DerivedCollisions const& collisions, DerivedTracks const& tracks)
   {
     BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<derivedCollisions, derivedTracks, BinningTypeDerived> pairs{configurableBinningDerived, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    SameKindPair<DerivedCollisions, DerivedTracks, BinningTypeDerived> pairs{configurableBinningDerived, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
@@ -721,12 +721,12 @@ struct CorrelationTask {
   }
   PROCESS_SWITCH(CorrelationTask, processMixedDerived, "Process mixed events on derived data", false);
 
-  void processMixed2ProngDerived(derivedCollisions const& collisions, derivedTracks const& tracks, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
+  void processMixed2ProngDerived(DerivedCollisions const& collisions, DerivedTracks const& tracks, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
   {
     BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     auto tracksTuple = std::make_tuple(p2tracks, tracks);
-    Pair<derivedCollisions, soa::Filtered<aod::CF2ProngTracks>, derivedTracks, BinningTypeDerived> pairs{configurableBinningDerived, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    Pair<DerivedCollisions, soa::Filtered<aod::CF2ProngTracks>, DerivedTracks, BinningTypeDerived> pairs{configurableBinningDerived, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
