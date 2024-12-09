@@ -8,7 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
+/// \file   pidcme.cxx
+/// \author ZhengqingWang(zhengqing.wang@cern.ch)
+/// \brief  task to calculate the pikp cme signal and bacground.
 // C++/ROOT includes.
 #include <chrono>
 #include <string>
@@ -47,11 +49,11 @@ using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
-namespace CMETrackPIDcolums
+namespace cme_track_pid_columns
 {
 DECLARE_SOA_COLUMN(NPIDFlag, Npid, int8_t); // Flag tracks without proper binning as -1, and indicate type of particle 0->un-Id, 1->pion, 2->kaon, 3->proton
-} // namespace CMETrackPIDcolums
-DECLARE_SOA_TABLE(Flags, "AOD", "Flags", CMETrackPIDcolums::NPIDFlag);
+} // namespace cme_track_pid_columns
+DECLARE_SOA_TABLE(Flags, "AOD", "Flags", cme_track_pid_columns::NPIDFlag);
 } // namespace o2::aod
 
 using TracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
@@ -77,7 +79,7 @@ struct FillPIDcolums {
   bool onlyTPC = true;
 
   template <typename TrackType>
-  bool SelTrack_PID(const TrackType track)
+  bool selTrack_PID(const TrackType track)
   {
     if (!(track.pt() > cfgMinPtPID))
       return false;
@@ -204,12 +206,12 @@ struct FillPIDcolums {
     histosQA.add(Form("QA/PID/histnSigma_Pr"), "", {HistType::kTH1F, {axisnSigma}});
     histosQA.add(Form("QA/PID/histnSigma_Pt_Pr"), "", {HistType::kTH2F, {axisPtPID, axisnSigma}});
   }
-  Produces<aod::Flags> PIDCMEtable;
+  Produces<aod::Flags> pidCmeTable;
   void process(TracksPID const& tracks)
   {
     int8_t PID_flag;
-    for (auto& track : tracks) {
-      if (!SelTrack_PID(track)) {
+    for (const auto& track : tracks) {
+      if (!selTrack_PID(track)) {
         PID_flag = -1;
       } else {
         histosQA.fill(HIST("QA/PID/histdEdxTPC_All"), track.sign() * track.tpcInnerParam(), track.tpcSignal());
@@ -219,7 +221,7 @@ struct FillPIDcolums {
           if (selectionPID(track, i))
             PID_flag = PID_flag * 10 + i + 1;
           if (PID_flag > 10) {                                                                     // If a track is identified as two different tracks.
-            if (fabs(nsigma_array[(PID_flag / 10) - 1]) < fabs(nsigma_array[(PID_flag % 10) - 1])) // The track is identified as the particle whose |nsigma| is the least.
+            if (std::abs(nsigma_array[(PID_flag / 10) - 1]) < std::abs(nsigma_array[(PID_flag % 10) - 1])) // The track is identified as the particle whose |nsigma| is the least.
               PID_flag /= 10;
             else
               PID_flag %= 10;
@@ -244,7 +246,7 @@ struct FillPIDcolums {
             break;
         }
       }
-      PIDCMEtable(PID_flag);
+      pidCmeTable(PID_flag);
     }
   }
 };
@@ -275,7 +277,7 @@ struct pidcme {
   ConfigurableAxis cfgaxissumpt{"cfgaxissumpt", {7, 1, 8}, "Binning for #gamma and #delta pt(particle1 + particle2)"};
   ConfigurableAxis cfgaxisdeltaeta{"cfgaxisdeltaeta", {5, 0, 1}, "Binning for #gamma and #delta |#eta(particle1 - particle2)|"};
 
-  Configurable<bool> OpenCME = {"cfgkOpeanCME", true, "open PID CME"};
+  Configurable<bool> cfgkOpeanCME{"cfgkOpeanCME", true, "open PID CME"};
 
   EventPlaneHelper helperEP;
   SliceCache cache;
@@ -314,11 +316,11 @@ struct pidcme {
   Filter collisionFilter = (nabs(aod::collision::posZ) < 10.f);
   Filter ptfilter = aod::track::pt > cfgMinPt;
   Filter etafilter = aod::track::eta < cfgMaxEta;
-  Filter properPIDfilter = aod::CMETrackPIDcolums::Npid != -1;
+  Filter properPIDfilter = aod::cme_track_pid_columns::Npid != -1;
 
-  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags>>> Tracks_set1 = aod::CMETrackPIDcolums::Npid == 1;
-  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags>>> Tracks_set2 = aod::CMETrackPIDcolums::Npid == 2;
-  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags>>> Tracks_set3 = aod::CMETrackPIDcolums::Npid == 3;
+  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags>>> Tracks_set1 = aod::cme_track_pid_columns::Npid == 1;
+  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags>>> Tracks_set2 = aod::cme_track_pid_columns::Npid == 2;
+  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags>>> Tracks_set3 = aod::cme_track_pid_columns::Npid == 3;
   void init(InitContext const&)
   {
 
@@ -373,13 +375,19 @@ struct pidcme {
     histosQA.add(Form("V2/PID/histCosDetV2_Ka_Neg"), "", {HistType::kTH3F, {axisCentMerged, axisPt, axisCos}});
     histosQA.add(Form("V2/PID/histCosDetV2_Pr_Neg"), "", {HistType::kTH3F, {axisCentMerged, axisPt, axisCos}});
 
-    if (OpenCME) {
+    if (cfgkOpeanCME) {
       histosQA.add<TProfile>(Form("PIDCME/histgamama_PiKa_ss"), "", {HistType::kTProfile, {axisCentMerged}});
       histosQA.add<TProfile>(Form("PIDCME/histgamama_PiKa_os"), "", {HistType::kTProfile, {axisCentMerged}});
       histosQA.add<TProfile>(Form("PIDCME/histgamama_PiPr_ss"), "", {HistType::kTProfile, {axisCentMerged}});
       histosQA.add<TProfile>(Form("PIDCME/histgamama_PiPr_os"), "", {HistType::kTProfile, {axisCentMerged}});
       histosQA.add<TProfile>(Form("PIDCME/histgamama_KaPr_ss"), "", {HistType::kTProfile, {axisCentMerged}});
       histosQA.add<TProfile>(Form("PIDCME/histgamama_KaPr_os"), "", {HistType::kTProfile, {axisCentMerged}});
+      histosQA.add<TProfile>(Form("PIDCME/histgamama_PiPi_ss"), "", {HistType::kTProfile, {axisCentMerged}});
+      histosQA.add<TProfile>(Form("PIDCME/histgamama_PiPi_os"), "", {HistType::kTProfile, {axisCentMerged}});
+      histosQA.add<TProfile>(Form("PIDCME/histgamama_KaKa_ss"), "", {HistType::kTProfile, {axisCentMerged}});
+      histosQA.add<TProfile>(Form("PIDCME/histgamama_KaKa_os"), "", {HistType::kTProfile, {axisCentMerged}});
+      histosQA.add<TProfile>(Form("PIDCME/histgamama_PrPr_ss"), "", {HistType::kTProfile, {axisCentMerged}});
+      histosQA.add<TProfile>(Form("PIDCME/histgamama_PrPr_os"), "", {HistType::kTProfile, {axisCentMerged}});
 
       histosQA.add<TProfile>(Form("PIDCME/histdelta_PiKa_ss"), "", {HistType::kTProfile, {axisCentMerged}});
       histosQA.add<TProfile>(Form("PIDCME/histdelta_PiKa_os"), "", {HistType::kTProfile, {axisCentMerged}});
@@ -387,6 +395,12 @@ struct pidcme {
       histosQA.add<TProfile>(Form("PIDCME/histdelta_PiPr_os"), "", {HistType::kTProfile, {axisCentMerged}});
       histosQA.add<TProfile>(Form("PIDCME/histdelta_KaPr_ss"), "", {HistType::kTProfile, {axisCentMerged}});
       histosQA.add<TProfile>(Form("PIDCME/histdelta_KaPr_os"), "", {HistType::kTProfile, {axisCentMerged}});
+      histosQA.add<TProfile>(Form("PIDCME/histdelta_PiPi_ss"), "", {HistType::kTProfile, {axisCentMerged}});
+      histosQA.add<TProfile>(Form("PIDCME/histdelta_PiPi_os"), "", {HistType::kTProfile, {axisCentMerged}});
+      histosQA.add<TProfile>(Form("PIDCME/histdelta_KaKa_ss"), "", {HistType::kTProfile, {axisCentMerged}});
+      histosQA.add<TProfile>(Form("PIDCME/histdelta_KaKa_os"), "", {HistType::kTProfile, {axisCentMerged}});
+      histosQA.add<TProfile>(Form("PIDCME/histdelta_PrPr_ss"), "", {HistType::kTProfile, {axisCentMerged}});
+      histosQA.add<TProfile>(Form("PIDCME/histdelta_PrPr_os"), "", {HistType::kTProfile, {axisCentMerged}});
 
       histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_PiKa_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
       histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_PiKa_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
@@ -394,6 +408,12 @@ struct pidcme {
       histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_PiPr_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
       histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_KaPr_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
       histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_KaPr_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
+      histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_PiPi_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
+      histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_PiPi_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
+      histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_KaKa_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
+      histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_KaKa_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
+      histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_PrPr_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
+      histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_PrPr_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
 
       histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_PiKa_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
       histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_PiKa_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
@@ -401,6 +421,12 @@ struct pidcme {
       histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_PiPr_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
       histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_KaPr_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
       histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_KaPr_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
+      histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_PiPi_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
+      histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_PiPi_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
+      histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_KaKa_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
+      histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_KaKa_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
+      histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_PrPr_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
+      histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_PrPr_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
     }
   }
 
@@ -472,7 +498,7 @@ struct pidcme {
     }
     int DetInd = DetId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
     float Psi_n = helperEP.GetEventPlane(collision.qvecRe()[DetInd + 3], collision.qvecIm()[DetInd + 3], nmode);
-    for (auto& trk : track1) {
+    for (const auto& trk : track1) {
       if (!SelTrack(trk))
         continue;
       if (nmode == 2) {
@@ -485,7 +511,7 @@ struct pidcme {
         }
       }
     }
-    for (auto& trk : track2) {
+    for (const auto& trk : track2) {
       if (!SelTrack(trk))
         continue;
       if (nmode == 2) {
@@ -498,7 +524,7 @@ struct pidcme {
         }
       }
     }
-    for (auto& trk : track3) {
+    for (const auto& trk : track3) {
       if (!SelTrack(trk))
         continue;
       if (nmode == 2) {
@@ -511,9 +537,78 @@ struct pidcme {
         }
       }
     }
-    if (OpenCME) {
-      for (auto& trk1 : track1) {
-        for (auto& trk2 : track2) {
+    if (cfgkOpeanCME) {
+      for (const auto& trk1 : track1) {
+        for (const auto& trk2 : track1) {
+          if (trk1.globalIndex() == trk2.globalIndex())
+            continue;
+          if (nmode == 2) {
+            if (trk1.sign() == trk2.sign()) {
+              histosQA.fill(HIST("PIDCME/histgamama_PiPi_ss"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * Psi_n)));
+              histosQA.fill(HIST("PIDCME/histdelta_PiPi_ss"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
+              histosQA.fill(HIST("PIDCME/Differential/histgamama_PiPi_ss_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
+                            std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * Psi_n)));
+              histosQA.fill(HIST("PIDCME/Differential/histdelta_PiPi_ss_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
+                            std::cos((trk1.phi() - trk2.phi())));
+            } else {
+              histosQA.fill(HIST("PIDCME/histgamama_PiPi_os"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * Psi_n)));
+              histosQA.fill(HIST("PIDCME/histdelta_PiPi_os"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
+              histosQA.fill(HIST("PIDCME/Differential/histgamama_PiPi_os_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
+                            std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * Psi_n)));
+              histosQA.fill(HIST("PIDCME/Differential/histdelta_PiPi_os_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
+                            std::cos((trk1.phi() - trk2.phi())));
+            }
+          }
+        }
+      }
+      for (const auto& trk1 : track2) {
+        for (const auto& trk2 : track2) {
+          if (trk1.globalIndex() == trk2.globalIndex())
+            continue;
+          if (nmode == 2) {
+            if (trk1.sign() == trk2.sign()) {
+              histosQA.fill(HIST("PIDCME/histgamama_KaKa_ss"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * Psi_n)));
+              histosQA.fill(HIST("PIDCME/histdelta_KaKa_ss"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
+              histosQA.fill(HIST("PIDCME/Differential/histgamama_KaKa_ss_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
+                            std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * Psi_n)));
+              histosQA.fill(HIST("PIDCME/Differential/histdelta_KaKa_ss_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
+                            std::cos((trk1.phi() - trk2.phi())));
+            } else {
+              histosQA.fill(HIST("PIDCME/histgamama_KaKa_os"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * Psi_n)));
+              histosQA.fill(HIST("PIDCME/histdelta_KaKa_os"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
+              histosQA.fill(HIST("PIDCME/Differential/histgamama_KaKa_os_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
+                            std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * Psi_n)));
+              histosQA.fill(HIST("PIDCME/Differential/histdelta_KaKa_os_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
+                            std::cos((trk1.phi() - trk2.phi())));
+            }
+          }
+        }
+      }
+      for (const auto& trk1 : track3) {
+        for (const auto& trk2 : track3) {
+          if (trk1.globalIndex() == trk2.globalIndex())
+            continue;
+          if (nmode == 2) {
+            if (trk1.sign() == trk2.sign()) {
+              histosQA.fill(HIST("PIDCME/histgamama_PrPr_ss"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * Psi_n)));
+              histosQA.fill(HIST("PIDCME/histdelta_PrPr_ss"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
+              histosQA.fill(HIST("PIDCME/Differential/histgamama_PrPr_ss_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
+                            std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * Psi_n)));
+              histosQA.fill(HIST("PIDCME/Differential/histdelta_PrPr_ss_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
+                            std::cos((trk1.phi() - trk2.phi())));
+            } else {
+              histosQA.fill(HIST("PIDCME/histgamama_PrPr_os"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * Psi_n)));
+              histosQA.fill(HIST("PIDCME/histdelta_PrPr_os"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
+              histosQA.fill(HIST("PIDCME/Differential/histgamama_PrPr_os_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
+                            std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * Psi_n)));
+              histosQA.fill(HIST("PIDCME/Differential/histdelta_PrPr_os_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
+                            std::cos((trk1.phi() - trk2.phi())));
+            }
+          }
+        }
+      }
+      for (const auto& trk1 : track1) {
+        for (const auto& trk2 : track2) {
           if (trk1.globalIndex() == trk2.globalIndex())
             continue;
           if (nmode == 2) {
@@ -535,8 +630,8 @@ struct pidcme {
           }
         }
       }
-      for (auto& trk1 : track1) {
-        for (auto& trk3 : track3) {
+      for (const auto& trk1 : track1) {
+        for (const auto& trk3 : track3) {
           if (trk1.globalIndex() == trk3.globalIndex())
             continue;
           if (nmode == 2) {
@@ -558,8 +653,8 @@ struct pidcme {
           }
         }
       }
-      for (auto& trk2 : track2) {
-        for (auto& trk3 : track3) {
+      for (const auto& trk2 : track2) {
+        for (const auto& trk3 : track3) {
           if (trk2.globalIndex() == trk3.globalIndex())
             continue;
           if (nmode == 2) {
@@ -604,7 +699,7 @@ struct pidcme {
     for (auto i = 0; i < static_cast<int>(cfgnMods->size()); i++) {
       int DetInd_global = DetId * 4 + cfgnTotalSystem * 4 * (cfgnMods->at(i) - 2);
       float Psi_n_global = helperEP.GetEventPlane(collision.qvecRe()[DetInd_global + 3], collision.qvecIm()[DetInd_global + 3], cfgnMods->at(i));
-      for (auto& trk : tracks) {
+      for (const auto& trk : tracks) {
         if (!SelTrack(trk))
           continue;
         histosQA.fill(HIST("V2/histSinDetV2"), collision.centFT0C(), trk.pt(),
