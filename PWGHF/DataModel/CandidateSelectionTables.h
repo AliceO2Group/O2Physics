@@ -52,7 +52,7 @@ DECLARE_SOA_TABLE(HfSelD0, "AOD", "HFSELD0", //!
                   hf_sel_candidate_d0::IsSelD0,
                   hf_sel_candidate_d0::IsSelD0bar,
                   hf_sel_candidate_d0::IsSelD0Refl,
-                  hf_sel_candidate_d0::IsSelD0D0barRefl,
+                  hf_sel_candidate_d0::IsSelD0barRefl,
                   hf_sel_candidate_d0::IsRecoHfFlag,
                   hf_sel_candidate_d0::IsRecoTopol,
                   hf_sel_candidate_d0::IsRecoCand,
