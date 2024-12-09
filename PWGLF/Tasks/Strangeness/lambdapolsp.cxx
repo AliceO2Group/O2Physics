@@ -186,6 +186,8 @@ struct lambdapolsp {
 
         histos.add("hpuxvscentpteta", "hpuxvscentpteta", kTProfile3D, {centAxis, thnAxispT, etaAxis}, true);
         histos.add("hpuyvscentpteta", "hpuyvscentpteta", kTProfile3D, {centAxis, thnAxispT, etaAxis}, true);
+        histos.add("hpuxvscentptetaneg", "hpuxvscentptetaneg", kTProfile3D, {centAxis, thnAxispT, etaAxis}, true);
+        histos.add("hpuyvscentptetaneg", "hpuyvscentptetaneg", kTProfile3D, {centAxis, thnAxispT, etaAxis}, true);
 
         histos.add("hpuxQxpvscentptetaneg", "hpuxQxpvscentptetaneg", kTProfile3D, {centAxis, thnAxispT, etaAxis}, true);
         histos.add("hpuyQypvscentptetaneg", "hpuyQypvscentptetaneg", kTProfile3D, {centAxis, thnAxispT, etaAxis}, true);
@@ -218,6 +220,8 @@ struct lambdapolsp {
 
         histos.add("hpuxvscentpteta", "hpuxvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
         histos.add("hpuyvscentpteta", "hpuyvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+        histos.add("hpuxvscentptetaneg", "hpuxvscentptetaneg", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+        histos.add("hpuyvscentptetaneg", "hpuyvscentptetaneg", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
 
         histos.add("hpuxQxpvscentptetaneg", "hpuxQxpvscentptetaneg", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
         histos.add("hpuyQypvscentptetaneg", "hpuyQypvscentptetaneg", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
@@ -250,6 +254,8 @@ struct lambdapolsp {
 
         histos.add("hpuxvscentpteta", "hpuxvscentpteta", HistType::kTHnSparseF, {configcentAxis, configthnAxispT, configetaAxis, spAxis}, true);
         histos.add("hpuyvscentpteta", "hpuyvscentpteta", HistType::kTHnSparseF, {configcentAxis, configthnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpuxvscentptetaneg", "hpuxvscentptetaneg", HistType::kTHnSparseF, {configcentAxis, configthnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpuyvscentptetaneg", "hpuyvscentptetaneg", HistType::kTHnSparseF, {configcentAxis, configthnAxispT, configetaAxis, spAxis}, true);
 
         histos.add("hpuxQxpvscentptetaneg", "hpuxQxpvscentptetaneg", HistType::kTHnSparseF, {configcentAxis, configthnAxispT, configetaAxis, spAxis}, true);
         histos.add("hpuyQypvscentptetaneg", "hpuyQypvscentptetaneg", HistType::kTHnSparseF, {configcentAxis, configthnAxispT, configetaAxis, spAxis}, true);
@@ -627,8 +633,8 @@ struct lambdapolsp {
               histos.fill(HIST("hpuxQxtvscentptetaneg"), centrality, track.pt(), track.eta(), uxQxt);
               histos.fill(HIST("hpuyQytvscentptetaneg"), centrality, track.pt(), track.eta(), uyQyt);
 
-              histos.fill(HIST("hpuxvscentpteta"), centrality, track.pt(), track.eta(), ux);
-              histos.fill(HIST("hpuyvscentpteta"), centrality, track.pt(), track.eta(), uy);
+              histos.fill(HIST("hpuxvscentptetaneg"), centrality, track.pt(), track.eta(), ux);
+              histos.fill(HIST("hpuyvscentptetaneg"), centrality, track.pt(), track.eta(), uy);
 
               histos.fill(HIST("hpuxyQxytvscentptetaneg"), centrality, track.pt(), track.eta(), uxyQxyt);
               histos.fill(HIST("hpuxyQxypvscentptetaneg"), centrality, track.pt(), track.eta(), uxyQxyp);
