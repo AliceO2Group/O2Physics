@@ -34,6 +34,8 @@
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "TVector2.h"
 #include "TVector3.h"
+#include "TPDGCode.h"
+
 
 using namespace o2;
 using namespace o2::framework;
@@ -114,10 +116,10 @@ struct AngularCorrelationsInJets {
   Configurable<bool> fDeuteronAnalysis{"deuteronAnalysis", true, "true [false]: analyse (anti)deuterons [(anti)helium-3]"};
   Configurable<bool> fUseTOFMass{"useTOFmass", true, "use TOF mass instead of pion mass if available"};
 
-  Configurable<int> fBufferSize{"trackBufferSize", 2000, "Number of mixed-event tracks being stored"};
+  Configurable<int> fBufferSize{"trackBufferSize", 200, "Number of mixed-event tracks being stored"};
 
   // QC Configurables
-  Configurable<float> fZVtx{"zVtx", 9999, "max zVertex"};
+  Configurable<float> fZVtx{"zVtx", 10.0, "max zVertex"};
   Configurable<float> fRmax{"Rmax", 0.4, "Maximum radius for jet and UE regions"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -127,7 +129,10 @@ struct AngularCorrelationsInJets {
                                    aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl/* , aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFTr, aod::pidTOFAl */>;
   using FullTracksRun3 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection, aod::TrackSelectionExtension,
                                    aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl/* , aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFTr, aod::pidTOFAl */>;
+  using McTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime, aod::TrackSelection,
+                             aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTOFmass, aod::pidTOFbeta, aod::McTrackLabels>;
   using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
+  using McCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>::iterator;
 
   Filter prelimTrackCuts = (aod::track::itsChi2NCl < fMaxChi2ITS &&
                             aod::track::tpcChi2NCl < fMaxChi2TPC &&
@@ -137,11 +142,14 @@ struct AngularCorrelationsInJets {
 
   Preslice<FullTracksRun2> perCollisionFullTracksRun2 = o2::aod::track::collisionId;
   Preslice<FullTracksRun3> perCollisionFullTracksRun3 = o2::aod::track::collisionId;
+  PreSlice<McTracks> perCollisionMcTracks = o2::aod::track::collisionId;
 
   AxisSpecs axisSpecs;
 
   HistogramRegistry registryData{"dataOutput", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry registryMC("MCOutput", {}, OutputObjHandlingPolicy::AnalysisObject, false, true);
   HistogramRegistry registryQA{"dataQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry registryMCQA("MCQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, true);
 
   JetBkgSubUtils bkgSub;
 
@@ -331,7 +339,7 @@ struct AngularCorrelationsInJets {
   { // reject any track that has nsigma < 3 for more than 1 species
     if (track.tpcNSigmaStoreEl() < 3.0 || track.tpcNSigmaStoreMu() < 3.0 || track.tpcNSigmaStorePi() < 3.0 || track.tpcNSigmaStoreKa() < 3.0 || track.tpcNSigmaStoreTr() < 3.0 || track.tpcNSigmaStoreAl() < 3.0)
       return false;
-    switch species {
+    switch (species) {
       case 1: // (anti)proton
         return (track.tpcNSigmaPr() < 3.0 && track.tpcNSigmaDe() > 3.0 && track.tpcNSigmaHe() > 3.0);
       case 2: // (anti)deuteron
@@ -344,6 +352,8 @@ struct AngularCorrelationsInJets {
   template <typename T>
   bool isProton(const T& track, bool tightCuts)
   {
+    if (doprocessMCRun3)
+      return (track.mcParticle().pdgCode() == 2212);
     if (track.sign() < 0)
       return false;
 
@@ -394,6 +404,8 @@ struct AngularCorrelationsInJets {
   template <typename T>
   bool isAntiproton(const T& track, bool tightCuts)
   {
+    if (doprocessMCRun3)
+      return (track.mcParticle().pdgCode() == -2212);
     if (track.sign() > 0)
       return false;
 
@@ -443,6 +455,8 @@ struct AngularCorrelationsInJets {
   template <typename T>
   bool isNucleus(const T& track, bool tightCuts)
   {
+    if (doprocessMCRun3)
+      return (track.mcParticle().pdgCode() == (fDeuteronAnalysis) ? 1000010020 : 1000020030);
     if (track.sign() < 0)
       return false;
     if (fDeuteronAnalysis) {
@@ -533,6 +547,8 @@ struct AngularCorrelationsInJets {
   template <typename T>
   bool isAntinucleus(const T& track, bool tightCuts)
   {
+    if (doprocessMCRun3)
+      return (track.mcParticle().pdgCode() == (fDeuteronAnalysis) ? -1000010020 : -1000020030);
     if (track.sign() > 0)
       return false;
 
@@ -1223,6 +1239,24 @@ struct AngularCorrelationsInJets {
     }
   }
   PROCESS_SWITCH(AngularCorrelationsInJets, processRun3, "process Run 3 data", false);
+
+  void processMCRun3(McCollisions const& collisions, soa::Filtered<McTracks> const& tracks)
+  {
+    for (const auto& collision : collisions) {
+      registryMC.fill(HIST("hEventProtocol"), 0);
+      if (!collision.sel8())
+        continue;
+      registryMC.fill(HIST("hNumberOfEvents"), 0);
+      registryMC.fill(HIST("hEventProtocol"), 1);
+      if (TMath::Abs(collision.posZ()) > fZVtx)
+        continue;
+
+      auto slicedTracks = tracks.sliceBy(perCollisionMcTracks, collision.globalIndex());
+
+      fillHistograms(slicedTracks);
+    }
+  }
+  PROCESS_SWITCH(AngularCorrelationsInJets, processMCRun3, "process Run 3 MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
