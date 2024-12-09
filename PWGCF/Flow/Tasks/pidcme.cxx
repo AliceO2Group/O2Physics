@@ -720,4 +720,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<PidCme>(cfgc),
   };
 }
- 
