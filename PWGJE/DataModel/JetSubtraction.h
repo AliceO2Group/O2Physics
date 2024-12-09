@@ -54,22 +54,22 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfD0PBases, "_0");
 
 namespace bkglc
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, Hf3PBases, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfLcBases, "_0");
 } // namespace bkglc
 
 namespace bkglcmc
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, Hf3PPBases, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfLcPBases, "_0");
 } // namespace bkglcmc
 
 namespace bkgbplus
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCandBplus, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfBplusBases, "_0");
 } // namespace bkgbplus
 
 namespace bkgbplusmc
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCandBplusMcGen, "_0"); // change this!!
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfBplusPBases, "_0");
 } // namespace bkgbplusmc
 
 namespace bkgdielectron
@@ -117,13 +117,13 @@ DECLARE_SOA_TABLE(BkgLcMcRhos, "AOD", "BkgLcMcRho",
                   bkgrho::RhoM,
                   o2::soa::Marker<5>);
 
-DECLARE_SOA_TABLE(BkgBplusRhos, "AOD", "BkgBPlRho",
+DECLARE_SOA_TABLE(BkgBplusRhos, "AOD", "BkgRho",
                   o2::soa::Index<>,
                   bkgrho::Rho,
                   bkgrho::RhoM,
                   o2::soa::Marker<6>);
 
-DECLARE_SOA_TABLE(BkgBplusMcRhos, "AOD", "BkgBPlMcRho",
+DECLARE_SOA_TABLE(BkgBplusMcRhos, "AOD", "BkgBPMcRho",
                   o2::soa::Index<>,
                   bkgrho::Rho,
                   bkgrho::RhoM,
@@ -246,7 +246,7 @@ DECLARE_SOA_TABLE(JMcParticleLcSubs, "AOD", "JMcPartLcSubs",
 
 using JMcParticleLcSub = JMcParticleLcSubs::iterator;
 
-DECLARE_SOA_TABLE(JTrackBplusSubs, "AOD", "JTrackBPlSubs",
+DECLARE_SOA_TABLE(JTrackBplusSubs, "AOD", "JTrackBPSubs",
                   o2::soa::Index<>,
                   bkgbplus::CandidateId,
                   jtrack::Pt,
@@ -261,7 +261,7 @@ DECLARE_SOA_TABLE(JTrackBplusSubs, "AOD", "JTrackBPlSubs",
 
 using JTrackBplusSub = JTrackBplusSubs::iterator;
 
-DECLARE_SOA_TABLE(JMcParticleBplusSubs, "AOD", "JMcPartBPlSubs",
+DECLARE_SOA_TABLE(JMcParticleBplusSubs, "AOD", "JMcPartBPSubs",
                   o2::soa::Index<>,
                   bkgbplusmc::CandidateId,
                   jmcparticle::Pt,

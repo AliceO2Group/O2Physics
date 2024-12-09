@@ -159,7 +159,7 @@ struct DileptonMC {
     Configurable<bool> cfg_require_diff_sides{"cfg_require_diff_sides", false, "flag to require 2 tracks are from different sides."};
 
     Configurable<bool> cfg_apply_cuts_from_prefilter{"cfg_apply_cuts_from_prefilter", false, "flag to apply phiv cut inherited from prefilter"};
-    Configurable<uint16_t> cfg_prefilter_bits{"cfg_prefilter_bits", 0, "prefilter bits [kNone : 0, kMee : 1, kPhiV : 2, kSplitOrMergedTrack : 4] Please consider logical-OR among them."}; // see PairUtilities.h
+    Configurable<uint16_t> cfg_prefilter_bits{"cfg_prefilter_bits", 0, "prefilter bits [kNone : 0, kMee : 1, kPhiV : 2, kSplitOrMergedTrackLS : 4, kSplitOrMergedTrackULS : 8] Please consider logical-OR among them."}; // see PairUtilities.h
 
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.2, "min pT for single track"};
     Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
@@ -724,9 +724,6 @@ struct DileptonMC {
       if (!cut.template IsSelectedPair(t1, t2, d_bz)) {
         return false;
       }
-      // if (!cut.template IsSelectedPair_PrefilterULS(t1, t2, d_bz) || !cut.template IsSelectedPair_PrefilterLS(t1, t2, d_bz)) {
-      //   return false;
-      // }
 
       if (dielectroncuts.cfg_x_to_go > 0.f) {
         auto track_par_cov1 = getTrackParCov(t1);
@@ -1064,7 +1061,9 @@ struct DileptonMC {
   Filter ttcaFilter_electron = ifnode(dielectroncuts.enableTTCA.node(), o2::aod::emprimaryelectron::isAssociatedToMPC == true || o2::aod::emprimaryelectron::isAssociatedToMPC == false, o2::aod::emprimaryelectron::isAssociatedToMPC == true);
   Filter prefilter_electron = ifnode(dielectroncuts.cfg_apply_cuts_from_prefilter.node() && dielectroncuts.cfg_prefilter_bits.node() >= static_cast<uint16_t>(1),
                                      ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kMee))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbpi0 & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kMee))) <= static_cast<uint16_t>(0), true) &&
-                                       ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrack))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbpi0 & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrack))) <= static_cast<uint16_t>(0), true),
+                                       ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kPhiV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbpi0 & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kPhiV))) <= static_cast<uint16_t>(0), true) &&
+                                       ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrackLS))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbpi0 & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrackLS))) <= static_cast<uint16_t>(0), true) &&
+                                       ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrackULS))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbpi0 & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kSplitOrMergedTrackULS))) <= static_cast<uint16_t>(0), true),
                                      o2::aod::emprimaryelectron::pfbpi0 >= static_cast<uint16_t>(0));
 
   Preslice<MyMCMuons> perCollision_muon = aod::emprimarymuon::emeventId;
@@ -1648,9 +1647,6 @@ struct DileptonMC {
       if (!cut.template IsSelectedPair<is_wo_acc>(t1, t2, d_bz)) {
         return false;
       }
-      // if (!cut.template IsSelectedPair_PrefilterULS(t1, t2, d_bz) || !cut.template IsSelectedPair_PrefilterLS(t1, t2, d_bz)) {
-      //   return false;
-      // }
       if (dielectroncuts.cfg_x_to_go > 0.f) {
         auto track_par_cov1 = getTrackParCov(t1);
         track_par_cov1.setPID(o2::track::PID::Electron);

@@ -153,6 +153,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     BookNUAHistograms();
     BookInternalValidationHistograms();
     BookTest0Histograms();
+    BookEtaSeparationsHistograms();
     BookTheRest(); // here I book everything that was not sorted (yet) in the specific functions above
 
     // *) Insanity checks after booking:

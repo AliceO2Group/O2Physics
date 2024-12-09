@@ -373,30 +373,30 @@ float getCandidateInvariantMass(T const& candidate)
 }
 
 template <typename T, typename U, typename V>
-void fillCandidateCollisionTable(T const& collision, U const& candidates, V& CandiateCollisionTable, int32_t& CandidateCollisionTableIndex)
+void fillCandidateCollisionTable(T const& collision, U const& /*candidates*/, V& CandiateCollisionTable, int32_t& CandidateCollisionTableIndex)
 {
   if constexpr (jethfutilities::isHFTable<U>()) {
-    jethfutilities::fillHFCollisionTable(collision, candidates, CandiateCollisionTable, CandidateCollisionTableIndex);
+    jethfutilities::fillHFCollisionTable(collision, CandiateCollisionTable, CandidateCollisionTableIndex);
   } else if constexpr (jetdqutilities::isDielectronTable<U>()) {
     jetdqutilities::fillDielectronCollisionTable(collision, CandiateCollisionTable, CandidateCollisionTableIndex); // if more dilepton tables are added we would need a fillDQCollisionTable
   }
 }
 
 template <typename T, typename U, typename V>
-void fillCandidateMcCollisionTable(T const& mcCollision, U const& candidates, V& CandiateMcCollisionTable, int32_t& CandidateMcCollisionTableIndex)
+void fillCandidateMcCollisionTable(T const& mcCollision, U const& /*candidates*/, V& CandiateMcCollisionTable, int32_t& CandidateMcCollisionTableIndex)
 {
   if constexpr (jethfutilities::isHFMcTable<U>()) {
-    jethfutilities::fillHFMcCollisionTable(mcCollision, candidates, CandiateMcCollisionTable, CandidateMcCollisionTableIndex);
+    jethfutilities::fillHFMcCollisionTable(mcCollision, CandiateMcCollisionTable, CandidateMcCollisionTableIndex);
   } else if constexpr (jetdqutilities::isDielectronMcTable<U>()) {
     jetdqutilities::fillDielectronMcCollisionTable(mcCollision, CandiateMcCollisionTable, CandidateMcCollisionTableIndex);
   }
 }
 
-template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O, typename P>
-void fillCandidateTable(T const& candidate, int32_t collisionIndex, U& BaseTable, V& HFParTable, M& HFParETable, N& HFSelectionFlagTable, O& HFMlTable, P& HFMCDTable, int32_t& candidateTableIndex)
+template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q, typename S>
+void fillCandidateTable(T const& candidate, int32_t collisionIndex, U& BaseTable, V& HFParTable, M& HFParETable, N& HFParDaughterTable, O& HFSelectionFlagTable, P& HFMlTable, Q& HFMlDaughterTable, S& HFMCDTable, int32_t& candidateTableIndex)
 {
   if constexpr (jethfutilities::isHFCandidate<T>()) {
-    jethfutilities::fillHFCandidateTable<isMc>(candidate, collisionIndex, BaseTable, HFParTable, HFParETable, HFSelectionFlagTable, HFMlTable, HFMCDTable, candidateTableIndex);
+    jethfutilities::fillHFCandidateTable<isMc>(candidate, collisionIndex, BaseTable, HFParTable, HFParETable, HFParDaughterTable, HFSelectionFlagTable, HFMlTable, HFMlDaughterTable, HFMCDTable, candidateTableIndex);
   } else if constexpr (jetdqutilities::isDielectronCandidate<T>()) {
     jetdqutilities::fillDielectronCandidateTable(candidate, collisionIndex, BaseTable, candidateTableIndex);
   }

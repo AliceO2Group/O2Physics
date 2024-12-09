@@ -188,11 +188,7 @@ auto slicedPerDielectronCollision(T const& table, U const& /*candidates*/, V con
 template <typename T>
 int getDielectronCandidateCollisionId(T const& candidate)
 {
-  if constexpr (isDielectronCandidate<T>()) {
-    return candidate.reducedeventId();
-  } else {
-    return -1;
-  }
+  return candidate.reducedeventId();
 }
 
 /**
@@ -275,11 +271,7 @@ float getDielectronTablePDGMass()
 template <typename T>
 float getDielectronCandidateInvariantMass(T const& candidate)
 {
-  if constexpr (isDielectronCandidate<T>()) {
-    return candidate.mass();
-  } else {
-    return -1.0;
-  }
+  return candidate.mass();
 }
 
 template <typename T, typename U>

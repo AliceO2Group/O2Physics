@@ -19,10 +19,6 @@
 #include <string>
 #include <algorithm>
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-
 enum MyParticle {
   P_ELECTRON = 0,
   P_MUON = 1,
@@ -160,6 +156,12 @@ int enumMyParticle(int valuePDG)
   }
 }
 
+float pt(float px, float py)
+// Just a simple function to return pt
+{
+  return std::sqrt(px * px + py * py);
+}
+
 float momentum(float px, float py, float pz)
 // Just a simple function to return momentum
 {
@@ -219,7 +221,7 @@ int countPhysicalPrimary(Ps particles)
 // Function to loop over particles associated to a mcCollision and return total of physical primary particles
 {
   int nTotal = 0;
-  for (auto& particle : particles) {
+  for (const auto& particle : particles) {
     if (!particle.isPhysicalPrimary())
       continue;
     nTotal++;
@@ -232,7 +234,7 @@ int countParticlesWithoutMother(Ps particles)
 // Function to loop over particles associated to a mcCollision and return total of particles without mothers (hopely alternative to isPhysicalPrimary)
 {
   int nTotal = 0;
-  for (auto& particle : particles) {
+  for (const auto& particle : particles) {
     if (particle.has_mothers())
       continue;
     nTotal++;
