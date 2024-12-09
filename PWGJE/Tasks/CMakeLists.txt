@@ -44,6 +44,10 @@ o2physics_add_dpl_workflow(photon-isolation-qa
                     COMPONENT_NAME Analysis)
 
 if(FastJet_FOUND)
+    o2physics_add_dpl_workflow(jet-background-analysis
+                        SOURCES jetBackgroundAnalysis.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure
                         SOURCES jetSubstructure.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
@@ -126,6 +130,14 @@ o2physics_add_dpl_workflow(jet-substructure-bplus
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-finder-v0-qa
                         SOURCES jetFinderV0QA.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-charged-spectra
+                        SOURCES jetSpectraCharged.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-matched-response
+                        SOURCES jetMatchedResponse.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(trigger-correlations
