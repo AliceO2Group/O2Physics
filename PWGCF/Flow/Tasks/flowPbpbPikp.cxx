@@ -57,8 +57,8 @@ using namespace std;
 
 struct FlowPbpbPikp {
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<int64_t> noLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<int64_t> noLaterThan{"noLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
@@ -96,7 +96,7 @@ struct FlowPbpbPikp {
 
   void init(InitContext const&)
   {
-    ccdb->setURL(url.value);
+    ccdb->setURL(ccdbUrl.value);
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(noLaterThan.value);
 
