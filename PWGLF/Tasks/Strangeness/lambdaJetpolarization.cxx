@@ -700,7 +700,6 @@ struct LfMyV0s {
     registry.add("V0protonpy", "V0protonpy", kTH1F, {axisPy});
     registry.add("V0protonpz", "V0protonpz", kTH1F, {axisPz});
     registry.add("hprotonPhi", "hprotonPhi", kTH1F, {axisPhi});
-
   }
   int N = 0;
   int JetNumbers = 0;
