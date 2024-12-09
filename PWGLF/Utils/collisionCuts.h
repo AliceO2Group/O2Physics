@@ -141,7 +141,11 @@ class CollisonCuts
   void setApplyNoITSROBorderCut(bool applyNoITSROBorderCut) { mApplyNoITSROBorderCut = applyNoITSROBorderCut; }
 
   /// Set the track occupancy in time range cut
-  void setTrackOccupancyInTimeRange(int trackOccupancyInTimeRangeMax, int trackOccupancyInTimeRangeMin) { mtrackOccupancyInTimeRangeMax = trackOccupancyInTimeRangeMax; mtrackOccupancyInTimeRangeMin = trackOccupancyInTimeRangeMin; }
+  void setTrackOccupancyInTimeRange(int trackOccupancyInTimeRangeMax, int trackOccupancyInTimeRangeMin)
+  {
+    mtrackOccupancyInTimeRangeMax = trackOccupancyInTimeRangeMax;
+    mtrackOccupancyInTimeRangeMin = trackOccupancyInTimeRangeMin;
+  }
 
   /// Set the NoCollInTimeRangeStandard cut
   void setApplyCollInTimeRangeStandard(bool applyCollInTimeRangeStandard) { mApplyCollInTimeRangeStandard = applyCollInTimeRangeStandard; }

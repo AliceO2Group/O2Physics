@@ -187,7 +187,7 @@ struct chk892flow {
   Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
 
   // Secondary Selection
-	Configurable<bool> cfgReturnFlag{"boolReturnFlag", false, "Return Flag for debugging"};
+  Configurable<bool> cfgReturnFlag{"boolReturnFlag", false, "Return Flag for debugging"};
   Configurable<bool> cSecondaryArmenterosCut{"boolArmenterosCut", true, "cut on Armenteros-Podolanski graph"};
 
   Configurable<bool> cfgByPassDauPIDSelection{"cfgByPassDauPIDSelection", true, "Bypass Daughters PID selection"};
@@ -278,10 +278,9 @@ struct chk892flow {
     histos.add("QA/before/hEvent", "Number of Events", HistType::kTH1F, {{1, 0.5, 1.5}});
 
     // EventPlane
-		histos.add("QA/EP/EPhEPDet", "Event plane distribution of FT0C (Det = A)", {HistType::kTH2D, {centAxis, epAxis}});
+    histos.add("QA/EP/EPhEPDet", "Event plane distribution of FT0C (Det = A)", {HistType::kTH2D, {centAxis, epAxis}});
     histos.add("QA/EP/EPhEPB", "Event plane distribution of TPCpos (B)", {HistType::kTH2D, {centAxis, epAxis}});
     histos.add("QA/EP/EPhEPC", "Event plane distribution of TPCneg (C)", {HistType::kTH2D, {centAxis, epAxis}});
-
 
     histos.add("QA/EP/hEPDet", "Event plane distribution of FT0C (Det = A)", {HistType::kTH2D, {centAxis, epAxis}});
     histos.add("QA/EP/hEPB", "Event plane distribution of TPCpos (B)", {HistType::kTH2D, {centAxis, epAxis}});
@@ -579,106 +578,104 @@ struct chk892flow {
     auto PropTauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
     auto mK0s = candidate.mK0Short();
 
-		if (cfgReturnFlag){
-		bool returnFlag = true;
+    if (cfgReturnFlag) {
+      bool returnFlag = true;
 
-			histos.fill(HIST("QA/K0sCutCheck"), 0);
-			if (DauDCA > cSecondaryDauDCAMax){
-				histos.fill(HIST("QA/K0sCutCheck"), 1);
-				returnFlag = false;
-			}
-			if (DauPosDCAtoPV < cSecondaryDauPosDCAtoPVMin){
-				histos.fill(HIST("QA/K0sCutCheck"), 2);
-				returnFlag = false;
-			}
-			if (DauNegDCAtoPV < cSecondaryDauNegDCAtoPVMin) {
-				histos.fill(HIST("QA/K0sCutCheck"), 3);
-				returnFlag = false;
-			}
-			if (pT < cSecondaryPtMin) {
-				histos.fill(HIST("QA/K0sCutCheck"), 4);
-				returnFlag = false;
-			}
-			if (Rapidity > cSecondaryRapidityMax) {
-				histos.fill(HIST("QA/K0sCutCheck"), 5);
-				returnFlag = false;
-			}
-			if (Radius < cSecondaryRadiusMin) {
-				histos.fill(HIST("QA/K0sCutCheck"), 6);
-				returnFlag = false;
-			}
-			if (DCAtoPV > cSecondaryDCAtoPVMax) {
-				histos.fill(HIST("QA/K0sCutCheck"), 7);
-				returnFlag = false;
-			}
-			if (CPA < cSecondaryCosPAMin) {
-				histos.fill(HIST("QA/K0sCutCheck"), 8);
-				returnFlag = false;
-			}
-			if (PropTauK0s > cSecondaryProperLifetimeMax) {
-				histos.fill(HIST("QA/K0sCutCheck"), 9);
-				returnFlag = false;
-			}
-			if (fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
-				histos.fill(HIST("QA/K0sCutCheck"), 10);
-				returnFlag = false;
-			}
-			if (candidate.qtarm() < cSecondaryparamArmenterosCut * TMath::Abs(candidate.alpha())) {
-				histos.fill(HIST("QA/K0sCutCheck"), 11);
-				returnFlag = false;
-			}
-			return returnFlag;
+      histos.fill(HIST("QA/K0sCutCheck"), 0);
+      if (DauDCA > cSecondaryDauDCAMax) {
+        histos.fill(HIST("QA/K0sCutCheck"), 1);
+        returnFlag = false;
+      }
+      if (DauPosDCAtoPV < cSecondaryDauPosDCAtoPVMin) {
+        histos.fill(HIST("QA/K0sCutCheck"), 2);
+        returnFlag = false;
+      }
+      if (DauNegDCAtoPV < cSecondaryDauNegDCAtoPVMin) {
+        histos.fill(HIST("QA/K0sCutCheck"), 3);
+        returnFlag = false;
+      }
+      if (pT < cSecondaryPtMin) {
+        histos.fill(HIST("QA/K0sCutCheck"), 4);
+        returnFlag = false;
+      }
+      if (Rapidity > cSecondaryRapidityMax) {
+        histos.fill(HIST("QA/K0sCutCheck"), 5);
+        returnFlag = false;
+      }
+      if (Radius < cSecondaryRadiusMin) {
+        histos.fill(HIST("QA/K0sCutCheck"), 6);
+        returnFlag = false;
+      }
+      if (DCAtoPV > cSecondaryDCAtoPVMax) {
+        histos.fill(HIST("QA/K0sCutCheck"), 7);
+        returnFlag = false;
+      }
+      if (CPA < cSecondaryCosPAMin) {
+        histos.fill(HIST("QA/K0sCutCheck"), 8);
+        returnFlag = false;
+      }
+      if (PropTauK0s > cSecondaryProperLifetimeMax) {
+        histos.fill(HIST("QA/K0sCutCheck"), 9);
+        returnFlag = false;
+      }
+      if (fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
+        histos.fill(HIST("QA/K0sCutCheck"), 10);
+        returnFlag = false;
+      }
+      if (candidate.qtarm() < cSecondaryparamArmenterosCut * TMath::Abs(candidate.alpha())) {
+        histos.fill(HIST("QA/K0sCutCheck"), 11);
+        returnFlag = false;
+      }
+      return returnFlag;
 
-		}else{
-			histos.fill(HIST("QA/K0sCutCheck"), 0);
-			if (DauDCA > cSecondaryDauDCAMax){
-				histos.fill(HIST("QA/K0sCutCheck"), 1);
-				return false;
-			}
-			if (DauPosDCAtoPV < cSecondaryDauPosDCAtoPVMin){
-				histos.fill(HIST("QA/K0sCutCheck"), 2);
-				return false;
-			}
-			if (DauNegDCAtoPV < cSecondaryDauNegDCAtoPVMin) {
-				histos.fill(HIST("QA/K0sCutCheck"), 3);
-				return false;
-			}
-			if (pT < cSecondaryPtMin) {
-				histos.fill(HIST("QA/K0sCutCheck"), 4);
-				return false;
-			}
-			if (Rapidity > cSecondaryRapidityMax) {
-				histos.fill(HIST("QA/K0sCutCheck"), 5);
-				return false;
-			}
-			if (Radius < cSecondaryRadiusMin) {
-				histos.fill(HIST("QA/K0sCutCheck"), 6);
-				return false;
-			}
-			if (DCAtoPV > cSecondaryDCAtoPVMax) {
-				histos.fill(HIST("QA/K0sCutCheck"), 7);
-				return false;
-			}
-			if (CPA < cSecondaryCosPAMin) {
-				histos.fill(HIST("QA/K0sCutCheck"), 8);
-				return false;
-			}
-			if (PropTauK0s > cSecondaryProperLifetimeMax) {
-				histos.fill(HIST("QA/K0sCutCheck"), 9);
-				return false;
-			}
-			if (fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
-				histos.fill(HIST("QA/K0sCutCheck"), 10);
-				return false;
-			}
-			if (candidate.qtarm() < cSecondaryparamArmenterosCut * TMath::Abs(candidate.alpha())) {
-				histos.fill(HIST("QA/K0sCutCheck"), 11);
-				return false;
-			}
-			return true;
-		}
-
-
+    } else {
+      histos.fill(HIST("QA/K0sCutCheck"), 0);
+      if (DauDCA > cSecondaryDauDCAMax) {
+        histos.fill(HIST("QA/K0sCutCheck"), 1);
+        return false;
+      }
+      if (DauPosDCAtoPV < cSecondaryDauPosDCAtoPVMin) {
+        histos.fill(HIST("QA/K0sCutCheck"), 2);
+        return false;
+      }
+      if (DauNegDCAtoPV < cSecondaryDauNegDCAtoPVMin) {
+        histos.fill(HIST("QA/K0sCutCheck"), 3);
+        return false;
+      }
+      if (pT < cSecondaryPtMin) {
+        histos.fill(HIST("QA/K0sCutCheck"), 4);
+        return false;
+      }
+      if (Rapidity > cSecondaryRapidityMax) {
+        histos.fill(HIST("QA/K0sCutCheck"), 5);
+        return false;
+      }
+      if (Radius < cSecondaryRadiusMin) {
+        histos.fill(HIST("QA/K0sCutCheck"), 6);
+        return false;
+      }
+      if (DCAtoPV > cSecondaryDCAtoPVMax) {
+        histos.fill(HIST("QA/K0sCutCheck"), 7);
+        return false;
+      }
+      if (CPA < cSecondaryCosPAMin) {
+        histos.fill(HIST("QA/K0sCutCheck"), 8);
+        return false;
+      }
+      if (PropTauK0s > cSecondaryProperLifetimeMax) {
+        histos.fill(HIST("QA/K0sCutCheck"), 9);
+        return false;
+      }
+      if (fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
+        histos.fill(HIST("QA/K0sCutCheck"), 10);
+        return false;
+      }
+      if (candidate.qtarm() < cSecondaryparamArmenterosCut * TMath::Abs(candidate.alpha())) {
+        histos.fill(HIST("QA/K0sCutCheck"), 11);
+        return false;
+      }
+      return true;
+    }
 
   } // selectionK0s
 
@@ -932,29 +929,29 @@ struct chk892flow {
           histos.fill(HIST("QA/after/KstarRapidity"), lResoKstar.Rapidity());
           histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
           histos.fill(HIST("QA/after/k0sv2vsinvmass"), lResoSecondary.M(), v2_k0s);
-					histos.fill(HIST("QA/after/kstarv2vsinvmass"), lResoKstar.M(), v2_kstar);
-					histos.fill(HIST("hInvmass_Kstar"), typeKstar, centrality, lResoKstar.Pt(), lResoKstar.M(), v2_kstar);
+          histos.fill(HIST("QA/after/kstarv2vsinvmass"), lResoKstar.M(), v2_kstar);
+          histos.fill(HIST("hInvmass_Kstar"), typeKstar, centrality, lResoKstar.Pt(), lResoKstar.M(), v2_kstar);
 
-				} // IsMix
-			} // K0scand
-		} // bTrack
+        } // IsMix
+      } // K0scand
+    } // bTrack
 
-		count++;
+    count++;
 
-	} // fillHistograms
+  } // fillHistograms
 
-	// process data
-	void processData(EventCandidates::iterator const& collision,
-			TrackCandidates const& tracks,
-			V0Candidates const& v0s,
-			aod::BCsWithTimestamps const&)
-	{
-		if (!colCuts.isSelected(collision)) // Default event selection
-			return;
-		if (cfgQvecSel && (collision.qvecAmp()[DetId] < 1e-4 || collision.qvecAmp()[RefAId] < 1e-4 || collision.qvecAmp()[RefBId] < 1e-4))
-			return; // If we don't have a Q-vector
-		colCuts.fillQA(collision);
-		centrality = GetCentrality(collision);
+  // process data
+  void processData(EventCandidates::iterator const& collision,
+                   TrackCandidates const& tracks,
+                   V0Candidates const& v0s,
+                   aod::BCsWithTimestamps const&)
+  {
+    if (!colCuts.isSelected(collision)) // Default event selection
+      return;
+    if (cfgQvecSel && (collision.qvecAmp()[DetId] < 1e-4 || collision.qvecAmp()[RefAId] < 1e-4 || collision.qvecAmp()[RefBId] < 1e-4))
+      return; // If we don't have a Q-vector
+    colCuts.fillQA(collision);
+    centrality = GetCentrality(collision);
 
     fillHistograms<false, false>(collision, tracks, v0s, 2); // second order
   }
@@ -971,7 +968,6 @@ struct chk892flow {
     fillHistograms<true, false>(collision, tracks, v0s, 2);
   }
   PROCESS_SWITCH(chk892flow, processMC, "Process Event for MC", false);
-
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
