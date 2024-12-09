@@ -25,8 +25,8 @@ o2physics_add_dpl_workflow(filterf1proton
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(reso2initializer
-    SOURCES LFResonanceInitializer.cxx
+o2physics_add_dpl_workflow(resonance-initializer
+    SOURCES resonanceInitializer.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
     COMPONENT_NAME Analysis)
 

@@ -712,14 +712,14 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from j/psi decays", {prong, prong}, {1, 1}); // signal at pair level
-    signal->SetDecayChannelIsExclusive(true);
+    signal->SetDecayChannelIsExclusive(2, true);
     return signal;
   }
   if (!nameStr.compare("eeFromJpsiNotExclusive")) {
     MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from j/psi decays", {prong, prong}, {1, 1}); // signal at pair level
-    signal->SetDecayChannelIsNotExclusive(true);
+    signal->SetDecayChannelIsNotExclusive(2, true);
     return signal;
   }
   if (!nameStr.compare("eePrimaryFromPromptJPsi")) {
@@ -1145,7 +1145,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     MCProng prongKaon(2, {321, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Kaon and electron pair from B+", {pronge, pronge, prongKaon}, {2, 2, 1});
-    signal->SetDecayChannelIsExclusive(true);
+    signal->SetDecayChannelIsExclusive(2, true);
     return signal;
   }
 
@@ -1153,7 +1153,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     MCProng prongKaon(2, {321, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Kaon and electron pair from B+", {pronge, pronge, prongKaon}, {2, 2, 1});
-    signal->SetDecayChannelIsNotExclusive(true);
+    signal->SetDecayChannelIsNotExclusive(2, true);
     return signal;
   }
 

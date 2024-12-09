@@ -119,33 +119,33 @@ struct FlowSP {
     registry.add("pt_phi_bef", "", {HistType::kTH2D, {ptAxis, phiModAxis}});
     registry.add("pt_phi_aft", "", {HistType::kTH2D, {ptAxis, phiModAxis}});
 
-    registry.add<TProfile>("v1_eta", "", kTProfile, {{10, -.8, .8}});
-    registry.add<TProfile>("v1A_eta", "", kTProfile, {{10, -.8, .8}});
-    registry.add<TProfile>("v1C_eta", "", kTProfile, {{10, -.8, .8}});
-    registry.add<TProfile>("v1AC_eta", "", kTProfile, {{10, -.8, .8}});
+    registry.add<TProfile2D>("v1_eta", "", kTProfile2D, {{10, -.8, .8}, ptAxis});
+    registry.add<TProfile2D>("v1A_eta", "", kTProfile2D, {{10, -.8, .8}, ptAxis});
+    registry.add<TProfile2D>("v1C_eta", "", kTProfile2D, {{10, -.8, .8}, ptAxis});
+    registry.add<TProfile2D>("v1AC_eta", "", kTProfile2D, {{10, -.8, .8}, ptAxis});
 
-    registry.add<TProfile>("v1_eta_odd", "", kTProfile, {{10, -.8, .8}});
-    registry.add<TProfile>("v1_eta_even", "", kTProfile, {{10, -.8, .8}});
+    registry.add<TProfile2D>("v1_eta_odd", "", kTProfile2D, {{10, -.8, .8}, ptAxis});
+    registry.add<TProfile2D>("v1_eta_even", "", kTProfile2D, {{10, -.8, .8}, ptAxis});
 
-    registry.add<TProfile>("v1_eta_odd_dev", "", kTProfile, {{10, -.8, .8}});
-    registry.add<TProfile>("v1_eta_even_dev", "", kTProfile, {{10, -.8, .8}});
+    registry.add<TProfile2D>("v1_eta_odd_dev", "", kTProfile2D, {{10, -.8, .8}, ptAxis});
+    registry.add<TProfile2D>("v1_eta_even_dev", "", kTProfile2D, {{10, -.8, .8}, ptAxis});
 
-    registry.add<TProfile>("v1_eta_odd_dev_pos", "", kTProfile, {{10, -.8, .8}});
-    registry.add<TProfile>("v1_eta_even_dev_pos", "", kTProfile, {{10, -.8, .8}});
-    registry.add<TProfile>("v1_eta_odd_pos", "", kTProfile, {{10, -.8, .8}});
-    registry.add<TProfile>("v1_eta_even_pos", "", kTProfile, {{10, -.8, .8}});
+    registry.add<TProfile2D>("v1_eta_odd_dev_pos", "", kTProfile2D, {{10, -.8, .8}, ptAxis});
+    registry.add<TProfile2D>("v1_eta_even_dev_pos", "", kTProfile2D, {{10, -.8, .8}, ptAxis});
+    registry.add<TProfile2D>("v1_eta_odd_pos", "", kTProfile2D, {{10, -.8, .8}, ptAxis});
+    registry.add<TProfile2D>("v1_eta_even_pos", "", kTProfile2D, {{10, -.8, .8}, ptAxis});
 
-    registry.add<TProfile>("v1_eta_odd_dev_neg", "", kTProfile, {{10, -.8, .8}});
-    registry.add<TProfile>("v1_eta_even_dev_neg", "", kTProfile, {{10, -.8, .8}});
-    registry.add<TProfile>("v1_eta_odd_neg", "", kTProfile, {{10, -.8, .8}});
-    registry.add<TProfile>("v1_eta_even_neg", "", kTProfile, {{10, -.8, .8}});
+    registry.add<TProfile2D>("v1_eta_odd_dev_neg", "", kTProfile2D, {{10, -.8, .8}, ptAxis});
+    registry.add<TProfile2D>("v1_eta_even_dev_neg", "", kTProfile2D, {{10, -.8, .8}, ptAxis});
+    registry.add<TProfile2D>("v1_eta_odd_neg", "", kTProfile2D, {{10, -.8, .8}, ptAxis});
+    registry.add<TProfile2D>("v1_eta_even_neg", "", kTProfile2D, {{10, -.8, .8}, ptAxis});
 
-    registry.add<TProfile>("v2_cent", "", kTProfile, {{80, 0, 80}});
-    registry.add<TProfile>("v2A_cent", "", kTProfile, {{80, 0, 80}});
-    registry.add<TProfile>("v2C_cent", "", kTProfile, {{80, 0, 80}});
-    registry.add<TProfile>("v2AC_cent", "", kTProfile, {{80, 0, 80}});
+    registry.add<TProfile2D>("v2_cent", "", kTProfile2D, {{80, 0, 80}, ptAxis});
+    registry.add<TProfile2D>("v2A_cent", "", kTProfile2D, {{80, 0, 80}, ptAxis});
+    registry.add<TProfile2D>("v2C_cent", "", kTProfile2D, {{80, 0, 80}, ptAxis});
+    registry.add<TProfile2D>("v2AC_cent", "", kTProfile2D, {{80, 0, 80}, ptAxis});
 
-    registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{10, 0, 10}}});
+    registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{11, 0, 11}}});
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "sel8");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "occupancy");
@@ -371,39 +371,39 @@ struct FlowSP {
 
         double v1AC = std::cos(phi - (psiA - psiC));
 
-        registry.fill(HIST("v1_eta"), track.eta(), (1. / std::sqrt(2)) * (v1A - v1C));
-        registry.fill(HIST("v1A_eta"), track.eta(), (v1A));
-        registry.fill(HIST("v1C_eta"), track.eta(), (v1C));
-        registry.fill(HIST("v1AC_eta"), track.eta(), (v1AC));
+        registry.fill(HIST("v1_eta"), track.eta(), track.pt(), (1. / std::sqrt(2)) * (v1A - v1C));
+        registry.fill(HIST("v1A_eta"), track.eta(), track.pt(), (v1A));
+        registry.fill(HIST("v1C_eta"), track.eta(), track.pt(), (v1C));
+        registry.fill(HIST("v1AC_eta"), track.eta(), track.pt(), (v1AC));
 
-        registry.fill(HIST("v1_eta_odd"), track.eta(), oddv1);
-        registry.fill(HIST("v1_eta_even"), track.eta(), evenv1);
+        registry.fill(HIST("v1_eta_odd"), track.eta(), track.pt(), oddv1);
+        registry.fill(HIST("v1_eta_even"), track.eta(), track.pt(), evenv1);
 
-        registry.fill(HIST("v1_eta_odd_dev"), track.eta(), oddv1Dev);
-        registry.fill(HIST("v1_eta_even_dev"), track.eta(), evenv1Dev);
+        registry.fill(HIST("v1_eta_odd_dev"), track.eta(), track.pt(), oddv1Dev);
+        registry.fill(HIST("v1_eta_even_dev"), track.eta(), track.pt(), evenv1Dev);
 
         if (pos) {
-          registry.fill(HIST("v1_eta_odd_pos"), track.eta(), oddv1);
-          registry.fill(HIST("v1_eta_even_pos"), track.eta(), evenv1);
+          registry.fill(HIST("v1_eta_odd_pos"), track.eta(), track.pt(), oddv1);
+          registry.fill(HIST("v1_eta_even_pos"), track.eta(), track.pt(), evenv1);
 
-          registry.fill(HIST("v1_eta_odd_dev_pos"), track.eta(), oddv1Dev);
-          registry.fill(HIST("v1_eta_even_dev_pos"), track.eta(), evenv1Dev);
+          registry.fill(HIST("v1_eta_odd_dev_pos"), track.eta(), track.pt(), oddv1Dev);
+          registry.fill(HIST("v1_eta_even_dev_pos"), track.eta(), track.pt(), evenv1Dev);
         } else {
-          registry.fill(HIST("v1_eta_odd_neg"), track.eta(), oddv1);
-          registry.fill(HIST("v1_eta_even_neg"), track.eta(), evenv1);
+          registry.fill(HIST("v1_eta_odd_neg"), track.eta(), track.pt(), oddv1);
+          registry.fill(HIST("v1_eta_even_neg"), track.eta(), track.pt(), evenv1);
 
-          registry.fill(HIST("v1_eta_odd_dev_neg"), track.eta(), oddv1Dev);
-          registry.fill(HIST("v1_eta_even_dev_neg"), track.eta(), evenv1Dev);
+          registry.fill(HIST("v1_eta_odd_dev_neg"), track.eta(), track.pt(), oddv1Dev);
+          registry.fill(HIST("v1_eta_even_dev_neg"), track.eta(), track.pt(), evenv1Dev);
         }
 
         double v2A = std::cos(2 * (phi - psiA));
         double v2C = std::cos(2 * (phi - psiC));
         double v2AC = std::cos(2 * (phi - (psiA - psiC)));
 
-        registry.fill(HIST("v2_cent"), centrality, (1. / std::sqrt(2)) * (v2A - v2C));
-        registry.fill(HIST("v2A_cent"), centrality, (v2A));
-        registry.fill(HIST("v2C_cent"), centrality, (v2C));
-        registry.fill(HIST("v2AC_cent"), centrality, (v2AC));
+        registry.fill(HIST("v2_cent"), centrality, track.pt(), (1. / std::sqrt(2)) * (v2A - v2C));
+        registry.fill(HIST("v2A_cent"), centrality, track.pt(), (v2A));
+        registry.fill(HIST("v2C_cent"), centrality, track.pt(), (v2C));
+        registry.fill(HIST("v2AC_cent"), centrality, track.pt(), (v2AC));
       }
 
       float qIm = collision.qvecIm()[0];

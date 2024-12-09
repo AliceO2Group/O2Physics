@@ -26,6 +26,7 @@ struct : ConfigurableGroup {
   Configurable<bool> cfVerboseUtility{"cfVerboseUtility", false, "run or not in verbose mode, also for simple utility functions (but not for function calls per particle)"};
   Configurable<bool> cfVerboseForEachParticle{"cfVerboseForEachParticle", false, "run or not in verbose mode (also for function calls per particle)"};
   Configurable<bool> cfVerboseEventCounter{"cfVerboseEventCounter", false, "print or not only event counter"};
+  Configurable<bool> cfVerboseEventCut{"cfVerboseEventCut", false, "print or not which event cut didn't survive"};
   Configurable<bool> cfPlainPrintout{"cfPlainPrintout", false, "print in color or in plain (use the latter in HL)"};
   Configurable<bool> cfDoAdditionalInsanityChecks{"cfDoAdditionalInsanityChecks", false, "do additional insanity checks at run time (this leads to small loss of performance)"};
   Configurable<bool> cfInsanityCheckForEachParticle{"cfInsanityCheckForEachParticle", false, "do insanity checks at run time for each particle, at the expense of losing a lot of performance. Use only during debugging."};
@@ -167,6 +168,21 @@ struct : ConfigurableGroup {
   Configurable<bool> cfUseDefaultLabels{"cfUseDefaultLabels", false, "use default internally hardwired labels, only for testing purposes"};
   Configurable<string> cfWhichDefaultLabels{"cfWhichDefaultLabels", "standard", "only for testing purposes, select one set of default labels, see GetDefaultObjArrayWithLabels for supported options"};
 } cf_t0;
+
+// *) Eta separation:
+struct : ConfigurableGroup {
+  Configurable<bool> cfCalculateEtaSeparations{"cfCalculateEtaSeparations", false, "calculate or not 2p corr. vs. eta separations"};
+  Configurable<bool> cfCalculateEtaSeparationsAsFunctionOfIntegrated{"cfCalculateEtaSeparationsAsFunctionOfIntegrated", false, "calculate or not 2p corr. vs. eta separations ..."};
+  Configurable<bool> cfCalculateEtaSeparationsAsFunctionOfMultiplicity{"cfCalculateEtaSeparationsAsFunctionOfMultiplicity", false, "calculate or not 2p corr. vs. eta separations as a function of multiplicity"};
+  Configurable<bool> cfCalculateEtaSeparationsAsFunctionOfCentrality{"cfCalculateEtaSeparationsAsFunctionOfCentrality", false, "calculate or not 2p corr. vs. eta separations as a function of centrality"};
+  Configurable<bool> cfCalculateEtaSeparationsAsFunctionOfPt{"cfCalculateEtaSeparationsAsFunctionOfPt", false, "calculate or not 2p corr. vs. eta separations as a function of pt"};
+  // Configurable<bool> cfCalculateEtaSeparationsAsFunctionOfEta{"cfCalculateEtaSeparationsAsFunctionOfEta", false, "this one doesn't make sense in this context"};
+  Configurable<bool> cfCalculateEtaSeparationsAsFunctionOfOccupancy{"cfCalculateEtaSeparationsAsFunctionOfOccupancy", false, "calculate or not 2p corr. vs. eta separations as a function of occupancy"};
+  Configurable<bool> cfCalculateEtaSeparationsAsFunctionOfInteractionRate{"cfCalculateEtaSeparationsAsFunctionOfInteractionRate", false, "calculate or not 2p corr. vs. eta separations as a function of interaction rate"};
+  Configurable<bool> cfCalculateEtaSeparationsAsFunctionOfCurrentRunDuration{"cfCalculateEtaSeparationsAsFunctionOfCurrentRunDuration", false, "calculate or not E2p corr. vs. eta separations as a function of current run duration (i.e. vs. seconds since start of run)"};
+  Configurable<vector<float>> cfEtaSeparationsValues{"cfEtaSeparationsValues", {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8}, "Eta separation between interval A (-eta) and B (+eta)"};
+  Configurable<vector<string>> cfEtaSeparationsSkipHarmonics{"cfEtaSeparationsSkipHarmonics", {"0-v1", "0-v2", "0-v3", "0-v4", "1-v5", "1-v6", "1-v7", "1-v8", "1-v9"}, "For calculation of 2p correlation with eta separation these harmonics will be skipped (if first flag = \"0-v1\", v1 will be NOT be skipped in the calculus of 2p correlations with eta separations, etc.)"};
+} cf_es;
 
 // *) Particle weights:
 struct : ConfigurableGroup {

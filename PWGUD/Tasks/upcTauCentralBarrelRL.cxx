@@ -2148,27 +2148,27 @@ struct UpcTauCentralBarrelRL {
     histos.get<TH1>(HIST("Events/Truth/hNmuons"))->Fill(countMuons);
     histos.get<TH1>(HIST("Events/Truth/hNpions"))->Fill(countPions);
 
-    if (countElectrons == 2)
+    if (countElectrons == 2 && countMuons == 0 && countPions == 0)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_EE);
-    if (countElectrons == 1 && countMuons == 1)
+    if (countElectrons == 1 && countMuons == 1 && countPions == 0)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_EMU);
-    if (countElectrons == 1 && countPions == 1)
+    if (countElectrons == 1 && countMuons == 0 && countPions == 1)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_EPI);
-    if ((countElectrons == 1 && countMuons == 1) || (countElectrons == 1 && countPions == 1))
+    if ((countElectrons == 1 && countMuons == 1 && countPions == 0) || (countElectrons == 1 && countMuons == 0 && countPions == 1))
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_EMUPI);
-    if (countMuons == 2)
+    if (countElectrons == 0 && countMuons == 2 && countPions == 0)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_MUMU);
-    if (countMuons == 1 && countPions == 1)
+    if (countElectrons == 0 && countMuons == 1 && countPions == 1)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_MUPI);
-    if (countPions == 2)
+    if (countElectrons == 0 && countMuons == 0 && countPions == 2)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_PIPI);
-    if (countPions == 4)
+    if (countElectrons == 0 && countMuons == 0 && countPions == 4)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_FOURPI);
-    if (countPions == 3 && countElectrons == 1)
+    if (countElectrons == 1 && countMuons == 0 && countPions == 3)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_ETHREEPI);
-    if (countPions == 3 && countMuons == 1)
+    if (countElectrons == 0 && countMuons == 1 && countPions == 3)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_MUTHREEPI);
-    if (countPions == 6)
+    if (countElectrons == 0 && countMuons == 0 && countPions == 6)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_SIXPI);
   }
 
