@@ -252,8 +252,8 @@ struct FillPIDcolums {
     }
   }
 };
-// o2-linter: disable=name/struct
-struct pidcme {
+
+struct pidcme { // o2-linter: disable=name/struct
   HistogramRegistry histosQA{"histosmain", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2}, "Modulation of interest"};
