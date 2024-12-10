@@ -276,6 +276,8 @@ struct HfCandidateSelectorD0 {
       // final selection flag: 0 - rejected, 1 - accepted
       int statusD0 = 0;
       int statusD0bar = 0;
+      int statusD0Refl = 0;
+      int statusD0barRefl = 0;
       int statusHFFlag = 0;
       int statusTopol = 0;
       int statusCand = 0;
@@ -285,7 +287,7 @@ struct HfCandidateSelectorD0 {
       outputMlD0bar.clear();
 
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+        hfSelD0Candidate(statusD0, statusD0bar, statusD0Refl, statusD0barRefl, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
           hfMlD0Candidate(outputMlD0, outputMlD0bar);
         }
@@ -299,7 +301,7 @@ struct HfCandidateSelectorD0 {
 
       // conjugate-independent topological selection
       if (!selectionTopol<reconstructionType>(candidate)) {
-        hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+        hfSelD0Candidate(statusD0, statusD0bar, statusD0Refl, statusD0barRefl, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
           hfMlD0Candidate(outputMlD0, outputMlD0bar);
         }
@@ -316,7 +318,7 @@ struct HfCandidateSelectorD0 {
       bool topolD0bar = selectionTopolConjugate<reconstructionType>(candidate, trackNeg, trackPos);
 
       if (!topolD0 && !topolD0bar) {
-        hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+        hfSelD0Candidate(statusD0, statusD0bar, statusD0Refl, statusD0barRefl, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
           hfMlD0Candidate(outputMlD0, outputMlD0bar);
         }
@@ -382,7 +384,7 @@ struct HfCandidateSelectorD0 {
         }
 
         if (pidD0 == 0 && pidD0bar == 0) {
-          hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+          hfSelD0Candidate(statusD0, statusD0bar, statusD0Refl, statusD0barRefl, statusHFFlag, statusTopol, statusCand, statusPID);
           if (applyMl) {
             hfMlD0Candidate(outputMlD0, outputMlD0bar);
           }
@@ -395,6 +397,12 @@ struct HfCandidateSelectorD0 {
         if ((pidD0bar == -1 || pidD0bar == 1) && topolD0bar) {
           statusD0bar = 1; // identified as D0bar
         }
+        if (statusD0 && (pidD0bar == -1 || pidD0bar == 1)) {
+          statusD0Refl = 1; // identified as D0 Reflection
+        }
+        if (statusD0bar && (pidD0 == -1 || pidD0 == 1)) {
+          statusD0barRefl = 1; // identified as D0bar Reflection
+        }
         statusPID = 1;
       } else {
         if (topolD0) {
@@ -402,6 +410,10 @@ struct HfCandidateSelectorD0 {
         }
         if (topolD0bar) {
           statusD0bar = 1; // identified as D0bar
+        }
+        if (topolD0 && topolD0bar) {
+          statusD0Refl = 1;    // identified as D0 Reflection
+          statusD0barRefl = 1; // identified as D0bar Reflection
         }
       }
 
@@ -426,6 +438,12 @@ struct HfCandidateSelectorD0 {
           statusD0bar = 0;
         }
 
+        if (!isSelectedMlD0 && statusD0Refl) {
+          statusD0Refl = 0;
+        }
+        if (!isSelectedMlD0bar && statusD0barRefl) {
+          statusD0barRefl = 0;
+        }
         hfMlD0Candidate(outputMlD0, outputMlD0bar);
 
         if (enableDebugMl) {
@@ -443,7 +461,7 @@ struct HfCandidateSelectorD0 {
           }
         }
       }
-      hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+      hfSelD0Candidate(statusD0, statusD0bar, statusD0Refl, statusD0barRefl, statusHFFlag, statusTopol, statusCand, statusPID);
     }
   }
 
