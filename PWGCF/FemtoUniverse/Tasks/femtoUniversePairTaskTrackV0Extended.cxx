@@ -464,7 +464,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEventV0, "Enable processing same event for V0 - V0", false);
 
   /// This function processes MC same events for Track - V0
-  void processMCSameEvent(FilteredFDCollision const& col, FemtoFullParticles const&  parts)
+  void processMCSameEvent(FilteredFDCollision const& col, FemtoFullParticles const& parts)
   {
     const auto& magFieldTesla = col.magField();
 
