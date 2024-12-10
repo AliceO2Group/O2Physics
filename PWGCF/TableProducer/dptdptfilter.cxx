@@ -32,6 +32,7 @@
 #include "PWGCF/DataModel/DptDptFiltered.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include <TROOT.h>
@@ -778,6 +779,7 @@ struct DptDptFilterTracks {
                                                                        "PID criteria for muons"};
 
   OutputObj<TList> fOutput{"DptDptFilterTracksInfo", OutputObjHandlingPolicy::AnalysisObject};
+  Service<o2::framework::O2DatabasePDG> fPDG;
   PIDSpeciesSelection pidselector;
   bool checkAmbiguousTracks = false;
 
@@ -821,7 +823,6 @@ struct DptDptFilterTracks {
     fSystem = getSystemType(tmpstr);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "datatype", tmpstr, false);
     fDataType = getDataType(tmpstr);
-    fPDG = TDatabasePDG::Instance();
 
     /* required ambiguous tracks checks? */
     if (dofilterDetectorLevelWithoutPIDAmbiguous || dofilterDetectorLevelWithPIDAmbiguous || dofilterDetectorLevelWithFullPIDAmbiguous ||
@@ -1181,9 +1182,10 @@ struct DptDptFilterTracks {
     }
 
     for (auto const& particle : particles) {
-      float charge = getCharge(particle);
-
       int8_t pid = -1;
+      auto pdgpart = fPDG->GetParticle(particle.pdgCode());
+      float charge = pdgpart != nullptr ? getCharge(pdgpart->Charge()) : 0;
+
       if (charge != 0) {
         if (particle.has_mcCollision() && (particle.template mcCollision_as<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>()).collisionaccepted()) {
           auto mccollision = particle.template mcCollision_as<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>();
@@ -1505,8 +1507,9 @@ inline int8_t DptDptFilterTracks::identifySecFromMaterialParticle(ParticleObject
 template <typename ParticleObject, typename MCCollisionObject>
 inline int8_t DptDptFilterTracks::selectParticle(ParticleObject const& particle, MCCollisionObject const& mccollision)
 {
-  float charge = getCharge(particle);
   int8_t sp = -127;
+  auto pdgpart = fPDG->GetParticle(particle.pdgCode());
+  float charge = pdgpart != nullptr ? getCharge(pdgpart->Charge()) : 0;
   if (charge != 0) {
     /* before particle selection */
     fillParticleHistosBeforeSelection(particle, mccollision, charge);
