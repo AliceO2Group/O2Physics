@@ -14,13 +14,14 @@
 ///
 /// \author Marianna Mazzilli <marianna.mazzilli@cern.ch>
 /// \author Zhen Zhang <zhenz@cern.ch>
+/// \author Ravindra Singh <ravindra.singh@cern.ch>
 
 #include <vector>
-#include <TDatabasePDG.h>
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
 #include "Common/Core/TrackSelection.h"
@@ -197,6 +198,7 @@ struct HfCorrelatorLcHadrons {
 
   HfHelper hfHelper;
   SliceCache cache;
+  Service<o2::framework::O2DatabasePDG> pdg;
   int leadingIndex = 0;
   bool correlationStatus = false;
 
@@ -746,8 +748,8 @@ struct HfCorrelatorLcHadrons {
           }
         }
 
-        int8_t chargeLc = TDatabasePDG::Instance()->GetParticle(particle.pdgCode())->Charge();         // Retrieve charge
-        int8_t chargeAssoc = TDatabasePDG::Instance()->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
+        int8_t chargeLc = pdg->GetParticle(particle.pdgCode())->Charge();         // Retrieve charge
+        int8_t chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
 
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
         registry.fill(HIST("hPtParticleAssocMcGen"), particleAssoc.pt());
@@ -976,8 +978,8 @@ struct HfCorrelatorLcHadrons {
         if (pidTrkApplied && (std::abs(particleAssoc.pdgCode()) != kProton)) {
           continue; // proton PID
         }
-        int8_t chargeLc = TDatabasePDG::Instance()->GetParticle(candidate.pdgCode())->Charge();        // Retrieve charge
-        int8_t chargeAssoc = TDatabasePDG::Instance()->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
+        int8_t chargeLc = pdg->GetParticle(candidate.pdgCode())->Charge();        // Retrieve charge
+        int8_t chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
 
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
         bool isLcPrompt = candidate.originMcGen() == RecoDecay::OriginType::Prompt;
