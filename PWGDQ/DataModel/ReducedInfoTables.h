@@ -893,6 +893,62 @@ DECLARE_SOA_TABLE(DileptonTrackCandidates, "AOD", "RTDILEPTONTRACK", //!
 
 using DileptonTrackCandidate = DileptonTrackCandidates::iterator;
 
+// candidate information
+namespace dileptonTrackTrackCandidate
+{
+// infotmation about the dilepton-track-track
+DECLARE_SOA_COLUMN(Mass, mass, float);                 //!
+DECLARE_SOA_COLUMN(Pt, pt, float);                     //!
+DECLARE_SOA_COLUMN(Eta, eta, float);                   //!
+DECLARE_SOA_COLUMN(Phi, phi, float);                   //!
+DECLARE_SOA_COLUMN(Rap, rap, float);                   //!
+DECLARE_SOA_COLUMN(DeltaQ, deltaQ, float);             //!
+DECLARE_SOA_COLUMN(R1, r1, float);                     //! distance between the dilepton and the track1 in theta-phi plane
+DECLARE_SOA_COLUMN(R2, r2, float);                     //! distance between the dilepton and the track2 in theta-phi plane
+DECLARE_SOA_COLUMN(DileptonMass, dileptonMass, float); //!
+DECLARE_SOA_COLUMN(DileptonPt, dileptonPt, float);     //!
+DECLARE_SOA_COLUMN(DileptonEta, dileptonEta, float);   //!
+DECLARE_SOA_COLUMN(DileptonPhi, dileptonPhi, float);   //!
+DECLARE_SOA_COLUMN(DileptonSign, dileptonSign, int);   //!
+DECLARE_SOA_COLUMN(DiTracksMass, diTracksMass, float); //!
+DECLARE_SOA_COLUMN(DiTracksPt, diTracksPt, float);     //!
+DECLARE_SOA_COLUMN(TrackPt1, trackPt1, float);         //!
+DECLARE_SOA_COLUMN(TrackPt2, trackPt2, float);         //!
+DECLARE_SOA_COLUMN(TrackEta1, trackEta1, float);       //!
+DECLARE_SOA_COLUMN(TrackEta2, trackEta2, float);       //!
+DECLARE_SOA_COLUMN(TrackPhi1, trackPhi1, float);       //!
+DECLARE_SOA_COLUMN(TrackPhi2, trackPhi2, float);       //!
+DECLARE_SOA_COLUMN(TrackSign1, trackSign1, int);       //!
+DECLARE_SOA_COLUMN(TrackSign2, trackSign2, int);       //!
+} // namespace dileptonTrackTrackCandidate
+
+DECLARE_SOA_TABLE(DileptonTrackTrackCandidates, "AOD", "RTDQUADPLET", //!
+                  dileptonTrackTrackCandidate::Mass,
+                  dileptonTrackTrackCandidate::Pt,
+                  dileptonTrackTrackCandidate::Eta,
+                  dileptonTrackTrackCandidate::Phi,
+                  dileptonTrackTrackCandidate::Rap,
+                  dileptonTrackTrackCandidate::DeltaQ,
+                  dileptonTrackTrackCandidate::R1,
+                  dileptonTrackTrackCandidate::R2,
+                  dileptonTrackTrackCandidate::DileptonMass,
+                  dileptonTrackTrackCandidate::DileptonPt,
+                  dileptonTrackTrackCandidate::DileptonEta,
+                  dileptonTrackTrackCandidate::DileptonPhi,
+                  dileptonTrackTrackCandidate::DileptonSign,
+                  dileptonTrackTrackCandidate::DiTracksMass,
+                  dileptonTrackTrackCandidate::DiTracksPt,
+                  dileptonTrackTrackCandidate::TrackPt1,
+                  dileptonTrackTrackCandidate::TrackPt2,
+                  dileptonTrackTrackCandidate::TrackEta1,
+                  dileptonTrackTrackCandidate::TrackEta2,
+                  dileptonTrackTrackCandidate::TrackPhi1,
+                  dileptonTrackTrackCandidate::TrackPhi2,
+                  dileptonTrackTrackCandidate::TrackSign1,
+                  dileptonTrackTrackCandidate::TrackSign2);
+
+using DileptonTrackTrackCandidate = DileptonTrackTrackCandidates::iterator;
+
 namespace v0bits
 {
 DECLARE_SOA_COLUMN(PIDBit, pidbit, uint8_t); //!
