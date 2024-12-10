@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file candidateSelectorBplusToD0Pi.cxx
-/// \brief B+ → D0bar π+ candidate selector
+/// \brief B ± → D0bar (D0) π± candidate selector
 ///
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari
 /// \author Deepa Thomas <deepa.thomas@cern.ch>, UT Austin
