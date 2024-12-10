@@ -641,13 +641,17 @@ struct HfTaskCorrelationLcHadrons {
 
       // fill correlation plots for signal/bagkground correlations
       if (pairEntry.signalStatus()) {
-        registry.fill(HIST("hCorrel2DVsPtSignalMcRec"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, efficiencyWeight);
-        if (fillSign)
+        if (fillSign) {
           registry.fill(HIST("hCorrel2DVsPtSignSignalMcRec"), deltaPhi, deltaEta, ptLc, ptHadron, signPair, poolBin, efficiencyWeight);
+        } else {
+          registry.fill(HIST("hCorrel2DVsPtSignalMcRec"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, efficiencyWeight);
+        }
       } else {
-        registry.fill(HIST("hCorrel2DVsPtBkgMcRec"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, efficiencyWeight);
-        if (fillSign)
+        if (fillSign) {
           registry.fill(HIST("hCorrel2DVsPtSignBkgMcRec"), deltaPhi, deltaEta, ptLc, ptHadron, signPair, poolBin, efficiencyWeight);
+        } else {
+          registry.fill(HIST("hCorrel2DVsPtBkgMcRec"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, efficiencyWeight);
+        }
       }
       // reject entries outside Pt ranges of interest
 
