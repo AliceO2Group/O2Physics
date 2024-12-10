@@ -53,8 +53,9 @@ struct JetTaggerHFTask {
 
   // jet flavour definition
   Configurable<float> maxDeltaR{"maxDeltaR", 0.25, "maximum distance of jet axis from flavour initiating parton"};
-  Configurable<bool> removeGluonShower{"removeGluonShower", true, "find jet origin removed gluon spliting"}; // true:: remove gluon spliting
   Configurable<bool> searchUpToQuark{"searchUpToQuark", true, "Finding first mother in particles to quark"};
+  Configurable<bool> isHfShower{"isHfShower", false, "to check the origin from HF shower"};
+  Configurable<bool> woGluonShower{"woGluonShower", false, "find jet origin removed gluon spliting"}; // it works when ```isHfShower``` is true only
 
   // configuration about IP method
   Configurable<bool> useJetProb{"useJetProb", false, "fill table for track counting algorithm"};
@@ -294,11 +295,7 @@ struct JetTaggerHFTask {
       bool flagtaggedjetSV = false;
       bool flagtaggedjetSVxyz = false;
       typename JetTagTracksMCD::iterator hftrack;
-      int origin = 0;
-      if (removeGluonShower)
-        origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, jtracks, particles, maxDeltaR, searchUpToQuark);
-      else
-        origin = jettaggingutilities::jetTrackFromHFShower(mcdjet, jtracks, particles, hftrack, searchUpToQuark);
+      int origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, jtracks, particles, maxDeltaR, searchUpToQuark, isHfShower, woGluonShower);
       if (useJetProb) {
         calculateJetProbability(origin, mcdjet, jtracks, jetProb);
         if (trackProbQA) {
@@ -322,11 +319,7 @@ struct JetTaggerHFTask {
       bool flagtaggedjetSV = false;
       bool flagtaggedjetSVxyz = false;
       typename JetTagTracksMCD::iterator hftrack;
-      int origin = 0;
-      if (removeGluonShower)
-        origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, jtracks, particles, maxDeltaR, searchUpToQuark);
-      else
-        origin = jettaggingutilities::jetTrackFromHFShower(mcdjet, jtracks, particles, hftrack, searchUpToQuark);
+      int origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, jtracks, particles, maxDeltaR, searchUpToQuark, isHfShower, woGluonShower);
       if (useJetProb) {
         calculateJetProbability(origin, mcdjet, jtracks, jetProb);
         if (trackProbQA) {
@@ -352,19 +345,7 @@ struct JetTaggerHFTask {
       bool flagtaggedjetSV = false;
       bool flagtaggedjetSVxyz = false;
       typename aod::JetParticles::iterator hfparticle;
-      int origin = 0;
-      // TODO
-      if (removeGluonShower) {
-        if (jettaggingutilities::mcpJetFromHFShower(mcpjet, particles, maxDeltaR, searchUpToQuark))
-          origin = jettaggingutilities::mcpJetFromHFShower(mcpjet, particles, maxDeltaR, searchUpToQuark);
-        else
-          origin = 0;
-      } else {
-        if (jettaggingutilities::jetParticleFromHFShower(mcpjet, particles, hfparticle, searchUpToQuark))
-          origin = jettaggingutilities::jetParticleFromHFShower(mcpjet, particles, hfparticle, searchUpToQuark);
-        else
-          origin = 0;
-      }
+      int origin = jettaggingutilities::mcpJetFromHFShower(mcpjet, particles, maxDeltaR, searchUpToQuark, isHfShower, woGluonShower);
       jetProb.clear();
       jetProb.reserve(maxOrder);
       jetProb.push_back(-1);

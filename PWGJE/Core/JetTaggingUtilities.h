@@ -99,94 +99,109 @@ int getOriginalMotherIndex(const typename T::iterator& particle)
 
 /**
  * returns the globalIndex of the earliest HF mother of a particle in the shower. returns -1 if a suitable mother is not found. Should be used only on already identified HF particles
+ * add priority to select HF shower based on status
  *
  * @param hfparticle MCParticle whose mother is to be found
+ * @param woGluonShower
  */
 
 template <typename T>
-int getOriginalHFMotherIndex(const typename T::iterator& hfparticle)
+int getOriginalHFMotherIndex(const typename T::iterator& hfparticle, bool woGluonShower)
 {
+  auto statusPriority = [](int status) -> int {
+    switch (status) {
+      case 33:
+        return 1; // High priority
+      case 43:
+        return 2;
+      case 23:
+        return 3;
+      case 63:
+        return 4;
+      case 51:
+        return 5;
+      default:
+        return 6;
+    }
+  };
 
-  // if (!hfparticle) {
-  //   return -1.0;
-  // }
+  int selectedMotherIndex = -1;
+  int minPriority = 100;
   auto mother = hfparticle;
-
   while (mother.has_mothers()) {
 
     mother = mother.template mothers_first_as<T>();
 
     int motherStatusCode = std::abs(mother.getGenStatusCode());
 
-    if (motherStatusCode == 23 || motherStatusCode == 33 || motherStatusCode == 43 || motherStatusCode == 63 || (motherStatusCode == 51 && mother.template mothers_first_as<T>().pdgCode() == 21)) {
-      return mother.globalIndex();
+    if (woGluonShower) {
+      if (motherStatusCode == 23 || motherStatusCode == 33 || motherStatusCode == 43 || motherStatusCode == 63) {
+        int priority = statusPriority(motherStatusCode);
+        if (priority < minPriority) {
+          minPriority = priority;
+          selectedMotherIndex = mother.globalIndex();
+        }
+      }
+    } else {
+      if (motherStatusCode == 23 || motherStatusCode == 33 || motherStatusCode == 43 || motherStatusCode == 63 || (motherStatusCode == 51 && mother.template mothers_first_as<T>().pdgCode() == 21)) {
+        int priority = statusPriority(motherStatusCode);
+        if (priority < minPriority) {
+          minPriority = priority;
+          selectedMotherIndex = mother.globalIndex();
+        }
+      }
     }
   }
-  return -1.0;
+
+  return selectedMotherIndex;
 }
 
 /**
- * checks if atrack in a reco level jet originates from a HF shower. 0:no HF shower, 1:charm shower, 2:beauty shower. The first track originating from an HF shower can be extracted by reference
+ * checks if a track originates from a HF shower. 0:no HF shower, 1:charm shower, 2:beauty shower. The first track originating from an HF shower can be extracted by reference
  *
- * @param jet
+ * @param track
  * @param particles table of generator level particles to be searched through
  * @param hftrack track passed as reference which is then replaced by the first track that originated from an HF shower
  */
-template <typename T, typename U, typename V>
-int jetTrackFromHFShower(T const& jet, U const& /*tracks*/, V const& particles, typename U::iterator& hftrack, bool searchUpToQuark)
+template <typename T, typename U>
+int trackFromHFShower(T const& track, U const& particles, T& hftrack, bool searchUpToQuark)
 {
-
-  bool hasMcParticle = false;
-  int origin = -1;
-  for (auto& track : jet.template tracks_as<U>()) {
-    hftrack = track; // for init if origin is 1 or 2, the track is not hftrack
-    if (!track.has_mcParticle()) {
-      continue;
-    }
-    hasMcParticle = true;
-    auto const& particle = track.template mcParticle_as<V>();
-    origin = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
-    if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
-      hftrack = track;
-      if (origin == 1) {
-        return JetTaggingSpecies::charm;
-      }
-      if (origin == 2) {
-        return JetTaggingSpecies::beauty;
-      }
-    }
-  }
-
-  if (hasMcParticle) {
-    return JetTaggingSpecies::lightflavour;
-  } else {
+  if (!track.has_mcParticle()) {
     return JetTaggingSpecies::none;
   }
+  auto const& particle = track.template mcParticle_as<U>();
+  int origin = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
+  if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
+    hftrack = track;
+    if (origin == 1) {
+      return JetTaggingSpecies::charm;
+    }
+    if (origin == 2) {
+      return JetTaggingSpecies::beauty;
+    }
+  }
+
+  return JetTaggingSpecies::lightflavour;
 }
 
 /**
- * checks if a particle in a generator level jet originates from a HF shower. 0:no HF shower, 1:charm shower, 2:beauty shower. The first particle originating from an HF shower can be extracted by reference
+ * checks if a particle originates from a HF shower. 0:no HF shower, 1:charm shower, 2:beauty shower. The first particle originating from an HF shower can be extracted by reference
  *
- * @param jet
+ * @param particle
  * @param particles table of generator level particles to be searched through
  * @param hfparticle particle passed as reference which is then replaced by the first track that originated from an HF shower
  */
-template <typename T, typename U>
-int jetParticleFromHFShower(T const& jet, U const& particles, typename U::iterator& hfparticle, bool searchUpToQuark)
+template <typename T>
+int particleFromHFShower(typename T::iterator const& particle, T const& particles, typename T::iterator& hfparticle, bool searchUpToQuark)
 {
-
-  int origin = -1;
-  for (const auto& particle : jet.template tracks_as<U>()) {
-    hfparticle = particle; // for init if origin is 1 or 2, the particle is not hfparticle
-    origin = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
-    if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
-      hfparticle = particle;
-      if (origin == 1) {
-        return JetTaggingSpecies::charm;
-      }
-      if (origin == 2) {
-        return JetTaggingSpecies::beauty;
-      }
+  int origin = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
+  if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
+    hfparticle = particle;
+    if (origin == 1) {
+      return JetTaggingSpecies::charm;
+    }
+    if (origin == 2) {
+      return JetTaggingSpecies::beauty;
     }
   }
   return JetTaggingSpecies::lightflavour;
@@ -196,41 +211,54 @@ int jetParticleFromHFShower(T const& jet, U const& particles, typename U::iterat
  * returns if a reco level jet originates from a HF shower. 0:no HF shower, 1:charm shower, 2:beauty shower. The requirement is that the jet contains a particle from an HF shower and that the original HF quark is within dRMax of the jet axis in eta-phi
  *
  * @param jet
- * @param particles table of generator level particles to be searched through
+ * @param tracks table of reconstrutor level particles to be searched through
+ * @param paritcles table of generator level particles to be searched through
  * @param dRMax maximum distance in eta-phi of initiating heavy-flavour quark from the jet axis
  */
 
 template <typename T, typename U, typename V>
-int mcdJetFromHFShower(T const& jet, U const& tracks, V const& particles, float dRMax = 0.25, bool searchUpToQuark = false)
+int mcdJetFromHFShower(T const& jet, U const& /*tracks*/, V const& particles, float dRMax = 0.25, bool searchUpToQuark = false, bool isHfShower = false, bool woGluonShower = false)
 {
-
   typename U::iterator hftrack;
-  int origin = jetTrackFromHFShower(jet, tracks, particles, hftrack, searchUpToQuark);
-  if (origin == JetTaggingSpecies::charm || origin == JetTaggingSpecies::beauty) {
-    if (!hftrack.has_mcParticle()) {
-      return JetTaggingSpecies::none;
-    }
-    auto const& hfparticle = hftrack.template mcParticle_as<V>();
-
-    int originalHFMotherIndex = getOriginalHFMotherIndex<V>(hfparticle);
-    if (originalHFMotherIndex > -1.0) {
-
-      if (jetutilities::deltaR(jet, particles.iteratorAt(originalHFMotherIndex)) < dRMax) {
-
-        return origin;
-
+  bool hasMcParticle = false;
+  bool hasHfTrack = false;
+  unsigned long countOutsideTrack = 0;
+  for (const auto& track : jet.template tracks_as<U>()) {
+    if (!track.has_mcParticle())
+      continue;
+    hasMcParticle = true;
+    int origin = trackFromHFShower(track, particles, hftrack, searchUpToQuark);
+    if (origin == JetTaggingSpecies::charm || origin == JetTaggingSpecies::beauty) {
+      auto const& hfparticle = hftrack.template mcParticle_as<V>();
+      if (isHfShower) {
+        int originalHFMotherIndex = getOriginalHFMotherIndex<V>(hfparticle, woGluonShower);
+        if (originalHFMotherIndex > -1.0) {
+          if (jetutilities::deltaR(jet, particles.iteratorAt(originalHFMotherIndex)) < dRMax) {
+            if (origin == JetTaggingSpecies::beauty) {
+              return JetTaggingSpecies::beauty;
+            }
+            hasHfTrack = true;
+          } else {
+            countOutsideTrack++;
+          }
+        }
       } else {
-        return JetTaggingSpecies::none;
+        if (jetutilities::deltaR(jet, hfparticle) < dRMax) {
+          if (origin == JetTaggingSpecies::beauty) {
+            return JetTaggingSpecies::beauty;
+          }
+          hasHfTrack = true;
+        } else {
+          countOutsideTrack++;
+        }
       }
-
-    } else {
-      return JetTaggingSpecies::none;
     }
-
-  } else {
-
-    return JetTaggingSpecies::lightflavour;
   }
+  if (!hasMcParticle || countOutsideTrack == jet.template tracks_as<U>().size())
+    return JetTaggingSpecies::none;
+  if (hasHfTrack)
+    return JetTaggingSpecies::charm;
+  return JetTaggingSpecies::lightflavour;
 }
 
 /**
@@ -242,32 +270,43 @@ int mcdJetFromHFShower(T const& jet, U const& tracks, V const& particles, float 
  */
 
 template <typename T, typename U>
-int mcpJetFromHFShower(T const& jet, U const& particles, float dRMax = 0.25, bool searchUpToQuark = false)
+int mcpJetFromHFShower(T const& jet, U const& particles, float dRMax = 0.25, bool searchUpToQuark = false, bool isHfShower = false, bool woGluonShower = false)
 {
-
   typename U::iterator hfparticle;
-  int origin = jetParticleFromHFShower(jet, particles, hfparticle, searchUpToQuark);
-  if (origin == JetTaggingSpecies::charm || origin == JetTaggingSpecies::beauty) {
-
-    int originalHFMotherIndex = getOriginalHFMotherIndex<U>(hfparticle);
-    if (originalHFMotherIndex > -1.0) {
-
-      if (jetutilities::deltaR(jet, particles.iteratorAt(originalHFMotherIndex)) < dRMax) {
-
-        return origin;
-
+  bool hasHfParticle = false;
+  unsigned long countOutsideParticle = 0;
+  for (const auto& particle : jet.template tracks_as<U>()) {
+    int origin = particleFromHFShower(particle, particles, hfparticle, searchUpToQuark);
+    if (origin == JetTaggingSpecies::charm || origin == JetTaggingSpecies::beauty) {
+      if (isHfShower) {
+        int originalHFMotherIndex = getOriginalHFMotherIndex<U>(hfparticle, woGluonShower);
+        if (originalHFMotherIndex > -1.0) {
+          if (jetutilities::deltaR(jet, particles.iteratorAt(originalHFMotherIndex)) < dRMax) {
+            if (origin == JetTaggingSpecies::beauty) {
+              return JetTaggingSpecies::beauty;
+            }
+            hasHfParticle = true;
+          } else {
+            countOutsideParticle++;
+          }
+        }
       } else {
-        return JetTaggingSpecies::none;
+        if (jetutilities::deltaR(jet, hfparticle) < dRMax) {
+          if (origin == JetTaggingSpecies::beauty) {
+            return JetTaggingSpecies::beauty;
+          }
+          hasHfParticle = true;
+        } else {
+          countOutsideParticle++;
+        }
       }
-
-    } else {
-      return JetTaggingSpecies::none;
     }
-
-  } else {
-
-    return JetTaggingSpecies::lightflavour;
   }
+  if (countOutsideParticle == jet.template tracks_as<U>().size())
+    return JetTaggingSpecies::none;
+  if (hasHfParticle)
+    return JetTaggingSpecies::charm;
+  return JetTaggingSpecies::lightflavour;
 }
 
 /**

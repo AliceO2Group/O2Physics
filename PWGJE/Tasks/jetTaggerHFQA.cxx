@@ -46,6 +46,10 @@ struct JetTaggerHFQA {
   Configurable<bool> fillTrackCounting{"fillTrackCounting", false, "process of track counting method"};
   Configurable<bool> fillGeneralSVQA{"fillGeneralSVQA", true, "process of general QA for sv"};
 
+  Configurable<float> maxDeltaR{"maxDeltaR", 0.25, "maximum distance of jet axis from flavour initiating parton"};
+  Configurable<bool> isHfShower{"isHfShower", false, "to check the origin from HF shower"};
+  Configurable<bool> woGluonShower{"woGluonShower", false, "find jet origin removed gluon spliting"}; // it works when ```isHfShower``` is true only
+
   // Cut configuration
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum eta acceptance for tracks"};
@@ -149,6 +153,18 @@ struct JetTaggerHFQA {
       registry.add("h_impact_parameter_z_significance", "", {HistType::kTH1F, {{impactParameterZSignificanceAxis}}});
       registry.add("h_impact_parameter_xyz", "", {HistType::kTH1F, {{impactParameterXYZAxis}}});
       registry.add("h_impact_parameter_xyz_significance", "", {HistType::kTH1F, {{impactParameterXYZSignificanceAxis}}});
+    }
+    if (doprocessValFlavourDefMCD) {
+      registry.add("h2_flavour_run2_quark_flavour_run2_hadron", "", {HistType::kTH2F, {{jetFlavourAxis}, {jetFlavourAxis}}});
+      registry.add("h2_flavour_quark_flavour_hadron", "", {HistType::kTH2F, {{jetFlavourAxis}, {jetFlavourAxis}}});
+      registry.add("h2_flavour_hadron_flavour_run2_hadron", "", {HistType::kTH2F, {{jetFlavourAxis}, {jetFlavourAxis}}});
+      registry.add("h2_flavour_quark_flavour_run2_quark", "", {HistType::kTH2F, {{jetFlavourAxis}, {jetFlavourAxis}}});
+    }
+    if (doprocessValFlavourDefMCP) {
+      registry.add("h2_part_flavour_run2_quark_part_flavour_run2_hadron", "", {HistType::kTH2F, {{jetFlavourAxis}, {jetFlavourAxis}}});
+      registry.add("h2_part_flavour_quark_part_flavour_hadron", "", {HistType::kTH2F, {{jetFlavourAxis}, {jetFlavourAxis}}});
+      registry.add("h2_part_flavour_hadron_part_flavour_run2_hadron", "", {HistType::kTH2F, {{jetFlavourAxis}, {jetFlavourAxis}}});
+      registry.add("h2_part_flavour_quark_part_flavour_run2_quark", "", {HistType::kTH2F, {{jetFlavourAxis}, {jetFlavourAxis}}});
     }
     if (doprocessIPsData) {
       registry.add("h3_jet_pt_track_pt_track_eta", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {etaAxis}}});
@@ -1198,6 +1214,74 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processTracksDca, "Fill inclusive tracks' imformation for data", false);
 
+  void processValFlavourDefMCD(soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP> const& mcdjets, soa::Join<JetTableMCP, TagTableMCP, JetTableMCPMCD> const& /*mcpjets*/, JetTagTracksMCD const& jtracks, aod::JetParticles& particles, soa::Filtered<aod::JetCollisionsMCD> const& /*collisions*/)
+  {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    for (auto& mcdjet : mcdjets) {
+      auto const particlesPerColl = particles.sliceBy(particlesPerCollision, collision.mcCollisionId());
+      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
+        continue;
+      }
+      float pTHat = 10. / (std::pow(1.0, 1.0 / pTHatExponent));
+      if (mcdjet.pt() > pTHatMaxMCD * pTHat) {
+        return;
+      }
+      typename JetTagTracksMCD::iterator hftrack;
+      int jetflavourQuarkLevel = jettaggingutilities::mcdJetFromHFShower(mcdjet, jtracks, particles, maxDeltaR, true, isHfShower, woGluonShower);
+      int jetflavourHadronLevel = jettaggingutilities::mcdJetFromHFShower(mcdjet, jtracks, particles, maxDeltaR, false, isHfShower, woGluonShower);
+      int jetflavourRun2DefQuarkLevel = -1;
+      int jetflavourRun2DefHadronLevel = -1;
+      for (auto& mcpjet : mcdjet.template matchedJetGeo_as<soa::Join<JetTableMCP, TagTableMCP, JetTableMCPMCD>>()) {
+        jetflavourRun2DefQuarkLevel = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
+        jetflavourRun2DefHadronLevel = jettaggingutilities::getJetFlavorHadron(mcpjet, particlesPerColl);
+      }
+      if (jetflavourRun2DefQuarkLevel < 0 || jetflavourRun2DefHadronLevel < 0)
+        return;
+      registry.fill(HIST("h2_flavour_run2_quark_flavour_run2_hadron"), jetflavourRun2DefQuarkLevel, jetflavourRun2DefHadronLevel, 1.0);
+      registry.fill(HIST("h2_flavour_quark_flavour_hadron"), jetflavourQuarkLevel, jetflavourHadronLevel, 1.0);
+      registry.fill(HIST("h2_flavour_hadron_flavour_run2_hadron"), jetflavourHadronLevel, jetflavourRun2DefHadronLevel, 1.0);
+      registry.fill(HIST("h2_flavour_quark_flavour_run2_quark"), jetflavourQuarkLevel, jetflavourRun2DefQuarkLevel, 1.0);
+    }
+  }
+  PROCESS_SWITCH(JetTaggerHFQA, processValFlavourDefMCD, "to check the validation of jet-flavour definition when compared to Run2 for mcd jets", false);
+
+  void processValFlavourDefMCP(soa::Join<JetTableMCP, TagTableMCP> const& mcpjets, aod::JetParticles& particles, aod::JetMcCollisions const&, soa::Filtered<aod::JetCollisionsMCD> const& collisions)
+  {
+    for (auto& mcpjet : mcpjets) {
+      if (!jetfindingutilities::isInEtaAcceptance(mcpjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetParticles>(mcpjet)) {
+        return;
+      }
+      auto const particlesPerColl = particles.sliceBy(particlesPerCollision, mcpjet.mcCollisionId());
+      int jetflavourQuarkLevel = jettaggingutilities::mcpJetFromHFShower(mcpjet, particles, maxDeltaR, true, isHfShower, woGluonShower);
+      int jetflavourHadronLevel = jettaggingutilities::mcpJetFromHFShower(mcpjet, particles, maxDeltaR, false, isHfShower, woGluonShower);
+      int jetflavourRun2DefQuarkLevel = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
+      int jetflavourRun2DefHadronLevel = jettaggingutilities::getJetFlavorHadron(mcpjet, particlesPerColl);
+      if (checkMcCollisionIsMatched) {
+        auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, mcpjet.mcCollisionId());
+        if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelection)) {
+          registry.fill(HIST("h2_part_flavour_run2_quark_part_flavour_run2_hadron"), jetflavourRun2DefQuarkLevel, jetflavourRun2DefHadronLevel, 1.0);
+          registry.fill(HIST("h2_part_flavour_quark_part_flavour_hadron"), jetflavourQuarkLevel, jetflavourHadronLevel, 1.0);
+          registry.fill(HIST("h2_part_flavour_hadron_part_flavour_run2_hadron"), jetflavourHadronLevel, jetflavourRun2DefHadronLevel, 1.0);
+          registry.fill(HIST("h2_part_flavour_quark_part_flavour_run2_quark"), jetflavourQuarkLevel, jetflavourRun2DefQuarkLevel, 1.0);
+        }
+      } else {
+        registry.fill(HIST("h2_part_flavour_run2_quark_part_flavour_run2_hadron"), jetflavourRun2DefQuarkLevel, jetflavourRun2DefHadronLevel, 1.0);
+        registry.fill(HIST("h2_part_flavour_quark_part_flavour_hadron"), jetflavourQuarkLevel, jetflavourHadronLevel, 1.0);
+        registry.fill(HIST("h2_part_flavour_hadron_part_flavour_run2_hadron"), jetflavourHadronLevel, jetflavourRun2DefHadronLevel, 1.0);
+        registry.fill(HIST("h2_part_flavour_quark_part_flavour_run2_quark"), jetflavourQuarkLevel, jetflavourRun2DefQuarkLevel, 1.0);
+      }
+    }
+  }
+  PROCESS_SWITCH(JetTaggerHFQA, processValFlavourDefMCP, "to check the validation of jet-flavour definition when compared to Run2 for mcp jets", false);
+
   void processIPsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableData, TagTableData> const& jets, JetTagTracksData const& jtracks)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
@@ -1515,7 +1599,7 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processSV2ProngMCPMCDMatchedWeighted, "Fill 2prong imformation for mcd jets", false);
 
-  void processSV3ProngMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, weightMCD, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, aod::MCDSecondaryVertex3Prongs const& prongs)
+  void processSV3ProngMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, aod::MCDSecondaryVertex3Prongs const& prongs)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
