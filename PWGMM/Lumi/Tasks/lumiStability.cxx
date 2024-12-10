@@ -270,6 +270,8 @@ struct LumiStabilityTask {
       nOrbitsPerTF = 32; // 128 in 2022, 32 in 2023
     }
     int runNumber = bcs.iteratorAt(0).runNumber();
+    int64_t tsSOR = 0;
+    int64_t tsEOR = 1;
     // std::string histName = "hOrbitFDDVertexCoinc_" + std::to_string(runNumber);
     if (runNumber != lastRunNumber && executionCounter < 1) {
       tsSOR = 0;
@@ -463,6 +465,7 @@ struct LumiStabilityTask {
         histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
         histos.fill(HIST("FDD/hCounts"), 1);
         histos.fill(HIST("hOrbitFDDVertex"), orbit - minOrbit);
+        histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1000); // Converting ms into seconds
 
         if (bcPatternB[localBC]) {
           histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
