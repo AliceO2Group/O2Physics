@@ -2105,7 +2105,7 @@ struct AnalysisAsymmetricPairing {
               fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
             } // end loop (common cuts)
           } // end loop (pair cuts)
-        }   // end if (pair cuts)
+        } // end if (pair cuts)
 
         // TODO: assign hist directories for the MC matched triplets for each (leg cut combo,MCsignal) combination
         if (!sigNamesStr.IsNull()) {
@@ -2191,7 +2191,7 @@ struct AnalysisAsymmetricPairing {
               fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
             } // end loop (common cuts)
           } // end loop (pair cuts)
-        }   // end if (pair cuts)
+        } // end if (pair cuts)
 
         // assign hist directories for the MC matched triplets for each (leg cut combo,MCsignal) combination
         if (!sigNamesStr.IsNull()) {
@@ -2303,7 +2303,8 @@ struct AnalysisAsymmetricPairing {
         } else {
           VarManager::SetupThreeProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value);
         }
-      } else { if (fConfigUseKFVertexing.value) {
+      } else {
+        if (fConfigUseKFVertexing.value) {
           VarManager::SetupTwoProngKFParticle(magField);
         } else {
           VarManager::SetupTwoProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value); // TODO: get these parameters from Configurables
@@ -2557,8 +2558,8 @@ struct AnalysisAsymmetricPairing {
         if constexpr (trackHasCov && TTwoProngFitter) {
           ditrackExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
         }
-      }   // end inner assoc loop (leg A)
-    }     // end event loop
+      } // end inner assoc loop (leg A)
+    } // end event loop
   }
 
   // Template function to run same event triplets (e.g. D+->K-pi+pi+)
@@ -2694,7 +2695,7 @@ struct AnalysisAsymmetricPairing {
       if (threeTrackFilter & (static_cast<uint32_t>(1) << icut)) {
         fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
         // TODO: loop over MC signals
-        for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {        // loop over MC signals
+        for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
           int offset = fNLegCuts * isig * (1 + fNCommonTrackCuts + fNPairCuts + fNCommonTrackCuts * fNPairCuts);
           if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
             fHistMan->FillHistClass(histNamesMC[offset + icut][0].Data(), VarManager::fgValues); // matched signal
@@ -2706,7 +2707,7 @@ struct AnalysisAsymmetricPairing {
         for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
           if (threeTrackCommonFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
             fHistMan->FillHistClass(histNames[fNLegCuts + icut * fNCommonTrackCuts + iCommonCut][0].Data(), VarManager::fgValues);
-            for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {        // loop over MC signals
+            for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
               int offset = fNLegCuts * isig * (1 + fNCommonTrackCuts + fNPairCuts + fNCommonTrackCuts * fNPairCuts);
               if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
                 fHistMan->FillHistClass(histNamesMC[offset + fNLegCuts + icut * fNCommonTrackCuts + iCommonCut][0].Data(), VarManager::fgValues); // matched signal
@@ -2721,7 +2722,7 @@ struct AnalysisAsymmetricPairing {
           }
           // Histograms with pair cuts
           fHistMan->FillHistClass(histNames[fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut][0].Data(), VarManager::fgValues);
-          for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {        // loop over MC signals
+          for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
             int offset = fNLegCuts * isig * (1 + fNCommonTrackCuts + fNPairCuts + fNCommonTrackCuts * fNPairCuts);
             if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
               fHistMan->FillHistClass(histNamesMC[offset + fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut][0].Data(), VarManager::fgValues); // matched signal
@@ -2731,7 +2732,7 @@ struct AnalysisAsymmetricPairing {
           for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
             if (threeTrackCommonFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
               fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut][0].Data(), VarManager::fgValues);
-              for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {        // loop over MC signals
+              for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
                 int offset = fNLegCuts * isig * (1 + fNCommonTrackCuts + fNPairCuts + fNCommonTrackCuts * fNPairCuts);
                 if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
                   fHistMan->FillHistClass(histNamesMC[offset + (fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * (1 + fNPairCuts) + iPairCut][0].Data(), VarManager::fgValues); // matched signal
