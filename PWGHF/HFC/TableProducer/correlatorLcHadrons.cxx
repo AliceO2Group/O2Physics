@@ -16,12 +16,12 @@
 /// \author Zhen Zhang <zhenz@cern.ch>
 
 #include <vector>
+#include <TDatabasePDG.h>
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "TDatabasePDG.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
