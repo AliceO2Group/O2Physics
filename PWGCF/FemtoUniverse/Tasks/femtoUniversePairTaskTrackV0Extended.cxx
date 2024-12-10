@@ -122,6 +122,7 @@ struct femtoUniversePairTaskTrackV0Extended {
   Configurable<bool> ConfUseCent{"ConfUseCent", false, "Use centrality in place of multiplicity"};
   ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  Configurable<int> ConfNEventsMix{"ConfNEventsMix", 5, "Number of events for mixing"};
   ConfigurableAxis ConfkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis ConfkTBins{"ConfkTBins", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis ConfmTBins{"ConfmTBins", {225, 0., 7.5}, "binning mT"};
@@ -612,12 +613,12 @@ struct femtoUniversePairTaskTrackV0Extended {
     };
 
     if (ConfUseCent) {
-      for (auto& [collision1, collision2] : soa::selfCombinations(colBinningCent, 5, -1, cols, cols)) {
+      for (auto& [collision1, collision2] : soa::selfCombinations(colBinningCent, ConfNEventsMix, -1, cols, cols)) {
         mixedCollProcessFunc(collision1, collision2);
         MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinningCent.getBin({collision1.posZ(), collision1.multV0M()}));
       }
     } else {
-      for (auto& [collision1, collision2] : soa::selfCombinations(colBinningMult, 5, -1, cols, cols)) {
+      for (auto& [collision1, collision2] : soa::selfCombinations(colBinningMult, ConfNEventsMix, -1, cols, cols)) {
         mixedCollProcessFunc(collision1, collision2);
         MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinningMult.getBin({collision1.posZ(), collision1.multNtr()}));
       }
@@ -691,12 +692,12 @@ struct femtoUniversePairTaskTrackV0Extended {
     };
 
     if (ConfUseCent) {
-      for (auto& [collision1, collision2] : soa::selfCombinations(colBinningCent, 5, -1, cols, cols)) {
+      for (auto& [collision1, collision2] : soa::selfCombinations(colBinningCent, ConfNEventsMix, -1, cols, cols)) {
         mixedCollProcessFunc(collision1, collision2);
         MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinningCent.getBin({collision1.posZ(), collision1.multV0M()}));
       }
     } else {
-      for (auto& [collision1, collision2] : soa::selfCombinations(colBinningMult, 5, -1, cols, cols)) {
+      for (auto& [collision1, collision2] : soa::selfCombinations(colBinningMult, ConfNEventsMix, -1, cols, cols)) {
         mixedCollProcessFunc(collision1, collision2);
         MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinningMult.getBin({collision1.posZ(), collision1.multNtr()}));
       }
@@ -738,12 +739,12 @@ struct femtoUniversePairTaskTrackV0Extended {
     };
 
     if (ConfUseCent) {
-      for (auto& [collision1, collision2] : soa::selfCombinations(colBinningCent, 5, -1, cols, cols)) {
+      for (auto& [collision1, collision2] : soa::selfCombinations(colBinningCent, ConfNEventsMix, -1, cols, cols)) {
         mixedCollProcessFunc(collision1, collision2);
         MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinningCent.getBin({collision1.posZ(), collision1.multV0M()}));
       }
     } else {
-      for (auto& [collision1, collision2] : soa::selfCombinations(colBinningMult, 5, -1, cols, cols)) {
+      for (auto& [collision1, collision2] : soa::selfCombinations(colBinningMult, ConfNEventsMix, -1, cols, cols)) {
         mixedCollProcessFunc(collision1, collision2);
         MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinningMult.getBin({collision1.posZ(), collision1.multNtr()}));
       }
@@ -776,12 +777,12 @@ struct femtoUniversePairTaskTrackV0Extended {
     };
 
     if (ConfUseCent) {
-      for (auto& [collision1, collision2] : soa::selfCombinations(colBinningCent, 5, -1, cols, cols)) {
+      for (auto& [collision1, collision2] : soa::selfCombinations(colBinningCent, ConfNEventsMix, -1, cols, cols)) {
         mixedCollProcessFunc(collision1, collision2);
         MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinningCent.getBin({collision1.posZ(), collision1.multV0M()}));
       }
     } else {
-      for (auto& [collision1, collision2] : soa::selfCombinations(colBinningMult, 5, -1, cols, cols)) {
+      for (auto& [collision1, collision2] : soa::selfCombinations(colBinningMult, ConfNEventsMix, -1, cols, cols)) {
         mixedCollProcessFunc(collision1, collision2);
         MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinningMult.getBin({collision1.posZ(), collision1.multNtr()}));
       }
