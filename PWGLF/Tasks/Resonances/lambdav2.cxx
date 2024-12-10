@@ -273,7 +273,7 @@ struct lambdav2 {
   using ResoV0s = aod::V0Datas;
 
   // void processData(EventCandidates::iterator const& collision, AllTrackCandidates const&, ResoV0s const& V0s, aod::BCs const&)
-  void processData(EventCandidates::iterator const& collision, AllTrackCandidates const& tracks, ResoV0s const& V0s, aod::BCs const&)
+  void processData(EventCandidates::iterator const& collision, AllTrackCandidates const& tracks, ResoV0s const& /*V0s*/, aod::BCs const&)
   {
 
     if (!collision.sel8()) {
@@ -303,8 +303,8 @@ struct lambdav2 {
     auto qxZDCC = collision.qxZDCC();
     auto qyZDCA = collision.qyZDCA();
     auto qyZDCC = collision.qyZDCC();
-    auto psiZDCC = collision.psiZDCC();
-    auto psiZDCA = collision.psiZDCA();
+    // auto psiZDCC = collision.psiZDCC();
+    // auto psiZDCA = collision.psiZDCA();
 
     histos.fill(HIST("hCentrality"), centrality);
 
@@ -350,12 +350,12 @@ struct lambdav2 {
       auto ux = TMath::Cos(GetPhiInRange(track.phi()));
       auto uy = TMath::Sin(GetPhiInRange(track.phi()));
 
-      auto uxQxp = ux * qxZDCA;
-      auto uyQyp = uy * qyZDCA;
-      auto uxyQxyp = uxQxp + uyQyp;
-      auto uxQxt = ux * qxZDCC;
-      auto uyQyt = uy * qyZDCC;
-      auto uxyQxyt = uxQxt + uyQyt;
+      // auto uxQxp = ux * qxZDCA;
+      // auto uyQyp = uy * qyZDCA;
+      // auto uxyQxyp = uxQxp + uyQyp;
+      // auto uxQxt = ux * qxZDCC;
+      // auto uyQyt = uy * qyZDCC;
+      // auto uxyQxyt = uxQxt + uyQyt;
       auto oddv1 = ux * (qxZDCA - qxZDCC) + uy * (qyZDCA - qyZDCC);
       auto evenv1 = ux * (qxZDCA + qxZDCC) + uy * (qyZDCA + qyZDCC);
 

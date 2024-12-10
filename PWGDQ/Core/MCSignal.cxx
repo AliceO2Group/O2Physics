@@ -25,10 +25,10 @@ MCSignal::MCSignal() : TNamed("", ""),
                        fNProngs(0),
                        fCommonAncestorIdxs({}),
                        fExcludeCommonAncestor(false),
-                       fTempAncestorLabel(-1),
                        fDecayChannelIsExclusive(false),
                        fDecayChannelIsNotExclusive(false),
-                       fNAncestorDirectProngs(0)
+                       fNAncestorDirectProngs(0),
+                       fTempAncestorLabel(-1)
 {
 }
 
@@ -38,10 +38,10 @@ MCSignal::MCSignal(int nProngs, const char* name /*= ""*/, const char* title /*=
                                                                                          fNProngs(nProngs),
                                                                                          fCommonAncestorIdxs({}),
                                                                                          fExcludeCommonAncestor(false),
-                                                                                         fTempAncestorLabel(-1),
                                                                                          fDecayChannelIsExclusive(false),
                                                                                          fDecayChannelIsNotExclusive(false),
-                                                                                         fNAncestorDirectProngs(0)
+                                                                                         fNAncestorDirectProngs(0),
+                                                                                         fTempAncestorLabel(-1)
 {
   fProngs.reserve(nProngs);
 }
@@ -52,10 +52,10 @@ MCSignal::MCSignal(const char* name, const char* title, std::vector<MCProng> pro
                                                                                                                                                         fNProngs(prongs.size()),
                                                                                                                                                         fCommonAncestorIdxs(commonAncestors),
                                                                                                                                                         fExcludeCommonAncestor(excludeCommonAncestor),
-                                                                                                                                                        fTempAncestorLabel(-1),
                                                                                                                                                         fDecayChannelIsExclusive(false),
                                                                                                                                                         fDecayChannelIsNotExclusive(false),
-                                                                                                                                                        fNAncestorDirectProngs(0)
+                                                                                                                                                        fNAncestorDirectProngs(0),
+                                                                                                                                                        fTempAncestorLabel(-1)
 {
 }
 

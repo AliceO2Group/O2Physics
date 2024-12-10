@@ -83,7 +83,7 @@ struct he3FromHypertritonMap {
     registryMC.add("hyperHe4Ptgen", "hyperHe4PtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
   }
 
-  void processMC(aod::McParticles const& mcParticles, const MCTracks& tracks)
+  void processMC(aod::McParticles const& /*mcParticles*/, const MCTracks& tracks)
   {
     for (const auto& track : tracks) {
       if (!track.has_mcParticle()) {

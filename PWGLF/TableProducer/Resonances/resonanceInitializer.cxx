@@ -1042,7 +1042,7 @@ struct ResonanceInitializer {
     LOGF(info, "Bz set to %f for run: ", dBz, mRunNumber);
   }
 
-  void processDummy(ResoRun2Events const& collisions)
+  void processDummy(ResoRun2Events const& /*collisions*/)
   {
   }
   PROCESS_SWITCH(ResonanceInitializer, processDummy, "Process for dummy", true);
