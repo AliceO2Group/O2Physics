@@ -443,7 +443,7 @@ struct CascadeCorrelations {
   // cascade filter
   Filter cascadeSelector = aod::cascadeflags::isSelected > 0;
 
-  // Warning: it is not possible to use this axis as configurable due to a bug - however, default values are sensible. 
+  // Warning: it is not possible to use this axis as configurable due to a bug - however, default values are sensible.
   SliceCache cache;
   ConfigurableAxis axisVtxZ{"axisVtxZ", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   // ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100, 1000}, "Mixing bins - multiplicity"};
@@ -841,7 +841,7 @@ struct CascadeCorrelations {
         } // same sign
       } // correlations
     } // collisions
-  }     // process mixed events
+  } // process mixed events
 
   PROCESS_SWITCH(CascadeCorrelations, processSameEvent, "Process same events", true);
   PROCESS_SWITCH(CascadeCorrelations, processMixedEvent, "Process mixed events", true);
