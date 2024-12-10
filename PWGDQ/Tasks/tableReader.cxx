@@ -402,7 +402,7 @@ struct AnalysisTrackSelection {
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, iCut++) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
           if (iCut != fConfigPrefilterCutId) {
-            filterMap |= (uint32_t(1) << iCut);
+            filterMap |= (static_cast<uint32_t>(1) << iCut);
           }
           if (iCut == fConfigPrefilterCutId) {
             prefilterSelected = true;
@@ -498,7 +498,7 @@ struct AnalysisMuonSelection {
       iCut = 0;
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, iCut++) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
-          filterMap |= (uint32_t(1) << iCut);
+          filterMap |= (static_cast<uint32_t>(1) << iCut);
           if (fConfigQA) { // TODO: make this compile time
             fHistMan->FillHistClass(Form("TrackMuon_%s", (*cut).GetName()), VarManager::fgValues);
           }
@@ -645,7 +645,7 @@ struct AnalysisEventMixing {
   o2::parameters::GRPMagField* grpmag = nullptr;
   TH1D* ResoFlowSP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
   TH1D* ResoFlowEP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
-  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
 
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   Filter filterTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
@@ -691,7 +691,7 @@ struct AnalysisEventMixing {
             Form("PairsBarrelMEMM_%s", objArray->At(icut)->GetName())};
           histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
           fTrackHistNames.push_back(names);
-          fTwoTrackFilterMask |= (uint32_t(1) << icut);
+          fTwoTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
         }
       }
     }
@@ -710,7 +710,7 @@ struct AnalysisEventMixing {
             histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
           }
           fMuonHistNames.push_back(names);
-          fTwoMuonFilterMask |= (uint32_t(1) << icut);
+          fTwoMuonFilterMask |= (static_cast<uint32_t>(1) << icut);
         }
       }
     }
@@ -728,8 +728,8 @@ struct AnalysisEventMixing {
               Form("PairsEleMuMEMM_%s_%s", objArrayBarrel->At(icut)->GetName(), objArrayMuon->At(icut)->GetName())};
             histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
             fTrackMuonHistNames.push_back(names);
-            fTwoTrackFilterMask |= (uint32_t(1) << icut);
-            fTwoMuonFilterMask |= (uint32_t(1) << icut);
+            fTwoTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
+            fTwoMuonFilterMask |= (static_cast<uint32_t>(1) << icut);
           }
         }
       }
@@ -759,13 +759,13 @@ struct AnalysisEventMixing {
     for (auto& track1 : tracks1) {
       for (auto& track2 : tracks2) {
         if constexpr (TPairType == VarManager::kDecayToEE) {
-          twoTrackFilter = uint32_t(track1.isBarrelSelected()) & uint32_t(track2.isBarrelSelected()) & fTwoTrackFilterMask;
+          twoTrackFilter = static_cast<uint32_t>(track1.isBarrelSelected()) & static_cast<uint32_t>(track2.isBarrelSelected()) & fTwoTrackFilterMask;
         }
         if constexpr (TPairType == VarManager::kDecayToMuMu) {
-          twoTrackFilter = uint32_t(track1.isMuonSelected()) & uint32_t(track2.isMuonSelected()) & fTwoMuonFilterMask;
+          twoTrackFilter = static_cast<uint32_t>(track1.isMuonSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoMuonFilterMask;
         }
         if constexpr (TPairType == VarManager::kElectronMuon) {
-          twoTrackFilter = uint32_t(track1.isBarrelSelected()) & uint32_t(track2.isMuonSelected()) & fTwoTrackFilterMask;
+          twoTrackFilter = static_cast<uint32_t>(track1.isBarrelSelected()) & static_cast<uint32_t>(track2.isMuonSelected()) & fTwoTrackFilterMask;
         }
 
         if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
@@ -774,7 +774,7 @@ struct AnalysisEventMixing {
         VarManager::FillPairME<TEventFillMap, TPairType>(track1, track2);
 
         for (unsigned int icut = 0; icut < ncuts; icut++) {
-          if (twoTrackFilter & (uint32_t(1) << icut)) {
+          if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             if (track1.sign() * track2.sign() < 0) {
               fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
               if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
@@ -933,7 +933,7 @@ struct AnalysisSameEventPairing {
   o2::base::MatLayerCylSet* lut = nullptr;
   TH1D* ResoFlowSP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
   TH1D* ResoFlowEP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
-  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
 
   OutputObj<THashList> fOutputList{"output"};
   Configurable<string> fConfigTrackCuts{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
@@ -1033,7 +1033,7 @@ struct AnalysisSameEventPairing {
       if (!cutNames.IsNull()) { // if track cuts
         std::unique_ptr<TObjArray> objArray(cutNames.Tokenize(","));
         for (int icut = 0; icut < objArray->GetEntries(); ++icut) { // loop over track cuts
-          fTwoTrackFilterMask |= (uint32_t(1) << icut);
+          fTwoTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
           // no pair cuts
           names = {
             Form("PairsBarrelSEPM_%s", objArray->At(icut)->GetName()),
@@ -1067,7 +1067,7 @@ struct AnalysisSameEventPairing {
       if (!cutNames.IsNull()) {
         std::unique_ptr<TObjArray> objArray(cutNames.Tokenize(","));
         for (int icut = 0; icut < objArray->GetEntries(); ++icut) { // loop over track cuts
-          fTwoMuonFilterMask |= (uint32_t(1) << icut);
+          fTwoMuonFilterMask |= (static_cast<uint32_t>(1) << icut);
           // no pair cuts
           names = {
             Form("PairsMuonSEPM_%s", objArray->At(icut)->GetName()),
@@ -1103,8 +1103,8 @@ struct AnalysisSameEventPairing {
         std::unique_ptr<TObjArray> objArrayMuon(cutNamesMuon.Tokenize(","));
         if (objArrayBarrel->GetEntries() == objArrayMuon->GetEntries()) {   // one must specify equal number of barrel and muon cuts
           for (int icut = 0; icut < objArrayBarrel->GetEntries(); ++icut) { // loop over track cuts
-            fTwoTrackFilterMask |= (uint32_t(1) << icut);
-            fTwoMuonFilterMask |= (uint32_t(1) << icut);
+            fTwoTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
+            fTwoMuonFilterMask |= (static_cast<uint32_t>(1) << icut);
             // no pair cuts
             names = {
               Form("PairsEleMuSEPM_%s_%s", objArrayBarrel->At(icut)->GetName(), objArrayMuon->At(icut)->GetName()),
@@ -1225,7 +1225,7 @@ struct AnalysisSameEventPairing {
 
       for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
         if constexpr (TPairType == VarManager::kDecayToMuMu) {
-          twoTrackFilter = uint32_t(t1.isMuonSelected()) & uint32_t(t2.isMuonSelected()) & fTwoMuonFilterMask;
+          twoTrackFilter = static_cast<uint32_t>(t1.isMuonSelected()) & static_cast<uint32_t>(t2.isMuonSelected()) & fTwoMuonFilterMask;
         }
 
         if (twoTrackFilter && (t1.sign() != t2.sign())) {
@@ -1243,13 +1243,13 @@ struct AnalysisSameEventPairing {
     bool isFirst = true;
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
       if constexpr (TPairType == VarManager::kDecayToEE || TPairType == VarManager::kDecayToPiPi) {
-        twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected()) & fTwoTrackFilterMask;
+        twoTrackFilter = static_cast<uint32_t>(t1.isBarrelSelected()) & static_cast<uint32_t>(t2.isBarrelSelected()) & fTwoTrackFilterMask;
       }
       if constexpr (TPairType == VarManager::kDecayToMuMu) {
-        twoTrackFilter = uint32_t(t1.isMuonSelected()) & uint32_t(t2.isMuonSelected()) & fTwoMuonFilterMask;
+        twoTrackFilter = static_cast<uint32_t>(t1.isMuonSelected()) & static_cast<uint32_t>(t2.isMuonSelected()) & fTwoMuonFilterMask;
       }
       if constexpr (TPairType == VarManager::kElectronMuon) {
-        twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isMuonSelected()) & fTwoTrackFilterMask;
+        twoTrackFilter = static_cast<uint32_t>(t1.isBarrelSelected()) & static_cast<uint32_t>(t2.isMuonSelected()) & fTwoTrackFilterMask;
       }
       if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
         continue;
@@ -1355,7 +1355,7 @@ struct AnalysisSameEventPairing {
 
       int iCut = 0;
       for (int icut = 0; icut < ncuts; icut++) {
-        if (twoTrackFilter & (uint32_t(1) << icut)) {
+        if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
           if (t1.sign() * t2.sign() < 0) {
             fHistMan->FillHistClass(histNames[iCut][0].Data(), VarManager::fgValues);
             if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
@@ -1756,7 +1756,7 @@ struct AnalysisDileptonHadron {
 
       // loop over hadrons
       for (auto& hadron : tracks) {
-        if (!(uint32_t(hadron.isBarrelSelected()) & (uint32_t(1) << fNHadronCutBit))) {
+        if (!(static_cast<uint32_t>(hadron.isBarrelSelected()) & (static_cast<uint32_t>(1) << fNHadronCutBit))) {
           continue;
         }
 
@@ -1802,7 +1802,7 @@ struct AnalysisDileptonHadron {
       for (auto dilepton : evDileptons) {
         for (auto& track : evTracks) {
 
-          if (!(uint32_t(track.isBarrelSelected()) & (uint32_t(1) << fNHadronCutBit))) {
+          if (!(static_cast<uint32_t>(track.isBarrelSelected()) & (static_cast<uint32_t>(1) << fNHadronCutBit))) {
             continue;
           }
 
@@ -1917,7 +1917,8 @@ struct AnalysisDileptonTrackTrack {
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesQuadruplet);
 
       // apply the dilepton cut
-      if (!fDileptonCut.IsSelected(fValuesQuadruplet)) continue;
+      if (!fDileptonCut.IsSelected(fValuesQuadruplet))
+        continue;
 
       fHistMan->FillHistClass(Form("Dileptons_%s", fDileptonCut.GetName()), fValuesQuadruplet);
 
@@ -1933,11 +1934,11 @@ struct AnalysisDileptonTrackTrack {
         }
 
         if (fIsSameTrackCut) {
-          if (!(uint32_t(t1.isBarrelSelected()) & (uint32_t(1) << 1)) || !(uint32_t(t2.isBarrelSelected()) & (uint32_t(1) << 1))) {
+          if (!(static_cast<uint32_t>(t1.isBarrelSelected()) & (static_cast<uint32_t>(1) << 1)) || !(static_cast<uint32_t>(t2.isBarrelSelected()) & (static_cast<uint32_t>(1) << 1))) {
             continue;
           }
         } else {
-          if (!(uint32_t(t1.isBarrelSelected()) & (uint32_t(1) << 1)) || !(uint32_t(t2.isBarrelSelected()) & (uint32_t(1) << 2))) {
+          if (!(static_cast<uint32_t>(t1.isBarrelSelected()) & (static_cast<uint32_t>(1) << 1)) || !(static_cast<uint32_t>(t2.isBarrelSelected()) & (static_cast<uint32_t>(1) << 2))) {
             continue;
           }
         }
@@ -1959,7 +1960,7 @@ struct AnalysisDileptonTrackTrack {
               if ((t1.sign() < 0) && (t2.sign() > 0)) {
                 fHistMan->FillHistClass(Form("QuadrupletSEMP_%s", fQuadrupletCutNames[iCut].Data()), fValuesQuadruplet);
               } else if ((t1.sign() > 0) && (t2.sign() < 0)) {
-                fHistMan->FillHistClass(Form("QuadrupletSEPM_%s", fQuadrupletCutNames[iCut].Data()), fValuesQuadruplet); 
+                fHistMan->FillHistClass(Form("QuadrupletSEPM_%s", fQuadrupletCutNames[iCut].Data()), fValuesQuadruplet);
               }
             }
             if ((t1.sign() > 0) && (t2.sign() > 0)) {
@@ -1971,7 +1972,8 @@ struct AnalysisDileptonTrackTrack {
         } // loop over dilepton-track-track cuts
 
         // table to be written out for ML analysis
-        if (!CutDecision) continue;
+        if (!CutDecision)
+          continue;
         DileptonTrackTrackTable(fValuesQuadruplet[VarManager::kQuadMass], fValuesQuadruplet[VarManager::kQuadPt], fValuesQuadruplet[VarManager::kQuadEta], fValuesQuadruplet[VarManager::kQuadPhi], fValuesQuadruplet[VarManager::kRap],
                                 fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2],
                                 dilepton.mass(), dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.sign(),
