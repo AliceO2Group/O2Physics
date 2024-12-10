@@ -267,6 +267,10 @@ struct CorrelationTask {
         for (const auto& track2 : tracks2) {
           if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks2::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
             if (doprocessSame2Prong2Prong) {
+              if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u)
+                continue;
+              if ((track1.decay() != 0) || (track2.decay() != 1)) // D0 in trk1, D0bar in trk2
+                continue;
               registry.fill(HIST("invMassTwoPart"), track1.invMass(), track2.invMass(), track1.pt(), track2.pt(), multiplicity);
             }
           }
