@@ -129,6 +129,13 @@ enum V0Species {
   kNV0
 };
 
+enum HfVtxStage : uint8_t {
+  Skimmed = 0,
+  BeautyVertex,
+  CharmHadPiSelected,
+  kNHfVtxStage
+};
+
 static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", "Dplus", "Ds", "Lc", "Xic"};
 static const std::array<std::string, kNBeautyParticles> beautyParticleNames{"Bplus", "B0toDStar", "B0", "Bs", "Lb", "Xib"};
 static const std::array<int, kNCharmParticles> pdgCodesCharm{421, 411, 431, 4122, 4232};
@@ -202,8 +209,10 @@ constexpr float cutsHighPtThresholds[1][2] = {{8., 8.}}; // 2-prongs, 3-prongs
 static const std::vector<std::string> labelsColumnsHighPtThresholds = {"2Prongs", "3Prongs"};
 
 // beauty
-constexpr float cutsDeltaMassB[1][kNBeautyParticles] = {{0.4, 0.4, 0.4, 0.4, 0.4, 0.4}}; // B+, B0, B0toDstar, Bs, Lb, Xib
+constexpr float cutsDeltaMassB[1][kNBeautyParticles] = {{0.4, 0.4, 0.4, 0.4, 0.4, 0.4}};                                                      // B+, B0, B0toDstar, Bs, Lb, Xib
+constexpr float cutsTopolBeautyHadron[3][kNBeautyParticles] = {{-1, -1, -1, -1, -1, -1}, {-1, -1, -1, -1, -1, -1}, {10, 10, 10, 10, 10, 10}}; // CosPa(LowerLimit), DecayLength(LowerLimit), ImpactParamProduct(UpperLimit)
 static const std::vector<std::string> labelsColumnsDeltaMassB = {"Bplus", "BZero", "BZeroToDstar", "Bs", "Lb", "Xib"};
+static const std::vector<std::string> labelsRowsTopolBeauty = {"CosPa", "DecayLength", "ImpParProd"};
 
 // double charm
 constexpr int activeDoubleCharmChannels[1][3] = {{1, 1, 1}}; // kDoubleCharm2P, kDoubleCharm3P, kDoubleCharmMix
@@ -337,6 +346,12 @@ class HfFilterHelper
     mMaxDcaXyXi = maxDcaxyXi;
     mMaxNsigmaXiDau = nSigma;
   }
+  void setBplusSelections(float minCosPa, float minDecLen, float maxImpParProd)
+  {
+    mMinCosPaForBplus = minCosPa;
+    mMinDecayLengthForBplus = minDecLen;
+    mMaxImpParProdForBplus = maxImpParProd;
+  }
   void setCutsSingleTrackCharmBaryonBachelor(o2::framework::LabeledArray<double> cutsSingleTrack) { mCutsSingleTrackCharmBaryonBachelor = cutsSingleTrack; }
   void setNsigmaPiCutsForCharmBaryonBachelor(float nSigmaTpc, float nSigmaTof)
   {
@@ -410,6 +425,8 @@ class HfFilterHelper
   int8_t isBDTSelected(const T& scores, const U& thresholdBDTScores);
   template <bool isKaonTrack, typename T>
   bool isSelectedKaonFromXicResoToSigmaC(const T& track);
+  template <typename T1, typename T2, typename T3, typename T4>
+  inline bool isSelectedBplus(T1 const& pVecTrack0, T1 const& pVecTrack1, T2 const& dcaTrack0, T2 const& dcaTrack1, const T3& primVtx, const T4& secVtx);
   template <typename T1>
   inline bool isCharmHadronMassInSbRegions(T1 const& massHypo1, T1 const& massHypo2, const float& lowLimitSB, const float& upLimitSB);
 
@@ -418,6 +435,8 @@ class HfFilterHelper
   T computeRelativeMomentum(const std::array<T, 3>& pTrack, const std::array<T, 3>& CharmCandMomentum, const T& CharmMass);
   template <typename T>
   int computeNumberOfCandidates(std::vector<std::vector<T>> indices);
+  template <typename T1>
+  inline int setVtxConfiguration(T1 vertexer, const bool& propagateToPCA, const bool& useAbsDCA, const bool& useWeightedFinalPCA, const float& maxR, const float& maxDZIni, const float& minParamChange, const float& minRelChi2Change);
 
   // PID
   void setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::array<std::string, 6>& ccdbPaths);
@@ -502,6 +521,9 @@ class HfFilterHelper
   float mPtThresholdHighPt3Prongs{8.};                                       // threshold for high pT triggers for 3-prongs
   float mNSigmaTpcKaonFromXicResoToSigmaC{3.};                               // maximum Nsigma TPC for kaons in Xic*->SigmaC-Kaon
   float mNSigmaTofKaonFromXicResoToSigmaC{3.};                               // maximum Nsigma TOF for kaons in Xic*->SigmaC-Kaon
+  float mMinCosPaForBplus{-1.};                                              // minimum threshold for beauty hadrons cpa
+  float mMinDecayLengthForBplus{0.};                                         // maximum threshold for beauty hadrons decay length
+  float mMaxImpParProdForBplus{10};
 
   // PID recalibrations
   int mTpcPidCalibrationOption{0};                        // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
@@ -1617,6 +1639,35 @@ inline bool HfFilterHelper::isSelectedKaon4Charm3Prong(const T& track)
   return true;
 }
 
+/// Method to perform selections for B+ candidates after vertex reconstruction
+/// \param pVecTrack0 is the array for the candidate D daughter momentum after reconstruction of secondary vertex
+/// \param pVecTrack1 is the array for the candidate bachelor pion momentum after reconstruction of secondary vertex
+/// \param dcaTrack0  is the dca of the D daughter track
+/// \param dcaTrack1  is the dca of the pion daughter track
+/// \param secVtx is the secondary vertex
+/// \param primVtx is the primary vertex
+/// \return true if the beauty candidate passes all cuts
+template <typename T1, typename T2, typename T3, typename T4>
+inline bool HfFilterHelper::isSelectedBplus(T1 const& pVecTrack0, T1 const& pVecTrack1, T2 const& dcaTrack0, T2 const& dcaTrack1, const T3& primVtx, const T4& secVtx)
+{
+  auto pVecB = RecoDecay::pVec(pVecTrack0, pVecTrack1);
+  auto cpa = RecoDecay::cpa(primVtx, secVtx, pVecB);
+  auto decayLength = RecoDecay::distance(primVtx, secVtx);
+  auto impactParameterProduct = dcaTrack0[0] * dcaTrack1[0];
+
+  if (cpa < mMinCosPaForBplus) {
+    return false;
+  }
+  if (decayLength < mMinDecayLengthForBplus) {
+    return false;
+  }
+  if (impactParameterProduct > mMaxImpParProdForBplus) {
+    return false;
+  }
+
+  return true;
+}
+
 /// Method to check if charm candidates has mass between sideband limits
 /// \param massHypo1 is the array for the candidate D daughter momentum after reconstruction of secondary vertex
 /// \param massHypo2 is the array for the candidate bachelor pion momentum after reconstruction of secondary vertex
@@ -1721,6 +1772,28 @@ inline int HfFilterHelper::findBin(T1 const& binsPt, T2 value)
     return -1;
   }
   return std::distance(binsPt.begin(), std::upper_bound(binsPt.begin(), binsPt.end(), value)) - 1;
+}
+
+/// Set vertxing configuration
+/// \param vertexer o2::vertexing::DCAFitterN<N> object
+/// \param propagateToPCA create tracks version propagated to PCA
+/// \param useAbsDCA use abs. distance minimization rather than chi2
+/// \param useWeightedFinalPCA recalculate PCA as a cov-matrix weighted mean
+/// \param maxR reject PCA's above this radius
+/// \param maxDZIni reject (if>0) PCA candidate if tracks DZ exceeds threshold
+/// \param minParamChange stop iterations if largest change of any X is smaller than this
+template <typename T1>
+inline int HfFilterHelper::setVtxConfiguration(T1 vertexer, const bool& propagateToPCA, const bool& useAbsDCA, const bool& useWeightedFinalPCA, const float& maxR, const float& maxDZIni, const float& minParamChange, const float& minRelChi2Change)
+{
+  // Fitter initialisation
+  vertexer.setPropagateToPCA(propagateToPCA);
+  vertexer.setMaxR(maxR);
+  vertexer.setMaxDZIni(maxDZIni);
+  vertexer.setMinParamChange(minParamChange);
+  vertexer.setMinRelChi2Change(minRelChi2Change);
+  vertexer.setUseAbsDCA(useAbsDCA);
+  vertexer.setWeightedFinalPCA(useWeightedFinalPCA);
+  return 1;
 }
 
 } // namespace hffilters
