@@ -86,14 +86,14 @@ const double ptHadronMax = 10.0;
 struct HfTaskCorrelationD0Hadrons {
 
   // pT ranges for correlation plots: the default values are those embedded in hf_cuts_d0_to_pi_k (i.e. the mass pT bins), but can be redefined via json files
-  Configurable<std::vector<double>> binsCorrelations{"ptBinsForCorrelations", std::vector<double>{vecPtBinsCorrelations}, "pT bin limits for correlation plots"};
+  Configurable<std::vector<double>> binsCorrelations{"binsCorrelations", std::vector<double>{vecPtBinsCorrelations}, "pT bin limits for correlation plots"};
   // pT bins for effiencies: same as above
-  Configurable<std::vector<double>> binsEfficiency{"ptBinsForEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for efficiency"};
+  Configurable<std::vector<double>> binsEfficiency{"binsEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for efficiency"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
-  Configurable<std::vector<double>> mlOutputPromptD0{"mlScorePromptD0", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt"};
-  Configurable<std::vector<double>> mlOutputBkgD0{"mlScoreBkgD0", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for bkg"};
-  Configurable<std::vector<double>> mlOutputPromptD0bar{"mlScorePromptD0bar", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt"};
-  Configurable<std::vector<double>> mlOutputBkgD0bar{"mlScoreBkgD0bar", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for bkg"};
+  Configurable<std::vector<double>> mlOutputPromptD0{"mlOutputPromptD0", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt"};
+  Configurable<std::vector<double>> mlOutputBkgD0{"mlOutputBkgD0", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for bkg"};
+  Configurable<std::vector<double>> mlOutputPromptD0bar{"mlOutputPromptD0bar", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt"};
+  Configurable<std::vector<double>> mlOutputBkgD0bar{"mlOutputBkgD0bar", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for bkg"};
   // signal and sideband region edges, to be defined via json file (initialised to empty)
   Configurable<std::vector<double>> signalRegionLeft{"signalRegionLeft", std::vector<double>{vecsignalRegionLeft}, "Inner values of signal region vs pT"};
   Configurable<std::vector<double>> signalRegionRight{"signalRegionRight", std::vector<double>{vecsignalRegionRight}, "Outer values of signal region vs pT"};
@@ -104,7 +104,7 @@ struct HfTaskCorrelationD0Hadrons {
   Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{vecEfficiencyDmeson}, "Efficiency values for D meson specie under study"};
   Configurable<bool> isTowardTransverseAway{"isTowardTransverseAway", false, "Divide into three regions: toward, transverse, and away"};
   Configurable<double> leadingParticlePtMin{"leadingParticlePtMin", 0., "Min for leading particle pt"};
-  Configurable<int> applyEfficiency{"efficiencyFlagD", 1, "Flag for applying efficiency weights"};
+  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying efficiency weights"};
 
   HistogramRegistry registry{
     "registry",
@@ -668,3 +668,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<HfTaskCorrelationD0Hadrons>(cfgc)};
 }
+

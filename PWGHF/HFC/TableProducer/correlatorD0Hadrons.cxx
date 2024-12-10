@@ -80,8 +80,6 @@ using SelectedParticlesMcGen = soa::Join<aod::McParticles, aod::HfCand2ProngMcGe
 
 // Code to select collisions with at least one D0
 struct HfCorrelatorD0HadronsSelection {
-  SliceCache cache;
-
   Produces<aod::DmesonSelection> d0Sel;
 
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
@@ -90,8 +88,9 @@ struct HfCorrelatorD0HadronsSelection {
   Configurable<float> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
 
   HfHelper hfHelper;
-
+  SliceCache cache;
   Preslice<aod::HfCand2Prong> perCol = aod::hf_cand::collisionId;
+  
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0candidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
@@ -162,8 +161,6 @@ struct HfCorrelatorD0HadronsSelection {
 
 /// D0-Hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
 struct HfCorrelatorD0Hadrons {
-  SliceCache cache;
-
   Produces<aod::D0HadronPair> entryD0HadronPair;
   Produces<aod::D0HadronRecoInfo> entryD0HadronRecoInfo;
   Produces<aod::D0HadronMlInfo> entryD0HadronMlInfo;
@@ -178,9 +175,9 @@ struct HfCorrelatorD0Hadrons {
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.3, "min. track pT"};
   Configurable<float> ptTrackMax{"ptTrackMax", 99., "max. track pT"};
-  Configurable<std::vector<double>> bins{"ptBinsForMassAndEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
+  Configurable<std::vector<double>> bins{"bins", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{vecEfficiencyDmeson}, "Efficiency values for D0 meson"};
-  Configurable<int> applyEfficiency{"efficiencyFlagD", 1, "Flag for applying D-meson efficiency weights"};
+  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
   Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<float> ptSoftPionMax{"ptSoftPionMax", 3.f * 800.f * std::pow(10.f, -6.f), "max. pT cut for soft pion identification"};
@@ -188,12 +185,6 @@ struct HfCorrelatorD0Hadrons {
   Configurable<bool> correlateD0WithLeadingParticle{"correlateD0WithLeadingParticle", false, "Switch for correlation of D0 mesons with leading particle only"};
   Configurable<bool> storeAutoCorrelationFlag{"storeAutoCorrelationFlag", false, "Store flag that indicates if the track is paired to its D-meson mother instead of skipping it"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
-  ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "z vertex position pools"};
-  ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 10000.0f}, "event multiplicity pools (FT0M)"};
-  ConfigurableAxis multPoolBinsMcGen{"multPoolBinsMcGen", {VARIABLE_WIDTH, 0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - MC multiplicity"}; // In MCGen multiplicity is defined by counting tracks
-
-  HfHelper hfHelper;
-  BinningType corrBinning{{zPoolBins, multPoolBins}, true};
 
   int leadingIndex = 0;
   double massD0{0.};
@@ -201,13 +192,21 @@ struct HfCorrelatorD0Hadrons {
   double massK{0.};
   double softPiMass = 0.14543; // pion mass + Q-value of the D*->D0pi decay
 
-  Preslice<aod::HfCand2Prong> perCol = aod::hf_cand::collisionId;
-
   Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
   Filter trackFilter = requireGlobalTrackWoDCAInFilter() && (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
   Filter d0Filter = (aod::hf_sel_candidate_d0::isSelD0 >= 1) || (aod::hf_sel_candidate_d0::isSelD0bar >= 1);
   Filter collisionFilterGen = aod::hf_selection_dmeson_collision::dmesonSel == true;
   Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == static_cast<int>(Pdg::kD0) || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
+  
+  HfHelper hfHelper;
+  SliceCache cache;
+  Preslice<aod::HfCand2Prong> perCol = aod::hf_cand::collisionId;
+  
+  ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "z vertex position pools"};
+  ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 10000.0f}, "event multiplicity pools (FT0M)"};
+  ConfigurableAxis multPoolBinsMcGen{"multPoolBinsMcGen", {VARIABLE_WIDTH, 0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - MC multiplicity"}; // In MCGen multiplicity is defined by counting tracks
+
+  BinningType corrBinning{{zPoolBins, multPoolBins}, true};
 
   HistogramRegistry registry{
     "registry",
@@ -925,3 +924,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<HfCorrelatorD0HadronsSelection>(cfgc),
     adaptAnalysisTask<HfCorrelatorD0Hadrons>(cfgc)};
 }
+
