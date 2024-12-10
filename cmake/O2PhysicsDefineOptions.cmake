@@ -19,5 +19,5 @@ function(o2physics_define_options)
 
   option(ENABLE_UPGRADES "Enable detectors for upgrades" OFF)
 
-  option(O2PHYSICS_WARNINGS_AS_ERRORS "Treat selected warnings as errors" OFF)
+  option(O2PHYSICS_WARNINGS_AS_ERRORS "Treat selected warnings as errors" ON)
 endfunction()
