@@ -1839,7 +1839,7 @@ struct femtoUniverseProducerTask {
   void processV0CentRun3Data(aod::FemtoFullCollisionCentRun3 const& col,
                              aod::BCsWithTimestamps const&,
                              soa::Filtered<aod::FemtoFullTracks> const& tracks,
-                             soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s)
+                             aod::V0Datas const& fullV0s)
   {
     // get magnetic field for run
     auto bc = col.bc_as<aod::BCsWithTimestamps>();
