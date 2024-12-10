@@ -350,7 +350,7 @@ struct cascadeXiAnalysis {
       histos.fill(HIST("QA_Casc_Xi/h1d_dca_bachtoPV"), casc.dcabachtopv());
       histos.fill(HIST("QA_Casc_Xi/h1d_dca_v0toPV"), casc.dcav0topv());
       histos.fill(HIST("QA_Casc_Xi/h1d_dca_v0_dau"), casc.daughDCA());
-      histos.fill(HIST("QA_Casc_Xi/h1d_dca_casc_dau"), casc.cascdaughDCA());
+      histos.fill(HIST("QA_Casc_Xi/h1d_dca_casc_dau"), casc.cascDaughDCA());
     }
 
     fillDataHisto<false, false>(cascTracks, resoTracks, resoCollision.cent());

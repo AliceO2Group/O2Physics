@@ -24,8 +24,6 @@
 #include "Framework/Logger.h"
 #include "Common/DataModel/EventSelection.h"
 
-using namespace o2::framework;
-
 namespace o2::analysis
 {
 
@@ -79,26 +77,26 @@ class CollisonCuts
 
   /// Initializes histograms for the task
   /// \param registry Histogram registry to be passed
-  void init(HistogramRegistry* registry)
+  void init(o2::framework::HistogramRegistry* registry)
   {
     if (!mCutsSet) {
       LOGF(error, "Event selection not set - quitting!");
     }
     mHistogramRegistry = registry;
-    mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});       // z-vertex histogram after event selections
-    mHistogramRegistry->add("Event/posZ_noCut", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}}); // z-vertex histogram before all selections
+    mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{250, -12.5, 12.5}});       // z-vertex histogram after event selections
+    mHistogramRegistry->add("Event/posZ_noCut", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{250, -12.5, 12.5}}); // z-vertex histogram before all selections
     if (mCheckIsRun3) {
-      mHistogramRegistry->add("Event/CentFV0A", "; vCentV0A; Entries", kTH1F, {{110, 0, 110}});
-      mHistogramRegistry->add("Event/CentFT0M", "; vCentT0M; Entries", kTH1F, {{110, 0, 110}});
-      mHistogramRegistry->add("Event/CentFT0C", "; vCentT0C; Entries", kTH1F, {{110, 0, 110}});
-      mHistogramRegistry->add("Event/CentFT0A", "; vCentT0A; Entries", kTH1F, {{110, 0, 110}});
-      mHistogramRegistry->add("Event/posZ_ITSOnly", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
-      mHistogramRegistry->add("Event/posZ_ITSTPC", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
-      mHistogramRegistry->add("Event/trackOccupancyInTimeRange_noCut", "; Occupancy; Entries", kTH1F, {{500, 0., 20000.}});
+      mHistogramRegistry->add("Event/CentFV0A", "; vCentV0A; Entries", o2::framework::kTH1F, {{110, 0, 110}});
+      mHistogramRegistry->add("Event/CentFT0M", "; vCentT0M; Entries", o2::framework::kTH1F, {{110, 0, 110}});
+      mHistogramRegistry->add("Event/CentFT0C", "; vCentT0C; Entries", o2::framework::kTH1F, {{110, 0, 110}});
+      mHistogramRegistry->add("Event/CentFT0A", "; vCentT0A; Entries", o2::framework::kTH1F, {{110, 0, 110}});
+      mHistogramRegistry->add("Event/posZ_ITSOnly", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{250, -12.5, 12.5}});
+      mHistogramRegistry->add("Event/posZ_ITSTPC", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{250, -12.5, 12.5}});
+      mHistogramRegistry->add("Event/trackOccupancyInTimeRange_noCut", "; Occupancy; Entries", o2::framework::kTH1F, {{500, 0., 20000.}});
     } else {
-      mHistogramRegistry->add("Event/CentRun2V0M", "; vCentV0M; Entries", kTH1F, {{110, 0, 110}});
+      mHistogramRegistry->add("Event/CentRun2V0M", "; vCentV0M; Entries", o2::framework::kTH1F, {{110, 0, 110}});
     }
-    mHistogramRegistry->add("CollCutCounts", "; ; Entries", kTH1F, {{11, 0., 11.}});
+    mHistogramRegistry->add("CollCutCounts", "; ; Entries", o2::framework::kTH1F, {{11, 0., 11.}});
     mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kAllEvent), "all");
     mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagZvertex), "Zvtx");
     mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagTrigerTVX), "IsTriggerTVX");
@@ -221,6 +219,11 @@ class CollisonCuts
         LOGF(debug, "Offline selection failed (sel7)");
         return false;
       }
+      auto bc = col.template bc_as<BCsWithRun2Info>();
+      if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted))) {
+        LOGF(debug, "Offline selection failed (AliEventCuts)");
+        return false;
+      }
       mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagTrigerTVX);
     }
     if (mCheckTrigger && !col.alias_bit(mTrigger)) {
@@ -273,23 +276,24 @@ class CollisonCuts
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry = nullptr; ///< For QA output
-  bool mCutsSet = false;                           ///< Protection against running without cuts
-  bool mCheckTrigger = false;                      ///< Check for trigger
-  bool mTriggerTVXselection = false;               ///< Check for trigger TVX selection
-  bool mCheckOffline = false;                      ///< Check for offline criteria (might change)
-  bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
-  bool mInitialTriggerScan = false;                ///< Check trigger when the event is first selected
-  bool mApplyTFBorderCut = false;                  ///< Apply time frame border cut
-  bool mApplyITSTPCvertex = false;                 ///< Apply at least one ITS-TPC track for vertexing
-  bool mApplyZvertexTimedifference = false;        ///< removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference.
-  bool mApplyPileupRejection = false;              ///< Pileup rejection
-  bool mApplyNoITSROBorderCut = false;             ///< Apply NoITSRO frame border cut
-  bool mApplyCollInTimeRangeStandard = false;      ///< Apply NoCollInTimeRangeStandard selection
-  int mTrigger = kINT7;                            ///< Trigger to check for
-  float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
-  int mtrackOccupancyInTimeRangeMax = -1;          ///< Maximum trackOccupancyInTimeRange cut (-1 no cut)
-  int mtrackOccupancyInTimeRangeMin = -1;          ///< Minimum trackOccupancyInTimeRange cut (-1 no cut)
+  using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr; ///< For QA output
+  bool mCutsSet = false;                                          ///< Protection against running without cuts
+  bool mCheckTrigger = false;                                     ///< Check for trigger
+  bool mTriggerTVXselection = false;                              ///< Check for trigger TVX selection
+  bool mCheckOffline = false;                                     ///< Check for offline criteria (might change)
+  bool mCheckIsRun3 = false;                                      ///< Check if running on Pilot Beam
+  bool mInitialTriggerScan = false;                               ///< Check trigger when the event is first selected
+  bool mApplyTFBorderCut = false;                                 ///< Apply time frame border cut
+  bool mApplyITSTPCvertex = false;                                ///< Apply at least one ITS-TPC track for vertexing
+  bool mApplyZvertexTimedifference = false;                       ///< removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference.
+  bool mApplyPileupRejection = false;                             ///< Pileup rejection
+  bool mApplyNoITSROBorderCut = false;                            ///< Apply NoITSRO frame border cut
+  bool mApplyCollInTimeRangeStandard = false;                     ///< Apply NoCollInTimeRangeStandard selection
+  int mTrigger = kINT7;                                           ///< Trigger to check for
+  float mZvtxMax = 999.f;                                         ///< Maximal deviation from nominal z-vertex (cm)
+  int mtrackOccupancyInTimeRangeMax = -1;                         ///< Maximum trackOccupancyInTimeRange cut (-1 no cut)
+  int mtrackOccupancyInTimeRangeMin = -1;                         ///< Minimum trackOccupancyInTimeRange cut (-1 no cut)
 };
 } // namespace o2::analysis
 
