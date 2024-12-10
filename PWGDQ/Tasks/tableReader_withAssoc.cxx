@@ -2232,8 +2232,6 @@ struct AnalysisAsymmetricPairing {
         continue;
       }
 
-      // TODO: Think about double counting
-      std::set<std::pair<int, int>> globIdxPairs;
       for (auto& [a1, a2] : combinations(soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs))) {
 
         uint32_t twoTrackFilter = static_cast<uint32_t>(0);
@@ -2395,7 +2393,6 @@ struct AnalysisAsymmetricPairing {
         continue;
       }
 
-      std::set<std::tuple<int64_t, int64_t, int64_t>> globIdxTriplets;
       // Based on triplet type, make suitable combinations of the partitions
       if (tripletType == VarManager::kTripleCandidateToPKPi) {
         for (auto& [a1, a2, a3] : combinations(soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs, groupedLegCAssocs))) {
