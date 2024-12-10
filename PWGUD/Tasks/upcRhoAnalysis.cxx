@@ -133,7 +133,7 @@ struct upcRhoAnalysis {
   ConfigurableAxis pt2Axis{"pt2Axis", {100, 0.0, 0.01}, "p_{T}^{2} (GeV^{2}/#it{c}^{2})"};
   ConfigurableAxis etaAxis{"etaAxis", {800, -4.0, 4.0}, "#eta"};
   ConfigurableAxis etaCutAxis{"etaCutAxis", {180, -0.9, 0.9}, "#eta"};
-  ConfigurableAxis yAxis{"yAxis", {400, -4.0, 4,0}, "y"};
+  ConfigurableAxis yAxis{"yAxis", {400, -4.0, 4.0}, "y"};
   ConfigurableAxis yCutAxis{"yCutAxis", {180, -0.9, 0.9}, "y"};
   ConfigurableAxis phiAxis{"phiAxis", {180, 0.0, o2::constants::math::TwoPI}, "#phi"};
   ConfigurableAxis phiAsymmAxis{"phiAsymmAxis", {182, -o2::constants::math::PI, o2::constants::math::PI}, "#phi"};
