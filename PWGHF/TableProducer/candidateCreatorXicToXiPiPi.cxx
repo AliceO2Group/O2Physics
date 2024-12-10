@@ -320,7 +320,7 @@ struct HfCandidateCreatorXicToXiPiPi {
         pPrFromLambda = trackPosLambdaDaughter.p();
         nSigTpcPrFromLambda = trackPosLambdaDaughter.tpcNSigmaPr();
         nSigTofPrFromLambda = trackPosLambdaDaughter.tofNSigmaPr();
-      } else if (signXic == -1) {
+      } else {
         pPiFromLambda = trackPosLambdaDaughter.p();
         nSigTpcPiFromLambda = trackPosLambdaDaughter.tpcNSigmaPi();
         nSigTofPiFromLambda = trackPosLambdaDaughter.tofNSigmaPi();
