@@ -1127,6 +1127,12 @@ struct upcRhoAnalysis {
     MC.fill(HIST("MC/system/hPhiCharge"), phiCharge);
   }
 
+  template <typename C>
+  void checkNumberOfCollisionReconstructions(C const& collisions)
+  {
+    MC.fill(HIST("MC/collisions/hNumOfCollisionRecos"), collisions.size());
+  }
+
   void processSGdata(FullUdSgCollision const& collision, FullUdTracks const& tracks)
   {
     if (collision.gapSide() != 2)
@@ -1147,9 +1153,9 @@ struct upcRhoAnalysis {
   }
   PROCESS_SWITCH(upcRhoAnalysis, processMCdata, "analyse MC data", false);
 
-  void processCollisionRecoCheck(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions)
+  void processCollisionRecoCheck(aod::McCollision const& /* mcCollision */, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions)
   {
-    MC.fill(HIST("MC/collisions/hNumOfCollisionRecos"), collisions.size());
+    checkNumberOfCollisionReconstructions(collisions);
   }
   PROCESS_SWITCH(upcRhoAnalysis, processCollisionRecoCheck, "check number of collision reconstructions", false);
 };
