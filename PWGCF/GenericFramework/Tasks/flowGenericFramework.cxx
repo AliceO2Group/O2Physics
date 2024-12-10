@@ -377,6 +377,7 @@ struct GenericFramework {
 
   void loadCorrections(aod::BCsWithTimestamps::iterator const& bc)
   {
+    uint64_t timestamp = bc.timestamp();
     int run = bc.runNumber();
     if (cfg.correctionsLoaded){
       if(!cfgRunByRunWeights)
@@ -384,32 +385,45 @@ struct GenericFramework {
       if(run == lastRun)
         return;
     }
-    uint64_t timestamp = bc.timestamp();
-    if (cfgAcceptance.value.empty() == false) {
-      if(cfgRunByRunWeights){ //run-by-run NUA weights from ccdb, stored in TList to hold PID weights
-          TList* weightlist = ccdb->getForTimeStamp<TList>(cfgAcceptance, timestamp);
-          cfg.mAcceptance.push_back(dynamic_cast<GFWWeights*>(weightlist->FindObject(Form("w%i_ref",run))));
-          cfg.mAcceptance.push_back(dynamic_cast<GFWWeights*>(weightlist->FindObject(Form("w%i_ch",run))));
-          if(cfgUsePID){
+    if(cfgUsePID){
+      if (cfgAcceptance.value.empty() == false) {
+        if(cfgRunByRunWeights){ //run-by-run NUA weights from ccdb, stored in TList to hold PID weights
+            TList* weightlist = ccdb->getForTimeStamp<TList>(cfgAcceptance, timestamp);
+            cfg.mAcceptance.push_back(dynamic_cast<GFWWeights*>(weightlist->FindObject(Form("w%i_ref",run))));
+            cfg.mAcceptance.push_back(dynamic_cast<GFWWeights*>(weightlist->FindObject(Form("w%i_ch",run))));
             cfg.mAcceptance.push_back(dynamic_cast<GFWWeights*>(weightlist->FindObject(Form("w%i_pi",run))));
             cfg.mAcceptance.push_back(dynamic_cast<GFWWeights*>(weightlist->FindObject(Form("w%i_ka",run))));
             cfg.mAcceptance.push_back(dynamic_cast<GFWWeights*>(weightlist->FindObject(Form("w%i_pr",run))));
           }
-        }
-      else { //run-averaged weights, stored in TList to hold PID weights
-          TList* weightlist = ccdb->getForTimeStamp<TList>(cfgAcceptance, timestamp);
-          cfg.mAcceptance.push_back(dynamic_cast<GFWWeights*>(weightlist->FindObject("weights_ref")));
-          cfg.mAcceptance.push_back(dynamic_cast<GFWWeights*>(weightlist->FindObject("weights_ch")));
-          if(cfgUsePID){
+        else { //run-averaged weights, stored in TList to hold PID weights
+            TList* weightlist = ccdb->getForTimeStamp<TList>(cfgAcceptance, timestamp);
+            cfg.mAcceptance.push_back(dynamic_cast<GFWWeights*>(weightlist->FindObject("weights_ref")));
+            cfg.mAcceptance.push_back(dynamic_cast<GFWWeights*>(weightlist->FindObject("weights_ch")));
             cfg.mAcceptance.push_back(dynamic_cast<GFWWeights*>(weightlist->FindObject("weights_pi")));
             cfg.mAcceptance.push_back(dynamic_cast<GFWWeights*>(weightlist->FindObject("weights_ka")));
             cfg.mAcceptance.push_back(dynamic_cast<GFWWeights*>(weightlist->FindObject("weights_pr")));
-          }
         }
-      if (!cfg.mAcceptance.empty())
-        LOGF(info, "Loaded acceptance weights from %s", cfgAcceptance.value.c_str());
-      else
-        LOGF(warning, "Could not load acceptance weights from %s", cfgAcceptance.value.c_str());
+        if (!cfg.mAcceptance.empty())
+          LOGF(info, "Loaded acceptance weights from %s", cfgAcceptance.value.c_str());
+        else
+          LOGF(warning, "Could not load acceptance weights from %s", cfgAcceptance.value.c_str());
+      }
+    }
+    else {
+      if (cfgAcceptance.value.empty() == false) {
+        if(cfgRunByRunWeights){ //run-by-run NUA weights from ccdb, stored in TList
+            TList* weightlist = ccdb->getForTimeStamp<TList>(cfgAcceptance, timestamp);
+            cfg.mAcceptance.push_back(dynamic_cast<GFWWeights*>(weightlist->FindObject(Form("w%i_ch",run))));
+        }
+        else { //run-averaged weights, stored in TList
+            TList* weightlist = ccdb->getForTimeStamp<TList>(cfgAcceptance, timestamp);
+            cfg.mAcceptance.push_back(dynamic_cast<GFWWeights*>(weightlist->FindObject("w_ch")));
+        }
+        if (!cfg.mAcceptance.empty())
+          LOGF(info, "Loaded acceptance weights from %s", cfgAcceptance.value.c_str());
+        else
+          LOGF(warning, "Could not load acceptance weights from %s", cfgAcceptance.value.c_str());
+      }
     }
     if (cfgEfficiency.value.empty() == false) {
       cfg.mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
@@ -422,12 +436,29 @@ struct GenericFramework {
   }
 
   template<typename TTrack>
-  double getAcceptance(TTrack track, int pid_index) { //-1 ref, 0 ch, 1 pi, 2 ka, 3 pr
-    return 1;
+  double getAcceptance(TTrack track, const double &vtxz, int index) { //-1 ref, 0 ch, 1 pi, 2 ka, 3 pr
+    double wacc = 1;
+    index+=1;
+    if (!cfg.mAcceptance.empty()){
+      if(cfgUsePID){
+        wacc = cfg.mAcceptance[index]->GetNUA(track.phi(), track.eta(), vtxz);
+      }
+      else {
+        wacc = cfg.mAcceptance[0]->GetNUA(track.phi(), track.eta(), vtxz);
+      }
+    }
+    return wacc;
   }
+
   template<typename TTrack>
   double getEfficiency(TTrack track) { //-1 ref, 0 ch, 1 pi, 2 ka, 3 pr
-    return 1;
+    double eff = 1.;
+    if (cfg.mEfficiency)
+      eff = cfg.mEfficiency->GetBinContent(cfg.mEfficiency->FindBin(track.pt()));
+    if (eff == 0)
+      return -1.;
+    else
+      return 1. / eff;
   }
 //Obsolete for now untill service wagons get added
 /*   template<typename TTrack>
@@ -468,23 +499,6 @@ struct GenericFramework {
         }
       }
     return pid + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
-  }
-
-  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, const float& phi, const float& eta, const float& pt, const float& vtxz)
-  {
-    float eff = 1.;
-    if (cfg.mEfficiency)
-      eff = cfg.mEfficiency->GetBinContent(cfg.mEfficiency->FindBin(pt));
-    else
-      eff = 1.0;
-    if (eff == 0)
-      return false;
-    weight_nue = 1. / eff;
-    if (!cfg.mAcceptance.empty())
-      weight_nua = cfg.mAcceptance[0]->GetNUA(phi, eta, vtxz);
-    else
-      weight_nua = 1;
-    return true;
   }
 
   template <typename TCollision>
@@ -702,7 +716,7 @@ struct GenericFramework {
       auto mcParticle = track.mcParticle();
       if (!mcParticle.isPhysicalPrimary()) return;
       if (cfgFillQA)
-        FillTrackQA<kReco,kBefore>(track, vtxz, 1);
+        FillTrackQA<kReco,kBefore>(track, vtxz);
 
       if (mcParticle.eta() < etalow || mcParticle.eta() > etaup || mcParticle.pt() < ptlow || mcParticle.pt() > ptup || track.tpcNClsFound() < cfgNcls)
         return;
@@ -712,30 +726,43 @@ struct GenericFramework {
 
       if (cfgFillWeights)
         FillWeights(mcParticle,vtxz,centrality,0);
-        //fWeights->Fill(mcParticle.phi(), mcParticle.eta(), vtxz, mcParticle.pt(), centrality, 0);
 
-      //if (!setCurrentParticleWeights(weff, wacc, mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), vtxz))
-      //  return;
+      int pid_index = 0;
+      if(cfgUsePID){
+        if(mcParticle.pdgCode() == 211) pid_index = 1;
+        if(mcParticle.pdgCode() == 321) pid_index = 2;
+        if(mcParticle.pdgCode() == 2212) pid_index = 3;
+      }
+
+      FillPtSums<kReco>(track, vtxz);
+      FillGFW<kReco>(mcParticle, vtxz, pid_index);
 
       if (cfgFillQA)
-        FillTrackQA<kReco,kAfter>(track, vtxz, wacc);
+        FillTrackQA<kReco,kAfter>(track, vtxz);
 
-      FillGFW(mcParticle,0);
     } else if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TTrack::all_columns>) {
       if (!track.isPhysicalPrimary()) return;
       if (cfgFillQA)
-        FillTrackQA<kGen,kBefore>(track, vtxz, 1);
+        FillTrackQA<kGen,kBefore>(track, vtxz);
 
       if(track.eta() < etalow || track.eta() > etaup || track.pt() < ptlow || track.pt() > ptup)
         return;
 
-      if (cfgFillQA)
-        FillTrackQA<kGen,kAfter>(track, vtxz, 1);
+      int pid_index = 0;
+      if(cfgUsePID){
+        if(track.pdgCode() == 211) pid_index = 1;
+        if(track.pdgCode() == 321) pid_index = 2;
+        if(track.pdgCode() == 2212) pid_index = 3;
+      }
 
-      FillGFW(track, 0);
+      FillPtSums<kGen>(track, vtxz);
+      FillGFW<kGen>(track, vtxz, 0);
+
+      if (cfgFillQA)
+        FillTrackQA<kGen,kAfter>(track, vtxz);
     } else {
       if (cfgFillQA)
-        FillTrackQA<kReco,kBefore>(track, vtxz, wacc);
+        FillTrackQA<kReco,kBefore>(track, vtxz);
       if (track.tpcNClsFound() < cfgNcls)
         return;
 
@@ -750,20 +777,19 @@ struct GenericFramework {
       if (cfgFillWeights)
         FillWeights(track,vtxz,centrality,pid_index);
 
-      //if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
-      //  return;
+      FillPtSums<kReco>(track, vtxz);
+      FillGFW<kReco>(track, vtxz, pid_index);
 
       if (cfgFillQA)
-        FillTrackQA<kReco,kAfter>(track, vtxz, wacc);
-
-      FillPtSums(track, weff, wacc);
-      FillGFW(track, pid_index);
-
+        FillTrackQA<kReco,kAfter>(track, vtxz);
     }
   }
 
-  template <typename TTrack>
-  inline void FillPtSums(TTrack track, float weff, float wacc){
+  template <datatype dt, typename TTrack>
+  inline void FillPtSums(TTrack track, const double &vtxz){
+    double wacc = (dt == kGen)?1.:getAcceptance(track,vtxz,-1);
+    double weff = (dt == kGen)?1.:getEfficiency(track);
+    if(weff<0) return;
     if (fabs(track.eta()) < cfgEtaPtPt){
       fFCpt->Fill(weff, track.pt());
     }
@@ -775,18 +801,18 @@ struct GenericFramework {
     }
   }
 
-  template <typename TTrack>
-  inline void FillGFW(TTrack track, int pid_index)
+  template <datatype dt, typename TTrack>
+  inline void FillGFW(TTrack track, const double &vtxz, int pid_index)
   {
     if(cfgUsePID){ //Analysing POI flow with id'ed particles
       double ptmins[] = {ptpoilow,ptpoilow,0.3,0.5};
       double ptmaxs[] = {ptpoiup,ptpoiup,6.0,6.0};
-      bool WithinPtRef=(track.pt() > 0.2 && track.pt() < 5);
-      bool WithinPtPOI=(track.pt() > ptmins[pid_index] && track.pt() < ptmaxs[pid_index]);
-      bool WithinPtNch=(track.pt() > ptmins[0] && track.pt() < ptmaxs[0]);
+      bool WithinPtRef= (track.pt() > ptreflow && track.pt() < ptrefup);
+      bool WithinPtPOI= (track.pt() > ptmins[pid_index] && track.pt() < ptmaxs[pid_index]);
+      bool WithinPtNch= (track.pt() > ptmins[0] && track.pt() < ptmaxs[0]);
       if(!WithinPtPOI && !WithinPtRef) return;
-      double wacc_ref = getAcceptance(track,-1);
-      double wacc_poi = WithinPtPOI?getAcceptance(track,pid_index):getAcceptance(track,0); //
+      double wacc_ref = (dt == kGen)?1.:getAcceptance(track,vtxz,-1);
+      double wacc_poi = (dt == kGen)?1.:WithinPtPOI?getAcceptance(track,vtxz,pid_index):getAcceptance(track,vtxz,0); //
       if(WithinPtRef && WithinPtPOI && pid_index)
         wacc_ref = wacc_poi; //if particle is both (then it's overlap), override ref with POI
       if (WithinPtRef)
@@ -796,13 +822,14 @@ struct GenericFramework {
       if (WithinPtNch)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc_poi, 2);
       if (WithinPtPOI && WithinPtRef && pid_index)
-        fGFW->Fill(track.eta(),fPtAxis->FindBin(track.pt()) - 1,track.phi(),1.,(1<<(pid_index+5)));
+        fGFW->Fill(track.eta(),fPtAxis->FindBin(track.pt()) - 1,track.phi(),wacc_poi,(1<<(pid_index+5)));
       if (WithinPtNch && WithinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc_poi, 32);
     }
     else { //Analysing only integrated flow
-      double weff = getEfficiency(track);
-      double wacc = getAcceptance(track,0);
+      double weff = (dt == kGen)?1.:getEfficiency(track);
+      if(weff<0) return;
+      double wacc = (dt == kGen)?1.:getAcceptance(track,vtxz,-1);
       bool WithinPtRef = (ptreflow < track.pt()) && (track.pt() < ptrefup); // within RF pT range
       if(WithinPtRef) fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 1);
     }
@@ -810,12 +837,13 @@ struct GenericFramework {
   }
 
   template <datatype dt, QAFillTime ft, typename TTrack>
-  inline void FillTrackQA(TTrack track, const float vtxz, const double wacc)
+  inline void FillTrackQA(TTrack track, const float vtxz)
   {
     if constexpr (dt == kGen) {
       registry.fill(HIST("MCGen/") + HIST(moment[ft]) + HIST("phi_eta_vtxZ_gen"), track.phi(), track.eta(), vtxz);
       registry.fill(HIST("MCGen/") + HIST(moment[ft]) + HIST("pt_gen"), track.pt());
     } else {
+      double wacc = getAcceptance(track,vtxz,-1);
       registry.fill(HIST("trackQA/") + HIST(moment[ft]) + HIST("phi_eta_vtxZ"), track.phi(), track.eta(), vtxz, wacc);
       registry.fill(HIST("trackQA/") + HIST(moment[ft]) + HIST("pt_dcaXY_dcaZ"), track.pt(), track.dcaXY(), track.dcaZ());
       if(ft == kAfter){
