@@ -316,11 +316,16 @@ struct AnalysisTrackSelection {
   {
     runSelection<gkEventFillMap, gkMCEventFillMap, gkTrackFillMap, gkParticleMCFillMap>(event, tracks, eventsMC, tracksMC);
   }
+  void processSkimmedWithCov(MyEventsSelected::iterator const& event, MyBarrelTracksWithCov const& tracks, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+  {
+    runSelection<gkEventFillMap, gkMCEventFillMap, gkTrackFillMapWithCov, gkParticleMCFillMap>(event, tracks, eventsMC, tracksMC);
+  }
   void processDummy(MyEvents&)
   {
     // do nothing
   }
 
+  PROCESS_SWITCH(AnalysisTrackSelection, processSkimmedWithCov, "Run barrel track selection on DQ skimmed tracks with covariance", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processSkimmed, "Run barrel track selection on DQ skimmed tracks", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy process function", false);
 };
