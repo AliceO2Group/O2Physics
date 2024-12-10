@@ -665,7 +665,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       }
 
     } // loop over LF Cascade-bachelor candidates
-  }   // end of run function
+  } // end of run function
 
   template <int decayChannel, typename Coll, typename Hist>
   void runKfOmegac0CreatorWithKFParticle(Coll const&,
@@ -1090,19 +1090,19 @@ struct HfCandidateCreatorXic0Omegac0 {
                       v0Chi2OverNdf, cascChi2OverNdf, charmbaryonChi2OverNdf, v0Chi2OverNdf_m, cascChi2OverNdf_m);
 
     } // loop over LF Cascade-bachelor candidates
-  }   // end of run function
-//==========================================================
+  } // end of run function
+  //==========================================================
   template <int decayChannel, typename Coll, typename Hist>
   void runKfXic0CreatorWithKFParticle(Coll const&,
-                                         aod::BCsWithTimestamps const& /*bcWithTimeStamps*/,
-                                         MyKfTracks const&,
-                                         MyKfCascTable const&, KFCascadesLinked const&,
-                                         aod::HfCascLf2Prongs const& candidates,
-                                         Hist& hInvMassCharmBaryon,
-                                         Hist& hFitterStatus,
-                                         Hist& hCandidateCounter,
-                                         Hist& hCascadesCounter)
-{
+                                      aod::BCsWithTimestamps const& /*bcWithTimeStamps*/,
+                                      MyKfTracks const&,
+                                      MyKfCascTable const&, KFCascadesLinked const&,
+                                      aod::HfCascLf2Prongs const& candidates,
+                                      Hist& hInvMassCharmBaryon,
+                                      Hist& hFitterStatus,
+                                      Hist& hCandidateCounter,
+                                      Hist& hCascadesCounter)
+  {
     for (const auto& cand : candidates) {
       hCandidateCounter->Fill(1);
 
@@ -1478,46 +1478,46 @@ struct HfCandidateCreatorXic0Omegac0 {
       registry.fill(HIST("hKfXiC0_ldl"), kfXic0Candidate.ldlXic);
       registry.fill(HIST("hDcaXYCascadeToPVKf"), kfXic0Candidate.kfDcaXYCascToPv);
 
-    // fill kf table
-    kfCandidateXicData(collision.globalIndex(),
-                      pvCoord[0], pvCoord[1], pvCoord[2],
-                      vertexCharmBaryonFromFitter[0], vertexCharmBaryonFromFitter[1], vertexCharmBaryonFromFitter[2],
-                      vertexCasc[0], vertexCasc[1], vertexCasc[2],
-                      vertexV0[0], vertexV0[1], vertexV0[2],
-                      trackCascDauCharged.sign(),
-                      covVtxCharmBaryon[0], covVtxCharmBaryon[1], covVtxCharmBaryon[2], covVtxCharmBaryon[3], covVtxCharmBaryon[4], covVtxCharmBaryon[5],
-                      pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],
-                      kfXiToXiC.GetPx(), kfXiToXiC.GetPy(), kfXiToXiC.GetPz(),
-                      pVecCharmBachelorAsD[0], pVecCharmBachelorAsD[1], pVecCharmBachelorAsD[2],
-                      pVecV0[0], pVecV0[1], pVecV0[2],
-                      pVecCascBachelor[0], pVecCascBachelor[1], pVecCascBachelor[2],
-                      pVecV0Dau0[0], pVecV0Dau0[1], pVecV0Dau0[2],
-                      pVecV0Dau1[0], pVecV0Dau1[1], pVecV0Dau1[2],
-                      impactParameterCasc.getY(), impactParBachFromCharmBaryonXY,
-                      impactParameterCasc.getZ(), impactParBachFromCharmBaryonZ,
-                      std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBachelor.getSigmaY2()),
-                      v0index, casc.posTrackId(), casc.negTrackId(),
-                      casc.cascadeId(), trackCharmBachelor.globalIndex(), casc.bachelorId(),
-                      kfXic0Candidate.massV0, kfXic0Candidate.massCasc, kfXic0Candidate.massXic,
-                      kfXic0Candidate.cosPaV0ToPv, kfXic0Candidate.cosPaXicToPv, kfXic0Candidate.cosPaCascToPv, kfXic0Candidate.cosPaXYV0ToPv, kfXic0Candidate.cosPaXYXicToPv, kfXic0Candidate.cosPaXYCascToPv,
-                      kfXic0Candidate.ctOmegac, kfXic0Candidate.ctCasc, kfXic0Candidate.ctV0, kfXic0Candidate.ctXic,
-                      pseudorapV0Dau0, pseudorapV0Dau1, pseudorapCascBachelor, pseudorapCharmBachelor,
-                      kfXic0Candidate.etaXic, kfXi.GetEta(), kfV0.GetEta(),
-                      dcaxyV0Dau0, dcaxyV0Dau1, dcaxyCascBachelor,
-                      dcazV0Dau0, dcazV0Dau1, dcazCascBachelor,
-                      kfXic0Candidate.kfDcaCascDau, kfXic0Candidate.kfDcaV0Dau, kfXic0Candidate.kfDcaXicDau,
-                      decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon,
-                      kfXic0Candidate.kfDcaXYPiFromXic, kfXic0Candidate.kfDcaXYCascToPv,
-                      kfXic0Candidate.chi2GeoV0, kfXic0Candidate.chi2GeoCasc, kfXic0Candidate.chi2GeoXic, kfXic0Candidate.chi2MassV0, kfXic0Candidate.chi2MassCasc,
-                      kfXic0Candidate.ldlV0, kfXic0Candidate.ldlCasc, kfXic0Candidate.ldlXic,
-                      kfXic0Candidate.chi2TopoV0ToPv, kfXic0Candidate.chi2TopoCascToPv, kfXic0Candidate.chi2TopoPiFromXicToPv, kfXic0Candidate.chi2TopoXicToPv,
-                      kfXic0Candidate.chi2TopoV0ToCasc, kfXic0Candidate.chi2TopoCascToXic,
-                      kfXic0Candidate.decayLenXYLambda, kfXic0Candidate.decayLenXYCasc, kfXic0Candidate.decayLenXYXic,
-                      kfXic0Candidate.cosPaV0ToCasc, kfXic0Candidate.cosPaCascToXic, kfXic0Candidate.cosPaXYV0ToCasc, kfXic0Candidate.cosPaXYCascToXic,
-                      kfXic0Candidate.rapXic, kfXic0Candidate.ptPiFromXic, kfXic0Candidate.ptXic,
-                      kfXic0Candidate.cosThetaStarPiFromXic,
-                      v0NDF, cascNDF, charmbaryonNDF, v0NDF_m, cascNDF_m,
-                      v0Chi2OverNdf, cascChi2OverNdf, charmbaryonChi2OverNdf, v0Chi2OverNdf_m, cascChi2OverNdf_m);
+      // fill kf table
+      kfCandidateXicData(collision.globalIndex(),
+                         pvCoord[0], pvCoord[1], pvCoord[2],
+                         vertexCharmBaryonFromFitter[0], vertexCharmBaryonFromFitter[1], vertexCharmBaryonFromFitter[2],
+                         vertexCasc[0], vertexCasc[1], vertexCasc[2],
+                         vertexV0[0], vertexV0[1], vertexV0[2],
+                         trackCascDauCharged.sign(),
+                         covVtxCharmBaryon[0], covVtxCharmBaryon[1], covVtxCharmBaryon[2], covVtxCharmBaryon[3], covVtxCharmBaryon[4], covVtxCharmBaryon[5],
+                         pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],
+                         kfXiToXiC.GetPx(), kfXiToXiC.GetPy(), kfXiToXiC.GetPz(),
+                         pVecCharmBachelorAsD[0], pVecCharmBachelorAsD[1], pVecCharmBachelorAsD[2],
+                         pVecV0[0], pVecV0[1], pVecV0[2],
+                         pVecCascBachelor[0], pVecCascBachelor[1], pVecCascBachelor[2],
+                         pVecV0Dau0[0], pVecV0Dau0[1], pVecV0Dau0[2],
+                         pVecV0Dau1[0], pVecV0Dau1[1], pVecV0Dau1[2],
+                         impactParameterCasc.getY(), impactParBachFromCharmBaryonXY,
+                         impactParameterCasc.getZ(), impactParBachFromCharmBaryonZ,
+                         std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBachelor.getSigmaY2()),
+                         v0index, casc.posTrackId(), casc.negTrackId(),
+                         casc.cascadeId(), trackCharmBachelor.globalIndex(), casc.bachelorId(),
+                         kfXic0Candidate.massV0, kfXic0Candidate.massCasc, kfXic0Candidate.massXic,
+                         kfXic0Candidate.cosPaV0ToPv, kfXic0Candidate.cosPaXicToPv, kfXic0Candidate.cosPaCascToPv, kfXic0Candidate.cosPaXYV0ToPv, kfXic0Candidate.cosPaXYXicToPv, kfXic0Candidate.cosPaXYCascToPv,
+                         kfXic0Candidate.ctOmegac, kfXic0Candidate.ctCasc, kfXic0Candidate.ctV0, kfXic0Candidate.ctXic,
+                         pseudorapV0Dau0, pseudorapV0Dau1, pseudorapCascBachelor, pseudorapCharmBachelor,
+                         kfXic0Candidate.etaXic, kfXi.GetEta(), kfV0.GetEta(),
+                         dcaxyV0Dau0, dcaxyV0Dau1, dcaxyCascBachelor,
+                         dcazV0Dau0, dcazV0Dau1, dcazCascBachelor,
+                         kfXic0Candidate.kfDcaCascDau, kfXic0Candidate.kfDcaV0Dau, kfXic0Candidate.kfDcaXicDau,
+                         decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon,
+                         kfXic0Candidate.kfDcaXYPiFromXic, kfXic0Candidate.kfDcaXYCascToPv,
+                         kfXic0Candidate.chi2GeoV0, kfXic0Candidate.chi2GeoCasc, kfXic0Candidate.chi2GeoXic, kfXic0Candidate.chi2MassV0, kfXic0Candidate.chi2MassCasc,
+                         kfXic0Candidate.ldlV0, kfXic0Candidate.ldlCasc, kfXic0Candidate.ldlXic,
+                         kfXic0Candidate.chi2TopoV0ToPv, kfXic0Candidate.chi2TopoCascToPv, kfXic0Candidate.chi2TopoPiFromXicToPv, kfXic0Candidate.chi2TopoXicToPv,
+                         kfXic0Candidate.chi2TopoV0ToCasc, kfXic0Candidate.chi2TopoCascToXic,
+                         kfXic0Candidate.decayLenXYLambda, kfXic0Candidate.decayLenXYCasc, kfXic0Candidate.decayLenXYXic,
+                         kfXic0Candidate.cosPaV0ToCasc, kfXic0Candidate.cosPaCascToXic, kfXic0Candidate.cosPaXYV0ToCasc, kfXic0Candidate.cosPaXYCascToXic,
+                         kfXic0Candidate.rapXic, kfXic0Candidate.ptPiFromXic, kfXic0Candidate.ptXic,
+                         kfXic0Candidate.cosThetaStarPiFromXic,
+                         v0NDF, cascNDF, charmbaryonNDF, v0NDF_m, cascNDF_m,
+                         v0Chi2OverNdf, cascChi2OverNdf, charmbaryonChi2OverNdf, v0Chi2OverNdf_m, cascChi2OverNdf_m);
 
     } // loop over LF Cascade-bachelor candidates
   }
@@ -1570,11 +1570,11 @@ struct HfCandidateCreatorXic0Omegac0 {
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processOmegacToOmegaPiWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega pi decay channel using KFParticle", false);
 
   void processXicToXiPiWithKFParticle(aod::Collisions const& collisions,
-                                            aod::BCsWithTimestamps const& bcWithTimeStamps,
-                                            MyKfTracks const& tracks,
-                                            MyKfCascTable const& cascades,
-                                            KFCascadesLinked const& cascadeLinks,
-                                            aod::HfCascLf2Prongs const& candidates)
+                                      aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                      MyKfTracks const& tracks,
+                                      MyKfCascTable const& cascades,
+                                      KFCascadesLinked const& cascadeLinks,
+                                      aod::HfCascLf2Prongs const& candidates)
   {
     runKfXic0CreatorWithKFParticle<hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
   }
@@ -2259,8 +2259,8 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           }
         }
       } // close loop on MCParticles
-    }   // close loop on MCCollisions
-  }     // close process
+    } // close loop on MCCollisions
+  } // close process
 
   void processDoNoMc(aod::Collisions::iterator const&)
   {
@@ -2280,11 +2280,11 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcXicToXiPi, "Run Xic0 to xi pi MC process function - no centrality", false);
 
   void processMcXicToXiPiKf(aod::HfCandToXiPiKf const& candidates,
-                          MyTracksWMc const& tracks,
-                          aod::McParticles const& mcParticles,
-                          aod::McCollisions const& mcColls,
-                          McCollisionsNoCents const& collsWithMcLabels,
-                          BCsInfo const& bcs)
+                            MyTracksWMc const& tracks,
+                            aod::McParticles const& mcParticles,
+                            aod::McCollisions const& mcColls,
+                            McCollisionsNoCents const& collsWithMcLabels,
+                            BCsInfo const& bcs)
   {
     runXic0Omegac0Mc<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
   }

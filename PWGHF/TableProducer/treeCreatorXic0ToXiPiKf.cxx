@@ -136,7 +136,7 @@ struct HfTreeCreatorXic0ToXiPiKf {
   template <typename T>
   void fillKfCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
   {
-    
+
     if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
 
       rowKfCandidate(
@@ -201,11 +201,10 @@ struct HfTreeCreatorXic0ToXiPiKf {
         originMc,
         collisionMatched);
     }
-
   }
 
   void processKfData(MyEventTable const& collisions, MyTrackTable const&,
-                         soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
+                     soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
   {
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
@@ -215,7 +214,7 @@ struct HfTreeCreatorXic0ToXiPiKf {
   PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfData, "Process KF data", false);
 
   void processKfMcXic0(MyEventTable const& collisions, MyTrackTable const&,
-                         soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
+                       soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
   {
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
