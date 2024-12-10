@@ -20,6 +20,9 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 
 #include <array>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "TRandom3.h"
 
