@@ -28,8 +28,7 @@
 // the value is the corresponding value in EnumInputFeatures
 #define FILL_MAP_BPLUS(FEATURE) \
   {                             \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesBplusToD0Pi::FEATURE) \
-  }
+    #FEATURE, static_cast<uint8_t>(InputFeaturesBplusToD0Pi::FEATURE)}
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE

@@ -13,6 +13,7 @@
 /// \brief B+ → D0bar π+ candidate selector
 ///
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari
+/// \author Deepa Thomas <deepa.thomas@cern.ch>, UT Austin
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 
 #include <string>
@@ -20,16 +21,15 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/RunningWorkflowInfo.h"
 
 #include "Common/Core/TrackSelectorPID.h"
 
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/Core/HfMlResponseBplusToD0Pi.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -76,9 +76,6 @@ struct HfCandidateSelectorBplusToD0Pi {
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_BPLUSToD0Pi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
-  // variable that will store the value of selectionFlagD (defined in dataCreatorD0PiReduced.cxx)
-  int mySelectionFlagD0 = -1;
-  int mySelectionFlagD0bar = -1;
 
   o2::analysis::HfMlResponseBplusToD0Pi<float> hfMlResponse;
   float outputMlNotPreselected = -1.;
@@ -103,7 +100,7 @@ struct HfCandidateSelectorBplusToD0Pi {
       LOGP(fatal, "Invalid PID option in configurable, please set 0 (no PID), 1 (TPC or TOF), or 2 (TPC and TOF)");
     }
 
-    if (pionPidMethod) {
+    if (pionPidMethod != 0) {
       selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
       selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
       selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -144,18 +141,11 @@ struct HfCandidateSelectorBplusToD0Pi {
   /// \param withDmesMl is the flag to use the table with ML scores for the D- daughter (only possible if present in the derived data)
   /// \param hfCandsBp B+ candidates
   /// \param pionTracks pion tracks
-  /// \param configs config inherited from the D0pi data creator
   template <bool withDmesMl, typename Cands, typename CandsDmes>
   void runSelection(Cands const& hfCandsBp,
                     CandsDmes const& /*hfCandsD0*/,
-                    TracksPion const& /*pionTracks*/,
-                    HfCandBpConfigs const& configs)
+                    TracksPion const& /*pionTracks*/)
   {
-    // get D0Pi creator configurable
-    for (const auto& config : configs) {
-      mySelectionFlagD0 = config.mySelectionFlagD0();
-      mySelectionFlagD0bar = config.mySelectionFlagD0bar();
-    }
 
     for (const auto& hfCandBp : hfCandsBp) {
       int statusBplus = 0;
@@ -250,20 +240,18 @@ struct HfCandidateSelectorBplusToD0Pi {
 
   void processSelection(HfCandBplus const& hfCandsBp,
                         aod::HfCand2ProngWPid const& hfCandsD0,
-                        TracksPion const& pionTracks,
-                        HfCandBpConfigs const& configs)
+                        TracksPion const& pionTracks)
   {
-    runSelection<false>(hfCandsBp, hfCandsD0, pionTracks, configs);
+    runSelection<false>(hfCandsBp, hfCandsD0, pionTracks);
   } // processSelection
 
   PROCESS_SWITCH(HfCandidateSelectorBplusToD0Pi, processSelection, "Process selection without ML scores of D mesons", true);
 
   void processSelectionWithDmesMl(HfCandBplus const& hfCandsBp,
                                   soa::Join<aod::HfCand2ProngWPid, aod::HfMlD0> const& hfCandsD0,
-                                  TracksPion const& pionTracks,
-                                  HfCandBpConfigs const& configs)
+                                  TracksPion const& pionTracks)
   {
-    runSelection<true>(hfCandsBp, hfCandsD0, pionTracks, configs);
+    runSelection<true>(hfCandsBp, hfCandsD0, pionTracks);
   } // processSelectionWithDmesMl
 
   PROCESS_SWITCH(HfCandidateSelectorBplusToD0Pi, processSelectionWithDmesMl, "Process selection with ML scores of D mesons", false);
