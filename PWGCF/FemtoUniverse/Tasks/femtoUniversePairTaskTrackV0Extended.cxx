@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file femtoUniversePairTaskTrackV0Extended.cxx
 /// \brief Tasks that build pairs of track particles and v0s
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
@@ -141,7 +142,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
   // Efficiency
   Configurable<std::string> confLocalEfficiency{"confLocalEfficiency", "", "Local path to efficiency .root file"};
 
-  static constexpr UInt_t V0ChildTable[][2] = {{0, 1}, {1, 0}, {1, 1}}; // Table to select the V0 children
+  static constexpr unsigned int V0ChildTable[][2] = {{0, 1}, {1, 0}, {1, 1}}; // Table to select the V0 children
 
   FemtoUniverseContainer<femtoUniverseContainer::EventType::same, femtoUniverseContainer::Observable::kstar> sameEventCont;
   FemtoUniverseContainer<femtoUniverseContainer::EventType::mixed, femtoUniverseContainer::Observable::kstar> mixedEventCont;
@@ -377,7 +378,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent(col, parts, groupPartsOne, groupPartsTwo);
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEvent, "Enable processing same event for track - V0", false);
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processSameEvent, "Enable processing same event for track - V0", false);
 
   void processSameEventMCReco(FilteredFDCollision const& col, FemtoRecoParticles const& parts, aod::FDMCParticles const& mcparts)
   {
@@ -385,7 +386,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
     auto groupPartsTwo = partsTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent(col, parts, groupPartsOne, groupPartsTwo, mcparts);
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEventMCReco, "Enable processing same event for track - V0 MC Reco", false);
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processSameEventMCReco, "Enable processing same event for track - V0 MC Reco", false);
 
   /// This function processes the same event for V0 - V0
   void processSameEventV0(FilteredFDCollision const& col, FemtoFullParticles const& parts)
@@ -461,7 +462,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
   }
 
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEventV0, "Enable processing same event for V0 - V0", false);
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processSameEventV0, "Enable processing same event for V0 - V0", false);
 
   /// This function processes MC same events for Track - V0
   void processMCSameEvent(FilteredFDCollision const& col, FemtoFullParticles const& parts)
@@ -515,7 +516,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
   }
 
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCSameEvent, "Enable processing same event for MC truth track - V0", false);
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCSameEvent, "Enable processing same event for MC truth track - V0", false);
 
   /// This function processes MC same events for V0 - V0
   void processMCSameEventV0(FilteredFDCollision const& col, FemtoFullParticles const& /*parts*/)
@@ -556,7 +557,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
   }
 
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCSameEventV0, "Enable processing same event for MC truth V0 - V0", false);
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCSameEventV0, "Enable processing same event for MC truth V0 - V0", false);
 
   /// This function processes the mixed event for track - V0
   template <typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
@@ -629,13 +630,13 @@ struct FemtoUniversePairTaskTrackV0Extended {
   {
     doMixedEvent(cols, parts, partsOne, partsTwo);
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEvent, "Enable processing mixed event for track - V0", false);
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMixedEvent, "Enable processing mixed event for track - V0", false);
 
   void processMixedEventMCReco(FilteredFDCollisions const& cols, FemtoRecoParticles const& parts, aod::FDMCParticles const& mcparts)
   {
     doMixedEvent(cols, parts, partsOneMCReco, partsTwoMCReco, mcparts);
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEventMCReco, "Enable processing mixed event for track - V0 for MC Reco", false);
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMixedEventMCReco, "Enable processing mixed event for track - V0 for MC Reco", false);
 
   /// This function processes the mixed event for V0 - V0
   void processMixedEventV0(FilteredFDCollisions const& cols, FemtoFullParticles const& parts)
@@ -703,7 +704,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
       }
     }
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEventV0, "Enable processing mixed events for V0 - V0", false);
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMixedEventV0, "Enable processing mixed events for V0 - V0", false);
 
   /// This function processes MC mixed events for Track - V0
   void processMCMixedEvent(FilteredFDCollisions const& cols, FemtoFullParticles const& parts)
@@ -751,7 +752,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
   }
 
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCMixedEvent, "Enable processing mixed events for MC truth track - V0", false);
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCMixedEvent, "Enable processing mixed events for MC truth track - V0", false);
 
   /// This function processes MC mixed events for V0 - V0
   void processMCMixedEventV0(FilteredFDCollisions const& cols, FemtoFullParticles const& /*parts*/)
@@ -789,7 +790,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
   }
 
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCMixedEventV0, "Enable processing mixed events for MC truth V0 - V0", false);
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCMixedEventV0, "Enable processing mixed events for MC truth V0 - V0", false);
   ///--------------------------------------------MC-------------------------------------------------///
 
   /// This function fills MC truth particles from derived MC table
@@ -839,7 +840,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
   }
 
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCTruth, "Process MC truth data", false);
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCTruth, "Process MC truth data", false);
 
   void processMCReco(FemtoRecoParticles const& parts, aod::FDMCParticles const& mcparts)
   {
@@ -907,13 +908,13 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
   }
 
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCReco, "Process MC reco data", false);
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCReco, "Process MC reco data", false);
 };
 
 WorkflowSpec defineDataProcessing(configContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<femtoUniversePairTaskTrackV0Extended>(cfgc),
+    adaptAnalysisTask<FemtoUniversePairTaskTrackV0Extended>(cfgc),
   };
   return workflow;
 }
