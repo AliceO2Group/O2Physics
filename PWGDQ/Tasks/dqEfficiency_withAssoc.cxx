@@ -1945,8 +1945,6 @@ struct AnalysisAsymmetricPairing {
   int fNLegCuts;
   int fNPairCuts = 0;
   int fNCommonTrackCuts;
-  bool fHasTwoProngGenMCsignals = false;
-  bool fHasThreeProngGenMCsignals = false;
 
   Preslice<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
 
@@ -2250,14 +2248,6 @@ struct AnalysisAsymmetricPairing {
         if (sig->GetNProngs() == 1) { // NOTE: 1-prong signals required
           fGenMCSignals.push_back(*sig);
           histNames += Form("MCTruthGen_%s;", sig->GetName()); // TODO: Add these names to a std::vector to avoid using Form in the process function
-        } else if (sig->GetNProngs() == 2) {                   // NOTE: 2-prong signals required
-          fGenMCSignals.push_back(*sig);
-          histNames += Form("MCTruthGenPair_%s;", sig->GetName());
-          fHasTwoProngGenMCsignals = true;
-        } else if (sig->GetNProngs() == 3) {                   // NOTE: 3-prong signals required
-          fGenMCSignals.push_back(*sig);
-          histNames += Form("MCTruthGenTriplet_%s;", sig->GetName());
-          fHasThreeProngGenMCsignals = true;
         }
       }
     }
@@ -2775,47 +2765,6 @@ struct AnalysisAsymmetricPairing {
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig.GetName()), VarManager::fgValues);
         }
       }
-    }
-
-    if (fHasTwoProngGenMCsignals) {
-      for (auto& event : mcEvents) {
-        auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.globalIndex());
-        groupedMCTracks.bindInternalIndicesTo(&mcTracks);
-        for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
-          auto t1_raw = groupedMCTracks.rawIteratorAt(t1.globalIndex());
-          auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
-          for (auto& sig : fGenMCSignals) {
-            if (sig.GetNProngs() != 2) { // NOTE: 2-prong signals required here
-              continue;
-            }
-            if (sig.CheckSignal(true, t1_raw, t2_raw)) {
-              VarManager::FillPairMC(t1, t2, VarManager::fgValues, pairType);
-              fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig.GetName()), VarManager::fgValues);
-            }
-          } // end loop over MC signals
-        }   // end loop over pairs
-      }     // end loop over events
-    }
-
-    if (fHasThreeProngGenMCsignals) {
-      for (auto& event : mcEvents) {
-        auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.globalIndex());
-        groupedMCTracks.bindInternalIndicesTo(&mcTracks);
-        for (auto& [t1, t2, t3] : combinations(groupedMCTracks, groupedMCTracks, groupedMCTracks)) {
-          auto t1_raw = groupedMCTracks.rawIteratorAt(t1.globalIndex());
-          auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
-          auto t3_raw = groupedMCTracks.rawIteratorAt(t3.globalIndex());
-          for (auto& sig : fGenMCSignals) {
-            if (sig.GetNProngs() != 3) { // NOTE: 3-prong signals required here
-              continue;
-            }
-            if (sig.CheckSignal(true, t1_raw, t2_raw, t3_raw)) {
-              VarManager::FillTripleMC(t1, t2, t3, VarManager::fgValues, pairType);
-              fHistMan->FillHistClass(Form("MCTruthGenTriplet_%s", sig.GetName()), VarManager::fgValues);
-            }
-          } // end loop over MC signals
-        }   // end loop over pairs
-      }     // end loop over events
     }
   } // end runMCGen
 
