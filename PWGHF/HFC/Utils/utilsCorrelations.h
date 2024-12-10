@@ -41,9 +41,12 @@ enum PairSign {
 template <typename T>
 Region getRegion(T const deltaPhi)
 {
+  constexpr double PITwoThird = 2. * o2::constants::math::PIThird;
+  constexpr double PIFourThird = 4. * o2::constants::math::PIThird;
+  
   if (std::abs(deltaPhi) < o2::constants::math::PIThird) {
     return Toward;
-  } else if (deltaPhi > 2. * o2::constants::math::PIThird && deltaPhi < 4. * o2::constants::math::PIThird) {
+  } else if (deltaPhi > PITwoThird && deltaPhi < PIFourThird) {
     return Away;
   } else {
     return Transverse;
