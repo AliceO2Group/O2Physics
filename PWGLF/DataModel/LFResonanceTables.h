@@ -131,7 +131,7 @@ DECLARE_SOA_COLUMN(Phi, phi, float);                                    //! Phi
 DECLARE_SOA_COLUMN(PartType, partType, uint8_t);                        //! Type of the particle, according to resodaughter::ParticleType
 DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                      //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
 DECLARE_SOA_COLUMN(Indices, indices, int[2]);                           //! Field for the track indices to remove auto-correlations
-DECLARE_SOA_COLUMN(CascadeIndices, cascadeIndices, int[3]);                //! Field for the track indices to remove auto-correlations (ordered: positive, negative, bachelor)
+DECLARE_SOA_COLUMN(CascadeIndices, cascadeIndices, int[3]);             //! Field for the track indices to remove auto-correlations (ordered: positive, negative, bachelor)
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                 //! Sign of the track charge
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t);    //! Number of TPC crossed rows
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);                //! Number of TPC clusters found
