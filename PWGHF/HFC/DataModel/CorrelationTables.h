@@ -423,4 +423,3 @@ DECLARE_SOA_TABLE(HfEHadronPair, "AOD", "HFEHADRONPAIR", //! Hfe-Hadrons pairs I
 } // namespace o2::aod
 
 #endif // PWGHF_HFC_DATAMODEL_CORRELATIONTABLES_H_
-
