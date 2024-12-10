@@ -46,7 +46,7 @@ struct : ConfigurableGroup {
   Configurable<bool> cfCheckUnderflowAndOverflow{"cfCheckUnderflowAndOverflow", false, "check and bail out if in event and particle histograms there are entries which went to underflow or overflow bins (use only locally)"};
   Configurable<int> cfRebin{"cfRebin", 1, "number of bins of selected heavy 2D histograms are devided with this number"};
   Configurable<bool> cfFillQAEventHistograms2D{"cfFillQAEventHistograms2D", false, "if false, all QA 2D event histograms are not filled. if true, only the ones for which fBookQAEventHistograms2D[...] is true, are filled"};
-  Configurable<vector<string>> cfBookQAEventHistograms2D{"cfBookQAEventHistograms2D", {"1-Multiplicity_vs_ReferenceMultiplicity", "1-Multiplicity_vs_NContributors", "1-Multiplicity_vs_Centrality", "1-Multiplicity_vs_Vertex_z", "1-Multiplicity_vs_Occupancy", "1-ReferenceMultiplicity_vs_NContributors", "1-ReferenceMultiplicity_vs_Centrality", "1-ReferenceMultiplicity_vs_Vertex_z", "1-ReferenceMultiplicity_vs_Occupancy", "1-NContributors_vs_Centrality", "1-NContributors_vs_Vertex_z", "1-NContributors_vs_Occupancy", "1-Centrality_vs_Vertex_z", "1-Centrality_vs_Occupancy", "1-Vertex_z_vs_Occupancy", "0-CentFT0C_vs_CentNTPV", "0-CentFT0M_vs_CentNTPV", "0-CentRun2V0M_vs_CentRun2SPDTracklets", "1-TrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange", "1-CurrentRunDuration_vs_InteractionRate"}, "book (1) or do not book (0) this QA 2D event histogram"};
+  Configurable<vector<string>> cfBookQAEventHistograms2D{"cfBookQAEventHistograms2D", {"1-Multiplicity_vs_ReferenceMultiplicity", "1-Multiplicity_vs_NContributors", "1-Multiplicity_vs_Centrality", "1-Multiplicity_vs_Vertex_z", "1-Multiplicity_vs_Occupancy", "1-ReferenceMultiplicity_vs_NContributors", "1-ReferenceMultiplicity_vs_Centrality", "1-ReferenceMultiplicity_vs_Vertex_z", "1-ReferenceMultiplicity_vs_Occupancy", "1-NContributors_vs_Centrality", "1-NContributors_vs_Vertex_z", "1-NContributors_vs_Occupancy", "1-Centrality_vs_Vertex_z", "1-Centrality_vs_Occupancy", "1-Centrality_vs_ImpactParameter", "1-Vertex_z_vs_Occupancy", "0-MultNTracksPV_vs_MultNTracksGlobal", "0-CentFT0C_vs_CentNTPV", "0-CentFT0M_vs_CentNTPV", "0-CentRun2V0M_vs_CentRun2SPDTracklets", "1-TrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange", "1-CurrentRunDuration_vs_InteractionRate"}, "book (1) or do not book (0) this QA 2D event histogram"};
   Configurable<bool> cfFillQAParticleHistograms2D{"cfFillQAParticleHistograms2D", false, "if false, all QA 2D particle histograms are not filled. if true, only the ones for which fBookQAParticleHistograms2D[...] is true, are filled"};
   Configurable<vector<string>> cfBookQAParticleHistograms2D{"cfBookQAParticleHistograms2D", {"1-Pt_vs_dcaXY"}, "book (1) or do not book (0) this QA 2D particle histogram"};
 } cf_qa;
@@ -54,12 +54,12 @@ struct : ConfigurableGroup {
 // *) Event histograms:
 struct : ConfigurableGroup {
   Configurable<bool> cfFillEventHistograms{"cfFillEventHistograms", true, "if false, all event histograms are not filled. if true, only the ones for which fBookEventHistograms[...] is true, are filled"};
-  Configurable<vector<string>> cfBookEventHistograms{"cfBookEventHistograms", {"1-NumberOfEvents", "1-TotalMultiplicity", "1-Multiplicity", "1-ReferenceMultiplicity", "1-Centrality", "1-Vertex_x", "1-Vertex_y", "1-Vertex_z", "1-NContributors", "0-ImpactParameter", "1-Occupancy", "1-InteractionRate", "1-CurrentRunDuration", "0-MultMCNParticlesEta08"}, "Book (1) or do not book (0) event histogram"};
+  Configurable<vector<string>> cfBookEventHistograms{"cfBookEventHistograms", {"1-NumberOfEvents", "1-TotalMultiplicity", "1-Multiplicity", "1-ReferenceMultiplicity", "1-Centrality", "1-Vertex_x", "1-Vertex_y", "1-Vertex_z", "1-NContributors", "0-ImpactParameter", "0-EventPlaneAngle", "1-Occupancy", "1-InteractionRate", "1-CurrentRunDuration", "0-MultMCNParticlesEta08"}, "Book (1) or do not book (0) event histogram"};
 } cf_eh;
 
 // *) Event cuts:
 struct : ConfigurableGroup {
-  Configurable<vector<string>> cfUseEventCuts{"cfUseEventCuts", {"1-NumberOfEvents", "1-TotalMultiplicity", "1-Multiplicity", "1-ReferenceMultiplicity", "1-Centrality", "1-Vertex_x", "1-Vertex_y", "1-Vertex_z", "1-NContributors", "1-ImpactParameter", "1-Occupancy", "1-InteractionRate", "1-CurrentRunDuration", "0-MultMCNParticlesEta08", "0-Trigger", "0-Sel7", "1-Sel8", "1-MultiplicityEstimator", "1-ReferenceMultiplicityEstimator", "1-CentralityEstimator", "1-SelectedEvents", "1-NoSameBunchPileup", "1-IsGoodZvtxFT0vsPV", "1-IsVertexITSTPC", "1-IsVertexTOFmatched", "1-IsVertexTRDmatched", "1-OccupancyEstimator"}, "use (1) or do not use (0) event cuts"};
+  Configurable<vector<string>> cfUseEventCuts{"cfUseEventCuts", {"1-NumberOfEvents", "1-TotalMultiplicity", "1-Multiplicity", "1-ReferenceMultiplicity", "1-Centrality", "1-Vertex_x", "1-Vertex_y", "1-Vertex_z", "1-NContributors", "1-ImpactParameter", "0-EventPlaneAngle", "1-Occupancy", "1-InteractionRate", "1-CurrentRunDuration", "0-MultMCNParticlesEta08", "0-Trigger", "0-Sel7", "1-Sel8", "1-MultiplicityEstimator", "1-ReferenceMultiplicityEstimator", "1-CentralityEstimator", "1-SelectedEvents", "1-NoSameBunchPileup", "1-IsGoodZvtxFT0vsPV", "1-IsVertexITSTPC", "1-IsVertexTOFmatched", "1-IsVertexTRDmatched", "0-NoCollInTimeRangeStrict", "0-NoCollInTimeRangeStandard", "0-NoCollInRofStrict", "0-NoCollInRofStandard", "0-NoHighMultCollInPrevRof", "1-OccupancyEstimator"}, "use (1) or do not use (0) event cuts"};
   Configurable<bool> cfUseEventCutCounterAbsolute{"cfUseEventCutCounterAbsolute", false, "profile and save how many times each event cut counter triggered (absolute). Use with care, as this is computationally heavy"};
   Configurable<bool> cfUseEventCutCounterSequential{"cfUseEventCutCounterSequential", false, "profile and save how many times each event cut counter triggered (sequential). Use with care, as this is computationally heavy"};
   Configurable<bool> cfPrintCutCounterContent{"cfPrintCutCounterContent", false, "if true, prints on the screen after each event the content of fEventCutCounterHist[*][*] (all which were booked)"};
@@ -74,11 +74,12 @@ struct : ConfigurableGroup {
   Configurable<vector<float>> cfVertex_z{"cfVertex_z", {-10., 10.}, "vertex z position range: {min, max}[cm], with convention: min <= Vz < max"};
   Configurable<vector<int>> cfNContributors{"cfNContributors", {2, 1000000000}, "Number of vertex contributors: {min, max}, with convention: min <= N < max"};
   Configurable<vector<float>> cfImpactParameter{"cfImpactParameter", {-1, 1000000000}, "Impact parameter range (can be used only for sim): {min, max}, with convention: min <= IP < max"};
+  Configurable<vector<float>> cfEventPlaneAngle{"cfEventPlaneAngle", {-1000, 1000000000}, "Event Plane Angle range (can be used only for sim): {min, max}, with convention: min <= EP < max"};
   Configurable<vector<float>> cfOccupancy{"cfOccupancy", {-2, 1000000000}, "Range for occupancy (use cfOccupancyEstimator to set specific estimator): {min, max}, with convention: min <= X < max"};
   Configurable<vector<float>> cfInteractionRate{"cfInteractionRate", {-2, 1000000000}, "Range for interaction rate: {min, max}, with convention: min <= X < max"};
   Configurable<vector<float>> cfCurrentRunDuration{"cfCurrentRunDuration", {-2, 1000000000}, "Range for current run duration (i.e. seconds since start of run) in seconds: {min, max}, with convention: min <= X < max. Only collisions taken in this range (measured from SOR) are taken for analysis"};
   Configurable<vector<float>> cfMultMCNParticlesEta08{"cfMultMCNParticlesEta08", {-1, 1000000000}, "Range for MultMCNParticlesEta08 : {min, max}, with convention: min <= X < max"};
-  Configurable<string> cfTrigger{"cfTrigger", "some supported trigger (e.g. kINT7, ...)", "set here some supported trigger"};
+  Configurable<string> cfTrigger{"cfTrigger", "some supported trigger (e.g. INT7 for Run 2, TVXinTRD for Run 3, etc...)", "set here some supported trigger"};
   Configurable<bool> cfUseSel7{"cfUseSel7", false, "use for Run 1 and 2 data and MC (see official doc)"};
   Configurable<bool> cfUseSel8{"cfUseSel8", false, "use for Run 3 data and MC (see official doc)"};
   Configurable<string> cfMultiplicityEstimator{"cfMultiplicityEstimator", "SelectedTracks", "all results vs. mult are calculated against this multiplicity. Can be set to SelectedTracks (calculated internally), ReferenceMultiplicity (calculated outside of my code), etc."};
@@ -92,7 +93,11 @@ struct : ConfigurableGroup {
   Configurable<bool> cfUseIsVertexITSTPC{"cfUseIsVertexITSTPC", false, "TBI 20240521 explanation"};
   Configurable<bool> cfUseIsVertexTOFmatched{"cfUseIsVertexTOFmatched", false, "TBI 20240521 explanation"};
   Configurable<bool> cfUseIsVertexTRDmatched{"cfUseIsVertexTRDmatched", false, "TBI 20240521 explanation"};
-  //  Configurable<string> cfOccupancyEstimator{"cfOccupancyEstimator", "some supported occupancy estimator (e.g. TrackOccupancyInTimeRange, FT0COccupancyInTimeRange, ...)", "set here some supported occupancy estimator (TrackOccupancyInTimeRange, FT0COccupancyInTimeRange, ..."};
+  Configurable<bool> cfUseNoCollInTimeRangeStrict{"cfUseNoCollInTimeRangeStrict", false, "TBI 20240521 explanation"};
+  Configurable<bool> cfUseNoCollInTimeRangeStandard{"cfUseNoCollInTimeRangeStandard", false, "TBI 20240521 explanation"};
+  Configurable<bool> cfUseNoCollInRofStrict{"cfUseNoCollInRofStrict", false, "TBI 20240521 explanation"};
+  Configurable<bool> cfUseNoCollInRofStandard{"cfUseNoCollInRofStandard", false, "TBI 20240521 explanation"};
+  Configurable<bool> cfUseNoHighMultCollInPrevRof{"cfUseNoHighMultCollInPrevRof", false, "TBI 20240521 explanation"};
   Configurable<string> cfOccupancyEstimator{"cfOccupancyEstimator", "FT0COccupancyInTimeRange", "set here some supported occupancy estimator (TrackOccupancyInTimeRange, FT0COccupancyInTimeRange, ..."};
 } cf_ec;
 
