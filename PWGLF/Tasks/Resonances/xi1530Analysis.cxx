@@ -342,7 +342,7 @@ struct cascadeXiAnalysis {
     for (auto const& casc : cascTracks) {
       histos.fill(HIST("QA_Casc_Xi/h1d_mass_Xi"), casc.mXi());
       histos.fill(HIST("QA_Casc_Xi/h1d_v0_radius"), casc.transRadius());
-      histos.fill(HIST("QA_Casc_Xi/h1d_casc_radius"), casc.casctransRadius());
+      histos.fill(HIST("QA_Casc_Xi/h1d_casc_radius"), casc.cascTransRadius());
       histos.fill(HIST("QA_Casc_Xi/h1d_v0_cosPA"), casc.v0CosPA());
       histos.fill(HIST("QA_Casc_Xi/h1d_casc_cosPA"), casc.cascCosPA());
       histos.fill(HIST("QA_Casc_Xi/h1d_dca_postoPV"), casc.dcapostopv());

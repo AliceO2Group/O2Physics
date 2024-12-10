@@ -493,7 +493,7 @@ struct xi1530analysisqa {
       return false;
     if (track.cascCosPA() < cCosPACasc)
       return false;
-    if (track.casctransRadius() > cMaxCascradiuscut || track.casctransRadius() < cMinCascradiuscut)
+    if (track.cascTransRadius() > cMaxCascradiuscut || track.cascTransRadius() < cMinCascradiuscut)
       return false;
     // if (std::abs(track.mXi() - XiMass) > cMasswindowCasccut)
     //     return false;
