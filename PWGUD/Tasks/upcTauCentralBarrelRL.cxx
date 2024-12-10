@@ -2301,21 +2301,21 @@ struct UpcTauCentralBarrelRL {
 
   } // end processMCgenDG
 
-  void processTestMC(FullMCUDCollision const& reconstructedCollision,
-                     FullMCUDTracks const& reconstructedBarrelTracks,
+  void processTestMC(FullMCUDCollision const& /*reconstructedCollision*/,
+                     FullMCUDTracks const& /*reconstructedBarrelTracks*/,
                      aod::UDMcCollisions const&,
                      aod::UDMcParticles const&)
   {
-    if (reconstructedCollision.has_udMcCollision()) {
-      const auto& generatedCollision = reconstructedCollision.udMcCollision();
-      printDebugMessage(Form("%li udMcCollision found", generatedCollision.size()));
-    }
+    // if (reconstructedCollision.has_udMcCollision()) {
+    //   const auto& generatedCollision = reconstructedCollision.udMcCollision();
+    //   printDebugMessage(Form("%lli udMcCollision found", generatedCollision.size())); // FIXME: Type of size() is not invariant.
+    // }
 
-    const auto& track = reconstructedBarrelTracks.iteratorAt(0);
-    if (track.size() && track.has_udMcParticle()) {
-      const auto& particle = track.udMcParticle();
-      printDebugMessage(Form("%li udMcParticle found", particle.size()));
-    }
+    // const auto& track = reconstructedBarrelTracks.iteratorAt(0);
+    // if (track.size() && track.has_udMcParticle()) {
+    //   const auto& particle = track.udMcParticle();
+    //   printDebugMessage(Form("%lli udMcParticle found", particle.size())); // FIXME: Type of size() is not invariant.
+    // }
 
   } // end processTestMC
 
