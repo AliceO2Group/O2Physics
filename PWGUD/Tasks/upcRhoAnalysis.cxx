@@ -774,7 +774,7 @@ struct upcRhoAnalysis {
          collision.posX(), collision.posY(), collision.posZ(),
          collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
          collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
-          collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC(), neutronClass,
+         collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC(), neutronClass,
          totalCharge, pT, system.Eta(), system.Phi(), mass, phiRandom, phiCharge,
          trackSigns, trackPts, trackEtas, trackPhis, trackMs, trackPiPIDs, trackElPIDs, trackDcaXYs, trackDcaZs, trackTpcSignals);
     // fill raw histograms according to the total charge
