@@ -88,3 +88,8 @@ o2physics_add_dpl_workflow(trackqa-converter
                     SOURCES trackQAConverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(trackqa-converter-002
+                    SOURCES trackQA002Converter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
