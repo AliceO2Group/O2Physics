@@ -531,7 +531,7 @@ struct Dilepton {
 
     if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC)) {
       fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/same/uls/hDeltaEtaDeltaPhi", "difference of p between 2 tracks;#Delta#varphi (rad.);#Delta#eta;", kTH2D, {{180, -M_PI, M_PI}, {100, -1, +1}}, true);
+      fRegistry.add("Pair/same/uls/hDeltaEtaDeltaPhi", "#Delta#eta-#Delta#varphi between 2 tracks;#Delta#varphi (rad.);#Delta#eta;", kTH2D, {{180, -M_PI, M_PI}, {200, -1, +1}}, true);
       fRegistry.add("Pair/same/uls/hGeomDeltaZRDeltaPhi", Form("difference in z-r#varphi plane between 2 tracks at r = %2.1f cm;r#Delta#varphi (cm);#Deltaz (cm);", dielectroncuts.cfg_x_to_go.value), kTH2D, {{200, -100, 100}, {200, -10, 10}}, true);
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
         fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {100, 0.0f, 1.0f}}, true); // phiv is only for dielectron
