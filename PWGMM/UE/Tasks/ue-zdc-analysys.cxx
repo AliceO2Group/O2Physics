@@ -355,7 +355,7 @@ struct ZDCAnalysis {
     float multFDA = 0;
     float multFDC = 0;
     if (foundBC.has_fdd()) {
-      auto fdd = foundBC.fdd();
+      auto const& fdd = foundBC.fdd();
       for (auto const& amplitude : fdd.chargeA()) {
         multFDA += amplitude;
       }
