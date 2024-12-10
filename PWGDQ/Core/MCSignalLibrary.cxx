@@ -1269,12 +1269,6 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Kaon pion pion triplet from D*", {prongKaon, prongPionSecondary, prongPion}, {2, 2, 1});
     return signal;
   }
-  if (!nameStr.compare("PiPiPiFromD0FromDstar")) {
-    MCProng prongPionSecondary(3, {211, Pdg::kD0, Pdg::kDStar}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
-    MCProng prongPion(2, {211, Pdg::kDStar}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
-    signal = new MCSignal(name, "Kaon pion pion triplet from D*", {prongPionSecondary, prongPionSecondary, prongPion}, {2, 2, 1});
-    return signal;
-  }
   if (!nameStr.compare("KFromDplus")) {
     MCProng prong(2, {321, Pdg::kDPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
