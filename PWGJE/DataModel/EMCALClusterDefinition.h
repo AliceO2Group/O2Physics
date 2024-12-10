@@ -9,11 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// Class for the cluster definition, i.e. what is considered a cluster by the clusterizer.
-// The cluster definition contains information about the used algorithm, seed threshold,
-// cell energy, gradient as well as timing cut
-//
-/// \author Florian Jonas <florian.jonas@cern.ch>
+/// \file EMCALClusterDefinition.h
+/// \brief Class for the cluster definition, i.e. what is considered a cluster by the clusterizer. The cluster definition contains information about the used algorithm, seed threshold, cell energy, gradient as well as timing cut
+/// \author Florian Jonas <florian.jonas@cern.ch>, Marvin Hemmer <marvin.hemmer@cern.ch>
 
 #ifndef PWGJE_DATAMODEL_EMCALCLUSTERDEFINITION_H_
 #define PWGJE_DATAMODEL_EMCALCLUSTERDEFINITION_H_
