@@ -39,9 +39,9 @@ struct HfTaskElectronWeakBoson {
 
   // configurable parameters
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pt registry"};
-  Configurable<float> BinPtmax{"BinPtmax", 100.0, "maximum pt registry"};
+  Configurable<float> binPtmax{"binPtmax", 100.0, "maximum pt registry"};
   Configurable<int> nBinsE{"nBinsE", 100, "N bins in E registry"};
-  Configurable<float> BinEmax{"BinEmax", 100.0, "maximum E registry"};
+  Configurable<float> binEmax{"binEmax", 100.0, "maximum E registry"};
 
   Configurable<float> vtxZ{"vtxZ", 10.f, ""};
 
@@ -82,7 +82,7 @@ struct HfTaskElectronWeakBoson {
 
   Filter etafilter = (aod::track::eta < etaTrUp) && (aod::track::eta > etaTrLow);
   Filter dcaxyfilter = (nabs(aod::track::dcaXY) < dcaxyMax);
-  Filter filter_globalTr = requireGlobalTrackInFilter();
+  Filter filterGlobalTr = requireGlobalTrackInFilter();
 
   Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == clusterDefinition) && (o2::aod::emcalcluster::time >= timeEmcMin) && (o2::aod::emcalcluster::time <= timeEmcMax) && (o2::aod::emcalcluster::m02 > m02Min) && (o2::aod::emcalcluster::m02 < m02Max);
 
@@ -101,9 +101,9 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisZvtx{400, -20, 20, "Zvtx"};
     const AxisSpec axisCounter{1, 0, 1, "events"};
     const AxisSpec axisEta{200, -1.0, 1.0, "#eta"};
-    const AxisSpec axisPt{nBinsPt, 0, BinPtmax, "p_{T}"};
+    const AxisSpec axisPt{nBinsPt, 0, binPtmax, "p_{T}"};
     const AxisSpec axisNsigma{100, -5, 5, "N#sigma"};
-    const AxisSpec axisE{nBinsE, 0, BinEmax, "Energy"};
+    const AxisSpec axisE{nBinsE, 0, binEmax, "Energy"};
     const AxisSpec axisM02{100, 0, 1, "M02"};
     const AxisSpec axisdPhi{200, -1, 1, "dPhi"};
     const AxisSpec axisdEta{200, -1, 1, "dEta"};
@@ -139,7 +139,7 @@ struct HfTaskElectronWeakBoson {
     registry.add("hEMCtime", "EMC timing", kTH1F, {axisEMCtime});
     registry.add("hIsolationEnergy", "Isolation Energy", kTH2F, {{axisE}, {axisIsoEnergy}});
   }
-  bool IsIsolatedCluster(const o2::aod::EMCALCluster& cluster,
+  bool isIsolatedCluster(const o2::aod::EMCALCluster& cluster,
                          const SelectedClusters& clusters)
   {
     float energySum = 0.0;
@@ -266,7 +266,7 @@ struct HfTaskElectronWeakBoson {
               continue;
 
             const auto& cluster = match.emcalcluster_as<SelectedClusters>();
-            bool isIsolated = IsIsolatedCluster(cluster, emcClusters);
+            bool isIsolated = isIsolatedCluster(cluster, emcClusters);
 
             double eop = energyEmc / match.track_as<TrackEle>().p();
             // LOG(info) << "E/p" << eop;
