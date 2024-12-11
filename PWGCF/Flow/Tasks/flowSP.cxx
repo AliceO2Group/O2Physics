@@ -319,7 +319,7 @@ struct FlowSP {
   }
 
   template <typename CollisionObject, typename TracksObject>
-  inline void FillEventQA(CollisionObject collision, TracksObject tracks, bool before)
+  inline void fillEventQA(CollisionObject collision, TracksObject tracks, bool before)
   {
     if(before){
       registry.fill(HIST("QA/before/hCent"), collision.centFT0C());
@@ -360,13 +360,13 @@ struct FlowSP {
     if (!eventSelected(collision, tracks.size(), centrality))
       return;
 
-    FillEventQA(collision, tracks, true);
+    fillEventQA(collision, tracks, true);
 
     if (collision.isSelected()) {
 
       registry.fill(HIST("hEventCount"), 10.5);
 
-      FillEventQA(collision, tracks, false);
+      fillEventQA(collision, tracks, false);
 
       double qxA = collision.qxA();
       double qyA = collision.qyA();
