@@ -1393,7 +1393,7 @@ struct AnalysisDileptonTrackTrack {
     if (!context.mOptions.get<bool>("processDummy")) {
       // Title_DileptonTrackTrackCutName
       if (!configQuadruletCutNamesStr.IsNull()) {
-        for (Int_t icut = 0; icut < fQuadrupletCutNames.size(); ++icut) {
+        for (std::size_t icut = 0; icut < fQuadrupletCutNames.size(); ++icut) {
           if (fIsSameTrackCut) {
             histNames += Form("QuadrupletSEPM_%s;", fQuadrupletCutNames[icut].Data());
           } else {
