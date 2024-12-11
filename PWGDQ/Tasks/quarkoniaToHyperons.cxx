@@ -90,7 +90,7 @@ using CascadeMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::Ca
 #define BITSET(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 #define BITCHECK(var, nbit) ((var) & (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 
-struct quarkoniaToHyperons {
+struct QuarkoniaToHyperons {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // master analysis switches
@@ -755,12 +755,12 @@ struct quarkoniaToHyperons {
       int64_t timeStampML = collision.timestamp();
       if (mlConfigurations.timestampCCDB.value != -1)
         timeStampML = mlConfigurations.timestampCCDB.value;
-      LoadMachines(timeStampML);
+      loadMachines(timeStampML);
     }
   }
 
   // function to load models for ML-based classifiers
-  void LoadMachines(int64_t timeStampML)
+  void loadMachines(int64_t timeStampML)
   {
     if (mlConfigurations.loadCustomModelsFromCCDB) {
       ccdbApi.init(ccdbConfigurations.ccdburl);
@@ -804,7 +804,7 @@ struct quarkoniaToHyperons {
   }
 
   template <typename TCollision>
-  bool IsEventAccepted(TCollision collision, bool fillHists)
+  bool isEventAccepted(TCollision collision, bool fillHists)
   // check whether the collision passes our collision selections
   {
     if (fillHists)
@@ -1940,7 +1940,7 @@ struct quarkoniaToHyperons {
       initCCDB(collision);
     }
 
-    if (!IsEventAccepted(collision, true)) {
+    if (!isEventAccepted(collision, true)) {
       return;
     }
 
@@ -2091,7 +2091,7 @@ struct quarkoniaToHyperons {
       initCCDB(collision);
     }
 
-    if (!IsEventAccepted(collision, true)) {
+    if (!isEventAccepted(collision, true)) {
       return;
     }
 
