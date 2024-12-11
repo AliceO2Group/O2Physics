@@ -597,9 +597,11 @@ struct NonPromptCascadeTask {
 
       int pdgCodeMom = 0;
       std::tuple<bool, bool> fromHF{false, false};
-      if (isGoodCascade && isGoodMatch) {
+      if (isGoodCascade) {
         fromHF = isFromHF(track.mcParticle());
-        pdgCodeMom = track.mcParticle().has_mothers() ? track.mcParticle().mothers_as<aod::McParticles>()[0].pdgCode() : 0;
+        if (isGoodMatch) {
+          pdgCodeMom = track.mcParticle().has_mothers() ? track.mcParticle().mothers_as<aod::McParticles>()[0].pdgCode() : 0;
+        }
       }
       int itsTrackPDG = ITStrack.has_mcParticle() ? ITStrack.mcParticle().pdgCode() : 0;
       float deltaPtITSCascade = std::hypot(cascadeMomentum[0], cascadeMomentum[1]) - ITStrack.pt();
