@@ -852,7 +852,7 @@ struct femtoUniverseProducerTask {
     const auto vtxZ = col.posZ();
     const auto multNtr = col.multNTracksPV();
     const auto cent = col.centFT0C();
-    const auto occupancy = col.trackOccupancyInTimeRange();    
+    const auto occupancy = col.trackOccupancyInTimeRange();
 
     // check whether the basic event selection criteria are fulfilled
     // if the basic selection is NOT fulfilled:
