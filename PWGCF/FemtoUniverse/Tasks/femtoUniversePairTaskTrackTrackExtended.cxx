@@ -173,8 +173,8 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry mixQaRegistry{"mixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  EFFICIENCY_CONFIGURABLES(effConfGroup);
-  EfficiencyCalculator efficiencyCalculator{effConfGroup};
+  EfficiencyConfigurableGroup effConfGroup{};
+  EfficiencyCalculator efficiencyCalculator{&effConfGroup};
 
   /// @brief Counter for particle swapping
   int fNeventsProcessed = 0;
@@ -319,9 +319,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
     effConfGroup.hMCTruth2.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, tracktwofilter.confPDGCodePartTwo, false);
 
     efficiencyCalculator
-      .setIsTest(true)
       .withRegistry(&qaRegistry)
-      .withCCDBPath("Users/d/dkarpins")
       .uploadOnStop(ic)
       .init();
 

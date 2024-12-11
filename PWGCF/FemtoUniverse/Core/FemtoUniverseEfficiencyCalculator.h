@@ -12,10 +12,6 @@
 
 namespace o2::analysis::femto_universe::efficiency
 {
-#define EFFICIENCY_CONFIGURABLES(name)   \
-  struct : EfficiencyConfigurableGroup { \
-  } name;
-
 template <uint8_t T>
 concept IsOneOrTwo = T == 1 || T == 2;
 
@@ -27,12 +23,11 @@ struct EfficiencyConfigurableGroup : ConfigurableGroup {
   Configurable<bool> shouldCalculate{"ConfEfficiencyCalculate", false, "Should calculate efficiency"};
   Configurable<bool> shouldApplyCorrections{"ConfEfficiencyApplyCorrections", false, "Should apply corrections from efficinecy"};
   Configurable<std::string> ccdbUrl{"ConfEfficiencyCCDBUrl", "http://alice-ccdb.cern.ch", "CCDB URL to be used"};
-  Configurable<std::string> ccdbPath{"ConfEfficiencyCCDBPath", "Users/", "CCDB base path where objects should be put"};
+  Configurable<std::string> ccdbPath{"ConfEfficiencyCCDBPath", "", "CCDB base path where objects should be put"};
 
   MCTruthTrackHisto<1> hMCTruth1;
   MCTruthTrackHisto<2> hMCTruth2;
 
-  // TODO: move this to other struct?
   OutputObj<TH1F> hEff1{"Efficiency part1"};
   OutputObj<TH1F> hEff2{"Efficiency part2"};
 };
@@ -41,44 +36,27 @@ class EfficiencyCalculator
 {
  public:
   o2::ccdb::BasicCCDBManager& ccdb{o2::ccdb::BasicCCDBManager::instance()};
-  EfficiencyConfigurableGroup config{};
+  EfficiencyConfigurableGroup* config{};
 
-  EfficiencyCalculator(EfficiencyConfigurableGroup& config)
-    : shouldCalculate(config.shouldCalculate.value),
-      shouldApplyCorrections(config.shouldApplyCorrections.value),
-      hOutput({config.hEff1.object, config.hEff2.object}), // TODO: figure out better way
-      hMCTruth1(&config.hMCTruth1),
-      hMCTruth2(&config.hMCTruth2),
-      ccdbUrl(config.ccdbUrl.value),
-      ccdbPath(config.ccdbPath.value)
+  explicit EfficiencyCalculator(EfficiencyConfigurableGroup* config)
+    : config(config),
+      shouldCalculate(config->shouldCalculate.value),
+      shouldApplyCorrections(config->shouldApplyCorrections.value)
   {
   }
 
   auto init() -> void
   {
-    if (!hOutput[0]) {
-      LOG(fatal) << "!!hOutput[0];" << !!hOutput[0];
-    }
-    if (!hOutput[1]) {
-      LOG(fatal) << "!!hOutput[1];" << !!hOutput[1];
-    }
-
-    ccdbApi.init(ccdbUrl);
-    ccdb.setURL(ccdbUrl);
+    ccdbApi.init(config->ccdbUrl);
+    ccdb.setURL(config->ccdbUrl);
     ccdb.setLocalObjectValidityChecking();
     ccdb.setFatalWhenNull(false);
 
-    // TODO: upload and load the actual hist for second particle
-    hLoaded[0] = loadEfficiencyFromCCDB(1733060890131);
-  }
+    hOutput = {config->hEff1.object, config->hEff2.object};
 
-  auto setIsTest(bool value) -> EfficiencyCalculator&
-  {
-    isTest = value;
-    if (value) {
-      ccdbUrl = "http://ccdb-test.cern.ch:8080";
-    }
-    return *this;
+    // TODO: upload and load the actual hist for second particle
+    // hLoaded = {loadEfficiencyFromCCDB(1733060890131), loadEfficiencyFromCCDB(1733060890131)};
+    hLoaded[0] = loadEfficiencyFromCCDB(1733060890131);
   }
 
   auto withRegistry(HistogramRegistry* reg) -> EfficiencyCalculator&
@@ -91,26 +69,15 @@ class EfficiencyCalculator
     return *this;
   }
 
-  auto withCCDBPath(const std::string& path) -> EfficiencyCalculator&
-  {
-    if (path.empty()) {
-      LOGF(fatal, log("CCDB path cannot be empty"));
-    }
-
-    // TODO: add more distinction in path
-    ccdbPath = std::format("{}/{}", path, folderPrefix);
-    return *this;
-  }
-
   template <uint8_t N>
     requires IsOneOrTwo<N>
   auto doMCTruth(auto particles) -> void
   {
     for (const auto& particle : particles) {
       if constexpr (N == 1) {
-        hMCTruth1->fillQA<false, false>(particle);
+        config->hMCTruth1.fillQA<false, false>(particle);
       } else if constexpr (N == 2) {
-        hMCTruth2->fillQA<false, false>(particle);
+        config->hMCTruth2.fillQA<false, false>(particle);
       }
     }
   }
@@ -136,7 +103,7 @@ class EfficiencyCalculator
           long now{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
           long oneYear{365LL * 24 * 60 * 60 * 1000};
 
-          if (ccdbApi.storeAsTFileAny(output.get(), ccdbPath, metadata, now, now + oneYear) == 0) {
+          if (ccdbApi.storeAsTFileAny(output.get(), config->ccdbPath, metadata, now, now + oneYear) == 0) {
             LOGF(info, log("Histogram saved successfully"));
           } else {
             LOGF(fatal, log("Histogram save failed"));
@@ -214,20 +181,39 @@ class EfficiencyCalculator
     return true;
   }
 
+  std::string path(const std::string& base, const std::initializer_list<std::string>& segments)
+  {
+    std::string url = base;
+    if (!url.empty() && url.back() == '/') {
+      url.pop_back();
+    }
+
+    for (const auto& segment : segments) {
+      if (!segment.empty()) {
+        if (url.back() != '/') {
+          url += '/';
+        }
+        url += segment.front() == '/' ? segment.substr(1) : segment;
+      }
+    }
+
+    return url;
+  }
+
   auto loadEfficiencyFromCCDB(long timestamp) -> TH1*
   {
     // TODO: ccdb.getSpecific<TH1>(ccdbPath, timestamp, metadata);
-    auto hEff{ccdb.getForTimeStamp<TH1>(ccdbPath, timestamp)};
+    auto fullPath{std::format("{}/{}", config->ccdbPath.value, folderPrefix)};
+
+    auto hEff{ccdb.getForTimeStamp<TH1>(fullPath, timestamp)};
     if (!hEff || hEff->IsZombie()) {
-      LOGF(fatal, log("Could not load histogram from %s"), ccdbPath);
+      LOGF(fatal, log("Could not load histogram from %s"), config->ccdbPath.value);
       return nullptr;
     }
 
-    LOGF(info, log("Histogram \"%s\" loaded from \"%s\""), hEff->GetTitle(), ccdbPath);
+    LOGF(info, log("Histogram \"%s\" loaded from \"%s\""), hEff->GetTitle(), config->ccdbPath.value);
     return hEff;
   }
-
-  bool isTest{false};
 
   bool shouldUploadOnStop{false};
   bool shouldCalculate{false};
@@ -238,11 +224,6 @@ class EfficiencyCalculator
   std::array<std::shared_ptr<TH1>, 2> hOutput{};
   std::array<TH1*, 2> hLoaded{};
 
-  MCTruthTrackHisto<1>* hMCTruth1;
-  MCTruthTrackHisto<2>* hMCTruth2;
-
-  std::string ccdbUrl{};
-  std::string ccdbPath{};
   o2::ccdb::CcdbApi ccdbApi;
 
   const std::string folderPrefix{"Efficiency"};
