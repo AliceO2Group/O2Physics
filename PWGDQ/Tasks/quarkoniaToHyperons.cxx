@@ -9,6 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+/// \file quarkoniaToHyperons.cxx
+/// \brief quarkonia --> hyperon antihyperon analysis task
+///
+/// \author David Dobrigkeit Chinellato <david.dobrigkeit.chinellato@cern.ch>, Austrian Academy of Sciences & SMI
+/// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences & SMI
+//
 // V0 analysis task
 // ================
 //
@@ -16,11 +22,6 @@
 // standard analysis output. It is meant to be run over
 // derived data.
 //
-/// \file quarkoniaToHyperons.cxx
-/// \brief quarkonia --> hyperon antihyperon analysis task
-///
-/// \author David Dobrigkeit Chinellato <david.dobrigkeit.chinellato@cern.ch>, Austrian Academy of Sciences & SMI
-/// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences & SMI
 //
 //    Comments, questions, complaints, suggestions?
 //    Please write to:
@@ -226,10 +227,10 @@ struct quarkoniaToHyperons {
   // UPC selections
   SGSelector sgSelector;
   struct : ConfigurableGroup {
-    Configurable<float> FV0cut{"upcCuts.FV0cut", 100., "FV0A threshold"};
-    Configurable<float> FT0Acut{"upcCuts.FT0Acut", 200., "FT0A threshold"};
-    Configurable<float> FT0Ccut{"upcCuts.FT0Ccut", 100., "FT0C threshold"};
-    Configurable<float> ZDCcut{"upcCuts.ZDCcut", 10., "ZDC threshold"};
+    Configurable<float> fv0Cut{"upcCuts.fv0Cut", 100., "FV0A threshold"};
+    Configurable<float> ft0aCut{"upcCuts.ft0aCut", 200., "FT0A threshold"};
+    Configurable<float> ft0cCut{"upcCuts.ft0cCut", 100., "FT0C threshold"};
+    Configurable<float> zdcCut{"upcCuts.zdcCut", 10., "ZDC threshold"};
     // Configurable<float> gapSel{"upcCuts.gapSel", 2, "Gap selection"};
   } upcCuts;
 
@@ -920,7 +921,7 @@ struct quarkoniaToHyperons {
       // 0 --> Single Gap - A side
       // 1 --> Single Gap - C side
       // 2 --> Double Gap - both A & C sides
-      selGapSide = sgSelector.trueGap(collision, upcCuts.FV0cut, upcCuts.FT0Acut, upcCuts.FT0Ccut, upcCuts.ZDCcut);
+      selGapSide = sgSelector.trueGap(collision, upcCuts.fv0Cut, upcCuts.ft0aCut, upcCuts.ft0cCut, upcCuts.zdcCut);
       histos.fill(HIST("hGapSide"), gapSide);
       histos.fill(HIST("hSelGapSide"), selGapSide);
       histos.fill(HIST("hEventCentralityVsSelGapSide"), centrality, selGapSide <= 2 ? selGapSide : -1);
@@ -1160,13 +1161,13 @@ struct quarkoniaToHyperons {
       return false;
     if (isXi && std::fabs(casc.mXi() - o2::constants::physics::MassXiMinus) > cascSelections.cascMassWindow)
       return false;
-    if (!isXi && std::fabs(casc.mOmega() - pdgDB->Mass(3334)) > cascSelections.cascMassWindow)
+    if (!isXi && std::fabs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) > cascSelections.cascMassWindow)
       return false;
 
     //
     // competing mass rejection
     //
-    if (isXi && std::fabs(casc.mOmega() - pdgDB->Mass(3334)) < cascSelections.compMassRejection)
+    if (isXi && std::fabs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < cascSelections.compMassRejection)
       return false;
     if (!isXi && std::fabs(casc.mXi() - o2::constants::physics::MassXiMinus) < cascSelections.compMassRejection)
       return false;
