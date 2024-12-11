@@ -566,7 +566,7 @@ struct match_mft_mch_data {
     return true;
   }
 
-  void process(aod::Collisions const& collisions, ExtBCs const& ebcs,
+  void process(aod::Collisions const&, ExtBCs const& ebcs,
                MyMuons const& fwdtracks, MyMFTs const& mfttracks)
   {
     initCCDB(ebcs.begin());
