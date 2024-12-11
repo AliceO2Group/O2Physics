@@ -334,30 +334,33 @@ struct phik0shortanalysis {
 
     // GenMC Phi and Phi coupled to K0S and Pion
     PhieffHist.add("h1PhiGenMC", "Phi for GenMC", kTH1F, {binnedmultAxis});
+    PhieffHist.add("h1PhiGenMCIncAssocReco", "Phi for GenMC Associated Reco Collision", kTH1F, {binnedmultAxis});
 
     PhieffHist.add("h2PhieffK0SGenMCInc", "Phi coupled to K0Short for GenMC Inclusive", kTH2F, {binnedmultAxis, binnedptK0SAxis});
     PhieffHist.add("h2PhieffK0SGenMCFCut", "Phi coupled to K0Short for GenMC Deltay < FirstCut", kTH2F, {binnedmultAxis, binnedptK0SAxis});
     PhieffHist.add("h2PhieffK0SGenMCSCut", "Phi coupled to K0Short for GenMC Deltay < SecondCut", kTH2F, {binnedmultAxis, binnedptK0SAxis});
 
-    PhieffHist.add("h2PhieffK0SGenMCIncAssocReco", "Phi coupled to K0Short for GenMC Inclusive", kTH2F, {binnedmultAxis, binnedptK0SAxis});
-    PhieffHist.add("h2PhieffK0SGenMCFCutAssocReco", "Phi coupled to K0Short for GenMC Deltay < FirstCut", kTH2F, {binnedmultAxis, binnedptK0SAxis});
-    PhieffHist.add("h2PhieffK0SGenMCSCutAssocReco", "Phi coupled to K0Short for GenMC Deltay < SecondCut", kTH2F, {binnedmultAxis, binnedptK0SAxis});
+    PhieffHist.add("h2PhieffK0SGenMCIncAssocReco", "Phi coupled to K0Short for GenMC Inclusive Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptK0SAxis});
+    PhieffHist.add("h2PhieffK0SGenMCFCutAssocReco", "Phi coupled to K0Short for GenMC Deltay < FirstCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptK0SAxis});
+    PhieffHist.add("h2PhieffK0SGenMCSCutAssocReco", "Phi coupled to K0Short for GenMC Deltay < SecondCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptK0SAxis});
 
     PhieffHist.add("h2PhieffPiGenMCInc", "Phi coupled to Pion for GenMC Inclusive", kTH2F, {binnedmultAxis, binnedptPiAxis});
     PhieffHist.add("h2PhieffPiGenMCFCut", "Phi coupled to Pion for GenMC Deltay < FirstCut", kTH2F, {binnedmultAxis, binnedptPiAxis});
     PhieffHist.add("h2PhieffPiGenMCSCut", "Phi coupled to Pion for GenMC Deltay < SecondCut", kTH2F, {binnedmultAxis, binnedptPiAxis});
 
-    PhieffHist.add("h2PhieffPiGenMCIncAssocReco", "Phi coupled to Pion for GenMC Inclusive", kTH2F, {binnedmultAxis, binnedptPiAxis});
-    PhieffHist.add("h2PhieffPiGenMCFCutAssocReco", "Phi coupled to Pion for GenMC Deltay < FirstCut", kTH2F, {binnedmultAxis, binnedptPiAxis});
-    PhieffHist.add("h2PhieffPiGenMCSCutAssocReco", "Phi coupled to Pion for GenMC Deltay < SecondCut", kTH2F, {binnedmultAxis, binnedptPiAxis});
+    PhieffHist.add("h2PhieffPiGenMCIncAssocReco", "Phi coupled to Pion for GenMC Inclusive Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
+    PhieffHist.add("h2PhieffPiGenMCFCutAssocReco", "Phi coupled to Pion for GenMC Deltay < FirstCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
+    PhieffHist.add("h2PhieffPiGenMCSCutAssocReco", "Phi coupled to Pion for GenMC Deltay < SecondCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
 
     // MCK0S invariant mass and GenMC K0S for computing efficiencies
     K0SeffHist.add("h3K0SeffInvMass", "Invariant mass of K0Short for Efficiency", kTH3F, {binnedmultAxis, binnedptK0SAxis, K0SmassAxis});
     K0SeffHist.add("h2K0SGenMC", "K0Short for GenMC", kTH2F, {binnedmultAxis, binnedptK0SAxis});
+    K0SeffHist.add("h2K0SGenMCIncAssocReco", "K0Short for GenMC Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptK0SAxis});
 
     // MCPion invariant mass and GenMC Pion for computing efficiencies
     PioneffHist.add("h4PieffInvMass", "Invariant mass of Pion for Efficiency", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
     PioneffHist.add("h2PiGenMC", "Pion for GenMC", kTH2F, {binnedmultAxis, binnedptPiAxis});
+    PioneffHist.add("h2PiGenMCIncAssocReco", "Pion for GenMC Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
 
     // y acceptance studies
     yaccHist.add("hyaccK0SRecMC", "K0S y acceptance in RecMC", kTH3F, {binnedmultAxis, binnedptK0SAxis, yAxis});
@@ -1638,6 +1641,8 @@ struct phik0shortanalysis {
       }
 
       PhieffHist.fill(HIST("h1PhiGenMC"), genmultiplicity);
+      if (isAssocColl)
+        PhieffHist.fill(HIST("h1PhiGenMCAssocReco"), genmultiplicity);
 
       std::array<bool, 3> isCountedK0S = {false, false, false};
 
@@ -1750,6 +1755,8 @@ struct phik0shortanalysis {
         continue;
 
       K0SeffHist.fill(HIST("h2K0SGenMC"), genmultiplicity, mcParticle1.pt());
+      if (isAssocColl)
+        K0SeffHist.fill(HIST("h2K0SGenMCAssocReco"), genmultiplicity, mcParticle1.pt());
 
       std::array<bool, 3> isCountedPhi = {false, false, false};
 
@@ -1827,6 +1834,8 @@ struct phik0shortanalysis {
         continue;
 
       PioneffHist.fill(HIST("h2PiGenMC"), genmultiplicity, mcParticle1.pt());
+      if (isAssocColl)
+        PioneffHist.fill(HIST("h2PiGenMCAssocReco"), genmultiplicity, mcParticle1.pt());
 
       std::array<bool, 3> isCountedPhi = {false, false, false};
 
