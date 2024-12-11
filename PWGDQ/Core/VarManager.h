@@ -989,8 +989,8 @@ class VarManager : public TObject
   static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr, PairCandidateType pairType = kDecayToEE);
   template <typename T1, typename T2, typename T3>
   static void FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
-  template <int candidateType, typename T1, typename T2, typename T3>
-  static void FillQaudMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr);
+  template <int candidateType, typename T1, typename T2>
+  static void FillQaudMC(T1 const& t1, T2 const& t2, T2 const& t3, float* values = nullptr);
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
   static void FillPairVertexing(C const& collision, T const& t1, T const& t2, bool propToSV = false, float* values = nullptr);
   template <uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
@@ -4559,8 +4559,8 @@ void VarManager::FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T
 }
 
 //__________________________________________________________________
-template <int candidateType, typename T1, typename T2, typename T3>
-void VarManager::FillQaudMC(T1 const& dilepton, T2 const& track1, T3 const& track2, float* values)
+template <int candidateType, typename T1, typename T2>
+void VarManager::FillQaudMC(T1 const& dilepton, T2 const& track1, T2 const& track2, float* values)
 {
   if (!values) {
     values = fgValues;
