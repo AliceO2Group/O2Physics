@@ -618,7 +618,7 @@ struct FlowTask {
     registry.fill(HIST("pt_phi_bef"), track.pt(), phimodn);
     if (cfgRejectionTPCsectorOverlap) {
       if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt()))
-      return false; // reject track
+        return false; // reject track
     }
     registry.fill(HIST("pt_phi_aft"), track.pt(), phimodn);
     return true;
