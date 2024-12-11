@@ -137,6 +137,12 @@ DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                              //! U
 DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool);                              //! Used in MC-Rec, Lc Prompt or Non-Prompt
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);            //! Used in MC-Rec, primary associated particles
 DECLARE_SOA_COLUMN(IsAutoCorrelated, isAutoCorrelated, bool);              //! Correlation Status
+DECLARE_SOA_COLUMN(PrNsigmTPC, prNsigmTPC, float);                         //! Associated Particle TPC nSigma proton
+DECLARE_SOA_COLUMN(KaNsigmTPC, kaNsigmTPC, float);                         //! Associated Particle TPC nSigma Kaon
+DECLARE_SOA_COLUMN(PiNsigmTPC, piNsigmTPC, float);                         //! Associated Particle TPC nSigma Pion
+DECLARE_SOA_COLUMN(PrNsigmTOF, prNsigmTOF, float);                         //! Associated Particle TOF nSigma Proton
+DECLARE_SOA_COLUMN(KaNsigmTOF, kaNsigmTOF, float);                         //! Associated Particle TOF nSigma Kaon
+DECLARE_SOA_COLUMN(PiNsigmTOF, piNsigmTOF, float);                         //! Associated Particle TOF nSigma Pion
 } // namespace hf_correlation_lc_hadron
 
 DECLARE_SOA_TABLE(LcHadronPair, "AOD", "LCHPAIR", //! Lc-Hadrons pairs Informations
@@ -150,6 +156,13 @@ DECLARE_SOA_TABLE(LcHadronPair, "AOD", "LCHPAIR", //! Lc-Hadrons pairs Informati
 DECLARE_SOA_TABLE(LcHadronRecoInfo, "AOD", "LCHRECOINFO", //! Lc-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_lc_hadron::MLc,
                   aod::hf_correlation_lc_hadron::SignalStatus);
+DECLARE_SOA_TABLE(LcHadronPairTrkPID, "AOD", "LCHPAIRPID", //! Lc-proton details
+                  aod::hf_correlation_lc_hadron::PrNsigmTPC,
+                  aod::hf_correlation_lc_hadron::KaNsigmTPC,
+                  aod::hf_correlation_lc_hadron::PiNsigmTPC,
+                  aod::hf_correlation_lc_hadron::PrNsigmTOF,
+                  aod::hf_correlation_lc_hadron::KaNsigmTOF,
+                  aod::hf_correlation_lc_hadron::PiNsigmTOF);
 
 DECLARE_SOA_TABLE(LcHadronGenInfo, "AOD", "LCHGENINFO", //! Lc-Hadrons pairs Generated Information
                   aod::hf_correlation_lc_hadron::IsPrompt,
