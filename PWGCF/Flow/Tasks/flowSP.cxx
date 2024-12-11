@@ -353,12 +353,12 @@ struct FlowSP {
         auto ux = std::cos(phi);
         auto uy = std::sin(phi);
 
-        auto uxQxA = ux * qxA;
-        auto uyQyA = uy * qyA;
-        auto uxyQxyA = uxQxA + uyQyA;
-        auto uxQxC = ux * qxC;
-        auto uyQyC = uy * qyC;
-        auto uxyQxyC = uxQxC + uyQyC;
+        // auto uxQxA = ux * qxA;
+        // auto uyQyA = uy * qyA;
+        // auto uxyQxyA = uxQxA + uyQyA;
+        // auto uxQxC = ux * qxC;
+        // auto uyQyC = uy * qyC;
+        // auto uxyQxyC = uxQxC + uyQyC;
 
         auto oddv1 = ux * (qxA - qxC) + uy * (qyA - qyC);
         auto evenv1 = ux * (qxA + qxC) + uy * (qyA + qyC);
