@@ -1636,7 +1636,7 @@ struct tofSpectra {
 
     if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
       return;
-    }   
+    }
 
     if (enableDCAvsmotherHistograms) {
       hDcaXYMC[i]->Fill(track.pt(), track.dcaXY());
@@ -1650,14 +1650,14 @@ struct tofSpectra {
           histos.fill(HIST(hdcaxystr[i]), track.pt(), track.dcaXY());
           histos.fill(HIST(hdcazstr[i]), track.pt(), track.dcaZ());
         }
-          
+
         if (mcParticle.has_mothers()) {
           for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
-          auto daughter0 = mother.template daughters_as<aod::McParticles>().begin();
-          double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-          double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
-          auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
-          hDecayLengthStr[i]->Fill(track.pt(), decayLength);
+            auto daughter0 = mother.template daughters_as<aod::McParticles>().begin();
+            double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
+            double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
+            auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
+            hDecayLengthStr[i]->Fill(track.pt(), decayLength);
           }
         }
       } else {
@@ -1724,26 +1724,26 @@ struct tofSpectra {
           hDcaXYMCNotHF[i]->Fill(track.pt(), track.dcaXY());
           hDcaZMCNotHF[i]->Fill(track.pt(), track.dcaZ());
         }
-          
+
         if (mcParticle.has_mothers()) {
           for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
-          auto daughter0 = mother.template daughters_as<aod::McParticles>().begin();
-          double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-          double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
-          auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
-                  
-          if (IsD0Mother) {
-            hDecayLengthMCD0[i]->Fill(track.pt(), decayLength);
-          }
-          if (IsCharmMother) {
-            hDecayLengthMCCharm[i]->Fill(track.pt(), decayLength);
-          }
-          if (IsBeautyMother) {
-            hDecayLengthMCBeauty[i]->Fill(track.pt(), decayLength);
-          }
-          if (IsNotHFMother) {
-            hDecayLengthMCNotHF[i]->Fill(track.pt(), decayLength);
-          }
+            auto daughter0 = mother.template daughters_as<aod::McParticles>().begin();
+            double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
+            double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
+            auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
+
+            if (IsD0Mother) {
+              hDecayLengthMCD0[i]->Fill(track.pt(), decayLength);
+            }
+            if (IsCharmMother) {
+              hDecayLengthMCCharm[i]->Fill(track.pt(), decayLength);
+            }
+            if (IsBeautyMother) {
+              hDecayLengthMCBeauty[i]->Fill(track.pt(), decayLength);
+            }
+            if (IsNotHFMother) {
+              hDecayLengthMCNotHF[i]->Fill(track.pt(), decayLength);
+            }
           }
         }
       }
