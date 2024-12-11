@@ -78,7 +78,7 @@ struct femtoUniversePairTaskTrackPhi {
   } ConfEff;
 
   struct : o2::framework::ConfigurableGroup {
-    Configurable<bool> ConfCPRIsEnabled{"ConfCPRIsEnabled", true, "Close Pair Rejection"};
+    Configurable<bool> ConfCPRIsEnabled{"ConfCPRIsEnabled", false, "Close Pair Rejection"};
     Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
     Configurable<float> ConfCPRdeltaPhiCutMax{"ConfCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
     Configurable<float> ConfCPRdeltaPhiCutMin{"ConfCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
@@ -578,6 +578,8 @@ struct femtoUniversePairTaskTrackPhi {
       }
     }
 
+    // Commented for now, maybe will be used in the future for better fitting of invariant mass background.
+
     TLorentzVector part1Vec;
     TLorentzVector part2Vec;
 
@@ -585,11 +587,6 @@ struct femtoUniversePairTaskTrackPhi {
     float mMassTwo = TDatabasePDG::Instance()->GetParticle(-321)->Mass(); // FIXME: Get from the PDG service of the common header
 
     for (auto& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsKaons, groupPartsKaons))) {
-      // empty if statements commented out on 20241114 to get rid of MegaLinter errors
-      // if (!IsKaonNSigma(kaon1.p(), trackCuts.getNsigmaTPC(kaon1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(kaon1, o2::track::PID::Kaon))) {
-      // }
-      // if (!IsKaonNSigma(kaon2.p(), trackCuts.getNsigmaTPC(kaon2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(kaon2, o2::track::PID::Kaon))) {
-      // }
       if ((kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
         part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
         part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassOne);

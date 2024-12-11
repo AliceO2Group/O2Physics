@@ -909,7 +909,8 @@ struct femtoUniverseProducerTask {
                       femtoUniverseTrackSelection::TrackContainerPosition::kCuts),
                     cutContainer.at(
                       femtoUniverseTrackSelection::TrackContainerPosition::kPID),
-                    track.dcaXY(), childIDs, 0, 0);
+                    track.dcaXY(), childIDs, 0,
+                    track.sign()); // sign getter is mAntiLambda()
       } else {
         outputCascParts(outputCollision.lastIndex(), track.pt(), track.eta(),
                         track.phi(), aod::femtouniverseparticle::ParticleType::kTrack,
@@ -1325,6 +1326,8 @@ struct femtoUniverseProducerTask {
         continue;
       }
 
+      //  LOGF(info, "p1 sign = %d and p2 sign = %d", p1.sign(), p2.sign());
+
       TLorentzVector part1Vec;
       TLorentzVector part2Vec;
 
@@ -1347,12 +1350,6 @@ struct femtoUniverseProducerTask {
         continue;
       }
 
-      /*float phiPhi = sumVec.Phi();
-      if (sumVec.Phi() < 0) {
-        phiPhi = sumVec.Phi() + o2::constants::math::TwoPI;
-      } else if (sumVec.Phi() >= 0) {
-        phiPhi = sumVec.Phi();
-      }*/
       float phiPhi = RecoDecay::constrainAngle(sumVec.Phi(), 0);
       float phiM = sumVec.M();
 
@@ -1361,7 +1358,6 @@ struct femtoUniverseProducerTask {
       }
 
       phiCuts.fillQA<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild>(col, p1, p1, p2, 321, -321); ///\todo fill QA also for daughters
-
       int postrackID = p1.globalIndex();
       int rowInPrimaryTrackTablePos = -1; // does it do anything?
       rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
@@ -1371,12 +1367,12 @@ struct femtoUniverseProducerTask {
       outputParts(outputCollision.lastIndex(), p1.pt(),
                   p1.eta(), p1.phi(),
                   aod::femtouniverseparticle::ParticleType::kPhiChild,
-                  -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kPosCuts),
-                  -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kPosPID),
-                  p1.dcaXY(),
+                  -999,       // cutContainer
+                  -999,       // cutContainer
+                  p1.dcaXY(), // tempFitVar
                   childIDs,
                   0,
-                  1); // sign, workaround for now
+                  (float)p1.sign());
       const int rowOfPosTrack = outputParts.lastIndex();
       if constexpr (isMC) {
         fillMCParticle(p1, o2::aod::femtouniverseparticle::ParticleType::kPhiChild);
@@ -1391,12 +1387,12 @@ struct femtoUniverseProducerTask {
                   p2.eta(),
                   p2.phi(),
                   aod::femtouniverseparticle::ParticleType::kPhiChild,
-                  -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegCuts),
-                  -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegPID),
-                  p2.dcaXY(),
+                  -999,       // cutContainer
+                  -999,       // cutContainer
+                  p2.dcaXY(), // tempFitVar
                   childIDs,
                   0,
-                  -1); // sign, workaround for now
+                  (float)p2.sign());
       const int rowOfNegTrack = outputParts.lastIndex();
       if constexpr (isMC) {
         fillMCParticle(p2, o2::aod::femtouniverseparticle::ParticleType::kPhiChild);
@@ -1408,11 +1404,11 @@ struct femtoUniverseProducerTask {
                   phiEta,
                   phiPhi,
                   aod::femtouniverseparticle::ParticleType::kPhi,
-                  -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kV0),
+                  -999, // cutContainer
                   0,
-                  phiM, // v0.v0cosPA(),
+                  phiM, // tempFitVar
                   indexChildID,
-                  phiM,  // phi.mLambda(), //for now it will have a mLambda getter, maybe we will change it in the future so it's more logical
+                  phiM,  // phi.mLambda() for now it will have a mLambda getter, maybe we will change it in the future so it's more logical
                   -999); // v0.mAntiLambda()
 
       if (ConfIsDebug) {
