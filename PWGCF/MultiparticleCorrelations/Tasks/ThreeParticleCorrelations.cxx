@@ -133,7 +133,7 @@ struct ThreePartCorr {
     QARegistry.add("hTOFPion", "hTOFPion", {HistType::kTH2D, {{TrackPtAxis}, {1000, -50, 50}}});
     QARegistry.add("hTOFKaon", "hTOFKaon", {HistType::kTH2D, {{TrackPtAxis}, {1000, -50, 50}}});
     QARegistry.add("hTOFProton", "hTOFProton", {HistType::kTH2D, {{TrackPtAxis}, {1000, -50, 50}}});
-    
+
     QARegistry.add("hInvMassLambda", "hInvMassLambda", {HistType::kTH3D, {{LambdaInvMassAxis}, {V0PtAxis}, {CentralityAxis}}});
     QARegistry.add("hInvMassAntiLambda", "hInvMassAntiLambda", {HistType::kTH3D, {{LambdaInvMassAxis}, {V0PtAxis}, {CentralityAxis}}});
 
@@ -204,11 +204,11 @@ struct ThreePartCorr {
     // Start of the Track QA
     for (const auto& track : tracks) {
       if (track.hasTOF()) {
-	QARegistry.fill(HIST("hTOFPion"), track.pt(), track.tofNSigmaPi());
-	QARegistry.fill(HIST("hTOFKaon"), track.pt(), track.tofNSigmaKa());
-	QARegistry.fill(HIST("hTOFProton"), track.pt(), track.tofNSigmaPr());
+        QARegistry.fill(HIST("hTOFPion"), track.pt(), track.tofNSigmaPi());
+        QARegistry.fill(HIST("hTOFKaon"), track.pt(), track.tofNSigmaKa());
+        QARegistry.fill(HIST("hTOFProton"), track.pt(), track.tofNSigmaPr());
       }
-      
+
       A_PID = TrackPID(track);
       if (A_PID[1] < 4.0) {
         QARegistry.fill(HIST("hTrackPt"), track.pt());
