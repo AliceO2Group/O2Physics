@@ -340,7 +340,7 @@ struct tofSpectra {
     const AxisSpec phiAxis{200, 0, 7, "#it{#varphi} (rad)"};
     const AxisSpec dcaZAxis{binsOptions.binsDca, "DCA_{z} (cm)"};
     const AxisSpec lengthAxis{100, 0, 600, "Track length (cm)"};
-    const AxisSpec decayLengthAxis{100, 0, 0.1, "Decay Length (cm)"};
+    const AxisSpec decayLengthAxis{100, 0, 0.5, "Decay Length (cm)"};
 
     if (enableTrackCutHistograms) {
       const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
@@ -1636,7 +1636,7 @@ struct tofSpectra {
 
     if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
       return;
-    }
+    }   
 
     if (enableDCAvsmotherHistograms) {
       hDcaXYMC[i]->Fill(track.pt(), track.dcaXY());
@@ -1650,12 +1650,15 @@ struct tofSpectra {
           histos.fill(HIST(hdcaxystr[i]), track.pt(), track.dcaXY());
           histos.fill(HIST(hdcazstr[i]), track.pt(), track.dcaZ());
         }
-        if (mcParticle.has_daughters()) {
-          auto daughter0 = mcParticle.template daughters_as<aod::McParticles>().begin();
+          
+        if (mcParticle.has_mothers()) {
+          for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
+          auto daughter0 = mother.template daughters_as<aod::McParticles>().begin();
           double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-          double vertexPrimary[3] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
-          auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau) / 10000;
+          double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
+          auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
           hDecayLengthStr[i]->Fill(track.pt(), decayLength);
+          }
         }
       } else {
         if (enableDCAxyzHistograms) {
@@ -1721,13 +1724,14 @@ struct tofSpectra {
           hDcaXYMCNotHF[i]->Fill(track.pt(), track.dcaXY());
           hDcaZMCNotHF[i]->Fill(track.pt(), track.dcaZ());
         }
-
-        if (mcParticle.has_daughters()) {
-          auto daughter0 = mcParticle.template daughters_as<aod::McParticles>().begin();
+          
+        if (mcParticle.has_mothers()) {
+          for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
+          auto daughter0 = mother.template daughters_as<aod::McParticles>().begin();
           double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-          double vertexPrimary[3] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
-          auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau) / 10000;
-
+          double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
+          auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
+                  
           if (IsD0Mother) {
             hDecayLengthMCD0[i]->Fill(track.pt(), decayLength);
           }
@@ -1739,6 +1743,7 @@ struct tofSpectra {
           }
           if (IsNotHFMother) {
             hDecayLengthMCNotHF[i]->Fill(track.pt(), decayLength);
+          }
           }
         }
       }
