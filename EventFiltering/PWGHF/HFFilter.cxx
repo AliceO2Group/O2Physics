@@ -62,9 +62,9 @@ struct HfFilter { // Main struct for HF triggers
 
   // parameters for all triggers
   // nsigma PID (except for V0 and cascades)
-  Configurable<LabeledArray<float>> nSigmaPidCuts{"nSigmaPidCuts", {cutsNsigma[0], 3, 6, labelsRowsNsigma, labelsColumnsNsigma}, "Nsigma cuts for TPC/TOF PID (except for V0 and cascades)"};
+  Configurable<LabeledArray<float>> nSigmaPidCuts{"nSigmaPidCuts", {cutsNsigma[0], 3, 7, labelsRowsNsigma, labelsColumnsNsigma}, "Nsigma cuts for TPC/TOF PID (except for V0 and cascades)"};
   // min and max pts for tracks and bachelors (except for V0 and cascades)
-  Configurable<LabeledArray<float>> ptCuts{"ptCuts", {cutsPt[0], 2, 6, labelsRowsCutsPt, labelsColumnsCutsPt}, "minimum and maximum pT for bachelor tracks (except for V0 and cascades)"};
+  Configurable<LabeledArray<float>> ptCuts{"ptCuts", {cutsPt[0], 2, 7, labelsRowsCutsPt, labelsColumnsCutsPt}, "minimum and maximum pT for bachelor tracks (except for V0 and cascades)"};
 
   // parameters for high-pT triggers
   Configurable<LabeledArray<float>> ptThresholds{"ptThresholds", {cutsHighPtThresholds[0], 1, 2, labelsEmpty, labelsColumnsHighPtThresholds}, "pT treshold for high pT charm hadron candidates for kHighPt triggers in GeV/c"};
@@ -79,7 +79,7 @@ struct HfFilter { // Main struct for HF triggers
 
   // parameters for femto triggers
   Configurable<float> femtoMaxRelativeMomentum{"femtoMaxRelativeMomentum", 2., "Maximal allowed value for relative momentum between charm-proton pairs in GeV/c"};
-  Configurable<LabeledArray<int>> enableFemtoChannels{"enableFemtoChannels", {activeFemtoChannels[0], 1, 5, labelsEmpty, labelsColumnsFemtoChannels}, "Flags to enable/disable femto channels"};
+  Configurable<LabeledArray<int>> enableFemtoChannels{"enableFemtoChannels", {activeFemtoChannels[0], 2, 5, labelsRowsFemtoChannels, labelsColumnsFemtoChannels}, "Flags to enable/disable femto channels"};
   Configurable<bool> requireCharmMassForFemto{"requireCharmMassForFemto", false, "Flags to enable/disable cut on charm-hadron invariant-mass window for femto"};
   Configurable<float> ptThresholdForFemtoPid{"ptThresholdForFemtoPid", 8., "pT threshold for changing strategy of proton PID in femto triggers"};
   Configurable<bool> forceTofPidForFemto{"forceTofPidForFemto", true, "force TOF PID for proton in femto triggers"};
@@ -142,9 +142,11 @@ struct HfFilter { // Main struct for HF triggers
   std::shared_ptr<TH1> hN2ProngCharmCand, hN3ProngCharmCand;
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmHighPt{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmProtonKstarDistr{};
+  std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmDeuteronKstarDistr{};
   std::array<std::shared_ptr<TH2>, kNBeautyParticles> hMassVsPtB{};
   std::array<std::shared_ptr<TH2>, kNCharmParticles + 17> hMassVsPtC{}; // +9 for resonances (D*+, D*0, Ds*+, Ds1+, Ds2*+, Xic+* right sign, Xic+* wrong sign, Xic0* right sign, Xic0* wrong sign) +2 for SigmaC (SigmaC++, SigmaC0) +2 for SigmaCK pairs (SigmaC++K-, SigmaC0K0s) +2 for charm baryons (Xi+Pi, Xi+Ka)
   std::shared_ptr<TH2> hProtonTPCPID, hProtonTOFPID;
+  std::shared_ptr<TH2> hDeuteronTPCPID, hDeuteronTOFPID;
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreBkg{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScorePrompt{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreNonPrompt{};
@@ -167,11 +169,13 @@ struct HfFilter { // Main struct for HF triggers
     helper.setPtLimitsBeautyBachelor(ptCuts->get(0u, 0u), ptCuts->get(1u, 0u));
     helper.setPtLimitsDstarSoftPion(ptCuts->get(0u, 1u), ptCuts->get(1u, 1u));
     helper.setPtLimitsProtonForFemto(ptCuts->get(0u, 2u), ptCuts->get(1u, 2u));
+    helper.setPtLimitsDeuteronForFemto(ptCuts->get(0u, 6u), ptCuts->get(1u, 6u));
     helper.setPtLimitsCharmBaryonBachelor(ptCuts->get(0u, 3u), ptCuts->get(1u, 3u));
     helper.setCutsSingleTrackBeauty(cutsTrackBeauty3Prong, cutsTrackBeauty4Prong);
     helper.setCutsSingleTrackCharmBaryonBachelor(cutsTrackCharmBaryonBachelor);
     helper.setPtThresholdPidStrategyForFemto(ptThresholdForFemtoPid);
     helper.setNsigmaProtonCutsForFemto(std::array{nSigmaPidCuts->get(0u, 3u), nSigmaPidCuts->get(1u, 3u), nSigmaPidCuts->get(2u, 3u)});
+    helper.setNsigmaDeuteronCutsForFemto(std::array{nSigmaPidCuts->get(0u, 6u), nSigmaPidCuts->get(1u, 6u), nSigmaPidCuts->get(2u, 6u)});
     helper.setNsigmaProtonCutsForCharmBaryons(nSigmaPidCuts->get(0u, 0u), nSigmaPidCuts->get(1u, 0u));
     helper.setNsigmaPionKaonCutsForDzero(nSigmaPidCuts->get(0u, 1u), nSigmaPidCuts->get(1u, 1u));
     helper.setNsigmaKaonCutsFor3Prongs(nSigmaPidCuts->get(0u, 2u), nSigmaPidCuts->get(1u, 2u));
@@ -199,6 +203,7 @@ struct HfFilter { // Main struct for HF triggers
       for (int iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
         hCharmHighPt[iCharmPart] = registry.add<TH1>(Form("f%sHighPt", charmParticleNames[iCharmPart].data()), Form("#it{p}_{T} distribution of triggered high-#it{p}_{T} %s candidates;#it{p}_{T} (GeV/#it{c});counts", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {ptAxis});
         hCharmProtonKstarDistr[iCharmPart] = registry.add<TH1>(Form("f%sProtonKstarDistr", charmParticleNames[iCharmPart].data()), Form("#it{k}* distribution of triggered p#minus%s pairs;#it{k}* (GeV/#it{c});counts", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {kstarAxis});
+        hCharmDeuteronKstarDistr[iCharmPart] = registry.add<TH1>(Form("f%sDeuteronKstarDistr", charmParticleNames[iCharmPart].data()), Form("#it{k}* distribution of triggered de%s pairs;#it{k}* (GeV/#it{c});counts", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {kstarAxis});
         hMassVsPtC[iCharmPart] = registry.add<TH2>(Form("fMassVsPt%s", charmParticleNames[iCharmPart].data()), Form("#it{M} vs. #it{p}_{T} distribution of triggered %s candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", charmParticleNames[iCharmPart].data()), HistType::kTH2F, {ptAxis, massAxisC[iCharmPart]});
         if (activateQA > 1) {
           hBDTScoreBkg[iCharmPart] = registry.add<TH1>(Form("f%sBDTScoreBkgDistr", charmParticleNames[iCharmPart].data()), Form("BDT background score distribution for %s;BDT background score;counts", charmParticleNames[iCharmPart].data()), HistType::kTH1F, {bdtAxis});
@@ -239,6 +244,9 @@ struct HfFilter { // Main struct for HF triggers
       if (activateQA > 1) {
         hProtonTPCPID = registry.add<TH2>("fProtonTPCPID", "#it{N}_{#sigma}^{TPC} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TPC}", HistType::kTH2F, {pAxis, nSigmaAxis});
         hProtonTOFPID = registry.add<TH2>("fProtonTOFPID", "#it{N}_{#sigma}^{TOF} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TOF}", HistType::kTH2F, {pAxis, nSigmaAxis});
+        hDeuteronTPCPID = registry.add<TH2>("hDeuteronTPCPID", "#it{N}_{#sigma}^{TPC} vs. #it{p} for selected deuterons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TPC}", HistType::kTH2F, {pAxis, nSigmaAxis});
+        hDeuteronTOFPID = registry.add<TH2>("hDeuteronTOFPID", "#it{N}_{#sigma}^{TOF} vs. #it{p} for selected deuterons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TOF}", HistType::kTH2F, {pAxis, nSigmaAxis});
+
         hV0Selected = registry.add<TH2>("fV0Selected", "Selections for V0s;;counts", HistType::kTH2F, {{9, -0.5, 8.5}, {kNV0, -0.5, +kNV0 - 0.5}});
 
         for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
@@ -266,8 +274,8 @@ struct HfFilter { // Main struct for HF triggers
     thresholdBDTScores = {thresholdBDTScoreD0ToKPi, thresholdBDTScoreDPlusToPiKPi, thresholdBDTScoreDSToPiKK, thresholdBDTScoreLcToPiKP, thresholdBDTScoreXicToPiKP};
   }
 
-  using BigTracksMCPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::McTrackLabels>;
-  using BigTracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
+  using BigTracksMCPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullDe, aod::pidTOFFullDe, aod::McTrackLabels>;
+  using BigTracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullDe, aod::pidTOFFullDe>;
   using CollsWithEvSel = soa::Join<aod::Collisions, aod::EvSels>;
 
   using Hf2ProngsWithMl = soa::Join<aod::Hf2Prongs, aod::Hf2ProngMlProbs>;
@@ -495,11 +503,11 @@ struct HfFilter { // Main struct for HF triggers
 
           // 2-prong femto
           if (!keepEvent[kFemto2P] && enableFemtoChannels->get(0u, 0u) && isCharmTagged && track.collisionId() == thisCollId && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1) || !requireCharmMassForFemto)) {
-            bool isProton = helper.isSelectedProton4Femto(track, trackParThird, activateQA, hProtonTPCPID, hProtonTOFPID, forceTofPidForFemto);
+            bool isProton = helper.isSelectedTrack4Femto(track, trackParThird, activateQA, hProtonTPCPID, hProtonTOFPID, forceTofPidForFemto, kProtonForFemto);
             if (isProton) {
               float relativeMomentum = helper.computeRelativeMomentum(pVecThird, pVec2Prong, massD0);
               if (applyOptimisation) {
-                optimisationTreeFemto(thisCollId, o2::constants::physics::Pdg::kD0, pt2Prong, scores[0], scores[1], scores[2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr());
+                optimisationTreeFemto(thisCollId, o2::constants::physics::Pdg::kD0, pt2Prong, scores[0], scores[1], scores[2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr(), track.tpcNSigmaDe(), track.tofNSigmaDe());
               }
               if (relativeMomentum < femtoMaxRelativeMomentum) {
                 keepEvent[kFemto2P] = true;
@@ -873,18 +881,35 @@ struct HfFilter { // Main struct for HF triggers
           } // end beauty selection
 
           // 3-prong femto
-          bool isProton = helper.isSelectedProton4Femto(track, trackParFourth, activateQA, hProtonTPCPID, hProtonTOFPID, forceTofPidForFemto);
+          bool isProton = helper.isSelectedTrack4Femto(track, trackParFourth, activateQA, hProtonTPCPID, hProtonTOFPID, forceTofPidForFemto, kProtonForFemto);
+          bool isDeuteron = helper.isSelectedTrack4Femto(track, trackParFourth, activateQA, hDeuteronTPCPID, hDeuteronTOFPID, forceTofPidForFemto, kDeuteronForFemto);
+
           if (isProton && track.collisionId() == thisCollId) {
             for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto3P]; ++iHypo) {
               if (isCharmTagged[iHypo] && enableFemtoChannels->get(0u, iHypo + 1) && (TESTBIT(is3ProngInMass[iHypo], 0) || TESTBIT(is3ProngInMass[iHypo], 1) || !requireCharmMassForFemto)) {
                 float relativeMomentum = helper.computeRelativeMomentum(pVecFourth, pVec3Prong, massCharmHypos[iHypo]);
                 if (applyOptimisation) {
-                  optimisationTreeFemto(thisCollId, charmParticleID[iHypo], pt3Prong, scores[iHypo][0], scores[iHypo][1], scores[iHypo][2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr());
+                  optimisationTreeFemto(thisCollId, charmParticleID[iHypo], pt3Prong, scores[iHypo][0], scores[iHypo][1], scores[iHypo][2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr(), track.tpcNSigmaDe(), track.tofNSigmaDe());
                 }
                 if (relativeMomentum < femtoMaxRelativeMomentum) {
                   keepEvent[kFemto3P] = true;
                   if (activateQA) {
                     hCharmProtonKstarDistr[iHypo + 1]->Fill(relativeMomentum);
+                  }
+                }
+              }
+            }
+          } else if (isDeuteron && track.collisionId() == thisCollId) {
+            for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto3P]; ++iHypo) {
+              if (isCharmTagged[iHypo] && enableFemtoChannels->get(1u, iHypo + 1) && (TESTBIT(is3ProngInMass[iHypo], 0) || TESTBIT(is3ProngInMass[iHypo], 1) || !requireCharmMassForFemto)) {
+                float relativeMomentum = helper.computeRelativeMomentum(pVecFourth, pVec3Prong, massCharmHypos[iHypo]);
+                if (applyOptimisation) {
+                  optimisationTreeFemto(thisCollId, charmParticleID[iHypo], pt3Prong, scores[iHypo][0], scores[iHypo][1], scores[iHypo][2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr(), track.tpcNSigmaDe(), track.tofNSigmaDe());
+                }
+                if (relativeMomentum < femtoMaxRelativeMomentum) {
+                  keepEvent[kFemto3P] = true;
+                  if (activateQA) {
+                    hCharmDeuteronKstarDistr[iHypo + 1]->Fill(relativeMomentum);
                   }
                 }
               }
@@ -990,9 +1015,9 @@ struct HfFilter { // Main struct for HF triggers
                   }
                 }
               } // end SigmaC++ candidate
-            }   // end loop over tracks (soft pi)
-          }     // end candidate Lc->pKpi
-        }       // end loop over tracks
+            } // end loop over tracks (soft pi)
+          } // end candidate Lc->pKpi
+        } // end loop over tracks
 
         // Ds with photon
         bool isGoodDsToKKPi = (isSignalTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 0);
