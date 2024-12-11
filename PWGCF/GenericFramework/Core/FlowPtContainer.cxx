@@ -10,6 +10,9 @@
 // or submit itself to any jurisdiction.
 
 #include "FlowPtContainer.h"
+#include <algorithm>
+#include <vector>
+#include <cstdio>
 
 FlowPtContainer::FlowPtContainer() : TNamed("name", "name"),
                                      fCMTermList(0),
