@@ -373,7 +373,7 @@ struct fwdMuonsUPC {
 
   // template function that fills a map with the collision id of each udmccollision as key
   // and a vector with the tracks
-  // map == (key, element) == (udCollisionId, vector(track1, mcPart1, udCollisionId1, track2, mcPart2, udCollisionId2))
+  // map == (key, element) == (udCollisionId, vector(track1, mcPart1, track2, mcPart2))
   template <typename TTracks>
   void collectRecoCandID(std::unordered_map<int32_t, std::vector<int32_t>>& tracksPerCand, TTracks& tracks)
   {
@@ -391,7 +391,6 @@ struct fwdMuonsUPC {
 
       tracksPerCand[candId].push_back(tr.globalIndex());
       tracksPerCand[candId].push_back(mcPart.globalIndex());
-      tracksPerCand[candId].push_back(mcPart.udMcCollisionId());
     }
   }
 
@@ -710,6 +709,11 @@ struct fwdMuonsUPC {
                          CompleteFwdTracks::iterator const& tr1, aod::UDMcParticles::iterator const& McPart1,
                          CompleteFwdTracks::iterator const& tr2, aod::UDMcParticles::iterator const& McPart2)
   {
+
+    // check that all pairs are mu+mu-
+    if (std::abs(McPart1.pdgCode()) !=13 && std::abs(McPart2.pdgCode()) != 13)
+      LOGF(info, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
+
     // V0 selection
     const auto& ampsV0A = cand.amplitudesV0A();
     const auto& ampsRelBCsV0A = cand.ampRelBCsV0A();
@@ -925,33 +929,26 @@ struct fwdMuonsUPC {
 
     // loop over the candidates
     for (const auto& item : tracksPerCandAll) {
-      if (item.second.size() != 6) {
-        // LOGF(info, "error: reco track(s) not gen");
+      if (item.second.size() != 4) {
+        LOGF(info, "number track (reco + gen) = %d",item.second.size());
         continue;
       }
 
-      int32_t trId1 = item.second[0];
-      int32_t trId2 = item.second[3]; //[2]
+      // get the reco candidate
+      auto cand = eventCandidates.iteratorAt(item.first);
 
-      int32_t candID = item.first;
-      auto cand = eventCandidates.iteratorAt(candID);
-      auto tr1 = fwdTracks.iteratorAt(trId1);
-      auto tr2 = fwdTracks.iteratorAt(trId2);
+      // get reco tracks and corresponding gen particles
+      auto tr1 = fwdTracks.iteratorAt(item.second[0]);
+      auto trMc1 = McParts.iteratorAt(item.second[1]);
+      auto tr2 = fwdTracks.iteratorAt(item.second[2]);
+      auto trMc2 = McParts.iteratorAt(item.second[3]);
 
-      auto trMcId1 = item.second[1];
-      auto trMcId2 = item.second[4];
-      auto trMc1 = McParts.iteratorAt(trMcId1);
-      auto trMc2 = McParts.iteratorAt(trMcId2);
-
-      auto mcCandID1 = mcCandidates.iteratorAt(item.second[2]);
-      auto mcCandID2 = mcCandidates.iteratorAt(item.second[5]);
-
-      if (mcCandID1 != mcCandID2) {
-        // LOGF(info, "mc tracks belong to different collisions");
-      }
-
-      // auto mcTr1 = McParts.iteratorAt(tr1.udMcParticleId());
-      // auto mcTr2 = McParts.iteratorAt(tr2.udMcParticleId());
+      // check that the method used here gets the the MC particles
+      // as the one used by Nazar
+      auto nz_trMc1 = McParts.iteratorAt(tr1.udMcParticleId());
+      auto nz_trMc2 = McParts.iteratorAt(tr2.udMcParticleId());
+      
+      if(nz_trMc1 != trMc1) LOGF(info, "diff wrt Nazar!");
       processMcRecoCand(cand, tr1, trMc1, tr2, trMc2);
     }
   }
