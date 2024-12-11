@@ -300,8 +300,8 @@ void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry, bool isSel
     fillSelectionHistogram<daugh>(); // pos, neg
     fillSelectionHistogram<bach>();  // bach
 
-    AxisSpec massAxisCascade = {2200, 1.25f, 1.8f, "m_{#Cascade} (GeV/#it{c}^{2})"};
-    AxisSpec massAxisV0 = {600, 0.0f, 3.0f, "m_{#V0} (GeV/#it{c}^{2})"};
+    AxisSpec massAxisCascade = {2200, 1.25f, 1.8f, "m_{Cascade} (GeV/#it{c}^{2})"};
+    AxisSpec massAxisV0 = {600, 0.0f, 3.0f, "m_{V0} (GeV/#it{c}^{2})"};
     AxisSpec DCADaughAxis = {1000, 0.0f, 2.0f, "DCA (cm)"};
     AxisSpec DCAToPVAxis = {1000, -10.0f, 10.0f, "DCA to PV (cm)"};
     AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
