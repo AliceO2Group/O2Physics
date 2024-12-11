@@ -328,31 +328,23 @@ struct JetSpectraEseTask {
   template </*std::size_t... Idx,*/ typename collision>
   void fillEPCos(/*const std::index_sequence<Idx...>&,*/ const collision& col, const std::array<float, 3>& Corr)
   {
-    static constexpr std::string CosList[] = {"hCosPsi2AmC", "hCosPsi2AmB", "hCosPsi2BmC"};
+    // static constexpr std::string CosList[] = {"hCosPsi2AmC", "hCosPsi2AmB", "hCosPsi2BmC"};
     // (registry.fill(HIST(CosList[Idx]), col.centrality(), Corr[Idx], col.qPERCFT0C()[0]), ...);
-    // static_for<0, 2>([&](auto i) {
-    //   constexpr int index = i.value;
-    //   registry.fill(HIST(CosList[index]), col.centrality(), Corr[index], col.qPERCFT0C()[0]);
-    // });
-    registry.fill(HIST(CosList[0]), col.centrality(), Corr[0], col.qPERCFT0C()[0]);
-    registry.fill(HIST(CosList[1]), col.centrality(), Corr[1], col.qPERCFT0C()[0]);
-    registry.fill(HIST(CosList[2]), col.centrality(), Corr[2], col.qPERCFT0C()[0]);
+    registry.fill(HIST("hCosPsi2AmC"), col.centrality(), Corr[0], col.qPERCFT0C()[0]);
+    registry.fill(HIST("hCosPsi2AmB"), col.centrality(), Corr[1], col.qPERCFT0C()[0]);
+    registry.fill(HIST("hCosPsi2BmC"), col.centrality(), Corr[2], col.qPERCFT0C()[0]);
   }
 
   template </*std::size_t... Idx,*/ typename collision>
   void fillEP(/*const std::index_sequence<Idx...>&,*/ const collision& col, const std::map<std::string, float>& epMap)
   {
-    static constexpr std::string_view EpList[] = {"hPsi2FT0A", "hPsi2FV0A", "hPsi2FT0C", "hPsi2TPCpos", "hPsi2TPCneg"};
+    // static constexpr std::string_view EpList[] = {"hPsi2FT0A", "hPsi2FV0A", "hPsi2FT0C", "hPsi2TPCpos", "hPsi2TPCneg"};
     // (registry.fill(HIST(EpList[Idx]), col.centrality(), epMap.at(std::string(RemovePrefix(EpList[Idx])))), ...);
-    // static_for<0, 4>([&](auto i) {
-    //   constexpr int index = i.value;
-    //   registry.fill(HIST(EpList[index]), col.centrality(), epMap.at(std::string(RemovePrefix(EpList[index]))));
-    // });
-    registry.fill(HIST(EpList[0]), col.centrality(), epMap.at(std::string(RemovePrefix(EpList[0]))));
-    registry.fill(HIST(EpList[1]), col.centrality(), epMap.at(std::string(RemovePrefix(EpList[1]))));
-    registry.fill(HIST(EpList[2]), col.centrality(), epMap.at(std::string(RemovePrefix(EpList[2]))));
-    registry.fill(HIST(EpList[3]), col.centrality(), epMap.at(std::string(RemovePrefix(EpList[3]))));
-    registry.fill(HIST(EpList[4]), col.centrality(), epMap.at(std::string(RemovePrefix(EpList[4]))));
+    registry.fill(HIST("hPsi2FT0A"), col.centrality(), epMap.at("FT0A"));
+    registry.fill(HIST("hPsi2FV0A"), col.centrality(), epMap.at("FV0A"));
+    registry.fill(HIST("hPsi2FT0C"), col.centrality(), epMap.at("FT0C"));
+    registry.fill(HIST("hPsi2TPCpos"), col.centrality(), epMap.at("TPCpos"));
+    registry.fill(HIST("hPsi2TPCneg"), col.centrality(), epMap.at("TPCneg"));
   }
   constexpr std::string_view RemovePrefix(std::string_view str)
   {
