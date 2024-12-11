@@ -14,6 +14,9 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 /// \author Hanseo Park <hanseo.park@cern.ch>
 
+#include <memory>
+#include <vector>
+
 #include <TF1.h>
 #include <TH1.h>
 

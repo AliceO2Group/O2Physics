@@ -222,7 +222,7 @@ int mcdJetFromHFShower(T const& jet, U const& /*tracks*/, V const& particles, fl
   typename U::iterator hftrack;
   bool hasMcParticle = false;
   bool hasHfTrack = false;
-  unsigned long countOutsideTrack = 0;
+  uint16_t countOutsideTrack = 0;
   for (const auto& track : jet.template tracks_as<U>()) {
     if (!track.has_mcParticle())
       continue;
@@ -274,7 +274,7 @@ int mcpJetFromHFShower(T const& jet, U const& particles, float dRMax = 0.25, boo
 {
   typename U::iterator hfparticle;
   bool hasHfParticle = false;
-  unsigned long countOutsideParticle = 0;
+  uint16_t countOutsideParticle = 0;
   for (const auto& particle : jet.template tracks_as<U>()) {
     int origin = particleFromHFShower(particle, particles, hfparticle, searchUpToQuark);
     if (origin == JetTaggingSpecies::charm || origin == JetTaggingSpecies::beauty) {

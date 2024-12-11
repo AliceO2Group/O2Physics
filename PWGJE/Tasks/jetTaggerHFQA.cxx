@@ -14,6 +14,11 @@
 ///
 /// \author Hanseo Park <hanseo.park@cern.ch>
 
+#include <string>
+#include <functional>
+#include <algorithm>
+#include <vector>
+
 #include "TF1.h"
 
 #include "Framework/AnalysisTask.h"
