@@ -2073,8 +2073,8 @@ struct QaEfficiency {
       float trackEta = track.eta();
       float trackPhi = track.phi();
       float trackSign = track.sign();
-      float occupancy;
-      float centrality;
+      float occupancy{};
+      float centrality{};
       if (doOccupancy) {
         centrality = collision.centFT0C();
         if (useFT0OccEstimator) {
