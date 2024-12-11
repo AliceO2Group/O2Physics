@@ -703,7 +703,7 @@ struct TableMaker {
   }
 
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TBCs, typename TZdcs, typename TTrackAssoc, typename TTracks>
-  void skimCollisions(TEvents const& collisions, TBCs const& bcs, TZdcs const& /*zdcs*/,
+  void skimCollisions(TEvents const& collisions, TBCs const& /*bcs*/, TZdcs const& /*zdcs*/,
                       TTrackAssoc const& trackAssocs, TTracks const& tracks)
   {
     // Skim collisions
