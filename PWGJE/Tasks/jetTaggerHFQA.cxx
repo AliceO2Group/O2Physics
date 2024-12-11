@@ -1683,7 +1683,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   tasks.emplace_back(
     adaptAnalysisTask<JetTaggerhfQaCharged>(cfgc,
-                                          SetDefaultProcesses{}, TaskName{"jet-taggerhf-qa-charged"}));
+                                            SetDefaultProcesses{}, TaskName{"jet-taggerhf-qa-charged"}));
   /*
   tasks.emplace_back(
     adaptAnalysisTask<JetTaggerhfQaFull>(cfgc,

@@ -695,7 +695,7 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
       tempTrkVtxIndex.push_back(i++);
   }
   tempTrkVtxIndex.push_back(i); // temporary index for PV
-  if (nTrks < 1) {             // the process should be done for nTrks == 1 as well
+  if (nTrks < 1) {              // the process should be done for nTrks == 1 as well
     trkLabels["trkVtxIndex"] = tempTrkVtxIndex;
     return nTrks;
   }
