@@ -735,7 +735,6 @@ struct tofSpectra {
     const auto& nsigmaTPC = o2::aod::pidutils::tpcNSigma<id>(track);
     // const auto id = track.sign() > 0 ? id : id + Np;
     const float multiplicity = getMultiplicity(collision);
-
     if (multiplicityEstimator == MultCodes::kNoMultiplicity) {
       if (track.sign() > 0) {
         histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTPC);
@@ -1345,6 +1344,15 @@ struct tofSpectra {
       if (!isTrackSelected<true>(track, collision)) {
         continue;
       }
+      if (std::abs(track.rapidity(PID::getMass(2))) > trkselOptions.cfgCutY) {
+        return;
+      }
+      if (std::abs(track.rapidity(PID::getMass(3))) > trkselOptions.cfgCutY) {
+        return;
+      }
+      if (std::abs(track.rapidity(PID::getMass(4))) > trkselOptions.cfgCutY) {
+        return;
+      }
       if (includeCentralityToTracks) {
 
         if (track.sign() > 0) {
@@ -1369,26 +1377,27 @@ struct tofSpectra {
           }
         }
       }
-      const auto& nsigmaTPCPi = o2::aod::pidutils::tpcNSigma<2>(track);
-      const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
-      const auto& nsigmaTPCPr = o2::aod::pidutils::tpcNSigma<4>(track);
-      const auto& nsigmaTOFPi = o2::aod::pidutils::tofNSigma<2>(track);
-      const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
-      const auto& nsigmaTOFPr = o2::aod::pidutils::tofNSigma<4>(track);
-      histos.fill(HIST("nsigmatpc/test_occupancy/pos/pi"), track.pt(), nsigmaTPCPi, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatpc/test_occupancy/neg/pi"), track.pt(), nsigmaTPCPi, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatpc/test_occupancy/pos/ka"), track.pt(), nsigmaTPCKa, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatpc/test_occupancy/neg/ka"), track.pt(), nsigmaTPCKa, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatpc/test_occupancy/pos/pr"), track.pt(), nsigmaTPCPr, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatpc/test_occupancy/neg/pr"), track.pt(), nsigmaTPCPr, multiplicity, occupancy);
-
-      histos.fill(HIST("nsigmatof/test_occupancy/pos/pi"), track.pt(), nsigmaTOFPi, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatof/test_occupancy/neg/pi"), track.pt(), nsigmaTOFPi, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatof/test_occupancy/pos/ka"), track.pt(), nsigmaTOFKa, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatof/test_occupancy/neg/ka"), track.pt(), nsigmaTOFKa, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatof/test_occupancy/pos/pr"), track.pt(), nsigmaTOFPr, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatof/test_occupancy/neg/pr"), track.pt(), nsigmaTOFPr, multiplicity, occupancy);
-
+      if (track.sign() > 0) {
+        histos.fill(HIST("nsigmatpc/test_occupancy/pos/pi"), track.pt(), track.tpcNSigmaPi(), multiplicity, occupancy);
+        histos.fill(HIST("nsigmatpc/test_occupancy/pos/ka"), track.pt(), track.tpcNSigmaKa(), multiplicity, occupancy);
+        histos.fill(HIST("nsigmatpc/test_occupancy/pos/pr"), track.pt(), track.tpcNSigmaPr(), multiplicity, occupancy);
+      } else if (track.sign() < 0) {
+        histos.fill(HIST("nsigmatpc/test_occupancy/neg/pi"), track.pt(), track.tpcNSigmaPi(), multiplicity, occupancy);
+        histos.fill(HIST("nsigmatpc/test_occupancy/neg/ka"), track.pt(), track.tpcNSigmaKa(), multiplicity, occupancy);
+        histos.fill(HIST("nsigmatpc/test_occupancy/neg/pr"), track.pt(), track.tpcNSigmaPr(), multiplicity, occupancy);
+      }
+      if (!track.hasTOF()) {
+        return;
+      }
+      if (track.sign() > 0) {
+        histos.fill(HIST("nsigmatof/test_occupancy/pos/pi"), track.pt(), track.tofNSigmaPi(), multiplicity, occupancy);
+        histos.fill(HIST("nsigmatof/test_occupancy/pos/ka"), track.pt(), track.tofNSigmaKa(), multiplicity, occupancy);
+        histos.fill(HIST("nsigmatof/test_occupancy/pos/pr"), track.pt(), track.tofNSigmaPr(), multiplicity, occupancy);
+      } else if (track.sign() < 0) {
+        histos.fill(HIST("nsigmatof/test_occupancy/neg/pi"), track.pt(), track.tofNSigmaPi(), multiplicity, occupancy);
+        histos.fill(HIST("nsigmatof/test_occupancy/neg/ka"), track.pt(), track.tofNSigmaKa(), multiplicity, occupancy);
+        histos.fill(HIST("nsigmatof/test_occupancy/neg/pr"), track.pt(), track.tofNSigmaPr(), multiplicity, occupancy);
+      }
     } // track
   } // process function
   PROCESS_SWITCH(tofSpectra, processOccupancy, "check for occupancy plots", false);

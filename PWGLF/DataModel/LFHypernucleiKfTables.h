@@ -24,17 +24,17 @@ namespace hykfmcColl
 {
 DECLARE_SOA_COLUMN(PassedEvSel, passedEvSel, bool); //!
 }
-DECLARE_SOA_TABLE(HypKfMcCollisions, "AOD", "HYPKFMCCOLL",
+DECLARE_SOA_TABLE(HypKfMcColls, "AOD", "HYPKFMCCOLL",
                   o2::soa::Index<>,
                   hykfmcColl::PassedEvSel,
                   mccollision::PosX,
                   mccollision::PosY,
                   mccollision::PosZ);
-using HypKfMcCollision = HypKfMcCollisions::iterator;
+using HypKfMcColl = HypKfMcColls::iterator;
 
 namespace hykfmc
 {
-DECLARE_SOA_INDEX_COLUMN(HypKfMcCollision, hypKfMcCollision);
+DECLARE_SOA_INDEX_COLUMN(HypKfMcColl, hypKfMcColl);
 DECLARE_SOA_COLUMN(Species, species, int8_t);                   //!
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool); //!
 DECLARE_SOA_COLUMN(Svx, svx, float);                            //!
@@ -46,9 +46,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(Mass, mass, [](float E, float px, float py, float pz)
 DECLARE_SOA_DYNAMIC_COLUMN(IsMatter, isMatter, [](int pdgCode) { return pdgCode > 0; });
 } // namespace hykfmc
 
-DECLARE_SOA_TABLE(HypKfMcParticles, "AOD", "HYPKFMCPART",
+DECLARE_SOA_TABLE(HypKfMcParts, "AOD", "HYPKFMCPART",
                   o2::soa::Index<>,
-                  hykfmc::HypKfMcCollisionId,
+                  hykfmc::HypKfMcCollId,
                   hykfmc::Species,
                   mcparticle::PdgCode,
                   hykfmc::IsPhysicalPrimary,
@@ -63,23 +63,23 @@ DECLARE_SOA_TABLE(HypKfMcParticles, "AOD", "HYPKFMCPART",
                   hykfmc::Y<mcparticle::E, mcparticle::Pz>,
                   hykfmc::Mass<mcparticle::E, mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
                   hykfmc::IsMatter<mcparticle::PdgCode>);
-using HypKfMcParticle = HypKfMcParticles::iterator;
+using HypKfMcPart = HypKfMcParts::iterator;
 
-DECLARE_SOA_TABLE(HypKfCollisions, "AOD", "HYPKFCOLL",
+DECLARE_SOA_TABLE(HypKfColls, "AOD", "HYPKFCOLL",
                   o2::soa::Index<>,
                   hykfmcColl::PassedEvSel,
-                  hykfmc::HypKfMcCollisionId,
+                  hykfmc::HypKfMcCollId,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
                   cent::CentFT0A,
                   cent::CentFT0C,
                   cent::CentFT0M);
-using HypKfCollision = HypKfCollisions::iterator;
+using HypKfColl = HypKfColls::iterator;
 
 namespace hykftrk
 {
-DECLARE_SOA_INDEX_COLUMN(HypKfCollision, hypKfCollision);
+DECLARE_SOA_INDEX_COLUMN(HypKfColl, hypKfColl);
 DECLARE_SOA_COLUMN(Rigidity, rigidity, float);              //!
 DECLARE_SOA_COLUMN(TPCnCluster, tpcNcluster, float);        //!
 DECLARE_SOA_COLUMN(TPCnSigma, tpcNsigma, float);            //!
@@ -149,12 +149,12 @@ DECLARE_SOA_TABLE(HypKfTracks, "AOD", "HYPKFTRACK",
                   hykftrk::ITSmeanClsSize<track::ITSClusterSizes>);
 using HypKfTrack = HypKfTracks::iterator;
 
-DECLARE_SOA_TABLE(HypKfSubDaughters, "AOD", "HYPKFSUBD",
+DECLARE_SOA_TABLE(HypKfSubDs, "AOD", "HYPKFSUBD",
                   o2::soa::Index<>,
                   hykftrk::SubMass);
-using HypKfSubDaughter = HypKfSubDaughters::iterator;
+using HypKfSubD = HypKfSubDs::iterator;
 
-DECLARE_SOA_TABLE(HypKfDaughterAddons, "AOD", "HYPKFDADD",
+DECLARE_SOA_TABLE(HypKfDaughtAdds, "AOD", "HYPKFDAUGHTADD",
                   o2::soa::Index<>,
                   track::X,
                   track::Y,
@@ -162,16 +162,16 @@ DECLARE_SOA_TABLE(HypKfDaughterAddons, "AOD", "HYPKFDADD",
                   mcparticle::Px,
                   mcparticle::Py,
                   mcparticle::Pz);
-using HypKfDaughterAddon = HypKfDaughterAddons::iterator;
+using HypKfDaughtAdd = HypKfDaughtAdds::iterator;
 
 namespace hykfhyp
 {
-DECLARE_SOA_INDEX_COLUMN(HypKfCollision, hypKfCollision);
-DECLARE_SOA_INDEX_COLUMN(HypKfMcParticle, hypKfMcParticle);
-DECLARE_SOA_ARRAY_INDEX_COLUMN(HypKfDaughterAddon, addons);
+DECLARE_SOA_INDEX_COLUMN(HypKfColl, hypKfColl);
+DECLARE_SOA_INDEX_COLUMN(HypKfMcPart, hypKfMcPart);
+DECLARE_SOA_ARRAY_INDEX_COLUMN(HypKfDaughtAdd, addons);
 DECLARE_SOA_ARRAY_INDEX_COLUMN(HypKfTrack, daughterTracks);
-DECLARE_SOA_SELF_INDEX_COLUMN(HypDaughter, hypDaughter);
-DECLARE_SOA_ARRAY_INDEX_COLUMN(HypKfSubDaughter, subDaughters);
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(HypDaughter, hypDaughter, int, "HypKfHypNucs");
+DECLARE_SOA_ARRAY_INDEX_COLUMN(HypKfSubD, subDaughters);
 DECLARE_SOA_COLUMN(Primary, primary, bool);        //!
 DECLARE_SOA_COLUMN(Mass, mass, float);             //!
 DECLARE_SOA_COLUMN(Px, px, float);                 //!
@@ -188,19 +188,19 @@ DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float px, float py, float pz) { return R
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) { return RecoDecay::phi(std::array{px, py}); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float px, float py, float pz) { return RecoDecay::p(px, py, pz); }); //
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y, [](float px, float py, float pz, float mass) { return RecoDecay::y(std::array{px, py, pz}, mass); });
-DECLARE_SOA_DYNAMIC_COLUMN(McTrue, mcTrue, [](int hypKfMcParticleId) { return hypKfMcParticleId > 0; });
+DECLARE_SOA_DYNAMIC_COLUMN(McTrue, mcTrue, [](int hypKfMcPartId) { return hypKfMcPartId > 0; });
 DECLARE_SOA_DYNAMIC_COLUMN(IsMatter, isMatter, [](int8_t species) { return species > 0; });
 DECLARE_SOA_DYNAMIC_COLUMN(Cascade, cascade, [](int hypDaughter) { return hypDaughter > 0; });
 } // namespace hykfhyp
 
 DECLARE_SOA_TABLE(HypKfHypNucs, "AOD", "HYPKFHYPNUC",
                   o2::soa::Index<>,
-                  hykfhyp::HypKfMcParticleId,
-                  hykfhyp::HypKfCollisionId,
+                  hykfhyp::HypKfMcPartId,
+                  hykfhyp::HypKfCollId,
                   hykfhyp::HypKfTrackIds,
-                  hykfhyp::HypKfDaughterAddonIds,
+                  hykfhyp::HypKfDaughtAddIds,
                   hykfhyp::HypDaughterId,
-                  hykfhyp::HypKfSubDaughterIds,
+                  hykfhyp::HypKfSubDIds,
                   hykfmc::Species,
                   hykfhyp::Primary,
                   hykfhyp::Mass,
@@ -221,7 +221,7 @@ DECLARE_SOA_TABLE(HypKfHypNucs, "AOD", "HYPKFHYPNUC",
                   hykfhyp::Eta<hykfhyp::Px, hykfhyp::Py, hykfhyp::Pz>,
                   hykfhyp::Phi<hykfhyp::Px, hykfhyp::Py>,
                   hykfhyp::P<hykfhyp::Px, hykfhyp::Py, hykfhyp::Pz>,
-                  hykfhyp::McTrue<hykfhyp::HypKfMcParticleId>,
+                  hykfhyp::McTrue<hykfhyp::HypKfMcPartId>,
                   hykfhyp::IsMatter<hykfmc::Species>,
                   hykfhyp::Cascade<hykfhyp::HypDaughterId>);
 using HypKfHypNuc = HypKfHypNucs::iterator;

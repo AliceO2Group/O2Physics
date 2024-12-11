@@ -35,6 +35,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
@@ -203,6 +204,7 @@ std::shared_ptr<TH2> hGloTOFtracks[2];
 std::shared_ptr<TH2> hDeltaP[2][5];
 std::shared_ptr<THnSparse> hFlowHists[2][5];
 std::shared_ptr<THnSparse> hDCAHists[2][5];
+std::shared_ptr<THnSparse> hMatchingStudy[2];
 o2::base::MatLayerCylSet* lut = nullptr;
 
 std::vector<NucleusCandidate> candidates;
@@ -463,6 +465,12 @@ struct nucleiSpectra {
       }
     }
 
+    if (doprocessMatching) {
+      for (int iC{0}; iC < 2; ++iC) {
+        nuclei::hMatchingStudy[iC] = spectra.add<THnSparse>(fmt::format("hMatchingStudy{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;n#sigma_{ITS};n#sigma{TPC};n#sigma_{TOF}", HistType::kTHnSparseF, {{20, 1., 9.}, {10, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {50, -5., 5.}, {50, -5., 5.}, {50, 0., 1.}});
+      }
+    }
+
     nuclei::lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
     // TrackTuner initialization
     if (cfgUseTrackTuner) {
@@ -699,8 +707,10 @@ struct nucleiSpectra {
             collision.multTPC()});
         }
         if (fillTree) {
-          if (track.pt() < cfgCutPtMinTree || track.pt() > cfgCutPtMaxTree)
-            continue;
+          if (flag & BIT(2)) {
+            if (track.pt() < cfgCutPtMinTree || track.pt() > cfgCutPtMaxTree || track.sign() > 0)
+              continue;
+          }
         }
         nuclei::candidates.emplace_back(NucleusCandidate{
           static_cast<int>(track.globalIndex()), static_cast<int>(track.collisionId()), (1 - 2 * iC) * mTrackParCov.getPt(), mTrackParCov.getEta(), mTrackParCov.getPhi(),
@@ -890,6 +900,29 @@ struct nucleiSpectra {
     }
   }
   PROCESS_SWITCH(nucleiSpectra, processMC, "MC analysis", false);
+
+  void processMatching(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
+  {
+    if (!eventSelection(collision)) {
+      return;
+    }
+    o2::aod::ITSResponse itsResponse;
+    for (auto& track : tracks) {
+      if (std::abs(track.eta()) > cfgCutEta ||
+          track.itsNCls() < 7 ||
+          track.itsChi2NCl() > 36.f ||
+          itsResponse.nSigmaITS<o2::track::PID::Helium3>(track) < -1.) {
+        continue;
+      }
+      double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams->get(4, 0u), cfgBetheBlochParams->get(4, 1u), cfgBetheBlochParams->get(4, 2u), cfgBetheBlochParams->get(4, 3u), cfgBetheBlochParams->get(4, 4u))};
+      double expSigma{expBethe * cfgBetheBlochParams->get(4, 5u)};
+      double nSigmaTPC{(track.tpcSignal() - expBethe) / expSigma};
+      int iC = track.signed1Pt() > 0;
+      nuclei::hMatchingStudy[iC]->Fill(track.pt() * 2, track.phi(), track.eta(), itsResponse.nSigmaITS<o2::track::PID::Helium3>(track), nSigmaTPC, o2::pid::tof::Beta::GetBeta(track));
+    }
+  }
+
+  PROCESS_SWITCH(nucleiSpectra, processMatching, "Matching analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

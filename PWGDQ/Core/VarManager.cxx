@@ -9,6 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 #include <cmath>
+#include <iostream>
+#include <vector>
+#include <map>
 #include "PWGDQ/Core/VarManager.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
@@ -378,6 +381,30 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kNTPCtracksInPast] = "";
   fgVariableNames[kNTPCtracksInFuture] = "# TPC tracks in future";
   fgVariableUnits[kNTPCtracksInFuture] = "";
+  fgVariableNames[kNTPCcontribLongA] = "# TPC-A pileup, long time range";
+  fgVariableUnits[kNTPCcontribLongA] = "";
+  fgVariableNames[kNTPCcontribLongC] = "# TPC-C pileup, long time range";
+  fgVariableUnits[kNTPCcontribLongC] = "";
+  fgVariableNames[kNTPCmeanTimeLongA] = "# TPC-A pileup mean time, long time range";
+  fgVariableUnits[kNTPCmeanTimeLongA] = "#mu s";
+  fgVariableNames[kNTPCmeanTimeLongC] = "# TPC-C pileup mean time, long time range";
+  fgVariableUnits[kNTPCmeanTimeLongC] = "#mu s";
+  fgVariableNames[kNTPCmedianTimeLongA] = "# TPC-A pileup median time, long time range";
+  fgVariableUnits[kNTPCmedianTimeLongA] = "#mu s";
+  fgVariableNames[kNTPCmedianTimeLongC] = "# TPC-C pileup median time, long time range";
+  fgVariableUnits[kNTPCmedianTimeLongC] = "#mu s";
+  fgVariableNames[kNTPCcontribShortA] = "# TPC-A pileup, short time range";
+  fgVariableUnits[kNTPCcontribShortA] = "";
+  fgVariableNames[kNTPCcontribShortC] = "# TPC-C pileup, short time range";
+  fgVariableUnits[kNTPCcontribShortC] = "";
+  fgVariableNames[kNTPCmeanTimeShortA] = "# TPC-A pileup mean time, short time range";
+  fgVariableUnits[kNTPCmeanTimeShortA] = "#mu s";
+  fgVariableNames[kNTPCmeanTimeShortC] = "# TPC-C pileup mean time, short time range";
+  fgVariableUnits[kNTPCmeanTimeShortC] = "#mu s";
+  fgVariableNames[kNTPCmedianTimeShortA] = "# TPC-A pileup median time, short time range";
+  fgVariableUnits[kNTPCmedianTimeShortA] = "#mu s";
+  fgVariableNames[kNTPCmedianTimeShortC] = "# TPC-C pileup median time, short time range";
+  fgVariableUnits[kNTPCmedianTimeShortC] = "#mu s";
   fgVariableNames[kPt] = "p_{T}";
   fgVariableUnits[kPt] = "GeV/c";
   fgVariableNames[kInvPt] = "1/p_{T}";
@@ -863,6 +890,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCosThetaCS] = "";
   fgVariableNames[kPhiCS] = "#varphi_{CS}";
   fgVariableUnits[kPhiCS] = "rad.";
+  fgVariableNames[kPhiVP] = "#varphi_{VP} - #Psi_{2}";
+  fgVariableUnits[kPhiVP] = "rad.";
   fgVariableNames[kDeltaPhiPair2] = "#Delta#phi";
   fgVariableUnits[kDeltaPhiPair2] = "rad.";
   fgVariableNames[kDeltaEtaPair2] = "#Delta#eta";

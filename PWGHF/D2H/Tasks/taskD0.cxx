@@ -360,7 +360,8 @@ struct HfTaskD0 {
   void processMc(CandType const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                  aod::TracksWMc const&,
-                 CollisionsWithMcLabels const& collisions)
+                 CollisionsWithMcLabels const& collisions,
+                 aod::McCollisions const&)
   {
     // MC rec.
     for (const auto& candidate : candidates) {
@@ -587,36 +588,40 @@ struct HfTaskD0 {
   void processMcWithDCAFitterN(D0CandidatesMc const&,
                                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                aod::TracksWMc const& tracks,
-                               CollisionsWithMcLabels const& collisions)
+                               CollisionsWithMcLabels const& collisions,
+                               aod::McCollisions const& mcCollisions)
   {
-    processMc<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0CandidatesMc, mcParticles, tracks, collisions);
+    processMc<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0CandidatesMc, mcParticles, tracks, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterN, "Process MC with DCAFitterN", false);
 
   void processMcWithKFParticle(D0CandidatesMcKF const&,
                                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                aod::TracksWMc const& tracks,
-                               CollisionsWithMcLabels const& collisions)
+                               CollisionsWithMcLabels const& collisions,
+                               aod::McCollisions const& mcCollisions)
   {
-    processMc<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesMcKF, mcParticles, tracks, collisions);
+    processMc<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesMcKF, mcParticles, tracks, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticle, "Process MC with KFParticle", false);
 
   void processMcWithDCAFitterNMl(D0CandidatesMlMc const&,
                                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                  aod::TracksWMc const& tracks,
-                                 CollisionsWithMcLabels const& collisions)
+                                 CollisionsWithMcLabels const& collisions,
+                                 aod::McCollisions const& mcCollisions)
   {
-    processMc<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMlMc, mcParticles, tracks, collisions);
+    processMc<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMlMc, mcParticles, tracks, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterNMl, "Process MC with DCAFitterN and ML selection", false);
 
   void processMcWithKFParticleMl(D0CandidatesMlMcKF const&,
                                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                  aod::TracksWMc const& tracks,
-                                 CollisionsWithMcLabels const& collisions)
+                                 CollisionsWithMcLabels const& collisions,
+                                 aod::McCollisions const& mcCollisions)
   {
-    processMc<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlMcKF, mcParticles, tracks, collisions);
+    processMc<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlMcKF, mcParticles, tracks, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
 };

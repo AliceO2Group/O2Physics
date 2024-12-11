@@ -712,14 +712,14 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from j/psi decays", {prong, prong}, {1, 1}); // signal at pair level
-    signal->SetDecayChannelIsExclusive(true);
+    signal->SetDecayChannelIsExclusive(2, true);
     return signal;
   }
   if (!nameStr.compare("eeFromJpsiNotExclusive")) {
     MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from j/psi decays", {prong, prong}, {1, 1}); // signal at pair level
-    signal->SetDecayChannelIsNotExclusive(true);
+    signal->SetDecayChannelIsNotExclusive(2, true);
     return signal;
   }
   if (!nameStr.compare("eePrimaryFromPromptJPsi")) {
@@ -1145,7 +1145,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     MCProng prongKaon(2, {321, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Kaon and electron pair from B+", {pronge, pronge, prongKaon}, {2, 2, 1});
-    signal->SetDecayChannelIsExclusive(true);
+    signal->SetDecayChannelIsExclusive(2, true);
     return signal;
   }
 
@@ -1153,7 +1153,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     MCProng prongKaon(2, {321, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Kaon and electron pair from B+", {pronge, pronge, prongKaon}, {2, 2, 1});
-    signal->SetDecayChannelIsNotExclusive(true);
+    signal->SetDecayChannelIsNotExclusive(2, true);
     return signal;
   }
 
@@ -1323,6 +1323,84 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     pronge.SetSourceBit(0, MCProng::kPhysicalPrimary);
     prongPhoton.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "Photon and electron pair from Pi0", {pronge, pronge, prongPhoton}, {1, 1, 1});
+    return signal;
+  }
+
+  //--------------------------------------------------------------------------------
+
+  if (!nameStr.compare("JpsiFromX3872")) {
+    MCProng prong(1, {443}, {true}, {false}, {0}, {0}, {false}, false, {9920443}, {false});
+    signal = new MCSignal(name, "Jpsi from X3872", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eFromX3872")) {
+    MCProng prong(3, {11, 443, 9920443}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Electron from Jpsi from X3872", {prong}, {1});
+    return signal;
+  }
+
+  if (!nameStr.compare("PionFromX3872")) {
+    MCProng prong(1, {211}, {true}, {false}, {0}, {0}, {false}, false, {9920443}, {false});
+    signal = new MCSignal(name, "Pion from Jpsi from X3872", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("JpsiFromPsi2S")) {
+    MCProng prong(1, {443}, {true}, {false}, {0}, {0}, {false}, false, {100443}, {false});
+    signal = new MCSignal(name, "Jpsi from Psi2S", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eFromPsi2S")) {
+    MCProng prong(3, {11, 443, 100443}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Electron from Jpsi from Psi2S", {prong}, {1});
+    return signal;
+  }
+
+  if (!nameStr.compare("PionFromPsi2S")) {
+    MCProng prong(1, {211}, {true}, {false}, {0}, {0}, {false}, false, {100443}, {false});
+    signal = new MCSignal(name, "Pion from Jpsi from Psi2S", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeFromJpsiFromX3872")) {
+    MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {9920443}, {false});
+    signal = new MCSignal(name, "Electron pair from Jpsi from X3872", {prong, prong}, {1, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("JpsiPiPiFromX3872")) {
+    MCProng prongJpsi(2, {443, 9920443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongPi(2, {211, 9920443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Jpsi and pion pair from X3872", {prongJpsi, prongPi, prongPi}, {1, 1, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eePiPiFromX3872")) {
+    MCProng pronge(3, {11, 443, 9920443}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPi(2, {211, 9920443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Electron pair and pion pair from X3872", {pronge, pronge, prongPi, prongPi}, {2, 2, 1, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeFromJpsiFromPsi2S")) {
+    MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {100443}, {false});
+    signal = new MCSignal(name, "Electron pair from Jpsi from Psi2S", {prong, prong}, {1, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("JpsiPiPiFromPsi2S")) {
+    MCProng prongJpsi(2, {443, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongPi(2, {211, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Jpsi and pion pair from Psi2S", {prongJpsi, prongPi, prongPi}, {1, 1, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eePiPiFromPsi2S")) {
+    MCProng pronge(3, {11, 443, 100443}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPi(2, {211, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Electron pair and pion pair from Psi2S", {pronge, pronge, prongPi, prongPi}, {2, 2, 1, 1});
     return signal;
   }
   return nullptr;
