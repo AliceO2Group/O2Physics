@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 //
-// Class for dilepton Cut
+// Class for dielectron Cut
 //
 
 #include <utility>
@@ -54,18 +54,12 @@ void DielectronCut::SetPairOpAng(float minOpAng, float maxOpAng)
   mMaxOpAng = maxOpAng;
   LOG(info) << "Dielectron Cut, set pair opening angle range: " << mMinOpAng << " - " << mMaxOpAng;
 }
-void DielectronCut::SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut)
+void DielectronCut::SetMaxMeePhiVDep(std::function<float(float)> phivDepCut, float min_phiv, float max_phiv)
 {
-  mMaxPhivPairMeeDep = meeDepCut;
-  LOG(info) << "Dielectron Cut, set max phiv pair mee dep: " << mMaxPhivPairMeeDep(0.02);
-}
-void DielectronCut::SetPhivPairRange(float min_phiv, float max_phiv, float min_mee, float max_mee)
-{
+  mMaxMeePhiVDep = phivDepCut;
   mMinPhivPair = min_phiv;
   mMaxPhivPair = max_phiv;
-  mMinMeeForPhivPair = min_mee;
-  mMaxMeeForPhivPair = max_mee;
-  LOG(info) << "Dielectron Cut, set phiv range: " << mMinPhivPair << " - " << mMaxPhivPair << " and mee range: " << mMinMeeForPhivPair << " - " << mMaxMeeForPhivPair;
+  LOG(info) << "Dielectron Cut, set max mee phiv dep: " << mMaxMeePhiVDep(2.5);
 }
 void DielectronCut::SelectPhotonConversion(bool flag)
 {
@@ -83,21 +77,6 @@ void DielectronCut::SetRequireDifferentSides(bool flag)
 {
   mRequireDiffSides = flag;
   LOG(info) << "Dielectron Cut, require 2 tracks to be from different sides: " << mRequireDiffSides;
-}
-void DielectronCut::SetPrefilterPhiV(float max_mee_uls, float max_phiv_uls, float max_mee_ls, float max_phiv_ls)
-{
-  mMaxMee_phiv_uls = max_mee_uls;
-  mMaxPhiV_uls = max_phiv_uls;
-  mSlope_phiv_ls = max_mee_ls / (M_PI - max_phiv_ls);
-  mIntercept_phiv_ls = max_mee_ls - mSlope_phiv_ls * M_PI;
-  LOG(info) << "Dielectron Cut, set phiv prefilter ULS: " << " mMaxMee_phiv_uls: " << mMaxMee_phiv_uls << " mMaxPhiV_uls: " << mMaxPhiV_uls;
-  LOG(info) << "Dielectron Cut, set phiv prefilter LS: " << " mSlope_phiv_ls: " << mSlope_phiv_ls << " mIntercept_phiv_ls: " << mIntercept_phiv_ls;
-}
-void DielectronCut::SetPrefilterMee(float min_mee_uls, float max_mee_uls)
-{
-  mMinMee_uls = min_mee_uls;
-  mMaxMee_uls = max_mee_uls;
-  LOG(info) << "Dielectron Cut, set mee prefilter ULS: " << " mMinMee_uls: " << mMinMee_uls << " mMaxMee_uls: " << mMaxMee_uls;
 }
 void DielectronCut::SetTrackPtRange(float minPt, float maxPt)
 {

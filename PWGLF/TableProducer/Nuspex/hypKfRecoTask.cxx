@@ -405,12 +405,12 @@ std::vector<std::shared_ptr<TH1>> hInvMass;
 //----------------------------------------------------------------------------------------------------------------
 struct hypKfRecoTask {
 
-  Produces<aod::HypKfMcCollisions> outputMcCollisionTable;
-  Produces<aod::HypKfMcParticles> outputMcParticleTable;
-  Produces<aod::HypKfCollisions> outputCollisionTable;
+  Produces<aod::HypKfMcColls> outputMcCollisionTable;
+  Produces<aod::HypKfMcParts> outputMcParticleTable;
+  Produces<aod::HypKfColls> outputCollisionTable;
   Produces<aod::HypKfTracks> outputTrackTable;
-  Produces<aod::HypKfDaughterAddons> outputDaughterAddonTable;
-  Produces<aod::HypKfSubDaughters> outputSubDaughterTable;
+  Produces<aod::HypKfDaughtAdds> outputDaughterAddonTable;
+  Produces<aod::HypKfSubDs> outputSubDaughterTable;
   Produces<aod::HypKfHypNucs> outputHypNucTable;
 
   Preslice<aod::TrackAssoc> perCollision = aod::track_association::collisionId;
