@@ -17,10 +17,18 @@
 /// \author Stefano Politanò <stefano.politano@cern.ch>, Politecnico & INFN Torino
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Universita and INFN Torino
 
+#include <memory>
+#include <unordered_map>
+#include <vector>
+#include <map>
+#include <string>
+
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+#include "MetadataHelper.h"
 
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/CentralityEstimation.h"
@@ -32,6 +40,8 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+MetadataHelper metadataInfo; // Metadata helper
+
 enum FinalState { KKPi = 0,
                   PiKK };
 
@@ -41,13 +51,9 @@ enum DataType { Data = 0,
                 McDplusPrompt,
                 McDplusNonPrompt,
                 McDplusBkg,
+                McLcBkg,
                 McBkg,
                 kDataTypes };
-
-enum SpeciesAndDecay { DsToKKPi = 0,
-                       DplusToKKPi,
-                       DplusToPiKPi,
-                       kSpeciesAndDecay };
 
 template <typename T>
 concept hasDsMlInfo = requires(T candidate)
@@ -69,14 +75,23 @@ struct HfTaskDs {
   Configurable<float> massDsSignalMax{"massDsSignalMax", 1.994, "max mass for Ds signal"};
   Configurable<float> massDplusSignalMin{"massDplusSignalMin", 1.866, "min mass for Dplus signal"};
   Configurable<float> massDplusSignalMax{"massDplusSignalMax", 1.906, "max mass for Dplus signal"};
+  Configurable<bool> fillPercentiles{"fillPercentiles", true, "Wheter to fill multiplicity axis with percentiles or raw information"};
 
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f}, "axis for pT"};
   ConfigurableAxis axisNPvContributors{"axisNPvContributors", {200, -0.5f, 199.5f}, "axis for NPvContributors"};
   ConfigurableAxis axisMlScore0{"axisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
   ConfigurableAxis axisMlScore1{"axisMlScore1", {100, 0., 1.}, "axis for ML output score 1"};
   ConfigurableAxis axisMlScore2{"axisMlScore2", {100, 0., 1.}, "axis for ML output score 2"};
+  ConfigurableAxis axisCentrality{"axisCentrality", {100, 0., 1.}, "axis for centrality/multiplicity"};
+
+  struct : ConfigurableGroup {
+    Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
+    Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
+    Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
+  } ccdbConfig;
 
   HfHelper hfHelper;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   using TH1_ptr = std::shared_ptr<TH1>;
   using TH2_ptr = std::shared_ptr<TH2>;
@@ -85,14 +100,14 @@ struct HfTaskDs {
   template <typename CandDs>
   using MemberFunctionPointer = bool (HfTaskDs::*)(const CandDs&);
 
-  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
-  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
-  using CollisionsWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::CentNTPVs>;
+  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs>;
+  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentFT0Ms>;
+  using CollisionsWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentNTPVs>;
 
   using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
-  using CollisionsMcWithFT0C = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>;
-  using CollisionsMcWithFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms>;
-  using CollisionsMcWithNTracksPV = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentNTPVs>;
+  using CollisionsMcWithFT0C = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs>;
+  using CollisionsMcWithFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::CentFT0Ms>;
+  using CollisionsMcWithNTracksPV = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::PVMults, aod::CentNTPVs>;
 
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using CandDsDataWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
@@ -105,12 +120,18 @@ struct HfTaskDs {
   SliceCache cache;
 
   int offsetDplusDecayChannel = aod::hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi - aod::hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi; // Offset between Dplus and Ds to use the same decay channel. See aod::hf_cand_3prong::DecayChannelDToKKPi
+  int mRunNumber{0};
+  bool lCalibLoaded;
+  TList* lCalibObjects;
+  TProfile* hVtxZFT0A;
+  TProfile* hVtxZFT0C;
+  TProfile* hVtxZNTracks;
 
   Filter filterDsFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0);
 
   HistogramRegistry registry{"registry", {}};
 
-  std::array<std::string, DataType::kDataTypes> folders = {"Data/", "MC/Ds/Prompt/", "MC/Ds/NonPrompt/", "MC/Dplus/Prompt/", "MC/Dplus/NonPrompt/", "MC/Dplus/Bkg/", "MC/Bkg/"};
+  std::array<std::string, DataType::kDataTypes> folders = {"Data/", "MC/Ds/Prompt/", "MC/Ds/NonPrompt/", "MC/Dplus/Prompt/", "MC/Dplus/NonPrompt/", "MC/Dplus/Bkg/", "MC/Lc/", "MC/Bkg/"};
 
   std::unordered_map<std::string, histTypes> dataHistograms = {};
   std::unordered_map<std::string, histTypes> mcDsPromptHistograms = {};
@@ -118,9 +139,10 @@ struct HfTaskDs {
   std::unordered_map<std::string, histTypes> mcDplusPromptHistograms = {};
   std::unordered_map<std::string, histTypes> mcDplusNonPromptHistograms = {};
   std::unordered_map<std::string, histTypes> mcDplusBkgHistograms = {};
+  std::unordered_map<std::string, histTypes> mcLcBkgHistograms = {};
   std::unordered_map<std::string, histTypes> mcBkgHistograms = {};
 
-  std::array<std::unordered_map<std::string, histTypes>, DataType::kDataTypes> histosPtr = {dataHistograms, mcDsPromptHistograms, mcDsNonPromptHistograms, mcDplusPromptHistograms, mcDplusNonPromptHistograms, mcDplusBkgHistograms, mcBkgHistograms};
+  std::array<std::unordered_map<std::string, histTypes>, DataType::kDataTypes> histosPtr = {dataHistograms, mcDsPromptHistograms, mcDsNonPromptHistograms, mcDplusPromptHistograms, mcDplusNonPromptHistograms, mcDplusBkgHistograms, mcLcBkgHistograms, mcBkgHistograms};
 
   void init(InitContext&)
   {
@@ -188,7 +210,7 @@ struct HfTaskDs {
         doprocessMc || doprocessMcWithMl) { // processing MC
 
       for (auto i = 0; i < DataType::kDataTypes; ++i) {
-        if (i == DataType::McDsPrompt || i == DataType::McDsNonPrompt || i == DataType::McDplusPrompt || i == DataType::McDplusNonPrompt || i == DataType::McDplusBkg) {
+        if (i == DataType::McDsPrompt || i == DataType::McDsNonPrompt || i == DataType::McDplusPrompt || i == DataType::McDplusNonPrompt || i == DataType::McDplusBkg || i == DataType::McLcBkg) {
 
           histosPtr[i]["hEtaGen"] = registry.add<TH1>((folders[i] + "hEtaGen").c_str(), "3-prong candidates (matched);#eta;entries", {HistType::kTH1F, {{100, -2., 2.}}});
           histosPtr[i]["hPtGen"] = registry.add<TH1>((folders[i] + "hPtGen").c_str(), "MC particles (unmatched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {ptbins}});
@@ -231,6 +253,12 @@ struct HfTaskDs {
     return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
   }
 
+  template <typename CandDs>
+  bool isLcBkg(const CandDs& candidate)
+  {
+    return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::LcToPKPi));
+  }
+
   /// Checks whether the candidate is in the signal region of either the Ds or D+ decay
   /// \param candidate is the candidate
   /// \param isDs is true if we check for the Ds signal region, false for the D+ signal region
@@ -249,13 +277,63 @@ struct HfTaskDs {
     return true;
   }
 
+  /// Evaluate centrality/multiplicity percentile using FT0M estimator
+  /// \param candidate is candidate
+  /// \return centrality/multiplicity percentile of the collision
+  template <o2::hf_centrality::hasFT0MCent Coll>
+  float getZEqMultColl(const Coll& collision, uint8_t nProngsContributorsPV)
+  {
+    auto multFT0A = collision.multFT0A() - nProngsContributorsPV;
+    auto multFT0C = collision.multFT0C() - nProngsContributorsPV;
+    float multZeqFT0A = hVtxZFT0A->Interpolate(0.0) * multFT0A / hVtxZFT0A->Interpolate(collision.posZ());
+    float multZeqFT0C = hVtxZFT0C->Interpolate(0.0) * multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
+    return multZeqFT0A + multZeqFT0C;
+  }
+
+  /// Evaluate centrality/multiplicity percentile using NTracksPV estimator
+  /// \param candidate is candidate
+  /// \return centrality/multiplicity percentile of the collision
+  template <o2::hf_centrality::hasNTracksPVCent Coll>
+  float getZEqMultColl(const Coll& collision, uint8_t nProngsContributorsPV)
+  {
+    auto multNTracksPV = collision.multNTracksPV() - nProngsContributorsPV;
+    float multZeqNTracksPV = hVtxZNTracks->Interpolate(0.0) * multNTracksPV / hVtxZNTracks->Interpolate(collision.posZ());
+    return multZeqNTracksPV;
+  }
+
+  /// Default case if no centrality/multiplicity estimator is provided
+  /// \param candidate is candidate
+  /// \return dummy value for centrality/multiplicity percentile of the collision
+  template <typename Coll>
+  float getZEqMultColl(const Coll&, uint8_t)
+  {
+    return -1.f;
+  }
+
+  /// Evaluate centrality/multiplicity percentile (centrality estimator is automatically selected based on the used table)
+  /// \param candidate is candidate
+  /// \return centrality/multiplicity percentile of the collision
+  template <typename Coll, typename CandDs>
+  float evaluateCentralityColl(const Coll& collision, const CandDs& candidate)
+  {
+    if (fillPercentiles) {
+      return o2::hf_centrality::getCentralityColl<Coll>(collision);
+    } else {
+      return getZEqMultColl<Coll>(collision, candidate.nProngsContributorsPV());
+    }
+  }
+
   /// Evaluate centrality/multiplicity percentile (centrality estimator is automatically selected based on the used table)
   /// \param candidate is candidate
   /// \return centrality/multiplicity percentile of the collision
   template <typename Coll>
   float evaluateCentralityColl(const Coll& collision)
   {
-    return o2::hf_centrality::getCentralityColl<Coll>(collision);
+    if (fillPercentiles) {
+      return o2::hf_centrality::getCentralityColl<Coll>(collision);
+    } else {
+      return getZEqMultColl<Coll>(collision, 0);
+    }
   }
 
   /// Evaluate centrality/multiplicity percentile
@@ -264,7 +342,7 @@ struct HfTaskDs {
   template <typename Coll, typename T1>
   float evaluateCentralityCand(const T1& candidate)
   {
-    return evaluateCentralityColl(candidate.template collision_as<Coll>());
+    return evaluateCentralityColl(candidate.template collision_as<Coll>(), candidate);
   }
 
   /// Fill histograms of quantities independent from the daugther-mass hypothesis
@@ -389,19 +467,21 @@ struct HfTaskDs {
   void fillHistoMCRec(const T1& candidate, const CandDsMcGen& mcParticles, DataType dataType)
   {
 
-    SpeciesAndDecay whichSpeciesDecay = SpeciesAndDecay::DsToKKPi;
-    if (dataType == DataType::McDplusPrompt || dataType == DataType::McDplusNonPrompt) {
-      whichSpeciesDecay = SpeciesAndDecay::DplusToKKPi;
-    } else if (dataType == DataType::McDplusBkg) {
-      whichSpeciesDecay = SpeciesAndDecay::DplusToPiKPi;
+    int id = o2::constants::physics::Pdg::kDS;
+    auto yCand = hfHelper.yDs(candidate);
+    if (dataType == DataType::McDplusPrompt || dataType == DataType::McDplusNonPrompt || dataType == DataType::McDplusBkg) {
+      id = o2::constants::physics::Pdg::kDPlus;
+      yCand = hfHelper.yDplus(candidate);
+    } else if (dataType == DataType::McLcBkg) {
+      id = o2::constants::physics::Pdg::kLambdaCPlus;
+      yCand = hfHelper.yLc(candidate);
     }
 
     auto indexMother = RecoDecay::getMother(mcParticles,
                                             candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>(),
-                                            whichSpeciesDecay == SpeciesAndDecay::DsToKKPi ? o2::constants::physics::Pdg::kDS : o2::constants::physics::Pdg::kDPlus, true);
+                                            id, true);
 
     if (indexMother != -1) {
-      auto yCand = whichSpeciesDecay == SpeciesAndDecay::DsToKKPi ? hfHelper.yDs(candidate) : hfHelper.yDplus(candidate);
       if (yCandRecoMax >= 0. && std::abs(yCand) > yCandRecoMax) {
         return;
       }
@@ -462,15 +542,16 @@ struct HfTaskDs {
                                  CandDsMcGen const& mcParticles)
   {
     // MC rec.
-    std::array<MemberFunctionPointer<CandDs>, 5> isOfType = {// Contains the functions to check if the candidate is of a certain type
+    std::array<MemberFunctionPointer<CandDs>, 6> isOfType = {// Contains the functions to check if the candidate is of a certain type
                                                              &HfTaskDs::isDsPrompt<CandDs>,
                                                              &HfTaskDs::isDsNonPrompt<CandDs>,
                                                              &HfTaskDs::isDplusPrompt<CandDs>,
                                                              &HfTaskDs::isDplusNonPrompt<CandDs>,
-                                                             &HfTaskDs::isDplusBkg<CandDs>};
+                                                             &HfTaskDs::isDplusBkg<CandDs>,
+                                                             &HfTaskDs::isLcBkg<CandDs>};
 
     bool isBkg = true;
-    for (int i = DataType::McDsPrompt; i <= DataType::McDplusBkg; i++) { // Check what type of MC signal candidate it is, and fill the corresponding histograms
+    for (int i = DataType::McDsPrompt; i <= DataType::McLcBkg; i++) { // Check what type of MC signal candidate it is, and fill the corresponding histograms
       if ((this->*isOfType[i - DataType::McDsPrompt])(candidate)) {
         isBkg = false;
         fillHistoMCRec<Coll>(candidate, mcParticles, static_cast<DataType>(i));
@@ -577,6 +658,41 @@ struct HfTaskDs {
   void runDataAnalysisPerCollision(const Coll& collisions, const CandsDs& candsDs)
   {
     for (const auto& collision : collisions) {
+      /* check the previous run number */
+      const auto& bc = collision.bc();
+      if (bc.runNumber() != mRunNumber) {
+        mRunNumber = bc.runNumber(); // mark this run as at least tried
+        if (ccdbConfig.reconstructionPass.value == "") {
+          lCalibObjects = ccdb->getForRun<TList>(ccdbConfig.ccdbPath, mRunNumber);
+        } else if (ccdbConfig.reconstructionPass.value == "metadata") {
+          std::map<std::string, std::string> metadata;
+          metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+          LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
+          lCalibObjects = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
+        } else {
+          std::map<std::string, std::string> metadata;
+          metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
+          LOGF(info, "Loading CCDB for reconstruction pass (from provided argument): %s", ccdbConfig.reconstructionPass.value);
+          lCalibObjects = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
+        }
+
+        if (lCalibObjects) {
+          LOG(info) << "CCDB objects loaded successfully";
+          hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
+          hVtxZFT0C = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
+          hVtxZNTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
+          lCalibLoaded = true;
+          // Capture error
+          if (!hVtxZFT0A || !hVtxZFT0C || !hVtxZNTracks) {
+            LOGF(error, "Problem loading CCDB objects! Please check");
+            lCalibLoaded = false;
+          }
+        } else {
+          LOGF(error, "Problem loading CCDB object! Please check");
+          lCalibLoaded = false;
+        }
+      }
+
       auto thisCollId = collision.globalIndex();
       std::array<int, DataType::kDataTypes> nCandsPerType{0};
       std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
@@ -607,6 +723,41 @@ struct HfTaskDs {
                                  const CandDsMcGen& mcParticles)
   {
     for (const auto& collision : collisions) {
+      /* check the previous run number */
+      const auto& bc = collision.bc();
+      if (bc.runNumber() != mRunNumber) {
+        mRunNumber = bc.runNumber(); // mark this run as at least tried
+        if (ccdbConfig.reconstructionPass.value == "") {
+          lCalibObjects = ccdb->getForRun<TList>(ccdbConfig.ccdbPath, mRunNumber);
+        } else if (ccdbConfig.reconstructionPass.value == "metadata") {
+          std::map<std::string, std::string> metadata;
+          metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+          LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
+          lCalibObjects = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
+        } else {
+          std::map<std::string, std::string> metadata;
+          metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
+          LOGF(info, "Loading CCDB for reconstruction pass (from provided argument): %s", ccdbConfig.reconstructionPass.value);
+          lCalibObjects = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
+        }
+
+        if (lCalibObjects) {
+          LOG(info) << "CCDB objects loaded successfully";
+          hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
+          hVtxZFT0C = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
+          hVtxZNTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
+          lCalibLoaded = true;
+          // Capture error
+          if (!hVtxZFT0A || !hVtxZFT0C || !hVtxZNTracks) {
+            LOGF(error, "Problem loading CCDB objects! Please check");
+            lCalibLoaded = false;
+          }
+        } else {
+          LOGF(error, "Problem loading CCDB object! Please check");
+          lCalibLoaded = false;
+        }
+      }
+
       auto thisCollId = collision.globalIndex();
       std::array<int, DataType::kDataTypes> nCandsPerType{0};
       std::array<int, DataType::kDataTypes> nCandsInSignalRegionDsPerType{0};
@@ -663,6 +814,7 @@ struct HfTaskDs {
 
   void processDataWithCentFT0C(CollisionsWithFT0C const& collisions,
                                CandDsData const& candsDs,
+                               aod::BCs const&,
                                aod::Tracks const&)
   {
     runDataAnalysisPerCollision(collisions, candsDs);
@@ -671,6 +823,7 @@ struct HfTaskDs {
 
   void processDataWithCentFT0M(CollisionsWithFT0M const& collisions,
                                CandDsData const& candsDs,
+                               aod::BCs const&,
                                aod::Tracks const&)
   {
     runDataAnalysisPerCollision(collisions, candsDs);
@@ -679,6 +832,7 @@ struct HfTaskDs {
 
   void processDataWithCentNTracksPV(CollisionsWithNTracksPV const& collisions,
                                     CandDsData const& candsDs,
+                                    aod::BCs const&,
                                     aod::Tracks const&)
   {
     runDataAnalysisPerCollision(collisions, candsDs);
@@ -687,6 +841,7 @@ struct HfTaskDs {
 
   void processData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                    CandDsData const& candsDs,
+                   aod::BCs const&,
                    aod::Tracks const&)
   {
     runDataAnalysisPerCollision(collisions, candsDs);
@@ -695,6 +850,7 @@ struct HfTaskDs {
 
   void processDataWithMlAndCentFT0C(CollisionsWithFT0C const& collisions,
                                     CandDsDataWithMl const& candsDs,
+                                    aod::BCs const&,
                                     aod::Tracks const&)
   {
     runDataAnalysisPerCollision(collisions, candsDs);
@@ -703,6 +859,7 @@ struct HfTaskDs {
 
   void processDataWithMlAndCentFT0M(CollisionsWithFT0M const& collisions,
                                     CandDsDataWithMl const& candsDs,
+                                    aod::BCs const&,
                                     aod::Tracks const&)
   {
     runDataAnalysisPerCollision(collisions, candsDs);
@@ -711,6 +868,7 @@ struct HfTaskDs {
 
   void processDataWithMlAndCentNTracksPV(CollisionsWithNTracksPV const& collisions,
                                          CandDsDataWithMl const& candsDs,
+                                         aod::BCs const&,
                                          aod::Tracks const&)
   {
     runDataAnalysisPerCollision(collisions, candsDs);
@@ -719,6 +877,7 @@ struct HfTaskDs {
 
   void processDataWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                          CandDsDataWithMl const& candsDs,
+                         aod::BCs const&,
                          aod::Tracks const&)
   {
     runDataAnalysisPerCollision(collisions, candsDs);
@@ -728,6 +887,7 @@ struct HfTaskDs {
   void processMcWithCentFT0C(CollisionsMcWithFT0C const& collisions,
                              CandDsMcReco const& candsDs,
                              CandDsMcGen const& mcParticles,
+                             aod::BCs const&,
                              aod::McCollisions const&,
                              aod::TracksWMc const&)
   {
@@ -738,6 +898,7 @@ struct HfTaskDs {
   void processMcWithCentFT0M(CollisionsMcWithFT0M const& collisions,
                              CandDsMcReco const& candsDs,
                              CandDsMcGen const& mcParticles,
+                             aod::BCs const&,
                              aod::McCollisions const&,
                              aod::TracksWMc const&)
   {
@@ -748,6 +909,7 @@ struct HfTaskDs {
   void processMcWithCentNTracksPV(CollisionsMcWithNTracksPV const& collisions,
                                   CandDsMcReco const& candsDs,
                                   CandDsMcGen const& mcParticles,
+                                  aod::BCs const&,
                                   aod::McCollisions const&,
                                   aod::TracksWMc const&)
   {
@@ -758,6 +920,7 @@ struct HfTaskDs {
   void processMc(CollisionsMc const& collisions,
                  CandDsMcReco const& candsDs,
                  CandDsMcGen const& mcParticles,
+                 aod::BCs const&,
                  aod::McCollisions const&,
                  aod::TracksWMc const&)
   {
@@ -768,6 +931,7 @@ struct HfTaskDs {
   void processMcWithMlAndCentFT0C(CollisionsMcWithFT0C const& collisions,
                                   CandDsMcRecoWithMl const& candsDs,
                                   CandDsMcGen const& mcParticles,
+                                  aod::BCs const&,
                                   aod::McCollisions const&,
                                   aod::TracksWMc const&)
   {
@@ -778,6 +942,7 @@ struct HfTaskDs {
   void processMcWithMlAndCentFT0M(CollisionsMcWithFT0M const& collisions,
                                   CandDsMcRecoWithMl const& candsDs,
                                   CandDsMcGen const& mcParticles,
+                                  aod::BCs const&,
                                   aod::McCollisions const&,
                                   aod::TracksWMc const&)
   {
@@ -788,6 +953,7 @@ struct HfTaskDs {
   void processMcWithMlAndCentNTracksPV(CollisionsMcWithNTracksPV const& collisions,
                                        CandDsMcRecoWithMl const& candsDs,
                                        CandDsMcGen const& mcParticles,
+                                       aod::BCs const&,
                                        aod::McCollisions const&,
                                        aod::TracksWMc const&)
   {
@@ -798,6 +964,7 @@ struct HfTaskDs {
   void processMcWithMl(CollisionsMc const& collisions,
                        CandDsMcRecoWithMl const& candsDs,
                        CandDsMcGen const& mcParticles,
+                       aod::BCs const&,
                        aod::McCollisions const&,
                        aod::TracksWMc const&)
   {
@@ -808,5 +975,7 @@ struct HfTaskDs {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  // Parse the metadata
+  metadataInfo.initMetadata(cfgc);
   return WorkflowSpec{adaptAnalysisTask<HfTaskDs>(cfgc)};
 }

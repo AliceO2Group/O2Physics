@@ -15,6 +15,7 @@
 
 #include <vector>
 #include <bitset>
+#include <string>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -179,6 +180,9 @@ struct femtoDreamTripletTaskTrackTrackV0 {
   {
 
     eventHisto.init(&qaRegistry, false);
+
+    colBinning = {{ConfVtxBins, ConfMultBins}, true};
+
     trackHistoSelectedParts.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTBins, ConfDummy, ConfDummy, ConfTempFitVarBinsTrack, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfPDGCodePart);
     trackHistoALLSelectedParts.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTBins, ConfDummy, ConfDummy, ConfTempFitVarBinsTrack, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfPDGCodePart);
     particleHistoSelectedV0s.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTV0Bins, ConfDummy, ConfDummy, ConfTempFitVarBinsV0, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfInvMassBins, ConfIsMC, ConfPDGCodeV0);
@@ -199,6 +203,9 @@ struct femtoDreamTripletTaskTrackTrackV0 {
     std::vector<double> tmpVecMult = ConfMultBins;
     framework::AxisSpec multAxis = {tmpVecMult, "Multiplicity"};
     ThreeBodyQARegistry.add("TripletTaskQA/hSEMultVSGoodTracks", ";Mult;GoodT", kTH2F, {multAxis, {100, 0, 100}});
+    ThreeBodyQARegistry.add("TripletTaskQA/hTestPairCleaner", ";posDaughtID; negDaughID", kTH2F, {{100, -10000, 10000}, {100, -10000, 10000}});
+    ThreeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerPos", ";primaryTrack; posDaughtID", kTH2F, {{100, -200, 200}, {100, -200, 200}});
+    ThreeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerNeg", ";primaryTrack; negDaughtID", kTH2F, {{100, -200, 200}, {100, -200, 200}});
 
     sameEventCont.init(&resultRegistry, ConfQ3Bins, ConfMultBins, ConfIsMC);
     mixedEventCont.init(&resultRegistry, ConfQ3Bins, ConfMultBins, ConfIsMC);
@@ -308,6 +315,13 @@ struct femtoDreamTripletTaskTrackTrackV0 {
     for (auto& V0 : groupSelectedV0s) {
       const auto& posChild = parts.iteratorAt(V0.index() - 2);
       const auto& negChild = parts.iteratorAt(V0.index() - 1);
+
+      const auto& childrenPos = posChild.childrenIds();
+      const auto& childrenNeg = negChild.childrenIds();
+      auto posID = childrenPos[0];
+      auto negID = childrenNeg[1];
+      ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleaner"), posID, negID);
+
       if (!((posChild.cut() & Conf_ChildPos_CutV0) == Conf_ChildPos_CutV0 &&
             (posChild.pidcut() & Conf_ChildPos_TPCBitV0) == Conf_ChildPos_TPCBitV0 &&
             (negChild.cut() & Conf_ChildNeg_CutV0) == Conf_ChildNeg_CutV0 &&
@@ -316,6 +330,10 @@ struct femtoDreamTripletTaskTrackTrackV0 {
       }
 
       for (auto& [T1, T2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupSelectedTracks, groupSelectedTracks))) {
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleanerPos"), T1.index(), posID);
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleanerNeg"), T1.index(), negID);
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleanerPos"), T2.index(), posID);
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleanerNeg"), T2.index(), negID);
         auto Q3 = FemtoDreamMath::getQ3(T1, mMassOne, T2, mMassTwo, V0, mMassThree);
         // Close pair rejection
         if (ConfIsCPR.value) {
@@ -548,7 +566,6 @@ struct femtoDreamTripletTaskTrackTrackV0 {
       if ((magFieldTesla1 != magFieldTesla2) || (magFieldTesla2 != magFieldTesla3) || (magFieldTesla1 != magFieldTesla3)) {
         continue;
       }
-      // CONSIDER testing different strategies to which events to use
 
       doMixedEvent<false>(groupPartsOne, groupPartsTwo, groupPartsThree, parts, magFieldTesla1, multiplicityCol);
     }

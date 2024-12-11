@@ -36,6 +36,8 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <string>
+#include <vector>
 #include <cmath>
 #include <array>
 #include <cstdlib>
@@ -124,6 +126,7 @@ struct cascadeBuilder {
   Produces<aod::CascTrackXs> cascTrackXs; // if desired for replaying of position information
   Produces<aod::CascBBs> cascbb;          // if enabled
   Produces<aod::CascCovs> casccovs;       // if requested by someone
+  Produces<aod::TraCascCovs> tracasccovs; // if requested by someone
   Produces<aod::KFCascCovs> kfcasccovs;   // if requested by someone
 
   // produces calls for machine-learning selections
@@ -136,7 +139,7 @@ struct cascadeBuilder {
   Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested topo sels"};
 
   // Configurables related to table creation
-  Configurable<int> createCascCovMats{"createCascCovMats", -1, {"Produces V0 cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> createCascCovMats{"createCascCovMats", -1, {"Produces casc cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> createCascTrackXs{"createCascTrackXs", -1, {"Produces track X at minima table. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
 
   // Topological selection criteria
@@ -1409,12 +1412,8 @@ struct cascadeBuilder {
     KFXi.TransportToDecayVertex();
     KFOmega.TransportToDecayVertex();
 
-    // get DCA of updated daughters at vertex
-    KFParticle kfpBachPionUpd = kfpBachPion;
-    KFParticle kfpV0Upd = kfpV0;
-    kfpBachPionUpd.SetProductionVertex(KFXi);
-    kfpV0Upd.SetProductionVertex(KFXi);
-    cascadecandidate.dcacascdau = kfpBachPionUpd.GetDistanceFromParticle(kfpV0Upd);
+    // get DCA of daughters at vertex
+    cascadecandidate.dcacascdau = kfpBachPion.GetDistanceFromParticle(kfpV0);
     if (cascadecandidate.dcacascdau > dcacascdau)
       return false;
 
@@ -1601,15 +1600,19 @@ struct cascadeBuilder {
       // store momentum covariance matrix
       std::array<float, 21> covTv0 = {0.};
       std::array<float, 21> covTbachelor = {0.};
+      float covCascade[21];
       // std::array<float, 6> momentumCovariance;
-      float momentumCovariance[6];
       lV0Track.getCovXYZPxPyPzGlo(covTv0);
       lBachelorTrack.getCovXYZPxPyPzGlo(covTbachelor);
       constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-      for (int i = 0; i < 6; i++) {
-        momentumCovariance[i] = covTv0[MomInd[i]] + covTbachelor[MomInd[i]];
+      for (int i = 0; i < 21; i++) {
+        covCascade[i] = 0.0f;
       }
-      casccovs(positionCovariance, momentumCovariance);
+      for (int i = 0; i < 6; i++) {
+        covCascade[i] = positionCovariance[i];
+        covCascade[MomInd[i]] = covTv0[MomInd[i]] + covTbachelor[MomInd[i]];
+      }
+      casccovs(covCascade);
     }
   }
 
@@ -1778,15 +1781,19 @@ struct cascadeBuilder {
         // store momentum covariance matrix
         std::array<float, 21> covTv0 = {0.};
         std::array<float, 21> covTbachelor = {0.};
+        float covCascade[21];
         // std::array<float, 6> momentumCovariance;
-        float momentumCovariance[6];
         lV0Track.getCovXYZPxPyPzGlo(covTv0);
         lBachelorTrack.getCovXYZPxPyPzGlo(covTbachelor);
         constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-        for (int i = 0; i < 6; i++) {
-          momentumCovariance[i] = covTv0[MomInd[i]] + covTbachelor[MomInd[i]];
+        for (int i = 0; i < 21; i++) {
+          covCascade[i] = 0.0f;
         }
-        casccovs(positionCovariance, momentumCovariance);
+        for (int i = 0; i < 6; i++) {
+          covCascade[i] = positionCovariance[i];
+          covCascade[MomInd[i]] = covTv0[MomInd[i]] + covTbachelor[MomInd[i]];
+        }
+        casccovs(covCascade);
       }
 
       float lPt = 0.0f;
@@ -1830,7 +1837,7 @@ struct cascadeBuilder {
           continue; // safety (should be fine but depends on future stratrack dev)
         // Track casting to <TTracksTo>
         auto cascadeTrack = trackedCascade.template track_as<TTrackTo>();
-        auto cascadeTrackPar = getTrackPar(cascadeTrack);
+        auto cascadeTrackPar = getTrackParCov(cascadeTrack);
         auto const& collision = cascade.collision();
         gpu::gpustd::array<float, 2> dcaInfo;
         lCascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
@@ -1910,6 +1917,19 @@ struct cascadeBuilder {
                         cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
                         cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,          // <--- stratrack (cascDCAxy/z)
                         trackedCascade.matchingChi2(), trackedCascade.topologyChi2(), trackedCascade.itsClsSize()); // <--- stratrack fit info
+
+        if (createCascCovMats) {
+          // create tracked cascade covariance in exactly the same way as non-tracked
+          // ensures getter consistency and full compatibility in template functions
+          // (easy switching between tracked and non-tracked)
+          std::array<float, 21> traCovMat = {0.};
+          cascadeTrackPar.getCovXYZPxPyPzGlo(traCovMat);
+          float traCovMatArray[21];
+          for (int ii = 0; ii < 21; ii++) {
+            traCovMatArray[ii] = traCovMat[ii];
+          }
+          tracasccovs(traCovMatArray);
+        }
       }
     }
     // En masse filling at end of process call
@@ -2234,7 +2254,7 @@ struct cascadePreselector {
   void checkAndFinalize()
   {
     // parse + publish tag table now
-    for (int ii = 0; ii < selectionMask.size(); ii++) {
+    for (std::size_t ii = 0; ii < selectionMask.size(); ii++) {
       histos.fill(HIST("hPreselectorStatistics"), 0.0f); // All cascades
       bool validCascade = bitcheck(selectionMask[ii], bitTrackQuality);
       if (validCascade) {
@@ -2356,9 +2376,9 @@ struct cascadePreselector {
 
 /// Extends the cascdata table with expression columns
 struct cascadeInitializer {
-  Spawns<aod::CascCore> cascdataext;
-  Spawns<aod::KFCascCore> kfcascdataext;
-  Spawns<aod::TraCascCore> tracascdataext;
+  Spawns<aod::CascCores> cascdataext;
+  Spawns<aod::KFCascCores> kfcascdataext;
+  Spawns<aod::TraCascCores> tracascdataext;
   void init(InitContext const&) {}
 };
 

@@ -11,6 +11,8 @@
 
 // author: Arvind Khuntia (arvind.khuntia@cern.ch) INFN Bologna, Italy
 
+#include <string>
+#include <vector>
 #include <TLorentzVector.h>
 #include <TVector2.h>
 
@@ -30,6 +32,8 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "ReconstructionDataFormats/Track.h"
+
+#include "PWGLF/DataModel/LFParticleIdentification.h"
 
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
@@ -92,6 +96,7 @@ struct nucleiInJets {
   Configurable<bool> isMC{"isMC", false, "flag for the MC"};
   Configurable<bool> isWithJetEvents{"isWithJetEvents", true, "Events with at least one jet"};
   Configurable<bool> isWithLeadingJet{"isWithLeadingJet", true, "Events with leading jet"};
+  Configurable<bool> useLfTpcPid{"useLfTpcPid", true, "Events with custom TPC parameters"};
 
   Configurable<double> cfgtrkMinPt{"cfgtrkMinPt", 0.15, "set track min pT"};
   Configurable<double> cfgtrkMaxEta{"cfgtrkMaxEta", 0.8, "set track max Eta"};
@@ -149,7 +154,9 @@ struct nucleiInJets {
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa,
                                     aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTPCFullTr, aod::pidTOFFullPi, aod::pidTOFFullKa,
                                     aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFbeta, aod::TOFSignal>;
-
+  using TrackCandidatesLfPid = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa,
+                                         aod::pidTPCLfFullPr, aod::pidTPCLfFullDe, aod::pidTPCLfFullHe, aod::pidTPCLfFullTr, aod::pidTOFFullPi, aod::pidTOFFullKa,
+                                         aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFbeta, aod::TOFSignal>;
   using TrackCandidatesMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa,
                                       aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTPCFullTr, aod::pidTOFFullPi,
                                       aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe,
@@ -963,8 +970,13 @@ struct nucleiInJets {
     jetHist.fill(HIST("jet/h1JetEvents"), 0.5);
 
     for (auto& track : tracks) {
-      auto trk = track.track_as<TrackCandidates>();
-      fillTrackInfo<false>(trk, chargedjets, leadingJetWithPtEtaPhi);
+      if (useLfTpcPid) {
+        auto trk = track.track_as<TrackCandidatesLfPid>();
+        fillTrackInfo<false>(trk, chargedjets, leadingJetWithPtEtaPhi);
+      } else {
+        auto trk = track.track_as<TrackCandidates>();
+        fillTrackInfo<false>(trk, chargedjets, leadingJetWithPtEtaPhi);
+      }
     }
   }
 
@@ -1190,7 +1202,7 @@ struct nucleiInJets {
       // add pid later
 
       bool jetFlag = false;
-      for (int iDJet = 0; iDJet < mcdJetPt.size(); iDJet++) {
+      for (std::size_t iDJet = 0; iDJet < mcdJetPt.size(); iDJet++) {
         double delPhi = TVector2::Phi_mpi_pi(mcdJetPhi[iDJet] - track.phi());
         double delEta = mcdJetEta[iDJet] - track.eta();
         double R = TMath::Sqrt((delEta * delEta) + (delPhi * delPhi));
@@ -1270,7 +1282,7 @@ struct nucleiInJets {
       // add pid later
 
       bool jetFlag = false;
-      for (int iDJet = 0; iDJet < mcpJetPt.size(); iDJet++) {
+      for (std::size_t iDJet = 0; iDJet < mcpJetPt.size(); iDJet++) {
         double delPhi = TVector2::Phi_mpi_pi(mcpJetPhi[iDJet] - mcParticle.phi());
         double delEta = mcpJetEta[iDJet] - mcParticle.eta();
         double R = TMath::Sqrt((delEta * delEta) + (delPhi * delPhi));

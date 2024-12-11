@@ -19,6 +19,11 @@ o2physics_add_dpl_workflow(flow-task
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(flow-runbyrun
+                    SOURCES FlowRunbyRun.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::GFWCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(flow-gfw-pbpb
                     SOURCES FlowGFWPbPb.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
@@ -34,12 +39,22 @@ o2physics_add_dpl_workflow(flow-gf
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(flow-pbpb-pikp-task
-                    SOURCES FlowPbPbpikp.cxx
+o2physics_add_dpl_workflow(flow-pbpb-pikp
+                    SOURCES flowPbpbPikp.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(flow-gfw-omegaxi
                     SOURCES flowGFWOmegaXi.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(flow-pid-cme
+                    SOURCES pidcme.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(flow-sp
+                    SOURCES flowSP.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
                     COMPONENT_NAME Analysis)

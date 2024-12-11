@@ -1037,7 +1037,7 @@ struct hadronnucleicorrelation {
 
         if (std::abs(track.tpcNSigmaDe()) < nsigmaTPC && track.sign() > 0)
           registry.fill(HIST("hDenominatorPurity_Deuteron_TPC"), track.pt());
-        if (std::abs(track.tpcNSigmaDe()) < nsigmaTPC && std::abs(track.tofNSigmaPr()) < nsigmaTOF && track.sign() > 0)
+        if (std::abs(track.tpcNSigmaDe()) < nsigmaTPC && std::abs(track.tofNSigmaDe()) < nsigmaTOF && track.sign() > 0)
           registry.fill(HIST("hDenominatorPurity_Deuteron_TPCTOF"), track.pt());
         if (((std::abs(track.tpcNSigmaDe()) < nsigmaTPC && track.beta() < -100) ||
              (track.beta() > -100 && std::abs(track.tpcNSigmaDe()) < nsigmaTPC && std::abs(track.tofNSigmaDe()) < nsigmaTOF)) &&
@@ -1055,7 +1055,7 @@ struct hadronnucleicorrelation {
 
         if (std::abs(track.tpcNSigmaDe()) < nsigmaTPC && track.sign() < 0)
           registry.fill(HIST("hDenominatorPurity_Deuteron_TPC"), track.pt() * -1);
-        if (std::abs(track.tpcNSigmaDe()) < nsigmaTPC && std::abs(track.tofNSigmaPr()) < nsigmaTOF && track.sign() < 0)
+        if (std::abs(track.tpcNSigmaDe()) < nsigmaTPC && std::abs(track.tofNSigmaDe()) < nsigmaTOF && track.sign() < 0)
           registry.fill(HIST("hDenominatorPurity_Deuteron_TPCTOF"), track.pt() * -1);
         if ((
               (std::abs(track.tpcNSigmaDe()) < nsigmaTPC && track.beta() < -100) ||

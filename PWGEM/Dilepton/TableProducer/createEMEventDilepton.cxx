@@ -14,6 +14,8 @@
 // This code produces reduced events for photon analyses.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <string>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -149,8 +151,7 @@ struct CreateEMEventDilepton {
       auto bc = collision.template foundBC_as<TBCs>();
       initCCDB(bc);
 
-      int16_t occ_tmp = collision.trackOccupancyInTimeRange() < 0 ? -1 : static_cast<int16_t>(collision.trackOccupancyInTimeRange() / 100.f);
-      event_norm_info(collision.alias_raw(), collision.selection_raw(), static_cast<int16_t>(10.f * collision.posZ()), occ_tmp);
+      event_norm_info(collision.alias_raw(), collision.selection_raw(), static_cast<int16_t>(10.f * collision.posZ()));
 
       if (!collision.isSelected() || !collision.isEoI()) {
         continue;
@@ -168,7 +169,7 @@ struct CreateEMEventDilepton {
 
       event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(),
             collision.posX(), collision.posY(), collision.posZ(),
-            collision.numContrib(), collision.trackOccupancyInTimeRange());
+            collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
 
       // eventcov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 

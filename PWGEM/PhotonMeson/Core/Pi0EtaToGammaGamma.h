@@ -11,8 +11,10 @@
 //
 // ========================
 //
-// This code loops over photons and makes pairs for neutral mesons analyses.
-//    Please write to: daiki.sekihata@cern.ch
+/// \file Pi0EtaToGammaGamma.h
+/// \brief This code loops over photons and makes pairs for neutral mesons analyses.
+///
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
 #ifndef PWGEM_PHOTONMESON_CORE_PI0ETATOGAMMAGAMMA_H_
 #define PWGEM_PHOTONMESON_CORE_PI0ETATOGAMMAGAMMA_H_
@@ -80,7 +82,7 @@ using MyEMCClusters = soa::Join<aod::SkimEMCClusters, aod::EMCEMEventIds>;
 using MyEMCCluster = MyEMCClusters::iterator;
 
 using MyPHOSClusters = soa::Join<aod::PHOSClusters, aod::PHOSEMEventIds>;
-using MyPHOSCluster = MyEMCClusters::iterator;
+using MyPHOSCluster = MyPHOSClusters::iterator;
 
 template <PairType pairtype, typename... Types>
 struct Pi0EtaToGammaGamma {
@@ -178,6 +180,7 @@ struct Pi0EtaToGammaGamma {
   EMCPhotonCut fEMCCut;
   struct : ConfigurableGroup {
     std::string prefix = "emccut_group";
+    Configurable<std::string> clusterDefinition{"clusterDefinition", "kV3Default", "Clusterizer to be selected, e.g. V3Default"};
     Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle"};
     Configurable<float> EMC_minTime{"EMC_minTime", -20., "Minimum cluster time for EMCal time cut"};
     Configurable<float> EMC_maxTime{"EMC_maxTime", +25., "Maximum cluster time for EMCal time cut"};
@@ -189,6 +192,7 @@ struct Pi0EtaToGammaGamma {
     Configurable<std::vector<float>> EMC_TM_Phi{"EMC_TM_Phi", {0.015f, 3.65f, -2.f}, "|phi| <= [0]+(pT+[1])^[2] for EMCal track matching"};
     Configurable<float> EMC_Eoverp{"EMC_Eoverp", 1.75, "Minimum cluster energy over track momentum for EMCal track matching"};
     Configurable<bool> EMC_UseExoticCut{"EMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
+    Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
   } emccuts;
 
   PHOSPhotonCut fPHOSCut;
@@ -210,6 +214,7 @@ struct Pi0EtaToGammaGamma {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber;
   float d_bz;
+  o2::emcal::Geometry* emcalGeom;
 
   void init(InitContext&)
   {
@@ -244,7 +249,7 @@ struct Pi0EtaToGammaGamma {
 
     if constexpr (pairtype == kEMCEMC) {
       fRegistry.addClone("Pair/same/", "Pair/rotation/");
-      o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
+      emcalGeom = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
     }
 
     mRunNumber = 0;
@@ -267,7 +272,7 @@ struct Pi0EtaToGammaGamma {
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       mRunNumber = collision.runNumber();
@@ -321,7 +326,6 @@ struct Pi0EtaToGammaGamma {
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
-    fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
   void DefinePCMCut()
@@ -419,13 +423,14 @@ struct Pi0EtaToGammaGamma {
 
     fEMCCut = EMCPhotonCut("fEMCCut", "fEMCCut");
 
+    fEMCCut.SetClusterizer(emccuts.clusterDefinition);
     fEMCCut.SetMinE(emccuts.EMC_minE);
     fEMCCut.SetMinNCell(emccuts.EMC_minNCell);
     fEMCCut.SetM02Range(emccuts.EMC_minM02, emccuts.EMC_maxM02);
     fEMCCut.SetTimeRange(emccuts.EMC_minTime, emccuts.EMC_maxTime);
 
-    fEMCCut.SetTrackMatchingEta([a, b, c](float pT) { return a + pow(pT + b, c); });
-    fEMCCut.SetTrackMatchingPhi([d, e, f](float pT) { return d + pow(pT + e, f); });
+    fEMCCut.SetTrackMatchingEta([a, b, c](float pT) { return a + std::pow(pT + b, c); });
+    fEMCCut.SetTrackMatchingPhi([d, e, f](float pT) { return d + std::pow(pT + e, f); });
 
     fEMCCut.SetMinEoverP(emccuts.EMC_Eoverp);
     fEMCCut.SetUseExoticCut(emccuts.EMC_UseExoticCut);
@@ -434,6 +439,42 @@ struct Pi0EtaToGammaGamma {
   void DefinePHOSCut()
   {
     fPHOSCut.SetEnergyRange(phoscuts.cfg_min_Ecluster, 1e+10);
+  }
+
+  /// \brief returns if cluster is too close to edge of EMCal (using rotation background method only for EMCal!)
+  bool IsTooCloseToEdge(const int cellID, const int DistanceToBorder = 1)
+  {
+    if (DistanceToBorder <= 0) {
+      return false;
+    }
+    if (cellID < 0) {
+      return true;
+    }
+
+    int iBadCell = -1;
+
+    // check distance to border in case the cell is okay
+    auto [iSupMod, iMod, iPhi, iEta] = emcalGeom->GetCellIndex(cellID);
+    auto [irow, icol] = emcalGeom->GetCellPhiEtaIndexInSModule(iSupMod, iMod, iPhi, iEta);
+
+    // Check rows/phi
+    int iRowLast = 24;
+    if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_HALF) {
+      iRowLast /= 2; // 2/3 sm case
+    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_THIRD) {
+      iRowLast /= 3; // 1/3 sm case
+    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::DCAL_EXT) {
+      iRowLast /= 3; // 1/3 sm case
+    }
+
+    if (irow < DistanceToBorder || (iRowLast - irow) <= DistanceToBorder) {
+      iBadCell = 1;
+    }
+
+    if (iBadCell > 0) {
+      return true;
+    }
+    return false;
   }
 
   /// \brief Calculate background (using rotation background method only for EMCal!)
@@ -450,9 +491,35 @@ struct Pi0EtaToGammaGamma {
     photon1 = rotationMatrix * photon1;
     photon2 = rotationMatrix * photon2;
 
-    for (auto& photon : photons_coll) {
+    int iCellID_photon1 = 0;
+    int iCellID_photon2 = 0;
+
+    try {
+      iCellID_photon1 = emcalGeom->GetAbsCellIdFromEtaPhi(photon1.Eta(), photon1.Phi());
+      if (IsTooCloseToEdge(iCellID_photon1, emccuts.cfgDistanceToEdge.value)) {
+        iCellID_photon1 = -1;
+      }
+    } catch (o2::emcal::InvalidPositionException& e) {
+      iCellID_photon1 = -1;
+    }
+    try {
+      iCellID_photon2 = emcalGeom->GetAbsCellIdFromEtaPhi(photon2.Eta(), photon2.Phi());
+      if (IsTooCloseToEdge(iCellID_photon2, emccuts.cfgDistanceToEdge.value)) {
+        iCellID_photon2 = -1;
+      }
+    } catch (o2::emcal::InvalidPositionException& e) {
+      iCellID_photon2 = -1;
+    }
+    if (iCellID_photon1 == -1 && iCellID_photon2 == -1) {
+      return;
+    }
+
+    for (const auto& photon : photons_coll) {
       if (photon.globalIndex() == ig1 || photon.globalIndex() == ig2) {
         // only combine rotated photons with other photons
+        continue;
+      }
+      if (!(fEMCCut.IsSelected<MyEMCCluster>(photon))) {
         continue;
       }
 
@@ -463,27 +530,14 @@ struct Pi0EtaToGammaGamma {
       float openingAngle1 = std::acos(photon1.Vect().Dot(photon3.Vect()) / (photon1.P() * photon3.P()));
       float openingAngle2 = std::acos(photon2.Vect().Dot(photon3.Vect()) / (photon2.P() * photon3.P()));
 
-      int iCellID_photon1 = 0;
-      int iCellID_photon2 = 0;
-
-      try {
-        iCellID_photon1 = o2::emcal::Geometry::GetInstance()->GetAbsCellIdFromEtaPhi(photon1.Eta(), photon1.Phi());
-      } catch (o2::emcal::InvalidPositionException& e) {
-        iCellID_photon1 = -1;
-      }
-      try {
-        iCellID_photon2 = o2::emcal::Geometry::GetInstance()->GetAbsCellIdFromEtaPhi(photon2.Eta(), photon2.Phi());
-      } catch (o2::emcal::InvalidPositionException& e) {
-        iCellID_photon2 = -1;
-      }
-
-      if (openingAngle1 > emccuts.minOpenAngle && abs(mother1.Rapidity()) < maxY && iCellID_photon1 > 0) {
+      if (openingAngle1 > emccuts.minOpenAngle && std::abs(mother1.Rapidity()) < maxY && iCellID_photon1 > 0) {
         fRegistry.fill(HIST("Pair/rotation/hs"), mother1.M(), mother1.Pt(), eventWeight);
       }
-      if (openingAngle2 > emccuts.minOpenAngle && abs(mother2.Rapidity()) < maxY && iCellID_photon2 > 0) {
+      if (openingAngle2 > emccuts.minOpenAngle && std::abs(mother2.Rapidity()) < maxY && iCellID_photon2 > 0) {
         fRegistry.fill(HIST("Pair/rotation/hs"), mother2.M(), mother2.Pt(), eventWeight);
       }
     }
+    return;
   }
 
   SliceCache cache;
@@ -508,14 +562,14 @@ struct Pi0EtaToGammaGamma {
                   TPreslice1 const& perCollision1, TPreslice2 const& perCollision2,
                   TCut1 const& cut1, TCut2 const& cut2)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       initCCDB(collision);
       int ndiphoton = 0;
       if ((pairtype == PairType::kPHOSPHOS || pairtype == PairType::kPCMPHOS) && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
         continue;
       }
 
-      if (eventcuts.onlyKeepWeightedEvents && fabs(collision.weight() - 1.) < 1E-10) {
+      if (eventcuts.onlyKeepWeightedEvents && std::fabs(collision.weight() - 1.) < 1E-10) {
         continue;
       }
 
@@ -571,7 +625,7 @@ struct Pi0EtaToGammaGamma {
         auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
         auto photons2_per_collision = photons2.sliceBy(perCollision2, collision.globalIndex());
 
-        for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_per_collision, photons2_per_collision))) {
+        for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_per_collision, photons2_per_collision))) {
           if (!cut1.template IsSelected<TSubInfos1>(g1) || !cut2.template IsSelected<TSubInfos2>(g2)) {
             continue;
           }
@@ -579,7 +633,7 @@ struct Pi0EtaToGammaGamma {
           ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          if (abs(v12.Rapidity()) > maxY) {
+          if (std::abs(v12.Rapidity()) > maxY) {
             continue;
           }
 
@@ -607,7 +661,7 @@ struct Pi0EtaToGammaGamma {
         auto positrons_per_collision = positrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
         auto electrons_per_collision = electrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
 
-        for (auto& g1 : photons1_per_collision) {
+        for (const auto& g1 : photons1_per_collision) {
           if (!cut1.template IsSelected<TSubInfos1>(g1)) {
             continue;
           }
@@ -615,7 +669,7 @@ struct Pi0EtaToGammaGamma {
           auto ele1 = g1.template negTrack_as<TSubInfos1>();
           ROOT::Math::PtEtaPhiMVector v_gamma(g1.pt(), g1.eta(), g1.phi(), 0.);
 
-          for (auto& [pos2, ele2] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
+          for (const auto& [pos2, ele2] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
 
             if (pos2.trackId() == ele2.trackId()) { // this is protection against pairing identical 2 tracks.
               continue;
@@ -636,7 +690,7 @@ struct Pi0EtaToGammaGamma {
             ROOT::Math::PtEtaPhiMVector v_ele(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ee = v_pos + v_ele;
             ROOT::Math::PtEtaPhiMVector veeg = v_gamma + v_pos + v_ele;
-            if (abs(veeg.Rapidity()) > maxY) {
+            if (std::abs(veeg.Rapidity()) > maxY) {
               continue;
             }
 
@@ -659,14 +713,14 @@ struct Pi0EtaToGammaGamma {
         auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
         auto photons2_per_collision = photons2.sliceBy(perCollision2, collision.globalIndex());
 
-        for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_per_collision, photons2_per_collision))) {
+        for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_per_collision, photons2_per_collision))) {
           if (!cut1.template IsSelected<TSubInfos1>(g1) || !cut2.template IsSelected<TSubInfos2>(g2)) {
             continue;
           }
           ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          if (abs(v12.Rapidity()) > maxY) {
+          if (std::abs(v12.Rapidity()) > maxY) {
             continue;
           }
 
@@ -700,7 +754,7 @@ struct Pi0EtaToGammaGamma {
       auto collisionIds2_in_mixing_pool = emh2->GetCollisionIdsFromEventPool(key_bin);
 
       if constexpr (pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) { // same kinds pairing
-        for (auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
+        for (const auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
 
@@ -711,12 +765,12 @@ struct Pi0EtaToGammaGamma {
           auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
 
-          for (auto& g1 : selected_photons1_in_this_event) {
-            for (auto& g2 : photons1_from_event_pool) {
+          for (const auto& g1 : selected_photons1_in_this_event) {
+            for (const auto& g2 : photons1_from_event_pool) {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-              if (abs(v12.Rapidity()) > maxY) {
+              if (std::abs(v12.Rapidity()) > maxY) {
                 continue;
               }
 
@@ -726,7 +780,7 @@ struct Pi0EtaToGammaGamma {
         } // end of loop over mixed event pool
 
       } else { // [photon1 from event1, photon2 from event2] and [photon1 from event2, photon2 from event1]
-        for (auto& mix_dfId_collisionId : collisionIds2_in_mixing_pool) {
+        for (const auto& mix_dfId_collisionId : collisionIds2_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
 
@@ -737,22 +791,22 @@ struct Pi0EtaToGammaGamma {
           auto photons2_from_event_pool = emh2->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), ngamma = %d | event pool (%d, %d), nll = %d", ndf, collision.globalIndex(), selected_photons1_in_this_event.size(), mix_dfId, mix_collisionId, photons2_from_event_pool.size());
 
-          for (auto& g1 : selected_photons1_in_this_event) {
-            for (auto& g2 : photons2_from_event_pool) {
+          for (const auto& g1 : selected_photons1_in_this_event) {
+            for (const auto& g2 : photons2_from_event_pool) {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
               if constexpr (pairtype == PairType::kPCMDalitzEE || pairtype == PairType::kPCMDalitzMuMu) { //[photon from event1, dilepton from event2] and [photon from event2, dilepton from event1]
                 v2.SetM(g2.mass());
               }
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-              if (abs(v12.Rapidity()) > maxY) {
+              if (std::abs(v12.Rapidity()) > maxY) {
                 continue;
               }
               fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), collision.weight());
             }
           }
         } // end of loop over mixed event pool
-        for (auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
+        for (const auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
 
@@ -763,15 +817,15 @@ struct Pi0EtaToGammaGamma {
           auto photons1_from_event_pool = emh1->GetTracksPerCollision(mix_dfId_collisionId);
           // LOGF(info, "Do event mixing: current event (%d, %d), nll = %d | event pool (%d, %d), ngamma = %d", ndf, collision.globalIndex(), selected_photons2_in_this_event.size(), mix_dfId, mix_collisionId, photons1_from_event_pool.size());
 
-          for (auto& g1 : selected_photons2_in_this_event) {
-            for (auto& g2 : photons1_from_event_pool) {
+          for (const auto& g1 : selected_photons2_in_this_event) {
+            for (const auto& g2 : photons1_from_event_pool) {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
               if constexpr (pairtype == PairType::kPCMDalitzEE || pairtype == PairType::kPCMDalitzMuMu) { //[photon from event1, dilepton from event2] and [photon from event2, dilepton from event1]
                 v1.SetM(g1.mass());
               }
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-              if (abs(v12.Rapidity()) > maxY) {
+              if (std::abs(v12.Rapidity()) > maxY) {
                 continue;
               }
               fRegistry.fill(HIST("Pair/mix/hs"), v12.M(), v12.Pt(), collision.weight());
@@ -788,6 +842,7 @@ struct Pi0EtaToGammaGamma {
     } // end of collision loop
   }
 
+  Filter collisionFilter_occupancy = eventcuts.cfgOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgOccupancyMax;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 

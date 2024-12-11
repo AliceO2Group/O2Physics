@@ -168,6 +168,7 @@ struct Pi0EtaToGammaGammaMC {
   EMCPhotonCut fEMCCut;
   struct : ConfigurableGroup {
     std::string prefix = "emccut_group";
+    Configurable<std::string> clusterDefinition{"clusterDefinition", "kV3Default", "Clusterizer to be selected, e.g. V3Default"};
     Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle"};
     Configurable<float> EMC_minTime{"EMC_minTime", -20., "Minimum cluster time for EMCal time cut"};
     Configurable<float> EMC_maxTime{"EMC_maxTime", +25., "Maximum cluster time for EMCal time cut"};
@@ -289,7 +290,6 @@ struct Pi0EtaToGammaGammaMC {
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
-    fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
   void DefinePCMCut()
@@ -386,6 +386,7 @@ struct Pi0EtaToGammaGammaMC {
 
     fEMCCut = EMCPhotonCut("fEMCCut", "fEMCCut");
 
+    fEMCCut.SetClusterizer(emccuts.clusterDefinition);
     fEMCCut.SetMinE(emccuts.EMC_minE);
     fEMCCut.SetMinNCell(emccuts.EMC_minNCell);
     fEMCCut.SetM02Range(emccuts.EMC_minM02, emccuts.EMC_maxM02);
@@ -663,6 +664,7 @@ struct Pi0EtaToGammaGammaMC {
     } // end of collision loop
   }
 
+  Filter collisionFilter_occupancy = eventcuts.cfgOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgOccupancyMax;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 

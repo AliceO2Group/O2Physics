@@ -15,6 +15,8 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <fairlogger/Logger.h>
+#include <vector>
+#include <string>
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -49,15 +51,19 @@ namespace o2::aod
 
 using FemtoFullCollision = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
 using FemtoFullCollision_noCent = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator;
+using FemtoFullCollision_CentPbPb = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>::iterator;
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
 using FemtoFullCollision_noCent_MC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
+using FemtoFullCollisionMC_CentPbPb = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::McCollisionLabels>::iterator;
 using FemtoFullMCgenCollisions = soa::Join<aod::McCollisions, MultsExtraMC>;
 using FemtoFullMCgenCollision = FemtoFullMCgenCollisions::iterator;
 
 using FemtoFullTracks =
   soa::Join<aod::FullTracks, aod::TracksDCA,
-            aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-            aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
+            aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa,
+            aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe,
+            aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa,
+            aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe>;
 } // namespace o2::aod
 
 namespace softwareTriggers
@@ -98,7 +104,6 @@ struct femtoDreamProducerTask {
   Configurable<bool> ConfIsDebug{"ConfIsDebug", true, "Enable Debug tables"};
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
   Configurable<bool> ConfIsForceGRP{"ConfIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
-
   /// Event cuts
   FemtoDreamCollisionSelection colCuts;
   // Event cuts - Triggers
@@ -107,6 +112,7 @@ struct femtoDreamProducerTask {
     "ConfTriggerSwitches",
     {softwareTriggers::triggerSwitches[0], 1, softwareTriggers::nTriggers, std::vector<std::string>{"Switch"}, softwareTriggers::triggerNames},
     "Turn on which trigger should be checked for recorded events to pass selection"};
+  Configurable<std::string> ConfBaseCCDBPathForTriggers{"ConfBaseCCDBPathForTriggers", "Users/m/mpuccio/EventFiltering/OTS/Chunked/", "Provide ccdb path for trigger table; default - trigger coordination"};
 
   // Event cuts - usual selection criteria
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
@@ -197,10 +203,10 @@ struct femtoDreamProducerTask {
 
   void init(InitContext&)
   {
-    if (doprocessData == false && doprocessData_noCentrality == false && doprocessMC == false && doprocessMC_noCentrality == false) {
+    if (doprocessData == false && doprocessData_noCentrality == false && doprocessData_CentPbPb == false && doprocessMC == false && doprocessMC_noCentrality == false && doprocessMC_CentPbPb == false) {
       LOGF(fatal, "Neither processData nor processMC enabled. Please choose one.");
     }
-    if ((doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMC_noCentrality == true) || (doprocessMC == true && doprocessMC_noCentrality == true) || (doprocessData_noCentrality == true && doprocessData == true) || (doprocessData_noCentrality == true && doprocessMC == true) || (doprocessData_noCentrality == true && doprocessMC_noCentrality == true)) {
+    if ((doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMC_noCentrality == true) || (doprocessMC == true && doprocessMC_noCentrality == true) || (doprocessData_noCentrality == true && doprocessData == true) || (doprocessData_noCentrality == true && doprocessMC == true) || (doprocessData_noCentrality == true && doprocessMC_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessData == true) || (doprocessData_CentPbPb == true && doprocessData_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessMC == true) || (doprocessData_CentPbPb == true && doprocessMC_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessMC_CentPbPb == true)) {
       LOGF(fatal,
            "Cannot enable more than one process switch at the same time. "
            "Please choose one.");
@@ -339,6 +345,7 @@ struct femtoDreamProducerTask {
 
     // Init for zorro to get trigger flags
     if (ConfEnableTriggerSelection) {
+      zorro.setCCDBpath(ConfBaseCCDBPathForTriggers);
       zorro.initCCDB(ccdb.service, mRunNumber, timestamp, zorroTriggerNames);
     }
   }
@@ -363,16 +370,21 @@ struct femtoDreamProducerTask {
                        particle.tpcNSigmaKa(),
                        particle.tpcNSigmaPr(),
                        particle.tpcNSigmaDe(),
+                       particle.tpcNSigmaTr(),
+                       particle.tpcNSigmaHe(),
                        particle.tofNSigmaEl(),
                        particle.tofNSigmaPi(),
                        particle.tofNSigmaKa(),
                        particle.tofNSigmaPr(),
                        particle.tofNSigmaDe(),
+                       particle.tofNSigmaTr(),
+                       particle.tofNSigmaHe(),
                        -999., -999., -999., -999., -999., -999.);
     } else {
-      outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
-                       -999., -999., -999., -999., -999., -999., -999., -999.,
-                       -999., -999., -999., -999., -999.,
+      outputDebugParts(-999., -999., -999., -999., -999., -999., -999.,
+                       -999., -999., -999., -999., -999., -999., -999.,
+                       -999., -999., -999., -999., -999., -999., -999.,
+                       -999., -999., -999., -999.,
                        particle.dcaV0daughters(),
                        particle.v0radius(),
                        particle.x(),
@@ -451,7 +463,7 @@ struct femtoDreamProducerTask {
       outputCollsMCLabels(-1);
     }
   }
-  template <bool isMC, bool useCentrality, typename V0Type, typename TrackType, typename CollisionType>
+  template <bool isMC, bool useCentrality, bool analysePbPb, typename V0Type, typename TrackType, typename CollisionType>
   void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
   {
     // If triggering is enabled, select only events which were triggered wit our triggers
@@ -468,7 +480,11 @@ struct femtoDreamProducerTask {
     int multNtr = 0;
     if (ConfIsRun3) {
       if constexpr (useCentrality) {
-        mult = col.centFT0M();
+        if constexpr (analysePbPb) {
+          mult = col.centFT0C();
+        } else {
+          mult = col.centFT0M();
+        }
       } else {
         mult = 0;
       }
@@ -647,8 +663,8 @@ struct femtoDreamProducerTask {
     }
 
     if (ConfIsActivateReso.value) {
-      for (auto iDaug1 = 0; iDaug1 < Daughter1.size(); ++iDaug1) {
-        for (auto iDaug2 = 0; iDaug2 < Daughter2.size(); ++iDaug2) {
+      for (std::size_t iDaug1 = 0; iDaug1 < Daughter1.size(); ++iDaug1) {
+        for (std::size_t iDaug2 = 0; iDaug2 < Daughter2.size(); ++iDaug2) {
           // MC stuff is still missing, also V0 QA
           // ALSO: fix indices and other table entries which are now set to 0 as deflaut as not needed for p-p-phi cf ana
 
@@ -703,7 +719,7 @@ struct femtoDreamProducerTask {
               outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
                                -999., -999., -999., -999., -999., -999., -999., -999.,
                                -999., -999., -999., -999., -999., -999., -999., -999.,
-                               -999., -999., -999.); // QA for Reso
+                               -999., -999. - 999., -999., -999., -999., -999., -999.); // QA for Reso
             }
           }
         }
@@ -720,7 +736,7 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0<false, true>(col, tracks, fullV0s);
+    fillCollisionsAndTracksAndV0<false, true, false>(col, tracks, fullV0s);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData,
                  "Provide experimental data", true);
@@ -734,10 +750,24 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0<false, false>(col, tracks, fullV0s);
+    fillCollisionsAndTracksAndV0<false, false, false>(col, tracks, fullV0s);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData_noCentrality,
                  "Provide experimental data without centrality information", false);
+
+  void
+    processData_CentPbPb(aod::FemtoFullCollision_CentPbPb const& col,
+                         aod::BCsWithTimestamps const&,
+                         aod::FemtoFullTracks const& tracks,
+                         o2::aod::V0Datas const& fullV0s)
+  {
+    // get magnetic field for run
+    initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisionsAndTracksAndV0<false, true, true>(col, tracks, fullV0s);
+  }
+  PROCESS_SWITCH(femtoDreamProducerTask, processData_CentPbPb,
+                 "Provide experimental data with centrality information for PbPb collisions", false);
 
   void processMC(aod::FemtoFullCollisionMC const& col,
                  aod::BCsWithTimestamps const&,
@@ -749,7 +779,7 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0<true, true>(col, tracks, fullV0s);
+    fillCollisionsAndTracksAndV0<true, true, false>(col, tracks, fullV0s);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC, "Provide MC data", false);
 
@@ -763,11 +793,24 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0<true, false>(col, tracks, fullV0s);
+    fillCollisionsAndTracksAndV0<true, false, false>(col, tracks, fullV0s);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC_noCentrality, "Provide MC data without requiring a centrality calibration", false);
-};
 
+  void processMC_CentPbPb(aod::FemtoFullCollisionMC_CentPbPb const& col,
+                          aod::BCsWithTimestamps const&,
+                          soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                          aod::FemtoFullMCgenCollisions const&,
+                          aod::McParticles const&,
+                          soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
+  {
+    // get magnetic field for run
+    initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisionsAndTracksAndV0<true, true, true>(col, tracks, fullV0s);
+  }
+  PROCESS_SWITCH(femtoDreamProducerTask, processMC_CentPbPb, "Provide MC data with centrality information for PbPb collisions", false);
+};
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{adaptAnalysisTask<femtoDreamProducerTask>(cfgc)};
