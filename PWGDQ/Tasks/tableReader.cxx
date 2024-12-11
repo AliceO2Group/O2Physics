@@ -1887,7 +1887,7 @@ struct AnalysisDileptonTrackTrack {
     if (!context.mOptions.get<bool>("processDummy")) {
       DefineHistograms(fHistMan, Form("Dileptons_%s", configDileptonCutNamesStr.Data()), fConfigAddDileptonHistogram);
       if (!configQuadruletCutNamesStr.IsNull()) {
-        for (Int_t icut = 0; icut < fQuadrupletCutNames.size(); ++icut) {
+        for (std::size_t icut = 0; icut < fQuadrupletCutNames.size(); ++icut) {
           if (fIsSameTrackCut) {
             DefineHistograms(fHistMan, Form("QuadrupletSEPM_%s", fQuadrupletCutNames[icut].Data()), fConfigAddQuadrupletHistogram);
           } else {
