@@ -1,6 +1,6 @@
 // Copyright 2020-2022 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
-// All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright
+// holders. All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -64,15 +64,9 @@ struct PseudorapidityDensityMFT {
 
   // Histogram registry
   HistogramRegistry registry{
-    "registry",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject};
+      "registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry QAregistry{
-    "QAregistry",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    false,
-    true};
+      "QAregistry", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   // analysis specific conf.
   Configurable<bool> usePhiCut{"usePhiCut", false, "use azimuthal angle cut"};
@@ -88,8 +82,8 @@ struct PseudorapidityDensityMFT {
     Configurable<double> cfg_min_pt{"cfg_min_pt", 0.,
                                     "minimum pT of the MFT tracks"};
     Configurable<bool> cfg_require_ca{
-      "cfg_require_ca", false,
-      "Use Cellular Automaton track-finding algorithm"};
+        "cfg_require_ca", false,
+        "Use Cellular Automaton track-finding algorithm"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 2.0f, "Cut on dcaXY"};
   } trkcuts;
 
@@ -100,62 +94,57 @@ struct PseudorapidityDensityMFT {
   Configurable<bool> useZDiffCut{"useZvtxDiffCut", false,
                                  "use Zvtx reco-mc diff. cut"};
   Configurable<float> maxZvtxDiff{
-    "maxZvtxDiff", 1.0f,
-    "max allowed Z vtx difference for reconstruced collisions (cm)"};
+      "maxZvtxDiff", 1.0f,
+      "max allowed Z vtx difference for reconstruced collisions (cm)"};
   Configurable<bool> requireNoCollInTimeRangeStd{
-    "requireNoCollInTimeRangeStd", false,
-    "reject collisions corrupted by the cannibalism, with other collisions "
-    "within +/- 10 microseconds"};
+      "requireNoCollInTimeRangeStd", false,
+      "reject collisions corrupted by the cannibalism, with other collisions "
+      "within +/- 10 microseconds"};
   Configurable<bool> requireNoCollInTimeRangeNarrow{
-    "requireNoCollInTimeRangeNarrow", false,
-    "reject collisions corrupted by the cannibalism, with other collisions "
-    "within +/- 10 microseconds"};
+      "requireNoCollInTimeRangeNarrow", false,
+      "reject collisions corrupted by the cannibalism, with other collisions "
+      "within +/- 10 microseconds"};
   ConfigurableAxis OccupancyBins{"OccupancyBins",
                                  {VARIABLE_WIDTH, 0.0f, 250.0f, 500.0f, 750.0f,
                                   1000.0f, 1500.0f, 2000.0f, 3000.0f, 4500.0f,
                                   6000.0f, 8000.0f, 10000.0f, 50000.0f},
                                  "Occupancy"};
   Configurable<float> minOccupancy{
-    "minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
+      "minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
   Configurable<float> maxOccupancy{
-    "maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
+      "maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
   ConfigurableAxis CentBins{
-    "CentBins",
-    {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
-    ""};
+      "CentBins",
+      {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
+      ""};
 
   Service<o2::framework::O2DatabasePDG> pdg;
 
   /// @brief init function, definition of histograms
-  void init(InitContext&)
-  {
+  void init(InitContext &) {
     if (static_cast<int>(doprocessDataInclusive) +
-          static_cast<int>(doprocessDatawBestTracksInclusive) >
+            static_cast<int>(doprocessDatawBestTracksInclusive) >
         1) {
-      LOGP(fatal,
-           "Either processDataInclusive OR "
-           "processDatawBestTracksInclusive should be enabled!");
+      LOGP(fatal, "Either processDataInclusive OR "
+                  "processDatawBestTracksInclusive should be enabled!");
     }
     if (static_cast<int>(doprocessDataCent) +
-          static_cast<int>(doprocessDatawBestTracksCent) >
+            static_cast<int>(doprocessDatawBestTracksCent) >
         1) {
-      LOGP(fatal,
-           "Either processDataCent OR processDatawBestTracksCent should "
-           "be enabled!");
+      LOGP(fatal, "Either processDataCent OR processDatawBestTracksCent should "
+                  "be enabled!");
     }
     if (static_cast<int>(doprocessMCInclusive) +
-          static_cast<int>(doprocessMCwBestTracksInclusive) >
+            static_cast<int>(doprocessMCwBestTracksInclusive) >
         1) {
-      LOGP(fatal,
-           "Either processMCInclusive OR processMCwBestTracksInclusive "
-           "should be enabled!");
+      LOGP(fatal, "Either processMCInclusive OR processMCwBestTracksInclusive "
+                  "should be enabled!");
     }
     if (static_cast<int>(doprocessMCCent) +
-          static_cast<int>(doprocessMCwBestTracksCent) >
+            static_cast<int>(doprocessMCwBestTracksCent) >
         1) {
-      LOGP(fatal,
-           "Either processMCCent OR processMCwBestTracksCent should be "
-           "enabled!");
+      LOGP(fatal, "Either processMCCent OR processMCwBestTracksCent should be "
+                  "enabled!");
     }
 
     auto hev = registry.add<TH1>("hEvtSel", "hEvtSel", HistType::kTH1F,
@@ -184,7 +173,7 @@ struct PseudorapidityDensityMFT {
                     ";status;events",
                     {HistType::kTH1F, {{2, 0.5, 2.5}}}});
       auto hstat = registry.get<TH1>(HIST("Events/Selection"));
-      auto* x = hstat->GetXaxis();
+      auto *x = hstat->GetXaxis();
       x->SetBinLabel(1, "All");
       x->SetBinLabel(2, "Selected");
 
@@ -201,7 +190,7 @@ struct PseudorapidityDensityMFT {
                       "; #chi^{2}; #it{#eta};",
                       {HistType::kTH2F, {{600, 0, 20}, {100, -8, 8}}}});
       QAregistry.add(
-        {"Tracks/Chi2", "; #chi^{2};", {HistType::kTH1F, {{600, 0, 20}}}});
+          {"Tracks/Chi2", "; #chi^{2};", {HistType::kTH1F, {{600, 0, 20}}}});
       QAregistry.add({"Tracks/NclustersEta",
                       "; nClusters; #eta;",
                       {HistType::kTH2F, {{7, 4, 10}, {100, -8, 8}}}});
@@ -244,7 +233,7 @@ struct PseudorapidityDensityMFT {
                     ";status;centrality;events",
                     {HistType::kTH2F, {{2, 0.5, 2.5}, CentAxis}}});
       auto hstat = registry.get<TH2>(HIST("Events/Centrality/Selection"));
-      auto* x = hstat->GetXaxis();
+      auto *x = hstat->GetXaxis();
       x->SetBinLabel(1, "All");
       x->SetBinLabel(2, "Selected");
 
@@ -259,12 +248,12 @@ struct PseudorapidityDensityMFT {
                     {HistType::kTH3F, {PhiAxis, EtaAxis, CentAxis}}});
       QAregistry.add({"Events/Centrality/hcentFT0C",
                       " ; cent FT0C",
-                      {HistType::kTH1F, {{1000, 0, 100}}},
+                      {HistType::kTH1F, {CentAxis}},
                       true});
       QAregistry.add(
-        {"Tracks/Centrality/Chi2Eta",
-         "; #chi^{2}; #it{#eta}; centrality",
-         {HistType::kTH3F, {{600, 0, 20}, {100, -8, 8}, CentAxis}}});
+          {"Tracks/Centrality/Chi2Eta",
+           "; #chi^{2}; #it{#eta}; centrality",
+           {HistType::kTH3F, {{600, 0, 20}, {100, -8, 8}, CentAxis}}});
       QAregistry.add({"Tracks/Centrality/Chi2",
                       "; #chi^{2}; centrality",
                       {HistType::kTH2F, {{600, 0, 20}, CentAxis}}});
@@ -289,9 +278,9 @@ struct PseudorapidityDensityMFT {
                       "; #varphi; #eta; centrality",
                       {HistType::kTH3F, {PhiAxis, EtaAxis, CentAxis}}});
         QAregistry.add(
-          {"Tracks/Centrality/NclustersEtaBest",
-           "; nClusters; #eta; centrality",
-           {HistType::kTH3F, {{7, 4, 10}, {100, -8, 8}, CentAxis}}});
+            {"Tracks/Centrality/NclustersEtaBest",
+             "; nClusters; #eta; centrality",
+             {HistType::kTH3F, {{7, 4, 10}, {100, -8, 8}, CentAxis}}});
         QAregistry.add({"Tracks/Centrality/TrackAmbDegree",
                         " ; N_{coll}^{comp}",
                         {HistType::kTH2F, {{51, -0.5, 50.5}, CentAxis}}});
@@ -322,7 +311,7 @@ struct PseudorapidityDensityMFT {
                     ";status;events",
                     {HistType::kTH1F, {{3, 0.5, 3.5}}}});
       auto heff = registry.get<TH1>(HIST("Events/EvtEffGen"));
-      auto* x = heff->GetXaxis();
+      auto *x = heff->GetXaxis();
       x->SetBinLabel(1, "All reconstructed");
       x->SetBinLabel(2, "Selected reconstructed");
       x->SetBinLabel(3, "All generated");
@@ -352,7 +341,7 @@ struct PseudorapidityDensityMFT {
                       " ; Z_{rec} - Z_{gen} (cm)",
                       {HistType::kTH1F, {DeltaZAxis}}});
       QAregistry.add(
-        {"Events/SplitMult", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
+          {"Events/SplitMult", " ; N_{gen}", {HistType::kTH1F, {MultAxis}}});
     }
 
     if (doprocessMCCent || doprocessMCwBestTracksCent) {
@@ -360,7 +349,7 @@ struct PseudorapidityDensityMFT {
                     ";status;events",
                     {HistType::kTH2F, {{3, 0.5, 3.5}, CentAxis}}});
       auto heff = registry.get<TH2>(HIST("Events/Centrality/EvtEffGen"));
-      auto* x = heff->GetXaxis();
+      auto *x = heff->GetXaxis();
       x->SetBinLabel(1, "All reconstructed");
       x->SetBinLabel(2, "Selected reconstructed");
       x->SetBinLabel(3, "All generated");
@@ -402,24 +391,24 @@ struct PseudorapidityDensityMFT {
 
     if (doprocessTrkEffIdxInlusive) {
       QAregistry.add(
-        {"Tracks/hPtPhiEtaZvtxEffGen",
-         "hPtPhiEtaZvtxEffGen",
-         {HistType::kTHnSparseF, {PtAxis, PhiAxis, EtaAxis, ZAxis}}});
+          {"Tracks/hPtPhiEtaZvtxEffGen",
+           "hPtPhiEtaZvtxEffGen",
+           {HistType::kTHnSparseF, {PtAxis, PhiAxis, EtaAxis, ZAxis}}});
       QAregistry.add(
-        {"Tracks/hPtPhiEtaZvtxEffRec",
-         "hPtPhiEtaZvtxEffRec",
-         {HistType::kTHnSparseF, {PtAxis, PhiAxis, EtaAxis, ZAxis}}});
+          {"Tracks/hPtPhiEtaZvtxEffRec",
+           "hPtPhiEtaZvtxEffRec",
+           {HistType::kTHnSparseF, {PtAxis, PhiAxis, EtaAxis, ZAxis}}});
       QAregistry.add({"Tracks/hPhiEtaDuplicates",
                       " ; p_{T} (GeV/c);",
                       {HistType::kTH2F, {PhiAxis, EtaAxis}}});
       QAregistry.add(
-        {"Tracks/hPtPhiEtaZvtxEffDuplicates",
-         "hPtPhiEtaZvtxEffDuplicates",
-         {HistType::kTHnSparseF, {PtAxis, PhiAxis, EtaAxis, ZAxis}}});
+          {"Tracks/hPtPhiEtaZvtxEffDuplicates",
+           "hPtPhiEtaZvtxEffDuplicates",
+           {HistType::kTHnSparseF, {PtAxis, PhiAxis, EtaAxis, ZAxis}}});
       QAregistry.add(
-        {"Tracks/hPtPhiEtaZvtxEffGenDuplicates",
-         "hPtPhiEtaZvtxEffGenDuplicates",
-         {HistType::kTHnSparseF, {PtAxis, PhiAxis, EtaAxis, ZAxis}}});
+          {"Tracks/hPtPhiEtaZvtxEffGenDuplicates",
+           "hPtPhiEtaZvtxEffGenDuplicates",
+           {HistType::kTHnSparseF, {PtAxis, PhiAxis, EtaAxis, ZAxis}}});
       QAregistry.add({"Tracks/NmftTrkPerPart",
                       "; #it{N}_{mft tracks per particle};",
                       {HistType::kTH1F, {{200, -0.5, 200.}}}});
@@ -452,13 +441,13 @@ struct PseudorapidityDensityMFT {
 
     if (doprocessTrkEffBestInclusive) {
       QAregistry.add(
-        {"Tracks/hPtPhiEtaZvtxEffBestGen",
-         "hPtPhiEtaZvtxEffGen",
-         {HistType::kTHnSparseF, {PtAxis, PhiAxis, EtaAxis, ZAxis}}});
+          {"Tracks/hPtPhiEtaZvtxEffBestGen",
+           "hPtPhiEtaZvtxEffGen",
+           {HistType::kTHnSparseF, {PtAxis, PhiAxis, EtaAxis, ZAxis}}});
       QAregistry.add(
-        {"Tracks/hPtPhiEtaZvtxEffBestRec",
-         "hPtPhiEtaZvtxEffRec",
-         {HistType::kTHnSparseF, {PtAxis, PhiAxis, EtaAxis, ZAxis}}});
+          {"Tracks/hPtPhiEtaZvtxEffBestRec",
+           "hPtPhiEtaZvtxEffRec",
+           {HistType::kTHnSparseF, {PtAxis, PhiAxis, EtaAxis, ZAxis}}});
       QAregistry.add({"Tracks/hPtEffBestFakeRec",
                       " ; p_{T} (GeV/c);",
                       {HistType::kTH1F, {PtAxis}}});
@@ -492,30 +481,25 @@ struct PseudorapidityDensityMFT {
 
     if (doprocessMcQACent) {
       QAregistry.add(
-        {"Events/Centrality/hRecPerGenColls",
-         "; #it{N}_{reco collisions} / #it{N}_{gen collisions}; centrality",
-         {HistType::kTH2F, {{200, 0., 2.}, CentAxis}}});
+          {"Events/Centrality/hRecPerGenColls",
+           "; #it{N}_{reco collisions} / #it{N}_{gen collisions}; centrality",
+           {HistType::kTH2F, {{200, 0., 2.}, CentAxis}}});
       QAregistry.add({"Tracks/Centrality/hNmftTrks",
                       "; #it{N}_{mft tracks}; centrality",
                       {HistType::kTH2F, {{200, -0.5, 200.}, CentAxis}}});
       QAregistry.add(
-        {"Tracks/Centrality/hFracAmbiguousMftTrks",
-         "; #it{N}_{ambiguous tracks} / #it{N}_{tracks}; centrality",
-         {HistType::kTH2F, {{100, 0., 1.}, CentAxis}}});
+          {"Tracks/Centrality/hFracAmbiguousMftTrks",
+           "; #it{N}_{ambiguous tracks} / #it{N}_{tracks}; centrality",
+           {HistType::kTH2F, {{100, 0., 1.}, CentAxis}}});
     }
   }
-
-  /// Filters - collision
-  Filter filterCollCent = nabs(aod::cent::centFT0C) < cfgCutCent;
-  Filter filterCollZvtx = nabs(aod::collision::posZ) < cfgCutZvtx;
-  Filter filterMcCollZvtx = nabs(aod::mccollision::posZ) < cfgCutZvtx;
 
   /// Filters - tracks
   Filter filtTrkEta = (aod::fwdtrack::eta < trkcuts.cfg_eta_max) &&
                       (aod::fwdtrack::eta > trkcuts.cfg_eta_min);
   Filter filtATrackID = (aod::fwdtrack::bestCollisionId >= 0);
   Filter filtATrackDCA =
-    (nabs(aod::fwdtrack::bestDCAXY) < trkcuts.cfg_max_dcaxy);
+      (nabs(aod::fwdtrack::bestDCAXY) < trkcuts.cfg_max_dcaxy);
 
   /// Filters - mc particles
   Filter primaries = (aod::mcparticle::flags &
@@ -525,7 +509,7 @@ struct PseudorapidityDensityMFT {
   /// Joined tables
   using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
   using CollBCs =
-    soa::Join<aod::BCsWithTimestamps, aod::MatchedBCCollisionsSparseMulti>;
+      soa::Join<aod::BCsWithTimestamps, aod::MatchedBCCollisionsSparseMulti>;
   using Colls = soa::Join<aod::Collisions, aod::EvSels>;
   using Coll = Colls::iterator;
   using CollsCent = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
@@ -536,33 +520,12 @@ struct PseudorapidityDensityMFT {
   using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 
   /// Filtered tables
-  using filtColls = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
-  using filtColl =
-    soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator;
-  using filtCollsCent =
-    soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>>;
-  using filtCollCent = soa::Filtered<
-    soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>>::iterator;
-  using CollsGenCentSmallG =
-    o2::soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions,
-                                   aod::CentFT0Cs, aod::EvSels>>;
-  using filtCollsGenCentSmallG =
-    soa::SmallGroups<soa::Join<aod::McCollisionLabels, filtCollsCent>>;
-  using filtCollsGenCent =
-    soa::Filtered<soa::Join<aod::McCollisionLabels, aod::Collisions,
-                            aod::CentFT0Cs, aod::EvSels>>;
-  using filtMcGenColls = soa::Filtered<aod::McCollisions>;
-  using filtMcGenColl = soa::Filtered<aod::McCollisions>::iterator;
   using filtMftTracks = soa::Filtered<aod::MFTTracks>;
   using filtMcMftTracks = soa::Filtered<MFTTracksLabeled>;
   using filtBestTracks = soa::Filtered<aod::BestCollisionsFwd>;
-  using filtBestTracksJ =
-    soa::Filtered<soa::Join<aod::BestCollisionsFwd, aod::MFTTracks>>;
   using filtParticles = soa::Filtered<aod::McParticles>;
 
-  template <typename T>
-  bool isTrackSelected(const T& track)
-  {
+  template <typename T> bool isTrackSelected(const T &track) {
     if (track.eta() < trkcuts.cfg_eta_min || track.eta() > trkcuts.cfg_eta_max)
       return false;
     if (trkcuts.cfg_require_ca && !track.isCA())
@@ -588,11 +551,10 @@ struct PseudorapidityDensityMFT {
   }
 
   template <typename C, bool fillHis = false, typename T>
-  int countTracks(T const& tracks, float z, float c, float occ)
-  {
+  int countTracks(T const &tracks, float z, float c, float occ) {
     auto nTrk = 0;
     if (tracks.size() > 0) {
-      for (auto& track : tracks) {
+      for (auto &track : tracks) {
         if (fillHis) {
           if constexpr (C::template contains<aod::CentFT0Cs>()) {
             QAregistry.fill(HIST("Tracks/Centrality/Chi2Eta"), track.chi2(),
@@ -634,12 +596,11 @@ struct PseudorapidityDensityMFT {
   }
 
   template <typename C, bool fillHis = false, typename T, typename B>
-  int countBestTracks(T const& /*tracks*/, B const& besttracks, float z,
-                      float c, float occ)
-  {
+  int countBestTracks(T const & /*tracks*/, B const &besttracks, float z,
+                      float c, float occ) {
     auto nATrk = 0;
     if (besttracks.size() > 0) {
-      for (auto& atrack : besttracks) {
+      for (auto &atrack : besttracks) {
         auto itrack = atrack.template mfttrack_as<T>();
         if (!isTrackSelected(itrack)) {
           continue;
@@ -692,11 +653,9 @@ struct PseudorapidityDensityMFT {
     return nATrk;
   }
 
-  template <typename P>
-  int countPart(P const& particles)
-  {
+  template <typename P> int countPart(P const &particles) {
     auto nCharged = 0;
-    for (auto& particle : particles) {
+    for (auto &particle : particles) {
       if (!isChrgParticle(particle.pdgCode())) {
         continue;
       }
@@ -706,8 +665,7 @@ struct PseudorapidityDensityMFT {
   }
 
   template <bool fillHis = false, typename C>
-  bool isGoodEvent(C const& collision)
-  {
+  bool isGoodEvent(C const &collision) {
     if constexpr (fillHis) {
       registry.fill(HIST("hEvtSel"), 0);
     }
@@ -768,8 +726,7 @@ struct PseudorapidityDensityMFT {
 
   /// @brief Selection of charged particles
   /// @return true: charged; false: not charged
-  bool isChrgParticle(int code)
-  {
+  bool isChrgParticle(int code) {
     auto p = pdg->GetParticle(code);
     auto charge = 0.;
     if (p != nullptr) {
@@ -779,10 +736,9 @@ struct PseudorapidityDensityMFT {
   }
 
   template <bool isCent, typename P>
-  void fillHist_MC(P const& particles, float cent, float zvtx,
-                   bool const atLeastOne)
-  {
-    for (auto& particle : particles) {
+  void fillHist_MC(P const &particles, float cent, float zvtx,
+                   bool const atLeastOne) {
+    for (auto &particle : particles) {
       if (!isChrgParticle(particle.pdgCode())) {
         continue;
       }
@@ -822,15 +778,14 @@ struct PseudorapidityDensityMFT {
   }
 
   /// @brief process fnc. for general event statistics
-  void processTagging(FullBCs const& bcs, CollsCent const& collisions)
-  {
+  void processTagging(FullBCs const &bcs, CollsCent const &collisions) {
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
-    for (auto& bc : bcs) {
+    for (auto &bc : bcs) {
       if ((bc.selection_bit(aod::evsel::kIsBBT0A) &&
            bc.selection_bit(aod::evsel::kIsBBT0C)) != 0) {
         registry.fill(HIST("hBcSel"), 0);
         cols.clear();
-        for (auto& collision : collisions) {
+        for (auto &collision : collisions) {
           if (collision.has_foundBC()) {
             if (collision.foundBCId() == bc.globalIndex()) {
               cols.emplace_back(collision);
@@ -854,9 +809,8 @@ struct PseudorapidityDensityMFT {
                  "Collect event sample stats", true);
 
   template <typename C>
-  void processData(typename C::iterator const& collision,
-                   filtMftTracks const& tracks)
-  {
+  void processData(typename C::iterator const &collision,
+                   filtMftTracks const &tracks) {
     float c = -1;
     if constexpr (C::template contains<aod::CentFT0Cs>()) {
       c = collision.centFT0C();
@@ -878,7 +832,7 @@ struct PseudorapidityDensityMFT {
     }
 
     auto nTrk = countTracks<C, true>(
-      tracks, z, c, occ); //!@note here we obtain eta-z and phi-eta
+        tracks, z, c, occ); //!@note here we obtain eta-z and phi-eta
     if constexpr (C::template contains<aod::CentFT0Cs>()) {
       registry.fill(HIST("Events/Centrality/NtrkZvtx"), nTrk, z, c);
     } else {
@@ -888,9 +842,8 @@ struct PseudorapidityDensityMFT {
 
   template <typename C>
   void processDatawBestTracks(
-    typename C::iterator const& collision, filtMftTracks const& tracks,
-    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
-  {
+      typename C::iterator const &collision, filtMftTracks const &tracks,
+      soa::SmallGroups<aod::BestCollisionsFwd> const &besttracks) {
     float c = -1;
     if constexpr (C::template contains<aod::CentFT0Cs>()) {
       c = collision.centFT0C();
@@ -911,8 +864,8 @@ struct PseudorapidityDensityMFT {
     }
 
     auto nBestTrks =
-      countBestTracks<C, true>(tracks, besttracks, z, c,
-                               occ); //!@note here we obtain eta-z and phi-eta
+        countBestTracks<C, true>(tracks, besttracks, z, c,
+                                 occ); //!@note here we obtain eta-z and phi-eta
     if constexpr (C::template contains<aod::CentFT0Cs>()) {
       registry.fill(HIST("Events/Centrality/NtrkZvtxBest"), nBestTrks, z, c);
     } else {
@@ -921,20 +874,18 @@ struct PseudorapidityDensityMFT {
   }
 
   /// @brief process fnc. to run on DATA and REC MC w/o centrality selection
-  void processDataInclusive(filtColls::iterator const& collision,
-                            filtMftTracks const& tracks)
-  {
-    processData<filtColls>(collision, tracks);
+  void processDataInclusive(Colls::iterator const &collision,
+                            filtMftTracks const &tracks) {
+    processData<Colls>(collision, tracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processDataInclusive, "Count tracks",
                  false);
 
   /// @brief process fnc. to run on DATA and REC MC w/ FT0C centrality selection
-  void processDataCent(filtCollsCent::iterator const& collision,
-                       filtMftTracks const& tracks)
-  {
-    processData<filtCollsCent>(collision, tracks);
+  void processDataCent(CollsCent::iterator const &collision,
+                       filtMftTracks const &tracks) {
+    processData<CollsCent>(collision, tracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processDataCent,
@@ -943,10 +894,9 @@ struct PseudorapidityDensityMFT {
   /// @brief process fnc. to run on DATA and REC MC based on BestCollisionsFwd
   /// table w/o centrality selection
   void processDatawBestTracksInclusive(
-    filtColls::iterator const& collision, filtMftTracks const& tracks,
-    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
-  {
-    processDatawBestTracks<filtColls>(collision, tracks, besttracks);
+      Colls::iterator const &collision, filtMftTracks const &tracks,
+      soa::SmallGroups<aod::BestCollisionsFwd> const &besttracks) {
+    processDatawBestTracks<Colls>(collision, tracks, besttracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processDatawBestTracksInclusive,
@@ -955,10 +905,9 @@ struct PseudorapidityDensityMFT {
   /// @brief process fnc. to run on DATA and REC MC based on BestCollisionsFwd
   /// table w/ FT0C centrality selection
   void processDatawBestTracksCent(
-    filtCollsCent::iterator const& collision, filtMftTracks const& tracks,
-    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
-  {
-    processDatawBestTracks<filtCollsCent>(collision, tracks, besttracks);
+      CollsCent::iterator const &collision, filtMftTracks const &tracks,
+      soa::SmallGroups<aod::BestCollisionsFwd> const &besttracks) {
+    processDatawBestTracks<CollsCent>(collision, tracks, besttracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processDatawBestTracksCent,
@@ -973,14 +922,13 @@ struct PseudorapidityDensityMFT {
   /// @param parts subscribe to filtered MC particle table
   template <typename MC, typename C>
   void processMC(
-    typename MC::iterator const& mcCollision,
-    soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions,
-    filtParticles const& particles, filtMcMftTracks const& tracks)
-  {
+      typename MC::iterator const &mcCollision,
+      soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const &collisions,
+      filtParticles const &particles, filtMcMftTracks const &tracks) {
     float c_gen = -1;
     bool atLeastOne = false;
     int moreThanOne = 0;
-    for (auto& collision : collisions) {
+    for (auto &collision : collisions) {
       float c_rec = -1;
       if constexpr (C::template contains<aod::CentFT0Cs>()) {
         c_rec = collision.centFT0C();
@@ -1008,10 +956,10 @@ struct PseudorapidityDensityMFT {
         }
 
         auto perCollisionSample =
-          tracks.sliceBy(perCol, collision.globalIndex());
+            tracks.sliceBy(perCol, collision.globalIndex());
         auto nTrkRec =
-          countTracks<C, true>(perCollisionSample, z, c_rec,
-                               collision.trackOccupancyInTimeRange());
+            countTracks<C, true>(perCollisionSample, z, c_rec,
+                                 collision.trackOccupancyInTimeRange());
 
         if constexpr (C::template contains<aod::CentFT0Cs>()) {
           QAregistry.fill(HIST("Events/Centrality/ZvtxDiff"),
@@ -1043,7 +991,7 @@ struct PseudorapidityDensityMFT {
     }
 
     auto perCollMCsample = mcSample->sliceByCached(
-      aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+        aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto Nchrg = countPart(perCollMCsample);
     if (moreThanOne > 1) {
       if constexpr (C::template contains<aod::CentFT0Cs>()) {
@@ -1077,12 +1025,12 @@ struct PseudorapidityDensityMFT {
 
   /// @brief process fnc. to run on MC w/o centrality selection
   void processMCInclusive(
-    filtMcGenColls::iterator const& mccollision,
-    soa::SmallGroups<soa::Join<filtColls, aod::McCollisionLabels>> const& collisions,
-    filtParticles const& particles, filtMcMftTracks const& tracks)
-  {
-    processMC<filtMcGenColls, filtColls>(mccollision, collisions, particles,
-                                         tracks);
+      aod::McCollisions::iterator const &mccollision,
+      soa::SmallGroups<soa::Join<Colls, aod::McCollisionLabels>> const
+          &collisions,
+      filtParticles const &particles, filtMcMftTracks const &tracks) {
+    processMC<aod::McCollisions, Colls>(mccollision, collisions, particles,
+                                        tracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMCInclusive,
@@ -1090,33 +1038,32 @@ struct PseudorapidityDensityMFT {
 
   /// @brief process fnc. to run on MC w FT0C centrality selection
   void processMCCent(
-    filtMcGenColls::iterator const& mccollision,
-    soa::SmallGroups<soa::Join<filtCollsCent, aod::McCollisionLabels>> const& collisions,
-    filtParticles const& particles, filtMcMftTracks const& tracks)
-  {
-    processMC<filtMcGenColls, filtCollsCent>(mccollision, collisions, particles,
-                                             tracks);
+      aod::McCollisions::iterator const &mccollision,
+      soa::SmallGroups<soa::Join<CollsCent, aod::McCollisionLabels>> const
+          &collisions,
+      filtParticles const &particles, filtMcMftTracks const &tracks) {
+    processMC<aod::McCollisions, CollsCent>(mccollision, collisions, particles,
+                                            tracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMCCent,
                  "Count MC particles in FT0C bins", false);
 
   PresliceUnsorted<aod::BestCollisionsFwd> perColU =
-    aod::fwdtrack::bestCollisionId;
+      aod::fwdtrack::bestCollisionId;
 
   /// @brief process template function to run on MC truth using
   /// aod::BestCollisionsFwd tracks
   template <typename MC, typename C>
   void processMCwBestTracks(
-    typename MC::iterator const& mcCollision,
-    soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions,
-    filtParticles const& particles, filtMcMftTracks const& tracks,
-    filtBestTracks const& besttracks)
-  {
+      typename MC::iterator const &mcCollision,
+      soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const &collisions,
+      filtParticles const &particles, filtMcMftTracks const &tracks,
+      filtBestTracks const &besttracks) {
     float c_gen = -1;
     bool atLeastOne = false;
     int moreThanOne = 0;
-    for (auto& collision : collisions) {
+    for (auto &collision : collisions) {
       float c_rec = -1;
       if constexpr (C::template contains<aod::CentFT0Cs>()) {
         c_rec = collision.centFT0C();
@@ -1142,12 +1089,12 @@ struct PseudorapidityDensityMFT {
         }
 
         auto perCollisionSample =
-          tracks.sliceBy(perCol, collision.globalIndex());
+            tracks.sliceBy(perCol, collision.globalIndex());
         auto perCollisionASample =
-          besttracks.sliceBy(perColU, collision.globalIndex());
+            besttracks.sliceBy(perColU, collision.globalIndex());
         auto nTrkRec = countBestTracks<C, false>(
-          perCollisionSample, perCollisionASample, z, c_rec,
-          collision.trackOccupancyInTimeRange());
+            perCollisionSample, perCollisionASample, z, c_rec,
+            collision.trackOccupancyInTimeRange());
 
         if constexpr (C::template contains<aod::CentFT0Cs>()) {
           registry.fill(HIST("Events/Centrality/NtrkZvtxGen"), nTrkRec, z,
@@ -1189,15 +1136,15 @@ struct PseudorapidityDensityMFT {
   /// @brief process fnc. to run on MC (inclusive, using aod::BestCollisionsFwd
   /// tracks)
   void processMCwBestTracksInclusive(
-    filtMcGenColls::iterator const& mccollision,
-    soa::SmallGroups<soa::Join<filtColls, aod::McCollisionLabels>> const& collisions,
-    filtParticles const& particles, filtMcMftTracks const& tracks,
-    //                                      aod::BestCollisionsFwd const
-    //                                      &besttracks
-    filtBestTracks const& besttracks)
-  {
-    processMCwBestTracks<filtMcGenColls, filtColls>(
-      mccollision, collisions, particles, tracks, besttracks);
+      aod::McCollisions::iterator const &mccollision,
+      soa::SmallGroups<soa::Join<Colls, aod::McCollisionLabels>> const
+          &collisions,
+      filtParticles const &particles, filtMcMftTracks const &tracks,
+      //                                      aod::BestCollisionsFwd const
+      //                                      &besttracks
+      filtBestTracks const &besttracks) {
+    processMCwBestTracks<aod::McCollisions, Colls>(
+        mccollision, collisions, particles, tracks, besttracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMCwBestTracksInclusive,
@@ -1206,13 +1153,13 @@ struct PseudorapidityDensityMFT {
   /// @brief process fnc. to run on MC (FT0C centrality, using
   /// aod::BestCollisionsFwd tracks)
   void processMCwBestTracksCent(
-    filtMcGenColls::iterator const& mccollision,
-    soa::SmallGroups<soa::Join<filtCollsCent, aod::McCollisionLabels>> const& collisions,
-    filtParticles const& particles, filtMcMftTracks const& tracks,
-    filtBestTracks const& besttracks)
-  {
-    processMCwBestTracks<filtMcGenColls, filtCollsCent>(
-      mccollision, collisions, particles, tracks, besttracks);
+      aod::McCollisions::iterator const &mccollision,
+      soa::SmallGroups<soa::Join<CollsCent, aod::McCollisionLabels>> const
+          &collisions,
+      filtParticles const &particles, filtMcMftTracks const &tracks,
+      filtBestTracks const &besttracks) {
+    processMCwBestTracks<aod::McCollisions, CollsCent>(
+        mccollision, collisions, particles, tracks, besttracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMCwBestTracksCent,
@@ -1221,19 +1168,19 @@ struct PseudorapidityDensityMFT {
 
   using ParticlesI = soa::Join<aod::McParticles, aod::ParticlesToMftTracks>;
   Partition<ParticlesI> primariesI =
-    ((aod::mcparticle::flags &
-      (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) ==
-     (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
+      ((aod::mcparticle::flags &
+        (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) ==
+       (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
 
   /// @brief process template function to calculate tracking efficiency (indexed
   /// as particle-to-MFT-tracks)
   template <typename C, typename MC>
   void processTrkEffIdx(
-    typename soa::Filtered<soa::Join<C, aod::McCollisionLabels>> const& collisions,
-    MC const& /*mccollisions*/, ParticlesI const& /*particles*/,
-    MFTTracksLabeled const& tracks)
-  {
-    for (auto& collision : collisions) {
+      typename soa::Filtered<soa::Join<C, aod::McCollisionLabels>> const
+          &collisions,
+      MC const & /*mccollisions*/, ParticlesI const & /*particles*/,
+      MFTTracksLabeled const &tracks) {
+    for (auto &collision : collisions) {
       if (!isGoodEvent<false>(collision)) {
         continue;
       }
@@ -1248,10 +1195,10 @@ struct PseudorapidityDensityMFT {
 
       auto mcCollision = collision.mcCollision();
       auto particlesPerCol = primariesI->sliceByCached(
-        aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+          aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
       particlesPerCol.bindExternalIndices(&tracks);
 
-      for (auto& particle : particlesPerCol) {
+      for (auto &particle : particlesPerCol) {
         if (!isChrgParticle(particle.pdgCode())) {
           continue;
         }
@@ -1269,8 +1216,8 @@ struct PseudorapidityDensityMFT {
           auto iscounted = false;
           auto ncnt = 0;
           auto relatedTracks =
-            particle.template mfttracks_as<MFTTracksLabeled>();
-          for (auto& track : relatedTracks) {
+              particle.template mfttracks_as<MFTTracksLabeled>();
+          for (auto &track : relatedTracks) {
             if (!isTrackSelected(track)) {
               continue;
             }
@@ -1286,9 +1233,9 @@ struct PseudorapidityDensityMFT {
                 QAregistry.fill(HIST("Tracks/Centrality/hPhiEtaDuplicates"),
                                 track.phi(), track.eta(), c_rec);
                 QAregistry.fill(
-                  HIST("Tracks/Centrality/hPtPhiEtaZvtxEffDuplicates"),
-                  particle.pt(), particle.phi(), particle.eta(),
-                  mcCollision.posZ(), c_rec);
+                    HIST("Tracks/Centrality/hPtPhiEtaZvtxEffDuplicates"),
+                    particle.pt(), particle.phi(), particle.eta(),
+                    mcCollision.posZ(), c_rec);
               }
             } else {
               if (!iscounted) { // primaries
@@ -1315,9 +1262,9 @@ struct PseudorapidityDensityMFT {
           if (relatedTracks.size() > 1) {
             if constexpr (C::template contains<aod::CentFT0Cs>()) {
               QAregistry.fill(
-                HIST("Tracks/Centrality/hPtPhiEtaZvtxEffGenDuplicates"),
-                particle.pt(), particle.phi(), particle.eta(),
-                mcCollision.posZ(), c_rec);
+                  HIST("Tracks/Centrality/hPtPhiEtaZvtxEffGenDuplicates"),
+                  particle.pt(), particle.phi(), particle.eta(),
+                  mcCollision.posZ(), c_rec);
             } else {
               QAregistry.fill(HIST("Tracks/hPtPhiEtaZvtxEffGenDuplicates"),
                               particle.pt(), particle.phi(), particle.eta(),
@@ -1332,10 +1279,9 @@ struct PseudorapidityDensityMFT {
   /// @brief process function to calculate tracking efficiency (inclusive,
   /// indexed)
   void processTrkEffIdxInlusive(
-    soa::Filtered<soa::Join<Colls, aod::McCollisionLabels>> const& collisions,
-    aod::McCollisions const& mccollisions, ParticlesI const& particles,
-    MFTTracksLabeled const& tracks)
-  {
+      soa::Filtered<soa::Join<Colls, aod::McCollisionLabels>> const &collisions,
+      aod::McCollisions const &mccollisions, ParticlesI const &particles,
+      MFTTracksLabeled const &tracks) {
     processTrkEffIdx<Colls, aod::McCollisions>(collisions, mccollisions,
                                                particles, tracks);
   }
@@ -1346,10 +1292,10 @@ struct PseudorapidityDensityMFT {
   /// @brief process function to calculate tracking efficiency (FT0 bins,
   /// indexed)
   void processTrkEffIdxCent(
-    soa::Filtered<soa::Join<CollsCent, aod::McCollisionLabels>> const& collisions,
-    aod::McCollisions const& mccollisions, ParticlesI const& particles,
-    MFTTracksLabeled const& tracks)
-  {
+      soa::Filtered<soa::Join<CollsCent, aod::McCollisionLabels>> const
+          &collisions,
+      aod::McCollisions const &mccollisions, ParticlesI const &particles,
+      MFTTracksLabeled const &tracks) {
     processTrkEffIdx<CollsCent, aod::McCollisions>(collisions, mccollisions,
                                                    particles, tracks);
   }
@@ -1361,12 +1307,11 @@ struct PseudorapidityDensityMFT {
   /// on BestCollisionsFwd in FT0C bins
   template <typename C, typename MC>
   void processTrkEffBest(
-    typename soa::Filtered<
-      soa::Join<C, aod::McCollisionLabels>>::iterator const& collision,
-    MC const& /*mccollisions*/, filtParticles const& particles,
-    filtMcMftTracks const& /*tracks*/,
-    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
-  {
+      typename soa::Filtered<
+          soa::Join<C, aod::McCollisionLabels>>::iterator const &collision,
+      MC const & /*mccollisions*/, filtParticles const &particles,
+      filtMcMftTracks const & /*tracks*/,
+      soa::SmallGroups<aod::BestCollisionsFwd> const &besttracks) {
     if (!isGoodEvent<false>(collision)) {
       return;
     }
@@ -1381,8 +1326,8 @@ struct PseudorapidityDensityMFT {
 
     auto mcCollision = collision.mcCollision();
     auto particlesPerCol = particles.sliceByCached(
-      aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-    for (auto& particle : particlesPerCol) {
+        aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+    for (auto &particle : particlesPerCol) {
       if (!isChrgParticle(particle.pdgCode())) {
         continue;
       }
@@ -1396,7 +1341,7 @@ struct PseudorapidityDensityMFT {
       }
     }
 
-    for (auto const& track : besttracks) {
+    for (auto const &track : besttracks) {
       auto itrack = track.mfttrack_as<filtMcMftTracks>();
       if (!isTrackSelected(itrack)) {
         continue;
@@ -1425,56 +1370,58 @@ struct PseudorapidityDensityMFT {
   /// @brief process function to calculate tracking efficiency (inclusive, based
   /// on BestCollisionsFwd)
   void processTrkEffBestInclusive(
-    soa::Filtered<soa::Join<Colls, aod::McCollisionLabels>>::iterator const& collision,
-    aod::McCollisions const& mccollisions, filtParticles const& particles,
-    filtMcMftTracks const& tracks,
-    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
-  {
+      soa::Filtered<soa::Join<Colls, aod::McCollisionLabels>>::iterator const
+          &collision,
+      aod::McCollisions const &mccollisions, filtParticles const &particles,
+      filtMcMftTracks const &tracks,
+      soa::SmallGroups<aod::BestCollisionsFwd> const &besttracks) {
     processTrkEffBest<Colls, aod::McCollisions>(collision, mccollisions,
                                                 particles, tracks, besttracks);
   }
 
   PROCESS_SWITCH(
-    PseudorapidityDensityMFT, processTrkEffBestInclusive,
-    "Process tracking efficiency (inclusive, based on BestCollisionsFwd)",
-    false);
+      PseudorapidityDensityMFT, processTrkEffBestInclusive,
+      "Process tracking efficiency (inclusive, based on BestCollisionsFwd)",
+      false);
 
   /// @brief process function to calculate tracking efficiency (in FT0 bins,
   /// based on BestCollisionsFwd)
   void processTrkEffBestCent(
-    soa::Filtered<soa::Join<CollsCent, aod::McCollisionLabels>>::
-      iterator const& collision,
-    aod::McCollisions const& mccollisions, filtParticles const& particles,
-    filtMcMftTracks const& tracks,
-    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
-  {
+      soa::Filtered<soa::Join<CollsCent, aod::McCollisionLabels>>::
+          iterator const &collision,
+      aod::McCollisions const &mccollisions, filtParticles const &particles,
+      filtMcMftTracks const &tracks,
+      soa::SmallGroups<aod::BestCollisionsFwd> const &besttracks) {
     processTrkEffBest<CollsCent, aod::McCollisions>(
-      collision, mccollisions, particles, tracks, besttracks);
+        collision, mccollisions, particles, tracks, besttracks);
   }
 
   PROCESS_SWITCH(
-    PseudorapidityDensityMFT, processTrkEffBestCent,
-    "Process tracking efficiency (in FT0 bins, based on BestCollisionsFwd)",
-    false);
+      PseudorapidityDensityMFT, processTrkEffBestCent,
+      "Process tracking efficiency (in FT0 bins, based on BestCollisionsFwd)",
+      false);
 
   Preslice<filtMftTracks> filtTrkperCol = o2::aod::fwdtrack::collisionId;
 
   /// @brief process template function for MC QA checks
   template <typename C>
   void processMcQA(
-    typename soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions,
-    filtMcGenColls const& mcCollisions, filtParticles const& /*particles*/,
-    MFTTracksLabeled const& tracks, aod::AmbiguousMFTTracks const& atracks)
-  {
-    for (const auto& collision : collisions) {
+      typename soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const
+          &collisions,
+      aod::McCollisions const &mcCollisions,
+      filtParticles const & /*particles*/, MFTTracksLabeled const &tracks,
+      aod::AmbiguousMFTTracks const &atracks) {
+    for (const auto &collision : collisions) {
       float c_rec = -1;
       if constexpr (C::template contains<aod::CentFT0Cs>()) {
         c_rec = collision.centFT0C();
-        QAregistry.fill(HIST("Events/Centrality/hRecPerGenColls"),
-                        static_cast<float>(collisions.size()) / mcCollisions.size(), c_rec);
+        QAregistry.fill(
+            HIST("Events/Centrality/hRecPerGenColls"),
+            static_cast<float>(collisions.size()) / mcCollisions.size(), c_rec);
       } else {
         QAregistry.fill(HIST("Events/hRecPerGenColls"),
-                        static_cast<float>(collisions.size()) / mcCollisions.size());
+                        static_cast<float>(collisions.size()) /
+                            mcCollisions.size());
       }
 
       if (!isGoodEvent<false>(collision)) {
@@ -1483,9 +1430,9 @@ struct PseudorapidityDensityMFT {
 
       auto trkPerColl = tracks.sliceBy(filtTrkperCol, collision.globalIndex());
       uint Ntracks{0u}, Natracks{0u};
-      for (const auto& track : trkPerColl) {
+      for (const auto &track : trkPerColl) {
         Ntracks++;
-        for (const auto& atrack : atracks) {
+        for (const auto &atrack : atracks) {
           if (atrack.mfttrackId() == track.globalIndex()) {
             Natracks++;
             break;
@@ -1506,12 +1453,11 @@ struct PseudorapidityDensityMFT {
 
   /// @brief process function for QA checks (inclusive)
   void processMcQAInclusive(
-    soa::SmallGroups<soa::Join<filtColls, aod::McCollisionLabels>> const& collisions,
-    filtMcGenColls const& mcCollisions, filtParticles const& particles,
-    MFTTracksLabeled const& tracks, aod::AmbiguousMFTTracks const& atracks)
-  {
-    processMcQA<filtColls>(collisions, mcCollisions, particles, tracks,
-                           atracks);
+      soa::SmallGroups<soa::Join<Colls, aod::McCollisionLabels>> const
+          &collisions,
+      aod::McCollisions const &mcCollisions, filtParticles const &particles,
+      MFTTracksLabeled const &tracks, aod::AmbiguousMFTTracks const &atracks) {
+    processMcQA<Colls>(collisions, mcCollisions, particles, tracks, atracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMcQAInclusive,
@@ -1519,19 +1465,18 @@ struct PseudorapidityDensityMFT {
 
   /// @brief process function for QA checks (in FT0 bins)
   void processMcQACent(
-    soa::SmallGroups<soa::Join<filtCollsCent, aod::McCollisionLabels>> const& collisions,
-    filtMcGenColls const& mcCollisions, filtParticles const& particles,
-    MFTTracksLabeled const& tracks, aod::AmbiguousMFTTracks const& atracks)
-  {
-    processMcQA<filtCollsCent>(collisions, mcCollisions, particles, tracks,
-                               atracks);
+      soa::SmallGroups<soa::Join<CollsCent, aod::McCollisionLabels>> const
+          &collisions,
+      aod::McCollisions const &mcCollisions, filtParticles const &particles,
+      MFTTracksLabeled const &tracks, aod::AmbiguousMFTTracks const &atracks) {
+    processMcQA<CollsCent>(collisions, mcCollisions, particles, tracks,
+                           atracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMcQACent,
                  "Process MC QA checks (in FT0 bins)", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
+WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
   return WorkflowSpec{adaptAnalysisTask<PseudorapidityDensityMFT>(cfgc)};
 }
