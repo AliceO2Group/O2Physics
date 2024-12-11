@@ -77,7 +77,7 @@ struct lambdapolsp {
   // Configurable<bool> mycut{"mycut", false, "select tracks based on my cuts"};
   Configurable<bool> tofhit{"tofhit", true, "select tracks based on tof hit"};
   Configurable<bool> globalpt{"globalpt", true, "select tracks based on pt global vs tpc"};
-  Configurable<bool> usefourvectormass{"usefourvectormass", true, "select invariant mass based on four vector"};
+  Configurable<bool> useglobal{"useglobal", true, "flag to use global vs v0 momentum"};
   Configurable<bool> checksign{"checksign", true, "check sign of daughter tracks"};
   Configurable<int> useprofile{"useprofile", 3, "flag to select profile vs Sparse"};
   Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
@@ -100,7 +100,6 @@ struct lambdapolsp {
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> isPVContributor{"isPVContributor", true, "is PV contributor"};
   Configurable<bool> checkwithpub{"checkwithpub", true, "checking results with published"};
-  Configurable<bool> rejectmisident{"rejectmisident", true, "rejecting misidentification"};
   Configurable<bool> useTPCTOF{"useTPCTOF", true, "flag to use TPC and TOF"};
 
   // Configs for V0
@@ -436,15 +435,6 @@ struct lambdapolsp {
       if (pid == 1 && TMath::Abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
         return false;
       }
-      // for misidentification
-      if (rejectmisident) {
-        if (pid == 0 && TMath::Abs(track.tpcNSigmaPi()) < 3.0) {
-          return false;
-        }
-        if (pid == 1 && TMath::Abs(track.tpcNSigmaPr()) < 3.0) {
-          return false;
-        }
-      }
     }
 
     if (pid == 0 && pt < cfgDaughPrPt) {
@@ -690,15 +680,24 @@ struct lambdapolsp {
         }
 
         if (LambdaTag) {
-          Proton = ROOT::Math::PxPyPzMVector(postrack.px(), postrack.py(), postrack.pz(), massPr);
-          Pion = ROOT::Math::PxPyPzMVector(negtrack.px(), negtrack.py(), negtrack.pz(), massPi);
+          if (useglobal) {
+            Proton = ROOT::Math::PxPyPzMVector(postrack.px(), postrack.py(), postrack.pz(), massPr);
+            Pion = ROOT::Math::PxPyPzMVector(negtrack.px(), negtrack.py(), negtrack.pz(), massPi);
+          } else {
+            Proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
+            Pion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
+          }
         }
         if (aLambdaTag) {
-          Proton = ROOT::Math::PxPyPzMVector(negtrack.px(), negtrack.py(), negtrack.pz(), massPr);
-          Pion = ROOT::Math::PxPyPzMVector(postrack.px(), postrack.py(), postrack.pz(), massPi);
+          if (useglobal) {
+            Proton = ROOT::Math::PxPyPzMVector(negtrack.px(), negtrack.py(), negtrack.pz(), massPr);
+            Pion = ROOT::Math::PxPyPzMVector(postrack.px(), postrack.py(), postrack.pz(), massPi);
+          } else {
+            Proton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
+            Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
+          }
         }
         Lambda = Proton + Pion;
-        Lambdacopy = Proton + Pion;
         Lambda.SetM(massLambda);
 
         ROOT::Math::Boost boost{Lambda.BoostToCM()};
@@ -733,15 +732,9 @@ struct lambdapolsp {
         auto candeta = 0.0;
 
         if (LambdaTag) {
-          if (usefourvectormass) {
-            candmass = Lambdacopy.M();
-            candpt = Lambdacopy.Pt();
-            candeta = Lambdacopy.Eta();
-          } else {
-            candmass = v0.mLambda();
-            candpt = v0.pt();
-            candeta = v0.eta();
-          }
+          candmass = v0.mLambda();
+          candpt = v0.pt();
+          candeta = v0.eta();
 
           histos.fill(HIST("hSparseLambdaPolA"), candmass, candpt, candeta, PolA, centrality);
           histos.fill(HIST("hSparseLambdaPolC"), candmass, candpt, candeta, PolC, centrality);
@@ -753,15 +746,9 @@ struct lambdapolsp {
         }
 
         if (aLambdaTag) {
-          if (usefourvectormass) {
-            candmass = Lambdacopy.M();
-            candpt = Lambdacopy.Pt();
-            candeta = Lambdacopy.Eta();
-          } else {
-            candmass = v0.mAntiLambda();
-            candpt = v0.pt();
-            candeta = v0.eta();
-          }
+          candmass = v0.mAntiLambda();
+          candpt = v0.pt();
+          candeta = v0.eta();
 
           histos.fill(HIST("hSparseAntiLambdaPolA"), candmass, candpt, candeta, PolA, centrality);
           histos.fill(HIST("hSparseAntiLambdaPolC"), candmass, candpt, candeta, PolC, centrality);
