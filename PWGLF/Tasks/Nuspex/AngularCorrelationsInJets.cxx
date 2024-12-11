@@ -36,7 +36,6 @@
 #include "TVector3.h"
 #include "TPDGCode.h"
 
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -343,7 +342,7 @@ struct AngularCorrelationsInJets {
 
   template <class T>
   bool singleSpeciesTPCNSigma(T const& track, int species) // make cut configurable
-  { // reject any track that has nsigma < 3 for more than 1 species
+  {                                                        // reject any track that has nsigma < 3 for more than 1 species
     if (track.tpcNSigmaStoreEl() < 3.0 || track.tpcNSigmaStoreMu() < 3.0 || track.tpcNSigmaStorePi() < 3.0 || track.tpcNSigmaStoreKa() < 3.0 || track.tpcNSigmaStoreTr() < 3.0 || track.tpcNSigmaStoreAl() < 3.0)
       return false;
     switch (species) {
@@ -376,12 +375,12 @@ struct AngularCorrelationsInJets {
 
       // nsigma
       double tofNsigma = track.hasTOF() ? track.tofNSigmaPr() : 999;
-      if ((track.pt() < fProtonTPCTOFpT && (TMath::Abs(track.tpcNSigmaPr()) > fProtonNsigma)) || (track.pt() > fProtonTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaPr()*track.tpcNSigmaPr() + tofNsigma*tofNsigma) > fProtonNsigma)))
-      if (TMath::Sqrt(track.tpcNSigmaPr()*track.tpcNSigmaPr() + tofNsigma*tofNsigma) > fProtonNsigma)
-        return false;
+      if ((track.pt() < fProtonTPCTOFpT && (TMath::Abs(track.tpcNSigmaPr()) > fProtonNsigma)) || (track.pt() > fProtonTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaPr() * track.tpcNSigmaPr() + tofNsigma * tofNsigma) > fProtonNsigma)))
+        if (TMath::Sqrt(track.tpcNSigmaPr() * track.tpcNSigmaPr() + tofNsigma * tofNsigma) > fProtonNsigma)
+          return false;
       if (!singleSpeciesTPCNSigma(track, 1))
         return false;
-      } else { // for yields
+    } else { // for yields
       // DCA
       if (TMath::Abs(track.dcaXY()) > fProtonDCAxyYield)
         return false;
@@ -428,7 +427,7 @@ struct AngularCorrelationsInJets {
 
       // nsigma
       double tofNsigma = track.hasTOF() ? track.tofNSigmaPr() : 999;
-      if ((track.pt() < fAntiprotonTPCTOFpT && (TMath::Abs(track.tpcNSigmaPr()) > fAntiprotonNsigma)) || (track.pt() > fAntiprotonTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaPr()*track.tpcNSigmaPr() + tofNsigma*tofNsigma) > fAntiprotonNsigma)))
+      if ((track.pt() < fAntiprotonTPCTOFpT && (TMath::Abs(track.tpcNSigmaPr()) > fAntiprotonNsigma)) || (track.pt() > fAntiprotonTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaPr() * track.tpcNSigmaPr() + tofNsigma * tofNsigma) > fAntiprotonNsigma)))
         return false;
       if (!singleSpeciesTPCNSigma(track, 1))
         return false;
@@ -479,7 +478,7 @@ struct AngularCorrelationsInJets {
 
         // nsigma
         double tofNsigma = track.hasTOF() ? track.tofNSigmaDe() : 999;
-        if ((track.pt() < fNucleiTPCTOFpT && (TMath::Abs(track.tpcNSigmaDe()) > fNucleiNsigma)) || (track.pt() > fNucleiTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaDe()*track.tpcNSigmaDe() + tofNsigma*tofNsigma) > fNucleiNsigma)))
+        if ((track.pt() < fNucleiTPCTOFpT && (TMath::Abs(track.tpcNSigmaDe()) > fNucleiNsigma)) || (track.pt() > fNucleiTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaDe() * track.tpcNSigmaDe() + tofNsigma * tofNsigma) > fNucleiNsigma)))
           return false;
         if (!singleSpeciesTPCNSigma(track, 2))
           return false;
@@ -519,7 +518,7 @@ struct AngularCorrelationsInJets {
 
         // nsigma
         double tofNsigma = track.hasTOF() ? track.tofNSigmaHe() : 999;
-        if ((track.pt() < fNucleiTPCTOFpT && (TMath::Abs(track.tpcNSigmaHe()) > fNucleiNsigma)) || (track.pt() > fNucleiTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaHe()*track.tpcNSigmaHe() + tofNsigma*tofNsigma) > fNucleiNsigma)))
+        if ((track.pt() < fNucleiTPCTOFpT && (TMath::Abs(track.tpcNSigmaHe()) > fNucleiNsigma)) || (track.pt() > fNucleiTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaHe() * track.tpcNSigmaHe() + tofNsigma * tofNsigma) > fNucleiNsigma)))
           return false;
         if (!singleSpeciesTPCNSigma(track, 3))
           return false;
@@ -572,7 +571,7 @@ struct AngularCorrelationsInJets {
 
         // nsigma
         double tofNsigma = track.hasTOF() ? track.tofNSigmaDe() : 999;
-        if ((track.pt() < fAntinucleiTPCTOFpT && (TMath::Abs(track.tpcNSigmaDe()) > fAntinucleiNsigma)) || (track.pt() > fAntinucleiTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaDe()*track.tpcNSigmaDe() + tofNsigma*tofNsigma) > fAntinucleiNsigma)))
+        if ((track.pt() < fAntinucleiTPCTOFpT && (TMath::Abs(track.tpcNSigmaDe()) > fAntinucleiNsigma)) || (track.pt() > fAntinucleiTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaDe() * track.tpcNSigmaDe() + tofNsigma * tofNsigma) > fAntinucleiNsigma)))
           return false;
         if (!singleSpeciesTPCNSigma(track, 2))
           return false;
@@ -610,7 +609,7 @@ struct AngularCorrelationsInJets {
 
         // nsigma
         double tofNsigma = track.hasTOF() ? track.tofNSigmaHe() : 999;
-        if ((track.pt() < fAntinucleiTPCTOFpT && (TMath::Abs(track.tpcNSigmaHe()) > fAntinucleiNsigma)) || (track.pt() > fAntinucleiTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaHe()*track.tpcNSigmaHe() + tofNsigma*tofNsigma) > fAntinucleiNsigma)))
+        if ((track.pt() < fAntinucleiTPCTOFpT && (TMath::Abs(track.tpcNSigmaHe()) > fAntinucleiNsigma)) || (track.pt() > fAntinucleiTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaHe() * track.tpcNSigmaHe() + tofNsigma * tofNsigma) > fAntinucleiNsigma)))
           return false;
         if (!singleSpeciesTPCNSigma(track, 3))
           return false;
