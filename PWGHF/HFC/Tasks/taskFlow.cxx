@@ -1535,7 +1535,7 @@ struct HfTaskFlow {
 
   void processSameTpcMftD0Ch(FilteredCollisionsWSelMult::iterator const& collision,
                              HfCandidatesSelD0 const& candidates,
-                             TracksWDcaSel const& tracks,
+                             TracksWDcaSel const& /*tracks*/,
                              aod::MFTTracks const& mftTracks)
   {
     auto fillEventSelectionPlots = true;
@@ -1565,7 +1565,7 @@ struct HfTaskFlow {
 
   void processSameTpcMftLcCh(FilteredCollisionsWSelMult::iterator const& collision,
                              HfCandidatesSelLc const& candidates,
-                             TracksWDcaSel const& tracks,
+                             TracksWDcaSel const& /*tracks*/,
                              aod::MFTTracks const& mftTracks)
   {
     auto fillEventSelectionPlots = true;
@@ -1756,7 +1756,7 @@ struct HfTaskFlow {
   void processMixedTpcMftD0Ch(FilteredCollisionsWSelMult const& collisions,
                               HfCandidatesSelD0 const& candidates,
                               aod::MFTTracks const& mftTracks,
-                              TracksWDcaSel const& tracks)
+                              TracksWDcaSel const& /*tracks*/)
   {
     //  we want to group collisions based on charged-track multiplicity
     auto getMultiplicity = [&collisions, this](FilteredCollisionsWSelMult::iterator const& collision) {
