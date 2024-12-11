@@ -42,6 +42,10 @@
 #include "EventFiltering/filterTables.h"
 #include "EventFiltering/PWGHF/HFFilterHelpers.h"
 
+#include <string>
+#include <memory>
+#include <vector>
+
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod::hffilters;
