@@ -1677,7 +1677,7 @@ struct HfTaskFlow {
     //   return size;
     //  };
 
-    auto getMultiplicity = [&collisions, this](FilteredCollisionsWSelMult::iterator const& collision) {
+    auto getMultiplicity = [](FilteredCollisionsWSelMult::iterator const& collision) {
       auto multiplicity = collision.numContrib();
       return multiplicity;
     };
@@ -1696,7 +1696,7 @@ struct HfTaskFlow {
                               HfCandidatesSelD0 const& candidates)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getMultiplicity = [&collisions, this](FilteredCollisionsWSelMult::iterator const& collision) {
+    auto getMultiplicity = [](FilteredCollisionsWSelMult::iterator const& collision) {
       auto multiplicity = collision.numContrib();
       return multiplicity;
     };
@@ -1740,7 +1740,7 @@ struct HfTaskFlow {
     //   return size;
     // };
 
-    auto getMultiplicity = [&collisions, this](FilteredCollisionsWSelMult::iterator const& collision) {
+    auto getMultiplicity = [](FilteredCollisionsWSelMult::iterator const& collision) {
       auto multiplicity = collision.numContrib();
       return multiplicity;
     };
@@ -1759,7 +1759,7 @@ struct HfTaskFlow {
                               TracksWDcaSel const& /*tracks*/)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getMultiplicity = [&collisions, this](FilteredCollisionsWSelMult::iterator const& collision) {
+    auto getMultiplicity = [](FilteredCollisionsWSelMult::iterator const& collision) {
       auto multiplicity = collision.numContrib();
       return multiplicity;
     };
@@ -1778,7 +1778,7 @@ struct HfTaskFlow {
   {
 
     //  we want to group collisions based on charged-track multiplicity
-    auto getMultiplicity = [&collisions, this](FilteredCollisionsWSelMult::iterator const& collision) {
+    auto getMultiplicity = [](FilteredCollisionsWSelMult::iterator const& collision) {
       auto multiplicity = collision.numContrib();
       return multiplicity;
     };
