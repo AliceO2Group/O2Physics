@@ -86,7 +86,6 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<LabeledArray<double>> cutsTrackBeauty4Prong{"cutsTrackBeauty4Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 4-prong beauty candidates"};
   Configurable<std::string> paramCharmMassShape{"paramCharmMassShape", "2023_pass3", "Parametrisation of charm-hadron mass shape (options: 2023_pass3)"};
   Configurable<float> numSigmaDeltaMassCharmHad{"numSigmaDeltaMassCharmHad", 2.5, "Number of sigma for charm-hadron delta mass cut in B and D resonance triggers"};
-  //Configurable<LabeledArray<float>> topolCutsBeautyHadron{"topolCutsBeautyHadron", {cutsTopolBeautyHadron[0], 3, kNBeautyParticles, labelsRowsTopolBeauty, labelsColumnsDeltaMassB}, "Cuts on CosPa, DecayLength and ImpactParameterProduct for beauty species"};
   Configurable<std::vector<double>> pTBinsBHadron{"pTBinsBHadron", std::vector<double>{hf_trigger_cuts_presel_beauty::vecBinsPt}, "pT bin limits for beauty hadrons preselections"};
   Configurable<LabeledArray<double>> cutsBplus{"cutsBplus", {hf_trigger_cuts_presel_beauty::cuts[0], hf_trigger_cuts_presel_beauty::nBinsPt, hf_trigger_cuts_presel_beauty::nCutVars, hf_trigger_cuts_presel_beauty::labelsPt, hf_trigger_cuts_presel_beauty::labelsRowsTopolBeauty}, "B+ candidate selection per pT bin"};
 
@@ -208,7 +207,6 @@ struct HfFilter { // Main struct for HF triggers
     if (activateSecVtx) {
       helper.setVtxConfiguration(df2);
       helper.setVtxConfiguration(dfB);
-      //helper.setBplusSelections(topolCutsBeautyHadron->get(0u, 0u), topolCutsBeautyHadron->get(1u, 0u), topolCutsBeautyHadron->get(2u, 0u));
     }
     hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;counts", HistType::kTH1F, {{kNtriggersHF + 2, -0.5, +kNtriggersHF + 1.5}});
     for (auto iBin = 0; iBin < kNtriggersHF + 2; ++iBin) {
@@ -269,7 +267,6 @@ struct HfFilter { // Main struct for HF triggers
       for (int iBin = 0; iBin < kNBinsHfVtxStages; iBin++) {
         registry.get<TH1>(HIST("fHfVtxStages"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
-    
 
       for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
         hArmPod[iV0] = registry.add<TH2>(Form("fArmPod%s", v0Names[iV0].data()), Form("Armenteros Podolanski plot for selected %s;#it{#alpha};#it{q}_{T} (GeV/#it{c})", v0Labels[iV0].data()), HistType::kTH2F, {alphaAxis, qtAxis});
