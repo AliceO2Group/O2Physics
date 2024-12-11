@@ -432,11 +432,6 @@ struct spvector {
           qxZDCC = qxZDCC / sumC;
           qyZDCC = qyZDCC / sumC;
         }
-      } else {
-        qxZDCA = qxZDCA;
-        qxZDCC = qxZDCC;
-        qyZDCA = qyZDCA;
-        qyZDCC = qyZDCC;
       }
       if (sumA <= 1e-4 || sumC <= 1e-4) {
         qxZDCA = 0.0;
