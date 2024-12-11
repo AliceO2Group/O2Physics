@@ -492,7 +492,7 @@ struct ZdcQVectors {
       calibConstant = h->Projection(4)->GetMean();
 
       if (h->Projection(4)->GetEntries() < cfgMinEntriesSparseBin) {
-        LOGF(info, "1 entry in sparse bin! Not used... (increase binsize)");
+        LOGF(debug, "1 entry in sparse bin! Not used... (increase binsize)");
         calibConstant = 0;
         isSelected = false;
       }
