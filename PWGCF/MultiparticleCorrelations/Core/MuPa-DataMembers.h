@@ -200,7 +200,7 @@ struct Qvector {
 struct MultiparticleCorrelations {
   TList* fCorrelationsList = NULL;                                           // list to hold all correlations objects
   TProfile* fCorrelationsFlagsPro = NULL;                                    // profile to hold all flags for correlations
-  Bool_t fCalculateCorrelations = kTRUE;                                     // calculate and store integrated correlations
+  bool fCalculateCorrelations = false;                                       // calculate and store integrated correlations
   TProfile* fCorrelationsPro[4][gMaxHarmonic][eAsFunctionOf_N] = {{{NULL}}}; //! multiparticle correlations
                                                                              //  [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=gMaxHarmonic]
                                                                              //  [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy]
@@ -300,15 +300,15 @@ struct EtaSeparations {
   TProfile* fEtaSeparationsPro[gMaxHarmonic][gMaxNumberEtaSeparations][eAsFunctionOf_N]; // [harmonic, 0 = v1, 8 = v9][ different eta Separations - see that enum ] [ AFO ]
 } es;
 
-// *) Common cosmetics:
-struct CommonCosmetics {
+// *) Global cosmetics:
+struct GlobalCosmetics {
   TString srs[2] = {"rec", "sim"};                              // used in the histogram name as index when saved to the file
   TString srs_long[2] = {"reconstructed", "simulated"};         // used in the histogram title
   TString sba[2] = {"before", "after"};                         // used in the histogram name as index when saved to the file
   TString sba_long[2] = {"before cuts", "after cuts"};          // used in the histogram title
   TString scc[eCutCounter_N] = {"abs", "seq"};                  // used in the histogram name as index when saved to the file
   TString scc_long[eCutCounter_N] = {"absolute", "sequential"}; // used in the histogram title
-} cc;
+} gc;
 
 // *) Results:
 struct Results {                                   // This is in addition also sort of "abstract" interface, which defines common binning, etc., for other groups of histograms.
