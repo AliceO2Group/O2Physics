@@ -71,17 +71,15 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, false, "Use kTVXinTRD (reject TRD triggered events)");
   O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "Selects collisions with at least one ITS-TPC track");
 
-
   ConfigurableAxis axisDCAz{"axisDCAz", {200, -.5, .5}, "DCA_{z} (cm)"};
   ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -.5, .5}, "DCA_{xy} (cm)"};
   ConfigurableAxis axisPhiMod = {"axisPhiMod", {100, 0, constants::math::PI / 9}, "fmod(#varphi,#pi/9)"};
   ConfigurableAxis axisPhi = {"axisPhi", {60, 0, constants::math::TwoPI}, "#varphi"};
-  ConfigurableAxis axisEta = {"axisEta", {64, -1, 1}, "#eta"}; 
-  ConfigurableAxis axisEtaV1 = {"axisEtaV1", {8, -.8, .8}, "#eta"}; 
-  ConfigurableAxis axisVz = {"axisVz", {40, -10, 10}, "v_{z}"}; 
-  ConfigurableAxis axisCent = {"axisCent", {90,0,90}, "Centrality(%)"}; 
-  ConfigurableAxis axisPhiPlane = {"axisPhiPlane", {100, -constants::math::PI,constants::math::PI}, "#Psi"}; 
-
+  ConfigurableAxis axisEta = {"axisEta", {64, -1, 1}, "#eta"};
+  ConfigurableAxis axisEtaV1 = {"axisEtaV1", {8, -.8, .8}, "#eta"};
+  ConfigurableAxis axisVz = {"axisVz", {40, -10, 10}, "v_{z}"};
+  ConfigurableAxis axisCent = {"axisCent", {90, 0, 90}, "Centrality(%)"};
+  ConfigurableAxis axisPhiPlane = {"axisPhiPlane", {100, -constants::math::PI, constants::math::PI}, "#Psi"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
@@ -111,7 +109,7 @@ struct FlowSP {
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
-    std::vector<double> ptbinning = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55,0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95,1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9,2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
+    std::vector<double> ptbinning = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
     AxisSpec axisPt = {ptbinning, "#it{p}_{T} GeV/#it{c}"};
     AxisSpec nchAxis = {4000, 0, 4000, "N_{ch}"};
     AxisSpec t0cAxis = {70, 0, 70000, "N_{ch} (T0C)"};
@@ -137,14 +135,14 @@ struct FlowSP {
     registry.add("QA/after/multV0A_multT0A", "", {HistType::kTH2D, {t0aAxis, t0aAxis}});
     registry.add("QA/after/multT0C_centT0C", "", {HistType::kTH2D, {axisCent, t0cAxis}});
     registry.addClone("QA/after/", "QA/before/");
-    
+
     registry.add("QA/after/pt_phi_bef", "", {HistType::kTH2D, {axisPt, axisPhiMod}});
     registry.add("QA/after/pt_phi_aft", "", {HistType::kTH2D, {axisPt, axisPhiMod}});
     registry.add("QA/after/hPhi_Eta_vz", "", {HistType::kTH3D, {axisPhi, axisEta, axisVz}});
     registry.add("QA/after/hDCAxy", "", {HistType::kTH1D, {axisDCAxy}});
     registry.add("QA/after/hDCAz", "", {HistType::kTH1D, {axisDCAz}});
 
-    // track properties per centrality and per eta, pt bin 
+    // track properties per centrality and per eta, pt bin
     registry.add<TProfile3D>("uxqxA_eta_pt", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
     registry.add<TProfile3D>("uyqyA_eta_pt", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
     registry.add<TProfile3D>("uxqxC_eta_pt", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
@@ -321,7 +319,7 @@ struct FlowSP {
   template <typename CollisionObject, typename TracksObject>
   inline void fillEventQA(CollisionObject collision, TracksObject tracks, bool before)
   {
-    if(before){
+    if (before) {
       registry.fill(HIST("QA/before/hCent"), collision.centFT0C());
       registry.fill(HIST("QA/before/globalTracks_centT0C"), collision.centFT0C(), tracks.size());
       registry.fill(HIST("QA/before/PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV());
@@ -380,15 +378,15 @@ struct FlowSP {
       registry.fill(HIST("hSPplaneC"), psiC, 1);
 
       // https://twiki.cern.ch/twiki/pub/ALICE/DirectedFlowAnalysisNote/v1_ZDC_ALICE_INT_NOTE_version02.pdf
-      double psiFull = 1.0 * std::atan2(qyA+qyC, qxA + qxC);
+      double psiFull = 1.0 * std::atan2(qyA + qyC, qxA + qxC);
       registry.fill(HIST("hSPplaneFull"), psiFull, 1);
 
-      registry.fill(HIST("hCosPhiACosPhiC"), centrality, std::cos(psiA)*std::cos(psiC));
-      registry.fill(HIST("hSinPhiASinPhiC"), centrality, std::sin(psiA)*std::sin(psiC));
-      registry.fill(HIST("hSinPhiACosPhiC"), centrality, std::sin(psiA)*std::cos(psiC));
-      registry.fill(HIST("hCosPhiASinsPhiC"), centrality, std::cos(psiA)*std::sin(psiC));
+      registry.fill(HIST("hCosPhiACosPhiC"), centrality, std::cos(psiA) * std::cos(psiC));
+      registry.fill(HIST("hSinPhiASinPhiC"), centrality, std::sin(psiA) * std::sin(psiC));
+      registry.fill(HIST("hSinPhiACosPhiC"), centrality, std::sin(psiA) * std::cos(psiC));
+      registry.fill(HIST("hCosPhiASinsPhiC"), centrality, std::cos(psiA) * std::sin(psiC));
 
-      if(std::cos(psiA) - std::cos(psiC) < 0)
+      if (std::cos(psiA) - std::cos(psiC) < 0)
         registry.fill(HIST("hFullEvPlaneRes"), centrality, std::sqrt(-2. * (std::cos(psiA) - std::cos(psiC))));
 
       registry.fill(HIST("qAqCXY"), centrality, qxA * qxC + qyA * qyC);
@@ -398,7 +396,7 @@ struct FlowSP {
       for (const auto& track : tracks) {
         if (!trackSelected(track, field))
           continue;
-        
+
         if (track.sign() == 0.0)
           continue;
         bool pos = (track.sign() > 0) ? true : false;
@@ -406,23 +404,23 @@ struct FlowSP {
         // constrain angle to 0 -> [0,0+2pi]
         auto phi = RecoDecay::constrainAngle(track.phi(), 0);
 
-        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         auto ux = std::cos(phi);
         auto uy = std::sin(phi);
-        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-        double uxqxA = ux*qxA;
-        double uyqyA = uy*qyA;
+        double uxqxA = ux * qxA;
+        double uyqyA = uy * qyA;
 
         registry.fill(HIST("uxqxA_eta_pt"), track.eta(), track.pt(), centrality, uxqxA);
         registry.fill(HIST("uyqyA_eta_pt"), track.eta(), track.pt(), centrality, uyqyA);
 
-        double uxqxC = ux*qxC;
-        double uyqyC = uy*qyC;
+        double uxqxC = ux * qxC;
+        double uyqyC = uy * qyC;
 
         registry.fill(HIST("uxqxC_eta_pt"), track.eta(), track.pt(), centrality, uxqxC);
         registry.fill(HIST("uyqyC_eta_pt"), track.eta(), track.pt(), centrality, uyqyC);
-       
+
         double v1A = std::cos(phi - psiA);
         double v1C = std::cos(phi - psiC);
         double v1Full = std::cos(phi - psiFull);
@@ -448,7 +446,7 @@ struct FlowSP {
           registry.fill(HIST("v1C_eta_pt_neg"), track.eta(), track.pt(), centrality, v1C);
           registry.fill(HIST("v1Full_eta_pt_neg"), track.eta(), track.pt(), centrality, v1Full);
         }
-        //QA plots
+        // QA plots
         registry.fill(HIST("QA/after/hPhi_Eta_vz"), track.phi(), track.eta(), collision.posZ());
         registry.fill(HIST("QA/after/hDCAxy"), track.dcaXY());
         registry.fill(HIST("QA/after/hDCAz"), track.dcaZ());
@@ -463,4 +461,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<FlowSP>(cfgc),
   };
 }
-

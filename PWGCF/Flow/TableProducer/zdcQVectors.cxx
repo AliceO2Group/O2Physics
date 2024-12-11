@@ -329,12 +329,12 @@ struct ZdcQVectors {
     registry.fill(HIST("step0/QA/hQXC_vs_vz"), v[2], q[0][0][2]);
     registry.fill(HIST("step0/QA/hQYC_vs_vz"), v[2], q[0][0][3]);
 
-          // add psi!!
+    // add psi!!
     double psiA = 1.0 * std::atan2(q[0][0][2], q[0][0][0]);
     registry.fill(HIST("step0/QA/hSPplaneA"), psiA, centrality, 1);
     double psiC = 1.0 * std::atan2(q[0][0][3], q[0][0][1]);
     registry.fill(HIST("step0/QA/hSPplaneC"), psiC, centrality, 1);
-    double psiFull = 1.0 * std::atan2(q[0][0][2] + q[0][0][3], q[0][0][0] +  q[0][0][1]);
+    double psiFull = 1.0 * std::atan2(q[0][0][2] + q[0][0][3], q[0][0][0] + q[0][0][1]);
     registry.fill(HIST("step0/QA/hSPplaneFull"), psiFull, centrality, 1);
 
     static constexpr std::string_view SubDir[] = {"step1/", "step2/", "step3/", "step4/", "step5/"};
@@ -374,7 +374,7 @@ struct ZdcQVectors {
       registry.fill(HIST(SubDir[Index]) + HIST("QA/hSPplaneA"), psiA, centrality, 1);
       psiC = 1.0 * std::atan2(q[iteration][indexRt][3], q[iteration][indexRt][1]);
       registry.fill(HIST(SubDir[Index]) + HIST("QA/hSPplaneC"), psiC, centrality, 1);
-      psiFull = 1.0 * std::atan2(q[iteration][indexRt][2] + q[iteration][indexRt][3], q[iteration][indexRt][0] +  q[iteration][indexRt][1]);
+      psiFull = 1.0 * std::atan2(q[iteration][indexRt][2] + q[iteration][indexRt][3], q[iteration][indexRt][0] + q[iteration][indexRt][1]);
       registry.fill(HIST(SubDir[Index]) + HIST("QA/hSPplaneFull"), psiFull, centrality, 1);
     });
   }
@@ -701,7 +701,8 @@ struct ZdcQVectors {
     if (cal.atIteration == 0) {
       if (counter < 1)
         LOGF(warning, "Calibation files missing!!! Output created with q-vectors right after energy gain eq. !!");
-      if(isSelected) fillAllRegistries(0, 0);
+      if (isSelected)
+        fillAllRegistries(0, 0);
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0][0][0], q[0][0][1], q[0][0][2], q[0][0][3], isSelected, 0, 0);
       counter++;
       return;
@@ -729,7 +730,7 @@ struct ZdcQVectors {
 
       if (counter < 1)
         LOGF(info, "Output created with q-vectors at iteration %i and step %i!!!!", cal.atIteration, cal.atStep + 1);
-      if(isSelected){
+      if (isSelected) {
         fillAllRegistries(cal.atIteration, cal.atStep + 1);
         registry.fill(HIST("QA/centrality_after"), centrality);
       }
@@ -746,4 +747,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<ZdcQVectors>(cfgc)};
 }
-
