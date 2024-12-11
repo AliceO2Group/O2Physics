@@ -285,7 +285,8 @@ struct QuarkoniaToHyperons {
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
-  Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {{30., 20.}, 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
+  static constexpr float defaultLifetimeCuts[1][2] = {{30., 20.}};
+  Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
 
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.2f, 0.4f, 0.6f, 0.8f, 1.0f, 1.2f, 1.4f, 1.6f, 1.8f, 2.0f, 2.4f, 2.8f, 3.2f, 3.6f, 4.0f, 4.8f, 5.6f, 6.5f, 7.5f, 9.0f, 11.0f, 13.0f, 15.0f, 19.0f, 23.0f, 30.0f, 40.0f, 50.0f}, "pt axis for analysis"};
   ConfigurableAxis axisQuarkoniumMass{"axisQuarkoniumMass", {500, 2.600f, 4.000f}, "M (hyp. #bar{hyp.} ) (GeV/#it{c}^{2})"};
@@ -2250,12 +2251,12 @@ struct QuarkoniaToHyperons {
     }
   }
 
-  PROCESS_SWITCH(quarkoniaToHyperons, processRealData, "process as if real data", true);
-  PROCESS_SWITCH(quarkoniaToHyperons, processMonteCarlo, "process as if MC", false);
+  PROCESS_SWITCH(QuarkoniaToHyperons, processRealData, "process as if real data", true);
+  PROCESS_SWITCH(QuarkoniaToHyperons, processMonteCarlo, "process as if MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<quarkoniaToHyperons>(cfgc)};
+    adaptAnalysisTask<QuarkoniaToHyperons>(cfgc)};
 }
