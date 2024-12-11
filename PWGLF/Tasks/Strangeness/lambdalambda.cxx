@@ -122,7 +122,6 @@ struct lambdalambda {
   Configurable<float> cfgV0V0Distance{"cfgV0V0Distance", 1, "minimum distance of v0v0"};
   Configurable<float> cfgV0V0DCA{"cfgV0V0DCA", 1.0, "maximum DCA of v0v0"};
 
-
   Configurable<bool> cfgEffCor{"cfgEffCor", false, "flag to apply efficiency correction"};
   Configurable<std::string> cfgEffCorPath{"cfgEffCorPath", "", "path for pseudo efficiency correction"};
 
@@ -137,7 +136,6 @@ struct lambdalambda {
   ConfigurableAxis CPAAxis{"CPAAxis", {102, -1.02, 1.02}, "CPA of v0v0"};
   ConfigurableAxis DistanceAxis{"DistanceAxis", {100, 0, 10}, "distance of v0v0"};
   ConfigurableAxis DCAAxis{"DCAAxis", {100, 0, 5}, "DCA of v0v0"};
-
 
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
@@ -328,8 +326,8 @@ struct lambdalambda {
     ROOT::Math::XYZVector posdiff = v02pos - v01pos;
 
     float d = 1. - TMath::Power(v01mom.Dot(v02mom), 2);
-      if (d < 1e-5)
-        return 999;
+    if (d < 1e-5)
+      return 999;
     float t = posdiff.Dot(v01mom - v01mom.Dot(v02mom) * v02mom) / d;
     float s = -posdiff.Dot(v02mom - v01mom.Dot(v02mom) * v01mom) / d;
     ROOT::Math::XYZVector dca = v01pos + v02pos + t * v01mom + s * v02mom;
@@ -400,7 +398,7 @@ struct lambdalambda {
 
         if (doprocessDataSame) {
           if (postrack_v01.globalIndex() == postrack_v02.globalIndex() || postrack_v01.globalIndex() == negtrack_v02.globalIndex() || negtrack_v01.globalIndex() == postrack_v02.globalIndex() || negtrack_v01.globalIndex() == negtrack_v02.globalIndex())
-            continue; //no shared decay products
+            continue; // no shared decay products
         }
 
         if (LambdaTag) {
@@ -443,8 +441,8 @@ struct lambdalambda {
   }
 
   void processDataSame(EventCandidates::iterator const& collision,
-                   TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s,
-                   aod::BCsWithTimestamps const&)
+                       TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s,
+                       aod::BCsWithTimestamps const&)
   {
     if (cfgCentEst == 1) {
       centrality = collision.centFT0C();
@@ -470,7 +468,7 @@ struct lambdalambda {
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
 
   void processDataMixed(EventCandidates const& collisions,
-                   TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s)
+                        TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s)
   {
     auto tracksTuple = std::make_tuple(V0s);
     BinningTypeVertexContributor binningOnPositions{{vertexAxis, centAxis}, true};
@@ -490,7 +488,6 @@ struct lambdalambda {
   }
   PROCESS_SWITCH(lambdalambda, processDataMixed, "Process Event for mixed data", true);
 };
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
