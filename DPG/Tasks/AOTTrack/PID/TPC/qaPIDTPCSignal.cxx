@@ -171,7 +171,7 @@ struct tpcPidQaSignal {
       return false;
     }
     histos.fill(HIST("trksel"), 6);
-    if (pidInTracking != -1 && (track.pidForTracking() != std::abs(pidInTracking))) {
+    if (pidInTracking != -1 && (track.pidForTracking() != static_cast<unsigned int>(std::abs(pidInTracking)))) {
       return false;
     }
     histos.fill(HIST("trksel"), 7);

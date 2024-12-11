@@ -1618,7 +1618,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
           sign = pdgInfo->Charge() / abs(pdgInfo->Charge());
         }
         // resolution plots
-        if (doExtraPIDqa && track.pidForTracking() != std::abs(PartIdentifier)) {
+        if (doExtraPIDqa && track.pidForTracking() != static_cast<unsigned int>(std::abs(PartIdentifier))) {
           // full eta range
           histos.fill(HIST("Tracks/Kine/resoPtVsptmcWrongPIDinTrk"), track.pt() - particle.pt(), particle.pt());
           histos.fill(HIST("Tracks/Kine/resoPtVsptmcScaledWrongPIDinTrk"), (track.pt() - particle.pt()) / particle.pt(), particle.pt());
@@ -1651,7 +1651,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
         }
 
         // optionally check for PID in tracking: select tracks with correct PID in tracking
-        if (checkPIDforTracking && track.pidForTracking() != std::abs(PartIdentifier)) {
+        if (checkPIDforTracking && track.pidForTracking() != static_cast<unsigned int>(std::abs(PartIdentifier))) {
           continue;
         }
 

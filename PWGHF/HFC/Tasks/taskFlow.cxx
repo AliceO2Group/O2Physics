@@ -1386,7 +1386,7 @@ struct HfTaskFlow {
       int bin = binningWithTracksSize.getBin(binningValues);
 
       const auto multiplicity = tracks2.size(); // get multiplicity of charged hadrons, which is used for slicing in mixing
-      const auto vz = collision1.posZ();
+      // const auto vz = collision1.posZ();
 
       // TO BE DONE : ADD ONE MORE IF CONDITION TO FILL THE MC CASE
       // TODO : FILL NEW PLOTS FOR MCTRUTH ONLY

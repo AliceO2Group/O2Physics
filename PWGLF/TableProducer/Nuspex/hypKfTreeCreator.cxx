@@ -514,7 +514,7 @@ struct hypKfTreeCreator {
   }
   //___________________________________________________________________________________________________________________________________________________________
 
-  void fillCandidate(hyperNucleus& cand, hyperNucleus& hypDaughter, aod::HypKfHypNuc const& hypNuc, aod::HypKfHypNucs const&, aod::HypKfColls const&, aod::HypKfTracks const&, aod::HypKfDaughtAdds const&, aod::HypKfSubDs const&)
+  void fillCandidate(hyperNucleus& cand, hyperNucleus& /*hypDaughter*/, aod::HypKfHypNuc const& hypNuc, aod::HypKfHypNucs const&, aod::HypKfColls const&, aod::HypKfTracks const&, aod::HypKfDaughtAdds const&, aod::HypKfSubDs const&)
   {
     cand.daughterTracks.clear();
     cand.subDaughterMassVec.clear();

@@ -638,7 +638,7 @@ struct fwdMuonsUPC {
 
   // function that processes the MC gen candidates:
   // it applies some kinematics cut and fills the histograms
-  void processMcGenCand(aod::UDMcCollisions::iterator const& mcCand,
+  void processMcGenCand(aod::UDMcCollisions::iterator const& /*mcCand*/,
                         aod::UDMcParticles::iterator const& McPart1, aod::UDMcParticles::iterator const& McPart2)
   {
 

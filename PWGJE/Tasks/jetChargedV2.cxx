@@ -334,7 +334,7 @@ struct Jetchargedv2Task {
 
   void processInOutJetV2(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors>>::iterator const& collision,
                          soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
-                         aod::JetTracks const& tracks)
+                         aod::JetTracks const&)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
