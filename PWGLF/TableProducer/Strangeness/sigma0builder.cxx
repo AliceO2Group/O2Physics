@@ -62,8 +62,6 @@ using V0StandardDerivedDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0E
 struct sigma0builder {
   SliceCache cache;
 
-  Produces<aod::Sigma0Collision> sigma0Coll;          // characterises collisions
-  Produces<aod::Sigma0CollRefs> sigma0CollRefs;       // characterises collisions
   Produces<aod::Sigma0Cores> sigma0cores;             // save sigma0 candidates for analysis
   Produces<aod::SigmaPhotonExtras> sigmaPhotonExtras; // save sigma0 candidates for analysis
   Produces<aod::SigmaLambdaExtras> sigmaLambdaExtras; // save sigma0 candidates for analysis
@@ -350,19 +348,10 @@ struct sigma0builder {
     histos.fill(HIST("hCandidateBuilderSelection"), 13.);
     return true;
   }
-  // Helper struct to pass v0 information
-  struct {
-    float mass;
-    float pT;
-    float Rapidity;
-    float OPAngle;
-    float DeltaEta;
-    float DeltaPhi;
-  } sigmaCandidate;
-
+  
   // Fill tables with reconstructed sigma0 candidate
-  template <typename TV0Object>
-  void fillTables(TV0Object const& lambda, TV0Object const& gamma)
+  template <typename TV0Object, typename TCollision>
+  void fillTables(TV0Object const& lambda, TV0Object const& gamma, TCollision const& coll)
   {
 
     float GammaBDTScore = -1;
@@ -464,23 +453,15 @@ struct sigma0builder {
     TVector3 v1(gamma.px(), gamma.py(), gamma.pz());
     TVector3 v2(lambda.px(), lambda.py(), lambda.pz());
 
-    sigmaCandidate.mass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassLambda0});
-    sigmaCandidate.pT = RecoDecay::pt(array{gamma.px() + lambda.px(), gamma.py() + lambda.py()});
-    sigmaCandidate.Rapidity = RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, o2::constants::physics::MassSigma0);
-    sigmaCandidate.OPAngle = v1.Angle(v2);
-    sigmaCandidate.DeltaEta = fLambdaEta - fPhotonEta;
-    sigmaCandidate.DeltaPhi = fLambdaPhi - fPhotonPhi;
-
     // Sigma related
-    float fSigmapT = sigmaCandidate.pT;
-    float fSigmaMass = sigmaCandidate.mass;
-    float fSigmaRap = sigmaCandidate.Rapidity;
-    float fSigmaOPAngle = sigmaCandidate.OPAngle;
-    float fSigmaDeltaEta = sigmaCandidate.DeltaEta;
-    float fSigmaDeltaPhi = sigmaCandidate.DeltaPhi;
+    float fSigmapT = RecoDecay::pt(array{gamma.px() + lambda.px(), gamma.py() + lambda.py()});
+    float fSigmaMass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassLambda0});
+    float fSigmaRap = RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, o2::constants::physics::MassSigma0);
+    float fSigmaOPAngle = v1.Angle(v2);
+    float fSigmaCentrality = coll.centFT0C();
 
     // Filling TTree for ML analysis
-    sigma0cores(fSigmapT, fSigmaMass, fSigmaRap, fSigmaOPAngle, fSigmaDeltaEta, fSigmaDeltaPhi);
+    sigma0cores(fSigmapT, fSigmaMass, fSigmaRap, fSigmaOPAngle, fSigmaCentrality);
 
     sigmaPhotonExtras(fPhotonPt, fPhotonMass, fPhotonQt, fPhotonAlpha, fPhotonRadius,
                       fPhotonCosPA, fPhotonDCADau, fPhotonDCANegPV, fPhotonDCAPosPV, fPhotonZconv,
@@ -607,7 +588,6 @@ struct sigma0builder {
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionSTDDerived, collIdx);
 
       histos.fill(HIST("hEventCentrality"), coll.centFT0C());
-      sigma0Coll(coll.posX(), coll.posY(), coll.posZ(), coll.centFT0M(), coll.centFT0A(), coll.centFT0C(), coll.centFV0A());
 
       // V0 table sliced
       for (auto& gamma : V0Table_thisCollision) {    // selecting photons from Sigma0
@@ -625,8 +605,7 @@ struct sigma0builder {
 
           histos.fill(HIST("h3dMassSigmasAfterSel"), coll.centFT0C(), SigmapT, SigmaMass);
 
-          sigma0CollRefs(collIdx);
-          fillTables(lambda, gamma); // filling tables with accepted candidates
+          fillTables(lambda, gamma, coll); // filling tables with accepted candidates
 
           nSigmaCandidates++;
           if (nSigmaCandidates % 5000 == 0) {
@@ -645,7 +624,6 @@ struct sigma0builder {
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionMLDerived, collIdx);
 
       histos.fill(HIST("hEventCentrality"), coll.centFT0C());
-      sigma0Coll(coll.posX(), coll.posY(), coll.posZ(), coll.centFT0M(), coll.centFT0A(), coll.centFT0C(), coll.centFV0A());
 
       // V0 table sliced
       for (auto& gamma : V0Table_thisCollision) {    // selecting photons from Sigma0
@@ -657,8 +635,7 @@ struct sigma0builder {
           if (nSigmaCandidates % 5000 == 0) {
             LOG(info) << "Sigma0 Candidates built: " << nSigmaCandidates;
           }
-          sigma0CollRefs(collIdx);
-          fillTables(lambda, gamma); // filling tables with accepted candidates
+          fillTables(lambda, gamma, coll); // filling tables with accepted candidates
         }
       }
     }

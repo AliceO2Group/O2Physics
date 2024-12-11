@@ -54,8 +54,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using V0MCSigmas = soa::Join<aod::Sigma0Cores, aod::Sigma0CollRefs, aod::SigmaPhotonExtras, aod::SigmaLambdaExtras, aod::SigmaMCCores>;
-using V0Sigmas = soa::Join<aod::Sigma0Cores, aod::Sigma0CollRefs, aod::SigmaPhotonExtras, aod::SigmaLambdaExtras>;
+using V0MCSigmas = soa::Join<aod::Sigma0Cores, aod::SigmaPhotonExtras, aod::SigmaLambdaExtras, aod::SigmaMCCores>;
+using V0Sigmas = soa::Join<aod::Sigma0Cores, aod::SigmaPhotonExtras, aod::SigmaLambdaExtras>;
 
 struct sigmaanalysis {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -139,9 +139,6 @@ struct sigmaanalysis {
   int nSigmaCandidates = 0;
   void init(InitContext const&)
   {
-    // Event counter
-    histos.add("hEventCentrality", "hEventCentrality", kTH1F, {axisCentrality});
-
     // All candidates received
     histos.add("GeneralQA/h2dArmenterosBeforeSel", "h2dArmenterosBeforeSel", {HistType::kTH2F, {axisAPAlpha, axisAPQt}});
     histos.add("GeneralQA/h2dArmenterosAfterSel", "h2dArmenterosAfterSel", {HistType::kTH2F, {axisAPAlpha, axisAPQt}});
@@ -230,8 +227,6 @@ struct sigmaanalysis {
     histos.add("AntiSigma0/hRapidityAntiSigma0", "hRapidityAntiSigma0", kTH1F, {axisRapidity});
 
     if (fProcessMonteCarlo) {
-      // Event counter
-      histos.add("MC/hMCEventCentrality", "hMCEventCentrality", kTH1F, {axisCentrality});
 
       // Kinematic
       histos.add("MC/h3dMassSigma0", "h3dMassSigma0", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
@@ -433,21 +428,10 @@ struct sigmaanalysis {
     return true;
   }
 
-  // This process function cross-checks index correctness
-  // void processCounterQA(V0Sigmas const& v0s)
-  // {
-  //   for (auto& gamma : v0s) {
-  //     histos.fill(HIST("hGammaIndices"), gamma.globalIndex());
-  //     histos.fill(HIST("hCollIndices"), gamma.straCollisionId());
-  //     histos.fill(HIST("h2dIndices"), gamma.straCollisionId(), gamma.globalIndex());
-  //   }
-  // }
-
-  void processMonteCarlo(aod::Sigma0Collision const& coll, V0MCSigmas const& v0s)
+  void processMonteCarlo(V0MCSigmas const& v0s)
   {
-    histos.fill(HIST("MC/hMCEventCentrality"), coll.centFT0C());
     for (auto& sigma : v0s) { // selecting Sigma0-like candidates
-
+      // selecting Sigma0-like candidates
       histos.fill(HIST("MC/h2dArmenterosBeforeSel"), sigma.photonAlpha(), sigma.photonQt());
       histos.fill(HIST("MC/h2dArmenterosBeforeSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
       histos.fill(HIST("MC/hMassSigma0BeforeSel"), sigma.sigmaMass());
@@ -554,7 +538,7 @@ struct sigmaanalysis {
             histos.fill(HIST("GeneralQA/hLambdaMassSelected"), sigma.lambdaMass());
             histos.fill(HIST("MC/hMassSigma0"), sigma.sigmaMass());
             histos.fill(HIST("MC/hPtSigma0"), sigma.sigmapT());
-            histos.fill(HIST("MC/h3dMassSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());
+            histos.fill(HIST("MC/h3dMassSigma0"), sigma.sigmaCentrality(), sigma.sigmapT(), sigma.sigmaMass());
           }
         } else {
           // PID selections
@@ -564,16 +548,15 @@ struct sigmaanalysis {
             histos.fill(HIST("MC/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
             histos.fill(HIST("MC/hMassAntiSigma0"), sigma.sigmaMass());
             histos.fill(HIST("MC/hPtAntiSigma0"), sigma.sigmapT());
-            histos.fill(HIST("MC/h3dMassAntiSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());
+            histos.fill(HIST("MC/h3dMassAntiSigma0"), sigma.sigmaCentrality(), sigma.sigmapT(), sigma.sigmaMass());
           }
         }
       }
     }
   }
 
-  void processRealData(aod::Sigma0Collision const& coll, V0Sigmas const& v0s)
+  void processRealData(V0Sigmas const& v0s)
   {
-    histos.fill(HIST("hEventCentrality"), coll.centFT0C());
     for (auto& sigma : v0s) { // selecting Sigma0-like candidates
       histos.fill(HIST("GeneralQA/h2dArmenterosBeforeSel"), sigma.photonAlpha(), sigma.photonQt());
       histos.fill(HIST("GeneralQA/h2dArmenterosBeforeSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
@@ -599,7 +582,7 @@ struct sigmaanalysis {
           histos.fill(HIST("Sigma0/hMassSigma0"), sigma.sigmaMass());
           histos.fill(HIST("Sigma0/hPtSigma0"), sigma.sigmapT());
           histos.fill(HIST("Sigma0/hRapiditySigma0"), sigma.sigmaRapidity());
-          histos.fill(HIST("Sigma0/h3dMassSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());
+          histos.fill(HIST("Sigma0/h3dMassSigma0"), sigma.sigmaCentrality(), sigma.sigmapT(), sigma.sigmaMass());
         }
       } else {
         // PID selections
@@ -613,7 +596,7 @@ struct sigmaanalysis {
           histos.fill(HIST("AntiSigma0/hMassAntiSigma0"), sigma.sigmaMass());
           histos.fill(HIST("AntiSigma0/hPtAntiSigma0"), sigma.sigmapT());
           histos.fill(HIST("AntiSigma0/hRapidityAntiSigma0"), sigma.sigmaRapidity());
-          histos.fill(HIST("AntiSigma0/h3dMassAntiSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());
+          histos.fill(HIST("AntiSigma0/h3dMassAntiSigma0"), sigma.sigmaCentrality(), sigma.sigmapT(), sigma.sigmaMass());
         }
       }
     }
