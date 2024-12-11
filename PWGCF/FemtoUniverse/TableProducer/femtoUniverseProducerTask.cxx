@@ -852,13 +852,14 @@ struct femtoUniverseProducerTask {
     const auto vtxZ = col.posZ();
     const auto multNtr = col.multNTracksPV();
     const auto cent = col.centFT0C();
+    const auto occupancy = col.trackOccupancyInTimeRange();
 
     // check whether the basic event selection criteria are fulfilled
     // if the basic selection is NOT fulfilled:
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any
     // particle candidates for such collisions
-    if (!colCuts.isSelectedRun3(col)) {
+    if (!colCuts.isSelectedRun3(col) || (occupancy < ConfTPCOccupancyMin || occupancy > ConfTPCOccupancyMax)) {
       return false;
     } else {
       if ((col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
