@@ -99,7 +99,7 @@ struct phik0shortanalysis {
   Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
 
   // Configurables on Phi mass
-  Configurable<int> nBins{"nBins", 14, "N bins in cfgPhimassaxis"};
+  Configurable<int> nBins{"nBins", 13, "N bins in cfgPhimassaxis"};
   Configurable<float> lowmPhi{"lowmPhiMB", 1.0095, "Upper limits on Phi mass for signal extraction"};
   Configurable<float> upmPhi{"upmPhiMB", 1.029, "Upper limits on Phi mass for signal extraction"};
 
@@ -177,12 +177,6 @@ struct phik0shortanalysis {
 
   // Necessary to flag INEL>0 events in GenMC
   Service<o2::framework::O2DatabasePDG> pdgDB;
-
-  typedef struct TLorentzVectorAndPID {
-    TLorentzVector fLorentzVector;
-    float fnSigmaTPC;
-    float fnSigmaTOF;
-  } TLorentzVectorAndPID;
 
   void init(InitContext&)
   {
