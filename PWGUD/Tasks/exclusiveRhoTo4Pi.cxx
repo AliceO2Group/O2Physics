@@ -320,7 +320,7 @@ struct UPCAnalysis {
       }
     } // end of if for 4 track events without selection
 
-    static_cast<int> totalSize = int(selectedTracks_p.size() + selectedTracks_n.size());
+    int totalSize = static_cast<int>(selectedTracks_p.size() + selectedTracks_n.size());
 
     if ((selectedTracks_p.size() == 2) && (selectedTracks_n.size() == 2)) {
 
