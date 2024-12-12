@@ -22,7 +22,6 @@
 #include <TH2F.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include <TDatabasePDG.h>
 #include <Math/Vector4D.h>
 #include <array>
 #include <vector>
@@ -619,7 +618,7 @@ struct phik0shortanalysis {
     bool isCountedPhi = false;
     bool isFilledhV0 = false;
 
-    for (auto track1 : posThisColl) { // loop over all selected tracks
+    for (const auto& track1 : posThisColl) { // loop over all selected tracks
       if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
         continue; // topological and PID selection
 
@@ -632,7 +631,7 @@ struct phik0shortanalysis {
       auto track1ID = track1.globalIndex();
 
       // Loop over all negative candidates
-      for (auto track2 : negThisColl) {
+      for (const auto& track2 : negThisColl) {
         if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
           continue; // topological and PID selection
 
@@ -756,14 +755,14 @@ struct phik0shortanalysis {
 
       // Phi reconstruction
       // Loop over positive candidates
-      for (auto track1 : posThisColl) { // loop over all selected tracks
+      for (const auto& track1 : posThisColl) { // loop over all selected tracks
         if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
           continue; // topological and PID selection
 
         auto track1ID = track1.globalIndex();
 
         // Loop over all negative candidates
-        for (auto track2 : negThisColl) {
+        for (const auto& track2 : negThisColl) {
           if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
@@ -827,14 +826,14 @@ struct phik0shortanalysis {
 
       // Phi reconstruction
       // Loop over positive candidates
-      for (auto track1 : posThisColl) { // loop over all selected tracks
+      for (const auto& track1 : posThisColl) { // loop over all selected tracks
         if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
           continue; // topological and PID selection
 
         auto track1ID = track1.globalIndex();
 
         // Loop over all negative candidates
-        for (auto track2 : negThisColl) {
+        for (const auto& track2 : negThisColl) {
           if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
@@ -893,7 +892,7 @@ struct phik0shortanalysis {
 
     bool isCountedPhi = false;
 
-    for (auto track1 : posThisColl) { // loop over all selected tracks
+    for (const auto& track1 : posThisColl) { // loop over all selected tracks
       if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
         continue; // topological and PID selection
 
@@ -903,7 +902,7 @@ struct phik0shortanalysis {
         continue;
 
       // Loop over all negative candidates
-      for (auto track2 : negThisColl) {
+      for (const auto& track2 : negThisColl) {
         if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
           continue; // topological and PID selection
 
@@ -1091,7 +1090,7 @@ struct phik0shortanalysis {
       std::array<bool, 3> isCountedPhi{false, false, false};
 
       // Phi reconstruction
-      for (auto track1 : posThisColl) { // loop over all selected tracks
+      for (const auto& track1 : posThisColl) { // loop over all selected tracks
         if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
           continue; // topological and PID selection
 
@@ -1100,7 +1099,7 @@ struct phik0shortanalysis {
         if (!track1.has_mcParticle())
           continue;
 
-        for (auto track2 : negThisColl) {
+        for (const auto& track2 : negThisColl) {
           if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
@@ -1203,7 +1202,7 @@ struct phik0shortanalysis {
       std::array<bool, 3> isCountedPhi{false, false, false};
 
       // Phi reconstruction
-      for (auto track1 : posThisColl) { // loop over all selected tracks
+      for (const auto& track1 : posThisColl) { // loop over all selected tracks
         if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
           continue; // topological and PID selection
 
@@ -1212,7 +1211,7 @@ struct phik0shortanalysis {
         if (!track1.has_mcParticle())
           continue;
 
-        for (auto track2 : negThisColl) {
+        for (const auto& track2 : negThisColl) {
           if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
@@ -1294,14 +1293,14 @@ struct phik0shortanalysis {
 
     bool isCountedPhi = false;
 
-    for (auto track1 : posThisColl) { // loop over all selected tracks
+    for (const auto& track1 : posThisColl) { // loop over all selected tracks
       if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
         continue; // topological and PID selection
 
       auto track1ID = track1.globalIndex();
 
       // Loop over all negative candidates
-      for (auto track2 : negThisColl) {
+      for (const auto& track2 : negThisColl) {
         if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
           continue; // topological and PID selection
 
@@ -1415,13 +1414,13 @@ struct phik0shortanalysis {
       std::array<int, 3> counts{};
 
       // Phi reconstruction
-      for (auto track1 : posThisColl) { // loop over all selected tracks
+      for (const auto& track1 : posThisColl) { // loop over all selected tracks
         if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
           continue; // topological and PID selection
 
         auto track1ID = track1.globalIndex();
 
-        for (auto track2 : negThisColl) {
+        for (const auto& track2 : negThisColl) {
           if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
@@ -1487,13 +1486,13 @@ struct phik0shortanalysis {
       std::array<int, 3> counts{};
 
       // Phi reconstruction
-      for (auto track1 : posThisColl) { // loop over all selected tracks
+      for (const auto& track1 : posThisColl) { // loop over all selected tracks
         if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
           continue; // topological and PID selection
 
         auto track1ID = track1.globalIndex();
 
-        for (auto track2 : negThisColl) {
+        for (const auto& track2 : negThisColl) {
           if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
@@ -1542,7 +1541,7 @@ struct phik0shortanalysis {
     MCeventHist.fill(HIST("hGenMCEventSelection"), 2); // INEL>0 collisions
 
     bool isAssocColl = false;
-    for (auto collision : collisions) {
+    for (const auto& collision : collisions) {
       if (acceptEventQA<true>(collision, false)) {
         isAssocColl = true;
         break;
@@ -1554,14 +1553,14 @@ struct phik0shortanalysis {
 
     bool isCountedPhi = false;
 
-    for (auto mcParticle1 : mcParticles) {
+    for (const auto& mcParticle1 : mcParticles) {
       if (mcParticle1.pdgCode() != 333)
         continue;
       auto kDaughters = mcParticle1.daughters_as<aod::McParticles>();
       if (kDaughters.size() != 2)
         continue;
       bool isPosKaon = false, isNegKaon = false;
-      for (auto kDaughter : kDaughters) {
+      for (const auto& kDaughter : kDaughters) {
         if (kDaughter.pdgCode() == 321)
           isPosKaon = true;
         if (kDaughter.pdgCode() == -321)
@@ -1585,10 +1584,22 @@ struct phik0shortanalysis {
 
       std::array<bool, 3> isCountedK0S = {false, false, false};
 
-      for (auto mcParticle2 : mcParticles) {
+      for (const auto& mcParticle2 : mcParticles) {
         if (mcParticle2.pdgCode() != 310)
           continue;
         if (!mcParticle2.isPhysicalPrimary())
+          continue;
+        auto kDaughters2 = mcParticle2.daughters_as<aod::McParticles>();
+        if (kDaughters2.size() != 2)
+          continue;
+        bool isPosPion = false, isNegPion = false;
+        for (const auto& kDaughter2 : kDaughters2) {
+          if (kDaughter2.pdgCode() == 211)
+            isPosPion = true;
+          if (kDaughter2.pdgCode() == -211)
+            isNegPion = true;
+        }
+        if (!isPosPion || !isNegPion)
           continue;
 
         if (std::abs(mcParticle2.y()) > cfgyAcceptance)
@@ -1619,7 +1630,7 @@ struct phik0shortanalysis {
 
       std::array<bool, 3> isCountedPi = {false, false, false};
 
-      for (auto mcParticle2 : mcParticles) {
+      for (const auto& mcParticle2 : mcParticles) {
         if (std::abs(mcParticle2.pdgCode()) != 211)
           continue;
         if (!mcParticle2.isPhysicalPrimary())
@@ -1663,7 +1674,7 @@ struct phik0shortanalysis {
       return;
 
     bool isAssocColl = false;
-    for (auto collision : collisions) {
+    for (const auto& collision : collisions) {
       if (acceptEventQA<true>(collision, false)) {
         isAssocColl = true;
         break;
@@ -1673,7 +1684,7 @@ struct phik0shortanalysis {
     float genmultiplicity = mcCollision.centFT0M();
     MCeventHist.fill(HIST("hGenMCMultiplicityPercent"), genmultiplicity);
 
-    for (auto mcParticle1 : mcParticles) {
+    for (const auto& mcParticle1 : mcParticles) {
       if (mcParticle1.pdgCode() != 310)
         continue;
       if (!mcParticle1.isPhysicalPrimary())
@@ -1682,7 +1693,7 @@ struct phik0shortanalysis {
       if (kDaughters1.size() != 2)
         continue;
       bool isPosPion = false, isNegPion = false;
-      for (auto kDaughter1 : kDaughters1) {
+      for (const auto& kDaughter1 : kDaughters1) {
         if (kDaughter1.pdgCode() == 211)
           isPosPion = true;
         if (kDaughter1.pdgCode() == -211)
@@ -1699,14 +1710,14 @@ struct phik0shortanalysis {
 
       std::array<bool, 3> isCountedPhi = {false, false, false};
 
-      for (auto mcParticle2 : mcParticles) {
+      for (const auto& mcParticle2 : mcParticles) {
         if (mcParticle2.pdgCode() != 333)
           continue;
         auto kDaughters2 = mcParticle2.daughters_as<aod::McParticles>();
         if (kDaughters2.size() != 2)
           continue;
         bool isPosKaon = false, isNegKaon = false;
-        for (auto kDaughter2 : kDaughters2) {
+        for (const auto& kDaughter2 : kDaughters2) {
           if (kDaughter2.pdgCode() == 321)
             isPosKaon = true;
           if (kDaughter2.pdgCode() == -321)
@@ -1754,7 +1765,7 @@ struct phik0shortanalysis {
       return;
 
     bool isAssocColl = false;
-    for (auto collision : collisions) {
+    for (const auto& collision : collisions) {
       if (acceptEventQA<true>(collision, false)) {
         isAssocColl = true;
         break;
@@ -1764,7 +1775,7 @@ struct phik0shortanalysis {
     float genmultiplicity = mcCollision.centFT0M();
     MCeventHist.fill(HIST("hGenMCMultiplicityPercent"), genmultiplicity);
 
-    for (auto mcParticle1 : mcParticles) {
+    for (const auto& mcParticle1 : mcParticles) {
       if (std::abs(mcParticle1.pdgCode()) != 211)
         continue;
       if (!mcParticle1.isPhysicalPrimary())
@@ -1778,14 +1789,14 @@ struct phik0shortanalysis {
 
       std::array<bool, 3> isCountedPhi = {false, false, false};
 
-      for (auto mcParticle2 : mcParticles) {
+      for (const auto& mcParticle2 : mcParticles) {
         if (mcParticle2.pdgCode() != 333)
           continue;
         auto kDaughters = mcParticle2.daughters_as<aod::McParticles>();
         if (kDaughters.size() != 2)
           continue;
         bool isPosKaon = false, isNegKaon = false;
-        for (auto kDaughter : kDaughters) {
+        for (const auto& kDaughter : kDaughters) {
           if (kDaughter.pdgCode() == 321)
             isPosKaon = true;
           if (kDaughter.pdgCode() == -321)
