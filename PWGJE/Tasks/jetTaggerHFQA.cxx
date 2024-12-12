@@ -42,7 +42,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 template <typename JetTableData, typename TagTableData, typename JetTableMCD, typename weightMCD, typename TagTableMCD, typename JetTableMCP, typename weightMCP, typename TagTableMCP, typename JetTableMCDMCP, typename JetTableMCPMCD>
-struct JetTaggerHFQA {
+struct JetTaggerHFQATask {
 
   // task on/off configuration
   Configurable<bool> fillIPxy{"fillIPxy", true, "process of xy plane of dca"};
@@ -1191,7 +1191,7 @@ struct JetTaggerHFQA {
   void processDummy(aod::Collision const&, aod::Tracks const&)
   {
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processDummy, "Dummy process", true);
+  PROCESS_SWITCH(JetTaggerHFQATask, processDummy, "Dummy process", true);
 
   void processTracksDca(JetTagTracksData const& jtracks)
   {
@@ -1217,7 +1217,7 @@ struct JetTaggerHFQA {
       registry.fill(HIST("h_impact_parameter_xyz_significance"), varImpXYZSig);
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processTracksDca, "Fill inclusive tracks' imformation for data", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processTracksDca, "Fill inclusive tracks' imformation for data", false);
 
   void processValFlavourDefMCD(soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP> const& mcdjets, soa::Join<JetTableMCP, TagTableMCP, JetTableMCPMCD> const& /*mcpjets*/, JetTagTracksMCD const& jtracks, aod::JetParticles const& particles, soa::Filtered<aod::JetCollisionsMCD> const& /*collisions*/)
   {
@@ -1253,7 +1253,7 @@ struct JetTaggerHFQA {
       registry.fill(HIST("h2_flavour_quark_flavour_run2_quark"), jetflavourQuarkLevel, jetflavourRun2DefQuarkLevel, 1.0);
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processValFlavourDefMCD, "to check the validation of jet-flavour definition when compared to Run2 for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processValFlavourDefMCD, "to check the validation of jet-flavour definition when compared to Run2 for mcd jets", false);
 
   void processValFlavourDefMCP(soa::Join<JetTableMCP, TagTableMCP> const& mcpjets, aod::JetParticles const& particles, aod::JetMcCollisions const&, soa::Filtered<aod::JetCollisionsMCD> const& collisions)
   {
@@ -1285,7 +1285,7 @@ struct JetTaggerHFQA {
       }
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processValFlavourDefMCP, "to check the validation of jet-flavour definition when compared to Run2 for mcp jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processValFlavourDefMCP, "to check the validation of jet-flavour definition when compared to Run2 for mcp jets", false);
 
   void processIPsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableData, TagTableData> const& jets, JetTagTracksData const& jtracks)
   {
@@ -1302,7 +1302,7 @@ struct JetTaggerHFQA {
       fillHistogramIPsData(jet, jtracks);
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processIPsData, "Fill impact parameter imformation for data jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processIPsData, "Fill impact parameter imformation for data jets", false);
 
   void processIPsMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD> const& mcdjets, JetTagTracksMCD const& jtracks, aod::JetParticles const&)
   {
@@ -1319,7 +1319,7 @@ struct JetTaggerHFQA {
       fillHistogramIPsMCD(mcdjet, jtracks);
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processIPsMCD, "Fill impact parameter imformation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processIPsMCD, "Fill impact parameter imformation for mcd jets", false);
 
   void processIPsMCDWeighted(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, aod::ChargedMCDetectorLevelJetEventWeights> const& mcdjets, JetTagTracksMCD const& jtracks, aod::JetParticles const&)
   {
@@ -1333,7 +1333,7 @@ struct JetTaggerHFQA {
       fillHistogramIPsMCD(mcdjet, jtracks, mcdjet.eventWeight());
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processIPsMCDWeighted, "Fill impact parameter imformation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processIPsMCDWeighted, "Fill impact parameter imformation for mcd jets", false);
 
   void processIPsMCP(soa::Join<JetTableMCP, TagTableMCP> const& mcpjets, aod::JetParticles const&, aod::JetMcCollisions const&, soa::Filtered<aod::JetCollisionsMCD> const& collisions)
   {
@@ -1354,7 +1354,7 @@ struct JetTaggerHFQA {
       }
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processIPsMCP, "Fill impact parameter imformation for mcp jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processIPsMCP, "Fill impact parameter imformation for mcp jets", false);
 
   void processIPsMCPWeighted(soa::Filtered<aod::JetCollisionsMCD> const& collisions, soa::Join<JetTableMCP, TagTableMCP, aod::ChargedMCParticleLevelJetEventWeights> const& mcpjets, aod::JetParticles const&)
   {
@@ -1375,7 +1375,7 @@ struct JetTaggerHFQA {
       }
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processIPsMCPWeighted, "Fill impact parameter imformation for mcp jets weighted", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processIPsMCPWeighted, "Fill impact parameter imformation for mcp jets weighted", false);
 
   void processIPsMCPMCDMatched(soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& mcpjets, JetTagTracksMCD const& jtracks, aod::JetParticles const& particles)
   {
@@ -1393,7 +1393,7 @@ struct JetTaggerHFQA {
       fillHistogramIPsMatched(mcdjet, mcpjets, jtracks, particlesPerColl);
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processIPsMCPMCDMatched, "Fill impact parameter imformation for mcp mcd matched jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processIPsMCPMCDMatched, "Fill impact parameter imformation for mcp mcd matched jets", false);
 
   void processIPsMCPMCDMatchedWeighted(soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, weightMCD> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& mcpjets, JetTagTracksMCD const& jtracks, aod::JetParticles const& particles)
   {
@@ -1411,7 +1411,7 @@ struct JetTaggerHFQA {
       fillHistogramIPsMatched(mcdjet, mcpjets, jtracks, particlesPerColl, mcdjet.eventWeight());
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processIPsMCPMCDMatchedWeighted, "Fill impact parameter imformation for mcp mcd matched jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processIPsMCPMCDMatchedWeighted, "Fill impact parameter imformation for mcp mcd matched jets", false);
 
   void processJPData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableData, TagTableData> const& jets, JetTagTracksData const&)
   {
@@ -1428,7 +1428,7 @@ struct JetTaggerHFQA {
       fillHistogramJPData(jet);
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processJPData, "Fill jet probability imformation for data jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processJPData, "Fill jet probability imformation for data jets", false);
 
   void processJPMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD> const& mcdjets, JetTagTracksMCD const&)
   {
@@ -1445,7 +1445,7 @@ struct JetTaggerHFQA {
       fillHistogramJPMCD(mcdjet);
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processJPMCD, "Fill jet probability imformation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processJPMCD, "Fill jet probability imformation for mcd jets", false);
 
   void processJPMCDWeighted(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, weightMCD> const& mcdjets, JetTagTracksMCD const&)
   {
@@ -1462,7 +1462,7 @@ struct JetTaggerHFQA {
       fillHistogramJPMCD(mcdjet, mcdjet.eventWeight());
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processJPMCDWeighted, "Fill jet probability imformation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processJPMCDWeighted, "Fill jet probability imformation for mcd jets", false);
 
   void processJPMCPMCDMatched(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& mcpjets, JetTagTracksMCD const&, aod::JetParticles const& particles)
   {
@@ -1480,7 +1480,7 @@ struct JetTaggerHFQA {
       fillHistogramJPMatched(mcdjet, mcpjets, particlesPerColl);
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processJPMCPMCDMatched, "Fill jet probability imformation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processJPMCPMCDMatched, "Fill jet probability imformation for mcd jets", false);
 
   void processJPMCPMCDMatchedWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, weightMCD> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& mcpjets, JetTagTracksMCD const&, aod::JetParticles const& particles)
   {
@@ -1498,7 +1498,7 @@ struct JetTaggerHFQA {
       fillHistogramJPMatched(mcdjet, mcpjets, particlesPerColl, mcdjet.eventWeight());
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processJPMCPMCDMatchedWeighted, "Fill jet probability imformation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processJPMCPMCDMatchedWeighted, "Fill jet probability imformation for mcd jets", false);
 
   void processSV2ProngData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableData, TagTableData, aod::DataSecondaryVertex2ProngIndices> const& jets, aod::DataSecondaryVertex2Prongs const& prongs)
   {
@@ -1515,7 +1515,7 @@ struct JetTaggerHFQA {
       fillHistogramSV2ProngData(jet, prongs);
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV2ProngData, "Fill 2prong imformation for data jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processSV2ProngData, "Fill 2prong imformation for data jets", false);
 
   void processSV3ProngData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableData, TagTableData, aod::DataSecondaryVertex3ProngIndices> const& jets, aod::DataSecondaryVertex3Prongs const& prongs)
   {
@@ -1532,7 +1532,7 @@ struct JetTaggerHFQA {
       fillHistogramSV3ProngData(jet, prongs);
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV3ProngData, "Fill 2prong imformation for data jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processSV3ProngData, "Fill 2prong imformation for data jets", false);
 
   void processSV2ProngMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, aod::MCDSecondaryVertex2ProngIndices> const& mcdjets, aod::MCDSecondaryVertex2Prongs const& prongs)
   {
@@ -1549,7 +1549,7 @@ struct JetTaggerHFQA {
       fillHistogramSV2ProngMCD(mcdjet, prongs);
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV2ProngMCD, "Fill 2prong imformation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processSV2ProngMCD, "Fill 2prong imformation for mcd jets", false);
 
   void processSV2ProngMCDWeighted(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, weightMCD, aod::MCDSecondaryVertex2ProngIndices> const& mcdjets, aod::MCDSecondaryVertex2Prongs const& prongs)
   {
@@ -1566,7 +1566,7 @@ struct JetTaggerHFQA {
       fillHistogramSV2ProngMCD(mcdjet, prongs, mcdjet.eventWeight());
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV2ProngMCDWeighted, "Fill 2prong imformation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processSV2ProngMCDWeighted, "Fill 2prong imformation for mcd jets", false);
 
   void processSV2ProngMCPMCDMatched(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, aod::MCDSecondaryVertex2ProngIndices> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& mcpjets, aod::MCDSecondaryVertex2Prongs const& prongs, aod::JetParticles const& particles)
   {
@@ -1584,7 +1584,7 @@ struct JetTaggerHFQA {
       fillHistogramSV2ProngMCPMCDMatched(mcdjet, mcpjets, prongs, particlesPerColl);
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV2ProngMCPMCDMatched, "Fill 2prong imformation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processSV2ProngMCPMCDMatched, "Fill 2prong imformation for mcd jets", false);
 
   void processSV2ProngMCPMCDMatchedWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, weightMCD, aod::MCDSecondaryVertex2ProngIndices> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& mcpjets, aod::MCDSecondaryVertex2Prongs const& prongs, aod::JetParticles const& particles)
   {
@@ -1602,7 +1602,7 @@ struct JetTaggerHFQA {
       fillHistogramSV2ProngMCPMCDMatched(mcdjet, mcpjets, prongs, particlesPerColl, mcdjet.eventWeight());
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV2ProngMCPMCDMatchedWeighted, "Fill 2prong imformation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processSV2ProngMCPMCDMatchedWeighted, "Fill 2prong imformation for mcd jets", false);
 
   void processSV3ProngMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, aod::MCDSecondaryVertex3Prongs const& prongs)
   {
@@ -1619,7 +1619,7 @@ struct JetTaggerHFQA {
       fillHistogramSV3ProngMCD(mcdjet, prongs);
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV3ProngMCD, "Fill 3prong imformation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processSV3ProngMCD, "Fill 3prong imformation for mcd jets", false);
 
   void processSV3ProngMCDWeighted(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, weightMCD, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, aod::MCDSecondaryVertex3Prongs const& prongs)
   {
@@ -1636,7 +1636,7 @@ struct JetTaggerHFQA {
       fillHistogramSV3ProngMCD(mcdjet, prongs, mcdjet.eventWeight());
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV3ProngMCDWeighted, "Fill 3prong imformation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processSV3ProngMCDWeighted, "Fill 3prong imformation for mcd jets", false);
 
   void processSV3ProngMCPMCDMatched(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& mcpjets, aod::MCDSecondaryVertex3Prongs const& prongs, aod::JetParticles const& particles)
   {
@@ -1654,7 +1654,7 @@ struct JetTaggerHFQA {
       fillHistogramSV3ProngMCPMCDMatched(mcdjet, mcpjets, prongs, particlesPerColl);
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV3ProngMCPMCDMatched, "Fill 3prong imformation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processSV3ProngMCPMCDMatched, "Fill 3prong imformation for mcd jets", false);
 
   void processSV3ProngMCPMCDMatchedWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, weightMCD, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& mcpjets, aod::MCDSecondaryVertex3Prongs const& prongs, aod::JetParticles const& particles)
   {
@@ -1672,14 +1672,14 @@ struct JetTaggerHFQA {
       fillHistogramSV3ProngMCPMCDMatched(mcdjet, mcpjets, prongs, particlesPerColl, mcdjet.eventWeight());
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV3ProngMCPMCDMatchedWeighted, "Fill 3prong imformation for mcd jets", false);
+  PROCESS_SWITCH(JetTaggerHFQATask, processSV3ProngMCPMCDMatchedWeighted, "Fill 3prong imformation for mcd jets", false);
 };
 
 using JetTaggerhfQaChargedDataJets = soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>;
 using JetTaggerhfQaChargedMCDJets = soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>;
 using JetTaggerhfQaChargedMCPJets = soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>;
 
-using JetTaggerhfQaCharged = JetTaggerHFQA<JetTaggerhfQaChargedDataJets, aod::ChargedJetTags, JetTaggerhfQaChargedMCDJets, aod::ChargedMCDetectorLevelJetEventWeights, aod::ChargedMCDetectorLevelJetTags, JetTaggerhfQaChargedMCPJets, aod::ChargedMCParticleLevelJetEventWeights, aod::ChargedMCParticleLevelJetTags, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>;
+using JetTaggerhfQaCharged = JetTaggerHFQATask<JetTaggerhfQaChargedDataJets, aod::ChargedJetTags, JetTaggerhfQaChargedMCDJets, aod::ChargedMCDetectorLevelJetEventWeights, aod::ChargedMCDetectorLevelJetTags, JetTaggerhfQaChargedMCPJets, aod::ChargedMCParticleLevelJetEventWeights, aod::ChargedMCParticleLevelJetTags, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
@@ -1688,15 +1688,15 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   tasks.emplace_back(
     adaptAnalysisTask<JetTaggerhfQaCharged>(cfgc,
-                                            SetDefaultProcesses{}, TaskName{"jet-taggerhf-qa-charged"}));
+                                            SetDefaultProcesses{}, TaskName{"jet-taggerhf-qa-charged"})); // o2-linter: disable=name/o2-task
   /*
   tasks.emplace_back(
     adaptAnalysisTask<JetTaggerhfQaFull>(cfgc,
-                                         SetDefaultProcesses{}, TaskName{"jet-taggerhf-qa-full"}));
+                                         SetDefaultProcesses{}, TaskName{"jet-taggerhf-qa-full"})); // o2-linter: disable=name/o2-task
 
     tasks.emplace_back(
       adaptAnalysisTask<JetTaggerhfQaNeutral>(cfgc,
-                                                  SetDefaultProcesses{}, TaskName{"jet-taggerhf-qa-neutral"}));
+                                                  SetDefaultProcesses{}, TaskName{"jet-taggerhf-qa-neutral"})); // o2-linter: disable=name/o2-task
   */
   return WorkflowSpec{tasks};
 }

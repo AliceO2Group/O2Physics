@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file JetTaggingUtilities.h
+/// \file jetTaggingUtilities.h
 /// \brief Jet tagging related utilities
 ///
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
@@ -799,8 +799,8 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
 
   trkLabels["trkVtxIndex"] = std::vector<int>(nTrks, -1);
   if (count.size() != 0) { // If there is any SV cluster not only PV cluster
-    for (auto& [idx, avgDistance] : avgDistances)
-      avgDistance /= count[idx];
+    for (auto& [idx, avgDistance] : avgDistances) // o2-linter: disable=const-ref-in-for-loop
+      avgDistance /= count[idx]; 
 
     nVertices += avgDistances.size();
 

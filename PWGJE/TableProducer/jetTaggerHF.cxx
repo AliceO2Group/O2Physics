@@ -364,9 +364,9 @@ struct JetTaggerHFTask {
   PROCESS_SWITCH(JetTaggerHFTask, processTraining, "Fill tagging decision for mcd jets", false);
 };
 
-using JetTaggerChargedJets = JetTaggerHFTask<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>, aod::ChargedJetTags, aod::ChargedMCDetectorLevelJetTags, aod::ChargedMCParticleLevelJetTags>;
-using JetTaggerFullJets = JetTaggerHFTask<soa::Join<aod::FullJets, aod::FullJetConstituents>, soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents>, soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>, aod::FullJetTags, aod::FullMCDetectorLevelJetTags, aod::FullMCParticleLevelJetTags>;
-// using JetTaggerNeutralJets = JetTaggerHFTask<soa::Join<aod::NeutralJets, aod::NeutralJetConstituents>,soa::Join<aod::NeutralMCDetectorLevelJets, aod::NeutralMCDetectorLevelJetConstituents>, aod::NeutralJetTags, aod::NeutralMCDetectorLevelJetTags>;
+using JetTaggerhfCharged = JetTaggerHFTask<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>, aod::ChargedJetTags, aod::ChargedMCDetectorLevelJetTags, aod::ChargedMCParticleLevelJetTags>;
+using JetTaggerhfFull = JetTaggerHFTask<soa::Join<aod::FullJets, aod::FullJetConstituents>, soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents>, soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>, aod::FullJetTags, aod::FullMCDetectorLevelJetTags, aod::FullMCParticleLevelJetTags>;
+// using JetTaggerhfNeutral = JetTaggerHFTask<soa::Join<aod::NeutralJets, aod::NeutralJetConstituents>,soa::Join<aod::NeutralMCDetectorLevelJets, aod::NeutralMCDetectorLevelJetConstituents>, aod::NeutralJetTags, aod::NeutralMCDetectorLevelJetTags>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
@@ -374,16 +374,16 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   std::vector<o2::framework::DataProcessorSpec> tasks;
 
   tasks.emplace_back(
-    adaptAnalysisTask<JetTaggerChargedJets>(cfgc,
-                                            SetDefaultProcesses{}, TaskName{"jet-taggerhf-charged"}));
+    adaptAnalysisTask<JetTaggerhfCharged>(cfgc,
+                                            SetDefaultProcesses{}, TaskName{"jet-taggerhf-charged"})); // o2-linter: disable=name/o2-task
 
   tasks.emplace_back(
-    adaptAnalysisTask<JetTaggerFullJets>(cfgc,
-                                         SetDefaultProcesses{}, TaskName{"jet-taggerhf-full"}));
+    adaptAnalysisTask<JetTaggerhfFull>(cfgc,
+                                         SetDefaultProcesses{}, TaskName{"jet-taggerhf-full"})); // o2-linter: disable=name/o2-task
   /*
     tasks.emplace_back(
-      adaptAnalysisTask<JetTaggerNeutralJets>(cfgc,
-                                                  SetDefaultProcesses{}, TaskName{"jet-taggerhf-neutral"}));
+      adaptAnalysisTask<JetTaggerhfNeutral>(cfgc,
+                                                  SetDefaultProcesses{}, TaskName{"jet-taggerhf-neutral"})); // o2-linter: disable=name/o2-task
   */
   return WorkflowSpec{tasks};
 }
