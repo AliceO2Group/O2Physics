@@ -794,7 +794,7 @@ struct phik0shortanalysis {
         weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
       }
 
-      fillInvMass2D<false>(recK0S, listrecPhi, multiplicity, weights);
+      fillInvMass2D<false>(v0, listrecPhi, multiplicity, weights);
     }
   }
 
@@ -865,7 +865,7 @@ struct phik0shortanalysis {
         weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
       }
 
-      fillInvMassNSigma<false>(recPi, listrecPhi, multiplicity, weights);
+      fillInvMassNSigma<false>(track, listrecPhi, multiplicity, weights);
     }
   }
 
@@ -1086,7 +1086,7 @@ struct phik0shortanalysis {
       if (std::abs(v0.yK0Short()) > cfgyAcceptance)
         continue;
 
-      K0SeffHist.fill(HIST("h3K0SeffInvMass"), genmultiplicity, v0.pt(), recK0S.M());
+      K0SeffHist.fill(HIST("h3K0SeffInvMass"), genmultiplicity, v0.pt(), v0.mK0Short());
 
       std::array<bool, 3> isCountedPhi{false, false, false};
 
@@ -1141,19 +1141,19 @@ struct phik0shortanalysis {
             continue;
           if (!isCountedPhi.at(0)) {
             yaccHist.fill(HIST("hyaccK0SRecMC"), genmultiplicity, v0.pt(), v0.yK0Short());
-            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEInc"), genmultiplicity, v0.pt(), recK0S.M());
+            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEInc"), genmultiplicity, v0.pt(), v0.mK0Short());
             isCountedPhi.at(0) = true;
           }
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
             continue;
           if (!isCountedPhi.at(1)) {
-            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEFCut"), genmultiplicity, v0.pt(), recK0S.M());
+            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEFCut"), genmultiplicity, v0.pt(), v0.mK0Short());
             isCountedPhi.at(1) = true;
           }
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
             continue;
           if (!isCountedPhi.at(2)) {
-            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSESCut"), genmultiplicity, v0.pt(), recK0S.M());
+            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSESCut"), genmultiplicity, v0.pt(), v0.mK0Short());
             isCountedPhi.at(2) = true;
           }
         }
@@ -1452,7 +1452,7 @@ struct phik0shortanalysis {
         weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
       }
 
-      fillInvMass2D<true>(recK0S, listrecPhi, genmultiplicity, weights);
+      fillInvMass2D<true>(v0, listrecPhi, genmultiplicity, weights);
     }
   }
 
@@ -1524,7 +1524,7 @@ struct phik0shortanalysis {
         weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
       }
 
-      fillInvMassNSigma<true>(recPi, listrecPhi, genmultiplicity, weights);
+      fillInvMassNSigma<true>(track, listrecPhi, genmultiplicity, weights);
     }
   }
 
