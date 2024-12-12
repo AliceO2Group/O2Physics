@@ -79,6 +79,7 @@ struct AngularCorrelationsInJets {
   Configurable<float> fProtonTPCnsigHighYield{"protonTPCnsigmaHighPtYield", 4.0, "[proton] max TPC nsigma with high pT for yield"};
   Configurable<float> fProtonTOFnsigYield{"protonTOFnsigmaHighPtYield", 4.0, "[proton] max TOF nsigma with high pT yield"};
   Configurable<float> fProtonNsigma{"protonNsigma", 2.0, "[proton] max combined nsigma for CF (sqrt(nsigTPC^2 + nsigTOF^2))"};
+  Configurable<float> fProtonNsigma{"protonNsigma", 2.0, "[proton] max combined nsigma for CF (sqrt(nsigTPC^2 + nsigTOF^2))"};
 
   // Antiproton Cuts
   Configurable<float> fAntiprotonDCAxyYield{"antiprotonDCAxyYield", 0.05, "[antiproton] DCAxy cut for yield"};
@@ -90,6 +91,7 @@ struct AngularCorrelationsInJets {
   Configurable<float> fAntiprotonTPCnsigHighYield{"antiprotonTPCnsigmaHighPtYield", 4.0, "[antiproton] max TPC nsigma with high pT for yield"};
   Configurable<float> fAntiprotonTOFnsigYield{"antiprotonTOFnsigmaHighPtYield", 4.0, "[antiproton] min TOF nsigma with high pT for yield"};
   Configurable<float> fAntiprotonNsigma{"antiprotonNsigma", 2.0, "[antiproton] max combined nsigma for CF (sqrt(nsigTPC^2 + nsigTOF^2))"};
+  Configurable<float> fAntiprotonNsigma{"antiprotonNsigma", 2.0, "[antiproton] max combined nsigma for CF (sqrt(nsigTPC^2 + nsigTOF^2))"};
 
   // Nuclei Cuts
   Configurable<float> fNucleiDCAxyYield{"nucleiDCAxyYield", 0.05, "[nuclei] DCAxy cut for yield"};
@@ -100,6 +102,7 @@ struct AngularCorrelationsInJets {
   Configurable<float> fNucleiTPCnsigLowYield{"nucleiTPCnsigmaLowPtYield", 4.0, "[nuclei] max TPC nsigma with low pT for yield"};
   Configurable<float> fNucleiTPCnsigHighYield{"nucleiTPCnsigmaHighPtYield", 4.0, "[nuclei] max TPC nsigma with high pT for yield"};
   Configurable<float> fNucleiTOFnsigYield{"nucleiTOFnsigmaHighPtYield", 4.0, "[nuclei] min TOF nsigma with high pT for yield"};
+  Configurable<float> fNucleiNsigma{"nucleiNsigma", 2.0, "[nuclei] max combined nsigma for CF (sqrt(nsigTPC^2 + nsigTOF^2))"};
   Configurable<float> fNucleiNsigma{"nucleiNsigma", 2.0, "[nuclei] max combined nsigma for CF (sqrt(nsigTPC^2 + nsigTOF^2))"};
 
   // Antinuclei Cuts
@@ -119,8 +122,10 @@ struct AngularCorrelationsInJets {
   Configurable<bool> fUseTOFMass{"useTOFmass", true, "use TOF mass instead of pion mass if available"};
 
   Configurable<int> fBufferSize{"trackBufferSize", 200, "Number of mixed-event tracks being stored"};
+  Configurable<int> fBufferSize{"trackBufferSize", 200, "Number of mixed-event tracks being stored"};
 
   // QC Configurables
+  Configurable<float> fZVtx{"zVtx", 10.0, "max zVertex"};
   Configurable<float> fZVtx{"zVtx", 10.0, "max zVertex"};
   Configurable<float> fRmax{"Rmax", 0.4, "Maximum radius for jet and UE regions"};
 
@@ -129,13 +134,20 @@ struct AngularCorrelationsInJets {
 
   using FullTracksRun2 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime, aod::TrackSelection,
                                    aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl>;
+                                   aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl>;
   using FullTracksRun3 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection, aod::TrackSelectionExtension,
                                    aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl>;
   // using McTracksRun2 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime, aod::TrackSelection,
   //                                  aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::McTrackLabels>;
   // using McTracksRun3 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection, aod::TrackSelectionExtension,
   //                                  aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::McTrackLabels>;
+                                   aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl>;
+  // using McTracksRun2 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime, aod::TrackSelection,
+  //                                  aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::McTrackLabels>;
+  // using McTracksRun3 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection, aod::TrackSelectionExtension,
+  //                                  aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFmass, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::McTrackLabels>;
   using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
+  // using McCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>::iterator;
   // using McCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>::iterator;
 
   Filter prelimTrackCuts = (aod::track::itsChi2NCl < fMaxChi2ITS &&
@@ -148,12 +160,15 @@ struct AngularCorrelationsInJets {
   Preslice<FullTracksRun3> perCollisionFullTracksRun3 = o2::aod::track::collisionId;
   // PreSlice<McTracksRun2> perCollisionMcTracksRun2 = o2::aod::track::collisionId;
   // PreSlice<McTracksRun3> perCollisionMcTracksRun3 = o2::aod::track::collisionId;
+  // PreSlice<McTracksRun2> perCollisionMcTracksRun2 = o2::aod::track::collisionId;
+  // PreSlice<McTracksRun3> perCollisionMcTracksRun3 = o2::aod::track::collisionId;
 
   AxisSpecs axisSpecs;
 
   HistogramRegistry registryData{"dataOutput", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryMC("MCOutput", {}, OutputObjHandlingPolicy::AnalysisObject, false, true);
   HistogramRegistry registryQA{"dataQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  // HistogramRegistry registryMCQA("MCQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, true);
 
   JetBkgSubUtils bkgSub;
 
@@ -309,6 +324,7 @@ struct AngularCorrelationsInJets {
 
   template <class T>
   bool selectTrack(T const& track) // preliminary track selections
+  bool selectTrack(T const& track) // preliminary track selections
   {
     if (track.tpcNClsCrossedRows() < fMinRatioCrossedRowsTPC * track.tpcNClsFindable() ||
         track.tpcNClsCrossedRows() < fMinNCrossedRowsTPC ||
@@ -344,6 +360,8 @@ struct AngularCorrelationsInJets {
   template <typename T>
   bool isProton(const T& track, bool tightCuts)
   {
+    // if (doprocessMCRun3)
+    //   return (track.mcParticle().pdgCode() == 2212);
     // if (doprocessMCRun3)
     //   return (track.mcParticle().pdgCode() == 2212);
     if (track.sign() < 0)
@@ -398,6 +416,8 @@ struct AngularCorrelationsInJets {
   {
     // if (doprocessMCRun3)
     //   return (track.mcParticle().pdgCode() == -2212);
+    // if (doprocessMCRun3)
+    //   return (track.mcParticle().pdgCode() == -2212);
     if (track.sign() > 0)
       return false;
 
@@ -447,6 +467,8 @@ struct AngularCorrelationsInJets {
   template <typename T>
   bool isNucleus(const T& track, bool tightCuts)
   {
+    // if (doprocessMCRun3)
+    //   return (track.mcParticle().pdgCode() == (fDeuteronAnalysis) ? 1000010020 : 1000020030);
     // if (doprocessMCRun3)
     //   return (track.mcParticle().pdgCode() == (fDeuteronAnalysis) ? 1000010020 : 1000020030);
     if (track.sign() < 0)
@@ -541,6 +563,8 @@ struct AngularCorrelationsInJets {
   {
     // if (doprocessMCRun3)
     //   return (track.mcParticle().pdgCode() == (fDeuteronAnalysis) ? -1000010020 : -1000020030);
+    // if (doprocessMCRun3)
+    //   return (track.mcParticle().pdgCode() == (fDeuteronAnalysis) ? -1000010020 : -1000020030);
     if (track.sign() > 0)
       return false;
 
@@ -630,6 +654,7 @@ struct AngularCorrelationsInJets {
   }
 
   void setTrackBuffer(const auto& tempBuffer, auto& buffer) // refresh track buffer
+  void setTrackBuffer(const auto& tempBuffer, auto& buffer) // refresh track buffer
   {
     for (const auto& pair : tempBuffer) {
       if (static_cast<int>(buffer.size()) == fBufferSize) {
@@ -641,6 +666,7 @@ struct AngularCorrelationsInJets {
     }
   }
 
+  void fillMixedEventDeltas(const auto& track, const auto& buffer, int particleType, const TVector3 jetAxis) // correlate tracks from current event with tracks from buffer, i.e. other events
   void fillMixedEventDeltas(const auto& track, const auto& buffer, int particleType, const TVector3 jetAxis) // correlate tracks from current event with tracks from buffer, i.e. other events
   {
     if (buffer.size() == 0)
@@ -865,6 +891,7 @@ struct AngularCorrelationsInJets {
       if (Delta > maxRadius)
         maxRadius = Delta;
     }
+    registryQA.fill(HIST("hMaxRadiusVsPt"), jet.pt(), maxRadius);
     registryQA.fill(HIST("hMaxRadiusVsPt"), jet.pt(), maxRadius);
 
     // QA for comparison with nuclei_in_jets
@@ -1169,6 +1196,24 @@ struct AngularCorrelationsInJets {
     }
   }
   PROCESS_SWITCH(AngularCorrelationsInJets, processRun3, "process Run 3 data", false);
+
+  // void processMCRun3(McCollisions const& collisions, soa::Filtered<McTracksRun3> const& tracks)
+  // {
+  //   for (const auto& collision : collisions) {
+  //     registryMC.fill(HIST("hEventProtocol"), 0);
+  //     if (!collision.sel8())
+  //       continue;
+  //     registryMC.fill(HIST("hNumberOfEvents"), 0);
+  //     registryMC.fill(HIST("hEventProtocol"), 1);
+  //     if (TMath::Abs(collision.posZ()) > fZVtx)
+  //       continue;
+
+  //     auto slicedTracks = tracks.sliceBy(perCollisionMcTracksRun3, collision.globalIndex());
+
+  //     fillHistograms(slicedTracks);
+  //   }
+  // }
+  // PROCESS_SWITCH(AngularCorrelationsInJets, processMCRun3, "process Run 3 MC", false);
 
   // void processMCRun3(McCollisions const& collisions, soa::Filtered<McTracksRun3> const& tracks)
   // {

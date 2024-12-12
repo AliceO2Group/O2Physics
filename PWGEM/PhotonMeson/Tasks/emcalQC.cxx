@@ -152,9 +152,9 @@ struct emcalQC {
     o2::aod::pwgem::photonmeson::utils::clusterhistogram::addClusterHistograms(&fRegistry, cfgDo2DQA);
   }
 
-  Preslice<aod::SkimEMCClusters> perCollision = aod::skimmedcluster::collisionId;
+  Preslice<MyEMCClusters> perCollision = aod::emccluster::emeventId;
 
-  void processQC(MyCollisions const& collisions, aod::SkimEMCClusters const& clusters)
+  void processQC(MyCollisions const& collisions, MyEMCClusters const& clusters)
   {
     for (auto& collision : collisions) {
 

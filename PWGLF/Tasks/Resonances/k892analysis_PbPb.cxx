@@ -279,19 +279,19 @@ struct k892analysis_PbPb {
 
     if (TofandTpcPID) {
 
-      if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon && candidate.hasTPC() && std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) { // tof and tpc cut
+      if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) <= cMaxTOFnSigmaKaon && candidate.hasTPC() && std::abs(candidate.tpcNSigmaKa()) <= cMaxTPCnSigmaKaon) { // tof and tpc cut
         return true;
       }
 
     } else {
 
-      if (candidate.hasTPC() && std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) { // tpc cut, tof when available
+      if (candidate.hasTPC() && std::abs(candidate.tpcNSigmaKa()) <= cMaxTPCnSigmaKaon) { // tpc cut, tof when available
 
         if (cByPassTOF) // skip tof selection
           return true;
 
         if (candidate.hasTOF()) {
-          if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
+          if (std::abs(candidate.tofNSigmaKa()) <= cMaxTOFnSigmaKaon) {
             return true;
           }
         } else {
@@ -309,19 +309,19 @@ struct k892analysis_PbPb {
 
     if (TofandTpcPID) {
 
-      if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion && candidate.hasTPC() && std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) { // tof and tpc cut
+      if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) <= cMaxTOFnSigmaPion && candidate.hasTPC() && std::abs(candidate.tpcNSigmaPi()) <= cMaxTPCnSigmaPion) { // tof and tpc cut
         return true;
       }
 
     } else {
 
-      if (candidate.hasTPC() && std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) { // tpc cut, tof when available
+      if (candidate.hasTPC() && std::abs(candidate.tpcNSigmaPi()) <= cMaxTPCnSigmaPion) { // tpc cut, tof when available
 
         if (cByPassTOF) // skip tof selection
           return true;
 
         if (candidate.hasTOF()) {
-          if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion) {
+          if (std::abs(candidate.tofNSigmaPi()) <= cMaxTOFnSigmaPion) {
             return true;
           }
         } else {
@@ -382,10 +382,10 @@ struct k892analysis_PbPb {
 
       if constexpr (IsMC) {
         if (tpclowpt) {
-          if (trk1ptPi > cMaxPtTPC || trk2ptKa > cMaxPtTPC)
+          if (trk1ptPi >= cMaxPtTPC || trk2ptKa >= cMaxPtTPC)
             continue;
         } else if (tofhighpt) {
-          if (trk1ptPi < cMinPtTOF || trk2ptKa < cMinPtTOF)
+          if (trk1ptPi <= cMinPtTOF || trk2ptKa <= cMinPtTOF)
             continue;
         }
       }
@@ -552,8 +552,8 @@ struct k892analysis_PbPb {
 
   Filter collisionFilter = nabs(aod::collision::posZ) <= cfgCutVertex;
   Filter centralityFilter = nabs(aod::cent::centFT0C) <= cfgCutCentrality;
-  Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
-  Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) >= cfgCutPT);
+  Filter DCAcutFilter = (nabs(aod::track::dcaXY) <= cfgCutDCAxy) && (nabs(aod::track::dcaZ) <= cfgCutDCAz);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
@@ -701,18 +701,18 @@ struct k892analysis_PbPb {
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (!collision1.sel8() || !collision2.sel8()) {
-        return;
+        continue;
       }
       auto centrality = collision1.centFT0C();
 
       if (timFrameEvsel && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
-        return;
+        continue;
       }
       if (additionalEvSel2 && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
-        return;
+        continue;
       }
       if (additionalEvSel3 && (!collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) || !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
-        return;
+        continue;
       }
 
       if (additionalQAeventPlots) {
@@ -935,11 +935,11 @@ struct k892analysis_PbPb {
       histos.fill(HIST("hMCrecCollSels"), 3);
 
       if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
-        return;
+        continue;
       histos.fill(HIST("hMCrecCollSels"), 4);
 
       if (std::abs(RecCollision.posZ()) > cfgCutVertex)
-        return;
+        continue;
       histos.fill(HIST("hMCrecCollSels"), 5);
 
       auto centrality = RecCollision.centRun2V0M();

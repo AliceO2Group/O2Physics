@@ -59,7 +59,7 @@ struct ThreePartCorr {
   using MyFilteredV0s = soa::Filtered<aod::V0Datas>;
   using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
                                                    aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
-                                                   aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>>;
+                                                   aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>>;
 
   // Table aliases - MC
   using MyFilteredMCGenCollision = soa::Filtered<aod::McCollisions>::iterator;
@@ -130,6 +130,10 @@ struct ThreePartCorr {
     QARegistry.add("hNSigmaKaon", "hNSigmaKaon", {HistType::kTH2D, {{201, -5.025, 5.025}, {201, -5.025, 5.025}}});
     QARegistry.add("hNSigmaProton", "hNSigmaProton", {HistType::kTH2D, {{201, -5.025, 5.025}, {201, -5.025, 5.025}}});
 
+    QARegistry.add("hTOFPion", "hTOFPion", {HistType::kTH2D, {{TrackPtAxis}, {1000, -50, 50}}});
+    QARegistry.add("hTOFKaon", "hTOFKaon", {HistType::kTH2D, {{TrackPtAxis}, {1000, -50, 50}}});
+    QARegistry.add("hTOFProton", "hTOFProton", {HistType::kTH2D, {{TrackPtAxis}, {1000, -50, 50}}});
+
     QARegistry.add("hInvMassLambda", "hInvMassLambda", {HistType::kTH3D, {{LambdaInvMassAxis}, {V0PtAxis}, {CentralityAxis}}});
     QARegistry.add("hInvMassAntiLambda", "hInvMassAntiLambda", {HistType::kTH3D, {{LambdaInvMassAxis}, {V0PtAxis}, {CentralityAxis}}});
 
@@ -199,6 +203,12 @@ struct ThreePartCorr {
 
     // Start of the Track QA
     for (const auto& track : tracks) {
+      if (track.hasTOF()) {
+        QARegistry.fill(HIST("hTOFPion"), track.pt(), track.tofNSigmaPi());
+        QARegistry.fill(HIST("hTOFKaon"), track.pt(), track.tofNSigmaKa());
+        QARegistry.fill(HIST("hTOFProton"), track.pt(), track.tofNSigmaPr());
+      }
+
       A_PID = TrackPID(track);
       if (A_PID[1] < 4.0) {
         QARegistry.fill(HIST("hTrackPt"), track.pt());
