@@ -664,7 +664,7 @@ struct pidTofQaMc {
                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                          aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
                          aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
-                         aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels, aod::pidTOFbeta>;
+                         aod::TOFSignal, aod::McTrackLabels, aod::pidTOFbeta>;
   using Colls = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
   Preslice<Trks> perCol = aod::track::collisionId;
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
