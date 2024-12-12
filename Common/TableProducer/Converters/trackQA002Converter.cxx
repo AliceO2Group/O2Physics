@@ -20,7 +20,7 @@ using namespace o2::framework;
 struct TrackQAConverter002 {
   Produces<aod::TracksQA_002> tracksQA_002;
 
-  void process000(aod::TracksQA_000 const& tracksQA_002)
+  void process000(aod::TracksQA_000 const& tracksQA_000)
   {
     for (const auto& trackQA : tracksQA_000) {
       tracksQA_002(
@@ -54,7 +54,7 @@ struct TrackQAConverter002 {
   }
   PROCESS_SWITCH(TrackQAConverter002, process000, "process v000-to-v002 conversion", false);
 
-  void process001(aod::TracksQA_001 const& tracksQA_002)
+  void process001(aod::TracksQA_001 const& tracksQA_001)
   {
     for (const auto& trackQA : tracksQA_001) {
       tracksQA_002(
