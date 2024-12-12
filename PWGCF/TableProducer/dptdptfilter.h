@@ -1003,7 +1003,7 @@ struct TpcExcludeTrack {
   {
     method = kNOEXCLUSION;
   }
-  TpcExcludeTrack(TpcExclusionMethod m)
+  explicit TpcExcludeTrack(TpcExclusionMethod m)
   {
     switch (m) {
       case kNOEXCLUSION:
