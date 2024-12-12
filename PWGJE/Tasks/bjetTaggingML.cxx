@@ -43,7 +43,7 @@ using namespace o2::framework::expressions;
 
 struct BJetTaggingML {
 
-  struct bjetParams {
+  struct BJetParams {
     float mJetpT = 0.0;
     float mJetEta = 0.0;
     float mJetPhi = 0.0;
@@ -52,7 +52,7 @@ struct BJetTaggingML {
     float mJetMass = 0.0;
   };
 
-  struct bjetTrackParams {
+  struct BJetTrackParams {
     double mTrackpT = 0.0;
     double mTrackEta = 0.0;
     double mDotProdTrackJet = 0.0;
@@ -66,7 +66,7 @@ struct BJetTaggingML {
     double mDeltaRTrackVertex = 0.0;
   };
 
-  struct bjetSVParams {
+  struct BJetSVParams {
     double mSVpT = 0.0;
     double mDeltaRSVJet = 0.0;
     double mSVMass = 0.0;
@@ -234,7 +234,7 @@ struct BJetTaggingML {
   using JetTracksMCDwID = soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>;
   using DataJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::DataSecondaryVertex3ProngIndices>>;
 
-  std::vector<std::vector<float>> getInputsForML(bjetParams jetparams, std::vector<bjetTrackParams>& tracksParams, std::vector<bjetSVParams>& svsParams)
+  std::vector<std::vector<float>> getInputsForML(BJetParams jetparams, std::vector<BJetTrackParams>& tracksParams, std::vector<BJetSVParams>& svsParams)
   {
     std::vector<float> jetInput = {jetparams.mJetpT, jetparams.mJetEta, jetparams.mJetPhi, static_cast<float>(jetparams.mNTracks), static_cast<float>(jetparams.mNSV), jetparams.mJetMass};
     std::vector<float> tracksInputFlat;
@@ -278,7 +278,7 @@ struct BJetTaggingML {
 
   // Looping over the SV info and writing them to a table
   template <typename AnalysisJet, typename AnyTracks, typename SecondaryVertices>
-  void analyzeJetSVInfo(AnalysisJet const& myJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<bjetSVParams>& svsParams, int jetFlavor = 0, double eventweight = 1.0)
+  void analyzeJetSVInfo(AnalysisJet const& myJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<BJetSVParams>& svsParams, int jetFlavor = 0, double eventweight = 1.0)
   {
     using SVType = typename SecondaryVertices::iterator;
 
@@ -304,7 +304,7 @@ struct BJetTaggingML {
       double energySV = candSV.e();
 
       if (svsParams.size() < (svReductionFactor * myJet.template tracks_as<AnyTracks>().size())) {
-        svsParams.emplace_back(bjetSVParams{candSV.pt(), deltaRJetSV, massSV, energySV / myJet.energy(), candSV.impactParameterXY(), candSV.cpa(), candSV.chi2PCA(), candSV.dispersion(), candSV.decayLengthXY(), candSV.errorDecayLengthXY(), candSV.decayLength(), candSV.errorDecayLength()});
+        svsParams.emplace_back(BJetSVParams{candSV.pt(), deltaRJetSV, massSV, energySV / myJet.energy(), candSV.impactParameterXY(), candSV.cpa(), candSV.chi2PCA(), candSV.dispersion(), candSV.decayLengthXY(), candSV.errorDecayLengthXY(), candSV.decayLength(), candSV.errorDecayLength()});
       }
 
       registry.fill(HIST("h2_LxyS_jetpT"), myJet.pt(), candSV.decayLengthXY() / candSV.errorDecayLengthXY(), eventweight);
@@ -330,7 +330,7 @@ struct BJetTaggingML {
   }
 
   template <typename AnyCollision, typename AnalysisJet, typename AnyTracks, typename SecondaryVertices>
-  void analyzeJetTrackInfo(AnyCollision const& /*collision*/, AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<bjetTrackParams>& tracksParams, int jetFlavor = 0, double eventweight = 1.0)
+  void analyzeJetTrackInfo(AnyCollision const& /*collision*/, AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<BJetTrackParams>& tracksParams, int jetFlavor = 0, double eventweight = 1.0)
   {
 
     for (const auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
@@ -367,10 +367,10 @@ struct BJetTaggingML {
         }
       }
 
-      tracksParams.emplace_back(bjetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), rClosestSV});
+      tracksParams.emplace_back(BJetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), rClosestSV});
     }
 
-    auto compare = [](bjetTrackParams& tr1, bjetTrackParams& tr2) {
+    auto compare = [](BJetTrackParams& tr1, BJetTrackParams& tr2) {
       return (tr1.mSignedIP2D / tr1.mSignedIP2DSign) > (tr2.mSignedIP2D / tr2.mSignedIP2DSign);
     };
 
@@ -405,8 +405,8 @@ struct BJetTaggingML {
         continue;
       }
 
-      std::vector<bjetTrackParams> tracksParams;
-      std::vector<bjetSVParams> svsParams;
+      std::vector<BJetTrackParams> tracksParams;
+      std::vector<BJetSVParams> svsParams;
 
       analyzeJetSVInfo(analysisJet, allTracks, allSVs, svsParams);
       analyzeJetTrackInfo(collision, analysisJet, allTracks, allSVs, tracksParams);
@@ -416,7 +416,7 @@ struct BJetTaggingML {
       registry.fill(HIST("h2_nTracks_jetpT"), analysisJet.pt(), tracksParams.size());
       registry.fill(HIST("h2_nSV_jetpT"), analysisJet.pt(), nSVs < 250 ? nSVs : 249);
 
-      bjetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), static_cast<int>(tracksParams.size()), static_cast<int>(nSVs), analysisJet.mass()};
+      BJetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), static_cast<int>(tracksParams.size()), static_cast<int>(nSVs), analysisJet.mass()};
       tracksParams.resize(nJetConst); // resize to the number of inputs of the ML
       svsParams.resize(nJetConst);    // resize to the number of inputs of the ML
 
@@ -475,8 +475,8 @@ struct BJetTaggingML {
         continue;
       }
 
-      std::vector<bjetTrackParams> tracksParams;
-      std::vector<bjetSVParams> svsParams;
+      std::vector<BJetTrackParams> tracksParams;
+      std::vector<BJetSVParams> svsParams;
 
       int jetFlavor = 0;
 
@@ -496,7 +496,7 @@ struct BJetTaggingML {
       registry.fill(HIST("h2_nTracks_jetpT"), analysisJet.pt(), tracksParams.size());
       registry.fill(HIST("h2_nSV_jetpT"), analysisJet.pt(), nSVs < 250 ? nSVs : 249);
 
-      bjetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), static_cast<int>(tracksParams.size()), static_cast<int>(nSVs), analysisJet.mass()};
+      BJetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), static_cast<int>(tracksParams.size()), static_cast<int>(nSVs), analysisJet.mass()};
       tracksParams.resize(nJetConst); // resize to the number of inputs of the ML
       svsParams.resize(nJetConst);    // resize to the number of inputs of the ML
 
@@ -511,13 +511,13 @@ struct BJetTaggingML {
       registry.fill(HIST("h2_jetMass_jetpT"), analysisJet.pt(), analysisJet.mass(), eventWeight);
 
       if (doDataDriven) {
-        registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), output[0], analysisJet.mass(), svsParams[0].mSVMass, svsParams[0].mSVfE, tracksParams[0].mMomFraction);
+        registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), output[0], analysisJet.mass(), svsParams[0].mSVMass, svsParams[0].mSVfE);
         if (jetFlavor == 2) {
-          registry.fill(HIST("hSparse_bjets"), analysisJet.pt(), output[0], analysisJet.mass(), svsParams[0].mSVMass, svsParams[0].mSVfE, tracksParams[0].mMomFraction);
+          registry.fill(HIST("hSparse_bjets"), analysisJet.pt(), output[0], analysisJet.mass(), svsParams[0].mSVMass, svsParams[0].mSVfE);
         } else if (jetFlavor == 1) {
-          registry.fill(HIST("hSparse_cjets"), analysisJet.pt(), output[0], analysisJet.mass(), svsParams[0].mSVMass, svsParams[0].mSVfE, tracksParams[0].mMomFraction);
+          registry.fill(HIST("hSparse_cjets"), analysisJet.pt(), output[0], analysisJet.mass(), svsParams[0].mSVMass, svsParams[0].mSVfE);
         } else {
-          registry.fill(HIST("hSparse_lfjets"), analysisJet.pt(), output[0], analysisJet.mass(), svsParams[0].mSVMass, svsParams[0].mSVfE, tracksParams[0].mMomFraction);
+          registry.fill(HIST("hSparse_lfjets"), analysisJet.pt(), output[0], analysisJet.mass(), svsParams[0].mSVMass, svsParams[0].mSVfE);
         }
       }
 
@@ -640,5 +640,5 @@ struct BJetTaggingML {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<BJetTaggingML>(cfgc, TaskName{"bjet-tagging-ml"})};
+  return WorkflowSpec{adaptAnalysisTask<BJetTaggingML>(cfgc, TaskName{"bjet-tagging-ml"})}; // o2-linter: disable=name/o2-task,name/workflow-file
 }
