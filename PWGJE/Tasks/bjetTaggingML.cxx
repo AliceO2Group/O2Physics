@@ -83,7 +83,7 @@ struct BJetTaggingML {
 
   HistogramRegistry registry;
 
-  static constexpr double defaultCutsMl[1][2] = {{0.5, 0.5}};
+  static constexpr double DefaultCutsMl[1][2] = {{0.5, 0.5}};
 
   // event level configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
@@ -119,7 +119,7 @@ struct BJetTaggingML {
 
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{5., 1000.}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{cuts_ml::CutSmaller, cuts_ml::CutNot}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {defaultCutsMl[0], 1, 2, {"pT bin 0"}, {"score for default b-jet tagging", "uncer 1"}}, "ML selections per pT bin"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {DefaultCutsMl[0], 1, 2, {"pT bin 0"}, {"score for default b-jet tagging", "uncer 1"}}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", 2, "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
 
@@ -333,7 +333,7 @@ struct BJetTaggingML {
   void analyzeJetTrackInfo(AnyCollision const& /*collision*/, AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<bjetTrackParams>& tracksParams, int jetFlavor = 0, double eventweight = 1.0)
   {
 
-    for (auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
+    for (const auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
 
       if (constituent.pt() < trackPtMin) {
         continue;
@@ -343,11 +343,11 @@ struct BJetTaggingML {
       double dotProduct = RecoDecay::dotProd(std::array<float, 3>{analysisJet.px(), analysisJet.py(), analysisJet.pz()}, std::array<float, 3>{constituent.px(), constituent.py(), constituent.pz()});
       int sign = jettaggingutilities::getGeoSign(analysisJet, constituent);
 
-      float RClosestSV = 10.;
+      float rClosestSV = 10.;
       for (const auto& candSV : analysisJet.template secondaryVertices_as<SecondaryVertices>()) {
         double deltaRTrackSV = jetutilities::deltaR(constituent, candSV);
-        if (deltaRTrackSV < RClosestSV) {
-          RClosestSV = deltaRTrackSV;
+        if (deltaRTrackSV < rClosestSV) {
+          rClosestSV = deltaRTrackSV;
         }
       }
 
@@ -367,7 +367,7 @@ struct BJetTaggingML {
         }
       }
 
-      tracksParams.emplace_back(bjetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), RClosestSV});
+      tracksParams.emplace_back(bjetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), rClosestSV});
     }
 
     auto compare = [](bjetTrackParams& tr1, bjetTrackParams& tr2) {
@@ -394,7 +394,7 @@ struct BJetTaggingML {
     for (const auto& analysisJet : alljets) {
 
       bool jetIncluded = false;
-      for (auto jetR : jetRadiiValues) {
+      for (const auto& jetR : jetRadiiValues) {
         if (analysisJet.r() == static_cast<int>(jetR * 100)) {
           jetIncluded = true;
           break;
@@ -406,9 +406,9 @@ struct BJetTaggingML {
       }
 
       std::vector<bjetTrackParams> tracksParams;
-      std::vector<bjetSVParams> SVsParams;
+      std::vector<bjetSVParams> svsParams;
 
-      analyzeJetSVInfo(analysisJet, allTracks, allSVs, SVsParams);
+      analyzeJetSVInfo(analysisJet, allTracks, allSVs, svsParams);
       analyzeJetTrackInfo(collision, analysisJet, allTracks, allSVs, tracksParams);
 
       int nSVs = analysisJet.template secondaryVertices_as<aod::DataSecondaryVertex3Prongs>().size();
@@ -418,9 +418,9 @@ struct BJetTaggingML {
 
       bjetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), static_cast<int>(tracksParams.size()), static_cast<int>(nSVs), analysisJet.mass()};
       tracksParams.resize(nJetConst); // resize to the number of inputs of the ML
-      SVsParams.resize(nJetConst);    // resize to the number of inputs of the ML
+      svsParams.resize(nJetConst);    // resize to the number of inputs of the ML
 
-      auto inputML = getInputsForML(jetparam, tracksParams, SVsParams);
+      auto inputML = getInputsForML(jetparam, tracksParams, svsParams);
 
       std::vector<float> output;
       // bool isSelectedMl = bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
@@ -431,7 +431,7 @@ struct BJetTaggingML {
       registry.fill(HIST("h2_jetMass_jetpT"), analysisJet.pt(), analysisJet.mass());
 
       if (doDataDriven) {
-        registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), output[0], analysisJet.mass(), SVsParams[0].mSVMass, SVsParams[0].mSVfE);
+        registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), output[0], analysisJet.mass(), svsParams[0].mSVMass, svsParams[0].mSVfE);
       }
     }
   }
@@ -441,8 +441,8 @@ struct BJetTaggingML {
   using MCPJetTable = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets, aod::ChargedMCParticleLevelJetEventWeights>>;
   using FilteredCollisionMCD = soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>;
 
-  Preslice<aod::JMcParticles> McParticlesPerCollision = aod::jmcparticle::mcCollisionId;
-  Preslice<MCPJetTable> McPJetsPerCollision = aod::jet::mcCollisionId;
+  Preslice<aod::JMcParticles> mcParticlesPerCollision = aod::jmcparticle::mcCollisionId;
+  Preslice<MCPJetTable> mcpJetsPerCollision = aod::jet::mcCollisionId;
 
   void processMCJets(FilteredCollisionMCD::iterator const& collision, MCDJetTable const& MCDjets, MCPJetTable const& MCPjets, JetTracksMCDwID const& allTracks, aod::JetParticles const& MCParticles, aod::MCDSecondaryVertex3Prongs const& allSVs)
   {
@@ -452,13 +452,13 @@ struct BJetTaggingML {
 
     registry.fill(HIST("h_vertexZ"), collision.posZ());
 
-    auto const mcParticlesPerColl = MCParticles.sliceBy(McParticlesPerCollision, collision.mcCollisionId());
-    auto const mcPJetsPerColl = MCPjets.sliceBy(McPJetsPerCollision, collision.mcCollisionId());
+    auto const mcParticlesPerColl = MCParticles.sliceBy(mcParticlesPerCollision, collision.mcCollisionId());
+    auto const mcPJetsPerColl = MCPjets.sliceBy(mcpJetsPerCollision, collision.mcCollisionId());
 
     for (const auto& analysisJet : MCDjets) {
 
       bool jetIncluded = false;
-      for (auto jetR : jetRadiiValues) {
+      for (const auto& jetR : jetRadiiValues) {
         if (analysisJet.r() == static_cast<int>(jetR * 100)) {
           jetIncluded = true;
           break;
@@ -476,11 +476,11 @@ struct BJetTaggingML {
       }
 
       std::vector<bjetTrackParams> tracksParams;
-      std::vector<bjetSVParams> SVsParams;
+      std::vector<bjetSVParams> svsParams;
 
       int jetFlavor = 0;
 
-      for (auto& mcpjet : analysisJet.template matchedJetGeo_as<MCPJetTable>()) {
+      for (const auto& mcpjet : analysisJet.template matchedJetGeo_as<MCPJetTable>()) {
         if (useQuarkDef) {
           jetFlavor = jettaggingutilities::getJetFlavor(mcpjet, mcParticlesPerColl);
         } else {
@@ -488,7 +488,7 @@ struct BJetTaggingML {
         }
       }
 
-      analyzeJetSVInfo(analysisJet, allTracks, allSVs, SVsParams, jetFlavor, eventWeight);
+      analyzeJetSVInfo(analysisJet, allTracks, allSVs, svsParams, jetFlavor, eventWeight);
       analyzeJetTrackInfo(collision, analysisJet, allTracks, allSVs, tracksParams, jetFlavor, eventWeight);
 
       int nSVs = analysisJet.template secondaryVertices_as<aod::MCDSecondaryVertex3Prongs>().size();
@@ -498,9 +498,9 @@ struct BJetTaggingML {
 
       bjetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), static_cast<int>(tracksParams.size()), static_cast<int>(nSVs), analysisJet.mass()};
       tracksParams.resize(nJetConst); // resize to the number of inputs of the ML
-      SVsParams.resize(nJetConst);    // resize to the number of inputs of the ML
+      svsParams.resize(nJetConst);    // resize to the number of inputs of the ML
 
-      auto inputML = getInputsForML(jetparam, tracksParams, SVsParams);
+      auto inputML = getInputsForML(jetparam, tracksParams, svsParams);
 
       std::vector<float> output;
       // bool isSelectedMl = bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
@@ -511,13 +511,13 @@ struct BJetTaggingML {
       registry.fill(HIST("h2_jetMass_jetpT"), analysisJet.pt(), analysisJet.mass(), eventWeight);
 
       if (doDataDriven) {
-        registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), output[0], analysisJet.mass(), SVsParams[0].mSVMass, SVsParams[0].mSVfE, tracksParams[0].mMomFraction);
+        registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), output[0], analysisJet.mass(), svsParams[0].mSVMass, svsParams[0].mSVfE, tracksParams[0].mMomFraction);
         if (jetFlavor == 2) {
-          registry.fill(HIST("hSparse_bjets"), analysisJet.pt(), output[0], analysisJet.mass(), SVsParams[0].mSVMass, SVsParams[0].mSVfE, tracksParams[0].mMomFraction);
+          registry.fill(HIST("hSparse_bjets"), analysisJet.pt(), output[0], analysisJet.mass(), svsParams[0].mSVMass, svsParams[0].mSVfE, tracksParams[0].mMomFraction);
         } else if (jetFlavor == 1) {
-          registry.fill(HIST("hSparse_cjets"), analysisJet.pt(), output[0], analysisJet.mass(), SVsParams[0].mSVMass, SVsParams[0].mSVfE, tracksParams[0].mMomFraction);
+          registry.fill(HIST("hSparse_cjets"), analysisJet.pt(), output[0], analysisJet.mass(), svsParams[0].mSVMass, svsParams[0].mSVfE, tracksParams[0].mMomFraction);
         } else {
-          registry.fill(HIST("hSparse_lfjets"), analysisJet.pt(), output[0], analysisJet.mass(), SVsParams[0].mSVMass, SVsParams[0].mSVfE, tracksParams[0].mMomFraction);
+          registry.fill(HIST("hSparse_lfjets"), analysisJet.pt(), output[0], analysisJet.mass(), svsParams[0].mSVMass, svsParams[0].mSVfE, tracksParams[0].mMomFraction);
         }
       }
 
@@ -535,7 +535,7 @@ struct BJetTaggingML {
         registry.fill(HIST("h_jetpT_detector_lfjet"), analysisJet.pt(), eventWeight);
       }
 
-      for (auto& mcpjet : analysisJet.template matchedJetGeo_as<MCPJetTable>()) {
+      for (const auto& mcpjet : analysisJet.template matchedJetGeo_as<MCPJetTable>()) {
         if (mcpjet.pt() > pTHatMaxMCP * pTHat) {
           continue;
         }
@@ -554,7 +554,7 @@ struct BJetTaggingML {
     for (const auto& mcpjet : mcPJetsPerColl) {
 
       bool jetIncluded = false;
-      for (auto jetR : jetRadiiValues) {
+      for (const auto& jetR : jetRadiiValues) {
         if (mcpjet.r() == static_cast<int>(jetR * 100)) {
           jetIncluded = true;
           break;
@@ -601,7 +601,7 @@ struct BJetTaggingML {
     for (const auto& mcpjet : MCPjets) {
 
       bool jetIncluded = false;
-      for (auto jetR : jetRadiiValues) {
+      for (const auto& jetR : jetRadiiValues) {
         if (mcpjet.r() == static_cast<int>(jetR * 100)) {
           jetIncluded = true;
           break;
