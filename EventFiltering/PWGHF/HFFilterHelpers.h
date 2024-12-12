@@ -436,7 +436,7 @@ class HfFilterHelper
   int computeNumberOfCandidates(std::vector<std::vector<T>> indices);
 
   // PID
-  void setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::array<std::string, 6>& ccdbPaths);
+  void setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::array<std::string, 8>& ccdbPaths);
   void setTpcRecalibMaps(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::string& ccdbPath);
 
  private:
@@ -1533,7 +1533,7 @@ inline int HfFilterHelper::computeNumberOfCandidates(std::vector<std::vector<T>>
 /// \param ccdbApi is Api for CCDB
 /// \param bunchCrossing is the timestamp of bunchcrossing for the run number
 /// \param ccdbPaths  are the paths on CCDB for pions, antipions, kaons, antikaons, protons, antiprotons
-inline void HfFilterHelper::setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::array<std::string, 6>& ccdbPaths)
+inline void HfFilterHelper::setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::array<std::string, 8>& ccdbPaths)
 {
   for (int iSpecie{0u}; iSpecie < 8; ++iSpecie) {
     std::map<std::string, std::string> metadata;
