@@ -66,7 +66,8 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgCutDCAzPtDepEnabled, bool, false, "switch of DCAz pt dependent cut")
   O2_DEFINE_CONFIGURABLE(cfgTrkSelSwitch, bool, false, "switch for self-defined track selection")
   O2_DEFINE_CONFIGURABLE(cfgTrkSelRun3ITSMatch, bool, false, "GlobalTrackRun3ITSMatching::Run3ITSall7Layers selection")
-  O2_DEFINE_CONFIGURABLE(cfgRejectionTPCsectorOverlap, bool, true, "rejection for TPC sector overlap")
+  O2_DEFINE_CONFIGURABLE(cfgShowTPCsectorOverlap, bool, true, "Draw TPC sector overlap")
+  O2_DEFINE_CONFIGURABLE(cfgRejectionTPCsectorOverlap, bool, false, "rejection for TPC sector overlap")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgTriggerkTVXinTRD, bool, true, "TRD triggered")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoSameBunchPileup, bool, true, "rejects collisions which are associated with the same found-by-T0 bunch crossing")
@@ -401,7 +402,7 @@ struct FlowTask {
       fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
     }
 
-    if (cfgRejectionTPCsectorOverlap) {
+    if (cfgShowTPCsectorOverlap) {
       fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
       fPhiCutHigh = new TF1("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
     }
@@ -591,7 +592,7 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    if (cfgCutDCAzPtDepEnabled && (track.dcaZ() > (0.004f + 0.013f / track.pt())))
+    if (cfgCutDCAzPtDepEnabled && (fabs(track.dcaZ()) > (0.004f + 0.013f / track.pt())))
       return false;
 
     if (cfgTrkSelSwitch) {
@@ -615,8 +616,10 @@ struct FlowTask {
     phimodn += TMath::Pi() / 18.0; // to center gap in the middle
     phimodn = fmod(phimodn, TMath::Pi() / 9.0);
     registry.fill(HIST("pt_phi_bef"), track.pt(), phimodn);
-    if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt()))
-      return false; // reject track
+    if (cfgRejectionTPCsectorOverlap) {
+      if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt()))
+        return false; // reject track
+    }
     registry.fill(HIST("pt_phi_aft"), track.pt(), phimodn);
     return true;
   }
@@ -703,7 +706,7 @@ struct FlowTask {
     double sum_ptSquare_wSquare_WithinGap08 = 0., sum_pt_wSquare_WithinGap08 = 0.;
     int Magnetfield = 0;
     double NTracksCorrected = 0;
-    if (cfgRejectionTPCsectorOverlap) {
+    if (cfgShowTPCsectorOverlap) {
       // magnet field dependence cut
       Magnetfield = getMagneticField(bc.timestamp());
     }
@@ -714,7 +717,7 @@ struct FlowTask {
     for (auto& track : tracks) {
       if (!trackSelected(track))
         continue;
-      if (cfgRejectionTPCsectorOverlap && !RejectionTPCoverlap(track, Magnetfield))
+      if (cfgShowTPCsectorOverlap && !RejectionTPCoverlap(track, Magnetfield))
         continue;
       bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
       bool WithinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
