@@ -337,7 +337,6 @@ struct HfTaskD0 {
       } else {
         if (candidate.isSelD0() >= selectionFlagD0) {
           registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, hfHelper.yD0(candidate), SigD0);
-
           if (candidate.isSelD0bar()) {
             registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, hfHelper.yD0(candidate), ReflectedD0);
           } else if (!candidate.isSelD0bar()) {
