@@ -111,6 +111,7 @@ struct BJetTaggingML {
   Configurable<int> nJetConst{"nJetConst", 10, "maximum number of jet consistuents to be used for ML evaluation"};
 
   Configurable<bool> useQuarkDef{"useQuarkDef", true, "Flag whether to use quarks or hadrons for determining the jet flavor"};
+  Configurable<bool> doDataDriven{"doDataDriven", false, "Flag whether to use fill THnSpase for data driven methods"};
 
   Configurable<float> svReductionFactor{"svReductionFactor", 1.0, "factor for how many SVs to keep"};
 
@@ -124,7 +125,7 @@ struct BJetTaggingML {
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/h/hahassan"}, "Paths of models on CCDB"};
-  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ML_bjets/01-MVA/Models/LHC23d4_5_20_90Percent/model.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ML_bjets/Models/LHC24g4_70_200/model.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
@@ -157,6 +158,15 @@ struct BJetTaggingML {
     registry.add("h2_Dispersion_jetpT", "SV dispersion;#it{p}_{T,jet} (GeV/#it{c});Dispersion", {HistType::kTH2F, {{200, 0., 200.}, {100, 0, 0.5}}});
     registry.add("h2_jetMass_jetpT", "Jet mass;#it{p}_{T,jet} (GeV/#it{c});#it{m}_{jet} (GeV/#it{c}^{2})", {HistType::kTH2F, {{200, 0., 200.}, {50, 0, 50.0}}});
     registry.add("h2_SVMass_jetpT", "Secondary vertex mass;#it{p}_{T,jet} (GeV/#it{c});#it{m}_{SV} (GeV/#it{c}^{2})", {HistType::kTH2F, {{200, 0., 200.}, {50, 0, 10}}});
+
+    if (doDataDriven) {
+      registry.add("hSparse_Incljets", "Inclusive jets Info;#it{p}_{T,jet} (GeV/#it{c});Score;#it{m}_{jet} (GeV/#it{c}^{2});#it{m}_{SV} (GeV/#it{c}^{2});SVfE;", {HistType::kTHnSparseF, {{200, 0., 200.}, {120, -0.1, 1.1}, {50, 0, 50}, {50, 0, 10}, {50, 0, 1}}});
+      if (doprocessMCJets) {
+        registry.add("hSparse_bjets", "Tagged b-jets Info;#it{p}_{T,jet} (GeV/#it{c});Score;#it{m}_{jet} (GeV/#it{c}^{2});#it{m}_{SV} (GeV/#it{c}^{2});SVfE;", {HistType::kTHnSparseF, {{200, 0., 200.}, {120, -0.1, 1.1}, {50, 0, 50}, {50, 0, 10}, {50, 0, 1}}});
+        registry.add("hSparse_cjets", "Tagged c-jets Info;#it{p}_{T,jet} (GeV/#it{c});Score;#it{m}_{jet} (GeV/#it{c}^{2});#it{m}_{SV} (GeV/#it{c}^{2});SVfE;", {HistType::kTHnSparseF, {{200, 0., 200.}, {120, -0.1, 1.1}, {50, 0, 50}, {50, 0, 10}, {50, 0, 1}}});
+        registry.add("hSparse_lfjets", "Tagged lf-jets Info;#it{p}_{T,jet} (GeV/#it{c});Score;#it{m}_{jet} (GeV/#it{c}^{2});#it{m}_{SV} (GeV/#it{c}^{2});SVfE;", {HistType::kTHnSparseF, {{200, 0., 200.}, {120, -0.1, 1.1}, {50, 0, 50}, {50, 0, 10}, {50, 0, 1}}});
+      }
+    }
 
     if (doprocessMCJets) {
 
@@ -419,6 +429,10 @@ struct BJetTaggingML {
       registry.fill(HIST("h2_score_jetpT"), analysisJet.pt(), output[0]);
 
       registry.fill(HIST("h2_jetMass_jetpT"), analysisJet.pt(), analysisJet.mass());
+
+      if (doDataDriven) {
+        registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), output[0], analysisJet.mass(), SVsParams[0].mSVMass, SVsParams[0].mSVfE);
+      }
     }
   }
   PROCESS_SWITCH(BJetTaggingML, processDataJets, "jet information in Data", false);
@@ -495,6 +509,17 @@ struct BJetTaggingML {
       registry.fill(HIST("h2_score_jetpT"), analysisJet.pt(), output[0], eventWeight);
 
       registry.fill(HIST("h2_jetMass_jetpT"), analysisJet.pt(), analysisJet.mass(), eventWeight);
+
+      if (doDataDriven) {
+        registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), output[0], analysisJet.mass(), SVsParams[0].mSVMass, SVsParams[0].mSVfE, tracksParams[0].mMomFraction);
+        if (jetFlavor == 2) {
+          registry.fill(HIST("hSparse_bjets"), analysisJet.pt(), output[0], analysisJet.mass(), SVsParams[0].mSVMass, SVsParams[0].mSVfE, tracksParams[0].mMomFraction);
+        } else if (jetFlavor == 1) {
+          registry.fill(HIST("hSparse_cjets"), analysisJet.pt(), output[0], analysisJet.mass(), SVsParams[0].mSVMass, SVsParams[0].mSVfE, tracksParams[0].mMomFraction);
+        } else {
+          registry.fill(HIST("hSparse_lfjets"), analysisJet.pt(), output[0], analysisJet.mass(), SVsParams[0].mSVMass, SVsParams[0].mSVfE, tracksParams[0].mMomFraction);
+        }
+      }
 
       if (jetFlavor == 2) {
         registry.fill(HIST("h2_score_jetpT_bjet"), analysisJet.pt(), output[0], eventWeight);
