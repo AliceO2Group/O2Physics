@@ -30,6 +30,14 @@ enum Region {
   Transverse
 };
 
+enum PairSign {
+  SignNotDefined = 0,
+  LcPosTrkPos,
+  LcPosTrkNeg,
+  LcNegTrkPos,
+  LcNegTrkNeg
+};
+
 template <typename T>
 Region getRegion(T const deltaPhi)
 {
@@ -40,6 +48,68 @@ Region getRegion(T const deltaPhi)
   } else {
     return Transverse;
   }
+}
+
+// Pair Sign Calculation
+template <typename TrgPt, typename TrkPt>
+int signCalulation(TrgPt const& trigPt, TrkPt const& assocPt)
+{
+  int sign = 0;
+  if (trigPt > 0. && assocPt > 0.) {
+    sign = LcPosTrkPos;
+  } else if (trigPt > 0. && assocPt < 0.) {
+    sign = LcPosTrkNeg;
+  } else if (trigPt < 0. && assocPt > 0.) {
+    sign = LcNegTrkPos;
+  } else if (trigPt < 0. && assocPt < 0.) {
+    sign = LcNegTrkNeg;
+  } else {
+    sign = SignNotDefined;
+  }
+  return sign;
+}
+
+template <typename Atrack, typename SpeciesContainer, typename T1, typename T2>
+bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
+                      T1 const maxTPC, T2 const maxTOF, double ptThreshold = 0.75, bool tofForced = false)
+{
+  // Ensure size consistency
+  if (mPIDspecies.value.size() != maxTPC.value.size() || mPIDspecies.value.size() != maxTOF.value.size()) {
+    LOGF(error, "Size of particle species and corresponding nSigma selection arrays should be the same");
+    return false; // Early exit on error
+  }
+
+  for (size_t speciesIndex = 0; speciesIndex < mPIDspecies.value.size(); ++speciesIndex) {
+    auto const& pid = mPIDspecies->at(speciesIndex);
+    auto nSigmaTPC = o2::aod::pidutils::tpcNSigma(pid, track);
+
+    if (tofForced && !track.hasTOF())
+      return false;
+
+    if (speciesIndex == 0) { // First species logic
+      if (std::abs(nSigmaTPC) > maxTPC->at(speciesIndex)) {
+        return false; // TPC check failed
+      }
+      if (tofForced || (track.pt() > ptThreshold && track.hasTOF())) {
+        auto nSigmaTOF = o2::aod::pidutils::tofNSigma(pid, track);
+        if (std::abs(nSigmaTOF) > maxTOF->at(speciesIndex)) {
+          return false; // TOF check failed
+        }
+      }
+    } else {                                                // Other species logic
+      if (std::abs(nSigmaTPC) < maxTPC->at(speciesIndex)) { // Check TPC nSigma  first
+        if (track.hasTOF()) {
+          auto nSigmaTOF = o2::aod::pidutils::tofNSigma(pid, track);
+          if (std::abs(nSigmaTOF) < maxTOF->at(speciesIndex)) {
+            return false; // Reject if both TPC and TOF are within thresholds
+          }
+        } else {
+          return false; // Reject if only TPC is within threshold and TOF is unavailable
+        }
+      }
+    }
+  }
+  return true; // Passed all checks
 }
 
 // ========= Find Leading Particle ==============

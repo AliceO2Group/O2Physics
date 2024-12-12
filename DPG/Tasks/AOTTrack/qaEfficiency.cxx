@@ -336,6 +336,7 @@ struct QaEfficiency {
                                   phiMin, phiMax,
                                   yMin, yMax);
     const int histogramIndex = id + pdgSign * nSpecies;
+
     // Pt
     hPtIts[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/its", PDGs[histogramIndex]), "ITS tracks " + tagPt, kTH1D, {axisPt});
     hPtTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/tpc", PDGs[histogramIndex]), "TPC tracks " + tagPt, kTH1D, {axisPt});
@@ -660,6 +661,9 @@ struct QaEfficiency {
       histos.add("MC/occ_cent/reco/pos/its", "ITS Positive ", kTH3D, {axisOcc, axisCent, axisPt});
       histos.add("MC/occ_cent/reco/neg/its", "ITS Negative ", kTH3D, {axisOcc, axisCent, axisPt});
     }
+
+    AxisSpec axisPtMother{ptBins, "#it{p}_{T} (GeV/#it{c})"};
+    hPtmotherGenerated = histos.add<TH1>("MC/mother/pt/generated", "Generated pT of mother Lambda or Xi", kTH1D, {axisPtMother});
 
     static_for<0, 1>([&](auto pdgSign) {
       makeMCHistograms<pdgSign, o2::track::PID::Electron>(doEl);
@@ -2068,8 +2072,8 @@ struct QaEfficiency {
       float trackEta = track.eta();
       float trackPhi = track.phi();
       float trackSign = track.sign();
-      float occupancy;
-      float centrality;
+      float occupancy{};
+      float centrality{};
       if (doOccupancy) {
         centrality = collision.centFT0C();
         if (useFT0OccEstimator) {
