@@ -169,7 +169,7 @@ struct EmcalQC {
       fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 1);
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 2);
-        if (collision.posZ() < eventcuts.cfgZvtxMax && collision.posZ() > -eventcuts.cfgZvtxMax) {
+        if (std::abs(collision.posZ()) < eventcuts.cfgZvtxMax) {
           fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 3);
           if (collision.sel8()) {
             fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 4);
