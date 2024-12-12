@@ -13,6 +13,7 @@
 // \since  May 2024
 
 #include <cstdlib>
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -385,7 +386,7 @@ struct UPCAnalysis {
 
     } // end of if for 2 positive and 2 negative charge events
 
-    else if (totalSize == 4 && int(allSelectedTracks.size()) == 4) {
+    if (totalSize == 4 && static_cast<int>(allSelectedTracks.size()) == 4) {
 
       histos.fill(HIST("EventsCounts"), 3);
       histos.fill(HIST("EventsCounts"), 7);
