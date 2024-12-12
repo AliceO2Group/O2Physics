@@ -12,7 +12,6 @@
 // \author Anantha Padmanabhan M Nair, anantha.manoj.nair@cern.ch
 // \since  May 2024
 
-
 #include <cstdlib>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -37,8 +36,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct UPCAnalysis
-{
+struct UPCAnalysis {
   SGSelector sgSelector;
   HistogramRegistry histos{"HistoReg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -65,12 +63,12 @@ struct UPCAnalysis
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
   // Begin of Init Function-----------------------------------------------------------------------------------------------------------------------------------------------------
-  void init(InitContext const &)
+  void init(InitContext const&)
   {
 
     histos.add("GapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
     histos.add("TrueGapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
-    histos.add("EventsCounts", "Total Events; Entries", kTH1F, {{100, 0, 100}}); //2=#Events, 3= #Selected Events, 5=#Selected Events with Zero Net charge, 6=Selected Events with Non-Zero Net charge
+    histos.add("EventsCounts", "Total Events; Entries", kTH1F, {{100, 0, 100}}); // 2=#Events, 3= #Selected Events, 5=#Selected Events with Zero Net charge, 6=Selected Events with Non-Zero Net charge
     histos.add("nSelectedEvents", "Number of Selected Events with 4 good tracks; Entries", kTH1F, {{10, 0, 10}});
     histos.add("nSelectedEventswithnonzerocharge", "Number of Selected Good Events with Non Zero Net charge; Entries", kTH1F, {{10, 0, 10}});
     histos.add("nSelectedEventswithzerocharge", "Number of Selected Good Events with Zero Net charge; Entries", kTH1F, {{10, 0, 10}});
@@ -84,10 +82,6 @@ struct UPCAnalysis
     histos.add("tof_nsigma_electron_WOTS", "TOF nSigma Electron; Entries", kTH1F, {{100, -15, 15}});
     histos.add("tof_nsigma_pion_electron_WOTS", "TOF nSigma Pion vs Electron; N sigma e-; N sigma Pi", kTH2F, {{300, -15, 15}, {300, -15, 15}});
     histos.add("tof_nsigma_pion_eletron_WTS", "TOF nSigma Pion vs Electron with track selection; N sigma e-; N sigma Pi", kTH2F, {{300, -15, 15}, {300, -15, 15}});
-
-
-
-
 
     histos.add("pT_with_nsigma_3_WOTS", "pT with nsigma 3 Without track selection; pT [GeV/c]; Counts", kTH1F, {{100, 0, 2}});
     histos.add("pT_with_nsigma_3_WTS", "pT with nsigma 3 with track selection; pT [GeV/c]; Counts", kTH1F, {{100, 0, 2}});
@@ -117,39 +111,31 @@ struct UPCAnalysis
     histos.add("invmass_likesign_event", "Event Mass Distribution of like sign pairs", kTH2F, {{100, 0.8, 2.5}, {100, 0.8, 2.5}});
     histos.add("invmass_total", "Invariant Mass Distribution of the Event", kTH1F, {{100, 0.8, 2.5}});
 
+    // QA plots
 
-
-    //QA plots
-
-    //tpc signal
+    // tpc signal
     histos.add("tpc_dEdx", "TPC dEdx vs p; p [GeV/c]; dEdx [a.u.]", kTH2F, {{500, 0, 10}, {5000, 0.0, 5000.0}});
     histos.add("tpc_dEdx_pion", "TPC dEdx vs p for pions; p [GeV/c]; dEdx [a.u.]", kTH2F, {{500, 0, 10}, {5000, 0.0, 5000.0}});
     histos.add("tpc_dEdx_kaons", "TPC dEdx vs p for ekaons; p [GeV/c]; dEdx [a.u.]", kTH2F, {{500, 0, 10}, {5000, 0.0, 5000.0}});
     histos.add("tpc_dEdx_protons", "TPC dEdx vs p for protons; p [GeV/c]; dEdx [a.u.]", kTH2F, {{500, 0, 10}, {5000, 0.0, 5000.0}});
 
-    //tof beta
+    // tof beta
     histos.add("tof_beta", "TOF beta vs p; p [GeV/c]; beta", kTH2F, {{500, 0, 10}, {500, 0.0, 1.0}});
     histos.add("tof_beta_pion", "TOF beta vs p for pions; p [GeV/c]; beta", kTH2F, {{500, 0, 10}, {500, 0.0, 1.0}});
     histos.add("tof_beta_kaons", "TOF beta vs p for kaons; p [GeV/c]; beta", kTH2F, {{500, 0, 10}, {500, 0.0, 1.0}});
     histos.add("tof_beta_protons", "TOF beta vs p for protons; p [GeV/c]; beta", kTH2F, {{500, 0, 10}, {500, 0.0, 1.0}});
 
-
-
-
-    //Other signals
+    // Other signals
     histos.add("FT0A", "T0A amplitude", kTH1F, {{500, 0.0, 500.0}});
     histos.add("FT0C", "T0C amplitude", kTH1F, {{500, 0.0, 500.0}});
     histos.add("ZDC_A", "ZDC amplitude", kTH1F, {{2000, 0.0, 1000.0}});
     histos.add("ZDC_C", "ZDC amplitude", kTH1F, {{2000, 0.0, 1000.0}});
     histos.add("V0A", "V0A amplitude", kTH1F, {{1000, 0.0, 1000.0}});
 
-
-
     // Collin Sopen Stuff
     histos.add("CSphi", "#phi Distribution; #phi; Entries", kTH1F, {{200, -3.2, 3.2}});
     histos.add("CStheta", "#theta Distribution; #theta; Entries", kTH1F, {{200, -3.2, 3.2}});
     histos.add("CS_Theta_vs_phi", "#theta vs #phi; #phi; #theta", kTH2F, {{200, -3.2, 3.2}, {200, 0.0, 3.2}});
-
 
   } // End of init function
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -160,11 +146,6 @@ struct UPCAnalysis
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; //
   using UDCollisionFull = UDCollisionsFull::iterator;
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
-
-
-
 
   // Calculate the Collins-Soper Frame----------------------------------------------------------------------------------------------------------------------------
   Double_t CosThetaCollinsSoperFrame(ROOT::Math::PtEtaPhiMVector pair1, ROOT::Math::PtEtaPhiMVector pair2, ROOT::Math::PtEtaPhiMVector fourpion)
@@ -193,9 +174,7 @@ struct UPCAnalysis
 
     Double_t CosThetaCS = zaxis_CS.Dot((v1_CM));
     return CosThetaCS;
-  }// End of CosThetaCollinsSoperFrame function------------------------------------------------------------------------------------------------------------------------
-
-
+  } // End of CosThetaCollinsSoperFrame function------------------------------------------------------------------------------------------------------------------------
 
   // Calculate Phi in Collins-Soper Frame------------------------------------------------------------------------------------------------------------------------
   Double_t PhiCollinsSoperFrame(ROOT::Math::PtEtaPhiMVector pair1, ROOT::Math::PtEtaPhiMVector pair2, ROOT::Math::PtEtaPhiMVector fourpion)
@@ -223,17 +202,10 @@ struct UPCAnalysis
 
     Double_t phi = TMath::ATan2(yaxis_CS.Dot(v1_CM), xaxis_CS.Dot(v1_CM));
     return phi;
-  }// End of PhiCollinsSoperFrame function------------------------------------------------------------------------------------------------------------------------
-
-
-
-
-
-
-
+  } // End of PhiCollinsSoperFrame function------------------------------------------------------------------------------------------------------------------------
 
   // Begin of Process function--------------------------------------------------------------------------------------------------------------------------------------------------
-  void process(UDCollisionFull const &collision, udtracksfull const &tracks)
+  void process(UDCollisionFull const& collision, udtracksfull const& tracks)
   {
 
     int gapSide = collision.gapSide();
@@ -245,18 +217,13 @@ struct UPCAnalysis
     histos.fill(HIST("EventsCounts"), 1);
     gapSide = truegapSide;
 
-    if ((gapSide != 2))
-    {
+    if ((gapSide != 2)) {
       return;
     }
 
-
-    if (collision.numContrib() != 4)
-    {
+    if (collision.numContrib() != 4) {
       return;
     }
-
-
 
     histos.fill(HIST("V0A"), collision.totalFV0AmplitudeA());
     histos.fill(HIST("FT0A"), collision.totalFT0AmplitudeA());
@@ -264,115 +231,78 @@ struct UPCAnalysis
     histos.fill(HIST("ZDC_A"), collision.energyCommonZNA());
     histos.fill(HIST("ZDC_C"), collision.energyCommonZNC());
 
-
     std::vector<decltype(tracks.begin())> selectedTracks_p;          // positive charge tracks
     std::vector<decltype(tracks.begin())> selectedTracks_n;          // negative charge tracks
     std::vector<decltype(tracks.begin())> allSelectedTracks;         // all selected tracks
     std::vector<decltype(tracks.begin())> allTrackswithoutselection; // all tracks without selection
 
-    for (auto &t0 : tracks)
-    {
+    for (auto& t0 : tracks) {
 
       // TPC signal without track selection
       histos.fill(HIST("tpc_nsigma_pion_WOTS"), t0.tpcNSigmaPi());
       histos.fill(HIST("tpc_nsigma_electron_WOTS"), t0.tpcNSigmaEl());
       histos.fill(HIST("tpc_nsigma_pion_electron_WOTS"), t0.tpcNSigmaEl(), t0.tpcNSigmaPi());
 
-
       // TOF signal without track selection
       histos.fill(HIST("tof_nsigma_pion_WOTS"), t0.tofNSigmaPi());
       histos.fill(HIST("tof_nsigma_electron_WOTS"), t0.tofNSigmaEl());
       histos.fill(HIST("tof_nsigma_pion_electron_WOTS"), t0.tofNSigmaEl(), t0.tofNSigmaPi());
 
-
       histos.fill(HIST("pT_WOTS"), TMath::Sqrt(t0.px() * t0.px() + t0.py() * t0.py()));
 
       // pT with nsigma 3 without track selection
-      if (fabs(t0.tpcNSigmaPi()) < 3.0 && fabs(t0.tpcNSigmaEl()) < 3.0)
-      {
+      if (fabs(t0.tpcNSigmaPi()) < 3.0 && fabs(t0.tpcNSigmaEl()) < 3.0) {
         histos.fill(HIST("pT_with_nsigma_3_WOTS"), TMath::Sqrt(t0.px() * t0.px() + t0.py() * t0.py()));
       }
 
       allTrackswithoutselection.push_back(t0);
       // track selection
-      if (!trackselector(t0, parameters))
-      {
+      if (!trackselector(t0, parameters)) {
         continue;
       }
 
+      // dE/dx for selected tracks
 
-
-      //dE/dx for selected tracks
-
-      histos.fill(HIST("tpc_dEdx"), TMath::Sqrt( t0.px()*t0.px() + t0.py()*t0.py() + t0.pz()*t0.pz() ),t0.tpcSignal());
-      histos.fill(HIST("tof_beta"), TMath::Sqrt( t0.px()*t0.px() + t0.py()*t0.py() + t0.pz()*t0.pz() ),t0.beta());
-
-
-
-
+      histos.fill(HIST("tpc_dEdx"), TMath::Sqrt(t0.px() * t0.px() + t0.py() * t0.py() + t0.pz() * t0.pz()), t0.tpcSignal());
+      histos.fill(HIST("tof_beta"), TMath::Sqrt(t0.px() * t0.px() + t0.py() * t0.py() + t0.pz() * t0.pz()), t0.beta());
 
       // pT with nsigma 3 with track selection
-      if (fabs(t0.tpcNSigmaPi()) < 3.0 && fabs(t0.tpcNSigmaEl()) < 3.0)
-      {
+      if (fabs(t0.tpcNSigmaPi()) < 3.0 && fabs(t0.tpcNSigmaEl()) < 3.0) {
         histos.fill(HIST("pT_with_nsigma_3_WTS"), TMath::Sqrt(t0.px() * t0.px() + t0.py() * t0.py()));
       }
 
-
-
-
       // pT with track selection
-      histos.fill(HIST("pT_WTS"),TMath::Sqrt(t0.px() * t0.px() + t0.py() * t0.py()));
+      histos.fill(HIST("pT_WTS"), TMath::Sqrt(t0.px() * t0.px() + t0.py() * t0.py()));
 
-
-
-      if((selectionPIDKaon(t0, true, nSigmaTPC_cut, nSigmaTOF_cut)))
-      {
-        histos.fill(HIST("tpc_dEdx_kaons"), TMath::Sqrt( t0.px()*t0.px() + t0.py()*t0.py() + t0.pz()*t0.pz() ),t0.tpcSignal());
-        histos.fill(HIST("tof_beta_kaons"), TMath::Sqrt( t0.px()*t0.px() + t0.py()*t0.py() + t0.pz()*t0.pz() ),t0.beta());
+      if ((selectionPIDKaon(t0, true, nSigmaTPC_cut, nSigmaTOF_cut))) {
+        histos.fill(HIST("tpc_dEdx_kaons"), TMath::Sqrt(t0.px() * t0.px() + t0.py() * t0.py() + t0.pz() * t0.pz()), t0.tpcSignal());
+        histos.fill(HIST("tof_beta_kaons"), TMath::Sqrt(t0.px() * t0.px() + t0.py() * t0.py() + t0.pz() * t0.pz()), t0.beta());
       }
 
-      if((selectionPIDProton(t0, true, nSigmaTPC_cut, nSigmaTOF_cut)))
-      {
-        histos.fill(HIST("tpc_dEdx_protons"), TMath::Sqrt( t0.px()*t0.px() + t0.py()*t0.py() + t0.pz()*t0.pz() ),t0.tpcSignal());
-        histos.fill(HIST("tof_beta_protons"), TMath::Sqrt( t0.px()*t0.px() + t0.py()*t0.py() + t0.pz()*t0.pz() ),t0.beta());
+      if ((selectionPIDProton(t0, true, nSigmaTPC_cut, nSigmaTOF_cut))) {
+        histos.fill(HIST("tpc_dEdx_protons"), TMath::Sqrt(t0.px() * t0.px() + t0.py() * t0.py() + t0.pz() * t0.pz()), t0.tpcSignal());
+        histos.fill(HIST("tof_beta_protons"), TMath::Sqrt(t0.px() * t0.px() + t0.py() * t0.py() + t0.pz() * t0.pz()), t0.beta());
       }
-
-
-
 
       // TPC signal with track selection
       histos.fill(HIST("tpc_nsigma_pion_eletron_WTS"), t0.tpcNSigmaEl(), t0.tpcNSigmaPi());
       histos.fill(HIST("tof_nsigma_pion_eletron_WTS"), t0.tofNSigmaEl(), t0.tofNSigmaPi());
 
-      if(!(selectionPIDPion(t0, true, nSigmaTPC_cut, nSigmaTOF_cut)))
-      {
+      if (!(selectionPIDPion(t0, true, nSigmaTPC_cut, nSigmaTOF_cut))) {
         continue;
       }
-      histos.fill(HIST("tpc_dEdx_pion"), TMath::Sqrt( t0.px()*t0.px() + t0.py()*t0.py() + t0.pz()*t0.pz() ), t0.tpcSignal());
-      histos.fill(HIST("tof_beta_pion"), TMath::Sqrt( t0.px()*t0.px() + t0.py()*t0.py() + t0.pz()*t0.pz() ), t0.beta());
-
-
+      histos.fill(HIST("tpc_dEdx_pion"), TMath::Sqrt(t0.px() * t0.px() + t0.py() * t0.py() + t0.pz() * t0.pz()), t0.tpcSignal());
+      histos.fill(HIST("tof_beta_pion"), TMath::Sqrt(t0.px() * t0.px() + t0.py() * t0.py() + t0.pz() * t0.pz()), t0.beta());
 
       allSelectedTracks.push_back(t0);
-      if (t0.sign() > 0)
-      {
+      if (t0.sign() > 0) {
         selectedTracks_p.push_back(t0);
-      }
-      else if (t0.sign() < 0)
-      {
+      } else if (t0.sign() < 0) {
         selectedTracks_n.push_back(t0);
       }
     } // End of loop over tracks
 
-
-
-
-
-
-
-
-    if (allTrackswithoutselection.size() == 4)
-    {
+    if (allTrackswithoutselection.size() == 4) {
 
       histos.fill(HIST("nSelectedEvents"), 4);
       TLorentzVector v1, v2, v3, v4, v1234;
@@ -382,21 +312,16 @@ struct UPCAnalysis
       v4.SetXYZM(allTrackswithoutselection[3].px(), allTrackswithoutselection[3].py(), allTrackswithoutselection[3].pz(), o2::constants::physics::MassPionCharged);
       int charge = allTrackswithoutselection[0].sign() + allTrackswithoutselection[1].sign() + allTrackswithoutselection[2].sign() + allTrackswithoutselection[3].sign();
       v1234 = v1 + v2 + v3 + v4;
-      if (charge == 0)
-      {
+      if (charge == 0) {
         histos.fill(HIST("pT_event_0c_WOTS"), v1234.Pt());
-      }
-      else
-      {
+      } else {
         histos.fill(HIST("pT_event_n0c_WOTS"), v1234.Pt());
       }
     } // end of if for 4 track events without selection
 
     int totalSize = int(selectedTracks_p.size() + selectedTracks_n.size());
 
-
-    if ((selectedTracks_p.size() == 2) && (selectedTracks_n.size() == 2))
-    {
+    if ((selectedTracks_p.size() == 2) && (selectedTracks_n.size() == 2)) {
 
       histos.fill(HIST("EventsCounts"), 3);
       histos.fill(HIST("EventsCounts"), 5);
@@ -410,14 +335,12 @@ struct UPCAnalysis
 
       v1234 = v1 + v2 + v3 + v4;
 
-
       v12 = v1 + v2;
       v34 = v3 + v4;
       v13 = v1 + v3;
       v24 = v2 + v4;
       v14 = v1 + v4;
       v23 = v2 + v3;
-
 
       ROOT::Math::PtEtaPhiMVector v1234_1(v1234.Pt(), v1234.Eta(), v1234.Phi(), o2::constants::physics::MassPionCharged);
 
@@ -427,21 +350,15 @@ struct UPCAnalysis
       ROOT::Math::PtEtaPhiMVector v14_1(v14.Pt(), v14.Eta(), v14.Phi(), o2::constants::physics::MassPionCharged);
       ROOT::Math::PtEtaPhiMVector v23_1(v23.Pt(), v23.Eta(), v23.Phi(), o2::constants::physics::MassPionCharged);
 
-
       histos.fill(HIST("CSphi"), PhiCollinsSoperFrame(v13_1, v24_1, v1234_1));
       histos.fill(HIST("CStheta"), CosThetaCollinsSoperFrame(v13_1, v24_1, v1234_1));
       histos.fill(HIST("CS_Theta_vs_phi"), PhiCollinsSoperFrame(v13_1, v24_1, v1234_1), CosThetaCollinsSoperFrame(v13_1, v24_1, v1234_1));
-
 
       histos.fill(HIST("CSphi"), PhiCollinsSoperFrame(v14_1, v23_1, v1234_1));
       histos.fill(HIST("CStheta"), CosThetaCollinsSoperFrame(v14_1, v23_1, v1234_1));
       histos.fill(HIST("CS_Theta_vs_phi"), PhiCollinsSoperFrame(v14_1, v23_1, v1234_1), CosThetaCollinsSoperFrame(v14_1, v23_1, v1234_1));
 
-
-
-
-      if (fabs(v1234.Rapidity()) < 0.5)
-      {
+      if (fabs(v1234.Rapidity()) < 0.5) {
         histos.fill(HIST("nSelectedEventswithzerocharge"), 6);
         histos.fill(HIST("pT_pi_0c"), v1.Pt());
         histos.fill(HIST("pT_pi_0c"), v2.Pt());
@@ -449,27 +366,18 @@ struct UPCAnalysis
         histos.fill(HIST("pT_pi_0c"), v4.Pt());
         histos.fill(HIST("pT_event_0c"), v1234.Pt());
 
-        if (v1234.Pt() < 0.15)
-        {
+        if (v1234.Pt() < 0.15) {
           histos.fill(HIST("invmass_0c_domA"), v1234.M());
-        }
-        else if (v1234.Pt() > 0.15 && v1234.Pt() < 0.8)
-        {
+        } else if (v1234.Pt() > 0.15 && v1234.Pt() < 0.8) {
           histos.fill(HIST("invmass_0c_domB"), v1234.M());
-        }
-        else if (v1234.Pt() > 0.8)
-        {
+        } else if (v1234.Pt() > 0.8) {
           histos.fill(HIST("invmass_0c_domC"), v1234.M());
         }
-
-
-
 
         histos.fill(HIST("invmass_unlikesign_event"), v13.M(), v24.M());
         histos.fill(HIST("invmass_unlikesign_event"), v14.M(), v23.M());
         histos.fill(HIST("invmass_likesign_event"), v12.M(), v34.M());
-        if (v1234.Pt() < 2.0)
-        {
+        if (v1234.Pt() < 2.0) {
           histos.fill(HIST("invmass_total"), v1234.M());
         }
 
@@ -477,12 +385,10 @@ struct UPCAnalysis
 
     } // end of if for 2 positive and 2 negative charge events
 
-    else if (totalSize == 4 && int(allSelectedTracks.size()) == 4)
-    {
+    else if (totalSize == 4 && int(allSelectedTracks.size()) == 4) {
 
       histos.fill(HIST("EventsCounts"), 3);
       histos.fill(HIST("EventsCounts"), 7);
-
 
       histos.fill(HIST("nSelectedEventswithnonzerocharge"), 4);
       TLorentzVector v1, v2, v3, v4, v1234;
@@ -493,24 +399,18 @@ struct UPCAnalysis
 
       v1234 = v1 + v2 + v3 + v4;
 
-      if (fabs(v1234.Rapidity()) < 0.5)
-      {
+      if (fabs(v1234.Rapidity()) < 0.5) {
         histos.fill(HIST("pT_pi_n0c"), v1.Pt());
         histos.fill(HIST("pT_pi_n0c"), v2.Pt());
         histos.fill(HIST("pT_pi_n0c"), v3.Pt());
         histos.fill(HIST("pT_pi_n0c"), v4.Pt());
         histos.fill(HIST("pT_event_n0c"), v1234.Pt());
 
-        if (v1234.Pt() < 0.15)
-        {
+        if (v1234.Pt() < 0.15) {
           histos.fill(HIST("invmass_n0c_domA"), v1234.M());
-        }
-        else if (v1234.Pt() > 0.15 && v1234.Pt() < 0.8)
-        {
+        } else if (v1234.Pt() > 0.15 && v1234.Pt() < 0.8) {
           histos.fill(HIST("invmass_n0c_domB"), v1234.M());
-        }
-        else if (v1234.Pt() > 0.8)
-        {
+        } else if (v1234.Pt() > 0.8) {
           histos.fill(HIST("invmass_n0c_domC"), v1234.M());
         }
       } // end of rapidity cut
@@ -523,8 +423,8 @@ struct UPCAnalysis
 }; // End of Struct UPCAnalysis
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-      adaptAnalysisTask<UPCAnalysis>(cfgc)};
+    adaptAnalysisTask<UPCAnalysis>(cfgc)};
 }
