@@ -457,7 +457,7 @@ class HfFilterHelper
   template <typename T>
   int computeNumberOfCandidates(std::vector<std::vector<T>> indices);
   template <typename T1>
-  inline int setVtxConfiguration(T1 vertexer);
+  inline int setVtxConfiguration(T1 vertexer, bool useAbsDCA);
 
   // PID
   void setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::array<std::string, 6>& ccdbPaths);
@@ -544,15 +544,6 @@ class HfFilterHelper
   float mNSigmaTpcKaonFromXicResoToSigmaC{3.};                               // maximum Nsigma TPC for kaons in Xic*->SigmaC-Kaon
   float mNSigmaTofKaonFromXicResoToSigmaC{3.};                               // maximum Nsigma TOF for kaons in Xic*->SigmaC-Kaon
   o2::framework::LabeledArray<double> mCutsBplus{};                          // selections for B+ candidates (DeltaMass, CPA, DecayLength, ImpactParameterProduct)
-
-  // vertexing parameter
-  bool mPropagateToPCA = true;
-  bool mUseAbsDCA = true;
-  bool mUseWeightedFinalPCA = false;
-  float mMaxR = 200.;
-  float mMaxDZIni = 4.;
-  float mMinParamChange = 1.e-3;
-  float mMinRelChi2Change = 0.9;
 
   // PID recalibrations
   int mTpcPidCalibrationOption{0};                        // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
@@ -1832,16 +1823,16 @@ inline int HfFilterHelper::findBin(T1 const& binsPt, T2 value)
 /// Set vertxing configuration
 /// \param vertexer o2::vertexing::DCAFitterN<N> object
 template <typename T1>
-inline int HfFilterHelper::setVtxConfiguration(T1 vertexer)
+inline int HfFilterHelper::setVtxConfiguration(T1 vertexer, bool useAbsDCA)
 {
   // Fitter initialisation
-  vertexer.setPropagateToPCA(mPropagateToPCA);
-  vertexer.setMaxR(mMaxR);
-  vertexer.setMaxDZIni(mMaxDZIni);
-  vertexer.setMinParamChange(mMinParamChange);
-  vertexer.setMinRelChi2Change(mMinRelChi2Change);
-  vertexer.setUseAbsDCA(mUseAbsDCA);
-  vertexer.setWeightedFinalPCA(mUseWeightedFinalPCA);
+  vertexer.setPropagateToPCA(true);
+  vertexer.setMaxR(200.);
+  vertexer.setMaxDZIni(4.);
+  vertexer.setMinParamChange(1.e-3);
+  vertexer.setMinRelChi2Change(0.9);
+  vertexer.setUseAbsDCA(useAbsDCA);
+  vertexer.setWeightedFinalPCA(false);
   return 1;
 }
 

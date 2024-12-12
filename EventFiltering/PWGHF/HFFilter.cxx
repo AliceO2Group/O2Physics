@@ -205,8 +205,8 @@ struct HfFilter { // Main struct for HF triggers
     helper.setPtDeltaMassRangeSigmaC(cutsPtDeltaMassCharmReso->get(0u, 6u), cutsPtDeltaMassCharmReso->get(1u, 6u), cutsPtDeltaMassCharmReso->get(0u, 7u), cutsPtDeltaMassCharmReso->get(1u, 7u), cutsPtDeltaMassCharmReso->get(0u, 8u), cutsPtDeltaMassCharmReso->get(1u, 8u), cutsPtDeltaMassCharmReso->get(0u, 9u), cutsPtDeltaMassCharmReso->get(1u, 9u), cutsPtDeltaMassCharmReso->get(2u, 6u), cutsPtDeltaMassCharmReso->get(2u, 7u), cutsPtDeltaMassCharmReso->get(2u, 8u), cutsPtDeltaMassCharmReso->get(2u, 9u));
     helper.setPtRangeSoftKaonXicResoToSigmaC(ptCuts->get(0u, 5u), ptCuts->get(1u, 5u));
     if (activateSecVtx) {
-      helper.setVtxConfiguration(df2);
-      helper.setVtxConfiguration(dfB);
+      helper.setVtxConfiguration(df2, false); // (DCAFitterN, useAbsDCA)
+      helper.setVtxConfiguration(dfB, true);
     }
     hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;counts", HistType::kTH1F, {{kNtriggersHF + 2, -0.5, +kNtriggersHF + 1.5}});
     for (auto iBin = 0; iBin < kNtriggersHF + 2; ++iBin) {
