@@ -330,7 +330,7 @@ struct HfFilter { // Main struct for HF triggers
         if (setTPCCalib == 1) {
           helper.setTpcRecalibMaps(ccdb, bc, ccdbPathTPC);
         } else if (setTPCCalib > 1) {
-          helper.setValuesBB(ccdbApi, bc, std::array{ccdbBBPion.value, ccdbBBAntiPion.value, ccdbBBKaon.value, ccdbBBAntiKaon.value, ccdbBBProton.value, ccdbBBAntiProton.value, ccdbBBProton.value, ccdbBBAntiProton.value}); //dummy for deuteron
+          helper.setValuesBB(ccdbApi, bc, std::array{ccdbBBPion.value, ccdbBBAntiPion.value, ccdbBBKaon.value, ccdbBBAntiKaon.value, ccdbBBProton.value, ccdbBBAntiProton.value, ccdbBBProton.value, ccdbBBAntiProton.value}); // dummy for deuteron
         }
 
         currentRun = bc.runNumber();
