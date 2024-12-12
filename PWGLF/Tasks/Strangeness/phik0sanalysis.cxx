@@ -60,7 +60,6 @@ struct phik0shortanalysis {
   HistogramRegistry PhicandHist{"PhicandHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry K0SHist{"K0SHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry PhipurHist{"PhipurHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry MCPhipurHist{"MCPhipurHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry PhiK0SHist{"PhiK0SHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry MCPhiK0SHist{"MCPhiK0SHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry PhiPionHist{"PhiPionHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -69,6 +68,7 @@ struct phik0shortanalysis {
   HistogramRegistry K0SeffHist{"K0SeffHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry PioneffHist{"PioneffHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry yaccHist{"yaccHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry closureMCPhipurHist{"closureMCPhipurHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry closureMCPhiK0SHist{"closureMCPhiK0SHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry closureMCPhiPionHist{"closureMCPhiPionHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -156,6 +156,7 @@ struct phik0shortanalysis {
 
   // Defining the type of the V0s
   using FullV0s = soa::Filtered<aod::V0Datas>;
+  using FullMCV0s = soa::Join<FullV0s, aod::McV0Labels>;
 
   // Defining the type of the tracks for data and MC
   using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullKa>;
@@ -258,15 +259,15 @@ struct phik0shortanalysis {
     PhipurHist.add("h3PhipurPiInvMassSCut", "Invariant mass of Phi for Purity (Pi) Deltay < SecondCut", kTH3F, {binnedmultAxis, binnedptPiAxis, PhimassAxis});
 
     // MCPhi invariant mass for computing purities
-    MCPhipurHist.add("h2MCPhipurInvMass", "Invariant mass of Phi for Purity (no K0S/Pi)", kTH2F, {binnedmultAxis, PhimassAxis});
+    closureMCPhipurHist.add("h2MCPhipurInvMass", "Invariant mass of Phi for Purity (no K0S/Pi)", kTH2F, {binnedmultAxis, PhimassAxis});
 
-    MCPhipurHist.add("h3MCPhipurK0SInvMassInc", "Invariant mass of Phi for Purity (K0S) Inclusive", kTH3F, {binnedmultAxis, binnedptK0SAxis, PhimassAxis});
-    MCPhipurHist.add("h3MCPhipurK0SInvMassFCut", "Invariant mass of Phi for Purity (K0S) Deltay < FirstCut", kTH3F, {binnedmultAxis, binnedptK0SAxis, PhimassAxis});
-    MCPhipurHist.add("h3MCPhipurK0SInvMassSCut", "Invariant mass of Phi for Purity (K0S) Deltay < SecondCut", kTH3F, {binnedmultAxis, binnedptK0SAxis, PhimassAxis});
+    closureMCPhipurHist.add("h3MCPhipurK0SInvMassInc", "Invariant mass of Phi for Purity (K0S) Inclusive", kTH3F, {binnedmultAxis, binnedptK0SAxis, PhimassAxis});
+    closureMCPhipurHist.add("h3MCPhipurK0SInvMassFCut", "Invariant mass of Phi for Purity (K0S) Deltay < FirstCut", kTH3F, {binnedmultAxis, binnedptK0SAxis, PhimassAxis});
+    closureMCPhipurHist.add("h3MCPhipurK0SInvMassSCut", "Invariant mass of Phi for Purity (K0S) Deltay < SecondCut", kTH3F, {binnedmultAxis, binnedptK0SAxis, PhimassAxis});
 
-    MCPhipurHist.add("h3MCPhipurPiInvMassInc", "Invariant mass of Phi for Purity (Pi) Inclusive", kTH3F, {binnedmultAxis, binnedptPiAxis, PhimassAxis});
-    MCPhipurHist.add("h3MCPhipurPiInvMassFCut", "Invariant mass of Phi for Purity (Pi) Deltay < FirstCut", kTH3F, {binnedmultAxis, binnedptPiAxis, PhimassAxis});
-    MCPhipurHist.add("h3MCPhipurPiInvMassSCut", "Invariant mass of Phi for Purity (Pi) Deltay < SecondCut", kTH3F, {binnedmultAxis, binnedptPiAxis, PhimassAxis});
+    closureMCPhipurHist.add("h3MCPhipurPiInvMassInc", "Invariant mass of Phi for Purity (Pi) Inclusive", kTH3F, {binnedmultAxis, binnedptPiAxis, PhimassAxis});
+    closureMCPhipurHist.add("h3MCPhipurPiInvMassFCut", "Invariant mass of Phi for Purity (Pi) Deltay < FirstCut", kTH3F, {binnedmultAxis, binnedptPiAxis, PhimassAxis});
+    closureMCPhipurHist.add("h3MCPhipurPiInvMassSCut", "Invariant mass of Phi for Purity (Pi) Deltay < SecondCut", kTH3F, {binnedmultAxis, binnedptPiAxis, PhimassAxis});
 
     // 2D mass for Phi and K0S for Data
     PhiK0SHist.add("h4PhiK0SSEInc", "2D Invariant mass of Phi and K0Short for Same Event Inclusive", kTHnSparseF, {binnedmultAxis, binnedptK0SAxis, K0SmassAxis, sigPhimassAxis});
@@ -1313,7 +1314,7 @@ struct phik0shortanalysis {
           isCountedPhi = true;
         }
 
-        MCPhipurHist.fill(HIST("h2MCPhipurInvMass"), genmultiplicity, recPhi.M());
+        closureMCPhipurHist.fill(HIST("h2MCPhipurInvMass"), genmultiplicity, recPhi.M());
 
         std::array<bool, 3> isCountedK0S{false, false, false};
 
@@ -1329,19 +1330,19 @@ struct phik0shortanalysis {
             continue;
 
           if (!isCountedK0S.at(0)) {
-            MCPhipurHist.fill(HIST("h3MCPhipurK0SInvMassInc"), genmultiplicity, v0.pt(), recPhi.M());
+            closureMCPhipurHist.fill(HIST("h3MCPhipurK0SInvMassInc"), genmultiplicity, v0.pt(), recPhi.M());
             isCountedK0S.at(0) = true;
           }
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
             continue;
           if (!isCountedK0S.at(1)) {
-            MCPhipurHist.fill(HIST("h3MCPhipurK0SInvMassFCut"), genmultiplicity, v0.pt(), recPhi.M());
+            closureMCPhipurHist.fill(HIST("h3MCPhipurK0SInvMassFCut"), genmultiplicity, v0.pt(), recPhi.M());
             isCountedK0S.at(1) = true;
           }
           if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
             continue;
           if (!isCountedK0S.at(2)) {
-            MCPhipurHist.fill(HIST("h3MCPhipurK0SInvMassSCut"), genmultiplicity, v0.pt(), recPhi.M());
+            closureMCPhipurHist.fill(HIST("h3MCPhipurK0SInvMassSCut"), genmultiplicity, v0.pt(), recPhi.M());
             isCountedK0S.at(2) = true;
           }
         }
@@ -1358,19 +1359,19 @@ struct phik0shortanalysis {
             continue;
 
           if (!isCountedPi.at(0)) {
-            MCPhipurHist.fill(HIST("h3MCPhipurPiInvMassInc"), genmultiplicity, track.pt(), recPhi.M());
+            closureMCPhipurHist.fill(HIST("h3MCPhipurPiInvMassInc"), genmultiplicity, track.pt(), recPhi.M());
             isCountedPi.at(0) = true;
           }
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgFirstCutonDeltay)
             continue;
           if (!isCountedPi.at(1)) {
-            MCPhipurHist.fill(HIST("h3MCPhipurPiInvMassFCut"), genmultiplicity, track.pt(), recPhi.M());
+            closureMCPhipurHist.fill(HIST("h3MCPhipurPiInvMassFCut"), genmultiplicity, track.pt(), recPhi.M());
             isCountedPi.at(1) = true;
           }
           if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgSecondCutonDeltay)
             continue;
           if (!isCountedPi.at(2)) {
-            MCPhipurHist.fill(HIST("h3MCPhipurPiInvMassSCut"), genmultiplicity, track.pt(), recPhi.M());
+            closureMCPhipurHist.fill(HIST("h3MCPhipurPiInvMassSCut"), genmultiplicity, track.pt(), recPhi.M());
             isCountedPi.at(2) = true;
           }
         }
