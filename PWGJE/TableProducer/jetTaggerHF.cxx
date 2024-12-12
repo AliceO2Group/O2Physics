@@ -375,11 +375,11 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   tasks.emplace_back(
     adaptAnalysisTask<JetTaggerhfCharged>(cfgc,
-                                            SetDefaultProcesses{}, TaskName{"jet-taggerhf-charged"})); // o2-linter: disable=name/o2-task
+                                          SetDefaultProcesses{}, TaskName{"jet-taggerhf-charged"})); // o2-linter: disable=name/o2-task
 
   tasks.emplace_back(
     adaptAnalysisTask<JetTaggerhfFull>(cfgc,
-                                         SetDefaultProcesses{}, TaskName{"jet-taggerhf-full"})); // o2-linter: disable=name/o2-task
+                                       SetDefaultProcesses{}, TaskName{"jet-taggerhf-full"})); // o2-linter: disable=name/o2-task
   /*
     tasks.emplace_back(
       adaptAnalysisTask<JetTaggerhfNeutral>(cfgc,

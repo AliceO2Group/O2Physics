@@ -798,9 +798,9 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
   }
 
   trkLabels["trkVtxIndex"] = std::vector<int>(nTrks, -1);
-  if (count.size() != 0) { // If there is any SV cluster not only PV cluster
+  if (count.size() != 0) {                        // If there is any SV cluster not only PV cluster
     for (auto& [idx, avgDistance] : avgDistances) // o2-linter: disable=const-ref-in-for-loop
-      avgDistance /= count[idx]; 
+      avgDistance /= count[idx];
 
     nVertices += avgDistances.size();
 
