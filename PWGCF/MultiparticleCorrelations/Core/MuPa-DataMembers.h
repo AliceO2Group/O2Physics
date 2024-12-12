@@ -62,7 +62,7 @@ struct TaskConfiguration {
   TStopwatch* fTimer[eTimer_N] = {NULL};           // stopwatch, global (overal execution time) and local
   Float_t fFloatingPointPrecision = 1.e-6;         // two floats are the same if TMath::Abs(f1 - f2) < fFloatingPointPrecision (there is configurable for it)
   Int_t fSequentialBailout = 0;                    // if fSequentialBailout > 0, then each fSequentialBailout events the function BailOut() is called. Can be used for real analysis and for IV.
-  Bool_t fUseSpecificCuts = kFALSE;                // apply after DefaultCuts() also hardwired analysis-specific cuts, determined via tc.fWhichSpecificCuts
+  bool fUseSpecificCuts = kFALSE;                  // apply after DefaultCuts() also hardwired analysis-specific cuts, determined via tc.fWhichSpecificCuts
   TString fWhichSpecificCuts = "";                 // determine which set of analysis-specific cuts will be applied after DefaultCuts(). Use in combination with tc.fUseSpecificCuts
 } tc;                                              // "tc" labels an instance of this group of variables.
 
