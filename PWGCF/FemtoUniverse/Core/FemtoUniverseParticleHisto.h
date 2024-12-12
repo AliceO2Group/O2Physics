@@ -24,10 +24,11 @@
 #include <optional>
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "Framework/HistogramRegistry.h"
+#include "CommonConstants/MathConstants.h"
 
-using namespace o2::framework;
+using namespace o2::framework; // o2-linter: disable=using-directive
 
-namespace o2::analysis::femtoUniverse
+namespace o2::analysis::femtoUniverse // o2-linter: disable=name/namespace
 {
 
 /// \class FemtoUniverseParticleHisto
@@ -50,14 +51,14 @@ class FemtoUniverseParticleHisto
   /// \param tempFitVarpTAxis axis object for the pT axis in the pT vs. tempFitVar plots
   /// \param tempFitVarAxis axis object for the tempFitVar axis
   template <o2::aod::femtouniverseMCparticle::MCType mc, typename T>
-  void init_base(std::string folderName, std::string tempFitVarAxisTitle, T& tempFitVarpTAxis, T& tempFitVarAxis)
+  void init_base(std::string folderName, std::string tempFitVarAxisTitle, T& tempFitVarpTAxis, T& tempFitVarAxis) // o2-linter: disable=name/function-variable
   {
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtouniverseMCparticle::MCTypeName[mc]).c_str();
     /// Histograms of the kinematic properties
     mHistogramRegistry->add((folderName + folderSuffix + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
     mHistogramRegistry->add((folderName + folderSuffix + "/hEta").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
-    mHistogramRegistry->add((folderName + folderSuffix + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
-    mHistogramRegistry->add((folderName + folderSuffix + "/hPhiEta").c_str(), "; #phi; #eta", kTH2F, {{200, 0, 2. * M_PI}, {200, -1.5, 1.5}});
+    mHistogramRegistry->add((folderName + folderSuffix + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{200, 0, o2::constants::math::TwoPI}});
+    mHistogramRegistry->add((folderName + folderSuffix + "/hPhiEta").c_str(), "; #phi; #eta", kTH2F, {{200, 0, o2::constants::math::TwoPI}, {200, -1.5, 1.5}});
 
     /// particle specific histogramms for the TempFitVar column in FemtoUniverseParticles
     if constexpr (o2::aod::femtouniverseMCparticle::MCType::kRecon == mc) {
@@ -67,7 +68,7 @@ class FemtoUniverseParticleHisto
 
   // comment
   template <o2::aod::femtouniverseMCparticle::MCType mc>
-  void init_debug(std::string folderName)
+  void init_debug(std::string folderName) // o2-linter: disable=name/function-variable
   {
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtouniverseMCparticle::MCTypeName[mc]).c_str();
     if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
@@ -126,7 +127,7 @@ class FemtoUniverseParticleHisto
   /// \param tempFitVarpTAxis axis object for the pT axis in the pT vs. tempFitVar plots
   /// \param tempFitVarAxis axis object for the tempFitVar axis
   template <typename T>
-  void init_MC(std::string folderName, std::string /*tempFitVarAxisTitle*/, T& tempFitVarpTAxis, T& tempFitVarAxis)
+  void init_MC(std::string folderName, std::string /*tempFitVarAxisTitle*/, T& tempFitVarpTAxis, T& tempFitVarAxis) // o2-linter: disable=name/function-variable
   {
     /// Particle-type specific histograms
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kTruth]).c_str();
@@ -221,7 +222,7 @@ class FemtoUniverseParticleHisto
   /// \tparam T Data type of the particle
   /// \param part Particle
   template <o2::aod::femtouniverseMCparticle::MCType mc, typename T, typename H>
-  void fillQA_base(T const& part, H const& histFolder)
+  void fillQA_base(T const& part, H const& histFolder) // o2-linter: disable=name/function-variable
   {
     /// Histograms of the kinematic properties
     mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/hPt"), part.pt());
@@ -236,7 +237,7 @@ class FemtoUniverseParticleHisto
   }
 
   template <o2::aod::femtouniverseMCparticle::MCType mc, typename T, typename H>
-  void fillQA_debug(T const& part, H const& histFolder)
+  void fillQA_debug(T const& part, H const& histFolder) // o2-linter: disable=name/function-variable
   {
     // Histograms holding further debug information
     if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
@@ -295,13 +296,13 @@ class FemtoUniverseParticleHisto
   /// \param mctruthorigin Origin of the associated mc Truth particle
   /// \param pdgcode PDG of the associated mc Truth particle associated to the reconstructed particle part
   template <typename T, typename H>
-  void fillQA_MC(T const& part, int mctruthorigin, int pdgcode, H const& histFolder)
+  void fillQA_MC(T const& part, int mctruthorigin, int pdgcode, H const& histFolder) // o2-linter: disable=name/function-variable
   {
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(histFolder + HIST("_MC/hPDG"), pdgcode);
       mHistogramRegistry->fill(histFolder + HIST("_MC/hOrigin_MC"), mctruthorigin);
 
-      if (abs(pdgcode) == mPDG) { // fill this histogramm only for TRUE protons (independently of their origin) for the track purity estimation
+      if (std::abs(pdgcode) == mPDG) { // fill this histogramm only for TRUE protons (independently of their origin) for the track purity estimation
         mHistogramRegistry->fill(histFolder + HIST("_MC/hPt_ReconNoFake"), part.pt());
       }
 
@@ -383,9 +384,9 @@ class FemtoUniverseParticleHisto
 
  private:
   HistogramRegistry* mHistogramRegistry;                                                      ///< For QA output
-  static constexpr o2::aod::femtouniverseparticle::ParticleType mParticleType = particleType; ///< Type of the particle under analysis
-  static constexpr int mFolderSuffixType = suffixType;                                        ///< Counter for the folder suffix specified below
-  static constexpr std::string_view mFolderSuffix[5] = {"", "_one", "_two", "_pos", "_neg"};  ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C)
+  static constexpr o2::aod::femtouniverseparticle::ParticleType mParticleType = particleType; ///< Type of the particle under analysis // o2-linter: disable=name/constexpr-constant
+  static constexpr int mFolderSuffixType = suffixType;                                        ///< Counter for the folder suffix specified below // o2-linter: disable=name/constexpr-constant
+  static constexpr std::string_view mFolderSuffix[5] = {"", "_one", "_two", "_pos", "_neg"};  ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C) // o2-linter: disable=name/constexpr-constant
   int mPDG = 0;                                                                               ///< PDG code of the selected particle
 };
 } // namespace o2::analysis::femtoUniverse
