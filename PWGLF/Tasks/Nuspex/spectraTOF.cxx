@@ -340,7 +340,7 @@ struct tofSpectra {
     const AxisSpec phiAxis{200, 0, 7, "#it{#varphi} (rad)"};
     const AxisSpec dcaZAxis{binsOptions.binsDca, "DCA_{z} (cm)"};
     const AxisSpec lengthAxis{100, 0, 600, "Track length (cm)"};
-    const AxisSpec decayLengthAxis{100, 0, 0.1, "Decay Length (cm)"};
+    const AxisSpec decayLengthAxis{100, 0, 0.5, "Decay Length (cm)"};
 
     if (enableTrackCutHistograms) {
       const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
@@ -735,7 +735,6 @@ struct tofSpectra {
     const auto& nsigmaTPC = o2::aod::pidutils::tpcNSigma<id>(track);
     // const auto id = track.sign() > 0 ? id : id + Np;
     const float multiplicity = getMultiplicity(collision);
-
     if (multiplicityEstimator == MultCodes::kNoMultiplicity) {
       if (track.sign() > 0) {
         histos.fill(HIST(hnsigmatpc[id]), track.pt(), nsigmaTPC);
@@ -1345,6 +1344,15 @@ struct tofSpectra {
       if (!isTrackSelected<true>(track, collision)) {
         continue;
       }
+      if (std::abs(track.rapidity(PID::getMass(2))) > trkselOptions.cfgCutY) {
+        return;
+      }
+      if (std::abs(track.rapidity(PID::getMass(3))) > trkselOptions.cfgCutY) {
+        return;
+      }
+      if (std::abs(track.rapidity(PID::getMass(4))) > trkselOptions.cfgCutY) {
+        return;
+      }
       if (includeCentralityToTracks) {
 
         if (track.sign() > 0) {
@@ -1369,26 +1377,27 @@ struct tofSpectra {
           }
         }
       }
-      const auto& nsigmaTPCPi = o2::aod::pidutils::tpcNSigma<2>(track);
-      const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
-      const auto& nsigmaTPCPr = o2::aod::pidutils::tpcNSigma<4>(track);
-      const auto& nsigmaTOFPi = o2::aod::pidutils::tofNSigma<2>(track);
-      const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
-      const auto& nsigmaTOFPr = o2::aod::pidutils::tofNSigma<4>(track);
-      histos.fill(HIST("nsigmatpc/test_occupancy/pos/pi"), track.pt(), nsigmaTPCPi, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatpc/test_occupancy/neg/pi"), track.pt(), nsigmaTPCPi, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatpc/test_occupancy/pos/ka"), track.pt(), nsigmaTPCKa, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatpc/test_occupancy/neg/ka"), track.pt(), nsigmaTPCKa, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatpc/test_occupancy/pos/pr"), track.pt(), nsigmaTPCPr, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatpc/test_occupancy/neg/pr"), track.pt(), nsigmaTPCPr, multiplicity, occupancy);
-
-      histos.fill(HIST("nsigmatof/test_occupancy/pos/pi"), track.pt(), nsigmaTOFPi, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatof/test_occupancy/neg/pi"), track.pt(), nsigmaTOFPi, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatof/test_occupancy/pos/ka"), track.pt(), nsigmaTOFKa, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatof/test_occupancy/neg/ka"), track.pt(), nsigmaTOFKa, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatof/test_occupancy/pos/pr"), track.pt(), nsigmaTOFPr, multiplicity, occupancy);
-      histos.fill(HIST("nsigmatof/test_occupancy/neg/pr"), track.pt(), nsigmaTOFPr, multiplicity, occupancy);
-
+      if (track.sign() > 0) {
+        histos.fill(HIST("nsigmatpc/test_occupancy/pos/pi"), track.pt(), track.tpcNSigmaPi(), multiplicity, occupancy);
+        histos.fill(HIST("nsigmatpc/test_occupancy/pos/ka"), track.pt(), track.tpcNSigmaKa(), multiplicity, occupancy);
+        histos.fill(HIST("nsigmatpc/test_occupancy/pos/pr"), track.pt(), track.tpcNSigmaPr(), multiplicity, occupancy);
+      } else if (track.sign() < 0) {
+        histos.fill(HIST("nsigmatpc/test_occupancy/neg/pi"), track.pt(), track.tpcNSigmaPi(), multiplicity, occupancy);
+        histos.fill(HIST("nsigmatpc/test_occupancy/neg/ka"), track.pt(), track.tpcNSigmaKa(), multiplicity, occupancy);
+        histos.fill(HIST("nsigmatpc/test_occupancy/neg/pr"), track.pt(), track.tpcNSigmaPr(), multiplicity, occupancy);
+      }
+      if (!track.hasTOF()) {
+        return;
+      }
+      if (track.sign() > 0) {
+        histos.fill(HIST("nsigmatof/test_occupancy/pos/pi"), track.pt(), track.tofNSigmaPi(), multiplicity, occupancy);
+        histos.fill(HIST("nsigmatof/test_occupancy/pos/ka"), track.pt(), track.tofNSigmaKa(), multiplicity, occupancy);
+        histos.fill(HIST("nsigmatof/test_occupancy/pos/pr"), track.pt(), track.tofNSigmaPr(), multiplicity, occupancy);
+      } else if (track.sign() < 0) {
+        histos.fill(HIST("nsigmatof/test_occupancy/neg/pi"), track.pt(), track.tofNSigmaPi(), multiplicity, occupancy);
+        histos.fill(HIST("nsigmatof/test_occupancy/neg/ka"), track.pt(), track.tofNSigmaKa(), multiplicity, occupancy);
+        histos.fill(HIST("nsigmatof/test_occupancy/neg/pr"), track.pt(), track.tofNSigmaPr(), multiplicity, occupancy);
+      }
     } // track
   } // process function
   PROCESS_SWITCH(tofSpectra, processOccupancy, "check for occupancy plots", false);
@@ -1641,12 +1650,15 @@ struct tofSpectra {
           histos.fill(HIST(hdcaxystr[i]), track.pt(), track.dcaXY());
           histos.fill(HIST(hdcazstr[i]), track.pt(), track.dcaZ());
         }
-        if (mcParticle.has_daughters()) {
-          auto daughter0 = mcParticle.template daughters_as<aod::McParticles>().begin();
-          double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-          double vertexPrimary[3] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
-          auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau) / 10000;
-          hDecayLengthStr[i]->Fill(track.pt(), decayLength);
+
+        if (mcParticle.has_mothers()) {
+          for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
+            auto daughter0 = mother.template daughters_as<aod::McParticles>().begin();
+            double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
+            double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
+            auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
+            hDecayLengthStr[i]->Fill(track.pt(), decayLength);
+          }
         }
       } else {
         if (enableDCAxyzHistograms) {
@@ -1713,23 +1725,25 @@ struct tofSpectra {
           hDcaZMCNotHF[i]->Fill(track.pt(), track.dcaZ());
         }
 
-        if (mcParticle.has_daughters()) {
-          auto daughter0 = mcParticle.template daughters_as<aod::McParticles>().begin();
-          double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-          double vertexPrimary[3] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
-          auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau) / 10000;
+        if (mcParticle.has_mothers()) {
+          for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
+            auto daughter0 = mother.template daughters_as<aod::McParticles>().begin();
+            double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
+            double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
+            auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
 
-          if (IsD0Mother) {
-            hDecayLengthMCD0[i]->Fill(track.pt(), decayLength);
-          }
-          if (IsCharmMother) {
-            hDecayLengthMCCharm[i]->Fill(track.pt(), decayLength);
-          }
-          if (IsBeautyMother) {
-            hDecayLengthMCBeauty[i]->Fill(track.pt(), decayLength);
-          }
-          if (IsNotHFMother) {
-            hDecayLengthMCNotHF[i]->Fill(track.pt(), decayLength);
+            if (IsD0Mother) {
+              hDecayLengthMCD0[i]->Fill(track.pt(), decayLength);
+            }
+            if (IsCharmMother) {
+              hDecayLengthMCCharm[i]->Fill(track.pt(), decayLength);
+            }
+            if (IsBeautyMother) {
+              hDecayLengthMCBeauty[i]->Fill(track.pt(), decayLength);
+            }
+            if (IsNotHFMother) {
+              hDecayLengthMCNotHF[i]->Fill(track.pt(), decayLength);
+            }
           }
         }
       }

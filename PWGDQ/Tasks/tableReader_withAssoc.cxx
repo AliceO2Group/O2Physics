@@ -262,17 +262,23 @@ struct AnalysisEventSelection {
 
       bool decision = false;
       // Fill histograms in the class Event, before cuts
-      fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
+      if (fConfigQA) {
+        fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
+      }
 
       // Apply event cuts and fill histograms after selection
       if (fEventCut->IsSelected(VarManager::fgValues)) {
         if (fConfigRunZorro) {
           if (event.tag_bit(56)) { // This is the bit used for the software trigger event selections [TO BE DONE: find a more clear way to use it]
-            fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+            if (fConfigQA) {
+              fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+            }
             decision = true;
           }
         } else {
-          fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+          if (fConfigQA) {
+            fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+          }
           decision = true;
         }
       }
@@ -304,51 +310,57 @@ struct AnalysisEventSelection {
     // key: event global index, value: whether pileup event is a possible splitting
     std::map<int64_t, bool> collisionSplittingMap;
 
-    // Reset the fValues array and fill event observables
-    VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
-    // loop over the BC map, get the collision vectors and make in-bunch and out of bunch 2-event correlations
-    for (auto bc1It = fBCCollMap.begin(); bc1It != fBCCollMap.end(); ++bc1It) {
-      uint64_t bc1 = bc1It->first;
-      auto bc1Events = bc1It->second;
+    if (fConfigCheckSplitCollisions) {
+      // Reset the fValues array and fill event observables
+      VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
+      // loop over the BC map, get the collision vectors and make in-bunch and out of bunch 2-event correlations
+      for (auto bc1It = fBCCollMap.begin(); bc1It != fBCCollMap.end(); ++bc1It) {
+        uint64_t bc1 = bc1It->first;
+        auto bc1Events = bc1It->second;
 
-      // same bunch event correlations, if more than 1 collisions in this bunch
-      if (bc1Events.size() > 1) {
-        for (auto ev1It = bc1Events.begin(); ev1It != bc1Events.end(); ++ev1It) {
-          auto ev1 = events.rawIteratorAt(*ev1It);
-          for (auto ev2It = std::next(ev1It); ev2It != bc1Events.end(); ++ev2It) {
-            auto ev2 = events.rawIteratorAt(*ev2It);
-            // compute 2-event quantities and mark the candidate split collisions
-            VarManager::FillTwoEvents(ev1, ev2);
-            if (TMath::Abs(VarManager::fgValues[VarManager::kTwoEvDeltaZ]) < fConfigSplitCollisionsDeltaZ) { // this is a possible collision split
-              collisionSplittingMap[*ev1It] = true;
-              collisionSplittingMap[*ev2It] = true;
+        // same bunch event correlations, if more than 1 collisions in this bunch
+        if (bc1Events.size() > 1) {
+          for (auto ev1It = bc1Events.begin(); ev1It != bc1Events.end(); ++ev1It) {
+            auto ev1 = events.rawIteratorAt(*ev1It);
+            for (auto ev2It = std::next(ev1It); ev2It != bc1Events.end(); ++ev2It) {
+              auto ev2 = events.rawIteratorAt(*ev2It);
+              // compute 2-event quantities and mark the candidate split collisions
+              VarManager::FillTwoEvents(ev1, ev2);
+              if (TMath::Abs(VarManager::fgValues[VarManager::kTwoEvDeltaZ]) < fConfigSplitCollisionsDeltaZ) { // this is a possible collision split
+                collisionSplittingMap[*ev1It] = true;
+                collisionSplittingMap[*ev2It] = true;
+              }
+              if (fConfigQA) {
+                fHistMan->FillHistClass("SameBunchCorrelations", VarManager::fgValues);
+              }
+            } // end second event loop
+          } // end first event loop
+        } // end if BC1 events > 1
+
+        // loop over the following BCs in the TF
+        for (auto bc2It = std::next(bc1It); bc2It != fBCCollMap.end(); ++bc2It) {
+          uint64_t bc2 = bc2It->first;
+          if ((bc2 > bc1 ? bc2 - bc1 : bc1 - bc2) > fConfigSplitCollisionsDeltaBC) {
+            break;
+          }
+          auto bc2Events = bc2It->second;
+
+          // loop over events in the first BC
+          for (auto ev1It : bc1Events) {
+            auto ev1 = events.rawIteratorAt(ev1It);
+            // loop over events in the second BC
+            for (auto ev2It : bc2Events) {
+              auto ev2 = events.rawIteratorAt(ev2It);
+              // compute 2-event quantities and mark the candidate split collisions
+              VarManager::FillTwoEvents(ev1, ev2);
+              if (TMath::Abs(VarManager::fgValues[VarManager::kTwoEvDeltaZ]) < fConfigSplitCollisionsDeltaZ) { // this is a possible collision split
+                collisionSplittingMap[ev1It] = true;
+                collisionSplittingMap[ev2It] = true;
+              }
+              if (fConfigQA) {
+                fHistMan->FillHistClass("OutOfBunchCorrelations", VarManager::fgValues);
+              }
             }
-            fHistMan->FillHistClass("SameBunchCorrelations", VarManager::fgValues);
-          } // end second event loop
-        } // end first event loop
-      } // end if BC1 events > 1
-
-      // loop over the following BCs in the TF
-      for (auto bc2It = std::next(bc1It); bc2It != fBCCollMap.end(); ++bc2It) {
-        uint64_t bc2 = bc2It->first;
-        if ((bc2 > bc1 ? bc2 - bc1 : bc1 - bc2) > fConfigSplitCollisionsDeltaBC) {
-          break;
-        }
-        auto bc2Events = bc2It->second;
-
-        // loop over events in the first BC
-        for (auto ev1It : bc1Events) {
-          auto ev1 = events.rawIteratorAt(ev1It);
-          // loop over events in the second BC
-          for (auto ev2It : bc2Events) {
-            auto ev2 = events.rawIteratorAt(ev2It);
-            // compute 2-event quantities and mark the candidate split collisions
-            VarManager::FillTwoEvents(ev1, ev2);
-            if (TMath::Abs(VarManager::fgValues[VarManager::kTwoEvDeltaZ]) < fConfigSplitCollisionsDeltaZ) { // this is a possible collision split
-              collisionSplittingMap[ev1It] = true;
-              collisionSplittingMap[ev2It] = true;
-            }
-            fHistMan->FillHistClass("OutOfBunchCorrelations", VarManager::fgValues);
           }
         }
       }
@@ -856,32 +868,47 @@ struct AnalysisPrefilterSelection {
   uint32_t fPrefilterMask;
   int fPrefilterCutBit;
 
+  Preslice<aod::ReducedTracksAssoc> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
+
   void init(o2::framework::InitContext& context)
   {
     if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
 
+    bool runPrefilter = true;
     // get the list of track cuts to be prefiltered
     TString trackCutsStr = fConfigTrackCuts.value;
     TObjArray* objArrayTrackCuts = nullptr;
     if (!trackCutsStr.IsNull()) {
       objArrayTrackCuts = trackCutsStr.Tokenize(",");
+      if (objArrayTrackCuts == nullptr) {
+        runPrefilter = false;
+      }
+    } else {
+      LOG(warn) << " No track cuts to prefilter! Prefilter will not be run";
+      runPrefilter = false;
     }
-    if (objArrayTrackCuts->GetEntries() == 0) {
-      LOG(fatal) << " No track cuts to prefilter!";
+    // get the cut to be used as loose selection
+    TString prefilterTrackCutStr = fConfigPrefilterTrackCut.value;
+    if (prefilterTrackCutStr.IsNull()) {
+      LOG(warn) << " No prefilter loose selection specified! Prefilter will not be run";
+      runPrefilter = false;
     }
 
-    // get the list of cuts that were computed in the barrel track-selection task and create a bit mask
-    //  to mark just the ones we want to apply a prefilter on
     fPrefilterMask = static_cast<uint32_t>(0);
     fPrefilterCutBit = -1;
-    string trackCuts;
-    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", trackCuts, false);
-    TString allTrackCutsStr = trackCuts;
-    TString prefilterTrackCutStr = fConfigPrefilterTrackCut.value;
-    if (!trackCutsStr.IsNull()) {
+    if (runPrefilter) {
+      // get the list of cuts that were computed in the barrel track-selection task and create a bit mask
+      //  to mark just the ones we want to apply a prefilter on
+      string trackCuts;
+      getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", trackCuts, false);
+      TString allTrackCutsStr = trackCuts;
+
       std::unique_ptr<TObjArray> objArray(allTrackCutsStr.Tokenize(","));
+      if (objArray == nullptr) {
+        LOG(fatal) << " Not getting any track cuts from the barrel-track-selection ";
+      }
       if (objArray->FindObject(prefilterTrackCutStr.Data()) == nullptr) {
         LOG(fatal) << " Prefilter track cut not among the cuts calculated by the track-selection task! ";
       }
@@ -894,16 +921,15 @@ struct AnalysisPrefilterSelection {
           fPrefilterCutBit = icut;
         }
       }
+      // setup the prefilter pair cut
+      fPairCut = new AnalysisCompositeCut(true);
+      TString pairCutStr = fConfigPrefilterPairCut.value;
+      if (!pairCutStr.IsNull()) {
+        fPairCut = dqcuts::GetCompositeCut(pairCutStr.Data());
+      }
     }
     if (fPrefilterMask == static_cast<uint32_t>(0) || fPrefilterCutBit < 0) {
       LOG(warn) << "No specified loose cut or track cuts for prefiltering. This task will do nothing.";
-    }
-
-    // setup the prefilter pair cut
-    fPairCut = new AnalysisCompositeCut(true);
-    TString pairCutStr = fConfigPrefilterPairCut.value;
-    if (!pairCutStr.IsNull()) {
-      fPairCut = dqcuts::GetCompositeCut(pairCutStr.Data());
     }
 
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -955,11 +981,8 @@ struct AnalysisPrefilterSelection {
     } // end loop over combinations
   }
 
-  Preslice<aod::ReducedTracksAssoc> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
-
   void processBarrelSkimmed(MyEvents const& events, soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& assocs, MyBarrelTracks const& tracks)
   {
-
     fPrefilterMap.clear();
 
     for (auto& event : events) {
@@ -968,17 +991,25 @@ struct AnalysisPrefilterSelection {
         runPrefilter<gkTrackFillMap>(groupedAssocs, tracks);
       }
     }
+
     uint32_t mymap = -1;
-    for (auto& assoc : assocs) {
-      auto track = assoc.template reducedtrack_as<MyBarrelTracks>();
-      mymap = -1;
-      // If cuts were not configured, then produce a map with all 1's
-      if (fPrefilterCutBit < 0 || fPrefilterMask == 0) {
+    // If cuts were not configured, then produce a map with all 1's and publish it for all associations
+    if (fPrefilterCutBit < 0 || fPrefilterMask == 0) {
+      for (int i = 0; i < assocs.size(); ++i) {
         prefilter(mymap);
-      } else if (fPrefilterMap.find(track.globalIndex()) != fPrefilterMap.end()) {
-        // NOTE: publish the bitwise negated bits (~), so there will be zeroes for cuts that failed the prefiltering and 1 everywhere else
-        mymap = ~fPrefilterMap[track.globalIndex()];
-        prefilter(mymap);
+      }
+    } else {
+      for (auto& assoc : assocs) {
+        // TODO: just use the index from the assoc (no need to cast the whole track)
+        auto track = assoc.template reducedtrack_as<MyBarrelTracks>();
+        mymap = -1;
+        if (fPrefilterMap.find(track.globalIndex()) != fPrefilterMap.end()) {
+          // NOTE: publish the bitwise negated bits (~), so there will be zeroes for cuts that failed the prefiltering and 1 everywhere else
+          mymap = ~fPrefilterMap[track.globalIndex()];
+          prefilter(mymap);
+        } else {
+          prefilter(mymap); // track did not pass the prefilter selections, so publish just 1's
+        }
       }
     }
   }

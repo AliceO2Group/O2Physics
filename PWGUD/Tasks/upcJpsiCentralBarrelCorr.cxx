@@ -14,6 +14,7 @@
 /// \since March 2024
 
 #include <vector>
+#include <utility>
 
 // O2 headers
 #include "Framework/runDataProcessing.h"
@@ -44,6 +45,8 @@ struct UpcJpsiCentralBarrel {
   ConfigurableAxis axisIVM{"axisIVM", {500.0f, 2.0f, 4.5f}, "M_#it{inv} (GeV/#it{c}^{2})"};
   ConfigurableAxis axisIVMWide{"axisIVMWide", {350.0f, 0.0f, 4.5f}, "M_#it{inv} (GeV/#it{c}^{2})"};
   ConfigurableAxis axisPt{"axisPt", {250.0f, 0.1f, 3.0f}, "#it{p}_T (GeV/#it{c})"};
+  ConfigurableAxis axisPt2{"axisPt2", {250.0f, 0.0f, 0.01f}, "#it{p}_T (GeV/#it{c})"};
+  ConfigurableAxis axisPt2wide{"axisPt2wide", {250.0f, 0.0f, 0.04f}, "#it{p}_T (GeV/#it{c})"};
   ConfigurableAxis axisP{"axisP", {250.0f, 0.1f, 3.0f}, "#it{p} (GeV/#it{c})"};
   ConfigurableAxis axisEta{"axisEta", {250.0f, -1.5f, 1.5f}, "#eta (-)"};
   ConfigurableAxis axisCounter{"axisCounter", {20.0f, 0.0f, 20.0f}, "Number of events (-)"};
@@ -51,15 +54,17 @@ struct UpcJpsiCentralBarrel {
   ConfigurableAxis axisAccAngle{"axisAccAngle", {250.0f, -0.2f, 0.2f}, "accAngle"};
   ConfigurableAxis axisAngTheta{"axisAngTheta", {250.0f, -1.5f, 1.5f}, "cos #theta (-)"};
   ConfigurableAxis axisTPC{"axisTPC", {1000.0f, 0, 200.0f}, "TPC d#it{E}/d#it{x}"};
-  ConfigurableAxis axisTOF{"axisTOF", {1000.0f, 0, 200.0f}, "TOF d#it{E}/d#it{x}"};
   ConfigurableAxis axisBetaTOF{"axisBetaTOF", {100.0f, 0, 1.5}, "TOF #beta"};
   ConfigurableAxis axisSigma{"axisSigma", {50, -25, 25}, "#sigma"};
   ConfigurableAxis axisZDCEnergy{"axisZDCEnergy", {250, -5.0, 20.0}, "ZDC energy"};
   ConfigurableAxis axisZDCTime{"axisZDCTime", {200, -10.0, 10.0}, "ZDC time"};
   ConfigurableAxis axisDCA{"axisDCA", {1000, -20.0, 20.0}, "DCA"};
-  ConfigurableAxis axisChi2{"axisChi2", {1000, 0.0, 100.0}, "Chi2"};
+  ConfigurableAxis axisChi2{"axisChi2", {200, -10.0, 40}, "Chi2"};
   ConfigurableAxis axisIVMSel{"axisIVMSel", {1000, 0.0, 10.0}, "IVM"};
   ConfigurableAxis axisCounterSel{"axisCounterSel", {1000, 0.0, 200.0}, "Selection"};
+  ConfigurableAxis axisITSNCls{"axisITSNCls", {10, 0.0, 10.0}, "ITSNCls"};
+  ConfigurableAxis axisTPCNCls{"axisTPCNCls", {170, -1, 160.0}, "TPCNCls"};
+  ConfigurableAxis axisTPCCrossed{"axisTPCCrossed", {300, 20, 170.0}, "TPCCrossedRows"};
 
   // configurable cuts (modify in json)
   // track quality cuts
@@ -69,7 +74,6 @@ struct UpcJpsiCentralBarrel {
   Configurable<bool> TOFOneProton{"TOFOneProton", false, "one candidate proton has TOF hits"};
   Configurable<bool> DCAcut{"DCAcut", false, "DCA cut from run2."};
   Configurable<bool> newCutTPC{"newCutTPC", false, "New cuts for TPC quality tracks."};
-  Configurable<float> TPCNSigmaMu{"TPCNSigmaMu", 3, "PID for TPC Mu track"};
   Configurable<float> EtaCut{"EtaCut", 0.9f, "acceptance cut per track"};
   Configurable<float> cutPtTrack{"cutPtTrack", 0.7f, "pT cut per track"};
   Configurable<float> cutVertexZ{"cutVertexZ", 10.0f, "cut on vertex position in Z"};
@@ -172,6 +176,10 @@ struct UpcJpsiCentralBarrel {
     "Asymmetry",
     {}};
 
+  HistogramRegistry MC{
+    "MC",
+    {}};
+
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
   using UDCollisionFull = UDCollisionsFull::iterator;
   using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
@@ -185,14 +193,6 @@ struct UpcJpsiCentralBarrel {
     Statistics.add("Statistics/hNumberOfCollisions", "hNumberOfCollisions", {HistType::kTH1F, {axisCounter}});
     Statistics.add("Statistics/hNumberOfTracks", "hNumberOfTracks", {HistType::kTH1F, {axisCounter}});
     Statistics.add("Statistics/hNumberGT", "hNumberGT", {HistType::kTH1F, {axisCounter}});
-    Statistics.add("Statistics/hNumberGTselected", "hNumberGTselected", {HistType::kTH1F, {axisCounter}});
-    Statistics.add("Statistics/hNumberGTel", "hNumberGTel", {HistType::kTH1F, {axisCounter}});
-    Statistics.add("Statistics/hNumberGTmu", "hNumberGTmu", {HistType::kTH1F, {axisCounter}});
-    Statistics.add("Statistics/hNumberGTp", "hNumberGTp", {HistType::kTH1F, {axisCounter}});
-    Statistics.add("Statistics/hNumberGTelSigma", "hNumberGTelSigma", {HistType::kTH1F, {axisCounter}});
-    Statistics.add("Statistics/hNumberGTmuSigma", "hNumberGTmuSigma", {HistType::kTH1F, {axisCounter}});
-    Statistics.add("Statistics/hNumberGTpSigma", "hNumberGTpSigma", {HistType::kTH1F, {axisCounter}});
-    Statistics.add("Statistics/hNumberGTpSigmaTOF", "hNumberGTpSigmaTOF", {HistType::kTH1F, {axisCounter}});
     Statistics.add("Statistics/hCutCounterCollisions", "hCutCounterCollisions", {HistType::kTH1F, {axisCounter}});
     Statistics.add("Statistics/hCutCounterTracks", "hCutCounterTracks", {HistType::kTH1F, {axisCounter}});
 
@@ -204,7 +204,7 @@ struct UpcJpsiCentralBarrel {
     RawData.add("RawData/hTPCNClsFindable", "hTPCNClsFindable", {HistType::kTH1F, {axisTPC}});
     RawData.add("RawData/hTPCNClsFindableMinusFound", "hTPCNClsFindableMinusFound", {HistType::kTH1F, {axisTPC}});
     RawData.add("RawData/hITSNCls", "hITSNCls", {HistType::kTH1F, {axisCounter}});
-    RawData.add("RawData/hTPCNCls", "hITSNCls", {HistType::kTH1F, {axisCounter}});
+    RawData.add("RawData/hTPCNCls", "hTPCNCls", {HistType::kTH1F, {axisCounter}});
     RawData.add("RawData/hITSChi2NCls", "hITSChi2NCls", {HistType::kTH1F, {axisChi2}});
     RawData.add("RawData/hTPCChi2NCls", "hTPCChi2NCls", {HistType::kTH1F, {axisChi2}});
     RawData.add("RawData/hPositionZ", "hPositionZ", {HistType::kTH1F, {axisSigma}});
@@ -213,84 +213,82 @@ struct UpcJpsiCentralBarrel {
     RawData.add("RawData/hPositionXY", "hPositionXY", {HistType::kTH2F, {axisSigma, axisSigma}});
     RawData.add("RawData/hZNACommonEnergy", "hZNACommonEnergy", {HistType::kTH1F, {axisZDCEnergy}});
     RawData.add("RawData/hZNCCommonEnergy", "hZNCCommonEnergy", {HistType::kTH1F, {axisZDCEnergy}});
+    RawData.add("RawData/hZNAvsZNCCommonEnergy", "hZNAvsZNCCommonEnergy", {HistType::kTH2F, {axisZDCEnergy, axisZDCEnergy}});
     RawData.add("RawData/hZNATime", "hZNATime", {HistType::kTH1F, {axisZDCTime}});
     RawData.add("RawData/hZNCTime", "hZNCTime", {HistType::kTH1F, {axisZDCTime}});
+    RawData.add("RawData/hZNAvsZNCTime", "hZNAvsZNCTime", {HistType::kTH2F, {axisZDCTime, axisZDCTime}});
     RawData.add("RawData/PID/hTPCVsP", "hTPCVsP", {HistType::kTH2F, {axisP, axisTPC}});
     RawData.add("RawData/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axisPt, axisTPC}});
     RawData.add("RawData/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
     RawData.add("RawData/PID/hTPCVsEta", "hTPCVsEta", {HistType::kTH2F, {axisEta, axisTPC}});
-    RawData.add("RawData/PID/hTOFVsP", "hTOFVsP", {HistType::kTH2F, {axisP, axisTOF}});
     RawData.add("RawData/PID/hBetaTOFVsP", "hBetaTOFVsP", {HistType::kTH2F, {axisP, axisBetaTOF}});
-    RawData.add("RawData/PID/hTOFVsPt", "hTOFVsPt", {HistType::kTH2F, {axisPt, axisTOF}});
-    RawData.add("RawData/PID/hTOFVsPhi", "hTOFVsPhi", {HistType::kTH2F, {axisPhi, axisTOF}});
-    RawData.add("RawData/PID/hTOFVsEta", "hTOFVsEta", {HistType::kTH2F, {axisEta, axisTOF}});
 
     // Selection checks
-    Selections.add("Selections/Electron/Mass/Leading/hITSNClsVsM", "hITSNClsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Electron/Mass/Leading/hITSChi2NClsVsM", "hITSChi2NClsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Electron/Mass/Leading/hTPCNClsVsM", "hTPCNClsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Electron/Mass/Leading/hTPCChi2NClsVsM", "hTPCChi2NClsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Electron/Mass/Leading/hTPCNClsCrossedRowsVsM", "hTPCNClsCrossedRowsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Electron/Mass/Subleading/hITSNClsVsM", "hITSNClsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Electron/Mass/Subleading/hITSChi2NClsVsM", "hITSChi2NClsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Electron/Mass/Subleading/hTPCNClsVsM", "hTPCNClsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Electron/Mass/Subleading/hTPCChi2NClsVsM", "hTPCChi2NClsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Electron/Mass/Subleading/hTPCNClsCrossedRowsVsM", "hTPCNClsCrossedRowsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
+    Selections.add("Selections/Electron/Mass/Leading/hITSNClsVsM", "hITSNClsVsM", {HistType::kTH2F, {axisIVMSel, axisITSNCls}});
+    Selections.add("Selections/Electron/Mass/Leading/hITSChi2NClsVsM", "hITSChi2NClsVsM", {HistType::kTH2F, {axisIVMSel, axisChi2}});
+    Selections.add("Selections/Electron/Mass/Leading/hTPCNClsVsM", "hTPCNClsVsM", {HistType::kTH2F, {axisIVMSel, axisTPCNCls}});
+    Selections.add("Selections/Electron/Mass/Leading/hTPCChi2NClsVsM", "hTPCChi2NClsVsM", {HistType::kTH2F, {axisIVMSel, axisChi2}});
+    Selections.add("Selections/Electron/Mass/Leading/hTPCNClsCrossedRowsVsM", "hTPCNClsCrossedRowsVsM", {HistType::kTH2F, {axisIVMSel, axisTPCCrossed}});
+    Selections.add("Selections/Electron/Mass/Subleading/hITSNClsVsM", "hITSNClsVsM", {HistType::kTH2F, {axisIVMSel, axisITSNCls}});
+    Selections.add("Selections/Electron/Mass/Subleading/hITSChi2NClsVsM", "hITSChi2NClsVsM", {HistType::kTH2F, {axisIVMSel, axisChi2}});
+    Selections.add("Selections/Electron/Mass/Subleading/hTPCNClsVsM", "hTPCNClsVsM", {HistType::kTH2F, {axisIVMSel, axisTPCNCls}});
+    Selections.add("Selections/Electron/Mass/Subleading/hTPCChi2NClsVsM", "hTPCChi2NClsVsM", {HistType::kTH2F, {axisIVMSel, axisChi2}});
+    Selections.add("Selections/Electron/Mass/Subleading/hTPCNClsCrossedRowsVsM", "hTPCNClsCrossedRowsVsM", {HistType::kTH2F, {axisIVMSel, axisTPCCrossed}});
 
-    Selections.add("Selections/Electron/Rapidity/Leading/hITSNClsVsY", "hITSNClsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Electron/Rapidity/Leading/hITSChi2NClsVsY", "hITSChi2NClsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Electron/Rapidity/Leading/hTPCNClsVsY", "hTPCNClsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Electron/Rapidity/Leading/hTPCChi2NClsVsY", "hTPCChi2NClsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Electron/Rapidity/Leading/hTPCNClsCrossedRowsVsY", "hTPCNClsCrossedRowsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Electron/Rapidity/Subleading/hITSNClsVsY", "hITSNClsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Electron/Rapidity/Subleading/hITSChi2NClsVsY", "hITSChi2NClsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Electron/Rapidity/Subleading/hTPCNClsVsY", "hTPCNClsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Electron/Rapidity/Subleading/hTPCChi2NClsVsY", "hTPCChi2NClsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Electron/Rapidity/Subleading/hTPCNClsCrossedRowsVsY", "hTPCNClsCrossedRowsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
+    Selections.add("Selections/Electron/Rapidity/Leading/hITSNClsVsY", "hITSNClsVsY", {HistType::kTH2F, {axisEta, axisITSNCls}});
+    Selections.add("Selections/Electron/Rapidity/Leading/hITSChi2NClsVsY", "hITSChi2NClsVsY", {HistType::kTH2F, {axisEta, axisChi2}});
+    Selections.add("Selections/Electron/Rapidity/Leading/hTPCNClsVsY", "hTPCNClsVsY", {HistType::kTH2F, {axisEta, axisTPCNCls}});
+    Selections.add("Selections/Electron/Rapidity/Leading/hTPCChi2NClsVsY", "hTPCChi2NClsVsY", {HistType::kTH2F, {axisEta, axisChi2}});
+    Selections.add("Selections/Electron/Rapidity/Leading/hTPCNClsCrossedRowsVsY", "hTPCNClsCrossedRowsVsY", {HistType::kTH2F, {axisEta, axisTPCCrossed}});
+    Selections.add("Selections/Electron/Rapidity/Subleading/hITSNClsVsY", "hITSNClsVsY", {HistType::kTH2F, {axisEta, axisITSNCls}});
+    Selections.add("Selections/Electron/Rapidity/Subleading/hITSChi2NClsVsY", "hITSChi2NClsVsY", {HistType::kTH2F, {axisEta, axisChi2}});
+    Selections.add("Selections/Electron/Rapidity/Subleading/hTPCNClsVsY", "hTPCNClsVsY", {HistType::kTH2F, {axisEta, axisTPCNCls}});
+    Selections.add("Selections/Electron/Rapidity/Subleading/hTPCChi2NClsVsY", "hTPCChi2NClsVsY", {HistType::kTH2F, {axisEta, axisChi2}});
+    Selections.add("Selections/Electron/Rapidity/Subleading/hTPCNClsCrossedRowsVsY", "hTPCNClsCrossedRowsVsY", {HistType::kTH2F, {axisEta, axisTPCCrossed}});
 
-    Selections.add("Selections/Electron/Pt/Leading/hITSNClsVsPt", "hITSNClsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Electron/Pt/Leading/hITSChi2NClsVsPt", "hITSChi2NClsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Electron/Pt/Leading/hTPCNClsVsPt", "hTPCNClsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Electron/Pt/Leading/hTPCChi2NClsVsPt", "hTPCChi2NClsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Electron/Pt/Leading/hTPCNClsCrossedRowsVsPt", "hTPCNClsCrossedRowsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Electron/Pt/Subleading/hITSNClsVsPt", "hITSNClsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Electron/Pt/Subleading/hITSChi2NClsVsPt", "hITSChi2NClsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Electron/Pt/Subleading/hTPCNClsVsPt", "hTPCNClsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Electron/Pt/Subleading/hTPCChi2NClsVsPt", "hTPCChi2NClsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Electron/Pt/Subleading/hTPCNClsCrossedRowsVsPt", "hTPCNClsCrossedRowsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
+    Selections.add("Selections/Electron/Pt/Leading/hITSNClsVsPt", "hITSNClsVsPt", {HistType::kTH2F, {axisPt, axisITSNCls}});
+    Selections.add("Selections/Electron/Pt/Leading/hITSChi2NClsVsPt", "hITSChi2NClsVsPt", {HistType::kTH2F, {axisPt, axisChi2}});
+    Selections.add("Selections/Electron/Pt/Leading/hTPCNClsVsPt", "hTPCNClsVsPt", {HistType::kTH2F, {axisPt, axisTPCNCls}});
+    Selections.add("Selections/Electron/Pt/Leading/hTPCChi2NClsVsPt", "hTPCChi2NClsVsPt", {HistType::kTH2F, {axisPt, axisChi2}});
+    Selections.add("Selections/Electron/Pt/Leading/hTPCNClsCrossedRowsVsPt", "hTPCNClsCrossedRowsVsPt", {HistType::kTH2F, {axisPt, axisTPCCrossed}});
+    Selections.add("Selections/Electron/Pt/Subleading/hITSNClsVsPt", "hITSNClsVsPt", {HistType::kTH2F, {axisPt, axisITSNCls}});
+    Selections.add("Selections/Electron/Pt/Subleading/hITSChi2NClsVsPt", "hITSChi2NClsVsPt", {HistType::kTH2F, {axisPt, axisChi2}});
+    Selections.add("Selections/Electron/Pt/Subleading/hTPCNClsVsPt", "hTPCNClsVsPt", {HistType::kTH2F, {axisPt, axisTPCNCls}});
+    Selections.add("Selections/Electron/Pt/Subleading/hTPCChi2NClsVsPt", "hTPCChi2NClsVsPt", {HistType::kTH2F, {axisPt, axisChi2}});
+    Selections.add("Selections/Electron/Pt/Subleading/hTPCNClsCrossedRowsVsPt", "hTPCNClsCrossedRowsVsPt", {HistType::kTH2F, {axisPt, axisTPCCrossed}});
 
-    Selections.add("Selections/Muon/Mass/Leading/hITSNClsVsM", "hITSNClsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Muon/Mass/Leading/hITSChi2NClsVsM", "hITSChi2NClsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Muon/Mass/Leading/hTPCNClsVsM", "hTPCNClsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Muon/Mass/Leading/hTPCChi2NClsVsM", "hTPCChi2NClsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Muon/Mass/Leading/hTPCNClsCrossedRowsVsM", "hTPCNClsCrossedRowsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Muon/Mass/Subleading/hITSNClsVsM", "hITSNClsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Muon/Mass/Subleading/hITSChi2NClsVsM", "hITSChi2NClsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Muon/Mass/Subleading/hTPCNClsVsM", "hTPCNClsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Muon/Mass/Subleading/hTPCChi2NClsVsM", "hTPCChi2NClsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
-    Selections.add("Selections/Muon/Mass/Subleading/hTPCNClsCrossedRowsVsM", "hTPCNClsCrossedRowsVsM", {HistType::kTH2F, {axisIVMSel, axisCounterSel}});
+    Selections.add("Selections/Muon/Mass/Leading/hITSNClsVsM", "hITSNClsVsM", {HistType::kTH2F, {axisIVMSel, axisITSNCls}});
+    Selections.add("Selections/Muon/Mass/Leading/hITSChi2NClsVsM", "hITSChi2NClsVsM", {HistType::kTH2F, {axisIVMSel, axisChi2}});
+    Selections.add("Selections/Muon/Mass/Leading/hTPCNClsVsM", "hTPCNClsVsM", {HistType::kTH2F, {axisIVMSel, axisTPCNCls}});
+    Selections.add("Selections/Muon/Mass/Leading/hTPCChi2NClsVsM", "hTPCChi2NClsVsM", {HistType::kTH2F, {axisIVMSel, axisChi2}});
+    Selections.add("Selections/Muon/Mass/Leading/hTPCNClsCrossedRowsVsM", "hTPCNClsCrossedRowsVsM", {HistType::kTH2F, {axisIVMSel, axisTPCCrossed}});
+    Selections.add("Selections/Muon/Mass/Subleading/hITSNClsVsM", "hITSNClsVsM", {HistType::kTH2F, {axisIVMSel, axisITSNCls}});
+    Selections.add("Selections/Muon/Mass/Subleading/hITSChi2NClsVsM", "hITSChi2NClsVsM", {HistType::kTH2F, {axisIVMSel, axisChi2}});
+    Selections.add("Selections/Muon/Mass/Subleading/hTPCNClsVsM", "hTPCNClsVsM", {HistType::kTH2F, {axisIVMSel, axisTPCNCls}});
+    Selections.add("Selections/Muon/Mass/Subleading/hTPCChi2NClsVsM", "hTPCChi2NClsVsM", {HistType::kTH2F, {axisIVMSel, axisChi2}});
+    Selections.add("Selections/Muon/Mass/Subleading/hTPCNClsCrossedRowsVsM", "hTPCNClsCrossedRowsVsM", {HistType::kTH2F, {axisIVMSel, axisTPCCrossed}});
 
-    Selections.add("Selections/Muon/Rapidity/Leading/hITSNClsVsY", "hITSNClsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Muon/Rapidity/Leading/hITSChi2NClsVsY", "hITSChi2NClsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Muon/Rapidity/Leading/hTPCNClsVsY", "hTPCNClsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Muon/Rapidity/Leading/hTPCChi2NClsVsY", "hTPCChi2NClsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Muon/Rapidity/Leading/hTPCNClsCrossedRowsVsY", "hTPCNClsCrossedRowsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Muon/Rapidity/Subleading/hITSNClsVsY", "hITSNClsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Muon/Rapidity/Subleading/hITSChi2NClsVsY", "hITSChi2NClsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Muon/Rapidity/Subleading/hTPCNClsVsY", "hTPCNClsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Muon/Rapidity/Subleading/hTPCChi2NClsVsY", "hTPCChi2NClsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
-    Selections.add("Selections/Muon/Rapidity/Subleading/hTPCNClsCrossedRowsVsY", "hTPCNClsCrossedRowsVsY", {HistType::kTH2F, {axisEta, axisCounterSel}});
+    Selections.add("Selections/Muon/Rapidity/Leading/hITSNClsVsY", "hITSNClsVsY", {HistType::kTH2F, {axisEta, axisITSNCls}});
+    Selections.add("Selections/Muon/Rapidity/Leading/hITSChi2NClsVsY", "hITSChi2NClsVsY", {HistType::kTH2F, {axisEta, axisChi2}});
+    Selections.add("Selections/Muon/Rapidity/Leading/hTPCNClsVsY", "hTPCNClsVsY", {HistType::kTH2F, {axisEta, axisTPCNCls}});
+    Selections.add("Selections/Muon/Rapidity/Leading/hTPCChi2NClsVsY", "hTPCChi2NClsVsY", {HistType::kTH2F, {axisEta, axisChi2}});
+    Selections.add("Selections/Muon/Rapidity/Leading/hTPCNClsCrossedRowsVsY", "hTPCNClsCrossedRowsVsY", {HistType::kTH2F, {axisEta, axisTPCCrossed}});
+    Selections.add("Selections/Muon/Rapidity/Subleading/hITSNClsVsY", "hITSNClsVsY", {HistType::kTH2F, {axisEta, axisITSNCls}});
+    Selections.add("Selections/Muon/Rapidity/Subleading/hITSChi2NClsVsY", "hITSChi2NClsVsY", {HistType::kTH2F, {axisEta, axisChi2}});
+    Selections.add("Selections/Muon/Rapidity/Subleading/hTPCNClsVsY", "hTPCNClsVsY", {HistType::kTH2F, {axisEta, axisTPCNCls}});
+    Selections.add("Selections/Muon/Rapidity/Subleading/hTPCChi2NClsVsY", "hTPCChi2NClsVsY", {HistType::kTH2F, {axisEta, axisChi2}});
+    Selections.add("Selections/Muon/Rapidity/Subleading/hTPCNClsCrossedRowsVsY", "hTPCNClsCrossedRowsVsY", {HistType::kTH2F, {axisEta, axisTPCCrossed}});
 
-    Selections.add("Selections/Muon/Pt/Leading/hITSNClsVsPt", "hITSNClsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Muon/Pt/Leading/hITSChi2NClsVsPt", "hITSChi2NClsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Muon/Pt/Leading/hTPCNClsVsPt", "hTPCNClsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Muon/Pt/Leading/hTPCChi2NClsVsPt", "hTPCChi2NClsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Muon/Pt/Leading/hTPCNClsCrossedRowsVsPt", "hTPCNClsCrossedRowsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Muon/Pt/Subleading/hITSNClsVsPt", "hITSNClsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Muon/Pt/Subleading/hITSChi2NClsVsPt", "hITSChi2NClsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Muon/Pt/Subleading/hTPCNClsVsPt", "hTPCNClsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Muon/Pt/Subleading/hTPCChi2NClsVsPt", "hTPCChi2NClsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
-    Selections.add("Selections/Muon/Pt/Subleading/hTPCNClsCrossedRowsVsPt", "hTPCNClsCrossedRowsVsPt", {HistType::kTH2F, {axisPt, axisCounterSel}});
+    Selections.add("Selections/Muon/Pt/Leading/hITSNClsVsPt", "hITSNClsVsPt", {HistType::kTH2F, {axisPt, axisITSNCls}});
+    Selections.add("Selections/Muon/Pt/Leading/hITSChi2NClsVsPt", "hITSChi2NClsVsPt", {HistType::kTH2F, {axisPt, axisChi2}});
+    Selections.add("Selections/Muon/Pt/Leading/hTPCNClsVsPt", "hTPCNClsVsPt", {HistType::kTH2F, {axisPt, axisTPCNCls}});
+    Selections.add("Selections/Muon/Pt/Leading/hTPCChi2NClsVsPt", "hTPCChi2NClsVsPt", {HistType::kTH2F, {axisPt, axisChi2}});
+    Selections.add("Selections/Muon/Pt/Leading/hTPCNClsCrossedRowsVsPt", "hTPCNClsCrossedRowsVsPt", {HistType::kTH2F, {axisPt, axisTPCCrossed}});
+    Selections.add("Selections/Muon/Pt/Subleading/hITSNClsVsPt", "hITSNClsVsPt", {HistType::kTH2F, {axisPt, axisITSNCls}});
+    Selections.add("Selections/Muon/Pt/Subleading/hITSChi2NClsVsPt", "hITSChi2NClsVsPt", {HistType::kTH2F, {axisPt, axisChi2}});
+    Selections.add("Selections/Muon/Pt/Subleading/hTPCNClsVsPt", "hTPCNClsVsPt", {HistType::kTH2F, {axisPt, axisTPCNCls}});
+    Selections.add("Selections/Muon/Pt/Subleading/hTPCChi2NClsVsPt", "hTPCChi2NClsVsPt", {HistType::kTH2F, {axisPt, axisChi2}});
+    Selections.add("Selections/Muon/Pt/Subleading/hTPCNClsCrossedRowsVsPt", "hTPCNClsCrossedRowsVsPt", {HistType::kTH2F, {axisPt, axisTPCCrossed}});
 
     // PVContributors histograms
     PVContributors.add("PVContributors/hTrackPt", "hTrackPt", {HistType::kTH1F, {axisPt}});
@@ -302,11 +300,7 @@ struct UpcJpsiCentralBarrel {
     PVContributors.add("PVContributors/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axisPt, axisTPC}});
     PVContributors.add("PVContributors/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
     PVContributors.add("PVContributors/PID/hTPCVsEta", "hTPCVsEta", {HistType::kTH2F, {axisEta, axisTPC}});
-    PVContributors.add("PVContributors/PID/hTOFVsP", "hTOFVsP", {HistType::kTH2F, {axisP, axisTOF}});
     PVContributors.add("PVContributors/PID/hBetaTOFVsP", "hBetaTOFVsP", {HistType::kTH2F, {axisP, axisBetaTOF}});
-    PVContributors.add("PVContributors/PID/hTOFVsPt", "hTOFVsPt", {HistType::kTH2F, {axisPt, axisTOF}});
-    PVContributors.add("PVContributors/PID/hTOFVsPhi", "hTOFVsPhi", {HistType::kTH2F, {axisPhi, axisTOF}});
-    PVContributors.add("PVContributors/PID/hTOFVsEta", "hTOFVsEta", {HistType::kTH2F, {axisEta, axisTOF}});
 
     // TG histograms
     TG.add("TG/hTrackPt1", "hTrackPt1", {HistType::kTH1F, {axisPt}});
@@ -321,18 +315,8 @@ struct UpcJpsiCentralBarrel {
     TG.add("TG/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axisPt, axisTPC}});
     TG.add("TG/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
     TG.add("TG/PID/hTPCVsEta", "hTPCVsEta", {HistType::kTH2F, {axisEta, axisTPC}});
-    TG.add("TG/PID/hTOFVsP", "hTOFVsP", {HistType::kTH2F, {axisP, axisTOF}});
     TG.add("TG/PID/hBetaTOFVsP", "hBetaTOFVsP", {HistType::kTH2F, {axisP, axisBetaTOF}});
-    TG.add("TG/PID/hTOFVsPt", "hTOFVsPt", {HistType::kTH2F, {axisPt, axisTOF}});
-    TG.add("TG/PID/hTOFVsPhi", "hTOFVsPhi", {HistType::kTH2F, {axisPhi, axisTOF}});
-    TG.add("TG/PID/hTOFVsEta", "hTOFVsEta", {HistType::kTH2F, {axisEta, axisTOF}});
-    TG.add("TG/TPC/hNsigmaMu", "hNsigmaMu", HistType::kTH1F, {axisSigma});
-    TG.add("TG/TPC/hNsigmaEl", "hNsigmaEl", HistType::kTH1F, {axisSigma});
-    TG.add("TG/TPC/hNsigmaPr", "hNsigmaPr", HistType::kTH1F, {axisSigma});
     TG.add("TG/TPC/TPCNegVsPosSignal", "TPCNegVsPosSignal", HistType::kTH2F, {axisTPC, axisTPC});
-    TG.add("TG/TOF/hNsigmaMu", "hNsigmaMu", HistType::kTH1F, {axisSigma});
-    TG.add("TG/TOF/hNsigmaEl", "hNsigmaEl", HistType::kTH1F, {axisSigma});
-    TG.add("TG/TOF/hNsigmaPr", "hNsigmaPr", HistType::kTH1F, {axisSigma});
 
     // TGmu histograms
     TGmu.add("TGmu/hTrackPt1", "hTrackPt1", {HistType::kTH1F, {axisPt}});
@@ -341,18 +325,12 @@ struct UpcJpsiCentralBarrel {
     TGmu.add("TGmu/hTrackPt2", "hTrackPt2", {HistType::kTH1F, {axisPt}});
     TGmu.add("TGmu/hTrackEta2", "hTrackEta2", {HistType::kTH1F, {axisEta}});
     TGmu.add("TGmu/hTrackPhi2", "hTrackPhi2", {HistType::kTH1F, {axisPhi}});
-    TGmu.add("TGmu/hNsigmaMu", "hNsigmaMu", HistType::kTH1F, {axisSigma});
-    TGmu.add("TGmu/hNsigmaMuTOF", "hNsigmaMuTOF", HistType::kTH1F, {axisSigma});
     TGmu.add("TGmu/TPCNegVsPosSignal", "TPCNegVsPosSignal", HistType::kTH2F, {axisTPC, axisTPC});
     TGmu.add("TGmu/PID/hTPCVsP", "hTPCVsP", {HistType::kTH2F, {axisP, axisTPC}});
     TGmu.add("TGmu/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axisPt, axisTPC}});
     TGmu.add("TGmu/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
     TGmu.add("TGmu/PID/hTPCVsEta", "hTPCVsEta", {HistType::kTH2F, {axisEta, axisTPC}});
-    TGmu.add("TGmu/PID/hTOFVsP", "hTOFVsP", {HistType::kTH2F, {axisP, axisTOF}});
     TGmu.add("TGmu/PID/hBetaTOFVsP", "hBetaTOFVsP", {HistType::kTH2F, {axisP, axisBetaTOF}});
-    TGmu.add("TGmu/PID/hTOFVsPt", "hTOFVsPt", {HistType::kTH2F, {axisPt, axisTOF}});
-    TGmu.add("TGmu/PID/hTOFVsPhi", "hTOFVsPhi", {HistType::kTH2F, {axisPhi, axisTOF}});
-    TGmu.add("TGmu/PID/hTOFVsEta", "hTOFVsEta", {HistType::kTH2F, {axisEta, axisTOF}});
 
     // TGmuCand histograms
     TGmuCand.add("TGmuCand/hTrackPt1", "hTrackPt1", {HistType::kTH1F, {axisPt}});
@@ -361,22 +339,26 @@ struct UpcJpsiCentralBarrel {
     TGmuCand.add("TGmuCand/hTrackPt2", "hTrackPt2", {HistType::kTH1F, {axisPt}});
     TGmuCand.add("TGmuCand/hTrackEta2", "hTrackEta2", {HistType::kTH1F, {axisEta}});
     TGmuCand.add("TGmuCand/hTrackPhi2", "hTrackPhi2", {HistType::kTH1F, {axisPhi}});
-    TGmuCand.add("TGmuCand/hTrackITSNcls1", "hTrackITSNcls1", {HistType::kTH1F, {axisCounter}});
-    TGmuCand.add("TGmuCand/hTrackITSNcls2", "hTrackITSNcls2", {HistType::kTH1F, {axisCounter}});
     TGmuCand.add("TGmuCand/hPairPt", "hPairPt", {HistType::kTH1F, {axisPt}});
     TGmuCand.add("TGmuCand/hPairIVM", "hPairIVM", {HistType::kTH1F, {axisIVMWide}});
     TGmuCand.add("TGmuCand/hJpsiPt", "hJpsiPt", {HistType::kTH1F, {axisPt}});
+    TGmuCand.add("TGmuCand/hJpsiPt2", "hJpsiPt2", {HistType::kTH1F, {axisPt2}});
+    TGmuCand.add("TGmuCand/XnXn/hJpsiPt2", "hJpsiPt2", {HistType::kTH1F, {axisPt2}});
+    TGmuCand.add("TGmuCand/OnOn/hJpsiPt2", "hJpsiPt2", {HistType::kTH1F, {axisPt2}});
+    TGmuCand.add("TGmuCand/OnXn/hJpsiPt2", "hJpsiPt2", {HistType::kTH1F, {axisPt2}});
+    TGmuCand.add("TGmuCand/XnOn/hJpsiPt2", "hJpsiPt2", {HistType::kTH1F, {axisPt2}});
+    TGmuCand.add("TGmuCand/hJpsiPt2wide", "hJpsiPt2wide", {HistType::kTH1F, {axisPt2}});
+    TGmuCand.add("TGmuCand/XnXn/hJpsiPt2wide", "hJpsiPt2wide", {HistType::kTH1F, {axisPt2wide}});
+    TGmuCand.add("TGmuCand/OnOn/hJpsiPt2wide", "hJpsiPt2wide", {HistType::kTH1F, {axisPt2wide}});
+    TGmuCand.add("TGmuCand/OnXn/hJpsiPt2wide", "hJpsiPt2wide", {HistType::kTH1F, {axisPt2wide}});
+    TGmuCand.add("TGmuCand/XnOn/hJpsiPt2wide", "hJpsiPt2wide", {HistType::kTH1F, {axisPt2wide}});
     TGmuCand.add("TGmuCand/hJpsiRap", "hJpsiRap", {HistType::kTH1F, {axisEta}});
     TGmuCand.add("TGmuCand/TPCNegVsPosSignal", "TPCNegVsPosSignal", HistType::kTH2F, {axisTPC, axisTPC});
     TGmuCand.add("TGmuCand/PID/hTPCVsP", "hTPCVsP", {HistType::kTH2F, {axisP, axisTPC}});
     TGmuCand.add("TGmuCand/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axisPt, axisTPC}});
     TGmuCand.add("TGmuCand/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
     TGmuCand.add("TGmuCand/PID/hTPCVsEta", "hTPCVsEta", {HistType::kTH2F, {axisEta, axisTPC}});
-    TGmuCand.add("TGmuCand/PID/hTOFVsP", "hTOFVsP", {HistType::kTH2F, {axisP, axisTOF}});
     TGmuCand.add("TGmuCand/PID/hBetaTOFVsP", "hBetaTOFVsP", {HistType::kTH2F, {axisP, axisBetaTOF}});
-    TGmuCand.add("TGmuCand/PID/hTOFVsPt", "hTOFVsPt", {HistType::kTH2F, {axisPt, axisTOF}});
-    TGmuCand.add("TGmuCand/PID/hTOFVsPhi", "hTOFVsPhi", {HistType::kTH2F, {axisPhi, axisTOF}});
-    TGmuCand.add("TGmuCand/PID/hTOFVsEta", "hTOFVsEta", {HistType::kTH2F, {axisEta, axisTOF}});
 
     // TGel histograms
     TGel.add("TGel/hTrackPt1", "hTrackPt1", {HistType::kTH1F, {axisPt}});
@@ -385,18 +367,12 @@ struct UpcJpsiCentralBarrel {
     TGel.add("TGel/hTrackPt2", "hTrackPt2", {HistType::kTH1F, {axisPt}});
     TGel.add("TGel/hTrackEta2", "hTrackEta2", {HistType::kTH1F, {axisEta}});
     TGel.add("TGel/hTrackPhi2", "hTrackPhi2", {HistType::kTH1F, {axisPhi}});
-    TGel.add("TGel/hNsigmaEl", "hNsigmaEl", HistType::kTH1F, {axisSigma});
-    TGel.add("TGel/hNsigmaElTOF", "hNsigmaElTOF", HistType::kTH1F, {axisSigma});
     TGel.add("TGel/TPCNegVsPosSignal", "TPCNegVsPosSignal", HistType::kTH2F, {axisTPC, axisTPC});
     TGel.add("TGel/PID/hTPCVsP", "hTPCVsP", {HistType::kTH2F, {axisP, axisTPC}});
     TGel.add("TGel/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axisPt, axisTPC}});
     TGel.add("TGel/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
     TGel.add("TGel/PID/hTPCVsEta", "hTPCVsEta", {HistType::kTH2F, {axisEta, axisTPC}});
-    TGel.add("TGel/PID/hTOFVsP", "hTOFVsP", {HistType::kTH2F, {axisP, axisTOF}});
     TGel.add("TGel/PID/hBetaTOFVsP", "hBetaTOFVsP", {HistType::kTH2F, {axisP, axisBetaTOF}});
-    TGel.add("TGel/PID/hTOFVsPt", "hTOFVsPt", {HistType::kTH2F, {axisPt, axisTOF}});
-    TGel.add("TGel/PID/hTOFVsPhi", "hTOFVsPhi", {HistType::kTH2F, {axisPhi, axisTOF}});
-    TGel.add("TGel/PID/hTOFVsEta", "hTOFVsEta", {HistType::kTH2F, {axisEta, axisTOF}});
 
     // TGelCand histograms
     TGelCand.add("TGelCand/hTrackPt1", "hTrackPt1", {HistType::kTH1F, {axisPt}});
@@ -406,8 +382,6 @@ struct UpcJpsiCentralBarrel {
     TGelCand.add("TGelCand/hTrackEta2", "hTrackEta2", {HistType::kTH1F, {axisEta}});
     TGelCand.add("TGelCand/hTrackPhi2", "hTrackPhi2", {HistType::kTH1F, {axisPhi}});
     TGelCand.add("TGelCand/TPCNegVsPosSignal", "TPCNegVsPosSignal", HistType::kTH2F, {axisTPC, axisTPC});
-    TGelCand.add("TGelCand/hTrackITSNcls1", "hTrackITSNcls1", {HistType::kTH1F, {axisCounter}});
-    TGelCand.add("TGelCand/hTrackITSNcls2", "hTrackITSNcls2", {HistType::kTH1F, {axisCounter}});
     TGelCand.add("TGelCand/hPairPt", "hPairPt", {HistType::kTH1F, {axisPt}});
     TGelCand.add("TGelCand/hPairIVM", "hPairIVM", {HistType::kTH1F, {axisIVMWide}});
     TGelCand.add("TGelCand/hJpsiPt", "hJpsiPt", {HistType::kTH1F, {axisPt}});
@@ -416,11 +390,7 @@ struct UpcJpsiCentralBarrel {
     TGelCand.add("TGelCand/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axisPt, axisTPC}});
     TGelCand.add("TGelCand/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
     TGelCand.add("TGelCand/PID/hTPCVsEta", "hTPCVsEta", {HistType::kTH2F, {axisEta, axisTPC}});
-    TGelCand.add("TGelCand/PID/hTOFVsP", "hTOFVsP", {HistType::kTH2F, {axisP, axisTOF}});
     TGelCand.add("TGelCand/PID/hBetaTOFVsP", "hBetaTOFVsP", {HistType::kTH2F, {axisP, axisBetaTOF}});
-    TGelCand.add("TGelCand/PID/hTOFVsPt", "hTOFVsPt", {HistType::kTH2F, {axisPt, axisTOF}});
-    TGelCand.add("TGelCand/PID/hTOFVsPhi", "hTOFVsPhi", {HistType::kTH2F, {axisPhi, axisTOF}});
-    TGelCand.add("TGelCand/PID/hTOFVsEta", "hTOFVsEta", {HistType::kTH2F, {axisEta, axisTOF}});
 
     // TGp histograms
     TGp.add("TGp/hTrackPt1", "hTrackPt1", {HistType::kTH1F, {axisPt}});
@@ -429,17 +399,11 @@ struct UpcJpsiCentralBarrel {
     TGp.add("TGp/hTrackPt2", "hTrackPt2", {HistType::kTH1F, {axisPt}});
     TGp.add("TGp/hTrackEta2", "hTrackEta2", {HistType::kTH1F, {axisEta}});
     TGp.add("TGp/hTrackPhi2", "hTrackPhi2", {HistType::kTH1F, {axisPhi}});
-    TGp.add("TGp/hNsigmaMu", "hNsigmaMu", HistType::kTH1F, {axisSigma});
-    TGp.add("TGp/hNsigmaMuTOF", "hNsigmaMuTOF", HistType::kTH1F, {axisSigma});
     TGp.add("TGp/PID/hTPCVsP", "hTPCVsP", {HistType::kTH2F, {axisP, axisTPC}});
     TGp.add("TGp/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axisPt, axisTPC}});
     TGp.add("TGp/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
     TGp.add("TGp/PID/hTPCVsEta", "hTPCVsEta", {HistType::kTH2F, {axisEta, axisTPC}});
-    TGp.add("TGp/PID/hTOFVsP", "hTOFVsP", {HistType::kTH2F, {axisP, axisTOF}});
     TGp.add("TGp/PID/hBetaTOFVsP", "hBetaTOFVsP", {HistType::kTH2F, {axisP, axisBetaTOF}});
-    TGp.add("TGp/PID/hTOFVsPt", "hTOFVsPt", {HistType::kTH2F, {axisPt, axisTOF}});
-    TGp.add("TGp/PID/hTOFVsPhi", "hTOFVsPhi", {HistType::kTH2F, {axisPhi, axisTOF}});
-    TGp.add("TGp/PID/hTOFVsEta", "hTOFVsEta", {HistType::kTH2F, {axisEta, axisTOF}});
 
     // TGpCand histograms
     TGpCand.add("TGpCand/hTrackPt1", "hTrackPt1", {HistType::kTH1F, {axisPt}});
@@ -448,8 +412,6 @@ struct UpcJpsiCentralBarrel {
     TGpCand.add("TGpCand/hTrackPt2", "hTrackPt2", {HistType::kTH1F, {axisPt}});
     TGpCand.add("TGpCand/hTrackEta2", "hTrackEta2", {HistType::kTH1F, {axisEta}});
     TGpCand.add("TGpCand/hTrackPhi2", "hTrackPhi2", {HistType::kTH1F, {axisPhi}});
-    TGpCand.add("TGpCand/hTrackITSNcls1", "hTrackITSNcls1", {HistType::kTH1F, {axisCounter}});
-    TGpCand.add("TGpCand/hTrackITSNcls2", "hTrackITSNcls2", {HistType::kTH1F, {axisCounter}});
     TGpCand.add("TGpCand/hPairPt", "hPairPt", {HistType::kTH1F, {axisPt}});
     TGpCand.add("TGpCand/hPairIVM", "hPairIVM", {HistType::kTH1F, {axisIVMWide}});
     TGpCand.add("TGpCand/hJpsiPt", "hJpsiPt", {HistType::kTH1F, {axisPt}});
@@ -458,11 +420,7 @@ struct UpcJpsiCentralBarrel {
     TGpCand.add("TGpCand/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axisPt, axisTPC}});
     TGpCand.add("TGpCand/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
     TGpCand.add("TGpCand/PID/hTPCVsEta", "hTPCVsEta", {HistType::kTH2F, {axisEta, axisTPC}});
-    TGpCand.add("TGpCand/PID/hTOFVsP", "hTOFVsP", {HistType::kTH2F, {axisP, axisTOF}});
     TGpCand.add("TGpCand/PID/hBetaTOFVsP", "hBetaTOFVsP", {HistType::kTH2F, {axisP, axisBetaTOF}});
-    TGpCand.add("TGpCand/PID/hTOFVsPt", "hTOFVsPt", {HistType::kTH2F, {axisPt, axisTOF}});
-    TGpCand.add("TGpCand/PID/hTOFVsPhi", "hTOFVsPhi", {HistType::kTH2F, {axisPhi, axisTOF}});
-    TGpCand.add("TGpCand/PID/hTOFVsEta", "hTOFVsEta", {HistType::kTH2F, {axisEta, axisTOF}});
 
     // JPsiToEl histograms
     JPsiToEl.add("JPsiToEl/Coherent/hPt", "Pt of J/Psi ; p_{T} {GeV/c]", {HistType::kTH1F, {axisPt}});
@@ -524,11 +482,7 @@ struct UpcJpsiCentralBarrel {
     JPsiToEl.add("JPsiToEl/Coherent/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axisPt, axisTPC}});
     JPsiToEl.add("JPsiToEl/Coherent/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
     JPsiToEl.add("JPsiToEl/Coherent/PID/hTPCVsEta", "hTPCVsEta", {HistType::kTH2F, {axisEta, axisTPC}});
-    JPsiToEl.add("JPsiToEl/Coherent/PID/hTOFVsP", "hTOFVsP", {HistType::kTH2F, {axisP, axisTOF}});
     JPsiToEl.add("JPsiToEl/Coherent/PID/hBetaTOFVsP", "hBetaTOFVsP", {HistType::kTH2F, {axisP, axisBetaTOF}});
-    JPsiToEl.add("JPsiToEl/Coherent/PID/hTOFVsPt", "hTOFVsPt", {HistType::kTH2F, {axisPt, axisTOF}});
-    JPsiToEl.add("JPsiToEl/Coherent/PID/hTOFVsPhi", "hTOFVsPhi", {HistType::kTH2F, {axisPhi, axisTOF}});
-    JPsiToEl.add("JPsiToEl/Coherent/PID/hTOFVsEta", "hTOFVsEta", {HistType::kTH2F, {axisEta, axisTOF}});
 
     JPsiToEl.add("JPsiToEl/Incoherent/hPt", "Pt of J/Psi ; p_{T} {GeV/c]", {HistType::kTH1F, {axisPt}});
     JPsiToEl.add("JPsiToEl/Incoherent/hPt1", "pT of track 1 ; p_{T} {GeV/c]", {HistType::kTH1F, {axisPt}});
@@ -538,6 +492,7 @@ struct UpcJpsiCentralBarrel {
     JPsiToEl.add("JPsiToEl/Incoherent/hPhi1", "phi of track 1 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToEl.add("JPsiToEl/Incoherent/hPhi2", "phi of track 2 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToEl.add("JPsiToEl/Incoherent/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
+    JPsiToEl.add("JPsiToEl/NotCoherent/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
     JPsiToEl.add("JPsiToEl/Incoherent/hRap", "Rap of J/Psi ; y {-]", {HistType::kTH1F, {axisEta}});
     JPsiToEl.add("JPsiToEl/Incoherent/hEta", "Eta of J/Psi ; #eta {-]", {HistType::kTH1F, {axisEta}});
     JPsiToEl.add("JPsiToEl/Incoherent/hPhi", "Phi of J/Psi ; #phi {-]", {HistType::kTH1F, {axisPhi}});
@@ -549,6 +504,7 @@ struct UpcJpsiCentralBarrel {
     JPsiToEl.add("JPsiToEl/Incoherent/XnXn/hPhi1", "phi of track 1 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToEl.add("JPsiToEl/Incoherent/XnXn/hPhi2", "phi of track 2 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToEl.add("JPsiToEl/Incoherent/XnXn/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
+    JPsiToEl.add("JPsiToEl/NotCoherent/XnXn/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
     JPsiToEl.add("JPsiToEl/Incoherent/XnXn/hRap", "Rap of J/Psi ; y {-]", {HistType::kTH1F, {axisEta}});
     JPsiToEl.add("JPsiToEl/Incoherent/XnXn/hEta", "Eta of J/Psi ; #eta {-]", {HistType::kTH1F, {axisEta}});
     JPsiToEl.add("JPsiToEl/Incoherent/XnXn/hPhi", "Phi of J/Psi ; #phi {-]", {HistType::kTH1F, {axisPhi}});
@@ -560,6 +516,7 @@ struct UpcJpsiCentralBarrel {
     JPsiToEl.add("JPsiToEl/Incoherent/OnOn/hPhi1", "phi of track 1 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToEl.add("JPsiToEl/Incoherent/OnOn/hPhi2", "phi of track 2 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToEl.add("JPsiToEl/Incoherent/OnOn/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
+    JPsiToEl.add("JPsiToEl/NotCoherent/OnOn/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
     JPsiToEl.add("JPsiToEl/Incoherent/OnOn/hRap", "Rap of J/Psi ; y {-]", {HistType::kTH1F, {axisEta}});
     JPsiToEl.add("JPsiToEl/Incoherent/OnOn/hEta", "Eta of J/Psi ; #eta {-]", {HistType::kTH1F, {axisEta}});
     JPsiToEl.add("JPsiToEl/Incoherent/OnOn/hPhi", "Phi of J/Psi ; #phi {-]", {HistType::kTH1F, {axisPhi}});
@@ -571,6 +528,7 @@ struct UpcJpsiCentralBarrel {
     JPsiToEl.add("JPsiToEl/Incoherent/OnXn/hPhi1", "phi of track 1 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToEl.add("JPsiToEl/Incoherent/OnXn/hPhi2", "phi of track 2 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToEl.add("JPsiToEl/Incoherent/OnXn/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
+    JPsiToEl.add("JPsiToEl/NotCoherent/OnXn/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
     JPsiToEl.add("JPsiToEl/Incoherent/OnXn/hRap", "Rap of J/Psi ; y {-]", {HistType::kTH1F, {axisEta}});
     JPsiToEl.add("JPsiToEl/Incoherent/OnXn/hEta", "Eta of J/Psi ; #eta {-]", {HistType::kTH1F, {axisEta}});
     JPsiToEl.add("JPsiToEl/Incoherent/OnXn/hPhi", "Phi of J/Psi ; #phi {-]", {HistType::kTH1F, {axisPhi}});
@@ -582,6 +540,7 @@ struct UpcJpsiCentralBarrel {
     JPsiToEl.add("JPsiToEl/Incoherent/XnOn/hPhi1", "phi of track 1 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToEl.add("JPsiToEl/Incoherent/XnOn/hPhi2", "phi of track 2 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToEl.add("JPsiToEl/Incoherent/XnOn/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
+    JPsiToEl.add("JPsiToEl/NotCoherent/XnOn/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
     JPsiToEl.add("JPsiToEl/Incoherent/XnOn/hRap", "Rap of J/Psi ; y {-]", {HistType::kTH1F, {axisEta}});
     JPsiToEl.add("JPsiToEl/Incoherent/XnOn/hEta", "Eta of J/Psi ; #eta {-]", {HistType::kTH1F, {axisEta}});
     JPsiToEl.add("JPsiToEl/Incoherent/XnOn/hPhi", "Phi of J/Psi ; #phi {-]", {HistType::kTH1F, {axisPhi}});
@@ -589,11 +548,7 @@ struct UpcJpsiCentralBarrel {
     JPsiToEl.add("JPsiToEl/Incoherent/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axisPt, axisTPC}});
     JPsiToEl.add("JPsiToEl/Incoherent/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
     JPsiToEl.add("JPsiToEl/Incoherent/PID/hTPCVsEta", "hTPCVsEta", {HistType::kTH2F, {axisEta, axisTPC}});
-    JPsiToEl.add("JPsiToEl/Incoherent/PID/hTOFVsP", "hTOFVsP", {HistType::kTH2F, {axisP, axisTOF}});
     JPsiToEl.add("JPsiToEl/Incoherent/PID/hBetaTOFVsP", "hBetaTOFVsP", {HistType::kTH2F, {axisP, axisBetaTOF}});
-    JPsiToEl.add("JPsiToEl/Incoherent/PID/hTOFVsPt", "hTOFVsPt", {HistType::kTH2F, {axisPt, axisTOF}});
-    JPsiToEl.add("JPsiToEl/Incoherent/PID/hTOFVsPhi", "hTOFVsPhi", {HistType::kTH2F, {axisPhi, axisTOF}});
-    JPsiToEl.add("JPsiToEl/Incoherent/PID/hTOFVsEta", "hTOFVsEta", {HistType::kTH2F, {axisEta, axisTOF}});
 
     // JPsiToMu histograms
     JPsiToMu.add("JPsiToMu/Coherent/hPt", "Pt of J/Psi ; p_{T} {GeV/c]", {HistType::kTH1F, {axisPt}});
@@ -655,11 +610,7 @@ struct UpcJpsiCentralBarrel {
     JPsiToMu.add("JPsiToMu/Coherent/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axisPt, axisTPC}});
     JPsiToMu.add("JPsiToMu/Coherent/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
     JPsiToMu.add("JPsiToMu/Coherent/PID/hTPCVsEta", "hTPCVsEta", {HistType::kTH2F, {axisEta, axisTPC}});
-    JPsiToMu.add("JPsiToMu/Coherent/PID/hTOFVsP", "hTOFVsP", {HistType::kTH2F, {axisP, axisTOF}});
     JPsiToMu.add("JPsiToMu/Coherent/PID/hBetaTOFVsP", "hBetaTOFVsP", {HistType::kTH2F, {axisP, axisBetaTOF}});
-    JPsiToMu.add("JPsiToMu/Coherent/PID/hTOFVsPt", "hTOFVsPt", {HistType::kTH2F, {axisPt, axisTOF}});
-    JPsiToMu.add("JPsiToMu/Coherent/PID/hTOFVsPhi", "hTOFVsPhi", {HistType::kTH2F, {axisPhi, axisTOF}});
-    JPsiToMu.add("JPsiToMu/Coherent/PID/hTOFVsEta", "hTOFVsEta", {HistType::kTH2F, {axisEta, axisTOF}});
 
     JPsiToMu.add("JPsiToMu/Incoherent/hPt", "Pt of J/Psi ; p_{T} {GeV/c]", {HistType::kTH1F, {axisPt}});
     JPsiToMu.add("JPsiToMu/Incoherent/hPt1", "pT of track 1 ; p_{T} {GeV/c]", {HistType::kTH1F, {axisPt}});
@@ -669,6 +620,7 @@ struct UpcJpsiCentralBarrel {
     JPsiToMu.add("JPsiToMu/Incoherent/hPhi1", "phi of track 1 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToMu.add("JPsiToMu/Incoherent/hPhi2", "phi of track 2 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToMu.add("JPsiToMu/Incoherent/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
+    JPsiToMu.add("JPsiToMu/NotCoherent/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
     JPsiToMu.add("JPsiToMu/Incoherent/hRap", "Rap of J/Psi ; y {-]", {HistType::kTH1F, {axisEta}});
     JPsiToMu.add("JPsiToMu/Incoherent/hEta", "Eta of J/Psi ; #eta {-]", {HistType::kTH1F, {axisEta}});
     JPsiToMu.add("JPsiToMu/Incoherent/hPhi", "Phi of J/Psi ; #phi {-]", {HistType::kTH1F, {axisPhi}});
@@ -680,6 +632,7 @@ struct UpcJpsiCentralBarrel {
     JPsiToMu.add("JPsiToMu/Incoherent/XnXn/hPhi1", "phi of track 1 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToMu.add("JPsiToMu/Incoherent/XnXn/hPhi2", "phi of track 2 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToMu.add("JPsiToMu/Incoherent/XnXn/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
+    JPsiToMu.add("JPsiToMu/NotCoherent/XnXn/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
     JPsiToMu.add("JPsiToMu/Incoherent/XnXn/hRap", "Rap of J/Psi ; y {-]", {HistType::kTH1F, {axisEta}});
     JPsiToMu.add("JPsiToMu/Incoherent/XnXn/hEta", "Eta of J/Psi ; #eta {-]", {HistType::kTH1F, {axisEta}});
     JPsiToMu.add("JPsiToMu/Incoherent/XnXn/hPhi", "Phi of J/Psi ; #phi {-]", {HistType::kTH1F, {axisPhi}});
@@ -691,6 +644,7 @@ struct UpcJpsiCentralBarrel {
     JPsiToMu.add("JPsiToMu/Incoherent/OnOn/hPhi1", "phi of track 1 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToMu.add("JPsiToMu/Incoherent/OnOn/hPhi2", "phi of track 2 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToMu.add("JPsiToMu/Incoherent/OnOn/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
+    JPsiToMu.add("JPsiToMu/NotCoherent/OnOn/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
     JPsiToMu.add("JPsiToMu/Incoherent/OnOn/hRap", "Rap of J/Psi ; y {-]", {HistType::kTH1F, {axisEta}});
     JPsiToMu.add("JPsiToMu/Incoherent/OnOn/hEta", "Eta of J/Psi ; #eta {-]", {HistType::kTH1F, {axisEta}});
     JPsiToMu.add("JPsiToMu/Incoherent/OnOn/hPhi", "Phi of J/Psi ; #phi {-]", {HistType::kTH1F, {axisPhi}});
@@ -702,6 +656,7 @@ struct UpcJpsiCentralBarrel {
     JPsiToMu.add("JPsiToMu/Incoherent/OnXn/hPhi1", "phi of track 1 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToMu.add("JPsiToMu/Incoherent/OnXn/hPhi2", "phi of track 2 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToMu.add("JPsiToMu/Incoherent/OnXn/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
+    JPsiToMu.add("JPsiToMu/NotCoherent/OnXn/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
     JPsiToMu.add("JPsiToMu/Incoherent/OnXn/hRap", "Rap of J/Psi ; y {-]", {HistType::kTH1F, {axisEta}});
     JPsiToMu.add("JPsiToMu/Incoherent/OnXn/hEta", "Eta of J/Psi ; #eta {-]", {HistType::kTH1F, {axisEta}});
     JPsiToMu.add("JPsiToMu/Incoherent/OnXn/hPhi", "Phi of J/Psi ; #phi {-]", {HistType::kTH1F, {axisPhi}});
@@ -713,6 +668,7 @@ struct UpcJpsiCentralBarrel {
     JPsiToMu.add("JPsiToMu/Incoherent/XnOn/hPhi1", "phi of track 1 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToMu.add("JPsiToMu/Incoherent/XnOn/hPhi2", "phi of track 2 ; #phi {-]", {HistType::kTH1F, {axisPhi}});
     JPsiToMu.add("JPsiToMu/Incoherent/XnOn/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
+    JPsiToMu.add("JPsiToMu/NotCoherent/XnOn/hIVM", "J/Psi Invariant Mass ; m {GeV]", {HistType::kTH1F, {axisIVM}});
     JPsiToMu.add("JPsiToMu/Incoherent/XnOn/hRap", "Rap of J/Psi ; y {-]", {HistType::kTH1F, {axisEta}});
     JPsiToMu.add("JPsiToMu/Incoherent/XnOn/hEta", "Eta of J/Psi ; #eta {-]", {HistType::kTH1F, {axisEta}});
     JPsiToMu.add("JPsiToMu/Incoherent/XnOn/hPhi", "Phi of J/Psi ; #phi {-]", {HistType::kTH1F, {axisPhi}});
@@ -720,11 +676,7 @@ struct UpcJpsiCentralBarrel {
     JPsiToMu.add("JPsiToMu/Incoherent/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axisPt, axisTPC}});
     JPsiToMu.add("JPsiToMu/Incoherent/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
     JPsiToMu.add("JPsiToMu/Incoherent/PID/hTPCVsEta", "hTPCVsEta", {HistType::kTH2F, {axisEta, axisTPC}});
-    JPsiToMu.add("JPsiToMu/Incoherent/PID/hTOFVsP", "hTOFVsP", {HistType::kTH2F, {axisP, axisTOF}});
     JPsiToMu.add("JPsiToMu/Incoherent/PID/hBetaTOFVsP", "hBetaTOFVsP", {HistType::kTH2F, {axisP, axisBetaTOF}});
-    JPsiToMu.add("JPsiToMu/Incoherent/PID/hTOFVsPt", "hTOFVsPt", {HistType::kTH2F, {axisPt, axisTOF}});
-    JPsiToMu.add("JPsiToMu/Incoherent/PID/hTOFVsPhi", "hTOFVsPhi", {HistType::kTH2F, {axisPhi, axisTOF}});
-    JPsiToMu.add("JPsiToMu/Incoherent/PID/hTOFVsEta", "hTOFVsEta", {HistType::kTH2F, {axisEta, axisTOF}});
 
     // JPsiToP histograms
     JPsiToP.add("JPsiToP/Coherent/hPt", "Pt of J/Psi ; p_{T} {GeV/c]", {HistType::kTH1F, {axisPt}});
@@ -742,11 +694,7 @@ struct UpcJpsiCentralBarrel {
     JPsiToP.add("JPsiToP/Coherent/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axisPt, axisTPC}});
     JPsiToP.add("JPsiToP/Coherent/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
     JPsiToP.add("JPsiToP/Coherent/PID/hTPCVsEta", "hTPCVsEta", {HistType::kTH2F, {axisEta, axisTPC}});
-    JPsiToP.add("JPsiToP/Coherent/PID/hTOFVsP", "hTOFVsP", {HistType::kTH2F, {axisP, axisTOF}});
     JPsiToP.add("JPsiToP/Coherent/PID/hBetaTOFVsP", "hBetaTOFVsP", {HistType::kTH2F, {axisP, axisBetaTOF}});
-    JPsiToP.add("JPsiToP/Coherent/PID/hTOFVsPt", "hTOFVsPt", {HistType::kTH2F, {axisPt, axisTOF}});
-    JPsiToP.add("JPsiToP/Coherent/PID/hTOFVsPhi", "hTOFVsPhi", {HistType::kTH2F, {axisPhi, axisTOF}});
-    JPsiToP.add("JPsiToP/Coherent/PID/hTOFVsEta", "hTOFVsEta", {HistType::kTH2F, {axisEta, axisTOF}});
 
     JPsiToP.add("JPsiToP/Incoherent/hPt", "Pt of J/Psi ; p_{T} {GeV/c]", {HistType::kTH1F, {axisPt}});
     JPsiToP.add("JPsiToP/Incoherent/hPt1", "pT of track 1 ; p_{T} {GeV/c]", {HistType::kTH1F, {axisPt}});
@@ -763,11 +711,7 @@ struct UpcJpsiCentralBarrel {
     JPsiToP.add("JPsiToP/Incoherent/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axisPt, axisTPC}});
     JPsiToP.add("JPsiToP/Incoherent/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
     JPsiToP.add("JPsiToP/Incoherent/PID/hTPCVsEta", "hTPCVsEta", {HistType::kTH2F, {axisEta, axisTPC}});
-    JPsiToP.add("JPsiToP/Incoherent/PID/hTOFVsP", "hTOFVsP", {HistType::kTH2F, {axisP, axisTOF}});
     JPsiToP.add("JPsiToP/Incoherent/PID/hBetaTOFVsP", "hBetaTOFVsP", {HistType::kTH2F, {axisP, axisBetaTOF}});
-    JPsiToP.add("JPsiToP/Incoherent/PID/hTOFVsPt", "hTOFVsPt", {HistType::kTH2F, {axisPt, axisTOF}});
-    JPsiToP.add("JPsiToP/Incoherent/PID/hTOFVsPhi", "hTOFVsPhi", {HistType::kTH2F, {axisPhi, axisTOF}});
-    JPsiToP.add("JPsiToP/Incoherent/PID/hTOFVsEta", "hTOFVsEta", {HistType::kTH2F, {axisEta, axisTOF}});
 
     // Correlation histograms
     Correlation.add("Correlation/Muon/Coherent/AccoplAngle", "AccoplAngle", {HistType::kTH1F, {axisAccAngle}});
@@ -800,9 +744,98 @@ struct UpcJpsiCentralBarrel {
 
     // Asymmetry histograms
     Asymmetry.add("Asymmetry/Muon/Coherent/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Coherent/XnXn/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Coherent/OnOn/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Coherent/XnOn/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Coherent/OnXn/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
     Asymmetry.add("Asymmetry/Muon/Incoherent/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Incoherent/XnXn/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Incoherent/OnOn/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Incoherent/XnOn/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Incoherent/OnXn/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
     Asymmetry.add("Asymmetry/Electron/Coherent/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Coherent/XnXn/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Coherent/OnOn/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Coherent/XnOn/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Coherent/OnXn/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
     Asymmetry.add("Asymmetry/Electron/Incoherent/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Incoherent/XnXn/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Incoherent/OnOn/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Incoherent/XnOn/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Incoherent/OnXn/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Coherent/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Coherent/XnXn/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Coherent/OnOn/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Coherent/XnOn/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Coherent/OnXn/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Incoherent/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Incoherent/XnXn/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Incoherent/OnOn/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Incoherent/XnOn/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Muon/Incoherent/OnXn/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Coherent/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Coherent/XnXn/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Coherent/OnOn/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Coherent/XnOn/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Coherent/OnXn/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Incoherent/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Incoherent/XnXn/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Incoherent/OnOn/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Incoherent/XnOn/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+    Asymmetry.add("Asymmetry/Electron/Incoherent/OnXn/DeltaPhiRandom", "DeltaPhiRandom", {HistType::kTH1F, {{180, -PI, PI}}});
+
+    // MC histograms
+    MC.add("MC/hNumberOfMCCollisions", "hNumberOfCollisions", {HistType::kTH1F, {{10, 0, 10}}});
+    MC.add("MC/hNumberOfRecoCollisions", "hNumberOfRecoCollisions", {HistType::kTH1F, {{10, 0, 10}}});
+    MC.add("MC/Muon/hNumberOfMCTracks", "hNumberOfMCTracks", {HistType::kTH1F, {{10, 0, 10}}});
+    MC.add("MC/Electron/hNumberOfMCTracks", "hNumberOfMCTracks", {HistType::kTH1F, {{10, 0, 10}}});
+    MC.add("MC/Proton/hNumberOfMCTracks", "hNumberOfMCTracks", {HistType::kTH1F, {{10, 0, 10}}});
+    MC.add("MC/hPosZ", "hPosZ", {HistType::kTH1F, {{60, -15, 15}}});
+    MC.add("MC/hPDG", "hPDG", {HistType::kTH1F, {{200000, -100000, 100000}}});
+    MC.add("MC/Electron/hEta1", "hEta1", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Electron/hEta2", "hEta2", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Electron/hPhi1", "hPhi1", {HistType::kTH1F, {axisPhi}});
+    MC.add("MC/Electron/hPhi2", "hPhi2", {HistType::kTH1F, {axisPhi}});
+    MC.add("MC/Electron/hIVM", "hIVM", {HistType::kTH1F, {axisIVM}});
+    MC.add("MC/Electron/hRapidity", "hRapidity", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Electron/hPt1", "hPt1", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/Electron/hPt2", "hPt2", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/Electron/hPt", "hPt", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/Muon/hEta1", "hEta1", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Muon/hEta2", "hEta2", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Muon/hPhi1", "hPhi1", {HistType::kTH1F, {axisPhi}});
+    MC.add("MC/Muon/hPhi2", "hPhi2", {HistType::kTH1F, {axisPhi}});
+    MC.add("MC/Muon/hIVM", "hIVM", {HistType::kTH1F, {axisIVM}});
+    MC.add("MC/Muon/hRapidity", "hRapidity", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Muon/hPt1", "hPt1", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/Muon/hPt2", "hPt2", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/Muon/hPt", "hPt", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/Proton/hEta1", "hEta1", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Proton/hEta2", "hEta2", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Proton/hPhi1", "hPhi1", {HistType::kTH1F, {axisPhi}});
+    MC.add("MC/Proton/hPhi2", "hPhi2", {HistType::kTH1F, {axisPhi}});
+    MC.add("MC/Proton/hIVM", "hIVM", {HistType::kTH1F, {axisIVM}});
+    MC.add("MC/Proton/hRapidity", "hRapidity", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Proton/hPt1", "hPt1", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/Proton/hPt2", "hPt2", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/Proton/hPt", "hPt", {HistType::kTH1F, {axisPt}});
+  }
+
+  bool cutITSLayers(uint8_t itsClusterMap) const
+  {
+    std::vector<std::pair<int8_t, std::array<uint8_t, 3>>> requiredITSHits{};
+    requiredITSHits.push_back(std::make_pair(1, std::array<uint8_t, 3>{0, 1, 2})); // at least one hit in the innermost layer
+    constexpr uint8_t bit = 1;
+    for (auto& itsRequirement : requiredITSHits) {
+      auto hits = std::count_if(itsRequirement.second.begin(), itsRequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (bit << requiredLayer); });
+
+      if ((itsRequirement.first == -1) && (hits > 0)) {
+        return false; // no hits were required in specified layers
+      } else if (hits < itsRequirement.first) {
+        return false; // not enough hits found in specified layers
+      }
+    }
+    return true;
   }
 
   template <typename T>
@@ -818,60 +851,65 @@ struct UpcJpsiCentralBarrel {
       Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(2);
       return false;
     }
-    // acceptance
+    // acceptance cut (TPC)
     if (std::abs(RecoDecay::eta(std::array{track.px(), track.py(), track.pz()})) > EtaCut) {
       Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(3);
       return false;
     }
     // DCA
     if (std::abs(track.dcaZ()) > dcaZCut) {
+      Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(4);
       return false;
     }
     if (DCAcut) {
       float dcaXYPtCut = 0.0105f + 0.0350f / pow(track.pt(), 1.1f);
       if (std::abs(track.dcaXY()) > dcaXYPtCut) {
-        Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(4);
+        Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(5);
         return false;
       }
     } else {
       if (std::abs(track.dcaXY()) > dcaXYCut) {
-        Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(4);
+        Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(5);
         return false;
       }
     }
     // ITS
     if (!track.hasITS()) {
-      Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(5);
-      return false;
-    }
-    if (track.itsNCls() < ITSNClsCut) {
       Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(6);
       return false;
     }
-    if (track.itsChi2NCl() > ITSChi2NClsCut) {
+    if (track.itsNCls() < ITSNClsCut) {
       Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(7);
+      return false;
+    }
+    if (!cutITSLayers(track.itsClusterMap())) {
+      Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(8);
+      return false;
+    }
+    if (track.itsChi2NCl() > ITSChi2NClsCut) {
+      Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(9);
       return false;
     }
     //  TPC
     if (!track.hasTPC()) {
-      Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(8);
+      Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(10);
       return false;
     }
     if (track.tpcNClsCrossedRows() < TPCNClsCrossedRowsCut) {
-      Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(9);
+      Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(11);
       return false;
     }
     if (track.tpcChi2NCl() > TPCChi2NCls) {
-      Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(10);
+      Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(12);
       return false; // TPC chi2
     }
+    if ((track.tpcNClsFindable() - track.tpcNClsFindableMinusFound()) < TPCMinNCls) {
+      Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(13);
+      return false;
+    }
     if (newCutTPC) {
-      if ((track.tpcNClsFindable() - track.tpcNClsFindableMinusFound()) < TPCMinNCls) {
-        Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(11);
-        return false;
-      }
       if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < TPCCrossedOverFindable) {
-        Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(12);
+        Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(14);
         return false;
       }
     }
@@ -883,12 +921,12 @@ struct UpcJpsiCentralBarrel {
   bool CandidateCuts(float massJpsi, float rapJpsi)
   {
     if (std::abs(rapJpsi) > RapCut) {
-      Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(13);
+      Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(15);
       return false;
     }
 
     if (massJpsi < 2.0f) {
-      Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(14);
+      Statistics.get<TH1>(HIST("Statistics/hCutCounterTracks"))->Fill(16);
       return false;
     }
 
@@ -899,14 +937,6 @@ struct UpcJpsiCentralBarrel {
   void fillHistograms(C collision, Ts tracks)
   {
     Statistics.get<TH1>(HIST("Statistics/hCutCounterCollisions"))->Fill(0); // number of collisions without any cuts
-    RawData.get<TH1>(HIST("RawData/hPositionX"))->Fill(collision.posX());
-    RawData.get<TH1>(HIST("RawData/hPositionY"))->Fill(collision.posY());
-    RawData.get<TH1>(HIST("RawData/hPositionZ"))->Fill(collision.posZ());
-    RawData.get<TH2>(HIST("RawData/hPositionXY"))->Fill(collision.posX(), collision.posY());
-    RawData.get<TH1>(HIST("RawData/hZNACommonEnergy"))->Fill(collision.energyCommonZNA());
-    RawData.get<TH1>(HIST("RawData/hZNCCommonEnergy"))->Fill(collision.energyCommonZNC());
-    RawData.get<TH1>(HIST("RawData/hZNCTime"))->Fill(collision.timeZNC());
-    RawData.get<TH1>(HIST("RawData/hZNATime"))->Fill(collision.timeZNA());
 
     // check UPC vs standard
     if (doOnlyUPC) {
@@ -959,11 +989,7 @@ struct UpcJpsiCentralBarrel {
         }
 
         if (track.hasTOF()) {
-          PVContributors.get<TH2>(HIST("PVContributors/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkPx, trkPy, trkPz), track.tofSignal());
           PVContributors.get<TH2>(HIST("PVContributors/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkPx, trkPy, trkPz), track.beta());
-          PVContributors.get<TH2>(HIST("PVContributors/PID/hTOFVsPt"))->Fill(track.pt(), track.tofSignal());
-          PVContributors.get<TH2>(HIST("PVContributors/PID/hTOFVsEta"))->Fill(RecoDecay::eta(std::array{trkPx, trkPy, trkPz}), track.tofSignal());
-          PVContributors.get<TH2>(HIST("PVContributors/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(trkPx, trkPy), track.tofSignal());
         }
       }
 
@@ -986,19 +1012,11 @@ struct UpcJpsiCentralBarrel {
       }
 
       if (track.hasTOF()) {
-        RawData.get<TH2>(HIST("RawData/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkPx, trkPy, trkPz), track.tofSignal());
         RawData.get<TH2>(HIST("RawData/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkPx, trkPy, trkPz), track.beta());
-        RawData.get<TH2>(HIST("RawData/PID/hTOFVsPt"))->Fill(track.pt(), track.tofSignal());
-        RawData.get<TH2>(HIST("RawData/PID/hTOFVsEta"))->Fill(RecoDecay::eta(std::array{trkPx, trkPy, trkPz}), track.tofSignal());
-        RawData.get<TH2>(HIST("RawData/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(trkPx, trkPy), track.tofSignal());
       }
     }
 
     int countGT = 0;
-    int countGTMuSigma = 0;
-    int countGTElSigma = 0;
-    int countGTPSigma = 0;
-    int countGTPSigmaTOF = 0;
     std::vector<int> trkIdx;
     // loop over tracks with selections
     if (std::abs(collision.posZ()) > cutVertexZ) {
@@ -1006,7 +1024,20 @@ struct UpcJpsiCentralBarrel {
       return;
     }
 
+    RawData.get<TH1>(HIST("RawData/hPositionX"))->Fill(collision.posX());
+    RawData.get<TH1>(HIST("RawData/hPositionY"))->Fill(collision.posY());
+    RawData.get<TH1>(HIST("RawData/hPositionZ"))->Fill(collision.posZ());
+    RawData.get<TH2>(HIST("RawData/hPositionXY"))->Fill(collision.posX(), collision.posY());
+    RawData.get<TH1>(HIST("RawData/hZNACommonEnergy"))->Fill(collision.energyCommonZNA());
+    RawData.get<TH1>(HIST("RawData/hZNCCommonEnergy"))->Fill(collision.energyCommonZNC());
+    RawData.get<TH2>(HIST("RawData/hZNAvsZNCCommonEnergy"))->Fill(collision.energyCommonZNA(), collision.energyCommonZNC());
+    RawData.get<TH1>(HIST("RawData/hZNCTime"))->Fill(collision.timeZNC());
+    RawData.get<TH1>(HIST("RawData/hZNATime"))->Fill(collision.timeZNA());
+    RawData.get<TH2>(HIST("RawData/hZNAvsZNCTime"))->Fill(collision.timeZNA(), collision.timeZNC());
+
     for (auto& track : tracks) {
+
+      Statistics.get<TH1>(HIST("Statistics/hNumberOfTracks"))->Fill(2.);
 
       // select good tracks
       if (GoodTrackCuts(track) != 1) {
@@ -1015,27 +1046,10 @@ struct UpcJpsiCentralBarrel {
 
       countGT++;
       trkIdx.push_back(track.index());
-
-      if (std::abs(track.tpcNSigmaMu()) <= 3) {
-        countGTMuSigma++;
-      }
-      if (std::abs(track.tpcNSigmaEl()) <= 3) {
-        countGTElSigma++;
-      }
-      if (std::abs(track.tpcNSigmaPr()) <= 3) {
-        countGTPSigma++;
-      }
-      if (std::abs(track.tofNSigmaPr()) <= 3) {
-        countGTPSigmaTOF++;
-      }
     }
 
-    Statistics.get<TH1>(HIST("Statistics/hNumberOfTracks"))->Fill(2., countGT);
+    Statistics.get<TH1>(HIST("Statistics/hNumberOfTracks"))->Fill(3., countGT);
     Statistics.get<TH1>(HIST("Statistics/hNumberGT"))->Fill(countGT);
-    Statistics.get<TH1>(HIST("Statistics/hNumberGTelSigma"))->Fill(countGTElSigma);
-    Statistics.get<TH1>(HIST("Statistics/hNumberGTmuSigma"))->Fill(countGTMuSigma);
-    Statistics.get<TH1>(HIST("Statistics/hNumberGTpSigma"))->Fill(countGTPSigma);
-    Statistics.get<TH1>(HIST("Statistics/hNumberGTpSigmaTOF"))->Fill(countGTPSigmaTOF);
 
     float massEl = o2::constants::physics::MassElectron;
     float massMu = o2::constants::physics::MassMuonMinus;
@@ -1075,9 +1089,6 @@ struct UpcJpsiCentralBarrel {
         TG.get<TH2>(HIST("TG/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
         TG.get<TH2>(HIST("TG/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
         TG.get<TH2>(HIST("TG/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
-        TG.get<TH1>(HIST("TG/TPC/hNsigmaMu"))->Fill(trkDaughter1.tpcNSigmaMu());
-        TG.get<TH1>(HIST("TG/TPC/hNsigmaEl"))->Fill(trkDaughter1.tpcNSigmaEl());
-        TG.get<TH1>(HIST("TG/TPC/hNsigmaPr"))->Fill(trkDaughter1.tpcNSigmaPr());
         TG.get<TH1>(HIST("TG/hTPCNClsFindable"))->Fill(trkDaughter1.tpcNClsFindable());
         TG.get<TH1>(HIST("TG/hTPCNClsFindableMinusFound"))->Fill(trkDaughter1.tpcNClsFindableMinusFound());
         if (trkDaughter1.sign() < 0) {
@@ -1091,30 +1102,14 @@ struct UpcJpsiCentralBarrel {
         TG.get<TH2>(HIST("TG/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
         TG.get<TH2>(HIST("TG/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
         TG.get<TH2>(HIST("TG/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
-        TG.get<TH1>(HIST("TG/TPC/hNsigmaMu"))->Fill(trkDaughter2.tpcNSigmaMu());
-        TG.get<TH1>(HIST("TG/TPC/hNsigmaEl"))->Fill(trkDaughter2.tpcNSigmaEl());
-        TG.get<TH1>(HIST("TG/TPC/hNsigmaPr"))->Fill(trkDaughter2.tpcNSigmaPr());
         TG.get<TH1>(HIST("TG/hTPCNClsFindable"))->Fill(trkDaughter2.tpcNClsFindable());
         TG.get<TH1>(HIST("TG/hTPCNClsFindableMinusFound"))->Fill(trkDaughter2.tpcNClsFindableMinusFound());
       }
       if (trkDaughter1.hasTOF()) {
-        TG.get<TH2>(HIST("TG/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
-        TG.get<TH2>(HIST("TG/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
-        TG.get<TH2>(HIST("TG/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
-        TG.get<TH2>(HIST("TG/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
-        TG.get<TH1>(HIST("TG/TOF/hNsigmaMu"))->Fill(trkDaughter1.tofNSigmaMu());
-        TG.get<TH1>(HIST("TG/TOF/hNsigmaEl"))->Fill(trkDaughter1.tofNSigmaEl());
-        TG.get<TH1>(HIST("TG/TOF/hNsigmaPr"))->Fill(trkDaughter1.tofNSigmaPr());
+        TG.get<TH2>(HIST("TG/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.beta());
       }
       if (trkDaughter2.hasTOF()) {
-        TG.get<TH2>(HIST("TG/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
         TG.get<TH2>(HIST("TG/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.beta());
-        TG.get<TH2>(HIST("TG/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
-        TG.get<TH2>(HIST("TG/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
-        TG.get<TH2>(HIST("TG/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
-        TG.get<TH1>(HIST("TG/TOF/hNsigmaMu"))->Fill(trkDaughter2.tofNSigmaMu());
-        TG.get<TH1>(HIST("TG/TOF/hNsigmaEl"))->Fill(trkDaughter2.tofNSigmaEl());
-        TG.get<TH1>(HIST("TG/TOF/hNsigmaPr"))->Fill(trkDaughter2.tofNSigmaPr());
       }
       if (doElectrons) {
         if (RecoDecay::sumOfSquares(trkDaughter1.tpcNSigmaMu(), trkDaughter2.tpcNSigmaMu()) > RecoDecay::sumOfSquares(trkDaughter1.tpcNSigmaEl(), trkDaughter2.tpcNSigmaEl())) {
@@ -1180,34 +1175,18 @@ struct UpcJpsiCentralBarrel {
             TGel.get<TH2>(HIST("TGel/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
             TGel.get<TH2>(HIST("TGel/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
             TGel.get<TH2>(HIST("TGel/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
-            TGel.get<TH1>(HIST("TGel/hNsigmaEl"))->Fill(trkDaughter1.tpcNSigmaEl());
           }
           if (trkDaughter2.hasTPC()) {
             TGel.get<TH2>(HIST("TGel/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tpcSignal());
             TGel.get<TH2>(HIST("TGel/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
             TGel.get<TH2>(HIST("TGel/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
             TGel.get<TH2>(HIST("TGel/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
-            TGel.get<TH1>(HIST("TGel/hNsigmaEl"))->Fill(trkDaughter2.tpcNSigmaEl());
-            if (trkDaughter1.sign() < 0) {
-              TGel.get<TH2>(HIST("TGel/TPCNegVsPosSignal"))->Fill(trkDaughter1.tpcSignal(), trkDaughter2.tpcSignal());
-            } else {
-              TGel.get<TH2>(HIST("TGel/TPCNegVsPosSignal"))->Fill(trkDaughter2.tpcSignal(), trkDaughter1.tpcSignal());
-            }
           }
           if (trkDaughter1.hasTOF()) {
-            TGel.get<TH2>(HIST("TGel/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
-            TGel.get<TH2>(HIST("TGel/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
-            TGel.get<TH2>(HIST("TGel/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
-            TGel.get<TH2>(HIST("TGel/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
-            TGel.get<TH1>(HIST("TGel/hNsigmaElTOF"))->Fill(trkDaughter1.tofNSigmaEl());
+            TGel.get<TH2>(HIST("TGel/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.beta());
           }
           if (trkDaughter2.hasTOF()) {
-            TGel.get<TH2>(HIST("TGel/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
             TGel.get<TH2>(HIST("TGel/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.beta());
-            TGel.get<TH2>(HIST("TGel/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
-            TGel.get<TH2>(HIST("TGel/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
-            TGel.get<TH2>(HIST("TGel/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
-            TGel.get<TH1>(HIST("TGel/hNsigmaElTOF"))->Fill(trkDaughter2.tofNSigmaEl());
           }
 
           if (CandidateCuts(massJpsi, rapJpsi) != 1) {
@@ -1220,8 +1199,6 @@ struct UpcJpsiCentralBarrel {
           TGelCand.get<TH1>(HIST("TGelCand/hTrackEta2"))->Fill(RecoDecay::eta(daughter2));
           TGelCand.get<TH1>(HIST("TGelCand/hTrackPhi1"))->Fill(RecoDecay::phi(daughter1));
           TGelCand.get<TH1>(HIST("TGelCand/hTrackPhi2"))->Fill(RecoDecay::phi(daughter2));
-          TGelCand.get<TH1>(HIST("TGelCand/hTrackITSNcls1"))->Fill(trkDaughter1.itsNCls());
-          TGelCand.get<TH1>(HIST("TGelCand/hTrackITSNcls2"))->Fill(trkDaughter2.itsNCls());
           TGelCand.get<TH1>(HIST("TGelCand/hPairPt"))->Fill(RecoDecay::pt(mother));
           TGelCand.get<TH1>(HIST("TGelCand/hPairIVM"))->Fill(massJpsi);
 
@@ -1243,28 +1220,58 @@ struct UpcJpsiCentralBarrel {
             TGelCand.get<TH2>(HIST("TGelCand/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
           }
           if (trkDaughter1.hasTOF()) {
-            TGelCand.get<TH2>(HIST("TGelCand/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
-            TGelCand.get<TH2>(HIST("TGelCand/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
-            TGelCand.get<TH2>(HIST("TGelCand/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
-            TGelCand.get<TH2>(HIST("TGelCand/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
+            TGelCand.get<TH2>(HIST("TGelCand/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.beta());
           }
           if (trkDaughter2.hasTOF()) {
-            TGelCand.get<TH2>(HIST("TGelCand/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
             TGelCand.get<TH2>(HIST("TGelCand/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.beta());
-            TGelCand.get<TH2>(HIST("TGelCand/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
-            TGelCand.get<TH2>(HIST("TGelCand/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
-            TGelCand.get<TH2>(HIST("TGelCand/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
           }
 
           if (RecoDecay::pt(mother) < 0.2f) {
             JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hIVM"))->Fill(massJpsi);
-          } else {
+            if (XnXn) {
+              JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/XnXn/hIVM"))->Fill(massJpsi);
+            } else if (OnXn) {
+              JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/OnXn/hIVM"))->Fill(massJpsi);
+            } else if (XnOn) {
+              JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/XnOn/hIVM"))->Fill(massJpsi);
+            } else if (OnOn) {
+              JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/OnOn/hIVM"))->Fill(massJpsi);
+            }
+          } else if (RecoDecay::pt(mother) > 0.4f) {
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/NotCoherent/hIVM"))->Fill(massJpsi);
+            if (XnXn) {
+              JPsiToEl.get<TH1>(HIST("JPsiToEl/NotCoherent/XnXn/hIVM"))->Fill(massJpsi);
+            } else if (OnXn) {
+              JPsiToEl.get<TH1>(HIST("JPsiToEl/NotCoherent/OnXn/hIVM"))->Fill(massJpsi);
+            } else if (XnOn) {
+              JPsiToEl.get<TH1>(HIST("JPsiToEl/NotCoherent/XnOn/hIVM"))->Fill(massJpsi);
+            } else if (OnOn) {
+              JPsiToEl.get<TH1>(HIST("JPsiToEl/NotCoherent/OnOn/hIVM"))->Fill(massJpsi);
+            }
+          }
+          if (RecoDecay::pt(mother) > 0.2f) {
             JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hIVM"))->Fill(massJpsi);
+            if (XnXn) {
+              JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/XnXn/hIVM"))->Fill(massJpsi);
+            } else if (OnXn) {
+              JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/OnXn/hIVM"))->Fill(massJpsi);
+            } else if (XnOn) {
+              JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/XnOn/hIVM"))->Fill(massJpsi);
+            } else if (OnOn) {
+              JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/OnOn/hIVM"))->Fill(massJpsi);
+            }
           }
 
           if ((massJpsi < maxJpsiMass) && (massJpsi > minJpsiMass)) {
             TGelCand.get<TH1>(HIST("TGelCand/hJpsiPt"))->Fill(RecoDecay::pt(mother));
             TGelCand.get<TH1>(HIST("TGelCand/hJpsiRap"))->Fill(rapJpsi);
+
+            if (trkDaughter1.sign() < 0) {
+              TGelCand.get<TH2>(HIST("TGelCand/TPCNegVsPosSignal"))->Fill(trkDaughter1.tpcSignal(), trkDaughter2.tpcSignal());
+            } else {
+              TGelCand.get<TH2>(HIST("TGelCand/TPCNegVsPosSignal"))->Fill(trkDaughter2.tpcSignal(), trkDaughter1.tpcSignal());
+            }
+
             if (RecoDecay::pt(mother) < 0.2f) {
               // fill track histos
               JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hPt1"))->Fill(trkDaughter1.pt());
@@ -1318,18 +1325,10 @@ struct UpcJpsiCentralBarrel {
               }
 
               if (trkDaughter1.hasTOF()) {
-                JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
                 JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.beta());
-                JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
-                JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
-                JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
               }
               if (trkDaughter2.hasTOF()) {
-                JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
                 JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.beta());
-                JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
-                JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
-                JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
               }
               // fill J/psi histos
               JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hPt"))->Fill(RecoDecay::pt(mother));
@@ -1369,6 +1368,27 @@ struct UpcJpsiCentralBarrel {
 
               double dp = DeltaPhi(daughter[0], daughter[1]);
               Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Coherent/DeltaPhi"))->Fill(dp);
+              if (XnXn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Coherent/XnXn/DeltaPhi"))->Fill(dp);
+              } else if (OnOn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Coherent/OnOn/DeltaPhi"))->Fill(dp);
+              } else if (XnOn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Coherent/XnOn/DeltaPhi"))->Fill(dp);
+              } else if (OnXn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Coherent/OnXn/DeltaPhi"))->Fill(dp);
+              }
+
+              double dpRandom = DeltaPhiRandom(daughter[0], daughter[1]);
+              Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Coherent/DeltaPhiRandom"))->Fill(dpRandom);
+              if (XnXn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Coherent/XnXn/DeltaPhiRandom"))->Fill(dpRandom);
+              } else if (OnOn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Coherent/OnOn/DeltaPhiRandom"))->Fill(dpRandom);
+              } else if (XnOn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Coherent/XnOn/DeltaPhiRandom"))->Fill(dpRandom);
+              } else if (OnXn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Coherent/OnXn/DeltaPhiRandom"))->Fill(dpRandom);
+              }
 
               delete[] q;
             } // end coherent electrons
@@ -1425,18 +1445,10 @@ struct UpcJpsiCentralBarrel {
               }
 
               if (trkDaughter1.hasTOF()) {
-                JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
                 JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.beta());
-                JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
-                JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
-                JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
               }
               if (trkDaughter2.hasTOF()) {
-                JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
                 JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.beta());
-                JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
-                JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
-                JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
               }
               // fill J/psi histos
               JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hPt"))->Fill(RecoDecay::pt(mother));
@@ -1476,6 +1488,27 @@ struct UpcJpsiCentralBarrel {
 
               double dp = DeltaPhi(daughter[0], daughter[1]);
               Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Incoherent/DeltaPhi"))->Fill(dp);
+              if (XnXn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Incoherent/XnXn/DeltaPhi"))->Fill(dp);
+              } else if (OnOn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Incoherent/OnOn/DeltaPhi"))->Fill(dp);
+              } else if (XnOn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Incoherent/XnOn/DeltaPhi"))->Fill(dp);
+              } else if (OnXn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Incoherent/OnXn/DeltaPhi"))->Fill(dp);
+              }
+
+              double dpRandom = DeltaPhiRandom(daughter[0], daughter[1]);
+              Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Incoherent/DeltaPhiRandom"))->Fill(dpRandom);
+              if (XnXn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Incoherent/XnXn/DeltaPhiRandom"))->Fill(dpRandom);
+              } else if (OnOn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Incoherent/OnOn/DeltaPhiRandom"))->Fill(dpRandom);
+              } else if (XnOn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Incoherent/XnOn/DeltaPhiRandom"))->Fill(dpRandom);
+              } else if (OnXn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Incoherent/OnXn/DeltaPhiRandom"))->Fill(dpRandom);
+              }
 
               delete[] q;
             } // end incoherent electrons
@@ -1546,7 +1579,6 @@ struct UpcJpsiCentralBarrel {
             TGmu.get<TH2>(HIST("TGmu/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
             TGmu.get<TH2>(HIST("TGmu/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
             TGmu.get<TH2>(HIST("TGmu/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
-            TGmu.get<TH1>(HIST("TGmu/hNsigmaMu"))->Fill(trkDaughter1.tpcNSigmaMu());
             if (trkDaughter1.sign() < 0) {
               TGmu.get<TH2>(HIST("TGmu/TPCNegVsPosSignal"))->Fill(trkDaughter1.tpcSignal(), trkDaughter2.tpcSignal());
             } else {
@@ -1558,22 +1590,13 @@ struct UpcJpsiCentralBarrel {
             TGmu.get<TH2>(HIST("TGmu/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
             TGmu.get<TH2>(HIST("TGmu/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
             TGmu.get<TH2>(HIST("TGmu/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
-            TGmu.get<TH1>(HIST("TGmu/hNsigmaMu"))->Fill(trkDaughter2.tpcNSigmaMu());
           }
           if (trkDaughter1.hasTOF()) {
-            TGmu.get<TH2>(HIST("TGmu/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
-            TGmu.get<TH2>(HIST("TGmu/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
-            TGmu.get<TH2>(HIST("TGmu/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
-            TGmu.get<TH2>(HIST("TGmu/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
-            TGmu.get<TH1>(HIST("TGmu/hNsigmaMuTOF"))->Fill(trkDaughter1.tofNSigmaMu());
+            TGmu.get<TH2>(HIST("TGmu/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.beta());
           }
           if (trkDaughter2.hasTOF()) {
-            TGmu.get<TH2>(HIST("TGmu/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
+
             TGmu.get<TH2>(HIST("TGmu/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.beta());
-            TGmu.get<TH2>(HIST("TGmu/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
-            TGmu.get<TH2>(HIST("TGmu/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
-            TGmu.get<TH2>(HIST("TGmu/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
-            TGmu.get<TH1>(HIST("TGmu/hNsigmaMuTOF"))->Fill(trkDaughter1.tofNSigmaMu());
           }
 
           if (CandidateCuts(massJpsi, rapJpsi) != 1) {
@@ -1586,8 +1609,6 @@ struct UpcJpsiCentralBarrel {
           TGmuCand.get<TH1>(HIST("TGmuCand/hTrackEta2"))->Fill(RecoDecay::eta(daughter2));
           TGmuCand.get<TH1>(HIST("TGmuCand/hTrackPhi1"))->Fill(RecoDecay::phi(daughter1));
           TGmuCand.get<TH1>(HIST("TGmuCand/hTrackPhi2"))->Fill(RecoDecay::phi(daughter2));
-          TGmuCand.get<TH1>(HIST("TGmuCand/hTrackITSNcls1"))->Fill(trkDaughter1.itsNCls());
-          TGmuCand.get<TH1>(HIST("TGmuCand/hTrackITSNcls2"))->Fill(trkDaughter2.itsNCls());
           TGmuCand.get<TH1>(HIST("TGmuCand/hPairPt"))->Fill(RecoDecay::pt(mother));
           TGmuCand.get<TH1>(HIST("TGmuCand/hPairIVM"))->Fill(massJpsi);
 
@@ -1596,11 +1617,6 @@ struct UpcJpsiCentralBarrel {
             TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
             TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
             TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
-            if (trkDaughter1.sign() < 0) {
-              TGmuCand.get<TH2>(HIST("TGmuCand/TPCNegVsPosSignal"))->Fill(trkDaughter1.tpcSignal(), trkDaughter2.tpcSignal());
-            } else {
-              TGmuCand.get<TH2>(HIST("TGmuCand/TPCNegVsPosSignal"))->Fill(trkDaughter2.tpcSignal(), trkDaughter1.tpcSignal());
-            }
           }
           if (trkDaughter2.hasTPC()) {
             TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tpcSignal());
@@ -1609,31 +1625,72 @@ struct UpcJpsiCentralBarrel {
             TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
           }
           if (trkDaughter1.hasTOF()) {
-            TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
-            TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
-            TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
-            TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
+            TGmuCand.get<TH2>(HIST("TGmuCand/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.beta());
           }
           if (trkDaughter2.hasTOF()) {
-            TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
             TGmuCand.get<TH2>(HIST("TGmuCand/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.beta());
-            TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
-            TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
-            TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
           }
 
           if (RecoDecay::pt(mother) < 0.2f) {
             JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hIVM"))->Fill(massJpsi);
-          } else {
+            if (XnXn) {
+              JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/XnXn/hIVM"))->Fill(massJpsi);
+            } else if (OnXn) {
+              JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/OnXn/hIVM"))->Fill(massJpsi);
+            } else if (XnOn) {
+              JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/XnOn/hIVM"))->Fill(massJpsi);
+            } else if (OnOn) {
+              JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/OnOn/hIVM"))->Fill(massJpsi);
+            }
+          } else if (RecoDecay::pt(mother) > 0.4f) {
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/NotCoherent/hIVM"))->Fill(massJpsi);
+            if (XnXn) {
+              JPsiToMu.get<TH1>(HIST("JPsiToMu/NotCoherent/XnXn/hIVM"))->Fill(massJpsi);
+            } else if (OnXn) {
+              JPsiToMu.get<TH1>(HIST("JPsiToMu/NotCoherent/OnXn/hIVM"))->Fill(massJpsi);
+            } else if (XnOn) {
+              JPsiToMu.get<TH1>(HIST("JPsiToMu/NotCoherent/XnOn/hIVM"))->Fill(massJpsi);
+            } else if (OnOn) {
+              JPsiToMu.get<TH1>(HIST("JPsiToMu/NotCoherent/OnOn/hIVM"))->Fill(massJpsi);
+            }
+          }
+          if (RecoDecay::pt(mother) > 0.2f) {
             JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hIVM"))->Fill(massJpsi);
+            if (XnXn) {
+              JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/XnXn/hIVM"))->Fill(massJpsi);
+            } else if (OnXn) {
+              JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/OnXn/hIVM"))->Fill(massJpsi);
+            } else if (XnOn) {
+              JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/XnOn/hIVM"))->Fill(massJpsi);
+            } else if (OnOn) {
+              JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/OnOn/hIVM"))->Fill(massJpsi);
+            }
           }
 
           if ((massJpsi < maxJpsiMass) && (massJpsi > minJpsiMass)) {
             TGmuCand.get<TH1>(HIST("TGmuCand/hJpsiPt"))->Fill(RecoDecay::pt(mother));
+            if (RecoDecay::pt(mother) < 0.1f) {
+              TGmuCand.get<TH1>(HIST("TGmuCand/hJpsiPt2"))->Fill(RecoDecay::pt(mother) * RecoDecay::pt(mother));
+              if (XnXn) {
+                TGmuCand.get<TH1>(HIST("TGmuCand/XnXn/hJpsiPt2"))->Fill(RecoDecay::pt(mother) * RecoDecay::pt(mother));
+              } else if (XnOn) {
+                TGmuCand.get<TH1>(HIST("TGmuCand/XnOn/hJpsiPt2"))->Fill(RecoDecay::pt(mother) * RecoDecay::pt(mother));
+              } else if (OnXn) {
+                TGmuCand.get<TH1>(HIST("TGmuCand/OnXn/hJpsiPt2"))->Fill(RecoDecay::pt(mother) * RecoDecay::pt(mother));
+              } else if (OnOn) {
+                TGmuCand.get<TH1>(HIST("TGmuCand/OnOn/hJpsiPt2"))->Fill(RecoDecay::pt(mother) * RecoDecay::pt(mother));
+              }
+            }
             TGmuCand.get<TH1>(HIST("TGmuCand/hJpsiRap"))->Fill(rapJpsi);
+            if (trkDaughter1.sign() < 0) {
+              TGmuCand.get<TH2>(HIST("TGmuCand/TPCNegVsPosSignal"))->Fill(trkDaughter1.tpcSignal(), trkDaughter2.tpcSignal());
+            } else {
+              TGmuCand.get<TH2>(HIST("TGmuCand/TPCNegVsPosSignal"))->Fill(trkDaughter2.tpcSignal(), trkDaughter1.tpcSignal());
+            }
 
             if (RecoDecay::pt(mother) < 0.2f) {
               // fill track histos
+              TGmuCand.get<TH1>(HIST("TGmuCand/hJpsiPt2wide"))->Fill(RecoDecay::pt(mother) * RecoDecay::pt(mother));
               JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hPt1"))->Fill(trkDaughter1.pt());
               JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hPt2"))->Fill(trkDaughter2.pt());
               JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hEta1"))->Fill(RecoDecay::eta(daughter1));
@@ -1648,6 +1705,7 @@ struct UpcJpsiCentralBarrel {
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/XnXn/hEta2"))->Fill(RecoDecay::eta(daughter2));
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/XnXn/hPhi1"))->Fill(RecoDecay::phi(daughter1));
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/XnXn/hPhi2"))->Fill(RecoDecay::phi(daughter2));
+                TGmuCand.get<TH1>(HIST("TGmuCand/XnXn/hJpsiPt2wide"))->Fill(RecoDecay::pt(mother) * RecoDecay::pt(mother));
               } else if (OnOn) {
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/OnOn/hPt1"))->Fill(trkDaughter1.pt());
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/OnOn/hPt2"))->Fill(trkDaughter2.pt());
@@ -1655,6 +1713,7 @@ struct UpcJpsiCentralBarrel {
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/OnOn/hEta2"))->Fill(RecoDecay::eta(daughter2));
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/OnOn/hPhi1"))->Fill(RecoDecay::phi(daughter1));
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/OnOn/hPhi2"))->Fill(RecoDecay::phi(daughter2));
+                TGmuCand.get<TH1>(HIST("TGmuCand/OnOn/hJpsiPt2wide"))->Fill(RecoDecay::pt(mother) * RecoDecay::pt(mother));
               } else if (XnOn) {
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/XnOn/hPt1"))->Fill(trkDaughter1.pt());
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/XnOn/hPt2"))->Fill(trkDaughter2.pt());
@@ -1662,6 +1721,7 @@ struct UpcJpsiCentralBarrel {
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/XnOn/hEta2"))->Fill(RecoDecay::eta(daughter2));
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/XnOn/hPhi1"))->Fill(RecoDecay::phi(daughter1));
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/XnOn/hPhi2"))->Fill(RecoDecay::phi(daughter2));
+                TGmuCand.get<TH1>(HIST("TGmuCand/XnOn/hJpsiPt2wide"))->Fill(RecoDecay::pt(mother) * RecoDecay::pt(mother));
               } else if (OnXn) {
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/OnXn/hPt1"))->Fill(trkDaughter1.pt());
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/OnXn/hPt2"))->Fill(trkDaughter2.pt());
@@ -1669,6 +1729,7 @@ struct UpcJpsiCentralBarrel {
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/OnXn/hEta2"))->Fill(RecoDecay::eta(daughter2));
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/OnXn/hPhi1"))->Fill(RecoDecay::phi(daughter1));
                 JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/OnXn/hPhi2"))->Fill(RecoDecay::phi(daughter2));
+                TGmuCand.get<TH1>(HIST("TGmuCand/OnXn/hJpsiPt2wide"))->Fill(RecoDecay::pt(mother) * RecoDecay::pt(mother));
               }
 
               if (trkDaughter1.hasTPC()) {
@@ -1684,18 +1745,10 @@ struct UpcJpsiCentralBarrel {
                 JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
               }
               if (trkDaughter1.hasTOF()) {
-                JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
                 JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.beta());
-                JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
-                JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
-                JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
               }
               if (trkDaughter2.hasTOF()) {
-                JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
                 JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.beta());
-                JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
-                JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
-                JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
               }
               // fill J/psi histos
               JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hPt"))->Fill(RecoDecay::pt(mother));
@@ -1735,6 +1788,26 @@ struct UpcJpsiCentralBarrel {
 
               double dp = DeltaPhi(daughter[0], daughter[1]);
               Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Coherent/DeltaPhi"))->Fill(dp);
+              if (XnXn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Coherent/XnXn/DeltaPhi"))->Fill(dp);
+              } else if (OnOn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Coherent/OnOn/DeltaPhi"))->Fill(dp);
+              } else if (XnOn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Coherent/XnOn/DeltaPhi"))->Fill(dp);
+              } else if (OnXn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Coherent/OnXn/DeltaPhi"))->Fill(dp);
+              }
+              double dpRandom = DeltaPhiRandom(daughter[0], daughter[1]);
+              Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Coherent/DeltaPhiRandom"))->Fill(dpRandom);
+              if (XnXn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Coherent/XnXn/DeltaPhiRandom"))->Fill(dpRandom);
+              } else if (OnOn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Coherent/OnOn/DeltaPhiRandom"))->Fill(dpRandom);
+              } else if (XnOn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Coherent/XnOn/DeltaPhiRandom"))->Fill(dpRandom);
+              } else if (OnXn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Coherent/OnXn/DeltaPhiRandom"))->Fill(dpRandom);
+              }
 
               delete[] q;
             }
@@ -1790,18 +1863,10 @@ struct UpcJpsiCentralBarrel {
                 JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
               }
               if (trkDaughter1.hasTOF()) {
-                JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
                 JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.beta());
-                JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
-                JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
-                JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
               }
               if (trkDaughter2.hasTOF()) {
-                JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tpcSignal());
                 JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.beta());
-                JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
-                JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
-                JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
               }
 
               // fill J/psi histos
@@ -1842,6 +1907,27 @@ struct UpcJpsiCentralBarrel {
 
               double dp = DeltaPhi(daughter[0], daughter[1]);
               Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Incoherent/DeltaPhi"))->Fill(dp);
+              if (XnXn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Incoherent/XnXn/DeltaPhi"))->Fill(dp);
+              } else if (OnOn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Incoherent/OnOn/DeltaPhi"))->Fill(dp);
+              } else if (XnOn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Incoherent/XnOn/DeltaPhi"))->Fill(dp);
+              } else if (OnXn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Incoherent/OnXn/DeltaPhi"))->Fill(dp);
+              }
+
+              double dpRandom = DeltaPhiRandom(daughter[0], daughter[1]);
+              Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Incoherent/DeltaPhiRandom"))->Fill(dpRandom);
+              if (XnXn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Incoherent/XnXn/DeltaPhiRandom"))->Fill(dpRandom);
+              } else if (OnOn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Incoherent/OnOn/DeltaPhiRandom"))->Fill(dpRandom);
+              } else if (XnOn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Incoherent/XnOn/DeltaPhiRandom"))->Fill(dpRandom);
+              } else if (OnXn) {
+                Asymmetry.get<TH1>(HIST("Asymmetry/Muon/Incoherent/OnXn/DeltaPhiRandom"))->Fill(dpRandom);
+              }
 
               delete[] q;
             }
@@ -1888,29 +1974,18 @@ struct UpcJpsiCentralBarrel {
             TGp.get<TH2>(HIST("TGp/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
             TGp.get<TH2>(HIST("TGp/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
             TGp.get<TH2>(HIST("TGp/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
-            TGp.get<TH1>(HIST("TGp/hNsigmaMu"))->Fill(trkDaughter1.tpcNSigmaPr());
           }
           if (trkDaughter2.hasTPC()) {
             TGp.get<TH2>(HIST("TGp/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tpcSignal());
             TGp.get<TH2>(HIST("TGp/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
             TGp.get<TH2>(HIST("TGp/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
             TGp.get<TH2>(HIST("TGp/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
-            TGp.get<TH1>(HIST("TGp/hNsigmaMu"))->Fill(trkDaughter2.tpcNSigmaPr());
           }
           if (trkDaughter1.hasTOF()) {
-            TGp.get<TH2>(HIST("TGp/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
-            TGp.get<TH2>(HIST("TGp/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
-            TGp.get<TH2>(HIST("TGp/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
-            TGp.get<TH2>(HIST("TGp/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
-            TGp.get<TH1>(HIST("TGp/hNsigmaMuTOF"))->Fill(trkDaughter1.tofNSigmaPr());
+            TGp.get<TH2>(HIST("TGp/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.beta());
           }
           if (trkDaughter2.hasTOF()) {
-            TGp.get<TH2>(HIST("TGp/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
             TGp.get<TH2>(HIST("TGp/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.beta());
-            TGp.get<TH2>(HIST("TGp/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
-            TGp.get<TH2>(HIST("TGp/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
-            TGp.get<TH2>(HIST("TGp/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
-            TGp.get<TH1>(HIST("TGp/hNsigmaMuTOF"))->Fill(trkDaughter2.tofNSigmaPr());
           }
 
           if (CandidateCuts(massJpsi, rapJpsi) != 1) {
@@ -1923,8 +1998,6 @@ struct UpcJpsiCentralBarrel {
           TGpCand.get<TH1>(HIST("TGpCand/hTrackEta2"))->Fill(RecoDecay::eta(daughter2));
           TGpCand.get<TH1>(HIST("TGpCand/hTrackPhi1"))->Fill(RecoDecay::phi(daughter1));
           TGpCand.get<TH1>(HIST("TGpCand/hTrackPhi2"))->Fill(RecoDecay::phi(daughter2));
-          TGpCand.get<TH1>(HIST("TGpCand/hTrackITSNcls1"))->Fill(trkDaughter1.itsNCls());
-          TGpCand.get<TH1>(HIST("TGpCand/hTrackITSNcls2"))->Fill(trkDaughter2.itsNCls());
           TGpCand.get<TH1>(HIST("TGpCand/hPairPt"))->Fill(RecoDecay::pt(mother));
           TGpCand.get<TH1>(HIST("TGpCand/hPairIVM"))->Fill(massJpsi);
 
@@ -1941,17 +2014,10 @@ struct UpcJpsiCentralBarrel {
             TGpCand.get<TH2>(HIST("TGpCand/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
           }
           if (trkDaughter1.hasTOF()) {
-            TGpCand.get<TH2>(HIST("TGpCand/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
-            TGpCand.get<TH2>(HIST("TGpCand/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
-            TGpCand.get<TH2>(HIST("TGpCand/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
-            TGpCand.get<TH2>(HIST("TGpCand/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
+            TGpCand.get<TH2>(HIST("TGpCand/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.beta());
           }
           if (trkDaughter2.hasTOF()) {
-            TGpCand.get<TH2>(HIST("TGpCand/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
             TGpCand.get<TH2>(HIST("TGpCand/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.beta());
-            TGpCand.get<TH2>(HIST("TGpCand/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
-            TGpCand.get<TH2>(HIST("TGpCand/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
-            TGpCand.get<TH2>(HIST("TGpCand/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
           }
 
           if (RecoDecay::pt(mother) < 0.2f) {
@@ -1984,18 +2050,10 @@ struct UpcJpsiCentralBarrel {
                 JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
               }
               if (trkDaughter1.hasTOF()) {
-                JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
                 JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.beta());
-                JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
-                JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
-                JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
               }
               if (trkDaughter2.hasTOF()) {
-                JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
                 JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.beta());
-                JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
-                JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
-                JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
               }
               // fill J/psi histos
               JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hPt"))->Fill(RecoDecay::pt(mother));
@@ -2024,18 +2082,10 @@ struct UpcJpsiCentralBarrel {
                 JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
               }
               if (trkDaughter1.hasTOF()) {
-                JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
                 JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.beta());
-                JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
-                JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
-                JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
               }
               if (trkDaughter2.hasTOF()) {
-                JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
                 JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.beta());
-                JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
-                JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
-                JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
               }
               // fill J/psi histos
               JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hPt"))->Fill(RecoDecay::pt(mother));
@@ -2047,7 +2097,115 @@ struct UpcJpsiCentralBarrel {
         }
       } // end protons
     } // end two tracks
-  } // end process
+  } // end reco process
+
+  template <typename C, typename T>
+  void processMC(C const& mcCollision, T const& mcParticles)
+  {
+
+    MC.get<TH1>(HIST("MC/hNumberOfMCCollisions"))->Fill(1.);
+    MC.get<TH1>(HIST("MC/hPosZ"))->Fill(mcCollision.posZ());
+
+    std::array<float, 3> daughPart1Mu;
+    std::array<float, 3> daughPart2Mu;
+    std::array<float, 3> daughPart1El;
+    std::array<float, 3> daughPart2El;
+    std::array<float, 3> daughPart1Pr;
+    std::array<float, 3> daughPart2Pr;
+
+    // fill number of particles
+    for (auto const& mcParticle : mcParticles) {
+      MC.get<TH1>(HIST("MC/Muon/hNumberOfMCTracks"))->Fill(1.);
+      MC.get<TH1>(HIST("MC/Electron/hNumberOfMCTracks"))->Fill(1.);
+      MC.get<TH1>(HIST("MC/Proton/hNumberOfMCTracks"))->Fill(1.);
+      MC.get<TH1>(HIST("MC/hPDG"))->Fill(mcParticle.pdgCode());
+
+      // check if only muons and physical primaries are present
+      if ((mcParticle.pdgCode() == 13) && mcParticle.isPhysicalPrimary()) {
+        daughPart1Mu = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+
+        MC.get<TH1>(HIST("MC/Muon/hNumberOfMCTracks"))->Fill(2.);
+      }
+      if ((mcParticle.pdgCode() == -13) && mcParticle.isPhysicalPrimary()) {
+        daughPart2Mu = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+
+        MC.get<TH1>(HIST("MC/Muon/hNumberOfMCTracks"))->Fill(3.);
+      }
+      if ((mcParticle.pdgCode() == 11) && mcParticle.isPhysicalPrimary()) {
+        daughPart1El = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+
+        MC.get<TH1>(HIST("MC/Electron/hNumberOfMCTracks"))->Fill(2.);
+      }
+      if ((mcParticle.pdgCode() == -11) && mcParticle.isPhysicalPrimary()) {
+        daughPart2El = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+
+        MC.get<TH1>(HIST("MC/Electron/hNumberOfMCTracks"))->Fill(3.);
+      }
+      if ((mcParticle.pdgCode() == 2212) && mcParticle.isPhysicalPrimary()) {
+        daughPart1Pr = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+
+        MC.get<TH1>(HIST("MC/Proton/hNumberOfMCTracks"))->Fill(2.);
+      }
+      if ((mcParticle.pdgCode() == -2212) && mcParticle.isPhysicalPrimary()) {
+        daughPart2Pr = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+
+        MC.get<TH1>(HIST("MC/Proton/hNumberOfMCTracks"))->Fill(3.);
+      }
+    }
+
+    // calculate J/psi system and needed distributions
+    std::array<double, 3> motherPartMu = {daughPart1Mu[0] + daughPart2Mu[0], daughPart1Mu[1] + daughPart2Mu[1], daughPart1Mu[2] + daughPart2Mu[2]};
+    std::array<double, 3> motherPartEl = {daughPart1El[0] + daughPart2El[0], daughPart1El[1] + daughPart2El[1], daughPart1El[2] + daughPart2El[2]};
+    std::array<double, 3> motherPartPr = {daughPart1Pr[0] + daughPart2Pr[0], daughPart1Pr[1] + daughPart2Pr[1], daughPart1Pr[2] + daughPart2Pr[2]};
+
+    float massEl = o2::constants::physics::MassElectron;
+    float massMu = o2::constants::physics::MassMuonMinus;
+    float massPr = o2::constants::physics::MassProton;
+
+    auto arrMomMu = std::array{daughPart1Mu, daughPart2Mu};
+    float massJpsiMu = RecoDecay::m(arrMomMu, std::array{massMu, massMu});
+    auto arrMomEl = std::array{daughPart1El, daughPart2El};
+    float massJpsiEl = RecoDecay::m(arrMomEl, std::array{massEl, massEl});
+    auto arrMomPr = std::array{daughPart1Pr, daughPart2Pr};
+    float massJpsiPr = RecoDecay::m(arrMomPr, std::array{massPr, massPr});
+
+    MC.get<TH1>(HIST("MC/Muon/hEta1"))->Fill(RecoDecay::eta(daughPart1Mu));
+    MC.get<TH1>(HIST("MC/Muon/hEta2"))->Fill(RecoDecay::eta(daughPart2Mu));
+    MC.get<TH1>(HIST("MC/Muon/hPhi1"))->Fill(RecoDecay::phi(daughPart1Mu));
+    MC.get<TH1>(HIST("MC/Muon/hPhi2"))->Fill(RecoDecay::phi(daughPart2Mu));
+    MC.get<TH1>(HIST("MC/Muon/hPt1"))->Fill(RecoDecay::pt(daughPart1Mu));
+    MC.get<TH1>(HIST("MC/Muon/hPt2"))->Fill(RecoDecay::pt(daughPart2Mu));
+    MC.get<TH1>(HIST("MC/Muon/hPt"))->Fill(RecoDecay::pt(motherPartMu));
+    MC.get<TH1>(HIST("MC/Muon/hIVM"))->Fill(massJpsiMu);
+    MC.get<TH1>(HIST("MC/Muon/hRapidity"))->Fill(RecoDecay::y(motherPartMu, massJpsiMu));
+
+    MC.get<TH1>(HIST("MC/Electron/hEta1"))->Fill(RecoDecay::eta(daughPart1El));
+    MC.get<TH1>(HIST("MC/Electron/hEta2"))->Fill(RecoDecay::eta(daughPart2El));
+    MC.get<TH1>(HIST("MC/Electron/hPhi1"))->Fill(RecoDecay::phi(daughPart1El));
+    MC.get<TH1>(HIST("MC/Electron/hPhi2"))->Fill(RecoDecay::phi(daughPart2El));
+    MC.get<TH1>(HIST("MC/Electron/hPt1"))->Fill(RecoDecay::pt(daughPart1El));
+    MC.get<TH1>(HIST("MC/Electron/hPt2"))->Fill(RecoDecay::pt(daughPart2El));
+    MC.get<TH1>(HIST("MC/Electron/hPt"))->Fill(RecoDecay::pt(motherPartEl));
+    MC.get<TH1>(HIST("MC/Electron/hIVM"))->Fill(massJpsiEl);
+    MC.get<TH1>(HIST("MC/Electron/hRapidity"))->Fill(RecoDecay::y(motherPartEl, massJpsiEl));
+
+    MC.get<TH1>(HIST("MC/Proton/hEta1"))->Fill(RecoDecay::eta(daughPart1Pr));
+    MC.get<TH1>(HIST("MC/Proton/hEta2"))->Fill(RecoDecay::eta(daughPart2Pr));
+    MC.get<TH1>(HIST("MC/Proton/hPhi1"))->Fill(RecoDecay::phi(daughPart1Pr));
+    MC.get<TH1>(HIST("MC/Proton/hPhi2"))->Fill(RecoDecay::phi(daughPart2Pr));
+    MC.get<TH1>(HIST("MC/Proton/hPt1"))->Fill(RecoDecay::pt(daughPart1Pr));
+    MC.get<TH1>(HIST("MC/Proton/hPt2"))->Fill(RecoDecay::pt(daughPart2Pr));
+    MC.get<TH1>(HIST("MC/Proton/hPt"))->Fill(RecoDecay::pt(motherPartPr));
+    MC.get<TH1>(HIST("MC/Proton/hIVM"))->Fill(massJpsiPr);
+    MC.get<TH1>(HIST("MC/Proton/hRapidity"))->Fill(RecoDecay::y(motherPartPr, massJpsiPr));
+
+  } // end MC skimmed process
+
+  template <typename C>
+  void processMCU(C const& collisions)
+  {
+    MC.fill(HIST("MC/hNumberOfRecoCollisions"), collisions.size());
+  } // end MC unskimmed process
 
   void processDGrecoLevel(UDCollisionFull const& collision, UDTracksFull const& tracks)
   {
@@ -2068,8 +2226,20 @@ struct UpcJpsiCentralBarrel {
 
   } // end SG process
 
-  PROCESS_SWITCH(UpcJpsiCentralBarrel, processDGrecoLevel, "Iterate over DG skimmed data.", true);
+  void processMCtruth(aod::UDMcCollision const& mcCollision, aod::UDMcParticles const& mcParticles)
+  {
+    processMC(mcCollision, mcParticles);
+  }
+
+  void processMCUnskimmed(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions /*, aod::McParticles const& mcParticles, aod::TracksIU const& tracks*/)
+  {
+    processMCU(collisions);
+  }
+
+  PROCESS_SWITCH(UpcJpsiCentralBarrel, processDGrecoLevel, "Iterate over DG skimmed data.", false);
   PROCESS_SWITCH(UpcJpsiCentralBarrel, processSGrecoLevel, "Iterate over SG skimmed data.", false);
+  PROCESS_SWITCH(UpcJpsiCentralBarrel, processMCtruth, "Iterate of MC true data.", true);
+  PROCESS_SWITCH(UpcJpsiCentralBarrel, processMCUnskimmed, "Iterate over unskimmed data.", true);
 }; // end struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

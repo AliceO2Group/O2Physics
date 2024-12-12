@@ -27,6 +27,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 
+#include "PWGLF/DataModel/mcCentrality.h"
+
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -47,17 +49,18 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Produces<o2::aod::HfBplusPars> rowCandidatePar;
   Produces<o2::aod::HfBplusParD0s> rowCandidateParD0;
   Produces<o2::aod::HfBplusParEs> rowCandidateParE;
+  Produces<o2::aod::HfBplusSels> rowCandidateSel;
   Produces<o2::aod::HfBplusMls> rowCandidateMl;
   Produces<o2::aod::HfBplusMlD0s> rowCandidateMlD0;
   Produces<o2::aod::HfBplusIds> rowCandidateId;
   Produces<o2::aod::HfBplusMcs> rowCandidateMc;
   // Collisions
-  Produces<o2::aod::HfCollBases> rowCollBase;
-  Produces<o2::aod::HfCollIds> rowCollId;
+  Produces<o2::aod::HfBplusCollBases> rowCollBase;
+  Produces<o2::aod::HfBplusCollIds> rowCollId;
   // MC collisions
-  Produces<o2::aod::HfMcCollBases> rowMcCollBase;
-  Produces<o2::aod::HfMcCollIds> rowMcCollId;
-  Produces<o2::aod::HfMcRCollIds> rowMcRCollId;
+  Produces<o2::aod::HfBplusMcCollBases> rowMcCollBase;
+  Produces<o2::aod::HfBplusMcCollIds> rowMcCollId;
+  Produces<o2::aod::HfBplusMcRCollIds> rowMcRCollId;
   // MC particles
   Produces<o2::aod::HfBplusPBases> rowParticleBase;
   Produces<o2::aod::HfBplusPIds> rowParticleId;
@@ -67,6 +70,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Configurable<bool> fillCandidatePar{"fillCandidatePar", true, "Fill candidate parameters"};
   Configurable<bool> fillCandidateParD0{"fillCandidateParD0", true, "Fill D0 candidate parameters"};
   Configurable<bool> fillCandidateParE{"fillCandidateParE", true, "Fill candidate extended parameters"};
+  Configurable<bool> fillCandidateSel{"fillCandidateSel", true, "Fill candidate selection flags"};
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
   Configurable<bool> fillCandidateMlD0{"fillCandidateMlD0", true, "Fill D0 candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};
@@ -89,13 +93,13 @@ struct HfDerivedDataCreatorBplusToD0Pi {
 
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
-  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
   using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi>>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfCandBplusMcRec, aod::HfSelBplusToD0Pi>>;
   using SelectedCandidatesMl = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplusToD0Pi, aod::HfMlBplusToD0Pi>>;
   using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfCandBplusMcRec, aod::HfSelBplusToD0Pi, aod::HfMlBplusToD0Pi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
-  using TypeMcCollisions = aod::McCollisions;
+  using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
   using THfCandDaughters = aod::HfCand2ProngWPid;
   using THfCandDaughtersMl = soa::Join<THfCandDaughters, aod::HfMlD0>;
 
@@ -165,7 +169,8 @@ struct HfDerivedDataCreatorBplusToD0Pi {
       rowMcCollBase(
         mcCollision.posX(),
         mcCollision.posY(),
-        mcCollision.posZ());
+        mcCollision.posZ(),
+        mcCollision.centFT0M());
     }
     if (fillMcCollId) {
       rowMcCollId(
@@ -263,6 +268,10 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         hfHelper.cosThetaStarBplus(candidate),
         ct);
     }
+    if (fillCandidateSel) {
+      rowCandidateSel(
+        BIT(candFlag));
+    }
     if (fillCandidateMl) {
       rowCandidateMl(
         mlScore);
@@ -345,6 +354,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
       reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
       reserveTable(rowCandidateParD0, fillCandidateParD0, sizeTableCand);
       reserveTable(rowCandidateParE, fillCandidateParE, sizeTableCand);
+      reserveTable(rowCandidateSel, fillCandidateSel, sizeTableCand);
       reserveTable(rowCandidateMl, fillCandidateMl, sizeTableCand);
       reserveTable(rowCandidateMlD0, fillCandidateMlD0, sizeTableCand);
       reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);

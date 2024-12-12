@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 //
-// Class for dilepton Cut
+// Class for dielectron Cut
 //
 
 #include <utility>
@@ -34,7 +34,7 @@ void DielectronCut::SetPairYRange(float minY, float maxY)
 {
   mMinPairY = minY;
   mMaxPairY = maxY;
-  LOG(info) << "Dielectron Cut, set pair eta range: " << mMinPairY << " - " << mMaxPairY;
+  LOG(info) << "Dielectron Cut, set pair y range: " << mMinPairY << " - " << mMaxPairY;
 }
 void DielectronCut::SetPairDCARange(float min, float max)
 {
@@ -54,18 +54,12 @@ void DielectronCut::SetPairOpAng(float minOpAng, float maxOpAng)
   mMaxOpAng = maxOpAng;
   LOG(info) << "Dielectron Cut, set pair opening angle range: " << mMinOpAng << " - " << mMaxOpAng;
 }
-void DielectronCut::SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut)
+void DielectronCut::SetMaxMeePhiVDep(std::function<float(float)> phivDepCut, float min_phiv, float max_phiv)
 {
-  mMaxPhivPairMeeDep = meeDepCut;
-  LOG(info) << "Dielectron Cut, set max phiv pair mee dep: " << mMaxPhivPairMeeDep(0.02);
-}
-void DielectronCut::SetPhivPairRange(float min_phiv, float max_phiv, float min_mee, float max_mee)
-{
+  mMaxMeePhiVDep = phivDepCut;
   mMinPhivPair = min_phiv;
   mMaxPhivPair = max_phiv;
-  mMinMeeForPhivPair = min_mee;
-  mMaxMeeForPhivPair = max_mee;
-  LOG(info) << "Dielectron Cut, set phiv range: " << mMinPhivPair << " - " << mMaxPhivPair << " and mee range: " << mMinMeeForPhivPair << " - " << mMaxMeeForPhivPair;
+  LOG(info) << "Dielectron Cut, set max mee phiv dep: " << mMaxMeePhiVDep(2.5);
 }
 void DielectronCut::SelectPhotonConversion(bool flag)
 {

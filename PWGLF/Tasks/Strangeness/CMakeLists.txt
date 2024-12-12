@@ -41,7 +41,7 @@ o2physics_add_dpl_workflow(v0postprocessing
 
 o2physics_add_dpl_workflow(cascadecorrelations
     SOURCES cascadecorrelations.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(non-prompt-cascade
@@ -122,4 +122,9 @@ o2physics_add_dpl_workflow(strange-yield-pbpb
 o2physics_add_dpl_workflow(lambdak0sflattenicity
     SOURCES lambdak0sflattenicity.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambdalambda
+    SOURCES lambdalambda.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

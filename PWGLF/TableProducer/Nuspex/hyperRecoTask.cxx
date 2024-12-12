@@ -155,8 +155,6 @@ struct hyperRecoTask {
   o2::vertexing::DCAFitterN<2> fitter;
   svPoolCreator svCreator{heDauPdg, 211};
 
-  o2::pid::tof::Beta<TracksFull::iterator> responseBeta;
-
   // daughter masses
   float he3Mass = o2::constants::physics::MassHelium3;
   float he4Mass = o2::constants::physics::MassAlpha;
@@ -506,7 +504,7 @@ struct hyperRecoTask {
     hypCand.collisionID = collision.globalIndex();
 
     if (heTrack.hasTOF()) {
-      float beta = responseBeta.GetBeta(heTrack);
+      float beta = o2::pid::tof::Beta::GetBeta(heTrack);
       beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
       hypCand.massTOFHe3 = hypCand.momHe3TPC * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
     }

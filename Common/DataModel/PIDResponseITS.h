@@ -53,7 +53,7 @@ struct ITSResponse {
   static float expSignal(const float momentum)
   {
     static constexpr float inverseMass = 1. / o2::track::pid_constants::sMasses[id];
-    static constexpr float charge = static_cast<float>(o2::track::pid_constants::sCharges[id]);
+    // static constexpr float charge = static_cast<float>(o2::track::pid_constants::sCharges[id]);
     const float bg = momentum * inverseMass;
     if (id == o2::track::PID::Helium3 || id == o2::track::PID::Alpha) {
       return (mITSRespParamsZ2[0] / (std::pow(bg, mITSRespParamsZ2[1])) + mITSRespParamsZ2[2]);
@@ -65,7 +65,7 @@ struct ITSResponse {
   static float expResolution(const float momentum)
   {
     static constexpr float inverseMass = 1. / o2::track::pid_constants::sMasses[id];
-    static constexpr float charge = static_cast<float>(o2::track::pid_constants::sCharges[id]);
+    // static constexpr float charge = static_cast<float>(o2::track::pid_constants::sCharges[id]);
     const float bg = momentum * inverseMass;
     float relRes = mResolutionParams[0] * std::erf((bg - mResolutionParams[1]) / mResolutionParams[2]);
     return relRes;
@@ -80,6 +80,12 @@ struct ITSResponse {
     const float resolution = expResolution<id>(momentum) * exp;
     return (average * coslInv - exp) / resolution;
   };
+
+  template <o2::track::PID::ID id, typename T>
+  static float nSigmaITS(const T& track)
+  {
+    return nSigmaITS<id>(track.itsClusterSizes(), track.p(), track.eta());
+  }
 
   static void setParameters(float p0, float p1, float p2, float p0_Z2, float p1_Z2, float p2_Z2, float p0_res, float p1_res, float p2_res)
   {
