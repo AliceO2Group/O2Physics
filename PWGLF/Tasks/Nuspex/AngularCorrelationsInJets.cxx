@@ -353,6 +353,7 @@ struct AngularCorrelationsInJets {
       case 3: // (anti)helium-3
         return (track.tpcNSigmaHe() < 3.0 && track.tpcNSigmaDe() > 3.0 && track.tpcNSigmaPr() > 3.0);
     }
+    return false;
   }
 
   template <typename T>
