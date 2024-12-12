@@ -39,7 +39,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 

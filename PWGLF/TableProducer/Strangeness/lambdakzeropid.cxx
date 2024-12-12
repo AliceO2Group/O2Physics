@@ -52,7 +52,8 @@
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 using namespace o2;
 using namespace o2::framework;

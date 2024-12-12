@@ -34,6 +34,8 @@
 #include "PWGUD/Core/UPCHelpers.h"
 
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 using namespace std;
 using namespace o2;
