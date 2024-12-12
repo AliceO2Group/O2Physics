@@ -209,7 +209,6 @@ perSpeciesWrapper(tpcExpSignalDiff);
 
 } // namespace pidutils
 
-
 namespace pidtpc
 {
 // Expected signals
@@ -406,7 +405,6 @@ DECLARE_SOA_COLUMN(DeDxTunedMc, mcTunedTPCSignal, float); //! TPC signal after T
 } // namespace mcpidtpc
 
 DECLARE_SOA_TABLE(mcTPCTuneOnData, "AOD", "MCTPCTUNEONDATA", mcpidtpc::DeDxTunedMc);
-
 
 } // namespace o2::aod
 
