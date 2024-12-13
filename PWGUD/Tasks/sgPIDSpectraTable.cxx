@@ -12,7 +12,7 @@
 // \Single Gap Event Analyzer
 // \author Sasha Bylinkin, alexander.bylinkin@gmail.com
 // \since  April 2023
-#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 
@@ -43,7 +43,7 @@ struct SGPIDSpectraTable {
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
   Configurable<float> GS_cut{"GS", 0., "Gap-side A=0, C=1, AC = 2, No Gap = -1, All events = 3"};
-  // Track Selections
+  //Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
@@ -71,10 +71,7 @@ struct SGPIDSpectraTable {
   {
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
     int truegapSide = sgSelector.trueGap(coll, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
-    if (GS_cut != 3) {
-      if (truegapSide != GS_cut)
-        return;
-    }
+    if (GS_cut!=3){ if(truegapSide!=GS_cut)return;}
     // fill collision histograms
     // int truegapSide = sgSelector.trueGap(dgcand, FV0_cut, ZDC_cut);
     // select PV contributors
@@ -83,41 +80,41 @@ struct SGPIDSpectraTable {
     float tpcpi, tpcka, tpcel, tpcpr, tofpi, tofka, tofpr, tofel;
     float tpcde, tpctr, tpche, tpcal, tofde, toftr, tofhe, tofal, tpcmu, tofmu;
     TVector3 a;
-    int goodtracks = 0;
+    int goodtracks=0;
     for (auto t : tracks) {
       if (trackselector(t, parameters)) {
-        goodtracks++;
+	      goodtracks++;
       }
     }
-    if (!goodtracks)
-      return;
-    SGevents(coll.runNumber(), coll.flags(), truegapSide, coll.energyCommonZNA(), coll.energyCommonZNC(), goodtracks);
-    // SGevents(coll.runNumber(), coll.flags());
+    if (!goodtracks) return;
+    SGevents(coll.runNumber(), coll.flags(), truegapSide, coll.energyCommonZNA(), coll.energyCommonZNC(),goodtracks);
+    //SGevents(coll.runNumber(), coll.flags());
     for (auto t : tracks) {
       if (trackselector(t, parameters)) {
-        a.SetXYZ(t.px(), t.py(), t.pz());
-        tpcpi = t.hasTPC() ? t.tpcNSigmaPi() : -999;
-        tpcmu = t.hasTPC() ? t.tpcNSigmaMu() : -999;
-        tpcka = t.hasTPC() ? t.tpcNSigmaKa() : -999;
-        tpcpr = t.hasTPC() ? t.tpcNSigmaPr() : -999;
-        tpcel = t.hasTPC() ? t.tpcNSigmaEl() : -999;
-        tofpi = t.hasTOF() ? t.tofNSigmaPi() : -999;
-        tofmu = t.hasTOF() ? t.tofNSigmaMu() : -999;
-        tofka = t.hasTOF() ? t.tofNSigmaKa() : -999;
-        tofpr = t.hasTOF() ? t.tofNSigmaPr() : -999;
-        tofel = t.hasTOF() ? t.tofNSigmaEl() : -999;
-        tpcde = t.hasTPC() ? t.tpcNSigmaDe() : -999;
-        tpctr = t.hasTPC() ? t.tpcNSigmaTr() : -999;
-        tpche = t.hasTPC() ? t.tpcNSigmaHe() : -999;
-        tpcal = t.hasTPC() ? t.tpcNSigmaAl() : -999;
-        tofde = t.hasTOF() ? t.tofNSigmaDe() : -999;
-        toftr = t.hasTOF() ? t.tofNSigmaTr() : -999;
-        tofhe = t.hasTOF() ? t.tofNSigmaHe() : -999;
-        tofal = t.hasTOF() ? t.tofNSigmaAl() : -999;
-        SGtracks(SGevents.lastIndex(), a.Pt(), a.Eta(), a.Phi(), t.sign(), tpcpi, tpcka, tpcpr, tpcel, tofpi, tofka, tofpr, tofel, tpcmu, tofmu, tpcde, tpctr, tpche, tpcal, tofde, toftr, tofhe, tofal);
-      }
-    }
-  }
+	      a.SetXYZ(t.px(),t.py(),t.pz());
+	    tpcpi = t.hasTPC() ? t.tpcNSigmaPi() : -999;
+	    tpcmu = t.hasTPC() ? t.tpcNSigmaMu() : -999;
+            tpcka = t.hasTPC() ? t.tpcNSigmaKa() : -999;
+            tpcpr = t.hasTPC() ? t.tpcNSigmaPr() : -999;
+            tpcel = t.hasTPC() ? t.tpcNSigmaEl() : -999;
+            tofpi = t.hasTOF() ? t.tofNSigmaPi() : -999;
+            tofmu = t.hasTOF() ? t.tofNSigmaMu() : -999;
+            tofka = t.hasTOF() ? t.tofNSigmaKa() : -999;
+            tofpr = t.hasTOF() ? t.tofNSigmaPr() : -999;
+            tofel = t.hasTOF() ? t.tofNSigmaEl() : -999;
+	    tpcde = t.hasTPC() ? t.tpcNSigmaDe() : -999;
+//            tpctr = t.hasTPC() ? t.tpcNSigmaTr() : -999;
+//            tpche = t.hasTPC() ? t.tpcNSigmaHe() : -999;
+//            tpcal = t.hasTPC() ? t.tpcNSigmaAl() : -999;
+            tofde = t.hasTOF() ? t.tofNSigmaDe() : -999;
+//            toftr = t.hasTOF() ? t.tofNSigmaTr() : -999;
+//            tofhe = t.hasTOF() ? t.tofNSigmaHe() : -999;
+//            tofal = t.hasTOF() ? t.tofNSigmaAl() : -999;
+	      //SGtracks(SGevents.lastIndex(),a.Pt(),a.Eta(),a.Phi(),t.sign(),tpcpi, tpcka, tpcpr, tpcel, tofpi, tofka, tofpr, tofel, tpcmu, tofmu, tpcde, tpctr, tpche, tpcal, tofde, toftr, tofhe, tofal);
+	      SGtracks(SGevents.lastIndex(),a.Pt(),a.Eta(),a.Phi(),t.sign(),tpcpi, tpcka, tpcpr, tpcel, tofpi, tofka, tofpr, tofel, tpcmu, tofmu, tpcde, tofde);
+            } 
+       }
+   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
