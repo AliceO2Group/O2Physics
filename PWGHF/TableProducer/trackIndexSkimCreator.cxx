@@ -3363,15 +3363,15 @@ struct HfTrackIndexSkimCreatorLfCascades {
       registry.add("hDCACascDau", "hDCACascDau", {HistType::kTH1D, {{500, 0.0f, 5.0f, "cm^{2}"}}});
       registry.add("hLambdaMass", "hLambdaMass", {HistType::kTH1D, {{400, 0.916f, 1.316f, "Inv. Mass (GeV/c^{2})"}}});
 
-      //pT rej
+      // pT rej
       registry.add("hPtCutsXicZeroOmegacZeroToXiPi", "Omegac/Xic to Xi Pi tracks selected by pT;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{500, 0., 50.}}});
       registry.add("hPtCutsOmegacZeroToOmegaPi", "Omegac to Omega Pi tracks selected by pT;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{500, 0., 50.}}});
       registry.add("hPtCutsOmegacZeroToOmegaKa", "Omegac to Omega Ka tracks selected by pT;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{500, 0., 50.}}});
       registry.add("hPtCutsXicPlusToXiPiPi", "Xicplus to Xi Pi Pi tracks selected by pT;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{500, 0., 50.}}});
-      registry.add("hRejpTStatusXicZeroOmegacZeroToXiPi", "XicZeroOmegacZeroToXiPi rejected by pT status;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); //pass dcafitter --> 0, pT>pTmin --> 1
-      registry.add("hRejpTStatusOmegacZeroToOmegaPi", "OmegacZeroToOmegaPi rejected by pT status;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); 
-      registry.add("hRejpTStatusOmegacZeroToOmegaKa", "OmegacZeroToOmegaKa rejected by pT status;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); 
-      registry.add("hRejpTStatusXicPlusToXiPiPi", "XicPlusToXiPiPi rejected by pT status;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); 
+      registry.add("hRejpTStatusXicZeroOmegacZeroToXiPi", "XicZeroOmegacZeroToXiPi rejected by pT status;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); // pass dcafitter --> 0, pT>pTmin --> 1
+      registry.add("hRejpTStatusOmegacZeroToOmegaPi", "OmegacZeroToOmegaPi rejected by pT status;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});
+      registry.add("hRejpTStatusOmegacZeroToOmegaKa", "OmegacZeroToOmegaKa rejected by pT status;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});
+      registry.add("hRejpTStatusXicPlusToXiPiPi", "XicPlusToXiPiPi rejected by pT status;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});
 
       // mass spectra
       registry.add("hMassXicZeroOmegacZeroToXiPi", "2-prong candidates;inv. mass (#Xi #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 2., 3.}}});
@@ -3575,13 +3575,11 @@ struct HfTrackIndexSkimCreatorLfCascades {
               std::array<std::array<float, 3>, 2> arrMomToXi = {pVecXi, pVecPion1XiHyp};
               auto mass2ProngXiHyp = RecoDecay::m(arrMomToXi, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi]);
 
-              if ((std::abs(casc.mXi() - massXi) < config.cascadeMassWindow) && (mass2ProngXiHyp >= config.massXiPiMin) && (mass2ProngXiHyp <= config.massXiPiMax)) 
-              {
-                registry.fill(HIST("hRejpTStatusXicZeroOmegacZeroToXiPi"),0);
-                if (ptXic >= config.ptMinXicZeroOmegacZeroToXiPiLfCasc) 
-                {
+              if ((std::abs(casc.mXi() - massXi) < config.cascadeMassWindow) && (mass2ProngXiHyp >= config.massXiPiMin) && (mass2ProngXiHyp <= config.massXiPiMax)) {
+                registry.fill(HIST("hRejpTStatusXicZeroOmegacZeroToXiPi"), 0);
+                if (ptXic >= config.ptMinXicZeroOmegacZeroToXiPiLfCasc) {
                   SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi);
-                  registry.fill(HIST("hRejpTStatusXicZeroOmegacZeroToXiPi"),1);
+                  registry.fill(HIST("hRejpTStatusXicZeroOmegacZeroToXiPi"), 1);
                 }
               }
 
@@ -3625,24 +3623,19 @@ struct HfTrackIndexSkimCreatorLfCascades {
               auto mass2ProngOmegaPiHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi]);
               auto mass2ProngOmegaKHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK]);
 
-              if (std::abs(casc.mOmega() - massOmega) < config.cascadeMassWindow) 
-              {
-                if ((mass2ProngOmegaPiHyp >= config.massOmegaCharmBachelorMin) && (mass2ProngOmegaPiHyp <= config.massOmegaCharmBachelorMax)) 
-                {
-                  registry.fill(HIST("hRejpTStatusOmegacZeroToOmegaPi"),0);
-                  if (ptOmegac >= config.ptMinOmegacZeroToOmegaPiLfCasc) 
-                  {
+              if (std::abs(casc.mOmega() - massOmega) < config.cascadeMassWindow) {
+                if ((mass2ProngOmegaPiHyp >= config.massOmegaCharmBachelorMin) && (mass2ProngOmegaPiHyp <= config.massOmegaCharmBachelorMax)) {
+                  registry.fill(HIST("hRejpTStatusOmegacZeroToOmegaPi"), 0);
+                  if (ptOmegac >= config.ptMinOmegacZeroToOmegaPiLfCasc) {
                     SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi);
-                    registry.fill(HIST("hRejpTStatusOmegacZeroToOmegaPi"),1);
+                    registry.fill(HIST("hRejpTStatusOmegacZeroToOmegaPi"), 1);
                   }
                 }
-                if ((mass2ProngOmegaKHyp >= config.massOmegaCharmBachelorMin) && (mass2ProngOmegaKHyp <= config.massOmegaCharmBachelorMax))
-                {
-                  registry.fill(HIST("hRejpTStatusOmegacZeroToOmegaKa"),0);
-                  if (ptOmegac >= config.ptMinOmegaczeroToOmegaKaLfCasc)
-                  {
+                if ((mass2ProngOmegaKHyp >= config.massOmegaCharmBachelorMin) && (mass2ProngOmegaKHyp <= config.massOmegaCharmBachelorMax)) {
+                  registry.fill(HIST("hRejpTStatusOmegacZeroToOmegaKa"), 0);
+                  if (ptOmegac >= config.ptMinOmegaczeroToOmegaKaLfCasc) {
                     SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK);
-                    registry.fill(HIST("hRejpTStatusOmegacZeroToOmegaKa"),1);
+                    registry.fill(HIST("hRejpTStatusOmegacZeroToOmegaKa"), 1);
                   }
                 }
               }
@@ -3733,12 +3726,11 @@ struct HfTrackIndexSkimCreatorLfCascades {
                   std::array<std::array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
                   auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi]);
 
-                  if ((std::abs(casc.mXi() - massXi) < config.cascadeMassWindow) && (mass3Prong >= config.massXiPiPiMin) && (mass3Prong <= config.massXiPiPiMax)) 
-                  { registry.fill(HIST("hRejpTStatusXicPlusToXiPiPi"),0);
-                     if (ptXic3Prong >= config.ptMinXicplusLfCasc)
-                    {
+                  if ((std::abs(casc.mXi() - massXi) < config.cascadeMassWindow) && (mass3Prong >= config.massXiPiPiMin) && (mass3Prong <= config.massXiPiPiMax)) {
+                    registry.fill(HIST("hRejpTStatusXicPlusToXiPiPi"), 0);
+                    if (ptXic3Prong >= config.ptMinXicplusLfCasc) {
                       SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi);
-                      registry.fill(HIST("hRejpTStatusXicPlusToXiPiPi"),1);
+                      registry.fill(HIST("hRejpTStatusXicPlusToXiPiPi"), 1);
                     }
                   }
 
