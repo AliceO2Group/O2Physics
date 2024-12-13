@@ -50,6 +50,11 @@ using namespace o2::framework::expressions;
 #define HNAMESTRING(thehnamefmt, thehnamepars...) FORMATSTRING(thehnamefmt, thehnamepars)
 #define HTITLESTRING(thehtitlefmt, thehtitlepars...) FORMATSTRING(thehtitlefmt, thehtitlepars)
 
+namespace o2::analysis::dptdptfilter
+{
+TpcExcludeTrack tpcExcluder; ///< the TPC excluder object instance
+} // namespace o2::analysis::dptdptfilter
+
 namespace efficiencyandqatask
 {
 /// \enum KindOfProcessQA

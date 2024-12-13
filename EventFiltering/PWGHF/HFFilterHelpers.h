@@ -129,6 +129,13 @@ enum V0Species {
   kNV0
 };
 
+enum HfVtxStage : uint8_t {
+  Skimmed = 0,
+  BeautyVertex,
+  CharmHadPiSelected,
+  kNHfVtxStage
+};
+
 static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", "Dplus", "Ds", "Lc", "Xic"};
 static const std::array<std::string, kNBeautyParticles> beautyParticleNames{"Bplus", "B0toDStar", "B0", "Bs", "Lb", "Xib"};
 static const std::array<int, kNCharmParticles> pdgCodesCharm{421, 411, 431, 4122, 4232};
@@ -205,6 +212,28 @@ static const std::vector<std::string> labelsColumnsHighPtThresholds = {"2Prongs"
 constexpr float cutsDeltaMassB[1][kNBeautyParticles] = {{0.4, 0.4, 0.4, 0.4, 0.4, 0.4}}; // B+, B0, B0toDstar, Bs, Lb, Xib
 static const std::vector<std::string> labelsColumnsDeltaMassB = {"Bplus", "BZero", "BZeroToDstar", "Bs", "Lb", "Xib"};
 
+namespace hf_trigger_cuts_presel_beauty
+{
+static constexpr int nBinsPt = 2;
+static constexpr int nCutVars = 4;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// common for any beauty candidate
+constexpr double binsPt[nBinsPt + 1] = {
+  1.,
+  5.,
+  1000.0};
+auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+// default values for the cuts
+constexpr double cuts[nBinsPt][nCutVars] = {{0.4, -1, -1, 10.},  /* 1 < pt < 5 */
+                                            {0.4, -1, -1, 10.}}; /* 5 < pt < 1000 */
+
+// row labels
+static const std::vector<std::string> labelsPt{};
+// column labels
+static const std::vector<std::string> labelsRowsTopolBeauty = {"DeltaMassB", "minCPA", "minDecayLength", "maxImpParProd"};
+
+} // namespace hf_trigger_cuts_presel_beauty
+
 // double charm
 constexpr int activeDoubleCharmChannels[1][3] = {{1, 1, 1}}; // kDoubleCharm2P, kDoubleCharm3P, kDoubleCharmMix
 static const std::vector<std::string> labelsColumnsDoubleCharmChannels = {"DoubleCharm2Prong", "DoubleCharm3Prong", "DoubleCharmMix"};
@@ -249,10 +278,15 @@ class HfFilterHelper
     mPtThresholdHighPt3Prongs = threshold3Prongs;
   }
   void setPtBinsSingleTracks(std::vector<double> ptBins) { mPtBinsTracks = ptBins; }
+  void setPtBinsBeautyHadrons(std::vector<double> ptBins) { mPtBinsBeautyHadrons = ptBins; }
   void setCutsSingleTrackBeauty(o2::framework::LabeledArray<double> cutsSingleTrack3P, o2::framework::LabeledArray<double> cutsSingleTrack4P)
   {
     mCutsSingleTrackBeauty3Prong = cutsSingleTrack3P;
     mCutsSingleTrackBeauty4Prong = cutsSingleTrack4P;
+  }
+  void setCutsBplus(o2::framework::LabeledArray<double> cutsBeautyHadrons)
+  {
+    mCutsBplus = cutsBeautyHadrons;
   }
   void setPtLimitsProtonForFemto(float minPt, float maxPt)
   {
@@ -410,6 +444,10 @@ class HfFilterHelper
   int8_t isBDTSelected(const T& scores, const U& thresholdBDTScores);
   template <bool isKaonTrack, typename T>
   bool isSelectedKaonFromXicResoToSigmaC(const T& track);
+  template <typename T1, typename T2, typename T3, typename T4>
+  inline bool isSelectedBplus(T1 const& pVecTrack0, T1 const& pVecTrack1, T2 const& dcaTrack0, T2 const& dcaTrack1, const T3& primVtx, const T4& secVtx);
+  template <typename T1, typename T2>
+  inline bool isSelectedBplusInMassRange(T1 const& ptCand, T2 const& massCand);
   template <typename T1>
   inline bool isCharmHadronMassInSbRegions(T1 const& massHypo1, T1 const& massHypo2, const float& lowLimitSB, const float& upLimitSB);
 
@@ -418,6 +456,8 @@ class HfFilterHelper
   T computeRelativeMomentum(const std::array<T, 3>& pTrack, const std::array<T, 3>& CharmCandMomentum, const T& CharmMass);
   template <typename T>
   int computeNumberOfCandidates(std::vector<std::vector<T>> indices);
+  template <typename T1>
+  inline int setVtxConfiguration(T1 vertexer, bool useAbsDCA);
 
   // PID
   void setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::array<std::string, 6>& ccdbPaths);
@@ -442,6 +482,7 @@ class HfFilterHelper
 
   // selections
   std::vector<double> mPtBinsTracks{};                                       // vector of pT bins for single track cuts
+  std::vector<double> mPtBinsBeautyHadrons{};                                // vector of pT bins for beauty hadron candidates
   o2::framework::LabeledArray<double> mCutsSingleTrackBeauty3Prong{};        // dca selections for the 3-prong b-hadron pion daughter
   o2::framework::LabeledArray<double> mCutsSingleTrackBeauty4Prong{};        // dca selections for the 4-prong b-hadron pion daughter
   float mPtMinSoftPionForDstar{0.1};                                         // minimum pt for the D*+ soft pion
@@ -502,6 +543,7 @@ class HfFilterHelper
   float mPtThresholdHighPt3Prongs{8.};                                       // threshold for high pT triggers for 3-prongs
   float mNSigmaTpcKaonFromXicResoToSigmaC{3.};                               // maximum Nsigma TPC for kaons in Xic*->SigmaC-Kaon
   float mNSigmaTofKaonFromXicResoToSigmaC{3.};                               // maximum Nsigma TOF for kaons in Xic*->SigmaC-Kaon
+  o2::framework::LabeledArray<double> mCutsBplus{};                          // selections for B+ candidates (DeltaMass, CPA, DecayLength, ImpactParameterProduct)
 
   // PID recalibrations
   int mTpcPidCalibrationOption{0};                        // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
@@ -1617,6 +1659,61 @@ inline bool HfFilterHelper::isSelectedKaon4Charm3Prong(const T& track)
   return true;
 }
 
+/// Method to perform selections for B+ candidates after vertex reconstruction
+/// \param pVecTrack0 is the array for the candidate D daughter momentum after reconstruction of secondary vertex
+/// \param pVecTrack1 is the array for the candidate bachelor pion momentum after reconstruction of secondary vertex
+/// \param dcaTrack0  is the dca of the D daughter track
+/// \param dcaTrack1  is the dca of the pion daughter track
+/// \param primVtx is the primary vertex
+/// \param secVtx is the secondary vertex
+/// \param cuts B+ candidate pre-selection per pT bin
+/// \return true if the beauty candidate passes all cuts
+template <typename T1, typename T2, typename T3, typename T4>
+inline bool HfFilterHelper::isSelectedBplus(T1 const& pVecTrack0, T1 const& pVecTrack1, T2 const& dcaTrack0, T2 const& dcaTrack1, const T3& primVtx, const T4& secVtx)
+{
+  auto pVecB = RecoDecay::pVec(pVecTrack0, pVecTrack1);
+  auto pTB = RecoDecay::pt(pVecB);
+  auto binPtB = findBin(mPtBinsBeautyHadrons, pTB);
+  if (binPtB == -1) {
+    return false;
+  }
+  auto cpa = RecoDecay::cpa(primVtx, secVtx, pVecB);
+  auto decayLength = RecoDecay::distance(primVtx, secVtx);
+  auto impactParameterProduct = dcaTrack0[0] * dcaTrack1[0];
+
+  if (cpa < mCutsBplus.get(binPtB, 1u)) {
+    return false;
+  }
+  if (decayLength < mCutsBplus.get(binPtB, 2u)) {
+    return false;
+  }
+  if (impactParameterProduct > mCutsBplus.get(binPtB, 3u)) {
+    return false;
+  }
+
+  return true;
+}
+
+/// Method to perform selections for B+ candidates after vertex reconstruction
+/// \param ptCand is the pT of the beauty candidate
+/// \param massCand is the mass of the beauty candidate
+/// \param ptBins is the array of pT bin limits
+/// \param cuts B+ candidate pre-selection per pT bin
+/// \return true if the beauty candidate passes all cuts
+template <typename T1, typename T2>
+inline bool HfFilterHelper::isSelectedBplusInMassRange(T1 const& ptCand, T2 const& massCand)
+{
+  auto binPtB = findBin(mPtBinsBeautyHadrons, ptCand);
+  if (binPtB == -1) {
+    return false;
+  }
+  if (std::fabs(massCand - massBPlus) > mCutsBplus.get(binPtB, 0u)) {
+    return false;
+  }
+
+  return true;
+}
+
 /// Method to check if charm candidates has mass between sideband limits
 /// \param massHypo1 is the array for the candidate D daughter momentum after reconstruction of secondary vertex
 /// \param massHypo2 is the array for the candidate bachelor pion momentum after reconstruction of secondary vertex
@@ -1721,6 +1818,22 @@ inline int HfFilterHelper::findBin(T1 const& binsPt, T2 value)
     return -1;
   }
   return std::distance(binsPt.begin(), std::upper_bound(binsPt.begin(), binsPt.end(), value)) - 1;
+}
+
+/// Set vertxing configuration
+/// \param vertexer o2::vertexing::DCAFitterN<N> object
+template <typename T1>
+inline int HfFilterHelper::setVtxConfiguration(T1 vertexer, bool useAbsDCA)
+{
+  // Fitter initialisation
+  vertexer.setPropagateToPCA(true);
+  vertexer.setMaxR(200.);
+  vertexer.setMaxDZIni(4.);
+  vertexer.setMinParamChange(1.e-3);
+  vertexer.setMinRelChi2Change(0.9);
+  vertexer.setUseAbsDCA(useAbsDCA);
+  vertexer.setWeightedFinalPCA(false);
+  return 1;
 }
 
 } // namespace hffilters

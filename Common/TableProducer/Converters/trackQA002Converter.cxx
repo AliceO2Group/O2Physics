@@ -20,7 +20,7 @@ using namespace o2::framework;
 struct TrackQAConverter002 {
   Produces<aod::TracksQA_002> tracksQA_002;
 
-  void process000(aod::TracksQA_000 const& tracksQA_001)
+  void process000(aod::TracksQA_000 const& tracksQA_000)
   {
     for (const auto& trackQA : tracksQA_001) {
       tracksQA_002(
