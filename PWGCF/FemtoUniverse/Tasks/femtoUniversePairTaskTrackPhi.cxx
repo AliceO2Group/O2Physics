@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file femtoUniversePairTaskTrackPhi.cxx
-/// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
+/// \brief Tasks that reads the track tables used for the pairing and builds pairs for h-Phi angular correlation analysis
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
