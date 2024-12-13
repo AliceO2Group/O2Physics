@@ -739,7 +739,7 @@ struct Lambda1520analysis {
 
       auto deltaEta = std::abs(trk1.eta() - trk2.eta());
       auto deltaPhi = std::abs(trk1.phi() - trk2.phi());
-      deltaPhi = (deltaPhi > o2::constants::math::PI) ? (2 * o2::constants::math::PI - deltaPhi) : deltaPhi;
+      deltaPhi = (deltaPhi > o2::constants::math::PI) ? (o2::constants::math::TwoPI - deltaPhi) : deltaPhi;
 
       //// QA plots before the selection
       //  --- Track QA all
