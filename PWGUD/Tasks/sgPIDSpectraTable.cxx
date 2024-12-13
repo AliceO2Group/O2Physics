@@ -81,7 +81,7 @@ struct SGPIDSpectraTable {
     std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
     // check rho0 signals
     float tpcpi, tpcka, tpcel, tpcpr, tofpi, tofka, tofpr, tofel;
-    float tpcde, tpctr, tpche, tpcal, tofde, toftr, tofhe, tofal, tpcmu, tofmu;
+    float tpcde, tofde, tpcmu, tofmu;
     TVector3 a;
     int goodtracks = 0;
     for (auto t : tracks) {
@@ -107,14 +107,15 @@ struct SGPIDSpectraTable {
         tofpr = t.hasTOF() ? t.tofNSigmaPr() : -999;
         tofel = t.hasTOF() ? t.tofNSigmaEl() : -999;
         tpcde = t.hasTPC() ? t.tpcNSigmaDe() : -999;
-        tpctr = t.hasTPC() ? t.tpcNSigmaTr() : -999;
-        tpche = t.hasTPC() ? t.tpcNSigmaHe() : -999;
-        tpcal = t.hasTPC() ? t.tpcNSigmaAl() : -999;
+        //            tpctr = t.hasTPC() ? t.tpcNSigmaTr() : -999;
+        //            tpche = t.hasTPC() ? t.tpcNSigmaHe() : -999;
+        //            tpcal = t.hasTPC() ? t.tpcNSigmaAl() : -999;
         tofde = t.hasTOF() ? t.tofNSigmaDe() : -999;
-        toftr = t.hasTOF() ? t.tofNSigmaTr() : -999;
-        tofhe = t.hasTOF() ? t.tofNSigmaHe() : -999;
-        tofal = t.hasTOF() ? t.tofNSigmaAl() : -999;
-        SGtracks(SGevents.lastIndex(), a.Pt(), a.Eta(), a.Phi(), t.sign(), tpcpi, tpcka, tpcpr, tpcel, tofpi, tofka, tofpr, tofel, tpcmu, tofmu, tpcde, tpctr, tpche, tpcal, tofde, toftr, tofhe, tofal);
+        //            toftr = t.hasTOF() ? t.tofNSigmaTr() : -999;
+        //            tofhe = t.hasTOF() ? t.tofNSigmaHe() : -999;
+        //            tofal = t.hasTOF() ? t.tofNSigmaAl() : -999;
+        // SGtracks(SGevents.lastIndex(),a.Pt(),a.Eta(),a.Phi(),t.sign(),tpcpi, tpcka, tpcpr, tpcel, tofpi, tofka, tofpr, tofel, tpcmu, tofmu, tpcde, tpctr, tpche, tpcal, tofde, toftr, tofhe, tofal);
+        SGtracks(SGevents.lastIndex(), a.Pt(), a.Eta(), a.Phi(), t.sign(), tpcpi, tpcka, tpcpr, tpcel, tofpi, tofka, tofpr, tofel, tpcmu, tofmu, tpcde, tofde);
       }
     }
   }
