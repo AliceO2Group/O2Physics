@@ -740,7 +740,7 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
     NSigmaTOF = 0.; // always accepted
   }
 
-  // Apply TPC PID post-calibration, only available for proton, dummy for deuteron
+  // Apply TPC PID post-calibration(only available for proton, dummy for deuteron)
   if (mTpcPidCalibrationOption == 1) {
     NSigmaTPC = getTPCPostCalib(track, trackSpecies == kProtonForFemto ? kPr : kDe);
   } else if (mTpcPidCalibrationOption == 2) {
