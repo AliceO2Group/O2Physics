@@ -2744,7 +2744,7 @@ struct AnalysisAsymmetricPairing {
 
   PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
 
-  void runMCGen(ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks, VarManager::PairCandidateType pairType)
+  void runMCGen(ReducedMCTracks const& mcTracks)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // group all the MC tracks which belong to the MC event corresponding to the current reconstructed event
@@ -2773,7 +2773,7 @@ struct AnalysisAsymmetricPairing {
   {
     runAsymmetricPairing<true, VarManager::kDecayToKPi, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
     if (fConfigRunMCGenPair)
-      runMCGen(mcEvents, mcTracks, VarManager::kDecayToKPi);
+      runMCGen(mcTracks);
   }
 
   void processKaonPionPionSkimmed(MyEventsVtxCovSelected const& events,
@@ -2783,7 +2783,7 @@ struct AnalysisAsymmetricPairing {
   {
     runThreeProng<true, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks, VarManager::kTripleCandidateToKPiPi);
     if (fConfigRunMCGenPair)
-      runMCGen(mcEvents, mcTracks, VarManager::kTripleCandidateToKPiPi);
+      runMCGen(mcTracks);
   }
 
   void processDummy(MyEvents&)
