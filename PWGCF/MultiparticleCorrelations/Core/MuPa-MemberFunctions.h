@@ -284,6 +284,7 @@ void DefaultConfiguration()
   ec.fEventCutName[eNoCollInRofStandard] = "NoCollInRofStandard";
   ec.fEventCutName[eNoHighMultCollInPrevRof] = "NoHighMultCollInPrevRof";
   ec.fEventCutName[eOccupancyEstimator] = "OccupancyEstimator";
+  ec.fEventCutName[eMinVertexDistanceFromIP] = "MinVertexDistanceFromIP";
   for (Int_t t = 0; t < eEventCuts_N; t++) {
     if (ec.fEventCutName[t].EqualTo("")) {
       LOGF(fatal, "\033[1;31m%s at line %d : event cut name is not set for ec.fEventCutName[%d]. The last cut name which was set is \"%s\" \033[0m", __FUNCTION__, __LINE__, t, ec.fEventCutName[t - 1].Data());
@@ -1338,6 +1339,7 @@ void DefaultCuts()
   ec.fUseEventCuts[eNoCollInRofStandard] = Alright(lUseEventCuts[eNoCollInRofStandard]);
   ec.fUseEventCuts[eNoHighMultCollInPrevRof] = Alright(lUseEventCuts[eNoHighMultCollInPrevRof]);
   ec.fUseEventCuts[eOccupancyEstimator] = Alright(lUseEventCuts[eOccupancyEstimator]);
+  ec.fUseEventCuts[eMinVertexDistanceFromIP] = Alright(lUseEventCuts[eMinVertexDistanceFromIP]);
 
   // **) event cuts defined via booleans:
   ec.fUseEventCuts[eSel7] = ec.fUseEventCuts[eSel7] && cf_ec.cfUseSel7;
@@ -1354,69 +1356,74 @@ void DefaultCuts()
   ec.fUseEventCuts[eNoHighMultCollInPrevRof] = ec.fUseEventCuts[eNoHighMultCollInPrevRof] && cf_ec.cfUseNoHighMultCollInPrevRof;
 
   // **) event cuts defined via [min, max):
-  auto lNumberOfEvents = (vector<int>)cf_ec.cfNumberOfEvents;
+  //     Remark: I use this one also for events cuts set only via min or via max.
+  //             In this case, I set eithe min or max intentionally to some value which never can be met (see below example for "MinVertexDistanceFromIP")
+  auto lNumberOfEvents = (std::vector<int>)cf_ec.cfNumberOfEvents;
   ec.fdEventCuts[eNumberOfEvents][eMin] = lNumberOfEvents[eMin];
   ec.fdEventCuts[eNumberOfEvents][eMax] = lNumberOfEvents[eMax];
 
-  auto lTotalMultiplicity = (vector<int>)cf_ec.cfTotalMultiplicity;
+  auto lTotalMultiplicity = (std::vector<int>)cf_ec.cfTotalMultiplicity;
   ec.fdEventCuts[eTotalMultiplicity][eMin] = lTotalMultiplicity[eMin];
   ec.fdEventCuts[eTotalMultiplicity][eMax] = lTotalMultiplicity[eMax];
 
-  auto lMultiplicity = (vector<float>)cf_ec.cfMultiplicity;
+  auto lMultiplicity = (std::vector<float>)cf_ec.cfMultiplicity;
   ec.fdEventCuts[eMultiplicity][eMin] = lMultiplicity[eMin];
   ec.fdEventCuts[eMultiplicity][eMax] = lMultiplicity[eMax];
 
-  auto lReferenceMultiplicity = (vector<float>)cf_ec.cfReferenceMultiplicity;
+  auto lReferenceMultiplicity = (std::vector<float>)cf_ec.cfReferenceMultiplicity;
   ec.fdEventCuts[eReferenceMultiplicity][eMin] = lReferenceMultiplicity[eMin];
   ec.fdEventCuts[eReferenceMultiplicity][eMax] = lReferenceMultiplicity[eMax];
 
-  auto lCentrality = (vector<float>)cf_ec.cfCentrality;
+  auto lCentrality = (std::vector<float>)cf_ec.cfCentrality;
   ec.fdEventCuts[eCentrality][eMin] = lCentrality[eMin];
   ec.fdEventCuts[eCentrality][eMax] = lCentrality[eMax];
 
-  auto lVertex_x = (vector<float>)cf_ec.cfVertex_x;
+  auto lVertex_x = (std::vector<float>)cf_ec.cfVertex_x;
   ec.fdEventCuts[eVertex_x][eMin] = lVertex_x[eMin];
   ec.fdEventCuts[eVertex_x][eMax] = lVertex_x[eMax];
 
-  auto lVertex_y = (vector<float>)cf_ec.cfVertex_y;
+  auto lVertex_y = (std::vector<float>)cf_ec.cfVertex_y;
   ec.fdEventCuts[eVertex_y][eMin] = lVertex_y[eMin];
   ec.fdEventCuts[eVertex_y][eMax] = lVertex_y[eMax];
 
-  auto lVertex_z = (vector<float>)cf_ec.cfVertex_z;
+  auto lVertex_z = (std::vector<float>)cf_ec.cfVertex_z;
   ec.fdEventCuts[eVertex_z][eMin] = lVertex_z[eMin];
   ec.fdEventCuts[eVertex_z][eMax] = lVertex_z[eMax];
 
-  auto lNContributors = (vector<int>)cf_ec.cfNContributors;
+  auto lNContributors = (std::vector<int>)cf_ec.cfNContributors;
   ec.fdEventCuts[eNContributors][eMin] = lNContributors[eMin];
   ec.fdEventCuts[eNContributors][eMax] = lNContributors[eMax];
 
-  auto lImpactParameter = (vector<float>)cf_ec.cfImpactParameter;
+  auto lImpactParameter = (std::vector<float>)cf_ec.cfImpactParameter;
   ec.fdEventCuts[eImpactParameter][eMin] = lImpactParameter[eMin];
   ec.fdEventCuts[eImpactParameter][eMax] = lImpactParameter[eMax];
 
-  auto lEventPlaneAngle = (vector<float>)cf_ec.cfEventPlaneAngle;
+  auto lEventPlaneAngle = (std::vector<float>)cf_ec.cfEventPlaneAngle;
   ec.fdEventCuts[eEventPlaneAngle][eMin] = lEventPlaneAngle[eMin];
   ec.fdEventCuts[eEventPlaneAngle][eMax] = lEventPlaneAngle[eMax];
 
-  auto lOccupancy = (vector<float>)cf_ec.cfOccupancy;
+  auto lOccupancy = (std::vector<float>)cf_ec.cfOccupancy;
   ec.fdEventCuts[eOccupancy][eMin] = lOccupancy[eMin];
   ec.fdEventCuts[eOccupancy][eMax] = lOccupancy[eMax];
 
-  auto lInteractionRate = (vector<float>)cf_ec.cfInteractionRate;
+  auto lInteractionRate = (std::vector<float>)cf_ec.cfInteractionRate;
   ec.fdEventCuts[eInteractionRate][eMin] = lInteractionRate[eMin];
   ec.fdEventCuts[eInteractionRate][eMax] = lInteractionRate[eMax];
 
-  auto lCurrentRunDuration = (vector<float>)cf_ec.cfCurrentRunDuration;
+  auto lCurrentRunDuration = (std::vector<float>)cf_ec.cfCurrentRunDuration;
   ec.fdEventCuts[eCurrentRunDuration][eMin] = lCurrentRunDuration[eMin];
   ec.fdEventCuts[eCurrentRunDuration][eMax] = lCurrentRunDuration[eMax];
 
-  auto lMultMCNParticlesEta08 = (vector<float>)cf_ec.cfMultMCNParticlesEta08;
+  auto lMultMCNParticlesEta08 = (std::vector<float>)cf_ec.cfMultMCNParticlesEta08;
   ec.fdEventCuts[eMultMCNParticlesEta08][eMin] = lMultMCNParticlesEta08[eMin];
   ec.fdEventCuts[eMultMCNParticlesEta08][eMax] = lMultMCNParticlesEta08[eMax];
 
-  auto lSelectedEvents = (vector<int>)cf_ec.cfSelectedEvents;
+  auto lSelectedEvents = (std::vector<int>)cf_ec.cfSelectedEvents;
   ec.fdEventCuts[eSelectedEvents][eMin] = lSelectedEvents[eMin];
   ec.fdEventCuts[eSelectedEvents][eMax] = lSelectedEvents[eMax];
+
+  ec.fdEventCuts[eMinVertexDistanceFromIP][eMin] = cf_ec.cfMinVertexDistanceFromIP; // if vertex is closer to IP than this value, the event is rejected
+  ec.fdEventCuts[eMinVertexDistanceFromIP][eMax] = -1;                              // // this value is never checked in any case
 
   // **) event cuts defined via string:
   ec.fsEventCuts[eMultiplicityEstimator] = cf_ec.cfMultiplicityEstimator;
@@ -1431,7 +1438,7 @@ void DefaultCuts()
 
   // *) Use or do not use a cut enumerated in eParticleHistograms + eParticleCuts.
   //    Default cuts are set in configurable cfUseParticleCuts
-  auto lUseParticleCuts = (vector<string>)cf_pc.cfUseParticleCuts;
+  auto lUseParticleCuts = (std::vector<string>)cf_pc.cfUseParticleCuts;
   if (lUseParticleCuts.size() != eParticleCuts_N) {
     LOGF(info, "\033[1;31m lUseParticleCuts.size() = %d\033[0m", lUseParticleCuts.size());
     LOGF(info, "\033[1;31m eParticleCuts_N = %d\033[0m", static_cast<int>(eParticleCuts_N));
@@ -1481,67 +1488,67 @@ void DefaultCuts()
   pc.fUseParticleCuts[eisGlobalTrack] = pc.fUseParticleCuts[eisGlobalTrack] && cf_pc.cfisGlobalTrack;
 
   // **) particles cuts defined via [min, max):
-  auto lPhi = (vector<float>)cf_pc.cfPhi;
+  auto lPhi = (std::vector<float>)cf_pc.cfPhi;
   pc.fdParticleCuts[ePhi][eMin] = lPhi[eMin];
   pc.fdParticleCuts[ePhi][eMax] = lPhi[eMax];
 
-  auto lPt = (vector<float>)cf_pc.cfPt;
+  auto lPt = (std::vector<float>)cf_pc.cfPt;
   pc.fdParticleCuts[ePt][eMin] = lPt[eMin];
   pc.fdParticleCuts[ePt][eMax] = lPt[eMax];
 
-  auto lEta = (vector<float>)cf_pc.cfEta;
+  auto lEta = (std::vector<float>)cf_pc.cfEta;
   pc.fdParticleCuts[eEta][eMin] = lEta[eMin];
   pc.fdParticleCuts[eEta][eMax] = lEta[eMax];
 
-  auto lCharge = (vector<float>)cf_pc.cfCharge;
+  auto lCharge = (std::vector<float>)cf_pc.cfCharge;
   pc.fdParticleCuts[eCharge][eMin] = lCharge[eMin];
   pc.fdParticleCuts[eCharge][eMax] = lCharge[eMax];
 
-  auto ltpcNClsFindable = (vector<float>)cf_pc.cftpcNClsFindable;
+  auto ltpcNClsFindable = (std::vector<float>)cf_pc.cftpcNClsFindable;
   pc.fdParticleCuts[etpcNClsFindable][eMin] = ltpcNClsFindable[eMin];
   pc.fdParticleCuts[etpcNClsFindable][eMax] = ltpcNClsFindable[eMax];
 
-  auto ltpcNClsShared = (vector<float>)cf_pc.cftpcNClsShared;
+  auto ltpcNClsShared = (std::vector<float>)cf_pc.cftpcNClsShared;
   pc.fdParticleCuts[etpcNClsShared][eMin] = ltpcNClsShared[eMin];
   pc.fdParticleCuts[etpcNClsShared][eMax] = ltpcNClsShared[eMax];
 
-  auto ltpcNClsFound = (vector<float>)cf_pc.cftpcNClsFound;
+  auto ltpcNClsFound = (std::vector<float>)cf_pc.cftpcNClsFound;
   pc.fdParticleCuts[etpcNClsFound][eMin] = ltpcNClsFound[eMin];
   pc.fdParticleCuts[etpcNClsFound][eMax] = ltpcNClsFound[eMax];
 
-  auto ltpcNClsCrossedRows = (vector<float>)cf_pc.cftpcNClsCrossedRows;
+  auto ltpcNClsCrossedRows = (std::vector<float>)cf_pc.cftpcNClsCrossedRows;
   pc.fdParticleCuts[etpcNClsCrossedRows][eMin] = ltpcNClsCrossedRows[eMin];
   pc.fdParticleCuts[etpcNClsCrossedRows][eMax] = ltpcNClsCrossedRows[eMax];
 
-  auto litsNCls = (vector<float>)cf_pc.cfitsNCls;
+  auto litsNCls = (std::vector<float>)cf_pc.cfitsNCls;
   pc.fdParticleCuts[eitsNCls][eMin] = litsNCls[eMin];
   pc.fdParticleCuts[eitsNCls][eMax] = litsNCls[eMax];
 
-  auto litsNClsInnerBarrel = (vector<float>)cf_pc.cfitsNClsInnerBarrel;
+  auto litsNClsInnerBarrel = (std::vector<float>)cf_pc.cfitsNClsInnerBarrel;
   pc.fdParticleCuts[eitsNClsInnerBarrel][eMin] = litsNClsInnerBarrel[eMin];
   pc.fdParticleCuts[eitsNClsInnerBarrel][eMax] = litsNClsInnerBarrel[eMax];
 
-  auto ltpcCrossedRowsOverFindableCls = (vector<float>)cf_pc.cftpcCrossedRowsOverFindableCls;
+  auto ltpcCrossedRowsOverFindableCls = (std::vector<float>)cf_pc.cftpcCrossedRowsOverFindableCls;
   pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMin] = ltpcCrossedRowsOverFindableCls[eMin];
   pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMax] = ltpcCrossedRowsOverFindableCls[eMax];
 
-  auto ltpcFoundOverFindableCls = (vector<float>)cf_pc.cftpcFoundOverFindableCls;
+  auto ltpcFoundOverFindableCls = (std::vector<float>)cf_pc.cftpcFoundOverFindableCls;
   pc.fdParticleCuts[etpcFoundOverFindableCls][eMin] = ltpcFoundOverFindableCls[eMin];
   pc.fdParticleCuts[etpcFoundOverFindableCls][eMax] = ltpcFoundOverFindableCls[eMax];
 
-  auto ltpcFractionSharedCls = (vector<float>)cf_pc.cftpcFractionSharedCls;
+  auto ltpcFractionSharedCls = (std::vector<float>)cf_pc.cftpcFractionSharedCls;
   pc.fdParticleCuts[etpcFractionSharedCls][eMin] = ltpcFractionSharedCls[eMin];
   pc.fdParticleCuts[etpcFractionSharedCls][eMax] = ltpcFractionSharedCls[eMax];
 
-  auto ldcaXY = (vector<float>)cf_pc.cfdcaXY;
+  auto ldcaXY = (std::vector<float>)cf_pc.cfdcaXY;
   pc.fdParticleCuts[edcaXY][eMin] = ldcaXY[eMin];
   pc.fdParticleCuts[edcaXY][eMax] = ldcaXY[eMax];
 
-  auto ldcaZ = (vector<float>)cf_pc.cfdcaZ;
+  auto ldcaZ = (std::vector<float>)cf_pc.cfdcaZ;
   pc.fdParticleCuts[edcaZ][eMin] = ldcaZ[eMin];
   pc.fdParticleCuts[edcaZ][eMax] = ldcaZ[eMax];
 
-  auto lPDG = (vector<float>)cf_pc.cfPDG;
+  auto lPDG = (std::vector<float>)cf_pc.cfPDG;
   pc.fdParticleCuts[ePDG][eMin] = lPDG[eMin];
   pc.fdParticleCuts[ePDG][eMax] = lPDG[eMax];
 
@@ -1583,13 +1590,37 @@ void SpecificCuts(TString whichSpecificCuts)
   }
 
   // b) Implementation of analysis-specific cuts:
-  //    Remark: Whichever cuts start to repeat below across different case statements, promote them into DefaultCuts().
+  //    Remark #1: Whichever cuts start to repeat below across different case statements, promote them into DefaultCuts().
+  //               The idea is to keep here cuts only which are specific for particular analysis, and which are unlikely ever to change for that particular analysis.
+  //    Remark #2: Remember that the values for the cuts hardwired here overwrite the ones set as default values in configurables.
+  //               If you want to reconfigure all cuts below manually via configurables, simply do not call SpecificCuts, i.e. set in JSON "cfUseSpecificCuts": "false"
+  //    Remark #3: Most up-to-date documentation of each cut is in enum file.
   switch (specificCuts) {
+
     case eLHC23zzh:
-      ec.fUseEventCuts[eSel8] = kTRUE;                    // central event selection for Run 3
-      ec.fUseEventCuts[eNoCollInTimeRangeStrict] = kTRUE; // IA Slide 39 in https://indico.cern.ch/event/1462154/
-      ec.fUseEventCuts[eNoCollInRofStrict] = kTRUE;       // IA Slide 39 in https://indico.cern.ch/event/1462154/
-      ec.fUseEventCuts[eNoHighMultCollInPrevRof] = kTRUE; // IA Slide 39 in https://indico.cern.ch/event/1462154/
+
+      // Event cuts:
+      ec.fUseEventCuts[eSel8] = kTRUE;
+      ec.fUseEventCuts[eNoSameBunchPileup] = kTRUE;
+      ec.fUseEventCuts[eIsGoodZvtxFT0vsPV] = kTRUE;
+      ec.fUseEventCuts[eIsVertexITSTPC] = kTRUE;
+      ec.fUseEventCuts[eNoCollInTimeRangeStrict] = kTRUE;
+      ec.fUseEventCuts[eNoCollInRofStrict] = kTRUE;
+      ec.fUseEventCuts[eNoHighMultCollInPrevRof] = kTRUE;
+
+      // Particle cuts:
+      pc.fUseParticleCuts[eitsNCls] = kTRUE;
+      pc.fdParticleCuts[eitsNCls][eMin] = 5.;
+      pc.fdParticleCuts[eitsNCls][eMax] = 1000.;
+
+      pc.fUseParticleCuts[etpcNClsFound] = kTRUE;
+      pc.fdParticleCuts[etpcNClsFound][eMin] = 70.;
+      pc.fdParticleCuts[etpcNClsFound][eMax] = 1000.;
+
+      pc.fUseParticleCuts[etpcNClsCrossedRows] = kTRUE;
+      pc.fdParticleCuts[etpcNClsCrossedRows][eMin] = 70.;
+      pc.fdParticleCuts[etpcNClsCrossedRows][eMax] = 1000.;
+
       break;
 
       // ...
@@ -1798,6 +1829,13 @@ void InsanityChecksBeforeBooking()
     //  ...
 
   } // if (ec.fUseEventCuts[eTrigger]) {
+
+  // **) Check if the cut on MinVertexDistanceFromIP makes sense:
+  if (ec.fUseEventCuts[eMinVertexDistanceFromIP]) {
+    if (!(ec.fdEventCuts[eMinVertexDistanceFromIP][eMin] > 0.)) {
+      LOGF(fatal, "\033[1;31m%s at line %d : trigger ec.fdEventCuts[eMinVertexDistanceFromIP][eMin] = %f must be positive. Check the setting of configurable cfMinVertexDistanceFromIP\033[0m", __FUNCTION__, __LINE__, ec.fdEventCuts[eMinVertexDistanceFromIP][eMin]);
+    }
+  }
 
   // **) Enforce the usage of particular trigger for this dataset:
   if (tc.fProcess[eProcessRec_Run2]) {
@@ -2725,6 +2763,11 @@ void BookEventCutsHistograms()
 
   // a) Book the profile holding flags:
   ec.fEventCutsPro = new TProfile("fEventCutsPro", "flags for event cuts", eEventCuts_N, -0.5, static_cast<float>(eEventCuts_N) - 0.5);
+  if (tc.fUseSpecificCuts) {
+    ec.fEventCutsPro->SetTitle(TString::Format("%s (hardwired analysis-specific cuts = %s)", ec.fEventCutsPro->GetTitle(), tc.fWhichSpecificCuts.Data()).Data());
+  } else {
+    ec.fEventCutsPro->SetTitle(TString::Format("%s (hardwired analysis-specific cuts not used)", ec.fEventCutsPro->GetTitle()).Data());
+  }
   ec.fEventCutsPro->SetStats(kFALSE);
   ec.fEventCutsPro->SetLineColor(eColor);
   ec.fEventCutsPro->SetFillColor(eFillColor);
@@ -2933,6 +2976,11 @@ void BookParticleCutsHistograms()
 
   // a) Book the profile holding flags:
   pc.fParticleCutsPro = new TProfile("fParticleCutsPro", "flags for particle cuts", eParticleCuts_N, -0.5, static_cast<float>(eParticleCuts_N) - 0.5);
+  if (tc.fUseSpecificCuts) {
+    pc.fParticleCutsPro->SetTitle(TString::Format("%s (hardwired analysis-specific cuts = %s)", pc.fParticleCutsPro->GetTitle(), tc.fWhichSpecificCuts.Data()).Data());
+  } else {
+    pc.fParticleCutsPro->SetTitle(TString::Format("%s (hardwired analysis-specific cuts not used)", pc.fParticleCutsPro->GetTitle()).Data());
+  }
   pc.fParticleCutsPro->SetStats(kFALSE);
   pc.fParticleCutsPro->SetLineColor(eColor);
   pc.fParticleCutsPro->SetFillColor(eFillColor);
@@ -4977,6 +5025,17 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
+    //   *) MinVertexDistanceFromIP (minimal vertex distance from nominal Interaction Point). If vertex is closer that this value, this event is rejected:
+    if (ec.fUseEventCuts[eMinVertexDistanceFromIP]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eRec, eMinVertexDistanceFromIP, eCutCounterBinning);
+      } else if (sqrt(pow(collision.posX(), 2.) + pow(collision.posY(), 2.) + pow(collision.posZ(), 2.)) < ec.fdEventCuts[eMinVertexDistanceFromIP][eMin]) {
+        if (!EventCut(eRec, eMinVertexDistanceFromIP, cutModus)) {
+          return kFALSE;
+        }
+      }
+    }
+
     //   *) NContributors:
     if (ec.fUseEventCuts[eNContributors]) {
       if (cutModus == eCutCounterBinning) {
@@ -5075,6 +5134,17 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
         EventCut(eSim, eVertex_z, eCutCounterBinning);
       } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertex_z][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eSim, eVertex_z, cutModus)) {
+          return kFALSE;
+        }
+      }
+    }
+
+    //   *) MinVertexDistanceFromIP (minimal vertex distance from nominal Interaction Point). If vertex is closer that this value, this event is rejected:
+    if (ec.fUseEventCuts[eMinVertexDistanceFromIP]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eRec, eMinVertexDistanceFromIP, eCutCounterBinning);
+      } else if (sqrt(pow(collision.posX(), 2.) + pow(collision.posY(), 2.) + pow(collision.posZ(), 2.)) < ec.fdEventCuts[eMinVertexDistanceFromIP][eMin]) {
+        if (!EventCut(eRec, eMinVertexDistanceFromIP, cutModus)) {
           return kFALSE;
         }
       }
@@ -8782,6 +8852,7 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
   } // else {
 
   // g) The final touch on histogram with weights:
+  TString histName = "";
   if (-1 == bin) {
     // Integrated weights:
     if (!(TString(variable).EqualTo("phi") || TString(variable).EqualTo("pt") || TString(variable).EqualTo("eta"))) {
@@ -8789,17 +8860,22 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
     }
 
     // fetch histogram directly from this list:
-    hist = reinterpret_cast<TH1D*>(listWithRuns->FindObject(Form("%s_%s", variable, tc.fTaskName.Data())));
+    histName = TString::Format("%s_%s", variable, tc.fTaskName.Data());
+    LOGF(info, "\033[1;33m%s at line %d : fetching directly hist with name = %s\033[0m", __FUNCTION__, __LINE__, histName.Data());
+    hist = reinterpret_cast<TH1D*>(listWithRuns->FindObject(histName.Data()));
     // if the previous search failed, descend recursively also into the nested lists:
     if (!hist) {
-      hist = reinterpret_cast<TH1D*>(GetObjectFromList(listWithRuns, Form("%s_%s", variable, tc.fTaskName.Data())));
+      LOGF(info, "\033[1;33m%s at line %d : previous attempt failed, fetching instead recursively hist with name = %s\033[0m", __FUNCTION__, __LINE__, histName.Data());
+      hist = reinterpret_cast<TH1D*>(GetObjectFromList(listWithRuns, histName.Data()));
     }
     if (!hist) {
-      hist = reinterpret_cast<TH1D*>(GetObjectFromList(listWithRuns, Form("%s", variable))); // yes, for some simple tests I can have only histogram named e.g. 'phi'
+      histName = TString::Format("%s", variable); // yes, for some simple tests I can have only histogram named e.g. 'phi'
+      LOGF(info, "\033[1;33m%s at line %d : last attempt, fetching instead hist with trivial name = %s\033[0m", __FUNCTION__, __LINE__, histName.Data());
+      hist = reinterpret_cast<TH1D*>(GetObjectFromList(listWithRuns, histName.Data()));
     }
     if (!hist) {
       listWithRuns->ls();
-      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d : couldn't fetch hist with name = %s\033[0m", __FUNCTION__, __LINE__, histName.Data());
     }
     hist->SetDirectory(0);
     hist->SetTitle(Form("%s, %s", filePath, runNumber)); // I have to do it here, because only here I have "filePath" av
@@ -8810,18 +8886,22 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
     // fetch histogram directly from this list:
-    hist = reinterpret_cast<TH1D*>(listWithRuns->FindObject(Form("%s[%d]_%s", variable, bin, tc.fTaskName.Data())));
+    histName = TString::Format("%s[%d]_%s", variable, bin, tc.fTaskName.Data());
+    LOGF(info, "\033[1;33m%s at line %d : fetching directly hist with name = %s\033[0m", __FUNCTION__, __LINE__, histName.Data());
+    hist = reinterpret_cast<TH1D*>(listWithRuns->FindObject(histName.Data()));
     // if the previous search failed, descend recursively also into the nested lists:
     if (!hist) {
+      LOGF(info, "\033[1;33m%s at line %d : previous attempt failed, fetching instead recursively hist with name = %s\033[0m", __FUNCTION__, __LINE__, histName.Data());
       hist = reinterpret_cast<TH1D*>(GetObjectFromList(listWithRuns, Form("%s[%d]_%s", variable, bin, tc.fTaskName.Data())));
     }
     if (!hist) {
-      hist = reinterpret_cast<TH1D*>(GetObjectFromList(listWithRuns, Form("%s[%d]", variable, bin))); // yes, for some simple tests I can have only histogram named e.g. 'phipt[0]'
+      histName = TString::Format("%s[%d]", variable, bin); // yes, for some simple tests I can have only histogram named e.g. 'phipt[0]'
+      LOGF(info, "\033[1;33m%s at line %d : last attempt, fetching instead hist with trivial name = %s\033[0m", __FUNCTION__, __LINE__, histName.Data());
+      hist = reinterpret_cast<TH1D*>(GetObjectFromList(listWithRuns, histName.Data()));
     }
     if (!hist) {
-      LOGF(info, "\033[1;31m Form(\"%%s[%%d]\", variable, bin) = %s\033[0m", Form("%s[%d]", variable, bin));
       listWithRuns->ls();
-      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d : couldn't fetch hist with name = %s\033[0m", __FUNCTION__, __LINE__, histName.Data());
     }
 
     // *) insanity check for differential weights => check if boundaries of current bin are the same as bin boundaries for which these weights were calculated.
@@ -9051,6 +9131,9 @@ TH1D* GetHistogramWithCentralityWeights(const char* filePath, const char* runNum
   } // else {
 
   // g) The final touch on histogram with centrality weights:
+
+  // TBI 20241211 unify code below with how I implemented below for particle weights
+
   // fetch histogram directly from this list:
   hist = reinterpret_cast<TH1D*>(listWithRuns->FindObject(Form("%s_%s", ec.fsEventCuts[eCentralityEstimator].Data(), tc.fTaskName.Data())));
   // if the previous search failed, descend recursively also into the nested lists:
