@@ -577,15 +577,17 @@ struct NonPromptCascadeTask {
 
       int motherParticleID = -1;
 
+      std::tuple<bool, bool> fromHF{false, false};
       if (protonTrack.mcParticle().has_mothers() && pionTrack.mcParticle().has_mothers() && bachelor.mcParticle().has_mothers()) {
         if (protonTrack.mcParticle().mothersIds()[0] == pionTrack.mcParticle().mothersIds()[0]) {
           const auto v0part = protonTrack.mcParticle().mothers_first_as<aod::McParticles>();
-          if (abs(v0part.pdgCode()) == 3122 && v0part.has_mothers()) {
+          if (std::abs(v0part.pdgCode()) == 3122 && v0part.has_mothers()) {
             const auto motherV0 = v0part.mothers_as<aod::McParticles>()[0];
             // const auto motherBach = bachelor.mcParticle().mothers_as<aod::McParticles>()[0];
             if (v0part.mothersIds()[0] == bachelor.mcParticle().mothersIds()[0]) {
-              if (abs(motherV0.pdgCode()) == 3312 || abs(motherV0.pdgCode()) == 3334) {
+              if (std::abs(motherV0.pdgCode()) == 3312 || abs(motherV0.pdgCode()) == 3334) {
                 isGoodCascade = true;
+                fromHF = isFromHF(motherV0);
                 motherParticleID = v0part.mothersIds()[0];
               }
             }
@@ -596,9 +598,7 @@ struct NonPromptCascadeTask {
       bool isGoodMatch = ((motherParticleID == ITStrack.mcParticleId())) ? true : false;
 
       int pdgCodeMom = 0;
-      std::tuple<bool, bool> fromHF{false, false};
-      if (isGoodCascade && isGoodMatch) {
-        fromHF = isFromHF(track.mcParticle());
+      if (isGoodMatch) {
         pdgCodeMom = track.mcParticle().has_mothers() ? track.mcParticle().mothers_as<aod::McParticles>()[0].pdgCode() : 0;
       }
       int itsTrackPDG = ITStrack.has_mcParticle() ? ITStrack.mcParticle().pdgCode() : 0;
@@ -648,7 +648,7 @@ struct NonPromptCascadeTask {
                  particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), mcCollision.posX() - particle.vx(), mcCollision.posY() - particle.vy(), mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == label.mcCollisionId());
     }
 
-    for (auto& p : mcParticles) {
+    for (const auto& p : mcParticles) {
       auto absCode = std::abs(p.pdgCode());
       if (absCode != 3312 && absCode != 3334) {
         continue;
@@ -780,11 +780,6 @@ struct NonPromptCascadeTask {
       }
       bachPionHasTOF = bachelor.hasTOF();
 
-      // if (!bachelor.hasTOF() && !ptrack.hasTOF() && !ntrack.hasTOF() ) {
-      //   LOG(debug)<< "no TOF: "<<bachelor.hasTOF()<<"/"<<ptrack.hasTOF()<<"/"<<ntrack.hasTOF();
-      //   continue;
-      // }
-
       registry.fill(HIST("h_PIDcutsXi"), 1, massXi);
       registry.fill(HIST("h_PIDcutsOmega"), 1, massOmega);
 
@@ -869,7 +864,7 @@ struct NonPromptCascadeTask {
                                               protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi()});
     }
 
-    for (auto& c : candidates) {
+    for (const auto& c : candidates) {
 
       NPCTable(c.matchingChi2, c.deltaPt, c.itsClusSize, c.hasReassociatedCluster,
                c.pvX, c.pvY, c.pvZ,

@@ -61,8 +61,8 @@ struct CorrSparse {
     registry.add("pT", "pT", {HistType::kTH1D, {axisPtTrigger}});
     registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
 
-    registry.add("Sparse_mixed", "", {HistType::kTHnSparseD, {{axisVertex, axisPtTrigger, axisPtAssoc, axisMultiplicity, axisDeltaPhi, axisDeltaEta}}}); // Make the output sparse
-    registry.add("Sparse_same", "", {HistType::kTHnSparseD, {{axisVertex, axisPtTrigger, axisPtAssoc, axisMultiplicity, axisDeltaPhi, axisDeltaEta}}});
+    registry.add("Sparse_mixed", "", {HistType::kTHnSparseF, {{axisVertex, axisPtTrigger, axisPtAssoc, axisMultiplicity, axisDeltaPhi, axisDeltaEta}}}); // Make the output sparse
+    registry.add("Sparse_same", "", {HistType::kTHnSparseF, {{axisVertex, axisPtTrigger, axisPtAssoc, axisMultiplicity, axisDeltaPhi, axisDeltaEta}}});
 
     const int maxMixBin = axisMultiplicity->size() * axisVertex->size();
     registry.add("eventcount", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}}); // histogram to see how many events are in the same and mixed event
