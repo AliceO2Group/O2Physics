@@ -736,7 +736,7 @@ struct MultiplicityTable {
     multsGlobal(nGlobalTracks, multNContribsEta08_kGlobalTrackWoDCA, multNContribsEta10_kGlobalTrackWoDCA, multNContribsEta05_kGlobalTrackWoDCA);
   }
 
-  void processRun3MFT(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+  void processRun3MFT(soa::Join<aod::Collisions, aod::EvSels>::iterator const&,
                       o2::aod::MFTTracks const& mftTracks,
                       soa::SmallGroups<aod::BestCollisionsFwd> const& retracks)
   {
