@@ -22,7 +22,7 @@ struct TrackQAConverter002 {
 
   void process000(aod::TracksQA_000 const& tracksQA_000)
   {
-    for (const auto& trackQA : tracksQA_001) {
+    for (const auto& trackQA : tracksQA_000) {
       tracksQA_002(
         trackQA.trackId(),
         trackQA.tpcTime0(),
