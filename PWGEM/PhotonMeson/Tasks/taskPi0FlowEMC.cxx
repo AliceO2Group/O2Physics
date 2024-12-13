@@ -740,7 +740,7 @@ struct TaskPi0FlowEMC {
         }
 
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
-        if(cfgDistanceToEdge.value) {
+        if (cfgDistanceToEdge.value) {
           int iCellIDPhoton1 = -1;
           int iCellIDPhoton2 = -1;
           try {
