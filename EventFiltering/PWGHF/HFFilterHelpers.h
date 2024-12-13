@@ -200,7 +200,7 @@ constexpr int activeFemtoChannels[2][5] = {{1, 1, 1, 1, 0},  // pD0, pD+, pDs, p
                                            {0, 0, 0, 1, 0}}; // only for deLc
 static const std::vector<std::string> labelsColumnsFemtoChannels = {"protonDZero", "protonDPlus", "protonDs", "protonLc", "protonXic"};
 static const std::vector<std::string> labelsRowsFemtoChannels = {"protonCharmFemto", "deuteronCharmFemto"};
-constexpr float cutsPtThresholdsForFemto[1][2] = {{0.8, 1.4}}; // proton, deuteron
+constexpr float cutsPtThresholdsForFemto[1][2] = {{8., 1.4}}; // proton, deuteron
 static const std::vector<std::string> labelsColumnsPtThresholdsForFemto = {"Proton", "Deuteron"};
 
 // min and max pT for all tracks combined  (except for V0 and cascades)
@@ -526,7 +526,7 @@ class HfFilterHelper
   float mPtMaxProtonForFemto{5.0};                                           // maximum pt for the proton for femto
   float mPtMaxDeuteronForFemto{5.0};                                         // maximum pt for the deuteron for femto
   float mPtMaxCharmBaryonBachelor{100000.};                                  // maximum pt for the bachelor pion from Xic/Omegac decays
-  float mPtThresholdProtonForFemto{0.8};                                     // pt threshold to change strategy for proton PID for femto
+  float mPtThresholdProtonForFemto{8.};                                     // pt threshold to change strategy for proton PID for femto
   float mPtThresholdDeuteronForFemto{1.4};                                   // pt threshold to change strategy for deuteron PID for femto
   float mPtMinSigmaCZero{0.f};                                               // pt min SigmaC0 candidate
   float mPtMinSigmaC2520Zero{0.f};                                           // pt min SigmaC(2520)0 candidate
@@ -733,16 +733,11 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
   if (!track.isGlobalTrack()) {
     return false; // use only global tracks
   }
-
   // PID evaluation
   float NSigmaTPC = (trackSpecies == kProtonForFemto) ? track.tpcNSigmaPr() : track.tpcNSigmaDe();
   float NSigmaTOF = (trackSpecies == kProtonForFemto) ? track.tofNSigmaPr() : track.tofNSigmaDe();
-
-  // Handle TOF usage based on the pT threshold and requirements
-  if (pt <= ptThresholdPidStrategy) {
-    NSigmaTOF = 0.; // Use only TPC below the threshold
-  } else if (!forceTof && !track.hasTOF()) {
-    NSigmaTOF = 0.; // If TOF is not required and unavailable, bypass it
+  if (!forceTof && !track.hasTOF()) {
+    NSigmaTOF = 0.; // always accepted
   }
 
   // Apply TPC PID post-calibration, only available for proton, dummy for deuteron
@@ -758,24 +753,38 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
 
   float NSigma = std::sqrt(NSigmaTPC * NSigmaTPC + NSigmaTOF * NSigmaTOF);
 
-  // Apply different PID strategy in different pt range
-  if (pt <= ptThresholdPidStrategy) {
-    // Use only TPC below the threshold
-    if (std::fabs(NSigmaTPC) > nSigmaCuts[0]) {
-      return false;
+  if (trackSpecies == kProtonForFemto) {
+    if (trackPar.getPt() <= ptThresholdPidStrategy) {
+      if (NSigma > nSigmaCuts[2]) {
+        return false;
+      }
+    } else {
+      if (std::fabs(NSigmaTPC) > nSigmaCuts[0] || std::fabs(NSigmaTOF) > nSigmaCuts[1]) {
+        return false;
+      }
     }
-  } else {
-    // Use combined TPC and TOF above the threshold
-    if (NSigma > nSigmaCuts[2]) {
-      return false;
+  }
+  // For deuterons: Determine whether to apply TOF based on pt threshold
+  if (trackSpecies == kDeuteronForFemto) {
+    // Apply different PID strategy in different pt range
+    if (pt <= ptThresholdPidStrategy) {
+      if (std::fabs(NSigmaTPC) > nSigmaCuts[0]) { // Use only TPC below the threshold
+        return false;
+      }
+    } else {
+      if (NSigma > nSigmaCuts[2]) { // Use combined TPC and TOF above the threshold
+        return false;
+      }
     }
   }
 
-  // Fill QA histograms if requested
   if (activateQA > 1) {
     hTPCPID->Fill(track.p(), NSigmaTPC);
-    if ((forceTof || track.hasTOF()) && pt > ptThresholdPidStrategy) {
-      hTOFPID->Fill(track.p(), NSigmaTOF);
+    if ((forceTof || track.hasTOF())) {
+      if (trackSpecies == kProtonForFemto)
+        hTOFPID->Fill(track.p(), NSigmaTOF);
+      else if (trackSpecies == kDeuteronForFemto && pt > ptThresholdPidStrategy)
+        hTOFPID->Fill(track.p(), NSigmaTOF);
     }
   }
 
