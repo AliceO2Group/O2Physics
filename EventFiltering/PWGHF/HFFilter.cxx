@@ -42,10 +42,6 @@
 #include "EventFiltering/filterTables.h"
 #include "EventFiltering/PWGHF/HFFilterHelpers.h"
 
-#include <string>
-#include <memory>
-#include <vector>
-
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod::hffilters;
@@ -85,8 +81,9 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<float> femtoMaxRelativeMomentum{"femtoMaxRelativeMomentum", 2., "Maximal allowed value for relative momentum between charm-proton pairs in GeV/c"};
   Configurable<LabeledArray<int>> enableFemtoChannels{"enableFemtoChannels", {activeFemtoChannels[0], 2, 5, labelsRowsFemtoChannels, labelsColumnsFemtoChannels}, "Flags to enable/disable femto channels"};
   Configurable<bool> requireCharmMassForFemto{"requireCharmMassForFemto", false, "Flags to enable/disable cut on charm-hadron invariant-mass window for femto"};
-  Configurable<float> ptThresholdForFemtoPid{"ptThresholdForFemtoPid", 8., "pT threshold for changing strategy of proton PID in femto triggers"};
-  Configurable<bool> forceTofPidForFemto{"forceTofPidForFemto", true, "force TOF PID for proton in femto triggers"};
+  Configurable<LabeledArray<float>> ptThresholdsForFemto{"ptThresholdsForFemto", {cutsPtThresholdsForFemto[0], 1, 2, labelsEmpty, labelsColumnsPtThresholdsForFemto}, "pT treshold for proton or deuteron for kFemto triggers in GeV/c"};
+  Configurable<bool> forceTofProtonForFemto{"forceTofProtonForFemto", true, "flag to force TOF PID for protons"};
+  Configurable<bool> forceTofDeuteronForFemto{"forceTofDeuteronForFemto", false, "flag to force TOF PID for deuterons"};
 
   // double charm
   Configurable<LabeledArray<int>> enableDoubleCharmChannels{"enableDoubleCharmChannels", {activeDoubleCharmChannels[0], 1, 3, labelsEmpty, labelsColumnsDoubleCharmChannels}, "Flags to enable/disable double charm channels"};
@@ -169,6 +166,7 @@ struct HfFilter { // Main struct for HF triggers
   void init(InitContext&)
   {
     helper.setHighPtTriggerThresholds(ptThresholds->get(0u, 0u), ptThresholds->get(0u, 1u));
+    helper.setPtTriggerThresholdsForFemto(ptThresholdsForFemto->get(0u, 0u), ptThresholdsForFemto->get(0u, 1u));
     helper.setPtBinsSingleTracks(pTBinsTrack);
     helper.setPtLimitsBeautyBachelor(ptCuts->get(0u, 0u), ptCuts->get(1u, 0u));
     helper.setPtLimitsDstarSoftPion(ptCuts->get(0u, 1u), ptCuts->get(1u, 1u));
@@ -177,12 +175,12 @@ struct HfFilter { // Main struct for HF triggers
     helper.setPtLimitsCharmBaryonBachelor(ptCuts->get(0u, 3u), ptCuts->get(1u, 3u));
     helper.setCutsSingleTrackBeauty(cutsTrackBeauty3Prong, cutsTrackBeauty4Prong);
     helper.setCutsSingleTrackCharmBaryonBachelor(cutsTrackCharmBaryonBachelor);
-    helper.setPtThresholdPidStrategyForFemto(ptThresholdForFemtoPid);
     helper.setNsigmaProtonCutsForFemto(std::array{nSigmaPidCuts->get(0u, 3u), nSigmaPidCuts->get(1u, 3u), nSigmaPidCuts->get(2u, 3u)});
     helper.setNsigmaDeuteronCutsForFemto(std::array{nSigmaPidCuts->get(0u, 6u), nSigmaPidCuts->get(1u, 6u), nSigmaPidCuts->get(2u, 6u)});
     helper.setNsigmaProtonCutsForCharmBaryons(nSigmaPidCuts->get(0u, 0u), nSigmaPidCuts->get(1u, 0u));
     helper.setNsigmaPionKaonCutsForDzero(nSigmaPidCuts->get(0u, 1u), nSigmaPidCuts->get(1u, 1u));
     helper.setNsigmaKaonCutsFor3Prongs(nSigmaPidCuts->get(0u, 2u), nSigmaPidCuts->get(1u, 2u));
+    helper.setForceTofForFemto(forceTofProtonForFemto, forceTofDeuteronForFemto);
     helper.setV0Selections(cutsGammaK0sLambda->get(0u, 0u), cutsGammaK0sLambda->get(0u, 1u), cutsGammaK0sLambda->get(0u, 2u), cutsGammaK0sLambda->get(0u, 3u), cutsGammaK0sLambda->get(0u, 4u), cutsGammaK0sLambda->get(0u, 5u));
     helper.setXiSelections(cutsXiCascades->get(0u, 0u), cutsXiCascades->get(0u, 1u), cutsXiCascades->get(0u, 2u), cutsXiCascades->get(0u, 3u), cutsXiCascades->get(0u, 4u), cutsXiCascades->get(0u, 5u), cutsXiCascades->get(0u, 6u), cutsXiCascades->get(0u, 7u));
     helper.setNsigmaPiCutsForCharmBaryonBachelor(nSigmaPidCuts->get(0u, 4u), nSigmaPidCuts->get(1u, 4u));
@@ -278,7 +276,7 @@ struct HfFilter { // Main struct for HF triggers
     thresholdBDTScores = {thresholdBDTScoreD0ToKPi, thresholdBDTScoreDPlusToPiKPi, thresholdBDTScoreDSToPiKK, thresholdBDTScoreLcToPiKP, thresholdBDTScoreXicToPiKP};
   }
 
-  using BigTracksMCPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullDe, aod::pidTOFFullDe, aod::McTrackLabels>;
+  using BigTracksMCPID = soa::Join<aod::Tracks, aod::TracksWCovDcaExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullDe, aod::pidTOFFullDe, aod::McTrackLabels>;
   using BigTracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullDe, aod::pidTOFFullDe>;
   using CollsWithEvSel = soa::Join<aod::Collisions, aod::EvSels>;
 
@@ -507,7 +505,7 @@ struct HfFilter { // Main struct for HF triggers
 
           // 2-prong femto
           if (!keepEvent[kFemto2P] && enableFemtoChannels->get(0u, 0u) && isCharmTagged && track.collisionId() == thisCollId && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1) || !requireCharmMassForFemto)) {
-            bool isProton = helper.isSelectedTrack4Femto(track, trackParThird, activateQA, hProtonTPCPID, hProtonTOFPID, forceTofPidForFemto, kProtonForFemto);
+            bool isProton = helper.isSelectedTrack4Femto(track, trackParThird, activateQA, hProtonTPCPID, hProtonTOFPID, kProtonForFemto);
             if (isProton) {
               float relativeMomentum = helper.computeRelativeMomentum(pVecThird, pVec2Prong, massD0);
               if (applyOptimisation) {
@@ -885,8 +883,8 @@ struct HfFilter { // Main struct for HF triggers
           } // end beauty selection
 
           // 3-prong femto
-          bool isProton = helper.isSelectedTrack4Femto(track, trackParFourth, activateQA, hProtonTPCPID, hProtonTOFPID, forceTofPidForFemto, kProtonForFemto);
-          bool isDeuteron = helper.isSelectedTrack4Femto(track, trackParFourth, activateQA, hDeuteronTPCPID, hDeuteronTOFPID, forceTofPidForFemto, kDeuteronForFemto);
+          bool isProton = helper.isSelectedTrack4Femto(track, trackParFourth, activateQA, hProtonTPCPID, hProtonTOFPID, kProtonForFemto);
+          bool isDeuteron = helper.isSelectedTrack4Femto(track, trackParFourth, activateQA, hDeuteronTPCPID, hDeuteronTOFPID, kDeuteronForFemto);
 
           if (isProton && track.collisionId() == thisCollId) {
             for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto3P]; ++iHypo) {
