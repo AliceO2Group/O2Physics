@@ -39,8 +39,8 @@ enum CandTypeSel {
   SigD0bar,       // Signal D0bar
   ReflectedD0,    // Reflected D0
   ReflectedD0bar, // Reflected D0bar
-  PureSigD0,      // Signal D0 without Reflected D0bar
-  PureSigD0bar    // Signal D0bar without Reflected D0
+  PureSigD0,      // Signal D0 exclude Reflected D0bar
+  PureSigD0bar    // Signal D0bar exclude Reflected D0
 };
 } // namespace
 struct HfTaskD0 {
