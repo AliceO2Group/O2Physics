@@ -754,7 +754,7 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
   float NSigma = std::sqrt(NSigmaTPC * NSigmaTPC + NSigmaTOF * NSigmaTOF);
 
   if (trackSpecies == kProtonForFemto) {
-    if (trackPar.getPt() <= ptThresholdPidStrategy) {
+    if (pt <= ptThresholdPidStrategy) {
       if (NSigma > nSigmaCuts[2]) {
         return false;
       }
