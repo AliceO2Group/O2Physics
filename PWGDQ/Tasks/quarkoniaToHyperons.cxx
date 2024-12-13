@@ -69,8 +69,8 @@
 #include "EventFiltering/ZorroSummary.h"
 
 // constants
-const float ctauXiPDG = 4.91;     // from PDG
-const float ctauOmegaPDG = 2.461; // from PDG
+const float ctauXiPDG = 4.91;     // Xi PDG lifetime
+const float ctauOmegaPDG = 2.461; // Omega PDG lifetime
 
 using namespace o2;
 using namespace o2::framework;
