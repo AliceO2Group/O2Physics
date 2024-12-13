@@ -78,6 +78,7 @@ class FlowPtContainer : public TNamed
   void SetUseCentralMoments(bool newval) { fUseCentralMoments = newval; }
   void SetUseGapMethod(bool newval) { fUseGap = newval; }
   bool usesCentralMoments() { return fUseCentralMoments; }
+  bool usesGap() { return fUseGap; }
   void RebinMulti(Int_t nbins);
   void RebinMulti(Int_t nbins, double* binedges);
   TH1* getCentralMomentHist(int ind, int m);

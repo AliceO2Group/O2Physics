@@ -9,12 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HfMlResponseBplusToD0Pi.h
-/// \brief Class to compute the ML response for B± → D0(bar) π± analysis selections
+/// \file HfMlResponseBplusToD0PiReduced.h
+/// \brief Class to compute the ML response for B± → D0(bar) π± analysis selections in the reduced format
 /// \author Antonio Palasciano <antonio.palasciano@ba.infn.it>, INFN Bari
 
-#ifndef PWGHF_CORE_HFMLRESPONSEBPLUSTOD0PI_H_
-#define PWGHF_CORE_HFMLRESPONSEBPLUSTOD0PI_H_
+#ifndef PWGHF_CORE_HFMLRESPONSEBPLUSTOD0PIREDUCED_H_
+#define PWGHF_CORE_HFMLRESPONSEBPLUSTOD0PIREDUCED_H_
 
 #include <map>
 #include <string>
@@ -26,54 +26,43 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_BPLUS(FEATURE)                                       \
-  {                                                                   \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesBplusToD0Pi::FEATURE) \
+#define FILL_MAP_BPLUS(FEATURE)                                              \
+  {                                                                          \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesBplusToD0PiReduced::FEATURE) \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER from OBJECT
-#define CHECK_AND_FILL_VEC_BPLUS_FULL(OBJECT, FEATURE, GETTER)    \
-  case static_cast<uint8_t>(InputFeaturesBplusToD0Pi::FEATURE): { \
-    inputFeatures.emplace_back(OBJECT.GETTER());                  \
-    break;                                                        \
+#define CHECK_AND_FILL_VEC_BPLUS_FULL(OBJECT, FEATURE, GETTER)           \
+  case static_cast<uint8_t>(InputFeaturesBplusToD0PiReduced::FEATURE): { \
+    inputFeatures.emplace_back(OBJECT.GETTER());                         \
+    break;                                                               \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the GETTER function taking OBJECT in argument
-#define CHECK_AND_FILL_VEC_BPLUS_FUNC(OBJECT, FEATURE, GETTER)    \
-  case static_cast<uint8_t>(InputFeaturesBplusToD0Pi::FEATURE): { \
-    inputFeatures.emplace_back(GETTER(OBJECT));                   \
-    break;                                                        \
+#define CHECK_AND_FILL_VEC_BPLUS_FUNC(OBJECT, FEATURE, GETTER)           \
+  case static_cast<uint8_t>(InputFeaturesBplusToD0PiReduced::FEATURE): { \
+    inputFeatures.emplace_back(GETTER(OBJECT));                          \
+    break;                                                               \
   }
 
 // Specific case of CHECK_AND_FILL_VEC_BPLUS_FULL(OBJECT, FEATURE, GETTER)
 // where OBJECT is named candidate and FEATURE = GETTER
-#define CHECK_AND_FILL_VEC_BPLUS(GETTER)                         \
-  case static_cast<uint8_t>(InputFeaturesBplusToD0Pi::GETTER): { \
-    inputFeatures.emplace_back(candidate.GETTER());              \
-    break;                                                       \
-  }
-
-// where OBJECT is named candidateD , FEATURE = GETTER and INDEX is the index of the vector
-#define CHECK_AND_FILL_VEC_D0_INDEX(FEATURE, GETTER1, GETTER2, INDEX) \
-  case static_cast<uint8_t>(InputFeaturesBplusToD0Pi::FEATURE): {     \
-    if (pdgCode == o2::constants::physics::kD0) {                     \
-      inputFeatures.emplace_back((candidateD0.GETTER1())[INDEX]);     \
-    } else {                                                          \
-      inputFeatures.emplace_back((candidateD0.GETTER2())[INDEX]);     \
-    }                                                                 \
-    break;                                                            \
+#define CHECK_AND_FILL_VEC_BPLUS(GETTER)                                \
+  case static_cast<uint8_t>(InputFeaturesBplusToD0PiReduced::GETTER): { \
+    inputFeatures.emplace_back(candidate.GETTER());                     \
+    break;                                                              \
   }
 
 namespace o2::analysis
 {
 
-enum class InputFeaturesBplusToD0Pi : uint8_t {
+enum class InputFeaturesBplusToD0PiReduced : uint8_t {
   ptProng0 = 0,
   ptProng1,
   impactParameter0,
@@ -87,32 +76,30 @@ enum class InputFeaturesBplusToD0Pi : uint8_t {
   cpa,
   cpaXY,
   maxNormalisedDeltaIP,
-  prong0MlProbBkg,
-  prong0MlProbPrompt,
-  prong0MlProbNonPrompt,
+  prong0MlScoreBkg,
+  prong0MlScorePrompt,
+  prong0MlScoreNonprompt,
   tpcNSigmaPi1,
   tofNSigmaPi1,
   tpcTofNSigmaPi1
 };
 
 template <typename TypeOutputScore = float>
-class HfMlResponseBplusToD0Pi : public HfMlResponse<TypeOutputScore>
+class HfMlResponseBplusToD0PiReduced : public HfMlResponse<TypeOutputScore>
 {
  public:
   /// Default constructor
-  HfMlResponseBplusToD0Pi() = default;
+  HfMlResponseBplusToD0PiReduced() = default;
   /// Default destructor
-  virtual ~HfMlResponseBplusToD0Pi() = default;
+  virtual ~HfMlResponseBplusToD0PiReduced() = default;
 
   /// Method to get the input features vector needed for ML inference
   /// \param candidate is the B+ candidate
   /// \param prong1 is the candidate's prong1
   /// \return inputFeatures vector
-  template <bool withDmesMl, typename T1, typename T2, typename T3>
+  template <bool withDmesMl, typename T1, typename T2>
   std::vector<float> getInputFeatures(T1 const& candidate,
-                                      T2 const& candidateD0,
-                                      int const& pdgCode,
-                                      T3 const& prong1)
+                                      T2 const& prong1)
   {
     std::vector<float> inputFeatures;
 
@@ -132,9 +119,9 @@ class HfMlResponseBplusToD0Pi : public HfMlResponse<TypeOutputScore>
           CHECK_AND_FILL_VEC_BPLUS(cpa);
           CHECK_AND_FILL_VEC_BPLUS(cpaXY);
           CHECK_AND_FILL_VEC_BPLUS(maxNormalisedDeltaIP);
-          CHECK_AND_FILL_VEC_D0_INDEX(prong0MlProbBkg, mlProbD0, mlProbD0bar, 0);
-          CHECK_AND_FILL_VEC_D0_INDEX(prong0MlProbPrompt, mlProbD0, mlProbD0bar, 1);
-          CHECK_AND_FILL_VEC_D0_INDEX(prong0MlProbNonPrompt, mlProbD0, mlProbD0bar, 2);
+          CHECK_AND_FILL_VEC_BPLUS(prong0MlScoreBkg);
+          CHECK_AND_FILL_VEC_BPLUS(prong0MlScorePrompt);
+          CHECK_AND_FILL_VEC_BPLUS(prong0MlScoreNonprompt);
           // TPC PID variable
           CHECK_AND_FILL_VEC_BPLUS_FULL(prong1, tpcNSigmaPi1, tpcNSigmaPi);
           // TOF PID variable
@@ -188,9 +175,9 @@ class HfMlResponseBplusToD0Pi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_BPLUS(cpa),
       FILL_MAP_BPLUS(cpaXY),
       FILL_MAP_BPLUS(maxNormalisedDeltaIP),
-      FILL_MAP_BPLUS(prong0MlProbBkg),
-      FILL_MAP_BPLUS(prong0MlProbPrompt),
-      FILL_MAP_BPLUS(prong0MlProbNonPrompt),
+      FILL_MAP_BPLUS(prong0MlScoreBkg),
+      FILL_MAP_BPLUS(prong0MlScorePrompt),
+      FILL_MAP_BPLUS(prong0MlScoreNonprompt),
       // TPC PID variable
       FILL_MAP_BPLUS(tpcNSigmaPi1),
       // TOF PID variable
@@ -207,4 +194,4 @@ class HfMlResponseBplusToD0Pi : public HfMlResponse<TypeOutputScore>
 #undef CHECK_AND_FILL_VEC_BPLUS_FUNC
 #undef CHECK_AND_FILL_VEC_BPLUS
 
-#endif // PWGHF_CORE_HFMLRESPONSEBPLUSTOD0PI_H_
+#endif // PWGHF_CORE_HFMLRESPONSEBPLUSTOD0PIREDUCED_H_
