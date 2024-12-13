@@ -47,7 +47,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt1, isInelGt1, //! is INEL > 1
                            [](int multPveta1) -> bool { return multPveta1 > 1; });
 
 // forward track counters
-DECLARE_SOA_COLUMN(MFTNalltracks, mftNalltracks, int); //! overall counter, uses AO2D coll assoc 
+DECLARE_SOA_COLUMN(MFTNalltracks, mftNalltracks, int); //! overall counter, uses AO2D coll assoc
 DECLARE_SOA_COLUMN(MFTNtracks, mftNtracks, int);       //! reassigned, uses mult group software
 
 // MC

@@ -738,10 +738,9 @@ struct MultiplicityTable {
 
   void processRun3MFT(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                       o2::aod::MFTTracks const& mftTracks,
-                      soa::SmallGroups<aod::BestCollisionsFwd> const& retracks
-                      )
+                      soa::SmallGroups<aod::BestCollisionsFwd> const& retracks)
   {
-    int nAllTracks = 0; 
+    int nAllTracks = 0;
     int nTracks = 0;
 
     for (auto& track : mftTracks) {
@@ -753,13 +752,13 @@ struct MultiplicityTable {
     if (retracks.size() > 0) {
       for (auto& retrack : retracks) {
         auto track = retrack.mfttrack();
-        if (track.nClusters() < 5){
+        if (track.nClusters() < 5) {
           continue; // min cluster requirement
         }
         if ((track.eta() > -2.0f) && (track.eta() < -3.9f)) {
           continue; // too far to be of true interest
         }
-        if (std::abs(retrack.bestDCAXY())> 2.0f){
+        if (std::abs(retrack.bestDCAXY()) > 2.0f) {
           continue; // does not point to PV properly
         }
         nTracks++;
