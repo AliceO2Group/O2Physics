@@ -3236,10 +3236,10 @@ struct HfTrackIndexSkimCreatorLfCascades {
     // selections have been set to run2 lambda dedicated cuts
     // selections for cascade have been set to the loosest value between xi and omega
     // a tolerance has been added to be more conservative  ptMinOmegaczeroToOmegaKaLfCasc ptMinXicZeroOmegacZeroToXiPiLfCasc
-    Configurable<float> ptMinOmegacZeroToOmegaPiLfCasc{"ptMinOmegacZeroToOmegaPiLfCasc", 2.0, "min. pT for Omegaczero in Omega + Pi decays"};
-    Configurable<float> ptMinOmegaczeroToOmegaKaLfCasc{"ptMinOmegaczeroToOmegaKaLfCasc", 2.0, "min. pT for Omegaczero in Omega + Ka decays"};
-    Configurable<float> ptMinXicZeroOmegacZeroToXiPiLfCasc{"ptMinXicZeroOmegacZeroToXiPiLfCasc", 2.0, "min. pT for XicZeroOmegacZero in Xi + Pi decays"};
-    Configurable<float> ptMinXicplusLfCasc{"ptMinXicplusLfCasc", 2.0, "min. pT for Xicplus in Xi + Pi + Pi decays"};
+    Configurable<float> ptMinOmegacZeroToOmegaPiLfCasc{"ptMinOmegacZeroToOmegaPiLfCasc", 0.f, "min. pT for Omegaczero in Omega + Pi decays"};
+    Configurable<float> ptMinOmegaczeroToOmegaKaLfCasc{"ptMinOmegaczeroToOmegaKaLfCasc", 0.f, "min. pT for Omegaczero in Omega + Ka decays"};
+    Configurable<float> ptMinXicZeroOmegacZeroToXiPiLfCasc{"ptMinXicZeroOmegacZeroToXiPiLfCasc", 0.f, "min. pT for XicZeroOmegacZero in Xi + Pi decays"};
+    Configurable<float> ptMinXicplusLfCasc{"ptMinXicplusLfCasc", 0.f, "min. pT for Xicplus in Xi + Pi + Pi decays"};
     Configurable<float> v0TransvRadius{"v0TransvRadius", 1.0, "V0 radius in xy plane"};          // 1.2 (xi) and 1.1 (omega) in run2
     Configurable<float> cascTransvRadius{"cascTransvRadius", 0.4, "Cascade radius in xy plane"}; // 0.5 cm (xi) and 0.6 (omega) in run2
     Configurable<float> dcaBachToPv{"dcaBachToPv", 0.03, "DCA Bach To PV"};                      // 0.04 in run2
@@ -3363,15 +3363,15 @@ struct HfTrackIndexSkimCreatorLfCascades {
       registry.add("hDCACascDau", "hDCACascDau", {HistType::kTH1D, {{500, 0.0f, 5.0f, "cm^{2}"}}});
       registry.add("hLambdaMass", "hLambdaMass", {HistType::kTH1D, {{400, 0.916f, 1.316f, "Inv. Mass (GeV/c^{2})"}}});
 
-      // pT rej
-      registry.add("hPtXicZeroOmegacZeroToXiPi", "Omegac/Xic to Xi Pi tracks selected by pT;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1D, {{500, 0., 50.}}});
-      registry.add("hPtCutsOmegacZeroToOmegaPi", "Omegac to Omega Pi tracks selected by pT;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1D, {{500, 0., 50.}}});
-      registry.add("hPtCutsOmegacZeroToOmegaKa", "Omegac to Omega Ka tracks selected by pT;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1D, {{500, 0., 50.}}});
-      registry.add("hPtCutsXicPlusToXiPiPi", "Xicplus to Xi Pi Pi tracks selected by pT;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1D, {{500, 0., 50.}}});
-      registry.add("hRejpTStatusXicZeroOmegacZeroToXiPi", "XicZeroOmegacZeroToXiPi rejected by pT status;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); // pass dcafitter --> 0, pT>pTmin --> 1
-      registry.add("hRejpTStatusOmegacZeroToOmegaPi", "OmegacZeroToOmegaPi rejected by pT status;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});
-      registry.add("hRejpTStatusOmegacZeroToOmegaKa", "OmegacZeroToOmegaKa rejected by pT status;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});
-      registry.add("hRejpTStatusXicPlusToXiPiPi", "XicPlusToXiPiPi rejected by pT status;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});
+      //pT rej
+      registry.add("hPtCutsXicZeroOmegacZeroToXiPi", "Omegac/Xic to Xi Pi tracks selected by pT;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{500, 0., 50.}}});
+      registry.add("hPtCutsOmegacZeroToOmegaPi", "Omegac to Omega Pi tracks selected by pT;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{500, 0., 50.}}});
+      registry.add("hPtCutsOmegacZeroToOmegaKa", "Omegac to Omega Ka tracks selected by pT;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{500, 0., 50.}}});
+      registry.add("hPtCutsXicPlusToXiPiPi", "Xicplus to Xi Pi Pi tracks selected by pT;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{500, 0., 50.}}});
+      registry.add("hRejpTStatusXicZeroOmegacZeroToXiPi", "XicZeroOmegacZeroToXiPi rejected by pT status;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); //pass dcafitter --> 0, pT>pTmin --> 1
+      registry.add("hRejpTStatusOmegacZeroToOmegaPi", "OmegacZeroToOmegaPi rejected by pT status;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); 
+      registry.add("hRejpTStatusOmegacZeroToOmegaKa", "OmegacZeroToOmegaKa rejected by pT status;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); 
+      registry.add("hRejpTStatusXicPlusToXiPiPi", "XicPlusToXiPiPi rejected by pT status;status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); 
 
       // mass spectra
       registry.add("hMassXicZeroOmegacZeroToXiPi", "2-prong candidates;inv. mass (#Xi #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 2., 3.}}});
@@ -3570,23 +3570,25 @@ struct HfTrackIndexSkimCreatorLfCascades {
               std::array<float, 3> pVecPion1XiHyp = {0.};
               df2.getTrack(0).getPxPyPzGlo(pVecXi);
               df2.getTrack(1).getPxPyPzGlo(pVecPion1XiHyp);
-              float p_T_Xic = std::hypot(pVecXi[0] + pVecPion1XiHyp[0], pVecXi[1] + pVecPion1XiHyp[1]);
+              float ptXic = RecoDecay::pt(pVecXi, pVecPion1XiHyp);
 
               std::array<std::array<float, 3>, 2> arrMomToXi = {pVecXi, pVecPion1XiHyp};
               auto mass2ProngXiHyp = RecoDecay::m(arrMomToXi, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi]);
 
-              if ((std::abs(casc.mXi() - massXi) < config.cascadeMassWindow) && (mass2ProngXiHyp >= config.massXiPiMin) && (mass2ProngXiHyp <= config.massXiPiMax)) {
-                registry.fill(HIST("hRejpTStatusXicZeroOmegacZeroToXiPi"), 0);
-                if (p_T_Xic >= config.ptMinXicZeroOmegacZeroToXiPiLfCasc) {
+              if ((std::abs(casc.mXi() - massXi) < config.cascadeMassWindow) && (mass2ProngXiHyp >= config.massXiPiMin) && (mass2ProngXiHyp <= config.massXiPiMax)) 
+              {
+                registry.fill(HIST("hRejpTStatusXicZeroOmegacZeroToXiPi"),0);
+                if (ptXic >= config.ptMinXicZeroOmegacZeroToXiPiLfCasc) 
+                {
                   SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi);
-                  registry.fill(HIST("hRejpTStatusXicZeroOmegacZeroToXiPi"), 1);
+                  registry.fill(HIST("hRejpTStatusXicZeroOmegacZeroToXiPi"),1);
                 }
               }
 
               // fill histograms
               if (config.fillHistograms && (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi))) {
                 registry.fill(HIST("hMassXicZeroOmegacZeroToXiPi"), mass2ProngXiHyp);
-                registry.fill(HIST("hPtXicZeroOmegacZeroToXiPi"), p_T_Xic);
+                registry.fill(HIST("hPtCutsXicZeroOmegacZeroToXiPi"), ptXic);
               }
             } else if (df2.isPropagationFailure()) {
               LOGF(info, "Exception caught: failed to propagate tracks (2prong - xi) to charm baryon decay vtx");
@@ -3617,25 +3619,30 @@ struct HfTrackIndexSkimCreatorLfCascades {
               std::array<float, 3> pVecCharmBachelor1OmegaHyp = {0.};
               df2.getTrack(0).getPxPyPzGlo(pVecOmega);
               df2.getTrack(1).getPxPyPzGlo(pVecCharmBachelor1OmegaHyp);
-              float p_T_Omegac = std::hypot(pVecOmega[0] + pVecCharmBachelor1OmegaHyp[0], pVecOmega[1] + pVecCharmBachelor1OmegaHyp[1]);
+              float ptOmegac = RecoDecay::pt(pVecOmega, pVecCharmBachelor1OmegaHyp);
 
               std::array<std::array<float, 3>, 2> arrMomToOmega = {pVecOmega, pVecCharmBachelor1OmegaHyp};
               auto mass2ProngOmegaPiHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi]);
               auto mass2ProngOmegaKHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK]);
 
-              if (std::abs(casc.mOmega() - massOmega) < config.cascadeMassWindow) {
-                if ((mass2ProngOmegaPiHyp >= config.massOmegaCharmBachelorMin) && (mass2ProngOmegaPiHyp <= config.massOmegaCharmBachelorMax)) {
-                  registry.fill(HIST("hRejpTStatusOmegacZeroToOmegaPi"), 0);
-                  if (p_T_Omegac >= config.ptMinOmegacZeroToOmegaPiLfCasc) {
+              if (std::abs(casc.mOmega() - massOmega) < config.cascadeMassWindow) 
+              {
+                if ((mass2ProngOmegaPiHyp >= config.massOmegaCharmBachelorMin) && (mass2ProngOmegaPiHyp <= config.massOmegaCharmBachelorMax)) 
+                {
+                  registry.fill(HIST("hRejpTStatusOmegacZeroToOmegaPi"),0);
+                  if (ptOmegac >= config.ptMinOmegacZeroToOmegaPiLfCasc) 
+                  {
                     SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi);
-                    registry.fill(HIST("hRejpTStatusOmegacZeroToOmegaPi"), 1);
+                    registry.fill(HIST("hRejpTStatusOmegacZeroToOmegaPi"),1);
                   }
                 }
-                if ((mass2ProngOmegaKHyp >= config.massOmegaCharmBachelorMin) && (mass2ProngOmegaKHyp <= config.massOmegaCharmBachelorMax)) {
-                  registry.fill(HIST("hRejpTStatusOmegacZeroToOmegaKa"), 0);
-                  if (p_T_Omegac >= config.ptMinOmegaczeroToOmegaKaLfCasc) {
+                if ((mass2ProngOmegaKHyp >= config.massOmegaCharmBachelorMin) && (mass2ProngOmegaKHyp <= config.massOmegaCharmBachelorMax))
+                {
+                  registry.fill(HIST("hRejpTStatusOmegacZeroToOmegaKa"),0);
+                  if (ptOmegac >= config.ptMinOmegaczeroToOmegaKaLfCasc)
+                  {
                     SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK);
-                    registry.fill(HIST("hRejpTStatusOmegacZeroToOmegaKa"), 1);
+                    registry.fill(HIST("hRejpTStatusOmegacZeroToOmegaKa"),1);
                   }
                 }
               }
@@ -3644,11 +3651,11 @@ struct HfTrackIndexSkimCreatorLfCascades {
               if (config.fillHistograms) {
                 if (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi)) {
                   registry.fill(HIST("hMassOmegacZeroToOmegaPi"), mass2ProngOmegaPiHyp);
-                  registry.fill(HIST("hPtCutsOmegacZeroToOmegaPi"), p_T_Omegac);
+                  registry.fill(HIST("hPtCutsOmegacZeroToOmegaPi"), ptOmegac);
                 }
                 if (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK)) {
                   registry.fill(HIST("hMassOmegacZeroToOmegaK"), mass2ProngOmegaKHyp);
-                  registry.fill(HIST("hPtCutsOmegacZeroToOmegaKa"), p_T_Omegac);
+                  registry.fill(HIST("hPtCutsOmegacZeroToOmegaKa"), ptOmegac);
                 }
               }
             } else if (df2.isPropagationFailure()) {
@@ -3721,23 +3728,24 @@ struct HfTrackIndexSkimCreatorLfCascades {
                   df3.getTrack(0).getPxPyPzGlo(pVec1); // take the momentum at the Xic vertex
                   df3.getTrack(1).getPxPyPzGlo(pVec2);
                   df3.getTrack(2).getPxPyPzGlo(pVec3);
-                  float p_T_Xic3Prong = std::hypot(pVec1[0] + pVec2[0] + pVec3[0], pVec1[1] + pVec2[1] + pVec3[1]);
+                  float ptXic3Prong = RecoDecay::pt(pVec1, pVec2, pVec3);
 
                   std::array<std::array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
                   auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi]);
 
-                  if ((std::abs(casc.mXi() - massXi) < config.cascadeMassWindow) && (mass3Prong >= config.massXiPiPiMin) && (mass3Prong <= config.massXiPiPiMax)) {
-                    registry.fill(HIST("hRejpTStatusXicPlusToXiPiPi"), 0);
-                    if (p_T_Xic3Prong >= config.ptMinXicplusLfCasc) {
+                  if ((std::abs(casc.mXi() - massXi) < config.cascadeMassWindow) && (mass3Prong >= config.massXiPiPiMin) && (mass3Prong <= config.massXiPiPiMax)) 
+                  { registry.fill(HIST("hRejpTStatusXicPlusToXiPiPi"),0);
+                     if (ptXic3Prong >= config.ptMinXicplusLfCasc)
+                    {
                       SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi);
-                      registry.fill(HIST("hRejpTStatusXicPlusToXiPiPi"), 1);
+                      registry.fill(HIST("hRejpTStatusXicPlusToXiPiPi"),1);
                     }
                   }
 
                   // fill histograms
                   if (config.fillHistograms && (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi))) {
                     registry.fill(HIST("hMassXicPlusToXiPiPi"), mass3Prong);
-                    registry.fill(HIST("hPtCutsXicPlusToXiPiPi"), p_T_Xic3Prong);
+                    registry.fill(HIST("hPtCutsXicPlusToXiPiPi"), ptXic3Prong);
                   }
                 } else if (df3.isPropagationFailure()) {
                   LOGF(info, "Exception caught: failed to propagate tracks (3prong) to charm baryon decay vtx");
