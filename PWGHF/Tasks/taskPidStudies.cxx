@@ -145,7 +145,7 @@ struct HfTaskPidStudies {
   Configurable<float> massLambdaMax{"massLambdaMax", 1.3, "Maximum mass for lambda"};
   Configurable<float> massOmegaMin{"massOmegaMin", 1.5, "Minimum mass for omega"};
   Configurable<float> massOmegaMax{"massOmegaMax", 1.8, "Maximum mass for omega"};
-  Configurable<float> maxRadius{"maxRadius", 2.3, "Maximum decay radius (cm)"};
+  Configurable<float> radiusMax{"radiusMax", 2.3, "Maximum decay radius (cm)"};
   Configurable<float> qtArmenterosMinForK0{"qtArmenterosMinForK0", 0.12, "Minimum Armenteros' qt for K0"};
   Configurable<float> qtArmenterosMaxForLambda{"qtArmenterosMaxForLambda", 0.12, "Minimum Armenteros' qt for (anti)Lambda"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to keep"};
@@ -279,7 +279,7 @@ struct HfTaskPidStudies {
     if (v0.qtarm() < qtArmenterosMinForK0) {
       return false;
     }
-    if (v0.v0radius() > maxRadius) {
+    if (v0.v0radius() > radiusMax) {
       return false;
     }
     return true;
@@ -295,7 +295,7 @@ struct HfTaskPidStudies {
     if (v0.qtarm() > qtArmenterosMaxForLambda) {
       return false;
     }
-    if (v0.v0radius() > maxRadius) {
+    if (v0.v0radius() > radiusMax) {
       return false;
     }
     return true;
@@ -310,7 +310,7 @@ struct HfTaskPidStudies {
     if (casc.mLambda() < massLambdaMin || casc.mLambda() > massLambdaMax) {
       return false;
     }
-    if (casc.cascradius() > maxRadius) {
+    if (casc.cascradius() > radiusMax) {
       return false;
     }
     return true;
