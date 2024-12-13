@@ -81,7 +81,7 @@ struct SGPIDSpectraTable {
     std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
     // check rho0 signals
     float tpcpi, tpcka, tpcel, tpcpr, tofpi, tofka, tofpr, tofel;
-    float tpcde, tpctr, tpche, tpcal, tofde, toftr, tofhe, tofal, tpcmu, tofmu;
+    float tpcde, tofde, tpcmu, tofmu;
     TVector3 a;
     int goodtracks = 0;
     for (auto t : tracks) {
