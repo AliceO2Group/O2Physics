@@ -50,8 +50,7 @@ static constexpr int kFT0MultZeqs = 10;
 static constexpr int kFDDMultZeqs = 11;
 static constexpr int kPVMultZeqs = 12;
 static constexpr int kMultMCExtras = 13;
-static constexpr int kMFTMults = 14;
-static constexpr int nTables = 15;
+static constexpr int nTables = 14;
 
 // Checking that the Zeq tables are after the normal ones
 static_assert(kFV0Mults < kFV0MultZeqs);
