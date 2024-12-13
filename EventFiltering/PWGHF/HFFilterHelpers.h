@@ -195,7 +195,7 @@ static const std::vector<std::string> labelsColumnsFemtoChannels = {"protonDZero
 static const std::vector<std::string> labelsRowsFemtoChannels = {"protonCharmFemto", "deuteronCharmFemto"};
 
 // min and max pT for all tracks combined  (except for V0 and cascades)
-constexpr float cutsPt[2][7] = {{1., 0.1, 0.8, 0.5, 0.1, 0.2, 0.8},
+constexpr float cutsPt[2][7] = {{1., 0.1, 0.8, 0.5, 0.1, 0.2, 0.4},
                                 {100000., 100000., 5., 100000., 100000., 100000., 100000.}}; // beauty, D*, femto, SigmaC, Xic*+ -> SigmaC++K-
 static const std::vector<std::string> labelsColumnsCutsPt = {"Beauty", "DstarPlus", "FemtoProton", "CharmBaryon", "SoftPiSigmaC", "SoftKaonXicResoToSigmaC", "FemtoDeuteron"};
 static const std::vector<std::string> labelsRowsCutsPt = {"Minimum", "Maximum"};
