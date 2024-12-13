@@ -526,7 +526,7 @@ class HfFilterHelper
   float mPtMaxProtonForFemto{5.0};                                           // maximum pt for the proton for femto
   float mPtMaxDeuteronForFemto{5.0};                                         // maximum pt for the deuteron for femto
   float mPtMaxCharmBaryonBachelor{100000.};                                  // maximum pt for the bachelor pion from Xic/Omegac decays
-  float mPtThresholdProtonForFemto{8.};                                     // pt threshold to change strategy for proton PID for femto
+  float mPtThresholdProtonForFemto{8.};                                      // pt threshold to change strategy for proton PID for femto
   float mPtThresholdDeuteronForFemto{1.4};                                   // pt threshold to change strategy for deuteron PID for femto
   float mPtMinSigmaCZero{0.f};                                               // pt min SigmaC0 candidate
   float mPtMinSigmaC2520Zero{0.f};                                           // pt min SigmaC(2520)0 candidate
