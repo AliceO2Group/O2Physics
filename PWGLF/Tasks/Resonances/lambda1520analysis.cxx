@@ -739,7 +739,7 @@ struct Lambda1520analysis {
 
       auto deltaEta = std::abs(trk1.eta() - trk2.eta());
       auto deltaPhi = std::abs(trk1.phi() - trk2.phi());
-      deltaPhi = (deltaPhi > TMath::Pi()) ? (2 * TMath::Pi() - deltaPhi) : deltaPhi;
+      deltaPhi = (deltaPhi > o2::constants::math::PI) ? (2 * o2::constants::math::PI - deltaPhi) : deltaPhi;
 
       //// QA plots before the selection
       //  --- Track QA all
@@ -880,7 +880,7 @@ struct Lambda1520analysis {
         if constexpr (IsData) {
           if (isCalcRotBkg) {
             for (int i = 0; i < cNofRotations; i++) {
-              float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotationalcut, TMath::Pi() + TMath::Pi() / rotationalcut);
+              float theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / rotationalcut, o2::constants::math::PI + o2::constants::math::PI / rotationalcut);
               ldaughterRot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa); // for rotated background
               lresonanceRot = lDecayDaughter1 + ldaughterRot;
               histos.fill(HIST("Result/Data/h3lambda1520InvMassRotation"), multiplicity, lresonanceRot.Pt(), lresonanceRot.M(), occupancyNo);
