@@ -216,8 +216,7 @@ struct JetSpectraEseTask {
   PROCESS_SWITCH(JetSpectraEseTask, processESEDataCharged, "process ese collisions", true);
 
   void processESEOccupancy(soa::Join<aod::JetCollisions, aod::Qvectors, aod::QPercentileFT0Cs>::iterator const& collision,
-                           soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks,
-                           soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection> const&)
+                           soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks)
   {
     float count{0.5};
     registry.fill(HIST("hEventCounterOcc"), count++);
