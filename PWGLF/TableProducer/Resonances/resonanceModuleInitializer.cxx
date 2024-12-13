@@ -607,7 +607,7 @@ struct ResonanceModuleInitializer {
    * @param collision Collision data with Qvectors
    * @param tracks Track data
    */
-  void processEventPlane(soa::Filtered<soa::Join<aod::ResoCollisionCandidates, aod::Qvectors>>::iterator const& collision, aod::ResoTrackCandidates const& tracks)
+  void processEventPlane(soa::Filtered<soa::Join<aod::ResoCollisionCandidates, aod::Qvectors>>::iterator const& collision)
   {
     resoEvtPlCollisions(collision.globalIndex(), getEvtPl(collision), getEvtPlRes(collision, evtPlDetId, evtPlRefAId), getEvtPlRes(collision, evtPlDetId, evtPlRefBId), getEvtPlRes(collision, evtPlRefAId, evtPlRefBId));
   }
