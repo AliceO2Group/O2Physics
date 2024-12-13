@@ -10,8 +10,8 @@
 // or submit itself to any jurisdiction.
 
 /// \author Kotliarov Artem <artem.kotliarov@cern.ch>, Nuclear Physics Institute of CAS
-/// \file jetHadronRecoil_OO.cxx
-/// \brief hadron-jet correlation analysis for OO collisions
+/// \file recoilJets.cxx
+/// \brief hadron-jet correlation analysis
 
 #include <string>
 #include <tuple>
@@ -61,7 +61,7 @@ using filtered_MatchedJets_PartLevel = soa::Filtered<soa::Join<aod::ChargedMCPar
 
 using filtered_Tracks = soa::Filtered<aod::JetTracks>;
 
-struct jetHadronRecoil_OO {
+struct recoilJets {
 
   // List of configurable parameters
   Configurable<std::string> evSel{"evSel", "sel8", "Choose event selection"};
@@ -432,7 +432,7 @@ struct jetHadronRecoil_OO {
     spectra.fill(HIST("vertexZ"), collision.posZ());
     fillHistograms(collision, jets, tracks);
   }
-  PROCESS_SWITCH(jetHadronRecoil_OO, processData, "process data", true);
+  PROCESS_SWITCH(recoilJets, processData, "process data", true);
 
   void processMC_DetLevel(filtered_Coll const& collision,
                           filtered_Jets_DetLevel const& jets,
@@ -444,7 +444,7 @@ struct jetHadronRecoil_OO {
     spectra.fill(HIST("vertexZ"), collision.posZ());
     fillHistograms(collision, jets, tracks, true);
   }
-  PROCESS_SWITCH(jetHadronRecoil_OO, processMC_DetLevel, "process MC detector level", false);
+  PROCESS_SWITCH(recoilJets, processMC_DetLevel, "process MC detector level", false);
 
   void processMC_DetLevel_Weighted(filtered_Coll_DetLevel_to_GetWeight const& collision,
                                    aod::JetMcCollisions const&,
@@ -459,7 +459,7 @@ struct jetHadronRecoil_OO {
     spectra.fill(HIST("vertexZ"), collision.posZ(), weight);
     fillHistograms(collision, jets, tracks, true, weight);
   }
-  PROCESS_SWITCH(jetHadronRecoil_OO, processMC_DetLevel_Weighted, "process MC detector level with event weight", false);
+  PROCESS_SWITCH(recoilJets, processMC_DetLevel_Weighted, "process MC detector level with event weight", false);
 
   void processMC_PartLevel(filtered_Coll_PartLevel const& collision,
                            filtered_Jets_PartLevel const& jets,
@@ -468,7 +468,7 @@ struct jetHadronRecoil_OO {
     spectra.fill(HIST("vertexZ"), collision.posZ());
     fillMCPHistograms(collision, jets, particles);
   }
-  PROCESS_SWITCH(jetHadronRecoil_OO, processMC_PartLevel, "process MC particle level", false);
+  PROCESS_SWITCH(recoilJets, processMC_PartLevel, "process MC particle level", false);
 
   void processMC_PartLevel_Weighted(filtered_Coll_PartLevel const& collision,
                                     filtered_Jets_PartLevel const& jets,
@@ -478,7 +478,7 @@ struct jetHadronRecoil_OO {
     spectra.fill(HIST("vertexZ"), collision.posZ(), weight);
     fillMCPHistograms(collision, jets, particles, weight);
   }
-  PROCESS_SWITCH(jetHadronRecoil_OO, processMC_PartLevel_Weighted, "process MC particle level with event weight", false);
+  PROCESS_SWITCH(recoilJets, processMC_PartLevel_Weighted, "process MC particle level with event weight", false);
 
   void processJetsMatched(filtered_Coll_DetLevel_to_GetWeight const& collision,
                           aod::JetMcCollisions const&,
@@ -491,7 +491,7 @@ struct jetHadronRecoil_OO {
     auto mcpjetsPerMCCollision = mcpjets.sliceBy(PartJetsPerCollision, collision.mcCollisionId());
     fillMatchedHistograms(tracks, mcdjets, mcpjetsPerMCCollision);
   }
-  PROCESS_SWITCH(jetHadronRecoil_OO, processJetsMatched, "process matching of MC jets (no weight)", false);
+  PROCESS_SWITCH(recoilJets, processJetsMatched, "process matching of MC jets (no weight)", false);
 
   void processJetsMatched_Weighted(filtered_Coll_DetLevel_to_GetWeight const& collision,
                                    aod::JetMcCollisions const&,
@@ -507,7 +507,7 @@ struct jetHadronRecoil_OO {
 
     fillMatchedHistograms(tracks, mcdjets, mcpjetsPerMCCollision, weight);
   }
-  PROCESS_SWITCH(jetHadronRecoil_OO, processJetsMatched_Weighted, "process matching of MC jets (weighted)", false);
+  PROCESS_SWITCH(recoilJets, processJetsMatched_Weighted, "process matching of MC jets (weighted)", false);
 
   //------------------------------------------------------------------------------
   // Auxiliary functions
@@ -538,4 +538,4 @@ struct jetHadronRecoil_OO {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<jetHadronRecoil_OO>(cfgc, TaskName{"jet-hadron-recoil-oo"})}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<recoilJets>(cfgc, TaskName{"trigger-hadron-recoil-jet"})}; }
