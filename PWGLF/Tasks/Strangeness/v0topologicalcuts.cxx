@@ -106,9 +106,9 @@ struct v0topologicalcuts {
 
   // Configurables for Cuts
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
-  Configurable<float> NSigmaTPCPion{"NSigmaTPCPion", 4, "NSigmaTPCPion"};
-  Configurable<float> NSigmaTPCProton{"NSigmaTPCProton", 4, "NSigmaTPCProton"};
-  Configurable<float> compv0masscut{"CompetitiveV0masscut", 0.01, "CompetitiveV0masscut (GeV)"};
+  Configurable<float> NSigmaTPCPion{"snigmatpcpion", 4, "NSigmaTPCPion"};
+  Configurable<float> NSigmaTPCProton{"nsigmatpcproton", 4, "NSigmaTPCProton"};
+  Configurable<float> compv0masscut{"competitivev0masscut", 0.01, "CompetitiveV0masscut (GeV)"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
 
   // Configurable strings for Kzero cuts
@@ -284,7 +284,6 @@ struct v0topologicalcuts {
     const auto& mLambdaPDG = 1.115683;
     const auto& mK0shPDG = 0.497611;
     for (const auto& v0 : V0s) {
-      LOG(INFO) << v0.mAntiLambda() << " " << v0.mLambda() << " " << v0.mK0Short() << std::endl;
       if (TMath::Abs(v0.posTrack_as<DaughterTracks>().eta()) < etadau && TMath::Abs(v0.negTrack_as<DaughterTracks>().eta()) < etadau) { // daughters pseudorapidity cut
         // filling histograms with V0 values
         rV0Parameters_MC_V0match.fill(HIST("hDCAV0Daughters_V0_Match"), v0.dcaV0daughters());
