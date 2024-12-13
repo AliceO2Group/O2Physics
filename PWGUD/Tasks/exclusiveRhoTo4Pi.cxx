@@ -344,10 +344,8 @@ struct UPCAnalysis {
       v23 = v2 + v3;
 
       ROOT::Math::PtEtaPhiMVector v1234_1(v1234.Pt(), v1234.Eta(), v1234.Phi(), o2::constants::physics::MassPionCharged);
-
       ROOT::Math::PtEtaPhiMVector v13_1(v13.Pt(), v13.Eta(), v13.Phi(), o2::constants::physics::MassPionCharged);
       ROOT::Math::PtEtaPhiMVector v24_1(v24.Pt(), v24.Eta(), v24.Phi(), o2::constants::physics::MassPionCharged);
-
       ROOT::Math::PtEtaPhiMVector v14_1(v14.Pt(), v14.Eta(), v14.Phi(), o2::constants::physics::MassPionCharged);
       ROOT::Math::PtEtaPhiMVector v23_1(v23.Pt(), v23.Eta(), v23.Phi(), o2::constants::physics::MassPionCharged);
 
