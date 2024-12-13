@@ -38,12 +38,12 @@ struct UDCollisionSelExtrasConverter {
     for (const auto& collision : collisions) {
 
       udCollisionSelExtras_001(collision.chFT0A(),
-                       collision.chFT0C(),
-                       collision.chFDDA(),
-                       collision.chFDDC(),
-                       collision.chFV0A(),
-                       0, // dummy occupancy
-                       0.0f); //dummy rate
+                               collision.chFT0C(),
+                               collision.chFDDA(),
+                               collision.chFDDC(),
+                               collision.chFV0A(),
+                               0,     // dummy occupancy
+                               0.0f); // dummy rate
     }
   }
 };
