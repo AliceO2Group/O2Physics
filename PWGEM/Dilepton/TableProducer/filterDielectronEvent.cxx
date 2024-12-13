@@ -13,6 +13,11 @@
 /// \author daiki.sekihata@cern.ch
 
 #include <unordered_map>
+#include <set>
+#include <utility>
+#include <string>
+#include <vector>
+
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -66,26 +71,30 @@ struct filterDielectronEvent {
   // Operation and minimisation criteria
   Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
-  Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 10, "min ncluster tpc"};
-  Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
+  Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
+  Configurable<int> mincrossedrows{"mincrossedrows", 80, "min. crossed rows"};
   Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
   Configurable<float> max_mean_its_cluster_size{"max_mean_its_cluster_size", 16.f, "max. <ITS cluster size> x cos(lambda)"};
-  Configurable<float> max_p_for_its_cluster_size{"max_p_for_its_cluster_size", 0.2, "its cluster size cut is applied below this p"};
+  Configurable<float> max_p_for_its_cluster_size{"max_p_for_its_cluster_size", 0, "its cluster size cut is applied below this p"};
   Configurable<float> max_pin_for_pion_rejection{"max_pin_for_pion_rejection", -1, "pion rejection is applied below this pin"};
   Configurable<int> minitsncls{"minitsncls", 4, "min. number of ITS clusters"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
   Configurable<float> minpt{"minpt", 0.15, "min pt for track"};
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
-  Configurable<float> dca_xy_max{"dca_xy_max", 1.0f, "max DCAxy in cm"};
-  Configurable<float> dca_z_max{"dca_z_max", 1.0f, "max DCAz in cm"};
-  Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 1e+10, "max DCA 3D in sigma"};
+  Configurable<float> dca_xy_max{"dca_xy_max", 0.1f, "max DCAxy in cm"};
+  Configurable<float> dca_z_max{"dca_z_max", 0.1f, "max DCAz in cm"};
+  Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 1.5, "max DCA 3D in sigma"};
   Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.5, "min. TPC n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.5, "max. TPC n sigma for electron inclusion"};
   Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 3.5, "max. TOF n sigma for electron inclusion"};
   Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", -1e+10, "min. TPC n sigma for pion exclusion"};
   Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 2.0, "max. TPC n sigma for pion exclusion"};
-  Configurable<float> maxMee{"maxMee", 0.02, "max mee for virtual photon selection"};
+  Configurable<float> minTPCNsigmaKa{"minTPCNsigmaKa", -3.0, "min. TPC n sigma for kaon exclusion"};
+  Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", +3.0, "max. TPC n sigma for kaon exclusion"};
+  Configurable<float> minTPCNsigmaPr{"minTPCNsigmaPr", -3.0, "min. TPC n sigma for proton exclusion"};
+  Configurable<float> maxTPCNsigmaPr{"maxTPCNsigmaPr", +3.0, "max. TPC n sigma for proton exclusion"};
+  Configurable<float> maxMee{"maxMee", 1e+10, "max mee for virtual photon selection"};
 
   Configurable<bool> apply_phiv{"apply_phiv", true, "flag to apply phiv cut"};
   Configurable<float> slope{"slope", 0.0181, "slope for mee vs. phiv"};
@@ -280,14 +289,37 @@ struct filterDielectronEvent {
   template <typename TTrack>
   bool isElectron(TTrack const& track)
   {
-    if (track.tpcInnerParam() < max_pin_for_pion_rejection && (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi)) {
+    return isElectron_TPChadrej(track) || isElectron_TOFreq(track);
+  }
+
+  template <typename TTrack>
+  bool isElectron_TPChadrej(TTrack const& track)
+  {
+    if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
       return false;
     }
-    if (track.hasTOF()) {
-      return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && fabs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
-    } else {
-      return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl;
+    if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi) {
+      return false;
     }
+    if (minTPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < maxTPCNsigmaKa) {
+      return false;
+    }
+    if (minTPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < maxTPCNsigmaPr) {
+      return false;
+    }
+    if (track.hasTOF() && (maxTOFNsigmaEl < fabs(track.tofNSigmaEl()))) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename TTrack>
+  bool isElectron_TOFreq(TTrack const& track)
+  {
+    if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi) {
+      return false;
+    }
+    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && fabs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
   }
 
   template <typename TCollision, typename TTrack>

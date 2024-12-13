@@ -617,7 +617,7 @@ struct sigma0builder {
           auto arrMom = std::array{pVecPhotons, pVecLambda};
           float SigmaMass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassLambda0});
           float SigmapT = RecoDecay::pt(array{gamma.px() + lambda.px(), gamma.py() + lambda.py()});
-          float SigmaY = TMath::Abs(RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, o2::constants::physics::MassSigma0));
+          // float SigmaY = TMath::Abs(RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, o2::constants::physics::MassSigma0));
           histos.fill(HIST("h3dMassSigmasBeforeSel"), coll.centFT0C(), SigmapT, SigmaMass);
 
           if (!processSigmaCandidate(lambda, gamma)) // applying selection for reconstruction
