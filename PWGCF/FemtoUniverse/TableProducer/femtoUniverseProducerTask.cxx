@@ -1445,7 +1445,7 @@ struct FemtoUniverseProducerTask {
       if (confMCTruthAnalysisWithPID) {
         bool pass = false;
         std::vector<int> tmpPDGCodes = confMCTruthPDGCodes; // necessary due to some features of the Configurable
-        for (uint32_t const& pdg : tmpPDGCodes) {
+        for (auto const& pdg : tmpPDGCodes) {
           if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
             if (pdgCode == 333) { // && (recoMcIds && recoMcIds->get().contains(particle.globalIndex()))) { // ATTENTION: all Phi mesons are NOT primary particles
               pass = true;
