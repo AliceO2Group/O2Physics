@@ -23,7 +23,7 @@
 #include "Common/Core/TrackSelectorPID.h"
 
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/HfMlResponseBplusToD0Pi.h"
+#include "PWGHF/Core/HfMlResponseBplusToD0PiReduced.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -78,7 +78,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
   int mySelectionFlagD0 = -1;
   int mySelectionFlagD0bar = -1;
 
-  o2::analysis::HfMlResponseBplusToD0Pi<float> hfMlResponse;
+  o2::analysis::HfMlResponseBplusToD0PiReduced<float> hfMlResponse;
   float outputMlNotPreselected = -1.;
   std::vector<float> outputMl = {};
   o2::ccdb::CcdbApi ccdbApi;
@@ -174,7 +174,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
       }
 
       if constexpr (withDmesMl) { // we include it in the topological selections
-        if (!hfHelper.selectionDmesMlScoresForB(hfCandBp, cutsDmesMl, binsPtDmesMl)) {
+        if (!hfHelper.selectionDmesMlScoresForBReduced(hfCandBp, cutsDmesMl, binsPtDmesMl)) {
           hfSelBplusToD0PiCandidate(statusBplus);
           if (applyBplusMl) {
             hfMlBplusToD0PiCandidate(outputMlNotPreselected);

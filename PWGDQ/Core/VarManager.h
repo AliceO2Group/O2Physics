@@ -146,7 +146,6 @@ class VarManager : public TObject
     kDecayToKPi,                // e.g. D0           -> K+ pi- or cc.
     kTripleCandidateToKPiPi,    // e.g. D+ -> K- pi+ pi+
     kTripleCandidateToPKPi,     // e.g. Lambda_c -> p K- pi+
-    kTripleCandidateToKKPi,     // e.g. D_s -> K+ K- pi+
     kNMaxCandidateTypes
   };
 
@@ -244,6 +243,18 @@ class VarManager : public TObject
     kNTPCpileupZC,
     kNTPCtracksInPast,
     kNTPCtracksInFuture,
+    kNTPCcontribLongA,
+    kNTPCcontribLongC,
+    kNTPCmeanTimeLongA,
+    kNTPCmeanTimeLongC,
+    kNTPCmedianTimeLongA,
+    kNTPCmedianTimeLongC,
+    kNTPCcontribShortA,
+    kNTPCcontribShortC,
+    kNTPCmeanTimeShortA,
+    kNTPCmeanTimeShortC,
+    kNTPCmedianTimeShortA,
+    kNTPCmedianTimeShortC,
     kMCEventGeneratorId,
     kMCEventSubGeneratorId,
     kMCVtxX,
@@ -611,6 +622,7 @@ class VarManager : public TObject
     kCosThetaCS,
     kPhiHE,
     kPhiCS,
+    kPhiVP,
     kDeltaPhiPair2,
     kDeltaEtaPair2,
     kPsiPair,
@@ -645,36 +657,20 @@ class VarManager : public TObject
     kM11REFetagap,
     kM01POI,
     kM1111REF,
-    kM1111REFsmall,
     kM11M1111REF,
     kCORR2CORR4REF,
     kM0111POI,
     kCORR2REF,
-    kCORR2REFw,
-    kCORR2REFsquared,
-    kCORR2REFsquaredw,
     kCORR2REFetagap,
-    kCORR2REFetagapw,
-    kCORR2REFetagapsquaredw,
     kCORR2POI,
-    kCORR2POIw,
-    kCORR2POIsquaredw,
-    kCORR2POIsquaredMpw,
     kCORR4REF,
-    kCORR4REFw,
-    kCORR4REFsquaredw,
     kCORR4POI,
-    kCORR4POIw,
-    kCORR4POIsquaredw,
-    kCORR4POIsquaredMpw,
     kM11REFoverMp,
     kM01POIoverMp,
     kM1111REFoverMp,
     kM0111POIoverMp,
     kCORR2POIMp,
     kCORR4POIMp,
-    kCORR2POIMpw,
-    kCORR4POIMpw,
     kR2SP,
     kR2EP,
     kPsi2A,
@@ -992,6 +988,8 @@ class VarManager : public TObject
   static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr, PairCandidateType pairType = kDecayToEE);
   template <typename T1, typename T2, typename T3>
   static void FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
+  template <int candidateType, typename T1, typename T2>
+  static void FillQaudMC(T1 const& t1, T2 const& t2, T2 const& t3, float* values = nullptr);
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
   static void FillPairVertexing(C const& collision, T const& t1, T const& t2, bool propToSV = false, float* values = nullptr);
   template <uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
@@ -1489,12 +1487,18 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultAllTracksTPCOnly] = event.multAllTracksTPCOnly();
     values[kMultAllTracksITSTPC] = event.multAllTracksITSTPC();
     if constexpr ((fillMap & ReducedEventMultExtra) > 0) {
-      values[kNTPCpileupContribA] = event.nTPCpileupContribA();
-      values[kNTPCpileupContribC] = event.nTPCpileupContribC();
-      values[kNTPCpileupZA] = event.nTPCpileupZA();
-      values[kNTPCpileupZC] = event.nTPCpileupZC();
-      values[kNTPCtracksInPast] = event.nTPCtracksInPast();
-      values[kNTPCtracksInFuture] = event.nTPCtracksInFuture();
+      values[kNTPCcontribLongA] = event.nTPCoccupContribLongA();
+      values[kNTPCcontribLongC] = event.nTPCoccupContribLongC();
+      values[kNTPCcontribShortA] = event.nTPCoccupContribShortA();
+      values[kNTPCcontribShortC] = event.nTPCoccupContribShortC();
+      values[kNTPCmeanTimeLongA] = event.nTPCoccupMeanTimeLongA();
+      values[kNTPCmeanTimeLongC] = event.nTPCoccupMeanTimeLongC();
+      values[kNTPCmeanTimeShortA] = event.nTPCoccupMeanTimeShortA();
+      values[kNTPCmeanTimeShortC] = event.nTPCoccupMedianTimeShortC();
+      values[kNTPCmedianTimeLongA] = event.nTPCoccupMedianTimeLongA();
+      values[kNTPCmedianTimeLongC] = event.nTPCoccupMedianTimeLongC();
+      values[kNTPCmedianTimeShortA] = event.nTPCoccupMedianTimeShortA();
+      values[kNTPCmedianTimeShortC] = event.nTPCoccupMedianTimeShortC();
     }
   }
   // TODO: need to add EvSels and Cents tables, etc. in case of the central data model
@@ -1652,21 +1656,11 @@ void VarManager::FillEvent(T const& event, float* values)
 
     if constexpr ((fillMap & ReducedEventRefFlow) > 0) {
       values[kM1111REF] = event.m1111ref();
-      values[kM1111REFsmall] = event.m1111ref();
-      values[kM11M1111REF] = event.m1111ref();
-      values[kCORR2CORR4REF] = event.corr4ref();
       values[kM11REF] = event.m11ref();
-      values[kM11REFetagap] = event.m11ref();
+      values[kM11M1111REF] = event.m11ref() * event.m1111ref();
       values[kCORR2REF] = event.corr2ref();
-      values[kCORR2REFsquared] = event.corr2ref();
-      values[kCORR2REFw] = event.corr2ref();
-      values[kCORR2REFsquaredw] = event.corr2ref();
-      values[kCORR2REFetagap] = event.corr2ref();
-      values[kCORR2REFetagapw] = event.corr2ref();
-      values[kCORR2REFetagapsquaredw] = event.corr2ref();
       values[kCORR4REF] = event.corr4ref();
-      values[kCORR4REFw] = event.corr4ref();
-      values[kCORR4REFsquaredw] = event.corr4ref();
+      values[kCORR2CORR4REF] = event.corr2ref() * event.corr4ref();
       values[kMultA] = event.multa();
     }
   }
@@ -1781,11 +1775,11 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   if constexpr ((fillMap & EventFilter) > 0) {
-    values[kIsDoubleGap] = (event.eventFilter() & (uint64_t(1) << kDoubleGap)) > 0;
-    values[kIsSingleGapA] = (event.eventFilter() & (uint64_t(1) << kSingleGapA)) > 0;
-    values[kIsSingleGapC] = (event.eventFilter() & (uint64_t(1) << kSingleGapC)) > 0;
+    values[kIsDoubleGap] = (event.eventFilter() & (static_cast<uint64_t>(1) << kDoubleGap)) > 0;
+    values[kIsSingleGapA] = (event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapA)) > 0;
+    values[kIsSingleGapC] = (event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapC)) > 0;
     values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
-    values[kIsITSUPCMode] = (event.eventFilter() & (uint64_t(1) << kITSUPCMode)) > 0;
+    values[kIsITSUPCMode] = (event.eventFilter() & (static_cast<uint64_t>(1) << kITSUPCMode)) > 0;
   }
 
   if constexpr ((fillMap & ReducedZdc) > 0) {
@@ -2890,21 +2884,6 @@ void VarManager::FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* val
     values[kPhi] = v123.Phi();
     values[kRap] = -v123.Rapidity();
   }
-
-  if (pairType == kTripleCandidateToKKPi) {
-    float m1 = o2::constants::physics::MassKaonCharged;
-    float m2 = o2::constants::physics::MassPionCharged;
-
-    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
-    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m1);
-    ROOT::Math::PtEtaPhiMVector v3(t3.pt(), t3.eta(), t3.phi(), m2);
-    ROOT::Math::PtEtaPhiMVector v123 = v1 + v2 + v3;
-    values[kMass] = v123.M();
-    values[kPt] = v123.Pt();
-    values[kEta] = v123.Eta();
-    values[kPhi] = v123.Phi();
-    values[kRap] = -v123.Rapidity();
-  }
 }
 
 template <uint32_t fillMap, int pairType, typename T1, typename T2>
@@ -3067,6 +3046,21 @@ void VarManager::FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* v
     values[kRap] = -v123.Rapidity();
     values[kPt1] = t1.pt();
     values[kPt2] = t2.pt();
+  }
+
+  if (pairType == kTripleCandidateToKPiPi) {
+    float m1 = o2::constants::physics::MassKaonCharged;
+    float m2 = o2::constants::physics::MassPionCharged;
+
+    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
+    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
+    ROOT::Math::PtEtaPhiMVector v3(t3.pt(), t3.eta(), t3.phi(), m2);
+    ROOT::Math::PtEtaPhiMVector v123 = v1 + v2 + v3;
+    values[kMass] = v123.M();
+    values[kPt] = v123.Pt();
+    values[kEta] = v123.Eta();
+    values[kPhi] = v123.Phi();
+    values[kRap] = -v123.Rapidity();
   }
 }
 
@@ -3579,6 +3573,10 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
       values[kVertexingTauzErr] = values[kVertexingLzErr] * v123.M() / (TMath::Abs(v123.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v123.M() / (v123.Pt() * o2::constants::physics::LightSpeedCm2NS);
 
+      values[kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v123.Px() +
+                                   (collision.posY() - secondaryVertex[1]) * v123.Py() +
+                                   (collision.posZ() - secondaryVertex[2]) * v123.Pz()) /
+                                  (v123.P() * values[VarManager::kVertexingLxyz]);
       // run 2 definitions: Decay length projected onto the momentum vector of the candidate
       values[kVertexingLzProjected] = (secondaryVertex[2] - collision.posZ()) * v123.Pz();
       values[kVertexingLzProjected] = values[kVertexingLzProjected] / TMath::Sqrt(v123.Pz() * v123.Pz());
@@ -3827,10 +3825,10 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
 
         values[VarManager::kVertexingLxy] = (collision.posX() - secondaryVertex[0]) * (collision.posX() - secondaryVertex[0]) +
                                             (collision.posY() - secondaryVertex[1]) * (collision.posY() - secondaryVertex[1]);
-        values[VarManager::kVertexingLxy] = std::sqrt(values[VarManager::kVertexingLxy]);
         values[VarManager::kVertexingLz] = (collision.posZ() - secondaryVertex[2]) * (collision.posZ() - secondaryVertex[2]);
-        values[VarManager::kVertexingLz] = std::sqrt(values[VarManager::kVertexingLz]);
         values[VarManager::kVertexingLxyz] = values[VarManager::kVertexingLxy] + values[VarManager::kVertexingLz];
+        values[VarManager::kVertexingLxy] = std::sqrt(values[VarManager::kVertexingLxy]);
+        values[VarManager::kVertexingLz] = std::sqrt(values[VarManager::kVertexingLz]);
         values[VarManager::kVertexingLxyz] = std::sqrt(values[VarManager::kVertexingLxyz]);
       }
 
@@ -4020,17 +4018,10 @@ void VarManager::FillQVectorFromGFW(C const& /*collision*/, A const& compA11, A 
   values[kM1111REF] = S41A - 6. * S12A * S21A + 8. * S13A * S11A + 3. * S22A - 6. * S14A;
   values[kCORR2REF] = (norm(compA21) - S12A) / values[kM11REF];
   values[kCORR4REF] = (pow(norm(compA21), 2) + norm(compA42) - 2. * (compA42 * conj(compA21) * conj(compA21)).real() + 8. * (compA23 * conj(compA21)).real() - 4. * S12A * norm(compA21) - 6. * S14A - 2. * S22A) / values[kM1111REF];
-  values[kCORR2REF] = std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
-  values[kCORR4REF] = std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR4REF];
-  values[kM11REF] = std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) ? 0 : values[kM11REF];
-  values[kM1111REF] = std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) ? 0 : values[kM1111REF];
-  values[kM11REF] = std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kM11REF];
-  values[kM1111REF] = std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kM1111REF];
-  values[kCORR2REFw] = values[kCORR2REF] * values[kM11REF];
-  values[kCORR2REFsquared] = values[kCORR2REF] * values[kCORR2REF];
-  values[kCORR2REFsquaredw] = values[kCORR2REF] * values[kCORR2REF] * values[kM11REF];
-  values[kCORR4REFw] = values[kCORR4REF] * values[kM1111REF];
-  values[kCORR4REFsquaredw] = values[kCORR4REF] * values[kCORR4REF] * values[kM1111REF];
+  values[kCORR2REF] = std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
+  values[kM11REF] = std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kM11REF];
+  values[kCORR4REF] = std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR4REF];
+  values[kM1111REF] = std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kM1111REF];
   values[kCORR2CORR4REF] = values[kCORR2REF] * values[kCORR4REF];
   values[kM11M1111REF] = values[kM11REF] * values[kM1111REF];
 
@@ -4040,9 +4031,8 @@ void VarManager::FillQVectorFromGFW(C const& /*collision*/, A const& compA11, A 
   complex<double> QC(values[kQ2X0C] * S11C, values[kQ2Y0C] * S11C);
   values[kM11REFetagap] = S11B * S11C;
   values[kCORR2REFetagap] = ((QB * conj(QC)).real()) / values[kM11REFetagap];
-  values[kCORR2REFetagap] = std::isnan(values[kCORR2REFetagap]) || std::isinf(values[kCORR2REFetagap]) ? 0 : values[kCORR2REFetagap];
-  values[kCORR2REFetagapw] = values[kCORR2REFetagap] * values[kM11REFetagap];
-  values[kCORR2REFetagapsquaredw] = values[kCORR2REFetagap] * values[kCORR2REFetagap] * values[kM11REFetagap];
+  values[kCORR2REFetagap] = std::isnan(values[kM11REFetagap]) || std::isinf(values[kM11REFetagap]) || std::isnan(values[kCORR2REFetagap]) || std::isinf(values[kCORR2REFetagap]) ? 0 : values[kCORR2REFetagap];
+  values[kM11REFetagap] = std::isnan(values[kM11REFetagap]) || std::isinf(values[kM11REFetagap]) || std::isnan(values[kCORR2REFetagap]) || std::isinf(values[kCORR2REFetagap]) ? 0 : values[kM11REFetagap];
 
   // TODO: provide different computations for R
   // Compute the R factor using the 2 sub-events technique for second and third harmonic
@@ -4369,6 +4359,16 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kCORR2REF] = std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
     values[kCORR4REF] = std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR4REF];
   }
+
+  ROOT::Math::PtEtaPhiMVector v1_vp(v1.Pt(), v1.Eta(), v1.Phi() - Psi2B, v1.M());
+  ROOT::Math::PtEtaPhiMVector v2_vp(v2.Pt(), v2.Eta(), v2.Phi() - Psi2B, v2.M());
+  ROOT::Math::PtEtaPhiMVector v12_vp = v1_vp + v2_vp;
+  auto p12_vp = ROOT::Math::XYZVectorF(v12_vp.Px(), v12_vp.Py(), v12_vp.Pz());
+  auto p12_vp_projXZ = ROOT::Math::XYZVectorF(p12_vp.X(), 0, p12_vp.Z());
+  auto vDimu = (t1.sign() > 0 ? ROOT::Math::XYZVectorF(v1_vp.Px(), v1_vp.Py(), v1_vp.Pz()).Cross(ROOT::Math::XYZVectorF(v2_vp.Px(), v2_vp.Py(), v2_vp.Pz()))
+                              : ROOT::Math::XYZVectorF(v2_vp.Px(), v2_vp.Py(), v2_vp.Pz()).Cross(ROOT::Math::XYZVectorF(v1_vp.Px(), v1_vp.Py(), v1_vp.Pz())));
+  auto vRef = p12_vp.Cross(p12_vp_projXZ);
+  values[kPhiVP] = std::acos(vDimu.Dot(vRef) / (vRef.R() * vDimu.R()));
 }
 
 template <typename T>
@@ -4559,6 +4559,40 @@ void VarManager::FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T
     values[kDeltaR2] = sqrt(pow(v1.Eta() - v3.Eta(), 2) + pow(v1.Phi() - v3.Phi(), 2));
     values[kRap] = v123.Rapidity();
   }
+}
+
+//__________________________________________________________________
+template <int candidateType, typename T1, typename T2>
+void VarManager::FillQaudMC(T1 const& dilepton, T2 const& track1, T2 const& track2, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  double defaultDileptonMass = 3.096;
+  double hadronMass1 = o2::constants::physics::MassPionCharged;
+  double hadronMass2 = o2::constants::physics::MassPionCharged;
+  if (candidateType == kXtoJpsiPiPi) {
+    defaultDileptonMass = 3.096;
+    hadronMass1 = o2::constants::physics::MassPionCharged;
+    hadronMass2 = o2::constants::physics::MassPionCharged;
+  }
+
+  ROOT::Math::PtEtaPhiMVector v1(dilepton.pt(), dilepton.eta(), dilepton.phi(), defaultDileptonMass);
+  ROOT::Math::PtEtaPhiMVector v2(track1.pt(), track1.eta(), track1.phi(), hadronMass1);
+  ROOT::Math::PtEtaPhiMVector v3(track2.pt(), track2.eta(), track2.phi(), hadronMass2);
+  ROOT::Math::PtEtaPhiMVector v123 = v1 + v2 + v3;
+  ROOT::Math::PtEtaPhiMVector v23 = v2 + v3;
+  values[kQuadMass] = v123.M();
+  values[kQuadDefaultDileptonMass] = v123.M();
+  values[kQuadPt] = v123.Pt();
+  values[kQuadEta] = v123.Eta();
+  values[kQuadPhi] = v123.Phi();
+  values[kQ] = v123.M() - defaultDileptonMass - v23.M();
+  values[kDeltaR1] = sqrt(pow(v1.Eta() - v2.Eta(), 2) + pow(v1.Phi() - v2.Phi(), 2));
+  values[kDeltaR2] = sqrt(pow(v1.Eta() - v3.Eta(), 2) + pow(v1.Phi() - v3.Phi(), 2));
+  values[kDitrackMass] = v23.M();
+  values[kDitrackPt] = v23.Pt();
 }
 
 //__________________________________________________________________
