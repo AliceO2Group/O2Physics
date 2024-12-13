@@ -21,7 +21,6 @@ that are filled with the V0 invariant mass under the K0, Lambda and Antilambda m
 The cuts are passed as configurable strings for convenience.
 This analysis includes two processes, one for Real Data and one for MC Data switchable at the end of the code, only run one at a time*/
 
-#include <iostream>
 #include <memory>
 #include <vector>
 #include <string>
