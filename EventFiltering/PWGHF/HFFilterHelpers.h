@@ -211,7 +211,7 @@ static const std::vector<std::string> labelsRowsCutsPt = {"Minimum", "Maximum"};
 
 // PID cuts
 constexpr float cutsNsigma[3][7] = {{3., 3., 3., 5., 3., 3., 5.},             // TPC proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron
-                                    {3., 3., 3., 2.5, 3., 3., 5.},            // TOF proton from Lc, pi/K from D0, K from 3-prong, fefemto selected protonmto, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron
+                                    {3., 3., 3., 2.5, 3., 3., 5.},            // TOF proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron
                                     {999., 999., 999., 2.5, 999., 999., 5.}}; // Sum in quadrature of TPC and TOF (used only for femto selected proton and deuteron for pT < 4 GeV/c)
 static const std::vector<std::string> labelsColumnsNsigma = {"PrFromLc", "PiKaFromDZero", "KaFrom3Prong", "FemtoProton", "PiKaFromCharmBaryon", "SoftKaonFromXicResoToSigmaC", "FemtoDeuteron"};
 static const std::vector<std::string> labelsRowsNsigma = {"TPC", "TOF", "Comb"};
