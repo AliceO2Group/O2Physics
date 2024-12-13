@@ -263,7 +263,7 @@ struct Lambda1520analysis {
         histos.add("QAafter/PhiKaafter", "Phi of kaon  candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 6.30}});
       }
 
-      if (IsCalcRotBkg) {
+      if (isCalcRotBkg) {
         histos.add("Result/Data/h3lambda1520InvMassRotation", "Invariant mass of #Lambda(1520) rotation", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520, occupancyaxis});
       }
 
@@ -392,7 +392,7 @@ struct Lambda1520analysis {
   template <typename T>
   bool selectionnewPIDProton(const T& candidate)
   {
-    if (tof_at_high_pt) {
+    if (tofAtHighPt) {
       if (candidate.hasTOF() && (std::abs(candidate.tofNSigmaPr()) < cMaxTOFnSigmaProton)) {
         return true;
       }
@@ -444,7 +444,7 @@ struct Lambda1520analysis {
   template <typename T>
   bool selectionnewPIDKaon(const T& candidate)
   {
-    if (tof_at_high_pt) {
+    if (tofAtHighPt) {
       if (candidate.hasTOF() && (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon)) {
         return true;
       }
@@ -678,7 +678,7 @@ struct Lambda1520analysis {
     // LOG(info) << "Before pass, Collision index:" << collision.index() << "multiplicity: " << collision.cent() << std::endl;
 
     auto occupancyNo = collision.trackOccupancyInTimeRange();
-    if (applyOccupancyCut && occupancyNo < OccupancyCut) {
+    if (applyOccupancyCut && occupancyNo < occupancyCut) {
       return;
     }
 
@@ -739,7 +739,7 @@ struct Lambda1520analysis {
 
       auto deltaEta = std::abs(trk1.eta() - trk2.eta());
       auto deltaPhi = std::abs(trk1.phi() - trk2.phi());
-      deltaPhi = (deltaPhi > std::Pi()) ? (2 * std::Pi() - deltaPhi) : deltaPhi;
+      deltaPhi = (deltaPhi > TMath::Pi()) ? (2 * TMath::Pi() - deltaPhi) : deltaPhi;
 
       //// QA plots before the selection
       //  --- Track QA all
@@ -782,10 +782,10 @@ struct Lambda1520analysis {
       if (cOldPIDcut) {
         if (!selectionoldPIDProton(trk1) || !selectionoldPIDKaon(trk2))
           continue;
-      } else if (!cOldPIDcut && !FixedPIDcut) {
+      } else if (!cOldPIDcut && !fixedPIDcut) {
         if (!selectionnewPIDProton(trk1) || !selectionnewPIDKaon(trk2))
           continue;
-      } else if (FixedPIDcut) {
+      } else if (fixedPIDcut) {
         if (!selectionPIDProtonFixed(trk1) || !selectionPIDKaonFixed(trk2))
           continue;
       }
@@ -878,9 +878,9 @@ struct Lambda1520analysis {
       //// Un-like sign pair only
       if (trk1.sign() * trk2.sign() < 0) {
         if constexpr (IsData) {
-          if (IsCalcRotBkg) {
+          if (isCalcRotBkg) {
             for (int i = 0; i < cNofRotations; i++) {
-              float theta2 = rn->Uniform(std::Pi() - std::Pi() / rotationalcut, std::Pi() + std::Pi() / rotationalcut);
+              float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotationalcut, TMath::Pi() + TMath::Pi() / rotationalcut);
               ldaughterRot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa); // for rotated background
               lresonanceRot = lDecayDaughter1 + ldaughterRot;
               histos.fill(HIST("Result/Data/h3lambda1520InvMassRotation"), multiplicity, lresonanceRot.Pt(), lresonanceRot.M(), occupancyNo);
@@ -992,7 +992,7 @@ struct Lambda1520analysis {
       histos.fill(HIST("QAevent/hEvtCounterSameE"), 1.0);
     fillHistograms<true, false, false>(collision, resotracks, resotracks);
   }
-  PROCESS_SWITCH(lambda1520analysis, processData, "Process Event for data without partition", false);
+  PROCESS_SWITCH(Lambda1520analysis, processData, "Process Event for data without partition", false);
 
   void processMC(ResoMCCols::iterator const& collision,
                  soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
@@ -1001,7 +1001,7 @@ struct Lambda1520analysis {
       return;
     fillHistograms<false, true, false>(collision, resotracks, resotracks);
   }
-  PROCESS_SWITCH(lambda1520analysis, processMC, "Process Event for MC Light without partition", false);
+  PROCESS_SWITCH(Lambda1520analysis, processMC, "Process Event for MC Light without partition", false);
 
   void processMCTrue(ResoMCCols::iterator const& collision, aod::ResoMCParents const& resoParents)
   {
@@ -1048,14 +1048,14 @@ struct Lambda1520analysis {
       }
     }
   }
-  PROCESS_SWITCH(lambda1520analysis, processMCTrue, "Process Event for MC only", false);
+  PROCESS_SWITCH(Lambda1520analysis, processMCTrue, "Process Event for MC only", false);
 
   // Processing Event Mixing
   using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
   void processME(o2::aod::ResoCollisions const& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}, true};
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
@@ -1064,7 +1064,7 @@ struct Lambda1520analysis {
       fillHistograms<false, false, true>(collision1, tracks1, tracks2);
     }
   };
-  PROCESS_SWITCH(lambda1520analysis, processME, "Process EventMixing light without partition", false);
+  PROCESS_SWITCH(Lambda1520analysis, processME, "Process EventMixing light without partition", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
