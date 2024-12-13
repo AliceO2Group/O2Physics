@@ -55,7 +55,7 @@ struct UPCAnalysis {
   Configurable<float> tpcChi2_cut{"tpcChi2_cut", 4, "Max tpcChi2NCl"};
   Configurable<float> tpcNClsFindable_cut{"tpcNClsFindable_cut", 85, "Min tpcNClsFindable"};
   Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
-  Configurable<float> eta_cut{"eta_cut", 0.5, "Track Pseudorapidity"};
+  Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
   Configurable<float> pt_cut{"pt_cut", 0, "Track Pt"};
 
   Configurable<float> nSigmaTPC_cut{"nsigmatpccut", 3, "TPC cut"};
