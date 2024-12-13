@@ -12,7 +12,7 @@
 ///
 /// \file   qaPIDTOFMC.cxx
 /// \author Nicolò Jacazio
-/// \brief  Task to produce QA output of the PID with TOF running on the MC.
+/// \brief  Task to produce QA output of the PID with TOF running on the MC e.g. to compute purity.
 ///
 
 // O2 includes
