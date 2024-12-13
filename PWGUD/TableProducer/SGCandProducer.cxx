@@ -14,7 +14,6 @@
 #include <map>
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
 #include "ReconstructionDataFormats/Vertex.h"
 #include "CommonConstants/LHCConstants.h"
 #include "DataFormatsFIT/Triggers.h"
