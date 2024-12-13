@@ -137,7 +137,7 @@ struct ResonanceCombine {
       }
       for (auto const& track2 : dTracks2) {
         auto track2Reso = track2.template track_as<aod::ResoTracks>();
-        auto track2FullPidExt = track2.template track_as<aod::Reso2TracksPIDExt>();
+        // auto track2FullPidExt = track2.template track_as<aod::Reso2TracksPIDExt>();
 
         if (!trackCut(track2Reso) || !selectionPID(track2Reso)) {
           continue;
