@@ -750,7 +750,7 @@ struct LfMyV0s {
     TVector3 UnitYInJet = YinJet.Unit();
     TVector3 UnitZInJet = JetCrossV0.Unit();
     TMatrixD matrixLabToJet(4, 4);
-    matrixLabToJet(0, 0) = 1.12;
+    matrixLabToJet(0, 0) = 1;
     matrixLabToJet(0, 1) = 0.0;
     matrixLabToJet(0, 2) = 0.0;
     matrixLabToJet(0, 3) = 0.0;
@@ -808,7 +808,7 @@ struct LfMyV0s {
       double ELambda = sqrt(candidate.v0Lambdamass() * candidate.v0Lambdamass() + PLambda * PLambda);
 
       TMatrixD pLabproton(4, 1);
-      double protonE = sqrt(0.938 * 0.938 + candidate.v0protonpx() * candidate.v0protonpx() + candidate.v0protonpy() * candidate.v0protonpy() + candidate.v0protonpz() * candidate.v0protonpz());
+      double protonE = sqrt(massPr * massPr + candidate.v0protonpx() * candidate.v0protonpx() + candidate.v0protonpy() * candidate.v0protonpy() + candidate.v0protonpz() * candidate.v0protonpz());
       pLabproton(0, 0) = protonE;
       pLabproton(1, 0) = candidate.v0protonpx();
       pLabproton(2, 0) = candidate.v0protonpy();
