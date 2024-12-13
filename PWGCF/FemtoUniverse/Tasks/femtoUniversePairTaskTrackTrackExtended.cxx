@@ -16,7 +16,6 @@
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
-#include <vector>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -93,10 +92,13 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsOneMCReco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == trackonefilter.confChargePart1 && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confPtLowPart1;
   // && ((aod::femtouniverseparticle::cut & confCutPartOne) == confCutPartOne);
 
-  Partition<soa::Join<FilteredFemtoFullParticles, aod::FdMCParticles, aod::FDMCLabels>> partsOneMCTruth =
+  Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsOneMCTruth =
     aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) &&
-    // aod::femtouniverseMCparticle::pdgMCTruth == trackonefilter.ConfPDGCodePartOne &&
-    // aod::femtouniverseparticle::sign == trackonefilter.ConfChargePart1 && // sign == -128
+    //
+    // FIXME: sign is always == -128
+    // aod::femtouniverseparticle::sign == trackonefilter.ConfChargePart1 &&
+    //
+    aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(trackonefilter.confPDGCodePartOne) &&
     aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 &&
     aod::femtouniverseparticle::pt > trackonefilter.confPtLowPart1;
 
@@ -121,6 +123,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
 
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsTwoMCTruth =
     aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) &&
+    aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(tracktwofilter.confPDGCodePartTwo) &&
     aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 &&
     aod::femtouniverseparticle::pt > tracktwofilter.confPtLowPart2;
 

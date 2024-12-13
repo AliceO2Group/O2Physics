@@ -15,33 +15,22 @@ namespace o2::analysis::femto_universe::efficiency
 template <uint8_t T>
 concept IsOneOrTwo = T == 1 || T == 2;
 
-template <uint8_t N>
-  requires IsOneOrTwo<N>
-using MCTruthTrackHisto = FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, N>;
-
 struct EfficiencyConfigurableGroup : ConfigurableGroup {
   Configurable<bool> shouldCalculate{"ConfEfficiencyCalculate", false, "Should calculate efficiency"};
-  Configurable<bool> shouldApplyCorrections{"ConfEfficiencyApplyCorrections", false, "Should apply corrections from efficinecy"};
+  Configurable<bool> shouldApplyCorrections{"ConfEfficiencyApplyCorrections", false, "Should apply corrections from efficiency"};
 
-  Configurable<std::string> ccdbUrl{"ConfEfficiencyCCDBUrl", "http://alice-ccdb.cern.ch", "CCDB URL to be used"};
-  Configurable<std::string> ccdbPath{"ConfEfficiencyCCDBPath", "", "CCDB base path where objects should be put"};
-  // TODO: make it an array of two values (part1, part2)
-  Configurable<long> ccdbTimestamp{"ConfEfficiencyCCDBTimestamp", -1, "Timestamp from which to get CCDB objects"};
+  Configurable<std::string> ccdbUrl{"ConfCCDBUrl", "http://alice-ccdb.cern.ch", "CCDB URL to be used"};
+  Configurable<std::string> ccdbPath{"ConfCCDBPath", "", "CCDB base path to where to upload objects"};
 
-  MCTruthTrackHisto<1> hMCTruth1;
-  MCTruthTrackHisto<2> hMCTruth2;
+  Configurable<long> ccdbTimestamp{"ConfCCDBTimestamp", -1, "Timestamp from which to query CCDB objects"};
+  Configurable<std::vector<std::string>> ccdbLabels{"ConfCCDBLabels", {"", ""}, "Labels for efficiency objects in CCDB"};
+
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> hMCTruth1;
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 2> hMCTruth2;
 
   OutputObj<TH1F> hEff1{"Efficiency part1"};
   OutputObj<TH1F> hEff2{"Efficiency part2"};
 };
-
-namespace EfficiencyMetadata
-{
-const auto PARTICLE_NO = "particle_no";
-// TODO: what else is worth saving?
-// PDG
-// run number?
-} // namespace EfficiencyMetadata
 
 class EfficiencyCalculator
 {
@@ -63,12 +52,14 @@ class EfficiencyCalculator
     shouldCalculate = config->shouldCalculate;
     shouldApplyCorrections = config->shouldApplyCorrections;
 
-    ccdbFullPath = std::format("{}/{}", config->ccdbPath.value, folderPrefix);
+    ccdbFullPath = std::format("{}/{}", config->ccdbPath.value, folderName);
 
-    hOutput = {
-      config->hEff1.object,
-      config->hEff2.object //
-    };
+    if (config->shouldCalculate) {
+      hOutput = {
+        config->hEff1.object,
+        config->hEff2.object //
+      };
+    }
 
     if (config->shouldApplyCorrections) {
       hLoaded = {
@@ -83,14 +74,13 @@ class EfficiencyCalculator
     if (!reg) {
       LOGF(error, log("Registry value cannot be null"));
     }
-
     registry = reg;
     return *this;
   }
 
   template <uint8_t N>
     requires IsOneOrTwo<N>
-  auto doMCTruth(auto particles) -> void
+  auto doMCTruth(auto particles) const -> void
   {
     for (const auto& particle : particles) {
       if constexpr (N == 1) {
@@ -116,14 +106,10 @@ class EfficiencyCalculator
           }
           LOGF(debug, log("Found histogram %d: %s"), i + 1, output->GetTitle());
 
-          std::map<string, string> metadata{};
-          metadata[EfficiencyMetadata::PARTICLE_NO] = std::format("{}", i + 1);
-          // metadata["runNumber"] = runNumber;
-
           long now{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
           long oneYear{365LL * 24 * 60 * 60 * 1000};
 
-          if (ccdbApi.storeAsTFileAny(output.get(), ccdbFullPath, metadata, now, now + oneYear) == 0) {
+          if (ccdbApi.storeAsTFileAny(output.get(), ccdbFullPath, createMetadata(i), now, now + oneYear) == 0) {
             LOGF(info, log("Histogram %d saved successfully"), i + 1);
           } else {
             LOGF(fatal, log("Histogram %d save failed"), i + 1);
@@ -139,7 +125,7 @@ class EfficiencyCalculator
 
   template <uint8_t N>
     requires IsOneOrTwo<N>
-  auto getWeight(auto const& particle) -> float
+  auto getWeight(auto const& particle) const -> float
   {
     auto weight{1.0f};
     auto hEff{hLoaded[N - 1]};
@@ -154,14 +140,14 @@ class EfficiencyCalculator
 
   template <uint8_t N>
     requires IsOneOrTwo<N>
-  auto calculate()
+  auto calculate() const
   {
     if (!shouldCalculate) {
       return;
     }
 
-    std::shared_ptr<TH1> truth{registry->get<TH1>(HIST("MCTruthTracks_one/hPt"))};
-    std::shared_ptr<TH1> reco{registry->get<TH1>(HIST("Tracks_one_MC/hPt"))};
+    std::shared_ptr<TH1> truth{registry->get<TH1>(HIST("MCTruthTracks") + HIST(histSuffix[N]) + HIST("/hPt"))};
+    std::shared_ptr<TH1> reco{registry->get<TH1>(HIST("Tracks") + HIST(histSuffix[N]) + HIST("_MC/hPt"))};
     if (!truth || !reco) {
       LOGF(error, log("MC Truth & MC Reco histograms cannot be null"));
       return;
@@ -180,12 +166,12 @@ class EfficiencyCalculator
   }
 
  private:
-  auto log(const std::string& msg) -> const std::string
+  auto log(const std::string& msg) const -> const std::string
   {
     return std::format("[EFFICIENCY] {}", msg);
   }
 
-  auto isHistogramEmpty(TH1* hist) -> bool
+  auto isHistogramEmpty(TH1* hist) const -> bool
   {
     if (!hist) {
       return true;
@@ -201,16 +187,23 @@ class EfficiencyCalculator
     return true;
   }
 
+  auto createMetadata(uint8_t partNo) const -> std::map<std::string, std::string>
+  {
+    if (config->ccdbLabels->size() != 2) {
+      LOGF(fatal, log("CCDB labels configurable should be exactly of size 2"));
+    }
+    return std::map<std::string, std::string>{
+      {"label", config->ccdbLabels.value[partNo]} //
+    };
+  }
+
   template <uint8_t N>
     requires IsOneOrTwo<N>
-  auto loadEfficiencyFromCCDB(long timestamp) -> TH1*
+  auto loadEfficiencyFromCCDB(long timestamp) const -> TH1*
   {
-    std::map<string, string> metadata{};
-    metadata[EfficiencyMetadata::PARTICLE_NO] = std::format("{}", N);
-
-    auto hEff{ccdb.getSpecific<TH1>(ccdbFullPath, timestamp, metadata)};
+    auto hEff{ccdb.getSpecific<TH1>(ccdbFullPath, timestamp, createMetadata(N - 1))};
     if (!hEff || hEff->IsZombie()) {
-      LOGF(fatal, log("Could not load histogram from %s"), config->ccdbPath.value);
+      LOGF(error, log("Could not load histogram from %s"), config->ccdbPath.value);
       return nullptr;
     }
 
@@ -230,7 +223,8 @@ class EfficiencyCalculator
   o2::ccdb::CcdbApi ccdbApi{};
   std::string ccdbFullPath{};
 
-  const std::string folderPrefix{"Efficiency"};
+  static constexpr std::string folderName{"Efficiency"};
+  static constexpr std::array<std::string, 3> histSuffix{"", "_one", "_two"};
 };
 
 } // namespace o2::analysis::femto_universe::efficiency
