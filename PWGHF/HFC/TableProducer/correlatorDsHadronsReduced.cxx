@@ -70,13 +70,12 @@ struct HfCorrelatorDsHadronsReduced {
       registry.add("hDsPoolBin", "Ds candidates pool bin", {HistType::kTH1F, {axisPoolBin}});
       registry.add("hTracksPoolBin", "Particles associated pool bin", {HistType::kTH1F, {axisPoolBin}});
     }
-    
   }
-  
-  //Preslice<aod::AssocTrackReds> tracksPerCol = aod::hf_assoc_track_reduced::hfcRedCollisionId;
+
+  // Preslice<aod::AssocTrackReds> tracksPerCol = aod::hf_assoc_track_reduced::hfcRedCollisionId;
   Preslice<aod::AssocTrackReds> tracksPerCol = aod::hf_candidate_reduced::hfcRedCollisionId;
   Preslice<aod::DsCandReduceds> candPerCol = aod::hf_candidate_reduced::hfcRedCollisionId;
-  
+
   void processDerivedDataME(aod::HfcRedCollisions const& collisions,
                             aod::DsCandReduceds const& candidates,
                             aod::AssocTrackReds const& tracks)
@@ -85,24 +84,24 @@ struct HfCorrelatorDsHadronsReduced {
     BinningTypeDerived corrBinning{{zPoolBins, multPoolBins}, true};
 
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    
+
     Pair<aod::HfcRedCollisions, aod::DsCandReduceds, aod::AssocTrackReds, BinningTypeDerived> pairData{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
-     
+
     for (const auto& [c1, tracks1, c2, tracks2] : pairData) {
       if (tracks1.size() == 0) {
         continue;
       }
-     
+
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multiplicity()));
       int poolBinDs = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multiplicity()));
       registry.fill(HIST("hMultFT0M"), c1.multiplicity());
       registry.fill(HIST("hZVtx"), c1.posZ());
       registry.fill(HIST("hTracksPoolBin"), poolBin);
       registry.fill(HIST("hDsPoolBin"), poolBinDs);
-      
+
       for (const auto& [cand, pAssoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d)", cand.index(), pAssoc.index(), c1.index(), c2.index(), cand.hfcRedCollisionId(), pAssoc.hfcRedCollisionId());
-        
+
         entryDsHadronPair(getDeltaPhi(pAssoc.phiAssocTrack(), cand.phiCand()),
                           pAssoc.etaAssocTrack() - cand.etaCand(),
                           cand.ptCand(),
@@ -110,7 +109,6 @@ struct HfCorrelatorDsHadronsReduced {
                           poolBin);
         entryDsHadronRecoInfo(cand.invMassDs(), false, false);
         entryDsHadronGenInfo(false, false, 0);
-        
       }
     }
   }
