@@ -48,8 +48,8 @@ using namespace o2::soa;
 
 namespace
 {
-static constexpr int NPart = 2;
-static constexpr int NCuts = 5;
+// static constexpr int NPart = 2;
+// static constexpr int NCuts = 5;
 static const std::vector<std::string> partNames{"PhiCandidate", "Track"};
 static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
 // static const float cutsTable[NPart][NCuts]{ //unused variable
