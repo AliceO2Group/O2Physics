@@ -531,9 +531,9 @@ struct chk892flow {
   // PID selection tools
   template <typename TrackType>
   bool selectionPIDPion(TrackType const& candidate)
-  {
-    bool tpcPIDPassed{false}, tofPIDPassed{false};
-		
+	{
+		bool tpcPIDPassed{false}, tofPIDPassed{false};
+
 		if (cTPConly){
 
 			if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
