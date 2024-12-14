@@ -47,13 +47,13 @@ struct HfCorrelatorDsHadronsReduced {
 
   Configurable<bool> fillHistoData{"fillHistoData", true, "Flag for filling histograms in data processes"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
-  
+
   SliceCache cache;
-  
+
   // Preslice<aod::AssocTrackReds> tracksPerCol = aod::hf_assoc_track_reduced::hfcRedCollisionId;
   Preslice<aod::AssocTrackReds> tracksPerCol = aod::hf_candidate_reduced::hfcRedCollisionId;
   Preslice<aod::DsCandReduceds> candPerCol = aod::hf_candidate_reduced::hfcRedCollisionId;
-  
+
   ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0}, "z vertex position pools"};
   ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 900., 1800., 6000.}, "event multiplicity pools (FT0M)"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
