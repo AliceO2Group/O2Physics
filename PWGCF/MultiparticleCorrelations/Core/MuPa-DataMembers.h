@@ -110,7 +110,7 @@ struct QualityAssurance {
   Bool_t fBookQAParticleEventHistograms2D[eQAParticleEventHistograms2D_N] = {kTRUE};         // book or not this 2D histogram, see configurable cfBookQAParticleEventHistograms2D
   Float_t fQAParticleEventHistogramsBins2D[eQAParticleEventHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
   TString fQAParticleEventHistogramsName2D[eQAParticleEventHistograms2D_N] = {""};           // name of fQAParticleEventHistograms2D, determined programatically from other 1D names, to ease bookkeeping
-  TProfile* fQAParticleEventProEbyE[2][2] = {{{NULL}}};                                      // helper profile to calculate <some-particle-property> event-by-event
+  TProfile* fQAParticleEventProEbyE[2][2] = {{NULL}};                                        // helper profile to calculate <some-particle-property> event-by-event
                                                                                              // [reco, sim][before, after]. Type dimension is bin.
 
   Float_t fReferenceMultiplicity[eReferenceMultiplicityEstimators_N] = {0.};              // used mostly in QA correlation plots
