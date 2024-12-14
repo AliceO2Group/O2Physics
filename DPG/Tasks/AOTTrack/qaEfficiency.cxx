@@ -663,7 +663,7 @@ struct QaEfficiency {
     }
 
     AxisSpec axisPtMother{ptBins, "#it{p}_{T} (GeV/#it{c})"};
-    hPtmotherGenerated = histos.add<TH1>("MC/mother/pt/generated", "Generated pT of mother Lambda or Xi", kTH1D, {axisPtMother});
+    hPtmotherGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated_mother", PDGs[histogramIndex]), "Generated Mother ", kTH1D, {axisPtMother});
 
     static_for<0, 1>([&](auto pdgSign) {
       makeMCHistograms<pdgSign, o2::track::PID::Electron>(doEl);
