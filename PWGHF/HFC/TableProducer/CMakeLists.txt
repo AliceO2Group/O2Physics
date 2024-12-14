@@ -43,7 +43,7 @@ o2physics_add_dpl_workflow(correlator-ds-hadrons
                     SOURCES correlatorDsHadrons.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-                    
+
 o2physics_add_dpl_workflow(correlator-ds-hadrons-reduced
                     SOURCES correlatorDsHadronsReduced.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
