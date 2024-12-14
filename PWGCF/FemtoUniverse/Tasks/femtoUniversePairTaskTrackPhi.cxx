@@ -48,13 +48,13 @@ using namespace o2::soa;
 
 namespace
 {
-static constexpr int NPart = 2;
-static constexpr int NCuts = 5;
+// static constexpr int NPart = 2;
+// static constexpr int NCuts = 5;
 static const std::vector<std::string> partNames{"PhiCandidate", "Track"};
 static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
-static const float cutsTable[NPart][NCuts]{
-  {4.05f, 1.f, 3.f, 3.f, 100.f},
-  {4.05f, 1.f, 3.f, 3.f, 100.f}};
+// static const float cutsTable[NPart][NCuts]{ //unused variable
+//   {4.05f, 1.f, 3.f, 3.f, 100.f},
+//   {4.05f, 1.f, 3.f, 3.f, 100.f}};
 } // namespace
 
 struct FemtoUniversePairTaskTrackPhi {
