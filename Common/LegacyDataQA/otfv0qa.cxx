@@ -49,7 +49,7 @@ struct OTFV0Qa {
     histos.add("hCandidates", "Number of OTF V0s", kTH1F, {axisNCandidates});
   }
 
-  void process(aod::Collision const& col, aod::OTFV0s const& v0s)
+  void process(aod::Collision const& col, aod::Run2OTFV0s const& v0s)
   {
     histos.fill(HIST("hEventCounter"), 0.5);
     histos.fill(HIST("hCandidates"), v0s.size());

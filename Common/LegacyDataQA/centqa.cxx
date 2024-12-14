@@ -48,31 +48,31 @@ struct CentQA {
     histos.add("hV0A", "V0A centrality", kTH1F, {axisCentrality});
     histos.add("hCL0", "CL0 centrality", kTH1F, {axisCentrality});
     histos.add("hCL1", "CL1 centrality", kTH1F, {axisCentrality});
-    histos.add("hRefMult5", "RefMult5 centrality", kTH1F, {axisCentrality});
-    histos.add("hRefMult8", "RefMult8 centrality", kTH1F, {axisCentrality});
+    histos.add("hRefMult5", "RefMult .5 centrality", kTH1F, {axisCentrality});
+    histos.add("hRefMult8", "RefMult .8 centrality", kTH1F, {axisCentrality});
   }
 
-  void processV0M(soa::Join<aod::Collision, aod::CentRun2V0Ms>::iterator const& col)
+  void processV0M(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& col)
   {
     histos.fill(HIST("hV0M"), col.centRun2V0M());
   }
-  void processV0A(soa::Join<aod::Collision, aod::CentRun2V0As>::iterator const& col)
+  void processV0A(soa::Join<aod::Collisions, aod::CentRun2V0As>::iterator const& col)
   {
     histos.fill(HIST("hV0A"), col.centRun2V0A());
   }
-  void processCL0(soa::Join<aod::Collision, aod::CentRun2CL0s>::iterator const& col)
+  void processCL0(soa::Join<aod::Collisions, aod::CentRun2CL0s>::iterator const& col)
   {
     histos.fill(HIST("hCL0"), col.centRun2CL0());
   }
-  void processCL1(soa::Join<aod::Collision, aod::CentRun2CL1s>::iterator const& col)
+  void processCL1(soa::Join<aod::Collisions, aod::CentRun2CL1s>::iterator const& col)
   {
     histos.fill(HIST("hCL1"), col.centRun2CL1());
   }
-  void processRefMult5(soa::Join<aod::Collision, aod::CentRun2RefMult5s>::iterator const& col)
+  void processRefMult5(soa::Join<aod::Collisions, aod::CentRun2RefMult5s>::iterator const& col)
   {
     histos.fill(HIST("hRefMult5"), col.centRun2RefMult5());
   }
-  void processRefMult8(soa::Join<aod::Collision, aod::CentRun2RefMult8s>::iterator const& col)
+  void processRefMult8(soa::Join<aod::Collisions, aod::CentRun2RefMult8s>::iterator const& col)
   {
     histos.fill(HIST("hRefMult8"), col.centRun2RefMult8());
   }
