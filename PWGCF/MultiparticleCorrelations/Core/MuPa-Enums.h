@@ -278,6 +278,38 @@ enum eQAParticleHistograms2D {
   eQAParticleHistograms2D_N
 };
 
+enum eQAParticleEventHistograms2D {
+  // In this category I do correlation <some-particle-property> vs. some-event-property.
+  // The < ... > goes over all particles in that event.
+  // All < ... > over particles are calculated with helper TProfile
+  // For instance: <nITScls> vs. current run duration
+  eCurrentRunDuration_vs_itsNClsEbyE,
+  eCurrentRunDuration_vs_itsNClsNegEtaEbyE,
+  eCurrentRunDuration_vs_itsNClsPosEtaEbyE,
+  eCurrentRunDuration_vs_Eta0804EbyE,
+  eCurrentRunDuration_vs_Eta0400EbyE,
+  eCurrentRunDuration_vs_Eta0004EbyE,
+  eCurrentRunDuration_vs_Eta0408EbyE,
+  eCurrentRunDuration_vs_Pt0005EbyE,
+  eCurrentRunDuration_vs_Pt0510EbyE,
+  eCurrentRunDuration_vs_Pt1050EbyE,
+  eQAParticleEventHistograms2D_N
+};
+
+enum eQAParticleEventProEbyE {
+  eitsNClsEbyE = 1,   // Labels average <itsNCls> in a given event (therefore "EbyE" is appended). Yes, from one, because it runs over bin content and entries in TProfile for most of the time.
+  eitsNClsNegEtaEbyE, // <itsNCls> in a given event for eta < 0
+  eitsNClsPosEtaEbyE, // <itsNCls> in a given event for eta > 0
+  eEta0804EbyE,       // <eta> in a given event for -0.8 < eta < -0.4
+  eEta0400EbyE,       // <eta> in a given event for -0.4 < eta <  0.0
+  eEta0004EbyE,       // <eta> in a given event for  0.0 < eta <  0.4
+  eEta0408EbyE,       // <eta> in a given event for  0.4 < eta <  0.8
+  ePt0005EbyE,        // <pt> in a given event for  0.0 < pt < 0.5
+  ePt0510EbyE,        // <pt> in a given event for  0.5 < pt < 1.0
+  ePt1050EbyE,        // <pt> in a given event for  1.0 < pt < 5.0
+  eQAParticleEventProEbyE_N
+};
+
 enum eReferenceMultiplicityEstimators {
   // Run 3:
   eMultTPC = 0,
