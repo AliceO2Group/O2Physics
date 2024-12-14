@@ -642,7 +642,7 @@ struct fwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (McPart1.pdgCode() + McPart2.pdgCode() != 0)
+    if (std::abs(McPart1.pdgCode()) !=13 && std::abs(McPart2.pdgCode()) != 13)
       LOGF(info, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
 
     // create Lorentz vectors
