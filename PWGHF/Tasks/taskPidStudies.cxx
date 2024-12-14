@@ -119,6 +119,7 @@ DECLARE_SOA_TABLE(PidCascades, "AOD", "PIDCASCADES", //! Table with PID informat
                   pid_studies::Pt,
                   pid_studies::BachPt,
                   pid_studies::TpcInnerParBach,
+                  pid_studies::Radius,
                   pid_studies::MLambda,
                   pid_studies::V0cosPA,
                   pid_studies::MassXi,
@@ -144,6 +145,7 @@ struct HfTaskPidStudies {
   Configurable<float> massLambdaMax{"massLambdaMax", 1.3, "Maximum mass for lambda"};
   Configurable<float> massOmegaMin{"massOmegaMin", 1.5, "Minimum mass for omega"};
   Configurable<float> massOmegaMax{"massOmegaMax", 1.8, "Maximum mass for omega"};
+  Configurable<float> radiusMax{"radiusMax", 2.3, "Maximum decay radius (cm)"};
   Configurable<float> qtArmenterosMinForK0{"qtArmenterosMinForK0", 0.12, "Minimum Armenteros' qt for K0"};
   Configurable<float> qtArmenterosMaxForLambda{"qtArmenterosMaxForLambda", 0.12, "Minimum Armenteros' qt for (anti)Lambda"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to keep"};
@@ -188,14 +190,14 @@ struct HfTaskPidStudies {
         candidate.v0cosPA(),
         candidate.dcaV0daughters(),
         candidate.dcav0topv(),
-        posTrack.tofNSigmaPi(),
-        negTrack.tofNSigmaPi(),
-        posTrack.tofNSigmaPr(),
-        negTrack.tofNSigmaPr(),
         posTrack.tpcNSigmaPi(),
         negTrack.tpcNSigmaPi(),
         posTrack.tpcNSigmaPr(),
         negTrack.tpcNSigmaPr(),
+        posTrack.tofNSigmaPi(),
+        negTrack.tofNSigmaPi(),
+        posTrack.tofNSigmaPr(),
+        negTrack.tofNSigmaPr(),
         candidate.alpha(),
         candidate.qtarm(),
         coll.ft0cOccupancyInTimeRange(),
@@ -210,6 +212,7 @@ struct HfTaskPidStudies {
         candidate.pt(),
         candidate.bachelorpt(),
         bachTrack.tpcInnerParam(),
+        candidate.cascradius(),
         candidate.mLambda(),
         candidate.v0cosPA(coll.posX(), coll.posY(), coll.posZ()),
         candidate.mXi(),
@@ -276,6 +279,9 @@ struct HfTaskPidStudies {
     if (v0.qtarm() < qtArmenterosMinForK0) {
       return false;
     }
+    if (v0.v0radius() > radiusMax) {
+      return false;
+    }
     return true;
   }
 
@@ -289,6 +295,9 @@ struct HfTaskPidStudies {
     if (v0.qtarm() > qtArmenterosMaxForLambda) {
       return false;
     }
+    if (v0.v0radius() > radiusMax) {
+      return false;
+    }
     return true;
   }
 
@@ -299,6 +308,9 @@ struct HfTaskPidStudies {
       return false;
     }
     if (casc.mLambda() < massLambdaMin || casc.mLambda() > massLambdaMax) {
+      return false;
+    }
+    if (casc.cascradius() > radiusMax) {
       return false;
     }
     return true;
