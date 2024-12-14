@@ -35,10 +35,10 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
-#include <TDatabasePDG.h>
 
 namespace o2
 {
@@ -147,6 +147,14 @@ enum StrongDebugging {
   kDEBUG        ///< output debugging information on a per track basis to a text file
 };
 
+/// \enum TpcExclusionMethod
+/// \brief Methods for excluding tracks witin the TPC
+enum TpcExclusionMethod {
+  kNOEXCLUSION = 0, ///< do not exclude tracks within the TPC
+  kSTATIC,          ///< exclude tracks statically on the bins of the TPC sector borders; only valid if 72 bins and origin shifted by 0.5
+  kDYNAMIC          ///< pT dependent exclusion matching the sector borders a la Alex Dobrin
+};
+
 //============================================================================================
 // The debug output stream
 //============================================================================================
@@ -172,9 +180,13 @@ float etalow = -0.8, etaup = 0.8;
 int zvtxbins = 40;
 float zvtxlow = -10.0, zvtxup = 10.0;
 int phibins = 72;
-float philow = 0.0;
+float philow = 0.0f;
 float phiup = constants::math::TwoPI;
-bool onlyInOneSide = false; /* select only tracks that don't cross the TPC central membrane */
+float phibinshift = 0.0f;
+
+struct TpcExcludeTrack;             ///< forward declaration of the excluder object
+bool onlyInOneSide = false;         ///< select only tracks that don't cross the TPC central membrane
+extern TpcExcludeTrack tpcExcluder; ///< the TPC excluder object instance
 
 /* selection criteria from PWGMM */
 // default quality criteria for tracks with ITS contribution
@@ -351,8 +363,6 @@ int recoIdMethod = 0;
 float particleMaxDCAxy = 999.9f;
 float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
-
-TDatabasePDG* fPDG = nullptr;
 
 inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
 {
@@ -988,6 +998,73 @@ inline bool isEventSelected(CollisionObject const& collision, float& centormult)
 /// Track selection
 //////////////////////////////////////////////////////////////////////////////////
 
+struct TpcExcludeTrack {
+  TpcExcludeTrack()
+  {
+    method = kNOEXCLUSION;
+  }
+  explicit TpcExcludeTrack(TpcExclusionMethod m)
+  {
+    switch (m) {
+      case kNOEXCLUSION:
+        method = m;
+        break;
+      case kSTATIC:
+        if (phibinshift == 0.5f && phibins == 72) {
+          method = m;
+        } else {
+          LOGF(fatal, "Static TPC exclusion method with bin shift: %.2f and number of bins %d. Please fix it", phibinshift, phibins);
+        }
+        break;
+      case kDYNAMIC:
+        LOGF(fatal, "Dynamic TPC exclusion method still not implemented");
+        method = m;
+        break;
+      default:
+        LOGF(fatal, "Wrong TPC tracks exclusion method %d. Please, fix it", static_cast<int>(m));
+    }
+    philow = 0.0f;
+    phiup = constants::math::TwoPI;
+    phibinwidth = (phiup - philow) / static_cast<float>(phibins);
+    phiup = phiup - phibinwidth * phibinshift;
+    philow = philow - phibinwidth * phibinshift;
+  }
+
+  template <typename TrackObject>
+  int getPhiBinIx(TrackObject const& track)
+  {
+    float phi = RecoDecay::constrainAngle(track.phi(), philow);
+    return static_cast<int>((phi - philow) / phibinwidth);
+  }
+
+  template <typename TrackObject>
+  bool exclude(TrackObject const& track)
+  {
+    switch (method) {
+      case kNOEXCLUSION: {
+        return false;
+      } break;
+      case kSTATIC: {
+        int phiBinIx = getPhiBinIx(track);
+        /* bins multiple of four have got sector border */
+        if ((phiBinIx % 4) != 0) {
+          return false;
+        } else {
+          return true;
+        }
+      } break;
+      case kDYNAMIC: {
+        return false;
+      } break;
+      default:
+        return false;
+    }
+  }
+
+  TpcExclusionMethod method = kNOEXCLUSION;
+  float phibinwidth = 0.0;
+};
+
 template <typename TrackObject>
 inline bool matchTrackType(TrackObject const& track)
 {
@@ -1074,7 +1151,7 @@ inline bool inTheAcceptance(TrackObject const& track)
   }
 
   if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
-    return true;
+    return !tpcExcluder.exclude(track);
   }
   return false;
 }
@@ -1107,14 +1184,9 @@ void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
   }
 }
 
-template <typename ParticleObject>
-inline float getCharge(ParticleObject& particle)
+inline float getCharge(float pdgCharge)
 {
-  float charge = 0.0;
-  TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
-  if (pdgparticle != nullptr) {
-    charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0);
-  }
+  float charge = (pdgCharge / 3 >= 1) ? 1.0 : ((pdgCharge / 3 <= -1) ? -1.0 : 0);
   return charge;
 }
 
@@ -1129,15 +1201,13 @@ inline bool acceptParticle(ParticleObject& particle, MCCollisionObject const&)
     return false;
   }
 
-  float charge = getCharge(particle);
-
   if (particle.isPhysicalPrimary()) {
     if ((particle.mcCollisionId() == 0) && traceCollId0) {
       LOGF(info, "Particle %d passed isPhysicalPrimary", particle.globalIndex());
     }
 
     if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
-      return (charge != 0) ? true : false;
+      return true;
     }
   } else {
     if ((particle.mcCollisionId() == 0) && traceCollId0) {

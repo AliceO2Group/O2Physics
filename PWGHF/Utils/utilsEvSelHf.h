@@ -93,7 +93,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> useItsRofBorderCut{"useItsRofBorderCut", true, "Apply ITS ROF border cut"};
   o2::framework::Configurable<bool> useIsGoodZvtxFT0vsPV{"useIsGoodZvtxFT0vsPV", false, "Check consistency between PVz from central barrel with that from FT0 timing"};
   o2::framework::Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", false, "Exclude collisions in bunches with more than 1 reco. PV"}; // POTENTIALLY BAD FOR BEAUTY ANALYSES
-  o2::framework::Configurable<bool> useOccupancyCut{"useOccupancyCut ", false, "Apply occupancy selection (num. ITS tracks with at least 5 clusters or num. of signals in FT0c in +-100us from current collision)"};
+  o2::framework::Configurable<bool> useOccupancyCut{"useOccupancyCut", false, "Apply occupancy selection (num. ITS tracks with at least 5 clusters or num. of signals in FT0c in +-100us from current collision)"};
   o2::framework::Configurable<int> occEstimator{"occEstimator", 1, "Occupancy estimation (1: ITS, 2: FT0C)"};
   o2::framework::Configurable<int> occupancyMin{"occupancyMin", 0, "Minimum occupancy"};
   o2::framework::Configurable<int> occupancyMax{"occupancyMax", 1000000, "Maximum occupancy"};
