@@ -160,8 +160,8 @@ struct lambdalambda {
     histos.add("Distance_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DistanceAxis, combAxis}});
     histos.add("DCA_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCAAxis, combAxis}});
 
-    histos.add("h_InvMass_same", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis, combAxis}});
-    histos.add("h_InvMass_mixed", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis, combAxis}});
+    histos.add("h_InvMass_same", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
+    histos.add("h_InvMass_mixed", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
     if (cfgQAv0) {
       histos.add("QA/CentDist", "", {HistType::kTH1F, {centQaAxis}});
       histos.add("QA/PVzDist", "", {HistType::kTH1F, {PVzQaAxis}});
