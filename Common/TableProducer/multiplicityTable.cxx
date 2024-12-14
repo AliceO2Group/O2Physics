@@ -28,6 +28,7 @@
 #include "TableHelper.h"
 #include "MetadataHelper.h"
 #include "TList.h"
+#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -49,8 +50,7 @@ static constexpr int kFT0MultZeqs = 10;
 static constexpr int kFDDMultZeqs = 11;
 static constexpr int kPVMultZeqs = 12;
 static constexpr int kMultMCExtras = 13;
-static constexpr int kMFTMults = 14;
-static constexpr int nTables = 15;
+static constexpr int nTables = 14;
 
 // Checking that the Zeq tables are after the normal ones
 static_assert(kFV0Mults < kFV0MultZeqs);
@@ -72,10 +72,9 @@ static const std::vector<std::string> tableNames{"FV0Mults",       // 0
                                                  "FT0MultZeqs",    // 10
                                                  "FDDMultZeqs",    // 11
                                                  "PVMultZeqs",     // 12
-                                                 "MultMCExtras",   // 13
-                                                 "MFTMults"};      // 14
+                                                 "MultMCExtras"};  // 13
 static const std::vector<std::string> parameterNames{"Enable"};
-static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
+static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
 struct MultiplicityTable {
   SliceCache cache;
@@ -94,7 +93,7 @@ struct MultiplicityTable {
   Produces<aod::PVMultZeqs> tablePVZeqs;        // 12
   Produces<aod::MultMCExtras> tableExtraMc;     // 13
   Produces<aod::Mult2MCExtras> tableExtraMult2MCExtras;
-  Produces<aod::MFTMults> mftMults;             // 14
+  Produces<aod::MFTMults> mftMults;             // Not accounted for, produced using custom process function to avoid dependencies
   Produces<aod::MultsGlobal> multsGlobal;       // Not accounted for, produced based on process function processGlobalTrackingCounters
 
   // For vertex-Z corrections in calibration
@@ -301,8 +300,7 @@ struct MultiplicityTable {
                    aod::Zdcs const&,
                    aod::FV0As const&,
                    aod::FT0s const&,
-                   aod::FDDs const&,
-                   aod::MFTTracks const& mftTracks)
+                   aod::FDDs const&)
   {
     // reserve memory
     for (auto i : mEnabledTables) {
@@ -347,9 +345,6 @@ struct MultiplicityTable {
           tablePVZeqs.reserve(collisions.size());
           break;
         case kMultMCExtras: // MC extra information (nothing to do in the data)
-          break;
-        case kMFTMults: // Equalized multiplicity for PV
-          mftMults.reserve(collisions.size());
           break;
         default:
           LOG(fatal) << "Unknown table requested: " << i;
@@ -629,19 +624,6 @@ struct MultiplicityTable {
           case kMultMCExtras: // MC only (nothing to do)
           {
           } break;
-          case kMFTMults: {
-            // for centrality estimation with the MFT if desired
-            // step 1: produce proper grouping
-            const uint64_t collIdx = collision.globalIndex();
-            auto mftTracksGrouped = mftTracks.sliceBy(perCollisionMFT, collIdx);
-            int nTracks = 0;
-            for (auto& track : mftTracksGrouped) {
-              if (track.nClusters() >= 5) { // hardcoded on purpose to avoid trouble
-                nTracks++;
-              }
-            }
-            mftMults(nTracks);
-          } break;
           default: // Default
           {
             LOG(fatal) << "Unknown table requested: " << i;
@@ -754,12 +736,44 @@ struct MultiplicityTable {
     multsGlobal(nGlobalTracks, multNContribsEta08_kGlobalTrackWoDCA, multNContribsEta10_kGlobalTrackWoDCA, multNContribsEta05_kGlobalTrackWoDCA);
   }
 
+  void processRun3MFT(soa::Join<aod::Collisions, aod::EvSels>::iterator const&,
+                      o2::aod::MFTTracks const& mftTracks,
+                      soa::SmallGroups<aod::BestCollisionsFwd> const& retracks)
+  {
+    int nAllTracks = 0;
+    int nTracks = 0;
+
+    for (auto& track : mftTracks) {
+      if (track.nClusters() >= 5) { // hardcoded for now
+        nAllTracks++;
+      }
+    }
+
+    if (retracks.size() > 0) {
+      for (auto& retrack : retracks) {
+        auto track = retrack.mfttrack();
+        if (track.nClusters() < 5) {
+          continue; // min cluster requirement
+        }
+        if ((track.eta() > -2.0f) && (track.eta() < -3.9f)) {
+          continue; // too far to be of true interest
+        }
+        if (std::abs(retrack.bestDCAXY()) > 2.0f) {
+          continue; // does not point to PV properly
+        }
+        nTracks++;
+      }
+    }
+    mftMults(nAllTracks, nTracks);
+  }
+
   // Process switches
   PROCESS_SWITCH(MultiplicityTable, processRun2, "Produce Run 2 multiplicity tables", false);
   PROCESS_SWITCH(MultiplicityTable, processRun3, "Produce Run 3 multiplicity tables", true);
   PROCESS_SWITCH(MultiplicityTable, processGlobalTrackingCounters, "Produce Run 3 global counters", false);
   PROCESS_SWITCH(MultiplicityTable, processMC, "Produce MC multiplicity tables", false);
   PROCESS_SWITCH(MultiplicityTable, processMC2Mults, "Produce MC -> Mult map", false);
+  PROCESS_SWITCH(MultiplicityTable, processRun3MFT, "Produce MFT mult tables", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

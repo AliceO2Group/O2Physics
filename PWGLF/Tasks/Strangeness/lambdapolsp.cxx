@@ -100,7 +100,6 @@ struct lambdapolsp {
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> isPVContributor{"isPVContributor", true, "is PV contributor"};
   Configurable<bool> checkwithpub{"checkwithpub", true, "checking results with published"};
-  Configurable<bool> useTPCTOF{"useTPCTOF", true, "flag to use TPC and TOF"};
 
   // Configs for V0
   Configurable<float> ConfV0PtMin{"ConfV0PtMin", 0.f, "Minimum transverse momentum of V0"};
@@ -120,8 +119,6 @@ struct lambdapolsp {
   Configurable<float> ConfDaughTPCnclsMin{"ConfDaughTPCnclsMin", 50.f, "V0 Daugh sel: Min. nCls TPC"};
   Configurable<double> ConfDaughDCAMin{"ConfDaughDCAMin", 0.08f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"};
   Configurable<float> ConfDaughPIDCuts{"ConfDaughPIDCuts", 3, "PID selections for Lambda daughters"};
-  Configurable<float> ConfDaughPIDTPCCuts{"ConfDaughPIDTPCCuts", 3, "PID selections for Lambda daughters in TPC"};
-  Configurable<float> ConfDaughPIDTOFCuts{"ConfDaughPIDTOFCuts", 3, "PID selections for Lambda daughters in TOF"};
 
   Configurable<int> CentNbins{"CentNbins", 16, "Number of bins in cent histograms"};
   Configurable<float> lbinCent{"lbinCent", 0.0, "lower bin value in cent histograms"};
@@ -413,28 +410,11 @@ struct lambdapolsp {
       return false;
       }*/
 
-    if (useTPCTOF) {
-      if (track.pt() < 0.5 && pid == 0 && TMath::Abs(track.tpcNSigmaPr()) > ConfDaughPIDCuts) {
-        return false;
-      }
-      if (track.pt() < 0.5 && pid == 1 && TMath::Abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
-        return false;
-      }
-      if (track.hasTOF()) {
-        if (track.pt() > 0.5 && pid == 0 && TMath::Abs(track.tpcNSigmaPr()) > ConfDaughPIDTPCCuts && TMath::Abs(track.tofNSigmaPr()) > ConfDaughPIDTOFCuts) {
-          return false;
-        }
-        if (track.pt() > 0.5 && pid == 1 && TMath::Abs(track.tpcNSigmaPi()) > ConfDaughPIDTPCCuts && TMath::Abs(track.tofNSigmaPi()) > ConfDaughPIDTOFCuts) {
-          return false;
-        }
-      }
-    } else {
-      if (pid == 0 && TMath::Abs(track.tpcNSigmaPr()) > ConfDaughPIDCuts) {
-        return false;
-      }
-      if (pid == 1 && TMath::Abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
-        return false;
-      }
+    if (pid == 0 && TMath::Abs(track.tpcNSigmaPr()) > ConfDaughPIDCuts) {
+      return false;
+    }
+    if (pid == 1 && TMath::Abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
+      return false;
     }
 
     if (pid == 0 && pt < cfgDaughPrPt) {
@@ -477,7 +457,8 @@ struct lambdapolsp {
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::SPCalibrationTables, aod::Mults>>;
   // using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
-  using AllTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>>;
+  // using AllTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>>;
+  using AllTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>>;
   using ResoV0s = aod::V0Datas;
 
   // void processData(EventCandidates::iterator const& collision, AllTrackCandidates const&, ResoV0s const& V0s, aod::BCs const&)
