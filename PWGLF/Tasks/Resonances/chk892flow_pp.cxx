@@ -81,7 +81,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
 
-struct chk892_pp{
+struct chk892_pp {
   enum binType : unsigned int {
     kKstarP = 0,
     kKstarN,
@@ -104,7 +104,7 @@ struct chk892_pp{
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
-//  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::Mults>;
+  //  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::Mults>;
   using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTOFFullPi>;
   using V0Candidates = aod::V0Datas;
 
@@ -149,7 +149,7 @@ struct chk892_pp{
   Configurable<float> cMinPtcut{"cMinPtcut", 0.15, "Track minium pt cut"};
   Configurable<float> cMaxEtacut{"cMaxEtacut", 0.8, "Track maximum eta cut"};
 
-	/*
+  /*
   // Cuts from polarization analysis
   Configurable<bool> cfgOccupancySel{"cfgOccupancySel", false, "Occupancy selection"};
   Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
@@ -164,7 +164,7 @@ struct chk892_pp{
   Configurable<float> cMaxbDCAzToPVcut{"cMaxbDCAzToPVcut", 0.1, "Track DCAz cut to PV Maximum"};
 
   /// PID Selections, pion
-	Configurable<bool> cTPConly{"cTPConly", true, "Use only TPC for PID"}; //bool
+  Configurable<bool> cTPConly{"cTPConly", true, "Use only TPC for PID"};                                    // bool
   Configurable<float> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};               // TPC
   Configurable<float> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};               // TOF
   Configurable<float> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"}; // Combined
@@ -188,8 +188,8 @@ struct chk892_pp{
   Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
 
   // Secondary Selection
-	Configurable<bool> cfgReturnFlag{"boolReturnFlag", false, "Return Flag for debugging"};
-	Configurable<bool> cSecondaryRequire{"bool", true, "Secondary cuts on/off"};
+  Configurable<bool> cfgReturnFlag{"boolReturnFlag", false, "Return Flag for debugging"};
+  Configurable<bool> cSecondaryRequire{"bool", true, "Secondary cuts on/off"};
   Configurable<bool> cSecondaryArmenterosCut{"boolArmenterosCut", true, "cut on Armenteros-Podolanski graph"};
 
   Configurable<bool> cfgByPassDauPIDSelection{"cfgByPassDauPIDSelection", true, "Bypass Daughters PID selection"};
@@ -492,46 +492,45 @@ struct chk892_pp{
   bool selectionPIDPion(TrackType const& candidate)
   {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
-		
-		if (cTPConly){
 
-			if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
-				tpcPIDPassed = true;
-			} else {
-				return false;
-			}
-			tofPIDPassed = true;
+    if (cTPConly) {
 
-		}else{
+      if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
+        tpcPIDPassed = true;
+      } else {
+        return false;
+      }
+      tofPIDPassed = true;
 
-			if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
-				tpcPIDPassed = true;
-			} else {
-				return false;
-			}
-			if (candidate.hasTOF()) {
-				if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion) {
-					tofPIDPassed = true;
-				}
-				if ((nsigmaCutCombinedPion > 0) && (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi() < nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
-					tofPIDPassed = true;
-				}
-			} else {
-				if (!cTOFVeto) {
-					return false;
-				}
-				tofPIDPassed = true;
-			}
-		}
+    } else {
 
-		if (tpcPIDPassed && tofPIDPassed) {
-			return true;
-		}
-		return false;
+      if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
+        tpcPIDPassed = true;
+      } else {
+        return false;
+      }
+      if (candidate.hasTOF()) {
+        if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion) {
+          tofPIDPassed = true;
+        }
+        if ((nsigmaCutCombinedPion > 0) && (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi() < nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
+          tofPIDPassed = true;
+        }
+      } else {
+        if (!cTOFVeto) {
+          return false;
+        }
+        tofPIDPassed = true;
+      }
+    }
 
-	}
+    if (tpcPIDPassed && tofPIDPassed) {
+      return true;
+    }
+    return false;
+  }
 
-	template <typename CollisionType, typename K0sType>
+  template <typename CollisionType, typename K0sType>
   bool selectionK0s(CollisionType const& collision, K0sType const& candidate)
   {
     auto DauDCA = candidate.dcaV0daughters();
@@ -545,125 +544,125 @@ struct chk892_pp{
     auto PropTauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
     auto mK0s = candidate.mK0Short();
 
-		if (cfgReturnFlag){
-			bool returnFlag = true;
+    if (cfgReturnFlag) {
+      bool returnFlag = true;
 
-			if (cSecondaryRequire){
-				histos.fill(HIST("QA/K0sCutCheck"), 0);
-				if (DauDCA > cSecondaryDauDCAMax){
-					histos.fill(HIST("QA/K0sCutCheck"), 1);
-					returnFlag = false;
-				}
-				if (DauPosDCAtoPV < cSecondaryDauPosDCAtoPVMin){
-					histos.fill(HIST("QA/K0sCutCheck"), 2);
-					returnFlag = false;
-				}
-				if (DauNegDCAtoPV < cSecondaryDauNegDCAtoPVMin) {
-					histos.fill(HIST("QA/K0sCutCheck"), 3);
-					returnFlag = false;
-				}
-				if (pT < cSecondaryPtMin) {
-					histos.fill(HIST("QA/K0sCutCheck"), 4);
-					returnFlag = false;
-				}
-				if (Rapidity > cSecondaryRapidityMax) {
-					histos.fill(HIST("QA/K0sCutCheck"), 5);
-					returnFlag = false;
-				}
-				if (Radius < cSecondaryRadiusMin) {
-					histos.fill(HIST("QA/K0sCutCheck"), 6);
-					returnFlag = false;
-				}
-				if (DCAtoPV > cSecondaryDCAtoPVMax) {
-					histos.fill(HIST("QA/K0sCutCheck"), 7);
-					returnFlag = false;
-				}
-				if (CPA < cSecondaryCosPAMin) {
-					histos.fill(HIST("QA/K0sCutCheck"), 8);
-					returnFlag = false;
-				}
-				if (PropTauK0s > cSecondaryProperLifetimeMax) {
-					histos.fill(HIST("QA/K0sCutCheck"), 9);
-					returnFlag = false;
-				}
-				if (candidate.qtarm() < cSecondaryparamArmenterosCut * TMath::Abs(candidate.alpha())) {
-					histos.fill(HIST("QA/K0sCutCheck"), 11);
-					returnFlag = false;
-				}
-				if (fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
-					histos.fill(HIST("QA/K0sCutCheck"), 10);
-					returnFlag = false;
-				}
+      if (cSecondaryRequire) {
+        histos.fill(HIST("QA/K0sCutCheck"), 0);
+        if (DauDCA > cSecondaryDauDCAMax) {
+          histos.fill(HIST("QA/K0sCutCheck"), 1);
+          returnFlag = false;
+        }
+        if (DauPosDCAtoPV < cSecondaryDauPosDCAtoPVMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 2);
+          returnFlag = false;
+        }
+        if (DauNegDCAtoPV < cSecondaryDauNegDCAtoPVMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 3);
+          returnFlag = false;
+        }
+        if (pT < cSecondaryPtMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 4);
+          returnFlag = false;
+        }
+        if (Rapidity > cSecondaryRapidityMax) {
+          histos.fill(HIST("QA/K0sCutCheck"), 5);
+          returnFlag = false;
+        }
+        if (Radius < cSecondaryRadiusMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 6);
+          returnFlag = false;
+        }
+        if (DCAtoPV > cSecondaryDCAtoPVMax) {
+          histos.fill(HIST("QA/K0sCutCheck"), 7);
+          returnFlag = false;
+        }
+        if (CPA < cSecondaryCosPAMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 8);
+          returnFlag = false;
+        }
+        if (PropTauK0s > cSecondaryProperLifetimeMax) {
+          histos.fill(HIST("QA/K0sCutCheck"), 9);
+          returnFlag = false;
+        }
+        if (candidate.qtarm() < cSecondaryparamArmenterosCut * TMath::Abs(candidate.alpha())) {
+          histos.fill(HIST("QA/K0sCutCheck"), 11);
+          returnFlag = false;
+        }
+        if (fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
+          histos.fill(HIST("QA/K0sCutCheck"), 10);
+          returnFlag = false;
+        }
 
-			return returnFlag;
+        return returnFlag;
 
-			} else {
-				if (fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
-					histos.fill(HIST("QA/K0sCutCheck"), 10);
-					returnFlag = false;
-				}
+      } else {
+        if (fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
+          histos.fill(HIST("QA/K0sCutCheck"), 10);
+          returnFlag = false;
+        }
 
-			return returnFlag;
-			}
+        return returnFlag;
+      }
 
-		}else{
-			if (cSecondaryRequire){
+    } else {
+      if (cSecondaryRequire) {
 
-				histos.fill(HIST("QA/K0sCutCheck"), 0);
-				if (DauDCA > cSecondaryDauDCAMax){
-					histos.fill(HIST("QA/K0sCutCheck"), 1);
-					return false;
-				}
-				if (DauPosDCAtoPV < cSecondaryDauPosDCAtoPVMin){
-					histos.fill(HIST("QA/K0sCutCheck"), 2);
-					return false;
-				}
-				if (DauNegDCAtoPV < cSecondaryDauNegDCAtoPVMin) {
-					histos.fill(HIST("QA/K0sCutCheck"), 3);
-					return false;
-				}
-				if (pT < cSecondaryPtMin) {
-					histos.fill(HIST("QA/K0sCutCheck"), 4);
-					return false;
-				}
-				if (Rapidity > cSecondaryRapidityMax) {
-					histos.fill(HIST("QA/K0sCutCheck"), 5);
-					return false;
-				}
-				if (Radius < cSecondaryRadiusMin) {
-					histos.fill(HIST("QA/K0sCutCheck"), 6);
-					return false;
-				}
-				if (DCAtoPV > cSecondaryDCAtoPVMax) {
-					histos.fill(HIST("QA/K0sCutCheck"), 7);
-					return false;
-				}
-				if (CPA < cSecondaryCosPAMin) {
-					histos.fill(HIST("QA/K0sCutCheck"), 8);
-					return false;
-				}
-				if (PropTauK0s > cSecondaryProperLifetimeMax) {
-					histos.fill(HIST("QA/K0sCutCheck"), 9);
-					return false;
-				}
-				if (candidate.qtarm() < cSecondaryparamArmenterosCut * TMath::Abs(candidate.alpha())) {
-					histos.fill(HIST("QA/K0sCutCheck"), 11);
-					return false;
-				}
-				if (fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
-					histos.fill(HIST("QA/K0sCutCheck"), 10);
-					return false;
-				}
-			return true;
+        histos.fill(HIST("QA/K0sCutCheck"), 0);
+        if (DauDCA > cSecondaryDauDCAMax) {
+          histos.fill(HIST("QA/K0sCutCheck"), 1);
+          return false;
+        }
+        if (DauPosDCAtoPV < cSecondaryDauPosDCAtoPVMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 2);
+          return false;
+        }
+        if (DauNegDCAtoPV < cSecondaryDauNegDCAtoPVMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 3);
+          return false;
+        }
+        if (pT < cSecondaryPtMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 4);
+          return false;
+        }
+        if (Rapidity > cSecondaryRapidityMax) {
+          histos.fill(HIST("QA/K0sCutCheck"), 5);
+          return false;
+        }
+        if (Radius < cSecondaryRadiusMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 6);
+          return false;
+        }
+        if (DCAtoPV > cSecondaryDCAtoPVMax) {
+          histos.fill(HIST("QA/K0sCutCheck"), 7);
+          return false;
+        }
+        if (CPA < cSecondaryCosPAMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 8);
+          return false;
+        }
+        if (PropTauK0s > cSecondaryProperLifetimeMax) {
+          histos.fill(HIST("QA/K0sCutCheck"), 9);
+          return false;
+        }
+        if (candidate.qtarm() < cSecondaryparamArmenterosCut * TMath::Abs(candidate.alpha())) {
+          histos.fill(HIST("QA/K0sCutCheck"), 11);
+          return false;
+        }
+        if (fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
+          histos.fill(HIST("QA/K0sCutCheck"), 10);
+          return false;
+        }
+        return true;
 
-			} else {
-					if (fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
-					histos.fill(HIST("QA/K0sCutCheck"), 10);
-					return false;
-				}
-			return true;
-			}
-		}
+      } else {
+        if (fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
+          histos.fill(HIST("QA/K0sCutCheck"), 10);
+          return false;
+        }
+        return true;
+      }
+    }
   } // selectionK0s
 
   double GetPhiInRange(double phi)
@@ -889,26 +888,26 @@ struct chk892_pp{
 
           histos.fill(HIST("QA/after/KstarRapidity"), lResoKstar.Rapidity());
           histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
-					histos.fill(HIST("hInvmass_Kstar"), typeKstar, centrality, lResoKstar.Pt(), lResoKstar.M());
+          histos.fill(HIST("hInvmass_Kstar"), typeKstar, centrality, lResoKstar.Pt(), lResoKstar.M());
 
-				} // IsMix
-			} // K0scand
-		} // bTrack
+        } // IsMix
+      } // K0scand
+    } // bTrack
 
-		count++;
+    count++;
 
-	} // fillHistograms
+  } // fillHistograms
 
-	// process data
-	void processData(EventCandidates::iterator const& collision,
-			TrackCandidates const& tracks,
-			V0Candidates const& v0s,
-			aod::BCsWithTimestamps const&)
-	{
-		if (!colCuts.isSelected(collision)) // Default event selection
-			return;
-		colCuts.fillQA(collision);
-		centrality = GetCentrality(collision);
+  // process data
+  void processData(EventCandidates::iterator const& collision,
+                   TrackCandidates const& tracks,
+                   V0Candidates const& v0s,
+                   aod::BCsWithTimestamps const&)
+  {
+    if (!colCuts.isSelected(collision)) // Default event selection
+      return;
+    colCuts.fillQA(collision);
+    centrality = GetCentrality(collision);
 
     fillHistograms<false, false>(collision, tracks, v0s); // second order
   }
@@ -925,7 +924,6 @@ struct chk892_pp{
     fillHistograms<true, false>(collision, tracks, v0s);
   }
   PROCESS_SWITCH(chk892_pp, processMC, "Process Event for MC", false);
-
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
