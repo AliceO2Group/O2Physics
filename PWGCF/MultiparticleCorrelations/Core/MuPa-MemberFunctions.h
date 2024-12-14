@@ -2882,6 +2882,11 @@ void BookQAHistograms()
 
       for (Int_t ba = 0; ba < 2; ba++) // before/after cuts
       {
+
+        if (ba == eBefore) { // TBI 20241214 re-think if I need these additional QA particle event histos before cuts
+          continue;
+        }
+
         qa.fQAParticleEventHistograms2D[t][rs][ba] = new TH2F(
           Form("fQAParticleEventHistograms2D[%s][%s][%s]", qa.fQAParticleEventHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
           Form("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
@@ -2907,11 +2912,16 @@ void BookQAHistograms()
 
     for (Int_t ba = 0; ba < 2; ba++) // before/after cuts
     {
+
+      if (ba == eBefore) { // TBI 20241214 re-think if I need these additional QA particle event histos before cuts
+        continue;
+      }
+
       qa.fQAParticleEventProEbyE[rs][ba] = new TProfile(
         Form("fParticleEventProEbyE[%s][%s]", gc.srs[rs].Data(), gc.sba[ba].Data()),
         Form("%s, %s", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()),
         eQAParticleEventProEbyE_N, 0., eQAParticleEventProEbyE_N);
-      qa.fQAParticleEventProEbyE[rs][ba]->GetXaxis()->SetBinLabel(eitsNClsEbyE, "#LTitsNCls#GT");
+      qa.fQAParticleEventProEbyE[rs][ba]->GetXaxis()->SetBinLabel(eitsNClsEbyE, "#LTitsNCls#GT"); // TBI 20241214 this bin labeling is not really needed, as I never save this TProfile persistently
       qa.fQAParticleEventProEbyE[rs][ba]->GetXaxis()->SetBinLabel(eitsNClsNegEtaEbyE, "#LTitsNClsNegEta#GT");
       qa.fQAParticleEventProEbyE[rs][ba]->GetXaxis()->SetBinLabel(eitsNClsPosEtaEbyE, "#LTitsNClsPosEta#GT");
       qa.fQAParticleEventProEbyE[rs][ba]->GetXaxis()->SetBinLabel(eEta0804EbyE, "#LTEta0804EbyE#GT");
@@ -5990,7 +6000,7 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
       !qa.fQAEventHistograms2D[eCurrentRunDuration_vs_InteractionRate][eRec][ba] ? true : qa.fQAEventHistograms2D[eCurrentRunDuration_vs_InteractionRate][eRec][ba]->Fill(ebye.fCurrentRunDuration, ebye.fInteractionRate);
     }
 
-    if (qa.fFillQAParticleEventHistograms2D) {
+    if (qa.fFillQAParticleEventHistograms2D && qa.fQAParticleEventProEbyE[eRec][ba]) {
       // This is a special category, where I do correlation <some-particle-property> vs. some-event-property.
       // I use 'number of combinations' as a weight, which here reduces simply to the 'number of entries' weight.
       !qa.fQAParticleEventHistograms2D[eCurrentRunDuration_vs_itsNClsEbyE][eRec][ba] ? true : qa.fQAParticleEventHistograms2D[eCurrentRunDuration_vs_itsNClsEbyE][eRec][ba]->Fill(ebye.fCurrentRunDuration, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eitsNClsEbyE), qa.fQAParticleEventProEbyE[eRec][ba]->GetBinEntries(eitsNClsEbyE));
@@ -6006,7 +6016,7 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
 
       // ...
 
-    } // if (qa.fFillQAParticleEventHistograms2D) {
+    } // if (qa.fFillQAParticleEventHistograms2D && qa.fQAParticleEventProEbyE[eRec][ba]) {
 
     // ... and corresponding MC truth simulated (Run 3 specific)
     // See https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx
