@@ -42,14 +42,17 @@ struct OTFV0Qa {
   void init(InitContext&)
   {
     const AxisSpec axisEvent{10, 0, 10, "Event counter"};
+    const AxisSpec axisNCandidates{500, 0, 500, "Number of OTF v0s"};
 
     // Base histograms
-    histos.add("hEventCounter", "Event counter", kTH1D, {axisEvent});
+    histos.add("hEventCounter", "Event counter", kTH1F, {axisEvent});
+    histos.add("hCandidates", "Number of OTF V0s", kTH1F, {axisNCandidates});
   }
 
-  void process(aod::Collision const& col)
+  void process(aod::Collision const& col, aod::OTFV0s const& v0s)
   {
     histos.fill(HIST("hEventCounter"), 0.5);
+    histos.fill(HIST("hCandidates"), v0s.size());
   }
 };
 

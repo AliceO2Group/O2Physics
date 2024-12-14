@@ -43,8 +43,8 @@ DECLARE_SOA_TABLE(CentRun2SPDTrks, "AOD", "CENTRUN2SPDTRK", cent::CentRun2SPDTra
 DECLARE_SOA_TABLE(CentRun2SPDClss, "AOD", "CENTRUN2SPDCLS", cent::CentRun2SPDClusters);  //! Run 2 SPD clusters centrality table
 DECLARE_SOA_TABLE(CentRun2CL0s, "AOD", "CENTRUN2CL0", cent::CentRun2CL0);                //! Run 2 CL0 centrality table
 DECLARE_SOA_TABLE(CentRun2CL1s, "AOD", "CENTRUN2CL1", cent::CentRun2CL1);                //! Run 2 CL1 centrality table
-DECLARE_SOA_TABLE(CentRun2RefMult5, "AOD", "CENTRUN2REFMULT5", cent::CentRun2RefMult5);  //! Run 2, ref mult |eta| < 0.5
-DECLARE_SOA_TABLE(CentRun2RefMult8, "AOD", "CENTRUN2REFMULT8", cent::CentRun2RefMult8);  //! Run 2, ref mult |eta| < 0.8
+DECLARE_SOA_TABLE(CentRun2RefMult5s, "AOD", "CENTRUN2REFMULT5", cent::CentRun2RefMult5); //! Run 2, ref mult |eta| < 0.5
+DECLARE_SOA_TABLE(CentRun2RefMult8s, "AOD", "CENTRUN2REFMULT8", cent::CentRun2RefMult8); //! Run 2, ref mult |eta| < 0.8
 
 // Run 3 tables
 DECLARE_SOA_TABLE(CentFV0As, "AOD", "CENTFV0A", cent::CentFV0A);                         //! Run 3 FV0A centrality table
@@ -63,6 +63,8 @@ using CentRun2SPDTrk = CentRun2SPDTrks::iterator;
 using CentRun2SPDCls = CentRun2SPDClss::iterator;
 using CentRun2CL0 = CentRun2CL0s::iterator;
 using CentRun2CL1 = CentRun2CL1s::iterator;
+using CentRun2RefMult5 = CentRun2RefMult5s::iterator;
+using CentRun2RefMult8 = CentRun2RefMult8s::iterator;
 using CentFV0A = CentFV0As::iterator;
 using CentFT0M = CentFT0Ms::iterator;
 using CentFT0A = CentFT0As::iterator;
