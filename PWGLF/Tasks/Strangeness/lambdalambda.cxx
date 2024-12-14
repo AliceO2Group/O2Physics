@@ -10,7 +10,6 @@
 // or submit itself to any jurisdiction.
 
 /// \author Junlee Kim (jikim1290@gmail.com)
-// o2-linter: disable=name/workflow-file
 
 #include <cmath>
 #include <array>
