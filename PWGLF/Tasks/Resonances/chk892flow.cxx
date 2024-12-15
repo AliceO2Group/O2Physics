@@ -159,7 +159,7 @@ struct chk892flow {
   Configurable<float> cMaxbDCAzToPVcut{"cMaxbDCAzToPVcut", 0.1, "Track DCAz cut to PV Maximum"};
 
   /// PID Selections, pion
-	Configurable<bool> cTPConly{"cTPConly", false, "Use only TPC for PID"}; //bool
+  Configurable<bool> cTPConly{"cTPConly", false, "Use only TPC for PID"};                                   // bool
   Configurable<float> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};               // TPC
   Configurable<float> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};               // TOF
   Configurable<float> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"}; // Combined
@@ -183,8 +183,8 @@ struct chk892flow {
   Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
 
   // Secondary Selection
-	Configurable<bool> cfgReturnFlag{"boolReturnFlag", false, "Return Flag for debugging"};
-	Configurable<bool> cSecondaryRequire{"bool", true, "Secondary cuts on/off"};
+  Configurable<bool> cfgReturnFlag{"boolReturnFlag", false, "Return Flag for debugging"};
+  Configurable<bool> cSecondaryRequire{"bool", true, "Secondary cuts on/off"};
   Configurable<bool> cSecondaryArmenterosCut{"boolArmenterosCut", true, "cut on Armenteros-Podolanski graph"};
 
   Configurable<bool> cfgByPassDauPIDSelection{"cfgByPassDauPIDSelection", true, "Bypass Daughters PID selection"};
@@ -531,48 +531,47 @@ struct chk892flow {
   // PID selection tools
   template <typename TrackType>
   bool selectionPIDPion(TrackType const& candidate)
-	{
-		bool tpcPIDPassed{false}, tofPIDPassed{false};
+  {
+    bool tpcPIDPassed{false}, tofPIDPassed{false};
 
-		if (cTPConly){
+    if (cTPConly) {
 
-			if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
-				tpcPIDPassed = true;
-			} else {
-				return false;
-			}
-			tofPIDPassed = true;
+      if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
+        tpcPIDPassed = true;
+      } else {
+        return false;
+      }
+      tofPIDPassed = true;
 
-		}else{
+    } else {
 
-			if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
-				tpcPIDPassed = true;
-			} else {
-				return false;
-			}
-			if (candidate.hasTOF()) {
-				if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion) {
-					tofPIDPassed = true;
-				}
-				if ((nsigmaCutCombinedPion > 0) && (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi() < nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
-					tofPIDPassed = true;
-				}
-			} else {
-				if (!cTOFVeto) {
-					return false;
-				}
-				tofPIDPassed = true;
-			}
-		}
+      if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
+        tpcPIDPassed = true;
+      } else {
+        return false;
+      }
+      if (candidate.hasTOF()) {
+        if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion) {
+          tofPIDPassed = true;
+        }
+        if ((nsigmaCutCombinedPion > 0) && (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi() < nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
+          tofPIDPassed = true;
+        }
+      } else {
+        if (!cTOFVeto) {
+          return false;
+        }
+        tofPIDPassed = true;
+      }
+    }
 
-		if (tpcPIDPassed && tofPIDPassed) {
-			return true;
-		}
-		return false;
+    if (tpcPIDPassed && tofPIDPassed) {
+      return true;
+    }
+    return false;
+  }
 
-	}
-
-	template <typename CollisionType, typename K0sType>
+  template <typename CollisionType, typename K0sType>
   bool selectionK0s(CollisionType const& collision, K0sType const& candidate)
   {
     auto DauDCA = candidate.dcaV0daughters();
@@ -586,125 +585,125 @@ struct chk892flow {
     auto PropTauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
     auto mK0s = candidate.mK0Short();
 
-		if (cfgReturnFlag){
-			bool returnFlag = true;
+    if (cfgReturnFlag) {
+      bool returnFlag = true;
 
-			if (cSecondaryRequire){
-				histos.fill(HIST("QA/K0sCutCheck"), 0);
-				if (DauDCA > cSecondaryDauDCAMax){
-					histos.fill(HIST("QA/K0sCutCheck"), 1);
-					returnFlag = false;
-				}
-				if (DauPosDCAtoPV < cSecondaryDauPosDCAtoPVMin){
-					histos.fill(HIST("QA/K0sCutCheck"), 2);
-					returnFlag = false;
-				}
-				if (DauNegDCAtoPV < cSecondaryDauNegDCAtoPVMin) {
-					histos.fill(HIST("QA/K0sCutCheck"), 3);
-					returnFlag = false;
-				}
-				if (pT < cSecondaryPtMin) {
-					histos.fill(HIST("QA/K0sCutCheck"), 4);
-					returnFlag = false;
-				}
-				if (Rapidity > cSecondaryRapidityMax) {
-					histos.fill(HIST("QA/K0sCutCheck"), 5);
-					returnFlag = false;
-				}
-				if (Radius < cSecondaryRadiusMin) {
-					histos.fill(HIST("QA/K0sCutCheck"), 6);
-					returnFlag = false;
-				}
-				if (DCAtoPV > cSecondaryDCAtoPVMax) {
-					histos.fill(HIST("QA/K0sCutCheck"), 7);
-					returnFlag = false;
-				}
-				if (CPA < cSecondaryCosPAMin) {
-					histos.fill(HIST("QA/K0sCutCheck"), 8);
-					returnFlag = false;
-				}
-				if (PropTauK0s > cSecondaryProperLifetimeMax) {
-					histos.fill(HIST("QA/K0sCutCheck"), 9);
-					returnFlag = false;
-				}
-				if (candidate.qtarm() < cSecondaryparamArmenterosCut * TMath::Abs(candidate.alpha())) {
-					histos.fill(HIST("QA/K0sCutCheck"), 11);
-					returnFlag = false;
-				}
-				if (std::fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
-					histos.fill(HIST("QA/K0sCutCheck"), 10);
-					returnFlag = false;
-				}
+      if (cSecondaryRequire) {
+        histos.fill(HIST("QA/K0sCutCheck"), 0);
+        if (DauDCA > cSecondaryDauDCAMax) {
+          histos.fill(HIST("QA/K0sCutCheck"), 1);
+          returnFlag = false;
+        }
+        if (DauPosDCAtoPV < cSecondaryDauPosDCAtoPVMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 2);
+          returnFlag = false;
+        }
+        if (DauNegDCAtoPV < cSecondaryDauNegDCAtoPVMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 3);
+          returnFlag = false;
+        }
+        if (pT < cSecondaryPtMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 4);
+          returnFlag = false;
+        }
+        if (Rapidity > cSecondaryRapidityMax) {
+          histos.fill(HIST("QA/K0sCutCheck"), 5);
+          returnFlag = false;
+        }
+        if (Radius < cSecondaryRadiusMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 6);
+          returnFlag = false;
+        }
+        if (DCAtoPV > cSecondaryDCAtoPVMax) {
+          histos.fill(HIST("QA/K0sCutCheck"), 7);
+          returnFlag = false;
+        }
+        if (CPA < cSecondaryCosPAMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 8);
+          returnFlag = false;
+        }
+        if (PropTauK0s > cSecondaryProperLifetimeMax) {
+          histos.fill(HIST("QA/K0sCutCheck"), 9);
+          returnFlag = false;
+        }
+        if (candidate.qtarm() < cSecondaryparamArmenterosCut * TMath::Abs(candidate.alpha())) {
+          histos.fill(HIST("QA/K0sCutCheck"), 11);
+          returnFlag = false;
+        }
+        if (std::fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
+          histos.fill(HIST("QA/K0sCutCheck"), 10);
+          returnFlag = false;
+        }
 
-			return returnFlag;
+        return returnFlag;
 
-			} else {
-				if (std::fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
-					histos.fill(HIST("QA/K0sCutCheck"), 10);
-					returnFlag = false;
-				}
+      } else {
+        if (std::fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
+          histos.fill(HIST("QA/K0sCutCheck"), 10);
+          returnFlag = false;
+        }
 
-			return returnFlag;
-			}
+        return returnFlag;
+      }
 
-		}else{
-			if (cSecondaryRequire){
+    } else {
+      if (cSecondaryRequire) {
 
-				histos.fill(HIST("QA/K0sCutCheck"), 0);
-				if (DauDCA > cSecondaryDauDCAMax){
-					histos.fill(HIST("QA/K0sCutCheck"), 1);
-					return false;
-				}
-				if (DauPosDCAtoPV < cSecondaryDauPosDCAtoPVMin){
-					histos.fill(HIST("QA/K0sCutCheck"), 2);
-					return false;
-				}
-				if (DauNegDCAtoPV < cSecondaryDauNegDCAtoPVMin) {
-					histos.fill(HIST("QA/K0sCutCheck"), 3);
-					return false;
-				}
-				if (pT < cSecondaryPtMin) {
-					histos.fill(HIST("QA/K0sCutCheck"), 4);
-					return false;
-				}
-				if (Rapidity > cSecondaryRapidityMax) {
-					histos.fill(HIST("QA/K0sCutCheck"), 5);
-					return false;
-				}
-				if (Radius < cSecondaryRadiusMin) {
-					histos.fill(HIST("QA/K0sCutCheck"), 6);
-					return false;
-				}
-				if (DCAtoPV > cSecondaryDCAtoPVMax) {
-					histos.fill(HIST("QA/K0sCutCheck"), 7);
-					return false;
-				}
-				if (CPA < cSecondaryCosPAMin) {
-					histos.fill(HIST("QA/K0sCutCheck"), 8);
-					return false;
-				}
-				if (PropTauK0s > cSecondaryProperLifetimeMax) {
-					histos.fill(HIST("QA/K0sCutCheck"), 9);
-					return false;
-				}
-				if (candidate.qtarm() < cSecondaryparamArmenterosCut * TMath::Abs(candidate.alpha())) {
-					histos.fill(HIST("QA/K0sCutCheck"), 11);
-					return false;
-				}
-				if (std::fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
-					histos.fill(HIST("QA/K0sCutCheck"), 10);
-					return false;
-				}
-			return true;
+        histos.fill(HIST("QA/K0sCutCheck"), 0);
+        if (DauDCA > cSecondaryDauDCAMax) {
+          histos.fill(HIST("QA/K0sCutCheck"), 1);
+          return false;
+        }
+        if (DauPosDCAtoPV < cSecondaryDauPosDCAtoPVMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 2);
+          return false;
+        }
+        if (DauNegDCAtoPV < cSecondaryDauNegDCAtoPVMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 3);
+          return false;
+        }
+        if (pT < cSecondaryPtMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 4);
+          return false;
+        }
+        if (Rapidity > cSecondaryRapidityMax) {
+          histos.fill(HIST("QA/K0sCutCheck"), 5);
+          return false;
+        }
+        if (Radius < cSecondaryRadiusMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 6);
+          return false;
+        }
+        if (DCAtoPV > cSecondaryDCAtoPVMax) {
+          histos.fill(HIST("QA/K0sCutCheck"), 7);
+          return false;
+        }
+        if (CPA < cSecondaryCosPAMin) {
+          histos.fill(HIST("QA/K0sCutCheck"), 8);
+          return false;
+        }
+        if (PropTauK0s > cSecondaryProperLifetimeMax) {
+          histos.fill(HIST("QA/K0sCutCheck"), 9);
+          return false;
+        }
+        if (candidate.qtarm() < cSecondaryparamArmenterosCut * TMath::Abs(candidate.alpha())) {
+          histos.fill(HIST("QA/K0sCutCheck"), 11);
+          return false;
+        }
+        if (std::fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
+          histos.fill(HIST("QA/K0sCutCheck"), 10);
+          return false;
+        }
+        return true;
 
-			} else {
-					if (std::fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
-					histos.fill(HIST("QA/K0sCutCheck"), 10);
-					return false;
-				}
-			return true;
-			}
-		}
+      } else {
+        if (std::fabs(mK0s - MassK0Short) > cSecondaryMassWindow) {
+          histos.fill(HIST("QA/K0sCutCheck"), 10);
+          return false;
+        }
+        return true;
+      }
+    }
   } // selectionK0s
 
   double GetPhiInRange(double phi)
@@ -957,29 +956,29 @@ struct chk892flow {
           histos.fill(HIST("QA/after/KstarRapidity"), lResoKstar.Rapidity());
           histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
           histos.fill(HIST("QA/after/k0sv2vsinvmass"), lResoSecondary.M(), v2_k0s);
-					histos.fill(HIST("QA/after/kstarv2vsinvmass"), lResoKstar.M(), v2_kstar);
-					histos.fill(HIST("hInvmass_Kstar"), typeKstar, centrality, lResoKstar.Pt(), lResoKstar.M(), v2_kstar);
+          histos.fill(HIST("QA/after/kstarv2vsinvmass"), lResoKstar.M(), v2_kstar);
+          histos.fill(HIST("hInvmass_Kstar"), typeKstar, centrality, lResoKstar.Pt(), lResoKstar.M(), v2_kstar);
 
-				} // IsMix
-			} // K0scand
-		} // bTrack
+        } // IsMix
+      } // K0scand
+    } // bTrack
 
-		count++;
+    count++;
 
-	} // fillHistograms
+  } // fillHistograms
 
-	// process data
-	void processData(EventCandidates::iterator const& collision,
-			TrackCandidates const& tracks,
-			V0Candidates const& v0s,
-			aod::BCsWithTimestamps const&)
-	{
-		if (!colCuts.isSelected(collision)) // Default event selection
-			return;
-		if (cfgQvecSel && (collision.qvecAmp()[DetId] < 1e-4 || collision.qvecAmp()[RefAId] < 1e-4 || collision.qvecAmp()[RefBId] < 1e-4))
-			return; // If we don't have a Q-vector
-		colCuts.fillQA(collision);
-		centrality = GetCentrality(collision);
+  // process data
+  void processData(EventCandidates::iterator const& collision,
+                   TrackCandidates const& tracks,
+                   V0Candidates const& v0s,
+                   aod::BCsWithTimestamps const&)
+  {
+    if (!colCuts.isSelected(collision)) // Default event selection
+      return;
+    if (cfgQvecSel && (collision.qvecAmp()[DetId] < 1e-4 || collision.qvecAmp()[RefAId] < 1e-4 || collision.qvecAmp()[RefBId] < 1e-4))
+      return; // If we don't have a Q-vector
+    colCuts.fillQA(collision);
+    centrality = GetCentrality(collision);
 
     fillHistograms<false, false>(collision, tracks, v0s, 2); // second order
   }
@@ -996,7 +995,6 @@ struct chk892flow {
     fillHistograms<true, false>(collision, tracks, v0s, 2);
   }
   PROCESS_SWITCH(chk892flow, processMC, "Process Event for MC", false);
-
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
