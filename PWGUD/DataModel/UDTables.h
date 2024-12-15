@@ -216,18 +216,17 @@ DECLARE_SOA_TABLE(UDCollisionSelExtras_000, "AOD", "UDCOLSELEXTRA",
                   udcollision::ChFV0A); //! number of active channels in FV0A
 
 DECLARE_SOA_TABLE_VERSIONED(UDCollisionSelExtras_001, "AOD", "UDCOLSELEXTRA", 1,
-                  udcollision::ChFT0A,  //! number of active channels in FT0A
-                  udcollision::ChFT0C,  //! number of active channels in FT0C
-                  udcollision::ChFDDA,  //! number of active channels in FDDA
-                  udcollision::ChFDDC,  //! number of active channels in FDDC
-                  udcollision::ChFV0A,  //! number of active channels in FV0A
-                  udcollision::OccupancyInTime,  //! Occupancy
-                  udcollision::HadronicRate,  //! Interaction Rate
-                  udcollision::Trs,
-                  udcollision::Trofs,
-                  udcollision::Hmpr
-                  ); 
-                  
+                            udcollision::ChFT0A,          //! number of active channels in FT0A
+                            udcollision::ChFT0C,          //! number of active channels in FT0C
+                            udcollision::ChFDDA,          //! number of active channels in FDDA
+                            udcollision::ChFDDC,          //! number of active channels in FDDC
+                            udcollision::ChFV0A,          //! number of active channels in FV0A
+                            udcollision::OccupancyInTime, //! Occupancy
+                            udcollision::HadronicRate,    //! Interaction Rate
+                            udcollision::Trs,
+                            udcollision::Trofs,
+                            udcollision::Hmpr);
+
 // central barrel-specific selections
 DECLARE_SOA_TABLE(UDCollisionsSelsCent, "AOD", "UDCOLSELCNT",
                   udcollision::DBcTOR,
