@@ -35,7 +35,6 @@ struct EfficiencyConfigurableGroup : ConfigurableGroup {
 class EfficiencyCalculator
 {
  public:
-  EfficiencyConfigurableGroup* config{};
   o2::ccdb::BasicCCDBManager& ccdb{o2::ccdb::BasicCCDBManager::instance()};
 
   explicit EfficiencyCalculator(EfficiencyConfigurableGroup* config) : config(config)
@@ -69,7 +68,7 @@ class EfficiencyCalculator
     }
   }
 
-  auto withRegistry(HistogramRegistry* reg) -> EfficiencyCalculator&
+  auto setRegistry(HistogramRegistry* reg) -> EfficiencyCalculator&
   {
     if (!reg) {
       LOGF(error, log("Registry value cannot be null"));
@@ -93,7 +92,7 @@ class EfficiencyCalculator
 
   auto uploadOnStop(InitContext& ic) -> EfficiencyCalculator&
   {
-    if (!shouldUploadOnStop) {
+    if (!shouldUploadOnStop && config->shouldCalculate) {
       shouldUploadOnStop = true;
 
       auto& callbacks = ic.services().get<CallbackService>();
@@ -135,6 +134,7 @@ class EfficiencyCalculator
       auto eff{hEff->GetBinContent(bin)};
       weight /= eff > 0 ? eff : 1.0f;
     }
+
     return weight;
   }
 
@@ -210,6 +210,8 @@ class EfficiencyCalculator
     LOGF(info, log("Histogram \"%s\" loaded from \"%s\""), hEff->GetTitle(), config->ccdbPath.value);
     return hEff;
   }
+
+  EfficiencyConfigurableGroup* config{};
 
   bool shouldUploadOnStop{false};
   bool shouldCalculate{false};

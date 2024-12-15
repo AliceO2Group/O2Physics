@@ -321,10 +321,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
     effConfGroup.hMCTruth1.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, trackonefilter.confPDGCodePartOne, false);
     effConfGroup.hMCTruth2.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, tracktwofilter.confPDGCodePartTwo, false);
 
-    efficiencyCalculator
-      .withRegistry(&qaRegistry)
-      .uploadOnStop(ic)
-      .init();
+    efficiencyCalculator.setRegistry(&qaRegistry);
+    efficiencyCalculator.uploadOnStop(ic);
+    efficiencyCalculator.init();
 
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, twotracksconfigs.confIsMC, trackonefilter.confPDGCodePartOne, true); // last true = isDebug
