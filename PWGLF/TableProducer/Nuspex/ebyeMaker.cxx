@@ -392,39 +392,41 @@ struct ebyeMaker {
       }
       o2::base::Propagator::initFieldFromGRP(grpo);
       TList* callst = ccdb->getForTimeStamp<TList>("Centrality/Estimators", bc.timestamp());
-      auto getccdb = [callst](const char* ccdbhname) {
-        TH1* h = reinterpret_cast<TH1*>(callst->FindObject(ccdbhname));
-        return h;
-      };
-      auto getformulaccdb = [callst](const char* ccdbhname) {
-        TFormula* f = reinterpret_cast<TFormula*>(callst->FindObject(ccdbhname));
-        return f;
-      };
-      Run2V0MInfo.mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized");
-      Run2V0MInfo.mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized");
-      Run2V0MInfo.mhMultSelCalib = getccdb("hMultSelCalib_V0M");
-      Run2V0MInfo.mMCScale = getformulaccdb(TString::Format("%s-V0M", genName->c_str()).Data());
-      if ((Run2V0MInfo.mhVtxAmpCorrV0A != nullptr) && (Run2V0MInfo.mhVtxAmpCorrV0C != nullptr) && (Run2V0MInfo.mhMultSelCalib != nullptr)) {
-        if (genName->length() != 0) {
-          if (Run2V0MInfo.mMCScale != nullptr) {
-            for (int ixpar = 0; ixpar < 6; ++ixpar) {
-              Run2V0MInfo.mMCScalePars[ixpar] = Run2V0MInfo.mMCScale->GetParameter(ixpar);
+      if (callst != nullptr) {
+        auto getccdb = [callst](const char* ccdbhname) {
+          TH1* h = reinterpret_cast<TH1*>(callst->FindObject(ccdbhname));
+          return h;
+        };
+        auto getformulaccdb = [callst](const char* ccdbhname) {
+          TFormula* f = reinterpret_cast<TFormula*>(callst->FindObject(ccdbhname));
+          return f;
+        };
+        Run2V0MInfo.mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized");
+        Run2V0MInfo.mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized");
+        Run2V0MInfo.mhMultSelCalib = getccdb("hMultSelCalib_V0M");
+        Run2V0MInfo.mMCScale = getformulaccdb(TString::Format("%s-V0M", genName->c_str()).Data());
+        if ((Run2V0MInfo.mhVtxAmpCorrV0A != nullptr) && (Run2V0MInfo.mhVtxAmpCorrV0C != nullptr) && (Run2V0MInfo.mhMultSelCalib != nullptr)) {
+          if (genName->length() != 0) {
+            if (Run2V0MInfo.mMCScale != nullptr) {
+              for (int ixpar = 0; ixpar < 6; ++ixpar) {
+                Run2V0MInfo.mMCScalePars[ixpar] = Run2V0MInfo.mMCScale->GetParameter(ixpar);
+              }
+            } else {
+              LOGF(fatal, "MC Scale information from V0M for run %d not available", bc.runNumber());
             }
-          } else {
-            LOGF(fatal, "MC Scale information from V0M for run %d not available", bc.runNumber());
           }
-        }
-        Run2V0MInfo.mCalibrationStored = true;
-      } else {
-        LOGF(fatal, "Calibration information from V0M for run %d corrupted", bc.runNumber());
-      }
-      if (doprocessRun2) {
-        Run2CL0Info.mhVtxAmpCorr = getccdb("hVtx_fnSPDClusters0_Normalized");
-        Run2CL0Info.mhMultSelCalib = getccdb("hMultSelCalib_CL0");
-        if ((Run2CL0Info.mhVtxAmpCorr != nullptr) && (Run2CL0Info.mhMultSelCalib != nullptr)) {
-          Run2CL0Info.mCalibrationStored = true;
+          Run2V0MInfo.mCalibrationStored = true;
         } else {
-          LOGF(fatal, "Calibration information from CL0 multiplicity for run %d corrupted", bc.runNumber());
+          LOGF(fatal, "Calibration information from V0M for run %d corrupted", bc.runNumber());
+        }
+        if (doprocessRun2) {
+          Run2CL0Info.mhVtxAmpCorr = getccdb("hVtx_fnSPDClusters0_Normalized");
+          Run2CL0Info.mhMultSelCalib = getccdb("hMultSelCalib_CL0");
+          if ((Run2CL0Info.mhVtxAmpCorr != nullptr) && (Run2CL0Info.mhMultSelCalib != nullptr)) {
+            Run2CL0Info.mCalibrationStored = true;
+          } else {
+            LOGF(fatal, "Calibration information from CL0 multiplicity for run %d corrupted", bc.runNumber());
+          }
         }
       }
     } else {
@@ -482,7 +484,7 @@ struct ebyeMaker {
       float multFV0M = multFV0A + multFV0C;
       v0m = scaleMC(multFV0M, Run2V0MInfo.mMCScalePars);
       LOGF(debug, "Unscaled v0m: %f, scaled v0m: %f", multFV0M, v0m);
-    } else {
+    } else if (Run2V0MInfo.mCalibrationStored) {
       v0m = multFV0A * Run2V0MInfo.mhVtxAmpCorrV0A->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0A->FindFixBin(zvtx)) +
             multFV0C * Run2V0MInfo.mhVtxAmpCorrV0C->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0C->FindFixBin(zvtx));
     }
@@ -560,6 +562,8 @@ struct ebyeMaker {
     // antid and antip QA
     histos.add<TH2>("QA/tpcSignal", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcAxis});
     histos.add<TH2>("QA/tpcSignalPr", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcAxis});
+    // histos.add<TH2>("QA/itsSignal", ";#it{p}_{ITS} (GeV/#it{c});d#it{E}/d#it{x}_{ITS} (a.u.)", HistType::kTH2F, {momAxis, tpcAxis});
+    // histos.add<TH2>("QA/itsSignalPr", ";#it{p}_{ITS} (GeV/#it{c});d#it{E}/d#it{x}_{ITS} (a.u.)", HistType::kTH2F, {momAxis, tpcAxis});
     tofMass[0] = histos.add<TH3>("QA/tofMass_p", ";Centrality (%);#it{p}_{T} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, tofMassAxis});
     tofMass[1] = histos.add<TH3>("QA/tofMass_d", ";Centrality (%);#it{p}_{T} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, tofMassAxis});
 
@@ -1035,9 +1039,12 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
-      if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || (kINT7Intervals && ((cV0M >= 10 && cV0M < 30) || cV0M > 50))))
-        continue;
+      float cV0M = -999.f;
+      if (Run2V0MInfo.mCalibrationStored) {
+        Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+        if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || (kINT7Intervals && ((cV0M >= 10 && cV0M < 30) || cV0M > 50))))
+          continue;
+      }
 
       auto centralityCl0 = 105.0f;
       if (Run2CL0Info.mCalibrationStored) {
@@ -1118,7 +1125,10 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+      float cV0M = -999.f;
+      if (Run2V0MInfo.mCalibrationStored) {
+        Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+      }
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
@@ -1232,7 +1242,10 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+      float cV0M = -999.f;
+      if (Run2V0MInfo.mCalibrationStored) {
+        Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+      }
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
@@ -1301,7 +1314,10 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+      float cV0M = -999.f;
+      if (Run2V0MInfo.mCalibrationStored) {
+        Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+      }
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
