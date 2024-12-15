@@ -46,7 +46,7 @@ struct UDCollisionSelExtrasConverter {
                                0.0f, // dummy rate
                                0,    // dummy trs
                                0,    // dummy trofs
-                               0);     // dummy hmpr
+                               0);   // dummy hmpr
     }
   }
 };
