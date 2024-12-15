@@ -14,6 +14,7 @@
 #include <map>
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
 #include "ReconstructionDataFormats/Vertex.h"
 #include "CommonConstants/LHCConstants.h"
 #include "DataFormatsFIT/Triggers.h"
@@ -38,11 +39,11 @@ using namespace o2::framework::expressions;
 using namespace o2::dataformats;
 
 struct SGCandProducer {
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  // data inputs
+  Service<o2::ccdb::BasicCCDBManager> ccdb;  
+    // data inputs
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using CC = CCs::iterator;
-  using BCs = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+  using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BC = BCs::iterator;
   using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -93,6 +94,8 @@ struct SGCandProducer {
   HistogramRegistry registry{
     "registry",
     {}};
+
+
 
   // function to update UDFwdTracks, UDFwdTracksExtra
   template <typename TFwdTrack>
@@ -217,12 +220,24 @@ struct SGCandProducer {
       return;
     }
     registry.get<TH1>(HIST("reco/Stat"))->Fill(6., 1.);
+    int trs = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)){
+    	trs = 1;
+    	}
+    int trofs = 0;    	
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)){
+    	trofs = 1;
+    	}	
+    int hmpr = 0;    	
+    if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)){
+    	hmpr = 1;
+    	}    	
     auto bc = collision.foundBC_as<BCs>();
     double ir = 0.;
     const uint64_t ts = bc.timestamp();
     const int runnumber = bc.runNumber();
     if (bc.has_zdc()) {
-      ir = mRateFetcher.fetch(ccdb.service, ts, runnumber, "ZNC hadronic") * 1.e-3;
+        ir = mRateFetcher.fetch(ccdb.service, ts, runnumber, "ZNC hadronic") * 1.e-3; 
     }
     auto newbc = bc;
 
@@ -252,7 +267,7 @@ struct SGCandProducer {
       uint8_t chFDDC = 0;
       uint8_t chFV0A = 0;
       int occ = 0;
-      occ = collision.trackOccupancyInTimeRange();
+      occ = collision.trackOccupancyInTimeRange();   
       udhelpers::getFITinfo(fitInfo, newbc, bcs, ft0s, fv0as, fdds);
       // update SG candidates tables
       int upc_flag = 0;
@@ -273,7 +288,7 @@ struct SGCandProducer {
                            fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir);
+      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr);                           
       outputCollsLabels(collision.globalIndex());
       if (newbc.has_zdc()) {
         auto zdc = newbc.zdc();
