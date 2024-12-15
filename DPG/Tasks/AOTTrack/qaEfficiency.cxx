@@ -364,6 +364,7 @@ struct QaEfficiency {
     hPtTrkItsTpcStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtItsTpcTofStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated", PDGs[histogramIndex]), "Generated (from weak decays) " + tagPt, kTH1D, {axisPt});
+    hPtmotherGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated_mother", PDGs[histogramIndex]), "Generated Mother ", + tagPt, kTH1D, {axisPt});
     hdecaylengthmother[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/decayLength", PDGs[histogramIndex]), "Decay Length of mother particle" + tagPt, kTH1D, {axisPt});
 
     // Ter
@@ -660,9 +661,6 @@ struct QaEfficiency {
       histos.add("MC/occ_cent/reco/pos/its", "ITS Positive ", kTH3D, {axisOcc, axisCent, axisPt});
       histos.add("MC/occ_cent/reco/neg/its", "ITS Negative ", kTH3D, {axisOcc, axisCent, axisPt});
     }
-
-    AxisSpec axisPtMother{ptBins, "#it{p}_{T} (GeV/#it{c})"};
-    hPtmotherGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated_mother", PDGs[histogramIndex]), "Generated Mother ", kTH1D, {axisPtMother});
 
     static_for<0, 1>([&](auto pdgSign) {
       makeMCHistograms<pdgSign, o2::track::PID::Electron>(doEl);
