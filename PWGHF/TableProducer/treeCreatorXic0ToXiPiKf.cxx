@@ -127,7 +127,6 @@ struct HfTreeCreatorXic0ToXiPiKf {
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
 
   using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
-  using MyEventTable = soa::Join<aod::Collisions, aod::EvSels>;
 
   void init(InitContext const&)
   {
@@ -203,7 +202,7 @@ struct HfTreeCreatorXic0ToXiPiKf {
     }
   }
 
-  void processKfData(MyEventTable const& collisions, MyTrackTable const&,
+  void processKfData(MyTrackTable const&,
                      soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
   {
     rowKfCandidate.reserve(candidates.size());
@@ -213,7 +212,7 @@ struct HfTreeCreatorXic0ToXiPiKf {
   }
   PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfData, "Process KF data", false);
 
-  void processKfMcXic0(MyEventTable const& collisions, MyTrackTable const&,
+  void processKfMcXic0(MyTrackTable const&,
                        soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
   {
     rowKfCandidate.reserve(candidates.size());
