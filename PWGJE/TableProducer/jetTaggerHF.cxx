@@ -29,7 +29,7 @@
 
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetTagging.h"
-#include "PWGJE/Core/JetTaggingUtilities.h"
+#include "PWGJE/Core/jetTaggingUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 
 using namespace o2;

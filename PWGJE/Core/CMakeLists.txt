@@ -20,7 +20,7 @@ o2physics_target_root_dictionary(PWGJECore
               HEADERS JetFinder.h
                       JetUtilities.h
                       FastJetUtilities.h
-                      JetTaggingUtilities.h
+                      jetTaggingUtilities.h
                       JetBkgSubUtils.h
                       JetDerivedDataUtilities.h
               LINKDEF PWGJECoreLinkDef.h)

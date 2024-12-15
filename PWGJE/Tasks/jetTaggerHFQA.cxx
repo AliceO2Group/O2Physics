@@ -35,7 +35,7 @@
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/Core/JetTaggingUtilities.h"
+#include "PWGJE/Core/jetTaggingUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
