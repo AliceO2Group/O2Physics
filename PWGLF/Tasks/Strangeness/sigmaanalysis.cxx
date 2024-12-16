@@ -344,11 +344,11 @@ struct sigmaanalysis {
         return false;
       histos.fill(HIST("GeneralQA/hPhotonPosTPCNSigma"), cand.photonPosTPCNSigma());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 6.);
-      if ((cand.photonPosTPCNSigma()!=-999.f) && ((cand.photonPosTPCNSigma() < PhotonMinTPCNSigmas) || (cand.photonPosTPCNSigma() > PhotonMaxTPCNSigmas)))
+      if ((cand.photonPosTPCNSigma() != -999.f) && ((cand.photonPosTPCNSigma() < PhotonMinTPCNSigmas) || (cand.photonPosTPCNSigma() > PhotonMaxTPCNSigmas)))
         return false;
       histos.fill(HIST("GeneralQA/hPhotonNegTPCNSigma"), cand.photonNegTPCNSigma());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 7.);
-      if ((cand.photonNegTPCNSigma()!=-999.f) && ((cand.photonNegTPCNSigma() < PhotonMinTPCNSigmas) || (cand.photonNegTPCNSigma() > PhotonMaxTPCNSigmas)))
+      if ((cand.photonNegTPCNSigma() != -999.f) && ((cand.photonNegTPCNSigma() < PhotonMinTPCNSigmas) || (cand.photonNegTPCNSigma() > PhotonMaxTPCNSigmas)))
         return false;
       histos.fill(HIST("GeneralQA/hPhotonpT"), cand.photonPt());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 8.);
@@ -428,7 +428,7 @@ struct sigmaanalysis {
     bool passedTPC = true;
     bool passedTOF = true;
 
-    if (isLambdalike){ // Lambda PID selection
+    if (isLambdalike) { // Lambda PID selection
       // TPC Selection
       if (fselLambdaTPCPID && (cand.lambdaPosPrTPCNSigma() != -999.f) && (TMath::Abs(cand.lambdaPosPrTPCNSigma()) > LambdaMaxTPCNSigmas))
         passedTPC = false;
@@ -441,25 +441,24 @@ struct sigmaanalysis {
       if (fselLambdaTOFPID && (cand.lambdaPiTOFNSigma() != -1e+3) && (TMath::Abs(cand.lambdaPiTOFNSigma()) > LambdaMaxTOFNSigmas))
         passedTOF = false;
 
-      if constexpr (requires { cand.lambdaCandPDGCode(); }){
-        if (doPIDQA && passedTPC){
+      if constexpr (requires { cand.lambdaCandPDGCode(); }) {
+        if (doPIDQA && passedTPC) {
           histos.fill(HIST("MC/hPtLambdaCandidates_passedTPCPID"), cand.lambdaPt());
           if (cand.lambdaCandPDGCode() == 3122)
-            histos.fill(HIST("MC/hPtTrueLambda_passedTPCPID"), cand.lambdaPt());  
+            histos.fill(HIST("MC/hPtTrueLambda_passedTPCPID"), cand.lambdaPt());
         }
-        if (doPIDQA && passedTOF){
+        if (doPIDQA && passedTOF) {
           histos.fill(HIST("MC/hPtLambdaCandidates_passedTOFPID"), cand.lambdaPt());
           if (cand.lambdaCandPDGCode() == 3122)
             histos.fill(HIST("MC/hPtTrueLambda_passedTOFPID"), cand.lambdaPt());
         }
-        if (doPIDQA && passedTPC && passedTOF){
+        if (doPIDQA && passedTPC && passedTOF) {
           histos.fill(HIST("MC/hPtLambdaCandidates_passedTPCTOFPID"), cand.lambdaPt());
           if (cand.lambdaCandPDGCode() == 3122)
             histos.fill(HIST("MC/hPtTrueLambda_passedTPCTOFPID"), cand.lambdaPt());
         }
       }
-    }
-    else{ // AntiLambda PID selection
+    } else { // AntiLambda PID selection
       // TPC Selection
       if (fselLambdaTPCPID && (cand.lambdaPosPiTPCNSigma() != -999.f) && (TMath::Abs(cand.lambdaPosPiTPCNSigma()) > LambdaMaxTPCNSigmas))
         passedTPC = false;
@@ -558,7 +557,7 @@ struct sigmaanalysis {
           histos.fill(HIST("MC/hMassSigma0"), sigma.sigmaMass());
           histos.fill(HIST("MC/hPtSigma0"), sigma.sigmapT());
           histos.fill(HIST("MC/h3dMassSigma0"), sigma.sigmaCentrality(), sigma.sigmapT(), sigma.sigmaMass());
-          
+
         } else {
           // TPC + TOF PID Selections
           if (!doLambdaPIDSel(sigma, false, false))
@@ -606,9 +605,8 @@ struct sigmaanalysis {
         histos.fill(HIST("Sigma0/hMassSigma0"), sigma.sigmaMass());
         histos.fill(HIST("Sigma0/hPtSigma0"), sigma.sigmapT());
         histos.fill(HIST("Sigma0/hRapiditySigma0"), sigma.sigmaRapidity());
-        histos.fill(HIST("Sigma0/h3dMassSigma0"), sigma.sigmaCentrality(), sigma.sigmapT(), sigma.sigmaMass());  
-      } 
-      else {
+        histos.fill(HIST("Sigma0/h3dMassSigma0"), sigma.sigmaCentrality(), sigma.sigmapT(), sigma.sigmaMass());
+      } else {
         // PID selections
         histos.fill(HIST("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPr"), sigma.lambdaNegPrTPCNSigma(), sigma.aLambdaPrTOFNSigma());
         histos.fill(HIST("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPi"), sigma.lambdaPosPiTPCNSigma(), sigma.aLambdaPiTOFNSigma());
