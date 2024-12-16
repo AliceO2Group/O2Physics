@@ -13,7 +13,7 @@
 /// ///        Invariant Mass Reconstruction of Lambda(1520) Resonance.
 ///
 /// \author Yash Patley <yash.patley@cern.ch>
-///  \author Nasir Mehdi Malik
+/// \author Nasir Mehdi Malik
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -30,7 +30,6 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
-#include "PWGLF/DataModel/LFResonanceTablesMergeDF.h"
 #include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
@@ -654,9 +653,9 @@ struct lambdaAnalysis_pb {
 
   PROCESS_SWITCH(lambdaAnalysis_pb, processMix, "Process for Mixed Events", false);
 
-  Preslice<aod::ResoTrackDFs> perRColdf = aod::resodaughterdf::resoCollisiondfId;
+  Preslice<aod::ResoTrackDFs> perRColdf = aod::resodaughter::resoCollisionId;
 
-  using resoColDFs = aod::ResoCollisionDFs;
+  using resoColDFs = aod::ResoCollisions;
   using resoTrackDFs = aod::ResoTrackDFs;
 
   void processDatadf(resoColDFs::iterator const& collision, resoTrackDFs const& tracks)
@@ -673,7 +672,7 @@ struct lambdaAnalysis_pb {
 
   PROCESS_SWITCH(lambdaAnalysis_pb, processDatadf, "Process for data merged DF", false);
 
-  using BinningTypeDF = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollisiondf::Cent>;
+  using BinningTypeDF = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
   void processMixDF(resoColDFs& collisions, resoTrackDFs const& tracks)
   {
     if (doprocessMix)
@@ -696,7 +695,7 @@ struct lambdaAnalysis_pb {
 
   PROCESS_SWITCH(lambdaAnalysis_pb, processMixDF, "Process for merged DF  Mixed Events", false);
 
-  using BinningTypeEP = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollisiondf::Cent, aod::resocollisiondf::EvtPl>;
+  using BinningTypeEP = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent, aod::resocollision::EvtPl>;
   void processMixepDF(resoColDFs& collisions, resoTrackDFs const& tracks)
   {
     if (doprocessMix || doprocessMixDF)

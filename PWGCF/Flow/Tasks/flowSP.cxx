@@ -9,7 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// author: Noor Koster noor.koster@cern.ch
+/// \file   flowSP.cxx
+/// \author Noor Koster
+/// \since  01/12/2024
+/// \brief  task to evaluate flow with respect to spectator plane.
 
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPObject.h>
@@ -29,7 +32,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Qvectors.h"
+#include "Common/Core/RecoDecay.h"
 
 #include "PWGCF/DataModel/SPTableZDC.h"
 #include "TF1.h"
@@ -41,7 +44,7 @@ using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct flowAnalysisSP {
+struct FlowSP {
 
   O2_DEFINE_CONFIGURABLE(cfgDCAxy, float, 0.2, "Cut on DCA in the transverse direction (cm)");
   O2_DEFINE_CONFIGURABLE(cfgDCAz, float, 2, "Cut on DCA in the longitudinal direction (cm)");
@@ -53,6 +56,9 @@ struct flowAnalysisSP {
   O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried");
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, true, "Bool to enable Additional Event Cut");
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, true, "Bool to enable Additional Track Cut");
+  O2_DEFINE_CONFIGURABLE(cfgCentMax, float, 90, "Maximum cenrality for selected events");
+  O2_DEFINE_CONFIGURABLE(cfgCentMin, float, 0, "Minimum cenrality for selected events");
+  O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, false, "Fill NUA weights")
 
   O2_DEFINE_CONFIGURABLE(cfgDoubleTrackFunction, bool, true, "Include track cut at low pt");
   O2_DEFINE_CONFIGURABLE(cfgTrackCutSize, float, 0.06, "Spread of track cut");
@@ -62,13 +68,23 @@ struct flowAnalysisSP {
   O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, true, "kNoCollInTimeRangeStandard");
   O2_DEFINE_CONFIGURABLE(cfgDoOccupancySel, bool, true, "Bool for event selection on detector occupancy");
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, true, "Use additional evenr cut on mult correlations");
-  O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, true, "Use kTVXinTRD (reject TRD triggered events)");
+  O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, false, "Use kTVXinTRD (reject TRD triggered events)");
   O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "Selects collisions with at least one ITS-TPC track");
+
+  ConfigurableAxis axisDCAz{"axisDCAz", {200, -.5, .5}, "DCA_{z} (cm)"};
+  ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -.5, .5}, "DCA_{xy} (cm)"};
+  ConfigurableAxis axisPhiMod = {"axisPhiMod", {100, 0, constants::math::PI / 9}, "fmod(#varphi,#pi/9)"};
+  ConfigurableAxis axisPhi = {"axisPhi", {60, 0, constants::math::TwoPI}, "#varphi"};
+  ConfigurableAxis axisEta = {"axisEta", {64, -1, 1}, "#eta"};
+  ConfigurableAxis axisEtaV1 = {"axisEtaV1", {8, -.8, .8}, "#eta"};
+  ConfigurableAxis axisVz = {"axisVz", {40, -10, 10}, "v_{z}"};
+  ConfigurableAxis axisCent = {"axisCent", {90, 0, 90}, "Centrality(%)"};
+  ConfigurableAxis axisPhiPlane = {"axisPhiPlane", {100, -constants::math::PI, constants::math::PI}, "#Psi"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
-  using myCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::SPTableZDC, aod::Qvectors>>;
-  using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
+  using UsedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::SPTableZDC>>;
+  using UsedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
 
   //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -86,11 +102,6 @@ struct flowAnalysisSP {
 
   void init(InitContext const&)
   {
-    std::vector<double> ptbinning = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
-
-    AxisSpec phiModAxis = {100, 0, constants::math::PI / 9, "fmod(#varphi,#pi/9)"};
-    AxisSpec ptAxis = {ptbinning, "#it{p}_{T} GeV/#it{c}"};
-
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -98,32 +109,69 @@ struct flowAnalysisSP {
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
-    registry.add<TH1>("hSPplaneA", "hSPplaneA", kTH1D, {{100, -3, 3}});
-    registry.add<TH1>("hSPplaneC", "hSPplaneC", kTH1D, {{100, -3, 3}});
-    registry.add<TH1>("hSPplaneA-C", "hSPplaneA-C", kTH1D, {{100, -3, 3}});
-    registry.add<TH1>("hCent", "hCent", kTH1D, {{80, 0, 80}});
+    std::vector<double> ptbinning = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
+    AxisSpec axisPt = {ptbinning, "#it{p}_{T} GeV/#it{c}"};
+    AxisSpec nchAxis = {4000, 0, 4000, "N_{ch}"};
+    AxisSpec t0cAxis = {70, 0, 70000, "N_{ch} (T0C)"};
+    AxisSpec t0aAxis = {200, 0, 200, "N_{ch}"};
+    AxisSpec multpvAxis = {4000, 0, 4000, "N_{ch} (PV)"};
 
-    registry.add<TH1>("hqIm", "hqIm", kTH1D, {{100, -2, 2}});
-    registry.add<TH1>("hqRe", "hqRe", kTH1D, {{100, -2, 2}});
+    registry.add<TH1>("hSPplaneA", "hSPplaneA", kTH1D, {axisPhiPlane});
+    registry.add<TH1>("hSPplaneC", "hSPplaneC", kTH1D, {axisPhiPlane});
+    registry.add<TH1>("hSPplaneFull", "hSPplaneFull", kTH1D, {axisPhiPlane});
 
-    registry.add<TProfile>("hCosdPhi", "hCosdPhi; Centrality(%); #LT Cos( #Psi^{A}-#Psi^{C})#GT", kTProfile, {{80, 0, 80}});
-    registry.add<TProfile>("hSindPhi", "hSindPhi; Centrality(%); #LT Sin( #Psi^{A}-#Psi^{C})#GT", kTProfile, {{80, 0, 80}});
-    registry.add<TProfile>("hSPlaneRes", "hSPlaneRes; Centrality(%); ", kTProfile, {{80, 0, 80}});
+    registry.add<TProfile>("hCosPhiACosPhiC", "hCosPhiACosPhiC; Centrality(%); #LT Cos(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCent});
+    registry.add<TProfile>("hSinPhiASinPhiC", "hSinPhiASinPhiC; Centrality(%); #LT Sin(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCent});
+    registry.add<TProfile>("hSinPhiACosPhiC", "hSinPhiACosPhiC; Centrality(%); #LT Sin(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCent});
+    registry.add<TProfile>("hCosPhiASinsPhiC", "hCosPhiASinsPhiC; Centrality(%); #LT Cos(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCent});
+    registry.add<TProfile>("hFullEvPlaneRes", "hFullEvPlaneRes; Centrality(%); #sqrt{2#LT Cos(#Psi^{A} - #Psi^{C})#GT} ", kTProfile, {axisCent});
 
-    registry.add("pt_phi_bef", "", {HistType::kTH2D, {ptAxis, phiModAxis}});
-    registry.add("pt_phi_aft", "", {HistType::kTH2D, {ptAxis, phiModAxis}});
+    registry.add("QA/after/hCent", "", {HistType::kTH1D, {axisCent}});
+    registry.add("QA/after/globalTracks_centT0C", "", {HistType::kTH2D, {axisCent, nchAxis}});
+    registry.add("QA/after/PVTracks_centT0C", "", {HistType::kTH2D, {axisCent, multpvAxis}});
+    registry.add("QA/after/globalTracks_PVTracks", "", {HistType::kTH2D, {multpvAxis, nchAxis}});
+    registry.add("QA/after/globalTracks_multT0A", "", {HistType::kTH2D, {t0aAxis, nchAxis}});
+    registry.add("QA/after/globalTracks_multV0A", "", {HistType::kTH2D, {t0aAxis, nchAxis}});
+    registry.add("QA/after/multV0A_multT0A", "", {HistType::kTH2D, {t0aAxis, t0aAxis}});
+    registry.add("QA/after/multT0C_centT0C", "", {HistType::kTH2D, {axisCent, t0cAxis}});
+    registry.addClone("QA/after/", "QA/before/");
 
-    registry.add<TProfile>("v1_eta", "", kTProfile, {{10, -.8, .8}});
-    registry.add<TProfile>("v1A_eta", "", kTProfile, {{10, -.8, .8}});
-    registry.add<TProfile>("v1C_eta", "", kTProfile, {{10, -.8, .8}});
-    registry.add<TProfile>("v1AC_eta", "", kTProfile, {{10, -.8, .8}});
+    registry.add("QA/after/pt_phi_bef", "", {HistType::kTH2D, {axisPt, axisPhiMod}});
+    registry.add("QA/after/pt_phi_aft", "", {HistType::kTH2D, {axisPt, axisPhiMod}});
+    registry.add("QA/after/hPhi_Eta_vz", "", {HistType::kTH3D, {axisPhi, axisEta, axisVz}});
+    registry.add("QA/after/hDCAxy", "", {HistType::kTH1D, {axisDCAxy}});
+    registry.add("QA/after/hDCAz", "", {HistType::kTH1D, {axisDCAz}});
 
-    registry.add<TProfile>("v2_cent", "", kTProfile, {{80, 0, 80}});
-    registry.add<TProfile>("v2A_cent", "", kTProfile, {{80, 0, 80}});
-    registry.add<TProfile>("v2C_cent", "", kTProfile, {{80, 0, 80}});
-    registry.add<TProfile>("v2AC_cent", "", kTProfile, {{80, 0, 80}});
+    // track properties per centrality and per eta, pt bin
+    registry.add<TProfile3D>("uxqxA_eta_pt", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("uyqyA_eta_pt", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("uxqxC_eta_pt", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("uyqyC_eta_pt", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("v1A_eta_pt", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("v1C_eta_pt", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("v1Full_eta_pt", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
 
-    registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{10, 0, 10}}});
+    registry.add<TProfile3D>("uxqxA_eta_pt_pos", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("uyqyA_eta_pt_pos", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("uxqxC_eta_pt_pos", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("uyqyC_eta_pt_pos", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("v1A_eta_pt_pos", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("v1C_eta_pt_pos", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("v1Full_eta_pt_pos", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+
+    registry.add<TProfile3D>("uxqxA_eta_pt_neg", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("uyqyA_eta_pt_neg", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("uxqxC_eta_pt_neg", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("uyqyC_eta_pt_neg", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("v1A_eta_pt_neg", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("v1C_eta_pt_neg", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+    registry.add<TProfile3D>("v1Full_eta_pt_neg", "", kTProfile3D, {axisEtaV1, axisPt, axisCent});
+
+    registry.add<TProfile>("qAqCX", "", kTProfile, {axisCent});
+    registry.add<TProfile>("qAqCY", "", kTProfile, {axisCent});
+    registry.add<TProfile>("qAqCXY", "", kTProfile, {axisCent});
+
+    registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{11, 0, 11}}});
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "sel8");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "occupancy");
@@ -133,7 +181,8 @@ struct flowAnalysisSP {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(7, "kNoCollInTimeRangeStandard");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(8, "kIsVertexITSTPC");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(9, "after Mult cuts");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(10, "isSelected");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(10, "after Cent cuts");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(11, "isSelected");
 
     if (cfgUseAdditionalEventCut) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
@@ -217,7 +266,7 @@ struct flowAnalysisSP {
     float vtxz = -999;
     if (collision.numContrib() > 1) {
       vtxz = collision.posZ();
-      float zRes = TMath::Sqrt(collision.covZZ());
+      float zRes = std::sqrt(collision.covZZ());
       if (zRes > 0.25 && collision.numContrib() < 20)
         vtxz = -999;
     }
@@ -239,6 +288,11 @@ struct flowAnalysisSP {
 
     registry.fill(HIST("hEventCount"), 8.5);
 
+    if (centrality > cfgCentMax || centrality < cfgCentMin)
+      return 0;
+
+    registry.fill(HIST("hEventCount"), 9.5);
+
     return 1;
   }
 
@@ -247,22 +301,47 @@ struct flowAnalysisSP {
   {
     double phimodn = track.phi();
     if (field < 0) // for negative polarity field
-      phimodn = TMath::TwoPi() - phimodn;
+      phimodn = o2::constants::math::TwoPI - phimodn;
     if (track.sign() < 0) // for negative charge
-      phimodn = TMath::TwoPi() - phimodn;
+      phimodn = o2::constants::math::TwoPI - phimodn;
     if (phimodn < 0)
       LOGF(warning, "phi < 0: %g", phimodn);
 
-    phimodn += TMath::Pi() / 18.0; // to center gap in the middle
-    phimodn = fmod(phimodn, TMath::Pi() / 9.0);
-    registry.fill(HIST("pt_phi_bef"), track.pt(), phimodn);
+    phimodn += o2::constants::math::PI / 18.0; // to center gap in the middle
+    phimodn = fmod(phimodn, o2::constants::math::PI / 9.0);
+    registry.fill(HIST("QA/after/pt_phi_bef"), track.pt(), phimodn);
     if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt()))
       return false; // reject track
-    registry.fill(HIST("pt_phi_aft"), track.pt(), phimodn);
+    registry.fill(HIST("QA/after/pt_phi_aft"), track.pt(), phimodn);
     return true;
   }
 
-  void process(myCollisions::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
+  template <typename CollisionObject, typename TracksObject>
+  inline void fillEventQA(CollisionObject collision, TracksObject tracks, bool before)
+  {
+    if (before) {
+      registry.fill(HIST("QA/before/hCent"), collision.centFT0C());
+      registry.fill(HIST("QA/before/globalTracks_centT0C"), collision.centFT0C(), tracks.size());
+      registry.fill(HIST("QA/before/PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV());
+      registry.fill(HIST("QA/before/globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
+      registry.fill(HIST("QA/before/globalTracks_multT0A"), collision.multFT0A(), tracks.size());
+      registry.fill(HIST("QA/before/globalTracks_multV0A"), collision.multFV0A(), tracks.size());
+      registry.fill(HIST("QA/before/multV0A_multT0A"), collision.multFT0A(), collision.multFV0A());
+      registry.fill(HIST("QA/before/multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
+    } else {
+      registry.fill(HIST("QA/after/hCent"), collision.centFT0C());
+      registry.fill(HIST("QA/after/globalTracks_centT0C"), collision.centFT0C(), tracks.size());
+      registry.fill(HIST("QA/after/PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV());
+      registry.fill(HIST("QA/after/globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
+      registry.fill(HIST("QA/after/globalTracks_multT0A"), collision.multFT0A(), tracks.size());
+      registry.fill(HIST("QA/after/globalTracks_multV0A"), collision.multFV0A(), tracks.size());
+      registry.fill(HIST("QA/after/multV0A_multT0A"), collision.multFT0A(), collision.multFV0A());
+      registry.fill(HIST("QA/after/multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
+    }
+    return;
+  }
+
+  void process(UsedCollisions::iterator const& collision, aod::BCsWithTimestamps const&, UsedTracks const& tracks)
   {
     // Hier sum over collisions and get ZDC data.
     registry.fill(HIST("hEventCount"), .5);
@@ -279,58 +358,99 @@ struct flowAnalysisSP {
     if (!eventSelected(collision, tracks.size(), centrality))
       return;
 
-    if (collision.isSelected()) {
-      registry.fill(HIST("hEventCount"), 9.5);
+    fillEventQA(collision, tracks, true);
 
-      registry.fill(HIST("hCent"), centrality);
+    if (collision.isSelected()) {
+
+      registry.fill(HIST("hEventCount"), 10.5);
+
+      fillEventQA(collision, tracks, false);
 
       double qxA = collision.qxA();
       double qyA = collision.qyA();
       double qxC = collision.qxC();
       double qyC = collision.qyC();
 
-      double Psi_A = 1.0 * TMath::ATan2(qyA, qxA);
-      registry.fill(HIST("hSPplaneA"), Psi_A, 1);
+      double psiA = 1.0 * std::atan2(qyA, qxA);
+      registry.fill(HIST("hSPplaneA"), psiA, 1);
 
-      double Psi_C = 1.0 * TMath::ATan2(qyC, qxC);
-      registry.fill(HIST("hSPplaneC"), Psi_C, 1);
+      double psiC = 1.0 * std::atan2(qyC, qxC);
+      registry.fill(HIST("hSPplaneC"), psiC, 1);
 
-      registry.fill(HIST("hSPplaneA-C"), Psi_A - Psi_C, 1);
+      // https://twiki.cern.ch/twiki/pub/ALICE/DirectedFlowAnalysisNote/v1_ZDC_ALICE_INT_NOTE_version02.pdf
+      double psiFull = 1.0 * std::atan2(qyA + qyC, qxA + qxC);
+      registry.fill(HIST("hSPplaneFull"), psiFull, 1);
 
-      registry.fill(HIST("hCosdPhi"), centrality, TMath::Cos(Psi_A - Psi_C));
-      if (TMath::Cos(Psi_A - Psi_C) < 0)
-        registry.fill(HIST("hSPlaneRes"), centrality, TMath::Sqrt(-1. * TMath::Cos(Psi_A - Psi_C)));
-      registry.fill(HIST("hSindPhi"), centrality, TMath::Sin(Psi_A - Psi_C));
+      registry.fill(HIST("hCosPhiACosPhiC"), centrality, std::cos(psiA) * std::cos(psiC));
+      registry.fill(HIST("hSinPhiASinPhiC"), centrality, std::sin(psiA) * std::sin(psiC));
+      registry.fill(HIST("hSinPhiACosPhiC"), centrality, std::sin(psiA) * std::cos(psiC));
+      registry.fill(HIST("hCosPhiASinsPhiC"), centrality, std::cos(psiA) * std::sin(psiC));
 
-      for (auto& track : tracks) {
+      if (std::cos(psiA) - std::cos(psiC) < 0)
+        registry.fill(HIST("hFullEvPlaneRes"), centrality, std::sqrt(-2. * (std::cos(psiA) - std::cos(psiC))));
+
+      registry.fill(HIST("qAqCXY"), centrality, qxA * qxC + qyA * qyC);
+      registry.fill(HIST("qAqCX"), centrality, qxA * qxC);
+      registry.fill(HIST("qAqCY"), centrality, qyA * qyC);
+
+      for (const auto& track : tracks) {
         if (!trackSelected(track, field))
           continue;
 
-        double v1A = TMath::Cos(track.phi() - Psi_A);
-        double v1C = TMath::Cos(track.phi() - Psi_C);
+        if (track.sign() == 0.0)
+          continue;
+        bool pos = (track.sign() > 0) ? true : false;
 
-        double v1AC = TMath::Cos(track.phi() - (Psi_A - Psi_C));
+        // constrain angle to 0 -> [0,0+2pi]
+        auto phi = RecoDecay::constrainAngle(track.phi(), 0);
 
-        registry.fill(HIST("v1_eta"), track.eta(), (1. / TMath::Sqrt(2)) * (v1A - v1C));
-        registry.fill(HIST("v1A_eta"), track.eta(), (v1A));
-        registry.fill(HIST("v1C_eta"), track.eta(), (v1C));
-        registry.fill(HIST("v1AC_eta"), track.eta(), (v1AC));
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        auto ux = std::cos(phi);
+        auto uy = std::sin(phi);
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-        double v2A = TMath::Cos(2 * (track.phi() - Psi_A));
-        double v2C = TMath::Cos(2 * (track.phi() - Psi_C));
-        double v2AC = TMath::Cos(2 * (track.phi() - (Psi_A - Psi_C)));
+        double uxqxA = ux * qxA;
+        double uyqyA = uy * qyA;
 
-        registry.fill(HIST("v2_cent"), centrality, (1. / TMath::Sqrt(2)) * (v2A - v2C));
-        registry.fill(HIST("v2A_cent"), centrality, (v2A));
-        registry.fill(HIST("v2C_cent"), centrality, (v2C));
-        registry.fill(HIST("v2AC_cent"), centrality, (v2AC));
+        registry.fill(HIST("uxqxA_eta_pt"), track.eta(), track.pt(), centrality, uxqxA);
+        registry.fill(HIST("uyqyA_eta_pt"), track.eta(), track.pt(), centrality, uyqyA);
+
+        double uxqxC = ux * qxC;
+        double uyqyC = uy * qyC;
+
+        registry.fill(HIST("uxqxC_eta_pt"), track.eta(), track.pt(), centrality, uxqxC);
+        registry.fill(HIST("uyqyC_eta_pt"), track.eta(), track.pt(), centrality, uyqyC);
+
+        double v1A = std::cos(phi - psiA);
+        double v1C = std::cos(phi - psiC);
+        double v1Full = std::cos(phi - psiFull);
+
+        registry.fill(HIST("v1A_eta_pt"), track.eta(), track.pt(), centrality, v1A);
+        registry.fill(HIST("v1C_eta_pt"), track.eta(), track.pt(), centrality, v1C);
+        registry.fill(HIST("v1Full_eta_pt"), track.eta(), track.pt(), centrality, v1Full);
+
+        if (pos) {
+          registry.fill(HIST("uxqxA_eta_pt_pos"), track.eta(), track.pt(), centrality, uxqxA);
+          registry.fill(HIST("uyqyA_eta_pt_pos"), track.eta(), track.pt(), centrality, uyqyA);
+          registry.fill(HIST("uxqxC_eta_pt_pos"), track.eta(), track.pt(), centrality, uxqxC);
+          registry.fill(HIST("uyqyC_eta_pt_pos"), track.eta(), track.pt(), centrality, uyqyC);
+          registry.fill(HIST("v1A_eta_pt_pos"), track.eta(), track.pt(), centrality, v1A);
+          registry.fill(HIST("v1C_eta_pt_pos"), track.eta(), track.pt(), centrality, v1C);
+          registry.fill(HIST("v1Full_eta_pt_pos"), track.eta(), track.pt(), centrality, v1Full);
+        } else {
+          registry.fill(HIST("uxqxA_eta_pt_neg"), track.eta(), track.pt(), centrality, uxqxA);
+          registry.fill(HIST("uyqyA_eta_pt_neg"), track.eta(), track.pt(), centrality, uyqyA);
+          registry.fill(HIST("uxqxC_eta_pt_neg"), track.eta(), track.pt(), centrality, uxqxC);
+          registry.fill(HIST("uyqyC_eta_pt_neg"), track.eta(), track.pt(), centrality, uyqyC);
+          registry.fill(HIST("v1A_eta_pt_neg"), track.eta(), track.pt(), centrality, v1A);
+          registry.fill(HIST("v1C_eta_pt_neg"), track.eta(), track.pt(), centrality, v1C);
+          registry.fill(HIST("v1Full_eta_pt_neg"), track.eta(), track.pt(), centrality, v1Full);
+        }
+        // QA plots
+        registry.fill(HIST("QA/after/hPhi_Eta_vz"), track.phi(), track.eta(), collision.posZ());
+        registry.fill(HIST("QA/after/hDCAxy"), track.dcaXY());
+        registry.fill(HIST("QA/after/hDCAz"), track.dcaZ());
       }
-
-      float qIm = collision.qvecIm()[0];
-      float qRe = collision.qvecRe()[0];
-
-      registry.fill(HIST("hqIm"), qIm);
-      registry.fill(HIST("hqRe"), qRe);
     }
   }
 };
@@ -338,6 +458,6 @@ struct flowAnalysisSP {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<flowAnalysisSP>(cfgc),
+    adaptAnalysisTask<FlowSP>(cfgc),
   };
 }

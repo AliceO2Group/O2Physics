@@ -90,9 +90,3 @@ struct JetMatchingMcSub {
   }
   PROCESS_SWITCH(JetMatchingMcSub, processJets, "Perform jet matching", true);
 };
-
-/*using BplusChargedJetMatching = JetMatchingMcSub<soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents>,
-                                                 soa::Join<aod::BplusChargedMCDetectorLevelEventWiseSubtractedJets, aod::BplusChargedMCDetectorLevelEventWiseSubtractedJetConstituents>,
-                                                 aod::BplusChargedMCDetectorLevelJetsMatchedToBplusChargedMCDetectorLevelEventWiseSubtractedJets,
-                                                 aod::BplusChargedMCDetectorLevelEventWiseSubtractedJetsMatchedToBplusChargedMCDetectorLevelJets,
-                                                 aod::CandidatesBplusMCD>;*/
