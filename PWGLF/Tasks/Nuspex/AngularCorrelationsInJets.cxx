@@ -342,10 +342,15 @@ struct AngularCorrelationsInJets {
     switch (species) {
       case 1: // (anti)proton
         return (track.tpcNSigmaPr() < nsigmaRejection && track.tpcNSigmaDe() > nsigmaRejection && track.tpcNSigmaHe() > nsigmaRejection);
+        break;
       case 2: // (anti)deuteron
         return (track.tpcNSigmaDe() < nsigmaRejection && track.tpcNSigmaPr() > nsigmaRejection && track.tpcNSigmaHe() > nsigmaRejection);
+        break;
       case 3: // (anti)helium-3
         return (track.tpcNSigmaHe() < nsigmaRejection && track.tpcNSigmaDe() > nsigmaRejection && track.tpcNSigmaPr() > nsigmaRejection);
+        break;
+      default:
+        return false;
     }
   }
 
