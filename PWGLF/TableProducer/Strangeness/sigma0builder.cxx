@@ -102,6 +102,20 @@ struct sigma0builder {
   Configurable<float> Sigma0Window{"Sigma0Window", 0.1, "Mass window around expected (in GeV/c2)"};
   Configurable<float> SigmaMaxRap{"SigmaMaxRap", 0.8, "Max sigma0 rapidity"};
 
+  //// Extras:
+  Configurable<bool> doPi0QA{"doPi0QA", true, "Flag to fill QA histos for pi0 rejection study."};
+  Configurable<float> Pi0PhotonMinDCADauToPv{"Pi0PhotonMinDCADauToPv", 0.0, "Min DCA daughter To PV (cm)"};
+  Configurable<float> Pi0PhotonMaxDCAV0Dau{"Pi0PhotonMaxDCAV0Dau", 3.5, "Max DCA V0 Daughters (cm)"};
+  Configurable<int> Pi0PhotonMinTPCCrossedRows{"Pi0PhotonMinTPCCrossedRows", 0, "Min daughter TPC Crossed Rows"};
+  Configurable<int> Pi0PhotonMaxTPCNSigmas{"Pi0PhotonMaxTPCNSigmas", 7, "Max TPC NSigmas for daughters"};
+  Configurable<float> Pi0PhotonMaxEta{"Pi0PhotonMaxEta", 0.8, "Max photon rapidity"};
+  Configurable<float> Pi0PhotonMinRadius{"Pi0PhotonMinRadius", 3.0, "Min photon conversion radius (cm)"};
+  Configurable<float> Pi0PhotonMaxRadius{"Pi0PhotonMaxRadius", 115, "Max photon conversion radius (cm)"};
+  Configurable<float> Pi0PhotonMaxQt{"Pi0PhotonMaxQt", 0.05, "Max photon qt value (AP plot) (GeV/c)"};
+  Configurable<float> Pi0PhotonMaxAlpha{"Pi0PhotonMaxAlpha", 0.95, "Max photon alpha absolute value (AP plot)"};
+  Configurable<float> Pi0PhotonMinV0cospa{"Pi0PhotonMinV0cospa", 0.80, "Min V0 CosPA"};
+  Configurable<float> Pi0PhotonMaxMass{"Pi0PhotonMaxMass", 0.10, "Max photon mass (GeV/c^{2})"};
+
   // Axis
   // base properties
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
@@ -174,6 +188,8 @@ struct sigma0builder {
     histos.add("GeneralQA/h2dMassGammaVsK0SAfterMassSel", "h2dMassGammaVsK0SAfterMassSel", kTH2D, {axisPhotonMass, {200, 0.4f, 0.6f}});
     histos.add("GeneralQA/h2dMassLambdaVsK0SAfterMassSel", "h2dMassLambdaVsK0SAfterMassSel", kTH2D, {axisLambdaMass, {200, 0.4f, 0.6f}});
     histos.add("GeneralQA/h2dMassGammaVsLambdaAfterMassSel", "h2dMassGammaVsLambdaAfterMassSel", kTH2D, {axisPhotonMass, axisLambdaMass});
+    histos.add("GeneralQA/h2dPtVsMassPi0BeforeSel_Candidates", "h2dPtVsMassPi0BeforeSel_Candidates", kTH2D, {axisPt, {500, 0.08f, 0.18f}});
+    histos.add("GeneralQA/h2dPtVsMassPi0AfterSel_Candidates", "h2dPtVsMassPi0AfterSel_Candidates", kTH2D, {axisPt, {500, 0.08f, 0.18f}});
 
     // MC
     histos.add("MC/h2dPtVsCentrality_GammaBeforeSel", "h2dPtVsCentrality_GammaBeforeSel", kTH2D, {axisCentrality, axisPt});
@@ -208,8 +224,108 @@ struct sigma0builder {
     histos.add("MC/h2dFakeGammaTrueLambdaMatrix", "h2dFakeGammaTrueLambdaMatrix", kTHnSparseD, {{10001, -5000.5f, +5000.5f}, {10001, -5000.5f, +5000.5f}});
     histos.add("MC/h2dFakeDaughtersMatrix", "h2dFakeDaughtersMatrix", kTHnSparseD, {{10001, -5000.5f, +5000.5f}, {10001, -5000.5f, +5000.5f}});
 
+    // For Pi0 QA
+    histos.add("MC/h2dPtVsMassPi0BeforeSel_SignalOnly", "h2dPtVsMassPi0BeforeSel_SignalOnly", kTH2D, {axisPt, {500, 0.08f, 0.18f}});
+    histos.add("MC/h2dPtVsMassPi0AfterSel_SignalOnly", "h2dPtVsMassPi0AfterSel_SignalOnly", kTH2D, {axisPt, {500, 0.08f, 0.18f}});
+
     histos.add("h3dMassSigmasBeforeSel", "h3dMassSigmasBeforeSel", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
     histos.add("h3dMassSigmasAfterSel", "h3dMassSigmasAfterSel", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
+  }
+template <typename TV0Object>
+void runPi0QA(TV0Object const& gamma1, TV0Object const& gamma2) {
+
+    // Check if both V0s are made of the same tracks
+    if (gamma1.posTrackExtraId() == gamma2.posTrackExtraId() || 
+        gamma1.negTrackExtraId() == gamma2.negTrackExtraId() || 
+        gamma1.posTrackExtraId() == gamma2.negTrackExtraId() || 
+        gamma1.negTrackExtraId() == gamma2.posTrackExtraId()) {
+        return;
+    }
+
+    // Calculate pi0 properties
+    std::array<float, 3> pVecGamma1{gamma1.px(), gamma1.py(), gamma1.pz()};
+    std::array<float, 3> pVecGamma2{gamma2.px(), gamma2.py(), gamma2.pz()};
+    std::array arrpi0{pVecGamma1, pVecGamma2};
+    float pi0Mass = RecoDecay::m(arrpi0, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassPhoton});
+    float pi0Pt = RecoDecay::pt(std::array{gamma1.px() + gamma2.px(), gamma1.py() + gamma2.py()});
+    float pi0Y = RecoDecay::y(std::array{gamma1.px() + gamma2.px(), gamma1.py() + gamma2.py(), gamma1.pz() + gamma2.pz()}, o2::constants::physics::MassPi0);
+
+    // MC-specific variables
+    bool fIsPi0 = false, fIsMC = false;
+
+    // Check if MC data and populate fIsMC, fIsPi0
+    if constexpr (requires { gamma1.pdgCode(); gamma2.pdgCode(); }) {
+        fIsMC = true;
+        if (gamma1.pdgCode() == 22 && gamma2.pdgCode() == 22 &&
+            gamma1.pdgCodeMother() == 111 && gamma2.pdgCodeMother() == 111 &&
+            gamma1.motherMCPartId() == gamma2.motherMCPartId()) {
+            fIsPi0 = true;
+            histos.fill(HIST("MC/h2dPtVsMassPi0BeforeSel_SignalOnly"), pi0Pt, pi0Mass);
+        }
+    } else {
+        histos.fill(HIST("GeneralQA/h2dPtVsMassPi0BeforeSel_Candidates"), pi0Pt, pi0Mass);
+    }
+
+    // Photon-specific selections
+    auto posTrackGamma1 = gamma1.template posTrackExtra_as<dauTracks>();
+    auto negTrackGamma1 = gamma1.template negTrackExtra_as<dauTracks>();
+    auto posTrackGamma2 = gamma2.template posTrackExtra_as<dauTracks>();
+    auto negTrackGamma2 = gamma2.template negTrackExtra_as<dauTracks>();
+
+    // Gamma1 Selection
+    bool passedTPCGamma1 = (posTrackGamma1.tpcNSigmaEl() == -999.f || TMath::Abs(posTrackGamma1.tpcNSigmaEl()) < Pi0PhotonMaxTPCNSigmas) &&
+                           (negTrackGamma1.tpcNSigmaEl() == -999.f || TMath::Abs(negTrackGamma1.tpcNSigmaEl()) < Pi0PhotonMaxTPCNSigmas);
+
+    if (TMath::Abs(gamma1.mGamma()) > Pi0PhotonMaxMass ||
+        gamma1.qtarm() >= Pi0PhotonMaxQt ||
+        TMath::Abs(gamma1.alpha()) >= Pi0PhotonMaxAlpha ||
+        TMath::Abs(gamma1.dcapostopv()) < Pi0PhotonMinDCADauToPv ||
+        TMath::Abs(gamma1.dcanegtopv()) < Pi0PhotonMinDCADauToPv ||
+        TMath::Abs(gamma1.dcaV0daughters()) > Pi0PhotonMaxDCAV0Dau ||
+        TMath::Abs(gamma1.negativeeta()) >= Pi0PhotonMaxEta ||
+        TMath::Abs(gamma1.positiveeta()) >= Pi0PhotonMaxEta ||
+        gamma1.v0cosPA() <= Pi0PhotonMinV0cospa ||
+        gamma1.v0radius() <= Pi0PhotonMinRadius ||
+        gamma1.v0radius() >= Pi0PhotonMaxRadius ||
+        posTrackGamma1.tpcCrossedRows() < Pi0PhotonMinTPCCrossedRows ||
+        negTrackGamma1.tpcCrossedRows() < Pi0PhotonMinTPCCrossedRows ||
+        !passedTPCGamma1) {
+        return;
+    }
+
+    // Gamma2 Selection
+    bool passedTPCGamma2 = (posTrackGamma2.tpcNSigmaEl() == -999.f || TMath::Abs(posTrackGamma2.tpcNSigmaEl()) < Pi0PhotonMaxTPCNSigmas) &&
+                           (negTrackGamma2.tpcNSigmaEl() == -999.f || TMath::Abs(negTrackGamma2.tpcNSigmaEl()) < Pi0PhotonMaxTPCNSigmas);
+
+    if (TMath::Abs(gamma2.mGamma()) > Pi0PhotonMaxMass ||
+        gamma2.qtarm() >= Pi0PhotonMaxQt ||
+        TMath::Abs(gamma2.alpha()) >= Pi0PhotonMaxAlpha ||
+        TMath::Abs(gamma2.dcapostopv()) < Pi0PhotonMinDCADauToPv ||
+        TMath::Abs(gamma2.dcanegtopv()) < Pi0PhotonMinDCADauToPv ||
+        TMath::Abs(gamma2.dcaV0daughters()) > Pi0PhotonMaxDCAV0Dau ||
+        TMath::Abs(gamma2.negativeeta()) >= Pi0PhotonMaxEta ||
+        TMath::Abs(gamma2.positiveeta()) >= Pi0PhotonMaxEta ||
+        gamma2.v0cosPA() <= Pi0PhotonMinV0cospa ||
+        gamma2.v0radius() <= Pi0PhotonMinRadius ||
+        gamma2.v0radius() >= Pi0PhotonMaxRadius ||
+        posTrackGamma2.tpcCrossedRows() < Pi0PhotonMinTPCCrossedRows ||
+        negTrackGamma2.tpcCrossedRows() < Pi0PhotonMinTPCCrossedRows ||
+        !passedTPCGamma2) {
+        return;
+    }
+
+    // Pi0-specific selections:
+    if (TMath::Abs(pi0Y) > 0.5) {
+      return;
+    }
+
+    // Fill histograms
+    if (fIsMC) {
+      if (fIsPi0)
+        histos.fill(HIST("MC/h2dPtVsMassPi0AfterSel_SignalOnly"), pi0Pt, pi0Mass);
+    } 
+    else 
+      histos.fill(HIST("GeneralQA/h2dPtVsMassPi0AfterSel_Candidates"), pi0Pt, pi0Mass);
   }
 
   // Process sigma candidate and store properties in object
@@ -482,7 +598,7 @@ struct sigma0builder {
                       fLambdaV0Type, LambdaBDTScore, AntiLambdaBDTScore);
   }
 
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents> const& collisions, V0DerivedMCDatas const& V0s)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents> const& collisions, V0DerivedMCDatas const& V0s, dauTracks const&)
   {
     for (const auto& coll : collisions) {
       // Do analysis with collision-grouped V0s, retain full collision information
@@ -530,6 +646,9 @@ struct sigma0builder {
         }
 
         for (auto& lambda : V0Table_thisCollision) { // selecting lambdas from Sigma0
+          if (doPi0QA) // Pi0 QA study
+            runPi0QA(gamma, lambda);
+
           // Sigma0 candidate properties
           std::array<float, 3> pVecPhotons{gamma.px(), gamma.py(), gamma.pz()};
           std::array<float, 3> pVecLambda{lambda.px(), lambda.py(), lambda.pz()};
@@ -592,6 +711,10 @@ struct sigma0builder {
       // V0 table sliced
       for (auto& gamma : V0Table_thisCollision) {    // selecting photons from Sigma0
         for (auto& lambda : V0Table_thisCollision) { // selecting lambdas from Sigma0
+          if (doPi0QA) // Pi0 QA study
+            runPi0QA(gamma, lambda);
+
+          // Sigma0 candidate properties
           std::array<float, 3> pVecPhotons{gamma.px(), gamma.py(), gamma.pz()};
           std::array<float, 3> pVecLambda{lambda.px(), lambda.py(), lambda.pz()};
           auto arrMom = std::array{pVecPhotons, pVecLambda};

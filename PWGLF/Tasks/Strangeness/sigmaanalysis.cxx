@@ -346,11 +346,11 @@ struct sigmaanalysis {
         return false;
       histos.fill(HIST("GeneralQA/hPhotonPosTPCNSigma"), cand.photonPosTPCNSigma());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 6.);
-      if ((cand.photonPosTPCNSigma() < PhotonMinTPCNSigmas) || (cand.photonPosTPCNSigma() > PhotonMaxTPCNSigmas))
+      if ((cand.photonPosTPCNSigma()!=-999.f) && ((cand.photonPosTPCNSigma() < PhotonMinTPCNSigmas) || (cand.photonPosTPCNSigma() > PhotonMaxTPCNSigmas)))
         return false;
       histos.fill(HIST("GeneralQA/hPhotonNegTPCNSigma"), cand.photonNegTPCNSigma());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 7.);
-      if ((cand.photonNegTPCNSigma() < PhotonMinTPCNSigmas) || (cand.photonNegTPCNSigma() > PhotonMaxTPCNSigmas))
+      if ((cand.photonNegTPCNSigma()!=-999.f) && ((cand.photonNegTPCNSigma() < PhotonMinTPCNSigmas) || (cand.photonNegTPCNSigma() > PhotonMaxTPCNSigmas)))
         return false;
       histos.fill(HIST("GeneralQA/hPhotonpT"), cand.photonPt());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 8.);
