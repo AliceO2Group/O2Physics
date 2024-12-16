@@ -4,7 +4,6 @@
 #include "Framework/Configurable.h"
 #include "Framework/AnalysisHelpers.h"
 #include "Framework/CallbackService.h"
-#include "Framework/HistogramRegistry.h"
 #include "Framework/InitContext.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "FemtoUniverseParticleHisto.h"
@@ -19,17 +18,19 @@ struct EfficiencyConfigurableGroup : ConfigurableGroup {
   Configurable<bool> shouldCalculate{"ConfEfficiencyCalculate", false, "Should calculate efficiency"};
   Configurable<bool> shouldApplyCorrections{"ConfEfficiencyApplyCorrections", false, "Should apply corrections from efficiency"};
 
-  Configurable<std::string> ccdbUrl{"ConfCCDBUrl", "http://alice-ccdb.cern.ch", "CCDB URL to be used"};
-  Configurable<std::string> ccdbPath{"ConfCCDBPath", "", "CCDB base path to where to upload objects"};
-
-  Configurable<long> ccdbTimestamp{"ConfCCDBTimestamp", -1, "Timestamp from which to query CCDB objects"};
   Configurable<std::vector<std::string>> ccdbLabels{"ConfCCDBLabels", {"", ""}, "Labels for efficiency objects in CCDB"};
 
+  OutputObj<TH1F> hEfficiency1{"Efficiency part1"};
+  OutputObj<TH1F> hEfficiency2{"Efficiency part2"};
+
+  // TODO: move to separate struct?
+  Configurable<std::string> ccdbUrl{"ConfCCDBUrl", "http://alice-ccdb.cern.ch", "CCDB URL to be used"};
+  Configurable<std::string> ccdbPath{"ConfCCDBPath", "", "CCDB base path to where to upload objects"};
+  Configurable<long> ccdbTimestamp{"ConfCCDBTimestamp", -1, "Timestamp from which to query CCDB objects"};
+
+  // TODO: should this be decalred in task directly?
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> hMCTruth1;
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 2> hMCTruth2;
-
-  OutputObj<TH1F> hEff1{"Efficiency part1"};
-  OutputObj<TH1F> hEff2{"Efficiency part2"};
 };
 
 class EfficiencyCalculator
@@ -54,7 +55,7 @@ class EfficiencyCalculator
     ccdbFullPath = std::format("{}/{}", config->ccdbPath.value, folderName);
 
     if (config->shouldCalculate) {
-      hOutput = {config->hEff1.object, config->hEff2.object};
+      hOutput = {config->hEfficiency1.object, config->hEfficiency2.object};
     }
 
     if (config->shouldApplyCorrections) {
@@ -63,15 +64,6 @@ class EfficiencyCalculator
         loadEfficiencyFromCCDB<2>(config->ccdbTimestamp) //
       };
     }
-  }
-
-  auto setRegistry(HistogramRegistry* reg) -> EfficiencyCalculator&
-  {
-    if (!reg) {
-      LOGF(error, log("Registry value cannot be null"));
-    }
-    registry = reg;
-    return *this;
   }
 
   template <uint8_t N>
@@ -104,8 +96,7 @@ class EfficiencyCalculator
           }
           LOGF(debug, log("Found histogram %d: %s"), i + 1, output->GetTitle());
 
-          using namespace std::chrono;
-          long now = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+          long now = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
           long oneYear = 365LL * 24 * 60 * 60 * 1000;
 
           if (ccdbApi.storeAsTFileAny(output.get(), ccdbFullPath, createMetadata(i), now, now + oneYear) == 0) {
@@ -140,14 +131,12 @@ class EfficiencyCalculator
 
   template <uint8_t N>
     requires IsOneOrTwo<N>
-  auto calculate() const
+  auto calculate(std::shared_ptr<TH1> truth, std::shared_ptr<TH1> reco) const
   {
     if (!shouldCalculate) {
       return;
     }
 
-    std::shared_ptr<TH1> truth = registry->get<TH1>(HIST("MCTruthTracks") + HIST(histSuffix[N]) + HIST("/hPt"));
-    std::shared_ptr<TH1> reco = registry->get<TH1>(HIST("Tracks") + HIST(histSuffix[N]) + HIST("_MC/hPt"));
     if (!truth || !reco) {
       LOGF(error, log("MC Truth & MC Reco histograms cannot be null"));
       return;
@@ -216,8 +205,6 @@ class EfficiencyCalculator
   bool shouldUploadOnStop = false;
   bool shouldCalculate = false;
   bool shouldApplyCorrections = false;
-
-  HistogramRegistry* registry{};
 
   std::array<std::shared_ptr<TH1>, 2> hOutput{};
   std::array<TH1*, 2> hLoaded{};
