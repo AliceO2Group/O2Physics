@@ -186,7 +186,7 @@ struct HfCorrelatorDsHadrons {
   Filter flagDsFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::DsToKKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs);
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
 
-  Preslice<CandDsData> candsDsPerColPreslicelision = aod::hf_cand::collisionId;
+  Preslice<CandDsData> candsDsPerColPerCollision = aod::hf_cand::collisionId;
   Preslice<MyTracksData> trackIndicesPerCollision = aod::track::collisionId;
   Preslice<CandDsMcGen> perCollisionCandMc = o2::aod::mcparticle::mcCollisionId;
   PresliceUnsorted<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::McCollisionLabels>> collPerCollMc = o2::aod::mccollisionlabel::mcCollisionId;
