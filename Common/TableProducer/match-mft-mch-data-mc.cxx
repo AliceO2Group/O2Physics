@@ -77,8 +77,8 @@ using namespace o2::framework::expressions;
 
 using MyCollisions = aod::Collisions;
 using MyBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedToFT0>;
-using MyMUONs = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
-using MyMFTs = aod::MFTTracks;
+using MyMUONs = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels>;
+using MyMFTs = soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>;
 
 using MyCollision = MyCollisions::iterator;
 using MyBC = MyBCs::iterator;
@@ -718,7 +718,7 @@ struct match_mft_mch_data_mc {
 
           matching.calcGlobalMuonParams();
 
-          bool isTrue = false;
+          bool isTrue = isCorrectMatching(muontrack1, mfttrack1);
 
           tableMatchingParams(matching.getGMPtAtDCA(),
                               matching.getGMEtaAtDCA(),
@@ -747,7 +747,7 @@ struct match_mft_mch_data_mc {
               continue;
             matching.calcGlobalMuonParams();
 
-            bool isTrue = false;
+            bool isTrue = isCorrectMatching(muontrack1, mfttrack1);
 
             tableMixMatchingParams(matching.getGMPtAtDCA(),
                                    matching.getGMEtaAtDCA(),
@@ -803,7 +803,7 @@ struct match_mft_mch_data_mc {
             matchingTag.calcGlobalMuonParams();
             if (isGoodTagMatching(matchingTag.getDx(), matchingTag.getDy(), matchingTag.getDeta(), matchingTag.getDphi()) &&
                 isPassMatchingPreselection(matchingTag.getDx(), matchingTag.getDy())) {
-              bool isTrue = false;
+              bool isTrue = isCorrectMatching(tagmuontrack, mfttrack1);
               tableTagMatchingParams(matchingTag.getGMPtAtDCA(),
                                      matchingTag.getGMEtaAtDCA(),
                                      matchingTag.getGMQ(),
@@ -830,7 +830,7 @@ struct match_mft_mch_data_mc {
             matchingProbe.calcMatchingParams();
             if (isPassMatchingPreselection(matchingProbe.getDx(), matchingProbe.getDy())) {
               float R = sqrt(matchingProbe.getDx() * matchingProbe.getDx() + matchingProbe.getDy() * matchingProbe.getDy());
-              bool isTrue = false;
+              bool isTrue = isCorrectMatching(probemuontrack, mfttrack1);
               matchingProbe.calcGlobalMuonParams();
               vector<float>& probeMatchingParams = map_probeMatchingParams[nProbeMFTCand];
               probeMatchingParams.push_back(tagGMPtAtDCA);
