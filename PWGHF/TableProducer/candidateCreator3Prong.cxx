@@ -102,6 +102,8 @@ struct HfCandidateCreator3Prong {
   double massPiK{0.};
   double bz{0.};
 
+  constexpr static float UndefValueFloat{-999.f};
+
   using FilteredHf3Prongs = soa::Filtered<aod::Hf3Prongs>;
   using FilteredPvRefitHf3Prongs = soa::Filtered<soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong>>;
 
@@ -361,6 +363,13 @@ struct HfCandidateCreator3Prong {
     return track.GetDeviationFromVertex(vtx);
   }
 
+  std::array<float, 3> KFCalculateProngMomentumInSecondaryVertex(KFParticle track, const KFParticle& vtx) { // track must be passed as a copy
+    const float PvPoint[3] = {vtx.X(), vtx.Y(), vtx.Z()};
+
+    track.TransportToPoint(PvPoint);
+    return {track.GetPx(), track.GetPy(), track.GetPz()};
+  }
+
   float KFCalculateDistanceBetweenParticles(KFParticle track1, KFParticle track2) { // tracks must be passed as a copy
     float dS[2];
     float dsdr[4][6];
@@ -461,22 +470,22 @@ struct HfCandidateCreator3Prong {
         registry.fill(HIST("hDcaXYProngs"), track0.pt(), impactParameter0XY * toMicrometers);
         registry.fill(HIST("hDcaZProngs"), track0.pt(), std::sqrt(kfFirstProton.GetDistanceFromVertex(KFPV) * kfFirstProton.GetDistanceFromVertex(KFPV) - impactParameter0XY * impactParameter0XY) * toMicrometers);
       } else {
-        registry.fill(HIST("hDcaXYProngs"), track0.pt(), -999.f);
-        registry.fill(HIST("hDcaZProngs"), track0.pt(), -999.f);
+        registry.fill(HIST("hDcaXYProngs"), track0.pt(), UndefValueFloat);
+        registry.fill(HIST("hDcaZProngs"), track0.pt(), UndefValueFloat);
       }
       if (!kfSecondKaon.GetDistanceFromVertexXY(KFPV, impactParameter1XY, errImpactParameter1XY)) {
         registry.fill(HIST("hDcaXYProngs"), track1.pt(), impactParameter1XY * toMicrometers);
         registry.fill(HIST("hDcaZProngs"), track1.pt(), std::sqrt(kfSecondKaon.GetDistanceFromVertex(KFPV) * kfSecondKaon.GetDistanceFromVertex(KFPV) - impactParameter1XY * impactParameter1XY) * toMicrometers);
       } else {
-        registry.fill(HIST("hDcaXYProngs"), track1.pt(), -999.f);
-        registry.fill(HIST("hDcaZProngs"), track1.pt(), -999.f);
+        registry.fill(HIST("hDcaXYProngs"), track1.pt(), UndefValueFloat);
+        registry.fill(HIST("hDcaZProngs"), track1.pt(), UndefValueFloat);
       }
       if (!kfThirdProton.GetDistanceFromVertexXY(KFPV, impactParameter2XY, errImpactParameter2XY)) {
         registry.fill(HIST("hDcaXYProngs"), track2.pt(), impactParameter2XY * toMicrometers);
         registry.fill(HIST("hDcaZProngs"), track2.pt(), std::sqrt(kfThirdProton.GetDistanceFromVertex(KFPV) * kfThirdProton.GetDistanceFromVertex(KFPV) - impactParameter2XY * impactParameter2XY) * toMicrometers);
       } else {
-        registry.fill(HIST("hDcaXYProngs"), track2.pt(), -999.f);
-        registry.fill(HIST("hDcaZProngs"), track2.pt(), -999.f);
+        registry.fill(HIST("hDcaXYProngs"), track2.pt(), UndefValueFloat);
+        registry.fill(HIST("hDcaZProngs"), track2.pt(), UndefValueFloat);
       }
 
       const float chi2prim_first = KFCalculateChi2ToPrimaryVertex(kfFirstProton, KFPV);
@@ -539,6 +548,10 @@ struct HfCandidateCreator3Prong {
       const float chi2topo = KFCalculateChi2ToPrimaryVertex(kfCandPKPi, KFPV);
       const std::pair<float, float> ldl = KFCalculateLdL(kfCandPKPi, KFPV);
 
+      std::array<float, 3> pProng0 = KFCalculateProngMomentumInSecondaryVertex(kfFirstProton, kfCandPiKP);
+      std::array<float, 3> pProng1 = KFCalculateProngMomentumInSecondaryVertex(kfSecondKaon, kfCandPiKP);
+      std::array<float, 3> pProng2 = KFCalculateProngMomentumInSecondaryVertex(kfThirdPion, kfCandPiKP);
+
       registry.fill(HIST("hCovSVXX"), kfCandPKPi.Covariance(0, 0));
       registry.fill(HIST("hCovSVYY"), kfCandPKPi.Covariance(1, 1));
       registry.fill(HIST("hCovSVXZ"), kfCandPKPi.Covariance(2, 0));
@@ -546,10 +559,8 @@ struct HfCandidateCreator3Prong {
 
       auto covMatrixSV = kfCandPKPi.CovarianceMatrix();
 
-      double phi, theta;
-      getPointDirection(std::array{KFPV.GetX(), KFPV.GetY(), KFPV.GetZ()}, std::array{kfCandPKPi.GetX(), kfCandPKPi.GetY(), kfCandPKPi.GetZ()}, phi, theta);
-      auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
-      auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
+      auto errorDecayLength = UndefValueFloat;    // decay length is evaluated using KF tools and saved in the rowCandidateKF table
+      auto errorDecayLengthXY = UndefValueFloat;  // these two fields are filled with meaningless values just for preserving the structure of the table
 
       auto indexCollision = collision.globalIndex();
       uint8_t nProngsContributorsPV = 0;
@@ -559,6 +570,9 @@ struct HfCandidateCreator3Prong {
       if (indexCollision == track1.collisionId() && track1.isPVContributor()) {
         nProngsContributorsPV += 1;
       }
+      if (indexCollision == track2.collisionId() && track2.isPVContributor()) {
+        nProngsContributorsPV += 1;
+      }
 
       // fill candidate table rows
       rowCandidateBase(indexCollision,
@@ -566,13 +580,13 @@ struct HfCandidateCreator3Prong {
                        kfCandPKPi.GetX(), kfCandPKPi.GetY(), kfCandPKPi.GetZ(),
                        errorDecayLength, errorDecayLengthXY,
                        kfCandPKPi.GetChi2() / kfCandPKPi.GetNDF(),
-                       kfFirstProton.GetPx(), kfFirstProton.GetPy(), kfFirstProton.GetPz(),
-                       kfSecondKaon.GetPx(), kfSecondKaon.GetPy(), kfSecondKaon.GetPz(),
-                       kfThirdPion.GetPx(), kfThirdPion.GetPy(), kfThirdPion.GetPz(),
+                       pProng0.at(0), pProng0.at(1), pProng0.at(2),
+                       pProng1.at(0), pProng1.at(1), pProng1.at(2),
+                       pProng2.at(0), pProng2.at(1), pProng2.at(2),
                        impactParameter0XY, impactParameter1XY, impactParameter2XY,
                        errImpactParameter0XY, errImpactParameter1XY, errImpactParameter2XY,
-                       0.f, 0.f, 0.f,
-                       0.f, 0.f, 0.f,
+                       UndefValueFloat, UndefValueFloat, UndefValueFloat, // impact parameter Z is not calculated in KF (as in 2-prong as well)
+                       UndefValueFloat, UndefValueFloat, UndefValueFloat, // impact parameter Z error is not calculated in KF (as in 2-prong as well)
                        rowTrackIndexProng3.prong0Id(), rowTrackIndexProng3.prong1Id(), rowTrackIndexProng3.prong2Id(), nProngsContributorsPV,
                        rowTrackIndexProng3.hfflag());
 
