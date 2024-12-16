@@ -1041,7 +1041,7 @@ struct ebyeMaker {
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
       float cV0M = -999.f;
       if (Run2V0MInfo.mCalibrationStored) {
-        Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+        cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
         if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || (kINT7Intervals && ((cV0M >= 10 && cV0M < 30) || cV0M > 50))))
           continue;
       }
@@ -1127,7 +1127,7 @@ struct ebyeMaker {
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
       float cV0M = -999.f;
       if (Run2V0MInfo.mCalibrationStored) {
-        Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+        cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
       }
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
@@ -1244,7 +1244,7 @@ struct ebyeMaker {
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
       float cV0M = -999.f;
       if (Run2V0MInfo.mCalibrationStored) {
-        Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+        cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
       }
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
@@ -1316,7 +1316,7 @@ struct ebyeMaker {
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
       float cV0M = -999.f;
       if (Run2V0MInfo.mCalibrationStored) {
-        Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+        cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
       }
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
