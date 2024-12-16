@@ -231,15 +231,16 @@ struct sigma0builder {
     histos.add("h3dMassSigmasBeforeSel", "h3dMassSigmasBeforeSel", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
     histos.add("h3dMassSigmasAfterSel", "h3dMassSigmasAfterSel", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
   }
-template <typename TV0Object>
-void runPi0QA(TV0Object const& gamma1, TV0Object const& gamma2) {
+  template <typename TV0Object>
+  void runPi0QA(TV0Object const& gamma1, TV0Object const& gamma2)
+  {
 
     // Check if both V0s are made of the same tracks
-    if (gamma1.posTrackExtraId() == gamma2.posTrackExtraId() || 
-        gamma1.negTrackExtraId() == gamma2.negTrackExtraId() || 
-        gamma1.posTrackExtraId() == gamma2.negTrackExtraId() || 
+    if (gamma1.posTrackExtraId() == gamma2.posTrackExtraId() ||
+        gamma1.negTrackExtraId() == gamma2.negTrackExtraId() ||
+        gamma1.posTrackExtraId() == gamma2.negTrackExtraId() ||
         gamma1.negTrackExtraId() == gamma2.posTrackExtraId()) {
-        return;
+      return;
     }
 
     // Calculate pi0 properties
@@ -255,15 +256,15 @@ void runPi0QA(TV0Object const& gamma1, TV0Object const& gamma2) {
 
     // Check if MC data and populate fIsMC, fIsPi0
     if constexpr (requires { gamma1.pdgCode(); gamma2.pdgCode(); }) {
-        fIsMC = true;
-        if (gamma1.pdgCode() == 22 && gamma2.pdgCode() == 22 &&
-            gamma1.pdgCodeMother() == 111 && gamma2.pdgCodeMother() == 111 &&
-            gamma1.motherMCPartId() == gamma2.motherMCPartId()) {
-            fIsPi0 = true;
-            histos.fill(HIST("MC/h2dPtVsMassPi0BeforeSel_SignalOnly"), pi0Pt, pi0Mass);
-        }
+      fIsMC = true;
+      if (gamma1.pdgCode() == 22 && gamma2.pdgCode() == 22 &&
+          gamma1.pdgCodeMother() == 111 && gamma2.pdgCodeMother() == 111 &&
+          gamma1.motherMCPartId() == gamma2.motherMCPartId()) {
+        fIsPi0 = true;
+        histos.fill(HIST("MC/h2dPtVsMassPi0BeforeSel_SignalOnly"), pi0Pt, pi0Mass);
+      }
     } else {
-        histos.fill(HIST("GeneralQA/h2dPtVsMassPi0BeforeSel_Candidates"), pi0Pt, pi0Mass);
+      histos.fill(HIST("GeneralQA/h2dPtVsMassPi0BeforeSel_Candidates"), pi0Pt, pi0Mass);
     }
 
     // Photon-specific selections
@@ -290,7 +291,7 @@ void runPi0QA(TV0Object const& gamma1, TV0Object const& gamma2) {
         posTrackGamma1.tpcCrossedRows() < Pi0PhotonMinTPCCrossedRows ||
         negTrackGamma1.tpcCrossedRows() < Pi0PhotonMinTPCCrossedRows ||
         !passedTPCGamma1) {
-        return;
+      return;
     }
 
     // Gamma2 Selection
@@ -311,7 +312,7 @@ void runPi0QA(TV0Object const& gamma1, TV0Object const& gamma2) {
         posTrackGamma2.tpcCrossedRows() < Pi0PhotonMinTPCCrossedRows ||
         negTrackGamma2.tpcCrossedRows() < Pi0PhotonMinTPCCrossedRows ||
         !passedTPCGamma2) {
-        return;
+      return;
     }
 
     // Pi0-specific selections:
@@ -323,8 +324,7 @@ void runPi0QA(TV0Object const& gamma1, TV0Object const& gamma2) {
     if (fIsMC) {
       if (fIsPi0)
         histos.fill(HIST("MC/h2dPtVsMassPi0AfterSel_SignalOnly"), pi0Pt, pi0Mass);
-    } 
-    else 
+    } else
       histos.fill(HIST("GeneralQA/h2dPtVsMassPi0AfterSel_Candidates"), pi0Pt, pi0Mass);
   }
 
@@ -464,7 +464,7 @@ void runPi0QA(TV0Object const& gamma1, TV0Object const& gamma2) {
     histos.fill(HIST("hCandidateBuilderSelection"), 13.);
     return true;
   }
-  
+
   // Fill tables with reconstructed sigma0 candidate
   template <typename TV0Object, typename TCollision>
   void fillTables(TV0Object const& lambda, TV0Object const& gamma, TCollision const& coll)
@@ -646,7 +646,7 @@ void runPi0QA(TV0Object const& gamma1, TV0Object const& gamma2) {
         }
 
         for (auto& lambda : V0Table_thisCollision) { // selecting lambdas from Sigma0
-          if (doPi0QA) // Pi0 QA study
+          if (doPi0QA)                               // Pi0 QA study
             runPi0QA(gamma, lambda);
 
           // Sigma0 candidate properties
@@ -711,7 +711,7 @@ void runPi0QA(TV0Object const& gamma1, TV0Object const& gamma2) {
       // V0 table sliced
       for (auto& gamma : V0Table_thisCollision) {    // selecting photons from Sigma0
         for (auto& lambda : V0Table_thisCollision) { // selecting lambdas from Sigma0
-          if (doPi0QA) // Pi0 QA study
+          if (doPi0QA)                               // Pi0 QA study
             runPi0QA(gamma, lambda);
 
           // Sigma0 candidate properties
