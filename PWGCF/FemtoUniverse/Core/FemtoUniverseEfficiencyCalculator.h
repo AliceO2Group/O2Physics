@@ -54,10 +54,7 @@ class EfficiencyCalculator
     ccdbFullPath = std::format("{}/{}", config->ccdbPath.value, folderName);
 
     if (config->shouldCalculate) {
-      hOutput = {
-        config->hEff1.object,
-        config->hEff2.object //
-      };
+      hOutput = {config->hEff1.object, config->hEff2.object};
     }
 
     if (config->shouldApplyCorrections) {
@@ -96,17 +93,20 @@ class EfficiencyCalculator
       shouldUploadOnStop = true;
 
       auto& callbacks = ic.services().get<CallbackService>();
+
       callbacks.set<o2::framework::CallbackService::Id::Stop>([this]() {
-        for (uint8_t i{0}; i < hOutput.size(); i++) {
-          const auto& output{hOutput[i]};
+        for (auto i = 0UL; i < hOutput.size(); i++) {
+          const auto& output = hOutput[i];
+
           if (isHistogramEmpty(output.get())) {
             LOGF(error, log("Histogram %d is empty - save aborted"), i + 1);
             return;
           }
           LOGF(debug, log("Found histogram %d: %s"), i + 1, output->GetTitle());
 
-          long now{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
-          long oneYear{365LL * 24 * 60 * 60 * 1000};
+          using namespace std::chrono;
+          long now = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+          long oneYear = 365LL * 24 * 60 * 60 * 1000;
 
           if (ccdbApi.storeAsTFileAny(output.get(), ccdbFullPath, createMetadata(i), now, now + oneYear) == 0) {
             LOGF(info, log("Histogram %d saved successfully"), i + 1);
@@ -126,12 +126,12 @@ class EfficiencyCalculator
     requires IsOneOrTwo<N>
   auto getWeight(auto const& particle) const -> float
   {
-    auto weight{1.0f};
-    auto hEff{hLoaded[N - 1]};
+    auto weight = 1.0f;
+    auto hEff = hLoaded[N - 1];
 
     if (shouldApplyCorrections && hEff) {
-      auto bin{hEff->FindBin(particle.pt())};
-      auto eff{hEff->GetBinContent(bin)};
+      auto bin = hEff->FindBin(particle.pt());
+      auto eff = hEff->GetBinContent(bin);
       weight /= eff > 0 ? eff : 1.0f;
     }
 
@@ -146,39 +146,39 @@ class EfficiencyCalculator
       return;
     }
 
-    std::shared_ptr<TH1> truth{registry->get<TH1>(HIST("MCTruthTracks") + HIST(histSuffix[N]) + HIST("/hPt"))};
-    std::shared_ptr<TH1> reco{registry->get<TH1>(HIST("Tracks") + HIST(histSuffix[N]) + HIST("_MC/hPt"))};
+    std::shared_ptr<TH1> truth = registry->get<TH1>(HIST("MCTruthTracks") + HIST(histSuffix[N]) + HIST("/hPt"));
+    std::shared_ptr<TH1> reco = registry->get<TH1>(HIST("Tracks") + HIST(histSuffix[N]) + HIST("_MC/hPt"));
     if (!truth || !reco) {
       LOGF(error, log("MC Truth & MC Reco histograms cannot be null"));
       return;
     }
 
-    auto hEff{hOutput[N - 1]};
+    auto hEff = hOutput[N - 1];
     if (!hEff) {
       LOGF(error, log("No OutputObj specified for particle %d histogram"), N);
       return;
     }
 
-    for (int bin{0}; bin < hEff->GetNbinsX(); bin++) {
-      auto denom{truth->GetBinContent(bin)};
+    for (auto bin = 0; bin < hEff->GetNbinsX(); bin++) {
+      auto denom = truth->GetBinContent(bin);
       hEff->SetBinContent(bin, denom == 0 ? 0 : reco->GetBinContent(bin) / denom);
     }
   }
 
  private:
-  auto log(const std::string& msg) const -> const std::string
+  static inline auto log(const std::string& msg) -> const std::string
   {
     return std::format("[EFFICIENCY] {}", msg);
   }
 
-  auto isHistogramEmpty(TH1* hist) const -> bool
+  static auto isHistogramEmpty(TH1* hist) -> bool
   {
     if (!hist) {
       return true;
     }
 
     // check overflow bins as well
-    for (int idx{0}; idx <= hist->GetNbinsX() + 1; idx++) {
+    for (auto idx = 0; idx <= hist->GetNbinsX() + 1; idx++) {
       if (hist->GetBinContent(idx) != 0) {
         return false;
       }
@@ -201,7 +201,7 @@ class EfficiencyCalculator
     requires IsOneOrTwo<N>
   auto loadEfficiencyFromCCDB(long timestamp) const -> TH1*
   {
-    auto hEff{ccdb.getSpecific<TH1>(ccdbFullPath, timestamp, createMetadata(N - 1))};
+    auto hEff = ccdb.getSpecific<TH1>(ccdbFullPath, timestamp, createMetadata(N - 1));
     if (!hEff || hEff->IsZombie()) {
       LOGF(error, log("Could not load histogram from %s"), config->ccdbPath.value);
       return nullptr;
@@ -213,9 +213,9 @@ class EfficiencyCalculator
 
   EfficiencyConfigurableGroup* config{};
 
-  bool shouldUploadOnStop{false};
-  bool shouldCalculate{false};
-  bool shouldApplyCorrections{false};
+  bool shouldUploadOnStop = false;
+  bool shouldCalculate = false;
+  bool shouldApplyCorrections = false;
 
   HistogramRegistry* registry{};
 
