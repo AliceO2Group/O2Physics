@@ -67,7 +67,7 @@ struct recoilJets {
   Configurable<std::string> evSel{"evSel", "sel8", "Choose event selection"};
   Configurable<std::string> trkSel{"trkSel", "globalTracks", "Set track selection"};
   Configurable<float> vertexZCut{"vertexZCut", 10., "Accepted z-vertex range"};
-  Configurable<float> frac_sig{"frac_sig", 0.9, "Fraction of events to use for Signal TT"};
+  Configurable<float> frac_sig{"frac_sig", 0.9, "Fraction of events to use for signal TT"};
 
   Configurable<float> trkPtMin{"trkPtMin", 0.15, "Minimum pT of acceptanced tracks"};
   Configurable<float> trkPtMax{"trkPtMax", 100., "Maximum pT of acceptanced tracks"};
@@ -81,8 +81,8 @@ struct recoilJets {
   Configurable<std::string> triggerMasks{"triggerMasks", "", "Relevant trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt"};
 
   // List of configurable parameters for MC
-  Configurable<float> pTHatExponent{"pTHatExponent", 4.0, "exponent of the event weight for the calculation of pTHat"};
-  Configurable<float> pTHatMax{"pTHatMax", 999.0, "maximum fraction of hard scattering for jet acceptance in MC"};
+  Configurable<float> pTHatExponent{"pTHatExponent", 4.0, "Exponent of the event weight for the calculation of pTHat"};
+  Configurable<float> pTHatMax{"pTHatMax", 999.0, "Maximum fraction of hard scattering for jet acceptance in MC"};
 
   // Parameters for recoil jet selection
   Configurable<uint8_t> pT_TTref_min{"pT_TTref_min", 5, "Minimum pT of reference TT"};
@@ -538,4 +538,4 @@ struct recoilJets {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<recoilJets>(cfgc, TaskName{"trigger-hadron-recoil-jet"})}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<recoilJets>(cfgc, TaskName{"recoil-jets"})}; }
