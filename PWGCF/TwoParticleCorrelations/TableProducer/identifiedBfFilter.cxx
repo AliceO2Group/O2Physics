@@ -411,7 +411,7 @@ void IdentifiedBfFilter::processWithoutCent(aod::CollisionEvSel const& collision
 }
 
 void IdentifiedBfFilter::processWithCentPID(aod::CollisionEvSelCent const& collision, IdBfFullTracksPID const& ftracks)
-{
+{ 
   processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
@@ -522,7 +522,7 @@ void IdentifiedBfFilter::processGeneratorLevel(aod::McCollision const& mccollisi
       if (tmpcollision.mcCollisionId() == mccollision.globalIndex()) {
         typename AllCollisions::iterator const& collision = allcollisions.iteratorAt(tmpcollision.globalIndex());
         if (IsEvtSelected(collision, defaultcent)) {
-          fhTrueVertexZAA->Fill((mccollision.posZ()));
+          fhTrueVertexZAA->Fill(mccollision.posZ());
           processGenerated(mccollision, mcparticles, defaultcent);
           processed = true;
           break; /* TODO: only processing the first reconstructed accepted collision */
@@ -1033,13 +1033,14 @@ struct IdentifiedBfFilterTracks {
     }
 
     for (auto& particle : particles) {
-      float charge = 0.0;
-      TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
-      if (pdgparticle != nullptr) {
-        charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0.0);
-      }
+
 
       int8_t pid = -1;
+      TParticlePDG* pdgpart = fPDG->GetParticle(particle.pdgCode());
+      float charge = 0;
+      if (pdgpart != nullptr){
+        charge = getCharge(pdgpart->Charge());
+      }
 
       if (charge != 0) {
         if (particle.has_mcCollision() && (particle.template mcCollision_as<soa::Join<aod::McCollisions, aod::IdentifiedBfCFGenCollisionsInfo>>()).collisionaccepted()) {
@@ -1062,7 +1063,7 @@ struct IdentifiedBfFilterTracks {
         gentracksinfo(pid);
       }
     }
-    LOGF(IDENTIFIEDBFFILTERLOGCOLLISIONS,
+    LOGF(info,
          "Processed %d accepted generated collisions out of a total of %d with  %d accepted particles out of a "
          "total of %d",
          acceptedcollisions,
@@ -1147,17 +1148,13 @@ struct IdentifiedBfFilterTracks {
   {
     filterParticles(gencollisions, particles);
   }
-  PROCESS_SWITCH(IdentifiedBfFilterTracks, filterGenerated, "Generated particles filering", true)
+  PROCESS_SWITCH(IdentifiedBfFilterTracks, filterGenerated, "Generated particles filtering", true)
 };
 
 template <typename ParticleObject>
 inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyParticle(ParticleObject const& particle)
 {
   using namespace identifiedbffilter;
-  constexpr int pdgcodeEl = 11;
-  constexpr int pdgcodePi = 211;
-  constexpr int pdgcodeKa = 321;
-  constexpr int pdgcodePr = 2212;
 
   int pdgcode = abs(particle.pdgCode());
 
@@ -1396,8 +1393,12 @@ inline int8_t IdentifiedBfFilterTracks::AcceptParticle(ParticleObject& particle,
   if (!(overallminp < particle.p())) {
     return kWrongSpecies;
   }
+  TParticlePDG* pdgpart = fPDG->GetParticle(particle.pdgCode());
+  float charge = 0;
+  if (pdgpart != nullptr){
+    charge = getCharge(pdgpart->Charge());
+  }
 
-  float charge = getCharge(particle);
 
   if (particle.isPhysicalPrimary()) {
     if ((particle.mcCollisionId() == 0) && traceCollId0) {
@@ -1600,7 +1601,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   WorkflowSpec workflow{adaptAnalysisTask<IdentifiedBfFilter>(cfgc,
                                                               SetDefaultProcesses{
                                                                 {{"processWithoutCent", true},
-                                                                 {"processWithoutCentMC", true}}}),
+                                                                 {"processWithoutCentGeneratorLevel", true}}}),
                         adaptAnalysisTask<IdentifiedBfFilterTracks>(cfgc)};
   return workflow;
 }
