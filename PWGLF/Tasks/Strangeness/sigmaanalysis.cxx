@@ -110,7 +110,6 @@ struct sigmaanalysis {
   // TODO: Include PsiPair selection
 
   Configurable<float> SigmaMaxRap{"SigmaMaxRap", 0.5, "Max sigma0 rapidity"};
-  Configurable<float> SigmaOPAngle{"SigmaOPAngle", 1.0, "Max sigma0 opening angle between daughters (radians)"};
 
   // Axis
   // base properties
@@ -173,8 +172,7 @@ struct sigmaanalysis {
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(22, "Lambda CosPA Cut");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(23, "Lambda Y Cut");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(24, "Sigma Y Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(25, "Sigma OP Angle Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(26, "Lambda/ALambda PID Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(25, "Lambda/ALambda PID Cut");
 
     // Photon Selection QA histos
     histos.add("GeneralQA/hPhotonMass", "hPhotonMass", kTH1F, {axisPhotonMass});
@@ -420,9 +418,6 @@ struct sigmaanalysis {
         return false;
       histos.fill(HIST("GeneralQA/hSigmaOPAngle"), cand.sigmaOPAngle());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 24.);
-      if (cand.sigmaOPAngle() > SigmaOPAngle)
-        return false;
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 25.);
     }
     return true;
   }
@@ -607,7 +602,7 @@ struct sigmaanalysis {
         histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.photonAlpha(), sigma.photonQt());
         histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
         histos.fill(HIST("GeneralQA/hLambdaMassSelected"), sigma.lambdaMass());
-        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 26.);
+        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 25.);
         histos.fill(HIST("Sigma0/hMassSigma0"), sigma.sigmaMass());
         histos.fill(HIST("Sigma0/hPtSigma0"), sigma.sigmapT());
         histos.fill(HIST("Sigma0/hRapiditySigma0"), sigma.sigmaRapidity());
@@ -625,7 +620,7 @@ struct sigmaanalysis {
         histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.photonAlpha(), sigma.photonQt());
         histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
         histos.fill(HIST("GeneralQA/hAntiLambdaMassSelected"), sigma.antilambdaMass());
-        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 26.);
+        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 25.);
         histos.fill(HIST("AntiSigma0/hMassAntiSigma0"), sigma.sigmaMass());
         histos.fill(HIST("AntiSigma0/hPtAntiSigma0"), sigma.sigmapT());
         histos.fill(HIST("AntiSigma0/hRapidityAntiSigma0"), sigma.sigmaRapidity());
