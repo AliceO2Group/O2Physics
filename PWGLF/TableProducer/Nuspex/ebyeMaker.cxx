@@ -1138,8 +1138,8 @@ struct ebyeMaker {
       if (std::abs(collision.posZ()) > zVtxMax)
         continue;
 
-      //if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kINELgtZERO)))
-      //  continue;
+      // if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kINELgtZERO)))
+      //   continue;
 
       if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
         continue;
