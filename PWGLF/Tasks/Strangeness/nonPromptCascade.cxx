@@ -59,6 +59,8 @@ struct NPCascCandidate {
   int pdgCodeITStrack;
   bool isFromBeauty;
   bool isFromCharm;
+  uint16_t pvContributors;
+  float pvTimeResolution;
   float pvX;
   float pvY;
   float pvZ;
@@ -386,7 +388,7 @@ struct NonPromptCascadeTask {
   }
 
   template <typename TrackType, typename CollisionType>
-  void fillCandidatesVector(CollisionType const& collisions, auto const& trackedCascades)
+  void fillCandidatesVector(CollisionType const&, auto const& trackedCascades)
   {
     candidates.clear();
     for (const auto& trackedCascade : trackedCascades) {
@@ -592,7 +594,7 @@ struct NonPromptCascadeTask {
       fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega, dDCA);
 
       candidates.emplace_back(NPCascCandidate{mcParticleID, track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), deltaPtITSCascade, trackedCascade.itsClsSize(), hasReassociatedClusters, isGoodMatch, isGoodCascade, pdgCodeMom, itsTrackPDG, fromHF[0], fromHF[1],
-                                              primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
+                                              collision.numContrib(), collision.collisionTimeRes(), primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
                                               mDCA.DCAxy, mDCA.DCAz, dDCA.protonDCAxy, dDCA.protonDCAz, dDCA.pionDCAxy, dDCA.pionDCAz, dDCA.bachDCAxy, dDCA.bachDCAz,
@@ -625,7 +627,7 @@ struct NonPromptCascadeTask {
       auto label = collisions.iteratorAt(c.collisionID);
 
       NPCTableMC(c.matchingChi2, c.deltaPt, c.itsClusSize, c.hasReassociatedCluster, c.isGoodMatch, c.isGoodCascade, c.pdgCodeMom, c.pdgCodeITStrack, c.isFromBeauty, c.isFromCharm,
-                 c.pvX, c.pvY, c.pvZ,
+                 c.pvContributors, c.pvTimeResolution, c.pvX, c.pvY, c.pvZ,
                  c.cascPt, c.cascEta, c.cascPhi,
                  c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
                  c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,
@@ -661,7 +663,7 @@ struct NonPromptCascadeTask {
     fillCandidatesVector<TracksExtData>(collisions, trackedCascades);
     for (const auto& c : candidates) {
       NPCTable(c.matchingChi2, c.deltaPt, c.itsClusSize, c.hasReassociatedCluster,
-               c.pvX, c.pvY, c.pvZ,
+               c.pvContributors, c.pvTimeResolution, c.pvX, c.pvY, c.pvZ,
                c.cascPt, c.cascEta, c.cascPhi,
                c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
                c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,
