@@ -679,7 +679,7 @@ struct lambdapolsp {
           }
         }
         Lambda = Proton + Pion;
-        Lambda.SetM(massLambda);
+        // Lambda.SetM(massLambda);
 
         ROOT::Math::Boost boost{Lambda.BoostToCM()};
         fourVecDauCM = boost(Proton);
