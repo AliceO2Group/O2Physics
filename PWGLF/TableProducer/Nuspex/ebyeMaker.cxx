@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <vector>
+#include <map>
 #include <utility>
 #include <random>
 #include <string>
