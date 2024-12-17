@@ -1456,13 +1456,13 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("hEventSelection"), 16 /* No other collision within the same ITS ROF */);
 
     float collisionOccupancy = useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-    if (minOccupancy > 0 && collisionOccupancy < minOccupancy) {
+    if (minOccupancy >= 0 && collisionOccupancy < minOccupancy) {
       return false;
     }
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 17 /* Below min occupancy */);
 
-    if (maxOccupancy > 0 && collisionOccupancy > maxOccupancy) {
+    if (maxOccupancy >= 0 && collisionOccupancy > maxOccupancy) {
       return false;
     }
     if (fillHists)
@@ -1752,10 +1752,10 @@ struct derivedlambdakzeroanalysis {
         centrality = collision.centFT0C();
         float collisionOccupancy = useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
 
-        if (minOccupancy > 0 && collisionOccupancy < minOccupancy) {
+        if (minOccupancy >= 0 && collisionOccupancy < minOccupancy) {
           continue;
         }
-        if (maxOccupancy > 0 && collisionOccupancy > maxOccupancy) {
+        if (maxOccupancy >= 0 && collisionOccupancy > maxOccupancy) {
           continue;
         }
 
@@ -1808,10 +1808,10 @@ struct derivedlambdakzeroanalysis {
         centrality = collision.centFT0C();
         float collisionOccupancy = useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
 
-        if (minOccupancy > 0 && collisionOccupancy < minOccupancy) {
+        if (minOccupancy >= 0 && collisionOccupancy < minOccupancy) {
           continue;
         }
-        if (maxOccupancy > 0 && collisionOccupancy > maxOccupancy) {
+        if (maxOccupancy >= 0 && collisionOccupancy > maxOccupancy) {
           continue;
         }
 
