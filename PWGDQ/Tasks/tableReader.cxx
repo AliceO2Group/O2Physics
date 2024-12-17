@@ -291,7 +291,7 @@ struct AnalysisEventSelection {
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorCentr, "Run event selection on DQ skimmed events with Q vector from CFW", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorMultExtra, "Run event selection on DQ skimmed events with Q vector from GFW and MultPV", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorCentrMultExtra, "Run event selection on DQ skimmed events with Q vector from CFW and MultPV", false);
-  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorExtraRefflow, "Run event selection on DQ skimmed events with Q vector and subscribing to reference flow table", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorExtraRef, "Run event selection on DQ skimmed events with Q vector and subscribing to reference flow table", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", false);
   // TODO: Add process functions subscribing to Framework Collision
 };
