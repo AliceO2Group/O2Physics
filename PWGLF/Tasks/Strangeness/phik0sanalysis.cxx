@@ -946,30 +946,16 @@ struct phik0shortanalysis {
 
         // V0 already reconstructed by the builder
         for (const auto& v0 : V0s) {
+          if (!v0.has_mcParticle()) {
+            continue;
+          }
+
+          auto v0mcparticle = v0.mcParticle();
+          if (v0mcparticle.pdgCode() != 310 || !v0mcparticle.isPhysicalPrimary())
+            continue;
+
           const auto& posDaughterTrack = v0.posTrack_as<V0DauMCTracks>();
           const auto& negDaughterTrack = v0.negTrack_as<V0DauMCTracks>();
-          if (!posDaughterTrack.has_mcParticle() || !negDaughterTrack.has_mcParticle())
-            continue;
-
-          auto posMCDaughterTrack = posDaughterTrack.mcParticle_as<aod::McParticles>();
-          auto negMCDaughterTrack = negDaughterTrack.mcParticle_as<aod::McParticles>();
-          if (posMCDaughterTrack.pdgCode() != 211 || negMCDaughterTrack.pdgCode() != -211)
-            continue;
-          if (!posMCDaughterTrack.has_mothers() || !negMCDaughterTrack.has_mothers())
-            continue;
-
-          int pdgParentv0 = 0;
-          bool isPhysPrim = false;
-          for (const auto& particleMotherOfNeg : negMCDaughterTrack.mothers_as<aod::McParticles>()) {
-            for (const auto& particleMotherOfPos : posMCDaughterTrack.mothers_as<aod::McParticles>()) {
-              if (particleMotherOfNeg == particleMotherOfPos) {
-                pdgParentv0 = particleMotherOfNeg.pdgCode();
-                isPhysPrim = particleMotherOfNeg.isPhysicalPrimary();
-              }
-            }
-          }
-          if (pdgParentv0 != 310 || !isPhysPrim)
-            continue;
 
           // Cut on V0 dynamic columns
           if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
@@ -1034,7 +1020,7 @@ struct phik0shortanalysis {
 
   PROCESS_SWITCH(phik0shortanalysis, processRecMCPhiQA, "Process for ReCMCQA and Phi in RecMC", false);
 
-  void processRecMCPhiK0S(SimCollisions::iterator const& collision, FullMCTracks const&, FullV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const&)
+  void processRecMCPhiK0S(SimCollisions::iterator const& collision, FullMCTracks const&, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const& mcParticles)
   {
     if (!acceptEventQA<true>(collision, false))
       return;
@@ -1049,32 +1035,21 @@ struct phik0shortanalysis {
     auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
+    // Defining McParticles in the collision
+    auto mcParticlesThisColl = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+
     // V0 already reconstructed by the builder
     for (const auto& v0 : V0s) {
+      if (!v0.has_mcParticle()) {
+          continue;
+        }
+
+      auto v0mcparticle = v0.mcParticle();
+      if (v0mcparticle.pdgCode() != 310 || !v0mcparticle.isPhysicalPrimary())
+        continue;
+
       const auto& posDaughterTrack = v0.posTrack_as<V0DauMCTracks>();
       const auto& negDaughterTrack = v0.negTrack_as<V0DauMCTracks>();
-      if (!posDaughterTrack.has_mcParticle() || !negDaughterTrack.has_mcParticle())
-        continue;
-
-      auto posMCDaughterTrack = posDaughterTrack.mcParticle_as<aod::McParticles>();
-      auto negMCDaughterTrack = negDaughterTrack.mcParticle_as<aod::McParticles>();
-      if (posMCDaughterTrack.pdgCode() != 211 || negMCDaughterTrack.pdgCode() != -211)
-        continue;
-      if (!posMCDaughterTrack.has_mothers() || !negMCDaughterTrack.has_mothers())
-        continue;
-
-      int pdgParentv0 = 0;
-      bool isPhysPrim = false;
-      for (const auto& particleMotherOfNeg : negMCDaughterTrack.mothers_as<aod::McParticles>()) {
-        for (const auto& particleMotherOfPos : posMCDaughterTrack.mothers_as<aod::McParticles>()) {
-          if (particleMotherOfNeg == particleMotherOfPos) {
-            pdgParentv0 = particleMotherOfNeg.pdgCode();
-            isPhysPrim = particleMotherOfNeg.isPhysicalPrimary();
-          }
-        }
-      }
-      if (pdgParentv0 != 310 || !isPhysPrim)
-        continue;
 
       if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
         continue;
@@ -1159,7 +1134,7 @@ struct phik0shortanalysis {
 
   PROCESS_SWITCH(phik0shortanalysis, processRecMCPhiK0S, "Process RecMC for Phi-K0S Analysis", false);
 
-  void processRecMCPhiPion(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, MCCollisions const&, aod::McParticles const&)
+  void processRecMCPhiPion(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, MCCollisions const&, aod::McParticles const& mcParticles)
   {
     if (!acceptEventQA<true>(collision, false))
       return;
@@ -1173,6 +1148,9 @@ struct phik0shortanalysis {
     // Defining positive and negative tracks for phi reconstruction
     auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+    // Defining McParticles in the collision
+    auto mcParticlesThisColl = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
 
     // Loop over all primary pion candidates
     for (const auto& track : fullMCTracks) {
