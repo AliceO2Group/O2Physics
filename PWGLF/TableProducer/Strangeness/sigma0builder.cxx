@@ -324,8 +324,9 @@ struct sigma0builder {
     if (fIsMC) {
       if (fIsPi0)
         histos.fill(HIST("MC/h2dPtVsMassPi0AfterSel_SignalOnly"), pi0Pt, pi0Mass);
-    } else
+    } else {
       histos.fill(HIST("GeneralQA/h2dPtVsMassPi0AfterSel_Candidates"), pi0Pt, pi0Mass);
+    }
   }
 
   // Process sigma candidate and store properties in object
