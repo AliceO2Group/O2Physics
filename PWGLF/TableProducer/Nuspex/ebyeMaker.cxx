@@ -452,9 +452,7 @@ struct ebyeMaker {
       for (const auto& classToIndexPair : *classNameToIndexMap) {
         bool hasClassName = classToIndexPair.first.find("HMV0M") < classToIndexPair.first.length();
         int classId = hasClassName ? classToIndexPair.second - 1 : -1;
-        LOGF(info, "class = %s", classToIndexPair.first);
-        if (classId < 0) { // class doesn't exist in this run
-          // LOGF(info, "classId = %d", classId);
+        if (classId < 0) {
           continue;
         }
         classIds.push_back(classId);
