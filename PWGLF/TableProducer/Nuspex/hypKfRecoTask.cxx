@@ -547,7 +547,7 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
         if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize"))
           continue;
         if (getMeanItsClsSize(track) > cfgTrackPIDsettings->get(i, "maxITSclsSize"))
-          continue;          
+          continue;
         if (getRigidity(track) < cfgTrackPIDsettings->get(i, "minRigidity") || getRigidity(track) > cfgTrackPIDsettings->get(i, "maxRigidity"))
           continue;
         if (cfgTrackPIDsettings->get(i, "TOFrequiredabove") >= 0 && getRigidity(track) > cfgTrackPIDsettings->get(i, "TOFrequiredabove") && (track.mass() < cfgTrackPIDsettings->get(i, "minTOFmass") || track.mass() > cfgTrackPIDsettings->get(i, "maxTOFmass")))
@@ -1086,10 +1086,10 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
     collPassedEvSel = collision.sel8() && std::abs(collision.posZ()) < 10;
     if (collPassedEvSel) {
       histos.fill(HIST("histNev"), 1.5);
-      histos.fill(HIST("histVtxZ"), collision.posZ()); 
-      histos.fill(HIST("histCentFT0A"), collision.centFT0A());  
+      histos.fill(HIST("histVtxZ"), collision.posZ());
+      histos.fill(HIST("histCentFT0A"), collision.centFT0A());
       histos.fill(HIST("histCentFT0C"), collision.centFT0C());
-      histos.fill(HIST("histCentFT0M"), collision.centFT0M());         
+      histos.fill(HIST("histCentFT0M"), collision.centFT0M());  
     }
     occupancy = collision.trackOccupancyInTimeRange();
     kfPrimVtx = createKFPVertexFromCollision(collision);
