@@ -97,6 +97,7 @@ using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended,
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
 using MyEventsVtxCovSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsVtxCovSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector>;
+using MyEventsVtxCovQvectorExtraWithRefFlow = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra, aod::ReducedEventsRefFlow>;
 using MyEventsVtxCovSelectedQvectorExtraWithRefFlow = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra, aod::ReducedEventsRefFlow>;
 using MyEventsVtxCovSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvectorCentr>;
 using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
@@ -277,7 +278,7 @@ struct AnalysisEventSelection {
   {
     runEventSelection<gkEventFillMapWithQvectorCentrMultExtra>(event);
   }
-  void processSkimmedQVectorExtraRef(MyEventsVtxCovSelectedQvectorExtraWithRefFlow::iterator const& event)
+  void processSkimmedQVectorExtraRef(MyEventsVtxCovQvectorExtraWithRefFlow::iterator const& event)
   {
     runEventSelection<gkEventFillMapWithCovQvectorExtraWithRefFlow>(event);
   }
