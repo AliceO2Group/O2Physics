@@ -130,7 +130,7 @@ struct phosCellQA {
       if (!cell.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
         continue;
 
-      bool isHighGain = cell.cellType();
+      // bool isHighGain = cell.cellType();
       double energy = calibParams->getGain(cell.cellNumber()) * cell.amplitude();
       // if (isHighGain) {
       //    energy = calibParams->getGain(cell.cellNumber()) * cell.amplitude();

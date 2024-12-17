@@ -51,6 +51,11 @@ std::vector<std::vector<int64_t>> mclabelpos[2];
 std::vector<std::vector<int64_t>> mclabelneg[2];
 } // namespace o2::analysis::recogenmap
 
+namespace o2::analysis::dptdptfilter
+{
+TpcExcludeTrack tpcExcluder; ///< the TPC excluder object instance
+} // namespace o2::analysis::dptdptfilter
+
 /// \brief Checks the correspondence generator level <=> detector level
 struct CheckGeneratorLevelVsDetectorLevel {
   Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96"};
@@ -62,6 +67,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
+  Configurable<int> cfgTpcExclusionMethod{"cfgTpcExclusionMethod", 0, "The method for excluding tracks within the TPC. 0: no exclusion; 1: static; 2: dynamic. Default: 0"};
   Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
   Configurable<float> cfgTraceOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
   Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 PID, 1 mcparticle. Default 0"};
@@ -96,6 +102,14 @@ struct CheckGeneratorLevelVsDetectorLevel {
     zvtxbins = cfgBinning->mZVtxbins;
     zvtxlow = cfgBinning->mZVtxmin;
     zvtxup = cfgBinning->mZVtxmax;
+    phibins = cfgBinning->mPhibins;
+    phibinshift = cfgBinning->mPhibinshift;
+
+    /* the TPC excluder object instance */
+    TpcExclusionMethod tpcExclude = kNOEXCLUSION; ///< exclude tracks within the TPC according to this method
+    tpcExclude = static_cast<TpcExclusionMethod>(cfgTpcExclusionMethod.value);
+    tpcExcluder = TpcExcludeTrack(tpcExclude);
+
     /* the track types and combinations */
     tracktype = cfgTrackType.value;
     initializeTrackSelection(cfgTuneTrackSelection);

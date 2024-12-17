@@ -28,6 +28,7 @@
 #include "TableHelper.h"
 #include "MetadataHelper.h"
 #include "TList.h"
+#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -92,6 +93,7 @@ struct MultiplicityTable {
   Produces<aod::PVMultZeqs> tablePVZeqs;        // 12
   Produces<aod::MultMCExtras> tableExtraMc;     // 13
   Produces<aod::Mult2MCExtras> tableExtraMult2MCExtras;
+  Produces<aod::MFTMults> mftMults;             // Not accounted for, produced using custom process function to avoid dependencies
   Produces<aod::MultsGlobal> multsGlobal;       // Not accounted for, produced based on process function processGlobalTrackingCounters
 
   // For vertex-Z corrections in calibration
@@ -105,6 +107,7 @@ struct MultiplicityTable {
   Partition<Run2Tracks> pvContribTracksEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
   Preslice<aod::TracksIU> perColIU = aod::track::collisionId;
+  Preslice<aod::MFTTracks> perCollisionMFT = o2::aod::fwdtrack::collisionId;
 
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
@@ -733,12 +736,44 @@ struct MultiplicityTable {
     multsGlobal(nGlobalTracks, multNContribsEta08_kGlobalTrackWoDCA, multNContribsEta10_kGlobalTrackWoDCA, multNContribsEta05_kGlobalTrackWoDCA);
   }
 
+  void processRun3MFT(soa::Join<aod::Collisions, aod::EvSels>::iterator const&,
+                      o2::aod::MFTTracks const& mftTracks,
+                      soa::SmallGroups<aod::BestCollisionsFwd> const& retracks)
+  {
+    int nAllTracks = 0;
+    int nTracks = 0;
+
+    for (auto& track : mftTracks) {
+      if (track.nClusters() >= 5) { // hardcoded for now
+        nAllTracks++;
+      }
+    }
+
+    if (retracks.size() > 0) {
+      for (auto& retrack : retracks) {
+        auto track = retrack.mfttrack();
+        if (track.nClusters() < 5) {
+          continue; // min cluster requirement
+        }
+        if ((track.eta() > -2.0f) && (track.eta() < -3.9f)) {
+          continue; // too far to be of true interest
+        }
+        if (std::abs(retrack.bestDCAXY()) > 2.0f) {
+          continue; // does not point to PV properly
+        }
+        nTracks++;
+      }
+    }
+    mftMults(nAllTracks, nTracks);
+  }
+
   // Process switches
   PROCESS_SWITCH(MultiplicityTable, processRun2, "Produce Run 2 multiplicity tables", false);
   PROCESS_SWITCH(MultiplicityTable, processRun3, "Produce Run 3 multiplicity tables", true);
   PROCESS_SWITCH(MultiplicityTable, processGlobalTrackingCounters, "Produce Run 3 global counters", false);
   PROCESS_SWITCH(MultiplicityTable, processMC, "Produce MC multiplicity tables", false);
   PROCESS_SWITCH(MultiplicityTable, processMC2Mults, "Produce MC -> Mult map", false);
+  PROCESS_SWITCH(MultiplicityTable, processRun3MFT, "Produce MFT mult tables", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
