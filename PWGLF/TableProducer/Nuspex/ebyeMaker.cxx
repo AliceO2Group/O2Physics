@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <vector>
+#include <map>
 #include <utility>
 #include <random>
 #include <string>
@@ -35,6 +36,7 @@
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
+#include "CCDB/CcdbApi.h"
 
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -205,6 +207,7 @@ struct ebyeMaker {
   std::array<std::vector<CandidateTrack>, 2> candidateTracks;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::vertexing::DCAFitterN<2> fitter;
+  std::vector<int> classIds;
 
   int mRunNumber;
   float d_bz;
@@ -380,7 +383,7 @@ struct ebyeMaker {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-
+    classIds.clear();
     auto timestamp = bc.timestamp();
     o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
@@ -441,6 +444,20 @@ struct ebyeMaker {
     d_bz = o2::base::Propagator::Instance()->getNominalBz();
     LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kG";
     mRunNumber = bc.runNumber();
+    if (doprocessMiniRun2) {
+      o2::ccdb::CcdbApi ccdbApi;
+      ccdbApi.init("http://alice-ccdb.cern.ch");
+      std::map<std::string, std::string> metadata;
+      std::map<std::string, int>* classNameToIndexMap = ccdbApi.retrieveFromTFileAny<std::map<std::string, int>>("CTP/ClassNameToIndexMap", metadata, mRunNumber);
+      for (const auto& classToIndexPair : *classNameToIndexMap) {
+        bool hasClassName = classToIndexPair.first.find("HMV0M") < classToIndexPair.first.length();
+        int classId = hasClassName ? classToIndexPair.second - 1 : -1;
+        if (classId < 0) {
+          continue;
+        }
+        classIds.push_back(classId);
+      }
+    }
     fitter.setBz(d_bz);
 
     // o2::base::Propagator::Instance()->setMatLUT(lut);
@@ -1041,7 +1058,7 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = -999.f;
+      float cV0M = 105.f;
       if (Run2V0MInfo.mCalibrationStored) {
         cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
         if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || (kINT7Intervals && ((cV0M >= 10 && cV0M < 30) || cV0M > 50))))
@@ -1127,7 +1144,7 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = -999.f;
+      float cV0M = 105.f;
       if (Run2V0MInfo.mCalibrationStored) {
         cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
       }
@@ -1141,6 +1158,16 @@ struct ebyeMaker {
       fillRecoEvent(collision, tracks, V0Table_thisCollision, cV0M);
 
       uint8_t trigger = collision.alias_bit(kINT7) ? 0x1 : 0x0;
+      bool hasHMV0M = false;
+      for (auto& classId : classIds) {
+        if (bc.triggerMask() & BIT(classId)) {
+          hasHMV0M = true;
+          break;
+        }
+      }
+      if (!hasHMV0M && trigger == 0x0) {
+        continue;
+      }
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, nTrackletsColl, cV0M);
 
       for (auto& candidateTrack : candidateTracks[0]) { // protons
@@ -1247,7 +1274,7 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = -999.f;
+      float cV0M = 105.f;
       if (Run2V0MInfo.mCalibrationStored) {
         cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
       }
@@ -1319,7 +1346,7 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = -999.f;
+      float cV0M = 105.f;
       if (Run2V0MInfo.mCalibrationStored) {
         cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
       }
