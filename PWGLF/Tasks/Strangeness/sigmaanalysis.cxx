@@ -497,10 +497,6 @@ struct sigmaanalysis {
       if (!processSigmaCandidate(sigma))
         continue;
 
-      // Purity Study + PID study:
-      bool fPassTPCPID = false;
-      bool fPassTOFPID = false;
-
       histos.fill(HIST("MC/hPtGammaCand_AfterSel"), sigma.photonPt());
       histos.fill(HIST("MC/hPtSigmaCand_AfterSel"), sigma.sigmapT());
 
