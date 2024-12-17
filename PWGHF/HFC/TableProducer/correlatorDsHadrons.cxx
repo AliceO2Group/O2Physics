@@ -724,7 +724,7 @@ struct HfCorrelatorDsHadrons {
       }
 
       collReduced(collision.multFT0M(), collision.posZ());
-      hfcReducedCollisionIndex += 1;
+      hfcReducedCollisionIndex++;
     }
   }
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processDerivedDataDs, "Process derived data Ds", false);
