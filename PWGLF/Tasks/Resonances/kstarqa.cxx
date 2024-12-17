@@ -399,7 +399,7 @@ struct LFkstarqa {
     ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau1);                                                // boost the frame of daughter same as mother
     ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();                                                  // get the 3 vector of daughter in the frame of mother
 
-    if (std::abs(lv3.Rapidity() < 0.5)) {
+    if (std::abs(lv3.Rapidity()) < 0.5) {
       if (activateTHnSparseCosThStarHelicity) {
         ROOT::Math::XYZVector helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
         auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
