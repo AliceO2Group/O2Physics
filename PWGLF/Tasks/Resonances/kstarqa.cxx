@@ -20,6 +20,7 @@
 #include <TH1F.h>
 #include <TH2F.h>
 #include <THn.h>
+#include <vector>
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
