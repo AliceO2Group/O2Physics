@@ -348,15 +348,15 @@ struct HyperNucCandidate {
     subDaughter.TransportToDecayVertex();
     return subDaughter.GetMass();
   }
-  KFParticle getDaughterTrackKfp(int track) 
+  KFParticle getDaughterTrackKfp(int track)
   {
     return kfpDaughters.at(track + isCascade() ? 1 : 0);
   }
-  float getDcaTrackToVtxXY(int track, std::vector<float> vtx) 
+  float getDcaTrackToVtxXY(int track, std::vector<float> vtx)
   {
     return getDaughterTrackKfp(track).GetDistanceFromVertexXY(&vtx[0]);
   }
-  float getDcaTrackToVtxZ(int track, std::vector<float> vtx) 
+  float getDcaTrackToVtxZ(int track, std::vector<float> vtx)
   {
     auto dKfp = getDaughterTrackKfp(track);
     dKfp.TransportToPoint(&vtx[0]);
@@ -785,7 +785,7 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
         HyperNucleus* hyperNuc = &(hypNucVectors.at(vec)->at(hyperNucIter));
         if (!hyperNuc->active)
           continue;
-        for (auto& hypCand : candidateVector->at(hyperNucIter)) { //o2-linter: disable=[const-ref-in-for-loop]
+        for (auto& hypCand : candidateVector->at(hyperNucIter)) { // o2-linter: disable=[const-ref-in-for-loop]
           std::vector<int64_t> motherIds;
           int daughterCount = 0;
           if (hypCand.isCascade()) {
@@ -856,7 +856,7 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
         HyperNucleus* hyperNuc = &(hypNucVectors.at(vec)->at(hyperNucIter));
         if (!hyperNuc->active)
           continue;
-        for (auto& hypCand : candidateVector->at(hyperNucIter)) { //o2-linter: disable=[const-ref-in-for-loop]
+        for (auto& hypCand : candidateVector->at(hyperNucIter)) { // o2-linter: disable=[const-ref-in-for-loop]
           if (!hypCand.isPrimaryCandidate && !hypCand.isUsedSecondary && !hypCand.isCascade())
             continue;
           if (saveOnlyMcTrue && !hypCand.mcTrue)
@@ -1022,7 +1022,8 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       initCollision(collision);
-      if (!collPassedEvSel) continue;
+      if (!collPassedEvSel) 
+        continue;
       const uint64_t collIdx = collision.globalIndex();
       auto tracksByColl = tracksColl.sliceBy(perCollision, collIdx);
       findDaughterParticles(tracksByColl, tracks);
