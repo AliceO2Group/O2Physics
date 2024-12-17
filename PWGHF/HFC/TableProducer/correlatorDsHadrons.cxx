@@ -169,6 +169,8 @@ struct HfCorrelatorDsHadrons {
   Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for assoc particle"};
   Configurable<std::vector<double>> binsPtEfficiencyD{"binsPtEfficiencyD", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", {1., 1., 1., 1., 1., 1.}, "efficiency values for Ds meson"};
+  
+  int hfcReducedCollisionIndex = 0;
 
   HfHelper hfHelper;
   SliceCache cache;
@@ -692,8 +694,6 @@ struct HfCorrelatorDsHadrons {
     }   // end loop generated collision
   }
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcGen, "Process MC Gen mode", false);
-
-  int hfcReducedCollisionIndex = 0;
 
   void processDerivedDataDs(SelCollisionsWithDs const& collisions,
                             CandDsData const& candidates,
