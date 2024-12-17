@@ -41,7 +41,7 @@
 #include "Common/DataModel/CollisionAssociationTables.h"
 
 // KFParticle
-#ifndef HomogeneousField 
+#ifndef HomogeneousField
 #define HomogeneousField  // o2-linter: disable=[name/macro]
 #endif
 #include "KFParticle.h"
@@ -353,8 +353,8 @@ struct HyperNucCandidate {
   }
   float getDcaTrackToVtxXY(int track, std::vector<float> vtx) {
     return getDaughterTrackKfp(track).GetDistanceFromVertexXY(&vtx[0]);
-  }    
-  float getDcaTrackToVtxZ(int track, std::vector<float> vtx) {  
+  }
+  float getDcaTrackToVtxZ(int track, std::vector<float> vtx) {
     auto dKfp = getDaughterTrackKfp(track);
     dKfp.TransportToPoint(&vtx[0]);
     return dKfp.GetZ() - vtx[2];
@@ -482,24 +482,21 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
     for (unsigned int i = 0; i < nCascades; i++) { // create cascades
       cascadeHyperNuclei.push_back(HyperNucleus(cascadeNames.at(i), cfgCascadesPdg->get(i, 0u), cfgCascadesActive->get(i, 0u), getHypDaughterVec(i, cfgCascadeHypDaughter), getDaughterVec(i, cfgCascadeDaughters), getDaughterSignVec(i, cfgCascadeSigns)));
     }
-
     // define histogram axes
     const AxisSpec axisMagField{10, -10., 10., "magnetic field"};
     const AxisSpec axisNev{3, 0., 3., "Number of events"};
     const AxisSpec axisRigidity{4000, -10., 10., "#it{p}^{TPC}/#it{z}"};
     const AxisSpec axisdEdx{2000, 0, 2000, "d#it{E}/d#it{x}"};
     const AxisSpec axisInvMass{1000, 1, 6, "inv mass"};
-    const AxisSpec axisCent{100, 0, 100, "centrality"};    
+    const AxisSpec axisCent{100, 0, 100, "centrality"};
     const AxisSpec axisVtxZ{100, -10, 10, "z"};
-        
     // create histograms
     histos.add("histMagField", "histMagField", kTH1F, {axisMagField});
     histos.add("histNev", "histNev", kTH1F, {axisNev});
     histos.add("histVtxZ", "histVtxZ", kTH1F, {axisVtxZ});    
-    histos.add("histCentFT0A", "histCentFT0A", kTH1F, {axisCent});    
+    histos.add("histCentFT0A", "histCentFT0A", kTH1F, {axisCent});
     histos.add("histCentFT0C", "histCentFT0C", kTH1F, {axisCent});
     histos.add("histCentFT0M", "histCentFT0M", kTH1F, {axisCent});
-            
     hDeDx.resize(2 * nDaughterParticles + 2);
     for (int i = 0; i < nDaughterParticles + 1; i++) {
       TString histName = i < nDaughterParticles ? daughterParticles[i].name : "all";
