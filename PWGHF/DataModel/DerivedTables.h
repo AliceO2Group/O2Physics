@@ -132,6 +132,12 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! momentum
                            [](float pt, float eta) -> float { return RecoDecayPtEtaPhi::p(pt, eta); });
 } // namespace hf_cand_base
 
+// Candidate selection flags
+namespace hf_cand_sel
+{
+DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t); //! bitmap of the selected candidate type
+}
+
 // Candidate MC columns
 namespace hf_cand_mc
 {
@@ -193,6 +199,11 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
                            hf_track_index::Prong2Id,                       \
                            o2::soa::Marker<Marker##_hf_type_>);
 
+#define DECLARE_CAND_SEL_TABLE(_hf_type_, _hf_description_)                  \
+  DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##Sels, "HF" _hf_description_ "SEL", \
+                           hf_cand_sel::CandidateSelFlag,                    \
+                           o2::soa::Marker<Marker##_hf_type_>);
+
 #define DECLARE_MCCAND_BASE_TABLE(_hf_type_, _hf_description_, _hf_namespace_)                \
   namespace hf_mc_particle                                                                    \
   {                                                                                           \
@@ -224,6 +235,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
 
 #define DECLARE_CAND_TABLES(_hf_type_, _hf_description_, _hf_namespace_) \
   DECLARE_CAND_BASE_TABLE(_hf_type_, _hf_description_, _hf_namespace_)   \
+  DECLARE_CAND_SEL_TABLE(_hf_type_, _hf_description_)                    \
   DECLARE_MCCAND_BASE_TABLE(_hf_type_, _hf_description_, _hf_namespace_) \
   DECLARE_MCCAND_ID_TABLE(_hf_type_, _hf_description_)
 
@@ -391,12 +403,6 @@ DECLARE_SOA_COLUMN(NSigTpcTofPr1Charm, nSigTpcTofPr1Charm, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPr2Charm, nSigTpcTofPr2Charm, float);
 } // namespace hf_cand_par_charm
 
-// Candidate selection flags
-namespace hf_cand_sel
-{
-DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t); //! bitmap of the selected candidate type
-}
-
 // Candidate MC columns of the charm daughter
 namespace hf_cand_mc_charm
 {
@@ -465,10 +471,6 @@ DECLARE_SOA_TABLE_STAGED(HfD0ParEs, "HFD0PARE", //! Table with additional candid
                          hf_cand::ErrorImpactParameter1,
                          hf_cand_par::CosThetaStar,
                          hf_cand_par::Ct,
-                         o2::soa::Marker<MarkerD0>);
-
-DECLARE_SOA_TABLE_STAGED(HfD0Sels, "HFD0SEL", //! Table with candidate selection flags
-                         hf_cand_sel::CandidateSelFlag,
                          o2::soa::Marker<MarkerD0>);
 
 DECLARE_SOA_TABLE_STAGED(HfD0Mls, "HFD0ML", //! Table with candidate selection ML scores
@@ -543,8 +545,8 @@ DECLARE_SOA_TABLE_STAGED(HfBplusParEs, "HFBPPARE", //! Table with additional can
                          hf_cand_par::Ct,
                          o2::soa::Marker<MarkerBplus>);
 
-DECLARE_SOA_TABLE_STAGED(HfBplusMls, "HFBPML",   //! Table with candidate selection ML scores
-                         hf_cand_mc::MlScoreSig, // why is this the signal ML score instead of the full one?
+DECLARE_SOA_TABLE_STAGED(HfBplusMls, "HFBPML", //! Table with candidate selection ML scores
+                         hf_cand_mc::MlScoreSig,
                          o2::soa::Marker<MarkerBplus>);
 
 DECLARE_SOA_TABLE_STAGED(HfBplusMlD0s, "HFBPMLD0", //! Table with D0 candidate selection ML scores
@@ -618,10 +620,6 @@ DECLARE_SOA_TABLE_STAGED(HfLcParEs, "HFLCPARE", //! Table with additional candid
                          hf_cand::ErrorImpactParameter1,
                          hf_cand::ErrorImpactParameter2,
                          hf_cand_par::Ct,
-                         o2::soa::Marker<MarkerLc>);
-
-DECLARE_SOA_TABLE_STAGED(HfLcSels, "HFLCSEL", //! Table with candidate selection flags
-                         hf_cand_sel::CandidateSelFlag,
                          o2::soa::Marker<MarkerLc>);
 
 DECLARE_SOA_TABLE_STAGED(HfLcMls, "HFLCML", //! Table with candidate selection ML scores
