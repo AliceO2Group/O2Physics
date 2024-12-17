@@ -134,7 +134,7 @@ DECLARE_SOA_TABLE(PidCascades, "AOD", "PIDCASCADES", //! Table with PID informat
                   pid_studies::CentralityFT0C,
                   pid_studies::CentralityFT0M,
                   pid_studies::CandFlag);
-} // namespace o2::aod 
+} // namespace o2::aod
 
 struct HfTaskPidStudies {
   Produces<o2::aod::PidV0s> pidV0;
@@ -189,7 +189,7 @@ struct HfTaskPidStudies {
         candidate.pt(),
         posTrack.pt(),
         negTrack.pt(),
-        posTrack.tpcInnerParam() / std::cosh(candidate.positiveeta()), 
+        posTrack.tpcInnerParam() / std::cosh(candidate.positiveeta()),
         negTrack.tpcInnerParam() / std::cosh(candidate.negativeeta()),
         candidate.v0radius(),
         candidate.v0cosPA(),
