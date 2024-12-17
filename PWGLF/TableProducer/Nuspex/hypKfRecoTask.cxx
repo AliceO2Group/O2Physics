@@ -493,7 +493,7 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
     // create histograms
     histos.add("histMagField", "histMagField", kTH1F, {axisMagField});
     histos.add("histNev", "histNev", kTH1F, {axisNev});
-    histos.add("histVtxZ", "histVtxZ", kTH1F, {axisVtxZ});    
+    histos.add("histVtxZ", "histVtxZ", kTH1F, {axisVtxZ});
     histos.add("histCentFT0A", "histCentFT0A", kTH1F, {axisCent});
     histos.add("histCentFT0C", "histCentFT0C", kTH1F, {axisCent});
     histos.add("histCentFT0M", "histCentFT0M", kTH1F, {axisCent});
@@ -545,7 +545,7 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
         if (std::abs(track.dcaZ()) < cfgTrackPIDsettings->get(i, "minDcaToPvZ"))
           continue;
         if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize"))
-          continue;  
+          continue;
         if (getMeanItsClsSize(track) > cfgTrackPIDsettings->get(i, "maxITSclsSize"))
           continue;          
         if (getRigidity(track) < cfgTrackPIDsettings->get(i, "minRigidity") || getRigidity(track) > cfgTrackPIDsettings->get(i, "maxRigidity"))
@@ -775,7 +775,7 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
     std::vector<std::vector<HyperNucleus>*> hypNucVectors = {&singleHyperNuclei, &cascadeHyperNuclei};
     std::vector<std::vector<std::vector<HyperNucCandidate>>*> candidateVectors = {&singleHyperNucCandidates, &cascadeHyperNucCandidates};
     const int nVecs = candidateVectors.size();
-    const int startVec = cascadesOnly ? 1 : 0; 
+    const int startVec = cascadesOnly ? 1 : 0;
     for (int vec = startVec; vec < nVecs; vec++) {
       auto candidateVector = candidateVectors.at(vec);
       for (size_t hyperNucIter = 0; hyperNucIter < hypNucVectors.at(vec)->size(); hyperNucIter++) {
@@ -869,7 +869,7 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
               outputTrackTable(
                 hyperNuc->daughters.at(daughterCount) * track.sign(),
                 track.pt(), track.eta(), track.phi(),
-                hypCand.getDcaTrackToVtxXY(daughterCount, primVtx), hypCand.getDcaTrackToVtxZ(daughterCount, primVtx), 
+                hypCand.getDcaTrackToVtxXY(daughterCount, primVtx), hypCand.getDcaTrackToVtxZ(daughterCount, primVtx),
                 track.tpcNClsFound(), track.tpcChi2NCl(),
                 track.itsClusterSizes(), track.itsChi2NCl(),
                 getRigidity(track), track.tpcSignal(), getTPCnSigma(track, daughterParticles.at(daught)),
@@ -1086,10 +1086,10 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
     collPassedEvSel = collision.sel8() && std::abs(collision.posZ()) < 10;
     if (collPassedEvSel) {
       histos.fill(HIST("histNev"), 1.5);
-      histos.fill(HIST("histVtxZ"), collision.posZ());      
-      histos.fill(HIST("histCentFT0A"), collision.centFT0A());           
-      histos.fill(HIST("histCentFT0C"), collision.centFT0C());           
-      histos.fill(HIST("histCentFT0M"), collision.centFT0M());                        
+      histos.fill(HIST("histVtxZ"), collision.posZ()); 
+      histos.fill(HIST("histCentFT0A"), collision.centFT0A());  
+      histos.fill(HIST("histCentFT0C"), collision.centFT0C());
+      histos.fill(HIST("histCentFT0M"), collision.centFT0M());         
     }
     occupancy = collision.trackOccupancyInTimeRange();
     kfPrimVtx = createKFPVertexFromCollision(collision);
@@ -1135,7 +1135,6 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
     return sigmaTPC;
   }
   //----------------------------------------------------------------------------------------------------------------
-  
   template <class T>
   float getMeanItsClsSize(T const& track)
   {
@@ -1148,7 +1147,6 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
     return n > 0 ? static_cast<float>(sum) / n : 0.f;
   }
   //----------------------------------------------------------------------------------------------------------------
-  
   template <class T>
   float getRigidity(T const& track)
   {
