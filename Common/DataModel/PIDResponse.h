@@ -409,23 +409,37 @@ DECLARE_SOA_DYNAMIC_COLUMN(EventCollisionTime, eventCollisionTime, //! Event col
 
 } // namespace pidtofsignal
 
+namespace pidtofevtime
+{
+DECLARE_SOA_COLUMN(TOFEvTime, tofEvTime, float);       //! event time for TOF signal. Can be obtained via a combination of detectors e.g. TOF, FT0A, FT0C
+DECLARE_SOA_COLUMN(TOFEvTimeErr, tofEvTimeErr, float); //! event time error for TOF. Can be obtained via a combination of detectors e.g. TOF, FT0A, FT0C
+} // namespace pidtofevtime
+
+DECLARE_SOA_TABLE(TOFEvTime, "AOD", "TOFEvTime", //! Table of the TOF event time. One entry per track.
+                  pidtofevtime::TOFEvTime,
+                  pidtofevtime::TOFEvTimeErr);
+
 namespace pidtofbeta
 {
 DECLARE_SOA_COLUMN(Beta, beta, float);           //! TOF beta
 DECLARE_SOA_COLUMN(BetaError, betaerror, float); //! Uncertainty on the TOF beta
-//
-DECLARE_SOA_COLUMN(ExpBetaEl, expbetael, float);           //! Expected beta of electron
-DECLARE_SOA_COLUMN(ExpBetaElError, expbetaelerror, float); //! Expected uncertainty on the beta of electron
-//
-DECLARE_SOA_COLUMN(SeparationBetaEl, separationbetael, float); //! Separation computed with the expected beta for electrons
-DECLARE_SOA_DYNAMIC_COLUMN(DiffBetaEl, diffbetael,             //! Difference between the measured and the expected beta for electrons
-                           [](float beta, float expbetael) -> float { return beta - expbetael; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFBetaImp, tofBeta,  //! TOF Beta value
+                           [](const float length, const float tofSignal, const float collisionTime) -> float {
+                             return length / (tofSignal - collisionTime) * o2::constants::physics::invLightSpeedCm2PS;
+                           });
 } // namespace pidtofbeta
+using TOFBeta = pidtofbeta::TOFBetaImp<o2::aod::track::Length, o2::aod::pidtofsignal::TOFSignal, o2::aod::pidtofevtime::TOFEvTime>;
 
 namespace pidtofmass
 {
-DECLARE_SOA_COLUMN(TOFMass, mass, float); //! TOF mass
+DECLARE_SOA_COLUMN(TOFMass, mass, float);       //! TOF mass
+DECLARE_SOA_DYNAMIC_COLUMN(TOFMassImp, tofMass, //! TOF Mass value
+                           [](const float length, const float tofSignal, const float collisionTime, const float momentum) -> float {
+                             const float beta = length / (tofSignal - collisionTime) * o2::constants::physics::invLightSpeedCm2PS;
+                             return (momentum / beta) * std::sqrt(std::abs(1.f - beta * beta));
+                           });
 } // namespace pidtofmass
+using TOFMass = pidtofmass::TOFMassImp<o2::aod::track::Length, o2::aod::pidtofsignal::TOFSignal, o2::aod::pidtofevtime::TOFEvTime, o2::aod::track::TOFExpMom>;
 
 namespace pidtof
 {
