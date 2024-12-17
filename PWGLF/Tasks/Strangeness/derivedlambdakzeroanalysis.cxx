@@ -127,6 +127,8 @@ struct derivedlambdakzeroanalysis {
     Configurable<bool> skipTPConly{"skipTPConly", false, "skip V0s comprised of at least one TPC only prong"};
     Configurable<bool> requirePosITSonly{"requirePosITSonly", false, "require that positive track is ITSonly (overrides TPC quality)"};
     Configurable<bool> requireNegITSonly{"requireNegITSonly", false, "require that negative track is ITSonly (overrides TPC quality)"};
+    Configurable<bool> rejectPosITSafterburner{"rejectPosITSafterburner", false, "reject positive track formed out of afterburner ITS tracks"};
+    Configurable<bool> rejectNegITSafterburner{"rejectNegITSafterburner", false, "reject negative track formed out of afterburner ITS tracks"};
 
     // PID (TPC/TOF)
     Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
@@ -747,9 +749,13 @@ struct derivedlambdakzeroanalysis {
     auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
 
     // ITS quality flags
-    if (posTrackExtra.itsNCls() >= v0Selections.minITSclusters)
+    bool posIsFromAfterburner = posTrackExtra.itsChi2PerNcl() < 0;
+    bool negIsFromAfterburner = negTrackExtra.itsChi2PerNcl() < 0;
+
+    // check minimum number of ITS clusters + reject ITS afterburner tracks if requested
+    if (posTrackExtra.itsNCls() >= v0Selections.minITSclusters && (!v0Selections.rejectPosITSafterburner || !posIsFromAfterburner))
       bitset(bitMap, selPosGoodITSTrack);
-    if (negTrackExtra.itsNCls() >= v0Selections.minITSclusters)
+    if (negTrackExtra.itsNCls() >= v0Selections.minITSclusters && (!v0Selections.rejectNegITSafterburner || !negIsFromAfterburner))
       bitset(bitMap, selNegGoodITSTrack);
 
     // TPC quality flags
