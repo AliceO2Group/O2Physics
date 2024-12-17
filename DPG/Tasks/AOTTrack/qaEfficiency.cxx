@@ -2201,7 +2201,7 @@ struct QaEfficiency {
       if (!isTrackSelected<false>(track, HIST("Data/trackSelection"))) {
         continue;
       }
-      if (abs(track.tpcNSigmaDe()) > nsigmaTPCDe) {
+      if (std::abs(track.tpcNSigmaDe()) > nsigmaTPCDe) {
         continue;
       }
       histos.fill(HIST("Data/trackLength"), track.length());
