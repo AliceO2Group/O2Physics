@@ -146,13 +146,13 @@ struct OnTheFlyTracker {
   } fastTrackerSettings; // allows for gap between peak and bg in case someone wants to
 
   struct : ConfigurableGroup {
-    std::string prefix = "cascadeDecaySettings"; // Cascade decay settings 
+    std::string prefix = "cascadeDecaySettings"; // Cascade decay settings
     Configurable<bool> decayXi{"decayXi", false, "Manually decay Xi and fill tables with daughters"};
     Configurable<bool> findXi{"findXi", false, "if decayXi on, find Xi and fill Tracks table also with Xi"};
     Configurable<bool> trackXi{"trackXi", false, "if findXi on, attempt to track Xi"};
     Configurable<bool> doXiQA{"doXiQA", false, "QA plots for when treating Xi"};
   } cascadeDecaySettings;
- 
+
   using PVertex = o2::dataformats::PrimaryVertex;
 
   // for secondary vertex finding
@@ -788,7 +788,7 @@ struct OnTheFlyTracker {
 
             // Cascade found successfully
             if (dcaFitterOK_Cascade) {
-              if (cascadeDecaySettings.doXiQA) 
+              if (cascadeDecaySettings.doXiQA)
                 histos.fill(HIST("hXiBuilding"), 5.0f);
               o2::track::TrackParCov bachelorTrackAtPCA = fitter.getTrack(1);
 

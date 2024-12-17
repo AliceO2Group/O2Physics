@@ -50,7 +50,8 @@ DetLayer FastTracker::GetLayer(const int layer, bool ignoreBarrelLayers)
   int layerIdx = layer;
   if (ignoreBarrelLayers) {
     for (uint32_t il = 0, trackingLayerIdx = 0; trackingLayerIdx <= layer; il++) {
-      if (layers[il].type == 0) continue;
+      if (layers[il].type == 0)
+        continue;
       trackingLayerIdx++;
       layerIdx = il;
     }
@@ -211,19 +212,19 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
     if (ok && applyElossCorrection && layers[il].xrho > 0) { // correct in small steps
       for (int ise = xrhosteps; ise--;) {
         ok = inputTrack.correctForMaterial(0, -layers[il].xrho / xrhosteps, applyAngularCorrection);
-        if (!ok) break;
+        if (!ok)
+          break;
       }
     }
 
-
     // was there a problem on this layer?
     if (!ok && il > 0) { // may fail to reach target layer due to the eloss
-      float rad2 = inputTrack.getX()*inputTrack.getX() + inputTrack.getY()*inputTrack.getY();
+      float rad2 = inputTrack.getX() * inputTrack.getX() + inputTrack.getY() * inputTrack.getY();
       float fMinRadTrack = 132.;
-      float maxR = layers[il-1].r + kTrackingMargin*2;
+      float maxR = layers[il - 1].r + kTrackingMargin * 2;
       float minRad = (fMinRadTrack > 0 && fMinRadTrack < maxR) ? fMinRadTrack : maxR;
-      if (rad2 - minRad*minRad < kTrackingMargin*kTrackingMargin) { // check previously reached layer
-        return -5; // did not reach min requested layer
+      if (rad2 - minRad * minRad < kTrackingMargin * kTrackingMargin) { // check previously reached layer
+        return -5;                                                      // did not reach min requested layer
       } else {
         break;
       }
@@ -235,7 +236,6 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
     if (layers[il].type == 0)
       continue; // inert layer, skip
 
-
     // layer is reached
     if (firstLayerReached < 0)
       firstLayerReached = il;
@@ -246,7 +246,6 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
   // initialize track at outer point
   o2::track::TrackParCov inwardTrack(inputTrack);
-
 
   // Enlarge covariance matrix
   std::array<float, 5> trPars = {0.};
@@ -321,21 +320,29 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       const o2::track::TrackParametrization<float>::dim2_t hitpoint = {
         static_cast<float>(xyz1[1]),
         static_cast<float>(xyz1[2])};
-        // LOG(info) << "Using resolution for layer: " << layers[il].name << ". RPhi: " << layers[il].resRPhi << " , Z: " << layers[il].resZ;
+      // LOG(info) << "Using resolution for layer: " << layers[il].name << ". RPhi: " << layers[il].resRPhi << " , Z: " << layers[il].resZ;
       const o2::track::TrackParametrization<float>::dim3_t hitpointcov = {layers[il].resRPhi * layers[il].resRPhi, 0.f, layers[il].resZ * layers[il].resZ};
 
       inwardTrack.update(hitpoint, hitpointcov);
       inwardTrack.checkCovariance();
     }
 
-    if (applyMSCorrection && layers[il].x0>0) {
-      if (!inputTrack.correctForMaterial(layers[il].x0, 0, applyAngularCorrection)) { return -6; }
-      if (!inwardTrack.correctForMaterial(layers[il].x0, 0, applyAngularCorrection)) { return -6; }
+    if (applyMSCorrection && layers[il].x0 > 0) {
+      if (!inputTrack.correctForMaterial(layers[il].x0, 0, applyAngularCorrection)) {
+        return -6;
+      }
+      if (!inwardTrack.correctForMaterial(layers[il].x0, 0, applyAngularCorrection)) {
+        return -6;
+      }
     }
-    if (applyElossCorrection && layers[il].xrho>0) {
+    if (applyElossCorrection && layers[il].xrho > 0) {
       for (int ise = xrhosteps; ise--;) { // correct in small steps
-        if (!inputTrack.correctForMaterial(0, layers[il].xrho / xrhosteps, applyAngularCorrection)) { return -7; }
-        if (!inwardTrack.correctForMaterial(0, layers[il].xrho / xrhosteps, applyAngularCorrection)) { return -7; }
+        if (!inputTrack.correctForMaterial(0, layers[il].xrho / xrhosteps, applyAngularCorrection)) {
+          return -7;
+        }
+        if (!inwardTrack.correctForMaterial(0, layers[il].xrho / xrhosteps, applyAngularCorrection)) {
+          return -7;
+        }
       }
     }
 
