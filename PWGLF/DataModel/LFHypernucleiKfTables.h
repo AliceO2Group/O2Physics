@@ -16,7 +16,7 @@
 #ifndef PWGLF_DATAMODEL_LFHYPERNUCLEIKFTABLES_H_
 #define PWGLF_DATAMODEL_LFHYPERNUCLEIKFTABLES_H_
 
-#include <cmath> 
+#include <cmath>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/Centrality.h"
