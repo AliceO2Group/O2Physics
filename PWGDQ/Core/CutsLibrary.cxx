@@ -3266,6 +3266,27 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("emu_electron_test1")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
+    cut->AddCut(GetAnalysisCut("electronPIDsigmaOpen"));
+    return cut;
+  }
+
+  if (!nameStr.compare("emu_electron_test2")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine2"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
+    cut->AddCut(GetAnalysisCut("electronPIDsigmaOpen"));
+    return cut;
+  }
+
+  if (!nameStr.compare("emu_electron_test3")) {
+    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
+    cut->AddCut(GetAnalysisCut("electronPIDsigmaOpen"));
+    return cut;
+  }
+
   if (!nameStr.compare("muonLooseTriggerTestCuts")) {
     cut->AddCut(GetAnalysisCut("muonLooseTriggerTestCuts"));
     return cut;
