@@ -49,8 +49,8 @@ DECLARE_SOA_COLUMN(MassAntiLambda, massAntiLambda, float); //! Candidate mass
 DECLARE_SOA_COLUMN(Pt, pt, float);                         //! Transverse momentum of the candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtPos, ptPos, float);                   //! Transverse momentum of positive track (GeV/c)
 DECLARE_SOA_COLUMN(PtNeg, ptNeg, float);                   //! Transverse momentum of negative track (GeV/c)
-DECLARE_SOA_COLUMN(TpcPtPos, tpcPtPos, float);             //! Transverse Momentum of positive track at inner wall of TPC (GeV/c)
-DECLARE_SOA_COLUMN(TpcPtNeg, tpcPtNeg, float);             //! Transverse Momentum of negative track at inner wall of TPC (GeV/c)
+DECLARE_SOA_COLUMN(PtPosTpc, ptPosTpc, float);             //! Transverse Momentum of positive track at inner wall of TPC (GeV/c)
+DECLARE_SOA_COLUMN(PtNegTpc, ptNegTpc, float);             //! Transverse Momentum of negative track at inner wall of TPC (GeV/c)
 DECLARE_SOA_COLUMN(Radius, radius, float);                 //! Radius
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                       //! Cosine of pointing angle
 DECLARE_SOA_COLUMN(DcaV0Daughters, dcaV0Daughters, float); //! DCA between V0 daughters
@@ -69,8 +69,8 @@ DECLARE_SOA_COLUMN(QtArm, qtArm, float);                   //! Armenteros Qt
 // Cascades
 DECLARE_SOA_COLUMN(MassOmega, massOmega, float);             //! Candidate mass
 DECLARE_SOA_COLUMN(MassXi, massXi, float);                   //! Candidate mass
-DECLARE_SOA_COLUMN(BachPt, bachPt, float);                   //! Transverse momentum of the bachelor (GeV/c)
-DECLARE_SOA_COLUMN(TpcPtBach, tpcPtBach, float);             //! Transverse momentum of the bachelor at inner wall of TPC (GeV/c)
+DECLARE_SOA_COLUMN(PtBach, ptBach, float);                   //! Transverse momentum of the bachelor (GeV/c)
+DECLARE_SOA_COLUMN(PtBachTpc, ptBachTpc, float);             //! Transverse momentum of the bachelor at inner wall of TPC (GeV/c)
 DECLARE_SOA_COLUMN(MLambda, mLambda, float);                 //! Daughter lambda mass (GeV/c^2)
 DECLARE_SOA_COLUMN(V0cosPA, v0cosPA, float);                 //! V0 CPA
 DECLARE_SOA_COLUMN(CascCosPa, cascCosPa, float);             //! Cascade CPA
@@ -92,8 +92,8 @@ DECLARE_SOA_TABLE(PidV0s, "AOD", "PIDV0S", //! Table with PID information
                   pid_studies::Pt,
                   pid_studies::PtPos,
                   pid_studies::PtNeg,
-                  pid_studies::TpcPtPos,
-                  pid_studies::TpcPtNeg,
+                  pid_studies::PtPosTpc,
+                  pid_studies::PtNegTpc,
                   pid_studies::Radius,
                   pid_studies::Cpa,
                   pid_studies::DcaV0Daughters,
@@ -117,8 +117,8 @@ DECLARE_SOA_TABLE(PidV0s, "AOD", "PIDV0S", //! Table with PID information
 DECLARE_SOA_TABLE(PidCascades, "AOD", "PIDCASCADES", //! Table with PID information
                   pid_studies::MassOmega,
                   pid_studies::Pt,
-                  pid_studies::BachPt,
-                  pid_studies::TpcPtBach,
+                  pid_studies::PtBach,
+                  pid_studies::PtBachTpc,
                   pid_studies::Radius,
                   pid_studies::MLambda,
                   pid_studies::V0cosPA,
