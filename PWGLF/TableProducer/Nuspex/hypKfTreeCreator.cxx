@@ -415,7 +415,7 @@ struct hypKfTreeCreator { // o2-linter: disable=[name/workflow-file][name/struct
       const auto& d3 = cand.daughterTracks.at(2);
       if (!isMC || (isMC && cfgMCReconstructed && cand.isReconstructed))
         outputTableThree(
-          cand.species, cand.isMatter,  cand.cent, cand.occu, cand.passedEvSel, cand.mass, cand.y, cand.pt, cand.ct, cand.cpaPv, cand.maxDcaTracks, cand.dcaToPvXY,
+          cand.species, cand.isMatter, cand.cent, cand.occu, cand.passedEvSel, cand.mass, cand.y, cand.pt, cand.ct, cand.cpaPv, cand.maxDcaTracks, cand.dcaToPvXY,
           cand.dcaToPvZ, cand.devToPvXY, cand.chi2, cand.pvx, cand.pvy, cand.pvz, cand.svx, cand.svy, cand.svz, cand.px, cand.py, cand.pz, cand.collisionMcTrue,
           cand.mcTrue, cand.mcPhysicalPrimary,
           d1.x, d1.y, d1.z, d1.px, d1.py, d1.pz, d1.tpcNcls, d1.tpcChi2, d1.itsNcls, d1.itsChi2, d1.itsMeanClsSizeL,
@@ -749,7 +749,6 @@ struct hypKfTreeCreator { // o2-linter: disable=[name/workflow-file][name/struct
   {
     return RecoDecay::cpa(primVtx(coll), decayVtx(hypNuc), momenta(hypNuc));
   }
-  
   // only for Cascades
   template <class TPart>
   float decayLength(TPart const& mother, TPart const& daughter)
