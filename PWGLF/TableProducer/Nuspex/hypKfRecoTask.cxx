@@ -1089,7 +1089,7 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
       histos.fill(HIST("histVtxZ"), collision.posZ());
       histos.fill(HIST("histCentFT0A"), collision.centFT0A());
       histos.fill(HIST("histCentFT0C"), collision.centFT0C());
-      histos.fill(HIST("histCentFT0M"), collision.centFT0M());  
+      histos.fill(HIST("histCentFT0M"), collision.centFT0M());
     }
     occupancy = collision.trackOccupancyInTimeRange();
     kfPrimVtx = createKFPVertexFromCollision(collision);
