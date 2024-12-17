@@ -523,7 +523,7 @@ struct hypKfTreeCreator { // o2-linter: disable=[name/workflow-file][name/struct
   }
   //___________________________________________________________________________________________________________________________________________________________
 
-  void fillCandidate(HyperNucleus& cand, HyperNucleus& hypDaughter, aod::HypKfHypNuc const& hypNuc, aod::HypKfHypNucs const&, aod::HypKfColls const&, aod::HypKfTracks const&, aod::HypKfDaughtAdds const&, aod::HypKfSubDs const&)
+  void fillCandidate(HyperNucleus& cand, HyperNucleus& /*hypDaughter*/, aod::HypKfHypNuc const& hypNuc, aod::HypKfHypNucs const&, aod::HypKfColls const&, aod::HypKfTracks const&, aod::HypKfDaughtAdds const&, aod::HypKfSubDs const&)
   {
     cand.daughterTracks.clear();
     cand.subDaughterMassVec.clear();

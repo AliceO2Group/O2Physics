@@ -412,59 +412,59 @@ struct centralityStudy {
     // process BCs, calculate FT0C distribution
     // conditionals suggested by FIT team (Jacek O. et al)
     histos.fill(HIST("hBCSelection"), 0); // all BCs
-    if (selectCollidingBCs && !multbc.multBCColliding())
+    if (selectCollidingBCs && !multbc.multCollidingBC())
       return;
     histos.fill(HIST("hBCSelection"), 1); // colliding
-    if (selectTVX && !multbc.multBCTVX())
+    if (selectTVX && !multbc.multTVX())
       return;
     histos.fill(HIST("hBCSelection"), 2); // TVX
-    if (selectFV0OrA && !multbc.multBCFV0OrA())
+    if (selectFV0OrA && !multbc.multFV0OrA())
       return;
     histos.fill(HIST("hBCSelection"), 3); // FV0OrA
     if (vertexZwithT0 < 100.0f) {
-      if (!multbc.multBCFT0PosZValid())
+      if (!multbc.multFT0PosZValid())
         return;
-      if (TMath::Abs(multbc.multBCFT0PosZ()) > vertexZwithT0)
+      if (TMath::Abs(multbc.multFT0PosZ()) > vertexZwithT0)
         return;
     }
     histos.fill(HIST("hBCSelection"), 4); // FV0OrA
 
-    if (multbc.multBCFT0C() < upcRejection.maxFT0CforZNACselection &&
-        multbc.multBCZNA() < upcRejection.minZNACsignal &&
-        multbc.multBCZNC() < upcRejection.minZNACsignal) {
+    if (multbc.multFT0C() < upcRejection.maxFT0CforZNACselection &&
+        multbc.multZNA() < upcRejection.minZNACsignal &&
+        multbc.multZNC() < upcRejection.minZNACsignal) {
       return;
     }
-    if (multbc.multBCFT0C() < upcRejection.maxFT0CforFV0Aselection &&
-        multbc.multBCFV0A() < upcRejection.minFV0Asignal) {
+    if (multbc.multFT0C() < upcRejection.maxFT0CforFV0Aselection &&
+        multbc.multFV0A() < upcRejection.minFV0Asignal) {
       return;
     }
-    if (multbc.multBCFT0C() < upcRejection.maxFT0CforFDDAselection &&
-        multbc.multBCFDDA() < upcRejection.minFDDAsignal) {
+    if (multbc.multFT0C() < upcRejection.maxFT0CforFDDAselection &&
+        multbc.multFDDA() < upcRejection.minFDDAsignal) {
       return;
     }
 
     histos.fill(HIST("hBCSelection"), 5); // znac
 
     // if we got here, we also finally fill the FT0C histogram, please
-    histos.fill(HIST("hFT0C_BCs"), multbc.multBCFT0C() * scaleSignalFT0C);
+    histos.fill(HIST("hFT0C_BCs"), multbc.multFT0C() * scaleSignalFT0C);
 
     // ZN signals
-    histos.fill(HIST("hZNAvsFT0C_BCs"), multbc.multBCFT0C() * scaleSignalFT0C, multbc.multBCZNA());
-    histos.fill(HIST("hZNCvsFT0C_BCs"), multbc.multBCFT0C() * scaleSignalFT0C, multbc.multBCZNC());
+    histos.fill(HIST("hZNAvsFT0C_BCs"), multbc.multFT0C() * scaleSignalFT0C, multbc.multZNA());
+    histos.fill(HIST("hZNCvsFT0C_BCs"), multbc.multFT0C() * scaleSignalFT0C, multbc.multZNC());
 
-    histos.fill(HIST("hFT0M_BCs"), (multbc.multBCFT0A() + multbc.multBCFT0C()) * scaleSignalFT0M);
-    histos.fill(HIST("hFV0A_BCs"), multbc.multBCFV0A() * scaleSignalFV0A);
-    if (multbc.multBCFT0PosZValid()) {
-      histos.fill(HIST("hFT0CvsPVz_BCs_All"), multbc.multBCFT0PosZ(), multbc.multBCFT0C() * scaleSignalFT0C);
-      if (multbc.multBCFT0C() > minFT0CforVertexZ) {
-        histos.fill(HIST("hFT0CvsPVz_BCs"), multbc.multBCFT0PosZ(), multbc.multBCFT0C() * scaleSignalFT0C);
+    histos.fill(HIST("hFT0M_BCs"), (multbc.multFT0A() + multbc.multFT0C()) * scaleSignalFT0M);
+    histos.fill(HIST("hFV0A_BCs"), multbc.multFV0A() * scaleSignalFV0A);
+    if (multbc.multFT0PosZValid()) {
+      histos.fill(HIST("hFT0CvsPVz_BCs_All"), multbc.multFT0PosZ(), multbc.multFT0C() * scaleSignalFT0C);
+      if (multbc.multFT0C() > minFT0CforVertexZ) {
+        histos.fill(HIST("hFT0CvsPVz_BCs"), multbc.multFT0PosZ(), multbc.multFT0C() * scaleSignalFT0C);
       }
     }
 
     if (multbc.has_ft0Mult()) {
       auto multco = multbc.ft0Mult_as<soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal>>();
-      if (multbc.multBCFT0PosZValid()) {
-        histos.fill(HIST("hVertexZ_BCvsCO"), multco.multPVz(), multbc.multBCFT0PosZ());
+      if (multbc.multFT0PosZValid()) {
+        histos.fill(HIST("hVertexZ_BCvsCO"), multco.multPVz(), multbc.multFT0PosZ());
       }
     }
   }

@@ -101,7 +101,7 @@ struct HfTaskMultiplicityEstimatorCorrelation {
         if (particle.isPhysicalPrimary()) {
           bool isCharged = false;
           for (auto const& consideredParticle : consideredParticles) {
-            if (std::abs(particle.pdgCode()) == consideredParticle) {
+            if (static_cast<unsigned int>(std::abs(particle.pdgCode())) == consideredParticle) {
               isCharged = true;
               break;
             }

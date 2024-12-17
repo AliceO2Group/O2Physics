@@ -453,7 +453,7 @@ struct correlateStrangeness {
     }
   }
 
-  void fillCorrelationsHadron(aod::TriggerTracks const& triggers, aod::AssocHadrons const& assocs, bool mixing, float pvz, float mult, int indexAssoc)
+  void fillCorrelationsHadron(aod::TriggerTracks const& triggers, aod::AssocHadrons const& assocs, bool mixing, float pvz, float mult, int /*indexAssoc*/)
   {
 
     for (auto& triggerTrack : triggers) {

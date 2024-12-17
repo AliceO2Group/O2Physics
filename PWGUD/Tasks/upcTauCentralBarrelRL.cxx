@@ -149,7 +149,7 @@ struct UpcTauCentralBarrelRL {
     ConfigurableAxis axisFITtime{"axisFITtime", {201, -40.5, 40.5}, "FIT time in ns"};
     ConfigurableAxis axisFITamplitude{"axisFITamplitude", {1000, 0., 1000.}, "FIT amplitude"};
 
-    AxisSpec axisChannels{CH_ENUM_COUNTER, -0.5, CH_ENUM_COUNTER - 0.5, "Channels (-)"};
+    AxisSpec axisChannels{CH_ENUM_COUNTER, -0.5, +CH_ENUM_COUNTER - 0.5, "Channels (-)"};
   } confAxis;
 
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
@@ -2148,27 +2148,27 @@ struct UpcTauCentralBarrelRL {
     histos.get<TH1>(HIST("Events/Truth/hNmuons"))->Fill(countMuons);
     histos.get<TH1>(HIST("Events/Truth/hNpions"))->Fill(countPions);
 
-    if (countElectrons == 2)
+    if (countElectrons == 2 && countMuons == 0 && countPions == 0)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_EE);
-    if (countElectrons == 1 && countMuons == 1)
+    if (countElectrons == 1 && countMuons == 1 && countPions == 0)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_EMU);
-    if (countElectrons == 1 && countPions == 1)
+    if (countElectrons == 1 && countMuons == 0 && countPions == 1)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_EPI);
-    if ((countElectrons == 1 && countMuons == 1) || (countElectrons == 1 && countPions == 1))
+    if ((countElectrons == 1 && countMuons == 1 && countPions == 0) || (countElectrons == 1 && countMuons == 0 && countPions == 1))
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_EMUPI);
-    if (countMuons == 2)
+    if (countElectrons == 0 && countMuons == 2 && countPions == 0)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_MUMU);
-    if (countMuons == 1 && countPions == 1)
+    if (countElectrons == 0 && countMuons == 1 && countPions == 1)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_MUPI);
-    if (countPions == 2)
+    if (countElectrons == 0 && countMuons == 0 && countPions == 2)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_PIPI);
-    if (countPions == 4)
+    if (countElectrons == 0 && countMuons == 0 && countPions == 4)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_FOURPI);
-    if (countPions == 3 && countElectrons == 1)
+    if (countElectrons == 1 && countMuons == 0 && countPions == 3)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_ETHREEPI);
-    if (countPions == 3 && countMuons == 1)
+    if (countElectrons == 0 && countMuons == 1 && countPions == 3)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_MUTHREEPI);
-    if (countPions == 6)
+    if (countElectrons == 0 && countMuons == 0 && countPions == 6)
       histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_SIXPI);
   }
 
@@ -2301,21 +2301,21 @@ struct UpcTauCentralBarrelRL {
 
   } // end processMCgenDG
 
-  void processTestMC(FullMCUDCollision const& reconstructedCollision,
-                     FullMCUDTracks const& reconstructedBarrelTracks,
+  void processTestMC(FullMCUDCollision const& /*reconstructedCollision*/,
+                     FullMCUDTracks const& /*reconstructedBarrelTracks*/,
                      aod::UDMcCollisions const&,
                      aod::UDMcParticles const&)
   {
-    if (reconstructedCollision.has_udMcCollision()) {
-      const auto& generatedCollision = reconstructedCollision.udMcCollision();
-      printDebugMessage(Form("%lli udMcCollision found", generatedCollision.size()));
-    }
+    // if (reconstructedCollision.has_udMcCollision()) {
+    //   const auto& generatedCollision = reconstructedCollision.udMcCollision();
+    //   printDebugMessage(Form("%lli udMcCollision found", generatedCollision.size())); // FIXME: Type of size() is not invariant.
+    // }
 
-    const auto& track = reconstructedBarrelTracks.iteratorAt(0);
-    if (track.size() && track.has_udMcParticle()) {
-      const auto& particle = track.udMcParticle();
-      printDebugMessage(Form("%lli udMcParticle found", particle.size()));
-    }
+    // const auto& track = reconstructedBarrelTracks.iteratorAt(0);
+    // if (track.size() && track.has_udMcParticle()) {
+    //   const auto& particle = track.udMcParticle();
+    //   printDebugMessage(Form("%lli udMcParticle found", particle.size())); // FIXME: Type of size() is not invariant.
+    // }
 
   } // end processTestMC
 

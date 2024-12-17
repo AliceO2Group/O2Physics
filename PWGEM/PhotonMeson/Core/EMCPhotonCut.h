@@ -34,7 +34,8 @@ class EMCPhotonCut : public TNamed
 
   enum class EMCPhotonCuts : int {
     // cluster cut
-    kEnergy = 0,
+    kDefinition = 0,
+    kEnergy,
     kNCell,
     kM02,
     kTiming,
@@ -49,6 +50,9 @@ class EMCPhotonCut : public TNamed
   template <typename T, typename Cluster>
   bool IsSelected(Cluster const& cluster) const
   {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kDefinition, cluster)) {
+      return false;
+    }
     if (!IsSelectedEMCal(EMCPhotonCuts::kEnergy, cluster)) {
       return false;
     }
@@ -75,6 +79,9 @@ class EMCPhotonCut : public TNamed
   bool IsSelectedEMCal(const EMCPhotonCuts& cut, Cluster const& cluster) const
   {
     switch (cut) {
+      case EMCPhotonCuts::kDefinition:
+        return cluster.definition() == mDefinition;
+
       case EMCPhotonCuts::kEnergy:
         return cluster.e() > mMinE;
 
@@ -113,6 +120,7 @@ class EMCPhotonCut : public TNamed
   }
 
   // Setters
+  void SetClusterizer(std::string clusterDefinitionString = "kV3Default");
   void SetMinE(float min = 0.7f);
   void SetMinNCell(int min = 1);
   void SetM02Range(float min = 0.1f, float max = 0.7f);
@@ -128,6 +136,7 @@ class EMCPhotonCut : public TNamed
 
  private:
   // EMCal cluster cuts
+  int mDefinition{10};      ///< clusterizer definition
   float mMinE{0.7f};        ///< minimum energy
   int mMinNCell{1};         ///< minimum number of cells per cluster
   float mMinM02{0.1f};      ///< minimum M02 for a cluster

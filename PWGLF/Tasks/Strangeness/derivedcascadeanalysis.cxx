@@ -72,6 +72,7 @@ struct derivedCascadeAnalysis {
   ConfigurableAxis axisMass{"axisMass", {200, 1.222f, 1.422f}, "range of invariant mass, in case of omega take 1.572f, 1.772f"};
 
   Configurable<bool> isXi{"isXi", 1, "Apply cuts for Xi identification"};
+  Configurable<bool> usePbPbCentrality{"usePbPbCentrality", 1, "If true, use centFt0C, else use centFT0M"};
   Configurable<int> minOccupancy{"minOccupancy", -1, "Minimal occupancy"};
   Configurable<int> maxOccupancy{"maxOccupancy", -1, "Maximal occupancy"};
   Configurable<float> minOccupancyFT0{"minOccupancyFT0", -1, "Minimal occupancy"};
@@ -195,6 +196,7 @@ struct derivedCascadeAnalysis {
   void init(InitContext const&)
   {
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {vertexZ});
+    histos.add("hEventMultFt0C", "", kTH1F, {{500, 0, 5000}});
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
     histos.add("hEventSelection", "hEventSelection", kTH1F, {{21, 0, 21}});
     histos.add("hOccupancyVsOccupFt0VsCentrality", "", kTH3F, {axisOccupancy, axisOccupancyFt0, {100, 0, 100}});
@@ -328,9 +330,21 @@ struct derivedCascadeAnalysis {
     if (doprocessCascadesMCforEff) {
       histos.add("hGenEvents", "", HistType::kTH2F, {{axisNch}, {2, 0, 2}});
       histos.add("hCentralityVsMultMC", "", kTH2F, {{101, 0.0f, 101.0f}, axisNch});
+      histos.add("hGenMultMCFT0C", "", kTH1F, {{500, 0, 5000}});
+      histos.add("hGenMCNParticlesEta10", "", kTH1F, {{500, 0, 5000}});
 
       histos.add("hCentralityVsNcoll_beforeEvSel", "", kTH2F, {{101, 0.0f, 101.0f}, {50, 0.f, 50.f}});
       histos.add("hCentralityVsNcoll_afterEvSel", "", kTH2F, {{101, 0.0f, 101.0f}, {50, 0.f, 50.f}});
+
+      histos.add("h2dGenXiMinusEta", "", kTH1F, {{30, -2, 2}});
+      histos.add("h2dGenXiMinusEtaPosDaughter", "", kTH1F, {{30, -2, 2}});
+      histos.add("h2dGenXiMinusEtaNegDaughter", "", kTH1F, {{30, -2, 2}});
+      histos.add("h2dGenXiMinusEtaBach", "", kTH1F, {{30, -2, 2}});
+
+      histos.add("h2dGenOmegaMinusEta", "", kTH1F, {{30, -2, 2}});
+      histos.add("h2dGenOmegaMinusEtaPosDaughter", "", kTH1F, {{30, -2, 2}});
+      histos.add("h2dGenOmegaMinusEtaNegDaughter", "", kTH1F, {{30, -2, 2}});
+      histos.add("h2dGenOmegaMinusEtaBach", "", kTH1F, {{30, -2, 2}});
 
       histos.add("h2dGenXiMinus", "h2dGenXiMinus", kTH2D, {{101, 0.0f, 101.0f}, axisPt});
       histos.add("h2dGenXiPlus", "h2dGenXiPlus", kTH2D, {{101, 0.0f, 101.0f}, axisPt});
@@ -392,11 +406,14 @@ struct derivedCascadeAnalysis {
 
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 0.5 /* all collisions */);
+    float centrality = coll.centFT0C();
+    if (!usePbPbCentrality)
+      centrality = coll.centFT0M();
 
     if (qaFlags.doBefSelEventMultCorr) {
       histos.fill(HIST("hEventNchCorrelationBefCuts"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
-      histos.fill(HIST("hEventPVcontributorsVsCentralityBefCuts"), coll.centFT0C(), coll.multNTracksPVeta1());
-      histos.fill(HIST("hEventGlobalTracksVsCentralityBefCuts"), coll.centFT0C(), coll.multNTracksGlobal());
+      histos.fill(HIST("hEventPVcontributorsVsCentralityBefCuts"), centrality, coll.multNTracksPVeta1());
+      histos.fill(HIST("hEventGlobalTracksVsCentralityBefCuts"), centrality, coll.multNTracksGlobal());
     }
 
     if (eventSelectionFlags.doTriggerTVXEventCut && !coll.selection_bit(aod::evsel::kIsTriggerTVX)) {
@@ -417,7 +434,7 @@ struct derivedCascadeAnalysis {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 3.5 /* collisions  after sel pvz sel*/);
 
-    if (coll.centFT0C() > centMax || coll.centFT0C() < centMin) {
+    if (centrality > centMax || centrality < centMin) {
       return false;
     }
     if (fillHists)
@@ -466,9 +483,9 @@ struct derivedCascadeAnalysis {
       histos.fill(HIST("hEventSelection"), 11.5 /* Not at TF border */);
 
     if (eventSelectionFlags.doMultiplicityCorrCut) {
-      if (coll.multNTracksGlobal() < (1343.3 * TMath::Exp(-0.0443259 * coll.centFT0C()) - 50) || coll.multNTracksGlobal() > (2098.9 * TMath::Exp(-0.0332444 * coll.centFT0C())))
+      if (coll.multNTracksGlobal() < (1343.3 * TMath::Exp(-0.0443259 * centrality) - 50) || coll.multNTracksGlobal() > (2098.9 * TMath::Exp(-0.0332444 * centrality)))
         return false;
-      if (coll.multNTracksPVeta1() < (3703 * TMath::Exp(-0.0455483 * coll.centFT0C()) - 150) || coll.multNTracksPVeta1() > (4937.33 * TMath::Exp(-0.0372668 * coll.centFT0C()) + 20))
+      if (coll.multNTracksPVeta1() < (3703 * TMath::Exp(-0.0455483 * centrality) - 150) || coll.multNTracksPVeta1() > (4937.33 * TMath::Exp(-0.0372668 * centrality) + 20))
         return false;
     }
     if (fillHists)
@@ -527,12 +544,13 @@ struct derivedCascadeAnalysis {
       histos.fill(HIST("hEventSelection"), 20.5 /* Occupancy FT0 selection */);
 
     if (fillHists) {
-      histos.fill(HIST("hOccupancyVsOccupFt0VsCentrality"), occupancy, occupancyFT0, coll.centFT0C());
-      histos.fill(HIST("hEventCentrality"), coll.centFT0C());
+      histos.fill(HIST("hOccupancyVsOccupFt0VsCentrality"), occupancy, occupancyFT0, centrality);
+      histos.fill(HIST("hEventCentrality"), centrality);
       histos.fill(HIST("hEventVertexZ"), coll.posZ());
+      histos.fill(HIST("hEventMultFt0C"), coll.multFT0C());
       histos.fill(HIST("hEventNchCorrelationAfCuts"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
-      histos.fill(HIST("hEventPVcontributorsVsCentrality"), coll.centFT0C(), coll.multNTracksPVeta1());
-      histos.fill(HIST("hEventGlobalTracksVsCentrality"), coll.centFT0C(), coll.multNTracksGlobal());
+      histos.fill(HIST("hEventPVcontributorsVsCentrality"), centrality, coll.multNTracksPVeta1());
+      histos.fill(HIST("hEventGlobalTracksVsCentrality"), centrality, coll.multNTracksGlobal());
     }
 
     return true;
@@ -699,6 +717,10 @@ struct derivedCascadeAnalysis {
     if (!IsEventAccepted(coll, true))
       return;
 
+    float centrality = coll.centFT0C();
+    if (!usePbPbCentrality)
+      centrality = coll.centFT0M();
+
     for (auto& casc : Cascades) {
 
       int counter = -1;
@@ -722,12 +744,12 @@ struct derivedCascadeAnalysis {
 
       if (qaFlags.doBefSelCheck) {
         if (isPositive)
-          histos.fill(HIST("InvMassBefSel/h") + HIST(charge[0]) + HIST("Cascade"), casc.pt(), invmass, coll.centFT0C());
+          histos.fill(HIST("InvMassBefSel/h") + HIST(charge[0]) + HIST("Cascade"), casc.pt(), invmass, centrality);
         if (isNegative)
-          histos.fill(HIST("InvMassBefSel/h") + HIST(charge[1]) + HIST("Cascade"), casc.pt(), invmass, coll.centFT0C());
+          histos.fill(HIST("InvMassBefSel/h") + HIST(charge[1]) + HIST("Cascade"), casc.pt(), invmass, centrality);
       }
 
-      if (!IsCascadeCandidateAccepted(casc, counter, coll.centFT0C()))
+      if (!IsCascadeCandidateAccepted(casc, counter, centrality))
         continue;
       counter += 13;
 
@@ -769,23 +791,23 @@ struct derivedCascadeAnalysis {
 
       if (casc.sign() < 0) {
         if (qaFlags.doFillNsigmaTPCHistProton)
-          histos.fill(HIST("hNsigmaProton"), posExtra.tpcNSigmaPr(), fullMomentumPosDaugh, coll.centFT0C());
+          histos.fill(HIST("hNsigmaProton"), posExtra.tpcNSigmaPr(), fullMomentumPosDaugh, centrality);
         if (qaFlags.doFillNsigmaTPCHistV0Pion)
-          histos.fill(HIST("hNsigmaPionNeg"), negExtra.tpcNSigmaPi(), fullmomentumNegDaugh, coll.centFT0C());
+          histos.fill(HIST("hNsigmaPionNeg"), negExtra.tpcNSigmaPi(), fullmomentumNegDaugh, centrality);
         if (qaFlags.doFillNsigmaTPCHistPionBach && isXi)
-          histos.fill(HIST("hNsigmaPionNegBach"), bachExtra.tpcNSigmaPi(), fullmomentumBachelor, coll.centFT0C());
+          histos.fill(HIST("hNsigmaPionNegBach"), bachExtra.tpcNSigmaPi(), fullmomentumBachelor, centrality);
         if (qaFlags.doFillNsigmaTPCHistPionBach && !isXi)
-          histos.fill(HIST("hNsigmaKaon"), bachExtra.tpcNSigmaPi(), fullmomentumBachelor, coll.centFT0C());
+          histos.fill(HIST("hNsigmaKaon"), bachExtra.tpcNSigmaPi(), fullmomentumBachelor, centrality);
 
       } else if (casc.sign() > 0) {
         if (qaFlags.doFillNsigmaTPCHistV0Pion)
-          histos.fill(HIST("hNsigmaPionPos"), posExtra.tpcNSigmaPi(), fullMomentumPosDaugh, coll.centFT0C());
+          histos.fill(HIST("hNsigmaPionPos"), posExtra.tpcNSigmaPi(), fullMomentumPosDaugh, centrality);
         if (qaFlags.doFillNsigmaTPCHistProton)
-          histos.fill(HIST("hNsigmaProtonNeg"), negExtra.tpcNSigmaPr(), fullmomentumNegDaugh, coll.centFT0C());
+          histos.fill(HIST("hNsigmaProtonNeg"), negExtra.tpcNSigmaPr(), fullmomentumNegDaugh, centrality);
         if (qaFlags.doFillNsigmaTPCHistPionBach && isXi)
-          histos.fill(HIST("hNsigmaPionPosBach"), bachExtra.tpcNSigmaPi(), fullmomentumBachelor, coll.centFT0C());
+          histos.fill(HIST("hNsigmaPionPosBach"), bachExtra.tpcNSigmaPi(), fullmomentumBachelor, centrality);
         if (qaFlags.doFillNsigmaTPCHistPionBach && !isXi)
-          histos.fill(HIST("hNsigmaKaon"), bachExtra.tpcNSigmaPi(), fullmomentumBachelor, coll.centFT0C());
+          histos.fill(HIST("hNsigmaKaon"), bachExtra.tpcNSigmaPi(), fullmomentumBachelor, centrality);
       }
 
       if (casc.sign() < 0) {
@@ -834,12 +856,12 @@ struct derivedCascadeAnalysis {
       if (posExtra.hasTOF()) {
 
         if (candidateSelectionFlags.doNTOFSigmaProtonCut && casc.sign() < 0) {
-          histos.fill(HIST("hNsigmaTOFProton"), casc.tofNSigmaXiLaPr(), fullMomentumPosDaugh, coll.centFT0C());
+          histos.fill(HIST("hNsigmaTOFProton"), casc.tofNSigmaXiLaPr(), fullMomentumPosDaugh, centrality);
           if (TMath::Abs(casc.tofNSigmaXiLaPr()) > candidateSelectionValues.nsigmatofPr && fullMomentumPosDaugh > 0.6)
             continue;
         }
         if (candidateSelectionFlags.doNTOFSigmaV0PionCut && casc.sign() > 0) {
-          histos.fill(HIST("hNsigmaTOFV0Pion"), casc.tofNSigmaXiLaPi(), fullMomentumPosDaugh, coll.centFT0C());
+          histos.fill(HIST("hNsigmaTOFV0Pion"), casc.tofNSigmaXiLaPi(), fullMomentumPosDaugh, centrality);
           if (TMath::Abs(casc.tofNSigmaXiLaPi()) > candidateSelectionValues.nsigmatofPion)
             continue;
         }
@@ -848,12 +870,12 @@ struct derivedCascadeAnalysis {
       if (negExtra.hasTOF()) {
 
         if (candidateSelectionFlags.doNTOFSigmaProtonCut && casc.sign() > 0) {
-          histos.fill(HIST("hNsigmaTOFProton"), casc.tofNSigmaXiLaPr(), fullmomentumNegDaugh, coll.centFT0C());
+          histos.fill(HIST("hNsigmaTOFProton"), casc.tofNSigmaXiLaPr(), fullmomentumNegDaugh, centrality);
           if (TMath::Abs(casc.tofNSigmaXiLaPr()) > candidateSelectionValues.nsigmatofPr && fullmomentumNegDaugh > 0.6)
             continue;
         }
         if (candidateSelectionFlags.doNTOFSigmaV0PionCut && casc.sign() < 0) {
-          histos.fill(HIST("hNsigmaTOFV0Pion"), casc.tofNSigmaXiLaPi(), fullmomentumNegDaugh, coll.centFT0C());
+          histos.fill(HIST("hNsigmaTOFV0Pion"), casc.tofNSigmaXiLaPi(), fullmomentumNegDaugh, centrality);
           if (TMath::Abs(casc.tofNSigmaXiLaPi()) > candidateSelectionValues.nsigmatofPion)
             continue;
         }
@@ -870,7 +892,7 @@ struct derivedCascadeAnalysis {
         }
 
         if (bachExtra.hasTOF() && candidateSelectionFlags.doNTOFSigmaBachelorCut) {
-          histos.fill(HIST("hNsigmaTOFBachelorPion"), casc.tofNSigmaXiPi(), fullmomentumBachelor, coll.centFT0C());
+          histos.fill(HIST("hNsigmaTOFBachelorPion"), casc.tofNSigmaXiPi(), fullmomentumBachelor, centrality);
           if (TMath::Abs(casc.tofNSigmaXiPi()) > candidateSelectionValues.nsigmatofBachPion)
             continue;
         }
@@ -893,7 +915,7 @@ struct derivedCascadeAnalysis {
         }
 
         if (bachExtra.hasTOF() && candidateSelectionFlags.doNTOFSigmaBachelorCut) {
-          histos.fill(HIST("hNsigmaTOFBachelorKaon"), casc.tofNSigmaOmKa(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)), coll.centFT0C());
+          histos.fill(HIST("hNsigmaTOFBachelorKaon"), casc.tofNSigmaOmKa(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)), centrality);
           if (TMath::Abs(casc.tofNSigmaOmKa()) > candidateSelectionValues.nsigmatofBachKaon)
             continue;
         }
@@ -908,9 +930,9 @@ struct derivedCascadeAnalysis {
         }
       }
       if (isPositive)
-        histos.fill(HIST("InvMassAfterSel/h") + HIST(charge[0]) + HIST("Cascade"), casc.pt(), invmass, coll.centFT0C());
+        histos.fill(HIST("InvMassAfterSel/h") + HIST(charge[0]) + HIST("Cascade"), casc.pt(), invmass, centrality);
       if (isNegative)
-        histos.fill(HIST("InvMassAfterSel/h") + HIST(charge[1]) + HIST("Cascade"), casc.pt(), invmass, coll.centFT0C());
+        histos.fill(HIST("InvMassAfterSel/h") + HIST(charge[1]) + HIST("Cascade"), casc.pt(), invmass, centrality);
 
       if (qaFlags.doOccupancyCheck) {
         float occupancy = -1;
@@ -920,7 +942,7 @@ struct derivedCascadeAnalysis {
           occupancy = coll.ft0cOccupancyInTimeRange();
         static_for<0, 9>([&](auto i) {
           constexpr int index = i.value;
-          if (coll.centFT0C() < centralityIntervals[index + 1] && coll.centFT0C() > centralityIntervals[index]) {
+          if (centrality < centralityIntervals[index + 1] && centrality > centralityIntervals[index]) {
             if (isPositive)
               histos.fill(HIST("InvMassAfterSelCent") + HIST(Index[index]) + HIST("/h") + HIST(charge[0]) + HIST("Cascade"), casc.pt(), invmass, occupancy);
             if (isNegative)
@@ -981,7 +1003,9 @@ struct derivedCascadeAnalysis {
   {
     if (!IsEventAccepted(coll, true))
       return;
-
+    float centrality = coll.centFT0C();
+    if (!usePbPbCentrality)
+      centrality = coll.centFT0M();
     for (auto& casc : Cascades) {
       float mass = -1;
       if (isXi)
@@ -1003,9 +1027,9 @@ struct derivedCascadeAnalysis {
       // To have trace of how it was before selections
       if (qaFlags.doBefSelCheck) {
         if (isPositive)
-          histos.fill(HIST("InvMassBefSel/h") + HIST(charge[0]) + HIST("Cascade"), casc.pt(), mass, coll.centFT0C());
+          histos.fill(HIST("InvMassBefSel/h") + HIST(charge[0]) + HIST("Cascade"), casc.pt(), mass, centrality);
         if (isNegative)
-          histos.fill(HIST("InvMassBefSel/h") + HIST(charge[1]) + HIST("Cascade"), casc.pt(), mass, coll.centFT0C());
+          histos.fill(HIST("InvMassBefSel/h") + HIST(charge[1]) + HIST("Cascade"), casc.pt(), mass, centrality);
       }
 
       if (!casc.has_cascMCCore())
@@ -1023,7 +1047,7 @@ struct derivedCascadeAnalysis {
         isTrueMCCascadeDecay = true;
       float ptmc = RecoDecay::sqrtSumOfSquares(cascMC.pxMC(), cascMC.pyMC());
 
-      if (!IsCascadeCandidateAccepted(casc, counter, coll.centFT0C()))
+      if (!IsCascadeCandidateAccepted(casc, counter, centrality))
         continue;
       counter += 13;
 
@@ -1061,13 +1085,13 @@ struct derivedCascadeAnalysis {
 
       if (isNegative) {
         if (qaFlags.doFillNsigmaTPCHistProton)
-          histos.fill(HIST("hNsigmaProton"), posExtra.tpcNSigmaPr(), fullMomentumPosDaugh, coll.centFT0C());
+          histos.fill(HIST("hNsigmaProton"), posExtra.tpcNSigmaPr(), fullMomentumPosDaugh, centrality);
         if (qaFlags.doFillNsigmaTPCHistV0Pion)
-          histos.fill(HIST("hNsigmaPionNeg"), negExtra.tpcNSigmaPi(), fullmomentumNegDaugh, coll.centFT0C());
+          histos.fill(HIST("hNsigmaPionNeg"), negExtra.tpcNSigmaPi(), fullmomentumNegDaugh, centrality);
         if (qaFlags.doFillNsigmaTPCHistPionBach && isXi)
-          histos.fill(HIST("hNsigmaPionNegBach"), bachExtra.tpcNSigmaPi(), fullmomentumBachelor, coll.centFT0C());
+          histos.fill(HIST("hNsigmaPionNegBach"), bachExtra.tpcNSigmaPi(), fullmomentumBachelor, centrality);
         if (qaFlags.doFillNsigmaTPCHistPionBach && !isXi)
-          histos.fill(HIST("hNsigmaKaon"), bachExtra.tpcNSigmaPi(), fullmomentumBachelor, coll.centFT0C());
+          histos.fill(HIST("hNsigmaKaon"), bachExtra.tpcNSigmaPi(), fullmomentumBachelor, centrality);
 
         if (candidateSelectionFlags.doNTPCSigmaCut) {
           if (TMath::Abs(posExtra.tpcNSigmaPr()) > candidateSelectionValues.nsigmatpcPr || TMath::Abs(negExtra.tpcNSigmaPi()) > candidateSelectionValues.nsigmatpcPi)
@@ -1079,13 +1103,13 @@ struct derivedCascadeAnalysis {
       }
       if (isPositive) {
         if (qaFlags.doFillNsigmaTPCHistV0Pion)
-          histos.fill(HIST("hNsigmaPionPos"), posExtra.tpcNSigmaPi(), fullMomentumPosDaugh, coll.centFT0C());
+          histos.fill(HIST("hNsigmaPionPos"), posExtra.tpcNSigmaPi(), fullMomentumPosDaugh, centrality);
         if (qaFlags.doFillNsigmaTPCHistProton)
-          histos.fill(HIST("hNsigmaProtonNeg"), negExtra.tpcNSigmaPr(), fullmomentumNegDaugh, coll.centFT0C());
+          histos.fill(HIST("hNsigmaProtonNeg"), negExtra.tpcNSigmaPr(), fullmomentumNegDaugh, centrality);
         if (qaFlags.doFillNsigmaTPCHistPionBach && isXi)
-          histos.fill(HIST("hNsigmaPionPosBach"), bachExtra.tpcNSigmaPi(), fullmomentumBachelor, coll.centFT0C());
+          histos.fill(HIST("hNsigmaPionPosBach"), bachExtra.tpcNSigmaPi(), fullmomentumBachelor, centrality);
         if (qaFlags.doFillNsigmaTPCHistPionBach && !isXi)
-          histos.fill(HIST("hNsigmaKaon"), bachExtra.tpcNSigmaPi(), fullmomentumBachelor, coll.centFT0C());
+          histos.fill(HIST("hNsigmaKaon"), bachExtra.tpcNSigmaPi(), fullmomentumBachelor, centrality);
 
         if (candidateSelectionFlags.doNTPCSigmaCut) {
           if (TMath::Abs(posExtra.tpcNSigmaPi()) > candidateSelectionValues.nsigmatpcPi || TMath::Abs(negExtra.tpcNSigmaPr()) > candidateSelectionValues.nsigmatpcPr)
@@ -1120,12 +1144,12 @@ struct derivedCascadeAnalysis {
 
       if (posExtra.hasTOF()) {
         if (candidateSelectionFlags.doNTOFSigmaProtonCut && isNegative) {
-          histos.fill(HIST("hNsigmaTOFProton"), casc.tofNSigmaXiLaPr(), fullMomentumPosDaugh, coll.centFT0C());
+          histos.fill(HIST("hNsigmaTOFProton"), casc.tofNSigmaXiLaPr(), fullMomentumPosDaugh, centrality);
           if (TMath::Abs(casc.tofNSigmaXiLaPr()) > candidateSelectionValues.nsigmatofPr && fullMomentumPosDaugh > 0.6)
             continue;
         }
         if (candidateSelectionFlags.doNTOFSigmaV0PionCut && isPositive) {
-          histos.fill(HIST("hNsigmaTOFV0Pion"), casc.tofNSigmaXiLaPi(), fullMomentumPosDaugh, coll.centFT0C());
+          histos.fill(HIST("hNsigmaTOFV0Pion"), casc.tofNSigmaXiLaPi(), fullMomentumPosDaugh, centrality);
           if (TMath::Abs(casc.tofNSigmaXiLaPi()) > candidateSelectionValues.nsigmatofPion)
             continue;
         }
@@ -1133,12 +1157,12 @@ struct derivedCascadeAnalysis {
 
       if (negExtra.hasTOF()) {
         if (candidateSelectionFlags.doNTOFSigmaProtonCut && isPositive) {
-          histos.fill(HIST("hNsigmaTOFProton"), casc.tofNSigmaXiLaPr(), fullmomentumNegDaugh, coll.centFT0C());
+          histos.fill(HIST("hNsigmaTOFProton"), casc.tofNSigmaXiLaPr(), fullmomentumNegDaugh, centrality);
           if (TMath::Abs(casc.tofNSigmaXiLaPr()) > candidateSelectionValues.nsigmatofPr && fullmomentumNegDaugh > 0.6)
             continue;
         }
         if (candidateSelectionFlags.doNTOFSigmaV0PionCut && isNegative) {
-          histos.fill(HIST("hNsigmaTOFV0Pion"), casc.tofNSigmaXiLaPi(), fullmomentumNegDaugh, coll.centFT0C());
+          histos.fill(HIST("hNsigmaTOFV0Pion"), casc.tofNSigmaXiLaPi(), fullmomentumNegDaugh, centrality);
           if (TMath::Abs(casc.tofNSigmaXiLaPi()) > candidateSelectionValues.nsigmatofPion)
             continue;
         }
@@ -1154,7 +1178,7 @@ struct derivedCascadeAnalysis {
         }
 
         if (bachExtra.hasTOF() && candidateSelectionFlags.doNTOFSigmaBachelorCut) {
-          histos.fill(HIST("hNsigmaTOFBachelorPion"), casc.tofNSigmaXiPi(), fullmomentumBachelor, coll.centFT0C());
+          histos.fill(HIST("hNsigmaTOFBachelorPion"), casc.tofNSigmaXiPi(), fullmomentumBachelor, centrality);
           if (TMath::Abs(casc.tofNSigmaXiPi()) > candidateSelectionValues.nsigmatofBachPion)
             continue;
         }
@@ -1170,7 +1194,7 @@ struct derivedCascadeAnalysis {
         }
 
         if (bachExtra.hasTOF() && candidateSelectionFlags.doNTOFSigmaBachelorCut) {
-          histos.fill(HIST("hNsigmaTOFBachelorKaon"), casc.tofNSigmaOmKa(), fullmomentumBachelor, coll.centFT0C());
+          histos.fill(HIST("hNsigmaTOFBachelorKaon"), casc.tofNSigmaOmKa(), fullmomentumBachelor, centrality);
           if (TMath::Abs(casc.tofNSigmaOmKa()) > candidateSelectionValues.nsigmatofBachKaon)
             continue;
         }
@@ -1187,20 +1211,20 @@ struct derivedCascadeAnalysis {
       }
 
       if (isPositive) {
-        histos.fill(HIST("InvMassAfterSel/h") + HIST(charge[0]) + HIST("Cascade"), casc.pt(), mass, coll.centFT0C());
+        histos.fill(HIST("InvMassAfterSel/h") + HIST(charge[0]) + HIST("Cascade"), casc.pt(), mass, centrality);
         if (isTrueMCCascadeDecay)
-          histos.fill(HIST("hPositiveCascadePtForEfficiency"), ptmc, mass, coll.centFT0C());
+          histos.fill(HIST("hPositiveCascadePtForEfficiency"), ptmc, mass, centrality);
       }
       if (isNegative) {
-        histos.fill(HIST("InvMassAfterSel/h") + HIST(charge[1]) + HIST("Cascade"), casc.pt(), mass, coll.centFT0C());
+        histos.fill(HIST("InvMassAfterSel/h") + HIST(charge[1]) + HIST("Cascade"), casc.pt(), mass, centrality);
         if (isTrueMCCascadeDecay)
-          histos.fill(HIST("hNegativeCascadePtForEfficiency"), ptmc, mass, coll.centFT0C());
+          histos.fill(HIST("hNegativeCascadePtForEfficiency"), ptmc, mass, centrality);
       }
       if (isTrueMCCascade) {
         if (isPositive)
-          histos.fill(HIST("InvMassAfterSelMCrecTruth/h") + HIST(charge[0]) + HIST("Cascade"), ptmc, mass, coll.centFT0C());
+          histos.fill(HIST("InvMassAfterSelMCrecTruth/h") + HIST(charge[0]) + HIST("Cascade"), ptmc, mass, centrality);
         if (isNegative)
-          histos.fill(HIST("InvMassAfterSelMCrecTruth/h") + HIST(charge[1]) + HIST("Cascade"), ptmc, mass, coll.centFT0C());
+          histos.fill(HIST("InvMassAfterSelMCrecTruth/h") + HIST(charge[1]) + HIST("Cascade"), ptmc, mass, centrality);
       }
       if (qaFlags.doOccupancyCheck) {
         float occupancy = -1;
@@ -1210,7 +1234,7 @@ struct derivedCascadeAnalysis {
           occupancy = coll.ft0cOccupancyInTimeRange();
         static_for<0, 9>([&](auto i) {
           constexpr int index = i.value;
-          if (coll.centFT0C() < centralityIntervals[index + 1] && coll.centFT0C() > centralityIntervals[index]) {
+          if (centrality < centralityIntervals[index + 1] && centrality > centralityIntervals[index]) {
             if (isPositive) {
               histos.fill(HIST("InvMassAfterSelCent") + HIST(Index[index]) + HIST("/h") + HIST(charge[0]) + HIST("Cascade"), casc.pt(), mass, occupancy);
               if (isTrueMCCascadeDecay)
@@ -1313,6 +1337,10 @@ struct derivedCascadeAnalysis {
 
       if (cascMC.pdgCode() == 3312) {
         histos.fill(HIST("h2dGenXiMinus"), centrality, ptmc);
+        histos.fill(HIST("h2dGenXiMinusEta"), RecoDecay::eta(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}));
+        histos.fill(HIST("h2dGenXiMinusEtaPosDaughter"), RecoDecay::eta(std::array{cascMC.pxPosMC(), cascMC.pyPosMC(), cascMC.pzPosMC()}));
+        histos.fill(HIST("h2dGenXiMinusEtaNegDaughter"), RecoDecay::eta(std::array{cascMC.pxNegMC(), cascMC.pyNegMC(), cascMC.pzNegMC()}));
+        histos.fill(HIST("h2dGenXiMinusEtaBach"), RecoDecay::eta(std::array{cascMC.pxBachMC(), cascMC.pyBachMC(), cascMC.pzBachMC()}));
         histos.fill(HIST("h2dGenXiMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
         histos.fill(HIST("h2dGenXiMinusVsCentOccupancy"), ptmc, centrality, occupancy);
       }
@@ -1323,6 +1351,10 @@ struct derivedCascadeAnalysis {
       }
       if (cascMC.pdgCode() == 3334) {
         histos.fill(HIST("h2dGenOmegaMinus"), centrality, ptmc);
+        histos.fill(HIST("h2dGenOmegaMinusEta"), RecoDecay::eta(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}));
+        histos.fill(HIST("h2dGenOmegaMinusEtaPosDaughter"), RecoDecay::eta(std::array{cascMC.pxPosMC(), cascMC.pyPosMC(), cascMC.pzPosMC()}));
+        histos.fill(HIST("h2dGenOmegaMinusEtaNegDaughter"), RecoDecay::eta(std::array{cascMC.pxNegMC(), cascMC.pyNegMC(), cascMC.pzNegMC()}));
+        histos.fill(HIST("h2dGenOmegaMinusEtaBach"), RecoDecay::eta(std::array{cascMC.pxBachMC(), cascMC.pyBachMC(), cascMC.pzBachMC()}));
         histos.fill(HIST("h2dGenOmegaMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
         histos.fill(HIST("h2dGenOmegaMinusVsCentOccupancy"), ptmc, centrality, occupancy);
       }
@@ -1370,6 +1402,9 @@ struct derivedCascadeAnalysis {
       histos.fill(HIST("hCentralityVsNcoll_afterEvSel"), centrality, nCollisions + 0.5);
 
       histos.fill(HIST("hCentralityVsMultMC"), centrality, mcCollision.multMCNParticlesEta05());
+
+      histos.fill(HIST("hGenMultMCFT0C"), mcCollision.multMCFT0C());
+      histos.fill(HIST("hGenMCNParticlesEta10"), mcCollision.multMCNParticlesEta10());
 
       if (atLeastOne) {
         histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 1.5 /* at least 1 rec. event*/);
