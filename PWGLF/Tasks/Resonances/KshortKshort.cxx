@@ -25,6 +25,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <vector>
+#include <algorithm>
 #include "TF1.h"
 #include "TRandom3.h"
 #include "Math/Vector3D.h"
@@ -60,7 +61,9 @@ struct strangeness_tutorial {
   HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rKzeroShort{"kzeroShort", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry hglue{"hglueball", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry MChists{"MChists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
+  // PID and QA
   Configurable<bool> QAv0{"QAv0", false, "QAv0"};
   Configurable<bool> QAPID{"QAPID", true, "QAPID"};
   Configurable<bool> QAv0_daughters{"QAv0_daughters", false, "QA of v0 daughters"};
@@ -90,7 +93,6 @@ struct strangeness_tutorial {
   Configurable<double> cMaxV0DCA{"cMaxV0DCA", 1, "DCA V0 to PV"};
   // Configurable<bool> isStandarv0{"isStandarv0", false, "Standard V0"};
   // Configurable<float> ConfDaughDCAMin{"ConfDaughDCAMin", 0.06f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"}; // same as DCA pos to pv and neg to pv
-
   Configurable<float> ConfV0PtMin{"ConfV0PtMin", 0.f, "Minimum transverse momentum of V0"};
   Configurable<float> ConfV0CPAMin{"ConfV0CPAMin", 0.97f, "Minimum CPA of V0"};
   Configurable<float> ConfV0TranRadV0Min{"ConfV0TranRadV0Min", 0.5f, "Minimum transverse radius"};
@@ -103,7 +105,6 @@ struct strangeness_tutorial {
   Configurable<float> ConfDaughPIDCuts{"ConfDaughPIDCuts", 5, "PID selections for KS0 daughters"};
   Configurable<float> Confarmcut{"Confarmcut", 0.2f, "Armenteros cut"};
   Configurable<float> ConfKsrapidity{"ConfKsrapidity", 0.5f, "Rapidity cut on K0s"};
-
   // Configurable<float> lowmasscutks0{"lowmasscutks0", 0.497 - 4 * 0.005, "Low mass cut on K0s"};
   // Configurable<float> highmasscutks0{"highmasscutks0", 0.497 + 4 * 0.005, "High mass cut on K0s"};
 
@@ -112,6 +113,10 @@ struct strangeness_tutorial {
   Configurable<int> cfgNmixedEvents{"cfgNmixedEvents", 5, "Number of mixed events"};
   Configurable<bool> cfgMultFOTM{"cfgMultFOTM", true, "Use FOTM multiplicity if pp else use 0 here for PbPb (FT0C)"};
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 5., 10., 30., 50., 70., 100., 110., 150.}, "Binning of the centrality axis"};
+
+  // Configurable for MC
+  Configurable<bool> AllGenCollisions{"AllGenCollisions", true, "To fill all generated collisions for the signal loss calculations"};
+  Configurable<bool> TVXEvsel{"TVXEvsel", true, "Triggger selection"};
 
   // output THnSparses
   Configurable<bool> activateTHnSparseCosThStarHelicity{"activateTHnSparseCosThStarHelicity", false, "Activate the THnSparse with cosThStar w.r.t. helicity axis"};
@@ -130,8 +135,8 @@ struct strangeness_tutorial {
 
   // Mass and pT axis as configurables
   Configurable<float> cPtMin{"cPtMin", 0.0f, "Minimum pT"};
-  Configurable<float> cPtMax{"cPtMax", 50.0f, "Maximum pT"};
-  Configurable<int> cPtBins{"cPtBins", 500, "Number of pT bins"};
+  Configurable<float> cPtMax{"cPtMax", 30.0f, "Maximum pT"};
+  Configurable<int> cPtBins{"cPtBins", 300, "Number of pT bins"};
   Configurable<float> cMassMin{"cMassMin", 0.9f, "Minimum mass of glueball"};
   Configurable<float> cMassMax{"cMassMax", 3.0f, "Maximum mass of glueball"};
   Configurable<int> cMassBins{"cMassBins", 210, "Number of mass bins for glueball"};
@@ -270,6 +275,19 @@ struct strangeness_tutorial {
       rKzeroShort.add("negative_phi", "Negative daughter phi", kTH1F, {{70, 0.0f, 7.0f}});
       rKzeroShort.add("positive_phi", "Positive daughter phi", kTH1F, {{70, 0.0f, 7.0f}});
     }
+
+    // For MC
+    MChists.add("events_check", "No. of events in the generated MC", kTH1I, {{20, 0, 20}});
+    MChists.add("events_checkrec", "No. of events in the reconstructed MC", kTH1I, {{20, 0, 20}});
+    MChists.add("Genf1710", "Gen f_{0}(1710)", kTH1F, {ptAxis});
+    MChists.add("Recf1710_pt1", "Rec f_{0}(1710) p_{T}", kTH1F, {ptAxis});
+    MChists.add("Recf1710_pt2", "Rec f_{0}(1710) p_{T}", kTH1F, {ptAxis});
+    MChists.add("Recf1710_p", "Rec f_{0}(1710) p", kTH1F, {ptAxis});
+    MChists.add("Recf1710_mass", "Rec f_{0}(1710) mass", kTH1F, {glueballMassAxis});
+    MChists.add("Genf1710_mass", "Gen f_{0}(1710) mass", kTH1F, {glueballMassAxis});
+    MChists.add("MC_mult", "Multiplicity in MC", kTH1F, {multiplicityAxis});
+    MChists.add("MC_mult_after_event_sel", "Multiplicity in MC", kTH1F, {multiplicityAxis});
+
     if (additionalEvsel) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
       fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
@@ -328,8 +346,7 @@ struct strangeness_tutorial {
   }
 
   template <typename Collision, typename V0>
-  bool SelectionV0(Collision const& collision, V0 const& candidate,
-                   float /*multiplicity*/)
+  bool SelectionV0(Collision const& collision, V0 const& candidate, float /*multiplicity*/)
   {
     const float qtarm = candidate.qtarm();
     const float alph = candidate.alpha();
@@ -524,6 +541,10 @@ struct strangeness_tutorial {
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::Mults>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
   using V0TrackCandidate = aod::V0Datas;
+  // For Monte Carlo
+  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
+  using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::McTrackLabels>>;
+  using V0TrackCandidatesMC = soa::Join<aod::V0Datas, aod::McV0Labels>;
 
   //   void processSE(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
   //                  soa::Filtered<aod::V0Datas> const& V0s,
@@ -661,7 +682,6 @@ struct strangeness_tutorial {
             lv5 = lv2 + lv4;
             hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarHelicity, occupancy_no);
           }
-
         } else if (activateTHnSparseCosThStarProduction) {
           ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
           auto cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(normalVec.Mag2()));
@@ -706,6 +726,8 @@ struct strangeness_tutorial {
 
   PROCESS_SWITCH(strangeness_tutorial, processSE, "same event process", true);
 
+  array<float, 3> pvec0;
+  array<float, 3> pvec1;
   // use any one of 3 alias depending on the dataset. If pp then FT0M and if pbpb then FTOC
   using BinningTypeTPCMultiplicity = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
   using BinningTypeCentralityM = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
@@ -926,6 +948,280 @@ struct strangeness_tutorial {
     }
   }
   PROCESS_SWITCH(strangeness_tutorial, processME, "mixed event process", true);
+
+  int counter = 0;
+  void processGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
+  {
+    TLorentzVector genvec;
+    MChists.fill(HIST("events_check"), 0.5);
+    if (std::abs(mcCollision.posZ()) < cutzvertex) {
+      MChists.fill(HIST("events_check"), 1.5);
+    }
+    // int Nchinel = 0;
+    // for (auto& mcParticle : mcParticles) {
+    //   auto pdgcode = std::abs(mcParticle.pdgCode());
+    //   if (mcParticle.isPhysicalPrimary() && (pdgcode == 211 || pdgcode == 321 || pdgcode == 2212 || pdgcode == 11 || pdgcode == 13)) {
+    //     if (std::abs(mcParticle.eta()) < 1.0) {
+    //       Nchinel = Nchinel + 1;
+    //     }
+    //   }
+    // }
+    // if (Nchinel > 0 && std::abs(mcCollision.posZ()) < cutzvertex)
+    MChists.fill(HIST("events_check"), 2.5);
+
+    std::vector<int64_t> SelectedEvents(collisions.size());
+    int nevts = 0;
+    for (const auto& collision : collisions) {
+      if (std::abs(collision.mcCollision().posZ()) > cutzvertex) {
+        continue;
+      }
+
+      if (timFrameEvsel && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        continue;
+      }
+      if (TVXEvsel && (!collision.selection_bit(aod::evsel::kIsTriggerTVX))) {
+        continue;
+      }
+
+      SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+    }
+    SelectedEvents.resize(nevts);
+    MChists.fill(HIST("events_check"), 3.5);
+    // const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end();
+
+    // if (!AllGenCollisions && !evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
+    //   return;
+    // }
+    MChists.fill(HIST("events_check"), 4.5);
+    for (auto& mcParticle : mcParticles) {
+      if (std::abs(mcParticle.y()) >= 0.5) {
+        continue;
+      }
+      MChists.fill(HIST("events_check"), 5.5);
+
+      // if (counter < 1e4) {
+      //   std::cout << "PDG code mother " << mcParticle.pdgCode() << std::endl;
+      // }
+      // counter++;
+      if (abs(mcParticle.pdgCode()) != 10331) // f2(1525), f0(1710)
+      {
+        continue;
+      }
+      MChists.fill(HIST("events_check"), 6.5);
+
+      auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
+      if (kDaughters.size() != 2) {
+        continue;
+      }
+      MChists.fill(HIST("events_check"), 7.5);
+
+      auto passKs = false;
+      for (auto kCurrentDaughter : kDaughters) {
+        // int daupdg = std::abs(kCurrentDaughter.pdgCode());
+        // if (counter < 1e4)
+        //   std::cout << "Daughter pdg code: " << daupdg << std::endl;
+        // counter++;
+
+        if (!kCurrentDaughter.isPhysicalPrimary()) {
+          continue;
+        }
+        MChists.fill(HIST("events_check"), 8.5);
+
+        if (abs(kCurrentDaughter.pdgCode()) == 310) {
+          passKs = true;
+          MChists.fill(HIST("events_check"), 9.5);
+        }
+      }
+      if (passKs) {
+        genvec.SetPtEtaPhiE(mcParticle.pt(), mcParticle.eta(), mcParticle.phi(), mcParticle.e());
+        MChists.fill(HIST("Genf1710"), mcParticle.pt());
+        MChists.fill(HIST("Genf1710_mass"), genvec.M());
+      }
+    }
+  }
+  PROCESS_SWITCH(strangeness_tutorial, processGen, "Process Generated", false);
+
+  int counter2 = 0;
+  int event_counter = 0;
+  std::vector<int> gindex1, gindex2;
+  void processRec(EventCandidatesMC::iterator const& collision, V0TrackCandidatesMC const& V0s, aod::McParticles const&, aod::McCollisions const& /*mcCollisions*/)
+  {
+
+    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
+
+    float multiplicity = 0.0f;
+    multiplicity = collision.centFT0C();
+    MChists.fill(HIST("MC_mult"), multiplicity);
+
+    MChists.fill(HIST("events_checkrec"), 0.5);
+    if (!collision.has_mcCollision()) {
+      return;
+    }
+    MChists.fill(HIST("events_checkrec"), 1.5);
+    // if (std::abs(collision.mcCollision().posZ()) > cutzvertex || !collision.sel8()) {
+    if (std::abs(collision.mcCollision().posZ()) > cutzvertex) {
+      return;
+    }
+    MChists.fill(HIST("events_checkrec"), 2.5);
+
+    if (timFrameEvsel && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return;
+    }
+    MChists.fill(HIST("events_checkrec"), 3.5);
+    if (TVXEvsel && (!collision.selection_bit(aod::evsel::kIsTriggerTVX))) {
+      return;
+    }
+    MChists.fill(HIST("events_checkrec"), 4.5);
+    MChists.fill(HIST("MC_mult_after_event_sel"), multiplicity);
+    event_counter++;
+
+    for (auto& v01 : V0s) {
+
+      for (auto& v02 : V0s) {
+
+        MChists.fill(HIST("events_checkrec"), 5.5);
+
+        if (v02.index() <= v01.index()) {
+          continue;
+        }
+
+        if (!v01.has_mcParticle() || !v02.has_mcParticle()) {
+          continue;
+        }
+        MChists.fill(HIST("events_checkrec"), 6.5);
+
+        auto postrack1 = v01.template posTrack_as<TrackCandidatesMC>();
+        auto negtrack1 = v01.template negTrack_as<TrackCandidatesMC>();
+
+        auto postrack2 = v02.template posTrack_as<TrackCandidatesMC>();
+        auto negtrack2 = v02.template negTrack_as<TrackCandidatesMC>();
+
+        if (!postrack1.has_mcParticle() || !postrack2.has_mcParticle())
+          continue; // Checking that the daughter tracks come from particles and are not fake
+        MChists.fill(HIST("events_checkrec"), 7.5);
+
+        if (!negtrack1.has_mcParticle() || !negtrack2.has_mcParticle())
+          continue;
+        MChists.fill(HIST("events_checkrec"), 8.5);
+
+        double nTPCSigmaPos1[1]{postrack1.tpcNSigmaPi()};
+        double nTPCSigmaNeg1[1]{negtrack1.tpcNSigmaPi()};
+
+        double nTPCSigmaPos2[1]{postrack2.tpcNSigmaPi()};
+        double nTPCSigmaNeg2[1]{negtrack2.tpcNSigmaPi()};
+
+        if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1[0], v01) || !isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2[0], v02)) {
+          continue;
+        }
+        MChists.fill(HIST("events_checkrec"), 9.5);
+
+        if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1[0], v01) || !isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2[0], v02)) {
+          continue;
+        }
+        MChists.fill(HIST("events_checkrec"), 10.5);
+
+        if (!SelectionV0(collision, v01, multiplicity) || !SelectionV0(collision, v02, multiplicity)) {
+          continue;
+        }
+        MChists.fill(HIST("events_checkrec"), 11.5);
+
+        auto mctrackv01 = v01.mcParticle();
+        auto mctrackv02 = v02.mcParticle();
+
+        int trackv0PDG1 = std::abs(mctrackv01.pdgCode());
+        int trackv0PDG2 = std::abs(mctrackv02.pdgCode());
+
+        if (abs(trackv0PDG1) != 310 || abs(trackv0PDG2) != 310) {
+          continue;
+        }
+        MChists.fill(HIST("events_checkrec"), 12.5);
+
+        for (auto& mothertrack1 : mctrackv01.mothers_as<aod::McParticles>()) {
+
+          // int motpdgs = std::abs(mothertrack1.pdgCode());
+          gindex1.push_back(mothertrack1.globalIndex());
+          if (gindex1.size() > 1) {
+            if (std::find(gindex1.begin(), gindex1.end(), mothertrack1.globalIndex()) != gindex1.end()) {
+              continue;
+            }
+          }
+          // if (counter2 < 1e4)
+          //   std::cout << "Mother1 pdg code: " << motpdgs << " p_{T} " << mothertrack1.pt() << "Global index " << mothertrack1.globalIndex() << " event " << event_counter << std::endl;
+          // counter2++;
+
+          // int counter_check = 0;
+
+          for (auto& mothertrack2 : mctrackv02.mothers_as<aod::McParticles>()) {
+
+            MChists.fill(HIST("events_checkrec"), 13.5);
+
+            if (mothertrack1.pdgCode() != mothertrack2.pdgCode()) {
+              continue;
+            }
+            MChists.fill(HIST("events_checkrec"), 14.5);
+
+            // int motpdgs2 = std::abs(mothertrack2.pdgCode());
+            gindex2.push_back(mothertrack2.globalIndex());
+            if (gindex2.size() > 1) {
+              if (std::find(gindex2.begin(), gindex2.end(), mothertrack2.globalIndex()) != gindex2.end()) {
+                continue;
+              }
+            }
+            // if (counter2 < 1e4)
+            //   std::cout << "Mother2 pdg code: " << motpdgs2 << " p_{T} " << mothertrack2.pt() << "Global index " << mothertrack1.globalIndex() << " event " << event_counter << std::endl;
+
+            if (mothertrack1.pdgCode() != 10331) {
+              continue;
+            }
+            MChists.fill(HIST("events_checkrec"), 15.5);
+
+            if (mothertrack1.globalIndex() != mothertrack2.globalIndex()) {
+              continue;
+            }
+            MChists.fill(HIST("events_checkrec"), 16.5);
+
+            if (!mothertrack1.producedByGenerator()) {
+              continue;
+            }
+            MChists.fill(HIST("events_checkrec"), 17.5);
+
+            if (std::abs(mothertrack1.y()) >= 0.5) {
+              continue;
+            }
+            MChists.fill(HIST("events_checkrec"), 18.5);
+
+            // counter_check++;
+            // if (counter_check > 1) {
+            //   std::cout << "Total mothers is " << counter_check << std::endl;
+            // }
+            // std::cout << "After selection " << " p_{T} " << mothertrack2.pt() << " event " << event_counter << std::endl;
+
+            pvec0 = array{v01.px(), v01.py(), v01.pz()};
+            pvec1 = array{v02.px(), v02.py(), v02.pz()};
+            auto arrMomrec = array{pvec0, pvec1};
+            auto motherP = mothertrack1.p();
+            // auto motherE = mothertrack1.e();
+            // auto genMass = std::sqrt(motherE * motherE - motherP * motherP);
+            auto recMass = RecoDecay::m(arrMomrec, array{PDGdatabase->Mass(310), PDGdatabase->Mass(310)});
+            // auto recpt = TMath::Sqrt((track1.px() + track2.px()) * (track1.px() + track2.px()) + (track1.py() + track2.py()) * (track1.py() + track2.py()));
+            //// Resonance reconstruction
+            lDecayDaughter1.SetXYZM(v01.px(), v01.py(), v01.pz(), PDGdatabase->Mass(310));
+            lDecayDaughter2.SetXYZM(v02.px(), v02.py(), v02.pz(), PDGdatabase->Mass(310));
+            lResonance = lDecayDaughter1 + lDecayDaughter2;
+
+            MChists.fill(HIST("Recf1710_p"), motherP);
+            MChists.fill(HIST("Recf1710_mass"), recMass);
+            MChists.fill(HIST("Recf1710_pt1"), mothertrack1.pt());
+            // MChists.fill(HIST("Genf1710_mass"), genMass);
+            MChists.fill(HIST("Recf1710_pt2"), lResonance.Pt());
+          }
+          gindex2.clear();
+        }
+        gindex1.clear();
+      }
+    }
+  }
+  PROCESS_SWITCH(strangeness_tutorial, processRec, "Process Reconstructed", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
