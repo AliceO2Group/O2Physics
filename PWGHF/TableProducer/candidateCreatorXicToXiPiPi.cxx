@@ -118,7 +118,7 @@ struct HfCandidateCreatorXicToXiPiPi {
     if (fillHistograms) {
       // counter
       registry.add("hVertexerType", "Use KF or DCAFitterN;Vertexer type;entries", {HistType::kTH1F, {{2, -0.5, 1.5}}}); // See o2::aod::hf_cand::VertexerType
-      registry.add("hCandCounter", "hCandCounter", {HistType::kTH1F, {{3, 0.f, 0.3}}});
+      registry.add("hCandCounter", "hCandCounter", {HistType::kTH1F, {{3, 0.5, 3.5}}});
       registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + AllIdTriplets, "total");
       registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + CascPreSel, "Cascade preselection");
       registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + VertexFit, "Successful vertex fit");
@@ -696,20 +696,20 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
                                          candidate.negTrack_as<aod::TracksWMc>()};
 
       // Xic → pi pi pi pi p
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4);
+      indexRec = RecoDecay::getMatchedMCRec<false, true, false, true>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4);
       indexRecXicPlus = indexRec;
       if (indexRec == -1) {
         debug = 1;
       }
       if (indexRec > -1) {
         // Xi- → pi pi p
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, &sign, 2);
+        indexRec = RecoDecay::getMatchedMCRec<false, true, false, true>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, &sign, 2);
         if (indexRec == -1) {
           debug = 2;
         }
         if (indexRec > -1) {
           // Lambda → p pi
-          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &sign, 1);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &sign, 1);
           if (indexRec == -1) {
             debug = 3;
           }
@@ -750,15 +750,15 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       arrDaughIndex.clear();
 
       //  Xic → Xi pi pi
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kXiCPlus, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, true, &sign, 2)) {
+      if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, Pdg::kXiCPlus, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, true, &sign, 2)) {
         debug = 1;
         // Xi- -> Lambda pi
         auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-        if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true)) {
+        if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascMC, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true)) {
           debug = 2;
           // Lambda -> p pi
           auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
-          if (RecoDecay::isMatchedMCGen(mcParticles, v0MC, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, v0MC, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
             debug = 3;
 
             RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
