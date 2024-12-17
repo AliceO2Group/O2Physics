@@ -42,7 +42,7 @@
 
 // KFParticle
 #ifndef HomogeneousField
-#define HomogeneousField  // o2-linter: disable=[name/macro]
+#define HomogeneousField // o2-linter: disable=[name/macro]
 #endif
 #include "KFParticle.h"
 #include "KFPTrack.h"
@@ -78,12 +78,12 @@ static const std::vector<int> particleCharge{1, 1, 1, 1, 2, 2};
 const int nBetheParams = 6;
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 constexpr double betheBlochDefault[nDaughterParticles][nBetheParams]{
-  {13.611469, 3.598765, -0.021138, 2.039562, 0.651040, 0.09},      // pion
-  {5.393020, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},        // proton
-  {5.393020, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},        // deuteron
-  {5.393020, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},        // triton
-  {-126.557359, -0.858569, 1.111643, 1.210323, 2.656374, 0.09},    // helion
-  {-126.557359, -0.858569, 1.111643, 1.210323, 2.656374, 0.09}};   // alpha
+  {13.611469, 3.598765, -0.021138, 2.039562, 0.651040, 0.09},    // pion
+  {5.393020, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},      // proton
+  {5.393020, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},      // deuteron
+  {5.393020, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},      // triton
+  {-126.557359, -0.858569, 1.111643, 1.210323, 2.656374, 0.09},  // helion
+  {-126.557359, -0.858569, 1.111643, 1.210323, 2.656374, 0.09}}; // alpha
 
 const int nTrkSettings = 15;
 static const std::vector<std::string> trackPIDsettingsNames{"useBBparams", "minITSnCls", "minTPCnCls", "maxTPCchi2", "maxITSchi2", "minRigidity", "maxRigidity", "maxTPCnSigma", "TOFrequiredabove", "minTOFmass", "maxTOFmass", "minDcaToPvXY", "minDcaToPvZ", "minITSclsSize", "maxITSclsSize"};
@@ -348,13 +348,16 @@ struct HyperNucCandidate {
     subDaughter.TransportToDecayVertex();
     return subDaughter.GetMass();
   }
-  KFParticle getDaughterTrackKfp(int track) {
+  KFParticle getDaughterTrackKfp(int track) 
+  {
     return kfpDaughters.at(track + isCascade() ? 1 : 0);
   }
-  float getDcaTrackToVtxXY(int track, std::vector<float> vtx) {
+  float getDcaTrackToVtxXY(int track, std::vector<float> vtx) 
+  {
     return getDaughterTrackKfp(track).GetDistanceFromVertexXY(&vtx[0]);
   }
-  float getDcaTrackToVtxZ(int track, std::vector<float> vtx) {
+  float getDcaTrackToVtxZ(int track, std::vector<float> vtx) 
+  {
     auto dKfp = getDaughterTrackKfp(track);
     dKfp.TransportToPoint(&vtx[0]);
     return dKfp.GetZ() - vtx[2];
