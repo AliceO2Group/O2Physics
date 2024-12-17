@@ -270,8 +270,8 @@ struct LumiStabilityTask {
       nOrbitsPerTF = 32; // 128 in 2022, 32 in 2023
     }
     int runNumber = bcs.iteratorAt(0).runNumber();
-    int64_t tsSOR = 0;
-    int64_t tsEOR = 1;
+    int64_t tsSOR;
+    int64_t tsEOR;
     // std::string histName = "hOrbitFDDVertexCoinc_" + std::to_string(runNumber);
     if (runNumber != lastRunNumber && executionCounter < 1) {
       tsSOR = 0;
@@ -358,6 +358,7 @@ struct LumiStabilityTask {
       // histos.add("hOrbitFT0vertex", "", kTH1F, {axisOrbits});
       // histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});
     }
+    // std::cout << "****************** tsSOR: " << (tsSOR) * 1.e-3 << " ************************* " << std::endl;
 
     for (auto const& bc : bcs) {
       if (bc.timestamp() == 0) {
@@ -465,7 +466,10 @@ struct LumiStabilityTask {
         histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
         histos.fill(HIST("FDD/hCounts"), 1);
         histos.fill(HIST("hOrbitFDDVertex"), orbit - minOrbit);
-        histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1000); // Converting ms into seconds
+        // std::cout << "****************** timestamp - tsSOR: " << (bc.timestamp() - tsSOR) * 1000 << " ************************* " << std::endl;
+        // std::cout << "****************** timestamp: " << (bc.timestamp()) * 1000 << " ************************* " << std::endl; //1660925892880000
+        // std::cout << "****************** tsSOR: " << (tsSOR) * 1000 << " ************************* " << std::endl;
+        histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
 
         if (bcPatternB[localBC]) {
           histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
@@ -758,6 +762,7 @@ struct LumiStabilityTask {
       if (vertex) {
         histos.fill(HIST("FT0/bcVertexTrigger"), localBC);
         histos.fill(HIST("hOrbitFT0vertex"), orbit - minOrbit);
+        histos.fill(HIST("FT0/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
 
         if (bcPatternA[localBC]) {
           histos.fill(HIST("FT0/timeACbcA"), ft0.timeA(), ft0.timeC());
