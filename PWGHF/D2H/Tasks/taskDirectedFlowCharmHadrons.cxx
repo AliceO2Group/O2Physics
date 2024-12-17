@@ -230,11 +230,14 @@ struct HfTaskDirectedFlowCharmHadrons {
     for (const auto& candidate : candidates) {
       double massCand = 0.;
       double rapCand = 0.;
+      double sign = 0.; // electric charge of the first daughter track to differentiate particle and antiparticle
       double signDstarCand = 0.0;
       std::vector<double> outputMl = {-999., -999.};
       if constexpr (std::is_same_v<T1, CandDplusData> || std::is_same_v<T1, CandDplusDataWMl>) {
         massCand = hfHelper.invMassDplusToPiKPi(candidate);
         rapCand = hfHelper.yDplus(candidate);
+        auto trackprong0 = candidate.template prong0_as<Trk>();
+        sign = trackprong0.sign();
         if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
             outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
@@ -244,6 +247,7 @@ struct HfTaskDirectedFlowCharmHadrons {
           case DecayChannel::D0ToPiK:
             massCand = hfHelper.invMassD0ToPiK(candidate);
             rapCand = hfHelper.yD0(candidate);
+            sign = 1;
             if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
                 outputMl[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
@@ -252,6 +256,7 @@ struct HfTaskDirectedFlowCharmHadrons {
           case DecayChannel::D0ToKPi:
             massCand = hfHelper.invMassD0barToKPi(candidate);
             rapCand = hfHelper.yD0(candidate);
+            sign = -1;
             if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
                 outputMl[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
@@ -274,9 +279,6 @@ struct HfTaskDirectedFlowCharmHadrons {
             outputMl[iclass] = candidate.mlProbDstarToD0Pi()[classMl->at(iclass)];
         }
       }
-
-      auto trackprong0 = candidate.template prong0_as<Trk>();
-      double sign = trackprong0.sign(); // electric charge of the first daughter track to differentiate particle and antiparticle
 
       double ptCand = candidate.pt();
       double etaCand = candidate.eta();
