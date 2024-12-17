@@ -2034,12 +2034,12 @@ struct LFNucleiBATask {
     }
 
     float gamma = 0., massTOF = 0., massTOFhe = 0., massTOFantihe = 0., heTPCmomentum = 0.f, antiheTPCmomentum = 0.f, heP = 0.f, antiheP = 0.f, hePt = 0.f, antihePt = 0.f, antiDPt = 0.f, DPt = 0.f;
-    bool isTritonTPCpid = kFALSE;
-    bool prRapCut = kFALSE;
-    bool deRapCut = kFALSE;
-    bool trRapCut = kFALSE;
-    bool heRapCut = kFALSE;
-    bool alRapCut = kFALSE;
+    bool isTritonTPCpid = false;
+    bool prRapCut = false;
+    bool deRapCut = false;
+    bool trRapCut = false;
+    bool heRapCut = false;
+    bool alRapCut = false;
 
     // Event histos fill
     histos.fill(HIST("event/h1VtxZ"), event.posZ());
@@ -2150,55 +2150,55 @@ struct LFNucleiBATask {
       auto parDCAxy = (std::vector<float>)parDCAxycuts;
       auto parDCAz = (std::vector<float>)parDCAzcuts;
 
-      bool passDCAxyCut = kFALSE;
-      bool passDCAzCut = kFALSE;
-      bool passDCAxyCutDe = kFALSE;
-      bool passDCAzCutDe = kFALSE;
-      bool passDCAxyCutAntiDe = kFALSE;
-      bool passDCAzCutAntiDe = kFALSE;
-      bool passDCAxyCutHe = kFALSE;
-      bool passDCAzCutHe = kFALSE;
-      bool passDCAxyCutAntiHe = kFALSE;
-      bool passDCAzCutAntiHe = kFALSE;
+      bool passDCAxyCut = false;
+      bool passDCAzCut = false;
+      bool passDCAxyCutDe = false;
+      bool passDCAzCutDe = false;
+      bool passDCAxyCutAntiDe = false;
+      bool passDCAzCutAntiDe = false;
+      bool passDCAxyCutHe = false;
+      bool passDCAzCutHe = false;
+      bool passDCAxyCutAntiHe = false;
+      bool passDCAzCutAntiHe = false;
 
-      bool isDeuteron = kFALSE;
-      bool isHelium = kFALSE;
-      bool isDe = kFALSE;
-      bool isAntiDe = kFALSE;
-      bool isHe = kFALSE;
-      bool isAntiHe = kFALSE;
+      bool isDeuteron = false;
+      bool isHelium = false;
+      bool isDe = false;
+      bool isAntiDe = false;
+      bool isHe = false;
+      bool isAntiHe = false;
 
-      bool isDeWoDCAxy = kFALSE;
-      bool isAntiDeWoDCAxy = kFALSE;
-      bool isHeWoDCAxy = kFALSE;
-      bool isAntiHeWoDCAxy = kFALSE;
+      bool isDeWoDCAxy = false;
+      bool isAntiDeWoDCAxy = false;
+      bool isHeWoDCAxy = false;
+      bool isAntiHeWoDCAxy = false;
 
-      bool isDeWoDCAz = kFALSE;
-      bool isAntiDeWoDCAz = kFALSE;
-      bool isHeWoDCAz = kFALSE;
-      bool isAntiHeWoDCAz = kFALSE;
+      bool isDeWoDCAz = false;
+      bool isAntiDeWoDCAz = false;
+      bool isHeWoDCAz = false;
+      bool isAntiHeWoDCAz = false;
 
-      bool isDeWoDCAxyWTPCpid = kFALSE;
-      bool isAntiDeWoDCAxyWTPCpid = kFALSE;
-      bool isHeWoDCAxyWTPCpid = kFALSE;
-      bool isAntiHeWoDCAxyWTPCpid = kFALSE;
+      bool isDeWoDCAxyWTPCpid = false;
+      bool isAntiDeWoDCAxyWTPCpid = false;
+      bool isHeWoDCAxyWTPCpid = false;
+      bool isAntiHeWoDCAxyWTPCpid = false;
 
-      bool isDeWoDCAzWTPCpid = kFALSE;
-      bool isAntiDeWoDCAzWTPCpid = kFALSE;
-      bool isHeWoDCAzWTPCpid = kFALSE;
-      bool isAntiHeWoDCAzWTPCpid = kFALSE;
+      bool isDeWoDCAzWTPCpid = false;
+      bool isAntiDeWoDCAzWTPCpid = false;
+      bool isHeWoDCAzWTPCpid = false;
+      bool isAntiHeWoDCAzWTPCpid = false;
 
-      bool isDeWoTPCpid = kFALSE;
-      bool isAntiDeWoTPCpid = kFALSE;
-      bool isHeWoTPCpid = kFALSE;
-      bool isAntiHeWoTPCpid = kFALSE;
+      bool isDeWoTPCpid = false;
+      bool isAntiDeWoTPCpid = false;
+      bool isHeWoTPCpid = false;
+      bool isAntiHeWoTPCpid = false;
 
-      bool isDeWTPCpid = kFALSE;
-      bool isAntiDeWTPCpid = kFALSE;
-      bool isHeWTPCpid = kFALSE;
-      bool isAntiHeWTPCpid = kFALSE;
+      bool isDeWTPCpid = false;
+      bool isAntiDeWTPCpid = false;
+      bool isHeWTPCpid = false;
+      bool isAntiHeWTPCpid = false;
 
-      bool passDCAxyzCut = kFALSE;
+      bool passDCAxyzCut = false;
 
       switch (dcaConfOptions.DCACustomConfig) {
         case 0:
@@ -2216,74 +2216,74 @@ struct LFNucleiBATask {
           passDCAzCutAntiHe = (std::abs(track.dcaZ()) <= dcaConfOptions.DCAzCustomCut);
           break;
         case 1:
-          passDCAxyCut = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(track.pt(), parDCAxy[2])));
-          passDCAzCut = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(track.pt(), parDCAz[2])));
+          passDCAxyCut = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(track.pt(), parDCAxy[2])));
+          passDCAzCut = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(track.pt(), parDCAz[2])));
 
-          passDCAxyCutDe = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(DPt, parDCAxy[2])));
-          passDCAzCutDe = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(DPt, parDCAz[2])));
-          passDCAxyCutAntiDe = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(antiDPt, parDCAxy[2])));
-          passDCAzCutAntiDe = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(antiDPt, parDCAz[2])));
+          passDCAxyCutDe = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(DPt, parDCAxy[2])));
+          passDCAzCutDe = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(DPt, parDCAz[2])));
+          passDCAxyCutAntiDe = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(antiDPt, parDCAxy[2])));
+          passDCAzCutAntiDe = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(antiDPt, parDCAz[2])));
 
-          passDCAxyCutHe = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(hePt, parDCAxy[2])));
-          passDCAzCutHe = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(hePt, parDCAz[2])));
-          passDCAxyCutAntiHe = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(antihePt, parDCAxy[2])));
-          passDCAzCutAntiHe = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(antihePt, parDCAz[2])));
+          passDCAxyCutHe = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(hePt, parDCAxy[2])));
+          passDCAzCutHe = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(hePt, parDCAz[2])));
+          passDCAxyCutAntiHe = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(antihePt, parDCAxy[2])));
+          passDCAzCutAntiHe = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(antihePt, parDCAz[2])));
           break;
         case 2:
-          passDCAxyCut = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(track.pt(), parDCAxy[2])));
+          passDCAxyCut = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(track.pt(), parDCAxy[2])));
           passDCAzCut = (std::abs(track.dcaZ()) <= dcaConfOptions.DCAzCustomCut);
 
-          passDCAxyCutDe = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(DPt, parDCAxy[2])));
+          passDCAxyCutDe = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(DPt, parDCAxy[2])));
           passDCAzCutDe = (std::abs(track.dcaZ()) <= dcaConfOptions.DCAzCustomCut);
-          passDCAxyCutAntiDe = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(antiDPt, parDCAxy[2])));
+          passDCAxyCutAntiDe = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(antiDPt, parDCAxy[2])));
           passDCAzCutAntiDe = (std::abs(track.dcaZ()) <= dcaConfOptions.DCAzCustomCut);
 
-          passDCAxyCutHe = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(hePt, parDCAxy[2])));
+          passDCAxyCutHe = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(hePt, parDCAxy[2])));
           passDCAzCutHe = (std::abs(track.dcaZ()) <= dcaConfOptions.DCAzCustomCut);
-          passDCAxyCutAntiHe = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(antihePt, parDCAxy[2])));
+          passDCAxyCutAntiHe = (std::abs(track.dcaXY()) <= parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(antihePt, parDCAxy[2])));
           passDCAzCutAntiHe = (std::abs(track.dcaZ()) <= dcaConfOptions.DCAzCustomCut);
           break;
         case 3:
           passDCAxyCut = (std::abs(track.dcaXY()) <= dcaConfOptions.DCAxyCustomCut);
-          passDCAzCut = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(track.pt(), parDCAz[2])));
+          passDCAzCut = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(track.pt(), parDCAz[2])));
 
           passDCAxyCutDe = (std::abs(track.dcaXY()) <= dcaConfOptions.DCAxyCustomCut);
-          passDCAzCutDe = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(DPt, parDCAz[2])));
+          passDCAzCutDe = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(DPt, parDCAz[2])));
           passDCAxyCutAntiDe = (std::abs(track.dcaXY()) <= dcaConfOptions.DCAxyCustomCut);
-          passDCAzCutAntiDe = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(antiDPt, parDCAz[2])));
+          passDCAzCutAntiDe = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(antiDPt, parDCAz[2])));
 
           passDCAxyCutHe = (std::abs(track.dcaXY()) <= dcaConfOptions.DCAxyCustomCut);
-          passDCAzCutHe = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(hePt, parDCAz[2])));
+          passDCAzCutHe = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(hePt, parDCAz[2])));
           passDCAxyCutAntiHe = (std::abs(track.dcaXY()) <= dcaConfOptions.DCAxyCustomCut);
-          passDCAzCutAntiHe = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(antihePt, parDCAz[2])));
+          passDCAzCutAntiHe = (std::abs(track.dcaZ()) <= parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(antihePt, parDCAz[2])));
           break;
         case 4:
-          passDCAxyCut = TMath::Power(track.dcaXY(), 2) / TMath::Power(dcaConfOptions.DCAxyCustomCut, 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(dcaConfOptions.DCAzCustomCut, 2) <= 1;
-          passDCAzCut = TMath::Power(track.dcaXY(), 2) / TMath::Power(dcaConfOptions.DCAxyCustomCut, 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(dcaConfOptions.DCAzCustomCut, 2) <= 1;
+          passDCAxyCut = std::pow(track.dcaXY(), 2) / std::pow(dcaConfOptions.DCAxyCustomCut, 2) + std::pow(track.dcaZ(), 2) / std::pow(dcaConfOptions.DCAzCustomCut, 2) <= 1;
+          passDCAzCut = std::pow(track.dcaXY(), 2) / std::pow(dcaConfOptions.DCAxyCustomCut, 2) + std::pow(track.dcaZ(), 2) / std::pow(dcaConfOptions.DCAzCustomCut, 2) <= 1;
 
-          passDCAxyCutDe = TMath::Power(track.dcaXY(), 2) / TMath::Power(dcaConfOptions.DCAxyCustomCut, 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(dcaConfOptions.DCAzCustomCut, 2) <= 1;
-          passDCAzCutDe = TMath::Power(track.dcaXY(), 2) / TMath::Power(dcaConfOptions.DCAxyCustomCut, 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(dcaConfOptions.DCAzCustomCut, 2) <= 1;
-          passDCAxyCutAntiDe = TMath::Power(track.dcaXY(), 2) / TMath::Power(dcaConfOptions.DCAxyCustomCut, 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(dcaConfOptions.DCAzCustomCut, 2) <= 1;
-          passDCAzCutAntiDe = TMath::Power(track.dcaXY(), 2) / TMath::Power(dcaConfOptions.DCAxyCustomCut, 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(dcaConfOptions.DCAzCustomCut, 2) <= 1;
+          passDCAxyCutDe = std::pow(track.dcaXY(), 2) / std::pow(dcaConfOptions.DCAxyCustomCut, 2) + std::pow(track.dcaZ(), 2) / std::pow(dcaConfOptions.DCAzCustomCut, 2) <= 1;
+          passDCAzCutDe = std::pow(track.dcaXY(), 2) / std::pow(dcaConfOptions.DCAxyCustomCut, 2) + std::pow(track.dcaZ(), 2) / std::pow(dcaConfOptions.DCAzCustomCut, 2) <= 1;
+          passDCAxyCutAntiDe = std::pow(track.dcaXY(), 2) / std::pow(dcaConfOptions.DCAxyCustomCut, 2) + std::pow(track.dcaZ(), 2) / std::pow(dcaConfOptions.DCAzCustomCut, 2) <= 1;
+          passDCAzCutAntiDe = std::pow(track.dcaXY(), 2) / std::pow(dcaConfOptions.DCAxyCustomCut, 2) + std::pow(track.dcaZ(), 2) / std::pow(dcaConfOptions.DCAzCustomCut, 2) <= 1;
 
-          passDCAxyCutHe = TMath::Power(track.dcaXY(), 2) / TMath::Power(dcaConfOptions.DCAxyCustomCut, 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(dcaConfOptions.DCAzCustomCut, 2) <= 1;
-          passDCAzCutHe = TMath::Power(track.dcaXY(), 2) / TMath::Power(dcaConfOptions.DCAxyCustomCut, 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(dcaConfOptions.DCAzCustomCut, 2) <= 1;
-          passDCAxyCutAntiHe = TMath::Power(track.dcaXY(), 2) / TMath::Power(dcaConfOptions.DCAxyCustomCut, 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(dcaConfOptions.DCAzCustomCut, 2) <= 1;
-          passDCAzCutAntiHe = TMath::Power(track.dcaXY(), 2) / TMath::Power(dcaConfOptions.DCAxyCustomCut, 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(dcaConfOptions.DCAzCustomCut, 2) <= 1;
+          passDCAxyCutHe = std::pow(track.dcaXY(), 2) / std::pow(dcaConfOptions.DCAxyCustomCut, 2) + std::pow(track.dcaZ(), 2) / std::pow(dcaConfOptions.DCAzCustomCut, 2) <= 1;
+          passDCAzCutHe = std::pow(track.dcaXY(), 2) / std::pow(dcaConfOptions.DCAxyCustomCut, 2) + std::pow(track.dcaZ(), 2) / std::pow(dcaConfOptions.DCAzCustomCut, 2) <= 1;
+          passDCAxyCutAntiHe = std::pow(track.dcaXY(), 2) / std::pow(dcaConfOptions.DCAxyCustomCut, 2) + std::pow(track.dcaZ(), 2) / std::pow(dcaConfOptions.DCAzCustomCut, 2) <= 1;
+          passDCAzCutAntiHe = std::pow(track.dcaXY(), 2) / std::pow(dcaConfOptions.DCAxyCustomCut, 2) + std::pow(track.dcaZ(), 2) / std::pow(dcaConfOptions.DCAzCustomCut, 2) <= 1;
           break;
         case 5:
-          passDCAxyCut = TMath::Power(track.dcaXY(), 2) / TMath::Power(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(track.pt(), parDCAxy[2])), 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(track.pt(), parDCAz[2])), 2) <= 1;
-          passDCAzCut = TMath::Power(track.dcaXY(), 2) / TMath::Power(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(track.pt(), parDCAxy[2])), 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(track.pt(), parDCAz[2])), 2) <= 1;
+          passDCAxyCut = std::pow(track.dcaXY(), 2) / std::pow(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(track.pt(), parDCAxy[2])), 2) + std::pow(track.dcaZ(), 2) / std::pow(parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(track.pt(), parDCAz[2])), 2) <= 1;
+          passDCAzCut = std::pow(track.dcaXY(), 2) / std::pow(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(track.pt(), parDCAxy[2])), 2) + std::pow(track.dcaZ(), 2) / std::pow(parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(track.pt(), parDCAz[2])), 2) <= 1;
 
-          passDCAxyCutDe = TMath::Power(track.dcaXY(), 2) / TMath::Power(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(DPt, parDCAxy[2])), 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(DPt, parDCAz[2])), 2) <= 1;
-          passDCAzCutDe = TMath::Power(track.dcaXY(), 2) / TMath::Power(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(DPt, parDCAxy[2])), 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(DPt, parDCAz[2])), 2) <= 1;
-          passDCAxyCutAntiDe = TMath::Power(track.dcaXY(), 2) / TMath::Power(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(antiDPt, parDCAxy[2])), 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(antiDPt, parDCAz[2])), 2) <= 1;
-          passDCAzCutAntiDe = TMath::Power(track.dcaXY(), 2) / TMath::Power(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(antiDPt, parDCAxy[2])), 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(antiDPt, parDCAz[2])), 2) <= 1;
+          passDCAxyCutDe = std::pow(track.dcaXY(), 2) / std::pow(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(DPt, parDCAxy[2])), 2) + std::pow(track.dcaZ(), 2) / std::pow(parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(DPt, parDCAz[2])), 2) <= 1;
+          passDCAzCutDe = std::pow(track.dcaXY(), 2) / std::pow(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(DPt, parDCAxy[2])), 2) + std::pow(track.dcaZ(), 2) / std::pow(parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(DPt, parDCAz[2])), 2) <= 1;
+          passDCAxyCutAntiDe = std::pow(track.dcaXY(), 2) / std::pow(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(antiDPt, parDCAxy[2])), 2) + std::pow(track.dcaZ(), 2) / std::pow(parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(antiDPt, parDCAz[2])), 2) <= 1;
+          passDCAzCutAntiDe = std::pow(track.dcaXY(), 2) / std::pow(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(antiDPt, parDCAxy[2])), 2) + std::pow(track.dcaZ(), 2) / std::pow(parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(antiDPt, parDCAz[2])), 2) <= 1;
 
-          passDCAxyCutHe = TMath::Power(track.dcaXY(), 2) / TMath::Power(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(hePt, parDCAxy[2])), 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(hePt, parDCAz[2])), 2) <= 1;
-          passDCAzCutHe = TMath::Power(track.dcaXY(), 2) / TMath::Power(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(hePt, parDCAxy[2])), 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(hePt, parDCAz[2])), 2) <= 1;
-          passDCAxyCutAntiHe = TMath::Power(track.dcaXY(), 2) / TMath::Power(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(antihePt, parDCAxy[2])), 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(antihePt, parDCAz[2])), 2) <= 1;
-          passDCAzCutAntiHe = TMath::Power(track.dcaXY(), 2) / TMath::Power(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / TMath::Power(antihePt, parDCAxy[2])), 2) + TMath::Power(track.dcaZ(), 2) / TMath::Power(parDCAz[3] * (parDCAz[0] + parDCAz[1] / TMath::Power(antihePt, parDCAz[2])), 2) <= 1;
+          passDCAxyCutHe = std::pow(track.dcaXY(), 2) / std::pow(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(hePt, parDCAxy[2])), 2) + std::pow(track.dcaZ(), 2) / std::pow(parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(hePt, parDCAz[2])), 2) <= 1;
+          passDCAzCutHe = std::pow(track.dcaXY(), 2) / std::pow(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(hePt, parDCAxy[2])), 2) + std::pow(track.dcaZ(), 2) / std::pow(parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(hePt, parDCAz[2])), 2) <= 1;
+          passDCAxyCutAntiHe = std::pow(track.dcaXY(), 2) / std::pow(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(antihePt, parDCAxy[2])), 2) + std::pow(track.dcaZ(), 2) / std::pow(parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(antihePt, parDCAz[2])), 2) <= 1;
+          passDCAzCutAntiHe = std::pow(track.dcaXY(), 2) / std::pow(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(antihePt, parDCAxy[2])), 2) + std::pow(track.dcaZ(), 2) / std::pow(parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(antihePt, parDCAz[2])), 2) <= 1;
           break;
       }
 
@@ -2917,7 +2917,7 @@ struct LFNucleiBATask {
           isProdByGen = track.producedByGenerator();
           isWeakDecay = track.getProcess() == 4;
           pdgCode = track.pdgCode();
-          genPt = TMath::Sqrt(TMath::Power(track.px(), 2) + TMath::Power(track.py(), 2));
+          genPt = TMath::Sqrt(std::pow(track.px(), 2) + std::pow(track.py(), 2));
 
         } else {
           if (!track.has_mcParticle()) {
