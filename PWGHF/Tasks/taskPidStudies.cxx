@@ -18,7 +18,6 @@
 /// \author Luca Aglietta <luca.aglietta@unito.it>, Università and INFN Torino
 
 #include "TPDGCode.h"
-#include "TMath.h"
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
