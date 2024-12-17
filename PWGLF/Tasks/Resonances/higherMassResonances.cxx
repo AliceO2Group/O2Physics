@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file kShortkShort.cxx
+/// \file higherMassResonances.cxx
 /// \brief glueball resonance
 /// \author Sawan <sawan.sawan@cern.ch>
 
@@ -58,7 +58,7 @@ using namespace o2::soa;
 // using namespace o2::constants::physics;
 using std::array;
 
-struct LfkShortkShort {
+struct HigherMassResonances {
   SliceCache cache;
   HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rKzeroShort{"kzeroShort", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -666,7 +666,7 @@ struct LfkShortkShort {
 
       ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s); // Kshort
 
-      ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of LfkShortkShort pair
+      ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of HigherMassResonances pair
       ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                                         // boost mother to center of mass frame
       ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);                                                 // boost the frame of daughter same as mother
       ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();                                                  // get the 3 vector of daughter in the frame of mother
@@ -734,7 +734,7 @@ struct LfkShortkShort {
     }
   }
 
-  PROCESS_SWITCH(LfkShortkShort, processSE, "same event process", true);
+  PROCESS_SWITCH(HigherMassResonances, processSE, "same event process", true);
 
   array<float, 3> pvec0;
   array<float, 3> pvec1;
@@ -820,7 +820,7 @@ struct LfkShortkShort {
 
           ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s); // Kshort
 
-          ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of LfkShortkShort pair
+          ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of HigherMassResonances pair
           ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                                         // boost mother to center of mass frame
           ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);                                                 // boost the frame of daughter same as mother
           ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();                                                  // get the 3 vector of daughter in the frame of mother
@@ -916,7 +916,7 @@ struct LfkShortkShort {
 
           ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s); // Kshort
 
-          ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of LfkShortkShort pair
+          ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of HigherMassResonances pair
           ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                                         // boost mother to center of mass frame
           ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);                                                 // boost the frame of daughter same as mother
           ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();                                                  // get the 3 vector of daughter in the frame of mother
@@ -958,7 +958,7 @@ struct LfkShortkShort {
       }
     }
   }
-  PROCESS_SWITCH(LfkShortkShort, processME, "mixed event process", true);
+  PROCESS_SWITCH(HigherMassResonances, processME, "mixed event process", true);
 
   int counter = 0;
   void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
@@ -1050,7 +1050,7 @@ struct LfkShortkShort {
       }
     }
   }
-  PROCESS_SWITCH(LfkShortkShort, processGen, "Process Generated", false);
+  PROCESS_SWITCH(HigherMassResonances, processGen, "Process Generated", false);
 
   int counter2 = 0;
   int eventCounter = 0;
@@ -1232,11 +1232,11 @@ struct LfkShortkShort {
       }
     }
   }
-  PROCESS_SWITCH(LfkShortkShort, processRec, "Process Reconstructed", false);
+  PROCESS_SWITCH(HigherMassResonances, processRec, "Process Reconstructed", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<LfkShortkShort>(cfgc)};
+    adaptAnalysisTask<HigherMassResonances>(cfgc)};
 }

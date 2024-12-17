@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file kstarqa.cxx
-/// \brief this is a code for the kstarqa resonance
+/// \file Kstarqa.cxx
+/// \brief this is a code for the Kstarqa resonance
 /// \author prottay das, sawan
 /// \since 13/03/2024
 
@@ -54,7 +54,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using std::array;
 
-struct LFkstarqa {
+struct Kstarqa {
 
   SliceCache cache;
 
@@ -598,7 +598,7 @@ struct LFkstarqa {
     }
   }
 
-  PROCESS_SWITCH(LFkstarqa, processSE, "Process Same event", true);
+  PROCESS_SWITCH(Kstarqa, processSE, "Process Same event", true);
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for ME mixing"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {10, 0, 100}, "multiplicity percentile for ME mixing"};
@@ -723,7 +723,7 @@ struct LFkstarqa {
     }
   }
 
-  PROCESS_SWITCH(LFkstarqa, processME, "Process Mixed event", true);
+  PROCESS_SWITCH(Kstarqa, processME, "Process Mixed event", true);
 
   void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
@@ -806,7 +806,7 @@ struct LFkstarqa {
       }
     }
   }
-  PROCESS_SWITCH(LFkstarqa, processGen, "Process Generated", false);
+  PROCESS_SWITCH(Kstarqa, processGen, "Process Generated", false);
 
   void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, aod::McCollisions const& /*mcCollisions*/)
   {
@@ -935,10 +935,10 @@ struct LFkstarqa {
       }
     }
   }
-  PROCESS_SWITCH(LFkstarqa, processRec, "Process Reconstructed", false);
+  PROCESS_SWITCH(Kstarqa, processRec, "Process Reconstructed", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<LFkstarqa>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<Kstarqa>(cfgc)};
 }
