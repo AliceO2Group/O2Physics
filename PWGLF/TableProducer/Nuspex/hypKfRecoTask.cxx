@@ -1022,7 +1022,7 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       initCollision(collision);
-      if (!collPassedEvSel) 
+      if (!collPassedEvSel)
         continue;
       const uint64_t collIdx = collision.globalIndex();
       auto tracksByColl = tracksColl.sliceBy(perCollision, collIdx);
