@@ -1129,6 +1129,51 @@ struct phik0shortanalysis {
           }
         }
       }
+
+      std::array<bool, 3> isCountedMCPhi{false, false, false};
+
+      for (const auto& mcParticle : mcParticles) {
+        if (mcParticle.pdgCode() != 333)
+          continue;
+        auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
+        if (kDaughters.size() != 2)
+          continue;
+        bool isPosKaon = false, isNegKaon = false;
+        for (const auto& kDaughter : kDaughters) {
+          if (kDaughter.pdgCode() == 321)
+            isPosKaon = true;
+          if (kDaughter.pdgCode() == -321)
+            isNegKaon = true;
+        }
+        if (!isPosKaon || !isNegKaon)
+          continue;
+        if (std::abs(mcParticle.y()) > cfgyAcceptance)
+          continue;
+///
+        if (recPhi.M() < lowmPhi || recPhi.M() > upmPhi)
+            continue;
+
+          if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
+            continue;
+          if (!isCountedMCPhi.at(0)) {
+            yaccHist.fill(HIST("hyaccK0SRecMC"), genmultiplicity, v0.pt(), v0.yK0Short());
+            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEInc"), genmultiplicity, v0.pt(), v0.mK0Short());
+            isCountedMCPhi.at(0) = true;
+          }
+          if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+            continue;
+          if (!isCountedMCPhi.at(1)) {
+            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEFCut"), genmultiplicity, v0.pt(), v0.mK0Short());
+            isCountedMCPhi.at(1) = true;
+          }
+          if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
+            continue;
+          if (!isCountedMCPhi.at(2)) {
+            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSESCut"), genmultiplicity, v0.pt(), v0.mK0Short());
+            isCountedMCPhi.at(2) = true;
+          }
+///
+      }
     }
   }
 
@@ -1243,6 +1288,51 @@ struct phik0shortanalysis {
             isCountedPhi.at(2) = true;
           }
         }
+      }
+
+      std::array<bool, 3> isCountedMCPhi{false, false, false};
+
+      for (const auto& mcParticle : mcParticles) {
+        if (mcParticle.pdgCode() != 333)
+          continue;
+        auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
+        if (kDaughters.size() != 2)
+          continue;
+        bool isPosKaon = false, isNegKaon = false;
+        for (const auto& kDaughter : kDaughters) {
+          if (kDaughter.pdgCode() == 321)
+            isPosKaon = true;
+          if (kDaughter.pdgCode() == -321)
+            isNegKaon = true;
+        }
+        if (!isPosKaon || !isNegKaon)
+          continue;
+        if (std::abs(mcParticle.y()) > cfgyAcceptance)
+          continue;
+///
+        if (recPhi.M() < lowmPhi || recPhi.M() > upmPhi)
+            continue;
+
+          if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
+            continue;
+          if (!isCountedMCPhi.at(0)) {
+            yaccHist.fill(HIST("hyaccK0SRecMC"), genmultiplicity, v0.pt(), v0.yK0Short());
+            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEInc"), genmultiplicity, v0.pt(), v0.mK0Short());
+            isCountedMCPhi.at(0) = true;
+          }
+          if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+            continue;
+          if (!isCountedMCPhi.at(1)) {
+            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEFCut"), genmultiplicity, v0.pt(), v0.mK0Short());
+            isCountedMCPhi.at(1) = true;
+          }
+          if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
+            continue;
+          if (!isCountedMCPhi.at(2)) {
+            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSESCut"), genmultiplicity, v0.pt(), v0.mK0Short());
+            isCountedMCPhi.at(2) = true;
+          }
+///
       }
     }
   }
