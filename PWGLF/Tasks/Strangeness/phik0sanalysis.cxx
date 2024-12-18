@@ -934,6 +934,9 @@ struct phik0shortanalysis {
           continue;
 
         TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
+
+        PhieffHist.fill(HIST("h3PhiRapiditySmearing"), genmultiplicity, recPhi.Rapidity(), MotherOfMCtrack1.y());
+
         if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
           continue;
 
@@ -1056,7 +1059,7 @@ struct phik0shortanalysis {
       if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
         continue;
 
-      //yaccHist.fill(HIST("hyaccK0SRecMC"), genmultiplicity, v0.pt(), v0.yK0Short());
+      K0SeffHist.fill(HIST("h4K0SRapiditySmearing"), genmultiplicity, v0.pt(), v0.yK0Short(), v0mcparticle.y());
 
       if (std::abs(v0mcparticle.y()) > cfgyAcceptance)
         continue;
@@ -1137,7 +1140,7 @@ struct phik0shortanalysis {
       if (!selectionPion(track))
         continue;
 
-      //yaccHist.fill(HIST("hyaccPiRecMC"), genmultiplicity, track.pt(), track.rapidity(massPi));
+      PioneffHist.fill(HIST("h4PiRapiditySmearing"), genmultiplicity, track.pt(), track.rapidity(massPi), MCtrack.y());
 
       if (std::abs(MCtrack.y()) > cfgyAcceptance)
         continue;
