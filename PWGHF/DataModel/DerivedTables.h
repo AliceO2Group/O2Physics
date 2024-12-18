@@ -564,7 +564,7 @@ DECLARE_SOA_TABLE_STAGED(HfBplusMcs, "HFBPMC", //! Table with MC candidate info
 // normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
 DECLARE_SOA_TABLE_STAGED(HfLcPars, "HFLCPAR", //! Table with candidate properties used for selection
                          hf_cand::Chi2PCA,
-                         hf_cand::NProngsContributorsPV,
+                         hf_cand::IndicesProngsContributorsPV,
                          hf_cand_par::Cpa,
                          hf_cand_par::CpaXY,
                          hf_cand_par::DecayLength,

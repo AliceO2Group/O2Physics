@@ -35,6 +35,7 @@
 
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/Utils/utilsPid.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 namespace o2::aod
 {
@@ -484,7 +485,7 @@ DECLARE_SOA_COLUMN(ErrorImpactParameterZ2, errorImpactParameterZ2, float);      
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterZNormalised2, impactParameterZNormalised2, //!
                            [](float dca, float err) -> float { return dca / err; });
 /// prong PID nsigma
-DECLARE_SOA_COLUMN(NProngsContributorsPV, nProngsContributorsPV, uint8_t); //! number of prongs contributing to the primary-vertex reconstruction
+DECLARE_SOA_COLUMN(IndicesProngsContributorsPV, indicesProngsContributorsPV, uint8_t); //! indices of prongs contributing to the primary-vertex reconstruction encoded in binary form
 DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);                         //! TPC nSigma for pion hypothesis - prong 0
 DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);                         //! TPC nSigma for pion hypothesis - prong 1
 DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float);                         //! TPC nSigma for pion hypothesis - prong 2
@@ -503,6 +504,7 @@ DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float);                         //! T
 DECLARE_SOA_COLUMN(NSigTofPr0, nSigTofPr0, float);                         //! TOF nSigma for proton hypothesis - prong 0
 DECLARE_SOA_COLUMN(NSigTofPr1, nSigTofPr1, float);                         //! TOF nSigma for proton hypothesis - prong 1
 DECLARE_SOA_COLUMN(NSigTofPr2, nSigTofPr2, float);                         //! TOF nSigma for proton hypothesis - prong 2
+DECLARE_SOA_DYNAMIC_COLUMN(NProngsContributorsPV, nProngsContributorsPV, [](uint8_t indicesProngsContributorsPV) -> uint8_t {return hf_trkcandsel::countOnesInBinary(indicesProngsContributorsPV); });
 DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPi0, tpcTofNSigmaPi0,               //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 0
                            [](float tpcNSigmaPi0, float tofNSigmaPi0) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi0, tofNSigmaPi0); });
 DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPi1, tpcTofNSigmaPi1, //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 1
@@ -664,7 +666,7 @@ DECLARE_SOA_TABLE(HfCand2ProngBase, "AOD", "HFCAND2PBASE", //!
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
                   hf_cand::ImpactParameterZ0, hf_cand::ImpactParameterZ1,
                   hf_cand::ErrorImpactParameterZ0, hf_cand::ErrorImpactParameterZ1,
-                  hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_cand::NProngsContributorsPV,
+                  hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_cand::IndicesProngsContributorsPV,
                   hf_track_index::HFflag,
                   /* dynamic columns */
                   hf_cand_2prong::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
@@ -672,6 +674,7 @@ DECLARE_SOA_TABLE(HfCand2ProngBase, "AOD", "HFCAND2PBASE", //!
                   hf_cand_2prong::ImpactParameterProduct<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
                   hf_cand_2prong::CosThetaStar<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_2prong::ImpactParameterProngSqSum<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
+                  hf_cand::NProngsContributorsPV<hf_cand::IndicesProngsContributorsPV>,
                   /* dynamic columns that use candidate momentum components */
                   hf_cand::Pt<hf_cand_2prong::Px, hf_cand_2prong::Py>,
                   hf_cand::Pt2<hf_cand_2prong::Px, hf_cand_2prong::Py>,
@@ -970,12 +973,13 @@ DECLARE_SOA_TABLE(HfCand3ProngBase, "AOD", "HFCAND3PBASE", //!
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, hf_cand::ErrorImpactParameter2,
                   hf_cand::ImpactParameterZ0, hf_cand::ImpactParameterZ1, hf_cand::ImpactParameterZ2,
                   hf_cand::ErrorImpactParameterZ0, hf_cand::ErrorImpactParameterZ1, hf_cand::ErrorImpactParameterZ2,
-                  hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_track_index::Prong2Id, hf_cand::NProngsContributorsPV,
+                  hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_track_index::Prong2Id, hf_cand::IndicesProngsContributorsPV,
                   hf_track_index::HFflag,
                   /* dynamic columns */
                   hf_cand_3prong::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2>,
                   hf_cand_3prong::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2>,
                   hf_cand_3prong::ImpactParameterProngSqSum<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ImpactParameter2>,
+                  hf_cand::NProngsContributorsPV<hf_cand::IndicesProngsContributorsPV>,
                   /* prong 2 */
                   hf_cand::ImpactParameterNormalised2<hf_cand::ImpactParameter2, hf_cand::ErrorImpactParameter2>,
                   hf_cand::PtProng2<hf_cand::PxProng2, hf_cand::PyProng2>,

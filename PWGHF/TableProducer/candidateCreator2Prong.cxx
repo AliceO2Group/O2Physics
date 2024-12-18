@@ -281,12 +281,12 @@ struct HfCandidateCreator2Prong {
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
       auto indexCollision = collision.globalIndex();
-      uint8_t nProngsContributorsPV = 0;
+      uint8_t indicesProngsContributorsPV = 0;
       if (indexCollision == track0.collisionId() && track0.isPVContributor()) {
-        nProngsContributorsPV += 1;
+        indicesProngsContributorsPV += 1;
       }
       if (indexCollision == track1.collisionId() && track1.isPVContributor()) {
-        nProngsContributorsPV += 1;
+        indicesProngsContributorsPV += 2;
       }
 
       // fill candidate table rows
@@ -301,7 +301,7 @@ struct HfCandidateCreator2Prong {
                        std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
                        impactParameter0.getZ(), impactParameter1.getZ(),
                        std::sqrt(impactParameter0.getSigmaZ2()), std::sqrt(impactParameter1.getSigmaZ2()),
-                       rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(), nProngsContributorsPV,
+                       rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(), indicesProngsContributorsPV,
                        rowTrackIndexProng2.hfflag());
 
       // fill candidate prong PID rows
@@ -432,12 +432,12 @@ struct HfCandidateCreator2Prong {
       }
 
       auto indexCollision = collision.globalIndex();
-      uint8_t nProngsContributorsPV = 0;
+      uint8_t indicesProngsContributorsPV = 0;
       if (indexCollision == track0.collisionId() && track0.isPVContributor()) {
-        nProngsContributorsPV += 1;
+        indicesProngsContributorsPV += 1;
       }
       if (indexCollision == track1.collisionId() && track1.isPVContributor()) {
-        nProngsContributorsPV += 1;
+        indicesProngsContributorsPV += 2;
       }
 
       // fill candidate table rows
@@ -452,7 +452,7 @@ struct HfCandidateCreator2Prong {
                        errImpactParameter0XY, errImpactParameter1XY,
                        0.f, 0.f,
                        0.f, 0.f,
-                       rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(), nProngsContributorsPV,
+                       rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(), indicesProngsContributorsPV,
                        rowTrackIndexProng2.hfflag());
 
       // fill candidate prong PID rows

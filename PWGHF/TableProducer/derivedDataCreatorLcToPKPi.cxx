@@ -191,7 +191,7 @@ struct HfDerivedDataCreatorLcToPKPi {
     if (fillCandidatePar) {
       rowCandidatePar(
         candidate.chi2PCA(),
-        candidate.nProngsContributorsPV(),
+        candidate.indicesProngsContributorsPV(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.decayLength(),
