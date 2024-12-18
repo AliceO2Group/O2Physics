@@ -40,6 +40,5 @@ struct Run2TracksExtraConverter {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Run2TracksExtraConverter>(cfgc)
-  };
+    adaptAnalysisTask<Run2TracksExtraConverter>(cfgc)};
 }
