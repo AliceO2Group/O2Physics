@@ -100,7 +100,7 @@ o2physics_add_dpl_workflow(lambda1520-pbpb
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(kshortkshort
-    SOURCES KshortKshort.cxx
+    SOURCES higherMassResonances.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
