@@ -67,6 +67,9 @@ enum EventSelectionFlags {
   kNoCollInRofStrict,            // no other collisions in this Readout Frame
   kNoCollInRofStandard,          // no other collisions in this Readout Frame with per-collision multiplicity above threshold
   kNoHighMultCollInPrevRof,      // veto an event if FT0C amplitude in previous ITS ROF is above threshold
+  kIsGoodITSLayer3,              // number of inactive chips on ITS layer 3 is below maximum allowed value
+  kIsGoodITSLayer0123,           // numbers of inactive chips on ITS layers 0-3 are below maximum allowed values
+  kIsGoodITSLayersAll,           // numbers of inactive chips on all ITS layers are below maximum allowed values
   kNsel                          // counter
 };
 

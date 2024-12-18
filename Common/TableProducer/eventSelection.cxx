@@ -27,6 +27,9 @@
 #include "ITSMFTBase/DPLAlpideParam.h"
 #include "MetadataHelper.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
+#include "DataFormatsITSMFT/NoiseMap.h" // missing include in TimeDeadMap.h
+#include "DataFormatsITSMFT/TimeDeadMap.h"
+#include "ITSMFTReconstruction/ChipMappingITS.h"
 
 #include "TH1D.h"
 
@@ -42,7 +45,8 @@ using BCsWithBcSelsRun2 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod:
 using BCsWithBcSelsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
 using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
-const double bcNS = o2::constants::lhc::LHCBunchSpacingNS;
+static const double bcNS = o2::constants::lhc::LHCBunchSpacingNS;
+static const int32_t nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 
 struct BcSelectionTask {
   Produces<aod::BcSels> bcsel;
@@ -54,14 +58,28 @@ struct BcSelectionTask {
   Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", -1, "Number of bcs to cut at the start of the Time Frame. Take from CCDB if -1"};
   Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", -1, "Number of bcs to cut at the end of the Time Frame. Take from CCDB if -1"};
   Configurable<bool> confCheckRunDurationLimits{"checkRunDurationLimits", false, "Check if the BCs are within the run duration limits"};
+  Configurable<std::vector<int>> maxInactiveChipsPerLayer{"maxInactiveChipsPerLayer", {8, 8, 8, 111, 111, 195, 195}, "Maximum allowed number of inactive ITS chips per layer"};
 
-  int lastRunNumber = -1;
-  int64_t bcSOR = -1;                    // global bc of the start of the first orbit
+  int lastRun = -1;
+  uint64_t sorTimestamp = 0;             // default SOR timestamp
+  uint64_t eorTimestamp = 1;             // default EOR timestamp
+  int64_t bcSOR = -1;                    // global bc of the start of run
   int64_t nBCsPerTF = -1;                // duration of TF in bcs, should be 128*3564 or 32*3564
+  int rofOffset = -1;                    // ITS ROF offset, in bc
+  int rofLength = -1;                    // ITS ROF length, in bc
   int mITSROFrameStartBorderMargin = 10; // default value
   int mITSROFrameEndBorderMargin = 20;   // default value
   int mTimeFrameStartBorderMargin = 300; // default value
   int mTimeFrameEndBorderMargin = 4000;  // default value
+  bool isPP = 1;                         // default value
+  TriggerAliases* aliases = nullptr;
+  EventSelectionParams* par = nullptr;
+  std::map<int64_t, std::vector<int16_t>> mapInactiveChips; // number of inactive chips vs orbit per layer
+  int64_t prevOrbitForInactiveChips = 0;                    // cached next stored orbit in the inactive chip map
+  int64_t nextOrbitForInactiveChips = 0;                    // cached previous stored orbit in the inactive chip map
+  bool isGoodITSLayer3 = true;                              // default value
+  bool isGoodITSLayer0123 = true;                           // default value
+  bool isGoodITSLayersAll = true;                           // default value
 
   void init(InitContext&)
   {
@@ -109,8 +127,8 @@ struct BcSelectionTask {
     bcsel.reserve(bcs.size());
 
     for (auto& bc : bcs) {
-      EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
-      TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
+      par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
+      aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
       // fill fired aliases
       uint32_t alias{0};
       uint64_t triggerMask = bc.triggerMask();
@@ -232,45 +250,74 @@ struct BcSelectionTask {
   {
     if (bcs.size() == 0)
       return;
-
     bcsel.reserve(bcs.size());
-    // extract ITS time frame parameters
+
     int run = bcs.iteratorAt(0).runNumber();
-    auto timestamps = ccdb->getRunDuration(run, true); /// fatalise if timestamps are not found
-    int64_t sorTimestamp = timestamps.first;           // timestamp of the SOR/SOX/STF in ms
-    int64_t eorTimestamp = timestamps.second;          // timestamp of the EOR/EOX/ETF in ms
-    int64_t ts = eorTimestamp / 2 + sorTimestamp / 2;  // timestamp of the middle of the run
-    auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
-    EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
-    TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", ts);
+
+    if (run != lastRun && run >= 500000) {
+      lastRun = run;
+      auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
+      // first bc of the first orbit
+      bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
+      // duration of TF in bcs
+      nBCsPerTF = runInfo.orbitsPerTF * nBCsPerOrbit;
+      // SOR and EOR timestamps
+      sorTimestamp = runInfo.sor;
+      eorTimestamp = runInfo.eor;
+      // timestamp of the middle of the run used to access run-wise CCDB entries
+      int64_t ts = runInfo.sor / 2 + runInfo.eor / 2;
+      // access ITSROF and TF border margins
+      par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
+      mITSROFrameStartBorderMargin = confITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : confITSROFrameStartBorderMargin;
+      mITSROFrameEndBorderMargin = confITSROFrameEndBorderMargin < 0 ? par->fITSROFrameEndBorderMargin : confITSROFrameEndBorderMargin;
+      mTimeFrameStartBorderMargin = confTimeFrameStartBorderMargin < 0 ? par->fTimeFrameStartBorderMargin : confTimeFrameStartBorderMargin;
+      mTimeFrameEndBorderMargin = confTimeFrameEndBorderMargin < 0 ? par->fTimeFrameEndBorderMargin : confTimeFrameEndBorderMargin;
+      // ITSROF parameters
+      auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
+      rofOffset = alppar->roFrameBiasInBC;
+      rofLength = alppar->roFrameLengthInBC;
+      // Trigger aliases
+      aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", ts);
+      // Collision system info
+      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
+      int beamZ1 = grplhcif->getBeamZ(o2::constants::lhc::BeamA);
+      int beamZ2 = grplhcif->getBeamZ(o2::constants::lhc::BeamC);
+      isPP = beamZ1 == 1 && beamZ2 == 1;
+      // prepare map of inactive chips
+      std::map<std::string, std::string> metadata;
+      metadata["runNumber"] = Form("%d", run);
+      auto itsDeadMap = ccdb->getSpecific<o2::itsmft::TimeDeadMap>("ITS/Calib/TimeDeadMap", ts, metadata);
+      auto itsDeadMapOrbits = itsDeadMap->getEvolvingMapKeys(); // roughly every second, ~350 TFs = 350x32 orbits
+      std::vector<uint16_t> vClosest;                           // temporary vector of inactive chip ids for the current orbit range
+      for (const auto& orbit : itsDeadMapOrbits) {
+        itsDeadMap->getMapAtOrbit(orbit, vClosest);
+        // insert initial (orbit,vector) pair for each layer
+        mapInactiveChips[orbit].resize(o2::itsmft::ChipMappingITS::NLayers, 0);
+
+        // fill map of inactive chips
+        for (size_t iel = 0; iel < vClosest.size(); iel++) {
+          uint16_t w1 = vClosest[iel];
+          bool isLastInSequence = (w1 & 0x8000) == 0;
+          uint16_t w2 = isLastInSequence ? w1 + 1 : vClosest[iel + 1];
+          uint16_t chipId1 = w1 & 0x7FFF;
+          uint16_t chipId2 = w2 & 0x7FFF;
+          for (int chipId = chipId1; chipId < chipId2; chipId++) {
+            auto layer = o2::itsmft::ChipMappingITS::getLayer(chipId);
+            mapInactiveChips[orbit][layer]++;
+          }
+        } // loop over vector of inactive chip ids
+      } // loop over orbits
+    }
+
     // map from GlobalBC to BcId needed to find triggerBc
     std::map<uint64_t, int32_t> mapGlobalBCtoBcId;
     for (auto& bc : bcs) {
       mapGlobalBCtoBcId[bc.globalBC()] = bc.globalIndex();
     }
+
     int triggerBcShift = confTriggerBcShift;
     if (confTriggerBcShift == 999) {
       triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734 || run >= 534091) ? 0 : 294;
-    }
-
-    // extract run number and related information
-    if (run != lastRunNumber) {
-      lastRunNumber = run; // do it only once
-      if (run >= 500000) { // access CCDB for data or anchored MC only
-        int64_t ts = bcs.iteratorAt(0).timestamp();
-        // access orbitShift, ITSROF and TF border margins
-        EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
-        mITSROFrameStartBorderMargin = confITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : confITSROFrameStartBorderMargin;
-        mITSROFrameEndBorderMargin = confITSROFrameEndBorderMargin < 0 ? par->fITSROFrameEndBorderMargin : confITSROFrameEndBorderMargin;
-        mTimeFrameStartBorderMargin = confTimeFrameStartBorderMargin < 0 ? par->fTimeFrameStartBorderMargin : confTimeFrameStartBorderMargin;
-        mTimeFrameEndBorderMargin = confTimeFrameEndBorderMargin < 0 ? par->fTimeFrameEndBorderMargin : confTimeFrameEndBorderMargin;
-
-        auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
-        // first bc of the first orbit
-        bcSOR = runInfo.orbitSOR * o2::constants::lhc::LHCMaxBunches;
-        // duration of TF in bcs
-        nBCsPerTF = runInfo.orbitsPerTF * o2::constants::lhc::LHCMaxBunches;
-      }
     }
 
     // bc loop
@@ -278,7 +325,7 @@ struct BcSelectionTask {
       uint32_t alias{0};
       // workaround for pp2022 (trigger info is shifted by -294 bcs)
       int32_t triggerBcId = mapGlobalBCtoBcId[bc.globalBC() + triggerBcShift];
-      if (triggerBcId) {
+      if (triggerBcId && aliases) {
         auto triggerBc = bcs.iteratorAt(triggerBcId);
         uint64_t triggerMask = triggerBc.triggerMask();
         for (auto& al : aliases->GetAliasToTriggerMaskMap()) {
@@ -346,15 +393,47 @@ struct BcSelectionTask {
       selection |= (bc.has_ft0() ? (bc.ft0().triggerMask() & BIT(o2::ft0::Triggers::bitVertex)) > 0 : 0) ? BIT(kIsTriggerTVX) : 0;
 
       // check if bc is far from start and end of the ITS RO Frame border
-      uint16_t bcInITSROF = (globalBC + 3564 - alppar->roFrameBiasInBC) % alppar->roFrameLengthInBC;
+      uint16_t bcInITSROF = (globalBC + nBCsPerOrbit - rofOffset) % rofLength;
       LOGP(debug, "bcInITSROF={}", bcInITSROF);
-      selection |= bcInITSROF > mITSROFrameStartBorderMargin && bcInITSROF < alppar->roFrameLengthInBC - mITSROFrameEndBorderMargin ? BIT(kNoITSROFrameBorder) : 0;
+      selection |= bcInITSROF > mITSROFrameStartBorderMargin && bcInITSROF < rofLength - mITSROFrameEndBorderMargin ? BIT(kNoITSROFrameBorder) : 0;
 
       // check if bc is far from the Time Frame borders
       int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
       LOGP(debug, "bcInTF={}", bcInTF);
       selection |= bcInTF > mTimeFrameStartBorderMargin && bcInTF < nBCsPerTF - mTimeFrameEndBorderMargin ? BIT(kNoTimeFrameBorder) : 0;
 
+      // check number of inactive chips and set kIsGoodITSLayer3, kIsGoodITSLayer0123, kIsGoodITSLayersAll flags
+      int64_t orbit = globalBC / nBCsPerOrbit;
+      if ((orbit < prevOrbitForInactiveChips || orbit > nextOrbitForInactiveChips) && run >= 500000) {
+        auto it = mapInactiveChips.upper_bound(orbit);
+        bool isEnd = (it == mapInactiveChips.end());
+        if (isEnd && mapInactiveChips.size() > 0)
+          it--;
+        nextOrbitForInactiveChips = isEnd ? orbit : it->first; // setting current orbit in case we reached the end of mapInactiveChips
+        auto vNextInactiveChips = it->second;
+        if (it != mapInactiveChips.begin() && !isEnd)
+          it--;
+        prevOrbitForInactiveChips = it->first;
+        auto vPrevInactiveChips = it->second;
+        LOGP(debug, "orbit: {}, previous orbit: {}, next orbit: {} ", orbit, prevOrbitForInactiveChips, nextOrbitForInactiveChips);
+        LOGP(debug, "next inactive chips: {} {} {} {} {} {} {}", vNextInactiveChips[0], vNextInactiveChips[1], vNextInactiveChips[2], vNextInactiveChips[3], vNextInactiveChips[4], vNextInactiveChips[5], vNextInactiveChips[6]);
+        LOGP(debug, "prev inactive chips: {} {} {} {} {} {} {}", vPrevInactiveChips[0], vPrevInactiveChips[1], vPrevInactiveChips[2], vPrevInactiveChips[3], vPrevInactiveChips[4], vPrevInactiveChips[5], vPrevInactiveChips[6]);
+        isGoodITSLayer3 = vPrevInactiveChips[3] <= maxInactiveChipsPerLayer->at(3) && vNextInactiveChips[3] <= maxInactiveChipsPerLayer->at(3);
+        isGoodITSLayer0123 = true;
+        for (int i = 0; i < 3; i++) {
+          isGoodITSLayer0123 &= vPrevInactiveChips[i] <= maxInactiveChipsPerLayer->at(i) && vNextInactiveChips[i] <= maxInactiveChipsPerLayer->at(i);
+        }
+        isGoodITSLayersAll = true;
+        for (int i = 0; i < o2::itsmft::ChipMappingITS::NLayers; i++) {
+          isGoodITSLayersAll &= vPrevInactiveChips[i] <= maxInactiveChipsPerLayer->at(i) && vNextInactiveChips[i] <= maxInactiveChipsPerLayer->at(i);
+        }
+      }
+
+      selection |= isGoodITSLayer3 ? BIT(kIsGoodITSLayer3) : 0;
+      selection |= isGoodITSLayer0123 ? BIT(kIsGoodITSLayer0123) : 0;
+      selection |= isGoodITSLayersAll ? BIT(kIsGoodITSLayersAll) : 0;
+
+      // fill found indices
       int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
       int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
       int32_t foundFDD = bc.has_fdd() ? bc.fdd().globalIndex() : -1;
@@ -363,10 +442,7 @@ struct BcSelectionTask {
 
       // Temporary workaround to get visible cross section. TODO: store run-by-run visible cross sections in CCDB
       const char* srun = Form("%d", run);
-      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", bc.timestamp());
-      int beamZ1 = grplhcif->getBeamZ(o2::constants::lhc::BeamA);
-      int beamZ2 = grplhcif->getBeamZ(o2::constants::lhc::BeamC);
-      bool isPP = beamZ1 == 1 && beamZ2 == 1;
+
       bool injectionEnergy = (run >= 500000 && run <= 520099) || (run >= 534133 && run <= 534468);
       // Cross sections in ub. Using dummy -1 if lumi estimator is not reliable
       float csTVX = isPP ? (injectionEnergy ? 0.0355e6 : 0.0594e6) : -1.;
@@ -416,7 +492,7 @@ struct BcSelectionTask {
         }
       }
 
-      if (bc.timestamp() < static_cast<uint64_t>(sorTimestamp) || bc.timestamp() > static_cast<uint64_t>(eorTimestamp)) {
+      if (bc.timestamp() < sorTimestamp || bc.timestamp() > eorTimestamp) {
         histos.get<TH1>(HIST("hCounterInvalidBCTimestamp"))->Fill(srun, 1);
         if (confCheckRunDurationLimits.value) {
           LOGF(warn, "Invalid BC timestamp: %d, run: %d, sor: %d, eor: %d", bc.timestamp(), run, sorTimestamp, eorTimestamp);
@@ -459,8 +535,8 @@ struct EventSelectionTask {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  int lastRun = -1;                                          // last run number (needed to access ccdb only if run!=lastRun)
-  std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB; // bc pattern of colliding bunches
+  int lastRun = -1;                     // last run number (needed to access ccdb only if run!=lastRun)
+  std::bitset<nBCsPerOrbit> bcPatternB; // bc pattern of colliding bunches
 
   int64_t bcSOR = -1;     // global bc of the start of the first orbit
   int64_t nBCsPerTF = -1; // duration of TF in bcs, should be 128*3564 or 32*3564
@@ -635,9 +711,9 @@ struct EventSelectionTask {
       lastRun = run;
       auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
       // first bc of the first orbit
-      bcSOR = runInfo.orbitSOR * o2::constants::lhc::LHCMaxBunches;
+      bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
       // duration of TF in bcs
-      nBCsPerTF = runInfo.orbitsPerTF * o2::constants::lhc::LHCMaxBunches;
+      nBCsPerTF = runInfo.orbitsPerTF * nBCsPerOrbit;
       // colliding bc pattern
       int64_t ts = bcs.iteratorAt(0).timestamp();
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
@@ -648,7 +724,7 @@ struct EventSelectionTask {
       rofOffset = alppar->roFrameBiasInBC;
       rofLength = alppar->roFrameLengthInBC;
       LOGP(debug, "ITS ROF Offset={} ITS ROF Length={}", rofOffset, rofLength);
-    }
+    } // if run != lastRun
 
     // create maps from globalBC to bc index for TVX-fired bcs
     // to be used for closest TVX searches
@@ -657,7 +733,7 @@ struct EventSelectionTask {
     for (auto& bc : bcs) {
       int64_t globalBC = bc.globalBC();
       // skip non-colliding bcs for data and anchored runs
-      if (run >= 500000 && bcPatternB[globalBC % o2::constants::lhc::LHCMaxBunches] == 0) {
+      if (run >= 500000 && bcPatternB[globalBC % nBCsPerOrbit] == 0) {
         continue;
       }
       if (bc.selection_bit(kIsTriggerTVX)) {
@@ -835,7 +911,7 @@ struct EventSelectionTask {
         vAmpFT0CperColl[colIndex] = bc.foundFT0().sumAmpC();
 
       int64_t TFid = (foundGlobalBC - bcSOR) / nBCsPerTF;
-      int64_t rofId = (foundGlobalBC + 3564 - rofOffset) / rofLength;
+      int64_t rofId = (foundGlobalBC + nBCsPerOrbit - rofOffset) / rofLength;
 
       // ### for in-ROF occupancy
       std::vector<int> vAssocCollInSameROF;
@@ -848,7 +924,7 @@ struct EventSelectionTask {
         if (thisTFid != TFid)
           break;
         // int thisRofIdInTF = (thisBC - rofOffset) / rofLength;
-        int64_t thisRofId = (thisBC + 3564 - rofOffset) / rofLength;
+        int64_t thisRofId = (thisBC + nBCsPerOrbit - rofOffset) / rofLength;
 
         // check if we are within the same ROF
         if (thisRofId != rofId)
@@ -863,7 +939,7 @@ struct EventSelectionTask {
         int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
         if (thisTFid != TFid)
           break;
-        int64_t thisRofId = (thisBC + 3564 - rofOffset) / rofLength;
+        int64_t thisRofId = (thisBC + nBCsPerOrbit - rofOffset) / rofLength;
         if (thisRofId != rofId)
           break;
         vAssocCollInSameROF.push_back(maxColIndex);
@@ -880,7 +956,7 @@ struct EventSelectionTask {
         int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
         if (thisTFid != TFid)
           break;
-        int64_t thisRofId = (thisBC + 3564 - rofOffset) / rofLength;
+        int64_t thisRofId = (thisBC + nBCsPerOrbit - rofOffset) / rofLength;
         if (thisRofId == rofId - 1)
           vAssocCollInPrevROF.push_back(minColIndex);
         else if (thisRofId < rofId - 1)
