@@ -328,7 +328,7 @@ struct BcSelectionTask {
     }
 
     // bc loop
-    for (auto& bc : bcs) {
+    for (auto bc : bcs) { // const-ref-in-for-loop
       uint32_t alias{0};
       // workaround for pp2022 (trigger info is shifted by -294 bcs)
       int32_t triggerBcId = mapGlobalBCtoBcId[bc.globalBC() + triggerBcShift];
