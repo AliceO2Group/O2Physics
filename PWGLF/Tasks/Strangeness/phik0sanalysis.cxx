@@ -1054,81 +1054,12 @@ struct phik0shortanalysis {
       if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
         continue;
 
-      if (std::abs(v0.yK0Short()) > cfgyAcceptance)
+      //yaccHist.fill(HIST("hyaccK0SRecMC"), genmultiplicity, v0.pt(), v0.yK0Short());
+
+      if (std::abs(v0mcparticle.y()) > cfgyAcceptance)
         continue;
 
       K0SeffHist.fill(HIST("h3K0SeffInvMass"), genmultiplicity, v0.pt(), v0.mK0Short());
-
-      std::array<bool, 3> isCountedPhi{false, false, false};
-
-      // Phi reconstruction
-      for (const auto& track1 : posThisColl) { // loop over all selected tracks
-        if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
-          continue; // topological and PID selection
-
-        auto track1ID = track1.globalIndex();
-
-        if (!track1.has_mcParticle())
-          continue;
-
-        for (const auto& track2 : negThisColl) {
-          if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
-            continue; // topological and PID selection
-
-          auto track2ID = track2.globalIndex();
-          if (track2ID == track1ID)
-            continue; // condition to avoid double counting of pair
-
-          if (!track2.has_mcParticle())
-            continue;
-
-          auto MCtrack1 = track1.mcParticle_as<aod::McParticles>();
-          auto MCtrack2 = track2.mcParticle_as<aod::McParticles>();
-          if (MCtrack1.pdgCode() != 321 || MCtrack2.pdgCode() != -321)
-            continue;
-          if (!MCtrack1.has_mothers() || !MCtrack2.has_mothers())
-            continue;
-          if (!MCtrack1.isPhysicalPrimary() || !MCtrack2.isPhysicalPrimary())
-            continue;
-
-          int pdgParentPhi = 0;
-          for (const auto& MotherOfMCtrack1 : MCtrack1.mothers_as<aod::McParticles>()) {
-            for (const auto& MotherOfMCtrack2 : MCtrack2.mothers_as<aod::McParticles>()) {
-              if (MotherOfMCtrack1 == MotherOfMCtrack2) {
-                pdgParentPhi = MotherOfMCtrack1.pdgCode();
-              }
-            }
-          }
-
-          if (pdgParentPhi != 333)
-            continue;
-
-          TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
-
-          if (recPhi.M() < lowmPhi || recPhi.M() > upmPhi)
-            continue;
-
-          if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
-            continue;
-          if (!isCountedPhi.at(0)) {
-            yaccHist.fill(HIST("hyaccK0SRecMC"), genmultiplicity, v0.pt(), v0.yK0Short());
-            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEInc"), genmultiplicity, v0.pt(), v0.mK0Short());
-            isCountedPhi.at(0) = true;
-          }
-          if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
-            continue;
-          if (!isCountedPhi.at(1)) {
-            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEFCut"), genmultiplicity, v0.pt(), v0.mK0Short());
-            isCountedPhi.at(1) = true;
-          }
-          if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
-            continue;
-          if (!isCountedPhi.at(2)) {
-            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSESCut"), genmultiplicity, v0.pt(), v0.mK0Short());
-            isCountedPhi.at(2) = true;
-          }
-        }
-      }
 
       std::array<bool, 3> isCountedMCPhi{false, false, false};
 
@@ -1149,30 +1080,23 @@ struct phik0shortanalysis {
           continue;
         if (std::abs(mcParticle.y()) > cfgyAcceptance)
           continue;
-///
-        if (recPhi.M() < lowmPhi || recPhi.M() > upmPhi)
-            continue;
 
-          if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
-            continue;
-          if (!isCountedMCPhi.at(0)) {
-            yaccHist.fill(HIST("hyaccK0SRecMC"), genmultiplicity, v0.pt(), v0.yK0Short());
-            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEInc"), genmultiplicity, v0.pt(), v0.mK0Short());
-            isCountedMCPhi.at(0) = true;
-          }
-          if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
-            continue;
-          if (!isCountedMCPhi.at(1)) {
-            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEFCut"), genmultiplicity, v0.pt(), v0.mK0Short());
-            isCountedMCPhi.at(1) = true;
-          }
-          if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
-            continue;
-          if (!isCountedMCPhi.at(2)) {
-            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSESCut"), genmultiplicity, v0.pt(), v0.mK0Short());
-            isCountedMCPhi.at(2) = true;
-          }
-///
+        if (!isCountedMCPhi.at(0)) {
+          MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEInc"), genmultiplicity, v0.pt(), v0.mK0Short());
+          isCountedMCPhi.at(0) = true;
+        }
+        if (std::abs(v0mcparticle.y() - mcParticle.y()) > cfgFirstCutonDeltay)
+          continue;
+        if (!isCountedMCPhi.at(1)) {
+          MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEFCut"), genmultiplicity, v0.pt(), v0.mK0Short());
+          isCountedMCPhi.at(1) = true;
+        }
+        if (std::abs(v0mcparticle.y() - mcParticle.y()) > cfgSecondCutonDeltay)
+          continue;
+        if (!isCountedMCPhi.at(2)) {
+          MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSESCut"), genmultiplicity, v0.pt(), v0.mK0Short());
+          isCountedMCPhi.at(2) = true;
+        }
       }
     }
   }
@@ -1211,84 +1135,15 @@ struct phik0shortanalysis {
       if (!selectionPion(track))
         continue;
 
-      if (std::abs(track.rapidity(massPi)) > cfgyAcceptance)
+      //yaccHist.fill(HIST("hyaccPiRecMC"), genmultiplicity, track.pt(), track.rapidity(massPi));
+
+      if (std::abs(MCtrack.y()) > cfgyAcceptance)
         continue;
 
       float nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -999);
       float nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -999);
 
       PioneffHist.fill(HIST("h4PieffInvMass"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
-
-      std::array<bool, 3> isCountedPhi{false, false, false};
-
-      // Phi reconstruction
-      for (const auto& track1 : posThisColl) { // loop over all selected tracks
-        if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
-          continue; // topological and PID selection
-
-        auto track1ID = track1.globalIndex();
-
-        if (!track1.has_mcParticle())
-          continue;
-
-        for (const auto& track2 : negThisColl) {
-          if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
-            continue; // topological and PID selection
-
-          auto track2ID = track2.globalIndex();
-          if (track2ID == track1ID)
-            continue; // condition to avoid double counting of pair
-
-          if (!track2.has_mcParticle())
-            continue;
-
-          auto MCtrack1 = track1.mcParticle_as<aod::McParticles>();
-          auto MCtrack2 = track2.mcParticle_as<aod::McParticles>();
-          if (MCtrack1.pdgCode() != 321 || MCtrack2.pdgCode() != -321)
-            continue;
-          if (!MCtrack1.has_mothers() || !MCtrack2.has_mothers())
-            continue;
-          if (!MCtrack1.isPhysicalPrimary() || !MCtrack2.isPhysicalPrimary())
-            continue;
-
-          int pdgParentPhi = 0;
-          for (const auto& MotherOfMCtrack1 : MCtrack1.mothers_as<aod::McParticles>()) {
-            for (const auto& MotherOfMCtrack2 : MCtrack2.mothers_as<aod::McParticles>()) {
-              if (MotherOfMCtrack1 == MotherOfMCtrack2) {
-                pdgParentPhi = MotherOfMCtrack1.pdgCode();
-              }
-            }
-          }
-
-          if (pdgParentPhi != 333)
-            continue;
-
-          TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
-
-          if (recPhi.M() < lowmPhi || recPhi.M() > upmPhi)
-            continue;
-
-          if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
-            continue;
-          if (!isCountedPhi.at(0)) {
-            yaccHist.fill(HIST("hyaccPiRecMC"), genmultiplicity, track.pt(), track.rapidity(massPi));
-            MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEInc"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
-            isCountedPhi.at(0) = true;
-          }
-          if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgFirstCutonDeltay)
-            continue;
-          if (!isCountedPhi.at(1)) {
-            MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEFCut"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
-            isCountedPhi.at(1) = true;
-          }
-          if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgSecondCutonDeltay)
-            continue;
-          if (!isCountedPhi.at(2)) {
-            MCPhiPionHist.fill(HIST("h4RecMCPhiPiSESCut"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
-            isCountedPhi.at(2) = true;
-          }
-        }
-      }
 
       std::array<bool, 3> isCountedMCPhi{false, false, false};
 
@@ -1309,30 +1164,23 @@ struct phik0shortanalysis {
           continue;
         if (std::abs(mcParticle.y()) > cfgyAcceptance)
           continue;
-///
-        if (recPhi.M() < lowmPhi || recPhi.M() > upmPhi)
-            continue;
 
-          if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
-            continue;
-          if (!isCountedMCPhi.at(0)) {
-            yaccHist.fill(HIST("hyaccK0SRecMC"), genmultiplicity, v0.pt(), v0.yK0Short());
-            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEInc"), genmultiplicity, v0.pt(), v0.mK0Short());
-            isCountedMCPhi.at(0) = true;
-          }
-          if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
-            continue;
-          if (!isCountedMCPhi.at(1)) {
-            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEFCut"), genmultiplicity, v0.pt(), v0.mK0Short());
-            isCountedMCPhi.at(1) = true;
-          }
-          if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
-            continue;
-          if (!isCountedMCPhi.at(2)) {
-            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSESCut"), genmultiplicity, v0.pt(), v0.mK0Short());
-            isCountedMCPhi.at(2) = true;
-          }
-///
+        if (!isCountedMCPhi.at(0)) {
+          MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEInc"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
+          isCountedMCPhi.at(0) = true;
+        }
+        if (std::abs(MCtrack.y() - mcParticle.y()) > cfgFirstCutonDeltay)
+          continue;
+        if (!isCountedMCPhi.at(1)) {
+          MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEFCut"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
+          isCountedMCPhi.at(1) = true;
+        }
+        if (std::abs(MCtrack.y() - mcParticle.y()) > cfgSecondCutonDeltay)
+          continue;
+        if (!isCountedMCPhi.at(2)) {
+          MCPhiPionHist.fill(HIST("h4RecMCPhiPiSESCut"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
+          isCountedMCPhi.at(2) = true;
+        }
       }
     }
   }
