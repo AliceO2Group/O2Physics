@@ -34,14 +34,14 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseAngularContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
+#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include <TFile.h>
 #include <TH1.h>
 #include "CCDB/BasicCCDBManager.h"
 
 using namespace o2;
-using namespace o2::analysis::femtoUniverse;
+using namespace o2::analysis::femto_universe;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
@@ -161,8 +161,8 @@ struct FemtoUniversePairTaskTrackPhi {
   ConfigurableAxis confBinskT{"confBinskT", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis confBinsmT{"confBinsmT", {225, 0., 7.5}, "binning mT"};
 
-  FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::same, femtoUniverseAngularContainer::Observable::kstar> sameEventAngularCont;
-  FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::mixed, femtoUniverseAngularContainer::Observable::kstar> mixedEventAngularCont;
+  FemtoUniverseAngularContainer<femto_universe_angular_container::EventType::same, femto_universe_angular_container::Observable::kstar> sameEventAngularCont;
+  FemtoUniverseAngularContainer<femto_universe_angular_container::EventType::mixed, femto_universe_angular_container::Observable::kstar> mixedEventAngularCont;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kPhi> pairCleaner;
   FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kPhi> pairCloseRejection;
   FemtoUniverseTrackSelection trackCuts;
@@ -544,7 +544,7 @@ struct FemtoUniversePairTaskTrackPhi {
 
       // Close Pair Rejection
       if (ConfCPR.confCPRIsEnabled.value) {
-        if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
+        if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           continue;
         }
       }
@@ -654,7 +654,7 @@ struct FemtoUniversePairTaskTrackPhi {
       }
 
       if (ConfCPR.confCPRIsEnabled.value) {
-        if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla, femtoUniverseContainer::EventType::mixed)) {
+        if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla, femto_universe_container::EventType::mixed)) {
           continue;
         }
       }
@@ -779,7 +779,7 @@ struct FemtoUniversePairTaskTrackPhi {
         continue; // no MC particle
       const auto& mcpart = mcparts.iteratorAt(mcPartId);
       if (part.partType() == aod::femtouniverseparticle::ParticleType::kPhi) {
-        if ((mcpart.pdgMCTruth() == 333) && (mcpart.partOriginMCTruth() == aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary)) {
+        if ((mcpart.pdgMCTruth() == 333) && (mcpart.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary)) {
           registryMCreco.fill(HIST("MCrecoPhi"), mcpart.pt(), mcpart.eta()); // phi
         }
       } else if (part.partType() == aod::femtouniverseparticle::ParticleType::kTrack) {
