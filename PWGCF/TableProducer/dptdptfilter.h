@@ -8,15 +8,20 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file dptdptfilter.h
+/// \brief Filters collisions and tracks according to selection criteria
+/// \author victor.gonzalez.sebastian@gmail.com
+
 #ifndef PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
 #define PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
 
 #include <CCDB/BasicCCDBManager.h>
 #include <TList.h>
 #include <vector>
+#include <bitset>
 #include <string>
 #include <iomanip>
-#include <iostream>
 #include <fstream>
 #include <locale>
 #include <sstream>
@@ -30,10 +35,10 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
-#include <TDatabasePDG.h>
 
 namespace o2
 {
@@ -106,11 +111,48 @@ enum TriggerSelectionType {
   knEventSelection        ///< number of triggers for event selection
 };
 
+/// \enum OccupancyEstimationType
+/// \brief The type of occupancy estimation
+enum OccupancyEstimationType {
+  kNOOCC = 0,           ///< do not use occupancy estimation
+  kTRACKSOCC,           ///< occupancy estimated using tracks
+  kFT0COCC,             ///< occupancy estimated using the FT0C
+  knOccupancyEstimators ///< the number of occupancy estimators
+};
+
+/// \enum CollisionSelectionFlags
+/// \brief The different criteria for selecting/rejecting collisions
+enum CollisionSelectionFlags {
+  kIN = 0,                  ///< new unhandled, yet, event
+  kMBBIT,                   ///< minimum  bias
+  kINT7BIT,                 ///< INT7 Run 1/2
+  kSEL7BIT,                 ///< Sel7 Run 1/2
+  kSEL8BIT,                 ///< Sel8
+  kNOSAMEBUNCHPUPBIT,       ///< no same bunch pile up
+  kISGOODZVTXFT0VSPVBIT,    ///< good zvtx FT0 vs PV
+  kISVERTEXITSTPCBIT,       ///< is vertex TPC and ITS
+  kISVERTEXTOFMATCHEDBIT,   ///< vertex contributor with TOF matched
+  kISVERTEXTRDMATCHEDBIT,   ///< vertex contributor with TRD matche
+  kOCCUPANCYBIT,            ///< occupancy within limits
+  kCENTRALITYBIT,           ///< centrality cut passed
+  kZVERTEXBIT,              ///< zvtx cut passed
+  kSELECTED,                ///< the event has passed all selections
+  knCollisionSelectionFlags ///< number of flags
+};
+
 /// \enum StrongDebugging
 /// \brief Enable a per track information debugging. Only for local analyses
 enum StrongDebugging {
   kNODEBUG = 0, ///< do not debug
   kDEBUG        ///< output debugging information on a per track basis to a text file
+};
+
+/// \enum TpcExclusionMethod
+/// \brief Methods for excluding tracks witin the TPC
+enum TpcExclusionMethod {
+  kNOEXCLUSION = 0, ///< do not exclude tracks within the TPC
+  kSTATIC,          ///< exclude tracks statically on the bins of the TPC sector borders; only valid if 72 bins and origin shifted by 0.5
+  kDYNAMIC          ///< pT dependent exclusion matching the sector borders a la Alex Dobrin
 };
 
 //============================================================================================
@@ -124,6 +166,11 @@ std::ofstream debugstream;
 float overallminp = 0.0f;
 
 //============================================================================================
+// The collision selection flags and configuration objects
+//============================================================================================
+std::bitset<32> collisionFlags;
+
+//============================================================================================
 // The DptDptFilter configuration objects
 //============================================================================================
 int ptbins = 18;
@@ -133,24 +180,28 @@ float etalow = -0.8, etaup = 0.8;
 int zvtxbins = 40;
 float zvtxlow = -10.0, zvtxup = 10.0;
 int phibins = 72;
-float philow = 0.0;
+float philow = 0.0f;
 float phiup = constants::math::TwoPI;
-bool onlyInOneSide = false; /* select only tracks that don't cross the TPC central membrane */
+float phibinshift = 0.0f;
+
+struct TpcExcludeTrack;             ///< forward declaration of the excluder object
+bool onlyInOneSide = false;         ///< select only tracks that don't cross the TPC central membrane
+extern TpcExcludeTrack tpcExcluder; ///< the TPC excluder object instance
 
 /* selection criteria from PWGMM */
 // default quality criteria for tracks with ITS contribution
-static constexpr o2::aod::track::TrackSelectionFlags::flagtype trackSelectionITS =
+static constexpr o2::aod::track::TrackSelectionFlags::flagtype TrackSelectionITS =
   o2::aod::track::TrackSelectionFlags::kITSNCls | o2::aod::track::TrackSelectionFlags::kITSChi2NDF |
   o2::aod::track::TrackSelectionFlags::kITSHits;
 
 // default quality criteria for tracks with TPC contribution
-static constexpr o2::aod::track::TrackSelectionFlags::flagtype trackSelectionTPC =
+static constexpr o2::aod::track::TrackSelectionFlags::flagtype TrackSelectionTPC =
   o2::aod::track::TrackSelectionFlags::kTPCNCls |
   o2::aod::track::TrackSelectionFlags::kTPCCrossedRowsOverNCls |
   o2::aod::track::TrackSelectionFlags::kTPCChi2NDF;
 
 // default standard DCA cuts
-static constexpr o2::aod::track::TrackSelectionFlags::flagtype trackSelectionDCA =
+static constexpr o2::aod::track::TrackSelectionFlags::flagtype TrackSelectionDCA =
   o2::aod::track::TrackSelectionFlags::kDCAz | o2::aod::track::TrackSelectionFlags::kDCAxy;
 
 int tracktype = 1;
@@ -278,7 +329,7 @@ inline void initializeTrackSelection(const TrackSelectionTuneCfg& tune)
       break;
   }
   if (tune.mUseIt) {
-    for (auto filter : trackFilters) {
+    for (auto const& filter : trackFilters) {
       if (tune.mUseTPCclusters) {
         filter->SetMinNClustersTPC(tune.mTPCclusters);
       }
@@ -302,6 +353,8 @@ SystemType fSystem = kNoSystem;
 DataType fDataType = kData;
 CentMultEstimatorType fCentMultEstimator = kV0M;
 TriggerSelectionType fTriggerSelection = kMB;
+OccupancyEstimationType fOccupancyEstimation = kNOOCC; /* the occupancy estimator to use */
+float fMaxOccupancy = 1e6f;                            /* the maximum allowed occupancy */
 
 /* adaptations for the pp nightly checks */
 analysis::CheckRangeCfg traceDCAOutliers;
@@ -310,8 +363,6 @@ int recoIdMethod = 0;
 float particleMaxDCAxy = 999.9f;
 float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
-
-TDatabasePDG* fPDG = nullptr;
 
 inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
 {
@@ -449,6 +500,20 @@ inline std::string getCentMultEstimatorName(CentMultEstimatorType est)
   }
 }
 
+inline OccupancyEstimationType getOccupancyEstimator(const std::string& estimator)
+{
+  if (estimator == "None") {
+    return kNOOCC;
+  } else if (estimator == "Tracks") {
+    return kTRACKSOCC;
+  } else if (estimator == "FT0C") {
+    return kFT0COCC;
+  } else {
+    LOGF(fatal, "Occupancy estimator %s not supported yet", estimator.c_str());
+    return kNOOCC;
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////////
 /// Trigger selection
 //////////////////////////////////////////////////////////////////////////////////
@@ -469,17 +534,21 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
           switch (fDataType) {
             case kData:
               if (collision.alias_bit(kINT7)) {
+                collisionFlags.set(kINT7BIT);
                 if (collision.sel7()) {
                   trigsel = true;
+                  collisionFlags.set(kSEL7BIT);
                 }
               }
               break;
             case kMC:
               if (collision.sel7()) {
                 trigsel = true;
+                collisionFlags.set(kSEL7BIT);
               }
               break;
             default:
+              collisionFlags.set(kMBBIT);
               trigsel = true;
               break;
           }
@@ -501,6 +570,14 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
                coll.selection_bit(aod::evsel::kNoSameBunchPileup) &&
                coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
                coll.selection_bit(aod::evsel::kIsVertexITSTPC);
+      };
+      auto setCollisionFlags = [](auto& flags, auto const& coll) {
+        flags.set(kSEL8BIT, coll.sel8() != 0);
+        flags.set(kNOSAMEBUNCHPUPBIT, coll.selection_bit(aod::evsel::kNoSameBunchPileup));
+        flags.set(kISGOODZVTXFT0VSPVBIT, coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV));
+        flags.set(kISVERTEXITSTPCBIT, coll.selection_bit(aod::evsel::kIsVertexITSTPC));
+        flags.set(kISVERTEXTOFMATCHEDBIT, coll.selection_bit(aod::evsel::kIsVertexTOFmatched));
+        flags.set(kISVERTEXTRDMATCHEDBIT, coll.selection_bit(aod::evsel::kIsVertexTRDmatched));
       };
       switch (fTriggerSelection) {
         case kMB:
@@ -549,6 +626,7 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
         default:
           break;
       }
+      setCollisionFlags(collisionFlags, collision);
     } break;
     default:
       break;
@@ -704,6 +782,7 @@ inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
   float mult = getCentMultPercentile(collision);
   if (mult < 100 && 0 < mult) {
     centmult = mult;
+    collisionFlags.set(kCENTRALITYBIT);
     return true;
   }
   return false;
@@ -718,6 +797,7 @@ inline bool centralitySelectionNoMult(CollisionObject const&, float& centmult)
     case kNOCM:
       centmult = 50.0;
       centmultsel = true;
+      collisionFlags.set(kCENTRALITYBIT);
       break;
     default:
       break;
@@ -787,13 +867,106 @@ inline bool centralitySelection<aod::McCollision>(aod::McCollision const&, float
 }
 
 //////////////////////////////////////////////////////////////////////////////////
+/// Occupancy selection
+//////////////////////////////////////////////////////////////////////////////////
+
+/// \brief get the collision occupancy
+template <typename CollisionObject>
+inline bool selectOnOccupancy(CollisionObject collision)
+{
+  switch (fOccupancyEstimation) {
+    case kNOOCC:
+      collisionFlags.set(kOCCUPANCYBIT);
+      return true;
+    case kTRACKSOCC:
+      if (collision.trackOccupancyInTimeRange() < fMaxOccupancy) {
+        collisionFlags.set(kOCCUPANCYBIT);
+        return true;
+      } else {
+        return false;
+      }
+    case kFT0COCC:
+      if (collision.ft0cOccupancyInTimeRange() < fMaxOccupancy) {
+        collisionFlags.set(kOCCUPANCYBIT);
+        return true;
+      } else {
+        return false;
+      }
+    default:
+      return false;
+  }
+}
+
+/// \brief Occupancy selection by default: unknown subscribed collision table
+template <typename CollisionObject>
+inline bool occupancySelection(CollisionObject const&)
+{
+  LOGF(fatal, "Occupancy selection not implemented for this kind of collisions");
+  return false;
+}
+
+/// \brief Occupancy selection for reconstructed and detector level collision tables with centrality/multiplicity information
+template <>
+inline bool occupancySelection<aod::CollisionEvSelCent>(aod::CollisionEvSelCent const& collision)
+{
+  return selectOnOccupancy(collision);
+}
+
+/// \brief Occupancy selection for reconstructed and detector level collision tables with Run 2 centrality/multiplicity information
+template <>
+inline bool occupancySelection<aod::CollisionEvSelRun2Cent>(aod::CollisionEvSelRun2Cent const& collision)
+{
+  return selectOnOccupancy(collision);
+}
+
+/// \brief Occupancy selection for reconstructed and detector level collision tables without centrality/multiplicity information
+template <>
+inline bool occupancySelection<aod::CollisionEvSel>(aod::CollisionEvSel const& collision)
+{
+  return selectOnOccupancy(collision);
+}
+
+/// \brief Occupancy selection for detector level collision tables without centrality/multiplicity
+template <>
+inline bool occupancySelection<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator const& collision)
+{
+  return selectOnOccupancy(collision);
+}
+
+/// \brief Occupancy selection for detector level collision tables with centrality/multiplicity
+template <>
+inline bool occupancySelection<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator const& collision)
+{
+  return selectOnOccupancy(collision);
+}
+
+/// \brief Occupancy selection for detector level collision tables with Run 2 centrality/multiplicity
+template <>
+inline bool occupancySelection<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>::iterator const& collision)
+{
+  return selectOnOccupancy(collision);
+}
+
+/// \brief Occupancy selection for generator level collision table
+template <>
+inline bool occupancySelection<aod::McCollision>(aod::McCollision const&)
+{
+  return true;
+}
+
+//////////////////////////////////////////////////////////////////////////////////
 /// Event selection
 //////////////////////////////////////////////////////////////////////////////////
 
 template <typename CollisionObject>
-inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
+inline bool isEventSelected(CollisionObject const& collision, float& centormult)
 {
+  collisionFlags.reset();
+  collisionFlags.set(kIN);
+
   bool trigsel = triggerSelection(collision);
+
+  bool occupancysel = occupancySelection(collision);
 
   bool zvtxsel = false;
   /* TODO: vertex quality checks */
@@ -802,20 +975,95 @@ inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
       if (collision.posZ() != 0.0) {
         /* if only one side, we accept collisions which have zvtx different than zero */
         zvtxsel = true;
+        collisionFlags.set(kZVERTEXBIT);
       }
     } else {
       zvtxsel = true;
+      collisionFlags.set(kZVERTEXBIT);
     }
   }
 
   bool centmultsel = centralitySelection(collision, centormult);
 
-  return trigsel && zvtxsel && centmultsel;
+  bool accepted = trigsel && occupancysel && zvtxsel && centmultsel;
+
+  if (accepted) {
+    collisionFlags.set(kSELECTED);
+  }
+
+  return accepted;
 }
 
 //////////////////////////////////////////////////////////////////////////////////
 /// Track selection
 //////////////////////////////////////////////////////////////////////////////////
+
+struct TpcExcludeTrack {
+  TpcExcludeTrack()
+  {
+    method = kNOEXCLUSION;
+  }
+  explicit TpcExcludeTrack(TpcExclusionMethod m)
+  {
+    switch (m) {
+      case kNOEXCLUSION:
+        method = m;
+        break;
+      case kSTATIC:
+        if (phibinshift == 0.5f && phibins == 72) {
+          method = m;
+        } else {
+          LOGF(fatal, "Static TPC exclusion method with bin shift: %.2f and number of bins %d. Please fix it", phibinshift, phibins);
+        }
+        break;
+      case kDYNAMIC:
+        LOGF(fatal, "Dynamic TPC exclusion method still not implemented");
+        method = m;
+        break;
+      default:
+        LOGF(fatal, "Wrong TPC tracks exclusion method %d. Please, fix it", static_cast<int>(m));
+    }
+    philow = 0.0f;
+    phiup = constants::math::TwoPI;
+    phibinwidth = (phiup - philow) / static_cast<float>(phibins);
+    phiup = phiup - phibinwidth * phibinshift;
+    philow = philow - phibinwidth * phibinshift;
+  }
+
+  template <typename TrackObject>
+  int getPhiBinIx(TrackObject const& track)
+  {
+    float phi = RecoDecay::constrainAngle(track.phi(), philow);
+    return static_cast<int>((phi - philow) / phibinwidth);
+  }
+
+  template <typename TrackObject>
+  bool exclude(TrackObject const& track)
+  {
+    switch (method) {
+      case kNOEXCLUSION: {
+        return false;
+      } break;
+      case kSTATIC: {
+        int phiBinIx = getPhiBinIx(track);
+        /* bins multiple of four have got sector border */
+        if ((phiBinIx % 4) != 0) {
+          return false;
+        } else {
+          return true;
+        }
+      } break;
+      case kDYNAMIC: {
+        return false;
+      } break;
+      default:
+        return false;
+    }
+  }
+
+  TpcExclusionMethod method = kNOEXCLUSION;
+  float phibinwidth = 0.0;
+};
 
 template <typename TrackObject>
 inline bool matchTrackType(TrackObject const& track)
@@ -829,11 +1077,11 @@ inline bool matchTrackType(TrackObject const& track)
     //       (track.passedDCAxy && track.passedDCAz && track.passedGoldenChi2) &&
     //       (track.passedITSNCls && track.passedITSChi2NDF && track.passedITSHits) &&
     //       (!track.hasTPC || (track.passedTPCNCls && track.passedTPCChi2NDF && track.passedTPCCrossedRowsOverNCls));
-    return track.hasITS() && ((track.trackCutFlag() & trackSelectionITS) == trackSelectionITS) &&
-           (!track.hasTPC() || ((track.trackCutFlag() & trackSelectionTPC) == trackSelectionTPC)) &&
-           ((track.trackCutFlag() & trackSelectionDCA) == trackSelectionDCA);
+    return track.hasITS() && ((track.trackCutFlag() & TrackSelectionITS) == TrackSelectionITS) &&
+           (!track.hasTPC() || ((track.trackCutFlag() & TrackSelectionTPC) == TrackSelectionTPC)) &&
+           ((track.trackCutFlag() & TrackSelectionDCA) == TrackSelectionDCA);
   } else {
-    for (auto filter : trackFilters) {
+    for (auto const& filter : trackFilters) {
       if (filter->IsSelected(track)) {
         /* additional track cuts if needed */
         auto checkDca2Dcut = [&](auto const& track) {
@@ -870,7 +1118,7 @@ inline bool matchTrackType(TrackObject const& track)
 /// \param track the track of interest
 /// \return true if the track is in the acceptance, otherwise false
 template <typename CollisionsObject, typename TrackObject>
-inline bool InTheAcceptance(TrackObject const& track)
+inline bool inTheAcceptance(TrackObject const& track)
 {
   /* the side on which the collision happened */
   float side = track.template collision_as<CollisionsObject>().posZ();
@@ -903,7 +1151,7 @@ inline bool InTheAcceptance(TrackObject const& track)
   }
 
   if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
-    return true;
+    return !tpcExcluder.exclude(track);
   }
   return false;
 }
@@ -912,9 +1160,9 @@ inline bool InTheAcceptance(TrackObject const& track)
 /// \param track the track of interest
 /// \return true if the track is accepted, otherwise false
 template <typename CollisionsObject, typename TrackObject>
-inline bool AcceptTrack(TrackObject const& track)
+inline bool acceptTrack(TrackObject const& track)
 {
-  if (InTheAcceptance<CollisionsObject>(track)) {
+  if (inTheAcceptance<CollisionsObject>(track)) {
     if (matchTrackType(track)) {
       return true;
     }
@@ -925,7 +1173,7 @@ inline bool AcceptTrack(TrackObject const& track)
 template <typename ParticleObject, typename MCCollisionObject>
 void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
 {
-  for (auto& m : particle.template mothers_as<aod::McParticles>()) {
+  for (const auto& m : particle.template mothers_as<aod::McParticles>()) {
     LOGF(info, "   mother index: %d", m.globalIndex());
     LOGF(info, "   Tracking back mother");
     LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", m.mcCollisionId(), collision.globalIndex());
@@ -936,14 +1184,9 @@ void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
   }
 }
 
-template <typename ParticleObject>
-inline float getCharge(ParticleObject& particle)
+inline float getCharge(float pdgCharge)
 {
-  float charge = 0.0;
-  TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
-  if (pdgparticle != nullptr) {
-    charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0);
-  }
+  float charge = (pdgCharge / 3 >= 1) ? 1.0 : ((pdgCharge / 3 <= -1) ? -1.0 : 0);
   return charge;
 }
 
@@ -951,14 +1194,12 @@ inline float getCharge(ParticleObject& particle)
 /// \param track the particle of interest
 /// \return `true` if the particle is accepted, `false` otherwise
 template <typename ParticleObject, typename MCCollisionObject>
-inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const&)
+inline bool acceptParticle(ParticleObject& particle, MCCollisionObject const&)
 {
   /* overall momentum cut */
   if (!(overallminp < particle.p())) {
     return false;
   }
-
-  float charge = getCharge(particle);
 
   if (particle.isPhysicalPrimary()) {
     if ((particle.mcCollisionId() == 0) && traceCollId0) {
@@ -966,7 +1207,7 @@ inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const&)
     }
 
     if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
-      return (charge != 0) ? true : false;
+      return true;
     }
   } else {
     if ((particle.mcCollisionId() == 0) && traceCollId0) {
@@ -1026,7 +1267,7 @@ struct PIDSpeciesSelection {
     reportadjdetectorwithcharge(tpcnsigmasshiftneg, "TPC", "M");
     reportadjdetectorwithcharge(tofnsigmasshiftneg, "TOF", "M");
   }
-  void Add(uint8_t sp, o2::analysis::TrackSelectionPIDCfg* incfg)
+  void addSpecies(uint8_t sp, o2::analysis::TrackSelectionPIDCfg* incfg)
   {
     o2::analysis::TrackSelectionPIDCfg* cfg = new o2::analysis::TrackSelectionPIDCfg(*incfg);
     config.push_back(cfg);
@@ -1041,7 +1282,7 @@ struct PIDSpeciesSelection {
     LOGF(info, "  maxTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTOF[0], last->mMaxNSigmasTOF[1], last->mMaxNSigmasTOF[2], last->mMaxNSigmasTOF[3], last->mMaxNSigmasTOF[4]);
     LOGF(info, "  %.1f < pT < %.1f", last->mPtMin, last->mPtMax);
   }
-  void AddExclude(uint8_t sp, const o2::analysis::TrackSelectionPIDCfg* incfg)
+  void addExcludedSpecies(uint8_t sp, const o2::analysis::TrackSelectionPIDCfg* incfg)
   {
     o2::analysis::TrackSelectionPIDCfg* cfg = new o2::analysis::TrackSelectionPIDCfg(*incfg);
     configexclude.push_back(cfg);
@@ -1070,10 +1311,10 @@ struct PIDSpeciesSelection {
     };
     auto outnsigmasdebug = [&]() {
       if constexpr (outdebug != 0) {
-        for (auto tpcn : tpcnsigmas) {
+        for (auto const& tpcn : tpcnsigmas) {
           debuginfo += TString::Format("%.4f,", tpcn);
         }
-        for (auto tofn : tofnsigmas) {
+        for (auto const& tofn : tofnsigmas) {
           debuginfo += TString::Format("%.4f,", tofn);
         }
       }

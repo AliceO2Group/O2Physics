@@ -10,8 +10,11 @@
 // or submit itself to any jurisdiction.
 
 #include <vector>
+#include <map>
 #include <utility>
 #include <random>
+#include <string>
+#include <algorithm>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -33,6 +36,7 @@
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
+#include "CCDB/CcdbApi.h"
 
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -183,6 +187,12 @@ struct tagRun2V0MCalibration {
   TFormula* mMCScale = nullptr;
 } Run2V0MInfo;
 
+struct tagRun2CL0Calibration {
+  bool mCalibrationStored = false;
+  TH1* mhVtxAmpCorr = nullptr;
+  TH1* mhMultSelCalib = nullptr;
+} Run2CL0Info;
+
 struct ebyeMaker {
   Produces<aod::CollEbyeTable> collisionEbyeTable;
   Produces<aod::MiniCollTable> miniCollTable;
@@ -197,6 +207,7 @@ struct ebyeMaker {
   std::array<std::vector<CandidateTrack>, 2> candidateTracks;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::vertexing::DCAFitterN<2> fitter;
+  std::vector<int> classIds;
 
   int mRunNumber;
   float d_bz;
@@ -372,7 +383,7 @@ struct ebyeMaker {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-
+    classIds.clear();
     auto timestamp = bc.timestamp();
     o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
@@ -384,31 +395,42 @@ struct ebyeMaker {
       }
       o2::base::Propagator::initFieldFromGRP(grpo);
       TList* callst = ccdb->getForTimeStamp<TList>("Centrality/Estimators", bc.timestamp());
-      auto getccdb = [callst](const char* ccdbhname) {
-        TH1* h = reinterpret_cast<TH1*>(callst->FindObject(ccdbhname));
-        return h;
-      };
-      auto getformulaccdb = [callst](const char* ccdbhname) {
-        TFormula* f = reinterpret_cast<TFormula*>(callst->FindObject(ccdbhname));
-        return f;
-      };
-      Run2V0MInfo.mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized");
-      Run2V0MInfo.mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized");
-      Run2V0MInfo.mhMultSelCalib = getccdb("hMultSelCalib_V0M");
-      Run2V0MInfo.mMCScale = getformulaccdb(TString::Format("%s-V0M", genName->c_str()).Data());
-      if ((Run2V0MInfo.mhVtxAmpCorrV0A != nullptr) && (Run2V0MInfo.mhVtxAmpCorrV0C != nullptr) && (Run2V0MInfo.mhMultSelCalib != nullptr)) {
-        if (genName->length() != 0) {
-          if (Run2V0MInfo.mMCScale != nullptr) {
-            for (int ixpar = 0; ixpar < 6; ++ixpar) {
-              Run2V0MInfo.mMCScalePars[ixpar] = Run2V0MInfo.mMCScale->GetParameter(ixpar);
+      if (callst != nullptr) {
+        auto getccdb = [callst](const char* ccdbhname) {
+          TH1* h = reinterpret_cast<TH1*>(callst->FindObject(ccdbhname));
+          return h;
+        };
+        auto getformulaccdb = [callst](const char* ccdbhname) {
+          TFormula* f = reinterpret_cast<TFormula*>(callst->FindObject(ccdbhname));
+          return f;
+        };
+        Run2V0MInfo.mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized");
+        Run2V0MInfo.mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized");
+        Run2V0MInfo.mhMultSelCalib = getccdb("hMultSelCalib_V0M");
+        Run2V0MInfo.mMCScale = getformulaccdb(TString::Format("%s-V0M", genName->c_str()).Data());
+        if ((Run2V0MInfo.mhVtxAmpCorrV0A != nullptr) && (Run2V0MInfo.mhVtxAmpCorrV0C != nullptr) && (Run2V0MInfo.mhMultSelCalib != nullptr)) {
+          if (genName->length() != 0) {
+            if (Run2V0MInfo.mMCScale != nullptr) {
+              for (int ixpar = 0; ixpar < 6; ++ixpar) {
+                Run2V0MInfo.mMCScalePars[ixpar] = Run2V0MInfo.mMCScale->GetParameter(ixpar);
+              }
+            } else {
+              LOGF(fatal, "MC Scale information from V0M for run %d not available", bc.runNumber());
             }
+          }
+          Run2V0MInfo.mCalibrationStored = true;
+        } else {
+          LOGF(fatal, "Calibration information from V0M for run %d corrupted", bc.runNumber());
+        }
+        if (doprocessRun2) {
+          Run2CL0Info.mhVtxAmpCorr = getccdb("hVtx_fnSPDClusters0_Normalized");
+          Run2CL0Info.mhMultSelCalib = getccdb("hMultSelCalib_CL0");
+          if ((Run2CL0Info.mhVtxAmpCorr != nullptr) && (Run2CL0Info.mhMultSelCalib != nullptr)) {
+            Run2CL0Info.mCalibrationStored = true;
           } else {
-            LOGF(fatal, "MC Scale information from V0M for run %d not available", bc.runNumber());
+            LOGF(fatal, "Calibration information from CL0 multiplicity for run %d corrupted", bc.runNumber());
           }
         }
-        Run2V0MInfo.mCalibrationStored = true;
-      } else {
-        LOGF(fatal, "Calibration information from V0M for run %d corrupted", bc.runNumber());
       }
     } else {
       auto grpmagPath{"GLO/Config/GRPMagField"};
@@ -422,23 +444,40 @@ struct ebyeMaker {
     d_bz = o2::base::Propagator::Instance()->getNominalBz();
     LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kG";
     mRunNumber = bc.runNumber();
+    if (doprocessMiniRun2) {
+      o2::ccdb::CcdbApi ccdbApi;
+      ccdbApi.init("http://alice-ccdb.cern.ch");
+      std::map<std::string, std::string> metadata;
+      std::map<std::string, int>* classNameToIndexMap = ccdbApi.retrieveFromTFileAny<std::map<std::string, int>>("CTP/ClassNameToIndexMap", metadata, mRunNumber);
+      for (const auto& classToIndexPair : *classNameToIndexMap) {
+        bool hasClassName = classToIndexPair.first.find("HMV0M") < classToIndexPair.first.length();
+        int classId = hasClassName ? classToIndexPair.second - 1 : -1;
+        if (classId < 0) {
+          continue;
+        }
+        classIds.push_back(classId);
+      }
+    }
     fitter.setBz(d_bz);
 
     // o2::base::Propagator::Instance()->setMatLUT(lut);
   }
 
   template <class T>
+  float getITSSignal(T const& track, aod::Run2TrackExtras const& trackExtraRun2)
+  {
+    if ((doprocessMiniRun2 || doprocessMiniMcRun2) && track.hasITS()) {
+      auto extra = trackExtraRun2.rawIteratorAt(track.globalIndex());
+      return extra.itsSignal();
+    }
+    return -999.f;
+  }
+
+  template <class T>
   float getOuterPID(T const& track)
   {
-    if (doprocessMiniRun2 || doprocessMiniMcRun2) {
-      if (track.hasTOF() && track.pt() > antipPtTof)
-        return track.tofNSigmaPr();
-      // else if (track.pt() < antipPtTof && track.pt() > antipPtMin) {
-      //   return track.tpcNSigmaPr() > -4.f ? track.tpcNSigmaPr() : -999.f;
-      // }
-      else
-        return -999.f;
-    }
+    if ((doprocessMiniRun2 || doprocessMiniMcRun2) && track.hasTOF() && track.pt() > antipPtTof)
+      return track.tofNSigmaPr();
     return -999.f;
   }
 
@@ -465,7 +504,7 @@ struct ebyeMaker {
       float multFV0M = multFV0A + multFV0C;
       v0m = scaleMC(multFV0M, Run2V0MInfo.mMCScalePars);
       LOGF(debug, "Unscaled v0m: %f, scaled v0m: %f", multFV0M, v0m);
-    } else {
+    } else if (Run2V0MInfo.mCalibrationStored) {
       v0m = multFV0A * Run2V0MInfo.mhVtxAmpCorrV0A->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0A->FindFixBin(zvtx)) +
             multFV0C * Run2V0MInfo.mhVtxAmpCorrV0C->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0C->FindFixBin(zvtx));
     }
@@ -543,6 +582,7 @@ struct ebyeMaker {
     // antid and antip QA
     histos.add<TH2>("QA/tpcSignal", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcAxis});
     histos.add<TH2>("QA/tpcSignalPr", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcAxis});
+    histos.add<TH2>("QA/itsSignal", ";#it{p}_{glo} (GeV/#it{c});d#it{E}/d#it{x}_{ITS} (a.u.)", HistType::kTH2F, {momAxis, tpcAxis});
     tofMass[0] = histos.add<TH3>("QA/tofMass_p", ";Centrality (%);#it{p}_{T} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, tofMassAxis});
     tofMass[1] = histos.add<TH3>("QA/tofMass_d", ";Centrality (%);#it{p}_{T} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, tofMassAxis});
 
@@ -985,22 +1025,24 @@ struct ebyeMaker {
           candidateV0.globalIndexPos);
       }
 
-      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
-        nucleiEbyeTable(
-          collisionEbyeTable.lastIndex(),
-          candidateTrack.pt,
-          candidateTrack.eta,
-          candidateTrack.mass,
-          candidateTrack.dcapv,
-          candidateTrack.tpcncls,
-          candidateTrack.tpcnsigma,
-          candidateTrack.tofmass);
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          nucleiEbyeTable(
+            collisionEbyeTable.lastIndex(),
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass);
+        }
       }
     }
   }
   PROCESS_SWITCH(ebyeMaker, processRun3, "process (Run 3)", false);
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2CL0s, aod::TrackletMults> const& collisions, TracksFull const& tracks, aod::V0s const& V0s, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, BCsWithRun2Info const&)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::TrackletMults> const& collisions, TracksFull const& tracks, aod::V0s const& V0s, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, BCsWithRun2Info const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<BCsWithRun2Info>();
@@ -1016,11 +1058,18 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
-      if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || (kINT7Intervals && ((cV0M >= 10 && cV0M < 30) || cV0M > 50))))
-        continue;
+      float cV0M = 105.f;
+      if (Run2V0MInfo.mCalibrationStored) {
+        cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+        if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || (kINT7Intervals && ((cV0M >= 10 && cV0M < 30) || cV0M > 50))))
+          continue;
+      }
 
-      auto centralityCl0 = collision.centRun2CL0();
+      auto centralityCl0 = 105.0f;
+      if (Run2CL0Info.mCalibrationStored) {
+        float cl0m = bc.spdClustersL0() * Run2CL0Info.mhVtxAmpCorr->GetBinContent(Run2CL0Info.mhVtxAmpCorr->FindFixBin(collision.posZ()));
+        centralityCl0 = Run2CL0Info.mhMultSelCalib->GetBinContent(Run2CL0Info.mhMultSelCalib->FindFixBin(cl0m));
+      }
       if (kUseEstimatorsCorrelationCut) {
         const auto& x = centralityCl0;
         const double center = estimatorsCorrelationCoef[0] + estimatorsCorrelationCoef[1] * x;
@@ -1061,22 +1110,24 @@ struct ebyeMaker {
           candidateV0.globalIndexPos);
       }
 
-      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
-        nucleiEbyeTable(
-          collisionEbyeTable.lastIndex(),
-          candidateTrack.pt,
-          candidateTrack.eta,
-          candidateTrack.mass,
-          candidateTrack.dcapv,
-          candidateTrack.tpcncls,
-          candidateTrack.tpcnsigma,
-          candidateTrack.tofmass);
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          nucleiEbyeTable(
+            collisionEbyeTable.lastIndex(),
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass);
+        }
       }
     }
   }
   PROCESS_SWITCH(ebyeMaker, processRun2, "process (Run 2)", false);
 
-  void processMiniRun2(soa::Join<aod::Collisions, aod::EvSels> const& collisions, TracksFullPID const& tracks, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::V0s const& V0s, BCsWithRun2Info const&)
+  void processMiniRun2(soa::Join<aod::Collisions, aod::EvSels> const& collisions, TracksFullPID const& tracks, aod::Run2TrackExtras const& trackExtraRun2, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::V0s const& V0s, BCsWithRun2Info const&)
   {
 
     for (const auto& collision : collisions) {
@@ -1086,14 +1137,17 @@ struct ebyeMaker {
       if (std::abs(collision.posZ()) > zVtxMax)
         continue;
 
-      if (!collision.alias_bit(kINT7))
+      if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kINELgtZERO)))
         continue;
 
       if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+      float cV0M = 105.f;
+      if (Run2V0MInfo.mCalibrationStored) {
+        cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+      }
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
@@ -1104,11 +1158,24 @@ struct ebyeMaker {
       fillRecoEvent(collision, tracks, V0Table_thisCollision, cV0M);
 
       uint8_t trigger = collision.alias_bit(kINT7) ? 0x1 : 0x0;
+      bool hasHMV0M = false;
+      for (auto& classId : classIds) {
+        if (bc.triggerMask() & BIT(classId)) {
+          hasHMV0M = true;
+          break;
+        }
+      }
+      if (!hasHMV0M && trigger == 0x0) {
+        continue;
+      }
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, nTrackletsColl, cV0M);
 
       for (auto& candidateTrack : candidateTracks[0]) { // protons
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
         float outerPID = getOuterPID(tk);
+        float itsSignal = getITSSignal(tk, trackExtraRun2);
+        histos.fill(HIST("QA/itsSignal"), tk.p(), itsSignal);
+
         candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
         int selMask = getTrackSelMask(candidateTrack);
         if (candidateTrack.outerPID < outerPIDMin)
@@ -1173,20 +1240,22 @@ struct ebyeMaker {
           candidateV0.isreco);
       }
 
-      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
-        mcNucleiEbyeTable(
-          collisionEbyeTable.lastIndex(),
-          candidateTrack.pt,
-          candidateTrack.eta,
-          candidateTrack.mass,
-          candidateTrack.dcapv,
-          candidateTrack.tpcncls,
-          candidateTrack.tpcnsigma,
-          candidateTrack.tofmass,
-          candidateTrack.genpt,
-          candidateTrack.geneta,
-          candidateTrack.pdgcode,
-          candidateTrack.isreco);
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          mcNucleiEbyeTable(
+            collisionEbyeTable.lastIndex(),
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass,
+            candidateTrack.genpt,
+            candidateTrack.geneta,
+            candidateTrack.pdgcode,
+            candidateTrack.isreco);
+        }
       }
     }
   }
@@ -1205,7 +1274,10 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+      float cV0M = 105.f;
+      if (Run2V0MInfo.mCalibrationStored) {
+        cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+      }
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
@@ -1239,26 +1311,28 @@ struct ebyeMaker {
           candidateV0.isreco);
       }
 
-      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
-        mcNucleiEbyeTable(
-          collisionEbyeTable.lastIndex(),
-          candidateTrack.pt,
-          candidateTrack.eta,
-          candidateTrack.mass,
-          candidateTrack.dcapv,
-          candidateTrack.tpcncls,
-          candidateTrack.tpcnsigma,
-          candidateTrack.tofmass,
-          candidateTrack.genpt,
-          candidateTrack.geneta,
-          candidateTrack.pdgcode,
-          candidateTrack.isreco);
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          mcNucleiEbyeTable(
+            collisionEbyeTable.lastIndex(),
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass,
+            candidateTrack.genpt,
+            candidateTrack.geneta,
+            candidateTrack.pdgcode,
+            candidateTrack.isreco);
+        }
       }
     }
   }
   PROCESS_SWITCH(ebyeMaker, processMcRun2, "process MC (Run 2)", false);
 
-  void processMiniMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullPID const& tracks, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
+  void processMiniMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullPID const& tracks, aod::Run2TrackExtras const& trackExtraRun2, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
   {
 
     for (const auto& collision : collisions) {
@@ -1272,7 +1346,10 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+      float cV0M = 105.f;
+      if (Run2V0MInfo.mCalibrationStored) {
+        cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+      }
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
@@ -1290,6 +1367,9 @@ struct ebyeMaker {
         if (candidateTrack.isreco) {
           auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
           float outerPID = getOuterPID(tk);
+          float itsSignal = getITSSignal(tk, trackExtraRun2);
+          histos.fill(HIST("QA/itsSignal"), tk.p(), itsSignal);
+
           candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
           selMask = getTrackSelMask(candidateTrack);
           // if (candidateTrack.outerPID < -4)

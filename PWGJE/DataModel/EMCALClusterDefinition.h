@@ -9,11 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// Class for the cluster definition, i.e. what is considered a cluster by the clusterizer.
-// The cluster definition contains information about the used algorithm, seed threshold,
-// cell energy, gradient as well as timing cut
-//
-/// \author Florian Jonas <florian.jonas@cern.ch>
+/// \file EMCALClusterDefinition.h
+/// \brief Class for the cluster definition, i.e. what is considered a cluster by the clusterizer. The cluster definition contains information about the used algorithm, seed threshold, cell energy, gradient as well as timing cut
+/// \author Florian Jonas <florian.jonas@cern.ch>, Marvin Hemmer <marvin.hemmer@cern.ch>
 
 #ifndef PWGJE_DATAMODEL_EMCALCLUSTERDEFINITION_H_
 #define PWGJE_DATAMODEL_EMCALCLUSTERDEFINITION_H_
@@ -38,15 +36,17 @@ struct EMCALClusterDefinition {
   std::string name = "kUndefined"; // name of the cluster definition
   double seedEnergy = 0.1;         // seed threshold (GeV)
   double minCellEnergy = 0.05;     // minimum cell energy (GeV)
-  double timeMin = -10000;         // minimum time (ns)
-  double timeMax = 10000;          // maximum time (ns)
+  double timeMin = -10000.;        // minimum time (ns)
+  double timeMax = 10000.;         // maximum time (ns)
+  double timeDiff = 20000.;        // maximum time difference (ns) between seed cell and aggregation cell
   bool doGradientCut = true;       // apply gradient cut if true
   double gradientCut = -1;         // gradient cut
+  bool recalcShowerShape5x5 = false; // recalculate shower shape using 5x5 cells
 
   // default constructor
   EMCALClusterDefinition() = default;
   // constructor
-  EMCALClusterDefinition(ClusterAlgorithm_t pAlgorithm, int pStorageID, int pSelectedCellType, std::string pName, double pSeedEnergy, double pMinCellEnergy, double pTimeMin, double pTimeMax, bool pDoGradientCut, double pGradientCut)
+  EMCALClusterDefinition(ClusterAlgorithm_t pAlgorithm, int pStorageID, int pSelectedCellType, std::string pName, double pSeedEnergy, double pMinCellEnergy, double pTimeMin, double pTimeMax, double ptimeDiff, bool pDoGradientCut, double pGradientCut, bool precalcShowerShape5x5)
   {
     algorithm = pAlgorithm;
     storageID = pStorageID;
@@ -56,14 +56,16 @@ struct EMCALClusterDefinition {
     minCellEnergy = pMinCellEnergy;
     timeMin = pTimeMin;
     timeMax = pTimeMax;
+    timeDiff = ptimeDiff;
     doGradientCut = pDoGradientCut;
     gradientCut = pGradientCut;
+    recalcShowerShape5x5 = precalcShowerShape5x5;
   }
 
   // implement comparison operators for int std::string and ClusterAlgorithm_t
   bool operator==(const EMCALClusterDefinition& rhs) const
   {
-    return (algorithm == rhs.algorithm && storageID == rhs.storageID && name == rhs.name && seedEnergy == rhs.seedEnergy && minCellEnergy == rhs.minCellEnergy && timeMin == rhs.timeMin && timeMax == rhs.timeMax && gradientCut == rhs.gradientCut && doGradientCut == rhs.doGradientCut);
+    return (algorithm == rhs.algorithm && storageID == rhs.storageID && name == rhs.name && seedEnergy == rhs.seedEnergy && minCellEnergy == rhs.minCellEnergy && timeMin == rhs.timeMin && timeMax == rhs.timeMax && timeDiff == rhs.timeDiff && gradientCut == rhs.gradientCut && doGradientCut == rhs.doGradientCut && recalcShowerShape5x5 == rhs.recalcShowerShape5x5);
   }
   bool operator!=(const EMCALClusterDefinition& rhs) const
   {

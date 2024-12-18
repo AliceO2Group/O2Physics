@@ -15,6 +15,10 @@
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 // O2
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisDataModel.h"
@@ -81,7 +85,7 @@ struct HfCandidateSelectorDstarToD0Pi {
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
-  Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
+  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::nCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
 
   // CCDB configuration
@@ -211,8 +215,7 @@ struct HfCandidateSelectorDstarToD0Pi {
     // decay exponentail law, with tau = beta*gamma*ctau
     // decay length > ctau retains (1-1/e)
 
-    double decayLengthCut = std::min((candidate.pD0() * 0.0066) + 0.01, cutsD0->get(binPt, "min decay length"));
-    if (candidate.decayLengthD0() * candidate.decayLengthD0() < decayLengthCut * decayLengthCut) {
+    if (candidate.decayLengthD0() < cutsD0->get(binPt, "min decay length")) {
       return false;
     }
     if (candidate.decayLengthD0() > cutsD0->get(binPt, "max decay length")) {

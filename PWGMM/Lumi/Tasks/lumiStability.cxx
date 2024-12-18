@@ -220,14 +220,14 @@ struct lumiStabilityTask {
   void processMain(aod::FDDs const& fdds, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::BCsWithTimestamps const& bcs)
   {
     int executionCounter = 0;
-    uint32_t nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023
+    // uint32_t nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023
     int runNumber = bcs.iteratorAt(0).runNumber();
     // std::string histName = "hOrbitFDDVertexCoinc_" + std::to_string(runNumber);
     if (runNumber != lastRunNumber && executionCounter < 1) {
       lastRunNumber = runNumber; // do it only once
       executionCounter++;
-      int64_t tsSOR = 0;
-      int64_t tsEOR = 1;
+      // int64_t tsSOR = 0;
+      // int64_t tsEOR = 1;
 
       if (runNumber >= 500000) { // access CCDB for data or anchored MC only
         int64_t ts = bcs.iteratorAt(0).timestamp();

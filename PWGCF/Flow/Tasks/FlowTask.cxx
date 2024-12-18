@@ -66,7 +66,8 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgCutDCAzPtDepEnabled, bool, false, "switch of DCAz pt dependent cut")
   O2_DEFINE_CONFIGURABLE(cfgTrkSelSwitch, bool, false, "switch for self-defined track selection")
   O2_DEFINE_CONFIGURABLE(cfgTrkSelRun3ITSMatch, bool, false, "GlobalTrackRun3ITSMatching::Run3ITSall7Layers selection")
-  O2_DEFINE_CONFIGURABLE(cfgRejectionTPCsectorOverlap, bool, true, "rejection for TPC sector overlap")
+  O2_DEFINE_CONFIGURABLE(cfgShowTPCsectorOverlap, bool, true, "Draw TPC sector overlap")
+  O2_DEFINE_CONFIGURABLE(cfgRejectionTPCsectorOverlap, bool, false, "rejection for TPC sector overlap")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgTriggerkTVXinTRD, bool, true, "TRD triggered")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoSameBunchPileup, bool, true, "rejects collisions which are associated with the same found-by-T0 bunch crossing")
@@ -248,13 +249,15 @@ struct FlowTask {
     // add in FlowContainer to Get boostrap sample automatically
     TObjArray* oba = new TObjArray();
     oba->Add(new TNamed("ChGap22", "ChGap22"));
-    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
-      oba->Add(new TNamed(Form("ChGap22_pt_%i", i + 1), "ChGap22_pTDiff"));
     oba->Add(new TNamed("ChFull22", "ChFull22"));
     oba->Add(new TNamed("ChFull32", "ChFull32"));
     oba->Add(new TNamed("ChFull42", "ChFull42"));
     oba->Add(new TNamed("ChFull24", "ChFull24"));
     oba->Add(new TNamed("ChFull26", "ChFull26"));
+    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("ChFull22_pt_%i", i + 1), "ChFull22_pTDiff"));
+    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("ChFull24_pt_%i", i + 1), "ChFull24_pTDiff"));
     oba->Add(new TNamed("Ch04Gap22", "Ch04Gap22"));
     oba->Add(new TNamed("Ch06Gap22", "Ch06Gap22"));
     oba->Add(new TNamed("Ch08Gap22", "Ch08Gap22"));
@@ -324,8 +327,10 @@ struct FlowTask {
     fGFW->AddRegion("refM", -0.4, 0.4, 1, 1);
     fGFW->AddRegion("poiN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("poiN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poifull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("olN", -0.8, -0.4, 1, 4);
     fGFW->AddRegion("olN10", -0.8, -0.5, 1, 4);
+    fGFW->AddRegion("olfull", -0.8, 0.8, 1, 4);
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {3 -3}", "ChFull32", kFALSE));
@@ -348,7 +353,8 @@ struct FlowTask {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {4} refP10 {-4}", "Ch10Gap42", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN12 {4} refP12 {-4}", "Ch12Gap42", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {2} refP {-2}", "ChGap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN refN | olN {2} refP {-2}", "ChGap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poifull full | olfull {2 -2}", "ChFull22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poifull full | olfull {2 2 -2 -2}", "ChFull24", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN10 refN10 | olN10 {2} refP10 {-2}", "Ch10Gap22", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN10 refN10 | olN10 {3} refP10 {-3}", "Ch10Gap32", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN10 refN10 | olN10 {4} refP10 {-4}", "Ch10Gap42", kTRUE));
@@ -396,7 +402,7 @@ struct FlowTask {
       fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
     }
 
-    if (cfgRejectionTPCsectorOverlap) {
+    if (cfgShowTPCsectorOverlap) {
       fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
       fPhiCutHigh = new TF1("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
     }
@@ -546,13 +552,6 @@ struct FlowTask {
       // no collisions in specified time range
       return 0;
     }
-    float vtxz = -999;
-    if (collision.numContrib() > 1) {
-      vtxz = collision.posZ();
-      float zRes = TMath::Sqrt(collision.covZZ());
-      if (zRes > 0.25 && collision.numContrib() < 20)
-        vtxz = -999;
-    }
     auto multNTracksPV = collision.multNTracksPV();
     auto occupancy = collision.trackOccupancyInTimeRange();
     if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh))
@@ -593,7 +592,7 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    if (cfgCutDCAzPtDepEnabled && (track.dcaZ() > (0.004f + 0.013f / track.pt())))
+    if (cfgCutDCAzPtDepEnabled && (fabs(track.dcaZ()) > (0.004f + 0.013f / track.pt())))
       return false;
 
     if (cfgTrkSelSwitch) {
@@ -617,8 +616,10 @@ struct FlowTask {
     phimodn += TMath::Pi() / 18.0; // to center gap in the middle
     phimodn = fmod(phimodn, TMath::Pi() / 9.0);
     registry.fill(HIST("pt_phi_bef"), track.pt(), phimodn);
-    if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt()))
-      return false; // reject track
+    if (cfgRejectionTPCsectorOverlap) {
+      if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt()))
+        return false; // reject track
+    }
     registry.fill(HIST("pt_phi_aft"), track.pt(), phimodn);
     return true;
   }
@@ -705,7 +706,7 @@ struct FlowTask {
     double sum_ptSquare_wSquare_WithinGap08 = 0., sum_pt_wSquare_WithinGap08 = 0.;
     int Magnetfield = 0;
     double NTracksCorrected = 0;
-    if (cfgRejectionTPCsectorOverlap) {
+    if (cfgShowTPCsectorOverlap) {
       // magnet field dependence cut
       Magnetfield = getMagneticField(bc.timestamp());
     }
@@ -716,7 +717,7 @@ struct FlowTask {
     for (auto& track : tracks) {
       if (!trackSelected(track))
         continue;
-      if (cfgRejectionTPCsectorOverlap && !RejectionTPCoverlap(track, Magnetfield))
+      if (cfgShowTPCsectorOverlap && !RejectionTPCoverlap(track, Magnetfield))
         continue;
       bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
       bool WithinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range

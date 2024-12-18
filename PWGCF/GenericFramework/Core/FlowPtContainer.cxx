@@ -10,6 +10,9 @@
 // or submit itself to any jurisdiction.
 
 #include "FlowPtContainer.h"
+#include <algorithm>
+#include <vector>
+#include <cstdio>
 
 FlowPtContainer::FlowPtContainer() : TNamed("name", "name"),
                                      fCMTermList(0),
@@ -796,7 +799,7 @@ void FlowPtContainer::RebinMulti(Int_t nbins, Double_t* binedges)
 }
 TH1* FlowPtContainer::getCorrHist(int ind, int m)
 {
-  return dynamic_cast<BootstrapProfile*>(fCorrList->FindObject(Form("mpt%i", m + 1)))->getHist(ind);
+  return dynamic_cast<BootstrapProfile*>(fCorrList->FindObject(Form("mpt%i", m)))->getHist(ind);
 }
 TH1* FlowPtContainer::getCentralMomentHist(int ind, int m)
 {

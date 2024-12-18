@@ -53,6 +53,9 @@ struct HfTaskLc {
   ConfigurableAxis thnConfigAxisBdtScoreBkg{"thnConfigAxisBdtScoreBkg", {1000, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreSignal{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisCanType{"thnConfigAxisCanType", {5, 0., 5.}, ""};
+  ConfigurableAxis thnAxisRapidity{"thnAxisRapidity", {20, -1, 1}, "Cand. rapidity bins"};
+  ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
+  ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Number of PV contributors"};
 
   HfHelper hfHelper;
 
@@ -70,7 +73,7 @@ struct HfTaskLc {
   using LcCandidatesMlMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi, aod::HfCand3ProngMcRec>>;
   using McParticles3ProngMatched = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
   Filter filterSelectCandidates = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc;
-  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
+  PresliceUnsorted<aod::McCollisionLabels> colPerMcCollision = aod::mcparticle::mcCollisionId;
   Preslice<aod::HfCand3Prong> candLcPerCollision = aod::hf_cand::collisionId;
   SliceCache cache;
 
@@ -102,7 +105,6 @@ struct HfTaskLc {
      {"MC/reconstructed/signal/hPtRecProng2Sig", "3-prong candidates (matched);prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
      {"MC/reconstructed/prompt/hPtRecProng2SigPrompt", "3-prong candidates (matched, prompt);prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
      {"MC/reconstructed/nonprompt/hPtRecProng2SigNonPrompt", "3-prong candidates (matched, non-prompt);prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"Data/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
      /// DCAxy to prim. vertex prongs
      {"Data/hd0Prong0", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
      {"MC/reconstructed/signal/hd0RecProng0Sig", "3-prong candidates (matched);prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
@@ -175,7 +177,7 @@ struct HfTaskLc {
 
     auto vbins = (std::vector<double>)binsPt;
     /// mass candidate
-    registry.add("Data/hMassVsPtVsMult", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; multiplicity", {HistType::kTH3F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {5000, 0., 10000.}}});
+    registry.add("Data/hMassVsPtVsNPvContributors", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; Number of PV contributors", {HistType::kTH3F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {5000, 0., 10000.}}});
     registry.add("Data/hMassVsPt", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hMassVsPtRecSig", "3-prong candidates (matched);inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/prompt/hMassVsPtRecSigPrompt", "3-prong candidates (matched, prompt);inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -287,11 +289,25 @@ struct HfTaskLc {
       const AxisSpec thnAxisBdtScoreLcPrompt{thnConfigAxisBdtScoreSignal, "BDT prompt score (Lc)"};
       const AxisSpec thnAxisBdtScoreLcNonPrompt{thnConfigAxisBdtScoreSignal, "BDT non-prompt score (Lc)"};
       const AxisSpec thnAxisCanType{thnConfigAxisCanType, "candidates type"};
+      const AxisSpec thnAxisY{thnAxisRapidity, "rapidity"};
+      const AxisSpec thnAxisPtB{thnConfigAxisGenPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
+      const AxisSpec thnAxisTracklets{thnConfigAxisNumPvContr, "Number of PV contributors"};
 
-      if (doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M || doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M) {
-        registry.add("hnLcVarsWithBdt", "THn for Lambdac candidates with BDT scores", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisCanType});
+      if (doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M) {
+
+        registry.add("hnLcVarsWithBdt", "THn for Lambdac candidates with BDT scores for data with ML", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets});
+
+      } else if (doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M) {
+
+        registry.add("hnLcVarsWithBdt", "THn for Lambdac candidates with BDT scores for mc with ML", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets, thnAxisPtB, thnAxisCanType});
+        registry.add("hnLcVarsGen", "THn for Generated Lambdac", HistType::kTHnSparseF, {thnAxisPt, thnAxisY, thnAxisTracklets, thnAxisPtB, thnAxisCanType});
+
+      } else if (doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M) {
+        registry.add("hnLcVars", "THn for Reconstructed Lambdac candidates for data without ML", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets});
+
       } else {
-        registry.add("hnLcVars", "THn for Lambdac candidates", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisCanType});
+        registry.add("hnLcVars", "THn for Reconstructed Lambdac candidates for mc without ML", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets, thnAxisPtB, thnAxisCanType});
+        registry.add("hnLcVarsGen", "THn for Generated Lambdac", HistType::kTHnSparseF, {thnAxisPt, thnAxisY, thnAxisTracklets, thnAxisPtB, thnAxisCanType});
       }
     }
   }
@@ -342,6 +358,9 @@ struct HfTaskLc {
         auto cpa = candidate.cpa();
         auto cpaXY = candidate.cpaXY();
         auto originType = candidate.originMcRec();
+        auto numPvContributors = collision.numContrib();
+        auto ptRecB = candidate.ptBhadMotherPart();
+
         /// MC reconstructed signal
         if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
           registry.fill(HIST("MC/reconstructed/signal/hMassRecSig"), hfHelper.invMassLcToPKPi(candidate));
@@ -477,9 +496,9 @@ struct HfTaskLc {
                 outputFD = candidate.mlProbLcToPKPi()[2];     /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate
-              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, originType);
+              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors, ptRecB, originType);
             } else {
-              registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, originType);
+              registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, numPvContributors, ptRecB, originType);
             }
           }
           if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
@@ -492,9 +511,9 @@ struct HfTaskLc {
                 outputFD = candidate.mlProbLcToPiKP()[2];     /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
-              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, originType);
+              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors, ptRecB, originType);
             } else {
-              registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, originType);
+              registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, numPvContributors, ptRecB, originType);
             }
           }
         }
@@ -504,8 +523,8 @@ struct HfTaskLc {
 
   /// Fill MC histograms at generated level
   /// \tparam fillMl switch to fill ML histograms
-  template <typename CandLcMcGen>
-  void fillHistosMcGen(CandLcMcGen const& mcParticles)
+  template <typename CandLcMcGen, typename Coll>
+  void fillHistosMcGen(CandLcMcGen const& mcParticles, Coll const& recoCollisions)
   {
     // MC gen.
     for (const auto& particle : mcParticles) {
@@ -515,6 +534,14 @@ struct HfTaskLc {
           continue;
         }
         auto ptGen = particle.pt();
+        auto originType = particle.originMcGen();
+        auto ptGenB = -1;
+        unsigned int numPvContributors = 0;
+        const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
+        for (const auto& recCol : recoCollsPerMcColl) {
+          numPvContributors = recCol.numContrib() > numPvContributors ? recCol.numContrib() : numPvContributors;
+        }
+
         registry.fill(HIST("MC/generated/signal/hPtGen"), ptGen);
         registry.fill(HIST("MC/generated/signal/hEtaGen"), particle.eta());
         registry.fill(HIST("MC/generated/signal/hYGen"), yGen);
@@ -524,6 +551,7 @@ struct HfTaskLc {
         registry.fill(HIST("MC/generated/signal/hPhiVsPtGenSig"), particle.phi(), ptGen);
 
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
+          registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, yGen, numPvContributors, ptGenB, originType);
           registry.fill(HIST("MC/generated/prompt/hPtGenPrompt"), ptGen);
           registry.fill(HIST("MC/generated/prompt/hEtaGenPrompt"), particle.eta());
           registry.fill(HIST("MC/generated/prompt/hYGenPrompt"), yGen);
@@ -533,6 +561,8 @@ struct HfTaskLc {
           registry.fill(HIST("MC/generated/prompt/hPhiVsPtGenSigPrompt"), particle.phi(), ptGen);
         }
         if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
+          ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+          registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, yGen, numPvContributors, ptGenB, originType);
           registry.fill(HIST("MC/generated/nonprompt/hPtGenNonPrompt"), ptGen);
           registry.fill(HIST("MC/generated/nonprompt/hEtaGenNonPrompt"), particle.eta());
           registry.fill(HIST("MC/generated/nonprompt/hYGenNonPrompt"), yGen);
@@ -547,25 +577,12 @@ struct HfTaskLc {
 
   /// Fill histograms for real data
   /// \tparam fillMl switch to fill ML histograms
-  template <bool fillMl, typename CollType, typename CandType, typename TrackType>
-  void fillHistosData(CollType const& collision, CandType const& candidates, TrackType const& tracks)
+  template <bool fillMl, typename CollType, typename CandType>
+  void fillHistosData(CollType const& collision, CandType const& candidates)
   {
     auto thisCollId = collision.globalIndex();
     auto groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
-
-    int nTracks = 0;
-    if (collision.numContrib() > 1) {
-      for (const auto& track : tracks) {
-        if (std::abs(track.eta()) > 4.0) {
-          continue;
-        }
-        if (std::abs(track.dcaXY()) > 0.0025 || std::abs(track.dcaZ()) > 0.0025) {
-          continue;
-        }
-        nTracks++;
-      }
-    }
-    registry.fill(HIST("Data/hMultiplicity"), nTracks);
+    auto numPvContributors = collision.numContrib();
 
     for (const auto& candidate : groupedLcCandidates) {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
@@ -586,12 +603,12 @@ struct HfTaskLc {
 
       if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
         registry.fill(HIST("Data/hMass"), hfHelper.invMassLcToPKPi(candidate));
-        registry.fill(HIST("Data/hMassVsPtVsMult"), hfHelper.invMassLcToPKPi(candidate), pt, nTracks);
+        registry.fill(HIST("Data/hMassVsPtVsNPvContributors"), hfHelper.invMassLcToPKPi(candidate), pt, numPvContributors);
         registry.fill(HIST("Data/hMassVsPt"), hfHelper.invMassLcToPKPi(candidate), pt);
       }
       if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
         registry.fill(HIST("Data/hMass"), hfHelper.invMassLcToPiKP(candidate));
-        registry.fill(HIST("Data/hMassVsPtVsMult"), hfHelper.invMassLcToPiKP(candidate), pt, nTracks);
+        registry.fill(HIST("Data/hMassVsPtVsNPvContributors"), hfHelper.invMassLcToPiKP(candidate), pt, numPvContributors);
         registry.fill(HIST("Data/hMassVsPt"), hfHelper.invMassLcToPiKP(candidate), pt);
       }
       registry.fill(HIST("Data/hPt"), pt);
@@ -641,9 +658,9 @@ struct HfTaskLc {
               outputFD = candidate.mlProbLcToPKPi()[2];     /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
-            registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, 0);
+            registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors);
           } else {
-            registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, 0);
+            registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, numPvContributors);
           }
         }
         if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
@@ -656,9 +673,9 @@ struct HfTaskLc {
               outputFD = candidate.mlProbLcToPiKP()[2];     /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
-            registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, 0);
+            registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors);
           } else {
-            registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, 0);
+            registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, numPvContributors);
           }
         }
       }
@@ -669,12 +686,11 @@ struct HfTaskLc {
   /// \tparam fillMl switch to fill ML histograms
   template <bool fillMl, typename CollType, typename CandType>
   void runAnalysisPerCollisionData(CollType const& collisions,
-                                   CandType const& candidates,
-                                   aod::TracksWDca const& tracks)
+                                   CandType const& candidates)
   {
 
     for (const auto& collision : collisions) {
-      fillHistosData<fillMl>(collision, candidates, tracks);
+      fillHistosData<fillMl>(collision, candidates);
     }
   }
 
@@ -688,57 +704,56 @@ struct HfTaskLc {
     for (const auto& collision : collisions) {
       // MC Rec.
       fillHistosMcRec<fillMl>(collision, candidates, mcParticles);
-      // MC gen.
-      auto mcParticlesPerColl = mcParticles.sliceBy(perMcCollision, collision.globalIndex());
-      fillHistosMcGen(mcParticlesPerColl);
     }
+    // MC gen.
+    fillHistosMcGen(mcParticles, collisions);
   }
 
   void processDataStd(Collisions const& collisions,
                       LcCandidates const& selectedLcCandidates,
-                      aod::TracksWDca const& tracks)
+                      aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates, tracks);
+    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStd, "Process Data with the standard method", true);
 
   void processDataWithMl(Collisions const& collisions,
                          LcCandidatesMl const& selectedLcCandidatesMl,
-                         aod::TracksWDca const& tracks)
+                         aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl, tracks);
+    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMl, "Process real data with the ML method and without centrality", false);
 
   void processDataStdWithFT0C(CollisionsWithFT0C const& collisions,
                               LcCandidates const& selectedLcCandidates,
-                              aod::TracksWDca const& tracks)
+                              aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates, tracks);
+    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStdWithFT0C, "Process real data with the standard method and with FT0C centrality", false);
 
   void processDataWithMlWithFT0C(CollisionsWithFT0C const& collisions,
                                  LcCandidatesMl const& selectedLcCandidatesMl,
-                                 aod::TracksWDca const& tracks)
+                                 aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl, tracks);
+    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0C, "Process real data with the ML method and with FT0C centrality", false);
 
   void processDataStdWithFT0M(CollisionsWithFT0M const& collisions,
                               LcCandidates const& selectedLcCandidates,
-                              aod::TracksWDca const& tracks)
+                              aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates, tracks);
+    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStdWithFT0M, "Process real data with the standard method and with FT0M centrality", false);
 
   void processDataWithMlWithFT0M(CollisionsWithFT0M const& collisions,
                                  LcCandidatesMl const& selectedLcCandidatesMl,
-                                 aod::TracksWDca const& tracks)
+                                 aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl, tracks);
+    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0M, "Process real data with the ML method and with FT0M centrality", false);
 

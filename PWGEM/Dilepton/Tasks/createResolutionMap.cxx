@@ -13,6 +13,12 @@
 // Analysis task to produce resolution mapfor electrons/muons in dilepton analysis
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <map>
+#include <string>
+#include <utility>
+#include <set>
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -66,6 +72,16 @@ struct CreateResolutionMap {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<int> cfgEventGeneratorType{"cfgEventGeneratorType", -1, "if positive, select event generator type. i.e. gap or signal"};
 
+  ConfigurableAxis ConfPtGenBins{"ConfPtGenBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.80, 2.90, 3.00, 3.10, 3.20, 3.30, 3.40, 3.50, 3.60, 3.70, 3.80, 3.90, 4.00, 4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 8.50, 9.00, 9.50, 10.00, 11.00, 12.00, 13.00, 14.00, 15.00, 16.00, 17.00, 18.00, 19.00, 20.00}, "gen. pT bins for output histograms"};
+
+  ConfigurableAxis ConfEtaCBGenBins{"ConfEtaCBGenBins", {30, -1.5, +1.5}, "gen. eta bins at midrapidity for output histograms"};
+  ConfigurableAxis ConfEtaFWDGenBins{"ConfEtaFWDGenBins", {30, -5, -2.0}, "gen. eta bins at forward rapidity for output histograms"};
+  ConfigurableAxis ConfPhiGenBins{"ConfPhiGenBins", {90, 0, 2.f * M_PI}, "gen. eta bins at forward rapidity for output histograms"};
+
+  ConfigurableAxis ConfRelDeltaPtBins{"ConfRelDeltaPtBins", {200, -1.f, +1.f}, "rel. dpt for output histograms"};
+  ConfigurableAxis ConfDeltaEtaBins{"ConfDeltaEtaBins", {200, -0.1f, +0.1f}, "deta bins for output histograms"};
+  ConfigurableAxis ConfDeltaPhiBins{"ConfDeltaPhiBins", {200, -0.1f, +0.1f}, "dphi bins for output histograms"};
+
   struct : ConfigurableGroup {
     std::string prefix = "electroncut_group";
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.01, "min pT for single track"};
@@ -84,7 +100,7 @@ struct CreateResolutionMap {
 
   struct : ConfigurableGroup {
     std::string prefix = "muoncut_group";
-    Configurable<uint8_t> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
+    Configurable<uint> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.01, "min pT for single track"};
     Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -5.0, "min eta for single track"};
     Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", -1.5, "max eta for single track"};
@@ -113,10 +129,13 @@ struct CreateResolutionMap {
     ccdb->setFatalWhenNull(false);
     ccdbApi.init(ccdburl);
 
-    const AxisSpec axis_pt_gen{{0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.80, 2.90, 3.00, 3.10, 3.20, 3.30, 3.40, 3.50, 3.60, 3.70, 3.80, 3.90, 4.00, 4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 8.50, 9.00, 9.50, 10.00, 11.00, 12.00, 13.00, 14.00, 15.00, 16.00, 17.00, 18.00, 19.00, 20.00}, "p_{T,l}^{gen} (GeV/c)"};
-    const AxisSpec axis_dpt{400, -1, 1, "(p_{T,l}^{gen.} - p_{T,l}^{rec.})/p_{T,l}^{gen.}"};
-    const AxisSpec axis_deta{500, -0.5, +0.5, "#eta_{l}^{gen.} - #eta_{l}^{rec.}"};
-    const AxisSpec axis_dphi{500, -0.5, +0.5, "#varphi_{l}^{gen.} - #varphi_{l}^{rec.} (rad.)"};
+    const AxisSpec axis_pt_gen{ConfPtGenBins, "p_{T,l}^{gen} (GeV/c)"};
+    const AxisSpec axis_eta_cb_gen{ConfEtaCBGenBins, "#eta_{l}^{gen}"};
+    const AxisSpec axis_eta_fwd_gen{ConfEtaFWDGenBins, "#eta_{l}^{gen}"};
+    const AxisSpec axis_phi_gen{ConfPhiGenBins, "#varphi_{l}^{gen} (rad.)"};
+    const AxisSpec axis_dpt{ConfRelDeltaPtBins, "(p_{T,l}^{gen} - p_{T,l}^{rec})/p_{T,l}^{gen}"};
+    const AxisSpec axis_deta{ConfDeltaEtaBins, "#eta_{l}^{gen} - #eta_{l}^{rec}"};
+    const AxisSpec axis_dphi{ConfDeltaPhiBins, "#varphi_{l}^{gen} - #varphi_{l}^{rec} (rad.)"};
 
     registry.add("Electron/Ptgen_RelDeltaPt", "resolution", kTH2F, {{axis_pt_gen}, {axis_dpt}}, true);
     registry.add("Electron/Ptgen_DeltaEta", "resolution", kTH2F, {{axis_pt_gen}, {axis_deta}}, true);
@@ -124,6 +143,13 @@ struct CreateResolutionMap {
     registry.add("Electron/Ptgen_DeltaPhi_Neg", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
     registry.addClone("Electron/", "StandaloneMuon/");
     registry.addClone("Electron/", "GlobalMuon/");
+
+    registry.add("Electron/hs_reso_Pos", "6D resolution positive", kTHnSparseF, {axis_pt_gen, axis_eta_cb_gen, axis_phi_gen, axis_dpt, axis_deta, axis_dphi}, true);
+    registry.add("StandaloneMuon/hs_reso_Pos", "6D resolution positive", kTHnSparseF, {axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_dpt, axis_deta, axis_dphi}, true);
+    registry.add("GlobalMuon/hs_reso_Pos", "6D resolution positive", kTHnSparseF, {axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_dpt, axis_deta, axis_dphi}, true);
+    registry.add("Electron/hs_reso_Neg", "6D resolution negative", kTHnSparseF, {axis_pt_gen, axis_eta_cb_gen, axis_phi_gen, axis_dpt, axis_deta, axis_dphi}, true);
+    registry.add("StandaloneMuon/hs_reso_Neg", "6D resolution negative", kTHnSparseF, {axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_dpt, axis_deta, axis_dphi}, true);
+    registry.add("GlobalMuon/hs_reso_Neg", "6D resolution negative", kTHnSparseF, {axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_dpt, axis_deta, axis_dphi}, true);
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -292,16 +318,20 @@ struct CreateResolutionMap {
       registry.fill(HIST("StandaloneMuon/Ptgen_DeltaEta"), mctrack.pt(), mctrack.eta() - eta);
       if (mctrack.pdgCode() == -13) { // positive muon
         registry.fill(HIST("StandaloneMuon/Ptgen_DeltaPhi_Pos"), mctrack.pt(), mctrack.phi() - phi);
+        registry.fill(HIST("StandaloneMuon/hs_reso_Pos"), mctrack.pt(), mctrack.eta(), mctrack.phi(), (mctrack.pt() - pt) / mctrack.pt(), mctrack.eta() - eta, mctrack.phi() - phi);
       } else if (mctrack.pdgCode() == 13) { // negative muon
         registry.fill(HIST("StandaloneMuon/Ptgen_DeltaPhi_Neg"), mctrack.pt(), mctrack.phi() - phi);
+        registry.fill(HIST("StandaloneMuon/hs_reso_Neg"), mctrack.pt(), mctrack.eta(), mctrack.phi(), (mctrack.pt() - pt) / mctrack.pt(), mctrack.eta() - eta, mctrack.phi() - phi);
       }
     } else if (muon.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
       registry.fill(HIST("GlobalMuon/Ptgen_RelDeltaPt"), mctrack.pt(), (mctrack.pt() - pt) / mctrack.pt());
       registry.fill(HIST("GlobalMuon/Ptgen_DeltaEta"), mctrack.pt(), mctrack.eta() - eta);
       if (mctrack.pdgCode() == -13) { // positive muon
         registry.fill(HIST("GlobalMuon/Ptgen_DeltaPhi_Pos"), mctrack.pt(), mctrack.phi() - phi);
+        registry.fill(HIST("GlobalMuon/hs_reso_Pos"), mctrack.pt(), mctrack.eta(), mctrack.phi(), (mctrack.pt() - pt) / mctrack.pt(), mctrack.eta() - eta, mctrack.phi() - phi);
       } else if (mctrack.pdgCode() == 13) { // negative muon
         registry.fill(HIST("GlobalMuon/Ptgen_DeltaPhi_Neg"), mctrack.pt(), mctrack.phi() - phi);
+        registry.fill(HIST("GlobalMuon/hs_reso_Neg"), mctrack.pt(), mctrack.eta(), mctrack.phi(), (mctrack.pt() - pt) / mctrack.pt(), mctrack.eta() - eta, mctrack.phi() - phi);
       }
     }
     return true;
@@ -355,8 +385,10 @@ struct CreateResolutionMap {
         registry.fill(HIST("Electron/Ptgen_DeltaEta"), mctrack.pt(), mctrack.eta() - track.eta());
         if (mctrack.pdgCode() == -11) { // positron
           registry.fill(HIST("Electron/Ptgen_DeltaPhi_Pos"), mctrack.pt(), mctrack.phi() - track.phi());
+          registry.fill(HIST("Electron/hs_reso_Pos"), mctrack.pt(), mctrack.eta(), mctrack.phi(), (mctrack.pt() - track.pt()) / mctrack.pt(), mctrack.eta() - track.eta(), mctrack.phi() - track.phi());
         } else if (mctrack.pdgCode() == 11) { // electron
           registry.fill(HIST("Electron/Ptgen_DeltaPhi_Neg"), mctrack.pt(), mctrack.phi() - track.phi());
+          registry.fill(HIST("Electron/hs_reso_Neg"), mctrack.pt(), mctrack.eta(), mctrack.phi(), (mctrack.pt() - track.pt()) / mctrack.pt(), mctrack.eta() - track.eta(), mctrack.phi() - track.phi());
         }
 
       } // end of track loop
