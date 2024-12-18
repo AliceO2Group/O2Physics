@@ -8,6 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+/// \file EventSelectionParams.h
+/// \brief Event selection parameters
+///
+/// \author Evgeny Kryshen <evgeny.kryshen@cern.ch> and Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
 #ifndef COMMON_CCDB_EVENTSELECTIONPARAMS_H_
 #define COMMON_CCDB_EVENTSELECTIONPARAMS_H_
@@ -157,7 +161,7 @@ class EventSelectionParams
   int fITSROFrameStartBorderMargin = 10; // number of bcs to cut in the beginning of ITS readout frame
   int fITSROFrameEndBorderMargin = 20;   // number of bcs to cut in the end of ITS readout frame
 
-  ClassDefNV(EventSelectionParams, 6)
+  ClassDefNV(EventSelectionParams, 7)
 };
 
 #endif // COMMON_CCDB_EVENTSELECTIONPARAMS_H_
