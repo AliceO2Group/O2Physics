@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 /// \file eventSelection.cxx
 /// \brief Event selection task
 ///
@@ -834,7 +835,7 @@ struct EventSelectionTask {
         }
       }
       vWeightedTimesTPCnoTOFnoTRD[colIndex] = sumW > 0 ? sumTime / sumW : 0;
-      vWeightedSigmaTPCnoTOFnoTRD[colIndex] = sumW > 0 ? sqrt(1. / sumW) : 0;
+      vWeightedSigmaTPCnoTOFnoTRD[colIndex] = sumW > 0 ? std::sqrt(1. / sumW) : 0;
       vNcontributors[colIndex] = colPvTracks.size();
       int nPvTracksTOF = vTrackTimesTOF.size();
       int nPvTracksTRDnoTOF = vTrackTimesTRDnoTOF.size();
@@ -1103,8 +1104,8 @@ struct EventSelectionTask {
           nITS567tracksForVetoStrict += vTracksITS567perColl[thisColIndex];
 
         // standard cut on other collisions vs delta-times
-        const float driftV = 2.5; // drift velocity in cm/us, TPC drift_length / drift_time = 250 cm / 100 us
-        if (std::fabs(dt) < 2.0) {     // us, complete veto on other collisions
+        const float driftV = 2.5;  // drift velocity in cm/us, TPC drift_length / drift_time = 250 cm / 100 us
+        if (std::fabs(dt) < 2.0) { // us, complete veto on other collisions
           nCollsWithFT0CAboveVetoStandard++;
         } else if (dt > -4.0 && dt <= -2.0) { // us, strict veto to suppress fake ITS-TPC matches more
           if (vAmpFT0CperColl[thisColIndex] > confFT0CamplCutVetoOnCollInTimeRange / 5)
