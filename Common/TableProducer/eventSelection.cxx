@@ -411,10 +411,10 @@ struct BcSelectionTask {
 
       // check number of inactive chips and set kIsGoodITSLayer3, kIsGoodITSLayer0123, kIsGoodITSLayersAll flags
       int64_t orbit = globalBC / nBCsPerOrbit;
-      if ((orbit < prevOrbitForInactiveChips || orbit > nextOrbitForInactiveChips) && run >= 500000) {
+      if (mapInactiveChips.size() > 0 && (orbit < prevOrbitForInactiveChips || orbit > nextOrbitForInactiveChips)) {
         auto it = mapInactiveChips.upper_bound(orbit);
         bool isEnd = (it == mapInactiveChips.end());
-        if (isEnd && mapInactiveChips.size() > 0)
+        if (isEnd)
           it--;
         nextOrbitForInactiveChips = isEnd ? orbit : it->first; // setting current orbit in case we reached the end of mapInactiveChips
         auto vNextInactiveChips = it->second;
