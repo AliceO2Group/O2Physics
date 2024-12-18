@@ -19,6 +19,7 @@
 #include <TRandom3.h>
 #include <THn.h>
 #include <THnSparse.h>
+#include <string>
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
