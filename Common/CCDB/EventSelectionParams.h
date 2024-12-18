@@ -14,6 +14,8 @@
 ///
 /// \author Evgeny Kryshen <evgeny.kryshen@cern.ch> and Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
+// o2-linter: disable=name/function-variable
+
 #ifndef COMMON_CCDB_EVENTSELECTIONPARAMS_H_
 #define COMMON_CCDB_EVENTSELECTIONPARAMS_H_
 
