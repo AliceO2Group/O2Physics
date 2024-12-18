@@ -13,10 +13,10 @@
 /// \brief Correlations between protons and neutrons in the ZDC
 /// \author Olaf Massen <olaf.massen@cern.ch>
 
+#include <string>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
-
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -55,7 +55,7 @@ struct NeutronProtonCorrZdc {
   void init(InitContext const&)
   {
     // define axes you want to use
-    const AxisSpec axisCounter{4, 0, +2, ""};
+    const AxisSpec axisCounter{3, -0.5, 3.5, ""};
     const AxisSpec axisZNSectorSignal{cfgNBinsZN, cfgZNmin, cfgZNmax / 3.};
     const AxisSpec axisZPSectorSignal{cfgNBinsZP, cfgZPmin, cfgZPmax / 3.};
     const AxisSpec axisZNASignal{cfgNBinsZN, cfgZNmin, cfgZNmax, "ZNA (a.u.)"};
