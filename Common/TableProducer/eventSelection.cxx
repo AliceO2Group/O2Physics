@@ -328,7 +328,7 @@ struct BcSelectionTask {
     }
 
     // bc loop
-    for (const auto& bc : bcs) {
+    for (auto& bc : bcs) {
       uint32_t alias{0};
       // workaround for pp2022 (trigger info is shifted by -294 bcs)
       int32_t triggerBcId = mapGlobalBCtoBcId[bc.globalBC() + triggerBcShift];
@@ -641,7 +641,7 @@ struct EventSelectionTask {
   {
     auto bc = col.bc_as<BCsWithBcSelsRun2>();
     EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
-    bool* applySelection = par->GetSelection(muonSelection);
+    bool* applySelection = par->getSelection(muonSelection);
     if (isMC == 1) {
       applySelection[kIsBBZAC] = 0;
       applySelection[kNoV0MOnVsOfPileup] = 0;
