@@ -148,10 +148,10 @@ struct f1protoncorrelation {
       histos.fill(HIST("hNsigmaPionKaonTPC"), f1track.f1d1TPC(), f1track.f1d2TPC());
       for (auto protontrack : protontracks) {
         Proton.SetXYZM(protontrack.protonPx(), protontrack.protonPy(), protontrack.protonPz(), 0.938);
-        if (Proton.P() < momentumTOFProton && TMath::Abs(protontrack.protonNsigmaTPC()) > 3) {
+        if (Proton.P() < momentumTOFProton && TMath::Abs(protontrack.protonNsigmaTPC()) > 2.5) {
           continue;
         }
-        if (Proton.P() >= momentumTOFProton && protontrack.protonTOFHit() != 1 && TMath::Abs(protontrack.protonNsigmaTOF()) > 3) {
+        if (Proton.P() >= momentumTOFProton && (protontrack.protonTOFHit() != 1 || TMath::Abs(protontrack.protonNsigmaTOF()) > 2.5)) {
           continue;
         }
         if ((f1track.f1PionIndex() == protontrack.f1ProtonIndex()) || (f1track.f1KaonIndex() == protontrack.f1ProtonIndex()) || (f1track.f1KshortPositiveIndex() == protontrack.f1ProtonIndex()) || (f1track.f1KshortNegativeIndex() == protontrack.f1ProtonIndex())) {
@@ -255,10 +255,10 @@ struct f1protoncorrelation {
           continue;
         }
         Proton.SetXYZM(t2.protonPx(), t2.protonPy(), t2.protonPz(), 0.938);
-        if (Proton.P() < momentumTOFProton && TMath::Abs(t2.protonNsigmaTPC()) > 3) {
+        if (Proton.P() < momentumTOFProton && TMath::Abs(t2.protonNsigmaTPC()) > 2.5) {
           continue;
         }
-        if (Proton.P() >= momentumTOFProton && t2.protonTOFHit() != 1 && TMath::Abs(t2.protonNsigmaTOF()) > 3) {
+        if (Proton.P() >= momentumTOFProton && (t2.protonTOFHit() != 1 || TMath::Abs(t2.protonNsigmaTOF()) > 2.5)) {
           continue;
         }
         auto relative_momentum = getkstar(F1, Proton);
