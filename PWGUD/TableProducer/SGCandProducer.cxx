@@ -12,16 +12,22 @@
 #include <cmath>
 #include <vector>
 #include <map>
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "ReconstructionDataFormats/Vertex.h"
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/DataModel/EventSelection.h"
 #include "CommonConstants/LHCConstants.h"
 #include "DataFormatsFIT/Triggers.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/DataModel/EventSelection.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/Core/SGSelector.h"
@@ -29,8 +35,22 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::dataformats;
 
 struct SGCandProducer {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  // data inputs
+  using CCs = soa::Join<aod::Collisions, aod::EvSels>;
+  using CC = CCs::iterator;
+  using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+  using BC = BCs::iterator;
+  using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+                        aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                        aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
+                        aod::TOFSignal, aod::pidTOFbeta,
+                        aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
+                        aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  using FWs = aod::FwdTracks;
   // get an SGCutparHolder
   SGCutParHolder sameCuts = SGCutParHolder(); // SGCutparHolder
   Configurable<SGCutParHolder> SGCuts{"SGCuts", {}, "SG event cuts"};
@@ -46,14 +66,15 @@ struct SGCandProducer {
   // Configurables to decide which tables are filled
   Configurable<bool> fillTrackTables{"fillTrackTables", true, "Fill track tables"};
   Configurable<bool> fillFwdTrackTables{"fillFwdTrackTables", true, "Fill forward track tables"};
-
   //  SG selector
   SGSelector sgSelector;
+  ctpRateFetcher mRateFetcher;
 
   // data tables
   Produces<aod::SGCollisions> outputSGCollisions;
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
+  Produces<aod::UDCollisionSelExtras> outputCollisionSelExtras;
   Produces<aod::UDCollsLabels> outputCollsLabels;
   Produces<aod::UDZdcs> outputZdcs;
   Produces<aod::UDZdcsReduced> udZdcsReduced;
@@ -72,19 +93,6 @@ struct SGCandProducer {
   HistogramRegistry registry{
     "registry",
     {}};
-
-  // data inputs
-  using CCs = soa::Join<aod::Collisions, aod::EvSels>;
-  using CC = CCs::iterator;
-  using BCs = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
-  using BC = BCs::iterator;
-  using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                        aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                        aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
-                        aod::TOFSignal, aod::pidTOFbeta,
-                        aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
-                        aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-  using FWs = aod::FwdTracks;
 
   // function to update UDFwdTracks, UDFwdTracksExtra
   template <typename TFwdTrack>
@@ -165,6 +173,9 @@ struct SGCandProducer {
 
   void init(InitContext&)
   {
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setFatalWhenNull(false);
     sameCuts = (SGCutParHolder)SGCuts;
     registry.add("reco/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{14, -0.5, 13.5}}});
   }
@@ -206,7 +217,25 @@ struct SGCandProducer {
       return;
     }
     registry.get<TH1>(HIST("reco/Stat"))->Fill(6., 1.);
+    int trs = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      trs = 1;
+    }
+    int trofs = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      trofs = 1;
+    }
+    int hmpr = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+      hmpr = 1;
+    }
     auto bc = collision.foundBC_as<BCs>();
+    double ir = 0.;
+    const uint64_t ts = bc.timestamp();
+    const int runnumber = bc.runNumber();
+    if (bc.has_zdc()) {
+      ir = mRateFetcher.fetch(ccdb.service, ts, runnumber, "ZNC hadronic") * 1.e-3;
+    }
     auto newbc = bc;
 
     // obtain slice of compatible BCs
@@ -229,6 +258,13 @@ struct SGCandProducer {
           return;
       }
       upchelpers::FITInfo fitInfo{};
+      uint8_t chFT0A = 0;
+      uint8_t chFT0C = 0;
+      uint8_t chFDDA = 0;
+      uint8_t chFDDC = 0;
+      uint8_t chFV0A = 0;
+      int occ = 0;
+      occ = collision.trackOccupancyInTimeRange();
       udhelpers::getFITinfo(fitInfo, newbc, bcs, ft0s, fv0as, fdds);
       // update SG candidates tables
       int upc_flag = 0;
@@ -249,6 +285,7 @@ struct SGCandProducer {
                            fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
+      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr);
       outputCollsLabels(collision.globalIndex());
       if (newbc.has_zdc()) {
         auto zdc = newbc.zdc();

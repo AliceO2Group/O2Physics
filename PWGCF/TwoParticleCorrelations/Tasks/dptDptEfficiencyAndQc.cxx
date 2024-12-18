@@ -15,6 +15,7 @@
 
 #include <TH2F.h>
 #include <TProfile2D.h>
+#include <TPDGCode.h>
 #include <CCDB/BasicCCDBManager.h>
 #include <vector>
 #include <cstdio>
@@ -23,6 +24,7 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TableHelper.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Framework/ASoAHelpers.h"
@@ -50,6 +52,11 @@ using namespace o2::framework::expressions;
 #define HNAMESTRING(thehnamefmt, thehnamepars...) FORMATSTRING(thehnamefmt, thehnamepars)
 #define HTITLESTRING(thehtitlefmt, thehtitlepars...) FORMATSTRING(thehtitlefmt, thehtitlepars)
 
+namespace o2::analysis::dptdptfilter
+{
+TpcExcludeTrack tpcExcluder; ///< the TPC excluder object instance
+} // namespace o2::analysis::dptdptfilter
+
 namespace efficiencyandqatask
 {
 /// \enum KindOfProcessQA
@@ -74,6 +81,10 @@ enum BeforeAfter {
   kAfter       ///< filling after track selection
 };
 
+/* the structures for checking the TPC sector borders impact */
+constexpr int kNoOfTpcSectors = 18;
+constexpr float kTpcPhiSectorWidth = (constants::math::TwoPI) / kNoOfTpcSectors;
+
 /* the configuration of the nsigma axis */
 float minNSigma = -4.05f;
 float maxNSigma = 4.05f;
@@ -93,7 +104,7 @@ static const std::vector<std::string> allmainsptitles{"e^{#plus}", "e^{#minus}",
 static const std::vector<o2::track::PID::ID> mainspecies{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton};
 static const std::vector<std::string> mainspnames{"PionP", "PionM", "KaonP", "KaonM", "ProtonP", "ProtonM"};
 static const std::vector<std::string> mainsptitles{"#pi^{#plus}", "#pi^{#minus}", "K^{#plus}", "K^{#minus}", "p", "#bar{p}"};
-static const std::vector<int> pdgcodes = {11, 13, 211, 321, 2212};
+static const std::vector<int> pdgcodes = {kElectron, kMuonPlus, kPiPlus, kKPlus, kProton};
 } // namespace efficiencyandqatask
 
 /* the QA data collecting engine */
@@ -115,9 +126,17 @@ struct QADataCollectingEngine {
   std::vector<std::shared_ptr<TH1>> fhPtB{2, nullptr};
   std::vector<std::shared_ptr<TH2>> fhPtVsEtaB{2, nullptr};
   std::vector<std::shared_ptr<TH2>> fhPtVsZvtxB{2, nullptr};
+  std::shared_ptr<TH2> fhPhiVsPtPosB{nullptr};
+  std::shared_ptr<TH2> fhPhiVsInnerWallMomPosB{nullptr};
+  std::shared_ptr<TH2> fhPhiVsPtNegB{nullptr};
+  std::shared_ptr<TH2> fhPhiVsInnerWallMomNegB{nullptr};
   std::vector<std::vector<std::shared_ptr<TH1>>> fhPtA{2, {nsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPtVsEtaA{2, {nsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPtVsZvtxA{2, {nsp, nullptr}};
+  std::vector<std::shared_ptr<TH2>> fhPhiVsPtA{nsp, nullptr};
+  std::vector<std::shared_ptr<TH2>> fhPhiVsInnerWallMomA{nsp, nullptr};
+  std::vector<std::shared_ptr<TH2>> fhPhiShiftedVsPtA{nsp, nullptr};
+  std::vector<std::shared_ptr<TH2>> fhPhiShiftedVsInnerWallMomA{nsp, nullptr};
   std::shared_ptr<TH2> fhPtVsEtaItsAcc{nullptr};
   std::shared_ptr<TH2> fhPtVsEtaTpcAcc{nullptr};
   std::shared_ptr<TH2> fhPtVsEtaItsTpcAcc{nullptr};
@@ -177,11 +196,15 @@ struct QADataCollectingEngine {
     using namespace efficiencyandqatask;
     using namespace analysis::dptdptfilter;
 
+    AxisSpec pidPtAxis{150, 0.1, 5.0, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec pidPAxis{150, 0.1, 5.0, "#it{p} (GeV/#it{c})"};
+    pidPtAxis.makeLogarithmic();
     pidPAxis.makeLogarithmic();
     const AxisSpec ptAxis{ptbins, ptlow, ptup, "#it{p}_{T} (GeV/c)"};
     const AxisSpec etaAxis{etabins, etalow, etaup, "#eta"};
-    const AxisSpec phiAxis{360, 0.0f, constants::math::TwoPI, "#varphi"};
+    const AxisSpec phiAxis{360, 0.0f, constants::math::TwoPI, "#varphi (rad)"};
+    const AxisSpec phiSectorAxis{144, 0.0f, 0.36, "#varphi (mod(2#pi/18) (rad))"};
+    const AxisSpec phiShiftedSectorAxis{220, -55.0f, 55.0f, "% of the sector"};
     const AxisSpec zvtxAxis{zvtxbins, zvtxlow, zvtxup, "#it{z}_{vtx}"};
     const AxisSpec itsNClsAxis{8, -0.5, 7.5, "ITS n clusters"};
     const AxisSpec itsCh2Axis{100, 0, 40, "#Chi^{2}/Cls ITS"};
@@ -204,6 +227,10 @@ struct QADataCollectingEngine {
 
     if constexpr (kindOfData == kReco) {
       /* only the reconstructed level histograms*/
+      fhPhiVsPtPosB = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "Before"), "PhiVsPtPos", "#varphi (mod(2#pi/18))", kTH2F, {pidPtAxis, phiSectorAxis});
+      fhPhiVsInnerWallMomPosB = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "Before"), "PhiVsIwMomPos", "#varphi (mod(2#pi/18)) TPC_{iw} #it{p}", kTH2F, {pidPAxis, phiSectorAxis});
+      fhPhiVsPtNegB = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "Before"), "PhiVsPtNeg", "#varphi (mod(2#pi/18))", kTH2F, {pidPtAxis, phiSectorAxis});
+      fhPhiVsInnerWallMomNegB = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "Before"), "PhiVsIwMomNeg", "#varphi (mod(2#pi/18)) TPC_{iw} #it{p}", kTH2F, {pidPAxis, phiSectorAxis});
       fhItsNClsVsPtB = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "Before"), "ITSNCls", "ITS clusters", kTH2F, {ptAxis, itsNClsAxis});
       fhItsChi2NClsVsPtB = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "Before"), "ITSChi2NCls", "ITS #Chi^{2}", kTH2F, {ptAxis, itsCh2Axis});
       fhTpcFindableNClsVsPtB = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "Before"), "TPCFindableNCls", "TPC findable clusters", kTH2F, {ptAxis, tpcNClsAxis});
@@ -222,6 +249,10 @@ struct QADataCollectingEngine {
       fhPtVsEtaTpcTofAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptTpcTofAcc", "TPC&TOF tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
       fhPtVsEtaItsTpcTofAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptItsTpcTofAcc", "ITS&TPC&TOF tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
       for (uint isp = 0; isp < nsp; ++isp) {
+        fhPhiVsPtA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "After"), HNAMESTRING("PhiVsPt_%s", tnames[isp].c_str()), HTITLESTRING("#varphi %s (mod(2#pi/18))", tnames[isp].c_str()), kTH2F, {pidPtAxis, phiSectorAxis});
+        fhPhiVsInnerWallMomA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "After"), HNAMESTRING("PhiVsIwMom_%s", tnames[isp].c_str()), HTITLESTRING("#varphi %s (mod(2#pi/18)) TPC_{iw} #it{p}", tnames[isp].c_str()), kTH2F, {pidPAxis, phiSectorAxis});
+        fhPhiShiftedVsPtA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "After"), HNAMESTRING("PhiShiftedVsPt_%s", tnames[isp].c_str()), HTITLESTRING("%s TPC sector %%", tnames[isp].c_str()), kTH2F, {pidPtAxis, phiShiftedSectorAxis});
+        fhPhiShiftedVsInnerWallMomA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "After"), HNAMESTRING("PhiShiftedVsIwMom_%s", tnames[isp].c_str()), HTITLESTRING("%s TPC sector %% TPC_{iw} #it{p}", tnames[isp].c_str()), kTH2F, {pidPAxis, phiShiftedSectorAxis});
         fhItsNClsVsPtA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "After"), HNAMESTRING("ITSNCls_%s", tnames[isp].c_str()), HTITLESTRING("ITS clusters %s", tnames[isp].c_str()), kTH2F, {ptAxis, itsNClsAxis});
         fhItsChi2NClsVsPtA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "After"), HNAMESTRING("ITSChi2NCls_%s", tnames[isp].c_str()), HTITLESTRING("ITS #Chi^{2} %s", tnames[isp].c_str()), kTH2F, {ptAxis, itsCh2Axis});
         fhTpcFindableNClsVsPtA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "After"), HNAMESTRING("TPCFindableNCls_%s", tnames[isp].c_str()), HTITLESTRING("TPC findable clusters %s", tnames[isp].c_str()), kTH2F, {ptAxis, tpcNClsAxis});
@@ -333,6 +364,16 @@ struct QADataCollectingEngine {
       bool hastpc = track.hasTPC() && TrackSelectionFlags::checkFlag(track.trackCutFlag(), TrackSelectionTPC);
       bool hastof = track.hasTOF();
 
+      float phiInTpcSector = std::fmod(track.phi(), kTpcPhiSectorWidth);
+      float phiShiftedPercentInTpcSector = phiInTpcSector * 100 / kTpcPhiSectorWidth;
+      phiShiftedPercentInTpcSector = (phiShiftedPercentInTpcSector > 50.0f) ? (phiShiftedPercentInTpcSector - 100.0f) : phiShiftedPercentInTpcSector;
+      if (track.sign() > 0) {
+        fhPhiVsPtPosB->Fill(track.pt(), phiInTpcSector);
+        fhPhiVsInnerWallMomPosB->Fill(track.tpcInnerParam(), phiInTpcSector);
+      } else {
+        fhPhiVsPtNegB->Fill(track.pt(), phiInTpcSector);
+        fhPhiVsInnerWallMomNegB->Fill(track.tpcInnerParam(), phiInTpcSector);
+      }
       fhItsNClsVsPtB->Fill(track.pt(), track.itsNCls());
       fhItsChi2NClsVsPtB->Fill(track.pt(), track.itsChi2NCl());
       fhTpcFindableNClsVsPtB->Fill(track.pt(), track.tpcNClsFindable());
@@ -352,6 +393,10 @@ struct QADataCollectingEngine {
         fillhisto(fhPtVsEtaItsTpcTofAcc, hasits && hastpc && hastof);
       }
       if (!(track.trackacceptedid() < 0)) {
+        fhPhiVsPtA[track.trackacceptedid()]->Fill(track.pt(), phiInTpcSector);
+        fhPhiVsInnerWallMomA[track.trackacceptedid()]->Fill(track.tpcInnerParam(), phiInTpcSector);
+        fhPhiShiftedVsPtA[track.trackacceptedid()]->Fill(track.pt(), phiShiftedPercentInTpcSector);
+        fhPhiShiftedVsInnerWallMomA[track.trackacceptedid()]->Fill(track.tpcInnerParam(), phiShiftedPercentInTpcSector);
         fhItsNClsVsPtA[track.trackacceptedid()]->Fill(track.pt(), track.itsNCls());
         fhItsChi2NClsVsPtA[track.trackacceptedid()]->Fill(track.pt(), track.itsChi2NCl());
         fhTpcFindableNClsVsPtA[track.trackacceptedid()]->Fill(track.pt(), track.tpcNClsFindable());

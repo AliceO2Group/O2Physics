@@ -3172,6 +3172,27 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairCosPointingPos")) {
+    cut->AddCut(GetAnalysisCut("pairCosPointingPos"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairCosPointingNeg90")) {
+    cut->AddCut(GetAnalysisCut("pairCosPointingNeg90"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairCosPointingNeg85")) {
+    cut->AddCut(GetAnalysisCut("pairCosPointingNeg85"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairTauxyzProjectedCosPointing1")) {
+    cut->AddCut(GetAnalysisCut("pairCosPointingNeg"));
+    cut->AddCut(GetAnalysisCut("pairTauxyzProjected1"));
+    return cut;
+  }
+
   // -------------------------------------------------------------------------------------------------
   //
   // Below are a list of single electron single muon and in order or optimize the trigger
@@ -3242,6 +3263,27 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityTriggerTest"));
     cut->AddCut(GetAnalysisCut("jpsi_TPCPID_TriggerTest4"));
+    return cut;
+  }
+
+  if (!nameStr.compare("emu_electron_test1")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
+    cut->AddCut(GetAnalysisCut("electronPIDsigmaOpen"));
+    return cut;
+  }
+
+  if (!nameStr.compare("emu_electron_test2")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine2"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
+    cut->AddCut(GetAnalysisCut("electronPIDsigmaOpen"));
+    return cut;
+  }
+
+  if (!nameStr.compare("emu_electron_test3")) {
+    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
+    cut->AddCut(GetAnalysisCut("electronPIDsigmaOpen"));
     return cut;
   }
 
@@ -5959,6 +6001,21 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pairLxyProjected3sigmaDplusCand")) {
     cut->AddCut(VarManager::kVertexingLxyProjected, 0.009, 10.);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairCosPointingPos")) {
+    cut->AddCut(VarManager::kCosPointingAngle, 0.9, 1000.);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairCosPointingNeg90")) {
+    cut->AddCut(VarManager::kCosPointingAngle, -1000., -0.9);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairCosPointingNeg85")) {
+    cut->AddCut(VarManager::kCosPointingAngle, -1000., -0.85);
     return cut;
   }
 

@@ -146,7 +146,6 @@ class VarManager : public TObject
     kDecayToKPi,                // e.g. D0           -> K+ pi- or cc.
     kTripleCandidateToKPiPi,    // e.g. D+ -> K- pi+ pi+
     kTripleCandidateToPKPi,     // e.g. Lambda_c -> p K- pi+
-    kTripleCandidateToKKPi,     // e.g. D_s -> K+ K- pi+
     kNMaxCandidateTypes
   };
 
@@ -1658,8 +1657,10 @@ void VarManager::FillEvent(T const& event, float* values)
     if constexpr ((fillMap & ReducedEventRefFlow) > 0) {
       values[kM1111REF] = event.m1111ref();
       values[kM11REF] = event.m11ref();
+      values[kM11REFetagap] = event.m11refetagap();
       values[kM11M1111REF] = event.m11ref() * event.m1111ref();
       values[kCORR2REF] = event.corr2ref();
+      values[kCORR2REFetagap] = event.corr2refetagap();
       values[kCORR4REF] = event.corr4ref();
       values[kCORR2CORR4REF] = event.corr2ref() * event.corr4ref();
       values[kMultA] = event.multa();
@@ -2885,21 +2886,6 @@ void VarManager::FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* val
     values[kPhi] = v123.Phi();
     values[kRap] = -v123.Rapidity();
   }
-
-  if (pairType == kTripleCandidateToKKPi) {
-    float m1 = o2::constants::physics::MassKaonCharged;
-    float m2 = o2::constants::physics::MassPionCharged;
-
-    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
-    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m1);
-    ROOT::Math::PtEtaPhiMVector v3(t3.pt(), t3.eta(), t3.phi(), m2);
-    ROOT::Math::PtEtaPhiMVector v123 = v1 + v2 + v3;
-    values[kMass] = v123.M();
-    values[kPt] = v123.Pt();
-    values[kEta] = v123.Eta();
-    values[kPhi] = v123.Phi();
-    values[kRap] = -v123.Rapidity();
-  }
 }
 
 template <uint32_t fillMap, int pairType, typename T1, typename T2>
@@ -3062,6 +3048,21 @@ void VarManager::FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* v
     values[kRap] = -v123.Rapidity();
     values[kPt1] = t1.pt();
     values[kPt2] = t2.pt();
+  }
+
+  if (pairType == kTripleCandidateToKPiPi) {
+    float m1 = o2::constants::physics::MassKaonCharged;
+    float m2 = o2::constants::physics::MassPionCharged;
+
+    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
+    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
+    ROOT::Math::PtEtaPhiMVector v3(t3.pt(), t3.eta(), t3.phi(), m2);
+    ROOT::Math::PtEtaPhiMVector v123 = v1 + v2 + v3;
+    values[kMass] = v123.M();
+    values[kPt] = v123.Pt();
+    values[kEta] = v123.Eta();
+    values[kPhi] = v123.Phi();
+    values[kRap] = -v123.Rapidity();
   }
 }
 
@@ -3574,6 +3575,10 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
       values[kVertexingTauzErr] = values[kVertexingLzErr] * v123.M() / (TMath::Abs(v123.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v123.M() / (v123.Pt() * o2::constants::physics::LightSpeedCm2NS);
 
+      values[kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v123.Px() +
+                                   (collision.posY() - secondaryVertex[1]) * v123.Py() +
+                                   (collision.posZ() - secondaryVertex[2]) * v123.Pz()) /
+                                  (v123.P() * values[VarManager::kVertexingLxyz]);
       // run 2 definitions: Decay length projected onto the momentum vector of the candidate
       values[kVertexingLzProjected] = (secondaryVertex[2] - collision.posZ()) * v123.Pz();
       values[kVertexingLzProjected] = values[kVertexingLzProjected] / TMath::Sqrt(v123.Pz() * v123.Pz());
@@ -4347,14 +4352,14 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kM0111POI] = values[kMultDimuons] * (values[kS31A] - 3. * values[kS11A] * values[kS12A] + 2. * values[kS13A]);
     values[kCORR2POI] = (P2 * conj(Q21)).real() / values[kM01POI];
     values[kCORR4POI] = (P2 * Q21 * conj(Q21) * conj(Q21) - P2 * Q21 * conj(Q42) - 2. * values[kS12A] * P2 * conj(Q21) + 2. * P2 * conj(Q23)).real() / values[kM0111POI];
-    values[kM01POIoverMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM01POI]) || std::isinf(values[kM01POI])) ? values[kM01POI] / values[kMultDimuons] : 0;
-    values[kM0111POIoverMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM0111POI]) || std::isinf(values[kM0111POI])) ? values[kM0111POI] / values[kMultDimuons] : 0;
-    values[kM11REFoverMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF])) ? values[kM11REF] / values[kMultDimuons] : 0;
-    values[kM1111REFoverMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF])) ? values[kM1111REF] / values[kMultDimuons] : 0;
-    values[kCORR2POIMp] = std::isnan(values[kCORR2POI]) || std::isinf(values[kCORR2POI]) ? 0 : values[kCORR2POI] * values[kMultDimuons];
-    values[kCORR4POIMp] = std::isnan(values[kCORR4POI]) || std::isinf(values[kCORR4POI]) ? 0 : values[kCORR4POI] * values[kMultDimuons];
-    values[kCORR2REF] = std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
-    values[kCORR4REF] = std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR4REF];
+    values[kM01POIoverMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM01POI]) || std::isinf(values[kM01POI]) || std::isnan(values[kCORR2POI]) || std::isinf(values[kCORR2POI])) ? values[kM01POI] / values[kMultDimuons] : 0;
+    values[kM0111POIoverMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM0111POI]) || std::isinf(values[kM0111POI]) || std::isnan(values[kCORR4POI]) || std::isinf(values[kCORR4POI])) ? values[kM0111POI] / values[kMultDimuons] : 0;
+    values[kM11REFoverMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF])) ? values[kM11REF] / values[kMultDimuons] : 0;
+    values[kM1111REFoverMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF])) ? values[kM1111REF] / values[kMultDimuons] : 0;
+    values[kCORR2POIMp] = std::isnan(values[kCORR2POI]) || std::isinf(values[kCORR2POI]) || std::isnan(values[kM01POI]) || std::isinf(values[kM01POI]) ? 0 : values[kCORR2POI] * values[kMultDimuons];
+    values[kCORR4POIMp] = std::isnan(values[kCORR4POI]) || std::isinf(values[kCORR4POI]) || std::isnan(values[kM0111POI]) || std::isinf(values[kM0111POI]) ? 0 : values[kCORR4POI] * values[kMultDimuons];
+    values[kCORR2REF] = std::isnan(values[kM11REFoverMp]) || std::isinf(values[kM11REFoverMp]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
+    values[kCORR4REF] = std::isnan(values[kM1111REFoverMp]) || std::isinf(values[kM1111REFoverMp]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR4REF];
   }
 
   ROOT::Math::PtEtaPhiMVector v1_vp(v1.Pt(), v1.Eta(), v1.Phi() - Psi2B, v1.M());
