@@ -1494,8 +1494,8 @@ struct LFNucleiBATask {
       }
     }
     if (enableTr) {
-      histos.add<TH2>("tracks/triton/h2TritonVspTNSigmaITS", "NSigmaITS(t) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaITS", HistType::kTH2F, {{ptAxis}, {sigmaITSAxis}});
-      histos.add<TH2>("tracks/triton/h2antiTritonVspTNSigmaITS", "NSigmaITS(#bar{t}) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaITS", HistType::kTH2F, {{ptAxis}, {sigmaITSAxis}});
+      // histos.add<TH2>("tracks/triton/h2TritonVspTNSigmaITS", "NSigmaITS(t) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaITS", HistType::kTH2F, {{ptAxis}, {sigmaITSAxis}});
+      // histos.add<TH2>("tracks/triton/h2antiTritonVspTNSigmaITS", "NSigmaITS(#bar{t}) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaITS", HistType::kTH2F, {{ptAxis}, {sigmaITSAxis}});
 
       histos.add<TH2>("tracks/triton/h2TritonVspTNSigmaTPC", "NSigmaTPC(t) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
       histos.add<TH2>("tracks/triton/h2antiTritonVspTNSigmaTPC", "NSigmaTPC(#bar{t}) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
@@ -2051,7 +2051,10 @@ struct LFNucleiBATask {
         debugHistos.fill(HIST("event/hFV0M"), event.centFV0M());
     }
 
-    for (auto& track : tracks) {
+    auto tracksWithITS = soa::Attach<TracksType,
+                                     aod::pidits::ITSNSigmaHe>(tracks);
+
+    for (auto& track : tracksWithITS) {
       histos.fill(HIST("tracks/h1pT"), track.pt());
       histos.fill(HIST("tracks/h1p"), track.p());
 
@@ -2140,7 +2143,8 @@ struct LFNucleiBATask {
           break;
       }
 
-      float nITSTr, nITSHe;
+      // float nITSTr;
+      float nITSHe;
 
       heP = track.p();
       antiheP = track.p();
@@ -3456,6 +3460,9 @@ struct LFNucleiBATask {
       if (isPVContributorCut && !track.isPVContributor()) {
         continue;
       }
+
+      // nITSTr = o2::aod::ITSResponse.nSigmaITS<o2::track::PID::Triton>(track);
+      nITSHe = track.itsNSigmaHe();
 
       if (outFlagOptions.makeDCAAfterCutPlots) {
 
