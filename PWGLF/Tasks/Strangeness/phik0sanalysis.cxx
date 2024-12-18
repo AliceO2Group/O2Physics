@@ -67,7 +67,6 @@ struct phik0shortanalysis {
   HistogramRegistry PhieffHist{"PhieffHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry K0SeffHist{"K0SeffHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry PioneffHist{"PioneffHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry yaccHist{"yaccHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry closureMCPhipurHist{"closureMCPhipurHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry closureMCPhiK0SHist{"closureMCPhiK0SHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry closureMCPhiPionHist{"closureMCPhiPionHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -129,10 +128,11 @@ struct phik0shortanalysis {
   Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
 
   // Configurables for delta y selection
-  Configurable<int> nBinsy{"nBinsy", 10, "Number of bins in y and deltay axis"};
+  Configurable<int> nBinsy{"nBinsy", 80, "Number of bins in y and deltay axis"};
   Configurable<float> cfgyAcceptance{"cfgyAcceptance", 0.5f, "Rapidity acceptance"};
   Configurable<float> cfgFirstCutonDeltay{"cgfFirstCutonDeltay", 0.5f, "First upper bound on Deltay selection"};
   Configurable<float> cfgSecondCutonDeltay{"cgfSecondCutonDeltay", 0.1f, "Second upper bound on Deltay selection"};
+  Configurable<float> cfgyAcceptanceSmear{"cfgyAcceptanceSmear", 0.8f, "Rapidity acceptance for smearing matrix study"};
 
   // Configurable for RecMC
   Configurable<bool> cfgiskNoITSROFrameBorder{"cfgiskNoITSROFrameBorder", false, "kNoITSROFrameBorder request on RecMC collisions"};
@@ -186,8 +186,8 @@ struct phik0shortanalysis {
     AxisSpec PhimassAxis = {200, 0.9f, 1.2f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec sigPhimassAxis = {nBins, lowmPhi, upmPhi, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec vertexZAxis = {100, -15.f, 15.f, "vrtx_{Z} [cm]"};
-    AxisSpec yAxis = {nBinsy, -cfgyAcceptance, cfgyAcceptance, "#it{y}"};
-    AxisSpec deltayAxis = {nBinsy, 0.0f, 1.0f, "|#it{#Deltay}|"};
+    AxisSpec yAxis = {nBinsy, -cfgyAcceptanceSmear, cfgyAcceptanceSmear, "#it{y}"};
+    AxisSpec deltayAxis = {nBinsy, 0.0f, 1.6f, "|#it{#Deltay}|"};
     AxisSpec multAxis = {120, 0.0f, 120.0f, "centFT0M"};
     AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
     AxisSpec ptK0SAxis = {60, 0.0f, 6.0f, "#it{p}_{T} (GeV/#it{c})"};
@@ -348,22 +348,24 @@ struct phik0shortanalysis {
     PhieffHist.add("h2PhieffPiGenMCFCutAssocReco", "Phi coupled to Pion for GenMC Deltay < FirstCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
     PhieffHist.add("h2PhieffPiGenMCSCutAssocReco", "Phi coupled to Pion for GenMC Deltay < SecondCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
 
+    // Rapidity smearing matrix for Phi
+    PhieffHist.add("h3PhiRapiditySmearing", "Rapidity Smearing Matrix for Phi", kTH3F, {binnedmultAxis, yAxis, yAxis});
+
     // MCK0S invariant mass and GenMC K0S for computing efficiencies
     K0SeffHist.add("h3K0SeffInvMass", "Invariant mass of K0Short for Efficiency", kTH3F, {binnedmultAxis, binnedptK0SAxis, K0SmassAxis});
     K0SeffHist.add("h2K0SGenMC", "K0Short for GenMC", kTH2F, {binnedmultAxis, binnedptK0SAxis});
     K0SeffHist.add("h2K0SGenMCAssocReco", "K0Short for GenMC Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptK0SAxis});
+
+    // Rapidity smearing matrix for K0S
+    K0SeffHist.add("h4K0SRapiditySmearing", "Rapidity Smearing Matrix for K0Short", kTHnSparseF, {binnedmultAxis, binnedptK0SAxis, yAxis, yAxis});
 
     // MCPion invariant mass and GenMC Pion for computing efficiencies
     PioneffHist.add("h4PieffInvMass", "Invariant mass of Pion for Efficiency", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
     PioneffHist.add("h2PiGenMC", "Pion for GenMC", kTH2F, {binnedmultAxis, binnedptPiAxis});
     PioneffHist.add("h2PiGenMCAssocReco", "Pion for GenMC Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
 
-    // y acceptance studies
-    yaccHist.add("hyaccK0SRecMC", "K0S y acceptance in RecMC", kTH3F, {binnedmultAxis, binnedptK0SAxis, yAxis});
-    yaccHist.add("hyaccK0SGenMC", "K0S y acceptance in GenMC", kTH3F, {binnedmultAxis, binnedptK0SAxis, yAxis});
-
-    yaccHist.add("hyaccPiRecMC", "Pion y acceptance in RecMC", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
-    yaccHist.add("hyaccPiGenMC", "Pion y acceptance in GenMC", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
+    // Rapidity smearing matrix for Pion
+    PioneffHist.add("h4PiRapiditySmearing", "Rapidity Smearing Matrix for Pion", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, yAxis, yAxis});
   }
 
   // Event selection and QA filling
