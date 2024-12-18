@@ -1111,7 +1111,7 @@ inline int8_t HfFilterHelper::isSelectedSigmaCInDeltaMassRange(const T& pTrackSa
   return retValue;
 }
 
-/// Mass selection of Xic candidates to build Lb candidates
+/// Mass selection of Xic candidates to build Xib candidates
 /// \param pTrackSameChargeFirst is the first same-charge track momentum
 /// \param pTrackSameChargeSecond is the second same-charge track momentum
 /// \param pTrackOppositeCharge is the opposite charge track momentum
