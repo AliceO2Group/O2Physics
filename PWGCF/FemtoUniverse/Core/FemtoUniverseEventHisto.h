@@ -21,7 +21,7 @@
 #include "Framework/HistogramRegistry.h"
 
 using namespace o2::framework;
-namespace o2::analysis::femtoUniverse
+namespace o2::analysis::femto_universe
 {
 /// \class FemtoUniverseEventHisto
 /// \brief Class for histogramming event properties
@@ -60,6 +60,6 @@ class FemtoUniverseEventHisto
  private:
   HistogramRegistry* mHistogramRegistry; ///< For QA output
 };
-} // namespace o2::analysis::femtoUniverse
+} // namespace o2::analysis::femto_universe
 
 #endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEVENTHISTO_H_
