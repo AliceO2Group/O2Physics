@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 /// \file EventSelectionParams.h
 /// \brief Event selection parameters
 ///
@@ -85,9 +86,9 @@ class EventSelectionParams
 {
  public:
   explicit EventSelectionParams(int system = 0, int run = 2);
-  void DisableOutOfBunchPileupCuts();
-  void SetOnVsOfParams(float newV0MOnVsOfA, float newV0MOnVsOfB, float newSPDOnVsOfA, float newSPDOnVsOfB);
-  bool* GetSelection(int iSelection);
+  void disableOutOfBunchPileupCuts();
+  void setOnVsOfParams(float newV0MOnVsOfA, float newV0MOnVsOfB, float newSPDOnVsOfA, float newSPDOnVsOfB);
+  bool* getSelection(int iSelection);
 
   bool selectionBarrel[o2::aod::evsel::kNsel];
   bool selectionMuonWithPileupCuts[o2::aod::evsel::kNsel];

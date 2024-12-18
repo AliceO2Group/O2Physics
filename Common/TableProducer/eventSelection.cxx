@@ -328,7 +328,7 @@ struct BcSelectionTask {
     }
 
     // bc loop
-    for (const auto bc : bcs) {
+    for (const auto& bc : bcs) {
       uint32_t alias{0};
       // workaround for pp2022 (trigger info is shifted by -294 bcs)
       int32_t triggerBcId = mapGlobalBCtoBcId[bc.globalBC() + triggerBcShift];
@@ -917,7 +917,7 @@ struct EventSelectionTask {
       if (bc.has_foundFT0())
         vAmpFT0CperColl[colIndex] = bc.foundFT0().sumAmpC();
 
-      int64_t TFid = (foundGlobalBC - bcSOR) / nBCsPerTF;
+      int64_t tfId = (foundGlobalBC - bcSOR) / nBCsPerTF;
       int64_t rofId = (foundGlobalBC + nBCsPerOrbit - rofOffset) / rofLength;
 
       // ### for in-ROF occupancy
@@ -928,7 +928,7 @@ struct EventSelectionTask {
         int64_t thisBC = vFoundGlobalBC[minColIndex];
         // check if this is still the same TF
         int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != TFid)
+        if (thisTFid != tfId)
           break;
         // int thisRofIdInTF = (thisBC - rofOffset) / rofLength;
         int64_t thisRofId = (thisBC + nBCsPerOrbit - rofOffset) / rofLength;
@@ -944,7 +944,7 @@ struct EventSelectionTask {
       while (maxColIndex < cols.size()) {
         int64_t thisBC = vFoundGlobalBC[maxColIndex];
         int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != TFid)
+        if (thisTFid != tfId)
           break;
         int64_t thisRofId = (thisBC + nBCsPerOrbit - rofOffset) / rofLength;
         if (thisRofId != rofId)
@@ -961,7 +961,7 @@ struct EventSelectionTask {
         int64_t thisBC = vFoundGlobalBC[minColIndex];
         // check if this is still the same TF
         int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != TFid)
+        if (thisTFid != tfId)
           break;
         int64_t thisRofId = (thisBC + nBCsPerOrbit - rofOffset) / rofLength;
         if (thisRofId == rofId - 1)
@@ -987,7 +987,7 @@ struct EventSelectionTask {
         int64_t thisBC = vFoundGlobalBC[minColIndex];
         // check if this is still the same TF
         int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != TFid)
+        if (thisTFid != tfId)
           break;
         float dt = (thisBC - foundGlobalBC) * bcNS; // ns
         // check if we are within the chosen time range
@@ -1002,7 +1002,7 @@ struct EventSelectionTask {
       while (maxColIndex < cols.size()) {
         int64_t thisBC = vFoundGlobalBC[maxColIndex];
         int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != TFid)
+        if (thisTFid != tfId)
           break;
         float dt = (thisBC - foundGlobalBC) * bcNS; // ns
         if (dt > timeWinOccupancyCalcMaxNS)
