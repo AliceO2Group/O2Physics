@@ -340,7 +340,7 @@ struct tofSpectra {
     const AxisSpec phiAxis{200, 0, 7, "#it{#varphi} (rad)"};
     const AxisSpec dcaZAxis{binsOptions.binsDca, "DCA_{z} (cm)"};
     const AxisSpec lengthAxis{100, 0, 600, "Track length (cm)"};
-    const AxisSpec decayLengthAxis{100, 0, 0.5, "Decay Length (cm)"};
+    const AxisSpec decayLengthAxis{100, 0, 1.0, "Decay Length (cm)"};
 
     if (enableTrackCutHistograms) {
       const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
@@ -1697,14 +1697,17 @@ struct tofSpectra {
             if (motherPdgCode == 421) {
               IsD0Mother = true;
             }
-            if (charmOrigin == RecoDecay::OriginType::NonPrompt && ((motherPdgCode) / 1000 == 5 || (motherPdgCode) / 100 == 5)) {
+            if (charmOrigin == RecoDecay::OriginType::NonPrompt) {
               IsBeautyMother = true;
+              std::cout << "Charm Origin for Beauty:" << charmOrigin << std::endl;
             }
-            if (charmOrigin == RecoDecay::OriginType::Prompt && ((motherPdgCode) / 1000 == 4 || (motherPdgCode) / 100 == 4)) {
+            if (charmOrigin == RecoDecay::OriginType::Prompt) {
               IsCharmMother = true;
+              std::cout << "Charm Origin for Charm:" << charmOrigin << std::endl;
             }
-            if (!(motherPdgCode / 1000 == 4 || motherPdgCode / 100 == 4) && !(motherPdgCode / 1000 == 5 || motherPdgCode / 100 == 5)) {
+            if (charmOrigin == RecoDecay::OriginType::None) {
               IsNotHFMother = true;
+              std::cout << "Charm Origin for NotHF:" << charmOrigin << std::endl;
             }
           }
         }
