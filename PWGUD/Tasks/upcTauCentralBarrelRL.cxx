@@ -148,7 +148,7 @@ struct UpcTauCentralBarrelRL {
     ConfigurableAxis axisRap{"axisRap", {50, -1.2, 1.2}, "Rapidity (a.u.)"};
     ConfigurableAxis axisFraction{"axisFraction", {500, 0., 1.}, "Fraction (-)"};
     ConfigurableAxis axisAcoplanarity{"axisAcoplanarity", {32, 0.0, o2::constants::math::PI}, "Acoplanarity (rad)"};
-    ConfigurableAxis axisCollinearity{"axisCollinearity", {200,0,20}, "Collinearity (-)"};
+    ConfigurableAxis axisCollinearity{"axisCollinearity", {200, 0, 20}, "Collinearity (-)"};
     ConfigurableAxis axisTPCdEdx{"axisTPCdEdx", {2000, 0., 200.}, "TPC dE/dx (a.u.)"};
     ConfigurableAxis axisTOFsignal{"axisTOFsignal", {2500, -10000., 40000.}, "TOF signal (a.u.)"};
     ConfigurableAxis axisNsigma{"axisNsigma", {200, -10., 10.}, "n sigma"};
@@ -904,7 +904,7 @@ struct UpcTauCentralBarrelRL {
       return false;
     return true;
   }
-  
+
   template <typename T>
   bool selectedGoodPion(T const& pionCandidate)
   {
@@ -1079,7 +1079,7 @@ struct UpcTauCentralBarrelRL {
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPhi"))->Fill(daug[0].Phi(), daug[1].Phi());
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersRapidity"))->Fill(daug[0].Rapidity(), daug[1].Rapidity());
-      histos.get<TH2>(HIST("EventTwoTracks/hDaughtersEnergyFractions"))->Fill(daug[0].E()/(daug[0].E() + daug[1].E()), daug[1].E()/(daug[0].E() + daug[1].E()));
+      histos.get<TH2>(HIST("EventTwoTracks/hDaughtersEnergyFractions"))->Fill(daug[0].E() / (daug[0].E() + daug[1].E()), daug[1].E() / (daug[0].E() + daug[1].E()));
       histos.get<TH2>(HIST("EventTwoTracks/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
       if (motherOfPions.Pt() < 0.2) {
         histos.get<TH1>(HIST("EventTwoTracks/hInvariantMassWideAllPionMassPtCut"))->Fill(motherOfPions.M());
@@ -1277,7 +1277,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersPhi"))->Fill(daug[0].Phi(), daug[1].Phi());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersRapidity"))->Fill(daug[0].Rapidity(), daug[1].Rapidity());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersEnergyFractions"))->Fill(electronE/(electronE + mupionE), mupionE/(electronE + mupionE));
+        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersEnergyFractions"))->Fill(electronE / (electronE + mupionE), mupionE / (electronE + mupionE));
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPvsOtherP"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].P() : daug[1].P(), (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].P() : daug[0].P());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPwideVsOtherPwide"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].P() : daug[1].P(), (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].P() : daug[0].P());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPtVsOtherPt"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt(), (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].Pt() : daug[0].Pt());
