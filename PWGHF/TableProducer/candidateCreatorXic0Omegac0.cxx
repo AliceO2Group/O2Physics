@@ -1520,7 +1520,6 @@ struct HfCandidateCreatorXic0Omegac0 {
                          v0NDF, cascNDF, charmbaryonNDF, v0Ndfm, cascNdfm,
                          v0Chi2OverNdf, cascChi2OverNdf, charmbaryonChi2OverNdf, v0Chi2OverNdfm, cascChi2OverNdfm);
 
-
     } // loop over LF Cascade-bachelor candidates
   }
   /// @brief process function w/o centrality selections
