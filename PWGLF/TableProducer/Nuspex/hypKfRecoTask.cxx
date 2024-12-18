@@ -350,7 +350,7 @@ struct HyperNucCandidate {
   }
   KFParticle getDaughterTrackKfp(int track)
   {
-    return kfpDaughters.at(track + isCascade() ? 1 : 0);
+    return kfpDaughters.at(track + (isCascade() ? 1 : 0));
   }
   float getDcaTrackToVtxXY(int track, std::vector<float> vtx)
   {
