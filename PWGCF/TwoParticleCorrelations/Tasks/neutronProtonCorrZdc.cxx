@@ -27,6 +27,11 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+enum EventCounter { kNoSelection = 0,
+                    kQualitySelection = 1,
+                    kMaxCentralitySelection = 2,
+                    kZDCSelection = 3};
+
 struct NeutronProtonCorrZdc {
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -55,7 +60,7 @@ struct NeutronProtonCorrZdc {
   void init(InitContext const&)
   {
     // define axes you want to use
-    const AxisSpec axisCounter{3, -0.5, 3.5, ""};
+    const AxisSpec axisCounter{4, -0.5, 3.5, ""};
     const AxisSpec axisZNSectorSignal{cfgNBinsZN, cfgZNmin, cfgZNmax / 3.};
     const AxisSpec axisZPSectorSignal{cfgNBinsZP, cfgZPmin, cfgZPmax / 3.};
     const AxisSpec axisZNASignal{cfgNBinsZN, cfgZNmin, cfgZNmax, "ZNA (a.u.)"};
@@ -139,20 +144,21 @@ struct NeutronProtonCorrZdc {
 
   void processRun3(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, CentralitiesRun3>>::iterator const& collision, BCsRun3 const&, aod::Zdcs const&)
   {
+    histos.fill(HIST("eventCounter"), EventCounter::kNoSelection);
     if (!collision.sel8()) {
-      histos.fill(HIST("eventCounter"), 0.25);
       return;
     }
+    histos.fill(HIST("eventCounter"), EventCounter::kQualitySelection);
     if (collision.centFT0C() > cfgMaxCentrality) {
-      histos.fill(HIST("eventCounter"), 0.75);
       return;
     }
+    histos.fill(HIST("eventCounter"), EventCounter::kMaxCentralitySelection);
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (foundBC.has_zdc()) {
       const auto& zdcread = foundBC.zdc();
       const auto cent = collision.centFT0C();
 
-      histos.fill(HIST("eventCounter"), 1.25);
+      histos.fill(HIST("eventCounter"), EventCounter::kZDCSelection);
       histos.fill(HIST("CentralityPercentile"), cent);
 
       fillZDCHistos<0>(cent, zdcread); // Fill A-side
@@ -180,20 +186,21 @@ struct NeutronProtonCorrZdc {
 
   void processRun2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Run2MatchedSparse, CentralitiesRun2>>::iterator const& collision, aod::BCsWithTimestamps const&, aod::Zdcs const&)
   {
-    if (!collision.alias_bit(kINT7)) {
-      histos.fill(HIST("eventCounter"), 0.25);
+    histos.fill(HIST("eventCounter"), EventCounter::kNoSelection);
+    if (!collision.alias_bit(kINT7)) {      
       return;
     }
+    histos.fill(HIST("eventCounter"), EventCounter::kQualitySelection);
     if (collision.centRun2V0M() > cfgMaxCentrality) {
-      histos.fill(HIST("eventCounter"), 0.75);
       return;
     }
+    histos.fill(HIST("eventCounter"), EventCounter::kMaxCentralitySelection);
 
     if (collision.has_zdc()) {
       const auto& zdcread = collision.zdc();
       const auto cent = collision.centRun2V0M();
 
-      histos.fill(HIST("eventCounter"), 1.25);
+      histos.fill(HIST("eventCounter"), EventCounter::kZDCSelection);
       histos.fill(HIST("CentralityPercentile"), cent);
 
       fillZDCHistos<0>(cent, zdcread); // Fill A-side
