@@ -283,10 +283,10 @@ struct HfCandidateCreator2Prong {
       auto indexCollision = collision.globalIndex();
       uint8_t indicesProngsContributorsPV = 0;
       if (indexCollision == track0.collisionId() && track0.isPVContributor()) {
-        indicesProngsContributorsPV += 1;
+        SETBIT(indicesProngsContributorsPV, 0);
       }
       if (indexCollision == track1.collisionId() && track1.isPVContributor()) {
-        indicesProngsContributorsPV += 2;
+        SETBIT(indicesProngsContributorsPV, 1);
       }
 
       // fill candidate table rows
@@ -434,10 +434,10 @@ struct HfCandidateCreator2Prong {
       auto indexCollision = collision.globalIndex();
       uint8_t indicesProngsContributorsPV = 0;
       if (indexCollision == track0.collisionId() && track0.isPVContributor()) {
-        indicesProngsContributorsPV += 1;
+        SETBIT(indicesProngsContributorsPV, 0);
       }
       if (indexCollision == track1.collisionId() && track1.isPVContributor()) {
-        indicesProngsContributorsPV += 2;
+        SETBIT(indicesProngsContributorsPV, 1);
       }
 
       // fill candidate table rows
