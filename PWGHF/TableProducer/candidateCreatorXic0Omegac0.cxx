@@ -958,12 +958,12 @@ struct HfCandidateCreatorXic0Omegac0 {
       auto charmbaryonChi2OverNdf = kfOmegac0Candidate.chi2GeoOmegac / charmbaryonNDF;
 
       kfOmegac0Candidate.chi2MassV0 = kfV0MassConstrained.GetChi2();
-      auto v0Ndf_m = kfV0MassConstrained.GetNDF();
-      auto v0Chi2OverNdf_m = kfOmegac0Candidate.chi2MassV0 / v0Ndf_m;
+      auto v0Ndfm = kfV0MassConstrained.GetNDF();
+      auto v0Chi2OverNdfm = kfOmegac0Candidate.chi2MassV0 / v0Ndfm;
 
       kfOmegac0Candidate.chi2MassCasc = kfOmegaMassConstrained.GetChi2();
-      auto cascNdf_m = kfOmegaMassConstrained.GetNDF();
-      auto cascChi2OverNdf_m = kfOmegac0Candidate.chi2MassCasc / cascNdf_m;
+      auto cascNdfm = kfOmegaMassConstrained.GetNDF();
+      auto cascChi2OverNdfm = kfOmegac0Candidate.chi2MassCasc / cascNdfm;
 
       // KF topo Chi2
       kfOmegac0Candidate.chi2TopoV0ToPv = kfV0ToPv.GetChi2();
@@ -988,17 +988,17 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfOmegac0Candidate.kfDcaOmegacDau = kfBachPionToOmegaC.GetDistanceFromParticle(kfOmegaToOmegaC);
 
       // KF decay length
-      float DecayLxy_Lam, err_DecayLxy_Lam;
-      kfV0ToCasc.GetDecayLengthXY(DecayLxy_Lam, err_DecayLxy_Lam);
-      kfOmegac0Candidate.decayLenXYLambda = DecayLxy_Lam;
+      float decayLxyLam, errDecayLxyLam;
+      kfV0ToCasc.GetDecayLengthXY(decayLxyLam, errDecayLxyLam);
+      kfOmegac0Candidate.decayLenXYLambda = decayLxyLam;
 
-      float DecayLxy_Casc, err_DecayLxy_Casc;
-      kfOmegaToOmegaC.GetDecayLengthXY(DecayLxy_Casc, err_DecayLxy_Casc);
-      kfOmegac0Candidate.decayLenXYCasc = DecayLxy_Casc;
+      float decayLxyCasc, errDecayLxyCasc;
+      kfOmegaToOmegaC.GetDecayLengthXY(decayLxyCasc, errDecayLxyCasc);
+      kfOmegac0Candidate.decayLenXYCasc = decayLxyCasc;
 
-      float DecayLxy_Omegac0, err_DecayLxy_Omegac0;
-      kfOmegac0ToPv.GetDecayLengthXY(DecayLxy_Omegac0, err_DecayLxy_Omegac0);
-      kfOmegac0Candidate.decayLenXYOmegac = DecayLxy_Omegac0;
+      float decayLxyOmegac0, errDecayLxyOmegac0;
+      kfOmegac0ToPv.GetDecayLengthXY(decayLxyOmegac0, errDecayLxyOmegac0);
+      kfOmegac0Candidate.decayLenXYOmegac = decayLxyOmegac0;
 
       // KF cosPA
       kfOmegac0Candidate.cosPaV0ToPv = cpaFromKF(kfV0, kfPV);
@@ -1086,8 +1086,8 @@ struct HfCandidateCreatorXic0Omegac0 {
                       kfOmegac0Candidate.cosPaV0ToCasc, kfOmegac0Candidate.cosPaCascToOmegac, kfOmegac0Candidate.cosPaXYV0ToCasc, kfOmegac0Candidate.cosPaXYCascToOmegac,
                       kfOmegac0Candidate.rapOmegac, kfOmegac0Candidate.ptPiFromOmegac, kfOmegac0Candidate.ptOmegac,
                       kfOmegac0Candidate.cosThetaStarPiFromOmegac,
-                      v0NDF, cascNDF, charmbaryonNDF, v0Ndf_m, cascNdf_m,
-                      v0Chi2OverNdf, cascChi2OverNdf, charmbaryonChi2OverNdf, v0Chi2OverNdf_m, cascChi2OverNdf_m);
+                      v0NDF, cascNDF, charmbaryonNDF, v0Ndfm, cascNdfm,
+                      v0Chi2OverNdf, cascChi2OverNdf, charmbaryonChi2OverNdf, v0Chi2OverNdfm, cascChi2OverNdfm);
 
     } // loop over LF Cascade-bachelor candidates
   } // end of run function
