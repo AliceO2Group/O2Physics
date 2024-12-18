@@ -41,7 +41,8 @@ void setLabelHistoCands(Histo& hCandidates)
   hCandidates->GetXaxis()->SetBinLabel(SVFitting::Fail + 1, "Run-time error in secondary vertexing");
 }
 
-int countOnesInBinary(uint8_t num) {
+int countOnesInBinary(uint8_t num)
+{
   int count = 0;
 
   // Loop through all bits of the number (8 bits for uint8_t)
