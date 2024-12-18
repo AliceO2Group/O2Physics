@@ -75,6 +75,7 @@ using DptDptFullTracksFullPIDDetLevel = soa::Join<DptDptFullTracksDetLevel, DptD
 using DptDptFullTracksFullPIDDetLevelAmbiguous = soa::Join<DptDptFullTracksDetLevelAmbiguous, DptDptTracksFullPID>;
 
 bool fullDerivedData = false; /* produce full derived data for its external storage */
+TpcExcludeTrack tpcExcluder;  ///< the TPC excluder object instance
 
 /// \enum MatchRecoGenSpecies
 /// \brief The species considered by the matching test
@@ -367,6 +368,7 @@ struct DptDptFilter {
   Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB,VTXTOFMATCHED,VTXTRDMATCHED,VTXTRDTOFMATCHED,None. Default MB"};
   Configurable<std::string> cfgCentSpec{"centralities", "00-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
   Configurable<float> cfgOverallMinP{"overallminp", 0.0f, "The overall minimum momentum for the analysis. Default: 0.0"};
+  Configurable<int> cfgTpcExclusionMethod{"cfgTpcExclusionMethod", 0, "The method for excluding tracks within the TPC. 0: no exclusion; 1: static; 2: dynamic. Default: 0"};
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
@@ -801,7 +803,15 @@ struct DptDptFilterTracks {
     getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins, false);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow, false);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibins", phibins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibinshift", phibinshift, false);
 
+    TpcExclusionMethod tpcExclude = kNOEXCLUSION; ///< exclude tracks within the TPC according to this method
+    {
+      int tmpTpcExclude = 0;
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgTpcExclusionMethod", tmpTpcExclude, false);
+      tpcExclude = static_cast<TpcExclusionMethod>(tmpTpcExclude);
+    }
     /* self configure the CCDB access to the input file */
     getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdburl", cfgCCDBUrl, false);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbpath", cfgCCDBPathName, false);
@@ -815,6 +825,9 @@ struct DptDptFilterTracks {
     traceOutOfSpeciesParticles = cfgTraceOutOfSpeciesParticles;
     recoIdMethod = cfgRecoIdMethod;
     onlyInOneSide = cfgOnlyInOneSide.value;
+
+    /* the TPC excluder object instance */
+    tpcExcluder = TpcExcludeTrack(tpcExclude);
 
     /* self configure system type and data type */
     /* if the system type is not known at this time, we have to put the initialization somewhere else */

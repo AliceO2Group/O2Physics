@@ -1185,6 +1185,126 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
+  //------------------------------------------------------------------------------------
+
+  if (!nameStr.compare("D0")) {
+    MCProng prong(1, {Pdg::kD0}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "D0", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiFromD0")) {
+    MCProng prongKaon(2, {321, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongPion(2, {211, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon and pion pair from D0", {prongKaon, prongPion}, {1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("Dcharged")) {
+    MCProng prong(1, {Pdg::kDPlus}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "D+/-", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("Dplus")) {
+    MCProng prong(1, {Pdg::kDPlus}, {false}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "D+", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("Dminus")) {
+    MCProng prong(1, {-Pdg::kDPlus}, {false}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "D+", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiPiFromDcharged")) {
+    MCProng prongKaon(2, {321, Pdg::kDPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongPion(2, {211, Pdg::kDPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon pion pion triplet from D+/-", {prongKaon, prongPion, prongPion}, {1, 1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiPiFromDplus")) {
+    MCProng prongKaon(2, {-321, Pdg::kDPlus}, {false, false}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongPion(2, {211, Pdg::kDPlus}, {false, false}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon pion pion triplet from D+", {prongKaon, prongPion, prongPion}, {1, 1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiPiFromDminus")) {
+    MCProng prongKaon(2, {321, -Pdg::kDPlus}, {false, false}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongPion(2, {-211, -Pdg::kDPlus}, {false, false}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon pion pion triplet from D-", {prongKaon, prongPion, prongPion}, {1, 1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("Dstar")) {
+    MCProng prong(1, {Pdg::kDStar}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "D*", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("DstarPlus")) {
+    MCProng prong(1, {Pdg::kDStar}, {false}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "D*+", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("DstarMinus")) {
+    MCProng prong(1, {-Pdg::kDStar}, {false}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "D*-", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("pionFromDstar")) {
+    MCProng prong(2, {211, Pdg::kDStar}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Pions from D* decays", {prong}, {1});
+    return signal;
+  }
+  if (!nameStr.compare("D0FromDstar")) {
+    MCProng prong(2, {Pdg::kD0, Pdg::kDStar}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "D0 from D* decays", {prong}, {1});
+    return signal;
+  }
+  if (!nameStr.compare("KFromD0FromDstar")) {
+    MCProng prong(3, {321, Pdg::kD0, Pdg::kDStar}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Kaons from D0 from D* decays", {prong}, {1});
+    return signal;
+  }
+  if (!nameStr.compare("PiFromD0FromDstar")) {
+    MCProng prong(3, {211, Pdg::kD0, Pdg::kDStar}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Pions from D0 from D* decays", {prong}, {1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiFromD0FromDstar")) {
+    MCProng prongKaon(3, {321, Pdg::kD0, Pdg::kDStar}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPion(3, {321, Pdg::kD0, Pdg::kDStar}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Kaon and pion pair from D0 from D* decay", {prongKaon, prongPion}, {1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiPiFromD0FromDstar")) {
+    MCProng prongKaon(3, {321, Pdg::kD0, Pdg::kDStar}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPionSecondary(3, {211, Pdg::kD0, Pdg::kDStar}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPion(2, {211, Pdg::kDStar}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon pion pion triplet from D*", {prongKaon, prongPionSecondary, prongPion}, {2, 2, 1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiPiFromD0FromDstarPlus")) {
+    MCProng prongKaon(3, {-321, Pdg::kD0, Pdg::kDStar}, {false, false, false}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPionSecondary(3, {211, Pdg::kD0, Pdg::kDStar}, {false, false, false}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPion(2, {211, Pdg::kDStar}, {false, false}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon pion pion triplet from D*+", {prongKaon, prongPionSecondary, prongPion}, {2, 2, 1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiPiFromD0FromDstarMinus")) {
+    MCProng prongKaon(3, {321, Pdg::kD0, Pdg::kDStar}, {false, false, false}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPionSecondary(3, {-211, Pdg::kD0, Pdg::kDStar}, {false, false, false}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPion(2, {-211, Pdg::kDStar}, {false, false}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon pion pion triplet from D*-", {prongKaon, prongPionSecondary, prongPion}, {2, 2, 1});
+    return signal;
+  }
+  if (!nameStr.compare("KFromDplus")) {
+    MCProng prong(2, {321, Pdg::kDPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Kaons from D+/- decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("LambdaC")) {
+    MCProng prong(1, {Pdg::kLambdaCPlus}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Lambda_c", {prong}, {-1});
+    return signal;
+  }
+
   //--------------------------------------------------------------------------------
 
   if (!nameStr.compare("JpsiFromChic0")) {
@@ -1323,6 +1443,84 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     pronge.SetSourceBit(0, MCProng::kPhysicalPrimary);
     prongPhoton.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "Photon and electron pair from Pi0", {pronge, pronge, prongPhoton}, {1, 1, 1});
+    return signal;
+  }
+
+  //--------------------------------------------------------------------------------
+
+  if (!nameStr.compare("JpsiFromX3872")) {
+    MCProng prong(1, {443}, {true}, {false}, {0}, {0}, {false}, false, {9920443}, {false});
+    signal = new MCSignal(name, "Jpsi from X3872", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eFromX3872")) {
+    MCProng prong(3, {11, 443, 9920443}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Electron from Jpsi from X3872", {prong}, {1});
+    return signal;
+  }
+
+  if (!nameStr.compare("PionFromX3872")) {
+    MCProng prong(1, {211}, {true}, {false}, {0}, {0}, {false}, false, {9920443}, {false});
+    signal = new MCSignal(name, "Pion from Jpsi from X3872", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("JpsiFromPsi2S")) {
+    MCProng prong(1, {443}, {true}, {false}, {0}, {0}, {false}, false, {100443}, {false});
+    signal = new MCSignal(name, "Jpsi from Psi2S", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eFromPsi2S")) {
+    MCProng prong(3, {11, 443, 100443}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Electron from Jpsi from Psi2S", {prong}, {1});
+    return signal;
+  }
+
+  if (!nameStr.compare("PionFromPsi2S")) {
+    MCProng prong(1, {211}, {true}, {false}, {0}, {0}, {false}, false, {100443}, {false});
+    signal = new MCSignal(name, "Pion from Jpsi from Psi2S", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeFromJpsiFromX3872")) {
+    MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {9920443}, {false});
+    signal = new MCSignal(name, "Electron pair from Jpsi from X3872", {prong, prong}, {1, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("JpsiPiPiFromX3872")) {
+    MCProng prongJpsi(2, {443, 9920443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongPi(2, {211, 9920443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Jpsi and pion pair from X3872", {prongJpsi, prongPi, prongPi}, {1, 1, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eePiPiFromX3872")) {
+    MCProng pronge(3, {11, 443, 9920443}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPi(2, {211, 9920443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Electron pair and pion pair from X3872", {pronge, pronge, prongPi, prongPi}, {2, 2, 1, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeFromJpsiFromPsi2S")) {
+    MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {100443}, {false});
+    signal = new MCSignal(name, "Electron pair from Jpsi from Psi2S", {prong, prong}, {1, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("JpsiPiPiFromPsi2S")) {
+    MCProng prongJpsi(2, {443, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongPi(2, {211, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Jpsi and pion pair from Psi2S", {prongJpsi, prongPi, prongPi}, {1, 1, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eePiPiFromPsi2S")) {
+    MCProng pronge(3, {11, 443, 100443}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPi(2, {211, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Electron pair and pion pair from Psi2S", {pronge, pronge, prongPi, prongPi}, {2, 2, 1, 1});
     return signal;
   }
   return nullptr;

@@ -559,7 +559,7 @@ struct TaskPi0FlowEMC {
     auto [xQVec, yQVec] = getQvec(collision, qvecDetector);
     float cent = getCentrality(collision);
     int iCellIDPhoton1 = 0;
-    int iCellIDPhoton = 0;
+    int iCellIDPhoton2 = 0;
 
     ROOT::Math::AxisAngle rotationAxis(meson.Vect(), cfgRotAngle.value);
     ROOT::Math::Rotation3D rotationMatrix(rotationAxis);
@@ -575,15 +575,15 @@ struct TaskPi0FlowEMC {
       iCellIDPhoton1 = -1;
     }
     try {
-      iCellIDPhoton = emcalGeom->GetAbsCellIdFromEtaPhi(photon2.Eta(), photon2.Phi());
-      if (isTooCloseToEdge(iCellIDPhoton, cfgDistanceToEdge.value)) {
-        iCellIDPhoton = -1;
+      iCellIDPhoton2 = emcalGeom->GetAbsCellIdFromEtaPhi(photon2.Eta(), photon2.Phi());
+      if (isTooCloseToEdge(iCellIDPhoton2, cfgDistanceToEdge.value)) {
+        iCellIDPhoton2 = -1;
       }
     } catch (o2::emcal::InvalidPositionException& e) {
-      iCellIDPhoton = -1;
+      iCellIDPhoton2 = -1;
     }
 
-    if (iCellIDPhoton1 == -1 && iCellIDPhoton == -1) {
+    if (iCellIDPhoton1 == -1 && iCellIDPhoton2 == -1) {
       return;
     }
     for (const auto& photon : photons_coll) {
@@ -618,7 +618,7 @@ struct TaskPi0FlowEMC {
           }
         }
       }
-      if (iCellIDPhoton > 0) {
+      if (iCellIDPhoton2 > 0) {
         ROOT::Math::PtEtaPhiMVector mother2 = photon2 + photon3;
         float openingAngle2 = std::acos(photon2.Vect().Dot(photon3.Vect()) / (photon2.P() * photon3.P()));
         float cosNPhi2 = std::cos(harmonic * mother2.Phi());
@@ -738,6 +738,29 @@ struct TaskPi0FlowEMC {
         if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fEMCCut.IsSelected<EMCalPhotons::iterator>(g2))) {
           continue;
         }
+
+        // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
+        if (cfgDistanceToEdge.value) {
+          int iCellIDPhoton1 = -1;
+          int iCellIDPhoton2 = -1;
+          try {
+            iCellIDPhoton1 = emcalGeom->GetAbsCellIdFromEtaPhi(g1.eta(), g1.phi());
+            if (isTooCloseToEdge(iCellIDPhoton1, cfgDistanceToEdge.value)) {
+              continue;
+            }
+          } catch (o2::emcal::InvalidPositionException& e) {
+            continue;
+          }
+          try {
+            iCellIDPhoton2 = emcalGeom->GetAbsCellIdFromEtaPhi(g2.eta(), g2.phi());
+            if (isTooCloseToEdge(iCellIDPhoton2, cfgDistanceToEdge.value)) {
+              continue;
+            }
+          } catch (o2::emcal::InvalidPositionException& e) {
+            continue;
+          }
+        }
+
         ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;

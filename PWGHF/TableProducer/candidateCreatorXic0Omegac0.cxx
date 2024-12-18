@@ -1140,7 +1140,11 @@ struct HfCandidateCreatorXic0Omegac0 {
       auto trackParCovV0Dau0 = getTrackParCov(trackV0Dau0);
       auto trackParCovV0Dau1 = getTrackParCov(trackV0Dau1);
       // pion <- casc TrackParCov
+<<<<<<< HEAD
       auto xiDauChargedTrackParCov = getTrackParCov(trackCascDauCharged);
+=======
+      auto XiDauChargedTrackParCov = getTrackParCov(trackCascDauCharged);
+>>>>>>> f6fc605286ade4311cb673e3d39dad54d3f04a33
       // convert tracks into KFParticle object
       KFPTrack kfTrack0 = createKFPTrackFromTrack(trackV0Dau0);
       KFPTrack kfTrack1 = createKFPTrackFromTrack(trackV0Dau1);
@@ -1516,8 +1520,13 @@ struct HfCandidateCreatorXic0Omegac0 {
                          kfXic0Candidate.cosPaV0ToCasc, kfXic0Candidate.cosPaCascToXic, kfXic0Candidate.cosPaXYV0ToCasc, kfXic0Candidate.cosPaXYCascToXic,
                          kfXic0Candidate.rapXic, kfXic0Candidate.ptPiFromXic, kfXic0Candidate.ptXic,
                          kfXic0Candidate.cosThetaStarPiFromXic,
+<<<<<<< HEAD
                          v0NDF, cascNDF, charmbaryonNDF, v0Ndfm, cascNdfm,
                          v0Chi2OverNdf, cascChi2OverNdf, charmbaryonChi2OverNdf, v0Chi2OverNdfm, cascChi2OverNdfm);
+=======
+                         v0NDF, cascNDF, charmbaryonNDF, v0NDF_m, cascNDF_m,
+                         v0Chi2OverNdf, cascChi2OverNdf, charmbaryonChi2OverNdf, v0Chi2OverNdf_m, cascChi2OverNdf_m);
+>>>>>>> f6fc605286ade4311cb673e3d39dad54d3f04a33
 
     } // loop over LF Cascade-bachelor candidates
   }
