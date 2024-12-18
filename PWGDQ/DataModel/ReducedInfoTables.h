@@ -112,9 +112,11 @@ DECLARE_SOA_COLUMN(S12A, s12a, float);         //! Weighted multiplicity (p = 1,
 DECLARE_SOA_COLUMN(S13A, s13a, float);         //! Weighted multiplicity (p = 1, k = 3)
 DECLARE_SOA_COLUMN(S31A, s31a, float);         //! Weighted multiplicity (p = 3, k = 1)
 DECLARE_SOA_COLUMN(CORR2REF, corr2ref, float); //!  Ref Flow correlator <2>
+DECLARE_SOA_COLUMN(CORR2REFetagap, corr2refetagap, float); //!  Ref Flow correlator <2>
 DECLARE_SOA_COLUMN(CORR4REF, corr4ref, float); //!  Ref Flow correlator <4>
 DECLARE_SOA_COLUMN(M11REF, m11ref, float);     //!  Weighted multiplicity of <<2>> for reference flow
 DECLARE_SOA_COLUMN(M1111REF, m1111ref, float); //!  Weighted multiplicity of <<4>> for reference flow
+DECLARE_SOA_COLUMN(M11REFetagap, m11refetagap, float); //!  Weighted multiplicity of <<2>>  etagap for reference flow
 } // namespace reducedevent
 
 DECLARE_SOA_TABLE_STAGED(ReducedEvents, "REDUCEDEVENT", //!   Main event information table
@@ -166,7 +168,7 @@ DECLARE_SOA_TABLE(ReducedEventsQvectorCentrExtra, "AOD", "REQVECCTREXTA", //!   
                   reducedevent::QvecBAllRe, reducedevent::QvecBAllIm, reducedevent::NTrkBAll);
 
 DECLARE_SOA_TABLE(ReducedEventsRefFlow, "AOD", "REREFFLOW", //!    Event Ref Flow information
-                  reducedevent::M11REF, reducedevent::M1111REF, reducedevent::CORR2REF, reducedevent::CORR4REF, cent::CentFT0C);
+                  reducedevent::M11REF, reducedevent::M11REFetagap, reducedevent::M1111REF, reducedevent::CORR2REF, reducedevent::CORR2REFetagap, reducedevent::CORR4REF, cent::CentFT0C);
 
 DECLARE_SOA_TABLE(ReducedEventsQvectorZN, "AOD", "REQVECTORZN", //!    Event Q-vector information from ZNs detectors
                   reducedevent::Q1ZNAX, reducedevent::Q1ZNAY, reducedevent::Q1ZNCX, reducedevent::Q1ZNCY);
