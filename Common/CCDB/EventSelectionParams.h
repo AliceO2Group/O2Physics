@@ -14,8 +14,6 @@
 ///
 /// \author Evgeny Kryshen <evgeny.kryshen@cern.ch> and Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
-// o2-linter: disable=name/function-variable
-
 #ifndef COMMON_CCDB_EVENTSELECTIONPARAMS_H_
 #define COMMON_CCDB_EVENTSELECTIONPARAMS_H_
 
@@ -87,7 +85,7 @@ extern const char* selectionLabels[kNsel];
 class EventSelectionParams
 {
  public:
-  explicit EventSelectionParams(int system = 0, int run = 2);
+  explicit EventSelectionParams(int system = 0, int run = 2); // o2-linter: disable=name/function-variable
   void disableOutOfBunchPileupCuts();
   void setOnVsOfParams(float newV0MOnVsOfA, float newV0MOnVsOfB, float newSPDOnVsOfA, float newSPDOnVsOfB);
   bool* getSelection(int iSelection);
