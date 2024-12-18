@@ -30,7 +30,7 @@ using namespace o2::framework::expressions;
 enum EventCounter { kNoSelection = 0,
                     kQualitySelection = 1,
                     kMaxCentralitySelection = 2,
-                    kZDCSelection = 3};
+                    kZDCSelection = 3 };
 
 struct NeutronProtonCorrZdc {
   // Histogram registry: an object to hold your histograms
@@ -187,7 +187,7 @@ struct NeutronProtonCorrZdc {
   void processRun2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Run2MatchedSparse, CentralitiesRun2>>::iterator const& collision, aod::BCsWithTimestamps const&, aod::Zdcs const&)
   {
     histos.fill(HIST("eventCounter"), EventCounter::kNoSelection);
-    if (!collision.alias_bit(kINT7)) {      
+    if (!collision.alias_bit(kINT7)) {
       return;
     }
     histos.fill(HIST("eventCounter"), EventCounter::kQualitySelection);
