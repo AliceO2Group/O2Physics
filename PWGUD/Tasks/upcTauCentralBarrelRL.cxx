@@ -69,11 +69,11 @@ struct UpcTauCentralBarrelRL {
   struct : ConfigurableGroup {
     Configurable<int> whichGapSide{"whichGapSide", 2, {"0 for side A, 1 for side C, 2 for both sides"}};
     Configurable<bool> useTrueGap{"useTrueGap", true, {"Calculate gapSide for a given FV0/FT0/ZDC thresholds"}};
-    Configurable<float> cutTrueGapSideFV0{"TrueGapFV0", 100, "FV0A threshold for SG selector"};
-    Configurable<float> cutTrueGapSideFT0A{"TrueGapFT0A", 200., "FT0A threshold for SG selector"};
-    Configurable<float> cutTrueGapSideFT0C{"TrueGapFT0C", 100., "FT0C threshold for SG selector"};
-    Configurable<float> cutTrueGapSideZDC{"TrueGapZDC", 1000., "ZDC threshold for SG selector"};
-    Configurable<float> cutFITtime{"cutFITtime", 40., "Maximum FIT time allowed. Default is 4ns"};
+    Configurable<float> cutTrueGapSideFV0{"TrueGapFV0", -1, "FV0A threshold for SG selector"};
+    Configurable<float> cutTrueGapSideFT0A{"TrueGapFT0A", 150., "FT0A threshold for SG selector"};
+    Configurable<float> cutTrueGapSideFT0C{"TrueGapFT0C", 50., "FT0C threshold for SG selector"};
+    Configurable<float> cutTrueGapSideZDC{"TrueGapZDC", 0., "ZDC threshold for SG selector. 0 is <1n, 4.2 is <2n, 6.7 is <3n, 9.5 is <4n, 12.5 is <5n"};
+    Configurable<float> cutFITtime{"cutFITtime", 40., "Maximum FIT time allowed. Default is 40ns"};
     Configurable<bool> applyAcceptanceSelection{"applyAcceptanceSelection", false, {"Select events in ALICE CB acceptance set with cutTrackEta"}};
     Configurable<float> cutTrackEta{"cutTrackEta", 0.9, "Cut on central barrel track eta in absolute values."};
   } cutSample;
