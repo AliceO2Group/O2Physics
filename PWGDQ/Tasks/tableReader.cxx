@@ -280,7 +280,6 @@ struct AnalysisEventSelection {
   }
   void processSkimmedQVectorExtraRef(MyEventsVtxCovQvectorExtraWithRefFlow::iterator const& event)
   {
-
     runEventSelection<gkEventFillMapWithCovQvectorExtraWithRefFlow>(event);
   }
   void processDummy(MyEvents&)
