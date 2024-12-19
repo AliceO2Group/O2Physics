@@ -555,7 +555,7 @@ struct PidDataCollectingEngine {
   }
 
   template <o2::track::PID::ID id, typename TrackObject>
-  void fillAllSpeciesPID(uint ix, TrackObject const& track, float mom)
+  void fillAllSpeciesPID(uint ix, TrackObject const& track, float tpcmom, float tofmom)
   {
     if (track.sign() < 0) {
       ix = 2 * ix + 1;
@@ -563,8 +563,8 @@ struct PidDataCollectingEngine {
       ix = 2 * ix;
     }
     for (uint when = 0; when < 2; ++when) {
-      fhTPCnSigmasVsP[when][ix]->Fill(mom, o2::aod::pidutils::tpcNSigma<id>(track));
-      fhTOFnSigmasVsP[when][ix]->Fill(mom, o2::aod::pidutils::tofNSigma<id>(track));
+      fhTPCnSigmasVsP[when][ix]->Fill(tpcmom, o2::aod::pidutils::tpcNSigma<id>(track));
+      fhTOFnSigmasVsP[when][ix]->Fill(tofmom, o2::aod::pidutils::tofNSigma<id>(track));
       if (track.trackacceptedid() < 0) {
         /* track not accepted */
         return;
@@ -573,7 +573,7 @@ struct PidDataCollectingEngine {
   }
 
   template <o2::track::PID::ID id, typename TrackObject>
-  void fillSpeciesPID(uint ix, TrackObject const& track, float mom)
+  void fillSpeciesPID(uint ix, TrackObject const& track, float tpcmom, float tofmom)
   {
     if (track.sign() < 0) {
       ix = 2 * ix + 1;
@@ -581,9 +581,9 @@ struct PidDataCollectingEngine {
       ix = 2 * ix;
     }
     for (uint when = 0; when < 2; ++when) {
-      fhTPCdEdxSignalDiffVsP[when][ix]->Fill(mom, o2::aod::pidutils::tpcExpSignalDiff<id>(track));
-      fhTOFSignalDiffVsP[when][ix]->Fill(mom, o2::aod::pidutils::tofExpSignalDiff<id>(track));
-      fhTPCTOFSigmaVsP[when][ix]->Fill(mom, o2::aod::pidutils::tpcNSigma<id>(track), o2::aod::pidutils::tofNSigma<id>(track));
+      fhTPCdEdxSignalDiffVsP[when][ix]->Fill(tpcmom, o2::aod::pidutils::tpcExpSignalDiff<id>(track));
+      fhTOFSignalDiffVsP[when][ix]->Fill(tofmom, o2::aod::pidutils::tofExpSignalDiff<id>(track));
+      fhTPCTOFSigmaVsP[when][ix]->Fill(tpcmom, o2::aod::pidutils::tpcNSigma<id>(track), o2::aod::pidutils::tofNSigma<id>(track));
       if (track.trackacceptedid() < 0) {
         /* track not accepted */
         return;
@@ -592,12 +592,16 @@ struct PidDataCollectingEngine {
   }
 
   template <typename TrackObject>
-  void fillPID(TrackObject const& track, float mom)
+  void fillPID(TrackObject const& track, float tpcmom, float tofmom)
   {
     for (uint when = 0; when < 2; ++when) {
-      fhTPCdEdxSignalVsP[when]->Fill(mom, track.tpcSignal());
-      fhTOFSignalVsP[when]->Fill(mom, track.beta());
-      fhPvsTOFSqMass[when]->Fill(track.mass() * track.mass(), mom);
+      if constexpr (framework::has_type_v<o2::aod::mcpidtpc::DeDxTunedMc, typename TrackObject::all_columns>) {
+        fhTPCdEdxSignalVsP[when]->Fill(tpcmom, track.mcTunedTPCSignal());
+      } else {
+        fhTPCdEdxSignalVsP[when]->Fill(tpcmom, track.tpcSignal());
+      }
+      fhTOFSignalVsP[when]->Fill(tofmom, track.beta());
+      fhPvsTOFSqMass[when]->Fill(track.mass() * track.mass(), tofmom);
       if (track.trackacceptedid() < 0) {
         /* track not accepted */
         return;
@@ -606,20 +610,20 @@ struct PidDataCollectingEngine {
   }
 
   template <efficiencyandqatask::KindOfData kindOfData, typename TrackObject>
-  void processTrack(TrackObject const& track, float mom)
+  void processTrack(TrackObject const& track, float tpcmom, float tofmom)
   {
     using namespace efficiencyandqatask;
 
     if constexpr (kindOfData == kReco) {
-      fillPID(track, mom);
-      fillSpeciesPID<o2::track::PID::Pion>(0, track, mom);
-      fillSpeciesPID<o2::track::PID::Kaon>(1, track, mom);
-      fillSpeciesPID<o2::track::PID::Proton>(2, track, mom);
-      fillAllSpeciesPID<o2::track::PID::Electron>(0, track, mom);
-      fillAllSpeciesPID<o2::track::PID::Muon>(1, track, mom);
-      fillAllSpeciesPID<o2::track::PID::Pion>(2, track, mom);
-      fillAllSpeciesPID<o2::track::PID::Kaon>(3, track, mom);
-      fillAllSpeciesPID<o2::track::PID::Proton>(4, track, mom);
+      fillPID(track, tpcmom, tofmom);
+      fillSpeciesPID<o2::track::PID::Pion>(0, track, tpcmom, tofmom);
+      fillSpeciesPID<o2::track::PID::Kaon>(1, track, tpcmom, tofmom);
+      fillSpeciesPID<o2::track::PID::Proton>(2, track, tpcmom, tofmom);
+      fillAllSpeciesPID<o2::track::PID::Electron>(0, track, tpcmom, tofmom);
+      fillAllSpeciesPID<o2::track::PID::Muon>(1, track, tpcmom, tofmom);
+      fillAllSpeciesPID<o2::track::PID::Pion>(2, track, tpcmom, tofmom);
+      fillAllSpeciesPID<o2::track::PID::Kaon>(3, track, tpcmom, tofmom);
+      fillAllSpeciesPID<o2::track::PID::Proton>(4, track, tpcmom, tofmom);
     }
   }
 };
@@ -688,7 +692,7 @@ struct PidExtraDataCollectingEngine {
   }
 
   template <o2::track::PID::ID id, typename TrackObject>
-  void fillAllSpeciesPID(uint ix, TrackObject const& track, float mom)
+  void fillAllSpeciesPID(uint ix, TrackObject const& track, float tpcmom, float tofmom)
   {
     if (track.trackacceptedid() < 0) {
       /* track not accepted */
@@ -699,46 +703,54 @@ struct PidExtraDataCollectingEngine {
     } else {
       ix = 2 * ix;
     }
-    fhIdTPCnSigmasVsP[track.trackacceptedid()][ix]->Fill(mom, o2::aod::pidutils::tpcNSigma<id>(track));
-    fhIdTOFnSigmasVsP[track.trackacceptedid()][ix]->Fill(mom, o2::aod::pidutils::tofNSigma<id>(track));
+    fhIdTPCnSigmasVsP[track.trackacceptedid()][ix]->Fill(tpcmom, o2::aod::pidutils::tpcNSigma<id>(track));
+    fhIdTOFnSigmasVsP[track.trackacceptedid()][ix]->Fill(tofmom, o2::aod::pidutils::tofNSigma<id>(track));
     if (efficiencyandqatask::pidselector.isGlobalSpecies(track.trackacceptedid() / 2, id)) {
       /* only if the species of the selected track matches the target of the number of sigmas */
-      fpIdTPCdEdxSignalVsPSigmas[track.trackacceptedid()]->Fill(mom, track.tpcSignal(), o2::aod::pidutils::tpcNSigma<id>(track));
-      fpIdTOFSignalVsPSigmas[track.trackacceptedid()]->Fill(mom, track.beta(), o2::aod::pidutils::tofNSigma<id>(track));
+      if constexpr (framework::has_type_v<o2::aod::mcpidtpc::DeDxTunedMc, typename TrackObject::all_columns>) {
+        fpIdTPCdEdxSignalVsPSigmas[track.trackacceptedid()]->Fill(tpcmom, track.mcTunedTPCSignal(), o2::aod::pidutils::tpcNSigma<id>(track));
+      } else {
+        fpIdTPCdEdxSignalVsPSigmas[track.trackacceptedid()]->Fill(tpcmom, track.tpcSignal(), o2::aod::pidutils::tpcNSigma<id>(track));
+      }
+      fpIdTOFSignalVsPSigmas[track.trackacceptedid()]->Fill(tofmom, track.beta(), o2::aod::pidutils::tofNSigma<id>(track));
     }
   }
 
   template <o2::track::PID::ID id, typename TrackObject>
-  void fillSpeciesPID(uint, TrackObject const&, float)
+  void fillSpeciesPID(uint, TrackObject const&, float, float)
   {
   }
 
   template <typename TrackObject>
-  void fillPID(TrackObject const& track, float mom)
+  void fillPID(TrackObject const& track, float tpcmom, float tofmom)
   {
     if (track.trackacceptedid() < 0) {
       /* track not accepted */
       return;
     }
-    fhIdTPCdEdxSignalVsP[track.trackacceptedid()]->Fill(mom, track.tpcSignal());
-    fhIdTOFSignalVsP[track.trackacceptedid()]->Fill(mom, track.beta());
+    if constexpr (framework::has_type_v<o2::aod::mcpidtpc::DeDxTunedMc, typename TrackObject::all_columns>) {
+      fhIdTPCdEdxSignalVsP[track.trackacceptedid()]->Fill(tpcmom, track.mcTunedTPCSignal());
+    } else {
+      fhIdTPCdEdxSignalVsP[track.trackacceptedid()]->Fill(tpcmom, track.tpcSignal());
+    }
+    fhIdTOFSignalVsP[track.trackacceptedid()]->Fill(tofmom, track.beta());
   }
 
   template <efficiencyandqatask::KindOfData kindOfData, typename TrackObject>
-  void processTrack(TrackObject const& track, float mom)
+  void processTrack(TrackObject const& track, float tpcmom, float tofmom)
   {
     using namespace efficiencyandqatask;
 
     if constexpr (kindOfData == kReco) {
-      fillPID(track, mom);
-      fillSpeciesPID<o2::track::PID::Pion>(0, track, mom);
-      fillSpeciesPID<o2::track::PID::Kaon>(1, track, mom);
-      fillSpeciesPID<o2::track::PID::Proton>(2, track, mom);
-      fillAllSpeciesPID<o2::track::PID::Electron>(0, track, mom);
-      fillAllSpeciesPID<o2::track::PID::Muon>(1, track, mom);
-      fillAllSpeciesPID<o2::track::PID::Pion>(2, track, mom);
-      fillAllSpeciesPID<o2::track::PID::Kaon>(3, track, mom);
-      fillAllSpeciesPID<o2::track::PID::Proton>(4, track, mom);
+      fillPID(track, tpcmom, tofmom);
+      fillSpeciesPID<o2::track::PID::Pion>(0, track, tpcmom, tofmom);
+      fillSpeciesPID<o2::track::PID::Kaon>(1, track, tpcmom, tofmom);
+      fillSpeciesPID<o2::track::PID::Proton>(2, track, tpcmom, tofmom);
+      fillAllSpeciesPID<o2::track::PID::Electron>(0, track, tpcmom, tofmom);
+      fillAllSpeciesPID<o2::track::PID::Muon>(1, track, tpcmom, tofmom);
+      fillAllSpeciesPID<o2::track::PID::Pion>(2, track, tpcmom, tofmom);
+      fillAllSpeciesPID<o2::track::PID::Kaon>(3, track, tpcmom, tofmom);
+      fillAllSpeciesPID<o2::track::PID::Proton>(4, track, tpcmom, tofmom);
     }
   }
 };
@@ -973,20 +985,21 @@ struct DptDptEfficiencyAndQc {
     int ixDCE = getDCEindex(collision);
     if (!(ixDCE < 0)) {
       for (auto const& track : tracks) {
-        float mom = track.p();
+        float tpcmom = track.p();
+        float tofmom = track.p();
         if (useTPCInnerWallMomentum.value) {
           if constexpr (!framework::has_type_v<aod::mcparticle::PdgCode, typename PassedTracks::iterator::all_columns>) {
-            mom = track.tpcInnerParam();
+            tpcmom = track.tpcInnerParam();
           }
         }
         if constexpr (kindOfProcess == kBASIC) {
           qaDataCE[ixDCE]->processTrack<kindOfData, FilteredCollisions>(collision.posZ(), track);
         }
         if constexpr (kindOfProcess == kPID) {
-          pidDataCE[ixDCE]->processTrack<kindOfData>(track, mom);
+          pidDataCE[ixDCE]->processTrack<kindOfData>(track, tpcmom, tofmom);
         }
         if constexpr (kindOfProcess == kPIDEXTRA) {
-          pidExtraDataCE[ixDCE]->processTrack<kindOfData>(track, mom);
+          pidExtraDataCE[ixDCE]->processTrack<kindOfData>(track, tpcmom, tofmom);
         }
       }
     }

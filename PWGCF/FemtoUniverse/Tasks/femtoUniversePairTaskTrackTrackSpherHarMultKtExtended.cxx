@@ -34,13 +34,13 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseSHContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
+#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairSHCentMultKt.h"
 
 using namespace o2;
-using namespace o2::analysis::femtoUniverse;
+using namespace o2::analysis::femto_universe;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
@@ -181,27 +181,27 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   Configurable<bool> cfgProcessKtBins{"cfgProcessKtBins", true, "Process kstar histograms in kT bins (if cfgProcessMultBins is set false, this will not be processed regardless this Configurable state)"};
   Configurable<bool> cfgProcessKtMt3DCF{"cfgProcessKtMt3DCF", false, "Process 3D histograms in kT and Mult bins"};
 
-  FemtoUniverseSHContainer<femtoUniverseSHContainer::EventType::same, femtoUniverseSHContainer::Observable::kstar> sameEventCont;
-  FemtoUniverseSHContainer<femtoUniverseSHContainer::EventType::mixed, femtoUniverseSHContainer::Observable::kstar> mixedEventCont;
+  FemtoUniverseSHContainer<femto_universe_sh_container::EventType::same, femto_universe_sh_container::Observable::kstar> sameEventCont;
+  FemtoUniverseSHContainer<femto_universe_sh_container::EventType::mixed, femto_universe_sh_container::Observable::kstar> mixedEventCont;
 
-  FemtoUniverseSHContainer<femtoUniverseSHContainer::EventType::same, femtoUniverseSHContainer::Observable::kstar> sameEventContPP;
-  FemtoUniverseSHContainer<femtoUniverseSHContainer::EventType::mixed, femtoUniverseSHContainer::Observable::kstar> mixedEventContPP;
+  FemtoUniverseSHContainer<femto_universe_sh_container::EventType::same, femto_universe_sh_container::Observable::kstar> sameEventContPP;
+  FemtoUniverseSHContainer<femto_universe_sh_container::EventType::mixed, femto_universe_sh_container::Observable::kstar> mixedEventContPP;
 
-  FemtoUniverseSHContainer<femtoUniverseSHContainer::EventType::same, femtoUniverseSHContainer::Observable::kstar> sameEventContMM;
-  FemtoUniverseSHContainer<femtoUniverseSHContainer::EventType::mixed, femtoUniverseSHContainer::Observable::kstar> mixedEventContMM;
+  FemtoUniverseSHContainer<femto_universe_sh_container::EventType::same, femto_universe_sh_container::Observable::kstar> sameEventContMM;
+  FemtoUniverseSHContainer<femto_universe_sh_container::EventType::mixed, femto_universe_sh_container::Observable::kstar> mixedEventContMM;
 
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kTrack> pairCleaner;
   FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kTrack> pairCloseRejection;
   FemtoUniverseTrackSelection trackCuts;
 
-  PairSHCentMultKt<femtoUniverseSHContainer::EventType::same, femtoUniverseSHContainer::Observable::kstar> sameEventMultCont;
-  PairSHCentMultKt<femtoUniverseSHContainer::EventType::mixed, femtoUniverseSHContainer::Observable::kstar> mixedEventMultCont;
+  PairSHCentMultKt<femto_universe_sh_container::EventType::same, femto_universe_sh_container::Observable::kstar> sameEventMultCont;
+  PairSHCentMultKt<femto_universe_sh_container::EventType::mixed, femto_universe_sh_container::Observable::kstar> mixedEventMultCont;
 
-  PairSHCentMultKt<femtoUniverseSHContainer::EventType::same, femtoUniverseSHContainer::Observable::kstar> sameEventMultContPP;
-  PairSHCentMultKt<femtoUniverseSHContainer::EventType::mixed, femtoUniverseSHContainer::Observable::kstar> mixedEventMultContPP;
+  PairSHCentMultKt<femto_universe_sh_container::EventType::same, femto_universe_sh_container::Observable::kstar> sameEventMultContPP;
+  PairSHCentMultKt<femto_universe_sh_container::EventType::mixed, femto_universe_sh_container::Observable::kstar> mixedEventMultContPP;
 
-  PairSHCentMultKt<femtoUniverseSHContainer::EventType::same, femtoUniverseSHContainer::Observable::kstar> sameEventMultContMM;
-  PairSHCentMultKt<femtoUniverseSHContainer::EventType::mixed, femtoUniverseSHContainer::Observable::kstar> mixedEventMultContMM;
+  PairSHCentMultKt<femto_universe_sh_container::EventType::same, femto_universe_sh_container::Observable::kstar> sameEventMultContMM;
+  PairSHCentMultKt<femto_universe_sh_container::EventType::mixed, femto_universe_sh_container::Observable::kstar> mixedEventMultContMM;
 
   float mass1 = -1;
   float mass2 = -1;
@@ -475,7 +475,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
 
         if (ConfIsCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
             continue;
           }
         }
@@ -485,7 +485,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           continue;
         }
         float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
-        sameEventMultCont.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::same, 2, multCol, kT, ConfIsIden);
+        sameEventMultCont.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, ConfIsIden);
       }
     } else {
       for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsOne))) {
@@ -499,7 +499,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
 
         if (ConfIsCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
             continue;
           }
         }
@@ -516,18 +516,18 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         switch (ContType) {
           case 2: {
             if (rand > 0.5) {
-              sameEventMultContPP.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::same, 2, multCol, kT, ConfIsIden);
+              sameEventMultContPP.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, ConfIsIden);
             } else if (rand <= 0.5) {
-              sameEventMultContPP.fill_mult_NumDen(p2, p1, femtoUniverseSHContainer::EventType::same, 2, multCol, kT, ConfIsIden);
+              sameEventMultContPP.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::same, 2, multCol, kT, ConfIsIden);
             }
             break;
           }
 
           case 3: {
             if (rand > 0.5) {
-              sameEventMultContMM.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::same, 2, multCol, kT, ConfIsIden);
+              sameEventMultContMM.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, ConfIsIden);
             } else if (rand <= 0.5) {
-              sameEventMultContMM.fill_mult_NumDen(p2, p1, femtoUniverseSHContainer::EventType::same, 2, multCol, kT, ConfIsIden);
+              sameEventMultContMM.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::same, 2, multCol, kT, ConfIsIden);
             }
             break;
           }
@@ -607,7 +607,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       }
 
       if (ConfIsCPR.value) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::mixed)) {
+        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::mixed)) {
           continue;
         }
       }
@@ -619,27 +619,27 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       switch (ContType) {
         case 1: {
           if (rand > 0.5) {
-            mixedEventMultCont.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::mixed, 2, multCol, kT, ConfIsIden);
+            mixedEventMultCont.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, ConfIsIden);
           } else {
-            mixedEventMultCont.fill_mult_NumDen(p2, p1, femtoUniverseSHContainer::EventType::mixed, 2, multCol, kT, ConfIsIden);
+            mixedEventMultCont.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, ConfIsIden);
           }
           break;
         }
 
         case 2: {
           if (rand > 0.5) {
-            mixedEventMultContPP.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::mixed, 2, multCol, kT, ConfIsIden);
+            mixedEventMultContPP.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, ConfIsIden);
           } else {
-            mixedEventMultContPP.fill_mult_NumDen(p2, p1, femtoUniverseSHContainer::EventType::mixed, 2, multCol, kT, ConfIsIden);
+            mixedEventMultContPP.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, ConfIsIden);
           }
           break;
         }
 
         case 3: {
           if (rand > 0.5) {
-            mixedEventMultContMM.fill_mult_NumDen(p1, p2, femtoUniverseSHContainer::EventType::mixed, 2, multCol, kT, ConfIsIden);
+            mixedEventMultContMM.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, ConfIsIden);
           } else {
-            mixedEventMultContMM.fill_mult_NumDen(p2, p1, femtoUniverseSHContainer::EventType::mixed, 2, multCol, kT, ConfIsIden);
+            mixedEventMultContMM.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, ConfIsIden);
           }
           break;
         }
@@ -697,14 +697,14 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   {
     int JMax = (ConfLMax + 1) * (ConfLMax + 1);
     if (cfgProcessMM) {
-      sameEventMultContMM.fill_mult_kT_Cov(femtoUniverseSHContainer::EventType::same, JMax);
-      mixedEventMultContMM.fill_mult_kT_Cov(femtoUniverseSHContainer::EventType::mixed, JMax);
+      sameEventMultContMM.fillMultkTCov(femto_universe_sh_container::EventType::same, JMax);
+      mixedEventMultContMM.fillMultkTCov(femto_universe_sh_container::EventType::mixed, JMax);
     } else if (cfgProcessPP) {
-      sameEventMultContPP.fill_mult_kT_Cov(femtoUniverseSHContainer::EventType::same, JMax);
-      mixedEventMultContPP.fill_mult_kT_Cov(femtoUniverseSHContainer::EventType::mixed, JMax);
+      sameEventMultContPP.fillMultkTCov(femto_universe_sh_container::EventType::same, JMax);
+      mixedEventMultContPP.fillMultkTCov(femto_universe_sh_container::EventType::mixed, JMax);
     } else if (cfgProcessPM) {
-      sameEventMultCont.fill_mult_kT_Cov(femtoUniverseSHContainer::EventType::same, JMax);
-      mixedEventMultCont.fill_mult_kT_Cov(femtoUniverseSHContainer::EventType::mixed, JMax);
+      sameEventMultCont.fillMultkTCov(femto_universe_sh_container::EventType::same, JMax);
+      mixedEventMultCont.fillMultkTCov(femto_universe_sh_container::EventType::mixed, JMax);
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processCov, "Enable processing same event covariance", true);
