@@ -9,12 +9,17 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file matchRecoGen.cxx
+/// \brief basic check for the matching between generator level and detector level
+/// \author victor.gonzalez.sebastian@gmail.com
+
 #include <cmath>
 #include <string>
 #include <vector>
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -57,24 +62,27 @@ TpcExcludeTrack tpcExcluder; ///< the TPC excluder object instance
 } // namespace o2::analysis::dptdptfilter
 
 /// \brief Checks the correspondence generator level <=> detector level
-struct CheckGeneratorLevelVsDetectorLevel {
-  Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96"};
-  Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector:  V0M, NOCM: none. Default V0M"};
-  Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3. Default PbPb"};
-  Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
-  Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB, None. Default MB"};
-  Configurable<float> cfgOverallMinP{"overallminp", 0.0f, "The overall minimum momentum for the analysis. Default: 0.0"};
-  Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
+struct MatchRecoGen {
+  Configurable<int> cfgTrackType{"cfgTrackType", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96"};
+  Configurable<std::string> cfgCentMultEstimator{"cfgCentMultEstimator", "V0M", "Centrality/multiplicity estimator detector:  V0M, NOCM: none. Default V0M"};
+  Configurable<std::string> cfgSystem{"cfgSystem", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3. Default PbPb"};
+  Configurable<std::string> cfgDataType{"cfgDataType", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
+  Configurable<std::string> cfgTriggSel{"cfgTriggSel", "MB", "Trigger selection: MB, None. Default MB"};
+  Configurable<float> cfgOverallMinP{"cfgOverallMinP", 0.0f, "The overall minimum momentum for the analysis. Default: 0.0"};
+  Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"cfgBinning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
-  Configurable<int> cfgTpcExclusionMethod{"cfgTpcExclusionMethod", 0, "The method for excluding tracks within the TPC. 0: no exclusion; 1: static; 2: dynamic. Default: 0"};
-  Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
-  Configurable<float> cfgTraceOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
-  Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 PID, 1 mcparticle. Default 0"};
-  Configurable<o2::analysis::TrackSelectionTuneCfg> cfgTuneTrackSelection{"tunetracksel", {}, "Track selection: {useit: true/false, tpccls-useit, tpcxrws-useit, tpcxrfc-useit, dcaxy-useit, dcaz-useit}. Default {false,0.70,false,0.8,false,2.4,false,3.2,false}"};
-  Configurable<bool> cfgTraceCollId0{"tracecollid0", false, "Trace particles in collisions id 0. Default false"};
-  Configurable<bool> cfgTrackMultiRec{"trackmultirec", false, "Track muli-reconstructed particles: true, false. Default false"};
-  Configurable<bool> cfgTrackCollAssoc{"trackcollassoc", false, "Track collision id association, track-mcparticle-mccollision vs. track-collision-mccollision: true, false. Default false"};
+  struct : ConfigurableGroup {
+    std::string prefix = "cfgTpcExclusion";
+    Configurable<int> method{"method", 0, "The method for excluding tracks within the TPC. 0: no exclusion; 1: static; 2: dynamic. Default: 0"};
+  } cfgTpcExclusion;
+  Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"cfgTraceDCAOutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
+  Configurable<float> cfgTraceOutOfSpeciesParticles{"cfgTraceOutOfSpeciesParticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
+  Configurable<int> cfgRecoIdMethod{"cfgRecoIdMethod", 0, "Method for identifying reconstructed tracks: 0 PID, 1 mcparticle. Default 0"};
+  Configurable<o2::analysis::TrackSelectionTuneCfg> cfgTuneTrackSelection{"cfgTuneTrackSelection", {}, "Track selection: {useit: true/false, tpccls-useit, tpcxrws-useit, tpcxrfc-useit, dcaxy-useit, dcaz-useit}. Default {false,0.70,false,0.8,false,2.4,false,3.2,false}"};
+  Configurable<bool> cfgTraceCollId0{"cfgTraceCollId0", false, "Trace particles in collisions id 0. Default false"};
+  Configurable<bool> cfgTrackMultiRec{"cfgTrackMultiRec", false, "Track muli-reconstructed particles: true, false. Default false"};
+  Configurable<bool> cfgTrackCollAssoc{"cfgTrackCollAssoc", false, "Track collision id association, track-mcparticle-mccollision vs. track-collision-mccollision: true, false. Default false"};
 
   HistogramRegistry histos{"RecoGenHistograms", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   Service<o2::framework::O2DatabasePDG> fPDG;
@@ -107,7 +115,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
 
     /* the TPC excluder object instance */
     TpcExclusionMethod tpcExclude = kNOEXCLUSION; ///< exclude tracks within the TPC according to this method
-    tpcExclude = static_cast<TpcExclusionMethod>(cfgTpcExclusionMethod.value);
+    tpcExclude = static_cast<TpcExclusionMethod>(cfgTpcExclusion.method.value);
     tpcExcluder = TpcExcludeTrack(tpcExclude);
 
     /* the track types and combinations */
@@ -183,23 +191,23 @@ struct CheckGeneratorLevelVsDetectorLevel {
   {
     using namespace o2::analysis::recogenmap;
 
-    static constexpr std::string_view dir[] = {"before/", "after/"};
-    static constexpr std::string_view colldir[] = {"positivecolid/", "negativecolid/"};
+    static constexpr std::string_view Dir[] = {"before/", "after/"};
+    static constexpr std::string_view Colldir[] = {"positivecolid/", "negativecolid/"};
 
-    int nrec_poslabel = 0;
-    int nrec_neglabel = 0;
-    int nrec_poslabel_crosscoll = 0;
+    int nRecPosLabel = 0;
+    int nRecNegLabel = 0;
+    int nRecPosLabelCrossColl = 0;
 
     for (int ixpart = 0; ixpart < mcParticles.size(); ++ixpart) {
       auto particle = mcParticles.iteratorAt(ixpart);
       /* multireconstructed tracks only for positive labels */
       int nrec = mclabelpos[collsign][ixpart].size();
-      nrec_poslabel += mclabelpos[collsign][ixpart].size();
-      nrec_neglabel += mclabelneg[collsign][ixpart].size();
+      nRecPosLabel += mclabelpos[collsign][ixpart].size();
+      nRecNegLabel += mclabelneg[collsign][ixpart].size();
 
       if (nrec > 1) {
         /* multireconstruction only from positive labels */
-        histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("multirec"), nrec);
+        histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("multirec"), nrec);
 
         if (collsign == kPOSITIVE) {
           /* check the cross collision reconstruction */
@@ -213,7 +221,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
               auto track2 = tracks.iteratorAt(mclabelpos[collsign][ixpart][j]);
 
               if (track1.collisionId() != track2.collisionId()) {
-                nrec_poslabel_crosscoll++;
+                nRecPosLabelCrossColl++;
                 crosscollfound = true;
               }
             }
@@ -252,7 +260,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
                    "END multi-reconstructed:   "
                    "==================================================================");
             }
-            histos.get<TH1>(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("pdgcodemr"))
+            histos.get<TH1>(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("pdgcodemr"))
               ->Fill(TString::Format("%d", particle.pdgCode()).Data(), 1.0);
           }
         }
@@ -264,52 +272,47 @@ struct CheckGeneratorLevelVsDetectorLevel {
 
             float deltaeta = track1.eta() - track2.eta();
             float deltaphi = track1.phi() - track2.phi();
-            if (deltaphi < 0) {
-              deltaphi += constants::math::TwoPI;
-            }
-            if (deltaphi > constants::math::TwoPI) {
-              deltaphi -= constants::math::TwoPI;
-            }
+            deltaphi = RecoDecay::constrainAngle(deltaphi, 0.0f);
             float deltapt = (track1.pt() > track2.pt()) ? track1.pt() - track2.pt() : track2.pt() - track1.pt();
 
-            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("mrDeltaEta"), deltaeta);
-            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("mrDeltaPhi"), deltaphi);
-            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("mrDeltaPt"), deltapt);
+            histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("mrDeltaEta"), deltaeta);
+            histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("mrDeltaPhi"), deltaphi);
+            histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("mrDeltaPt"), deltapt);
           }
-          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("recomreta"), track1.eta());
-          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("recomrphi"), track1.phi());
-          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("recomrpt"), track1.pt());
-          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("detectormapmr"), track1.detectorMap());
-          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("dcaxymr"), track1.dcaXY());
-          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("dcazmr"), track1.dcaZ());
+          histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("recomreta"), track1.eta());
+          histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("recomrphi"), track1.phi());
+          histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("recomrpt"), track1.pt());
+          histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("detectormapmr"), track1.detectorMap());
+          histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("dcaxymr"), track1.dcaXY());
+          histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("dcazmr"), track1.dcaZ());
           if (track1.dcaXY() < 1.0) {
-            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("finedcaxymr"), track1.dcaXY());
+            histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("finedcaxymr"), track1.dcaXY());
           }
           if (track1.dcaZ() < 1.0) {
-            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("finedcazmr"), track1.dcaZ());
+            histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("finedcazmr"), track1.dcaZ());
           }
-          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecomreta"), track1.eta(), particle.eta());
-          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecomrphi"), track1.phi(), particle.phi());
-          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecomrpt"), track1.pt(), particle.pt());
+          histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("genrecomreta"), track1.eta(), particle.eta());
+          histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("genrecomrphi"), track1.phi(), particle.phi());
+          histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("genrecomrpt"), track1.pt(), particle.pt());
           if (particle.mcCollisionId() != colls.iteratorAt(track1.collisionId()).mcCollisionId()) {
-            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("matchcollidmr"), static_cast<float>(kDONTMATCH) + 0.5f);
+            histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("matchcollidmr"), static_cast<float>(kDONTMATCH) + 0.5f);
           } else {
-            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("matchcollidmr"), static_cast<float>(kMATCH) + 0.5f);
+            histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("matchcollidmr"), static_cast<float>(kMATCH) + 0.5f);
           }
         }
       } else if (nrec > 0) {
         auto track = tracks.iteratorAt(mclabelpos[collsign][ixpart][0]);
-        histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecoeta"), track.eta(), particle.eta());
-        histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecophi"), track.phi(), particle.phi());
-        histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecopt"), track.pt(), particle.pt());
-        histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("detectormap"), track.detectorMap());
-        histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("dcaxy"), track.dcaXY());
-        histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("dcaz"), track.dcaZ());
+        histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("genrecoeta"), track.eta(), particle.eta());
+        histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("genrecophi"), track.phi(), particle.phi());
+        histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("genrecopt"), track.pt(), particle.pt());
+        histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("detectormap"), track.detectorMap());
+        histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("dcaxy"), track.dcaXY());
+        histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("dcaz"), track.dcaZ());
         if (track.dcaXY() < 1.0) {
-          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("finedcaxy"), track.dcaXY());
+          histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("finedcaxy"), track.dcaXY());
         }
         if (track.dcaZ() < 1.0) {
-          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("finedcaz"), track.dcaZ());
+          histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("finedcaz"), track.dcaZ());
         }
         if (particle.mcCollisionId() != colls.iteratorAt(track.collisionId()).mcCollisionId()) {
           if ((ba == kAFTER) && (collsign == kPOSITIVE) && cfgTrackCollAssoc) {
@@ -319,19 +322,19 @@ struct CheckGeneratorLevelVsDetectorLevel {
             LOGF(info, "        associated to track with index %d and label %d assigned to collision %d, with associated MC collision %d",
                  track.globalIndex(), ixpart, track.collisionId(), colls.iteratorAt(track.collisionId()).mcCollisionId());
           }
-          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("matchcollid"), static_cast<float>(kDONTMATCH) + 0.5f);
+          histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("matchcollid"), static_cast<float>(kDONTMATCH) + 0.5f);
         } else {
-          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("matchcollid"), static_cast<float>(kMATCH) + 0.5f);
+          histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("matchcollid"), static_cast<float>(kMATCH) + 0.5f);
         }
       }
     }
 
     if (collsign == kPOSITIVE) {
       LOGF(info, "Reconstructed tracks (%s) with positive collision ID: %d with positive label, %d with negative label, %d with cross collision",
-           ba == kAFTER ? "after" : "before", nrec_poslabel, nrec_neglabel, nrec_poslabel_crosscoll);
+           ba == kAFTER ? "after" : "before", nRecPosLabel, nRecNegLabel, nRecPosLabelCrossColl);
     } else {
       LOGF(info, "Reconstructed tracks (%s) with negative collision ID: %d with positive label, %d with negative label",
-           ba == kAFTER ? "after" : "before", nrec_poslabel, nrec_neglabel);
+           ba == kAFTER ? "after" : "before", nRecPosLabel, nRecNegLabel);
     }
   }
 
@@ -365,7 +368,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
     // For the time being we are only interested in the information based on the reconstructed tracks
     LOGF(info, "New dataframe (DF) with %d generated charged particles and %d reconstructed tracks", ngen, nreco);
 
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       int64_t recix = track.globalIndex();
       int32_t label = track.mcParticleId();
 
@@ -405,7 +408,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
     size_t nreco = 0;
     size_t ngen = 0;
 
-    for (auto& part : mcParticles) {
+    for (auto const& part : mcParticles) {
       auto pdgpart = fPDG->GetParticle(part.pdgCode());
       if (pdgpart != nullptr) {
         float charge = getCharge(pdgpart->Charge());
@@ -416,7 +419,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
     }
 
     // Let's go through the reco-gen mapping to detect multi-reconstructed particles
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       int64_t recix = track.globalIndex();
       int32_t label = track.mcParticleId();
       if (!(label < 0)) {
@@ -447,7 +450,7 @@ struct CheckGeneratorLevelVsDetectorLevel {
     processMapChecksBeforeCuts(tracks, collisions, mcParticles);
     processMapChecksAfterCuts(tracks, collisions, mcParticles);
   }
-  PROCESS_SWITCH(CheckGeneratorLevelVsDetectorLevel, processMapChecksWithCent, "Process detector <=> generator levels with centrality/multiplicity information", false);
+  PROCESS_SWITCH(MatchRecoGen, processMapChecksWithCent, "Process detector <=> generator levels with centrality/multiplicity information", false);
 
   void processMapChecksWithoutCent(soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels> const& tracks,
                                    soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels> const& collisions,
@@ -456,11 +459,11 @@ struct CheckGeneratorLevelVsDetectorLevel {
     processMapChecksBeforeCuts(tracks, collisions, mcParticles);
     processMapChecksAfterCuts(tracks, collisions, mcParticles);
   }
-  PROCESS_SWITCH(CheckGeneratorLevelVsDetectorLevel, processMapChecksWithoutCent, "Process detector <=> generator levels without centrality/multiplicity information", true);
+  PROCESS_SWITCH(MatchRecoGen, processMapChecksWithoutCent, "Process detector <=> generator levels without centrality/multiplicity information", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<CheckGeneratorLevelVsDetectorLevel>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<MatchRecoGen>(cfgc)};
   return workflow;
 }

@@ -17,6 +17,7 @@
 #define PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
 
 #include <CCDB/BasicCCDBManager.h>
+#include <TF1.h>
 #include <TList.h>
 #include <vector>
 #include <bitset>
@@ -1017,7 +1018,6 @@ struct TpcExcludeTrack {
         }
         break;
       case kDYNAMIC:
-        LOGF(fatal, "Dynamic TPC exclusion method still not implemented");
         method = m;
         break;
       default:
@@ -1040,6 +1040,9 @@ struct TpcExcludeTrack {
   template <typename TrackObject>
   bool exclude(TrackObject const& track)
   {
+    constexpr int kNoOfTpcSectors = 18;
+    constexpr float kTpcPhiSectorWidth = (constants::math::TwoPI) / kNoOfTpcSectors;
+
     switch (method) {
       case kNOEXCLUSION: {
         return false;
@@ -1054,15 +1057,33 @@ struct TpcExcludeTrack {
         }
       } break;
       case kDYNAMIC: {
-        return false;
+        float phiInTpcSector = std::fmod(track.phi(), kTpcPhiSectorWidth);
+        if (track.sign() > 0) {
+          return (phiInTpcSector < positiveUpCut->Eval(track.pt())) && (positiveLowCut->Eval(track.pt()) < phiInTpcSector);
+        } else {
+          return (phiInTpcSector < negativeUpCut->Eval(track.pt())) && (negativeLowCut->Eval(track.pt()) < phiInTpcSector);
+        }
       } break;
       default:
         return false;
     }
   }
 
+  void setCuts(std::string pLowCut, std::string pUpCut, std::string nLowCut, std::string nUpCut)
+  {
+    LOGF(info, "Setting the TPC exclusion cuts: pLow=%s, pUp=%s, nLow=%s, nUp=%s", pLowCut, pUpCut, nLowCut, nUpCut);
+    positiveLowCut = new TF1("posLowCut", pLowCut.c_str(), ptlow, ptup);
+    positiveUpCut = new TF1("posUpCut", pUpCut.c_str(), ptlow, ptup);
+    negativeLowCut = new TF1("negLowCut", nLowCut.c_str(), ptlow, ptup);
+    negativeUpCut = new TF1("negUpCut", nUpCut.c_str(), ptlow, ptup);
+  }
+
   TpcExclusionMethod method = kNOEXCLUSION;
   float phibinwidth = 0.0;
+  TF1* positiveLowCut = nullptr;
+  TF1* positiveUpCut = nullptr;
+  TF1* negativeLowCut = nullptr;
+  TF1* negativeUpCut = nullptr;
 };
 
 template <typename TrackObject>

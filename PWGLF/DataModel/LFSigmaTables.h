@@ -25,19 +25,6 @@
 // Creating output TTree for sigma analysis
 namespace o2::aod
 {
-DECLARE_SOA_TABLE(Sigma0Collisions, "AOD", "SIGMA0COLLISION", //! basic collision properties: position
-                  o2::soa::Index<>, collision::PosX, collision::PosY, collision::PosZ,
-                  cent::CentFT0M, cent::CentFT0A, cent::CentFT0C, cent::CentFV0A);
-
-using Sigma0Collision = Sigma0Collisions::iterator;
-
-namespace sigma0Core
-{
-//______________________________________________________
-// REGULAR COLUMNS FOR INDEXING
-// FOR DERIVED
-DECLARE_SOA_INDEX_COLUMN(Sigma0Collision, sigma0Collision); //!
-} // namespace sigma0Core
 
 // for real data
 namespace sigma0Core
@@ -46,8 +33,8 @@ DECLARE_SOA_COLUMN(SigmapT, sigmapT, float);
 DECLARE_SOA_COLUMN(SigmaMass, sigmaMass, float);
 DECLARE_SOA_COLUMN(SigmaRapidity, sigmaRapidity, float);
 DECLARE_SOA_COLUMN(SigmaOPAngle, sigmaOPAngle, float);
-DECLARE_SOA_COLUMN(SigmaDeltaEta, sigmaDeltaEta, float);
-DECLARE_SOA_COLUMN(SigmaDeltaPhi, sigmaDeltaPhi, float);
+DECLARE_SOA_COLUMN(SigmaCentrality, sigmaCentrality, float);
+
 } // namespace sigma0Core
 
 DECLARE_SOA_TABLE(Sigma0Cores, "AOD", "SIGMA0CORES",
@@ -55,11 +42,7 @@ DECLARE_SOA_TABLE(Sigma0Cores, "AOD", "SIGMA0CORES",
                   sigma0Core::SigmaMass,
                   sigma0Core::SigmaRapidity,
                   sigma0Core::SigmaOPAngle,
-                  sigma0Core::SigmaDeltaEta,
-                  sigma0Core::SigmaDeltaPhi);
-
-DECLARE_SOA_TABLE(Sigma0CollRefs, "AOD", "SIGMA0COLLREF", //! optional table to refer back to a collision
-                  o2::soa::Index<>, sigma0Core::Sigma0CollisionId);
+                  sigma0Core::SigmaCentrality);
 
 // For Photon extra info
 namespace sigmaPhotonExtra
