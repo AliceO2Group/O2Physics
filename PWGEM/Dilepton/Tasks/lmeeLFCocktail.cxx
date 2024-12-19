@@ -364,7 +364,7 @@ struct lmeelfcocktail {
           pEleRec = temp_p;
           weight = daughter.weight();
           effEle = daughter.efficiency();
-          dcaEle = daughter.dca();
+          // dcaEle = daughter.dca();
           nEle++;
           continue;
         }
@@ -374,7 +374,7 @@ struct lmeelfcocktail {
           pPosGen = temp_p_gen;
           pPosRec = temp_p;
           effPos = daughter.efficiency();
-          dcaPos = daughter.dca();
+          // dcaPos = daughter.dca();
           nPos++;
           continue;
         }
