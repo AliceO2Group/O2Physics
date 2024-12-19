@@ -592,4 +592,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<FlowSP>(cfgc),
   };
 }
- 
