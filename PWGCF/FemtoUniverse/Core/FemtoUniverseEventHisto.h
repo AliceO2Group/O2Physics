@@ -20,7 +20,6 @@
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "Framework/HistogramRegistry.h"
 
-using namespace o2::framework;
 namespace o2::analysis::femto_universe
 {
 /// \class FemtoUniverseEventHisto
