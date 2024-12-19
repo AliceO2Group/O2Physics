@@ -217,7 +217,9 @@ struct AnalysisEventSelection {
       // Reset the fValues array and fill event observables
       VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
       VarManager::FillEvent<TEventFillMap>(event);
-      VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent());
+      if (event.has_reducedMCevent()) {
+        VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent());
+      }
 
       bool decision = false;
       // if QA is requested fill histograms before event selections
