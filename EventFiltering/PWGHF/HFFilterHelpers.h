@@ -198,7 +198,7 @@ static const std::array<o2::framework::AxisSpec, kNBeautyParticles> massAxisB = 
 // channels to trigger on for femto
 constexpr int activeFemtoChannels[2][5] = {{1, 1, 1, 1, 0},  // pD0, pD+, pDs, pLc, pXic
                                            {0, 0, 0, 1, 0}}; // only for deLc
-static const std::vector<std::string> labelsColumnsFemtoChannels = {"protonDZero", "protonDPlus", "protonDs", "protonLc", "protonXic"};
+static const std::vector<std::string> labelsColumnsFemtoChannels = {"DZero", "DPlus", "Ds", "Lc", "Xic"};
 static const std::vector<std::string> labelsRowsFemtoChannels = {"protonCharmFemto", "deuteronCharmFemto"};
 constexpr float cutsPtThresholdsForFemto[1][2] = {{8., 1.4}}; // proton, deuteron
 static const std::vector<std::string> labelsColumnsPtThresholdsForFemto = {"Proton", "Deuteron"};
@@ -206,14 +206,14 @@ static const std::vector<std::string> labelsColumnsPtThresholdsForFemto = {"Prot
 // min and max pT for all tracks combined  (except for V0 and cascades)
 constexpr float cutsPt[2][7] = {{1., 0.1, 0.8, 0.5, 0.1, 0.2, 0.4},
                                 {100000., 100000., 5., 100000., 100000., 100000., 100000.}}; // beauty, D*, femto, SigmaC, Xic*+ -> SigmaC++K-
-static const std::vector<std::string> labelsColumnsCutsPt = {"Beauty", "DstarPlus", "FemtoProton", "CharmBaryon", "SoftPiSigmaC", "SoftKaonXicResoToSigmaC", "FemtoDeuteron"};
+static const std::vector<std::string> labelsColumnsCutsPt = {"Beauty", "DstarPlus", "PrForFemto", "CharmBaryon", "SoftPiSigmaC", "SoftKaonXicResoToSigmaC", "DeForFemto"};
 static const std::vector<std::string> labelsRowsCutsPt = {"Minimum", "Maximum"};
 
 // PID cuts
 constexpr float cutsNsigma[3][7] = {{3., 3., 3., 5., 3., 3., 5.},             // TPC proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron
                                     {3., 3., 3., 2.5, 3., 3., 5.},            // TOF proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron
                                     {999., 999., 999., 2.5, 999., 999., 5.}}; // Sum in quadrature of TPC and TOF (used only for femto selected proton and deuteron for pT < 4 GeV/c)
-static const std::vector<std::string> labelsColumnsNsigma = {"PrFromLc", "PiKaFromDZero", "KaFrom3Prong", "FemtoProton", "PiKaFromCharmBaryon", "SoftKaonFromXicResoToSigmaC", "FemtoDeuteron"};
+static const std::vector<std::string> labelsColumnsNsigma = {"PrFromLc", "PiKaFromDZero", "KaFrom3Prong", "PrForFemto", "PiKaFromCharmBaryon", "SoftKaonFromXicResoToSigmaC", "DeForFemto"};
 static const std::vector<std::string> labelsRowsNsigma = {"TPC", "TOF", "Comb"};
 
 // high pt
@@ -1111,7 +1111,7 @@ inline int8_t HfFilterHelper::isSelectedSigmaCInDeltaMassRange(const T& pTrackSa
   return retValue;
 }
 
-/// Mass selection of Xic candidates to build Lb candidates
+/// Mass selection of Xic candidates to build Xib candidates
 /// \param pTrackSameChargeFirst is the first same-charge track momentum
 /// \param pTrackSameChargeSecond is the second same-charge track momentum
 /// \param pTrackOppositeCharge is the opposite charge track momentum
