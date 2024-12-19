@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file match-reco-gen.cxx
+/// \file matchRecoGen.cxx
 /// \brief basic check for the matching between generator level and detector level 
 /// \author victor.gonzalez.sebastian@gmail.com
 
