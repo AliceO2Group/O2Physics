@@ -563,7 +563,7 @@ void fillLcCandidateTable(T const& candidate, U& LcParTable, V& LcParETable, M& 
 
   LcParTable(
     candidate.chi2PCA(),
-    candidate.nProngsContributorsPV(),
+    candidate.indicesProngsContributorsPV(),
     candidate.cpa(),
     candidate.cpaXY(),
     candidate.decayLength(),
