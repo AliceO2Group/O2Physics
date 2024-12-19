@@ -26,6 +26,9 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/StepTHn.h"
+#include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/ReducedF1ProtonTables.h"
 #include "CommonConstants/PhysicsConstants.h"
 
@@ -39,7 +42,9 @@ struct f1protoncorrelation {
   // PID selection
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
   Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the TOF Nsigma cut"};
+  Configurable<int> typeofCombined{"typeofCombined", 1, "type of combined"};
   // PID selection
+  Configurable<bool> fillSparse{"fillSparse", 1, "Fill Sparse"};
   Configurable<bool> fillRotation{"fillRotation", 1, "Fill rotation"};
   Configurable<bool> pdepPID{"pdepPID", 1, "Momentum dependent pi, k PID"};
   Configurable<int> strategyPIDPion{"strategyPIDPion", 0, "PID strategy Pion"};
@@ -52,11 +57,19 @@ struct f1protoncorrelation {
   Configurable<float> momentumTOFPionMax{"momentumTOFPionMax", 1.2, "Pion momentum TOF Max"};
   Configurable<float> momentumTOFKaonMax{"momentumTOFKaonMax", 1.2, "Kaon momentum TOF Max"};
   Configurable<float> momentumTOFProton{"momentumTOFProton", 0.7, "Proton momentum TOF"};
+  Configurable<float> momentumProtonMax{"momentumProtonMax", 3.0, "Maximum proton momentum"};
   Configurable<float> lowPtF1{"lowPtF1", 1.0, "PT cut F1"};
   // Event Mixing
-  Configurable<int> nEvtMixing{"nEvtMixing", 1, "Number of events to mix"};
+  Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {10, -10, 10}, "Mixing bins - z-vertex"};
-  ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0, 30.0, 40.0, 50.0, 60.0, 80.0, 200.0}, "Mixing bins - number of contributor"};
+  ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0, 20.0, 40.0, 60.0, 80.0, 500.0}, "Mixing bins - number of contributor"};
+
+  // THnsparse bining
+  ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {100, 1.0, 1.4}, "#it{M} (GeV/#it{c}^{2})"};
+  ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.0, 10.}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis configThnAxisKstar{"configThnAxisKstar", {100, 0.0, 1.0}, "#it{k}^{*} (GeV/#it{c})"};
+  ConfigurableAxis configThnAxisPtProton{"configThnAxisPtProton", {20, 0.0, 4.}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis configThnAxisNsigma{"configThnAxisNsigma", {90, -9.0, 9.0}, "NsigmaCombined"};
 
   // Initialize the ananlysis task
   void init(o2::framework::InitContext&)
@@ -75,6 +88,21 @@ struct f1protoncorrelation {
     histos.add("h2MixEventInvariantMassUnlike_mass", "Unlike Sign Invariant mass of f1 mix event", kTH3F, {{100, 0.0f, 1.0f}, {100, 0.0, 10.0}, {800, 1.0, 1.8}});
     histos.add("h2MixEventInvariantMassLike_mass", "Like Sign Invariant mass of f1 mix event", kTH3F, {{100, 0.0f, 1.0f}, {100, 0.0, 10.0}, {800, 1.0, 1.8}});
     histos.add("h2MixEventInvariantMassRot_mass", "Rotational Sign Invariant mass of f1 mix event", kTH3F, {{100, 0.0f, 1.0f}, {100, 0.0, 10.0}, {800, 1.0, 1.8}});
+
+    const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec thnAxisPtProton{configThnAxisPtProton, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec thnAxisKstar{configThnAxisKstar, "#it{k}^{*} (GeV/#it{c})"};
+    const AxisSpec thnAxisNsigma{configThnAxisNsigma, "NsigmaCombined"};
+    if (fillSparse) {
+      histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma});
+      histos.add("SEMassLike", "SEMassLike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma});
+      histos.add("SEMassRot", "SEMassRot", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma});
+
+      histos.add("MEMassUnlike", "MEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma});
+      histos.add("MEMassLike", "MEMassLike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma});
+      histos.add("MEMassRot", "MEMassRot", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma});
+    }
   }
 
   // get kstar
@@ -99,7 +127,7 @@ struct f1protoncorrelation {
     trackRelK = PartOneCMS - PartTwoCMS;
     return 0.5 * trackRelK.P();
   }
-
+  float combinedTPC;
   TLorentzVector F1, Proton, F1ProtonPair, Pion, Kaon, Kshort;
   TLorentzVector F1Rot, PionRot, KaonKshortPair, KaonKshortPairRot;
   // Process the data in same event
@@ -146,8 +174,17 @@ struct f1protoncorrelation {
       histos.fill(HIST("hNsigmaKaonTPC"), f1track.f1d2TPC(), Kaon.Pt());
       histos.fill(HIST("hNsigmaPionTPC"), f1track.f1d1TPC(), Pion.Pt());
       histos.fill(HIST("hNsigmaPionKaonTPC"), f1track.f1d1TPC(), f1track.f1d2TPC());
+      if (typeofCombined == 0) {
+        combinedTPC = TMath::Sqrt(f1track.f1d1TPC() * f1track.f1d1TPC() + f1track.f1d2TPC() * f1track.f1d2TPC());
+      }
+      if (typeofCombined == 1) {
+        combinedTPC = (f1track.f1d1TPC() - f1track.f1d2TPC()) / (f1track.f1d1TPC() + f1track.f1d2TPC());
+      }
       for (auto protontrack : protontracks) {
         Proton.SetXYZM(protontrack.protonPx(), protontrack.protonPy(), protontrack.protonPz(), 0.938);
+        if (Proton.Pt() > momentumProtonMax) {
+          continue;
+        }
         if (Proton.P() < momentumTOFProton && TMath::Abs(protontrack.protonNsigmaTPC()) > 2.5) {
           continue;
         }
@@ -164,9 +201,15 @@ struct f1protoncorrelation {
         histos.fill(HIST("h2SameEventPtCorrelation"), relative_momentum, F1.Pt(), Proton.Pt());
         if (f1track.f1SignalStat() == 1) {
           histos.fill(HIST("h2SameEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
+          if (fillSparse) {
+            histos.fill(HIST("SEMassUnlike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC);
+          }
         }
         if (f1track.f1SignalStat() == -1) {
           histos.fill(HIST("h2SameEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M());
+          if (fillSparse) {
+            histos.fill(HIST("SEMassLike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC);
+          }
         }
         if (fillRotation) {
           for (int nrotbkg = 0; nrotbkg < 9; nrotbkg++) {
@@ -181,6 +224,9 @@ struct f1protoncorrelation {
             auto relative_momentum_rot = getkstar(F1Rot, Proton);
             if (f1track.f1SignalStat() == 1) {
               histos.fill(HIST("h2SameEventInvariantMassRot_mass"), relative_momentum_rot, F1Rot.Pt(), F1Rot.M());
+              if (fillSparse) {
+                histos.fill(HIST("SEMassRot"), F1Rot.M(), F1Rot.Pt(), Proton.Pt(), relative_momentum_rot, combinedTPC);
+              }
             }
           }
         }
@@ -189,12 +235,6 @@ struct f1protoncorrelation {
   }
 
   // Processing Event Mixing
-  // using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
-  // for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
-  // Pair<aod::RedF1PEvents, aod::F1Tracks, aod::ProtonTracks, BinningType> pairs{colBinning, nEvtMixing, -1, &cache}; // -1 is the number of the bin to skip
-  //
-  // tracks1 is an aod::Tracks table of f1tracks belonging to collision collision1 (aod::Collision::iterator)
-  // tracks2 is an aod::Tracks table of protontracks belonging to collision collision2 (aod::Collision::iterator)
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
   BinningType colBinning{{CfgVtxBins, CfgMultBins}, true};
@@ -214,9 +254,7 @@ struct f1protoncorrelation {
       auto groupProton = protontracks.sliceBy(tracksPerCollisionPresliceP, collision2.globalIndex());
       // auto groupF1 = f1tracks.sliceByCached(aod::f1protondaughter::redF1PEventId, collision1.globalIndex(), cache);
       // auto groupProton = protontracks.sliceByCached(aod::f1protondaughter::redF1PEventId, collision2.globalIndex(), cache);
-      // for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(f1tracks, protontracks))) {
       for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupF1, groupProton))) {
-        // LOGF(info, "Mixed event collision1 track1: (%d, %d)", collision1.index(), t1.index());
         if (t1.f1MassKaonKshort() > maxKKS0Mass) {
           continue;
         }
@@ -254,7 +292,16 @@ struct f1protoncorrelation {
         if (strategyPIDKaon == 1 && Kaon.Pt() > momentumTOFKaonMin && Kaon.Pt() <= momentumTOFKaonMax && t1.f1d2TOFHit() != 1) {
           continue;
         }
+        if (typeofCombined == 0) {
+          combinedTPC = TMath::Sqrt(t1.f1d1TPC() * t1.f1d1TPC() + t1.f1d2TPC() * t1.f1d2TPC());
+        }
+        if (typeofCombined == 1) {
+          combinedTPC = (t1.f1d1TPC() - t1.f1d2TPC()) / (t1.f1d1TPC() + t1.f1d2TPC());
+        }
         Proton.SetXYZM(t2.protonPx(), t2.protonPy(), t2.protonPz(), 0.938);
+        if (Proton.Pt() > momentumProtonMax) {
+          continue;
+        }
         if (Proton.P() < momentumTOFProton && TMath::Abs(t2.protonNsigmaTPC()) > 2.5) {
           continue;
         }
@@ -264,9 +311,15 @@ struct f1protoncorrelation {
         auto relative_momentum = getkstar(F1, Proton);
         if (t1.f1SignalStat() == 1) {
           histos.fill(HIST("h2MixEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
+          if (fillSparse) {
+            histos.fill(HIST("MEMassUnlike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC);
+          }
         }
         if (t1.f1SignalStat() == -1) {
           histos.fill(HIST("h2MixEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M());
+          if (fillSparse) {
+            histos.fill(HIST("MEMassLike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC);
+          }
         }
         if (fillRotation) {
           for (int nrotbkg = 0; nrotbkg < 9; nrotbkg++) {
@@ -281,6 +334,9 @@ struct f1protoncorrelation {
             auto relative_momentum_rot = getkstar(F1Rot, Proton);
             if (t1.f1SignalStat() == 1) {
               histos.fill(HIST("h2MixEventInvariantMassRot_mass"), relative_momentum_rot, F1Rot.Pt(), F1Rot.M());
+              if (fillSparse) {
+                histos.fill(HIST("MEMassRot"), F1Rot.M(), F1Rot.Pt(), Proton.Pt(), relative_momentum_rot, combinedTPC);
+              }
             }
           }
         }
