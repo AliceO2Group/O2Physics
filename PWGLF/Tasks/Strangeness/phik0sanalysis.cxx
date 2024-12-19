@@ -869,7 +869,7 @@ struct phik0shortanalysis {
 
   PROCESS_SWITCH(phik0shortanalysis, processSEPhiPion, "Process Same Event for Phi-Pion Analysis", false);
 
-  void processRecMCPhiQA(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, FullV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const&)
+  void processRecMCPhiQA(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const&)
   {
     if (!acceptEventQA<true>(collision, true))
       return;
@@ -1646,7 +1646,6 @@ struct phik0shortanalysis {
         if (std::abs(mcParticle2.y()) > cfgyAcceptance)
           continue;
         if (!isCountedPhi.at(0)) {
-          yaccHist.fill(HIST("hyaccK0SGenMC"), genmultiplicity, mcParticle1.pt(), mcParticle1.y());
           MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCInc"), genmultiplicity, mcParticle1.pt());
           if (isAssocColl)
             MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCIncAssocReco"), genmultiplicity, mcParticle1.pt());
@@ -1725,7 +1724,6 @@ struct phik0shortanalysis {
         if (std::abs(mcParticle2.y()) > cfgyAcceptance)
           continue;
         if (!isCountedPhi.at(0)) {
-          yaccHist.fill(HIST("hyaccPiGenMC"), genmultiplicity, mcParticle1.pt(), mcParticle1.y());
           MCPhiPionHist.fill(HIST("h2PhiPiGenMCInc"), genmultiplicity, mcParticle1.pt());
           if (isAssocColl)
             MCPhiPionHist.fill(HIST("h2PhiPiGenMCIncAssocReco"), genmultiplicity, mcParticle1.pt());
