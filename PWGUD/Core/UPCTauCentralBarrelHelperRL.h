@@ -219,7 +219,9 @@ double calculateAcoplanarity(double phiTrk1, double phiTrk2)
 double calculateCollinearity(double etaTrk1, double etaTrk2, double phiTrk1, double phiTrk2)
 // Function to calculate deltaR(trk1,trk2) = sqrt(deltaEta^2+deltaPhi^2)
 {
-  return std::sqrt(etaTrk1 * etaTrk2 + phiTrk1 * phiTrk2);
+  double deltaEta = etaTrk1 - etaTrk2;
+  double deltaPhi = phiTrk1 - phiTrk2;
+  return std::sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
 }
 
 template <typename Ps>
