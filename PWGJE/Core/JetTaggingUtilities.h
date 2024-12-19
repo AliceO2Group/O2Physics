@@ -44,9 +44,58 @@ enum JetTaggingSpecies {
   gluon = 5
 };
 
+enum BJetTaggingMethod {
+  IPsN1 = 0,
+  IPsN2 = 1,
+  IPsN3 = 2,
+  IPs3DN1 = 3,
+  IPs3DN2 = 4,
+  IPs3DN3 = 5,
+  SV = 6,
+  SV3D = 7
+};
+
 namespace jettaggingutilities
 {
 const int cmTomum = 10000; // using cm -> #mum for impact parameter (dca)
+
+struct BJetParams {
+  float mJetpT = 0.0;
+  float mJetEta = 0.0;
+  float mJetPhi = 0.0;
+  int mNTracks = -1;
+  int mNSV = -1;
+  float mJetMass = 0.0;
+};
+
+struct BJetTrackParams {
+  double mTrackpT = 0.0;
+  double mTrackEta = 0.0;
+  double mDotProdTrackJet = 0.0;
+  double mDotProdTrackJetOverJet = 0.0;
+  double mDeltaRJetTrack = 0.0;
+  double mSignedIP2D = 0.0;
+  double mSignedIP2DSign = 0.0;
+  double mSignedIP3D = 0.0;
+  double mSignedIP3DSign = 0.0;
+  double mMomFraction = 0.0;
+  double mDeltaRTrackVertex = 0.0;
+};
+
+struct BJetSVParams {
+  double mSVpT = 0.0;
+  double mDeltaRSVJet = 0.0;
+  double mSVMass = 0.0;
+  double mSVfE = 0.0;
+  double mIPXY = 0.0;
+  double mCPA = 0.0;
+  double mChi2PCA = 0.0;
+  double mDispersion = 0.0;
+  double mDecayLength2D = 0.0;
+  double mDecayLength2DError = 0.0;
+  double mDecayLength3D = 0.0;
+  double mDecayLength3DError = 0.0;
+};
 
 //________________________________________________________________________
 bool isBHadron(int pc)
@@ -138,7 +187,7 @@ int jetTrackFromHFShower(T const& jet, U const& /*tracks*/, V const& particles, 
 
   bool hasMcParticle = false;
   int origin = -1;
-  for (auto& track : jet.template tracks_as<U>()) {
+  for (auto const& track : jet.template tracks_as<U>()) {
     hftrack = track; // for init if origin is 1 or 2, the track is not hftrack
     if (!track.has_mcParticle()) {
       continue;
@@ -284,7 +333,7 @@ int jetOrigin(T const& jet, U const& particles, float dRMax = 0.25)
   bool firstPartonFound = false;
   typename U::iterator parton1;
   typename U::iterator parton2;
-  for (auto& particle : particles) {
+  for (auto const& particle : particles) {
     if (std::abs(particle.getGenStatusCode() == 23)) {
       if (!firstPartonFound) {
         parton1 = particle;
@@ -320,15 +369,15 @@ template <typename AnyJet, typename AllMCParticles>
 int16_t getJetFlavor(AnyJet const& jet, AllMCParticles const& mcparticles)
 {
   bool charmQuark = false;
-  for (auto& mcpart : mcparticles) {
+  for (auto const& mcpart : mcparticles) {
     int pdgcode = mcpart.pdgCode();
-    if (TMath::Abs(pdgcode) == 21 || (TMath::Abs(pdgcode) >= 1 && TMath::Abs(pdgcode) <= 5)) {
+    if (std::abs(pdgcode) == 21 || (std::abs(pdgcode) >= 1 && std::abs(pdgcode) <= 5)) {
       double dR = jetutilities::deltaR(jet, mcpart);
 
       if (dR < jet.r() / 100.f) {
-        if (TMath::Abs(pdgcode) == 5) {
+        if (std::abs(pdgcode) == 5) {
           return JetTaggingSpecies::beauty; // Beauty jet
-        } else if (TMath::Abs(pdgcode) == 4) {
+        } else if (std::abs(pdgcode) == 4) {
           charmQuark = true;
         }
       }
@@ -353,7 +402,7 @@ int16_t getJetFlavorHadron(AnyJet const& jet, AllMCParticles const& mcparticles)
 {
   bool charmHadron = false;
 
-  for (auto& mcpart : mcparticles) {
+  for (auto const& mcpart : mcparticles) {
     int pdgcode = mcpart.pdgCode();
     if (isBHadron(pdgcode) || isCHadron(pdgcode)) {
       double dR = jetutilities::deltaR(jet, mcpart);
@@ -398,20 +447,16 @@ bool prongAcceptance(T const& prong, float prongChi2PCAMin, float prongChi2PCAMa
     return false;
   if (prong.chi2PCA() > prongChi2PCAMax)
     return false;
+  if (std::abs(prong.impactParameterXY()) < prongIPxyMin)
+    return false;
+  if (std::abs(prong.impactParameterXY()) > prongIPxyMax)
+    return false;
+
   if (!doXYZ) {
     if (prong.errorDecayLengthXY() > prongsigmaLxyMax)
       return false;
-    if (std::abs(prong.impactParameterXY()) < prongIPxyMin)
-      return false;
-    if (std::abs(prong.impactParameterXY()) > prongIPxyMax)
-      return false;
   } else {
     if (prong.errorDecayLength() > prongsigmaLxyMax)
-      return false;
-    // TODO
-    if (std::abs(prong.impactParameterXY()) < prongIPxyMin)
-      return false;
-    if (std::abs(prong.impactParameterXY()) > prongIPxyMax)
       return false;
   }
   return true;
@@ -450,9 +495,9 @@ int getGeoSign(T const& jet, U const& jtrack)
  * in a vector in descending order.
  */
 template <typename T, typename U, typename Vec = std::vector<float>>
-void orderForIPJetTracks(T const& jet, U const& /*jtracks*/, float const& trackDcaXYMax, float const& trackDcaZMax, Vec& vecSignImpSig, bool useIPxyz)
+void orderForIPJetTracks(T const& jet, U const& /*jtracks*/, float trackDcaXYMax, float trackDcaZMax, Vec& vecSignImpSig, bool useIPxyz)
 {
-  for (auto& jtrack : jet.template tracks_as<U>()) {
+  for (auto const& jtrack : jet.template tracks_as<U>()) {
     if (!trackAcceptanceWithDca(jtrack, trackDcaXYMax, trackDcaZMax))
       continue;
     auto geoSign = getGeoSign(jet, jtrack);
@@ -469,25 +514,32 @@ void orderForIPJetTracks(T const& jet, U const& /*jtracks*/, float const& trackD
 
 /**
  * Checks if a jet is greater than the given tagging working point based on the signed impact parameter significances
+ * return (true, true, true) if the jet is tagged by the 1st, 2nd and 3rd largest IPs
  */
 template <typename T, typename U>
-bool isGreaterThanTaggingPoint(T const& jet, U const& jtracks, float const& trackDcaXYMax, float const& trackDcaZMax, float const& taggingPoint = 1.0, int const& cnt = 1, bool useIPxyz = false)
+std::tuple<bool, bool, bool> isGreaterThanTaggingPoint(T const& jet, U const& jtracks, float trackDcaXYMax, float trackDcaZMax, float taggingPoint = 1.0, bool useIPxyz = false)
 {
-  if (cnt == 0) {
-    return true; // untagged
-  }
+  bool taggedIPsN1 = false;
+  bool taggedIPsN2 = false;
+  bool taggedIPsN3 = false;
   std::vector<float> vecSignImpSig;
   orderForIPJetTracks(jet, jtracks, trackDcaXYMax, trackDcaZMax, vecSignImpSig, useIPxyz);
-  if (vecSignImpSig.size() > static_cast<std::vector<float>::size_type>(cnt) - 1) {
-    for (int i = 0; i < cnt; i++) {
-      if (vecSignImpSig[i] < taggingPoint) { // tagger point set
-        return false;
-      }
+  if (vecSignImpSig.size() > 0) {
+    if (vecSignImpSig[0] > taggingPoint) { // tagger point set
+      taggedIPsN1 = true;
     }
-  } else {
-    return false;
   }
-  return true;
+  if (vecSignImpSig.size() > 1) {
+    if (vecSignImpSig[1] > taggingPoint) { // tagger point set
+      taggedIPsN2 = true;
+    }
+  }
+  if (vecSignImpSig.size() > 2) {
+    if (vecSignImpSig[2] > taggingPoint) { // tagger point set
+      taggedIPsN3 = true;
+    }
+  }
+  return std::make_tuple(taggedIPsN1, taggedIPsN2, taggedIPsN3);
 }
 
 /**
@@ -523,10 +575,10 @@ std::unique_ptr<TF1> setResolutionFunction(T const& vecParams)
  *         impact parameter significance.
  */
 template <typename T, typename U>
-float getTrackProbability(T const& fResoFuncjet, U const& track, const float& minSignImpXYSig = -40)
+float getTrackProbability(T const& fResoFuncjet, U const& track, float minSignImpXYSig = -40)
 {
   float probTrack = 0;
-  auto varSignImpXYSig = TMath::Abs(track.dcaXY()) / track.sigmadcaXY();
+  auto varSignImpXYSig = std::abs(track.dcaXY()) / track.sigmadcaXY();
   if (-varSignImpXYSig < minSignImpXYSig)
     varSignImpXYSig = -minSignImpXYSig - 0.01; // To avoid overflow for integral
   probTrack = fResoFuncjet->Integral(minSignImpXYSig, -varSignImpXYSig) / fResoFuncjet->Integral(minSignImpXYSig, 0);
@@ -553,15 +605,12 @@ float getTrackProbability(T const& fResoFuncjet, U const& track, const float& mi
  *         geometric sign.
  */
 template <typename T, typename U, typename V>
-float getJetProbability(T const& fResoFuncjet, U const& jet, V const& jtracks, float const& trackDcaXYMax, float const& trackDcaZMax, const int& cnt, const float& tagPoint = 1.0, const float& minSignImpXYSig = -10, bool useIPxy = true)
+float getJetProbability(T const& fResoFuncjet, U const& jet, V const& /*jtracks*/, float trackDcaXYMax, float trackDcaZMax, float minSignImpXYSig = -10)
 {
-  if (!(isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPoint, cnt, useIPxy)))
-    return -1;
-
   std::vector<float> jetTracksPt;
   float trackjetProb = 1.;
 
-  for (auto& jtrack : jet.template tracks_as<V>()) {
+  for (auto const& jtrack : jet.template tracks_as<V>()) {
     if (!trackAcceptanceWithDca(jtrack, trackDcaXYMax, trackDcaZMax))
       continue;
 
@@ -574,22 +623,22 @@ float getJetProbability(T const& fResoFuncjet, U const& jet, V const& jtracks, f
     }
   }
 
-  float JP = -1.;
+  float jetProb = -1.;
   if (jetTracksPt.size() < 2)
     return -1;
 
   float sumjetProb = 0.;
   for (std::vector<float>::size_type i = 0; i < jetTracksPt.size(); i++) {
-    sumjetProb += (TMath::Power(-1 * TMath::Log(trackjetProb), static_cast<int>(i)) / TMath::Factorial(i));
+    sumjetProb += (std::pow(-1 * std::log(trackjetProb), static_cast<int>(i)) / TMath::Factorial(i));
   }
 
-  JP = trackjetProb * sumjetProb;
-  return JP;
+  jetProb = trackjetProb * sumjetProb;
+  return jetProb;
 }
 
 // For secaondy vertex method utilites
 template <typename ProngType, typename JetType>
-typename ProngType::iterator jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2PCAMin, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, float const& prongIPxyMin, float const& prongIPxyMax, const bool& doXYZ = false, bool* checkSv = nullptr)
+typename ProngType::iterator jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2PCAMin, float prongChi2PCAMax, float prongsigmaLxyMax, float prongIPxyMin, float prongIPxyMax, bool doXYZ = false, bool* checkSv = nullptr)
 {
   if (checkSv)
     *checkSv = false;
@@ -599,13 +648,14 @@ typename ProngType::iterator jetFromProngMaxDecayLength(const JetType& jet, floa
     if (!prongAcceptance(prong, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, doXYZ))
       continue;
     *checkSv = true;
-    float Sxy = -1.0f;
+    float sxy = -1.0f;
     if (!doXYZ) {
-      Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
+      sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
     } else {
-      Sxy = prong.decayLength() / prong.errorDecayLength();
+      sxy = prong.decayLength() / prong.errorDecayLength();
     }
-    if (maxSxy < Sxy) {
+    if (maxSxy < sxy) {
+      maxSxy = sxy;
       bjetCand = prong;
     }
   }
@@ -613,7 +663,7 @@ typename ProngType::iterator jetFromProngMaxDecayLength(const JetType& jet, floa
 }
 
 template <typename T, typename U>
-bool isTaggedJetSV(T const jet, U const& /*prongs*/, float const& prongChi2PCAMin, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, float const& prongIPxyMin, float const& prongIPxyMax, float svDispersionMax, float const& doXYZ = false, float const& tagPointForSV = 15.)
+bool isTaggedJetSV(T const jet, U const& /*prongs*/, float prongChi2PCAMin, float prongChi2PCAMax, float prongsigmaLxyMax, float prongIPxyMin, float prongIPxyMax, float svDispersionMax, float doXYZ = false, float tagPointForSV = 15.)
 {
   bool checkSv = false;
   auto bjetCand = jetFromProngMaxDecayLength<U>(jet, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, doXYZ, &checkSv);
@@ -631,6 +681,47 @@ bool isTaggedJetSV(T const jet, U const& /*prongs*/, float const& prongChi2PCAMi
   return true;
 }
 
+template <typename T, typename U, typename V = float>
+uint8_t setTaggingIPBit(T const& jet, U const& jtracks, V trackDcaXYMax, V trackDcaZMax, V tagPointForIP)
+{
+  uint8_t bit = 0;
+  auto [taggedIPsN1, taggedIPsN2, taggedIPsN3] = isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, false);
+  if (taggedIPsN1) {
+    SETBIT(bit, BJetTaggingMethod::IPsN1);
+  }
+  if (taggedIPsN2) {
+    SETBIT(bit, BJetTaggingMethod::IPsN2);
+  }
+  if (taggedIPsN3) {
+    SETBIT(bit, BJetTaggingMethod::IPsN3);
+  }
+
+  auto [taggedIPs3DN1, taggedIPs3DN2, taggedIPs3DN3] = isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, true);
+  if (taggedIPs3DN1) {
+    SETBIT(bit, BJetTaggingMethod::IPs3DN1);
+  }
+  if (taggedIPs3DN2) {
+    SETBIT(bit, BJetTaggingMethod::IPs3DN2);
+  }
+  if (taggedIPs3DN3) {
+    SETBIT(bit, BJetTaggingMethod::IPs3DN3);
+  }
+  return bit;
+}
+
+template <typename T, typename U, typename V = float>
+uint8_t setTaggingSVBit(T const& jet, U const& prongs, V prongChi2PCAMin, V prongChi2PCAMax, V prongsigmaLxyMax, float prongIPxyMin, float prongIPxyMax, V svDispersionMax, V tagPointForSV)
+{
+  uint8_t bit = 0;
+  if (isTaggedJetSV(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, svDispersionMax, false, tagPointForSV)) {
+    SETBIT(bit, BJetTaggingMethod::SV);
+  }
+  if (isTaggedJetSV(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, svDispersionMax, true, tagPointForSV)) {
+    SETBIT(bit, BJetTaggingMethod::SV3D);
+  }
+  return bit;
+}
+
 /**
  * Clusters jet constituent tracks into groups of tracks originating from same mcParticle position (trkVtxIndex), and finds each track origin (trkOrigin). (for GNN b-jet tagging)
  * @param trkLabels Track labels for GNN vertex and track origin predictions. trkVtxIndex: The index value of each vertex (cluster) which is determined by the function. trkOrigin: The category of the track origin (0: not physical primary, 1: charm, 2: beauty, 3: primary vertex, 4: other secondary vertex).
@@ -642,7 +733,7 @@ template <typename AnyCollision, typename AnalysisJet, typename AnyTracks, typen
 int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyTracks const&, AnyParticles const& particles, AnyOriginalParticles const&, std::unordered_map<std::string, std::vector<int>>& trkLabels, bool searchUpToQuark, float vtxResParam = 0.01 /* 0.01cm = 100um */, float trackPtMin = 0.5)
 {
   const auto& tracks = jet.template tracks_as<AnyTracks>();
-  const int n_trks = tracks.size();
+  const int nTrks = tracks.size();
 
   // trkVtxIndex
 
@@ -656,32 +747,32 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
       tempTrkVtxIndex.push_back(i++);
   }
   tempTrkVtxIndex.push_back(i); // temporary index for PV
-  if (n_trks < 1) {             // the process should be done for n_trks == 1 as well
+  if (nTrks < 1) {              // the process should be done for nTrks == 1 as well
     trkLabels["trkVtxIndex"] = tempTrkVtxIndex;
-    return n_trks;
+    return nTrks;
   }
 
-  int n_pos = n_trks + 1;
-  std::vector<float> dists(n_pos * (n_pos - 1) / 2);
-  auto trk_pair_idx = [n_pos](int ti, int tj) {
-    if (ti == tj || ti >= n_pos || tj >= n_pos || ti < 0 || tj < 0) {
+  int nPos = nTrks + 1;
+  std::vector<float> dists(nPos * (nPos - 1) / 2);
+  auto trkPairIdx = [nPos](int ti, int tj) {
+    if (ti == tj || ti >= nPos || tj >= nPos || ti < 0 || tj < 0) {
       LOGF(info, "Track pair index out of range");
       return -1;
     } else {
-      return (ti < tj) ? (ti * n_pos - (ti * (ti + 1)) / 2 + tj - ti - 1) : (tj * n_pos - (tj * (tj + 1)) / 2 + ti - tj - 1);
+      return (ti < tj) ? (ti * nPos - (ti * (ti + 1)) / 2 + tj - ti - 1) : (tj * nPos - (tj * (tj + 1)) / 2 + ti - tj - 1);
     }
-  }; // index n_trks is for PV
+  }; // index nTrks is for PV
 
-  for (int ti = 0; ti < n_pos - 1; ti++)
-    for (int tj = ti + 1; tj < n_pos; tj++) {
+  for (int ti = 0; ti < nPos - 1; ti++)
+    for (int tj = ti + 1; tj < nPos; tj++) {
       std::array<float, 3> posi, posj;
 
-      if (tj < n_trks) {
+      if (tj < nTrks) {
         if (tracks[tj].has_mcParticle()) {
           const auto& pj = tracks[tj].template mcParticle_as<AnyParticles>().template mcParticle_as<AnyOriginalParticles>();
           posj = std::array<float, 3>{pj.vx(), pj.vy(), pj.vz()};
         } else {
-          dists[trk_pair_idx(ti, tj)] = std::numeric_limits<float>::max();
+          dists[trkPairIdx(ti, tj)] = std::numeric_limits<float>::max();
           continue;
         }
       } else {
@@ -692,24 +783,24 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
         const auto& pi = tracks[ti].template mcParticle_as<AnyParticles>().template mcParticle_as<AnyOriginalParticles>();
         posi = std::array<float, 3>{pi.vx(), pi.vy(), pi.vz()};
       } else {
-        dists[trk_pair_idx(ti, tj)] = std::numeric_limits<float>::max();
+        dists[trkPairIdx(ti, tj)] = std::numeric_limits<float>::max();
         continue;
       }
 
-      dists[trk_pair_idx(ti, tj)] = RecoDecay::distance(posi, posj);
+      dists[trkPairIdx(ti, tj)] = RecoDecay::distance(posi, posj);
     }
 
   int clusteri = -1, clusterj = -1;
-  float min_min_dist = -1.f; // If there is an not-merge-able min_dist pair, check the 2nd-min_dist pair.
+  float minMinDist = -1.f; // If there is an not-merge-able minDist pair, check the 2nd-minDist pair.
   while (true) {
 
-    float min_dist = -1.f; // Get min_dist pair
-    for (int ti = 0; ti < n_pos - 1; ti++)
-      for (int tj = ti + 1; tj < n_pos; tj++)
+    float minDist = -1.f; // Get minDist pair
+    for (int ti = 0; ti < nPos - 1; ti++)
+      for (int tj = ti + 1; tj < nPos; tj++)
         if (tempTrkVtxIndex[ti] != tempTrkVtxIndex[tj] && tempTrkVtxIndex[ti] >= 0 && tempTrkVtxIndex[tj] >= 0) {
-          float dist = dists[trk_pair_idx(ti, tj)];
-          if ((dist < min_dist || min_dist < 0.f) && dist > min_min_dist) {
-            min_dist = dist;
+          float dist = dists[trkPairIdx(ti, tj)];
+          if ((dist < minDist || minDist < 0.f) && dist > minMinDist) {
+            minDist = dist;
             clusteri = ti;
             clusterj = tj;
           }
@@ -718,59 +809,59 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
       break;
 
     bool mrg = true; // Merge-ability check
-    for (int ti = 0; ti < n_pos && mrg; ti++)
+    for (int ti = 0; ti < nPos && mrg; ti++)
       if (tempTrkVtxIndex[ti] == tempTrkVtxIndex[clusteri] && tempTrkVtxIndex[ti] >= 0) {
-        for (int tj = 0; tj < n_pos && mrg; tj++)
+        for (int tj = 0; tj < nPos && mrg; tj++)
           if (tj != ti && tempTrkVtxIndex[tj] == tempTrkVtxIndex[clusterj] && tempTrkVtxIndex[tj] >= 0) {
-            if (dists[trk_pair_idx(ti, tj)] > vtxResParam) { // If there is more distant pair compared to vtx_res between two clusters, they cannot be merged.
+            if (dists[trkPairIdx(ti, tj)] > vtxResParam) { // If there is more distant pair compared to vtx_res between two clusters, they cannot be merged.
               mrg = false;
-              min_min_dist = min_dist;
+              minMinDist = minDist;
             }
           }
       }
-    if (min_dist > vtxResParam || min_dist < 0.f)
+    if (minDist > vtxResParam || minDist < 0.f)
       break;
 
     if (mrg) { // Merge two clusters
-      int old_index = tempTrkVtxIndex[clusterj];
-      for (int t = 0; t < n_pos; t++)
-        if (tempTrkVtxIndex[t] == old_index)
+      int oldIndex = tempTrkVtxIndex[clusterj];
+      for (int t = 0; t < nPos; t++)
+        if (tempTrkVtxIndex[t] == oldIndex)
           tempTrkVtxIndex[t] = tempTrkVtxIndex[clusteri];
     }
   }
 
-  int n_vertices = 0;
+  int nVertices = 0;
 
   // Sort the indices from PV (as 0) to the most distant SV (as 1~).
-  int idxPV = tempTrkVtxIndex[n_trks];
-  for (int t = 0; t < n_trks; t++)
+  int idxPV = tempTrkVtxIndex[nTrks];
+  for (int t = 0; t < nTrks; t++)
     if (tempTrkVtxIndex[t] == idxPV) {
       tempTrkVtxIndex[t] = -2;
-      n_vertices = 1; // There is a track originating from PV
+      nVertices = 1; // There is a track originating from PV
     }
 
   std::unordered_map<int, float> avgDistances;
   std::unordered_map<int, int> count;
-  for (int t = 0; t < n_trks; t++) {
+  for (int t = 0; t < nTrks; t++) {
     if (tempTrkVtxIndex[t] >= 0) {
-      avgDistances[tempTrkVtxIndex[t]] += dists[trk_pair_idx(t, n_trks)];
+      avgDistances[tempTrkVtxIndex[t]] += dists[trkPairIdx(t, nTrks)];
       count[tempTrkVtxIndex[t]]++;
     }
   }
 
-  trkLabels["trkVtxIndex"] = std::vector<int>(n_trks, -1);
-  if (count.size() != 0) { // If there is any SV cluster not only PV cluster
-    for (auto& [idx, avgDistance] : avgDistances)
+  trkLabels["trkVtxIndex"] = std::vector<int>(nTrks, -1);
+  if (count.size() != 0) {                        // If there is any SV cluster not only PV cluster
+    for (auto& [idx, avgDistance] : avgDistances) // o2-linter: disable=const-ref-in-for-loop
       avgDistance /= count[idx];
 
-    n_vertices += avgDistances.size();
+    nVertices += avgDistances.size();
 
     std::vector<std::pair<int, float>> sortedIndices(avgDistances.begin(), avgDistances.end());
     std::sort(sortedIndices.begin(), sortedIndices.end(), [](const auto& a, const auto& b) { return a.second < b.second; });
     int rank = 1;
-    for (const auto& [idx, avgDistance] : sortedIndices) {
+    for (auto const& [idx, avgDistance] : sortedIndices) {
       bool found = false;
-      for (int t = 0; t < n_trks; t++)
+      for (int t = 0; t < nTrks; t++)
         if (tempTrkVtxIndex[t] == idx) {
           trkLabels["trkVtxIndex"][t] = rank;
           found = true;
@@ -779,14 +870,14 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
     }
   }
 
-  for (int t = 0; t < n_trks; t++)
+  for (int t = 0; t < nTrks; t++)
     if (tempTrkVtxIndex[t] == -2)
       trkLabels["trkVtxIndex"][t] = 0;
 
   // trkOrigin
 
   int trkIdx = 0;
-  for (auto& constituent : jet.template tracks_as<AnyTracks>()) {
+  for (auto const& constituent : jet.template tracks_as<AnyTracks>()) {
     if (!constituent.has_mcParticle() || !constituent.template mcParticle_as<AnyParticles>().isPhysicalPrimary() || constituent.pt() < trackPtMin) {
       trkLabels["trkOrigin"].push_back(0);
     } else {
@@ -799,9 +890,116 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
     trkIdx++;
   }
 
-  return n_vertices;
+  return nVertices;
 }
 
+std::vector<std::vector<float>> getInputsForML(BJetParams jetparams, std::vector<BJetTrackParams>& tracksParams, std::vector<BJetSVParams>& svsParams, int maxJetConst = 10)
+{
+  std::vector<float> jetInput = {jetparams.mJetpT, jetparams.mJetEta, jetparams.mJetPhi, static_cast<float>(jetparams.mNTracks), static_cast<float>(jetparams.mNSV), jetparams.mJetMass};
+  std::vector<float> tracksInputFlat;
+  std::vector<float> svsInputFlat;
+
+  for (int iconstit = 0; iconstit < maxJetConst; iconstit++) {
+
+    tracksInputFlat.push_back(tracksParams[iconstit].mTrackpT);
+    tracksInputFlat.push_back(tracksParams[iconstit].mTrackEta);
+    tracksInputFlat.push_back(tracksParams[iconstit].mDotProdTrackJet);
+    tracksInputFlat.push_back(tracksParams[iconstit].mDotProdTrackJetOverJet);
+    tracksInputFlat.push_back(tracksParams[iconstit].mDeltaRJetTrack);
+    tracksInputFlat.push_back(tracksParams[iconstit].mSignedIP2D);
+    tracksInputFlat.push_back(tracksParams[iconstit].mSignedIP2DSign);
+    tracksInputFlat.push_back(tracksParams[iconstit].mSignedIP3D);
+    tracksInputFlat.push_back(tracksParams[iconstit].mSignedIP3DSign);
+    tracksInputFlat.push_back(tracksParams[iconstit].mMomFraction);
+    tracksInputFlat.push_back(tracksParams[iconstit].mDeltaRTrackVertex);
+
+    svsInputFlat.push_back(svsParams[iconstit].mSVpT);
+    svsInputFlat.push_back(svsParams[iconstit].mDeltaRSVJet);
+    svsInputFlat.push_back(svsParams[iconstit].mSVMass);
+    svsInputFlat.push_back(svsParams[iconstit].mSVfE);
+    svsInputFlat.push_back(svsParams[iconstit].mIPXY);
+    svsInputFlat.push_back(svsParams[iconstit].mCPA);
+    svsInputFlat.push_back(svsParams[iconstit].mChi2PCA);
+    svsInputFlat.push_back(svsParams[iconstit].mDispersion);
+    svsInputFlat.push_back(svsParams[iconstit].mDecayLength2D);
+    svsInputFlat.push_back(svsParams[iconstit].mDecayLength2DError);
+    svsInputFlat.push_back(svsParams[iconstit].mDecayLength3D);
+    svsInputFlat.push_back(svsParams[iconstit].mDecayLength3DError);
+  }
+
+  std::vector<std::vector<float>> totalInput;
+  totalInput.push_back(jetInput);
+  totalInput.push_back(tracksInputFlat);
+  totalInput.push_back(svsInputFlat);
+
+  return totalInput;
+}
+
+// Looping over the SV info and putting them in the input vector
+template <typename AnalysisJet, typename AnyTracks, typename SecondaryVertices>
+void analyzeJetSVInfo4ML(AnalysisJet const& myJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<BJetSVParams>& svsParams, float svPtMin = 1.0, int svReductionFactor = 3)
+{
+  using SVType = typename SecondaryVertices::iterator;
+
+  // Min-heap to store the top 30 SVs by decayLengthXY/errorDecayLengthXY
+  auto compare = [](SVType& sv1, SVType& sv2) {
+    return (sv1.decayLengthXY() / sv1.errorDecayLengthXY()) > (sv2.decayLengthXY() / sv2.errorDecayLengthXY());
+  };
+
+  auto svs = myJet.template secondaryVertices_as<SecondaryVertices>();
+
+  // Sort the SVs based on their decay length significance in descending order
+  // This is needed in order to select longest SVs since some jets could have thousands of SVs
+  std::sort(svs.begin(), svs.end(), compare);
+
+  for (const auto& candSV : svs) {
+
+    if (candSV.pt() < svPtMin) {
+      continue;
+    }
+
+    double deltaRJetSV = jetutilities::deltaR(myJet, candSV);
+    double massSV = candSV.m();
+    double energySV = candSV.e();
+
+    if (svsParams.size() < (svReductionFactor * myJet.template tracks_as<AnyTracks>().size())) {
+      svsParams.emplace_back(BJetSVParams{candSV.pt(), deltaRJetSV, massSV, energySV / myJet.energy(), candSV.impactParameterXY(), candSV.cpa(), candSV.chi2PCA(), candSV.dispersion(), candSV.decayLengthXY(), candSV.errorDecayLengthXY(), candSV.decayLength(), candSV.errorDecayLength()});
+    }
+  }
+}
+
+// Looping over the track info and putting them in the input vector
+template <typename AnalysisJet, typename AnyTracks, typename SecondaryVertices>
+void analyzeJetTrackInfo4ML(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<BJetTrackParams>& tracksParams, float trackPtMin = 0.5)
+{
+  for (const auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
+
+    if (constituent.pt() < trackPtMin) {
+      continue;
+    }
+
+    double deltaRJetTrack = jetutilities::deltaR(analysisJet, constituent);
+    double dotProduct = RecoDecay::dotProd(std::array<float, 3>{analysisJet.px(), analysisJet.py(), analysisJet.pz()}, std::array<float, 3>{constituent.px(), constituent.py(), constituent.pz()});
+    int sign = jettaggingutilities::getGeoSign(analysisJet, constituent);
+
+    float rClosestSV = 10.;
+    for (const auto& candSV : analysisJet.template secondaryVertices_as<SecondaryVertices>()) {
+      double deltaRTrackSV = jetutilities::deltaR(constituent, candSV);
+      if (deltaRTrackSV < rClosestSV) {
+        rClosestSV = deltaRTrackSV;
+      }
+    }
+
+    tracksParams.emplace_back(BJetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), rClosestSV});
+  }
+
+  auto compare = [](BJetTrackParams& tr1, BJetTrackParams& tr2) {
+    return (tr1.mSignedIP2D / tr1.mSignedIP2DSign) > (tr2.mSignedIP2D / tr2.mSignedIP2DSign);
+  };
+
+  // Sort the tracks based on their IP significance in descending order
+  std::sort(tracksParams.begin(), tracksParams.end(), compare);
+}
 }; // namespace jettaggingutilities
 
 #endif // PWGJE_CORE_JETTAGGINGUTILITIES_H_
