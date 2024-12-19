@@ -31,9 +31,11 @@ DECLARE_SOA_COLUMN(GS, gs, int);
 DECLARE_SOA_COLUMN(ZNA, zna, float);
 DECLARE_SOA_COLUMN(ZNC, znc, float);
 DECLARE_SOA_COLUMN(Ntr, ntr, int);
+DECLARE_SOA_COLUMN(Occ, occ, int);
+DECLARE_SOA_COLUMN(Ir, ir, float);
 } // namespace sgevent
 DECLARE_SOA_TABLE(SGEvents, "AOD", "SGEVENT", // o2::soa::Index<>,
-                  sgevent::Run, sgevent::Flag, sgevent::GS, sgevent::ZNA, sgevent::ZNC, sgevent::Ntr);
+                  sgevent::Run, sgevent::Flag, sgevent::GS, sgevent::ZNA, sgevent::ZNC, sgevent::Ntr, sgevent::Occ, sgevent::Ir);
 // sgevent::Run, sgevent::Flag);
 using SGEvent = SGEvents::iterator;
 namespace sgtrack

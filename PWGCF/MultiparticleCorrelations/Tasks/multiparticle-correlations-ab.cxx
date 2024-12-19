@@ -122,7 +122,6 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     DefaultCuts();                                // here default values for cuts are either hardwired, or defined through default binning to ease bookeeping,
                                                   // or values for cuts provided via configurables are taken into account
                                                   // Remark: DefaultCuts() has to be called after DefaultBinning()
-
     // *) Specific cuts:
     if (tc.fUseSpecificCuts) {
       SpecificCuts(tc.fWhichSpecificCuts); // after default cuts are applied, on top of them apply analysis-specific cuts. Has to be called after DefaultBinning() and DefaultCuts()

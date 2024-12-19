@@ -44,6 +44,7 @@ struct JetDerivedDataProducerDummyLcTask {
   Produces<aod::HfBplusPars> bplusParsTable;
   Produces<aod::HfBplusParEs> bplusParExtrasTable;
   Produces<aod::HfBplusParD0s> bplusParD0sTable;
+  Produces<aod::HfBplusSels> bplusSelsTable;
   Produces<aod::HfBplusMls> bplusMlsTable;
   Produces<aod::HfBplusMlD0s> bplusMlD0sTable;
   Produces<aod::HfBplusMcs> bplusMcsTable;

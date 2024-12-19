@@ -137,7 +137,7 @@ struct CreateEMEventDilepton {
   PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
   PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
 
-  template <bool isMC, bool isTriggerAnalysis, EMEventType eventype, typename TCollisions, typename TBCs>
+  template <bool isMC, bool isTriggerAnalysis, EMEventType eventtype, typename TCollisions, typename TBCs>
   void skimEvent(TCollisions const& collisions, TBCs const&)
   {
     for (auto& collision : collisions) {
@@ -151,7 +151,13 @@ struct CreateEMEventDilepton {
       auto bc = collision.template foundBC_as<TBCs>();
       initCCDB(bc);
 
-      event_norm_info(collision.alias_raw(), collision.selection_raw(), static_cast<int16_t>(10.f * collision.posZ()));
+      if constexpr (eventtype == EMEventType::kEvent) {
+        event_norm_info(collision.alias_raw(), collision.selection_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+      } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
+        event_norm_info(collision.alias_raw(), collision.selection_raw(), static_cast<int16_t>(10.f * collision.posZ()), collision.centFT0C());
+      } else {
+        event_norm_info(collision.alias_raw(), collision.selection_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+      }
 
       if (!collision.isSelected() || !collision.isEoI()) {
         continue;
@@ -175,17 +181,17 @@ struct CreateEMEventDilepton {
 
       event_mult(collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
 
-      if constexpr (eventype == EMEventType::kEvent) {
+      if constexpr (eventtype == EMEventType::kEvent) {
         event_cent(105.f, 105.f, 105.f);
         event_qvec(
           999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
           999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
-      } else if constexpr (eventype == EMEventType::kEvent_Cent) {
+      } else if constexpr (eventtype == EMEventType::kEvent_Cent) {
         event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
         event_qvec(
           999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
           999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
-      } else if constexpr (eventype == EMEventType::kEvent_Cent_Qvec) {
+      } else if constexpr (eventtype == EMEventType::kEvent_Cent_Qvec) {
         event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
         float q2xft0m = 999.f, q2yft0m = 999.f, q2xft0a = 999.f, q2yft0a = 999.f, q2xft0c = 999.f, q2yft0c = 999.f, q2xbpos = 999.f, q2ybpos = 999.f, q2xbneg = 999.f, q2ybneg = 999.f, q2xbtot = 999.f, q2ybtot = 999.f;
         float q3xft0m = 999.f, q3yft0m = 999.f, q3xft0a = 999.f, q3yft0a = 999.f, q3xft0c = 999.f, q3yft0c = 999.f, q3xbpos = 999.f, q3ybpos = 999.f, q3xbneg = 999.f, q3ybneg = 999.f, q3xbtot = 999.f, q3ybtot = 999.f;

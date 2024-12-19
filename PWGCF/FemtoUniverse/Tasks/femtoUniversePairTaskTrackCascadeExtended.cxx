@@ -28,13 +28,13 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
+#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 
 using namespace o2;
 using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::analysis::femtoUniverse;
+using namespace o2::analysis::femto_universe;
 using namespace o2::aod::pidutils;
 
 struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/struct
@@ -105,8 +105,8 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kCascadeBachelor, 0> bachHistos;
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kCascade, 0> cascQAHistos;
 
-  FemtoUniverseContainer<femtoUniverseContainer::EventType::same, femtoUniverseContainer::Observable::kstar> sameEventCont;
-  FemtoUniverseContainer<femtoUniverseContainer::EventType::mixed, femtoUniverseContainer::Observable::kstar> mixedEventCont;
+  FemtoUniverseContainer<femto_universe_container::EventType::same, femto_universe_container::Observable::kstar> sameEventCont;
+  FemtoUniverseContainer<femto_universe_container::EventType::mixed, femto_universe_container::Observable::kstar> mixedEventCont;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kCascade> pairCleaner;
 
   HistogramRegistry rXiQA{"xi", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};

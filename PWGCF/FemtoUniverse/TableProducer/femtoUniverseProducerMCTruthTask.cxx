@@ -26,7 +26,7 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseV0Selection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePhiSelection.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
+#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -40,7 +40,7 @@
 #include "TLorentzVector.h"
 
 using namespace o2;
-using namespace o2::analysis::femtoUniverse;
+using namespace o2::analysis::femto_universe;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
