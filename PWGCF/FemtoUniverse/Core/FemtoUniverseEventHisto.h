@@ -36,9 +36,9 @@ class FemtoUniverseEventHisto
   {
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
-    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{1500, 0, 30000}});
+    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{2000, 0, 20000}});
     mHistogramRegistry->add("Event/MultNTr", "; vMultNTr; Entries", kTH1F, {{20, 0, 200}});
-    mHistogramRegistry->add("Event/MultNTrVSMultV0M", "; vMultNTr; MultV0M", kTH2F, {{200, 0, 4000}, {1500, 0, 30000}});
+    mHistogramRegistry->add("Event/MultNTrVSMultV0M", "; vMultNTr; MultV0M", kTH2F, {{200, 0, 4000}, {2000, 0, 20000}});
     mHistogramRegistry->add("Event/zvtxhist_MultNTr", "; zvtxhist; MultNTr", kTH2F, {{250, -12.5, 12.5}, {20, 0, 200}});
   }
 
