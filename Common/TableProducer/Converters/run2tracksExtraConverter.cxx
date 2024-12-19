@@ -9,16 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file tracksExtraConverter.cxx
-/// \brief Converts TracksExtra table from version 000 to 001
-
-/// This task allows for the conversion of the TracksExtra table from version 000 to 001.
-/// The conversion is needed because the table has been extended with the ITSClusterSize column
-/// and the ITSClusterMap column is evaluated dynamically from it.
-/// In the converter a dummy ITSClusterSize column is filled with overflows if a hit in the layer is present
-
-/// \author F.Mazzaschi <fmazzasc@cern.ch>
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
