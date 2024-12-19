@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file matchRecoGen.cxx
-/// \brief basic check for the matching between generator level and detector level 
+/// \brief basic check for the matching between generator level and detector level
 /// \author victor.gonzalez.sebastian@gmail.com
 
 #include <cmath>
