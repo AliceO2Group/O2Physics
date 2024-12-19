@@ -79,7 +79,7 @@ o2physics_add_dpl_workflow(jet-track-derived
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-hf-definition
-                    SOURCES jetFlavourDef.cxx
+                    SOURCES heavyFlavourDefinition.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
