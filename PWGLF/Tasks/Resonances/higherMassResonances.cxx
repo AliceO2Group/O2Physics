@@ -1055,7 +1055,7 @@ struct HigherMassResonances {
   int counter2 = 0;
   int eventCounter = 0;
   std::vector<int> gindex1, gindex2;
-  void processRec(EventCandidatesMC::iterator const& collision, V0TrackCandidatesMC const& V0s, aod::McParticles const&, aod::McCollisions const& /*mcCollisions*/)
+  void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const&, V0TrackCandidatesMC const& V0s, aod::McParticles const&, aod::McCollisions const& /*mcCollisions*/)
   {
 
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
