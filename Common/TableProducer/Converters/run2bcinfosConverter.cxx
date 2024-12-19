@@ -46,6 +46,5 @@ struct Run2BCInfosConverter {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Run2BCInfosConverter>(cfgc)
-  };
+    adaptAnalysisTask<Run2BCInfosConverter>(cfgc)};
 }
