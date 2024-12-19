@@ -9,10 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-///
+/// \file JetTagging.h
 /// \brief Table definitions for hf jet tagging
 ///
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
+/// \author Hanseo Park <hanseo.park@cern.ch>
 
 #ifndef PWGJE_DATAMODEL_JETTAGGING_H_
 #define PWGJE_DATAMODEL_JETTAGGING_H_
@@ -120,6 +121,13 @@ JETSV_TABLES_DEF(Charged, SecondaryVertex3Prong, "3PRONG");
 JETSV_TABLES_DEF(Charged, SecondaryVertex2Prong, "2PRONG");
 
 // Defines the jet substrcuture table definition
+#define JETFLAVOURDEF_TABLE_DEF(_jet_type_, _name_, _description_) \
+  namespace _name_##flavourdef                                     \
+  {                                                                \
+    DECLARE_SOA_COLUMN(Origin, origin, int);                       \
+  }                                                                \
+  DECLARE_SOA_TABLE(_jet_type_##FlavourDef, "AOD", _description_ "FlavourDef", _name_##flavourdef::Origin);
+
 #define JETTAGGING_TABLE_DEF(_jet_type_, _name_, _description_)       \
   namespace _name_##tagging                                           \
   {                                                                   \
@@ -132,9 +140,11 @@ JETSV_TABLES_DEF(Charged, SecondaryVertex2Prong, "2PRONG");
   }                                                                   \
   DECLARE_SOA_TABLE(_jet_type_##Tags, "AOD", _description_ "Tags", _name_##tagging::Origin, _name_##tagging::JetProb, _name_##tagging::FlagtaggedjetIP, _name_##tagging::FlagtaggedjetIPxyz, _name_##tagging::FlagtaggedjetSV, _name_##tagging::FlagtaggedjetSVxyz);
 
-#define JETTAGGING_TABLES_DEF(_jet_type_, _description_)                                                    \
-  JETTAGGING_TABLE_DEF(_jet_type_##Jet, _jet_type_##jet, _description_)                                     \
-  JETTAGGING_TABLE_DEF(_jet_type_##MCDetectorLevelJet, _jet_type_##mcdetectorleveljet, _description_ "MCD") \
+#define JETTAGGING_TABLES_DEF(_jet_type_, _description_)                                                       \
+  JETTAGGING_TABLE_DEF(_jet_type_##Jet, _jet_type_##jet, _description_)                                        \
+  JETFLAVOURDEF_TABLE_DEF(_jet_type_##MCDetectorLevelJet, _jet_type_##mcdetectorleveljet, _description_ "MCD") \
+  JETTAGGING_TABLE_DEF(_jet_type_##MCDetectorLevelJet, _jet_type_##mcdetectorleveljet, _description_ "MCD")    \
+  JETFLAVOURDEF_TABLE_DEF(_jet_type_##MCParticleLevelJet, _jet_type_##mcparticleleveljet, _description_ "MCP") \
   JETTAGGING_TABLE_DEF(_jet_type_##MCParticleLevelJet, _jet_type_##mcparticleleveljet, _description_ "MCP")
 
 JETTAGGING_TABLES_DEF(Charged, "C");
