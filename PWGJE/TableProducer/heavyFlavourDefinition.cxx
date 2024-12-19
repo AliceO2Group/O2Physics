@@ -118,12 +118,10 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   std::vector<o2::framework::DataProcessorSpec> tasks;
 
   tasks.emplace_back(
-    adaptAnalysisTask<JetFlavourDefCharged>(cfgc,
-                                            SetDefaultProcesses{}));
+    adaptAnalysisTask<JetFlavourDefCharged>(cfgc));
 
   tasks.emplace_back(
-    adaptAnalysisTask<JetFlavourDefFull>(cfgc,
-                                         SetDefaultProcesses{}));
+    adaptAnalysisTask<JetFlavourDefFull>(cfgc));
   /*
     tasks.emplace_back(
       adaptAnalysisTask<JetFlavourDefNeutral>(cfgc,
