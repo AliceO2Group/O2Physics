@@ -98,7 +98,7 @@ struct phik0shortanalysis {
   Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
 
   // Configurables on Phi mass
-  Configurable<int> nBins{"nBins", 13, "N bins in cfgPhimassaxis"};
+  Configurable<int> nBinsmPhi{"nBinsmPhi", 13, "N bins in cfgPhimassaxis"};
   Configurable<float> lowmPhi{"lowmPhiMB", 1.0095, "Upper limits on Phi mass for signal extraction"};
   Configurable<float> upmPhi{"upmPhiMB", 1.029, "Upper limits on Phi mass for signal extraction"};
 
@@ -184,7 +184,7 @@ struct phik0shortanalysis {
     // Axes
     AxisSpec K0SmassAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec PhimassAxis = {200, 0.9f, 1.2f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
-    AxisSpec sigPhimassAxis = {nBins, lowmPhi, upmPhi, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
+    AxisSpec sigPhimassAxis = {nBinsmPhi, lowmPhi, upmPhi, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec vertexZAxis = {100, -15.f, 15.f, "vrtx_{Z} [cm]"};
     AxisSpec yAxis = {nBinsy, -cfgyAcceptanceSmear, cfgyAcceptanceSmear, "#it{y}"};
     AxisSpec deltayAxis = {nBinsy, 0.0f, 1.6f, "|#it{#Deltay}|"};
@@ -899,6 +899,9 @@ struct phik0shortanalysis {
 
       if (!track1.has_mcParticle())
         continue;
+      auto MCtrack1 = track1.mcParticle_as<aod::McParticles>();
+      if (MCtrack1.pdgCode() != 321 || !MCtrack1.isPhysicalPrimary())
+          continue;
 
       // Loop over all negative candidates
       for (const auto& track2 : negThisColl) {
@@ -911,31 +914,27 @@ struct phik0shortanalysis {
 
         if (!track2.has_mcParticle())
           continue;
-
-        auto MCtrack1 = track1.mcParticle_as<aod::McParticles>();
         auto MCtrack2 = track2.mcParticle_as<aod::McParticles>();
-        if (MCtrack1.pdgCode() != 321 || MCtrack2.pdgCode() != -321)
-          continue;
-        if (!MCtrack1.has_mothers() || !MCtrack2.has_mothers())
-          continue;
-        if (!MCtrack1.isPhysicalPrimary() || !MCtrack2.isPhysicalPrimary())
+        if (MCtrack2.pdgCode() != -321 || !MCtrack2.isPhysicalPrimary())
           continue;
 
-        int pdgParentPhi = 0;
+        bool isMCMotherPhi = false;
+        auto MCMotherPhi = MCtrack1.mothers_as<aod::McParticles>()[0];
         for (const auto& MotherOfMCtrack1 : MCtrack1.mothers_as<aod::McParticles>()) {
           for (const auto& MotherOfMCtrack2 : MCtrack2.mothers_as<aod::McParticles>()) {
-            if (MotherOfMCtrack1 == MotherOfMCtrack2) {
-              pdgParentPhi = MotherOfMCtrack1.pdgCode();
+            if (MotherOfMCtrack1 == MotherOfMCtrack2 && MotherOfMCtrack1.pdgCode() == 333) {
+              MCMotherPhi = MotherOfMCtrack1;
+              isMCMotherPhi = true;
             }
           }
         }
 
-        if (pdgParentPhi != 333)
+        if (!isMCMotherPhi)
           continue;
 
         TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
 
-        PhieffHist.fill(HIST("h3PhiRapiditySmearing"), genmultiplicity, recPhi.Rapidity(), MotherOfMCtrack1.y());
+        PhieffHist.fill(HIST("h3PhiRapiditySmearing"), genmultiplicity, recPhi.Rapidity(), MCMotherPhi.y());
 
         if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
           continue;
