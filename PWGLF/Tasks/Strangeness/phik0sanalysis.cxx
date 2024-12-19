@@ -901,7 +901,7 @@ struct phik0shortanalysis {
         continue;
       auto MCtrack1 = track1.mcParticle_as<aod::McParticles>();
       if (MCtrack1.pdgCode() != 321 || !MCtrack1.isPhysicalPrimary())
-          continue;
+        continue;
 
       // Loop over all negative candidates
       for (const auto& track2 : negThisColl) {
@@ -1044,9 +1044,8 @@ struct phik0shortanalysis {
 
     // V0 already reconstructed by the builder
     for (const auto& v0 : V0s) {
-      if (!v0.has_mcParticle()) {
-          continue;
-        }
+      if (!v0.has_mcParticle())
+        continue;
 
       auto v0mcparticle = v0.mcParticle();
       if (v0mcparticle.pdgCode() != 310 || !v0mcparticle.isPhysicalPrimary())
