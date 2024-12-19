@@ -557,8 +557,6 @@ struct HfCandidateCreator3Prong {
       registry.fill(HIST("hCovSVXZ"), kfCandPKPi.Covariance(2, 0));
       registry.fill(HIST("hCovSVZZ"), kfCandPKPi.Covariance(2, 2));
 
-      auto covMatrixSV = kfCandPKPi.CovarianceMatrix();
-
       auto errorDecayLength = UndefValueFloat;    // decay length is evaluated using KF tools and saved in the rowCandidateKF table
       auto errorDecayLengthXY = UndefValueFloat;  // these two fields are filled with meaningless values just for preserving the structure of the table
 
@@ -592,7 +590,7 @@ struct HfCandidateCreator3Prong {
 
       // fill KF info
       rowCandidateKF(kfCandPKPi.GetErrX(), kfCandPKPi.GetErrY(), kfCandPKPi.GetErrZ(),
-                     std::sqrt(kfCandPKPi.Covariance(0, 0)), std::sqrt(kfCandPKPi.Covariance(1, 1)), std::sqrt(kfCandPKPi.Covariance(2, 2)),
+                     std::sqrt(KFPV.Covariance(0, 0)), std::sqrt(KFPV.Covariance(1, 1)), std::sqrt(KFPV.Covariance(2, 2)),
                      massPKPi, massPiKP, massPiKPi, massKKPi, massPiKK, massKPi, massPiK,
                      kfCandPKPi.GetPx(), kfCandPKPi.GetPy(), kfCandPKPi.GetPz(),
                      kfCandPKPi.GetErrPx(), kfCandPKPi.GetErrPy(), kfCandPKPi.GetErrPz(),
