@@ -342,7 +342,7 @@ struct EventSelectionQaTask {
       lastRun = run;
       auto firstBC = bcs.iteratorAt(0);
       EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", firstBC.timestamp());
-      bool* applySelection = par->GetSelection(0);
+      bool* applySelection = par->getSelection(0);
       for (int i = 0; i < kNsel; i++) {
         histos.get<TH1>(HIST("hSelMask"))->SetBinContent(i + 1, applySelection[i]);
       }
