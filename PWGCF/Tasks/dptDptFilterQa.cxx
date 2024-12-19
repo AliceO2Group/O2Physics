@@ -14,6 +14,7 @@
 /// \author victor.gonzalez.sebastian@gmail.com
 
 #include <cmath>
+#include <string>
 
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
