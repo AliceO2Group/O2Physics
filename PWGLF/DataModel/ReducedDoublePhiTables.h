@@ -93,4 +93,4 @@ DECLARE_SOA_TABLE(PhiTracks, "AOD", "PHITRACK",
 
 using PhiTrack = PhiTracks::iterator;
 } // namespace o2::aod
-#endif // GLF_DATAMODEL_REDUCEDDOUBLEPHITABLES_H_
+#endif // PWGLF_DATAMODEL_REDUCEDDOUBLEPHITABLES_H_
