@@ -44,7 +44,7 @@ using namespace o2::analysis::hf_derived;
 
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorBplusToD0Pi {
-  ProducesHfDerivedData<
+  HfProducesDerivedData<
     o2::aod::HfBplusBases,
     o2::aod::HfBplusCollBases,
     o2::aod::HfBplusCollIds,
@@ -65,7 +65,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Produces<o2::aod::HfBplusMcs> rowCandidateMc;
 
   // Switches for filling tables
-  ConfigurableHfDerivedData confDerData;
+  HfConfigurableDerivedData confDerData;
   Configurable<bool> fillCandidatePar{"fillCandidatePar", true, "Fill candidate parameters"};
   Configurable<bool> fillCandidateParD0{"fillCandidateParD0", true, "Fill D0 candidate parameters"};
   Configurable<bool> fillCandidateParE{"fillCandidateParE", true, "Fill candidate extended parameters"};

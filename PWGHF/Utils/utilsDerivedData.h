@@ -49,7 +49,7 @@ void reserveTable(T& cursor, const o2::framework::Configurable<bool>& enabled, c
   }
 }
 
-struct ConfigurableHfDerivedData : o2::framework::ConfigurableGroup {
+struct HfConfigurableDerivedData : o2::framework::ConfigurableGroup {
   // Candidates
   o2::framework::Configurable<bool> fillCandidateBase{"fillCandidateBase", true, "Fill candidate base properties"};
   // Collisions
@@ -73,7 +73,7 @@ template <
   typename HfMcRCollIds,
   typename HfPBases,
   typename HfPIds>
-struct ProducesHfDerivedData : o2::framework::ProducesGroup {
+struct HfProducesDerivedData : o2::framework::ProducesGroup {
   // Candidates
   o2::framework::Produces<HfBases> rowCandidateBase;
   // Collisions
@@ -87,11 +87,11 @@ struct ProducesHfDerivedData : o2::framework::ProducesGroup {
   o2::framework::Produces<HfPBases> rowParticleBase;
   o2::framework::Produces<HfPIds> rowParticleId;
 
-  ConfigurableHfDerivedData const* conf;
+  HfConfigurableDerivedData const* conf;
   std::map<int, std::vector<int>> matchedCollisions; // indices of derived reconstructed collisions matched to the global indices of MC collisions
   std::map<int, bool> hasMcParticles;                // flags for MC collisions with HF particles
 
-  void init(ConfigurableHfDerivedData const& c)
+  void init(HfConfigurableDerivedData const& c)
   {
     conf = &c;
   }

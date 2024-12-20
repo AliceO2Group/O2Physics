@@ -42,7 +42,7 @@ using namespace o2::analysis::hf_derived;
 
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorLcToPKPi {
-  ProducesHfDerivedData<
+  HfProducesDerivedData<
     o2::aod::HfLcBases,
     o2::aod::HfLcCollBases,
     o2::aod::HfLcCollIds,
@@ -61,7 +61,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   Produces<o2::aod::HfLcMcs> rowCandidateMc;
 
   // Switches for filling tables
-  ConfigurableHfDerivedData confDerData;
+  HfConfigurableDerivedData confDerData;
   Configurable<bool> fillCandidatePar{"fillCandidatePar", true, "Fill candidate parameters"};
   Configurable<bool> fillCandidateParE{"fillCandidateParE", true, "Fill candidate extended parameters"};
   Configurable<bool> fillCandidateSel{"fillCandidateSel", true, "Fill candidate selection flags"};
