@@ -49,37 +49,35 @@
 
 #include "CommonDataFormat/InteractionRecord.h"
 
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using collisionEvSelIt = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator;
-using myTracks  =  o2::soa::Filtered<o2::soa::Join<o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi, o2::aod::FullTracks, o2::aod::TrackSelection>>;
-
+using myTracks = o2::soa::Filtered<o2::soa::Join<o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi, o2::aod::FullTracks, o2::aod::TrackSelection>>;
 
 struct EmcalClusterHadronicCorrectionTask {
   Produces<o2::aod::EmcalHCs> hadroniccorrectedclusters;
 
   HistogramRegistry registry;
-  //Configurables for Histogram Binning
-  Preslice<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalclustercell::emcalclusterId;  // looking at clusterID column in the EMCALMatchedTracks for every cluster
+  // Configurables for Histogram Binning
+  Preslice<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalclustercell::emcalclusterId; // looking at clusterID column in the EMCALMatchedTracks for every cluster
 
-  //define configurables here
+  // define configurables here
   Configurable<int> mClusterDefinition{"clusterDefinition", 10, "cluster definition to be selected, e.g. 10=kV3Default"};
   Configurable<float> minTime{"minTime", -25., "Minimum cluster time for time cut"};
   Configurable<float> maxTime{"maxTime", 20., "Maximum cluster time for time cut"};
   Configurable<float> minM02{"minM02", 0.1, "Minimum M02 for M02 cut"};
   Configurable<float> maxM02{"maxM02", 0.9, "Maximum M02 for M02 cut"};
   Configurable<float> minTrackPt{"minTrackPt", 0.15, "Minimum pT for tracks"};
-  Configurable<double> fHadCorr1{"HadCorr1", 1., "hadronic correction fraction for complete cluster energy subtraction for one matched track" };    //100% - default
-  Configurable<double> fHadCorr2{"HadCorr2", 0.7, "hadronic correction fraction for systematic studies for one matched track"};                     //70%
-  Configurable<double> fHadCorralltrks1{"HadCorralltrks1", 1., "hadronic correction fraction for complete cluster energy subtraction for all matched tracks" };    //100% - all tracks
-  Configurable<double> fHadCorralltrks2{"HadCorralltrks2", 0.7, "hadronic correction fraction for systematic studies for all matched tracks"};                     //70%
+  Configurable<double> fHadCorr1{"HadCorr1", 1., "hadronic correction fraction for complete cluster energy subtraction for one matched track"};                // 100% - default
+  Configurable<double> fHadCorr2{"HadCorr2", 0.7, "hadronic correction fraction for systematic studies for one matched track"};                                // 70%
+  Configurable<double> fHadCorralltrks1{"HadCorralltrks1", 1., "hadronic correction fraction for complete cluster energy subtraction for all matched tracks"}; // 100% - all tracks
+  Configurable<double> fHadCorralltrks2{"HadCorralltrks2", 0.7, "hadronic correction fraction for systematic studies for all matched tracks"};                 // 70%
   Configurable<float> minDEta{"minDEta", 0.01, "Minimum dEta between track and cluster"};
   Configurable<float> minDPhi{"minDPhi", 0.01, "Minimum dPhi between track and cluster"};
   Configurable<double> fConstantSubtractionValue{"ConstantSubtractionValue", 0.236, "Value to be used for constant MIP subtraction (only applicable if using constant subtraction in M02 scheme)"};
 
-  //pT-dependent track-matching configurables
+  // pT-dependent track-matching configurables
   Configurable<float> Eta0{"eta0", 0.04, "Param 0 in eta for pt-dependent matching"};
   Configurable<float> Eta1{"eta1", 0.010, "Param 1 in eta for pt-dependent matching"};
   Configurable<float> Eta2{"eta2", 2.5, "Param 2 in eta for pt-dependent matching"};
@@ -96,13 +94,13 @@ struct EmcalClusterHadronicCorrectionTask {
   Configurable<bool> UseFraction1{"UseFraction1", false, "Fractional momentum subtraction for Ecluster1 and EclusterAll1"};
   Configurable<bool> UseFraction2{"UseFraction2", false, "Fractional momentum subtraction for Ecluster2 and EclusterAll2"};
 
-  void init(o2::framework::InitContext&)  {
+  void init(o2::framework::InitContext&)
+  {
 
-
-    //Event histograms
+    // Event histograms
     registry.add("h_allcollisions", "Total events; event status;entries", {HistType::kTH1F, {{1, 0.5, 1.5}}});
 
-    //Matched-Cluster histograms
+    // Matched-Cluster histograms
     registry.add("h_matchedclusters", "Total matched clusters; cluster status;entries", {HistType::kTH1F, {{1, 0.5, 1.5}}});
     registry.add("h_ClsE", "; Cls E w/o correction (GeV); entries", {HistType::kTH1F, {{350, 0., 350.}}});
     registry.add("h_Ecluster1", "; Ecluster1 (GeV); entries", {HistType::kTH1F, {{350, 0., 350.}}});
@@ -111,21 +109,21 @@ struct EmcalClusterHadronicCorrectionTask {
     registry.add("h_EclusterAll2", "; EclusterAll2 (GeV); entries", {HistType::kTH1F, {{350, 0., 350.}}});
     registry.add("h_ClsTime", "Cluster time distribution of uncorrected cluster E; #it{t}_{cls} (ns); entries", {HistType::kTH1F, {{500, -250., 250.}}});
     registry.add("h_ClsM02", "Cluster M02 distribution of uncorrected cluster E; #it{M}_{02}; entries", {HistType::kTH1F, {{400, 0., 5.}}});
-    registry.add("h2_ClsEvsNmatches", "Original cluster energy vs Nmatches; Cls E w/o correction (GeV); Nmatches", {HistType::kTH2F,{{350, 0., 350.},{100, -0.5, 21.}}});
-    registry.add("h2_ClsEvsEcluster1", "; Cls E w/o correction (GeV); Ecluster1 (GeV)", {HistType::kTH2F,{{350, 0., 350.},{350, 0., 350.}}});
-    registry.add("h2_ClsEvsEcluster2", "; Cls E w/o correction (GeV); Ecluster2 (GeV)", {HistType::kTH2F,{{350, 0., 350.},{350, 0., 350.}}});
-    registry.add("h2_ClsEvsEclusterAll1", "; Cls E w/o correction (GeV); EclusterAll1 (GeV)", {HistType::kTH2F,{{350, 0., 350.},{350, 0., 350.}}});
-    registry.add("h2_ClsEvsEclusterAll2", "; Cls E w/o correction (GeV); EclusterAll2 (GeV)", {HistType::kTH2F,{{350, 0., 350.},{350, 0., 350.}}});
+    registry.add("h2_ClsEvsNmatches", "Original cluster energy vs Nmatches; Cls E w/o correction (GeV); Nmatches", {HistType::kTH2F, {{350, 0., 350.}, {100, -0.5, 21.}}});
+    registry.add("h2_ClsEvsEcluster1", "; Cls E w/o correction (GeV); Ecluster1 (GeV)", {HistType::kTH2F, {{350, 0., 350.}, {350, 0., 350.}}});
+    registry.add("h2_ClsEvsEcluster2", "; Cls E w/o correction (GeV); Ecluster2 (GeV)", {HistType::kTH2F, {{350, 0., 350.}, {350, 0., 350.}}});
+    registry.add("h2_ClsEvsEclusterAll1", "; Cls E w/o correction (GeV); EclusterAll1 (GeV)", {HistType::kTH2F, {{350, 0., 350.}, {350, 0., 350.}}});
+    registry.add("h2_ClsEvsEclusterAll2", "; Cls E w/o correction (GeV); EclusterAll2 (GeV)", {HistType::kTH2F, {{350, 0., 350.}, {350, 0., 350.}}});
 
-    //Matched-Track histograms
+    // Matched-Track histograms
     registry.add("h_matchedtracks", "Total matched tracks; track status;entries", {HistType::kTH1F, {{1, 0.5, 1.5}}});
   }
 
   Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == mClusterDefinition) && (o2::aod::emcalcluster::time >= minTime) && (o2::aod::emcalcluster::time <= maxTime) && (o2::aod::emcalcluster::m02 > minM02) && (o2::aod::emcalcluster::m02 < maxM02);
   Filter trackSelection = (o2::aod::track::pt >= minTrackPt);
-  //The matching of clusters and tracks is already centralised in the EMCAL framework.
-  //One only needs to apply a filter on matched clusters
-  //Here looping over all collisions matched to EMCAL clusters
+  // The matching of clusters and tracks is already centralised in the EMCAL framework.
+  // One only needs to apply a filter on matched clusters
+  // Here looping over all collisions matched to EMCAL clusters
   void processMatchedCollisions(collisionEvSelIt const&, o2::aod::EMCALClusters const& clusters, o2::aod::EMCALMatchedTracks const& matchedtracks, myTracks const&)
   {
     registry.fill(HIST("h_allcollisions"), 1);
@@ -135,22 +133,25 @@ struct EmcalClusterHadronicCorrectionTask {
       return;
     }
 
-    //Looping over all clusters matched to the collision
+    // Looping over all clusters matched to the collision
     for (const auto& cluster : clusters) {
       registry.fill(HIST("h_matchedclusters"), 1);
 
-      double Ecluster1; double Ecluster2; double EclusterAll1; double EclusterAll2;
+      double Ecluster1;
+      double Ecluster2;
+      double EclusterAll1;
+      double EclusterAll2;
       Ecluster1 = Ecluster2 = EclusterAll1 = EclusterAll2 = cluster.energy();
 
       registry.fill(HIST("h_ClsE"), cluster.energy());
       registry.fill(HIST("h_ClsM02"), cluster.m02());
       registry.fill(HIST("h_ClsTime"), cluster.time());
-      //selecting ALL MATCHED TRACKS after slicing all entries in perClusterMatchedTracks by the cluster globalIndex
+      // selecting ALL MATCHED TRACKS after slicing all entries in perClusterMatchedTracks by the cluster globalIndex
       auto tracksofcluster = matchedtracks.sliceBy(perClusterMatchedTracks, cluster.globalIndex());
 
       int Nmatches = 0;         // counter for closest matched track
       double closestTrkP = 0.0; // closest track momentum
-      double totalTrkP = 0.0;  // total track momentum
+      double totalTrkP = 0.0;   // total track momentum
 
       // pT-dependent track-matching instead of PID based track-matching to be adapted from Run 2 - suggested by Markus Fasel
 
@@ -175,22 +176,22 @@ struct EmcalClusterHadronicCorrectionTask {
         continue;
       }
 
-      //Looping over all matched tracks for the cluster
-      //Total number of matched tracks = 20 (hard-coded)
+      // Looping over all matched tracks for the cluster
+      // Total number of matched tracks = 20 (hard-coded)
       for (const auto& match : tracksofcluster) {
 
         double mom = abs(match.track_as<myTracks>().p());
         registry.fill(HIST("h_matchedtracks"), 1);
 
-        //CASE 1: skip tracks with a very low pT
+        // CASE 1: skip tracks with a very low pT
         if (mom < 1e-6) {
           continue;
         } // end CASE 1
 
-        //CASE 2:
-        // a) If one matched track -> 100% energy subtraction
-        // b) If more than one matched track -> 100% energy subtraction
-        // c) If you want to do systematic studies -> perform the above two checks a) and b), and then subtract 70% energy instead of 100%
+        // CASE 2:
+        //  a) If one matched track -> 100% energy subtraction
+        //  b) If more than one matched track -> 100% energy subtraction
+        //  c) If you want to do systematic studies -> perform the above two checks a) and b), and then subtract 70% energy instead of 100%
 
         // Perform dEta/dPhi matching
         double dEta = match.track_as<myTracks>().eta() - cluster.eta();
@@ -199,12 +200,11 @@ struct EmcalClusterHadronicCorrectionTask {
         // Apply the eta and phi matching thresholds
         // dEta and dPhi cut : ensures that the matched track is within the desired eta/phi window
 
-        //Do pT-dependent track matching
-        if(doMomDepMatching)
-        {
-          auto trackEtaMax  = funcPtDepEta.Eval(mom);
+        // Do pT-dependent track matching
+        if (doMomDepMatching) {
+          auto trackEtaMax = funcPtDepEta.Eval(mom);
           auto trackPhiHigh = +funcPtDepPhi.Eval(mom);
-          auto trackPhiLow  = -funcPtDepPhi.Eval(mom);
+          auto trackPhiLow = -funcPtDepPhi.Eval(mom);
 
           if ((dPhi < trackPhiHigh && dPhi > trackPhiLow) && fabs(dEta) < trackEtaMax) {
             if (Nmatches == 0) {
@@ -221,13 +221,13 @@ struct EmcalClusterHadronicCorrectionTask {
 
           // If track passes fixed dEta/dPhi cuts, process it
           if (Nmatches == 0) {
-            closestTrkP = mom;  // Closest track match
+            closestTrkP = mom; // Closest track match
           }
-          totalTrkP += mom;       // Accumulate momentum
-          Nmatches++;             // Count this match
+          totalTrkP += mom; // Accumulate momentum
+          Nmatches++;       // Count this match
         }
 
-      }  // End of track loop
+      } // End of track loop
       registry.fill(HIST("h2_ClsEvsNmatches"), cluster.energy(), Nmatches);
 
       if (Nmatches >= 1) {
@@ -267,40 +267,42 @@ struct EmcalClusterHadronicCorrectionTask {
   } // process function ends
 
   // Helper function to prevent negative energy subtraction
-  double subtractClusterEnergy(double Ecluster, double mom, double correctionFactor, int Nmatches, bool UseFraction) {
+  double subtractClusterEnergy(double Ecluster, double mom, double correctionFactor, int Nmatches, bool UseFraction)
+  {
     double Ecorr = Ecluster;
 
     // if (UseConstantSubtractionValue) {
-    if(!UseFraction) {
-      Ecorr = Ecluster- fConstantSubtractionValue* Nmatches;   // Use constant value for MIP-subtraction (regardless of the cluster-shape)
+    if (!UseFraction) {
+      Ecorr = Ecluster - fConstantSubtractionValue * Nmatches; // Use constant value for MIP-subtraction (regardless of the cluster-shape)
     } else {
-      Ecorr = Ecluster - correctionFactor * mom;               // Fractional momentum subtraction
+      Ecorr = Ecluster - correctionFactor * mom; // Fractional momentum subtraction
     }
     return (Ecorr < 0) ? 0 : Ecorr;
   }
 
   // Helper function for M02-based energy subtraction (based on cluster-shape)
-  double subtractM02ClusterEnergy(double m02, double Ecluster, int Nmatches, double totalTrkP, double correctionFactor, bool UseFraction) {
+  double subtractM02ClusterEnergy(double m02, double Ecluster, int Nmatches, double totalTrkP, double correctionFactor, bool UseFraction)
+  {
     double Ecorr = Ecluster;
 
     // For M02 in the single photon region, the signal is primarily: Single photons, single electrons, single MIPs
-    if (m02 > 0.1 && m02 < 0.4) {   //circular clusters(electron/photon)
-      Ecorr = Ecluster;  // Single electron, single MIP
+    if (m02 > 0.1 && m02 < 0.4) { // circular clusters(electron/photon)
+      Ecorr = Ecluster;           // Single electron, single MIP
     } else if (m02 > 0.4) {
       // Large M02 region (M02 > 0.4), more complex overlaps and hadronic showers.
       // The signal is primarily: Single hadronic shower, photon-photon overlap, photon-MIP overlap, MIP-MIP overlap,
       // MIP-hadronic shower overlap, hadronic shower - hadronic shower overlap)
 
       if (!UseFraction) {
-        Ecorr = Ecluster- fConstantSubtractionValue* Nmatches;   // Use constant value for MIP-subtraction (regardless of the cluster-shape)
+        Ecorr = Ecluster - fConstantSubtractionValue * Nmatches; // Use constant value for MIP-subtraction (regardless of the cluster-shape)
       } else {
-        Ecorr = Ecluster - correctionFactor * totalTrkP;        // Fractional momentum subtraction
+        Ecorr = Ecluster - correctionFactor * totalTrkP; // Fractional momentum subtraction
       }
     }
-    return (Ecorr < 0) ? 0 : Ecorr;  // Prevent negative energy
+    return (Ecorr < 0) ? 0 : Ecorr; // Prevent negative energy
   }
 
   PROCESS_SWITCH(EmcalClusterHadronicCorrectionTask, processMatchedCollisions, "Process matched clusters from collision", true);
-}; //end of struct
+}; // end of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<EmcalClusterHadronicCorrectionTask>(cfgc, TaskName{"emcal-cluster-hadronic-correction-task"})}; }
