@@ -1270,9 +1270,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "DeltaPhiPair", "", false, 130, -6.5, 6.5, VarManager::kDeltaPhiPair);
     }
     if (subGroupStr.Contains("correlation-emu")) {
-      hm->AddHistogram(histClass, "DeltaPhiPair2", "", false, 600, -o2::constants::math::PIHalf, 1.5 * o2::constants::math::PI, VarManager::kDeltaPhiPair2);
-      hm->AddHistogram(histClass, "DeltaEtaPair2", "", false, 350, 1.5, 5.0, VarManager::kDeltaEtaPair2);
       hm->AddHistogram(histClass, "DeltaPhiPair2_DeltaEtaPair2", "", false, 600, -o2::constants::math::PIHalf, 1.5 * o2::constants::math::PI, VarManager::kDeltaPhiPair2, 350, 1.5, 5.0, VarManager::kDeltaEtaPair2);
+      hm->AddHistogram(histClass, "DeltaPhiPair2_Pt", "", false, 600, -o2::constants::math::PIHalf, 1.5 * o2::constants::math::PI, VarManager::kDeltaPhiPair2, 200, 0.0, 20.0, VarManager::kPt);
     }
     if (subGroupStr.Contains("dielectrons")) {
       if (subGroupStr.Contains("prefilter")) {
