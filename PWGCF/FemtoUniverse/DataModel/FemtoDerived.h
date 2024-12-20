@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file FemtoDerived.h
+/// \brief Declaration of FemtoUniverse tables
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
+
 #ifndef PWGCF_FEMTOUNIVERSE_DATAMODEL_FEMTODERIVED_H_
 #define PWGCF_FEMTOUNIVERSE_DATAMODEL_FEMTODERIVED_H_
 
@@ -31,6 +35,8 @@ DECLARE_SOA_COLUMN(MultV0M, multV0M, float);       //! V0M multiplicity
 DECLARE_SOA_COLUMN(MultNtr, multNtr, int);         //! multiplicity of charged tracks as defined in the producer
 DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
 DECLARE_SOA_COLUMN(MagField, magField, float);     //! Magnetic field of the event
+DECLARE_SOA_COLUMN(IRrate, irrate, float);         //! Interaction rate
+DECLARE_SOA_COLUMN(Occupancy, occupancy, int);     //! TPC occupancy
 
 } // namespace femtouniversecollision
 
@@ -42,6 +48,11 @@ DECLARE_SOA_TABLE(FDCollisions, "AOD", "FDCOLLISION",
                   femtouniversecollision::Sphericity,
                   femtouniversecollision::MagField);
 using FDCollision = FDCollisions::iterator;
+
+DECLARE_SOA_TABLE(FDExtCollisions, "AOD", "FDEXTCOLLISION",
+                  femtouniversecollision::IRrate,
+                  femtouniversecollision::Occupancy);
+using FDExtCollision = FDExtCollisions::iterator;
 
 /// FemtoUniverseTrack
 namespace femtouniverseparticle
@@ -236,7 +247,7 @@ DECLARE_SOA_TABLE(FDCascParticles, "AOD", "FDCASCPARTICLE",
 using FDCascParticle = FDCascParticles::iterator;
 
 /// FemtoUniverseTrackMC
-namespace femtouniverseMCparticle
+namespace femtouniverse_mc_particle
 {
 /// Distinuishes the different particle origins
 enum ParticleOriginMCTruth {
@@ -274,19 +285,19 @@ DECLARE_SOA_COLUMN(PDGMCTruth, pdgMCTruth, int);                   //! Particle 
 
 // debug variables
 DECLARE_SOA_COLUMN(MotherPDG, motherPDG, int); //! Checks mother PDG, where mother is the primary particle for that decay chain
-} // namespace femtouniverseMCparticle
+} // namespace femtouniverse_mc_particle
 
 DECLARE_SOA_TABLE(FDMCParticles, "AOD", "FDMCPARTICLE",
                   o2::soa::Index<>,
-                  femtouniverseMCparticle::PartOriginMCTruth,
-                  femtouniverseMCparticle::PDGMCTruth,
+                  femtouniverse_mc_particle::PartOriginMCTruth,
+                  femtouniverse_mc_particle::PDGMCTruth,
                   femtouniverseparticle::Pt,
                   femtouniverseparticle::Eta,
                   femtouniverseparticle::Phi);
 using FDMCParticle = FDMCParticles::iterator;
 
 DECLARE_SOA_TABLE(FDExtMCParticles, "AOD", "FDEXTMCPARTICLE",
-                  femtouniverseMCparticle::MotherPDG);
+                  femtouniverse_mc_particle::MotherPDG);
 using FDExtMCParticle = FDExtMCParticles::iterator;
 
 namespace mcfdlabel

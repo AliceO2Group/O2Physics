@@ -9,91 +9,77 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+add_subdirectory(Matching)
 
 if(FastJet_FOUND)
 
 o2physics_add_dpl_workflow(jet-deriveddata-producer
-                    SOURCES jetderiveddataproducer.cxx
+                    SOURCES derivedDataProducer.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-deriveddata-trigger-producer
-                    SOURCES jetderiveddatatriggerproducer.cxx
+                    SOURCES derivedDataTriggerProducer.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-deriveddata-producer-dummy
-                    SOURCES jetderiveddataproducerdummy.cxx
+                    SOURCES derivedDataProducerDummy.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-deriveddata-producer-dummy-d0
-                    SOURCES jetderiveddataproducerdummyd0.cxx
+                    SOURCES derivedDataProducerDummyD0.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-deriveddata-producer-dummy-lc
-                    SOURCES jetderiveddataproducerdummylc.cxx
+                    SOURCES derivedDataProducerDummyLc.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-deriveddata-producer-dummy-bplus
+                    SOURCES derivedDataProducerDummyBplus.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-deriveddata-producer-dummy-dielectron
-                    SOURCES jetderiveddataproducerdummydielectron.cxx
+                    SOURCES derivedDataProducerDummyDielectron.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-deriveddata-writer
-                    SOURCES jetderiveddatawriter.cxx
+                    SOURCES derivedDataWriter.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-luminosity-producer
-                    SOURCES luminosityproducer.cxx
+                    SOURCES luminosityProducer.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-luminosity-calculator
-                    SOURCES luminositycalculator.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(jet-matching-mc
-                    SOURCES jetmatchingmc.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(jet-matching-sub
-                    SOURCES jetmatchingsub.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(jet-matching-mc-sub
-                    SOURCES jetmatchingmcsub.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(jet-matching-duplicates
-                    SOURCES jetmatchingduplicates.cxx
+                    SOURCES luminosityCalculator.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-eventweight-mcd
-                    SOURCES jeteventweightmcd.cxx
+                    SOURCES jetEventWeightMCD.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-eventweight-mcp
-                    SOURCES jeteventweightmcp.cxx
+                    SOURCES jetEventWeightMCP.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-track-derived
-                    SOURCES jettrackderived.cxx
+                    SOURCES jetTrackDerived.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-taggerhf
-                    SOURCES jettaggerhf.cxx
+                    SOURCES jetTaggerHF.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

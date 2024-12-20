@@ -208,14 +208,34 @@ DECLARE_SOA_COLUMN(StoredTPCNSigmaHe, storedTpcNSigmaHe, binning::nsigma::binned
 
 DECLARE_SOA_COLUMN(StoredTOFNSigmaPi_v1, storedTofNSigmaPi_v1, binning::nsigma::binned_t); // (v1)
 DECLARE_SOA_COLUMN(StoredTPCNSigmaPi_v1, storedTpcNSigmaPi_v1, binning::nsigma::binned_t); // (v1)
+
 DECLARE_SOA_COLUMN(StoredTOFNSigmaKa_v1, storedTofNSigmaKa_v1, binning::nsigma::binned_t); // (v1)
 DECLARE_SOA_COLUMN(StoredTPCNSigmaKa_v1, storedTpcNSigmaKa_v1, binning::nsigma::binned_t); // (v1)
+
 DECLARE_SOA_COLUMN(StoredTOFNSigmaPr_v1, storedTofNSigmaPr_v1, binning::nsigma::binned_t); // (v1)
 DECLARE_SOA_COLUMN(StoredTPCNSigmaPr_v1, storedTpcNSigmaPr_v1, binning::nsigma::binned_t); // (v1)
+
 DECLARE_SOA_COLUMN(StoredTOFNSigmaDe_v1, storedTofNSigmaDe_v1, binning::nsigma::binned_t); // (v1)
 DECLARE_SOA_COLUMN(StoredTPCNSigmaDe_v1, storedTpcNSigmaDe_v1, binning::nsigma::binned_t); // (v1)
+
 DECLARE_SOA_COLUMN(StoredTOFNSigmaHe_v1, storedTofNSigmaHe_v1, binning::nsigma::binned_t); // (v1)
 DECLARE_SOA_COLUMN(StoredTPCNSigmaHe_v1, storedTpcNSigmaHe_v1, binning::nsigma::binned_t); // (v1)
+
+DECLARE_SOA_COLUMN(StoredITSNSigmaPi_v1, storedItsNSigmaPi_v1, binning::nsigma::binned_t); // (v1)
+DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaPi_v1, itsNSigmaPi,
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
+DECLARE_SOA_COLUMN(StoredITSNSigmaKa_v1, storedItsNSigmaKa_v1, binning::nsigma::binned_t); // (v1)
+DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaKa_v1, itsNSigmaKa,
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
+DECLARE_SOA_COLUMN(StoredITSNSigmaPr_v1, storedItsNSigmaPr_v1, binning::nsigma::binned_t); // (v1)
+DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaPr_v1, itsNSigmaPr,
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
+DECLARE_SOA_COLUMN(StoredITSNSigmaDe_v1, storedItsNSigmaDe_v1, binning::nsigma::binned_t); // (v1)
+DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaDe_v1, itsNSigmaDe,
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
+DECLARE_SOA_COLUMN(StoredITSNSigmaHe_v1, storedItsNSigmaHe_v1, binning::nsigma::binned_t); // (v1)
+DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaHe_v1, itsNSigmaHe,
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
 
 DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy, [](float p, float mass) -> float { return sqrt(p * p + mass * mass); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float p, float eta) -> float { return p / std::cosh(eta); });
@@ -486,6 +506,18 @@ DECLARE_SOA_TABLE(SingleTrkExtras, "AOD", "SINGLETRKEXTRA",
 DECLARE_SOA_TABLE(SinglePIDEls, "AOD", "SINGLEPIDEL",
                   singletrackselector::StoredTPCNSigmaEl,
                   singletrackselector::TPCNSigmaEl<singletrackselector::StoredTPCNSigmaEl>);
+
+DECLARE_SOA_TABLE(SinglePIDsITSPi, "AOD", "STSPIDITSPI",
+                  singletrackselector::StoredITSNSigmaPi_v1,
+                  singletrackselector::ITSNSigmaPi_v1<singletrackselector::StoredITSNSigmaPi_v1>);
+
+DECLARE_SOA_TABLE(SinglePIDsITSKa, "AOD", "STSPIDITSKA",
+                  singletrackselector::StoredITSNSigmaKa_v1,
+                  singletrackselector::ITSNSigmaKa_v1<singletrackselector::StoredITSNSigmaKa_v1>);
+
+DECLARE_SOA_TABLE(SinglePIDsITSPr, "AOD", "STSPIDITSPR",
+                  singletrackselector::StoredITSNSigmaPr_v1,
+                  singletrackselector::ITSNSigmaPr_v1<singletrackselector::StoredITSNSigmaPr_v1>);
 
 namespace singletrackselector
 {

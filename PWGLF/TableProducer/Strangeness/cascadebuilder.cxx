@@ -36,6 +36,8 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <string>
+#include <vector>
 #include <cmath>
 #include <array>
 #include <cstdlib>
@@ -1410,12 +1412,8 @@ struct cascadeBuilder {
     KFXi.TransportToDecayVertex();
     KFOmega.TransportToDecayVertex();
 
-    // get DCA of updated daughters at vertex
-    KFParticle kfpBachPionUpd = kfpBachPion;
-    KFParticle kfpV0Upd = kfpV0;
-    kfpBachPionUpd.SetProductionVertex(KFXi);
-    kfpV0Upd.SetProductionVertex(KFXi);
-    cascadecandidate.dcacascdau = kfpBachPionUpd.GetDistanceFromParticle(kfpV0Upd);
+    // get DCA of daughters at vertex
+    cascadecandidate.dcacascdau = kfpBachPion.GetDistanceFromParticle(kfpV0);
     if (cascadecandidate.dcacascdau > dcacascdau)
       return false;
 
@@ -2256,7 +2254,7 @@ struct cascadePreselector {
   void checkAndFinalize()
   {
     // parse + publish tag table now
-    for (int ii = 0; ii < selectionMask.size(); ii++) {
+    for (std::size_t ii = 0; ii < selectionMask.size(); ii++) {
       histos.fill(HIST("hPreselectorStatistics"), 0.0f); // All cascades
       bool validCascade = bitcheck(selectionMask[ii], bitTrackQuality);
       if (validCascade) {

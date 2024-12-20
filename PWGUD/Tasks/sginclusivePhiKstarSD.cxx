@@ -13,21 +13,27 @@
 // \since  May 2024
 
 #include <cstdlib>
+#include <vector>
+#include <TString.h>
+#include <TLorentzVector.h>
+#include <TMath.h>
+#include "Math/Vector4D.h"
+#include "Math/Vector3D.h"
+#include "Math/GenVector/Boost.h"
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
+#include "ReconstructionDataFormats/Vertex.h"
+
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/SGTrackSelector.h"
+#include "PWGUD/Core/UPCHelpers.h"
+
 #include "Common/DataModel/PIDResponse.h"
-#include <TString.h>
-#include "TLorentzVector.h"
-#include <TMath.h>
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "Math/GenVector/Boost.h"
 
 using namespace std;
 using namespace o2;
@@ -59,17 +65,22 @@ struct SGResonanceAnalyzer {
   Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
   Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
   Configurable<float> pt_cut{"pt_cut", 0.15, "Track pt cut"};
+  Configurable<float> pt1{"pt1", 0.3, "pid selection pt1"};
+  Configurable<float> pt2{"pt2", 0.4, "pid selection pt2"};
+  Configurable<float> pt3{"pt3", 0.5, "pid selection pt3"};
 
   Configurable<float> EtaGapMin{"EtaGapMin", 0.0, "Track eta min"};
   Configurable<float> EtaGapMax{"EtaGapMax", 0.9, "Track eta min"};
   Configurable<float> EtaDG{"EtaDG", 0.5, "Track eta DG"};
 
+  Configurable<float> nsigmatpc_cut1{"nsigmatpc1", 3.0, "nsigma tpc cut1"};
+  Configurable<float> nsigmatpc_cut2{"nsigmatpc2", 3.0, "nsigma tpc cut2"};
+  Configurable<float> nsigmatpc_cut3{"nsigmatpc3", 3.0, "nsigma tpc cut3"};
   Configurable<float> nsigmatpc_cut{"nsigmatpc", 3.0, "nsigma tpc cut"};
   Configurable<float> nsigmatof_cut{"nsigmatof", 9.0, "nsigma tof cut"};
 
   Configurable<int> mintrack{"min_track", 1, "min track"};
   Configurable<int> maxtrack{"max_track", 50, "max track"};
-
   Configurable<bool> use_tof{"Use_TOF", true, "TOF PID"};
   Configurable<bool> QA{"QA", true, ""};
   Configurable<bool> rapidity_gap{"rapidity_gap", true, ""};
@@ -78,17 +89,32 @@ struct SGResonanceAnalyzer {
   Configurable<bool> rho{"rho", true, ""};
   Configurable<bool> kstar{"kstar", true, ""};
   Configurable<bool> fourpion{"fourpion", true, ""};
+
+  Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 1, "Number of mixed events per event"};
+  Configurable<int> nBkgRotations{"nBkgRotations", 9, "Number of rotated copies (background) per each original candidate"};
+  Configurable<bool> fillRotation{"fillRotation", true, "fill rotation"};
+  Configurable<float> confMinRot{"confMinRot", 5.0 * TMath::Pi() / 6.0, "Minimum of rotation"};
+  Configurable<float> confMaxRot{"confMaxRot", 7.0 * TMath::Pi() / 6.0, "Maximum of rotation"};
+
   void init(InitContext const&)
   {
     registry.add("GapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
     registry.add("TrueGapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
     if (phi) {
-      registry.add("os_KK_pT_0", "pt kaon pair", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_KK_pT_1", "pt kaon pair", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_KK_pT_2", "pt kaon pair", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_KK_ls_pT_0", "kaon pair like sign", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_KK_ls_pT_1", "kaon pair like sign", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_KK_ls_pT_2", "kaon pair like sign", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_KK_pT_0", "pt kaon pair", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_KK_pT_1", "pt kaon pair", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_KK_pT_2", "pt kaon pair", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_KK_ls_pT_0", "kaon pair like sign", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_KK_ls_pT_1", "kaon pair like sign", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_KK_ls_pT_2", "kaon pair like sign", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+
+      registry.add("os_KK_mix_pT_0", "kaon pair mix event", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_KK_mix_pT_1", "kaon pair mix event", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_KK_mix_pT_2", "kaon pair mix event", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+
+      registry.add("os_KK_rot_pT_0", "kaon pair mix event", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_KK_rot_pT_1", "kaon pair mix event", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_KK_rot_pT_2", "kaon pair mix event", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
     }
     if (rho) {
       registry.add("os_pp_pT_0", "pt pion pair", kTH3F, {{120, 1.44, 2.04}, {80, -2.0, 2.0}, {100, 0, 10}});
@@ -102,13 +128,26 @@ struct SGResonanceAnalyzer {
       registry.add("os_pk_pT_0", "pion-kaon pair", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
       registry.add("os_pk_pT_1", "pion-kaon pair", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
       registry.add("os_pk_pT_2", "pion-kaon pair", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
+
+      registry.add("os_pk_mix_pT_0", "pion-kaon mix pair", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_pk_mix_pT_1", "pion-kaon mix pair", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_pk_mix_pT_2", "pion-kaon mix pair", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
+
+      registry.add("os_pk_rot_pT_0", "pion-kaon rotional pair", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_pk_rot_pT_1", "pion-kaon rotional pair", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_pk_rot_pT_2", "pion-kaon rotional pair", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
+
       registry.add("os_pk_ls_pT_0", "pion-kaon pair like sign", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
       registry.add("os_pk_ls_pT_1", "pion-kaon like sign", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
       registry.add("os_pk_ls_pT_2", "pion-kaon like sign", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
+
+      registry.add("hRotation", "hRotation", kTH1F, {{360, 0.0, 2.0 * TMath::Pi()}});
     }
     // QA plots
     if (QA) {
       registry.add("tpc_dedx", "p vs dE/dx", kTH2F, {{100, 0.0, 10.0}, {5000, 0.0, 5000.0}});
+      registry.add("tof_beta", "p vs beta", kTH2F, {{100, 0.0, 10.0}, {5000, 0.0, 5000.0}});
+
       registry.add("tpc_dedx_kaon", "p#k dE/dx", kTH2F, {{100, 0.0, 10.0}, {5000, 0.0, 5000.0}});
       registry.add("tpc_dedx_pion", "p#pi dE/dx", kTH2F, {{100, 0.0, 10.0}, {5000, 0.0, 5000.0}});
       registry.add("tpc_dedx_kaon_1", "tpc+tof pid cut p#k dE/dx", kTH2F, {{100, 0.0, 10.0}, {5000, 0.0, 5000.0}});
@@ -118,6 +157,9 @@ struct SGResonanceAnalyzer {
       registry.add("tpc_nsigma_pion", "p#pi n#sigma", kTH2F, {{100, 0.0, 10.0}, {100, -10.0, 10.0}});
       registry.add("tpc_tof_nsigma_kaon", "p#k n#sigma TPC vs TOF", kTH2F, {{100, -10.0, 10.0}, {100, -10.0, 10.0}});
       registry.add("tpc_tof_nsigma_pion", "p#pi n#sigma TPC vs TOF", kTH2F, {{100, -10.0, 10.0}, {100, -10.0, 10.0}});
+
+      registry.add("tof_nsigma_kaon", "p#k n#sigma", kTH2F, {{100, 0.0, 10.0}, {100, -10.0, 10.0}});
+      registry.add("tof_nsigma_pion", "p#pi n#sigma", kTH2F, {{100, 0.0, 10.0}, {100, -10.0, 10.0}});
 
       registry.add("FT0A", "T0A amplitude", kTH1F, {{500, 0.0, 500.0}});
       registry.add("FT0A_0", "T0A amplitude", kTH1F, {{500, 0.0, 500.0}});
@@ -150,31 +192,32 @@ struct SGResonanceAnalyzer {
         registry.add("rap2_mult3", "rap2_mult3", kTH1F, {{150, 0, 150}});
       }
     }
+
     registry.add("gap_mult0", "Mult 0", kTH1F, {{100, 0.0, 100.0}});
     registry.add("gap_mult1", "Mult 1", kTH1F, {{100, 0.0, 100.0}});
     registry.add("gap_mult2", "Mult 2", kTH1F, {{100, 0.0, 100.0}});
     // Multiplicity plot
     if (rapidity_gap && phi) {
-      registry.add("os_kk_mass_rap", "phi mass1", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_mass_rap1", "phi mass2", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_mass_rap2", "phi mass3", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_mass1_rap", "phi mass1 gap1", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_mass1_rap1", "phi mass2 gap1", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_mass1_rap2", "phi mass3 gap1", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_mass2_rap", "phi mass1 DG", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_mass2_rap1", "phi mass2 DG", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_mass2_rap2", "phi mass3 DG", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_mass_rap", "phi mass1", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_mass_rap1", "phi mass2", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_mass_rap2", "phi mass3", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_mass1_rap", "phi mass1 gap1", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_mass1_rap1", "phi mass2 gap1", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_mass1_rap2", "phi mass3 gap1", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_mass2_rap", "phi mass1 DG", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_mass2_rap1", "phi mass2 DG", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_mass2_rap2", "phi mass3 DG", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
 
       // like sign bkg
-      registry.add("os_kk_ls_mass_rap", "phi ls mass1", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_ls_mass_rap1", "phi ls mass2", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_ls_mass_rap2", "phi ls mass3", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_ls_mass1_rap", "phi ls mass1 gap1", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_ls_mass1_rap1", "phi ls mass2 gap1", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_ls_mass1_rap2", "phi ls mass3 gap1", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_ls_mass2_rap", "phi ls mass1 DG", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_ls_mass2_rap1", "phi ls mass2 DG", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_ls_mass2_rap2", "phi ls mass3 DG", kTH3F, {{220, 0.98, 1.12}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_ls_mass_rap", "phi ls mass1", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_ls_mass_rap1", "phi ls mass2", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_ls_mass_rap2", "phi ls mass3", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_ls_mass1_rap", "phi ls mass1 gap1", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_ls_mass1_rap1", "phi ls mass2 gap1", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_ls_mass1_rap2", "phi ls mass3 gap1", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_ls_mass2_rap", "phi ls mass1 DG", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_ls_mass2_rap1", "phi ls mass2 DG", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_kk_ls_mass2_rap2", "phi ls mass3 DG", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
     }
 
     if (rapidity_gap && kstar) {
@@ -246,6 +289,53 @@ struct SGResonanceAnalyzer {
     Double_t CosThetaCS = zaxis_CS.Dot((v1_CM));
     return CosThetaCS;
   }
+
+  template <typename T>
+  bool selectionPIDKaon1(const T& candidate)
+  {
+    auto pt = TMath::Sqrt(candidate.px() * candidate.px() + candidate.py() * candidate.py());
+    //  float pt1, pt2, pt3 , nsigmatpc_cut1, nsigmatpc_cut2, nsigmatpc_cut3;
+    if (use_tof && pt < pt1 && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut1) {
+      return true;
+    }
+    if (use_tof && pt >= pt1 && pt < pt2 && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut2) {
+      return true;
+    }
+    if (use_tof && pt >= pt2 && pt < pt3 && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut3) {
+      return true;
+    }
+    if (pt > pt3 && use_tof && candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < nsigmatof_cut) {
+      return true;
+    }
+    if (!use_tof && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut) {
+      return true;
+    }
+    return false;
+  }
+
+  template <typename T>
+  bool selectionPIDPion1(const T& candidate)
+  {
+    auto pt = TMath::Sqrt(candidate.px() * candidate.px() + candidate.py() * candidate.py());
+
+    if (use_tof && pt < pt1 && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut1) {
+      return true;
+    }
+    if (use_tof && pt >= pt1 && pt < pt2 && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut2) {
+      return true;
+    }
+    if (use_tof && pt >= pt2 && pt < pt3 && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut3) {
+      return true;
+    }
+    if (pt > pt3 && use_tof && candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < nsigmatof_cut) {
+      return true;
+    }
+    if (!use_tof && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
+      return true;
+    }
+    return false;
+  }
+
   //------------------------------------------------------------------------------------------------------
   Double_t PhiCollinsSoperFrame(ROOT::Math::PtEtaPhiMVector pair1, ROOT::Math::PtEtaPhiMVector pair2, ROOT::Math::PtEtaPhiMVector fourpion)
   {
@@ -285,6 +375,11 @@ struct SGResonanceAnalyzer {
     TLorentzVector v1;
     TLorentzVector v01;
     TLorentzVector v0_1;
+    int gapSide = collision.gapSide();
+    float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
+    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
+    int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
+
     ROOT::Math::PtEtaPhiMVector phiv;
     ROOT::Math::PtEtaPhiMVector phiv1;
 
@@ -297,10 +392,6 @@ struct SGResonanceAnalyzer {
     std::vector<ROOT::Math::PtEtaPhiMVector> onlyPionTracks_n;
     std::vector<decltype(tracks.begin())> rawPionTracks_n;
 
-    int gapSide = collision.gapSide();
-    float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
-    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
-    int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
     registry.fill(HIST("GapSide"), gapSide);
     registry.fill(HIST("TrueGapSide"), truegapSide);
     gapSide = truegapSide;
@@ -331,7 +422,7 @@ struct SGResonanceAnalyzer {
         continue;
       v0.SetXYZM(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassPionCharged);
       ROOT::Math::PtEtaPhiMVector vv1(v0.Pt(), v0.Eta(), v0.Phi(), o2::constants::physics::MassPionCharged);
-      if (selectionPIDPion(track1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
+      if (selectionPIDPion1(track1)) {
         onlyPionTracks_pm.push_back(vv1);
         rawPionTracks_pm.push_back(track1);
         if (track1.sign() == 1) {
@@ -371,20 +462,24 @@ struct SGResonanceAnalyzer {
 
       if (QA) {
         registry.fill(HIST("tpc_dedx"), v0.P(), track1.tpcSignal());
+        registry.fill(HIST("tof_beta"), v0.P(), track1.beta());
+        registry.fill(HIST("tof_nsigma_kaon"), v0.Pt(), track1.tofNSigmaKa());
+        registry.fill(HIST("tof_nsigma_pion"), v0.Pt(), track1.tofNSigmaPi());
+
         if (std::abs(track1.tpcNSigmaKa()) < 3.0) {
           registry.fill(HIST("tpc_dedx_kaon"), v0.P(), track1.tpcSignal());
         } else if (std::abs(track1.tpcNSigmaPi()) < 3.0) {
           registry.fill(HIST("tpc_dedx_pion"), v0.P(), track1.tpcSignal());
         }
-        if (selectionPIDKaon(track1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
+        if (selectionPIDKaon1(track1)) {
           registry.fill(HIST("tpc_dedx_kaon_1"), v0.P(), track1.tpcSignal());
           registry.fill(HIST("tpc_nsigma_kaon"), v0.Pt(), track1.tpcNSigmaKa());
           registry.fill(HIST("tpc_tof_nsigma_kaon"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
         }
-        if (selectionPIDKaon(track1, use_tof, nsigmatpc_cut, nsigmatof_cut) && std::abs(track1.tpcNSigmaPi()) > 3.0) {
+        if (selectionPIDKaon1(track1) && std::abs(track1.tpcNSigmaPi()) > 3.0) {
           registry.fill(HIST("tpc_dedx_kaon_2"), v0.P(), track1.tpcSignal());
         }
-        if (selectionPIDPion(track1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
+        if (selectionPIDPion1(track1)) {
           registry.fill(HIST("tpc_dedx_pion_1"), v0.P(), track1.tpcSignal());
           registry.fill(HIST("tpc_nsigma_pion"), v0.Pt(), track1.tpcNSigmaPi());
           registry.fill(HIST("tpc_tof_nsigma_pion"), track1.tpcNSigmaPi(), track1.tofNSigmaPi());
@@ -467,7 +562,7 @@ struct SGResonanceAnalyzer {
         for (auto& [t0, t1] : combinations(tracks, tracks)) {
           if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
             continue;
-          if (phi && selectionPIDKaon(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDKaon(t1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
+          if (phi && selectionPIDKaon1(t0) && selectionPIDKaon1(t1)) {
             // Apply kaon hypothesis and create pairs
             v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
             v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
@@ -496,7 +591,13 @@ struct SGResonanceAnalyzer {
               }
             }
           }
-          if (kstar && selectionPIDKaon(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && std::abs(t0.tpcNSigmaPi()) > 3.0 && selectionPIDPion(t1, use_tof, nsigmatpc_cut, nsigmatof_cut) && std::abs(t1.tpcNSigmaKa()) > 3.0) {
+        }
+        for (auto& [t0, t1] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks, tracks))) {
+          if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
+            continue;
+          if (t0.globalIndex() == t1.globalIndex())
+            continue;
+          if (kstar && selectionPIDKaon1(t0) && selectionPIDPion1(t1)) {
             // Apply kaon hypothesis and create pairs
             v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
             v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
@@ -532,7 +633,7 @@ struct SGResonanceAnalyzer {
         for (auto& [t0, t1] : combinations(tracks, tracks)) {
           if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
             continue;
-          if (phi && selectionPIDKaon(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDKaon(t1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
+          if (phi && selectionPIDKaon1(t0) && selectionPIDKaon1(t1)) {
             // Apply kaon hypothesis and create pairs
             v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
             v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
@@ -561,7 +662,13 @@ struct SGResonanceAnalyzer {
               }
             }
           }
-          if (kstar && selectionPIDKaon(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && std::abs(t0.tpcNSigmaPi()) > 3.0 && selectionPIDPion(t1, use_tof, nsigmatpc_cut, nsigmatof_cut) && std::abs(t1.tpcNSigmaKa()) > 3.0) {
+        }
+        for (auto& [t0, t1] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks, tracks))) {
+          if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
+            continue;
+          if (t0.globalIndex() == t1.globalIndex())
+            continue;
+          if (kstar && selectionPIDKaon1(t0) && selectionPIDPion1(t1)) {
             // Apply kaon hypothesis and create pairs
             v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
             v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
@@ -596,7 +703,7 @@ struct SGResonanceAnalyzer {
         for (auto& [t0, t1] : combinations(tracks, tracks)) {
           if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
             continue;
-          if (phi && selectionPIDKaon(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDKaon(t1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
+          if (phi && selectionPIDKaon1(t0) && selectionPIDKaon1(t1)) {
             // Apply kaon hypothesis and create pairs
             v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
             v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
@@ -625,7 +732,13 @@ struct SGResonanceAnalyzer {
               }
             }
           }
-          if (kstar && selectionPIDKaon(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && std::abs(t0.tpcNSigmaPi()) > 3.0 && selectionPIDPion(t1, use_tof, nsigmatpc_cut, nsigmatof_cut) && std::abs(t1.tpcNSigmaKa()) > 3.0) {
+        }
+        for (auto& [t0, t1] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks, tracks))) {
+          if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
+            continue;
+          if (t0.globalIndex() == t1.globalIndex())
+            continue;
+          if (kstar && selectionPIDKaon1(t0) && selectionPIDPion1(t1)) {
             // Apply kaon hypothesis and create pairs
             v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
             v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
@@ -661,7 +774,8 @@ struct SGResonanceAnalyzer {
     for (auto& [t0, t1] : combinations(tracks, tracks)) {
       if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
         continue;
-      if (phi && selectionPIDKaon(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDKaon(t1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
+
+      if (phi && selectionPIDKaon1(t0) && selectionPIDKaon1(t1)) {
         // Apply kaon hypothesis and create pairs
         v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
         v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
@@ -690,8 +804,42 @@ struct SGResonanceAnalyzer {
             registry.fill(HIST("os_KK_ls_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
           }
         }
+
+        if (fillRotation) {
+          for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
+            auto anglestart = confMinRot;
+            auto angleend = confMaxRot;
+            auto anglestep = (angleend - anglestart) / (1.0 * (nBkgRotations - 1));
+            auto rotangle = anglestart + nrotbkg * anglestep;
+            registry.fill(HIST("hRotation"), rotangle);
+
+            auto rotkaonPx = t0.px() * std::cos(rotangle) - t0.py() * std::sin(rotangle);
+            auto rotkaonPy = t0.px() * std::sin(rotangle) + t0.py() * std::cos(rotangle);
+
+            v0.SetXYZM(rotkaonPx, rotkaonPy, t0.pz(), o2::constants::physics::MassKaonCharged);
+            v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
+            v01 = v0 + v1;
+            if (t0.sign() != t1.sign()) {
+              if (gapSide == 0) {
+                registry.fill(HIST("os_KK_rot_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
+              }
+              if (gapSide == 1) {
+                registry.fill(HIST("os_KK_rot_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
+              }
+              if (gapSide == 2) {
+                registry.fill(HIST("os_KK_rot_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
+              }
+            }
+          }
+        }
       }
-      if (rho && selectionPIDProton(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDPion(t1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
+    }
+    for (auto& [t0, t1] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks, tracks))) {
+      if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
+        continue;
+      if (t0.globalIndex() == t1.globalIndex())
+        continue;
+      if (rho && selectionPIDProton(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDPion1(t1)) {
         v0.SetXYZM(t0.px(), t0.py(), t0.pz(), mproton);
         v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
         v01 = v0 + v1;
@@ -719,7 +867,7 @@ struct SGResonanceAnalyzer {
           }
         }
       }
-      if (kstar && selectionPIDKaon(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && std::abs(t0.tpcNSigmaPi()) > 3.0 && selectionPIDPion(t1, use_tof, nsigmatpc_cut, nsigmatof_cut) && std::abs(t1.tpcNSigmaKa()) > 3.0) {
+      if (kstar && selectionPIDKaon1(t0) && selectionPIDPion1(t1)) {
         v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
         v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
         v01 = v0 + v1;
@@ -744,6 +892,33 @@ struct SGResonanceAnalyzer {
           }
           if (gapSide == 2) {
             registry.fill(HIST("os_pk_ls_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
+          }
+        }
+        if (fillRotation) {
+          for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
+            auto anglestart = confMinRot;
+            auto angleend = confMaxRot;
+            auto anglestep = (angleend - anglestart) / (1.0 * (nBkgRotations - 1));
+            auto rotangle = anglestart + nrotbkg * anglestep;
+            registry.fill(HIST("hRotation"), rotangle);
+
+            auto rotkaonPx = t0.px() * std::cos(rotangle) - t0.py() * std::sin(rotangle);
+            auto rotkaonPy = t0.px() * std::sin(rotangle) + t0.py() * std::cos(rotangle);
+
+            v0.SetXYZM(rotkaonPx, rotkaonPy, t0.pz(), o2::constants::physics::MassKaonCharged);
+            v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
+            v01 = v0 + v1;
+            if (t0.sign() != t1.sign()) {
+              if (gapSide == 0) {
+                registry.fill(HIST("os_pk_rot_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
+              }
+              if (gapSide == 1) {
+                registry.fill(HIST("os_pk_rot_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
+              }
+              if (gapSide == 2) {
+                registry.fill(HIST("os_pk_rot_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
+              }
+            }
           }
         }
       }
@@ -791,6 +966,81 @@ struct SGResonanceAnalyzer {
       }
     }
   }
+  PROCESS_SWITCH(SGResonanceAnalyzer, process, "Process unlike event", false);
+
+  using UDCollisionsFull1 = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; //
+  SliceCache cache;
+  Partition<udtracksfull> posTracks = aod::udtrack::sign > 0;
+  Partition<udtracksfull> negTracks = aod::udtrack::sign < 0;
+
+  ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for bin"};
+  ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {10, 0, 100}, "multiplicity percentile for bin"};
+  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
+  void mixprocess(UDCollisionsFull1 const& collisions, udtracksfull const& /*track*/)
+  {
+    TLorentzVector v0;
+    TLorentzVector v1;
+    TLorentzVector v01;
+    float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
+    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
+    for (auto const& [collision1, collision2] : o2::soa::selfCombinations(binningOnPositions, cfgNoMixedEvents, -1, collisions, collisions)) {
+      int truegapSide1 = sgSelector.trueGap(collision1, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
+      int truegapSide2 = sgSelector.trueGap(collision2, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
+      if (truegapSide1 != truegapSide2)
+        continue;
+      if (truegapSide1 == -1)
+        continue;
+      auto posThisColl = posTracks->sliceByCached(aod::udtrack::udCollisionId, collision1.globalIndex(), cache);
+      auto negThisColl = negTracks->sliceByCached(aod::udtrack::udCollisionId, collision2.globalIndex(), cache);
+      //      for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posThisColl, negThisColl))) {
+      for (auto& [track1, track2] : o2::soa::combinations(posThisColl, negThisColl)) {
+        if (!trackselector(track1, parameters) || !trackselector(track2, parameters))
+          continue;
+        if (selectionPIDKaon1(track1) && selectionPIDKaon1(track2)) {
+          v0.SetXYZM(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassKaonCharged);
+          v1.SetXYZM(track2.px(), track2.py(), track2.pz(), o2::constants::physics::MassKaonCharged);
+          v01 = v0 + v1;
+          // Opposite sign pairs
+          if (track1.sign() != track2.sign()) {
+            if (truegapSide1 == 0) {
+              registry.fill(HIST("os_KK_mix_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
+            }
+            if (truegapSide1 == 1) {
+              registry.fill(HIST("os_KK_mix_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
+            }
+            if (truegapSide1 == 2) {
+              registry.fill(HIST("os_KK_mix_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
+            }
+          }
+        }
+      }
+      for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posThisColl, negThisColl))) {
+        if (!trackselector(track1, parameters) || !trackselector(track2, parameters))
+          continue;
+        if (track1.globalIndex() == track2.globalIndex())
+          continue;
+        if (selectionPIDKaon1(track1) && selectionPIDPion1(track2)) {
+          v0.SetXYZM(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassKaonCharged);
+          v1.SetXYZM(track2.px(), track2.py(), track2.pz(), o2::constants::physics::MassPionCharged);
+          v01 = v0 + v1;
+          // Opposite sign pairs
+          if (track1.sign() != track2.sign()) {
+            if (truegapSide1 == 0) {
+              registry.fill(HIST("os_pk_mix_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
+            }
+            if (truegapSide1 == 1) {
+              registry.fill(HIST("os_pk_mix_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
+            }
+            if (truegapSide1 == 2) {
+              registry.fill(HIST("os_pk_mix_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
+            }
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(SGResonanceAnalyzer, mixprocess, "Process Mixed event", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

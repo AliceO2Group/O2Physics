@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file xi1530analysisqa.cxx
-/// \brief Reconstruction of track-track decay resonance candidates
+/// \file xi1530Analysisqa.cxx
+/// \brief Reconstruction of Xi* resonance.
 ///
 /// \author Min-jae Kim <minjae.kim@cern.ch>, Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 #include <TLorentzVector.h>
@@ -48,9 +48,16 @@ enum {
   kAllType
 };
 
+enum {
+  PionPID = 211,
+  XiPID = 3312,
+  XiStarPID = 3324
+};
+
 struct xi1530analysisqa {
 
   // Basic set-up //
+  Configurable<float> cMassXiminus{"cMassXiminus", 1.32171, "Mass of Xi baryon"};
   SliceCache cache;
   Preslice<aod::ResoTracks> perRCol = aod::resodaughter::resoCollisionId;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
@@ -58,24 +65,26 @@ struct xi1530analysisqa {
 
   using ResoMCCols = soa::Join<aod::ResoCollisions, aod::ResoMCCollisions>;
 
-  Configurable<float> cMassXiminus{"cMassXiminus", 1.31486, "Mass of Xi baryon"};
-
   // associated with histograms
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 10.0, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 12.0, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 13.0, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 14.0, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.0}, "Binning of the pT axis"};
   ConfigurableAxis binsPtQA{"binsPtQA", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0, 8.2, 8.4, 8.6, 8.8, 9.0, 9.2, 9.4, 9.6, 9.8, 10.0}, "Binning of the pT axis"};
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
 
-  Configurable<float> cInvMassStart{"cInvMassStart", 1.2, "Invariant mass start"};
-  Configurable<float> cInvMassEnd{"cInvMassEnd", 2.1, "Invariant mass end"};
-  Configurable<int> cInvMassBins{"cInvMassBins", 900, "Invariant mass binning"};
+  Configurable<float> cInvMassStart{"cInvMassStart", 1.4, "Invariant mass start"};
+  Configurable<float> cInvMassEnd{"cInvMassEnd", 1.8, "Invariant mass end"};
+  Configurable<int> cInvMassBins{"cInvMassBins", 200, "Invariant mass binning"};
 
-  Configurable<int> cPIDBins{"cPIDBins", 65, "PID binning"};
+  Configurable<int> cPIDBins{"cPIDBins", 130, "PID binning"};
   Configurable<float> cPIDQALimit{"cPIDQALimit", 6.5, "PID QA limit"};
   Configurable<int> cDCABins{"cDCABins", 150, "DCA binning"};
 
   Configurable<bool> invmass1D{"invmass1D", true, "Invariant mass 1D"};
   Configurable<bool> study_antiparticle{"study_antiparticle", true, "Study anti-particles separately"};
   Configurable<bool> PIDplots{"PIDplots", true, "Make TPC and TOF PID plots"};
+
+  Configurable<bool> additionalQAplots{"additionalQAplots", true, "Additional QA plots"};
+  Configurable<bool> additionalQAeventPlots{"additionalQAeventPlots", true, "Additional QA event plots"};
+  Configurable<bool> additionalMEPlots{"additionalMEPlots", true, "Additional Mixed event plots"};
 
   // Event Mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
@@ -92,28 +101,26 @@ struct xi1530analysisqa {
 
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
-  Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", true, "Global track selection"};
-  Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
-  Configurable<bool> additionalQAplots{"additionalQAplots", true, "Additional QA plots"};
-  Configurable<bool> additionalQAeventPlots{"additionalQAeventPlots", true, "Additional QA event plots"};
-  Configurable<bool> additionalMEPlots{"additionalMEPlots", true, "Additional Mixed event plots"};
+  Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};
+  Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"};
 
-  Configurable<bool> tof_at_high_pt{"tof_at_high_pt", true, "Use TOF at high pT"};
+  Configurable<bool> tof_at_high_pt{"tof_at_high_pt", false, "Use TOF at high pT"};
 
-  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"}; // Minmimum
-  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 0, "Number of TPC cluster"}; // Minmimum
+  Configurable<int> cfgITScluster{"cfgITScluster", 1, "Minimum Number of ITS cluster"}; // Minmimum
+  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 1, "Minimum Number of TPC cluster"}; // Minmimum
 
-  Configurable<float> cfgRatioTPCRowsOverFindableCls{"cfgRatioTPCRowsOverFindableCls", 0.0f, "TPC Crossed Rows to Findable Clusters"}; // Minmimum
+  Configurable<int> cfgTPCRows{"cfgTPCRows", 70, "Minimum Number of TPC Crossed Rows "};
+  Configurable<float> cfgRatioTPCRowsOverFindableCls{"cfgRatioTPCRowsOverFindableCls", 0.8, "Minimum of TPC Crossed Rows to Findable Clusters"}; // Minmimum
 
-  Configurable<float> cfgITSChi2NCl{"cfgITSChi2NCl", 999.0, "ITS Chi2/NCl"}; // Maximum
-  Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 999.0, "TPC Chi2/NCl"}; // Maximum
+  Configurable<float> cfgITSChi2NCl{"cfgITSChi2NCl", 4.0, "Maximum ITS Chi2/NCl"}; // Maximum
+  Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 4.0, "Maximum TPC Chi2/NCl"}; // Maximum
 
-  Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", true, "Require TPC Refit"};
-  Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", true, "Require ITS Refit"};
+  Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
+  Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
 
   Configurable<bool> cfgHasITS{"cfgHasITS", true, "Require ITS"};
   Configurable<bool> cfgHasTPC{"cfgHasTPC", true, "Require TPC"};
-  Configurable<bool> cfgHasTOF{"cfgHasTOF", true, "Require TOF"};
+  Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
 
   //*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//
 
@@ -148,38 +155,43 @@ struct xi1530analysisqa {
 
   // PID Selections//
 
+  Configurable<float> cPIDBound{"cPIDBound", 6.349, "configurable for replacing to .has"};
+
   // PID Selections for Pion First
   Configurable<double> cMaxTPCnSigmaPionFirst{"cMaxTPCnSigmaPionFirst", 3.0, "TPC nSigma cut for Pion First"};
   Configurable<double> cMaxTOFnSigmaPionFirst{"cMaxTOFnSigmaPionFirst", 3.0, "TOF nSigma cut for Pion First"};
 
-  Configurable<double> nsigmaCutCombinedPionFirst{"nsigmaCutCombinedPionFirst", -999, "Combined nSigma cut for Pion First"};
+  Configurable<double> nsigmaCutCombinedPionFirst{"nsigmaCutCombinedPionFirst", -4.0, "Combined nSigma cut for Pion First"};
 
-  Configurable<bool> cUseOnlyTOFTrackPionFirst{"cUseOnlyTOFTrackPionFirst", true, "Use only TOF track for PID selection Pion First"};
-  Configurable<bool> cByPassTOFPionFirst{"cByPassTOFPionFirst", true, "By pass TOF Pion First PID selection"};
+  Configurable<bool> cUseOnlyTOFTrackPionFirst{"cUseOnlyTOFTrackPionFirst", false, "Use only TOF track for PID selection Pion First"};
+  Configurable<bool> cByPassTOFPionFirst{"cByPassTOFPionFirst", false, "By pass TOF Pion First PID selection"};
 
-  // // PID Selections for Pion Bachelor
-  // Configurable<double> cMaxTPCnSigmaPionBachelor{"cMaxTPCnSigmaPionBachelor", 3.0, "TPC nSigma cut for Pion Bachelor"};
-  // Configurable<double> cMaxTOFnSigmaPionBachelor{"cMaxTOFnSigmaPionBachelor", 3.0, "TOF nSigma cut for Pion Bachelor"};
+  // PID Selections for Pion Bachelor
+  Configurable<double> cMaxTPCnSigmaPionBachelor{"cMaxTPCnSigmaPionBachelor", 3.0, "TPC nSigma cut for Pion Bachelor"};
+  Configurable<double> cMaxTOFnSigmaPionBachelor{"cMaxTOFnSigmaPionBachelor", 3.0, "TOF nSigma cut for Pion Bachelor"};
 
-  // Configurable<double> nsigmaCutCombinedPionBachelor{"nsigmaCutCombinedPionBachelor", -999, "Combined nSigma cut for Pion Bachelor"};
+  Configurable<double> nsigmaCutCombinedPionBachelor{"nsigmaCutCombinedPionBachelor", -4.0, "Combined nSigma cut for Pion Bachelor"};
 
-  // Configurable<bool> cUseOnlyTOFTrackPionBachelor{"cUseOnlyTOFTrackPionBachelor", false, "Use only TOF track for PID selection Pion Bachelor"};
+  Configurable<bool> cUseOnlyTOFTrackPionBachelor{"cUseOnlyTOFTrackPionBachelor", false, "Use only TOF track for PID selection Pion Bachelor"};
+  Configurable<bool> cByPassTOFPionBachelor{"cByPassTOFPionBachelor", false, "By pass TOF Pion Bachelor PID selection"};
 
-  // // PID Selections for Pion
-  // Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};
-  // Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};
+  // PID Selections for Pion
+  Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};
+  Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};
 
-  // Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};
+  Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -4.0, "Combined nSigma cut for Pion"};
 
-  // Configurable<bool> cUseOnlyTOFTrackPion{"cUseOnlyTOFTrackPion", false, "Use only TOF track for PID selection Pion"};
+  Configurable<bool> cUseOnlyTOFTrackPion{"cUseOnlyTOFTrackPion", false, "Use only TOF track for PID selection Pion"};
+  Configurable<bool> cByPassTOFPion{"cByPassTOFPion", false, "By pass TOF Pion PID selection"};
 
-  // // PID Selections for Proton
-  // Configurable<double> cMaxTPCnSigmaProton{"cMaxTPCnSigmaProton", 3.0, "TPC nSigma cut for Proton"};
-  // Configurable<double> cMaxTOFnSigmaProton{"cMaxTOFnSigmaProton", 3.0, "TOF nSigma cut for Proton"};
+  // PID Selections for Proton
+  Configurable<double> cMaxTPCnSigmaProton{"cMaxTPCnSigmaProton", 3.0, "TPC nSigma cut for Proton"};
+  Configurable<double> cMaxTOFnSigmaProton{"cMaxTOFnSigmaProton", 3.0, "TOF nSigma cut for Proton"};
 
-  // Configurable<double> nsigmaCutCombinedProton{"nsigmaCutCombinedProton", -999, "Combined nSigma cut for Proton"};
+  Configurable<double> nsigmaCutCombinedProton{"nsigmaCutCombinedProton", -4.0, "Combined nSigma cut for Proton"};
 
-  // Configurable<bool> cUseOnlyTOFTrackProton{"cUseOnlyTOFTrackProton", false, "Use only TOF track for PID selection Proton"};
+  Configurable<bool> cUseOnlyTOFTrackProton{"cUseOnlyTOFTrackProton", false, "Use only TOF track for PID selection Proton"};
+  Configurable<bool> cByPassTOFProton{"cByPassTOFProton", false, "By pass TOF Proton PID selection"};
 
   //*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//
 
@@ -191,11 +203,17 @@ struct xi1530analysisqa {
   // Cuts on mother particle
   Configurable<bool> cfgCutsOnMother{"cfgCutsOnMother", true, "Enamble additional cuts on mother"};
   Configurable<double> cMaxPtMotherCut{"cMaxPtMotherCut", 15.0, "Maximum pt of mother cut"};
-  Configurable<double> cMaxMinvMotherCut{"cMaxMinvMotherCut", 1.5, "Maximum Minv of mother cut"};
-  Configurable<int> cetaphiBins{"cetaphiBins", 400, "number of eta and phi bins"};
+  Configurable<double> cMaxMinvMotherCut{"cMaxMinvMotherCut", 2.1, "Maximum Minv of mother cut"};
   TRandom* rn = new TRandom();
 
   //*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//
+
+  struct PIDSelectionParam {
+    double cMaxTPCnSigma;
+    double cMaxTOFnSigma;
+    bool cByPassTOF;
+    double nsigmaCutCombined;
+  };
 
   void init(o2::framework::InitContext&)
   {
@@ -249,16 +267,8 @@ struct xi1530analysisqa {
     if (additionalQAplots) {
       // TPC ncluster distirbutions
       histos.add("TPCncluster/TPCnclusterpifirst", "TPC ncluster distribution", kTH1F, {{160, 0, 160, "TPC nCluster"}});
-      // histos.add("TPCncluster/TPCnclusterpr", "TPC ncluster distribution", kTH1F, {{160, 0, 160, "TPC nCluster"}}); // can't use TPC info. for cascades!!
+
       histos.add("TPCncluster/TPCnclusterPhipifirst", "TPC ncluster vs phi", kTH2F, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}});
-      // histos.add("TPCncluster/TPCnclusterPhipr", "TPC ncluster vs phi", kTH2F, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}}); // can't use TPC info. for cascades!!
-
-      // Multiplicity correlation calibrations
-      histos.add("MultCalib/centglopi_before", "Centrality vs Global-Tracks", kTH2F, {{110, 0, 110, "Centrality"}, {500, 0, 5000, "Global Tracks"}});
-      histos.add("MultCalib/GloPVpi_before", "Global tracks vs PV tracks", kTH2F, {{500, 0, 5000, "Global tracks"}, {500, 0, 5000, "PV tracks"}});
-
-      histos.add("MultCalib/centglopi_after", "Centrality vs Global-Tracks", kTH2F, {{110, 0, 110, "Centrality"}, {500, 0, 5000, "Global Tracks"}});
-      histos.add("MultCalib/GloPVpi_after", "Global tracks vs PV tracks", kTH2F, {{500, 0, 5000, "Global tracks"}, {500, 0, 5000, "PV tracks"}});
     }
 
     // DCA QA to candidates for first pion and Xi-
@@ -281,24 +291,47 @@ struct xi1530analysisqa {
     histos.add("QAafter/trkpT_pi", "pT distribution of pion track candidates", kTH1F, {ptAxis});
     histos.add("QAafter/trkpT_Xi", "pT distribution of Xi- track candidates", kTH1F, {ptAxis});
 
-    // Can't use PID for cascades !!
     if (PIDplots) {
+
+      // Plots for QA before, Need to pt info. for the daugthers
       histos.add("QAbefore/TOF_TPC_Map_pi_first_all", "TOF + TPC Combined PID for Pion_{First};#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
       histos.add("QAbefore/TOF_Nsigma_pi_first_all", "TOF NSigma for Pion_{First};#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
       histos.add("QAbefore/TPC_Nsigma_pi_first_all", "TPC NSigma for Pion_{First};#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
 
-      // histos.add("QAbefore/TOF_TPC_Map_pr_all", "TOF + TPC Combined PID for Pion;#sigma_{TOF}^{proton};#sigma_{TPC}^{proton}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
-      // histos.add("QAbefore/TOF_Nsigma_pr_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{proton};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
-      // histos.add("QAbefore/TPC_Nsigma_pr_all", "TPC NSigma for proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{proton};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+      histos.add("QAbefore/TOF_TPC_Map_pi_bachelor_all", "TOF + TPC Combined PID for Pion_{Bachelor};#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+      histos.add("QAbefore/TPC_Nsigma_pi_bachelor_all", "TPC NSigma for Pion_{Bachelor};#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
 
-      // PID QA after cuts
+      histos.add("QAbefore/TOF_TPC_Map_pr_all", "TOF + TPC Combined PID for Proton;#sigma_{TOF}^{Proton};#sigma_{TPC}^{Proton}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+      histos.add("QAbefore/TOF_TPC_Map_antipr_all", "TOF + TPC Combined PID for Anti-Proton;#sigma_{TOF}^{Proton};#sigma_{TPC}^{Proton}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+
+      histos.add("QAbefore/TPC_Nsigma_pr_all", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+      histos.add("QAbefore/TPC_Nsigma_antipr_all", "TPC NSigma for Anti-Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+
+      histos.add("QAbefore/TOF_TPC_Map_pi_all", "TOF + TPC Combined PID for Pion;#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+      histos.add("QAbefore/TOF_TPC_Map_piminus_all", "TOF + TPC Combined PID for Pion -;#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+
+      histos.add("QAbefore/TPC_Nsigma_pi_all", "TPC NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+      histos.add("QAbefore/TPC_Nsigma_piminus_all", "TPC NSigma for Pion -;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+
+      // Plots for QA after
       histos.add("QAafter/TOF_TPC_Map_pi_first_all", "TOF + TPC Combined PID for Pion_{First};#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
       histos.add("QAafter/TOF_Nsigma_pi_first_all", "TOF NSigma for Pion_{First};#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
       histos.add("QAafter/TPC_Nsigma_pi_first_all", "TPC NSigma for Pion_{First};#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
 
-      //     histos.add("QAafter/TOF_TPC_Map_pr_all", "TOF + TPC Combined PID for Pion;#sigma_{TOF}^{proton};#sigma_{TPC}^{proton}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
-      //     histos.add("QAafter/TOF_Nsigma_pr_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{proton};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
-      //     histos.add("QAafter/TPC_Nsigma_pr_all", "TPC NSigma for proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{proton};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+      histos.add("QAafter/TOF_TPC_Map_pi_bachelor_all", "TOF + TPC Combined PID for Pion_{Bachelor};#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+      histos.add("QAafter/TPC_Nsigma_pi_bachelor_all", "TPC NSigma for Pion_{Bachelor};#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+
+      histos.add("QAafter/TOF_TPC_Map_pr_all", "TOF + TPC Combined PID for Proton;#sigma_{TOF}^{Proton};#sigma_{TPC}^{Proton}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+      histos.add("QAafter/TOF_TPC_Map_antipr_all", "TOF + TPC Combined PID for Anti-Proton;#sigma_{TOF}^{Proton};#sigma_{TPC}^{Proton}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+
+      histos.add("QAafter/TPC_Nsigma_pr_all", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+      histos.add("QAafter/TPC_Nsigma_antipr_all", "TPC NSigma for Anti-Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+
+      histos.add("QAafter/TOF_TPC_Map_pi_all", "TOF + TPC Combined PID for Pion;#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+      histos.add("QAafter/TOF_TPC_Map_piminus_all", "TOF + TPC Combined PID for Pion -;#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+
+      histos.add("QAafter/TPC_Nsigma_pi_all", "TPC NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+      histos.add("QAafter/TPC_Nsigma_piminus_all", "TPC NSigma for Pion -;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
     }
 
     // 3d histogram + Flags
@@ -319,18 +352,30 @@ struct xi1530analysisqa {
     if (doprocessMC) {
       // MC QA
       histos.add("QAMCTrue/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
-      histos.add("QAMCTrue/trkDCAxy_Xi", "DCAxy distribution of Xi- track candidates", HistType::kTH1F, {dcaxyAxis});
+      histos.add("QAMCTrue/trkDCAxy_xi", "DCAxy distribution of Xi- track candidates", HistType::kTH1F, {dcaxyAxis});
 
       histos.add("QAMCTrue/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
-      histos.add("QAMCTrue/trkDCAz_Xi", "DCAz distribution of Xi- track candidates", HistType::kTH1F, {dcazAxis});
+      histos.add("QAMCTrue/trkDCAz_xi", "DCAz distribution of Xi- track candidates", HistType::kTH1F, {dcazAxis});
 
-      // Can't use PID for cascades !!
       if (PIDplots) {
-        histos.add("QAMCTrue/TOF_Nsigma_pi_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
-        histos.add("QAMCTrue/TPC_Nsigma_pi_all", "TPC NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+        histos.add("QAMCTrue/TOF_TPC_Map_pi_first_all", "TOF + TPC Combined PID for Pion_{First};#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+        histos.add("QAMCTrue/TOF_Nsigma_pi_first_all", "TOF NSigma for Pion_{First};#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+        histos.add("QAMCTrue/TPC_Nsigma_pi_first_all", "TPC NSigma for Pion_{First};#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
 
-        // histos.add("QAMCTrue/TOF_Nsigma_pr_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Proton};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
-        // histos.add("QAMCTrue/TPC_Nsigma_pr_all", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+        histos.add("QAMCTrue/TOF_TPC_Map_pi_bachelor_all", "TOF + TPC Combined PID for Pion_{Bachelor};#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+        histos.add("QAMCTrue/TPC_Nsigma_pi_bachelor_all", "TPC NSigma for Pion_{Bachelor};#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+
+        histos.add("QAMCTrue/TOF_TPC_Map_pr_all", "TOF + TPC Combined PID for Proton;#sigma_{TOF}^{Proton};#sigma_{TPC}^{Proton}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+        histos.add("QAMCTrue/TOF_TPC_Map_antipr_all", "TOF + TPC Combined PID for Anti-Proton;#sigma_{TOF}^{Proton};#sigma_{TPC}^{Proton}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+
+        histos.add("QAMCTrue/TPC_Nsigma_pr_all", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+        histos.add("QAMCTrue/TPC_Nsigma_antipr_all", "TPC NSigma for Anti-Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+
+        histos.add("QAMCTrue/TOF_TPC_Map_pi_all", "TOF + TPC Combined PID for Pion;#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+        histos.add("QAMCTrue/TOF_TPC_Map_piminus_all", "TOF + TPC Combined PID for Pion -;#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
+
+        histos.add("QAMCTrue/TPC_Nsigma_pi_all", "TPC NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
+        histos.add("QAMCTrue/TPC_Nsigma_piminus_all", "TPC NSigma for Pion -;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
       }
 
       histos.add("h3RecXi1530invmass", "Invariant mass of Reconstructed MC Xi(1530)0", kTHnSparseF, {centAxis, ptAxis, invMassAxis, FlagAxis});
@@ -349,7 +394,7 @@ struct xi1530analysisqa {
 
   // Primary track selection for the first pion //
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool PtrackCut(const TrackType track)
   {
     if (std::abs(track.eta()) > cMaxetacut)
       return false;
@@ -362,6 +407,8 @@ struct xi1530analysisqa {
     if (track.itsNCls() < cfgITScluster)
       return false;
     if (track.tpcNClsFound() < cfgTPCcluster)
+      return false;
+    if (track.tpcNClsCrossedRows() < cfgTPCRows)
       return false;
     if (track.tpcCrossedRowsOverFindableCls() < cfgRatioTPCRowsOverFindableCls)
       return false;
@@ -391,9 +438,14 @@ struct xi1530analysisqa {
     return true;
   }
 
-  // Primary track selection for cascades (Need to more informations for cascades!) //
+  bool hasSubsystemInfo(float Nsigma) // this will be replaced // .hasXX() was not appied in resocascade yet
+  {
+    return std::abs(Nsigma) < cPIDBound;
+  }
+
+  // Primary track selection for cascades, Need to more informations for cascades //
   template <typename TracksTypeCasc>
-  bool casctrackCut(const TracksTypeCasc track)
+  bool cascPtrackCut(const TracksTypeCasc track)
   {
     if (std::abs(track.eta()) > cMaxetacut)
       return false;
@@ -407,8 +459,7 @@ struct xi1530analysisqa {
     return true;
   }
 
-  // Secondary track selection for cascades  //
-  //(Not added yet!-> Need to more informations for cascades!)
+  // Secondary track selection for cascades  // need to more information,
 
   // Topological cuts for cascades
   template <typename TracksTypeCasc>
@@ -424,7 +475,7 @@ struct xi1530analysisqa {
         return false;
       if (std::abs(track.dcapostopv()) < cDCAProtonToPVcut)
         return false;
-    } else if (track.sign() > 0) {
+    } else {
       if (std::abs(track.dcanegtopv()) < cDCAProtonToPVcut)
         return false;
       if (std::abs(track.dcapostopv()) < cDCAPionToPVcut)
@@ -438,13 +489,13 @@ struct xi1530analysisqa {
     // Topological Cuts for Cascades
     if (track.dcabachtopv() < cDCABachlorToPVcut)
       return false;
-    if (track.cascdaughDCA() > cDCAXiDaugtherscut)
+    if (track.cascDaughDCA() > cDCAXiDaugtherscut)
       return false;
     if (track.cascCosPA() < cCosPACasc)
       return false;
-    if (track.casctransRadius() > cMaxCascradiuscut || track.casctransRadius() < cMinCascradiuscut)
+    if (track.cascTransRadius() > cMaxCascradiuscut || track.cascTransRadius() < cMinCascradiuscut)
       return false;
-    // if (std::abs(track.mXi() - pdgDB->Mass(3312)) > cMasswindowCasccut) // codes are not operated when using pdgDB->Mass() !!
+    // if (std::abs(track.mXi() - XiMass) > cMasswindowCasccut)
     //     return false;
     if (std::abs(track.mXi() - cMassXiminus) > cMasswindowCasccut)
       return false;
@@ -452,232 +503,107 @@ struct xi1530analysisqa {
     return true;
   }
 
-  // PID selection for the First Pion //
-  template <typename T>
-  bool selectionPIDPionFirst(const T& candidate)
+  bool PIDSelector(float TPCNsigma, float TOFNsigma, const PIDSelectionParam& params, bool tofAtHighPt)
   {
-    if (tof_at_high_pt) {
-      if (candidate.hasTOF() && (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPionFirst)) {
+    bool tpcPIDPassed{false}, tofPIDPassed{false};
+
+    if (tofAtHighPt) {
+      // TOF based PID
+      if (hasSubsystemInfo(TOFNsigma) && std::abs(TOFNsigma) < params.cMaxTOFnSigma) {
         return true;
       }
-      if (!candidate.hasTOF() && (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPionFirst)) {
+      if (!hasSubsystemInfo(TOFNsigma) && std::abs(TPCNsigma) < params.cMaxTPCnSigma) {
         return true;
       }
+      return false;
     } else {
-      bool tpcPIDPassed{false}, tofPIDPassed{false};
-      if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPionFirst) {
+
+      if (std::abs(TPCNsigma) < params.cMaxTPCnSigma) {
         tpcPIDPassed = true;
       }
-      if (cByPassTOFPionFirst && tpcPIDPassed) {
+
+      if (params.cByPassTOF && tpcPIDPassed) {
         return true;
       }
-      if (candidate.hasTOF()) {
-        if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPionFirst) {
+
+      if (hasSubsystemInfo(TOFNsigma)) {
+        if (std::abs(TOFNsigma) < params.cMaxTOFnSigma) {
           tofPIDPassed = true;
         }
-        if ((nsigmaCutCombinedPionFirst > 0) && (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi() < nsigmaCutCombinedPionFirst * nsigmaCutCombinedPionFirst)) {
+        if ((params.nsigmaCutCombined > 0) &&
+            (TPCNsigma * TPCNsigma + TOFNsigma * TOFNsigma < params.nsigmaCutCombined * params.nsigmaCutCombined)) {
           tofPIDPassed = true;
         }
       } else {
         tofPIDPassed = true;
       }
-      if (tpcPIDPassed && tofPIDPassed) {
-        return true;
-      }
+
+      return tpcPIDPassed && tofPIDPassed;
     }
-    return true;
   }
 
-  // PID selection for the Cascades // -> Does not use yet!
-  // template <class TCascTracksTo, typename TCascade>
-  // bool selectionPIDCascade(const TCascade& candidate)
-  // {
-  //     auto bachTrack = candidate.template bachelor_as<TCascTracksTo>();
-  //     auto posTrack = candidate.template posTrack_as<TCascTracksTo>();
-  //     auto negTrack = candidate.template negTrack_as<TCascTracksTo>();
+  // PID selection for the First Pion //
+  template <typename T>
+  bool selectionPIDPionFirst(const T& candidate)
+  {
 
-  //     bool lConsistentWithLambdaPos = false;
-  //     bool lConsistentWithLambdaNeg = false;
-  //     bool lConsistentWithLambda = false;
-  //     bool lConsistentWithXi = false;
+    float TPCNsigmaPionFirst, TOFNsigmaPionFirst;
 
-  //     if (tof_at_high_pt) {
-  //         if (bachTrack.hasTOF() && (std::abs(bachTrack.tofNSigmaPi()) < cMaxTOFnSigmaPionBachelor)) {
-  //             lConsistentWithXi = true;
-  //         }
-  //         if (!bachTrack.hasTOF() && (std::abs(bachTrack.tpcNSigmaPi()) < cMaxTPCnSigmaPionBachelor)) {
-  //             lConsistentWithXi = true;
-  //         }
-  //     } else {
-  //         bool tpcPIDPassed{false}, tofPIDPassed{false};
-  //         if (std::abs(bachTrack.tpcNSigmaPi()) < cMaxTPCnSigmaPionBachelor) {
-  //             tpcPIDPassed = true;
-  //         }
-  //         if (cByPassTOF && tpcPIDPassed) {
-  //             lConsistentWithXi = true;
-  //         }
-  //         if (bachTrack.hasTOF()) {
-  //             if (std::abs(bachTrack.tofNSigmaPi()) < cMaxTPCnSigmaPionBachelor) {
-  //                 tofPIDPassed = true;
-  //             }
-  //             if ((nsigmaCutCombinedPionBachelor > 0) && (bachTrack.tpcNSigmaPi() * bachTrack.tpcNSigmaPi() + bachTrack.tofNSigmaPi() * bachTrack.tofNSigmaPi() < nsigmaCutCombinedPionBachelor * nsigmaCutCombinedPionBachelor)) {
-  //                 tofPIDPassed = true;
-  //             }
-  //         } else {
-  //             tofPIDPassed = true;
-  //         }
-  //         if (tpcPIDPassed && tofPIDPassed) {
-  //             lConsistentWithXi = true;
-  //         }
+    TPCNsigmaPionFirst = candidate.tpcNSigmaPi();
+    TOFNsigmaPionFirst = candidate.tofNSigmaPi();
 
-  //     }
+    PIDSelectionParam PionFirstParams = {cMaxTPCnSigmaPionFirst, cMaxTOFnSigmaPionFirst, cByPassTOFPionFirst, nsigmaCutCombinedPionFirst};
 
-  //     if(candidate.sign() > 0) {
-  //         bool lConsistentWithPion = false;
-  //         bool lConsistentWithProton = false;
+    return PIDSelector(TPCNsigmaPionFirst, TOFNsigmaPionFirst, PionFirstParams, tof_at_high_pt);
+  }
 
-  //         if (tof_at_high_pt) {
-  //             if (posTrack.hasTOF() && (std::abs(posTrack.tofNSigmaPi()) < cMaxTOFnSigmaPion)) {
-  //                 lConsistentWithPion = true;
-  //             }
-  //             if (!posTrack.hasTOF() && (std::abs(posTrack.tpcNSigmaPi()) < cMaxTPCnSigmaPion)) {
-  //                 lConsistentWithPion = true;
-  //             }
-  //         } else {
-  //             bool tpcPIDPassed{false}, tofPIDPassed{false};
-  //             if (std::abs(posTrack.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
-  //                 tpcPIDPassed = true;
-  //             }
-  //             if (cByPassTOF && tpcPIDPassed) {
-  //                 lConsistentWithPion = true;
-  //             }
-  //             if (posTrack.hasTOF()) {
-  //                 if (std::abs(posTrack.tofNSigmaPi()) < cMaxTPCnSigmaPion) {
-  //                     tofPIDPassed = true;
-  //                 }
-  //                 if ((nsigmaCutCombinedPion > 0) && (posTrack.tpcNSigmaPi() * posTrack.tpcNSigmaPi() + posTrack.tofNSigmaPi() * posTrack.tofNSigmaPi() < nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
-  //                     tofPIDPassed = true;
-  //                 }
-  //             } else {
-  //                 tofPIDPassed = true;
-  //             }
-  //             if (tpcPIDPassed && tofPIDPassed) {
-  //                 lConsistentWithPion = true;
-  //             }
-  //         }
+  template <typename TCascade>
+  bool selectionPIDCascades(const TCascade& candidate)
+  {
+    bool lConsistentWithXi{false}, lConsistentWithLambda{false}, lConsistentWithPion{false}, lConsistentWithProton{false};
 
-  //         if (tof_at_high_pt) {
-  //             if (posTrack.hasTOF() && (std::abs(posTrack.tofNSigmaPr()) < cMaxTOFnSigmaProton)) {
-  //                 lConsistentWithProton = true;
-  //             }
-  //             if (!posTrack.hasTOF() && (std::abs(posTrack.tpcNSigmaPr()) < cMaxTPCnSigmaProton)) {
-  //                 lConsistentWithProton = true;
-  //             }
-  //         } else {
-  //             bool tpcPIDPassed{false}, tofPIDPassed{false};
-  //             if (std::abs(posTrack.tpcNSigmaPr()) < cMaxTPCnSigmaProton) {
-  //                 tpcPIDPassed = true;
-  //             }
-  //             if (cByPassTOF && tpcPIDPassed) {
-  //                 lConsistentWithProton = true;
-  //             }
-  //             if (posTrack.hasTOF()) {
-  //                 if (std::abs(posTrack.tofNSigmaPr()) < cMaxTPCnSigmaProton) {
-  //                     tofPIDPassed = true;
-  //                 }
-  //                 if ((nsigmaCutCombinedProton > 0) && (posTrack.tpcNSigmaPr() * posTrack.tpcNSigmaPr() + posTrack.tofNSigmaPr() * posTrack.tofNSigmaPr() < nsigmaCutCombinedProton * nsigmaCutCombinedProton)) {
-  //                     tofPIDPassed = true;
-  //                 }
-  //             } else {
-  //                 tofPIDPassed = true;
-  //             }
-  //             if (tpcPIDPassed && tofPIDPassed) {
-  //                 lConsistentWithProton = true;
-  //             }
-  //         }
-  //         lConsistentWithLambdaPos = lConsistentWithProton*lConsistentWithPion;
-  //     }
+    float TPCNsigmaBachelor, TOFNsigmaBachelor;
+    float TPCNsigmaPion, TOFNsigmaPion;
+    float TPCNsigmaProton, TOFNsigmaProton;
 
-  //     if(candidate.sign() < 0) {
-  //         bool lConsistentWithPion = false;
-  //         bool lConsistentWithProton = false;
+    if (candidate.sign() < 0) { // Xi- candidates
+      TPCNsigmaBachelor = candidate.daughterTPCNSigmaBachPi();
+      TOFNsigmaBachelor = candidate.daughterTOFNSigmaBachPi();
 
-  //         if (tof_at_high_pt) {
-  //             if (negTrack.hasTOF() && (std::abs(negTrack.tofNSigmaPi()) < cMaxTOFnSigmaPion)) {
-  //                 lConsistentWithPion = true;
-  //             }
-  //             if (!negTrack.hasTOF() && (std::abs(negTrack.tpcNSigmaPi()) < cMaxTPCnSigmaPion)) {
-  //                 lConsistentWithPion = true;
-  //             }
-  //         } else {
-  //             bool tpcPIDPassed{false}, tofPIDPassed{false};
-  //             if (std::abs(negTrack.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
-  //                 tpcPIDPassed = true;
-  //             }
-  //             if (cByPassTOF && tpcPIDPassed) {
-  //                 lConsistentWithPion = true;
-  //             }
-  //             if (negTrack.hasTOF()) {
-  //                 if (std::abs(negTrack.tofNSigmaPi()) < cMaxTPCnSigmaPion) {
-  //                     tofPIDPassed = true;
-  //                 }
-  //                 if ((nsigmaCutCombinedPion > 0) && (negTrack.tpcNSigmaPi() * negTrack.tpcNSigmaPi() + negTrack.tofNSigmaPi() * negTrack.tofNSigmaPi() < nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
-  //                     tofPIDPassed = true;
-  //                 }
-  //             } else {
-  //                 tofPIDPassed = true;
-  //             }
-  //             if (tpcPIDPassed && tofPIDPassed) {
-  //                 lConsistentWithPion = true;
-  //             }
-  //         }
+      TPCNsigmaPion = candidate.daughterTPCNSigmaNegPi();
+      TOFNsigmaPion = candidate.daughterTOFNSigmaNegPi();
 
-  //         if (tof_at_high_pt) {
-  //             if (negTrack.hasTOF() && (std::abs(negTrack.tofNSigmaPr()) < cMaxTOFnSigmaProton)) {
-  //                 lConsistentWithProton = true;
-  //             }
-  //             if (!negTrack.hasTOF() && (std::abs(negTrack.tpcNSigmaPr()) < cMaxTPCnSigmaProton)) {
-  //                 lConsistentWithProton = true;
-  //             }
-  //         } else {
-  //             bool tpcPIDPassed{false}, tofPIDPassed{false};
-  //             if (std::abs(negTrack.tpcNSigmaPr()) < cMaxTPCnSigmaProton) {
-  //                 tpcPIDPassed = true;
-  //             }
-  //             if (cByPassTOF && tpcPIDPassed) {
-  //                 lConsistentWithProton = true;
-  //             }
-  //             if (negTrack.hasTOF()) {
-  //                 if (std::abs(negTrack.tofNSigmaPr()) < cMaxTPCnSigmaProton) {
-  //                     tofPIDPassed = true;
-  //                 }
-  //                 if ((nsigmaCutCombinedProton > 0) && (negTrack.tpcNSigmaPr() * negTrack.tpcNSigmaPr() + negTrack.tofNSigmaPr() * negTrack.tofNSigmaPr() < nsigmaCutCombinedProton * nsigmaCutCombinedProton)) {
-  //                     tofPIDPassed = true;
-  //                 }
-  //             } else {
-  //                 tofPIDPassed = true;
-  //             }
-  //             if (tpcPIDPassed && tofPIDPassed) {
-  //                 lConsistentWithProton = true;
-  //             }
-  //         }
-  //         lConsistentWithLambdaNeg = lConsistentWithProton*lConsistentWithPion;
-  //     }
+      TPCNsigmaProton = candidate.daughterTPCNSigmaPosPr();
+      TOFNsigmaProton = candidate.daughterTOFNSigmaPosPr();
+    } else { // Anti-Xi- candidates
 
-  //     lConsistentWithLambda = lConsistentWithLambdaPos * lConsistentWithLambdaNeg;
+      TPCNsigmaBachelor = candidate.daughterTPCNSigmaBachPi();
+      TOFNsigmaBachelor = candidate.daughterTOFNSigmaBachPi();
 
-  //     return lConsistentWithXi * lConsistentWithLambda;
-  // }
+      TPCNsigmaPion = candidate.daughterTPCNSigmaPosPi();
+      TOFNsigmaPion = candidate.daughterTOFNSigmaPosPi();
+
+      TPCNsigmaProton = candidate.daughterTPCNSigmaNegPr();
+      TOFNsigmaProton = candidate.daughterTOFNSigmaNegPr();
+    }
+
+    PIDSelectionParam bachelorParams = {cMaxTPCnSigmaPionBachelor, cMaxTOFnSigmaPionBachelor, cByPassTOFPionBachelor, nsigmaCutCombinedPionBachelor};
+    PIDSelectionParam pionParams = {cMaxTPCnSigmaPion, cMaxTOFnSigmaPion, cByPassTOFPion, nsigmaCutCombinedPion};
+    PIDSelectionParam protonParams = {cMaxTPCnSigmaProton, cMaxTOFnSigmaProton, cByPassTOFProton, nsigmaCutCombinedProton};
+
+    lConsistentWithXi = PIDSelector(TPCNsigmaBachelor, TOFNsigmaBachelor, bachelorParams, tof_at_high_pt);
+    lConsistentWithPion = PIDSelector(TPCNsigmaPion, TOFNsigmaPion, pionParams, tof_at_high_pt);
+    lConsistentWithProton = PIDSelector(TPCNsigmaProton, TOFNsigmaProton, protonParams, tof_at_high_pt);
+
+    lConsistentWithLambda = lConsistentWithProton && lConsistentWithPion;
+
+    return lConsistentWithXi && lConsistentWithLambda;
+  }
 
   template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType, typename TracksTypeCasc>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksTypeCasc& dTracks2) // Order: ResoColl, ResoTrack, ResoCascTrack
   {
     auto multiplicity = collision.cent();
-
-    if (additionalQAplots) {
-      histos.fill(HIST("MultCalib/centglopi_before"), multiplicity, dTracks1.size());            // centrality vs global tracks before the multiplicity calibration cuts
-      histos.fill(HIST("MultCalib/GloPVpi_before"), dTracks1.size(), collision.multNTracksPV()); // global tracks vs PV tracks before the multiplicity calibration cuts
-    }
 
     if (additionalQAeventPlots) {
       if constexpr (!IsMix) {
@@ -693,12 +619,8 @@ struct xi1530analysisqa {
       }
     }
 
-    if (additionalQAplots) {
-      histos.fill(HIST("MultCalib/centglopi_after"), multiplicity, dTracks1.size());            // centrality vs global tracks after the multiplicity calibration cuts
-      histos.fill(HIST("MultCalib/GloPVpi_after"), dTracks1.size(), collision.multNTracksPV()); // global tracks vs PV tracks after the multiplicity calibration cuts
-    }
+    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance; // It will be replaced to use RecoDecay (In fixing...)
 
-    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
     for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
 
       if (additionalQAeventPlots) {
@@ -709,47 +631,100 @@ struct xi1530analysisqa {
         }
       }
 
-      if (!trackCut(trk1) || !casctrackCut(trk2))
+      if (!PtrackCut(trk1) || !cascPtrackCut(trk2)) // Primary track selections
         continue;
-
-      auto isTrk1hasTOF = trk1.hasTOF();
-      // auto isTrk2hasTOF = trk2.hasTOF(); // Can't use TPC, TOF info. for cascades yet!!
 
       auto trk1ptPi = trk1.pt();
       auto trk1NSigmaPiTPC = trk1.tpcNSigmaPi();
-      auto trk1NSigmaPiTOF = (isTrk1hasTOF) ? trk1.tofNSigmaPi() : -999.;
+      auto trk1NSigmaPiTOF = trk1.tofNSigmaPi();
 
       auto trk2ptXi = trk2.pt();
+      // Need to daughther's pt info. in the table
+      // auto trk2ptPiBachelor = trk2.pt();
+      float trk2NSigmaPiBachelorTPC = trk2.daughterTPCNSigmaBachPi();
+      float trk2NSigmaPiBachelorTOF = trk2.daughterTOFNSigmaBachPi();
+
+      // auto trk2ptPr = trk2.pt();
+      float trk2NSigmaPrPosTPC = trk2.daughterTPCNSigmaPosPr();
+      float trk2NSigmaPrNegTPC = trk2.daughterTPCNSigmaNegPr();
+
+      float trk2NSigmaPrPosTOF = trk2.daughterTOFNSigmaPosPr();
+      float trk2NSigmaPrNegTOF = trk2.daughterTOFNSigmaNegPr();
+
+      // auto trk2ptPi = trk2.pt();
+      float trk2NSigmaPiPosTPC = trk2.daughterTPCNSigmaPosPi();
+      float trk2NSigmaPiNegTPC = trk2.daughterTPCNSigmaNegPi();
+
+      float trk2NSigmaPiPosTOF = trk2.daughterTOFNSigmaPosPi();
+      float trk2NSigmaPiNegTOF = trk2.daughterTOFNSigmaNegPi();
 
       if constexpr (!IsMix) {
-        //// QA plots before the selection
-        //  --- PID QA Pion
+        //// QA plots before the selection // need to pt for cascade tracks
+        //  --- PID QA
         if (PIDplots) {
           histos.fill(HIST("QAbefore/TPC_Nsigma_pi_first_all"), multiplicity, trk1ptPi, trk1NSigmaPiTPC);
-          if (isTrk1hasTOF) {
+          if (hasSubsystemInfo(trk1NSigmaPiTOF)) {
             histos.fill(HIST("QAbefore/TOF_Nsigma_pi_first_all"), multiplicity, trk1ptPi, trk1NSigmaPiTOF);
             histos.fill(HIST("QAbefore/TOF_TPC_Map_pi_first_all"), trk1NSigmaPiTOF, trk1NSigmaPiTPC);
+          }
+          // hasSubsystemInfo is Temporary, it will be replaced.
+
+          histos.fill(HIST("QAbefore/TPC_Nsigma_pi_bachelor_all"), multiplicity, 0, trk2NSigmaPiBachelorTPC); // can't take pt information for the cascade secondary
+          if (hasSubsystemInfo(trk2NSigmaPiBachelorTOF)) {
+            histos.fill(HIST("QAbefore/TOF_TPC_Map_pi_bachelor_all"), trk2NSigmaPiBachelorTOF, trk2NSigmaPiBachelorTPC);
+          }
+
+          histos.fill(HIST("QAbefore/TPC_Nsigma_pr_all"), multiplicity, 0, trk2NSigmaPrPosTPC);
+          if (hasSubsystemInfo(trk2NSigmaPrPosTOF)) {
+            histos.fill(HIST("QAbefore/TOF_TPC_Map_pr_all"), trk2NSigmaPrPosTOF, trk2NSigmaPrPosTPC);
+          }
+
+          histos.fill(HIST("QAbefore/TPC_Nsigma_antipr_all"), multiplicity, 0, trk2NSigmaPrNegTPC);
+          if (hasSubsystemInfo(trk2NSigmaPrNegTOF)) {
+            histos.fill(HIST("QAbefore/TOF_TPC_Map_antipr_all"), trk2NSigmaPrNegTOF, trk2NSigmaPrNegTPC);
+          }
+
+          histos.fill(HIST("QAbefore/TPC_Nsigma_pi_all"), multiplicity, 0, trk2NSigmaPiPosTPC);
+          if (hasSubsystemInfo(trk2NSigmaPiPosTOF)) {
+            histos.fill(HIST("QAbefore/TOF_TPC_Map_pi_all"), trk2NSigmaPiPosTOF, trk2NSigmaPiPosTPC);
+          }
+
+          histos.fill(HIST("QAbefore/TPC_Nsigma_piminus_all"), multiplicity, 0, trk2NSigmaPiNegTPC);
+          if (hasSubsystemInfo(trk2NSigmaPiNegTOF)) {
+            histos.fill(HIST("QAbefore/TOF_TPC_Map_piminus_all"), trk2NSigmaPiNegTOF, trk2NSigmaPiNegTPC);
           }
         }
 
         histos.fill(HIST("QAbefore/trkpT_pi"), trk1ptPi);
         histos.fill(HIST("QAbefore/trkpT_Xi"), trk2ptXi);
+
         histos.fill(HIST("QAbefore/trkDCAxy_pi"), trk1.dcaXY());
         histos.fill(HIST("QAbefore/trkDCAxy_Xi"), trk2.dcaXYCascToPV());
+
         histos.fill(HIST("QAbefore/trkDCAz_pi"), trk1.dcaZ());
         histos.fill(HIST("QAbefore/trkDCAz_Xi"), trk2.dcaZCascToPV());
       }
 
-      if (cUseOnlyTOFTrackPionFirst && !isTrk1hasTOF)
+      // PID selection
+      if (cUseOnlyTOFTrackPionFirst && !hasSubsystemInfo(trk1NSigmaPiTOF))
         continue;
 
-      // if (cUseOnlyTOFTrackPr && !isTrk2hasTOF) // Can't use TPC, TOF info. for cascades yet!!
-      //     continue;
-      if (!selectionPIDPionFirst(trk1))
+      if (cUseOnlyTOFTrackPionBachelor && !hasSubsystemInfo(trk2NSigmaPiBachelorTOF))
         continue;
 
-      // if (!selectionPIDCascades(trk2)) // Can't use TPC, TOF info. for cascades yet!!
-      //     continue;
+      if (cUseOnlyTOFTrackProton && !hasSubsystemInfo(trk2NSigmaPrPosTOF))
+        continue;
+      if (cUseOnlyTOFTrackProton && !hasSubsystemInfo(trk2NSigmaPrNegTOF))
+        continue;
+
+      if (cUseOnlyTOFTrackPion && !hasSubsystemInfo(trk2NSigmaPiPosTOF))
+        continue;
+      if (cUseOnlyTOFTrackPion && !hasSubsystemInfo(trk2NSigmaPiNegTOF))
+        continue;
+
+      if (!selectionPIDPionFirst(trk1) || !selectionPIDCascades(trk2))
+        continue;
+
       if (!casctopCut(trk2))
         continue;
 
@@ -761,34 +736,74 @@ struct xi1530analysisqa {
 
       if constexpr (!IsMix) {
         //// QA plots before the selection
-        //  --- PID QA Pion
+        //  --- PID QA
         if (PIDplots) {
           histos.fill(HIST("QAafter/TPC_Nsigma_pi_first_all"), multiplicity, trk1ptPi, trk1NSigmaPiTPC);
-          if (isTrk1hasTOF) {
+
+          if (hasSubsystemInfo(trk1NSigmaPiTOF)) {
             histos.fill(HIST("QAafter/TOF_Nsigma_pi_first_all"), multiplicity, trk1ptPi, trk1NSigmaPiTOF);
             histos.fill(HIST("QAafter/TOF_TPC_Map_pi_first_all"), trk1NSigmaPiTOF, trk1NSigmaPiTPC);
+          }
+
+          if (trk2.sign() < 0) {
+            histos.fill(HIST("QAafter/TPC_Nsigma_pi_bachelor_all"), multiplicity, 0, trk2NSigmaPiBachelorTPC); // not exist pt information in resocascade yet.
+            if (hasSubsystemInfo(trk2NSigmaPiBachelorTOF)) {
+              histos.fill(HIST("QAafter/TOF_TPC_Map_pi_bachelor_all"), trk2NSigmaPiBachelorTOF, trk2NSigmaPiBachelorTPC);
+            }
+
+            histos.fill(HIST("QAafter/TPC_Nsigma_pr_all"), multiplicity, 0, trk2NSigmaPrPosTPC);
+            if (hasSubsystemInfo(trk2NSigmaPrPosTOF)) {
+              histos.fill(HIST("QAafter/TOF_TPC_Map_pr_all"), trk2NSigmaPrPosTOF, trk2NSigmaPrPosTPC);
+            }
+
+            histos.fill(HIST("QAafter/TPC_Nsigma_piminus_all"), multiplicity, 0, trk2NSigmaPiNegTPC);
+            if (hasSubsystemInfo(trk2NSigmaPiNegTOF)) {
+              histos.fill(HIST("QAafter/TOF_TPC_Map_piminus_all"), trk2NSigmaPiNegTOF, trk2NSigmaPiNegTPC);
+            }
+
+          } else {
+
+            histos.fill(HIST("QAafter/TPC_Nsigma_pi_bachelor_all"), multiplicity, 0, trk2NSigmaPiBachelorTPC); // not exist pt information in resocascade yet.
+            if (hasSubsystemInfo(trk2NSigmaPiBachelorTOF)) {
+              histos.fill(HIST("QAafter/TOF_TPC_Map_pi_bachelor_all"), trk2NSigmaPiBachelorTOF, trk2NSigmaPiBachelorTPC);
+            }
+
+            histos.fill(HIST("QAafter/TPC_Nsigma_antipr_all"), multiplicity, 0, trk2NSigmaPrNegTPC);
+            if (hasSubsystemInfo(trk2NSigmaPrNegTOF)) {
+              histos.fill(HIST("QAafter/TOF_TPC_Map_antipr_all"), trk2NSigmaPrNegTOF, trk2NSigmaPrNegTPC);
+            }
+
+            histos.fill(HIST("QAafter/TPC_Nsigma_pi_all"), multiplicity, 0, trk2NSigmaPiPosTPC);
+            if (hasSubsystemInfo(trk2NSigmaPiPosTOF)) {
+              histos.fill(HIST("QAafter/TOF_TPC_Map_pi_all"), trk2NSigmaPiPosTOF, trk2NSigmaPiPosTPC);
+            }
           }
         }
 
         histos.fill(HIST("QAafter/trkpT_pi"), trk1ptPi);
         histos.fill(HIST("QAafter/trkpT_Xi"), trk2ptXi);
+
         histos.fill(HIST("QAafter/trkDCAxy_pi"), trk1.dcaXY());
         histos.fill(HIST("QAafter/trkDCAxy_Xi"), trk2.dcaXYCascToPV());
+
         histos.fill(HIST("QAafter/trkDCAz_pi"), trk1.dcaZ());
         histos.fill(HIST("QAafter/trkDCAz_Xi"), trk2.dcaZCascToPV());
       }
 
-      lDecayDaughter1.SetPtEtaPhiM(trk1.pt(), trk1.eta(), trk1.phi(), massPi);
-      lDecayDaughter2.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi(), trk2.mXi());
+      lDecayDaughter1.SetPtEtaPhiM(trk1ptPi, trk1.eta(), trk1.phi(), massPi);
+      lDecayDaughter2.SetPtEtaPhiM(trk2ptXi, trk2.eta(), trk2.phi(), trk2.mXi());
       lResonance = lDecayDaughter1 + lDecayDaughter2;
 
-      if (abs(lResonance.Rapidity()) >= 0.5)
+      auto lResonancePt = lResonance.Pt();
+      auto lResonanceInMass = lResonance.M();
+
+      if (std::abs(lResonance.Rapidity()) >= 0.5)
         continue;
 
       if (cfgCutsOnMother) {
-        if (lResonance.Pt() >= cMaxPtMotherCut) // excluding candidates in overflow
+        if (lResonancePt >= cMaxPtMotherCut) // excluding candidates in overflow
           continue;
-        if (lResonance.M() >= cMaxMinvMotherCut) // excluding candidates in overflow
+        if (lResonanceInMass >= cMaxMinvMotherCut) // excluding candidates in overflow
           continue;
       }
 
@@ -798,59 +813,93 @@ struct xi1530analysisqa {
           if (study_antiparticle) {
             if (trk1.sign() > 0) {
               if (invmass1D)
-                histos.fill(HIST("Xi1530invmassDS"), lResonance.M());
-              histos.fill(HIST("h3Xi1530invmassDS"), multiplicity, lResonance.Pt(), lResonance.M(), kData);
+                histos.fill(HIST("Xi1530invmassDS"), lResonanceInMass);
+              histos.fill(HIST("h3Xi1530invmassDS"), multiplicity, lResonancePt, lResonanceInMass, kData);
             } else if (trk1.sign() < 0) {
               if (invmass1D)
-                histos.fill(HIST("Xi1530invmassDSAnti"), lResonance.M());
-              histos.fill(HIST("h3Xi1530invmassDSAnti"), multiplicity, lResonance.Pt(), lResonance.M(), kData);
+                histos.fill(HIST("Xi1530invmassDSAnti"), lResonanceInMass);
+              histos.fill(HIST("h3Xi1530invmassDSAnti"), multiplicity, lResonancePt, lResonanceInMass, kData);
             }
           } else {
             if (invmass1D)
-              histos.fill(HIST("Xi1530invmassDS"), lResonance.M());
-            histos.fill(HIST("h3Xi1530invmassDS"), multiplicity, lResonance.Pt(), lResonance.M(), kData);
+              histos.fill(HIST("Xi1530invmassDS"), lResonanceInMass);
+            histos.fill(HIST("h3Xi1530invmassDS"), multiplicity, lResonancePt, lResonanceInMass, kData);
           }
         } else {
           if (invmass1D)
-            histos.fill(HIST("Xi1530invmassME"), lResonance.M());
+            histos.fill(HIST("Xi1530invmassME"), lResonanceInMass);
           if (trk1.sign() > 0) {
             if (invmass1D)
-              histos.fill(HIST("Xi1530invmassME_DS"), lResonance.M());
-            histos.fill(HIST("h3Xi1530invmassME_DS"), multiplicity, lResonance.Pt(), lResonance.M(), kMixing);
+              histos.fill(HIST("Xi1530invmassME_DS"), lResonanceInMass);
+            histos.fill(HIST("h3Xi1530invmassME_DS"), multiplicity, lResonancePt, lResonanceInMass, kMixing);
           } else if (trk1.sign() < 0) {
             if (invmass1D)
-              histos.fill(HIST("Xi1530invmassME_DSAnti"), lResonance.M());
-            histos.fill(HIST("h3Xi1530invmassME_DSAnti"), multiplicity, lResonance.Pt(), lResonance.M(), kMixing);
+              histos.fill(HIST("Xi1530invmassME_DSAnti"), lResonanceInMass);
+            histos.fill(HIST("h3Xi1530invmassME_DSAnti"), multiplicity, lResonancePt, lResonanceInMass, kMixing);
           }
-          histos.fill(HIST("h3Xi1530invmassME"), multiplicity, lResonance.Pt(), lResonance.M(), kMixing);
+          histos.fill(HIST("h3Xi1530invmassME"), multiplicity, lResonancePt, lResonanceInMass, kMixing);
         }
 
         if constexpr (IsMC) {
-          if (abs(trk1.pdgCode()) != 211 || abs(trk2.pdgCode()) != 3312)
+          if (std::abs(trk2.motherPDG()) != XiStarPID)
+            continue;
+          if (std::abs(trk1.pdgCode()) != PionPID || std::abs(trk2.pdgCode()) != XiPID)
             continue;
           if (trk1.motherId() != trk2.motherId())
-            continue;
-          if (abs(trk2.motherPDG()) != 3324)
             continue;
 
           histos.fill(HIST("QAMCTrue/trkDCAxy_pi"), trk1.dcaXY());
           histos.fill(HIST("QAMCTrue/trkDCAxy_xi"), trk2.dcaXYCascToPV());
           histos.fill(HIST("QAMCTrue/trkDCAz_pi"), trk1.dcaZ());
           histos.fill(HIST("QAMCTrue/trkDCAz_xi"), trk2.dcaZCascToPV());
-          histos.fill(HIST("QAMCTrue/TPC_Nsigma_pi_all"), multiplicity, trk1ptPi, trk1NSigmaPiTPC);
-          if (isTrk1hasTOF) {
-            histos.fill(HIST("QAMCTrue/TOF_Nsigma_pi_all"), multiplicity, trk1ptPi, trk1NSigmaPiTOF);
+          histos.fill(HIST("QAMCTrue/TPC_Nsigma_pi_first_all"), multiplicity, trk1ptPi, trk1NSigmaPiTPC);
+          if (hasSubsystemInfo(trk1NSigmaPiTOF)) {
+            histos.fill(HIST("QAMCTrue/TOF_Nsigma_pi_first_all"), multiplicity, trk1ptPi, trk1NSigmaPiTOF);
+            histos.fill(HIST("QAMCTrue/TOF_TPC_Map_pi_first_all"), trk1NSigmaPiTOF, trk1NSigmaPiTPC);
           }
 
+          if (trk2.sign() < 0) {
+            histos.fill(HIST("QAafter/TPC_Nsigma_pi_bachelor_all"), multiplicity, 0, trk2NSigmaPiBachelorTPC); // not exist pt information in resocascade yet.
+            if (hasSubsystemInfo(trk2NSigmaPiBachelorTOF)) {
+              histos.fill(HIST("QAafter/TOF_TPC_Map_pi_bachelor_all"), trk2NSigmaPiBachelorTOF, trk2NSigmaPiBachelorTPC);
+            }
+
+            histos.fill(HIST("QAafter/TPC_Nsigma_pr_all"), multiplicity, 0, trk2NSigmaPrPosTPC);
+            if (hasSubsystemInfo(trk2NSigmaPrPosTOF)) {
+              histos.fill(HIST("QAafter/TOF_TPC_Map_pr_all"), trk2NSigmaPrPosTOF, trk2NSigmaPrPosTPC);
+            }
+
+            histos.fill(HIST("QAafter/TPC_Nsigma_piminus_all"), multiplicity, 0, trk2NSigmaPiNegTPC);
+            if (hasSubsystemInfo(trk2NSigmaPiNegTOF)) {
+              histos.fill(HIST("QAafter/TOF_TPC_Map_piminus_all"), trk2NSigmaPiNegTOF, trk2NSigmaPiNegTPC);
+            }
+
+          } else {
+
+            histos.fill(HIST("QAafter/TPC_Nsigma_pi_bachelor_all"), multiplicity, 0, trk2NSigmaPiBachelorTPC); // not exist pt information in resocascade yet.
+            if (hasSubsystemInfo(trk2NSigmaPiBachelorTOF)) {
+              histos.fill(HIST("QAafter/TOF_TPC_Map_pi_bachelor_all"), trk2NSigmaPiBachelorTOF, trk2NSigmaPiBachelorTPC);
+            }
+
+            histos.fill(HIST("QAafter/TPC_Nsigma_antipr_all"), multiplicity, 0, trk2NSigmaPrNegTPC);
+            if (hasSubsystemInfo(trk2NSigmaPrNegTOF)) {
+              histos.fill(HIST("QAafter/TOF_TPC_Map_antipr_all"), trk2NSigmaPrNegTOF, trk2NSigmaPrNegTPC);
+            }
+
+            histos.fill(HIST("QAafter/TPC_Nsigma_pi_all"), multiplicity, 0, trk2NSigmaPiPosTPC);
+            if (hasSubsystemInfo(trk2NSigmaPiPosTOF)) {
+              histos.fill(HIST("QAafter/TOF_TPC_Map_pi_all"), trk2NSigmaPiPosTOF, trk2NSigmaPiPosTPC);
+            }
+          }
           // MC histograms
           if (trk2.motherPDG() > 0) {
-            histos.fill(HIST("Xi1530Rec"), lResonance.Pt(), multiplicity);
-            histos.fill(HIST("Xi1530Recinvmass"), lResonance.M());
-            histos.fill(HIST("h3RecXi1530invmass"), multiplicity, lResonance.Pt(), lResonance.M(), kMCReco);
+            histos.fill(HIST("Xi1530Rec"), lResonancePt, multiplicity);
+            histos.fill(HIST("Xi1530Recinvmass"), lResonanceInMass);
+            histos.fill(HIST("h3RecXi1530invmass"), multiplicity, lResonancePt, lResonanceInMass, kMCReco);
           } else {
-            histos.fill(HIST("Xi1530RecAnti"), lResonance.Pt(), multiplicity);
-            histos.fill(HIST("Xi1530Recinvmass"), lResonance.M());
-            histos.fill(HIST("h3RecXi1530invmassAnti"), multiplicity, lResonance.Pt(), lResonance.M(), kMCReco);
+            histos.fill(HIST("Xi1530RecAnti"), lResonancePt, multiplicity);
+            histos.fill(HIST("Xi1530Recinvmass"), lResonanceInMass);
+            histos.fill(HIST("h3RecXi1530invmassAnti"), multiplicity, lResonancePt, lResonanceInMass, kMCReco);
           }
         }
 
@@ -859,17 +908,17 @@ struct xi1530analysisqa {
           if (study_antiparticle) {
             if (trk1.sign() < 0) {
               if (invmass1D)
-                histos.fill(HIST("Xi1530invmassLS"), lResonance.M());
-              histos.fill(HIST("h3Xi1530invmassLS"), multiplicity, lResonance.Pt(), lResonance.M(), kLS);
+                histos.fill(HIST("Xi1530invmassLS"), lResonanceInMass);
+              histos.fill(HIST("h3Xi1530invmassLS"), multiplicity, lResonancePt, lResonanceInMass, kLS);
             } else if (trk1.sign() > 0) {
               if (invmass1D)
-                histos.fill(HIST("Xi1530invmassLSAnti"), lResonance.M());
-              histos.fill(HIST("h3Xi1530invmassLSAnti"), multiplicity, lResonance.Pt(), lResonance.M(), kLS);
+                histos.fill(HIST("Xi1530invmassLSAnti"), lResonanceInMass);
+              histos.fill(HIST("h3Xi1530invmassLSAnti"), multiplicity, lResonancePt, lResonanceInMass, kLS);
             }
           } else {
             if (invmass1D)
-              histos.fill(HIST("Xi1530invmassLS"), lResonance.M());
-            histos.fill(HIST("h3Xi1530invmassLS"), multiplicity, lResonance.Pt(), lResonance.M(), kLS);
+              histos.fill(HIST("Xi1530invmassLS"), lResonanceInMass);
+            histos.fill(HIST("h3Xi1530invmassLS"), multiplicity, lResonancePt, lResonanceInMass, kLS);
           }
         }
       }
@@ -887,7 +936,7 @@ struct xi1530analysisqa {
                  soa::Join<aod::ResoCascades, aod::ResoMCCascades> const& cascTracks,
                  soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resoTracks)
   {
-    if (!resoCollision.isInAfterAllCuts() || (abs(resoCollision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
+    if (!resoCollision.isInAfterAllCuts() || (std::abs(resoCollision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
       return;
     fillHistograms<true, false>(resoCollision, resoTracks, cascTracks);
   }
@@ -896,10 +945,10 @@ struct xi1530analysisqa {
   {
     auto multiplicity = resoCollision.cent();
     for (auto& part : resoParents) { // loop over all pre-filtered MC particles
-      if (abs(part.pdgCode()) != 3324 || abs(part.y()) >= 0.5)
+      if (std::abs(part.pdgCode()) != XiStarPID || std::abs(part.y()) >= 0.5)
         continue;
-      bool pass1 = abs(part.daughterPDG1()) == 211 || abs(part.daughterPDG2()) == 211;
-      bool pass2 = abs(part.daughterPDG1()) == 3312 || abs(part.daughterPDG2()) == 3312;
+      bool pass1 = std::abs(part.daughterPDG1()) == PionPID || std::abs(part.daughterPDG2()) == PionPID;
+      bool pass2 = std::abs(part.daughterPDG1()) == XiPID || std::abs(part.daughterPDG2()) == XiPID;
 
       if (!pass1 || !pass2)
         continue;
@@ -955,6 +1004,7 @@ struct xi1530analysisqa {
   PROCESS_SWITCH(xi1530analysisqa, processMCTrue, "Process Event for MC (Generated)", true);
   PROCESS_SWITCH(xi1530analysisqa, processME, "Process EventMixing light without partition", true);
 };
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<xi1530analysisqa>(cfgc)};

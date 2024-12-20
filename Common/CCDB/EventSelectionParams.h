@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file EventSelectionParams.h
+/// \brief Event selection parameters
+///
+/// \author Evgeny Kryshen <evgeny.kryshen@cern.ch> and Igor Altsybeev <Igor.Altsybeev@cern.ch>
+
 #ifndef COMMON_CCDB_EVENTSELECTIONPARAMS_H_
 #define COMMON_CCDB_EVENTSELECTIONPARAMS_H_
 
@@ -66,6 +71,10 @@ enum EventSelectionFlags {
   kNoCollInTimeRangeVzDependent, // no other collisions in vZ-dependent time range near a given collision
   kNoCollInRofStrict,            // no other collisions in this Readout Frame
   kNoCollInRofStandard,          // no other collisions in this Readout Frame with per-collision multiplicity above threshold
+  kNoHighMultCollInPrevRof,      // veto an event if FT0C amplitude in previous ITS ROF is above threshold
+  kIsGoodITSLayer3,              // number of inactive chips on ITS layer 3 is below maximum allowed value
+  kIsGoodITSLayer0123,           // numbers of inactive chips on ITS layers 0-3 are below maximum allowed values
+  kIsGoodITSLayersAll,           // numbers of inactive chips on all ITS layers are below maximum allowed values
   kNsel                          // counter
 };
 
@@ -76,10 +85,10 @@ extern const char* selectionLabels[kNsel];
 class EventSelectionParams
 {
  public:
-  explicit EventSelectionParams(int system = 0, int run = 2);
-  void DisableOutOfBunchPileupCuts();
-  void SetOnVsOfParams(float newV0MOnVsOfA, float newV0MOnVsOfB, float newSPDOnVsOfA, float newSPDOnVsOfB);
-  bool* GetSelection(int iSelection);
+  explicit EventSelectionParams(int system = 0, int run = 2); // o2-linter: disable=name/function-variable
+  void disableOutOfBunchPileupCuts();
+  void setOnVsOfParams(float newV0MOnVsOfA, float newV0MOnVsOfB, float newSPDOnVsOfA, float newSPDOnVsOfB);
+  bool* getSelection(int iSelection);
 
   bool selectionBarrel[o2::aod::evsel::kNsel];
   bool selectionMuonWithPileupCuts[o2::aod::evsel::kNsel];
@@ -153,7 +162,7 @@ class EventSelectionParams
   int fITSROFrameStartBorderMargin = 10; // number of bcs to cut in the beginning of ITS readout frame
   int fITSROFrameEndBorderMargin = 20;   // number of bcs to cut in the end of ITS readout frame
 
-  ClassDefNV(EventSelectionParams, 6)
+  ClassDefNV(EventSelectionParams, 7)
 };
 
 #endif // COMMON_CCDB_EVENTSELECTIONPARAMS_H_

@@ -36,7 +36,8 @@ using namespace o2::analysis::hf_correlations;
 
 namespace o2::aod
 {
-using DHadronPairFull = soa::Join<aod::DHadronPair, aod::DHadronRecoInfo>;
+using D0HadronPairFull = soa::Join<aod::D0HadronPair, aod::D0HadronRecoInfo>;
+using D0HadronPairFullMl = soa::Join<aod::D0HadronPair, aod::D0HadronRecoInfo, aod::D0HadronMlInfo>;
 } // namespace o2::aod
 
 // string definitions, used for histogram axis labels
@@ -58,6 +59,8 @@ AxisSpec axisPtHadron = {11, 0., 11., ""};
 AxisSpec axisPoolBin = {9, 0., 9., ""};
 AxisSpec axisCorrelationState = {2, 0., 2., ""};
 ConfigurableAxis axisMass{"axisMass", {250, 1.65f, 2.15f}, ""};
+ConfigurableAxis binsBdtScore{"binsBdtScore", {100, 0., 1.}, "Bdt output scores"};
+AxisSpec axisBdtScore = {binsBdtScore, "Bdt score"};
 
 // definition of vectors for standard ptbin and invariant mass configurables
 const int nPtBinsCorrelations = 12;
@@ -83,9 +86,14 @@ const double ptHadronMax = 10.0;
 struct HfTaskCorrelationD0Hadrons {
 
   // pT ranges for correlation plots: the default values are those embedded in hf_cuts_d0_to_pi_k (i.e. the mass pT bins), but can be redefined via json files
-  Configurable<std::vector<double>> binsCorrelations{"ptBinsForCorrelations", std::vector<double>{vecPtBinsCorrelations}, "pT bin limits for correlation plots"};
+  Configurable<std::vector<double>> binsCorrelations{"binsCorrelations", std::vector<double>{vecPtBinsCorrelations}, "pT bin limits for correlation plots"};
   // pT bins for effiencies: same as above
-  Configurable<std::vector<double>> binsEfficiency{"ptBinsForEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for efficiency"};
+  Configurable<std::vector<double>> binsEfficiency{"binsEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for efficiency"};
+  Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
+  Configurable<std::vector<double>> mlOutputPromptD0{"mlOutputPromptD0", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt"};
+  Configurable<std::vector<double>> mlOutputBkgD0{"mlOutputBkgD0", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for bkg"};
+  Configurable<std::vector<double>> mlOutputPromptD0bar{"mlOutputPromptD0bar", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt"};
+  Configurable<std::vector<double>> mlOutputBkgD0bar{"mlOutputBkgD0bar", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for bkg"};
   // signal and sideband region edges, to be defined via json file (initialised to empty)
   Configurable<std::vector<double>> signalRegionLeft{"signalRegionLeft", std::vector<double>{vecsignalRegionLeft}, "Inner values of signal region vs pT"};
   Configurable<std::vector<double>> signalRegionRight{"signalRegionRight", std::vector<double>{vecsignalRegionRight}, "Outer values of signal region vs pT"};
@@ -96,7 +104,7 @@ struct HfTaskCorrelationD0Hadrons {
   Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{vecEfficiencyDmeson}, "Efficiency values for D meson specie under study"};
   Configurable<bool> isTowardTransverseAway{"isTowardTransverseAway", false, "Divide into three regions: toward, transverse, and away"};
   Configurable<double> leadingParticlePtMin{"leadingParticlePtMin", 0., "Min for leading particle pt"};
-  Configurable<int> applyEfficiency{"efficiencyFlagD", 1, "Flag for applying efficiency weights"};
+  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying efficiency weights"};
 
   HistogramRegistry registry{
     "registry",
@@ -191,6 +199,10 @@ struct HfTaskCorrelationD0Hadrons {
   {
     int nBinsPtAxis = binsCorrelations->size() - 1;
     const double* valuesPtAxis = binsCorrelations->data();
+    registry.add("hBdtScorePromptD0", "D0 BDT prompt score", {HistType::kTH1F, {axisBdtScore}});
+    registry.add("hBdtScoreBkgD0", "D0 BDT bkg score", {HistType::kTH1F, {axisBdtScore}});
+    registry.add("hBdtScorePromptD0bar", "D0bar BDT prompt score", {HistType::kTH1F, {axisBdtScore}});
+    registry.add("hBdtScoreBkgD0bar", "D0bar BDT bkg score", {HistType::kTH1F, {axisBdtScore}});
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegion"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebands"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegion"))->Sumw2();
@@ -233,8 +245,26 @@ struct HfTaskCorrelationD0Hadrons {
 
   /// D-h correlation pair filling task, from pair tables - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   /// Works on both USL and LS analyses pair tables
-  void processData(aod::DHadronPairFull const& pairEntries)
+  void processData(aod::D0HadronPairFullMl const& pairEntries,
+                   aod::D0CandRecoInfo const& candidates)
   {
+    for (const auto& candidate : candidates) {
+      float ptD = candidate.ptD();
+      float bdtScorePromptD0 = candidate.mlScorePromptD0();
+      float bdtScoreBkgD0 = candidate.mlScoreBkgD0();
+      float bdtScorePromptD0bar = candidate.mlScorePromptD0bar();
+      float bdtScoreBkgD0bar = candidate.mlScoreBkgD0bar();
+      int effBinD = o2::analysis::findBin(binsEfficiency, ptD);
+      if (bdtScorePromptD0 < mlOutputPromptD0->at(effBinD) || bdtScoreBkgD0 > mlOutputBkgD0->at(effBinD) ||
+          bdtScorePromptD0bar < mlOutputPromptD0bar->at(effBinD) || bdtScoreBkgD0bar > mlOutputBkgD0bar->at(effBinD)) {
+        continue;
+      }
+      registry.fill(HIST("hBdtScorePromptD0"), bdtScorePromptD0);
+      registry.fill(HIST("hBdtScoreBkgD0"), bdtScoreBkgD0);
+      registry.fill(HIST("hBdtScorePromptD0bar"), bdtScorePromptD0bar);
+      registry.fill(HIST("hBdtScoreBkgD0bar"), bdtScoreBkgD0bar);
+    }
+
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
@@ -248,6 +278,10 @@ struct HfTaskCorrelationD0Hadrons {
       int ptBinD = o2::analysis::findBin(binsCorrelations, ptD);
       int poolBin = pairEntry.poolBin();
       bool isAutoCorrelated = pairEntry.isAutoCorrelated();
+      float bdtScorePromptD0 = pairEntry.mlScorePromptD0();
+      float bdtScoreBkgD0 = pairEntry.mlScoreBkgD0();
+      float bdtScorePromptD0bar = pairEntry.mlScorePromptD0bar();
+      float bdtScoreBkgD0bar = pairEntry.mlScoreBkgD0bar();
       // reject entries outside pT ranges of interest
       if (ptBinD < 0 || effBinD < 0) {
         continue;
@@ -255,7 +289,10 @@ struct HfTaskCorrelationD0Hadrons {
       if (ptHadron > ptHadronMax) {
         ptHadron = ptHadronMax + 0.5;
       }
-
+      if (bdtScorePromptD0 < mlOutputPromptD0->at(ptBinD) || bdtScoreBkgD0 > mlOutputBkgD0->at(ptBinD) ||
+          bdtScorePromptD0bar < mlOutputPromptD0bar->at(ptBinD) || bdtScoreBkgD0bar > mlOutputBkgD0bar->at(ptBinD)) {
+        continue;
+      }
       double efficiencyWeight = 1.;
       if (applyEfficiency) {
         efficiencyWeight = 1. / (efficiencyDmeson->at(o2::analysis::findBin(binsEfficiency, ptD))); // ***** track efficiency to be implemented *****
@@ -362,7 +399,7 @@ struct HfTaskCorrelationD0Hadrons {
   }
   PROCESS_SWITCH(HfTaskCorrelationD0Hadrons, processData, "Process data", false);
 
-  void processMcRec(aod::DHadronPairFull const& pairEntries)
+  void processMcRec(aod::D0HadronPairFull const& pairEntries)
   {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
@@ -580,7 +617,7 @@ struct HfTaskCorrelationD0Hadrons {
   PROCESS_SWITCH(HfTaskCorrelationD0Hadrons, processMcRec, "Process MC Reco mode", true);
 
   /// D-Hadron correlation pair filling task, from pair tables - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGen(aod::DHadronPairFull const& pairEntries)
+  void processMcGen(aod::D0HadronPairFull const& pairEntries)
   {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities

@@ -9,6 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file EventSelectionParams.cxx
+/// \brief Event selection parameters
+///
+/// \author Evgeny Kryshen <evgeny.kryshen@cern.ch> and Igor Altsybeev <Igor.Altsybeev@cern.ch>
+
+// o2-linter: disable=name/workflow-file
+
 #include "EventSelectionParams.h"
 
 namespace o2::aod::evsel
@@ -60,7 +67,11 @@ const char* selectionLabels[kNsel] = {
   "kNoCollInTimeRangeStandard",
   "kNoCollInTimeRangeVzDependent",
   "kNoCollInRofStrict",
-  "kNoCollInRofStandard"};
+  "kNoCollInRofStandard",
+  "kNoHighMultCollInPrevRof",
+  "kIsGoodITSLayer3",
+  "kIsGoodITSLayer0123",
+  "kIsGoodITSLayersAll"};
 } // namespace o2::aod::evsel
 
 using namespace o2::aod::evsel;
@@ -165,7 +176,7 @@ EventSelectionParams::EventSelectionParams(int system, int run)
   }
 }
 
-void EventSelectionParams::DisableOutOfBunchPileupCuts()
+void EventSelectionParams::disableOutOfBunchPileupCuts()
 {
   selectionBarrel[kNoV0MOnVsOfPileup] = 0;
   selectionBarrel[kNoSPDOnVsOfPileup] = 0;
@@ -183,7 +194,7 @@ void EventSelectionParams::DisableOutOfBunchPileupCuts()
   selectionMuonWithoutPileupCuts[kNoV0PFPileup] = 0;
 }
 
-void EventSelectionParams::SetOnVsOfParams(float newV0MOnVsOfA, float newV0MOnVsOfB, float newSPDOnVsOfA, float newSPDOnVsOfB)
+void EventSelectionParams::setOnVsOfParams(float newV0MOnVsOfA, float newV0MOnVsOfB, float newSPDOnVsOfA, float newSPDOnVsOfB)
 {
   fV0MOnVsOfA = newV0MOnVsOfA;
   fV0MOnVsOfB = newV0MOnVsOfB;
@@ -191,7 +202,7 @@ void EventSelectionParams::SetOnVsOfParams(float newV0MOnVsOfA, float newV0MOnVs
   fSPDOnVsOfB = newSPDOnVsOfB;
 }
 
-bool* EventSelectionParams::GetSelection(int iSelection)
+bool* EventSelectionParams::getSelection(int iSelection)
 {
   if (iSelection == 0) {
     return selectionBarrel;

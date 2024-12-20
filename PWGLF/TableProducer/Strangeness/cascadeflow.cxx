@@ -135,10 +135,16 @@ struct cascadeFlow {
   Configurable<bool> isNoSameBunchPileupCut{"isNoSameBunchPileupCut", 1, "Same found-by-T0 bunch crossing rejection"};
   Configurable<bool> isGoodZvtxFT0vsPVCut{"isGoodZvtxFT0vsPVCut", 1, "z of PV by tracks and z of PV from FT0 A-C time difference cut"};
   Configurable<bool> isGoodEventEP{"isGoodEventEP", 1, "Event is used to calibrate event plane"};
+  Configurable<bool> isTrackOccupancySel{"isTrackOccupancySel", 0, "isTrackOccupancySel"};
   Configurable<int> MinOccupancy{"MinOccupancy", 0, "MinOccupancy"};
   Configurable<int> MaxOccupancy{"MaxOccupancy", 500, "MaxOccupancy"};
-  Configurable<bool> isCollInStandardTimeRange{"isCollInStandardTimeRange", 1, "To remove collisions in +-10 micros time range"};
-  Configurable<bool> isCollInNarrowTimeRange{"isCollInNarrowTimeRange", 0, "To remove collisions in +-4 micros time range"};
+  Configurable<bool> isFT0OccupancySel{"isFT0OccupancySel", 0, "isFT0OccupancySel"};
+  Configurable<int> MinOccupancyFT0{"MinOccupancyFT0", 0, "MinOccupancyFT0"};
+  Configurable<int> MaxOccupancyFT0{"MaxOccupancyFT0", 5000, "MaxOccupancyFT0"};
+  Configurable<bool> isNoCollInStandardTimeRange{"isNoCollInStandardTimeRange", 1, "To remove collisions in +-10 micros time range"};
+  Configurable<bool> isNoCollInNarrowTimeRange{"isNoCollInNarrowTimeRange", 0, "To remove collisions in +-2 micros time range"};
+  Configurable<bool> isNoCollInRofStandard{"isNoCollInRofStandard", 0, "To remove collisions in the same ITS ROF and with a multiplicity above a certain threshold"};
+  Configurable<bool> isNoTVXinTRD{"isNoTVXinTRD", 0, "To remove collisions with trigger in TRD"};
 
   Configurable<float> MinPt{"MinPt", 0.6, "Min pt of cascade"};
   Configurable<float> MaxPt{"MaxPt", 10, "Max pt of cascade"};
@@ -213,21 +219,44 @@ struct cascadeFlow {
 
     // occupancy cut
     int occupancy = collision.trackOccupancyInTimeRange();
-    if (occupancy < MinOccupancy || occupancy > MaxOccupancy) {
+    if (isTrackOccupancySel && (occupancy < MinOccupancy || occupancy > MaxOccupancy)) {
       return false;
     }
+    // occupancy cut based on FT0C
+    int occupancyFT0 = collision.ft0cOccupancyInTimeRange();
+    if (isFT0OccupancySel && (occupancyFT0 < MinOccupancyFT0 || occupancyFT0 > MaxOccupancyFT0)) {
+      return false;
+    }
+
     if (isFillHisto)
       histos.fill(HIST("hNEvents"), 5.5);
 
-    if (isCollInStandardTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    // time-based event selection
+    if (isNoCollInStandardTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return false;
+    }
+    if (isNoCollInNarrowTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
       return false;
     }
 
-    if (isCollInNarrowTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
-      return false;
-    }
     if (isFillHisto)
       histos.fill(HIST("hNEvents"), 6.5);
+
+    // In-ROF event selection
+    if (isNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      return false;
+    }
+
+    if (isFillHisto)
+      histos.fill(HIST("hNEvents"), 7.5);
+
+    // TVX in TRD
+    //  if (isNoTVXinTRD && collision.alias_bit(kTVXinTRD)){
+    //   return false;
+    //  }
+
+    if (isFillHisto)
+      histos.fill(HIST("hNEvents"), 8.5);
 
     if (isFillHisto) {
       histos.fill(HIST("hEventNchCorrelation"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
@@ -337,7 +366,21 @@ struct cascadeFlow {
       cosThetaStarLambda[i] = boostedLambda.Pz() / boostedLambda.P();
     }
 
+    // time-based event selection
+    bool isNoCollInTimeRangeStd = 0;
+    if (coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
+      isNoCollInTimeRangeStd = 1;
+    // IN-ROF pile-up rejection
+    bool isNoCollInRofStd = 0;
+    if (coll.selection_bit(o2::aod::evsel::kNoCollInRofStandard))
+      isNoCollInRofStd = 1;
+    // TVX in TRD
+    // bool isTVXinTRD = 0;
+    //    if (coll.alias_bit(kTVXinTRD)) isTVXinTRD = 1;
+
     analysisSample(coll.centFT0C(),
+                   isNoCollInTimeRangeStd,
+                   isNoCollInRofStd,
                    casc.sign(),
                    casc.pt(),
                    casc.eta(),
@@ -365,7 +408,7 @@ struct cascadeFlow {
     const AxisSpec ptAxis{static_cast<int>((MaxPt - MinPt) / 0.2), MinPt, MaxPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec v2Axis{200, -1., 1., "#it{v}_{2}"};
     const AxisSpec CentAxis{18, 0., 90., "FT0C centrality percentile"};
-    TString hNEventsLabels[8] = {"All", "sel8", "z vrtx", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "trackOccupancyInTimeRange", "kNoCollInTimeRange", "kIsGoodEventEP"};
+    TString hNEventsLabels[10] = {"All", "sel8", "z vrtx", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "trackOccupancyInTimeRange", "kNoCollInTimeRange", "kNoCollInROF", "kTVXinTRD", "kIsGoodEventEP"};
     TString hNEventsLabelsMC[6] = {"All", "z vtx", ">=1RecoColl", "1Reco", "2Reco", "EvSelected"};
     TString hNCascLabelsMC[8] = {"All Xi", "all Omega", "Xi: has MC coll", "Om: has MC coll", "Xi: isPrimary", "Om: is Primary", "Xi: |eta|<0.8", "Om: |eta| < 0.8"};
 
@@ -376,7 +419,7 @@ struct cascadeFlow {
     resolution.add("QVectorsNormT0CTPCC", "QVectorsNormT0CTPCC", HistType::kTH2F, {axisQVsNorm, CentAxis});
     resolution.add("QVectorsNormTPCAC", "QVectorsNormTPCCB", HistType::kTH2F, {axisQVsNorm, CentAxis});
 
-    histos.add("hNEvents", "hNEvents", {HistType::kTH1F, {{8, 0.f, 8.f}}});
+    histos.add("hNEvents", "hNEvents", {HistType::kTH1F, {{10, 0.f, 10.f}}});
     for (Int_t n = 1; n <= histos.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
       histos.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
     }
@@ -398,17 +441,21 @@ struct cascadeFlow {
     histos.add("hCandidate", "hCandidate", HistType::kTH1F, {{22, -0.5, 21.5}});
     histos.add("hCascadeSignal", "hCascadeSignal", HistType::kTH1F, {{6, -0.5, 5.5}});
     histos.add("hCascade", "hCascade", HistType::kTH1F, {{6, -0.5, 5.5}});
-    histos.add("hXiPtvsCent", "hXiPtvsCent", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
-    histos.add("hOmegaPtvsCent", "hOmegaPtvsCent", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
+    histos.add("hXiPtvsCent", "hXiPtvsCent", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histos.add("hXiPtvsCentEta08", "hXiPtvsCentEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histos.add("hXiPtvsCentY05", "hXiPtvsCentY05", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histos.add("hOmegaPtvsCent", "hOmegaPtvsCent", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histos.add("hOmegaPtvsCentEta08", "hOmegaPtvsCentEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histos.add("hOmegaPtvsCentY05", "hOmegaPtvsCentY05", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
     histos.add("hCascadePhi", "hCascadePhi", HistType::kTH1F, {{100, 0, 2 * TMath::Pi()}});
     histos.add("hcascminuspsiT0C", "hcascminuspsiT0C", HistType::kTH1F, {{100, 0, TMath::Pi()}});
     histos.add("hv2CEPvsFT0C", "hv2CEPvsFT0C", HistType::kTH2F, {CentAxis, {100, -1, 1}});
     histos.add("hv2CEPvsv2CSP", "hv2CEPvsV2CSP", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
 
-    histosMCGen.add("h2DGenXiEta08", "h2DGenXiEta08", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
-    histosMCGen.add("h2DGenOmegaEta08", "h2DGenOmegaEta08", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
-    histosMCGen.add("h2DGenXiY05", "h2DGenXiY05", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
-    histosMCGen.add("h2DGenOmegaY05", "h2DGenOmegaY05", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
+    histosMCGen.add("h2DGenXiEta08", "h2DGenXiEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histosMCGen.add("h2DGenOmegaEta08", "h2DGenOmegaEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histosMCGen.add("h2DGenXiY05", "h2DGenXiY05", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histosMCGen.add("h2DGenOmegaY05", "h2DGenOmegaY05", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
     histosMCGen.add("hGenXiY", "hGenXiY", HistType::kTH1F, {{100, -1, 1}});
     histosMCGen.add("hGenOmegaY", "hGenOmegaY", HistType::kTH1F, {{100, -1, 1}});
     histosMCGen.add("hZvertexGen", "hZvertexGen", HistType::kTH1F, {{100, -20, 20}});
@@ -544,7 +591,7 @@ struct cascadeFlow {
     if (isGoodEventEP && !coll.triggereventep()) {
       return;
     }
-    histos.fill(HIST("hNEvents"), 7.5);
+    histos.fill(HIST("hNEvents"), 9.5);
     histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
     histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksPVeta1());
     histos.fill(HIST("hEventGlobalTracksVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksGlobal());
@@ -669,7 +716,7 @@ struct cascadeFlow {
       }
     }
 
-    histos.fill(HIST("hNEvents"), 7.5);
+    histos.fill(HIST("hNEvents"), 9.5);
     histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
     histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksPVeta1());
     histos.fill(HIST("hEventGlobalTracksVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksGlobal());
@@ -790,7 +837,7 @@ struct cascadeFlow {
       return;
     }
 
-    histos.fill(HIST("hNEvents"), 7.5);
+    histos.fill(HIST("hNEvents"), 9.5);
     histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
     histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksPVeta1());
     histos.fill(HIST("hEventGlobalTracksVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksGlobal());
@@ -813,11 +860,22 @@ struct cascadeFlow {
         pdgCode = 0;
       }
 
+      // rapidity definition
+      float XiY = RecoDecay::y(std::array{casc.px(), casc.py(), casc.pz()}, constants::physics::MassXiMinus);
+      float OmegaY = RecoDecay::y(std::array{casc.px(), casc.py(), casc.pz()}, constants::physics::MassOmegaMinus);
       // true reco cascades before applying any selection
       if (std::abs(pdgCode) == 3312 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 211) {
         histos.fill(HIST("hXiPtvsCent"), coll.centFT0C(), casc.pt());
+        if (std::abs(casc.eta()) < 0.8)
+          histos.fill(HIST("hXiPtvsCentEta08"), coll.centFT0C(), casc.pt());
+        if (std::abs(XiY) < 0.5)
+          histos.fill(HIST("hXiPtvsCentY05"), coll.centFT0C(), casc.pt());
       } else if (std::abs(pdgCode) == 3334 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 321) {
         histos.fill(HIST("hOmegaPtvsCent"), coll.centFT0C(), casc.pt());
+        if (std::abs(casc.eta()) < 0.8)
+          histos.fill(HIST("hOmegaPtvsCentEta08"), coll.centFT0C(), casc.pt());
+        if (std::abs(OmegaY) < 0.5)
+          histos.fill(HIST("hOmegaPtvsCentY05"), coll.centFT0C(), casc.pt());
       }
 
       /// Add some minimal cuts for single track variables (min number of TPC clusters)
@@ -916,7 +974,6 @@ struct cascadeFlow {
       histosMCGen.fill(HIST("hNEventsMC"), 4.5);
 
     int biggestNContribs = -1;
-    int bestCollisionIndex = -1;
     float centrality = 100.5f;
     int nCollisions = 0;
     for (auto const& coll : collisions) {
@@ -925,7 +982,6 @@ struct cascadeFlow {
       }
       if (biggestNContribs < coll.multPVTotalContributors()) {
         biggestNContribs = coll.multPVTotalContributors();
-        bestCollisionIndex = coll.globalIndex();
         centrality = coll.centFT0C();
       }
       nCollisions++;

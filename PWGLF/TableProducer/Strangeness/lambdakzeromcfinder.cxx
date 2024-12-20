@@ -24,10 +24,18 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
-#include <Math/Vector4D.h>
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <vector>
+
+#include "Math/Vector4D.h"
+#include <TFile.h>
+#include <TLorentzVector.h>
+#include <TH1F.h>
+#include <TH2F.h>
+#include <TProfile.h>
+#include <TPDGCode.h>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -49,14 +57,6 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
-
-#include <TFile.h>
-#include <TLorentzVector.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -351,7 +351,7 @@ struct lambdakzeromcfinder {
         continue; // skip particles without decay mothers
       for (auto& posMotherParticle : posParticle.mothers_as<aod::McParticles>()) {
         // determine if mother particle satisfies any condition curently being searched for
-        for (int ipdg = 0; ipdg < searchedV0PDG.size(); ipdg++)
+        for (std::size_t ipdg = 0; ipdg < searchedV0PDG.size(); ipdg++)
           if (searchedV0PDG[ipdg] == posMotherParticle.pdgCode() && fabs(posMotherParticle.y()) < yPreFilter) {
             v0pdgIndex = ipdg; // index mapping to desired V0 species
             motherIndex = posMotherParticle.globalIndex();
