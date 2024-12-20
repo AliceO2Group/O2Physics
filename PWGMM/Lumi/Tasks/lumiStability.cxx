@@ -11,7 +11,7 @@
 ///
 /// \brief This task is an empty skeleton that fills a simple eta histogram.
 ///        it is meant to be a blank page for further developments.
-/// \author everyone
+/// \author josuem@cern.ch
 
 #include <utility>
 #include <map>
@@ -83,6 +83,7 @@ struct lumiStabilityTask {
     const AxisSpec axisTimeFDD{1000, -20, 100};
     const AxisSpec axisCountsTime{2, -0.5, 1.5};
     const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
+    const AxisSpec axisTimeRate{1440, 0., 86400, ""}; // t in seconds. Histo for 24 hrs. Each bin contain 1 min.
 
     histos.add("hBcA", "BC pattern A; BC ; It is present", kTH1F, {axisTriggger});
     histos.add("hBcC", "BC pattern C; BC ; It is present", kTH1F, {axisTriggger});
@@ -152,6 +153,7 @@ struct lumiStabilityTask {
     histos.add("FDD/hInvTimeCvsBC", "Invalid Time C vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
     histos.add("FDD/hValidTimevsBC", "Valid Time vs BC id;BC in FT0;valid time counts", kTH1F, {axisTriggger});
     histos.add("FDD/hInvTimevsBC", "Invalid Time vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
+    histos.add("FDD/hTimeForRate", "Counts by time in FDD;t (in seconds) in FDD; counts", kTH1F, {axisTimeRate});
 
     histos.add("FT0/hCounts", "0 FT0Count - 1 FT0VertexCount - 2 FT0PPVertexCount - 3 FT0PPBothSidesCount; Number; counts", kTH1F, {axisCounts});
     histos.add("FT0/bcVertexTrigger", "vertex trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
@@ -180,6 +182,7 @@ struct lumiStabilityTask {
     histos.add("FT0/hInvTimeCvsBC", "Invalid Time C vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
     histos.add("FT0/hValidTimevsBC", "Valid Time vs BC id;BC in FT0;valid time counts", kTH1F, {axisTriggger});
     histos.add("FT0/hInvTimevsBC", "Invalid Time vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
+    histos.add("FT0/hTimeForRate", "Counts by time in FDD;t (in seconds) in FDD; counts", kTH1F, {axisTimeRate});
 
     histos.add("FV0/hCounts", "0 CountCentralFV0 - 1 CountPFPCentralFV0 - 2 CountPFPOutInFV0 - 3 CountPPCentralFV0 - 4 CountPPOutInFV0; Number; counts", kTH1F, {axisV0Counts});
     histos.add("FV0/bcOutTrigger", "Out trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
@@ -220,14 +223,21 @@ struct lumiStabilityTask {
   void processMain(aod::FDDs const& fdds, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::BCsWithTimestamps const& bcs)
   {
     int executionCounter = 0;
-    // uint32_t nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023
+    uint32_t nOrbitsPerTF = 0; // 128 in 2022, 32 in 2023
+    if (is2022Data) {
+      nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023
+    } else {
+      nOrbitsPerTF = 32; // 128 in 2022, 32 in 2023
+    }
     int runNumber = bcs.iteratorAt(0).runNumber();
+    int64_t tsSOR;
+    int64_t tsEOR;
     // std::string histName = "hOrbitFDDVertexCoinc_" + std::to_string(runNumber);
     if (runNumber != lastRunNumber && executionCounter < 1) {
+      tsSOR = 0;
+      tsEOR = 1;
       lastRunNumber = runNumber; // do it only once
       executionCounter++;
-      // int64_t tsSOR = 0;
-      // int64_t tsEOR = 1;
 
       if (runNumber >= 500000) { // access CCDB for data or anchored MC only
         int64_t ts = bcs.iteratorAt(0).timestamp();
@@ -256,7 +266,7 @@ struct lumiStabilityTask {
           }
         }
 
-        /*EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
+        EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
         // access orbit-reset timestamp
         auto ctpx = ccdb->getForTimeStamp<std::vector<Long64_t>>("CTP/Calib/OrbitReset", ts);
         int64_t tsOrbitReset = (*ctpx)[0]; // us
@@ -281,7 +291,7 @@ struct lumiStabilityTask {
         // duration of TF in bcs
         nBCsPerTF = nOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
         LOGP(info, "tsOrbitReset={} us, SOR = {} ms, EOR = {} ms, orbitSOR = {}, nBCsPerTF = {}", tsOrbitReset, tsSOR, tsEOR, orbitSOR, nBCsPerTF);
-        std::cout << "<<<<<<<<<<<<<<<<<<<<<<<<< Orbits per second: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << nOrbits << std::endl;*/
+        // std::cout << "<<<<<<<<<<<<<<<<<<<<<<<<< Orbits per second: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << nOrbits << std::endl;
       }
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
@@ -293,6 +303,7 @@ struct lumiStabilityTask {
       histos.add("hOrbitFT0vertex", "", kTH1F, {axisOrbits});
       histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});*/
     }
+    // std::cout << "****************** tsSOR: " << (tsSOR) * 1.e-3 << " ************************* " << std::endl;
 
     for (auto const& fdd : fdds) {
       auto bc = fdd.bc_as<BCsWithTimestamps>();
@@ -330,6 +341,10 @@ struct lumiStabilityTask {
         histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
         histos.fill(HIST("FDD/hCounts"), 1);
         histos.fill(HIST("hOrbitFDDVertex"), orbit - minOrbit);
+        // std::cout << "****************** timestamp - tsSOR: " << (bc.timestamp() - tsSOR) * 1000 << " ************************* " << std::endl;
+        // std::cout << "****************** timestamp: " << (bc.timestamp()) * 1000 << " ************************* " << std::endl; //1660925892880000
+        // std::cout << "****************** tsSOR: " << (tsSOR) * 1000 << " ************************* " << std::endl;
+        histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
 
         int deltaIndex = 0; // backward move counts
         int deltaBC = 0;    // current difference wrt globalBC
@@ -553,6 +568,7 @@ struct lumiStabilityTask {
       if (vertex) {
         histos.fill(HIST("FT0/bcVertexTrigger"), localBC);
         histos.fill(HIST("hOrbitFT0vertex"), orbit - minOrbit);
+        histos.fill(HIST("FT0/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
 
         if (bcPatternA[localBC]) {
           histos.fill(HIST("FT0/timeACbcA"), ft0.timeA(), ft0.timeC());
