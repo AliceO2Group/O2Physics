@@ -72,8 +72,7 @@ template <
   typename HfMcCollIds,
   typename HfMcRCollIds,
   typename HfPBases,
-  typename HfPIds
->
+  typename HfPIds>
 struct ProducesHfDerivedData : o2::framework::ProducesGroup {
   // Candidates
   o2::framework::Produces<HfBases> rowCandidateBase;

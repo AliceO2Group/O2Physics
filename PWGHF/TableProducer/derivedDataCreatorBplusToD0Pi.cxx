@@ -52,8 +52,8 @@ struct HfDerivedDataCreatorBplusToD0Pi {
     o2::aod::HfBplusMcCollIds,
     o2::aod::HfBplusMcRCollIds,
     o2::aod::HfBplusPBases,
-    o2::aod::HfBplusPIds
-  > rowsCommon;
+    o2::aod::HfBplusPIds>
+    rowsCommon;
   // Candidates
   Produces<o2::aod::HfBplusPars> rowCandidatePar;
   Produces<o2::aod::HfBplusParD0s> rowCandidateParD0;

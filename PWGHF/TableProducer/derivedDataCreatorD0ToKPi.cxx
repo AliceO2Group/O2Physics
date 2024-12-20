@@ -52,8 +52,8 @@ struct HfDerivedDataCreatorD0ToKPi {
     o2::aod::HfD0McCollIds,
     o2::aod::HfD0McRCollIds,
     o2::aod::HfD0PBases,
-    o2::aod::HfD0PIds
-  > rowsCommon;
+    o2::aod::HfD0PIds>
+    rowsCommon;
   // Candidates
   Produces<o2::aod::HfD0Pars> rowCandidatePar;
   Produces<o2::aod::HfD0ParEs> rowCandidateParE;
