@@ -250,6 +250,24 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisionsWithXsection, "produces derived MC collision table with cross section information", false);
 
+  void processTracksRun2(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>::iterator const& track, aod::Collisions const&) //aod::TracksDCACov,
+  {
+    jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), dcaZMax));
+    float sigmaDCAXYZ2;
+    float dcaXYZ = getDcaXYZ(track, &sigmaDCAXYZ2);
+    float dcaX = -99.0;
+    float dcaY = -99.0;
+    if (track.collisionId() >= 0) {
+      auto const& collision = track.collision_as<aod::Collisions>();
+    }
+
+    jTracksExtraTable(dcaX, dcaY, track.dcaZ(), track.dcaXY(), dcaXYZ, std::sqrt(1.), std::sqrt(1.), std::sqrt(sigmaDCAXYZ2), track.sigma1Pt()); //dummy values - consider improving
+
+    jTracksParentIndexTable(track.globalIndex());
+    trackCollisionMapping[{track.globalIndex(), track.collisionId()}] = jTracksTable.lastIndex();
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processTracksRun2, "produces derived track table for Run2 AO2Ds", true);
+
   void processTracks(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::TrackSelectionExtension>::iterator const& track, aod::Collisions const&)
   {
     products.jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), dcaZMax));

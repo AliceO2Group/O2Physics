@@ -79,6 +79,11 @@ void TrackSelection::SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossed
   mMinNCrossedRowsOverFindableClustersTPC = minNCrossedRowsOverFindableClustersTPC;
   LOG(info) << "Track selection, set min N crossed rows over findable clusters TPC: " << mMinNCrossedRowsOverFindableClustersTPC;
 }
+/*void TrackSelection::SetMaxTPCFractionSharedCls(float maxTPCFractionSharedCls)
+{
+  mMaxTPCFractionSharedCls = maxTPCFractionSharedCls;
+  LOG(info) << "Track selection, set max fraction of shared clusters TPC: " << mMinNCrossedRowsOverFindableClustersTPC;
+}*/ //CHANGE
 void TrackSelection::SetMinNClustersITS(int minNClustersITS)
 {
   mMinNClustersITS = minNClustersITS;

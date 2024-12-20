@@ -121,11 +121,13 @@ TrackSelection getGlobalTrackSelectionRun3HF()
 TrackSelection getJEGlobalTrackSelectionRun2()
 {
   TrackSelection selectedTracks = getGlobalTrackSelection();
-  selectedTracks.SetPtRange(0.15f, 1e15f);
-  selectedTracks.SetRequireGoldenChi2(false);
+  selectedTracks.SetPtRange(0.15f, 1000.f);
   selectedTracks.SetMaxDcaXYPtDep([](float /*pt*/) { return 1e+10; });
   selectedTracks.SetEtaRange(-0.9f, 0.9f);
   selectedTracks.SetMaxDcaXY(2.4f);
   selectedTracks.SetMaxDcaZ(3.2f);
+  selectedTracks.SetRequireHitsInITSLayers(0, {0, 1}); // no minimum required number of hits in any SPD layer 
+  //selectedTracks.SetMaxTPCFractionSharedCls(0.4f); //CHANGE this cut isn't functional yet
+  
   return selectedTracks;
 }
