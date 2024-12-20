@@ -61,6 +61,12 @@ struct UPCAnalysis {
   Configurable<float> nSigmaTPC_cut{"nsigmatpccut", 3, "TPC cut"};
   Configurable<float> nSigmaTOF_cut{"nsigmatofcut", 3, "TOF cut"};
   Configurable<bool> StrictEventSelection{"StrictEventSelection", true, "Event Selection"};
+
+  Configurable<int> nBins_pT{"nBins_pT", 1000, "Number of bins for pT"};
+  Configurable<int> nBins_IM{"nBins_IM", 1000, "Number of bins for Invariant Mass"};
+  Configurable<int> nBins_y{"nBins_y", 1000, "Number of bins for Rapidity"};
+  Configurable<int> nBins_Phi{"nBins_phi", 360, "Number of bins for Phi"};
+  Configurable<int> nBins_CosTheta{"nBins_cosTheta", 360, "Number of bins for cos Theta"};
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
   // Begin of Init Function-----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -82,15 +88,15 @@ struct UPCAnalysis {
     histos.add("tofNSigmaPi_WTS_PID_Pi", "TOF nSigma Pion with track selection and PID Selection of Pi; Entries", kTH1F, {{100, -15, 15}});
 
     // Track Transverse Momentum
-    histos.add("pT_track_WOTS", "pT without track selection; pT [GeV/c]; Events", kTH1F, {{1000, 0, 2}});
-    histos.add("pT_track_WTS", "pT with track selection; pT [GeV/c]; Events", kTH1F, {{1000, 0, 2}});
-    histos.add("pT_track_WTS_PID_Pi", "pT with track selection and PID selection of Pi; pT [GeV/c]; Events", kTH1F, {{1000, 0, 2}});
+    histos.add("pT_track_WOTS", "pT without track selection; pT [GeV/c]; Events", kTH1F, {{nBins_pT, 0, 2}});
+    histos.add("pT_track_WTS", "pT with track selection; pT [GeV/c]; Events", kTH1F, {{nBins_pT, 0, 2}});
+    histos.add("pT_track_WTS_PID_Pi", "pT with track selection and PID selection of Pi; pT [GeV/c]; Events", kTH1F, {{nBins_pT, 0, 2}});
 
     // Zero charge Event Transverse Momentum
-    histos.add("pT_event_0charge_WTS_PID_Pi", "Event pT in 0 Charge Events With Track Selection and PID Selection of Pi; pT [GeV/c]; Counts", kTH1F, {{1000, 0, 2}});
+    histos.add("pT_event_0charge_WTS_PID_Pi", "Event pT in 0 Charge Events With Track Selection and PID Selection of Pi; pT [GeV/c]; Counts", kTH1F, {{nBins_pT, 0, 2}});
 
     // Non Zero charge Event Transverse Momentum
-    histos.add("pT_event_non0charge_WTS_PID_Pi", "Event pT in Non 0 Charge Events With Track Selection and PID Selection of Pi; pT [GeV/c]; Counts", kTH1F, {{100, 0, 2}});
+    histos.add("pT_event_non0charge_WTS_PID_Pi", "Event pT in Non 0 Charge Events With Track Selection and PID Selection of Pi; pT [GeV/c]; Counts", kTH1F, {{nBins_pT, 0, 2}});
 
     // Rapidity of 0 charge Events
     histos.add("rapidity_event_0charge_WTS_PID_Pi_domainA", "Rapidity of Events With Track Selection and PID Selection of Pi for p_{T} < 0.15 GeV/c; y; Counts", kTH1F, {{1000, -2.5, 2.5}});
@@ -98,19 +104,19 @@ struct UPCAnalysis {
     histos.add("rapidity_event_0charge_WTS_PID_Pi_domainC", "Rapidity of Events With Track Selection and PID Selection of Pi for p_{T} > 0.80 GeV/c; y; Counts", kTH1F, {{1000, -2.5, 2.5}});
 
     // Rapidity of non 0 charge Events
-    histos.add("rapidity_event_non0charge_WTS_PID_Pi_domainA", "Rapidity of Events With Track Selection and PID Selection of Pi for p_{T} < 0.15 GeV/c; y; Counts", kTH1F, {{1000, -2.5, 2.5}});
-    histos.add("rapidity_event_non0charge_WTS_PID_Pi_domainB", "Rapidity of Events With Track Selection and PID Selection of Pi for 0.15< p_{T} < 0.80 GeV/c$; y; Counts", kTH1F, {{1000, -2.5, 2.5}});
-    histos.add("rapidity_event_non0charge_WTS_PID_Pi_domainC", "Rapidity of Events With Track Selection and PID Selection of Pi for p_{T} > 0.80 GeV/c; y; Counts", kTH1F, {{1000, -2.5, 2.5}});
+    histos.add("rapidity_event_non0charge_WTS_PID_Pi_domainA", "Rapidity of Events With Track Selection and PID Selection of Pi for p_{T} < 0.15 GeV/c; y; Counts", kTH1F, {{nBins_y, -2.5, 2.5}});
+    histos.add("rapidity_event_non0charge_WTS_PID_Pi_domainB", "Rapidity of Events With Track Selection and PID Selection of Pi for 0.15< p_{T} < 0.80 GeV/c$; y; Counts", kTH1F, {{nBins_y, -2.5, 2.5}});
+    histos.add("rapidity_event_non0charge_WTS_PID_Pi_domainC", "Rapidity of Events With Track Selection and PID Selection of Pi for p_{T} > 0.80 GeV/c; y; Counts", kTH1F, {{nBins_y, -2.5, 2.5}});
 
     // Invariant Mass of 0 charge events
-    histos.add("invMass_event_0charge_WTS_PID_Pi_domainA", "Invariant Mass Distribution of 0 charge Events with PID Selection of Pi for p_{T} < 0.15 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{1000, 0.8, 2.5}});       // pT < 0.15GeV
-    histos.add("invMass_event_0charge_WTS_PID_Pi_domainB", "Invariant Mass Distribution of 0 charge Events with PID Selection of Pi for 0.15< p_{T} < 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{1000, 0.8, 2.5}}); // 0.15GeV < pT < 0.8GeV
-    histos.add("invMass_event_0charge_WTS_PID_Pi_domainC", "Invariant Mass Distribution of 0 charge Events with PID Selection of Pi for p_{T} > 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{1000, 0.8, 2.5}});       // 0.8GeV < pT
+    histos.add("invMass_event_0charge_WTS_PID_Pi_domainA", "Invariant Mass Distribution of 0 charge Events with PID Selection of Pi for p_{T} < 0.15 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBins_IM, 0.8, 2.5}});       // pT < 0.15GeV
+    histos.add("invMass_event_0charge_WTS_PID_Pi_domainB", "Invariant Mass Distribution of 0 charge Events with PID Selection of Pi for 0.15< p_{T} < 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBins_IM, 0.8, 2.5}}); // 0.15GeV < pT < 0.8GeV
+    histos.add("invMass_event_0charge_WTS_PID_Pi_domainC", "Invariant Mass Distribution of 0 charge Events with PID Selection of Pi for p_{T} > 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBins_IM, 0.8, 2.5}});       // 0.8GeV < pT
 
     // Invariant mass of non 0 charge events
-    histos.add("invMass_event_non0charge_WTS_PID_Pi_domainA", "Invariant Mass Distribution of non 0 charge Events with PID Selection of Pi for p_{T} < 0.15 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{1000, 0.8, 2.5}});       // pT < 0.15GeV
-    histos.add("invMass_event_non0charge_WTS_PID_Pi_domainB", "Invariant Mass Distribution of non 0 charge Events with PID Selection of Pi for 0.15< p_{T} < 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{1000, 0.8, 2.5}}); // 0.15GeV < pT < 0.8GeV
-    histos.add("invMass_event_non0charge_WTS_PID_Pi_domainC", "Invariant Mass Distribution of non 0 charge Events with PID Selection of Pi for p_{T} > 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{1000, 0.8, 2.5}});       // 0.8GeV < pT
+    histos.add("invMass_event_non0charge_WTS_PID_Pi_domainA", "Invariant Mass Distribution of non 0 charge Events with PID Selection of Pi for p_{T} < 0.15 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBins_IM, 0.8, 2.5}});       // pT < 0.15GeV
+    histos.add("invMass_event_non0charge_WTS_PID_Pi_domainB", "Invariant Mass Distribution of non 0 charge Events with PID Selection of Pi for 0.15< p_{T} < 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBins_IM, 0.8, 2.5}}); // 0.15GeV < pT < 0.8GeV
+    histos.add("invMass_event_non0charge_WTS_PID_Pi_domainC", "Invariant Mass Distribution of non 0 charge Events with PID Selection of Pi for p_{T} > 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBins_IM, 0.8, 2.5}});       // 0.8GeV < pT
 
     // tpc signal
     histos.add("tpcSignal", "TPC dEdx vs p; p [GeV/c]; dEdx [a.u.]", kTH2F, {{500, 0, 10}, {5000, 0.0, 5000.0}});
@@ -128,10 +134,10 @@ struct UPCAnalysis {
     histos.add("V0A", "V0A amplitude", kTH1F, {{1000, 0.0, 100}});
 
     // Collin Soper Theta and Phi
-    histos.add("CS_phi_pair_1", "#phi Distribution; #phi; Entries", kTH1F, {{200, -3.2, 3.2}});
-    histos.add("CS_phi_pair_2", "#phi Distribution; #phi; Entries", kTH1F, {{200, -3.2, 3.2}});
-    histos.add("CS_costheta_pair_1", "#theta Distribution;cos(#theta); Entries", kTH1F, {{200, -1, 1}});
-    histos.add("CS_costheta_pair_2", "#theta Distribution;cos(#theta); Entries", kTH1F, {{200, -1, 1}});
+    histos.add("CS_phi_pair_1", "#phi Distribution; #phi; Entries", kTH1F, {{nBins_Phi, -3.2, 3.2}});
+    histos.add("CS_phi_pair_2", "#phi Distribution; #phi; Entries", kTH1F, {{nBins_Phi, -3.2, 3.2}});
+    histos.add("CS_costheta_pair_1", "#theta Distribution;cos(#theta); Entries", kTH1F, {{nBins_CosTheta, -1, 1}});
+    histos.add("CS_costheta_pair_2", "#theta Distribution;cos(#theta); Entries", kTH1F, {{nBins_CosTheta, -1, 1}});
 
   } // End of init function
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
