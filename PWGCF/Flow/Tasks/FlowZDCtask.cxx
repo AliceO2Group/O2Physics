@@ -9,6 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+// o2-analysis-cf-flow-zdc-task --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-track-propagation --aod-file AO2D.root --configuration json://configuration_run3.json |  o2-analysis-timestamp --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-event-selection --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-trackselection --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-centrality-table --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-multiplicity-table --aod-file AO2D.root --configuration json://configuration_run3.json -b
+
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <vector>
