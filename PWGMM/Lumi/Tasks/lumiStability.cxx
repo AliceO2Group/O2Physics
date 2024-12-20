@@ -272,7 +272,6 @@ struct LumiStabilityTask {
     int runNumber = bcs.iteratorAt(0).runNumber();
     int64_t tsSOR;
     int64_t tsEOR;
-    // std::string histName = "hOrbitFDDVertexCoinc_" + std::to_string(runNumber);
     if (runNumber != lastRunNumber && executionCounter < 1) {
       tsSOR = 0;
       tsEOR = 1;
@@ -358,7 +357,6 @@ struct LumiStabilityTask {
       // histos.add("hOrbitFT0vertex", "", kTH1F, {axisOrbits});
       // histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});
     }
-    // std::cout << "****************** tsSOR: " << (tsSOR) * 1.e-3 << " ************************* " << std::endl;
 
     for (auto const& bc : bcs) {
       if (bc.timestamp() == 0) {
@@ -466,9 +464,6 @@ struct LumiStabilityTask {
         histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
         histos.fill(HIST("FDD/hCounts"), 1);
         histos.fill(HIST("hOrbitFDDVertex"), orbit - minOrbit);
-        // std::cout << "****************** timestamp - tsSOR: " << (bc.timestamp() - tsSOR) * 1000 << " ************************* " << std::endl;
-        // std::cout << "****************** timestamp: " << (bc.timestamp()) * 1000 << " ************************* " << std::endl; //1660925892880000
-        // std::cout << "****************** tsSOR: " << (tsSOR) * 1000 << " ************************* " << std::endl;
         histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
 
         if (bcPatternB[localBC]) {
