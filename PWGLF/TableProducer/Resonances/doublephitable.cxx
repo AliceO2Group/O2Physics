@@ -245,7 +245,7 @@ struct doublephitable {
       keepEventDoublePhi = true;
     }
     qaRegistry.fill(HIST("hEventstat"), 0.5);
-    if (keepEventDoublePhi && numberPhi >= 2 && (phiresonance.size() == phiresonanced1.size()) & (phiresonance.size() == phiresonanced2.size())) {
+    if (keepEventDoublePhi && numberPhi >= 2 && (phiresonance.size() == phiresonanced1.size()) && (phiresonance.size() == phiresonanced2.size())) {
       qaRegistry.fill(HIST("hEventstat"), 1.5);
       /////////// Fill collision table///////////////
       redPhiEvents(bc.globalBC(), currentRunNumber, bc.timestamp(), collision.posZ(), collision.numContrib(), Npostrack, Nnegtrack);
