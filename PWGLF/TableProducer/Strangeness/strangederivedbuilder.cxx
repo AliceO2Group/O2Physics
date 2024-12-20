@@ -807,7 +807,10 @@ struct strangederivedbuilder {
   }
   void processZDCSP(soa::Join<aod::Collisions, aod::SPCalibrationTables>::iterator const& collision)
   {
-    StraZDCSP(collision.triggereventsp(), collision.psiZDCA(), collision.psiZDCC());
+    StraZDCSP(collision.triggereventsp(), 
+              collision.psiZDCA(), collision.psiZDCC(), 
+              collision.qxZDCA(), collision.qxZDCC(),
+              collision.qyZDCA(), collision.qyZDCC());
   }
   void processFT0MQVectors(soa::Join<aod::Collisions, aod::QvectorFT0Ms>::iterator const& collision)
   {

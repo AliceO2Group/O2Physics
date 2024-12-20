@@ -229,8 +229,11 @@ DECLARE_SOA_TABLE(StraTPCQVs, "AOD", "STRATPCQVS", //! tpc Qvec
                   qvec::QvecBPosRe, qvec::QvecBPosIm, epcalibrationtable::QTPCR);
 DECLARE_SOA_TABLE(StraFT0CQVsEv, "AOD", "STRAFT0CQVSEv", //! events used to compute t0c Qvec
                   epcalibrationtable::TriggerEventEP);
-DECLARE_SOA_TABLE(StraZDCSP, "AOD", "STRAZDCSP", //! events used to compute the ZDC spectator plane
-                  spcalibrationtable::TriggerEventSP, spcalibrationtable::PsiZDCA, spcalibrationtable::PsiZDCC);
+DECLARE_SOA_TABLE(StraZDCSP, "AOD", "STRAZDCSP", //! ZDC SP information
+                  spcalibrationtable::TriggerEventSP, 
+                  spcalibrationtable::PsiZDCA, spcalibrationtable::PsiZDCC,
+                  spcalibrationtable::QxZDCA, spcalibrationtable::QxZDCC,
+                  spcalibrationtable::QyZDCA, spcalibrationtable::QyZDCC);
 DECLARE_SOA_TABLE(StraStamps_000, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
                   bc::RunNumber, timestamp::Timestamp);
 DECLARE_SOA_TABLE_VERSIONED(StraStamps_001, "AOD", "STRASTAMPS", 1, //! information for ID-ing mag field if needed
