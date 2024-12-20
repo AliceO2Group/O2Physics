@@ -99,6 +99,7 @@ struct HfTaskCorrelationDsHadrons {
                         kAssocTrackNSteps };
 
   using DsHadronPairFull = soa::Join<aod::DsHadronPair, aod::DsHadronRecoInfo, aod::DsHadronGenInfo>;
+  using DsHadronPairWithMl = soa::Join<aod::DsHadronPair, aod::DsHadronRecoInfo, aod::DsHadronMlInfo, aod::TrackRecoInfo>;
   using DsHadronPairFullWithMl = soa::Join<aod::DsHadronPair, aod::DsHadronRecoInfo, aod::DsHadronGenInfo, aod::DsHadronMlInfo, aod::TrackRecoInfo>;
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi, aod::HfCand3ProngMcRec>>; // flagDsFilter applied
   using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;                                                         // flagDsFilter applied
@@ -218,7 +219,7 @@ struct HfTaskCorrelationDsHadrons {
     }
   }
 
-  void processData(DsHadronPairFullWithMl const& pairEntries,
+  void processData(DsHadronPairWithMl const& pairEntries,
                    aod::DsCandRecoInfo const& candidates)
   {
     for (const auto& candidate : candidates) {
@@ -410,7 +411,7 @@ struct HfTaskCorrelationDsHadrons {
   }
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processMcGen, "Process MC Gen mode", false);
 
-  void processDataME(DsHadronPairFullWithMl const& pairEntries)
+  void processDataME(DsHadronPairWithMl const& pairEntries)
   {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
