@@ -44,7 +44,16 @@ using namespace o2::analysis::hf_derived;
 
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorBplusToD0Pi {
-  ProducesHfDerivedData rowsCommon;
+  ProducesHfDerivedData<
+    o2::aod::HfBplusBases,
+    o2::aod::HfBplusCollBases,
+    o2::aod::HfBplusCollIds,
+    o2::aod::HfBplusMcCollBases,
+    o2::aod::HfBplusMcCollIds,
+    o2::aod::HfBplusMcRCollIds,
+    o2::aod::HfBplusPBases,
+    o2::aod::HfBplusPIds
+  > rowsCommon;
   // Candidates
   Produces<o2::aod::HfBplusPars> rowCandidatePar;
   Produces<o2::aod::HfBplusParD0s> rowCandidateParD0;
@@ -60,6 +69,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Configurable<bool> fillCandidatePar{"fillCandidatePar", true, "Fill candidate parameters"};
   Configurable<bool> fillCandidateParD0{"fillCandidateParD0", true, "Fill D0 candidate parameters"};
   Configurable<bool> fillCandidateParE{"fillCandidateParE", true, "Fill candidate extended parameters"};
+  Configurable<bool> fillCandidateSel{"fillCandidateSel", true, "Fill candidate selection flags"};
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
   Configurable<bool> fillCandidateMlD0{"fillCandidateMlD0", true, "Fill D0 candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};

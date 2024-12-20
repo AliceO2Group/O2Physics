@@ -42,7 +42,16 @@ using namespace o2::analysis::hf_derived;
 
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorLcToPKPi {
-  ProducesHfDerivedData rowsCommon;
+  ProducesHfDerivedData<
+    o2::aod::HfLcBases,
+    o2::aod::HfLcCollBases,
+    o2::aod::HfLcCollIds,
+    o2::aod::HfLcMcCollBases,
+    o2::aod::HfLcMcCollIds,
+    o2::aod::HfLcMcRCollIds,
+    o2::aod::HfLcPBases,
+    o2::aod::HfLcPIds
+  > rowsCommon;
   // Candidates
   Produces<o2::aod::HfLcPars> rowCandidatePar;
   Produces<o2::aod::HfLcParEs> rowCandidateParE;

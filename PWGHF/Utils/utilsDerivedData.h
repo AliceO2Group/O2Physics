@@ -64,19 +64,29 @@ struct ConfigurableHfDerivedData : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> fillParticleId{"fillParticleId", true, "Fill original MC indices"};
 };
 
+template <
+  typename HfBases,
+  typename HfCollBases,
+  typename HfCollIds,
+  typename HfMcCollBases,
+  typename HfMcCollIds,
+  typename HfMcRCollIds,
+  typename HfPBases,
+  typename HfPIds
+>
 struct ProducesHfDerivedData : o2::framework::ProducesGroup {
   // Candidates
-  o2::framework::Produces<o2::aod::HfBases> rowCandidateBase;
+  o2::framework::Produces<HfBases> rowCandidateBase;
   // Collisions
-  o2::framework::Produces<o2::aod::HfCollBases> rowCollBase;
-  o2::framework::Produces<o2::aod::HfCollIds> rowCollId;
+  o2::framework::Produces<HfCollBases> rowCollBase;
+  o2::framework::Produces<HfCollIds> rowCollId;
   // MC collisions
-  o2::framework::Produces<o2::aod::HfMcCollBases> rowMcCollBase;
-  o2::framework::Produces<o2::aod::HfMcCollIds> rowMcCollId;
-  o2::framework::Produces<o2::aod::HfMcRCollIds> rowMcRCollId;
+  o2::framework::Produces<HfMcCollBases> rowMcCollBase;
+  o2::framework::Produces<HfMcCollIds> rowMcCollId;
+  o2::framework::Produces<HfMcRCollIds> rowMcRCollId;
   // MC particles
-  o2::framework::Produces<o2::aod::HfPBases> rowParticleBase;
-  o2::framework::Produces<o2::aod::HfPIds> rowParticleId;
+  o2::framework::Produces<HfPBases> rowParticleBase;
+  o2::framework::Produces<HfPIds> rowParticleId;
 
   ConfigurableHfDerivedData const* conf;
   std::map<int, std::vector<int>> matchedCollisions; // indices of derived reconstructed collisions matched to the global indices of MC collisions
@@ -165,7 +175,8 @@ struct ProducesHfDerivedData : o2::framework::ProducesGroup {
       rowMcCollBase(
         mcCollision.posX(),
         mcCollision.posY(),
-        mcCollision.posZ());
+        mcCollision.posZ(),
+        mcCollision.centFT0M());
     }
     if (conf->fillMcCollId.value) {
       rowMcCollId(
