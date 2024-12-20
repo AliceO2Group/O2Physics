@@ -62,11 +62,11 @@ struct UPCAnalysis {
   Configurable<float> nSigmaTOF_cut{"nsigmatofcut", 3, "TOF cut"};
   Configurable<bool> StrictEventSelection{"StrictEventSelection", true, "Event Selection"};
 
-  Configurable<float> nBins_pT{"nBins_pT", 1000, "Number of bins for pT"};
-  Configurable<float> nBins_IM{"nBins_IM", 1000, "Number of bins for Invariant Mass"};
-  Configurable<float> nBins_y{"nBins_y", 1000, "Number of bins for Rapidity"};
-  Configurable<float> nBins_Phi{"nBins_phi", 360, "Number of bins for Phi"};
-  Configurable<float> nBins_CosTheta{"nBins_cosTheta", 360, "Number of bins for cos Theta"};
+  Configurable<int> nBins_pT{"nBins_pT", 1000, "Number of bins for pT"};
+  Configurable<int> nBins_IM{"nBins_IM", 1000, "Number of bins for Invariant Mass"};
+  Configurable<int> nBins_y{"nBins_y", 1000, "Number of bins for Rapidity"};
+  Configurable<int> nBins_Phi{"nBins_phi", 360, "Number of bins for Phi"};
+  Configurable<int> nBins_CosTheta{"nBins_cosTheta", 360, "Number of bins for cos Theta"};
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
   // Begin of Init Function-----------------------------------------------------------------------------------------------------------------------------------------------------
