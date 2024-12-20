@@ -54,7 +54,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using collisionEvSelIt = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator;
-using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
+// using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 using myTracks  =  o2::soa::Filtered<o2::soa::Join<o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi, o2::aod::FullTracks, o2::aod::TrackSelection>>;
 
 
@@ -127,7 +127,7 @@ struct EmcalClusterHadronicCorrectionTask {
   //The matching of clusters and tracks is already centralised in the EMCAL framework.
   //One only needs to apply a filter on matched clusters
   //Here looping over all collisions matched to EMCAL clusters
-  void processMatchedCollisions(collisionEvSelIt const&, selectedClusters const& clusters, o2::aod::EMCALMatchedTracks const& matchedtracks, myTracks const&)
+  void processMatchedCollisions(collisionEvSelIt const&, o2::aod::EMCALClusters const& clusters, o2::aod::EMCALMatchedTracks const& matchedtracks, myTracks const&)
   {
     registry.fill(HIST("h_allcollisions"), 1);
 
