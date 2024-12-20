@@ -110,7 +110,7 @@ struct NeutronProtonCorrZdc {
   template <int side, typename Z>
   void fillZDCHistos(const float centr, const Z& zdc)
   {
-    static constexpr std::string subDir[2] = {"ASide/", "CSide/"};
+    static constexpr std::string SubDir[2] = {"ASide/", "CSide/"};
 
     std::array<std::array<float, 4>, 2> znEnergyResponse = {zdc.energySectorZNA(), zdc.energySectorZNC()};
     std::array<std::array<float, 4>, 2> zpEnergyResponse = {zdc.energySectorZPA(), zdc.energySectorZPC()};
@@ -118,28 +118,28 @@ struct NeutronProtonCorrZdc {
     std::array<float, 2> zpEnergyResponseCommon = {zdc.energyCommonZPA(), zdc.energyCommonZPC()};
 
     // Fill Neutron ZDC historgrams
-    histos.fill(HIST(subDir[side]) + HIST("CentvsZNSector0Signal"), centr, znEnergyResponse[side][0]);
-    histos.fill(HIST(subDir[side]) + HIST("CentvsZNSector1Signal"), centr, znEnergyResponse[side][1]);
-    histos.fill(HIST(subDir[side]) + HIST("CentvsZNSector2Signal"), centr, znEnergyResponse[side][2]);
-    histos.fill(HIST(subDir[side]) + HIST("CentvsZNSector3Signal"), centr, znEnergyResponse[side][3]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZNSector0Signal"), centr, znEnergyResponse[side][0]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZNSector1Signal"), centr, znEnergyResponse[side][1]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZNSector2Signal"), centr, znEnergyResponse[side][2]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZNSector3Signal"), centr, znEnergyResponse[side][3]);
 
     float sumZN = znEnergyResponse[side][0] + znEnergyResponse[side][1] + znEnergyResponse[side][2] + znEnergyResponse[side][3];
 
-    histos.fill(HIST(subDir[side]) + HIST("CentvsZNSignalSum"), centr, sumZN);
-    histos.fill(HIST(subDir[side]) + HIST("CentvsZNSignalCommon"), centr, znEnergyResponseCommon[side]);
-    histos.fill(HIST(subDir[side]) + HIST("CentvsdiffZNSignal"), centr, sumZN - znEnergyResponseCommon[side]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZNSignalSum"), centr, sumZN);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZNSignalCommon"), centr, znEnergyResponseCommon[side]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsdiffZNSignal"), centr, sumZN - znEnergyResponseCommon[side]);
 
     // Fill Proton ZDC histograms
-    histos.fill(HIST(subDir[side]) + HIST("CentvsZPSector0Signal"), centr, zpEnergyResponse[side][0]);
-    histos.fill(HIST(subDir[side]) + HIST("CentvsZPSector1Signal"), centr, zpEnergyResponse[side][1]);
-    histos.fill(HIST(subDir[side]) + HIST("CentvsZPSector2Signal"), centr, zpEnergyResponse[side][2]);
-    histos.fill(HIST(subDir[side]) + HIST("CentvsZPSector3Signal"), centr, zpEnergyResponse[side][3]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZPSector0Signal"), centr, zpEnergyResponse[side][0]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZPSector1Signal"), centr, zpEnergyResponse[side][1]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZPSector2Signal"), centr, zpEnergyResponse[side][2]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZPSector3Signal"), centr, zpEnergyResponse[side][3]);
 
     float sumZP = zpEnergyResponse[side][0] + zpEnergyResponse[side][1] + zpEnergyResponse[side][2] + zpEnergyResponse[side][3];
 
-    histos.fill(HIST(subDir[side]) + HIST("CentvsZPSignalSum"), centr, sumZP);
-    histos.fill(HIST(subDir[side]) + HIST("CentvsZPSignalCommon"), centr, zpEnergyResponseCommon[side]);
-    histos.fill(HIST(subDir[side]) + HIST("CentvsdiffZPSignal"), centr, sumZP - zpEnergyResponseCommon[side]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZPSignalSum"), centr, sumZP);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZPSignalCommon"), centr, zpEnergyResponseCommon[side]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsdiffZPSignal"), centr, sumZP - zpEnergyResponseCommon[side]);
   }
 
   void processRun3(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, CentralitiesRun3>>::iterator const& collision, BCsRun3 const&, aod::Zdcs const&)
