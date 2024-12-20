@@ -263,7 +263,7 @@ struct FlowTask {
 
     if (cfgOutputGroupNUAWeights) {
       groupNUAWeightPtr.resize(cfgGroupSplitRunNumber.value.size() + 1);
-      for (long unsigned int i = 0; i < cfgGroupSplitRunNumber.value.size() + 1; i++) {
+      for (uint i = 0; i < cfgGroupSplitRunNumber.value.size() + 1; i++) {
         GFWWeights* groupweight = nullptr;
         if (i < cfgGroupSplitRunNumber.value.size())
           groupweight = new GFWWeights(Form("groupweight_%d", cfgGroupSplitRunNumber.value[i]));
@@ -764,7 +764,7 @@ struct FlowTask {
 
     int groupNUAIndex = 0;
     if (cfgOutputGroupNUAWeights || cfgAcceptanceGroupUse) {
-      for (long unsigned int i = 0; i < cfgGroupSplitRunNumber.value.size(); i++) {
+      for (uint i = 0; i < cfgGroupSplitRunNumber.value.size(); i++) {
         if (currentRunNumber < cfgGroupSplitRunNumber.value.at(i)) {
           break;
         } else {
