@@ -16,13 +16,19 @@
 using namespace o2;
 using namespace o2::framework;
 
-struct Run2TracksExtraConverter {
-  Produces<aod::Run2TrackExtras_001> Run2TrackExtras_001;
-  void process(aod::Run2TrackExtras_000 const& Run2TrackExtras_000)
+struct Run2BCInfosConverter {
+  Produces<aod::Run2BCInfos_001> Run2BCInfos_001;
+  void process(aod::Run2BCInfos_000 const& Run2BCInfos_000)
   {
 
-    for (const auto& track0 : Run2TrackExtras_000) {
-      Run2TrackExtras_001(track0.itsSignal(), 0);
+    for (const auto& entry : Run2BCInfos_000) {
+      Run2BCInfos_001(entry.eventCuts(),
+                      entry.triggerMaskNext50(), entry.l0TriggerInputMask(),
+                      entry.spdClustersL0(), entry.spdClustersL1(),
+                      entry.spdFiredChipsL0(), entry.spdFiredChipsL1(),
+                      entry.spdFiredFastOrL0(), entry.spdFiredFastOrL1(),
+                      entry.v0TriggerChargeA(), entry.v0TriggerChargeC(),
+                      0, 0);
     }
   }
 };
@@ -30,5 +36,5 @@ struct Run2TracksExtraConverter {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Run2TracksExtraConverter>(cfgc)};
+    adaptAnalysisTask<Run2BCInfosConverter>(cfgc)};
 }

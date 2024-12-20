@@ -94,7 +94,13 @@ o2physics_add_dpl_workflow(trackqa-converter-002
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(run2bcinfos-converter
+                    SOURCES run2bcinfosConverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(run2-tracks-extra-converter
                     SOURCES run2tracksExtraConverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
