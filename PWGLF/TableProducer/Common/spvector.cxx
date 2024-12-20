@@ -140,18 +140,20 @@ struct spvector {
   Configurable<bool> refsys{"refsys", true, "flag to use own reference system"};
   Configurable<bool> followpub{"followpub", true, "flag to use alphaZDC"};
   Configurable<bool> useGainCallib{"useGainCallib", false, "use gain calibration"};
+  Configurable<bool> useCallibvertex{"useCallibvertex", false, "use calibration for vxy"};
   Configurable<bool> useRecentereSp{"useRecentereSp", false, "use Recentering with Sparse or THn"};
   Configurable<bool> useRecenterefineSp{"useRecenterefineSp", false, "use fine Recentering with Sparse or THn"};
   Configurable<bool> useRecenteresqSp{"useRecenteresqSp", false, "use Recenteringsq with Sparse or THn"};
   Configurable<bool> recwitherror{"recwitherror", false, "use Recentering with error"};
   Configurable<bool> recfinewitherror{"recfinewitherror", false, "use Recentering fine with error"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
+  Configurable<std::string> ConfGainPathvxy{"ConfGainPathvxy", "Users/p/prottay/My/Object/swapcoords/PbPbpass4_20112024/recentervert", "Path to gain calibration for vxy"};
   Configurable<std::string> ConfRecentereSp{"ConfRecentereSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recentere"};
-  Configurable<std::string> ConfRecenterecentSp{"ConfRecenterecentSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for cent recentere"};
+  /*Configurable<std::string> ConfRecenterecentSp{"ConfRecenterecentSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for cent recentere"};
   Configurable<std::string> ConfRecenterevxSp{"ConfRecenterevxSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vx recentere"};
   Configurable<std::string> ConfRecenterevySp{"ConfRecenterevySp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vy recentere"};
   Configurable<std::string> ConfRecenterevzSp{"ConfRecenterevzSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vz recentere"};
-  Configurable<std::string> ConfRecenteresqSp{"ConfRecenteresqSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recenteresq"};
+  Configurable<std::string> ConfRecenteresqSp{"ConfRecenteresqSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recenteresq"};*/
   Configurable<std::string> ConfShiftC{"ConfShiftC", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift C"};
   Configurable<std::string> ConfShiftA{"ConfShiftA", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift A"};
 
@@ -203,6 +205,7 @@ struct spvector {
     AxisSpec centfineAxis = {CentfineNbins, lfinebinCent, hfinebinCent, "V0M (%) fine"};
     AxisSpec shiftAxis = {10, 0, 10, "shift"};
     AxisSpec basisAxis = {2, 0, 2, "basis"};
+    AxisSpec VxyAxis = {1, 0, 1, "Vxy"};
 
     histos.add("hCentrality", "hCentrality", kTH1F, {{centfineAxis}});
     histos.add("hpQxZDCAC", "hpQxZDCAC", kTProfile, {centfineAxis});
@@ -254,6 +257,8 @@ struct spvector {
     // histos.add("ZDCAmpCommon", "ZDCAmpCommon", kTProfile3D, {{2,0.0,2.0}, vzfineAxis, centfineAxis});
     histos.add("ShiftZDCC", "ShiftZDCC", kTProfile3D, {centfineAxis, basisAxis, shiftAxis});
     histos.add("ShiftZDCA", "ShiftZDCA", kTProfile3D, {centfineAxis, basisAxis, shiftAxis});
+    histos.add("AvgVx", "AvgVx", kTProfile, {VxyAxis});
+    histos.add("AvgVy", "AvgVy", kTProfile, {VxyAxis});
 
     if (QA) {
       histos.add("Vz", "Vz", kTH1F, {vzfineAxis});
@@ -285,6 +290,7 @@ struct spvector {
   int lastRunNumber = -999;
   // TH3D* gainprofile;
   TH2D* gainprofile;
+  TH1F* gainprofilevxy;
   THnF* hrecentereSp;
   TH2F* hrecenterecentSp;
   TH2F* hrecenterevxSp;
@@ -446,9 +452,22 @@ struct spvector {
       histos.fill(HIST("hCentrality"), centrality);
       histos.fill(HIST("Vz"), vz);
 
+      histos.fill(HIST("AvgVx"), 0.5, vx);
+      histos.fill(HIST("AvgVy"), 0.5, vy);
+
+      if (useCallibvertex && (currentRunNumber != lastRunNumber)) {
+        gainprofilevxy = ccdb->getForTimeStamp<TH1F>(ConfGainPathvxy.value, bc.timestamp());
+      }
+
+      if (useCallibvertex) {
+        vx = vx - gainprofilevxy->GetBinContent(1);
+        vy = vy - gainprofilevxy->GetBinContent(2);
+      }
+
       if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
         hrecentereSp = ccdb->getForTimeStamp<THnF>(ConfRecentereSp.value, bc.timestamp());
       }
+      /*
       if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
         hrecenterecentSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp.value, bc.timestamp());
         hrecenterevxSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp.value, bc.timestamp());
@@ -457,7 +476,7 @@ struct spvector {
       }
       if (useRecenteresqSp && (currentRunNumber != lastRunNumber)) {
         hrecenteresqSp = ccdb->getForTimeStamp<THnF>(ConfRecenteresqSp.value, bc.timestamp());
-      }
+  }*/
 
       if (useRecentereSp && hrecentereSp) {
 
@@ -527,6 +546,7 @@ struct spvector {
         }
       }
 
+      /*
       if (useRecenterefineSp && hrecenterecentSp) {
 
         double meanxAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 0.5));
@@ -658,6 +678,7 @@ struct spvector {
           qyZDCC = qyZDCC / meanyCvzerror;
         }
       }
+      */
 
       // LOG(info) << "**********qxa values in spvector************" << qxZDCA<<" "<<centrality<<" "<<vx<<" "<<vy<<" "<<vz;
 
