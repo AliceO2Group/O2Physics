@@ -14,7 +14,6 @@
 ///
 /// \author Evgeny Kryshen <evgeny.kryshen@cern.ch> and Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
-#include <string>
 #include <vector>
 #include <map>
 
@@ -291,9 +290,7 @@ struct BcSelectionTask {
       int beamZ2 = grplhcif->getBeamZ(o2::constants::lhc::BeamC);
       isPP = beamZ1 == 1 && beamZ2 == 1;
       // prepare map of inactive chips
-      std::map<std::string, std::string> metadata;
-      metadata["runNumber"] = Form("%d", run);
-      auto itsDeadMap = ccdb->getSpecific<o2::itsmft::TimeDeadMap>("ITS/Calib/TimeDeadMap", ts, metadata);
+      auto itsDeadMap = ccdb->getForTimeStamp<o2::itsmft::TimeDeadMap>("ITS/Calib/TimeDeadMap", ts);
       auto itsDeadMapOrbits = itsDeadMap->getEvolvingMapKeys(); // roughly every second, ~350 TFs = 350x32 orbits
       std::vector<uint16_t> vClosest;                           // temporary vector of inactive chip ids for the current orbit range
       for (const auto& orbit : itsDeadMapOrbits) {
