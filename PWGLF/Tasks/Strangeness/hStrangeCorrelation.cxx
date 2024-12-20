@@ -59,7 +59,7 @@ struct correlateStrangeness {
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // event filtering 
+  // event filtering
   Configurable<string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
 
   Zorro zorro;
@@ -211,7 +211,7 @@ struct correlateStrangeness {
 
     zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), zorroMask.value);
     zorro.populateHistRegistry(histos, bc.runNumber());
-    
+
     mRunNumberZorro = bc.runNumber();
   }
 
@@ -839,7 +839,7 @@ struct correlateStrangeness {
     if (!collision.isInelGt0() && selectINELgtZERO) {
       return false;
     }
-    if (zorroMask.value != ""){ 
+    if (zorroMask.value != "") {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initZorro(bc);
       bool zorroSelected = zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting

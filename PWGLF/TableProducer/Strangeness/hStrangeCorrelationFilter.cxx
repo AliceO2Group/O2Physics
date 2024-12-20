@@ -51,7 +51,7 @@ struct hstrangecorrelationfilter {
   Configurable<float> strangedEdxNSigma{"strangedEdxNSigma", 4, "Nsigmas for strange decay daughters"};
   Configurable<float> strangedEdxNSigmaTight{"strangedEdxNSigmaTight", 3, "Nsigmas for strange decay daughters"};
 
-  // event filtering 
+  // event filtering
   Configurable<std::string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
 
   // Trigger particle selections in phase space
@@ -192,7 +192,7 @@ struct hstrangecorrelationfilter {
 
     zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), zorroMask.value);
     zorro.populateHistRegistry(histos, bc.runNumber());
-    
+
     mRunNumber = bc.runNumber();
   }
 
@@ -233,7 +233,7 @@ struct hstrangecorrelationfilter {
     if (TMath::Abs(collision.posZ()) > 10.0) {
       return;
     }
-    if (zorroMask.value != ""){ 
+    if (zorroMask.value != "") {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
@@ -266,7 +266,7 @@ struct hstrangecorrelationfilter {
     if (TMath::Abs(collision.posZ()) > 10.0) {
       return;
     }
-    if (zorroMask.value != ""){ 
+    if (zorroMask.value != "") {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
@@ -305,7 +305,7 @@ struct hstrangecorrelationfilter {
     if (TMath::Abs(collision.posZ()) > 10.0) {
       return;
     }
-    if (zorroMask.value != ""){ 
+    if (zorroMask.value != "") {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
@@ -379,7 +379,7 @@ struct hstrangecorrelationfilter {
     if (TMath::Abs(collision.posZ()) > 10.0) {
       return;
     }
-    if (zorroMask.value != ""){ 
+    if (zorroMask.value != "") {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
@@ -421,7 +421,7 @@ struct hstrangecorrelationfilter {
     if (TMath::Abs(collision.posZ()) > 10.0) {
       return;
     }
-    if (zorroMask.value != ""){ 
+    if (zorroMask.value != "") {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
@@ -512,7 +512,7 @@ struct hstrangecorrelationfilter {
     if (TMath::Abs(collision.posZ()) > 10.0) {
       return;
     }
-    if (zorroMask.value != ""){ 
+    if (zorroMask.value != "") {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
