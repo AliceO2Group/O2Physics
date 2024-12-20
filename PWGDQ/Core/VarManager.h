@@ -1510,30 +1510,6 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kVtxY] = event.posY();
     values[kVtxZ] = event.posZ();
     values[kVtxNcontrib] = event.numContrib();
-    if (fgUsedVars[kIsNoITSROFBorder]) {
-      values[kIsNoITSROFBorder] = (event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) > 0);
-    }
-    if (fgUsedVars[kIsNoTFBorder]) {
-      values[kIsNoTFBorder] = (event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) > 0);
-    }
-    if (fgUsedVars[kNoCollInTimeRangeStandard]) {
-      values[kNoCollInTimeRangeStandard] = (event.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) > 0);
-    }
-    if (fgUsedVars[kIsNoSameBunch]) {
-      values[kIsNoSameBunch] = (event.selection_bit(o2::aod::evsel::kNoSameBunchPileup) > 0);
-    }
-    if (fgUsedVars[kIsGoodZvtxFT0vsPV]) {
-      values[kIsGoodZvtxFT0vsPV] = (event.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) > 0);
-    }
-    if (fgUsedVars[kIsVertexITSTPC]) {
-      values[kIsVertexITSTPC] = (event.selection_bit(o2::aod::evsel::kIsVertexITSTPC) > 0);
-    }
-    if (fgUsedVars[kIsVertexTOFmatched]) {
-      values[kIsVertexTOFmatched] = (event.selection_bit(o2::aod::evsel::kIsVertexTOFmatched) > 0);
-    }
-    if (fgUsedVars[kIsSel8]) {
-      values[kIsSel8] = event.selection_bit(o2::aod::evsel::kIsTriggerTVX) && event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
-    }
     if (fgUsedVars[kIsDoubleGap]) {
       values[kIsDoubleGap] = (event.tag_bit(56 + kDoubleGap) > 0);
     }
@@ -1559,6 +1535,30 @@ void VarManager::FillEvent(T const& event, float* values)
     if (fgUsedVars[kIsNoITSROFBorderRecomputed]) {
       uint16_t bcInITSROF = (event.globalBC() + 3564 - fgITSROFbias) % fgITSROFlength;
       values[kIsNoITSROFBorderRecomputed] = bcInITSROF > fgITSROFBorderMarginLow && bcInITSROF < fgITSROFlength - fgITSROFBorderMarginHigh ? 1.0 : 0.0;
+    }
+    if (fgUsedVars[kIsNoITSROFBorder]) {
+      values[kIsNoITSROFBorder] = (event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) > 0);
+    }
+    if (fgUsedVars[kIsNoTFBorder]) {
+      values[kIsNoTFBorder] = (event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) > 0);
+    }
+    if (fgUsedVars[kNoCollInTimeRangeStandard]) {
+      values[kNoCollInTimeRangeStandard] = (event.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) > 0);
+    }
+    if (fgUsedVars[kIsNoSameBunch]) {
+      values[kIsNoSameBunch] = (event.selection_bit(o2::aod::evsel::kNoSameBunchPileup) > 0);
+    }
+    if (fgUsedVars[kIsGoodZvtxFT0vsPV]) {
+      values[kIsGoodZvtxFT0vsPV] = (event.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) > 0);
+    }
+    if (fgUsedVars[kIsVertexITSTPC]) {
+      values[kIsVertexITSTPC] = (event.selection_bit(o2::aod::evsel::kIsVertexITSTPC) > 0);
+    }
+    if (fgUsedVars[kIsVertexTOFmatched]) {
+      values[kIsVertexTOFmatched] = (event.selection_bit(o2::aod::evsel::kIsVertexTOFmatched) > 0);
+    }
+    if (fgUsedVars[kIsSel8]) {
+      values[kIsSel8] = event.selection_bit(o2::aod::evsel::kIsTriggerTVX) && event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
     }
     if (fgUsedVars[kIsINT7]) {
       values[kIsINT7] = (event.alias_bit(kINT7) > 0);
