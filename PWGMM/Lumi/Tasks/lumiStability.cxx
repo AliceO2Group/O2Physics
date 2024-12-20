@@ -8,10 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \brief This task is an empty skeleton that fills a simple eta histogram.
-///        it is meant to be a blank page for further developments.
-/// \author josuem@cern.ch
+// \author josuem@cern.ch
 
 #include <utility>
 #include <map>
@@ -232,7 +229,6 @@ struct lumiStabilityTask {
     int runNumber = bcs.iteratorAt(0).runNumber();
     int64_t tsSOR;
     int64_t tsEOR;
-    // std::string histName = "hOrbitFDDVertexCoinc_" + std::to_string(runNumber);
     if (runNumber != lastRunNumber && executionCounter < 1) {
       tsSOR = 0;
       tsEOR = 1;
@@ -291,7 +287,6 @@ struct lumiStabilityTask {
         // duration of TF in bcs
         nBCsPerTF = nOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
         LOGP(info, "tsOrbitReset={} us, SOR = {} ms, EOR = {} ms, orbitSOR = {}, nBCsPerTF = {}", tsOrbitReset, tsSOR, tsEOR, orbitSOR, nBCsPerTF);
-        // std::cout << "<<<<<<<<<<<<<<<<<<<<<<<<< Orbits per second: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << nOrbits << std::endl;
       }
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
@@ -303,7 +298,6 @@ struct lumiStabilityTask {
       histos.add("hOrbitFT0vertex", "", kTH1F, {axisOrbits});
       histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});*/
     }
-    // std::cout << "****************** tsSOR: " << (tsSOR) * 1.e-3 << " ************************* " << std::endl;
 
     for (auto const& fdd : fdds) {
       auto bc = fdd.bc_as<BCsWithTimestamps>();
@@ -341,9 +335,6 @@ struct lumiStabilityTask {
         histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
         histos.fill(HIST("FDD/hCounts"), 1);
         histos.fill(HIST("hOrbitFDDVertex"), orbit - minOrbit);
-        // std::cout << "****************** timestamp - tsSOR: " << (bc.timestamp() - tsSOR) * 1000 << " ************************* " << std::endl;
-        // std::cout << "****************** timestamp: " << (bc.timestamp()) * 1000 << " ************************* " << std::endl; //1660925892880000
-        // std::cout << "****************** tsSOR: " << (tsSOR) * 1000 << " ************************* " << std::endl;
         histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
 
         int deltaIndex = 0; // backward move counts
@@ -517,7 +508,6 @@ struct lumiStabilityTask {
             histos.fill(HIST("FDD/bcVertexTriggerBothSidesCoincidencePP"), localBC);
           }
         } // coincidences
-
       } // vertex true
 
       if (scentral) {
