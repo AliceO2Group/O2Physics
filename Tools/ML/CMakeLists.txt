@@ -10,6 +10,6 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_library(MLCore
-             SOURCES model.cxx
              PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ONNXRuntime::ONNXRuntime
+             SOURCES model.cxx MlResponse.cxx
 )

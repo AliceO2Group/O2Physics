@@ -61,20 +61,7 @@ class MlResponse
   /// \param cuts is a LabeledArray containing selections per bin
   /// \param cutDir is a vector telling whether to reject score values greater or smaller than the threshold
   /// \param nClasses is the number of classes for each model
-  void configure(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir, const uint8_t& nClasses)
-  {
-    if (cutDir.size() != nClasses) {
-      LOG(fatal) << "Number of classes (" << static_cast<int>(nClasses) << ") different from the number of cuts on model scores (" << cutDir.size() << ")! Please check your configurables.";
-    }
-
-    mBinsLimits = binsLimits;
-    mCuts = cuts;
-    mCutDir = cutDir;
-    mNClasses = nClasses;
-    mNModels = binsLimits.size() - 1;
-    mModels = std::vector<o2::ml::OnnxModel>(mNModels);
-    mPaths = std::vector<std::string>(mNModels);
-  }
+  void configure(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir, const uint8_t& nClasses);
 
   /// Set model paths to CCDB
   /// \param onnxFiles is a vector of onnx file names, one for each bin
@@ -82,110 +69,34 @@ class MlResponse
   /// \param pathsCCDB is a vector of model paths in CCDB, one for each bin
   /// \param timestampCCDB is the CCDB timestamp
   /// \note On the CCDB, different models must be stored in different folders
-  void setModelPathsCCDB(const std::vector<std::string>& onnxFiles, const o2::ccdb::CcdbApi& ccdbApi, const std::vector<std::string>& pathsCCDB, int64_t timestampCCDB)
-  {
-    if (onnxFiles.size() != mNModels) {
-      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
-    }
-    if (pathsCCDB.size() != mNModels) {
-      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the number of CCDB paths (" << pathsCCDB.size() << ")! Please check your configurables.";
-    }
-
-    // check that the path is unique for each BDT model (otherwise CCDB download does not work as expected)
-    for (auto iThisFile{0}; iThisFile < mNModels; ++iThisFile) {
-      for (auto iOtherFile{iThisFile + 1}; iOtherFile < mNModels; ++iOtherFile) {
-        if ((pathsCCDB[iThisFile] == pathsCCDB[iOtherFile]) && (onnxFiles[iThisFile] != onnxFiles[iOtherFile])) {
-          LOGP(fatal, "More than one model ({} and {}) in the same CCDB directory ({})! Each directory in CCDB can contain only one model. Please check your configurables.", onnxFiles[iThisFile], onnxFiles[iOtherFile], pathsCCDB[iThisFile]);
-        }
-      }
-    }
-
-    for (auto iFile{0}; iFile < mNModels; ++iFile) {
-      std::map<std::string, std::string> metadata;
-      bool retrieveSuccess = ccdbApi.retrieveBlob(pathsCCDB[iFile], ".", metadata, timestampCCDB, false, onnxFiles[iFile]);
-      if (retrieveSuccess) {
-        mPaths[iFile] = onnxFiles[iFile];
-      } else {
-        LOG(fatal) << "Error encountered while accessing the ML model from " << pathsCCDB[iFile] << "! Maybe the ML model doesn't exist yet for this run number or timestamp?";
-      }
-    }
-  }
+  void setModelPathsCCDB(const std::vector<std::string>& onnxFiles, const o2::ccdb::CcdbApi& ccdbApi, const std::vector<std::string>& pathsCCDB, int64_t timestampCCDB);
 
   /// Set model paths to local or cvmfs
   /// \param onnxFiles is a vector of onnx file names, one for each bin
-  void setModelPathsLocal(const std::vector<std::string>& onnxFiles)
-  {
-    if (onnxFiles.size() != mNModels) {
-      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
-    }
-    mPaths = onnxFiles;
-  }
+  void setModelPathsLocal(const std::vector<std::string>& onnxFiles);
 
   /// Initialize class instance (initialize OnnxModels)
   /// \param enableOptimizations is a switch to enable optimizations
   /// \param threads is the number of active threads
-  void init(bool enableOptimizations = false, int threads = 0)
-  {
-    uint8_t counterModel{0};
-    for (const auto& path : mPaths) {
-      mModels[counterModel].initModel(path, enableOptimizations, threads);
-      ++counterModel;
-    }
-  }
+  void init(bool enableOptimizations = false, int threads = 0);
 
   /// Method to translate configurable input-feature strings into integers
   /// \param cfgInputFeatures array of input features names
-  void cacheInputFeaturesIndices(std::vector<std::string> const& cfgInputFeatures)
-  {
-    setAvailableInputFeatures();
-    for (const auto& inputFeature : cfgInputFeatures) {
-      if (mAvailableInputFeatures.count(inputFeature)) {
-        mCachedIndices.emplace_back(mAvailableInputFeatures[inputFeature]);
-      } else {
-        LOG(fatal) << "Input feature " << inputFeature << " not available! Please check your configurables.";
-      }
-    }
-  }
+  void cacheInputFeaturesIndices(std::vector<std::string> const& cfgInputFeatures);
 
   /// Get vector with model predictions
   /// \param input a vector containing the values of features used in the model
   /// \param nModel is the model index
   /// \return model prediction for each class and the selected model
   template <typename T1, typename T2>
-  std::vector<TypeOutputScore> getModelOutput(T1& input, const T2& nModel)
-  {
-    if (nModel < 0 || static_cast<std::size_t>(nModel) >= mModels.size()) {
-      LOG(fatal) << "Model index " << nModel << " is out of range! The number of initialised models is " << mModels.size() << ". Please check your configurables.";
-    }
-
-    TypeOutputScore* outputPtr = mModels[nModel].evalModel(input);
-    return std::vector<TypeOutputScore>{outputPtr, outputPtr + mNClasses};
-  }
+  std::vector<TypeOutputScore> getModelOutput(T1& input, const T2& nModel);
 
   /// ML selections
   /// \param input is the input features
   /// \param candVar is the variable value (e.g. pT) used to select which model to use
   /// \return boolean telling if model predictions pass the cuts
   template <typename T1, typename T2>
-  bool isSelectedMl(T1& input, const T2& candVar)
-  {
-    int nModel = findBin(candVar);
-    auto output = getModelOutput(input, nModel);
-    uint8_t iClass{0};
-    for (const auto& outputValue : output) {
-      uint8_t dir = mCutDir.at(iClass);
-      if (dir != o2::cuts_ml::CutDirection::CutNot) {
-        if (dir == o2::cuts_ml::CutDirection::CutGreater && outputValue > mCuts.get(nModel, iClass)) {
-          return false;
-        }
-        if (dir == o2::cuts_ml::CutDirection::CutSmaller && outputValue < mCuts.get(nModel, iClass)) {
-          return false;
-        }
-      }
-      ++iClass;
-    }
-    return true;
-  }
+  bool isSelectedMl(T1& input, const T2& candVar);
 
   /// ML selections
   /// \param input is the input features
@@ -193,25 +104,7 @@ class MlResponse
   /// \param output is a container to be filled with model output
   /// \return boolean telling if model predictions pass the cuts
   template <typename T1, typename T2>
-  bool isSelectedMl(T1& input, const T2& candVar, std::vector<TypeOutputScore>& output)
-  {
-    int nModel = findBin(candVar);
-    output = getModelOutput(input, nModel);
-    uint8_t iClass{0};
-    for (const auto& outputValue : output) {
-      uint8_t dir = mCutDir.at(iClass);
-      if (dir != o2::cuts_ml::CutDirection::CutNot) {
-        if (dir == o2::cuts_ml::CutDirection::CutGreater && outputValue > mCuts.get(nModel, iClass)) {
-          return false;
-        }
-        if (dir == o2::cuts_ml::CutDirection::CutSmaller && outputValue < mCuts.get(nModel, iClass)) {
-          return false;
-        }
-      }
-      ++iClass;
-    }
-    return true;
-  }
+  bool isSelectedMl(T1& input, const T2& candVar, std::vector<TypeOutputScore>& output);
 
  protected:
   std::vector<o2::ml::OnnxModel> mModels;                 // OnnxModel objects, one for each bin
@@ -243,6 +136,9 @@ class MlResponse
     return std::distance(mBinsLimits.begin(), std::upper_bound(mBinsLimits.begin(), mBinsLimits.end(), value)) - 1;
   }
 };
+
+extern template class MlResponse<float>;
+extern template class MlResponse<double>;
 
 } // namespace analysis
 } // namespace o2
