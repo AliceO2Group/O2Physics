@@ -101,8 +101,6 @@ struct doublephimeson {
     trackRelK = PartOneCMS - PartTwoCMS;
     return 0.5 * trackRelK.P();
   }
-
-  
   bool selectionPID(float nsigmaTPC, float nsigmaTOF, int TOFHit, int PIDStrategy, float ptcand)
   {
     if (PIDStrategy == 0) {
