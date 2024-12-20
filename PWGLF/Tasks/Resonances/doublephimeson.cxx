@@ -102,8 +102,8 @@ struct doublephimeson {
     return 0.5 * trackRelK.P();
   }
 
-  template <typename T>
-  bool selectionPID(const T& candidate, float nsigmaTPC, float nsigmaTOF, int TOFHit, int PIDStrategy, float ptcand)
+  
+  bool selectionPID(float nsigmaTPC, float nsigmaTOF, int TOFHit, int PIDStrategy, float ptcand)
   {
     if (PIDStrategy == 0) {
       if (TOFHit != 1) {
@@ -199,10 +199,10 @@ struct doublephimeson {
       auto kaonplusd1pt = TMath::Sqrt(phitrackd1.phid1Px() * phitrackd1.phid1Px() + phitrackd1.phid1Py() * phitrackd1.phid1Py());
       auto kaonminusd1pt = TMath::Sqrt(phitrackd1.phid2Px() * phitrackd1.phid2Px() + phitrackd1.phid2Py() * phitrackd1.phid2Py());
 
-      if (!selectionPID(phitrackd1, phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), phitrackd1.phid1TOFHit(), strategyPID, kaonplusd1pt)) {
+      if (!selectionPID(phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), phitrackd1.phid1TOFHit(), strategyPID, kaonplusd1pt)) {
         continue;
       }
-      if (!selectionPID(phitrackd1, phitrackd1.phid2TPC(), phitrackd1.phid2TOF(), phitrackd1.phid2TOFHit(), strategyPID, kaonminusd1pt)) {
+      if (!selectionPID(phitrackd1.phid2TPC(), phitrackd1.phid2TOF(), phitrackd1.phid2TOFHit(), strategyPID, kaonminusd1pt)) {
         continue;
       }
 
@@ -222,10 +222,10 @@ struct doublephimeson {
         auto kaonplusd2pt = TMath::Sqrt(phitrackd2.phid1Px() * phitrackd2.phid1Px() + phitrackd2.phid1Py() * phitrackd2.phid1Py());
         auto kaonminusd2pt = TMath::Sqrt(phitrackd2.phid2Px() * phitrackd2.phid2Px() + phitrackd2.phid2Py() * phitrackd2.phid2Py());
 
-        if (!selectionPID(phitrackd2, phitrackd2.phid1TPC(), phitrackd2.phid1TOF(), phitrackd2.phid1TOFHit(), strategyPID, kaonplusd2pt)) {
+        if (!selectionPID(phitrackd2.phid1TPC(), phitrackd2.phid1TOF(), phitrackd2.phid1TOFHit(), strategyPID, kaonplusd2pt)) {
           continue;
         }
-        if (!selectionPID(phitrackd2, phitrackd2.phid2TPC(), phitrackd2.phid2TOF(), phitrackd2.phid2TOFHit(), strategyPID, kaonminusd2pt)) {
+        if (!selectionPID(phitrackd2.phid2TPC(), phitrackd2.phid2TOF(), phitrackd2.phid2TOFHit(), strategyPID, kaonminusd2pt)) {
           continue;
         }
         if (phitrackd1.phid1Index() == phitrackd2.phid1Index()) {
@@ -278,20 +278,20 @@ struct doublephimeson {
         auto kaonplusd2pt = TMath::Sqrt(phitrackd2.phid1Px() * phitrackd2.phid1Px() + phitrackd2.phid1Py() * phitrackd2.phid1Py());
         auto kaonminusd2pt = TMath::Sqrt(phitrackd2.phid2Px() * phitrackd2.phid2Px() + phitrackd2.phid2Py() * phitrackd2.phid2Py());
 
-        if (!selectionPID(phitrackd1, phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), phitrackd1.phid1TOFHit(), strategyPID, kaonplusd1pt)) {
+        if (!selectionPID(phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), phitrackd1.phid1TOFHit(), strategyPID, kaonplusd1pt)) {
           continue;
         }
-        if (!selectionPID(phitrackd1, phitrackd1.phid2TPC(), phitrackd1.phid2TOF(), phitrackd1.phid2TOFHit(), strategyPID, kaonminusd1pt)) {
+        if (!selectionPID(phitrackd1.phid2TPC(), phitrackd1.phid2TOF(), phitrackd1.phid2TOFHit(), strategyPID, kaonminusd1pt)) {
           continue;
         }
         Phid1.SetXYZM(phitrackd1.phiPx(), phitrackd1.phiPy(), phitrackd1.phiPz(), phitrackd1.phiMass());
         if (phitrackd2.phiMass() < minPhiMass || phitrackd2.phiMass() > maxPhiMass) {
           continue;
         }
-        if (!selectionPID(phitrackd2, phitrackd2.phid1TPC(), phitrackd2.phid1TOF(), phitrackd2.phid1TOFHit(), strategyPID, kaonplusd2pt)) {
+        if (!selectionPID(phitrackd2.phid1TPC(), phitrackd2.phid1TOF(), phitrackd2.phid1TOFHit(), strategyPID, kaonplusd2pt)) {
           continue;
         }
-        if (!selectionPID(phitrackd2, phitrackd2.phid2TPC(), phitrackd2.phid2TOF(), phitrackd2.phid2TOFHit(), strategyPID, kaonminusd2pt)) {
+        if (!selectionPID(phitrackd2.phid2TPC(), phitrackd2.phid2TOF(), phitrackd2.phid2TOFHit(), strategyPID, kaonminusd2pt)) {
           continue;
         }
         Phid2.SetXYZM(phitrackd2.phiPx(), phitrackd2.phiPy(), phitrackd2.phiPz(), phitrackd2.phiMass());
