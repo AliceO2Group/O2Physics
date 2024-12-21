@@ -142,6 +142,8 @@ enum TrackLabels {
   kEffCorrPtY,
   kEffCorrPtYVz,
   kNoEffCorr,
+  kGenTotLambda,
+  kGenLambdaNoDau,
   kGenLambdaToPrPi
 };
 
@@ -353,6 +355,8 @@ struct LambdaCorrTableProducer {
       histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kLambdaNotPrPiMinus, "kLambdaNotPrPiMinus");
       histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kAntiLambdaNotAntiPrPiPlus, "kAntiLambdaNotAntiPrPiPlus");
       histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kPassTrueLambdaSel, "kPassTrueLambdaSel");
+      histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kGenTotLambda, "kGenTotLambda");
+      histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kGenLambdaNoDau, "kGenLambdaNoDau");
       histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kGenLambdaToPrPi, "kGenLambdaToPrPi");
     }
 
@@ -885,6 +889,8 @@ struct LambdaCorrTableProducer {
         continue;
       }
 
+      histos.fill(HIST("Tracks/h1f_tracks_info"), kGenTotLambda);
+
       // check for Primary Lambdas/AntiLambdas
       if (cGenPrimaryLambda && !mcpart.isPhysicalPrimary()) {
         continue;
@@ -897,7 +903,7 @@ struct LambdaCorrTableProducer {
 
       // get daughter track info and check for decay channel flag
       if (!mcpart.has_daughters()) {
-        histos.fill(HIST("Tracks/h1f_tracks_info"), kGenLambdaToPrPi);
+        histos.fill(HIST("Tracks/h1f_tracks_info"), kGenLambdaNoDau);
         continue;
       }
       auto dautracks = mcpart.template daughters_as<aod::McParticles>();
@@ -909,6 +915,8 @@ struct LambdaCorrTableProducer {
       if (cGenDecayChannel && (std::abs(daughterPDGs[0]) != kProton || std::abs(daughterPDGs[1]) != kPiPlus)) {
         continue;
       }
+
+      histos.fill(HIST("Tracks/h1f_tracks_info"), kGenLambdaToPrPi);
 
       if (v0type == kLambda) {
         histos.fill(HIST("McGen/h1f_lambda_daughter_PDG"), daughterPDGs[0]);
