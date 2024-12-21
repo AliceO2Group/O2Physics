@@ -145,7 +145,7 @@ struct EmcalQC {
     defineEMEventCut();
 
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
-    auto hEMCCollisionCounter = fRegistry.add<TH1>("Event/hEMCCollisionCounter", "Number of collisions after event cuts", HistType::kTH1F, {{7, 0.5, 7.5}}, false);
+    auto hEMCCollisionCounter = fRegistry.add<TH1>("Event/hEMCCollisionCounter", "Number of collisions after event cuts", HistType::kTH1D, {{7, 0.5, 7.5}}, false);
     hEMCCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
     hEMCCollisionCounter->GetXaxis()->SetBinLabel(2, "+TVX");         // TVX
     hEMCCollisionCounter->GetXaxis()->SetBinLabel(3, "+|z|<10cm");    // TVX with z < 10cm
