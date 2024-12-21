@@ -432,7 +432,8 @@ struct lambdapolsp {
   }
 
   template <typename TV0>
-  bool isCompatible(TV0 const& v0, int pid /*0: lambda, 1: antilambda*/){
+  bool isCompatible(TV0 const& v0, int pid /*0: lambda, 1: antilambda*/)
+  {
     // checks if this V0 is compatible with the requested hypothesis
 
     // de-ref track extras
@@ -440,24 +441,24 @@ struct lambdapolsp {
     auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
 
     // check for desired kinematics
-    if(pid == 0 && (v0.positivept() < cfgDaughPrPt || v0.negativept() < cfgDaughPiPt)) {
+    if (pid == 0 && (v0.positivept() < cfgDaughPrPt || v0.negativept() < cfgDaughPiPt)) {
       return false; // doesn´t pass lambda pT sels
     }
-    if(pid == 1 && (v0.positivept() < cfgDaughPiPt || v0.negativept() < cfgDaughPrPt)) {
+    if (pid == 1 && (v0.positivept() < cfgDaughPiPt || v0.negativept() < cfgDaughPrPt)) {
       return false; // doesn´t pass antilambda pT sels
     }
-    if(std::abs(v0.positiveeta()) > ConfDaughEta || std::abs(v0.negativeeta()) > ConfDaughEta) {
+    if (std::abs(v0.positiveeta()) > ConfDaughEta || std::abs(v0.negativeeta()) > ConfDaughEta) {
       return false;
     }
 
     // check TPC tracking properties
-    if(posTrackExtra.tpcNClsCrossedRows() < 70 || negTrackExtra.tpcNClsCrossedRows() < 70) {
+    if (posTrackExtra.tpcNClsCrossedRows() < 70 || negTrackExtra.tpcNClsCrossedRows() < 70) {
       return false;
     }
-    if(posTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin || negTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin) {
+    if (posTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin || negTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin) {
       return false;
     }
-    if(posTrackExtra.tpcCrossedRowsOverFindableCls() < 0.8 || negTrackExtra.tpcCrossedRowsOverFindableCls() < 0.8) {
+    if (posTrackExtra.tpcCrossedRowsOverFindableCls() < 0.8 || negTrackExtra.tpcCrossedRowsOverFindableCls() < 0.8) {
       return false;
     }
 
@@ -794,7 +795,7 @@ struct lambdapolsp {
   void processDerivedData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP>::iterator const& collision, v0Candidates const& V0s, dauTracks const&)
   {
     //___________________________________________________________________________________________________
-    // event selection 
+    // event selection
     if (!collision.sel8()) {
       return;
     }
@@ -870,7 +871,7 @@ struct lambdapolsp {
         Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
       }
       Lambda = Proton + Pion;
-      
+
       ROOT::Math::Boost boost{Lambda.BoostToCM()};
       fourVecDauCM = boost(Proton);
       threeVecDauCM = fourVecDauCM.Vect();
@@ -932,8 +933,6 @@ struct lambdapolsp {
     } // end loop over V0s
   }
   PROCESS_SWITCH(lambdapolsp, processDerivedData, "Process derived data", false);
-
-
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

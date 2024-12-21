@@ -483,10 +483,10 @@ struct strangederivedbuilder {
     for (auto const& tr : tracksExtra) {
       if (trackMap[tr.globalIndex()] >= 0) {
         dauTrackExtras(tr.itsChi2NCl(),
-                       tr.detectorMap(), 
+                       tr.detectorMap(),
                        tr.itsClusterSizes(),
                        tr.tpcNClsFindable(),
-                       tr.tpcNClsFindableMinusFound(), 
+                       tr.tpcNClsFindableMinusFound(),
                        tr.tpcNClsFindableMinusCrossedRows());
       }
     }
@@ -577,10 +577,10 @@ struct strangederivedbuilder {
     for (auto const& tr : tracksExtra) {
       if (trackMap[tr.globalIndex()] >= 0) {
         dauTrackExtras(tr.itsChi2NCl(),
-                       tr.detectorMap(), 
+                       tr.detectorMap(),
                        tr.itsClusterSizes(),
                        tr.tpcNClsFindable(),
-                       tr.tpcNClsFindableMinusFound(), 
+                       tr.tpcNClsFindableMinusFound(),
                        tr.tpcNClsFindableMinusCrossedRows());
 
         // if the table has MC info
@@ -813,8 +813,8 @@ struct strangederivedbuilder {
   }
   void processZDCSP(soa::Join<aod::Collisions, aod::SPCalibrationTables>::iterator const& collision)
   {
-    StraZDCSP(collision.triggereventsp(), 
-              collision.psiZDCA(), collision.psiZDCC(), 
+    StraZDCSP(collision.triggereventsp(),
+              collision.psiZDCA(), collision.psiZDCC(),
               collision.qxZDCA(), collision.qxZDCC(),
               collision.qyZDCA(), collision.qyZDCC());
   }

@@ -230,7 +230,7 @@ DECLARE_SOA_TABLE(StraTPCQVs, "AOD", "STRATPCQVS", //! tpc Qvec
 DECLARE_SOA_TABLE(StraFT0CQVsEv, "AOD", "STRAFT0CQVSEv", //! events used to compute t0c Qvec
                   epcalibrationtable::TriggerEventEP);
 DECLARE_SOA_TABLE(StraZDCSP, "AOD", "STRAZDCSP", //! ZDC SP information
-                  spcalibrationtable::TriggerEventSP, 
+                  spcalibrationtable::TriggerEventSP,
                   spcalibrationtable::PsiZDCA, spcalibrationtable::PsiZDCC,
                   spcalibrationtable::QXZDCA, spcalibrationtable::QXZDCC,
                   spcalibrationtable::QYZDCA, spcalibrationtable::QYZDCC);
@@ -312,16 +312,16 @@ DECLARE_SOA_DYNAMIC_COLUMN(HasITSTracker, hasITSTracker, //! Flag to check if tr
 DECLARE_SOA_DYNAMIC_COLUMN(HasITSAfterburner, hasITSAfterburner, //! Flag to check if track is from ITS AB
                            [](uint8_t detectorMap, float itsChi2PerNcl) -> bool { return (detectorMap & o2::aod::track::ITS) ? (itsChi2PerNcl < -1e-3f) : false; });
 
-//sub-namespace for compatibility purposes
+// sub-namespace for compatibility purposes
 namespace compatibility
-{ // adds dynamics that ensure full backwards compatibility with previous getters
+{                                                    // adds dynamics that ensure full backwards compatibility with previous getters
 DECLARE_SOA_DYNAMIC_COLUMN(TPCClusters, tpcClusters, //! number of TPC clusters
                            [](uint8_t tpcNClsFindable, int8_t tpcNClsFindableMinusFound) -> int16_t { return (int16_t)tpcNClsFindable - tpcNClsFindableMinusFound; });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRows, tpcCrossedRows, //! Number of crossed TPC Rows
                            [](uint8_t tpcNClsFindable, int8_t TPCNClsFindableMinusCrossedRows) -> int16_t { return (int16_t)tpcNClsFindable - TPCNClsFindableMinusCrossedRows; });
 DECLARE_SOA_DYNAMIC_COLUMN(ITSChi2PerNcl, itsChi2PerNcl, //! simple equivalent return
                            [](float itsChi2NCl) -> float { return (float)itsChi2NCl; });
-}
+} // namespace compatibility
 
 } // namespace dautrack
 
@@ -355,18 +355,18 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_001, "AOD", "DAUTRACKEXTRA", 1, //! d
                             dautrack::HasITSAfterburner<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>);
 
 DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_002, "AOD", "DAUTRACKEXTRA", 2, //! detector properties of decay daughters
-                            track::ITSChi2NCl, 
+                            track::ITSChi2NCl,
                             dautrack::DetectorMap, // here we don´t save everything so we simplify this
                             track::ITSClusterSizes,
-                            track::TPCNClsFindable, 
+                            track::TPCNClsFindable,
                             track::TPCNClsFindableMinusFound,
                             track::TPCNClsFindableMinusCrossedRows,
-                            
+
                             // Dynamics for ITS matching TracksExtra
                             track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
                             track::v001::ITSClsSizeInLayer<track::ITSClusterSizes>,
-                            track::v001::ITSClusterMap<track::ITSClusterSizes>, 
-                            track::v001::ITSNCls<track::ITSClusterSizes>, 
+                            track::v001::ITSClusterMap<track::ITSClusterSizes>,
+                            track::v001::ITSNCls<track::ITSClusterSizes>,
                             track::v001::IsITSAfterburner<track::v001::DetectorMap, track::ITSChi2NCl>,
                             /*compatibility*/ dautrack::HasITSTracker<dautrack::DetectorMap, track::ITSChi2NCl>,
                             /*compatibility*/ dautrack::HasITSAfterburner<dautrack::DetectorMap, track::ITSChi2NCl>,
@@ -384,7 +384,7 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_002, "AOD", "DAUTRACKEXTRA", 2, //! d
                             dautrack::HasITS<dautrack::DetectorMap>,
                             dautrack::HasTPC<dautrack::DetectorMap>,
                             dautrack::HasTRD<dautrack::DetectorMap>,
-                            dautrack::HasTOF<dautrack::DetectorMap>);              
+                            dautrack::HasTOF<dautrack::DetectorMap>);
 
 DECLARE_SOA_TABLE(DauTrackMCIds, "AOD", "DAUTRACKMCID", // index table when using AO2Ds
                   dautrack::ParticleMCId);
