@@ -36,6 +36,9 @@
 #include "Framework/StaticFor.h"
 #include "CCDB/BasicCCDBManager.h"
 
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+
 using namespace o2;
 using namespace o2::constants::math;
 using namespace o2::framework;
@@ -55,6 +58,12 @@ struct correlateStrangeness {
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  // event filtering
+  Configurable<string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
+
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   Configurable<bool> doCorrelationHadron{"doCorrelationHadron", false, "do Hadron correlation"};
   Configurable<bool> doCorrelationK0Short{"doCorrelationK0Short", true, "do K0Short correlation"};
@@ -173,6 +182,7 @@ struct correlateStrangeness {
 
   uint16_t doCorrelation;
   int mRunNumber;
+  int mRunNumberZorro;
 
   std::vector<std::vector<float>> axisRanges;
 
@@ -189,6 +199,20 @@ struct correlateStrangeness {
       deltaPhi -= 2. * TMath::Pi();
     }
     return deltaPhi;
+  }
+
+  /// Function to load zorro
+  /// \param bc provided such that the run number + timestamp can be used
+  void initZorro(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (mRunNumberZorro == bc.runNumber()) {
+      return;
+    }
+
+    zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), zorroMask.value);
+    zorro.populateHistRegistry(histos, bc.runNumber());
+
+    mRunNumberZorro = bc.runNumber();
   }
 
   /// Function to load efficiencies to memory from CCDB
@@ -509,7 +533,9 @@ struct correlateStrangeness {
 
   void init(InitContext const&)
   {
+    zorroSummary.setObject(zorro.getZorroSummary());
     mRunNumber = 0;
+    mRunNumberZorro = 0;
     hEfficiencyPion = 0x0;
     hEfficiencyK0Short = 0x0;
     hEfficiencyLambda = 0x0;
@@ -795,6 +821,35 @@ struct correlateStrangeness {
     }
   }
 
+  // this function allows for all event selections to be done in a modular way
+  template <typename TCollision>
+  bool isCollisionSelected(TCollision const& collision)
+  {
+    // ________________________________________________
+    // Perform basic event selection
+    if (!collision.sel8()) {
+      return false;
+    }
+    if (TMath::Abs(collision.posZ()) > zVertexCut) {
+      return false;
+    }
+    if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
+      return false;
+    }
+    if (!collision.isInelGt0() && selectINELgtZERO) {
+      return false;
+    }
+    if (zorroMask.value != "") {
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      initZorro(bc);
+      bool zorroSelected = zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+      if (!zorroSelected) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   // if this process function is enabled, it will be such that only events with trigger particles within a given
   // trigger pt bin are taken for the entire processing. This allows for the calculation of e.g. efficiencies
   // within an event class that has a trigger (which may differ with respect to other cases, to be checked)
@@ -812,16 +867,7 @@ struct correlateStrangeness {
     for (auto const& collision : collisions) {
       // ________________________________________________
       // Perform basic event selection
-      if (!collision.sel8()) {
-        continue;
-      }
-      if (TMath::Abs(collision.posZ()) > zVertexCut) {
-        continue;
-      }
-      if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
-        continue;
-      }
-      if (!collision.isInelGt0() && selectINELgtZERO) {
+      if (!isCollisionSelected(collision)) {
         continue;
       }
 
@@ -851,16 +897,7 @@ struct correlateStrangeness {
 
     // ________________________________________________
     // Perform basic event selection
-    if (!collision.sel8()) {
-      return;
-    }
-    if (TMath::Abs(collision.posZ()) > zVertexCut) {
-      return;
-    }
-    if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
-      return;
-    }
-    if (!collision.isInelGt0() && selectINELgtZERO) {
+    if (!isCollisionSelected(collision)) {
       return;
     }
     // ________________________________________________
@@ -906,16 +943,7 @@ struct correlateStrangeness {
 
     // ________________________________________________
     // Perform basic event selection
-    if (!collision.sel8()) {
-      return;
-    }
-    if (TMath::Abs(collision.posZ()) > zVertexCut) {
-      return;
-    }
-    if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
-      return;
-    }
-    if (!collision.isInelGt0() && selectINELgtZERO) {
+    if (!isCollisionSelected(collision)) {
       return;
     }
     // ________________________________________________
@@ -1004,16 +1032,7 @@ struct correlateStrangeness {
 
     // ________________________________________________
     // Perform basic event selection
-    if (!collision.sel8()) {
-      return;
-    }
-    if (TMath::Abs(collision.posZ()) > zVertexCut) {
-      return;
-    }
-    if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
-      return;
-    }
-    if (!collision.isInelGt0() && selectINELgtZERO) {
+    if (!isCollisionSelected(collision)) {
       return;
     }
     // ________________________________________________
@@ -1105,16 +1124,7 @@ struct correlateStrangeness {
 
     // ________________________________________________
     // Perform basic event selection
-    if (!collision.sel8()) {
-      return;
-    }
-    if (TMath::Abs(collision.posZ()) > zVertexCut) {
-      return;
-    }
-    if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
-      return;
-    }
-    if (!collision.isInelGt0() && selectINELgtZERO) {
+    if (!isCollisionSelected(collision)) {
       return;
     }
     // ________________________________________________
@@ -1161,15 +1171,12 @@ struct correlateStrangeness {
 
       // ________________________________________________
       // Perform basic event selection on both collisions
-      if (!collision1.sel8() || !collision2.sel8())
+      if (!isCollisionSelected(collision1) || !isCollisionSelected(collision2)) {
         continue;
-      if (TMath::Abs(collision1.posZ()) > zVertexCut || TMath::Abs(collision2.posZ()) > zVertexCut)
-        continue;
+      }
       if (collision1.centFT0M() > axisRanges[5][1] || collision1.centFT0M() < axisRanges[5][0])
         continue;
       if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
-        continue;
-      if ((!collision1.isInelGt0() || !collision2.isInelGt0()) && selectINELgtZERO)
         continue;
 
       if (collision1.globalIndex() == collision2.globalIndex()) {
@@ -1202,19 +1209,16 @@ struct correlateStrangeness {
       // ________________________________________________
       // skip if desired trigger not found
       if (triggerPresenceMap.size() > 0 && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
-        return;
+        continue;
       }
 
       // Perform basic event selection on both collisions
-      if (!collision1.sel8() || !collision2.sel8())
+      if (!isCollisionSelected(collision1) || !isCollisionSelected(collision2)) {
         continue;
-      if (TMath::Abs(collision1.posZ()) > zVertexCut || TMath::Abs(collision2.posZ()) > zVertexCut)
-        continue;
+      }
       if (collision1.centFT0M() > axisRanges[5][1] || collision1.centFT0M() < axisRanges[5][0])
         continue;
       if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
-        continue;
-      if ((!collision1.isInelGt0() || !collision2.isInelGt0()) && selectINELgtZERO)
         continue;
 
       if (!doprocessMixedEventHCascades) {
@@ -1247,19 +1251,16 @@ struct correlateStrangeness {
       // ________________________________________________
       // skip if desired trigger not found
       if (triggerPresenceMap.size() > 0 && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
-        return;
+        continue;
       }
 
       // Perform basic event selection on both collisions
-      if (!collision1.sel8() || !collision2.sel8())
+      if (!isCollisionSelected(collision1) || !isCollisionSelected(collision2)) {
         continue;
-      if (TMath::Abs(collision1.posZ()) > zVertexCut || TMath::Abs(collision2.posZ()) > zVertexCut)
-        continue;
+      }
       if (collision1.centFT0M() > axisRanges[5][1] || collision1.centFT0M() < axisRanges[5][0])
         continue;
       if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
-        continue;
-      if ((!collision1.isInelGt0() || !collision2.isInelGt0()) && selectINELgtZERO)
         continue;
 
       if (collision1.globalIndex() == collision2.globalIndex()) {
@@ -1287,20 +1288,17 @@ struct correlateStrangeness {
       // ________________________________________________
       // skip if desired trigger not found
       if (triggerPresenceMap.size() > 0 && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
-        return;
+        continue;
       }
 
       // ________________________________________________
       // Perform basic event selection on both collisions
-      if (!collision1.sel8() || !collision2.sel8())
+      if (!isCollisionSelected(collision1) || !isCollisionSelected(collision2)) {
         continue;
-      if (TMath::Abs(collision1.posZ()) > zVertexCut || TMath::Abs(collision2.posZ()) > zVertexCut)
-        continue;
+      }
       if (collision1.centFT0M() > axisRanges[5][1] || collision1.centFT0M() < axisRanges[5][0])
         continue;
       if (collision2.centFT0M() > axisRanges[5][1] || collision2.centFT0M() < axisRanges[5][0])
-        continue;
-      if ((!collision1.isInelGt0() || !collision2.isInelGt0()) && selectINELgtZERO)
         continue;
 
       if (collision1.globalIndex() == collision2.globalIndex()) {
