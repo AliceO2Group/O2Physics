@@ -19,6 +19,13 @@ using namespace o2::framework;
 struct TracksExtraV002Converter {
   Produces<aod::StoredTracksExtra_002> tracksExtra_002;
 
+  void init(InitContext& context)
+  {
+    if (doprocess000 == false && doprocess001 == false) {
+      LOGF(fatal, "Neither process000 nor process001 is enabled. Please choose one!");
+    }
+  }
+
   void processV000ToV002(aod::TracksExtra_000 const& tracksExtra_000)
   {
 
