@@ -9,10 +9,12 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(DataModel)
-add_subdirectory(Core)
-add_subdirectory(CCDB)
-add_subdirectory(Tasks)
-add_subdirectory(TableProducer)
-add_subdirectory(Tools)
-add_subdirectory(LegacyDataQA)
+o2physics_add_dpl_workflow(otfv0qa
+                    SOURCES otfv0qa.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(centqa
+                    SOURCES centqa.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
