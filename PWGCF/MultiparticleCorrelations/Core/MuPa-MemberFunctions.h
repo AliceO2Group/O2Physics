@@ -283,6 +283,9 @@ void DefaultConfiguration()
   ec.fEventCutName[eNoCollInRofStrict] = "NoCollInRofStrict";
   ec.fEventCutName[eNoCollInRofStandard] = "NoCollInRofStandard";
   ec.fEventCutName[eNoHighMultCollInPrevRof] = "NoHighMultCollInPrevRof";
+  ec.fEventCutName[eIsGoodITSLayer3] = "IsGoodITSLayer3";
+  ec.fEventCutName[eIsGoodITSLayer0123] = "IsGoodITSLayer0123";
+  ec.fEventCutName[eIsGoodITSLayersAll] = "IsGoodITSLayersAll";
   ec.fEventCutName[eOccupancyEstimator] = "OccupancyEstimator";
   ec.fEventCutName[eMinVertexDistanceFromIP] = "MinVertexDistanceFromIP";
   for (Int_t t = 0; t < eEventCuts_N; t++) {
@@ -1371,6 +1374,9 @@ void DefaultCuts()
   ec.fUseEventCuts[eNoCollInRofStrict] = Alright(lUseEventCuts[eNoCollInRofStrict]);
   ec.fUseEventCuts[eNoCollInRofStandard] = Alright(lUseEventCuts[eNoCollInRofStandard]);
   ec.fUseEventCuts[eNoHighMultCollInPrevRof] = Alright(lUseEventCuts[eNoHighMultCollInPrevRof]);
+  ec.fUseEventCuts[eIsGoodITSLayer3] = Alright(lUseEventCuts[eIsGoodITSLayer3]);
+  ec.fUseEventCuts[eIsGoodITSLayer0123] = Alright(lUseEventCuts[eIsGoodITSLayer0123]);
+  ec.fUseEventCuts[eIsGoodITSLayersAll] = Alright(lUseEventCuts[eIsGoodITSLayersAll]);
   ec.fUseEventCuts[eOccupancyEstimator] = Alright(lUseEventCuts[eOccupancyEstimator]);
   ec.fUseEventCuts[eMinVertexDistanceFromIP] = Alright(lUseEventCuts[eMinVertexDistanceFromIP]);
 
@@ -1387,6 +1393,9 @@ void DefaultCuts()
   ec.fUseEventCuts[eNoCollInRofStrict] = ec.fUseEventCuts[eNoCollInRofStrict] && cf_ec.cfUseNoCollInRofStrict;
   ec.fUseEventCuts[eNoCollInRofStandard] = ec.fUseEventCuts[eNoCollInRofStandard] && cf_ec.cfUseNoCollInRofStandard;
   ec.fUseEventCuts[eNoHighMultCollInPrevRof] = ec.fUseEventCuts[eNoHighMultCollInPrevRof] && cf_ec.cfUseNoHighMultCollInPrevRof;
+  ec.fUseEventCuts[eIsGoodITSLayer3] = ec.fUseEventCuts[eIsGoodITSLayer3] && cf_ec.cfUseIsGoodITSLayer3;
+  ec.fUseEventCuts[eIsGoodITSLayer0123] = ec.fUseEventCuts[eIsGoodITSLayer0123] && cf_ec.cfUseIsGoodITSLayer0123;
+  ec.fUseEventCuts[eIsGoodITSLayersAll] = ec.fUseEventCuts[eIsGoodITSLayersAll] && cf_ec.cfUseIsGoodITSLayersAll;
 
   // **) event cuts defined via [min, max):
   //     Remark: I use this one also for events cuts set only via min or via max.
@@ -1998,6 +2007,24 @@ void InsanityChecksBeforeBooking()
   if (ec.fUseEventCuts[eNoHighMultCollInPrevRof]) {
     if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
       LOGF(fatal, "\033[1;31m%s at line %d : use eNoHighMultCollInPrevRof only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
+    }
+  }
+
+  if (ec.fUseEventCuts[eIsGoodITSLayer3]) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+      LOGF(fatal, "\033[1;31m%s at line %d : use eIsGoodITSLayer3 only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
+    }
+  }
+
+  if (ec.fUseEventCuts[eIsGoodITSLayer0123]) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+      LOGF(fatal, "\033[1;31m%s at line %d : use eIsGoodITSLayer0123 only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
+    }
+  }
+
+  if (ec.fUseEventCuts[eIsGoodITSLayersAll]) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+      LOGF(fatal, "\033[1;31m%s at line %d : use eIsGoodITSLayersAll only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
@@ -5597,6 +5624,39 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
         EventCut(eRec, eNoHighMultCollInPrevRof, eCutCounterBinning);
       } else if (!collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
         if (!EventCut(eRec, eNoHighMultCollInPrevRof, cutModus)) {
+          return kFALSE;
+        }
+      }
+    }
+
+    //   *) IsGoodITSLayer3: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
+    if (ec.fUseEventCuts[eIsGoodITSLayer3]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eRec, eIsGoodITSLayer3, eCutCounterBinning);
+      } else if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3)) {
+        if (!EventCut(eRec, eIsGoodITSLayer3, cutModus)) {
+          return kFALSE;
+        }
+      }
+    }
+
+    //   *) IsGoodITSLayer0123: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
+    if (ec.fUseEventCuts[eIsGoodITSLayer0123]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eRec, eIsGoodITSLayer0123, eCutCounterBinning);
+      } else if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
+        if (!EventCut(eRec, eIsGoodITSLayer0123, cutModus)) {
+          return kFALSE;
+        }
+      }
+    }
+
+    //   *) IsGoodITSLayersAll: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
+    if (ec.fUseEventCuts[eIsGoodITSLayersAll]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eRec, eIsGoodITSLayersAll, eCutCounterBinning);
+      } else if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        if (!EventCut(eRec, eIsGoodITSLayersAll, cutModus)) {
           return kFALSE;
         }
       }
