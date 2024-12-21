@@ -1822,33 +1822,27 @@ inline bool HfFilterHelper::isSelectedBhadronInMassRange(T1 const& ptCand, T2 co
 
   float massBhad{-1};
   switch (whichB) {
-    case kBplus:
-    {
+    case kBplus: {
       massBhad = massBPlus;
       break;
     }
-    case kB0toDStar:
-    {
+    case kB0toDStar: {
       massBhad = massB0;
       break;
     }
-    case kB0:
-    {
+    case kB0: {
       massBhad = massB0;
       break;
     }
-    case kBs:
-    {
+    case kBs: {
       massBhad = massBs;
       break;
     }
-    case kLb:
-    {
+    case kLb: {
       massBhad = massLb;
       break;
     }
-    case kXib:
-    {
+    case kXib: {
       massBhad = massXib;
       break;
     }
