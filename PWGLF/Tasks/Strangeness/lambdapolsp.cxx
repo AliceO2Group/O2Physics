@@ -851,18 +851,6 @@ struct lambdapolsp {
       auto postrack = v0.template posTrackExtra_as<AllTrackCandidates>();
       auto negtrack = v0.template negTrackExtra_as<AllTrackCandidates>();
 
-
-
-      // checked at construction, always true
-      const auto signpos = +1;
-      const auto signneg = -1;
-
-      if (checksign) {
-        if (signpos < 0 || signneg > 0) {
-          continue;
-        }
-      }
-
       bool LambdaTag = isCompatible(v0, 0);
       bool aLambdaTag = isCompatible(v0, 1);
 
