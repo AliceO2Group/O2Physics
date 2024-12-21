@@ -54,6 +54,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "Common/DataModel/FT0Corrected.h"
 
 using namespace o2;
@@ -62,6 +63,7 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
 
 struct lambdapolsp {
 
@@ -426,6 +428,48 @@ struct lambdapolsp {
       return false;
     }
 
+    return true;
+  }
+
+  template <typename TV0>
+  bool isCompatible(TV0 const& v0, int pid /*0: lambda, 1: antilambda*/){
+    // checks if this V0 is compatible with the requested hypothesis
+
+    // de-ref track extras
+    auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
+    auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
+
+    // check for desired kinematics
+    if(pid == 0 && (v0.positivept() < cfgDaughPrPt || v0.negativept() < cfgDaughPiPt)) {
+      return false; // doesn´t pass lambda pT sels
+    }
+    if(pid == 1 && (v0.positivept() < cfgDaughPiPt || v0.negativept() < cfgDaughPrPt)) {
+      return false; // doesn´t pass antilambda pT sels
+    }
+    if(std::abs(v0.positiveeta()) > ConfDaughEta || std::abs(v0.negativeeta()) > ConfDaughEta) {
+      return false;
+    }
+
+    // check TPC tracking properties
+    if(posTrackExtra.tpcNClsCrossedRows() < 70 || negTrackExtra.tpcNClsCrossedRows() < 70) {
+      return false;
+    }
+    if(posTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin || negTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin) {
+      return false;
+    }
+    if(posTrackExtra.tpcCrossedRowsOverFindableCls() < 0.8 || negTrackExtra.tpcCrossedRowsOverFindableCls() < 0.8) {
+      return false;
+    }
+
+    // check TPC PID
+    if (pid == 0 && ((std::abs(posTrackExtra.tpcNSigmaPr()) > ConfDaughPIDCuts) || (std::abs(negTrackExtra.tpcNSigmaPi()) > ConfDaughPIDCuts))) {
+      return false;
+    }
+    if (pid == 1 && ((std::abs(posTrackExtra.tpcNSigmaPi()) > ConfDaughPIDCuts) || (std::abs(negTrackExtra.tpcNSigmaPr()) > ConfDaughPIDCuts))) {
+      return false;
+    }
+
+    // if we made it this far, it's good
     return true;
   }
 
@@ -807,8 +851,7 @@ struct lambdapolsp {
       auto postrack = v0.template posTrackExtra_as<AllTrackCandidates>();
       auto negtrack = v0.template negTrackExtra_as<AllTrackCandidates>();
 
-      int LambdaTag = 0;
-      int aLambdaTag = 0;
+
 
       // checked at construction, always true
       const auto signpos = +1;
@@ -820,15 +863,11 @@ struct lambdapolsp {
         }
       }
 
-      // if (isSelectedV0Daughter(postrack, 0) && isSelectedV0Daughter(negtrack, 1)) {
-      //   LambdaTag = 1;
-      // }
-      // if (isSelectedV0Daughter(negtrack, 0) && isSelectedV0Daughter(postrack, 1)) {
-      //   aLambdaTag = 1;
-      // }
+      bool LambdaTag = isCompatible(v0, 0);
+      bool aLambdaTag = isCompatible(v0, 1);
 
-      // if (LambdaTag == aLambdaTag)
-      //   continue;
+      if (LambdaTag == aLambdaTag)
+        continue;
 
       if (!SelectionV0(collision, v0)) {
         continue;
