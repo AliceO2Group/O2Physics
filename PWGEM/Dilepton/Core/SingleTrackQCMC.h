@@ -205,6 +205,8 @@ struct SingleTrackQCMC {
   {
     // event info
     o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
+    fRegistry.add("MCEvent/before/hZvtx", "vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
+    fRegistry.addClone("MCEvent/before/", "MCEvent/after/");
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       const AxisSpec axis_pt{ConfPtlBins, "p_{T,e} (GeV/c)"};
@@ -759,6 +761,7 @@ struct SingleTrackQCMC {
       if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
         continue;
       }
+      fRegistry.fill(HIST("MCEvent/before/hZvtx"), mccollision.posZ());
 
       auto rec_colls_per_mccoll = collisions.sliceBy(recColperMcCollision, mccollision.globalIndex());
       uint32_t maxNumContrib = 0;
@@ -780,10 +783,10 @@ struct SingleTrackQCMC {
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
-
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+      fRegistry.fill(HIST("MCEvent/after/hZvtx"), mccollision.posZ());
 
       auto leptonsMC_per_coll = leptonsMC.sliceByCachedUnsorted(o2::aod::emmcparticle::emmceventId, mccollision.globalIndex(), cache);
       for (auto& lepton : leptonsMC_per_coll) {

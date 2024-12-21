@@ -158,24 +158,27 @@ struct LambdaCorrTableProducer {
 
   // Tracks
   Configurable<float> cTrackMinPt{"cTrackMinPt", 0.2, "p_{T} minimum"};
-  Configurable<float> cTrackMaxPt{"cTrackMaxPt", 4.0, "p_{T} minimum"};
+  Configurable<float> cTrackMaxPt{"cTrackMaxPt", 999.0, "p_{T} minimum"};
   Configurable<float> cTrackEtaCut{"cTrackEtaCut", 0.8, "Pseudorapidity cut"};
   Configurable<int> cMinTpcCrossedRows{"cMinTpcCrossedRows", 70, "min crossed rows"};
   Configurable<double> cTpcNsigmaCut{"cTpcNsigmaCut", 2.0, "TPC NSigma Selection Cut"};
   Configurable<double> cTrackMinDcaXY{"cTrackMinDcaXY", 0.05, "Minimum DcaXY of Daughter Tracks"};
+  Configurable<bool> cIsGlobalTrackWoDca{"cIsGlobalTrackWoDca", true, "Check for Global Track"};
 
   // V0s
-  Configurable<double> cMinV0DcaDaughters{"cMinV0DcaDaughters", 1.4, "min DCA between V0 daughters"};
+  Configurable<double> cMinV0DcaDaughters{"cMinV0DcaDaughters", 0., "Minimum DCA between V0 daughters"};
+  Configurable<double> cMaxV0DcaDaughters{"cMaxV0DcaDaughters", 1.4, "Maximum DCA between V0 daughters"};
   Configurable<double> cMinDcaPosToPV{"cMinDcaPosToPV", 0.1, "Minimum V0 Positive Track DCAr cut to PV"};
   Configurable<double> cMinDcaNegToPV{"cMinDcaNegToPV", 0.1, "Minimum V0 Negative Track DCAr cut to PV"};
-  Configurable<double> cMinDcaV0ToPV{"cMinDcaV0ToPV", 3.0, "Minimum DCA V0 to PV"};
+  Configurable<double> cMinDcaV0ToPV{"cMinDcaV0ToPV", 0.0, "Minimum DCA V0 to PV"};
+  Configurable<double> cMaxDcaV0ToPV{"cMaxDcaV0ToPV", 999.0, "Maximum DCA V0 to PV"};
   Configurable<double> cMinV0TransRadius{"cMinV0TransRadius", 0.2, "Minimum V0 radius from PV"};
-  Configurable<double> cMaxV0TransRadius{"cMaxV0TransRadius", 200.0, "Maximum V0 radius from PV"};
+  Configurable<double> cMaxV0TransRadius{"cMaxV0TransRadius", 100.0, "Maximum V0 radius from PV"};
   Configurable<double> cMinV0CTau{"cMinV0CTau", 0.0, "Minimum ctau"};
   Configurable<double> cMaxV0CTau{"cMaxV0CTau", 30.0, "Maximum ctau"};
   Configurable<double> cMinV0CosPA{"cMinV0CosPA", 0.998, "Minimum V0 CosPA to PV"};
-  Configurable<double> cLambdaMassWindow{"cLambdaMassWindow", 0.007, "Mass Window to select Lambda"};
-  Configurable<double> cKshortRejMassWindow{"cKshortRejMassWindow", 0.005, "Reject K0Short Candidates"};
+  Configurable<double> cLambdaMassWindow{"cLambdaMassWindow", 0.005, "Mass Window to select Lambda"};
+  Configurable<double> cKshortRejMassWindow{"cKshortRejMassWindow", 0.017, "Reject K0Short Candidates"};
   Configurable<bool> cKshortRejFlag{"cKshortRejFlag", false, "K0short Mass Rej Flag"};
   Configurable<double> cArmPodCutValue{"cArmPodCutValue", 0.5, "Armentros-Podolanski Slope Parameter"};
   Configurable<bool> cArmPodCutFlag{"cArmPodCutFlag", true, "Armentros-Podolanski Cut Flag"};
@@ -183,7 +186,7 @@ struct LambdaCorrTableProducer {
   // V0s kinmatic acceptance
   Configurable<float> cMinV0Pt{"cMinV0Pt", 0.8, "Minimum V0 pT"};
   Configurable<float> cMaxV0Pt{"cMaxV0Pt", 3.2, "Minimum V0 pT"};
-  Configurable<float> cMaxV0Rap{"cMaxV0Rap", 0.8, "|rap| cut"};
+  Configurable<float> cMaxV0Rap{"cMaxV0Rap", 0.6, "|rap| cut"};
 
   // V0s MC
   Configurable<bool> cHasMcFlag{"cHasMcFlag", true, "Has Mc Tag"};
@@ -218,7 +221,7 @@ struct LambdaCorrTableProducer {
     ccdb->setCaching(true);
 
     // initialize axis specifications
-    const AxisSpec axisCol(20, 0, 20, "");
+    const AxisSpec axisCol(25, 0, 25, "");
     const AxisSpec axisCent(105, 0, 105, "FT0M (%)");
     const AxisSpec axisMult(10, 0, 10, "N_{#Lambda}");
     const AxisSpec axisVz(220, -11, 11, "V_{z} (cm)");
@@ -308,7 +311,7 @@ struct LambdaCorrTableProducer {
   template <typename C>
   bool selCollision(C const& col)
   {
-    if (col.posZ() < cMinZVtx || col.posZ() >= cMaxZVtx) {
+    if (col.posZ() <= cMinZVtx || col.posZ() >= cMaxZVtx) {
       return false;
     }
 
@@ -346,7 +349,7 @@ struct LambdaCorrTableProducer {
   template <typename T>
   bool selDaughterTracks(T const& track)
   {
-    if (track.pt() < cTrackMinPt || track.pt() > cTrackMaxPt) {
+    if (track.pt() <= cTrackMinPt || track.pt() >= cTrackMaxPt) {
       return false;
     }
 
@@ -354,11 +357,15 @@ struct LambdaCorrTableProducer {
       return false;
     }
 
-    if (track.tpcNClsCrossedRows() < cMinTpcCrossedRows) {
+    if (track.tpcNClsCrossedRows() <= cMinTpcCrossedRows) {
       return false;
     }
 
-    if (std::abs(track.dcaXY()) < cTrackMinDcaXY) {
+    if (std::abs(track.dcaXY()) <= cTrackMinDcaXY) {
+      return false;
+    }
+
+    if (cIsGlobalTrackWoDca && !track.isGlobalTrackWoDCA()) {
       return false;
     }
 
@@ -377,7 +384,7 @@ struct LambdaCorrTableProducer {
 
     histos.fill(HIST("Tracks/h1f_tracks_info"), 2.5);
 
-    if (v0.dcaV0daughters() > cMinV0DcaDaughters) {
+    if (v0.dcaV0daughters() <= cMinV0DcaDaughters || v0.dcaV0daughters() >= cMaxV0DcaDaughters) {
       return false;
     }
 
@@ -389,22 +396,22 @@ struct LambdaCorrTableProducer {
       return false;
     }
 
-    if (v0.dcav0topv() > cMinDcaV0ToPV) {
+    if (v0.dcav0topv() <= cMinDcaV0ToPV || v0.dcav0topv() >= cMaxDcaV0ToPV) {
       return false;
     }
 
-    if ((v0.v0radius() > cMaxV0TransRadius) || (v0.v0radius() < cMinV0TransRadius)) {
+    if (v0.v0radius() <= cMinV0TransRadius || v0.v0radius() >= cMaxV0TransRadius) {
       return false;
     }
 
     // ctau
     float ctau = v0.distovertotmom(col.posX(), col.posY(), col.posZ()) * MassLambda0;
-    if (ctau < cMinV0CTau || ctau > cMaxV0CTau) {
+    if (ctau <= cMinV0CTau || ctau >= cMaxV0CTau) {
       return false;
     }
 
     // cosine of pointing angle
-    if (v0.v0cosPA() < cMinV0CosPA) {
+    if (v0.v0cosPA() <= cMinV0CosPA) {
       return false;
     }
 
@@ -581,12 +588,16 @@ struct LambdaCorrTableProducer {
     float retVal = 0.;
 
     if (std::string(obj->ClassName()) == "TH1F") {
+      histos.fill(HIST("Tracks/h1f_tracks_info"), 21.5);
       retVal = hist->GetBinContent(hist->FindBin(v0.pt()));
     } else if (std::string(obj->ClassName()) == "TH2F") {
+      histos.fill(HIST("Tracks/h1f_tracks_info"), 22.5);
       retVal = hist->GetBinContent(hist->FindBin(v0.pt(), v0.yLambda()));
     } else if (std::string(obj->ClassName()) == "TH3F") {
+      histos.fill(HIST("Tracks/h1f_tracks_info"), 23.5);
       retVal = hist->GetBinContent(hist->FindBin(v0.pt(), v0.yLambda(), col.posZ()));
     } else {
+      histos.fill(HIST("Tracks/h1f_tracks_info"), 24.5);
       LOGF(warning, "CCDB OBJECT IS NOT A HISTOGRAM !!!");
       retVal = 1.;
     }
@@ -674,7 +685,7 @@ struct LambdaCorrTableProducer {
       // check for corresponding MCGen Particle
       if constexpr (dmc == kMC) {
         histos.fill(HIST("Tracks/h1f_tracks_info"), 0.5);
-        if (!v0.has_mcParticle()) {
+        if (!v0.has_mcParticle() || !v0.template posTrack_as<T>().has_mcParticle() || !v0.template negTrack_as<T>().has_mcParticle()) {
           continue;
         }
       }
@@ -757,7 +768,7 @@ struct LambdaCorrTableProducer {
     histos.fill(HIST("McGen/h1f_collisions_info"), 1.5);
 
     // apply collision cuts
-    if (mcCollision.posZ() < cMinZVtx || mcCollision.posZ() > cMaxZVtx) {
+    if (mcCollision.posZ() <= cMinZVtx || mcCollision.posZ() >= cMaxZVtx) {
       return;
     }
 
@@ -798,6 +809,16 @@ struct LambdaCorrTableProducer {
       }
       if (std::abs(daughterPDGs[0]) != kProton || std::abs(daughterPDGs[1]) != kPiPlus) {
         continue;
+      }
+
+      if (v0type == kLambda) {
+        histos.fill(HIST("McGen/h1f_lambda_daughter_PDG"), daughterPDGs[0], mcpart.pt());
+        histos.fill(HIST("McGen/h1f_lambda_daughter_PDG"), daughterPDGs[1], mcpart.pt());
+        histos.fill(HIST("McGen/h1f_lambda_daughter_PDG"), mcpart.pdgCode(), mcpart.pt());
+      } else {
+        histos.fill(HIST("McGen/h1f_antilambda_daughter_PDG"), daughterPDGs[0], mcpart.pt());
+        histos.fill(HIST("McGen/h1f_antilambda_daughter_PDG"), daughterPDGs[1], mcpart.pt());
+        histos.fill(HIST("McGen/h1f_antilambda_daughter_PDG"), mcpart.pdgCode(), mcpart.pt());
       }
 
       lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.px(), mcpart.py(), mcpart.pz(),
@@ -854,7 +875,7 @@ struct LambdaR2Correlation {
     const AxisSpec axisCent(105, 0, 105, "FT0M (%)");
     const AxisSpec axisMult(10, 0, 10, "N_{#Lambda}");
     const AxisSpec axisMass(100, 1.06, 1.16, "Inv Mass (GeV/#it{c}^{2})");
-    const AxisSpec axisPt(64, 0.2, 3.4, "p_{T} (GeV/#it{c})");
+    const AxisSpec axisPt(32, 0.2, 3.4, "p_{T} (GeV/#it{c})");
     const AxisSpec axisEta(24, -1.2, 1.2, "#eta");
     const AxisSpec axisCPA(100, 0.99, 1.0, "cos(#theta_{PA})");
     const AxisSpec axisDcaDau(75, 0., 1.5, "Daug DCA (#sigma)");
@@ -900,12 +921,14 @@ struct LambdaR2Correlation {
 
     // single and two particle densities
     // 1D Histograms
+    histos.add("Reco/h1d_n1_mass_LaP", "#rho_{1}^{#Lambda}", kTH1D, {axisMass});
+    histos.add("Reco/h1d_n1_mass_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisMass});
     histos.add("Reco/h1d_n1_pt_LaP", "#rho_{1}^{#Lambda}", kTH1D, {axisPt});
     histos.add("Reco/h1d_n1_pt_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisPt});
     histos.add("Reco/h1d_n1_eta_LaP", "#rho_{1}^{#Lambda}", kTH1D, {axisEta});
     histos.add("Reco/h1d_n1_eta_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisEta});
-    histos.add("Reco/h1d_n1_rap_LaP", "#rho_{1}^{#Lambda}", kTH1D, {axisEta});
-    histos.add("Reco/h1d_n1_rap_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisEta});
+    histos.add("Reco/h1d_n1_rap_LaP", "#rho_{1}^{#Lambda}", kTH1D, {axisRap});
+    histos.add("Reco/h1d_n1_rap_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisRap});
     histos.add("Reco/h1d_n1_phi_LaP", "#rho_{1}^{#Lambda}", kTH1D, {axisPhi});
     histos.add("Reco/h1d_n1_phi_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisPhi});
 
@@ -1041,6 +1064,7 @@ struct LambdaR2Correlation {
       ++ntrk3;
 
       // QA Plots
+      histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h1d_n1_mass_") + HIST(SubDirHist[part]), track.mass());
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h1d_n1_pt_") + HIST(SubDirHist[part]), track.pt(), track.corrFact());
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h1d_n1_eta_") + HIST(SubDirHist[part]), track.eta(), track.corrFact());
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h1d_n1_phi_") + HIST(SubDirHist[part]), track.phi(), track.corrFact());

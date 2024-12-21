@@ -63,6 +63,7 @@ struct FlowRunbyRun {
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
+  O2_DEFINE_CONFIGURABLE(cfgDynamicRunNumber, bool, false, "Add runNumber during runtime")
   Configurable<std::vector<int>> cfgRunNumbers{"cfgRunNumbers", std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}, "Preconfigured run numbers"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWCorr{"cfgUserDefineGFWCorr", std::vector<std::string>{"refN10 {2} refP10 {-2}"}, "User defined GFW CorrelatorConfig"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWName{"cfgUserDefineGFWName", std::vector<std::string>{"Ch10Gap22"}, "User defined GFW Name"};
@@ -83,7 +84,7 @@ struct FlowRunbyRun {
 
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
-  OutputObj<TList> fWeightList{"WeightList", OutputObjHandlingPolicy::AnalysisObject};
+  OutputObj<TList> fWeightList{"WeightList", OutputObjHandlingPolicy::AnalysisObject, OutputObjSourceType::OutputObjSource};
   HistogramRegistry registry{"registry"};
 
   // define global variables
@@ -248,7 +249,7 @@ struct FlowRunbyRun {
     float lRandom = fRndm->Rndm();
     if (runNumber != lastRunNumer) {
       lastRunNumer = runNumber;
-      if (std::find(runNumbers.begin(), runNumbers.end(), runNumber) == runNumbers.end()) {
+      if (cfgDynamicRunNumber && std::find(runNumbers.begin(), runNumbers.end(), runNumber) == runNumbers.end()) {
         // if run number is not in the preconfigured list, create new output histograms for this run
         createOutputObjectsForRun(runNumber);
         runNumbers.push_back(runNumber);

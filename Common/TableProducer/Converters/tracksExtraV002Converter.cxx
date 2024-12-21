@@ -88,7 +88,7 @@ struct TracksExtraV002Converter {
                       track1.trackTimeRes());
     }
   }
-  PROCESS_SWITCH(TracksExtraV002Converter, processV001ToV002, "process v001-to-v002 conversion", false);
+  PROCESS_SWITCH(TracksExtraV002Converter, processV001ToV002, "process v001-to-v002 conversion", true);
 };
 
 /// Spawn the extended table for TracksExtra002 to avoid the call to the internal spawner and a consequent circular dependency
