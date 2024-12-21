@@ -2655,6 +2655,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("muonLowPt610SigmaPDCA")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt6"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts10SigmaPDCA"));
+    cut->AddCut(GetAnalysisCut("MCHMID"));
+    return cut;
+  }
+
   if (!nameStr.compare("muonLowPt")) {
     cut->AddCut(GetAnalysisCut("muonLowPt"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
