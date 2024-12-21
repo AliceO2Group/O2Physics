@@ -19,10 +19,10 @@ using namespace o2::framework;
 struct TracksExtraV002Converter {
   Produces<aod::StoredTracksExtra_002> tracksExtra_002;
 
-  void init(InitContext& context)
+  void init(InitContext const&)
   {
-    if (doprocess000 == false && doprocess001 == false) {
-      LOGF(fatal, "Neither process000 nor process001 is enabled. Please choose one!");
+    if (doprocessV000ToV002 == false && doprocessV001ToV002 == false) {
+      LOGF(fatal, "Neither processV000ToV002 nor processV001ToV002 is enabled. Please choose one!");
     }
   }
 
