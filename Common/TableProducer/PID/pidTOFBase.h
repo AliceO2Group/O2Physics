@@ -37,6 +37,7 @@ namespace o2::aod
 
 namespace pidtofevtime
 {
+// TOF only columns
 DECLARE_SOA_COLUMN(UsedForTOFEvTime, usedForTOFEvTime, uint8_t); //! Flag to check if track was used in the TOF event time making
 DECLARE_SOA_COLUMN(EvTimeTOF, evTimeTOF, float);                 //! Event time computed with the TOF detector
 DECLARE_SOA_COLUMN(EvTimeTOFErr, evTimeTOFErr, float);           //! Error of the event time computed with the TOF detector
