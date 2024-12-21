@@ -166,6 +166,8 @@ struct HfCorrelatorLcHadrons {
   Produces<aod::LcHadronGenInfo> entryLcHadronGenInfo;
   Produces<aod::LcGenInfo> entryLcCandGenInfo;
   Produces<aod::TrkRecInfoLc> entryTrackRecoInfo;
+  Produces<aod::Lc> entryLc;
+  Produces<aod::Hadron> entryHadron;
 
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "number of events mixed in ME process"};
@@ -321,6 +323,9 @@ struct HfCorrelatorLcHadrons {
     if (correlateLcWithLeadingParticle) {
       leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value, etaTrackMax.value);
     }
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int gCollisionId = collision.globalIndex();
+    int64_t timeStamp = bc.timestamp();
 
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
     int nTracks = 0;
@@ -368,6 +373,7 @@ struct HfCorrelatorLcHadrons {
           outputMl[iclass] = candidate.mlProbLcToPKPi()[classMl->at(iclass)];
         }
         entryLcCandRecoInfo(hfHelper.invMassLcToPKPi(candidate), candidate.pt() * chargeLc, outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
+        entryLc(candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassLcToPKPi(candidate), poolBin, gCollisionId, timeStamp);
       }
       if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
         registry.fill(HIST("hMassLcVsPt"), hfHelper.invMassLcToPiKP(candidate), candidate.pt(), efficiencyWeightLc);
@@ -377,6 +383,7 @@ struct HfCorrelatorLcHadrons {
           outputMl[iclass] = candidate.mlProbLcToPiKP()[classMl->at(iclass)];
         }
         entryLcCandRecoInfo(hfHelper.invMassLcToPiKP(candidate), candidate.pt() * chargeLc, outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
+        entryLc(candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassLcToPiKP(candidate), poolBin, gCollisionId, timeStamp);
       }
 
       // Lc-Hadron correlation dedicated section
@@ -432,6 +439,7 @@ struct HfCorrelatorLcHadrons {
           }
         }
         if (cntLc == 0) {
+          entryHadron(track.phi(), track.eta(), track.pt(), poolBin, gCollisionId, timeStamp);
           registry.fill(HIST("hTracksBin"), poolBin);
         }
       } // Hadron Tracks loop
