@@ -409,6 +409,12 @@ DECLARE_SOA_DYNAMIC_COLUMN(EventCollisionTime, eventCollisionTime, //! Event col
 
 } // namespace pidtofsignal
 
+namespace pidtofevtime
+{
+DECLARE_SOA_COLUMN(TOFEvTime, tofEvTime, float);       //! event time for TOF signal. Can be obtained via a combination of detectors e.g. TOF, FT0A, FT0C
+DECLARE_SOA_COLUMN(TOFEvTimeErr, tofEvTimeErr, float); //! event time error for TOF. Can be obtained via a combination of detectors e.g. TOF, FT0A, FT0C
+} // namespace pidtofevtime
+
 namespace pidtofbeta
 {
 DECLARE_SOA_COLUMN(Beta, beta, float);           //! TOF beta
@@ -533,6 +539,10 @@ DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaAl, tofNSigmaAl); //! Unwrapped (float) nsi
 DECLARE_SOA_TABLE(TOFSignal, "AOD", "TOFSignal", //! Table of the TOF signal
                   pidtofsignal::TOFSignal,
                   pidtofsignal::EventCollisionTime<pidtofsignal::TOFSignal>);
+
+DECLARE_SOA_TABLE(TOFEvTime, "AOD", "TOFEvTime", //! Table of the TOF event time. One entry per track.
+                  pidtofevtime::TOFEvTime,
+                  pidtofevtime::TOFEvTimeErr);
 
 DECLARE_SOA_TABLE(pidTOFFlags, "AOD", "pidTOFFlags", //! Table of the flags for TOF signal quality on the track level
                   pidflags::GoodTOFMatch);
