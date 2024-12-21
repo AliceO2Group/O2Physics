@@ -275,16 +275,17 @@ struct HfCandidateCreator3Prong {
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
       auto indexCollision = collision.globalIndex();
-      uint8_t nProngsContributorsPV = 0;
+      uint8_t bitmapProngsContributorsPV = 0;
       if (indexCollision == track0.collisionId() && track0.isPVContributor()) {
-        nProngsContributorsPV += 1;
+        SETBIT(bitmapProngsContributorsPV, 0);
       }
       if (indexCollision == track1.collisionId() && track1.isPVContributor()) {
-        nProngsContributorsPV += 1;
+        SETBIT(bitmapProngsContributorsPV, 1);
       }
       if (indexCollision == track2.collisionId() && track2.isPVContributor()) {
-        nProngsContributorsPV += 1;
+        SETBIT(bitmapProngsContributorsPV, 2);
       }
+      uint8_t nProngsContributorsPV = hf_trkcandsel::countOnesInBinary(bitmapProngsContributorsPV);
 
       // fill candidate table rows
       rowCandidateBase(indexCollision,
@@ -299,7 +300,7 @@ struct HfCandidateCreator3Prong {
                        std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()), std::sqrt(impactParameter2.getSigmaY2()),
                        impactParameter0.getZ(), impactParameter1.getZ(), impactParameter2.getZ(),
                        std::sqrt(impactParameter0.getSigmaZ2()), std::sqrt(impactParameter1.getSigmaZ2()), std::sqrt(impactParameter2.getSigmaZ2()),
-                       rowTrackIndexProng3.prong0Id(), rowTrackIndexProng3.prong1Id(), rowTrackIndexProng3.prong2Id(), nProngsContributorsPV,
+                       rowTrackIndexProng3.prong0Id(), rowTrackIndexProng3.prong1Id(), rowTrackIndexProng3.prong2Id(), nProngsContributorsPV, bitmapProngsContributorsPV,
                        rowTrackIndexProng3.hfflag());
 
       // fill histograms
