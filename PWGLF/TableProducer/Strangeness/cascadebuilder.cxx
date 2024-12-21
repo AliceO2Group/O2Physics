@@ -1238,7 +1238,7 @@ struct cascadeBuilder {
   }
 
   template <class TTrackTo, typename TV0Object, typename TCascObject>
-  bool buildCascadeCandidateWithKF(TCascObject const& cascade, TV0Object const& v0, TTrackTo const& posTrack, TTrackTo const& negTrack)
+  bool buildCascadeCandidateWithKF(TCascObject const& cascade, TV0Object const& v0)
   {
     registry.fill(HIST("hKFParticleStatistics"), 0.0f);
     //*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*
@@ -1247,6 +1247,8 @@ struct cascadeBuilder {
     //*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*
 
     // Track casting for those not provided
+    auto posTrack = v0.template posTrack_as<TTrackTo>();
+    auto negTrack = v0.template negTrack_as<TTrackTo>();
     auto bachTrack = cascade.template bachelor_as<TTrackTo>();
     auto const& collision = cascade.collision();
 
@@ -1647,15 +1649,11 @@ struct cascadeBuilder {
       bool validCascadeCandidateKF = false;
       if constexpr (requires { cascade.template v0(); }) {
         auto v0 = cascade.template v0_as<aod::V0sLinked>();
-        auto posTrack = v0.template posTrack_as<TTrackTo>();
-        auto negTrack = v0.template negTrack_as<TTrackTo>();
-        validCascadeCandidateKF = buildCascadeCandidateWithKF<TTrackTo>(cascade, v0, posTrack, negTrack);
+        validCascadeCandidateKF = buildCascadeCandidateWithKF<TTrackTo>(cascade, v0);
       }
       if constexpr (requires { cascade.template findableV0(); }) {
         auto v0 = cascade.template findableV0_as<aod::FindableV0sLinked>();
-        auto posTrack = v0.template posTrack_as<TTrackTo>();
-        auto negTrack = v0.template negTrack_as<TTrackTo>();
-        validCascadeCandidateKF = buildCascadeCandidateWithKF<TTrackTo>(cascade, v0, posTrack, negTrack);
+        validCascadeCandidateKF = buildCascadeCandidateWithKF<TTrackTo>(cascade, v0);
       }
       if (!validCascadeCandidateKF)
         continue; // doesn't pass cascade selections
@@ -2393,9 +2391,9 @@ struct cascadePreselector {
 
 /// Extends the cascdata table with expression columns
 struct cascadeInitializer {
-  Spawns<aod::CascCore> cascdataext;
-  Spawns<aod::KFCascCore> kfcascdataext;
-  Spawns<aod::TraCascCore> tracascdataext;
+  Spawns<aod::CascCores> cascdataext;
+  Spawns<aod::KFCascCores> kfcascdataext;
+  Spawns<aod::TraCascCores> tracascdataext;
   void init(InitContext const&) {}
 };
 
