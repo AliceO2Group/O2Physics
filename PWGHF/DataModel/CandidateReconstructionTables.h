@@ -35,7 +35,6 @@
 
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/Utils/utilsPid.h"
-#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 namespace o2::aod
 {
