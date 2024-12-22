@@ -29,7 +29,7 @@ struct stradautracksextraconverter2 {
                          values.itsClusterSizes(),
                          static_cast<uint8_t>(0),  // findable (unknown in old format)
                          -values.tpcClusters(),    // findable minus found: we know found
-                         values.tpcCrossedRows()); // findable minus crossed rows: we know crossed rows
+                         -values.tpcCrossedRows()); // findable minus crossed rows: we know crossed rows
     }
   }
 };
