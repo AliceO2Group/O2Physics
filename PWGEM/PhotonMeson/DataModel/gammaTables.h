@@ -230,7 +230,7 @@ DECLARE_SOA_COLUMN(CosPA, cospa, float);                                //!
 DECLARE_SOA_COLUMN(PCA, pca, float);                                    //!
 DECLARE_SOA_COLUMN(Alpha, alpha, float);                                //!
 DECLARE_SOA_COLUMN(QtArm, qtarm, float);                                //!
-DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float);                  // Chi2 / NDF of the reconstructed V0
+DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float);                  //! Chi2 / NDF of the reconstructed V0
 DECLARE_SOA_COLUMN(SigmaPx2, sigmaPx2, float);                          //! error^2 of px in covariant matrix
 DECLARE_SOA_COLUMN(SigmaPy2, sigmaPy2, float);                          //! error^2 of py in covariant matrix
 DECLARE_SOA_COLUMN(SigmaPz2, sigmaPz2, float);                          //! error^2 of pz in covariant matrix
