@@ -764,12 +764,12 @@ struct CorrelationTask {
   PROCESS_SWITCH(CorrelationTask, processMixed2ProngDerived, "Process mixed events on derived data", false);
 
   void processMixed2Prong2Prong(DerivedCollisions const& collisions, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
-  { 
+  {
     BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     auto tracksTuple = std::make_tuple(p2tracks);
     SameKindPair<DerivedCollisions, soa::Filtered<aod::CF2ProngTracks>, BinningTypeDerived> pairs{configurableBinningDerived, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
-    
+
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
       int bin = configurableBinningDerived.getBin({collision1.posZ(), collision1.multiplicity()});
@@ -778,29 +778,29 @@ struct CorrelationTask {
       if (cfgTwoTrackCut > 0) {
         field = getMagneticField(collision1.timestamp());
       }
-      
+
       if (cfgVerbosity > 0) {
         LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), collision1.multiplicity(), collision2.globalIndex(), collision2.posZ(), collision2.multiplicity());
       }
-      
+
       if (it.isNewWindow()) {
         loadEfficiency(collision1.timestamp());
-        
+
         mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepReconstructed);
       }
-      
+
       // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
-      
+
       registry.fill(HIST("eventcount_mixed"), bin);
       fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight);
-      
+
       if (cfg.mEfficiencyAssociated || cfg.mEfficiencyTrigger) {
         if (it.isNewWindow()) {
           mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepCorrected);
         }
         fillCorrelations<CorrelationContainer::kCFStepCorrected>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight);
       }
-    } 
+    }
   }
   PROCESS_SWITCH(CorrelationTask, processMixed2Prong2Prong, "Process mixed events on derived data", false);
 
