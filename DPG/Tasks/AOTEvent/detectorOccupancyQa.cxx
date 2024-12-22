@@ -34,7 +34,6 @@
 #include "TH3.h"
 
 using namespace o2;
-using namespace std;
 using namespace o2::framework;
 using namespace o2::aod::evsel;
 
@@ -584,7 +583,7 @@ struct DetectorOccupancyQaTask {
         float thisColTimeDiff = vCollsTimeDeltaWrtGivenColl[iCol] / 1e3; // ns -> us
 
         // fill this-event time bins
-        if (thisColIndex != colIndex && fabs(thisColTimeDiff) < confTimeIntervalForSmallBins) {
+        if (thisColIndex != colIndex && std::fabs(thisColTimeDiff) < confTimeIntervalForSmallBins) {
           LOGP(debug, " iCol={}/{}, thisColIndex={}, colIndex={}, thisColTimeDiff={} nITS={}", iCol, vCollsAssocToGivenColl.size(), thisColIndex, colIndex, thisColTimeDiff, vTracksITS567perColl[thisColIndex]);
           histos.fill(HIST("thisEventITStracksInTimeBins"), thisColTimeDiff, vTracksITS567perColl[thisColIndex]);
           histos.fill(HIST("thisEventFT0CInTimeBins"), thisColTimeDiff, vAmpFT0CperColl[thisColIndex]);
@@ -646,7 +645,7 @@ struct DetectorOccupancyQaTask {
         histos.fill(HIST("hNumITSTPC_vs_ITS567tracksThisCol_vs_ITS567tracksInTimeWindow_BEFORE_sel"), vTracksITS567perCollPtEtaCuts[colIndex], vTracksITSTPCperCollPtEtaCuts[colIndex], nITS567tracksInTimeWindow - vTracksITS567perColl[colIndex]);
         histos.fill(HIST("hNumITSTPC_vs_ITS567tracksThisCol_vs_FT0CamplInTimeWindow_BEFORE_sel"), vTracksITS567perCollPtEtaCuts[colIndex], vTracksITSTPCperCollPtEtaCuts[colIndex], multFT0CInTimeWindow - multFT0CmainCollision);
 
-        if (sel && fabs(col.posZ()) < 10) {
+        if (sel && std::fabs(col.posZ()) < 10) {
           histos.fill(HIST("hNumITS567tracksInTimeWindowSel"), nITS567tracksInTimeWindowSel);
           histos.fill(HIST("hNumITSTPCtracksInTimeWindowSel"), nITSTPCtracksInTimeWindowSel);
 
@@ -729,7 +728,7 @@ struct DetectorOccupancyQaTask {
         if (confFlagUseNoHighMultCollInPrevRof && !col.selection_bit(kNoHighMultCollInPrevRof))
           flagFillOccupVsDt = false;
 
-        if (sel && fabs(col.posZ()) < 10 && flagFillOccupVsDt) {
+        if (sel && std::fabs(col.posZ()) < 10 && flagFillOccupVsDt) {
           histos.fill(HIST("occupancyInTimeBins"), dt, vTracksITS567perCollPtEtaCuts[colIndex], confFlagUseGlobalTracks ? vTracksGlobalPerCollPtEtaCuts[colIndex] : vTracksITSTPCperCollPtEtaCuts[colIndex], nITStrInTimeBin);
           histos.fill(HIST("occupancyInTimeBins_occupByFT0"), dt, vTracksITS567perCollPtEtaCuts[colIndex], confFlagUseGlobalTracks ? vTracksGlobalPerCollPtEtaCuts[colIndex] : vTracksITSTPCperCollPtEtaCuts[colIndex], nFT0CInTimeBin);
 
