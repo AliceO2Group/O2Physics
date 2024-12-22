@@ -835,8 +835,7 @@ struct DptDptFilterTracks {
 
     /* the track types and combinations */
     tracktype = cfgTrackType.value;
-    trackSelectionTune = cfgTuneTrackSelection;
-    initializeTrackSelection();
+    initializeTrackSelection(cfgTuneTrackSelection.value);
     traceDCAOutliers = cfgTraceDCAOutliers;
     traceOutOfSpeciesParticles = cfgTraceOutOfSpeciesParticles;
     recoIdMethod = cfgRecoIdMethod;

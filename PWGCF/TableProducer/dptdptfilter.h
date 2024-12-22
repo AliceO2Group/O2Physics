@@ -206,7 +206,6 @@ static constexpr o2::aod::track::TrackSelectionFlags::flagtype TrackSelectionDCA
   o2::aod::track::TrackSelectionFlags::kDCAz | o2::aod::track::TrackSelectionFlags::kDCAxy;
 
 int tracktype = 1;
-TrackSelectionTuneCfg trackSelectionTune;
 std::function<float(float)> maxDcaZPtDep{}; // max dca in z axis as function of pT
 
 std::vector<TrackSelection*> trackFilters = {};
@@ -238,7 +237,7 @@ inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdat
   return lst;
 }
 
-inline void initializeTrackSelection()
+inline void initializeTrackSelection(TrackSelectionTuneCfg& tune)
 {
   switch (tracktype) {
     case 1: { /* Run2 global track */
@@ -331,31 +330,31 @@ inline void initializeTrackSelection()
     default:
       break;
   }
-  if (trackSelectionTune.mUseIt) {
+  if (tune.mUseIt) {
     for (auto const& filter : trackFilters) {
-      if (trackSelectionTune.mUseTPCclusters) {
-        filter->SetMinNClustersTPC(trackSelectionTune.mTPCclusters);
+      if (tune.mUseTPCclusters) {
+        filter->SetMinNClustersTPC(tune.mTPCclusters);
       }
-      if (trackSelectionTune.mUseTPCxRows) {
-        filter->SetMinNCrossedRowsTPC(trackSelectionTune.mTPCxRows);
+      if (tune.mUseTPCxRows) {
+        filter->SetMinNCrossedRowsTPC(tune.mTPCxRows);
       }
-      if (trackSelectionTune.mUseTPCXRoFClusters) {
-        filter->SetMinNCrossedRowsOverFindableClustersTPC(trackSelectionTune.mTPCXRoFClusters);
+      if (tune.mUseTPCXRoFClusters) {
+        filter->SetMinNCrossedRowsOverFindableClustersTPC(tune.mTPCXRoFClusters);
       }
-      if (trackSelectionTune.mUseDCAxy) {
+      if (tune.mUseDCAxy) {
         /* DCAxy is tricky due to how the pT dependence is implemented */
-        filter->SetMaxDcaXYPtDep([](float) { return trackSelectionTune.mDCAxy; });
-        filter->SetMaxDcaXY(trackSelectionTune.mDCAxy);
+        filter->SetMaxDcaXYPtDep([&tune](float) { return tune.mDCAxy; });
+        filter->SetMaxDcaXY(tune.mDCAxy);
       }
-      if (trackSelectionTune.mUseDCAz) {
-        filter->SetMaxDcaZ(trackSelectionTune.mDCAz);
+      if (tune.mUseDCAz) {
+        filter->SetMaxDcaZ(tune.mDCAz);
       }
     }
-    if (trackSelectionTune.mUseDCAz) {
-      maxDcaZPtDep = [](float) { return trackSelectionTune.mDCAz; };
+    if (tune.mUseDCAz) {
+      maxDcaZPtDep = [&tune](float) { return tune.mDCAz; };
     }
-    if (trackSelectionTune.mUseFractionTpcSharedClusters) {
-      sharedTpcClusters = trackSelectionTune.mFractionTpcSharedClusters;
+    if (tune.mUseFractionTpcSharedClusters) {
+      sharedTpcClusters = tune.mFractionTpcSharedClusters;
     }
   }
 }
