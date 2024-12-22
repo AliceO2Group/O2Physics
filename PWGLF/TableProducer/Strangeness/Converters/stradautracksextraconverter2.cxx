@@ -27,8 +27,8 @@ struct stradautracksextraconverter2 {
       dauTrackExtras_002(values.itsChi2PerNcl(),
                          values.detectorMap(),
                          values.itsClusterSizes(),
-                         static_cast<uint8_t>(0),  // findable (unknown in old format)
-                         -values.tpcClusters(),    // findable minus found: we know found
+                         static_cast<uint8_t>(0),   // findable (unknown in old format)
+                         -values.tpcClusters(),     // findable minus found: we know found
                          -values.tpcCrossedRows()); // findable minus crossed rows: we know crossed rows
     }
   }
