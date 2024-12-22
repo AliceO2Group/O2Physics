@@ -833,21 +833,12 @@ struct lambdapolsp {
         histos.fill(HIST("hpCosPsiC"), centrality, (TMath::Cos(GetPhiInRange(psiZDCC))));
         histos.fill(HIST("hpSinPsiA"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA))));
         histos.fill(HIST("hpSinPsiC"), centrality, (TMath::Sin(GetPhiInRange(psiZDCC))));
-        /*histos.fill(HIST("hcentQxZDCA"), centrality, qxZDCA);
-        histos.fill(HIST("hcentQyZDCA"), centrality, qyZDCA);
-        histos.fill(HIST("hcentQxZDCC"), centrality, qxZDCC);
-        histos.fill(HIST("hcentQyZDCC"), centrality, qyZDCC);*/
       }
     }
 
     //___________________________________________________________________________________________________
-    // loop over V00s as necessary
+    // loop over V0s as necessary
     for (auto v0 : V0s) {
-
-      // for track properties
-      auto postrack = v0.template posTrackExtra_as<AllTrackCandidates>();
-      auto negtrack = v0.template negTrackExtra_as<AllTrackCandidates>();
-
       bool LambdaTag = isCompatible(v0, 0);
       bool aLambdaTag = isCompatible(v0, 1);
 
