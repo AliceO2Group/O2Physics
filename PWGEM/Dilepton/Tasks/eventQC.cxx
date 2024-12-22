@@ -82,6 +82,7 @@ struct eventQC {
     Configurable<bool> cfgRequireNoCollInTimeRangeStrict{"cfgRequireNoCollInTimeRangeStrict", false, "require no collision in time range strict"};
     Configurable<bool> cfgRequirekNoCollInRofStandard{"cfgRequirekNoCollInRofStandard", false, "require no other collisions in this Readout Frame with per-collision multiplicity above threshold"};
     Configurable<bool> cfgRequirekNoCollInRofStrict{"cfgRequirekNoCollInRofStrict", false, "require no other collisions in this Readout Frame"};
+    Configurable<bool> cfgRequirekNoHighMultCollInPrevRof{"cfgRequirekNoHighMultCollInPrevRof", false, "require no HM collision in previous ITS ROF"};
   } eventcuts;
 
   struct : ConfigurableGroup {
@@ -98,6 +99,7 @@ struct eventQC {
     Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 1, "min ncluster its"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
+    Configurable<float> cfg_max_chi2tof{"cfg_max_chi2tof", 1e+10, "max chi2/NclsTOF"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 0.2, "max dca XY for single track in cm"};
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 0.2, "max dca Z for single track in cm"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -1e+10, "min n sigma e in TPC"};
@@ -129,7 +131,7 @@ struct eventQC {
   {
     // event info
 
-    const int nbin_ev = 13;
+    const int nbin_ev = 17;
     auto hCollisionCounter = fRegistry.add<TH1>("Event/before/hCollisionCounter", "collision counter;;Number of events", kTH1F, {{nbin_ev, 0.5, nbin_ev + 0.5}}, false);
     hCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
     hCollisionCounter->GetXaxis()->SetBinLabel(2, "FT0AND");
@@ -143,7 +145,11 @@ struct eventQC {
     hCollisionCounter->GetXaxis()->SetBinLabel(10, "sel8");
     hCollisionCounter->GetXaxis()->SetBinLabel(11, "|Z_{vtx}| < 10 cm");
     hCollisionCounter->GetXaxis()->SetBinLabel(12, "NoCollInTimeRangeStandard");
-    hCollisionCounter->GetXaxis()->SetBinLabel(13, "accepted");
+    hCollisionCounter->GetXaxis()->SetBinLabel(13, "NoCollInTimeRangeStrict");
+    hCollisionCounter->GetXaxis()->SetBinLabel(14, "NoCollInRofStandard");
+    hCollisionCounter->GetXaxis()->SetBinLabel(15, "NoCollInRofStrict");
+    hCollisionCounter->GetXaxis()->SetBinLabel(16, "NoHighMultCollInPrevRof");
+    hCollisionCounter->GetXaxis()->SetBinLabel(17, "accepted");
 
     fRegistry.add("Event/before/hZvtx", "vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
     fRegistry.add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", kTH1F, {{6001, -0.5, 6000.5}}, false);
@@ -251,7 +257,7 @@ struct eventQC {
     fRegistry.add("Track/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
     fRegistry.add("Track/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("Track/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
-    fRegistry.add("Track/hChi2TOF", "chi2 of TOF", kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("Track/hChi2TOF", "chi2 of TOF", kTH2F, {{1000, 0, 10}, {100, 0, 10}}, false);
 
     if (cfgFillPID) {
       fRegistry.add("Track/hTPCdEdx", "TPC dE/dx;p_{pv} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
@@ -290,7 +296,7 @@ struct eventQC {
     fRegistry.fill(HIST("Track/hDeltaPin"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
     fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
     fRegistry.fill(HIST("Track/hITSClusterMap"), track.itsClusterMap());
-    fRegistry.fill(HIST("Track/hChi2TOF"), track.tofChi2());
+    fRegistry.fill(HIST("Track/hChi2TOF"), track.p(), track.tofChi2());
 
     if (cfgFillPID) {
       int nsize = 0;
@@ -349,6 +355,18 @@ struct eventQC {
     }
     if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 12.0);
+    }
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 13.0);
+    }
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 14.0);
+    }
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 15.0);
+    }
+    if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 16.0);
     }
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hZvtx"), collision.posZ());
 
@@ -571,11 +589,11 @@ struct eventQC {
       return false;
     }
 
-    if (trackcuts.cfg_requireTOF && !track.hasTOF()) {
+    if (trackcuts.cfg_requireTOF && !(track.hasTOF() && track.tofChi2() < trackcuts.cfg_max_chi2tof)) {
       return false;
     }
 
-    if (track.hasTOF() && (track.tofNSigmaEl() < trackcuts.cfg_min_TOFNsigmaEl || trackcuts.cfg_max_TOFNsigmaEl < track.tofNSigmaEl())) {
+    if (track.hasTOF() && ((track.tofNSigmaEl() < trackcuts.cfg_min_TOFNsigmaEl || trackcuts.cfg_max_TOFNsigmaEl < track.tofNSigmaEl()) || trackcuts.cfg_max_chi2tof < track.tofChi2())) {
       return false;
     }
 
@@ -629,6 +647,10 @@ struct eventQC {
       return false;
     }
 
+    if (eventcuts.cfgRequirekNoHighMultCollInPrevRof && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+      return false;
+    }
+
     if (!(eventcuts.cfgTrackOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgTrackOccupancyMax)) {
       return false;
     }
@@ -669,8 +691,8 @@ struct eventQC {
         continue;
       }
       fillEventInfo<1>(collision);
-      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 13); // accepted
-      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 13);  // accepted
+      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 17); // accepted
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 17);  // accepted
 
       int nGlobalTracks = 0, nGlobalTracksPV = 0;
       auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
