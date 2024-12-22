@@ -46,44 +46,44 @@ using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TrackSelect
 
 struct DetectorOccupancyQaTask {
   // configurables for study of occupancy in time windows
-  Configurable<bool> confAddBasicQAhistos{"AddBasicQAhistos", true, "0 - add basic histograms, 1 - skip"};
-  Configurable<float> confTimeIntervalForOccupancyCalculation{"TimeIntervalForOccupancyCalculation", 100, "Time interval for TPC occupancy calculation, us"};
-  Configurable<float> confOccupancyHistCoeffNtracksForOccupancy{"HistCoeffNtracksForOccupancy", 1., "Coefficient for max nTracks in occupancy histos"};
-  Configurable<float> confOccupancyHistCoeffNbins2D{"HistCoeffNbins2D", 1., "Coefficient for nBins in occupancy 2D histos"};
-  Configurable<float> confOccupancyHistCoeffNbins3D{"HistCoeffNbins3D", 1., "Coefficient for nBins in occupancy 3D histos"};
-  Configurable<float> confCoeffMaxNtracksThisEvent{"CoeffMaxNtracksThisEvent", 1., "Coefficient for max nTracks or FT0 ampl in histos in a given event"};
-  Configurable<bool> confFlagApplyROFborderCut{"ApplyROFborderCut", true, "Use ROF border cut for a current event"};
-  Configurable<bool> confFlagApplyTFborderCut{"ApplyTFborderCut", true, "Use TF border cut for a current event"};
-  Configurable<int> confFlagWhichTimeRange{"FlagWhichTimeRange", 0, "Whicn time range for occupancy calculation: 0 - symmetric, 1 - only past, 2 - only future"};
-  Configurable<bool> confFlagUseGlobalTracks{"FlagUseGlobalTracks", false, "For small time bins, use global tracks counter instead of ITSTPC tracks"};
-  Configurable<bool> confFlagUseNoCollInRofStrict{"FlagUseNoCollInRofStrict", false, "Suppress same-ROF events for occupancy historams"};
-  Configurable<bool> confFlagUseNoHighMultCollInPrevRof{"FlagUseNoHighMultCollInPrevRof", false, "Suppress high-multiplicity prev-ROF events for occupancy historams"};
+  Configurable<bool> confAddBasicQAhistos{"AddBasicQAhistos", true, "0 - add basic histograms, 1 - skip"};                                                              // o2-linter: disable=name/configurable
+  Configurable<float> confTimeIntervalForOccupancyCalculation{"TimeIntervalForOccupancyCalculation", 100, "Time interval for TPC occupancy calculation, us"};           // o2-linter: disable=name/configurable
+  Configurable<float> confOccupancyHistCoeffNtracksForOccupancy{"HistCoeffNtracksForOccupancy", 1., "Coefficient for max nTracks in occupancy histos"};                 // o2-linter: disable=name/configurable
+  Configurable<float> confOccupancyHistCoeffNbins2D{"HistCoeffNbins2D", 1., "Coefficient for nBins in occupancy 2D histos"};                                            // o2-linter: disable=name/configurable
+  Configurable<float> confOccupancyHistCoeffNbins3D{"HistCoeffNbins3D", 1., "Coefficient for nBins in occupancy 3D histos"};                                            // o2-linter: disable=name/configurable
+  Configurable<float> confCoeffMaxNtracksThisEvent{"CoeffMaxNtracksThisEvent", 1., "Coefficient for max nTracks or FT0 ampl in histos in a given event"};               // o2-linter: disable=name/configurable
+  Configurable<bool> confFlagApplyROFborderCut{"ApplyROFborderCut", true, "Use ROF border cut for a current event"};                                                    // o2-linter: disable=name/configurable
+  Configurable<bool> confFlagApplyTFborderCut{"ApplyTFborderCut", true, "Use TF border cut for a current event"};                                                       // o2-linter: disable=name/configurable
+  Configurable<int> confFlagWhichTimeRange{"FlagWhichTimeRange", 0, "Whicn time range for occupancy calculation: 0 - symmetric, 1 - only past, 2 - only future"};       // o2-linter: disable=name/configurable
+  Configurable<bool> confFlagUseGlobalTracks{"FlagUseGlobalTracks", false, "For small time bins, use global tracks counter instead of ITSTPC tracks"};                  // o2-linter: disable=name/configurable
+  Configurable<bool> confFlagUseNoCollInRofStrict{"FlagUseNoCollInRofStrict", false, "Suppress same-ROF events for occupancy historams"};                               // o2-linter: disable=name/configurable
+  Configurable<bool> confFlagUseNoHighMultCollInPrevRof{"FlagUseNoHighMultCollInPrevRof", false, "Suppress high-multiplicity prev-ROF events for occupancy historams"}; // o2-linter: disable=name/configurable
 
   // configuration for small time binning
-  Configurable<float> confTimeIntervalForSmallBins{"TimeIntervalForSmallBins", 100, "Time interval for TPC occupancy calculation in small bins, +/-, us"};
-  Configurable<int> confNumberOfSmallTimeBins{"nSmallTimeBins", 40, "Number of small time bins"};
+  Configurable<float> confTimeIntervalForSmallBins{"TimeIntervalForSmallBins", 100, "Time interval for TPC occupancy calculation in small bins, +/-, us"}; // o2-linter: disable=name/configurable
+  Configurable<int> confNumberOfSmallTimeBins{"nSmallTimeBins", 40, "Number of small time bins"};                                                          // o2-linter: disable=name/configurable
 
   // event and track cuts for given event
-  Configurable<float> confCutVertZMinThisEvent{"VzMinThisEvent", -10, "vZ cut for a current event"};
-  Configurable<float> confCutVertZMaxThisEvent{"VzMaxThisEvent", 10, "vZ cut for a current event"};
-  Configurable<float> confCutPtMinThisEvent{"PtMinThisEvent", 0.2, "pt cut for particles in a current event"};
-  Configurable<float> confCutPtMaxThisEvent{"PtMaxThisEvent", 100., "pt cut for particles in a current event"};
-  Configurable<float> confCutEtaMinTracksThisEvent{"EtaMinTracksThisEvent", -0.8, "eta cut for particles in a current event"};
-  Configurable<float> confCutEtaMaxTracksThisEvent{"EtaMaxTracksThisEvent", 0.8, "eta cut for particles in a current event"};
-  Configurable<int> confCutMinTPCcls{"MinNumTPCcls", 70, "min number of TPC clusters for a current event"};
+  Configurable<float> confCutVertZMinThisEvent{"VzMinThisEvent", -10, "vZ cut for a current event"};                           // o2-linter: disable=name/configurable
+  Configurable<float> confCutVertZMaxThisEvent{"VzMaxThisEvent", 10, "vZ cut for a current event"};                            // o2-linter: disable=name/configurable
+  Configurable<float> confCutPtMinThisEvent{"PtMinThisEvent", 0.2, "pt cut for particles in a current event"};                 // o2-linter: disable=name/configurable
+  Configurable<float> confCutPtMaxThisEvent{"PtMaxThisEvent", 100., "pt cut for particles in a current event"};                // o2-linter: disable=name/configurable
+  Configurable<float> confCutEtaMinTracksThisEvent{"EtaMinTracksThisEvent", -0.8, "eta cut for particles in a current event"}; // o2-linter: disable=name/configurable
+  Configurable<float> confCutEtaMaxTracksThisEvent{"EtaMaxTracksThisEvent", 0.8, "eta cut for particles in a current event"};  // o2-linter: disable=name/configurable
+  Configurable<int> confCutMinTPCcls{"MinNumTPCcls", 70, "min number of TPC clusters for a current event"};                    // o2-linter: disable=name/configurable
 
   // config for QA histograms
-  Configurable<bool> confAddTracksVsFwdHistos{"AddTracksVsFwdHistos", true, "0 - add histograms, 1 - skip"};
-  Configurable<int> nBinsTracks{"nBinsTracks", 400, "N bins in n tracks histo"};
-  Configurable<int> nMaxTracks{"nMaxTracks", 8000, "N max in n tracks histo"};
-  Configurable<int> nMaxGlobalTracks{"nMaxGlobalTracks", 3000, "N max in n tracks histo"};
-  Configurable<int> nBinsMultFwd{"nBinsMultFwd", 400, "N bins in mult fwd histo"};
-  Configurable<float> nMaxMultFwd{"nMaxMultFwd", 200000, "N max in mult fwd histo"};
+  Configurable<bool> confAddTracksVsFwdHistos{"AddTracksVsFwdHistos", true, "0 - add histograms, 1 - skip"}; // o2-linter: disable=name/configurable
+  Configurable<int> nBinsTracks{"nBinsTracks", 400, "N bins in n tracks histo"};                             // o2-linter: disable=name/configurable
+  Configurable<int> nMaxTracks{"nMaxTracks", 8000, "N max in n tracks histo"};                               // o2-linter: disable=name/configurable
+  Configurable<int> nMaxGlobalTracks{"nMaxGlobalTracks", 3000, "N max in n tracks histo"};                   // o2-linter: disable=name/configurable
+  Configurable<int> nBinsMultFwd{"nBinsMultFwd", 400, "N bins in mult fwd histo"};                           // o2-linter: disable=name/configurable
+  Configurable<float> nMaxMultFwd{"nMaxMultFwd", 200000, "N max in mult fwd histo"};                         // o2-linter: disable=name/configurable
 
-  Configurable<int> nBinsOccupancy{"nBinsOccupancy", 150, "N bins for occupancy axis"};
-  Configurable<float> nMaxOccupancy{"nMaxOccupancy", 15000, "N for max of the occupancy axis"};
+  Configurable<int> nBinsOccupancy{"nBinsOccupancy", 150, "N bins for occupancy axis"};         // o2-linter: disable=name/configurable
+  Configurable<float> nMaxOccupancy{"nMaxOccupancy", 15000, "N for max of the occupancy axis"}; // o2-linter: disable=name/configurable
 
-  Configurable<int> nMaxBcInTFforAnalysis{"nMaxBcInTFforAnalysis", -1, "When to stop taking collisions in TF, if -1: take all collisions"};
+  Configurable<int> nMaxBcInTFforAnalysis{"nMaxBcInTFforAnalysis", -1, "When to stop taking collisions in TF, if -1: take all collisions"}; // o2-linter: disable=name/configurable
 
   uint64_t minGlobalBC = 0;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
