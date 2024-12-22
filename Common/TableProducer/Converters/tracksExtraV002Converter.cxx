@@ -24,6 +24,9 @@ struct TracksExtraV002Converter {
     if (doprocessV000ToV002 == false && doprocessV001ToV002 == false) {
       LOGF(fatal, "Neither processV000ToV002 nor processV001ToV002 is enabled. Please choose one!");
     }
+    if (doprocessV000ToV002 == true && doprocessV001ToV002 == true) {
+      LOGF(fatal, "Both processV000ToV002 and processV001ToV002 are enabled. Please choose only one!");
+    }
   }
 
   void processV000ToV002(aod::TracksExtra_000 const& tracksExtra_000)
