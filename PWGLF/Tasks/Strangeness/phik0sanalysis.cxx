@@ -1066,7 +1066,7 @@ struct phik0shortanalysis {
 
       std::array<bool, 3> isCountedMCPhi{false, false, false};
 
-      for (const auto& mcParticle : mcParticles) {
+      for (const auto& mcParticle : mcParticlesThisColl) {
         if (mcParticle.pdgCode() != 333)
           continue;
         auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
@@ -1150,7 +1150,7 @@ struct phik0shortanalysis {
 
       std::array<bool, 3> isCountedMCPhi{false, false, false};
 
-      for (const auto& mcParticle : mcParticles) {
+      for (const auto& mcParticle : mcParticlesThisColl) {
         if (mcParticle.pdgCode() != 333)
           continue;
         auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
