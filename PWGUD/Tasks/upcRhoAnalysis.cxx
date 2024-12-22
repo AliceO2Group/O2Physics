@@ -43,12 +43,12 @@ namespace tree
 {
 // misc event info
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
-DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
+DECLARE_SOA_COLUMN(LocalBC, localBC, int);
 DECLARE_SOA_COLUMN(NumContrib, numContrib, int);
 // event vertex
-DECLARE_SOA_COLUMN(PosX, posX, double);
-DECLARE_SOA_COLUMN(PosY, posY, double);
-DECLARE_SOA_COLUMN(PosZ, posZ, double);
+DECLARE_SOA_COLUMN(PosX, posX, float);
+DECLARE_SOA_COLUMN(PosY, posY, float);
+DECLARE_SOA_COLUMN(PosZ, posZ, float);
 // FIT info
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
@@ -69,29 +69,29 @@ DECLARE_SOA_COLUMN(NeutronClass, neutronClass, int);
 // Rhos
 DECLARE_SOA_COLUMN(TotalCharge, totalCharge, int);
 // store things for reconstruction of lorentz vectors
-DECLARE_SOA_COLUMN(RhoPt, rhoPt, double);
-DECLARE_SOA_COLUMN(RhoEta, rhoEta, double);
-DECLARE_SOA_COLUMN(RhoPhi, rhoPhi, double);
-DECLARE_SOA_COLUMN(RhoM, rhoM, double);
+DECLARE_SOA_COLUMN(RhoPt, rhoPt, float);
+DECLARE_SOA_COLUMN(RhoEta, rhoEta, float);
+DECLARE_SOA_COLUMN(RhoPhi, rhoPhi, float);
+DECLARE_SOA_COLUMN(RhoM, rhoM, float);
 // other stuff
-DECLARE_SOA_COLUMN(RhoPhiRandom, rhoPhiRandom, double);
-DECLARE_SOA_COLUMN(RhoPhiCharge, rhoPhiCharge, double);
+DECLARE_SOA_COLUMN(RhoPhiRandom, rhoPhiRandom, float);
+DECLARE_SOA_COLUMN(RhoPhiCharge, rhoPhiCharge, float);
 // Pion tracks
 DECLARE_SOA_COLUMN(TrackSign, trackSign, std::vector<int>);
 // for lorentz vector reconstruction
-DECLARE_SOA_COLUMN(TrackPt, trackPt, std::vector<double>);
-DECLARE_SOA_COLUMN(TrackEta, trackEta, std::vector<double>);
-DECLARE_SOA_COLUMN(TrackPhi, trackPhi, std::vector<double>);
-DECLARE_SOA_COLUMN(TrackM, trackM, std::vector<double>);
+DECLARE_SOA_COLUMN(TrackPt, trackPt, std::vector<float>);
+DECLARE_SOA_COLUMN(TrackEta, trackEta, std::vector<float>);
+DECLARE_SOA_COLUMN(TrackPhi, trackPhi, std::vector<float>);
+DECLARE_SOA_COLUMN(TrackM, trackM, std::vector<float>);
 // other stuff
-DECLARE_SOA_COLUMN(TrackPiPID, trackPiPID, std::vector<double>);
-DECLARE_SOA_COLUMN(TrackElPID, trackElPID, std::vector<double>);
-DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, std::vector<double>);
-DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, std::vector<double>);
-DECLARE_SOA_COLUMN(TrackTpcSignal, trackTpcSignal, std::vector<double>);
+DECLARE_SOA_COLUMN(TrackPiPID, trackPiPID, std::vector<float>);
+DECLARE_SOA_COLUMN(TrackElPID, trackElPID, std::vector<float>);
+DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, std::vector<float>);
+DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, std::vector<float>);
+DECLARE_SOA_COLUMN(TrackTpcSignal, trackTpcSignal, std::vector<float>);
 } // namespace tree
 DECLARE_SOA_TABLE(Tree, "AOD", "TREE",
-                  tree::RunNumber, tree::GlobalBC, tree::NumContrib,
+                  tree::RunNumber, tree::LocalBC, tree::NumContrib,
                   tree::PosX, tree::PosY, tree::PosZ, tree::TotalFT0AmplitudeA, tree::TotalFT0AmplitudeC, tree::TotalFV0AmplitudeA, tree::TotalFDDAmplitudeA, tree::TotalFDDAmplitudeC,
                   tree::TimeFT0A, tree::TimeFT0C, tree::TimeFV0A, tree::TimeFDDA, tree::TimeFDDC,
                   tree::EnergyCommonZNA, tree::EnergyCommonZNC, tree::TimeZNA, tree::TimeZNC, tree::NeutronClass,
@@ -102,29 +102,29 @@ DECLARE_SOA_TABLE(Tree, "AOD", "TREE",
 struct upcRhoAnalysis {
   Produces<o2::aod::Tree> Tree;
 
-  double PcEtaCut = 0.9; // physics coordination recommendation
+  float PcEtaCut = 0.9; // physics coordination recommendation
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
   Configurable<bool> do4pi{"do4pi", true, "do 4pi analysis"};
 
-  Configurable<double> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "max Z position cut on collisions"};
-  Configurable<double> ZNcommonEnergyCut{"ZNcommonEnergyCut", 0.0, "ZN common energy cut"};
-  Configurable<double> ZNtimeCut{"ZNtimeCut", 2.0, "ZN time cut"};
+  Configurable<float> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "max Z position cut on collisions"};
+  Configurable<float> ZNcommonEnergyCut{"ZNcommonEnergyCut", 0.0, "ZN common energy cut"};
+  Configurable<float> ZNtimeCut{"ZNtimeCut", 2.0, "ZN time cut"};
 
-  Configurable<double> tracksTpcNSigmaPiCut{"tracksTpcNSigmaPiCut", 3.0, "TPC nSigma pion cut"};
-  Configurable<double> tracksDcaMaxCut{"tracksDcaMaxCut", 1.0, "max DCA cut on tracks"};
+  Configurable<float> tracksTpcNSigmaPiCut{"tracksTpcNSigmaPiCut", 3.0, "TPC nSigma pion cut"};
+  Configurable<float> tracksDcaMaxCut{"tracksDcaMaxCut", 1.0, "max DCA cut on tracks"};
   Configurable<int> tracksMinItsNClsCut{"tracksMinItsNClsCut", 6, "min ITS clusters cut"};
-  Configurable<double> tracksMaxItsChi2NClCut{"tracksMaxItsChi2NClCut", 3.0, "max ITS chi2/Ncls cut"};
+  Configurable<float> tracksMaxItsChi2NClCut{"tracksMaxItsChi2NClCut", 3.0, "max ITS chi2/Ncls cut"};
   Configurable<int> tracksMinTpcNClsCut{"tracksMinTpcNClsCut", 120, "min TPC clusters cut"};
   Configurable<int> tracksMinTpcNClsCrossedRowsCut{"tracksMinTpcNClsCrossedRowsCut", 140, "min TPC crossed rows cut"};
-  Configurable<double> tracksMinTpcChi2NClCut{"tracksMinTpcChi2NClCut", 1.0, "min TPC chi2/Ncls cut"};
-  Configurable<double> tracksMaxTpcChi2NClCut{"tracksMaxTpcChi2NClCut", 1.8, "max TPC chi2/Ncls cut"};
-  Configurable<double> tracksMinTpcNClsCrossedOverFindableCut{"tracksMinTpcNClsCrossedOverFindableCut", 1.05, "min TPC crossed rows / findable clusters cut"};
-  Configurable<double> tracksMinPtCut{"tracksMinPtCut", 0.2, "min pT cut on tracks"};
+  Configurable<float> tracksMinTpcChi2NClCut{"tracksMinTpcChi2NClCut", 1.0, "min TPC chi2/Ncls cut"};
+  Configurable<float> tracksMaxTpcChi2NClCut{"tracksMaxTpcChi2NClCut", 1.8, "max TPC chi2/Ncls cut"};
+  Configurable<float> tracksMinTpcNClsCrossedOverFindableCut{"tracksMinTpcNClsCrossedOverFindableCut", 1.05, "min TPC crossed rows / findable clusters cut"};
+  Configurable<float> tracksMinPtCut{"tracksMinPtCut", 0.2, "min pT cut on tracks"};
 
-  Configurable<double> systemMassMinCut{"systemMassMinCut", 0.4, "min M cut for reco system"};
-  Configurable<double> systemMassMaxCut{"systemMassMaxCut", 1.2, "max M cut for reco system"};
-  Configurable<double> systemPtCut{"systemPtMaxCut", 0.1, "max pT cut for reco system"};
-  Configurable<double> systemYCut{"systemYCut", 0.9, "rapiditiy cut for reco system"};
+  Configurable<float> systemMassMinCut{"systemMassMinCut", 0.4, "min M cut for reco system"};
+  Configurable<float> systemMassMaxCut{"systemMassMaxCut", 1.2, "max M cut for reco system"};
+  Configurable<float> systemPtCut{"systemPtMaxCut", 0.1, "max pT cut for reco system"};
+  Configurable<float> systemYCut{"systemYCut", 0.9, "rapiditiy cut for reco system"};
 
   ConfigurableAxis mAxis{"mAxis", {1000, 0.0, 10.0}, "m (GeV/#it{c}^{2})"};
   ConfigurableAxis mCutAxis{"mCutAxis", {160, 0.4, 1.2}, "m (GeV/#it{c}^{2})"};
@@ -205,7 +205,7 @@ struct upcRhoAnalysis {
                                                        "TPC crossed rows/N_{clusters}",
                                                        "TOF requirement",
                                                        "p_{T}", "DCA", "#eta", "exactly 2 tracks", "PID"};
-    auto hSelectionCounter = QC.add<TH1>("QC/tracks/hSelectionCounter", ";;counts", kTH1D, {{static_cast<int>(selectionCounterLabels.size()), -0.5, static_cast<double>(selectionCounterLabels.size()) - 0.5}});
+    auto hSelectionCounter = QC.add<TH1>("QC/tracks/hSelectionCounter", ";;counts", kTH1D, {{static_cast<int>(selectionCounterLabels.size()), -0.5, static_cast<float>(selectionCounterLabels.size()) - 0.5}});
     for (int i = 0; i < static_cast<int>(selectionCounterLabels.size()); ++i)
       hSelectionCounter->GetXaxis()->SetBinLabel(i + 1, selectionCounterLabels[i].c_str());
     // TOF hit check
@@ -550,7 +550,7 @@ struct upcRhoAnalysis {
   template <typename T>
   bool tracksPassPiPID(const T& cutTracks) // n-dimensional PID cut
   {
-    double radius = 0.0;
+    float radius = 0.0;
     for (const auto& track : cutTracks)
       radius += std::pow(track.tpcNSigmaPi(), 2);
     return radius < std::pow(tracksTpcNSigmaPiCut, 2);
@@ -593,7 +593,7 @@ struct upcRhoAnalysis {
     return system;
   }
 
-  double getPhiRandom(const std::vector<TLorentzVector>& cutTracks4Vecs) // decay phi anisotropy
+  float getPhiRandom(const std::vector<TLorentzVector>& cutTracks4Vecs) // decay phi anisotropy
   {                                                                      // two possible definitions of phi: randomize the tracks
     std::vector<int> indices = {0, 1};
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();    // get time-based seed
@@ -607,7 +607,7 @@ struct upcRhoAnalysis {
   }
 
   template <typename T>
-  double getPhiCharge(const T& cutTracks, const std::vector<TLorentzVector>& cutTracks4Vecs)
+  float getPhiCharge(const T& cutTracks, const std::vector<TLorentzVector>& cutTracks4Vecs)
   { // two possible definitions of phi: charge-based assignment
     TLorentzVector pOne, pTwo;
     pOne = (cutTracks[0].sign() > 0) ? cutTracks4Vecs[0] : cutTracks4Vecs[1];
@@ -618,7 +618,7 @@ struct upcRhoAnalysis {
   }
 
   template <typename T>
-  double getPhiChargeMC(const T& cutTracks, const std::vector<TLorentzVector>& cutTracks4Vecs)
+  float getPhiChargeMC(const T& cutTracks, const std::vector<TLorentzVector>& cutTracks4Vecs)
   { // the same as for data but using pdg code instead of charge
     TLorentzVector pOne, pTwo;
     pOne = (cutTracks[0].pdgCode() > 0) ? cutTracks4Vecs[0] : cutTracks4Vecs[1];
@@ -677,7 +677,7 @@ struct upcRhoAnalysis {
     std::vector<TLorentzVector> cutTracks4Vecs;
 
     for (const auto& track : tracks) {
-      // double p = momentum(track.px(), track.py(), track.pz());
+      // float p = momentum(track.px(), track.py(), track.pz());
       QC.fill(HIST("QC/tracks/raw/hPt"), track.pt());
       QC.fill(HIST("QC/tracks/raw/hEta"), eta(track.px(), track.py(), track.pz()));
       QC.fill(HIST("QC/tracks/raw/hPhi"), phi(track.px(), track.py()));
@@ -711,11 +711,11 @@ struct upcRhoAnalysis {
     // reonstruct system and calculate total charge, save commonly used values into variables
     TLorentzVector system = reconstructSystem(cutTracks4Vecs);
     int totalCharge = tracksTotalCharge(cutTracks);
-    double mass = system.M();
-    double pT = system.Pt();
-    double pTsquare = pT * pT;
-    double rapidity = system.Rapidity();
-    double systemPhi = system.Phi() + o2::constants::math::PI;
+    float mass = system.M();
+    float pT = system.Pt();
+    float pTsquare = pT * pT;
+    float rapidity = system.Rapidity();
+    float systemPhi = system.Phi() + o2::constants::math::PI;
 
     if (do4pi && cutTracks.size() == 4 && totalCharge == 0) {
       // fill out some 4pi QC histograms
@@ -744,33 +744,34 @@ struct upcRhoAnalysis {
     for (int i = 0; i < static_cast<int>(cutTracks.size()); i++)
       QC.fill(HIST("QC/tracks/hSelectionCounter"), 15);
 
-    double phiRandom = getPhiRandom(cutTracks4Vecs);
-    double phiCharge = getPhiCharge(cutTracks, cutTracks4Vecs);
+    float phiRandom = getPhiRandom(cutTracks4Vecs);
+    float phiCharge = getPhiCharge(cutTracks, cutTracks4Vecs);
 
     // differentiate leading- and subleading-momentum tracks
     auto leadingMomentumTrack = momentum(cutTracks[0].px(), cutTracks[0].py(), cutTracks[0].pz()) > momentum(cutTracks[1].px(), cutTracks[1].py(), cutTracks[1].pz()) ? cutTracks[0] : cutTracks[1];
     auto subleadingMomentumTrack = (leadingMomentumTrack == cutTracks[0]) ? cutTracks[1] : cutTracks[0];
-    double leadingPt = leadingMomentumTrack.pt();
-    double subleadingPt = subleadingMomentumTrack.pt();
-    double leadingEta = eta(leadingMomentumTrack.px(), leadingMomentumTrack.py(), leadingMomentumTrack.pz());
-    double subleadingEta = eta(subleadingMomentumTrack.px(), subleadingMomentumTrack.py(), subleadingMomentumTrack.pz());
-    double leadingPhi = phi(leadingMomentumTrack.px(), leadingMomentumTrack.py());
-    double subleadingPhi = phi(subleadingMomentumTrack.px(), subleadingMomentumTrack.py());
+    float leadingPt = leadingMomentumTrack.pt();
+    float subleadingPt = subleadingMomentumTrack.pt();
+    float leadingEta = eta(leadingMomentumTrack.px(), leadingMomentumTrack.py(), leadingMomentumTrack.pz());
+    float subleadingEta = eta(subleadingMomentumTrack.px(), subleadingMomentumTrack.py(), subleadingMomentumTrack.pz());
+    float leadingPhi = phi(leadingMomentumTrack.px(), leadingMomentumTrack.py());
+    float subleadingPhi = phi(subleadingMomentumTrack.px(), subleadingMomentumTrack.py());
     // fill TOF hit checker
     QC.fill(HIST("QC/tracks/hTofHitCheck"), leadingMomentumTrack.hasTOF(), subleadingMomentumTrack.hasTOF());
 
     // fill tree
+    int localBc = collision.globalBC() % o2::constants::lhc::LHCMaxBunches;
     std::vector<int> trackSigns = {leadingMomentumTrack.sign(), subleadingMomentumTrack.sign()};
-    std::vector<double> trackPts = {leadingPt, subleadingPt};
-    std::vector<double> trackEtas = {leadingEta, subleadingEta};
-    std::vector<double> trackPhis = {leadingPhi, subleadingPhi};
-    std::vector<double> trackMs = {o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged};
-    std::vector<double> trackPiPIDs = {leadingMomentumTrack.tpcNSigmaPi(), subleadingMomentumTrack.tpcNSigmaPi()};
-    std::vector<double> trackElPIDs = {leadingMomentumTrack.tpcNSigmaEl(), subleadingMomentumTrack.tpcNSigmaEl()};
-    std::vector<double> trackDcaXYs = {leadingMomentumTrack.dcaXY(), subleadingMomentumTrack.dcaXY()};
-    std::vector<double> trackDcaZs = {leadingMomentumTrack.dcaZ(), subleadingMomentumTrack.dcaZ()};
-    std::vector<double> trackTpcSignals = {leadingMomentumTrack.tpcSignal(), subleadingMomentumTrack.tpcSignal()};
-    Tree(collision.runNumber(), collision.globalBC(), collision.numContrib(),
+    std::vector<float> trackPts = {leadingPt, subleadingPt};
+    std::vector<float> trackEtas = {leadingEta, subleadingEta};
+    std::vector<float> trackPhis = {leadingPhi, subleadingPhi};
+    std::vector<float> trackMs = {o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged};
+    std::vector<float> trackPiPIDs = {leadingMomentumTrack.tpcNSigmaPi(), subleadingMomentumTrack.tpcNSigmaPi()};
+    std::vector<float> trackElPIDs = {leadingMomentumTrack.tpcNSigmaEl(), subleadingMomentumTrack.tpcNSigmaEl()};
+    std::vector<float> trackDcaXYs = {leadingMomentumTrack.dcaXY(), subleadingMomentumTrack.dcaXY()};
+    std::vector<float> trackDcaZs = {leadingMomentumTrack.dcaZ(), subleadingMomentumTrack.dcaZ()};
+    std::vector<float> trackTpcSignals = {leadingMomentumTrack.tpcSignal(), subleadingMomentumTrack.tpcSignal()};
+    Tree(collision.runNumber(), localBc, collision.numContrib(),
          collision.posX(), collision.posY(), collision.posZ(),
          collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
          collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
@@ -1087,11 +1088,11 @@ struct upcRhoAnalysis {
       return;
 
     TLorentzVector system = reconstructSystem(mcParticles4Vecs);
-    double mass = system.M();
-    double pT = system.Pt();
-    double pTsquare = pT * pT;
-    double rapidity = system.Rapidity();
-    double systemPhi = system.Phi() + o2::constants::math::PI;
+    float mass = system.M();
+    float pT = system.Pt();
+    float pTsquare = pT * pT;
+    float rapidity = system.Rapidity();
+    float systemPhi = system.Phi() + o2::constants::math::PI;
 
     if (do4pi && cutMcParticles.size() == 4) {
       for (int i = 0; i < static_cast<int>(cutMcParticles.size()); i++) {
@@ -1114,8 +1115,8 @@ struct upcRhoAnalysis {
     MC.fill(HIST("MC/tracks/pions/hEta"), eta(leadingMomentumPion.px(), leadingMomentumPion.py(), leadingMomentumPion.pz()), eta(subleadingMomentumPion.px(), subleadingMomentumPion.py(), subleadingMomentumPion.pz()));
     MC.fill(HIST("MC/tracks/pions/hPhi"), phi(leadingMomentumPion.px(), leadingMomentumPion.py()), phi(subleadingMomentumPion.px(), subleadingMomentumPion.py()));
 
-    double phiRandom = getPhiRandom(mcParticles4Vecs);
-    double phiCharge = getPhiChargeMC(cutMcParticles, mcParticles4Vecs);
+    float phiRandom = getPhiRandom(mcParticles4Vecs);
+    float phiCharge = getPhiChargeMC(cutMcParticles, mcParticles4Vecs);
 
     MC.fill(HIST("MC/system/hM"), mass);
     MC.fill(HIST("MC/system/hPt"), pT);
