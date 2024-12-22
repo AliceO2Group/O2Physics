@@ -819,10 +819,6 @@ struct lambdapolsp {
 
     //___________________________________________________________________________________________________
     // retrieve further info provided by StraZDCSP
-    auto qxZDCA = collision.qxZDCA();
-    auto qxZDCC = collision.qxZDCC();
-    auto qyZDCA = collision.qyZDCA();
-    auto qyZDCC = collision.qyZDCC();
     auto psiZDCC = collision.psiZDCC();
     auto psiZDCA = collision.psiZDCA();
 
