@@ -21,6 +21,11 @@
 #include <map>
 #include <iterator>
 #include <utility>
+#include <string>
+#include <set>
+#include <algorithm>
+#include <vector>
+#include <unordered_map>
 
 #include "Math/Vector4D.h"
 
@@ -367,9 +372,9 @@ struct PhotonConversionBuilder {
   }
 
   template <typename TTrack, typename TShiftedTrack, typename TKFParticle>
-  void fillTrackTable(TTrack const& track, TShiftedTrack const& shiftedtrack, TKFParticle const& kfp, float dcaXY, float dcaZ)
+  void fillTrackTable(TTrack const& track, TShiftedTrack const& shiftedtrack, TKFParticle const& kfp, float dcaXY, float dcaZ, bool isMoved)
   {
-    v0legs(track.collisionId(), track.globalIndex(), track.sign(),
+    v0legs(track.collisionId(), track.globalIndex(), track.sign(), isMoved,
            kfp.GetPx(), kfp.GetPy(), kfp.GetPz(), dcaXY, dcaZ,
            track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
            track.tpcChi2NCl(), track.tpcInnerParam(), track.tpcSignal(),
@@ -415,10 +420,17 @@ struct PhotonConversionBuilder {
     // Calculate DCA with respect to the collision associated to the v0, not individual tracks
     gpu::gpustd::array<float, 2> dcaInfo;
 
+    bool is_pos_moved = false;
+    bool is_ele_moved = false;
+
     auto pTrack = getTrackParCov(pos);
-    if (moveTPCTracks && isTPConlyTrack(pos) && !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, pos, pTrack)) {
-      LOGP(error, "failed correction for positive tpc track");
-      return;
+    if (moveTPCTracks && isTPConlyTrack(pos)) {
+      if (mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, pos, pTrack)) {
+        is_pos_moved = true;
+      } else {
+        LOGP(error, "failed correction for positive tpc track");
+        return;
+      }
     }
     auto pTrackC = pTrack;
     pTrackC.setPID(o2::track::PID::Electron);
@@ -427,9 +439,13 @@ struct PhotonConversionBuilder {
     auto posdcaZ = dcaInfo[1];
 
     auto nTrack = getTrackParCov(ele);
-    if (moveTPCTracks && isTPConlyTrack(ele) && !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, ele, nTrack)) {
-      LOGP(error, "failed correction for negative tpc track");
-      return;
+    if (moveTPCTracks && isTPConlyTrack(ele)) {
+      if (mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, ele, nTrack)) {
+        is_ele_moved = true;
+      } else {
+        LOGP(error, "failed correction for negative tpc track");
+        return;
+      }
     }
     auto nTrackC = nTrack;
     nTrackC.setPID(o2::track::PID::Electron);
@@ -669,8 +685,8 @@ struct PhotonConversionBuilder {
 
       v0photonskfcov(gammaKF_PV.GetCovariance(9), gammaKF_PV.GetCovariance(14), gammaKF_PV.GetCovariance(20), gammaKF_PV.GetCovariance(13), gammaKF_PV.GetCovariance(19), gammaKF_PV.GetCovariance(18));
 
-      fillTrackTable(pos, pTrack, kfp_pos_DecayVtx, posdcaXY, posdcaZ); // positive leg first
-      fillTrackTable(ele, nTrack, kfp_ele_DecayVtx, eledcaXY, eledcaZ); // negative leg second
+      fillTrackTable(pos, pTrack, kfp_pos_DecayVtx, posdcaXY, posdcaZ, is_pos_moved); // positive leg first
+      fillTrackTable(ele, nTrack, kfp_ele_DecayVtx, eledcaXY, eledcaZ, is_ele_moved); // negative leg second
     } // end of fill table
   }
 

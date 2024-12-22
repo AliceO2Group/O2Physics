@@ -113,6 +113,7 @@ namespace v0leg
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
+DECLARE_SOA_COLUMN(IsMoved, isMoved, bool);        //! moved by drift manager. relevant to TPConly tracks
 DECLARE_SOA_COLUMN(Px, px, float);                 //! Px at SV
 DECLARE_SOA_COLUMN(Py, py, float);                 //! Py at SV
 DECLARE_SOA_COLUMN(Pz, pz, float);                 //! Pz at SV
@@ -167,7 +168,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32
 });
 } // namespace v0leg
 DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
-                  o2::soa::Index<>, v0leg::CollisionId, v0leg::TrackId, v0leg::Sign,
+                  o2::soa::Index<>, v0leg::CollisionId, v0leg::TrackId, v0leg::Sign, v0leg::IsMoved,
                   v0leg::Px, v0leg::Py, v0leg::Pz,
                   track::DcaXY, track::DcaZ,
                   track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,

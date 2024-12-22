@@ -65,7 +65,6 @@ struct CreateResolutionMap {
   using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
   using SMatrix5 = ROOT::Math::SVector<double, 5>;
 
-  Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -75,12 +74,12 @@ struct CreateResolutionMap {
   ConfigurableAxis ConfPtGenBins{"ConfPtGenBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.80, 2.90, 3.00, 3.10, 3.20, 3.30, 3.40, 3.50, 3.60, 3.70, 3.80, 3.90, 4.00, 4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 8.50, 9.00, 9.50, 10.00, 11.00, 12.00, 13.00, 14.00, 15.00, 16.00, 17.00, 18.00, 19.00, 20.00}, "gen. pT bins for output histograms"};
 
   ConfigurableAxis ConfEtaCBGenBins{"ConfEtaCBGenBins", {30, -1.5, +1.5}, "gen. eta bins at midrapidity for output histograms"};
-  ConfigurableAxis ConfEtaFWDGenBins{"ConfEtaFWDGenBins", {30, -5, -2.0}, "gen. eta bins at forward rapidity for output histograms"};
-  ConfigurableAxis ConfPhiGenBins{"ConfPhiGenBins", {90, 0, 2.f * M_PI}, "gen. eta bins at forward rapidity for output histograms"};
+  ConfigurableAxis ConfEtaFWDGenBins{"ConfEtaFWDGenBins", {40, -5.5, -1.5}, "gen. eta bins at forward rapidity for output histograms"};
+  ConfigurableAxis ConfPhiGenBins{"ConfPhiGenBins", {72, 0, 2.f * M_PI}, "gen. eta bins at forward rapidity for output histograms"};
 
   ConfigurableAxis ConfRelDeltaPtBins{"ConfRelDeltaPtBins", {200, -1.f, +1.f}, "rel. dpt for output histograms"};
-  ConfigurableAxis ConfDeltaEtaBins{"ConfDeltaEtaBins", {200, -0.1f, +0.1f}, "deta bins for output histograms"};
-  ConfigurableAxis ConfDeltaPhiBins{"ConfDeltaPhiBins", {200, -0.1f, +0.1f}, "dphi bins for output histograms"};
+  ConfigurableAxis ConfDeltaEtaBins{"ConfDeltaEtaBins", {100, -0.1f, +0.1f}, "deta bins for output histograms"};
+  ConfigurableAxis ConfDeltaPhiBins{"ConfDeltaPhiBins", {100, -0.1f, +0.1f}, "dphi bins for output histograms"};
 
   struct : ConfigurableGroup {
     std::string prefix = "electroncut_group";

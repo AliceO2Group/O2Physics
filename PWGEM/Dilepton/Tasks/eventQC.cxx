@@ -251,7 +251,7 @@ struct eventQC {
     fRegistry.add("Track/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
     fRegistry.add("Track/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("Track/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
-    fRegistry.add("Track/hChi2TOF", "chi2 of TOF", kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("Track/hChi2TOF", "chi2 of TOF", kTH2F, {{1000, 0, 10}, {100, 0, 10}}, false);
 
     if (cfgFillPID) {
       fRegistry.add("Track/hTPCdEdx", "TPC dE/dx;p_{pv} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
@@ -290,7 +290,7 @@ struct eventQC {
     fRegistry.fill(HIST("Track/hDeltaPin"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
     fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
     fRegistry.fill(HIST("Track/hITSClusterMap"), track.itsClusterMap());
-    fRegistry.fill(HIST("Track/hChi2TOF"), track.tofChi2());
+    fRegistry.fill(HIST("Track/hChi2TOF"), track.p(), track.tofChi2());
 
     if (cfgFillPID) {
       int nsize = 0;
