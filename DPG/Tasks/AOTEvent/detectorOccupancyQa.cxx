@@ -453,8 +453,8 @@ struct DetectorOccupancyQaTask {
       vTracksITSTPCperCollPtEtaCuts[colIndex] += nITSTPCtracksPtEtaCuts;
 
       // TF ids within a given cols table
-      int tfid = (bc.globalBC() - bcSOR) / nBCsPerTF;
-      vTFids[colIndex] = tfid;
+      int tfId = (bc.globalBC() - bcSOR) / nBCsPerTF;
+      vTFids[colIndex] = tfId;
 
       // check that this collision has full information inside the time window (taking into account TF borders)
       int64_t bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
@@ -481,7 +481,7 @@ struct DetectorOccupancyQaTask {
       }
 
       int64_t foundGlobalBC = vFoundGlobalBC[colIndex];
-      int64_t tfid = (foundGlobalBC - bcSOR) / nBCsPerTF;
+      int64_t tfId = (foundGlobalBC - bcSOR) / nBCsPerTF;
 
       // find all collisions in time window before the current one (start with the current collision)
       int32_t minColIndex = colIndex;
@@ -489,8 +489,8 @@ struct DetectorOccupancyQaTask {
         int64_t thisBC = vFoundGlobalBC[minColIndex];
 
         // check if this is still the same TF
-        int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != tfid)
+        int64_t thisTfId = (thisBC - bcSOR) / nBCsPerTF;
+        if (thisTfId != tfId)
           break;
 
         float dt = (thisBC - foundGlobalBC) * bcNS; // ns
@@ -510,8 +510,8 @@ struct DetectorOccupancyQaTask {
       int32_t maxColIndex = colIndex + 1;
       while (maxColIndex < cols.size() && confFlagWhichTimeRange != 1) {
         int64_t thisBC = vFoundGlobalBC[maxColIndex];
-        int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != tfid)
+        int64_t thisTfId = (thisBC - bcSOR) / nBCsPerTF;
+        if (thisTfId != tfId)
           break;
 
         float dt = (thisBC - foundGlobalBC) * bcNS; // ns
