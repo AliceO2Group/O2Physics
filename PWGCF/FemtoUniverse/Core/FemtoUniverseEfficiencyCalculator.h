@@ -18,7 +18,7 @@ struct EfficiencyConfigurableGroup : ConfigurableGroup {
   Configurable<bool> shouldCalculate{"ConfEfficiencyCalculate", false, "Should calculate efficiency"};
   Configurable<bool> shouldApplyCorrections{"ConfEfficiencyApplyCorrections", false, "Should apply corrections from efficiency"};
 
-  Configurable<std::vector<std::string>> ccdbLabels{"ConfCCDBLabels", {"", ""}, "Labels for efficiency objects in CCDB"};
+  Configurable<std::vector<std::string>> ccdbLabels{"ConfCCDBLabels", std::vector<std::string>{"", ""}, "Labels for efficiency objects in CCDB"};
 
   OutputObj<TH1F> hEfficiency1{"Efficiency part1"};
   OutputObj<TH1F> hEfficiency2{"Efficiency part2"};
@@ -79,9 +79,13 @@ class EfficiencyCalculator
     }
   }
 
-  auto uploadOnStop(InitContext& ic) -> EfficiencyCalculator&
+  auto uploadOnStop(InitContext& ic) -> void
   {
-    if (!shouldUploadOnStop && config->shouldCalculate) {
+    if (!shouldCalculate) {
+      return;
+    }
+
+    if (!shouldUploadOnStop) {
       shouldUploadOnStop = true;
 
       auto& callbacks = ic.services().get<CallbackService>();
@@ -109,8 +113,6 @@ class EfficiencyCalculator
     } else {
       LOGF(warn, log("Uploading on stop callback is already set up"));
     }
-
-    return *this;
   }
 
   template <uint8_t N>
