@@ -206,10 +206,12 @@ static constexpr o2::aod::track::TrackSelectionFlags::flagtype TrackSelectionDCA
   o2::aod::track::TrackSelectionFlags::kDCAz | o2::aod::track::TrackSelectionFlags::kDCAxy;
 
 int tracktype = 1;
+TrackSelectionTuneCfg trackSelectionTune;
 std::function<float(float)> maxDcaZPtDep{}; // max dca in z axis as function of pT
 
 std::vector<TrackSelection*> trackFilters = {};
 bool dca2Dcut = false;
+float sharedTpcClusters = 1.0; ///< max fraction of shared TPC clusters
 float maxDCAz = 1e6f;
 float maxDCAxy = 1e6f;
 
@@ -236,7 +238,7 @@ inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdat
   return lst;
 }
 
-inline void initializeTrackSelection(const TrackSelectionTuneCfg& tune)
+inline void initializeTrackSelection()
 {
   switch (tracktype) {
     case 1: { /* Run2 global track */
@@ -329,23 +331,31 @@ inline void initializeTrackSelection(const TrackSelectionTuneCfg& tune)
     default:
       break;
   }
-  if (tune.mUseIt) {
+  if (trackSelectionTune.mUseIt) {
     for (auto const& filter : trackFilters) {
-      if (tune.mUseTPCclusters) {
-        filter->SetMinNClustersTPC(tune.mTPCclusters);
+      if (trackSelectionTune.mUseTPCclusters) {
+        filter->SetMinNClustersTPC(trackSelectionTune.mTPCclusters);
       }
-      if (tune.mUseTPCxRows) {
-        filter->SetMinNCrossedRowsTPC(tune.mTPCxRows);
+      if (trackSelectionTune.mUseTPCxRows) {
+        filter->SetMinNCrossedRowsTPC(trackSelectionTune.mTPCxRows);
       }
-      if (tune.mUseTPCXRoFClusters) {
-        filter->SetMinNCrossedRowsOverFindableClustersTPC(tune.mTPCXRoFClusters);
+      if (trackSelectionTune.mUseTPCXRoFClusters) {
+        filter->SetMinNCrossedRowsOverFindableClustersTPC(trackSelectionTune.mTPCXRoFClusters);
       }
-      if (tune.mUseDCAxy) {
-        filter->SetMaxDcaXY(tune.mDCAxy);
+      if (trackSelectionTune.mUseDCAxy) {
+        /* DCAxy is tricky due to how the pT dependence is implemented */
+        filter->SetMaxDcaXYPtDep([](float) { return trackSelectionTune.mDCAxy; });
+        filter->SetMaxDcaXY(trackSelectionTune.mDCAxy);
       }
-      if (tune.mUseDCAz) {
-        filter->SetMaxDcaZ(tune.mDCAz);
+      if (trackSelectionTune.mUseDCAz) {
+        filter->SetMaxDcaZ(trackSelectionTune.mDCAz);
       }
+    }
+    if (trackSelectionTune.mUseDCAz) {
+      maxDcaZPtDep = [](float) { return trackSelectionTune.mDCAz; };
+    }
+    if (trackSelectionTune.mUseFractionTpcSharedClusters) {
+      sharedTpcClusters = trackSelectionTune.mFractionTpcSharedClusters;
     }
   }
 }
@@ -1126,6 +1136,10 @@ inline bool matchTrackType(TrackObject const& track)
         }
         /* 2D DCA xy-o-z cut */
         if (!checkDca2Dcut(track)) {
+          return false;
+        }
+        /* shared fraction of TPC clusters */
+        if (!(track.tpcFractionSharedCls() < sharedTpcClusters)) {
           return false;
         }
         return true;

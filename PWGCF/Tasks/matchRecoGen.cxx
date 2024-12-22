@@ -120,7 +120,8 @@ struct MatchRecoGen {
 
     /* the track types and combinations */
     tracktype = cfgTrackType.value;
-    initializeTrackSelection(cfgTuneTrackSelection);
+    trackSelectionTune = cfgTuneTrackSelection;
+    initializeTrackSelection();
     /* the centrality/multiplicity estimation */
     fCentMultEstimator = getCentMultEstimator(cfgCentMultEstimator);
     /* the trigger selection */
