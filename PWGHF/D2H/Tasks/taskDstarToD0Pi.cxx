@@ -22,9 +22,6 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
-#include "Framework/Expressions.h"
-#include "Framework/ExpressionHelpers.h"
-#include "Framework/ExpirationHandler.h"
 #include "Framework/runDataProcessing.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
@@ -87,9 +84,9 @@ struct HfTaskDstarToD0Pi {
 
   void init(InitContext&)
   {
-    // if((doprocessDataWoML & doprocessDataWML) |(doprocessMcWoMl & doprocessMcWML)){
-    //   LOGP(fatal, "Only Without-ML or With-ML functions should be enabled at a time! Please check your configuration!");
-    // }
+    if ((doprocessDataWoML & doprocessDataWML) | (doprocessMcWoMl & doprocessMcWML)) {
+      LOGP(fatal, "Only Without-ML or With-ML functions should be enabled at a time! Please check your configuration!");
+    }
     auto vecPtBins = (std::vector<double>)ptBins;
 
     AxisSpec axisImpactParam = {binningImpactParam, "impact parameter (cm)"};
@@ -381,7 +378,6 @@ struct HfTaskDstarToD0Pi {
   {
     // MC Gen level
     for (auto const& mcParticle : rowsMcPartilces) {
-      // LOGF(info, "Deep: MC Particle Index: %d", mcParticle.globalIndex());
       if (TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // MC Matching is successful at Generator Level
         auto ptGen = mcParticle.pt();
         auto yGen = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDStar);
@@ -389,7 +385,6 @@ struct HfTaskDstarToD0Pi {
           continue;
         }
         auto mcCollision = mcParticle.template mcCollision_as<aod::McCollisions>();
-        // LOGF(info, "Deep:MC Collision Index: %d", mcCollision.globalIndex());
         auto recCollisions = collisions.sliceBy(colsPerMcCollision, mcCollision.globalIndex());
         // looking if a generated collision reconstructed more than a times.
         if (recCollisions.size() > 1) {
