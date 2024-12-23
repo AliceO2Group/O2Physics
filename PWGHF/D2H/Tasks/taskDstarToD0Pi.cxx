@@ -22,6 +22,9 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/Expressions.h"
+#include "Framework/ExpressionHelpers.h"
+#include "Framework/ExpirationHandler.h"
 #include "Framework/runDataProcessing.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
@@ -47,6 +50,7 @@ struct HfTaskDstarToD0Pi {
   /// @brief specially for MC data
   // full reconstructed Dstar candidate
   using CandDstarWSelFlagMcRec = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfCandDstarMcRec>;
+  using CandDstarWSelFlagWMlMcRec = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfCandDstarMcRec, aod::HfMlDstarToD0Pi>;
   using CandDstarMcGen = soa::Join<aod::McParticles, aod::HfCandDstarMcGen>;
 
   using CollisionsWCent = soa::Join<aod::Collisions, aod::CentFT0Ms>;
@@ -60,6 +64,7 @@ struct HfTaskDstarToD0Pi {
   SliceCache cache;
 
   Partition<CandDstarWSelFlagMcRec> rowsSelectedCandDstarMcRec = aod::hf_sel_candidate_dstar::isRecoD0Flag == selectionFlagHfD0ToPiK;
+  Partition<CandDstarWSelFlagWMlMcRec> rowsSelectedCandDstarMcRecWMl = aod::hf_sel_candidate_dstar::isRecoD0Flag == selectionFlagHfD0ToPiK;
 
   ConfigurableAxis binningImpactParam{"binningImpactParam", {1000, 0.1, -0.1}, " Bins of Impact Parameter"};
   ConfigurableAxis binningDecayLength{"binningDecayLength", {1000, 0.0, 0.7}, "Bins of Decay Length"};
@@ -82,6 +87,9 @@ struct HfTaskDstarToD0Pi {
 
   void init(InitContext&)
   {
+    // if((doprocessDataWoML & doprocessDataWML) |(doprocessMcWoMl & doprocessMcWML)){
+    //   LOGP(fatal, "Only Without-ML or With-ML functions should be enabled at a time! Please check your configuration!");
+    // }
     auto vecPtBins = (std::vector<double>)ptBins;
 
     AxisSpec axisImpactParam = {binningImpactParam, "impact parameter (cm)"};
@@ -162,7 +170,14 @@ struct HfTaskDstarToD0Pi {
     registry.add("Efficiency/hNumPvContributorsCandInMass", "PV Contributors; PV Contributor; FT0M Centrality", {HistType::kTH2F, {{100, 0, 300}, {axisCentrality}}}, true);
 
     // BDT Score (axisBDTScoreBackground, axisBDTScorePrompt, axisBDTScoreNonPrompt)
-    registry.add("Yield/hDeltaInvMassVsPtVsCentVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseL, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
+    if (doprocessDataWML) {
+      registry.add("Yield/hDeltaInvMassVsPtVsCentVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseL, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
+    }
+    if (doprocessMcWML) {
+      registry.add("Efficiency/hPtPromptVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseL, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
+      registry.add("Efficiency/hPtNonPromptVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseL, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
+      registry.add("Efficiency/hPtBkgVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseL, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
+    }
   }
 
   template <bool applyMl, typename T1, typename T2>
@@ -178,7 +193,7 @@ struct HfTaskDstarToD0Pi {
       auto nCandsCurrentCol = selectedCandsCurrentCol.size();
 
       if (nCandsCurrentCol > 0) {
-        LOGF(debug, "size of selectedCandsCurrentCol: %d", nCandsCurrentCol);
+        // LOGF(debug, "size of selectedCandsCurrentCol: %d", nCandsCurrentCol);
         registry.fill(HIST("Efficiency/hNumPvContributorsCand"), nPVContributors, centrality);
       }
 
@@ -260,46 +275,42 @@ struct HfTaskDstarToD0Pi {
   }
 
   // process function without susing ML
-  void processWoML(CollisionsWCent const& cols, soa::Filtered<CandDstarWSelFlag> const& selectedCands)
+  void processDataWoML(CollisionsWCent const& cols, soa::Filtered<CandDstarWSelFlag> const& selectedCands)
   {
     runTaskDstar<false, soa::Filtered<CandDstarWSelFlag>, Preslice<soa::Filtered<CandDstarWSelFlag>>>(cols, selectedCands, preslicSelectedCandDstarPerCol);
   }
-  PROCESS_SWITCH(HfTaskDstarToD0Pi, processWoML, "Process without ML", true);
+  PROCESS_SWITCH(HfTaskDstarToD0Pi, processDataWoML, "Process Data without ML", true);
 
   // process function with susing ML, Here we store BDT score as well
-  void processWML(CollisionsWCent const& cols, soa::Filtered<CandDstarWSelFlagWMl> const& selectedCands)
+  void processDataWML(CollisionsWCent const& cols, soa::Filtered<CandDstarWSelFlagWMl> const& selectedCands)
   {
     runTaskDstar<true, soa::Filtered<CandDstarWSelFlagWMl>, Preslice<soa::Filtered<CandDstarWSelFlagWMl>>>(cols, selectedCands, preslicSelectedCandDstarPerColWMl);
   }
-  PROCESS_SWITCH(HfTaskDstarToD0Pi, processWML, "Process with ML", false);
+  PROCESS_SWITCH(HfTaskDstarToD0Pi, processDataWML, "Process Data with ML", false);
 
-  void processMC(aod::McCollisions const&, CollisionsWCentMcLabel const& collisions, CandDstarWSelFlagMcRec const&,
-                 CandDstarMcGen const& rowsMcPartilces,
-                 aod::TracksWMc const&)
+  template <bool applyMl, typename T1>
+  void runMcRecTaskDstar(T1 const& candsMcRecSel, CandDstarMcGen const& rowsMcPartilces)
   {
-    rowsSelectedCandDstarMcRec.bindExternalIndices(&collisions);
-
+    // LOGF(info, "Running MC Rec Task Dstar");
     int8_t signDstar = 0;
     // MC at Reconstruction level
-    for (const auto& candDstarMcRec : rowsSelectedCandDstarMcRec) {
+    for (const auto& candDstarMcRec : candsMcRecSel) {
+      // LOGF(info, "MC Rec Dstar loop");
       auto ptDstarRecSig = candDstarMcRec.pt();
       auto yDstarRecSig = candDstarMcRec.y(constants::physics::MassDStar);
       if (yCandDstarRecoMax >= 0. && std::abs(yDstarRecSig) > yCandDstarRecoMax) {
         continue;
       }
-      auto collision = candDstarMcRec.collision_as<CollisionsWCentMcLabel>();
+      auto collision = candDstarMcRec.template collision_as<CollisionsWCentMcLabel>();
       auto centrality = collision.centFT0M();                                                               // 0-100%
       if (TESTBIT(std::abs(candDstarMcRec.flagMcMatchRec()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // if MC matching is successful at Reconstruction Level
+        // LOGF(info, "MC Rec Dstar loop MC Matched");
         // get MC Mother particle
-        auto indexMother = RecoDecay::getMother(rowsMcPartilces, candDstarMcRec.prong0_as<aod::TracksWMc>().mcParticle_as<CandDstarMcGen>(), o2::constants::physics::Pdg::kDStar, true, &signDstar, 2);
+        auto prong0 = candDstarMcRec.template prong0_as<aod::TracksWMc>();
+        auto indexMother = RecoDecay::getMother(rowsMcPartilces, prong0.template mcParticle_as<CandDstarMcGen>(), o2::constants::physics::Pdg::kDStar, true, &signDstar, 2);
         auto particleMother = rowsMcPartilces.rawIteratorAt(indexMother);  // What is difference between rawIterator() or iteratorAt() methods?
         registry.fill(HIST("QA/hPtSkimDstarGenSig"), particleMother.pt()); // generator level pt
         registry.fill(HIST("Efficiency/hPtVsCentSkimDstarGenSig"), particleMother.pt(), centrality);
-        registry.fill(HIST("Efficiency/hPtVsCentFullRecoDstarRecSig"), ptDstarRecSig, centrality);
-
-        // auto recCollision = candDstarMcRec.collision_as<CollisionsWCentMcLabel>();
-        // float centFT0M = recCollision.centFT0M();
-        // LOGF(info, "centFT0M: %f", centFT0M);
 
         registry.fill(HIST("QA/hPtVsYSkimDstarRecSig"), ptDstarRecSig, yDstarRecSig); // Skimed at level of trackIndexSkimCreator
         if (candDstarMcRec.isRecoTopol()) {                                           // if Topological selection are passed
@@ -308,8 +319,9 @@ struct HfTaskDstarToD0Pi {
         if (candDstarMcRec.isRecoPid()) { // if PID selection is passed
           registry.fill(HIST("QA/hPtVsYRecoPidDstarRecSig"), ptDstarRecSig, yDstarRecSig);
         }
-        if (candDstarMcRec.isRecoCand()) { // if all selection passed
+        if (candDstarMcRec.isSelDstarToD0Pi()) { // if all selection passed
           registry.fill(HIST("QA/hPtFullRecoDstarRecSig"), ptDstarRecSig);
+          registry.fill(HIST("Efficiency/hPtVsCentFullRecoDstarRecSig"), ptDstarRecSig, centrality);
         }
         registry.fill(HIST("QA/hCPASkimD0RecSig"), candDstarMcRec.cpaD0());
         registry.fill(HIST("QA/hEtaSkimD0RecSig"), candDstarMcRec.etaD0());
@@ -324,47 +336,61 @@ struct HfTaskDstarToD0Pi {
           if (candDstarMcRec.isRecoPid()) { // if PID selection is passed
             registry.fill(HIST("QA/hPtVsYRecoPidPromptDstarRecSig"), ptDstarRecSig, yDstarRecSig);
           }
-          if (candDstarMcRec.isRecoCand()) { // if all selection passed
+          if (candDstarMcRec.isSelDstarToD0Pi()) { // if all selection passed
             registry.fill(HIST("QA/hPtFullRecoPromptDstarRecSig"), ptDstarRecSig);
+            if constexpr (applyMl) {
+              // LOGF(info, "Deep: Prompt MC Rec Task Dstar: ML applied");
+              auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
+              registry.fill(HIST("Efficiency/hPtPromptVsCentVsBDTScore"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2]);
+              // LOGF(info, "Deep: Prompt MC Rec Task Dstar: ML applied, Efficiency filled");
+            }
           }
-
         } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) { // only non-prompt signal at reconstruction level
           registry.fill(HIST("QA/hPtVsYSkimNonPromptDstarRecSig"), ptDstarRecSig, yDstarRecSig);
           if (candDstarMcRec.isRecoTopol()) { // if Topological selection are passed
             registry.fill(HIST("QA/hPtVsYRecoTopolNonPromptDstarRecSig"), ptDstarRecSig, yDstarRecSig);
           }
-          if (candDstarMcRec.isRecoPid()) {
+          if (candDstarMcRec.isRecoPid()) { // if PID selection is passed
             registry.fill(HIST("QA/hPtVsYRecoPidNonPromptDstarRecSig"), ptDstarRecSig, yDstarRecSig);
           }
-          if (candDstarMcRec.isRecoCand()) {
+          if (candDstarMcRec.isSelDstarToD0Pi()) { // if all selection passed
             registry.fill(HIST("QA/hPtFullRecoNonPromptDstarRecSig"), ptDstarRecSig);
+            if constexpr (applyMl) {
+              auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
+              registry.fill(HIST("Efficiency/hPtNonPromptVsCentVsBDTScore"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2]);
+            }
           }
         }
       } else { // MC Unmatched (Baground at Reconstruction Level)
         registry.fill(HIST("QA/hCPASkimD0RecBg"), candDstarMcRec.cpaD0());
         registry.fill(HIST("QA/hEtaSkimD0RecBg"), candDstarMcRec.etaD0());
         registry.fill(HIST("QA/hEtaSkimDstarRecBg"), candDstarMcRec.eta());
-        registry.fill(HIST("QA/hPtSkimD0RecBg"), candDstarMcRec.ptD0());
-        registry.fill(HIST("QA/hPtSkimDstarRecBg"), candDstarMcRec.pt());
+        if (candDstarMcRec.isSelDstarToD0Pi()) {
+          registry.fill(HIST("QA/hPtSkimDstarRecBg"), candDstarMcRec.pt());
+          if constexpr (applyMl) {
+            auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
+            registry.fill(HIST("Efficiency/hPtBkgVsCentVsBDTScore"), candDstarMcRec.pt(), centrality, bdtScore[0], bdtScore[1], bdtScore[2]);
+          }
+        }
       }
-    }
+    } // candidate loop ends
+    // LOGF(info, "Deep: MC Rec Task Dstar finished");
+  }
 
-    // MC at Generator Level
-    for (const auto& mcParticle : rowsMcPartilces) {
+  void runMcGenTaskDstar(CollisionsWCentMcLabel const& collisions, CandDstarMcGen const& rowsMcPartilces)
+  {
+    // MC Gen level
+    for (auto const& mcParticle : rowsMcPartilces) {
+      // LOGF(info, "Deep: MC Particle Index: %d", mcParticle.globalIndex());
       if (TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // MC Matching is successful at Generator Level
-
         auto ptGen = mcParticle.pt();
-        // auto yGen = mcParticle.y(); // Can we use this definition?
         auto yGen = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDStar);
         if (yCandDstarGenMax >= 0. && std::abs(yGen) > yCandDstarGenMax) {
           continue;
         }
-
-        auto mcCollision = mcParticle.mcCollision_as<aod::McCollisions>();
+        auto mcCollision = mcParticle.template mcCollision_as<aod::McCollisions>();
+        // LOGF(info, "Deep:MC Collision Index: %d", mcCollision.globalIndex());
         auto recCollisions = collisions.sliceBy(colsPerMcCollision, mcCollision.globalIndex());
-        // auto recCollisions = collisions.sliceByCached(aod::mccollisionlabel::mcCollisionId, mcCollision.globalIndex(), cache);
-        // auto recCollisions = collisions.sliceByCachedUnsorted(aod::mccollisionlabel::mcCollisionId, mcCollision.globalIndex(), cache);
-
         // looking if a generated collision reconstructed more than a times.
         if (recCollisions.size() > 1) {
           for (const auto& [c1, c2] : combinations(CombinationsStrictlyUpperIndexPolicy(recCollisions, recCollisions))) {
@@ -372,28 +398,22 @@ struct HfTaskDstarToD0Pi {
             registry.fill(HIST("QA/hDeltaCentGen"), deltaCent);
           }
         }
-
         float centFT0MGen;
         // assigning centrality to MC Collision using max FT0M amplitute from Reconstructed collisions
         if (recCollisions.size()) {
           std::vector<std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>> tempRecCols;
-
           for (const auto& recCol : recCollisions) {
-            // if(recCollisions.size()>1) LOGF(info, "cuurent cent: %f",recCol.centFT0M());
             tempRecCols.push_back(std::make_pair(recCol, recCol.numContrib()));
           }
           std::sort(tempRecCols.begin(), tempRecCols.end(), compare);
           centFT0MGen = tempRecCols.at(0).first.centFT0M();
-          // if(recCollisions.size()>1) LOGF(info, "assigned cent: %f",centFT0MGen);
         } else {
           centFT0MGen = -999.;
         }
-
         registry.fill(HIST("QA/hEtaDstarGen"), mcParticle.eta());
         registry.fill(HIST("QA/hPtDstarGen"), ptGen);
         registry.fill(HIST("QA/hPtVsYDstarGen"), ptGen, yGen);
         registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen);
-
         // only promt Dstar candidate at Generator level
         if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("QA/hPtPromptDstarGen"), ptGen);
@@ -403,9 +423,28 @@ struct HfTaskDstarToD0Pi {
           registry.fill(HIST("QA/hPtVsYNonPromptDstarGen"), ptGen, yGen);
         }
       }
-    }
+    } // MC Particle loop ends
   }
-  PROCESS_SWITCH(HfTaskDstarToD0Pi, processMC, "Process MC Data", false);
+
+  void processMcWoMl(aod::McCollisions const&, CollisionsWCentMcLabel const& collisions, CandDstarWSelFlagMcRec const&,
+                     CandDstarMcGen const& rowsMcPartilces,
+                     aod::TracksWMc const&)
+  {
+    rowsSelectedCandDstarMcRec.bindExternalIndices(&collisions);
+    runMcRecTaskDstar<false, Partition<CandDstarWSelFlagMcRec>>(rowsSelectedCandDstarMcRec, rowsMcPartilces);
+    runMcGenTaskDstar(collisions, rowsMcPartilces);
+  }
+  PROCESS_SWITCH(HfTaskDstarToD0Pi, processMcWoMl, "Process MC Data without ML", false);
+
+  void processMcWML(aod::McCollisions const&, CollisionsWCentMcLabel const& collisions, CandDstarWSelFlagWMlMcRec const&,
+                    CandDstarMcGen const& rowsMcPartilces,
+                    aod::TracksWMc const&)
+  {
+    rowsSelectedCandDstarMcRecWMl.bindExternalIndices(&collisions);
+    runMcRecTaskDstar<true, Partition<CandDstarWSelFlagWMlMcRec>>(rowsSelectedCandDstarMcRecWMl, rowsMcPartilces);
+    runMcGenTaskDstar(collisions, rowsMcPartilces);
+  }
+  PROCESS_SWITCH(HfTaskDstarToD0Pi, processMcWML, "Process MC Data with ML", false);
 
   // Comparator function to sort based on the second argument of a tuple
   static bool compare(const std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>& a, const std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>& b)
