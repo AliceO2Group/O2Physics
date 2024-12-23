@@ -15,6 +15,8 @@
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+/// \brief Dstar production analysis task (With and Without ML)
+
 #include <algorithm>
 #include <utility>
 #include <vector>
@@ -42,6 +44,8 @@ struct HfTaskDstarToD0Pi {
   Configurable<bool> selectionFlagHfD0ToPiK{"selectionFlagHfD0ToPiK", true, "Selection Flag for HF flagged candidates"};
   Configurable<std::vector<double>> ptBins{"ptBins", std::vector<double>{hf_cuts_dstar_to_d0_pi::vecBinsPt}, "pT bin limits for Dstar"};
 
+  SliceCache cache;
+
   using CandDstarWSelFlag = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>;
   using CandDstarWSelFlagWMl = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfMlDstarToD0Pi>;
   /// @brief specially for MC data
@@ -58,7 +62,6 @@ struct HfTaskDstarToD0Pi {
   Preslice<soa::Filtered<CandDstarWSelFlagWMl>> preslicSelectedCandDstarPerColWMl = aod::hf_cand::collisionId;
 
   PresliceUnsorted<CollisionsWCentMcLabel> colsPerMcCollision = aod::mccollisionlabel::mcCollisionId;
-  SliceCache cache;
 
   Partition<CandDstarWSelFlagMcRec> rowsSelectedCandDstarMcRec = aod::hf_sel_candidate_dstar::isRecoD0Flag == selectionFlagHfD0ToPiK;
   Partition<CandDstarWSelFlagWMlMcRec> rowsSelectedCandDstarMcRecWMl = aod::hf_sel_candidate_dstar::isRecoD0Flag == selectionFlagHfD0ToPiK;
@@ -177,6 +180,19 @@ struct HfTaskDstarToD0Pi {
     }
   }
 
+  // Comparator function to sort based on the second argument of a tuple
+  static bool compare(const std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>& a, const std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>& b)
+  {
+    return a.second > b.second;
+  }
+
+  /// @brief This function runs over Data to obatin yield
+  /// @tparam T1 type of the candidate
+  /// @tparam T2 type of preslice used to slice the candidate table
+  /// @tparam applyMl  a boolean to apply ML or not
+  /// @param cols reconstructed collision with centrality
+  /// @param selectedCands selected candidates with selection flag
+  /// @param preslice preslice to slice
   template <bool applyMl, typename T1, typename T2>
   void runTaskDstar(CollisionsWCent const& cols, T1 selectedCands, T2 preslice)
   {
@@ -271,20 +287,11 @@ struct HfTaskDstarToD0Pi {
     } // collision loop ends
   }
 
-  // process function without susing ML
-  void processDataWoML(CollisionsWCent const& cols, soa::Filtered<CandDstarWSelFlag> const& selectedCands)
-  {
-    runTaskDstar<false, soa::Filtered<CandDstarWSelFlag>, Preslice<soa::Filtered<CandDstarWSelFlag>>>(cols, selectedCands, preslicSelectedCandDstarPerCol);
-  }
-  PROCESS_SWITCH(HfTaskDstarToD0Pi, processDataWoML, "Process Data without ML", true);
-
-  // process function with susing ML, Here we store BDT score as well
-  void processDataWML(CollisionsWCent const& cols, soa::Filtered<CandDstarWSelFlagWMl> const& selectedCands)
-  {
-    runTaskDstar<true, soa::Filtered<CandDstarWSelFlagWMl>, Preslice<soa::Filtered<CandDstarWSelFlagWMl>>>(cols, selectedCands, preslicSelectedCandDstarPerColWMl);
-  }
-  PROCESS_SWITCH(HfTaskDstarToD0Pi, processDataWML, "Process Data with ML", false);
-
+  /// @brief This function runs over MC at reco level to obatin efficiency
+  /// @tparam T1 type of the candidate table
+  /// @tparam applyMl a boolean to apply ML or not
+  /// @param candsMcRecSel reconstructed candidates with selection flag
+  /// @param rowsMcPartilces generated particles  table
   template <bool applyMl, typename T1>
   void runMcRecTaskDstar(T1 const& candsMcRecSel, CandDstarMcGen const& rowsMcPartilces)
   {
@@ -374,6 +381,9 @@ struct HfTaskDstarToD0Pi {
     // LOGF(info, "Deep: MC Rec Task Dstar finished");
   }
 
+  /// @brief This function runs over MC at gen level to obatin efficiency
+  /// @param collisions reconstructed collision with centrality
+  /// @param rowsMcPartilces generated particles  table
   void runMcGenTaskDstar(CollisionsWCentMcLabel const& collisions, CandDstarMcGen const& rowsMcPartilces)
   {
     // MC Gen level
@@ -389,7 +399,7 @@ struct HfTaskDstarToD0Pi {
         // looking if a generated collision reconstructed more than a times.
         if (recCollisions.size() > 1) {
           for (const auto& [c1, c2] : combinations(CombinationsStrictlyUpperIndexPolicy(recCollisions, recCollisions))) {
-            auto deltaCent = abs(c1.centFT0M() - c2.centFT0M());
+            auto deltaCent = std::abs(c1.centFT0M() - c2.centFT0M());
             registry.fill(HIST("QA/hDeltaCentGen"), deltaCent);
           }
         }
@@ -421,6 +431,21 @@ struct HfTaskDstarToD0Pi {
     } // MC Particle loop ends
   }
 
+  // process data function without susing ML
+  void processDataWoML(CollisionsWCent const& cols, soa::Filtered<CandDstarWSelFlag> const& selectedCands)
+  {
+    runTaskDstar<false, soa::Filtered<CandDstarWSelFlag>, Preslice<soa::Filtered<CandDstarWSelFlag>>>(cols, selectedCands, preslicSelectedCandDstarPerCol);
+  }
+  PROCESS_SWITCH(HfTaskDstarToD0Pi, processDataWoML, "Process Data without ML", true);
+
+  // process data function with using ML, Here we store BDT score as well
+  void processDataWML(CollisionsWCent const& cols, soa::Filtered<CandDstarWSelFlagWMl> const& selectedCands)
+  {
+    runTaskDstar<true, soa::Filtered<CandDstarWSelFlagWMl>, Preslice<soa::Filtered<CandDstarWSelFlagWMl>>>(cols, selectedCands, preslicSelectedCandDstarPerColWMl);
+  }
+  PROCESS_SWITCH(HfTaskDstarToD0Pi, processDataWML, "Process Data with ML", false);
+
+  // process MC function without using ML
   void processMcWoMl(aod::McCollisions const&, CollisionsWCentMcLabel const& collisions, CandDstarWSelFlagMcRec const&,
                      CandDstarMcGen const& rowsMcPartilces,
                      aod::TracksWMc const&)
@@ -431,6 +456,7 @@ struct HfTaskDstarToD0Pi {
   }
   PROCESS_SWITCH(HfTaskDstarToD0Pi, processMcWoMl, "Process MC Data without ML", false);
 
+  // process MC function with using ML
   void processMcWML(aod::McCollisions const&, CollisionsWCentMcLabel const& collisions, CandDstarWSelFlagWMlMcRec const&,
                     CandDstarMcGen const& rowsMcPartilces,
                     aod::TracksWMc const&)
@@ -440,12 +466,6 @@ struct HfTaskDstarToD0Pi {
     runMcGenTaskDstar(collisions, rowsMcPartilces);
   }
   PROCESS_SWITCH(HfTaskDstarToD0Pi, processMcWML, "Process MC Data with ML", false);
-
-  // Comparator function to sort based on the second argument of a tuple
-  static bool compare(const std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>& a, const std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>& b)
-  {
-    return a.second > b.second;
-  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
