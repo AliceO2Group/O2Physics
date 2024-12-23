@@ -37,7 +37,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct UPCAnalysis {
+struct exclusiveRhoTo4Pi {
   SGSelector sgSelector;
   HistogramRegistry histos{"HistoReg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -78,14 +78,26 @@ struct UPCAnalysis {
     histos.add("EventCounts", "Total Events; Events", kTH1F, {{10, 0, 10}}); // 2=#Events, 3= #Selected Events, 5=#Selected Events with Zero Net charge, 6=Selected Events with Non-Zero Net charge
 
     // TPC nSigma
-    histos.add("tpcNSigmaPi_WOTS", "TPC nSigma Pion without track selection; Events", kTH1F, {{100, -15, 15}});
-    histos.add("tpcNSigmaPi_WTS", "TPC nSigma Pion with track selection; Events", kTH1F, {{100, -15, 15}});
-    histos.add("tpcNSigmaPi_WTS_PID_Pi", "TPC nSigma Pion with track selection and PID Selection of Pi; Entries", kTH1F, {{100, -15, 15}});
+    histos.add("tpcNSigmaPi_WOTS", "TPC nSigma Pion without track selection; Events", kTH1F, {{1000, -15, 15}});
+    histos.add("tpcNSigmaPi_WTS", "TPC nSigma Pion with track selection; Events", kTH1F, {{1000, -15, 15}});
+    histos.add("tpcNSigmaPi_WTS_PID_Pi", "TPC nSigma Pion with track selection and PID Selection of Pi; Entries", kTH1F, {{1000, -15, 15}});
+
+    // TPC nSigma of other particles with selected pion tracks
+    histos.add("tpcNSigmaPi_WTS_PID_Pi_Ka", "TPC nSigma Kaon with track selection and PID Selection of Pion; Entries", kTH1F, {{1000, -15, 15}});
+    histos.add("tpcNSigmaPi_WTS_PID_Pi_Pr", "TPC nSigma Proton with track selection and PID Selection of Pion; Entries", kTH1F, {{1000, -15, 15}});
+    histos.add("tpcNSigmaPi_WTS_PID_Pi_El", "TPC nSigma Electron with track selection and PID Selection of Pion; Entries", kTH1F, {{1000, -15, 15}});
+    histos.add("tpcNSigmaPi_WTS_PID_Pi_Mu", "TPC nSigma Muon with track selection and PID Selection of Pion; Entries", kTH1F, {{1000, -15, 15}});
 
     // TOF nSigma
-    histos.add("tofNSigmaPi_WTS", "TOF nSigma Pion with track selection; Events", kTH1F, {{100, -15, 15}});
-    histos.add("tofNSigmaPi_WOTS", "TOF nSigma Pion without track selection; Events", kTH1F, {{100, -15, 15}});
-    histos.add("tofNSigmaPi_WTS_PID_Pi", "TOF nSigma Pion with track selection and PID Selection of Pi; Entries", kTH1F, {{100, -15, 15}});
+    histos.add("tofNSigmaPi_WTS", "TOF nSigma Pion with track selection; Events", kTH1F, {{1000, -15, 15}});
+    histos.add("tofNSigmaPi_WOTS", "TOF nSigma Pion without track selection; Events", kTH1F, {{1000, -15, 15}});
+    histos.add("tofNSigmaPi_WTS_PID_Pi", "TOF nSigma Pion with track selection and PID Selection of Pi; Entries", kTH1F, {{1000, -15, 15}});
+
+    // TOF nSigma of other particles with selected pion tracks
+    histos.add("tofNSigmaPi_WTS_PID_Pi_Ka", "TOF nSigma Kaon with track selection and PID Selection of Pion; Entries", kTH1F, {{1000, -15, 15}});
+    histos.add("tofNSigmaPi_WTS_PID_Pi_Pr", "TOF nSigma Proton with track selection and PID Selection of Pion; Entries", kTH1F, {{1000, -15, 15}});
+    histos.add("tofNSigmaPi_WTS_PID_Pi_El", "TOF nSigma Electron with track selection and PID Selection of Pion; Entries", kTH1F, {{1000, -15, 15}});
+    histos.add("tofNSigmaPi_WTS_PID_Pi_Mu", "TOF nSigma Muon with track selection and PID Selection of Pion; Entries", kTH1F, {{1000, -15, 15}});
 
     // Track Transverse Momentum
     histos.add("pT_track_WOTS", "pT without track selection; pT [GeV/c]; Events", kTH1F, {{nBins_pT, 0, 2}});
@@ -291,8 +303,19 @@ struct UPCAnalysis {
 
       histos.fill(HIST("tpcSignal_Pi"), TMath::Sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py() + WTS_PID_Pi_tracks[i].pz() * WTS_PID_Pi_tracks[i].pz()), WTS_PID_Pi_tracks[i].tpcSignal());
       histos.fill(HIST("tofBeta_Pi"), TMath::Sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py() + WTS_PID_Pi_tracks[i].pz() * WTS_PID_Pi_tracks[i].pz()), WTS_PID_Pi_tracks[i].beta());
+
       histos.fill(HIST("tpcNSigmaPi_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tpcNSigmaPi());
+      histos.fill(HIST("tpcNSigmaPi_WTS_PID_Pi_Ka"), WTS_PID_Pi_tracks[i].tpcNSigmaKa());
+      histos.fill(HIST("tpcNSigmaPi_WTS_PID_Pi_Pr"), WTS_PID_Pi_tracks[i].tpcNSigmaPr());
+      histos.fill(HIST("tpcNSigmaPi_WTS_PID_Pi_El"), WTS_PID_Pi_tracks[i].tpcNSigmaEl());
+      histos.fill(HIST("tpcNSigmaPi_WTS_PID_Pi_Mu"), WTS_PID_Pi_tracks[i].tpcNSigmaMu());
+
       histos.fill(HIST("tofNSigmaPi_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tofNSigmaPi());
+      histos.fill(HIST("tofNSigmaPi_WTS_PID_Pi_Ka"), WTS_PID_Pi_tracks[i].tofNSigmaKa());
+      histos.fill(HIST("tofNSigmaPi_WTS_PID_Pi_Pr"), WTS_PID_Pi_tracks[i].tofNSigmaPr());
+      histos.fill(HIST("tofNSigmaPi_WTS_PID_Pi_El"), WTS_PID_Pi_tracks[i].tofNSigmaEl());
+      histos.fill(HIST("tofNSigmaPi_WTS_PID_Pi_Mu"), WTS_PID_Pi_tracks[i].tofNSigmaMu());
+
       histos.fill(HIST("pT_track_WTS_PID_Pi"), TMath::Sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
     } // End of loop over tracks with selection and PID selection of Pions
 
@@ -324,7 +347,7 @@ struct UPCAnalysis {
       k23 = k2 + k3;
       k24 = k2 + k4;
 
-      if (fabs(p1234.Rapidity()) < 0.5) {
+      if (std::fabs(p1234.Rapidity()) < 0.5) {
         histos.fill(HIST("pT_event_0charge_WTS_PID_Pi"), p1234.Pt());
         if (p1234.Pt() < 0.15) {
           histos.fill(HIST("rapidity_event_0charge_WTS_PID_Pi_domainA"), p1234.Rapidity());
@@ -363,7 +386,7 @@ struct UPCAnalysis {
 
       p1234 = p1 + p2 + p3 + p4;
 
-      if (fabs(p1234.Rapidity()) < 0.5) {
+      if (std::fabs(p1234.Rapidity()) < 0.5) {
         histos.fill(HIST("pT_event_non0charge_WTS_PID_Pi"), p1234.Pt());
 
         if (p1234.Pt() < 0.15) {
@@ -391,5 +414,5 @@ struct UPCAnalysis {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<UPCAnalysis>(cfgc)};
+    adaptAnalysisTask<exclusiveRhoTo4Pi>(cfgc)};
 }
