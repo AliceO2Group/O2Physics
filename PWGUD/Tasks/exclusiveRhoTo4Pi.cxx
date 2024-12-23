@@ -37,7 +37,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct UPCAnalysis {
+struct exclusiveRhoTo4Pi {
   SGSelector sgSelector;
   HistogramRegistry histos{"HistoReg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -414,5 +414,5 @@ struct UPCAnalysis {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<UPCAnalysis>(cfgc)};
+    adaptAnalysisTask<exclusiveRhoTo4Pi>(cfgc)};
 }
