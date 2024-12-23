@@ -47,11 +47,11 @@ bool isTableRequiredInWorkflow(o2::framework::InitContext& initContext, const st
       if (input.matcher.binding == table) {
         LOG(debug) << "Table: " << input.matcher.binding << " is needed in device: " << device.name;
         tableNeeded = true;
-      }else{
-        std::string versionedTable = table; 
+      } else {
+        std::string versionedTable = table;
         versionedTable.append("_00"); // would need fixing in case of more than 9 versions
         if (input.matcher.binding.find(versionedTable) != std::string::npos) {
-          LOG(debug) << "Versioned table: " << input.matcher.binding << " is needed in device: " << device.name <<  "(original table name: "<<table<<")";
+          LOG(debug) << "Versioned table: " << input.matcher.binding << " is needed in device: " << device.name << "(original table name: " << table << ")";
           tableNeeded = true;
         }
       }
