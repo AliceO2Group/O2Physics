@@ -31,24 +31,23 @@ namespace emcalhadroniccorrection
 // DECLARE_SOA_COLUMN(HadCorrEnergy, hadcorrEnergy, float);          //! cluster energy (GeV) after hadronic correction
 
 // hadronic corrected energy values
-DECLARE_SOA_COLUMN(HadCorrOneTrack1, hadCorrOneTrack1, float);      //! with hadronic correction fraction (100%) for one matched track
-DECLARE_SOA_COLUMN(HadCorrOneTrack2, hadCorrOneTrack2, float);     //! with hadronic correction fraction (70%) for one matched track - systematic studies
-DECLARE_SOA_COLUMN(HadCorrAllTracks1, hadCorrAllTracks1, float);   //! with hadronic correction fraction (100%) for all matched tracks
-DECLARE_SOA_COLUMN(HadCorrAllTracks2, hadCorrAllTracks2, float);   //! with hadronic correction fraction (70%) for all matched tracks - for systematic studies
-
+DECLARE_SOA_COLUMN(HadCorrOneTrack1, hadCorrOneTrack1, float);   //! with hadronic correction fraction (100%) for one matched track
+DECLARE_SOA_COLUMN(HadCorrOneTrack2, hadCorrOneTrack2, float);   //! with hadronic correction fraction (70%) for one matched track - systematic studies
+DECLARE_SOA_COLUMN(HadCorrAllTracks1, hadCorrAllTracks1, float); //! with hadronic correction fraction (100%) for all matched tracks
+DECLARE_SOA_COLUMN(HadCorrAllTracks2, hadCorrAllTracks2, float); //! with hadronic correction fraction (70%) for all matched tracks - for systematic studies
 
 } // namespace emcalhadroniccorrection
 
-//Table Definitions - define what needs to be written into the tables produced by this tableproducer task
-DECLARE_SOA_TABLE(EmcalHCs, "AOD", "EMCALHCS",                       //!
-                  o2::soa::Index<>,                                  //!
-                  emcalhadroniccorrection::HadCorrOneTrack1,        // corrected cluster energy for 1 matched track (f = 100%)
-                  emcalhadroniccorrection::HadCorrOneTrack2,        // corrected cluster energy for 1 matched track (f = 70%)
-                  emcalhadroniccorrection::HadCorrAllTracks1,       // corrected cluster energy for all matched tracks (f = 100%)
-                  emcalhadroniccorrection::HadCorrAllTracks2        // corrected cluster energy for all matched tracks (f = 70%)
-                  )
+// Table Definitions - define what needs to be written into the tables produced by this tableproducer task
+DECLARE_SOA_TABLE(EmcalHCs, "AOD", "EMCALHCS",                //!
+                  o2::soa::Index<>,                           //!
+                  emcalhadroniccorrection::HadCorrOneTrack1,  // corrected cluster energy for 1 matched track (f = 100%)
+                  emcalhadroniccorrection::HadCorrOneTrack2,  // corrected cluster energy for 1 matched track (f = 70%)
+                  emcalhadroniccorrection::HadCorrAllTracks1, // corrected cluster energy for all matched tracks (f = 100%)
+                  emcalhadroniccorrection::HadCorrAllTracks2  // corrected cluster energy for all matched tracks (f = 70%)
+)
 
 using EmcalHC = EmcalHCs::iterator;
 
-} //namespace o2::aod
-#endif  // PWGJE_DATAMODEL_EMCALCLUSTERHADRONICCORRECTION_H_
+} // namespace o2::aod
+#endif // PWGJE_DATAMODEL_EMCALCLUSTERHADRONICCORRECTION_H_
