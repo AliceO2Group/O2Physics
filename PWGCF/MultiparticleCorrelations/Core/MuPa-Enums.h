@@ -138,6 +138,9 @@ enum eEventCuts {
                                    // see IA Slide 39 in https://indico.cern.ch/event/1462154/
   eNoCollInRofStandard,            // same as previous + additional cuts on multiplicity, see IA Slide 39 in https://indico.cern.ch/event/1462154/
   eNoHighMultCollInPrevRof,        // veto an event if FT0C amplitude in previous ITS ROF is above threshold (default is >5000 a.e. by FT0C), see IA Slide 39 in https://indico.cern.ch/event/1462154/
+  eIsGoodITSLayer3,                // number of inactive chips on ITS layer 3 is below maximum allowed value
+  eIsGoodITSLayer0123,             // numbers of inactive chips on ITS layers 0-3 are below maximum allowed values
+  eIsGoodITSLayersAll,             // numbers of inactive chips on all ITS layers are below maximum allowed values
   eOccupancyEstimator,             // the default Occupancy estimator, set via configurable. All supported centrality estimators, for QA, etc, are in enum eOccupancyEstimators
   eMinVertexDistanceFromIP,        // if sqrt(vx^2+vy^2+vz^2) < MinVertexDistanceFromIP, the event is rejected. This way, I remove suspicious events with |vertex| = 0.
   eEventCuts_N
