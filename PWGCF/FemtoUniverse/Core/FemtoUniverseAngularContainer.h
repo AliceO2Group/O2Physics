@@ -159,7 +159,13 @@ class FemtoUniverseAngularContainer
     deltaEta = part1.eta() - part2.eta();
 
     deltaPhi = part1.phi() - part2.phi();
-    deltaPhi = RecoDecay::constrainAngle(deltaPhi, 0);
+
+    while (deltaPhi < mPhiLow) {
+      deltaPhi += o2::constants::math::TwoPI;
+    }
+    while (deltaPhi > mPhiHigh) {
+      deltaPhi -= o2::constants::math::TwoPI;
+    }
 
     mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/DeltaEtaDeltaPhi"), deltaPhi, deltaEta, weight);
     if (use3dplots) {
