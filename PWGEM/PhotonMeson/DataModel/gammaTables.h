@@ -168,7 +168,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32
 });
 } // namespace v0leg
 DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
-                  o2::soa::Index<>, v0leg::CollisionId, v0leg::TrackId, v0leg::Sign, v0leg::IsMoved,
+                  o2::soa::Index<>, v0leg::CollisionId, v0leg::TrackId, v0leg::Sign,
                   v0leg::Px, v0leg::Py, v0leg::Pz,
                   track::DcaXY, track::DcaZ,
                   track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,

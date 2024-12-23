@@ -184,7 +184,7 @@ struct skimmerGammaConversion {
   void fillTrackTable(TTRACK const& theTrack, TKFP const& kfp)
   {
     v0legs(theTrack.collisionId(),
-           theTrack.globalIndex(), theTrack.sign(), false,
+           theTrack.globalIndex(), theTrack.sign(),
            kfp.GetPx(), kfp.GetPy(), kfp.GetPz(), theTrack.dcaXY(), theTrack.dcaZ(),
            theTrack.tpcNClsFindable(), theTrack.tpcNClsFindableMinusFound(), theTrack.tpcNClsFindableMinusCrossedRows(), theTrack.tpcNClsShared(),
            theTrack.tpcChi2NCl(), theTrack.tpcInnerParam(), theTrack.tpcSignal(),
