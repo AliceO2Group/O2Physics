@@ -17,6 +17,9 @@
 ///
 
 // O2 includes
+#include <memory>
+#include <vector>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -73,8 +76,6 @@ static constexpr const char* particleTitle[nParticles] = {"e", "#mu", "#pi", "K"
 static constexpr int PDGs[nParticles] = {11, 13, 211, 321, 2212, 1000010020, 1000010030, 1000020030, 1000020040,
                                          -11, -13, -211, -321, -2212, -1000010020, -1000010030, -1000020030, -1000020040};
 
-// Histograms
-
 // Pt
 std::array<std::shared_ptr<TH1>, nParticles> hPtIts;
 std::array<std::shared_ptr<TH1>, nParticles> hPtTpc;
@@ -102,6 +103,8 @@ std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcStr;
 std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpcStr;
 std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTofStr;
 std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedStr;
+std::array<std::shared_ptr<TH1>, nParticles> hPtmotherGenerated; // histogram to store pT of mother
+std::array<std::shared_ptr<TH1>, nParticles> hdecaylengthmother; // histogram to store decaylength of mother
 
 // Pt for secondaries from material
 std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcMat;
@@ -288,6 +291,7 @@ struct QaEfficiency {
       LOG(fatal) << "Can't interpret pdgSign " << pdgSign;
     }
 
+    AxisSpec axisDecayLength{100, 0.0, 10.0, "Decay Length (cm)"};
     AxisSpec axisPt{ptBins, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisP{ptBins, "#it{p} (GeV/#it{c})"};
     if (logPt) {
@@ -360,6 +364,8 @@ struct QaEfficiency {
     hPtTrkItsTpcStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtItsTpcTofStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated", PDGs[histogramIndex]), "Generated (from weak decays) " + tagPt, kTH1D, {axisPt});
+    hPtmotherGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated_mother", PDGs[histogramIndex]), "Generated Mother " + tagPt, kTH1D, {axisPt});
+    hdecaylengthmother[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/decayLength", PDGs[histogramIndex]), "Decay Length of mother particle" + tagPt, kTH1D, {axisPt});
 
     // Ter
     hPtItsTpcTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (from secondary weak decays) " + tagPt, kTH1D, {axisPt});
@@ -1150,6 +1156,9 @@ struct QaEfficiency {
           for (const auto& pdgToCheck : mothersPDGs.value) {
             if (mother.pdgCode() == pdgToCheck) {
               motherIsAccepted = true;
+              // Calculate the decay length
+              double decayLength = std::sqrt(std::pow(mother.vx() - mother.mcCollision().posX(), 2) + std::pow(mother.vy() - mother.mcCollision().posY(), 2) + std::pow(mother.vz() - mother.mcCollision().posZ(), 2));
+              hdecaylengthmother[histogramIndex]->Fill(decayLength);
               break;
             }
             if (motherIsAccepted) {
@@ -1242,15 +1251,17 @@ struct QaEfficiency {
       }
     } else {
       if (mcParticle.getProcess() == 4) { // Particle decay
-        // Checking mothers
         bool motherIsAccepted = true;
+        // Check for mothers if needed
         if (checkForMothers.value && mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
           motherIsAccepted = false;
           auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
+          // Loop over mother particles
           for (const auto& mother : mothers) {
             for (const auto& pdgToCheck : mothersPDGs.value) {
               if (mother.pdgCode() == pdgToCheck) {
-                motherIsAccepted = true;
+                motherIsAccepted = true; // Mother matches the list of specified PDGs
+                hPtmotherGenerated[histogramIndex]->Fill(mother.pt()); // Fill generated pT for mother
                 break;
               }
               if (motherIsAccepted) {
@@ -2060,8 +2071,8 @@ struct QaEfficiency {
       float trackEta = track.eta();
       float trackPhi = track.phi();
       float trackSign = track.sign();
-      float occupancy;
-      float centrality;
+      float occupancy{};
+      float centrality{};
       if (doOccupancy) {
         centrality = collision.centFT0C();
         if (useFT0OccEstimator) {
@@ -2192,7 +2203,7 @@ struct QaEfficiency {
       if (!isTrackSelected<false>(track, HIST("Data/trackSelection"))) {
         continue;
       }
-      if (abs(track.tpcNSigmaDe()) > nsigmaTPCDe) {
+      if (std::abs(track.tpcNSigmaDe()) > nsigmaTPCDe) {
         continue;
       }
       histos.fill(HIST("Data/trackLength"), track.length());

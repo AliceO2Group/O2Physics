@@ -21,6 +21,11 @@
 #include <map>
 #include <iterator>
 #include <utility>
+#include <string>
+#include <set>
+#include <algorithm>
+#include <vector>
+#include <unordered_map>
 
 #include "Math/Vector4D.h"
 

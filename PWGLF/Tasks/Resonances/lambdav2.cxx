@@ -8,47 +8,53 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \brief this is a code for flow of lambda baryons for exotic pheno
-/// \author prottay das
-/// \since 25/04/2024
+// Particle flow task
+// prottay.das@cern.ch
 
-#include <TDatabasePDG.h>
-#include <TDirectory.h>
-#include <TFile.h>
 #include <TH1F.h>
-#include <TH2F.h>
+#include <TDirectory.h>
 #include <THn.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
+#include <TFile.h>
+#include <TH2F.h>
+#include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include "TF1.h"
-
-#include <array>
+#include <TDatabasePDG.h>
 #include <cmath>
+#include <array>
 #include <cstdlib>
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
+#include "TRandom3.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "Math/GenVector/Boost.h"
+#include "TF1.h"
+
+// #include "Common/DataModel/Qvectors.h"
+#include "PWGLF/DataModel/SPCalibrationTables.h"
+#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Common/Core/TrackSelection.h"
+#include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
-
-#include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "Common/DataModel/FT0Corrected.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -57,302 +63,148 @@ using std::array;
 
 struct lambdav2 {
 
-  // Connect to ccdb
-  Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<int64_t> nolaterthan{
-    "ccdb-no-later-than",
-    std::chrono::duration_cast<std::chrono::milliseconds>(
-      std::chrono::system_clock::now().time_since_epoch())
-      .count(),
-    "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080",
-                                "url of the ccdb repository"};
+  int mRunNumber;
+  int multEstimator;
+  float d_bz;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdg;
+
+  // fill output
+  Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
+  Configurable<bool> additionalEvSel2{"additionalEvSel2", false, "additionalEvSel2"};
+  Configurable<bool> additionalEvSel3{"additionalEvSel3", false, "additionalEvSel3"};
+  Configurable<bool> correction1{"correction1", false, "fill histograms including corrections 1"};
+  Configurable<bool> correction2{"correction2", false, "fill histograms including corrections 2"};
+  Configurable<bool> QA{"QA", false, "flag for QA"};
+  Configurable<bool> mycut{"mycut", false, "select tracks based on my cuts"};
+  Configurable<bool> tofhit{"tofhit", true, "select tracks based on tof hit"};
+  Configurable<bool> globalpt{"globalpt", true, "select tracks based on pt global vs tpc"};
+  Configurable<int> useprofile{"useprofile", 3, "flag to select profile vs Sparse"};
+  Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
+  Configurable<float> lbinQxy{"lbinQxy", -5.0, "lower bin value in QxQy histograms"};
+  Configurable<float> hbinQxy{"hbinQxy", 5.0, "higher bin value in QxQy histograms"};
+  Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 1000, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+
+  // events
+  Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
+  Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 50.0f, "Accepted maximum Centrality"};
+  Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 30.0f, "Accepted minimum Centrality"};
+  // proton track cut
+  Configurable<float> confRapidity{"confRapidity", 0.8, "cut on Rapidity"};
+  Configurable<float> cfgCutPT{"cfgCutPT", 0.15, "PT cut on daughter track"};
+  Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
+  Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 0.1f, "DCAxy range for tracks"};
+  Configurable<float> cfgCutDCAz{"cfgCutDCAz", 0.1f, "DCAz range for tracks"};
+  Configurable<int> cfgITScluster{"cfgITScluster", 5, "Number of ITS cluster"};
+  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
+  Configurable<bool> isPVContributor{"isPVContributor", true, "is PV contributor"};
+  Configurable<bool> checkwithpub{"checkwithpub", true, "checking results with published"};
+  Configurable<float> nsigmaCutTPCPi{"nsigmaCutTPCPi", 3, "PID selections for Pions"};
+  Configurable<float> nsigmaCutTPCKa{"nsigmaCutTPCKa", 3, "PID selections for Kaons"};
+  Configurable<float> nsigmaCutTPCPr{"nsigmaCutTPCPr", 3, "PID selections for Protons"};
+  Configurable<float> nsigmaCutTOFPi{"nsigmaCutTOFPi", 3, "PID selections for TOF Pions"};
+  Configurable<float> nsigmaCutTOFKa{"nsigmaCutTOFKa", 3, "PID selections for TOF Kaons"};
+  Configurable<float> nsigmaCutTOFPr{"nsigmaCutTOFPr", 3, "PID selections for TOF Protons"};
+  Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0, "Beta selections for Particles"};
+
+  Configurable<int> CentNbins{"CentNbins", 16, "Number of bins in cent histograms"};
+  Configurable<float> lbinCent{"lbinCent", 0.0, "lower bin value in cent histograms"};
+  Configurable<float> hbinCent{"hbinCent", 80.0, "higher bin value in cent histograms"};
+  Configurable<int> SANbins{"SANbins", 20, "Number of bins in costhetastar"};
+  Configurable<float> lbinSA{"lbinSA", -1.0, "lower bin value in costhetastar histograms"};
+  Configurable<float> hbinSA{"hbinSA", 1.0, "higher bin value in costhetastar histograms"};
+  Configurable<int> PolNbins{"PolNbins", 20, "Number of bins in polarisation"};
+  Configurable<float> lbinPol{"lbinPol", -1.0, "lower bin value in #phi-#psi histograms"};
+  Configurable<float> hbinPol{"hbinPol", 1.0, "higher bin value in #phi-#psi histograms"};
+  Configurable<int> IMNbins{"IMNbins", 100, "Number of bins in invariant mass"};
+  Configurable<float> lbinIM{"lbinIM", 1.0, "lower bin value in IM histograms"};
+  Configurable<float> hbinIM{"hbinIM", 1.2, "higher bin value in IM histograms"};
+  Configurable<int> ptNbins{"ptNbins", 50, "Number of bins in pt"};
+  Configurable<float> lbinpt{"lbinpt", 0.0, "lower bin value in pt histograms"};
+  Configurable<float> hbinpt{"hbinpt", 10.0, "higher bin value in pt histograms"};
+  Configurable<int> resNbins{"resNbins", 50, "Number of bins in reso"};
+  Configurable<float> lbinres{"lbinres", 0.0, "lower bin value in reso histograms"};
+  Configurable<float> hbinres{"hbinres", 10.0, "higher bin value in reso histograms"};
+  Configurable<int> etaNbins{"etaNbins", 20, "Number of bins in eta"};
+  Configurable<float> lbineta{"lbineta", -1.0, "lower bin value in eta histograms"};
+  Configurable<float> hbineta{"hbineta", 1.0, "higher bin value in eta histograms"};
+  Configurable<int> spNbins{"spNbins", 2000, "Number of bins in sp"};
+  Configurable<float> lbinsp{"lbinsp", -1.0, "lower bin value in sp histograms"};
+  Configurable<float> hbinsp{"hbinsp", 1.0, "higher bin value in sp histograms"};
+  Configurable<int> phiNbins{"phiNbins", 30, "Number of bins in phi"};
+
+  ConfigurableAxis configcentAxis{"configcentAxis", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, "Cent V0M"};
+  ConfigurableAxis configthnAxispT{"configthnAxisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis configetaAxis{"configetaAxis", {VARIABLE_WIDTH, -0.8, -0.4, -0.2, 0, 0.2, 0.4, 0.8}, "Eta"};
+  ConfigurableAxis configthnAxisPol{"configthnAxisPol", {VARIABLE_WIDTH, -1.0, -0.6, -0.2, 0, 0.2, 0.4, 0.8}, "Pol"};
+  ConfigurableAxis configphiAxis{"configphiAxis", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.8, 1.0, 2.0, 2.5, 3.0, 4.0, 5.0, 5.5, 6.28}, "PhiAxis"};
 
   SliceCache cache;
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // Histograms are defined with HistogramRegistry
-  HistogramRegistry rEventSelection{"eventSelection",
-                                    {},
-                                    OutputObjHandlingPolicy::AnalysisObject,
-                                    true,
-                                    true};
-  HistogramRegistry histos{
-    "histos",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    true,
-    true};
-
-  // Configurable for histograms
-  Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
-  // Confugrable for QA histograms
-  Configurable<bool> QA{"QA", true, "QA"};
-  Configurable<bool> QAv0{"QAv0", false, "QAv0"};
-  // Configurable for event selection
-  Configurable<float> cutzvertex{"cutzvertex", 10.0f,
-                                 "Accepted z-vertex range (cm)"};
-  // Configurable parameters for V0 selection
-  Configurable<float> ConfV0PtMin{"ConfV0PtMin", 0.f,
-                                  "Minimum transverse momentum of V0"};
-  Configurable<float> ConfV0DCADaughMax{"ConfV0DCADaughMax", 1.0f,
-                                        "Maximum DCA between the V0 daughters"};
-  Configurable<float> ConfV0CPAMin{"ConfV0CPAMin", 0.985f, "Minimum CPA of V0"};
-  Configurable<float> ConfV0TranRadV0Min{"ConfV0TranRadV0Min", 0.5f,
-                                         "Minimum transverse radius"};
-  Configurable<float> ConfV0TranRadV0Max{"ConfV0TranRadV0Max", 200.f,
-                                         "Maximum transverse radius"};
-  Configurable<double> cMaxV0LifeTime{"cMaxV0LifeTime", 4,
-                                      "Maximum V0 life time"};
-  Configurable<double> cMaxV0DCA{"cMaxV0DCA", 0.3, "DCA V0 to PV"};
-  Configurable<double> cSigmaMassLambda{"cSigmaMassLambda", 4,
-                                        "n Sigma cut on Lambda mass"};
-  Configurable<double> cWidthLambda{"cWidthLambda", 0.005, "Width of Lambda"};
-  Configurable<float> ConfDaughEta{"ConfDaughEta", 0.8f,
-                                   "V0 Daugh sel: max eta"};
-  Configurable<float> ConfDaughTPCnclsMin{"ConfDaughTPCnclsMin", 70.f,
-                                          "V0 Daugh sel: Min. nCls TPC"};
-  Configurable<float> ConfDaughDCAMin{
-    "ConfDaughDCAMin", 0.06f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"};
-  Configurable<float> ConfDaughPIDCuts{"ConfDaughPIDCuts", 4,
-                                       "PID selections for KS0 daughters"};
-
-  // Configurables for track selections
-  Configurable<float> cfgCutPT{"cfgCutPT", 0.2f, "PT cut on daughter track"};
-  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta cut on daughter track"};
-  Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f,
-                                  "DCAxy range for tracks"};
-  Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
-  Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0,
-                                   "Value of the TPC Nsigma cut"};
-  Configurable<float> nsigmaCutTOF{"nsigmacutTOF", 3.0,
-                                   "Value of the TOF Nsigma cut"};
-  Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0,
-                                        "Value of the Combined Nsigma cut"};
-  Configurable<bool> iscustomDCAcut{"iscustomDCAcut", false, "iscustomDCAcut"};
-  Configurable<bool> ismanualDCAcut{"ismanualDCAcut", true, "ismanualDCAcut"};
-  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
-  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
-  Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
-  Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
-  Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
-
-  // Event selection cuts - Alex
-  TF1* fMultPVCutLow = nullptr;
-  TF1* fMultPVCutHigh = nullptr;
-  TF1* fMultCutLow = nullptr;
-  TF1* fMultCutHigh = nullptr;
-  TF1* fMultMultPVCut = nullptr;
-
-  void init(InitContext const&)
+  void init(o2::framework::InitContext&)
   {
-    // Axes
-    AxisSpec vertexZAxis = {nBins, -10., 10., "vrtx_{Z} [cm]"};
-    AxisSpec ptAxis = {200, 0.0f, 20.0f, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec thnAxispT{ptNbins, lbinpt, hbinpt, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec thnAxisRap{100, -0.5, 0.5, "Rapidity"};
+    AxisSpec thnAxisres{resNbins, lbinres, hbinres, "Reso"};
+    AxisSpec thnAxisInvMass{IMNbins, lbinIM, hbinIM, "#it{M} (GeV/#it{c}^{2})"};
+    AxisSpec thnAxisPol{PolNbins, lbinPol, hbinPol, "Sin(#phi - #psi)"};
+    AxisSpec thnAxisCosThetaStar{SANbins, lbinSA, hbinSA, "SA"};
+    AxisSpec centAxis = {CentNbins, lbinCent, hbinCent, "V0M (%)"};
+    AxisSpec etaAxis = {etaNbins, lbineta, hbineta, "Eta"};
+    AxisSpec spAxis = {spNbins, lbinsp, hbinsp, "Sp"};
+    AxisSpec qxZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qx"};
+    AxisSpec phiAxis = {phiNbins, 0.0, 6.28, "phi-phiStar"};
+    /*
+      histos.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+      histos.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+      histos.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+      histos.add("hpuyQytvscentpteta", "hpuyQytvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+      histos.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+      histos.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);*/
+    histos.add("hpoddv1vscentpteta", "hpoddv1vscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+    histos.add("hpevenv1vscentpteta", "hpevenv1vscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+    histos.add("hpoddv1vscentptetakaon", "hpoddv1vscentptetakaon", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+    histos.add("hpevenv1vscentptetakaon", "hpevenv1vscentptetakaon", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+    histos.add("hpoddv1vscentptetaproton", "hpoddv1vscentptetaproton", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+    histos.add("hpevenv1vscentptetaproton", "hpevenv1vscentptetaproton", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
 
-    // Event selection
-    rEventSelection.add("hVertexZRec", "hVertexZRec",
-                        {HistType::kTH1F, {vertexZAxis}});
-    rEventSelection.add("hmult", "Centrality distribution", kTH1F,
-                        {{100, 0.0f, 100.0f}});
+    /* histos.add("hpuxQxpvscentptetaneg", "hpuxQxpvscentptetaneg", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+       histos.add("hpuyQypvscentptetaneg", "hpuyQypvscentptetaneg", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+       histos.add("hpuxQxtvscentptetaneg", "hpuxQxtvscentptetaneg", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+       histos.add("hpuyQytvscentptetaneg", "hpuyQytvscentptetaneg", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+       histos.add("hpuxyQxytvscentptetaneg", "hpuxyQxytvscentptetaneg", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+       histos.add("hpuxyQxypvscentptetaneg", "hpuxyQxypvscentptetaneg", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);*/
+    histos.add("hpoddv1vscentptetaneg", "hpoddv1vscentptetaneg", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+    histos.add("hpevenv1vscentptetaneg", "hpevenv1vscentptetaneg", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+    histos.add("hpoddv1vscentptetakaonneg", "hpoddv1vscentptetakaonneg", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+    histos.add("hpevenv1vscentptetakaonneg", "hpevenv1vscentptetakaonneg", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+    histos.add("hpoddv1vscentptetaprotonneg", "hpoddv1vscentptetaprotonneg", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+    histos.add("hpevenv1vscentptetaprotonneg", "hpevenv1vscentptetaprotonneg", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
 
-    // from sourav da
-    AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
-    AxisSpec resAxis = {400, -2, 2, "Res"};
-    AxisSpec centAxis = {100, 0, 100, "V0M (%)"};
+    histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", HistType::kTHnSparseF, {centAxis, spAxis}, true);
+    histos.add("hpQytQypvscent", "hpQytQypvscent", HistType::kTHnSparseF, {centAxis, spAxis}, true);
+    histos.add("hpQxytpvscent", "hpQxytpvscent", HistType::kTHnSparseF, {centAxis, spAxis}, true);
+    histos.add("hpQxtQypvscent", "hpQxtQypvscent", HistType::kTHnSparseF, {centAxis, spAxis}, true);
+    histos.add("hpQxpQytvscent", "hpQxpQytvscent", HistType::kTHnSparseF, {centAxis, spAxis}, true);
 
-    if (QA) {
-      histos.add("hFTOCvsTPCNoCut", "Mult correlation FT0C vs. TPC without any cut", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
-      histos.add("hFTOCvsTPCSelected", "Mult correlation FT0C vs. TPC after selection", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
-      histos.add("hPsiFT0C", "PsiFT0C", kTH2F, {centAxis, phiAxis});
-      histos.add("hPsiFT0A", "PsiFT0A", kTH2F, {centAxis, phiAxis});
-      histos.add("hPsiTPC", "PsiTPC", kTH2F, {centAxis, phiAxis});
-      histos.add("hPsiTPCR", "PsiTPCR", kTH2F, {centAxis, phiAxis});
-      histos.add("hPsiTPCL", "PsiTPCL", kTH2F, {centAxis, phiAxis});
-      // histogram for resolution
-      histos.add("ResFT0CTPC", "ResFT0CTPC", kTH2F, {centAxis, resAxis});
-      histos.add("ResFT0CTPCR", "ResFT0CTPCR", kTH2F, {centAxis, resAxis});
-      histos.add("ResFT0CTPCL", "ResFT0CTPCL", kTH2F, {centAxis, resAxis});
-      histos.add("ResTPCRTPCL", "ResTPCRTPCL", kTH2F, {centAxis, resAxis});
-      histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH2F, {centAxis, resAxis});
-      histos.add("ResFT0ATPC", "ResFT0ATPC", kTH2F, {centAxis, resAxis});
-    }
-
-    if (QAv0) {
-      // Lambda topological cuts
-      histos.add("hDCAV0Daughters", "hDCAV0Daughters",
-                 {HistType::kTH1F, {{50, 0.0f, 5.0f}}});
-      histos.add("hLT", "hLT", {HistType::kTH1F, {{100, 0.0f, 50.0f}}});
-      histos.add("hV0CosPA", "hV0CosPA",
-                 {HistType::kTH1F, {{100, 0.95f, 1.f}}});
-    }
-
-    // CKStar histograms
-    histos.add("hLamInvMass",
-               "Invariant mass of Lambda baryon", kTHnSparseF,
-               {{100, 0.0, 100.0}, {200, 0.0f, 20.0f}, {200, 1.0, 1.2}, {100, -1, 1}}, true);
-
-    // Event selection cut additional - Alex
-    if (additionalEvsel) {
-      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-      fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-      fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x)", 0, 100);
-      fMultCutLow->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x)", 0, 100);
-      fMultCutHigh->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-      fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
-      fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
-    }
-  }
-
-  double massLambda = TDatabasePDG::Instance()
-                        ->GetParticle(kLambda0)
-                        ->Mass(); // FIXME: Get from the common header
-
-  template <typename TCollision>
-  bool eventSelected(TCollision collision, const float& centrality)
-  {
-    if (collision.alias_bit(kTVXinTRD)) {
-      // TRD triggered
-      // return 0;
-    }
-    auto multNTracksPV = collision.multNTracksPV();
-    if (multNTracksPV < fMultPVCutLow->Eval(centrality))
-      return 0;
-    if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
-      return 0;
-    // if (multTrk < fMultCutLow->Eval(centrality))
-    //  return 0;
-    // if (multTrk > fMultCutHigh->Eval(centrality))
-    //  return 0;
-    // if (multTrk > fMultMultPVCut->Eval(multNTracksPV))
-    //  return 0;
-
-    return 1;
+    histos.add("hCentrality", "Centrality distribution", kTH1F, {{centAxis}});
   }
 
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (iscustomDCAcut &&
-        (!candidate.isGlobalTrack() || !candidate.isPVContributor() ||
-         candidate.itsNCls() < cfgITScluster)) {
-      return false;
-    }
 
-    if (ismanualDCAcut && !(candidate.isGlobalTrackWoDCA() && candidate.isPVContributor() && std::abs(candidate.dcaXY()) < cfgCutDCAxy && std::abs(candidate.dcaZ()) < cfgCutDCAz && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
-      return false;
+    if (mycut) {
+      if (!candidate.isGlobalTrack() || !candidate.isPVContributor() || !(candidate.itsNCls() > cfgITScluster) || !(candidate.tpcNClsFound() > cfgTPCcluster) || !(candidate.itsNClsInnerBarrel() >= 1)) {
+        return false;
+      }
+    } else {
+      if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster && candidate.itsNClsInnerBarrel() >= 1)) {
+        return false;
+      }
     }
-
-    return true;
-  }
-
-  template <typename T>
-  bool selectionPID(const T& candidate)
-  {
-
-    if (!candidate.hasTOF() &&
-        std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
-      return true;
-    } else if (candidate.hasTOF() &&
-               std::abs(candidate.tofNSigmaPi()) < nsigmaCutTOF) {
-      return true;
-    }
-
-    return false;
-  }
-
-  template <typename Collision, typename V0>
-  bool SelectionV0(Collision const& collision, V0 const& candidate,
-                   float /*multiplicity*/)
-  {
-    if (fabs(candidate.dcav0topv()) > cMaxV0DCA) {
-      return false;
-    }
-
-    const float pT = candidate.pt();
-    const float tranRad = candidate.v0radius();
-    const float dcaDaughv0 = candidate.dcaV0daughters();
-    const float cpav0 = candidate.v0cosPA();
-    float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(),
-                                             collision.posZ()) *
-                    TDatabasePDG::Instance()
-                      ->GetParticle(kLambda0)
-                      ->Mass(); // FIXME: Get from the common header
-    // float lowmasscutks0 = 0.497 - cWidthKs0 * cSigmaMassKs0;
-    // float highmasscutks0 = 0.497 + cWidthKs0 * cSigmaMassKs0;
-    float lowmasscutlambda = 1.0;
-    float highmasscutlambda = 1.2;
-    // float decayLength = candidate.distovertotmom(collision.posX(),
-    // collision.posY(), collision.posZ()) *
-    // RecoDecay::sqrtSumOfSquares(candidate.px(), candidate.py(),
-    // candidate.pz());
-
-    if (pT < ConfV0PtMin) {
-      return false;
-    }
-    if (dcaDaughv0 > ConfV0DCADaughMax) {
-      return false;
-    }
-    if (cpav0 < ConfV0CPAMin) {
-      return false;
-    }
-    if (tranRad < ConfV0TranRadV0Min) {
-      return false;
-    }
-    if (tranRad > ConfV0TranRadV0Max) {
-      return false;
-    }
-    if (fabs(CtauK0s) > cMaxV0LifeTime ||
-        candidate.mLambda() < lowmasscutlambda ||
-        candidate.mLambda() > highmasscutlambda) {
-      return false;
-    }
-
-    if (QAv0) {
-      histos.fill(HIST("hLT"), CtauK0s);
-      histos.fill(HIST("hDCAV0Daughters"), candidate.dcaV0daughters());
-      histos.fill(HIST("hV0CosPA"), candidate.v0cosPA());
-    }
-    return true;
-  }
-
-  template <typename T>
-  bool isSelectedV0Daughter(T const& track, float charge,
-                            double nsigmaV0Daughter)
-  {
-    const auto eta = track.eta();
-    const auto tpcNClsF = track.tpcNClsFound();
-    const auto dcaXY = track.dcaXY();
-    const auto sign = track.sign();
-
-    if (!track.hasTPC())
-      return false;
-    if (track.tpcNClsCrossedRows() < 70)
-      return false;
-    if (track.tpcCrossedRowsOverFindableCls() < 0.8)
-      return false;
-
-    if (charge < 0 && sign > 0) {
-      return false;
-    }
-    if (charge > 0 && sign < 0) {
-      return false;
-    }
-    if (std::abs(eta) > ConfDaughEta) {
-      return false;
-    }
-    if (tpcNClsF < ConfDaughTPCnclsMin) {
-      return false;
-    }
-    if (std::abs(dcaXY) < ConfDaughDCAMin) {
-      return false;
-    }
-    if (std::abs(nsigmaV0Daughter) > ConfDaughPIDCuts) {
-      return false;
-    }
-
     return true;
   }
 
@@ -360,119 +212,183 @@ struct lambdav2 {
   {
     double result = phi;
     while (result < 0) {
-      result = result + 2. * TMath::Pi() / 2;
+      result = result + 2. * TMath::Pi();
     }
-    while (result > 2. * TMath::Pi() / 2) {
-      result = result - 2. * TMath::Pi() / 2;
+    while (result > 2. * TMath::Pi()) {
+      result = result - 2. * TMath::Pi();
     }
     return result;
   }
 
-  // Defining filters for events (event selection)
-  // Processed events will be already fulfilling the event selection
-  // requirements
-  // Filter eventFilter = (o2::aod::evsel::sel8 == true);
-  Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
+  template <typename T>
+  bool SelectionPID(const T& candidate, int PID)
+  {
+    if (PID == 0) // pion
+    {
+      auto combPIDPi = TMath::Sqrt(TMath::Abs(candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()));
+      if (!candidate.hasTOF() && candidate.tpcInnerParam() < 0.6 && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi) {
+        return true;
+      }
+      if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && combPIDPi < nsigmaCutTOFPi) {
+        return true;
+      }
+    } else if (PID == 1) // kaon
+    {
+      auto combPIDKa = TMath::Sqrt(TMath::Abs(candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()));
+      if (!candidate.hasTOF() && candidate.tpcInnerParam() < 0.45 && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa) {
+        return true;
+      }
+      if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && combPIDKa < nsigmaCutTOFKa) {
+        return true;
+      }
+    } else // proton
+    {
+      auto combPIDPr = TMath::Sqrt(TMath::Abs(candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()));
+      if (!candidate.hasTOF() && candidate.tpcInnerParam() < 0.6 && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCPr) {
+        return true;
+      }
+      if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && combPIDPr < nsigmaCutTOFPr) {
+        return true;
+      }
+    }
+    return false;
+  }
 
-  Filter acceptanceFilter =
-    (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
+  ROOT::Math::PxPyPzMVector Lambda, Proton, Pion, fourVecDauCM;
+  // ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm, beamvector;
+  ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY;
+  double phiangle = 0.0;
+  double massPi = o2::constants::physics::MassPionCharged;
+  double massKa = o2::constants::physics::MassKaonCharged;
+  double massPr = o2::constants::physics::MassProton;
 
-  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::EPCalibrationTables>>;
+  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
+  Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
+  Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
+  Filter dcaCutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                                                  aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
-  using V0TrackCandidate = aod::V0Datas;
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::SPCalibrationTables, aod::Mults>>;
+  // using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
+  using AllTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>>;
+  using ResoV0s = aod::V0Datas;
 
-  ROOT::Math::PxPyPzMVector Lambda;
-
-  void processSE(EventCandidates::iterator const& collision,
-                 TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s,
-                 aod::BCs const&)
-
+  // void processData(EventCandidates::iterator const& collision, AllTrackCandidates const&, ResoV0s const& V0s, aod::BCs const&)
+  void processData(EventCandidates::iterator const& collision, AllTrackCandidates const& tracks, ResoV0s const& /*V0s*/, aod::BCs const&)
   {
 
     if (!collision.sel8()) {
       return;
     }
+    auto centrality = collision.centFT0C();
+    // histos.fill(HIST("hCentrality0"), centrality);
+    if (!collision.triggereventsp()) {
+      return;
+    }
+    // histos.fill(HIST("hCentrality1"), centrality);
 
-    float centrality = 0.0f;
-    centrality = collision.centFT0C();
-    auto multTPC = collision.multNTracksPV();
-
-    if (timFrameEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+    if (additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      return;
+    }
+    // histos.fill(HIST("hCentrality2"), centrality);
+    //  if (additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+    if (additionalEvSel2 && (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+      return;
+    }
+    // histos.fill(HIST("hCentrality3"), centrality);
+    if (additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return;
     }
 
-    if (additionalEvsel && !eventSelected(collision, centrality)) {
-      return;
-    }
+    auto qxZDCA = collision.qxZDCA();
+    auto qxZDCC = collision.qxZDCC();
+    auto qyZDCA = collision.qyZDCA();
+    auto qyZDCC = collision.qyZDCC();
+    // auto psiZDCC = collision.psiZDCC();
+    // auto psiZDCA = collision.psiZDCA();
 
-    if (QA) {
-      histos.fill(HIST("hFTOCvsTPCNoCut"), centrality, multTPC);
-    }
-    if (!collision.triggereventep()) {
-      return;
-    }
-    auto psiFT0C = collision.psiFT0C();
-    auto psiFT0A = collision.psiFT0A();
-    auto psiTPC = collision.psiTPC();
-    auto psiTPCR = collision.psiTPCR();
-    auto psiTPCL = collision.psiTPCL();
-    if (QA) {
-      histos.fill(HIST("hFTOCvsTPCSelected"), centrality, multTPC);
-      histos.fill(HIST("hPsiFT0C"), centrality, psiFT0C);
-      histos.fill(HIST("hPsiFT0A"), centrality, psiFT0A);
-      histos.fill(HIST("hPsiTPC"), centrality, psiTPC);
-      histos.fill(HIST("hPsiTPCR"), centrality, psiTPCR);
-      histos.fill(HIST("hPsiTPCL"), centrality, psiTPCL);
-      histos.fill(HIST("ResFT0CTPC"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPC)));
-      histos.fill(HIST("ResFT0CTPCR"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPCR)));
-      histos.fill(HIST("ResFT0CTPCL"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPCL)));
-      histos.fill(HIST("ResTPCRTPCL"), centrality, TMath::Cos(2.0 * (psiTPCR - psiTPCL)));
-      histos.fill(HIST("ResFT0CFT0A"), centrality, TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
-      histos.fill(HIST("ResFT0ATPC"), centrality, TMath::Cos(2.0 * (psiTPC - psiFT0A)));
-    }
+    histos.fill(HIST("hCentrality"), centrality);
 
-    // Fill the event counter
-    rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-    rEventSelection.fill(HIST("hmult"), centrality);
+    auto QxtQxp = qxZDCA * qxZDCC;
+    auto QytQyp = qyZDCA * qyZDCC;
+    auto Qxytp = QxtQxp + QytQyp;
+    auto QxpQyt = qxZDCA * qyZDCC;
+    auto QxtQyp = qxZDCC * qyZDCA;
 
-    for (auto& v0 : V0s) {
+    histos.fill(HIST("hpQxtQxpvscent"), centrality, QxtQxp);
+    histos.fill(HIST("hpQytQypvscent"), centrality, QytQyp);
+    histos.fill(HIST("hpQxytpvscent"), centrality, Qxytp);
+    histos.fill(HIST("hpQxpQytvscent"), centrality, QxpQyt);
+    histos.fill(HIST("hpQxtQypvscent"), centrality, QxtQyp);
 
-      auto postrack = v0.template posTrack_as<TrackCandidates>();
-      auto negtrack = v0.template negTrack_as<TrackCandidates>();
-      double nTPCSigmaPos[1]{postrack.tpcNSigmaPr()};
-      double nTPCSigmaNeg[1]{negtrack.tpcNSigmaPi()};
-      double nTPCSigmaPos2[1]{postrack.tpcNSigmaPi()};
-      double nTPCSigmaNeg2[1]{negtrack.tpcNSigmaPr()};
-
-      if (!isSelectedV0Daughter(postrack, 1, nTPCSigmaPos[0]) && !isSelectedV0Daughter(postrack, 1, nTPCSigmaPos2[0])) {
-        continue;
-      }
-      if (!isSelectedV0Daughter(negtrack, -1, nTPCSigmaNeg[0]) && !isSelectedV0Daughter(negtrack, -1, nTPCSigmaNeg2[0])) {
+    for (auto track : tracks) {
+      if (!selectionTrack(track)) {
         continue;
       }
 
-      if (!SelectionV0(collision, v0, centrality)) {
+      bool ispion = 0;
+      bool iskaon = 0;
+      bool isproton = 0;
+
+      if (SelectionPID(track, 0))
+        ispion = 1;
+      if (SelectionPID(track, 1))
+        iskaon = 1;
+      if (SelectionPID(track, 2))
+        isproton = 1;
+
+      if (ispion && iskaon)
         continue;
-      }
+      if (ispion && isproton)
+        continue;
+      if (iskaon && isproton)
+        continue;
 
-      Lambda = ROOT::Math::PxPyPzMVector(v0.px(), v0.py(), v0.pz(), massLambda);
+      float sign = track.sign();
+      if (sign == 0.0) // removing neutral particles
+        continue;
 
-      auto phiminuspsi = GetPhiInRange(Lambda.Phi() - psiFT0C);
-      auto v2 = TMath::Cos(2.0 * phiminuspsi);
+      auto ux = TMath::Cos(GetPhiInRange(track.phi()));
+      auto uy = TMath::Sin(GetPhiInRange(track.phi()));
 
-      if (TMath::Abs(Lambda.Rapidity()) < 0.5) {
-        histos.fill(HIST("hLamInvMass"), centrality,
-                    Lambda.Pt(), v0.mLambda(), v2);
+      // auto uxQxp = ux * qxZDCA;
+      // auto uyQyp = uy * qyZDCA;
+      // auto uxyQxyp = uxQxp + uyQyp;
+      // auto uxQxt = ux * qxZDCC;
+      // auto uyQyt = uy * qyZDCC;
+      // auto uxyQxyt = uxQxt + uyQyt;
+      auto oddv1 = ux * (qxZDCA - qxZDCC) + uy * (qyZDCA - qyZDCC);
+      auto evenv1 = ux * (qxZDCA + qxZDCC) + uy * (qyZDCA + qyZDCC);
+
+      if (sign > 0) {
+        if (ispion) {
+          histos.fill(HIST("hpoddv1vscentpteta"), centrality, track.pt(), track.rapidity(massPi), oddv1);
+          histos.fill(HIST("hpevenv1vscentpteta"), centrality, track.pt(), track.rapidity(massPi), evenv1);
+        } else if (iskaon) {
+          histos.fill(HIST("hpoddv1vscentptetakaon"), centrality, track.pt(), track.rapidity(massKa), oddv1);
+          histos.fill(HIST("hpevenv1vscentptetakaon"), centrality, track.pt(), track.rapidity(massKa), evenv1);
+        } else if (isproton) {
+          histos.fill(HIST("hpoddv1vscentptetaproton"), centrality, track.pt(), track.rapidity(massPr), oddv1);
+          histos.fill(HIST("hpevenv1vscentptetaproton"), centrality, track.pt(), track.rapidity(massPr), evenv1);
+        }
+
+      } else {
+        if (ispion) {
+          histos.fill(HIST("hpoddv1vscentptetaneg"), centrality, track.pt(), track.rapidity(massPi), oddv1);
+          histos.fill(HIST("hpevenv1vscentptetaneg"), centrality, track.pt(), track.rapidity(massPi), evenv1);
+        } else if (iskaon) {
+          histos.fill(HIST("hpoddv1vscentptetakaonneg"), centrality, track.pt(), track.rapidity(massKa), oddv1);
+          histos.fill(HIST("hpevenv1vscentptetakaonneg"), centrality, track.pt(), track.rapidity(massKa), evenv1);
+        } else if (isproton) {
+          histos.fill(HIST("hpoddv1vscentptetaprotonneg"), centrality, track.pt(), track.rapidity(massPr), oddv1);
+          histos.fill(HIST("hpevenv1vscentptetaprotonneg"), centrality, track.pt(), track.rapidity(massPr), evenv1);
+        }
       }
     }
   }
-
-  PROCESS_SWITCH(lambdav2, processSE, "Process Same event", true);
+  PROCESS_SWITCH(lambdav2, processData, "Process data", true);
 };
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<lambdav2>(cfgc)};
+  return WorkflowSpec{
+    adaptAnalysisTask<lambdav2>(cfgc, TaskName{"lambdav2"})};
 }
