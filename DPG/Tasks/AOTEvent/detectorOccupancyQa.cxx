@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file detectorOccupancyQa.cxx
+/// \brief Occupancy QA task
+///
+/// \author Igor Altsybeev <Igor.Altsybeev@cern.ch>
+
 #include <vector>
 #include "map"
 
@@ -167,17 +172,18 @@ struct DetectorOccupancyQaTask {
       histos.add("track_distr_nITStrThisEv_above_2000/hEta_highOccupInNeighbourEvents", ";#eta;n tracks", kTH1D, {{nEtaBins, -1.0, 1.0}});
 
       const int nPhiBins = 800;
-      histos.add("track_distr_nITStrThisEv_10_200/hPhi_lowOccupInTPC", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
-      histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInRecentPast", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
-      histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInCloseFuture", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
-      histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInDistantFuture", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
-      histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInNeighbourEvents", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
+      AxisSpec axisPhi{nPhiBins, 0, TMath::TwoPi(), "#varphi"}; // o2-linter: disable=external-pi
+      histos.add("track_distr_nITStrThisEv_10_200/hPhi_lowOccupInTPC", ";#varphi;n tracks", kTH1D, {axisPhi});
+      histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInRecentPast", ";#varphi;n tracks", kTH1D, {axisPhi});
+      histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInCloseFuture", ";#varphi;n tracks", kTH1D, {axisPhi});
+      histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInDistantFuture", ";#varphi;n tracks", kTH1D, {axisPhi});
+      histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInNeighbourEvents", ";#varphi;n tracks", kTH1D, {axisPhi});
 
-      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_lowOccupInTPC", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
-      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInRecentPast", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
-      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInCloseFuture", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
-      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInDistantFuture", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
-      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInNeighbourEvents", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
+      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_lowOccupInTPC", ";#varphi;n tracks", kTH1D, {axisPhi});
+      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInRecentPast", ";#varphi;n tracks", kTH1D, {axisPhi});
+      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInCloseFuture", ";#varphi;n tracks", kTH1D, {axisPhi});
+      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInDistantFuture", ";#varphi;n tracks", kTH1D, {axisPhi});
+      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInNeighbourEvents", ";#varphi;n tracks", kTH1D, {axisPhi});
 
       // const int nPtBins = 800;
       AxisSpec axisLogPt{200, 0.05, 40, "p_{T}"};
