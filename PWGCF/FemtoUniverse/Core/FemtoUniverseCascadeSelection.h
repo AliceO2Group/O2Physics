@@ -88,7 +88,7 @@ class FemtoUniverseCascadeSelection
   }
 
   /// Initializes histograms for the task
-  template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, o2::aod::femtouniverseparticle::ParticleType bach, typename cutContainerType>
+  template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, o2::aod::femtouniverseparticle::ParticleType bach, typename CutContainerType>
   void init(HistogramRegistry* registry, bool isSelectCascOmega = false);
 
   template <typename Col, typename Casc, typename Track>
@@ -285,7 +285,7 @@ class FemtoUniverseCascadeSelection
 
 }; // namespace femto_universe
 
-template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, o2::aod::femtouniverseparticle::ParticleType bach, typename cutContainerType>
+template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, o2::aod::femtouniverseparticle::ParticleType bach, typename CutContainerType>
 void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry, bool isSelectCascOmega)
 {
 
@@ -308,22 +308,22 @@ void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry, bool isSel
     /// \todo this should be an automatic check in the parent class, and the
     /// return type should be templated
     size_t nSelections = getNSelections();
-    if (nSelections > 17 * sizeof(cutContainerType)) {
+    if (nSelections > 17 * sizeof(CutContainerType)) {
       LOG(fatal) << "FemtoUniverseCascadeCuts: Number of selections to large for your "
                     "container - quitting!";
     }
 
     posDaughTrack.init<aod::femtouniverseparticle::ParticleType::kV0Child,
                        aod::femtouniverseparticle::TrackType::kPosChild,
-                       aod::femtouniverseparticle::cutContainerType>(
+                       aod::femtouniverseparticle::CutContainerType>(
       mHistogramRegistry);
     negDaughTrack.init<aod::femtouniverseparticle::ParticleType::kV0Child,
                        aod::femtouniverseparticle::TrackType::kNegChild,
-                       aod::femtouniverseparticle::cutContainerType>(
+                       aod::femtouniverseparticle::CutContainerType>(
       mHistogramRegistry);
     bachTrackSel.init<aod::femtouniverseparticle::ParticleType::kCascadeBachelor,
                       aod::femtouniverseparticle::TrackType::kBachelor,
-                      aod::femtouniverseparticle::cutContainerType>(
+                      aod::femtouniverseparticle::CutContainerType>(
       mHistogramRegistry);
 
     // V0 (Lambda)

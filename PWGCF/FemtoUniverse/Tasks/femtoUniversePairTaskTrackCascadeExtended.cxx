@@ -46,7 +46,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   Configurable<float> confZVertexCut{"ConfZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"}; // o2-linter: disable=name/configurable
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < confZVertexCut);
-  using FilteredFDCollisions = soa::Filtered<o2::aod::FDCollisions>;
+  using FilteredFDCollisions = soa::Filtered<o2::aod::FdCollisions>;
   using FilteredFDCollision = FilteredFDCollisions::iterator;
 
   ConfigurableAxis confChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};               // o2-linter: disable=name/configurable

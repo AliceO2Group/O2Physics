@@ -71,7 +71,7 @@ class FemtoUniverseV0Selection
   /// Initializes histograms for the task
   template <o2::aod::femtouniverseparticle::ParticleType part,
             o2::aod::femtouniverseparticle::ParticleType daugh,
-            typename cutContainerType>
+            typename CutContainerType>
   void init(HistogramRegistry* registry);
 
   template <typename C, typename V, typename T>
@@ -84,8 +84,8 @@ class FemtoUniverseV0Selection
 
   /// \todo for the moment the PID of the tracks is factored out into a separate
   /// field, hence 5 values in total \\ASK: what does it mean?
-  template <typename cutContainerType, typename C, typename V, typename T>
-  std::array<cutContainerType, 5> getCutContainer(C const& col, V const& v0,
+  template <typename CutContainerType, typename C, typename V, typename T>
+  std::array<CutContainerType, 5> getCutContainer(C const& col, V const& v0,
                                                   T const& posTrack,
                                                   T const& negTrack);
 
@@ -273,7 +273,7 @@ class FemtoUniverseV0Selection
 
 template <o2::aod::femtouniverseparticle::ParticleType part,
           o2::aod::femtouniverseparticle::ParticleType daugh,
-          typename cutContainerType>
+          typename CutContainerType>
 void FemtoUniverseV0Selection::init(HistogramRegistry* registry)
 {
   if (registry) {
@@ -288,7 +288,7 @@ void FemtoUniverseV0Selection::init(HistogramRegistry* registry)
     /// \todo this should be an automatic check in the parent class, and the
     /// return type should be templated
     size_t nSelections = getNSelections();
-    if (nSelections > 8 * sizeof(cutContainerType)) {
+    if (nSelections > 8 * sizeof(CutContainerType)) {
       LOG(fatal) << "FemtoUniverseV0Cuts: Number of selections to large for your "
                     "container - quitting!";
     }
@@ -332,11 +332,11 @@ void FemtoUniverseV0Selection::init(HistogramRegistry* registry)
 
     posDaughTrack.init<aod::femtouniverseparticle::ParticleType::kV0Child,
                        aod::femtouniverseparticle::TrackType::kPosChild,
-                       aod::femtouniverseparticle::cutContainerType>(
+                       aod::femtouniverseparticle::CutContainerType>(
       mHistogramRegistry);
     negDaughTrack.init<aod::femtouniverseparticle::ParticleType::kV0Child,
                        aod::femtouniverseparticle::TrackType::kNegChild,
-                       aod::femtouniverseparticle::cutContainerType>(
+                       aod::femtouniverseparticle::CutContainerType>(
       mHistogramRegistry);
 
     mHistogramRegistry->add("LambdaQA/hInvMassLambdaNoCuts", "No cuts", kTH1F,
@@ -542,13 +542,13 @@ void FemtoUniverseV0Selection::fillLambdaQA(C const& /*col*/, V const& v0,
 
 /// the CosPA of V0 needs as argument the posXYZ of collisions vertex so we need
 /// to pass the collsion as well
-template <typename cutContainerType, typename C, typename V, typename T>
-std::array<cutContainerType, 5>
+template <typename CutContainerType, typename C, typename V, typename T>
+std::array<CutContainerType, 5>
   FemtoUniverseV0Selection::getCutContainer(C const& /*col*/, V const& v0, T const& posTrack, T const& negTrack)
 {
-  auto outputPosTrack = posDaughTrack.getCutContainer<cutContainerType>(posTrack);
-  auto outputNegTrack = negDaughTrack.getCutContainer<cutContainerType>(negTrack);
-  cutContainerType output = 0;
+  auto outputPosTrack = posDaughTrack.getCutContainer<CutContainerType>(posTrack);
+  auto outputNegTrack = negDaughTrack.getCutContainer<CutContainerType>(negTrack);
+  CutContainerType output = 0;
   size_t counter = 0;
 
   auto lambdaMassNominal = o2::constants::physics::MassLambda; // FIXME: Get from the common header

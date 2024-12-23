@@ -53,7 +53,7 @@ int getPIDselection(float nSigma, std::vector<float> vNsigma)
 /// \param vNsigma vector with available n-sigma selections for PID (to check if chosen nSigma value is avialable + size to get the bit number)
 /// \param KDetector enum corresponding to the PID technique
 /// \return Whether the PID selection specified in the vectors is fulfilled
-bool isPIDSelected(aod::femtouniverseparticle::cutContainerType pidcut,
+bool isPIDSelected(aod::femtouniverseparticle::CutContainerType pidcut,
                    int vSpecies,
                    int nSpecies,
                    float nSigma,
@@ -76,7 +76,7 @@ bool isPIDSelected(aod::femtouniverseparticle::cutContainerType pidcut,
 /// \param nSigmaTPC Number of TPC sigmas for selection
 /// \param nSigmaTPCTOF Number of TPC+TOF sigmas for selection (circular selection)
 /// \return Whether the PID selection is fulfilled
-bool isFullPIDSelected(aod::femtouniverseparticle::cutContainerType const& pidCut,
+bool isFullPIDSelected(aod::femtouniverseparticle::CutContainerType const& pidCut,
                        float momentum,
                        float pidThresh,
                        int vSpecies,
