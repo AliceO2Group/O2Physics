@@ -237,7 +237,6 @@ struct MultiplicityTable {
                    aod::FT0s const&)
   {
     float multFV0A = 0.f;
-    float multFV0Aouter = 0.f;
     float multFV0C = 0.f;
     float multFT0A = 0.f;
     float multFT0C = 0.f;
