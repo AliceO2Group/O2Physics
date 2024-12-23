@@ -178,3 +178,8 @@ o2physics_add_dpl_workflow(doublephimeson
     SOURCES doublephimeson.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(kshortlambda
+    SOURCES kshortlambda.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
