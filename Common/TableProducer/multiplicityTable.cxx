@@ -438,11 +438,11 @@ struct MultiplicityTable {
             // using FV0 row index from event selection task
             if (collision.has_foundFV0()) {
               const auto& fv0 = collision.foundFV0();
-              for (size_t ii=0; ii<fv0.amplitude().size(); ii++) {
+              for (size_t ii = 0; ii < fv0.amplitude().size(); ii++) {
                 auto amplitude = fv0.amplitude()[ii];
                 auto channel = fv0.channel()[ii];
                 multFV0A += amplitude;
-                if(channel>7){ 
+                if (channel > 7) {
                   multFV0AOuter += amplitude;
                 }
               }
