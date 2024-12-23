@@ -1492,9 +1492,16 @@ struct Dilepton {
   }
   PROCESS_SWITCH(Dilepton, processTriggerAnalysis, "run dilepton analysis on triggered data", false);
 
-  void processNorm(aod::EMEventNormInfos const& collisions)
+  Filter collisionFilter_centrality_norm = cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax;
+  using FilteredNormInfos = soa::Filtered<aod::EMEventNormInfos>;
+
+  void processNorm(FilteredNormInfos const& collisions)
   {
     for (auto& collision : collisions) {
+      if (collision.centFT0C() < cfgCentMin || cfgCentMax < collision.centFT0C()) {
+        continue;
+      }
+
       fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 1.0);
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 2.0);
