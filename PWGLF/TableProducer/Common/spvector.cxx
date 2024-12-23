@@ -559,6 +559,8 @@ struct spvector {
         res = Correctcoarse(bc.timestamp(), ConfRecentereSp6, useRecentereSp, currentRunNumber, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
+      if (res == 2 || resfine == 2) {
+      }
       psiZDCC = 1.0 * TMath::ATan2(qyZDCC, qxZDCC);
       psiZDCA = 1.0 * TMath::ATan2(qyZDCA, qxZDCA);
 
