@@ -193,8 +193,8 @@ struct EmcalClusterHadronicCorrectionTask {
         // c) If you want to do systematic studies -> perform the above two checks a) and b), and then subtract 70% energy instead of 100%
 
         // Perform dEta/dPhi matching
-        double dEta = match.track_as<myTracks>().eta() - cluster.eta();
-        double dPhi = TVector2::Phi_mpi_pi(match.track_as<myTracks>().phi() - cluster.phi());
+        double dEta = match.track_as<myTracks>().etaEmcal() - cluster.eta();
+        double dPhi = TVector2::Phi_mpi_pi(match.track_as<myTracks>().phiEmcal() - cluster.phi());
 
         // Apply the eta and phi matching thresholds
         // dEta and dPhi cut : ensures that the matched track is within the desired eta/phi window
