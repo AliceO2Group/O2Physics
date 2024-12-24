@@ -47,9 +47,9 @@ struct LumiStabilityTask {
   Configurable<int> myMaxDeltaBCFDD{"myMaxDeltaBCFDD", 5, {"My BC cut"}};
   Configurable<int> myMaxDeltaBCFT0{"myMaxDeltaBCFT0", 5, {"My BC cut"}};
   Configurable<int> myMaxDeltaBCFV0{"myMaxDeltaBCFV0", 5, {"My BC cut"}};
-  Configurable<int> nOrbitsConf{"nOrbits", 972'288'000, "number of orbits"};
+  Configurable<int> nOrbitsConf{"nOrbitsConf", 972'288'000, "number of orbits"};
   Configurable<int> nOrbitsPerTF{"nOrbitsPerTF", 128, "number of orbits per time frame"};
-  Configurable<double> minOrbitConf{"minOrbit", 0, "minimum orbit"};
+  Configurable<double> minOrbitConf{"minOrbitConf", 0, "minimum orbit"};
   Configurable<bool> is2022Data{"is2022Data", true, "To 2022 data"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -205,13 +205,13 @@ struct LumiStabilityTask {
 
   bool checkAnyCoincidence(const std::vector<int>& channels)
   {
-    constexpr std::pair<int, int> pair0 = {0, 4};
-    constexpr std::pair<int, int> pair1 = {1, 5};
-    constexpr std::pair<int, int> pair2 = {2, 6};
-    constexpr std::pair<int, int> pair3 = {3, 7};
-    constexpr std::array<std::pair<int, int>, 4> channelPairs = {pair0, pair1, pair2, pair3};
-    // std::map<int, int> channelPairs = {{0, 4}, {1, 5}, {2, 6}, {3, 7}};
-    for (const auto& pair : channelPairs) {
+    constexpr std::pair<int, int> kPair0 = {0, 4};
+    constexpr std::pair<int, int> kPair1 = {1, 5};
+    constexpr std::pair<int, int> kPair2 = {2, 6};
+    constexpr std::pair<int, int> kPair3 = {3, 7};
+    constexpr std::array<std::pair<int, int>, 4> kChannelPairs = {kPair0, kPair1, kPair2, kPair3};
+    // std::map<int, int> kChannelPairs = {{0, 4}, {1, 5}, {2, 6}, {3, 7}};
+    for (const auto& pair : kChannelPairs) {
       if (std::find(channels.begin(), channels.end(), pair.first) != channels.end() &&
           std::find(channels.begin(), channels.end(), pair.second) != channels.end()) {
         return true;
