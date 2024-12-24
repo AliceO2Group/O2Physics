@@ -56,30 +56,10 @@ std::vector<std::vector<int64_t>> mclabelpos[2];
 std::vector<std::vector<int64_t>> mclabelneg[2];
 } // namespace o2::analysis::recogenmap
 
-namespace o2::analysis::dptdptfilter
-{
-TpcExcludeTrack tpcExcluder; ///< the TPC excluder object instance
-} // namespace o2::analysis::dptdptfilter
-
 /// \brief Checks the correspondence generator level <=> detector level
 struct MatchRecoGen {
-  Configurable<int> cfgTrackType{"cfgTrackType", 1, "Type of selected tracks: 0 = no selection, 1 = global tracks FB96"};
-  Configurable<std::string> cfgCentMultEstimator{"cfgCentMultEstimator", "V0M", "Centrality/multiplicity estimator detector:  V0M, NOCM: none. Default V0M"};
-  Configurable<std::string> cfgSystem{"cfgSystem", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3. Default PbPb"};
-  Configurable<std::string> cfgDataType{"cfgDataType", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
-  Configurable<std::string> cfgTriggSel{"cfgTriggSel", "MB", "Trigger selection: MB, None. Default MB"};
-  Configurable<float> cfgOverallMinP{"cfgOverallMinP", 0.0f, "The overall minimum momentum for the analysis. Default: 0.0"};
-  Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"cfgBinning",
-                                                           {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
-                                                           "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
-  struct : ConfigurableGroup {
-    std::string prefix = "cfgTpcExclusion";
-    Configurable<int> method{"method", 0, "The method for excluding tracks within the TPC. 0: no exclusion; 1: static; 2: dynamic. Default: 0"};
-  } cfgTpcExclusion;
   Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"cfgTraceDCAOutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
   Configurable<float> cfgTraceOutOfSpeciesParticles{"cfgTraceOutOfSpeciesParticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
-  Configurable<int> cfgRecoIdMethod{"cfgRecoIdMethod", 0, "Method for identifying reconstructed tracks: 0 PID, 1 mcparticle. Default 0"};
-  Configurable<o2::analysis::TrackSelectionTuneCfg> cfgTuneTrackSelection{"cfgTuneTrackSelection", {}, "Track selection: {useit: true/false, tpccls-useit, tpcxrws-useit, tpcxrfc-useit, dcaxy-useit, dcaz-useit}. Default {false,0.70,false,0.8,false,2.4,false,3.2,false}"};
   Configurable<bool> cfgTraceCollId0{"cfgTraceCollId0", false, "Trace particles in collisions id 0. Default false"};
   Configurable<bool> cfgTrackMultiRec{"cfgTrackMultiRec", false, "Track muli-reconstructed particles: true, false. Default false"};
   Configurable<bool> cfgTrackCollAssoc{"cfgTrackCollAssoc", false, "Track collision id association, track-mcparticle-mccollision vs. track-collision-mccollision: true, false. Default false"};
@@ -99,51 +79,20 @@ struct MatchRecoGen {
     using namespace o2::analysis::dptdptfilter;
 
     /* update with the configurable values */
-    overallminp = cfgOverallMinP.value;
-    /* the binning */
-    ptbins = cfgBinning->mPTbins;
-    ptlow = cfgBinning->mPTmin;
-    ptup = cfgBinning->mPTmax;
-    etabins = cfgBinning->mEtabins;
-    etalow = cfgBinning->mEtamin;
-    etaup = cfgBinning->mEtamax;
-    zvtxbins = cfgBinning->mZVtxbins;
-    zvtxlow = cfgBinning->mZVtxmin;
-    zvtxup = cfgBinning->mZVtxmax;
-    phibins = cfgBinning->mPhibins;
-    phibinshift = cfgBinning->mPhibinshift;
-
-    /* the TPC excluder object instance */
-    TpcExclusionMethod tpcExclude = kNOEXCLUSION; ///< exclude tracks within the TPC according to this method
-    tpcExclude = static_cast<TpcExclusionMethod>(cfgTpcExclusion.method.value);
-    tpcExcluder = TpcExcludeTrack(tpcExclude);
-
-    /* the track types and combinations */
-    tracktype = cfgTrackType.value;
-    initializeTrackSelection(cfgTuneTrackSelection.value);
-    /* the centrality/multiplicity estimation */
-    fCentMultEstimator = getCentMultEstimator(cfgCentMultEstimator);
-    /* the trigger selection */
-    fTriggerSelection = getTriggerSelection(cfgTriggSel);
     traceDCAOutliers = cfgTraceDCAOutliers;
     traceOutOfSpeciesParticles = cfgTraceOutOfSpeciesParticles;
-    recoIdMethod = cfgRecoIdMethod;
     traceCollId0 = cfgTraceCollId0;
-
-    /* if the system type is not known at this time, we have to put the initialization somewhere else */
-    fSystem = getSystemType(cfgSystem);
-    fDataType = getDataType(cfgDataType);
 
     AxisSpec deltaEta = {100, -2, 2, "#Delta#eta"};
     AxisSpec deltaPhi = {100, 0, constants::math::TwoPI, "#Delta#varphi (rad)"};
     AxisSpec deltaPt = {1000, 0, 4, "#Delta#it{p}_{T} (GeV/#it{c})"};
     AxisSpec mrectimes = {11, -0.5f, 10.5f, "##/particle"};
     AxisSpec detectors = {32, -0.5, 31.5, "Detectors"};
-    std::vector<std::string> detectorlbls = {"", "ITS", "TPC", "ITS+TPC", "TRD", "ITS+TRD", "TPC+TRD", "ITS+TPC+TRD",
-                                             "TOF", "ITS+TOF", "TPC+TOF", "ITS+TPC+TOF", "TRD+TOF", "ITS+TRD+TOF", "TPC+TRD+TOF", "ITS+TPC+TRD+TOF",
-                                             "UNKN", "ITS+UNKN", "TPC+UNKN", "ITS+TPC+UNKN", "TRD+UNKN", "ITS+TRD+UNKN", "TPC+TRD+UNKN", "ITS+TPC+TRD+UNKN",
-                                             "TOF+UNKN", "ITS+TOF+UNKN", "TPC+TOF+UNKN", "ITS+TPC+TOF+UNKN", "TRD+TOF+UNKN", "ITS+TRD+TOF+UNKN", "TPC+TRD+TOF+UNKN", "ITS+TPC+TRD+TOF+UNKN"};
-    std::vector<std::string> matchlbs = {"match", "don't match"};
+    std::vector<std::string> detectorLabels = {"", "ITS", "TPC", "ITS+TPC", "TRD", "ITS+TRD", "TPC+TRD", "ITS+TPC+TRD",
+                                               "TOF", "ITS+TOF", "TPC+TOF", "ITS+TPC+TOF", "TRD+TOF", "ITS+TRD+TOF", "TPC+TRD+TOF", "ITS+TPC+TRD+TOF",
+                                               "UNKN", "ITS+UNKN", "TPC+UNKN", "ITS+TPC+UNKN", "TRD+UNKN", "ITS+TRD+UNKN", "TPC+TRD+UNKN", "ITS+TPC+TRD+UNKN",
+                                               "TOF+UNKN", "ITS+TOF+UNKN", "TPC+TOF+UNKN", "ITS+TPC+TOF+UNKN", "TRD+TOF+UNKN", "ITS+TRD+TOF+UNKN", "TPC+TRD+TOF+UNKN", "ITS+TPC+TRD+TOF+UNKN"};
+    std::vector<std::string> matchLabels = {"match", "don't match"};
 
     histos.add("before/positivecolid/mrDeltaEta", "#Delta#eta multirec tracks", kTH1F, {deltaEta});
     histos.add("before/positivecolid/mrDeltaPhi", "#Delta#varphi multirec tracks", kTH1F, {deltaPhi});
@@ -170,13 +119,13 @@ struct MatchRecoGen {
     histos.add("before/positivecolid/dcazmr", "DCA_{z} Reconstructed (mr)", kTH1F, {{1000, -4.0, 4.0, "DCA_{z} (cm)"}});
     histos.add("before/positivecolid/finedcaxymr", "DCA_{xy} Reconstructed (mr)", kTH1F, {{2000, -1.0, 1.0, "DCA_{xy} (cm)"}});
     histos.add("before/positivecolid/finedcazmr", "DCA_{z} Reconstructed (mr)", kTH1F, {{2000, -1.0, 1.0, "DCA_{z} (cm)"}});
-    for (unsigned int i = 0; i < detectorlbls.size(); ++i) {
-      histos.get<TH1>(HIST("before/positivecolid/detectormap"))->GetXaxis()->SetBinLabel(i + 1, detectorlbls[i].c_str());
-      histos.get<TH1>(HIST("before/positivecolid/detectormapmr"))->GetXaxis()->SetBinLabel(i + 1, detectorlbls[i].c_str());
+    for (unsigned int i = 0; i < detectorLabels.size(); ++i) {
+      histos.get<TH1>(HIST("before/positivecolid/detectormap"))->GetXaxis()->SetBinLabel(i + 1, detectorLabels[i].c_str());
+      histos.get<TH1>(HIST("before/positivecolid/detectormapmr"))->GetXaxis()->SetBinLabel(i + 1, detectorLabels[i].c_str());
     }
-    for (unsigned int i = 0; i < matchlbs.size(); ++i) {
-      histos.get<TH1>(HIST("before/positivecolid/matchcollid"))->GetXaxis()->SetBinLabel(i + 1, matchlbs[i].c_str());
-      histos.get<TH1>(HIST("before/positivecolid/matchcollidmr"))->GetXaxis()->SetBinLabel(i + 1, matchlbs[i].c_str());
+    for (unsigned int i = 0; i < matchLabels.size(); ++i) {
+      histos.get<TH1>(HIST("before/positivecolid/matchcollid"))->GetXaxis()->SetBinLabel(i + 1, matchLabels[i].c_str());
+      histos.get<TH1>(HIST("before/positivecolid/matchcollidmr"))->GetXaxis()->SetBinLabel(i + 1, matchLabels[i].c_str());
     }
 
     /* clone the set for the other cases */
@@ -260,8 +209,7 @@ struct MatchRecoGen {
                    "END multi-reconstructed:   "
                    "==================================================================");
             }
-            histos.get<TH1>(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("pdgcodemr"))
-              ->Fill(TString::Format("%d", particle.pdgCode()).Data(), 1.0);
+            histos.get<TH1>(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("pdgcodemr"))->Fill(TString::Format("%d", particle.pdgCode()).Data(), 1.0);
           }
         }
 
@@ -285,10 +233,10 @@ struct MatchRecoGen {
           histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("detectormapmr"), track1.detectorMap());
           histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("dcaxymr"), track1.dcaXY());
           histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("dcazmr"), track1.dcaZ());
-          if (track1.dcaXY() < 1.0) {
+          if (std::fabs(track1.dcaXY()) < 1.0) {
             histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("finedcaxymr"), track1.dcaXY());
           }
-          if (track1.dcaZ() < 1.0) {
+          if (std::fabs(track1.dcaZ()) < 1.0) {
             histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("finedcazmr"), track1.dcaZ());
           }
           histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("genrecomreta"), track1.eta(), particle.eta());
@@ -308,10 +256,10 @@ struct MatchRecoGen {
         histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("detectormap"), track.detectorMap());
         histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("dcaxy"), track.dcaXY());
         histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("dcaz"), track.dcaZ());
-        if (track.dcaXY() < 1.0) {
+        if (std::fabs(track.dcaXY()) < 1.0) {
           histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("finedcaxy"), track.dcaXY());
         }
-        if (track.dcaZ() < 1.0) {
+        if (std::fabs(track.dcaZ()) < 1.0) {
           histos.fill(HIST(Dir[ba]) + HIST(Colldir[collsign]) + HIST("finedcaz"), track.dcaZ());
         }
         if (particle.mcCollisionId() != colls.iteratorAt(track.collisionId()).mcCollisionId()) {
@@ -425,10 +373,9 @@ struct MatchRecoGen {
       if (!(label < 0)) {
         if (!(track.collisionId() < 0)) {
           typename CollisionsObject::iterator coll = collisions.iteratorAt(track.collisionId());
-          float centormult = -100.0f;
-          if (isEventSelected(coll, centormult)) {
+          if (coll.collisionaccepted() == uint8_t(true)) {
             /* TODO: AcceptTrack does not consider PID */
-            if (acceptTrack<CollisionsObject>(track)) {
+            if (!(track.trackacceptedid() < 0)) {
               /* the track has been accepted */
               nreco++;
               LOGF(MATCHRECGENLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.template mcParticle_as<aod::McParticles>().mcCollisionId());
@@ -443,23 +390,14 @@ struct MatchRecoGen {
     collectData<kAFTER, kPOSITIVE>(tracks, mcParticles, collisions);
   }
 
-  void processMapChecksWithCent(soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels> const& tracks,
-                                soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels> const& collisions,
-                                aod::McParticles const& mcParticles)
+  void processMapChecks(soa::Join<aod::FullTracks, aod::TracksDCA, aod::DptDptCFTracksInfo, aod::McTrackLabels> const& tracks,
+                        soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo, aod::McCollisionLabels> const& collisions,
+                        aod::McParticles const& mcParticles)
   {
     processMapChecksBeforeCuts(tracks, collisions, mcParticles);
     processMapChecksAfterCuts(tracks, collisions, mcParticles);
   }
-  PROCESS_SWITCH(MatchRecoGen, processMapChecksWithCent, "Process detector <=> generator levels with centrality/multiplicity information", false);
-
-  void processMapChecksWithoutCent(soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels> const& tracks,
-                                   soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels> const& collisions,
-                                   aod::McParticles const& mcParticles)
-  {
-    processMapChecksBeforeCuts(tracks, collisions, mcParticles);
-    processMapChecksAfterCuts(tracks, collisions, mcParticles);
-  }
-  PROCESS_SWITCH(MatchRecoGen, processMapChecksWithoutCent, "Process detector <=> generator levels without centrality/multiplicity information", true);
+  PROCESS_SWITCH(MatchRecoGen, processMapChecks, "Process detector <=> generator levels", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
