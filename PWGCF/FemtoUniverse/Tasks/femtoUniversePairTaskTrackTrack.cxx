@@ -197,7 +197,7 @@ struct FemtoUniversePairTaskTrackTrack {
       if (part.p() > confCutTable->get("PartOne", "MaxP") || part.pt() > confCutTable->get("PartOne", "MaxPt")) {
         continue;
       }
-      if (!isFullPIDSelected(part.pidcut(),
+      if (!isFullPIDSelected(part.pidCut(),
                              part.p(),
                              confCutTable->get("PartOne", "PIDthr"),
                              vPIDPartOne,
@@ -216,7 +216,7 @@ struct FemtoUniversePairTaskTrackTrack {
         if (part.p() > confCutTable->get("PartTwo", "MaxP") || part.pt() > confCutTable->get("PartTwo", "MaxPt")) {
           continue;
         }
-        if (!isFullPIDSelected(part.pidcut(),
+        if (!isFullPIDSelected(part.pidCut(),
                                part.p(),
                                confCutTable->get("PartTwo", "PIDthr"),
                                vPIDPartTwo,
@@ -234,7 +234,7 @@ struct FemtoUniversePairTaskTrackTrack {
       if (p1.p() > confCutTable->get("PartOne", "MaxP") || p1.pt() > confCutTable->get("PartOne", "MaxPt") || p2.p() > confCutTable->get("PartTwo", "MaxP") || p2.pt() > confCutTable->get("PartTwo", "MaxPt")) {
         continue;
       }
-      if (!isFullPIDSelected(p1.pidcut(),
+      if (!isFullPIDSelected(p1.pidCut(),
                              p1.p(),
                              confCutTable->get("PartOne", "PIDthr"),
                              vPIDPartOne,
@@ -242,7 +242,7 @@ struct FemtoUniversePairTaskTrackTrack {
                              kNsigma,
                              confCutTable->get("PartOne", "nSigmaTPC"),
                              confCutTable->get("PartOne", "nSigmaTPCTOF")) ||
-          !isFullPIDSelected(p2.pidcut(),
+          !isFullPIDSelected(p2.pidCut(),
                              p2.p(),
                              confCutTable->get("PartTwo", "PIDthr"),
                              vPIDPartTwo,
@@ -272,7 +272,7 @@ struct FemtoUniversePairTaskTrackTrack {
   /// process function for to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processSameEvent(const o2::aod::FDCollision& col,
+  void processSameEvent(const o2::aod::FdCollision& col,
                         const o2::aod::FDParticles& parts)
   {
     fillCollision(col);
@@ -288,9 +288,9 @@ struct FemtoUniversePairTaskTrackTrack {
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// \param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processSameEventMC(const o2::aod::FDCollision& col,
+  void processSameEventMC(const o2::aod::FdCollision& col,
                           const soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
-                          const o2::aod::FDMCParticles&)
+                          const o2::aod::FdMCParticles&)
   {
     fillCollision(col);
 
@@ -319,7 +319,7 @@ struct FemtoUniversePairTaskTrackTrack {
       if (p1.p() > confCutTable->get("PartOne", "MaxP") || p1.pt() > confCutTable->get("PartOne", "MaxPt") || p2.p() > confCutTable->get("PartTwo", "MaxP") || p2.pt() > confCutTable->get("PartTwo", "MaxPt")) {
         continue;
       }
-      if (!isFullPIDSelected(p1.pidcut(),
+      if (!isFullPIDSelected(p1.pidCut(),
                              p1.p(),
                              confCutTable->get("PartOne", "PIDthr"),
                              vPIDPartOne,
@@ -327,7 +327,7 @@ struct FemtoUniversePairTaskTrackTrack {
                              kNsigma,
                              confCutTable->get("PartOne", "nSigmaTPC"),
                              confCutTable->get("PartOne", "nSigmaTPCTOF")) ||
-          !isFullPIDSelected(p2.pidcut(),
+          !isFullPIDSelected(p2.pidCut(),
                              p2.p(),
                              confCutTable->get("PartTwo", "PIDthr"),
                              vPIDPartTwo,
@@ -352,7 +352,7 @@ struct FemtoUniversePairTaskTrackTrack {
   /// process function for to call doMixedEvent with Data
   /// @param cols subscribe to the collisions table (Data)
   /// @param parts subscribe to the femtoUniverseParticleTable
-  void processMixedEvent(const o2::aod::FDCollisions& cols,
+  void processMixedEvent(const o2::aod::FdCollisions& cols,
                          const o2::aod::FDParticles& parts)
   {
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
@@ -381,9 +381,9 @@ struct FemtoUniversePairTaskTrackTrack {
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processMixedEventMC(const o2::aod::FDCollisions& cols,
+  void processMixedEventMC(const o2::aod::FdCollisions& cols,
                            const soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
-                           const o2::aod::FDMCParticles&)
+                           const o2::aod::FdMCParticles&)
   {
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 

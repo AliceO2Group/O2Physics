@@ -77,7 +77,7 @@ int getRowDaughters(int daughID, T const& vecID)
 
 struct femtoUniverseProducerTaskV0Only {
 
-  Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FdCollisions> outputCollision;
   Produces<aod::FDParticles> outputParts;
   Produces<aod::FDExtParticles> outputDebugParts;
 
@@ -279,7 +279,7 @@ struct femtoUniverseProducerTaskV0Only {
                                 ConfV0DaughTPIDspecies);
       v0Cuts.init<aod::femtouniverseparticle::ParticleType::kV0,
                   aod::femtouniverseparticle::ParticleType::kV0Child,
-                  aod::femtouniverseparticle::cutContainerType>(&qaRegistry);
+                  aod::femtouniverseparticle::CutContainerType>(&qaRegistry);
       v0Cuts.setInvMassLimits(ConfInvMassLowLimit, ConfInvMassUpLimit);
       v0Cuts.setChildRejectNotPropagatedTracks(femto_universe_v0_selection::kPosTrack,
                                                ConfRejectNotPropagatedTracks);
@@ -419,7 +419,7 @@ struct femtoUniverseProducerTaskV0Only {
                       aod::femtouniverseparticle::ParticleType::kV0Child>(
           col, v0, postrack, negtrack); ///\todo fill QA also for daughters
         auto cutContainerV0 =
-          v0Cuts.getCutContainer<aod::femtouniverseparticle::cutContainerType>(
+          v0Cuts.getCutContainer<aod::femtouniverseparticle::CutContainerType>(
             col, v0, postrack, negtrack);
 
         if ((cutContainerV0.at(

@@ -200,7 +200,7 @@ class FemtoUniverseCutculator
   /// \param selectionType Selection type under investigation, as defined in the
   /// selection class
   template <typename T1, typename T2>
-  void checkForSelection(aod::femtouniverseparticle::cutContainerType& output,
+  void checkForSelection(aod::femtouniverseparticle::CutContainerType& output,
                          size_t& counter, T1 objectSelection, T2 selectionType,
                          bool SysChecks, float sign)
   {
@@ -294,9 +294,9 @@ class FemtoUniverseCutculator
   /// container that will be put to the user task incorporating the user choice
   /// of selections
   template <typename T>
-  aod::femtouniverseparticle::cutContainerType iterateSelection(T objectSelection, bool SysChecks, float sign)
+  aod::femtouniverseparticle::CutContainerType iterateSelection(T objectSelection, bool SysChecks, float sign)
   {
-    aod::femtouniverseparticle::cutContainerType output = 0;
+    aod::femtouniverseparticle::CutContainerType output = 0;
     size_t counter = 0;
     auto selectionVariables = objectSelection.getSelectionVariables();
     for (auto selVarIt : selectionVariables) {
@@ -309,7 +309,7 @@ class FemtoUniverseCutculator
   /// selection bit-wise container incorporating the user choice of selections
   void analyseCuts(std::string choice, bool SysChecks = false, float sign = 1)
   {
-    aod::femtouniverseparticle::cutContainerType output = -1;
+    aod::femtouniverseparticle::CutContainerType output = -1;
     if (choice == std::string("T")) {
       output = iterateSelection(mTrackSel, SysChecks, sign);
     } else if (choice == std::string("V")) {
@@ -319,7 +319,7 @@ class FemtoUniverseCutculator
       std::cout << "Option " << choice << " not recognized - available options are (T/V)" << std::endl;
       return;
     }
-    std::bitset<8 * sizeof(aod::femtouniverseparticle::cutContainerType)>
+    std::bitset<8 * sizeof(aod::femtouniverseparticle::CutContainerType)>
       bitOutput = output;
     // LOGF(info, "+++++++++++++++++++++++++++++++++");
     // LOGF(info, "CutCulator has spoken - your selection bit is");

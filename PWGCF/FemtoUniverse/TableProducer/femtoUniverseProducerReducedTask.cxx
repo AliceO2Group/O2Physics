@@ -63,9 +63,9 @@ using FemtoFullTracks = soa::Join<aod::FullTracks, aod::TracksDCA,
 
 struct femtoUniverseProducerReducedTask {
 
-  Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FdCollisions> outputCollision;
   Produces<aod::FDParticles> outputParts;
-  Produces<aod::FDMCParticles> outputPartsMC;
+  Produces<aod::FdMCParticles> outputPartsMC;
   Produces<aod::FDExtParticles> outputDebugParts;
   Produces<aod::FDMCLabels> outputPartsMCLabels;
   Produces<aod::FDExtMCParticles> outputDebugPartsMC;
@@ -138,7 +138,7 @@ struct femtoUniverseProducerReducedTask {
     trackCuts.setnSigmaPIDOffset(ConfPIDnSigmaOffsetTPC, ConfPIDnSigmaOffsetTOF);
     trackCuts.init<aod::femtouniverseparticle::ParticleType::kTrack,
                    aod::femtouniverseparticle::TrackType::kNoChild,
-                   aod::femtouniverseparticle::cutContainerType>(&qaRegistry);
+                   aod::femtouniverseparticle::CutContainerType>(&qaRegistry);
     mRunNumber = 0;
     mMagField = 0.0;
     /// Initializing CCDB
@@ -267,7 +267,7 @@ struct femtoUniverseProducerReducedTask {
       trackCuts.fillQA<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::TrackType::kNoChild>(track);
       // an array of two bit-wise containers of the systematic variations is obtained
       // one container for the track quality cuts and one for the PID cuts
-      auto cutContainer = trackCuts.getCutContainer<aod::femtouniverseparticle::cutContainerType>(track);
+      auto cutContainer = trackCuts.getCutContainer<aod::femtouniverseparticle::CutContainerType>(track);
 
       // now the table is filled
       outputParts(outputCollision.lastIndex(),

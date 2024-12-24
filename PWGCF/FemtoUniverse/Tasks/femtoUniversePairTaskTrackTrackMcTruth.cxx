@@ -215,7 +215,7 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   /// process function for to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processSameEvent(o2::aod::FDCollision& col,
+  void processSameEvent(o2::aod::FdCollision& col,
                         o2::aod::FDParticles& parts)
   {
     fillCollision(col);
@@ -259,7 +259,7 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   /// process function for to call doMixedEvent with Data
   /// @param cols subscribe to the collisions table (Data)
   /// @param parts subscribe to the femtoUniverseParticleTable
-  void processMixedEvent(o2::aod::FDCollisions& cols,
+  void processMixedEvent(o2::aod::FdCollisions& cols,
                          o2::aod::FDParticles& parts)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {

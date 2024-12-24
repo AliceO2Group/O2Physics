@@ -77,10 +77,10 @@ struct femtoUniverseProducerMCTruthTask {
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
 
   // Tables being produced
-  Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FdCollisions> outputCollision;
   Produces<aod::FDParticles> outputParts;
   // Produces<aod::FDMCLabels> outputPartsMCLabels;
-  // Produces<aod::FDMCParticles> outputPartsMC;
+  // Produces<aod::FdMCParticles> outputPartsMC;
 
   // Analysis configs
   Configurable<bool> ConfIsTrigger{"ConfIsTrigger", false, "Store all collisions"}; // Choose if filtering or skimming version is run
@@ -121,7 +121,7 @@ struct femtoUniverseProducerMCTruthTask {
     colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3, ConfCentFT0Min, ConfCentFT0Max);
 
     colCuts.init(&qaRegistry);
-    trackCuts.init<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::TrackType::kNoChild, aod::femtouniverseparticle::cutContainerType>(&qaRegistry);
+    trackCuts.init<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::TrackType::kNoChild, aod::femtouniverseparticle::CutContainerType>(&qaRegistry);
 
     mRunNumber = 0;
     mMagField = 0.0;
@@ -189,7 +189,7 @@ struct femtoUniverseProducerMCTruthTask {
       // trackCuts.fillQA<aod::femtouniverseparticle::ParticleType::kTrack,
       //                  aod::femtouniverseparticle::TrackType::kNoChild>(track);
       //  the bit-wise container of the systematic variations is obtained
-      // auto cutContainer = trackCuts.getCutContainer<aod::femtouniverseparticle::cutContainerType>(track);
+      // auto cutContainer = trackCuts.getCutContainer<aod::femtouniverseparticle::CutContainerType>(track);
       // instead of the bitmask, the PDG of the particle is stored as uint32_t
 
       // now the table is filled
