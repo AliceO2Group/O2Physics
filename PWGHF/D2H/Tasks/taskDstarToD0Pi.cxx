@@ -87,7 +87,7 @@ struct HfTaskDstarToD0Pi {
 
   void init(InitContext&)
   {
-    if ((doprocessDataWoML & doprocessDataWML) | (doprocessMcWoMl & doprocessMcWML)) {
+    if ((doprocessDataWoML && doprocessDataWML) || (doprocessMcWoMl && doprocessMcWML) || (doprocessDataWoML && doprocessMcWML) || (doprocessDataWML && doprocessMcWoMl)) {
       LOGP(fatal, "Only Without-ML or With-ML functions should be enabled at a time! Please check your configuration!");
     }
     auto vecPtBins = (std::vector<double>)ptBins;
