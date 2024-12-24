@@ -517,7 +517,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   /// process function for to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processSameEvent(soa::Filtered<o2::aod::FDCollisions>::iterator& col,
+  void processSameEvent(soa::Filtered<o2::aod::FdCollisions>::iterator& col,
                         FilteredFemtoFullParticles& parts)
   {
     fillCollision(col);
@@ -543,9 +543,9 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// \param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processSameEventMC(o2::aod::FDCollision& col,
+  void processSameEventMC(o2::aod::FdCollision& col,
                           soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
-                          o2::aod::FDMCParticles&)
+                          o2::aod::FdMCParticles&)
   {
     fillCollision(col);
 
@@ -654,7 +654,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   /// process function for to call doMixedEvent with Data
   /// \param cols subscribe to the collisions table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processMixedEvent(soa::Filtered<o2::aod::FDCollisions>& cols,
+  void processMixedEvent(soa::Filtered<o2::aod::FdCollisions>& cols,
                          FilteredFemtoFullParticles& parts)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
@@ -692,9 +692,9 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   /// \param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// \param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processMixedEventMC(o2::aod::FDCollisions& cols,
+  void processMixedEventMC(o2::aod::FdCollisions& cols,
                            soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
-                           o2::aod::FDMCParticles&)
+                           o2::aod::FdMCParticles&)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 

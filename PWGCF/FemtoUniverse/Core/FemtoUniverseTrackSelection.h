@@ -96,9 +96,9 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
   /// Initializes histograms for the task
   /// \tparam part Type of the particle for proper naming of the folders for QA
   /// \tparam tracktype Type of track (track, positive child, negative child) for proper naming of the folders for QA
-  /// \tparam cutContainerType Data type of the bit-wise container for the selections
+  /// \tparam CutContainerType Data type of the bit-wise container for the selections
   /// \param registry HistogramRegistry for QA output
-  template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::TrackType tracktype, typename cutContainerType>
+  template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::TrackType tracktype, typename CutContainerType>
   void init(HistogramRegistry* registry);
 
   /// Passes the species to the task for which PID needs to be stored
@@ -138,12 +138,12 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
 
   /// Obtain the bit-wise container for the selections
   /// \todo For the moment, PID is separated from the other selections, hence instead of a single value an std::array of size two is returned
-  /// \tparam cutContainerType Data type of the bit-wise container for the selections
+  /// \tparam CutContainerType Data type of the bit-wise container for the selections
   /// \tparam T Data type of the track
   /// \param track Track
   /// \return The bit-wise container for the selections, separately with all selection criteria, and the PID
-  template <typename cutContainerType, typename T>
-  std::array<cutContainerType, 2> getCutContainer(T const& track);
+  template <typename CutContainerType, typename T>
+  std::array<CutContainerType, 2> getCutContainer(T const& track);
 
   /// Some basic QA histograms
   /// \tparam part Type of the particle for proper naming of the folders for QA
@@ -289,7 +289,7 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
                                                                           "Maximal PID (nSigma)"}; ///< Helper information for the different selections
 }; // namespace femto_universe
 
-template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::TrackType tracktype, typename cutContainerType>
+template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::TrackType tracktype, typename CutContainerType>
 void FemtoUniverseTrackSelection::init(HistogramRegistry* registry)
 {
   if (registry) {
@@ -298,7 +298,7 @@ void FemtoUniverseTrackSelection::init(HistogramRegistry* registry)
 
     /// check whether the number of selection exceeds the bitmap size
     unsigned int nSelections = getNSelections() - getNSelections(femto_universe_track_selection::kPIDnSigmaMax);
-    if (nSelections > 8 * sizeof(cutContainerType)) {
+    if (nSelections > 8 * sizeof(CutContainerType)) {
       LOG(fatal) << "FemtoUniverseTrackCuts: Number of selections too large for your container - quitting!";
     }
 
@@ -456,12 +456,12 @@ bool FemtoUniverseTrackSelection::isSelectedMinimal(T const& track)
   return true;
 }
 
-template <typename cutContainerType, typename T>
-std::array<cutContainerType, 2> FemtoUniverseTrackSelection::getCutContainer(T const& track)
+template <typename CutContainerType, typename T>
+std::array<CutContainerType, 2> FemtoUniverseTrackSelection::getCutContainer(T const& track)
 {
-  cutContainerType output = 0;
+  CutContainerType output = 0;
   size_t counter = 0;
-  cutContainerType outputPID = 0;
+  CutContainerType outputPID = 0;
   const auto sign = track.sign();
   const auto pT = track.pt();
   const auto eta = track.eta();

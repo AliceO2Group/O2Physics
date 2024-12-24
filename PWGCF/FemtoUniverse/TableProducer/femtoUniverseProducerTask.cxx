@@ -104,10 +104,10 @@ int getRowDaughters(int daughID, T const& vecID)
 }
 
 struct FemtoUniverseProducerTask {
-  Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FdCollisions> outputCollision;
   Produces<aod::FDExtCollisions> outputCollExtra;
   Produces<aod::FDParticles> outputParts;
-  Produces<aod::FDMCParticles> outputPartsMC;
+  Produces<aod::FdMCParticles> outputPartsMC;
   Produces<aod::FDExtParticles> outputDebugParts;
   Produces<aod::FDMCLabels> outputPartsMCLabels;
   Produces<aod::FDExtMCParticles> outputDebugPartsMC;
@@ -483,7 +483,7 @@ struct FemtoUniverseProducerTask {
     trackCuts.setSelection(confTrkPIDnSigmaMax, femto_universe_track_selection::kPIDnSigmaMax, femto_universe_selection::kAbsUpperLimit);
     trackCuts.setPIDSpecies(confTrkPIDspecies);
     trackCuts.setnSigmaPIDOffset(confTrkPIDnSigmaOffsetTPC, confTrkPIDnSigmaOffsetTOF);
-    trackCuts.init<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::TrackType::kNoChild, aod::femtouniverseparticle::cutContainerType>(&qaRegistry);
+    trackCuts.init<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::TrackType::kNoChild, aod::femtouniverseparticle::CutContainerType>(&qaRegistry);
 
     /// \todo fix how to pass array to setSelection, getRow() passing a
     /// different type!
@@ -512,7 +512,7 @@ struct FemtoUniverseProducerTask {
       v0Cuts.setChildCuts(femto_universe_v0_selection::kNegTrack, ConfV0Selection.confChildPIDnSigmaMax, femto_universe_track_selection::kPIDnSigmaMax, femto_universe_selection::kAbsUpperLimit);
       v0Cuts.setChildPIDSpecies(femto_universe_v0_selection::kPosTrack, ConfV0Selection.confChildPIDspecies);
       v0Cuts.setChildPIDSpecies(femto_universe_v0_selection::kNegTrack, ConfV0Selection.confChildPIDspecies);
-      v0Cuts.init<aod::femtouniverseparticle::ParticleType::kV0, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::cutContainerType>(&qaRegistry);
+      v0Cuts.init<aod::femtouniverseparticle::ParticleType::kV0, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::CutContainerType>(&qaRegistry);
       v0Cuts.setInvMassLimits(ConfV0Selection.confV0InvMassLowLimit, ConfV0Selection.confV0InvMassUpLimit);
 
       v0Cuts.setChildRejectNotPropagatedTracks(femto_universe_v0_selection::kPosTrack, confTrkRejectNotPropagated);
@@ -576,7 +576,7 @@ struct FemtoUniverseProducerTask {
       cascadeCuts.setChildPIDSpecies(femto_universe_cascade_selection::kBachTrack, ConfCascadeSelection.confCascChildPIDspecies);
 
       // check if works correctly for bachelor track
-      cascadeCuts.init<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::ParticleType::kCascadeBachelor, aod::femtouniverseparticle::cutContainerType>(&cascadeQaRegistry, confIsSelectCascOmega);
+      cascadeCuts.init<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::ParticleType::kCascadeBachelor, aod::femtouniverseparticle::CutContainerType>(&cascadeQaRegistry, confIsSelectCascOmega);
       // invmass cuts
       cascadeCuts.setInvMassLimits(ConfCascadeSelection.confCascInvMassLowLimit, ConfCascadeSelection.confCascInvMassUpLimit);
 
@@ -587,7 +587,7 @@ struct FemtoUniverseProducerTask {
 
     if (confIsActivatePhi) {
       // initializing for Phi meson
-      phiCuts.init<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild, aod::femtouniverseparticle::cutContainerType>(&qaRegistry);
+      phiCuts.init<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild, aod::femtouniverseparticle::CutContainerType>(&qaRegistry);
     }
 
     mRunNumber = 0;
@@ -904,7 +904,7 @@ struct FemtoUniverseProducerTask {
       trackCuts.fillQA<aod::femtouniverseparticle::ParticleType::kTrack,
                        aod::femtouniverseparticle::TrackType::kNoChild>(track);
       // the bit-wise container of the systematic variations is obtained
-      auto cutContainer = trackCuts.getCutContainer<aod::femtouniverseparticle::cutContainerType>(track);
+      auto cutContainer = trackCuts.getCutContainer<aod::femtouniverseparticle::CutContainerType>(track);
 
       // now the table is filled
       if (!confIsActivateCascade) {
@@ -964,7 +964,7 @@ struct FemtoUniverseProducerTask {
       // }
 
       v0Cuts.fillQA<aod::femtouniverseparticle::ParticleType::kV0, aod::femtouniverseparticle::ParticleType::kV0Child>(col, v0, postrack, negtrack); ///\todo fill QA also for daughters
-      auto cutContainerV0 = v0Cuts.getCutContainer<aod::femtouniverseparticle::cutContainerType>(col, v0, postrack, negtrack);
+      auto cutContainerV0 = v0Cuts.getCutContainer<aod::femtouniverseparticle::CutContainerType>(col, v0, postrack, negtrack);
 
       int postrackID = v0.posTrackId();
       int rowInPrimaryTrackTablePos = -1;
@@ -1267,8 +1267,8 @@ struct FemtoUniverseProducerTask {
                     hfCand.eta(),
                     hfCand.phi(),
                     aod::femtouniverseparticle::ParticleType::kD0,
-                    -999, // cut, cutContainerType
-                    -999, // PID, cutContainerType
+                    -999, // cut, CutContainerType
+                    -999, // PID, CutContainerType
                     -999,
                     indexChildID,
                     invMassD0,     // D0 mass (mLambda)
@@ -1468,7 +1468,7 @@ struct FemtoUniverseProducerTask {
       // trackCuts.fillQA<aod::femtouniverseparticle::ParticleType::kTrack,
       //                  aod::femtouniverseparticle::TrackType::kNoChild>(track);
       //  the bit-wise container of the systematic variations is obtained
-      // auto cutContainer = trackCuts.getCutContainer<aod::femtouniverseparticle::cutContainerType>(track);
+      // auto cutContainer = trackCuts.getCutContainer<aod::femtouniverseparticle::CutContainerType>(track);
       // instead of the bitmask, the PDG of the particle is stored as uint32_t
 
       // now the table is filled
