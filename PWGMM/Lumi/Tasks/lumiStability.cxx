@@ -9,9 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// \file lumiStability.cxx
-// \brief Analysis over BCs to study the luminosity stability along time.
-// \author josuem@cern.ch
+/// \file lumiStability.cxx
+/// \brief Analysis over BCs to study the luminosity stability along time.
+///
+/// \author Josue Martinez Garcia, josuem@cern.ch
 
 
 #include <utility>
