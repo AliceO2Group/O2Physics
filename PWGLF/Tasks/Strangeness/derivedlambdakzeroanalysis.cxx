@@ -1786,6 +1786,9 @@ struct derivedlambdakzeroanalysis {
       if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
+      if (v0.v0Type() != v0Selections.v0TypeSelection && v0Selections.v0TypeSelection > -1)
+        continue; // skip V0s that are not standard
+
       if (!v0.has_v0MCCore())
         continue;
 
