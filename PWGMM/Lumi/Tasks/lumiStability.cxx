@@ -8,6 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+// \file lumiStability.cxx
+// \brief Analysis over BCs to study the luminosity stability along time.
 // \author josuem@cern.ch
 
 #include <utility>
@@ -36,7 +38,7 @@ using namespace o2::framework;
 
 using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
 
-struct lumiStabilityTask {
+struct LumiStabilityTask {
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -291,12 +293,11 @@ struct lumiStabilityTask {
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
       // otherwise default minOrbit and nOrbits will be used
-      /*const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
-      std::cout << "<<<<<<<<<<<<<<<<<<<<<<<<<   Creating histograms >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl;
-      histos.add("hOrbitFDDVertexCoinc", "", kTH1F, {axisOrbits});
-      histos.add("hOrbitFDDVertex", "", kTH1F, {axisOrbits});
-      histos.add("hOrbitFT0vertex", "", kTH1F, {axisOrbits});
-      histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});*/
+      // const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
+      // histos.add("hOrbitFDDVertexCoinc", "", kTH1F, {axisOrbits});
+      // histos.add("hOrbitFDDVertex", "", kTH1F, {axisOrbits});
+      // histos.add("hOrbitFT0vertex", "", kTH1F, {axisOrbits});
+      // histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});
     }
 
     for (auto const& fdd : fdds) {
@@ -314,15 +315,15 @@ struct lumiStabilityTask {
       bool scentral = fddTriggers[o2::fdd::Triggers::bitSCen];
       bool central = fddTriggers[o2::fdd::Triggers::bitCen];
 
-      auto SideA = fdd.chargeA();
-      auto SideC = fdd.chargeC();
+      auto sideA = fdd.chargeA();
+      auto sideC = fdd.chargeC();
       std::vector<int> channelA;
       std::vector<int> channelC;
       for (auto i = 0; i < 8; i++) {
-        if (SideA[i] > 0) {
+        if (sideA[i] > 0) {
           channelA.push_back(i);
         }
-        if (SideC[i] > 0) {
+        if (sideC[i] > 0) {
           channelC.push_back(i);
         }
       }
@@ -476,15 +477,15 @@ struct lumiStabilityTask {
               bool vertexPast = fddTriggersPast[o2::fdd::Triggers::bitVertex];
               bool triggerAPast = fddTriggersPast[o2::fdd::Triggers::bitA];
               bool triggerCPast = fddTriggersPast[o2::fdd::Triggers::bitC];
-              auto SideAPast = fdd_past.chargeA();
-              auto SideCPast = fdd_past.chargeC();
+              auto sideAPast = fdd_past.chargeA();
+              auto sideCPast = fdd_past.chargeC();
               std::vector<int> channelAPast;
               std::vector<int> channelCPast;
               for (auto i = 0; i < 8; i++) {
-                if (SideAPast[i] > 0) {
+                if (sideAPast[i] > 0) {
                   channelAPast.push_back(i);
                 }
-                if (SideCPast[i] > 0) {
+                if (sideCPast[i] > 0) {
                   channelCPast.push_back(i);
                 }
               }
@@ -786,7 +787,7 @@ struct lumiStabilityTask {
     } // loop over V0 events
   } // end processMain
 
-  PROCESS_SWITCH(lumiStabilityTask, processMain, "Process FDD and FT0 to lumi stability analysis", true);
+  PROCESS_SWITCH(LumiStabilityTask, processMain, "Process FDD and FT0 to lumi stability analysis", true);
 
   void processCollisions(aod::Collision const& collision)
   {
@@ -798,11 +799,11 @@ struct lumiStabilityTask {
     histos.fill(HIST("hvertexXvsTime"), collision.posX(), collision.collisionTime());
   }
 
-  PROCESS_SWITCH(lumiStabilityTask, processCollisions, "Process collision to get vertex position", true);
+  PROCESS_SWITCH(LumiStabilityTask, processCollisions, "Process collision to get vertex position", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lumiStabilityTask>(cfgc)};
+    adaptAnalysisTask<LumiStabilityTask>(cfgc)};
 }
