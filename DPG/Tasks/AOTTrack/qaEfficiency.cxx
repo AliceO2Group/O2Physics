@@ -365,7 +365,7 @@ struct QaEfficiency {
     hPtItsTpcTofStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated", PDGs[histogramIndex]), "Generated (from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtmotherGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated_mother", PDGs[histogramIndex]), "Generated Mother " + tagPt, kTH1D, {axisPt});
-    hdecaylengthmother[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/decayLength", PDGs[histogramIndex]), "Decay Length of mother particle" + tagPt, kTH1D, {axisPt});
+    hdecaylengthmother[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/decayLength", PDGs[histogramIndex]), "Decay Length of mother particle" + tagPt, kTH1D, {axisDecayLength});
 
     // Ter
     hPtItsTpcTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (from secondary weak decays) " + tagPt, kTH1D, {axisPt});
