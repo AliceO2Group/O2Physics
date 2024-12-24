@@ -172,7 +172,7 @@ class FemtoUniversePairWithCentMultKt
   template <typename t1, typename t2>
   void fillkT(t1 kstar_value, t1 kt_value, t2 folder)
   {
-    if (kt_value < ktBins[1]) {
+    if (kt_value >= ktBins[0] && kt_value < ktBins[1]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_0_1"), kstar_value);
     } else if (kt_value < ktBins[2]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_1_2"), kstar_value);
@@ -272,12 +272,18 @@ class FemtoUniversePairWithCentMultKt
   template <typename t1, typename t2>
   void fillkT3D(t1 qout_value, t1 qside_value, t1 qlong_value, t1 kt_value, t2 folder)
   {
-    if (kt_value < ktBins[1]) {
+    if (kt_value >= ktBins[0] && kt_value < ktBins[1]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_0_1"), qout_value, qside_value, qlong_value);
     } else if (kt_value < ktBins[2]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_1_2"), qout_value, qside_value, qlong_value);
     } else if (kt_value < ktBins[3]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_2_3"), qout_value, qside_value, qlong_value);
+    } else if (kt_value < ktBins[4]) {
+      pairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_3_4"), qout_value, qside_value, qlong_value);
+    } else if (kt_value < ktBins[5]) {
+      pairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_4_5"), qout_value, qside_value, qlong_value);
+    } else if (kt_value < ktBins[6]) {
+      pairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_5_6"), qout_value, qside_value, qlong_value);
     }
   }
 
