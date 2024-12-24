@@ -284,7 +284,7 @@ class FemtoUniversePairWithCentMultKt
       pairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_4_5"), qout_value, qside_value, qlong_value);
     } else if (kt_value < ktBins[6]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_5_6"), qout_value, qside_value, qlong_value);
-    }  
+    }
   }
 
  protected:
