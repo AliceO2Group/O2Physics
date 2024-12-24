@@ -237,8 +237,6 @@ struct ebyeMaker {
   Configurable<float> etaMaxV0dau{"etaMaxV0dau", 0.8f, "maximum eta V0 daughters"};
   Configurable<float> outerPIDMin{"outerPIDMin", -4.f, "minimum outer PID"};
 
-  Configurable<uint8_t> triggerCut{"triggerCut", 0x1, "trigger class to select"};
-
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "fill histograms only for true signal candidates (MC)"};
   Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
 
@@ -1167,17 +1165,14 @@ struct ebyeMaker {
       fillRecoEvent(collision, tracks, V0Table_thisCollision, cV0M);
 
       uint8_t trigger = collision.alias_bit(kINT7) ? 0x1 : 0x0;
-      bool hasHMV0M = false;
       for (auto& classId : classIds) {
         if (bc.triggerMask() & BIT(classId)) {
-          hasHMV0M = true;
+          trigger |= 0x2;
+          cV0M = cV0M < 104.f ? cV0M * 100. : cV0M;
           break;
         }
       }
-      if (!hasHMV0M && trigger == 0x0) {
-        continue;
-      }
-      if (trigger != triggerCut && triggerCut != 0x2) {
+      if (trigger == 0x0) {
         continue;
       }
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, nTrackletsColl, cV0M);

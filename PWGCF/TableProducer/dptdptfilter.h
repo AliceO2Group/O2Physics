@@ -210,6 +210,7 @@ std::function<float(float)> maxDcaZPtDep{}; // max dca in z axis as function of 
 
 std::vector<TrackSelection*> trackFilters = {};
 bool dca2Dcut = false;
+float sharedTpcClusters = 1.0; ///< max fraction of shared TPC clusters
 float maxDCAz = 1e6f;
 float maxDCAxy = 1e6f;
 
@@ -236,7 +237,7 @@ inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdat
   return lst;
 }
 
-inline void initializeTrackSelection(const TrackSelectionTuneCfg& tune)
+inline void initializeTrackSelection(TrackSelectionTuneCfg& tune)
 {
   switch (tracktype) {
     case 1: { /* Run2 global track */
@@ -341,11 +342,19 @@ inline void initializeTrackSelection(const TrackSelectionTuneCfg& tune)
         filter->SetMinNCrossedRowsOverFindableClustersTPC(tune.mTPCXRoFClusters);
       }
       if (tune.mUseDCAxy) {
+        /* DCAxy is tricky due to how the pT dependence is implemented */
+        filter->SetMaxDcaXYPtDep([&tune](float) { return tune.mDCAxy; });
         filter->SetMaxDcaXY(tune.mDCAxy);
       }
       if (tune.mUseDCAz) {
         filter->SetMaxDcaZ(tune.mDCAz);
       }
+    }
+    if (tune.mUseDCAz) {
+      maxDcaZPtDep = [&tune](float) { return tune.mDCAz; };
+    }
+    if (tune.mUseFractionTpcSharedClusters) {
+      sharedTpcClusters = tune.mFractionTpcSharedClusters;
     }
   }
 }
@@ -1126,6 +1135,10 @@ inline bool matchTrackType(TrackObject const& track)
         }
         /* 2D DCA xy-o-z cut */
         if (!checkDca2Dcut(track)) {
+          return false;
+        }
+        /* shared fraction of TPC clusters */
+        if (!(track.tpcFractionSharedCls() < sharedTpcClusters)) {
           return false;
         }
         return true;

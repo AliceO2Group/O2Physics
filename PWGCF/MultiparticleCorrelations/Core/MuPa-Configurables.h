@@ -62,7 +62,7 @@ struct : ConfigurableGroup {
 
 // *) Event cuts:
 struct : ConfigurableGroup {
-  Configurable<vector<string>> cfUseEventCuts{"cfUseEventCuts", {"1-NumberOfEvents", "1-TotalMultiplicity", "1-Multiplicity", "1-ReferenceMultiplicity", "1-Centrality", "1-Vertex_x", "1-Vertex_y", "1-Vertex_z", "1-NContributors", "1-ImpactParameter", "0-EventPlaneAngle", "1-Occupancy", "1-InteractionRate", "1-CurrentRunDuration", "0-MultMCNParticlesEta08", "0-Trigger", "0-Sel7", "1-Sel8", "1-MultiplicityEstimator", "1-ReferenceMultiplicityEstimator", "1-CentralityEstimator", "1-SelectedEvents", "1-NoSameBunchPileup", "1-IsGoodZvtxFT0vsPV", "1-IsVertexITSTPC", "1-IsVertexTOFmatched", "1-IsVertexTRDmatched", "0-NoCollInTimeRangeStrict", "0-NoCollInTimeRangeStandard", "0-NoCollInRofStrict", "0-NoCollInRofStandard", "0-NoHighMultCollInPrevRof", "1-OccupancyEstimator", "1-MinVertexDistanceFromIP"}, "use (1) or do not use (0) event cuts"};
+  Configurable<vector<string>> cfUseEventCuts{"cfUseEventCuts", {"1-NumberOfEvents", "1-TotalMultiplicity", "1-Multiplicity", "1-ReferenceMultiplicity", "1-Centrality", "1-Vertex_x", "1-Vertex_y", "1-Vertex_z", "1-NContributors", "1-ImpactParameter", "0-EventPlaneAngle", "1-Occupancy", "1-InteractionRate", "1-CurrentRunDuration", "0-MultMCNParticlesEta08", "0-Trigger", "0-Sel7", "1-Sel8", "1-MultiplicityEstimator", "1-ReferenceMultiplicityEstimator", "1-CentralityEstimator", "1-SelectedEvents", "1-NoSameBunchPileup", "1-IsGoodZvtxFT0vsPV", "1-IsVertexITSTPC", "1-IsVertexTOFmatched", "1-IsVertexTRDmatched", "0-NoCollInTimeRangeStrict", "0-NoCollInTimeRangeStandard", "0-NoCollInRofStrict", "0-NoCollInRofStandard", "0-NoHighMultCollInPrevRof", "0-IsGoodITSLayer3", "0-IsGoodITSLayer0123", "0-IsGoodITSLayersAll", "1-OccupancyEstimator", "1-MinVertexDistanceFromIP"}, "use (1) or do not use (0) event cuts"};
   Configurable<bool> cfUseEventCutCounterAbsolute{"cfUseEventCutCounterAbsolute", false, "profile and save how many times each event cut counter triggered (absolute). Use with care, as this is computationally heavy"};
   Configurable<bool> cfUseEventCutCounterSequential{"cfUseEventCutCounterSequential", false, "profile and save how many times each event cut counter triggered (sequential). Use with care, as this is computationally heavy"};
   Configurable<bool> cfPrintCutCounterContent{"cfPrintCutCounterContent", false, "if true, prints on the screen after each event the content of fEventCutCounterHist[*][*] (all which were booked)"};
@@ -102,6 +102,9 @@ struct : ConfigurableGroup {
   Configurable<bool> cfUseNoCollInRofStrict{"cfUseNoCollInRofStrict", false, "TBI 20240521 explanation"};
   Configurable<bool> cfUseNoCollInRofStandard{"cfUseNoCollInRofStandard", false, "TBI 20240521 explanation"};
   Configurable<bool> cfUseNoHighMultCollInPrevRof{"cfUseNoHighMultCollInPrevRof", false, "TBI 20240521 explanation"};
+  Configurable<bool> cfUseIsGoodITSLayer3{"cfUseIsGoodITSLayer3", false, "TBI 20241220 explanation (or see enum)"};
+  Configurable<bool> cfUseIsGoodITSLayer0123{"cfUseIsGoodITSLayer0123", false, "TBI 20241220 explanation (or see enum)"};
+  Configurable<bool> cfUseIsGoodITSLayersAll{"cfUseIsGoodITSLayersAll", false, "TBI 20241220 explanation (or see enum)"};
   Configurable<string> cfOccupancyEstimator{"cfOccupancyEstimator", "FT0COccupancyInTimeRange", "set here some supported occupancy estimator (TrackOccupancyInTimeRange, FT0COccupancyInTimeRange, ..."};
 } cf_ec;
 

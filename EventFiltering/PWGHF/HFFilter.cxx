@@ -67,8 +67,7 @@ struct HfFilter { // Main struct for HF triggers
 
   Configurable<int> activateQA{"activateQA", 0, "flag to enable QA histos (0 no QA, 1 basic QA, 2 extended QA, 3 very extended QA)"};
   Configurable<bool> applyEventSelection{"applyEventSelection", true, "flag to enable event selection (sel8 + Zvt and possibly time-frame border cut)"};
-  Configurable<bool> applyTimeFrameBorderCut{"applyTimeFrameBorderCut", true, "flag to enable time-frame border cut"};
-  Configurable<bool> activateSecVtx{"activateSecVtx", false, "flag to enable 2nd vertex fitting - only beauty hadrons"};
+  Configurable<bool> activateSecVtxForB{"activateSecVtxForB", false, "flag to enable 2nd vertex fitting - only beauty hadrons"};
 
   // parameters for all triggers
   // nsigma PID (except for V0 and cascades)
@@ -80,7 +79,6 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<LabeledArray<float>> ptThresholds{"ptThresholds", {cutsHighPtThresholds[0], 1, 2, labelsEmpty, labelsColumnsHighPtThresholds}, "pT treshold for high pT charm hadron candidates for kHighPt triggers in GeV/c"};
 
   // parameters for beauty triggers
-  Configurable<LabeledArray<float>> deltaMassBeauty{"deltaMassBeauty", {cutsDeltaMassB[0], 1, kNBeautyParticles, labelsEmpty, labelsColumnsDeltaMassB}, "invariant-mass delta with respect to the b-hadron masses in GeV/c2"};
   Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCAXY pT-dependent cut"};
   Configurable<LabeledArray<double>> cutsTrackBeauty3Prong{"cutsTrackBeauty3Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 3-prong beauty candidates"};
   Configurable<LabeledArray<double>> cutsTrackBeauty4Prong{"cutsTrackBeauty4Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 4-prong beauty candidates"};
@@ -88,6 +86,11 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<float> numSigmaDeltaMassCharmHad{"numSigmaDeltaMassCharmHad", 2.5, "Number of sigma for charm-hadron delta mass cut in B and D resonance triggers"};
   Configurable<std::vector<double>> pTBinsBHadron{"pTBinsBHadron", std::vector<double>{hf_trigger_cuts_presel_beauty::vecBinsPt}, "pT bin limits for beauty hadrons preselections"};
   Configurable<LabeledArray<double>> cutsBplus{"cutsBplus", {hf_trigger_cuts_presel_beauty::cuts[0], hf_trigger_cuts_presel_beauty::nBinsPt, hf_trigger_cuts_presel_beauty::nCutVars, hf_trigger_cuts_presel_beauty::labelsPt, hf_trigger_cuts_presel_beauty::labelsRowsTopolBeauty}, "B+ candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cutsBzeroToDstar{"cutsBzeroToDstar", {hf_trigger_cuts_presel_beauty::cuts[0], hf_trigger_cuts_presel_beauty::nBinsPt, hf_trigger_cuts_presel_beauty::nCutVars, hf_trigger_cuts_presel_beauty::labelsPt, hf_trigger_cuts_presel_beauty::labelsRowsTopolBeauty}, "B0 -> D*+ candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cutsBzero{"cutsBzero", {hf_trigger_cuts_presel_beauty::cuts[0], hf_trigger_cuts_presel_beauty::nBinsPt, hf_trigger_cuts_presel_beauty::nCutVars, hf_trigger_cuts_presel_beauty::labelsPt, hf_trigger_cuts_presel_beauty::labelsRowsTopolBeauty}, "B0 candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cutsBs{"cutsBs", {hf_trigger_cuts_presel_beauty::cuts[0], hf_trigger_cuts_presel_beauty::nBinsPt, hf_trigger_cuts_presel_beauty::nCutVars, hf_trigger_cuts_presel_beauty::labelsPt, hf_trigger_cuts_presel_beauty::labelsRowsTopolBeauty}, "Bs candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cutsLb{"cutsLb", {hf_trigger_cuts_presel_beauty::cuts[0], hf_trigger_cuts_presel_beauty::nBinsPt, hf_trigger_cuts_presel_beauty::nCutVars, hf_trigger_cuts_presel_beauty::labelsPt, hf_trigger_cuts_presel_beauty::labelsRowsTopolBeauty}, "Lb candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cutsXib{"cutsXib", {hf_trigger_cuts_presel_beauty::cuts[0], hf_trigger_cuts_presel_beauty::nBinsPt, hf_trigger_cuts_presel_beauty::nCutVars, hf_trigger_cuts_presel_beauty::labelsPt, hf_trigger_cuts_presel_beauty::labelsRowsTopolBeauty}, "Xib candidate selection per pT bin"};
 
   // parameters for femto triggers
   Configurable<float> femtoMaxRelativeMomentum{"femtoMaxRelativeMomentum", 2., "Maximal allowed value for relative momentum between charm-proton pairs in GeV/c"};
@@ -149,7 +152,9 @@ struct HfFilter { // Main struct for HF triggers
   std::array<LabeledArray<double>, kNCharmParticles> thresholdBDTScores;
 
   o2::vertexing::DCAFitterN<2> df2; // fitter for Charm Hadron vertex (2-prong vertex fitter)
+  o2::vertexing::DCAFitterN<3> df3; // fitter for Charm Hadron vertex (3-prong vertex fitter)
   o2::vertexing::DCAFitterN<2> dfB; // fitter for Beauty Hadron vertex (2-prong vertex fitter)
+  o2::vertexing::DCAFitterN<3> dfBtoDstar; // fitter for Beauty Hadron to D* vertex (3-prong vertex fitter)
 
   HistogramRegistry registry{"registry"};
   std::shared_ptr<TH1> hProcessedEvents;
@@ -194,7 +199,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setPtLimitsCharmBaryonBachelor(ptCuts->get(0u, 3u), ptCuts->get(1u, 3u));
     helper.setCutsSingleTrackBeauty(cutsTrackBeauty3Prong, cutsTrackBeauty4Prong);
     helper.setCutsSingleTrackCharmBaryonBachelor(cutsTrackCharmBaryonBachelor);
-    helper.setCutsBplus(cutsBplus);
+    helper.setCutsBhadrons(cutsBplus, cutsBzeroToDstar, cutsBzero, cutsBs, cutsLb, cutsXib);
     helper.setNsigmaProtonCutsForFemto(std::array{nSigmaPidCuts->get(0u, 3u), nSigmaPidCuts->get(1u, 3u), nSigmaPidCuts->get(2u, 3u)});
     helper.setNsigmaDeuteronCutsForFemto(std::array{nSigmaPidCuts->get(0u, 6u), nSigmaPidCuts->get(1u, 6u), nSigmaPidCuts->get(2u, 6u)});
     helper.setNsigmaProtonCutsForCharmBaryons(nSigmaPidCuts->get(0u, 0u), nSigmaPidCuts->get(1u, 0u));
@@ -210,9 +215,11 @@ struct HfFilter { // Main struct for HF triggers
     helper.setPtRangeSoftPiSigmaC(ptCuts->get(0u, 4u), ptCuts->get(1u, 4u));
     helper.setPtDeltaMassRangeSigmaC(cutsPtDeltaMassCharmReso->get(0u, 6u), cutsPtDeltaMassCharmReso->get(1u, 6u), cutsPtDeltaMassCharmReso->get(0u, 7u), cutsPtDeltaMassCharmReso->get(1u, 7u), cutsPtDeltaMassCharmReso->get(0u, 8u), cutsPtDeltaMassCharmReso->get(1u, 8u), cutsPtDeltaMassCharmReso->get(0u, 9u), cutsPtDeltaMassCharmReso->get(1u, 9u), cutsPtDeltaMassCharmReso->get(2u, 6u), cutsPtDeltaMassCharmReso->get(2u, 7u), cutsPtDeltaMassCharmReso->get(2u, 8u), cutsPtDeltaMassCharmReso->get(2u, 9u));
     helper.setPtRangeSoftKaonXicResoToSigmaC(ptCuts->get(0u, 5u), ptCuts->get(1u, 5u));
-    if (activateSecVtx) {
+    if (activateSecVtxForB) {
       helper.setVtxConfiguration(df2, false); // (DCAFitterN, useAbsDCA)
+      helper.setVtxConfiguration(df3, false);
       helper.setVtxConfiguration(dfB, true);
+      helper.setVtxConfiguration(dfBtoDstar, true);
     }
     hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;counts", HistType::kTH1F, {{kNtriggersHF + 2, -0.5, +kNtriggersHF + 1.5}});
     for (auto iBin = 0; iBin < kNtriggersHF + 2; ++iBin) {
@@ -262,7 +269,9 @@ struct HfFilter { // Main struct for HF triggers
         hMassVsPtB[iBeautyPart] = registry.add<TH2>(Form("fMassVsPt%s", beautyParticleNames[iBeautyPart].data()), Form("#it{M} vs. #it{p}_{T} distribution of triggered %s candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", beautyParticleNames[iBeautyPart].data()), HistType::kTH2F, {ptAxis, massAxisB[iBeautyPart]});
         hCpaVsPtB[iBeautyPart] = registry.add<TH2>(Form("fCpaVsPt%s", beautyParticleNames[iBeautyPart].data()), Form("CPA vs. #it{p}_{T} distribution of triggered %s candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", beautyParticleNames[iBeautyPart].data()), HistType::kTH2F, {ptAxis, {100, -1, 1}});
         hDecayLengthVsPtB[iBeautyPart] = registry.add<TH2>(Form("fDecayLengthVsPt%s", beautyParticleNames[iBeautyPart].data()), Form("DecayLength vs. #it{p}_{T} distribution of triggered %s candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", beautyParticleNames[iBeautyPart].data()), HistType::kTH2F, {ptAxis, {100, 0, 20}});
-        hImpactParamProductVsPtB[iBeautyPart] = registry.add<TH2>(Form("fImpactParamProductVsPt%s", beautyParticleNames[iBeautyPart].data()), Form("ImpactParamProduct vs. #it{p}_{T} distribution of triggered %s candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", beautyParticleNames[iBeautyPart].data()), HistType::kTH2F, {ptAxis, {100, -2.5, +2.5}});
+        if (iBeautyPart != kB0toDStar) {
+          hImpactParamProductVsPtB[iBeautyPart] = registry.add<TH2>(Form("fImpactParamProductVsPt%s", beautyParticleNames[iBeautyPart].data()), Form("ImpactParamProduct vs. #it{p}_{T} distribution of triggered %s candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", beautyParticleNames[iBeautyPart].data()), HistType::kTH2F, {ptAxis, {100, -2.5, +2.5}});
+        }
       }
       constexpr int kNBinsHfVtxStages = kNHfVtxStage;
       std::string labels[kNBinsHfVtxStages];
@@ -270,9 +279,12 @@ struct HfFilter { // Main struct for HF triggers
       labels[HfVtxStage::BeautyVertex] = "vertex CharmHad-Pi pairs";
       labels[HfVtxStage::CharmHadPiSelected] = "selected CharmHad-Pi pairs";
       static const AxisSpec axisHfVtxStages = {kNBinsHfVtxStages, 0.5, kNBinsHfVtxStages + 0.5, ""};
-      registry.add("fHfVtxStages", "HfVtxStages;;entries", HistType::kTH1F, {axisHfVtxStages});
+      registry.add("fHfVtxStages", "HfVtxStages;;entries", HistType::kTH2F, {axisHfVtxStages, {kNBeautyParticles, -0.5, +kNBeautyParticles - 0.5}});
       for (int iBin = 0; iBin < kNBinsHfVtxStages; iBin++) {
-        registry.get<TH1>(HIST("fHfVtxStages"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+        registry.get<TH2>(HIST("fHfVtxStages"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+      }
+      for (int iBin = 0; iBin < kNBeautyParticles; iBin++) {
+        registry.get<TH2>(HIST("fHfVtxStages"))->GetYaxis()->SetBinLabel(iBin + 1, beautyParticleNames[iBin].data());
       }
 
       for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
@@ -341,7 +353,7 @@ struct HfFilter { // Main struct for HF triggers
     for (const auto& collision : collisions) {
 
       bool keepEvent[kNtriggersHF]{false};
-      if (applyEventSelection && (!collision.sel8() || std::fabs(collision.posZ()) > 11.f || (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && applyTimeFrameBorderCut))) { // safety margin for Zvtx
+      if (applyEventSelection && (!collision.sel8() || std::fabs(collision.posZ()) > 11.f)) { // safety margin for Zvtx
         tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0], keepEvent[kPhotonCharm2P], keepEvent[kPhotonCharm3P], keepEvent[kSingleCharm2P], keepEvent[kSingleCharm3P], keepEvent[kSingleNonPromptCharm2P], keepEvent[kSingleNonPromptCharm3P]);
         continue;
       }
@@ -479,11 +491,11 @@ struct HfFilter { // Main struct for HF triggers
               auto massCand = RecoDecay::m(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
               auto pVecBeauty3Prong = RecoDecay::pVec(pVec2Prong, pVecThird);
               auto ptCand = RecoDecay::pt(pVecBeauty3Prong);
-              if (TESTBIT(isTrackSelected, kForBeauty) && helper.isSelectedBplusInMassRange(ptCand, massCand)) {
+              if (TESTBIT(isTrackSelected, kForBeauty) && helper.isSelectedBhadronInMassRange(ptCand, massCand, kBplus)) {
                 if (activateQA) {
-                  registry.fill(HIST("fHfVtxStages"), 1 + HfVtxStage::Skimmed);
+                  registry.fill(HIST("fHfVtxStages"), 1 + HfVtxStage::Skimmed, kBplus);
                 }
-                if (!activateSecVtx) {
+                if (!activateSecVtxForB) {
                   keepEvent[kBeauty3P] = true;
                   // fill optimisation tree for D0
                   if (applyOptimisation) {
@@ -494,22 +506,24 @@ struct HfFilter { // Main struct for HF triggers
                   }
                 } else {
                   df2.process(trackParPos, trackParNeg);
-                  df2.getTrack(0).getPxPyPzGlo(pVecPos);
-                  df2.getTrack(1).getPxPyPzGlo(pVecNeg);
+                  std::array<float, 3> pVecPosVtx{}, pVecNegVtx{};
+                  df2.getTrack(0).getPxPyPzGlo(pVecPosVtx);
+                  df2.getTrack(1).getPxPyPzGlo(pVecNegVtx);
                   auto trackParD = df2.createParentTrackParCov();
                   trackParD.setAbsCharge(0); // to be sure
-                  auto pVec2Prong = RecoDecay::pVec(pVecPos, pVecNeg);
+                  auto pVec2ProngVtx = RecoDecay::pVec(pVecPosVtx, pVecNegVtx);
                   if (dfB.process(trackParD, trackParThird) != 0) {
                     if (activateQA) {
-                      registry.fill(HIST("fHfVtxStages"), 1 + HfVtxStage::BeautyVertex);
+                      registry.fill(HIST("fHfVtxStages"), 1 + HfVtxStage::BeautyVertex, kBplus);
                     }
                     const auto& secondaryVertexBplus = dfB.getPCACandidate();
                     dfB.propagateTracksToVertex();
-                    dfB.getTrack(0).getPxPyPzGlo(pVec2Prong);
-                    dfB.getTrack(1).getPxPyPzGlo(pVecThird);
+                    std::array<float, 3> pVecThirdVtx{};
+                    dfB.getTrack(0).getPxPyPzGlo(pVec2ProngVtx);
+                    dfB.getTrack(1).getPxPyPzGlo(pVecThirdVtx);
                     o2::gpu::gpustd::array<float, 2> dca2Prong; //{trackParD.dcaXY(), trackParD.dcaZ()};
                     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParD, 2.f, noMatCorr, &dca2Prong);
-                    bool isBplus = helper.isSelectedBplus(pVec2Prong, pVecThird, dca2Prong, dcaThird, std::array<double, 3>{static_cast<double>(collision.posX()), static_cast<double>(collision.posY()), static_cast<double>(collision.posZ())}, std::array{secondaryVertexBplus[0], secondaryVertexBplus[1], secondaryVertexBplus[2]});
+                    bool isBplus = helper.isSelectedBhadron(pVec2ProngVtx, pVecThirdVtx, dca2Prong, dcaThird, std::array<double, 3>{static_cast<double>(collision.posX()), static_cast<double>(collision.posY()), static_cast<double>(collision.posZ())}, std::array{secondaryVertexBplus[0], secondaryVertexBplus[1], secondaryVertexBplus[2]}, kBplus);
                     if (isBplus) {
                       keepEvent[kBeauty3P] = true;
                       // fill optimisation tree for D0
@@ -517,10 +531,10 @@ struct HfFilter { // Main struct for HF triggers
                         optimisationTreeBeauty(thisCollId, o2::constants::physics::Pdg::kD0, pt2Prong, scores[0], scores[1], scores[2], dcaThird[0]);
                       }
                       if (activateQA) {
-                        registry.fill(HIST("fHfVtxStages"), 1 + HfVtxStage::CharmHadPiSelected);
-                        hCpaVsPtB[kBplus]->Fill(RecoDecay::pt(RecoDecay::pVec(pVec2Prong, pVecThird)), RecoDecay::cpa(std::array<double, 3>{static_cast<double>(collision.posX()), static_cast<double>(collision.posY()), static_cast<double>(collision.posZ())}, std::array{secondaryVertexBplus[0], secondaryVertexBplus[1], secondaryVertexBplus[2]}, RecoDecay::pVec(pVec2Prong, pVecThird)));
-                        hDecayLengthVsPtB[kBplus]->Fill(RecoDecay::pt(RecoDecay::pVec(pVec2Prong, pVecThird)), RecoDecay::distance(std::array<double, 3>{static_cast<double>(collision.posX()), static_cast<double>(collision.posY()), static_cast<double>(collision.posZ())}, std::array{secondaryVertexBplus[0], secondaryVertexBplus[1], secondaryVertexBplus[2]}));
-                        hImpactParamProductVsPtB[kBplus]->Fill(RecoDecay::pt(RecoDecay::pVec(pVec2Prong, pVecThird)), dca2Prong[0] * dcaThird[0]);
+                        registry.fill(HIST("fHfVtxStages"), 1 + HfVtxStage::CharmHadPiSelected, kBplus);
+                        hCpaVsPtB[kBplus]->Fill(ptCand, RecoDecay::cpa(std::array<double, 3>{static_cast<double>(collision.posX()), static_cast<double>(collision.posY()), static_cast<double>(collision.posZ())}, std::array{secondaryVertexBplus[0], secondaryVertexBplus[1], secondaryVertexBplus[2]}, RecoDecay::pVec(pVec2ProngVtx, pVecThirdVtx)));
+                        hDecayLengthVsPtB[kBplus]->Fill(ptCand, RecoDecay::distance(std::array<double, 3>{static_cast<double>(collision.posX()), static_cast<double>(collision.posY()), static_cast<double>(collision.posZ())}, std::array{secondaryVertexBplus[0], secondaryVertexBplus[1], secondaryVertexBplus[2]}));
+                        hImpactParamProductVsPtB[kBplus]->Fill(ptCand, dca2Prong[0] * dcaThird[0]);
                         hMassVsPtB[kBplus]->Fill(ptCand, massCand);
                       }
                     }
@@ -549,7 +563,7 @@ struct HfFilter { // Main struct for HF triggers
                   if (track.globalIndex() == trackB.globalIndex()) {
                     continue;
                   }
-                  auto trackParFourth = getTrackPar(trackB);
+                  auto trackParFourth = getTrackParCov(trackB);
                   o2::gpu::gpustd::array<float, 2> dcaFourth{trackB.dcaXY(), trackB.dcaZ()};
                   std::array<float, 3> pVecFourth = trackB.pVector();
                   if (trackB.collisionId() != thisCollId) {
@@ -560,16 +574,54 @@ struct HfFilter { // Main struct for HF triggers
                   auto isTrackFourthSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackB, trackParFourth, dcaFourth, kBeauty3P);
                   if (track.sign() * trackB.sign() < 0 && TESTBIT(isTrackFourthSelected, kForBeauty)) {
                     auto massCandB0 = RecoDecay::m(std::array{pVecBeauty3Prong, pVecFourth}, std::array{massDStar, massPi});
-                    if (std::fabs(massCandB0 - massB0) <= deltaMassBeauty->get(0u, 2u)) {
-                      keepEvent[kBeauty3P] = true;
-                      // fill optimisation tree for D0
-                      if (applyOptimisation) {
-                        optimisationTreeBeauty(thisCollId, 413, pt2Prong, scores[0], scores[1], scores[2], dcaFourth[0]); // pdgCode of D*(2010)+: 413
-                      }
+                    auto pVecBeauty4Prong = RecoDecay::pVec(pVec2Prong, pVecThird, pVecFourth);
+                    auto ptCandBeauty4Prong = RecoDecay::pt(pVecBeauty4Prong);
+                    if (helper.isSelectedBhadronInMassRange(ptCandBeauty4Prong, massCandB0, kB0toDStar)) {
                       if (activateQA) {
-                        auto pVecBeauty4Prong = RecoDecay::pVec(pVec2Prong, pVecThird, pVecFourth);
-                        auto ptCandBeauty4Prong = RecoDecay::pt(pVecBeauty4Prong);
-                        hMassVsPtB[kB0toDStar]->Fill(ptCandBeauty4Prong, massCandB0);
+                        registry.fill(HIST("fHfVtxStages"), 1 + HfVtxStage::Skimmed, kB0toDStar);
+                      }
+                      if (!activateSecVtxForB) {
+                        keepEvent[kBeauty3P] = true;
+                        // fill optimisation tree for D*
+                        if (applyOptimisation) {
+                          optimisationTreeBeauty(thisCollId, 413, pt2Prong, scores[0], scores[1], scores[2], dcaFourth[0]); // pdgCode of D*(2010)+: 413
+                        }
+                        if (activateQA) {
+                          hMassVsPtB[kB0toDStar]->Fill(ptCandBeauty4Prong, massCandB0);
+                        }
+                      } else {
+                        df2.process(trackParPos, trackParNeg);
+                        std::array<float, 3> pVecPosVtx{}, pVecNegVtx{};
+                        df2.getTrack(0).getPxPyPzGlo(pVecPosVtx);
+                        df2.getTrack(1).getPxPyPzGlo(pVecNegVtx);
+                        auto trackParD = df2.createParentTrackParCov();
+                        trackParD.setAbsCharge(0); // to be sure
+                        auto pVec2ProngVtx = RecoDecay::pVec(pVecPosVtx, pVecNegVtx);
+                        if (dfBtoDstar.process(trackParD, trackParThird, trackParFourth) != 0) {
+                          if (activateQA) {
+                            registry.fill(HIST("fHfVtxStages"), 1 + HfVtxStage::BeautyVertex, kB0toDStar);
+                          }
+                          const auto& secondaryVertexBzero = dfBtoDstar.getPCACandidate();
+                          dfBtoDstar.propagateTracksToVertex();
+                          std::array<float, 3> pVecThirdVtx{}, pVecFourthVtx{};
+                          dfBtoDstar.getTrack(0).getPxPyPzGlo(pVec2ProngVtx);
+                          dfBtoDstar.getTrack(1).getPxPyPzGlo(pVecThirdVtx);
+                          dfBtoDstar.getTrack(2).getPxPyPzGlo(pVecFourthVtx);
+                          bool isBzero = helper.isSelectedBzeroToDstar(pVec2ProngVtx, pVecThirdVtx, pVecFourthVtx, std::array<double, 3>{static_cast<double>(collision.posX()), static_cast<double>(collision.posY()), static_cast<double>(collision.posZ())}, std::array{secondaryVertexBzero[0], secondaryVertexBzero[1], secondaryVertexBzero[2]});
+                          if (isBzero) {
+                            keepEvent[kBeauty3P] = true;
+                            // fill optimisation tree for D0
+                            if (applyOptimisation) {
+                              optimisationTreeBeauty(thisCollId, 413, pt2Prong, scores[0], scores[1], scores[2], dcaFourth[0]); // pdgCode of D*(2010)+: 413
+                            }
+                            if (activateQA) {
+                              registry.fill(HIST("fHfVtxStages"), 1 + HfVtxStage::CharmHadPiSelected, kB0toDStar);
+                              hCpaVsPtB[kB0toDStar]->Fill(ptCandBeauty4Prong, RecoDecay::cpa(std::array<double, 3>{static_cast<double>(collision.posX()), static_cast<double>(collision.posY()), static_cast<double>(collision.posZ())}, std::array{secondaryVertexBzero[0], secondaryVertexBzero[1], secondaryVertexBzero[2]}, RecoDecay::pVec(pVec2ProngVtx, pVecThirdVtx, pVecFourthVtx)));
+                              hDecayLengthVsPtB[kB0toDStar]->Fill(ptCandBeauty4Prong, RecoDecay::distance(std::array<double, 3>{static_cast<double>(collision.posX()), static_cast<double>(collision.posY()), static_cast<double>(collision.posZ())}, std::array{secondaryVertexBzero[0], secondaryVertexBzero[1], secondaryVertexBzero[2]}));
+                              hMassVsPtB[kB0toDStar]->Fill(ptCandBeauty4Prong, massCandB0);
+                            }
+                          }
+                        }
                       }
                     }
                   }
@@ -790,9 +842,9 @@ struct HfFilter { // Main struct for HF triggers
         auto trackSecond = cand3Prong.prong1_as<BigTracksPID>();
         auto trackThird = cand3Prong.prong2_as<BigTracksPID>();
 
-        auto trackParFirst = getTrackPar(trackFirst);
-        auto trackParSecond = getTrackPar(trackSecond);
-        auto trackParThird = getTrackPar(trackThird);
+        auto trackParFirst = getTrackParCov(trackFirst);
+        auto trackParSecond = getTrackParCov(trackSecond);
+        auto trackParThird = getTrackParCov(trackThird);
         o2::gpu::gpustd::array<float, 2> dcaFirst{trackFirst.dcaXY(), trackFirst.dcaZ()};
         o2::gpu::gpustd::array<float, 2> dcaSecond{trackSecond.dcaXY(), trackSecond.dcaZ()};
         o2::gpu::gpustd::array<float, 2> dcaThird{trackThird.dcaXY(), trackThird.dcaZ()};
@@ -924,7 +976,7 @@ struct HfFilter { // Main struct for HF triggers
             continue;
           }
 
-          auto trackParFourth = getTrackPar(track);
+          auto trackParFourth = getTrackParCov(track);
           o2::gpu::gpustd::array<float, 2> dcaFourth{track.dcaXY(), track.dcaZ()};
           std::array<float, 3> pVecFourth = track.pVector();
           if (track.collisionId() != thisCollId) {
@@ -935,22 +987,61 @@ struct HfFilter { // Main struct for HF triggers
           int charmParticleID[kNBeautyParticles - 2] = {o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kXiCPlus};
 
           float massCharmHypos[kNBeautyParticles - 2] = {massDPlus, massDs, massLc, massXic};
-          float massBeautyHypos[kNBeautyParticles - 2] = {massB0, massBs, massLb, massXib};
-          float deltaMassHypos[kNBeautyParticles - 2] = {deltaMassBeauty->get(0u, 1u), deltaMassBeauty->get(0u, 3u), deltaMassBeauty->get(0u, 4u), deltaMassBeauty->get(0u, 5u)};
           auto isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(track, trackParFourth, dcaFourth, kBeauty4P);
           if (track.sign() * sign3Prong < 0 && TESTBIT(isTrackSelected, kForBeauty)) {
             for (int iHypo{0}; iHypo < kNBeautyParticles - 2 && !keepEvent[kBeauty4P]; ++iHypo) {
               if (isBeautyTagged[iHypo] && (TESTBIT(is3ProngInMass[iHypo], 0) || TESTBIT(is3ProngInMass[iHypo], 1))) {
                 auto massCandB = RecoDecay::m(std::array{pVec3Prong, pVecFourth}, std::array{massCharmHypos[iHypo], massPi});
-                if (std::fabs(massCandB - massBeautyHypos[iHypo]) <= deltaMassHypos[iHypo]) {
-                  keepEvent[kBeauty4P] = true;
-                  if (applyOptimisation) {
-                    optimisationTreeBeauty(thisCollId, charmParticleID[iHypo], pt3Prong, scores[iHypo][0], scores[iHypo][1], scores[iHypo][2], dcaFourth[0]);
-                  }
+                auto pVecBeauty4Prong = RecoDecay::pVec(pVec3Prong, pVecFourth);
+                auto ptCandBeauty4Prong = RecoDecay::pt(pVecBeauty4Prong);
+                if (helper.isSelectedBhadronInMassRange(ptCandBeauty4Prong, massCandB, iHypo + 2)) { // + 2 to account for B+ and B0->D*+
                   if (activateQA) {
-                    auto pVecBeauty4Prong = RecoDecay::pVec(pVec3Prong, pVecFourth);
-                    auto ptCandBeauty4Prong = RecoDecay::pt(pVecBeauty4Prong);
-                    hMassVsPtB[iHypo + 2]->Fill(ptCandBeauty4Prong, massCandB);
+                    registry.fill(HIST("fHfVtxStages"), 1 + HfVtxStage::Skimmed, iHypo + 2);
+                  }
+                  if (!activateSecVtxForB) {
+                    keepEvent[kBeauty4P] = true;
+                    if (applyOptimisation) {
+                      optimisationTreeBeauty(thisCollId, charmParticleID[iHypo], pt3Prong, scores[iHypo][0], scores[iHypo][1], scores[iHypo][2], dcaFourth[0]);
+                    }
+                    if (activateQA) {
+                      hMassVsPtB[iHypo + 2]->Fill(ptCandBeauty4Prong, massCandB);
+                    }
+                  } else {
+                    df3.process(trackParFirst, trackParSecond, trackParThird);
+                    std::array<float, 3> pVecFirstVtx{}, pVecSecondVtx{}, pVecThirdVtx{};
+                    df3.getTrack(0).getPxPyPzGlo(pVecFirstVtx);
+                    df3.getTrack(1).getPxPyPzGlo(pVecSecondVtx);
+                    df3.getTrack(1).getPxPyPzGlo(pVecThirdVtx);
+                    auto trackParD = df3.createParentTrackParCov();
+                    trackParD.setAbsCharge(sign3Prong); // to be sure
+                    auto pVec3ProngVtx = RecoDecay::pVec(pVecFirstVtx, pVecSecondVtx, pVecThirdVtx);
+                    if (dfB.process(trackParD, trackParFourth) != 0) {
+                      if (activateQA) {
+                        registry.fill(HIST("fHfVtxStages"), 1 + HfVtxStage::BeautyVertex, iHypo + 2);
+                      }
+                      const auto& secondaryVertexB = dfB.getPCACandidate();
+                      dfB.propagateTracksToVertex();
+                      std::array<float, 3> pVecFourtVtx{};
+                      dfB.getTrack(0).getPxPyPzGlo(pVec3ProngVtx);
+                      dfB.getTrack(1).getPxPyPzGlo(pVecFourtVtx);
+                      o2::gpu::gpustd::array<float, 2> dca3Prong; //{trackParD.dcaXY(), trackParD.dcaZ()};
+                      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParD, 2.f, noMatCorr, &dca3Prong);
+                      bool isBhad = helper.isSelectedBhadron(pVec3ProngVtx, pVecFourtVtx, dca3Prong, dcaFourth, std::array<double, 3>{static_cast<double>(collision.posX()), static_cast<double>(collision.posY()), static_cast<double>(collision.posZ())}, std::array{secondaryVertexB[0], secondaryVertexB[1], secondaryVertexB[2]}, iHypo + 2);
+                      if (isBhad) {
+                        keepEvent[kBeauty4P] = true;
+                        // fill optimisation tree
+                        if (applyOptimisation) {
+                          optimisationTreeBeauty(thisCollId, charmParticleID[iHypo], pt3Prong, scores[iHypo][0], scores[iHypo][1], scores[iHypo][2], dcaFourth[0]);
+                        }
+                        if (activateQA) {
+                          registry.fill(HIST("fHfVtxStages"), 1 + HfVtxStage::CharmHadPiSelected, iHypo + 2);
+                          hCpaVsPtB[iHypo + 2]->Fill(ptCandBeauty4Prong, RecoDecay::cpa(std::array<double, 3>{static_cast<double>(collision.posX()), static_cast<double>(collision.posY()), static_cast<double>(collision.posZ())}, std::array{secondaryVertexB[0], secondaryVertexB[1], secondaryVertexB[2]}, RecoDecay::pVec(pVec3ProngVtx, pVecFourtVtx)));
+                          hDecayLengthVsPtB[iHypo + 2]->Fill(ptCandBeauty4Prong, RecoDecay::distance(std::array<double, 3>{static_cast<double>(collision.posX()), static_cast<double>(collision.posY()), static_cast<double>(collision.posZ())}, std::array{secondaryVertexB[0], secondaryVertexB[1], secondaryVertexB[2]}));
+                          hImpactParamProductVsPtB[iHypo + 2]->Fill(ptCandBeauty4Prong, dca3Prong[0] * dcaFourth[0]);
+                          hMassVsPtB[iHypo + 2]->Fill(ptCandBeauty4Prong, massCandB);
+                        }
+                      }
+                    }
                   }
                 }
               }
