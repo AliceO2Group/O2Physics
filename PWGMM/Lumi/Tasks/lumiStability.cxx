@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 // \file lumiStability.cxx
 // \brief Analysis over BCs to study the luminosity stability along time.
 // \author josuem@cern.ch
@@ -346,12 +347,12 @@ struct LumiStabilityTask {
           if (fdd.globalIndex() - deltaIndex < 0) {
             break;
           }
-          const auto& fdd_past = fdds.iteratorAt(fdd.globalIndex() - deltaIndex);
-          auto bc_past = fdd_past.bc_as<BCsWithTimestamps>();
-          deltaBC = globalBC - bc_past.globalBC();
+          const auto& fddPast = fdds.iteratorAt(fdd.globalIndex() - deltaIndex);
+          auto bcPast = fddPast.bc_as<BCsWithTimestamps>();
+          deltaBC = globalBC - bcPast.globalBC();
 
           if (deltaBC < myMaxDeltaBCFDD) {
-            std::bitset<8> fddTriggersPast = fdd_past.triggerMask();
+            std::bitset<8> fddTriggersPast = fddPast.triggerMask();
             bool vertexPast = fddTriggersPast[o2::fdd::Triggers::bitVertex];
             pastActivityFDDVertex |= (vertexPast);
           }
@@ -468,17 +469,17 @@ struct LumiStabilityTask {
             if (fdd.globalIndex() - deltaIndex < 0) {
               break;
             }
-            const auto& fdd_past = fdds.iteratorAt(fdd.globalIndex() - deltaIndex);
-            auto bc_past = fdd_past.bc_as<BCsWithTimestamps>();
-            deltaBC = globalBC - bc_past.globalBC();
+            const auto& fddPast = fdds.iteratorAt(fdd.globalIndex() - deltaIndex);
+            auto bcPast = fddPast.bc_as<BCsWithTimestamps>();
+            deltaBC = globalBC - bcPast.globalBC();
 
             if (deltaBC < myMaxDeltaBCFDD) {
-              std::bitset<8> fddTriggersPast = fdd_past.triggerMask();
+              std::bitset<8> fddTriggersPast = fddPast.triggerMask();
               bool vertexPast = fddTriggersPast[o2::fdd::Triggers::bitVertex];
               bool triggerAPast = fddTriggersPast[o2::fdd::Triggers::bitA];
               bool triggerCPast = fddTriggersPast[o2::fdd::Triggers::bitC];
-              auto sideAPast = fdd_past.chargeA();
-              auto sideCPast = fdd_past.chargeC();
+              auto sideAPast = fddPast.chargeA();
+              auto sideCPast = fddPast.chargeC();
               std::vector<int> channelAPast;
               std::vector<int> channelCPast;
               for (auto i = 0; i < 8; i++) {
@@ -615,12 +616,12 @@ struct LumiStabilityTask {
           if (ft0.globalIndex() - deltaIndex < 0) {
             break;
           }
-          const auto& ft0_past = ft0s.iteratorAt(ft0.globalIndex() - deltaIndex);
-          auto bc_past = ft0_past.bc_as<BCsWithTimestamps>();
-          deltaBC = globalBC - bc_past.globalBC();
+          const auto& ft0Past = ft0s.iteratorAt(ft0.globalIndex() - deltaIndex);
+          auto bcPast = ft0Past.bc_as<BCsWithTimestamps>();
+          deltaBC = globalBC - bcPast.globalBC();
 
           if (deltaBC < myMaxDeltaBCFT0) {
-            std::bitset<8> fT0TriggersPast = ft0_past.triggerMask();
+            std::bitset<8> fT0TriggersPast = ft0Past.triggerMask();
             bool vertexPast = fT0TriggersPast[o2::ft0::Triggers::bitVertex];
             bool triggerAPast = fT0TriggersPast[o2::ft0::Triggers::bitA];
             bool triggerCPast = fT0TriggersPast[o2::ft0::Triggers::bitC];
@@ -721,12 +722,12 @@ struct LumiStabilityTask {
           if (fv0.globalIndex() - deltaIndex < 0) {
             break;
           }
-          const auto& fv0_past = fv0s.iteratorAt(fv0.globalIndex() - deltaIndex);
-          auto bc_past = fv0_past.bc_as<BCsWithTimestamps>();
-          deltaBC = globalBC - bc_past.globalBC();
+          const auto& fv0Past = fv0s.iteratorAt(fv0.globalIndex() - deltaIndex);
+          auto bcPast = fv0Past.bc_as<BCsWithTimestamps>();
+          deltaBC = globalBC - bcPast.globalBC();
 
           if (deltaBC < myMaxDeltaBCFV0) {
-            std::bitset<8> fv0Triggers = fv0_past.triggerMask();
+            std::bitset<8> fv0Triggers = fv0Past.triggerMask();
             bool centralPast = fv0Triggers[o2::fv0::Triggers::bitTrgCharge];
             bool triggerOutPast = fv0Triggers[o2::fv0::Triggers::bitAOut];
             bool triggerInPast = fv0Triggers[o2::fv0::Triggers::bitAIn];
@@ -747,11 +748,11 @@ struct LumiStabilityTask {
           if (fv0.globalIndex() + deltaIndex >= fv0s.size()) {
             break;
           }
-          const auto& fv0_future = fv0s.iteratorAt(fv0.globalIndex() + deltaIndex);
-          deltaBC = fv0_future.bcId() - fv0.bcId();
+          const auto& fv0Future = fv0s.iteratorAt(fv0.globalIndex() + deltaIndex);
+          deltaBC = fv0Future.bcId() - fv0.bcId();
 
           if (deltaBC < myMaxDeltaBCFV0) {
-            std::bitset<8> fv0Triggers = fv0_future.triggerMask();
+            std::bitset<8> fv0Triggers = fv0Future.triggerMask();
             bool centralFuture = fv0Triggers[o2::fv0::Triggers::bitTrgCharge];
             bool triggerOutFuture = fv0Triggers[o2::fv0::Triggers::bitAOut];
             bool triggerInFuture = fv0Triggers[o2::fv0::Triggers::bitAIn];
