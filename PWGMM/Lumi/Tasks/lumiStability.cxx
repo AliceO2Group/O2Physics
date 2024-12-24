@@ -14,7 +14,6 @@
 ///
 /// \author Josue Martinez Garcia, josuem@cern.ch
 
-
 #include <utility>
 #include <map>
 #include <string>
