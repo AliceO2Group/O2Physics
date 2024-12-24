@@ -198,6 +198,12 @@ class PairSHCentMultKt
       ktbinval = 2;
     } else if (ktval < ktBins[4]) {
       ktbinval = 3;
+    } else if (ktval < ktBins[5]) {
+      ktbinval = 4;
+    } else if (ktval < ktBins[6]) {
+      ktbinval = 5;
+    } else if (ktval < ktBins[7]) {
+      ktbinval = 6;
     } else {
       return;
     }
@@ -336,7 +342,7 @@ class PairSHCentMultKt
   void fillMultkTCov(uint8_t ChosenEventType, int MaxJM)
   {
     for (int multbinvalcov = 0;
-         multbinvalcov < static_cast<int>(centMultBins.size() - 2);
+         multbinvalcov < static_cast<int>(centMultBins.size() - 1);
          multbinvalcov++) {
       for (int ktbinvalcov = 0;
            ktbinvalcov < static_cast<int>(ktBins.size() - 1); ktbinvalcov++) {
@@ -346,10 +352,10 @@ class PairSHCentMultKt
   }
 
  private:
-  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 4>, 4> fnumsreal{};
-  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 4>, 4> fnumsimag{};
-  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 4>, 4> fdensreal{};
-  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 4>, 4> fdensimag{};
+  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 7>, 4> fnumsreal{};
+  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 7>, 4> fnumsimag{};
+  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 7>, 4> fdensreal{};
+  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 7>, 4> fdensimag{};
 
   TH1D* fbinctn[10][10];
   TH1D* fbinctd[10][10];
@@ -357,11 +363,11 @@ class PairSHCentMultKt
   static constexpr int kMaxL = 2;
   static constexpr int kMaxJM = (kMaxL + 1) * (kMaxL + 1);
 
-  std::array<std::array<std::array<float, (kMaxJM * kMaxJM * 4 * 100)>, 4>, 4> fcovmnum{}; ///< Covariance matrix for the numerator
-  std::array<std::array<std::array<float, (kMaxJM * kMaxJM * 4 * 100)>, 4>, 4> fcovmden{}; ///< Covariance matrix for the numerator
+  std::array<std::array<std::array<float, (kMaxJM * kMaxJM * 4 * 100)>, 7>, 4> fcovmnum{}; ///< Covariance matrix for the numerator
+  std::array<std::array<std::array<float, (kMaxJM * kMaxJM * 4 * 100)>, 7>, 4> fcovmden{}; ///< Covariance matrix for the numerator
 
-  std::array<std::array<std::shared_ptr<TH3>, 4>, 4> fcovnum{};
-  std::array<std::array<std::shared_ptr<TH3>, 4>, 4> fcovden{};
+  std::array<std::array<std::shared_ptr<TH3>, 7>, 4> fcovnum{};
+  std::array<std::array<std::shared_ptr<TH3>, 7>, 4> fcovden{};
 
  protected:
   HistogramRegistry* pairSHCentMultKtRegistry = nullptr;
