@@ -104,10 +104,10 @@ struct he3HadCandidate {
 
   float recoPtHe3() const { return signHe3 * std::hypot(momHe3[0], momHe3[1]); }
   float recoPhiHe3() const { return std::atan2(momHe3[1], momHe3[0]); }
-  float recoEtaHe3() const { return std::asinh(momHe3[2] / recoPtHe3()); }
+  float recoEtaHe3() const { return std::asinh(momHe3[2] / std::abs(recoPtHe3())); }
   float recoPtHad() const { return signHad * std::hypot(momHad[0], momHad[1]); }
   float recoPhiHad() const { return std::atan2(momHad[1], momHad[0]); }
-  float recoEtaHad() const { return std::asinh(momHad[2] / recoPtHad()); }
+  float recoEtaHad() const { return std::asinh(momHad[2] / std::abs(recoPtHad())); }
 
   std::array<float, 3> momHe3 = {99.f, 99.f, 99.f};
   std::array<float, 3> momHad = {99.f, 99.f, 99.f};
