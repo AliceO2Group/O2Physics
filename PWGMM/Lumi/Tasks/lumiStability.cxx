@@ -1,9 +1,3 @@
-/**
- * \file lumiStability.cxx
- * \brief Analysis over BCs to study the luminosity stability along time.
- * \author josuem@cern.ch
- */
-
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
@@ -15,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+<<<<<<< HEAD
 /// \file lumiStability.cxx
 /// \brief Analysis over BCs to study the luminosity stability along time.
 ///
@@ -24,6 +19,12 @@
 #include <map>
 #include <string>
 #include <vector>
+=======
+// \file lumiStability.cxx
+// \brief Analysis over BCs to study the luminosity stability along time.
+// \author josuem@cern.ch
+
+>>>>>>> d97ed2dd7 (new changes)
 
 #include <utility>
 #include <map>
