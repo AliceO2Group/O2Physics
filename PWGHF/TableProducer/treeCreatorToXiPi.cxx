@@ -260,7 +260,6 @@ struct HfTreeCreatorToXiPi {
     }
   }
 
-  //template <bool useCentrality, typename T>
   template <typename T>
   void fillEvent(const T& collision, float cutZPv)
   {
@@ -284,7 +283,7 @@ struct HfTreeCreatorToXiPi {
       collision.posY(),
       collision.posZ(),
       0,
-      1, //collision.bc().runNumber(),
+      1,
       centFT0A,
       centFT0C,
       centFT0M,
