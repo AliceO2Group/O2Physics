@@ -22,6 +22,8 @@
 #include <memory>
 #include "Framework/HistogramRegistry.h"
 
+using namespace o2::constants::physics;
+
 namespace o2::analysis::femto_universe
 {
 
@@ -213,12 +215,10 @@ class PairSHCentMultKt
   /// Set the PDG codes of the two particles involved
   /// \param pdg1 PDG code of particle one
   /// \param pdg2 PDG code of particle two
-  void setPDGCodes(const int pdg1, const int pdg2)
-  {
-    mMassOne = TDatabasePDG::Instance()->GetParticle(pdg1)->Mass();
-    mMassTwo = TDatabasePDG::Instance()->GetParticle(pdg2)->Mass();
-    mPDGOne = pdg1;
-    mPDGTwo = pdg2;
+  void setPionPairMass()
+  {    
+    mMassOne = o2::constants::physics::MassPiPlus;  // FIXME: Get from the PDG service of the common header
+    mMassTwo = o2::constants::physics::MassPiPlus; // FIXME: Get from the PDG service of the common header
   }
 
   /// To compute the bin value for cavariance matrix
@@ -248,6 +248,7 @@ class PairSHCentMultKt
     int fKtBin = ktval;
     std::vector<std::complex<double>> fYlmBuffer(kMaxJM);
     std::vector<double> f3d;
+    setPionPairMass();
     f3d = FemtoUniverseMath::newpairfunc(part1, mMassOne, part2, mMassTwo,
                                          isiden);
 
