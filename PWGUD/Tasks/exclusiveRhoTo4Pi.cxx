@@ -8,12 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// \Single Gap Event Analyzer
-// \author Anantha Padmanabhan M Nair, anantha.manoj.nair@cern.ch
-// \since  May 2024
+/// \author AnanthaPadmanabhan
+/// \brief Task for analyzing exclusive rho decays to 4 pions
+/// \file exclusiveRhoTo4Pi.cxx
 
 #include <cstdlib>
 #include <vector>
+#include <cmath>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -37,36 +38,36 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct exclusiveRhoTo4Pi {
+struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
   SGSelector sgSelector;
   HistogramRegistry histos{"HistoReg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  Configurable<float> FV0_cut{"FV0", 50., "FV0A threshold"};
-  Configurable<float> FT0A_cut{"FT0A", 150., "FT0A threshold"};
-  Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
-  Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
-  Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
-  Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
+  Configurable<float> FV0_cut{"FV0_cut", 50., "FV0A threshold"};      // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<float> FT0A_cut{"FT0A_cut", 150., "FT0A threshold"};   // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<float> FT0C_cut{"FT0C_cut", 50., "FT0C threshold"};    // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<float> FDDA_cut{"FDDA_cut", 10000., "FDDA threshold"}; // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<float> FDDC_cut{"FDDC_cut", 10000., "FDDC threshold"}; // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<float> ZDC_cut{"ZDC_cut", 10., "ZDC threshold"};       // o2-linter: disable=name/function-variable,name/configurable
 
-  Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
-  Configurable<float> dcaZ_cut{"dcaZ_cut", 3.2, "dcaZ cut"};
-  Configurable<float> dcaXY_cut{"dcaXY_cut", 2.4, "dcaXY cut (0 for Pt-function)"};
-  Configurable<float> tpcChi2_cut{"tpcChi2_cut", 4, "Max tpcChi2NCl"};
-  Configurable<float> tpcNClsFindable_cut{"tpcNClsFindable_cut", 80, "Min tpcNClsFindable"};
-  Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
-  Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
-  Configurable<float> pt_cut{"pt_cut", 0, "Track Pt"};
+  Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};                           // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<float> dcaZ_cut{"dcaZ_cut", 3.2, "dcaZ cut"};                                 // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<float> dcaXY_cut{"dcaXY_cut", 2.4, "dcaXY cut (0 for Pt-function)"};          // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<float> tpcChi2_cut{"tpcChi2_cut", 4, "Max tpcChi2NCl"};                       // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<float> tpcNClsFindable_cut{"tpcNClsFindable_cut", 80, "Min tpcNClsFindable"}; // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};                      // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};                       // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<float> pt_cut{"pt_cut", 0, "Track Pt"};                                       // o2-linter: disable=name/function-variable,name/configurable
 
-  Configurable<float> nSigmaTPC_cut{"nsigmatpccut", 3, "TPC cut"};
-  Configurable<float> nSigmaTOF_cut{"nsigmatofcut", 3, "TOF cut"};
-  Configurable<bool> StrictEventSelection{"StrictEventSelection", true, "Event Selection"};
+  Configurable<float> nSigmaTPC_cut{"nSigmaTPC_cut", 3, "TPC cut"};                         // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<float> nSigmaTOF_cut{"nSigmaTOF_cut", 3, "TOF cut"};                         // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<bool> StrictEventSelection{"StrictEventSelection", true, "Event Selection"}; // o2-linter: disable=name/function-variable,name/configurable
 
-  Configurable<int> nBins_pT{"nBins_pT", 1000, "Number of bins for pT"};
-  Configurable<int> nBins_IM{"nBins_IM", 1000, "Number of bins for Invariant Mass"};
-  Configurable<int> nBins_y{"nBins_y", 1000, "Number of bins for Rapidity"};
-  Configurable<int> nBins_Phi{"nBins_phi", 360, "Number of bins for Phi"};
-  Configurable<int> nBins_CosTheta{"nBins_cosTheta", 360, "Number of bins for cos Theta"};
+  Configurable<int> nBins_pT{"nBins_pT", 1000, "Number of bins for pT"};                   // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<int> nBins_IM{"nBins_IM", 1000, "Number of bins for Invariant Mass"};       // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<int> nBins_y{"nBins_y", 1000, "Number of bins for Rapidity"};               // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<int> nBins_Phi{"nBins_phi", 360, "Number of bins for Phi"};                 // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<int> nBins_CosTheta{"nBins_cosTheta", 360, "Number of bins for cos Theta"}; // o2-linter: disable=name/function-variable,name/configurable
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
   // Begin of Init Function-----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -75,7 +76,7 @@ struct exclusiveRhoTo4Pi {
 
     histos.add("GapSide", "Gap Side; Events", kTH1F, {{4, -1.5, 2.5}});
     histos.add("TrueGapSide", "Gap Side; Events", kTH1F, {{4, -1.5, 2.5}});
-    histos.add("EventCounts", "Total Events; Events", kTH1F, {{10, 0, 10}}); // 2=#Events, 3= #Selected Events, 5=#Selected Events with Zero Net charge, 6=Selected Events with Non-Zero Net charge
+    histos.add("EventCounts", "Total Events; Events", kTH1F, {{10, 0, 10}});
 
     // TPC nSigma
     histos.add("tpcNSigmaPi_WOTS", "TPC nSigma Pion without track selection; Events", kTH1F, {{1000, -15, 15}});
@@ -162,14 +163,14 @@ struct exclusiveRhoTo4Pi {
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
   // Calculate the Collins-Soper Frame----------------------------------------------------------------------------------------------------------------------------
-  Double_t CosThetaCollinsSoperFrame(ROOT::Math::PtEtaPhiMVector pair1, ROOT::Math::PtEtaPhiMVector pair2, ROOT::Math::PtEtaPhiMVector fourpion)
+  double cosThetaCollinsSoperFrame(ROOT::Math::PtEtaPhiMVector pair1, ROOT::Math::PtEtaPhiMVector pair2, ROOT::Math::PtEtaPhiMVector fourpion)
   {
-    Double_t HalfSqrtSnn = 2680.;
-    Double_t MassOfLead208 = 193.6823;
-    Double_t MomentumBeam = TMath::Sqrt(HalfSqrtSnn * HalfSqrtSnn * 208 * 208 - MassOfLead208 * MassOfLead208);
+    double halfSqrtSnn = 2680.;
+    double massOfLead208 = 193.6823;
+    double momentumBeam = std::sqrt(halfSqrtSnn * halfSqrtSnn * 208 * 208 - massOfLead208 * massOfLead208);
 
-    TLorentzVector pProjCM(0., 0., -MomentumBeam, HalfSqrtSnn * 208); // projectile
-    TLorentzVector pTargCM(0., 0., MomentumBeam, HalfSqrtSnn * 208);  // target
+    TLorentzVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
+    TLorentzVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
 
     //  TVector3 beta = (-1. / fourpion.E()) * fourpion.Vect();
     ROOT::Math::PtEtaPhiMVector v1 = pair1;
@@ -180,43 +181,43 @@ struct exclusiveRhoTo4Pi {
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
     ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
     ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
-    ROOT::Math::XYZVectorF Beam1_CM{(boostv12(pProjCM).Vect()).Unit()};
-    ROOT::Math::XYZVectorF Beam2_CM{(boostv12(pTargCM).Vect()).Unit()};
+    ROOT::Math::XYZVectorF beam1_CM{(boostv12(pProjCM).Vect()).Unit()};
+    ROOT::Math::XYZVectorF beam2_CM{(boostv12(pTargCM).Vect()).Unit()};
 
     // Axes
-    ROOT::Math::XYZVectorF zaxis_CS{((Beam1_CM.Unit() - Beam2_CM.Unit()).Unit())};
+    ROOT::Math::XYZVectorF zaxis_CS{((beam1_CM.Unit() - beam2_CM.Unit()).Unit())};
 
-    Double_t CosThetaCS = zaxis_CS.Dot((v1_CM));
+    double CosThetaCS = zaxis_CS.Dot((v1_CM));
     return CosThetaCS;
-  } // End of CosThetaCollinsSoperFrame function------------------------------------------------------------------------------------------------------------------------
+  } // End of cosThetaCollinsSoperFrame function------------------------------------------------------------------------------------------------------------------------
 
   // Calculate Phi in Collins-Soper Frame------------------------------------------------------------------------------------------------------------------------
-  Double_t PhiCollinsSoperFrame(ROOT::Math::PtEtaPhiMVector pair1, ROOT::Math::PtEtaPhiMVector pair2, ROOT::Math::PtEtaPhiMVector fourpion)
+  double phiCollinsSoperFrame(ROOT::Math::PtEtaPhiMVector pair1, ROOT::Math::PtEtaPhiMVector pair2, ROOT::Math::PtEtaPhiMVector fourpion)
   {
     // Half of the energy per pair of the colliding nucleons.
-    Double_t HalfSqrtSnn = 2680.;
-    Double_t MassOfLead208 = 193.6823;
-    Double_t MomentumBeam = TMath::Sqrt(HalfSqrtSnn * HalfSqrtSnn * 208 * 208 - MassOfLead208 * MassOfLead208);
+    double halfSqrtSnn = 2680.;
+    double massOfLead208 = 193.6823;
+    double momentumBeam = std::sqrt(halfSqrtSnn * halfSqrtSnn * 208 * 208 - massOfLead208 * massOfLead208);
 
-    TLorentzVector pProjCM(0., 0., -MomentumBeam, HalfSqrtSnn * 208); // projectile
-    TLorentzVector pTargCM(0., 0., MomentumBeam, HalfSqrtSnn * 208);  // target
+    TLorentzVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
+    TLorentzVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
     ROOT::Math::PtEtaPhiMVector v1 = pair1;
     ROOT::Math::PtEtaPhiMVector v2 = pair2;
     ROOT::Math::PtEtaPhiMVector v12 = fourpion;
     // Boost to center of mass frame
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
-    ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
-    ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
-    ROOT::Math::XYZVectorF Beam1_CM{(boostv12(pProjCM).Vect()).Unit()};
-    ROOT::Math::XYZVectorF Beam2_CM{(boostv12(pTargCM).Vect()).Unit()};
+    ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};         // o2-linter: disable=name/function-variable,name/configurable
+    ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};         // o2-linter: disable=name/function-variable,name/configurable
+    ROOT::Math::XYZVectorF beam1_CM{(boostv12(pProjCM).Vect()).Unit()}; // o2-linter: disable=name/function-variable,name/configurable
+    ROOT::Math::XYZVectorF beam2_CM{(boostv12(pTargCM).Vect()).Unit()}; // o2-linter: disable=name/function-variable,name/configurable
     // Axes
-    ROOT::Math::XYZVectorF zaxis_CS{((Beam1_CM.Unit() - Beam2_CM.Unit()).Unit())};
-    ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
-    ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
+    ROOT::Math::XYZVectorF zaxis_CS{((beam1_CM.Unit() - beam2_CM.Unit()).Unit())}; // o2-linter: disable=name/function-variable,name/configurable
+    ROOT::Math::XYZVectorF yaxis_CS{(beam1_CM.Cross(beam2_CM)).Unit()};            // o2-linter: disable=name/function-variable,name/configurable
+    ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};            // o2-linter: disable=name/function-variable,name/configurable
 
-    Double_t phi = TMath::ATan2(yaxis_CS.Dot(v1_CM), xaxis_CS.Dot(v1_CM));
+    double phi = std::atan2(yaxis_CS.Dot(v1_CM), xaxis_CS.Dot(v1_CM));
     return phi;
-  } // End of PhiCollinsSoperFrame function------------------------------------------------------------------------------------------------------------------------
+  } // End of phiCollinsSoperFrame function------------------------------------------------------------------------------------------------------------------------
 
   // Begin of Process function--------------------------------------------------------------------------------------------------------------------------------------------------
   void process(UDCollisionFull const& collision, udtracksfull const& tracks)
@@ -257,7 +258,7 @@ struct exclusiveRhoTo4Pi {
     std::vector<decltype(tracks.begin())> Pi_plus_tracks;
     std::vector<decltype(tracks.begin())> Pi_minus_tracks;
 
-    for (auto& t0 : tracks) {
+    for (const auto& t0 : tracks) {
 
       WOTS_tracks.push_back(t0);
 
@@ -287,22 +288,22 @@ struct exclusiveRhoTo4Pi {
     for (int i = 0; i < len_WOTS; i++) {
       histos.fill(HIST("tpcNSigmaPi_WOTS"), WOTS_tracks[i].tpcNSigmaPi());
       histos.fill(HIST("tofNSigmaPi_WOTS"), WOTS_tracks[i].tofNSigmaPi());
-      histos.fill(HIST("pT_track_WOTS"), TMath::Sqrt(WOTS_tracks[i].px() * WOTS_tracks[i].px() + WOTS_tracks[i].py() * WOTS_tracks[i].py()));
+      histos.fill(HIST("pT_track_WOTS"), std::sqrt(WOTS_tracks[i].px() * WOTS_tracks[i].px() + WOTS_tracks[i].py() * WOTS_tracks[i].py()));
     } // End of loop over tracks without selection
 
     for (int i = 0; i < len_WTS; i++) {
 
-      histos.fill(HIST("tpcSignal"), TMath::Sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py() + WTS_tracks[i].pz() * WTS_tracks[i].pz()), WTS_tracks[i].tpcSignal());
-      histos.fill(HIST("tofBeta"), TMath::Sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py() + WTS_tracks[i].pz() * WTS_tracks[i].pz()), WTS_tracks[i].beta());
+      histos.fill(HIST("tpcSignal"), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py() + WTS_tracks[i].pz() * WTS_tracks[i].pz()), WTS_tracks[i].tpcSignal());
+      histos.fill(HIST("tofBeta"), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py() + WTS_tracks[i].pz() * WTS_tracks[i].pz()), WTS_tracks[i].beta());
       histos.fill(HIST("tpcNSigmaPi_WTS"), WTS_tracks[i].tpcNSigmaPi());
       histos.fill(HIST("tofNSigmaPi_WTS"), WTS_tracks[i].tofNSigmaPi());
-      histos.fill(HIST("pT_track_WTS"), TMath::Sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py()));
+      histos.fill(HIST("pT_track_WTS"), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py()));
     } // End of loop over tracks with selection only
 
     for (int i = 0; i < len_WTS_PID_Pi; i++) {
 
-      histos.fill(HIST("tpcSignal_Pi"), TMath::Sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py() + WTS_PID_Pi_tracks[i].pz() * WTS_PID_Pi_tracks[i].pz()), WTS_PID_Pi_tracks[i].tpcSignal());
-      histos.fill(HIST("tofBeta_Pi"), TMath::Sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py() + WTS_PID_Pi_tracks[i].pz() * WTS_PID_Pi_tracks[i].pz()), WTS_PID_Pi_tracks[i].beta());
+      histos.fill(HIST("tpcSignal_Pi"), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py() + WTS_PID_Pi_tracks[i].pz() * WTS_PID_Pi_tracks[i].pz()), WTS_PID_Pi_tracks[i].tpcSignal());
+      histos.fill(HIST("tofBeta_Pi"), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py() + WTS_PID_Pi_tracks[i].pz() * WTS_PID_Pi_tracks[i].pz()), WTS_PID_Pi_tracks[i].beta());
 
       histos.fill(HIST("tpcNSigmaPi_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tpcNSigmaPi());
       histos.fill(HIST("tpcNSigmaPi_WTS_PID_Pi_Ka"), WTS_PID_Pi_tracks[i].tpcNSigmaKa());
@@ -316,7 +317,7 @@ struct exclusiveRhoTo4Pi {
       histos.fill(HIST("tofNSigmaPi_WTS_PID_Pi_El"), WTS_PID_Pi_tracks[i].tofNSigmaEl());
       histos.fill(HIST("tofNSigmaPi_WTS_PID_Pi_Mu"), WTS_PID_Pi_tracks[i].tofNSigmaMu());
 
-      histos.fill(HIST("pT_track_WTS_PID_Pi"), TMath::Sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
+      histos.fill(HIST("pT_track_WTS_PID_Pi"), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
     } // End of loop over tracks with selection and PID selection of Pions
 
     if (len_WTS_PID_Pi != 4) {
@@ -353,10 +354,10 @@ struct exclusiveRhoTo4Pi {
           histos.fill(HIST("rapidity_event_0charge_WTS_PID_Pi_domainA"), p1234.Rapidity());
           histos.fill(HIST("invMass_event_0charge_WTS_PID_Pi_domainA"), p1234.M());
 
-          auto phi_pair_1 = PhiCollinsSoperFrame(k13, k24, k1234);
-          auto phi_pair_2 = PhiCollinsSoperFrame(k14, k23, k1234);
-          auto cos_theta_1 = CosThetaCollinsSoperFrame(k13, k24, k1234);
-          auto cos_theta_2 = CosThetaCollinsSoperFrame(k14, k23, k1234);
+          auto phi_pair_1 = phiCollinsSoperFrame(k13, k24, k1234);
+          auto phi_pair_2 = phiCollinsSoperFrame(k14, k23, k1234);
+          auto cos_theta_1 = cosThetaCollinsSoperFrame(k13, k24, k1234);
+          auto cos_theta_2 = cosThetaCollinsSoperFrame(k14, k23, k1234);
 
           histos.fill(HIST("CS_phi_pair_1"), phi_pair_1);
           histos.fill(HIST("CS_phi_pair_2"), phi_pair_2);
