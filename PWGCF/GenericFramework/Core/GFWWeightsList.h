@@ -16,7 +16,7 @@
 
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWWEIGHTSLIST_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_GFWWEIGHTSLIST_H_
-#include <unordered_map>
+#include <map>
 #include "TObjArray.h"
 #include "GFWWeights.h"
 
@@ -24,7 +24,7 @@ class GFWWeightsList : public TNamed
 {
  public:
   GFWWeightsList();
-  GFWWeightsList(const char* name);
+  explicit GFWWeightsList(const char* name);
   ~GFWWeightsList();
   void init(const char* listName);
   void addGFWWeightsByName(const char* weightName, int nPtBins, double* ptBins, bool addData = kTRUE, bool addMC = kTRUE);
