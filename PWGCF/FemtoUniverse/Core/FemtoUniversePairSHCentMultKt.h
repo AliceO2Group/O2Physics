@@ -217,7 +217,7 @@ class PairSHCentMultKt
   /// \param pdg2 PDG code of particle two
   void setPionPairMass()
   {
-    mMassOne = o2::constants::physics::MassPiPlus;  // FIXME: Get from the PDG service of the common header
+    mMassOne = o2::constants::physics::MassPiPlus; // FIXME: Get from the PDG service of the common header
     mMassTwo = o2::constants::physics::MassPiPlus; // FIXME: Get from the PDG service of the common header
   }
 
