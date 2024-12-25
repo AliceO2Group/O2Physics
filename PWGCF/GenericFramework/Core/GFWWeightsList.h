@@ -22,22 +22,22 @@
 
 class GFWWeightsList : public TNamed
 {
-    public:
-    GFWWeightsList();
-    GFWWeightsList(const char* name);
-    ~GFWWeightsList();
-    void init(const char *listName);
-    void addGFWWeightsByName(const char* weightName, int nPtBins, double* ptBins, bool addData = kTRUE, bool addMC = kTRUE);
-    GFWWeights* getGFWWeightsByName(const char* weightName);
-    void addGFWWeightsByRun(int runNumber, int nPtBins, double* ptBins, bool addData = kTRUE, bool addMC = kTRUE);
-    GFWWeights* getGFWWeightsByRun(int runNumber);
-    TObjArray* getList() const { return list; }
+ public:
+  GFWWeightsList();
+  GFWWeightsList(const char* name);
+  ~GFWWeightsList();
+  void init(const char* listName);
+  void addGFWWeightsByName(const char* weightName, int nPtBins, double* ptBins, bool addData = kTRUE, bool addMC = kTRUE);
+  GFWWeights* getGFWWeightsByName(const char* weightName);
+  void addGFWWeightsByRun(int runNumber, int nPtBins, double* ptBins, bool addData = kTRUE, bool addMC = kTRUE);
+  GFWWeights* getGFWWeightsByRun(int runNumber);
+  TObjArray* getList() const { return list; }
 
-    private:
-    TObjArray* list;
-    std::map<int, GFWWeights*> runNumerMap;
+ private:
+  TObjArray* list;
+  std::map<int, GFWWeights*> runNumerMap;
 
-    ClassDef(GFWWeightsList, 1);
+  ClassDef(GFWWeightsList, 1);
 };
 
 #endif // PWGCF_GENERICFRAMEWORK_CORE_GFWWEIGHTSLIST_H_

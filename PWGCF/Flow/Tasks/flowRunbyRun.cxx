@@ -230,7 +230,6 @@ struct FlowRunbyRun {
     int nPtBins = axis.binEdges.size() - 1;
     double* ptBins = &(axis.binEdges)[0];
     fGFWWeightsList->addGFWWeightsByRun(runNumber, nPtBins, ptBins, true, false);
-
   }
 
   void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)

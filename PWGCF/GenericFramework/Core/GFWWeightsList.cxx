@@ -18,69 +18,68 @@
 
 GFWWeightsList::GFWWeightsList() : TNamed("", ""), list(0)
 {
-    runNumerMap.clear();
+  runNumerMap.clear();
 }
 
-GFWWeightsList::GFWWeightsList(const char *name) : TNamed(name, name), list(0)
+GFWWeightsList::GFWWeightsList(const char* name) : TNamed(name, name), list(0)
 {
-    runNumerMap.clear();
+  runNumerMap.clear();
 }
 
 GFWWeightsList::~GFWWeightsList()
 {
-    delete list;
-    runNumerMap.clear();
+  delete list;
+  runNumerMap.clear();
 }
 
-void GFWWeightsList::init(const char *listName)
+void GFWWeightsList::init(const char* listName)
 {
-    list = new TObjArray();
-    list->SetName(listName);
-    list->SetOwner(kTRUE);
+  list = new TObjArray();
+  list->SetName(listName);
+  list->SetOwner(kTRUE);
 }
 
-void GFWWeightsList::addGFWWeightsByName(const char *weightName, int nPtBins, double *ptBins, bool addData, bool addMC)
+void GFWWeightsList::addGFWWeightsByName(const char* weightName, int nPtBins, double* ptBins, bool addData, bool addMC)
 {
-    if(!list) {
-        init("weightList");
-    }
-    GFWWeights* weight = new GFWWeights(weightName);
-    weight->SetPtBins(nPtBins, ptBins);
-    weight->Init(addData, addMC);
-    list->Add(weight);
+  if (!list) {
+    init("weightList");
+  }
+  GFWWeights* weight = new GFWWeights(weightName);
+  weight->SetPtBins(nPtBins, ptBins);
+  weight->Init(addData, addMC);
+  list->Add(weight);
 }
 
 GFWWeights* GFWWeightsList::getGFWWeightsByName(const char* weightName)
 {
-    if(!list) {
-        printf("Error: weight list is not initialized\n");
-        return nullptr;
-    }
-    return reinterpret_cast<GFWWeights*>(list->FindObject(weightName));
+  if (!list) {
+    printf("Error: weight list is not initialized\n");
+    return nullptr;
+  }
+  return reinterpret_cast<GFWWeights*>(list->FindObject(weightName));
 }
 
 void GFWWeightsList::addGFWWeightsByRun(int runNumber, int nPtBins, double* ptBins, bool addData, bool addMC)
 {
-    if(!list) {
-        init("weightList");
-    }
-    GFWWeights* weight = new GFWWeights(Form("weight_%d",runNumber));
-    weight->SetPtBins(nPtBins, ptBins);
-    weight->Init(addData, addMC);
-    list->Add(weight);
-    runNumerMap.insert(std::make_pair(runNumber, weight));
+  if (!list) {
+    init("weightList");
+  }
+  GFWWeights* weight = new GFWWeights(Form("weight_%d", runNumber));
+  weight->SetPtBins(nPtBins, ptBins);
+  weight->Init(addData, addMC);
+  list->Add(weight);
+  runNumerMap.insert(std::make_pair(runNumber, weight));
 }
 
 GFWWeights* GFWWeightsList::getGFWWeightsByRun(int runNumber)
 {
-    if(!list) {
-        printf("Error: weight list is not initialized\n");
-        return nullptr;
-    }
-    if(!runNumerMap.contains(runNumber)) {
-        printf("Error: weight for run %d is not found\n", runNumber);
-        return nullptr;
-    }
-    return runNumerMap.at(runNumber);
+  if (!list) {
+    printf("Error: weight list is not initialized\n");
+    return nullptr;
+  }
+  if (!runNumerMap.contains(runNumber)) {
+    printf("Error: weight for run %d is not found\n", runNumber);
+    return nullptr;
+  }
+  return runNumerMap.at(runNumber);
 }
-
