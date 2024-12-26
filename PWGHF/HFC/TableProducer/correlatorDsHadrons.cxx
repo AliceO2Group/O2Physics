@@ -417,7 +417,7 @@ struct HfCorrelatorDsHadrons {
                             track.pt(),
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToKKPi(candidate), false, false);
-          entryDsHadronGenInfo(false, false, 0);
+          // entryDsHadronGenInfo(false, false, 0);
           entryDsHadronMlInfo(outputMl[0], outputMl[2]);
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
@@ -427,7 +427,7 @@ struct HfCorrelatorDsHadrons {
                             track.pt(),
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToPiKK(candidate), false, false);
-          entryDsHadronGenInfo(false, false, 0);
+          // entryDsHadronGenInfo(false, false, 0);
           entryDsHadronMlInfo(outputMl[0], outputMl[2]);
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
         }
@@ -688,8 +688,8 @@ struct HfCorrelatorDsHadrons {
               entryDsHadronRecoInfo(MassDS, true, isDecayChan);
               entryDsHadronGenInfo(isDsPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
             }
-          }
-        }
+          } // end loop generated particles
+        } // end loop generated Ds
       } // end loop reconstructed collision
     }   // end loop generated collision
   }
@@ -706,7 +706,7 @@ struct HfCorrelatorDsHadrons {
       auto tracksThisColl = tracks.sliceBy(trackIndicesPerCollision, thisCollId);
 
       // Ds fill histograms and Ds candidates information stored
-      for (const auto& candidate : candidates) {
+      for (const auto& candidate : candsDsThisColl) {
         // candidate selected
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
           candReduced(hfcReducedCollisionIndex, candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToKKPi(candidate));
@@ -716,7 +716,7 @@ struct HfCorrelatorDsHadrons {
       }
 
       // tracks information
-      for (const auto& track : tracks) {
+      for (const auto& track : tracksThisColl) {
         if (!track.isGlobalTrackWoDCA()) {
           continue;
         }
@@ -742,7 +742,7 @@ struct HfCorrelatorDsHadrons {
       int indexHfcReducedCollision = collReduced.lastIndex() + 1;
 
       // Ds fill histograms and Ds candidates information stored
-      for (const auto& candidate : candidates) {
+      for (const auto& candidate : candsDsThisColl) {
         // candidate selected
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
           candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToKKPi(candidate));
@@ -752,7 +752,7 @@ struct HfCorrelatorDsHadrons {
       }
 
       // tracks information
-      for (const auto& track : tracks) {
+      for (const auto& track : tracksThisColl) {
         if (!track.isGlobalTrackWoDCA()) {
           continue;
         }
@@ -808,7 +808,7 @@ struct HfCorrelatorDsHadrons {
                             pAssoc.pt(),
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToKKPi(cand), false, false);
-          entryDsHadronGenInfo(false, false, 0);
+          // entryDsHadronGenInfo(false, false, 0);
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = cand.mlProbDsToKKPi()[classMl->at(iclass)];
           }
@@ -822,7 +822,7 @@ struct HfCorrelatorDsHadrons {
                             pAssoc.pt(),
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToPiKK(cand), false, false);
-          entryDsHadronGenInfo(false, false, 0);
+          // entryDsHadronGenInfo(false, false, 0);
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = cand.mlProbDsToPiKK()[classMl->at(iclass)];
           }

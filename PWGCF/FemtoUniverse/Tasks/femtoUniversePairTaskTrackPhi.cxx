@@ -593,7 +593,7 @@ struct FemtoUniversePairTaskTrackPhi {
   /// process function for to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processSameEvent(o2::aod::FDCollision const& col,
+  void processSameEvent(o2::aod::FdCollision const& col,
                         FemtoFullParticles const& parts)
   {
     fillCollision(col);
@@ -611,9 +611,9 @@ struct FemtoUniversePairTaskTrackPhi {
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// \param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processSameEventMC(o2::aod::FDCollision const& col,
+  void processSameEventMC(o2::aod::FdCollision const& col,
                           soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels> const& parts,
-                          o2::aod::FDMCParticles const&)
+                          o2::aod::FdMCParticles const&)
   {
     fillCollision(col);
 
@@ -672,7 +672,7 @@ struct FemtoUniversePairTaskTrackPhi {
   /// process function for to call doMixedEvent with Data
   /// @param cols subscribe to the collisions table (Data)
   /// @param parts subscribe to the femtoUniverseParticleTable
-  void processMixedEvent(o2::aod::FDCollisions const& cols,
+  void processMixedEvent(o2::aod::FdCollisions const& cols,
                          FemtoFullParticles const& parts)
   {
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
@@ -701,9 +701,9 @@ struct FemtoUniversePairTaskTrackPhi {
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processMixedEventMC(o2::aod::FDCollisions const& cols,
+  void processMixedEventMC(o2::aod::FdCollisions const& cols,
                            soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels> const& parts,
-                           o2::aod::FDMCParticles const&)
+                           o2::aod::FdMCParticles const&)
   {
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
@@ -736,7 +736,7 @@ struct FemtoUniversePairTaskTrackPhi {
       if (part.partType() != uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack))
         continue;
 
-      int pdgCode = static_cast<int>(part.pidcut());
+      int pdgCode = static_cast<int>(part.pidCut());
       const auto& pdgParticle = pdgMC->GetParticle(pdgCode);
       if (!pdgParticle) {
         continue;
@@ -771,7 +771,7 @@ struct FemtoUniversePairTaskTrackPhi {
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processMCTruth, "Process MC truth data", false);
 
-  void processMCReco(FemtoRecoParticles const& parts, aod::FDMCParticles const& mcparts)
+  void processMCReco(FemtoRecoParticles const& parts, aod::FdMCParticles const& mcparts)
   {
     for (auto const& part : parts) {
       auto mcPartId = part.fdMCParticleId();
