@@ -34,6 +34,10 @@ o2physics_add_dpl_workflow(emc-tmmonitor
                     SOURCES emcTmMonitor.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(hadron-photon-correlation
+                    SOURCES hadronPhotonCorrelation.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(mc-generator-studies
                     SOURCES mcGeneratorStudies.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
@@ -166,6 +170,10 @@ o2physics_add_dpl_workflow(jet-substructure-bplus
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-hadron-recoil
                         SOURCES jetHadronRecoil.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(recoil-jets
+                        SOURCES recoilJets.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-nsubjettiness
