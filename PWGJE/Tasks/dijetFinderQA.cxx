@@ -15,6 +15,8 @@
 
 #include <cmath>
 #include <TRandom3.h>
+#include <string>
+#include <vector>
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
