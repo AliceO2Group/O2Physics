@@ -589,7 +589,10 @@ struct skimmerPrimaryElectron {
 
 struct prefilterPrimaryElectron {
   enum class EM_Electron_PF : int {
-    kElFromPC = 0, // electron from photon conversion
+    kElFromPC = 0,    // electron from photon conversion
+    kElFromPi0_1 = 1, // electron from pi0 dalitz decay, threshold 1
+    kElFromPi0_2 = 2, // electron from  pi0 dalitz decay, threshold 2
+    kElFromPi0_3 = 3, // electron from pi0 dalitz decay, threshold 3
   };
 
   Produces<aod::EMPrimaryElectronsPrefilterBit> ele_pfb;
@@ -610,7 +613,7 @@ struct prefilterPrimaryElectron {
   Configurable<float> max_dcaxy{"max_dcaxy", 0.3, "DCAxy To PV for loose track sample"};
   Configurable<float> max_dcaz{"max_dcaz", 0.3, "DCAz To PV for loose track sample"};
   Configurable<float> minpt{"minpt", 0.1, "min pt for track for loose track sample"};
-  Configurable<float> maxeta{"maxeta", 1.2, "eta acceptance for loose track sample"};
+  Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance for loose track sample"};
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
   Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
@@ -624,12 +627,9 @@ struct prefilterPrimaryElectron {
   Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
   Configurable<float> intercept{"intercept", -0.0280, "intercept for m vs. phiv"};
 
-  HistogramRegistry fRegistry{
-    "fRegistry",
-    {
-      {"hMvsPhiV_PV", "mass vs. phiv;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", {HistType::kTH2F, {{90, .0f, TMath::Pi()}, {100, 0, 0.1}}}},
-    },
-  };
+  Configurable<std::vector<float>> max_mee_vec{"max_mee_vec", std::vector<float>{0.08, 0.10, 0.12}, "vector fo max mee for prefilter in ULS. Please sort this by increasing order."}; // currently, 3 thoresholds are allowed.
+
+  HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   int mRunNumber;
   float d_bz;
@@ -645,6 +645,22 @@ struct prefilterPrimaryElectron {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    if (!doprocessDummy) {
+      addHistograms();
+    }
+  }
+
+  void addHistograms()
+  {
+    fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
+    fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {40, -1.0f, 1.0f}}, false);
+    fRegistry.add("Track/hTPCNsigmaEl", "loose track TPC PID", kTH2F, {{1000, 0.f, 10}, {100, -5, +5}});
+    fRegistry.add("Pair/before/uls/hMvsPt", "mass vs. pT;m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {{400, 0, 4}, {100, 0, 10}});
+    fRegistry.add("Pair/before/uls/hMvsPhiV", "mass vs. phiv;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0.f, M_PI}, {100, 0, 1.f}});
+    fRegistry.addClone("Pair/before/uls/", "Pair/before/lspp/");
+    fRegistry.addClone("Pair/before/uls/", "Pair/before/lsmm/");
+    fRegistry.addClone("Pair/before/", "Pair/after/");
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -748,11 +764,7 @@ struct prefilterPrimaryElectron {
   template <int loose_track_sign, typename TCollision, typename TTrack1, typename TTrack2>
   bool reconstructPC(TCollision const& collision, TTrack1 const& ele, TTrack2 const& pos)
   {
-    if (pos.sign() * ele.sign() > 0) { // reject same sign pair
-      return false;
-    }
-
-    float mee, phiv = 0;
+    float mee = 0, phiv = 0;
     gpu::gpustd::array<float, 2> dcaInfo;
     std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
 
@@ -777,8 +789,6 @@ struct prefilterPrimaryElectron {
       mee = v12.M();
       phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos.px(), pos.py(), pos.pz(), pVec_recalc[0], pVec_recalc[1], pVec_recalc[2], pos.sign(), ele.sign(), d_bz);
     }
-
-    fRegistry.fill(HIST("hMvsPhiV_PV"), phiv, mee);
 
     if (mee < slope * phiv + intercept) {
       return true;
@@ -822,7 +832,8 @@ struct prefilterPrimaryElectron {
         if (!checkTrack(collision, track)) {
           continue;
         }
-
+        fRegistry.fill(HIST("Track/hPt"), track.pt());
+        fRegistry.fill(HIST("Track/hEtaPhi"), track.phi(), track.eta());
         if (track.sign() > 0) {
           posTracks_per_coll.emplace_back(track);
         } else {
@@ -830,37 +841,125 @@ struct prefilterPrimaryElectron {
         }
       }
 
-      for (auto& empos : positrons_per_coll) {
-        // auto pos = tracks.rawIteratorAt(empos.trackId()); // use rawIterator, if the table is filtered.
-        for (auto& ele : negTracks_per_coll) {
-          if (!checkTrack(collision, ele)) {
-            continue;
-          }
+      for (auto& ele : negTracks_per_coll) {
+        if (!checkTrack(collision, ele)) {
+          continue;
+        }
+        gpu::gpustd::array<float, 2> dcaInfo;
+        std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
+        auto track_par_cov_recalc = getTrackParCov(ele);
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
+        getPxPyPz(track_par_cov_recalc, pVec_recalc);
+
+        for (auto& empos : positrons_per_coll) {
           if (empos.trackId() == ele.globalIndex()) {
             continue;
           }
-          bool isPC = reconstructPC<-1>(collision, ele, empos);
-          if (isPC) {
+
+          ROOT::Math::PtEtaPhiMVector v1(track_par_cov_recalc.getPt(), track_par_cov_recalc.getEta(), track_par_cov_recalc.getPhi(), o2::constants::physics::MassElectron); // loose track
+          ROOT::Math::PtEtaPhiMVector v2(empos.pt(), empos.eta(), empos.phi(), o2::constants::physics::MassElectron);                                                       // signal track
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(empos.px(), empos.py(), empos.pz(), pVec_recalc[0], pVec_recalc[1], pVec_recalc[2], empos.sign(), ele.sign(), d_bz);
+          fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
+          fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
+          if (v12.M() < max_mee_vec->at(static_cast<int>(max_mee_vec->size()) - 1)) {
+            fRegistry.fill(HIST("Track/hTPCNsigmaEl"), ele.tpcInnerParam(), ele.tpcNSigmaEl());
+          }
+          for (int i = 0; i < static_cast<int>(max_mee_vec->size()); i++) {
+            if (v12.M() < max_mee_vec->at(i)) {
+              pfb_map[empos.globalIndex()] |= (uint8_t(1) << (static_cast<int>(EM_Electron_PF::kElFromPi0_1) + i));
+            }
+          }
+
+          if (v12.M() < slope * phiv + intercept) {
             pfb_map[empos.globalIndex()] |= (uint8_t(1) << static_cast<int>(EM_Electron_PF::kElFromPC));
           }
-        } // end of loose electron loop
-      } // end of signal positon loop
 
-      for (auto& emele : electrons_per_coll) {
-        // auto ele = tracks.rawIteratorAt(emele.trackId()); // use rawIterator, if the table is filtered.
-        for (auto& pos : posTracks_per_coll) {
-          if (!checkTrack(collision, pos)) { // track cut is applied to loose sample
-            continue;
-          }
+        } // end of signal positon loop
+      } // end of loose electron loop
+
+      for (auto& pos : posTracks_per_coll) {
+        if (!checkTrack(collision, pos)) { // track cut is applied to loose sample
+          continue;
+        }
+        gpu::gpustd::array<float, 2> dcaInfo;
+        std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
+        auto track_par_cov_recalc = getTrackParCov(pos);
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
+        getPxPyPz(track_par_cov_recalc, pVec_recalc);
+        for (auto& emele : electrons_per_coll) {
           if (emele.trackId() == pos.globalIndex()) {
             continue;
           }
-          bool isPC = reconstructPC<+1>(collision, emele, pos);
-          if (isPC) {
+
+          ROOT::Math::PtEtaPhiMVector v1(emele.pt(), emele.eta(), emele.phi(), o2::constants::physics::MassElectron);                                                       // signal track
+          ROOT::Math::PtEtaPhiMVector v2(track_par_cov_recalc.getPt(), track_par_cov_recalc.getEta(), track_par_cov_recalc.getPhi(), o2::constants::physics::MassElectron); // loose track
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pVec_recalc[0], pVec_recalc[1], pVec_recalc[2], emele.px(), emele.py(), emele.pz(), pos.sign(), emele.sign(), d_bz);
+          fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
+          fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
+          if (v12.M() < max_mee_vec->at(static_cast<int>(max_mee_vec->size()) - 1)) {
+            fRegistry.fill(HIST("Track/hTPCNsigmaEl"), pos.tpcInnerParam(), pos.tpcNSigmaEl());
+          }
+          for (int i = 0; i < static_cast<int>(max_mee_vec->size()); i++) {
+            if (v12.M() < max_mee_vec->at(i)) {
+              pfb_map[emele.globalIndex()] |= (uint8_t(1) << (static_cast<int>(EM_Electron_PF::kElFromPi0_1) + i));
+            }
+          }
+
+          if (v12.M() < slope * phiv + intercept) {
             pfb_map[emele.globalIndex()] |= (uint8_t(1) << static_cast<int>(EM_Electron_PF::kElFromPC));
           }
-        } // end of loose positon loop
-      } // end of signal electron loop
+        } // end of signal electron loop
+      } // end of loose positon loop
+
+      for (auto& pos : posTracks_per_coll) {
+        if (!checkTrack(collision, pos)) { // track cut is applied to loose sample
+          continue;
+        }
+        gpu::gpustd::array<float, 2> dcaInfo;
+        std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
+        auto track_par_cov_recalc = getTrackParCov(pos);
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
+        getPxPyPz(track_par_cov_recalc, pVec_recalc);
+        for (auto& empos : positrons_per_coll) {
+          if (empos.trackId() == pos.globalIndex()) {
+            continue;
+          }
+
+          ROOT::Math::PtEtaPhiMVector v1(empos.pt(), empos.eta(), empos.phi(), o2::constants::physics::MassElectron);                                                       // signal track
+          ROOT::Math::PtEtaPhiMVector v2(track_par_cov_recalc.getPt(), track_par_cov_recalc.getEta(), track_par_cov_recalc.getPhi(), o2::constants::physics::MassElectron); // loose track
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pVec_recalc[0], pVec_recalc[1], pVec_recalc[2], empos.px(), empos.py(), empos.pz(), pos.sign(), empos.sign(), d_bz);
+          fRegistry.fill(HIST("Pair/before/lspp/hMvsPhiV"), phiv, v12.M());
+          fRegistry.fill(HIST("Pair/before/lspp/hMvsPt"), v12.M(), v12.Pt());
+        } // end of signal positron loop
+      } // end of loose positon loop
+
+      for (auto& ele : negTracks_per_coll) {
+        if (!checkTrack(collision, ele)) {
+          continue;
+        }
+        gpu::gpustd::array<float, 2> dcaInfo;
+        std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
+        auto track_par_cov_recalc = getTrackParCov(ele);
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
+        getPxPyPz(track_par_cov_recalc, pVec_recalc);
+
+        for (auto& emele : electrons_per_coll) {
+          if (emele.trackId() == ele.globalIndex()) {
+            continue;
+          }
+
+          ROOT::Math::PtEtaPhiMVector v1(track_par_cov_recalc.getPt(), track_par_cov_recalc.getEta(), track_par_cov_recalc.getPhi(), o2::constants::physics::MassElectron); // loose track
+          ROOT::Math::PtEtaPhiMVector v2(emele.pt(), emele.eta(), emele.phi(), o2::constants::physics::MassElectron);                                                       // signal track
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(emele.px(), emele.py(), emele.pz(), pVec_recalc[0], pVec_recalc[1], pVec_recalc[2], emele.sign(), ele.sign(), d_bz);
+          fRegistry.fill(HIST("Pair/before/lsmm/hMvsPhiV"), phiv, v12.M());
+          fRegistry.fill(HIST("Pair/before/lsmm/hMvsPt"), v12.M(), v12.Pt());
+
+        } // end of signal electron loop
+      } // end of loose electron loop
 
       posTracks_per_coll.clear();
       negTracks_per_coll.clear();
@@ -871,6 +970,26 @@ struct prefilterPrimaryElectron {
     for (auto& ele : primaryelectrons) {
       ele_pfb(pfb_map[ele.globalIndex()]);
     }
+
+    // check prefilter
+    for (auto& collision : collisions) {
+      auto positrons_per_coll = positrons->sliceByCachedUnsorted(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache); // signal sample
+      auto electrons_per_coll = electrons->sliceByCachedUnsorted(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache); // signal sample
+
+      for (auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(electrons_per_coll, positrons_per_coll))) {
+        if (pfb_map[ele.globalIndex()] != 0 || pfb_map[pos.globalIndex()] != 0) {
+          continue;
+        }
+
+        ROOT::Math::PtEtaPhiMVector v1(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v2(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos.px(), pos.py(), pos.pz(), ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
+        fRegistry.fill(HIST("Pair/after/uls/hMvsPhiV"), phiv, v12.M());
+        fRegistry.fill(HIST("Pair/after/uls/hMvsPt"), v12.M(), v12.Pt());
+
+      } // end of ULS pairing
+    } // end of collision loop
 
     pfb_map.clear();
   }
@@ -893,6 +1012,21 @@ struct prefilterPrimaryElectron {
       auto positrons_per_coll = positrons->sliceByCachedUnsorted(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache); // signal sample
       auto electrons_per_coll = electrons->sliceByCachedUnsorted(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache); // signal sample
 
+      for (auto& pos : posTracks_per_coll) {
+        if (!checkTrack(collision, pos)) { // track cut is applied to loose sample
+          continue;
+        }
+        fRegistry.fill(HIST("Track/hPt"), pos.pt());
+        fRegistry.fill(HIST("Track/hEtaPhi"), pos.phi(), pos.eta());
+      }
+      for (auto& neg : negTracks_per_coll) {
+        if (!checkTrack(collision, neg)) { // track cut is applied to loose sample
+          continue;
+        }
+        fRegistry.fill(HIST("Track/hPt"), neg.pt());
+        fRegistry.fill(HIST("Track/hEtaPhi"), neg.phi(), neg.eta());
+      }
+
       for (auto& [ele, empos] : combinations(CombinationsFullIndexPolicy(negTracks_per_coll, positrons_per_coll))) {
         // auto pos = tracks.rawIteratorAt(empos.trackId()); // use rawIterator, if the table is filtered.
         if (!checkTrack(collision, ele)) { // track cut is applied to loose sample
@@ -902,11 +1036,26 @@ struct prefilterPrimaryElectron {
           continue;
         }
 
-        bool isPC = reconstructPC<-1>(collision, ele, empos);
-        if (isPC) {
+        ROOT::Math::PtEtaPhiMVector v1(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);       // loose track
+        ROOT::Math::PtEtaPhiMVector v2(empos.pt(), empos.eta(), empos.phi(), o2::constants::physics::MassElectron); // signal track
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(empos.px(), empos.py(), empos.pz(), ele.px(), ele.py(), ele.pz(), empos.sign(), ele.sign(), d_bz);
+        fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
+        fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
+        if (v12.M() < max_mee_vec->at(static_cast<int>(max_mee_vec->size()) - 1)) {
+          fRegistry.fill(HIST("Track/hTPCNsigmaEl"), ele.tpcInnerParam(), ele.tpcNSigmaEl());
+        }
+        for (int i = 0; i < static_cast<int>(max_mee_vec->size()); i++) {
+          if (v12.M() < max_mee_vec->at(i)) {
+            pfb_map[empos.globalIndex()] |= (uint8_t(1) << (static_cast<int>(EM_Electron_PF::kElFromPi0_1) + i));
+          }
+        }
+
+        if (v12.M() < slope * phiv + intercept) {
           pfb_map[empos.globalIndex()] |= (uint8_t(1) << static_cast<int>(EM_Electron_PF::kElFromPC));
         }
-      }
+
+      } // end of ULS pairing
 
       for (auto& [pos, emele] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, electrons_per_coll))) {
         // auto ele = tracks.rawIteratorAt(emele.trackId()); // use rawIterator, if the table is filtered.
@@ -916,16 +1065,86 @@ struct prefilterPrimaryElectron {
         if (emele.trackId() == pos.globalIndex()) {
           continue;
         }
-        bool isPC = reconstructPC<+1>(collision, emele, pos);
-        if (isPC) {
+
+        ROOT::Math::PtEtaPhiMVector v1(emele.pt(), emele.eta(), emele.phi(), o2::constants::physics::MassElectron); // signal track
+        ROOT::Math::PtEtaPhiMVector v2(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);       // loose track
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos.px(), pos.py(), pos.pz(), emele.px(), emele.py(), emele.pz(), pos.sign(), emele.sign(), d_bz);
+        fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
+        fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
+        if (v12.M() < max_mee_vec->at(static_cast<int>(max_mee_vec->size()) - 1)) {
+          fRegistry.fill(HIST("Track/hTPCNsigmaEl"), pos.tpcInnerParam(), pos.tpcNSigmaEl());
+        }
+        for (int i = 0; i < static_cast<int>(max_mee_vec->size()); i++) {
+          if (v12.M() < max_mee_vec->at(i)) {
+            pfb_map[emele.globalIndex()] |= (uint8_t(1) << (static_cast<int>(EM_Electron_PF::kElFromPi0_1) + i));
+          }
+        }
+
+        if (v12.M() < slope * phiv + intercept) {
           pfb_map[emele.globalIndex()] |= (uint8_t(1) << static_cast<int>(EM_Electron_PF::kElFromPC));
         }
-      }
+
+      } // end of ULS pairing
+
+      for (auto& [pos, empos] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, positrons_per_coll))) {
+        // auto pos = tracks.rawIteratorAt(empos.trackId()); // use rawIterator, if the table is filtered.
+        if (!checkTrack(collision, pos)) { // track cut is applied to loose sample
+          continue;
+        }
+        if (empos.trackId() == pos.globalIndex()) {
+          continue;
+        }
+
+        ROOT::Math::PtEtaPhiMVector v1(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);       // loose track
+        ROOT::Math::PtEtaPhiMVector v2(empos.pt(), empos.eta(), empos.phi(), o2::constants::physics::MassElectron); // signal track
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(empos.px(), empos.py(), empos.pz(), pos.px(), pos.py(), pos.pz(), empos.sign(), pos.sign(), d_bz);
+        fRegistry.fill(HIST("Pair/before/lspp/hMvsPhiV"), phiv, v12.M());
+        fRegistry.fill(HIST("Pair/before/lspp/hMvsPt"), v12.M(), v12.Pt());
+      } // end of LS++ pairing
+
+      for (auto& [ele, emele] : combinations(CombinationsFullIndexPolicy(negTracks_per_coll, electrons_per_coll))) {
+        // auto ele = tracks.rawIteratorAt(emele.trackId()); // use rawIterator, if the table is filtered.
+        if (!checkTrack(collision, ele)) { // track cut is applied to loose sample
+          continue;
+        }
+        if (emele.trackId() == ele.globalIndex()) {
+          continue;
+        }
+
+        ROOT::Math::PtEtaPhiMVector v1(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);       // loose track
+        ROOT::Math::PtEtaPhiMVector v2(emele.pt(), emele.eta(), emele.phi(), o2::constants::physics::MassElectron); // signal track
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(emele.px(), emele.py(), emele.pz(), ele.px(), ele.py(), ele.pz(), emele.sign(), ele.sign(), d_bz);
+        fRegistry.fill(HIST("Pair/before/lsmm/hMvsPhiV"), phiv, v12.M());
+        fRegistry.fill(HIST("Pair/before/lsmm/hMvsPt"), v12.M(), v12.Pt());
+      } // end of LS-- pairing
+
     } // end of collision loop
 
     for (auto& ele : primaryelectrons) {
       ele_pfb(pfb_map[ele.globalIndex()]);
     }
+
+    // check prefilter
+    for (auto& collision : collisions) {
+      auto positrons_per_coll = positrons->sliceByCachedUnsorted(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache); // signal sample
+      auto electrons_per_coll = electrons->sliceByCachedUnsorted(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache); // signal sample
+
+      for (auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(electrons_per_coll, positrons_per_coll))) {
+        if (pfb_map[ele.globalIndex()] != 0 || pfb_map[pos.globalIndex()] != 0) {
+          continue;
+        }
+
+        ROOT::Math::PtEtaPhiMVector v1(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v2(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos.px(), pos.py(), pos.pz(), ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
+        fRegistry.fill(HIST("Pair/after/uls/hMvsPhiV"), phiv, v12.M());
+        fRegistry.fill(HIST("Pair/after/uls/hMvsPt"), v12.M(), v12.Pt());
+      } // end of ULS pairing
+    } // end of collision loop
 
     pfb_map.clear();
   }
