@@ -52,6 +52,11 @@ struct SGPIDSpectraTable {
   Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
   Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
   Configurable<float> pt_cut{"pt_cut", 0.1, "Track Pt"};
+  Configurable<int> occ_cut{"occ_cut", 200, "Maximum Occupancy"};
+  Configurable<int> occ_bit1_cut{"occ_bit1_cut", 0, "Check NoCollInTimeRangeStandard"};
+  Configurable<int> occ_bit2_cut{"occ_bit2_cut", 0, "Check NoCollInRofStandard"};
+  Configurable<int> occ_bit3_cut{"occ_bit3_cut", 0, "Check NoHighMultCollInPrevRof"};
+  Configurable<float> ir_cut{"ir_cut", 100, "Maximum IR"};
   // initialize histogram registry
   HistogramRegistry registry{
     "registry",
@@ -63,7 +68,7 @@ struct SGPIDSpectraTable {
   }
 
   // define data types
-  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; // UDCollisions
+  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::UDZdcsReduced>; // UDCollisions
   using UDCollisionFull = UDCollisionsFull::iterator;
   using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksPIDExtra, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
 
@@ -76,12 +81,23 @@ struct SGPIDSpectraTable {
         return;
     }
     // fill collision histograms
+    // check occupancies:
+    if (occ_bit1_cut && !coll.trs())
+      return;
+    if (occ_bit2_cut && !coll.trofs())
+      return;
+    if (occ_bit3_cut && !coll.hmpr())
+      return;
+    if (coll.occupancyInTime() > occ_cut)
+      return;
+    if (coll.hadronicRate() > ir_cut)
+      return;
     // int truegapSide = sgSelector.trueGap(dgcand, FV0_cut, ZDC_cut);
     // select PV contributors
     std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
     // check rho0 signals
     float tpcpi, tpcka, tpcel, tpcpr, tofpi, tofka, tofpr, tofel;
-    float tpcde, tpctr, tpche, tpcal, tofde, toftr, tofhe, tofal, tpcmu, tofmu;
+    float tpcde, tofde, tpcmu, tofmu;
     TVector3 a;
     int goodtracks = 0;
     for (auto t : tracks) {
@@ -91,7 +107,7 @@ struct SGPIDSpectraTable {
     }
     if (!goodtracks)
       return;
-    SGevents(coll.runNumber(), coll.flags(), truegapSide, coll.energyCommonZNA(), coll.energyCommonZNC(), goodtracks);
+    SGevents(coll.runNumber(), coll.flags(), truegapSide, coll.energyCommonZNA(), coll.energyCommonZNC(), goodtracks, coll.occupancyInTime(), coll.hadronicRate());
     // SGevents(coll.runNumber(), coll.flags());
     for (auto t : tracks) {
       if (trackselector(t, parameters)) {
@@ -107,14 +123,8 @@ struct SGPIDSpectraTable {
         tofpr = t.hasTOF() ? t.tofNSigmaPr() : -999;
         tofel = t.hasTOF() ? t.tofNSigmaEl() : -999;
         tpcde = t.hasTPC() ? t.tpcNSigmaDe() : -999;
-        tpctr = t.hasTPC() ? t.tpcNSigmaTr() : -999;
-        tpche = t.hasTPC() ? t.tpcNSigmaHe() : -999;
-        tpcal = t.hasTPC() ? t.tpcNSigmaAl() : -999;
         tofde = t.hasTOF() ? t.tofNSigmaDe() : -999;
-        toftr = t.hasTOF() ? t.tofNSigmaTr() : -999;
-        tofhe = t.hasTOF() ? t.tofNSigmaHe() : -999;
-        tofal = t.hasTOF() ? t.tofNSigmaAl() : -999;
-        SGtracks(SGevents.lastIndex(), a.Pt(), a.Eta(), a.Phi(), t.sign(), tpcpi, tpcka, tpcpr, tpcel, tofpi, tofka, tofpr, tofel, tpcmu, tofmu, tpcde, tpctr, tpche, tpcal, tofde, toftr, tofhe, tofal);
+        SGtracks(SGevents.lastIndex(), a.Pt(), a.Eta(), a.Phi(), t.sign(), tpcpi, tpcka, tpcpr, tpcel, tofpi, tofka, tofpr, tofel, tpcmu, tofmu, tpcde, tofde);
       }
     }
   }

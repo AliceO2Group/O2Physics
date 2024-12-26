@@ -103,7 +103,7 @@ std::vector<double> e(8, 0.);    // calibrated energies (a1, a2, a3, a4, c1, c2,
 double centrality = 0;
 int runnumber = 0;
 std::vector<double> v(3, 0); // vx, vy, vz
-bool isSelected = false;
+bool isSelected = true;
 
 } // namespace o2::analysis::qvectortask
 
@@ -133,6 +133,7 @@ struct ZdcQVectors {
   O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried")
   O2_DEFINE_CONFIGURABLE(cfgEnergyCal, std::string, "Users/c/ckoster/ZDC/LHC23_zzh_pass4/Energy", "ccdb path for energy calibration histos")
   O2_DEFINE_CONFIGURABLE(cfgMeanv, std::string, "Users/c/ckoster/ZDC/LHC23_zzh_pass4/vmean", "ccdb path for mean v histos")
+  O2_DEFINE_CONFIGURABLE(cfgMinEntriesSparseBin, int, 100, "Minimal number of entries allowed in 4D recentering histogram to use for recentering.")
 
   Configurable<std::vector<std::string>> cfgRec1{"cfgRec1", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step1", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step2", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step3", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step4", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it1_step5"}, "ccdb paths for recentering calibration histos iteration 1"};
   Configurable<std::vector<std::string>> cfgRec2{"cfgRec2", {"Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step1", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step2", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step3", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step4", "Users/c/ckoster/ZDC/LHC23_zzh_pass4/it2_step5"}, "ccdb paths for recentering calibration histos iteration 2"};
@@ -175,6 +176,7 @@ struct ZdcQVectors {
     for (int step = 0; step < 6; step++) {
       registry.add<TH2>(Form("step%i/QA/hSPplaneA", step), "hSPplaneA", kTH2D, {{100, -4, 4}, axisCent10});
       registry.add<TH2>(Form("step%i/QA/hSPplaneC", step), "hSPplaneC", kTH2D, {{100, -4, 4}, axisCent10});
+      registry.add<TH2>(Form("step%i/QA/hSPplaneFull", step), "hSPplaneFull", kTH2D, {{100, -4, 4}, axisCent10});
       for (const auto& side : sides) {
         hQxvsQy[step] = registry.add<TH2>(Form("step%i/hZN%s_Qx_vs_Qy", step, side), Form("hZN%s_Qx_vs_Qy", side), kTH2F, {axisQ, axisQ});
       }
@@ -229,8 +231,11 @@ struct ZdcQVectors {
     // recentered q-vectors (to check what steps are finished in the end)
     registry.add("hStep", "hStep", {HistType::kTH1D, {{10, 0., 10.}}});
     registry.add("hIteration", "hIteration", {HistType::kTH1D, {{10, 0., 10.}}});
+
     registry.add<TProfile>("vmean/hvertex_vx", "hvertex_vx", kTProfile, {{1, 0., 1.}});
     registry.add<TProfile>("vmean/hvertex_vy", "hvertex_vy", kTProfile, {{1, 0., 1.}});
+    registry.add<TProfile>("vmean/hvertex_vz", "hvertex_vz", kTProfile, {{1, 0., 1.}});
+
     registry.add<TH1>("QA/centrality_before", "centrality_before", kTH1D, {{200, 0, 100}});
     registry.add<TH1>("QA/centrality_after", "centrality_after", kTH1D, {{200, 0, 100}});
 
@@ -324,6 +329,14 @@ struct ZdcQVectors {
     registry.fill(HIST("step0/QA/hQXC_vs_vz"), v[2], q[0][0][2]);
     registry.fill(HIST("step0/QA/hQYC_vs_vz"), v[2], q[0][0][3]);
 
+    // add psi!!
+    double psiA = 1.0 * std::atan2(q[0][0][2], q[0][0][0]);
+    registry.fill(HIST("step0/QA/hSPplaneA"), psiA, centrality, 1);
+    double psiC = 1.0 * std::atan2(q[0][0][3], q[0][0][1]);
+    registry.fill(HIST("step0/QA/hSPplaneC"), psiC, centrality, 1);
+    double psiFull = 1.0 * std::atan2(q[0][0][2] + q[0][0][3], q[0][0][0] + q[0][0][1]);
+    registry.fill(HIST("step0/QA/hSPplaneFull"), psiFull, centrality, 1);
+
     static constexpr std::string_view SubDir[] = {"step1/", "step2/", "step3/", "step4/", "step5/"};
     static_for<0, 4>([&](auto Ind) {
       constexpr int Index = Ind.value;
@@ -357,11 +370,12 @@ struct ZdcQVectors {
       registry.fill(HIST(SubDir[Index]) + HIST("QA/hQXC_vs_vz"), v[2], q[iteration][indexRt][2]);
       registry.fill(HIST(SubDir[Index]) + HIST("QA/hQYC_vs_vz"), v[2], q[iteration][indexRt][3]);
 
-      // add psi!!
-      double psiA = 1.0 * std::atan2(q[iteration][indexRt][2], q[iteration][indexRt][0]);
+      psiA = 1.0 * std::atan2(q[iteration][indexRt][2], q[iteration][indexRt][0]);
       registry.fill(HIST(SubDir[Index]) + HIST("QA/hSPplaneA"), psiA, centrality, 1);
-      double psiC = 1.0 * std::atan2(q[iteration][indexRt][3], q[iteration][indexRt][1]);
+      psiC = 1.0 * std::atan2(q[iteration][indexRt][3], q[iteration][indexRt][1]);
       registry.fill(HIST(SubDir[Index]) + HIST("QA/hSPplaneC"), psiC, centrality, 1);
+      psiFull = 1.0 * std::atan2(q[iteration][indexRt][2] + q[iteration][indexRt][3], q[iteration][indexRt][0] + q[iteration][indexRt][1]);
+      registry.fill(HIST(SubDir[Index]) + HIST("QA/hSPplaneFull"), psiFull, centrality, 1);
     });
   }
 
@@ -420,14 +434,14 @@ struct ZdcQVectors {
         return;
       }
       if (counter < 1)
-        LOGF(info, "<--------OK----------> Calibrations loaded for iteration %i and step %i", iteration, step + 1);
+        LOGF(info, "<--------OK----------> Calibrations loaded for cal.calibfilesLoaded[%i][%i]", iteration, step);
       cal.calibfilesLoaded[iteration][step] = true;
       cal.atIteration = iteration;
       cal.atStep = step;
       return;
     } else {
       if (counter < 1)
-        LOGF(info, "<--------X-----------> Calibrations not loaded for iteration %i and step %i cfg = empty!", iteration, step + 1);
+        LOGF(info, "<--------X-----------> Calibrations not loaded for iteration %i and step %i cfg = empty!", iteration, step);
     }
   }
 
@@ -452,7 +466,7 @@ struct ZdcQVectors {
     } else if (hist->InheritsFrom("TProfile")) {
       TProfile* h = reinterpret_cast<TProfile*>(hist);
       TString name = h->GetName();
-      int bin;
+      int bin{};
       if (name.Contains("mean_vx"))
         bin = h->GetXaxis()->FindBin(v[0]);
       if (name.Contains("mean_vy"))
@@ -465,22 +479,22 @@ struct ZdcQVectors {
         bin = h->GetXaxis()->FindBin(TString::Format("%i", runnumber));
       calibConstant = h->GetBinContent(bin);
     } else if (hist->InheritsFrom("THnSparse")) {
-      std::vector<double> sparsePars;
+      std::vector<int> sparsePars;
       THnSparseD* h = reinterpret_cast<THnSparseD*>(hist);
-      if (step == 0 && iteration > 0) {
-        sparsePars.push_back(h->GetAxis(1)->FindBin(centrality));
-        sparsePars.push_back(h->GetAxis(2)->FindBin(v[0]));
-        sparsePars.push_back(h->GetAxis(3)->FindBin(v[1]));
-        sparsePars.push_back(h->GetAxis(4)->FindBin(v[2]));
-      }
+      sparsePars.push_back(h->GetAxis(0)->FindBin(centrality));
+      sparsePars.push_back(h->GetAxis(1)->FindBin(v[0]));
+      sparsePars.push_back(h->GetAxis(2)->FindBin(v[1]));
+      sparsePars.push_back(h->GetAxis(3)->FindBin(v[2]));
+
       for (std::size_t i = 0; i < sparsePars.size(); i++) {
         h->GetAxis(i)->SetRange(sparsePars[i], sparsePars[i]);
       }
-      calibConstant = h->Projection(sparsePars.size())->GetMean();
+      calibConstant = h->Projection(4)->GetMean();
 
-      if (h->Projection(sparsePars.size())->GetEntries() < 2) {
+      if (h->Projection(4)->GetEntries() < cfgMinEntriesSparseBin) {
         LOGF(debug, "1 entry in sparse bin! Not used... (increase binsize)");
         calibConstant = 0;
+        isSelected = false;
       }
     }
     return calibConstant;
@@ -503,10 +517,13 @@ struct ZdcQVectors {
     std::vector<double> xEnZN(2, 0.);
     std::vector<double> yEnZN(2, 0.);
 
+    isSelected = true;
+
     auto cent = collision.centFT0C();
 
     if (cent < 0 || cent > 90) {
-      spTableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
+      isSelected = false;
+      spTableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
       return;
     }
 
@@ -515,7 +532,8 @@ struct ZdcQVectors {
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
 
     if (!foundBC.has_zdc()) {
-      spTableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
+      isSelected = false;
+      spTableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
       return;
     }
 
@@ -548,6 +566,7 @@ struct ZdcQVectors {
         LOGF(warning, " --> No mean V found.. -> THis wil lead to wrong axis for vx, vy (will be created in vmean/)");
       registry.get<TProfile>(HIST("vmean/hvertex_vx"))->Fill(Form("%d", runnumber), v[0]);
       registry.get<TProfile>(HIST("vmean/hvertex_vy"))->Fill(Form("%d", runnumber), v[1]);
+      registry.get<TProfile>(HIST("vmean/hvertex_vz"))->Fill(Form("%d", runnumber), v[2]);
     }
 
     if (counter < 1)
@@ -588,13 +607,15 @@ struct ZdcQVectors {
     // if ZNA or ZNC not hit correctly.. do not use event in q-vector calculation
     if (!isZNAhit || !isZNChit) {
       counter++;
-      spTableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
+      isSelected = false;
+      spTableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
       return;
     }
 
     if (!cal.calibfilesLoaded[0][0]) {
       counter++;
-      spTableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, false, 0, 0);
+      isSelected = false;
+      spTableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
       return;
     }
 
@@ -674,11 +695,15 @@ struct ZdcQVectors {
       }
     }
 
+    if (counter < 1)
+      LOGF(info, "We evaluate cal.atIteration=%i and cal.atStep=%i ", cal.atIteration, cal.atStep);
+
     if (cal.atIteration == 0) {
       if (counter < 1)
         LOGF(warning, "Calibation files missing!!! Output created with q-vectors right after energy gain eq. !!");
-      fillAllRegistries(0, 0);
-      spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0][0][0], q[0][0][1], q[0][0][2], q[0][0][3], true, 0, 0);
+      if (isSelected)
+        fillAllRegistries(0, 0);
+      spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0][0][0], q[0][0][1], q[0][0][2], q[0][0][3], isSelected, 0, 0);
       counter++;
       return;
     } else {
@@ -705,9 +730,11 @@ struct ZdcQVectors {
 
       if (counter < 1)
         LOGF(info, "Output created with q-vectors at iteration %i and step %i!!!!", cal.atIteration, cal.atStep + 1);
-      fillAllRegistries(cal.atIteration, cal.atStep + 1);
-      registry.fill(HIST("QA/centrality_after"), centrality);
-      spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[cal.atIteration][cal.atStep][0], q[cal.atIteration][cal.atStep][1], q[cal.atIteration][cal.atStep][2], q[cal.atIteration][cal.atStep][3], true, cal.atIteration, cal.atStep);
+      if (isSelected) {
+        fillAllRegistries(cal.atIteration, cal.atStep + 1);
+        registry.fill(HIST("QA/centrality_after"), centrality);
+      }
+      spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[cal.atIteration][cal.atStep][0], q[cal.atIteration][cal.atStep][1], q[cal.atIteration][cal.atStep][2], q[cal.atIteration][cal.atStep][3], isSelected, cal.atIteration, cal.atStep);
       counter++;
       return;
     }

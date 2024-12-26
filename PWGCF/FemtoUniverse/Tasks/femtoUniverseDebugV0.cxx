@@ -29,10 +29,10 @@
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
+#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 
 using namespace o2;
-using namespace o2::analysis::femtoUniverse;
+using namespace o2::analysis::femto_universe;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
@@ -81,7 +81,7 @@ struct femtoUniverseDebugV0 {
   }
 
   /// Porduce QA plots for V0 selection in FemtoUniverse framework
-  void process(o2::aod::FDCollision const& col, FemtoFullParticles const& parts)
+  void process(o2::aod::FdCollision const& col, FemtoFullParticles const& parts)
   {
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     eventHisto.fillQA(col);
@@ -98,8 +98,8 @@ struct femtoUniverseDebugV0 {
       // check cuts on V0 children
       if ((posChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) && (posChild.cut() & ConfCutChildPos) == ConfCutChildPos) &&
           (negChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) && (negChild.cut() & ConfCutChildNeg) == ConfCutChildNeg) &&
-          isFullPIDSelected(posChild.pidcut(), posChild.p(), 999.f, ConfChildPosIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfChildPosPidnSigmaMax.value, 1.f) &&
-          isFullPIDSelected(negChild.pidcut(), negChild.p(), 999.f, ConfChildNegIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfChildNegPidnSigmaMax.value, 1.f)) {
+          isFullPIDSelected(posChild.pidCut(), posChild.p(), 999.f, ConfChildPosIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfChildPosPidnSigmaMax.value, 1.f) &&
+          isFullPIDSelected(negChild.pidCut(), negChild.p(), 999.f, ConfChildNegIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfChildNegPidnSigmaMax.value, 1.f)) {
         V0Histos.fillQA<false, true>(part);
         posChildHistos.fillQA<false, true>(posChild);
         negChildHistos.fillQA<false, true>(negChild);

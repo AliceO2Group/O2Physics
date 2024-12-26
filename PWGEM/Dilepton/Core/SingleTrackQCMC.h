@@ -197,7 +197,7 @@ struct SingleTrackQCMC {
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false}; // 1 HistogramRegistry can keep up to 512 histograms
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
-  static constexpr std::string_view lepton_source_types[9] = {"lf/", "Photon/", "PromptJPsi/", "NonPromptJPsi/", "PromptPsi2S/", "NonPromptPsi2S/", "c2l/", "b2l/", "b2c2l/"};
+  static constexpr std::string_view lepton_source_types[10] = {"lf/", "lf_prompt/", "Photon/", "PromptJPsi/", "NonPromptJPsi/", "PromptPsi2S/", "NonPromptPsi2S/", "c2l/", "b2l/", "b2c2l/"};
 
   ~SingleTrackQCMC() {}
 
@@ -205,6 +205,8 @@ struct SingleTrackQCMC {
   {
     // event info
     o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
+    fRegistry.add("MCEvent/before/hZvtx", "vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
+    fRegistry.addClone("MCEvent/before/", "MCEvent/after/");
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       const AxisSpec axis_pt{ConfPtlBins, "p_{T,e} (GeV/c)"};
@@ -221,6 +223,7 @@ struct SingleTrackQCMC {
 
       // generated info
       fRegistry.add("Generated/lf/hs", "gen. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
+      fRegistry.addClone("Generated/lf/", "Generated/lf_prompt/");
       fRegistry.addClone("Generated/lf/", "Generated/PromptJPsi/");
       fRegistry.addClone("Generated/lf/", "Generated/NonPromptJPsi/");
       fRegistry.addClone("Generated/lf/", "Generated/PromptPsi2S/");
@@ -253,6 +256,7 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/lf/positive/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
       }
       fRegistry.addClone("Track/lf/positive/", "Track/lf/negative/");
+      fRegistry.addClone("Track/lf/", "Track/lf_prompt/");
       fRegistry.addClone("Track/lf/", "Track/Photon/"); // this is not for efficiency! only for contamination. We don't store generated photon conversions.
       fRegistry.addClone("Track/lf/", "Track/PromptJPsi/");
       fRegistry.addClone("Track/lf/", "Track/NonPromptJPsi/");
@@ -289,6 +293,7 @@ struct SingleTrackQCMC {
 
       // generated info
       fRegistry.add("Generated/lf/hs", "gen. single muon", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
+      fRegistry.addClone("Generated/lf/", "Generated/lf_prompt/");
       fRegistry.addClone("Generated/lf/", "Generated/PromptJPsi/");
       fRegistry.addClone("Generated/lf/", "Generated/NonPromptJPsi/");
       fRegistry.addClone("Generated/lf/", "Generated/PromptPsi2S/");
@@ -318,6 +323,7 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/lf/positive/hPtGen_DeltaPhi", "muon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
       }
       fRegistry.addClone("Track/lf/positive/", "Track/lf/negative/");
+      fRegistry.addClone("Track/lf/", "Track/lf_prompt/");
       fRegistry.addClone("Track/lf/", "Track/Photon/"); // this is not for efficiency! only for contamination. We don't store generated photon conversions.
       fRegistry.addClone("Track/lf/", "Track/PromptJPsi/");
       fRegistry.addClone("Track/lf/", "Track/NonPromptJPsi/");
@@ -369,6 +375,7 @@ struct SingleTrackQCMC {
     fEMEventCut.SetRequireNoCollInTimeRangeStrict(eventcuts.cfgRequireNoCollInTimeRangeStrict);
     fEMEventCut.SetRequireNoCollInITSROFStandard(eventcuts.cfgRequireNoCollInITSROFStandard);
     fEMEventCut.SetRequireNoCollInITSROFStrict(eventcuts.cfgRequireNoCollInITSROFStrict);
+    fEMEventCut.SetRequireNoHighMultCollInPrevRof(eventcuts.cfgRequireNoHighMultCollInPrevRof);
   }
 
   o2::analysis::MlResponseDielectronSingleTrack<float> mlResponseSingleTrack;
@@ -713,30 +720,33 @@ struct SingleTrackQCMC {
 
         if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
           if (pdg_mother == 111 || pdg_mother == 221 || pdg_mother == 331 || pdg_mother == 113 || pdg_mother == 223 || pdg_mother == 333) {
-            fillTrackInfo<0, TMCParticles>(track);
+            fillTrackInfo<0, TMCParticles>(track); // lf
+            if (IsFromCharm(mcmother, mcparticles) < 0 && IsFromBeauty(mcmother, mcparticles) < 0) {
+              fillTrackInfo<1, TMCParticles>(track); // lf_prompt
+            }
           } else if (pdg_mother == 443) {
             if (IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
-              fillTrackInfo<3, TMCParticles>(track);
+              fillTrackInfo<4, TMCParticles>(track);
             } else {
-              fillTrackInfo<2, TMCParticles>(track);
+              fillTrackInfo<3, TMCParticles>(track);
             }
           } else if (pdg_mother == 100443) {
             if (IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
-              fillTrackInfo<5, TMCParticles>(track);
+              fillTrackInfo<6, TMCParticles>(track);
             } else {
-              fillTrackInfo<4, TMCParticles>(track);
+              fillTrackInfo<5, TMCParticles>(track);
             }
           } else if (IsFromBeauty(mctrack, mcparticles) > 0) { // b is found in full decay chain.
             if (IsFromCharm(mctrack, mcparticles) > 0) {       // c is found in full decay chain.
-              fillTrackInfo<8, TMCParticles>(track);
+              fillTrackInfo<9, TMCParticles>(track);
             } else {
-              fillTrackInfo<7, TMCParticles>(track);
+              fillTrackInfo<8, TMCParticles>(track);
             }
           } else if (IsFromCharm(mctrack, mcparticles) > 0) { // c is found in full decay chain. Not from b.
-            fillTrackInfo<6, TMCParticles>(track);
+            fillTrackInfo<7, TMCParticles>(track);
           }
         } else {
-          fillTrackInfo<1, TMCParticles>(track);
+          fillTrackInfo<2, TMCParticles>(track);
         }
       } // end of track loop
 
@@ -751,6 +761,7 @@ struct SingleTrackQCMC {
       if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
         continue;
       }
+      fRegistry.fill(HIST("MCEvent/before/hZvtx"), mccollision.posZ());
 
       auto rec_colls_per_mccoll = collisions.sliceBy(recColperMcCollision, mccollision.globalIndex());
       uint32_t maxNumContrib = 0;
@@ -772,10 +783,10 @@ struct SingleTrackQCMC {
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
-
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+      fRegistry.fill(HIST("MCEvent/after/hZvtx"), mccollision.posZ());
 
       auto leptonsMC_per_coll = leptonsMC.sliceByCachedUnsorted(o2::aod::emmcparticle::emmceventId, mccollision.globalIndex(), cache);
       for (auto& lepton : leptonsMC_per_coll) {
@@ -820,6 +831,9 @@ struct SingleTrackQCMC {
 
         if (pdg_mother == 111 || pdg_mother == 221 || pdg_mother == 331 || pdg_mother == 113 || pdg_mother == 223 || pdg_mother == 333) {
           fRegistry.fill(HIST("Generated/lf/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+          if (IsFromCharm(mcmother, mcparticles) < 0 && IsFromBeauty(mcmother, mcparticles) < 0) {
+            fRegistry.fill(HIST("Generated/lf_prompt/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+          }
         } else if (pdg_mother == 443) {
           if (IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
             fRegistry.fill(HIST("Generated/NonPromptJPsi/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);

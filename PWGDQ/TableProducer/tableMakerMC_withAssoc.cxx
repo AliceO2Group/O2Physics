@@ -476,7 +476,9 @@ struct TableMakerMC {
       VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
       VarManager::FillBC(bc);
       VarManager::FillEvent<TEventFillMap>(collision); // extract event information and place it in the fValues array
-      VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(collision.mcCollision());
+      if (collision.has_mcCollision()) {
+        VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(collision.mcCollision());
+      }
       if (fDoDetailedQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
       }
@@ -532,7 +534,7 @@ struct TableMakerMC {
         multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
                collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
         multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
-                0, 0, 0.0, 0.0, 0, 0);
+                0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0.0, 0.0);
       }
 
       // add an element for this collision into the map

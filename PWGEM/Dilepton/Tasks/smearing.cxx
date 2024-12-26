@@ -43,7 +43,9 @@ struct ApplySmearing {
 
   struct : ConfigurableGroup {
     std::string prefix = "electron_filename_group";
+    Configurable<bool> fConfigNDSmearing{"cfgNDSmearing", false, "apply ND-correlated smearing"};
     Configurable<std::string> fConfigResFileName{"cfgResFileName", "", "name of resolution file"};
+    Configurable<std::string> fConfigResNDHistName{"cfgResNDHistName", "hs_reso", "name of ND resolution file"};
     Configurable<std::string> fConfigResPtHistName{"cfgResPtHistName", "RelPtResArrCocktail", "histogram name for pt in resolution file"};
     Configurable<std::string> fConfigResEtaHistName{"cfgResEtaHistName", "EtaResArr", "histogram name for eta in resolution file"};
     Configurable<std::string> fConfigResPhiPosHistName{"cfgResPhiPosHistName", "PhiPosResArr", "histogram name for phi pos in resolution file"};
@@ -59,7 +61,9 @@ struct ApplySmearing {
 
   struct : ConfigurableGroup {
     std::string prefix = "sa_muon_filename_group";
+    Configurable<bool> fConfigNDSmearing{"cfgNDSmearing", false, "apply ND-correlated smearing"};
     Configurable<std::string> fConfigResFileName{"cfgResFileName", "", "name of resolution file"};
+    Configurable<std::string> fConfigResNDHistName{"cfgResNDHistName", "hs_reso", "name of ND resolution file"};
     Configurable<std::string> fConfigResPtHistName{"cfgResPtHistName", "RelPtResArrCocktail", "histogram name for pt in resolution file"};
     Configurable<std::string> fConfigResEtaHistName{"cfgResEtaHistName", "EtaResArr", "histogram name for eta in resolution file"};
     Configurable<std::string> fConfigResPhiPosHistName{"cfgResPhiPosHistName", "PhiPosResArr", "histogram name for phi pos in resolution file"};
@@ -75,7 +79,9 @@ struct ApplySmearing {
 
   struct : ConfigurableGroup {
     std::string prefix = "gl_muon_filename_group";
+    Configurable<bool> fConfigNDSmearing{"cfgNDSmearing", false, "apply ND-correlated smearing"};
     Configurable<std::string> fConfigResFileName{"cfgResFileName", "", "name of resolution file"};
+    Configurable<std::string> fConfigResNDHistName{"cfgResNDHistName", "hs_reso", "name of ND resolution file"};
     Configurable<std::string> fConfigResPtHistName{"cfgResPtHistName", "RelPtResArrCocktail", "histogram name for pt in resolution file"};
     Configurable<std::string> fConfigResEtaHistName{"cfgResEtaHistName", "EtaResArr", "histogram name for eta in resolution file"};
     Configurable<std::string> fConfigResPhiPosHistName{"cfgResPhiPosHistName", "PhiPosResArr", "histogram name for phi pos in resolution file"};
@@ -96,7 +102,9 @@ struct ApplySmearing {
 
   void init(InitContext&)
   {
+    smearer_Electron.setNDSmearing(electron_filenames.fConfigNDSmearing.value);
     smearer_Electron.setResFileName(TString(electron_filenames.fConfigResFileName));
+    smearer_Electron.setResNDHistName(TString(electron_filenames.fConfigResNDHistName));
     smearer_Electron.setResPtHistName(TString(electron_filenames.fConfigResPtHistName));
     smearer_Electron.setResEtaHistName(TString(electron_filenames.fConfigResEtaHistName));
     smearer_Electron.setResPhiPosHistName(TString(electron_filenames.fConfigResPhiPosHistName));
@@ -106,7 +114,9 @@ struct ApplySmearing {
     smearer_Electron.setDCAFileName(TString(electron_filenames.fConfigDCAFileName));
     smearer_Electron.setDCAHistName(TString(electron_filenames.fConfigDCAHistName));
 
+    smearer_StandaloneMuon.setNDSmearing(sa_muon_filenames.fConfigNDSmearing.value);
     smearer_StandaloneMuon.setResFileName(TString(sa_muon_filenames.fConfigResFileName));
+    smearer_StandaloneMuon.setResNDHistName(TString(sa_muon_filenames.fConfigResNDHistName));
     smearer_StandaloneMuon.setResPtHistName(TString(sa_muon_filenames.fConfigResPtHistName));
     smearer_StandaloneMuon.setResEtaHistName(TString(sa_muon_filenames.fConfigResEtaHistName));
     smearer_StandaloneMuon.setResPhiPosHistName(TString(sa_muon_filenames.fConfigResPhiPosHistName));
@@ -116,7 +126,9 @@ struct ApplySmearing {
     smearer_StandaloneMuon.setDCAFileName(TString(sa_muon_filenames.fConfigDCAFileName));
     smearer_StandaloneMuon.setDCAHistName(TString(sa_muon_filenames.fConfigDCAHistName));
 
+    smearer_GlobalMuon.setNDSmearing(gl_muon_filenames.fConfigNDSmearing.value);
     smearer_GlobalMuon.setResFileName(TString(gl_muon_filenames.fConfigResFileName));
+    smearer_GlobalMuon.setResNDHistName(TString(gl_muon_filenames.fConfigResNDHistName));
     smearer_GlobalMuon.setResPtHistName(TString(gl_muon_filenames.fConfigResPtHistName));
     smearer_GlobalMuon.setResEtaHistName(TString(gl_muon_filenames.fConfigResEtaHistName));
     smearer_GlobalMuon.setResPhiPosHistName(TString(gl_muon_filenames.fConfigResPhiPosHistName));
@@ -239,12 +251,14 @@ struct ApplySmearing {
     }
   }
 
-  void processDummyMCanalysis(ReducedMCTracks const&) {}
+  void processDummyMCanalysisEM(aod::EMMCParticles const&) {}
+  void processDummyMCanalysisDQ(ReducedMCTracks const&) {}
 
   PROCESS_SWITCH(ApplySmearing, processMCanalysisEM, "Run for MC analysis which uses skimmed EM data format", false);
   PROCESS_SWITCH(ApplySmearing, processMCanalysisDQ, "Run for MC analysis which uses skimmed DQ data format", false);
   PROCESS_SWITCH(ApplySmearing, processCocktail, "Run for cocktail analysis", false);
-  PROCESS_SWITCH(ApplySmearing, processDummyMCanalysis, "Dummy process function", false);
+  PROCESS_SWITCH(ApplySmearing, processDummyMCanalysisEM, "Dummy process function", false);
+  PROCESS_SWITCH(ApplySmearing, processDummyMCanalysisDQ, "Dummy process function", false);
   PROCESS_SWITCH(ApplySmearing, processDummyCocktail, "Dummy process function", true);
 };
 
