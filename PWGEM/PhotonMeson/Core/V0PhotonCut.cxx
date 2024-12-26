@@ -10,8 +10,11 @@
 // or submit itself to any jurisdiction.
 
 //
-// Class for track selection
+// Class for v0 photon selection
 //
+
+#include <set>
+#include <utility>
 
 #include "Framework/Logger.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
@@ -78,6 +81,11 @@ void V0PhotonCut::SetMaxPCA(float max)
 {
   mMaxPCA = max;
   LOG(info) << "V0 Photon Cut, set max distance between 2 legs: " << mMaxPCA;
+}
+void V0PhotonCut::SetMaxChi2KF(float max)
+{
+  mMaxChi2KF = max;
+  LOG(info) << "V0 Photon Cut, set max chi2/ndf with KF: " << mMaxChi2KF;
 }
 void V0PhotonCut::SetMaxMarginZ(float max)
 {
