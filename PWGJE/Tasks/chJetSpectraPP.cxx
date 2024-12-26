@@ -191,12 +191,17 @@ struct ChJetSpectraPP {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    bool leadingJetFilled = false;
     for (auto jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
+      }
+      if (!leadingJetFilled) {
+        registry.fill(HIST("h3_centrality_leadingjet_pt_rho"), collision.centrality(), jet.pt(), collision.rho());
+        leadingJetFilled = true;
       }
       // fillRhoAreaSubtractedHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.rho());
     }
