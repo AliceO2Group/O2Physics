@@ -340,7 +340,7 @@ struct AngularCorrelationsInJets {
     if (track.tpcNSigmaStoreEl() < nsigmaRejection || track.tpcNSigmaStoreMu() < nsigmaRejection || track.tpcNSigmaStorePi() < nsigmaRejection || track.tpcNSigmaStoreKa() < nsigmaRejection || track.tpcNSigmaStoreTr() < nsigmaRejection || track.tpcNSigmaStoreAl() < nsigmaRejection)
       return false;
     switch (species) { // guard against nsigmaRejection being lower than nsigma cuts that are applied before this function
-      case 1: // proton
+      case 1:          // proton
         return (track.tpcNSigmaPr() < protonNsigma && track.tpcNSigmaDe() > nsigmaRejection && track.tpcNSigmaHe() > nsigmaRejection);
         break;
       case 2: // antiproton
