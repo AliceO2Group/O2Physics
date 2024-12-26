@@ -31,7 +31,7 @@ struct OTFV0Qa {
   ConfigurableAxis axisNCandidates{"axisNCandidates", {500, 0, 500}, "Number of OTF v0s"};
   ConfigurableAxis axisPosition{"axisPosition", {1000, -100, 100}, "position (cm)"};
   ConfigurableAxis axisMass{"axisMass", {100, 0.0f, 1.0f}, "Mass (GeV/c2)"};
-  
+
   void init(InitContext&)
   {
     const AxisSpec axisPVz{30, -15, 15, "Primary vertex Z (cm)"};
@@ -49,7 +49,7 @@ struct OTFV0Qa {
     histos.fill(HIST("hCandidates"), v0s.size());
     for (auto const& v0 : v0s) {
       histos.fill(HIST("hGammaMass"), v0.mass());
-      if(v0.mass()<maxGammaMassForXYplot){
+      if (v0.mass() < maxGammaMassForXYplot) {
         histos.fill(HIST("h2dPosition"), v0.x(), v0.y());
       }
     }
