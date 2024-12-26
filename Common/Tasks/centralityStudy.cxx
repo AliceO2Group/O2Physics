@@ -472,7 +472,7 @@ struct centralityStudy {
     }
 
     if (multbc.has_ft0Mult()) {
-      auto multco = multbc.ft0Mult_as<soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal>>();
+      auto multco = multbc.ft0Mult_as<soa::Join<aod::Mults, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal>>();
       if (multbc.multFT0PosZValid()) {
         histos.fill(HIST("hVertexZ_BCvsCO"), multco.multPVz(), multbc.multFT0PosZ());
       }
