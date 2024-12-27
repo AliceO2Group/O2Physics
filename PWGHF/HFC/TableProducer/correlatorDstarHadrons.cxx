@@ -128,16 +128,14 @@ struct HfCorrelatorDstarHadrons {
   Configurable<std::vector<double>> rightSidebandOuterBoundary{"rightSidebandOuterBoundary", std::vector<double>{vecSidebandRightOuterDefault}, "right sideband outer baoundary vs pT"};
   Configurable<std::vector<double>> rightSidebandInnerBoundary{"rightSidebandInnerBoundary", std::vector<double>{vecSidebandRightInnerDefault}, "right sideband inner boundary"};
 
-  SliceCache cache;
-
   // Inv Mass of Dstar and D0 Candidate
   float invMassDstarParticle;
   float invMassD0Particle;
   int binNumber;
+  SliceCache cache;
 
   // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
-  BinningType binningScheme{{binsZVtx, binsMultiplicity}, true};
 
   // Collision Table
   using CollisionsWDstar = soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>;
@@ -165,6 +163,7 @@ struct HfCorrelatorDstarHadrons {
 
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
+  BinningType binningScheme{{binsZVtx, binsMultiplicity}, true};
   // Eta Phi Axes
   ConfigurableAxis axisEta{"axisEta", {16, -1.0, 1.0}, "Eta Axis"};
   ConfigurableAxis axisPhi{"axisPhi", {64, 0.0, 3.14}, "Phi Axis"};
