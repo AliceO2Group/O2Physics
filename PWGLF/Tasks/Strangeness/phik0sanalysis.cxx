@@ -1024,81 +1024,82 @@ struct phik0shortanalysis {
 
   PROCESS_SWITCH(phik0shortanalysis, processRecMCPhiQA, "Process for ReCMCQA and Phi in RecMC", false);
 
-  void processRecMCPhiK0S(SimCollisions::iterator const& collision, FullMCTracks const&, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const& mcParticles)
+  void processRecMCPhiK0S(SimCollisions const& collisions, FullMCTracks const&, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const& mcParticles)
   {
-    if (!acceptEventQA<true>(collision, false))
-      return;
+    for (const auto& collision : collisions) {
+      if (!acceptEventQA<true>(collision, false))
+        return;
 
-    if (!collision.has_mcCollision())
-      return;
+      if (!collision.has_mcCollision())
+        return;
 
-    const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
-    float genmultiplicity = mcCollision.centFT0M();
+      const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
+      float genmultiplicity = mcCollision.centFT0M();
 
-    // Defining positive and negative tracks for phi reconstruction
-    auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      // Defining V0s in the collision
+      auto V0sThisColl = V0s.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-    // Defining McParticles in the collision
-    auto mcParticlesThisColl = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+      // Defining McParticles in the collision
+      auto mcParticlesThisColl = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
 
-    // V0 already reconstructed by the builder
-    for (const auto& v0 : V0s) {
-      if (!v0.has_mcParticle())
-        continue;
-
-      auto v0mcparticle = v0.mcParticle();
-      if (v0mcparticle.pdgCode() != 310 || !v0mcparticle.isPhysicalPrimary())
-        continue;
-
-      const auto& posDaughterTrack = v0.posTrack_as<V0DauMCTracks>();
-      const auto& negDaughterTrack = v0.negTrack_as<V0DauMCTracks>();
-
-      if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
-        continue;
-
-      K0SeffHist.fill(HIST("h4K0SRapiditySmearing"), genmultiplicity, v0.pt(), v0.yK0Short(), v0mcparticle.y());
-
-      if (std::abs(v0mcparticle.y()) > cfgyAcceptance)
-        continue;
-
-      K0SeffHist.fill(HIST("h3K0SeffInvMass"), genmultiplicity, v0.pt(), v0.mK0Short());
-
-      std::array<bool, 3> isCountedMCPhi{false, false, false};
-
-      for (const auto& mcParticle : mcParticlesThisColl) {
-        if (mcParticle.pdgCode() != 333)
-          continue;
-        auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
-        if (kDaughters.size() != 2)
-          continue;
-        bool isPosKaon = false, isNegKaon = false;
-        for (const auto& kDaughter : kDaughters) {
-          if (kDaughter.pdgCode() == 321)
-            isPosKaon = true;
-          if (kDaughter.pdgCode() == -321)
-            isNegKaon = true;
-        }
-        if (!isPosKaon || !isNegKaon)
-          continue;
-        if (std::abs(mcParticle.y()) > cfgyAcceptance)
+      // V0 already reconstructed by the builder
+      for (const auto& v0 : V0sThisColl) {
+        if (!v0.has_mcParticle())
           continue;
 
-        if (!isCountedMCPhi.at(0)) {
-          MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEInc"), genmultiplicity, v0.pt(), v0.mK0Short());
-          isCountedMCPhi.at(0) = true;
-        }
-        if (std::abs(v0mcparticle.y() - mcParticle.y()) > cfgFirstCutonDeltay)
+        auto v0mcparticle = v0.mcParticle();
+        if (v0mcparticle.pdgCode() != 310 || !v0mcparticle.isPhysicalPrimary())
           continue;
-        if (!isCountedMCPhi.at(1)) {
-          MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEFCut"), genmultiplicity, v0.pt(), v0.mK0Short());
-          isCountedMCPhi.at(1) = true;
-        }
-        if (std::abs(v0mcparticle.y() - mcParticle.y()) > cfgSecondCutonDeltay)
+
+        const auto& posDaughterTrack = v0.posTrack_as<V0DauMCTracks>();
+        const auto& negDaughterTrack = v0.negTrack_as<V0DauMCTracks>();
+
+        if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
           continue;
-        if (!isCountedMCPhi.at(2)) {
-          MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSESCut"), genmultiplicity, v0.pt(), v0.mK0Short());
-          isCountedMCPhi.at(2) = true;
+
+        K0SeffHist.fill(HIST("h4K0SRapiditySmearing"), genmultiplicity, v0.pt(), v0.yK0Short(), v0mcparticle.y());
+
+        if (std::abs(v0mcparticle.y()) > cfgyAcceptance)
+          continue;
+
+        K0SeffHist.fill(HIST("h3K0SeffInvMass"), genmultiplicity, v0.pt(), v0.mK0Short());
+
+        std::array<bool, 3> isCountedMCPhi{false, false, false};
+
+        for (const auto& mcParticle : mcParticlesThisColl) {
+          if (mcParticle.pdgCode() != 333)
+            continue;
+          auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
+          if (kDaughters.size() != 2)
+            continue;
+          bool isPosKaon = false, isNegKaon = false;
+          for (const auto& kDaughter : kDaughters) {
+            if (kDaughter.pdgCode() == 321)
+              isPosKaon = true;
+            if (kDaughter.pdgCode() == -321)
+              isNegKaon = true;
+          }
+          if (!isPosKaon || !isNegKaon)
+            continue;
+          if (std::abs(mcParticle.y()) > cfgyAcceptance)
+            continue;
+
+          if (!isCountedMCPhi.at(0)) {
+            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEInc"), genmultiplicity, v0.pt(), v0.mK0Short());
+            isCountedMCPhi.at(0) = true;
+          }
+          if (std::abs(v0mcparticle.y() - mcParticle.y()) > cfgFirstCutonDeltay)
+            continue;
+          if (!isCountedMCPhi.at(1)) {
+            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEFCut"), genmultiplicity, v0.pt(), v0.mK0Short());
+            isCountedMCPhi.at(1) = true;
+          }
+          if (std::abs(v0mcparticle.y() - mcParticle.y()) > cfgSecondCutonDeltay)
+            continue;
+          if (!isCountedMCPhi.at(2)) {
+            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSESCut"), genmultiplicity, v0.pt(), v0.mK0Short());
+            isCountedMCPhi.at(2) = true;
+          }
         }
       }
     }
@@ -1106,83 +1107,84 @@ struct phik0shortanalysis {
 
   PROCESS_SWITCH(phik0shortanalysis, processRecMCPhiK0S, "Process RecMC for Phi-K0S Analysis", false);
 
-  void processRecMCPhiPion(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, MCCollisions const&, aod::McParticles const& mcParticles)
+  void processRecMCPhiPion(SimCollisions const& collisions, FullMCTracks const& fullMCTracks, MCCollisions const&, aod::McParticles const& mcParticles)
   {
-    if (!acceptEventQA<true>(collision, false))
-      return;
+    for (const auto& collision : collisions) {
+      if (!acceptEventQA<true>(collision, false))
+        return;
 
-    if (!collision.has_mcCollision())
-      return;
+      if (!collision.has_mcCollision())
+        return;
 
-    const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
-    float genmultiplicity = mcCollision.centFT0M();
+      const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
+      float genmultiplicity = mcCollision.centFT0M();
 
-    // Defining positive and negative tracks for phi reconstruction
-    auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      // Defining tracks in the collision
+      auto mcTracksThisColl = fullMCTracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-    // Defining McParticles in the collision
-    auto mcParticlesThisColl = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+      // Defining McParticles in the collision
+      auto mcParticlesThisColl = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
 
-    // Loop over all primary pion candidates
-    for (const auto& track : fullMCTracks) {
+      // Loop over all primary pion candidates
+      for (const auto& track : mcTracksThisColl) {
 
-      if (!track.has_mcParticle())
-        continue;
-
-      auto MCtrack = track.mcParticle_as<aod::McParticles>();
-      if (std::abs(MCtrack.pdgCode()) != 211 || !MCtrack.isPhysicalPrimary())
-        continue;
-
-      // Pion selection
-      if (!selectionPion(track))
-        continue;
-
-      PioneffHist.fill(HIST("h4PiRapiditySmearing"), genmultiplicity, track.pt(), track.rapidity(massPi), MCtrack.y());
-
-      if (std::abs(MCtrack.y()) > cfgyAcceptance)
-        continue;
-
-      float nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -999);
-      float nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -999);
-
-      PioneffHist.fill(HIST("h4PieffInvMass"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
-
-      std::array<bool, 3> isCountedMCPhi{false, false, false};
-
-      for (const auto& mcParticle : mcParticlesThisColl) {
-        if (mcParticle.pdgCode() != 333)
-          continue;
-        auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
-        if (kDaughters.size() != 2)
-          continue;
-        bool isPosKaon = false, isNegKaon = false;
-        for (const auto& kDaughter : kDaughters) {
-          if (kDaughter.pdgCode() == 321)
-            isPosKaon = true;
-          if (kDaughter.pdgCode() == -321)
-            isNegKaon = true;
-        }
-        if (!isPosKaon || !isNegKaon)
-          continue;
-        if (std::abs(mcParticle.y()) > cfgyAcceptance)
+        if (!track.has_mcParticle())
           continue;
 
-        if (!isCountedMCPhi.at(0)) {
-          MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEInc"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
-          isCountedMCPhi.at(0) = true;
-        }
-        if (std::abs(MCtrack.y() - mcParticle.y()) > cfgFirstCutonDeltay)
+        auto MCtrack = track.mcParticle_as<aod::McParticles>();
+        if (std::abs(MCtrack.pdgCode()) != 211 || !MCtrack.isPhysicalPrimary())
           continue;
-        if (!isCountedMCPhi.at(1)) {
-          MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEFCut"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
-          isCountedMCPhi.at(1) = true;
-        }
-        if (std::abs(MCtrack.y() - mcParticle.y()) > cfgSecondCutonDeltay)
+
+        // Pion selection
+        if (!selectionPion(track))
           continue;
-        if (!isCountedMCPhi.at(2)) {
-          MCPhiPionHist.fill(HIST("h4RecMCPhiPiSESCut"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
-          isCountedMCPhi.at(2) = true;
+
+        PioneffHist.fill(HIST("h4PiRapiditySmearing"), genmultiplicity, track.pt(), track.rapidity(massPi), MCtrack.y());
+
+        if (std::abs(MCtrack.y()) > cfgyAcceptance)
+          continue;
+
+        float nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -999);
+        float nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -999);
+
+        PioneffHist.fill(HIST("h4PieffInvMass"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
+
+        std::array<bool, 3> isCountedMCPhi{false, false, false};
+
+        for (const auto& mcParticle : mcParticlesThisColl) {
+          if (mcParticle.pdgCode() != 333)
+            continue;
+          auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
+          if (kDaughters.size() != 2)
+            continue;
+          bool isPosKaon = false, isNegKaon = false;
+          for (const auto& kDaughter : kDaughters) {
+            if (kDaughter.pdgCode() == 321)
+              isPosKaon = true;
+            if (kDaughter.pdgCode() == -321)
+              isNegKaon = true;
+          }
+          if (!isPosKaon || !isNegKaon)
+            continue;
+          if (std::abs(mcParticle.y()) > cfgyAcceptance)
+            continue;
+
+          if (!isCountedMCPhi.at(0)) {
+            MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEInc"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
+            isCountedMCPhi.at(0) = true;
+          }
+          if (std::abs(MCtrack.y() - mcParticle.y()) > cfgFirstCutonDeltay)
+            continue;
+          if (!isCountedMCPhi.at(1)) {
+            MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEFCut"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
+            isCountedMCPhi.at(1) = true;
+          }
+          if (std::abs(MCtrack.y() - mcParticle.y()) > cfgSecondCutonDeltay)
+            continue;
+          if (!isCountedMCPhi.at(2)) {
+            MCPhiPionHist.fill(HIST("h4RecMCPhiPiSESCut"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
+            isCountedMCPhi.at(2) = true;
+          }
         }
       }
     }
