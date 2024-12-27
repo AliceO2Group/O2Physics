@@ -9,13 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// This task converts tiny PID tables into full PID tables. 
-// It is meant to be used with Run 2 converted data to maintain 
-// full compatibility with any task that may subscribe to the Full 
-// tables (at the cost of some memory consumption). 
-// It is also able to produce very simple QA plots on the stored 
-// quantities (optionally disabled for simplicity) 
-// 
+// This task converts tiny PID tables into full PID tables.
+// It is meant to be used with Run 2 converted data to maintain
+// full compatibility with any task that may subscribe to the Full
+// tables (at the cost of some memory consumption).
+// It is also able to produce very simple QA plots on the stored
+// quantities (optionally disabled for simplicity)
+//
 // Warning: expected resolution is NOT provided.
 
 #include "Framework/runDataProcessing.h"
@@ -109,10 +109,10 @@ struct Run2TinyToFullPID {
           break;
         case kPidHe:
           pidTPCFullHe.reserve(tracks.size());
-          break;  
+          break;
         case kPidAl:
           pidTPCFullAl.reserve(tracks.size());
-          break;  
+          break;
         default:
           LOG(fatal) << "Unknown table requested: " << i;
           break;
@@ -145,10 +145,10 @@ struct Run2TinyToFullPID {
             break;
           case kPidHe:
             pidTPCFullHe(0.0f, track.tpcNSigmaHe());
-            break;  
+            break;
           case kPidAl:
             pidTPCFullAl(0.0f, track.tpcNSigmaAl());
-            break;  
+            break;
           default:
             LOG(fatal) << "Unknown table requested: " << i;
             break;

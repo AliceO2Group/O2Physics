@@ -9,13 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// This task converts tiny PID tables into full PID tables. 
-// It is meant to be used with Run 2 converted data to maintain 
-// full compatibility with any task that may subscribe to the Full 
-// tables (at the cost of some memory consumption). 
-// It is also able to produce very simple QA plots on the stored 
-// quantities (optionally disabled for simplicity) 
-// 
+// This task converts tiny PID tables into full PID tables.
+// It is meant to be used with Run 2 converted data to maintain
+// full compatibility with any task that may subscribe to the Full
+// tables (at the cost of some memory consumption).
+// It is also able to produce very simple QA plots on the stored
+// quantities (optionally disabled for simplicity)
+//
 // Warning: expected resolution is NOT provided.
 
 #include "Framework/runDataProcessing.h"
@@ -81,33 +81,33 @@ struct TpcPidQa {
   void process(tinyPidTracks const& tracks)
   {
     for (const auto& track : tracks) {
-      if(mEnabledTables[kPidEl]){
-        histos.fill(HIST("hNSigmaVsPTotEl"), track.p(), track.tpcNSigmaEl());  
+      if (mEnabledTables[kPidEl]) {
+        histos.fill(HIST("hNSigmaVsPTotEl"), track.p(), track.tpcNSigmaEl());
       }
-      if(mEnabledTables[kPidMu]){
-        histos.fill(HIST("hNSigmaVsPTotMu"), track.p(), track.tpcNSigmaMu());  
+      if (mEnabledTables[kPidMu]) {
+        histos.fill(HIST("hNSigmaVsPTotMu"), track.p(), track.tpcNSigmaMu());
       }
-      if(mEnabledTables[kPidPi]){
-        histos.fill(HIST("hNSigmaVsPTotPi"), track.p(), track.tpcNSigmaPi());  
+      if (mEnabledTables[kPidPi]) {
+        histos.fill(HIST("hNSigmaVsPTotPi"), track.p(), track.tpcNSigmaPi());
       }
-      if(mEnabledTables[kPidKa]){
-        histos.fill(HIST("hNSigmaVsPTotKa"), track.p(), track.tpcNSigmaKa());  
+      if (mEnabledTables[kPidKa]) {
+        histos.fill(HIST("hNSigmaVsPTotKa"), track.p(), track.tpcNSigmaKa());
       }
-      if(mEnabledTables[kPidPr]){
-        histos.fill(HIST("hNSigmaVsPTotPr"), track.p(), track.tpcNSigmaPr());  
+      if (mEnabledTables[kPidPr]) {
+        histos.fill(HIST("hNSigmaVsPTotPr"), track.p(), track.tpcNSigmaPr());
       }
-      if(mEnabledTables[kPidDe]){
-        histos.fill(HIST("hNSigmaVsPTotDe"), track.p(), track.tpcNSigmaDe());  
+      if (mEnabledTables[kPidDe]) {
+        histos.fill(HIST("hNSigmaVsPTotDe"), track.p(), track.tpcNSigmaDe());
       }
-      if(mEnabledTables[kPidTr]){
-        histos.fill(HIST("hNSigmaVsPTotTr"), track.p(), track.tpcNSigmaTr());  
-      }    
-      if(mEnabledTables[kPidHe]){
-        histos.fill(HIST("hNSigmaVsPTotHe"), track.p(), track.tpcNSigmaHe());  
-      }    
-      if(mEnabledTables[kPidAl]){
-        histos.fill(HIST("hNSigmaVsPTotAl"), track.p(), track.tpcNSigmaAl());  
-      }    
+      if (mEnabledTables[kPidTr]) {
+        histos.fill(HIST("hNSigmaVsPTotTr"), track.p(), track.tpcNSigmaTr());
+      }
+      if (mEnabledTables[kPidHe]) {
+        histos.fill(HIST("hNSigmaVsPTotHe"), track.p(), track.tpcNSigmaHe());
+      }
+      if (mEnabledTables[kPidAl]) {
+        histos.fill(HIST("hNSigmaVsPTotAl"), track.p(), track.tpcNSigmaAl());
+      }
     }
   }
 };
