@@ -153,17 +153,23 @@ struct HfCorrelatorHfeHadrons {
       registry.fill(HIST("hptElectron"), ptElectron);
 
       for (const auto& hTrack : tracks) {
-        if (hTrack.globalIndex() == eTrack.trackId())
+        if (hTrack.globalIndex() == eTrack.trackId()) {
           continue;
+        }
+
         // Apply Hadron cut
-        if (!selAssoHadron(hTrack))
+        if (!selAssoHadron(hTrack)) {
           continue;
+        }
+
         ptHadron = hTrack.pt();
         phiHadron = hTrack.phi();
         etaHadron = hTrack.eta();
 
-        if (ptCondition && (ptElectron < ptHadron))
+        if (ptCondition && (ptElectron < ptHadron)) {
           continue;
+        }
+
         deltaPhi = RecoDecay::constrainAngle(phiElectron - phiHadron, -o2::constants::math::PIHalf);
         deltaEta = etaElectron - etaHadron;
         registry.fill(HIST("hInclusiveEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
@@ -205,18 +211,24 @@ struct HfCorrelatorHfeHadrons {
     double phiHadronMix = -999;
     int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()));
     for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
-      if (!t1.isEmcal())
+      if (!t1.isEmcal()) {
         continue;
+      }
+
       ptHadronMix = t2.pt();
       ptElectronMix = t1.ptTrack();
       phiElectronMix = t1.phiTrack();
       phiHadronMix = t2.phi();
       etaElectronMix = t1.etaTrack();
       etaHadronMix = t2.eta();
-      if (!selAssoHadron(t2))
+      if (!selAssoHadron(t2)) {
         continue;
-      if (ptCondition && (ptElectronMix < ptHadronMix))
+      }
+
+      if (ptCondition && (ptElectronMix < ptHadronMix)) {
         continue;
+      }
+
       deltaPhiMix = RecoDecay::constrainAngle(phiElectronMix - phiHadronMix, -o2::constants::math::PIHalf);
       deltaEtaMix = etaElectronMix - etaHadronMix;
 
@@ -282,11 +294,16 @@ struct HfCorrelatorHfeHadrons {
       phiElectron = electronMc.phiTrack();
       etaElectron = electronMc.etaTrack();
       for (const auto& particleMc : mcParticles) {
-        if (particleMc.globalIndex() == electronMc.trackId())
+        if (particleMc.globalIndex() == electronMc.trackId()) {
+
           continue;
+        }
+
         // Associated hadron Selection //////
-        if (!particleMc.isPhysicalPrimary())
+        if (!particleMc.isPhysicalPrimary()) {
           continue;
+        }
+
         if (particleMc.eta() < etaTrackMin || particleMc.eta() > etaTrackMax) {
           continue;
         }
@@ -378,8 +395,10 @@ struct HfCorrelatorHfeHadrons {
         if (t2.pt() < ptTrackMin) {
           continue;
         }
-        if (ptCondition && (ptElectronMix < ptHadronMix))
+        if (ptCondition && (ptElectronMix < ptHadronMix)) {
           continue;
+        }
+
         deltaPhiMix = RecoDecay::constrainAngle(phiElectronMix - phiHadronMix, -o2::constants::math::PIHalf);
         deltaEtaMix = etaElectronMix - etaHadronMix;
         bool isNonHfeCorr = false;
