@@ -59,11 +59,11 @@ struct HfTaskDplus {
   ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {40, -1, 1}, "Cand. rapidity bins"};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {110, 0., 110.}, ""};
   ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for centrality"};
-  ConfigurableAxis thnConfigAxisPtBHad{"axisPtBHad", {25, 0., 50}, "axis for pt of B hadron decayed into D candidate"};
-  ConfigurableAxis thnConfigAxisFlagBHad{"axisFlagBhad", {5, 0., 5}, "axis for PDG of B hadron"};
-  ConfigurableAxis thnConfigAxisMlScore0{"axisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
-  ConfigurableAxis thnConfigAxisMlScore1{"axisMlScore1", {100, 0., 1.}, "axis for ML output score 1"};
-  ConfigurableAxis thnConfigAxisMlScore2{"axisMlScore2", {100, 0., 1.}, "axis for ML output score 2"};
+  ConfigurableAxis thnConfigAxisPtBHad{"thnConfigAxisPtBHad", {25, 0., 50}, "axis for pt of B hadron decayed into D candidate"};
+  ConfigurableAxis thnConfigAxisFlagBHad{"thnConfigAxisFlagBHad", {5, 0., 5}, "axis for PDG of B hadron"};
+  ConfigurableAxis thnConfigAxisMlScore0{"thnConfigAxisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
+  ConfigurableAxis thnConfigAxisMlScore1{"thnConfigAxisMlScore1", {100, 0., 1.}, "axis for ML output score 1"};
+  ConfigurableAxis thnConfigAxisMlScore2{"thnConfigAxisMlScore2", {100, 0., 1.}, "axis for ML output score 2"};
 
   HfHelper hfHelper;
 
@@ -76,10 +76,10 @@ struct HfTaskDplus {
   using CollisionsCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
   using McRecoCollisionsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
 
+  Filter filterDplusFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi))) != static_cast<uint8_t>(0);
+
   PresliceUnsorted<aod::McCollisionLabels> recoColPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
-
-  Filter filterDplusFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi))) != static_cast<uint8_t>(0);
 
   // data
   Partition<CandDplusData> selectedDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
@@ -669,16 +669,16 @@ struct HfTaskDplus {
   /// \return integer map to specific mothers' PDG codes
   int getBHadMotherFlag(const int& flagBHad)
   {
-    if (abs(flagBHad) == o2::constants::physics::kBPlus) {
+    if (std::abs(flagBHad) == o2::constants::physics::kBPlus) {
       return BHadMothers::BPlus;
     }
-    if (abs(flagBHad) == o2::constants::physics::kB0) {
+    if (std::abs(flagBHad) == o2::constants::physics::kB0) {
       return BHadMothers::BZero;
     }
-    if (abs(flagBHad) == o2::constants::physics::kBS) {
+    if (std::abs(flagBHad) == o2::constants::physics::kBS) {
       return BHadMothers::Bs;
     }
-    if (abs(flagBHad) == o2::constants::physics::kLambdaB0) {
+    if (std::abs(flagBHad) == o2::constants::physics::kLambdaB0) {
       return BHadMothers::LambdaBZero;
     }
     return BHadMothers::NotMatched;
