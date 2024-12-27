@@ -65,7 +65,7 @@ struct TpcPidQa {
 
   ConfigurableAxis axisNSigma{"axisNSigma", {120, -6.0f, 6.0f}, "axisNSigma"};
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     mEnabledTables.resize(9, 0);
 
