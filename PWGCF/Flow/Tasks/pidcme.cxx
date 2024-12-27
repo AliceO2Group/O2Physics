@@ -149,46 +149,52 @@ struct FillPIDcolums {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaPi()) < cfgnSigmaCutITSPi && clustersize > cfgAveClusSizeCoslMinPi && clustersize < cfgAveClusSizeCoslMaxPi)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
       } else if (onlyTOFHIT) {
         if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < cfgnSigmaCutTOFPi) {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaPi()) < cfgnSigmaCutITSPi && clustersize > cfgAveClusSizeCoslMinPi && clustersize < cfgAveClusSizeCoslMaxPi)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
         if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < cfgnSigmaCutTPCPi) {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaPi()) < cfgnSigmaCutITSPi && clustersize > cfgAveClusSizeCoslMinPi && clustersize < cfgAveClusSizeCoslMaxPi)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
       } else if (onlyTPC) {
         if (std::abs(candidate.tpcNSigmaPi()) < cfgnSigmaCutTPCPi) {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaPi()) < cfgnSigmaCutITSPi && clustersize > cfgAveClusSizeCoslMinPi && clustersize < cfgAveClusSizeCoslMaxPi)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
       } else {
         if (candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (cfgnSigmaCutCombine * cfgnSigmaCutCombine)) {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaPi()) < cfgnSigmaCutITSPi && clustersize > cfgAveClusSizeCoslMinPi && clustersize < cfgAveClusSizeCoslMaxPi)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
         if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < cfgnSigmaCutTPCPi) {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaPi()) < cfgnSigmaCutITSPi && clustersize > cfgAveClusSizeCoslMinPi && clustersize < cfgAveClusSizeCoslMaxPi)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
       }
     } else if (PID == 1) {
@@ -197,46 +203,52 @@ struct FillPIDcolums {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaKa()) < cfgnSigmaCutITSKa && clustersize > cfgAveClusSizeCoslMinKa && clustersize < cfgAveClusSizeCoslMaxKa)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
       } else if (onlyTOFHIT) {
         if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < cfgnSigmaCutTOFKa) {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaKa()) < cfgnSigmaCutITSKa && clustersize > cfgAveClusSizeCoslMinKa && clustersize < cfgAveClusSizeCoslMaxKa)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
         if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < cfgnSigmaCutTPCPi) {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaKa()) < cfgnSigmaCutITSKa && clustersize > cfgAveClusSizeCoslMinKa && clustersize < cfgAveClusSizeCoslMaxKa)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
       } else if (onlyTPC) {
         if (std::abs(candidate.tpcNSigmaKa()) < cfgnSigmaCutTPCPi) {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaKa()) < cfgnSigmaCutITSKa && clustersize > cfgAveClusSizeCoslMinKa && clustersize < cfgAveClusSizeCoslMaxKa)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
       } else {
         if (candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (cfgnSigmaCutCombine * cfgnSigmaCutCombine)) {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaKa()) < cfgnSigmaCutITSKa && clustersize > cfgAveClusSizeCoslMinKa && clustersize < cfgAveClusSizeCoslMaxKa)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
         if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < cfgnSigmaCutTPCPi) {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaKa()) < cfgnSigmaCutITSKa && clustersize > cfgAveClusSizeCoslMinKa && clustersize < cfgAveClusSizeCoslMaxKa)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
       }
     } else if (PID == 2) {
@@ -245,46 +257,52 @@ struct FillPIDcolums {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaPr()) < cfgnSigmaCutITSPr && clustersize > cfgAveClusSizeCoslMinPr && clustersize < cfgAveClusSizeCoslMaxPr)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
       } else if (onlyTOFHIT) {
         if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPr()) < cfgnSigmaCutTOFPr) {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaPr()) < cfgnSigmaCutITSPr && clustersize > cfgAveClusSizeCoslMinPr && clustersize < cfgAveClusSizeCoslMaxPr)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
         if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPCPr) {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaPr()) < cfgnSigmaCutITSPr && clustersize > cfgAveClusSizeCoslMinPr && clustersize < cfgAveClusSizeCoslMaxPr)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
       } else if (onlyTPC) {
         if (std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPCPr) {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaPr()) < cfgnSigmaCutITSPr && clustersize > cfgAveClusSizeCoslMinPr && clustersize < cfgAveClusSizeCoslMaxPr)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
       } else {
         if (candidate.hasTOF() && (candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < (cfgnSigmaCutCombine * cfgnSigmaCutCombine)) {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaPr()) < cfgnSigmaCutITSPr && clustersize > cfgAveClusSizeCoslMinPr && clustersize < cfgAveClusSizeCoslMaxPr)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
         if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPCPr) {
           if (openITSCut) {
             if (std::abs(candidate.itsNSigmaPr()) < cfgnSigmaCutITSPr && clustersize > cfgAveClusSizeCoslMinPr && clustersize < cfgAveClusSizeCoslMaxPr)
               return true;
-          } else
+          } else {
             return true;
+          }
         }
       }
     }
