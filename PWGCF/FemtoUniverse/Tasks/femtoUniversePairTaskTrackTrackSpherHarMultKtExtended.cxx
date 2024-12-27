@@ -139,9 +139,9 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   Configurable<float> ConfIntRateHigh{"ConfIntRateHigh", 10000.0, "Higher limit for interaction rate"};
 
   Filter collfilterFDtable = (o2::aod::femtouniversecollision::multV0M > ConfV0MLow) && (o2::aod::femtouniversecollision::multV0M < ConfV0MHigh);
-  Filter collfilterFDExttable = (o2::aod::femtouniversecollision::irrate > ConfIntRateLow) && (o2::aod::femtouniversecollision::irrate < ConfIntRateHigh) &&
+  Filter collfilterFDExttable = (o2::aod::femtouniversecollision::interactionRate > ConfIntRateLow) && (o2::aod::femtouniversecollision::interactionRate < ConfIntRateHigh) &&
                                 (o2::aod::femtouniversecollision::occupancy > ConfTPCOccupancyLow) && (o2::aod::femtouniversecollision::occupancy < ConfTPCOccupancyHigh);
-  using FilteredFDCollisions = soa::Filtered<soa::Join<aod::FDCollisions, aod::FDExtCollisions>>;
+  using FilteredFDCollisions = soa::Filtered<soa::Join<aod::FdCollisions, aod::FDExtCollisions>>;
   using FilteredFDCollision = FilteredFDCollisions::iterator;
   // Filter trackAdditionalfilter = (nabs(aod::femtouniverseparticle::eta) < twotracksconfigs.ConfEtaMax); // example filtering on configurable
 
@@ -571,9 +571,9 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// \param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processSameEventMC(o2::aod::FDCollision& col,
+  void processSameEventMC(o2::aod::FdCollision& col,
                           soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& /*parts*/,
-                          o2::aod::FDMCParticles&)
+                          o2::aod::FdMCParticles&)
   {
     fillCollision(col);
 
@@ -692,7 +692,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// process function for to fill covariance histograms
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processCov(soa::Filtered<o2::aod::FDCollisions>::iterator& /*col*/,
+  void processCov(soa::Filtered<o2::aod::FdCollisions>::iterator& /*col*/,
                   FilteredFemtoFullParticles& /*parts*/)
   {
     int JMax = (ConfLMax + 1) * (ConfLMax + 1);
@@ -715,9 +715,9 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processMixedEventMC(o2::aod::FDCollisions& cols,
+  void processMixedEventMC(o2::aod::FdCollisions& cols,
                            soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& /*parts*/,
-                           o2::aod::FDMCParticles&)
+                           o2::aod::FdMCParticles&)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
 

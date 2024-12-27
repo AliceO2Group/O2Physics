@@ -8,19 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// This code calculates output histograms for centrality calibration
-// as well as vertex-Z dependencies of raw variables (either for calibration
-// of vtx-Z dependencies or for the calibration of those).
-//
-// This task is not strictly necessary in a typical analysis workflow,
-// except for centrality calibration! The necessary task is the multiplicity
-// tables.
-//
-// Comments, suggestions, questions? Please write to:
-// - victor.gonzalez@cern.ch
-// - david.dobrigkeit.chinellato@cern.ch
-//
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -44,7 +31,7 @@ struct OTFV0Qa {
   ConfigurableAxis axisNCandidates{"axisNCandidates", {500, 0, 500}, "Number of OTF v0s"};
   ConfigurableAxis axisPosition{"axisPosition", {1000, -100, 100}, "position (cm)"};
   ConfigurableAxis axisMass{"axisMass", {100, 0.0f, 1.0f}, "Mass (GeV/c2)"};
-  
+
   void init(InitContext&)
   {
     const AxisSpec axisPVz{30, -15, 15, "Primary vertex Z (cm)"};
@@ -63,6 +50,7 @@ struct OTFV0Qa {
     for (auto const& v0 : v0s) {
       histos.fill(HIST("hGammaMass"), v0.mass());
       if(v0.mass()<maxGammaMassForXYplot){
+      if (v0.mass() < maxGammaMassForXYplot) {
         histos.fill(HIST("h2dPosition"), v0.x(), v0.y());
       }
     }

@@ -92,8 +92,9 @@ struct CreateResolutionMap {
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
     Configurable<float> cfg_min_tpc_cr_findable_ratio{"cfg_min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
-    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
-    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
+    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
+    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 0.3, "max dca XY for single track in cm"};
+    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 0.3, "max dca Z for single track in cm"};
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", false, "flag to require ITS ib 1st hit"};
   } electroncuts;
 
@@ -135,6 +136,7 @@ struct CreateResolutionMap {
     const AxisSpec axis_dpt{ConfRelDeltaPtBins, "(p_{T,l}^{gen} - p_{T,l}^{rec})/p_{T,l}^{gen}"};
     const AxisSpec axis_deta{ConfDeltaEtaBins, "#eta_{l}^{gen} - #eta_{l}^{rec}"};
     const AxisSpec axis_dphi{ConfDeltaPhiBins, "#varphi_{l}^{gen} - #varphi_{l}^{rec} (rad.)"};
+    const AxisSpec axis_charge_gen{3, -1.5, +1.5, "true sign"};
 
     registry.add("Electron/Ptgen_RelDeltaPt", "resolution", kTH2F, {{axis_pt_gen}, {axis_dpt}}, true);
     registry.add("Electron/Ptgen_DeltaEta", "resolution", kTH2F, {{axis_pt_gen}, {axis_deta}}, true);
@@ -143,12 +145,9 @@ struct CreateResolutionMap {
     registry.addClone("Electron/", "StandaloneMuon/");
     registry.addClone("Electron/", "GlobalMuon/");
 
-    registry.add("Electron/hs_reso_Pos", "6D resolution positive", kTHnSparseF, {axis_pt_gen, axis_eta_cb_gen, axis_phi_gen, axis_dpt, axis_deta, axis_dphi}, true);
-    registry.add("StandaloneMuon/hs_reso_Pos", "6D resolution positive", kTHnSparseF, {axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_dpt, axis_deta, axis_dphi}, true);
-    registry.add("GlobalMuon/hs_reso_Pos", "6D resolution positive", kTHnSparseF, {axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_dpt, axis_deta, axis_dphi}, true);
-    registry.add("Electron/hs_reso_Neg", "6D resolution negative", kTHnSparseF, {axis_pt_gen, axis_eta_cb_gen, axis_phi_gen, axis_dpt, axis_deta, axis_dphi}, true);
-    registry.add("StandaloneMuon/hs_reso_Neg", "6D resolution negative", kTHnSparseF, {axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_dpt, axis_deta, axis_dphi}, true);
-    registry.add("GlobalMuon/hs_reso_Neg", "6D resolution negative", kTHnSparseF, {axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_dpt, axis_deta, axis_dphi}, true);
+    registry.add("Electron/hs_reso", "7D resolution positive", kTHnSparseF, {axis_pt_gen, axis_eta_cb_gen, axis_phi_gen, axis_charge_gen, axis_dpt, axis_deta, axis_dphi}, true);
+    registry.add("StandaloneMuon/hs_reso", "7D resolution positive", kTHnSparseF, {axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_charge_gen, axis_dpt, axis_deta, axis_dphi}, true);
+    registry.add("GlobalMuon/hs_reso", "7D resolution positive", kTHnSparseF, {axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_charge_gen, axis_dpt, axis_deta, axis_dphi}, true);
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -207,6 +206,10 @@ struct CreateResolutionMap {
     }
 
     if (track.tpcCrossedRowsOverFindableCls() < electroncuts.cfg_min_tpc_cr_findable_ratio) {
+      return false;
+    }
+
+    if (track.tpcFractionSharedCls() > electroncuts.cfg_max_frac_shared_clusters_tpc) {
       return false;
     }
 
@@ -313,24 +316,22 @@ struct CreateResolutionMap {
 
     auto mctrack = muon.template mcParticle_as<aod::McParticles>();
     if (muon.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
+      registry.fill(HIST("StandaloneMuon/hs_reso"), mctrack.pt(), mctrack.eta(), mctrack.phi(), -mctrack.pdgCode() / 13, (mctrack.pt() - pt) / mctrack.pt(), mctrack.eta() - eta, mctrack.phi() - phi);
       registry.fill(HIST("StandaloneMuon/Ptgen_RelDeltaPt"), mctrack.pt(), (mctrack.pt() - pt) / mctrack.pt());
       registry.fill(HIST("StandaloneMuon/Ptgen_DeltaEta"), mctrack.pt(), mctrack.eta() - eta);
       if (mctrack.pdgCode() == -13) { // positive muon
         registry.fill(HIST("StandaloneMuon/Ptgen_DeltaPhi_Pos"), mctrack.pt(), mctrack.phi() - phi);
-        registry.fill(HIST("StandaloneMuon/hs_reso_Pos"), mctrack.pt(), mctrack.eta(), mctrack.phi(), (mctrack.pt() - pt) / mctrack.pt(), mctrack.eta() - eta, mctrack.phi() - phi);
       } else if (mctrack.pdgCode() == 13) { // negative muon
         registry.fill(HIST("StandaloneMuon/Ptgen_DeltaPhi_Neg"), mctrack.pt(), mctrack.phi() - phi);
-        registry.fill(HIST("StandaloneMuon/hs_reso_Neg"), mctrack.pt(), mctrack.eta(), mctrack.phi(), (mctrack.pt() - pt) / mctrack.pt(), mctrack.eta() - eta, mctrack.phi() - phi);
       }
     } else if (muon.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
+      registry.fill(HIST("GlobalMuon/hs_reso"), mctrack.pt(), mctrack.eta(), mctrack.phi(), -mctrack.pdgCode() / 13, (mctrack.pt() - pt) / mctrack.pt(), mctrack.eta() - eta, mctrack.phi() - phi);
       registry.fill(HIST("GlobalMuon/Ptgen_RelDeltaPt"), mctrack.pt(), (mctrack.pt() - pt) / mctrack.pt());
       registry.fill(HIST("GlobalMuon/Ptgen_DeltaEta"), mctrack.pt(), mctrack.eta() - eta);
       if (mctrack.pdgCode() == -13) { // positive muon
         registry.fill(HIST("GlobalMuon/Ptgen_DeltaPhi_Pos"), mctrack.pt(), mctrack.phi() - phi);
-        registry.fill(HIST("GlobalMuon/hs_reso_Pos"), mctrack.pt(), mctrack.eta(), mctrack.phi(), (mctrack.pt() - pt) / mctrack.pt(), mctrack.eta() - eta, mctrack.phi() - phi);
       } else if (mctrack.pdgCode() == 13) { // negative muon
         registry.fill(HIST("GlobalMuon/Ptgen_DeltaPhi_Neg"), mctrack.pt(), mctrack.phi() - phi);
-        registry.fill(HIST("GlobalMuon/hs_reso_Neg"), mctrack.pt(), mctrack.eta(), mctrack.phi(), (mctrack.pt() - pt) / mctrack.pt(), mctrack.eta() - eta, mctrack.phi() - phi);
       }
     }
     return true;
@@ -380,14 +381,13 @@ struct CreateResolutionMap {
           continue;
         }
 
+        registry.fill(HIST("Electron/hs_reso"), mctrack.pt(), mctrack.eta(), mctrack.phi(), -mctrack.pdgCode() / 11, (mctrack.pt() - track.pt()) / mctrack.pt(), mctrack.eta() - track.eta(), mctrack.phi() - track.phi());
         registry.fill(HIST("Electron/Ptgen_RelDeltaPt"), mctrack.pt(), (mctrack.pt() - track.pt()) / mctrack.pt());
         registry.fill(HIST("Electron/Ptgen_DeltaEta"), mctrack.pt(), mctrack.eta() - track.eta());
         if (mctrack.pdgCode() == -11) { // positron
           registry.fill(HIST("Electron/Ptgen_DeltaPhi_Pos"), mctrack.pt(), mctrack.phi() - track.phi());
-          registry.fill(HIST("Electron/hs_reso_Pos"), mctrack.pt(), mctrack.eta(), mctrack.phi(), (mctrack.pt() - track.pt()) / mctrack.pt(), mctrack.eta() - track.eta(), mctrack.phi() - track.phi());
         } else if (mctrack.pdgCode() == 11) { // electron
           registry.fill(HIST("Electron/Ptgen_DeltaPhi_Neg"), mctrack.pt(), mctrack.phi() - track.phi());
-          registry.fill(HIST("Electron/hs_reso_Neg"), mctrack.pt(), mctrack.eta(), mctrack.phi(), (mctrack.pt() - track.pt()) / mctrack.pt(), mctrack.eta() - track.eta(), mctrack.phi() - track.phi());
         }
 
       } // end of track loop
