@@ -50,10 +50,9 @@ struct OTFV0Qa {
     for (auto const& v0 : v0s) {
       histos.fill(HIST("hGammaMass"), v0.mass());
       if (v0.mass() < maxGammaMassForXYplot) {
-        if (v0.mass() < maxGammaMassForXYplot) {
-          histos.fill(HIST("h2dPosition"), v0.x(), v0.y());
-        }
+        histos.fill(HIST("h2dPosition"), v0.x(), v0.y());
       }
+    }
   }
 };
 
