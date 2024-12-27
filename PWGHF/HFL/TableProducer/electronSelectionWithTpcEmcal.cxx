@@ -74,7 +74,7 @@ struct HfElectronSelectionWithTpcEmcal {
 
   Produces<aod::HfSelEl> electronSel;
   Produces<aod::HfCorrSelEl> HfElectronSelection;
-  Produces<aod::HfGenSelEl> HfGenElectronSel;
+  Produces<aod::HfMcGenSelEl> HfGenElectronSel;
   // Configurables
   // EMCal Cluster information
   KFParticle KFNonHfe;
@@ -133,6 +133,8 @@ struct HfElectronSelectionWithTpcEmcal {
 
   using McTableCollisions = o2::soa::Filtered<o2::soa::Join<TableCollisions, aod::McCollisionLabels>>;
   using McTableCollision = McTableCollisions::iterator;
+  using McGenTableCollisions = soa::Join<aod::McCollisions, aod::MultsExtraMC>;
+  using McGenTableCollision = McGenTableCollisions::iterator;
   using McTableTracks = soa::Join<TableTracks, aod::McTrackLabels>;
   using McTableEmcals = soa::Join<o2::aod::EMCALClusters, aod::EMCALMCClusters>;
 
@@ -157,6 +159,8 @@ struct HfElectronSelectionWithTpcEmcal {
      {"hZvertex", "z vertex", {HistType::kTH1F, {{100, -100, 100}}}},
      {"hLikeMass", "Like mass", {HistType::kTH1F, {{1000, 0, 2.0}}}},
      {"hUnLikeMass", "unLike mass", {HistType::kTH1F, {{1000, 0, 1.0}}}},
+     {"hLikeSignPt", "Like sign Momentum ", {HistType::kTH1F, {{pAxisBins, pAxisMin, pAxisMax}}}},
+     {"hUnLikeSignPt", "UnLike sign Momentum", {HistType::kTH1F, {{pAxisBins, pAxisMin, pAxisMax}}}},
      {"hMcgenInElectron", "Mc Gen Inclusive Electron", {HistType::kTH1F, {{pAxisBins, pAxisMin, pAxisMax}}}},
      {"hMcgenAllNonHfeElectron", "Mc Gen All NonHf Electron", {HistType::kTH1F, {{pAxisBins, pAxisMin, pAxisMax}}}},
      {"hMcgenNonHfeElectron", "Mc Gen NonHf  Electron with mother", {HistType::kTH1F, {{pAxisBins, pAxisMin, pAxisMax}}}},
@@ -257,21 +261,22 @@ struct HfElectronSelectionWithTpcEmcal {
     return true;
   }
   // nonHfe Identification
+
   template <typename ElectronType, typename TracksType>
   void nonHfe(ElectronType const& electron, TracksType const& tracks, bool isEMcal)
   {
-    bool isLSElectronFound = 0;
-    bool isULSElectronFound = 0;
-    bool isLSElectron = 0;
-    bool isULSElectron = 0;
+    int isLSElectronFound = 0;
+    int isULSElectronFound = 0;
+    bool isLSElectron = false;
+    bool isULSElectron = false;
     float invMassElectron = 0.;
     float massLike = 0;
     float massUnLike = 0;
+
     for (const auto& pTrack : tracks) {
-
-      if (pTrack.globalIndex() == electron.globalIndex())
+      if (pTrack.globalIndex() == electron.globalIndex()) {
         continue;
-
+      }
       // Apply partner electron selection
 
       if (!selAssoTracks(pTrack)) {
@@ -311,26 +316,37 @@ struct HfElectronSelectionWithTpcEmcal {
       if (pTrack.sign() == electron.sign()) {
         massLike = invMassElectron;
         isLSElectron = true;
-        registry.fill(HIST("hLikeMass"), massLike);
+        if (isEMcal) {
+          registry.fill(HIST("hLikeMass"), massLike);
+        }
       }
       // for unlike charge
       if (pTrack.sign() != electron.sign()) {
         massUnLike = invMassElectron;
         isULSElectron = true;
-        registry.fill(HIST("hUnLikeMass"), massUnLike);
+        if (isEMcal) {
+          registry.fill(HIST("hUnLikeMass"), massUnLike);
+        }
       }
 
       // for like charge
       if (isLSElectron && (invMassElectron <= invariantMass)) {
         massLike = invMassElectron;
-        isLSElectronFound = 1;
+        ++isLSElectronFound;
+        if (isEMcal) {
+          registry.fill(HIST("hLikeSignPt"), electron.pt());
+        }
       }
       // for unlike charge
       if (isULSElectron && (invMassElectron <= invariantMass)) {
         massUnLike = invMassElectron;
-        isULSElectronFound = 1;
+        ++isULSElectronFound;
+        if (isEMcal) {
+          registry.fill(HIST("hUnLikeSignPt"), electron.pt());
+        }
       }
     }
+    // Pass multiplicities and other required parameters for this electron
     HfElectronSelection(electron.collisionId(), electron.globalIndex(), electron.eta(), electron.phi(), electron.pt(), electron.tpcNSigmaEl(), electron.tofNSigmaEl(), isLSElectronFound, isULSElectronFound, isEMcal);
   }
   // Electron Identification
@@ -471,19 +487,16 @@ struct HfElectronSelectionWithTpcEmcal {
 
         /////////////////          NonHf electron Selection with Emcal       ////////////////////////
 
-        nonHfe(matchTrack, tracks, true);
-
         electronSel(track.collisionId(), matchTrack.globalIndex(), etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
                     eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
       }
-
+      nonHfe(track, tracks, true);
       /// Electron information without Emcal and use TPC and TOF
       if (isEMcal) {
         continue;
       }
-
-      /////////////////          NonHf electron Selection without Emcal       ////////////////////////
       nonHfe(track, tracks, false);
+      /////////////////          NonHf electron Selection without Emcal       ////////////////////////
       electronSel(track.collisionId(), track.globalIndex(), etaTrack, phiTrack, ptTrack, pTrack, trackRapidity, dcaxyTrack, dcazTrack, track.tpcNSigmaEl(), track.tofNSigmaEl(),
                   eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
     }
@@ -498,7 +511,6 @@ struct HfElectronSelectionWithTpcEmcal {
     fillElectronTrack<false>(collision, tracks, emcClusters, matchedTracks, 0);
   }
   PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processData, "process Data info only", false);
-
   ///  Electron selection - for MC reco-level analysis
   void processMcRec(McTableCollision const& mcCollision,
                     McTableTracks const& mcTracks,
@@ -508,15 +520,16 @@ struct HfElectronSelectionWithTpcEmcal {
   {
     fillElectronTrack<true>(mcCollision, mcTracks, mcEmcClusters, matchedTracks, mcParticles);
   }
-  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processMcRec, "Process MC Reco mode", true);
+  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processMcRec, "Process MC Reco mode", false);
 
-  void processMcGen(aod::McParticles const& mcCollision, aod::McParticles const& mcParticles)
+  void processMcGen(McGenTableCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
 
     ///// electron identification
     bool isNonHfe = false;
     for (const auto& particleMc : mcParticles) {
 
+      std::cout << " collision id" << particleMc.mcCollisionId() << "trackid" << particleMc.index() << std::endl;
       if (!particleMc.isPhysicalPrimary())
         continue;
       if (!mcGensel(particleMc)) {
@@ -524,48 +537,51 @@ struct HfElectronSelectionWithTpcEmcal {
       }
       if (abs(particleMc.pdgCode()) == 11) {
 
-        registry.fill(HIST("hMcgenInElectron"), particleMc.pt(), particleMc.phi(), particleMc.eta());
+        registry.fill(HIST("hMcgenInElectron"), particleMc.pt());
         bool isEmbEta = false;
         bool isEmbPi0 = false;
 
         if (particleMc.has_mothers()) {
-
           // Check first mother
           auto const& mother = particleMc.mothers_first_as<aod::McParticles>();
-          auto const& gmother = mother.mothers_first_as<aod::McParticles>();
-          auto const& ggmother = gmother.mothers_first_as<aod::McParticles>();
 
           if (abs(mother.pdgCode()) == 221 || abs(mother.pdgCode()) == 111 || abs(mother.pdgCode()) == 22) {
             registry.fill(HIST("hMcgenAllNonHfeElectron"), particleMc.pt());
+            if (mother.has_mothers()) {
+              auto const& gmother = mother.mothers_first_as<aod::McParticles>();
+              if (gmother.has_mothers()) {
+                auto const& ggmother = gmother.mothers_first_as<aod::McParticles>();
 
-            // cases to consider: eta->e, eta->pi0->e, eta->gamma->e, eta->pi0->gamma->e, pi0->e, pi0->gamma->e
+                // cases to consider: eta->e, eta->pi0->e, eta->gamma->e, eta->pi0->gamma->e, pi0->e, pi0->gamma->e
 
-            //=================  eta->e ======================================
-            if (abs(mother.pdgCode()) == 221) {
-              isEmbEta = true;
-            }
-            //=================  eta->pi0->e ======================================
+                //=================  eta->e ======================================
+                if (abs(mother.pdgCode()) == 221) {
+                  isEmbEta = true;
+                }
+                //=================  eta->pi0->e ======================================
 
-            if (abs(mother.pdgCode()) == 111) {
-              isEmbPi0 = kTRUE; // pi0 -> e
+                if (abs(mother.pdgCode()) == 111) {
+                  isEmbPi0 = kTRUE; // pi0 -> e
 
-              if (abs(gmother.pdgCode()) == 221) {
-                isEmbEta = kTRUE; // eta->pi0-> e
-              }
-            }
+                  if (abs(gmother.pdgCode()) == 221) {
+                    isEmbEta = kTRUE; // eta->pi0-> e
+                  }
+                }
 
-            /// ====================================  eta->gamma->e  and eta->pi0->gamma->e============
-            if (abs(mother.pdgCode()) == 22) {
-              if (abs(gmother.pdgCode()) == 221) {
-                isEmbEta = kTRUE; // eta->gamma-> e
-              }
+                /// ====================================  eta->gamma->e  and eta->pi0->gamma->e============
+                if (abs(mother.pdgCode()) == 22) {
+                  if (abs(gmother.pdgCode()) == 221) {
+                    isEmbEta = kTRUE; // eta->gamma-> e
+                  }
 
-              if (abs(gmother.pdgCode()) == 111) {
-                isEmbPi0 = kTRUE; // pi0-> gamma-> e
+                  if (abs(gmother.pdgCode()) == 111) {
+                    isEmbPi0 = kTRUE; // pi0-> gamma-> e
 
-                if (abs(ggmother.pdgCode()) == 221) {
+                    if (abs(ggmother.pdgCode()) == 221) {
 
-                  isEmbEta = kTRUE; // eta->pi0->gamma-> e
+                      isEmbEta = kTRUE; // eta->pi0->gamma-> e
+                    }
+                  }
                 }
               }
             }
@@ -581,13 +597,13 @@ struct HfElectronSelectionWithTpcEmcal {
           if (isEmbEta) {
             registry.fill(HIST("hEtaeEmbTrkPt"), particleMc.pt());
           }
-
-          HfGenElectronSel(particleMc.index(), particleMc.eta(), particleMc.phi(), particleMc.pt(), isNonHfe);
         }
+        HfGenElectronSel(particleMc.mcCollisionId(), particleMc.globalIndex(), particleMc.eta(), particleMc.phi(), particleMc.pt(), isNonHfe);
       }
     }
   }
-  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processMcGen, "Process MC Gen mode", false);
+
+  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processMcGen, "Process MC Gen mode", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
