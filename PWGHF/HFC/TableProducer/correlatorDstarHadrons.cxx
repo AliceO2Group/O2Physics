@@ -59,14 +59,15 @@ struct HfCorrelatorDstarHadronsCollisionSelector {
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
 
+  SliceCache cache;
+
   using DstarCandidates = soa::Join<aod::HfCandDstars, aod::HfSelDstarToD0Pi>;
   using FilteredCandidates = soa::Filtered<DstarCandidates>;
 
-  SliceCache cache;
-  Preslice<DstarCandidates> perColDstarCand = aod::hf_cand::collisionId;
-
   // candidates who passed the slection criteria defined in "CandidateSelectionTables.h"
   Filter candidateFilter = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstar;
+
+  Preslice<DstarCandidates> perColDstarCand = aod::hf_cand::collisionId;
 
   void processCollisionSelWDstar(aod::Collisions const& collisions,
                                  FilteredCandidates const& candidates)
@@ -127,18 +128,12 @@ struct HfCorrelatorDstarHadrons {
   Configurable<std::vector<double>> rightSidebandOuterBoundary{"rightSidebandOuterBoundary", std::vector<double>{vecSidebandRightOuterDefault}, "right sideband outer baoundary vs pT"};
   Configurable<std::vector<double>> rightSidebandInnerBoundary{"rightSidebandInnerBoundary", std::vector<double>{vecSidebandRightInnerDefault}, "right sideband inner boundary"};
 
+  SliceCache cache;
+
   // Inv Mass of Dstar and D0 Candidate
   float invMassDstarParticle;
   float invMassD0Particle;
   int binNumber;
-
-  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
-  ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
-  // Eta Phi Axes
-  ConfigurableAxis axisEta{"axisEta", {16, -1.0, 1.0}, "Eta Axis"};
-  ConfigurableAxis axisPhi{"axisPhi", {64, 0.0, 3.14}, "Phi Axis"};
-  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {31, -2.0, 2.0}, "Delta Eta Axis"};
-  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {64, -o2::constants::math::PIHalf, 3.0 * o2::constants::math::PIHalf}, "Delta Phi Axis"};
 
   // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
@@ -162,11 +157,19 @@ struct HfCorrelatorDstarHadrons {
   Filter trackFilter = nabs(aod::track::eta) <= etaAbsAssoTrackMax && aod::track::pt >= ptAssoTrackMin && aod::track::pt <= ptAssoTrackMax &&
                        aod::track::dcaXY >= dcaxyAssoTrackMin && aod::track::dcaXY <= dcaxyAssoTrackMax &&
                        aod::track::dcaZ >= dcazAssoTrackMin && aod::track::dcaZ <= dcazAssoTrackMax;
-  SliceCache cache;
+
   // Preslice<DstarCandidates> perColCandidates = aod::hf_cand::collisionId;
   Preslice<FilteredCandidates> perColCandidates = aod::hf_cand::collisionId;
   // Preslice<aod::TracksWDca> perColTracks = aod::track::collisionId;
   Preslice<FilteredTracks> perColTracks = aod::track::collisionId;
+
+  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
+  // Eta Phi Axes
+  ConfigurableAxis axisEta{"axisEta", {16, -1.0, 1.0}, "Eta Axis"};
+  ConfigurableAxis axisPhi{"axisPhi", {64, 0.0, 3.14}, "Phi Axis"};
+  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {31, -2.0, 2.0}, "Delta Eta Axis"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {64, -o2::constants::math::PIHalf, 3.0 * o2::constants::math::PIHalf}, "Delta Phi Axis"};
 
   HistogramRegistry registry{
     "registry",
