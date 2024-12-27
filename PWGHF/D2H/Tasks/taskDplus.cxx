@@ -58,7 +58,6 @@ struct HfTaskDplus {
   Configurable<bool> storeCentrality{"storeCentrality", false, "Flag to store centrality information"};
   Configurable<bool> storeOccupancy{"storeOccupancy", false, "Flag to store occupancy information"};
 
-
   HfHelper hfHelper;
 
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
