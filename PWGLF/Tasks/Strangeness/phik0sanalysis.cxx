@@ -53,7 +53,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct LfPhiK0Shortanalysis {
+struct phik0shortanalysis {
   // Histograms are defined with HistogramRegistry
   HistogramRegistry dataEventHist{"dataEventHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry mcEventHist{"mcEventHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -722,7 +722,7 @@ struct LfPhiK0Shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(LfPhiK0Shortanalysis, processQAPurity, "Process for QA and Phi Purities", true);
+  PROCESS_SWITCH(phik0shortanalysis, processQAPurity, "Process for QA and Phi Purities", true);
 
   void processSEPhiK0S(soa::Filtered<SelCollisions>::iterator const& collision, FullTracks const&, FullV0s const& V0s, V0DauTracks const&)
   {
@@ -795,7 +795,7 @@ struct LfPhiK0Shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(LfPhiK0Shortanalysis, processSEPhiK0S, "Process Same Event for Phi-K0S Analysis", false);
+  PROCESS_SWITCH(phik0shortanalysis, processSEPhiK0S, "Process Same Event for Phi-K0S Analysis", false);
 
   void processSEPhiPion(soa::Filtered<SelCollisions>::iterator const& collision, FullTracks const& fullTracks)
   {
@@ -866,7 +866,7 @@ struct LfPhiK0Shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(LfPhiK0Shortanalysis, processSEPhiPion, "Process Same Event for Phi-Pion Analysis", false);
+  PROCESS_SWITCH(phik0shortanalysis, processSEPhiPion, "Process Same Event for Phi-Pion Analysis", false);
 
   void processRecMCPhiQA(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const&)
   {
@@ -1021,7 +1021,7 @@ struct LfPhiK0Shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(LfPhiK0Shortanalysis, processRecMCPhiQA, "Process for ReCMCQA and Phi in RecMC", false);
+  PROCESS_SWITCH(phik0shortanalysis, processRecMCPhiQA, "Process for ReCMCQA and Phi in RecMC", false);
 
   void processRecMCPhiK0S(SimCollisions const& collisions, FullMCTracks const&, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const& mcParticles)
   {
@@ -1104,7 +1104,7 @@ struct LfPhiK0Shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(LfPhiK0Shortanalysis, processRecMCPhiK0S, "Process RecMC for Phi-K0S Analysis", false);
+  PROCESS_SWITCH(phik0shortanalysis, processRecMCPhiK0S, "Process RecMC for Phi-K0S Analysis", false);
 
   void processRecMCPhiPion(SimCollisions const& collisions, FullMCTracks const& fullMCTracks, MCCollisions const&, aod::McParticles const& mcParticles)
   {
@@ -1189,7 +1189,7 @@ struct LfPhiK0Shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(LfPhiK0Shortanalysis, processRecMCPhiPion, "Process RecMC for Phi-Pion Analysis", false);
+  PROCESS_SWITCH(phik0shortanalysis, processRecMCPhiPion, "Process RecMC for Phi-Pion Analysis", false);
 
   void processRecMCClosurePhiQA(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, FullV0s const& V0s, V0DauMCTracks const&, MCCollisions const&)
   {
@@ -1299,7 +1299,7 @@ struct LfPhiK0Shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(LfPhiK0Shortanalysis, processRecMCClosurePhiQA, "Process for ReCMCQA and Phi in RecMCClosure", false);
+  PROCESS_SWITCH(phik0shortanalysis, processRecMCClosurePhiQA, "Process for ReCMCQA and Phi in RecMCClosure", false);
 
   void processRecMCClosurePhiK0S(SimCollisions::iterator const& collision, FullMCTracks const&, FullV0s const& V0s, V0DauMCTracks const&, MCCollisions const&)
   {
@@ -1372,7 +1372,7 @@ struct LfPhiK0Shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(LfPhiK0Shortanalysis, processRecMCClosurePhiK0S, "Process RecMC for MCClosure Phi-K0S Analysis", false);
+  PROCESS_SWITCH(phik0shortanalysis, processRecMCClosurePhiK0S, "Process RecMC for MCClosure Phi-K0S Analysis", false);
 
   void processRecMCClosurePhiPion(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, MCCollisions const&)
   {
@@ -1444,7 +1444,7 @@ struct LfPhiK0Shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(LfPhiK0Shortanalysis, processRecMCClosurePhiPion, "Process RecMC for MCClosure Phi-Pion Analysis", false);
+  PROCESS_SWITCH(phik0shortanalysis, processRecMCClosurePhiPion, "Process RecMC for MCClosure Phi-Pion Analysis", false);
 
   void processGenMCPhiQA(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, aod::McParticles const& mcParticles)
   {
@@ -1581,7 +1581,7 @@ struct LfPhiK0Shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(LfPhiK0Shortanalysis, processGenMCPhiQA, "Process for ReCMCQA and Phi in RecMC", false);
+  PROCESS_SWITCH(phik0shortanalysis, processGenMCPhiQA, "Process for ReCMCQA and Phi in RecMC", false);
 
   void processGenMCPhiK0S(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, aod::McParticles const& mcParticles)
   {
@@ -1671,7 +1671,7 @@ struct LfPhiK0Shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(LfPhiK0Shortanalysis, processGenMCPhiK0S, "Process GenMC for Phi-K0S Analysis", false);
+  PROCESS_SWITCH(phik0shortanalysis, processGenMCPhiK0S, "Process GenMC for Phi-K0S Analysis", false);
 
   void processGenMCPhiPion(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, aod::McParticles const& mcParticles)
   {
@@ -1749,11 +1749,11 @@ struct LfPhiK0Shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(LfPhiK0Shortanalysis, processGenMCPhiPion, "Process GenMC for Phi-Pion Analysis", false);
+  PROCESS_SWITCH(phik0shortanalysis, processGenMCPhiPion, "Process GenMC for Phi-Pion Analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<LfPhiK0Shortanalysis>(cfgc, TaskName{"lf-phik0shortanalysis"})};
+    adaptAnalysisTask<phik0shortanalysis>(cfgc)};
 }
