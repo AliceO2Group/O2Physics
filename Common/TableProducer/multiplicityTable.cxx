@@ -134,6 +134,7 @@ struct MultiplicityTable {
   TProfile* hVtxZFT0A;
   TProfile* hVtxZFT0C;
   TProfile* hVtxZFDDA;
+
   TProfile* hVtxZFDDC;
   TProfile* hVtxZNTracks;
   std::vector<int> mEnabledTables; // Vector of enabled tables
@@ -160,6 +161,19 @@ struct MultiplicityTable {
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
     }
+
+    // exploratory
+    auto& workflows = context.services().get<o2::framework::RunningWorkflowInfo const>();
+    for (auto const& device : workflows.devices) {
+      for (auto const& input : device.inputs) {
+        // input.print();
+        TString devNam = device.name.c_str();
+        TString inBin = input.matcher.binding.c_str();
+        // TString subSpec = input.matcher.subspec.c_str();
+        LOGF(info, Form("device %s input binding %s subspec", devNam.Data(), inBin.Data()));
+      }
+    }
+
     bool tEnabled[nTables] = {false};
     for (int i = 0; i < nTables; i++) {
       int f = enabledTables->get(tableNames[i].c_str(), "Enable");
