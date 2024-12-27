@@ -48,8 +48,7 @@ DECLARE_SOA_COLUMN(TimeEmcCluster, timeEmcCluster, float);       //! time of the
 
 DECLARE_SOA_COLUMN(DeltaEtaMatch, deltaEtaMatch, float); //! dEta matched track to EMCal cluster
 DECLARE_SOA_COLUMN(DeltaPhiMatch, deltaPhiMatch, float); //! dPhi matched track to EMCal cluster
-DECLARE_SOA_COLUMN(ISEmcal, isEmcal, bool);              //! electron information with Emcal
-
+DECLARE_SOA_COLUMN(ISEmcal, isEmcal, bool);              //! electron information
 } // namespace hf_sel_electron
 DECLARE_SOA_TABLE(HfSelEl, "AOD", "HFSELEL", //! Electron Informations
                   o2::soa::Index<>,
@@ -75,6 +74,54 @@ DECLARE_SOA_TABLE(HfSelEl, "AOD", "HFSELEL", //! Electron Informations
                   hf_sel_electron::DeltaPhiMatch,
                   hf_sel_electron::ISEmcal);
 
+// definition of columns and tables for HfcorrElectron Selection
+namespace Hf_corr_sel_electron
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                //! collisioniD of the electron track
+DECLARE_SOA_INDEX_COLUMN(Track, track);                        //! trackid of of the electron track
+DECLARE_SOA_COLUMN(EtaTrack, etaTrack, float);                 //! pseudorapidity of the electron track
+DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);                 //! azimuth of the electron track
+DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);                   //! transverse momentum of the electron track
+DECLARE_SOA_COLUMN(TPCNSigmaElTrack, tpcNSigmaElTrack, float); //! tpcNSigma of the electron track(TPC PID)
+DECLARE_SOA_COLUMN(TOFNSigmaElTrack, tofNSigmaElTrack, float); //! tofNSigma of the electron track(TOF PID)
+DECLARE_SOA_COLUMN(IsLSElectron, isLSElectron, int);           //! Like sign electron information
+DECLARE_SOA_COLUMN(IsULSElectron, isULSElectron, int);         //! Unlike sign electron information
+DECLARE_SOA_COLUMN(ISEmcal, isEmcal, bool);                    //! electron information
+} // namespace Hf_corr_sel_electron
+
+DECLARE_SOA_TABLE(HfCorrSelEl, "AOD", "HfCORRSELEL", //! Electron Informations
+                  o2::soa::Index<>,
+                  Hf_corr_sel_electron::CollisionId,
+                  Hf_corr_sel_electron::TrackId,
+                  Hf_corr_sel_electron::EtaTrack,
+                  Hf_corr_sel_electron::PhiTrack,
+                  Hf_corr_sel_electron::PtTrack,
+                  Hf_corr_sel_electron::TPCNSigmaElTrack,
+                  Hf_corr_sel_electron::TOFNSigmaElTrack,
+                  Hf_corr_sel_electron::IsLSElectron,
+                  Hf_corr_sel_electron::IsULSElectron,
+                  Hf_corr_sel_electron::ISEmcal);
+
+// definition of columns and tables for Mc Gen HfElectron Selection
+namespace HfMcGen_sel_electron
+{
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! collisioniD of the electron track
+DECLARE_SOA_INDEX_COLUMN(Track, track);             //! trackid of of the electron track
+DECLARE_SOA_COLUMN(EtaTrack, etaTrack, float);      //! pseudorapidity of the electron track
+DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);      //! azimuth of the electron track
+DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);        //! transverse momentum of the electron track
+DECLARE_SOA_COLUMN(IsNonHfe, isNonHfe, bool);       //! Non-Heavy flavour  electron information
+
+} // namespace HfMcGen_sel_electron
+
+DECLARE_SOA_TABLE(HfMcGenSelEl, "AOD", "HFMCGENEESELEL", //! Electron Informations
+                  o2::soa::Index<>,
+                  HfMcGen_sel_electron::McCollisionId,
+                  HfMcGen_sel_electron::TrackId,
+                  HfMcGen_sel_electron::EtaTrack,
+                  HfMcGen_sel_electron::PhiTrack,
+                  HfMcGen_sel_electron::PtTrack,
+                  HfMcGen_sel_electron::IsNonHfe);
 } // namespace o2::aod
 
 #endif // PWGHF_HFL_DATAMODEL_ELECTRONSELECTIONTABLE_H_
