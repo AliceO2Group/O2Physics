@@ -365,6 +365,28 @@ DECLARE_SOA_TABLE(HfEHadronPair, "AOD", "HFEHADRONPAIR", //! Hfe-Hadrons pairs I
                   hf_correlation_electron_hadron::PtElectron,
                   hf_correlation_electron_hadron::PtHadron,
                   hf_correlation_electron_hadron::PoolBin);
+
+// definition of columns and tables for Mc Gen HfElectron Selection
+namespace HfMcGen_sel_electron
+{
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! collisioniD of the electron track
+DECLARE_SOA_INDEX_COLUMN(Track, track);             //! trackid of of the electron track
+DECLARE_SOA_COLUMN(EtaTrack, etaTrack, float);      //! pseudorapidity of the electron track
+DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);      //! azimuth of the electron track
+DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);        //! transverse momentum of the electron track
+DECLARE_SOA_COLUMN(IsNonHfe, isNonHfe, bool);       //! Non-Heavy flavour  electron information
+
+} // namespace HfMcGen_sel_electron
+
+DECLARE_SOA_TABLE(HfMcGenSelEl, "AOD", "HFMCGENEESELEL", //! Electron Informations
+                  o2::soa::Index<>,
+                  HfMcGen_sel_electron::McCollisionId,
+                  HfMcGen_sel_electron::TrackId,
+                  HfMcGen_sel_electron::EtaTrack,
+                  HfMcGen_sel_electron::PhiTrack,
+                  HfMcGen_sel_electron::PtTrack,
+                  HfMcGen_sel_electron::IsNonHfe);
+
 } // namespace o2::aod
 
 #endif // PWGHF_HFC_DATAMODEL_CORRELATIONTABLES_H_
