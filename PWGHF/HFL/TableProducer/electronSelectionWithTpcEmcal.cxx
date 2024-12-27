@@ -529,7 +529,6 @@ struct HfElectronSelectionWithTpcEmcal {
     bool isNonHfe = false;
     for (const auto& particleMc : mcParticles) {
 
-      std::cout << " collision id" << particleMc.mcCollisionId() << "trackid" << particleMc.index() << std::endl;
       if (!particleMc.isPhysicalPrimary())
         continue;
       if (!mcGensel(particleMc)) {
