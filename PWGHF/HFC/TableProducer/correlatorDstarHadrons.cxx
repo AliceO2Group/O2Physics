@@ -15,6 +15,9 @@
 
 /// \brief Correlator for D* and hadrons. This task is used to produce table for D* and hadron pairs.
 
+//c++
+#include <vector>
+
 // O2
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/ASoAHelpers.h"
