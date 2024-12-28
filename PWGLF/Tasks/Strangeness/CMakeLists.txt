@@ -85,7 +85,7 @@ o2physics_add_dpl_workflow(sigmaanalysis
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(phik0shortanalysis
-    SOURCES phik0sanalysis.cxx
+    SOURCES phik0shortanalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
