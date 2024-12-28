@@ -55,6 +55,12 @@ enum DataType { Data = 0,
                 McBkg,
                 kDataTypes };
 
+enum BHadMothers { NotMatched = 0,
+                   BPlus,
+                   BZero,
+                   Bs,
+                   LambdaBZero };
+
 template <typename T>
 concept hasDsMlInfo = requires(T candidate)
 {
@@ -76,13 +82,18 @@ struct HfTaskDs {
   Configurable<float> massDplusSignalMin{"massDplusSignalMin", 1.866, "min mass for Dplus signal"};
   Configurable<float> massDplusSignalMax{"massDplusSignalMax", 1.906, "max mass for Dplus signal"};
   Configurable<bool> fillPercentiles{"fillPercentiles", true, "Wheter to fill multiplicity axis with percentiles or raw information"};
+  Configurable<bool> storeOccupancy{"storeOccupancy", false, "Flag to store occupancy information"};
+  Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
 
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f}, "axis for pT"};
+  ConfigurableAxis axisPtBHad{"axisPtBHad", {50, 0., 100}, "axis for pt of B hadron decayed into D candidate"};
+  ConfigurableAxis axisPdgBHad{"axisPdgBHad", {5, 0, 5}, "axis for B hadron mother flag"};
   ConfigurableAxis axisNPvContributors{"axisNPvContributors", {200, -0.5f, 199.5f}, "axis for NPvContributors"};
   ConfigurableAxis axisMlScore0{"axisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
   ConfigurableAxis axisMlScore1{"axisMlScore1", {100, 0., 1.}, "axis for ML output score 1"};
   ConfigurableAxis axisMlScore2{"axisMlScore2", {100, 0., 1.}, "axis for ML output score 2"};
   ConfigurableAxis axisCentrality{"axisCentrality", {100, 0., 1.}, "axis for centrality/multiplicity"};
+  ConfigurableAxis axisOccupancy{"axisOccupancy", {14, 0., 14000.}, "axis for occupancy"};
 
   struct : ConfigurableGroup {
     Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
@@ -156,24 +167,50 @@ struct HfTaskDs {
     }
 
     AxisSpec ptbins{axisPt, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec ptBHad{axisPtBHad, "#it{p}_{T}(B) (GeV/#it{c})"};
+    AxisSpec pdgBHad{axisPdgBHad, "PDG"};
     AxisSpec ybins = {100, -5., 5, "#it{y}"};
     AxisSpec massbins = {600, 1.67, 2.27, "inv. mass (KK#pi) (GeV/#it{c}^{2})"};
     AxisSpec centralitybins = {100, 0., 100., "Centrality"};
+    AxisSpec mlscore0bins = {axisMlScore0, "Score 0"};
+    AxisSpec mlscore1bins = {axisMlScore1, "Score 1"};
+    AxisSpec mlscore2bins = {axisMlScore2, "Score 2"};
+    AxisSpec occupancybins = {axisOccupancy, "Occupancy"};
 
     histosPtr[DataType::Data]["hNPvContribAll"] = registry.add<TH2>((folders[DataType::Data] + "hNPvContribAll").c_str(), "3-prong candidates;NPvContributors;Centrality;Entries", HistType::kTH2F, {axisNPvContributors, {100, 0., 100}});
 
+    std::vector<AxisSpec> axes = {massbins, ptbins, centralitybins};
+    std::vector<AxisSpec> axesMl = {massbins, ptbins, centralitybins, mlscore0bins, mlscore1bins, mlscore2bins};
+    std::vector<AxisSpec> axesFd = {massbins, ptbins, centralitybins, ptBHad, pdgBHad};
+    std::vector<AxisSpec> axesFdMl = {massbins, ptbins, centralitybins, mlscore0bins, mlscore1bins, mlscore2bins, ptBHad, pdgBHad};
+    std::vector<AxisSpec> axesWithNpv = {massbins, ptbins, centralitybins, axisNPvContributors};
+    std::vector<AxisSpec> axesWithNpvMl = {massbins, ptbins, centralitybins, axisNPvContributors, mlscore0bins, mlscore1bins, mlscore2bins};
+    
+    if (storeOccupancy) {
+      axes.insert(axes.end(), {occupancybins});
+      axesMl.insert(axesMl.end(), {occupancybins});
+      axesFd.insert(axesFd.end(), {occupancybins});
+      axesFdMl.insert(axesFdMl.end(), {occupancybins});
+      axesWithNpv.insert(axesWithNpv.end(), {occupancybins});
+      axesWithNpvMl.insert(axesWithNpvMl.end(), {occupancybins});
+    }
+    
     for (auto i = 0; i < DataType::kDataTypes; ++i) {
       if (doprocessDataWithCentFT0C || doprocessDataWithCentFT0M || doprocessDataWithCentNTracksPV || doprocessData || doprocessMcWithCentFT0C || doprocessMcWithCentFT0M || doprocessMcWithCentNTracksPV || doprocessMc) {
         if (i == DataType::Data) { // If data do not fill PV contributors in sparse
-          histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins});
+          histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, axes);
+        } else if (i == DataType::McDsNonPrompt) { // If data do not fill PV contributors in sparse
+          histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, axesFd);
         } else {
-          histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins, axisNPvContributors});
+          histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, axesWithNpv);
         }
       } else if (doprocessDataWithMlAndCentFT0C || doprocessDataWithMlAndCentFT0M || doprocessDataWithMlAndCentNTracksPV || doprocessDataWithMl || doprocessMcWithMlAndCentFT0C || doprocessMcWithMlAndCentFT0M || doprocessMcWithMlAndCentNTracksPV || doprocessMcWithMl) {
         if (i == DataType::Data) { // If data do not fill PV contributors in sparse
-          histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins, axisMlScore0, axisMlScore1, axisMlScore2});
+          histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, axesMl);
+        } else if (i == DataType::McDsNonPrompt) { // If data do not fill PV contributors in sparse
+          histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, axesFdMl); 
         } else {
-          histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins, axisMlScore0, axisMlScore1, axisMlScore2, axisNPvContributors});
+          histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, axesWithNpvMl);
         }
       }
       histosPtr[i]["hNPvContribCands"] = registry.add<TH2>((folders[i] + "hNPvContribCands").c_str(), "3-prong candidates;NPvContributors;Centrality;Entries", HistType::kTH2F, {axisNPvContributors, centralitybins});
@@ -277,6 +314,26 @@ struct HfTaskDs {
     return true;
   }
 
+  /// Convert the B hadron mother PDG for non prompt candidates to a flag
+  /// \param pdg of the b hadron mother
+  /// \return integer map to specific mothers' PDG codes
+  int getBHadMotherFlag(const int& flagBHad)
+  {
+    if (std::abs(flagBHad) == o2::constants::physics::kBPlus) {
+      return BHadMothers::BPlus;
+    }
+    if (std::abs(flagBHad) == o2::constants::physics::kB0) {
+      return BHadMothers::BZero;
+    }
+    if (std::abs(flagBHad) == o2::constants::physics::kBS) {
+      return BHadMothers::Bs;
+    }
+    if (std::abs(flagBHad) == o2::constants::physics::kLambdaB0) {
+      return BHadMothers::LambdaBZero;
+    }
+    return BHadMothers::NotMatched;
+  }
+
   /// Evaluate centrality/multiplicity percentile using FT0M estimator
   /// \param candidate is candidate
   /// \return centrality/multiplicity percentile of the collision
@@ -308,6 +365,66 @@ struct HfTaskDs {
   float getZEqMultColl(const Coll&, uint8_t)
   {
     return -1.f;
+  }
+
+  /// Get the occupancy
+  /// \param collision is the collision with the occupancy information
+  /// \return collision occupancy
+  template <typename Coll>
+  float evaluateOccupancy(Coll const& collision)
+  {
+    float occupancy = -999.;
+    switch (occEstimator) {
+      case 1:
+        occupancy = collision.trackOccupancyInTimeRange();
+        break;
+      case 2:
+        occupancy = collision.ft0cOccupancyInTimeRange();
+        break;
+      default:
+        LOG(warning) << "Occupancy estimator not valid. Possible values are ITS or FT0C. Fallback to ITS";
+        occupancy = collision.trackOccupancyInTimeRange();
+        break;
+    }
+    return occupancy;
+  }
+
+  /// \brief Function to get MC collision occupancy
+  /// \param collSlice collection of reconstructed collisions associated to a generated one
+  /// \return generated MC collision occupancy
+  template <typename CCs>
+  int evaluateMcGenCollOccupancy(CCs const& collSlice)
+  {
+    float multiplicity{0.f};
+    int occupancy = 0;
+    for (const auto& collision : collSlice) {
+      float collMult{0.f};
+      collMult = collision.numContrib();
+      if (collMult > multiplicity) {
+        occupancy = evaluateOccupancy(collision);
+        multiplicity = collMult;
+      }
+    } // end loop over collisions
+
+    return occupancy;
+  }
+
+  /// \brief Function to get MC collision centrality
+  /// \param collSlice collection of reconstructed collisions associated to a generated one
+  /// \return generated MC collision centrality
+  template <typename CCs>
+  float evaluateMcGenCollCentrality(CCs const& collSlice)
+  {
+    float centrality{-1};
+    float multiplicity{0.f};
+    for (const auto& collision : collSlice) {
+      float collMult = collision.numContrib();
+      if (collMult > multiplicity) {
+        centrality = evaluateCentralityColl(collision);
+        multiplicity = collMult;
+      }
+    }
+    return centrality;
   }
 
   /// Evaluate centrality/multiplicity percentile (centrality estimator is automatically selected based on the used table)
@@ -382,7 +499,7 @@ struct HfTaskDs {
   /// \param candidate is candidate
   /// \param dataType is data class, as defined in DataType enum
   /// \param finalState is either KKPi or PiKK, as defined in FinalState enum
-  template <typename Coll, hasDsMlInfo Cand>
+  template <bool isMc, typename Coll, hasDsMlInfo Cand>
   void fillSparse(const Cand& candidate, DataType dataType, FinalState finalState)
   {
     auto mass = finalState == FinalState::KKPi ? hfHelper.invMassDsToKKPi(candidate) : hfHelper.invMassDsToPiKK(candidate);
@@ -398,41 +515,82 @@ struct HfTaskDs {
     }
 
     if (dataType == DataType::Data) { // If data do not fill PV contributors in sparse
-      std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2]);
+      if (storeOccupancy) {
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], evaluateOccupancy(candidate.template collision_as<Coll>()));
+        return;
+      } else {
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2]);
+        return;
+      }
+    }
+    if constexpr (isMc) {
+      if (dataType == DataType::McDsNonPrompt) { // If data do not fill PV contributors in sparse
+        if (storeOccupancy) {
+          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()), evaluateOccupancy(candidate.template collision_as<Coll>()));
+
+          return;
+        } else {
+          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()));
+          return;
+        }
+      }
+    } 
+    if (storeOccupancy) {
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib(), evaluateOccupancy(candidate.template collision_as<Coll>()));
+        return;
+    } else {
+      std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib());
       return;
     }
-    std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib());
-
-    return;
   }
 
   /// Fill mass sparse if ML information is not present
   /// \param candidate is candidate
   /// \param dataType is data class, as defined in DataType enum
   /// \param finalState is either KKPi or PiKK, as defined in FinalState enum
-  template <typename Coll, typename Cand>
+  template <bool isMc, typename Coll, typename Cand>
   void fillSparse(const Cand& candidate, DataType dataType, FinalState finalState)
   {
     auto mass = finalState == FinalState::KKPi ? hfHelper.invMassDsToKKPi(candidate) : hfHelper.invMassDsToPiKK(candidate);
     auto pt = candidate.pt();
 
     if (dataType == DataType::Data) { // If data do not fill PV contributors in sparse
-      std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate));
+      if (storeOccupancy) {
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), evaluateOccupancy(candidate.template collision_as<Coll>()));
+        return;
+      } else {
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate));
+        return;
+      }
+    }
+    if constexpr (isMc) {
+      if (dataType == DataType::McDsNonPrompt) { // If data do not fill PV contributors in sparse
+        if (storeOccupancy) {
+          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()), evaluateOccupancy(candidate.template collision_as<Coll>()));
+          return;
+        } else {
+          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()));
+          return;
+        }
+      }
+    } 
+    if (storeOccupancy) {
+      std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib(), evaluateOccupancy(candidate.template collision_as<Coll>()));
+      return;
+    } else {
+      std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib());
       return;
     }
-    std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib());
-
-    return;
   }
 
   /// Fill histograms of quantities for the KKPi daugther-mass hypothesis
   /// \param candidate is candidate
   /// \param dataType is data class, as defined in DataType enum
-  template <typename Coll, typename T1>
+  template <bool isMc, typename Coll, typename T1>
   void fillHistoKKPi(const T1& candidate, DataType dataType)
   {
     auto pt = candidate.pt();
-    fillSparse<Coll>(candidate, dataType, FinalState::KKPi);
+    fillSparse<isMc, Coll>(candidate, dataType, FinalState::KKPi);
 
     std::get<TH2_ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(hfHelper.cos3PiKDsToKKPi(candidate), pt);
     std::get<TH2_ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(hfHelper.absCos3PiKDsToKKPi(candidate), pt);
@@ -445,11 +603,11 @@ struct HfTaskDs {
   /// Fill histograms of quantities for the PiKK daugther-mass hypothesis
   /// \param candidate is candidate
   /// \param dataType is data class, as defined in DataType enum
-  template <typename Coll, typename T1>
+  template <bool isMc, typename Coll, typename T1>
   void fillHistoPiKK(const T1& candidate, DataType dataType)
   {
     auto pt = candidate.pt();
-    fillSparse<Coll>(candidate, dataType, FinalState::PiKK);
+    fillSparse<isMc, Coll>(candidate, dataType, FinalState::PiKK);
 
     std::get<TH2_ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(hfHelper.cos3PiKDsToPiKK(candidate), pt);
     std::get<TH2_ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(hfHelper.absCos3PiKDsToPiKK(candidate), pt);
@@ -490,7 +648,7 @@ struct HfTaskDs {
 
       if (candidate.isSelDsToKKPi() >= selectionFlagDs) { // KKPi
         fillHisto(candidate, dataType);
-        fillHistoKKPi<Coll>(candidate, dataType);
+        fillHistoKKPi<true, Coll>(candidate, dataType);
 
         if (TESTBIT(candidate.isSelDsToKKPi(), aod::SelectionStep::RecoSkims)) {
           std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecoSkim"])->Fill(pt, yCand);
@@ -504,7 +662,7 @@ struct HfTaskDs {
       }
       if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
         fillHisto(candidate, dataType);
-        fillHistoPiKK<Coll>(candidate, dataType);
+        fillHistoPiKK<true, Coll>(candidate, dataType);
 
         if (TESTBIT(candidate.isSelDsToPiKK(), aod::SelectionStep::RecoSkims)) {
           std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecoSkim"])->Fill(pt, yCand);
@@ -529,11 +687,11 @@ struct HfTaskDs {
 
     if (candidate.isSelDsToKKPi() >= selectionFlagDs) { // KKPi
       fillHisto(candidate, DataType::Data);
-      fillHistoKKPi<Coll>(candidate, DataType::Data);
+      fillHistoKKPi<false, Coll>(candidate, DataType::Data);
     }
     if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
       fillHisto(candidate, DataType::Data);
-      fillHistoPiKK<Coll>(candidate, DataType::Data);
+      fillHistoPiKK<false, Coll>(candidate, DataType::Data);
     }
   }
 
@@ -566,11 +724,11 @@ struct HfTaskDs {
       if (candidate.isSelDsToKKPi() >= selectionFlagDs || candidate.isSelDsToPiKK() >= selectionFlagDs) {
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) { // KKPi
           fillHisto(candidate, DataType::McBkg);
-          fillHistoKKPi<Coll>(candidate, DataType::McBkg);
+          fillHistoKKPi<true, Coll>(candidate, DataType::McBkg);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
           fillHisto(candidate, DataType::McBkg);
-          fillHistoPiKK<Coll>(candidate, DataType::McBkg);
+          fillHistoPiKK<true, Coll>(candidate, DataType::McBkg);
         }
       }
     }
