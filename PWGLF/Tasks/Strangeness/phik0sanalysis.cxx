@@ -1027,10 +1027,10 @@ struct phik0shortanalysis {
   {
     for (const auto& collision : collisions) {
       if (!acceptEventQA<true>(collision, false))
-        return;
+        continue;
 
       if (!collision.has_mcCollision())
-        return;
+        continue;
 
       const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
       float genmultiplicity = mcCollision.centFT0M();
@@ -1110,10 +1110,10 @@ struct phik0shortanalysis {
   {
     for (const auto& collision : collisions) {
       if (!acceptEventQA<true>(collision, false))
-        return;
+        continue;
 
       if (!collision.has_mcCollision())
-        return;
+        continue;
 
       const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
       float genmultiplicity = mcCollision.centFT0M();
@@ -1126,7 +1126,6 @@ struct phik0shortanalysis {
 
       // Loop over all primary pion candidates
       for (const auto& track : mcTracksThisColl) {
-
         if (!track.has_mcParticle())
           continue;
 
