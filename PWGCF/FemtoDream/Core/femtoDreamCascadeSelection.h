@@ -52,14 +52,16 @@ enum ChildTrackType { kPosTrack,
                       kNegTrack,
                       kBachTrack };
 
-/*enum CascadeContainerPosition {
+enum CascadeContainerPosition {
   kCascade,
   kPosCuts,
   kPosPID,
   kNegCuts,
   kNegPID,
+  kBachCuts,
+  kBachPID,
 }; /// Position in the full VO cut container (for cutculator)
-*/
+
 } // namespace femtoDreamCascadeSelection
 
 /// \class FemtoDreamCascadeSelection
