@@ -252,11 +252,11 @@ struct HfTaskDplus {
   /// \param centrality collision centrality
   /// \param occupancy collision occupancy
   template <bool isMc, bool isMatched, typename T1>
-  void fillSparseML(const T1& candidate,
-                    float& ptbhad,
-                    int& flagBHad,
-                    float& centrality,
-                    float& occupancy)
+  void fillSparseML(const T1 candidate,
+                    float ptbhad,
+                    int flagBHad,
+                    float centrality,
+                    float occupancy)
   {
     std::vector<float> outputMl = {-999., -999., -999.};
     for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -400,11 +400,11 @@ struct HfTaskDplus {
   /// \param centrality collision centrality
   /// \param occupancy collision occupancy
   template <typename T1>
-  void fillSparseMCGen(const T1& particle,
-                       float& ptGenB,
-                       int& flagGenB,
-                       float& centrality,
-                       float& occupancy)
+  void fillSparseMCGen(const T1 particle,
+                       float ptGenB,
+                       int flagGenB,
+                       float centrality,
+                       float occupancy)
   {
     auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus);
     if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
@@ -590,10 +590,10 @@ struct HfTaskDplus {
   {
     float occupancy = -999.;
     switch (occEstimator) {
-      case 1:
+      case OccupancyEstimator::ITS:
         occupancy = collision.trackOccupancyInTimeRange();
         break;
-      case 2:
+      case OccupancyEstimator::FT0C:
         occupancy = collision.ft0cOccupancyInTimeRange();
         break;
       default:
