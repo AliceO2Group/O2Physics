@@ -58,8 +58,8 @@ struct doublephitable {
 
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 0.0f, "Accepted maximum Centrality"};
-  Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 100.0f, "Accepted minimum Centrality"};
+  // Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 0.0f, "Accepted maximum Centrality"};
+  // Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 100.0f, "Accepted minimum Centrality"};
   // track
   Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use Global track"};
   Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.0, "cut TOF beta"};
@@ -80,12 +80,12 @@ struct doublephitable {
   Configurable<float> maxPhiMass{"maxPhiMass", 1.03, "Maximum phi mass"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
+  // Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   Filter PIDcutFilter = nabs(aod::pidtpc::tpcNSigmaKa) < nsigmaCutTPC;
 
-  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>;
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCFullKa, aod::pidTOFFullKa>>;
 
   SliceCache cache;
