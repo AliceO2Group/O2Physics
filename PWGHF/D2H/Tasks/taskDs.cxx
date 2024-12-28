@@ -61,6 +61,10 @@ enum BHadMothers { NotMatched = 0,
                    Bs,
                    LambdaBZero };
 
+enum OccupancyEstimator { None = 0,
+                          Its,
+                          Ft0c };
+
 template <typename T>
 concept hasDsMlInfo = requires(T candidate)
 {
@@ -87,7 +91,7 @@ struct HfTaskDs {
 
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f}, "axis for pT"};
   ConfigurableAxis axisPtBHad{"axisPtBHad", {50, 0., 100}, "axis for pt of B hadron decayed into D candidate"};
-  ConfigurableAxis axisPdgBHad{"axisPdgBHad", {5, 0, 5}, "axis for B hadron mother flag"};
+  ConfigurableAxis axisFlagBHad{"axisFlagBHad", {5, 0, 5}, "axis for B hadron mother flag"};
   ConfigurableAxis axisNPvContributors{"axisNPvContributors", {200, -0.5f, 199.5f}, "axis for NPvContributors"};
   ConfigurableAxis axisMlScore0{"axisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
   ConfigurableAxis axisMlScore1{"axisMlScore1", {100, 0., 1.}, "axis for ML output score 1"};
@@ -168,7 +172,7 @@ struct HfTaskDs {
 
     AxisSpec ptbins{axisPt, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptBHad{axisPtBHad, "#it{p}_{T}(B) (GeV/#it{c})"};
-    AxisSpec pdgBHad{axisPdgBHad, "PDG"};
+    AxisSpec flagBHad{axisFlagBHad, "B Hadron flag"};
     AxisSpec ybins = {100, -5., 5, "#it{y}"};
     AxisSpec massbins = {600, 1.67, 2.27, "inv. mass (KK#pi) (GeV/#it{c}^{2})"};
     AxisSpec centralitybins = {100, 0., 100., "Centrality"};
@@ -181,11 +185,14 @@ struct HfTaskDs {
 
     std::vector<AxisSpec> axes = {massbins, ptbins, centralitybins};
     std::vector<AxisSpec> axesMl = {massbins, ptbins, centralitybins, mlscore0bins, mlscore1bins, mlscore2bins};
-    std::vector<AxisSpec> axesFd = {massbins, ptbins, centralitybins, ptBHad, pdgBHad};
-    std::vector<AxisSpec> axesFdMl = {massbins, ptbins, centralitybins, mlscore0bins, mlscore1bins, mlscore2bins, ptBHad, pdgBHad};
+    std::vector<AxisSpec> axesFd = {massbins, ptbins, centralitybins, ptBHad, flagBHad};
+    std::vector<AxisSpec> axesFdMl = {massbins, ptbins, centralitybins, mlscore0bins, mlscore1bins, mlscore2bins, ptBHad, flagBHad};
     std::vector<AxisSpec> axesWithNpv = {massbins, ptbins, centralitybins, axisNPvContributors};
     std::vector<AxisSpec> axesWithNpvMl = {massbins, ptbins, centralitybins, axisNPvContributors, mlscore0bins, mlscore1bins, mlscore2bins};
-    
+    std::vector<AxisSpec> axesGenPrompt = {ptbins, ybins, axisNPvContributors, centralitybins};
+    std::vector<AxisSpec> axesGenFd = {ptbins, ybins, axisNPvContributors, ptBHad, flagBHad, centralitybins};
+    std::vector<AxisSpec> axesGenBkg = {ptbins, ybins, axisNPvContributors, centralitybins};
+
     if (storeOccupancy) {
       axes.insert(axes.end(), {occupancybins});
       axesMl.insert(axesMl.end(), {occupancybins});
@@ -193,6 +200,9 @@ struct HfTaskDs {
       axesFdMl.insert(axesFdMl.end(), {occupancybins});
       axesWithNpv.insert(axesWithNpv.end(), {occupancybins});
       axesWithNpvMl.insert(axesWithNpvMl.end(), {occupancybins});
+      axesGenPrompt.insert(axesGenPrompt.end(), {occupancybins});
+      axesGenFd.insert(axesGenFd.end(), {occupancybins});
+      axesGenBkg.insert(axesGenBkg.end(), {occupancybins});
     }
     
     for (auto i = 0; i < DataType::kDataTypes; ++i) {
@@ -248,13 +258,20 @@ struct HfTaskDs {
 
       for (auto i = 0; i < DataType::kDataTypes; ++i) {
         if (i == DataType::McDsPrompt || i == DataType::McDsNonPrompt || i == DataType::McDplusPrompt || i == DataType::McDplusNonPrompt || i == DataType::McDplusBkg || i == DataType::McLcBkg) {
-
           histosPtr[i]["hEtaGen"] = registry.add<TH1>((folders[i] + "hEtaGen").c_str(), "3-prong candidates (matched);#eta;entries", {HistType::kTH1F, {{100, -2., 2.}}});
           histosPtr[i]["hPtGen"] = registry.add<TH1>((folders[i] + "hPtGen").c_str(), "MC particles (unmatched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {ptbins}});
           histosPtr[i]["hPtVsYRecoPID"] = registry.add<TH2>((folders[i] + "hPtVsYRecoPID").c_str(), "3-prong candidates (RecoPID - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
           histosPtr[i]["hPtVsYRecoTopol"] = registry.add<TH2>((folders[i] + "hPtVsYRecoTopol").c_str(), "3-prong candidates (RecoTopol - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
           histosPtr[i]["hPtVsYRecoSkim"] = registry.add<TH2>((folders[i] + "hPtVsYRecoSkim").c_str(), "3-prong candidates (RecoSkim - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
-          histosPtr[i]["hPtYNPvContribGen"] = registry.add<THnSparse>((folders[i] + "hPtYNPvContribGen").c_str(), "Thn for generated candidates", {HistType::kTHnSparseF, {ptbins, {ybins}, axisNPvContributors}});
+        }
+        if (i == DataType::McDsPrompt || i == DataType::McDplusPrompt) {
+          histosPtr[i]["hSparseGen"] = registry.add<THnSparse>((folders[i] + "hSparseGen").c_str(), "Thn for generated prompt candidates", HistType::kTHnSparseF, axesGenPrompt);
+        } 
+        if (i == DataType::McDsNonPrompt || i == DataType::McDplusNonPrompt) {
+          histosPtr[i]["hSparseGen"] = registry.add<THnSparse>((folders[i] + "hSparseGen").c_str(), "Thn for generated nonprompt candidates", HistType::kTHnSparseF, axesGenFd);
+        } 
+        if (i == DataType::McBkg) {
+          histosPtr[i]["hSparseGen"] = registry.add<THnSparse>((folders[i] + "hSparseGen").c_str(), "Thn for non-matched generated candidates", HistType::kTHnSparseF, axesGenBkg);
         }
       }
     }
@@ -375,10 +392,10 @@ struct HfTaskDs {
   {
     float occupancy = -999.;
     switch (occEstimator) {
-      case 1:
+      case OccupancyEstimator::Its:
         occupancy = collision.trackOccupancyInTimeRange();
         break;
-      case 2:
+      case OccupancyEstimator::Ft0c:
         occupancy = collision.ft0cOccupancyInTimeRange();
         break;
       default:
@@ -737,22 +754,29 @@ struct HfTaskDs {
   }
 
   template <typename Coll>
-  void fillMcGenHistos(CandDsMcGen const& mcParticles,
+  void fillMcGenHistosSparse(CandDsMcGen const& mcParticles,
                        Coll const& recoCollisions)
   {
+    
+    float cent{-1.};
+    float occ{-1.};
+    unsigned maxNumContrib = 0;
+
     // MC gen.
     for (const auto& particle : mcParticles) {
+      const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
+      for (const auto& recCol : recoCollsPerMcColl) {
+        maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
+      }
+      cent = evaluateMcGenCollCentrality(recoCollsPerMcColl);
+      if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
+        occ = evaluateMcGenCollOccupancy(recoCollsPerMcColl);
+      }
+
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
         if (particle.flagMcDecayChanGen() == decayChannel || (fillDplusMc && particle.flagMcDecayChanGen() == (decayChannel + offsetDplusDecayChannel))) {
           auto pt = particle.pt();
           double y{0.f};
-
-          unsigned maxNumContrib = 0;
-          const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
-          for (const auto& recCol : recoCollsPerMcColl) {
-            maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
-          }
-
           if (particle.flagMcDecayChanGen() == decayChannel) {
             y = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDS);
             if (yCandGenMax >= 0. && std::abs(y) > yCandGenMax) {
@@ -762,12 +786,23 @@ struct HfTaskDs {
             if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
               std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hPtGen"])->Fill(pt); // gen. level pT
               std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hEtaGen"])->Fill(particle.eta());
-              std::get<THnSparse_ptr>(histosPtr[DataType::McDsPrompt]["hPtYNPvContribGen"])->Fill(pt, y, maxNumContrib); // gen. level pT
+              if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
+                std::get<THnSparse_ptr>(histosPtr[DataType::McDsPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ);
+              } else {
+                std::get<THnSparse_ptr>(histosPtr[DataType::McDsPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent);
+              }
             }
             if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
               std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtGen"])->Fill(pt);                                    // gen. level pT
-              std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hEtaGen"])->Fill(particle.eta());                       // gen. level pT
-              std::get<THnSparse_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtYNPvContribGen"])->Fill(pt, y, maxNumContrib); // gen. level pT
+              std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hEtaGen"])->Fill(particle.eta());  
+              auto bHadMother = mcParticles.rawIteratorAt(particle.idxBhadMotherPart() - mcParticles.offset());
+              int flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
+              float ptGenB = bHadMother.pt();         
+              if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
+                std::get<THnSparse_ptr>(histosPtr[DataType::McDsNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent, occ);
+              } else {
+                std::get<THnSparse_ptr>(histosPtr[DataType::McDsNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent);
+              }
             }
           } else if (fillDplusMc) {
             y = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus);
@@ -777,14 +812,33 @@ struct HfTaskDs {
             if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
               std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hPtGen"])->Fill(pt); // gen. level pT
               std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hEtaGen"])->Fill(particle.eta());
-              std::get<THnSparse_ptr>(histosPtr[DataType::McDplusPrompt]["hPtYNPvContribGen"])->Fill(pt, y, maxNumContrib); // gen. level pT
+              if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
+                std::get<THnSparse_ptr>(histosPtr[DataType::McDplusPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ);
+              } else {
+                std::get<THnSparse_ptr>(histosPtr[DataType::McDplusPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent);
+              }
             }
             if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
               std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtGen"])->Fill(pt); // gen. level pT
               std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hEtaGen"])->Fill(particle.eta());
-              std::get<THnSparse_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtYNPvContribGen"])->Fill(pt, y, maxNumContrib); // gen. level pT
+              auto bHadMother = mcParticles.rawIteratorAt(particle.idxBhadMotherPart() - mcParticles.offset());
+              int flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
+              float ptGenB = bHadMother.pt();
+              if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
+                std::get<THnSparse_ptr>(histosPtr[DataType::McDplusNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent, occ);
+              } else {
+                std::get<THnSparse_ptr>(histosPtr[DataType::McDplusNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent);
+              }
             }
           }
+        }
+      } else { // not matched candidates
+        auto pt = particle.pt();
+        double y = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDS);
+        if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
+          std::get<THnSparse_ptr>(histosPtr[DataType::McBkg]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ);
+        } else {
+          std::get<THnSparse_ptr>(histosPtr[DataType::McBkg]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent);
         }
       }
     }
@@ -967,7 +1021,7 @@ struct HfTaskDs {
       }
       fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
     }
-    fillMcGenHistos(mcParticles, collisions);
+    fillMcGenHistosSparse(mcParticles, collisions);
   }
 
   void processDataWithCentFT0C(CollisionsWithFT0C const& collisions,
