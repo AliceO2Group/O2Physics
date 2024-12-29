@@ -44,31 +44,31 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
   HistogramRegistry histos{"HistoReg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  Configurable<float> FV0_cut{"FV0_cut", 50., "FV0A threshold"};      // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<float> FT0A_cut{"FT0A_cut", 150., "FT0A threshold"};   // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<float> FT0C_cut{"FT0C_cut", 50., "FT0C threshold"};    // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<float> FDDA_cut{"FDDA_cut", 10000., "FDDA threshold"}; // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<float> FDDC_cut{"FDDC_cut", 10000., "FDDC threshold"}; // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<float> ZDC_cut{"ZDC_cut", 10., "ZDC threshold"};       // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<float> fv0Cut{"fv0Cut", 50., "FV0A threshold"};
+  Configurable<float> ft0aCut{"ft0aCut", 150., "FT0A threshold"};
+  Configurable<float> ft0cCut{"ft0cCut", 50., "FT0C threshold"};
+  Configurable<float> fddaCut{"fddaCut", 10000., "FDDA threshold"};
+  Configurable<float> fddcCut{"fddcCut", 10000., "FDDC threshold"};
+  Configurable<float> zdcCut{"zdcCut", 10., "ZDC threshold"};
 
-  Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};                           // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<float> dcaZ_cut{"dcaZ_cut", 3.2, "dcaZ cut"};                                 // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<float> dcaXY_cut{"dcaXY_cut", 2.4, "dcaXY cut (0 for Pt-function)"};          // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<float> tpcChi2_cut{"tpcChi2_cut", 4, "Max tpcChi2NCl"};                       // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<float> tpcNClsFindable_cut{"tpcNClsFindable_cut", 80, "Min tpcNClsFindable"}; // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};                      // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};                       // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<float> pt_cut{"pt_cut", 0, "Track Pt"};                                       // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<float> pvCut{"pvCut", 1.0, "Use Only PV tracks"};
+  Configurable<float> dcaZcut{"dcaZcut", 3.2, "dcaZ cut"};
+  Configurable<float> dcaXYcut{"dcaXYcut", 2.4, "dcaXY cut (0 for Pt-function)"};
+  Configurable<float> tpcChi2Cut{"tpcChi2Cut", 4, "Max tpcChi2NCl"};
+  Configurable<float> tpcNClsFindableCut{"tpcNClsFindableCut", 80, "Min tpcNClsFindable"};
+  Configurable<float> itsChi2Cut{"itsChi2Cut", 36, "Max itsChi2NCl"};
+  Configurable<float> etaCut{"etaCut", 0.9, "Track Pseudorapidity"};
+  Configurable<float> pTcut{"pTcut", 0, "Track Pt"};
 
-  Configurable<float> nSigmaTPC_cut{"nSigmaTPC_cut", 3, "TPC cut"};                         // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<float> nSigmaTOF_cut{"nSigmaTOF_cut", 3, "TOF cut"};                         // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<bool> StrictEventSelection{"StrictEventSelection", true, "Event Selection"}; // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<float> nSigmaTPCcut{"nSigmaTPCcut", 3, "TPC cut"};
+  Configurable<float> nSigmaTOFcut{"nSigmaTOFcut", 3, "TOF cut"};
+  Configurable<bool> strictEventSelection{"strictEventSelection", true, "Event Selection"};
 
-  Configurable<int> nBins_pT{"nBins_pT", 1000, "Number of bins for pT"};                   // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<int> nBins_IM{"nBins_IM", 1000, "Number of bins for Invariant Mass"};       // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<int> nBins_y{"nBins_y", 1000, "Number of bins for Rapidity"};               // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<int> nBins_Phi{"nBins_phi", 360, "Number of bins for Phi"};                 // o2-linter: disable=name/function-variable,name/configurable
-  Configurable<int> nBins_CosTheta{"nBins_cosTheta", 360, "Number of bins for cos Theta"}; // o2-linter: disable=name/function-variable,name/configurable
+  Configurable<int> nBinsPt{"nBinsPt", 1000, "Number of bins for pT"};
+  Configurable<int> nBinsInvariantMass{"nBinsInvariantMass", 1000, "Number of bins for Invariant Mass"};
+  Configurable<int> nBinsRapidity{"nBinsRapidity", 1000, "Number of bins for Rapidity"};
+  Configurable<int> nBinsPhi{"nBinsPhi", 360, "Number of bins for Phi"};
+  Configurable<int> nBinsCosTheta{"nBinsCosTheta", 360, "Number of bins for cos Theta"};
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
   // Begin of Init Function-----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -102,15 +102,15 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histos.add("tofNSigmaPi_WTS_PID_Pi_Mu", "TOF nSigma Muon with track selection and PID Selection of Pion; Entries", kTH1F, {{1000, -15, 15}});
 
     // Track Transverse Momentum
-    histos.add("pT_track_WOTS", "pT without track selection; pT [GeV/c]; Events", kTH1F, {{nBins_pT, 0, 2}});
-    histos.add("pT_track_WTS", "pT with track selection; pT [GeV/c]; Events", kTH1F, {{nBins_pT, 0, 2}});
-    histos.add("pT_track_WTS_PID_Pi", "pT with track selection and PID selection of Pi; pT [GeV/c]; Events", kTH1F, {{nBins_pT, 0, 2}});
+    histos.add("pT_track_WOTS", "pT without track selection; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
+    histos.add("pT_track_WTS", "pT with track selection; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
+    histos.add("pT_track_WTS_PID_Pi", "pT with track selection and PID selection of Pi; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
 
     // Zero charge Event Transverse Momentum
-    histos.add("pT_event_0charge_WTS_PID_Pi", "Event pT in 0 Charge Events With Track Selection and PID Selection of Pi; pT [GeV/c]; Counts", kTH1F, {{nBins_pT, 0, 2}});
+    histos.add("pT_event_0charge_WTS_PID_Pi", "Event pT in 0 Charge Events With Track Selection and PID Selection of Pi; pT [GeV/c]; Counts", kTH1F, {{nBinsPt, 0, 2}});
 
     // Non Zero charge Event Transverse Momentum
-    histos.add("pT_event_non0charge_WTS_PID_Pi", "Event pT in Non 0 Charge Events With Track Selection and PID Selection of Pi; pT [GeV/c]; Counts", kTH1F, {{nBins_pT, 0, 2}});
+    histos.add("pT_event_non0charge_WTS_PID_Pi", "Event pT in Non 0 Charge Events With Track Selection and PID Selection of Pi; pT [GeV/c]; Counts", kTH1F, {{nBinsPt, 0, 2}});
 
     // Rapidity of 0 charge Events
     histos.add("rapidity_event_0charge_WTS_PID_Pi_domainA", "Rapidity of Events With Track Selection and PID Selection of Pi for p_{T} < 0.15 GeV/c; y; Counts", kTH1F, {{1000, -2.5, 2.5}});
@@ -118,19 +118,19 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histos.add("rapidity_event_0charge_WTS_PID_Pi_domainC", "Rapidity of Events With Track Selection and PID Selection of Pi for p_{T} > 0.80 GeV/c; y; Counts", kTH1F, {{1000, -2.5, 2.5}});
 
     // Rapidity of non 0 charge Events
-    histos.add("rapidity_event_non0charge_WTS_PID_Pi_domainA", "Rapidity of Events With Track Selection and PID Selection of Pi for p_{T} < 0.15 GeV/c; y; Counts", kTH1F, {{nBins_y, -2.5, 2.5}});
-    histos.add("rapidity_event_non0charge_WTS_PID_Pi_domainB", "Rapidity of Events With Track Selection and PID Selection of Pi for 0.15< p_{T} < 0.80 GeV/c$; y; Counts", kTH1F, {{nBins_y, -2.5, 2.5}});
-    histos.add("rapidity_event_non0charge_WTS_PID_Pi_domainC", "Rapidity of Events With Track Selection and PID Selection of Pi for p_{T} > 0.80 GeV/c; y; Counts", kTH1F, {{nBins_y, -2.5, 2.5}});
+    histos.add("rapidity_event_non0charge_WTS_PID_Pi_domainA", "Rapidity of Events With Track Selection and PID Selection of Pi for p_{T} < 0.15 GeV/c; y; Counts", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
+    histos.add("rapidity_event_non0charge_WTS_PID_Pi_domainB", "Rapidity of Events With Track Selection and PID Selection of Pi for 0.15< p_{T} < 0.80 GeV/c$; y; Counts", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
+    histos.add("rapidity_event_non0charge_WTS_PID_Pi_domainC", "Rapidity of Events With Track Selection and PID Selection of Pi for p_{T} > 0.80 GeV/c; y; Counts", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
 
     // Invariant Mass of 0 charge events
-    histos.add("invMass_event_0charge_WTS_PID_Pi_domainA", "Invariant Mass Distribution of 0 charge Events with PID Selection of Pi for p_{T} < 0.15 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBins_IM, 0.8, 2.5}});       // pT < 0.15GeV
-    histos.add("invMass_event_0charge_WTS_PID_Pi_domainB", "Invariant Mass Distribution of 0 charge Events with PID Selection of Pi for 0.15< p_{T} < 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBins_IM, 0.8, 2.5}}); // 0.15GeV < pT < 0.8GeV
-    histos.add("invMass_event_0charge_WTS_PID_Pi_domainC", "Invariant Mass Distribution of 0 charge Events with PID Selection of Pi for p_{T} > 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBins_IM, 0.8, 2.5}});       // 0.8GeV < pT
+    histos.add("invMass_event_0charge_WTS_PID_Pi_domainA", "Invariant Mass Distribution of 0 charge Events with PID Selection of Pi for p_{T} < 0.15 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBinsInvariantMass, 0.8, 2.5}});       // pT < 0.15GeV
+    histos.add("invMass_event_0charge_WTS_PID_Pi_domainB", "Invariant Mass Distribution of 0 charge Events with PID Selection of Pi for 0.15< p_{T} < 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBinsInvariantMass, 0.8, 2.5}}); // 0.15GeV < pT < 0.8GeV
+    histos.add("invMass_event_0charge_WTS_PID_Pi_domainC", "Invariant Mass Distribution of 0 charge Events with PID Selection of Pi for p_{T} > 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBinsInvariantMass, 0.8, 2.5}});       // 0.8GeV < pT
 
     // Invariant mass of non 0 charge events
-    histos.add("invMass_event_non0charge_WTS_PID_Pi_domainA", "Invariant Mass Distribution of non 0 charge Events with PID Selection of Pi for p_{T} < 0.15 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBins_IM, 0.8, 2.5}});       // pT < 0.15GeV
-    histos.add("invMass_event_non0charge_WTS_PID_Pi_domainB", "Invariant Mass Distribution of non 0 charge Events with PID Selection of Pi for 0.15< p_{T} < 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBins_IM, 0.8, 2.5}}); // 0.15GeV < pT < 0.8GeV
-    histos.add("invMass_event_non0charge_WTS_PID_Pi_domainC", "Invariant Mass Distribution of non 0 charge Events with PID Selection of Pi for p_{T} > 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBins_IM, 0.8, 2.5}});       // 0.8GeV < pT
+    histos.add("invMass_event_non0charge_WTS_PID_Pi_domainA", "Invariant Mass Distribution of non 0 charge Events with PID Selection of Pi for p_{T} < 0.15 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBinsInvariantMass, 0.8, 2.5}});       // pT < 0.15GeV
+    histos.add("invMass_event_non0charge_WTS_PID_Pi_domainB", "Invariant Mass Distribution of non 0 charge Events with PID Selection of Pi for 0.15< p_{T} < 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBinsInvariantMass, 0.8, 2.5}}); // 0.15GeV < pT < 0.8GeV
+    histos.add("invMass_event_non0charge_WTS_PID_Pi_domainC", "Invariant Mass Distribution of non 0 charge Events with PID Selection of Pi for p_{T} > 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {{nBinsInvariantMass, 0.8, 2.5}});       // 0.8GeV < pT
 
     // tpc signal
     histos.add("tpcSignal", "TPC dEdx vs p; p [GeV/c]; dEdx [a.u.]", kTH2F, {{500, 0, 10}, {5000, 0.0, 5000.0}});
@@ -148,10 +148,10 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histos.add("V0A", "V0A amplitude", kTH1F, {{1000, 0.0, 100}});
 
     // Collin Soper Theta and Phi
-    histos.add("CS_phi_pair_1", "#phi Distribution; #phi; Entries", kTH1F, {{nBins_Phi, -3.2, 3.2}});
-    histos.add("CS_phi_pair_2", "#phi Distribution; #phi; Entries", kTH1F, {{nBins_Phi, -3.2, 3.2}});
-    histos.add("CS_costheta_pair_1", "#theta Distribution;cos(#theta); Entries", kTH1F, {{nBins_CosTheta, -1, 1}});
-    histos.add("CS_costheta_pair_2", "#theta Distribution;cos(#theta); Entries", kTH1F, {{nBins_CosTheta, -1, 1}});
+    histos.add("CS_phi_pair_1", "#phi Distribution; #phi; Entries", kTH1F, {{nBinsPhi, -3.2, 3.2}});
+    histos.add("CS_phi_pair_2", "#phi Distribution; #phi; Entries", kTH1F, {{nBinsPhi, -3.2, 3.2}});
+    histos.add("CS_costheta_pair_1", "#theta Distribution;cos(#theta); Entries", kTH1F, {{nBinsCosTheta, -1, 1}});
+    histos.add("CS_costheta_pair_2", "#theta Distribution;cos(#theta); Entries", kTH1F, {{nBinsCosTheta, -1, 1}});
 
   } // End of init function
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -225,9 +225,9 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
   {
 
     int gapSide = collision.gapSide();
-    float fitCuts[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
-    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
-    int truegapSide = sgSelector.trueGap(collision, fitCuts[0], fitCuts[1], fitCuts[2], ZDC_cut);
+    float fitCuts[5] = {fv0Cut, ft0aCut, ft0cCut, fddaCut, fddcCut};
+    std::vector<float> parameters = {pvCut, dcaZcut, dcaXYcut, tpcChi2Cut, tpcNClsFindableCut, itsChi2Cut, etaCut, pTcut};
+    int truegapSide = sgSelector.trueGap(collision, fitCuts[0], fitCuts[1], fitCuts[2], zdcCut);
     histos.fill(HIST("GapSide"), gapSide);
     histos.fill(HIST("TrueGapSide"), truegapSide);
     histos.fill(HIST("EventCounts"), 1);
@@ -243,7 +243,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     histos.fill(HIST("ZDC_A"), collision.energyCommonZNA());
     histos.fill(HIST("ZDC_C"), collision.energyCommonZNC());
 
-    if (StrictEventSelection) {
+    if (strictEventSelection) {
       if (collision.numContrib() != 4) {
         return;
       }
@@ -266,7 +266,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       if (trackselector(t0, parameters)) {
         WTS_tracks.push_back(t0);
 
-        if (selectionPIDPion(t0, true, nSigmaTPC_cut, nSigmaTOF_cut)) {
+        if (selectionPIDPion(t0, true, nSigmaTPCcut, nSigmaTOFcut)) {
           WTS_PID_Pi_tracks.push_back(t0);
           if (t0.sign() == 1) {
             Pi_plus_tracks.push_back(t0);
