@@ -122,7 +122,7 @@ struct HfTaskDs {
   using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
   Filter filterDsFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0);
-  
+
   Preslice<aod::HfCand3Prong> candDsPerCollision = aod::hf_cand::collisionId;
   PresliceUnsorted<aod::McCollisionLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
@@ -205,7 +205,7 @@ struct HfTaskDs {
       axesGenFd.insert(axesGenFd.end(), {occupancybins});
       axesGenBkg.insert(axesGenBkg.end(), {occupancybins});
     }
-    
+
     for (auto i = 0; i < DataType::kDataTypes; ++i) {
       if (doprocessDataWithCentFT0C || doprocessDataWithCentFT0M || doprocessDataWithCentNTracksPV || doprocessData || doprocessMcWithCentFT0C || doprocessMcWithCentFT0M || doprocessMcWithCentNTracksPV || doprocessMc) {
         if (i == DataType::Data) { // If data do not fill PV contributors in sparse
@@ -219,7 +219,7 @@ struct HfTaskDs {
         if (i == DataType::Data) { // If data do not fill PV contributors in sparse
           histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, axesMl);
         } else if (i == DataType::McDsNonPrompt) { // If data do not fill PV contributors in sparse
-          histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, axesFdMl); 
+          histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, axesFdMl);
         } else {
           histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, axesWithNpvMl);
         }
@@ -267,10 +267,10 @@ struct HfTaskDs {
         }
         if (i == DataType::McDsPrompt || i == DataType::McDplusPrompt) {
           histosPtr[i]["hSparseGen"] = registry.add<THnSparse>((folders[i] + "hSparseGen").c_str(), "Thn for generated prompt candidates", HistType::kTHnSparseF, axesGenPrompt);
-        } 
+        }
         if (i == DataType::McDsNonPrompt || i == DataType::McDplusNonPrompt) {
           histosPtr[i]["hSparseGen"] = registry.add<THnSparse>((folders[i] + "hSparseGen").c_str(), "Thn for generated nonprompt candidates", HistType::kTHnSparseF, axesGenFd);
-        } 
+        }
         if (i == DataType::McBkg) {
           histosPtr[i]["hSparseGen"] = registry.add<THnSparse>((folders[i] + "hSparseGen").c_str(), "Thn for non-matched generated candidates", HistType::kTHnSparseF, axesGenBkg);
         }
@@ -757,7 +757,7 @@ struct HfTaskDs {
 
   template <typename Coll>
   void fillMcGenHistosSparse(CandDsMcGen const& mcParticles,
-                       Coll const& recoCollisions)
+                             Coll const& recoCollisions)
   {
 
     // MC gen.
@@ -795,11 +795,11 @@ struct HfTaskDs {
               }
             }
             if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
-              std::get<TH1Ptr>(histosPtr[DataType::McDsNonPrompt]["hPtGen"])->Fill(pt);                                    // gen. level pT
-              std::get<TH1Ptr>(histosPtr[DataType::McDsNonPrompt]["hEtaGen"])->Fill(particle.eta());  
+              std::get<TH1Ptr>(histosPtr[DataType::McDsNonPrompt]["hPtGen"])->Fill(pt); // gen. level pT
+              std::get<TH1Ptr>(histosPtr[DataType::McDsNonPrompt]["hEtaGen"])->Fill(particle.eta());
               auto bHadMother = mcParticles.rawIteratorAt(particle.idxBhadMotherPart() - mcParticles.offset());
               int flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
-              float ptGenB = bHadMother.pt();         
+              float ptGenB = bHadMother.pt();
               if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
                 std::get<THnSparsePtr>(histosPtr[DataType::McDsNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent, occ);
               } else {
