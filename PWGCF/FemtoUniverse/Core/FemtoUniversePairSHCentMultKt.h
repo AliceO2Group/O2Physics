@@ -192,19 +192,19 @@ class PairSHCentMultKt
                     int maxl, int multval, float ktval, bool isiden)
   {
     int ktbinval = -1;
-    if ((ktval >= ktBins[0]) && (ktval < ktBins[1])) {
+    if (ktval >= ktBins[0] && ktval < ktBins[1]) {
       ktbinval = 0;
-    } else if (ktval < ktBins[2]) {
+    } else if (ktval >= ktBins[1] && ktval < ktBins[2]) {
       ktbinval = 1;
-    } else if (ktval < ktBins[3]) {
+    } else if (ktval >= ktBins[2] && ktval < ktBins[3]) {
       ktbinval = 2;
-    } else if (ktval < ktBins[4]) {
+    } else if (ktval >= ktBins[3] && ktval < ktBins[4]) {
       ktbinval = 3;
-    } else if (ktval < ktBins[5]) {
+    } else if (ktval >= ktBins[4] && ktval < ktBins[5]) {
       ktbinval = 4;
-    } else if (ktval < ktBins[6]) {
+    } else if (ktval >= ktBins[5] && ktval < ktBins[6]) {
       ktbinval = 5;
-    } else if (ktval < ktBins[7]) {
+    } else if (ktval >= ktBins[6] && ktval < ktBins[7]) {
       ktbinval = 6;
     } else {
       return;

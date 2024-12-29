@@ -174,21 +174,21 @@ class FemtoUniversePairWithCentMultKt
   {
     if (kt_value >= ktBins[0] && kt_value < ktBins[1]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_0_1"), kstar_value);
-    } else if (kt_value < ktBins[2]) {
+    } else if (kt_value >= ktBins[1] && kt_value < ktBins[2]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_1_2"), kstar_value);
-    } else if (kt_value < ktBins[3]) {
+    } else if (kt_value >= ktBins[2] && kt_value < ktBins[3]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_2_3"), kstar_value);
-    } else if (kt_value < ktBins[4]) {
+    } else if (kt_value >= ktBins[3] && kt_value < ktBins[4]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_3_4"), kstar_value);
-    } else if (kt_value < ktBins[5]) {
+    } else if (kt_value >= ktBins[4] && kt_value < ktBins[5]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_4_5"), kstar_value);
-    } else if (kt_value < ktBins[6]) {
+    } else if (kt_value >= ktBins[5] && kt_value < ktBins[6]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_5_6"), kstar_value);
-    } else if (kt_value < ktBins[7]) {
+    } else if (kt_value >= ktBins[6] && kt_value < ktBins[7]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_6_7"), kstar_value);
-    } else if (kt_value < ktBins[8]) {
+    } else if (kt_value >= ktBins[7] && kt_value < ktBins[8]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_7_8"), kstar_value);
-    } else if (kt_value < ktBins[9]) {
+    } else if (kt_value >= ktBins[8] && kt_value < ktBins[9]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_8_9"), kstar_value);
     }
   }
@@ -274,15 +274,15 @@ class FemtoUniversePairWithCentMultKt
   {
     if (kt_value >= ktBins[0] && kt_value < ktBins[1]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_0_1"), qout_value, qside_value, qlong_value);
-    } else if (kt_value < ktBins[2]) {
+    } else if (kt_value >= ktBins[1] && kt_value < ktBins[2]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_1_2"), qout_value, qside_value, qlong_value);
-    } else if (kt_value < ktBins[3]) {
+    } else if (kt_value >= ktBins[2] && kt_value < ktBins[3]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_2_3"), qout_value, qside_value, qlong_value);
-    } else if (kt_value < ktBins[4]) {
+    } else if (kt_value >= ktBins[3] && kt_value < ktBins[4]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_3_4"), qout_value, qside_value, qlong_value);
-    } else if (kt_value < ktBins[5]) {
+    } else if (kt_value >= ktBins[4] && kt_value < ktBins[5]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_4_5"), qout_value, qside_value, qlong_value);
-    } else if (kt_value < ktBins[6]) {
+    } else if (kt_value >= ktBins[5] && kt_value < ktBins[6]) {
       pairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_5_6"), qout_value, qside_value, qlong_value);
     }
   }
