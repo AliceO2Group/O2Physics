@@ -8,9 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \author AnanthaPadmanabhan
-/// \brief Task for analyzing exclusive rho decays to 4 pions
+
 /// \file exclusiveRhoTo4Pi.cxx
+/// \brief Task for analyzing exclusive rho decays to 4 pions
+/// \author Anantha Padmanabhan M Nair
 
 #include <cstdlib>
 #include <vector>
@@ -156,8 +157,8 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
-  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
+  // using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
+  using UDtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; //
   using UDCollisionFull = UDCollisionsFull::iterator;
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -179,16 +180,16 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
 
     // Boost to center of mass frame
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
-    ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
-    ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
-    ROOT::Math::XYZVectorF beam1_CM{(boostv12(pProjCM).Vect()).Unit()};
-    ROOT::Math::XYZVectorF beam2_CM{(boostv12(pTargCM).Vect()).Unit()};
+    ROOT::Math::XYZVectorF v1CM{(boostv12(v1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF v2CM{(boostv12(v2).Vect()).Unit()};
+    ROOT::Math::XYZVectorF beam1CM{(boostv12(pProjCM).Vect()).Unit()};
+    ROOT::Math::XYZVectorF beam2CM{(boostv12(pTargCM).Vect()).Unit()};
 
     // Axes
-    ROOT::Math::XYZVectorF zaxis_CS{((beam1_CM.Unit() - beam2_CM.Unit()).Unit())};
+    ROOT::Math::XYZVectorF zaxisCS{((beam1CM.Unit() - beam2CM.Unit()).Unit())};
 
-    double CosThetaCS = zaxis_CS.Dot((v1_CM));
-    return CosThetaCS;
+    double cosThetaCS = zaxisCS.Dot((v1CM));
+    return cosThetaCS;
   } // End of cosThetaCollinsSoperFrame function------------------------------------------------------------------------------------------------------------------------
 
   // Calculate Phi in Collins-Soper Frame------------------------------------------------------------------------------------------------------------------------
@@ -206,27 +207,27 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     ROOT::Math::PtEtaPhiMVector v12 = fourpion;
     // Boost to center of mass frame
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
-    ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};         // o2-linter: disable=name/function-variable,name/configurable
-    ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};         // o2-linter: disable=name/function-variable,name/configurable
-    ROOT::Math::XYZVectorF beam1_CM{(boostv12(pProjCM).Vect()).Unit()}; // o2-linter: disable=name/function-variable,name/configurable
-    ROOT::Math::XYZVectorF beam2_CM{(boostv12(pTargCM).Vect()).Unit()}; // o2-linter: disable=name/function-variable,name/configurable
+    ROOT::Math::XYZVectorF v1CM{(boostv12(v1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF v2CM{(boostv12(v2).Vect()).Unit()};
+    ROOT::Math::XYZVectorF beam1CM{(boostv12(pProjCM).Vect()).Unit()};
+    ROOT::Math::XYZVectorF beam2CM{(boostv12(pTargCM).Vect()).Unit()};
     // Axes
-    ROOT::Math::XYZVectorF zaxis_CS{((beam1_CM.Unit() - beam2_CM.Unit()).Unit())}; // o2-linter: disable=name/function-variable,name/configurable
-    ROOT::Math::XYZVectorF yaxis_CS{(beam1_CM.Cross(beam2_CM)).Unit()};            // o2-linter: disable=name/function-variable,name/configurable
-    ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};            // o2-linter: disable=name/function-variable,name/configurable
+    ROOT::Math::XYZVectorF zaxisCS{((beam1CM.Unit() - beam2CM.Unit()).Unit())};
+    ROOT::Math::XYZVectorF yaxisCS{(beam1CM.Cross(beam2CM)).Unit()};
+    ROOT::Math::XYZVectorF xaxisCS{(yaxisCS.Cross(zaxisCS)).Unit()};
 
-    double phi = std::atan2(yaxis_CS.Dot(v1_CM), xaxis_CS.Dot(v1_CM));
+    double phi = std::atan2(yaxisCS.Dot(v1CM), xaxisCS.Dot(v1CM));
     return phi;
   } // End of phiCollinsSoperFrame function------------------------------------------------------------------------------------------------------------------------
 
   // Begin of Process function--------------------------------------------------------------------------------------------------------------------------------------------------
-  void process(UDCollisionFull const& collision, udtracksfull const& tracks)
+  void process(UDCollisionFull const& collision, UDtracksfull const& tracks)
   {
 
     int gapSide = collision.gapSide();
-    float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
+    float fitCuts[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
     std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
-    int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
+    int truegapSide = sgSelector.trueGap(collision, fitCuts[0], fitCuts[1], fitCuts[2], ZDC_cut);
     histos.fill(HIST("GapSide"), gapSide);
     histos.fill(HIST("TrueGapSide"), truegapSide);
     histos.fill(HIST("EventCounts"), 1);
@@ -279,19 +280,19 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
 
     } // End of loop over tracks
 
-    int len_WOTS = static_cast<int>(WOTS_tracks.size());
-    int len_WTS = static_cast<int>(WTS_tracks.size());
-    int len_WTS_PID_Pi = static_cast<int>(WTS_PID_Pi_tracks.size());
-    int len_Pi_plus = static_cast<int>(Pi_plus_tracks.size());
-    int len_Pi_minus = static_cast<int>(Pi_minus_tracks.size());
+    int numTracksWOTS = static_cast<int>(WOTS_tracks.size());
+    int numTracksWTS = static_cast<int>(WTS_tracks.size());
+    int numTracksWTSandPIDpi = static_cast<int>(WTS_PID_Pi_tracks.size());
+    int numPiPlusTracks = static_cast<int>(Pi_plus_tracks.size());
+    int numPionMinusTRacks = static_cast<int>(Pi_minus_tracks.size());
 
-    for (int i = 0; i < len_WOTS; i++) {
+    for (int i = 0; i < numTracksWOTS; i++) {
       histos.fill(HIST("tpcNSigmaPi_WOTS"), WOTS_tracks[i].tpcNSigmaPi());
       histos.fill(HIST("tofNSigmaPi_WOTS"), WOTS_tracks[i].tofNSigmaPi());
       histos.fill(HIST("pT_track_WOTS"), std::sqrt(WOTS_tracks[i].px() * WOTS_tracks[i].px() + WOTS_tracks[i].py() * WOTS_tracks[i].py()));
     } // End of loop over tracks without selection
 
-    for (int i = 0; i < len_WTS; i++) {
+    for (int i = 0; i < numTracksWTS; i++) {
 
       histos.fill(HIST("tpcSignal"), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py() + WTS_tracks[i].pz() * WTS_tracks[i].pz()), WTS_tracks[i].tpcSignal());
       histos.fill(HIST("tofBeta"), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py() + WTS_tracks[i].pz() * WTS_tracks[i].pz()), WTS_tracks[i].beta());
@@ -300,7 +301,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       histos.fill(HIST("pT_track_WTS"), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py()));
     } // End of loop over tracks with selection only
 
-    for (int i = 0; i < len_WTS_PID_Pi; i++) {
+    for (int i = 0; i < numTracksWTSandPIDpi; i++) {
 
       histos.fill(HIST("tpcSignal_Pi"), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py() + WTS_PID_Pi_tracks[i].pz() * WTS_PID_Pi_tracks[i].pz()), WTS_PID_Pi_tracks[i].tpcSignal());
       histos.fill(HIST("tofBeta_Pi"), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py() + WTS_PID_Pi_tracks[i].pz() * WTS_PID_Pi_tracks[i].pz()), WTS_PID_Pi_tracks[i].beta());
@@ -320,12 +321,12 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
       histos.fill(HIST("pT_track_WTS_PID_Pi"), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
     } // End of loop over tracks with selection and PID selection of Pions
 
-    if (len_WTS_PID_Pi != 4) {
+    if (numTracksWTSandPIDpi != 4) {
       return;
     }
 
     // Selecting Events with net charge = 0
-    if (len_Pi_minus == 2 && len_Pi_plus == 2) {
+    if (numPionMinusTRacks == 2 && numPiPlusTracks == 2) {
 
       TLorentzVector p1, p2, p3, p4, p1234;
       ROOT::Math::PtEtaPhiMVector k1, k2, k3, k4, k1234, k13, k14, k23, k24;
@@ -354,15 +355,15 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
           histos.fill(HIST("rapidity_event_0charge_WTS_PID_Pi_domainA"), p1234.Rapidity());
           histos.fill(HIST("invMass_event_0charge_WTS_PID_Pi_domainA"), p1234.M());
 
-          auto phi_pair_1 = phiCollinsSoperFrame(k13, k24, k1234);
-          auto phi_pair_2 = phiCollinsSoperFrame(k14, k23, k1234);
-          auto cos_theta_1 = cosThetaCollinsSoperFrame(k13, k24, k1234);
-          auto cos_theta_2 = cosThetaCollinsSoperFrame(k14, k23, k1234);
+          auto phiPair1 = phiCollinsSoperFrame(k13, k24, k1234);
+          auto phiPair2 = phiCollinsSoperFrame(k14, k23, k1234);
+          auto cosThetaPair1 = cosThetaCollinsSoperFrame(k13, k24, k1234);
+          auto cosThetaPair2 = cosThetaCollinsSoperFrame(k14, k23, k1234);
 
-          histos.fill(HIST("CS_phi_pair_1"), phi_pair_1);
-          histos.fill(HIST("CS_phi_pair_2"), phi_pair_2);
-          histos.fill(HIST("CS_costheta_pair_1"), cos_theta_1);
-          histos.fill(HIST("CS_costheta_pair_2"), cos_theta_2);
+          histos.fill(HIST("CS_phi_pair_1"), phiPair1);
+          histos.fill(HIST("CS_phi_pair_2"), phiPair2);
+          histos.fill(HIST("CS_costheta_pair_1"), cosThetaPair1);
+          histos.fill(HIST("CS_costheta_pair_2"), cosThetaPair2);
         }
         if (p1234.Pt() > 0.15 && p1234.Pt() < 0.80) {
           histos.fill(HIST("rapidity_event_0charge_WTS_PID_Pi_domainB"), p1234.Rapidity());
@@ -377,7 +378,7 @@ struct exclusiveRhoTo4Pi { // o2-linter: disable=name/workflow-file,name/struct
     } // End of Analysis for 0 charge events
 
     // Selecting Events with net charge != 0 for estimation of background
-    if (len_Pi_minus != 2 && len_Pi_plus != 2) {
+    if (numPionMinusTRacks != 2 && numPiPlusTracks != 2) {
 
       TLorentzVector p1, p2, p3, p4, p1234;
       p1.SetXYZM(WTS_PID_Pi_tracks[0].px(), WTS_PID_Pi_tracks[0].py(), WTS_PID_Pi_tracks[0].pz(), o2::constants::physics::MassPionCharged);
