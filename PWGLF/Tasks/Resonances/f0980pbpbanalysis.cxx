@@ -239,9 +239,6 @@ struct f0980pbpbanalysis {
   bool PIDSelected(const TrackType track)
   {
     if (cfgUSETOF) {
-      if (!track.hasTOF()) {
-        return 0;
-      }
       if (std::fabs(track.tofNSigmaPi()) > cMaxTOFnSigmaPion) {
         return 0;
       }
