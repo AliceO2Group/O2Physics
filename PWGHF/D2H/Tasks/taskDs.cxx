@@ -89,29 +89,20 @@ struct HfTaskDs {
   Configurable<bool> storeOccupancy{"storeOccupancy", false, "Flag to store occupancy information"};
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
 
-  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f}, "axis for pT"};
-  ConfigurableAxis axisPtBHad{"axisPtBHad", {50, 0., 100}, "axis for pt of B hadron decayed into D candidate"};
-  ConfigurableAxis axisFlagBHad{"axisFlagBHad", {5, 0, 5}, "axis for B hadron mother flag"};
-  ConfigurableAxis axisNPvContributors{"axisNPvContributors", {200, -0.5f, 199.5f}, "axis for NPvContributors"};
-  ConfigurableAxis axisMlScore0{"axisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
-  ConfigurableAxis axisMlScore1{"axisMlScore1", {100, 0., 1.}, "axis for ML output score 1"};
-  ConfigurableAxis axisMlScore2{"axisMlScore2", {100, 0., 1.}, "axis for ML output score 2"};
-  ConfigurableAxis axisCentrality{"axisCentrality", {100, 0., 1.}, "axis for centrality/multiplicity"};
-  ConfigurableAxis axisOccupancy{"axisOccupancy", {14, 0., 14000.}, "axis for occupancy"};
-
   struct : ConfigurableGroup {
     Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
-    Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
+    Configurable<std::string> ccdbPath{"ccdbPath", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
     Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
   } ccdbConfig;
 
   HfHelper hfHelper;
+  SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  using TH1_ptr = std::shared_ptr<TH1>;
-  using TH2_ptr = std::shared_ptr<TH2>;
-  using THnSparse_ptr = std::shared_ptr<THnSparse>;
-  using histTypes = std::variant<TH1_ptr, TH2_ptr, THnSparse_ptr>;
+  using TH1Ptr = std::shared_ptr<TH1>;
+  using TH2Ptr = std::shared_ptr<TH2>;
+  using THnSparsePtr = std::shared_ptr<THnSparse>;
+  using HistTypes = std::variant<TH1Ptr, TH2Ptr, THnSparsePtr>;
   template <typename CandDs>
   using MemberFunctionPointer = bool (HfTaskDs::*)(const CandDs&);
 
@@ -130,9 +121,20 @@ struct HfTaskDs {
   using CandDsMcRecoWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec, aod::HfMlDsToKKPi>>;
   using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
+  Filter filterDsFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0);
+  
   Preslice<aod::HfCand3Prong> candDsPerCollision = aod::hf_cand::collisionId;
   PresliceUnsorted<aod::McCollisionLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
-  SliceCache cache;
+
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f}, "axis for pT"};
+  ConfigurableAxis axisPtBHad{"axisPtBHad", {50, 0., 100}, "axis for pt of B hadron decayed into D candidate"};
+  ConfigurableAxis axisFlagBHad{"axisFlagBHad", {5, 0, 5}, "axis for B hadron mother flag"};
+  ConfigurableAxis axisNPvContributors{"axisNPvContributors", {200, -0.5f, 199.5f}, "axis for NPvContributors"};
+  ConfigurableAxis axisMlScore0{"axisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
+  ConfigurableAxis axisMlScore1{"axisMlScore1", {100, 0., 1.}, "axis for ML output score 1"};
+  ConfigurableAxis axisMlScore2{"axisMlScore2", {100, 0., 1.}, "axis for ML output score 2"};
+  ConfigurableAxis axisCentrality{"axisCentrality", {100, 0., 1.}, "axis for centrality/multiplicity"};
+  ConfigurableAxis axisOccupancy{"axisOccupancy", {14, 0., 14000.}, "axis for occupancy"};
 
   int offsetDplusDecayChannel = aod::hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi - aod::hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi; // Offset between Dplus and Ds to use the same decay channel. See aod::hf_cand_3prong::DecayChannelDToKKPi
   int mRunNumber{0};
@@ -142,22 +144,20 @@ struct HfTaskDs {
   TProfile* hVtxZFT0C;
   TProfile* hVtxZNTracks;
 
-  Filter filterDsFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0);
-
   HistogramRegistry registry{"registry", {}};
 
   std::array<std::string, DataType::kDataTypes> folders = {"Data/", "MC/Ds/Prompt/", "MC/Ds/NonPrompt/", "MC/Dplus/Prompt/", "MC/Dplus/NonPrompt/", "MC/Dplus/Bkg/", "MC/Lc/", "MC/Bkg/"};
 
-  std::unordered_map<std::string, histTypes> dataHistograms = {};
-  std::unordered_map<std::string, histTypes> mcDsPromptHistograms = {};
-  std::unordered_map<std::string, histTypes> mcDsNonPromptHistograms = {};
-  std::unordered_map<std::string, histTypes> mcDplusPromptHistograms = {};
-  std::unordered_map<std::string, histTypes> mcDplusNonPromptHistograms = {};
-  std::unordered_map<std::string, histTypes> mcDplusBkgHistograms = {};
-  std::unordered_map<std::string, histTypes> mcLcBkgHistograms = {};
-  std::unordered_map<std::string, histTypes> mcBkgHistograms = {};
+  std::unordered_map<std::string, HistTypes> dataHistograms = {};
+  std::unordered_map<std::string, HistTypes> mcDsPromptHistograms = {};
+  std::unordered_map<std::string, HistTypes> mcDsNonPromptHistograms = {};
+  std::unordered_map<std::string, HistTypes> mcDplusPromptHistograms = {};
+  std::unordered_map<std::string, HistTypes> mcDplusNonPromptHistograms = {};
+  std::unordered_map<std::string, HistTypes> mcDplusBkgHistograms = {};
+  std::unordered_map<std::string, HistTypes> mcLcBkgHistograms = {};
+  std::unordered_map<std::string, HistTypes> mcBkgHistograms = {};
 
-  std::array<std::unordered_map<std::string, histTypes>, DataType::kDataTypes> histosPtr = {dataHistograms, mcDsPromptHistograms, mcDsNonPromptHistograms, mcDplusPromptHistograms, mcDplusNonPromptHistograms, mcDplusBkgHistograms, mcLcBkgHistograms, mcBkgHistograms};
+  std::array<std::unordered_map<std::string, HistTypes>, DataType::kDataTypes> histosPtr = {dataHistograms, mcDsPromptHistograms, mcDsNonPromptHistograms, mcDplusPromptHistograms, mcDplusNonPromptHistograms, mcDplusBkgHistograms, mcLcBkgHistograms, mcBkgHistograms};
 
   void init(InitContext&)
   {
@@ -176,6 +176,7 @@ struct HfTaskDs {
     AxisSpec ybins = {100, -5., 5, "#it{y}"};
     AxisSpec massbins = {600, 1.67, 2.27, "inv. mass (KK#pi) (GeV/#it{c}^{2})"};
     AxisSpec centralitybins = {100, 0., 100., "Centrality"};
+    AxisSpec npvcontributorsbins = {axisNPvContributors, "NPvContributors"};
     AxisSpec mlscore0bins = {axisMlScore0, "Score 0"};
     AxisSpec mlscore1bins = {axisMlScore1, "Score 1"};
     AxisSpec mlscore2bins = {axisMlScore2, "Score 2"};
@@ -187,11 +188,11 @@ struct HfTaskDs {
     std::vector<AxisSpec> axesMl = {massbins, ptbins, centralitybins, mlscore0bins, mlscore1bins, mlscore2bins};
     std::vector<AxisSpec> axesFd = {massbins, ptbins, centralitybins, ptBHad, flagBHad};
     std::vector<AxisSpec> axesFdMl = {massbins, ptbins, centralitybins, mlscore0bins, mlscore1bins, mlscore2bins, ptBHad, flagBHad};
-    std::vector<AxisSpec> axesWithNpv = {massbins, ptbins, centralitybins, axisNPvContributors};
-    std::vector<AxisSpec> axesWithNpvMl = {massbins, ptbins, centralitybins, axisNPvContributors, mlscore0bins, mlscore1bins, mlscore2bins};
-    std::vector<AxisSpec> axesGenPrompt = {ptbins, ybins, axisNPvContributors, centralitybins};
-    std::vector<AxisSpec> axesGenFd = {ptbins, ybins, axisNPvContributors, ptBHad, flagBHad, centralitybins};
-    std::vector<AxisSpec> axesGenBkg = {ptbins, ybins, axisNPvContributors, centralitybins};
+    std::vector<AxisSpec> axesWithNpv = {massbins, ptbins, centralitybins, npvcontributorsbins};
+    std::vector<AxisSpec> axesWithNpvMl = {massbins, ptbins, centralitybins, npvcontributorsbins, mlscore0bins, mlscore1bins, mlscore2bins};
+    std::vector<AxisSpec> axesGenPrompt = {ptbins, ybins, npvcontributorsbins, centralitybins};
+    std::vector<AxisSpec> axesGenFd = {ptbins, ybins, npvcontributorsbins, ptBHad, flagBHad, centralitybins};
+    std::vector<AxisSpec> axesGenBkg = {ptbins, ybins, npvcontributorsbins, centralitybins};
 
     if (storeOccupancy) {
       axes.insert(axes.end(), {occupancybins});
@@ -334,18 +335,18 @@ struct HfTaskDs {
   /// Convert the B hadron mother PDG for non prompt candidates to a flag
   /// \param pdg of the b hadron mother
   /// \return integer map to specific mothers' PDG codes
-  int getBHadMotherFlag(const int& flagBHad)
+  int getBHadMotherFlag(const int& pdgBHad)
   {
-    if (std::abs(flagBHad) == o2::constants::physics::kBPlus) {
+    if (std::abs(pdgBHad) == o2::constants::physics::kBPlus) {
       return BHadMothers::BPlus;
     }
-    if (std::abs(flagBHad) == o2::constants::physics::kB0) {
+    if (std::abs(pdgBHad) == o2::constants::physics::kB0) {
       return BHadMothers::BZero;
     }
-    if (std::abs(flagBHad) == o2::constants::physics::kBS) {
+    if (std::abs(pdgBHad) == o2::constants::physics::kBS) {
       return BHadMothers::Bs;
     }
-    if (std::abs(flagBHad) == o2::constants::physics::kLambdaB0) {
+    if (std::abs(pdgBHad) == o2::constants::physics::kLambdaB0) {
       return BHadMothers::LambdaBZero;
     }
     return BHadMothers::NotMatched;
@@ -486,28 +487,28 @@ struct HfTaskDs {
   void fillHisto(const T1& candidate, DataType dataType)
   {
     auto pt = candidate.pt();
-    std::get<TH1_ptr>(histosPtr[dataType]["hPt"])->Fill(pt);
-    std::get<TH1_ptr>(histosPtr[dataType]["hPtProng0"])->Fill(candidate.ptProng0());
-    std::get<TH1_ptr>(histosPtr[dataType]["hPtProng1"])->Fill(candidate.ptProng1());
-    std::get<TH1_ptr>(histosPtr[dataType]["hPtProng2"])->Fill(candidate.ptProng2());
-    std::get<TH2_ptr>(histosPtr[dataType]["hEta"])->Fill(candidate.eta(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hCt"])->Fill(hfHelper.ctDs(candidate), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hDecayLength"])->Fill(candidate.decayLength(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hDecayLengthXY"])->Fill(candidate.decayLengthXY(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hNormalisedDecayLengthXY"])->Fill(candidate.decayLengthXYNormalised(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hCPA"])->Fill(candidate.cpa(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hCPAxy"])->Fill(candidate.cpaXY(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterXY"])->Fill(candidate.impactParameterXY(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hMaxNormalisedDeltaIP"])->Fill(candidate.maxNormalisedDeltaIP(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterProngSqSum"])->Fill(candidate.impactParameterProngSqSum(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hDecayLengthError"])->Fill(candidate.errorDecayLength(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hDecayLengthXYError"])->Fill(candidate.errorDecayLengthXY(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterError"])->Fill(candidate.errorImpactParameter0(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterError"])->Fill(candidate.errorImpactParameter1(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterError"])->Fill(candidate.errorImpactParameter2(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hd0Prong0"])->Fill(candidate.impactParameter0(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hd0Prong1"])->Fill(candidate.impactParameter1(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hd0Prong2"])->Fill(candidate.impactParameter2(), pt);
+    std::get<TH1Ptr>(histosPtr[dataType]["hPt"])->Fill(pt);
+    std::get<TH1Ptr>(histosPtr[dataType]["hPtProng0"])->Fill(candidate.ptProng0());
+    std::get<TH1Ptr>(histosPtr[dataType]["hPtProng1"])->Fill(candidate.ptProng1());
+    std::get<TH1Ptr>(histosPtr[dataType]["hPtProng2"])->Fill(candidate.ptProng2());
+    std::get<TH2Ptr>(histosPtr[dataType]["hEta"])->Fill(candidate.eta(), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hCt"])->Fill(hfHelper.ctDs(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hDecayLength"])->Fill(candidate.decayLength(), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hDecayLengthXY"])->Fill(candidate.decayLengthXY(), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hNormalisedDecayLengthXY"])->Fill(candidate.decayLengthXYNormalised(), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hCPA"])->Fill(candidate.cpa(), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hCPAxy"])->Fill(candidate.cpaXY(), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hImpactParameterXY"])->Fill(candidate.impactParameterXY(), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hMaxNormalisedDeltaIP"])->Fill(candidate.maxNormalisedDeltaIP(), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hImpactParameterProngSqSum"])->Fill(candidate.impactParameterProngSqSum(), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hDecayLengthError"])->Fill(candidate.errorDecayLength(), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hDecayLengthXYError"])->Fill(candidate.errorDecayLengthXY(), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hImpactParameterError"])->Fill(candidate.errorImpactParameter0(), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hImpactParameterError"])->Fill(candidate.errorImpactParameter1(), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hImpactParameterError"])->Fill(candidate.errorImpactParameter2(), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hd0Prong0"])->Fill(candidate.impactParameter0(), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hd0Prong1"])->Fill(candidate.impactParameter1(), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hd0Prong2"])->Fill(candidate.impactParameter2(), pt);
 
     return;
   }
@@ -533,31 +534,31 @@ struct HfTaskDs {
 
     if (dataType == DataType::Data) { // If data do not fill PV contributors in sparse
       if (storeOccupancy) {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], evaluateOccupancy(candidate.template collision_as<Coll>()));
+        std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], evaluateOccupancy(candidate.template collision_as<Coll>()));
         return;
       } else {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2]);
+        std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2]);
         return;
       }
     }
     if constexpr (isMc) {
       if (dataType == DataType::McDsNonPrompt) { // If data do not fill PV contributors in sparse
         if (storeOccupancy) {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()), evaluateOccupancy(candidate.template collision_as<Coll>()));
-
+          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()), evaluateOccupancy(candidate.template collision_as<Coll>()));
           return;
         } else {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()));
+          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()));
+          return;
+        }
+      } else {
+        if (storeOccupancy) {
+          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib(), outputMl[0], outputMl[1], outputMl[2], evaluateOccupancy(candidate.template collision_as<Coll>()));
+          return;
+        } else {
+          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib(), outputMl[0], outputMl[1], outputMl[2]);
           return;
         }
       }
-    } 
-    if (storeOccupancy) {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib(), evaluateOccupancy(candidate.template collision_as<Coll>()));
-        return;
-    } else {
-      std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib());
-      return;
     }
   }
 
@@ -573,30 +574,31 @@ struct HfTaskDs {
 
     if (dataType == DataType::Data) { // If data do not fill PV contributors in sparse
       if (storeOccupancy) {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), evaluateOccupancy(candidate.template collision_as<Coll>()));
+        std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), evaluateOccupancy(candidate.template collision_as<Coll>()));
         return;
       } else {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate));
+        std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate));
         return;
       }
     }
     if constexpr (isMc) {
       if (dataType == DataType::McDsNonPrompt) { // If data do not fill PV contributors in sparse
         if (storeOccupancy) {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()), evaluateOccupancy(candidate.template collision_as<Coll>()));
+          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()), evaluateOccupancy(candidate.template collision_as<Coll>()));
           return;
         } else {
-          std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()));
+          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()));
+          return;
+        }
+      } else {
+        if (storeOccupancy) {
+          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib(), evaluateOccupancy(candidate.template collision_as<Coll>()));
+          return;
+        } else {
+          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib());
           return;
         }
       }
-    } 
-    if (storeOccupancy) {
-      std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib(), evaluateOccupancy(candidate.template collision_as<Coll>()));
-      return;
-    } else {
-      std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib());
-      return;
     }
   }
 
@@ -609,10 +611,10 @@ struct HfTaskDs {
     auto pt = candidate.pt();
     fillSparse<isMc, Coll>(candidate, dataType, FinalState::KKPi);
 
-    std::get<TH2_ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(hfHelper.cos3PiKDsToKKPi(candidate), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(hfHelper.absCos3PiKDsToKKPi(candidate), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hDeltaMassPhi"])->Fill(hfHelper.deltaMassPhiDsToKKPi(candidate), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hMassKK"])->Fill(hfHelper.massKKPairDsToKKPi(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(hfHelper.cos3PiKDsToKKPi(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(hfHelper.absCos3PiKDsToKKPi(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hDeltaMassPhi"])->Fill(hfHelper.deltaMassPhiDsToKKPi(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hMassKK"])->Fill(hfHelper.massKKPairDsToKKPi(candidate), pt);
 
     return;
   }
@@ -626,10 +628,10 @@ struct HfTaskDs {
     auto pt = candidate.pt();
     fillSparse<isMc, Coll>(candidate, dataType, FinalState::PiKK);
 
-    std::get<TH2_ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(hfHelper.cos3PiKDsToPiKK(candidate), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(hfHelper.absCos3PiKDsToPiKK(candidate), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hDeltaMassPhi"])->Fill(hfHelper.deltaMassPhiDsToPiKK(candidate), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hMassKK"])->Fill(hfHelper.massKKPairDsToPiKK(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(hfHelper.cos3PiKDsToPiKK(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(hfHelper.absCos3PiKDsToPiKK(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hDeltaMassPhi"])->Fill(hfHelper.deltaMassPhiDsToPiKK(candidate), pt);
+    std::get<TH2Ptr>(histosPtr[dataType]["hMassKK"])->Fill(hfHelper.massKKPairDsToPiKK(candidate), pt);
 
     return;
   }
@@ -668,13 +670,13 @@ struct HfTaskDs {
         fillHistoKKPi<true, Coll>(candidate, dataType);
 
         if (TESTBIT(candidate.isSelDsToKKPi(), aod::SelectionStep::RecoSkims)) {
-          std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecoSkim"])->Fill(pt, yCand);
+          std::get<TH2Ptr>(histosPtr[dataType]["hPtVsYRecoSkim"])->Fill(pt, yCand);
         }
         if (TESTBIT(candidate.isSelDsToKKPi(), aod::SelectionStep::RecoTopol)) {
-          std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecoTopol"])->Fill(pt, yCand);
+          std::get<TH2Ptr>(histosPtr[dataType]["hPtVsYRecoTopol"])->Fill(pt, yCand);
         }
         if (TESTBIT(candidate.isSelDsToKKPi(), aod::SelectionStep::RecoPID)) {
-          std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecoPID"])->Fill(pt, yCand);
+          std::get<TH2Ptr>(histosPtr[dataType]["hPtVsYRecoPID"])->Fill(pt, yCand);
         }
       }
       if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
@@ -682,13 +684,13 @@ struct HfTaskDs {
         fillHistoPiKK<true, Coll>(candidate, dataType);
 
         if (TESTBIT(candidate.isSelDsToPiKK(), aod::SelectionStep::RecoSkims)) {
-          std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecoSkim"])->Fill(pt, yCand);
+          std::get<TH2Ptr>(histosPtr[dataType]["hPtVsYRecoSkim"])->Fill(pt, yCand);
         }
         if (TESTBIT(candidate.isSelDsToPiKK(), aod::SelectionStep::RecoTopol)) {
-          std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecoTopol"])->Fill(pt, yCand);
+          std::get<TH2Ptr>(histosPtr[dataType]["hPtVsYRecoTopol"])->Fill(pt, yCand);
         }
         if (TESTBIT(candidate.isSelDsToPiKK(), aod::SelectionStep::RecoPID)) {
-          std::get<TH2_ptr>(histosPtr[dataType]["hPtVsYRecoPID"])->Fill(pt, yCand);
+          std::get<TH2Ptr>(histosPtr[dataType]["hPtVsYRecoPID"])->Fill(pt, yCand);
         }
       }
     }
@@ -757,26 +759,26 @@ struct HfTaskDs {
   void fillMcGenHistosSparse(CandDsMcGen const& mcParticles,
                        Coll const& recoCollisions)
   {
-    
-    float cent{-1.};
-    float occ{-1.};
-    unsigned maxNumContrib = 0;
 
     // MC gen.
     for (const auto& particle : mcParticles) {
       const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
-      for (const auto& recCol : recoCollsPerMcColl) {
-        maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
-      }
-      cent = evaluateMcGenCollCentrality(recoCollsPerMcColl);
-      if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-        occ = evaluateMcGenCollOccupancy(recoCollsPerMcColl);
-      }
 
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
         if (particle.flagMcDecayChanGen() == decayChannel || (fillDplusMc && particle.flagMcDecayChanGen() == (decayChannel + offsetDplusDecayChannel))) {
           auto pt = particle.pt();
           double y{0.f};
+
+          unsigned maxNumContrib = 0;
+          for (const auto& recCol : recoCollsPerMcColl) {
+            maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
+          }
+          float cent = evaluateMcGenCollCentrality(recoCollsPerMcColl);
+          float occ{-1.};
+          if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
+            occ = evaluateMcGenCollOccupancy(recoCollsPerMcColl);
+          }
+
           if (particle.flagMcDecayChanGen() == decayChannel) {
             y = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDS);
             if (yCandGenMax >= 0. && std::abs(y) > yCandGenMax) {
@@ -784,24 +786,24 @@ struct HfTaskDs {
             }
 
             if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
-              std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hPtGen"])->Fill(pt); // gen. level pT
-              std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hEtaGen"])->Fill(particle.eta());
+              std::get<TH1Ptr>(histosPtr[DataType::McDsPrompt]["hPtGen"])->Fill(pt); // gen. level pT
+              std::get<TH1Ptr>(histosPtr[DataType::McDsPrompt]["hEtaGen"])->Fill(particle.eta());
               if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-                std::get<THnSparse_ptr>(histosPtr[DataType::McDsPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ);
+                std::get<THnSparsePtr>(histosPtr[DataType::McDsPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ);
               } else {
-                std::get<THnSparse_ptr>(histosPtr[DataType::McDsPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent);
+                std::get<THnSparsePtr>(histosPtr[DataType::McDsPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent);
               }
             }
             if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
-              std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtGen"])->Fill(pt);                                    // gen. level pT
-              std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hEtaGen"])->Fill(particle.eta());  
+              std::get<TH1Ptr>(histosPtr[DataType::McDsNonPrompt]["hPtGen"])->Fill(pt);                                    // gen. level pT
+              std::get<TH1Ptr>(histosPtr[DataType::McDsNonPrompt]["hEtaGen"])->Fill(particle.eta());  
               auto bHadMother = mcParticles.rawIteratorAt(particle.idxBhadMotherPart() - mcParticles.offset());
               int flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
               float ptGenB = bHadMother.pt();         
               if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-                std::get<THnSparse_ptr>(histosPtr[DataType::McDsNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent, occ);
+                std::get<THnSparsePtr>(histosPtr[DataType::McDsNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent, occ);
               } else {
-                std::get<THnSparse_ptr>(histosPtr[DataType::McDsNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent);
+                std::get<THnSparsePtr>(histosPtr[DataType::McDsNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent);
               }
             }
           } else if (fillDplusMc) {
@@ -810,24 +812,24 @@ struct HfTaskDs {
               continue;
             }
             if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
-              std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hPtGen"])->Fill(pt); // gen. level pT
-              std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hEtaGen"])->Fill(particle.eta());
+              std::get<TH1Ptr>(histosPtr[DataType::McDplusPrompt]["hPtGen"])->Fill(pt); // gen. level pT
+              std::get<TH1Ptr>(histosPtr[DataType::McDplusPrompt]["hEtaGen"])->Fill(particle.eta());
               if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-                std::get<THnSparse_ptr>(histosPtr[DataType::McDplusPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ);
+                std::get<THnSparsePtr>(histosPtr[DataType::McDplusPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ);
               } else {
-                std::get<THnSparse_ptr>(histosPtr[DataType::McDplusPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent);
+                std::get<THnSparsePtr>(histosPtr[DataType::McDplusPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent);
               }
             }
             if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
-              std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtGen"])->Fill(pt); // gen. level pT
-              std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hEtaGen"])->Fill(particle.eta());
+              std::get<TH1Ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtGen"])->Fill(pt); // gen. level pT
+              std::get<TH1Ptr>(histosPtr[DataType::McDplusNonPrompt]["hEtaGen"])->Fill(particle.eta());
               auto bHadMother = mcParticles.rawIteratorAt(particle.idxBhadMotherPart() - mcParticles.offset());
               int flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
               float ptGenB = bHadMother.pt();
               if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-                std::get<THnSparse_ptr>(histosPtr[DataType::McDplusNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent, occ);
+                std::get<THnSparsePtr>(histosPtr[DataType::McDplusNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent, occ);
               } else {
-                std::get<THnSparse_ptr>(histosPtr[DataType::McDplusNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent);
+                std::get<THnSparsePtr>(histosPtr[DataType::McDplusNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent);
               }
             }
           }
@@ -835,10 +837,19 @@ struct HfTaskDs {
       } else { // not matched candidates
         auto pt = particle.pt();
         double y = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDS);
+        unsigned maxNumContrib = 0;
+        for (const auto& recCol : recoCollsPerMcColl) {
+          maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
+        }
+        float cent = evaluateMcGenCollCentrality(recoCollsPerMcColl);
+        float occ{-1.};
         if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-          std::get<THnSparse_ptr>(histosPtr[DataType::McBkg]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ);
+          occ = evaluateMcGenCollOccupancy(recoCollsPerMcColl);
+        }
+        if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
+          std::get<THnSparsePtr>(histosPtr[DataType::McBkg]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ);
         } else {
-          std::get<THnSparse_ptr>(histosPtr[DataType::McBkg]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent);
+          std::get<THnSparsePtr>(histosPtr[DataType::McBkg]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent);
         }
       }
     }
@@ -852,16 +863,16 @@ struct HfTaskDs {
   {
     int numPvContributors = collision.numContrib();
     float centrality = evaluateCentralityColl(collision);
-    std::get<TH2_ptr>(histosPtr[DataType::Data]["hNPvContribAll"])->Fill(numPvContributors, centrality);
+    std::get<TH2Ptr>(histosPtr[DataType::Data]["hNPvContribAll"])->Fill(numPvContributors, centrality);
     for (int i = 0; i < DataType::kDataTypes; i++) {
       if (nCandsPerType[i]) {
-        std::get<TH2_ptr>(histosPtr[i]["hNPvContribCands"])->Fill(numPvContributors, centrality);
+        std::get<TH2Ptr>(histosPtr[i]["hNPvContribCands"])->Fill(numPvContributors, centrality);
       }
       if (nCandsInSignalRegionDsPerType[i]) {
-        std::get<TH2_ptr>(histosPtr[i]["hNPvContribCandsInSignalRegionDs"])->Fill(numPvContributors, centrality);
+        std::get<TH2Ptr>(histosPtr[i]["hNPvContribCandsInSignalRegionDs"])->Fill(numPvContributors, centrality);
       }
       if (nCandsInSignalRegionDplusPerType[i]) {
-        std::get<TH2_ptr>(histosPtr[i]["hNPvContribCandsInSignalRegionDplus"])->Fill(numPvContributors, centrality);
+        std::get<TH2Ptr>(histosPtr[i]["hNPvContribCandsInSignalRegionDplus"])->Fill(numPvContributors, centrality);
       }
     }
   }
