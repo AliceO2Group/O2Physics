@@ -1363,7 +1363,7 @@ struct tofSpectra {
         if (track.tpcNClsCrossedRows() < 70 || track.tpcChi2NCl() > 4 || track.tpcChi2NCl() < 0.5 ||
             track.itsChi2NCl() > 36 || std::abs(track.dcaXY()) > 0.05 || std::abs(track.dcaZ()) > 2.0 ||
             std::abs(track.eta()) > 0.8 || track.tpcCrossedRowsOverFindableCls() < 0.8 || track.tpcNClsFound() < 100 ||
-            !(static_cast<bool>(o2::aod::track::TPCrefit)) || !(static_cast<bool>(o2::aod::track::TPCrefit))) {
+            !(o2::aod::track::TPCrefit) || !(o2::aod::track::TPCrefit)) {
             continue;
         }
         const auto& nsigmaTPCPi = o2::aod::pidutils::tpcNSigma<2>(track);;
@@ -2198,8 +2198,8 @@ struct tofSpectra {
                 std::abs(track.eta()) > 0.8 ||
                 track.tpcCrossedRowsOverFindableCls() < 0.8 ||
                 track.tpcNClsFound() < 100 ||
-                !(static_cast<bool>(o2::aod::track::TPCrefit)) ||
-                !(static_cast<bool>(o2::aod::track::TPCrefit))) {
+                !(o2::aod::track::TPCrefit) ||
+                !(o2::aod::track::TPCrefit)) {
                 continue;
             }
             const auto& mcLabel = mcTrackLabels.iteratorAt(track.globalIndex());
