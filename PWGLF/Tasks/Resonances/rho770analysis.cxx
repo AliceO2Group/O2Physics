@@ -67,7 +67,7 @@ struct rho770analysis
     Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 999.0, "TPC Chi2/NCl"};
     Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
     Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
-    Configurable<bool> cfgHasITS{"cfgHasITS", false, "Require ITS"};	
+    Configurable<bool> cfgHasITS{"cfgHasITS", false, "Require ITS"};
     Configurable<bool> cfgHasTPC{"cfgHasTPC", false, "Require TPC"};
     Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
 
@@ -83,7 +83,7 @@ struct rho770analysis
     ConfigurableAxis massKstarAxis{"massKstarAxis", {200, 0.7, 1.1}, "Kstar Invariant mass axis"};
     ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
     ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 95.0, 100.0, 105.0, 110.0}, "Centrality  Binning"};
-    
+
     void init(o2::framework::InitContext&)
     {
         AxisSpec pidqaAxis = {120, -6, 6};
@@ -276,7 +276,7 @@ struct rho770analysis
             }
 
             if ( (selPion(trk1) && selKaon(trk2)) || (selKaon(trk1) && selPion(trk2)) )
-            {	
+            {
                 if (selPion(trk1))
                 {
                     part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
