@@ -221,139 +221,139 @@ struct strangederivedbuilder {
 
   void init(InitContext&)
   {
-    LOGF(info, "Initializing now: cross-checking correctness..."); 
-    if (doprocessCollisions + 
-        doprocessCollisionsWithUD +
-        doprocessCollisionsWithMC +
-        doprocessCollisionsWithUDWithMC > 1
-        ){
+    LOGF(info, "Initializing now: cross-checking correctness...");
+    if (doprocessCollisions +
+          doprocessCollisionsWithUD +
+          doprocessCollisionsWithMC +
+          doprocessCollisionsWithUDWithMC >
+        1) {
       LOGF(fatal, "You have enabled more than one process function associated to collisions. Please check your configuration! Aborting now.");
     }
-    if (doprocessTrackExtrasV0sOnly + 
-        doprocessTrackExtras +
-        doprocessTrackExtrasNoPID +
-        doprocessTrackExtrasMC > 1
-        ){
+    if (doprocessTrackExtrasV0sOnly +
+          doprocessTrackExtras +
+          doprocessTrackExtrasNoPID +
+          doprocessTrackExtrasMC >
+        1) {
       LOGF(fatal, "You have enabled more than one process function associated to TracksExtra. Please check your configuration! Aborting now.");
     }
 
     LOGF(info, "====] base information processing [===============================");
-    if(doprocessDataframeIDs){
+    if (doprocessDataframeIDs) {
       LOGF(info, "Process data frame IDs............: yes");
-    }else{
+    } else {
       LOGF(info, "Process data frame IDs............: no");
     }
 
     // collision processing printout
-    if(doprocessCollisions){
+    if (doprocessCollisions) {
       LOGF(info, "Collision processing type.........: no UD, no MC");
     }
-    if(doprocessCollisionsWithUD){
+    if (doprocessCollisionsWithUD) {
       LOGF(info, "Collision processing type.........: with UD, no MC");
     }
-    if(doprocessCollisionsWithMC){
+    if (doprocessCollisionsWithMC) {
       LOGF(info, "Collision processing type.........: with MC, no UD");
     }
-    if(doprocessCollisionsWithUDWithMC){
+    if (doprocessCollisionsWithUDWithMC) {
       LOGF(info, "Collision processing type.........: with MC, with UD");
     }
 
     LOGF(info, "====] event characterization processing [=========================");
-    if(doprocessFT0AQVectors){ 
+    if (doprocessFT0AQVectors) {
       LOGF(info, "Process FT0A Q-vectors............: yes");
-    }else{
+    } else {
       LOGF(info, "Process FT0A Q-vectors............: no");
     }
-    if(doprocessFT0CQVectors){
+    if (doprocessFT0CQVectors) {
       LOGF(info, "Process FT0C Q-vectors............: yes");
-    }else{
+    } else {
       LOGF(info, "Process FT0C Q-vectors............: no");
     }
-    if(doprocessFT0CQVectorsLF){
+    if (doprocessFT0CQVectorsLF) {
       LOGF(info, "Process FT0C Q-vectors (LF).......: yes");
-    }else{
+    } else {
       LOGF(info, "Process FT0C Q-vectors (LF).......: no");
     }
-    if(doprocessFT0MQVectors){
+    if (doprocessFT0MQVectors) {
       LOGF(info, "Process FT0M Q-vectors............: yes");
-    }else{
+    } else {
       LOGF(info, "Process FT0M Q-vectors............: no");
     }
-    if(doprocessFV0AQVectors){
+    if (doprocessFV0AQVectors) {
       LOGF(info, "Process FV0A Q-vectors............: yes");
-    }else{
+    } else {
       LOGF(info, "Process FV0A Q-vectors............: no");
     }
-    if(doprocessTPCQVectors){
+    if (doprocessTPCQVectors) {
       LOGF(info, "Process TPC Q-vectors.............: yes");
-    }else{
+    } else {
       LOGF(info, "Process TPC Q-vectors.............: no");
     }
-    if(doprocessTPCQVectorsLF){
+    if (doprocessTPCQVectorsLF) {
       LOGF(info, "Process TPC Q-vectors (LF)........: yes");
-    }else{
+    } else {
       LOGF(info, "Process TPC Q-vectors (LF)........: no");
     }
-    if(doprocessZDCSP){
+    if (doprocessZDCSP) {
       LOGF(info, "Process ZPC spectator plane.......: yes");
-    }else{
+    } else {
       LOGF(info, "Process ZPC spectator plane.......: no");
     }
 
     LOGF(info, "====] daughter track property processing [========================");
-    if(doprocessTrackExtrasV0sOnly){
+    if (doprocessTrackExtrasV0sOnly) {
       LOGF(info, "TracksExtra processing type.......: V0s only");
     }
-    if(doprocessTrackExtras){
+    if (doprocessTrackExtras) {
       LOGF(info, "TracksExtra processing type.......: V0s + cascades");
     }
-    if(doprocessTrackExtrasNoPID){
+    if (doprocessTrackExtrasNoPID) {
       LOGF(info, "TracksExtra processing type.......: V0s + cascades, no PID");
     }
-    if(doprocessTrackExtrasMC){
+    if (doprocessTrackExtrasMC) {
       LOGF(info, "TracksExtra processing type.......: V0s + cascades, Monte Carlo");
     }
     LOGF(info, "====] cascade interlink processing [==============================");
-    if(doprocessCascadeInterlinkTracked){
+    if (doprocessCascadeInterlinkTracked) {
       LOGF(info, "Process cascade/tracked interlink.: yes");
-    }else{
+    } else {
       LOGF(info, "Process cascade/tracked interlink.: no");
     }
-    if(doprocessCascadeInterlinkKF){
+    if (doprocessCascadeInterlinkKF) {
       LOGF(info, "Process cascade/KF interlink......: yes");
-    }else{
+    } else {
       LOGF(info, "Process cascade/KF interlink......: no");
     }
     LOGF(info, "====] simulated information processing [==========================");
-    if(doprocessPureSimulation){
+    if (doprocessPureSimulation) {
       LOGF(info, "Process pure simulation info......: yes");
-    }else{
+    } else {
       LOGF(info, "Process pure simulation info......: no");
     }
-    if(doprocessReconstructedSimulation){
+    if (doprocessReconstructedSimulation) {
       LOGF(info, "Process reco simulation info......: yes");
-    }else{
+    } else {
       LOGF(info, "Process reco simulation info......: no");
     }
-    if(doprocessBinnedGenerated){
+    if (doprocessBinnedGenerated) {
       LOGF(info, "Process binned simulation info....: yes");
-    }else{
+    } else {
       LOGF(info, "Process binned simulation info....: no");
     }
-    if(doprocessStrangeMothers){
+    if (doprocessStrangeMothers) {
       LOGF(info, "Process strange mothers...........: yes");
-    }else{
+    } else {
       LOGF(info, "Process strange mothers...........: no");
     }
     LOGF(info, "====] findable exercise extras [==================================");
-    if(doprocessV0FoundTags){
+    if (doprocessV0FoundTags) {
       LOGF(info, "Process found V0 tags.............: yes");
-    }else{
+    } else {
       LOGF(info, "Process found V0 tags.............: no");
     }
-    if(doprocessCascFoundTags){
+    if (doprocessCascFoundTags) {
       LOGF(info, "Process found cascade tags........: yes");
-    }else{
+    } else {
       LOGF(info, "Process found cascade tags........: no");
     }
     LOGF(info, "==================================================================");
@@ -742,7 +742,7 @@ struct strangederivedbuilder {
           }
           // populate daughter-level TOF information
           dauTrackTOFPIDs(tr.tofSignal(), tr.tofEvTime(), tr.length());
-        }else{
+        } else {
           // populate with empty fully-compatible Nsigmas if no corresponding table available
           dauTrackTPCPIDs(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
           dauTrackTOFPIDs(0.0f, 0.0f, 0.0f);
