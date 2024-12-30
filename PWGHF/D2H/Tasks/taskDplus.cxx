@@ -471,8 +471,8 @@ struct HfTaskDplus {
   // Run analysis for the reconstructed Dplus candidates with MC matching
   /// \param recoCandidates are reconstructed candidates
   /// \param recoColls are reconstructed collisions
-  template <bool fillMl>
-  void runAnalysisMcRec(McRecoCollisionsCent const& /*recoColls*/)
+  template <bool fillMl, typename T1>
+  void runAnalysisMcRec(const T1& /*recoCandidates*/, McRecoCollisionsCent const& /*recoColls*/)
   {
     float cent{-1};
     float occ{-1};
@@ -702,7 +702,7 @@ struct HfTaskDplus {
                  McRecoCollisionsCent const& mcRecoCollisions,
                  aod::McCollisions const& mcGenCollisions)
   {
-    runAnalysisMcRec<false>(mcRecoCollisions);
+    runAnalysisMcRec<false>(mcRecoParticles, mcRecoCollisions);
     runAnalysisMcGen<false>(mcGenCollisions, mcRecoCollisions, mcGenParticles);
   }
   PROCESS_SWITCH(HfTaskDplus, processMc, "Process MC w/o ML", false);
@@ -712,7 +712,7 @@ struct HfTaskDplus {
                        McRecoCollisionsCent const& mcRecoCollisions,
                        aod::McCollisions const& mcGenCollisions)
   {
-    runAnalysisMcRec<true>(mcRecoCollisions);
+    runAnalysisMcRec<true>(mcRecoParticles, mcRecoCollisions);
     runAnalysisMcGen<true>(mcGenCollisions, mcRecoCollisions, mcGenParticles);
   }
   PROCESS_SWITCH(HfTaskDplus, processMcWithMl, "Process MC with ML", false);
