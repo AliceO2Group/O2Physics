@@ -147,6 +147,7 @@ struct CreateResolutionMap {
     const AxisSpec axis_dphi{ConfDeltaPhiBins, "#varphi_{l}^{gen} - #varphi_{l}^{rec} (rad.)"};
     const AxisSpec axis_charge_gen{3, -1.5, +1.5, "true sign"};
 
+    registry.add("Event/hImpPar_Centrality", "true imapact parameter vs. estimated centrality;impact parameter (fm);centrality (%)", kTH2F, {{200, 0, 20}, {110, 0, 110}}, true);
     registry.add("Electron/Ptgen_RelDeltaPt", "resolution", kTH2F, {{axis_pt_gen}, {axis_dpt}}, true);
     registry.add("Electron/Ptgen_DeltaEta", "resolution", kTH2F, {{axis_pt_gen}, {axis_deta}}, true);
     registry.add("Electron/Ptgen_DeltaPhi_Pos", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
@@ -383,6 +384,8 @@ struct CreateResolutionMap {
       if constexpr (std::is_same_v<std::decay_t<TCollisions>, MyFilteredCollisionsCent>) {
         centrality = std::array{collision.centFT0M(), collision.centFT0A(), collision.centFT0C()}[cfgCentEstimator];
       }
+
+      registry.fill(HIST("Event/hImpPar_Centrality"), mccollision.impactParameter(), centrality);
 
       auto tracks_per_coll = tracks.sliceBy(perCollision_mid, collision.globalIndex());
       for (auto& track : tracks_per_coll) {

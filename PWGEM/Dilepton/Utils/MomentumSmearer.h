@@ -365,11 +365,12 @@ class MomentumSmearer
     fInitialized = true;
   }
 
-  void applySmearing(float ptgen, float vargen, float multiply, float& varsmeared, TH2F* fReso, std::vector<TH1F*>& fVecReso)
+  void applySmearing(const float ptgen, const float vargen, const float multiply, float& varsmeared, TH2F* fReso, std::vector<TH1F*>& fVecReso)
   {
+    float ptgen_tmp = ptgen > fMinPtGen ? ptgen : fMinPtGen;
     TAxis* axisPt = fReso->GetXaxis();
     int nBinsPt = axisPt->GetNbins();
-    int ptbin = axisPt->FindBin(ptgen);
+    int ptbin = axisPt->FindBin(ptgen_tmp);
     if (ptbin < 1) {
       ptbin = 1;
     }
@@ -393,6 +394,12 @@ class MomentumSmearer
     }
 
     if (fDoNDSmearing) {
+      if (centrality < 0) {
+        ptsmeared = ptgen;
+        etasmeared = etagen;
+        phismeared = phigen;
+        return;
+      }
       applySmearingND(centrality, ch, ptgen, etagen, phigen, ptsmeared, etasmeared, phismeared);
     } else {
       applySmearing(ptgen, ptgen, ptgen, ptsmeared, fResoPt, fVecResoPt);
@@ -407,8 +414,9 @@ class MomentumSmearer
 
   void applySmearingND(const float centrality, const int ch, const float ptgen, const float etagen, const float phigen, float& ptsmeared, float& etasmeared, float& phismeared)
   {
+    float ptgen_tmp = ptgen > fMinPtGen ? ptgen : fMinPtGen;
     int cenbin = fResoND->GetAxis(0)->FindBin(centrality);
-    int ptbin = fResoND->GetAxis(1)->FindBin(ptgen);
+    int ptbin = fResoND->GetAxis(1)->FindBin(ptgen_tmp);
     int etabin = fResoND->GetAxis(2)->FindBin(etagen);
     int phibin = fResoND->GetAxis(3)->FindBin(phigen);
     int chbin = fResoND->GetAxis(4)->FindBin(ch);
@@ -447,11 +455,6 @@ class MomentumSmearer
     } else if (chbin > fNChBins) {
       chbin = fNChBins;
     }
-
-    // ptbin = 1;
-    // etabin = 1;
-    // phibin = 1;
-    // chbin = 1;
 
     double dpt_rel = 0, deta = 0, dphi = 0;
     if (fVecResoND[cenbin - 1][ptbin - 1][etabin - 1][phibin - 1][chbin - 1]->GetEntries() > 0) {
@@ -570,6 +573,7 @@ class MomentumSmearer
     fFromCcdb = true;
   }
   void setTimestamp(int64_t timestamp) { fTimestamp = timestamp; }
+  void setMinPt(float minpt) { fMinPtGen = minpt; }
 
   // getters
   bool getNDSmearing() { return fDoNDSmearing; }
@@ -591,6 +595,7 @@ class MomentumSmearer
   TString getCcdbPathRes() { return fCcdbPathRes; }
   TString getCcdbPathEff() { return fCcdbPathEff; }
   TString getCcdbPathDCA() { return fCcdbPathDCA; }
+  float getMinPt() { return fMinPtGen; }
 
  private:
   bool fInitialized = false;
@@ -632,6 +637,7 @@ class MomentumSmearer
   int64_t fTimestamp;
   bool fFromCcdb = false;
   Service<ccdb::BasicCCDBManager> fCcdb;
+  float fMinPtGen = -1.f;
 };
 
 #endif // PWGEM_DILEPTON_UTILS_MOMENTUMSMEARER_H_
