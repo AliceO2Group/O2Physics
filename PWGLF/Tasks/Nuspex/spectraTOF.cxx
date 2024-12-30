@@ -1341,13 +1341,13 @@ struct tofSpectra {
                         soa::Join<TrackCandidates,
                                   aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                   aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
-{
+  {
     // Event selection criteria
     if (!collision.sel8() || std::abs(collision.posZ()) > 10 || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) ||
         !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) ||
         !collision.selection_bit(aod::evsel::kNoSameBunchPileup) ||
         !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
-        return;
+      return;
     }
     histos.fill(HIST("test_occupancy/event/vertexz"), collision.posZ());
 
@@ -1359,78 +1359,79 @@ struct tofSpectra {
     int tpcCount = 0, tofCount = 0;
 
     for (const auto& track : tracks) {
-        // Track selection criteria
-        if (track.tpcNClsCrossedRows() < 70 || track.tpcChi2NCl() > 4 || track.tpcChi2NCl() < 0.5 ||
-            track.itsChi2NCl() > 36 || std::abs(track.dcaXY()) > 0.05 || std::abs(track.dcaZ()) > 2.0 ||
-            std::abs(track.eta()) > 0.8 || track.tpcCrossedRowsOverFindableCls() < 0.8 || track.tpcNClsFound() < 100 ||
-            !(o2::aod::track::TPCrefit) || !(o2::aod::track::TPCrefit)) {
-            continue;
+      // Track selection criteria
+      if (track.tpcNClsCrossedRows() < 70 || track.tpcChi2NCl() > 4 || track.tpcChi2NCl() < 0.5 ||
+          track.itsChi2NCl() > 36 || std::abs(track.dcaXY()) > 0.05 || std::abs(track.dcaZ()) > 2.0 ||
+          std::abs(track.eta()) > 0.8 || track.tpcCrossedRowsOverFindableCls() < 0.8 || track.tpcNClsFound() < 100 ||
+          !(o2::aod::track::TPCrefit) || !(o2::aod::track::TPCrefit)) {
+        continue;
+      }
+      const auto& nsigmaTPCPi = o2::aod::pidutils::tpcNSigma<2>(track);
+      ;
+      const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
+      const auto& nsigmaTPCPr = o2::aod::pidutils::tpcNSigma<4>(track);
+
+      bool isTPCPion = fabs(nsigmaTPCPi) < trkselOptions.cfgCutNsigma;
+      bool isTPCKaon = fabs(nsigmaTPCKa) < trkselOptions.cfgCutNsigma;
+      bool isTPCProton = fabs(nsigmaTPCPr) < trkselOptions.cfgCutNsigma;
+
+      const auto& nsigmaTOFPi = o2::aod::pidutils::tofNSigma<2>(track);
+      const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
+      const auto& nsigmaTOFPr = o2::aod::pidutils::tofNSigma<4>(track);
+
+      bool isTOFPion = track.hasTOF() && fabs(nsigmaTOFPi) < trkselOptions.cfgCutNsigma;
+      bool isTOFKaon = track.hasTOF() && fabs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
+      bool isTOFProton = track.hasTOF() && fabs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
+
+      // Apply rapidity cut for identified particles
+      if (isTPCPion && std::abs(track.rapidity(PID::getMass(2))) < trkselOptions.cfgCutY) {
+        tpcCount++;
+        if (track.sign() > 0) {
+          histos.fill(HIST("nsigmatpc/test_occupancy/pos/pi"), track.pt(), nsigmaTPCPi, multiplicity, occupancy);
+        } else {
+          histos.fill(HIST("nsigmatpc/test_occupancy/neg/pi"), track.pt(), nsigmaTPCPi, multiplicity, occupancy);
         }
-        const auto& nsigmaTPCPi = o2::aod::pidutils::tpcNSigma<2>(track);;
-        const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
-        const auto& nsigmaTPCPr = o2::aod::pidutils::tpcNSigma<4>(track);
-
-        bool isTPCPion = fabs(nsigmaTPCPi) < trkselOptions.cfgCutNsigma;
-        bool isTPCKaon = fabs(nsigmaTPCKa) < trkselOptions.cfgCutNsigma;
-        bool isTPCProton = fabs(nsigmaTPCPr) < trkselOptions.cfgCutNsigma;
-
-        const auto& nsigmaTOFPi = o2::aod::pidutils::tofNSigma<2>(track);
-        const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
-        const auto& nsigmaTOFPr = o2::aod::pidutils::tofNSigma<4>(track);
-
-        bool isTOFPion = track.hasTOF() && fabs(nsigmaTOFPi) < trkselOptions.cfgCutNsigma;
-        bool isTOFKaon = track.hasTOF() && fabs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
-        bool isTOFProton = track.hasTOF() && fabs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
-
-        // Apply rapidity cut for identified particles
-        if (isTPCPion && std::abs(track.rapidity(PID::getMass(2))) < trkselOptions.cfgCutY) {
-            tpcCount++;
-            if (track.sign() > 0) {
-                histos.fill(HIST("nsigmatpc/test_occupancy/pos/pi"), track.pt(), nsigmaTPCPi, multiplicity, occupancy);
-            } else {
-                histos.fill(HIST("nsigmatpc/test_occupancy/neg/pi"), track.pt(), nsigmaTPCPi, multiplicity, occupancy);
-            }
-        } else if (isTPCKaon && std::abs(track.rapidity(PID::getMass(3))) < trkselOptions.cfgCutY) {
-            tpcCount++;
-            if (track.sign() > 0) {
-                histos.fill(HIST("nsigmatpc/test_occupancy/pos/ka"), track.pt(), nsigmaTPCKa, multiplicity, occupancy);
-            } else {
-                histos.fill(HIST("nsigmatpc/test_occupancy/neg/ka"), track.pt(), nsigmaTPCKa, multiplicity, occupancy);
-            }
-        } else if (isTPCProton && std::abs(track.rapidity(PID::getMass(4))) < trkselOptions.cfgCutY) {
-            tpcCount++;
-            if (track.sign() > 0) {
-                histos.fill(HIST("nsigmatpc/test_occupancy/pos/pr"), track.pt(), nsigmaTPCPr, multiplicity, occupancy);
-            } else {
-                histos.fill(HIST("nsigmatpc/test_occupancy/neg/pr"), track.pt(), nsigmaTPCPr, multiplicity, occupancy);
-            }
+      } else if (isTPCKaon && std::abs(track.rapidity(PID::getMass(3))) < trkselOptions.cfgCutY) {
+        tpcCount++;
+        if (track.sign() > 0) {
+          histos.fill(HIST("nsigmatpc/test_occupancy/pos/ka"), track.pt(), nsigmaTPCKa, multiplicity, occupancy);
+        } else {
+          histos.fill(HIST("nsigmatpc/test_occupancy/neg/ka"), track.pt(), nsigmaTPCKa, multiplicity, occupancy);
         }
-
-        // TOF PID histograms
-        if (isTOFPion && std::abs(track.rapidity(PID::getMass(2))) < trkselOptions.cfgCutY) {
-            tofCount++;
-            if (track.sign() > 0) {
-                histos.fill(HIST("nsigmatof/test_occupancy/pos/pi"), track.pt(), nsigmaTOFPi, multiplicity, occupancy);
-            } else {
-                histos.fill(HIST("nsigmatof/test_occupancy/neg/pi"), track.pt(), nsigmaTOFPi, multiplicity, occupancy);
-            }
-        } else if (isTOFKaon && std::abs(track.rapidity(PID::getMass(3))) < trkselOptions.cfgCutY) {
-            tofCount++;
-            if (track.sign() > 0) {
-                histos.fill(HIST("nsigmatof/test_occupancy/pos/ka"), track.pt(), nsigmaTOFKa, multiplicity, occupancy);
-            } else {
-                histos.fill(HIST("nsigmatof/test_occupancy/neg/ka"), track.pt(), nsigmaTOFKa, multiplicity, occupancy);
-            }
-        } else if (isTOFProton && std::abs(track.rapidity(PID::getMass(4))) < trkselOptions.cfgCutY) {
-            tofCount++;
-            if (track.sign() > 0) {
-                histos.fill(HIST("nsigmatof/test_occupancy/pos/pr"), track.pt(), nsigmaTOFPr, multiplicity, occupancy);
-            } else {
-                histos.fill(HIST("nsigmatof/test_occupancy/neg/pr"), track.pt(), nsigmaTOFPr, multiplicity, occupancy);
-            }
+      } else if (isTPCProton && std::abs(track.rapidity(PID::getMass(4))) < trkselOptions.cfgCutY) {
+        tpcCount++;
+        if (track.sign() > 0) {
+          histos.fill(HIST("nsigmatpc/test_occupancy/pos/pr"), track.pt(), nsigmaTPCPr, multiplicity, occupancy);
+        } else {
+          histos.fill(HIST("nsigmatpc/test_occupancy/neg/pr"), track.pt(), nsigmaTPCPr, multiplicity, occupancy);
         }
+      }
+
+      // TOF PID histograms
+      if (isTOFPion && std::abs(track.rapidity(PID::getMass(2))) < trkselOptions.cfgCutY) {
+        tofCount++;
+        if (track.sign() > 0) {
+          histos.fill(HIST("nsigmatof/test_occupancy/pos/pi"), track.pt(), nsigmaTOFPi, multiplicity, occupancy);
+        } else {
+          histos.fill(HIST("nsigmatof/test_occupancy/neg/pi"), track.pt(), nsigmaTOFPi, multiplicity, occupancy);
+        }
+      } else if (isTOFKaon && std::abs(track.rapidity(PID::getMass(3))) < trkselOptions.cfgCutY) {
+        tofCount++;
+        if (track.sign() > 0) {
+          histos.fill(HIST("nsigmatof/test_occupancy/pos/ka"), track.pt(), nsigmaTOFKa, multiplicity, occupancy);
+        } else {
+          histos.fill(HIST("nsigmatof/test_occupancy/neg/ka"), track.pt(), nsigmaTOFKa, multiplicity, occupancy);
+        }
+      } else if (isTOFProton && std::abs(track.rapidity(PID::getMass(4))) < trkselOptions.cfgCutY) {
+        tofCount++;
+        if (track.sign() > 0) {
+          histos.fill(HIST("nsigmatof/test_occupancy/pos/pr"), track.pt(), nsigmaTOFPr, multiplicity, occupancy);
+        } else {
+          histos.fill(HIST("nsigmatof/test_occupancy/neg/pr"), track.pt(), nsigmaTOFPr, multiplicity, occupancy);
+        }
+      }
     }
-} // process function
+  } // process function
   PROCESS_SWITCH(tofSpectra, processOccupancy, "check for occupancy plots", false);
 
   void processStandard(CollisionCandidates::iterator const& collision,
@@ -2171,54 +2172,55 @@ struct tofSpectra {
   }
   PROCESS_SWITCH(tofSpectra, processMCgen, "process generated MC", false);
   void processMCgen_RecoEvs(soa::Join<TrackCandidates,
-                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks,
-                          aod::McTrackLabels const& mcTrackLabels,
-                          GenMCCollisions const& genCollisions,
-                          RecoMCCollisions const& collisions,
-                          aod::McParticles const& mcParticles)
-{
+                                      aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                      aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks,
+                            aod::McTrackLabels const& mcTrackLabels,
+                            GenMCCollisions const& genCollisions,
+                            RecoMCCollisions const& collisions,
+                            aod::McParticles const& mcParticles)
+  {
     for (const auto& collision : collisions) {
-        if (!collision.has_mcCollision()) {
-            continue;
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+
+      const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
+      histos.fill(HIST("Vertex/RecoEvs/histGenVtxMC"), mcCollision.posZ());
+      histos.fill(HIST("Centrality/RecoEvs/ImpParm"), mcCollision.impactParameter());
+      const float multiplicity = mcCollision.impactParameter();
+
+      for (const auto& track : tracks) {
+        if (track.tpcNClsCrossedRows() < 70 ||
+            track.tpcChi2NCl() > 4 ||
+            track.tpcChi2NCl() < 0.5 ||
+            track.itsChi2NCl() > 36 ||
+            std::abs(track.dcaXY()) > 0.05 ||
+            std::abs(track.dcaZ()) > 2.0 ||
+            std::abs(track.eta()) > 0.8 ||
+            track.tpcCrossedRowsOverFindableCls() < 0.8 ||
+            track.tpcNClsFound() < 100 ||
+            !(o2::aod::track::TPCrefit) ||
+            !(o2::aod::track::TPCrefit)) {
+          continue;
+        }
+        const auto& mcLabel = mcTrackLabels.iteratorAt(track.globalIndex());
+        if (mcLabel.mcParticleId() < 0 || mcLabel.mcParticleId() >= mcParticles.size()) {
+          continue;
+        }
+        const auto& mcParticle = mcParticles.iteratorAt(mcLabel.mcParticleId());
+        if (!mcParticle.isPhysicalPrimary()) {
+          continue;
         }
 
-        const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
-        histos.fill(HIST("Vertex/RecoEvs/histGenVtxMC"), mcCollision.posZ());
-        histos.fill(HIST("Centrality/RecoEvs/ImpParm"), mcCollision.impactParameter());
-        const float multiplicity = mcCollision.impactParameter();
+        int pdgCode = mcParticle.pdgCode();
+        float pt = mcParticle.pt();
+        float absY = std::abs(mcParticle.y());
+        if (absY > trkselOptions.cfgCutY) {
+          continue;
+        }
 
-        for (const auto& track : tracks) {
-            if (track.tpcNClsCrossedRows() < 70 ||
-                track.tpcChi2NCl() > 4 ||
-                track.tpcChi2NCl() < 0.5 ||
-                track.itsChi2NCl() > 36 ||
-                std::abs(track.dcaXY()) > 0.05 ||
-                std::abs(track.dcaZ()) > 2.0 ||
-                std::abs(track.eta()) > 0.8 ||
-                track.tpcCrossedRowsOverFindableCls() < 0.8 ||
-                track.tpcNClsFound() < 100 ||
-                !(o2::aod::track::TPCrefit) ||
-                !(o2::aod::track::TPCrefit)) {
-                continue;
-            }
-            const auto& mcLabel = mcTrackLabels.iteratorAt(track.globalIndex());
-            if (mcLabel.mcParticleId() < 0 || mcLabel.mcParticleId() >= mcParticles.size()) {
-                continue;
-            }
-            const auto& mcParticle = mcParticles.iteratorAt(mcLabel.mcParticleId());
-            if (!mcParticle.isPhysicalPrimary()) {
-                continue;
-            }
-
-            int pdgCode = mcParticle.pdgCode();
-            float pt = mcParticle.pt();
-            float absY = std::abs(mcParticle.y());
-            if (absY > trkselOptions.cfgCutY) {
-                continue;
-            }
-
-        const auto& nsigmaTPCPi = o2::aod::pidutils::tpcNSigma<2>(track);;
+        const auto& nsigmaTPCPi = o2::aod::pidutils::tpcNSigma<2>(track);
+        ;
         const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
         const auto& nsigmaTPCPr = o2::aod::pidutils::tpcNSigma<4>(track);
 
@@ -2234,59 +2236,59 @@ struct tofSpectra {
         bool isKaonTOF = track.hasTOF() && fabs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
         bool isProtonTOF = track.hasTOF() && fabs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
 
-            if (isPionTPC || isKaonTPC || isProtonTPC) {
-                switch (pdgCode) {
-                    case 2212: // Proton
-                        histos.fill(HIST("MC/test/RecoEvs/pr/pos/prm/pt/num"), pt, multiplicity);
-                        break;
-                    case -2212: // Anti-proton
-                        histos.fill(HIST("MC/test/RecoEvs/pr/neg/prm/pt/num"), pt, multiplicity);
-                        break;
-                    case 211: // Pion+
-                        histos.fill(HIST("MC/test/RecoEvs/pi/pos/prm/pt/num"), pt, multiplicity);
-                        break;
-                    case -211: // Pion-
-                        histos.fill(HIST("MC/test/RecoEvs/pi/neg/prm/pt/num"), pt, multiplicity);
-                        break;
-                    case 321: // Kaon+
-                        histos.fill(HIST("MC/test/RecoEvs/ka/pos/prm/pt/num"), pt, multiplicity);
-                        break;
-                    case -321: // Kaon-
-                        histos.fill(HIST("MC/test/RecoEvs/ka/neg/prm/pt/num"), pt, multiplicity);
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            // Fill histograms for TOF tracks
-            if (isPionTOF || isKaonTOF || isProtonTOF) {
-                switch (pdgCode) {
-                    case 2212: // Proton
-                        histos.fill(HIST("MC/test/RecoEvs/pr/pos/prm/pt/numtof"), pt, multiplicity);
-                        break;
-                    case -2212: // Anti-proton
-                        histos.fill(HIST("MC/test/RecoEvs/pr/neg/prm/pt/numtof"), pt, multiplicity);
-                        break;
-                    case 211: // Pion+
-                        histos.fill(HIST("MC/test/RecoEvs/pi/pos/prm/pt/numtof"), pt, multiplicity);
-                        break;
-                    case -211: // Pion-
-                        histos.fill(HIST("MC/test/RecoEvs/pi/neg/prm/pt/numtof"), pt, multiplicity);
-                        break;
-                    case 321: // Kaon+
-                        histos.fill(HIST("MC/test/RecoEvs/ka/pos/prm/pt/numtof"), pt, multiplicity);
-                        break;
-                    case -321: // Kaon-
-                        histos.fill(HIST("MC/test/RecoEvs/ka/neg/prm/pt/numtof"), pt, multiplicity);
-                        break;
-                    default:
-                        break;
-                }
-            }
+        if (isPionTPC || isKaonTPC || isProtonTPC) {
+          switch (pdgCode) {
+            case 2212: // Proton
+              histos.fill(HIST("MC/test/RecoEvs/pr/pos/prm/pt/num"), pt, multiplicity);
+              break;
+            case -2212: // Anti-proton
+              histos.fill(HIST("MC/test/RecoEvs/pr/neg/prm/pt/num"), pt, multiplicity);
+              break;
+            case 211: // Pion+
+              histos.fill(HIST("MC/test/RecoEvs/pi/pos/prm/pt/num"), pt, multiplicity);
+              break;
+            case -211: // Pion-
+              histos.fill(HIST("MC/test/RecoEvs/pi/neg/prm/pt/num"), pt, multiplicity);
+              break;
+            case 321: // Kaon+
+              histos.fill(HIST("MC/test/RecoEvs/ka/pos/prm/pt/num"), pt, multiplicity);
+              break;
+            case -321: // Kaon-
+              histos.fill(HIST("MC/test/RecoEvs/ka/neg/prm/pt/num"), pt, multiplicity);
+              break;
+            default:
+              break;
+          }
         }
+
+        // Fill histograms for TOF tracks
+        if (isPionTOF || isKaonTOF || isProtonTOF) {
+          switch (pdgCode) {
+            case 2212: // Proton
+              histos.fill(HIST("MC/test/RecoEvs/pr/pos/prm/pt/numtof"), pt, multiplicity);
+              break;
+            case -2212: // Anti-proton
+              histos.fill(HIST("MC/test/RecoEvs/pr/neg/prm/pt/numtof"), pt, multiplicity);
+              break;
+            case 211: // Pion+
+              histos.fill(HIST("MC/test/RecoEvs/pi/pos/prm/pt/numtof"), pt, multiplicity);
+              break;
+            case -211: // Pion-
+              histos.fill(HIST("MC/test/RecoEvs/pi/neg/prm/pt/numtof"), pt, multiplicity);
+              break;
+            case 321: // Kaon+
+              histos.fill(HIST("MC/test/RecoEvs/ka/pos/prm/pt/numtof"), pt, multiplicity);
+              break;
+            case -321: // Kaon-
+              histos.fill(HIST("MC/test/RecoEvs/ka/neg/prm/pt/numtof"), pt, multiplicity);
+              break;
+            default:
+              break;
+          }
+        }
+      }
     }
-}
+  }
   PROCESS_SWITCH(tofSpectra, processMCgen_RecoEvs, "process generated MC (reconstructed events)", false);
 
 }; // end of spectra task
