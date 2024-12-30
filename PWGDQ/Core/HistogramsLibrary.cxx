@@ -279,6 +279,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "centrFT0C_M11REF_ev", "", true, 100, 0.0, 100.0, VarManager::kCentFT0C, 1000, 0.0, 1000000.0, VarManager::kM11REF);
       hm->AddHistogram(histClass, "centrFT0C_M11etagap_ev", "", true, 100, 0.0, 100.0, VarManager::kCentFT0C, 1000, 0.0, 10000000.0, VarManager::kM11REFetagap);
       hm->AddHistogram(histClass, "centrFT0C_M1111REF_ev", "", true, 100, 0.0, 100.0, VarManager::kCentFT0C, 1000, 0.0, 100000000000000.0, VarManager::kM1111REF);
+      hm->AddHistogram(histClass, "centrFT0C_M11M1111REF_ev", "", true, 100, 0.0, 100.0, VarManager::kCentFT0C, 1000, 0.0, 10000000000000000.0, VarManager::kM11M1111REF);
       if (subGroupStr.Contains("cross")) {
         hm->AddHistogram(histClass, "Q1ZNACXX_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 4000, -2, 2, VarManager::kQ1ZNACXX);
         hm->AddHistogram(histClass, "Q1ZNACYY_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 4000, -2, 2, VarManager::kQ1ZNACYY);
