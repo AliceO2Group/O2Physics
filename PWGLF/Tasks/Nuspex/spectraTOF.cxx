@@ -1346,7 +1346,7 @@ struct tofSpectra {
         !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) ||
         !collision.selection_bit(aod::evsel::kNoSameBunchPileup) ||
         !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
-        return; 
+        return;
     }
     histos.fill(HIST("test_occupancy/event/vertexz"), collision.posZ());
 
@@ -1359,11 +1359,11 @@ struct tofSpectra {
 
     for (const auto& track : tracks) {
         // Track selection criteria
-        if (track.tpcNClsCrossedRows() < 70 || track.tpcChi2NCl() > 4 || track.tpcChi2NCl() < 0.5 || 
-            track.itsChi2NCl() > 36 || std::abs(track.dcaXY()) > 0.05 || std::abs(track.dcaZ()) > 2.0 || 
+        if (track.tpcNClsCrossedRows() < 70 || track.tpcChi2NCl() > 4 || track.tpcChi2NCl() < 0.5 ||
+            track.itsChi2NCl() > 36 || std::abs(track.dcaXY()) > 0.05 || std::abs(track.dcaZ()) > 2.0 ||
             std::abs(track.eta()) > 0.8 || track.tpcCrossedRowsOverFindableCls() < 0.8 || track.tpcNClsFound() < 100 ||
             !(static_cast<bool>(o2::aod::track::TPCrefit)) || !(static_cast<bool>(o2::aod::track::TPCrefit))) {
-            continue;    
+            continue;
         }
         const auto& nsigmaTPCPi = o2::aod::pidutils::tpcNSigma<2>(track);;
         const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
@@ -2169,12 +2169,12 @@ struct tofSpectra {
     }
   }
   PROCESS_SWITCH(tofSpectra, processMCgen, "process generated MC", false);
- void processMCgen_RecoEvs(soa::Join<TrackCandidates, 
-                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, 
-                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks, 
-                          aod::McTrackLabels const& mcTrackLabels, 
-                          GenMCCollisions const& genCollisions, 
-                          RecoMCCollisions const& collisions, 
+ void processMCgen_RecoEvs(soa::Join<TrackCandidates,
+                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks,
+                          aod::McTrackLabels const& mcTrackLabels,
+                          GenMCCollisions const& genCollisions,
+                          RecoMCCollisions const& collisions,
                           aod::McParticles const& mcParticles)
 {
     for (const auto& collision : collisions) {
@@ -2188,20 +2188,19 @@ struct tofSpectra {
         const float multiplicity = mcCollision.impactParameter();
 
         for (const auto& track : tracks) {
-            if (track.tpcNClsCrossedRows() < 70 || 
-                track.tpcChi2NCl() > 4 || 
-                track.tpcChi2NCl() < 0.5 || 
-                track.itsChi2NCl() > 36 || 
-                std::abs(track.dcaXY()) > 0.05 || 
-                std::abs(track.dcaZ()) > 2.0 || 
-                std::abs(track.eta()) > 0.8 || 
-                track.tpcCrossedRowsOverFindableCls() < 0.8 || 
-                track.tpcNClsFound() < 100 || 
-                !(static_cast<bool>(o2::aod::track::TPCrefit)) || 
+            if (track.tpcNClsCrossedRows() < 70 ||
+                track.tpcChi2NCl() > 4 ||
+                track.tpcChi2NCl() < 0.5 ||
+                track.itsChi2NCl() > 36 ||
+                std::abs(track.dcaXY()) > 0.05 ||
+                std::abs(track.dcaZ()) > 2.0 ||
+                std::abs(track.eta()) > 0.8 ||
+                track.tpcCrossedRowsOverFindableCls() < 0.8 ||
+                track.tpcNClsFound() < 100 ||
+                !(static_cast<bool>(o2::aod::track::TPCrefit)) ||
                 !(static_cast<bool>(o2::aod::track::TPCrefit))) {
                 continue;
             }
-
             const auto& mcLabel = mcTrackLabels.iteratorAt(track.globalIndex());
             if (mcLabel.mcParticleId() < 0 || mcLabel.mcParticleId() >= mcParticles.size()) {
                 continue; 
