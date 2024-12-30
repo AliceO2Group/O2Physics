@@ -2203,7 +2203,7 @@ struct tofSpectra {
             }
             const auto& mcLabel = mcTrackLabels.iteratorAt(track.globalIndex());
             if (mcLabel.mcParticleId() < 0 || mcLabel.mcParticleId() >= mcParticles.size()) {
-                continue; 
+                continue;
             }
             const auto& mcParticle = mcParticles.iteratorAt(mcLabel.mcParticleId());
             if (!mcParticle.isPhysicalPrimary()) {
