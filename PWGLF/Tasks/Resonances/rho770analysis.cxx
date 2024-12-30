@@ -37,7 +37,7 @@ using namespace o2::constants::physics;
 struct rho770analysis
 {
     SliceCache cache;
-    HistogramRegistry histos{"histos", {},OutputObjHandlingPolicy::AnalysisObject};
+    HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
     Configurable<float> cfgMinPt{"cfgMinPt", 0.15, "Minimum transverse momentum for charged track"};
     Configurable<float> cfgMaxEta{"cfgMaxEta", 0.8, "Maximum pseudorapidiy for charged track"};
@@ -255,20 +255,17 @@ struct rho770analysis
                                 histos.fill(HIST("MCL/hpT_K0s_REC"), reco.M(), reco.Pt(), collision.cent());
                                 histos.fill(HIST("MCL/hpT_K0s_pipi_REC"), reco.M(), reco.Pt(), collision.cent());
                             }
-                        }
-                        else if ((std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == 211))
+                        }else if ((std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == 211))
                         {
                             if (std::abs(trk1.motherPDG()) == 313)
                                 histos.fill(HIST("MCL/hpT_Kstar_REC"), reco.M(), reco.Pt(), collision.cent());
                         }
                     }
-                }
-                else if (trk1.sign() > 0 && trk2.sign() > 0)
+                }else if (trk1.sign() > 0 && trk2.sign() > 0)
                 {
                     histos.fill(HIST("hInvMass_rho770_LSpp"), reco.M(), reco.Pt(), collision.cent());
                     histos.fill(HIST("hInvMass_K0s_LSpp"), reco.M(), reco.Pt(), collision.cent());
-                }
-                else if (trk1.sign() < 0 && trk2.sign() < 0)
+                }else if (trk1.sign() < 0 && trk2.sign() < 0)
                 {
                     histos.fill(HIST("hInvMass_rho770_LSmm"), reco.M(), reco.Pt(), collision.cent());
                     histos.fill(HIST("hInvMass_K0s_LSmm"), reco.M(), reco.Pt(), collision.cent());
@@ -281,8 +278,7 @@ struct rho770analysis
                 {
                     part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
                     part2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
-                }
-                else if (selPion(trk2))
+                }else if (selPion(trk2))
                 {
                     part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massKa);
                     part2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
@@ -307,8 +303,7 @@ struct rho770analysis
                                 histos.fill(HIST("MCL/hpT_Kstar_Kpi_REC"), reco.M(), reco.Pt(), collision.cent());
                         }
                     }
-                }
-                else if (trk1.sign() > 0 && trk2.sign() > 0)
+                }else if (trk1.sign() > 0 && trk2.sign() > 0)
                     histos.fill(HIST("hInvMass_Kstar_LSpp"), reco.M(), reco.Pt(), collision.cent());
                 else if (trk1.sign() < 0 && trk2.sign() < 0)
                     histos.fill(HIST("hInvMass_Kstar_LSmm"), reco.M(), reco.Pt(), collision.cent());
