@@ -233,11 +233,11 @@ struct rho770analysis {
             if (trk1.motherId() != trk2.motherId())
               continue;
             if (std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 211) {
-              if (std::abs(trk1.motherPDG()) == 113)
+              if (std::abs(trk1.motherPDG()) == 113){
                 histos.fill(HIST("MCL/hpT_rho770_REC"), reco.M(), reco.Pt(), collision.cent());
-              else if (std::abs(trk1.motherPDG()) == 223)
+              }else if (std::abs(trk1.motherPDG()) == 223){
                 histos.fill(HIST("MCL/hpT_omega_REC"), reco.M(), reco.Pt(), collision.cent());
-              else if (std::abs(trk1.motherPDG()) == 310) {
+              }else if (std::abs(trk1.motherPDG()) == 310) {
                 histos.fill(HIST("MCL/hpT_K0s_REC"), reco.M(), reco.Pt(), collision.cent());
                 histos.fill(HIST("MCL/hpT_K0s_pipi_REC"), reco.M(), reco.Pt(), collision.cent());
               }
@@ -273,11 +273,11 @@ struct rho770analysis {
                             continue;
                         if (std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 211)
                         {
-                            if (std::abs(trk1.motherPDG()) == 113)
+                            if (std::abs(trk1.motherPDG()) == 113){
                                 histos.fill(HIST("MCL/hpT_rho770_REC"), reco.M(), reco.Pt(), collision.cent());
-                            else if (std::abs(trk1.motherPDG()) == 223)
+                            }else if (std::abs(trk1.motherPDG()) == 223){
                                 histos.fill(HIST("MCL/hpT_omega_REC"), reco.M(), reco.Pt(), collision.cent());
-                            else if (std::abs(trk1.motherPDG()) == 310)
+                            }else if (std::abs(trk1.motherPDG()) == 310)
                             {
                                 histos.fill(HIST("MCL/hpT_K0s_REC"), reco.M(), reco.Pt(), collision.cent());
                                 histos.fill(HIST("MCL/hpT_K0s_pipi_REC"), reco.M(), reco.Pt(), collision.cent());
