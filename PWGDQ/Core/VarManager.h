@@ -667,7 +667,6 @@ class VarManager : public TObject
     kCORR2POICORR4POI,
     kCORR2REFCORR4POI,
     kCORR2REFCORR2POI,
-    kM11M1111REFoverMp,
     kM01M0111overMp,
     kM11M0111overMp,
     kM11M01overMp,
