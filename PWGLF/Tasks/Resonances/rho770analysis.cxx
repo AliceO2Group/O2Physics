@@ -316,9 +316,9 @@ struct rho770analysis {
                       histos.fill(HIST("MCL/hpT_Kstar_Kpi_REC"), reco.M(), reco.Pt(), collision.cent());
                   }
                 }
-              } else if (trk1.sign() > 0 && trk2.sign() > 0){
+              } else if (trk1.sign() > 0 && trk2.sign() > 0) {
                 histos.fill(HIST("hInvMass_Kstar_LSpp"), reco.M(), reco.Pt(), collision.cent());
-              }else if (trk1.sign() < 0 && trk2.sign() < 0){
+              } else if (trk1.sign() < 0 && trk2.sign() < 0) {
                 histos.fill(HIST("hInvMass_Kstar_LSmm"), reco.M(), reco.Pt(), collision.cent());
               }
             }
@@ -357,9 +357,9 @@ struct rho770analysis {
                 histos.fill(HIST("MCL/hpT_Kstar_Kpi_REC"), reco.M(), reco.Pt(), collision.cent());
             }
           }
-        } else if (trk1.sign() > 0 && trk2.sign() > 0){
+        } else if (trk1.sign() > 0 && trk2.sign() > 0) {
           histos.fill(HIST("hInvMass_Kstar_LSpp"), reco.M(), reco.Pt(), collision.cent());
-        }else if (trk1.sign() < 0 && trk2.sign() < 0){
+        } else if (trk1.sign() < 0 && trk2.sign() < 0) {
           histos.fill(HIST("hInvMass_Kstar_LSmm"), reco.M(), reco.Pt(), collision.cent());
         }
       }
