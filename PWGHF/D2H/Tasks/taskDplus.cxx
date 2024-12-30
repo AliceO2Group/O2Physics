@@ -252,7 +252,7 @@ struct HfTaskDplus {
   /// \param centrality collision centrality
   /// \param occupancy collision occupancy
   template <bool isMc, bool isMatched, typename T1>
-  void fillSparseML(const T1 candidate,
+  void fillSparseML(const T1& candidate,
                     float ptbhad,
                     int flagBHad,
                     float centrality,
@@ -400,7 +400,7 @@ struct HfTaskDplus {
   /// \param centrality collision centrality
   /// \param occupancy collision occupancy
   template <typename T1>
-  void fillSparseMCGen(const T1 particle,
+  void fillSparseMcGen(const T1& particle,
                        float ptGenB,
                        int flagGenB,
                        float centrality,
@@ -471,8 +471,8 @@ struct HfTaskDplus {
   // Run analysis for the reconstructed Dplus candidates with MC matching
   /// \param recoCandidates are reconstructed candidates
   /// \param recoColls are reconstructed collisions
-  template <bool fillMl, typename T1>
-  void runMCRecoAnalysis(const T1& /*recoCandidates*/, McRecoCollisionsCent const& /*recoColls*/)
+  template <bool fillMl>
+  void runAnalysisMcRec(McRecoCollisionsCent const& /*recoColls*/)
   {
     float cent{-1};
     float occ{-1};
@@ -542,9 +542,9 @@ struct HfTaskDplus {
   /// \param mcRecoCollisions are the reconstructed MC collisions
   /// \param mcGenParticles are the generated MC particle candidates
   template <bool fillMl, typename Cand>
-  void runMCGenAnalysis(aod::McCollisions const& mcGenCollisions,
+  void runAnalysisMcGen(aod::McCollisions const& mcGenCollisions,
                         McRecoCollisionsCent const& mcRecoCollisions,
-                        const Cand& mcGenParticles)
+                        Cand const& mcGenParticles)
   {
     // MC gen.
     float cent{-1.};
@@ -576,7 +576,7 @@ struct HfTaskDplus {
         }
         fillHistoMCGen(particle);
         if constexpr (fillMl) {
-          fillSparseMCGen(particle, ptGenB, flagGenB, cent, occ);
+          fillSparseMcGen(particle, ptGenB, flagGenB, cent, occ);
         }
       }
     }
@@ -702,8 +702,8 @@ struct HfTaskDplus {
                  McRecoCollisionsCent const& mcRecoCollisions,
                  aod::McCollisions const& mcGenCollisions)
   {
-    runMCRecoAnalysis<false>(mcRecoParticles, mcRecoCollisions);
-    runMCGenAnalysis<false>(mcGenCollisions, mcRecoCollisions, mcGenParticles);
+    runAnalysisMcRec<false>(mcRecoCollisions);
+    runAnalysisMcGen<false>(mcGenCollisions, mcRecoCollisions, mcGenParticles);
   }
   PROCESS_SWITCH(HfTaskDplus, processMc, "Process MC w/o ML", false);
 
@@ -712,8 +712,8 @@ struct HfTaskDplus {
                        McRecoCollisionsCent const& mcRecoCollisions,
                        aod::McCollisions const& mcGenCollisions)
   {
-    runMCRecoAnalysis<true>(mcRecoParticles, mcRecoCollisions);
-    runMCGenAnalysis<true>(mcGenCollisions, mcRecoCollisions, mcGenParticles);
+    runAnalysisMcRec<true>(mcRecoCollisions);
+    runAnalysisMcGen<true>(mcGenCollisions, mcRecoCollisions, mcGenParticles);
   }
   PROCESS_SWITCH(HfTaskDplus, processMcWithMl, "Process MC with ML", false);
 };
