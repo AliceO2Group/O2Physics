@@ -233,105 +233,93 @@ struct rho770analysis {
             if (trk1.motherId() != trk2.motherId())
               continue;
             if (std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 211) {
-              if (std::abs(trk1.motherPDG()) == 113){
+              if (std::abs(trk1.motherPDG()) == 113) {
                 histos.fill(HIST("MCL/hpT_rho770_REC"), reco.M(), reco.Pt(), collision.cent());
-              }else if (std::abs(trk1.motherPDG()) == 223){
+              } else if (std::abs(trk1.motherPDG()) == 223) {
                 histos.fill(HIST("MCL/hpT_omega_REC"), reco.M(), reco.Pt(), collision.cent());
-              }else if (std::abs(trk1.motherPDG()) == 310) {
+              } else if (std::abs(trk1.motherPDG()) == 310) {
                 histos.fill(HIST("MCL/hpT_K0s_REC"), reco.M(), reco.Pt(), collision.cent());
                 histos.fill(HIST("MCL/hpT_K0s_pipi_REC"), reco.M(), reco.Pt(), collision.cent());
               }
             } else if ((std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == 211)) {
               if (std::abs(trk1.motherPDG()) == 313)
                 histos.fill(HIST("MCL/hpT_Kstar_REC"), reco.M(), reco.Pt(), collision.cent());
-                histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), trk1.tpcNSigmaPi());
-                histos.fill(HIST("QA/Nsigma_TOF"), trk1.pt(), trk1.tofNSigmaPi());
-                histos.fill(HIST("QA/TPC_TOF"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
-                continue;
+              histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), trk1.tpcNSigmaPi());
+              histos.fill(HIST("QA/Nsigma_TOF"), trk1.pt(), trk1.tofNSigmaPi());
+              histos.fill(HIST("QA/TPC_TOF"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
+              continue;
             }
 
             if (!selTrack(trk1) || !selTrack(trk2))
+              continue;
+
+            if (selPion(trk1) && selPion(trk2)) {
+              part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
+              part2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
+              reco = part1 + part2;
+
+              if (reco.Rapidity() > cfgMaxRap || reco.Rapidity() < cfgMinRap)
                 continue;
 
-            if (selPion(trk1) && selPion(trk2))
-            {
-                part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
-                part2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
-                reco = part1 + part2;
+              if (trk1.sign() * trk2.sign() < 0) {
+                histos.fill(HIST("hInvMass_rho770_US"), reco.M(), reco.Pt(), collision.cent());
+                histos.fill(HIST("hInvMass_K0s_US"), reco.M(), reco.Pt(), collision.cent());
 
-                if (reco.Rapidity() > cfgMaxRap || reco.Rapidity() < cfgMinRap)
+                if constexpr (IsMC) {
+                  if (trk1.motherId() != trk2.motherId())
                     continue;
-
-                if (trk1.sign() * trk2.sign() < 0)
-                {
-                    histos.fill(HIST("hInvMass_rho770_US"), reco.M(), reco.Pt(), collision.cent());
-                    histos.fill(HIST("hInvMass_K0s_US"), reco.M(), reco.Pt(), collision.cent());
-
-                    if constexpr (IsMC)
-                    {
-                        if (trk1.motherId() != trk2.motherId())
-                            continue;
-                        if (std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 211)
-                        {
-                            if (std::abs(trk1.motherPDG()) == 113){
-                                histos.fill(HIST("MCL/hpT_rho770_REC"), reco.M(), reco.Pt(), collision.cent());
-                            }else if (std::abs(trk1.motherPDG()) == 223){
-                                histos.fill(HIST("MCL/hpT_omega_REC"), reco.M(), reco.Pt(), collision.cent());
-                            }else if (std::abs(trk1.motherPDG()) == 310)
-                            {
-                                histos.fill(HIST("MCL/hpT_K0s_REC"), reco.M(), reco.Pt(), collision.cent());
-                                histos.fill(HIST("MCL/hpT_K0s_pipi_REC"), reco.M(), reco.Pt(), collision.cent());
-                            }
-                        }else if ((std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == 211))
-                        {
-                            if (std::abs(trk1.motherPDG()) == 313)
-                                histos.fill(HIST("MCL/hpT_Kstar_REC"), reco.M(), reco.Pt(), collision.cent());
-                        }
+                  if (std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 211) {
+                    if (std::abs(trk1.motherPDG()) == 113) {
+                      histos.fill(HIST("MCL/hpT_rho770_REC"), reco.M(), reco.Pt(), collision.cent());
+                    } else if (std::abs(trk1.motherPDG()) == 223) {
+                      histos.fill(HIST("MCL/hpT_omega_REC"), reco.M(), reco.Pt(), collision.cent());
+                    } else if (std::abs(trk1.motherPDG()) == 310) {
+                      histos.fill(HIST("MCL/hpT_K0s_REC"), reco.M(), reco.Pt(), collision.cent());
+                      histos.fill(HIST("MCL/hpT_K0s_pipi_REC"), reco.M(), reco.Pt(), collision.cent());
                     }
-                }else if (trk1.sign() > 0 && trk2.sign() > 0){
-                    histos.fill(HIST("hInvMass_rho770_LSpp"), reco.M(), reco.Pt(), collision.cent());
-                    histos.fill(HIST("hInvMass_K0s_LSpp"), reco.M(), reco.Pt(), collision.cent());
-                }else if (trk1.sign() < 0 && trk2.sign() < 0){
-                    histos.fill(HIST("hInvMass_rho770_LSmm"), reco.M(), reco.Pt(), collision.cent());
-                    histos.fill(HIST("hInvMass_K0s_LSmm"), reco.M(), reco.Pt(), collision.cent());
+                  } else if ((std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == 211)) {
+                    if (std::abs(trk1.motherPDG()) == 313)
+                      histos.fill(HIST("MCL/hpT_Kstar_REC"), reco.M(), reco.Pt(), collision.cent());
+                  }
                 }
+              } else if (trk1.sign() > 0 && trk2.sign() > 0) {
+                histos.fill(HIST("hInvMass_rho770_LSpp"), reco.M(), reco.Pt(), collision.cent());
+                histos.fill(HIST("hInvMass_K0s_LSpp"), reco.M(), reco.Pt(), collision.cent());
+              } else if (trk1.sign() < 0 && trk2.sign() < 0) {
+                histos.fill(HIST("hInvMass_rho770_LSmm"), reco.M(), reco.Pt(), collision.cent());
+                histos.fill(HIST("hInvMass_K0s_LSmm"), reco.M(), reco.Pt(), collision.cent());
+              }
             }
 
-            if ( (selPion(trk1) && selKaon(trk2)) || (selKaon(trk1) && selPion(trk2)) )
-            {
-                if (selPion(trk1))
-                {
-                    part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
-                    part2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
-                }else if (selPion(trk2))
-                {
-                    part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massKa);
-                    part2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
-                }
-                reco = part1 + part2;
+            if ((selPion(trk1) && selKaon(trk2)) || (selKaon(trk1) && selPion(trk2))) {
+              if (selPion(trk1)) {
+                part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
+                part2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
+              } else if (selPion(trk2)) {
+                part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massKa);
+                part2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
+              }
+              reco = part1 + part2;
 
-                if (reco.Rapidity() > cfgMaxRap || reco.Rapidity() < cfgMinRap)
+              if (reco.Rapidity() > cfgMaxRap || reco.Rapidity() < cfgMinRap)
+                continue;
+
+              if (trk1.sign() * trk2.sign() < 0) {
+                histos.fill(HIST("hInvMass_Kstar_US"), reco.M(), reco.Pt(), collision.cent());
+
+                if constexpr (IsMC) {
+                  if (trk1.motherId() != trk2.motherId())
                     continue;
 
-                if (trk1.sign() * trk2.sign() < 0)
-                {
-                    histos.fill(HIST("hInvMass_Kstar_US"), reco.M(), reco.Pt(), collision.cent());
-
-                    if constexpr (IsMC)
-                    {
-                        if (trk1.motherId() != trk2.motherId())
-                            continue;
-
-                        if ((std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == 211))
-                        {
-                            if (std::abs(trk1.motherPDG()) == 313)
-                                histos.fill(HIST("MCL/hpT_Kstar_Kpi_REC"), reco.M(), reco.Pt(), collision.cent());
-                        }
-                    }
-                }else if (trk1.sign() > 0 && trk2.sign() > 0)
-                    histos.fill(HIST("hInvMass_Kstar_LSpp"), reco.M(), reco.Pt(), collision.cent());
-                else if (trk1.sign() < 0 && trk2.sign() < 0)
-                    histos.fill(HIST("hInvMass_Kstar_LSmm"), reco.M(), reco.Pt(), collision.cent());
+                  if ((std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == 211)) {
+                    if (std::abs(trk1.motherPDG()) == 313)
+                      histos.fill(HIST("MCL/hpT_Kstar_Kpi_REC"), reco.M(), reco.Pt(), collision.cent());
+                  }
+                }
+              } else if (trk1.sign() > 0 && trk2.sign() > 0)
+                histos.fill(HIST("hInvMass_Kstar_LSpp"), reco.M(), reco.Pt(), collision.cent());
+              else if (trk1.sign() < 0 && trk2.sign() < 0)
+                histos.fill(HIST("hInvMass_Kstar_LSmm"), reco.M(), reco.Pt(), collision.cent());
             }
           }
         } else if (trk1.sign() > 0 && trk2.sign() > 0) {
