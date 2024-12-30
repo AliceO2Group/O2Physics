@@ -214,6 +214,7 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::FlagMcMatchRec, full::DebugMcRec, full::OriginRec, full::CollisionMatched);
 
 DECLARE_SOA_TABLE(HfToXiPiLites, "AOD", "HFTOXIPILITE",
+                  full::CollisionId,
                   full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
                   full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
@@ -248,7 +249,8 @@ struct HfTreeCreatorToXiPi {
   Produces<o2::aod::HfToXiPiEvs> rowEv;
 
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
-
+  Configurable<bool> useCentrality{"useCentrality", false, "Decide whether to use centrality information"};
+                             
   using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>;
   using MyEventTable = soa::Join<aod::Collisions, aod::EvSels, aod::PVMultZeqs, Cents>;
   using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
@@ -268,11 +270,13 @@ struct HfTreeCreatorToXiPi {
     float centFT0M = -1.f;
     float centFV0A = -1.f;
     float centFDDM = -1.f;
-    centFT0A = collision.centFT0A();
-    centFT0C = collision.centFT0C();
-    centFT0M = collision.centFT0M();
-    centFV0A = collision.centFV0A();
-    centFDDM = collision.centFDDM();
+    if (useCentrality) {
+      centFT0A = collision.centFT0A();
+      centFT0C = collision.centFT0C();
+      centFT0M = collision.centFT0M();
+      centFV0A = collision.centFV0A();
+      centFDDM = collision.centFDDM();
+    }
 
     rowEv(
       collision.sel8(), std::abs(collision.posZ()) < cutZPv,
@@ -414,6 +418,7 @@ struct HfTreeCreatorToXiPi {
     if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
 
       rowCandidateLite(
+        candidate.collisionId(),
         candidate.xPv(),
         candidate.yPv(),
         candidate.zPv(),
