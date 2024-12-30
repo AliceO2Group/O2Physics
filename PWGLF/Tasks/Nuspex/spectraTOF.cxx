@@ -19,6 +19,7 @@
 
 // O2 includes
 #include <string>
+#include <iostream>
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -2169,7 +2170,7 @@ struct tofSpectra {
     }
   }
   PROCESS_SWITCH(tofSpectra, processMCgen, "process generated MC", false);
- void processMCgen_RecoEvs(soa::Join<TrackCandidates,
+  void processMCgen_RecoEvs(soa::Join<TrackCandidates,
                                   aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                   aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks,
                           aod::McTrackLabels const& mcTrackLabels,
