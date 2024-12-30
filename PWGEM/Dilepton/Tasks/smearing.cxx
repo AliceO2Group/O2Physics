@@ -24,7 +24,7 @@
 #include "Framework/ASoA.h"
 #include "Framework/DataTypes.h"
 #include "Framework/HistogramRegistry.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h" // remove this later, because 2 data tables (covariant matrix) in this header confilict against EM tables.
+// #include "PWGDQ/DataModel/ReducedInfoTables.h" // remove this later, because 2 data tables (covariant matrix) in this header confilict against EM tables.
 #include "PWGEM/Dilepton/Utils/MomentumSmearer.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
@@ -34,6 +34,11 @@ using namespace o2::framework::expressions;
 using namespace o2::aod;
 
 struct ApplySmearing {
+  enum class EMAnaType : int {
+    kEfficiency = 0,
+    kCocktail = 1,
+  };
+
   Produces<aod::SmearedElectrons> smearedelectron;
   Produces<aod::SmearedMuons> smearedmuon;
 
@@ -43,7 +48,9 @@ struct ApplySmearing {
 
   struct : ConfigurableGroup {
     std::string prefix = "electron_filename_group";
+    Configurable<bool> fConfigNDSmearing{"cfgNDSmearing", false, "apply ND-correlated smearing"};
     Configurable<std::string> fConfigResFileName{"cfgResFileName", "", "name of resolution file"};
+    Configurable<std::string> fConfigResNDHistName{"cfgResNDHistName", "hs_reso", "name of ND resolution file"};
     Configurable<std::string> fConfigResPtHistName{"cfgResPtHistName", "RelPtResArrCocktail", "histogram name for pt in resolution file"};
     Configurable<std::string> fConfigResEtaHistName{"cfgResEtaHistName", "EtaResArr", "histogram name for eta in resolution file"};
     Configurable<std::string> fConfigResPhiPosHistName{"cfgResPhiPosHistName", "PhiPosResArr", "histogram name for phi pos in resolution file"};
@@ -59,7 +66,9 @@ struct ApplySmearing {
 
   struct : ConfigurableGroup {
     std::string prefix = "sa_muon_filename_group";
+    Configurable<bool> fConfigNDSmearing{"cfgNDSmearing", false, "apply ND-correlated smearing"};
     Configurable<std::string> fConfigResFileName{"cfgResFileName", "", "name of resolution file"};
+    Configurable<std::string> fConfigResNDHistName{"cfgResNDHistName", "hs_reso", "name of ND resolution file"};
     Configurable<std::string> fConfigResPtHistName{"cfgResPtHistName", "RelPtResArrCocktail", "histogram name for pt in resolution file"};
     Configurable<std::string> fConfigResEtaHistName{"cfgResEtaHistName", "EtaResArr", "histogram name for eta in resolution file"};
     Configurable<std::string> fConfigResPhiPosHistName{"cfgResPhiPosHistName", "PhiPosResArr", "histogram name for phi pos in resolution file"};
@@ -75,7 +84,9 @@ struct ApplySmearing {
 
   struct : ConfigurableGroup {
     std::string prefix = "gl_muon_filename_group";
+    Configurable<bool> fConfigNDSmearing{"cfgNDSmearing", false, "apply ND-correlated smearing"};
     Configurable<std::string> fConfigResFileName{"cfgResFileName", "", "name of resolution file"};
+    Configurable<std::string> fConfigResNDHistName{"cfgResNDHistName", "hs_reso", "name of ND resolution file"};
     Configurable<std::string> fConfigResPtHistName{"cfgResPtHistName", "RelPtResArrCocktail", "histogram name for pt in resolution file"};
     Configurable<std::string> fConfigResEtaHistName{"cfgResEtaHistName", "EtaResArr", "histogram name for eta in resolution file"};
     Configurable<std::string> fConfigResPhiPosHistName{"cfgResPhiPosHistName", "PhiPosResArr", "histogram name for phi pos in resolution file"};
@@ -96,7 +107,9 @@ struct ApplySmearing {
 
   void init(InitContext&)
   {
+    smearer_Electron.setNDSmearing(electron_filenames.fConfigNDSmearing.value);
     smearer_Electron.setResFileName(TString(electron_filenames.fConfigResFileName));
+    smearer_Electron.setResNDHistName(TString(electron_filenames.fConfigResNDHistName));
     smearer_Electron.setResPtHistName(TString(electron_filenames.fConfigResPtHistName));
     smearer_Electron.setResEtaHistName(TString(electron_filenames.fConfigResEtaHistName));
     smearer_Electron.setResPhiPosHistName(TString(electron_filenames.fConfigResPhiPosHistName));
@@ -106,7 +119,9 @@ struct ApplySmearing {
     smearer_Electron.setDCAFileName(TString(electron_filenames.fConfigDCAFileName));
     smearer_Electron.setDCAHistName(TString(electron_filenames.fConfigDCAHistName));
 
+    smearer_StandaloneMuon.setNDSmearing(sa_muon_filenames.fConfigNDSmearing.value);
     smearer_StandaloneMuon.setResFileName(TString(sa_muon_filenames.fConfigResFileName));
+    smearer_StandaloneMuon.setResNDHistName(TString(sa_muon_filenames.fConfigResNDHistName));
     smearer_StandaloneMuon.setResPtHistName(TString(sa_muon_filenames.fConfigResPtHistName));
     smearer_StandaloneMuon.setResEtaHistName(TString(sa_muon_filenames.fConfigResEtaHistName));
     smearer_StandaloneMuon.setResPhiPosHistName(TString(sa_muon_filenames.fConfigResPhiPosHistName));
@@ -116,7 +131,9 @@ struct ApplySmearing {
     smearer_StandaloneMuon.setDCAFileName(TString(sa_muon_filenames.fConfigDCAFileName));
     smearer_StandaloneMuon.setDCAHistName(TString(sa_muon_filenames.fConfigDCAHistName));
 
+    smearer_GlobalMuon.setNDSmearing(gl_muon_filenames.fConfigNDSmearing.value);
     smearer_GlobalMuon.setResFileName(TString(gl_muon_filenames.fConfigResFileName));
+    smearer_GlobalMuon.setResNDHistName(TString(gl_muon_filenames.fConfigResNDHistName));
     smearer_GlobalMuon.setResPtHistName(TString(gl_muon_filenames.fConfigResPtHistName));
     smearer_GlobalMuon.setResEtaHistName(TString(gl_muon_filenames.fConfigResEtaHistName));
     smearer_GlobalMuon.setResPhiPosHistName(TString(gl_muon_filenames.fConfigResPhiPosHistName));
@@ -155,8 +172,8 @@ struct ApplySmearing {
     smearer_GlobalMuon.init();
   }
 
-  template <typename TTracksMC>
-  void applySmearing(TTracksMC const& tracksMC)
+  template <EMAnaType type, typename TTracksMC, typename TCollisions, typename TMCCollisions>
+  void applySmearing(TTracksMC const& tracksMC, TCollisions const&, TMCCollisions const&)
   {
     for (auto& mctrack : tracksMC) {
       float ptgen = mctrack.pt();
@@ -164,6 +181,13 @@ struct ApplySmearing {
       float phigen = mctrack.phi();
       float efficiency = 1.;
       float dca = 0.;
+
+      float centrality = 105.f;
+      if constexpr (type == EMAnaType::kEfficiency) {
+        centrality = 0; // to be implemented later.
+      } else {
+        centrality = 0;
+      }
 
       int pdgCode = mctrack.pdgCode();
       if (abs(pdgCode) == 11) {
@@ -173,7 +197,7 @@ struct ApplySmearing {
         }
         // apply smearing for electrons or muons.
         float ptsmeared, etasmeared, phismeared;
-        smearer_Electron.applySmearing(ch, ptgen, etagen, phigen, ptsmeared, etasmeared, phismeared);
+        smearer_Electron.applySmearing(centrality, ch, ptgen, etagen, phigen, ptsmeared, etasmeared, phismeared);
         // get the efficiency
         efficiency = smearer_Electron.getEfficiency(ptgen, etagen, phigen);
         // get DCA
@@ -188,13 +212,13 @@ struct ApplySmearing {
         }
         // apply smearing for muons based on resolution map of standalone muons
         float ptsmeared_sa = 0.f, etasmeared_sa = 0.f, phismeared_sa = 0.f, efficiency_sa = 1.f, dca_sa = 0.f;
-        smearer_StandaloneMuon.applySmearing(ch, ptgen, etagen, phigen, ptsmeared_sa, etasmeared_sa, phismeared_sa);
+        smearer_StandaloneMuon.applySmearing(centrality, ch, ptgen, etagen, phigen, ptsmeared_sa, etasmeared_sa, phismeared_sa);
         efficiency_sa = smearer_StandaloneMuon.getEfficiency(ptgen, etagen, phigen);
         dca_sa = smearer_StandaloneMuon.getDCA(ptsmeared_sa);
 
         float ptsmeared_gl = 0.f, etasmeared_gl = 0.f, phismeared_gl = 0.f, efficiency_gl = 1.f, dca_gl = 0.f;
         // apply smearing for muons based on resolution map of global muons
-        smearer_GlobalMuon.applySmearing(ch, ptgen, etagen, phigen, ptsmeared_gl, etasmeared_gl, phismeared_gl);
+        smearer_GlobalMuon.applySmearing(centrality, ch, ptgen, etagen, phigen, ptsmeared_gl, etasmeared_gl, phismeared_gl);
         efficiency_gl = smearer_GlobalMuon.getEfficiency(ptgen, etagen, phigen);
         dca_gl = smearer_GlobalMuon.getDCA(ptsmeared_gl);
         smearedmuon(ptsmeared_sa, etasmeared_sa, phismeared_sa, efficiency_sa, dca_sa, ptsmeared_gl, etasmeared_gl, phismeared_gl, efficiency_gl, dca_gl);
@@ -208,19 +232,19 @@ struct ApplySmearing {
     }
   }
 
-  void processMCanalysisEM(aod::EMMCParticles const& tracksMC)
+  void processMCanalysisEM(aod::EMMCParticles const& tracksMC, aod::EMEvents const& collisions, aod::EMMCEvents const& mccollisions)
   {
-    applySmearing(tracksMC);
+    applySmearing<EMAnaType::kEfficiency>(tracksMC, collisions, mccollisions);
   }
 
-  void processMCanalysisDQ(ReducedMCTracks const& tracksMC)
-  {
-    applySmearing(tracksMC);
-  }
+  // void processMCanalysisDQ(ReducedMCTracks const& tracksMC)
+  // {
+  //   applySmearing<EMAnaType::kEfficiency>(tracksMC);
+  // }
 
   void processCocktail(aod::McParticles const& tracksMC)
   {
-    applySmearing(tracksMC);
+    applySmearing<EMAnaType::kCocktail>(tracksMC, nullptr, nullptr);
   }
 
   void processDummyCocktail(aod::McParticles const& tracksMC)
@@ -239,19 +263,21 @@ struct ApplySmearing {
     }
   }
 
-  void processDummyMCanalysis(ReducedMCTracks const&) {}
+  void processDummyMCanalysisEM(aod::EMMCParticles const&) {}
+  // void processDummyMCanalysisDQ(ReducedMCTracks const&) {}
 
   PROCESS_SWITCH(ApplySmearing, processMCanalysisEM, "Run for MC analysis which uses skimmed EM data format", false);
-  PROCESS_SWITCH(ApplySmearing, processMCanalysisDQ, "Run for MC analysis which uses skimmed DQ data format", false);
+  // PROCESS_SWITCH(ApplySmearing, processMCanalysisDQ, "Run for MC analysis which uses skimmed DQ data format", false);
   PROCESS_SWITCH(ApplySmearing, processCocktail, "Run for cocktail analysis", false);
-  PROCESS_SWITCH(ApplySmearing, processDummyMCanalysis, "Dummy process function", false);
+  PROCESS_SWITCH(ApplySmearing, processDummyMCanalysisEM, "Dummy process function", false);
+  // PROCESS_SWITCH(ApplySmearing, processDummyMCanalysisDQ, "Dummy process function", false);
   PROCESS_SWITCH(ApplySmearing, processDummyCocktail, "Dummy process function", true);
 };
 
 struct CheckSmearing {
   using EMMCParticlesWithSmearing = soa::Join<aod::EMMCParticles, aod::SmearedElectrons>; // this is only for electrons
-  using MyReducedTracks = soa::Join<ReducedMCTracks, aod::SmearedElectrons>;              // this is only for electrons
-  using MyCocktailTracks = soa::Join<aod::McParticles, aod::SmearedElectrons>;            // this is only for electrons
+  // using MyReducedTracks = soa::Join<ReducedMCTracks, aod::SmearedElectrons>;              // this is only for electrons
+  using MyCocktailTracks = soa::Join<aod::McParticles, aod::SmearedElectrons>; // this is only for electrons
 
   // Run for electrons or muons
   Configurable<int> fPdgCode{"cfgPdgCode", 11, "Set the type of particle to be checked"};
@@ -322,10 +348,10 @@ struct CheckSmearing {
     Check(tracksMC);
   }
 
-  void processCheckMCanalysisDQ(MyReducedTracks const& tracksMC)
-  {
-    Check(tracksMC);
-  }
+  // void processCheckMCanalysisDQ(MyReducedTracks const& tracksMC)
+  // {
+  //   Check(tracksMC);
+  // }
 
   void processCheckCocktail(MyCocktailTracks const& tracksMC)
   {
@@ -333,14 +359,14 @@ struct CheckSmearing {
   }
 
   void processDummyMCanalysisEM(aod::EMMCParticles const&) {}
-  void processDummyMCanalysisDQ(ReducedMCTracks const&) {}
+  // void processDummyMCanalysisDQ(ReducedMCTracks const&) {}
   void processDummyCocktail(aod::McParticles const&) {}
 
   PROCESS_SWITCH(CheckSmearing, processCheckMCanalysisEM, "Run for MC analysis", false);
-  PROCESS_SWITCH(CheckSmearing, processCheckMCanalysisDQ, "Run for MC analysis", false);
+  // PROCESS_SWITCH(CheckSmearing, processCheckMCanalysisDQ, "Run for MC analysis", false);
   PROCESS_SWITCH(CheckSmearing, processCheckCocktail, "Run for cocktail analysis", false);
   PROCESS_SWITCH(CheckSmearing, processDummyMCanalysisEM, "Dummy process function", false);
-  PROCESS_SWITCH(CheckSmearing, processDummyMCanalysisDQ, "Dummy process function", false);
+  // PROCESS_SWITCH(CheckSmearing, processDummyMCanalysisDQ, "Dummy process function", false);
   PROCESS_SWITCH(CheckSmearing, processDummyCocktail, "Dummy process function", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

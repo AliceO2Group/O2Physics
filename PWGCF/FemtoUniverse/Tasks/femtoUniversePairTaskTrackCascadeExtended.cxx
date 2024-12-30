@@ -28,13 +28,13 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
+#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 
 using namespace o2;
 using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::analysis::femtoUniverse;
+using namespace o2::analysis::femto_universe;
 using namespace o2::aod::pidutils;
 
 struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/struct
@@ -46,7 +46,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   Configurable<float> confZVertexCut{"ConfZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"}; // o2-linter: disable=name/configurable
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < confZVertexCut);
-  using FilteredFDCollisions = soa::Filtered<o2::aod::FDCollisions>;
+  using FilteredFDCollisions = soa::Filtered<o2::aod::FdCollisions>;
   using FilteredFDCollision = FilteredFDCollisions::iterator;
 
   ConfigurableAxis confChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};               // o2-linter: disable=name/configurable
@@ -105,8 +105,8 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kCascadeBachelor, 0> bachHistos;
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kCascade, 0> cascQAHistos;
 
-  FemtoUniverseContainer<femtoUniverseContainer::EventType::same, femtoUniverseContainer::Observable::kstar> sameEventCont;
-  FemtoUniverseContainer<femtoUniverseContainer::EventType::mixed, femtoUniverseContainer::Observable::kstar> mixedEventCont;
+  FemtoUniverseContainer<femto_universe_container::EventType::same, femto_universe_container::Observable::kstar> sameEventCont;
+  FemtoUniverseContainer<femto_universe_container::EventType::mixed, femto_universe_container::Observable::kstar> mixedEventCont;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kCascade> pairCleaner;
 
   HistogramRegistry rXiQA{"xi", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};

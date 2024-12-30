@@ -44,6 +44,8 @@
 #include <map>
 #include <iterator>
 #include <utility>
+#include <string>
+#include <vector>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
@@ -1237,8 +1239,8 @@ struct cascadeBuilder {
     return true;
   }
 
-  template <class TTrackTo, typename TCascObject>
-  bool buildCascadeCandidateWithKF(TCascObject const& cascade)
+  template <class TTrackTo, typename TV0Object, typename TCascObject>
+  bool buildCascadeCandidateWithKF(TCascObject const& cascade, TV0Object const& v0)
   {
     registry.fill(HIST("hKFParticleStatistics"), 0.0f);
     //*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*
@@ -1246,11 +1248,10 @@ struct cascadeBuilder {
     // dispenses prior V0 generation, uses constrained (re-)fit based on bachelor charge
     //*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*
 
-    // Track casting
-    auto bachTrack = cascade.template bachelor_as<TTrackTo>();
-    auto v0 = cascade.v0();
+    // Track casting for those not provided
     auto posTrack = v0.template posTrack_as<TTrackTo>();
     auto negTrack = v0.template negTrack_as<TTrackTo>();
+    auto bachTrack = cascade.template bachelor_as<TTrackTo>();
     auto const& collision = cascade.collision();
 
     if (calculateBachBaryonVars) {
@@ -1624,24 +1625,14 @@ struct cascadeBuilder {
       // de-reference from V0 pool, either specific for cascades or general
       // use templatizing to avoid code duplication
 
-      auto v0index = cascade.template v0_as<aod::V0sLinked>();
-      processCascadeCandidate<TTrackTo>(v0index, cascade);
-    }
-    // En masse filling at end of process call
-    fillHistos();
-    resetHistos();
-  }
-
-  template <class TTrackTo, typename TCascTable>
-  void buildFindableStrangenessTables(TCascTable const& cascades)
-  {
-    statisticsRegistry.eventCounter++;
-    for (auto& cascade : cascades) {
-      // de-reference from V0 pool, either specific for cascades or general
-      // use templatizing to avoid code duplication
-
-      auto v0index = cascade.template findableV0_as<aod::FindableV0sLinked>();
-      processCascadeCandidate<TTrackTo>(v0index, cascade);
+      if constexpr (requires { cascade.template v0(); }) {
+        auto v0index = cascade.template v0_as<aod::V0sLinked>();
+        processCascadeCandidate<TTrackTo>(v0index, cascade);
+      }
+      if constexpr (requires { cascade.template findableV0(); }) {
+        auto v0index = cascade.template findableV0_as<aod::FindableV0sLinked>();
+        processCascadeCandidate<TTrackTo>(v0index, cascade);
+      }
     }
     // En masse filling at end of process call
     fillHistos();
@@ -1653,7 +1644,15 @@ struct cascadeBuilder {
   {
     statisticsRegistry.eventCounter++;
     for (auto& cascade : cascades) {
-      bool validCascadeCandidateKF = buildCascadeCandidateWithKF<TTrackTo>(cascade);
+      bool validCascadeCandidateKF = false;
+      if constexpr (requires { cascade.template v0(); }) {
+        auto v0 = cascade.template v0_as<aod::V0sLinked>();
+        validCascadeCandidateKF = buildCascadeCandidateWithKF<TTrackTo>(cascade, v0);
+      }
+      if constexpr (requires { cascade.template findableV0(); }) {
+        auto v0 = cascade.template findableV0_as<aod::FindableV0sLinked>();
+        validCascadeCandidateKF = buildCascadeCandidateWithKF<TTrackTo>(cascade, v0);
+      }
       if (!validCascadeCandidateKF)
         continue; // doesn't pass cascade selections
 
@@ -1974,7 +1973,7 @@ struct cascadeBuilder {
       // Do analysis with collision-grouped V0s, retain full collision information
       const uint64_t collIdx = collision.globalIndex();
       auto CascadeTable_thisCollision = cascades.sliceBy(perCollisionFindable, collIdx);
-      buildFindableStrangenessTables<FullTracksExtIU>(CascadeTable_thisCollision);
+      buildStrangenessTables<FullTracksExtIU>(CascadeTable_thisCollision);
     }
   }
   PROCESS_SWITCH(cascadeBuilder, processFindableRun3, "Produce Run 3 findable cascade tables", false);
@@ -1992,6 +1991,20 @@ struct cascadeBuilder {
     }
   }
   PROCESS_SWITCH(cascadeBuilder, processRun3withKFParticle, "Produce Run 3 KF cascade tables", false);
+
+  void processFindableRun3withKFParticle(aod::Collisions const& collisions, aod::FindableV0sLinked const&, V0full const&, soa::Filtered<TaggedFindableCascades> const& cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
+  {
+    for (const auto& collision : collisions) {
+      // Fire up CCDB
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      // Do analysis with collision-grouped V0s, retain full collision information
+      const uint64_t collIdx = collision.globalIndex();
+      auto CascadeTable_thisCollision = cascades.sliceBy(perCollisionFindable, collIdx);
+      buildKFStrangenessTables<FullTracksExtIU>(CascadeTable_thisCollision);
+    }
+  }
+  PROCESS_SWITCH(cascadeBuilder, processFindableRun3withKFParticle, "Produce Run 3 findable cascade tables with KF processing path", false);
 
   void processRun3withStrangenessTracking(aod::Collisions const& collisions, aod::V0sLinked const&, V0full const&, V0fCfull const&, soa::Filtered<TaggedCascades> const& cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&, aod::TrackedCascades const& trackedCascades)
   {

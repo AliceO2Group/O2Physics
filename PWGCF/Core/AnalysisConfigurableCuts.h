@@ -86,27 +86,28 @@ class TrackSelectionCfg
   ClassDefNV(TrackSelectionCfg, 1);
 };
 
-/// \brief Simple class for fine tuning a track selection object
-/// The tune is done after the actual track selection has ben performed
-/// Take into consideration that only more restrictive tunes are supported
-/// For more relaxed tunes the whole track selection object must be modified
+/// \brief Simple class for configuring the fine tuning a track selection object
+/// The tune should change the track selection objects and probably do further checks
+/// after the actual track selection has ben performed
 class TrackSelectionTuneCfg
 {
  public:
-  bool mUseIt = false;              ///< use this track selection tuning configuration
-  int mTPCclusters = 0;             ///< minimum number of TPC clusters
-  bool mUseTPCclusters = false;     ///< use or not the number of TPC clusters
-  int mTPCxRows = 70;               ///< minimum number of TPC crossed rows
-  bool mUseTPCxRows = false;        ///< use or not the number of TPC crossed rows
-  float mTPCXRoFClusters = 0.8;     ///< minimum value of the TPC ratio no of crossed rows over findable clusters
-  bool mUseTPCXRoFClusters = false; ///< use or not the TPC ration of no of crossed rows over findable clusters
-  float mDCAxy = 2.4;               ///< maximum DCA on xy plane
-  bool mUseDCAxy = false;           ///< use or not the maximum DCA on the xy plane
-  float mDCAz = 3.2;                ///< maximum DCA on z axis
-  bool mUseDCAz = false;            ///< use or not the maximum DCA on z asis
+  bool mUseIt = false;                        ///< use this track selection tuning configuration
+  int mTPCclusters = 0;                       ///< minimum number of TPC clusters
+  bool mUseTPCclusters = false;               ///< use or not the number of TPC clusters
+  int mTPCxRows = 70;                         ///< minimum number of TPC crossed rows
+  bool mUseTPCxRows = false;                  ///< use or not the number of TPC crossed rows
+  float mTPCXRoFClusters = 0.8;               ///< minimum value of the TPC ratio no of crossed rows over findable clusters
+  bool mUseTPCXRoFClusters = false;           ///< use or not the TPC ratio of no of crossed rows over findable clusters
+  float mFractionTpcSharedClusters = 0.4;     ///< the maximum fraction of TPC shared clusters
+  bool mUseFractionTpcSharedClusters = false; ///< use or not the fraction of TPC share clusters
+  float mDCAxy = 2.4;                         ///< maximum DCA on xy plane
+  bool mUseDCAxy = false;                     ///< use or not the maximum DCA on the xy plane
+  float mDCAz = 3.2;                          ///< maximum DCA on z axis
+  bool mUseDCAz = false;                      ///< use or not the maximum DCA on z asis
 
  private:
-  ClassDefNV(TrackSelectionTuneCfg, 1);
+  ClassDefNV(TrackSelectionTuneCfg, 2);
 };
 
 /// \brief Simple class to configure a selection based on PID

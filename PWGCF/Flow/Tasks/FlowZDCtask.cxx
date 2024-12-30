@@ -79,7 +79,7 @@ struct FlowZDCtask {
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.30, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00}, "pt axis for histograms"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2500, 0, 2500}, "centrality axis for histograms"};
   ConfigurableAxis axisEnergy{"axisEnergy", {100, 0, 700}, "energy axis for zdc histos"};
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
@@ -133,7 +133,7 @@ struct FlowZDCtask {
     AxisSpec axisVtxcounts{2, -0.5f, 1.5f, "Vtx info (0=no, 1=yes)"};
     AxisSpec axisZvert{120, -30.f, 30.f, "Vtx z (cm)"};
     AxisSpec axisCent{8, 0.f, 105.f, "centrality"};
-    AxisSpec axisMult{1000, -0.5f, 1500.5f, "multiplicity"};
+    AxisSpec axisMult{2500, 0, 2500.0f, "multiplicity"};
     AxisSpec axisMultTPC{1000, -0.5f, 1999.5f, "TPCmultiplicity"};
     AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
     AxisSpec axisPtBins{{0., 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.25, 2.5, 2.75, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10., 13., 16., 20.}, "p_{T} (GeV/c)"};
@@ -144,7 +144,7 @@ struct FlowZDCtask {
 
     histos.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
     histos.add("centHistogram", "centHistogram", kTH1F, {axisCent});
-    histos.add("multHistogram", "multHistogram", kTH1F, {axisMult});
+    histos.add("multHistogram", "multHistogram", kTH1F, {axisMultiplicity});
     histos.add("multvsCent", "centrality vs multiplicity", kTH2F, {axisCent, axisMult});
     histos.add("phiHistogram", "phiHistogram", kTH1F, {axisPhi});
     histos.add("TPCmultiplicity", "TPCmultiplicity", kTH1F, {axisMultTPC});
@@ -187,7 +187,6 @@ struct FlowZDCtask {
       histos.add("ImagQHistogramZNC", "ImagQHistogramZNC", kTH1F, {axisQZNA});
 
       histos.add("Acorrelations", "Acorrelations", kTH2F, {{axisQZNA}, {axisQZNA}});
-
       histos.add("SPAngleZNA", "Spectator Plane Angle ZNA;Angle (radians);Entries", {HistType::kTH1F, {{100, -TMath::Pi(), TMath::Pi()}}});
       histos.add("SPAngleZNC", "Spectator Plane Angle ZNC;Angle (radians);Entries", {HistType::kTH1F, {{100, -TMath::Pi(), TMath::Pi()}}});
 

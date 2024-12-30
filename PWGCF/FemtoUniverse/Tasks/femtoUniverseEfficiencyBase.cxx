@@ -25,7 +25,7 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 
 using namespace o2;
-using namespace o2::analysis::femtoUniverse;
+using namespace o2::analysis::femto_universe;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
@@ -41,7 +41,7 @@ struct femtoUniverseEfficiencyBase {
   Configurable<float> ConfZVertex{"ConfZVertex", 10.f, "Event sel: Maximum z-Vertex (cm)"};
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < ConfZVertex);
-  using FilteredFDCollisions = soa::Filtered<o2::aod::FDCollisions>;
+  using FilteredFDCollisions = soa::Filtered<o2::aod::FdCollisions>;
   using FilteredFDCollision = FilteredFDCollisions::iterator;
 
   /// Particle selection part
@@ -559,7 +559,7 @@ struct femtoUniverseEfficiencyBase {
   /// process function for to call doMCRecTrackTrack with Data
   /// \param col subscribe to the collision table (Data)
   void processTrackTrack(FilteredFDCollision& col,
-                         FemtoFullParticles&, aod::FDMCParticles const&)
+                         FemtoFullParticles&, aod::FdMCParticles const&)
   {
     fillCollision(col);
     // MCGen
@@ -580,7 +580,7 @@ struct femtoUniverseEfficiencyBase {
   /// process function for to call doMCRecTrackPhi with Data
   /// \param col subscribe to the collision table (Data)
   void processTrackPhi(FilteredFDCollision& col,
-                       FemtoFullParticles&, aod::FDMCParticles const&)
+                       FemtoFullParticles&, aod::FdMCParticles const&)
   {
     fillCollision(col);
     // MCGen
@@ -602,7 +602,7 @@ struct femtoUniverseEfficiencyBase {
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
   void processV0V0(FilteredFDCollision& col,
-                   FemtoFullParticles& parts, aod::FDMCParticles const&)
+                   FemtoFullParticles& parts, aod::FdMCParticles const&)
   {
     fillCollision(col);
     // MCGen
@@ -625,7 +625,7 @@ struct femtoUniverseEfficiencyBase {
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
   void processTrackV0(FilteredFDCollision& col,
-                      FemtoFullParticles& parts, aod::FDMCParticles const&)
+                      FemtoFullParticles& parts, aod::FdMCParticles const&)
   {
     fillCollision(col);
     // MCGen
