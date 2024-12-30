@@ -250,7 +250,7 @@ struct HfTreeCreatorToXiPi {
 
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
   Configurable<bool> useCentrality{"useCentrality", false, "Decide whether to use centrality information"};
-                             
+  
   using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>;
   using MyEventTable = soa::Join<aod::Collisions, aod::EvSels, aod::PVMultZeqs, Cents>;
   using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
