@@ -39,6 +39,8 @@
 #include "CommonConstants/MathConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/DataTypes.h"
@@ -141,6 +143,39 @@ enum HfVtxStage : uint8_t {
   BeautyVertex,
   CharmHadPiSelected,
   kNHfVtxStage
+};
+
+// Helper struct to pass V0 informations
+struct V0Cand {
+  std::array<float, 3> mom;
+  float etaPos;
+  float etaNeg;
+  float ptPos;
+  float ptNeg;
+  float pinTpcPos;
+  float pinTpcNeg;
+  float nClsFoundTpcPos;
+  float nClsFoundTpcNeg;
+  float signalTpcPos;
+  float signalTpcNeg;
+  float nClsTpcNeg;
+  float v0cosPA;
+  float dcav0topv;
+  float dcaV0daughters;
+  float dcapostopv;
+  float dcanegtopv;
+  float alpha;
+  float qtarm;
+  float v0radius;
+  float mK0Short;
+  float mLambda;
+  float mAntiLambda;
+  float nSigmaPrTpcPos;
+  float nSigmaPrTofPos;
+  float nSigmaPrTpcNeg;
+  float nSigmaPrTofNeg;
+  bool hasTofPos;
+  bool hasTofNeg;
 };
 
 static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", "Dplus", "Ds", "Lc", "Xic"};
@@ -460,10 +495,10 @@ class HfFilterHelper
   int8_t isSelectedSigmaCInDeltaMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const T& pTrackSoftPi, const float ptSigmaC, const int8_t isSelectedLc, H2 hMassVsPt, const int& activateQA);
   template <typename T, typename H2>
   int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic, const int8_t isSelected, const int& activateQA, H2 hMassVsPt);
-  template <typename V0, typename Coll, typename T, typename H2>
-  int8_t isSelectedV0(const V0& v0, const std::array<T, 2>& dauTracks, const Coll& collision, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
+  template <typename V0, typename H2>
+  int8_t isSelectedV0(const V0& v0, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
   template <typename Photon, typename T, typename H2>
-  inline bool isSelectedPhoton(const Photon& photon, const std::array<T, 2>& dauTracks, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
+  bool isSelectedPhoton(const Photon& photon, const std::array<T, 2>& dauTracks, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
   template <typename Casc, typename T, typename Coll>
   bool isSelectedCascade(const Casc& casc, const std::array<T, 3>& dauTracks, const Coll& collision);
   template <typename T, typename T2>
@@ -473,13 +508,13 @@ class HfFilterHelper
   template <bool isKaonTrack, typename T>
   bool isSelectedKaonFromXicResoToSigmaC(const T& track);
   template <typename T1, typename T2, typename T3, typename T4>
-  inline bool isSelectedBhadron(T1 const& pVecTrack0, T1 const& pVecTrack1, T2 const& dcaTrack0, T2 const& dcaTrack1, const T3& primVtx, const T4& secVtx, const int whichB);
+  bool isSelectedBhadron(T1 const& pVecTrack0, T1 const& pVecTrack1, T2 const& dcaTrack0, T2 const& dcaTrack1, const T3& primVtx, const T4& secVtx, const int whichB);
   template <typename T1, typename T2>
-  inline bool isSelectedBhadronInMassRange(T1 const& ptCand, T2 const& massCand, const int whichB);
+  bool isSelectedBhadronInMassRange(T1 const& ptCand, T2 const& massCand, const int whichB);
   template <typename T1, typename T2, typename T3>
-  inline bool isSelectedBzeroToDstar(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, const T2& primVtx, const T3& secVtx);
+  bool isSelectedBzeroToDstar(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, const T2& primVtx, const T3& secVtx);
   template <typename T1>
-  inline bool isCharmHadronMassInSbRegions(T1 const& massHypo1, T1 const& massHypo2, const float& lowLimitSB, const float& upLimitSB);
+  bool isCharmHadronMassInSbRegions(T1 const& massHypo1, T1 const& massHypo2, const float& lowLimitSB, const float& upLimitSB);
 
   // helpers
   template <typename T>
@@ -487,7 +522,7 @@ class HfFilterHelper
   template <typename T>
   int computeNumberOfCandidates(std::vector<std::vector<T>> indices);
   template <typename T1>
-  inline int setVtxConfiguration(T1 vertexer, bool useAbsDCA);
+  int setVtxConfiguration(T1 vertexer, bool useAbsDCA);
 
   // PID
   void setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::array<std::string, 8>& ccdbPaths);
@@ -501,14 +536,20 @@ class HfFilterHelper
   bool isSelectedProton4CharmBaryons(const T& track);
 
   // PID
+  float getTPCSplineCalib(const float tpcPin, const float dEdx, const int& pidSpecies);
   template <typename T>
-  double getTPCSplineCalib(const T& track, const int& pidSpecies);
+  float getTPCSplineCalib(const T& track, const int& pidSpecies);
+  float getTPCPostCalib(const float tpcPin, const float tpcNCls, const float eta, const float tpcNSigma, const int& pidSpecies);
   template <typename T>
   float getTPCPostCalib(const T& track, const int& pidSpecies);
 
   // helpers
   template <typename T1, typename T2>
   int findBin(T1 const& binsPt, T2 value);
+  template <typename T>
+  std::array<T, 2> alphaAndQtAP(std::array<T, 3> const& momPos, std::array<T, 3> const& momNeg);
+  template <typename V, typename T, typename C>
+  bool buildV0(V const& v0Indices, T const& tracks, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const std::vector<int>& vetoedTrackIds, V0Cand& v0Cand);
 
   // selections
   std::vector<double> mPtBinsTracks{};                                            // vector of pT bins for single track cuts
@@ -1154,14 +1195,12 @@ inline int8_t HfFilterHelper::isSelectedXicInMassRange(const T& pTrackSameCharge
 
 /// Basic selection of V0 candidates
 /// \param v0 is the v0 candidate
-/// \param dauTracks is a 2-element array with positive and negative V0 daughter tracks
-/// \param collision is the current collision
 /// \param activateQA flag to fill QA histos
 /// \param hV0Selected is the pointer to the QA histo for selected V0S
 /// \param hArmPod is the pointer to an array of QA histo AP plot after selection
 /// \return an integer passes all cuts
-template <typename V0, typename Coll, typename T, typename H2>
-inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>& dauTracks, const Coll& /*collision*/, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod)
+template <typename V0, typename H2>
+inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod)
 {
   int8_t isSelected{BIT(kK0S) | BIT(kLambda) | BIT(kAntiLambda)};
 
@@ -1172,7 +1211,7 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
   }
 
   // eta of daughters
-  if (std::fabs(dauTracks[0].eta()) > 1. || std::fabs(dauTracks[1].eta()) > 1.) { // cut all V0 daughters with |eta| > 1.
+  if (std::fabs(v0.etaPos) > 1. || std::fabs(v0.etaNeg) > 1.) { // cut all V0 daughters with |eta| > 1.
     if (activateQA > 1) {
       for (int iV0{kK0S}; iV0 < kNV0; ++iV0) {
         hV0Selected->Fill(1., iV0);
@@ -1182,7 +1221,7 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
   }
 
   // V0 radius
-  if (v0.v0radius() < mMinK0sLambdaRadius) {
+  if (v0.v0radius < mMinK0sLambdaRadius) {
     for (int iV0{kK0S}; iV0 < kNV0; ++iV0) {
       CLRBIT(isSelected, iV0);
       if (activateQA > 1) {
@@ -1191,9 +1230,8 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
     }
   }
 
-  auto v0CosinePa = v0.v0cosPA();
   for (int iV0{kK0S}; iV0 < kNV0; ++iV0) {
-    if (TESTBIT(isSelected, iV0) && v0CosinePa < mMinK0sLambdaCosinePa) {
+    if (TESTBIT(isSelected, iV0) && v0.v0cosPA < mMinK0sLambdaCosinePa) {
       CLRBIT(isSelected, iV0);
       if (activateQA > 1) {
         hV0Selected->Fill(3., iV0);
@@ -1202,19 +1240,19 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
   }
 
   // armenteros-podolanski / mass
-  if (TESTBIT(isSelected, kK0S) && std::fabs(v0.mK0Short() - massK0S) > mDeltaMassK0s) {
+  if (TESTBIT(isSelected, kK0S) && std::fabs(v0.mK0Short - massK0S) > mDeltaMassK0s) {
     CLRBIT(isSelected, kK0S);
     if (activateQA > 1) {
       hV0Selected->Fill(4., kK0S);
     }
   }
-  if (TESTBIT(isSelected, kLambda) && std::fabs(v0.mLambda() - massLambda) > mDeltaMassLambda) {
+  if (TESTBIT(isSelected, kLambda) && std::fabs(v0.mLambda - massLambda) > mDeltaMassLambda) {
     CLRBIT(isSelected, kLambda);
     if (activateQA > 1) {
       hV0Selected->Fill(4., kLambda);
     }
   }
-  if (TESTBIT(isSelected, kAntiLambda) && std::fabs(v0.mAntiLambda() - massLambda) > mDeltaMassLambda) {
+  if (TESTBIT(isSelected, kAntiLambda) && std::fabs(v0.mAntiLambda - massLambda) > mDeltaMassLambda) {
     CLRBIT(isSelected, kAntiLambda);
     if (activateQA > 1) {
       hV0Selected->Fill(4., kAntiLambda);
@@ -1223,13 +1261,13 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
 
   // DCA V0 and V0 daughters
   for (int iV0{kK0S}; iV0 < kNV0; ++iV0) {
-    if (TESTBIT(isSelected, iV0) && v0.dcav0topv() > 0.1f) { // we want only primary V0s
+    if (TESTBIT(isSelected, iV0) && v0.dcav0topv > 0.1f) { // we want only primary V0s
       CLRBIT(isSelected, iV0);
       if (activateQA > 1) {
         hV0Selected->Fill(5., iV0);
       }
     }
-    if (TESTBIT(isSelected, iV0) && (v0.dcaV0daughters() > 1.f || std::fabs(v0.dcapostopv()) < 0.05f || std::fabs(v0.dcanegtopv()) < 0.05f)) {
+    if (TESTBIT(isSelected, iV0) && (v0.dcaV0daughters > 1.f || std::fabs(v0.dcapostopv) < 0.05f || std::fabs(v0.dcanegtopv) < 0.05f)) {
       CLRBIT(isSelected, iV0);
       if (activateQA > 1) {
         hV0Selected->Fill(6., iV0);
@@ -1238,25 +1276,29 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
   }
 
   // PID (Lambda/AntiLambda only)
-  float nSigmaPrTpc[2] = {dauTracks[0].tpcNSigmaPr(), dauTracks[1].tpcNSigmaPr()};
-  float nSigmaPrTof[2] = {dauTracks[0].tofNSigmaPr(), dauTracks[1].tofNSigmaPr()};
+  float nSigmaPrTpc[2] = {v0.nSigmaPrTpcPos, v0.nSigmaPrTpcNeg};
+  float nSigmaPrTof[2] = {v0.nSigmaPrTofPos, v0.nSigmaPrTofNeg};
+  float pInTpc[2] = {v0.pinTpcPos, v0.pinTpcNeg};
+  float nClsTpc[2] = {v0.nClsFoundTpcPos, v0.nClsFoundTpcNeg};
+  float etaDaus[2] = {v0.etaPos, v0.etaNeg};
+  float signalTpc[2] = {v0.signalTpcPos, v0.signalTpcNeg};
   if (mTpcPidCalibrationOption == 1) {
     for (int iDau{0}; iDau < 2; ++iDau) {
-      nSigmaPrTpc[iDau] = getTPCPostCalib(dauTracks[iDau], kPr);
+      nSigmaPrTpc[iDau] = getTPCPostCalib(pInTpc[iDau], nClsTpc[iDau], etaDaus[iDau], nSigmaPrTpc[2], kPr);
     }
   } else if (mTpcPidCalibrationOption == 2) {
     for (int iDau{0}; iDau < 2; ++iDau) {
-      nSigmaPrTpc[iDau] = getTPCSplineCalib(dauTracks[iDau], (iDau == 0) ? kPr : kAntiPr);
+      nSigmaPrTpc[iDau] = getTPCSplineCalib(pInTpc[iDau], signalTpc[iDau], (iDau == 0) ? kPr : kAntiPr);
     }
   }
 
-  if (TESTBIT(isSelected, kLambda) && ((dauTracks[0].hasTPC() && std::fabs(nSigmaPrTpc[0]) > mMaxNsigmaPrForLambda) || (dauTracks[0].hasTOF() && std::fabs(nSigmaPrTof[0]) > mMaxNsigmaPrForLambda))) {
+  if (TESTBIT(isSelected, kLambda) && (std::fabs(nSigmaPrTpc[0]) > mMaxNsigmaPrForLambda || (v0.hasTofPos && std::fabs(nSigmaPrTof[0]) > mMaxNsigmaPrForLambda))) {
     CLRBIT(isSelected, kLambda);
     if (activateQA > 1) {
       hV0Selected->Fill(7., kLambda);
     }
   }
-  if (TESTBIT(isSelected, kAntiLambda) && ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1]) > mMaxNsigmaPrForLambda) || (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1]) > mMaxNsigmaPrForLambda))) {
+  if (TESTBIT(isSelected, kAntiLambda) && (std::fabs(nSigmaPrTpc[1]) > mMaxNsigmaPrForLambda || (v0.hasTofNeg && std::fabs(nSigmaPrTof[1]) > mMaxNsigmaPrForLambda))) {
     CLRBIT(isSelected, kAntiLambda);
     if (activateQA > 1) {
       hV0Selected->Fill(7., kAntiLambda);
@@ -1266,7 +1308,7 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
   if (activateQA) {
     for (int iV0{kK0S}; iV0 < kNV0; ++iV0) {
       if (TESTBIT(isSelected, iV0)) {
-        hArmPod[iV0]->Fill(v0.alpha(), v0.qtarm());
+        hArmPod[iV0]->Fill(v0.alpha, v0.qtarm);
         if (activateQA > 1) {
           hV0Selected->Fill(8., iV0);
         }
@@ -1877,7 +1919,20 @@ inline bool isCharmHadronMassInSbRegions(T1 const& massHypo1, T1 const& massHypo
 /// \param pidSpecies is the particle species to be considered
 /// \return updated nsigma value for TPC PID
 template <typename T>
-inline double HfFilterHelper::getTPCSplineCalib(const T& track, const int& pidSpecies)
+inline float HfFilterHelper::getTPCSplineCalib(const T& track, const int& pidSpecies)
+{
+  float tpcPin = track.tpcInnerParam();
+  float dEdx = track.tpcSignal();
+
+  return getTPCSplineCalib(tpcPin, dEdx, pidSpecies);
+}
+
+/// Update the TPC PID baesd on the spline of particles
+/// \param tpcPin is the TPC momentum at innermost update
+/// \param dEdx is the TPC dEdx
+/// \param pidSpecies is the particle species to be considered
+/// \return updated nsigma value for TPC PID
+inline float HfFilterHelper::getTPCSplineCalib(const float tpcPin, const float dEdx, const int& pidSpecies)
 {
   float mMassPar{0.};
   if (pidSpecies == kPi || pidSpecies == kAntiPi) {
@@ -1894,38 +1949,31 @@ inline double HfFilterHelper::getTPCSplineCalib(const T& track, const int& pidSp
   }
 
   auto bgScaling = 1 / mMassPar;
-  double expBethe = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScaling), mBetheBlochPiKaPrDe[pidSpecies][0], mBetheBlochPiKaPrDe[pidSpecies][1], mBetheBlochPiKaPrDe[pidSpecies][2], mBetheBlochPiKaPrDe[pidSpecies][3], mBetheBlochPiKaPrDe[pidSpecies][4]);
+  double expBethe = tpc::BetheBlochAleph(static_cast<double>(tpcPin * bgScaling), mBetheBlochPiKaPrDe[pidSpecies][0], mBetheBlochPiKaPrDe[pidSpecies][1], mBetheBlochPiKaPrDe[pidSpecies][2], mBetheBlochPiKaPrDe[pidSpecies][3], mBetheBlochPiKaPrDe[pidSpecies][4]);
   double expSigma = expBethe * mBetheBlochPiKaPrDe[pidSpecies][5];
-  return static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
+  return static_cast<float>((dEdx - expBethe) / expSigma);
 }
 
 /// compute TPC postcalibrated nsigma based on calibration histograms from CCDB
-/// \param hCalibMean calibration histograms of mean from CCDB
-/// \param hCalibSigma calibration histograms of sigma from CCDB
-/// \param track is the track
+/// \param tpcPin is the TPC momentum at innermost update
+/// \param tpcNCls is the number of found TPC clusters
+/// \param eta is the pseudorapidity
+/// \param tpcNSigma is the original Nsigma
 /// \param pidSpecies is the PID species
 /// \return the corrected Nsigma value for the PID species
-template <typename T>
-inline float HfFilterHelper::getTPCPostCalib(const T& track, const int& pidSpecies)
+inline float HfFilterHelper::getTPCPostCalib(const float tpcPin, const float tpcNCls, const float eta, const float tpcNSigma, const int& pidSpecies)
 {
-  float tpcNCls = track.tpcNClsFound();
-  float tpcPin = track.tpcInnerParam();
-  float eta = track.eta();
-  float tpcNSigma{0.};
   int iHist{0};
-
   if (pidSpecies == kPi) {
-    tpcNSigma = track.tpcNSigmaPi();
     iHist = 0;
   } else if (pidSpecies == kKa) {
-    tpcNSigma = track.tpcNSigmaKa();
     iHist = 2;
   } else if (pidSpecies == kPr) {
-    tpcNSigma = track.tpcNSigmaPr();
     iHist = 4;
   } else {
     LOG(fatal) << "Wrong PID Species be selected, please check!";
   }
+
   if (!mHistMapPiPrKaDe[iHist] || !mHistMapPiPrKaDe[iHist + 1]) {
     LOGP(warn, "Postcalibration TPC PID histograms not set. Use default Nsigma values.");
   }
@@ -1944,6 +1992,31 @@ inline float HfFilterHelper::getTPCPostCalib(const T& track, const int& pidSpeci
   auto width = mHistMapPiPrKaDe[iHist + 1]->GetBinContent(binTPCNCls, binPin, binEta);
 
   return (tpcNSigma - mean) / width;
+}
+
+/// compute TPC postcalibrated nsigma based on calibration histograms from CCDB
+/// \param track is the track
+/// \param pidSpecies is the PID species
+/// \return the corrected Nsigma value for the PID species
+template <typename T>
+inline float HfFilterHelper::getTPCPostCalib(const T& track, const int& pidSpecies)
+{
+  float tpcNCls = track.tpcNClsFound();
+  float tpcPin = track.tpcInnerParam();
+  float eta = track.eta();
+  float tpcNSigma{-999.};
+
+  if (pidSpecies == kPi) {
+    tpcNSigma = track.tpcNSigmaPi();
+  } else if (pidSpecies == kKa) {
+    tpcNSigma = track.tpcNSigmaKa();
+  } else if (pidSpecies == kPr) {
+    tpcNSigma = track.tpcNSigmaPr();
+  } else {
+    LOG(fatal) << "Wrong PID Species be selected, please check!";
+  }
+
+  return getTPCPostCalib(tpcPin, tpcNCls, eta, tpcNSigma, pidSpecies);
 }
 
 /// Finds pT bin in an array.
@@ -1971,12 +2044,129 @@ inline int HfFilterHelper::setVtxConfiguration(T1 vertexer, bool useAbsDCA)
   // Fitter initialisation
   vertexer.setPropagateToPCA(true);
   vertexer.setMaxR(200.);
-  vertexer.setMaxDZIni(4.);
+  vertexer.setMaxDZIni(1.e9);
+  vertexer.setMaxDXYIni(4.);
   vertexer.setMinParamChange(1.e-3);
   vertexer.setMinRelChi2Change(0.9);
+  vertexer.setMaxChi2(0.9);
   vertexer.setUseAbsDCA(useAbsDCA);
   vertexer.setWeightedFinalPCA(false);
   return 1;
+}
+
+/// Utility to compute AP alpha and qt
+/// \param momPos momentum array of positive daughter
+/// \param momNeg momentum array of negative daughter
+template <typename T>
+inline std::array<T, 2> alphaAndQtAP(std::array<T, 3> const& momPos, std::array<T, 3> const& momNeg)
+{
+  float momTotSq = RecoDecay::p2(momPos[0] + momNeg[0], momPos[1] + momNeg[1], momPos[2] + momNeg[2]);
+  float momTot = std::sqrt(momTotSq);
+  float lQlNeg = RecoDecay::dotProd(momNeg, std::array{momPos[0] + momNeg[0], momPos[1] + momNeg[1], momPos[2] + momNeg[2]}) / momTot;
+  float lQlPos = RecoDecay::dotProd(momPos, std::array{momPos[0] + momNeg[0], momPos[1] + momNeg[1], momPos[2] + momNeg[2]}) / momTot;
+  float alpha = (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
+  float qtarm = std::sqrt(RecoDecay::p2(momNeg) - lQlNeg * lQlNeg / momTotSq);
+
+  std::array<float, 2> alphaAndQt = {alpha, qtarm};
+  return alphaAndQt;
+}
+
+/// build V0 candidate from table with track indices
+/// \param v0Indices V0 candidate from AO2D table (track indices)
+/// \param tracks track table
+/// \param collision collision
+/// \param dcaFitter DCA fitter to be used
+/// \param vetoedTrackIds vector with forbidden track indices, if any
+template <typename V, typename T, typename C>
+inline bool buildV0(V const& v0Indices, T const& tracks, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const std::vector<int>& vetoedTrackIds, V0Cand& v0Cand)
+{
+  auto trackPos = tracks.rawIteratorAt(v0Indices.posTrackId());
+  auto trackNeg = tracks.rawIteratorAt(v0Indices.negTrackId());
+
+  // minimal track cuts
+  if (!trackPos.hasTPC() || !trackNeg.hasTPC()) {
+    return false;
+  }
+  if (!(trackPos.trackType() & o2::aod::track::TPCrefit) || !(trackNeg.trackType() & o2::aod::track::TPCrefit)) {
+    return false;
+  }
+  if (trackPos.tpcNClsCrossedRows() < 50 || trackNeg.tpcNClsCrossedRows() < 50) {
+    return false;
+  }
+
+  if (std::find(vetoedTrackIds.begin(), vetoedTrackIds.end(), trackPos.globalIndex()) != vetoedTrackIds.end() || std::find(vetoedTrackIds.begin(), vetoedTrackIds.end(), trackNeg.globalIndex()) != vetoedTrackIds.end()) {
+    return false;
+  }
+
+  auto trackParCovPos = getTrackParCov(trackPos);
+  auto trackParCovNeg = getTrackParCov(trackNeg);
+  std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
+  gpu::gpustd::array<float, 2> dcaInfoPos, dcaInfoNeg;
+  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovPos, 2.f, dcaFitter.getMatCorrType(), &dcaInfoPos);
+  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovNeg, 2.f, dcaFitter.getMatCorrType(), &dcaInfoNeg);
+
+  // reconstruct vertex
+  int nCand = 0;
+  try {
+    nCand = dcaFitter.process(trackParCovPos, trackParCovNeg);
+  } catch (...) {
+    LOG(error) << "Exception caught in DCA fitter process call!";
+    return false;
+  }
+  if (nCand == 0) {
+    return false;
+  }
+
+  // compute candidate momentum from tracks propagated to decay vertex
+  auto& trackPosProp = dcaFitter.getTrack(0);
+  auto& trackNegProp = dcaFitter.getTrack(1);
+  std::array<float, 3> momPos{}, momNeg{};
+  trackPosProp.getPxPyPzGlo(momPos);
+  trackNegProp.getPxPyPzGlo(momNeg);
+  v0Cand.mom = RecoDecay::pVec(momPos, momNeg);
+
+  // fill V0 quantities
+  v0Cand.dcapostopv = dcaInfoPos[0];
+  v0Cand.dcanegtopv = dcaInfoNeg[0];
+  v0Cand.ptPos = RecoDecay::pt(momPos);
+  v0Cand.ptNeg = RecoDecay::pt(momNeg);
+  v0Cand.pinTpcPos = trackPos.tpcInnerParam();
+  v0Cand.pinTpcNeg = trackNeg.tpcInnerParam();
+  v0Cand.nClsFoundTpcPos = trackPos.tpcNClsFound();
+  v0Cand.nClsFoundTpcNeg = trackNeg.tpcNClsFound();
+  v0Cand.signalTpcPos = trackPos.tpcSignal();
+  v0Cand.signalTpcNeg = trackNeg.tpcSignal();
+  v0Cand.etaPos = RecoDecay::eta(momPos);
+  v0Cand.etaNeg = RecoDecay::eta(momNeg);
+  v0Cand.dcaV0daughters = std::sqrt(dcaFitter.getChi2AtPCACandidate());
+
+  const auto& vtx = dcaFitter.getPCACandidate();
+  v0Cand.v0radius = std::hypot(vtx[0], vtx[1]);
+  v0Cand.v0cosPA = RecoDecay::cpa(primVtx, vtx, v0Cand.mom);
+
+  auto trackParV0 = dcaFitter.createParentTrackParCov();
+  trackParV0.setAbsCharge(0);
+  trackParV0.setPID(o2::track::PID::K0);
+  gpu::gpustd::array<float, 2> dcaInfoV0;
+  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParV0, 2.f, dcaFitter.getMatCorrType(), &dcaInfoV0);
+  v0Cand.dcav0topv = dcaInfoV0[0];
+
+  v0Cand.mK0Short = RecoDecay::m(std::array{momPos, momNeg}, std::array{massPi, massPi});
+  v0Cand.mLambda = RecoDecay::m(std::array{momPos, momNeg}, std::array{massProton, massPi});
+  v0Cand.mAntiLambda = RecoDecay::m(std::array{momPos, momNeg}, std::array{massPi, massProton});
+
+  auto alphaAndQt = alphaAndQtAP(momPos, momNeg);
+  v0Cand.alpha = alphaAndQt[0];
+  v0Cand.qtarm = alphaAndQt[1];
+
+  v0Cand.hasTofPos = trackPos.hasTOF();
+  v0Cand.hasTofNeg = trackNeg.hasTOF();
+  v0Cand.nSigmaPrTpcPos = trackPos.tpcNSigmaPr();
+  v0Cand.nSigmaPrTofPos = trackPos.tofNSigmaPr();
+  v0Cand.nSigmaPrTpcNeg = trackNeg.tpcNSigmaPr();
+  v0Cand.nSigmaPrTofNeg = trackNeg.tofNSigmaPr();
+
+  return true;
 }
 
 } // namespace hffilters
