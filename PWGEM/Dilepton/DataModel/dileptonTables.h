@@ -367,7 +367,7 @@ DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(AmbiguousElectrons, ambiguousElectrons);
 DECLARE_SOA_COLUMN(IsAssociatedToMPC, isAssociatedToMPC, bool); //! is associated to most probable collision
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                         //!
 DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);                 //!
-DECLARE_SOA_COLUMN(PrefilterBitPi0, pfbpi0, uint16_t);          //!
+DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);  //!
 DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -513,9 +513,9 @@ DECLARE_SOA_TABLE(EMAmbiguousElectronSelfIds, "AOD", "EMAMBELSELFID", emprimarye
 // iterators
 using EMAmbiguousElectronSelfId = EMAmbiguousElectronSelfIds::iterator;
 
-DECLARE_SOA_TABLE(EMPrimaryElectronsPrefilterBitPi0, "AOD", "PRMELPFBPI0", emprimaryelectron::PrefilterBitPi0); // To be joined with EMPrimaryElectrons table at analysis level.
+DECLARE_SOA_TABLE(EMPrimaryElectronsPrefilterBitDerived, "AOD", "PRMELPFBPI0", emprimaryelectron::PrefilterBitDerived); // To be joined with EMPrimaryElectrons table at analysis level.
 // iterators
-using EMPrimaryElectronPrefilterBitPi0 = EMPrimaryElectronsPrefilterBitPi0::iterator;
+using EMPrimaryElectronPrefilterBitDerived = EMPrimaryElectronsPrefilterBitDerived::iterator;
 
 namespace emprimarymuon
 {
