@@ -70,7 +70,7 @@ struct TpcPidQa {
     mEnabledTables.resize(9, 0);
 
     for (int i = 0; i < nTables; i++) {
-      int f = enabledTables->get(tableNames[i].c_str(), "Enable");
+      int f = enabledTables->get(tableNames[i].c_str(), "enable");
       if (f == 1) {
         mEnabledTables[i] = 1;
         histos.add(fmt::format("hNSigmaVsPTot{}", tableNames[i]).c_str(), "", kTH2F, {axisMomentum, axisNSigma});
