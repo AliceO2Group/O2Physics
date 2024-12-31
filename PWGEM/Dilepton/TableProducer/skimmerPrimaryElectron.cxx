@@ -588,13 +588,6 @@ struct skimmerPrimaryElectron {
 };
 
 struct prefilterPrimaryElectron {
-  enum class EM_Electron_PF : int {
-    kElFromPC = 0,    // electron from photon conversion
-    kElFromPi0_1 = 1, // electron from pi0 dalitz decay, threshold 1
-    kElFromPi0_2 = 2, // electron from  pi0 dalitz decay, threshold 2
-    kElFromPi0_3 = 3, // electron from pi0 dalitz decay, threshold 3
-  };
-
   Produces<aod::EMPrimaryElectronsPrefilterBit> ele_pfb;
 
   SliceCache cache;
@@ -867,12 +860,12 @@ struct prefilterPrimaryElectron {
           }
           for (int i = 0; i < static_cast<int>(max_mee_vec->size()); i++) {
             if (v12.M() < max_mee_vec->at(i)) {
-              pfb_map[empos.globalIndex()] |= (uint8_t(1) << (static_cast<int>(EM_Electron_PF::kElFromPi0_1) + i));
+              pfb_map[empos.globalIndex()] |= (uint8_t(1) << (static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_1) + i));
             }
           }
 
           if (v12.M() < slope * phiv + intercept) {
-            pfb_map[empos.globalIndex()] |= (uint8_t(1) << static_cast<int>(EM_Electron_PF::kElFromPC));
+            pfb_map[empos.globalIndex()] |= (uint8_t(1) << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC));
           }
 
         } // end of signal positon loop
@@ -903,12 +896,12 @@ struct prefilterPrimaryElectron {
           }
           for (int i = 0; i < static_cast<int>(max_mee_vec->size()); i++) {
             if (v12.M() < max_mee_vec->at(i)) {
-              pfb_map[emele.globalIndex()] |= (uint8_t(1) << (static_cast<int>(EM_Electron_PF::kElFromPi0_1) + i));
+              pfb_map[emele.globalIndex()] |= (uint8_t(1) << (static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_1) + i));
             }
           }
 
           if (v12.M() < slope * phiv + intercept) {
-            pfb_map[emele.globalIndex()] |= (uint8_t(1) << static_cast<int>(EM_Electron_PF::kElFromPC));
+            pfb_map[emele.globalIndex()] |= (uint8_t(1) << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC));
           }
         } // end of signal electron loop
       } // end of loose positon loop
@@ -1047,12 +1040,12 @@ struct prefilterPrimaryElectron {
         }
         for (int i = 0; i < static_cast<int>(max_mee_vec->size()); i++) {
           if (v12.M() < max_mee_vec->at(i)) {
-            pfb_map[empos.globalIndex()] |= (uint8_t(1) << (static_cast<int>(EM_Electron_PF::kElFromPi0_1) + i));
+            pfb_map[empos.globalIndex()] |= (uint8_t(1) << (static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_1) + i));
           }
         }
 
         if (v12.M() < slope * phiv + intercept) {
-          pfb_map[empos.globalIndex()] |= (uint8_t(1) << static_cast<int>(EM_Electron_PF::kElFromPC));
+          pfb_map[empos.globalIndex()] |= (uint8_t(1) << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC));
         }
 
       } // end of ULS pairing
@@ -1077,12 +1070,12 @@ struct prefilterPrimaryElectron {
         }
         for (int i = 0; i < static_cast<int>(max_mee_vec->size()); i++) {
           if (v12.M() < max_mee_vec->at(i)) {
-            pfb_map[emele.globalIndex()] |= (uint8_t(1) << (static_cast<int>(EM_Electron_PF::kElFromPi0_1) + i));
+            pfb_map[emele.globalIndex()] |= (uint8_t(1) << (static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_1) + i));
           }
         }
 
         if (v12.M() < slope * phiv + intercept) {
-          pfb_map[emele.globalIndex()] |= (uint8_t(1) << static_cast<int>(EM_Electron_PF::kElFromPC));
+          pfb_map[emele.globalIndex()] |= (uint8_t(1) << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPC));
         }
 
       } // end of ULS pairing
