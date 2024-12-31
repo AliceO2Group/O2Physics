@@ -146,10 +146,10 @@ struct TrackPropagation {
     }
 
     // load matLUT for this timestamp
-    if(!lut){
+    if (!lut) {
       LOG(info) << "Loading material look-up table for timestamp: " << bc.timestamp();
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(lutPath, bc.timestamp()));
-    }else{
+    } else {
       LOG(info) << "Material look-up table already in place. Not reloading.";
     }
 
