@@ -737,7 +737,7 @@ struct lambdakzeroBuilder {
     // Set magnetic field value once known
     fitter.setBz(d_bz);
 
-    if (dcaFitterConfigurations.useMatCorrType == 2) {
+    if (dcaFitterConfigurations.useMatCorrType == 2 && !lut) {
       // setMatLUT only after magfield has been initalized
       // (setMatLUT has implicit and problematic init field call if not)
       LOG(info) << "Loading material look-up table for timestamp: " << timestamp;

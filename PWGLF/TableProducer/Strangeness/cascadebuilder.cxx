@@ -755,7 +755,7 @@ struct cascadeBuilder {
     /// Set magnetic field for KF vertexing
     KFParticle::SetField(d_bz);
 
-    if (useMatCorrType == 2) {
+    if (useMatCorrType == 2 && !lut) {
       // setMatLUT only after magfield has been initalized
       // (setMatLUT has implicit and problematic init field call if not)
       LOG(info) << "Loading material look-up table for timestamp: " << timestamp;
