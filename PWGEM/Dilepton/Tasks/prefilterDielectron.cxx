@@ -56,7 +56,7 @@ using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, 
 using MyTrack = MyTracks::iterator;
 
 struct prefilterDielectron {
-  Produces<aod::EMPrimaryElectronsPrefilterBitPi0> pfb_pi0;
+  Produces<aod::EMPrimaryElectronsPrefilterBitDerived> pfb_derived;
 
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -453,7 +453,7 @@ struct prefilterDielectron {
 
     for (auto& track : tracks) {
       // LOGF(info, "map_pfb[%d] = %d", track.globalIndex(), map_pfb[track.globalIndex()]);
-      pfb_pi0(map_pfb[track.globalIndex()]);
+      pfb_derived(map_pfb[track.globalIndex()]);
     } // end of track loop
 
     // check pfb.
@@ -542,7 +542,7 @@ struct prefilterDielectron {
   void processDummy(MyTracks const& tracks)
   {
     for (int i = 0; i < tracks.size(); i++) {
-      pfb_pi0(0);
+      pfb_derived(0);
     }
   }
   PROCESS_SWITCH(prefilterDielectron, processDummy, "dummy", true);
