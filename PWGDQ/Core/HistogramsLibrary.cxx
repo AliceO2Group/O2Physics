@@ -1238,9 +1238,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         int bins[4] = {250, 60, 6, 18};
         double minBins[4] = {0.0, 0.0, 2.5, 0.0};
         double maxBins[4] = {5.0, 30.0, 4.0, 90.0};
-        hm->AddHistogram(histClass, "centrFT0C_M11REF_ev", "", true, 100, 0.0, 100.0, VarManager::kCentFT0C, 1000, 0.0, 1000000.0, VarManager::kM11REFoverMp);
-        hm->AddHistogram(histClass, "centrFT0C_M1111REF_ev", "", true, 100, 0.0, 100.0, VarManager::kCentFT0C, 1000, 0.0, 100000000000000.0, VarManager::kM1111REFoverMp);
-        hm->AddHistogram(histClass, "centrFT0C_M11M1111REF_ev", "", true, 100, 0.0, 100.0, VarManager::kCentFT0C, 1000, 0.0, 10000000000000000.0, VarManager::kM11M1111REFoverMp);
+        hm->AddHistogram(histClass, "centrFT0C_M11REFoverMp_ev", "", true, 100, 0.0, 100.0, VarManager::kCentFT0C, 1000, 0.0, 1000000.0, VarManager::kM11REFoverMp);
+        hm->AddHistogram(histClass, "centrFT0C_M1111REFoverMp_ev", "", true, 100, 0.0, 100.0, VarManager::kCentFT0C, 1000, 0.0, 100000000000000.0, VarManager::kM1111REFoverMp);
+        hm->AddHistogram(histClass, "centrFT0C_M11M1111REFoverMp_ev", "", true, 100, 0.0, 100.0, VarManager::kCentFT0C, 1000, 0.0, 10000000000000000.0, VarManager::kM11M1111REFoverMp);
         hm->AddHistogram(histClass, "centrFT0C_Corr2REF_ev", "", true, 100, 0.0, 100.0, VarManager::kCentFT0C, 250, -1.0, 1.0, VarManager::kCORR2REF, VarManager::kM11REFoverMp);
         hm->AddHistogram(histClass, "centrFT0C_Corr4REF_ev", "", true, 100, 0.0, 100.0, VarManager::kCentFT0C, 250, -1.0, 1.0, VarManager::kCORR4REF, VarManager::kM1111REFoverMp);
         hm->AddHistogram(histClass, "centrFT0C_Corr2Corr4REF_ev", "", true, 100, 0.0, 100.0, VarManager::kCentFT0C, 250, -1.0, 1.0, VarManager::kCORR2CORR4REF, VarManager::kM11M1111REFoverMp);
