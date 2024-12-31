@@ -834,6 +834,7 @@ struct PhotonHBT {
         auto electrons_per_collision = electrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
         std::vector<std::pair<std::pair<int, int>, std::pair<int, int>>> used_pairs_per_collision;
         used_pairs_per_collision.reserve(std::pow(positrons_per_collision.size() * electrons_per_collision.size(), 2));
+        // LOGF(info, "collision.globalIndex() = %d, positrons_per_collision.size() = %d, electrons_per_collision.size() = %d", collision.globalIndex(), positrons_per_collision.size(), electrons_per_collision.size());
 
         for (auto& [pos1, ele1] : combinations(CombinationsFullIndexPolicy(positrons_per_collision, electrons_per_collision))) {
           if (pos1.trackId() == ele1.trackId()) { // this is protection against pairing identical 2 tracks. // never happens. only for protection.
@@ -925,6 +926,7 @@ struct PhotonHBT {
               ndiphoton++;
               used_pairs_per_collision.emplace_back(std::make_pair(pair_tmp.first, pair_tmp.second));
               used_pairs_per_collision.emplace_back(std::make_pair(pair_tmp.second, pair_tmp.first));
+              // LOGF(info, "collision.globalIndex() = %d, pos1.trackId() = %d, ele1.trackId() = %d, pos2.trackId() = %d, ele2.trackId() = %d", collision.globalIndex(), pos1.trackId(), ele1.trackId(), pos2.trackId(), ele2.trackId());
 
               std::tuple<int, int, int, int> tuple_tmp_id1 = std::make_tuple(ndf, collision.globalIndex(), pos1.globalIndex(), ele1.globalIndex());
               std::tuple<int, int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), pos2.globalIndex(), ele2.globalIndex());
@@ -1391,7 +1393,7 @@ struct PhotonHBT {
   }
 
   Filter trackFilter = dielectroncuts.cfg_min_pt_track < o2::aod::track::pt && dielectroncuts.cfg_min_eta_track < o2::aod::track::eta && o2::aod::track::eta < dielectroncuts.cfg_max_eta_track && o2::aod::track::tpcChi2NCl < dielectroncuts.cfg_max_chi2tpc && o2::aod::track::itsChi2NCl < dielectroncuts.cfg_max_chi2its && nabs(o2::aod::track::dcaXY) < dielectroncuts.cfg_max_dcaxy && nabs(o2::aod::track::dcaZ) < dielectroncuts.cfg_max_dcaz;
-  Filter pidFilter = (dielectroncuts.cfg_min_TPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < dielectroncuts.cfg_max_TPCNsigmaEl) && (o2::aod::pidtpc::tpcNSigmaPi < dielectroncuts.cfg_min_TPCNsigmaPi || dielectroncuts.cfg_max_TPCNsigmaPi < o2::aod::pidtpc::tpcNSigmaPi);
+  Filter pidFilter = dielectroncuts.cfg_min_TPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < dielectroncuts.cfg_max_TPCNsigmaEl;
   Filter ttcaFilter = ifnode(dielectroncuts.enableTTCA.node(), o2::aod::emprimaryelectron::isAssociatedToMPC == true || o2::aod::emprimaryelectron::isAssociatedToMPC == false, o2::aod::emprimaryelectron::isAssociatedToMPC == true);
 
   Partition<FilteredMyTracks> positrons = o2::aod::emprimaryelectron::sign > int8_t(0);
