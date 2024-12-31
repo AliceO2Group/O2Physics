@@ -146,7 +146,7 @@ struct TrackPropagation {
     }
 
     // load matLUT for this timestamp
-    LOG(info) << "Loading material look-up table for timestamp: " << bc.timestamp(); 
+    LOG(info) << "Loading material look-up table for timestamp: " << bc.timestamp();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(lutPath, bc.timestamp()));
 
     grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
