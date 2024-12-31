@@ -487,7 +487,7 @@ class DielectronCut : public TNamed
   int mMinNClustersITS{0}, mMaxNClustersITS{7};                      // range in number of ITS clusters
   float mMinChi2PerClusterITS{-1e10f}, mMaxChi2PerClusterITS{1e10f}; // max its fit chi2 per ITS cluster
   float mMaxPinMuonTPConly{0.2f};                                    // max pin cut for muon ID with TPConly
-  float mMaxPinForPionRejectionTPC{1e10f};                           // max pin cut for muon ID with TPConly
+  float mMaxPinForPionRejectionTPC{1e10f};                           // max pin for pion rejection in TPC
   bool mRequireITSibAny{true};
   bool mRequireITSib1st{false};
   float mMinChi2TOF{-1e10f}, mMaxChi2TOF{1e10f}; // max tof chi2 per
