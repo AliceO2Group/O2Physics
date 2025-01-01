@@ -363,9 +363,11 @@ DECLARE_SOA_TABLE(TrkRecInfoDplus, "AOD", "TRKRECINFODPLUS", //! Tracks Reconstr
 // definition of columns and tables for Dstar-Hadron correlation pair
 namespace hf_correlation_dstar_hadron
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);      // used in pair table for indexing
+DECLARE_SOA_COLUMN(CollisionIdx, collisionIdx, int); // used in Dstar table for indexing
 // Dstar candidate properties
-DECLARE_SOA_INDEX_COLUMN(HfCandDstar, hfCandDstar);
+DECLARE_SOA_INDEX_COLUMN(HfCandDstar, hfCandDstar);      // used in pair table for indexing
+DECLARE_SOA_COLUMN(HfCandDstarIdx, hfCandDstarIdx, int); // used in Dstar table for indexing
 DECLARE_SOA_COLUMN(PhiDstar, phiDstar, float);
 DECLARE_SOA_COLUMN(EtaDstar, etaDstar, float);
 DECLARE_SOA_COLUMN(PtDstar, ptDstar, float);
@@ -410,9 +412,9 @@ DECLARE_SOA_TABLE(DstarHadronPair, "AOD", "DSTRHPAIR", // D* Hadrons pairs Infor
                   hf_correlation_dstar_hadron::DeltaM<hf_correlation_dstar_hadron::MDstar, hf_correlation_dstar_hadron::MD0>);
 
 DECLARE_SOA_TABLE(Dstar, "AOD", "DSTAR", // Only Dstar properties
-                  hf_correlation_dstar_hadron::CollisionId,
+                  hf_correlation_dstar_hadron::CollisionIdx,
                   // D* only properties
-                  hf_correlation_dstar_hadron::HfCandDstarId,
+                  hf_correlation_dstar_hadron::HfCandDstarIdx,
                   hf_correlation_dstar_hadron::PhiDstar,
                   hf_correlation_dstar_hadron::EtaDstar,
                   hf_correlation_dstar_hadron::PtDstar,
