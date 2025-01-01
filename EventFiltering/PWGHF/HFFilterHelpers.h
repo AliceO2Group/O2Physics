@@ -2314,7 +2314,8 @@ inline bool HfFilterHelper::buildCascade(Casc const& cascIndices, V const& v0Ind
   for (int iCoord{0}; iCoord < 3; ++iCoord) {
     cascCand.vtx[iCoord] = vtx[iCoord];
   }
-  cascCand.cascradius = std::hypot(vtx[0], vtx[1]);;
+  cascCand.cascradius = std::hypot(vtx[0], vtx[1]);
+  ;
   cascCand.casccosPA = RecoDecay::cpa(primVtx, vtx, cascCand.mom);
 
   auto trackParCasc = dcaFitter.createParentTrackParCov();
@@ -2325,7 +2326,8 @@ inline bool HfFilterHelper::buildCascade(Casc const& cascIndices, V const& v0Ind
   cascCand.dcaXYCascToPV = dcaInfoCasc[0];
   cascCand.dcacascdaughters = std::sqrt(dcaFitter.getChi2AtPCACandidate());
   cascCand.mXi = RecoDecay::m(std::array{momBach, momV0}, std::array{massPi, massLambda});
-  cascCand.mOmega = RecoDecay::m(std::array{momBach, momV0}, std::array{massKa, massLambda});;
+  cascCand.mOmega = RecoDecay::m(std::array{momBach, momV0}, std::array{massKa, massLambda});
+  ;
 
   cascCand.hasTofBach = trackBachelor.hasTOF();
   cascCand.nSigmaPiTpcBach = trackBachelor.tpcNSigmaPi();

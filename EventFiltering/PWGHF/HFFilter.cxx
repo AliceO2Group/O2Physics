@@ -1392,7 +1392,7 @@ struct HfFilter { // Main struct for HF triggers
         for (const auto& casc : cascThisColl) {
 
           CascCand cascCand;
-          if(!helper.buildCascade(casc, v0s, tracksIU, collision, dfStrangeness, {}, cascCand)) {
+          if (!helper.buildCascade(casc, v0s, tracksIU, collision, dfStrangeness, {}, cascCand)) {
             continue;
           }
 
