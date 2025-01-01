@@ -63,7 +63,7 @@ struct TpcPidQa {
 
   ConfigurableAxis axisMomentum{"axisMomentum", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "momentum"};
 
-  ConfigurableAxis axisNSigma{"axisNSigma", {120, -6.0f, 6.0f}, "axisNSigma"};
+  ConfigurableAxis axisNSigma{"axisNSigma", {48, -6.0f, 6.0f}, "axisNSigma"};
 
   void init(InitContext&)
   {
@@ -82,31 +82,31 @@ struct TpcPidQa {
   {
     for (const auto& track : tracks) {
       if (mEnabledTables[kPidEl]) {
-        histos.fill(HIST("hNSigmaVsPTotEl"), track.p(), track.tpcNSigmaEl());
+        histos.fill(HIST("hNSigmaVsPTotElectron"), track.p(), track.tpcNSigmaEl());
       }
       if (mEnabledTables[kPidMu]) {
-        histos.fill(HIST("hNSigmaVsPTotMu"), track.p(), track.tpcNSigmaMu());
+        histos.fill(HIST("hNSigmaVsPTotMuon"), track.p(), track.tpcNSigmaMu());
       }
       if (mEnabledTables[kPidPi]) {
-        histos.fill(HIST("hNSigmaVsPTotPi"), track.p(), track.tpcNSigmaPi());
+        histos.fill(HIST("hNSigmaVsPTotPion"), track.p(), track.tpcNSigmaPi());
       }
       if (mEnabledTables[kPidKa]) {
-        histos.fill(HIST("hNSigmaVsPTotKa"), track.p(), track.tpcNSigmaKa());
+        histos.fill(HIST("hNSigmaVsPTotKaon"), track.p(), track.tpcNSigmaKa());
       }
       if (mEnabledTables[kPidPr]) {
-        histos.fill(HIST("hNSigmaVsPTotPr"), track.p(), track.tpcNSigmaPr());
+        histos.fill(HIST("hNSigmaVsPTotProton"), track.p(), track.tpcNSigmaPr());
       }
       if (mEnabledTables[kPidDe]) {
-        histos.fill(HIST("hNSigmaVsPTotDe"), track.p(), track.tpcNSigmaDe());
+        histos.fill(HIST("hNSigmaVsPTotDeuteron"), track.p(), track.tpcNSigmaDe());
       }
       if (mEnabledTables[kPidTr]) {
-        histos.fill(HIST("hNSigmaVsPTotTr"), track.p(), track.tpcNSigmaTr());
+        histos.fill(HIST("hNSigmaVsPTotTriton"), track.p(), track.tpcNSigmaTr());
       }
       if (mEnabledTables[kPidHe]) {
-        histos.fill(HIST("hNSigmaVsPTotHe"), track.p(), track.tpcNSigmaHe());
+        histos.fill(HIST("hNSigmaVsPTotHelium"), track.p(), track.tpcNSigmaHe());
       }
       if (mEnabledTables[kPidAl]) {
-        histos.fill(HIST("hNSigmaVsPTotAl"), track.p(), track.tpcNSigmaAl());
+        histos.fill(HIST("hNSigmaVsPTotAlpha"), track.p(), track.tpcNSigmaAl());
       }
     }
   }
