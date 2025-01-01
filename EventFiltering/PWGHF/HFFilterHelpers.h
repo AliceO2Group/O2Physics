@@ -1320,7 +1320,7 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const int& activateQA, 
   float signalTpc[2] = {v0.signalTpcPos, v0.signalTpcNeg};
   if (mTpcPidCalibrationOption == 1) {
     for (int iDau{0}; iDau < 2; ++iDau) {
-      nSigmaPrTpc[iDau] = getTPCPostCalib(pInTpc[iDau], nClsTpc[iDau], etaDaus[iDau], nSigmaPrTpc[2], kPr);
+      nSigmaPrTpc[iDau] = getTPCPostCalib(pInTpc[iDau], nClsTpc[iDau], etaDaus[iDau], nSigmaPrTpc[iDau], kPr);
     }
   } else if (mTpcPidCalibrationOption == 2) {
     for (int iDau{0}; iDau < 2; ++iDau) {
@@ -1479,11 +1479,11 @@ inline bool HfFilterHelper::isSelectedCascade(const Casc& casc)
   float signalTpc[3] = {casc.signalTpcBach, casc.v0.signalTpcPos, casc.v0.signalTpcNeg};
   if (mTpcPidCalibrationOption == 1) {
     for (int iDau{0}; iDau < 3; ++iDau) {
-      nSigmaPiTpc[iDau] = getTPCPostCalib(pInTpc[iDau], nClsTpc[iDau], etaDaus[iDau], nSigmaPrTpc[2], kPi);
+      nSigmaPiTpc[iDau] = getTPCPostCalib(pInTpc[iDau], nClsTpc[iDau], etaDaus[iDau], nSigmaPrTpc[iDau], kPi);
       if (iDau == 0) {
         continue;
       }
-      nSigmaPrTpc[iDau] = getTPCPostCalib(pInTpc[iDau], nClsTpc[iDau], etaDaus[iDau], nSigmaPrTpc[2], kPr);
+      nSigmaPrTpc[iDau] = getTPCPostCalib(pInTpc[iDau], nClsTpc[iDau], etaDaus[iDau], nSigmaPrTpc[iDau], kPr);
     }
   } else if (mTpcPidCalibrationOption == 2) {
     for (int iDau{0}; iDau < 3; ++iDau) {
