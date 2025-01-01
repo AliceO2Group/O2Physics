@@ -292,13 +292,13 @@ struct LambdaTableProducer {
     const AxisSpec axisV0Phi(36, 0., TwoPI, "#phi (rad)");
 
     const AxisSpec axisRadius(200, 0, 200, "r(cm)");
-    const AxisSpec axisCosPA(100, 0.99, 1.0, "cos(#theta_{PA})");
-    const AxisSpec axisDcaV0PV(100, 0., 10., "dca (cm)");
-    const AxisSpec axisDcaProngPV(1000, -50., 50., "dca (cm)");
+    const AxisSpec axisCosPA(500, 0.995, 1.0, "cos(#theta_{PA})");
+    const AxisSpec axisDcaV0PV(1000, 0., 10., "dca (cm)");
+    const AxisSpec axisDcaProngPV(5000, -50., 50., "dca (cm)");
     const AxisSpec axisDcaDau(75, 0., 1.5, "Daug DCA (#sigma)");
     const AxisSpec axisCTau(200, 0, 200, "c#tau (cm)");
     const AxisSpec axisGCTau(200, 0, 200, "#gammac#tau (cm)");
-    const AxisSpec axisAlpha(20, -1, 1, "#alpha");
+    const AxisSpec axisAlpha(40, -1, 1, "#alpha");
     const AxisSpec axisQtarm(40, 0, 0.4, "q_{T}");
 
     const AxisSpec axisTrackPt(40, 0, 4, "p_{T} (GeV/#it{c})");
@@ -976,7 +976,7 @@ struct LambdaTracksExtProducer {
     // Axis Specifications
     const AxisSpec axisMult(10, 0, 10);
     const AxisSpec axisMass(100, 1.06, 1.16, "Inv Mass (GeV/#it{c}^{2})");
-    const AxisSpec axisCPA(100, 0.99, 1.0, "cos(#theta_{PA})");
+    const AxisSpec axisCPA(100, 0.995, 1.0, "cos(#theta_{PA})");
     const AxisSpec axisDcaDau(75, 0., 1.5, "Daug DCA (#sigma)");
 
     // Histograms Booking
