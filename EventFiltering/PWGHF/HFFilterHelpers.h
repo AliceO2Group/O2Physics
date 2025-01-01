@@ -148,6 +148,8 @@ enum HfVtxStage : uint8_t {
 // Helper struct to pass V0 informations
 struct V0Cand {
   std::array<float, 3> mom;
+  std::array<float, 3> vtx;
+  std::array<float, 21> cov;
   float etaPos;
   float etaNeg;
   float ptPos;
@@ -156,9 +158,12 @@ struct V0Cand {
   float pinTpcNeg;
   float nClsFoundTpcPos;
   float nClsFoundTpcNeg;
+  float nClsCrossedRowsTpcPos;
+  float nClsCrossedRowsTpcNeg;
+  float crossedRowsOverFindableClsTpcPos;
+  float crossedRowsOverFindableClsTpcNeg;
   float signalTpcPos;
   float signalTpcNeg;
-  float nClsTpcNeg;
   float v0cosPA;
   float dcav0topv;
   float dcaV0daughters;
@@ -174,8 +179,37 @@ struct V0Cand {
   float nSigmaPrTofPos;
   float nSigmaPrTpcNeg;
   float nSigmaPrTofNeg;
+  float nSigmaPiTpcPos;
+  float nSigmaPiTofPos;
+  float nSigmaPiTpcNeg;
+  float nSigmaPiTofNeg;
   bool hasTofPos;
   bool hasTofNeg;
+};
+
+// Helper struct to pass Cascade informations
+struct CascCand {
+  std::array<float, 3> mom;
+  std::array<float, 3> vtx;
+  V0Cand v0;
+  float ptBach;
+  float etaBach;
+  float pinTpcBach;
+  float nClsFoundTpcBach;
+  float nClsCrossedRowsTpcBach;
+  float crossedRowsOverFindableClsTpcBach;
+  float signalTpcBach;
+  float pt;
+  float casccosPA;
+  float cascradius;
+  float dcaXYCascToPV;
+  float dcacascdaughters;
+  float mXi;
+  float mOmega;
+  float nSigmaPiTpcBach;
+  float nSigmaPiTofBach;
+  bool hasTofBach;
+  int sign;
 };
 
 static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", "Dplus", "Ds", "Lc", "Xic"};
@@ -499,8 +533,8 @@ class HfFilterHelper
   int8_t isSelectedV0(const V0& v0, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
   template <typename Photon, typename T, typename H2>
   bool isSelectedPhoton(const Photon& photon, const std::array<T, 2>& dauTracks, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
-  template <typename Casc, typename T, typename Coll>
-  bool isSelectedCascade(const Casc& casc, const std::array<T, 3>& dauTracks, const Coll& collision);
+  template <typename Casc>
+  bool isSelectedCascade(const Casc& casc);
   template <typename T, typename T2>
   int8_t isSelectedBachelorForCharmBaryon(const T& track, const T2& dca);
   template <typename T, typename U>
@@ -523,6 +557,10 @@ class HfFilterHelper
   int computeNumberOfCandidates(std::vector<std::vector<T>> indices);
   template <typename T1>
   int setVtxConfiguration(T1 vertexer, bool useAbsDCA);
+  template <typename V, typename T, typename C>
+  bool buildV0(V const& v0Indices, T const& tracks, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const std::vector<int>& vetoedTrackIds, V0Cand& v0Cand);
+  template <typename Casc, typename T, typename C, typename V>
+  bool buildCascade(Casc const& cascIndices, V const& v0Indices, T const& tracks, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const std::vector<int>& vetoedTrackIds, CascCand& cascCand);
 
   // PID
   void setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::array<std::string, 8>& ccdbPaths);
@@ -548,8 +586,6 @@ class HfFilterHelper
   int findBin(T1 const& binsPt, T2 value);
   template <typename T>
   std::array<T, 2> alphaAndQtAP(std::array<T, 3> const& momPos, std::array<T, 3> const& momNeg);
-  template <typename V, typename T, typename C>
-  bool buildV0(V const& v0Indices, T const& tracks, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const std::vector<int>& vetoedTrackIds, V0Cand& v0Cand);
 
   // selections
   std::vector<double> mPtBinsTracks{};                                            // vector of pT bins for single track cuts
@@ -1370,123 +1406,127 @@ inline bool HfFilterHelper::isSelectedPhoton(const Photon& photon, const std::ar
 
 /// Basic selection of cascade candidates
 /// \param casc is the cascade candidate
-/// \param dauTracks is a 3-element array with bachelor, positive and negative V0 daughter tracks
-/// \param collision is the collision
 /// \return true if cascade passes all cuts
-template <typename Casc, typename T, typename Coll>
-inline bool HfFilterHelper::isSelectedCascade(const Casc& casc, const std::array<T, 3>& dauTracks, const Coll& collision)
+template <typename Casc>
+inline bool HfFilterHelper::isSelectedCascade(const Casc& casc)
 {
 
   // Xi min pT
-  if (casc.pt() < mMinPtXi) {
+  if (casc.pt < mMinPtXi) {
     return false;
   }
 
   // eta of daughters
-  if (std::fabs(dauTracks[0].eta()) > 1. || std::fabs(dauTracks[1].eta()) > 1. || std::fabs(dauTracks[2].eta()) > 1.) { // cut all V0 daughters with |eta| > 1.
+  if (std::fabs(casc.v0.etaPos) > 1. || std::fabs(casc.v0.etaNeg) > 1. || std::fabs(casc.etaBach) > 1.) { // cut all V0 daughters with |eta| > 1.
     return false;
   }
 
   // V0 radius
-  if (casc.v0radius() < 1.2) {
+  if (casc.v0.v0radius < 1.2) {
     return false;
   }
 
   // cascade radius
-  if (casc.cascradius() < 0.6) {
+  if (casc.cascradius < 0.6) {
     return false;
   }
 
   // V0 cosp
-  if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < mCosPaLambdaFromXi) {
+  if (casc.v0.v0cosPA < mCosPaLambdaFromXi) {
     return false;
   }
 
   // cascade cosp
-  if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < mCosPaXi) {
+  if (casc.casccosPA < mCosPaXi) {
     return false;
   }
 
   // cascade DCAxy to PV
-  if (std::fabs(casc.dcaXYCascToPV()) > mMaxDcaXyXi) {
+  if (std::fabs(casc.dcaXYCascToPV) > mMaxDcaXyXi) {
     return false;
   }
 
   // Xi bachelor min pT
-  if (dauTracks[0].pt() < mMinPtXiBachelor) {
+  if (casc.ptBach < mMinPtXiBachelor) {
     return false;
   }
 
   // dau dca
-  if (std::fabs(casc.dcaV0daughters()) > 1.f || std::fabs(casc.dcacascdaughters()) > 1.f) {
+  if (std::fabs(casc.v0.dcaV0daughters) > 1.f || std::fabs(casc.dcacascdaughters) > 1.f) {
     return false;
   }
 
   // cascade mass
-  if (std::fabs(casc.mXi() - massXi) > mDeltaMassXi) {
+  if (std::fabs(casc.mXi - massXi) > mDeltaMassXi) {
     return false;
   }
 
   // V0 mass
-  if (std::fabs(casc.mLambda() - massLambda) > mDeltaMassLambdaFromXi) {
+  if (std::fabs(casc.v0.mLambda - massLambda) > mDeltaMassLambdaFromXi) {
     return false;
   }
 
   // PID
-  float nSigmaPrTpc[3] = {-999., dauTracks[1].tpcNSigmaPr(), dauTracks[2].tpcNSigmaPr()};
-  float nSigmaPrTof[3] = {-999., dauTracks[1].tofNSigmaPr(), dauTracks[2].tofNSigmaPr()};
-  float nSigmaPiTpc[3] = {dauTracks[0].tpcNSigmaPi(), dauTracks[1].tpcNSigmaPi(), dauTracks[2].tpcNSigmaPi()};
-  float nSigmaPiTof[3] = {dauTracks[0].tofNSigmaPi(), dauTracks[1].tofNSigmaPi(), dauTracks[2].tofNSigmaPi()};
+  float nSigmaPrTpc[3] = {-999, casc.v0.nSigmaPrTpcPos, casc.v0.nSigmaPrTpcNeg};
+  float nSigmaPrTof[3] = {-999., casc.v0.nSigmaPrTofPos, casc.v0.nSigmaPrTofNeg};
+  float nSigmaPiTpc[3] = {casc.nSigmaPiTpcBach, casc.v0.nSigmaPiTpcPos, casc.v0.nSigmaPiTpcNeg};
+  float nSigmaPiTof[3] = {casc.nSigmaPiTofBach, casc.v0.nSigmaPiTofPos, casc.v0.nSigmaPiTofNeg};
+  float pInTpc[3] = {casc.pinTpcBach, casc.v0.pinTpcPos, casc.v0.pinTpcNeg};
+  float nClsTpc[3] = {casc.nClsFoundTpcBach, casc.v0.nClsFoundTpcPos, casc.v0.nClsFoundTpcNeg};
+  float nCrossedRowsTpc[3] = {casc.nClsCrossedRowsTpcBach, casc.v0.nClsCrossedRowsTpcPos, casc.v0.nClsCrossedRowsTpcNeg};
+  float crossedRowsOverFindableClsTpc[3] = {casc.crossedRowsOverFindableClsTpcBach, casc.v0.crossedRowsOverFindableClsTpcPos, casc.v0.crossedRowsOverFindableClsTpcNeg};
+  float etaDaus[3] = {casc.etaBach, casc.v0.etaPos, casc.v0.etaNeg};
+  float signalTpc[3] = {casc.signalTpcBach, casc.v0.signalTpcPos, casc.v0.signalTpcNeg};
   if (mTpcPidCalibrationOption == 1) {
     for (int iDau{0}; iDau < 3; ++iDau) {
-      nSigmaPiTpc[iDau] = getTPCPostCalib(dauTracks[iDau], kPi);
+      nSigmaPiTpc[iDau] = getTPCPostCalib(pInTpc[iDau], nClsTpc[iDau], etaDaus[iDau], nSigmaPrTpc[2], kPi);
       if (iDau == 0) {
         continue;
       }
-      nSigmaPrTpc[iDau] = getTPCPostCalib(dauTracks[iDau], kPr);
+      nSigmaPrTpc[iDau] = getTPCPostCalib(pInTpc[iDau], nClsTpc[iDau], etaDaus[iDau], nSigmaPrTpc[2], kPr);
     }
   } else if (mTpcPidCalibrationOption == 2) {
     for (int iDau{0}; iDau < 3; ++iDau) {
-      nSigmaPiTpc[iDau] = getTPCSplineCalib(dauTracks[iDau], (dauTracks[iDau].sign() > 0) ? kPi : kAntiPi);
+      nSigmaPiTpc[iDau] = getTPCSplineCalib(pInTpc[iDau], signalTpc[iDau], (iDau == 0) ? kPi : kAntiPi);
       if (iDau == 0) {
         continue;
       }
-      nSigmaPrTpc[iDau] = getTPCSplineCalib(dauTracks[iDau], (dauTracks[iDau].sign() > 0) ? kPr : kAntiPr);
+      nSigmaPrTpc[iDau] = getTPCSplineCalib(pInTpc[iDau], signalTpc[iDau], (iDau == 0) ? kPr : kAntiPr);
     }
   }
 
   // PID to V0 tracks
-  if (dauTracks[0].sign() < 0) { // Xi-
-    if ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1]) > mMaxNsigmaXiDau) && (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1]) > mMaxNsigmaXiDau)) {
+  if (casc.sign < 0) { // Xi-
+    if (std::fabs(nSigmaPrTpc[1]) > mMaxNsigmaXiDau && (casc.v0.hasTofPos && std::fabs(nSigmaPrTof[1]) > mMaxNsigmaXiDau)) {
       return false;
     }
-    if ((dauTracks[2].hasTPC() && std::fabs(nSigmaPiTpc[2]) > mMaxNsigmaXiDau) && (dauTracks[2].hasTOF() && std::fabs(nSigmaPiTof[2]) > mMaxNsigmaXiDau)) {
+    if (std::fabs(nSigmaPiTpc[2]) > mMaxNsigmaXiDau && (casc.v0.hasTofNeg && std::fabs(nSigmaPiTof[2]) > mMaxNsigmaXiDau)) {
       return false;
     }
-  } else if (dauTracks[0].sign() > 0) { // Xi+
-    if ((dauTracks[2].hasTPC() && std::fabs(nSigmaPrTpc[2]) > mMaxNsigmaXiDau) && (dauTracks[2].hasTOF() && std::fabs(nSigmaPrTof[2]) > mMaxNsigmaXiDau)) {
+  } else if (casc.sign > 0) { // Xi+
+    if (std::fabs(nSigmaPrTpc[2]) > mMaxNsigmaXiDau && (casc.v0.hasTofNeg && std::fabs(nSigmaPrTof[2]) > mMaxNsigmaXiDau)) {
       return false;
     }
-    if ((dauTracks[1].hasTPC() && std::fabs(nSigmaPiTpc[1]) > mMaxNsigmaXiDau) && (dauTracks[1].hasTOF() && std::fabs(nSigmaPiTof[1]) > mMaxNsigmaXiDau)) {
+    if (std::fabs(nSigmaPiTpc[1]) > mMaxNsigmaXiDau && (casc.v0.hasTofPos && std::fabs(nSigmaPiTof[1]) > mMaxNsigmaXiDau)) {
       return false;
     }
   }
 
   // bachelor PID
-  if ((dauTracks[0].hasTPC() && std::fabs(nSigmaPiTpc[0]) > mMaxNsigmaXiDau) && (dauTracks[0].hasTOF() && std::fabs(nSigmaPiTof[0]) > mMaxNsigmaXiDau)) {
+  if (std::fabs(nSigmaPiTpc[0]) > mMaxNsigmaXiDau && (casc.hasTofBach && std::fabs(nSigmaPiTof[0]) > mMaxNsigmaXiDau)) {
     return false;
   }
 
   // additional track cuts
-  for (const auto& dauTrack : dauTracks) {
+  for (int iTrack{0}; iTrack < 3; ++iTrack) {
     //  TPC clusters selections
-    if (dauTrack.tpcNClsFound() < 70) { // TODO: put me as a configurable please
+    if (nClsTpc[iTrack] < 70) { // TODO: put me as a configurable please
       return false;
     }
-    if (dauTrack.tpcNClsCrossedRows() < 70) {
+    if (nCrossedRowsTpc[iTrack] < 70) {
       return false;
     }
-    if (dauTrack.tpcCrossedRowsOverFindableCls() < 0.8) {
+    if (crossedRowsOverFindableClsTpc[iTrack] < 0.8) {
       return false;
     }
   }
@@ -2058,7 +2098,7 @@ inline int HfFilterHelper::setVtxConfiguration(T1 vertexer, bool useAbsDCA)
 /// \param momPos momentum array of positive daughter
 /// \param momNeg momentum array of negative daughter
 template <typename T>
-inline std::array<T, 2> alphaAndQtAP(std::array<T, 3> const& momPos, std::array<T, 3> const& momNeg)
+inline std::array<T, 2> HfFilterHelper::alphaAndQtAP(std::array<T, 3> const& momPos, std::array<T, 3> const& momNeg)
 {
   float momTotSq = RecoDecay::p2(momPos[0] + momNeg[0], momPos[1] + momNeg[1], momPos[2] + momNeg[2]);
   float momTot = std::sqrt(momTotSq);
@@ -2078,7 +2118,7 @@ inline std::array<T, 2> alphaAndQtAP(std::array<T, 3> const& momPos, std::array<
 /// \param dcaFitter DCA fitter to be used
 /// \param vetoedTrackIds vector with forbidden track indices, if any
 template <typename V, typename T, typename C>
-inline bool buildV0(V const& v0Indices, T const& tracks, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const std::vector<int>& vetoedTrackIds, V0Cand& v0Cand)
+inline bool HfFilterHelper::buildV0(V const& v0Indices, T const& tracks, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const std::vector<int>& vetoedTrackIds, V0Cand& v0Cand)
 {
   auto trackPos = tracks.rawIteratorAt(v0Indices.posTrackId());
   auto trackNeg = tracks.rawIteratorAt(v0Indices.negTrackId());
@@ -2134,6 +2174,10 @@ inline bool buildV0(V const& v0Indices, T const& tracks, C const& collision, o2:
   v0Cand.pinTpcNeg = trackNeg.tpcInnerParam();
   v0Cand.nClsFoundTpcPos = trackPos.tpcNClsFound();
   v0Cand.nClsFoundTpcNeg = trackNeg.tpcNClsFound();
+  v0Cand.nClsCrossedRowsTpcPos = trackPos.tpcNClsCrossedRows();
+  v0Cand.nClsCrossedRowsTpcNeg = trackNeg.tpcNClsCrossedRows();
+  v0Cand.crossedRowsOverFindableClsTpcPos = trackPos.tpcCrossedRowsOverFindableCls();
+  v0Cand.crossedRowsOverFindableClsTpcNeg = trackNeg.tpcCrossedRowsOverFindableCls();
   v0Cand.signalTpcPos = trackPos.tpcSignal();
   v0Cand.signalTpcNeg = trackNeg.tpcSignal();
   v0Cand.etaPos = RecoDecay::eta(momPos);
@@ -2141,6 +2185,25 @@ inline bool buildV0(V const& v0Indices, T const& tracks, C const& collision, o2:
   v0Cand.dcaV0daughters = std::sqrt(dcaFitter.getChi2AtPCACandidate());
 
   const auto& vtx = dcaFitter.getPCACandidate();
+  for (int iCoord{0}; iCoord < 3; ++iCoord) {
+    v0Cand.vtx[iCoord] = vtx[iCoord];
+  }
+  auto covVtxV = dcaFitter.calcPCACovMatrix(0);
+  v0Cand.cov = {};
+  v0Cand.cov[0] = covVtxV(0, 0);
+  v0Cand.cov[1] = covVtxV(1, 0);
+  v0Cand.cov[2] = covVtxV(1, 1);
+  v0Cand.cov[3] = covVtxV(2, 0);
+  v0Cand.cov[4] = covVtxV(2, 1);
+  v0Cand.cov[5] = covVtxV(2, 2);
+  std::array<float, 21> covTpositive = {0.};
+  std::array<float, 21> covTnegative = {0.};
+  trackPosProp.getCovXYZPxPyPzGlo(covTpositive);
+  trackNegProp.getCovXYZPxPyPzGlo(covTnegative);
+  constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+  for (int iCoord{0}; iCoord < 6; ++iCoord) {
+    v0Cand.cov[MomInd[iCoord]] = covTpositive[MomInd[iCoord]] + covTnegative[MomInd[iCoord]];
+  }
   v0Cand.v0radius = std::hypot(vtx[0], vtx[1]);
   v0Cand.v0cosPA = RecoDecay::cpa(primVtx, vtx, v0Cand.mom);
 
@@ -2165,6 +2228,108 @@ inline bool buildV0(V const& v0Indices, T const& tracks, C const& collision, o2:
   v0Cand.nSigmaPrTofPos = trackPos.tofNSigmaPr();
   v0Cand.nSigmaPrTpcNeg = trackNeg.tpcNSigmaPr();
   v0Cand.nSigmaPrTofNeg = trackNeg.tofNSigmaPr();
+  v0Cand.nSigmaPiTpcPos = trackPos.tpcNSigmaPi();
+  v0Cand.nSigmaPiTofPos = trackPos.tofNSigmaPi();
+  v0Cand.nSigmaPiTpcNeg = trackNeg.tpcNSigmaPi();
+  v0Cand.nSigmaPiTofNeg = trackNeg.tofNSigmaPi();
+
+  return true;
+}
+
+/// build cascade candidate from table with track indices
+/// \param cascIndices cascade candidate from AO2D table (track indices)
+/// \param v0Indices V0 candidate from AO2D table (track indices)
+/// \param tracks track table
+/// \param collision collision
+/// \param dcaFitter DCA fitter to be used
+/// \param vetoedTrackIds vector with forbidden track indices, if any
+template <typename Casc, typename T, typename C, typename V>
+inline bool HfFilterHelper::buildCascade(Casc const& cascIndices, V const& v0Indices, T const& tracks, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const std::vector<int>& vetoedTrackIds, CascCand& cascCand)
+{
+  auto v0 = v0Indices.rawIteratorAt(cascIndices.v0Id());
+  auto trackBachelor = tracks.rawIteratorAt(cascIndices.bachelorId());
+
+  // minimal track cuts
+  if (!trackBachelor.hasTPC()) {
+    return false;
+  }
+  if (!(trackBachelor.trackType() & o2::aod::track::TPCrefit)) {
+    return false;
+  }
+  if (trackBachelor.tpcNClsCrossedRows() < 50) {
+    return false;
+  }
+
+  if (std::find(vetoedTrackIds.begin(), vetoedTrackIds.end(), trackBachelor.globalIndex()) != vetoedTrackIds.end()) {
+    return false;
+  }
+
+  gpu::gpustd::array<float, 2> dcaInfoBach;
+  auto bachTrackParCov = getTrackParCov(trackBachelor);
+  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, bachTrackParCov, 2.f, dcaFitter.getMatCorrType(), &dcaInfoBach);
+
+  // first we build V0 candidate
+  V0Cand v0Cand;
+  if (!buildV0(v0, tracks, collision, dcaFitter, vetoedTrackIds, v0Cand)) {
+    return false;
+  }
+
+  // Set up covariance matrices (should in fact be optional)
+  auto v0TrackParCov = o2::track::TrackParCov({v0Cand.vtx[0], v0Cand.vtx[1], v0Cand.vtx[2]}, {v0Cand.mom[0], v0Cand.mom[1], v0Cand.mom[2]}, v0Cand.cov, 0, true);
+  v0TrackParCov.setAbsCharge(0);
+  v0TrackParCov.setPID(o2::track::PID::Lambda);
+
+  int nCand = 0;
+  try {
+    nCand = dcaFitter.process(v0TrackParCov, bachTrackParCov);
+  } catch (...) {
+    LOG(error) << "Exception caught in DCA fitter process call!";
+    return false;
+  }
+  if (nCand == 0) {
+    return false;
+  }
+
+  // compute candidate momentum from tracks propagated to decay vertex
+  auto& trackV0Prop = dcaFitter.getTrack(0);
+  auto& trackBachProp = dcaFitter.getTrack(1);
+  std::array<float, 3> momV0{}, momBach{};
+  trackV0Prop.getPxPyPzGlo(momV0);
+  trackBachProp.getPxPyPzGlo(momBach);
+  cascCand.mom = RecoDecay::pVec(momV0, momBach);
+  cascCand.sign = trackBachelor.sign();
+
+  cascCand.v0 = v0Cand;
+  cascCand.ptBach = RecoDecay::pt(momBach);
+  cascCand.etaBach = RecoDecay::eta(momBach);
+  cascCand.pinTpcBach = trackBachelor.tpcInnerParam();
+  cascCand.nClsFoundTpcBach = trackBachelor.tpcNClsFound();
+  cascCand.nClsCrossedRowsTpcBach = trackBachelor.tpcNClsCrossedRows();
+  cascCand.crossedRowsOverFindableClsTpcBach = trackBachelor.tpcCrossedRowsOverFindableCls();
+  cascCand.signalTpcBach = trackBachelor.tpcSignal();
+  cascCand.pt = RecoDecay::pt(cascCand.mom);
+
+  std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
+  const auto& vtx = dcaFitter.getPCACandidate();
+  for (int iCoord{0}; iCoord < 3; ++iCoord) {
+    cascCand.vtx[iCoord] = vtx[iCoord];
+  }
+  cascCand.cascradius = std::hypot(vtx[0], vtx[1]);;
+  cascCand.casccosPA = RecoDecay::cpa(primVtx, vtx, cascCand.mom);
+
+  auto trackParCasc = dcaFitter.createParentTrackParCov();
+  trackParCasc.setAbsCharge(1);
+  trackParCasc.setPID(o2::track::PID::XiMinus);
+  gpu::gpustd::array<float, 2> dcaInfoCasc;
+  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCasc, 2.f, dcaFitter.getMatCorrType(), &dcaInfoCasc);
+  cascCand.dcaXYCascToPV = dcaInfoCasc[0];
+  cascCand.dcacascdaughters = std::sqrt(dcaFitter.getChi2AtPCACandidate());
+  cascCand.mXi = RecoDecay::m(std::array{momBach, momV0}, std::array{massPi, massLambda});
+  cascCand.mOmega = RecoDecay::m(std::array{momBach, momV0}, std::array{massKa, massLambda});;
+
+  cascCand.hasTofBach = trackBachelor.hasTOF();
+  cascCand.nSigmaPiTpcBach = trackBachelor.tpcNSigmaPi();
+  cascCand.nSigmaPiTofBach = trackBachelor.tofNSigmaPi();
 
   return true;
 }

@@ -155,7 +155,7 @@ struct HfFilter { // Main struct for HF triggers
   o2::vertexing::DCAFitterN<3> df3; // fitter for Charm Hadron vertex (3-prong vertex fitter)
   o2::vertexing::DCAFitterN<2> dfB; // fitter for Beauty Hadron vertex (2-prong vertex fitter)
   o2::vertexing::DCAFitterN<3> dfBtoDstar; // fitter for Beauty Hadron to D* vertex (3-prong vertex fitter)
-  o2::vertexing::DCAFitterN<2> dfV0; // fitter for V0s (3-prong vertex fitter)
+  o2::vertexing::DCAFitterN<2> dfStrangeness; // fitter for V0s and cascades (2-prong vertex fitter)
 
   HistogramRegistry registry{"registry"};
   std::shared_ptr<TH1> hProcessedEvents;
@@ -216,8 +216,8 @@ struct HfFilter { // Main struct for HF triggers
     helper.setPtRangeSoftPiSigmaC(ptCuts->get(0u, 4u), ptCuts->get(1u, 4u));
     helper.setPtDeltaMassRangeSigmaC(cutsPtDeltaMassCharmReso->get(0u, 6u), cutsPtDeltaMassCharmReso->get(1u, 6u), cutsPtDeltaMassCharmReso->get(0u, 7u), cutsPtDeltaMassCharmReso->get(1u, 7u), cutsPtDeltaMassCharmReso->get(0u, 8u), cutsPtDeltaMassCharmReso->get(1u, 8u), cutsPtDeltaMassCharmReso->get(0u, 9u), cutsPtDeltaMassCharmReso->get(1u, 9u), cutsPtDeltaMassCharmReso->get(2u, 6u), cutsPtDeltaMassCharmReso->get(2u, 7u), cutsPtDeltaMassCharmReso->get(2u, 8u), cutsPtDeltaMassCharmReso->get(2u, 9u));
     helper.setPtRangeSoftKaonXicResoToSigmaC(ptCuts->get(0u, 5u), ptCuts->get(1u, 5u));
-    helper.setVtxConfiguration(dfV0, true); // (DCAFitterN, useAbsDCA)
-    dfV0.setMatCorrType(matCorr);
+    helper.setVtxConfiguration(dfStrangeness, true); // (DCAFitterN, useAbsDCA)
+    dfStrangeness.setMatCorrType(matCorr);
     if (activateSecVtxForB) {
       helper.setVtxConfiguration(df2, false); // (DCAFitterN, useAbsDCA)
       helper.setVtxConfiguration(df3, false);
@@ -330,7 +330,7 @@ struct HfFilter { // Main struct for HF triggers
 
   using BigTracksMCPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullDe, aod::pidTOFFullDe, aod::McTrackLabels>;
   using BigTracksPID = soa::Join<aod::Tracks, aod::TracksWCovDcaExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullDe, aod::pidTOFFullDe>;
-  using TracksIUPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPr, aod::pidTOFFullPr>;
+  using TracksIUPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi>;
   using CollsWithEvSel = soa::Join<aod::Collisions, aod::EvSels>;
 
   using Hf2ProngsWithMl = soa::Join<aod::Hf2Prongs, aod::Hf2ProngMlProbs>;
@@ -340,13 +340,13 @@ struct HfFilter { // Main struct for HF triggers
   Preslice<aod::V0s> v0sPerCollision = aod::v0data::collisionId;
   Preslice<Hf2ProngsWithMl> hf2ProngPerCollision = aod::track_association::collisionId;
   Preslice<Hf3ProngsWithMl> hf3ProngPerCollision = aod::track_association::collisionId;
-  Preslice<aod::CascDatas> cascPerCollision = aod::cascdata::collisionId;
+  Preslice<aod::Cascades> cascPerCollision = aod::cascdata::collisionId;
   Preslice<aod::V0PhotonsKF> photonsPerCollision = aod::v0photonkf::collisionId;
 
   void process(CollsWithEvSel const& collisions,
                aod::BCsWithTimestamps const&,
                aod::V0s const& v0s,
-               aod::CascDatas const& cascades,
+               aod::Cascades const& cascades,
                Hf2ProngsWithMl const& cand2Prongs,
                Hf3ProngsWithMl const& cand3Prongs,
                aod::TrackAssoc const& trackIndices,
@@ -383,6 +383,15 @@ struct HfFilter { // Main struct for HF triggers
           helper.setTpcRecalibMaps(ccdb, bc, ccdbPathTPC);
         } else if (setTPCCalib > 1) {
           helper.setValuesBB(ccdbApi, bc, std::array{ccdbBBPion.value, ccdbBBAntiPion.value, ccdbBBKaon.value, ccdbBBAntiKaon.value, ccdbBBProton.value, ccdbBBAntiProton.value, ccdbBBProton.value, ccdbBBAntiProton.value}); // dummy for deuteron
+        }
+
+        auto bz = o2::base::Propagator::Instance()->getNominalBz();
+        dfStrangeness.setBz(bz);
+        if (activateSecVtxForB) {
+          df2.setBz(bz);
+          df3.setBz(bz);
+          dfB.setBz(bz);
+          dfBtoDstar.setBz(bz);
         }
 
         currentRun = bc.runNumber();
@@ -708,7 +717,7 @@ struct HfFilter { // Main struct for HF triggers
           auto v0sThisCollision = v0s.sliceBy(v0sPerCollision, thisCollId);
           for (const auto& v0 : v0sThisCollision) {
             V0Cand v0Cand;
-            if (!buildV0(v0, tracksIU, collision, dfV0, std::vector{cand2Prong.prong0Id(), cand2Prong.prong1Id()}, v0Cand)) {
+            if (!helper.buildV0(v0, tracksIU, collision, dfStrangeness, std::vector{cand2Prong.prong0Id(), cand2Prong.prong1Id()}, v0Cand)) {
               continue;
             }
             auto selV0 = helper.isSelectedV0(v0Cand, activateQA, hV0Selected, hArmPod);
@@ -1241,7 +1250,7 @@ struct HfFilter { // Main struct for HF triggers
         if ((!keepEvent[kV0Charm3P] && isGoodDPlus) || (!keepEvent[kSigmaC0K0] && (isGoodLcToPKPi || isGoodLcToPiKP))) {
           for (const auto& v0 : v0sThisCollision) {
             V0Cand v0Cand;
-            if (!buildV0(v0, tracksIU, collision, dfV0, std::vector{cand3Prong.prong0Id(), cand3Prong.prong1Id(), cand3Prong.prong2Id()}, v0Cand)) {
+            if (!helper.buildV0(v0, tracksIU, collision, dfStrangeness, std::vector{cand3Prong.prong0Id(), cand3Prong.prong1Id(), cand3Prong.prong2Id()}, v0Cand)) {
               continue;
             }
             auto selV0 = helper.isSelectedV0(v0Cand, activateQA, hV0Selected, hArmPod);
@@ -1381,35 +1390,43 @@ struct HfFilter { // Main struct for HF triggers
       if (!keepEvent[kCharmBarToXiBach]) {
         auto cascThisColl = cascades.sliceBy(cascPerCollision, thisCollId);
         for (const auto& casc : cascThisColl) {
-          auto bachelorCasc = casc.bachelor_as<BigTracksPID>();
-          auto v0DauPos = casc.posTrack_as<BigTracksPID>();
-          auto v0DauNeg = casc.negTrack_as<BigTracksPID>();
 
-          if (!helper.isSelectedCascade(casc, std::array{bachelorCasc, v0DauPos, v0DauNeg}, collision)) {
+          CascCand cascCand;
+          if(!helper.buildCascade(casc, v0s, tracksIU, collision, dfStrangeness, {}, cascCand)) {
             continue;
           }
-          if (activateQA) {
-            hMassXi->Fill(casc.mXi());
+
+          if (!helper.isSelectedCascade(cascCand)) {
+            continue;
           }
+
+          if (activateQA) {
+            hMassXi->Fill(cascCand.mXi);
+          }
+
+          auto bachelorCascId = casc.bachelorId();
+          auto v0 = v0s.rawIteratorAt(casc.v0Id());
+          auto v0DauPosId = v0.posTrackId();
+          auto v0DauNegId = v0.negTrackId();
 
           auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
           for (const auto& trackId : trackIdsThisCollision) { // start loop over tracks
             auto track = trackId.track_as<BigTracksPID>();
 
             // ask for opposite sign daughters (omegac daughters)
-            if (track.sign() * bachelorCasc.sign() >= 0) {
+            if (track.sign() * cascCand.sign > 0) {
               continue;
             }
 
             // check if track is one of the Xi daughters
-            if (track.globalIndex() == bachelorCasc.globalIndex() || track.globalIndex() == v0DauPos.globalIndex() || track.globalIndex() == v0DauNeg.globalIndex()) {
+            if (track.globalIndex() == bachelorCascId || track.globalIndex() == v0DauPosId || track.globalIndex() == v0DauNegId) {
               continue;
             }
 
             // propagate to PV
             gpu::gpustd::array<float, 2> dcaInfo;
-            std::array<float, 3> pVecCascade = {casc.px(), casc.py(), casc.pz()};
-            auto trackParCasc = o2::track::TrackPar(std::array{casc.x(), casc.y(), casc.z()}, pVecCascade, bachelorCasc.sign(), true);
+            std::array<float, 3> pVecCascade = cascCand.mom;
+            auto trackParCasc = o2::track::TrackPar(cascCand.vtx, cascCand.mom, cascCand.sign, true);
             trackParCasc.setPID(o2::track::PID::XiMinus);
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCasc, 2.f, matCorr, &dcaInfo);
             getPxPyPz(trackParCasc, pVecCascade);
