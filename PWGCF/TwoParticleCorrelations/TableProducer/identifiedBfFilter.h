@@ -84,9 +84,9 @@ enum SpeciesPairMatch {
   kIdBfProtonProton      ///< Proton-Proton
 };
 
-const char* speciesName[kIdBfNoOfSpecies] = {"e", "pi", "ka", "p"};
+const char* speciesName[kIdBfNoOfSpecies+1] = {"e", "pi", "ka", "p","ha"};
 
-const char* speciesTitle[kIdBfNoOfSpecies] = {"e", "#pi", "K", "p"};
+const char* speciesTitle[kIdBfNoOfSpecies+1] = {"e", "#pi", "K", "p","ha"};
 
 const int speciesChargeValue1[kIdBfNoOfSpecies] = {
   0, //< electron

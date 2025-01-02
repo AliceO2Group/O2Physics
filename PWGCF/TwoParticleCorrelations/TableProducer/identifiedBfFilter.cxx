@@ -81,15 +81,15 @@ TH1F* fhVertexZA = nullptr;
 TH1F* fhMultB = nullptr;
 TH1F* fhMultA = nullptr;
 TH1F* fhPB = nullptr;
-TH1F* fhPA[kIdBfNoOfSpecies] = {nullptr};
+TH1F* fhPA[kIdBfNoOfSpecies + 1] = {nullptr};
 TH1F* fhPtB = nullptr;
-TH1F* fhPtA[kIdBfNoOfSpecies] = {nullptr};
+TH1F* fhPtA[kIdBfNoOfSpecies + 1] = {nullptr};
 TH1F* fhPtPosB = nullptr;
-TH1F* fhPtPosA[kIdBfNoOfSpecies] = {nullptr};
+TH1F* fhPtPosA[kIdBfNoOfSpecies + 1] = {nullptr};
 TH1F* fhPtNegB = nullptr;
-TH1F* fhPtNegA[kIdBfNoOfSpecies] = {nullptr};
-TH2F* fhNPosNegA[kIdBfNoOfSpecies] = {nullptr};
-TH1F* fhDeltaNA[kIdBfNoOfSpecies] = {nullptr};
+TH1F* fhPtNegA[kIdBfNoOfSpecies + 1] = {nullptr};
+TH2F* fhNPosNegA[kIdBfNoOfSpecies + 1] = {nullptr};
+TH1F* fhDeltaNA[kIdBfNoOfSpecies + 1] = {nullptr};
 
 TH2F* fhNSigmaTPC[kIdBfNoOfSpecies] = {nullptr};
 TH2F* fhNSigmaTOF[kIdBfNoOfSpecies] = {nullptr};
@@ -106,8 +106,8 @@ TH1F* fhPhiA = nullptr;
 
 TH2F* fhdEdxB = nullptr;
 TH2F* fhdEdxIPTPCB = nullptr;
-TH2F* fhdEdxA[kIdBfNoOfSpecies + 1] = {nullptr};
-TH2F* fhdEdxIPTPCA[kIdBfNoOfSpecies + 1] = {nullptr};
+TH2F* fhdEdxA[kIdBfNoOfSpecies + 2] = {nullptr};
+TH2F* fhdEdxIPTPCA[kIdBfNoOfSpecies + 2] = {nullptr};
 
 TH1F* fhMassB = nullptr;
 TH1F* fhMassA[kIdBfNoOfSpecies + 1] = {nullptr};
@@ -134,15 +134,15 @@ TH1F* fhTrueVertexZB = nullptr;
 TH1F* fhTrueVertexZA = nullptr;
 TH1F* fhTrueVertexZAA = nullptr;
 TH1F* fhTruePB = nullptr;
-TH1F* fhTruePA[kIdBfNoOfSpecies] = {nullptr};
+TH1F* fhTruePA[kIdBfNoOfSpecies + 1] = {nullptr};
 TH1F* fhTruePtB = nullptr;
-TH1F* fhTruePtA[kIdBfNoOfSpecies] = {nullptr};
+TH1F* fhTruePtA[kIdBfNoOfSpecies + 1] = {nullptr};
 TH1F* fhTruePtPosB = nullptr;
-TH1F* fhTruePtPosA[kIdBfNoOfSpecies] = {nullptr};
+TH1F* fhTruePtPosA[kIdBfNoOfSpecies + 1] = {nullptr};
 TH1F* fhTruePtNegB = nullptr;
-TH1F* fhTruePtNegA[kIdBfNoOfSpecies] = {nullptr};
-TH2F* fhTrueNPosNegA[kIdBfNoOfSpecies] = {nullptr};
-TH1F* fhTrueDeltaNA[kIdBfNoOfSpecies] = {nullptr};
+TH1F* fhTruePtNegA[kIdBfNoOfSpecies + 1] = {nullptr};
+TH2F* fhTrueNPosNegA[kIdBfNoOfSpecies + 1] = {nullptr};
+TH1F* fhTrueDeltaNA[kIdBfNoOfSpecies + 1] = {nullptr};
 
 TH1F* fhTrueEtaB = nullptr;
 TH1F* fhTrueEtaA = nullptr;
@@ -772,7 +772,27 @@ struct IdentifiedBfFilterTracks {
         fhCompatibleCollisionsZVtxRms = new TH2F("fHistCompatibleCollisionsZVtxRms", "Compatible collisions #it{z}_{vtx} RMS;#sigma_{#it{z}_{vtx}};Multiplicity (%);counts", 100, -10.0, 10.0, 101, -0.5, 100.5);
       }
 
-      for (int sp = 0; sp < kIdBfNoOfSpecies; ++sp) {
+      for(int sp = 0; sp < kIdBfNoOfSpecies; ++sp){
+        fhNSigmaTPC[sp] = new TH2F(TString::Format("fhNSigmaTPC_%s", speciesName[sp]).Data(),
+                            TString::Format("N Sigma from TPC vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
+                            48, -6, 6,
+                                    ptbins, ptlow, ptup);
+        fhNSigmaTOF[sp] = new TH2F(TString::Format("fhNSigmaTOF_%s", speciesName[sp]).Data(),
+                                    TString::Format("N Sigma from TOF vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
+                                    48, -6, 6,
+                                    ptbins, ptlow, ptup);
+        fhNSigmaCombo[sp] = new TH2F(TString::Format("fhNSigmaCombo_%s", speciesName[sp]).Data(),
+                                      TString::Format("N Sigma from Combo vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
+                                      48, -6, 6,
+                                      ptbins, ptlow, ptup);
+        fhNSigmaTPC_IdTrks[sp] = new TH2F(TString::Format("fhNSigmaTPC_IdTrks_%s", speciesName[sp]).Data(),
+                                          TString::Format("N Sigma from TPC vs P for Identified %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
+                                          48, -6, 6,
+                                          ptbins, ptlow, ptup);
+      }
+      LOGF(info,"Making histos");
+
+      for (int sp = 0; sp < kIdBfNoOfSpecies + 1; ++sp) {
         fhPA[sp] = new TH1F(TString::Format("fHistPA_%s", speciesName[sp]).Data(),
                             TString::Format("p distribution for reconstructed %s;p (GeV/c);dN/dp (c/GeV)", speciesTitle[sp]).Data(),
                             ptbins, ptlow, ptup);
@@ -791,22 +811,6 @@ struct IdentifiedBfFilterTracks {
         fhDeltaNA[sp] = new TH1F(TString::Format("fhDeltaNA_%s", speciesName[sp]).Data(),
                                  TString::Format("N(%s^{#plus}) #minus N(%s^{#minus}) distribution for reconstructed;N(%s^{#plus}) #minus N(%s^{#minus})", speciesTitle[sp], speciesTitle[sp], speciesTitle[sp], speciesTitle[sp]).Data(),
                                  79, -39.5, 39.5);
-        fhNSigmaTPC[sp] = new TH2F(TString::Format("fhNSigmaTPC_%s", speciesName[sp]).Data(),
-                                   TString::Format("N Sigma from TPC vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
-                                   48, -6, 6,
-                                   ptbins, ptlow, ptup);
-        fhNSigmaTOF[sp] = new TH2F(TString::Format("fhNSigmaTOF_%s", speciesName[sp]).Data(),
-                                   TString::Format("N Sigma from TOF vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
-                                   48, -6, 6,
-                                   ptbins, ptlow, ptup);
-        fhNSigmaCombo[sp] = new TH2F(TString::Format("fhNSigmaCombo_%s", speciesName[sp]).Data(),
-                                     TString::Format("N Sigma from Combo vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
-                                     48, -6, 6,
-                                     ptbins, ptlow, ptup);
-        fhNSigmaTPC_IdTrks[sp] = new TH2F(TString::Format("fhNSigmaTPC_IdTrks_%s", speciesName[sp]).Data(),
-                                          TString::Format("N Sigma from TPC vs P for Identified %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
-                                          48, -6, 6,
-                                          ptbins, ptlow, ptup);
         fhdEdxA[sp] = new TH2F(TString::Format("fhdEdxA_%s", speciesName[sp]).Data(),
                                TString::Format("dE/dx vs P reconstructed %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
                                ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
@@ -814,10 +818,10 @@ struct IdentifiedBfFilterTracks {
                                     TString::Format("dE/dx vs P_{IP} reconstructed %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
                                     ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
       }
-      fhdEdxA[kIdBfNoOfSpecies] = new TH2F(TString::Format("fhdEdxA_WrongSpecies").Data(),
+      fhdEdxA[kIdBfNoOfSpecies + 1] = new TH2F(TString::Format("fhdEdxA_WrongSpecies").Data(),
                                            TString::Format("dE/dx vs P reconstructed Wrong Species; P (GeV/c); dE/dx (a.u.)").Data(),
                                            ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
-      fhdEdxIPTPCA[kIdBfNoOfSpecies] = new TH2F(TString::Format("fhdEdxIPTPCA_WrongSpecies").Data(),
+      fhdEdxIPTPCA[kIdBfNoOfSpecies + 1] = new TH2F(TString::Format("fhdEdxIPTPCA_WrongSpecies").Data(),
                                                 TString::Format("dE/dx vs P_{IP} reconstructed Wrong Species; P (GeV/c); dE/dx (a.u.)").Data(),
                                                 ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
       /* add the hstograms to the output list */
@@ -839,6 +843,7 @@ struct IdentifiedBfFilterTracks {
       fOutputList->Add(fhDCAzB);
       fOutputList->Add(fhDCAzA);
       fOutputList->Add(fhFineDCAzA);
+
       if (checkAmbiguousTracks) {
         fOutputList->Add(fhAmbiguousTrackType);
         fOutputList->Add(fhAmbiguousTrackPt);
@@ -847,21 +852,27 @@ struct IdentifiedBfFilterTracks {
       }
 
       for (int sp = 0; sp < kIdBfNoOfSpecies; ++sp) {
+        fOutputList->Add(fhNSigmaTPC[sp]);
+        fOutputList->Add(fhNSigmaTOF[sp]);
+        fOutputList->Add(fhNSigmaCombo[sp]);
+        fOutputList->Add(fhNSigmaTPC_IdTrks[sp]);
+      }
+
+      LOGF(info, "Adding Histos to list");
+      for (int sp = 0; sp < kIdBfNoOfSpecies + 1; ++sp) {
         fOutputList->Add(fhPA[sp]);
         fOutputList->Add(fhPtA[sp]);
         fOutputList->Add(fhPtPosA[sp]);
         fOutputList->Add(fhPtNegA[sp]);
         fOutputList->Add(fhNPosNegA[sp]);
         fOutputList->Add(fhDeltaNA[sp]);
-        fOutputList->Add(fhNSigmaTPC[sp]);
-        fOutputList->Add(fhNSigmaTOF[sp]);
-        fOutputList->Add(fhNSigmaCombo[sp]);
-        fOutputList->Add(fhNSigmaTPC_IdTrks[sp]);
         fOutputList->Add(fhdEdxA[sp]);
         fOutputList->Add(fhdEdxIPTPCA[sp]);
       }
-      fOutputList->Add(fhdEdxA[kIdBfNoOfSpecies]);
-      fOutputList->Add(fhdEdxIPTPCA[kIdBfNoOfSpecies]);
+      LOGF(info, "Adding Additional Histos to list");
+      fOutputList->Add(fhdEdxA[kIdBfNoOfSpecies + 1]);
+      fOutputList->Add(fhdEdxIPTPCA[kIdBfNoOfSpecies + 1]);
+      LOGF(info, "Added additional histos to list ");
     }
 
     if ((fDataType != kData) && (fDataType != kDataNoEvtSel)) {
@@ -884,7 +895,7 @@ struct IdentifiedBfFilterTracks {
       fhTrueDCAzB = new TH1F("TrueDCAzB", "DCA_{z} distribution for generated before;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
       fhTrueDCAzA = new TH1F("TrueDCAzA", "DCA_{z} distribution for generated;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
 
-      for (int sp = 0; sp < kIdBfNoOfSpecies; ++sp) {
+      for (int sp = 0; sp < kIdBfNoOfSpecies + 1; ++sp) {
         fhTruePA[sp] = new TH1F(TString::Format("fTrueHistPA_%s", speciesName[sp]).Data(),
                                 TString::Format("p distribution %s (truth);p (GeV/c);dN/dp (c/GeV)", speciesTitle[sp]).Data(),
                                 ptbins, ptlow, ptup);
@@ -922,7 +933,7 @@ struct IdentifiedBfFilterTracks {
       fOutputList->Add(fhTrueDCAzB);
       fOutputList->Add(fhTrueDCAzA);
 
-      for (int sp = 0; sp < kIdBfNoOfSpecies; ++sp) {
+      for (int sp = 0; sp < kIdBfNoOfSpecies + 1; ++sp) {
         fOutputList->Add(fhTruePA[sp]);
         fOutputList->Add(fhTruePtA[sp]);
         fOutputList->Add(fhTruePtPosA[sp]);
