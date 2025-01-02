@@ -112,7 +112,7 @@ class FemtoUniversePairWithCentMultKt
         auto histMultFolder = HIST("mult_0_1/");
         fillkT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value >= centMultBins[1] &&  cent_mult_value < centMultBins[2]) {
+    } else if (cent_mult_value >= centMultBins[1] && cent_mult_value < centMultBins[2]) {
       pairWithCentMultKtRegistry->fill(HIST("mult_1_2/kstar"), kstar_value);
       if (useKt) {
         auto histMultFolder = HIST("mult_1_2/");
