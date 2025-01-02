@@ -350,7 +350,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
       // if (part.p() > twotracksconfigs.confCutTable->get("PartOne", "MaxP") || part.pt() > twotracksconfigs.confCutTable->get("PartOne", "MaxPt")) {
       //   continue;
       // }
-      // if (!isFullPIDSelected(part.pidcut(),
+      // if (!isFullPIDSelected(part.pidCut(),
       //                        part.p(),
       //                        twotracksconfigs.confCutTable->get("PartOne", "PIDthr"),
       //                        vPIDPartOne,
@@ -374,7 +374,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
         // if (part.p() > twotracksconfigs.confCutTable->get("PartTwo", "MaxP") || part.pt() > twotracksconfigs.confCutTable->get("PartTwo", "MaxPt")) {
         //   continue;
         // }
-        // if (!isFullPIDSelected(part.pidcut(),
+        // if (!isFullPIDSelected(part.pidCut(),
         //                        part.p(),
         //                        twotracksconfigs.confCutTable->get("PartTwo", "PIDthr"),
         //                        vPIDPartTwo,
@@ -397,7 +397,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
         // if (p1.p() > twotracksconfigs.confCutTable->get("PartOne", "MaxP") || p1.pt() > twotracksconfigs.confCutTable->get("PartOne", "MaxPt") || p2.p() > twotracksconfigs.confCutTable->get("PartTwo", "MaxP") || p2.pt() > twotracksconfigs.confCutTable->get("PartTwo", "MaxPt")) {
         //   continue;
         // }
-        // if (!isFullPIDSelected(p1.pidcut(),
+        // if (!isFullPIDSelected(p1.pidCut(),
         //                        p1.p(),
         //                        twotracksconfigs.confCutTable->get("PartOne", "PIDthr"),
         //                        vPIDPartOne,
@@ -405,7 +405,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
         //                        kNsigma,
         //                        twotracksconfigs.confCutTable->get("PartOne", "nSigmaTPC"),
         //                        twotracksconfigs.confCutTable->get("PartOne", "nSigmaTPCTOF")) ||
-        //     !isFullPIDSelected(p2.pidcut(),
+        //     !isFullPIDSelected(p2.pidCut(),
         //                        p2.p(),
         //                        twotracksconfigs.confCutTable->get("PartTwo", "PIDthr"),
         //                        vPIDPartTwo,
@@ -453,7 +453,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
         // if (p1.p() > twotracksconfigs.confCutTable->get("PartOne", "MaxP") || p1.pt() > twotracksconfigs.confCutTable->get("PartOne", "MaxPt") || p2.p() > twotracksconfigs.confCutTable->get("PartTwo", "MaxP") || p2.pt() > twotracksconfigs.confCutTable->get("PartTwo", "MaxPt")) {
         //   continue;
         // }
-        // if (!isFullPIDSelected(p1.pidcut(),
+        // if (!isFullPIDSelected(p1.pidCut(),
         //                        p1.p(),
         //                        twotracksconfigs.confCutTable->get("PartOne", "PIDthr"),
         //                        vPIDPartOne,
@@ -461,7 +461,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
         //                        kNsigma,
         //                        twotracksconfigs.confCutTable->get("PartOne", "nSigmaTPC"),
         //                        twotracksconfigs.confCutTable->get("PartOne", "nSigmaTPCTOF")) ||
-        //     !isFullPIDSelected(p2.pidcut(),
+        //     !isFullPIDSelected(p2.pidCut(),
         //                        p2.p(),
         //                        twotracksconfigs.confCutTable->get("PartTwo", "PIDthr"),
         //                        vPIDPartTwo,
@@ -502,7 +502,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   /// process function for to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processSameEvent(const o2::aod::FDCollision& col,
+  void processSameEvent(const o2::aod::FdCollision& col,
                         const FilteredFemtoFullParticles& parts)
   {
     fillCollision(col);
@@ -518,9 +518,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// \param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processSameEventMC(const o2::aod::FDCollision& col,
+  void processSameEventMC(const o2::aod::FdCollision& col,
                           const soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
-                          const o2::aod::FDMCParticles&)
+                          const o2::aod::FdMCParticles&)
   {
     fillCollision(col);
 
@@ -553,7 +553,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
       // if (p1.p() > twotracksconfigs.confCutTable->get("PartOne", "MaxP") || p1.pt() > twotracksconfigs.confCutTable->get("PartOne", "MaxPt") || p2.p() > twotracksconfigs.confCutTable->get("PartTwo", "MaxP") || p2.pt() > twotracksconfigs.confCutTable->get("PartTwo", "MaxPt")) {
       //   continue;
       // }
-      // if (!isFullPIDSelected(p1.pidcut(),
+      // if (!isFullPIDSelected(p1.pidCut(),
       //                        p1.p(),
       //                        twotracksconfigs.confCutTable->get("PartOne", "PIDthr"),
       //                        vPIDPartOne,
@@ -561,7 +561,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
       //                        kNsigma,
       //                        twotracksconfigs.confCutTable->get("PartOne", "nSigmaTPC"),
       //                        twotracksconfigs.confCutTable->get("PartOne", "nSigmaTPCTOF")) ||
-      //     !isFullPIDSelected(p2.pidcut(),
+      //     !isFullPIDSelected(p2.pidCut(),
       //                        p2.p(),
       //                        twotracksconfigs.confCutTable->get("PartTwo", "PIDthr"),
       //                        vPIDPartTwo,
@@ -601,7 +601,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   /// process function for to call doMixedEvent with Data
   /// @param cols subscribe to the collisions table (Data)
   /// @param parts subscribe to the femtoUniverseParticleTable
-  void processMixedEvent(const o2::aod::FDCollisions& cols,
+  void processMixedEvent(const o2::aod::FdCollisions& cols,
                          const FilteredFemtoFullParticles& parts)
   {
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
@@ -630,9 +630,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processMixedEventMC(const o2::aod::FDCollisions& cols,
+  void processMixedEventMC(const o2::aod::FdCollisions& cols,
                            const soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
-                           const o2::aod::FDMCParticles&)
+                           const o2::aod::FdMCParticles&)
   {
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
