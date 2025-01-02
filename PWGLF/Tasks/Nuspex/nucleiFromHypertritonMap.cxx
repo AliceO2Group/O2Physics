@@ -80,12 +80,11 @@ struct nucleiFromHypertritonMap {
   void init(InitContext const&)
   {
     registryMC.add("hypertritonPtgen", "hypertritonPtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
-    if(saveHelium){
-    registryMC.add("he3SecPtRec_from_hypertriton", "he3SecPtRec_from_hypertriton", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
-    registryMC.add("hyperHe4Ptgen", "hyperHe4PtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
-    registryMC.add("he3SecPtRec_from_hyperHe4", "he3SecPtRec_from_hyperHe4", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
-    }
-    else{
+    if (saveHelium) {
+      registryMC.add("he3SecPtRec_from_hypertriton", "he3SecPtRec_from_hypertriton", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+      registryMC.add("hyperHe4Ptgen", "hyperHe4PtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+      registryMC.add("he3SecPtRec_from_hyperHe4", "he3SecPtRec_from_hyperHe4", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+    } else {
       registryMC.add("deutSecPtRec_from_hypertriton", "deutSecPtRec_from_hypertriton", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
     }
   }
@@ -97,12 +96,11 @@ struct nucleiFromHypertritonMap {
         continue;
       }
       auto mcparticle = track.mcParticle();
-      if(saveHelium){
+      if (saveHelium) {
         if (mcparticle.pdgCode() != AntihePDG || mcparticle.isPhysicalPrimary()) {
           continue;
         }
-      }
-      else{
+      } else {
         if (mcparticle.pdgCode() != AntideuteronPDG || mcparticle.isPhysicalPrimary()) {
           continue;
         }
@@ -124,10 +122,9 @@ struct nucleiFromHypertritonMap {
           }
           if (motherparticle.pdgCode() == AntiHypertritonPDG) {
             registryMC.fill(HIST("hypertritonPtgen"), motherparticle.pt());
-            if(saveHelium){
+            if (saveHelium) {
               registryMC.fill(HIST("he3SecPtRec_from_hypertriton"), 2 * track.pt());
-            }
-            else{
+            } else {
               registryMC.fill(HIST("deutSecPtRec_from_hypertriton"), track.pt());
             }
           }
