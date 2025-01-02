@@ -318,6 +318,8 @@ struct femtoDreamProducerTask {
       cascadeCuts.setSelection(ConfCascadeSign, femtoDreamCascadeSelection::kCascadeSign, femtoDreamSelection::kEqual);
       cascadeCuts.setSelection(ConfCascadePtmin, femtoDreamCascadeSelection::kCascadepTMin, femtoDreamSelection::kLowerLimit);
       cascadeCuts.setSelection(ConfCascadePtmax, femtoDreamCascadeSelection::kCascadepTMax, femtoDreamSelection::kUpperLimit);
+      cascadeCuts.init<aod::femtodreamparticle::ParticleType::kCascade, aod::femtodreamparticle::ParticleType::kCascadeV0Child, aod::femtodreamparticle::ParticleType::kCascadeBachelor, aod::femtodreamparticle::cutContainerType>(&qaRegistry, &CascadeRegistry, false);
+      cascadeCuts.setInvMassLimits(ConfCascadeInvMassLowLimit, ConfCascadeInvMassUpLimit);
     }
 
     mRunNumber = 0;
@@ -739,20 +741,38 @@ struct femtoDreamProducerTask {
     }
    if (ConfIsActivateCascade.value) {
     for (auto& casc : fullCascades) {
+      LOGF(info, "GG Producer: Enter the Xi Loop"); //REMOVE COMMENT
+      //get the daughter tracks
+      const auto& posTrackCasc = casc.template posTrack_as<TrackType>();
+      const auto& negTrackCasc = casc.template negTrack_as<TrackType>();
+      const auto& bachTrackCasc = casc.template bachelor_as<TrackType>();
+      //get the daughter v0
+
+      //QA before the cuts
+      cascadeCuts.fillCascadeQA(col, casc, posTrackCasc, negTrackCasc); //TODO include the bachelor
+      if (!cascadeCuts.isSelectedMinimal(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc)) {
+        continue;
+      }
+      LOGF(info, "GG Producer: A Xi is selected"); //REMOVE COMMENT
+
+      cascadeCuts.fillQA<aod::femtodreamparticle::ParticleType::kCascade>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
+      auto cutContainerCasc = cascadeCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
+
       std::vector<int> indexChildID = {0, 0};
-      unsigned int intPlaceHolder = 0;
+      
       outputParts(outputCollision.lastIndex(),
                     casc.pt(),
                     casc.eta(),
                     casc.phi(),
-                    aod::femtodreamparticle::ParticleType::kV0,
-                    intPlaceHolder, 
+                    aod::femtodreamparticle::ParticleType::kCascade,
+                    cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kCascade),
                     0,
                     casc.casccosPA(col.posX(), col.posY(), col.posZ()),
                     indexChildID,
                     0.,
                     0.);
-                    /*
+
+      /*
       outputParts(outputCollision.lastIndex(),
                   casc.pt(),
                   9999.,  //eta
@@ -764,7 +784,7 @@ struct femtoDreamProducerTask {
                   nullptr,      //child Index
                   9999.,  //mLambda
                   9999.); //mAntiLambda
-                    */
+        */
     }
    }
 

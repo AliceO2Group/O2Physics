@@ -88,7 +88,7 @@ class FemtoDreamCascadeSelection
   template <typename Col, typename Casc, typename Track>
   void fillCascadeQA(Col const& col, Casc const& cascade, Track const& posTrack, Track const& negTrack);
 
-  template <typename Col, typename Casc, typename Track>
+  template <o2::aod::femtodreamparticle::ParticleType part, typename Col, typename Casc, typename Track>
   void fillQA(Col const& col, Casc const& cascade, Track const& posTrack, Track const& negTrack, Track const& bachTrack);
 
   template <typename cutContainerType, typename Col, typename Casc, typename Track>
@@ -134,6 +134,30 @@ class FemtoDreamCascadeSelection
     outString += static_cast<std::string>(mSelectionNames[iSel]);
     outString += suffix;
     return outString;
+  }
+  
+  /// Helper function to obtain the index of a given selection variable for consistent naming of the configurables
+  /// \param obs Cascade selection variable (together with prefix) got from file
+  /// \param prefix Additional prefix for the output of the configurable
+  static int findSelectionIndex(const std::string_view& obs,
+                                std::string_view prefix = "")
+  {
+    for (int index = 0; index < kNcascadeSelection; index++) {
+      std::string comp = static_cast<std::string>(prefix) +
+                         static_cast<std::string>(mSelectionNames[index]);
+      std::string_view cmp{comp};
+      if (obs.compare(cmp) == 0)
+        return index;
+    }
+    LOGF(info, "Variable %s not found", obs);
+    return -1;
+  } 
+
+  /// Helper function to obtain the type of a given selection variable for consistent naming of the configurables
+  /// \param iSel Casc selection variable whose type is returned
+  static femtoDreamSelection::SelectionType getSelectionType(femtoDreamCascadeSelection::CascadeSel iSel)
+  {
+    return mSelectionTypes[iSel];
   }
 
   /// Helper function to obtain the helper string of a given selection criterion
@@ -188,7 +212,7 @@ class FemtoDreamCascadeSelection
   FemtoDreamTrackSelection NegDaughTrack;
   FemtoDreamTrackSelection BachTrack;
 
-  static constexpr int kNcascadeSelection = 20; // can I do less ?
+  static constexpr int kNcascadeSelection = 3; // can I do less ?
 
   static constexpr std::string_view mSelectionNames[kNcascadeSelection] = {
     "Sign", "PtMin", "PtMax"};
@@ -248,11 +272,21 @@ void FemtoDreamCascadeSelection::init(HistogramRegistry* QAregistry, HistogramRe
                     "container - quitting!";
     }
 
-    PosDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child,
+    std::string folderName = static_cast<std::string>(
+      o2::aod::femtodreamparticle::ParticleTypeName[part]);
+    mQAHistogramRegistry->add((folderName + "/hPt").c_str(),
+                              "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F,
+                              {{1000, 0, 10}});
+    mQAHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries",
+                              kTH1F, {{1000, -1, 1}});
+    mQAHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries",
+                              kTH1F, {{1000, 0, 2. * M_PI}});
+
+    PosDaughTrack.init<aod::femtodreamparticle::ParticleType::kCascadeV0Child,
                        aod::femtodreamparticle::TrackType::kPosChild,
                        aod::femtodreamparticle::cutContainerType>(
       mQAHistogramRegistry, mQAHistogramRegistry);
-    NegDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child,
+    NegDaughTrack.init<aod::femtodreamparticle::ParticleType::kCascadeV0Child,
                        aod::femtodreamparticle::TrackType::kNegChild,
                        aod::femtodreamparticle::cutContainerType>(
       mQAHistogramRegistry, mQAHistogramRegistry);
@@ -363,8 +397,8 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   //const float cpaCasc = cascade.casccosPA(col.posX(), col.posY(), col.posZ());
   //const float dcav0topv = cascade.dcav0topv(col.posX(), col.posY(), col.posZ());
   // const float invMassLambda = cascade.mLambda();
-  const float invMass = isCascOmega ? cascade.mOmega() : cascade.mXi();
-
+  //const float invMass = isCascOmega ? cascade.mOmega() : cascade.mXi();
+  const float invMass = cascade.mXi();
   /*
   if (invMassLambda < fV0InvMassLowLimit || invMassLambda > fV0InvMassUpLimit) {
     return false;
@@ -373,6 +407,7 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   if (invMass < fInvMassLowLimit || invMass > fInvMassUpLimit) {
     return false;
   }
+  /* 
   if (fRejectCompetingMass) {
     const float invMassCompeting = isCascOmega ? cascade.mXi() : cascade.mOmega();
     if (invMassCompeting > fInvMassCompetingLowLimit &&
@@ -380,6 +415,7 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
       return false;
     }
   }
+  */
   if (nPtCascadeMinSel > 0 && cascade.pt() < pTCascadeMin) {
     return false;
   }
@@ -459,6 +495,7 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
       return false;
     }
   */
+  LOGF(info, "GG CascadeSelection: A Xi is selected!"); //REMOVE COMMENT
   return true;
 }
 
@@ -519,25 +556,25 @@ std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col 
   cutContainerType output = 0;
   size_t counter = 0;
 
-  auto xiMassNominal = o2::constants::physics::MassXiMinus;
-  auto xiMassHypothesis = casc.mXi();
-  auto antiXiMassHypothesis = casc.mAntiXi();
-  auto diffXi = abs(xiMassNominal - xiMassHypothesis);
-  auto diffAntiXi = abs(xiMassNominal - antiXiMassHypothesis);
+  //auto xiMassNominal = o2::constants::physics::MassXiMinus;
+  //auto xiMassHypothesis = casc.mXi();
+  //auto antiXiMassHypothesis = casc.mAntiXi();
+  //auto diffXi = abs(xiMassNominal - xiMassHypothesis);
+  //auto diffAntiXi = abs(xiMassNominal - antiXiMassHypothesis);
 
   float sign = 0.;
   int nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
-  auto nSigmaV0Pr = posTrack.tpcNSigmaPr(); 
-  auto nSigmaV0Pi = negTrack.tpcNSigmaPi(); 
-  auto nSigmaV0Ba = posTrack.tpcNSigmaPr(); 
   
-  auto nSigmaAntiV0Pr = negTrack.tpcNSigmaPr(); 
-  auto nSigmaAntiV0Pi = posTrack.tpcNSigmaPi(); 
-  auto nSigmaAntiV0Ba = bachTrack.tpcNSigmaPi(); 
+  auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
+  auto nSigmaPiPos = posTrack.tpcNSigmaPi();
+  auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
+  auto nSigmaPrPos = posTrack.tpcNSigmaPr();
+  float nSigmaPIDOffsetTPC = 0.;
 
-  if (diffAntiXi < diffXi) {
+  //TODO: improve the selection of the Xi candidates (now I select only Xi/ antiXi based on the daughter Lambda)
+  if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
     sign = -1.;
-  } else if (diffAntiXi > diffXi){
+  } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
     sign = 1.;
   }
 
@@ -569,9 +606,24 @@ std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col 
     outputBachTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kPID)};
 }
 
-template <typename Col, typename Casc, typename Track>
-void FemtoDreamCascadeSelection::fillQA(Col const& /*col*/, Casc const& /*cascade*/, Track const& posTrack, Track const& negTrack, Track const& bachTrack)
+template <o2::aod::femtodreamparticle::ParticleType part, typename Col, typename Casc, typename Track>
+void FemtoDreamCascadeSelection::fillQA(Col const& /*col*/, Casc const& casc, Track const& posTrack, Track const& negTrack, Track const& bachTrack)
 {
+
+  if (mQAHistogramRegistry) {
+    mQAHistogramRegistry->fill(
+      HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) +
+        HIST("/hPt"),
+      casc.pt());
+    mQAHistogramRegistry->fill(
+      HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) +
+        HIST("/hEta"),
+      casc.eta());
+    mQAHistogramRegistry->fill(
+      HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) +
+        HIST("/hPhi"),
+      casc.phi());
+  }
   PosDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child,
                        aod::femtodreamparticle::TrackType::kPosChild>(posTrack);
   NegDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child,
