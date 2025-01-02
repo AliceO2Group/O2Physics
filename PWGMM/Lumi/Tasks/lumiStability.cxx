@@ -8,10 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \file lumiStability.cxx
+/// \brief Analysis over BCs to study the luminosity stability along time.
 ///
-/// \brief This task is an empty skeleton that fills a simple eta histogram.
-///        it is meant to be a blank page for further developments.
-/// \author everyone
+/// \author Josue Martinez Garcia, josuem@cern.ch
 
 #include <utility>
 #include <map>
@@ -39,7 +40,7 @@ using namespace o2::framework;
 
 using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
 
-struct lumiStabilityTask {
+struct LumiStabilityTask {
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -47,9 +48,9 @@ struct lumiStabilityTask {
   Configurable<int> myMaxDeltaBCFDD{"myMaxDeltaBCFDD", 5, {"My BC cut"}};
   Configurable<int> myMaxDeltaBCFT0{"myMaxDeltaBCFT0", 5, {"My BC cut"}};
   Configurable<int> myMaxDeltaBCFV0{"myMaxDeltaBCFV0", 5, {"My BC cut"}};
-  Configurable<int> nOrbitsConf{"nOrbits", 972'288'000, "number of orbits"};
+  Configurable<int> nOrbitsConf{"nOrbitsConf", 972'288'000, "number of orbits"};
   Configurable<int> nOrbitsPerTF{"nOrbitsPerTF", 128, "number of orbits per time frame"};
-  Configurable<double> minOrbitConf{"minOrbit", 0, "minimum orbit"};
+  Configurable<double> minOrbitConf{"minOrbitConf", 0, "minimum orbit"};
   Configurable<bool> is2022Data{"is2022Data", true, "To 2022 data"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -83,6 +84,7 @@ struct lumiStabilityTask {
     const AxisSpec axisTimeFDD{1000, -20, 100};
     const AxisSpec axisCountsTime{2, -0.5, 1.5};
     const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
+    const AxisSpec axisTimeRate{1440, 0., 86400, ""}; // t in seconds. Histo for 24 hrs. Each bin contain 1 min.
 
     histos.add("hBcA", "BC pattern A; BC ; It is present", kTH1F, {axisTriggger});
     histos.add("hBcC", "BC pattern C; BC ; It is present", kTH1F, {axisTriggger});
@@ -152,6 +154,7 @@ struct lumiStabilityTask {
     histos.add("FDD/hInvTimeCvsBC", "Invalid Time C vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
     histos.add("FDD/hValidTimevsBC", "Valid Time vs BC id;BC in FT0;valid time counts", kTH1F, {axisTriggger});
     histos.add("FDD/hInvTimevsBC", "Invalid Time vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
+    histos.add("FDD/hTimeForRate", "Counts by time in FDD;t (in seconds) in FDD; counts", kTH1F, {axisTimeRate});
 
     histos.add("FT0/hCounts", "0 FT0Count - 1 FT0VertexCount - 2 FT0PPVertexCount - 3 FT0PPBothSidesCount; Number; counts", kTH1F, {axisCounts});
     histos.add("FT0/bcVertexTrigger", "vertex trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
@@ -180,6 +183,7 @@ struct lumiStabilityTask {
     histos.add("FT0/hInvTimeCvsBC", "Invalid Time C vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
     histos.add("FT0/hValidTimevsBC", "Valid Time vs BC id;BC in FT0;valid time counts", kTH1F, {axisTriggger});
     histos.add("FT0/hInvTimevsBC", "Invalid Time vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
+    histos.add("FT0/hTimeForRate", "Counts by time in FDD;t (in seconds) in FDD; counts", kTH1F, {axisTimeRate});
 
     histos.add("FV0/hCounts", "0 CountCentralFV0 - 1 CountPFPCentralFV0 - 2 CountPFPOutInFV0 - 3 CountPPCentralFV0 - 4 CountPPOutInFV0; Number; counts", kTH1F, {axisV0Counts});
     histos.add("FV0/bcOutTrigger", "Out trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
@@ -202,13 +206,13 @@ struct lumiStabilityTask {
 
   bool checkAnyCoincidence(const std::vector<int>& channels)
   {
-    constexpr std::pair<int, int> pair0 = {0, 4};
-    constexpr std::pair<int, int> pair1 = {1, 5};
-    constexpr std::pair<int, int> pair2 = {2, 6};
-    constexpr std::pair<int, int> pair3 = {3, 7};
-    constexpr std::array<std::pair<int, int>, 4> channelPairs = {pair0, pair1, pair2, pair3};
-    // std::map<int, int> channelPairs = {{0, 4}, {1, 5}, {2, 6}, {3, 7}};
-    for (const auto& pair : channelPairs) {
+    constexpr std::pair<int, int> kPair0 = {0, 4};
+    constexpr std::pair<int, int> kPair1 = {1, 5};
+    constexpr std::pair<int, int> kPair2 = {2, 6};
+    constexpr std::pair<int, int> kPair3 = {3, 7};
+    constexpr std::array<std::pair<int, int>, 4> kChannelPairs = {kPair0, kPair1, kPair2, kPair3};
+    // std::map<int, int> kChannelPairs = {{0, 4}, {1, 5}, {2, 6}, {3, 7}};
+    for (const auto& pair : kChannelPairs) {
       if (std::find(channels.begin(), channels.end(), pair.first) != channels.end() &&
           std::find(channels.begin(), channels.end(), pair.second) != channels.end()) {
         return true;
@@ -220,14 +224,20 @@ struct lumiStabilityTask {
   void processMain(aod::FDDs const& fdds, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::BCsWithTimestamps const& bcs)
   {
     int executionCounter = 0;
-    // uint32_t nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023
+    uint32_t nOrbitsPerTF = 0; // 128 in 2022, 32 in 2023
+    if (is2022Data) {
+      nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023
+    } else {
+      nOrbitsPerTF = 32; // 128 in 2022, 32 in 2023
+    }
     int runNumber = bcs.iteratorAt(0).runNumber();
-    // std::string histName = "hOrbitFDDVertexCoinc_" + std::to_string(runNumber);
+    int64_t tsSOR = 0;
+    int64_t tsEOR = 1;
     if (runNumber != lastRunNumber && executionCounter < 1) {
+      tsSOR = 0;
+      tsEOR = 1;
       lastRunNumber = runNumber; // do it only once
       executionCounter++;
-      // int64_t tsSOR = 0;
-      // int64_t tsEOR = 1;
 
       if (runNumber >= 500000) { // access CCDB for data or anchored MC only
         int64_t ts = bcs.iteratorAt(0).timestamp();
@@ -256,9 +266,9 @@ struct lumiStabilityTask {
           }
         }
 
-        /*EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
+        EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
         // access orbit-reset timestamp
-        auto ctpx = ccdb->getForTimeStamp<std::vector<Long64_t>>("CTP/Calib/OrbitReset", ts);
+        auto ctpx = ccdb->getForTimeStamp<std::vector<int64_t>>("CTP/Calib/OrbitReset", ts);
         int64_t tsOrbitReset = (*ctpx)[0]; // us
         // access TF duration, start-of-run and end-of-run timestamps from ECS GRP
         std::map<std::string, std::string> metadata;
@@ -281,17 +291,15 @@ struct lumiStabilityTask {
         // duration of TF in bcs
         nBCsPerTF = nOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
         LOGP(info, "tsOrbitReset={} us, SOR = {} ms, EOR = {} ms, orbitSOR = {}, nBCsPerTF = {}", tsOrbitReset, tsSOR, tsEOR, orbitSOR, nBCsPerTF);
-        std::cout << "<<<<<<<<<<<<<<<<<<<<<<<<< Orbits per second: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << nOrbits << std::endl;*/
       }
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
       // otherwise default minOrbit and nOrbits will be used
-      /*const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
-      std::cout << "<<<<<<<<<<<<<<<<<<<<<<<<<   Creating histograms >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl;
-      histos.add("hOrbitFDDVertexCoinc", "", kTH1F, {axisOrbits});
-      histos.add("hOrbitFDDVertex", "", kTH1F, {axisOrbits});
-      histos.add("hOrbitFT0vertex", "", kTH1F, {axisOrbits});
-      histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});*/
+      // const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
+      // histos.add("hOrbitFDDVertexCoinc", "", kTH1F, {axisOrbits});
+      // histos.add("hOrbitFDDVertex", "", kTH1F, {axisOrbits});
+      // histos.add("hOrbitFT0vertex", "", kTH1F, {axisOrbits});
+      // histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});
     }
 
     for (auto const& fdd : fdds) {
@@ -300,7 +308,7 @@ struct lumiStabilityTask {
         continue;
       }
 
-      Long64_t globalBC = bc.globalBC();
+      int64_t globalBC = bc.globalBC();
       int localBC = globalBC % nBCsPerOrbit;
       uint64_t orbit = globalBC / nBCsPerOrbit;
 
@@ -309,15 +317,15 @@ struct lumiStabilityTask {
       bool scentral = fddTriggers[o2::fdd::Triggers::bitSCen];
       bool central = fddTriggers[o2::fdd::Triggers::bitCen];
 
-      auto SideA = fdd.chargeA();
-      auto SideC = fdd.chargeC();
+      auto sideA = fdd.chargeA();
+      auto sideC = fdd.chargeC();
       std::vector<int> channelA;
       std::vector<int> channelC;
       for (auto i = 0; i < 8; i++) {
-        if (SideA[i] > 0) {
+        if (sideA[i] > 0) {
           channelA.push_back(i);
         }
-        if (SideC[i] > 0) {
+        if (sideC[i] > 0) {
           channelC.push_back(i);
         }
       }
@@ -330,6 +338,7 @@ struct lumiStabilityTask {
         histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
         histos.fill(HIST("FDD/hCounts"), 1);
         histos.fill(HIST("hOrbitFDDVertex"), orbit - minOrbit);
+        histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
 
         int deltaIndex = 0; // backward move counts
         int deltaBC = 0;    // current difference wrt globalBC
@@ -339,12 +348,12 @@ struct lumiStabilityTask {
           if (fdd.globalIndex() - deltaIndex < 0) {
             break;
           }
-          const auto& fdd_past = fdds.iteratorAt(fdd.globalIndex() - deltaIndex);
-          auto bc_past = fdd_past.bc_as<BCsWithTimestamps>();
-          deltaBC = globalBC - bc_past.globalBC();
+          const auto& fddPast = fdds.iteratorAt(fdd.globalIndex() - deltaIndex);
+          auto bcPast = fddPast.bc_as<BCsWithTimestamps>();
+          deltaBC = globalBC - bcPast.globalBC();
 
           if (deltaBC < myMaxDeltaBCFDD) {
-            std::bitset<8> fddTriggersPast = fdd_past.triggerMask();
+            std::bitset<8> fddTriggersPast = fddPast.triggerMask();
             bool vertexPast = fddTriggersPast[o2::fdd::Triggers::bitVertex];
             pastActivityFDDVertex |= (vertexPast);
           }
@@ -461,24 +470,24 @@ struct lumiStabilityTask {
             if (fdd.globalIndex() - deltaIndex < 0) {
               break;
             }
-            const auto& fdd_past = fdds.iteratorAt(fdd.globalIndex() - deltaIndex);
-            auto bc_past = fdd_past.bc_as<BCsWithTimestamps>();
-            deltaBC = globalBC - bc_past.globalBC();
+            const auto& fddPast = fdds.iteratorAt(fdd.globalIndex() - deltaIndex);
+            auto bcPast = fddPast.bc_as<BCsWithTimestamps>();
+            deltaBC = globalBC - bcPast.globalBC();
 
             if (deltaBC < myMaxDeltaBCFDD) {
-              std::bitset<8> fddTriggersPast = fdd_past.triggerMask();
+              std::bitset<8> fddTriggersPast = fddPast.triggerMask();
               bool vertexPast = fddTriggersPast[o2::fdd::Triggers::bitVertex];
               bool triggerAPast = fddTriggersPast[o2::fdd::Triggers::bitA];
               bool triggerCPast = fddTriggersPast[o2::fdd::Triggers::bitC];
-              auto SideAPast = fdd_past.chargeA();
-              auto SideCPast = fdd_past.chargeC();
+              auto sideAPast = fddPast.chargeA();
+              auto sideCPast = fddPast.chargeC();
               std::vector<int> channelAPast;
               std::vector<int> channelCPast;
               for (auto i = 0; i < 8; i++) {
-                if (SideAPast[i] > 0) {
+                if (sideAPast[i] > 0) {
                   channelAPast.push_back(i);
                 }
-                if (SideCPast[i] > 0) {
+                if (sideCPast[i] > 0) {
                   channelCPast.push_back(i);
                 }
               }
@@ -502,7 +511,6 @@ struct lumiStabilityTask {
             histos.fill(HIST("FDD/bcVertexTriggerBothSidesCoincidencePP"), localBC);
           }
         } // coincidences
-
       } // vertex true
 
       if (scentral) {
@@ -540,7 +548,7 @@ struct lumiStabilityTask {
         continue;
       }
 
-      Long64_t globalBC = bc.globalBC();
+      int64_t globalBC = bc.globalBC();
       int localBC = globalBC % nBCsPerOrbit;
       uint64_t orbit = globalBC / nBCsPerOrbit;
 
@@ -553,6 +561,7 @@ struct lumiStabilityTask {
       if (vertex) {
         histos.fill(HIST("FT0/bcVertexTrigger"), localBC);
         histos.fill(HIST("hOrbitFT0vertex"), orbit - minOrbit);
+        histos.fill(HIST("FT0/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
 
         if (bcPatternA[localBC]) {
           histos.fill(HIST("FT0/timeACbcA"), ft0.timeA(), ft0.timeC());
@@ -608,12 +617,12 @@ struct lumiStabilityTask {
           if (ft0.globalIndex() - deltaIndex < 0) {
             break;
           }
-          const auto& ft0_past = ft0s.iteratorAt(ft0.globalIndex() - deltaIndex);
-          auto bc_past = ft0_past.bc_as<BCsWithTimestamps>();
-          deltaBC = globalBC - bc_past.globalBC();
+          const auto& ft0Past = ft0s.iteratorAt(ft0.globalIndex() - deltaIndex);
+          auto bcPast = ft0Past.bc_as<BCsWithTimestamps>();
+          deltaBC = globalBC - bcPast.globalBC();
 
           if (deltaBC < myMaxDeltaBCFT0) {
-            std::bitset<8> fT0TriggersPast = ft0_past.triggerMask();
+            std::bitset<8> fT0TriggersPast = ft0Past.triggerMask();
             bool vertexPast = fT0TriggersPast[o2::ft0::Triggers::bitVertex];
             bool triggerAPast = fT0TriggersPast[o2::ft0::Triggers::bitA];
             bool triggerCPast = fT0TriggersPast[o2::ft0::Triggers::bitC];
@@ -661,7 +670,7 @@ struct lumiStabilityTask {
         continue;
       }
 
-      Long64_t globalBC = bc.globalBC();
+      int64_t globalBC = bc.globalBC();
       int localBC = globalBC % nBCsPerOrbit;
       uint64_t orbit = globalBC / nBCsPerOrbit;
 
@@ -714,12 +723,12 @@ struct lumiStabilityTask {
           if (fv0.globalIndex() - deltaIndex < 0) {
             break;
           }
-          const auto& fv0_past = fv0s.iteratorAt(fv0.globalIndex() - deltaIndex);
-          auto bc_past = fv0_past.bc_as<BCsWithTimestamps>();
-          deltaBC = globalBC - bc_past.globalBC();
+          const auto& fv0Past = fv0s.iteratorAt(fv0.globalIndex() - deltaIndex);
+          auto bcPast = fv0Past.bc_as<BCsWithTimestamps>();
+          deltaBC = globalBC - bcPast.globalBC();
 
           if (deltaBC < myMaxDeltaBCFV0) {
-            std::bitset<8> fv0Triggers = fv0_past.triggerMask();
+            std::bitset<8> fv0Triggers = fv0Past.triggerMask();
             bool centralPast = fv0Triggers[o2::fv0::Triggers::bitTrgCharge];
             bool triggerOutPast = fv0Triggers[o2::fv0::Triggers::bitAOut];
             bool triggerInPast = fv0Triggers[o2::fv0::Triggers::bitAIn];
@@ -740,11 +749,11 @@ struct lumiStabilityTask {
           if (fv0.globalIndex() + deltaIndex >= fv0s.size()) {
             break;
           }
-          const auto& fv0_future = fv0s.iteratorAt(fv0.globalIndex() + deltaIndex);
-          deltaBC = fv0_future.bcId() - fv0.bcId();
+          const auto& fv0Future = fv0s.iteratorAt(fv0.globalIndex() + deltaIndex);
+          deltaBC = fv0Future.bcId() - fv0.bcId();
 
           if (deltaBC < myMaxDeltaBCFV0) {
-            std::bitset<8> fv0Triggers = fv0_future.triggerMask();
+            std::bitset<8> fv0Triggers = fv0Future.triggerMask();
             bool centralFuture = fv0Triggers[o2::fv0::Triggers::bitTrgCharge];
             bool triggerOutFuture = fv0Triggers[o2::fv0::Triggers::bitAOut];
             bool triggerInFuture = fv0Triggers[o2::fv0::Triggers::bitAIn];
@@ -780,7 +789,7 @@ struct lumiStabilityTask {
     } // loop over V0 events
   } // end processMain
 
-  PROCESS_SWITCH(lumiStabilityTask, processMain, "Process FDD and FT0 to lumi stability analysis", true);
+  PROCESS_SWITCH(LumiStabilityTask, processMain, "Process FDD and FT0 to lumi stability analysis", true);
 
   void processCollisions(aod::Collision const& collision)
   {
@@ -792,11 +801,11 @@ struct lumiStabilityTask {
     histos.fill(HIST("hvertexXvsTime"), collision.posX(), collision.collisionTime());
   }
 
-  PROCESS_SWITCH(lumiStabilityTask, processCollisions, "Process collision to get vertex position", true);
+  PROCESS_SWITCH(LumiStabilityTask, processCollisions, "Process collision to get vertex position", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lumiStabilityTask>(cfgc)};
+    adaptAnalysisTask<LumiStabilityTask>(cfgc)};
 }
