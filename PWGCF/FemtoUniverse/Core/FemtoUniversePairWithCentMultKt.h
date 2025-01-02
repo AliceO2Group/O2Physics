@@ -106,55 +106,55 @@ class FemtoUniversePairWithCentMultKt
 
     if (cent_mult_value >= centMultBins[centMultBins.size() - 1] || cent_mult_value < centMultBins[0]) {
       pairWithCentMultKtRegistry->fill(HIST("Beyond_Max"), kstar_value);
-    } else if (cent_mult_value < centMultBins[1]) {
+    } else if (cent_mult_value >= centMultBins[0] && cent_mult_value < centMultBins[1]) {
       pairWithCentMultKtRegistry->fill(HIST("mult_0_1/kstar"), kstar_value);
       if (useKt) {
         auto histMultFolder = HIST("mult_0_1/");
         fillkT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value < centMultBins[2]) {
+    } else if (cent_mult_value >= centMultBins[1] && cent_mult_value < centMultBins[2]) {
       pairWithCentMultKtRegistry->fill(HIST("mult_1_2/kstar"), kstar_value);
       if (useKt) {
         auto histMultFolder = HIST("mult_1_2/");
         fillkT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value < centMultBins[3]) {
+    } else if (cent_mult_value >= centMultBins[2] && cent_mult_value < centMultBins[3]) {
       pairWithCentMultKtRegistry->fill(HIST("mult_2_3/kstar"), kstar_value);
       if (useKt) {
         auto histMultFolder = HIST("mult_2_3/");
         fillkT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value < centMultBins[4]) {
+    } else if (cent_mult_value >= centMultBins[3] && cent_mult_value < centMultBins[4]) {
       pairWithCentMultKtRegistry->fill(HIST("mult_3_4/kstar"), kstar_value);
       if (useKt) {
         auto histMultFolder = HIST("mult_3_4/");
         fillkT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value < centMultBins[5]) {
+    } else if (cent_mult_value >= centMultBins[4] && cent_mult_value < centMultBins[5]) {
       pairWithCentMultKtRegistry->fill(HIST("mult_4_5/kstar"), kstar_value);
       if (useKt) {
         auto histMultFolder = HIST("mult_4_5/");
         fillkT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value < centMultBins[6]) {
+    } else if (cent_mult_value >= centMultBins[5] && cent_mult_value < centMultBins[6]) {
       pairWithCentMultKtRegistry->fill(HIST("mult_5_6/kstar"), kstar_value);
       if (useKt) {
         auto histMultFolder = HIST("mult_5_6/");
         fillkT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value < centMultBins[7]) {
+    } else if (cent_mult_value >= centMultBins[6] && cent_mult_value < centMultBins[7]) {
       pairWithCentMultKtRegistry->fill(HIST("mult_6_7/kstar"), kstar_value);
       if (useKt) {
         auto histMultFolder = HIST("mult_6_7/");
         fillkT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value < centMultBins[8]) {
+    } else if (cent_mult_value >= centMultBins[7] && cent_mult_value < centMultBins[8]) {
       pairWithCentMultKtRegistry->fill(HIST("mult_7_8/kstar"), kstar_value);
       if (useKt) {
         auto histMultFolder = HIST("mult_7_8/");
         fillkT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value < centMultBins[9]) {
+    } else if (cent_mult_value >= centMultBins[8] && cent_mult_value < centMultBins[9]) {
       pairWithCentMultKtRegistry->fill(HIST("mult_8_9/kstar"), kstar_value);
       if (useKt) {
         auto histMultFolder = HIST("mult_8_9/");
@@ -205,55 +205,55 @@ class FemtoUniversePairWithCentMultKt
 
     if (cent_mult_value >= centMultBins[centMultBins.size() - 1] || cent_mult_value < centMultBins[0]) {
       pairWithCentMultKtRegistry->fill(HIST("Beyond_Max_3D"), qout_value, qside_value, qlong_value);
-    } else if (cent_mult_value < centMultBins[1]) {
+    } else if (cent_mult_value >= centMultBins[0] && cent_mult_value < centMultBins[1]) {
       pairWithCentMultKtRegistry->fill(HIST("mult_0_1/q3D"), qout_value, qside_value, qlong_value);
       if (use3D) {
         auto histMultFolder = HIST("mult_0_1/");
         fillkT3D(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value < centMultBins[2]) {
+    } else if (cent_mult_value >= centMultBins[1] && cent_mult_value < centMultBins[2]) {
       // pairWithCentMultKtRegistry->fill(HIST("mult_1_2/q3D"), qout_value, qside_value, qlong_value);
       if (use3D) {
         auto histMultFolder = HIST("mult_1_2/");
         fillkT3D(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value < centMultBins[3]) {
+    } else if (cent_mult_value >= centMultBins[2] && cent_mult_value < centMultBins[3]) {
       // pairWithCentMultKtRegistry->fill(HIST("mult_2_3/q3D"), qout_value, qside_value, qlong_value);
       if (use3D) {
         auto histMultFolder = HIST("mult_2_3/");
         fillkT3D(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value < centMultBins[4]) {
+    } else if (cent_mult_value >= centMultBins[3] && cent_mult_value < centMultBins[4]) {
       // pairWithCentMultKtRegistry->fill(HIST("mult_3_4/q3D"), qout_value, qside_value, qlong_value);
       if (use3D) {
         auto histMultFolder = HIST("mult_3_4/");
         fillkT3D(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value < centMultBins[5]) {
+    } else if (cent_mult_value >= centMultBins[4] && cent_mult_value < centMultBins[5]) {
       // pairWithCentMultKtRegistry->fill(HIST("mult_4_5/q3D"), qout_value, qside_value, qlong_value);
       if (use3D) {
         auto histMultFolder = HIST("mult_4_5/");
         fillkT3D(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value < centMultBins[6]) {
+    } else if (cent_mult_value >= centMultBins[5] && cent_mult_value < centMultBins[6]) {
       // pairWithCentMultKtRegistry->fill(HIST("mult_5_6/q3D"), qout_value, qside_value, qlong_value);
       if (use3D) {
         auto histMultFolder = HIST("mult_5_6/");
         fillkT3D(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value < centMultBins[7]) {
+    } else if (cent_mult_value >= centMultBins[6] && cent_mult_value < centMultBins[7]) {
       // pairWithCentMultKtRegistry->fill(HIST("mult_6_7/q3D"), qout_value, qside_value, qlong_value);
       if (use3D) {
         auto histMultFolder = HIST("mult_6_7/");
         fillkT3D(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value < centMultBins[8]) {
+    } else if (cent_mult_value >= centMultBins[7] && cent_mult_value < centMultBins[8]) {
       // pairWithCentMultKtRegistry->fill(HIST("mult_7_8/q3D"), qout_value, qside_value, qlong_value);
       if (use3D) {
         auto histMultFolder = HIST("mult_7_8/");
         fillkT3D(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value < centMultBins[9]) {
+    } else if (cent_mult_value >= centMultBins[8] && cent_mult_value < centMultBins[9]) {
       // pairWithCentMultKtRegistry->fill(HIST("mult_8_9/q3D"), qout_value, qside_value, qlong_value);
       if (use3D) {
         auto histMultFolder = HIST("mult_8_9/");

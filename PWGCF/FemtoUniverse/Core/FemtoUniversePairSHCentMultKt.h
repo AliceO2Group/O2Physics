@@ -167,11 +167,11 @@ class PairSHCentMultKt
 
     if ((absmultval >= centMultBins[0]) && (absmultval < centMultBins[1])) {
       multbinval = 0;
-    } else if (absmultval < centMultBins[2]) {
+    } else if ((absmultval >= centMultBins[1]) && (absmultval < centMultBins[2])) {
       multbinval = 1;
-    } else if (absmultval < centMultBins[3]) {
+    } else if ((absmultval >= centMultBins[2]) && (absmultval < centMultBins[3])) {
       multbinval = 2;
-    } else if (absmultval < centMultBins[4]) {
+    } else if ((absmultval >= centMultBins[3]) && (absmultval < centMultBins[4])) {
       multbinval = 3;
     } else {
       return;
