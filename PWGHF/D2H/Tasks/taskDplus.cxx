@@ -113,9 +113,9 @@ struct HfTaskDplus {
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "Only one process function should be enabled! Please check your configuration!");
     }
-    auto vbins = (std::vector<double>)binsPt;
-    AxisSpec ptbins = {vbins, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec massbins = {600, 1.67, 2.27, "inv. mass (K#pi#pi) (GeV/#it{c}^{2})"};
+    auto vbins = static_cast<std::vector<double>>(binsPt);
+    AxisSpec thnAxisPt = {vbins, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec thnAxisMass = {600, 1.67, 2.27, "inv. mass (K#pi#pi) (GeV/#it{c}^{2})"};
     AxisSpec thnAxisY = {thnConfigAxisY, "y"};
     AxisSpec thnAxisMlScore0 = {thnConfigAxisMlScore0, "Score 0"};
     AxisSpec thnAxisMlScore1 = {thnConfigAxisMlScore1, "Score 1"};
@@ -164,7 +164,7 @@ struct HfTaskDplus {
     registry.add("hPtVsYGenNonPrompt", "MC particles (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
 
     if (doprocessDataWithMl || doprocessData) {
-      std::vector<AxisSpec> axes = {massbins, ptbins};
+      std::vector<AxisSpec> axes = {thnAxisMass, thnAxisPt};
 
       if (doprocessDataWithMl) {
         axes.insert(axes.end(), {thnAxisMlScore0, thnAxisMlScore1, thnAxisMlScore2});
@@ -179,10 +179,10 @@ struct HfTaskDplus {
       registry.add("hSparseMass", "THn for Dplus", HistType::kTHnSparseF, axes);
     }
     if (doprocessMcWithMl || doprocessMc) {
-      std::vector<AxisSpec> axes = {massbins, ptbins};
-      std::vector<AxisSpec> axesFD = {massbins, ptbins};
-      std::vector<AxisSpec> axesGenPrompt = {ptbins, thnAxisY};
-      std::vector<AxisSpec> axesGenFD = {ptbins, thnAxisY};
+      std::vector<AxisSpec> axes = {thnAxisMass, thnAxisPt};
+      std::vector<AxisSpec> axesFD = {thnAxisMass, thnAxisPt};
+      std::vector<AxisSpec> axesGenPrompt = {thnAxisPt, thnAxisY};
+      std::vector<AxisSpec> axesGenFD = {thnAxisPt, thnAxisY};
 
       axesFD.insert(axesFD.end(), {thnAxisPtBHad});
       axesFD.insert(axesFD.end(), {thnAxisFlagBHad});
