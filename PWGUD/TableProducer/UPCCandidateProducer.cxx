@@ -45,6 +45,7 @@ struct UpcCandProducer {
 
   Produces<o2::aod::UDFwdTracks> udFwdTracks;
   Produces<o2::aod::UDFwdTracksExtra> udFwdTracksExtra;
+  Produces<o2::aod::UDFwdTracksTgl> udFwdTracksTgl;
   Produces<o2::aod::UDFwdIndices> udFwdIndices;
   Produces<o2::aod::UDFwdTracksCls> udFwdTrkClusters;
   Produces<o2::aod::UDMcFwdTrackLabels> udFwdTrackLabels;
@@ -386,6 +387,7 @@ struct UpcCandProducer {
       udFwdTracks(candID, track.px(), track.py(), track.pz(), track.sign(), globalBC, trTime, track.trackTimeRes());
       udFwdTracksExtra(track.trackType(), track.nClusters(), track.pDca(), track.rAtAbsorberEnd(), track.chi2(), mchmidChi2, mchmftChi2,
                        track.mchBitMap(), track.midBitMap(), track.midBoards());
+      udFwdTracksTgl(track.tgl());
       udFwdIndices(candID, globalIndex, mchIndex, mftIndex);
       // fill MC labels and masks if needed
       if (fDoMC) {
@@ -1600,28 +1602,42 @@ struct UpcCandProducer {
 
     std::vector<int> selTrackIdsGlobal{};
 
-    // storing n-prong matches
     int32_t candID = 0;
-    auto midIt = bcsMatchedTrIdsMID.begin();
+
     for (auto& pair : bcsMatchedTrIdsGlobal) { // candidates with MFT
       auto globalBC = static_cast<int64_t>(pair.first);
-      const auto& fwdTrackIDs = pair.second;
+      const auto& fwdTrackIDs = pair.second; // Forward tracks
       uint32_t nMFTs = fwdTrackIDs.size();
-      if (nMFTs > fNFwdProngs) // too many tracks
-        continue;
       std::vector<int64_t> trkCandIDs{};
-      const auto& midTrackIDs = midIt->second; // to retrieve corresponding MCH-MID tracks
+
+      // Find corresponding midTrackIDs using std::find_if
+      auto midIt = std::find_if(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
+                                [globalBC](const auto& midPair) {
+                                  return midPair.first == globalBC;
+                                });
+
+      const auto* midTrackIDs = (midIt != bcsMatchedTrIdsMID.end()) ? &midIt->second : nullptr;
+      int32_t nMIDs = midTrackIDs ? midTrackIDs->size() : 0;
+
+      if (nMFTs > fNFwdProngs) // Skip if too many tracks
+        continue;
+
       if (nMFTs == fNFwdProngs) {
+
         for (auto iMft : fwdTrackIDs) {
           auto trk = fwdTracks.iteratorAt(iMft);
           auto trkEta = trk.eta();
-          if (trkEta > fMinEtaMFT && trkEta < fMaxEtaMFT) { // If the track is in the MFT acceptance, store the global track
-            trkCandIDs.insert(trkCandIDs.end(), fwdTrackIDs.begin(), fwdTrackIDs.end());
-          } else { // If the track is not in the MFT acceptance, store the MCH-MID track
-            trkCandIDs.insert(trkCandIDs.end(), midTrackIDs.begin(), midTrackIDs.end());
+
+          if (trkEta > fMinEtaMFT && trkEta < fMaxEtaMFT) {
+            // Track is within MFT acceptance, store forward track IDs
+            trkCandIDs.push_back(iMft);
+          } else if (midTrackIDs) {
+            // Track is outside MFT acceptance, store corresponding MID track IDs
+            trkCandIDs.insert(trkCandIDs.end(), midTrackIDs->begin(), midTrackIDs->end());
           }
         }
       }
+
       uint64_t closestBcMCH = 0;
       upchelpers::FITInfo fitInfo{};
       fitInfo.timeFT0A = -999.f;
@@ -1732,7 +1748,6 @@ struct UpcCandProducer {
                              amplitudesV0A,
                              relBCsV0A);
       candID++;
-      midIt++;
       trkCandIDs.clear();
     }
 
