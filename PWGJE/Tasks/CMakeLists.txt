@@ -148,10 +148,10 @@ o2physics_add_dpl_workflow(jet-substructure-bplus
                         SOURCES ChJetTriggerQATask.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
-     o2physics_add_dpl_workflow(jet-full-trigger-qa
-                         SOURCES fullJetTriggerQATask.cxx
-                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-full-trigger-qa
+                        SOURCES fullJetTriggerQATask.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-matching-qa
                         SOURCES jetMatchingQA.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
@@ -240,5 +240,8 @@ o2physics_add_dpl_workflow(jet-substructure-bplus
                         SOURCES gammaJetTreeProducer.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
-
+    o2physics_add_dpl_workflow(dijet-finder-charged-qa
+                        SOURCES dijetFinderQA.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
 endif()
