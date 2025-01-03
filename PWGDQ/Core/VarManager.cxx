@@ -816,12 +816,16 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kM0111POI] = "";
   fgVariableNames[kCORR2REF] = "<2> ";
   fgVariableUnits[kCORR2REF] = "";
+  fgVariableNames[kCORR2REFbydimuons] = "<2> only for events with dimuons";
+  fgVariableUnits[kCORR2REFbydimuons] = "";
   fgVariableNames[kCORR2REFetagap] = "<2-etagap> ";
   fgVariableUnits[kCORR2REFetagap] = "";
   fgVariableNames[kCORR2POI] = "<2'> ";
   fgVariableUnits[kCORR2POI] = "";
   fgVariableNames[kCORR4REF] = "<4> ";
   fgVariableUnits[kCORR4REF] = "";
+  fgVariableNames[kCORR4REFbydimuons] = "<4> only for events with dimuons";
+  fgVariableUnits[kCORR4REFbydimuons] = "";
   fgVariableNames[kCORR4POI] = "<4'> ";
   fgVariableUnits[kCORR4POI] = "";
   fgVariableNames[kM11REFoverMp] = "M_{11}^{REF}/M_{p} ";
