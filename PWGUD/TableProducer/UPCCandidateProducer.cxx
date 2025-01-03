@@ -1613,11 +1613,10 @@ struct UpcCandProducer {
       // Find corresponding midTrackIDs using std::find_if
       auto midIt = std::find_if(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
                                 [globalBC](const auto& midPair) {
-                                  return midPair.first == globalBC;
+                                  return midPair.first == static_cast<uint64_t>(globalBC);
                                 });
 
       const auto* midTrackIDs = (midIt != bcsMatchedTrIdsMID.end()) ? &midIt->second : nullptr;
-      int32_t nMIDs = midTrackIDs ? midTrackIDs->size() : 0;
 
       if (nMFTs > fNFwdProngs) // Skip if too many tracks
         continue;
