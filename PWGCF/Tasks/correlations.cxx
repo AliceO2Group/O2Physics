@@ -75,6 +75,7 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgTriggerCharge, int, 0, "Select on charge of trigger particle: 0 = all; 1 = positive; -1 = negative");
   O2_DEFINE_CONFIGURABLE(cfgAssociatedCharge, int, 0, "Select on charge of associated particle: 0 = all; 1 = positive; -1 = negative");
   O2_DEFINE_CONFIGURABLE(cfgPairCharge, int, 0, "Select on charge of particle pair: 0 = all; 1 = like sign; -1 = unlike sign");
+  O2_DEFINE_CONFIGURABLE(cfgCorrelateTheSame, int, 0, "Correlate the d0 with d0 or d0bar with d0bar, 0 = no, 1 = yes");
 
   O2_DEFINE_CONFIGURABLE(cfgTwoTrackCut, float, -1, "Two track cut: -1 = off; >0 otherwise distance value (suggested: 0.02)");
   O2_DEFINE_CONFIGURABLE(cfgTwoTrackCutMinRadius, float, 0.8f, "Two track cut: radius in m from which two track cuts are applied");
@@ -202,6 +203,8 @@ struct CorrelationTask {
     }
     if (doprocessSame2Prong2Prong)
       userAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
+    if (doprocessMixed2Prong2Prong)
+      userMixingAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
 
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userMixingAxis));
@@ -265,7 +268,7 @@ struct CorrelationTask {
         registry.fill(HIST("invMass"), track1.invMass(), track1.pt(), multiplicity);
         for (const auto& track2 : tracks2) {
           if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks2::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
-            if (doprocessSame2Prong2Prong) {
+            if (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong) {
               if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u)
                 continue;
               if ((track1.decay() != 0) || (track2.decay() != 1)) // D0 in trk1, D0bar in trk2
@@ -410,10 +413,12 @@ struct CorrelationTask {
         }
 
         if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
-          if (doprocessSame2Prong2Prong && (track1.decay() == track2.decay() || track1.decay() > 1 || track2.decay() > 1)) {
-            continue;
+          if (cfgCorrelateTheSame == 0 && (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong) && (track1.decay() == track2.decay() || track1.decay() > 1 || track2.decay() > 1)) {
+            continue; // D0 and anti-D0 selection
+          } else if (cfgCorrelateTheSame == 1 && (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong) && (track1.decay() != track2.decay() || track1.decay() > 1 || track2.decay() > 1)) {
+            continue; // the same particle selection
           }
-        } // D0 and anti-D0 selection
+        }
 
         if constexpr (std::experimental::is_detected<HasProng0Id, typename TTracks1::iterator>::value) {
           if constexpr (std::experimental::is_detected<HasProng0Id, typename TTracks2::iterator>::value) {
@@ -480,7 +485,7 @@ struct CorrelationTask {
         float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -o2::constants::math::PIHalf);
 
         // last param is the weight
-        if (cfgMassAxis && (doprocessSame2Prong2Prong) && !(doprocessSame2ProngDerived || doprocessMixed2ProngDerived)) {
+        if (cfgMassAxis && (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong) && !(doprocessSame2ProngDerived || doprocessMixed2ProngDerived)) {
           if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value && std::experimental::is_detected<HasInvMass, typename TTracks2::iterator>::value)
             target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track2.invMass(), track1.invMass(), associatedWeight);
           else
@@ -785,7 +790,6 @@ struct CorrelationTask {
 
       if (it.isNewWindow()) {
         loadEfficiency(collision1.timestamp());
-
         mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepReconstructed);
       }
 
@@ -793,7 +797,6 @@ struct CorrelationTask {
 
       registry.fill(HIST("eventcount_mixed"), bin);
       fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight);
-
       if (cfg.mEfficiencyAssociated || cfg.mEfficiencyTrigger) {
         if (it.isNewWindow()) {
           mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepCorrected);
