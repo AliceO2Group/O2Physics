@@ -320,7 +320,7 @@ DECLARE_SOA_TABLE(HypKfMcCascadeThreeTwoCandidates, "AOD", "HYPKFMCCAND32", HYPK
 using HypKfMcCascadeThreeTwoCandidate = HypKfMcCascadeThreeTwoCandidates::iterator;
 } // namespace o2::aod
 
-struct hypKfTreeCreator { // o2-linter: disable=[name/workflow-file][name/struct]
+struct HypKfTreeCreator {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Produces<aod::HypKfGens> outputMcGenTable;
@@ -370,7 +370,7 @@ struct hypKfTreeCreator { // o2-linter: disable=[name/workflow-file][name/struct
       fillTable(candidate, hypDaughter);
     }
   }
-  PROCESS_SWITCH(hypKfTreeCreator, processData, "single tree", false);
+  PROCESS_SWITCH(HypKfTreeCreator, processData, "single tree", false);
   //___________________________________________________________________________________________________________________________________________________________
   void fillTable(HyperNucleus& cand, HyperNucleus& hypDaughter)
   {
@@ -648,7 +648,7 @@ struct hypKfTreeCreator { // o2-linter: disable=[name/workflow-file][name/struct
     }
     hPt[2]->Divide(hPt[1].get(), hPt[0].get());
   }
-  PROCESS_SWITCH(hypKfTreeCreator, processMC, "MC Gen tree", false);
+  PROCESS_SWITCH(HypKfTreeCreator, processMC, "MC Gen tree", false);
 
   //___________________________________________________________________________________________________________________________________________________________
   std::vector<float> dcaTracksAll(std::vector<arr3>& posVec, TString opt = "")
@@ -770,5 +770,5 @@ struct hypKfTreeCreator { // o2-linter: disable=[name/workflow-file][name/struct
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<hypKfTreeCreator>(cfgc)};
+    adaptAnalysisTask<HypKfTreeCreator>(cfgc)};
 }
