@@ -106,6 +106,7 @@ using MyMuonsColl = soa::Join<aod::FwdTracks, aod::FwdTracksDCA, aod::FwdTrkComp
 using MyMuonsCollWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::FwdTracksDCA, aod::FwdTrkCompColls>;
 using MyBCs = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedBCCollisionsSparseMulti>;
+using MyEventsWithMultsExtra = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra>;
 
 // Declaration of various bit maps containing information on which tables are included in a Join
 //   These are used as template arguments and checked at compile time
@@ -129,6 +130,7 @@ constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | Va
 // constexpr static uint32_t gkMuonFillMapWithCovAmbi = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov | VarManager::ObjTypes::AmbiMuon;
 // constexpr static uint32_t gkTrackFillMapWithAmbi = VarManager::ObjTypes::Track | VarManager::ObjTypes::AmbiTrack;
 constexpr static uint32_t gkMFTFillMap = VarManager::ObjTypes::TrackMFT;
+constexpr static uint32_t gkEventFillMapWithMultsExtra = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
 
 // Enum containing the ordering of statistics histograms to be written in the QA file
 enum SkimStatsHists {
@@ -1358,6 +1360,14 @@ struct TableMaker {
   {
     fullSkimming<gkEventFillMapWithMults, 0u, gkMuonFillMapWithCov, gkMFTFillMap>(collisions, bcs, nullptr, nullptr, muons, mftTracks, nullptr, fwdTrackAssocs, mftAssocs);
   }
+                             
+  // Central barrel multiplicity estimation with the muon+mft DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), meant to run on skimmed data
+  void processPPMuonMFTWithMultsExtra(MyEventsWithMultsExtra const& collisions, BCsWithTimestamps const& bcs,
+                        MyMuonsWithCov const& muons, MFTTracks const& mftTracks,
+                        FwdTrackAssoc const& fwdTrackAssocs, MFTTrackAssoc const& mftAssocs)
+  {
+    fullSkimming<gkEventFillMapWithMultsExtra, 0u, gkMuonFillMapWithCov, gkMFTFillMap>(collisions, bcs, nullptr, nullptr, muons, mftTracks, nullptr, fwdTrackAssocs, mftAssocs);
+  }
 
   // produce the full DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
   void processPbPb(MyEventsWithCentAndMults const& collisions, BCsWithTimestamps const& bcs,
@@ -1428,6 +1438,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processPPBarrelOnly, "Build barrel only DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb", false);
   PROCESS_SWITCH(TableMaker, processPPMuonOnly, "Build muon only DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb", false);
   PROCESS_SWITCH(TableMaker, processPPMuonMFT, "Build muon + mft DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb", false);
+  PROCESS_SWITCH(TableMaker, processPPMuonMFTWithMultsExtra, "Build muon + mft DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb", false);
   PROCESS_SWITCH(TableMaker, processPbPb, "Build full DQ skimmed data model typically for Pb-Pb, w/o event filtering", false);
   PROCESS_SWITCH(TableMaker, processPbPbBarrelOnly, "Build barrel only DQ skimmed data model typically for Pb-Pb, w/o event filtering", false);
   PROCESS_SWITCH(TableMaker, processPbPbBarrelOnlyWithV0Bits, "Build barrel only DQ skimmed data model typically for Pb-Pb, w/ V0 bits, w/o event filtering", false);
