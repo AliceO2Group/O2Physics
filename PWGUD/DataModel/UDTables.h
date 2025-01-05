@@ -429,14 +429,9 @@ DECLARE_SOA_TABLE_VERSIONED(UDFwdTracksExtra_001, "AOD", "UDFWDTRACKEXTRA", 1,
 
 using UDFwdTracksExtra = UDFwdTracksExtra_001;
 
-// Tangent lambda information
-DECLARE_SOA_TABLE(UDFwdTracksTgl, "AOD", "UDFWDTRACKTGL",
-                  fwdtrack::Tgl);
-
 using UDFwdTrack = UDFwdTracks::iterator;
 using UDFwdIndex = UDFwdIndices::iterator;
 using UDFwdTrackExtra = UDFwdTracksExtra::iterator;
-using UDFwdTrackTgl = UDFwdTracksTgl::iterator;
 
 DECLARE_SOA_TABLE(UDFwdTracksProp, "AOD", "UDFWDTRACKPROP",
                   o2::soa::Index<>, fwdtrack::CollisionId, fwdtrack::TrackType,
