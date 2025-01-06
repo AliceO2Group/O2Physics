@@ -313,7 +313,7 @@ struct HfCorrelatorLcHadrons {
   /// Lc-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(SelCollisionsWithLc::iterator const& collision,
                    TracksData const& tracks,
-                   CandidatesLcData const& candidates)
+                   CandidatesLcData const& candidates, aod::BCsWithTimestamps const&)
   {
     if (candidates.size() == 0) {
       return;

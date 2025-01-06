@@ -110,7 +110,6 @@ struct TrackPropagation {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     // Histograms for track tuner
     AxisSpec axisBinsDCA = {600, -0.15f, 0.15f, "#it{dca}_{xy} (cm)"};
     registry.add("hDCAxyVsPtRec", "hDCAxyVsPtRec", kTH2F, {axisBinsDCA, axisPtQA});
@@ -145,6 +144,15 @@ struct TrackPropagation {
     if (runNumber == bc.runNumber()) {
       return;
     }
+
+    // load matLUT for this timestamp
+    if (!lut) {
+      LOG(info) << "Loading material look-up table for timestamp: " << bc.timestamp();
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(lutPath, bc.timestamp()));
+    } else {
+      LOG(info) << "Material look-up table already in place. Not reloading.";
+    }
+
     grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
     LOG(info) << "Setting magnetic field to current " << grpmag->getL3Current() << " A for run " << bc.runNumber() << " from its GRPMagField CCDB object";
     o2::base::Propagator::initFieldFromGRP(grpmag);
