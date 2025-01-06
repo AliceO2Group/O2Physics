@@ -22,6 +22,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Framework/StaticFor.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -110,7 +111,7 @@ struct NeutronProtonCorrZdc {
   template <int side, typename Z>
   void fillZDCHistos(const float centr, const Z& zdc)
   {
-    static constexpr std::string SubDir[2] = {"ASide/", "CSide/"};
+    static constexpr std::string SubDir[] = {"ASide/", "CSide/"};
 
     std::array<std::array<float, 4>, 2> znEnergyResponse = {zdc.energySectorZNA(), zdc.energySectorZNC()};
     std::array<std::array<float, 4>, 2> zpEnergyResponse = {zdc.energySectorZPA(), zdc.energySectorZPC()};
