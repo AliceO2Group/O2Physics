@@ -111,7 +111,7 @@ struct NeutronProtonCorrZdc {
   template <int side, typename Z>
   void fillZDCHistos(const float centr, const Z& zdc)
   {
-    static constexpr std::string SubDir[] = {"ASide/", "CSide/"};
+    static constexpr std::string_view SubDir[] = {"ASide/", "CSide/"};
 
     std::array<std::array<float, 4>, 2> znEnergyResponse = {zdc.energySectorZNA(), zdc.energySectorZNC()};
     std::array<std::array<float, 4>, 2> zpEnergyResponse = {zdc.energySectorZPA(), zdc.energySectorZPC()};
