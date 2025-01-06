@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file FemtoUtils.h
+/// \file femtoUtils.h
 /// \brief Utilities for the FemtoUniverse framework
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
@@ -23,10 +23,10 @@
 #include "Framework/ASoAHelpers.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-namespace o2::analysis::femtoUniverse
+namespace o2::analysis::femto_universe
 {
 
-enum kDetector { kTPC,
+enum KDetector { kTPC,
                  kTPCTOF,
                  kNdetectors };
 
@@ -51,19 +51,19 @@ int getPIDselection(float nSigma, std::vector<float> vNsigma)
 /// \param nSpecies number of available selected species (output from cutculator), i.e. how many particle types were saved in the skimmed data
 /// \param nSigma Nsigma selection for PID (e.g. 3, for NsigmaTPC < 3 or NsigmaTPCTOF < 3)
 /// \param vNsigma vector with available n-sigma selections for PID (to check if chosen nSigma value is avialable + size to get the bit number)
-/// \param kDetector enum corresponding to the PID technique
+/// \param KDetector enum corresponding to the PID technique
 /// \return Whether the PID selection specified in the vectors is fulfilled
-bool isPIDSelected(aod::femtouniverseparticle::cutContainerType pidcut,
+bool isPIDSelected(aod::femtouniverseparticle::CutContainerType pidcut,
                    int vSpecies,
                    int nSpecies,
                    float nSigma,
                    std::vector<float> vNsigma,
-                   kDetector iDet)
+                   KDetector iDet)
 {
   int iNsigma = getPIDselection(nSigma, vNsigma);
-  int nDet = static_cast<int>(kDetector::kNdetectors);
-  int bit_to_check = 1 + (vNsigma.size() - (iNsigma + 1)) * nDet * nSpecies + (nSpecies - (vSpecies + 1)) * nSpecies + (nDet - 1 - iDet);
-  return ((pidcut >> (bit_to_check)) & 1) == 1;
+  int nDet = static_cast<int>(KDetector::kNdetectors);
+  int bitToCheck = 1 + (vNsigma.size() - (iNsigma + 1)) * nDet * nSpecies + (nSpecies - (vSpecies + 1)) * nSpecies + (nDet - 1 - iDet);
+  return ((pidcut >> (bitToCheck)) & 1) == 1;
 };
 
 /// function that checks whether the PID selection specified in the vectors is fulfilled, depending on the momentum TPC or TPC+TOF PID is conducted
@@ -76,7 +76,7 @@ bool isPIDSelected(aod::femtouniverseparticle::cutContainerType pidcut,
 /// \param nSigmaTPC Number of TPC sigmas for selection
 /// \param nSigmaTPCTOF Number of TPC+TOF sigmas for selection (circular selection)
 /// \return Whether the PID selection is fulfilled
-bool isFullPIDSelected(aod::femtouniverseparticle::cutContainerType const& pidCut,
+bool isFullPIDSelected(aod::femtouniverseparticle::CutContainerType const& pidCut,
                        float momentum,
                        float pidThresh,
                        int vSpecies,
@@ -88,10 +88,10 @@ bool isFullPIDSelected(aod::femtouniverseparticle::cutContainerType const& pidCu
   bool pidSelection = true;
   if (momentum < pidThresh) {
     /// TPC PID only
-    pidSelection = isPIDSelected(pidCut, vSpecies, nSpecies, nSigmaTPC, vNsigma, kDetector::kTPC);
+    pidSelection = isPIDSelected(pidCut, vSpecies, nSpecies, nSigmaTPC, vNsigma, KDetector::kTPC);
   } else {
     /// TPC + TOF PID
-    pidSelection = isPIDSelected(pidCut, vSpecies, nSpecies, nSigmaTPCTOF, vNsigma, kDetector::kTPCTOF);
+    pidSelection = isPIDSelected(pidCut, vSpecies, nSpecies, nSigmaTPCTOF, vNsigma, KDetector::kTPCTOF);
   }
   return pidSelection;
 };
@@ -101,31 +101,31 @@ int checkDaughterType(o2::aod::femtouniverseparticle::ParticleType partType, int
   int partOrigin = 0;
   if (partType == o2::aod::femtouniverseparticle::ParticleType::kTrack) {
 
-    switch (abs(motherPDG)) {
+    switch (std::abs(motherPDG)) {
       case 3122:
-        partOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kDaughterLambda;
+        partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterLambda;
         break;
       case 3222:
-        partOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kDaughterSigmaplus;
+        partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughterSigmaplus;
         break;
       default:
-        partOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kDaughter;
+        partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughter;
     } // switch
 
   } else if (partType == o2::aod::femtouniverseparticle::ParticleType::kV0) {
-    partOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kDaughter;
+    partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughter;
 
   } else if (partType == o2::aod::femtouniverseparticle::ParticleType::kV0Child) {
-    partOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kDaughter;
+    partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughter;
 
   } else if (partType == o2::aod::femtouniverseparticle::ParticleType::kCascade) {
-    partOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kDaughter;
+    partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughter;
 
   } else if (partType == o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor) {
-    partOrigin = aod::femtouniverseMCparticle::ParticleOriginMCTruth::kDaughter;
+    partOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kDaughter;
   }
   return partOrigin;
 };
 
-} // namespace o2::analysis::femtoUniverse
+} // namespace o2::analysis::femto_universe
 #endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUTILS_H_

@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file FemtoUniverseCascadeSelection.h
-/// \brief Definition of the femtoUniverseCascadeSelection
+/// \brief Definition of the femto_universe_cascade_selection
 /// \author Valentina Mantovani Sarti, TU München valentina.mantovani-sarti@tum.de
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
@@ -32,9 +32,9 @@
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/PID.h"
 
-namespace o2::analysis::femtoUniverse // o2-linter: disable=name/namespace
+namespace o2::analysis::femto_universe // o2-linter: disable=name/namespace
 {
-namespace femtoUniverseCascadeSelection // o2-linter: disable=name/namespace
+namespace femto_universe_cascade_selection // o2-linter: disable=name/namespace
 {
 /// The different selections this task is capable of doing
 enum CascadeSel {
@@ -72,12 +72,12 @@ enum ChildTrackType { kPosTrack,
   kNegPID,
 }; /// Position in the full VO cut container (for cutculator)
 */
-} // namespace femtoUniverseCascadeSelection
+} // namespace femto_universe_cascade_selection
 
 /// \class FemtoUniverseCascadeSelection
 /// \brief Cut class to contain and execute all cuts applied to Cascades
 class FemtoUniverseCascadeSelection
-  : public FemtoUniverseObjectSelection<float, femtoUniverseCascadeSelection::CascadeSel>
+  : public FemtoUniverseObjectSelection<float, femto_universe_cascade_selection::CascadeSel>
 {
   // do cutculatora
 
@@ -88,7 +88,7 @@ class FemtoUniverseCascadeSelection
   }
 
   /// Initializes histograms for the task
-  template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, o2::aod::femtouniverseparticle::ParticleType bach, typename cutContainerType>
+  template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, o2::aod::femtouniverseparticle::ParticleType bach, typename CutContainerType>
   void init(HistogramRegistry* registry, bool isSelectCascOmega = false);
 
   template <typename Col, typename Casc, typename Track>
@@ -101,27 +101,27 @@ class FemtoUniverseCascadeSelection
   void fillQA(Col const& col, Casc const& cascade, Track const& posTrack, Track const& negTrack, Track const& bachTrack);
 
   template <typename T1, typename T2>
-  void setChildCuts(femtoUniverseCascadeSelection::ChildTrackType child, T1 selVal,
-                    T2 selVar, femtoUniverseSelection::SelectionType selType)
+  void setChildCuts(femto_universe_cascade_selection::ChildTrackType child, T1 selVal,
+                    T2 selVar, femto_universe_selection::SelectionType selType)
   {
-    if (child == femtoUniverseCascadeSelection::kPosTrack) {
+    if (child == femto_universe_cascade_selection::kPosTrack) {
       posDaughTrack.setSelection(selVal, selVar, selType);
-    } else if (child == femtoUniverseCascadeSelection::kNegTrack) {
+    } else if (child == femto_universe_cascade_selection::kNegTrack) {
       negDaughTrack.setSelection(selVal, selVar, selType);
-    } else if (child == femtoUniverseCascadeSelection::kBachTrack) {
+    } else if (child == femto_universe_cascade_selection::kBachTrack) {
       bachTrackSel.setSelection(selVal, selVar, selType);
     }
   }
 
   template <typename T>
-  void setChildPIDSpecies(femtoUniverseCascadeSelection::ChildTrackType child,
+  void setChildPIDSpecies(femto_universe_cascade_selection::ChildTrackType child,
                           T& pids)
   {
-    if (child == femtoUniverseCascadeSelection::kPosTrack) {
+    if (child == femto_universe_cascade_selection::kPosTrack) {
       posDaughTrack.setPIDSpecies(pids);
-    } else if (child == femtoUniverseCascadeSelection::kNegTrack) {
+    } else if (child == femto_universe_cascade_selection::kNegTrack) {
       negDaughTrack.setPIDSpecies(pids);
-    } else if (child == femtoUniverseCascadeSelection::kBachTrack) {
+    } else if (child == femto_universe_cascade_selection::kBachTrack) {
       bachTrackSel.setPIDSpecies(pids);
     }
   }
@@ -130,7 +130,7 @@ class FemtoUniverseCascadeSelection
   /// \param iSel Track selection variable to be examined
   /// \param prefix Additional prefix for the name of the configurable
   /// \param suffix Additional suffix for the name of the configurable
-  static std::string getSelectionName(femtoUniverseCascadeSelection::CascadeSel iSel,
+  static std::string getSelectionName(femto_universe_cascade_selection::CascadeSel iSel,
                                       std::string_view prefix = "",
                                       std::string_view suffix = "")
   {
@@ -144,7 +144,7 @@ class FemtoUniverseCascadeSelection
   /// for consistent description of the configurables
   /// \param iSel Track selection variable to be examined
   /// \param prefix Additional prefix for the output of the configurable
-  static std::string getSelectionHelper(femtoUniverseCascadeSelection::CascadeSel iSel,
+  static std::string getSelectionHelper(femto_universe_cascade_selection::CascadeSel iSel,
                                         std::string_view prefix = "")
   {
     std::string outString = static_cast<std::string>(prefix);
@@ -235,28 +235,28 @@ class FemtoUniverseCascadeSelection
     "kV0MassMin", "V0MassMax"}; ///< Name of the different
                                 ///< selections
 
-  static constexpr femtoUniverseSelection::SelectionType
+  static constexpr femto_universe_selection::SelectionType
     mSelectionTypes[kNcascadeSelection]{
-      femtoUniverseSelection::kEqual,      // sign
-      femtoUniverseSelection::kLowerLimit, // pt min
-      femtoUniverseSelection::kUpperLimit, // pt max
-      femtoUniverseSelection::kUpperLimit, // eta max
-      femtoUniverseSelection::kUpperLimit, // DCA v0 daughters max
-      femtoUniverseSelection::kLowerLimit, // v0 cos PA min
-      femtoUniverseSelection::kLowerLimit, // v0 tran rad min
-      femtoUniverseSelection::kUpperLimit, // v0 tran rad max
-      femtoUniverseSelection::kUpperLimit, // v0 maximum distance of decay vertex to PV
-      femtoUniverseSelection::kUpperLimit, // DCA cascade daughters max
-      femtoUniverseSelection::kLowerLimit, // cascade cos PA min
-      femtoUniverseSelection::kLowerLimit, // cascade tran rad min
-      femtoUniverseSelection::kUpperLimit, // cascade tran rad max
-      femtoUniverseSelection::kUpperLimit, // cascade maximum distance of decay vertex to PV
-      femtoUniverseSelection::kLowerLimit, // DCA pos to PV max
-      femtoUniverseSelection::kLowerLimit, // DCA neg to PV max
-      femtoUniverseSelection::kLowerLimit, // DCA bach to PV max
-      femtoUniverseSelection::kLowerLimit, // DCA v0 to PV max
-      femtoUniverseSelection::kLowerLimit, // v0 mass min
-      femtoUniverseSelection::kUpperLimit, // v0 mass max
+      femto_universe_selection::kEqual,      // sign
+      femto_universe_selection::kLowerLimit, // pt min
+      femto_universe_selection::kUpperLimit, // pt max
+      femto_universe_selection::kUpperLimit, // eta max
+      femto_universe_selection::kUpperLimit, // DCA v0 daughters max
+      femto_universe_selection::kLowerLimit, // v0 cos PA min
+      femto_universe_selection::kLowerLimit, // v0 tran rad min
+      femto_universe_selection::kUpperLimit, // v0 tran rad max
+      femto_universe_selection::kUpperLimit, // v0 maximum distance of decay vertex to PV
+      femto_universe_selection::kUpperLimit, // DCA cascade daughters max
+      femto_universe_selection::kLowerLimit, // cascade cos PA min
+      femto_universe_selection::kLowerLimit, // cascade tran rad min
+      femto_universe_selection::kUpperLimit, // cascade tran rad max
+      femto_universe_selection::kUpperLimit, // cascade maximum distance of decay vertex to PV
+      femto_universe_selection::kLowerLimit, // DCA pos to PV max
+      femto_universe_selection::kLowerLimit, // DCA neg to PV max
+      femto_universe_selection::kLowerLimit, // DCA bach to PV max
+      femto_universe_selection::kLowerLimit, // DCA v0 to PV max
+      femto_universe_selection::kLowerLimit, // v0 mass min
+      femto_universe_selection::kUpperLimit, // v0 mass max
     }; ///< Map to match a variable with
        ///< its type
 
@@ -283,9 +283,9 @@ class FemtoUniverseCascadeSelection
     "Maximum V0 mass"}; ///< Helper information for the
                         ///< different selections
 
-}; // namespace femtoUniverse
+}; // namespace femto_universe
 
-template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, o2::aod::femtouniverseparticle::ParticleType bach, typename cutContainerType>
+template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, o2::aod::femtouniverseparticle::ParticleType bach, typename CutContainerType>
 void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry, bool isSelectCascOmega)
 {
 
@@ -308,22 +308,22 @@ void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry, bool isSel
     /// \todo this should be an automatic check in the parent class, and the
     /// return type should be templated
     size_t nSelections = getNSelections();
-    if (nSelections > 17 * sizeof(cutContainerType)) {
+    if (nSelections > 17 * sizeof(CutContainerType)) {
       LOG(fatal) << "FemtoUniverseCascadeCuts: Number of selections to large for your "
                     "container - quitting!";
     }
 
     posDaughTrack.init<aod::femtouniverseparticle::ParticleType::kV0Child,
                        aod::femtouniverseparticle::TrackType::kPosChild,
-                       aod::femtouniverseparticle::cutContainerType>(
+                       aod::femtouniverseparticle::CutContainerType>(
       mHistogramRegistry);
     negDaughTrack.init<aod::femtouniverseparticle::ParticleType::kV0Child,
                        aod::femtouniverseparticle::TrackType::kNegChild,
-                       aod::femtouniverseparticle::cutContainerType>(
+                       aod::femtouniverseparticle::CutContainerType>(
       mHistogramRegistry);
     bachTrackSel.init<aod::femtouniverseparticle::ParticleType::kCascadeBachelor,
                       aod::femtouniverseparticle::TrackType::kBachelor,
-                      aod::femtouniverseparticle::cutContainerType>(
+                      aod::femtouniverseparticle::CutContainerType>(
       mHistogramRegistry);
 
     // V0 (Lambda)
@@ -351,63 +351,63 @@ void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry, bool isSel
 
   /// check whether the most open cuts are fulfilled - most of this should have
   /// already be done by the filters
-  nPtCascadeMinSel = getNSelections(femtoUniverseCascadeSelection::kCascadepTMin);
-  nPtCascadeMaxSel = getNSelections(femtoUniverseCascadeSelection::kCascadepTMax);
-  nEtaCascadeMaxSel = getNSelections(femtoUniverseCascadeSelection::kCascadeetaMax);
-  nDCAV0DaughMax = getNSelections(femtoUniverseCascadeSelection::kCascadeV0DCADaughMax);
-  nCPAV0Min = getNSelections(femtoUniverseCascadeSelection::kCascadeV0CPAMin);
-  nTranRadV0Min = getNSelections(femtoUniverseCascadeSelection::kCascadeV0TranRadMin);
-  nTranRadV0Max = getNSelections(femtoUniverseCascadeSelection::kCascadeV0TranRadMax);
-  nV0DecVtxMax = getNSelections(femtoUniverseCascadeSelection::kCascadeV0DecVtxMax);
-  nDCACascadeDaughMax = getNSelections(femtoUniverseCascadeSelection::kCascadeDCADaughMax);
-  nCPACascadeMin = getNSelections(femtoUniverseCascadeSelection::kCascadeCPAMin);
-  nTranRadCascadeMin = getNSelections(femtoUniverseCascadeSelection::kCascadeTranRadMin);
-  nTranRadCascadeMax = getNSelections(femtoUniverseCascadeSelection::kCascadeTranRadMax);
-  nDecVtxMax = getNSelections(femtoUniverseCascadeSelection::kCascadeDecVtxMax);
-  nDCAPosToPV = getNSelections(femtoUniverseCascadeSelection::kCascadeDCAPosToPV);
-  nDCANegToPV = getNSelections(femtoUniverseCascadeSelection::kCascadeDCANegToPV);
-  nDCABachToPV = getNSelections(femtoUniverseCascadeSelection::kCascadeDCABachToPV);
-  nDCAV0ToPV = getNSelections(femtoUniverseCascadeSelection::kCascadeDCAV0ToPV);
+  nPtCascadeMinSel = getNSelections(femto_universe_cascade_selection::kCascadepTMin);
+  nPtCascadeMaxSel = getNSelections(femto_universe_cascade_selection::kCascadepTMax);
+  nEtaCascadeMaxSel = getNSelections(femto_universe_cascade_selection::kCascadeetaMax);
+  nDCAV0DaughMax = getNSelections(femto_universe_cascade_selection::kCascadeV0DCADaughMax);
+  nCPAV0Min = getNSelections(femto_universe_cascade_selection::kCascadeV0CPAMin);
+  nTranRadV0Min = getNSelections(femto_universe_cascade_selection::kCascadeV0TranRadMin);
+  nTranRadV0Max = getNSelections(femto_universe_cascade_selection::kCascadeV0TranRadMax);
+  nV0DecVtxMax = getNSelections(femto_universe_cascade_selection::kCascadeV0DecVtxMax);
+  nDCACascadeDaughMax = getNSelections(femto_universe_cascade_selection::kCascadeDCADaughMax);
+  nCPACascadeMin = getNSelections(femto_universe_cascade_selection::kCascadeCPAMin);
+  nTranRadCascadeMin = getNSelections(femto_universe_cascade_selection::kCascadeTranRadMin);
+  nTranRadCascadeMax = getNSelections(femto_universe_cascade_selection::kCascadeTranRadMax);
+  nDecVtxMax = getNSelections(femto_universe_cascade_selection::kCascadeDecVtxMax);
+  nDCAPosToPV = getNSelections(femto_universe_cascade_selection::kCascadeDCAPosToPV);
+  nDCANegToPV = getNSelections(femto_universe_cascade_selection::kCascadeDCANegToPV);
+  nDCABachToPV = getNSelections(femto_universe_cascade_selection::kCascadeDCABachToPV);
+  nDCAV0ToPV = getNSelections(femto_universe_cascade_selection::kCascadeDCAV0ToPV);
   // dodac V0 mass min i max
 
-  pTCascadeMin = getMinimalSelection(femtoUniverseCascadeSelection::kCascadepTMin,
-                                     femtoUniverseSelection::kLowerLimit);
-  pTCascadeMax = getMinimalSelection(femtoUniverseCascadeSelection::kCascadepTMax,
-                                     femtoUniverseSelection::kUpperLimit);
-  etaCascadeMax = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeetaMax,
-                                      femtoUniverseSelection::kAbsUpperLimit);
-  fDCAV0DaughMax = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeV0DCADaughMax,
-                                       femtoUniverseSelection::kUpperLimit);
-  fCPAV0Min = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeV0CPAMin,
-                                  femtoUniverseSelection::kLowerLimit);
-  fTranRadV0Min = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeV0TranRadMin,
-                                      femtoUniverseSelection::kLowerLimit);
-  fTranRadV0Max = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeV0TranRadMax,
-                                      femtoUniverseSelection::kUpperLimit);
-  fV0DecVtxMax = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeV0DecVtxMax,
-                                     femtoUniverseSelection::kAbsUpperLimit);
-  fDCACascadeDaughMax = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeDCADaughMax,
-                                            femtoUniverseSelection::kUpperLimit);
-  fCPACascadeMin = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeCPAMin,
-                                       femtoUniverseSelection::kLowerLimit);
-  fTranRadCascadeMin = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeTranRadMin,
-                                           femtoUniverseSelection::kLowerLimit);
-  fTranRadCascadeMax = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeTranRadMax,
-                                           femtoUniverseSelection::kUpperLimit);
-  fDecVtxMax = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeDecVtxMax,
-                                   femtoUniverseSelection::kAbsUpperLimit);
-  fDCAPosToPV = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeDCAPosToPV,
-                                    femtoUniverseSelection::kLowerLimit);
-  fDCANegToPV = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeDCANegToPV,
-                                    femtoUniverseSelection::kLowerLimit);
-  fDCABachToPV = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeDCABachToPV,
-                                     femtoUniverseSelection::kLowerLimit);
-  fDCAV0ToPV = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeDCAV0ToPV,
-                                   femtoUniverseSelection::kLowerLimit);
-  fV0InvMassLowLimit = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeV0MassMin,
-                                           femtoUniverseSelection::kLowerLimit);
-  fV0InvMassUpLimit = getMinimalSelection(femtoUniverseCascadeSelection::kCascadeV0MassMax,
-                                          femtoUniverseSelection::kUpperLimit);
+  pTCascadeMin = getMinimalSelection(femto_universe_cascade_selection::kCascadepTMin,
+                                     femto_universe_selection::kLowerLimit);
+  pTCascadeMax = getMinimalSelection(femto_universe_cascade_selection::kCascadepTMax,
+                                     femto_universe_selection::kUpperLimit);
+  etaCascadeMax = getMinimalSelection(femto_universe_cascade_selection::kCascadeetaMax,
+                                      femto_universe_selection::kAbsUpperLimit);
+  fDCAV0DaughMax = getMinimalSelection(femto_universe_cascade_selection::kCascadeV0DCADaughMax,
+                                       femto_universe_selection::kUpperLimit);
+  fCPAV0Min = getMinimalSelection(femto_universe_cascade_selection::kCascadeV0CPAMin,
+                                  femto_universe_selection::kLowerLimit);
+  fTranRadV0Min = getMinimalSelection(femto_universe_cascade_selection::kCascadeV0TranRadMin,
+                                      femto_universe_selection::kLowerLimit);
+  fTranRadV0Max = getMinimalSelection(femto_universe_cascade_selection::kCascadeV0TranRadMax,
+                                      femto_universe_selection::kUpperLimit);
+  fV0DecVtxMax = getMinimalSelection(femto_universe_cascade_selection::kCascadeV0DecVtxMax,
+                                     femto_universe_selection::kAbsUpperLimit);
+  fDCACascadeDaughMax = getMinimalSelection(femto_universe_cascade_selection::kCascadeDCADaughMax,
+                                            femto_universe_selection::kUpperLimit);
+  fCPACascadeMin = getMinimalSelection(femto_universe_cascade_selection::kCascadeCPAMin,
+                                       femto_universe_selection::kLowerLimit);
+  fTranRadCascadeMin = getMinimalSelection(femto_universe_cascade_selection::kCascadeTranRadMin,
+                                           femto_universe_selection::kLowerLimit);
+  fTranRadCascadeMax = getMinimalSelection(femto_universe_cascade_selection::kCascadeTranRadMax,
+                                           femto_universe_selection::kUpperLimit);
+  fDecVtxMax = getMinimalSelection(femto_universe_cascade_selection::kCascadeDecVtxMax,
+                                   femto_universe_selection::kAbsUpperLimit);
+  fDCAPosToPV = getMinimalSelection(femto_universe_cascade_selection::kCascadeDCAPosToPV,
+                                    femto_universe_selection::kLowerLimit);
+  fDCANegToPV = getMinimalSelection(femto_universe_cascade_selection::kCascadeDCANegToPV,
+                                    femto_universe_selection::kLowerLimit);
+  fDCABachToPV = getMinimalSelection(femto_universe_cascade_selection::kCascadeDCABachToPV,
+                                     femto_universe_selection::kLowerLimit);
+  fDCAV0ToPV = getMinimalSelection(femto_universe_cascade_selection::kCascadeDCAV0ToPV,
+                                   femto_universe_selection::kLowerLimit);
+  fV0InvMassLowLimit = getMinimalSelection(femto_universe_cascade_selection::kCascadeV0MassMin,
+                                           femto_universe_selection::kLowerLimit);
+  fV0InvMassUpLimit = getMinimalSelection(femto_universe_cascade_selection::kCascadeV0MassMax,
+                                          femto_universe_selection::kUpperLimit);
 
   isCascOmega = isSelectCascOmega;
 }
@@ -581,6 +581,6 @@ void FemtoUniverseCascadeSelection::fillQA(Col const& /*col*/, Casc const& /*cas
                       aod::femtouniverseparticle::TrackType::kBachelor>(bachTrack);
 }
 
-} // namespace o2::analysis::femtoUniverse
+} // namespace o2::analysis::femto_universe
 
 #endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECASCADESELECTION_H_

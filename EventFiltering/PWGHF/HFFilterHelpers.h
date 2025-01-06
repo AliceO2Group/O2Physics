@@ -118,7 +118,14 @@ enum PIDSpecies {
   kKa,
   kAntiKa,
   kPr,
-  kAntiPr
+  kAntiPr,
+  kDe,
+  kAntiDe
+};
+
+enum trackSpecies {
+  kProtonForFemto,
+  kDeuteronForFemto
 };
 
 enum V0Species {
@@ -155,6 +162,7 @@ static const std::tuple pdgCharmDaughters{
 constexpr float massPi = o2::constants::physics::MassPiPlus;
 constexpr float massKa = o2::constants::physics::MassKPlus;
 constexpr float massProton = o2::constants::physics::MassProton;
+constexpr float massDeuteron = o2::constants::physics::MassDeuteron;
 constexpr float massGamma = o2::constants::physics::MassGamma;
 constexpr float massK0S = o2::constants::physics::MassK0Short;
 constexpr float massLambda = o2::constants::physics::MassLambda0;
@@ -188,29 +196,29 @@ static const std::array<o2::framework::AxisSpec, kNBeautyParticles> massAxisB = 
 
 // default values for configurables
 // channels to trigger on for femto
-constexpr int activeFemtoChannels[1][5] = {{1, 1, 1, 1, 0}}; // pD0, pD+, pDs, pLc, pXic
-static const std::vector<std::string> labelsColumnsFemtoChannels = {"protonDZero", "protonDPlus", "protonDs", "protonLc", "protonXic"};
+constexpr int activeFemtoChannels[2][5] = {{1, 1, 1, 1, 0},  // pD0, pD+, pDs, pLc, pXic
+                                           {0, 0, 0, 1, 0}}; // only for deLc
+static const std::vector<std::string> labelsColumnsFemtoChannels = {"DZero", "DPlus", "Ds", "Lc", "Xic"};
+static const std::vector<std::string> labelsRowsFemtoChannels = {"protonCharmFemto", "deuteronCharmFemto"};
+constexpr float cutsPtThresholdsForFemto[1][2] = {{8., 1.4}}; // proton, deuteron
+static const std::vector<std::string> labelsColumnsPtThresholdsForFemto = {"Proton", "Deuteron"};
 
 // min and max pT for all tracks combined  (except for V0 and cascades)
-constexpr float cutsPt[2][6] = {{1., 0.1, 0.8, 0.5, 0.1, 0.2},
-                                {100000., 100000., 5., 100000., 100000., 100000.}}; // beauty, D*, femto, SigmaC, Xic*+ -> SigmaC++K-
-static const std::vector<std::string> labelsColumnsCutsPt = {"Beauty", "DstarPlus", "Femto", "CharmBaryon", "SoftPiSigmaC", "SoftKaonXicResoToSigmaC"};
+constexpr float cutsPt[2][7] = {{1., 0.1, 0.8, 0.5, 0.1, 0.2, 0.4},
+                                {100000., 100000., 5., 100000., 100000., 100000., 100000.}}; // beauty, D*, femto, SigmaC, Xic*+ -> SigmaC++K-
+static const std::vector<std::string> labelsColumnsCutsPt = {"Beauty", "DstarPlus", "PrForFemto", "CharmBaryon", "SoftPiSigmaC", "SoftKaonXicResoToSigmaC", "DeForFemto"};
 static const std::vector<std::string> labelsRowsCutsPt = {"Minimum", "Maximum"};
 
 // PID cuts
-constexpr float cutsNsigma[3][6] = {{3., 3., 3., 5., 3., 3.},             // TPC proton from Lc, pi/K from D0, K from 3-prong, femto, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon
-                                    {3., 3., 3., 2.5, 3., 3.},            // TOF proton from Lc, pi/K from D0, K from 3-prong, femto, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon
-                                    {999., 999., 999., 2.5, 999., 999.}}; // Sum in quadrature of TPC and TOF (used only for femto for pT < 4 GeV/c)
-static const std::vector<std::string> labelsColumnsNsigma = {"PrFromLc", "PiKaFromDZero", "KaFrom3Prong", "Femto", "PiKaFromCharmBaryon", "SoftKaonFromXicResoToSigmaC"};
+constexpr float cutsNsigma[3][7] = {{3., 3., 3., 5., 3., 3., 5.},             // TPC proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron
+                                    {3., 3., 3., 2.5, 3., 3., 5.},            // TOF proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron
+                                    {999., 999., 999., 2.5, 999., 999., 5.}}; // Sum in quadrature of TPC and TOF (used only for femto selected proton and deuteron for pT < 4 GeV/c)
+static const std::vector<std::string> labelsColumnsNsigma = {"PrFromLc", "PiKaFromDZero", "KaFrom3Prong", "PrForFemto", "PiKaFromCharmBaryon", "SoftKaonFromXicResoToSigmaC", "DeForFemto"};
 static const std::vector<std::string> labelsRowsNsigma = {"TPC", "TOF", "Comb"};
 
 // high pt
 constexpr float cutsHighPtThresholds[1][2] = {{8., 8.}}; // 2-prongs, 3-prongs
 static const std::vector<std::string> labelsColumnsHighPtThresholds = {"2Prongs", "3Prongs"};
-
-// beauty
-constexpr float cutsDeltaMassB[1][kNBeautyParticles] = {{0.4, 0.4, 0.4, 0.4, 0.4, 0.4}}; // B+, B0, B0toDstar, Bs, Lb, Xib
-static const std::vector<std::string> labelsColumnsDeltaMassB = {"Bplus", "BZero", "BZeroToDstar", "Bs", "Lb", "Xib"};
 
 namespace hf_trigger_cuts_presel_beauty
 {
@@ -277,6 +285,16 @@ class HfFilterHelper
     mPtThresholdHighPt2Prongs = threshold2Prongs;
     mPtThresholdHighPt3Prongs = threshold3Prongs;
   }
+  void setPtTriggerThresholdsForFemto(float thresholdProtons, float thresholdDeuterons)
+  {
+    mPtThresholdProtonForFemto = thresholdProtons;
+    mPtThresholdDeuteronForFemto = thresholdDeuterons;
+  }
+  void setForceTofForFemto(bool forceTofProtons, bool forceTofDeuterons)
+  {
+    mForceTofProtonForFemto = forceTofProtons;
+    mForceTofDeuteronForFemto = forceTofDeuterons;
+  }
   void setPtBinsSingleTracks(std::vector<double> ptBins) { mPtBinsTracks = ptBins; }
   void setPtBinsBeautyHadrons(std::vector<double> ptBins) { mPtBinsBeautyHadrons = ptBins; }
   void setCutsSingleTrackBeauty(o2::framework::LabeledArray<double> cutsSingleTrack3P, o2::framework::LabeledArray<double> cutsSingleTrack4P)
@@ -284,14 +302,24 @@ class HfFilterHelper
     mCutsSingleTrackBeauty3Prong = cutsSingleTrack3P;
     mCutsSingleTrackBeauty4Prong = cutsSingleTrack4P;
   }
-  void setCutsBplus(o2::framework::LabeledArray<double> cutsBeautyHadrons)
+  void setCutsBhadrons(o2::framework::LabeledArray<double> cutsBplus, o2::framework::LabeledArray<double> cutsB0toDstar, o2::framework::LabeledArray<double> cutsB0, o2::framework::LabeledArray<double> cutsBs, o2::framework::LabeledArray<double> cutsLb, o2::framework::LabeledArray<double> cutsXib)
   {
-    mCutsBplus = cutsBeautyHadrons;
+    mCutsBhad[kBplus] = cutsBplus;
+    mCutsBhad[kB0toDStar] = cutsB0toDstar;
+    mCutsBhad[kB0] = cutsB0;
+    mCutsBhad[kBs] = cutsBs;
+    mCutsBhad[kLb] = cutsLb;
+    mCutsBhad[kXib] = cutsXib;
   }
   void setPtLimitsProtonForFemto(float minPt, float maxPt)
   {
     mPtMinProtonForFemto = minPt;
     mPtMaxProtonForFemto = maxPt;
+  }
+  void setPtLimitsDeuteronForFemto(float minPt, float maxPt)
+  {
+    mPtMinDeuteronForFemto = minPt;
+    mPtMaxDeuteronForFemto = maxPt;
   }
   void setPtLimitsBeautyBachelor(float minPt, float maxPt)
   {
@@ -334,8 +362,8 @@ class HfFilterHelper
     mPtMaxCharmBaryonBachelor = maxPt;
   }
 
-  void setPtThresholdPidStrategyForFemto(float ptThreshold) { mPtThresholdPidStrategyForFemto = ptThreshold; }
   void setNsigmaProtonCutsForFemto(std::array<float, 3> nSigmaCuts) { mNSigmaPrCutsForFemto = nSigmaCuts; }
+  void setNsigmaDeuteronCutsForFemto(std::array<float, 3> nSigmaCuts) { mNSigmaDeCutsForFemto = nSigmaCuts; }
   void setNsigmaProtonCutsForCharmBaryons(float nSigmaTpc, float nSigmaTof)
   {
     mNSigmaTpcPrCutForCharmBaryons = nSigmaTpc;
@@ -411,7 +439,7 @@ class HfFilterHelper
   template <typename T, typename T1, typename T2>
   int8_t isSelectedTrackForSoftPionOrBeauty(const T& track, const T1& trackPar, const T2& dca, const int& whichTrigger);
   template <typename T1, typename T2, typename H2>
-  bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID, bool forceTof);
+  bool isSelectedTrack4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hTPCPID, H2 hTOFPID, const int& trackSpecies);
   template <typename T>
   int8_t isDzeroPreselected(const T& trackPos, const T& trackNeg);
   template <typename T>
@@ -445,9 +473,11 @@ class HfFilterHelper
   template <bool isKaonTrack, typename T>
   bool isSelectedKaonFromXicResoToSigmaC(const T& track);
   template <typename T1, typename T2, typename T3, typename T4>
-  inline bool isSelectedBplus(T1 const& pVecTrack0, T1 const& pVecTrack1, T2 const& dcaTrack0, T2 const& dcaTrack1, const T3& primVtx, const T4& secVtx);
+  inline bool isSelectedBhadron(T1 const& pVecTrack0, T1 const& pVecTrack1, T2 const& dcaTrack0, T2 const& dcaTrack1, const T3& primVtx, const T4& secVtx, const int whichB);
   template <typename T1, typename T2>
-  inline bool isSelectedBplusInMassRange(T1 const& ptCand, T2 const& massCand);
+  inline bool isSelectedBhadronInMassRange(T1 const& ptCand, T2 const& massCand, const int whichB);
+  template <typename T1, typename T2, typename T3>
+  inline bool isSelectedBzeroToDstar(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, const T2& primVtx, const T3& secVtx);
   template <typename T1>
   inline bool isCharmHadronMassInSbRegions(T1 const& massHypo1, T1 const& massHypo2, const float& lowLimitSB, const float& upLimitSB);
 
@@ -460,7 +490,7 @@ class HfFilterHelper
   inline int setVtxConfiguration(T1 vertexer, bool useAbsDCA);
 
   // PID
-  void setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::array<std::string, 6>& ccdbPaths);
+  void setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::array<std::string, 8>& ccdbPaths);
   void setTpcRecalibMaps(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::string& ccdbPath);
 
  private:
@@ -481,74 +511,80 @@ class HfFilterHelper
   int findBin(T1 const& binsPt, T2 value);
 
   // selections
-  std::vector<double> mPtBinsTracks{};                                       // vector of pT bins for single track cuts
-  std::vector<double> mPtBinsBeautyHadrons{};                                // vector of pT bins for beauty hadron candidates
-  o2::framework::LabeledArray<double> mCutsSingleTrackBeauty3Prong{};        // dca selections for the 3-prong b-hadron pion daughter
-  o2::framework::LabeledArray<double> mCutsSingleTrackBeauty4Prong{};        // dca selections for the 4-prong b-hadron pion daughter
-  float mPtMinSoftPionForDstar{0.1};                                         // minimum pt for the D*+ soft pion
-  float mPtMinSoftPionForSigmaC{0.1};                                        // minimum pt for the Σ0,++ soft pion
-  float mPtMaxSoftPionForSigmaC{10000.f};                                    // maximum pt for the Σ0,++ soft pion
-  float mPtMinSoftKaonForXicResoToSigmaC{0.1};                               // minimum pt for the soft kaon of Xic* to SigmaC-Kaon
-  float mPtMaxSoftKaonForXicResoToSigmaC{10000.f};                           // maximum pt for the soft kaon of Xic* to SigmaC-Kaon
-  float mPtMinBeautyBachelor{0.5};                                           // minimum pt for the b-hadron pion daughter
-  float mPtMinProtonForFemto{0.8};                                           // minimum pt for the proton for femto
-  float mPtMinCharmBaryonBachelor{0.5};                                      // minimum pt for the bachelor pion from Xic/Omegac decays
-  float mPtMaxSoftPionForDstar{2.};                                          // maximum pt for the D*+ soft pion
-  float mPtMaxBeautyBachelor{100000.};                                       // maximum pt for the b-hadron pion daughter
-  float mPtMaxProtonForFemto{5.0};                                           // maximum pt for the proton for femto
-  float mPtMaxCharmBaryonBachelor{100000.};                                  // maximum pt for the bachelor pion from Xic/Omegac decays
-  float mPtThresholdPidStrategyForFemto{8.};                                 // pt threshold to change strategy for proton PID for femto
-  float mPtMinSigmaCZero{0.f};                                               // pt min SigmaC0 candidate
-  float mPtMinSigmaC2520Zero{0.f};                                           // pt min SigmaC(2520)0 candidate
-  float mPtMinSigmaCPlusPlus{0.f};                                           // pt min SigmaC++ candidate
-  float mPtMinSigmaC2520PlusPlus{0.f};                                       // pt min SigmaC(2520)++ candidate
-  std::array<float, 3> mNSigmaPrCutsForFemto{3., 3., 3.};                    // cut values for Nsigma TPC, TOF, combined for femto protons
-  float mNSigmaTpcPrCutForCharmBaryons{3.};                                  // maximum Nsigma TPC for protons in Lc and Xic decays
-  float mNSigmaTofPrCutForCharmBaryons{3.};                                  // maximum Nsigma TOF for protons in Lc and Xic decays
-  float mNSigmaTpcKaCutFor3Prongs{3.};                                       // maximum Nsigma TPC for kaons in 3-prong decays
-  float mNSigmaTofKaCutFor3Prongs{3.};                                       // maximum Nsigma TOF for kaons in 3-prong decays
-  float mNSigmaTpcPiKaCutForDzero{3.};                                       // maximum Nsigma TPC for pions/kaons in D0 decays
-  float mNSigmaTofPiKaCutForDzero{3.};                                       // maximum Nsigma TOF for pions/kaons in D0 decays
-  float mDeltaMassMinSigmaCZero{0.155};                                      // minimum delta mass M(pKpipi)-M(pKpi) of SigmaC0 candidates
-  float mDeltaMassMaxSigmaCZero{0.18};                                       // maximum delta mass M(pKpipi)-M(pKpi) of SigmaC0 candidates
-  float mDeltaMassMinSigmaC2520Zero{0.2};                                    // minimum delta mass M(pKpipi)-M(pKpi) of SigmaC(2520)0 candidates
-  float mDeltaMassMaxSigmaC2520Zero{0.26};                                   // maximum delta mass M(pKpipi)-M(pKpi) of SigmaC(2520)0 candidates
-  float mDeltaMassMinSigmaCPlusPlus{0.155};                                  // minimum delta mass M(pKpipi)-M(pKpi) of SigmaC++ candidates
-  float mDeltaMassMaxSigmaCPlusPlus{0.18};                                   // maximum delta mass M(pKpipi)-M(pKpi) of SigmaC++ candidates
-  float mDeltaMassMinSigmaC2520PlusPlus{0.2};                                // minimum delta mass M(pKpipi)-M(pKpi) of SigmaC(2520)++ candidates
-  float mDeltaMassMaxSigmaC2520PlusPlus{0.26};                               // maximum delta mass M(pKpipi)-M(pKpi) of SigmaC(2520)++ candidates
-  float mMinGammaCosinePa{0.85};                                             // minimum cosp for gammas
-  float mMinK0sLambdaCosinePa{0.97};                                         // minimum cosp for K0S and Lambda in charm excited decays
-  float mMinK0sLambdaRadius{0.5};                                            // minimum radius for K0S and Lambda in charm excited decays
-  float mMaxNsigmaPrForLambda{4.};                                           // maximum Nsigma TPC and TOF for protons in Lambda decays
-  float mDeltaMassK0s{0.02};                                                 // delta mass cut for K0S in charm excited decays
-  float mDeltaMassLambda{0.01};                                              // delta mass cut for Lambda in charm excited decays
-  float mMinPtXiBachelor{0.1};                                               // minimum pt for Xi bachelor in Xic/Omegac decays
-  float mMinPtXi{1.};                                                        // minimum pt for Xi in Xic/Omegac decays
-  float mDeltaMassXi{0.01};                                                  // delta mass cut for Xi in Xic/Omegac decays
-  float mDeltaMassLambdaFromXi{0.01};                                        // delta mass cut for Lambda <- Xi in Xic/Omegac decays
-  float mCosPaXi{0.99};                                                      // minimum cosp for Xi in Xic/Omegac decays
-  float mCosPaLambdaFromXi{0.99};                                            // minimum cosp for Xi in Xic/Omegac decays
-  float mMaxDcaXyXi{0.3};                                                    // maximum dca for Xi in Xic/Omegac decays
-  float mMaxNsigmaXiDau{3.};                                                 // maximum Nsigma TPC and TOF for Xi daughter tracks
-  o2::framework::LabeledArray<double> mCutsSingleTrackCharmBaryonBachelor{}; // dca selections for the bachelor pion from Xic/Omegac decays
-  float mNSigmaTpcPiCharmBaryonBachelor{3.};                                 // maximum Nsigma TPC for pions in Xic/Omegac decays
-  float mNSigmaTofPiCharmBaryonBachelor{3.};                                 // maximum Nsigma TOF for pions in Xic/Omegac decays
-  float mNumSigmaDeltaMassCharmHad{2.5};                                     // number of sigmas for delta mass cut for charm hadrons in B and charm excited decays
-  std::array<float, 2> mSigmaPars2Prongs{};                                  // parameters (intercept, slope) for parametrisation of mass sigma vs pT for 2-prongs
-  std::array<float, 2> mDeltaMassPars2Prongs{};                              // parameters (intercept, slope) for parametrisation of mass delta wrt PDG vs pT for 2-prongs
-  std::array<float, 2> mSigmaPars3Prongs{};                                  // parameters (intercept, slope) for parametrisation of mass sigma vs pT for 3-prongs
-  std::array<float, 2> mDeltaMassPars3Prongs{};                              // parameters (intercept, slope) for parametrisation of mass delta wrt PDG vs pT for 3-prongs
-  float mPtThresholdHighPt2Prongs{8.};                                       // threshold for high pT triggers for 2-prongs
-  float mPtThresholdHighPt3Prongs{8.};                                       // threshold for high pT triggers for 3-prongs
-  float mNSigmaTpcKaonFromXicResoToSigmaC{3.};                               // maximum Nsigma TPC for kaons in Xic*->SigmaC-Kaon
-  float mNSigmaTofKaonFromXicResoToSigmaC{3.};                               // maximum Nsigma TOF for kaons in Xic*->SigmaC-Kaon
-  o2::framework::LabeledArray<double> mCutsBplus{};                          // selections for B+ candidates (DeltaMass, CPA, DecayLength, ImpactParameterProduct)
+  std::vector<double> mPtBinsTracks{};                                            // vector of pT bins for single track cuts
+  std::vector<double> mPtBinsBeautyHadrons{};                                     // vector of pT bins for beauty hadron candidates
+  o2::framework::LabeledArray<double> mCutsSingleTrackBeauty3Prong{};             // dca selections for the 3-prong b-hadron pion daughter
+  o2::framework::LabeledArray<double> mCutsSingleTrackBeauty4Prong{};             // dca selections for the 4-prong b-hadron pion daughter
+  float mPtMinSoftPionForDstar{0.1};                                              // minimum pt for the D*+ soft pion
+  float mPtMinSoftPionForSigmaC{0.1};                                             // minimum pt for the Σ0,++ soft pion
+  float mPtMaxSoftPionForSigmaC{10000.f};                                         // maximum pt for the Σ0,++ soft pion
+  float mPtMinSoftKaonForXicResoToSigmaC{0.1};                                    // minimum pt for the soft kaon of Xic* to SigmaC-Kaon
+  float mPtMaxSoftKaonForXicResoToSigmaC{10000.f};                                // maximum pt for the soft kaon of Xic* to SigmaC-Kaon
+  float mPtMinBeautyBachelor{0.5};                                                // minimum pt for the b-hadron pion daughter
+  float mPtMinProtonForFemto{0.8};                                                // minimum pt for the proton for femto
+  float mPtMinDeuteronForFemto{0.8};                                              // minimum pt for the deuteron for femto
+  float mPtMinCharmBaryonBachelor{0.5};                                           // minimum pt for the bachelor pion from Xic/Omegac decays
+  float mPtMaxSoftPionForDstar{2.};                                               // maximum pt for the D*+ soft pion
+  float mPtMaxBeautyBachelor{100000.};                                            // maximum pt for the b-hadron pion daughter
+  float mPtMaxProtonForFemto{5.0};                                                // maximum pt for the proton for femto
+  float mPtMaxDeuteronForFemto{5.0};                                              // maximum pt for the deuteron for femto
+  float mPtMaxCharmBaryonBachelor{100000.};                                       // maximum pt for the bachelor pion from Xic/Omegac decays
+  float mPtThresholdProtonForFemto{8.};                                           // pt threshold to change strategy for proton PID for femto
+  float mPtThresholdDeuteronForFemto{1.4};                                        // pt threshold to change strategy for deuteron PID for femto
+  float mPtMinSigmaCZero{0.f};                                                    // pt min SigmaC0 candidate
+  float mPtMinSigmaC2520Zero{0.f};                                                // pt min SigmaC(2520)0 candidate
+  float mPtMinSigmaCPlusPlus{0.f};                                                // pt min SigmaC++ candidate
+  float mPtMinSigmaC2520PlusPlus{0.f};                                            // pt min SigmaC(2520)++ candidate
+  std::array<float, 3> mNSigmaPrCutsForFemto{3., 3., 3.};                         // cut values for Nsigma TPC, TOF, combined for femto protons
+  std::array<float, 3> mNSigmaDeCutsForFemto{3., 3., 3.};                         // cut values for Nsigma TPC, TOF, combined for femto deuterons
+  float mNSigmaTpcPrCutForCharmBaryons{3.};                                       // maximum Nsigma TPC for protons in Lc and Xic decays
+  float mNSigmaTofPrCutForCharmBaryons{3.};                                       // maximum Nsigma TOF for protons in Lc and Xic decays
+  float mNSigmaTpcKaCutFor3Prongs{3.};                                            // maximum Nsigma TPC for kaons in 3-prong decays
+  float mNSigmaTofKaCutFor3Prongs{3.};                                            // maximum Nsigma TOF for kaons in 3-prong decays
+  float mNSigmaTpcPiKaCutForDzero{3.};                                            // maximum Nsigma TPC for pions/kaons in D0 decays
+  float mNSigmaTofPiKaCutForDzero{3.};                                            // maximum Nsigma TOF for pions/kaons in D0 decays
+  float mDeltaMassMinSigmaCZero{0.155};                                           // minimum delta mass M(pKpipi)-M(pKpi) of SigmaC0 candidates
+  float mDeltaMassMaxSigmaCZero{0.18};                                            // maximum delta mass M(pKpipi)-M(pKpi) of SigmaC0 candidates
+  float mDeltaMassMinSigmaC2520Zero{0.2};                                         // minimum delta mass M(pKpipi)-M(pKpi) of SigmaC(2520)0 candidates
+  float mDeltaMassMaxSigmaC2520Zero{0.26};                                        // maximum delta mass M(pKpipi)-M(pKpi) of SigmaC(2520)0 candidates
+  float mDeltaMassMinSigmaCPlusPlus{0.155};                                       // minimum delta mass M(pKpipi)-M(pKpi) of SigmaC++ candidates
+  float mDeltaMassMaxSigmaCPlusPlus{0.18};                                        // maximum delta mass M(pKpipi)-M(pKpi) of SigmaC++ candidates
+  float mDeltaMassMinSigmaC2520PlusPlus{0.2};                                     // minimum delta mass M(pKpipi)-M(pKpi) of SigmaC(2520)++ candidates
+  float mDeltaMassMaxSigmaC2520PlusPlus{0.26};                                    // maximum delta mass M(pKpipi)-M(pKpi) of SigmaC(2520)++ candidates
+  float mMinGammaCosinePa{0.85};                                                  // minimum cosp for gammas
+  float mMinK0sLambdaCosinePa{0.97};                                              // minimum cosp for K0S and Lambda in charm excited decays
+  float mMinK0sLambdaRadius{0.5};                                                 // minimum radius for K0S and Lambda in charm excited decays
+  float mMaxNsigmaPrForLambda{4.};                                                // maximum Nsigma TPC and TOF for protons in Lambda decays
+  float mDeltaMassK0s{0.02};                                                      // delta mass cut for K0S in charm excited decays
+  float mDeltaMassLambda{0.01};                                                   // delta mass cut for Lambda in charm excited decays
+  float mMinPtXiBachelor{0.1};                                                    // minimum pt for Xi bachelor in Xic/Omegac decays
+  float mMinPtXi{1.};                                                             // minimum pt for Xi in Xic/Omegac decays
+  float mDeltaMassXi{0.01};                                                       // delta mass cut for Xi in Xic/Omegac decays
+  float mDeltaMassLambdaFromXi{0.01};                                             // delta mass cut for Lambda <- Xi in Xic/Omegac decays
+  float mCosPaXi{0.99};                                                           // minimum cosp for Xi in Xic/Omegac decays
+  float mCosPaLambdaFromXi{0.99};                                                 // minimum cosp for Xi in Xic/Omegac decays
+  float mMaxDcaXyXi{0.3};                                                         // maximum dca for Xi in Xic/Omegac decays
+  float mMaxNsigmaXiDau{3.};                                                      // maximum Nsigma TPC and TOF for Xi daughter tracks
+  o2::framework::LabeledArray<double> mCutsSingleTrackCharmBaryonBachelor{};      // dca selections for the bachelor pion from Xic/Omegac decays
+  float mNSigmaTpcPiCharmBaryonBachelor{3.};                                      // maximum Nsigma TPC for pions in Xic/Omegac decays
+  float mNSigmaTofPiCharmBaryonBachelor{3.};                                      // maximum Nsigma TOF for pions in Xic/Omegac decays
+  float mNumSigmaDeltaMassCharmHad{2.5};                                          // number of sigmas for delta mass cut for charm hadrons in B and charm excited decays
+  std::array<float, 2> mSigmaPars2Prongs{};                                       // parameters (intercept, slope) for parametrisation of mass sigma vs pT for 2-prongs
+  std::array<float, 2> mDeltaMassPars2Prongs{};                                   // parameters (intercept, slope) for parametrisation of mass delta wrt PDG vs pT for 2-prongs
+  std::array<float, 2> mSigmaPars3Prongs{};                                       // parameters (intercept, slope) for parametrisation of mass sigma vs pT for 3-prongs
+  std::array<float, 2> mDeltaMassPars3Prongs{};                                   // parameters (intercept, slope) for parametrisation of mass delta wrt PDG vs pT for 3-prongs
+  float mPtThresholdHighPt2Prongs{8.};                                            // threshold for high pT triggers for 2-prongs
+  float mPtThresholdHighPt3Prongs{8.};                                            // threshold for high pT triggers for 3-prongs
+  float mNSigmaTpcKaonFromXicResoToSigmaC{3.};                                    // maximum Nsigma TPC for kaons in Xic*->SigmaC-Kaon
+  float mNSigmaTofKaonFromXicResoToSigmaC{3.};                                    // maximum Nsigma TOF for kaons in Xic*->SigmaC-Kaon
+  bool mForceTofProtonForFemto = true;                                            // flag to force TOF PID for protons
+  bool mForceTofDeuteronForFemto = false;                                         // flag to force TOF PID for deuterons
+  std::array<o2::framework::LabeledArray<double>, kNBeautyParticles> mCutsBhad{}; // selections for B-hadron candidates (DeltaMass, CPA, DecayLength, ImpactParameterProduct)
 
   // PID recalibrations
-  int mTpcPidCalibrationOption{0};                        // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
-  std::array<TH3F*, 6> mHistMapPiPrKa{};                  // Map for TPC PID postcalibrations for pions, kaon and protons
-  std::array<std::vector<double>, 6> mBetheBlochPiKaPr{}; // Bethe-Bloch parametrisations for pions, antipions, kaons, antikaons, protons, antiprotons in TPC
+  int mTpcPidCalibrationOption{0};                          // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
+  std::array<TH3F*, 8> mHistMapPiPrKaDe{};                  // Map for TPC PID postcalibrations for pions, kaon, protons and deuterons
+  std::array<std::vector<double>, 8> mBetheBlochPiKaPrDe{}; // Bethe-Bloch parametrisations for pions, antipions, kaons, antikaons, protons, antiprotons, deuterons, antideuterons in TPC
 };
 
 /// Selection of high-pt 2-prong candidates
@@ -652,19 +688,44 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T& track,
   return retValue;
 }
 
-/// Basic selection of proton candidates
+/// Basic selection of proton or deuteron candidates
 /// \param track is a track
 /// \param trackPar is a track parameter
 /// \param activateQA flag to activate the filling of QA histos
 /// \param hProtonTPCPID histo with NsigmaTPC vs. p
 /// \param hProtonTOFPID histo with NsigmaTOF vs. p
-/// \param forceTof flag to force TOF PID
+/// \param trackSpecies flag to choose proton or deuteron
 /// \return true if track passes all cuts
 template <typename T1, typename T2, typename H2>
-inline bool HfFilterHelper::isSelectedProton4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID, bool forceTof)
+inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hTPCPID, H2 hTOFPID, const int& trackSpecies)
 {
   float pt = trackPar.getPt();
-  if (pt < mPtMinProtonForFemto || pt > mPtMaxProtonForFemto) {
+  float ptMin, ptMax, ptThresholdPidStrategy;
+  std::array<float, 3> nSigmaCuts;
+  bool forceTof = false; // flag to force TOF PID
+
+  // Assign particle-specific parameters
+  switch (trackSpecies) {
+    case kProtonForFemto:
+      ptMin = mPtMinProtonForFemto;
+      ptMax = mPtMaxProtonForFemto;
+      nSigmaCuts = mNSigmaPrCutsForFemto;
+      forceTof = mForceTofProtonForFemto;
+      ptThresholdPidStrategy = mPtThresholdProtonForFemto;
+      break;
+    case kDeuteronForFemto:
+      ptMin = mPtMinDeuteronForFemto;
+      ptMax = mPtMaxDeuteronForFemto;
+      nSigmaCuts = mNSigmaDeCutsForFemto;
+      forceTof = mForceTofDeuteronForFemto;
+      ptThresholdPidStrategy = mPtThresholdDeuteronForFemto;
+      break;
+    default:
+      return false; // Unknown particle type
+  }
+
+  // Common selection criteria
+  if (pt < ptMin || pt > ptMax) {
     return false;
   }
 
@@ -675,39 +736,58 @@ inline bool HfFilterHelper::isSelectedProton4Femto(const T1& track, const T2& tr
   if (!track.isGlobalTrack()) {
     return false; // use only global tracks
   }
-
-  float NSigmaTPC = track.tpcNSigmaPr();
-  float NSigmaTOF = track.tofNSigmaPr();
+  // PID evaluation
+  float NSigmaTPC = (trackSpecies == kProtonForFemto) ? track.tpcNSigmaPr() : track.tpcNSigmaDe();
+  float NSigmaTOF = (trackSpecies == kProtonForFemto) ? track.tofNSigmaPr() : track.tofNSigmaDe();
   if (!forceTof && !track.hasTOF()) {
     NSigmaTOF = 0.; // always accepted
   }
 
+  // Apply TPC PID post-calibration(only available for proton, dummy for deuteron)
   if (mTpcPidCalibrationOption == 1) {
-    NSigmaTPC = getTPCPostCalib(track, kPr);
+    NSigmaTPC = getTPCPostCalib(track, trackSpecies == kProtonForFemto ? kPr : kDe);
   } else if (mTpcPidCalibrationOption == 2) {
     if (track.sign() > 0) {
-      NSigmaTPC = getTPCSplineCalib(track, kPr);
+      NSigmaTPC = getTPCSplineCalib(track, trackSpecies == kProtonForFemto ? kPr : kDe);
     } else {
-      NSigmaTPC = getTPCSplineCalib(track, kAntiPr);
+      NSigmaTPC = getTPCSplineCalib(track, trackSpecies == kProtonForFemto ? kAntiPr : kAntiDe);
     }
   }
 
   float NSigma = std::sqrt(NSigmaTPC * NSigmaTPC + NSigmaTOF * NSigmaTOF);
 
-  if (trackPar.getPt() <= mPtThresholdPidStrategyForFemto) {
-    if (NSigma > mNSigmaPrCutsForFemto[2]) {
-      return false;
+  if (trackSpecies == kProtonForFemto) {
+    if (pt <= ptThresholdPidStrategy) {
+      if (NSigma > nSigmaCuts[2]) {
+        return false;
+      }
+    } else {
+      if (std::fabs(NSigmaTPC) > nSigmaCuts[0] || std::fabs(NSigmaTOF) > nSigmaCuts[1]) {
+        return false;
+      }
     }
-  } else {
-    if (std::fabs(NSigmaTPC) > mNSigmaPrCutsForFemto[0] || std::fabs(NSigmaTOF) > mNSigmaPrCutsForFemto[1]) {
-      return false;
+  }
+  // For deuterons: Determine whether to apply TOF based on pt threshold
+  if (trackSpecies == kDeuteronForFemto) {
+    // Apply different PID strategy in different pt range
+    if (pt <= ptThresholdPidStrategy) {
+      if (std::fabs(NSigmaTPC) > nSigmaCuts[0]) { // Use only TPC below the threshold
+        return false;
+      }
+    } else {
+      if (NSigma > nSigmaCuts[2]) { // Use combined TPC and TOF above the threshold
+        return false;
+      }
     }
   }
 
   if (activateQA > 1) {
-    hProtonTPCPID->Fill(track.p(), NSigmaTPC);
-    if (forceTof || track.hasTOF()) {
-      hProtonTOFPID->Fill(track.p(), NSigmaTOF);
+    hTPCPID->Fill(track.p(), NSigmaTPC);
+    if ((forceTof || track.hasTOF())) {
+      if (trackSpecies == kProtonForFemto)
+        hTOFPID->Fill(track.p(), NSigmaTOF);
+      else if (trackSpecies == kDeuteronForFemto && pt > ptThresholdPidStrategy)
+        hTOFPID->Fill(track.p(), NSigmaTOF);
     }
   }
 
@@ -1034,7 +1114,7 @@ inline int8_t HfFilterHelper::isSelectedSigmaCInDeltaMassRange(const T& pTrackSa
   return retValue;
 }
 
-/// Mass selection of Xic candidates to build Lb candidates
+/// Mass selection of Xic candidates to build Xib candidates
 /// \param pTrackSameChargeFirst is the first same-charge track momentum
 /// \param pTrackSameChargeSecond is the second same-charge track momentum
 /// \param pTrackOppositeCharge is the opposite charge track momentum
@@ -1531,9 +1611,9 @@ inline int HfFilterHelper::computeNumberOfCandidates(std::vector<std::vector<T>>
 /// \param ccdbApi is Api for CCDB
 /// \param bunchCrossing is the timestamp of bunchcrossing for the run number
 /// \param ccdbPaths  are the paths on CCDB for pions, antipions, kaons, antikaons, protons, antiprotons
-inline void HfFilterHelper::setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::array<std::string, 6>& ccdbPaths)
+inline void HfFilterHelper::setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::array<std::string, 8>& ccdbPaths)
 {
-  for (int iSpecie{0u}; iSpecie < 6; ++iSpecie) {
+  for (int iSpecie{0u}; iSpecie < 8; ++iSpecie) {
     std::map<std::string, std::string> metadata;
     auto hSpline = ccdbApi.retrieveFromTFileAny<TH1F>(ccdbPaths[iSpecie], metadata, bunchCrossing.timestamp());
 
@@ -1542,12 +1622,12 @@ inline void HfFilterHelper::setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWith
     }
 
     TAxis* axis = hSpline->GetXaxis();
-    mBetheBlochPiKaPr[iSpecie] = {static_cast<double>(hSpline->GetBinContent(axis->FindBin("bb1"))),
-                                  static_cast<double>(hSpline->GetBinContent(axis->FindBin("bb2"))),
-                                  static_cast<double>(hSpline->GetBinContent(axis->FindBin("bb3"))),
-                                  static_cast<double>(hSpline->GetBinContent(axis->FindBin("bb4"))),
-                                  static_cast<double>(hSpline->GetBinContent(axis->FindBin("bb5"))),
-                                  static_cast<double>(hSpline->GetBinContent(axis->FindBin("Resolution")))};
+    mBetheBlochPiKaPrDe[iSpecie] = {static_cast<double>(hSpline->GetBinContent(axis->FindBin("bb1"))),
+                                    static_cast<double>(hSpline->GetBinContent(axis->FindBin("bb2"))),
+                                    static_cast<double>(hSpline->GetBinContent(axis->FindBin("bb3"))),
+                                    static_cast<double>(hSpline->GetBinContent(axis->FindBin("bb4"))),
+                                    static_cast<double>(hSpline->GetBinContent(axis->FindBin("bb5"))),
+                                    static_cast<double>(hSpline->GetBinContent(axis->FindBin("Resolution")))};
   }
 }
 
@@ -1561,16 +1641,16 @@ inline void HfFilterHelper::setTpcRecalibMaps(o2::framework::Service<o2::ccdb::B
   if (!calibList) {
     LOG(fatal) << "Can not find the TPC Post Calibration object!";
   }
-  std::array<std::string, 6> mapNames = {"mean_map_pion", "sigma_map_pion", "mean_map_kaon", "sigma_map_kaon", "mean_map_proton", "sigma_map_proton"};
+  std::array<std::string, 8> mapNames = {"mean_map_pion", "sigma_map_pion", "mean_map_kaon", "sigma_map_kaon", "mean_map_proton", "sigma_map_proton", "mean_map_deuteron", "sigma_map_deuteron"};
 
   for (size_t iMap = 0; iMap < mapNames.size(); iMap++) {
-    mHistMapPiPrKa[iMap] = nullptr;
+    mHistMapPiPrKaDe[iMap] = nullptr;
   }
 
   for (size_t iMap = 0; iMap < mapNames.size(); iMap++) {
 
-    mHistMapPiPrKa[iMap] = reinterpret_cast<TH3F*>(calibList->FindObject(mapNames[iMap].data()));
-    if (!mHistMapPiPrKa[iMap]) {
+    mHistMapPiPrKaDe[iMap] = reinterpret_cast<TH3F*>(calibList->FindObject(mapNames[iMap].data()));
+    if (!mHistMapPiPrKaDe[iMap]) {
       LOG(fatal) << "Cannot find histogram: " << mapNames[iMap].data();
       return;
     }
@@ -1666,11 +1746,15 @@ inline bool HfFilterHelper::isSelectedKaon4Charm3Prong(const T& track)
 /// \param dcaTrack1  is the dca of the pion daughter track
 /// \param primVtx is the primary vertex
 /// \param secVtx is the secondary vertex
-/// \param cuts B+ candidate pre-selection per pT bin
+/// \param whichB is the B-hadron species
 /// \return true if the beauty candidate passes all cuts
 template <typename T1, typename T2, typename T3, typename T4>
-inline bool HfFilterHelper::isSelectedBplus(T1 const& pVecTrack0, T1 const& pVecTrack1, T2 const& dcaTrack0, T2 const& dcaTrack1, const T3& primVtx, const T4& secVtx)
+inline bool HfFilterHelper::isSelectedBhadron(T1 const& pVecTrack0, T1 const& pVecTrack1, T2 const& dcaTrack0, T2 const& dcaTrack1, const T3& primVtx, const T4& secVtx, const int whichB)
 {
+  if (whichB == kB0toDStar) {
+    LOGP(fatal, "Wrong function used for selection of B0 -> D*pi, please use isSelectedBzeroToDstar");
+  }
+
   auto pVecB = RecoDecay::pVec(pVecTrack0, pVecTrack1);
   auto pTB = RecoDecay::pt(pVecB);
   auto binPtB = findBin(mPtBinsBeautyHadrons, pTB);
@@ -1681,13 +1765,42 @@ inline bool HfFilterHelper::isSelectedBplus(T1 const& pVecTrack0, T1 const& pVec
   auto decayLength = RecoDecay::distance(primVtx, secVtx);
   auto impactParameterProduct = dcaTrack0[0] * dcaTrack1[0];
 
-  if (cpa < mCutsBplus.get(binPtB, 1u)) {
+  if (cpa < mCutsBhad[whichB].get(binPtB, 1u)) {
     return false;
   }
-  if (decayLength < mCutsBplus.get(binPtB, 2u)) {
+  if (decayLength < mCutsBhad[whichB].get(binPtB, 2u)) {
     return false;
   }
-  if (impactParameterProduct > mCutsBplus.get(binPtB, 3u)) {
+  if (impactParameterProduct > mCutsBhad[whichB].get(binPtB, 3u)) {
+    return false;
+  }
+
+  return true;
+}
+
+/// Method to perform selections for B+ candidates after vertex reconstruction
+/// \param pVecTrack0 is the array for the candidate D daughter momentum after reconstruction of secondary vertex
+/// \param pVecTrack1 is the array for the soft pion momentum after reconstruction of secondary vertex
+/// \param pVecTrack2 is the array for the candidate bachelor pion momentum after reconstruction of secondary vertex
+/// \param primVtx is the primary vertex
+/// \param secVtx is the secondary vertex
+/// \return true if the beauty candidate passes all cuts
+template <typename T1, typename T2, typename T3>
+inline bool HfFilterHelper::isSelectedBzeroToDstar(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, const T2& primVtx, const T3& secVtx)
+{
+  auto pVecB = RecoDecay::pVec(pVecTrack0, pVecTrack1, pVecTrack2);
+  auto pTB = RecoDecay::pt(pVecB);
+  auto binPtB = findBin(mPtBinsBeautyHadrons, pTB);
+  if (binPtB == -1) {
+    return false;
+  }
+  auto cpa = RecoDecay::cpa(primVtx, secVtx, pVecB);
+  auto decayLength = RecoDecay::distance(primVtx, secVtx);
+
+  if (cpa < mCutsBhad[kB0toDStar].get(binPtB, 1u)) {
+    return false;
+  }
+  if (decayLength < mCutsBhad[kB0toDStar].get(binPtB, 2u)) {
     return false;
   }
 
@@ -1697,17 +1810,45 @@ inline bool HfFilterHelper::isSelectedBplus(T1 const& pVecTrack0, T1 const& pVec
 /// Method to perform selections for B+ candidates after vertex reconstruction
 /// \param ptCand is the pT of the beauty candidate
 /// \param massCand is the mass of the beauty candidate
-/// \param ptBins is the array of pT bin limits
-/// \param cuts B+ candidate pre-selection per pT bin
+/// \param whichB is the B-hadron species
 /// \return true if the beauty candidate passes all cuts
 template <typename T1, typename T2>
-inline bool HfFilterHelper::isSelectedBplusInMassRange(T1 const& ptCand, T2 const& massCand)
+inline bool HfFilterHelper::isSelectedBhadronInMassRange(T1 const& ptCand, T2 const& massCand, const int whichB)
 {
   auto binPtB = findBin(mPtBinsBeautyHadrons, ptCand);
   if (binPtB == -1) {
     return false;
   }
-  if (std::fabs(massCand - massBPlus) > mCutsBplus.get(binPtB, 0u)) {
+
+  float massBhad{-1};
+  switch (whichB) {
+    case kBplus: {
+      massBhad = massBPlus;
+      break;
+    }
+    case kB0toDStar: {
+      massBhad = massB0;
+      break;
+    }
+    case kB0: {
+      massBhad = massB0;
+      break;
+    }
+    case kBs: {
+      massBhad = massBs;
+      break;
+    }
+    case kLb: {
+      massBhad = massLb;
+      break;
+    }
+    case kXib: {
+      massBhad = massXib;
+      break;
+    }
+  }
+
+  if (std::fabs(massCand - massBhad) > mCutsBhad[whichB].get(binPtB, 0u)) {
     return false;
   }
 
@@ -1745,14 +1886,16 @@ inline double HfFilterHelper::getTPCSplineCalib(const T& track, const int& pidSp
     mMassPar = massKa;
   } else if (pidSpecies == kPr || pidSpecies == kAntiPr) {
     mMassPar = massProton;
+  } else if (pidSpecies == kDe || pidSpecies == kAntiDe) {
+    mMassPar = massDeuteron;
   } else {
     LOGP(fatal, "TPC recalibrated Nsigma requested for unknown particle species, return 999");
     return 999.;
   }
 
   auto bgScaling = 1 / mMassPar;
-  double expBethe = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScaling), mBetheBlochPiKaPr[pidSpecies][0], mBetheBlochPiKaPr[pidSpecies][1], mBetheBlochPiKaPr[pidSpecies][2], mBetheBlochPiKaPr[pidSpecies][3], mBetheBlochPiKaPr[pidSpecies][4]);
-  double expSigma = expBethe * mBetheBlochPiKaPr[pidSpecies][5];
+  double expBethe = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScaling), mBetheBlochPiKaPrDe[pidSpecies][0], mBetheBlochPiKaPrDe[pidSpecies][1], mBetheBlochPiKaPrDe[pidSpecies][2], mBetheBlochPiKaPrDe[pidSpecies][3], mBetheBlochPiKaPrDe[pidSpecies][4]);
+  double expSigma = expBethe * mBetheBlochPiKaPrDe[pidSpecies][5];
   return static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
 }
 
@@ -1783,22 +1926,22 @@ inline float HfFilterHelper::getTPCPostCalib(const T& track, const int& pidSpeci
   } else {
     LOG(fatal) << "Wrong PID Species be selected, please check!";
   }
-  if (!mHistMapPiPrKa[iHist] || !mHistMapPiPrKa[iHist + 1]) {
+  if (!mHistMapPiPrKaDe[iHist] || !mHistMapPiPrKaDe[iHist + 1]) {
     LOGP(warn, "Postcalibration TPC PID histograms not set. Use default Nsigma values.");
   }
 
-  auto binTPCNCls = mHistMapPiPrKa[iHist]->GetXaxis()->FindBin(tpcNCls);
+  auto binTPCNCls = mHistMapPiPrKaDe[iHist]->GetXaxis()->FindBin(tpcNCls);
   binTPCNCls = (binTPCNCls == 0 ? 1 : binTPCNCls);
-  binTPCNCls = std::min(mHistMapPiPrKa[iHist]->GetXaxis()->GetNbins(), binTPCNCls);
-  auto binPin = mHistMapPiPrKa[iHist]->GetYaxis()->FindBin(tpcPin);
+  binTPCNCls = std::min(mHistMapPiPrKaDe[iHist]->GetXaxis()->GetNbins(), binTPCNCls);
+  auto binPin = mHistMapPiPrKaDe[iHist]->GetYaxis()->FindBin(tpcPin);
   binPin = (binPin == 0 ? 1 : binPin);
-  binPin = std::min(mHistMapPiPrKa[iHist]->GetYaxis()->GetNbins(), binPin);
-  auto binEta = mHistMapPiPrKa[iHist]->GetZaxis()->FindBin(eta);
+  binPin = std::min(mHistMapPiPrKaDe[iHist]->GetYaxis()->GetNbins(), binPin);
+  auto binEta = mHistMapPiPrKaDe[iHist]->GetZaxis()->FindBin(eta);
   binEta = (binEta == 0 ? 1 : binEta);
-  binEta = std::min(mHistMapPiPrKa[iHist]->GetZaxis()->GetNbins(), binEta);
+  binEta = std::min(mHistMapPiPrKaDe[iHist]->GetZaxis()->GetNbins(), binEta);
 
-  auto mean = mHistMapPiPrKa[iHist]->GetBinContent(binTPCNCls, binPin, binEta);
-  auto width = mHistMapPiPrKa[iHist + 1]->GetBinContent(binTPCNCls, binPin, binEta);
+  auto mean = mHistMapPiPrKaDe[iHist]->GetBinContent(binTPCNCls, binPin, binEta);
+  auto width = mHistMapPiPrKaDe[iHist + 1]->GetBinContent(binTPCNCls, binPin, binEta);
 
   return (tpcNSigma - mean) / width;
 }
@@ -1962,6 +2105,8 @@ DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);                 //!
 DECLARE_SOA_COLUMN(KStar, kStar, float);                 //!
 DECLARE_SOA_COLUMN(NsigmaPrTPC, nsigmaPrTPC, float);     //!
 DECLARE_SOA_COLUMN(NsigmaPrTOF, nsigmaPrTOF, float);     //!
+DECLARE_SOA_COLUMN(NsigmaDeTPC, nsigmaDeTPC, float);     //!
+DECLARE_SOA_COLUMN(NsigmaDeTOF, nsigmaDeTOF, float);     //!
 } // namespace hfoptimisationTree
 
 DECLARE_SOA_TABLE(HFOptimisationTreeBeauty, "AOD", "HFOPTIMTREEB", //!
@@ -1988,7 +2133,9 @@ DECLARE_SOA_TABLE(HFOptimisationTreeFemto, "AOD", "HFOPTIMTREEF", //!
                   hfoptimisationTree::NonpromptBDT,
                   hfoptimisationTree::KStar,
                   hfoptimisationTree::NsigmaPrTPC,
-                  hfoptimisationTree::NsigmaPrTOF);
+                  hfoptimisationTree::NsigmaPrTOF,
+                  hfoptimisationTree::NsigmaDeTPC,
+                  hfoptimisationTree::NsigmaDeTOF);
 DECLARE_SOA_TABLE(HFOptimisationTreeCollisions, "AOD", "HFOPTIMTREECOLL", //!
                   hfoptimisationTree::CollisionIndex)
 } // namespace o2::aod

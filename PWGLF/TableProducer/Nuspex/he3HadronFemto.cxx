@@ -104,10 +104,10 @@ struct he3HadCandidate {
 
   float recoPtHe3() const { return signHe3 * std::hypot(momHe3[0], momHe3[1]); }
   float recoPhiHe3() const { return std::atan2(momHe3[1], momHe3[0]); }
-  float recoEtaHe3() const { return std::asinh(momHe3[2] / recoPtHe3()); }
+  float recoEtaHe3() const { return std::asinh(momHe3[2] / std::abs(recoPtHe3())); }
   float recoPtHad() const { return signHad * std::hypot(momHad[0], momHad[1]); }
   float recoPhiHad() const { return std::atan2(momHad[1], momHad[0]); }
-  float recoEtaHad() const { return std::asinh(momHad[2] / recoPtHad()); }
+  float recoEtaHad() const { return std::asinh(momHad[2] / std::abs(recoPtHad())); }
 
   std::array<float, 3> momHe3 = {99.f, 99.f, 99.f};
   std::array<float, 3> momHad = {99.f, 99.f, 99.f};
@@ -239,7 +239,7 @@ struct he3hadronfemto {
       {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
       {"hDCAxyHe3", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
       {"hDCAzHe3", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-      {"hhe3HadtInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{50, 3.74f, 3.85f}}}},
+      {"hhe3HadtInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
       {"hHe3Pt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
       {"hHadronPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
       {"h2dEdxHe3candidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},

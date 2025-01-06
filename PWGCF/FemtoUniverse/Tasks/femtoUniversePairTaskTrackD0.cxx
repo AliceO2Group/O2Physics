@@ -28,6 +28,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/Core/RecoDecay.h"
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
@@ -36,7 +37,7 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseFemtoContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseAngularContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
+#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 
 #include "PWGHF/Core/HfHelper.h"
@@ -45,7 +46,7 @@
 
 using namespace o2;
 using namespace o2::analysis;
-using namespace o2::analysis::femtoUniverse;
+using namespace o2::analysis::femto_universe;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
@@ -194,10 +195,10 @@ struct FemtoUniversePairTaskTrackD0 {
   Configurable<float> confCPRdeltaEtaCutMin{"confCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
   Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
 
-  FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::same, femtoUniverseFemtoContainer::Observable::kstar> sameEventFemtoCont;
-  FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::mixed, femtoUniverseFemtoContainer::Observable::kstar> mixedEventFemtoCont;
-  FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::same, femtoUniverseAngularContainer::Observable::kstar> sameEventAngularCont;
-  FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::mixed, femtoUniverseAngularContainer::Observable::kstar> mixedEventAngularCont;
+  FemtoUniverseFemtoContainer<femto_universe_femto_container::EventType::same, femto_universe_femto_container::Observable::kstar> sameEventFemtoCont;
+  FemtoUniverseFemtoContainer<femto_universe_femto_container::EventType::mixed, femto_universe_femto_container::Observable::kstar> mixedEventFemtoCont;
+  FemtoUniverseAngularContainer<femto_universe_angular_container::EventType::same, femto_universe_angular_container::Observable::kstar> sameEventAngularCont;
+  FemtoUniverseAngularContainer<femto_universe_angular_container::EventType::mixed, femto_universe_angular_container::Observable::kstar> mixedEventAngularCont;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kD0> pairCleaner;
   FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kD0> pairCloseRejection;
   FemtoUniverseTrackSelection trackCuts;
@@ -420,7 +421,7 @@ struct FemtoUniversePairTaskTrackD0 {
     eventHisto.fillQA(col);
   }
 
-  void processQAD0D0barSel(o2::aod::FDCollision const& col, FemtoFullParticles const&)
+  void processQAD0D0barSel(o2::aod::FdCollision const& col, FemtoFullParticles const&)
   {
     auto groupPartsD0s = partsD0s->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsD0bars = partsD0bars->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -440,7 +441,7 @@ struct FemtoUniversePairTaskTrackD0 {
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackD0, processQAD0D0barSel, "Enable filling QA plots for selected D0/D0bar cand.", true);
 
-  void processD0mesons(o2::aod::FDCollision const& col, FemtoFullParticles const&)
+  void processD0mesons(o2::aod::FdCollision const& col, FemtoFullParticles const&)
   {
     auto groupPartsOnlyD0D0bar = partsOnlyD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsAllDmesons = partsAllDmesons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -508,7 +509,7 @@ struct FemtoUniversePairTaskTrackD0 {
   PROCESS_SWITCH(FemtoUniversePairTaskTrackD0, processD0mesons, "Enable processing D0 mesons", true);
 
   // D0-D0bar pair correlations (side-band methode)
-  void processSideBand(o2::aod::FDCollision const& col, FemtoFullParticles const&)
+  void processSideBand(o2::aod::FdCollision const& col, FemtoFullParticles const&)
   {
     auto groupPartsOnlyD0D0bar = partsOnlyD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
@@ -618,7 +619,7 @@ struct FemtoUniversePairTaskTrackD0 {
       }
       // // Close Pair Rejection
       if (confIsCPR.value) {
-        if (pairCloseRejection.isClosePair(track, d0candidate, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
+        if (pairCloseRejection.isClosePair(track, d0candidate, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           continue;
         }
       }
@@ -635,7 +636,7 @@ struct FemtoUniversePairTaskTrackD0 {
   /// process function for to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processSameEvent(o2::aod::FDCollision const& col,
+  void processSameEvent(o2::aod::FdCollision const& col,
                         FemtoFullParticles const& parts)
   {
     fillCollision(col);
@@ -669,9 +670,9 @@ struct FemtoUniversePairTaskTrackD0 {
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// \param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processSameEventMC(o2::aod::FDCollision const& col,
+  void processSameEventMC(o2::aod::FdCollision const& col,
                           soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels> const& parts,
-                          o2::aod::FDMCParticles const&)
+                          o2::aod::FdMCParticles const&)
   {
     fillCollision(col);
 
@@ -704,7 +705,7 @@ struct FemtoUniversePairTaskTrackD0 {
       }
       // // Close Pair Rejection
       if (confIsCPR.value) {
-        if (pairCloseRejection.isClosePair(track, d0candidate, parts, magFieldTesla, femtoUniverseContainer::EventType::mixed)) {
+        if (pairCloseRejection.isClosePair(track, d0candidate, parts, magFieldTesla, femto_universe_container::EventType::mixed)) {
           continue;
         }
       }
@@ -717,7 +718,7 @@ struct FemtoUniversePairTaskTrackD0 {
   /// process function for to call doMixedEvent with Data
   /// @param cols subscribe to the collisions table (Data)
   /// @param parts subscribe to the femtoUniverseParticleTable
-  void processMixedEvent(o2::aod::FDCollisions const& cols,
+  void processMixedEvent(o2::aod::FdCollisions const& cols,
                          FemtoFullParticles const& parts)
   {
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
@@ -764,9 +765,9 @@ struct FemtoUniversePairTaskTrackD0 {
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processMixedEventMC(o2::aod::FDCollisions const& cols,
+  void processMixedEventMC(o2::aod::FdCollisions const& cols,
                            soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels> const& parts,
-                           o2::aod::FDMCParticles const&)
+                           o2::aod::FdMCParticles const&)
   {
     for (auto const& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
