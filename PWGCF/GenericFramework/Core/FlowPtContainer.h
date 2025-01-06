@@ -48,7 +48,8 @@ class FlowPtContainer : public TNamed
   void Initialise(int nbinsx, double xlow, double xhigh, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
   void Fill(const double& w, const double& pt);
   void FillArray(FillType a, FillType b, double c, double d);
-  int GetVectorIndex(const int i, const int j) { return j * (mpar + 1) + i; }
+  int GetVectorIndex(const int i, const int j) { return j * (mpar + 1) + i; } //index for 2d array for storing pt correlations
+  int GetVectorIndex(const int i, const int j, const int k, const int l) { return i + j * 3 + k * 3 * 3 + l * 3 * 3 * 3; } //index for 4d array for std vnpt correlation - size 3x3x3x3
   void CalculateCorrelations();
   void CalculateCMTerms();
   void FillPtProfiles(const Double_t& lMult, const Double_t& rn);
@@ -91,7 +92,6 @@ class FlowPtContainer : public TNamed
   void CalculateCentralMomentHists(std::vector<TH1*> inh, int ind, int m, TH1* hMpt);
   void CreateCumulantList();
   void CalculateCumulantHists(std::vector<TH1*> inh, Int_t ind);
-  void ClearArray();
   void ClearVector()
   {
     sumP.clear();
@@ -99,6 +99,10 @@ class FlowPtContainer : public TNamed
     cmVal.clear();
     cmDen.clear();
     fillCounter = 0;
+    arr.clear();
+    arr.resize(3*3*3*3,{0.0,0.0});
+    warr.clear();
+    warr.resize(3*3*3*3,0.0);
   };
 
   TList* fCMTermList;
@@ -119,8 +123,8 @@ class FlowPtContainer : public TNamed
   std::vector<double> corrDen;          //!
   std::vector<double> cmVal;            //!
   std::vector<double> cmDen;            //!
-  std::complex<double> arr[3][3][3][3]; //!
-  double warr[3][3][3][3];              //!
+  std::vector<std::complex<double>> arr; //!
+  std::vector<double> warr;              //!
   template <typename T>
   double getStdAABBCC(T& inarr);
   template <typename T>

@@ -698,7 +698,6 @@ struct GenericFramework {
     float vtxz = collision.posZ();
     fGFW->Clear();
     fFCpt->ClearVector();
-    fFCpt->ClearArray();
     float l_Random = fRndm->Rndm();
     for (auto& track : tracks) {
       ProcessTrack(track, centrality, vtxz, field);

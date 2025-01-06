@@ -29,8 +29,8 @@ FlowPtContainer::FlowPtContainer() : fCMTermList(0),
                                      corrDen(),
                                      cmVal(),
                                      cmDen(),
-                                     arr{},
-                                     warr{} {}
+                                     arr(),
+                                     warr() {}
 FlowPtContainer::~FlowPtContainer()
 {
   delete fCMTermList;
@@ -53,8 +53,8 @@ FlowPtContainer::FlowPtContainer(const char* name) : TNamed(name, name),
                                                      corrDen(),
                                                      cmVal(),
                                                      cmDen(),
-                                                      arr{},
-                                                      warr{} {}
+                                                      arr(),
+                                                      warr() {}
 FlowPtContainer::FlowPtContainer(const char* name, const char* title) : TNamed(name, title),
                                                                         fCMTermList(0),
                                                                         fCorrList(0),
@@ -71,10 +71,12 @@ FlowPtContainer::FlowPtContainer(const char* name, const char* title) : TNamed(n
                                                                         corrDen(),
                                                                         cmVal(),
                                                                         cmDen(),
-                                                                        arr{},
-                                                                        warr{} {}
+                                                                        arr(),
+                                                                        warr() {}
 void FlowPtContainer::Initialise(const o2::framework::AxisSpec axis, const int& m, const GFWCorrConfigs& configs, const int& nsub)
 {
+  arr.resize(3*3*3*3);
+  warr.resize(3*3*3*3);
   if (!mpar)
     mpar = m;
   std::vector<double> multiBins = axis.binEdges;
@@ -155,7 +157,8 @@ void FlowPtContainer::Initialise(const o2::framework::AxisSpec axis, const int& 
 };
 void FlowPtContainer::Initialise(int nbinsx, double* xbins, const int& m, const GFWCorrConfigs& configs, const int& nsub)
 {
-  printf("1\n");
+  arr.resize(3*3*3*3);
+  warr.resize(3*3*3*3);
   if (!mpar)
     mpar = m;
   if (fCMTermList)
@@ -170,17 +173,14 @@ void FlowPtContainer::Initialise(int nbinsx, double* xbins, const int& m, const 
     delete fCovList;
   fCovList = new TList();
   fCovList->SetOwner(kTRUE);
-  printf("2\n");
   for (int m = 0; m < mpar; ++m) {
     fCorrList->Add(new BootstrapProfile(Form("mpt%i", m + 1), Form("mpt%i", m + 1), nbinsx, xbins));
   }
-  printf("3\n");
   for (int m = 0; m < 4; ++m) {
     for (int i = 0; i <= m; ++i) {
       fCMTermList->Add(new BootstrapProfile(Form("cm%i_Mpt%i", m + 1, i), Form("cm%i_Mpt%i", m + 1, i), nbinsx, xbins));
     }
   }
-  printf("4\n");
   if (fUseGap) {
     for (int i = 0; i < configs.GetSize(); ++i) {
       for (auto m(1); m <= mpar; ++m) {
@@ -211,14 +211,12 @@ void FlowPtContainer::Initialise(int nbinsx, double* xbins, const int& m, const 
       fCovList->Add(new BootstrapProfile("ChFull22pt1_Mpt0", "ChFull22pt1_Mpt0", nbinsx, xbins));
       fCovList->Add(new BootstrapProfile("ChFull22pt1_Mpt1", "ChFull22pt1_Mpt1", nbinsx, xbins));
     } else {
-      printf("5\n");
       fCovList->Add(new BootstrapProfile("ChFull24pt2", "ChFull24pt2", nbinsx, xbins));
       fCovList->Add(new BootstrapProfile("ChFull24pt1", "ChFull24pt1", nbinsx, xbins));
       fCovList->Add(new BootstrapProfile("ChFull22pt2", "ChFull22pt2", nbinsx, xbins));
       fCovList->Add(new BootstrapProfile("ChFull22pt1", "ChFull22pt1", nbinsx, xbins));
     }
   }
-  printf("6\n");
   if (nsub) {
     for (int i = 0; i < fCorrList->GetEntries(); ++i)
       dynamic_cast<BootstrapProfile*>(fCorrList->At(i))->InitializeSubsamples(nsub);
@@ -231,6 +229,8 @@ void FlowPtContainer::Initialise(int nbinsx, double* xbins, const int& m, const 
 };
 void FlowPtContainer::Initialise(int nbinsx, double xlow, double xhigh, const int& m, const GFWCorrConfigs& configs, const int& nsub)
 {
+  arr.resize(3*3*3*3);
+  warr.resize(3*3*3*3);
   if (!mpar)
     mpar = m;
   if (fCMTermList)
@@ -472,67 +472,50 @@ void FlowPtContainer::FillCMProfiles(const double& centmult, const double& rn)
 }
 void FlowPtContainer::FillArray(FillType a, FillType b, double c, double d)
 {
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      for (int k = 0; k < 3; ++k) {
-        for (int l = 0; l < 3; ++l) {
-          if (std::holds_alternative<std::complex<double>>(a) && std::holds_alternative<std::complex<double>>(b)) {
-            arr[i][j][k][l] += pow(std::get<0>(a), i) * pow(std::get<0>(b), j) * pow(c, k) * pow(d, l);
-          } else if (std::holds_alternative<double>(a) && std::holds_alternative<double>(b)) {
-            warr[i][j][k][l] += pow(std::get<1>(a), i) * pow(std::get<1>(b), j) * pow(c, k) * pow(d, l);
-          } else {
-            LOGF(error, "FillType variant should hold same type for a and b during single function c");
-          }
-        }
-      }
+  for(int idx = 0; idx < 81; ++idx){
+    int i = idx % 3;
+    int j = ( ( idx - i ) / 3 ) %  3;
+    int k = ( ( idx - j * 3 - i ) / 9 ) % 3;
+    int l = ( ( idx - k * 9 - j * 3 - i ) / 27 ) % 3;
+    if (std::holds_alternative<std::complex<double>>(a) && std::holds_alternative<std::complex<double>>(b)) {
+      arr[idx] += pow(std::get<0>(a), i) * pow(std::get<0>(b), j) * pow(c, k) * pow(d, l);
+    } else if (std::holds_alternative<double>(a) && std::holds_alternative<double>(b)) {
+      warr[idx] += pow(std::get<1>(a), i) * pow(std::get<1>(b), j) * pow(c, k) * pow(d, l);
+    } else {
+        LOGF(error, "FillType variant should hold same type for a and b during single function c");
     }
   }
-  return;
-}
-void FlowPtContainer::ClearArray()
-{
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      for (int k = 0; k < 3; ++k) {
-        for (int l = 0; l < 3; ++l) {
-          arr[i][j][k][l] = {0.0, 0.0};
-          warr[i][j][k][l] = 0.0;
-        }
-      }
-    }
-  }
-
   return;
 }
 template <typename T>
 double FlowPtContainer::getStdAABBCC(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> c = inarr[0][0][1][0];
-  std::complex<double> aa = inarr[2][0][0][0];
-  std::complex<double> bb = inarr[0][2][0][0];
-  std::complex<double> cc = inarr[0][0][2][0];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ac = inarr[1][0][1][0];
-  std::complex<double> bc = inarr[0][1][1][0];
-  std::complex<double> aab = inarr[2][1][0][0];
-  std::complex<double> aac = inarr[2][0][1][0];
-  std::complex<double> abb = inarr[1][2][0][0];
-  std::complex<double> acc = inarr[1][0][2][0];
-  std::complex<double> abc = inarr[1][1][1][0];
-  std::complex<double> bbc = inarr[0][2][1][0];
-  std::complex<double> bcc = inarr[0][1][2][0];
-  std::complex<double> aabb = inarr[2][2][0][0];
-  std::complex<double> aacc = inarr[2][0][2][0];
-  std::complex<double> aabc = inarr[2][1][1][0];
-  std::complex<double> abbc = inarr[1][2][1][0];
-  std::complex<double> abcc = inarr[1][1][2][0];
-  std::complex<double> bbcc = inarr[0][2][2][0];
-  std::complex<double> aabbc = inarr[2][2][1][0];
-  std::complex<double> aabcc = inarr[2][1][2][0];
-  std::complex<double> abbcc = inarr[0][0][0][0];
-  std::complex<double> aabbcc = inarr[2][2][2][0];
+  std::complex<double> a = inarr[GetVectorIndex(1,0,0,0)];
+  std::complex<double> b = inarr[GetVectorIndex(0,1,0,0)];
+  std::complex<double> c = inarr[GetVectorIndex(0,0,1,0)];
+  std::complex<double> aa = inarr[GetVectorIndex(2,0,0,0)];
+  std::complex<double> bb = inarr[GetVectorIndex(0,2,0,0)];
+  std::complex<double> cc = inarr[GetVectorIndex(0,0,2,0)];
+  std::complex<double> ab = inarr[GetVectorIndex(1,1,0,0)];
+  std::complex<double> ac = inarr[GetVectorIndex(1,0,1,0)];
+  std::complex<double> bc = inarr[GetVectorIndex(0,1,1,0)];
+  std::complex<double> aab = inarr[GetVectorIndex(2,1,0,0)];
+  std::complex<double> aac = inarr[GetVectorIndex(2,0,1,0)];
+  std::complex<double> abb = inarr[GetVectorIndex(1,2,0,0)];
+  std::complex<double> acc = inarr[GetVectorIndex(1,0,2,0)];
+  std::complex<double> abc = inarr[GetVectorIndex(1,1,1,0)];
+  std::complex<double> bbc = inarr[GetVectorIndex(0,2,1,0)];
+  std::complex<double> bcc = inarr[GetVectorIndex(0,1,2,0)];
+  std::complex<double> aabb = inarr[GetVectorIndex(2,2,0,0)];
+  std::complex<double> aacc = inarr[GetVectorIndex(2,0,2,0)];
+  std::complex<double> aabc = inarr[GetVectorIndex(2,1,1,0)];
+  std::complex<double> abbc = inarr[GetVectorIndex(1,2,1,0)];
+  std::complex<double> abcc = inarr[GetVectorIndex(1,1,2,0)];
+  std::complex<double> bbcc = inarr[GetVectorIndex(0,2,2,0)];
+  std::complex<double> aabbc = inarr[GetVectorIndex(2,2,1,0)];
+  std::complex<double> aabcc = inarr[GetVectorIndex(2,1,2,0)];
+  std::complex<double> abbcc = inarr[GetVectorIndex(0,0,0,0)];
+  std::complex<double> aabbcc = inarr[GetVectorIndex(2,2,2,0)];
   return (a * a * b * b * c * c - aa * b * b * c * c - a * a * bb * c * c - a * a * b * b * cc - 4. * a * ab * b * c * c -
           4. * a * ac * b * b * c - 4. * a * a * b * bc * c + 4. * aab * b * c * c + 4. * aac * b * b * c +
           4. * a * abb * c * c + 4. * a * acc * b * b + 4. * a * a * bbc * c + 4. * a * a * b * bcc +
@@ -552,41 +535,41 @@ double FlowPtContainer::getStdAABBCC(T& inarr)
 template <typename T>
 double FlowPtContainer::getStdAABBCD(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> c = inarr[0][0][1][0];
-  std::complex<double> d = inarr[0][0][0][1];
-  std::complex<double> aa = inarr[2][0][0][0];
-  std::complex<double> bb = inarr[0][2][0][0];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ac = inarr[1][0][1][0];
-  std::complex<double> ad = inarr[1][0][0][1];
-  std::complex<double> bc = inarr[0][1][1][0];
-  std::complex<double> bd = inarr[0][1][0][1];
-  std::complex<double> cd = inarr[0][0][1][1];
-  std::complex<double> aab = inarr[2][1][0][0];
-  std::complex<double> aac = inarr[2][0][1][0];
-  std::complex<double> aad = inarr[2][0][0][1];
-  std::complex<double> abb = inarr[1][2][0][0];
-  std::complex<double> abc = inarr[1][1][1][0];
-  std::complex<double> abd = inarr[1][1][0][1];
-  std::complex<double> acd = inarr[1][0][1][1];
-  std::complex<double> bbc = inarr[0][2][1][0];
-  std::complex<double> bbd = inarr[0][2][0][1];
-  std::complex<double> bcd = inarr[0][1][1][1];
-  std::complex<double> aabb = inarr[2][2][0][0];
-  std::complex<double> aabc = inarr[2][1][1][0];
-  std::complex<double> aabd = inarr[2][1][0][1];
-  std::complex<double> aacd = inarr[2][0][1][1];
-  std::complex<double> abbc = inarr[1][2][1][0];
-  std::complex<double> abbd = inarr[1][2][0][1];
-  std::complex<double> abcd = inarr[0][1][1][1];
-  std::complex<double> bbcd = inarr[0][2][1][1];
-  std::complex<double> aabbc = inarr[2][2][1][0];
-  std::complex<double> aabbd = inarr[2][2][0][1];
-  std::complex<double> aabcd = inarr[2][1][1][1];
-  std::complex<double> abbcd = inarr[1][2][1][1];
-  std::complex<double> aabbcd = inarr[2][2][1][1];
+  std::complex<double> a = inarr[GetVectorIndex(1,0,0,0)];
+  std::complex<double> b = inarr[GetVectorIndex(0,1,0,0)];
+  std::complex<double> c = inarr[GetVectorIndex(0,0,1,0)];
+  std::complex<double> d = inarr[GetVectorIndex(0,0,0,1)];
+  std::complex<double> aa = inarr[GetVectorIndex(2,0,0,0)];
+  std::complex<double> bb = inarr[GetVectorIndex(0,2,0,0)];
+  std::complex<double> ab = inarr[GetVectorIndex(1,1,0,0)];
+  std::complex<double> ac = inarr[GetVectorIndex(1,0,1,0)];
+  std::complex<double> ad = inarr[GetVectorIndex(1,0,0,1)];
+  std::complex<double> bc = inarr[GetVectorIndex(0,1,1,0)];
+  std::complex<double> bd = inarr[GetVectorIndex(0,1,0,1)];
+  std::complex<double> cd = inarr[GetVectorIndex(0,0,1,1)];
+  std::complex<double> aab = inarr[GetVectorIndex(2,1,0,0)];
+  std::complex<double> aac = inarr[GetVectorIndex(2,0,1,0)];
+  std::complex<double> aad = inarr[GetVectorIndex(2,0,0,1)];
+  std::complex<double> abb = inarr[GetVectorIndex(1,2,0,0)];
+  std::complex<double> abc = inarr[GetVectorIndex(1,1,1,0)];
+  std::complex<double> abd = inarr[GetVectorIndex(1,1,0,1)];
+  std::complex<double> acd = inarr[GetVectorIndex(1,0,1,1)];
+  std::complex<double> bbc = inarr[GetVectorIndex(0,2,1,0)];
+  std::complex<double> bbd = inarr[GetVectorIndex(0,2,0,1)];
+  std::complex<double> bcd = inarr[GetVectorIndex(0,1,1,1)];
+  std::complex<double> aabb = inarr[GetVectorIndex(2,2,0,0)];
+  std::complex<double> aabc = inarr[GetVectorIndex(2,1,1,0)];
+  std::complex<double> aabd = inarr[GetVectorIndex(2,1,0,1)];
+  std::complex<double> aacd = inarr[GetVectorIndex(2,0,1,1)];
+  std::complex<double> abbc = inarr[GetVectorIndex(1,2,1,0)];
+  std::complex<double> abbd = inarr[GetVectorIndex(1,2,0,1)];
+  std::complex<double> abcd = inarr[GetVectorIndex(0,1,1,1)];
+  std::complex<double> bbcd = inarr[GetVectorIndex(0,2,1,1)];
+  std::complex<double> aabbc = inarr[GetVectorIndex(2,2,1,0)];
+  std::complex<double> aabbd = inarr[GetVectorIndex(2,2,0,1)];
+  std::complex<double> aabcd = inarr[GetVectorIndex(2,1,1,1)];
+  std::complex<double> abbcd = inarr[GetVectorIndex(1,2,1,1)];
+  std::complex<double> aabbcd = inarr[GetVectorIndex(2,2,1,1)];
   return (-120. * aabbcd + 48. * a * abbcd + 24. * ab * abcd + 16. * abc * abd + 12. * abbd * ac +
           8. * abb * acd + 12. * abbc * ad + 48. * aabcd * b - 24. * a * abcd * b - 8. * abd * ac * b -
           8. * ab * acd * b - 8. * abc * ad * b - 6. * aacd * b * b + 4. * a * acd * b * b + 2. * ac * ad * b * b +
@@ -611,32 +594,32 @@ double FlowPtContainer::getStdAABBCD(T& inarr)
 template <typename T>
 double FlowPtContainer::getStdAABBDD(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> d = inarr[0][0][1][1];
-  std::complex<double> aa = inarr[2][0][0][0];
-  std::complex<double> bb = inarr[0][2][0][0];
-  std::complex<double> dd = inarr[0][0][0][2];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ad = inarr[1][0][0][1];
-  std::complex<double> bd = inarr[0][1][0][1];
-  std::complex<double> aab = inarr[2][1][0][0];
-  std::complex<double> aad = inarr[2][0][0][1];
-  std::complex<double> abb = inarr[1][2][0][0];
-  std::complex<double> add = inarr[1][0][0][2];
-  std::complex<double> abd = inarr[1][1][0][1];
-  std::complex<double> bbd = inarr[0][2][0][1];
-  std::complex<double> bdd = inarr[0][1][0][2];
-  std::complex<double> aabb = inarr[2][2][0][0];
-  std::complex<double> aadd = inarr[2][0][0][2];
-  std::complex<double> aabd = inarr[2][1][0][1];
-  std::complex<double> abbd = inarr[1][2][0][1];
-  std::complex<double> abdd = inarr[1][1][0][2];
-  std::complex<double> bbdd = inarr[0][2][0][2];
-  std::complex<double> aabbd = inarr[2][2][0][1];
-  std::complex<double> aabdd = inarr[2][1][0][2];
-  std::complex<double> abbdd = inarr[0][0][0][2];
-  std::complex<double> aabbdd = inarr[2][2][0][2];
+  std::complex<double> a = inarr[GetVectorIndex(1,0,0,0)];
+  std::complex<double> b = inarr[GetVectorIndex(0,1,0,0)];
+  std::complex<double> d = inarr[GetVectorIndex(0,0,1,1)];
+  std::complex<double> aa = inarr[GetVectorIndex(2,0,0,0)];
+  std::complex<double> bb = inarr[GetVectorIndex(0,2,0,0)];
+  std::complex<double> dd = inarr[GetVectorIndex(0,0,0,2)];
+  std::complex<double> ab = inarr[GetVectorIndex(1,1,0,0)];
+  std::complex<double> ad = inarr[GetVectorIndex(1,0,0,1)];
+  std::complex<double> bd = inarr[GetVectorIndex(0,1,0,1)];
+  std::complex<double> aab = inarr[GetVectorIndex(2,1,0,0)];
+  std::complex<double> aad = inarr[GetVectorIndex(2,0,0,1)];
+  std::complex<double> abb = inarr[GetVectorIndex(1,2,0,0)];
+  std::complex<double> add = inarr[GetVectorIndex(1,0,0,2)];
+  std::complex<double> abd = inarr[GetVectorIndex(1,1,0,1)];
+  std::complex<double> bbd = inarr[GetVectorIndex(0,2,0,1)];
+  std::complex<double> bdd = inarr[GetVectorIndex(0,1,0,2)];
+  std::complex<double> aabb = inarr[GetVectorIndex(2,2,0,0)];
+  std::complex<double> aadd = inarr[GetVectorIndex(2,0,0,2)];
+  std::complex<double> aabd = inarr[GetVectorIndex(2,1,0,1)];
+  std::complex<double> abbd = inarr[GetVectorIndex(1,2,0,1)];
+  std::complex<double> abdd = inarr[GetVectorIndex(1,1,0,2)];
+  std::complex<double> bbdd = inarr[GetVectorIndex(0,2,0,2)];
+  std::complex<double> aabbd = inarr[GetVectorIndex(2,2,0,1)];
+  std::complex<double> aabdd = inarr[GetVectorIndex(2,1,0,2)];
+  std::complex<double> abbdd = inarr[GetVectorIndex(0,0,0,2)];
+  std::complex<double> aabbdd = inarr[GetVectorIndex(2,2,0,2)];
   return (-120. * aabbdd + 48. * a * abbdd + 16. * abd * abd + 24. * ab * abdd + 24. * abbd * ad +
           8. * abb * add + 48. * aabdd * b - 24. * a * abdd * b - 16. * abd * ad * b - 8. * ab * add * b -
           6. * aadd * b * b + 2. * ad * ad * b * b + 4. * a * add * b * b + 6. * aadd * bb - 2. * ad * ad * bb -
@@ -656,81 +639,81 @@ double FlowPtContainer::getStdAABBDD(T& inarr)
 template <typename T>
 double FlowPtContainer::getStdAABBC(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> c = inarr[0][0][1][0];
-  std::complex<double> aa = inarr[2][0][0][0];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ac = inarr[1][0][1][0];
-  std::complex<double> bb = inarr[0][2][0][0];
-  std::complex<double> bc = inarr[0][1][1][0];
-  std::complex<double> aab = inarr[2][1][0][0];
-  std::complex<double> aac = arr[2][0][1][0];
-  std::complex<double> abb = inarr[1][2][0][0];
-  std::complex<double> abc = inarr[1][1][1][0];
-  std::complex<double> bbc = inarr[0][2][1][0];
-  std::complex<double> aabb = inarr[2][2][0][0];
-  std::complex<double> aabc = inarr[2][1][1][0];
-  std::complex<double> abbc = inarr[1][2][1][0];
-  std::complex<double> aabbc = inarr[2][2][1][0];
+  std::complex<double> a = inarr[GetVectorIndex(1,0,0,0)];
+  std::complex<double> b = inarr[GetVectorIndex(0,1,0,0)];
+  std::complex<double> c = inarr[GetVectorIndex(0,0,1,0)];
+  std::complex<double> aa = inarr[GetVectorIndex(2,0,0,0)];
+  std::complex<double> ab = inarr[GetVectorIndex(1,1,0,0)];
+  std::complex<double> ac = inarr[GetVectorIndex(1,0,1,0)];
+  std::complex<double> bb = inarr[GetVectorIndex(0,2,0,0)];
+  std::complex<double> bc = inarr[GetVectorIndex(0,1,1,0)];
+  std::complex<double> aab = inarr[GetVectorIndex(2,1,0,0)];
+  std::complex<double> aac = inarr[GetVectorIndex(2,0,1,0)];
+  std::complex<double> abb = inarr[GetVectorIndex(1,2,0,0)];
+  std::complex<double> abc = inarr[GetVectorIndex(1,1,1,0)];
+  std::complex<double> bbc = inarr[GetVectorIndex(0,2,1,0)];
+  std::complex<double> aabb = inarr[GetVectorIndex(2,2,0,0)];
+  std::complex<double> aabc = inarr[GetVectorIndex(2,1,1,0)];
+  std::complex<double> abbc = inarr[GetVectorIndex(1,2,1,0)];
+  std::complex<double> aabbc = inarr[GetVectorIndex(2,2,1,0)];
   return (a * a * b * b * c - aa * b * b * c - a * a * bb * c - 4. * ab * a * b * c - 2. * a * ac * b * b - 2. * a * a * bc * b + 2. * ab * ab * c + 4. * ab * ac * b + 4. * ab * bc * a + 8. * abc * a * b + 4. * aab * b * c + 2. * aac * b * b + 4. * abb * a * c + 2. * bbc * a * a + aa * bb * c + 2. * aa * b * bc + 2. * bb * a * ac - 12. * aabc * b - 12. * abbc * a - 6. * aabb * c - 8. * abc * ab - 2. * bbc * aa - 2. * aac * bb - 4. * aab * bc - 4. * abb * ac + 24. * aabbc).real();
 }
 template <typename T>
 double FlowPtContainer::getStdAABBD(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> d = inarr[0][0][1][0];
-  std::complex<double> aa = inarr[2][0][0][0];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ad = inarr[1][0][1][0];
-  std::complex<double> bb = inarr[0][2][0][0];
-  std::complex<double> bd = inarr[0][1][1][0];
-  std::complex<double> aab = inarr[2][1][0][0];
-  std::complex<double> aad = arr[2][0][1][0];
-  std::complex<double> abb = inarr[1][2][0][0];
-  std::complex<double> abd = inarr[1][1][1][0];
-  std::complex<double> bbd = inarr[0][2][1][0];
-  std::complex<double> aabb = inarr[2][2][0][0];
-  std::complex<double> aabd = inarr[2][1][1][0];
-  std::complex<double> abbd = inarr[1][2][1][0];
-  std::complex<double> aabbd = inarr[2][2][1][0];
+  std::complex<double> a = inarr[GetVectorIndex(1,0,0,0)];
+  std::complex<double> b = inarr[GetVectorIndex(0,1,0,0)];
+  std::complex<double> d = inarr[GetVectorIndex(0,0,1,0)];
+  std::complex<double> aa = inarr[GetVectorIndex(2,0,0,0)];
+  std::complex<double> ab = inarr[GetVectorIndex(1,1,0,0)];
+  std::complex<double> ad = inarr[GetVectorIndex(1,0,1,0)];
+  std::complex<double> bb = inarr[GetVectorIndex(0,2,0,0)];
+  std::complex<double> bd = inarr[GetVectorIndex(0,1,1,0)];
+  std::complex<double> aab = inarr[GetVectorIndex(2,1,0,0)];
+  std::complex<double> aad = inarr[GetVectorIndex(2,0,1,0)];
+  std::complex<double> abb = inarr[GetVectorIndex(1,2,0,0)];
+  std::complex<double> abd = inarr[GetVectorIndex(1,1,1,0)];
+  std::complex<double> bbd = inarr[GetVectorIndex(0,2,1,0)];
+  std::complex<double> aabb = inarr[GetVectorIndex(2,2,0,0)];
+  std::complex<double> aabd = inarr[GetVectorIndex(2,1,1,0)];
+  std::complex<double> abbd = inarr[GetVectorIndex(1,2,1,0)];
+  std::complex<double> aabbd = inarr[GetVectorIndex(2,2,1,0)];
   return (a * a * b * b * d - aa * b * b * d - a * a * bb * d - 4. * ab * a * b * d - 2. * a * ad * b * b - 2. * a * a * bd * b + 2. * ab * ab * d + 4. * ab * ad * b + 4. * ab * bd * a + 8. * abd * a * b + 4. * aab * b * d + 2. * aad * b * b + 4. * abb * a * d + 2. * bbd * a * a + aa * bb * d + 2. * aa * b * bd + 2. * bb * a * ad - 12. * aabd * b - 12. * abbd * a - 6. * aabb * d - 8. * abd * ab - 2. * bbd * aa - 2. * aad * bb - 4. * aab * bd - 4. * abb * ad + 24. * aabbd).real();
 }
 template <typename T>
 double FlowPtContainer::getStdABCC(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> c = inarr[0][0][1][0];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ac = inarr[1][0][1][0];
-  std::complex<double> bc = inarr[0][1][1][0];
-  std::complex<double> cc = inarr[0][0][2][0];
-  std::complex<double> abc = inarr[1][1][1][0];
-  std::complex<double> acc = inarr[1][0][2][0];
-  std::complex<double> bcc = inarr[0][1][2][0];
-  std::complex<double> abcc = inarr[1][1][2][0];
+  std::complex<double> a = inarr[GetVectorIndex(1,0,0,0)];
+  std::complex<double> b = inarr[GetVectorIndex(0,1,0,0)];
+  std::complex<double> c = inarr[GetVectorIndex(0,0,1,0)];
+  std::complex<double> ab = inarr[GetVectorIndex(1,1,0,0)];
+  std::complex<double> ac = inarr[GetVectorIndex(1,0,1,0)];
+  std::complex<double> bc = inarr[GetVectorIndex(0,1,1,0)];
+  std::complex<double> cc = inarr[GetVectorIndex(0,0,2,0)];
+  std::complex<double> abc = inarr[GetVectorIndex(1,1,1,0)];
+  std::complex<double> acc = inarr[GetVectorIndex(1,0,2,0)];
+  std::complex<double> bcc = inarr[GetVectorIndex(0,1,2,0)];
+  std::complex<double> abcc = inarr[GetVectorIndex(1,1,2,0)];
   return (a * b * c * c - a * b * cc - 2. * a * bc * c - 2. * ac * b * c - ab * c * c + 2. * acc * b + 2. * a * bcc + 4. * abc * c + ab * cc + 2. * ac * bc - 6. * abcc).real();
 }
 template <typename T>
 double FlowPtContainer::getStdABCD(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> c = inarr[0][0][1][0];
-  std::complex<double> d = inarr[0][0][0][1];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ac = inarr[1][0][1][0];
-  std::complex<double> ad = inarr[1][0][0][1];
-  std::complex<double> bc = inarr[0][1][1][0];
-  std::complex<double> bd = inarr[0][1][0][1];
-  std::complex<double> cd = inarr[0][0][1][1];
-  std::complex<double> abc = inarr[1][1][1][0];
-  std::complex<double> abd = inarr[1][1][0][1];
-  std::complex<double> acd = inarr[1][0][1][1];
-  std::complex<double> bcd = inarr[0][1][1][1];
-  std::complex<double> abcd = inarr[1][1][0][1];
+  std::complex<double> a = inarr[GetVectorIndex(1,0,0,0)];
+  std::complex<double> b = inarr[GetVectorIndex(0,1,0,0)];
+  std::complex<double> c = inarr[GetVectorIndex(0,0,1,0)];
+  std::complex<double> d = inarr[GetVectorIndex(0,0,0,1)];
+  std::complex<double> ab = inarr[GetVectorIndex(1,1,0,0)];
+  std::complex<double> ac = inarr[GetVectorIndex(1,0,1,0)];
+  std::complex<double> ad = inarr[GetVectorIndex(1,0,0,1)];
+  std::complex<double> bc = inarr[GetVectorIndex(0,1,1,0)];
+  std::complex<double> bd = inarr[GetVectorIndex(0,1,0,1)];
+  std::complex<double> cd = inarr[GetVectorIndex(0,0,1,1)];
+  std::complex<double> abc = inarr[GetVectorIndex(1,1,1,0)];
+  std::complex<double> abd = inarr[GetVectorIndex(1,1,0,1)];
+  std::complex<double> acd = inarr[GetVectorIndex(1,0,1,1)];
+  std::complex<double> bcd = inarr[GetVectorIndex(0,1,1,1)];
+  std::complex<double> abcd = inarr[GetVectorIndex(1,1,0,1)];
   return (-6. * abcd + 2. * acd * b + ad * bc + 2. * a * bcd + ac * bd + 2. * abd * c - ad * b * c -
           a * bd * c + ab * cd - a * b * cd + 2. * abc * d - ac * b * d - a * bc * d - ab * c * d +
           a * b * c * d)
@@ -739,41 +722,41 @@ double FlowPtContainer::getStdABCD(T& inarr)
 template <typename T>
 double FlowPtContainer::getStdABDD(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> d = inarr[0][0][0][1];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ad = inarr[1][0][0][1];
-  std::complex<double> bd = inarr[0][1][0][1];
-  std::complex<double> dd = inarr[0][0][0][2];
-  std::complex<double> abd = inarr[1][1][0][1];
-  std::complex<double> add = inarr[1][0][0][2];
-  std::complex<double> bdd = inarr[0][1][0][2];
-  std::complex<double> abdd = inarr[1][1][0][2];
+  std::complex<double> a = inarr[GetVectorIndex(1,0,0,0)];
+  std::complex<double> b = inarr[GetVectorIndex(0,1,0,0)];
+  std::complex<double> d = inarr[GetVectorIndex(0,0,0,1)];
+  std::complex<double> ab = inarr[GetVectorIndex(1,1,0,0)];
+  std::complex<double> ad = inarr[GetVectorIndex(1,0,0,1)];
+  std::complex<double> bd = inarr[GetVectorIndex(0,1,0,1)];
+  std::complex<double> dd = inarr[GetVectorIndex(0,0,0,2)];
+  std::complex<double> abd = inarr[GetVectorIndex(1,1,0,1)];
+  std::complex<double> add = inarr[GetVectorIndex(1,0,0,2)];
+  std::complex<double> bdd = inarr[GetVectorIndex(0,1,0,2)];
+  std::complex<double> abdd = inarr[GetVectorIndex(1,1,0,2)];
   return (a * b * d * d - a * b * dd - 2. * a * bd * d - 2. * ad * b * d - ab * d * d + 2. * add * b + 2. * a * bdd + 4. * abd * d + ab * dd + 2. * ad * bd - 6. * abdd).real();
 }
 template <typename T>
 double FlowPtContainer::getStdABC(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> c = inarr[0][0][1][0];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ac = inarr[1][0][1][0];
-  std::complex<double> bc = inarr[0][1][1][0];
-  std::complex<double> abc = inarr[1][1][1][0];
+  std::complex<double> a = inarr[GetVectorIndex(1,0,0,0)];
+  std::complex<double> b = inarr[GetVectorIndex(0,1,0,0)];
+  std::complex<double> c = inarr[GetVectorIndex(0,0,1,0)];
+  std::complex<double> ab = inarr[GetVectorIndex(1,1,0,0)];
+  std::complex<double> ac = inarr[GetVectorIndex(1,0,1,0)];
+  std::complex<double> bc = inarr[GetVectorIndex(0,1,1,0)];
+  std::complex<double> abc = inarr[GetVectorIndex(1,1,1,0)];
   return (a * b * c - ab * c - ac * b - a * bc + 2. * abc).real();
 }
 template <typename T>
 double FlowPtContainer::getStdABD(T& inarr)
 {
-  std::complex<double> a = inarr[1][0][0][0];
-  std::complex<double> b = inarr[0][1][0][0];
-  std::complex<double> d = inarr[0][0][0][1];
-  std::complex<double> ab = inarr[1][1][0][0];
-  std::complex<double> ad = inarr[1][0][0][1];
-  std::complex<double> bd = inarr[0][1][0][1];
-  std::complex<double> abd = inarr[1][1][0][1];
+  std::complex<double> a = inarr[GetVectorIndex(1,0,0,0)];
+  std::complex<double> b = inarr[GetVectorIndex(0,1,0,0)];
+  std::complex<double> d = inarr[GetVectorIndex(0,0,0,1)];
+  std::complex<double> ab = inarr[GetVectorIndex(1,1,0,0)];
+  std::complex<double> ad = inarr[GetVectorIndex(1,0,0,1)];
+  std::complex<double> bd = inarr[GetVectorIndex(0,1,0,1)];
+  std::complex<double> abd = inarr[GetVectorIndex(1,1,0,1)];
   return (a * b * d - ab * d - ad * b - a * bd + 2. * abd).real();
 }
 double FlowPtContainer::OrderedAddition(std::vector<double> vec)
