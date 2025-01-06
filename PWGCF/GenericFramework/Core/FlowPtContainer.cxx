@@ -14,8 +14,7 @@
 #include <vector>
 #include <cstdio>
 
-FlowPtContainer::FlowPtContainer() : TNamed("name", "name"),
-                                     fCMTermList(0),
+FlowPtContainer::FlowPtContainer() : fCMTermList(0),
                                      fCorrList(0),
                                      fCovList(0),
                                      fCumulantList(0),
@@ -29,11 +28,14 @@ FlowPtContainer::FlowPtContainer() : TNamed("name", "name"),
                                      corrNum(),
                                      corrDen(),
                                      cmVal(),
-                                     cmDen() {}
+                                     cmDen(),
+                                     arr{},
+                                     warr{} {}
 FlowPtContainer::~FlowPtContainer()
 {
   delete fCMTermList;
   delete fCorrList;
+  delete fCovList;
 };
 FlowPtContainer::FlowPtContainer(const char* name) : TNamed(name, name),
                                                      fCMTermList(0),
@@ -50,7 +52,9 @@ FlowPtContainer::FlowPtContainer(const char* name) : TNamed(name, name),
                                                      corrNum(),
                                                      corrDen(),
                                                      cmVal(),
-                                                     cmDen() {}
+                                                     cmDen(),
+                                                      arr{},
+                                                      warr{} {}
 FlowPtContainer::FlowPtContainer(const char* name, const char* title) : TNamed(name, title),
                                                                         fCMTermList(0),
                                                                         fCorrList(0),
@@ -66,7 +70,9 @@ FlowPtContainer::FlowPtContainer(const char* name, const char* title) : TNamed(n
                                                                         corrNum(),
                                                                         corrDen(),
                                                                         cmVal(),
-                                                                        cmDen() {}
+                                                                        cmDen(),
+                                                                        arr{},
+                                                                        warr{} {}
 void FlowPtContainer::Initialise(const o2::framework::AxisSpec axis, const int& m, const GFWCorrConfigs& configs, const int& nsub)
 {
   if (!mpar)
@@ -149,6 +155,7 @@ void FlowPtContainer::Initialise(const o2::framework::AxisSpec axis, const int& 
 };
 void FlowPtContainer::Initialise(int nbinsx, double* xbins, const int& m, const GFWCorrConfigs& configs, const int& nsub)
 {
+  printf("1\n");
   if (!mpar)
     mpar = m;
   if (fCMTermList)
@@ -159,14 +166,21 @@ void FlowPtContainer::Initialise(int nbinsx, double* xbins, const int& m, const 
     delete fCorrList;
   fCorrList = new TList();
   fCorrList->SetOwner(kTRUE);
+  if (fCovList)
+    delete fCovList;
+  fCovList = new TList();
+  fCovList->SetOwner(kTRUE);
+  printf("2\n");
   for (int m = 0; m < mpar; ++m) {
     fCorrList->Add(new BootstrapProfile(Form("mpt%i", m + 1), Form("mpt%i", m + 1), nbinsx, xbins));
   }
+  printf("3\n");
   for (int m = 0; m < 4; ++m) {
     for (int i = 0; i <= m; ++i) {
       fCMTermList->Add(new BootstrapProfile(Form("cm%i_Mpt%i", m + 1, i), Form("cm%i_Mpt%i", m + 1, i), nbinsx, xbins));
     }
   }
+  printf("4\n");
   if (fUseGap) {
     for (int i = 0; i < configs.GetSize(); ++i) {
       for (auto m(1); m <= mpar; ++m) {
@@ -197,12 +211,14 @@ void FlowPtContainer::Initialise(int nbinsx, double* xbins, const int& m, const 
       fCovList->Add(new BootstrapProfile("ChFull22pt1_Mpt0", "ChFull22pt1_Mpt0", nbinsx, xbins));
       fCovList->Add(new BootstrapProfile("ChFull22pt1_Mpt1", "ChFull22pt1_Mpt1", nbinsx, xbins));
     } else {
+      printf("5\n");
       fCovList->Add(new BootstrapProfile("ChFull24pt2", "ChFull24pt2", nbinsx, xbins));
       fCovList->Add(new BootstrapProfile("ChFull24pt1", "ChFull24pt1", nbinsx, xbins));
       fCovList->Add(new BootstrapProfile("ChFull22pt2", "ChFull22pt2", nbinsx, xbins));
       fCovList->Add(new BootstrapProfile("ChFull22pt1", "ChFull22pt1", nbinsx, xbins));
     }
   }
+  printf("6\n");
   if (nsub) {
     for (int i = 0; i < fCorrList->GetEntries(); ++i)
       dynamic_cast<BootstrapProfile*>(fCorrList->At(i))->InitializeSubsamples(nsub);
@@ -225,6 +241,10 @@ void FlowPtContainer::Initialise(int nbinsx, double xlow, double xhigh, const in
     delete fCorrList;
   fCorrList = new TList();
   fCorrList->SetOwner(kTRUE);
+  if (fCovList)
+    delete fCovList;
+  fCovList = new TList();
+  fCovList->SetOwner(kTRUE);
   for (int m = 0; m < mpar; ++m) {
     fCorrList->Add(new BootstrapProfile(Form("mpt%i", m + 1), Form("mpt%i", m + 1), nbinsx, xlow, xhigh));
   }
@@ -900,6 +920,7 @@ Long64_t FlowPtContainer::Merge(TCollection* collist)
   while ((l_PTC = dynamic_cast<FlowPtContainer*>(all_PTC()))) {
     TList* t_CMTerm = l_PTC->fCMTermList;
     TList* t_Corr = l_PTC->fCorrList;
+    TList* t_Cov = l_PTC->fCovList;
     TList* t_Cum = l_PTC->fCumulantList;
     TList* t_CM = l_PTC->fCentralMomentList;
     if (t_CMTerm) {
@@ -914,6 +935,12 @@ Long64_t FlowPtContainer::Merge(TCollection* collist)
         fCorrList = dynamic_cast<TList*>(t_Corr->Clone());
       else
         MergeBSLists(fCorrList, t_Corr);
+    }
+    if (t_Cov) {
+      if (!fCovList)
+        fCovList = dynamic_cast<TList*>(t_Cov->Clone());
+      else
+        MergeBSLists(fCovList, t_Cov);
     }
     if (t_Cum) {
       if (!fCumulantList)

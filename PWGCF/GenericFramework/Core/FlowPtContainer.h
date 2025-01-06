@@ -101,17 +101,17 @@ class FlowPtContainer : public TNamed
     fillCounter = 0;
   };
 
- private:
   TList* fCMTermList;
   TList* fCorrList;
   TList* fCovList;
   TList* fCumulantList;
   TList* fCentralMomentList;
-  int mpar;
-  int fillCounter;
-  unsigned int fEventWeight;
-  bool fUseCentralMoments;
-  bool fUseGap;
+
+  int mpar;                             //!
+  int fillCounter;                      //!
+  unsigned int fEventWeight;            //!
+  bool fUseCentralMoments;              //!
+  bool fUseGap;                         //!
   void MergeBSLists(TList* source, TList* target);
   TH1* raiseHistToPower(TH1* inh, double p);
   std::vector<double> sumP;             //!
@@ -141,8 +141,9 @@ class FlowPtContainer : public TNamed
   double getStdABC(T& inarr);
   template <typename T>
   double getStdABD(T& inarr);
+private:
   static constexpr float fFactorial[9] = {1., 1., 2., 6., 24., 120., 720., 5040., 40320.};
   static constexpr int fSign[9] = {1, -1, 1, -1, 1, -1, 1, -1, 1};
-  ClassDef(FlowPtContainer, 1);
+  ClassDef(FlowPtContainer, 2);
 };
 #endif // PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_
