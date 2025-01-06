@@ -137,7 +137,7 @@ o2physics_add_dpl_workflow(mftmch-matching-data
 
 o2physics_add_dpl_workflow(occ-table-producer
                     SOURCES occupancyTableProducer.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
 o2physics_add_dpl_workflow(mftmch-matching-data-mc
                     SOURCES match-mft-mch-data-mc.cxx
