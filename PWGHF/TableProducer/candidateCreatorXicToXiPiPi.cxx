@@ -374,7 +374,7 @@ struct HfCandidateCreatorXicToXiPiPi {
                        casc.mXi(), casc.mLambda(), massXiPi0, massXiPi1,
                        /*DCA information*/
                        casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(),
-                       casc.dcaXYCascToPV(), casc.dcaZCascToPV(), 
+                       casc.dcaXYCascToPV(), casc.dcaZCascToPV(),
                        /*PID information*/
                        nSigTpcPiFromXicPlus0, nSigTpcPiFromXicPlus1, nSigTpcBachelorPi, nSigTpcPiFromLambda, nSigTpcPrFromLambda,
                        nSigTofPiFromXicPlus0, nSigTofPiFromXicPlus1, nSigTofBachelorPi, nSigTofPiFromLambda, nSigTofPrFromLambda);
@@ -638,7 +638,7 @@ struct HfCandidateCreatorXicToXiPiPi {
                        casc.mXi(), casc.mLambda(), massXiPi0, massXiPi1,
                        /*DCA information*/
                        casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(),
-                       casc.dcaXYCascToPV(), casc.dcaZCascToPV(), 
+                       casc.dcaXYCascToPV(), casc.dcaZCascToPV(),
                        /*PID information*/
                        nSigTpcPiFromXicPlus0, nSigTpcPiFromXicPlus1, nSigTpcBachelorPi, nSigTpcPiFromLambda, nSigTpcPrFromLambda,
                        nSigTofPiFromXicPlus0, nSigTofPiFromXicPlus1, nSigTofBachelorPi, nSigTofPiFromLambda, nSigTofPrFromLambda);
