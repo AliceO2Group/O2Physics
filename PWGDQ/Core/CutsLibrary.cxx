@@ -3315,7 +3315,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-    if (!nameStr.compare("emu_electron_test1_tightnsigma")) {
+  if (!nameStr.compare("emu_electron_test1_tightnsigma")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaLoose"));
