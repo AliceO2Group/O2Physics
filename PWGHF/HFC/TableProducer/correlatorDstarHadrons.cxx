@@ -190,22 +190,22 @@ struct HfCorrelatorDstarHadrons {
 
     binningScheme = {{binsZVtx, binsMultiplicity}, true};
 
-    registry.add("QA/hCandsPerCol", "Candidates per Collision", {HistType::kTH1F, {{100, 0.0, 100.0}}});
-    registry.add("QA/hAssoTracksPerCol", "Tracks per Collision", {HistType::kTH1F, {{1000, 0.0, 1000.0}}});
+    registry.add("QA/hCandsPerCol", "Candidates per Collision", {HistType::kTH1D, {{100, 0.0, 100.0}}});
+    registry.add("QA/hAssoTracksPerCol", "Tracks per Collision", {HistType::kTH1D, {{1000, 0.0, 1000.0}}});
     registry.add("QA/hCandsVsTracksPerCol", "Candidates vs Tracks per Collision", {HistType::kTHnSparseF, {{100, 0.0, 100.0}, {1000, 0.0, 1000.0}}});
     registry.add("QA/hCandsSignalVsTracksPerCol", "Candidates vs Tracks per Collision", {HistType::kTHnSparseF, {{100, 0.0, 100.0}, {1000, 0.0, 1000.0}}});
     registry.add("QA/hCandsSideBandVsTracksPerCol", "Candidates vs Tracks per Collision", {HistType::kTHnSparseF, {{100, 0.0, 100.0}, {1000, 0.0, 1000.0}}});
     // eta phi single particle distribution
-    registry.add("QA/hPhiDstarSignal", "Phi distribution of Dstar from signal region", {HistType::kTH1F, {axisPhi}});
-    registry.add("QA/hEtaDstarSignal", "Eta distribution of Dstar from signal region", {HistType::kTH1F, {axisEta}});
-    registry.add("QA/hPhiDstarSideBand", "Phi distribution of Dstar from side band region", {HistType::kTH1F, {axisPhi}});
-    registry.add("QA/hEtaDstarSideBand", "Eta distribution of Dstar from side band region", {HistType::kTH1F, {axisEta}});
-    registry.add("QA/hPhiAssoTrack", "Phi distribution of Associated Track", {HistType::kTH1F, {axisPhi}});
-    registry.add("QA/hEtaAssoTrack", "Eta distribution of Associated Track", {HistType::kTH1F, {axisEta}});
+    registry.add("QA/hPhiDstarSignal", "Phi distribution of Dstar from signal region", {HistType::kTH1D, {axisPhi}});
+    registry.add("QA/hEtaDstarSignal", "Eta distribution of Dstar from signal region", {HistType::kTH1D, {axisEta}});
+    registry.add("QA/hPhiDstarSideBand", "Phi distribution of Dstar from side band region", {HistType::kTH1D, {axisPhi}});
+    registry.add("QA/hEtaDstarSideBand", "Eta distribution of Dstar from side band region", {HistType::kTH1D, {axisEta}});
+    registry.add("QA/hPhiAssoTrack", "Phi distribution of Associated Track", {HistType::kTH1D, {axisPhi}});
+    registry.add("QA/hEtaAssoTrack", "Eta distribution of Associated Track", {HistType::kTH1D, {axisEta}});
     // delta eta phi distribution
-    registry.add("QA/hDPhiDstarAssoTrack", "Delta Phi distribution between Dstar and Associated Track", {HistType::kTH1F, {axisDeltaPhi}});
-    registry.add("QA/hDEtaDstarAssoTrack", "Delta Eta distribution between Dstar and Associated Track", {HistType::kTH1F, {axisDeltaEta}});
-    registry.add("QA/hDPhiDEtaDstarAssoTrack", "Delta Phi vs Delta Eta distribution between Dstar and Associated Track", {HistType::kTH2F, {axisDeltaPhi, axisDeltaEta}});
+    registry.add("QA/hDPhiDstarAssoTrack", "Delta Phi distribution between Dstar and Associated Track", {HistType::kTH1D, {axisDeltaPhi}});
+    registry.add("QA/hDEtaDstarAssoTrack", "Delta Eta distribution between Dstar and Associated Track", {HistType::kTH1D, {axisDeltaEta}});
+    registry.add("QA/hDPhiDEtaDstarAssoTrack", "Delta Phi vs Delta Eta distribution between Dstar and Associated Track", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
   }
 
   void processDataSameEvent(FilteredCollisions const& collisions, // only collisions who have altleast one D*
