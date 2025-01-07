@@ -1474,7 +1474,7 @@ struct tofSpectra { // o2-linter: disable=name/struct
     }
   } // end of the process function
   PROCESS_SWITCH(tofSpectra, processDerived, "Derived data processor", false);
-
+// o2-linter: disable-file=name/macro
 #define makeProcessFunction(processorName, inputPid, particleId, isFull, tofTable, tpcTable)   \
   void process##processorName##inputPid(CollisionCandidates::iterator const& collision,        \
                                         soa::Join<TrackCandidates,                             \
