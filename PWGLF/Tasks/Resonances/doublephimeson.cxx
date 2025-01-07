@@ -41,7 +41,7 @@ using namespace o2::soa;
 
 struct doublephimeson {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
+  Configurable<bool> fillDeltaMass{"fillDeltaMass", 1, "Fill Delta Mass"};
   Configurable<bool> fillRotation{"fillRotation", 1, "Fill rotation"};
   Configurable<int> strategyPID1{"strategyPID1", 0, "PID strategy 1"};
   Configurable<int> strategyPID2{"strategyPID2", 0, "PID strategy 2"};
@@ -265,7 +265,12 @@ struct doublephimeson {
         auto cosThetaStar = getCosTheta(exotic, Phid1);
         auto kstar = getkstar(Phid1, Phid2);
         auto deltaR = TMath::Sqrt(TMath::Power(Phid1.Phi() - Phid2.Phi(), 2.0) + TMath::Power(Phid1.Eta() - Phid2.Eta(), 2.0));
-        histos.fill(HIST("SEMassUnlike"), exotic.M(), exotic.Pt(), kstar, cosThetaStar, deltaR);
+        if (!fillDeltaMass) {
+          histos.fill(HIST("SEMassUnlike"), exotic.M(), exotic.Pt(), kstar, cosThetaStar, deltaR);
+        }
+        if (fillDeltaMass) {
+          histos.fill(HIST("SEMassUnlike"), exotic.M() - Phid1.M(), exotic.Pt(), kstar, cosThetaStar, deltaR);
+        }
         histos.fill(HIST("SEMass"), Phid1.M(), Phid2.M(), Phid1.Pt(), Phid2.Pt());
         if (fillRotation) {
           for (int nrotbkg = 0; nrotbkg < 5; nrotbkg++) {
@@ -280,7 +285,12 @@ struct doublephimeson {
             auto cosThetaStar_rot = getCosTheta(exoticRot, Phid1Rot);
             auto kstar_rot = getkstar(Phid1Rot, Phid2);
             auto deltaR_rot = TMath::Sqrt(TMath::Power(Phid1Rot.Phi() - Phid2.Phi(), 2.0) + TMath::Power(Phid1Rot.Eta() - Phid2.Eta(), 2.0));
-            histos.fill(HIST("SEMassRot"), exoticRot.M(), exoticRot.Pt(), kstar_rot, cosThetaStar_rot, deltaR_rot);
+            if (!fillDeltaMass) {
+              histos.fill(HIST("SEMassRot"), exoticRot.M(), exoticRot.Pt(), kstar_rot, cosThetaStar_rot, deltaR_rot);
+            }
+            if (fillDeltaMass) {
+              histos.fill(HIST("SEMassRot"), exoticRot.M() - Phid1Rot.M(), exoticRot.Pt(), kstar_rot, cosThetaStar_rot, deltaR_rot);
+            }
           }
         }
       }
@@ -334,7 +344,12 @@ struct doublephimeson {
         auto cosThetaStar = getCosTheta(exotic, Phid1);
         auto kstar = getkstar(Phid1, Phid2);
         auto deltaR = TMath::Sqrt(TMath::Power(Phid1.Phi() - Phid2.Phi(), 2.0) + TMath::Power(Phid1.Eta() - Phid2.Eta(), 2.0));
-        histos.fill(HIST("MEMassUnlike"), exotic.M(), exotic.Pt(), kstar, cosThetaStar, deltaR);
+        if (!fillDeltaMass) {
+          histos.fill(HIST("MEMassUnlike"), exotic.M(), exotic.Pt(), kstar, cosThetaStar, deltaR);
+        }
+        if (fillDeltaMass) {
+          histos.fill(HIST("MEMassUnlike"), exotic.M() - Phid1.M(), exotic.Pt(), kstar, cosThetaStar, deltaR);
+        }
       }
     }
   }
