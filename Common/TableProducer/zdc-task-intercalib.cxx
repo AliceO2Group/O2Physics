@@ -75,7 +75,7 @@ struct zdcInterCalib {
   void process(ColEvSels const& cols, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/)
   {
     // collision-based event selection
-    for (auto const &collision : cols) {
+    for (auto const& collision : cols) {
       const auto& foundBC = collision.foundBC_as<BCsRun3>();
       if (foundBC.has_zdc()) {
         const auto& zdc = foundBC.zdc();
