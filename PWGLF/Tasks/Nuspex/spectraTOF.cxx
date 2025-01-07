@@ -70,7 +70,7 @@ std::array<std::shared_ptr<TH2>, NpCharge> hDecayLengthMCBeauty; // Decay Length
 std::array<std::shared_ptr<TH2>, NpCharge> hDecayLengthMCNotHF;  // Decay Length in the MC for particles from not a HF
 
 // Spectra task
-struct tofSpectra {// o2-linter: disable=struct
+struct tofSpectra {// o2-linter: disable=name/struct
   struct : ConfigurableGroup {
     Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
     Configurable<int> cfgINELCut{"cfgINELCut", 0, "INEL event selection: 0 no sel, 1 INEL>0, 2 INEL>1"};
@@ -1493,7 +1493,7 @@ struct tofSpectra {// o2-linter: disable=struct
   PROCESS_SWITCH(tofSpectra, process##processorName##inputPid, Form("Process for the %s hypothesis from %s tables", #particleId, #processorName), false);
 
 // Full tables
-#define makeProcessFunctionFull(inputPid, particleId) makeProcessFunction(Full, inputPid, particleId, true, TOFFull, TPCFull)// o2-linter: disable=macro
+#define makeProcessFunctionFull(inputPid, particleId) makeProcessFunction(Full, inputPid, particleId, true, TOFFull, TPCFull)// o2-linter: disable=name/macro
 
   makeProcessFunctionFull(El, Electron);
   makeProcessFunctionFull(Mu, Muon);
@@ -1507,7 +1507,7 @@ struct tofSpectra {// o2-linter: disable=struct
 #undef makeProcessFunctionFull
 
 // Full LF tables
-#define makeProcessFunctionFull(inputPid, particleId) makeProcessFunction(LfFull, inputPid, particleId, true, TOFFull, TPCLfFull)// o2-linter: disable=macro
+#define makeProcessFunctionFull(inputPid, particleId) makeProcessFunction(LfFull, inputPid, particleId, true, TOFFull, TPCLfFull)// o2-linter: disable=name/macro
 
   makeProcessFunctionFull(El, Electron);
   makeProcessFunctionFull(Mu, Muon);
@@ -1645,7 +1645,8 @@ struct tofSpectra {// o2-linter: disable=struct
 
   using RecoMCCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFT0Ms>; // RD
   template <std::size_t i, typename TrackType, typename ParticleType>
-  void fillTrackHistograms_MC(TrackType const& track, // o2-linter: disable=function-variable
+  // o2-linter: disable=name/function-variable
+  void fillTrackHistograms_MC(TrackType const& track,
                               ParticleType::iterator const& mcParticle,
                               RecoMCCollisions::iterator const& collision,
                               ParticleType const& mcParticles)
@@ -1720,11 +1721,14 @@ struct tofSpectra {// o2-linter: disable=struct
       }
 
       if (enableDCAvsmotherHistograms) {
-        bool IsD0Mother = false;// o2-linter: disable=function-variable
-        bool IsCharmMother = false;// o2-linter: disable=function-variable
-        bool IsBeautyMother = false;// o2-linter: disable=function-variable
-        bool IsNotHFMother = false;// o2-linter: disable=function-variable
-
+      // o2-linter: disable=name/function-variable
+        bool IsD0Mother = false;
+        // o2-linter: disable=name/function-variable
+        bool IsCharmMother = false;
+        // o2-linter: disable=name/function-variable
+        bool IsBeautyMother = false;
+        // o2-linter: disable=name/function-variable
+        bool IsNotHFMother = false;
         if (mcParticle.has_mothers()) {
           const int charmOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, false);
           for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
@@ -1880,7 +1884,8 @@ struct tofSpectra {// o2-linter: disable=struct
   }
 
   template <std::size_t i, typename ParticleType>
-  void fillParticleHistograms_MC(const float multiplicity, ParticleType const& mcParticle)// o2-linter: disable=function-variable
+  // o2-linter: disable=name/function-variable
+  void fillParticleHistograms_MC(const float multiplicity, ParticleType const& mcParticle)
   {
     if (!isParticleEnabled<i>()) { // Check if the particle is enabled
       return;
@@ -1902,7 +1907,8 @@ struct tofSpectra {// o2-linter: disable=struct
   }
 
   template <std::size_t i, typename ParticleType>
-  void fillParticleHistograms_MCRecoEvs(ParticleType const& mcParticle, RecoMCCollisions::iterator const& collision)// o2-linter: disable=function-variable
+  // o2-linter: disable=name/function-variable
+  void fillParticleHistograms_MCRecoEvs(ParticleType const& mcParticle, RecoMCCollisions::iterator const& collision)
   {
     if (!isParticleEnabled<i>()) { // Check if the particle is enabled
       return;
@@ -1960,7 +1966,8 @@ struct tofSpectra {// o2-linter: disable=struct
   }
 
   template <std::size_t i, typename ParticleType>
-  void fillParticleHistograms_MCGenEvs(ParticleType const& mcParticle, GenMCCollisions::iterator const& mcCollision)// o2-linter: disable=function-variable
+  // o2-linter: disable=name/function-variable
+  void fillParticleHistograms_MCGenEvs(ParticleType const& mcParticle, GenMCCollisions::iterator const& mcCollision)
   {
 
     if (!isParticleEnabled<i>()) { // Check if the particle is enabled
@@ -2163,8 +2170,8 @@ struct tofSpectra {// o2-linter: disable=struct
     }
   }
   PROCESS_SWITCH(tofSpectra, processMCgen, "process generated MC", false);
-  void processMCgen_RecoEvs(soa::Join<TrackCandidates, // o2-linter: disable=function-variable
-                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+  // o2-linter: disable=name/function-variable
+  void processMCgen_RecoEvs(soa::Join<TrackCandidates, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                   aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks,
                           aod::McTrackLabels const& mcTrackLabels,
                           RecoMCCollisions const& collisions,
