@@ -114,11 +114,11 @@ DECLARE_SOA_COLUMN(Chi2PrimPion, chi2PrimPion, float); //! Chi2 of prong's appro
 DECLARE_SOA_COLUMN(DCAProtonKaon, dcaProtonKaon, float); //! Distance of closest approach between 2 prongs, cm
 DECLARE_SOA_COLUMN(DCAProtonPion, dcaProtonPion, float); //! Distance of closest approach between 2 prongs, cm
 DECLARE_SOA_COLUMN(DCAPionKaon, dcaPionKaon, float); //! Distance of closest approach between 2 prongs, cm
-DECLARE_SOA_COLUMN(Chi2geoProtonKaon, chi2geoProtonKaon, float); // Chi2 of two prongs' approach to each other
-DECLARE_SOA_COLUMN(Chi2geoProtonPion, chi2geoProtonPion, float); // Chi2 of two prongs' approach to each other
-DECLARE_SOA_COLUMN(Chi2geoPionKaon, chi2geoPionKaon, float); // Chi2 of two prongs' approach to each other
-DECLARE_SOA_COLUMN(Chi2geo, chi2geo, float);     //! chi2 geo of the full candidate
-DECLARE_SOA_COLUMN(Chi2topo, chi2topo, float);     //! chi2 topo of the full candidate (chi2prim of candidate to PV)
+DECLARE_SOA_COLUMN(Chi2geoProtonKaon, chi2GeoProtonKaon, float); // Chi2 of two prongs' approach to each other
+DECLARE_SOA_COLUMN(Chi2geoProtonPion, chi2GeoProtonPion, float); // Chi2 of two prongs' approach to each other
+DECLARE_SOA_COLUMN(Chi2geoPionKaon, chi2GeoPionKaon, float); // Chi2 of two prongs' approach to each other
+DECLARE_SOA_COLUMN(Chi2geo, chi2Geo, float);     //! chi2 geo of the full candidate
+DECLARE_SOA_COLUMN(Chi2topo, chi2Topo, float);     //! chi2 topo of the full candidate (chi2prim of candidate to PV)
 DECLARE_SOA_COLUMN(L, l, float);     //! decay length, cm
 DECLARE_SOA_COLUMN(DeltaL, deltaL, float);     //! decay length error
 DECLARE_SOA_COLUMN(LdL, ldl, float);     //! decay length over its error
@@ -598,26 +598,26 @@ struct HfTreeCreatorLcToPKPi {
           }
 
           if constexpr  (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
-            const float X = candidate.xSecondaryVertex();
-            const float Y = candidate.ySecondaryVertex();
-            const float Z = candidate.zSecondaryVertex();
-            const float ErrX = candidate.kfErrorX();
-            const float ErrY = candidate.kfErrorY();
-            const float ErrZ = candidate.kfErrorZ();
-            const float ErrPVX = candidate.kfErrorPVX();
-            const float ErrPVY = candidate.kfErrorPVY();
-            const float ErrPVZ = candidate.kfErrorPVZ();
-            const float chi2prim_proton = CandFlag == 0 ? candidate.kfChi2PrimProng0() : candidate.kfChi2PrimProng2();
-            const float chi2prim_kaon = candidate.kfChi2PrimProng1();
-            const float chi2prim_pion = CandFlag == 0 ? candidate.kfChi2PrimProng2() : candidate.kfChi2PrimProng0();
-            const float dca_proton_kaon = CandFlag == 0 ? candidate.kfDCAProng0Prong1() : candidate.kfDCAProng1Prong2();
-            const float dca_proton_pion = candidate.kfDCAProng0Prong2();
-            const float dca_pion_kaon = CandFlag == 0 ? candidate.kfDCAProng1Prong2() : candidate.kfDCAProng0Prong1();
-            const float chi2geo_proton_kaon = CandFlag == 0 ? candidate.kfChi2geoProng0Prong1() : candidate.kfChi2geoProng1Prong2();
-            const float chi2geo_proton_pion = candidate.kfChi2geoProng0Prong2();
-            const float chi2geo_pion_kaon = CandFlag == 0 ? candidate.kfChi2geoProng1Prong2() : candidate.kfChi2geoProng0Prong1();
-            const float chi2geo = candidate.kfChi2geo();
-            const float chi2topo = candidate.kfChi2topo();
+            const float svX = candidate.xSecondaryVertex();
+            const float svY = candidate.ySecondaryVertex();
+            const float svZ = candidate.zSecondaryVertex();
+            const float svErrX = candidate.kfErrorX();
+            const float svErrY = candidate.kfErrorY();
+            const float svErrZ = candidate.kfErrorZ();
+            const float pvErrX = candidate.kfErrorPVX();
+            const float pvErrY = candidate.kfErrorPVY();
+            const float pvErrZ = candidate.kfErrorPVZ();
+            const float chi2primProton = CandFlag == 0 ? candidate.kfChi2PrimProng0() : candidate.kfChi2PrimProng2();
+            const float chi2primKaon = candidate.kfChi2PrimProng1();
+            const float chi2primPion = CandFlag == 0 ? candidate.kfChi2PrimProng2() : candidate.kfChi2PrimProng0();
+            const float dcaProtonKaon = CandFlag == 0 ? candidate.kfDCAProng0Prong1() : candidate.kfDCAProng1Prong2();
+            const float dcaProtonPion = candidate.kfDCAProng0Prong2();
+            const float dcaPionKaon = CandFlag == 0 ? candidate.kfDCAProng1Prong2() : candidate.kfDCAProng0Prong1();
+            const float chi2GeoProtonKaon = CandFlag == 0 ? candidate.kfChi2geoProng0Prong1() : candidate.kfChi2geoProng1Prong2();
+            const float chi2GeoProtonPion = candidate.kfChi2geoProng0Prong2();
+            const float chi2GeoPionKaon = CandFlag == 0 ? candidate.kfChi2geoProng1Prong2() : candidate.kfChi2geoProng0Prong1();
+            const float chi2Geo = candidate.kfChi2geo();
+            const float chi2Topo = candidate.kfChi2topo();
             const float l = candidate.kfL();
             const float dl = candidate.kfDeltaL();
             const float pt = std::sqrt(candidate.kfPx()*candidate.kfPx() + candidate.kfPy()*candidate.kfPy());
@@ -626,33 +626,33 @@ struct HfTreeCreatorLcToPKPi {
             const float p = std::sqrt(pt*pt + candidate.kfPz()*candidate.kfPz());
             const float deltaP = std::sqrt(pt*pt*deltaPt*deltaPt +
                                            candidate.kfPz()*candidate.kfPz()*candidate.kfErrorPz()*candidate.kfErrorPz()) / p;
-            const float T = l * MassLambdaCPlus / LightSpeedCm2PS / p;
+            const float t = l * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float mass = CandFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
             rowCandidateKF(
-              X, Y, Z, ErrX, ErrY, ErrZ,
-              ErrPVX, ErrPVY, ErrPVZ,
-              chi2prim_proton, chi2prim_kaon, chi2prim_pion,
-              dca_proton_kaon, dca_proton_pion, dca_pion_kaon,
-              chi2geo_proton_kaon, chi2geo_proton_pion, chi2geo_pion_kaon,
-              chi2geo, chi2topo, l, dl, l/dl, T, deltaT,
+              svX, svY, svZ, svErrX, svErrY, svErrZ,
+              pvErrX, pvErrY, pvErrZ,
+              chi2primProton, chi2primKaon, chi2primPion,
+              dcaProtonKaon, dcaProtonPion, dcaPionKaon,
+              chi2GeoProtonKaon, chi2GeoProtonPion, chi2GeoPionKaon,
+              chi2Geo, chi2Topo, l, dl, l/dl, t, deltaT,
               mass, p, pt, deltaP, deltaPt,
               FunctionSelection, sigbgstatus
             );
           }
           if (fillCandidateMcTable) {
-            float p, pt, X, Y, Z, X_PV, Y_PV, Z_PV, L, T;
+            float p, pt, svX, svY, svZ, pvX, pvY, pvZ, l, t;
             if (!isMcCandidateSignal) {
               p = UndefValueFloat;
               pt = UndefValueFloat;
-              X = UndefValueFloat;
-              Y = UndefValueFloat;
-              Z = UndefValueFloat;
-              X_PV = UndefValueFloat;
-              Y_PV = UndefValueFloat;
-              Z_PV = UndefValueFloat;
-              L = UndefValueFloat;
-              T = UndefValueFloat;
+              svX = UndefValueFloat;
+              svY = UndefValueFloat;
+              svZ = UndefValueFloat;
+              pvX = UndefValueFloat;
+              pvY = UndefValueFloat;
+              pvZ = UndefValueFloat;
+              l = UndefValueFloat;
+              t = UndefValueFloat;
             } else {
               auto mcParticleProng0 = candidate.template prong0_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
               auto indexMother = RecoDecay::getMother(particles, mcParticleProng0, o2::constants::physics::Pdg::kLambdaCPlus, true);
@@ -662,19 +662,19 @@ struct HfTreeCreatorLcToPKPi {
               pt = particleMother.pt();
               const float p2m = p / MassLambdaCPlus;
               const float gamma = std::sqrt(1 + p2m*p2m); // mother's particle Lorentz factor
-              X_PV = mcCollision.posX();
-              Y_PV = mcCollision.posY();
-              Z_PV = mcCollision.posZ();
-              X = mcParticleProng0.vx();
-              Y = mcParticleProng0.vy();
-              Z = mcParticleProng0.vz();
-              L = std::sqrt((X-X_PV)*(X-X_PV) + (Y-Y_PV)*(Y-Y_PV) + (Z-Z_PV)*(Z-Z_PV));
-              T = mcParticleProng0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
+              pvX = mcCollision.posX();
+              pvY = mcCollision.posY();
+              pvZ = mcCollision.posZ();
+              svX = mcParticleProng0.vx();
+              svY = mcParticleProng0.vy();
+              svZ = mcParticleProng0.vz();
+              l = std::sqrt((svX-pvX)*(svX-pvX) + (svY-pvY)*(svY-pvY) + (svZ-pvZ)*(svZ-pvZ));
+              t = mcParticleProng0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
             }
             rowCandidateMC(
               p, pt,
-              X, Y, Z, L, T,
-              X_PV, Y_PV, Z_PV
+              svX, svY, svZ, l, t,
+              pvX, pvY, pvZ
             );
           }
         }
@@ -985,11 +985,11 @@ struct HfTreeCreatorLcToPKPi {
             const float dca_proton_kaon = CandFlag == 0 ? candidate.kfDCAProng0Prong1() : candidate.kfDCAProng1Prong2();
             const float dca_proton_pion = candidate.kfDCAProng0Prong2();
             const float dca_pion_kaon = CandFlag == 0 ? candidate.kfDCAProng1Prong2() : candidate.kfDCAProng0Prong1();
-            const float chi2geo_proton_kaon = CandFlag == 0 ? candidate.kfChi2geoProng0Prong1() : candidate.kfChi2geoProng1Prong2();
-            const float chi2geo_proton_pion = candidate.kfChi2geoProng0Prong2();
-            const float chi2geo_pion_kaon = CandFlag == 0 ? candidate.kfChi2geoProng1Prong2() : candidate.kfChi2geoProng0Prong1();
-            const float chi2geo = candidate.kfChi2geo();
-            const float chi2topo = candidate.kfChi2topo();
+            const float chi2Geo_proton_kaon = CandFlag == 0 ? candidate.kfChi2geoProng0Prong1() : candidate.kfChi2geoProng1Prong2();
+            const float chi2Geo_proton_pion = candidate.kfChi2geoProng0Prong2();
+            const float chi2Geo_pion_kaon = CandFlag == 0 ? candidate.kfChi2geoProng1Prong2() : candidate.kfChi2geoProng0Prong1();
+            const float chi2Geo = candidate.kfChi2geo();
+            const float chi2Topo = candidate.kfChi2topo();
             const float l = candidate.kfL();
             const float dl = candidate.kfDeltaL();
             const float pt = std::sqrt(candidate.kfPx()*candidate.kfPx() + candidate.kfPy()*candidate.kfPy());
@@ -1006,8 +1006,8 @@ struct HfTreeCreatorLcToPKPi {
               ErrPVX, ErrPVY, ErrPVZ,
               chi2prim_proton, chi2prim_kaon, chi2prim_pion,
               dca_proton_kaon, dca_proton_pion, dca_pion_kaon,
-              chi2geo_proton_kaon, chi2geo_proton_pion, chi2geo_pion_kaon,
-              chi2geo, chi2topo, l, dl, l/dl, T, deltaT,
+              chi2Geo_proton_kaon, chi2Geo_proton_pion, chi2Geo_pion_kaon,
+              chi2Geo, chi2Topo, l, dl, l/dl, T, deltaT,
               mass, p, pt, deltaP, deltaPt,
               FunctionSelection, UndefValueInt
             );

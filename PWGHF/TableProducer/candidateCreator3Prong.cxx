@@ -488,17 +488,17 @@ struct HfCandidateCreator3Prong {
         registry.fill(HIST("hDcaZProngs"), track2.pt(), UndefValueFloat);
       }
 
-      const float chi2prim_first = KFCalculateChi2ToPrimaryVertex(kfFirstProton, KFPV);
-      const float chi2prim_second = KFCalculateChi2ToPrimaryVertex(kfSecondKaon, KFPV);
-      const float chi2prim_third = KFCalculateChi2ToPrimaryVertex(kfThirdPion, KFPV);
+      const float chi2primFirst = KFCalculateChi2ToPrimaryVertex(kfFirstProton, KFPV);
+      const float chi2primSecond = KFCalculateChi2ToPrimaryVertex(kfSecondKaon, KFPV);
+      const float chi2primThird = KFCalculateChi2ToPrimaryVertex(kfThirdPion, KFPV);
 
-      const float DCA_second_third = KFCalculateDistanceBetweenParticles(kfSecondKaon, kfThirdPion);
-      const float DCA_first_third = KFCalculateDistanceBetweenParticles(kfFirstProton, kfThirdPion);
-      const float DCA_first_second = KFCalculateDistanceBetweenParticles(kfFirstProton, kfSecondKaon);
+      const float dcaSecondThird = KFCalculateDistanceBetweenParticles(kfSecondKaon, kfThirdPion);
+      const float dcaFirstThird = KFCalculateDistanceBetweenParticles(kfFirstProton, kfThirdPion);
+      const float dcaFirstSecond = KFCalculateDistanceBetweenParticles(kfFirstProton, kfSecondKaon);
 
-      const float chi2geo_second_third = KFCalculateChi2geoBetweenParticles(kfSecondKaon, kfThirdPion);
-      const float chi2geo_first_third = KFCalculateChi2geoBetweenParticles(kfFirstProton, kfThirdPion);
-      const float chi2geo_first_second = KFCalculateChi2geoBetweenParticles(kfFirstProton, kfSecondKaon);
+      const float chi2geoSecondThird = KFCalculateChi2geoBetweenParticles(kfSecondKaon, kfThirdPion);
+      const float chi2geoFirstThird = KFCalculateChi2geoBetweenParticles(kfFirstProton, kfThirdPion);
+      const float chi2geoFirstSecond = KFCalculateChi2geoBetweenParticles(kfFirstProton, kfSecondKaon);
 
       // Λc± → p± K∓ π±,  Ξc± → p± K∓ π±
       KFParticle kfCandPKPi;
@@ -595,9 +595,9 @@ struct HfCandidateCreator3Prong {
                      massPKPi, massPiKP, massPiKPi, massKKPi, massPiKK, massKPi, massPiK,
                      kfCandPKPi.GetPx(), kfCandPKPi.GetPy(), kfCandPKPi.GetPz(),
                      kfCandPKPi.GetErrPx(), kfCandPKPi.GetErrPy(), kfCandPKPi.GetErrPz(),
-                     chi2prim_first, chi2prim_second, chi2prim_third,
-                     DCA_second_third, DCA_first_third, DCA_first_second,
-                     chi2geo_second_third, chi2geo_first_third, chi2geo_first_second,
+                     chi2primFirst, chi2primSecond, chi2primThird,
+                     dcaSecondThird, dcaFirstThird, dcaFirstSecond,
+                     chi2geoSecondThird, chi2geoFirstThird, chi2geoFirstSecond,
                      chi2geo, ldl.first, ldl.second, chi2topo
       );
 
