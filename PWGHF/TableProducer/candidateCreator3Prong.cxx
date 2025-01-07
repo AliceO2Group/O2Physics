@@ -561,16 +561,17 @@ struct HfCandidateCreator3Prong {
       auto errorDecayLengthXY = UndefValueFloat;  // these two fields are filled with meaningless values just for preserving the structure of the table
 
       auto indexCollision = collision.globalIndex();
-      uint8_t nProngsContributorsPV = 0;
+      uint8_t bitmapProngsContributorsPV = 0;
       if (indexCollision == track0.collisionId() && track0.isPVContributor()) {
-        nProngsContributorsPV += 1;
+        SETBIT(bitmapProngsContributorsPV, 0);
       }
       if (indexCollision == track1.collisionId() && track1.isPVContributor()) {
-        nProngsContributorsPV += 1;
+        SETBIT(bitmapProngsContributorsPV, 1);
       }
       if (indexCollision == track2.collisionId() && track2.isPVContributor()) {
-        nProngsContributorsPV += 1;
+        SETBIT(bitmapProngsContributorsPV, 2);
       }
+      uint8_t nProngsContributorsPV = hf_trkcandsel::countOnesInBinary(bitmapProngsContributorsPV);
 
       // fill candidate table rows
       rowCandidateBase(indexCollision,
@@ -585,7 +586,7 @@ struct HfCandidateCreator3Prong {
                        errImpactParameter0XY, errImpactParameter1XY, errImpactParameter2XY,
                        UndefValueFloat, UndefValueFloat, UndefValueFloat, // impact parameter Z is not calculated in KF (as in 2-prong as well)
                        UndefValueFloat, UndefValueFloat, UndefValueFloat, // impact parameter Z error is not calculated in KF (as in 2-prong as well)
-                       rowTrackIndexProng3.prong0Id(), rowTrackIndexProng3.prong1Id(), rowTrackIndexProng3.prong2Id(), nProngsContributorsPV,
+                       rowTrackIndexProng3.prong0Id(), rowTrackIndexProng3.prong1Id(), rowTrackIndexProng3.prong2Id(), nProngsContributorsPV, bitmapProngsContributorsPV,
                        rowTrackIndexProng3.hfflag());
 
       // fill KF info
