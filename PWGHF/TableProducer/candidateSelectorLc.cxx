@@ -488,7 +488,7 @@ struct HfCandidateSelectorLc {
   /// \param candidates Lc candidate table
   /// \param tracks track table
   void processNoBayesPidWithDCAFitterN(aod::HfCand3Prong const& candidates,
-                         TracksSel const& tracks)
+                                       TracksSel const& tracks)
   {
     runSelectLc<false, aod::hf_cand::VertexerType::DCAFitter>(candidates, tracks);
   }
@@ -498,7 +498,7 @@ struct HfCandidateSelectorLc {
   /// \param candidates Lc candidate table
   /// \param tracks track table with Bayes PID information
   void processBayesPidWithDCAFitterN(aod::HfCand3Prong const& candidates,
-                       TracksSelBayesPid const& tracks)
+                                     TracksSelBayesPid const& tracks)
   {
     runSelectLc<true, aod::hf_cand::VertexerType::DCAFitter>(candidates, tracks);
   }
@@ -508,7 +508,7 @@ struct HfCandidateSelectorLc {
   /// \param candidates Lc candidate table
   /// \param tracks track table
   void processNoBayesPidWithKFParticle(soa::Join<aod::HfCand3Prong, aod::HfCand3ProngKF> const& candidates,
-                         TracksSel const& tracks)
+                                       TracksSel const& tracks)
   {
     runSelectLc<false, aod::hf_cand::VertexerType::KfParticle>(candidates, tracks);
   }
@@ -518,7 +518,7 @@ struct HfCandidateSelectorLc {
   /// \param candidates Lc candidate table
   /// \param tracks track table with Bayes PID information
   void processBayesPidWithKFParticle(soa::Join<aod::HfCand3Prong, aod::HfCand3ProngKF> const& candidates,
-                       TracksSelBayesPid const& tracks)
+                                     TracksSelBayesPid const& tracks)
   {
     runSelectLc<true, aod::hf_cand::VertexerType::KfParticle>(candidates, tracks);
   }

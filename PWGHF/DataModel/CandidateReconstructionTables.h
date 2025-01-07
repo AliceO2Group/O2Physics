@@ -957,38 +957,38 @@ enum DecayChannelDToKKPi {
 };
 
 // KF related properties
-DECLARE_SOA_COLUMN(KfErrorPVX, kfErrorPVX, float);       //! error of X coordinate of the event's primary vertex
-DECLARE_SOA_COLUMN(KfErrorPVY, kfErrorPVY, float);       //! error of Y coordinate of the event's primary vertex
-DECLARE_SOA_COLUMN(KfErrorPVZ, kfErrorPVZ, float);       //! error of Z coordinate of the event's primary vertex
-DECLARE_SOA_COLUMN(KfErrorX, kfErrorX, float);       //! error of candidate's decay point X coordinate from the KFParticle fit
-DECLARE_SOA_COLUMN(KfErrorY, kfErrorY, float);       //! error of candidate's decay point Y coordinate from the KFParticle fit
-DECLARE_SOA_COLUMN(KfErrorZ, kfErrorZ, float);       //! error of candidate's decay point Z coordinate from the KFParticle fit
-DECLARE_SOA_COLUMN(KfMassPKPi, kfMassPKPi, float);       //! mass of the PKPi candidate from the KFParticle fit
-DECLARE_SOA_COLUMN(KfMassPiKP, kfMassPiKP, float);       //! mass of the PiKP candidate from the KFParticle fit
-DECLARE_SOA_COLUMN(KfMassPiKPi, kfMassPiKPi, float);     //! mass of the PiKPi candidate from the KFParticle fit
-DECLARE_SOA_COLUMN(KfMassKKPi, kfMassKKPi, float);       //! mass of the KKPi candidate from the KFParticle fit
-DECLARE_SOA_COLUMN(KfMassPiKK, kfMassPiKK, float);       //! mass of the PiKK candidate from the KFParticle fit
-DECLARE_SOA_COLUMN(KfMassKPi, kfMassKPi, float);         //! mass of the KPi pair from the KFParticle fit
-DECLARE_SOA_COLUMN(KfMassPiK, kfMassPiK, float);         //! mass of the PiK pair from the KFParticle fit
-DECLARE_SOA_COLUMN(KfPx, kfPx, float);  //! Px of the candidate from the KFParticle fit
-DECLARE_SOA_COLUMN(KfPy, kfPy, float);  //! Py of the candidate from the KFParticle fit
-DECLARE_SOA_COLUMN(KfPz, kfPz, float);  //! Pz of the candidate from the KFParticle fit
-DECLARE_SOA_COLUMN(KfErrorPx, kfErrorPx, float);  //! Px error of the candidate from the KFParticle fit
-DECLARE_SOA_COLUMN(KfErrorPy, kfErrorPy, float);  //! Py error of the candidate from the KFParticle fit
-DECLARE_SOA_COLUMN(KfErrorPz, kfErrorPz, float);  //! Pz error of the candidate from the KFParticle fit
-DECLARE_SOA_COLUMN(KfChi2PrimProng0, kfChi2PrimProng0, float);     //! chi2 primary of the first prong
-DECLARE_SOA_COLUMN(KfChi2PrimProng1, kfChi2PrimProng1, float);     //! chi2 primary of the second prong
-DECLARE_SOA_COLUMN(KfChi2PrimProng2, kfChi2PrimProng2, float);     //! chi2 primary of the third prong
-DECLARE_SOA_COLUMN(KfDCAProng0Prong1, kfDCAProng0Prong1, float);     //! DCA between first and second prongs
-DECLARE_SOA_COLUMN(KfDCAProng0Prong2, kfDCAProng0Prong2, float);     //! DCA between first and third prongs
-DECLARE_SOA_COLUMN(KfDCAProng1Prong2, kfDCAProng1Prong2, float);     //! DCA between second and third prongs
-DECLARE_SOA_COLUMN(KfChi2geoProng0Prong1, kfChi2geoProng0Prong1, float);     //! chi2 geo between first and second prongs
-DECLARE_SOA_COLUMN(KfChi2geoProng0Prong2, kfChi2geoProng0Prong2, float);     //! chi2 geo between first and third prongs
-DECLARE_SOA_COLUMN(KfChi2geoProng1Prong2, kfChi2geoProng1Prong2, float);     //! chi2 geo between second and third prongs
-DECLARE_SOA_COLUMN(KfChi2geo, kfChi2geo, float);     //! chi2 geo of the full candidate
-DECLARE_SOA_COLUMN(KfChi2topo, kfChi2topo, float);     //! chi2 topo of the full candidate (chi2prim of candidate to PV)
-DECLARE_SOA_COLUMN(KfL, kfL, float);     //! decay length
-DECLARE_SOA_COLUMN(KfDeltaL, kfDeltaL, float);     //! decay length error
+DECLARE_SOA_COLUMN(KfErrorPVX, kfErrorPVX, float);                       //! error of X coordinate of the event's primary vertex
+DECLARE_SOA_COLUMN(KfErrorPVY, kfErrorPVY, float);                       //! error of Y coordinate of the event's primary vertex
+DECLARE_SOA_COLUMN(KfErrorPVZ, kfErrorPVZ, float);                       //! error of Z coordinate of the event's primary vertex
+DECLARE_SOA_COLUMN(KfErrorX, kfErrorX, float);                           //! error of candidate's decay point X coordinate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfErrorY, kfErrorY, float);                           //! error of candidate's decay point Y coordinate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfErrorZ, kfErrorZ, float);                           //! error of candidate's decay point Z coordinate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassPKPi, kfMassPKPi, float);                       //! mass of the PKPi candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassPiKP, kfMassPiKP, float);                       //! mass of the PiKP candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassPiKPi, kfMassPiKPi, float);                     //! mass of the PiKPi candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassKKPi, kfMassKKPi, float);                       //! mass of the KKPi candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassPiKK, kfMassPiKK, float);                       //! mass of the PiKK candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassKPi, kfMassKPi, float);                         //! mass of the KPi pair from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassPiK, kfMassPiK, float);                         //! mass of the PiK pair from the KFParticle fit
+DECLARE_SOA_COLUMN(KfPx, kfPx, float);                                   //! Px of the candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfPy, kfPy, float);                                   //! Py of the candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfPz, kfPz, float);                                   //! Pz of the candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfErrorPx, kfErrorPx, float);                         //! Px error of the candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfErrorPy, kfErrorPy, float);                         //! Py error of the candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfErrorPz, kfErrorPz, float);                         //! Pz error of the candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfChi2PrimProng0, kfChi2PrimProng0, float);           //! chi2 primary of the first prong
+DECLARE_SOA_COLUMN(KfChi2PrimProng1, kfChi2PrimProng1, float);           //! chi2 primary of the second prong
+DECLARE_SOA_COLUMN(KfChi2PrimProng2, kfChi2PrimProng2, float);           //! chi2 primary of the third prong
+DECLARE_SOA_COLUMN(KfDCAProng0Prong1, kfDCAProng0Prong1, float);         //! DCA between first and second prongs
+DECLARE_SOA_COLUMN(KfDCAProng0Prong2, kfDCAProng0Prong2, float);         //! DCA between first and third prongs
+DECLARE_SOA_COLUMN(KfDCAProng1Prong2, kfDCAProng1Prong2, float);         //! DCA between second and third prongs
+DECLARE_SOA_COLUMN(KfChi2geoProng0Prong1, kfChi2geoProng0Prong1, float); //! chi2 geo between first and second prongs
+DECLARE_SOA_COLUMN(KfChi2geoProng0Prong2, kfChi2geoProng0Prong2, float); //! chi2 geo between first and third prongs
+DECLARE_SOA_COLUMN(KfChi2geoProng1Prong2, kfChi2geoProng1Prong2, float); //! chi2 geo between second and third prongs
+DECLARE_SOA_COLUMN(KfChi2geo, kfChi2geo, float);                         //! chi2 geo of the full candidate
+DECLARE_SOA_COLUMN(KfChi2topo, kfChi2topo, float);                       //! chi2 topo of the full candidate (chi2prim of candidate to PV)
+DECLARE_SOA_COLUMN(KfL, kfL, float);                                     //! decay length
+DECLARE_SOA_COLUMN(KfDeltaL, kfDeltaL, float);                           //! decay length error
 
 } // namespace hf_cand_3prong
 
@@ -1048,8 +1048,7 @@ DECLARE_SOA_TABLE(HfCand3ProngKF, "AOD", "HFCAND3PKF",
                   hf_cand_3prong::KfChi2PrimProng0, hf_cand_3prong::KfChi2PrimProng1, hf_cand_3prong::KfChi2PrimProng2,
                   hf_cand_3prong::KfDCAProng1Prong2, hf_cand_3prong::KfDCAProng0Prong2, hf_cand_3prong::KfDCAProng0Prong1,
                   hf_cand_3prong::KfChi2geoProng1Prong2, hf_cand_3prong::KfChi2geoProng0Prong2, hf_cand_3prong::KfChi2geoProng0Prong1,
-                  hf_cand_3prong::KfChi2geo, hf_cand_3prong::KfL, hf_cand_3prong::KfDeltaL, hf_cand_3prong::KfChi2topo
-                  );
+                  hf_cand_3prong::KfChi2geo, hf_cand_3prong::KfL, hf_cand_3prong::KfDeltaL, hf_cand_3prong::KfChi2topo);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCand3ProngMcRec, "AOD", "HFCAND3PMCREC", //!

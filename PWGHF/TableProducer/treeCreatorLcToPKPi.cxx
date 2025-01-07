@@ -95,48 +95,48 @@ DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);
 DECLARE_SOA_COLUMN(CentFDDM, centFDDM, float);
 DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float);
-} // namespace
+} // namespace full
 
 namespace kf
 {
-DECLARE_SOA_COLUMN(X, x, float); //! decay vertex X coordinate
-DECLARE_SOA_COLUMN(Y, y, float); //! decay vertex Y coordinate
-DECLARE_SOA_COLUMN(Z, z, float); //! decay vertex Z coordinate
-DECLARE_SOA_COLUMN(ErrX, errX, float); //! decay vertex X coordinate error
-DECLARE_SOA_COLUMN(ErrY, errY, float); //! decay vertex Y coordinate error
-DECLARE_SOA_COLUMN(ErrZ, errZ, float); //! decay vertex Z coordinate error
-DECLARE_SOA_COLUMN(ErrPVX, errPVX, float); //! event vertex X coordinate error
-DECLARE_SOA_COLUMN(ErrPVY, errPVY, float); //! event vertex Y coordinate error
-DECLARE_SOA_COLUMN(ErrPVZ, errPVZ, float); //! event vertex Z coordinate error
-DECLARE_SOA_COLUMN(Chi2PrimProton, chi2PrimProton, float); //! Chi2 of prong's approach to the PV
-DECLARE_SOA_COLUMN(Chi2PrimKaon, chi2PrimKaon, float); //! Chi2 of prong's approach to the PV
-DECLARE_SOA_COLUMN(Chi2PrimPion, chi2PrimPion, float); //! Chi2 of prong's approach to the PV
-DECLARE_SOA_COLUMN(DCAProtonKaon, dcaProtonKaon, float); //! Distance of closest approach between 2 prongs, cm
-DECLARE_SOA_COLUMN(DCAProtonPion, dcaProtonPion, float); //! Distance of closest approach between 2 prongs, cm
-DECLARE_SOA_COLUMN(DCAPionKaon, dcaPionKaon, float); //! Distance of closest approach between 2 prongs, cm
+DECLARE_SOA_COLUMN(X, x, float);                                 //! decay vertex X coordinate
+DECLARE_SOA_COLUMN(Y, y, float);                                 //! decay vertex Y coordinate
+DECLARE_SOA_COLUMN(Z, z, float);                                 //! decay vertex Z coordinate
+DECLARE_SOA_COLUMN(ErrX, errX, float);                           //! decay vertex X coordinate error
+DECLARE_SOA_COLUMN(ErrY, errY, float);                           //! decay vertex Y coordinate error
+DECLARE_SOA_COLUMN(ErrZ, errZ, float);                           //! decay vertex Z coordinate error
+DECLARE_SOA_COLUMN(ErrPVX, errPVX, float);                       //! event vertex X coordinate error
+DECLARE_SOA_COLUMN(ErrPVY, errPVY, float);                       //! event vertex Y coordinate error
+DECLARE_SOA_COLUMN(ErrPVZ, errPVZ, float);                       //! event vertex Z coordinate error
+DECLARE_SOA_COLUMN(Chi2PrimProton, chi2PrimProton, float);       //! Chi2 of prong's approach to the PV
+DECLARE_SOA_COLUMN(Chi2PrimKaon, chi2PrimKaon, float);           //! Chi2 of prong's approach to the PV
+DECLARE_SOA_COLUMN(Chi2PrimPion, chi2PrimPion, float);           //! Chi2 of prong's approach to the PV
+DECLARE_SOA_COLUMN(DCAProtonKaon, dcaProtonKaon, float);         //! Distance of closest approach between 2 prongs, cm
+DECLARE_SOA_COLUMN(DCAProtonPion, dcaProtonPion, float);         //! Distance of closest approach between 2 prongs, cm
+DECLARE_SOA_COLUMN(DCAPionKaon, dcaPionKaon, float);             //! Distance of closest approach between 2 prongs, cm
 DECLARE_SOA_COLUMN(Chi2geoProtonKaon, chi2GeoProtonKaon, float); // Chi2 of two prongs' approach to each other
 DECLARE_SOA_COLUMN(Chi2geoProtonPion, chi2GeoProtonPion, float); // Chi2 of two prongs' approach to each other
-DECLARE_SOA_COLUMN(Chi2geoPionKaon, chi2GeoPionKaon, float); // Chi2 of two prongs' approach to each other
-DECLARE_SOA_COLUMN(Chi2geo, chi2Geo, float);     //! chi2 geo of the full candidate
-DECLARE_SOA_COLUMN(Chi2topo, chi2Topo, float);     //! chi2 topo of the full candidate (chi2prim of candidate to PV)
-DECLARE_SOA_COLUMN(L, l, float);     //! decay length, cm
-DECLARE_SOA_COLUMN(DeltaL, deltaL, float);     //! decay length error
-DECLARE_SOA_COLUMN(LdL, ldl, float);     //! decay length over its error
-DECLARE_SOA_COLUMN(T, t, float);     //! proper lifetime, ps
-DECLARE_SOA_COLUMN(DeltaT, deltaT, float);     //! lifetime error
-DECLARE_SOA_COLUMN(MassInv, massInv, float);     //! invariant mass
-DECLARE_SOA_COLUMN(P, p, float);     //! momentum
-DECLARE_SOA_COLUMN(Pt, pt, float);     //! transverse momentum
-DECLARE_SOA_COLUMN(DeltaP, deltaP, float);     //! momentum error
-DECLARE_SOA_COLUMN(DeltaPt, deltaPt, float);     //! transverse momentum error
-DECLARE_SOA_COLUMN(IsSelected, isSelected, int);     //! flag whether candidate was selected in candidateSelectorLc task
-DECLARE_SOA_COLUMN(SigBgStatus, sigBgStatus, int);     //! 0 bg, 1 prompt, 2 non-prompt, 3 wrong order of prongs, -1 default value (impossible, should not be the case), -999 for data
-}
+DECLARE_SOA_COLUMN(Chi2geoPionKaon, chi2GeoPionKaon, float);     // Chi2 of two prongs' approach to each other
+DECLARE_SOA_COLUMN(Chi2geo, chi2Geo, float);                     //! chi2 geo of the full candidate
+DECLARE_SOA_COLUMN(Chi2topo, chi2Topo, float);                   //! chi2 topo of the full candidate (chi2prim of candidate to PV)
+DECLARE_SOA_COLUMN(L, l, float);                                 //! decay length, cm
+DECLARE_SOA_COLUMN(DeltaL, deltaL, float);                       //! decay length error
+DECLARE_SOA_COLUMN(LdL, ldl, float);                             //! decay length over its error
+DECLARE_SOA_COLUMN(T, t, float);                                 //! proper lifetime, ps
+DECLARE_SOA_COLUMN(DeltaT, deltaT, float);                       //! lifetime error
+DECLARE_SOA_COLUMN(MassInv, massInv, float);                     //! invariant mass
+DECLARE_SOA_COLUMN(P, p, float);                                 //! momentum
+DECLARE_SOA_COLUMN(Pt, pt, float);                               //! transverse momentum
+DECLARE_SOA_COLUMN(DeltaP, deltaP, float);                       //! momentum error
+DECLARE_SOA_COLUMN(DeltaPt, deltaPt, float);                     //! transverse momentum error
+DECLARE_SOA_COLUMN(IsSelected, isSelected, int);                 //! flag whether candidate was selected in candidateSelectorLc task
+DECLARE_SOA_COLUMN(SigBgStatus, sigBgStatus, int);               //! 0 bg, 1 prompt, 2 non-prompt, 3 wrong order of prongs, -1 default value (impossible, should not be the case), -999 for data
+} // namespace kf
 
 namespace mc_match
 {
-DECLARE_SOA_COLUMN(P, p, float); //! Momentum, GeV/c
-DECLARE_SOA_COLUMN(Pt, pt, float); //! Transverse momentum, GeV/c
+DECLARE_SOA_COLUMN(P, p, float);           //! Momentum, GeV/c
+DECLARE_SOA_COLUMN(Pt, pt, float);         //! Transverse momentum, GeV/c
 DECLARE_SOA_COLUMN(DecayX, decayX, float); //! Secondary (decay) vertex X coordinate, cm
 DECLARE_SOA_COLUMN(DecayY, decayY, float); //! Secondary (decay) vertex Y coordinate, cm
 DECLARE_SOA_COLUMN(DecayZ, decayZ, float); //! Secondary (decay) vertex Z coordinate, cm
@@ -145,14 +145,13 @@ DECLARE_SOA_COLUMN(DecayT, decayT, float); //! Proper lifetime, ps
 DECLARE_SOA_COLUMN(EventX, eventX, float); //! Primary (event) vertex X coordinate, cm
 DECLARE_SOA_COLUMN(EventY, eventY, float); //! Primary (event) vertex Y coordinate, cm
 DECLARE_SOA_COLUMN(EventZ, eventZ, float); //! Primary (event) vertex Z coordinate, cm
-}
+} // namespace mc_match
 
 DECLARE_SOA_TABLE(HfCandLcMCs, "AOD", "HFCANDLCMC",
                   mc_match::P, mc_match::Pt,
                   mc_match::DecayX, mc_match::DecayY, mc_match::DecayZ, mc_match::DecayL,
                   mc_match::DecayT,
-                  mc_match::EventX, mc_match::EventY, mc_match::EventZ
-)
+                  mc_match::EventX, mc_match::EventY, mc_match::EventZ)
 
 DECLARE_SOA_TABLE(HfCandLcKFs, "AOD", "HFCANDLCKF",
                   kf::X, kf::Y, kf::Z, kf::ErrX, kf::ErrY, kf::ErrZ,
@@ -162,8 +161,7 @@ DECLARE_SOA_TABLE(HfCandLcKFs, "AOD", "HFCANDLCKF",
                   kf::Chi2geoProtonKaon, kf::Chi2geoProtonPion, kf::Chi2geoPionKaon,
                   kf::Chi2geo, kf::Chi2topo, kf::L, kf::DeltaL, kf::LdL, kf::T, kf::DeltaT,
                   kf::MassInv, kf::P, kf::Pt, kf::DeltaP, kf::DeltaPt,
-                  kf::IsSelected, kf::SigBgStatus
-);
+                  kf::IsSelected, kf::SigBgStatus);
 
 DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
                   collision::PosX,
@@ -312,7 +310,6 @@ DECLARE_SOA_TABLE(HfCandLcFullPs, "AOD", "HFCANDLCFULLP",
                   full::FlagMc,
                   full::OriginMcGen);
 
-
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -344,24 +341,29 @@ struct HfTreeCreatorLcToPKPi {
   using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>;
 
   template <typename CandType>
-  int DetermineSignalBgStatus(const CandType& candidate, int CandFlag) {
+  int DetermineSignalBgStatus(const CandType& candidate, int CandFlag)
+  {
     const int flag = candidate.flagMcMatchRec();
     const int origin = candidate.originMcRec();
     const int swapped = candidate.isCandidateSwapped();
     int status{-1}; // 0 bg, 1 prompt, 2 non-prompt, 3 wrong order of prongs, -1 default value (impossible, should not be the case)
 
-    if(std::abs(flag) == (1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi)) {
-      if(swapped == 0) {
-        if(CandFlag == 0) {
-          if(origin == RecoDecay::OriginType::Prompt) status = 1;
-          else if(origin == RecoDecay::OriginType::NonPrompt) status = 2;
+    if (std::abs(flag) == (1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+      if (swapped == 0) {
+        if (CandFlag == 0) {
+          if (origin == RecoDecay::OriginType::Prompt)
+            status = 1;
+          else if (origin == RecoDecay::OriginType::NonPrompt)
+            status = 2;
         } else {
           status = 3;
         }
       } else {
-        if(CandFlag == 1) {
-          if(origin == RecoDecay::OriginType::Prompt) status = 1;
-          else if(origin == RecoDecay::OriginType::NonPrompt) status = 2;
+        if (CandFlag == 1) {
+          if (origin == RecoDecay::OriginType::Prompt)
+            status = 1;
+          else if (origin == RecoDecay::OriginType::NonPrompt)
+            status = 2;
         } else {
           status = 3;
         }
@@ -380,7 +382,7 @@ struct HfTreeCreatorLcToPKPi {
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
-    if(std::accumulate(processes.begin(), processes.begin()+4, 0) && fillCandidateMcTable) {
+    if (std::accumulate(processes.begin(), processes.begin() + 4, 0) && fillCandidateMcTable) {
       LOGP(fatal, "fillCandidateMcTable can be activated only in case of MC processing.");
     }
   }
@@ -435,19 +437,19 @@ struct HfTreeCreatorLcToPKPi {
     // Filling candidate properties
     if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
       if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(candidates.size()*2);
+        rowCandidateLite.reserve(candidates.size() * 2);
       } else {
-        rowCandidateFull.reserve(candidates.size()*2);
+        rowCandidateFull.reserve(candidates.size() * 2);
       }
     } else {
-      rowCandidateKF.reserve(candidates.size()*2);
+      rowCandidateKF.reserve(candidates.size() * 2);
     }
     if (fillCollIdTable) {
       /// save also candidate collision indices
       rowCollisionId.reserve(candidates.size());
     }
     if (fillCandidateMcTable) {
-      rowCandidateMC.reserve(candidates.size()*2);
+      rowCandidateMC.reserve(candidates.size() * 2);
     }
     for (const auto& candidate : candidates) {
       auto trackPos1 = candidate.template prong0_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>(); // positive daughter (negative for the antiparticles)
@@ -457,7 +459,7 @@ struct HfTreeCreatorLcToPKPi {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
         const int FunctionSelection = CandFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         const int sigbgstatus = DetermineSignalBgStatus(candidate, CandFlag);
-        bool isMcCandidateSignal = (sigbgstatus==1) || (sigbgstatus==2);
+        bool isMcCandidateSignal = (sigbgstatus == 1) || (sigbgstatus == 2);
         if (FunctionSelection >= selectionFlagLc && (/*keep all*/ (!keepOnlySignalMc && !keepOnlyBkg) || /*keep only signal*/ (keepOnlySignalMc && isMcCandidateSignal) || /*keep only background and downsample it*/ (keepOnlyBkg && !isMcCandidateSignal && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))))) {
           float FunctionInvMass, FunctionInvMassKPi;
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
@@ -516,10 +518,10 @@ struct HfTreeCreatorLcToPKPi {
               candidate.flagMcDecayChanRec(),
               FunctionInvMassKPi);
 
-              if (fillCollIdTable) {
-                /// save also candidate collision indices
-                rowCollisionId(candidate.collisionId());
-              }
+            if (fillCollIdTable) {
+              /// save also candidate collision indices
+              rowCollisionId(candidate.collisionId());
+            }
           } else {
             rowCandidateFull(
               candidate.collisionId(),
@@ -597,7 +599,7 @@ struct HfTreeCreatorLcToPKPi {
               FunctionInvMassKPi);
           }
 
-          if constexpr  (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+          if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
             const float svX = candidate.xSecondaryVertex();
             const float svY = candidate.ySecondaryVertex();
             const float svZ = candidate.zSecondaryVertex();
@@ -620,12 +622,14 @@ struct HfTreeCreatorLcToPKPi {
             const float chi2Topo = candidate.kfChi2topo();
             const float l = candidate.kfL();
             const float dl = candidate.kfDeltaL();
-            const float pt = std::sqrt(candidate.kfPx()*candidate.kfPx() + candidate.kfPy()*candidate.kfPy());
-            const float deltaPt = std::sqrt(candidate.kfPx()*candidate.kfPx()*candidate.kfErrorPx()*candidate.kfErrorPx() +
-                                            candidate.kfPy()*candidate.kfPy()*candidate.kfErrorPy()*candidate.kfErrorPy() )/pt;
-            const float p = std::sqrt(pt*pt + candidate.kfPz()*candidate.kfPz());
-            const float deltaP = std::sqrt(pt*pt*deltaPt*deltaPt +
-                                           candidate.kfPz()*candidate.kfPz()*candidate.kfErrorPz()*candidate.kfErrorPz()) / p;
+            const float pt = std::sqrt(candidate.kfPx() * candidate.kfPx() + candidate.kfPy() * candidate.kfPy());
+            const float deltaPt = std::sqrt(candidate.kfPx() * candidate.kfPx() * candidate.kfErrorPx() * candidate.kfErrorPx() +
+                                            candidate.kfPy() * candidate.kfPy() * candidate.kfErrorPy() * candidate.kfErrorPy()) /
+                                  pt;
+            const float p = std::sqrt(pt * pt + candidate.kfPz() * candidate.kfPz());
+            const float deltaP = std::sqrt(pt * pt * deltaPt * deltaPt +
+                                           candidate.kfPz() * candidate.kfPz() * candidate.kfErrorPz() * candidate.kfErrorPz()) /
+                                 p;
             const float t = l * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float mass = CandFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
@@ -635,10 +639,9 @@ struct HfTreeCreatorLcToPKPi {
               chi2primProton, chi2primKaon, chi2primPion,
               dcaProtonKaon, dcaProtonPion, dcaPionKaon,
               chi2GeoProtonKaon, chi2GeoProtonPion, chi2GeoPionKaon,
-              chi2Geo, chi2Topo, l, dl, l/dl, t, deltaT,
+              chi2Geo, chi2Topo, l, dl, l / dl, t, deltaT,
               mass, p, pt, deltaP, deltaPt,
-              FunctionSelection, sigbgstatus
-            );
+              FunctionSelection, sigbgstatus);
           }
           if (fillCandidateMcTable) {
             float p, pt, svX, svY, svZ, pvX, pvY, pvZ, l, t;
@@ -661,21 +664,20 @@ struct HfTreeCreatorLcToPKPi {
               p = particleMother.p();
               pt = particleMother.pt();
               const float p2m = p / MassLambdaCPlus;
-              const float gamma = std::sqrt(1 + p2m*p2m); // mother's particle Lorentz factor
+              const float gamma = std::sqrt(1 + p2m * p2m); // mother's particle Lorentz factor
               pvX = mcCollision.posX();
               pvY = mcCollision.posY();
               pvZ = mcCollision.posZ();
               svX = mcParticleProng0.vx();
               svY = mcParticleProng0.vy();
               svZ = mcParticleProng0.vz();
-              l = std::sqrt((svX-pvX)*(svX-pvX) + (svY-pvY)*(svY-pvY) + (svZ-pvZ)*(svZ-pvZ));
+              l = std::sqrt((svX - pvX) * (svX - pvX) + (svY - pvY) * (svY - pvY) + (svZ - pvZ) * (svZ - pvZ));
               t = mcParticleProng0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
             }
             rowCandidateMC(
               p, pt,
               svX, svY, svZ, l, t,
-              pvX, pvY, pvZ
-            );
+              pvX, pvY, pvZ);
           }
         }
       };
@@ -707,10 +709,10 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processMcNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs> const& collisions,
-                             aod::McCollisions const& mcCollisions,
-                             soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
-                             soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
-                             soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
+                                           aod::McCollisions const& mcCollisions,
+                                           soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
+                                           soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
+                                           soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
     fillTablesMc<false, aod::hf_cand::VertexerType::DCAFitter>(collisions, mcCollisions, candidates, particles, tracks, bcs);
   }
@@ -723,10 +725,10 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processMcWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents> const& collisions,
-                               aod::McCollisions const& mcCollisions,
-                               soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
-                               soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
-                               soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
+                                             aod::McCollisions const& mcCollisions,
+                                             soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
+                                             soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
+                                             soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
     fillTablesMc<true, aod::hf_cand::VertexerType::DCAFitter>(collisions, mcCollisions, candidates, particles, tracks, bcs);
   }
@@ -740,10 +742,10 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processMcNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs> const& collisions,
-                             aod::McCollisions const& mcCollisions,
-                             soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
-                             soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
-                             soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
+                                           aod::McCollisions const& mcCollisions,
+                                           soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                           soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
+                                           soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
     fillTablesMc<false, aod::hf_cand::VertexerType::KfParticle>(collisions, mcCollisions, candidates, particles, tracks, bcs);
   }
@@ -756,10 +758,10 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processMcWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents> const& collisions,
-                               aod::McCollisions const& mcCollisions,
-                               soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
-                               soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
-                               soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
+                                             aod::McCollisions const& mcCollisions,
+                                             soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                             soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
+                                             soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
     fillTablesMc<true, aod::hf_cand::VertexerType::KfParticle>(collisions, mcCollisions, candidates, particles, tracks, bcs);
   }
@@ -811,12 +813,12 @@ struct HfTreeCreatorLcToPKPi {
     // Filling candidate properties
     if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
       if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(candidates.size()*2);
+        rowCandidateLite.reserve(candidates.size() * 2);
       } else {
-        rowCandidateFull.reserve(candidates.size()*2);
+        rowCandidateFull.reserve(candidates.size() * 2);
       }
     } else {
-      rowCandidateKF.reserve(candidates.size()*2);
+      rowCandidateKF.reserve(candidates.size() * 2);
     }
     if (fillCollIdTable) {
       /// save also candidate collision indices
@@ -969,7 +971,7 @@ struct HfTreeCreatorLcToPKPi {
               FunctionInvMassKPi);
           }
 
-          if constexpr  (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+          if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
             const float X = candidate.xSecondaryVertex();
             const float Y = candidate.ySecondaryVertex();
             const float Z = candidate.zSecondaryVertex();
@@ -992,12 +994,14 @@ struct HfTreeCreatorLcToPKPi {
             const float chi2Topo = candidate.kfChi2topo();
             const float l = candidate.kfL();
             const float dl = candidate.kfDeltaL();
-            const float pt = std::sqrt(candidate.kfPx()*candidate.kfPx() + candidate.kfPy()*candidate.kfPy());
-            const float deltaPt = std::sqrt(candidate.kfPx()*candidate.kfPx()*candidate.kfErrorPx()*candidate.kfErrorPx() +
-                                            candidate.kfPy()*candidate.kfPy()*candidate.kfErrorPy()*candidate.kfErrorPy() )/pt;
-            const float p = std::sqrt(pt*pt + candidate.kfPz()*candidate.kfPz());
-            const float deltaP = std::sqrt(pt*pt*deltaPt*deltaPt +
-                                           candidate.kfPz()*candidate.kfPz()*candidate.kfErrorPz()*candidate.kfErrorPz()) / p;
+            const float pt = std::sqrt(candidate.kfPx() * candidate.kfPx() + candidate.kfPy() * candidate.kfPy());
+            const float deltaPt = std::sqrt(candidate.kfPx() * candidate.kfPx() * candidate.kfErrorPx() * candidate.kfErrorPx() +
+                                            candidate.kfPy() * candidate.kfPy() * candidate.kfErrorPy() * candidate.kfErrorPy()) /
+                                  pt;
+            const float p = std::sqrt(pt * pt + candidate.kfPz() * candidate.kfPz());
+            const float deltaP = std::sqrt(pt * pt * deltaPt * deltaPt +
+                                           candidate.kfPz() * candidate.kfPz() * candidate.kfErrorPz() * candidate.kfErrorPz()) /
+                                 p;
             const float T = l * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float mass = CandFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
@@ -1007,10 +1011,9 @@ struct HfTreeCreatorLcToPKPi {
               chi2prim_proton, chi2prim_kaon, chi2prim_pion,
               dca_proton_kaon, dca_proton_pion, dca_pion_kaon,
               chi2Geo_proton_kaon, chi2Geo_proton_pion, chi2Geo_pion_kaon,
-              chi2Geo, chi2Topo, l, dl, l/dl, T, deltaT,
+              chi2Geo, chi2Topo, l, dl, l / dl, T, deltaT,
               mass, p, pt, deltaP, deltaPt,
-              FunctionSelection, UndefValueInt
-            );
+              FunctionSelection, UndefValueInt);
           }
         }
       };
@@ -1026,8 +1029,8 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processDataNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs> const& collisions,
-                               soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
-                               TracksWPid const& tracks, aod::BCs const& bcs)
+                                             soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
+                                             TracksWPid const& tracks, aod::BCs const& bcs)
   {
     fillTablesData<false, aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, tracks, bcs);
   }
@@ -1039,8 +1042,8 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processDataWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents> const& collisions,
-                                 soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
-                                 TracksWPid const& tracks, aod::BCs const& bcs)
+                                               soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
+                                               TracksWPid const& tracks, aod::BCs const& bcs)
   {
     fillTablesData<true, aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, tracks, bcs);
   }
@@ -1052,8 +1055,8 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processDataNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs> const& collisions,
-                               soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
-                               TracksWPid const& tracks, aod::BCs const& bcs)
+                                             soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                             TracksWPid const& tracks, aod::BCs const& bcs)
   {
     fillTablesData<false, aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, tracks, bcs);
   }
@@ -1065,8 +1068,8 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processDataWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents> const& collisions,
-                                 soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
-                                 TracksWPid const& tracks, aod::BCs const& bcs)
+                                               soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                               TracksWPid const& tracks, aod::BCs const& bcs)
   {
     fillTablesData<true, aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, tracks, bcs);
   }
