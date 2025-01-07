@@ -1373,17 +1373,17 @@ struct tofSpectra {
         const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
         const auto& nsigmaTPCPr = o2::aod::pidutils::tpcNSigma<4>(track);
 
-        bool isTPCPion = fabs(nsigmaTPCPi) < trkselOptions.cfgCutNsigma;
-        bool isTPCKaon = fabs(nsigmaTPCKa) < trkselOptions.cfgCutNsigma;
-        bool isTPCProton = fabs(nsigmaTPCPr) < trkselOptions.cfgCutNsigma;
+        bool isTPCPion = std::abs(nsigmaTPCPi) < trkselOptions.cfgCutNsigma;
+        bool isTPCKaon = std::abs(nsigmaTPCKa) < trkselOptions.cfgCutNsigma;
+        bool isTPCProton = std::abs(nsigmaTPCPr) < trkselOptions.cfgCutNsigma;
 
         const auto& nsigmaTOFPi = o2::aod::pidutils::tofNSigma<2>(track);
         const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
         const auto& nsigmaTOFPr = o2::aod::pidutils::tofNSigma<4>(track);
 
-        bool isTOFPion = track.hasTOF() && fabs(nsigmaTOFPi) < trkselOptions.cfgCutNsigma;
-        bool isTOFKaon = track.hasTOF() && fabs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
-        bool isTOFProton = track.hasTOF() && fabs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
+        bool isTOFPion = track.hasTOF() && std::abs(nsigmaTOFPi) < trkselOptions.cfgCutNsigma;
+        bool isTOFKaon = track.hasTOF() && std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
+        bool isTOFProton = track.hasTOF() && std::abs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
 
         // Apply rapidity cut for identified particles
         if (isTPCPion && std::abs(track.rapidity(PID::getMass(2))) < trkselOptions.cfgCutY) {
@@ -2215,17 +2215,17 @@ struct tofSpectra {
         const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
         const auto& nsigmaTPCPr = o2::aod::pidutils::tpcNSigma<4>(track);
 
-        bool isPionTPC = fabs(nsigmaTPCPi) < trkselOptions.cfgCutNsigma;
-        bool isKaonTPC = fabs(nsigmaTPCKa) < trkselOptions.cfgCutNsigma;
-        bool isProtonTPC = fabs(nsigmaTPCPr) < trkselOptions.cfgCutNsigma;
+        bool isPionTPC = std::abs(nsigmaTPCPi) < trkselOptions.cfgCutNsigma;
+        bool isKaonTPC = std::abs(nsigmaTPCKa) < trkselOptions.cfgCutNsigma;
+        bool isProtonTPC = std::abs(nsigmaTPCPr) < trkselOptions.cfgCutNsigma;
 
         const auto& nsigmaTOFPi = o2::aod::pidutils::tofNSigma<2>(track);
         const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
         const auto& nsigmaTOFPr = o2::aod::pidutils::tofNSigma<4>(track);
 
-        bool isPionTOF = track.hasTOF() && fabs(nsigmaTOFPi) < trkselOptions.cfgCutNsigma;
-        bool isKaonTOF = track.hasTOF() && fabs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
-        bool isProtonTOF = track.hasTOF() && fabs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
+        bool isPionTOF = track.hasTOF() && std::abs(nsigmaTOFPi) < trkselOptions.cfgCutNsigma;
+        bool isKaonTOF = track.hasTOF() && std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
+        bool isProtonTOF = track.hasTOF() && std::abs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
 
             if (isPionTPC || isKaonTPC || isProtonTPC) {
                 if (pdgCode == 2212) {
