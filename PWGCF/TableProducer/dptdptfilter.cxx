@@ -368,7 +368,14 @@ struct DptDptFilter {
   Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB,VTXTOFMATCHED,VTXTRDMATCHED,VTXTRDTOFMATCHED,None. Default MB"};
   Configurable<std::string> cfgCentSpec{"centralities", "00-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
   Configurable<float> cfgOverallMinP{"overallminp", 0.0f, "The overall minimum momentum for the analysis. Default: 0.0"};
-  Configurable<int> cfgTpcExclusionMethod{"cfgTpcExclusionMethod", 0, "The method for excluding tracks within the TPC. 0: no exclusion; 1: static; 2: dynamic. Default: 0"};
+  struct : ConfigurableGroup {
+    std::string prefix = "cfgTpcExclusion";
+    Configurable<int> method{"method", 0, "The method for excluding tracks within the TPC. 0: no exclusion; 1: static; 2: dynamic. Default: 0"};
+    Configurable<std::string> positiveLowCut{"positiveLowCut", "0.0787/x - 0.0236", "The lower cut function for positive tracks"};
+    Configurable<std::string> positiveUpCut{"positiveUpCut", "0.0892/x + 0.0251", "The upper cut function for positive tracks"};
+    Configurable<std::string> negativeLowCut{"negativeLowCut", "pi/9.0 - (0.0892/x + 0.0251)", "The lower cut function for negative tracks"};
+    Configurable<std::string> negativeUpCut{"negativeUpCut", "pi/9 - (0.0787/x - 0.0236)", "The upper cut function for negative tracks"};
+  } cfgTpcExclusion;
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
@@ -763,7 +770,7 @@ struct DptDptFilterTracks {
   Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
   Configurable<float> cfgTraceOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
   Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 No PID, 1 PID, 2 mcparticle, 3 mcparticle only primaries, 4 mcparticle only sec, 5 mcparicle only sec from decays, 6 mcparticle only sec from material. Default 0"};
-  Configurable<o2::analysis::TrackSelectionTuneCfg> cfgTuneTrackSelection{"tunetracksel", {}, "Track selection: {useit: true/false, tpccls-useit, tpcxrws-useit, tpcxrfc-useit, dcaxy-useit, dcaz-useit}. Default {false,0.70,false,0.8,false,2.4,false,3.2,false}"};
+  Configurable<o2::analysis::TrackSelectionTuneCfg> cfgTuneTrackSelection{"tunetracksel", {}, "Track selection: {useit: true/false, tpccls-useit, tpcxrws-useit, tpcxrfc-useit, tpcshcls-useit, dcaxy-useit, dcaz-useit}. Default {false,0.70,false,0.8,false,0.4,false,2.4,false,3.2,false}"};
   Configurable<o2::analysis::TrackSelectionPIDCfg> cfgPionPIDSelection{"pipidsel",
                                                                        {},
                                                                        "PID criteria for pions"};
@@ -807,9 +814,17 @@ struct DptDptFilterTracks {
     getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibinshift", phibinshift, false);
 
     TpcExclusionMethod tpcExclude = kNOEXCLUSION; ///< exclude tracks within the TPC according to this method
+    std::string pLowCut;
+    std::string pUpCut;
+    std::string nLowCut;
+    std::string nUpCut;
     {
       int tmpTpcExclude = 0;
-      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgTpcExclusionMethod", tmpTpcExclude, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgTpcExclusion.method", tmpTpcExclude, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgTpcExclusion.positiveLowCut", pLowCut, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgTpcExclusion.positiveUpCut", pUpCut, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgTpcExclusion.negativeLowCut", nLowCut, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgTpcExclusion.negativeUpCut", nUpCut, false);
       tpcExclude = static_cast<TpcExclusionMethod>(tmpTpcExclude);
     }
     /* self configure the CCDB access to the input file */
@@ -820,7 +835,7 @@ struct DptDptFilterTracks {
 
     /* the track types and combinations */
     tracktype = cfgTrackType.value;
-    initializeTrackSelection(cfgTuneTrackSelection);
+    initializeTrackSelection(cfgTuneTrackSelection.value);
     traceDCAOutliers = cfgTraceDCAOutliers;
     traceOutOfSpeciesParticles = cfgTraceOutOfSpeciesParticles;
     recoIdMethod = cfgRecoIdMethod;
@@ -828,6 +843,7 @@ struct DptDptFilterTracks {
 
     /* the TPC excluder object instance */
     tpcExcluder = TpcExcludeTrack(tpcExclude);
+    tpcExcluder.setCuts(pLowCut, pUpCut, nLowCut, nUpCut);
 
     /* self configure system type and data type */
     /* if the system type is not known at this time, we have to put the initialization somewhere else */

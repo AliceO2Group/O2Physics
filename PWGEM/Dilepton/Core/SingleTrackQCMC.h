@@ -79,8 +79,8 @@ struct SingleTrackQCMC {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
-  Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
-  Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
+  // Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
+  // Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
   Configurable<bool> cfgFillQA{"cfgFillQA", false, "flag to fill QA histograms"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
   Configurable<uint> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
@@ -205,6 +205,8 @@ struct SingleTrackQCMC {
   {
     // event info
     o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
+    fRegistry.add("MCEvent/before/hZvtx", "vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
+    fRegistry.addClone("MCEvent/before/", "MCEvent/after/");
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       const AxisSpec axis_pt{ConfPtlBins, "p_{T,e} (GeV/c)"};
@@ -759,8 +761,13 @@ struct SingleTrackQCMC {
       if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
         continue;
       }
+      fRegistry.fill(HIST("MCEvent/before/hZvtx"), mccollision.posZ());
 
       auto rec_colls_per_mccoll = collisions.sliceBy(recColperMcCollision, mccollision.globalIndex());
+      if (rec_colls_per_mccoll.size() < 1) {
+        continue;
+      }
+
       uint32_t maxNumContrib = 0;
       int rec_col_globalIndex = -999;
       for (auto& rec_col : rec_colls_per_mccoll) {
@@ -769,21 +776,16 @@ struct SingleTrackQCMC {
           maxNumContrib = rec_col.numContrib(); // assign mc collision to collision where the number of contibutor is lager. LF/MM recommendation
         }
       }
-
-      if (rec_colls_per_mccoll.size() < 1) {
-        continue;
-      }
-
       auto collision = collisions.rawIteratorAt(rec_col_globalIndex);
 
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
-
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+      fRegistry.fill(HIST("MCEvent/after/hZvtx"), mccollision.posZ());
 
       auto leptonsMC_per_coll = leptonsMC.sliceByCachedUnsorted(o2::aod::emmcparticle::emmceventId, mccollision.globalIndex(), cache);
       for (auto& lepton : leptonsMC_per_coll) {
@@ -956,7 +958,7 @@ struct SingleTrackQCMC {
   Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), o2::aod::emprimarymuon::isAssociatedToMPC == true || o2::aod::emprimarymuon::isAssociatedToMPC == false, o2::aod::emprimarymuon::isAssociatedToMPC == true);
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
+  // Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin < o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
@@ -1053,7 +1055,7 @@ struct SingleTrackQCMC {
   }
   PROCESS_SWITCH(SingleTrackQCMC, processNorm, "process normalization info", false);
 
-  void processDummy(MyCollisions const&) {}
+  void processDummy(FilteredMyCollisions const&) {}
   PROCESS_SWITCH(SingleTrackQCMC, processDummy, "Dummy function", false);
 };
 

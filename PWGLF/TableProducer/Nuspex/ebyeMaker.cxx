@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <vector>
+#include <map>
 #include <utility>
 #include <random>
 #include <string>
@@ -35,6 +36,7 @@
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
+#include "CCDB/CcdbApi.h"
 
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -57,9 +59,10 @@ using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
 namespace
 {
 constexpr int kNpart = 2;
-constexpr float trackSels[10]{/* 60, */ 80, 100, 2, 3, /* 4,  */ 0.05, 0.1, /* 0.15,  */ 0.5, 1, /* 1.5, */ 2, 3 /* , 4 */};
+constexpr float trackSels[12]{/* 60, */ 80, 100, 2, 3, /* 4,  */ 0.05, 0.1, /* 0.15,  */ 0.5, 1, /* 1.5, */ 2, 3 /* , 4 */, 2, 3, /*, 4 */};
 constexpr float dcaSels[3]{10., 10., 10.};
 constexpr double betheBlochDefault[kNpart][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}, {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
+constexpr double betheBlochDefaultITS[6]{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32};
 constexpr double estimatorsCorrelationCoef[2]{-0.669108, 1.04489};
 constexpr double estimatorsSigmaPars[4]{0.933321, 0.0416976, -0.000936344, 8.92179e-06};
 constexpr double deltaEstimatorNsigma[2]{5.5, 5.};
@@ -67,7 +70,7 @@ constexpr double partMass[kNpart]{o2::constants::physics::MassProton, o2::consta
 constexpr double partPdg[kNpart]{2212, o2::constants::physics::kDeuteron};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleNamesPar{"p", "d"};
-static const std::vector<std::string> trackSelsNames{"tpcClsMid", "tpcClsTight", "chi2TpcTight", "chi2TpcMid", "dcaxyTight", "dcaxyMid", "dcazTight", "dcazMid", "tpcNsigmaTight", "tpcNsigmaMid"};
+static const std::vector<std::string> trackSelsNames{"tpcClsMid", "tpcClsTight", "chi2TpcTight", "chi2TpcMid", "dcaxyTight", "dcaxyMid", "dcazTight", "dcazMid", "tpcNsigmaTight", "tpcNsigmaMid", "itsNsigmaTight", "itsNsigmaMid"};
 static const std::vector<std::string> dcaSelsNames{"dcaxy", "dcaz", "dca"};
 static const std::vector<std::string> particleName{"p"};
 std::array<std::shared_ptr<TH3>, kNpart> tofMass;
@@ -205,6 +208,7 @@ struct ebyeMaker {
   std::array<std::vector<CandidateTrack>, 2> candidateTracks;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::vertexing::DCAFitterN<2> fitter;
+  std::vector<int> classIds;
 
   int mRunNumber;
   float d_bz;
@@ -213,6 +217,7 @@ struct ebyeMaker {
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 2, 6, particleNamesPar, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
+  Configurable<LabeledArray<double>> cfgBetheBlochParamsITS{"cfgBetheBlochParamsITS", {betheBlochDefaultITS, 1, 6, particleName, betheBlochParNames}, "ITS Bethe-Bloch parameterisation for deuteron"};
 
   ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
@@ -289,7 +294,7 @@ struct ebyeMaker {
   Configurable<float> antidItsClsSizeCut{"antidItsClsSizeCut", 1.e-10f, "cluster size cut for antideuterons"};
   Configurable<float> antidPtItsClsSizeCut{"antidPtItsClsSizeCut", 10.f, "pt for cluster size cut for antideuterons"};
 
-  Configurable<LabeledArray<float>> cfgTrackSels{"cfgTrackSels", {trackSels, 1, 10, particleName, trackSelsNames}, "Track selections"};
+  Configurable<LabeledArray<float>> cfgTrackSels{"cfgTrackSels", {trackSels, 1, 12, particleName, trackSelsNames}, "Track selections"};
 
   std::array<float, kNpart> ptMin;
   std::array<float, kNpart> ptTof;
@@ -380,7 +385,7 @@ struct ebyeMaker {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-
+    classIds.clear();
     auto timestamp = bc.timestamp();
     o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
@@ -441,19 +446,36 @@ struct ebyeMaker {
     d_bz = o2::base::Propagator::Instance()->getNominalBz();
     LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kG";
     mRunNumber = bc.runNumber();
+    if (doprocessMiniRun2) {
+      o2::ccdb::CcdbApi ccdbApi;
+      ccdbApi.init("http://alice-ccdb.cern.ch");
+      std::map<std::string, std::string> metadata;
+      std::map<std::string, int>* classNameToIndexMap = ccdbApi.retrieveFromTFileAny<std::map<std::string, int>>("CTP/ClassNameToIndexMap", metadata, mRunNumber);
+      for (const auto& classToIndexPair : *classNameToIndexMap) {
+        bool hasClassName = classToIndexPair.first.find("HMV0M") < classToIndexPair.first.length();
+        int classId = hasClassName ? classToIndexPair.second - 1 : -1;
+        if (classId < 0) {
+          continue;
+        }
+        classIds.push_back(classId);
+      }
+    }
     fitter.setBz(d_bz);
 
     // o2::base::Propagator::Instance()->setMatLUT(lut);
   }
 
   template <class T>
-  float getITSSignal(T const& track, aod::Run2TrackExtras const& trackExtraRun2)
+  std::pair<float, float> getITSSignal(T const& track, aod::Run2TrackExtras const& trackExtraRun2)
   {
     if ((doprocessMiniRun2 || doprocessMiniMcRun2) && track.hasITS()) {
       auto extra = trackExtraRun2.rawIteratorAt(track.globalIndex());
-      return extra.itsSignal();
+      double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.p() / partMass[0]), cfgBetheBlochParamsITS->get("p0"), cfgBetheBlochParamsITS->get("p1"), cfgBetheBlochParamsITS->get("p2"), cfgBetheBlochParamsITS->get("p3"), cfgBetheBlochParamsITS->get("p4"))};
+      double expSigma{expBethe * cfgBetheBlochParamsITS->get("resolution")};
+      auto nSigmaITS = static_cast<float>((extra.itsSignal() - expBethe) / expSigma);
+      return std::make_pair(extra.itsSignal(), nSigmaITS);
     }
-    return -999.f;
+    return std::make_pair(-999.f, -999.f);
   }
 
   template <class T>
@@ -518,8 +540,10 @@ struct ebyeMaker {
       mask |= kTPCPIDTight;
     else if (std::abs(track.tpcnsigma) < cfgTrackSels->get("tpcNsigmaMid"))
       mask |= kTPCPIDMid;
-    // if (track.itsnsigma < 2) mask |= kITSPIDTight;
-    // else if (track.itsnsigma < 3) mask |= kITSPIDMid;
+    if (std::abs(track.itsnsigma) < cfgTrackSels->get("itsNsigmaTight"))
+      mask |= kITSPIDTight;
+    else if (std::abs(track.itsnsigma) < cfgTrackSels->get("itsNsigmaMid"))
+      mask |= kITSPIDMid;
     return mask;
   }
 
@@ -1041,7 +1065,7 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = -999.f;
+      float cV0M = 105.f;
       if (Run2V0MInfo.mCalibrationStored) {
         cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
         if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || (kINT7Intervals && ((cV0M >= 10 && cV0M < 30) || cV0M > 50))))
@@ -1127,7 +1151,7 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = -999.f;
+      float cV0M = 105.f;
       if (Run2V0MInfo.mCalibrationStored) {
         cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
       }
@@ -1141,14 +1165,24 @@ struct ebyeMaker {
       fillRecoEvent(collision, tracks, V0Table_thisCollision, cV0M);
 
       uint8_t trigger = collision.alias_bit(kINT7) ? 0x1 : 0x0;
+      for (auto& classId : classIds) {
+        if (bc.triggerMask() & BIT(classId)) {
+          trigger |= 0x2;
+          cV0M = cV0M < 104.f ? cV0M * 100. : cV0M;
+          break;
+        }
+      }
+      if (trigger == 0x0) {
+        continue;
+      }
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, nTrackletsColl, cV0M);
 
       for (auto& candidateTrack : candidateTracks[0]) { // protons
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
         float outerPID = getOuterPID(tk);
-        float itsSignal = getITSSignal(tk, trackExtraRun2);
+        auto [itsSignal, nSigmaITS] = getITSSignal(tk, trackExtraRun2);
         histos.fill(HIST("QA/itsSignal"), tk.p(), itsSignal);
-
+        candidateTrack.itsnsigma = nSigmaITS;
         candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
         int selMask = getTrackSelMask(candidateTrack);
         if (candidateTrack.outerPID < outerPIDMin)
@@ -1247,7 +1281,7 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = -999.f;
+      float cV0M = 105.f;
       if (Run2V0MInfo.mCalibrationStored) {
         cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
       }
@@ -1319,7 +1353,7 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = -999.f;
+      float cV0M = 105.f;
       if (Run2V0MInfo.mCalibrationStored) {
         cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
       }
@@ -1340,9 +1374,9 @@ struct ebyeMaker {
         if (candidateTrack.isreco) {
           auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
           float outerPID = getOuterPID(tk);
-          float itsSignal = getITSSignal(tk, trackExtraRun2);
+          auto [itsSignal, nSigmaITS] = getITSSignal(tk, trackExtraRun2);
           histos.fill(HIST("QA/itsSignal"), tk.p(), itsSignal);
-
+          candidateTrack.itsnsigma = nSigmaITS;
           candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
           selMask = getTrackSelMask(candidateTrack);
           // if (candidateTrack.outerPID < -4)

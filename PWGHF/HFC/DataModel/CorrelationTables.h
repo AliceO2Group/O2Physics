@@ -51,21 +51,21 @@ DECLARE_SOA_TABLE(DDbarRecoInfo, "AOD", "DDBARRECOINFO",
 // definition of columns and tables for D0-Hadron correlation pairs
 namespace hf_correlation_d0_hadron
 {
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                //! DeltaPhi between D0 and Hadrons
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                //! DeltaEta between D0 and Hadrons
-DECLARE_SOA_COLUMN(PtD, ptD, float);                          //! Transverse momentum of D0
-DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                //! Transverse momentum of Hadron
-DECLARE_SOA_COLUMN(MD, mD, float);                            //! Invariant mass of D0
-DECLARE_SOA_COLUMN(MDbar, mDbar, float);                      //! Invariant mass of D0bar
-DECLARE_SOA_COLUMN(MlScoreBkgD0, mlScoreBkgD0, float);        //! ML background score for D0 selection
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                           //! DeltaPhi between D0 and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                           //! DeltaEta between D0 and Hadrons
+DECLARE_SOA_COLUMN(PtD, ptD, float);                                     //! Transverse momentum of D0
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                           //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(MD, mD, float);                                       //! Invariant mass of D0
+DECLARE_SOA_COLUMN(MDbar, mDbar, float);                                 //! Invariant mass of D0bar
+DECLARE_SOA_COLUMN(MlScoreBkgD0, mlScoreBkgD0, float);                   //! ML background score for D0 selection
 DECLARE_SOA_COLUMN(MlScoreNonPromptD0, mlScoreNonPromptD0, float);       //! ML prompt score for D0 selection
 DECLARE_SOA_COLUMN(MlScorePromptD0, mlScorePromptD0, float);             //! ML prompt score for D0 selection
 DECLARE_SOA_COLUMN(MlScoreBkgD0bar, mlScoreBkgD0bar, float);             //! ML background score for D0 selection
 DECLARE_SOA_COLUMN(MlScoreNonPromptD0bar, mlScoreNonPromptD0bar, float); //! ML prompt score for D0 selection
 DECLARE_SOA_COLUMN(MlScorePromptD0bar, mlScorePromptD0bar, float);       //! ML prompt score for D0 selection
-DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);          //! Tag for D0,D0bar
-DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                    //! Pool Bin for the MixedEvent
-DECLARE_SOA_COLUMN(IsAutoCorrelated, isAutoCorrelated, bool); //! Correlation Status
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);                     //! Tag for D0,D0bar
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                               //! Pool Bin for the MixedEvent
+DECLARE_SOA_COLUMN(IsAutoCorrelated, isAutoCorrelated, bool);            //! Correlation Status
 
 enum ParticleTypeData {
   D0Only = 1,        // Identified as D0
@@ -242,6 +242,27 @@ DECLARE_SOA_TABLE(TrackRecoInfo, "AOD", "TRACKRECOINFO", //! Tracks Reconstructe
                   aod::hf_correlation_ds_hadron::TrackDcaXY,
                   aod::hf_correlation_ds_hadron::TrackDcaZ,
                   aod::hf_correlation_ds_hadron::TrackTPCNClsCrossedRows);
+
+// definition of columns and tables for LambdaC properties
+namespace hf_lc_baryon
+{
+DECLARE_SOA_COLUMN(Phi, phi, float);               //! Phi of Lc
+DECLARE_SOA_COLUMN(Eta, eta, float);               //! Eta of Lc
+DECLARE_SOA_COLUMN(PtLc, ptLc, float);             //! Transverse momentum of Lc
+DECLARE_SOA_COLUMN(MLc, mLc, float);               //! Invariant mass of Lc
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);         //! Pool Bin of event defined using zvtx and multiplicity
+DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);     //! Global index for the collision
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t); //! Timestamp for the collision
+} // namespace hf_lc_baryon
+
+DECLARE_SOA_TABLE(Lc, "AOD", "LC", //! Lc properties
+                  aod::hf_lc_baryon::Phi,
+                  aod::hf_lc_baryon::Eta,
+                  aod::hf_lc_baryon::PtLc,
+                  aod::hf_lc_baryon::MLc,
+                  aod::hf_lc_baryon::PoolBin,
+                  aod::hf_lc_baryon::GIndexCol,
+                  aod::hf_lc_baryon::TimeStamp);
 
 // definition of columns and tables for Dplus properties
 namespace hf_dplus_meson
