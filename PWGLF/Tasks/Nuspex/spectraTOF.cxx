@@ -70,7 +70,7 @@ std::array<std::shared_ptr<TH2>, NpCharge> hDecayLengthMCBeauty; // Decay Length
 std::array<std::shared_ptr<TH2>, NpCharge> hDecayLengthMCNotHF;  // Decay Length in the MC for particles from not a HF
 
 // Spectra task
- // o2-linter: disable=name/workflow-file
+// o2-linter: disable=name/workflow-file
 struct tofSpectra { // o2-linter: disable=name/struct
   struct : ConfigurableGroup {
     Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
