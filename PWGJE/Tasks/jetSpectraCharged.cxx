@@ -254,7 +254,7 @@ struct JetSpectraChargedTask {
     if (jetBase.pt() > pTHatMaxMCD * pTHat) {
       return;
     }
-    // fill geometry matched histograms 
+    // fill geometry matched histograms
     if (checkGeoMatched) {
       if (jetBase.has_matchedJetGeo()) {
         for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<TTag>>()) {
@@ -269,7 +269,7 @@ struct JetSpectraChargedTask {
             registry.fill(HIST("h2_jet_ntracks_reco_jet_ntracks_gen_matchedgeo"), jetBase.tracksIds().size(), jetTag.tracksIds().size(), weight);
             registry.fill(HIST("h2_jet_pt_gen_jet_pt_diff_matchedgeo"), jetTag.pt(), dpt / jetTag.pt(), weight);
             registry.fill(HIST("h2_jet_pt_reco_jet_pt_diff_matchedgeo"), jetBase.pt(), dpt / jetBase.pt(), weight);
-            registry.fill(HIST("h2_jet_pt_gen_jet_pt_ratio_matchedgeo"), jetTag.pt(), jetBase.pt()/jetTag.pt(), weight);
+            registry.fill(HIST("h2_jet_pt_gen_jet_pt_ratio_matchedgeo"), jetTag.pt(), jetBase.pt() / jetTag.pt(), weight);
           }
         }
       }
@@ -289,12 +289,12 @@ struct JetSpectraChargedTask {
             registry.fill(HIST("h2_jet_ntracks_reco_jet_ntracks_gen_matchedpt"), jetBase.tracksIds().size(), jetTag.tracksIds().size(), weight);
             registry.fill(HIST("h2_jet_pt_gen_jet_pt_diff_matchedpt"), jetTag.pt(), dpt / jetTag.pt(), weight);
             registry.fill(HIST("h2_jet_pt_reco_jet_pt_diff_matchedpt"), jetBase.pt(), dpt / jetBase.pt(), weight);
-            registry.fill(HIST("h2_jet_pt_gen_jet_pt_ratio_matchedpt"), jetTag.pt(), jetBase.pt()/jetTag.pt(), weight);
+            registry.fill(HIST("h2_jet_pt_gen_jet_pt_ratio_matchedpt"), jetTag.pt(), jetBase.pt() / jetTag.pt(), weight);
           }
         }
       }
     }
-    // fill geometry and pt histograms:
+    // fill geometry and pt histograms
     if (checkGeoPtMatched) {
       if (jetBase.has_matchedJetGeo() && jetBase.has_matchedJetPt()) {
         for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<TTag>>()) {
@@ -309,7 +309,7 @@ struct JetSpectraChargedTask {
             registry.fill(HIST("h2_jet_ntracks_reco_jet_ntracks_gen_matchedgeopt"), jetBase.tracksIds().size(), jetTag.tracksIds().size(), weight);
             registry.fill(HIST("h2_jet_pt_gen_jet_pt_diff_matchedgeopt"), jetTag.pt(), dpt / jetTag.pt(), weight);
             registry.fill(HIST("h2_jet_pt_reco_jet_pt_diff_matchedgeopt"), jetBase.pt(), dpt / jetBase.pt(), weight);
-            registry.fill(HIST("h2_jet_pt_gen_jet_pt_ratio_matchedgeopt"), jetTag.pt(), jetBase.pt()/jetTag.pt(), weight);
+            registry.fill(HIST("h2_jet_pt_gen_jet_pt_ratio_matchedgeopt"), jetTag.pt(), jetBase.pt() / jetTag.pt(), weight);
           }
         }
       }
