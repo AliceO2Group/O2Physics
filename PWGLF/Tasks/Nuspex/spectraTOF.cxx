@@ -1966,8 +1966,7 @@ struct tofSpectra {// o2-linter: disable=name/struct
   }
 
   template <std::size_t i, typename ParticleType>
-  // o2-linter: disable=name/function-variable
-  void fillParticleHistograms_MCGenEvs(ParticleType const& mcParticle, GenMCCollisions::iterator const& mcCollision)
+  void fillParticleHistograms_MCGenEvs(ParticleType const& mcParticle, GenMCCollisions::iterator const& mcCollision) // o2-linter: disable=name/function-variable
   {
 
     if (!isParticleEnabled<i>()) { // Check if the particle is enabled
