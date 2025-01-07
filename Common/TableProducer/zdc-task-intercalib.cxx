@@ -50,6 +50,9 @@ struct zdcInterCalib {
   //
   Configurable<int> nBins{"nBins", 400, "n bins"};
   Configurable<float> MaxZN{"MaxZN", 399.5, "Max ZN signal"};
+  Configurable<bool> TDCcut{"TDCcut", false, "Flag for TDC cut"};
+  Configurable<float> tdcZNmincut{"tdcZNmincut", -2.5, "Min ZN TDC cut"};
+  Configurable<float> tdcZNmaxcut{"tdcZNmaxcut", -2.5, "Max ZN TDC cut"};
   //
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -80,20 +83,28 @@ struct zdcInterCalib {
         // To assure that ZN have a genuine signal (tagged by the relative TDC)
         // we can check that the amplitude is >0 or that ADC is NOT very negative (-inf)
         // If this is not the case, signals are set to kVeryNegative values
+
         double pmcZNC = zdc.energyCommonZNC();
         double pmcZNA = zdc.energyCommonZNA();
+        bool isZNChit = false, isZNAhit = false;
         //
-        // double tdcZNC = zdc.zdc.timeZNC();
-        // double tdcZNA = zdc.zdc.timeZNA();
-        //
-        bool isZNChit = true, isZNAhit = true;
-        if (pmcZNC < kVeryNegative) {
-          pmcZNC = kVeryNegative;
-          isZNChit = false;
-        }
-        if (pmcZNA < kVeryNegative) {
-          pmcZNA = kVeryNegative;
-          isZNAhit = false;
+        double tdcZNC = zdc.timeZNC();
+        double tdcZNA = zdc.timeZNA();
+        // OR we can select a narrow window in both ZN TDCs using the configurable parameters
+        if (TDCcut) { // a narrow TDC window is set
+          if ((tdcZNC >= tdcZNmincut) && (tdcZNC <= tdcZNmaxcut)) {
+            isZNChit = true;
+          }
+          if ((tdcZNA >= tdcZNmincut) && (tdcZNA <= tdcZNmaxcut)) {
+            isZNAhit = true;
+          }
+        } else { // if no window on TDC is set
+          if (pmcZNC > -1.) {
+            isZNChit = true;
+          }
+          if (pmcZNA > -1.) {
+            isZNAhit = true;
+          }
         }
         //
         double sumZNC = 0;
@@ -137,7 +148,7 @@ struct zdcInterCalib {
           registry.get<TH1>(HIST("ZNAsumq"))->Fill(sumZNA);
         }
         if (isZNAhit || isZNChit)
-          zTab(pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3], pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3]);
+          zTab(pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3], tdcZNC, pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3], tdcZNA);
       }
     }
   }

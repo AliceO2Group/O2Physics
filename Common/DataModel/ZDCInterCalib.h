@@ -22,11 +22,13 @@ DECLARE_SOA_COLUMN(pm1ZNA, ZNAPM1, float);      //! PM1 ZNA
 DECLARE_SOA_COLUMN(pm2ZNA, ZNAPM2, float);      //! PM2 ZNA
 DECLARE_SOA_COLUMN(pm3ZNA, ZNAPM3, float);      //! PM3 ZNA
 DECLARE_SOA_COLUMN(pm4ZNA, ZNAPM4, float);      //! PM4 ZNA
+DECLARE_SOA_COLUMN(tdcZNA, ZNATDC, float);      //! TDC ZNA
 DECLARE_SOA_COLUMN(pmcZNC, ZNCcommonPM, float); //! PMC ZNC
 DECLARE_SOA_COLUMN(pm1ZNC, ZNCPM1, float);      //! PM1 ZNC
 DECLARE_SOA_COLUMN(pm2ZNC, ZNCPM2, float);      //! PM2 ZNC
 DECLARE_SOA_COLUMN(pm3ZNC, ZNCPM3, float);      //! PM3 ZNC
 DECLARE_SOA_COLUMN(pm4ZNC, ZNCPM4, float);      //! PM4 ZNC
+DECLARE_SOA_COLUMN(tdcZNC, ZNCTDC, float);      //! TDC ZNC
 
 } // namespace znoutput
 
@@ -36,11 +38,13 @@ DECLARE_SOA_TABLE(ZDCInterCalib, "AOD", "ZDCIC", o2::soa::Index<>,
                   znoutput::pm2ZNA,
                   znoutput::pm3ZNA,
                   znoutput::pm4ZNA,
+                  znoutput::tdcZNA,
                   znoutput::pmcZNC,
                   znoutput::pm1ZNC,
                   znoutput::pm2ZNC,
                   znoutput::pm3ZNC,
-                  znoutput::pm4ZNC);
+                  znoutput::pm4ZNC,
+                  znoutput::tdcZNC);
 } // namespace o2::aod
 
 #endif // COMMON_DATAMODEL_ZDCINTERCALIB_H_
