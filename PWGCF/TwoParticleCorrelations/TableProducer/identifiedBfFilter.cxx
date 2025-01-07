@@ -1051,6 +1051,7 @@ struct IdentifiedBfFilterTracks {
       float charge = 0;
       if (pdgpart != nullptr){
         charge = getCharge(pdgpart->Charge());
+        //print charge
       }
 
       if (charge != 0) {
@@ -1167,7 +1168,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyParticle(ParticleOb
 {
   using namespace identifiedbffilter;
 
-  int pdgcode = abs(particle.pdgCode());
+  int pdgcode = fabs(particle.pdgCode());
 
   switch (pdgcode) {
     case pdgcodeEl:
@@ -1503,6 +1504,7 @@ int8_t IdentifiedBfFilterTracks::selectTrackAmbiguousCheck(CollisionObjects cons
       /* feedback of no ambiguous tracks only if checks required */
       fhAmbiguousTrackType->Fill(tracktype, multiplicityclass);
     }
+    std::cout<<"Hello Accept Track"<<std::endl;
     return AcceptTrack(track);
   }
 }
