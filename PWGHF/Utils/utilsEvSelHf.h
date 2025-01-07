@@ -214,7 +214,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     uint16_t rejectionMask{0}; // 16 bits, in case new ev. selections will be added
 
     if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
-      centrality = o2::hf_centrality::evalCentralityColl<centEstimator>(collision);
+      centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
       if (centrality < centralityMin || centrality > centralityMax) {
         SETBIT(rejectionMask, EventRejection::Centrality);
       }
@@ -394,7 +394,7 @@ struct HfEventSelectionMc {
     auto bc = mcCollision.template bc_as<TBc>();
 
     if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
-      centrality = o2::hf_centrality::evalCentralityGenColl<centEstimator>(collSlice);
+      centrality = o2::hf_centrality::getCentralityGenColl(collSlice, centEstimator);
       /// centrality selection
       if (centrality < centralityMin || centrality > centralityMax) {
         SETBIT(rejectionMask, EventRejection::Centrality);

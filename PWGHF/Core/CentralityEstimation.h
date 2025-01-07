@@ -151,7 +151,7 @@ float getCentralityColl(const Coll& collision, int centEstimator)
       break;
     default:
       LOG(warning) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C. Fallback to V0A";
-      cent = collision.centFV0A();
+      cent = -999.;
       break;
   }
   return cent;
@@ -187,44 +187,6 @@ float getCentralityGenColl(CCs const& collSlice, int centEstimator)
     float collMult = collision.numContrib();
     if (collMult > multiplicity) {
       centrality = getCentralityColl(collision, centEstimator);
-      multiplicity = collMult;
-    }
-  }
-  return centrality;
-}
-
-/// Get the centrality
-/// \param collision is the collision with the centrality information
-/// \param centEstimator is the centrality estimator from hf_centrality::CentralityEstimator
-template <o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
-float evalCentralityColl(Coll const& collision)
-{
-  if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
-    return collision.centFT0A();
-  } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
-    return collision.centFT0C();
-  } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
-    return collision.centFT0M();
-  } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
-    return collision.centFV0A();
-  } else {
-    LOG(warning) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C. Fallback to FT0c";
-    return collision.centFT0C();
-  }
-}
-
-/// \brief Function to get MC collision centrality
-/// \param collSlice collection of reconstructed collisions associated to a generated one
-/// \return generated MC collision centrality
-template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs>
-float evalCentralityGenColl(CCs const& collSlice)
-{
-  float centrality{-1};
-  float multiplicity{0.f};
-  for (const auto& collision : collSlice) {
-    float collMult = collision.numContrib();
-    if (collMult > multiplicity) {
-      centrality = evalCentralityColl<centEstimator>(collision);
       multiplicity = collMult;
     }
   }
