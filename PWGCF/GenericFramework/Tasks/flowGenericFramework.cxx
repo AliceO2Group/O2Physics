@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file FlowPtContainer.cxx
+/// \brief Task to analyse angular and transverse momentum correlations with GFW
+/// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
+
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPObject.h>
 #include <DataFormatsParameters/GRPMagField.h>
@@ -125,7 +129,7 @@ struct GenericFramework {
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
   OutputObj<FlowPtContainer> fFCpt{FlowPtContainer("FlowPtContainer")};
-  OutputObj<FlowContainer> fFC_gen{FlowContainer("FlowContainer_gen")};
+  OutputObj<FlowContainer> fFCgen{FlowContainer("FlowContainer_gen")};
   OutputObj<TList> fWeightList{"WeightList", OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registry{"registry"};
 
@@ -286,9 +290,9 @@ struct GenericFramework {
       fFC->Initialize(oba, multAxis, cfgNbootstrap);
     }
     if (doprocessMCGen) {
-      fFC_gen->SetName("FlowContainer_gen");
-      fFC_gen->SetXAxis(fPtAxis);
-      fFC_gen->Initialize(oba, multAxis, cfgNbootstrap);
+      fFCgen->SetName("FlowContainer_gen");
+      fFCgen->SetXAxis(fPtAxis);
+      fFCgen->Initialize(oba, multAxis, cfgNbootstrap);
     }
     delete oba;
     fFCpt->setUseCentralMoments(cfgUseCentralMoments);
@@ -594,7 +598,7 @@ struct GenericFramework {
     return true;
   }
 
-  enum datatype {
+  enum DataType {
     kReco,
     kGen
   };
@@ -655,7 +659,7 @@ struct GenericFramework {
     return;
   }
 
-  template <datatype dt>
+  template <DataType dt>
   void fillOutputContainers(const float& centmult, const double& rndm)
   {
     fFCpt->calculateCorrelations();
@@ -670,25 +674,25 @@ struct GenericFramework {
           continue;
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, kFALSE).real() / dnx;
         if (std::abs(val) < 1) {
-          (dt == kGen) ? fFC_gen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, dnx, rndm) : fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, dnx, rndm);
+          (dt == kGen) ? fFCgen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, dnx, rndm) : fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, dnx, rndm);
           if (cfgUseGapMethod)
             fFCpt->fillVnPtProfiles(centmult, val, dnx, rndm, configs.GetpTCorrMasks()[l_ind]);
         }
         continue;
       }
-      for (Int_t i = 1; i <= fPtAxis->GetNbins(); i++) {
+      for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
         auto dnx = fGFW->Calculate(corrconfigs.at(l_ind), i - 1, kTRUE).real();
         if (dnx == 0)
           continue;
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), i - 1, kFALSE).real() / dnx;
         if (std::abs(val) < 1)
-          (dt == kGen) ? fFC_gen->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, dnx, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, dnx, rndm);
+          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, dnx, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, dnx, rndm);
       }
     }
     return;
   }
 
-  template <datatype dt, typename TCollision, typename TTracks>
+  template <DataType dt, typename TCollision, typename TTracks>
   void processCollision(TCollision collision, TTracks tracks, const float& centrality, const int& field)
   {
     if (tracks.size() < 1)
@@ -699,12 +703,12 @@ struct GenericFramework {
     float vtxz = collision.posZ();
     fGFW->Clear();
     fFCpt->clearVector();
-    float l_Random = fRndm->Rndm();
+    float lRandom = fRndm->Rndm();
     for (const auto& track : tracks) {
       processTrack(track, centrality, vtxz, field);
     }
     if (!cfgFillWeights)
-      fillOutputContainers<dt>((cfgUseNch) ? tracks.size() : centrality, l_Random);
+      fillOutputContainers<dt>((cfgUseNch) ? tracks.size() : centrality, lRandom);
   }
 
   template <typename TTrack>
@@ -726,21 +730,21 @@ struct GenericFramework {
       if (cfgUseAdditionalTrackCut && !trackSelected(track, field))
         return;
 
-      int pid_index = 0;
+      int pidIndex = 0;
       if (cfgUsePID) {
         if (mcParticle.pdgCode() == 211)
-          pid_index = 1;
+          pidIndex = 1;
         if (mcParticle.pdgCode() == 321)
-          pid_index = 2;
+          pidIndex = 2;
         if (mcParticle.pdgCode() == 2212)
-          pid_index = 3;
+          pidIndex = 3;
       }
 
       if (cfgFillWeights) {
         fillWeights(mcParticle, vtxz, centrality, 0);
       } else {
         fillPtSums<kReco>(track, vtxz);
-        fillGFW<kReco>(mcParticle, vtxz, pid_index);
+        fillGFW<kReco>(mcParticle, vtxz, pidIndex);
       }
 
       if (cfgFillQA)
@@ -755,18 +759,18 @@ struct GenericFramework {
       if (track.eta() < etalow || track.eta() > etaup || track.pt() < ptlow || track.pt() > ptup)
         return;
 
-      int pid_index = 0;
+      int pidIndex = 0;
       if (cfgUsePID) {
         if (track.pdgCode() == 211)
-          pid_index = 1;
+          pidIndex = 1;
         if (track.pdgCode() == 321)
-          pid_index = 2;
+          pidIndex = 2;
         if (track.pdgCode() == 2212)
-          pid_index = 3;
+          pidIndex = 3;
       }
 
       fillPtSums<kGen>(track, vtxz);
-      fillGFW<kGen>(track, vtxz, pid_index);
+      fillGFW<kGen>(track, vtxz, pidIndex);
 
       if (cfgFillQA)
         fillTrackQA<kGen, kAfter>(track, vtxz);
@@ -779,23 +783,23 @@ struct GenericFramework {
       if (cfgUseAdditionalTrackCut && !trackSelected(track, field))
         return;
 
-      int pid_index = 0;
+      int pidIndex = 0;
       if (cfgUsePID) {
         // pid_index = getBayesPIDIndex(track);
-        pid_index = getNsigmaPID(track);
+        pidIndex = getNsigmaPID(track);
       }
       if (cfgFillWeights) {
-        fillWeights(track, vtxz, centrality, pid_index);
+        fillWeights(track, vtxz, centrality, pidIndex);
       } else {
         fillPtSums<kReco>(track, vtxz);
-        fillGFW<kReco>(track, vtxz, pid_index);
+        fillGFW<kReco>(track, vtxz, pidIndex);
       }
       if (cfgFillQA)
         fillTrackQA<kReco, kAfter>(track, vtxz);
     }
   }
 
-  template <datatype dt, typename TTrack>
+  template <DataType dt, typename TTrack>
   inline void fillPtSums(TTrack track, const double& vtxz)
   {
     double wacc = (dt == kGen) ? 1. : getAcceptance(track, vtxz, -1);
@@ -813,32 +817,32 @@ struct GenericFramework {
     }
   }
 
-  template <datatype dt, typename TTrack>
+  template <DataType dt, typename TTrack>
   inline void fillGFW(TTrack track, const double& vtxz, int pid_index)
   {
     if (cfgUsePID) { // Analysing POI flow with id'ed particles
       double ptmins[] = {ptpoilow, ptpoilow, 0.3, 0.5};
       double ptmaxs[] = {ptpoiup, ptpoiup, 6.0, 6.0};
-      bool WithinPtRef = (track.pt() > ptreflow && track.pt() < ptrefup);
-      bool WithinPtPOI = (track.pt() > ptmins[pid_index] && track.pt() < ptmaxs[pid_index]);
-      bool WithinPtNch = (track.pt() > ptmins[0] && track.pt() < ptmaxs[0]);
-      if (!WithinPtPOI && !WithinPtRef)
+      bool withinPtRef = (track.pt() > ptreflow && track.pt() < ptrefup);
+      bool withinPtPOI = (track.pt() > ptmins[pid_index] && track.pt() < ptmaxs[pid_index]);
+      bool withinPtNch = (track.pt() > ptmins[0] && track.pt() < ptmaxs[0]);
+      if (!withinPtPOI && !withinPtRef)
         return;
-      double wacc_ref = (dt == kGen) ? 1. : getAcceptance(track, vtxz, -1);
-      double wacc_poi = (dt == kGen) ? 1. : WithinPtPOI ? getAcceptance(track, vtxz, pid_index)
+      double waccRef = (dt == kGen) ? 1. : getAcceptance(track, vtxz, -1);
+      double waccPOI = (dt == kGen) ? 1. : withinPtPOI ? getAcceptance(track, vtxz, pid_index)
                                                         : getAcceptance(track, vtxz, 0); //
-      if (WithinPtRef && WithinPtPOI && pid_index)
-        wacc_ref = wacc_poi; // if particle is both (then it's overlap), override ref with POI
-      if (WithinPtRef)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc_ref, 1);
-      if (WithinPtPOI && pid_index)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc_poi, (1 << (pid_index + 1)));
-      if (WithinPtNch)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc_poi, 2);
-      if (WithinPtPOI && WithinPtRef && pid_index)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc_poi, (1 << (pid_index + 5)));
-      if (WithinPtNch && WithinPtRef)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc_poi, 32);
+      if (withinPtRef && withinPtPOI && pid_index)
+        waccRef = waccPOI; // if particle is both (then it's overlap), override ref with POI
+      if (withinPtRef)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), waccRef, 1);
+      if (withinPtPOI && pid_index)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), waccPOI, (1 << (pid_index + 1)));
+      if (withinPtNch)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), waccPOI, 2);
+      if (withinPtPOI && withinPtRef && pid_index)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), waccPOI, (1 << (pid_index + 5)));
+      if (withinPtNch && withinPtRef)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), waccPOI, 32);
     } else { // Analysing only integrated flow
       double weff = (dt == kGen) ? 1. : getEfficiency(track);
       if (weff < 0)
@@ -849,7 +853,7 @@ struct GenericFramework {
     return;
   }
 
-  template <datatype dt, QAFillTime ft, typename TTrack>
+  template <DataType dt, QAFillTime ft, typename TTrack>
   inline void fillTrackQA(TTrack track, const float vtxz)
   {
     if constexpr (dt == kGen) {
@@ -881,9 +885,9 @@ struct GenericFramework {
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
-  using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFKa, aod::pidTPCKa, aod::pidTOFPr, aod::pidTPCPr>>;
+  using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFKa, aod::pidTPCKa, aod::pidTOFPr, aod::pidTPCPr>>;
 
-  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int run = bc.runNumber();
@@ -957,7 +961,7 @@ struct GenericFramework {
   }
   PROCESS_SWITCH(GenericFramework, processMCGen, "Process analysis for MC generated events", false);
 
-  void processRun2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentRun2V0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
+  void processRun2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentRun2V0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
   {
     if (!collision.sel7())
       return;

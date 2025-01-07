@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file FlowPtContainer.cxx
+/// \brief Class to handle angular and transverse momentum correlations
+/// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
+
 #include "FlowPtContainer.h"
 #include <algorithm>
 #include <vector>
@@ -478,9 +482,9 @@ void FlowPtContainer::fillArray(FillType a, FillType b, double c, double d)
     int k = ( ( idx - j * 3 - i ) / 9 ) % 3;
     int l = ( ( idx - k * 9 - j * 3 - i ) / 27 ) % 3;
     if (std::holds_alternative<std::complex<double>>(a) && std::holds_alternative<std::complex<double>>(b)) {
-      arr[idx] += std::pow(std::get<0>(a), i) * std::pow(std::get<0>(b), j) * std::pow(c, k) * pow(d, l);
+      arr[idx] += std::pow(std::get<0>(a), i) * std::pow(std::get<0>(b), j) * std::pow(c, k) * std::pow(d, l);
     } else if (std::holds_alternative<double>(a) && std::holds_alternative<double>(b)) {
-      warr[idx] += std::pow(std::get<1>(a), i) * std::pow(std::get<1>(b), j) * std::pow(c, k) * pow(d, l);
+      warr[idx] += std::pow(std::get<1>(a), i) * std::pow(std::get<1>(b), j) * std::pow(c, k) * std::pow(d, l);
     } else {
         LOGF(error, "FillType variant should hold same type for a and b during single function c");
     }
@@ -898,44 +902,44 @@ Long64_t FlowPtContainer::Merge(TCollection* collist)
   if (!fCorrList || !fCMTermList)
     return 0;
   Long64_t nmerged = 0;
-  TIter all_PTC(collist);
-  FlowPtContainer* l_PTC = 0;
-  while ((l_PTC = dynamic_cast<FlowPtContainer*>(all_PTC()))) {
-    TList* t_CMTerm = l_PTC->fCMTermList;
-    TList* t_Corr = l_PTC->fCorrList;
-    TList* t_Cov = l_PTC->fCovList;
-    TList* t_Cum = l_PTC->fCumulantList;
-    TList* t_CM = l_PTC->fCentralMomentList;
-    if (t_CMTerm) {
+  TIter allPTC(collist);
+  FlowPtContainer* lPTC = 0;
+  while ((lPTC = dynamic_cast<FlowPtContainer*>(allPTC()))) {
+    TList* tCMTerm = lPTC->fCMTermList;
+    TList* tCorr = lPTC->fCorrList;
+    TList* tCov = lPTC->fCovList;
+    TList* tCum = lPTC->fCumulantList;
+    TList* tCM = lPTC->fCentralMomentList;
+    if (tCMTerm) {
       if (!fCMTermList)
-        fCMTermList = dynamic_cast<TList*>(t_CMTerm->Clone());
+        fCMTermList = dynamic_cast<TList*>(tCMTerm->Clone());
       else
-        mergeBSLists(fCMTermList, t_CMTerm);
+        mergeBSLists(fCMTermList, tCMTerm);
       nmerged++;
     }
-    if (t_Corr) {
+    if (tCorr) {
       if (!fCorrList)
-        fCorrList = dynamic_cast<TList*>(t_Corr->Clone());
+        fCorrList = dynamic_cast<TList*>(tCorr->Clone());
       else
-        mergeBSLists(fCorrList, t_Corr);
+        mergeBSLists(fCorrList, tCorr);
     }
-    if (t_Cov) {
+    if (tCov) {
       if (!fCovList)
-        fCovList = dynamic_cast<TList*>(t_Cov->Clone());
+        fCovList = dynamic_cast<TList*>(tCov->Clone());
       else
-        mergeBSLists(fCovList, t_Cov);
+        mergeBSLists(fCovList, tCov);
     }
-    if (t_Cum) {
+    if (tCum) {
       if (!fCumulantList)
-        fCumulantList = dynamic_cast<TList*>(t_Cum->Clone());
+        fCumulantList = dynamic_cast<TList*>(tCum->Clone());
       else
-        mergeBSLists(fCumulantList, t_Cum);
+        mergeBSLists(fCumulantList, tCum);
     }
-    if (t_CM) {
+    if (tCM) {
       if (!fCentralMomentList)
-        fCentralMomentList = dynamic_cast<TList*>(t_CM->Clone());
+        fCentralMomentList = dynamic_cast<TList*>(tCM->Clone());
       else
-        mergeBSLists(fCentralMomentList, t_CM);
+        mergeBSLists(fCentralMomentList, tCM);
     }
   }
   return nmerged;
@@ -947,9 +951,9 @@ void FlowPtContainer::mergeBSLists(TList* source, TList* target)
     return;
   }
   for (int i = 0; i < source->GetEntries(); i++) {
-    BootstrapProfile* l_obj = dynamic_cast<BootstrapProfile*>(source->At(i));
-    BootstrapProfile* t_obj = dynamic_cast<BootstrapProfile*>(target->At(i));
-    l_obj->MergeBS(t_obj);
+    BootstrapProfile* lObj = dynamic_cast<BootstrapProfile*>(source->At(i));
+    BootstrapProfile* tObj = dynamic_cast<BootstrapProfile*>(target->At(i));
+    lObj->MergeBS(tObj);
   }
 }
 TH1* FlowPtContainer::raiseHistToPower(TH1* inh, double p)
@@ -967,6 +971,3 @@ TH1* FlowPtContainer::raiseHistToPower(TH1* inh, double p)
   }
   return reth;
 }
-/// \file FlowPtContainer.cxx
-/// \brief Class to handle angular and transverse momentum correlations
-/// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch

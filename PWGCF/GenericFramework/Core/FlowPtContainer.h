@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file FlowPtContainer.cxx
+/// \brief Class to handle angular and transverse momentum correlations
+/// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
+
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_
 
@@ -80,8 +84,8 @@ class FlowPtContainer : public TNamed
   void setUseGapMethod(bool newval) { fUseGap = newval; }
   bool usesCentralMoments() { return fUseCentralMoments; }
   bool usesGap() { return fUseGap; }
-  void rebinMulti(Int_t nbins);
-  void rebinMulti(Int_t nbins, double* binedges);
+  void rebinMulti(int nbins);
+  void rebinMulti(int nbins, double* binedges);
   TH1* getCentralMomentHist(int ind, int m);
   TH1* getCumulantHist(int ind, int m);
   TH1* getCorrHist(int ind, int m);
