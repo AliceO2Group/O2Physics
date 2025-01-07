@@ -9,11 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// Charged-particle jet spectra task
-//
-/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
-/// \author Aimeric Landou <aimeric.landou@cern.ch>
-/// \author Wenhui Feng <wenhui.feng@cern.ch>
+/// \file jetSpectraCharged.cxx
+/// \brief Charged-particle jet spectra task
+/// \author Nima Zardoshti <nima.zardoshti@cern.ch>, Aimeric Landou <aimeric.landou@cern.ch>, Wenhui Feng <wenhui.feng@cern.ch>
 
 #include <cmath>
 #include <TRandom3.h>
@@ -47,7 +45,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct JetSpectraChargedTask {
+struct JetSpectraCharged {
 
   using ChargedMCDMatchedJets = soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>;
   using ChargedMCPMatchedJets = soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>;
@@ -91,21 +89,18 @@ struct JetSpectraChargedTask {
 
     AxisSpec centralityAxis = {1200, -10., 110., "Centrality"};
     AxisSpec trackPtAxis = {200, -0.5, 199.5, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec trackEtaAxis = {nBinsEta, trackEtaMin, trackEtaMax, "#eta"};
-    AxisSpec PhiAxis = {160, -1.0, 7.0, "#varphi"};
+    AxisSpec trackEtaAxis = {nBinsEta, -1.0, 1.0, "#eta"};
+    AxisSpec phiAxis = {160, -1.0, 7.0, "#varphi"};
     AxisSpec jetPtAxis = {200, 0., 200., "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec jetPtAxisRhoAreaSub = {400, -200., 200., "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec jetEtaAxis = {nBinsEta, jetEtaMin, jetEtaMax, "#eta"};
+    AxisSpec jetEtaAxis = {nBinsEta, -1.0, 1.0, "#eta"};
 
     if (doprocessQC || doprocessQCWeighted) {
       registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       registry.add("h2_centrality_occupancy", "centrality vs occupancy; centrality; occupancy", {HistType::kTH2F, {centralityAxis, {60, 0, 30000}}});
       registry.add("h_collisions_vertexZ", "position of collision ;#it{Z} (cm)", {HistType::kTH1F, {{300, -15.0, 15.0}}});
       registry.add("h_track_pt", "track pT ; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH1F, {trackPtAxis}});
-      registry.add("h2_track_eta_track_phi", "track eta vs. track phi; #eta; #phi; counts", {HistType::kTH2F, {trackEtaAxis, PhiAxis}});
-      registry.add("h_jet_pt", "jet pT;#it{p}_{T,jet} (GeV/#it{c}); counts", {HistType::kTH1F, {jetPtAxisRhoAreaSub}});
-      registry.add("h_jet_eta", "jet eta;#eta; counts", {HistType::kTH1F, {jetEtaAxis}});
-      registry.add("h_jet_phi", "jet phi;#phi; counts", {HistType::kTH1F, {PhiAxis}});
+      registry.add("h2_track_eta_track_phi", "track eta vs. track phi; #eta; #phi; counts", {HistType::kTH2F, {trackEtaAxis, phiAxis}});
       if (doprocessQCWeighted) {
         registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       }
@@ -113,14 +108,16 @@ struct JetSpectraChargedTask {
 
     if (doprocessSpectraData || doprocessSpectraMCD || doprocessSpectraMCDWeighted) {
       registry.add("h_jet_pt_rhoareasubtracted", "jet pT;#it{p}_{T,jet} (GeV/#it{c}); counts", {HistType::kTH1F, {jetPtAxisRhoAreaSub}});
+      registry.add("h_jet_eta_rhoareasubtracted", "jet eta;#eta; counts", {HistType::kTH1F, {jetEtaAxis}});
+      registry.add("h_jet_phi_rhoareasubtracted", "jet phi;#phi; counts", {HistType::kTH1F, {phiAxis}});
       registry.add("h2_centrality_jet_pt_rhoareasubtracted", "centrality vs. jet pT;centrality; #it{p}_{T,jet} (GeV/#it{c}); counts", {HistType::kTH2F, {centralityAxis, jetPtAxisRhoAreaSub}});
       registry.add("h2_centrality_jet_eta_rhoareasubtracted", "centrality vs. jet eta;centrality; #eta; counts", {HistType::kTH2F, {centralityAxis, jetEtaAxis}});
-      registry.add("h2_centrality_jet_phi_rhoareasubtracted", "centrality vs. jet phi;centrality; #varphi; counts", {HistType::kTH2F, {centralityAxis, PhiAxis}});
+      registry.add("h2_centrality_jet_phi_rhoareasubtracted", "centrality vs. jet phi;centrality; #varphi; counts", {HistType::kTH2F, {centralityAxis, phiAxis}});
       registry.add("h2_jet_pt_jet_area_rhoareasubtracted", "jet #it{p}_{T,jet} vs. Area_{jet}; #it{p}_{T,jet} (GeV/#it{c}); Area_{jet}", {HistType::kTH2F, {jetPtAxis, {150, 0., 1.5}}});
       registry.add("h2_jet_pt_jet_ntracks_rhoareasubtracted", "jet #it{p}_{T,jet} vs. N_{jet tracks}; #it{p}_{T,jet} (GeV/#it{c}); N_{jet, tracks}", {HistType::kTH2F, {jetPtAxis, {200, -0.5, 199.5}}});
       registry.add("h2_jet_pt_jet_corr_pt_rhoareasubtracted", "jet #it{p}_{T,jet} vs. #it{p}_{T,corr}; #it{p}_{T,jet} (GeV/#it{c});  #it{p}_{T,corr} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, jetPtAxisRhoAreaSub}});
       registry.add("h2_jet_pt_track_pt_rhoareasubtracted", "jet #it{p}_{T,jet} vs. #it{p}_{T,track}; #it{p}_{T,jet} (GeV/#it{c});  #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, trackPtAxis}});
-      registry.add("h3_jet_pt_eta_phi_rhoareasubtracted", "jet_pt_eta_phi_rhoareasubtracted", {HistType::kTH3F, {jetPtAxisRhoAreaSub, jetEtaAxis, PhiAxis}});
+      registry.add("h3_jet_pt_eta_phi_rhoareasubtracted", "jet_pt_eta_phi_rhoareasubtracted", {HistType::kTH3F, {jetPtAxisRhoAreaSub, jetEtaAxis, phiAxis}});
       if (doprocessSpectraMCDWeighted) {
         registry.add("h_jet_phat", "jet #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0, 1000}}});
         registry.add("h_jet_phat_weighted", "jet #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0, 1000}}});
@@ -129,40 +126,43 @@ struct JetSpectraChargedTask {
 
     if (doprocessEvtWiseConstSubJetsData || doprocessEvtWiseConstSubJetsMCD) {
       registry.add("h2_centrality_jet_pt_eventwiseconstituentsubtracted", "centrality vs. jet pT;centrality;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH2F, {centralityAxis, jetPtAxis}});
-      registry.add("jet_observables_eventwiseconstituentsubtracted", "jet_observables_eventwiseconstituentsubtracted", HistType::kTHnSparseF, {jetPtAxis, jetEtaAxis, PhiAxis});
+      registry.add("jet_observables_eventwiseconstituentsubtracted", "jet_observables_eventwiseconstituentsubtracted", HistType::kTHnSparseF, {jetPtAxis, jetEtaAxis, phiAxis});
     }
 
     if (doprocessJetsMatched || doprocessJetsMatchedWeighted) {
       if (checkGeoMatched) {
-        registry.add("h2_jet_pt_tag_jet_pt_base_matchedgeo", "pT tag vs. pT base;#it{p}_{T,jet}^{tag} (GeV/#it{c});#it{p}_{T,jet}^{base} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, jetPtAxis}});
-        registry.add("h2_jet_eta_tag_jet_eta_base_matchedgeo", "Eta tag vs. Eta base;#eta_{jet}^{tag};#eta_{jet}^{base}", {HistType::kTH2F, {jetEtaAxis, jetEtaAxis}});
-        registry.add("h2_jet_phi_tag_jet_phi_base_matchedgeo", "Phi tag vs. Phi base;#varphi_{jet}^{tag};#varphi_{jet}^{base}", {HistType::kTH2F, {PhiAxis, PhiAxis}});
-        registry.add("h2_jet_ntracks_tag_jet_ntracks_base_matchedgeo", "Ntracks tag vs. Ntracks base;N_{jet tracks}^{tag};N_{jet tracks}^{base}", {HistType::kTH2F, {{200, -0.5, 199.5}, {200, -0.5, 199.5}}});
-        registry.add("h2_jet_pt_tag_jet_pt_diff_matchedgeo", "jet tag pT vs. delta pT / jet tag pt;#it{p}_{T,jet}^{tag} (GeV/#it{c}); (#it{p}_{T,jet}^{tag} (GeV/#it{c}) - #it{p}_{T,jet}^{base} (GeV/#it{c})) / #it{p}_{T,jet}^{tag} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
-        registry.add("h2_jet_pt_base_jet_pt_diff_matchedgeo", "jet base pT vs. delta pT / jet base pt;#it{p}_{T,jet}^{tag} (GeV/#it{c}); (#it{p}_{T,jet}^{tag} (GeV/#it{c}) - #it{p}_{T,jet}^{base} (GeV/#it{c})) / #it{p}_{T,jet}^{tag} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
+        registry.add("h2_jet_pt_reco_jet_pt_gen_matchedgeo", "pT reco vs. pT gen;#it{p}_{T,jet}^{reco} (GeV/#it{c});#it{p}_{T,jet}^{gen} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, jetPtAxis}});
+        registry.add("h2_jet_eta_reco_jet_eta_gen_matchedgeo", "Eta reco vs. Eta gen;#eta_{jet}^{reco};#eta_{jet}^{gen}", {HistType::kTH2F, {jetEtaAxis, jetEtaAxis}});
+        registry.add("h2_jet_phi_reco_jet_phi_gen_matchedgeo", "Phi reco vs. Phi gen;#varphi_{jet}^{reco};#varphi_{jet}^{gen}", {HistType::kTH2F, {phiAxis, phiAxis}});
+        registry.add("h2_jet_ntracks_reco_jet_ntracks_gen_matchedgeo", "Ntracks reco vs. Ntracks gen;N_{jet tracks}^{reco};N_{jet tracks}^{gen}", {HistType::kTH2F, {{200, -0.5, 199.5}, {200, -0.5, 199.5}}});
+        registry.add("h2_jet_pt_gen_jet_pt_diff_matchedgeo", "jet gen pT vs. delta pT / jet gen pt;#it{p}_{T,jet}^{gen} (GeV/#it{c}); (#it{p}_{T,jet}^{gen} (GeV/#it{c}) - #it{p}_{T,jet}^{reco} (GeV/#it{c})) / #it{p}_{T,jet}^{gen} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
+        registry.add("h2_jet_pt_reco_jet_pt_diff_matchedgeo", "jet reco pT vs. delta pT / jet reco pt;#it{p}_{T,jet}^{reco} (GeV/#it{c}); (#it{p}_{T,jet}^{reco} (GeV/#it{c}) - #it{p}_{T,jet}^{gen} (GeV/#it{c})) / #it{p}_{T,jet}^{reco} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
+        registry.add("h2_jet_pt_gen_jet_pt_ratio_matchedgeo", "jet gen pT vs. jet reco pT / jet gen pt;#it{p}_{T,jet}^{gen} (GeV/#it{c}); #it{p}_{T,jet}^{reco} (GeV/#it{c}) / #it{p}_{T,jet}^{gen} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 5.0}}});
       }
       if (checkPtMatched) {
-        registry.add("h2_jet_pt_tag_jet_pt_base_matchedpt", "pT tag vs. pT base;#it{p}_{T,jet}^{tag} (GeV/#it{c});#it{p}_{T,jet}^{base} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, jetPtAxis}});
-        registry.add("h2_jet_eta_tag_jet_eta_base_matchedpt", "Eta tag vs. Eta base;#eta_{jet}^{tag};#eta_{jet}^{base}", {HistType::kTH2F, {jetEtaAxis, jetEtaAxis}});
-        registry.add("h2_jet_phi_tag_jet_phi_base_matchedpt", "Phi tag vs. Phi base;#varphi_{jet}^{tag};#varphi_{jet}^{base}", {HistType::kTH2F, {PhiAxis, PhiAxis}});
-        registry.add("h2_jet_ntracks_tag_jet_ntracks_base_matchedpt", "Ntracks tag vs. Ntracks base;N_{jet tracks}^{tag};N_{jet tracks}^{base}", {HistType::kTH2F, {{200, -0.5, 199.5}, {200, -0.5, 199.5}}});
-        registry.add("h2_jet_pt_tag_jet_pt_diff_matchedpt", "jet tag pT vs. delta pT / jet tag pt;#it{p}_{T,jet}^{tag} (GeV/#it{c}); (#it{p}_{T,jet}^{tag} (GeV/#it{c}) - #it{p}_{T,jet}^{base} (GeV/#it{c})) / #it{p}_{T,jet}^{tag} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
-        registry.add("h2_jet_pt_base_jet_pt_diff_matchedpt", "jet base pT vs. delta pT / jet base pt;#it{p}_{T,jet}^{tag} (GeV/#it{c}); (#it{p}_{T,jet}^{tag} (GeV/#it{c}) - #it{p}_{T,jet}^{base} (GeV/#it{c})) / #it{p}_{T,jet}^{tag} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
+        registry.add("h2_jet_pt_reco_jet_pt_gen_matchedpt", "pT reco vs. pT gen;#it{p}_{T,jet}^{reco} (GeV/#it{c});#it{p}_{T,jet}^{gen} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, jetPtAxis}});
+        registry.add("h2_jet_eta_reco_jet_eta_gen_matchedpt", "Eta reco vs. Eta gen;#eta_{jet}^{reco};#eta_{jet}^{gen}", {HistType::kTH2F, {jetEtaAxis, jetEtaAxis}});
+        registry.add("h2_jet_phi_reco_jet_phi_gen_matchedgpt", "Phi reco vs. Phi gen;#varphi_{jet}^{reco};#varphi_{jet}^{gen}", {HistType::kTH2F, {phiAxis, phiAxis}});
+        registry.add("h2_jet_ntracks_reco_jet_ntracks_gen_matchedpt", "Ntracks reco vs. Ntracks gen;N_{jet tracks}^{reco};N_{jet tracks}^{gen}", {HistType::kTH2F, {{200, -0.5, 199.5}, {200, -0.5, 199.5}}});
+        registry.add("h2_jet_pt_gen_jet_pt_diff_matchedpt", "jet gen pT vs. delta pT / jet gen pt;#it{p}_{T,jet}^{gen} (GeV/#it{c}); (#it{p}_{T,jet}^{gen} (GeV/#it{c}) - #it{p}_{T,jet}^{reco} (GeV/#it{c})) / #it{p}_{T,jet}^{gen} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
+        registry.add("h2_jet_pt_reco_jet_pt_diff_matchedpt", "jet reco pT vs. delta pT / jet reco pt;#it{p}_{T,jet}^{reco} (GeV/#it{c}); (#it{p}_{T,jet}^{reco} (GeV/#it{c}) - #it{p}_{T,jet}^{gen} (GeV/#it{c})) / #it{p}_{T,jet}^{reco} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
+        registry.add("h2_jet_pt_gen_jet_pt_ratio_matchedpt", "jet gen pT vs. jet reco pT / jet gen pt;#it{p}_{T,jet}^{gen} (GeV/#it{c}); #it{p}_{T,jet}^{reco} (GeV/#it{c}) / #it{p}_{T,jet}^{gen} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 5.0}}});
       }
       if (checkGeoPtMatched) {
-        registry.add("h2_jet_pt_tag_jet_pt_base_matchedgeopt", "pT tag vs. pT base;#it{p}_{T,jet}^{tag} (GeV/#it{c});#it{p}_{T,jet}^{base} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, jetPtAxis}});
-        registry.add("h2_jet_eta_tag_jet_eta_base_matchedgeopt", "Eta tag vs. Eta base;#eta_{jet}^{tag};#eta_{jet}^{base}", {HistType::kTH2F, {jetEtaAxis, jetEtaAxis}});
-        registry.add("h2_jet_phi_tag_jet_phi_base_matchedgeopt", "Phi tag vs. Phi base;#varphi_{jet}^{tag};#varphi_{jet}^{base}", {HistType::kTH2F, {PhiAxis, PhiAxis}});
-        registry.add("h2_jet_ntracks_tag_jet_ntracks_base_matchedgeopt", "Ntracks tag vs. Ntracks base;N_{jet tracks}^{tag};N_{jet tracks}^{base}", {HistType::kTH2F, {{200, -0.5, 199.5}, {200, -0.5, 199.5}}});
-        registry.add("h2_jet_pt_tag_jet_pt_diff_matchedgeopt", "jet tag pT vs. delta pT / jet tag pt;#it{p}_{T,jet}^{tag} (GeV/#it{c}); (#it{p}_{T,jet}^{tag} (GeV/#it{c}) - #it{p}_{T,jet}^{base} (GeV/#it{c})) / #it{p}_{T,jet}^{tag} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
-        registry.add("h2_jet_pt_base_jet_pt_diff_matchedgeopt", "jet base pT vs. delta pT / jet base pt;#it{p}_{T,jet}^{tag} (GeV/#it{c}); (#it{p}_{T,jet}^{tag} (GeV/#it{c}) - #it{p}_{T,jet}^{base} (GeV/#it{c})) / #it{p}_{T,jet}^{tag} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
+        registry.add("h2_jet_pt_reco_jet_pt_gen_matchedgeopt", "pT reco vs. pT gen;#it{p}_{T,jet}^{reco} (GeV/#it{c});#it{p}_{T,jet}^{gen} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, jetPtAxis}});
+        registry.add("h2_jet_eta_reco_jet_eta_gen_matchedgeopt", "Eta reco vs. Eta gen;#eta_{jet}^{reco};#eta_{jet}^{gen}", {HistType::kTH2F, {jetEtaAxis, jetEtaAxis}});
+        registry.add("h2_jet_phi_reco_jet_phi_gen_matchedgeopt", "Phi reco vs. Phi gen;#varphi_{jet}^{reco};#varphi_{jet}^{gen}", {HistType::kTH2F, {phiAxis, phiAxis}});
+        registry.add("h2_jet_ntracks_reco_jet_ntracks_gen_matchedgeopt", "Ntracks reco vs. Ntracks gen;N_{jet tracks}^{reco};N_{jet tracks}^{gen}", {HistType::kTH2F, {{200, -0.5, 199.5}, {200, -0.5, 199.5}}});
+        registry.add("h2_jet_pt_gen_jet_pt_diff_matchedgeopt", "jet gen pT vs. delta pT / jet gen pt;#it{p}_{T,jet}^{gen} (GeV/#it{c}); (#it{p}_{T,jet}^{gen} (GeV/#it{c}) - #it{p}_{T,jet}^{reco} (GeV/#it{c})) / #it{p}_{T,jet}^{gen} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
+        registry.add("h2_jet_pt_reco_jet_pt_diff_matchedgeopt", "jet reco pT vs. delta pT / jet reco pt;#it{p}_{T,jet}^{reco} (GeV/#it{c}); (#it{p}_{T,jet}^{reco} (GeV/#it{c}) - #it{p}_{T,jet}^{gen} (GeV/#it{c})) / #it{p}_{T,jet}^{reco} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
+        registry.add("h2_jet_pt_gen_jet_pt_ratio_matchedgeopt", "jet gen pT vs. jet reco pT / jet gen pt;#it{p}_{T,jet}^{gen} (GeV/#it{c}); #it{p}_{T,jet}^{reco} (GeV/#it{c}) / #it{p}_{T,jet}^{gen} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 5.0}}});
       }
     }
 
     if (doprocessJetsMatchedSubtracted) {
-      registry.add("h2_jet_pt_tag_jet_pt_base_corr_matchedgeo", "pT tag vs. corr pT base;#it{p}_{T,jet}^{tag} (GeV/#it{c});#it{p}_{T,jet}^{base} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, jetPtAxis}});
-      registry.add("h2_jet_pt_tag_jet_pt_diff_corr_matchedgeo", "jet tag pT vs. corr delta pT / jet tag pt;#it{p}_{T,jet}^{tag} (GeV/#it{c}); (#it{p}_{T,jet}^{tag} (GeV/#it{c}) - #it{p}_{T,jet}^{base} (GeV/#it{c})) / #it{p}_{T,jet}^{tag} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
-      registry.add("h2_jet_pt_base_jet_pt_diff_corr_matchedgeo", "jet base pT vs. corr delta pT / jet base pt;#it{p}_{T,jet}^{tag} (GeV/#it{c}); (#it{p}_{T,jet}^{tag} (GeV/#it{c}) - #it{p}_{T,jet}^{base} (GeV/#it{c})) / #it{p}_{T,jet}^{tag} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
+      registry.add("h2_jet_pt_reco_corr_jet_pt_gen_matchedgeo", "corr pT reco vs. pT gen;#it{p}_{T,jet}^{reco} (GeV/#it{c});#it{p}_{T,jet}^{gen} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, jetPtAxis}});
+      registry.add("h2_jet_pt_gen_jet_pt_diff_corr_matchedgeo", "jet gen pT vs. corr delta pT / jet gen pt;#it{p}_{T,jet}^{gen} (GeV/#it{c}); (#it{p}_{T,jet}^{gen} (GeV/#it{c}) - #it{p}_{T,jet}^{reco} (GeV/#it{c})) / #it{p}_{T,jet}^{gen} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
+      registry.add("h2_jet_pt_reco_jet_pt_diff_corr_matchedgeo", "jet reco pT vs. corr delta pT / jet reco pt;#it{p}_{T,jet}^{reco} (GeV/#it{c}); (#it{p}_{T,jet}^{reco} (GeV/#it{c}) - #it{p}_{T,jet}^{gen} (GeV/#it{c})) / #it{p}_{T,jet}^{reco} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
     }
   }
 
@@ -174,7 +174,7 @@ struct JetSpectraChargedTask {
   {
 
     if (jetAreaFractionMin > -98.0) {
-      if (jet.area() < jetAreaFractionMin * M_PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
+      if (jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
     }
@@ -208,9 +208,11 @@ struct JetSpectraChargedTask {
   void fillJetHistograms(TJets const& jet, float centrality, float rho, float weight = 1.0)
   {
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
-      Double_t jetcorrpt = jet.pt() - (rho * jet.area());
+      double jetcorrpt = jet.pt() - (rho * jet.area());
       // fill jet histograms after area-based subtraction
       registry.fill(HIST("h_jet_pt_rhoareasubtracted"), jetcorrpt, weight);
+      registry.fill(HIST("h_jet_eta_rhoareasubtracted"), jet.eta(), weight);
+      registry.fill(HIST("h_jet_phi_rhoareasubtracted"), jet.phi(), weight);
       registry.fill(HIST("h2_centrality_jet_pt_rhoareasubtracted"), centrality, jetcorrpt, weight);
       registry.fill(HIST("h2_centrality_jet_eta_rhoareasubtracted"), centrality, jet.eta(), weight);
       registry.fill(HIST("h2_centrality_jet_phi_rhoareasubtracted"), centrality, jet.phi(), weight);
@@ -222,7 +224,7 @@ struct JetSpectraChargedTask {
       }
     }
 
-    for (auto& constituent : jet.template tracks_as<aod::JetTracks>()) {
+    for (const auto& constituent : jet.template tracks_as<aod::JetTracks>()) {
       registry.fill(HIST("h2_jet_pt_track_pt_rhoareasubtracted"), jet.pt(), constituent.pt(), weight);
     }
   }
@@ -253,18 +255,19 @@ struct JetSpectraChargedTask {
     // fill geometry matched histograms
     if (checkGeoMatched) {
       if (jetBase.has_matchedJetGeo()) {
-        for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<TTag>>()) {
+        for (const auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<TTag>>()) {
           if (jetTag.pt() > pTHatMaxMCD * pTHat) {
             continue;
           }
           if (jetBase.r() == round(selectedJetsRadius * 100.0f)) {
-            Double_t dpt = jetTag.pt() - jetBase.pt();
-            registry.fill(HIST("h2_jet_pt_tag_jet_pt_base_matchedgeo"), jetTag.pt(), jetBase.pt(), weight);
-            registry.fill(HIST("h2_jet_eta_tag_jet_eta_base_matchedgeo"), jetTag.eta(), jetBase.eta(), weight);
-            registry.fill(HIST("h2_jet_phi_tag_jet_phi_base_matchedgeo"), jetTag.phi(), jetBase.phi(), weight);
-            registry.fill(HIST("h2_jet_ntracks_tag_jet_ntracks_base_matchedgeo"), jetTag.tracksIds().size(), jetBase.tracksIds().size(), weight);
-            registry.fill(HIST("h2_jet_pt_tag_jet_pt_diff_matchedgeo"), jetTag.pt(), dpt / jetTag.pt(), weight);
-            registry.fill(HIST("h2_jet_pt_base_jet_pt_diff_matchedgeo"), jetBase.pt(), dpt / jetBase.pt(), weight);
+            double dpt = jetTag.pt() - jetBase.pt();
+            registry.fill(HIST("h2_jet_pt_reco_jet_pt_gen_matchedgeo"), jetBase.pt(), jetTag.pt(), weight);
+            registry.fill(HIST("h2_jet_eta_reco_jet_eta_gen_matchedgeo"), jetBase.eta(), jetTag.eta(), weight);
+            registry.fill(HIST("h2_jet_phi_reco_jet_phi_gen_matchedgeo"), jetBase.phi(), jetTag.phi(), weight);
+            registry.fill(HIST("h2_jet_ntracks_reco_jet_ntracks_gen_matchedgeo"), jetBase.tracksIds().size(), jetTag.tracksIds().size(), weight);
+            registry.fill(HIST("h2_jet_pt_gen_jet_pt_diff_matchedgeo"), jetTag.pt(), dpt / jetTag.pt(), weight);
+            registry.fill(HIST("h2_jet_pt_reco_jet_pt_diff_matchedgeo"), jetBase.pt(), dpt / jetBase.pt(), weight);
+            registry.fill(HIST("h2_jet_pt_gen_jet_pt_ratio_matchedgeo"), jetTag.pt(), jetBase.pt() / jetTag.pt(), weight);
           }
         }
       }
@@ -272,37 +275,39 @@ struct JetSpectraChargedTask {
     // fill pt matched histograms
     if (checkPtMatched) {
       if (jetBase.has_matchedJetPt()) {
-        for (auto& jetTag : jetBase.template matchedJetPt_as<std::decay_t<TTag>>()) {
+        for (const auto& jetTag : jetBase.template matchedJetPt_as<std::decay_t<TTag>>()) {
           if (jetTag.pt() > pTHatMaxMCD * pTHat) {
             continue;
           }
           if (jetBase.r() == round(selectedJetsRadius * 100.0f)) {
-            Double_t dpt = jetTag.pt() - jetBase.pt();
-            registry.fill(HIST("h2_jet_pt_tag_jet_pt_base_matchedpt"), jetTag.pt(), jetBase.pt(), weight);
-            registry.fill(HIST("h2_jet_eta_tag_jet_eta_base_matchedpt"), jetTag.eta(), jetBase.eta(), weight);
-            registry.fill(HIST("h2_jet_phi_tag_jet_phi_base_matchedpt"), jetTag.phi(), jetBase.phi(), weight);
-            registry.fill(HIST("h2_jet_ntracks_tag_jet_ntracks_base_matchedpt"), jetTag.tracksIds().size(), jetBase.tracksIds().size(), weight);
-            registry.fill(HIST("h2_jet_pt_tag_jet_pt_diff_matchedpt"), jetTag.pt(), dpt / jetTag.pt(), weight);
-            registry.fill(HIST("h2_jet_pt_base_jet_pt_diff_matchedpt"), jetBase.pt(), dpt / jetBase.pt(), weight);
+            double dpt = jetTag.pt() - jetBase.pt();
+            registry.fill(HIST("h2_jet_pt_reco_jet_pt_gen_matchedpt"), jetBase.pt(), jetTag.pt(), weight);
+            registry.fill(HIST("h2_jet_eta_reco_jet_eta_gen_matchedpt"), jetBase.eta(), jetTag.eta(), weight);
+            registry.fill(HIST("h2_jet_phi_reco_jet_phi_gen_matchedpt"), jetBase.phi(), jetTag.phi(), weight);
+            registry.fill(HIST("h2_jet_ntracks_reco_jet_ntracks_gen_matchedpt"), jetBase.tracksIds().size(), jetTag.tracksIds().size(), weight);
+            registry.fill(HIST("h2_jet_pt_gen_jet_pt_diff_matchedpt"), jetTag.pt(), dpt / jetTag.pt(), weight);
+            registry.fill(HIST("h2_jet_pt_reco_jet_pt_diff_matchedpt"), jetBase.pt(), dpt / jetBase.pt(), weight);
+            registry.fill(HIST("h2_jet_pt_gen_jet_pt_ratio_matchedpt"), jetTag.pt(), jetBase.pt() / jetTag.pt(), weight);
           }
         }
       }
     }
-    // fill geometry and pt histograms:
+    // fill geometry and pt histograms
     if (checkGeoPtMatched) {
       if (jetBase.has_matchedJetGeo() && jetBase.has_matchedJetPt()) {
-        for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<TTag>>()) {
+        for (const auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<TTag>>()) {
           if (jetTag.pt() > pTHatMaxMCD * pTHat) {
             continue;
           }
           if (jetBase.template matchedJetGeo_first_as<std::decay_t<TTag>>().globalIndex() == jetBase.template matchedJetPt_first_as<std::decay_t<TTag>>().globalIndex()) { // not a good way to do this
-            Double_t dpt = jetTag.pt() - jetBase.pt();
-            registry.fill(HIST("h2_jet_pt_tag_jet_pt_base_matchedgeopt"), jetTag.pt(), jetBase.pt(), weight);
-            registry.fill(HIST("h2_jet_eta_tag_jet_eta_base_matchedgeopt"), jetTag.eta(), jetBase.eta(), weight);
-            registry.fill(HIST("h2_jet_phi_tag_jet_phi_base_matchedgeopt"), jetTag.phi(), jetBase.phi(), weight);
-            registry.fill(HIST("h2_jet_ntracks_tag_jet_ntracks_base_matchedgeopt"), jetTag.tracksIds().size(), jetBase.tracksIds().size(), weight);
-            registry.fill(HIST("h2_jet_pt_tag_jet_pt_diff_matchedgeopt"), jetTag.pt(), dpt / jetTag.pt(), weight);
-            registry.fill(HIST("h2_jet_pt_base_jet_pt_diff_matchedgeopt"), jetBase.pt(), dpt / jetBase.pt(), weight);
+            double dpt = jetTag.pt() - jetBase.pt();
+            registry.fill(HIST("h2_jet_pt_reco_jet_pt_gen_matchedgeopt"), jetBase.pt(), jetTag.pt(), weight);
+            registry.fill(HIST("h2_jet_eta_reco_jet_eta_gen_matchedgeopt"), jetBase.eta(), jetTag.eta(), weight);
+            registry.fill(HIST("h2_jet_phi_reco_jet_phi_gen_matchedgeopt"), jetBase.phi(), jetTag.phi(), weight);
+            registry.fill(HIST("h2_jet_ntracks_reco_jet_ntracks_gen_matchedgeopt"), jetBase.tracksIds().size(), jetTag.tracksIds().size(), weight);
+            registry.fill(HIST("h2_jet_pt_gen_jet_pt_diff_matchedgeopt"), jetTag.pt(), dpt / jetTag.pt(), weight);
+            registry.fill(HIST("h2_jet_pt_reco_jet_pt_diff_matchedgeopt"), jetBase.pt(), dpt / jetBase.pt(), weight);
+            registry.fill(HIST("h2_jet_pt_gen_jet_pt_ratio_matchedgeopt"), jetTag.pt(), jetBase.pt() / jetTag.pt(), weight);
           }
         }
       }
@@ -317,24 +322,23 @@ struct JetSpectraChargedTask {
       return;
     }
     if (jetBase.has_matchedJetGeo()) {
-      for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<TTag>>()) {
+      for (const auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<TTag>>()) {
         if (jetTag.pt() > pTHatMaxMCD * pTHat) {
           continue;
         }
         if (jetBase.r() == round(selectedJetsRadius * 100.0f)) {
-          Double_t corrBasejetpt = jetBase.pt() - (rho * jetBase.area());
-          Double_t dcorrpt = jetTag.pt() - corrBasejetpt;
-          registry.fill(HIST("h2_jet_pt_tag_jet_pt_base_corr_matchedgeo"), jetTag.pt(), corrBasejetpt, weight);
-          registry.fill(HIST("h2_jet_pt_tag_jet_pt_diff_corr_matchedgeo"), jetTag.pt(), dcorrpt / jetTag.pt(), weight);
-          registry.fill(HIST("h2_jet_pt_base_jet_pt_diff_corr_matchedgeo"), corrBasejetpt, dcorrpt / corrBasejetpt, weight);
+          double corrBasejetpt = jetBase.pt() - (rho * jetBase.area());
+          double dcorrpt = jetTag.pt() - corrBasejetpt;
+          registry.fill(HIST("h2_jet_pt_reco_corr_jet_pt_gen_matchedgeo"), corrBasejetpt, jetTag.pt(), weight);
+          registry.fill(HIST("h2_jet_pt_gen_jet_pt_diff_corr_matchedgeo"), jetTag.pt(), dcorrpt / jetTag.pt(), weight);
+          registry.fill(HIST("h2_jet_pt_reco_jet_pt_diff_corr_matchedgeo"), corrBasejetpt, dcorrpt / corrBasejetpt, weight);
         }
       }
     }
   }
 
   void processQC(soa::Filtered<aod::JetCollisions>::iterator const& collision,
-                 soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks,
-                 soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
+                 soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
   {
     registry.fill(HIST("h_collisions"), 0.5);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
@@ -354,25 +358,12 @@ struct JetSpectraChargedTask {
       }
       fillTrackHistograms(track, collision.centrality());
     }
-
-    for (auto const& jet : jets) {
-      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
-        continue;
-      }
-      if (!isAcceptedJet<aod::JetTracks>(jet)) {
-        continue;
-      }
-      registry.fill(HIST("h_jet_pt"), jet.pt());
-      registry.fill(HIST("h_jet_eta"), jet.eta());
-      registry.fill(HIST("h_jet_phi"), jet.phi());
-    }
   }
-  PROCESS_SWITCH(JetSpectraChargedTask, processQC, "collisions and track QC for Data and MCD", true);
+  PROCESS_SWITCH(JetSpectraCharged, processQC, "collisions and track QC for Data and MCD", true);
 
   void processQCWeighted(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
                          aod::JetMcCollisions const&,
-                         soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks,
-                         soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights> const& jets)
+                         soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
   {
     float eventWeight = collision.mcCollision().weight();
     registry.fill(HIST("h_collisions"), 0.5);
@@ -395,20 +386,8 @@ struct JetSpectraChargedTask {
       }
       fillTrackHistograms(track, eventWeight);
     }
-
-    for (auto const& jet : jets) {
-      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
-        continue;
-      }
-      if (!isAcceptedJet<aod::JetTracks>(jet)) {
-        continue;
-      }
-      registry.fill(HIST("h_jet_pt"), jet.pt(), eventWeight);
-      registry.fill(HIST("h_jet_eta"), jet.eta(), eventWeight);
-      registry.fill(HIST("h_jet_phi"), jet.phi(), eventWeight);
-    }
   }
-  PROCESS_SWITCH(JetSpectraChargedTask, processQCWeighted, "weighted collsions and tracks QC for MC", false);
+  PROCESS_SWITCH(JetSpectraCharged, processQCWeighted, "weighted collsions and tracks QC for MC", false);
 
   void processSpectraData(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision,
                           soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
@@ -430,7 +409,7 @@ struct JetSpectraChargedTask {
       fillJetHistograms(jet, collision.centrality(), collision.rho());
     }
   }
-  PROCESS_SWITCH(JetSpectraChargedTask, processSpectraData, "jet spectra for Data", false);
+  PROCESS_SWITCH(JetSpectraCharged, processSpectraData, "jet spectra for Data", false);
 
   void processSpectraMCD(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision,
                          soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets,
@@ -452,7 +431,7 @@ struct JetSpectraChargedTask {
       fillJetHistograms(jet, collision.centrality(), collision.rho());
     }
   }
-  PROCESS_SWITCH(JetSpectraChargedTask, processSpectraMCD, "jet spectra for Data", false);
+  PROCESS_SWITCH(JetSpectraCharged, processSpectraMCD, "jet spectra for Data", false);
 
   void processSpectraMCDWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision,
                                  soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights> const& jets,
@@ -481,7 +460,7 @@ struct JetSpectraChargedTask {
       fillJetHistograms(jet, collision.centrality(), collision.rho(), jetweight);
     }
   }
-  PROCESS_SWITCH(JetSpectraChargedTask, processSpectraMCDWeighted, "jet finder QA mcd with weighted events", false);
+  PROCESS_SWITCH(JetSpectraCharged, processSpectraMCDWeighted, "jet finder QA mcd with weighted events", false);
 
   void processEvtWiseConstSubJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                                       soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents> const& jets,
@@ -503,7 +482,7 @@ struct JetSpectraChargedTask {
       fillEventWiseConstituentSubtractedHistograms(jet, collision.centrality());
     }
   }
-  PROCESS_SWITCH(JetSpectraChargedTask, processEvtWiseConstSubJetsData, "jet spectrum for eventwise constituent-subtracted jets data", false);
+  PROCESS_SWITCH(JetSpectraCharged, processEvtWiseConstSubJetsData, "jet spectrum for eventwise constituent-subtracted jets data", false);
 
   void processEvtWiseConstSubJetsMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                                      soa::Join<aod::ChargedMCDetectorLevelEventWiseSubtractedJets, aod::ChargedMCDetectorLevelEventWiseSubtractedJetConstituents> const& jets,
@@ -525,22 +504,19 @@ struct JetSpectraChargedTask {
       fillEventWiseConstituentSubtractedHistograms(jet, collision.centrality());
     }
   }
-  PROCESS_SWITCH(JetSpectraChargedTask, processEvtWiseConstSubJetsMCD, "jet spectrum for eventwise constituent-subtracted mcd jets", false);
+  PROCESS_SWITCH(JetSpectraCharged, processEvtWiseConstSubJetsMCD, "jet spectrum for eventwise constituent-subtracted mcd jets", false);
 
   void processJetsMatched(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                           ChargedMCDMatchedJets const& mcdjets,
                           ChargedMCPMatchedJets const&,
                           aod::JetTracks const&, aod::JetParticles const&)
   {
-    registry.fill(HIST("h_collisions"), 0.5);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
-    registry.fill(HIST("h_collisions"), 1.5);
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
-    registry.fill(HIST("h_collisions"), 2.5);
 
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -549,28 +525,22 @@ struct JetSpectraChargedTask {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
       }
-      registry.fill(HIST("h_jet_pt_mcd"), mcdjet.pt());
-      registry.fill(HIST("h_jet_eta_mcd"), mcdjet.eta());
-      registry.fill(HIST("h_jet_phi_mcd"), mcdjet.phi());
       fillMatchedHistograms<ChargedMCDMatchedJets::iterator, ChargedMCPMatchedJets>(mcdjet);
     }
   }
-  PROCESS_SWITCH(JetSpectraChargedTask, processJetsMatched, "matched mcp and mcd jets", false);
+  PROCESS_SWITCH(JetSpectraCharged, processJetsMatched, "matched mcp and mcd jets", false);
 
   void processJetsMatchedWeighted(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                                   ChargedMCDMatchedJetsWeighted const& mcdjets,
                                   ChargedMCPMatchedJetsWeighted const&,
                                   aod::JetTracks const&, aod::JetParticles const&)
   {
-    registry.fill(HIST("h_collisions"), 0.5);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
-    registry.fill(HIST("h_collisions"), 1.5);
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
-    registry.fill(HIST("h_collisions"), 2.5);
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -581,7 +551,7 @@ struct JetSpectraChargedTask {
       fillMatchedHistograms<ChargedMCDMatchedJetsWeighted::iterator, ChargedMCPMatchedJetsWeighted>(mcdjet, mcdjet.eventWeight());
     }
   }
-  PROCESS_SWITCH(JetSpectraChargedTask, processJetsMatchedWeighted, "matched mcp and mcd jets with weighted events", false);
+  PROCESS_SWITCH(JetSpectraCharged, processJetsMatchedWeighted, "matched mcp and mcd jets with weighted events", false);
 
   void processJetsMatchedSubtracted(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision,
                                     ChargedMCDMatchedJets const& mcdjets,
@@ -606,10 +576,10 @@ struct JetSpectraChargedTask {
       fillGeoMatchedCorrHistograms<ChargedMCDMatchedJets::iterator, ChargedMCPMatchedJets>(mcdjet, collision.rho());
     }
   }
-  PROCESS_SWITCH(JetSpectraChargedTask, processJetsMatchedSubtracted, "matched mcp and mcd jets after subtraction", false);
+  PROCESS_SWITCH(JetSpectraCharged, processJetsMatchedSubtracted, "matched mcp and mcd jets after subtraction", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<JetSpectraChargedTask>(cfgc, TaskName{"jet-charged-spectra"})};
+  return WorkflowSpec{adaptAnalysisTask<JetSpectraCharged>(cfgc, TaskName{"jet-spectra-charged"})};
 }
