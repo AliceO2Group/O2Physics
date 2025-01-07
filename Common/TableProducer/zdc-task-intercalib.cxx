@@ -8,16 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
+
+/// \file zdc-task-intercalib.cxx
 /// \brief Task for ZDC tower inter-calibration
 /// \author chiara.oppedisano@cern.ch
-// Minimal example to run this task:
-// export OPTIONS="-b --configuration json://config.json --aod-file AO2D.root"
-//  o2-analysis-timestamp ${OPTIONS} |
-//  o2-analysis-event-selection ${OPTIONS} |
-//  o2-analysis-track-propagation ${OPTIONS} |
-//  o2-analysis-mm-zdc-task-intercalib ${OPTIONS}
 
+// o2-linter: disable=name/workflow-file
+// o2-linter: disable=name/file-cpp
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
@@ -37,20 +34,18 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::evsel;
 
-constexpr double kVeryNegative = -1.e12;
-
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
 
-struct zdcInterCalib {
+struct ZDCCalibTower {
 
   Produces<aod::ZDCInterCalib> zTab;
 
   // Configurable parameters
   //
   Configurable<int> nBins{"nBins", 400, "n bins"};
-  Configurable<float> MaxZN{"MaxZN", 399.5, "Max ZN signal"};
-  Configurable<bool> TDCcut{"TDCcut", false, "Flag for TDC cut"};
+  Configurable<float> maxZN{"maxZN", 399.5, "Max ZN signal"};
+  Configurable<bool> tdcCut{"tdcCut", false, "Flag for TDC cut"};
   Configurable<float> tdcZNmincut{"tdcZNmincut", -2.5, "Min ZN TDC cut"};
   Configurable<float> tdcZNmaxcut{"tdcZNmaxcut", -2.5, "Max ZN TDC cut"};
   //
@@ -58,18 +53,18 @@ struct zdcInterCalib {
 
   void init(InitContext const&)
   {
-    registry.add("ZNApmc", "ZNApmc; ZNA PMC; Entries", {HistType::kTH1F, {{nBins, -0.5, MaxZN}}});
-    registry.add("ZNCpmc", "ZNCpmc; ZNC PMC; Entries", {HistType::kTH1F, {{nBins, -0.5, MaxZN}}});
-    registry.add("ZNApm1", "ZNApm1; ZNA PM1; Entries", {HistType::kTH1F, {{nBins, -0.5, MaxZN}}});
-    registry.add("ZNApm2", "ZNApm2; ZNA PM2; Entries", {HistType::kTH1F, {{nBins, -0.5, MaxZN}}});
-    registry.add("ZNApm3", "ZNApm3; ZNA PM3; Entries", {HistType::kTH1F, {{nBins, -0.5, MaxZN}}});
-    registry.add("ZNApm4", "ZNApm4; ZNA PM4; Entries", {HistType::kTH1F, {{nBins, -0.5, MaxZN}}});
-    registry.add("ZNCpm1", "ZNCpm1; ZNC PM1; Entries", {HistType::kTH1F, {{nBins, -0.5, MaxZN}}});
-    registry.add("ZNCpm2", "ZNCpm2; ZNC PM2; Entries", {HistType::kTH1F, {{nBins, -0.5, MaxZN}}});
-    registry.add("ZNCpm3", "ZNCpm3; ZNC PM3; Entries", {HistType::kTH1F, {{nBins, -0.5, MaxZN}}});
-    registry.add("ZNCpm4", "ZNCpm4; ZNC PM4; Entries", {HistType::kTH1F, {{nBins, -0.5, MaxZN}}});
-    registry.add("ZNAsumq", "ZNAsumq; ZNA uncalib. sum PMQ; Entries", {HistType::kTH1F, {{nBins, -0.5, MaxZN}}});
-    registry.add("ZNCsumq", "ZNCsumq; ZNC uncalib. sum PMQ; Entries", {HistType::kTH1F, {{nBins, -0.5, MaxZN}}});
+    registry.add("ZNApmc", "ZNApmc; ZNA PMC; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
+    registry.add("ZNCpmc", "ZNCpmc; ZNC PMC; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
+    registry.add("ZNApm1", "ZNApm1; ZNA PM1; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
+    registry.add("ZNApm2", "ZNApm2; ZNA PM2; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
+    registry.add("ZNApm3", "ZNApm3; ZNA PM3; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
+    registry.add("ZNApm4", "ZNApm4; ZNA PM4; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
+    registry.add("ZNCpm1", "ZNCpm1; ZNC PM1; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
+    registry.add("ZNCpm2", "ZNCpm2; ZNC PM2; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
+    registry.add("ZNCpm3", "ZNCpm3; ZNC PM3; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
+    registry.add("ZNCpm4", "ZNCpm4; ZNC PM4; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
+    registry.add("ZNAsumq", "ZNAsumq; ZNA uncalib. sum PMQ; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
+    registry.add("ZNCsumq", "ZNCsumq; ZNC uncalib. sum PMQ; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
   }
 
   void process(ColEvSels const& cols, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/)
@@ -82,7 +77,6 @@ struct zdcInterCalib {
 
         // To assure that ZN have a genuine signal (tagged by the relative TDC)
         // we can check that the amplitude is >0 or that ADC is NOT very negative (-inf)
-        // If this is not the case, signals are set to kVeryNegative values
 
         double pmcZNC = zdc.energyCommonZNC();
         double pmcZNA = zdc.energyCommonZNA();
@@ -91,7 +85,7 @@ struct zdcInterCalib {
         double tdcZNC = zdc.timeZNC();
         double tdcZNA = zdc.timeZNA();
         // OR we can select a narrow window in both ZN TDCs using the configurable parameters
-        if (TDCcut) { // a narrow TDC window is set
+        if (tdcCut) { // a narrow TDC window is set
           if ((tdcZNC >= tdcZNmincut) && (tdcZNC <= tdcZNmaxcut)) {
             isZNChit = true;
           }
@@ -154,8 +148,8 @@ struct zdcInterCalib {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) // o2-linter: disable=name/file-cpp
 {
   return WorkflowSpec{
-    adaptAnalysisTask<zdcInterCalib>(cfgc)};
+    adaptAnalysisTask<ZDCCalibTower>(cfgc)};
 }
