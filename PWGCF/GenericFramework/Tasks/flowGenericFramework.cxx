@@ -830,7 +830,7 @@ struct GenericFramework {
         return;
       double waccRef = (dt == kGen) ? 1. : getAcceptance(track, vtxz, -1);
       double waccPOI = (dt == kGen) ? 1. : withinPtPOI ? getAcceptance(track, vtxz, pid_index)
-                                                        : getAcceptance(track, vtxz, 0); //
+                                                       : getAcceptance(track, vtxz, 0); //
       if (withinPtRef && withinPtPOI && pid_index)
         waccRef = waccPOI; // if particle is both (then it's overlap), override ref with POI
       if (withinPtRef)
