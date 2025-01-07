@@ -845,7 +845,7 @@ class HfHelper
     }
 
     // d0 of D
-    if (std::abs(candBp.impactParameter0()) < cuts->get(pTBin, "d0 D")) {
+    if (std::abs(candBp.impactParameter0()) < cuts->get(pTBin, "d0 D0")) {
       return false;
     }
 
