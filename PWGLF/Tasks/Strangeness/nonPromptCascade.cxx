@@ -188,7 +188,6 @@ struct NonPromptCascadeTask {
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> cfgGRPmagPath{"cfgGRPmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> cfgGRPpath{"cfgGRPpath", "GLO/GRP/GRP", "Path of the grp file"};
 
   Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 70, "Minimum number of TPC clusters"};
   Configurable<LabeledArray<float>> cfgCutsPID{"particlesCutsPID", {cutsPID[0], nParticles, nCutsPID, particlesNames, cutsNames}, "Nuclei PID selections"};
@@ -251,15 +250,8 @@ struct NonPromptCascadeTask {
     }
     mRunNumber = bc.runNumber();
 
-    if (o2::parameters::GRPObject* grpo = ccdb->getForRun<o2::parameters::GRPObject>(cfgGRPpath, mRunNumber)) {
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      bz = grpo->getNominalL3Field();
-    } else if (o2::parameters::GRPMagField* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(cfgGRPmagPath, mRunNumber)) {
+    if (o2::parameters::GRPMagField* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(cfgGRPmagPath, mRunNumber)) {
       o2::base::Propagator::initFieldFromGRP(grpmag);
-      bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(debug) << "bz = " << bz;
-    } else {
-      LOG(fatal) << "Got nullptr from CCDB for path " << cfgGRPmagPath << " of object GRPMagField and " << cfgGRPpath << " of object GRPObject for run " << mRunNumber;
     }
 
     if (static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value) == o2::base::Propagator::MatCorrType::USEMatCorrLUT) {
@@ -271,7 +263,7 @@ struct NonPromptCascadeTask {
   void init(InitContext const&)
   {
     ccdb->setURL(ccdbUrl);
-    ccdb->setFatalWhenNull(false);
+    ccdb->setFatalWhenNull(true);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
