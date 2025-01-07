@@ -57,16 +57,6 @@ enum DataType { Data = 0,
                 McBkg,
                 kDataTypes };
 
-// enum BHadMothers { NotMatched = 0,
-//                    BPlus,
-//                    BZero,
-//                    Bs,
-//                    LambdaBZero };
-
-// enum OccupancyEstimator { None = 0,
-//                           Its,
-//                           Ft0c };
-
 template <typename T>
 concept hasDsMlInfo = requires(T candidate)
 {
@@ -366,24 +356,6 @@ struct HfTaskDs {
   {
     return -1.f;
   }
-
-  // /// \brief Function to get MC collision centrality
-  // /// \param collSlice collection of reconstructed collisions associated to a generated one
-  // /// \return generated MC collision centrality
-  // template <typename CCs>
-  // float o2::hf_centrality::getCentralityGenColl(CCs const& collSlice)
-  // {
-  //   float centrality{-1};
-  //   float multiplicity{0.f};
-  //   for (const auto& collision : collSlice) {
-  //     float collMult = collision.numContrib();
-  //     if (collMult > multiplicity) {
-  //       centrality = evaluateCentralityColl(collision);
-  //       multiplicity = collMult;
-  //     }
-  //   }
-  //   return centrality;
-  // }
 
   /// Evaluate centrality/multiplicity percentile (centrality estimator is automatically selected based on the used table)
   /// \param candidate is candidate

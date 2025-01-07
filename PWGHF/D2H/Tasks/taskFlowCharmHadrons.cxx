@@ -330,32 +330,6 @@ struct HfTaskFlowCharmHadrons {
     }
   }
 
-  // /// Get the centrality
-  // /// \param collision is the collision with the centrality information
-  // float getCentrality(CollsWithQvecs::iterator const& collision)
-  // {
-  //   float cent = -999.;
-  //   switch (centEstimator) {
-  //     case CentralityEstimator::FV0A:
-  //       cent = collision.centFV0A();
-  //       break;
-  //     case CentralityEstimator::FT0M:
-  //       cent = collision.centFT0M();
-  //       break;
-  //     case CentralityEstimator::FT0A:
-  //       cent = collision.centFT0A();
-  //       break;
-  //     case CentralityEstimator::FT0C:
-  //       cent = collision.centFT0C();
-  //       break;
-  //     default:
-  //       LOG(warning) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C. Fallback to V0A";
-  //       cent = collision.centFV0A();
-  //       break;
-  //   }
-  //   return cent;
-  // }
-
   /// Check if the collision is selected
   /// \param collision is the collision with the Q vector information
   /// \param bc is the bunch crossing with timestamp information

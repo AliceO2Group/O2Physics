@@ -241,27 +241,6 @@ struct HfTaskMcValidationGen {
     hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
-  // /// \brief Function to get MC collision occupancy
-  // /// \param collSlice collection of reconstructed collisions
-  // /// \return collision occupancy
-  // template <typename CCs>
-  // int getOccupancyColl(CCs const& collSlice)
-  // {
-  //   float multiplicity{0.f};
-  //   int occupancy = 0;
-  //   for (const auto& collision : collSlice) {
-  //     float collMult{0.f};
-  //     collMult = collision.numContrib();
-
-  //     if (collMult > multiplicity) {
-  //       occupancy = collision.trackOccupancyInTimeRange();
-  //       multiplicity = collMult;
-  //     }
-  //   } // end loop over collisions
-
-  //   return occupancy;
-  // }
-
   template <o2::hf_centrality::CentralityEstimator centEstimator, typename GenColl, typename Particles, typename RecoColls>
   void runCheckGenParticles(GenColl const& mcCollision, Particles const& mcParticles, RecoColls const& recoCollisions, BCsInfo const&, std::array<int, nChannels>& counterPrompt, std::array<int, nChannels>& counterNonPrompt)
   {

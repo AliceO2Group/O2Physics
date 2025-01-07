@@ -215,7 +215,6 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
     if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
       centrality = o2::hf_centrality::evalCentralityColl<centEstimator>(collision);
-      // centrality = getCentrality<centEstimator>(collision);
       if (centrality < centralityMin || centrality > centralityMax) {
         SETBIT(rejectionMask, EventRejection::Centrality);
       }
@@ -309,46 +308,6 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     return rejectionMask;
   }
 
-  // /// Get the occupancy
-  // /// \param collision is the collision with the occupancy information
-  // /// \param occEstimator is the occupancy estimator (1: ITS, 2: FT0C)
-  // template <typename Coll>
-  // float getOccupancyColl(Coll const& collision, int occEstimator = 1)
-  // {
-  //   switch (occEstimator) {
-  //     case 1: // ITS
-  //       return collision.trackOccupancyInTimeRange();
-  //       break;
-  //     case 2: // FT0c
-  //       return collision.ft0cOccupancyInTimeRange();
-  //       break;
-  //     default:
-  //       LOG(warning) << "Occupancy estimator not valid. Possible values are ITS or FT0C. Fallback to ITS";
-  //       return collision.trackOccupancyInTimeRange();
-  //       break;
-  //   }
-  // }
-
-  // /// Get the centrality
-  // /// \param collision is the collision with the centrality information
-  // /// \param centEstimator is the centrality estimator from hf_centrality::CentralityEstimator
-  // template <o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
-  // float getCentrality(Coll const& collision)
-  // {
-  //   if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
-  //     return collision.centFT0A();
-  //   } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
-  //     return collision.centFT0C();
-  //   } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
-  //     return collision.centFT0M();
-  //   } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
-  //     return collision.centFV0A();
-  //   } else {
-  //     LOG(warning) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C. Fallback to FT0c";
-  //     return collision.centFT0C();
-  //   }
-  // }
-
   /// \brief Fills histograms for monitoring event selections satisfied by the collision.
   /// \param collision analysed collision
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
@@ -436,27 +395,6 @@ struct HfEventSelectionMc {
 
     if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
       centrality = o2::hf_centrality::evalCentralityGenColl<centEstimator>(collSlice);
-      // float multiplicity{0.f};
-      // for (const auto& collision : collSlice) {
-      //   float collCent{0.f};
-      //   float collMult{0.f};
-      //   if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
-      //     collCent = collision.centFT0A();
-      //   } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
-      //     collCent = collision.centFT0C();
-      //   } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
-      //     collCent = collision.centFT0M();
-      //   } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
-      //     collCent = collision.centFV0A();
-      //   } else {
-      //     LOGP(fatal, "Unsupported centrality estimator!");
-      //   }
-      //   collMult = collision.numContrib();
-      //   if (collMult > multiplicity) {
-      //     centrality = collCent;
-      //     multiplicity = collMult;
-      //   }
-      // }
       /// centrality selection
       if (centrality < centralityMin || centrality > centralityMax) {
         SETBIT(rejectionMask, EventRejection::Centrality);

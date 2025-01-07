@@ -41,12 +41,6 @@ enum OccupancyEstimator { None = 0,
                           ITS,
                           FT0C };
 
-// enum BHadMothers { NotMatched = 0,
-//                    BPlus,
-//                    BZero,
-//                    Bs,
-//                    LambdaBZero };
-
 /// D± analysis task
 struct HfTaskDplus {
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for DPlus"}; // 7 corresponds to topo+PID cuts
@@ -583,46 +577,6 @@ struct HfTaskDplus {
       }
     }
   }
-
-  // /// Get the centrality
-  // /// \param collision is the collision with the centrality information
-  // /// \return collision centrality
-  // template <typename Coll>
-  // float o2::hf_centrality::getCentralityColl(Coll const& collision, int centEstimator=0)
-  // {
-  //   float cent = -999.;
-  //   switch (centEstimator) {
-  //     case CentralityEstimator::FT0C:
-  //       cent = collision.centFT0C();
-  //       break;
-  //     case CentralityEstimator::FT0M:
-  //       cent = collision.centFT0M();
-  //       break;
-  //     default:
-  //       LOG(warning) << "Centrality estimator not valid. Possible values are FT0C, FT0M. Fallback to FT0C";
-  //       cent = collision.centFT0C();
-  //       break;
-  //   }
-  //   return cent;
-  // }
-
-  // /// \brief Function to get MC collision centrality
-  // /// \param collSlice collection of reconstructed collisions associated to a generated one
-  // /// \return generated MC collision centrality
-  // template <typename CCs>
-  // float o2::hf_centrality::getCentralityGenColl(CCs const& collSlice)
-  // {
-  //   float centrality{-1};
-  //   float multiplicity{0.f};
-  //   for (const auto& collision : collSlice) {
-  //     float collMult = collision.numContrib();
-  //     if (collMult > multiplicity) {
-  //       centrality = o2::hf_centrality::getCentralityColl(collision);
-  //       multiplicity = collMult;
-  //     }
-  //   }
-  //   return centrality;
-  // }
 
   // process functions
   void processData(CandDplusData const& candidates, CollisionsCent const& collisions)
