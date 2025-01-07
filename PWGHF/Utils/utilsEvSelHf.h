@@ -42,7 +42,7 @@ enum OccupancyEstimator { None = 0,
 /// \param collision is the collision with the occupancy information
 /// \return collision occupancy
 template <typename Coll>
-float getOccupancy(Coll const& collision, int occEstimator=1)
+float getOccupancyColl(Coll const& collision, int occEstimator=1)
 {
   float occupancy = -999.;
   switch (occEstimator) {
@@ -64,7 +64,7 @@ float getOccupancy(Coll const& collision, int occEstimator=1)
 /// \param collSlice collection of reconstructed collisions associated to a generated one
 /// \return generated MC collision occupancy
 template <typename CCs>
-int getGenOccupancy(CCs const& collSlice, int occEstimator=1)
+int getOccupancyGenColl(CCs const& collSlice, int occEstimator=1)
 {
   float multiplicity{0.f};
   int occupancy = 0;
@@ -72,7 +72,7 @@ int getGenOccupancy(CCs const& collSlice, int occEstimator=1)
     float collMult{0.f};
     collMult = collision.numContrib();
     if (collMult > multiplicity) {
-      occupancy = getOccupancy(collision, occEstimator);
+      occupancy = getOccupancyColl(collision, occEstimator);
       multiplicity = collMult;
     }
   } // end loop over collisions
@@ -214,7 +214,8 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     uint16_t rejectionMask{0}; // 16 bits, in case new ev. selections will be added
 
     if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
-      centrality = getCentrality<centEstimator>(collision);
+      centrality = o2::hf_centrality::evalCentralityColl<centEstimator>(collision);
+      // centrality = getCentrality<centEstimator>(collision);
       if (centrality < centralityMin || centrality > centralityMax) {
         SETBIT(rejectionMask, EventRejection::Centrality);
       }
@@ -259,7 +260,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
         SETBIT(rejectionMask, EventRejection::NoCollInRofStandard);
       }
       if (useOccupancyCut) {
-        float occupancy = getOccupancy(collision, occEstimator);
+        float occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
         if (occupancy < occupancyMin || occupancy > occupancyMax) {
           SETBIT(rejectionMask, EventRejection::Occupancy);
         }
@@ -312,7 +313,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   // /// \param collision is the collision with the occupancy information
   // /// \param occEstimator is the occupancy estimator (1: ITS, 2: FT0C)
   // template <typename Coll>
-  // float getOccupancy(Coll const& collision, int occEstimator = 1)
+  // float getOccupancyColl(Coll const& collision, int occEstimator = 1)
   // {
   //   switch (occEstimator) {
   //     case 1: // ITS
@@ -328,25 +329,25 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   //   }
   // }
 
-  /// Get the centrality
-  /// \param collision is the collision with the centrality information
-  /// \param centEstimator is the centrality estimator from hf_centrality::CentralityEstimator
-  template <o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
-  float getCentrality(Coll const& collision)
-  {
-    if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
-      return collision.centFT0A();
-    } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
-      return collision.centFT0C();
-    } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
-      return collision.centFT0M();
-    } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
-      return collision.centFV0A();
-    } else {
-      LOG(warning) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C. Fallback to FT0c";
-      return collision.centFT0C();
-    }
-  }
+  // /// Get the centrality
+  // /// \param collision is the collision with the centrality information
+  // /// \param centEstimator is the centrality estimator from hf_centrality::CentralityEstimator
+  // template <o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
+  // float getCentrality(Coll const& collision)
+  // {
+  //   if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
+  //     return collision.centFT0A();
+  //   } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
+  //     return collision.centFT0C();
+  //   } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
+  //     return collision.centFT0M();
+  //   } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
+  //     return collision.centFV0A();
+  //   } else {
+  //     LOG(warning) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C. Fallback to FT0c";
+  //     return collision.centFT0C();
+  //   }
+  // }
 
   /// \brief Fills histograms for monitoring event selections satisfied by the collision.
   /// \param collision analysed collision
@@ -434,27 +435,28 @@ struct HfEventSelectionMc {
     auto bc = mcCollision.template bc_as<TBc>();
 
     if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
-      float multiplicity{0.f};
-      for (const auto& collision : collSlice) {
-        float collCent{0.f};
-        float collMult{0.f};
-        if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
-          collCent = collision.centFT0A();
-        } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
-          collCent = collision.centFT0C();
-        } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
-          collCent = collision.centFT0M();
-        } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
-          collCent = collision.centFV0A();
-        } else {
-          LOGP(fatal, "Unsupported centrality estimator!");
-        }
-        collMult = collision.numContrib();
-        if (collMult > multiplicity) {
-          centrality = collCent;
-          multiplicity = collMult;
-        }
-      }
+      centrality = o2::hf_centrality::evalCentralityGenColl<centEstimator>(collSlice);
+      // float multiplicity{0.f};
+      // for (const auto& collision : collSlice) {
+      //   float collCent{0.f};
+      //   float collMult{0.f};
+      //   if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
+      //     collCent = collision.centFT0A();
+      //   } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
+      //     collCent = collision.centFT0C();
+      //   } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
+      //     collCent = collision.centFT0M();
+      //   } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
+      //     collCent = collision.centFV0A();
+      //   } else {
+      //     LOGP(fatal, "Unsupported centrality estimator!");
+      //   }
+      //   collMult = collision.numContrib();
+      //   if (collMult > multiplicity) {
+      //     centrality = collCent;
+      //     multiplicity = collMult;
+      //   }
+      // }
       /// centrality selection
       if (centrality < centralityMin || centrality > centralityMax) {
         SETBIT(rejectionMask, EventRejection::Centrality);
