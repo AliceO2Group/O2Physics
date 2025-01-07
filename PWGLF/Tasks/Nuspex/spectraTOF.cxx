@@ -1107,7 +1107,7 @@ struct tofSpectra {// o2-linter: disable = name/struct
           return false;
         }
       }
-      return (std::abs(track.dcaXY()) <= (maxDcaXYFactor.value * (0.0105f + 0.0350f / pow(track.pt(), 1.1f))));// o2-linter: disable = std-prefix
+      return (std::abs(track.dcaXY()) <= (maxDcaXYFactor.value * (0.0105f + 0.0350f / pow(track.pt(), 1.1f))));// o2-linter: disable=std-prefix
     }
     return track.isGlobalTrack();
   }
