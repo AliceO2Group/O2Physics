@@ -19,7 +19,6 @@
 
 // O2 includes
 #include <string>
-#include <iostream>
 #include <vector>
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
