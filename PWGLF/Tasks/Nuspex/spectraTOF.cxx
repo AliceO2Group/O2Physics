@@ -2144,38 +2144,22 @@ struct tofSpectra {
       int pdgCode = mcParticleGen.pdgCode();
       float pt = mcParticleGen.pt();
       float absY = std::abs(mcParticleGen.y());
-      const int PDG_PROTON = 2212;
-      const int PDG_ANTIPROTON = -2212;
-      const int PDG_PION_PLUS = 211;
-      const int PDG_PION_MINUS = -211;
-      const int PDG_KAON_PLUS = 321;
-      const int PDG_KAON_MINUS = -321;
-
       if (absY > trkselOptions.cfgCutY) {
         continue;
       }
 
-      switch (pdgCode) {
-        case PDG_PROTON:
-          histos.fill(HIST("MC/test/pr/pos/prm/pt/den"), pt, multiplicity);
-          break;
-        case PDG_ANTIPROTON:
-          histos.fill(HIST("MC/test/pr/neg/prm/pt/den"), pt, multiplicity);
-          break;
-        case PDG_PION_PLUS:
-          histos.fill(HIST("MC/test/pi/pos/prm/pt/den"), pt, multiplicity);
-          break;
-        case PDG_PION_MINUS:
-          histos.fill(HIST("MC/test/pi/neg/prm/pt/den"), pt, multiplicity);
-          break;
-        case PDG_KAON_PLUS:
-          histos.fill(HIST("MC/test/ka/pos/prm/pt/den"), pt, multiplicity);
-          break;
-        case PDG_KAON_MINUS:
-          histos.fill(HIST("MC/test/ka/neg/prm/pt/den"), pt, multiplicity);
-          break;
-        default:
-          break;
+            if (pdgCode == 2212) {
+                histos.fill(HIST("MC/test/pr/pos/prm/pt/den"), pt, multiplicity);
+            } else if (pdgCode == -2212) {
+                histos.fill(HIST("MC/test/pr/neg/prm/pt/den"), pt, multiplicity);
+            } else if (pdgCode == 211) {
+                histos.fill(HIST("MC/test/pi/pos/prm/pt/den"), pt, multiplicity);
+            } else if (pdgCode == -211) {
+                histos.fill(HIST("MC/test/pi/neg/prm/pt/den"), pt, multiplicity);
+            } else if (pdgCode == 321) {
+                histos.fill(HIST("MC/test/ka/pos/prm/pt/den"), pt, multiplicity);
+            } else if (pdgCode == -321) {
+                histos.fill(HIST("MC/test/ka/neg/prm/pt/den"), pt, multiplicity);
       }
     }
   }
@@ -2242,60 +2226,36 @@ struct tofSpectra {
         bool isPionTOF = track.hasTOF() && fabs(nsigmaTOFPi) < trkselOptions.cfgCutNsigma;
         bool isKaonTOF = track.hasTOF() && fabs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
         bool isProtonTOF = track.hasTOF() && fabs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
-        const int PDG_PROTON = 2212;
-        const int PDG_ANTIPROTON = -2212;
-        const int PDG_PION_PLUS = 211;
-        const int PDG_PION_MINUS = -211;
-        const int PDG_KAON_PLUS = 321;
-        const int PDG_KAON_MINUS = -321;
 
             if (isPionTPC || isKaonTPC || isProtonTPC) {
-                switch (pdgCode) {
-                    case PDG_PROTON: // Proton
-                        histos.fill(HIST("MC/test/RecoEvs/pr/pos/prm/pt/num"), pt, multiplicity);
-                        break;
-                    case PDG_ANTIPROTON: // Anti-proton
-                        histos.fill(HIST("MC/test/RecoEvs/pr/neg/prm/pt/num"), pt, multiplicity);
-                        break;
-                    case PDG_PION_PLUS: // Pion+
-                        histos.fill(HIST("MC/test/RecoEvs/pi/pos/prm/pt/num"), pt, multiplicity);
-                        break;
-                    case PDG_PION_MINUS: // Pion-
-                        histos.fill(HIST("MC/test/RecoEvs/pi/neg/prm/pt/num"), pt, multiplicity);
-                        break;
-                    case PDG_KAON_PLUS: // Kaon+
-                        histos.fill(HIST("MC/test/RecoEvs/ka/pos/prm/pt/num"), pt, multiplicity);
-                        break;
-                    case PDG_KAON_MINUS: // Kaon-
-                        histos.fill(HIST("MC/test/RecoEvs/ka/neg/prm/pt/num"), pt, multiplicity);
-                        break;
-                    default:
-                        break;
+                if (pdgCode == 2212) {
+                    histos.fill(HIST("MC/test/RecoEvs/pr/pos/prm/pt/num"), pt, multiplicity);
+                } else if (pdgCode == -2212) {
+                    histos.fill(HIST("MC/test/RecoEvs/pr/neg/prm/pt/num"), pt, multiplicity);
+                } else if (pdgCode == 211) {
+                    histos.fill(HIST("MC/test/RecoEvs/pi/pos/prm/pt/num"), pt, multiplicity);
+                } else if (pdgCode == -211) {
+                    histos.fill(HIST("MC/test/RecoEvs/pi/neg/prm/pt/num"), pt, multiplicity);
+                } else if (pdgCode == 321) {
+                    histos.fill(HIST("MC/test/RecoEvs/ka/pos/prm/pt/num"), pt, multiplicity);
+                } else if (pdgCode == -321) {
+                    histos.fill(HIST("MC/test/RecoEvs/ka/neg/prm/pt/num"), pt, multiplicity);
                 }
             }
 
             if (isPionTOF || isKaonTOF || isProtonTOF) {
-                switch (pdgCode) {
-                    case PDG_PROTON: // Proton
-                        histos.fill(HIST("MC/test/RecoEvs/pr/pos/prm/pt/numtof"), pt, multiplicity);
-                        break;
-                    case PDG_ANTIPROTON: // Anti-proton
-                        histos.fill(HIST("MC/test/RecoEvs/pr/neg/prm/pt/numtof"), pt, multiplicity);
-                        break;
-                    case PDG_PION_PLUS: // Pion+
-                        histos.fill(HIST("MC/test/RecoEvs/pi/pos/prm/pt/numtof"), pt, multiplicity);
-                        break;
-                    case PDG_PION_MINUS: // Pion-
-                        histos.fill(HIST("MC/test/RecoEvs/pi/neg/prm/pt/numtof"), pt, multiplicity);
-                        break;
-                    case PDG_KAON_PLUS: // Kaon+
-                        histos.fill(HIST("MC/test/RecoEvs/ka/pos/prm/pt/numtof"), pt, multiplicity);
-                        break;
-                    case PDG_KAON_MINUS: // Kaon-
-                        histos.fill(HIST("MC/test/RecoEvs/ka/neg/prm/pt/numtof"), pt, multiplicity);
-                        break;
-                    default:
-                        break;
+                if (pdgCode == 2212) {
+                    histos.fill(HIST("MC/test/RecoEvs/pr/pos/prm/pt/numtof"), pt, multiplicity);
+                } else if (pdgCode == -2212) {
+                    histos.fill(HIST("MC/test/RecoEvs/pr/neg/prm/pt/numtof"), pt, multiplicity);
+                } else if (pdgCode == 211) {
+                    histos.fill(HIST("MC/test/RecoEvs/pi/pos/prm/pt/numtof"), pt, multiplicity);
+                } else if (pdgCode == -211) {
+                    histos.fill(HIST("MC/test/RecoEvs/pi/neg/prm/pt/numtof"), pt, multiplicity);
+                } else if (pdgCode == 321) {
+                    histos.fill(HIST("MC/test/RecoEvs/ka/pos/prm/pt/numtof"), pt, multiplicity);
+                } else if (pdgCode == -321) {
+                    histos.fill(HIST("MC/test/RecoEvs/ka/neg/prm/pt/numtof"), pt, multiplicity);
                 }
             }
         }
