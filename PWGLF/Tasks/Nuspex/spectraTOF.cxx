@@ -1473,7 +1473,7 @@ struct tofSpectra {// o2-linter: disable=name/struct
     }
   } // end of the process function
   PROCESS_SWITCH(tofSpectra, processDerived, "Derived data processor", false);
-// o2-linter: disable=name/macro
+
 #define makeProcessFunction(processorName, inputPid, particleId, isFull, tofTable, tpcTable)   \
   void process##processorName##inputPid(CollisionCandidates::iterator const& collision,        \
                                         soa::Join<TrackCandidates,                             \
@@ -1645,10 +1645,11 @@ struct tofSpectra {// o2-linter: disable=name/struct
 
   using RecoMCCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFT0Ms>; // RD
   template <std::size_t i, typename TrackType, typename ParticleType>
+  // o2-linter: disable=name/function-variable
   void fillTrackHistograms_MC(TrackType const& track,
                               ParticleType::iterator const& mcParticle,
                               RecoMCCollisions::iterator const& collision,
-                              ParticleType const& mcParticles)// o2-linter: disable=name/function-variable
+                              ParticleType const& mcParticles)
   {
     if (!isParticleEnabled<i>()) { // Check if the particle is enabled
       return;
@@ -2169,8 +2170,8 @@ struct tofSpectra {// o2-linter: disable=name/struct
     }
   }
   PROCESS_SWITCH(tofSpectra, processMCgen, "process generated MC", false);
-  // o2-linter: disable=name/function-variable
-  void processMCgen_RecoEvs(soa::Join<TrackCandidates, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+  void processMCgen_RecoEvs(soa::Join<TrackCandidates, // o2-linter: disable=name/function-variable
+                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                   aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks,
                           aod::McTrackLabels const& mcTrackLabels,
                           RecoMCCollisions const& collisions,
