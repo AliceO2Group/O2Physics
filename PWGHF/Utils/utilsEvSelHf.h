@@ -31,6 +31,55 @@
 #include "EventFiltering/ZorroSummary.h"
 #include "PWGHF/Core/CentralityEstimation.h"
 
+namespace o2::hf_occupancy
+{
+// centrality selection estimators
+enum OccupancyEstimator { None = 0,
+                          Its,
+                          Ft0c };
+
+/// Get the occupancy
+/// \param collision is the collision with the occupancy information
+/// \return collision occupancy
+template <typename Coll>
+float getOccupancy(Coll const& collision, int occEstimator=1)
+{
+  float occupancy = -999.;
+  switch (occEstimator) {
+    case OccupancyEstimator::Its:
+      occupancy = collision.trackOccupancyInTimeRange();
+      break;
+    case OccupancyEstimator::Ft0c:
+      occupancy = collision.ft0cOccupancyInTimeRange();
+      break;
+    default:
+      LOG(warning) << "Occupancy estimator not valid. Possible values are ITS or FT0C. Fallback to ITS";
+      occupancy = collision.trackOccupancyInTimeRange();
+      break;
+  }
+  return occupancy;
+};
+
+/// \brief Function to get MC collision occupancy
+/// \param collSlice collection of reconstructed collisions associated to a generated one
+/// \return generated MC collision occupancy
+template <typename CCs>
+int getGenOccupancy(CCs const& collSlice, int occEstimator=1)
+{
+  float multiplicity{0.f};
+  int occupancy = 0;
+  for (const auto& collision : collSlice) {
+    float collMult{0.f};
+    collMult = collision.numContrib();
+    if (collMult > multiplicity) {
+      occupancy = getOccupancy(collision, occEstimator);
+      multiplicity = collMult;
+    }
+  } // end loop over collisions
+  return occupancy;
+};
+} // namespace o2::hf_occupancy
+
 namespace o2::hf_evsel
 {
 // event rejection types
@@ -259,25 +308,25 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     return rejectionMask;
   }
 
-  /// Get the occupancy
-  /// \param collision is the collision with the occupancy information
-  /// \param occEstimator is the occupancy estimator (1: ITS, 2: FT0C)
-  template <typename Coll>
-  float getOccupancy(Coll const& collision, int occEstimator = 1)
-  {
-    switch (occEstimator) {
-      case 1: // ITS
-        return collision.trackOccupancyInTimeRange();
-        break;
-      case 2: // FT0c
-        return collision.ft0cOccupancyInTimeRange();
-        break;
-      default:
-        LOG(warning) << "Occupancy estimator not valid. Possible values are ITS or FT0C. Fallback to ITS";
-        return collision.trackOccupancyInTimeRange();
-        break;
-    }
-  }
+  // /// Get the occupancy
+  // /// \param collision is the collision with the occupancy information
+  // /// \param occEstimator is the occupancy estimator (1: ITS, 2: FT0C)
+  // template <typename Coll>
+  // float getOccupancy(Coll const& collision, int occEstimator = 1)
+  // {
+  //   switch (occEstimator) {
+  //     case 1: // ITS
+  //       return collision.trackOccupancyInTimeRange();
+  //       break;
+  //     case 2: // FT0c
+  //       return collision.ft0cOccupancyInTimeRange();
+  //       break;
+  //     default:
+  //       LOG(warning) << "Occupancy estimator not valid. Possible values are ITS or FT0C. Fallback to ITS";
+  //       return collision.trackOccupancyInTimeRange();
+  //       break;
+  //   }
+  // }
 
   /// Get the centrality
   /// \param collision is the collision with the centrality information

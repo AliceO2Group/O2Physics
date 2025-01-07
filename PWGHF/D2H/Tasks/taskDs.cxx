@@ -61,9 +61,9 @@ enum BHadMothers { NotMatched = 0,
                    Bs,
                    LambdaBZero };
 
-enum OccupancyEstimator { None = 0,
-                          Its,
-                          Ft0c };
+// enum OccupancyEstimator { None = 0,
+//                           Its,
+//                           Ft0c };
 
 template <typename T>
 concept hasDsMlInfo = requires(T candidate)
@@ -385,48 +385,6 @@ struct HfTaskDs {
     return -1.f;
   }
 
-  /// Get the occupancy
-  /// \param collision is the collision with the occupancy information
-  /// \return collision occupancy
-  template <typename Coll>
-  float evaluateOccupancy(Coll const& collision)
-  {
-    float occupancy = -999.;
-    switch (occEstimator) {
-      case OccupancyEstimator::Its:
-        occupancy = collision.trackOccupancyInTimeRange();
-        break;
-      case OccupancyEstimator::Ft0c:
-        occupancy = collision.ft0cOccupancyInTimeRange();
-        break;
-      default:
-        LOG(warning) << "Occupancy estimator not valid. Possible values are ITS or FT0C. Fallback to ITS";
-        occupancy = collision.trackOccupancyInTimeRange();
-        break;
-    }
-    return occupancy;
-  }
-
-  /// \brief Function to get MC collision occupancy
-  /// \param collSlice collection of reconstructed collisions associated to a generated one
-  /// \return generated MC collision occupancy
-  template <typename CCs>
-  int evaluateMcGenCollOccupancy(CCs const& collSlice)
-  {
-    float multiplicity{0.f};
-    int occupancy = 0;
-    for (const auto& collision : collSlice) {
-      float collMult{0.f};
-      collMult = collision.numContrib();
-      if (collMult > multiplicity) {
-        occupancy = evaluateOccupancy(collision);
-        multiplicity = collMult;
-      }
-    } // end loop over collisions
-
-    return occupancy;
-  }
-
   /// \brief Function to get MC collision centrality
   /// \param collSlice collection of reconstructed collisions associated to a generated one
   /// \return generated MC collision centrality
@@ -534,7 +492,7 @@ struct HfTaskDs {
 
     if (dataType == DataType::Data) { // If data do not fill PV contributors in sparse
       if (storeOccupancy) {
-        std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], evaluateOccupancy(candidate.template collision_as<Coll>()));
+        std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], o2::hf_occupancy::getOccupancy(candidate.template collision_as<Coll>(), occEstimator));
         return;
       } else {
         std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2]);
@@ -544,7 +502,7 @@ struct HfTaskDs {
     if constexpr (isMc) {
       if (dataType == DataType::McDsNonPrompt) { // If data do not fill PV contributors in sparse
         if (storeOccupancy) {
-          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()), evaluateOccupancy(candidate.template collision_as<Coll>()));
+          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()), o2::hf_occupancy::getOccupancy(candidate.template collision_as<Coll>(), occEstimator));
           return;
         } else {
           std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()));
@@ -552,7 +510,7 @@ struct HfTaskDs {
         }
       } else {
         if (storeOccupancy) {
-          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib(), outputMl[0], outputMl[1], outputMl[2], evaluateOccupancy(candidate.template collision_as<Coll>()));
+          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib(), outputMl[0], outputMl[1], outputMl[2], o2::hf_occupancy::getOccupancy(candidate.template collision_as<Coll>(), occEstimator));
           return;
         } else {
           std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib(), outputMl[0], outputMl[1], outputMl[2]);
@@ -574,7 +532,7 @@ struct HfTaskDs {
 
     if (dataType == DataType::Data) { // If data do not fill PV contributors in sparse
       if (storeOccupancy) {
-        std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), evaluateOccupancy(candidate.template collision_as<Coll>()));
+        std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), o2::hf_occupancy::getOccupancy(candidate.template collision_as<Coll>(), occEstimator));
         return;
       } else {
         std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate));
@@ -584,7 +542,7 @@ struct HfTaskDs {
     if constexpr (isMc) {
       if (dataType == DataType::McDsNonPrompt) { // If data do not fill PV contributors in sparse
         if (storeOccupancy) {
-          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()), evaluateOccupancy(candidate.template collision_as<Coll>()));
+          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()), o2::hf_occupancy::getOccupancy(candidate.template collision_as<Coll>(), occEstimator));
           return;
         } else {
           std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()));
@@ -592,7 +550,7 @@ struct HfTaskDs {
         }
       } else {
         if (storeOccupancy) {
-          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib(), evaluateOccupancy(candidate.template collision_as<Coll>()));
+          std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib(), o2::hf_occupancy::getOccupancy(candidate.template collision_as<Coll>(), occEstimator));
           return;
         } else {
           std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib());
@@ -775,8 +733,8 @@ struct HfTaskDs {
           }
           float cent = evaluateMcGenCollCentrality(recoCollsPerMcColl);
           float occ{-1.};
-          if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-            occ = evaluateMcGenCollOccupancy(recoCollsPerMcColl);
+          if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
+            occ = o2::hf_occupancy::getGenOccupancy(recoCollsPerMcColl, occEstimator);
           }
 
           if (particle.flagMcDecayChanGen() == decayChannel) {
@@ -788,7 +746,7 @@ struct HfTaskDs {
             if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
               std::get<TH1Ptr>(histosPtr[DataType::McDsPrompt]["hPtGen"])->Fill(pt); // gen. level pT
               std::get<TH1Ptr>(histosPtr[DataType::McDsPrompt]["hEtaGen"])->Fill(particle.eta());
-              if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
+              if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
                 std::get<THnSparsePtr>(histosPtr[DataType::McDsPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ);
               } else {
                 std::get<THnSparsePtr>(histosPtr[DataType::McDsPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent);
@@ -800,7 +758,7 @@ struct HfTaskDs {
               auto bHadMother = mcParticles.rawIteratorAt(particle.idxBhadMotherPart() - mcParticles.offset());
               int flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
               float ptGenB = bHadMother.pt();
-              if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
+              if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
                 std::get<THnSparsePtr>(histosPtr[DataType::McDsNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent, occ);
               } else {
                 std::get<THnSparsePtr>(histosPtr[DataType::McDsNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent);
@@ -814,7 +772,7 @@ struct HfTaskDs {
             if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
               std::get<TH1Ptr>(histosPtr[DataType::McDplusPrompt]["hPtGen"])->Fill(pt); // gen. level pT
               std::get<TH1Ptr>(histosPtr[DataType::McDplusPrompt]["hEtaGen"])->Fill(particle.eta());
-              if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
+              if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
                 std::get<THnSparsePtr>(histosPtr[DataType::McDplusPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ);
               } else {
                 std::get<THnSparsePtr>(histosPtr[DataType::McDplusPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent);
@@ -826,7 +784,7 @@ struct HfTaskDs {
               auto bHadMother = mcParticles.rawIteratorAt(particle.idxBhadMotherPart() - mcParticles.offset());
               int flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
               float ptGenB = bHadMother.pt();
-              if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
+              if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
                 std::get<THnSparsePtr>(histosPtr[DataType::McDplusNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent, occ);
               } else {
                 std::get<THnSparsePtr>(histosPtr[DataType::McDplusNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, ptGenB, flagGenB, cent);
@@ -843,10 +801,10 @@ struct HfTaskDs {
         }
         float cent = evaluateMcGenCollCentrality(recoCollsPerMcColl);
         float occ{-1.};
-        if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-          occ = evaluateMcGenCollOccupancy(recoCollsPerMcColl);
+        if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
+          occ = o2::hf_occupancy::getGenOccupancy(recoCollsPerMcColl, occEstimator);
         }
-        if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
+        if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
           std::get<THnSparsePtr>(histosPtr[DataType::McBkg]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ);
         } else {
           std::get<THnSparsePtr>(histosPtr[DataType::McBkg]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent);
