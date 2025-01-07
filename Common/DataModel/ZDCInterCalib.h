@@ -8,6 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file ZDCInterCalib.h
+/// \brief ZDC tower intercalibration task
+/// \author Chiara Oppedisano <chiara.oppedisano@cern.ch>, INFN Torino
+
 #ifndef COMMON_DATAMODEL_ZDCINTERCALIB_H_
 #define COMMON_DATAMODEL_ZDCINTERCALIB_H_
 
