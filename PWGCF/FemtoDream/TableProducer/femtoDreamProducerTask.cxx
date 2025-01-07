@@ -429,7 +429,7 @@ struct femtoDreamProducerTask {
 
       cascadeCuts.init<aod::femtodreamparticle::ParticleType::kCascade, aod::femtodreamparticle::ParticleType::kCascadeV0Child, aod::femtodreamparticle::ParticleType::kCascadeBachelor, aod::femtodreamparticle::cutContainerType>(&qaRegistry, &CascadeRegistry, false);
       cascadeCuts.setInvMassLimits(ConfCascSel.ConfCascadeInvMassLowLimit, ConfCascSel.ConfCascadeInvMassUpLimit);
-      // --> uncomment this after including the function in the cascade selection: cascadeCuts.setInvMassV0Limits(ConfCascSel.ConfCascadeV0InvMassLowLimit, ConfCascSel.ConfCascadeV0InvMassUpLimit);
+      cascadeCuts.setV0InvMassLimits(ConfCascSel.ConfCascadeV0InvMassLowLimit, ConfCascSel.ConfCascadeV0InvMassUpLimit);
     }
 
     mRunNumber = 0;
@@ -703,6 +703,7 @@ struct femtoDreamProducerTask {
     }
 
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
+    std::vector<int> cascadechildIDs = {0, 0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     std::vector<typename TrackTypeWithItsPid::iterator> Daughter1, Daughter2;
 
@@ -871,8 +872,74 @@ struct femtoDreamProducerTask {
       //auto cutContainerCasc = cascadeCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, casc, v0daugh, posTrackCasc, negTrackCasc, bachTrackCasc);
       auto cutContainerCasc = cascadeCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
 
-      std::vector<int> indexChildID = {0, 0};
+      //Fill positive child
+      int poscasctrackID = casc.posTrackId(); 
+      int rowInPrimaryTrackTablePosCasc = -1;
+      rowInPrimaryTrackTablePosCasc = getRowDaughters(poscasctrackID, tmpIDtrack);
+      cascadechildIDs[0] = rowInPrimaryTrackTablePosCasc;
+      cascadechildIDs[1] = 0;
+      cascadechildIDs[2] = 0;
+      outputParts(outputCollision.lastIndex(),
+                    casc.positivept(),
+                    casc.positiveeta(),
+                    casc.positivephi(),
+                    aod::femtodreamparticle::ParticleType::kCascadeV0Child,
+                    cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kPosCuts),
+                    cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kPosPID),
+                    posTrackCasc.dcaXY(),
+                    cascadechildIDs,
+                    0,
+                    0);
+      const int rowOfPosCascadeTrack = outputParts.lastIndex();
+      //TODO: include here MC filling
+      //------
       
+      //Fill negative child
+      int negcasctrackID = casc.negTrackId(); 
+      int rowInPrimaryTrackTableNegCasc = -1;
+      rowInPrimaryTrackTableNegCasc = getRowDaughters(negcasctrackID, tmpIDtrack);
+      cascadechildIDs[0] = 0;
+      cascadechildIDs[1] = rowInPrimaryTrackTableNegCasc;
+      cascadechildIDs[2] = 0;
+      outputParts(outputCollision.lastIndex(),
+                    casc.negativept(),
+                    casc.negativeeta(),
+                    casc.negativephi(),
+                    aod::femtodreamparticle::ParticleType::kCascadeV0Child,
+                    cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kNegCuts),
+                    cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kNegPID),
+                    negTrackCasc.dcaXY(),
+                    cascadechildIDs,
+                    0,
+                    0);
+      const int rowOfNegCascadeTrack = outputParts.lastIndex();
+      //TODO: include here MC filling
+      //------
+      
+      //Fill bachelor child
+      int bachelorcasctrackID = casc.bachelorId(); 
+      int rowInPrimaryTrackTableBachelorCasc = -1;
+      rowInPrimaryTrackTableBachelorCasc = getRowDaughters(bachelorcasctrackID, tmpIDtrack);
+      cascadechildIDs[0] = 0;
+      cascadechildIDs[1] = 0;
+      cascadechildIDs[2] = rowInPrimaryTrackTableBachelorCasc;
+      outputParts(outputCollision.lastIndex(),
+                    casc.bachelorpt(),
+                    casc.bacheloreta(),
+                    casc.bachelorphi(),
+                    aod::femtodreamparticle::ParticleType::kCascadeBachelor,
+                    cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kBachCuts),
+                    cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kBachPID),
+                    bachTrackCasc.dcaXY(),
+                    cascadechildIDs,
+                    0,
+                    0);
+      const int rowOfBachelorCascadeTrack = outputParts.lastIndex();
+      //TODO: include here MC filling
+      //------
+
+      //Fill cascades 
+      std::vector<int> indexCascadeChildID = {rowOfPosCascadeTrack, rowOfNegCascadeTrack, rowOfBachelorCascadeTrack};
       outputParts(outputCollision.lastIndex(),
                     casc.pt(),
                     casc.eta(),
@@ -881,9 +948,11 @@ struct femtoDreamProducerTask {
                     cutContainerCasc.at(femtoDreamCascadeSelection::CascadeContainerPosition::kCascade),
                     0,
                     casc.casccosPA(col.posX(), col.posY(), col.posZ()),
-                    indexChildID,
+                    indexCascadeChildID,
                     casc.mXi(),
-                    0.);
+                    casc.mLambda());
+      //TODO: include here MC filling
+      //------
 
       /*
       outputParts(outputCollision.lastIndex(),

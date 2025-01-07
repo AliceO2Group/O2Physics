@@ -39,6 +39,11 @@ o2physics_add_dpl_workflow(femtodream-debug-v0
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femtodream-debug-cascade
+          SOURCES femtoDreamDebugCascade.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femtodream-collision-masker
           SOURCES femtoDreamCollisionMasker.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore

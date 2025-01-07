@@ -58,9 +58,10 @@ enum CascadeSel {
   kCascadeV0TranRadMin,
   kCascadeV0TranRadMax,
   kCascadeV0DCAtoPVMin,
-  kCascadeV0DCAtoPVMax,
-  kCascadeV0MassMin,
-  kCascadeV0MassMax
+  kCascadeV0DCAtoPVMax
+  //kNcascadeSelection
+  //kCascadeV0MassMin,
+  //kCascadeV0MassMax
 }; 
   /*
   kCascadeDCAPosToPV,
@@ -252,6 +253,12 @@ class FemtoDreamCascadeSelection
     fInvMassLowLimit = lowLimit;
     fInvMassUpLimit = upLimit;
   }
+  
+  void setV0InvMassLimits(float lowLimit, float upLimit)
+  {
+    fV0InvMassLowLimit = lowLimit;
+    fV0InvMassUpLimit = upLimit;
+  }
 
   /// Set limit for the omega rejection on the invariant mass
   /// \param lowLimit Lower limit for the invariant mass distribution
@@ -323,11 +330,12 @@ class FemtoDreamCascadeSelection
   FemtoDreamTrackSelection BachTrack;
   //FemtoDreamV0Selection V0DaughSel;
 
-  static constexpr int kNcascadeSelection = 17; //TODO can I do less ?
+  static constexpr int kNcascadeSelection = 16; //TODO can I do less ?
 
   static constexpr std::string_view mSelectionNames[kNcascadeSelection] = {
     "Sign", "PtMin", "PtMax", "EtaMax", "DCAcascDaugh", "CPAMin", "TranRadMin", "TranRadMax", "DecVtxMax",                   //Cascade Selections
-    "DCAv0daughMax", "v0CPAMin", "v0TranRadMin", "v0TranRadMax", "DCAV0ToPVMin", "DCAV0ToPVMax", "kV0MassMin", "V0MassMax"}; //CascadeV0 selections
+    "DCAv0daughMax", "v0CPAMin", "v0TranRadMin", "v0TranRadMax", "DCAV0ToPVMin", "DCAV0ToPVMax"};                            //CascadeV0 selections
+    //"kV0MassMin", "V0MassMax"}; //CascadeV0 selections
     // "DCAPosToPV", "DCANegToPV", "DCABachToPV",                                                             //Cascade daughter track selections
     // }; //<< Name of the different selections
 
@@ -348,9 +356,9 @@ class FemtoDreamCascadeSelection
       femtoDreamSelection::kLowerLimit, // v0 tran rad min
       femtoDreamSelection::kUpperLimit, // v0 tran rad max
       femtoDreamSelection::kLowerLimit, // v0 minimum distance of decay vertex to PV
-      femtoDreamSelection::kUpperLimit, // v0 maximum distance of decay vertex to PV
-      femtoDreamSelection::kLowerLimit, // v0 mass min
-      femtoDreamSelection::kUpperLimit // v0 mass max
+      femtoDreamSelection::kUpperLimit  // v0 maximum distance of decay vertex to PV
+      //femtoDreamSelection::kLowerLimit, // v0 mass min
+      //femtoDreamSelection::kUpperLimit // v0 mass max
     }; ///< Map to match a variable with
        ///< its type
       
@@ -377,9 +385,9 @@ class FemtoDreamCascadeSelection
     "Minimum v0 transverse radius (cm)",
     "Maximum v0 transverse radius (cm)",
     "Minimum distance of v0 from primary vertex",
-    "Maximum distance of v0 from primary vertex",
-    "Minimum V0 mass",
-    "Maximum V0 mass"
+    "Maximum distance of v0 from primary vertex"
+    //"Minimum V0 mass",
+    //"Maximum V0 mass"
   }; ///< Helper information for the
      ///< different selections
     
@@ -531,10 +539,10 @@ void FemtoDreamCascadeSelection::init(HistogramRegistry* QAregistry, HistogramRe
                                              femtoDreamSelection::kLowerLimit);
   fCascadeV0DCAToPVMax = getMinimalSelection(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax,
                                              femtoDreamSelection::kUpperLimit);
-  fV0InvMassLowLimit = getMinimalSelection(femtoDreamCascadeSelection::kCascadeV0MassMin,
-                                           femtoDreamSelection::kLowerLimit);
-  fV0InvMassUpLimit = getMinimalSelection(femtoDreamCascadeSelection::kCascadeV0MassMax,
-                                          femtoDreamSelection::kUpperLimit);
+  //fV0InvMassLowLimit = getMinimalSelection(femtoDreamCascadeSelection::kCascadeV0MassMin,
+  //                                         femtoDreamSelection::kLowerLimit);
+  //fV0InvMassUpLimit = getMinimalSelection(femtoDreamCascadeSelection::kCascadeV0MassMax,
+  //                                        femtoDreamSelection::kUpperLimit);
    
   /*
   fCascadeDCAPosToPV = getMinimalSelection(femtoDreamCascadeSelection::kCascadeDCAPosToPV,
@@ -631,6 +639,16 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   if (nCascadeV0DCAToPVMax > 0 && abs(dcav0topv) < fCascadeV0DCAToPVMax) {
     return false;
   }
+  //Chech the selection criteria for the tracks as well (TODO) 
+  if (!PosDaughTrack.isSelectedMinimal(posTrack)) {
+    return false;
+  }
+  if (!NegDaughTrack.isSelectedMinimal(negTrack)) {
+    return false;
+  }
+  if (!BachTrack.isSelectedMinimal(bachTrack)) {
+    return false;
+  }
   
   
   /*
@@ -641,16 +659,6 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
     return false;
   }
   if (nCascadeDCABachToPV > 0 && abs(cascade.dcabachtopv()) < fCascadeDCABachToPV) {
-    return false;
-  }
-  //Chech the selection criteria for the tracks as well (TODO) 
-  if (!PosDaughTrack.isSelectedMinimal(posTrack)) {
-    return false;
-  }
-  if (!NegDaughTrack.isSelectedMinimal(negTrack)) {
-    return false;
-  }
-  if (!BachTrack.isSelectedMinimal(bachTrack)) {
     return false;
   }
   */ 
@@ -830,12 +838,12 @@ std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col 
       case (femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax):
         observable = dcav0topv; 
         break;
-      case (femtoDreamCascadeSelection::kCascadeV0MassMin):
-        observable = casc.mLambda(); 
-        break;
-      case (femtoDreamCascadeSelection::kCascadeV0MassMax):
-        observable = casc.mLambda(); 
-        break;
+      //case (femtoDreamCascadeSelection::kCascadeV0MassMin):
+      //  observable = casc.mLambda(); 
+      //  break;
+      //case (femtoDreamCascadeSelection::kCascadeV0MassMax):
+      //  observable = casc.mLambda(); 
+      //  break;
       
       /*
       case (femtoDreamCascadeSelection::kCascadeDCAPosToPV):
