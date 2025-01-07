@@ -1735,15 +1735,15 @@ struct tofSpectra {
             }
             if (charmOrigin == RecoDecay::OriginType::NonPrompt) {
               IsBeautyMother = true;
-              std::cout << "Charm Origin for Beauty:" << charmOrigin << std::endl;
+              LOG(info) << "Charm Origin for Beauty: " << charmOrigin;
             }
             if (charmOrigin == RecoDecay::OriginType::Prompt) {
               IsCharmMother = true;
-              std::cout << "Charm Origin for Charm:" << charmOrigin << std::endl;
+              LOG(info) << "Charm Origin for Charm: " << charmOrigin;
             }
             if (charmOrigin == RecoDecay::OriginType::None) {
               IsNotHFMother = true;
-              std::cout << "Charm Origin for NotHF:" << charmOrigin << std::endl;
+              LOG(info) << "Charm Origin for NotHF: " << charmOrigin;
             }
           }
         }
