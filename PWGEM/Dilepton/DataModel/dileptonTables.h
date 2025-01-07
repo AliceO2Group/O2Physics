@@ -217,6 +217,7 @@ using EMEventNormInfo = EMEventNormInfos::iterator;
 
 namespace emmcevent
 {
+DECLARE_SOA_INDEX_COLUMN(EMEvent, mpemevent); //! most propable emeventId
 DECLARE_SOA_COLUMN(McCollisionId, mcCollisionId, int);
 } // namespace emmcevent
 
@@ -229,8 +230,10 @@ DECLARE_SOA_TABLE(EMMCEvents, "AOD", "EMMCEVENT", //!   MC event information tab
                   mccollision::GetGeneratorId<mccollision::GeneratorsID>,
                   mccollision::GetSubGeneratorId<mccollision::GeneratorsID>,
                   mccollision::GetSourceId<mccollision::GeneratorsID>);
-
 using EMMCEvent = EMMCEvents::iterator;
+
+DECLARE_SOA_TABLE(MostProbableEMEventIdsInMC, "AOD", "MPEMEVENTIDINMC", emmcevent::EMEventId); // To be joined with EMMCEvents table at analysis level.
+using MostProbableEMEventIdInMC = MostProbableEMEventIdsInMC::iterator;
 
 namespace emmceventlabel
 {
