@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file FlowPtContainer.cxx
+/// \file FlowPtContainer.h
 /// \brief Class to handle angular and transverse momentum correlations
 /// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
 
