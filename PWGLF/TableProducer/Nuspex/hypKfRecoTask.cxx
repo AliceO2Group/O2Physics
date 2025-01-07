@@ -275,12 +275,12 @@ struct HyperNucCandidate {
   }
   int getNdaughters() { return static_cast<int>(daughters.size()); }
   float getDcaTracks() { return getNdaughters() == 2 ? getDcaTracks2() : getMaxDcaToSv(); }
-  float getDcaTracks2() { return daughters.at(0)->daughterKfp.GetDistanceFromParticle(daughters.at(1)->daughterKfp); }
+  float getDcaTracks2() { return daughters.at(0)->daughterKfp.GetDistanceFromParticleXY(daughters.at(1)->daughterKfp); }
   float getMaxDcaToSv()
   {
     float maxDca = std::numeric_limits<float>::lowest();
     for (size_t i = 0; i < daughters.size(); i++) {
-      float dca = daughters.at(i)->daughterKfp.GetDistanceFromVertex(&recoSV[0]);
+      float dca = daughters.at(i)->daughterKfp.GetDistanceFromVertexXY(&recoSV[0]);
       if (dca > maxDca)
         maxDca = dca;
     }
