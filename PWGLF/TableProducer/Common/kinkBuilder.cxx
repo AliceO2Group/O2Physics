@@ -13,7 +13,11 @@
 /// \brief Builder task for kink decay topologies using ITS standalone tracks for the mother
 /// \author Francesco Mazzaschi <francesco.mazzaschi@cern.ch>
 
+#include <memory>
+#include <string>
 #include <array>
+#include <vector>
+#include <algorithm>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
