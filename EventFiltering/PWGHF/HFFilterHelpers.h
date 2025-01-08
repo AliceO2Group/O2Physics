@@ -2127,9 +2127,7 @@ inline bool HfFilterHelper::buildV0(V const& v0Indices, T const& tracks, C const
   if (!trackPos.hasTPC() || !trackNeg.hasTPC()) {
     return false;
   }
-  if (!(trackPos.trackType() & o2::aod::track::TPCrefit) || !(trackNeg.trackType() & o2::aod::track::TPCrefit)) {
-    return false;
-  }
+
   if (trackPos.tpcNClsCrossedRows() < 50 || trackNeg.tpcNClsCrossedRows() < 50) {
     return false;
   }
@@ -2253,9 +2251,7 @@ inline bool HfFilterHelper::buildCascade(Casc const& cascIndices, V const& v0Ind
   if (!trackBachelor.hasTPC()) {
     return false;
   }
-  if (!(trackBachelor.trackType() & o2::aod::track::TPCrefit)) {
-    return false;
-  }
+
   if (trackBachelor.tpcNClsCrossedRows() < 50) {
     return false;
   }
