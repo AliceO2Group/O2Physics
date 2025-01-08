@@ -337,10 +337,10 @@ struct HfFilter { // Main struct for HF triggers
   using Hf3ProngsWithMl = soa::Join<aod::Hf3Prongs, aod::Hf3ProngMlProbs>;
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  Preslice<aod::V0s> v0sPerCollision = aod::v0data::collisionId;
+  Preslice<aod::V0s> v0sPerCollision = aod::v0::collisionId;
   Preslice<Hf2ProngsWithMl> hf2ProngPerCollision = aod::track_association::collisionId;
   Preslice<Hf3ProngsWithMl> hf3ProngPerCollision = aod::track_association::collisionId;
-  Preslice<aod::Cascades> cascPerCollision = aod::cascdata::collisionId;
+  Preslice<aod::Cascades> cascPerCollision = aod::cascade::collisionId;
   Preslice<aod::V0PhotonsKF> photonsPerCollision = aod::v0photonkf::collisionId;
 
   void process(CollsWithEvSel const& collisions,
