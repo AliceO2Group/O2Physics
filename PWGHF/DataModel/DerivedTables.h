@@ -85,30 +85,30 @@ DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! original global index of
                            o2::soa::Marker<Marker##_hf_type_>);
 
 // Defines the mc collision table
-#define DECLARE_MCCOLL_TABLE(_hf_type_, _hf_description_, _hf_namespace_)                  \
-  namespace hf_mc_coll                                                                     \
-  {                                                                                        \
-  namespace der_##_hf_namespace_                                                           \
-  {                                                                                        \
-    DECLARE_SOA_ARRAY_INDEX_COLUMN(Hf##_hf_type_##CollBase, hfCollBases);                  \
-  }                                                                                        \
-  }                                                                                        \
-  DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##McCollBases, "HF" _hf_description_ "MCCOLLBASE", \
-                           o2::soa::Index<>,                                               \
-                           mccollision::PosX,                                              \
-                           mccollision::PosY,                                              \
-                           mccollision::PosZ,                                              \
-                           cent::CentFT0M,                                                 \
-                           o2::soa::Marker<Marker##_hf_type_>);                            \
-                                                                                           \
-  using Hf##_hf_type_##McCollBase = Hf##_hf_type_##McCollBases::iterator;                  \
-  using StoredHf##_hf_type_##McCollBase = StoredHf##_hf_type_##McCollBases::iterator;      \
-                                                                                           \
-  DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##McCollIds, "HF" _hf_description_ "MCCOLLID",     \
-                           hf_mc_coll::McCollisionId,                                      \
-                           o2::soa::Marker<Marker##_hf_type_>);                            \
-                                                                                           \
-  DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##McRCollIds, "HF" _hf_description_ "MCRCOLLID",   \
+#define DECLARE_MCCOLL_TABLE(_hf_type_, _hf_description_, _hf_namespace_)                                           \
+  namespace hf_mc_coll                                                                                              \
+  {                                                                                                                 \
+  namespace der_##_hf_namespace_                                                                                    \
+  {                                                                                                                 \
+    DECLARE_SOA_ARRAY_INDEX_COLUMN_CUSTOM(Hf##_hf_type_##CollBase, hfCollBases, "HF" _hf_description_ "COLLBASES"); \
+  }                                                                                                                 \
+  }                                                                                                                 \
+  DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##McCollBases, "HF" _hf_description_ "MCCOLLBASE",                          \
+                           o2::soa::Index<>,                                                                        \
+                           mccollision::PosX,                                                                       \
+                           mccollision::PosY,                                                                       \
+                           mccollision::PosZ,                                                                       \
+                           cent::CentFT0M,                                                                          \
+                           o2::soa::Marker<Marker##_hf_type_>);                                                     \
+                                                                                                                    \
+  using Hf##_hf_type_##McCollBase = Hf##_hf_type_##McCollBases::iterator;                                           \
+  using StoredHf##_hf_type_##McCollBase = StoredHf##_hf_type_##McCollBases::iterator;                               \
+                                                                                                                    \
+  DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##McCollIds, "HF" _hf_description_ "MCCOLLID",                              \
+                           hf_mc_coll::McCollisionId,                                                               \
+                           o2::soa::Marker<Marker##_hf_type_>);                                                     \
+                                                                                                                    \
+  DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##McRCollIds, "HF" _hf_description_ "MCRCOLLID",                            \
                            hf_mc_coll::der_##_hf_namespace_::Hf##_hf_type_##CollBaseIds);
 
 #define DECLARE_COLL_TABLES(_hf_type_, _hf_description_, _hf_namespace_) \
@@ -161,27 +161,27 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! particle
 DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant decay channel flag, generator level
 } // namespace hf_mc_particle
 
-#define DECLARE_CAND_BASE_TABLE(_hf_type_, _hf_description_, _hf_namespace_)              \
-  namespace hf_cand_base                                                                  \
-  {                                                                                       \
-  namespace der_##_hf_namespace_                                                          \
-  {                                                                                       \
-    DECLARE_SOA_INDEX_COLUMN(Hf##_hf_type_##CollBase, hfCollBase);                        \
-  }                                                                                       \
-  }                                                                                       \
-                                                                                          \
-  DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##Bases, "HF" _hf_description_ "BASE",            \
-                           o2::soa::Index<>,                                              \
-                           hf_cand_base::der_##_hf_namespace_::Hf##_hf_type_##CollBaseId, \
-                           hf_cand_base::Pt,                                              \
-                           hf_cand_base::Eta,                                             \
-                           hf_cand_base::Phi,                                             \
-                           hf_cand_base::M,                                               \
-                           hf_cand_base::Y,                                               \
-                           hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,         \
-                           hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,         \
-                           hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,         \
-                           hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,          \
+#define DECLARE_CAND_BASE_TABLE(_hf_type_, _hf_description_, _hf_namespace_)                                 \
+  namespace hf_cand_base                                                                                     \
+  {                                                                                                          \
+  namespace der_##_hf_namespace_                                                                             \
+  {                                                                                                          \
+    DECLARE_SOA_INDEX_COLUMN_CUSTOM(Hf##_hf_type_##CollBase, hfCollBase, "HF" _hf_description_ "COLLBASES"); \
+  }                                                                                                          \
+  }                                                                                                          \
+                                                                                                             \
+  DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##Bases, "HF" _hf_description_ "BASE",                               \
+                           o2::soa::Index<>,                                                                 \
+                           hf_cand_base::der_##_hf_namespace_::Hf##_hf_type_##CollBaseId,                    \
+                           hf_cand_base::Pt,                                                                 \
+                           hf_cand_base::Eta,                                                                \
+                           hf_cand_base::Phi,                                                                \
+                           hf_cand_base::M,                                                                  \
+                           hf_cand_base::Y,                                                                  \
+                           hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,                            \
+                           hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,                            \
+                           hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,                            \
+                           hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,                             \
                            o2::soa::Marker<Marker##_hf_type_>);
 
 #define DECLARE_CAND_2P_ID_TABLE(_hf_type_, _hf_description_)              \
@@ -204,27 +204,27 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
                            hf_cand_sel::CandidateSelFlag,                    \
                            o2::soa::Marker<Marker##_hf_type_>);
 
-#define DECLARE_MCCAND_BASE_TABLE(_hf_type_, _hf_description_, _hf_namespace_)                \
-  namespace hf_mc_particle                                                                    \
-  {                                                                                           \
-  namespace der_##_hf_namespace_                                                              \
-  {                                                                                           \
-    DECLARE_SOA_INDEX_COLUMN(Hf##_hf_type_##McCollBase, hfMcCollBase);                        \
-  }                                                                                           \
-  }                                                                                           \
-  DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##PBases, "HF" _hf_description_ "PBASE",              \
-                           o2::soa::Index<>,                                                  \
-                           hf_mc_particle::der_##_hf_namespace_::Hf##_hf_type_##McCollBaseId, \
-                           hf_cand_base::Pt,                                                  \
-                           hf_cand_base::Eta,                                                 \
-                           hf_cand_base::Phi,                                                 \
-                           hf_cand_base::Y,                                                   \
-                           hf_mc_particle::FlagMcMatchGen,                                    \
-                           hf_mc_particle::OriginMcGen,                                       \
-                           hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,             \
-                           hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,             \
-                           hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,             \
-                           hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,              \
+#define DECLARE_MCCAND_BASE_TABLE(_hf_type_, _hf_description_, _hf_namespace_)                                     \
+  namespace hf_mc_particle                                                                                         \
+  {                                                                                                                \
+  namespace der_##_hf_namespace_                                                                                   \
+  {                                                                                                                \
+    DECLARE_SOA_INDEX_COLUMN_CUSTOM(Hf##_hf_type_##McCollBase, hfMcCollBase, "HF" _hf_description_ "MCCOLLBASES"); \
+  }                                                                                                                \
+  }                                                                                                                \
+  DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##PBases, "HF" _hf_description_ "PBASE",                                   \
+                           o2::soa::Index<>,                                                                       \
+                           hf_mc_particle::der_##_hf_namespace_::Hf##_hf_type_##McCollBaseId,                      \
+                           hf_cand_base::Pt,                                                                       \
+                           hf_cand_base::Eta,                                                                      \
+                           hf_cand_base::Phi,                                                                      \
+                           hf_cand_base::Y,                                                                        \
+                           hf_mc_particle::FlagMcMatchGen,                                                         \
+                           hf_mc_particle::OriginMcGen,                                                            \
+                           hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,                                  \
+                           hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,                                  \
+                           hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,                                  \
+                           hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,                                   \
                            o2::soa::Marker<Marker##_hf_type_>);
 
 #define DECLARE_MCCAND_ID_TABLE(_hf_type_, _hf_description_)                 \
