@@ -71,7 +71,6 @@ struct FlowPbpbPikp {
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
-
   O2_DEFINE_CONFIGURABLE(cfgTpcNsigmaCut, float, 2.0f, "TPC N-sigma cut for pions, kaons, protons")
   O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 1.8f, "Minimum pt to use TOF N-sigma")
 
@@ -203,7 +202,7 @@ struct FlowPbpbPikp {
   {
     const auto pglobal = track.p();
     const auto ptpc = track.tpcInnerParam();
-    if (TMath::Abs(pglobal - ptpc) > 0.1) {
+    if (std::abs(pglobal - ptpc) > 0.1) {
       return true;
     }
     return false;
@@ -270,7 +269,7 @@ struct FlowPbpbPikp {
   template <typename TTrack, typename vector, char... chars>
   void resurrectParticle(TTrack trackplus, TTrack trackminus, vector plusdaug, vector minusdaug, vector mom, double plusmass, double minusmass, const ConstStr<chars...>& hist)
   {
-    for (auto& [partplus, partminus] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(trackplus, trackminus))) {
+    for (auto const& [partplus, partminus] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(trackplus, trackminus))) {
       if (getNsigmaPID(partplus) != 2)
         continue;
       if (getNsigmaPID(partminus) != 2)
