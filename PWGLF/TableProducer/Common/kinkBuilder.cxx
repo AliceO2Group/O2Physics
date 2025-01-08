@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \brief Builder task for kink decay topologies using ITS standalone tracks for the mother 
+/// \brief Builder task for kink decay topologies using ITS standalone tracks for the mother
 /// \author Francesco Mazzaschi <francesco.mazzaschi@cern.ch>
 
 #include <array>
@@ -412,11 +412,10 @@ struct kinkBuilder {
   void process(aod::Collisions const& collisions, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs)
   {
 
-
     kinkCandidates.clear();
     fillCandidateData(collisions, tracks, ambiTracks, bcs);
 
-    //sort kinkCandidates by collisionID to allow joining with collision table
+    // sort kinkCandidates by collisionID to allow joining with collision table
     std::sort(kinkCandidates.begin(), kinkCandidates.end(), [](const kinkCandidate& a, const kinkCandidate& b) { return a.collisionID < b.collisionID; });
 
     for (auto& kinkCand : kinkCandidates) {

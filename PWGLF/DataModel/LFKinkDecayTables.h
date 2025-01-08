@@ -29,7 +29,7 @@ namespace kinkcand
 
 DECLARE_SOA_INDEX_COLUMN_FULL(TrackMoth, trackMoth, int, TracksIU, "_Moth"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(TrackDaug, trackDaug, int, TracksIU, "_Daug"); //!
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                            //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                              //!
 
 DECLARE_SOA_COLUMN(XDecVtx, xDecVtx, float);         //! Decay vertex of the candidate (x direction)
 DECLARE_SOA_COLUMN(YDecVtx, yDecVtx, float);         //! Decay vertex of the candidate (y direction)
