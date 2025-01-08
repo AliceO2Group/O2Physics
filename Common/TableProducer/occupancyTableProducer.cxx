@@ -2,13 +2,16 @@
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
-// This software is distributed under the terms of the GNU general Public
+// This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
 //
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \brief Occupancy Table Producer : TPC PID - Calibration
+///
+/// \brief  Occupancy Table Producer : TPC PID - Calibration
+///         Occupancy calculater using tracks which have entry for collision and trackQA tables
+///         Ambg tracks were not used
 /// \author Rahul Verma (rahul.verma@iitb.ac.in) :: Marian I Ivanov (marian.ivanov@cern.ch)
 
 #include <vector>
