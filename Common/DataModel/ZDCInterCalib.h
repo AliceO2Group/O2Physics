@@ -8,6 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file ZDCInterCalib.h
+/// \brief ZDC tower intercalibration task
+/// \author Chiara Oppedisano <chiara.oppedisano@cern.ch>, INFN Torino
+
 #ifndef COMMON_DATAMODEL_ZDCINTERCALIB_H_
 #define COMMON_DATAMODEL_ZDCINTERCALIB_H_
 
@@ -17,30 +22,34 @@ namespace o2::aod
 {
 namespace znoutput
 {
-DECLARE_SOA_COLUMN(pmcZNA, ZNAcommonPM, float); //! PMC ZNA
-DECLARE_SOA_COLUMN(pm1ZNA, ZNAPM1, float);      //! PM1 ZNA
-DECLARE_SOA_COLUMN(pm2ZNA, ZNAPM2, float);      //! PM2 ZNA
-DECLARE_SOA_COLUMN(pm3ZNA, ZNAPM3, float);      //! PM3 ZNA
-DECLARE_SOA_COLUMN(pm4ZNA, ZNAPM4, float);      //! PM4 ZNA
-DECLARE_SOA_COLUMN(pmcZNC, ZNCcommonPM, float); //! PMC ZNC
-DECLARE_SOA_COLUMN(pm1ZNC, ZNCPM1, float);      //! PM1 ZNC
-DECLARE_SOA_COLUMN(pm2ZNC, ZNCPM2, float);      //! PM2 ZNC
-DECLARE_SOA_COLUMN(pm3ZNC, ZNCPM3, float);      //! PM3 ZNC
-DECLARE_SOA_COLUMN(pm4ZNC, ZNCPM4, float);      //! PM4 ZNC
+DECLARE_SOA_COLUMN(ZNApmc, commonPMZNA, float); //! PMC ZNA // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNApm1, ZNAPM1, float);      //! PM1 ZNA // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNApm2, ZNAPM2, float);      //! PM2 ZNA // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNApm3, ZNAPM3, float);      //! PM3 ZNA // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNApm4, ZNAPM4, float);      //! PM4 ZNA // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNAtdc, ZNATDC, float);      //! TDC ZNA // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNCpmc, commonPMZNC, float); //! PMC ZNC // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNCpm1, ZNCPM1, float);      //! PM1 ZNC // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNCpm2, ZNCPM2, float);      //! PM2 ZNC // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNCpm3, ZNCPM3, float);      //! PM3 ZNC // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNCpm4, ZNCPM4, float);      //! PM4 ZNC // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNCtdc, ZNCTDC, float);      //! TDC ZNC // o2-linter: disable=name/o2-column
 
 } // namespace znoutput
 
 DECLARE_SOA_TABLE(ZDCInterCalib, "AOD", "ZDCIC", o2::soa::Index<>,
-                  znoutput::pmcZNA,
-                  znoutput::pm1ZNA,
-                  znoutput::pm2ZNA,
-                  znoutput::pm3ZNA,
-                  znoutput::pm4ZNA,
-                  znoutput::pmcZNC,
-                  znoutput::pm1ZNC,
-                  znoutput::pm2ZNC,
-                  znoutput::pm3ZNC,
-                  znoutput::pm4ZNC);
+                  znoutput::ZNApmc,
+                  znoutput::ZNApm1,
+                  znoutput::ZNApm2,
+                  znoutput::ZNApm3,
+                  znoutput::ZNApm4,
+                  znoutput::ZNAtdc,
+                  znoutput::ZNCpmc,
+                  znoutput::ZNCpm1,
+                  znoutput::ZNCpm2,
+                  znoutput::ZNCpm3,
+                  znoutput::ZNCpm4,
+                  znoutput::ZNCtdc);
 } // namespace o2::aod
 
 #endif // COMMON_DATAMODEL_ZDCINTERCALIB_H_
