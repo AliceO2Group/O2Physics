@@ -65,6 +65,9 @@ using namespace o2::aod::pwgem::dilepton::utils::pairutil;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
+using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::MostProbableEMEventIdsInMC>;
+using MyMCCollision = MyMCCollisions::iterator;
+
 using MyMCElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit, aod::EMPrimaryElectronsPrefilterBitDerived, aod::EMPrimaryElectronMCLabels>;
 using MyMCElectron = MyMCElectrons::iterator;
 using FilteredMyMCElectrons = soa::Filtered<MyMCElectrons>;
@@ -96,8 +99,8 @@ struct DileptonMC {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
-  Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
-  Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
+  // Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
+  // Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
   Configurable<uint> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
   Configurable<bool> cfgFillUnfolding{"cfgFillUnfolding", false, "flag to fill histograms for unfolding"};
@@ -1052,7 +1055,7 @@ struct DileptonMC {
   Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), o2::aod::emprimarymuon::isAssociatedToMPC == true || o2::aod::emprimarymuon::isAssociatedToMPC == false, o2::aod::emprimarymuon::isAssociatedToMPC == true);
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
+  // Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin < o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
@@ -1103,20 +1106,26 @@ struct DileptonMC {
       }
       fRegistry.fill(HIST("MCEvent/before/hZvtx"), mccollision.posZ());
 
-      auto rec_colls_per_mccoll = collisions.sliceBy(recColperMcCollision, mccollision.globalIndex());
-      uint32_t maxNumContrib = 0;
-      int rec_col_globalIndex = -999;
-      for (auto& rec_col : rec_colls_per_mccoll) {
-        if (rec_col.numContrib() > maxNumContrib) {
-          rec_col_globalIndex = rec_col.globalIndex();
-          maxNumContrib = rec_col.numContrib(); // assign mc collision to collision where the number of contibutor is lager. LF/MM recommendation
-        }
-      }
+      // auto rec_colls_per_mccoll = collisions.sliceBy(recColperMcCollision, mccollision.globalIndex());
+      // // LOGF(info, "rec_colls_per_mccoll.size() = %d", rec_colls_per_mccoll.size());
+      // if (rec_colls_per_mccoll.size() < 1) {
+      //   continue;
+      // }
 
-      if (rec_colls_per_mccoll.size() < 1) {
+      // uint32_t maxNumContrib = 0;
+      // int rec_col_globalIndex = -999;
+      // for (auto& rec_col : rec_colls_per_mccoll) {
+      //   if (rec_col.numContrib() > maxNumContrib) {
+      //     rec_col_globalIndex = rec_col.globalIndex();
+      //     maxNumContrib = rec_col.numContrib(); // assign mc collision to collision where the number of contibutor is lager. LF/MM recommendation
+      //   }
+      // }
+      // auto collision = collisions.rawIteratorAt(rec_col_globalIndex);
+
+      if (mccollision.mpemeventId() < 0) {
         continue;
       }
-      auto collision = collisions.rawIteratorAt(rec_col_globalIndex);
+      auto collision = collisions.rawIteratorAt(mccollision.mpemeventId());
 
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
@@ -2099,10 +2108,11 @@ struct DileptonMC {
   Partition<aod::EMMCParticles> negative_muonsMC = o2::aod::mcparticle::pdgCode == 13;      // mu-
   PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
   PresliceUnsorted<aod::EMMCGenVectorMesons> perMcCollision_vm = aod::emmcgenvectormeson::emmceventId;
-  PresliceUnsorted<MyCollisions> recColperMcCollision = aod::emmceventlabel::emmceventId;
+  // PresliceUnsorted<MyCollisions> recColperMcCollision = aod::emmceventlabel::emmceventId;
 
-  void processAnalysis(FilteredMyCollisions const& collisions, aod::EMMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles, TLeptons const& leptons)
+  void processAnalysis(FilteredMyCollisions const& collisions, MyMCCollisions const& mccollisions, aod::EMMCParticles const& mcparticles, TLeptons const& leptons)
   {
+    // LOGF(info, "collisions.size() = %d, mccollisions.size() = %d, mcparticles.size() = %d", collisions.size(), mccollisions.size(), mcparticles.size());
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (cfgApplyWeightTTCA) {
         fillPairWeightMap(collisions, positive_electrons, negative_electrons, o2::aod::emprimaryelectron::emeventId, fDielectronCut, leptons, mccollisions, mcparticles);
@@ -2131,8 +2141,9 @@ struct DileptonMC {
   Partition<MySmearedMuons> positive_muonsMC_smeared = o2::aod::mcparticle::pdgCode == -13;         // mu+
   Partition<MySmearedMuons> negative_muonsMC_smeared = o2::aod::mcparticle::pdgCode == 13;          // mu-
 
-  void processAnalysis_Smeared(FilteredMyCollisions const& collisions, aod::EMMCEvents const& mccollisions, TLeptons const& leptons, TSmeardMCParitlces const& mcparticles_smeared)
+  void processAnalysis_Smeared(FilteredMyCollisions const& collisions, MyMCCollisions const& mccollisions, TLeptons const& leptons, TSmeardMCParitlces const& mcparticles_smeared)
   {
+    // LOGF(info, "collisions.size() = %d, mccollisions.size() = %d, mcparticles.size() = %d", collisions.size(), mccollisions.size(), mcparticles.size());
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (cfgApplyWeightTTCA) {
         fillPairWeightMap(collisions, positive_electrons, negative_electrons, o2::aod::emprimaryelectron::emeventId, fDielectronCut, leptons, mccollisions, mcparticles_smeared);
@@ -2156,7 +2167,7 @@ struct DileptonMC {
   }
   PROCESS_SWITCH(DileptonMC, processAnalysis_Smeared, "run dilepton mc analysis with smearing", false);
 
-  void processGen_VM(FilteredMyCollisions const& collisions, aod::EMMCEvents const&, aod::EMMCGenVectorMesons const& mcparticles)
+  void processGen_VM(FilteredMyCollisions const& collisions, MyMCCollisions const&, aod::EMMCGenVectorMesons const& mcparticles)
   {
     // for oemga, phi efficiency
     for (auto& collision : collisions) {
@@ -2168,7 +2179,7 @@ struct DileptonMC {
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      auto mccollision = collision.template emmcevent_as<aod::EMMCEvents>();
+      auto mccollision = collision.template emmcevent_as<MyMCCollisions>();
       if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
         continue;
       }
@@ -2263,7 +2274,7 @@ struct DileptonMC {
   }
   PROCESS_SWITCH(DileptonMC, processNorm, "process normalization info", false);
 
-  void processDummy(MyCollisions const&) {}
+  void processDummy(FilteredMyCollisions const&) {}
   PROCESS_SWITCH(DileptonMC, processDummy, "Dummy function", false);
 };
 
