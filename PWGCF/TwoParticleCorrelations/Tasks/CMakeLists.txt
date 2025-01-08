@@ -53,7 +53,7 @@ o2physics_add_dpl_workflow(corr-sparse
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(neutronprotoncorrzdc
+o2physics_add_dpl_workflow(neutron-proton-corr-zdc
                            SOURCES neutronProtonCorrZdc.cxx
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)

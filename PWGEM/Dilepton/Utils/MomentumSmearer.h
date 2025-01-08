@@ -169,6 +169,7 @@ class MomentumSmearer
               hs_reso->GetAxis(4)->SetRange(ich + 1, ich + 1);
               auto h3 = reinterpret_cast<TH3D*>(hs_reso->Projection(5, 6, 7));
               h3->SetName(Form("h3reso_cen%d_pt%d_eta%d_phi%d_ch%d", icen, ipt, ieta, iphi, ich));
+              h3->Scale(1.f, "width"); // convert ntrack to probability density
               fVecResoND[icen][ipt][ieta][iphi][ich] = h3;
             } // end of charge loop
           } // end of phi loop
