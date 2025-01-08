@@ -262,7 +262,7 @@ struct OccupancyTableProducer {
   Preslice<MyTracks> tracksPerCollisionPreslice = o2::aod::track::collisionId;
 
   int dfCount = 0;
-  int32_t nBCsPerTF =-999;
+  int32_t nBCsPerTF = -999;
   int64_t bcSOR = -999;
   uint64_t time = -1;
   int64_t tfIdThis = -1;
@@ -701,7 +701,7 @@ struct OccupancyTableProducer {
       }
 
       auto it = std::find(bcTFMap[idx].begin(), bcTFMap[idx].end(), bc.globalIndex()); // will find the iterator where object is placed.
-      if (it != bcTFMap[idx].end()) {                                                    // Element is in the vector
+      if (it != bcTFMap[idx].end()) { // Element is in the vector
         occIDX = idx;
       } else { // Element is not in the vector
         occIDX = -1;
@@ -899,7 +899,7 @@ struct TrackMeanOccTableProducer {
 
   using MyCollisions = soa::Join<aod::Collisions, aod::Mults>;
   using MyTracks = soa::Join<aod::Tracks, o2::aod::TracksCov, aod::TracksExtra>;
-  using MyTracksQA = aod::TracksQA_000;// aod::TracksQAVersion; //aod::TracksQA
+  using MyTracksQA = aod::TracksQA_000; // aod::TracksQAVersion; //aod::TracksQA
   using MyBCTable = soa::Join<aod::BCsWithTimestamps, aod::OccIndexTable, aod::BCTFinfoTable>;
 
   using MyOccsDet = soa::Join<aod::OccsBCsList, aod::OccsDet>;
