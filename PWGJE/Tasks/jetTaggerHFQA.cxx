@@ -1591,20 +1591,6 @@ using JetTaggerhfQACharged = JetTaggerHFQA<JetTaggerQAChargedDataJets, aod::Char
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-
-  std::vector<o2::framework::DataProcessorSpec> tasks;
-
-  tasks.emplace_back(
-    adaptAnalysisTask<JetTaggerhfQACharged>(cfgc,
-                                            SetDefaultProcesses{}));
-  /*
-  tasks.emplace_back(
-    adaptAnalysisTask<JetTaggerhfQAFull>(cfgc,
-                                         SetDefaultProcesses{}));
-
-    tasks.emplace_back(
-      adaptAnalysisTask<JetTaggerhfQANeutral>(cfgc,
-                                                  SetDefaultProcesses{}));
-  */
-  return WorkflowSpec{tasks};
+  return WorkflowSpec{
+    adaptAnalysisTask<JetTaggerhfQACharged>(cfgc, TaskName{"jet-taggerhf-qa-charged"})};
 }

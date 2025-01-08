@@ -363,10 +363,7 @@ using JetTaggerhfMCDCharged = JetTaggerHFTask<soa::Join<aod::ChargedMCDetectorLe
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
 
-  std::vector<o2::framework::DataProcessorSpec> tasks;
-
-  tasks.emplace_back(adaptAnalysisTask<JetTaggerhfDataCharged>(cfgc, SetDefaultProcesses{}));
-  tasks.emplace_back(adaptAnalysisTask<JetTaggerhfMCDCharged>(cfgc, SetDefaultProcesses{}));
-
-  return WorkflowSpec{tasks};
+  return WorkflowSpec{
+    adaptAnalysisTask<JetTaggerhfDataCharged>(cfgc, TaskName{"jet-taggerhf-data-charged"}),
+    adaptAnalysisTask<JetTaggerhfMCDCharged>(cfgc, TaskName{"jet-taggerhf-mcd-charged"})};
 }

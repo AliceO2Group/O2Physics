@@ -107,11 +107,6 @@ using JetHfDefinitionCharged = HeavyFlavourDefinitionTask<soa::Join<aod::Charged
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-
-  std::vector<o2::framework::DataProcessorSpec> tasks;
-
-  tasks.emplace_back(adaptAnalysisTask<JetHfDefinitionCharged>(cfgc, SetDefaultProcesses{}));
-  // tasks.emplace_back(adaptAnalysisTask<JetHfDefinitionFull>(cfgc, SetDefaultProcesses{}));
-
-  return WorkflowSpec{tasks};
+  return WorkflowSpec{
+    adaptAnalysisTask<JetHfDefinitionCharged>(cfgc, TaskName{"jet-hf-definition-charged"})};
 }
