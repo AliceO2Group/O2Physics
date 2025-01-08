@@ -157,7 +157,7 @@ struct f1protonreducedtable {
                                              {"hEta", "hEta", {HistType::kTH1F, {{20, -1.0f, 1.0f}}}},
                                              {"hNsigmaPtpionTPC", "hNsigmaPtpionTPC", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtpionTOF", "hNsigmaPtpionTOF", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
-                                             {"hNsigmaPtkaonTPC", "hNsigmaPtkaonTPC", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
+                                             {"hNsigmaPtkaonTPC", "hNsigmaPtkaonTPC", {HistType::kTH3F, {{200, -10.0f, 10.0f}, {200, -20.0f, 20.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtkaonTOF", "hNsigmaPtkaonTOF", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtprotonTPC", "hNsigmaPtprotonTPC", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtprotonTOF", "hNsigmaPtprotonTOF", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
@@ -538,6 +538,8 @@ struct f1protonreducedtable {
     std::vector<int> KaonTOFHitFinal = {};
     std::vector<float> KaonTPC = {};
     std::vector<float> KaonTPCFinal = {};
+    std::vector<float> KaonTPCPionHypo = {};
+    std::vector<float> KaonTPCPionHypoFinal = {};
 
     // keep kaon-kshort mass of f1resonance
     std::vector<float> f1kaonkshortmass = {};
@@ -642,12 +644,14 @@ struct f1protonreducedtable {
             KaonCharge.push_back(track.sign());
             auto KaonTOF = 0;
             if (track.sign() > 0) {
-              qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaP[1], track.pt());
+              qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaP[1], nTPCSigmaP[0], track.pt());
               KaonTPC.push_back(nTPCSigmaP[1]);
+              KaonTPCPionHypo.push_back(nTPCSigmaP[0]);
             }
             if (track.sign() < 0) {
-              qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaN[1], track.pt());
+              qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaN[1], nTPCSigmaN[0], track.pt());
               KaonTPC.push_back(nTPCSigmaN[1]);
+              KaonTPCPionHypo.push_back(nTPCSigmaN[0]);
             }
             if (track.hasTOF()) {
               qaRegistry.fill(HIST("hNsigmaPtkaonTOF"), track.tofNSigmaKa(), track.pt());
@@ -752,6 +756,7 @@ struct f1protonreducedtable {
                 KaonTOFHitFinal.push_back(KaonTOFHit.at(i2)); // Kaon TOF Hit
                 PionTPCFinal.push_back(PionTPC.at(i1));       // Pion TPC
                 KaonTPCFinal.push_back(KaonTPC.at(i2));       // Kaon TPC
+                KaonTPCPionHypoFinal.push_back(KaonTPCPionHypo.at(i2)); // Kaon TPC
                 if (pairsign == 1) {
                   qaRegistry.fill(HIST("hInvMassf1"), F1Vector.M(), F1Vector.Pt());
                   numberF1 = numberF1 + 1;
@@ -808,7 +813,7 @@ struct f1protonreducedtable {
           F1d1dummy = f1resonanced1.at(i5);
           F1d2dummy = f1resonanced2.at(i5);
           F1d3dummy = f1resonanced3.at(i5);
-          f1track(indexEvent, f1signal.at(i5), F1VectorDummy.Px(), F1VectorDummy.Py(), F1VectorDummy.Pz(), F1d1dummy.Px(), F1d1dummy.Py(), F1d1dummy.Pz(), F1d2dummy.Px(), F1d2dummy.Py(), F1d2dummy.Pz(), F1d3dummy.Px(), F1d3dummy.Py(), F1d3dummy.Pz(), PionTOFHitFinal.at(i5), KaonTOFHitFinal.at(i5), PionTPCFinal.at(i5), KaonTPCFinal.at(i5), F1VectorDummy.M(), f1kaonkshortmass.at(i5), F1PionIndex.at(i5), F1KaonIndex.at(i5), F1KshortDaughterPositiveIndex.at(i5), F1KshortDaughterNegativeIndex.at(i5));
+          f1track(indexEvent, f1signal.at(i5), F1VectorDummy.Px(), F1VectorDummy.Py(), F1VectorDummy.Pz(), F1d1dummy.Px(), F1d1dummy.Py(), F1d1dummy.Pz(), F1d2dummy.Px(), F1d2dummy.Py(), F1d2dummy.Pz(), F1d3dummy.Px(), F1d3dummy.Py(), F1d3dummy.Pz(), PionTOFHitFinal.at(i5), KaonTOFHitFinal.at(i5), PionTPCFinal.at(i5), KaonTPCFinal.at(i5), KaonTPCPionHypoFinal.at(i5), F1VectorDummy.M(), f1kaonkshortmass.at(i5), F1PionIndex.at(i5), F1KaonIndex.at(i5), F1KshortDaughterPositiveIndex.at(i5), F1KshortDaughterNegativeIndex.at(i5));
         }
         //// Fill track table for proton//////////////////
         for (auto iproton = protons.begin(); iproton != protons.end(); ++iproton) {
