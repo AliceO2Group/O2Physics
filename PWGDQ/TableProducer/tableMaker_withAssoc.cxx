@@ -2,7 +2,7 @@
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
-// This software is distributed under the terms of the GNU General Public
+// This software is distributed under the terms of the GNU General Public 
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
 //
 // In applying this license CERN does not waive the privileges and immunities
