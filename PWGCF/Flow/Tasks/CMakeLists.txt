@@ -39,13 +39,8 @@ o2physics_add_dpl_workflow(flow-gf
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
 
-<<<<<<< HEAD
-o2physics_add_dpl_workflow(flow-pbpb-pikp-task
-                    SOURCES flowPbPbpikp.cxx
-=======
 o2physics_add_dpl_workflow(flow-pbpb-pikp
                     SOURCES flowPbpbPikp.cxx
->>>>>>> 5b9f1eab610d3879f782c6b06957eb9eb3e1d5ec
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
 
