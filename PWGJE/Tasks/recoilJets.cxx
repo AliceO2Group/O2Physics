@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \author Kotliarov Artem <artem.kotliarov@cern.ch>, Nuclear Physics Institute of CAS
+/// \author Kotliarov Artem <artem.kotliarov@cern.ch>
 /// \file recoilJets.cxx
 /// \brief hadron-jet correlation analysis
 
@@ -61,7 +61,7 @@ using filtered_MatchedJets_PartLevel = soa::Filtered<soa::Join<aod::ChargedMCPar
 
 using filtered_Tracks = soa::Filtered<aod::JetTracks>;
 
-struct recoilJets {
+struct RecoilJets {
 
   // List of configurable parameters
   Configurable<std::string> evSel{"evSel", "sel8", "Choose event selection"};
@@ -85,10 +85,10 @@ struct recoilJets {
   Configurable<float> pTHatMax{"pTHatMax", 999.0, "Maximum fraction of hard scattering for jet acceptance in MC"};
 
   // Parameters for recoil jet selection
-  Configurable<uint8_t> pT_TTref_min{"pT_TTref_min", 5, "Minimum pT of reference TT"};
-  Configurable<uint8_t> pT_TTref_max{"pT_TTref_max", 7, "Maximum pT of reference TT"};
-  Configurable<uint8_t> pT_TTsig_min{"pT_TTsig_min", 20, "Minimum pT of signal TT"};
-  Configurable<uint8_t> pT_TTsig_max{"pT_TTsig_max", 50, "Maximum pT of signal TT"};
+  Configurable<float> pT_TTref_min{"pT_TTref_min", 5., "Minimum pT of reference TT"};
+  Configurable<float> pT_TTref_max{"pT_TTref_max", 7., "Maximum pT of reference TT"};
+  Configurable<float> pT_TTsig_min{"pT_TTsig_min", 20., "Minimum pT of signal TT"};
+  Configurable<float> pT_TTsig_max{"pT_TTsig_max", 50., "Maximum pT of signal TT"};
   Configurable<float> recoilRegion{"recoilRegion", 0.6, "Width of recoil acceptance"};
 
   // List of configurable parameters for histograms
@@ -133,7 +133,10 @@ struct recoilJets {
     spectra.add("vertexZ", "Z vertex of collisions", kTH1F, {{60, -12., 12.}});
 
     spectra.add("hTrackPtEtaPhi", "Charact. of tracks", kTH3F, {pT, pseudorap, phi_angle});
-    spectra.add("hNtrig", "Total number of selected triggers per class", kTH1F, {{2, 0.0, 2.}}); // Can we set name for bins?
+    spectra.add("hNtrig", "Total number of selected triggers per class", kTH1F, {{2, 0.0, 2.}});
+    spectra.get<TH1>(HIST("hNtrig"))->GetXaxis()->SetBinLabel(1, "TT_{ref}");
+    spectra.get<TH1>(HIST("hNtrig"))->GetXaxis()->SetBinLabel(2, "TT_{sig}");
+
     spectra.add("hTTRef_per_event", "Number of TT_{Ref} per event", kTH1F, {{10, 0.0, 10.}});
     spectra.add("hTTSig_per_event", "Number of TT_{Sig} per event", kTH1F, {{5, 0.0, 5.}});
 
@@ -175,13 +178,19 @@ struct recoilJets {
 
     // Response matrices, jet pT & jet phi resolution
     spectra.add("hJetPt_PartLevel_vs_DetLevel", "Correlation jet pT at part. vs. det. levels", kTH2F, {pT, pT});
+    // spectra.add("hJetPt_Corr_PartLevel_vs_DetLevel", "Correlation jet pT at part. vs. det. levels", kTH2F, {jet_pT_corr, jet_pT_corr});
     spectra.add("hJetPt_PartLevel_vs_DetLevel_RecoilJets", "Correlation recoil jet pT at part. vs. det. levels", kTH2F, {pT, pT});
+    // spectra.add("hJetPt_Corr_PartLevel_vs_DetLevel_RecoilJets", "Correlation recoil jet pT at part. vs. det. levels", kTH2F, {jet_pT_corr, jet_pT_corr});
 
     spectra.add("hMissedJets_pT", "Part. level jets w/o matched pair", kTH1F, {pT});
+    // spectra.add("hMissedJets_Corr_pT", "Part. level jets w/o matched pair", kTH1F, {jet_pT_corr});
     spectra.add("hMissedJets_pT_RecoilJets", "Part. level jets w/o matched pair", kTH1F, {pT});
+    // spectra.add("hMissedJets_Corr_pT_RecoilJets", "Part. level jets w/o matched pair", kTH1F, {jet_pT_corr});
 
     spectra.add("hFakeJets_pT", "Det. level jets w/o matched pair", kTH1F, {pT});
+    // spectra.add("hFakeJets_Corr_pT", "Det. level jets w/o matched pair", kTH1F, {jet_pT_corr});
     spectra.add("hFakeJets_pT_RecoilJets", "Det. level jets w/o matched pair", kTH1F, {pT});
+    // spectra.add("hFakeJets_Corr_pT_RecoilJets", "Det. level jets w/o matched pair", kTH1F, {jet_pT_corr});
 
     spectra.add("hJetPt_resolution", "Jet p_{T} relative resolution as a func. of jet #it{p}_{T, part}", kTH2F, {{60, -1., 2.}, pT});
     spectra.add("hJetPt_resolution_RecoilJets", "Jet p_{T} relative resolution as a func. of jet #it{p}_{T, part}", kTH2F, {{60, -1., 2.}, pT});
@@ -356,6 +365,7 @@ struct recoilJets {
     }
   }
 
+  /// TODO: Add functionality to get rho for particle and detector level
   template <typename Tracks, typename DetLevelJets, typename PartLevelJets>
   void fillMatchedHistograms(Tracks const& tracks, DetLevelJets const& jets_det_level, PartLevelJets const& jets_part_level, float weight = 1.)
   {
@@ -538,4 +548,4 @@ struct recoilJets {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<recoilJets>(cfgc, TaskName{"recoil-jets"})}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<RecoilJets>(cfgc)}; }
