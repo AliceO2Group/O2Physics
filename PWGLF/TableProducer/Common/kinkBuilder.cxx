@@ -8,7 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
+
+/// \file   kinkBuilder.cxx
 /// \brief Builder task for kink decay topologies using ITS standalone tracks for the mother
 /// \author Francesco Mazzaschi <francesco.mazzaschi@cern.ch>
 
@@ -94,7 +95,7 @@ struct kinkBuilder {
   Configurable<float> maxZDiff{"maxZDiff", 20., "Max z difference between the kink daughter and the mother"};
   Configurable<float> maxPhiDiff{"maxPhiDiff", 100, "Max phi difference between the kink daughter and the mother"};
   Configurable<float> timeMarginNS{"timeMarginNS", 600, "Additional time res tolerance in ns"};
-  Configurable<float> etaMax{"eta", 1., "eta daughter"};
+  Configurable<float> etaMax{"etaMax", 1., "eta daughter"};
   Configurable<float> nTPCClusMinDaug{"nTPCClusMinDaug", 80, "daug NTPC clusters cut"};
   Configurable<bool> askTOFforDaug{"askTOFforDaug", false, "If true, ask for TOF signal"};
 
@@ -113,8 +114,8 @@ struct kinkBuilder {
   Configurable<bool> unlikeSignBkg{"unlikeSignBkg", false, "Use unlike sign background"};
 
   // CCDB options
-  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<double> inputBz{"inputBz", -999, "bz field, -999 is automatic"};
+  Configurable<std::string> ccdbPath{"ccdbPath", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
@@ -133,7 +134,7 @@ struct kinkBuilder {
   HistogramRegistry qaRegistry{"QA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   int mRunNumber;
-  float d_bz;
+  float mBz;
   std::array<float, 6> mBBparamsDaug;
 
   void init(InitContext const&)
@@ -143,9 +144,9 @@ struct kinkBuilder {
     svCreator.setPDGs(1, 0);
 
     mRunNumber = 0;
-    d_bz = 0;
+    mBz = 0;
 
-    ccdb->setURL(ccdburl);
+    ccdb->setURL(ccdbPath);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
@@ -376,12 +377,12 @@ struct kinkBuilder {
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
-      if (d_bz_input < -990) {
+      if (inputBz < -990) {
         // Fetch magnetic field from ccdb for current collision
-        d_bz = grpo->getNominalL3Field();
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+        mBz = grpo->getNominalL3Field();
+        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
       } else {
-        d_bz = d_bz_input;
+        mBz = inputBz;
       }
     } else {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
@@ -389,12 +390,12 @@ struct kinkBuilder {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
-      if (d_bz_input < -990) {
+      if (inputBz < -990) {
         // Fetch magnetic field from ccdb for current collision
-        d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+        mBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
       } else {
-        d_bz = d_bz_input;
+        mBz = inputBz;
       }
     }
 
@@ -403,10 +404,10 @@ struct kinkBuilder {
     }
     mBBparamsDaug[5] = cfgBetheBlochParams->get("Daughter", "resolution");
 
-    fitter.setBz(d_bz);
+    fitter.setBz(mBz);
     mRunNumber = bc.runNumber();
     o2::base::Propagator::Instance()->setMatLUT(lut);
-    LOG(info) << "Task initialized for run " << mRunNumber << " with magnetic field " << d_bz << " kZG";
+    LOG(info) << "Task initialized for run " << mRunNumber << " with magnetic field " << mBz << " kZG";
   }
 
   void process(aod::Collisions const& collisions, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs)

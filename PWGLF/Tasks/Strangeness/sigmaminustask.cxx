@@ -8,8 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
+
+/// \file   sigmaminustask.cxx
 /// \brief Example of a simple task for the analysis of the Sigma-minus
+/// \author Francesco Mazzaschi <francesco.mazzaschi@cern.ch>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"

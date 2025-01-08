@@ -12,6 +12,7 @@
 ///
 /// \file LFKinkDecayTables.h
 /// \brief Slim tables for kinks
+/// \author Francesco Mazzaschi <francesco.mazzaschi@cern.ch>
 ///
 
 #include "Framework/AnalysisDataModel.h"
@@ -40,20 +41,20 @@ DECLARE_SOA_COLUMN(PzMoth, pzMoth, float);           //! Pz of the mother kink
 DECLARE_SOA_COLUMN(PxDaug, pxDaug, float);           //! Px of the daughter kink
 DECLARE_SOA_COLUMN(PyDaug, pyDaug, float);           //! Py of the daughter kink
 DECLARE_SOA_COLUMN(PzDaug, pzDaug, float);           //! Pz of the daughter kink
-DECLARE_SOA_COLUMN(MotherSign, mothSign, int);       //! Sign of the mother kink
+DECLARE_SOA_COLUMN(MothSign, mothSign, int);         //! Sign of the mother kink
 DECLARE_SOA_COLUMN(DcaMothPv, dcaMothPv, float);     //! DCA of the mother to the primary vertex
 DECLARE_SOA_COLUMN(DcaDaugPv, dcaDaugPv, float);     //! DCA of the daughter kink to the primary vertex
-DECLARE_SOA_COLUMN(DCAKinkTopo, dcaKinkTopo, float); //! DCA of the kink topology
+DECLARE_SOA_COLUMN(DcaKinkTopo, dcaKinkTopo, float); //! DCA of the kink topology
 
 // DYNAMIC COLUMNS
 
-DECLARE_SOA_DYNAMIC_COLUMN(PxDauNeut, pxDaugNeut, //! Px of the daughter neutral particle
+DECLARE_SOA_DYNAMIC_COLUMN(PxDaugNeut, pxDaugNeut, //! Px of the daughter neutral particle
                            [](float pxmoth, float pxdau) -> float { return pxmoth - pxdau; });
 
-DECLARE_SOA_DYNAMIC_COLUMN(PyDauNeut, pyDaugNeut, //! Py of the daughter neutral particle
+DECLARE_SOA_DYNAMIC_COLUMN(PyDaugNeut, pyDaugNeut, //! Py of the daughter neutral particle
                            [](float pymoth, float pydau) -> float { return pymoth - pydau; });
 
-DECLARE_SOA_DYNAMIC_COLUMN(PzDauNeut, pzDaugNeut, //! Pz of the daughter neutral particle
+DECLARE_SOA_DYNAMIC_COLUMN(PzDaugNeut, pzDaugNeut, //! Pz of the daughter neutral particle
                            [](float pzmoth, float pzdau) -> float { return pzmoth - pzdau; });
 
 DECLARE_SOA_DYNAMIC_COLUMN(PtMoth, ptMoth, //! pT of the mother kink
@@ -81,14 +82,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(MSigmaPlus, mSigmaPlus, //! mass under sigma plus hyp
 DECLARE_SOA_TABLE(KinkCands, "AOD", "KINKCANDS",
                   o2::soa::Index<>, kinkcand::CollisionId, kinkcand::TrackMothId, kinkcand::TrackDaugId,
                   kinkcand::XDecVtx, kinkcand::YDecVtx, kinkcand::ZDecVtx,
-                  kinkcand::MotherSign, kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth,
+                  kinkcand::MothSign, kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth,
                   kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug,
-                  kinkcand::DcaMothPv, kinkcand::DcaDaugPv, kinkcand::DCAKinkTopo,
+                  kinkcand::DcaMothPv, kinkcand::DcaDaugPv, kinkcand::DcaKinkTopo,
 
                   // dynamic columns
-                  kinkcand::PxDauNeut<kinkcand::PxMoth, kinkcand::PxDaug>,
-                  kinkcand::PyDauNeut<kinkcand::PyMoth, kinkcand::PyDaug>,
-                  kinkcand::PzDauNeut<kinkcand::PzMoth, kinkcand::PzDaug>,
+                  kinkcand::PxDaugNeut<kinkcand::PxMoth, kinkcand::PxDaug>,
+                  kinkcand::PyDaugNeut<kinkcand::PyMoth, kinkcand::PyDaug>,
+                  kinkcand::PzDaugNeut<kinkcand::PzMoth, kinkcand::PzDaug>,
                   kinkcand::PtMoth<kinkcand::PxMoth, kinkcand::PyMoth>,
                   kinkcand::PtDaug<kinkcand::PxDaug, kinkcand::PyDaug>,
                   kinkcand::MSigmaMinus<kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth, kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug>,
