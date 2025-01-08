@@ -109,6 +109,7 @@ struct HfTaskMcValidationGen {
   using CollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using CollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using CollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
   PresliceUnsorted<CollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<CollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<CollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
@@ -284,7 +285,7 @@ struct HfTaskMcValidationGen {
     } else if constexpr (centEstimator == CentralityEstimator::None) {
       rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, recoCollisions, centrality);
     }
-    hfEvSelMc.fillHistograms(rejectionMask);
+    hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask);
     if (rejectionMask != 0) {
       return;
     }
@@ -581,7 +582,7 @@ struct HfTaskMcValidationGen {
   } // end processCentFT0C
   PROCESS_SWITCH(HfTaskMcValidationGen, processCentFT0C, "Process generated collisions information with centrality selection using FT0C", false);
 
-  void processCentFT0M(aod::McCollisions const& mcCollisions,
+  void processCentFT0M(McCollisionsCentFT0Ms const& mcCollisions,
                        aod::McParticles const& mcParticles,
                        CollisionsFT0Ms const& recoCollisions,
                        BCsInfo const& bcInfo)
