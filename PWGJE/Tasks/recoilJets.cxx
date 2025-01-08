@@ -442,7 +442,7 @@ struct RecoilJets {
     spectra.fill(HIST("vertexZ"), collision.posZ());
     fillHistograms(collision, jets, tracks);
   }
-  PROCESS_SWITCH(recoilJets, processData, "process data", true);
+  PROCESS_SWITCH(RecoilJets, processData, "process data", true);
 
   void processMCDetLevel(FilteredColl const& collision,
                          FilteredJetsDetLevel const& jets,
@@ -454,7 +454,7 @@ struct RecoilJets {
     spectra.fill(HIST("vertexZ"), collision.posZ());
     fillHistograms(collision, jets, tracks, true);
   }
-  PROCESS_SWITCH(recoilJets, processMCDetLevel, "process MC detector level", false);
+  PROCESS_SWITCH(RecoilJets, processMCDetLevel, "process MC detector level", false);
 
   void processMCDetLevelWeighted(FilteredCollDetLevelGetWeight const& collision,
                                  aod::JetMcCollisions const&,
@@ -469,7 +469,7 @@ struct RecoilJets {
     spectra.fill(HIST("vertexZ"), collision.posZ(), weight);
     fillHistograms(collision, jets, tracks, true, weight);
   }
-  PROCESS_SWITCH(recoilJets, processMCDetLevelWeighted, "process MC detector level with event weight", false);
+  PROCESS_SWITCH(RecoilJets, processMCDetLevelWeighted, "process MC detector level with event weight", false);
 
   void processMCPartLevel(FilteredCollPartLevel const& collision,
                           FilteredJetsPartLevel const& jets,
@@ -478,7 +478,7 @@ struct RecoilJets {
     spectra.fill(HIST("vertexZ"), collision.posZ());
     fillMCPHistograms(collision, jets, particles);
   }
-  PROCESS_SWITCH(recoilJets, processMCPartLevel, "process MC particle level", false);
+  PROCESS_SWITCH(RecoilJets, processMCPartLevel, "process MC particle level", false);
 
   void processMCPartLevelWeighted(FilteredCollPartLevel const& collision,
                                   FilteredJetsPartLevel const& jets,
@@ -488,7 +488,7 @@ struct RecoilJets {
     spectra.fill(HIST("vertexZ"), collision.posZ(), weight);
     fillMCPHistograms(collision, jets, particles, weight);
   }
-  PROCESS_SWITCH(recoilJets, processMCPartLevelWeighted, "process MC particle level with event weight", false);
+  PROCESS_SWITCH(RecoilJets, processMCPartLevelWeighted, "process MC particle level with event weight", false);
 
   void processJetsMatched(FilteredCollDetLevelGetWeight const& collision,
                           aod::JetMcCollisions const&,
@@ -501,7 +501,7 @@ struct RecoilJets {
     auto mcpjetsPerMCCollision = mcpjets.sliceBy(partJetsPerCollision, collision.mcCollisionId());
     fillMatchedHistograms(tracks, mcdjets, mcpjetsPerMCCollision);
   }
-  PROCESS_SWITCH(recoilJets, processJetsMatched, "process matching of MC jets (no weight)", false);
+  PROCESS_SWITCH(RecoilJets, processJetsMatched, "process matching of MC jets (no weight)", false);
 
   void processJetsMatchedWeighted(FilteredCollDetLevelGetWeight const& collision,
                                   aod::JetMcCollisions const&,
@@ -517,7 +517,7 @@ struct RecoilJets {
 
     fillMatchedHistograms(tracks, mcdjets, mcpjetsPerMCCollision, weight);
   }
-  PROCESS_SWITCH(recoilJets, processJetsMatchedWeighted, "process matching of MC jets (weighted)", false);
+  PROCESS_SWITCH(RecoilJets, processJetsMatchedWeighted, "process matching of MC jets (weighted)", false);
 
   //------------------------------------------------------------------------------
   // Auxiliary functions
