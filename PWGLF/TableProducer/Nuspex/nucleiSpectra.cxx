@@ -108,13 +108,15 @@ struct NucleusCandidateFlow {
   float centFT0A;
   float centFT0C;
   float psiFT0A;
-  float multFT0A;
   float psiFT0C;
-  float multFT0C;
   float psiTPC;
   float psiTPCl;
   float psiTPCr;
-  int multTPC;
+  float qFT0A;
+  float qFT0C;
+  float qTPC;
+  float qTPCl;
+  float qTPCr;
 };
 
 namespace nuclei
@@ -317,7 +319,7 @@ struct nucleiSpectra {
   // Flow analysis
   using CollWithEP = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::EPCalibrationTables>::iterator;
 
-  using CollWithQvec = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs>::iterator;
+  using CollWithQvec = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBTots, aod::QvectorBPoss, aod::QvectorBNegs>::iterator;
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -686,13 +688,16 @@ struct nucleiSpectra {
             collision.centFT0A(),
             collision.centFT0C(),
             collision.psiFT0A(),
-            collision.multFT0A(),
             collision.psiFT0C(),
-            collision.multFT0C(),
             collision.psiTPC(),
             collision.psiTPCL(),
             collision.psiTPCR(),
-            collision.multTPC()});
+            collision.qFT0A(),
+            collision.qFT0C(),
+            collision.qTPC(),
+            collision.qTPCL(),
+            collision.qTPCR(),
+          });
         } else if constexpr (std::is_same<Tcoll, CollWithQvec>::value) {
           nuclei::candidates_flow.emplace_back(NucleusCandidateFlow{
             collision.centFV0A(),
@@ -700,13 +705,15 @@ struct nucleiSpectra {
             collision.centFT0A(),
             collision.centFT0C(),
             computeEventPlane(collision.qvecFT0AIm(), collision.qvecFT0ARe()),
-            collision.multFT0A(),
             computeEventPlane(collision.qvecFT0CIm(), collision.qvecFT0CRe()),
-            collision.multFT0C(),
-            -999.,
+            computeEventPlane(collision.qvecBTotIm(), collision.qvecBTotRe()),
             computeEventPlane(collision.qvecBNegIm(), collision.qvecBNegRe()),
             computeEventPlane(collision.qvecBPosIm(), collision.qvecBPosRe()),
-            collision.multTPC()});
+            collision.sumAmplFT0A(),
+            collision.sumAmplFT0C(),
+            static_cast<float>(collision.nTrkBTot()),
+            static_cast<float>(collision.nTrkBNeg()),
+            static_cast<float>(collision.nTrkBPos())});
         }
         if (fillTree) {
           if (flag & BIT(2)) {
@@ -773,7 +780,7 @@ struct nucleiSpectra {
       }
     }
     for (auto& c : nuclei::candidates_flow) {
-      nucleiTableFlow(c.centFV0A, c.centFT0M, c.centFT0A, c.centFT0C, c.psiFT0A, c.multFT0A, c.psiFT0C, c.multFT0C, c.psiTPC, c.psiTPCl, c.psiTPCr, c.multTPC);
+      nucleiTableFlow(c.centFV0A, c.centFT0M, c.centFT0A, c.centFT0C, c.psiFT0A, c.psiFT0C, c.psiTPC, c.psiTPCl, c.psiTPCr, c.qFT0A, c.qFT0C, c.qTPC, c.qTPCl, c.qTPCr);
     }
   }
   PROCESS_SWITCH(nucleiSpectra, processDataFlow, "Data analysis with flow", false);
@@ -802,7 +809,7 @@ struct nucleiSpectra {
       }
     }
     for (auto& c : nuclei::candidates_flow) {
-      nucleiTableFlow(c.centFV0A, c.centFT0M, c.centFT0A, c.centFT0C, c.psiFT0A, c.multFT0A, c.psiFT0C, c.multFT0C, c.psiTPC, c.psiTPCl, c.psiTPCr, c.multTPC);
+      nucleiTableFlow(c.centFV0A, c.centFT0M, c.centFT0A, c.centFT0C, c.psiFT0A, c.psiFT0C, c.psiTPC, c.psiTPCl, c.psiTPCr, c.qFT0A, c.qFT0C, c.qTPC, c.qTPCl, c.qTPCr);
     }
   }
   PROCESS_SWITCH(nucleiSpectra, processDataFlowAlternative, "Data analysis with flow - alternative framework", false);
