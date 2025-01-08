@@ -2577,6 +2577,9 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   if constexpr (pairType == kDecayToKPi) {
     m1 = o2::constants::physics::MassKaonCharged;
     m2 = o2::constants::physics::MassPionCharged;
+    // Make the TPC information of the kaon available for pair histograms
+    values[kPin] = t1.tpcInnerParam();
+    values[kTPCnSigmaKa] = t1.tpcNSigmaKa();
   }
 
   if constexpr (pairType == kElectronMuon) {
