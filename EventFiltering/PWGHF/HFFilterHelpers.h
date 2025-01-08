@@ -2100,12 +2100,11 @@ inline int HfFilterHelper::setVtxConfiguration(T1 vertexer, bool useAbsDCA)
 template <typename T>
 inline std::array<T, 2> HfFilterHelper::alphaAndQtAP(std::array<T, 3> const& momPos, std::array<T, 3> const& momNeg)
 {
-  float momTotSq = RecoDecay::p2(momPos[0] + momNeg[0], momPos[1] + momNeg[1], momPos[2] + momNeg[2]);
-  float momTot = std::sqrt(momTotSq);
+  float momTot = RecoDecay::p(momPos[0] + momNeg[0], momPos[1] + momNeg[1], momPos[2] + momNeg[2]);
   float lQlNeg = RecoDecay::dotProd(momNeg, std::array{momPos[0] + momNeg[0], momPos[1] + momNeg[1], momPos[2] + momNeg[2]}) / momTot;
   float lQlPos = RecoDecay::dotProd(momPos, std::array{momPos[0] + momNeg[0], momPos[1] + momNeg[1], momPos[2] + momNeg[2]}) / momTot;
   float alpha = (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
-  float qtarm = std::sqrt(RecoDecay::p2(momNeg) - lQlNeg * lQlNeg / momTotSq);
+  float qtarm = std::sqrt(RecoDecay::p2(momNeg) - lQlNeg * lQlNeg);
 
   std::array<float, 2> alphaAndQt = {alpha, qtarm};
   return alphaAndQt;
