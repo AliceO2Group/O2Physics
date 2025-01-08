@@ -152,8 +152,8 @@ enum TrackLabels {
   kAntiLambdaNotAntiPrPiPlus,
   kPassTrueLambdaSel,
   kEffCorrPt,
-  kEffCorrPtY,
-  kEffCorrPtYVz,
+  kEffCorrPtRap,
+  kEffCorrPtRapVz,
   kNoEffCorr,
   kGenTotAccLambda,
   kGenLambdaNoDau,
@@ -223,25 +223,26 @@ struct LambdaTableProducer {
   // V0s
   Configurable<double> cMinV0DcaDaughters{"cMinV0DcaDaughters", 0., "Minimum DCA between V0 daughters"};
   Configurable<double> cMaxV0DcaDaughters{"cMaxV0DcaDaughters", 1.4, "Maximum DCA between V0 daughters"};
-  Configurable<double> cMinDcaPosToPV{"cMinDcaPosToPV", 0.1, "Minimum V0 Positive Track DCAr cut to PV"};
-  Configurable<double> cMinDcaNegToPV{"cMinDcaNegToPV", 0.1, "Minimum V0 Negative Track DCAr cut to PV"};
+  Configurable<double> cMinDcaPosToPV{"cMinDcaPosToPV", 0.06, "Minimum V0 Positive Track DCAr cut to PV"};
+  Configurable<double> cMinDcaNegToPV{"cMinDcaNegToPV", 0.06, "Minimum V0 Negative Track DCAr cut to PV"};
   Configurable<double> cMinDcaV0ToPV{"cMinDcaV0ToPV", 0.0, "Minimum DCA V0 to PV"};
   Configurable<double> cMaxDcaV0ToPV{"cMaxDcaV0ToPV", 999.0, "Maximum DCA V0 to PV"};
   Configurable<double> cMinV0TransRadius{"cMinV0TransRadius", 0.2, "Minimum V0 radius from PV"};
-  Configurable<double> cMaxV0TransRadius{"cMaxV0TransRadius", 100.0, "Maximum V0 radius from PV"};
+  Configurable<double> cMaxV0TransRadius{"cMaxV0TransRadius", 999.0, "Maximum V0 radius from PV"};
   Configurable<double> cMinV0CTau{"cMinV0CTau", 0.0, "Minimum ctau"};
   Configurable<double> cMaxV0CTau{"cMaxV0CTau", 30.0, "Maximum ctau"};
   Configurable<double> cMinV0CosPA{"cMinV0CosPA", 0.998, "Minimum V0 CosPA to PV"};
   Configurable<double> cLambdaMassWindow{"cLambdaMassWindow", 0.005, "Mass Window to select Lambda"};
   Configurable<double> cKshortRejMassWindow{"cKshortRejMassWindow", 0.017, "Reject K0Short Candidates"};
-  Configurable<bool> cKshortRejFlag{"cKshortRejFlag", false, "K0short Mass Rej Flag"};
+  Configurable<bool> cKshortRejFlag{"cKshortRejFlag", true, "K0short Mass Rej Flag"};
   Configurable<double> cArmPodCutValue{"cArmPodCutValue", 0.5, "Armentros-Podolanski Slope Parameter"};
-  Configurable<bool> cArmPodCutFlag{"cArmPodCutFlag", true, "Armentros-Podolanski Cut Flag"};
+  Configurable<bool> cArmPodCutFlag{"cArmPodCutFlag", false, "Armentros-Podolanski Cut Flag"};
 
   // V0s kinmatic acceptance
   Configurable<float> cMinV0Pt{"cMinV0Pt", 0.8, "Minimum V0 pT"};
-  Configurable<float> cMaxV0Pt{"cMaxV0Pt", 3.2, "Minimum V0 pT"};
+  Configurable<float> cMaxV0Pt{"cMaxV0Pt", 2.8, "Minimum V0 pT"};
   Configurable<float> cMaxV0Rap{"cMaxV0Rap", 0.6, "|rap| cut"};
+  Configurable<bool> cDoEtaAnalysis{"cDoEtaAnalysis", false, "Do Eta Analysis"};
 
   // V0s MC
   Configurable<bool> cHasMcFlag{"cHasMcFlag", true, "Has Mc Tag"};
@@ -253,8 +254,9 @@ struct LambdaTableProducer {
   Configurable<float> cLambdaToPiProtonBR{"cLambdaToPiProtonBR", 0.639, "#Lambda->p#pi B.R. (63.9%) (PDG)"};
 
   // Efficiency Correction
-  Configurable<bool> cCorrectionFlag{"cCorrectionFlag", true, "Efficiency Correction Flag"};
-  Configurable<int> cCorrFactHistType{"cCorrFactHistType", 0, "Histogram Type {TH1F, TH2F, TH3F}"};
+  Configurable<bool> cCorrectionFlag{"cCorrectionFlag", false, "Efficiency Correction Flag"};
+  Configurable<int> cCorrFactHist{"cCorrFactHist", 0, "Correction Factor Histogram"};
+  Configurable<bool> cDoEtaCorr{"cDoEtaCorr", false, "Do Eta Corr"};
 
   // CCDB
   Configurable<std::string> cUrlCCDB{"cUrlCCDB", "http://ccdb-test.cern.ch:8080", "url of ccdb"};
@@ -269,7 +271,9 @@ struct LambdaTableProducer {
   // initialize corr_factor objects
   std::vector<std::vector<std::string>> vCorrFactStrings = {{"hEffVsPtLambda", "hEffVsPtAntiLambda"},
                                                             {"hEffVsPtYLambda", "hEffVsPtYAntiLambda"},
-                                                            {"hEffVsPtYVzLambda", "hEffVsPtYVzAntiLambda"}};
+                                                            {"hEffVsPtEtaLambda", "hEffVsPtEtaAntiLambda"},
+                                                            {"hEffVsPtYVzLambda", "hEffVsPtYVzAntiLambda"},
+                                                            {"hEffVsPtEtaVzLambda", "hEffVsPtEtaVzAntiLambda"}};
 
   void init(InitContext const&)
   {
@@ -291,13 +295,13 @@ struct LambdaTableProducer {
     const AxisSpec axisV0Eta(24, -1.2, 1.2, "#eta");
     const AxisSpec axisV0Phi(36, 0., TwoPI, "#phi (rad)");
 
-    const AxisSpec axisRadius(200, 0, 200, "r(cm)");
+    const AxisSpec axisRadius(2000, 0, 200, "r(cm)");
     const AxisSpec axisCosPA(500, 0.995, 1.0, "cos(#theta_{PA})");
     const AxisSpec axisDcaV0PV(1000, 0., 10., "dca (cm)");
     const AxisSpec axisDcaProngPV(5000, -50., 50., "dca (cm)");
     const AxisSpec axisDcaDau(75, 0., 1.5, "Daug DCA (#sigma)");
-    const AxisSpec axisCTau(200, 0, 200, "c#tau (cm)");
-    const AxisSpec axisGCTau(200, 0, 200, "#gammac#tau (cm)");
+    const AxisSpec axisCTau(2000, 0, 200, "c#tau (cm)");
+    const AxisSpec axisGCTau(2000, 0, 200, "#gammac#tau (cm)");
     const AxisSpec axisAlpha(40, -1, 1, "#alpha");
     const AxisSpec axisQtarm(40, 0, 0.4, "q_{T}");
 
@@ -389,8 +393,8 @@ struct LambdaTableProducer {
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kV0AsLambdaAntiLambda, "kV0AsLambdaAntiLambda");
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kPassV0MassWinCuts, "kPassV0MassWinCuts");
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kEffCorrPt, "kEffCorrPt");
-    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kEffCorrPtY, "kEffCorrPtY");
-    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kEffCorrPtYVz, "kEffCorrPtYVz");
+    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kEffCorrPtRap, "kEffCorrPtRap");
+    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kEffCorrPtRapVz, "kEffCorrPtRapVz");
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kNoEffCorr, "kNoEffCorr");
   }
 
@@ -518,11 +522,13 @@ struct LambdaTableProducer {
       return false;
     }
 
-    // rapidity cut
-    if (std::abs(v0.yLambda()) >= cMaxV0Rap) {
+    // rapidity | pseudo-rapidity cut
+    float rap = (cDoEtaAnalysis) ? v0.eta() : v0.yLambda();
+    if (std::abs(rap) >= cMaxV0Rap) {
       return false;
     }
 
+    // all selection criterion passed (Return True)
     return true;
   }
 
@@ -677,19 +683,20 @@ struct LambdaTableProducer {
     }
 
     // get ccdb object
-    TObject* obj = reinterpret_cast<TObject*>(ccdbObj->FindObject(Form("%s", vCorrFactStrings[cCorrFactHistType][part].c_str())));
+    TObject* obj = reinterpret_cast<TObject*>(ccdbObj->FindObject(Form("%s", vCorrFactStrings[cCorrFactHist][part].c_str())));
     TH1F* hist = reinterpret_cast<TH1F*>(obj->Clone());
     float retVal = 0.;
+    float rap = (cDoEtaCorr) ? v0.eta() : v0.yLambda();
 
     if (std::string(obj->ClassName()) == "TH1F") {
       histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPt);
       retVal = hist->GetBinContent(hist->FindBin(v0.pt()));
     } else if (std::string(obj->ClassName()) == "TH2F") {
-      histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtY);
-      retVal = hist->GetBinContent(hist->FindBin(v0.pt(), v0.yLambda()));
+      histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtRap);
+      retVal = hist->GetBinContent(hist->FindBin(v0.pt(), rap));
     } else if (std::string(obj->ClassName()) == "TH3F") {
-      histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtYVz);
-      retVal = hist->GetBinContent(hist->FindBin(v0.pt(), v0.yLambda(), col.posZ()));
+      histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtRapVz);
+      retVal = hist->GetBinContent(hist->FindBin(v0.pt(), rap, col.posZ()));
     } else {
       histos.fill(HIST("Tracks/h1f_tracks_info"), kNoEffCorr);
       LOGF(warning, "CCDB OBJECT IS NOT A HISTOGRAM !!!");
@@ -989,13 +996,9 @@ struct LambdaTracksExtProducer {
     histos.add("Reco/h1f_lambda_invmass", "M_{p#pi}", kTH1F, {axisMass});
     histos.add("Reco/h1f_lambda_cospa", "cos(#theta_{PA})", kTH1F, {axisCPA});
     histos.add("Reco/h1f_lambda_dcadau", "DCA_{p#pi} at V0 Decay Vertex", kTH1F, {axisDcaDau});
-    histos.add("Reco/h1f_lambda_cospa_vs_invm", "cos(#theta_{PA}) vs M_{p#pi}", kTH2F, {axisMass, axisCPA});
-    histos.add("Reco/h1f_lambda_dcadau_vs_invm", "DCA_{p#pi} vs M_{p#pi}", kTH2F, {axisMass, axisDcaDau});
     histos.add("Reco/h1f_antilambda_invmass", "M_{p#pi}", kTH1F, {axisMass});
     histos.add("Reco/h1f_antilambda_cospa", "cos(#theta_{PA})", kTH1F, {axisCPA});
     histos.add("Reco/h1f_antilambda_dcadau", "DCA_{p#pi} at V0 Decay Vertex", kTH1F, {axisDcaDau});
-    histos.add("Reco/h1f_antilambda_cospa_vs_invm", "cos(#theta_{PA}) vs M_{p#pi}", kTH2F, {axisMass, axisCPA});
-    histos.add("Reco/h1f_antilambda_dcadau_vs_invm", "DCA_{p#pi} vs M_{p#pi}", kTH2F, {axisMass, axisDcaDau});
 
     histos.addClone("Reco/", "SharingDau/");
   }
@@ -1009,14 +1012,10 @@ struct LambdaTracksExtProducer {
       histos.fill(HIST(SubDir[sd]) + HIST("h1f_lambda_invmass"), track.mass());
       histos.fill(HIST(SubDir[sd]) + HIST("h1f_lambda_dcadau"), track.dcaDau());
       histos.fill(HIST(SubDir[sd]) + HIST("h1f_lambda_cospa"), track.cosPA());
-      histos.fill(HIST(SubDir[sd]) + HIST("h1f_lambda_cospa_vs_invm"), track.mass(), track.cosPA());
-      histos.fill(HIST(SubDir[sd]) + HIST("h1f_lambda_dcadau_vs_invm"), track.dcaDau(), track.cosPA());
     } else {
       histos.fill(HIST(SubDir[sd]) + HIST("h1f_antilambda_invmass"), track.mass());
       histos.fill(HIST(SubDir[sd]) + HIST("h1f_antilambda_dcadau"), track.dcaDau());
       histos.fill(HIST(SubDir[sd]) + HIST("h1f_antilambda_cospa"), track.cosPA());
-      histos.fill(HIST(SubDir[sd]) + HIST("h1f_antilambda_cospa_vs_invm"), track.mass(), track.cosPA());
-      histos.fill(HIST(SubDir[sd]) + HIST("h1f_antilambda_dcadau_vs_invm"), track.dcaDau(), track.cosPA());
     }
   }
 
@@ -1037,7 +1036,7 @@ struct LambdaTracksExtProducer {
         ++nTotAntiLambda;
       }
 
-      tLambda = (cA * std::abs(lambda.mass() - MassLambda0)) + (cB * lambda.dcaDau()) + (cC * lambda.cosPA());
+      tLambda = (cA * std::abs(lambda.mass() - MassLambda0)) + (cB * lambda.dcaDau()) + (cC * std::abs(lambda.cosPA() - 1.));
 
       for (auto const& track : tracks) {
         // check lambda index (don't analyze same lambda track !!!)
@@ -1061,7 +1060,7 @@ struct LambdaTracksExtProducer {
           }
 
           // decisions based on t-score
-          tTrack = (cA * std::abs(track.mass() - MassLambda0)) + (cB * track.dcaDau()) + (cC * track.cosPA());
+          tTrack = (cA * std::abs(track.mass() - MassLambda0)) + (cB * track.dcaDau()) + (cC * std::abs(track.cosPA() - 1.));
           if (tLambda > tTrack) {
             lambdaMinTScoreFlag = false;
           }
@@ -1125,8 +1124,8 @@ struct LambdaR2Correlation {
   Configurable<float> cMaxRap{"cMaxRap", 0.6, "Maximum Rapidity"};
   Configurable<int> cNPhiBins{"cNPhiBins", 64, "N Phi Bins"};
 
-  // remove lambda with shared daughters
-  Configurable<bool> cRemoveLambdaSharingDau{"cRemoveLambdaSharingDau", true, "Flag to remove lambda"};
+  // Eta/Rap Analysis
+  Configurable<bool> cDoEtaAnalysis{"cDoEtaAnalysis", false, "Eta/Rap Analysis Flag"};
 
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -1162,14 +1161,15 @@ struct LambdaR2Correlation {
     const AxisSpec axisCent(105, 0, 105, "FT0M (%)");
     const AxisSpec axisMult(10, 0, 10, "N_{#Lambda}");
     const AxisSpec axisMass(100, 1.06, 1.16, "Inv Mass (GeV/#it{c}^{2})");
-    const AxisSpec axisPt(32, 0.2, 3.4, "p_{T} (GeV/#it{c})");
+    const AxisSpec axisPt(40, 0, 4.0, "p_{T} (GeV/#it{c})");
     const AxisSpec axisEta(24, -1.2, 1.2, "#eta");
-    const AxisSpec axisRap(cNRapBins, cMinRap, cMaxRap, "y");
+    const AxisSpec axisYRap(24, -1.2, 1.2, "y");
+    const AxisSpec axisRap(cNRapBins, cMinRap, cMaxRap, "rap");
     const AxisSpec axisPhi(cNPhiBins, 0., TwoPI, "#phi (rad)");
     const AxisSpec axisRapPhi(knrapphibins, kminrapphi, kmaxrapphi, "y #phi");
     const AxisSpec axisQinv(100, 0, 10, "q_{inv} (GeV/#it{c})");
 
-    const AxisSpec axisEfPt(19, 0.2, 4.0, "p_{T}");
+    const AxisSpec axisEfPt(20, 0, 4.0, "p_{T}");
     const AxisSpec axisEfEta(24, -1.2, 1.2, "#eta");
     const AxisSpec axisEfRap(24, -1.2, 1.2, "y");
     const AxisSpec axisEfPosZ(10, -10., 10., "V_{Z}");
@@ -1201,8 +1201,8 @@ struct LambdaR2Correlation {
     histos.add("Reco/h1d_n1_pt_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisPt});
     histos.add("Reco/h1d_n1_eta_LaP", "#rho_{1}^{#Lambda}", kTH1D, {axisEta});
     histos.add("Reco/h1d_n1_eta_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisEta});
-    histos.add("Reco/h1d_n1_rap_LaP", "#rho_{1}^{#Lambda}", kTH1D, {axisRap});
-    histos.add("Reco/h1d_n1_rap_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisRap});
+    histos.add("Reco/h1d_n1_rap_LaP", "#rho_{1}^{#Lambda}", kTH1D, {axisYRap});
+    histos.add("Reco/h1d_n1_rap_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisYRap});
     histos.add("Reco/h1d_n1_phi_LaP", "#rho_{1}^{#Lambda}", kTH1D, {axisPhi});
     histos.add("Reco/h1d_n1_phi_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisPhi});
 
@@ -1211,8 +1211,8 @@ struct LambdaR2Correlation {
     histos.add("Reco/h2d_n1_rapphi_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH2D, {axisRap, axisPhi});
 
     // rho1 for R2 qinv histograms
-    histos.add("Reco/h2d_n1_ptrap_LaP", "#rho_{1}^{#Lambda}", kTH2D, {axisPt, axisRap});
-    histos.add("Reco/h2d_n1_ptrap_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH2D, {axisPt, axisRap});
+    histos.add("Reco/h2d_n1_ptrap_LaP", "#rho_{1}^{#Lambda}", kTH2D, {axisPt, axisYRap});
+    histos.add("Reco/h2d_n1_ptrap_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH2D, {axisPt, axisYRap});
     histos.add("Reco/h2d_n1_pteta_LaP", "#rho_{1}^{#Lambda}", kTH2D, {axisPt, axisEta});
     histos.add("Reco/h2d_n1_pteta_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH2D, {axisPt, axisEta});
 
@@ -1225,29 +1225,6 @@ struct LambdaR2Correlation {
     histos.add("Reco/h1d_n2_qinv_LaP_LaM", "#rho_{2}^{#Lambda-#bar{#Lambda}}", kTH1D, {axisQinv});
     histos.add("Reco/h1d_n2_qinv_LaP_LaP", "#rho_{2}^{#Lambda-#Lambda}", kTH1D, {axisQinv});
     histos.add("Reco/h1d_n2_qinv_LaM_LaM", "#rho_{2}^{#bar{#Lambda}-#bar{#Lambda}}", kTH1D, {axisQinv});
-
-    // rho2 for qa checks
-    histos.add("Reco/h2d_n2_pt1pt2_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH2D, {axisPt, axisPt});
-    histos.add("Reco/h2d_n2_pt1pt2_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH2D, {axisPt, axisPt});
-    histos.add("Reco/h2d_n2_pt1pt2_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH2D, {axisPt, axisPt});
-    histos.add("Reco/h2d_n2_eta1eta2_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH2D, {axisEta, axisEta});
-    histos.add("Reco/h2d_n2_eta1eta2_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH2D, {axisEta, axisEta});
-    histos.add("Reco/h2d_n2_eta1eta2_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH2D, {axisEta, axisEta});
-    histos.add("Reco/h2d_n2_phi1phi2_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH2D, {axisPhi, axisPhi});
-    histos.add("Reco/h2d_n2_phi1phi2_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH2D, {axisPhi, axisPhi});
-    histos.add("Reco/h2d_n2_phi1phi2_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH2D, {axisPhi, axisPhi});
-    histos.add("Reco/h2d_n2_rap1rap2_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH2D, {axisRap, axisRap});
-    histos.add("Reco/h2d_n2_rap1rap2_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH2D, {axisRap, axisRap});
-    histos.add("Reco/h2d_n2_rap1rap2_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH2D, {axisRap, axisRap});
-    histos.add("Reco/h2d_n2_pt1eta2_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH2D, {axisPt, axisEta});
-    histos.add("Reco/h2d_n2_pt1eta2_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH2D, {axisPt, axisEta});
-    histos.add("Reco/h2d_n2_pt1eta2_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH2D, {axisPt, axisEta});
-    histos.add("Reco/h2d_n2_pt1phi2_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH2D, {axisPt, axisPhi});
-    histos.add("Reco/h2d_n2_pt1phi2_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH2D, {axisPt, axisPhi});
-    histos.add("Reco/h2d_n2_pt1phi2_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH2D, {axisPt, axisPhi});
-    histos.add("Reco/h2d_n2_pt1rap2_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH2D, {axisPt, axisRap});
-    histos.add("Reco/h2d_n2_pt1rap2_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH2D, {axisPt, axisRap});
-    histos.add("Reco/h2d_n2_pt1rap2_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH2D, {axisPt, axisRap});
 
     // MCGen
     if (doprocessMCGen) {
@@ -1262,21 +1239,16 @@ struct LambdaR2Correlation {
     static constexpr std::string_view SubDirRecGen[] = {"Reco/", "McGen/"};
     static constexpr std::string_view SubDirHist[] = {"LaP_LaM", "LaP_LaP", "LaM_LaM"};
 
-    int rapbin1 = static_cast<int>((p1.rap() - kminrap) / rapbinwidth);
-    int rapbin2 = static_cast<int>((p2.rap() - kminrap) / rapbinwidth);
+    float rap1 = (cDoEtaAnalysis) ? p1.eta() : p1.rap();
+    float rap2 = (cDoEtaAnalysis) ? p2.eta() : p2.rap();
+
+    int rapbin1 = static_cast<int>((rap1 - kminrap) / rapbinwidth);
+    int rapbin2 = static_cast<int>((rap2 - kminrap) / rapbinwidth);
 
     int phibin1 = static_cast<int>(p1.phi() / phibinwidth);
     int phibin2 = static_cast<int>(p2.phi() / phibinwidth);
 
     float corfac = p1.corrFact() * p2.corrFact();
-
-    histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_pt1pt2_") + HIST(SubDirHist[part_pair]), p1.pt(), p2.pt(), corfac);
-    histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_eta1eta2_") + HIST(SubDirHist[part_pair]), p1.eta(), p2.eta(), corfac);
-    histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_phi1phi2_") + HIST(SubDirHist[part_pair]), p1.phi(), p2.phi(), corfac);
-    histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_rap1rap2_") + HIST(SubDirHist[part_pair]), p1.rap(), p2.rap(), corfac);
-    histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_pt1eta2_") + HIST(SubDirHist[part_pair]), p1.pt(), p2.eta(), corfac);
-    histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_pt1phi2_") + HIST(SubDirHist[part_pair]), p1.pt(), p2.phi(), corfac);
-    histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_pt1rap2_") + HIST(SubDirHist[part_pair]), p1.pt(), p2.rap(), corfac);
 
     if (rapbin1 >= 0 && rapbin2 >= 0 && phibin1 >= 0 && phibin2 >= 0 && rapbin1 < nrapbins && rapbin2 < nrapbins && phibin1 < nphibins && phibin2 < nphibins) {
 
