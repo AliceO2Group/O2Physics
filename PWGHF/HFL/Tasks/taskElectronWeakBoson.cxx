@@ -139,6 +139,7 @@ struct HfTaskElectronWeakBoson {
     registry.add("hMatchEta", "Match in Eta", kTH2F, {{axisEta}, {axisEta}});
     registry.add("hEop", "energy momentum match", kTH2F, {{axisPt}, {axisEop}});
     registry.add("hEopIsolation", "energy momentum match after isolation", kTH2F, {{axisPt}, {axisEop}});
+    registry.add("hEopIsolationTr", "energy momentum match after isolationTr", kTH2F, {{axisPt}, {axisEop}});
     registry.add("hEopNsigTPC", "Eop vs. Nsigma", kTH2F, {{axisNsigma}, {axisEop}});
     registry.add("hEMCtime", "EMC timing", kTH1F, {axisEMCtime});
     registry.add("hIsolationEnergy", "Isolation Energy", kTH2F, {{axisE}, {axisIsoEnergy}});
@@ -316,6 +317,10 @@ struct HfTaskElectronWeakBoson {
 
               if (isIsolated) {
                 registry.fill(HIST("hEopIsolation"), match.track_as<TrackEle>().pt(), eop);
+              }
+
+              if (isIsolatedTr) {
+                registry.fill(HIST("hEopIsolationTr"), match.track_as<TrackEle>().pt(), eop);
               }
             }
           }
