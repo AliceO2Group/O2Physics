@@ -2,14 +2,14 @@
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
-// This software is distributed under the terms of the GNU General Public 
+// This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
 //
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no 
+// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //   Configurable workflow for running several DQ or other PWG analyses
 
 #include <cstdint>
@@ -134,7 +134,7 @@ constexpr static uint32_t gkEventFillMapWithZdc = VarManager::ObjTypes::ReducedE
 constexpr static uint32_t gkEventFillMapWithCov = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov;
 constexpr static uint32_t gkEventFillMapWithCovZdc = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ReducedZdc;
 constexpr static uint32_t gkEventFillMapWithMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra;
-constexpr static uint32_t gkEventFillMapWithCovMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventMultExtra ;
+constexpr static uint32_t gkEventFillMapWithCovMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventMultExtra;
 // constexpr static uint32_t gkEventFillMapWithQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventQvector;
 // constexpr static uint32_t gkEventFillMapWithCovQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
@@ -1838,8 +1838,8 @@ struct AnalysisSameEventPairing {
     runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons);
   }
 
-    void processMuonOnlySkimmedMultExtra(MyEventsVtxCovSelectedMultExtra const& events,
-                              soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
+  void processMuonOnlySkimmedMultExtra(MyEventsVtxCovSelectedMultExtra const& events,
+                                       soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
     runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithMultExtra, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons);
   }

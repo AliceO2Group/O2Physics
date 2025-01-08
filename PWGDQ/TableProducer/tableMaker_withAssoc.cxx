@@ -2,14 +2,14 @@
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
-// This software is distributed under the terms of the GNU General Public 
+// This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
 //
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no  
+// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
 // TableMaker produces skimmed data using the DQ data model
 // Events to be written are filtered using a user provided event cut and optionally the filterPPwithAssociation task
@@ -22,7 +22,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <iostream> 
+#include <iostream>
 // other includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -109,7 +109,6 @@ using MyBCs = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedBCCollisionsSparseMulti>;
 using MyEventsWithMultsExtra = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra>;
 
-
 // Declaration of various bit maps containing information on which tables are included in a Join
 //   These are used as template arguments and checked at compile time
 // constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
@@ -133,7 +132,6 @@ constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | Va
 // constexpr static uint32_t gkTrackFillMapWithAmbi = VarManager::ObjTypes::Track | VarManager::ObjTypes::AmbiTrack;
 constexpr static uint32_t gkMFTFillMap = VarManager::ObjTypes::TrackMFT;
 constexpr static uint32_t gkEventFillMapWithMultsExtra = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
-
 
 // Enum containing the ordering of statistics histograms to be written in the QA file
 enum SkimStatsHists {
@@ -1364,15 +1362,15 @@ struct TableMaker {
     fullSkimming<gkEventFillMapWithMults, 0u, gkMuonFillMapWithCov, gkMFTFillMap>(collisions, bcs, nullptr, nullptr, muons, mftTracks, nullptr, fwdTrackAssocs, mftAssocs);
   }
 
-      // Debadatta=====================================
-    void processPPMuonMFTWithMultsExtra(MyEventsWithMultsExtra const& collisions, BCsWithTimestamps const& bcs,
-                        MyMuonsWithCov const& muons, MFTTracks const& mftTracks,
-                        FwdTrackAssoc const& fwdTrackAssocs, MFTTrackAssoc const& mftAssocs)
+  // Debadatta=====================================
+  void processPPMuonMFTWithMultsExtra(MyEventsWithMultsExtra const& collisions, BCsWithTimestamps const& bcs,
+                                      MyMuonsWithCov const& muons, MFTTracks const& mftTracks,
+                                      FwdTrackAssoc const& fwdTrackAssocs, MFTTrackAssoc const& mftAssocs)
   {
-    cout<<"I am inside TableMaker-with-association ===  processPPMuonMFTWithMultsExtra======="<<endl;
+    cout << "I am inside TableMaker-with-association ===  processPPMuonMFTWithMultsExtra=======" << endl;
     fullSkimming<gkEventFillMapWithMultsExtra, 0u, gkMuonFillMapWithCov, gkMFTFillMap>(collisions, bcs, nullptr, nullptr, muons, mftTracks, nullptr, fwdTrackAssocs, mftAssocs);
   }
-   //===========================================================
+  //===========================================================
 
   // produce the full DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
   void processPbPb(MyEventsWithCentAndMults const& collisions, BCsWithTimestamps const& bcs,
