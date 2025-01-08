@@ -467,7 +467,7 @@ struct nucleiSpectra {
 
     if (doprocessMatching) {
       for (int iC{0}; iC < 2; ++iC) {
-        nuclei::hMatchingStudy[iC] = spectra.add<THnSparse>(fmt::format("hMatchingStudy{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;n#sigma_{ITS};n#sigma{TPC};n#sigma_{TOF}", HistType::kTHnSparseF, {{20, 1., 9.}, {10, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {50, -5., 5.}, {50, -5., 5.}, {50, 0., 1.}});
+        nuclei::hMatchingStudy[iC] = spectra.add<THnSparse>(fmt::format("hMatchingStudy{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;n#sigma_{ITS};n#sigma{TPC};n#sigma_{TOF};Centrality", HistType::kTHnSparseF, {{20, 1., 9.}, {10, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {50, -5., 5.}, {50, -5., 5.}, {50, 0., 1.}, {8, 0., 80.}});
       }
     }
 
@@ -901,9 +901,9 @@ struct nucleiSpectra {
   }
   PROCESS_SWITCH(nucleiSpectra, processMC, "MC analysis", false);
 
-  void processMatching(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
+  void processMatching(soa::Join<aod::Collisions, aod::EvSels, aod::EPCalibrationTables, aod::CentFT0Cs>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
-    if (!eventSelection(collision)) {
+    if (!eventSelection(collision) || !collision.triggereventep()) {
       return;
     }
     o2::aod::ITSResponse itsResponse;
@@ -918,7 +918,7 @@ struct nucleiSpectra {
       double expSigma{expBethe * cfgBetheBlochParams->get(4, 5u)};
       double nSigmaTPC{(track.tpcSignal() - expBethe) / expSigma};
       int iC = track.signed1Pt() > 0;
-      nuclei::hMatchingStudy[iC]->Fill(track.pt() * 2, track.phi(), track.eta(), itsResponse.nSigmaITS<o2::track::PID::Helium3>(track), nSigmaTPC, o2::pid::tof::Beta::GetBeta(track));
+      nuclei::hMatchingStudy[iC]->Fill(track.pt() * 2, getPhiInRange(track.phi() - collision.psiFT0C()), track.eta(), itsResponse.nSigmaITS<o2::track::PID::Helium3>(track), nSigmaTPC, o2::pid::tof::Beta::GetBeta(track), getCentrality(collision));
     }
   }
 
