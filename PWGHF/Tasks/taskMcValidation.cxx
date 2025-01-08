@@ -44,6 +44,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_evsel;
 using namespace o2::hf_centrality;
+using namespace o2::hf_occupancy;
 
 namespace
 {
@@ -253,7 +254,7 @@ struct HfTaskMcValidationGen {
     float centrality{105.f};
     int occupancy = 0;
     if (storeOccupancy) {
-      occupancy = o2::hf_occupancy::getOccupancyGenColl(recoCollisions, o2::hf_occupancy::OccupancyEstimator::Its);
+      occupancy = getOccupancyGenColl(recoCollisions, OccupancyEstimator::Its);
     }
     uint16_t rejectionMask{0};
     if constexpr (centEstimator == CentralityEstimator::FT0C) {

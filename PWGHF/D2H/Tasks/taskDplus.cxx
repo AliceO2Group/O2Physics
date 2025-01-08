@@ -36,10 +36,8 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
+using namespace o2::hf_occupancy;
 
-enum OccupancyEstimator { None = 0,
-                          ITS,
-                          FT0C };
 
 /// D± analysis task
 struct HfTaskDplus {
@@ -62,8 +60,8 @@ struct HfTaskDplus {
   using CandDplusMcRecoWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec, aod::HfMlDplusToPiKPi>>;
   using CandDplusMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
-  using CollisionsCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As>;
-  using McRecoCollisionsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As>;
+  using CollisionsCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using McRecoCollisionsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
 
   Filter filterDplusFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi))) != static_cast<uint8_t>(0);
 
@@ -451,10 +449,10 @@ struct HfTaskDplus {
         if (storeCentrality || storeOccupancy) {
           auto collision = candidate.template collision_as<CollisionsCent>();
           if (storeCentrality && centEstimator != CentralityEstimator::None) {
-            cent = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+            cent = getCentralityColl(collision, centEstimator);
           }
           if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-            occ = o2::hf_occupancy::getOccupancyColl(collision);
+            occ = getOccupancyColl(collision, occEstimator);
           }
         }
 
@@ -497,15 +495,15 @@ struct HfTaskDplus {
           continue;
         }
         ptBhad = candidate.ptBhadMotherPart();
-        flagBHad = o2::analysis::getBHadMotherFlag(candidate.pdgBhadMotherPart());
+        flagBHad = getBHadMotherFlag(candidate.pdgBhadMotherPart());
 
         if (storeCentrality || storeOccupancy) {
           auto collision = candidate.template collision_as<McRecoCollisionsCent>();
           if (storeCentrality && centEstimator != CentralityEstimator::None) {
-            cent = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+            cent = getCentralityColl(collision, centEstimator);
           }
           if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-            occ = o2::hf_occupancy::getOccupancyColl(collision);
+            occ = getOccupancyColl(collision, occEstimator);
           }
         }
 
@@ -522,10 +520,10 @@ struct HfTaskDplus {
         }
         auto collision = candidate.template collision_as<McRecoCollisionsCent>();
         if (storeCentrality && centEstimator != CentralityEstimator::None) {
-          cent = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+          cent = getCentralityColl(collision, centEstimator);
         }
         if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-          occ = o2::hf_occupancy::getOccupancyColl(collision);
+          occ = getOccupancyColl(collision, occEstimator);
         }
         fillHistoMCRec<false>(candidate);
         fillSparseML<true, false>(candidate, ptBhad, flagBHad, cent, occ);
@@ -552,10 +550,10 @@ struct HfTaskDplus {
       const auto recoCollsPerGenMcColl = mcRecoCollisions.sliceBy(recoColPerMcCollision, mcGenCollision.globalIndex());
       const auto mcParticlesPerGenMcColl = mcGenParticles.sliceBy(mcParticlesPerMcCollision, mcGenCollision.globalIndex());
       if (storeCentrality && centEstimator != CentralityEstimator::None) {
-        cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerGenMcColl, centEstimator);
+        cent = getCentralityGenColl(recoCollsPerGenMcColl, centEstimator);
       }
       if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-        occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerGenMcColl);
+        occ = getOccupancyGenColl(recoCollsPerGenMcColl, occEstimator);
       }
 
       for (const auto& particle : mcParticlesPerGenMcColl) {
@@ -567,7 +565,7 @@ struct HfTaskDplus {
         }
         if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
           auto bHadMother = mcGenParticles.rawIteratorAt(particle.idxBhadMotherPart() - mcGenParticles.offset());
-          flagGenB = o2::analysis::getBHadMotherFlag(bHadMother.pdgCode());
+          flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
           ptGenB = bHadMother.pt();
         }
         fillHistoMCGen(particle);

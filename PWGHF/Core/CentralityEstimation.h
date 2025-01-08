@@ -115,6 +115,7 @@ float getCentralityColl(const Coll&)
 
 /// Get the centrality
 /// \param collision is the collision with the centrality information
+/// \param centEstimator integer to select the centrality estimator
 /// \return collision centrality
 template <typename Coll>
 float getCentralityColl(const Coll& collision, int centEstimator)
@@ -150,7 +151,7 @@ float getCentralityColl(const Coll& collision, int centEstimator)
       }
       break;
     default:
-      LOG(warning) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C. Fallback to V0A";
+      LOG(warning) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C. Setting value to -999.";
       cent = -999.;
       break;
   }
@@ -177,6 +178,7 @@ float getCentralityGenColl(CCs const& collSlice)
 
 /// \brief Function to get MC collision centrality
 /// \param collSlice collection of reconstructed collisions associated to a generated one
+/// \param centEstimator integer to select the centrality estimator
 /// \return generated MC collision centrality
 template <typename CCs>
 float getCentralityGenColl(CCs const& collSlice, int centEstimator)

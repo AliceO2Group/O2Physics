@@ -37,6 +37,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
+using namespace o2::hf_occupancy;
 using namespace o2::hf_evsel;
 
 enum DecayChannel { DplusToPiKPi = 0,
@@ -340,7 +341,7 @@ struct HfTaskFlowCharmHadrons {
                       aod::BCsWithTimestamps const&,
                       float& centrality)
   {
-    float occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
+    float occupancy = getOccupancyColl(collision, occEstimator);
     const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
     centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
 
@@ -412,7 +413,7 @@ struct HfTaskFlowCharmHadrons {
     float occupancy = 0.;
     uint16_t hfevflag{};
     if (occEstimator != 0) {
-      occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
+      occupancy = getOccupancyColl(collision, occEstimator);
       registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
       hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
     }
