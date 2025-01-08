@@ -490,7 +490,7 @@ struct NucleiHistTask {
   Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4.f, "Cut on the maximum value of the chi2 per cluster in the TPC"};
   Configurable<float> minChi2PerClusterTPC{"minChi2PerClusterTPC", 0.5f, "Cut on the minimum value of the chi2 per cluster in the TPC"};
   Configurable<float> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36.f, "Cut on the maximum value of the chi2 per cluster in the ITS"};
-  //Configurable<float> maxDCA_XY{"maxDCA_XY", 0.5f, "max DCA to vertex xy"};
+  // Configurable<float> maxDCA_XY{"maxDCA_XY", 0.5f, "max DCA to vertex xy"};
   Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 0.5f, "DCA xy factor"};
   Configurable<float> maxDCA_Z{"maxDCA_Z", 2.0f, "max DCA to vertex z"};
   Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", -1, "Last cluster to required in TRD for track selection. -1 does not require any TRD cluster"};
@@ -509,11 +509,16 @@ struct NucleiHistTask {
   template <typename CollisionType>
   bool isEventSelected(CollisionType const& collision)
   {
-    if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) return false;
-    if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) return false;
-    if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) return false;
-    if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) return false;
-    if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) return false;
+    if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+      return false;
+    if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+      return false;
+    if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      return false;
+    if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC))
+      return false;
+    if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      return false;
     return true;
   }
 
@@ -528,10 +533,11 @@ struct NucleiHistTask {
     if (!event_selection_sel8) {
       spectra_reg.fill(HIST("histRecVtxZData"), event.posZ());
     }
-    if (!isEventSelected(event)) return;
-    
+    if (!isEventSelected(event))
+      return;
+
     for (auto track : tracks) { // start loop over all tracks
-      
+
       histTrackcuts_data_spectra->AddBinContent(1);
       if (event_selection_sel8 && !event.sel8())
         continue;
@@ -556,7 +562,7 @@ struct NucleiHistTask {
       float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
       float Chi2perClusterTPC = track.tpcChi2NCl();
       float Chi2perClusterITS = track.itsChi2NCl();
-      
+
       bool insideDCAxy = (std::abs(track.dcaXY()) <= (maxDcaXYFactor.value * (0.0105f + 0.0350f / pow(track.pt(), 1.1f))));
 
       if (!(insideDCAxy) || TMath::Abs(track.dcaZ()) > maxDCA_Z)
@@ -597,15 +603,15 @@ struct NucleiHistTask {
       }
     }
   }
-  
-  
+
   //***********************************************************************************
 
   template <typename CollisionType, typename TracksType>
   void fillHistograms_particle(const CollisionType& event, const TracksType& tracks, const int Partilce_type)
   {
 
-    if (!isEventSelected(event)) return;
+    if (!isEventSelected(event))
+      return;
     for (auto track : tracks) {
 
       float TPCnSigma_particle = -100;
@@ -616,7 +622,7 @@ struct NucleiHistTask {
       HistogramRegistry aparticle_reg;
 
       switch (Partilce_type) {
-        case 0:  // pi plus/minus
+        case 0: // pi plus/minus
           lorentzVector_particle.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
           TPCnSigma_particle = track.tpcNSigmaPi();
           TOFnSigma_particle = track.tofNSigmaPi();
@@ -624,7 +630,7 @@ struct NucleiHistTask {
           aparticle_reg = apion_reg;
           momentum = track.pt();
           break;
-        case 1:  // (anti)proton
+        case 1: // (anti)proton
           lorentzVector_particle.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
           TPCnSigma_particle = track.tpcNSigmaPr();
           TOFnSigma_particle = track.tofNSigmaPr();
@@ -632,7 +638,7 @@ struct NucleiHistTask {
           aparticle_reg = aproton_reg;
           momentum = track.pt();
           break;
-        case 2:  // (anti)deuteron
+        case 2: // (anti)deuteron
           lorentzVector_particle.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
           TPCnSigma_particle = track.tpcNSigmaDe();
           TOFnSigma_particle = track.tofNSigmaDe();
@@ -640,7 +646,7 @@ struct NucleiHistTask {
           aparticle_reg = adeuteron_reg;
           momentum = track.pt();
           break;
-        case 3:  // (anti)triton
+        case 3: // (anti)triton
           lorentzVector_particle.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
           TPCnSigma_particle = track.tpcNSigmaTr();
           TOFnSigma_particle = track.tofNSigmaTr();
@@ -648,7 +654,7 @@ struct NucleiHistTask {
           aparticle_reg = atriton_reg;
           momentum = track.pt();
           break;
-        case 4:  // (anti)Helium-3
+        case 4: // (anti)Helium-3
           lorentzVector_particle.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
           TPCnSigma_particle = track.tpcNSigmaHe();
           TOFnSigma_particle = track.tofNSigmaHe();
@@ -656,7 +662,7 @@ struct NucleiHistTask {
           aparticle_reg = aHelium3_reg;
           momentum = track.pt() * 2.0;
           break;
-        case 5:  // (anti)Helium-4
+        case 5: // (anti)Helium-4
           lorentzVector_particle.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
           TPCnSigma_particle = track.tpcNSigmaAl();
           TOFnSigma_particle = track.tofNSigmaAl();
@@ -716,7 +722,7 @@ struct NucleiHistTask {
       if (requireGoldenChi2 && !(track.passedGoldenChi2()))
         continue;
       histTrackcuts_data_particle->AddBinContent(13);
-      
+
       //******* Fill particle histograms ***********
       if (track.sign() > 0) {
         particle_reg.fill(HIST("histTpcNsigmaData"), momentum, TPCnSigma_particle);
@@ -796,7 +802,8 @@ struct NucleiHistTask {
   template <typename CollisionType, typename TracksType>
   void fillHistograms_particle_cent(const CollisionType& event, const TracksType& tracks, const int Partilce_type)
   {
-    if (!isEventSelected(event)) return;
+    if (!isEventSelected(event))
+      return;
     if (event_selection_sel8 && event.sel8())
       spectra_reg.fill(HIST("histCentrality"), event.centFT0C());
     if (!event_selection_sel8)
@@ -814,7 +821,7 @@ struct NucleiHistTask {
       HistogramRegistry aparticle_reg;
 
       switch (Partilce_type) {
-        case 0:  // pi plus/minus
+        case 0: // pi plus/minus
           lorentzVector_particle.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
           TPCnSigma_particle = track.tpcNSigmaPi();
           TOFnSigma_particle = track.tofNSigmaPi();
@@ -822,7 +829,7 @@ struct NucleiHistTask {
           aparticle_reg = apion_reg;
           momentum = track.pt();
           break;
-        case 1:  // (anti)proton
+        case 1: // (anti)proton
           lorentzVector_particle.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
           TPCnSigma_particle = track.tpcNSigmaPr();
           TOFnSigma_particle = track.tofNSigmaPr();
@@ -830,7 +837,7 @@ struct NucleiHistTask {
           aparticle_reg = aproton_reg;
           momentum = track.pt();
           break;
-        case 2:  // (anti)deuteron
+        case 2: // (anti)deuteron
           lorentzVector_particle.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
           TPCnSigma_particle = track.tpcNSigmaDe();
           TOFnSigma_particle = track.tofNSigmaDe();
@@ -838,7 +845,7 @@ struct NucleiHistTask {
           aparticle_reg = adeuteron_reg;
           momentum = track.pt();
           break;
-        case 3:  // (anti)triton
+        case 3: // (anti)triton
           lorentzVector_particle.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
           TPCnSigma_particle = track.tpcNSigmaTr();
           TOFnSigma_particle = track.tofNSigmaTr();
@@ -846,7 +853,7 @@ struct NucleiHistTask {
           aparticle_reg = atriton_reg;
           momentum = track.pt();
           break;
-        case 4:  // (anti)Helium-3
+        case 4: // (anti)Helium-3
           lorentzVector_particle.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
           TPCnSigma_particle = track.tpcNSigmaHe();
           TOFnSigma_particle = track.tofNSigmaHe();
@@ -854,7 +861,7 @@ struct NucleiHistTask {
           aparticle_reg = aHelium3_reg;
           momentum = track.pt() * 2.0;
           break;
-        case 5:  // (anti)Helium-4
+        case 5: // (anti)Helium-4
           lorentzVector_particle.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
           TPCnSigma_particle = track.tpcNSigmaAl();
           TOFnSigma_particle = track.tofNSigmaAl();
@@ -977,30 +984,48 @@ struct NucleiHistTask {
   void processData(EventCandidates::iterator const& event, TrackCandidates const& tracks)
   {
     fillHistograms_spectra(event, tracks);
-    if (do_pion) fillHistograms_particle(event, tracks, 0);      // pion
-    if (do_proton) fillHistograms_particle(event, tracks, 1);    // proton
-    if (do_deuteron) fillHistograms_particle(event, tracks, 2);  // deuteron
-    if (do_triton) fillHistograms_particle(event, tracks, 3);    // triton
-    if (do_He3) fillHistograms_particle(event, tracks, 4);       // He3
-    if (do_He4) fillHistograms_particle(event, tracks, 5);       // He4
+    if (do_pion)
+      fillHistograms_particle(event, tracks, 0); // pion
+    if (do_proton)
+      fillHistograms_particle(event, tracks, 1); // proton
+    if (do_deuteron)
+      fillHistograms_particle(event, tracks, 2); // deuteron
+    if (do_triton)
+      fillHistograms_particle(event, tracks, 3); // triton
+    if (do_He3)
+      fillHistograms_particle(event, tracks, 4); // He3
+    if (do_He4)
+      fillHistograms_particle(event, tracks, 5); // He4
   }
   PROCESS_SWITCH(NucleiHistTask, processData, "process data", true);
 
   void processDataCent(EventCandidatesCent::iterator const& event, TrackCandidates const& tracks)
   {
     fillHistograms_spectra(event, tracks);
-    if (do_pion) fillHistograms_particle(event, tracks, 0);      // pion
-    if (do_proton) fillHistograms_particle(event, tracks, 1);    // proton
-    if (do_deuteron) fillHistograms_particle(event, tracks, 2);  // deuteron
-    if (do_triton) fillHistograms_particle(event, tracks, 3);    // triton
-    if (do_He3) fillHistograms_particle(event, tracks, 4);       // He3
-    if (do_He4) fillHistograms_particle(event, tracks, 5);       // He4
-    if (do_pion) fillHistograms_particle_cent(event, tracks, 0);      // pion
-    if (do_proton) fillHistograms_particle_cent(event, tracks, 1);    // proton
-    if (do_deuteron) fillHistograms_particle_cent(event, tracks, 2);  // deuteron
-    if (do_triton) fillHistograms_particle_cent(event, tracks, 3);    // triton
-    if (do_He3) fillHistograms_particle_cent(event, tracks, 4);       // He3
-    if (do_He4) fillHistograms_particle_cent(event, tracks, 5);       // He4
+    if (do_pion)
+      fillHistograms_particle(event, tracks, 0); // pion
+    if (do_proton)
+      fillHistograms_particle(event, tracks, 1); // proton
+    if (do_deuteron)
+      fillHistograms_particle(event, tracks, 2); // deuteron
+    if (do_triton)
+      fillHistograms_particle(event, tracks, 3); // triton
+    if (do_He3)
+      fillHistograms_particle(event, tracks, 4); // He3
+    if (do_He4)
+      fillHistograms_particle(event, tracks, 5); // He4
+    if (do_pion)
+      fillHistograms_particle_cent(event, tracks, 0); // pion
+    if (do_proton)
+      fillHistograms_particle_cent(event, tracks, 1); // proton
+    if (do_deuteron)
+      fillHistograms_particle_cent(event, tracks, 2); // deuteron
+    if (do_triton)
+      fillHistograms_particle_cent(event, tracks, 3); // triton
+    if (do_He3)
+      fillHistograms_particle_cent(event, tracks, 4); // He3
+    if (do_He4)
+      fillHistograms_particle_cent(event, tracks, 5); // He4
   }
   PROCESS_SWITCH(NucleiHistTask, processDataCent, "process data with centralities", false);
 
@@ -1091,7 +1116,7 @@ struct NucleiHistTask {
     }
   }
   PROCESS_SWITCH(NucleiHistTask, processMCgen, "process generated MC", false);
-  
+
   void processMCreco(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
                      aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
@@ -1100,7 +1125,8 @@ struct NucleiHistTask {
       return;
     MC_recon_reg.fill(HIST("histRecVtxMC"), collisions.posZ());
     MC_recon_reg.fill(HIST("histCentrality"), collisions.centFT0C());
-    if (!isEventSelected(collisions)) return;
+    if (!isEventSelected(collisions))
+      return;
 
     for (auto& track : tracks) {
       histTrackcuts_MC->AddBinContent(1);
