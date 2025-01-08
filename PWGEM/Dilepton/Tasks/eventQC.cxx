@@ -308,6 +308,9 @@ struct eventQC {
       fRegistry.add("Track/hITSNsigmaPi", "ITS n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{ITS}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hITSNsigmaKa", "ITS n sigma ka;p_{pv} (GeV/c);n #sigma_{K}^{ITS}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hITSNsigmaPr", "ITS n sigma pr;p_{pv} (GeV/c);n #sigma_{p}^{ITS}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+
+      fRegistry.add("Track/hTPCNsigmaKa_ITSNsigmaKa", "ITS vs. TPC n sigma ka in 0.4 < p_{in} < 0.7 (GeV/c);n #sigma_{K}^{TPC};n #sigma_{K}^{ITS}", kTH2F, {{100, -5, +5}, {100, -5, +5}}, false);
+      fRegistry.add("Track/hTPCNsigmaPr_ITSNsigmaPr", "ITS vs. TPC n sigma pr in 0.8 < p_{in} < 1.4 (GeV/c);n #sigma_{p}^{TPC};n #sigma_{p}^{ITS}", kTH2F, {{100, -5, +5}, {100, -5, +5}}, false);
     }
   }
 
@@ -381,6 +384,12 @@ struct eventQC {
       fRegistry.fill(HIST("Track/hITSNsigmaPi"), track.p(), track.itsNSigmaPi());
       fRegistry.fill(HIST("Track/hITSNsigmaKa"), track.p(), track.itsNSigmaKa());
       fRegistry.fill(HIST("Track/hITSNsigmaPr"), track.p(), track.itsNSigmaPr());
+
+      if (0.4 < track.tpcInnerParam() && track.tpcInnerParam() < 0.7) {
+        fRegistry.fill(HIST("Track/hTPCNsigmaKa_ITSNsigmaKa"), track.tpcNSigmaKa(), track.itsNSigmaKa());
+      } else if (0.8 < track.tpcInnerParam() && track.tpcInnerParam() < 1.4) {
+        fRegistry.fill(HIST("Track/hTPCNsigmaPr_ITSNsigmaPr"), track.tpcNSigmaPr(), track.itsNSigmaPr());
+      }
     }
   }
 
