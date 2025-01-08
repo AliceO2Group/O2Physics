@@ -280,6 +280,7 @@ struct tofSpectra { // o2-linter: disable=name/struct
     }
 
     histos.add("event/vertexz", "", HistType::kTH1D, {vtxZAxis});
+    histos.add("test_occupancy/event/vertexz", "", HistType::kTH1D, {vtxZAxis});
     auto h = histos.add<TH1>("evsel", "evsel", HistType::kTH1D, {{20, 0.5, 20.5}});
     h->GetXaxis()->SetBinLabel(1, "Events read");
     h->GetXaxis()->SetBinLabel(2, "INEL>0 (fraction)");
@@ -1476,22 +1477,22 @@ struct tofSpectra { // o2-linter: disable=name/struct
   } // end of the process function
   PROCESS_SWITCH(tofSpectra, processDerived, "Derived data processor", false);
 
-#define makeProcessFunction(processorName, inputPid, particleId, isFull, tofTable, tpcTable)   \
-  void process##processorName##inputPid(CollisionCandidates::iterator const& collision,        \
-                                        soa::Join<TrackCandidates,                             \
-                                                  aod::pid##tofTable##inputPid,                \
-                                                  aod::pid##tpcTable##inputPid> const& tracks) \
-  {                                                                                            \
-    if (!isEventSelected<false, false>(collision)) {                                           \
-      return;                                                                                  \
-    }                                                                                          \
-    for (const auto& track : tracks) {                                                         \
-      if (!isTrackSelected<false>(track, collision)) {                                         \
-        continue;                                                                              \
-      }                                                                                        \
-      fillParticleHistos<isFull, PID::particleId>(track, collision);                           \
-    }                                                                                          \
-  }                                                                                            \
+#define makeProcessFunction(processorName, inputPid, particleId, isFull, tofTable, tpcTable) /* o2-linter: disable=name/macro */ \
+  void process##processorName##inputPid(CollisionCandidates::iterator const& collision,                                          \
+                                        soa::Join<TrackCandidates,                                                               \
+                                                  aod::pid##tofTable##inputPid,                                                  \
+                                                  aod::pid##tpcTable##inputPid> const& tracks)                                   \
+  {                                                                                                                              \
+    if (!isEventSelected<false, false>(collision)) {                                                                             \
+      return;                                                                                                                    \
+    }                                                                                                                            \
+    for (const auto& track : tracks) {                                                                                           \
+      if (!isTrackSelected<false>(track, collision)) {                                                                           \
+        continue;                                                                                                                \
+      }                                                                                                                          \
+      fillParticleHistos<isFull, PID::particleId>(track, collision);                                                             \
+    }                                                                                                                            \
+  }                                                                                                                              \
   PROCESS_SWITCH(tofSpectra, process##processorName##inputPid, Form("Process for the %s hypothesis from %s tables", #particleId, #processorName), false);
 
 // Full tables
@@ -2168,6 +2169,7 @@ struct tofSpectra { // o2-linter: disable=name/struct
                                       aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                       aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks,
                             aod::McTrackLabels const& mcTrackLabels,
+                            GenMCCollisions const&,
                             RecoMCCollisions const& collisions,
                             aod::McParticles const& mcParticles)
   {
