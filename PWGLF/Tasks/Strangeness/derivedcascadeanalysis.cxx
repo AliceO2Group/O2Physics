@@ -837,7 +837,7 @@ struct Derivedcascadeanalysis {
         }
       }
 
-      if (posExtra.tpcCrossedRows() < candidateSelectionValues.mintpccrrows || negExtra.tpcCrossedRows() < candidateSelectionValues.mintpccrrows || bachExtra.tpcCrossedRows() < candidateSelectionValues.mintpccrrows)
+      if (std::abs(posExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows || std::abs(negExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows || std::abs(bachExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows)
         continue;
       histos.fill(HIST("hCandidate"), ++counter);
 
@@ -859,7 +859,7 @@ struct Derivedcascadeanalysis {
       float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
       float ctau = -10;
 
-      cut = ctau;
+      cut = candidateSelectionValues.proplifetime;
       histos.fill(HIST("hCutValue"), 21, cut);
 
       if (posExtra.hasTOF()) {
@@ -1129,7 +1129,7 @@ struct Derivedcascadeanalysis {
         }
       }
 
-      if (posExtra.tpcCrossedRows() < candidateSelectionValues.mintpccrrows || negExtra.tpcCrossedRows() < candidateSelectionValues.mintpccrrows || bachExtra.tpcCrossedRows() < candidateSelectionValues.mintpccrrows)
+      if (std::abs(posExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows || std::abs(negExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows || std::abs(bachExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows)
         continue;
       histos.fill(HIST("hCandidate"), ++counter);
 
