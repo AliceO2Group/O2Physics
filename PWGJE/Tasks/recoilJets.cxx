@@ -85,7 +85,7 @@ struct RecoilJets {
   Configurable<float> pTHatMax{"pTHatMax", 999.0, "Maximum fraction of hard scattering for jet acceptance in MC"};
 
   // Parameters for recoil jet selection
-  Configurable<float> ptTTrefMin{"ptTTrefMin", 5., "Minimum pT of reference TT"}; 
+  Configurable<float> ptTTrefMin{"ptTTrefMin", 5., "Minimum pT of reference TT"};
   Configurable<float> ptTTrefMax{"ptTTrefMax", 7., "Maximum pT of reference TT"};
   Configurable<float> ptTTsigMin{"ptTTsigMin", 20., "Minimum pT of signal TT"};
   Configurable<float> ptTTsigMax{"ptTTsigMax", 50., "Maximum pT of signal TT"};
@@ -445,8 +445,8 @@ struct RecoilJets {
   PROCESS_SWITCH(recoilJets, processData, "process data", true);
 
   void processMCDetLevel(FilteredColl const& collision,
-                          FilteredJetsDetLevel const& jets,
-                          FilteredTracks const& tracks)
+                         FilteredJetsDetLevel const& jets,
+                         FilteredTracks const& tracks)
   {
     if (skipEvent(collision))
       return;
@@ -457,9 +457,9 @@ struct RecoilJets {
   PROCESS_SWITCH(recoilJets, processMCDetLevel, "process MC detector level", false);
 
   void processMCDetLevelWeighted(FilteredCollDetLevelGetWeight const& collision,
-                                   aod::JetMcCollisions const&,
-                                   FilteredJetsDetLevel const& jets,
-                                   FilteredTracks const& tracks)
+                                 aod::JetMcCollisions const&,
+                                 FilteredJetsDetLevel const& jets,
+                                 FilteredTracks const& tracks)
   {
     if (skipEvent(collision))
       return;
@@ -472,8 +472,8 @@ struct RecoilJets {
   PROCESS_SWITCH(recoilJets, processMCDetLevelWeighted, "process MC detector level with event weight", false);
 
   void processMCPartLevel(FilteredCollPartLevel const& collision,
-                           FilteredJetsPartLevel const& jets,
-                           aod::JetParticles const& particles)
+                          FilteredJetsPartLevel const& jets,
+                          aod::JetParticles const& particles)
   {
     spectra.fill(HIST("vertexZ"), collision.posZ());
     fillMCPHistograms(collision, jets, particles);
@@ -481,8 +481,8 @@ struct RecoilJets {
   PROCESS_SWITCH(recoilJets, processMCPartLevel, "process MC particle level", false);
 
   void processMCPartLevelWeighted(FilteredCollPartLevel const& collision,
-                                    FilteredJetsPartLevel const& jets,
-                                    aod::JetParticles const& particles)
+                                  FilteredJetsPartLevel const& jets,
+                                  aod::JetParticles const& particles)
   {
     auto weight = collision.weight();
     spectra.fill(HIST("vertexZ"), collision.posZ(), weight);
@@ -504,10 +504,10 @@ struct RecoilJets {
   PROCESS_SWITCH(recoilJets, processJetsMatched, "process matching of MC jets (no weight)", false);
 
   void processJetsMatchedWeighted(FilteredCollDetLevelGetWeight const& collision,
-                                   aod::JetMcCollisions const&,
-                                   FilteredTracks const& tracks,
-                                   FilteredMatchedJetsDetLevel const& mcdjets,
-                                   FilteredMatchedJetsPartLevel const& mcpjets)
+                                  aod::JetMcCollisions const&,
+                                  FilteredTracks const& tracks,
+                                  FilteredMatchedJetsDetLevel const& mcdjets,
+                                  FilteredMatchedJetsPartLevel const& mcpjets)
   {
     if (skipEvent(collision))
       return;
