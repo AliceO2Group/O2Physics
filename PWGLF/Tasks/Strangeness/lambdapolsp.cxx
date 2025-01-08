@@ -734,10 +734,6 @@ struct lambdapolsp {
         int LambdaTag = 0;
         int aLambdaTag = 0;
 
-        auto candmass = 0.0;
-        auto candpt = 0.0;
-        auto candeta = 0.0;
-
         const auto signpos = postrack.sign();
         const auto signneg = negtrack.sign();
 
