@@ -510,7 +510,7 @@ struct HfTaskCorrelationDsHadrons {
     }
   }
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processDerivedDataME, "Process derived data ME", false);
-  
+
   /// D-Hadron correlation pair filling task, from pair tables - for MC reco-level analysis (candidates matched to true signal only, but also bkg sources are studied)
   void processMcRecME(DsHadronPairFullWithMl const& pairEntries)
   {
