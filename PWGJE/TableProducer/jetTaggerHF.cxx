@@ -16,6 +16,10 @@
 /// \author Hanseo Park <hanseo.park@cern.ch>
 /// \author Hadi Hassan <hadi.hassan@cern.ch>, University of Jyväskylä
 
+#include <string>
+#include <memory>
+#include <vector>
+
 #include <TF1.h>
 #include <TH1.h>
 

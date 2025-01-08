@@ -14,6 +14,11 @@
 ///
 /// \author Hanseo Park <hanseo.park@cern.ch>
 
+#include <string>
+#include <functional>
+#include <algorithm>
+#include <vector>
+
 #include "TF1.h"
 
 #include "Framework/AnalysisTask.h"
@@ -74,6 +79,7 @@ struct JetTaggerHFQA {
   Configurable<bool> checkMcCollisionIsMatched{"checkMcCollisionIsMatched", false, "0: count whole MCcollisions, 1: select MCcollisions which only have their correspond collisions"};
   Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range; only applied to reconstructed collisions (data and mcd jets), not mc collisions (mcp jets)"};
   Configurable<int> trackOccupancyInTimeRangeMin{"trackOccupancyInTimeRangeMin", -999999, "minimum occupancy of tracks in neighbouring collisions in a given time range; only applied to reconstructed collisions (data and mcd jets), not mc collisions (mcp jets)"};
+  Configurable<bool> useQuarkDef{"useQuarkDef", true, "Flag whether to use quarks or hadrons for determining the jet flavor"};
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
@@ -741,7 +747,11 @@ struct JetTaggerHFQA {
     int jetflavourRun2Def = -1;
     // if (!mcdjet.has_matchedJetGeo()) continue;
     for (auto const& mcpjet : mcdjet.template matchedJetGeo_as<U>()) {
-      jetflavourRun2Def = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
+      if (useQuarkDef) {
+        jetflavourRun2Def = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
+      } else {
+        jetflavourRun2Def = jettaggingutilities::getJetFlavorHadron(mcpjet, particlesPerColl);
+      }
       registry.fill(HIST("h3_jet_pt_jet_pt_part_matchedgeo_flavour"), mcpjet.pt(), mcdjet.pt(), jetflavour, eventWeight);
       registry.fill(HIST("h3_jet_pt_jet_pt_part_matchedgeo_flavour_run2"), mcpjet.pt(), mcdjet.pt(), jetflavourRun2Def, eventWeight);
     }
@@ -845,7 +855,11 @@ struct JetTaggerHFQA {
       jetflavour = JetTaggingSpecies::lightflavour; // TODO
     int jetflavourRun2Def = -1;
     for (auto const& mcpjet : mcdjet.template matchedJetGeo_as<U>()) {
-      jetflavourRun2Def = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
+      if (useQuarkDef) {
+        jetflavourRun2Def = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
+      } else {
+        jetflavourRun2Def = jettaggingutilities::getJetFlavorHadron(mcpjet, particlesPerColl);
+      }
     }
     if (jetflavourRun2Def < 0)
       return;
@@ -1006,7 +1020,11 @@ struct JetTaggerHFQA {
     }
     int jetflavourRun2Def = -1;
     for (auto const& mcpjet : mcdjet.template matchedJetGeo_as<U>()) {
-      jetflavourRun2Def = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
+      if (useQuarkDef) {
+        jetflavourRun2Def = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
+      } else {
+        jetflavourRun2Def = jettaggingutilities::getJetFlavorHadron(mcpjet, particlesPerColl);
+      }
     }
     if (jetflavourRun2Def < 0)
       return;
@@ -1101,7 +1119,11 @@ struct JetTaggerHFQA {
     }
     int jetflavourRun2Def = -1;
     for (auto const& mcpjet : mcdjet.template matchedJetGeo_as<U>()) {
-      jetflavourRun2Def = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
+      if (useQuarkDef) {
+        jetflavourRun2Def = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
+      } else {
+        jetflavourRun2Def = jettaggingutilities::getJetFlavorHadron(mcpjet, particlesPerColl);
+      }
     }
     if (jetflavourRun2Def < 0)
       return;
