@@ -922,7 +922,7 @@ struct TrackMeanOccTableProducer {
                //  o2::aod::AmbiguousTracks const& ambgTracks, o2::aod::Origins const& Origins, aod::OccsBCsList const& occsBCsList, //tables only used during debugging
                MyOccsDet const& occsDet, MyOccsTrackMult const& occsTrackMult,
                MyOccsMultExtra const& occsMultExtra, MyOccsRobust const& occsRobust)
-  { 
+  {
     // dfCount++;LOG(info) << "DEBUG 2 :: df_" << dfCount ;//<< " :: DF_" << Origins.begin().dataframeID() << " :: collisions.size() = " << collisions.size() << " :: tracks.size() = " << tracks.size() << " :: tracksQA.size() = " << tracksQA.size()
     //           << " :: MyBCTable.size() = " << BCs.size()
     //           << " :: occsBCsList.size() = "  <<occsBCsList.size()
