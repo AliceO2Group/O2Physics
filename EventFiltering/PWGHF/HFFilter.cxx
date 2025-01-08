@@ -337,10 +337,10 @@ struct HfFilter { // Main struct for HF triggers
   using Hf3ProngsWithMl = soa::Join<aod::Hf3Prongs, aod::Hf3ProngMlProbs>;
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  Preslice<aod::V0s> v0sPerCollision = aod::v0data::collisionId;
+  Preslice<aod::V0s> v0sPerCollision = aod::v0::collisionId;
   Preslice<Hf2ProngsWithMl> hf2ProngPerCollision = aod::track_association::collisionId;
   Preslice<Hf3ProngsWithMl> hf3ProngPerCollision = aod::track_association::collisionId;
-  Preslice<aod::Cascades> cascPerCollision = aod::cascdata::collisionId;
+  Preslice<aod::Cascades> cascPerCollision = aod::cascade::collisionId;
   Preslice<aod::V0PhotonsKF> photonsPerCollision = aod::v0photonkf::collisionId;
 
   void process(CollsWithEvSel const& collisions,
@@ -350,7 +350,7 @@ struct HfFilter { // Main struct for HF triggers
                Hf2ProngsWithMl const& cand2Prongs,
                Hf3ProngsWithMl const& cand3Prongs,
                aod::TrackAssoc const& trackIndices,
-               BigTracksPID const&,
+               BigTracksPID const& tracks,
                TracksIUPID const& tracksIU,
                aod::V0PhotonsKF const& photons,
                aod::V0Legs const&)
@@ -407,8 +407,8 @@ struct HfFilter { // Main struct for HF triggers
           continue;
         }
 
-        auto trackPos = cand2Prong.prong0_as<BigTracksPID>(); // positive daughter
-        auto trackNeg = cand2Prong.prong1_as<BigTracksPID>(); // negative daughter
+        auto trackPos = tracks.rawIteratorAt(cand2Prong.prong0Id()); // positive daughter
+        auto trackNeg = tracks.rawIteratorAt(cand2Prong.prong1Id()); // negative daughter
 
         auto preselD0 = helper.isDzeroPreselected(trackPos, trackNeg);
         if (!preselD0) {
@@ -485,7 +485,7 @@ struct HfFilter { // Main struct for HF triggers
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
         for (const auto& trackId : trackIdsThisCollision) { // start loop over tracks
-          auto track = trackId.track_as<BigTracksPID>();
+          auto track = tracks.rawIteratorAt(trackId.trackId());
 
           if (track.globalIndex() == trackPos.globalIndex() || track.globalIndex() == trackNeg.globalIndex()) {
             continue;
@@ -573,7 +573,7 @@ struct HfFilter { // Main struct for HF triggers
                   hMassVsPtC[kNCharmParticles]->Fill(ptCand, massDiffDstar);
                 }
                 for (const auto& trackIdB : trackIdsThisCollision) { // start loop over tracks
-                  auto trackB = trackIdB.track_as<BigTracksPID>();
+                  auto trackB = tracks.rawIteratorAt(trackIdB.trackId());
                   if (track.globalIndex() == trackB.globalIndex()) {
                     continue;
                   }
@@ -729,7 +729,7 @@ struct HfFilter { // Main struct for HF triggers
 
               // we first look for a D*+
               for (const auto& trackBachelorId : trackIdsThisCollision) { // start loop over tracks
-                auto trackBachelor = trackBachelorId.track_as<BigTracksPID>();
+                auto trackBachelor = tracks.rawIteratorAt(trackBachelorId.trackId());
                 if (trackBachelor.globalIndex() == trackPos.globalIndex() || trackBachelor.globalIndex() == trackNeg.globalIndex() || trackBachelor.globalIndex() == v0.posTrackId() || trackBachelor.globalIndex() == v0.negTrackId()) {
                   continue;
                 }
@@ -838,9 +838,9 @@ struct HfFilter { // Main struct for HF triggers
           continue;
         }
 
-        auto trackFirst = cand3Prong.prong0_as<BigTracksPID>();
-        auto trackSecond = cand3Prong.prong1_as<BigTracksPID>();
-        auto trackThird = cand3Prong.prong2_as<BigTracksPID>();
+        auto trackFirst = tracks.rawIteratorAt(cand3Prong.prong0Id());
+        auto trackSecond = tracks.rawIteratorAt(cand3Prong.prong1Id());
+        auto trackThird = tracks.rawIteratorAt(cand3Prong.prong2Id());
 
         auto trackParFirst = getTrackParCov(trackFirst);
         auto trackParSecond = getTrackParCov(trackSecond);
@@ -971,7 +971,7 @@ struct HfFilter { // Main struct for HF triggers
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
         for (const auto& trackId : trackIdsThisCollision) { // start loop over track indices as associated to this collision in HF code
-          auto track = trackId.track_as<BigTracksPID>();
+          auto track = tracks.rawIteratorAt(trackId.trackId());
           if (track.globalIndex() == trackFirst.globalIndex() || track.globalIndex() == trackSecond.globalIndex() || track.globalIndex() == trackThird.globalIndex()) {
             continue;
           }
@@ -1092,7 +1092,7 @@ struct HfFilter { // Main struct for HF triggers
             for (const auto& trackSoftPiId : trackIdsThisCollision) { // start loop over tracks (soft pi)
 
               // soft pion candidates
-              auto trackSoftPi = trackSoftPiId.track_as<BigTracksPID>();
+              auto trackSoftPi = tracks.rawIteratorAt(trackSoftPiId.trackId());
               auto globalIndexSoftPi = trackSoftPi.globalIndex();
 
               // exclude tracks already used to build the 3-prong candidate
@@ -1303,7 +1303,7 @@ struct HfFilter { // Main struct for HF triggers
               for (const auto& trackSoftPiId : trackIdsThisCollision) { // start loop over tracks (soft pi)
 
                 // soft pion candidates
-                auto trackSoftPi = trackSoftPiId.track_as<BigTracksPID>();
+                auto trackSoftPi = tracks.rawIteratorAt(trackSoftPiId.trackId());
                 auto globalIndexSoftPi = trackSoftPi.globalIndex();
 
                 // exclude tracks already used to build the 3-prong candidate
@@ -1411,7 +1411,7 @@ struct HfFilter { // Main struct for HF triggers
 
           auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
           for (const auto& trackId : trackIdsThisCollision) { // start loop over tracks
-            auto track = trackId.track_as<BigTracksPID>();
+            auto track = tracks.rawIteratorAt(trackId.trackId());
 
             // ask for opposite sign daughters (omegac daughters)
             if (track.sign() * cascCand.sign > 0) {
