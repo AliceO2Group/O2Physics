@@ -262,17 +262,23 @@ struct AnalysisEventSelection {
 
       bool decision = false;
       // Fill histograms in the class Event, before cuts
-      fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
+      if (fConfigQA) {
+        fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
+      }
 
       // Apply event cuts and fill histograms after selection
       if (fEventCut->IsSelected(VarManager::fgValues)) {
         if (fConfigRunZorro) {
           if (event.tag_bit(56)) { // This is the bit used for the software trigger event selections [TO BE DONE: find a more clear way to use it]
-            fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+            if (fConfigQA) {
+              fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+            }
             decision = true;
           }
         } else {
-          fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+          if (fConfigQA) {
+            fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+          }
           decision = true;
         }
       }
@@ -304,51 +310,57 @@ struct AnalysisEventSelection {
     // key: event global index, value: whether pileup event is a possible splitting
     std::map<int64_t, bool> collisionSplittingMap;
 
-    // Reset the fValues array and fill event observables
-    VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
-    // loop over the BC map, get the collision vectors and make in-bunch and out of bunch 2-event correlations
-    for (auto bc1It = fBCCollMap.begin(); bc1It != fBCCollMap.end(); ++bc1It) {
-      uint64_t bc1 = bc1It->first;
-      auto bc1Events = bc1It->second;
+    if (fConfigCheckSplitCollisions) {
+      // Reset the fValues array and fill event observables
+      VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
+      // loop over the BC map, get the collision vectors and make in-bunch and out of bunch 2-event correlations
+      for (auto bc1It = fBCCollMap.begin(); bc1It != fBCCollMap.end(); ++bc1It) {
+        uint64_t bc1 = bc1It->first;
+        auto bc1Events = bc1It->second;
 
-      // same bunch event correlations, if more than 1 collisions in this bunch
-      if (bc1Events.size() > 1) {
-        for (auto ev1It = bc1Events.begin(); ev1It != bc1Events.end(); ++ev1It) {
-          auto ev1 = events.rawIteratorAt(*ev1It);
-          for (auto ev2It = std::next(ev1It); ev2It != bc1Events.end(); ++ev2It) {
-            auto ev2 = events.rawIteratorAt(*ev2It);
-            // compute 2-event quantities and mark the candidate split collisions
-            VarManager::FillTwoEvents(ev1, ev2);
-            if (TMath::Abs(VarManager::fgValues[VarManager::kTwoEvDeltaZ]) < fConfigSplitCollisionsDeltaZ) { // this is a possible collision split
-              collisionSplittingMap[*ev1It] = true;
-              collisionSplittingMap[*ev2It] = true;
+        // same bunch event correlations, if more than 1 collisions in this bunch
+        if (bc1Events.size() > 1) {
+          for (auto ev1It = bc1Events.begin(); ev1It != bc1Events.end(); ++ev1It) {
+            auto ev1 = events.rawIteratorAt(*ev1It);
+            for (auto ev2It = std::next(ev1It); ev2It != bc1Events.end(); ++ev2It) {
+              auto ev2 = events.rawIteratorAt(*ev2It);
+              // compute 2-event quantities and mark the candidate split collisions
+              VarManager::FillTwoEvents(ev1, ev2);
+              if (TMath::Abs(VarManager::fgValues[VarManager::kTwoEvDeltaZ]) < fConfigSplitCollisionsDeltaZ) { // this is a possible collision split
+                collisionSplittingMap[*ev1It] = true;
+                collisionSplittingMap[*ev2It] = true;
+              }
+              if (fConfigQA) {
+                fHistMan->FillHistClass("SameBunchCorrelations", VarManager::fgValues);
+              }
+            } // end second event loop
+          } // end first event loop
+        } // end if BC1 events > 1
+
+        // loop over the following BCs in the TF
+        for (auto bc2It = std::next(bc1It); bc2It != fBCCollMap.end(); ++bc2It) {
+          uint64_t bc2 = bc2It->first;
+          if ((bc2 > bc1 ? bc2 - bc1 : bc1 - bc2) > fConfigSplitCollisionsDeltaBC) {
+            break;
+          }
+          auto bc2Events = bc2It->second;
+
+          // loop over events in the first BC
+          for (auto ev1It : bc1Events) {
+            auto ev1 = events.rawIteratorAt(ev1It);
+            // loop over events in the second BC
+            for (auto ev2It : bc2Events) {
+              auto ev2 = events.rawIteratorAt(ev2It);
+              // compute 2-event quantities and mark the candidate split collisions
+              VarManager::FillTwoEvents(ev1, ev2);
+              if (TMath::Abs(VarManager::fgValues[VarManager::kTwoEvDeltaZ]) < fConfigSplitCollisionsDeltaZ) { // this is a possible collision split
+                collisionSplittingMap[ev1It] = true;
+                collisionSplittingMap[ev2It] = true;
+              }
+              if (fConfigQA) {
+                fHistMan->FillHistClass("OutOfBunchCorrelations", VarManager::fgValues);
+              }
             }
-            fHistMan->FillHistClass("SameBunchCorrelations", VarManager::fgValues);
-          } // end second event loop
-        } // end first event loop
-      } // end if BC1 events > 1
-
-      // loop over the following BCs in the TF
-      for (auto bc2It = std::next(bc1It); bc2It != fBCCollMap.end(); ++bc2It) {
-        uint64_t bc2 = bc2It->first;
-        if ((bc2 > bc1 ? bc2 - bc1 : bc1 - bc2) > fConfigSplitCollisionsDeltaBC) {
-          break;
-        }
-        auto bc2Events = bc2It->second;
-
-        // loop over events in the first BC
-        for (auto ev1It : bc1Events) {
-          auto ev1 = events.rawIteratorAt(ev1It);
-          // loop over events in the second BC
-          for (auto ev2It : bc2Events) {
-            auto ev2 = events.rawIteratorAt(ev2It);
-            // compute 2-event quantities and mark the candidate split collisions
-            VarManager::FillTwoEvents(ev1, ev2);
-            if (TMath::Abs(VarManager::fgValues[VarManager::kTwoEvDeltaZ]) < fConfigSplitCollisionsDeltaZ) { // this is a possible collision split
-              collisionSplittingMap[ev1It] = true;
-              collisionSplittingMap[ev2It] = true;
-            }
-            fHistMan->FillHistClass("OutOfBunchCorrelations", VarManager::fgValues);
           }
         }
       }
@@ -1411,6 +1423,7 @@ struct AnalysisSameEventPairing {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
+      uint8_t evSel = event.isEventSelected_raw();
       // Reset the fValues array
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
@@ -1536,6 +1549,7 @@ struct AnalysisSameEventPairing {
             dimuonsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
             if (fConfigOptions.flatTables.value) {
               dimuonAllList(event.posX(), event.posY(), event.posZ(), event.numContrib(),
+                            event.selection_raw(), evSel,
                             -999., -999., -999.,
                             VarManager::fgValues[VarManager::kMass],
                             false,
@@ -1864,9 +1878,9 @@ struct AnalysisAsymmetricPairing {
 
   // Configurables
   Configurable<string> fConfigLegCuts{"cfgLegCuts", "", "<leg-A-1>:<leg-B-1>[:<leg-C-1>],[<leg-A-2>:<leg-B-2>[:<leg-C-1>],...]"};
-  Configurable<uint32_t> fConfigLegAFilterMask{"cfgLegAFilterMask", 0, "Filter mask corresponding to cuts in event-selection"};
-  Configurable<uint32_t> fConfigLegBFilterMask{"cfgLegBFilterMask", 0, "Filter mask corresponding to cuts in event-selection"};
-  Configurable<uint32_t> fConfigLegCFilterMask{"cfgLegCFilterMask", 0, "Filter mask corresponding to cuts in event-selection"};
+  Configurable<uint32_t> fConfigLegAFilterMask{"cfgLegAFilterMask", 0, "Filter mask corresponding to cuts in track-selection"};
+  Configurable<uint32_t> fConfigLegBFilterMask{"cfgLegBFilterMask", 0, "Filter mask corresponding to cuts in track-selection"};
+  Configurable<uint32_t> fConfigLegCFilterMask{"cfgLegCFilterMask", 0, "Filter mask corresponding to cuts in track-selection"};
   Configurable<string> fConfigCommonTrackCuts{"cfgCommonTrackCuts", "", "Comma separated list of cuts to be applied to all legs"};
   Configurable<string> fConfigPairCuts{"cfgPairCuts", "", "Comma separated list of pair cuts"};
   Configurable<bool> fConfigSkipAmbiguousIdCombinations{"cfgSkipAmbiguousIdCombinations", true, "Choose whether to skip pairs/triples which pass a stricter combination of cuts, e.g. KKPi triplets for D+ -> KPiPi"};
@@ -2051,7 +2065,7 @@ struct AnalysisAsymmetricPairing {
               names = {};
               names.push_back(Form("TripletsBarrelSE_%s_%s_%s", legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), objArrayPair->At(iPairCut)->GetName()));
               histNames += Form("%s;", names[0].Data());
-              fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
+              fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + (icut * fNPairCuts * fNCommonTrackCuts) + (iCommonCut * fNPairCuts) + iPairCut] = names;
             } // end loop (common cuts)
           } // end loop (pair cuts)
         } // end if (pair cuts)
@@ -2102,7 +2116,7 @@ struct AnalysisAsymmetricPairing {
                 names.push_back(Form("%s_%s_%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), objArrayPair->At(iPairCut)->GetName()));
                 histNames += Form("%s;", names[iPrefix].Data());
               }
-              fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
+              fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + (icut * fNPairCuts * fNCommonTrackCuts) + (iCommonCut * fNPairCuts) + iPairCut] = names;
             } // end loop (common cuts)
           } // end loop (pair cuts)
         } // end if (pair cuts)
@@ -2220,8 +2234,6 @@ struct AnalysisAsymmetricPairing {
         continue;
       }
 
-      // TODO: Think about double counting
-      std::set<std::pair<int, int>> globIdxPairs;
       for (auto& [a1, a2] : combinations(soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs))) {
 
         uint32_t twoTrackFilter = static_cast<uint32_t>(0);
@@ -2326,12 +2338,12 @@ struct AnalysisAsymmetricPairing {
               for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
                 if (twoTrackCommonFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
                   if (sign1 * sign2 < 0) {
-                    fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut][0].Data(), VarManager::fgValues);
+                    fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + (icut * fNPairCuts * fNCommonTrackCuts) + (iCommonCut * fNPairCuts) + iPairCut][0].Data(), VarManager::fgValues);
                   } else if (fConfigSameSignHistograms.value) {
                     if (sign1 > 0) {
-                      fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut][1].Data(), VarManager::fgValues);
+                      fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + (icut * fNPairCuts * fNCommonTrackCuts) + (iCommonCut * fNPairCuts) + iPairCut][1].Data(), VarManager::fgValues);
                     } else {
-                      fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut][2].Data(), VarManager::fgValues);
+                      fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + (icut * fNPairCuts * fNCommonTrackCuts) + (iCommonCut * fNPairCuts) + iPairCut][2].Data(), VarManager::fgValues);
                     }
                   }
                 }
@@ -2383,9 +2395,8 @@ struct AnalysisAsymmetricPairing {
         continue;
       }
 
-      std::set<std::tuple<int64_t, int64_t, int64_t>> globIdxTriplets;
       // Based on triplet type, make suitable combinations of the partitions
-      if (tripletType == VarManager::kTripleCandidateToPKPi || tripletType == VarManager::kTripleCandidateToKKPi) {
+      if (tripletType == VarManager::kTripleCandidateToPKPi) {
         for (auto& [a1, a2, a3] : combinations(soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs, groupedLegCAssocs))) {
           readTriplet<TThreeProngFitter, TEventFillMap, TTrackFillMap>(a1, a2, a3, tracks, event, tripletType, histNames);
         }
@@ -2483,7 +2494,7 @@ struct AnalysisAsymmetricPairing {
           // Histograms with pair cuts and common track cuts
           for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
             if (threeTrackCommonFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
-              fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut][0].Data(), VarManager::fgValues);
+              fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + (icut * fNPairCuts * fNCommonTrackCuts) + (iCommonCut * fNPairCuts) + iPairCut][0].Data(), VarManager::fgValues);
             }
           }
         } // end loop (pair cuts)
@@ -2505,13 +2516,6 @@ struct AnalysisAsymmetricPairing {
     runThreeProng<true, gkEventFillMapWithCovZdc, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, VarManager::kTripleCandidateToKPiPi);
   }
 
-  void processKaonKaonPionSkimmed(MyEventsVtxCovZdcSelected const& events,
-                                  soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
-                                  MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
-  {
-    runThreeProng<true, gkEventFillMapWithCovZdc, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, VarManager::kTripleCandidateToKKPi);
-  }
-
   void processProtonKaonPionSkimmed(MyEventsVtxCovZdcSelected const& events,
                                     soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
                                     MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
@@ -2526,7 +2530,6 @@ struct AnalysisAsymmetricPairing {
 
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processKaonPionSkimmed, "Run kaon pion pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processKaonPionPionSkimmed, "Run kaon pion pion triplets, with skimmed tracks", false);
-  PROCESS_SWITCH(AnalysisAsymmetricPairing, processKaonKaonPionSkimmed, "Run kaon kaon pion triplets, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processProtonKaonPionSkimmed, "Run proton kaon pion triplets, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", true);
 };

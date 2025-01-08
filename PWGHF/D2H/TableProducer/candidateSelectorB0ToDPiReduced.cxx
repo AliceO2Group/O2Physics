@@ -173,7 +173,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
       }
 
       if constexpr (withDmesMl) { // we include it in the topological selections
-        if (!hfHelper.selectionDmesMlScoresForB(hfCandB0, cutsDmesMl, binsPtDmesMl)) {
+        if (!hfHelper.selectionDmesMlScoresForBReduced(hfCandB0, cutsDmesMl, binsPtDmesMl)) {
           hfSelB0ToDPiCandidate(statusB0ToDPi);
           if (applyB0Ml) {
             hfMlB0ToDPiCandidate(outputMlNotPreselected);

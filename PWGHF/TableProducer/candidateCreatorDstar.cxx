@@ -514,6 +514,7 @@ struct HfCandidateCreatorDstarExpressions {
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
@@ -542,11 +543,11 @@ struct HfCandidateCreatorDstarExpressions {
   }
 
   /// Perform MC Matching.
-  template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs>
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs, typename McCollisions>
   void runCreatorDstarMc(aod::TracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
                          CCs const& collInfos,
-                         aod::McCollisions const& mcCollisions,
+                         McCollisions const& mcCollisions,
                          BCsInfo const&)
   {
     rowsCandidateD0->bindExternalIndices(&tracks);
@@ -644,7 +645,7 @@ struct HfCandidateCreatorDstarExpressions {
         const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
         rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
       }
-      hfEvSelMc.fillHistograms(rejectionMask);
+      hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask);
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject all particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
@@ -718,7 +719,7 @@ struct HfCandidateCreatorDstarExpressions {
   void processMcCentFT0M(aod::TracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
                          McCollisionsFT0Ms const& collInfos,
-                         aod::McCollisions const& mcCollisions,
+                         McCollisionsCentFT0Ms const& mcCollisions,
                          BCsInfo const& BCsInfo)
   {
     runCreatorDstarMc<CentralityEstimator::FT0M>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);

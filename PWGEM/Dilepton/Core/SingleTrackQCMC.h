@@ -55,6 +55,9 @@ using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
+using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::MostProbableEMEventIdsInMC>;
+using MyMCCollision = MyMCCollisions::iterator;
+
 using MyMCElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit, aod::EMPrimaryElectronMCLabels>;
 using MyMCElectron = MyMCElectrons::iterator;
 using FilteredMyMCElectrons = soa::Filtered<MyMCElectrons>;
@@ -79,8 +82,8 @@ struct SingleTrackQCMC {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
-  Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
-  Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
+  // Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
+  // Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
   Configurable<bool> cfgFillQA{"cfgFillQA", false, "flag to fill QA histograms"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
   Configurable<uint> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
@@ -197,7 +200,7 @@ struct SingleTrackQCMC {
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false}; // 1 HistogramRegistry can keep up to 512 histograms
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
-  static constexpr std::string_view lepton_source_types[9] = {"lf/", "Photon/", "PromptJPsi/", "NonPromptJPsi/", "PromptPsi2S/", "NonPromptPsi2S/", "c2l/", "b2l/", "b2c2l/"};
+  static constexpr std::string_view lepton_source_types[10] = {"lf/", "lf_prompt/", "Photon/", "PromptJPsi/", "NonPromptJPsi/", "PromptPsi2S/", "NonPromptPsi2S/", "c2l/", "b2l/", "b2c2l/"};
 
   ~SingleTrackQCMC() {}
 
@@ -205,6 +208,8 @@ struct SingleTrackQCMC {
   {
     // event info
     o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
+    fRegistry.add("MCEvent/before/hZvtx", "vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
+    fRegistry.addClone("MCEvent/before/", "MCEvent/after/");
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       const AxisSpec axis_pt{ConfPtlBins, "p_{T,e} (GeV/c)"};
@@ -221,6 +226,7 @@ struct SingleTrackQCMC {
 
       // generated info
       fRegistry.add("Generated/lf/hs", "gen. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
+      fRegistry.addClone("Generated/lf/", "Generated/lf_prompt/");
       fRegistry.addClone("Generated/lf/", "Generated/PromptJPsi/");
       fRegistry.addClone("Generated/lf/", "Generated/NonPromptJPsi/");
       fRegistry.addClone("Generated/lf/", "Generated/PromptPsi2S/");
@@ -253,6 +259,7 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/lf/positive/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
       }
       fRegistry.addClone("Track/lf/positive/", "Track/lf/negative/");
+      fRegistry.addClone("Track/lf/", "Track/lf_prompt/");
       fRegistry.addClone("Track/lf/", "Track/Photon/"); // this is not for efficiency! only for contamination. We don't store generated photon conversions.
       fRegistry.addClone("Track/lf/", "Track/PromptJPsi/");
       fRegistry.addClone("Track/lf/", "Track/NonPromptJPsi/");
@@ -289,6 +296,7 @@ struct SingleTrackQCMC {
 
       // generated info
       fRegistry.add("Generated/lf/hs", "gen. single muon", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
+      fRegistry.addClone("Generated/lf/", "Generated/lf_prompt/");
       fRegistry.addClone("Generated/lf/", "Generated/PromptJPsi/");
       fRegistry.addClone("Generated/lf/", "Generated/NonPromptJPsi/");
       fRegistry.addClone("Generated/lf/", "Generated/PromptPsi2S/");
@@ -318,6 +326,7 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/lf/positive/hPtGen_DeltaPhi", "muon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
       }
       fRegistry.addClone("Track/lf/positive/", "Track/lf/negative/");
+      fRegistry.addClone("Track/lf/", "Track/lf_prompt/");
       fRegistry.addClone("Track/lf/", "Track/Photon/"); // this is not for efficiency! only for contamination. We don't store generated photon conversions.
       fRegistry.addClone("Track/lf/", "Track/PromptJPsi/");
       fRegistry.addClone("Track/lf/", "Track/NonPromptJPsi/");
@@ -369,6 +378,7 @@ struct SingleTrackQCMC {
     fEMEventCut.SetRequireNoCollInTimeRangeStrict(eventcuts.cfgRequireNoCollInTimeRangeStrict);
     fEMEventCut.SetRequireNoCollInITSROFStandard(eventcuts.cfgRequireNoCollInITSROFStandard);
     fEMEventCut.SetRequireNoCollInITSROFStrict(eventcuts.cfgRequireNoCollInITSROFStrict);
+    fEMEventCut.SetRequireNoHighMultCollInPrevRof(eventcuts.cfgRequireNoHighMultCollInPrevRof);
   }
 
   o2::analysis::MlResponseDielectronSingleTrack<float> mlResponseSingleTrack;
@@ -713,30 +723,33 @@ struct SingleTrackQCMC {
 
         if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
           if (pdg_mother == 111 || pdg_mother == 221 || pdg_mother == 331 || pdg_mother == 113 || pdg_mother == 223 || pdg_mother == 333) {
-            fillTrackInfo<0, TMCParticles>(track);
+            fillTrackInfo<0, TMCParticles>(track); // lf
+            if (IsFromCharm(mcmother, mcparticles) < 0 && IsFromBeauty(mcmother, mcparticles) < 0) {
+              fillTrackInfo<1, TMCParticles>(track); // lf_prompt
+            }
           } else if (pdg_mother == 443) {
             if (IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
-              fillTrackInfo<3, TMCParticles>(track);
+              fillTrackInfo<4, TMCParticles>(track);
             } else {
-              fillTrackInfo<2, TMCParticles>(track);
+              fillTrackInfo<3, TMCParticles>(track);
             }
           } else if (pdg_mother == 100443) {
             if (IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
-              fillTrackInfo<5, TMCParticles>(track);
+              fillTrackInfo<6, TMCParticles>(track);
             } else {
-              fillTrackInfo<4, TMCParticles>(track);
+              fillTrackInfo<5, TMCParticles>(track);
             }
           } else if (IsFromBeauty(mctrack, mcparticles) > 0) { // b is found in full decay chain.
             if (IsFromCharm(mctrack, mcparticles) > 0) {       // c is found in full decay chain.
-              fillTrackInfo<8, TMCParticles>(track);
+              fillTrackInfo<9, TMCParticles>(track);
             } else {
-              fillTrackInfo<7, TMCParticles>(track);
+              fillTrackInfo<8, TMCParticles>(track);
             }
           } else if (IsFromCharm(mctrack, mcparticles) > 0) { // c is found in full decay chain. Not from b.
-            fillTrackInfo<6, TMCParticles>(track);
+            fillTrackInfo<7, TMCParticles>(track);
           }
         } else {
-          fillTrackInfo<1, TMCParticles>(track);
+          fillTrackInfo<2, TMCParticles>(track);
         }
       } // end of track loop
 
@@ -751,31 +764,35 @@ struct SingleTrackQCMC {
       if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
         continue;
       }
+      fRegistry.fill(HIST("MCEvent/before/hZvtx"), mccollision.posZ());
 
-      auto rec_colls_per_mccoll = collisions.sliceBy(recColperMcCollision, mccollision.globalIndex());
-      uint32_t maxNumContrib = 0;
-      int rec_col_globalIndex = -999;
-      for (auto& rec_col : rec_colls_per_mccoll) {
-        if (rec_col.numContrib() > maxNumContrib) {
-          rec_col_globalIndex = rec_col.globalIndex();
-          maxNumContrib = rec_col.numContrib(); // assign mc collision to collision where the number of contibutor is lager. LF/MM recommendation
-        }
-      }
+      // auto rec_colls_per_mccoll = collisions.sliceBy(recColperMcCollision, mccollision.globalIndex());
+      // if (rec_colls_per_mccoll.size() < 1) {
+      //   continue;
+      // }
+      // uint32_t maxNumContrib = 0;
+      // int rec_col_globalIndex = -999;
+      // for (auto& rec_col : rec_colls_per_mccoll) {
+      //   if (rec_col.numContrib() > maxNumContrib) {
+      //     rec_col_globalIndex = rec_col.globalIndex();
+      //     maxNumContrib = rec_col.numContrib(); // assign mc collision to collision where the number of contibutor is lager. LF/MM recommendation
+      //   }
+      // }
+      // auto collision = collisions.rawIteratorAt(rec_col_globalIndex);
 
-      if (rec_colls_per_mccoll.size() < 1) {
+      if (mccollision.mpemeventId() < 0) {
         continue;
       }
-
-      auto collision = collisions.rawIteratorAt(rec_col_globalIndex);
+      auto collision = collisions.rawIteratorAt(mccollision.mpemeventId());
 
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
-
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+      fRegistry.fill(HIST("MCEvent/after/hZvtx"), mccollision.posZ());
 
       auto leptonsMC_per_coll = leptonsMC.sliceByCachedUnsorted(o2::aod::emmcparticle::emmceventId, mccollision.globalIndex(), cache);
       for (auto& lepton : leptonsMC_per_coll) {
@@ -820,6 +837,9 @@ struct SingleTrackQCMC {
 
         if (pdg_mother == 111 || pdg_mother == 221 || pdg_mother == 331 || pdg_mother == 113 || pdg_mother == 223 || pdg_mother == 333) {
           fRegistry.fill(HIST("Generated/lf/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+          if (IsFromCharm(mcmother, mcparticles) < 0 && IsFromBeauty(mcmother, mcparticles) < 0) {
+            fRegistry.fill(HIST("Generated/lf_prompt/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+          }
         } else if (pdg_mother == 443) {
           if (IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
             fRegistry.fill(HIST("Generated/NonPromptJPsi/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
@@ -945,7 +965,7 @@ struct SingleTrackQCMC {
   Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), o2::aod::emprimarymuon::isAssociatedToMPC == true || o2::aod::emprimarymuon::isAssociatedToMPC == false, o2::aod::emprimarymuon::isAssociatedToMPC == true);
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
+  // Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin < o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
@@ -954,9 +974,9 @@ struct SingleTrackQCMC {
   Partition<aod::EMMCParticles> muonsMC = nabs(o2::aod::mcparticle::pdgCode) == 13;     // mu+, mu-
   PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
 
-  PresliceUnsorted<MyCollisions> recColperMcCollision = aod::emmceventlabel::emmceventId;
+  // PresliceUnsorted<MyCollisions> recColperMcCollision = aod::emmceventlabel::emmceventId;
 
-  void processQCMC(FilteredMyCollisions const& collisions, aod::EMMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles, TLeptons const& tracks)
+  void processQCMC(FilteredMyCollisions const& collisions, MyMCCollisions const& mccollisions, aod::EMMCParticles const& mcparticles, TLeptons const& tracks)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (cfgApplyWeightTTCA) {
@@ -978,7 +998,7 @@ struct SingleTrackQCMC {
   Partition<MySmearedElectrons> electronsMC_smeared = nabs(o2::aod::mcparticle::pdgCode) == 11; // e+, e-
   Partition<MySmearedMuons> muonsMC_smeared = nabs(o2::aod::mcparticle::pdgCode) == 13;         // mu+, mu-
 
-  void processQCMC_Smeared(FilteredMyCollisions const& collisions, aod::EMMCEvents const& mccollisions, TLeptons const& tracks, TSmearedMCParticles const& mcparticles_smeared)
+  void processQCMC_Smeared(FilteredMyCollisions const& collisions, MyMCCollisions const& mccollisions, TLeptons const& tracks, TSmearedMCParticles const& mcparticles_smeared)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (cfgApplyWeightTTCA) {
@@ -1042,7 +1062,7 @@ struct SingleTrackQCMC {
   }
   PROCESS_SWITCH(SingleTrackQCMC, processNorm, "process normalization info", false);
 
-  void processDummy(MyCollisions const&) {}
+  void processDummy(FilteredMyCollisions const&) {}
   PROCESS_SWITCH(SingleTrackQCMC, processDummy, "Dummy function", false);
 };
 

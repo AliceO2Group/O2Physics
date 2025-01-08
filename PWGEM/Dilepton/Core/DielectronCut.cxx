@@ -34,7 +34,7 @@ void DielectronCut::SetPairYRange(float minY, float maxY)
 {
   mMinPairY = minY;
   mMaxPairY = maxY;
-  LOG(info) << "Dielectron Cut, set pair eta range: " << mMinPairY << " - " << mMaxPairY;
+  LOG(info) << "Dielectron Cut, set pair y range: " << mMinPairY << " - " << mMaxPairY;
 }
 void DielectronCut::SetPairDCARange(float min, float max)
 {
