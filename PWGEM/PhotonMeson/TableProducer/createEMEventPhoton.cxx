@@ -126,7 +126,7 @@ struct CreateEMEvent {
   // std::unordered_map<uint64_t, int> map_ncolls_per_bc;
 
   template <bool isMC, EMEventType eventype, typename TCollisions, typename TBCs>
-  void skimEvent(TCollisions const& collisions, TBCs const& bcs)
+  void skimEvent(TCollisions const& collisions, TBCs const&)
   {
     // first count the number of collisions per bc
     // for (const auto& bc : bcs) {
