@@ -117,6 +117,7 @@ class PairSHCentMultKt
           } else {
             suffix = "Ylm" + std::to_string(felsi[ihist]) + std::to_string(femsi[ihist]);
           }
+          //std::cout<<"ihist "<<ihist<<" "<<suffix.c_str()<<std::endl;
           if (FolderSuffix[EventType] == FolderSuffix[0]) {
             fnumsreal[i][j][ihist] = pairSHCentMultKtRegistry->add<TH1>(
               (histFolderMult + "/" + histFolderkT + "/" + "NumRe" + suffix).c_str(),
@@ -141,6 +142,7 @@ class PairSHCentMultKt
                                                               {(kMaxJM * 2), -0.5, ((static_cast<float>(kMaxJM) * 2.0 - 0.5))},
                                                               {(kMaxJM * 2), -0.5,
                                                                ((static_cast<float>(kMaxJM) * 2.0 - 0.5))}});
+          fcovnum[i][j]->Sumw2();                                                     
         } else if (FolderSuffix[EventType] == FolderSuffix[1]) {
           std::string bufnameDen = "CovDen";
           fcovden[i][j] = pairSHCentMultKtRegistry->add<TH3>((histFolderMult + "/" + histFolderkT + "/" + bufnameDen).c_str(), "; x; y; z", kTH3D,
@@ -257,7 +259,9 @@ class PairSHCentMultKt
     const float qlong = f3d[3];
 
     double kv = std::sqrt(qout * qout + qside * qside + qlong * qlong);
-    int nqbin = fbinctn[0][0]->GetXaxis()->FindFixBin(kv) - 1;
+    
+    int nqbin = fbinctn[0][0]->GetXaxis()->FindFixBin(kv);
+    int nqbinnotfix = fbinctn[0][0]->GetXaxis()->FindBin(kv);
 
     FemtoUniverseSpherHarMath kYlm;
     kYlm.doYlmUpToL(kMaxL, qout, qside, qlong, fYlmBuffer.data());
@@ -268,17 +272,16 @@ class PairSHCentMultKt
         fnumsimag[fMultBin][fKtBin][ihist]->Fill(kv, -imag(fYlmBuffer[ihist]));
         fbinctn[fMultBin][fKtBin]->Fill(kv, 1.0);
       }
-      if (nqbin < fbinctn[0][0]->GetNbinsX()) {
-        for (int ilmzero = 0; ilmzero < kMaxJM; ilmzero++) {
-          for (int ilmprim = 0; ilmprim < kMaxJM; ilmprim++) {
-            fcovmnum[fMultBin][fKtBin][getBin(nqbin, ilmzero, 0, ilmprim, 0)] +=
-              (real(fYlmBuffer[ilmzero]) * real(fYlmBuffer[ilmprim]));
-            fcovmnum[fMultBin][fKtBin][getBin(nqbin, ilmzero, 0, ilmprim, 1)] +=
-              (real(fYlmBuffer[ilmzero]) * -imag(fYlmBuffer[ilmprim]));
-            fcovmnum[fMultBin][fKtBin][getBin(nqbin, ilmzero, 1, ilmprim, 0)] +=
-              (-imag(fYlmBuffer[ilmzero]) * real(fYlmBuffer[ilmprim]));
-            fcovmnum[fMultBin][fKtBin][getBin(nqbin, ilmzero, 1, ilmprim, 1)] +=
-              (-imag(fYlmBuffer[ilmzero]) * -imag(fYlmBuffer[ilmprim]));
+      for (int ilmzero = 0; ilmzero < kMaxJM * 2; ilmzero++) {
+        for (int ilmprim = 0; ilmprim < kMaxJM * 2; ilmprim++) {
+          if((ilmzero % 2) == 0 && (ilmprim % 2) == 0) {
+            fcovnum[fMultBin][fKtBin]->Fill(kv,ilmzero, ilmprim, (real(fYlmBuffer[ilmzero / 2]) * real(fYlmBuffer[ilmprim / 2])));
+          } else if((ilmzero % 2) == 0 && (ilmprim % 2) == 1) {
+            fcovnum[fMultBin][fKtBin]->Fill(kv,ilmzero, ilmprim, (real(fYlmBuffer[ilmzero / 2]) * -imag(fYlmBuffer[ilmprim / 2])));
+          } else if((ilmzero % 2) == 1 && (ilmprim % 2) == 0) {
+            fcovnum[fMultBin][fKtBin]->Fill(kv,ilmzero, ilmprim, (-imag(fYlmBuffer[ilmzero / 2]) * real(fYlmBuffer[ilmprim / 2])));
+          } else if((ilmzero % 2) == 1 && (ilmprim % 2) == 1) {
+            fcovnum[fMultBin][fKtBin]->Fill(kv,ilmzero, ilmprim, (-imag(fYlmBuffer[ilmzero / 2]) * -imag(fYlmBuffer[ilmprim / 2])));
           }
         }
       }
@@ -288,17 +291,16 @@ class PairSHCentMultKt
         fdensimag[fMultBin][fKtBin][ihist]->Fill(kv, -imag(fYlmBuffer[ihist]));
         fbinctd[fMultBin][fKtBin]->Fill(kv, 1.0);
       }
-      if (nqbin < fbinctd[0][0]->GetNbinsX()) {
-        for (int ilmzero = 0; ilmzero < kMaxJM; ilmzero++) {
-          for (int ilmprim = 0; ilmprim < kMaxJM; ilmprim++) {
-            fcovmden[fMultBin][fKtBin][getBin(nqbin, ilmzero, 0, ilmprim, 0)] +=
-              (real(fYlmBuffer[ilmzero]) * real(fYlmBuffer[ilmprim]));
-            fcovmden[fMultBin][fKtBin][getBin(nqbin, ilmzero, 0, ilmprim, 1)] +=
-              (real(fYlmBuffer[ilmzero]) * -imag(fYlmBuffer[ilmprim]));
-            fcovmden[fMultBin][fKtBin][getBin(nqbin, ilmzero, 1, ilmprim, 0)] +=
-              (-imag(fYlmBuffer[ilmzero]) * real(fYlmBuffer[ilmprim]));
-            fcovmden[fMultBin][fKtBin][getBin(nqbin, ilmzero, 1, ilmprim, 1)] +=
-              (-imag(fYlmBuffer[ilmzero]) * -imag(fYlmBuffer[ilmprim]));
+      for (int ilmzero = 0; ilmzero < kMaxJM * 2; ilmzero++) {
+        for (int ilmprim = 0; ilmprim < kMaxJM * 2; ilmprim++) {
+          if((ilmzero % 2) == 0 && (ilmprim % 2) == 0) {
+            fcovden[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (real(fYlmBuffer[ilmzero / 2]) * real(fYlmBuffer[ilmprim / 2])));
+          } else if((ilmzero % 2) == 0 && (ilmprim % 2) == 1) {
+            fcovden[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (real(fYlmBuffer[ilmzero / 2]) * -imag(fYlmBuffer[ilmprim / 2])));
+          } else if((ilmzero % 2) == 1 && (ilmprim % 2) == 0) {
+            fcovden[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (-imag(fYlmBuffer[ilmzero / 2]) * real(fYlmBuffer[ilmprim / 2])));
+          } else if((ilmzero % 2) == 1 && (ilmprim % 2) == 1) {
+            fcovden[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (-imag(fYlmBuffer[ilmzero / 2]) * -imag(fYlmBuffer[ilmprim / 2])));
           }
         }
       }
