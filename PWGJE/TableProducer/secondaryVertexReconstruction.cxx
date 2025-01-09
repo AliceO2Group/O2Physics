@@ -14,6 +14,9 @@
 /// \author Hadi Hassan <hadi.hassan@cern.ch>
 
 #include <type_traits>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <TF1.h>
 #include <TH1.h>
