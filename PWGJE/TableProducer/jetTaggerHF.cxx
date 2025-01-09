@@ -116,7 +116,7 @@ struct JetTaggerHFTask {
   std::vector<float> scoreML;
 
   template <typename T, typename U>
-  float calculateJetProbability(int origin, T const& jet, U const& tracks, bool const& isMC = true)
+  float calculateJetProbability(int origin, T const& jet, U const& tracks, bool const& isMC = false)
   {
     float jetProb = -1.0;
     if (!isMC) {
