@@ -98,8 +98,10 @@ struct LFNucleiBATask {
   } nsigmaTPCvar;
 
   struct : ConfigurableGroup {
-    Configurable<float> nsigmaITSTr{"nsigmaITSTr", 3.f, "Value of the Nsigma ITS cut for tritons"};
-    Configurable<float> nsigmaITSHe{"nsigmaITSHe", 3.f, "Value of the Nsigma ITS cut for helium-3"};
+    Configurable<bool> useITSTrCut{"useITSTrCut", false, "Select Helium if NOT compatible with triton hypothesis (via SigmaITS)"};
+    Configurable<float> nsigmaITSTr{"nsigmaITSTr", 3.f, "Value of the Nsigma ITS cut for tritons ( > nSigmaITSTr)"};
+    // Configurable<bool> useITSHeCut{"useITSHeCut", false, "Select Helium if compatible with helium hypothesis (via SigmaITS)"};
+    // Configurable<float> nsigmaITSHe{"nsigmaITSHe", 3.f, "Value of the Nsigma ITS cut for helium-3 ( < nSigmaITSHe)"};
   } nsigmaITSvar;
 
   // Set additional cuts (used for debug)
@@ -114,7 +116,7 @@ struct LFNucleiBATask {
   ConfigurableAxis binsdEdx{"binsdEdx", {600, 0.f, 3000.f}, ""};
   ConfigurableAxis binsBeta{"binsBeta", {120, 0.0, 1.2}, ""};
   ConfigurableAxis binsDCA{"binsDCA", {400, -1.f, 1.f}, ""};
-  ConfigurableAxis binsSigmaITS{"binsSigmaITS", {1000, -100, 100}, ""};
+  ConfigurableAxis binsSigmaITS{"binsSigmaITS", {200, -20, 20}, ""};
   ConfigurableAxis binsSigmaTPC{"binsSigmaTPC", {1000, -100, 100}, ""};
   ConfigurableAxis binsSigmaTOF{"binsSigmaTOF", {1000, -100, 100}, ""};
   ConfigurableAxis binsMassPr{"binsMassPr", {100, -1., 1.f}, ""};
@@ -2052,6 +2054,7 @@ struct LFNucleiBATask {
     }
 
     auto tracksWithITS = soa::Attach<TracksType,
+                                     aod::pidits::ITSNSigmaTr,
                                      aod::pidits::ITSNSigmaHe>(tracks);
 
     for (auto& track : tracksWithITS) {
@@ -2143,8 +2146,7 @@ struct LFNucleiBATask {
           break;
       }
 
-      // float nITSTr;
-      float nITSHe;
+      float nITSTr, nITSHe;
 
       heP = track.p();
       antiheP = track.p();
@@ -2306,8 +2308,14 @@ struct LFNucleiBATask {
       isHelium = enableHe && heRapCut;
       isDe = isDeuteron && track.sign() > 0;
       isAntiDe = isDeuteron && track.sign() < 0;
-      isHe = isHelium && track.sign() > 0;
-      isAntiHe = isHelium && track.sign() < 0;
+
+      if (!nsigmaITSvar.useITSTrCut) {
+        isHe = isHelium && track.sign() > 0;
+        isAntiHe = isHelium && track.sign() < 0;
+      } else {
+        isHe = isHelium && track.sign() > 0 && std::abs(track.itsNSigmaTr()) > nsigmaITSvar.nsigmaITSTr;
+        isAntiHe = isHelium && track.sign() < 0 && std::abs(track.itsNSigmaTr()) > nsigmaITSvar.nsigmaITSTr;
+      }
 
       isDeWoDCAxy = isDe && passDCAzCutDe;
       isAntiDeWoDCAxy = isAntiDe && passDCAzCutAntiDe;
@@ -3461,7 +3469,7 @@ struct LFNucleiBATask {
         continue;
       }
 
-      // nITSTr = o2::aod::ITSResponse.nSigmaITS<o2::track::PID::Triton>(track);
+      nITSTr = track.itsNSigmaTr();
       nITSHe = track.itsNSigmaHe();
 
       if (outFlagOptions.makeDCAAfterCutPlots) {
