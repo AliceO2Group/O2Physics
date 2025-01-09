@@ -29,6 +29,11 @@ o2physics_add_dpl_workflow(cascadeanalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(sigmaminus-task
+    SOURCES sigmaminustask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(cascadeanalysismc
     SOURCES cascadeanalysisMC.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -47,11 +52,6 @@ o2physics_add_dpl_workflow(cascadecorrelations
 o2physics_add_dpl_workflow(non-prompt-cascade
     SOURCES nonPromptCascade.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore O2::DetectorsBase
-    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(kinkanalysis
-    SOURCES kinkAnalysis.cxx
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(k0mixedevents

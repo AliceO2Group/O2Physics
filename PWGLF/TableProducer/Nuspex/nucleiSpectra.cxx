@@ -205,6 +205,7 @@ std::shared_ptr<TH2> hDeltaP[2][5];
 std::shared_ptr<THnSparse> hFlowHists[2][5];
 std::shared_ptr<THnSparse> hDCAHists[2][5];
 std::shared_ptr<THnSparse> hMatchingStudy[2];
+std::shared_ptr<THn> hMatchingStudyHadrons[2];
 o2::base::MatLayerCylSet* lut = nullptr;
 
 std::vector<NucleusCandidate> candidates;
@@ -467,7 +468,8 @@ struct nucleiSpectra {
 
     if (doprocessMatching) {
       for (int iC{0}; iC < 2; ++iC) {
-        nuclei::hMatchingStudy[iC] = spectra.add<THnSparse>(fmt::format("hMatchingStudy{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;n#sigma_{ITS};n#sigma{TPC};n#sigma_{TOF}", HistType::kTHnSparseF, {{20, 1., 9.}, {10, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {50, -5., 5.}, {50, -5., 5.}, {50, 0., 1.}});
+        nuclei::hMatchingStudy[iC] = spectra.add<THnSparse>(fmt::format("hMatchingStudy{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;n#sigma_{ITS};n#sigma{TPC};n#sigma_{TOF};Centrality", HistType::kTHnSparseF, {{20, 1., 9.}, {10, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {50, -5., 5.}, {50, -5., 5.}, {50, 0., 1.}, {8, 0., 80.}});
+        nuclei::hMatchingStudyHadrons[iC] = spectra.add<THn>(fmt::format("hMatchingStudyHadrons{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;Centrality;Track type", HistType::kTHnSparseF, {{23, 0.4, 5.}, {20, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {8, 0., 80.}, {2, -0.5, 1.5}});
       }
     }
 
@@ -901,13 +903,14 @@ struct nucleiSpectra {
   }
   PROCESS_SWITCH(nucleiSpectra, processMC, "MC analysis", false);
 
-  void processMatching(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
+  void processMatching(soa::Join<aod::Collisions, aod::EvSels, aod::EPCalibrationTables, aod::CentFT0Cs>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
-    if (!eventSelection(collision)) {
+    if (!eventSelection(collision) || !collision.triggereventep()) {
       return;
     }
+    const float centrality = getCentrality(collision);
     o2::aod::ITSResponse itsResponse;
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (std::abs(track.eta()) > cfgCutEta ||
           track.itsNCls() < 7 ||
           track.itsChi2NCl() > 36.f ||
@@ -918,7 +921,10 @@ struct nucleiSpectra {
       double expSigma{expBethe * cfgBetheBlochParams->get(4, 5u)};
       double nSigmaTPC{(track.tpcSignal() - expBethe) / expSigma};
       int iC = track.signed1Pt() > 0;
-      nuclei::hMatchingStudy[iC]->Fill(track.pt() * 2, track.phi(), track.eta(), itsResponse.nSigmaITS<o2::track::PID::Helium3>(track), nSigmaTPC, o2::pid::tof::Beta::GetBeta(track));
+      const float pt = track.pt();
+      const float phi = getPhiInRange(track.phi() - collision.psiFT0C());
+      nuclei::hMatchingStudy[iC]->Fill(pt * 2, phi, track.eta(), itsResponse.nSigmaITS<o2::track::PID::Helium3>(track), nSigmaTPC, o2::pid::tof::Beta::GetBeta(track), centrality);
+      nuclei::hMatchingStudyHadrons[iC]->Fill(pt, phi, track.eta(), centrality, track.hasTPC());
     }
   }
 
