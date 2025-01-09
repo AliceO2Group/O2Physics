@@ -1169,7 +1169,7 @@ struct ebyeMaker {
       for (auto& classId : classIds) {
         if (bc.triggerMask() & BIT(classId)) {
           trigger |= 0x2;
-          cV0M = cV0M * 100.;
+          cV0M = cV0M < 104.f ? cV0M * 100. : cV0M;
           break;
         }
       }
