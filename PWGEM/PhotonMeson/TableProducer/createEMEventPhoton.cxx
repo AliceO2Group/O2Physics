@@ -16,7 +16,6 @@
 
 // #include <string>
 // #include <unordered_map>
-#include <chrono>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -130,7 +129,6 @@ struct CreateEMEvent {
   template <bool isMC, EMEventType eventype, typename TCollisions, typename TBCs>
   void skimEvent(TCollisions const& collisions, TBCs const& bcs)
   {
-    auto start = std::chrono::high_resolution_clock::now();
     // first count the number of collisions per bc
     // for (auto& bc : bcs) {
     //   auto collisions_per_bc = collisions.sliceBy(preslice_collisions_per_bc, bc.globalIndex());
@@ -205,8 +203,6 @@ struct CreateEMEvent {
       }
     } // end of collision loop
     // map_ncolls_per_bc.clear();
-    auto end = std::chrono::high_resolution_clock::now();
-    LOG(info) << "Time elapsed: " << std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() << " ns";
   } // end of skimEvent
 
   void fillEventWeights(MyCollisionsMC const& collisions, aod::McCollisions const&, MyBCs const&)
