@@ -14,8 +14,9 @@
 // This code produces reduced events for photon analyses.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <string>
-#include <unordered_map>
+// #include <string>
+// #include <unordered_map>
+#include <chrono>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -123,18 +124,19 @@ struct CreateEMEvent {
     mRunNumber = bc.runNumber();
   }
 
-  PresliceUnsorted<MyCollisions> preslice_collisions_per_bc = o2::aod::evsel::foundBCId;
-  std::unordered_map<uint64_t, int> map_ncolls_per_bc;
+  // PresliceUnsorted<MyCollisions> preslice_collisions_per_bc = o2::aod::evsel::foundBCId;
+  // std::unordered_map<uint64_t, int> map_ncolls_per_bc;
 
   template <bool isMC, EMEventType eventype, typename TCollisions, typename TBCs>
   void skimEvent(TCollisions const& collisions, TBCs const& bcs)
   {
+    auto start = std::chrono::high_resolution_clock::now();
     // first count the number of collisions per bc
-    for (auto& bc : bcs) {
-      auto collisions_per_bc = collisions.sliceBy(preslice_collisions_per_bc, bc.globalIndex());
-      map_ncolls_per_bc[bc.globalIndex()] = collisions_per_bc.size();
-      // LOGF(info, "bc-loop | bc.globalIndex() = %d , collisions_per_bc.size() = %d", bc.globalIndex(), collisions_per_bc.size());
-    }
+    // for (auto& bc : bcs) {
+    //   auto collisions_per_bc = collisions.sliceBy(preslice_collisions_per_bc, bc.globalIndex());
+    //   map_ncolls_per_bc[bc.globalIndex()] = collisions_per_bc.size();
+    //   // LOGF(info, "bc-loop | bc.globalIndex() = %d , collisions_per_bc.size() = %d", bc.globalIndex(), collisions_per_bc.size());
+    // }
 
     for (auto& collision : collisions) {
       if constexpr (isMC) {
@@ -156,6 +158,8 @@ struct CreateEMEvent {
         continue;
       }
 
+      float qDefault = 999.f; // default value for q vectors if not obtained
+
       // LOGF(info, "collision-loop | bc.globalIndex() = %d, ncolls_per_bc = %d", bc.globalIndex(), map_ncolls_per_bc[bc.globalIndex()]);
       registry.fill(HIST("hEventCounter"), 1);
 
@@ -176,38 +180,33 @@ struct CreateEMEvent {
         event_weights(1.f);
       }
 
-      float q2xft0m = 999.f, q2yft0m = 999.f, q2xft0a = 999.f, q2yft0a = 999.f, q2xft0c = 999.f, q2yft0c = 999.f, q2xbpos = 999.f, q2ybpos = 999.f, q2xbneg = 999.f, q2ybneg = 999.f, q2xbtot = 999.f, q2ybtot = 999.f;
-      float q3xft0m = 999.f, q3yft0m = 999.f, q3xft0a = 999.f, q3yft0a = 999.f, q3xft0c = 999.f, q3yft0c = 999.f, q3xbpos = 999.f, q3ybpos = 999.f, q3xbneg = 999.f, q3ybneg = 999.f, q3xbtot = 999.f, q3ybtot = 999.f;
-
       if constexpr (eventype == EMEventType::kEvent) {
         event_cent(105.f, 105.f, 105.f);
-        event_qvec(q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot,
-                   q3xft0m, q3yft0m, q3xft0a, q3yft0a, q3xft0c, q3yft0c, q3xbpos, q3ybpos, q3xbneg, q3ybneg, q3xbtot, q3ybtot);
+        event_qvec(qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault,
+                   qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault);
       } else if constexpr (eventype == EMEventType::kEvent_Cent) {
         event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
-        event_qvec(q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot,
-                   q3xft0m, q3yft0m, q3xft0a, q3yft0a, q3xft0c, q3yft0c, q3xbpos, q3ybpos, q3xbneg, q3ybneg, q3xbtot, q3ybtot);
+        event_qvec(qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault,
+                   qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault);
       } else if constexpr (eventype == EMEventType::kEvent_Cent_Qvec) {
         event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
-
-        if (collision.qvecFT0CReVec().size() >= 2) { // harmonics 2,3
-          q2xft0m = collision.qvecFT0MReVec()[0], q2xft0a = collision.qvecFT0AReVec()[0], q2xft0c = collision.qvecFT0CReVec()[0], q2xbpos = collision.qvecBPosReVec()[0], q2xbneg = collision.qvecBNegReVec()[0], q2xbtot = collision.qvecBTotReVec()[0];
-          q2yft0m = collision.qvecFT0MImVec()[0], q2yft0a = collision.qvecFT0AImVec()[0], q2yft0c = collision.qvecFT0CImVec()[0], q2ybpos = collision.qvecBPosImVec()[0], q2ybneg = collision.qvecBNegImVec()[0], q2ybtot = collision.qvecBTotImVec()[0];
-          q3xft0m = collision.qvecFT0MReVec()[1], q3xft0a = collision.qvecFT0AReVec()[1], q3xft0c = collision.qvecFT0CReVec()[1], q3xbpos = collision.qvecBPosReVec()[1], q3xbneg = collision.qvecBNegReVec()[1], q3xbtot = collision.qvecBTotReVec()[1];
-          q3yft0m = collision.qvecFT0MImVec()[1], q3yft0a = collision.qvecFT0AImVec()[1], q3yft0c = collision.qvecFT0CImVec()[1], q3ybpos = collision.qvecBPosImVec()[1], q3ybneg = collision.qvecBNegImVec()[1], q3ybtot = collision.qvecBTotImVec()[1];
-        } else if (collision.qvecFT0CReVec().size() >= 1) { // harmonics 2
-          q2xft0m = collision.qvecFT0MReVec()[0], q2xft0a = collision.qvecFT0AReVec()[0], q2xft0c = collision.qvecFT0CReVec()[0], q2xbpos = collision.qvecBPosReVec()[0], q2xbneg = collision.qvecBNegReVec()[0], q2xbtot = collision.qvecBTotReVec()[0];
-          q2yft0m = collision.qvecFT0MImVec()[0], q2yft0a = collision.qvecFT0AImVec()[0], q2yft0c = collision.qvecFT0CImVec()[0], q2ybpos = collision.qvecBPosImVec()[0], q2ybneg = collision.qvecBNegImVec()[0], q2ybtot = collision.qvecBTotImVec()[0];
+        const size_t qvecSize = collision.qvecFT0CReVec().size();
+        if (qvecSize >= 2) { // harmonics 2,3
+          event_qvec(collision.qvecFT0MReVec()[0], collision.qvecFT0MImVec()[0], collision.qvecFT0AReVec()[0], collision.qvecFT0AImVec()[0], collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], collision.qvecBPosReVec()[0], collision.qvecBPosImVec()[0], collision.qvecBNegReVec()[0], collision.qvecBNegImVec()[0], collision.qvecBTotReVec()[0], collision.qvecBTotImVec()[0],
+                    collision.qvecFT0MReVec()[1], collision.qvecFT0MImVec()[1], collision.qvecFT0AReVec()[1], collision.qvecFT0AImVec()[1], collision.qvecFT0CReVec()[1], collision.qvecFT0CImVec()[1], collision.qvecBPosReVec()[1], collision.qvecBPosImVec()[1], collision.qvecBNegReVec()[1], collision.qvecBNegImVec()[1], collision.qvecBTotReVec()[1], collision.qvecBTotImVec()[1]);
+        } else if (qvecSize >= 1) { // harmonics 2
+          event_qvec(collision.qvecFT0MReVec()[0], collision.qvecFT0MImVec()[0], collision.qvecFT0AReVec()[0], collision.qvecFT0AImVec()[0], collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], collision.qvecBPosReVec()[0], collision.qvecBPosImVec()[0], collision.qvecBNegReVec()[0], collision.qvecBNegImVec()[0], collision.qvecBTotReVec()[0], collision.qvecBTotImVec()[0],
+                   qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault);
         }
-        event_qvec(q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot,
-                   q3xft0m, q3yft0m, q3xft0a, q3yft0a, q3xft0c, q3yft0c, q3xbpos, q3ybpos, q3xbneg, q3ybneg, q3xbtot, q3ybtot);
       } else {
         event_cent(105.f, 105.f, 105.f);
-        event_qvec(q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot,
-                   q3xft0m, q3yft0m, q3xft0a, q3yft0a, q3xft0c, q3yft0c, q3xbpos, q3ybpos, q3xbneg, q3ybneg, q3xbtot, q3ybtot);
+        event_qvec(qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault,
+                   qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault);
       }
     } // end of collision loop
-    map_ncolls_per_bc.clear();
+    // map_ncolls_per_bc.clear();
+    auto end = std::chrono::high_resolution_clock::now();
+    LOG(info) << "Time elapsed: " << std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() << " ns";
   } // end of skimEvent
 
   void fillEventWeights(MyCollisionsMC const& collisions, aod::McCollisions const&, MyBCs const&)
