@@ -687,9 +687,9 @@ bool isTaggedJetSV(T const jet, U const& /*prongs*/, float prongChi2PCAMin, floa
 }
 
 template <typename T, typename U, typename V = float>
-uint8_t setTaggingIPBit(T const& jet, U const& tracks, V trackDcaXYMax, V trackDcaZMax, V tagPointForIP)
+uint16_t setTaggingIPBit(T const& jet, U const& tracks, V trackDcaXYMax, V trackDcaZMax, V tagPointForIP)
 {
-  uint8_t bit = 0;
+  uint16_t bit = 0;
   auto [taggedIPsN1, taggedIPsN2, taggedIPsN3] = isGreaterThanTaggingPoint(jet, tracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, false);
   if (taggedIPsN1) {
     SETBIT(bit, BJetTaggingMethod::IPsN1);
@@ -715,9 +715,9 @@ uint8_t setTaggingIPBit(T const& jet, U const& tracks, V trackDcaXYMax, V trackD
 }
 
 template <typename T, typename U, typename V = float>
-uint8_t setTaggingSVBit(T const& jet, U const& prongs, V prongChi2PCAMin, V prongChi2PCAMax, V prongsigmaLxyMax, float prongIPxyMin, float prongIPxyMax, V svDispersionMax, V tagPointForSV)
+uint16_t setTaggingSVBit(T const& jet, U const& prongs, V prongChi2PCAMin, V prongChi2PCAMax, V prongsigmaLxyMax, float prongIPxyMin, float prongIPxyMax, V svDispersionMax, V tagPointForSV)
 {
-  uint8_t bit = 0;
+  uint16_t bit = 0;
   if (isTaggedJetSV(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, svDispersionMax, false, tagPointForSV)) {
     SETBIT(bit, BJetTaggingMethod::SV);
   }

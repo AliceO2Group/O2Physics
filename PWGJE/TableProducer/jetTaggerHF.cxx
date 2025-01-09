@@ -112,7 +112,7 @@ struct JetTaggerHFTask {
   std::unique_ptr<TF1> fSignImpXYSigBeautyJetMC = nullptr;
   std::unique_ptr<TF1> fSignImpXYSigLfJetMC = nullptr;
 
-  std::vector<uint8_t> decisionNonML;
+  std::vector<uint16_t> decisionNonML;
   std::vector<float> scoreML;
 
   template <typename T, typename U>
@@ -308,7 +308,7 @@ struct JetTaggerHFTask {
   void processIP(JetTable const& jets, JetTracksExt const& tracks)
   {
     for (const auto& jet : jets) {
-      uint8_t bit = jettaggingutilities::setTaggingIPBit(jet, tracks, trackDcaXYMax, trackDcaZMax, tagPointForIP);
+      uint16_t bit = jettaggingutilities::setTaggingIPBit(jet, tracks, trackDcaXYMax, trackDcaZMax, tagPointForIP);
       decisionNonML[jet.globalIndex()] |= bit;
     }
   }
@@ -317,7 +317,7 @@ struct JetTaggerHFTask {
   void processSV(soa::Join<JetTable, SVIndicesTable> const& jets, SVTable const& prongs)
   {
     for (const auto& jet : jets) {
-      uint8_t bit = jettaggingutilities::setTaggingSVBit(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, svDispersionMax, tagPointForSV);
+      uint16_t bit = jettaggingutilities::setTaggingSVBit(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, svDispersionMax, tagPointForSV);
       decisionNonML[jet.globalIndex()] |= bit;
     }
   }
