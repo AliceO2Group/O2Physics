@@ -59,7 +59,7 @@ struct HeavyFlavourDefinitionTask {
       flavourTableMCD(origin);
     }
   }
-  PROCESS_SWITCH(HeavyFlavourDefinitionTask, processMCD, "Fill definition of flavour for mcd jets using constituents", false);
+  PROCESS_SWITCH(HeavyFlavourDefinitionTask, processMCDByConstituents, "Fill definition of flavour for mcd jets using constituents", false);
 
   void processMCDByDistance(soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>::iterator const& collision, soa::Join<JetTableMCD, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets> const& mcdjets, soa::Join<JetTableMCP, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets> const& /*mcpjets*/, aod::JetParticles const& particles) // it used only for charged jets now
   {
@@ -76,7 +76,7 @@ struct HeavyFlavourDefinitionTask {
       flavourTableMCD(origin);
     }
   }
-  PROCESS_SWITCH(HeavyFlavourDefinitionTask, processMCDRun2, "Fill definition of flavour for mcd jets using distance of jet with particles", false);
+  PROCESS_SWITCH(HeavyFlavourDefinitionTask, processMCDByDistance, "Fill definition of flavour for mcd jets using distance of jet with particles", false);
 
   void processMCPByConstituents(soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>::iterator const& collision, JetTableMCP const& mcpjets, aod::JetParticles const& particles)
   {
@@ -85,7 +85,7 @@ struct HeavyFlavourDefinitionTask {
       flavourTableMCP(origin);
     }
   }
-  PROCESS_SWITCH(HeavyFlavourDefinitionTask, processMCP, "Fill definition of flavour for mcp jets using constituents", false);
+  PROCESS_SWITCH(HeavyFlavourDefinitionTask, processMCPByConstituents, "Fill definition of flavour for mcp jets using constituents", false);
 
   void processMCPByDistance(aod::JMcCollisions::iterator const& /*collision*/, JetTableMCP const& mcpjets, aod::JetParticles const& particles)
   {
@@ -99,7 +99,7 @@ struct HeavyFlavourDefinitionTask {
       flavourTableMCP(origin);
     }
   }
-  PROCESS_SWITCH(HeavyFlavourDefinitionTask, processMCPRun2, "Fill definition of flavour for mcp jets using distance of jet with particles", false);
+  PROCESS_SWITCH(HeavyFlavourDefinitionTask, processMCPByDistance, "Fill definition of flavour for mcp jets using distance of jet with particles", false);
 };
 
 using JetHfDefinitionCharged = HeavyFlavourDefinitionTask<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>, aod::ChargedMCDetectorLevelJetFlavourDef, aod::ChargedMCParticleLevelJetFlavourDef>;
