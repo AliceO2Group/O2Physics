@@ -210,7 +210,7 @@ struct ThreePartCorr {
       }
 
       if (TrackFilters(track)) {
-	A_PID = TrackPID(track);
+        A_PID = TrackPID(track);
         QARegistry.fill(HIST("hTrackPt"), track.pt());
         QARegistry.fill(HIST("hTrackEta"), track.eta());
         QARegistry.fill(HIST("hTrackPhi"), track.phi());
@@ -364,64 +364,64 @@ struct ThreePartCorr {
       }
 
       if (TrackFilters(track)) {
-	auto particle = track.mcParticle();
-	if (particle.isPhysicalPrimary()) {
+        auto particle = track.mcParticle();
+        if (particle.isPhysicalPrimary()) {
 
-	  // Efficiency - Reconstructed
-	  MCRegistry.fill(HIST("hReconstructed"), track.pt());
-	  if (particle.pdgCode() == kPiPlus) { // Pos pions
-	    MCRegistry.fill(HIST("hRecPionP"), track.pt());
-	  } else if (particle.pdgCode() == kPiMinus) { // Neg pions
-	    MCRegistry.fill(HIST("hRecPionN"), track.pt());
-	  } else if (particle.pdgCode() == kKPlus) { // Pos kaons
-	    MCRegistry.fill(HIST("hRecKaonP"), track.pt());
-	  } else if (particle.pdgCode() == kKMinus) { // Neg kaons
-	    MCRegistry.fill(HIST("hRecKaonN"), track.pt());
-	  } else if (particle.pdgCode() == kProton) { // Pos protons
-	    MCRegistry.fill(HIST("hRecProtonP"), track.pt());
-	  } else if (particle.pdgCode() == kProtonBar) { // Neg protons
-	    MCRegistry.fill(HIST("hRecProtonN"), track.pt());
-	  }
+          // Efficiency - Reconstructed
+          MCRegistry.fill(HIST("hReconstructed"), track.pt());
+          if (particle.pdgCode() == kPiPlus) { // Pos pions
+            MCRegistry.fill(HIST("hRecPionP"), track.pt());
+          } else if (particle.pdgCode() == kPiMinus) { // Neg pions
+            MCRegistry.fill(HIST("hRecPionN"), track.pt());
+          } else if (particle.pdgCode() == kKPlus) { // Pos kaons
+            MCRegistry.fill(HIST("hRecKaonP"), track.pt());
+          } else if (particle.pdgCode() == kKMinus) { // Neg kaons
+            MCRegistry.fill(HIST("hRecKaonN"), track.pt());
+          } else if (particle.pdgCode() == kProton) { // Pos protons
+            MCRegistry.fill(HIST("hRecProtonP"), track.pt());
+          } else if (particle.pdgCode() == kProtonBar) { // Neg protons
+            MCRegistry.fill(HIST("hRecProtonN"), track.pt());
+          }
 
-	  // Purity (PID)
-	  A_PID = TrackPID(track);
+          // Purity (PID)
+          A_PID = TrackPID(track);
 
-	  if (track.sign() > 0) {  // Positive tracks
-	    if (A_PID[0] == 0.0) { // Pions
-	      MCRegistry.fill(HIST("hSelectPionP"), track.pt());
-	      if (particle.pdgCode() == kPiPlus) {
-		MCRegistry.fill(HIST("hTrueSelectPionP"), track.pt());
-	      }
-	    } else if (A_PID[0] == 1.0) { // Kaons
-	      MCRegistry.fill(HIST("hSelectKaonP"), track.pt());
-	      if (particle.pdgCode() == kKPlus) {
-		MCRegistry.fill(HIST("hTrueSelectKaonP"), track.pt());
-	      }
-	    } else if (A_PID[0] == 2.0) { // Protons
-	      MCRegistry.fill(HIST("hSelectProtonP"), track.pt());
-	      if (particle.pdgCode() == kProton) {
-		MCRegistry.fill(HIST("hTrueSelectProtonP"), track.pt());
-	      }
-	    }
-	  } else if (track.sign() < 0) { // Negative tracks
-	    if (A_PID[0] == 0.0) {       // Pions
-	      MCRegistry.fill(HIST("hSelectPionN"), track.pt());
-	      if (particle.pdgCode() == kPiMinus) {
-		MCRegistry.fill(HIST("hTrueSelectPionN"), track.pt());
-	      }
-	    } else if (A_PID[0] == 1.0) { // Kaons
-	      MCRegistry.fill(HIST("hSelectKaonN"), track.pt());
-	      if (particle.pdgCode() == kKMinus) {
-		MCRegistry.fill(HIST("hTrueSelectKaonN"), track.pt());
-	      }
-	    } else if (A_PID[0] == 2.0) { // Protons
-	      MCRegistry.fill(HIST("hSelectProtonN"), track.pt());
-	      if (particle.pdgCode() == kProtonBar) {
-		MCRegistry.fill(HIST("hTrueSelectProtonN"), track.pt());
-	      }
-	    }
-	  }
-	}
+          if (track.sign() > 0) {  // Positive tracks
+            if (A_PID[0] == 0.0) { // Pions
+              MCRegistry.fill(HIST("hSelectPionP"), track.pt());
+              if (particle.pdgCode() == kPiPlus) {
+                MCRegistry.fill(HIST("hTrueSelectPionP"), track.pt());
+              }
+            } else if (A_PID[0] == 1.0) { // Kaons
+              MCRegistry.fill(HIST("hSelectKaonP"), track.pt());
+              if (particle.pdgCode() == kKPlus) {
+                MCRegistry.fill(HIST("hTrueSelectKaonP"), track.pt());
+              }
+            } else if (A_PID[0] == 2.0) { // Protons
+              MCRegistry.fill(HIST("hSelectProtonP"), track.pt());
+              if (particle.pdgCode() == kProton) {
+                MCRegistry.fill(HIST("hTrueSelectProtonP"), track.pt());
+              }
+            }
+          } else if (track.sign() < 0) { // Negative tracks
+            if (A_PID[0] == 0.0) {       // Pions
+              MCRegistry.fill(HIST("hSelectPionN"), track.pt());
+              if (particle.pdgCode() == kPiMinus) {
+                MCRegistry.fill(HIST("hTrueSelectPionN"), track.pt());
+              }
+            } else if (A_PID[0] == 1.0) { // Kaons
+              MCRegistry.fill(HIST("hSelectKaonN"), track.pt());
+              if (particle.pdgCode() == kKMinus) {
+                MCRegistry.fill(HIST("hTrueSelectKaonN"), track.pt());
+              }
+            } else if (A_PID[0] == 2.0) { // Protons
+              MCRegistry.fill(HIST("hSelectProtonN"), track.pt());
+              if (particle.pdgCode() == kProtonBar) {
+                MCRegistry.fill(HIST("hTrueSelectProtonN"), track.pt());
+              }
+            }
+          }
+        }
       }
     }
     // End of the Monte-Carlo reconstructed QA
@@ -503,7 +503,7 @@ struct ThreePartCorr {
 
     return ID;
   }
-  
+
   //================================================================================================================================================================================================================
 
   template <class V0Cand>
@@ -534,69 +534,69 @@ struct ThreePartCorr {
     }
 
     if (TrackPID(Track)[0] == 0.0) { // Pions
-      if(TMath::Abs(Track.tpcNSigmaPi()) > 4.0) {
-	return kFALSE;
+      if (TMath::Abs(Track.tpcNSigmaPi()) > 4.0) {
+        return kFALSE;
       }
       if (Track.pt() < 0.3) {
-	return kFALSE;
+        return kFALSE;
       } else if (Track.pt() > 0.3 && Track.pt() < 1.5) {
-	if (TMath::Abs(TrackPID(Track)[1]) > 4.0) {
-	  return kFALSE;
-	}
+        if (TMath::Abs(TrackPID(Track)[1]) > 4.0) {
+          return kFALSE;
+        }
       } else if (Track.pt() > 1.5 && Track.pt() < 2.3) {
-	if (TrackPID(Track)[1] < -4.0 || TrackPID(Track)[1] > 0.0) {
-	  return kFALSE;
-	}
+        if (TrackPID(Track)[1] < -4.0 || TrackPID(Track)[1] > 0.0) {
+          return kFALSE;
+        }
       } else if (Track.pt() > 2.3) {
-	return kFALSE;
+        return kFALSE;
       }
-      
+
     } else if (TrackPID(Track)[0] == 1.0) { // Kaons
-      if(TMath::Abs(Track.tpcNSigmaKa()) > 4.0) {
-	return kFALSE;
+      if (TMath::Abs(Track.tpcNSigmaKa()) > 4.0) {
+        return kFALSE;
       }
       if (Track.pt() < 0.5) {
-	return kFALSE;
+        return kFALSE;
       } else if (Track.pt() > 0.5 && Track.pt() < 1.5) {
-	if (TMath::Abs(TrackPID(Track)[1]) > 4.0) {
-	  return kFALSE;
-	}
+        if (TMath::Abs(TrackPID(Track)[1]) > 4.0) {
+          return kFALSE;
+        }
       } else if (Track.pt() > 1.5 && Track.pt() < 2.0) {
-	if (TrackPID(Track)[1] < -2.0 || TrackPID(Track)[1] > 4.0) {
-	  return kFALSE;
-	}
+        if (TrackPID(Track)[1] < -2.0 || TrackPID(Track)[1] > 4.0) {
+          return kFALSE;
+        }
       } else if (Track.pt() > 2.0 && Track.pt() < 2.5) {
-	if (TrackPID(Track)[1] < 0.0 || TrackPID(Track)[1] > 4.0) {
-	  return kFALSE;
-	}
+        if (TrackPID(Track)[1] < 0.0 || TrackPID(Track)[1] > 4.0) {
+          return kFALSE;
+        }
       } else if (Track.pt() > 2.5) {
-	return kFALSE;
+        return kFALSE;
       }
 
     } else if (TrackPID(Track)[0] == 2.0) { // Protons
-      if(TMath::Abs(Track.tpcNSigmaPr()) > 4.0) {
-	return kFALSE;
+      if (TMath::Abs(Track.tpcNSigmaPr()) > 4.0) {
+        return kFALSE;
       }
       if (Track.pt() < 0.5) {
-	return kFALSE;
+        return kFALSE;
       } else if (Track.pt() > 0.5 && Track.pt() < 0.7) {
-	if (TrackPID(Track)[1] < -2.0 || TrackPID(Track)[1] > 4.0) {
-	  return kFALSE;
-	}
+        if (TrackPID(Track)[1] < -2.0 || TrackPID(Track)[1] > 4.0) {
+          return kFALSE;
+        }
       } else if (Track.pt() > 0.7 && Track.pt() < 2.5) {
-	if (TMath::Abs(TrackPID(Track)[1]) > 4.0) {
-	  return kFALSE;
-	}
+        if (TMath::Abs(TrackPID(Track)[1]) > 4.0) {
+          return kFALSE;
+        }
       } else if (Track.pt() > 2.5) {
-	if (TrackPID(Track)[1] < -2.0 || TrackPID(Track)[1] > 4.0) {
-	  return kFALSE;
-	}
+        if (TrackPID(Track)[1] < -2.0 || TrackPID(Track)[1] > 4.0) {
+          return kFALSE;
+        }
       }
     }
 
     return kTRUE;
   }
-  
+
   template <class V0Cand, class TrackCand>
   Bool_t CorrelationFilters(const V0Cand& V0, const TrackCand& Track)
   {
