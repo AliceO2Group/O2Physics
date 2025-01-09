@@ -42,29 +42,25 @@ enum OccupancyEstimator { None = 0,
 /// \param collision is the collision with the occupancy information
 /// \return collision occupancy
 template <typename Coll>
-float getOccupancyColl(Coll const& collision, int occEstimator = OccupancyEstimator::Its)
+float getOccupancyColl(Coll const& collision, int occEstimator)
 {
-  float occupancy = -999.;
   switch (occEstimator) {
     case OccupancyEstimator::Its:
-      occupancy = collision.trackOccupancyInTimeRange();
-      break;
+      return collision.trackOccupancyInTimeRange();
     case OccupancyEstimator::Ft0c:
-      occupancy = collision.ft0cOccupancyInTimeRange();
-      break;
+      return collision.ft0cOccupancyInTimeRange();
     default:
-      LOG(warning) << "Occupancy estimator not valid. Possible values are ITS or FT0C. Fallback to ITS";
-      occupancy = collision.trackOccupancyInTimeRange();
+      LOG(fatal) << "Occupancy estimator not valid. Possible values are ITS or FT0C.";
       break;
   }
-  return occupancy;
+  return -999.f;
 };
 
 /// \brief Function to get MC collision occupancy
 /// \param collSlice collection of reconstructed collisions associated to a generated one
 /// \return generated MC collision occupancy
 template <typename CCs>
-int getOccupancyGenColl(CCs const& collSlice, int occEstimator = OccupancyEstimator::Its)
+int getOccupancyGenColl(CCs const& collSlice, int occEstimator)
 {
   float multiplicity{0.f};
   int occupancy = 0;

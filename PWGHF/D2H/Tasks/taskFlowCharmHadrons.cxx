@@ -607,7 +607,7 @@ struct HfTaskFlowCharmHadrons {
                          aod::BCsWithTimestamps const& bcs)
   {
     float centrality{-1.f};
-    if (!isCollSelected<o2::hf_centrality::CentralityEstimator::None>(collision, bcs, centrality)) {
+    if (!isCollSelected<o2::hf_centrality::CentralityEstimator::FT0C>(collision, bcs, centrality)) {
       // no selection on the centrality is applied on purpose to allow for the resolution study in post-processing
       return;
     }

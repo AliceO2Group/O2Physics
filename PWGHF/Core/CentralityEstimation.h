@@ -120,42 +120,36 @@ float getCentralityColl(const Coll&)
 template <typename Coll>
 float getCentralityColl(const Coll& collision, int centEstimator)
 {
-  float cent = -999.;
   switch (centEstimator) {
     case CentralityEstimator::FT0A:
       if constexpr (hasFT0ACent<Coll>) {
-        cent = collision.centFT0A();
-      } else {
-        LOG(warning) << "Warning: Collision does not have centFT0A().\n";
+        return collision.centFT0A();
       }
+      LOG(fatal) << "Collision does not have centFT0A().";
       break;
     case CentralityEstimator::FT0C:
       if constexpr (hasFT0CCent<Coll>) {
-        cent = collision.centFT0C();
-      } else {
-        LOG(warning) << "Warning: Collision does not have centFT0C().\n";
+        return collision.centFT0C();
       }
+      LOG(fatal) << "Collision does not have centFT0C().";
       break;
     case CentralityEstimator::FT0M:
       if constexpr (hasFT0MCent<Coll>) {
-        cent = collision.centFT0M();
-      } else {
-        LOG(warning) << "Warning: Collision does not have centFT0M().\n";
+        return collision.centFT0M();
       }
+      LOG(fatal) << "Collision does not have centFT0M().";
       break;
     case CentralityEstimator::FV0A:
       if constexpr (hasFV0ACent<Coll>) {
-        cent = collision.centFV0A();
-      } else {
-        LOG(warning) << "Warning: Collision does not have centFV0A().\n";
+        return collision.centFV0A();
       }
+      LOG(fatal) << "Collision does not have centFV0A().";
       break;
     default:
-      LOG(warning) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C. Setting value to -999.";
-      cent = -999.;
+      LOG(fatal) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C.";
       break;
   }
-  return cent;
+  return -999.f;
 }
 
 /// \brief Function to get MC collision centrality
