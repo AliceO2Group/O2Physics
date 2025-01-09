@@ -29,11 +29,16 @@
 #include <string>
 #include <unordered_map>
 
+#include <TPDGCode.h>
+#include "CommonConstants/PhysicsConstants.h"
+
 #include "TF1.h"
 #include "Framework/Logger.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
+
+using namespace o2::constants::physics;
 
 enum JetTaggingSpecies {
   none = 0,
@@ -100,10 +105,10 @@ struct BJetSVParams {
 //________________________________________________________________________
 bool isBHadron(int pc)
 {
-  std::vector<int> bPdG = {511, 521, 10511, 10521, 513, 523, 10513, 10523, 20513, 20523, 20513, 20523, 515, 525, 531, 10531, 533, 10533,
+  std::vector<int> bPdG = {Pdg::kB0, Pdg::kBPlus, 10511, 10521, 513, 523, 10513, 10523, 20513, 20523, 20513, 20523, 515, 525, Pdg::kBS, 10531, 533, 10533,
                            20533, 535, 541, 10541, 543, 10543, 20543, 545, 551, 10551, 100551, 110551, 200551, 210551, 553, 10553, 20553,
                            30553, 100553, 110553, 120553, 130553, 200553, 210553, 220553, 300553, 9000533, 9010553, 555, 10555, 20555,
-                           100555, 110555, 120555, 200555, 557, 100557, 5122, 5112, 5212, 5222, 5114, 5214, 5224, 5132, 5232, 5312, 5322,
+                           100555, 110555, 120555, 200555, 557, 100557, Pdg::kLambdaB0, 5112, 5212, 5222, 5114, 5214, 5224, 5132, kXiB0, 5312, 5322,
                            5314, 5324, 5332, 5334, 5142, 5242, 5412, 5422, 5414, 5424, 5342, 5432, 5434, 5442, 5444, 5512, 5522, 5514, 5524,
                            5532, 5534, 5542, 5544, 5554};
 
@@ -112,9 +117,9 @@ bool isBHadron(int pc)
 //________________________________________________________________________
 bool isCHadron(int pc)
 {
-  std::vector<int> bPdG = {411, 421, 10411, 10421, 413, 423, 10413, 10423, 20431, 20423, 415, 425, 431, 10431, 433, 10433, 20433, 435, 441,
-                           10441, 100441, 443, 10443, 20443, 100443, 30443, 9000443, 9010443, 9020443, 445, 100445, 4122, 4222, 4212, 4112,
-                           4224, 4214, 4114, 4232, 4132, 4322, 4312, 4324, 4314, 4332, 4334, 4412, 4422, 4414, 4424, 4432, 4434, 4444};
+  std::vector<int> bPdG = {Pdg::kDPlus, Pdg::kD0, Pdg::kD0StarPlus, Pdg::kD0Star0, 413, 423, 10413, 10423, 20431, 20423, Pdg::kD2StarPlus, Pdg::kD2Star0, Pdg::kDS, 10431, Pdg::kDSStar, Pdg::kDS1, 20433, Pdg::kDS2Star, 441,
+                           10441, 100441, Pdg::kJPsi, 10443, Pdg::kChiC1, 100443, 30443, 9000443, 9010443, 9020443, 445, 100445, Pdg::kLambdaCPlus, Pdg::kSigmaCPlusPlus, 4212, Pdg::kSigmaC0,
+                           4224, 4214, 4114, Pdg::kXiCPlus, Pdg::kXiC0, 4322, 4312, 4324, 4314, Pdg::kOmegaC0, 4334, 4412, Pdg::kXiCCPlusPlus, 4414, 4424, 4432, 4434, 4444};
 
   return (std::find(bPdG.begin(), bPdG.end(), std::abs(pc)) != bPdG.end());
 }
