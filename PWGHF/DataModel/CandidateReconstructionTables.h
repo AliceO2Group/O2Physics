@@ -1569,12 +1569,20 @@ DECLARE_SOA_COLUMN(CosPaLambdaToXi, cosPaLambdaToXi, float);
 DECLARE_SOA_COLUMN(CosPaXYLambdaToXi, cosPaXYLambdaToXi, float);
 DECLARE_SOA_COLUMN(InvMassXicPlus, invMassXicPlus, float);
 DECLARE_SOA_COLUMN(InvMassXi, invMassXi, float);
+DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, float);
 DECLARE_SOA_COLUMN(Sign, sign, float);
 DECLARE_SOA_COLUMN(InvMassXiPi0, invMassXiPi0, float);
 DECLARE_SOA_COLUMN(InvMassXiPi1, invMassXiPi1, float);
 DECLARE_SOA_COLUMN(PBachelorPi, pBachelorPi, float);
 DECLARE_SOA_COLUMN(PPiFromLambda, pPiFromLambda, float);
-DECLARE_SOA_COLUMN(PPrFrmoLambda, pPrFromLambda, float);
+DECLARE_SOA_COLUMN(PPrFromLambda, pPrFromLambda, float);
+DECLARE_SOA_COLUMN(DcaXiDaughters, dcaXiDaughters, float);
+DECLARE_SOA_COLUMN(DcaV0Daughters, dcaV0Daughters, float);
+DECLARE_SOA_COLUMN(DcaPosToPV, dcaPosToPV, float);
+DECLARE_SOA_COLUMN(DcaNegToPV, dcaNegToPV, float);
+DECLARE_SOA_COLUMN(DcaBachelorToPV, dcaBachelorToPV, float);
+DECLARE_SOA_COLUMN(DcaXYCascToPV, dcaXYCascToPV, float);
+DECLARE_SOA_COLUMN(DcaZCascToPV, dcaXCascToPV, float);
 // KF specific columns
 DECLARE_SOA_COLUMN(DcaXYPi0Pi1, dcaXYPi0Pi1, float);
 DECLARE_SOA_COLUMN(DcaXYPi0Xi, dcaXYPi0Xi, float);
@@ -1636,9 +1644,11 @@ DECLARE_SOA_TABLE(HfCandXicBase, "AOD", "HFCANDXICBASE",
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ImpactParameter2,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, hf_cand::ErrorImpactParameter2,
                   // cascade specific columns
-                  hf_cand_xic_to_xi_pi_pi::PBachelorPi, hf_cand_xic_to_xi_pi_pi::PPiFromLambda, hf_cand_xic_to_xi_pi_pi::PPrFrmoLambda,
+                  hf_cand_xic_to_xi_pi_pi::PBachelorPi, hf_cand_xic_to_xi_pi_pi::PPiFromLambda, hf_cand_xic_to_xi_pi_pi::PPrFromLambda,
                   hf_cand_xic_to_xi_pi_pi::CosPaXi, hf_cand_xic_to_xi_pi_pi::CosPaXYXi, hf_cand_xic_to_xi_pi_pi::CosPaLambda, hf_cand_xic_to_xi_pi_pi::CosPaXYLambda, hf_cand_xic_to_xi_pi_pi::CosPaLambdaToXi, hf_cand_xic_to_xi_pi_pi::CosPaXYLambdaToXi,
-                  hf_cand_xic_to_xi_pi_pi::InvMassXi, hf_cand_xic_to_xi_pi_pi::InvMassXiPi0, hf_cand_xic_to_xi_pi_pi::InvMassXiPi1,
+                  hf_cand_xic_to_xi_pi_pi::InvMassXi, hf_cand_xic_to_xi_pi_pi::InvMassLambda, hf_cand_xic_to_xi_pi_pi::InvMassXiPi0, hf_cand_xic_to_xi_pi_pi::InvMassXiPi1,
+                  // DCA
+                  hf_cand_xic_to_xi_pi_pi::DcaXiDaughters, hf_cand_xic_to_xi_pi_pi::DcaV0Daughters, hf_cand_xic_to_xi_pi_pi::DcaPosToPV, hf_cand_xic_to_xi_pi_pi::DcaNegToPV, hf_cand_xic_to_xi_pi_pi::DcaBachelorToPV, hf_cand_xic_to_xi_pi_pi::DcaXYCascToPV, hf_cand_xic_to_xi_pi_pi::DcaZCascToPV,
                   // PID
                   hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromXicPlus0, hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromXicPlus1, hf_cand_xic_to_xi_pi_pi::NSigTpcBachelorPi, hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromLambda, hf_cand_xic_to_xi_pi_pi::NSigTpcPrFromLambda,
                   hf_cand_xic_to_xi_pi_pi::NSigTofPiFromXicPlus0, hf_cand_xic_to_xi_pi_pi::NSigTofPiFromXicPlus1, hf_cand_xic_to_xi_pi_pi::NSigTofBachelorPi, hf_cand_xic_to_xi_pi_pi::NSigTofPiFromLambda, hf_cand_xic_to_xi_pi_pi::NSigTofPrFromLambda,
