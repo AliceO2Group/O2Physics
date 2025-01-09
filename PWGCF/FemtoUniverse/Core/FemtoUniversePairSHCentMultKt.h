@@ -22,7 +22,7 @@
 #include <memory>
 #include "Framework/HistogramRegistry.h"
 
-using namespace o2::constants::physics;
+//using namespace o2::constants::physics;
 
 namespace o2::analysis::femto_universe
 {
@@ -117,7 +117,7 @@ class PairSHCentMultKt
           } else {
             suffix = "Ylm" + std::to_string(felsi[ihist]) + std::to_string(femsi[ihist]);
           }
-          //std::cout<<"ihist "<<ihist<<" "<<suffix.c_str()<<std::endl;
+          // std::cout<<"ihist "<<ihist<<" "<<suffix.c_str()<<std::endl;
           if (FolderSuffix[EventType] == FolderSuffix[0]) {
             fnumsreal[i][j][ihist] = pairSHCentMultKtRegistry->add<TH1>(
               (histFolderMult + "/" + histFolderkT + "/" + "NumRe" + suffix).c_str(),
@@ -142,7 +142,7 @@ class PairSHCentMultKt
                                                               {(kMaxJM * 2), -0.5, ((static_cast<float>(kMaxJM) * 2.0 - 0.5))},
                                                               {(kMaxJM * 2), -0.5,
                                                                ((static_cast<float>(kMaxJM) * 2.0 - 0.5))}});
-          fcovnum[i][j]->Sumw2();                                                     
+          fcovnum[i][j]->Sumw2();                                      
         } else if (FolderSuffix[EventType] == FolderSuffix[1]) {
           std::string bufnameDen = "CovDen";
           fcovden[i][j] = pairSHCentMultKtRegistry->add<TH3>((histFolderMult + "/" + histFolderkT + "/" + bufnameDen).c_str(), "; x; y; z", kTH3D,
@@ -259,9 +259,9 @@ class PairSHCentMultKt
     const float qlong = f3d[3];
 
     double kv = std::sqrt(qout * qout + qside * qside + qlong * qlong);
-    
-    int nqbin = fbinctn[0][0]->GetXaxis()->FindFixBin(kv);
-    int nqbinnotfix = fbinctn[0][0]->GetXaxis()->FindBin(kv);
+
+    //int nqbin = fbinctn[0][0]->GetXaxis()->FindFixBin(kv);
+    //int nqbinnotfix = fbinctn[0][0]->GetXaxis()->FindBin(kv);
 
     FemtoUniverseSpherHarMath kYlm;
     kYlm.doYlmUpToL(kMaxL, qout, qside, qlong, fYlmBuffer.data());
@@ -274,14 +274,14 @@ class PairSHCentMultKt
       }
       for (int ilmzero = 0; ilmzero < kMaxJM * 2; ilmzero++) {
         for (int ilmprim = 0; ilmprim < kMaxJM * 2; ilmprim++) {
-          if((ilmzero % 2) == 0 && (ilmprim % 2) == 0) {
-            fcovnum[fMultBin][fKtBin]->Fill(kv,ilmzero, ilmprim, (real(fYlmBuffer[ilmzero / 2]) * real(fYlmBuffer[ilmprim / 2])));
-          } else if((ilmzero % 2) == 0 && (ilmprim % 2) == 1) {
-            fcovnum[fMultBin][fKtBin]->Fill(kv,ilmzero, ilmprim, (real(fYlmBuffer[ilmzero / 2]) * -imag(fYlmBuffer[ilmprim / 2])));
-          } else if((ilmzero % 2) == 1 && (ilmprim % 2) == 0) {
-            fcovnum[fMultBin][fKtBin]->Fill(kv,ilmzero, ilmprim, (-imag(fYlmBuffer[ilmzero / 2]) * real(fYlmBuffer[ilmprim / 2])));
-          } else if((ilmzero % 2) == 1 && (ilmprim % 2) == 1) {
-            fcovnum[fMultBin][fKtBin]->Fill(kv,ilmzero, ilmprim, (-imag(fYlmBuffer[ilmzero / 2]) * -imag(fYlmBuffer[ilmprim / 2])));
+          if ((ilmzero % 2) == 0 && (ilmprim % 2) == 0) {
+            fcovnum[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (real(fYlmBuffer[ilmzero / 2]) * real(fYlmBuffer[ilmprim / 2])));
+          } else if ((ilmzero % 2) == 0 && (ilmprim % 2) == 1) {
+            fcovnum[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (real(fYlmBuffer[ilmzero / 2]) * -imag(fYlmBuffer[ilmprim / 2])));
+          } else if ((ilmzero % 2) == 1 && (ilmprim % 2) == 0) {
+            fcovnum[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (-imag(fYlmBuffer[ilmzero / 2]) * real(fYlmBuffer[ilmprim / 2])));
+          } else if ((ilmzero % 2) == 1 && (ilmprim % 2) == 1) {
+            fcovnum[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (-imag(fYlmBuffer[ilmzero / 2]) * -imag(fYlmBuffer[ilmprim / 2])));
           }
         }
       }
@@ -293,13 +293,13 @@ class PairSHCentMultKt
       }
       for (int ilmzero = 0; ilmzero < kMaxJM * 2; ilmzero++) {
         for (int ilmprim = 0; ilmprim < kMaxJM * 2; ilmprim++) {
-          if((ilmzero % 2) == 0 && (ilmprim % 2) == 0) {
+          if ((ilmzero % 2) == 0 && (ilmprim % 2) == 0) {
             fcovden[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (real(fYlmBuffer[ilmzero / 2]) * real(fYlmBuffer[ilmprim / 2])));
-          } else if((ilmzero % 2) == 0 && (ilmprim % 2) == 1) {
+          } else if ((ilmzero % 2) == 0 && (ilmprim % 2) == 1) {
             fcovden[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (real(fYlmBuffer[ilmzero / 2]) * -imag(fYlmBuffer[ilmprim / 2])));
-          } else if((ilmzero % 2) == 1 && (ilmprim % 2) == 0) {
+          } else if ((ilmzero % 2) == 1 && (ilmprim % 2) == 0) {
             fcovden[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (-imag(fYlmBuffer[ilmzero / 2]) * real(fYlmBuffer[ilmprim / 2])));
-          } else if((ilmzero % 2) == 1 && (ilmprim % 2) == 1) {
+          } else if ((ilmzero % 2) == 1 && (ilmprim % 2) == 1) {
             fcovden[fMultBin][fKtBin]->Fill(kv, ilmzero, ilmprim, (-imag(fYlmBuffer[ilmzero / 2]) * -imag(fYlmBuffer[ilmprim / 2])));
           }
         }
