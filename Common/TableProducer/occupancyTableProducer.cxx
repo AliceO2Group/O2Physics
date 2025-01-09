@@ -320,10 +320,8 @@ struct OccupancyTableProducer {
       std::fill(occMultAllTracksTPCOnlyUnfm80[i].begin(), occMultAllTracksTPCOnlyUnfm80[i].end(), 0.);
     }
 
-    int iColl = -1;
     std::vector<int64_t> tfIDList;
     for (const auto& collision : collisions) {
-      iColl++;
       const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
       getTimingInfo(bc, lastRun, nBCsPerTF, bcSOR, time, tfIdThis, bcInTF);
 
@@ -344,7 +342,6 @@ struct OccupancyTableProducer {
       int nTrackTOF = 0;
       int nTrackTPCA = 0;
       int nTrackTPCC = 0;
-      int nTrackITSTPC = 0;
       int nTrackITSTPCA = 0;
       int nTrackITSTPCC = 0;
 
