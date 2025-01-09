@@ -497,7 +497,7 @@ struct QaImpactPar {
     float trackIuPosY = -999.f;
     float trackIuPosZ = -999.f;
     std::array<float, 3> posXYZ = {-999.f, -999.f, -999.f};
-    int clusterSizeInLayer0;
+    int clusterSizeInLayer0 = -1;
     int ntr = tracks.size();
     int cnt = 0;
     for (const auto& track : tracks) {
