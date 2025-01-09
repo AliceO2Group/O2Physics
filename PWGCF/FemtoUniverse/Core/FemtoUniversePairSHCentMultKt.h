@@ -22,7 +22,7 @@
 #include <memory>
 #include "Framework/HistogramRegistry.h"
 
-//using namespace o2::constants::physics;
+// using namespace o2::constants::physics;
 
 namespace o2::analysis::femto_universe
 {
@@ -142,7 +142,7 @@ class PairSHCentMultKt
                                                               {(kMaxJM * 2), -0.5, ((static_cast<float>(kMaxJM) * 2.0 - 0.5))},
                                                               {(kMaxJM * 2), -0.5,
                                                                ((static_cast<float>(kMaxJM) * 2.0 - 0.5))}});
-          fcovnum[i][j]->Sumw2();                                      
+          fcovnum[i][j]->Sumw2();
         } else if (FolderSuffix[EventType] == FolderSuffix[1]) {
           std::string bufnameDen = "CovDen";
           fcovden[i][j] = pairSHCentMultKtRegistry->add<TH3>((histFolderMult + "/" + histFolderkT + "/" + bufnameDen).c_str(), "; x; y; z", kTH3D,
@@ -260,8 +260,8 @@ class PairSHCentMultKt
 
     double kv = std::sqrt(qout * qout + qside * qside + qlong * qlong);
 
-    //int nqbin = fbinctn[0][0]->GetXaxis()->FindFixBin(kv);
-    //int nqbinnotfix = fbinctn[0][0]->GetXaxis()->FindBin(kv);
+    // int nqbin = fbinctn[0][0]->GetXaxis()->FindFixBin(kv);
+    // int nqbinnotfix = fbinctn[0][0]->GetXaxis()->FindBin(kv);
 
     FemtoUniverseSpherHarMath kYlm;
     kYlm.doYlmUpToL(kMaxL, qout, qside, qlong, fYlmBuffer.data());
