@@ -364,7 +364,6 @@ struct OccupancyTableProducer {
           nTrackTOF++;
         } // Flag to check if track has a TOF measurement
         if (track.hasITS() && track.hasTPC()) {
-          nTrackITSTPC++;
           if (track.eta() <= 0.0) {
             nTrackITSTPCA++; // includes tracks at eta zero as well.
           } else {
