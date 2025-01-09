@@ -53,9 +53,9 @@ struct f1protoncorrelation {
   Configurable<float> maxMomentumPion{"maxMomentumPion", 4.0, "Maximum momentum Pion"};
   Configurable<float> maxMomentumKaon{"maxMomentumKaon", 4.0, "Maximum momentum Kaon"};
   Configurable<float> momentumTOFPionMin{"momentumTOFPionMin", 0.8, "Pion momentum TOF Min"};
-  Configurable<float> momentumTOFKaonMin{"momentumTOFKaonMin", 0.8, "Kaon momentum TOF Min"};
+  Configurable<float> momentumTOFKaonMin{"momentumTOFKaonMin", 0.5, "Kaon momentum TOF Min"};
   Configurable<float> momentumTOFPionMax{"momentumTOFPionMax", 1.2, "Pion momentum TOF Max"};
-  Configurable<float> momentumTOFKaonMax{"momentumTOFKaonMax", 1.2, "Kaon momentum TOF Max"};
+  Configurable<float> momentumTOFKaonMax{"momentumTOFKaonMax", 0.9, "Kaon momentum TOF Max"};
   Configurable<float> momentumTOFProton{"momentumTOFProton", 0.7, "Proton momentum TOF"};
   Configurable<float> momentumProtonMax{"momentumProtonMax", 3.0, "Maximum proton momentum"};
   Configurable<float> lowPtF1{"lowPtF1", 1.0, "PT cut F1"};
@@ -172,6 +172,9 @@ struct f1protoncorrelation {
         continue;
       }
       if (strategyPIDKaon == 1 && Kaon.Pt() > momentumTOFKaonMin && Kaon.Pt() <= momentumTOFKaonMax && f1track.f1d2TOFHit() != 1) {
+        continue;
+      }
+      if (strategyPIDKaon == 2 && Kaon.Pt() > momentumTOFKaonMin && Kaon.Pt() <= momentumTOFKaonMax && f1track.f1d2TPC() < -1.0 && f1track.f1d2TOFHit() != 1) {
         continue;
       }
       histos.fill(HIST("hNsigmaKaonTPC"), f1track.f1d2TPC(), Kaon.Pt());
