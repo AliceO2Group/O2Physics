@@ -708,10 +708,10 @@ struct TaskPi0FlowEMC {
               float dTheta = photon1.Theta() - photon3.Theta();
               float dPhi = photon1.Phi() - photon3.Phi();
               if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
-                registry.fill(HIST("hSparseCalibBack"), mother1.M(), mother1.E()/2., cent);
+                registry.fill(HIST("hSparseCalibBack"), mother1.M(), mother1.E() / 2., cent);
               }
             } else {
-              registry.fill(HIST("hSparseCalibBack"), mother1.M(), mother1.E()/2., cent);
+              registry.fill(HIST("hSparseCalibBack"), mother1.M(), mother1.E() / 2., cent);
             }
           }
         }
@@ -726,10 +726,10 @@ struct TaskPi0FlowEMC {
               float dTheta = photon2.Theta() - photon3.Theta();
               float dPhi = photon2.Phi() - photon3.Phi();
               if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
-                registry.fill(HIST("hSparseCalibBack"), mother2.M(), mother2.E()/2., cent);
+                registry.fill(HIST("hSparseCalibBack"), mother2.M(), mother2.E() / 2., cent);
               }
             } else {
-              registry.fill(HIST("hSparseCalibBack"), mother2.M(), mother2.E()/2., cent);
+              registry.fill(HIST("hSparseCalibBack"), mother2.M(), mother2.E() / 2., cent);
             }
           }
         }
@@ -1096,8 +1096,9 @@ struct TaskPi0FlowEMC {
   PROCESS_SWITCH(TaskPi0FlowEMC, processResolution, "Process resolution", false);
 
   // EMCal calibration
-  void processEMCalCalib(CollsWithQvecs const& collisions, EMCalPhotons const& clusters){
-    if(!correctionConfig.doEMCalCalib) {
+  void processEMCalCalib(CollsWithQvecs const& collisions, EMCalPhotons const& clusters)
+  {
+    if (!correctionConfig.doEMCalCalib) {
       return;
     }
     int nColl = 1;
@@ -1197,7 +1198,7 @@ struct TaskPi0FlowEMC {
         }
         if ((v1.E() - v2.E()) / (v1.E() + v2.E()) > 0.9) { // only use symmetric decays
           registry.fill(HIST("hClusterCuts"), 6);
-          registry.fill(HIST("hSparseCalibSE"), vMeson.M(), vMeson.E()/2., getCentrality(collision));
+          registry.fill(HIST("hSparseCalibSE"), vMeson.M(), vMeson.E() / 2., getCentrality(collision));
         }
       }
       if (cfgDoRotation) {
