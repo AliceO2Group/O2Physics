@@ -479,12 +479,12 @@ bool svAcceptance(T const& sv, float svDispersionMax)
  * positive value is expected from secondary vertex
  *
  * @param jet
- * @param jtrack which is needed aod::JTrackExtras
+ * @param track which is needed aod::JTrackExtras
  */
 template <typename T, typename U>
-int getGeoSign(T const& jet, U const& jtrack)
+int getGeoSign(T const& jet, U const& track)
 {
-  auto sign = TMath::Sign(1, jtrack.dcaX() * jet.px() + jtrack.dcaY() * jet.py() + jtrack.dcaZ() * jet.pz());
+  auto sign = TMath::Sign(1, track.dcaX() * jet.px() + track.dcaY() * jet.py() + track.dcaZ() * jet.pz());
   if (sign < -1 || sign > 1)
     LOGF(info, Form("Sign is %d", sign));
   return sign;
@@ -495,17 +495,17 @@ int getGeoSign(T const& jet, U const& jtrack)
  * in a vector in descending order.
  */
 template <typename T, typename U, typename Vec = std::vector<float>>
-void orderForIPJetTracks(T const& jet, U const& /*jtracks*/, float trackDcaXYMax, float trackDcaZMax, Vec& vecSignImpSig, bool useIPxyz)
+void orderForIPJetTracks(T const& jet, U const& /*tracks*/, float trackDcaXYMax, float trackDcaZMax, Vec& vecSignImpSig, bool useIPxyz)
 {
-  for (auto const& jtrack : jet.template tracks_as<U>()) {
-    if (!trackAcceptanceWithDca(jtrack, trackDcaXYMax, trackDcaZMax))
+  for (auto const& track : jet.template tracks_as<U>()) {
+    if (!trackAcceptanceWithDca(track, trackDcaXYMax, trackDcaZMax))
       continue;
-    auto geoSign = getGeoSign(jet, jtrack);
+    auto geoSign = getGeoSign(jet, track);
     float varSignImpSig;
     if (!useIPxyz) {
-      varSignImpSig = geoSign * std::abs(jtrack.dcaXY()) / jtrack.sigmadcaXY();
+      varSignImpSig = geoSign * std::abs(track.dcaXY()) / track.sigmadcaXY();
     } else {
-      varSignImpSig = geoSign * std::abs(jtrack.dcaXYZ()) / jtrack.sigmadcaXYZ();
+      varSignImpSig = geoSign * std::abs(track.dcaXYZ()) / track.sigmadcaXYZ();
     }
     vecSignImpSig.push_back(varSignImpSig);
   }
@@ -517,13 +517,13 @@ void orderForIPJetTracks(T const& jet, U const& /*jtracks*/, float trackDcaXYMax
  * return (true, true, true) if the jet is tagged by the 1st, 2nd and 3rd largest IPs
  */
 template <typename T, typename U>
-std::tuple<bool, bool, bool> isGreaterThanTaggingPoint(T const& jet, U const& jtracks, float trackDcaXYMax, float trackDcaZMax, float taggingPoint = 1.0, bool useIPxyz = false)
+std::tuple<bool, bool, bool> isGreaterThanTaggingPoint(T const& jet, U const& tracks, float trackDcaXYMax, float trackDcaZMax, float taggingPoint = 1.0, bool useIPxyz = false)
 {
   bool taggedIPsN1 = false;
   bool taggedIPsN2 = false;
   bool taggedIPsN3 = false;
   std::vector<float> vecSignImpSig;
-  orderForIPJetTracks(jet, jtracks, trackDcaXYMax, trackDcaZMax, vecSignImpSig, useIPxyz);
+  orderForIPJetTracks(jet, tracks, trackDcaXYMax, trackDcaZMax, vecSignImpSig, useIPxyz);
   if (vecSignImpSig.size() > 0) {
     if (vecSignImpSig[0] > taggingPoint) { // tagger point set
       taggedIPsN1 = true;
@@ -596,7 +596,7 @@ float getTrackProbability(T const& fResoFuncjet, U const& track, float minSignIm
  *                     assess its probability based on the impact parameter significance.
  * @param collision: The collision event data, necessary for geometric sign calculations.
  * @param jet: The jet for which the probability is being calculated.
- * @param jtracks: Tracks in jets
+ * @param tracks: Tracks in jets
  * @param cnt: ordering number of impact parameter cnt=0: untagged, cnt=1: first, cnt=2: seconde, cnt=3: third.
  * @param tagPoint: tagging working point which is selected by condiered efficiency and puriy
  * @param minSignImpXYSig: To avoid over fitting
@@ -605,21 +605,21 @@ float getTrackProbability(T const& fResoFuncjet, U const& track, float minSignIm
  *         geometric sign.
  */
 template <typename T, typename U, typename V>
-float getJetProbability(T const& fResoFuncjet, U const& jet, V const& /*jtracks*/, float trackDcaXYMax, float trackDcaZMax, float minSignImpXYSig = -10)
+float getJetProbability(T const& fResoFuncjet, U const& jet, V const& /*tracks*/, float trackDcaXYMax, float trackDcaZMax, float minSignImpXYSig = -10)
 {
   std::vector<float> jetTracksPt;
   float trackjetProb = 1.;
 
-  for (auto const& jtrack : jet.template tracks_as<V>()) {
-    if (!trackAcceptanceWithDca(jtrack, trackDcaXYMax, trackDcaZMax))
+  for (auto const& track : jet.template tracks_as<V>()) {
+    if (!trackAcceptanceWithDca(track, trackDcaXYMax, trackDcaZMax))
       continue;
 
-    float probTrack = getTrackProbability(fResoFuncjet, jtrack, minSignImpXYSig);
+    float probTrack = getTrackProbability(fResoFuncjet, track, minSignImpXYSig);
 
-    auto geoSign = getGeoSign(jet, jtrack);
+    auto geoSign = getGeoSign(jet, track);
     if (geoSign > 0) { // only take positive sign track for JP calculation
       trackjetProb *= probTrack;
-      jetTracksPt.push_back(jtrack.pt());
+      jetTracksPt.push_back(track.pt());
     }
   }
 
@@ -682,10 +682,10 @@ bool isTaggedJetSV(T const jet, U const& /*prongs*/, float prongChi2PCAMin, floa
 }
 
 template <typename T, typename U, typename V = float>
-uint8_t setTaggingIPBit(T const& jet, U const& jtracks, V trackDcaXYMax, V trackDcaZMax, V tagPointForIP)
+uint8_t setTaggingIPBit(T const& jet, U const& tracks, V trackDcaXYMax, V trackDcaZMax, V tagPointForIP)
 {
   uint8_t bit = 0;
-  auto [taggedIPsN1, taggedIPsN2, taggedIPsN3] = isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, false);
+  auto [taggedIPsN1, taggedIPsN2, taggedIPsN3] = isGreaterThanTaggingPoint(jet, tracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, false);
   if (taggedIPsN1) {
     SETBIT(bit, BJetTaggingMethod::IPsN1);
   }
@@ -696,7 +696,7 @@ uint8_t setTaggingIPBit(T const& jet, U const& jtracks, V trackDcaXYMax, V track
     SETBIT(bit, BJetTaggingMethod::IPsN3);
   }
 
-  auto [taggedIPs3DN1, taggedIPs3DN2, taggedIPs3DN3] = isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, true);
+  auto [taggedIPs3DN1, taggedIPs3DN2, taggedIPs3DN3] = isGreaterThanTaggingPoint(jet, tracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, true);
   if (taggedIPs3DN1) {
     SETBIT(bit, BJetTaggingMethod::IPs3DN1);
   }

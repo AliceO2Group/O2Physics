@@ -469,7 +469,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U>
-  void fillHistogramIPsData(T const& jet, U const& /*jtracks*/)
+  void fillHistogramIPsData(T const& jet, U const& /*tracks*/)
   {
     float eventWeight = 1.0;
     float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
@@ -555,7 +555,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U>
-  void fillHistogramIPsMCD(T const& mcdjet, U const& /*jtracks*/, float eventWeight = 1.0)
+  void fillHistogramIPsMCD(T const& mcdjet, U const& /*tracks*/, float eventWeight = 1.0)
   {
     float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (mcdjet.pt() > pTHatMaxMCD * pTHat) {
@@ -1169,19 +1169,19 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processDummy, "Dummy process", true);
 
-  void processTracksDca(JetTagTracksData const& jtracks)
+  void processTracksDca(JetTagTracksData const& tracks)
   {
-    for (auto const& jtrack : jtracks) {
-      if (!jetderiveddatautilities::selectTrack(jtrack, trackSelection)) {
+    for (auto const& track : tracks) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
       }
       float varImpXY, varImpXYSig, varImpZ, varImpZSig, varImpXYZ, varImpXYZSig;
-      varImpXY = jtrack.dcaXY() * jettaggingutilities::cmTomum;
-      varImpXYSig = jtrack.dcaXY() / jtrack.sigmadcaXY();
-      varImpZ = jtrack.dcaZ() * jettaggingutilities::cmTomum;
-      varImpZSig = jtrack.dcaZ() / jtrack.sigmadcaZ();
-      float dcaXYZ = jtrack.dcaXYZ();
-      float sigmadcaXYZ = jtrack.sigmadcaXYZ();
+      varImpXY = track.dcaXY() * jettaggingutilities::cmTomum;
+      varImpXYSig = track.dcaXY() / track.sigmadcaXY();
+      varImpZ = track.dcaZ() * jettaggingutilities::cmTomum;
+      varImpZSig = track.dcaZ() / track.sigmadcaZ();
+      float dcaXYZ = track.dcaXYZ();
+      float sigmadcaXYZ = track.sigmadcaXYZ();
       varImpXYZ = dcaXYZ * jettaggingutilities::cmTomum;
       varImpXYZSig = dcaXYZ / sigmadcaXYZ;
 
@@ -1195,7 +1195,7 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processTracksDca, "Fill inclusive tracks' imformation for data", false);
 
-  void processIPsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableData, TagTableData> const& jets, JetTagTracksData const& jtracks)
+  void processIPsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableData, TagTableData> const& jets, JetTagTracksData const& tracks)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
@@ -1207,12 +1207,12 @@ struct JetTaggerHFQA {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      fillHistogramIPsData(jet, jtracks);
+      fillHistogramIPsData(jet, tracks);
     }
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsData, "Fill impact parameter imformation for data jets", false);
 
-  void processIPsMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD> const& mcdjets, JetTagTracksMCD const& jtracks, aod::JetParticles const&)
+  void processIPsMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD> const& mcdjets, JetTagTracksMCD const& tracks, aod::JetParticles const&)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
@@ -1224,12 +1224,12 @@ struct JetTaggerHFQA {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
       }
-      fillHistogramIPsMCD(mcdjet, jtracks);
+      fillHistogramIPsMCD(mcdjet, tracks);
     }
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsMCD, "Fill impact parameter imformation for mcd jets", false);
 
-  void processIPsMCDWeighted(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, aod::ChargedMCDetectorLevelJetEventWeights> const& mcdjets, JetTagTracksMCD const& jtracks, aod::JetParticles const&)
+  void processIPsMCDWeighted(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, aod::ChargedMCDetectorLevelJetEventWeights> const& mcdjets, JetTagTracksMCD const& tracks, aod::JetParticles const&)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
@@ -1238,7 +1238,7 @@ struct JetTaggerHFQA {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
-      fillHistogramIPsMCD(mcdjet, jtracks, mcdjet.eventWeight());
+      fillHistogramIPsMCD(mcdjet, tracks, mcdjet.eventWeight());
     }
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsMCDWeighted, "Fill impact parameter imformation for mcd jets", false);
@@ -1285,7 +1285,7 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsMCPWeighted, "Fill impact parameter imformation for mcp jets weighted", false);
 
-  void processIPsMCPMCDMatched(soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& mcpjets, JetTagTracksMCD const& jtracks, aod::JetParticles const& particles)
+  void processIPsMCPMCDMatched(soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& mcpjets, JetTagTracksMCD const& tracks, aod::JetParticles const& particles)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
@@ -1298,12 +1298,12 @@ struct JetTaggerHFQA {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
       }
-      fillHistogramIPsMatched(mcdjet, mcpjets, jtracks, particlesPerColl);
+      fillHistogramIPsMatched(mcdjet, mcpjets, tracks, particlesPerColl);
     }
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsMCPMCDMatched, "Fill impact parameter imformation for mcp mcd matched jets", false);
 
-  void processIPsMCPMCDMatchedWeighted(soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, weightMCD> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& mcpjets, JetTagTracksMCD const& jtracks, aod::JetParticles const& particles)
+  void processIPsMCPMCDMatchedWeighted(soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, weightMCD> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& mcpjets, JetTagTracksMCD const& tracks, aod::JetParticles const& particles)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
@@ -1316,7 +1316,7 @@ struct JetTaggerHFQA {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
       }
-      fillHistogramIPsMatched(mcdjet, mcpjets, jtracks, particlesPerColl, mcdjet.eventWeight());
+      fillHistogramIPsMatched(mcdjet, mcpjets, tracks, particlesPerColl, mcdjet.eventWeight());
     }
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsMCPMCDMatchedWeighted, "Fill impact parameter imformation for mcp mcd matched jets", false);

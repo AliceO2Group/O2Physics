@@ -52,10 +52,10 @@ struct HeavyFlavourDefinitionTask {
   }
   PROCESS_SWITCH(HeavyFlavourDefinitionTask, processDummy, "Dummy process", true);
 
-  void processMCD(aod::JetCollision const& /*collision*/, JetTableMCD const& mcdjets, JetTracksMCD const& jtracks, aod::JetParticles const& particles)
+  void processMCD(aod::JetCollision const& /*collision*/, JetTableMCD const& mcdjets, JetTracksMCD const& tracks, aod::JetParticles const& particles)
   {
     for (auto const& mcdjet : mcdjets) {
-      int8_t origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, jtracks, particles, maxDeltaR, searchUpToQuark);
+      int8_t origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, tracks, particles, maxDeltaR, searchUpToQuark);
       flavourTableMCD(origin);
     }
   }
