@@ -78,7 +78,7 @@ struct HeavyFlavourDefinitionTask {
   }
   PROCESS_SWITCH(HeavyFlavourDefinitionTask, processMCDByDistance, "Fill definition of flavour for mcd jets using distance of jet with particles", false);
 
-  void processMCPByConstituents(soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>::iterator const& collision, JetTableMCP const& mcpjets, aod::JetParticles const& particles)
+  void processMCPByConstituents(JetTableMCP const& mcpjets, aod::JetParticles const& particles)
   {
     for (auto const& mcpjet : mcpjets) {
       int8_t origin = jettaggingutilities::mcpJetFromHFShower(mcpjet, particles, maxDeltaR, searchUpToQuark);
