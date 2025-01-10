@@ -13,12 +13,12 @@ add_subdirectory(Converters)
 
 o2physics_add_dpl_workflow(dgcand-producer
                            SOURCES DGCandProducer.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder O2Physics::AnalysisCCDB
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(sgcand-producer
                            SOURCES SGCandProducer.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::SGCutParHolder
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::SGCutParHolder O2Physics::AnalysisCCDB
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dgbccand-producer

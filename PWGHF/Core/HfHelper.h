@@ -839,6 +839,16 @@ class HfHelper
       return false;
     }
 
+    // d0 of pi
+    if (std::abs(candBp.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
+      return false;
+    }
+
+    // d0 of D
+    if (std::abs(candBp.impactParameter0()) < cuts->get(pTBin, "d0 D0")) {
+      return false;
+    }
+
     return true;
   }
 

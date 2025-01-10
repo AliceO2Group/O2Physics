@@ -448,6 +448,7 @@ struct HfCandidateCreatorCascadeMc {
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
@@ -471,11 +472,11 @@ struct HfCandidateCreatorCascadeMc {
     hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
-  template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs>
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs, typename McCollisions>
   void runCreatorCascMc(MyTracksWMc const& tracks,
                         aod::McParticles const& mcParticles,
                         CCs const& collInfos,
-                        aod::McCollisions const& mcCollisions,
+                        McCollisions const& mcCollisions,
                         BCsInfo const&)
   {
     // Match reconstructed candidates.
@@ -548,7 +549,7 @@ struct HfCandidateCreatorCascadeMc {
         const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
         rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
       }
-      hfEvSelMc.fillHistograms(rejectionMask);
+      hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask);
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject all particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
@@ -578,11 +579,11 @@ struct HfCandidateCreatorCascadeMc {
         }
         if (sign != 0) {
           // we check the K0S
-          for (const auto& daughterK0 : particle.daughters_as<aod::McParticles>()) {
+          for (const auto& daughterK0 : particle.template daughters_as<aod::McParticles>()) {
             if (std::abs(daughterK0.pdgCode()) != kK0) {
               continue;
             }
-            for (const auto& daughterK0S : daughterK0.daughters_as<aod::McParticles>()) {
+            for (const auto& daughterK0S : daughterK0.template daughters_as<aod::McParticles>()) {
               if (daughterK0S.pdgCode() != kK0Short) {
                 continue;
               }
@@ -628,7 +629,7 @@ struct HfCandidateCreatorCascadeMc {
   void processMcCentFT0M(MyTracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
                          McCollisionsFT0Ms const& collInfos,
-                         aod::McCollisions const& mcCollisions,
+                         McCollisionsCentFT0Ms const& mcCollisions,
                          BCsInfo const& BCsInfo)
   {
     runCreatorCascMc<CentralityEstimator::FT0M>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);

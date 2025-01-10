@@ -74,10 +74,10 @@ struct filterDielectronEvent {
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
   Configurable<int> mincrossedrows{"mincrossedrows", 80, "min. crossed rows"};
   Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
-  Configurable<float> max_mean_its_cluster_size{"max_mean_its_cluster_size", 16.f, "max. <ITS cluster size> x cos(lambda)"};
-  Configurable<float> max_p_for_its_cluster_size{"max_p_for_its_cluster_size", 0, "its cluster size cut is applied below this p"};
-  Configurable<float> max_pin_for_pion_rejection{"max_pin_for_pion_rejection", -1, "pion rejection is applied below this pin"};
-  Configurable<int> minitsncls{"minitsncls", 4, "min. number of ITS clusters"};
+  Configurable<float> max_pin_for_pion_rejection{"max_pin_for_pion_rejection", 1e+10, "pion rejection is applied below this pin"};
+  Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
+  Configurable<int> min_ncluster_its{"min_ncluster_its", 4, "min ncluster its"};
+  Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 1, "min ncluster itsib"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
   Configurable<float> minpt{"minpt", 0.15, "min pt for track"};
@@ -101,8 +101,6 @@ struct filterDielectronEvent {
   Configurable<float> intercept{"intercept", -0.0370, "intercept for mee vs. phiv"};
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
-
-  std::pair<int8_t, std::set<uint8_t>> itsRequirement = {1, {0, 1, 2}}; // any hits on 3 ITS ib layers.
 
   int mRunNumber;
   float d_bz;
@@ -220,25 +218,10 @@ struct filterDielectronEvent {
     if (!track.hasITS() || !track.hasTPC()) {
       return false;
     }
-    if (track.itsNCls() < minitsncls) {
+    if (track.itsNCls() < min_ncluster_its) {
       return false;
     }
-
-    auto hits = std::count_if(itsRequirement.second.begin(), itsRequirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
-    if (hits < itsRequirement.first) {
-      return false;
-    }
-
-    uint32_t itsClusterSizes = track.itsClusterSizes();
-    int total_cluster_size = 0, nl = 0;
-    for (unsigned int layer = 0; layer < 7; layer++) {
-      int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
-      if (cluster_size_per_layer > 0) {
-        nl++;
-      }
-      total_cluster_size += cluster_size_per_layer;
-    }
-    if (static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())) > max_mean_its_cluster_size && track.p() < max_p_for_its_cluster_size) {
+    if (track.itsNClsInnerBarrel() < min_ncluster_itsib) {
       return false;
     }
 
@@ -251,6 +234,10 @@ struct filterDielectronEvent {
     }
 
     if (track.tpcCrossedRowsOverFindableCls() < min_tpc_cr_findable_ratio) {
+      return false;
+    }
+
+    if (track.tpcFractionSharedCls() > max_frac_shared_clusters_tpc) {
       return false;
     }
 
@@ -298,7 +285,7 @@ struct filterDielectronEvent {
     if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
       return false;
     }
-    if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi) {
+    if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi && track.tpcInnerParam() < max_pin_for_pion_rejection) {
       return false;
     }
     if (minTPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < maxTPCNsigmaKa) {
@@ -316,7 +303,7 @@ struct filterDielectronEvent {
   template <typename TTrack>
   bool isElectron_TOFreq(TTrack const& track)
   {
-    if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi) {
+    if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi && track.tpcInnerParam() < max_pin_for_pion_rejection) {
       return false;
     }
     return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && fabs(track.tofNSigmaEl()) < maxTOFNsigmaEl;

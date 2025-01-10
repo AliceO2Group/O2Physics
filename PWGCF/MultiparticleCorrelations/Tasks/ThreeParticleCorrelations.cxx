@@ -67,7 +67,7 @@ struct ThreePartCorr {
   using MyFilteredMCRecCollision = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>>::iterator;
   using MyFilteredMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::McTrackLabels,
                                                      aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
-                                                     aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>>;
+                                                     aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>>;
 
   // Mixed-events binning policy
   SliceCache cache;
@@ -209,24 +209,24 @@ struct ThreePartCorr {
         QARegistry.fill(HIST("hTOFProton"), track.pt(), track.tofNSigmaPr());
       }
 
-      A_PID = TrackPID(track);
-      if (A_PID[1] < 4.0) {
+      if (TrackFilters(track)) {
+        A_PID = TrackPID(track);
         QARegistry.fill(HIST("hTrackPt"), track.pt());
         QARegistry.fill(HIST("hTrackEta"), track.eta());
         QARegistry.fill(HIST("hTrackPhi"), track.phi());
-        QARegistry.fill(HIST("hdEdx"), track.p(), track.tpcSignal());
-        QARegistry.fill(HIST("hBeta"), track.p(), track.beta());
+        QARegistry.fill(HIST("hdEdx"), track.pt(), track.tpcSignal());
+        QARegistry.fill(HIST("hBeta"), track.pt(), track.beta());
         if (A_PID[0] == 0.0) { // Pions
-          QARegistry.fill(HIST("hdEdxPion"), track.p(), track.tpcSignal());
-          QARegistry.fill(HIST("hBetaPion"), track.p(), track.beta());
+          QARegistry.fill(HIST("hdEdxPion"), track.pt(), track.tpcSignal());
+          QARegistry.fill(HIST("hBetaPion"), track.pt(), track.beta());
           QARegistry.fill(HIST("hNSigmaPion"), track.tpcNSigmaPi(), track.tofNSigmaPi());
         } else if (A_PID[0] == 1.0) { // Kaons
-          QARegistry.fill(HIST("hdEdxKaon"), track.p(), track.tpcSignal());
-          QARegistry.fill(HIST("hBetaKaon"), track.p(), track.beta());
+          QARegistry.fill(HIST("hdEdxKaon"), track.pt(), track.tpcSignal());
+          QARegistry.fill(HIST("hBetaKaon"), track.pt(), track.beta());
           QARegistry.fill(HIST("hNSigmaKaon"), track.tpcNSigmaKa(), track.tofNSigmaKa());
         } else if (A_PID[0] == 2.0) { // Protons
-          QARegistry.fill(HIST("hdEdxProton"), track.p(), track.tpcSignal());
-          QARegistry.fill(HIST("hBetaProton"), track.p(), track.beta());
+          QARegistry.fill(HIST("hdEdxProton"), track.pt(), track.tpcSignal());
+          QARegistry.fill(HIST("hBetaProton"), track.pt(), track.beta());
           QARegistry.fill(HIST("hNSigmaProton"), track.tpcNSigmaPr(), track.tofNSigmaPr());
         }
       }
@@ -247,8 +247,8 @@ struct ThreePartCorr {
         }
 
         for (const auto& associate : tracks) {
-          if (TrackFilters(trigger, associate)) {
-            if (FakeV0Filter(trigger, associate)) {
+          if (TrackFilters(associate)) {
+            if (CorrelationFilters(trigger, associate) && FakeV0Filter(trigger, associate)) {
 
               A_PID = TrackPID(associate);
               DeltaPhi = DeltaPhiShift(trigger.phi(), associate.phi());
@@ -285,8 +285,8 @@ struct ThreePartCorr {
     // Start of the Mixed-events Correlations
     for (const auto& [coll_1, v0_1, coll_2, track_2] : pair) {
       for (const auto& [trigger, associate] : soa::combinations(soa::CombinationsFullIndexPolicy(v0_1, track_2))) {
-        if (V0Filters(trigger) && TrackFilters(trigger, associate)) {
-          if (FakeV0Filter(trigger, associate)) {
+        if (V0Filters(trigger) && TrackFilters(associate)) {
+          if (CorrelationFilters(trigger, associate) && FakeV0Filter(trigger, associate)) {
 
             T_Sign = V0Sign(trigger);
             if (T_Sign == 1) {
@@ -363,28 +363,28 @@ struct ThreePartCorr {
         continue;
       }
 
-      auto particle = track.mcParticle();
-      if (particle.isPhysicalPrimary()) {
+      if (TrackFilters(track)) {
+        auto particle = track.mcParticle();
+        if (particle.isPhysicalPrimary()) {
 
-        // Efficiency - Reconstructed
-        MCRegistry.fill(HIST("hReconstructed"), track.pt());
-        if (particle.pdgCode() == kPiPlus) { // Pos pions
-          MCRegistry.fill(HIST("hRecPionP"), track.pt());
-        } else if (particle.pdgCode() == kPiMinus) { // Neg pions
-          MCRegistry.fill(HIST("hRecPionN"), track.pt());
-        } else if (particle.pdgCode() == kKPlus) { // Pos kaons
-          MCRegistry.fill(HIST("hRecKaonP"), track.pt());
-        } else if (particle.pdgCode() == kKMinus) { // Neg kaons
-          MCRegistry.fill(HIST("hRecKaonN"), track.pt());
-        } else if (particle.pdgCode() == kProton) { // Pos protons
-          MCRegistry.fill(HIST("hRecProtonP"), track.pt());
-        } else if (particle.pdgCode() == kProtonBar) { // Neg protons
-          MCRegistry.fill(HIST("hRecProtonN"), track.pt());
-        }
+          // Efficiency - Reconstructed
+          MCRegistry.fill(HIST("hReconstructed"), track.pt());
+          if (particle.pdgCode() == kPiPlus) { // Pos pions
+            MCRegistry.fill(HIST("hRecPionP"), track.pt());
+          } else if (particle.pdgCode() == kPiMinus) { // Neg pions
+            MCRegistry.fill(HIST("hRecPionN"), track.pt());
+          } else if (particle.pdgCode() == kKPlus) { // Pos kaons
+            MCRegistry.fill(HIST("hRecKaonP"), track.pt());
+          } else if (particle.pdgCode() == kKMinus) { // Neg kaons
+            MCRegistry.fill(HIST("hRecKaonN"), track.pt());
+          } else if (particle.pdgCode() == kProton) { // Pos protons
+            MCRegistry.fill(HIST("hRecProtonP"), track.pt());
+          } else if (particle.pdgCode() == kProtonBar) { // Neg protons
+            MCRegistry.fill(HIST("hRecProtonN"), track.pt());
+          }
 
-        // Purity
-        A_PID = TrackPID(track);
-        if (A_PID[1] < 4.0) {
+          // Purity (PID)
+          A_PID = TrackPID(track);
 
           if (track.sign() > 0) {  // Positive tracks
             if (A_PID[0] == 0.0) { // Pions
@@ -480,34 +480,31 @@ struct ThreePartCorr {
 
     static Double_t ID[2]; // {PID, NSigma}
 
-    Double_t NSigmaTPC[3], NSigma[3];
-    Double_t NSigmaTOF[3] = {0.0, 0.0, 0.0};
-    NSigmaTPC[0] = Track.tpcNSigmaPi();
-    NSigmaTPC[1] = Track.tpcNSigmaKa();
-    NSigmaTPC[2] = Track.tpcNSigmaPr();
-    if (Track.hasTOF()) {
-      NSigmaTOF[0] = Track.tofNSigmaPi();
-      NSigmaTOF[1] = Track.tofNSigmaKa();
-      NSigmaTOF[2] = Track.tofNSigmaPr();
-    }
+    Double_t NSigma[3];
+    Double_t NSigmaTOF[3];
+    NSigmaTOF[0] = Track.tofNSigmaPi();
+    NSigmaTOF[1] = Track.tofNSigmaKa();
+    NSigmaTOF[2] = Track.tofNSigmaPr();
 
-    NSigma[0] = TMath::Sqrt(pow(NSigmaTPC[0], 2) + pow(NSigmaTOF[0], 2));
-    NSigma[1] = TMath::Sqrt(pow(NSigmaTPC[1], 2) + pow(NSigmaTOF[1], 2));
-    NSigma[2] = TMath::Sqrt(pow(NSigmaTPC[2], 2) + pow(NSigmaTOF[2], 2));
+    NSigma[0] = TMath::Abs(NSigmaTOF[0]);
+    NSigma[1] = TMath::Abs(NSigmaTOF[1]);
+    NSigma[2] = TMath::Abs(NSigmaTOF[2]);
 
     if (NSigma[0] <= std::min(NSigma[1], NSigma[2])) { // Pions
       ID[0] = 0.0;
-      ID[1] = NSigma[0];
+      ID[1] = NSigmaTOF[0];
     } else if (NSigma[1] <= std::min(NSigma[0], NSigma[2])) { // Kaons
       ID[0] = 1.0;
-      ID[1] = NSigma[1];
-    } else if (NSigma[2] <= std::min(NSigma[0], NSigma[1])) { // Protons
+      ID[1] = NSigmaTOF[1];
+    } else if (NSigma[2] < std::min(NSigma[0], NSigma[1])) { // Protons
       ID[0] = 2.0;
-      ID[1] = NSigma[2];
+      ID[1] = NSigmaTOF[2];
     }
 
     return ID;
   }
+
+  //================================================================================================================================================================================================================
 
   template <class V0Cand>
   Bool_t V0Filters(const V0Cand& V0)
@@ -528,14 +525,83 @@ struct ThreePartCorr {
     return kTRUE;
   }
 
+  template <class TrackCand>
+  Bool_t TrackFilters(const TrackCand& Track)
+  {
+
+    if (!Track.hasTOF()) {
+      return kFALSE;
+    }
+
+    if (TrackPID(Track)[0] == 0.0) { // Pions
+      if (TMath::Abs(Track.tpcNSigmaPi()) > 4.0) {
+        return kFALSE;
+      }
+      if (Track.pt() < 0.3) {
+        return kFALSE;
+      } else if (Track.pt() > 0.3 && Track.pt() < 1.5) {
+        if (TMath::Abs(TrackPID(Track)[1]) > 4.0) {
+          return kFALSE;
+        }
+      } else if (Track.pt() > 1.5 && Track.pt() < 2.3) {
+        if (TrackPID(Track)[1] < -4.0 || TrackPID(Track)[1] > 0.0) {
+          return kFALSE;
+        }
+      } else if (Track.pt() > 2.3) {
+        return kFALSE;
+      }
+
+    } else if (TrackPID(Track)[0] == 1.0) { // Kaons
+      if (TMath::Abs(Track.tpcNSigmaKa()) > 4.0) {
+        return kFALSE;
+      }
+      if (Track.pt() < 0.5) {
+        return kFALSE;
+      } else if (Track.pt() > 0.5 && Track.pt() < 1.5) {
+        if (TMath::Abs(TrackPID(Track)[1]) > 4.0) {
+          return kFALSE;
+        }
+      } else if (Track.pt() > 1.5 && Track.pt() < 2.0) {
+        if (TrackPID(Track)[1] < -2.0 || TrackPID(Track)[1] > 4.0) {
+          return kFALSE;
+        }
+      } else if (Track.pt() > 2.0 && Track.pt() < 2.5) {
+        if (TrackPID(Track)[1] < 0.0 || TrackPID(Track)[1] > 4.0) {
+          return kFALSE;
+        }
+      } else if (Track.pt() > 2.5) {
+        return kFALSE;
+      }
+
+    } else if (TrackPID(Track)[0] == 2.0) { // Protons
+      if (TMath::Abs(Track.tpcNSigmaPr()) > 4.0) {
+        return kFALSE;
+      }
+      if (Track.pt() < 0.5) {
+        return kFALSE;
+      } else if (Track.pt() > 0.5 && Track.pt() < 0.7) {
+        if (TrackPID(Track)[1] < -2.0 || TrackPID(Track)[1] > 4.0) {
+          return kFALSE;
+        }
+      } else if (Track.pt() > 0.7 && Track.pt() < 2.5) {
+        if (TMath::Abs(TrackPID(Track)[1]) > 4.0) {
+          return kFALSE;
+        }
+      } else if (Track.pt() > 2.5) {
+        if (TrackPID(Track)[1] < -2.0 || TrackPID(Track)[1] > 4.0) {
+          return kFALSE;
+        }
+      }
+    }
+
+    return kTRUE;
+  }
+
   template <class V0Cand, class TrackCand>
-  Bool_t TrackFilters(const V0Cand& V0, const TrackCand& Track)
+  Bool_t CorrelationFilters(const V0Cand& V0, const TrackCand& Track)
   {
 
     if (Track.globalIndex() == V0.posTrackId() || Track.globalIndex() == V0.negTrackId()) {
-      return kFALSE;
-    }
-    if (TrackPID(Track)[1] > 4.0) {
       return kFALSE;
     }
 

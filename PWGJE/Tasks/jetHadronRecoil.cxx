@@ -192,6 +192,9 @@ struct JetHadronRecoil {
     }
 
     for (const auto& jet : jets) {
+      if (jet.tracksIds().size() == 1) {
+        continue;
+      }
       if (jet.pt() > pTHatMaxMCD * pTHat) {
         continue;
       }
@@ -313,6 +316,9 @@ struct JetHadronRecoil {
     }
 
     for (const auto& jet : jets) {
+      if (jet.tracksIds().size() == 1) {
+        continue;
+      }
       if (jet.pt() > pTHatMaxMCP * pTHat) {
         continue;
       }
@@ -387,12 +393,18 @@ struct JetHadronRecoil {
     double dRp = 0;
 
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
+    if (jetBase.tracksIds().size() == 1) {
+      return;
+    }
     if (jetBase.pt() > pTHatMaxMCD * pTHat) {
       return;
     }
 
     for (const auto& mcdjetWTA : mcdjetsWTA) {
       double djet = RecoDecay::sqrtSumOfSquares(RecoDecay::constrainAngle(jetBase.phi() - mcdjetWTA.phi(), -o2::constants::math::PI), jetBase.eta() - mcdjetWTA.eta());
+      if (mcdjetWTA.tracksIds().size() == 1) {
+        continue;
+      }
       if (mcdjetWTA.pt() > pTHatMaxMCD * pTHat) {
         continue;
       }
@@ -404,11 +416,17 @@ struct JetHadronRecoil {
 
     if (jetBase.has_matchedJetGeo()) {
       for (const auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
+        if (jetTag.tracksIds().size() == 1) {
+          continue;
+        }
         if (jetTag.pt() > pTHatMaxMCP * pTHat) {
           continue;
         }
         for (const auto& mcpjetWTA : mcpjetsWTA) {
           double djetp = RecoDecay::sqrtSumOfSquares(RecoDecay::constrainAngle(jetTag.phi() - mcpjetWTA.phi(), -o2::constants::math::PI), jetTag.eta() - mcpjetWTA.eta());
+          if (mcpjetWTA.tracksIds().size() == 1) {
+            continue;
+          }
           if (mcpjetWTA.pt() > pTHatMaxMCP * pTHat) {
             continue;
           }

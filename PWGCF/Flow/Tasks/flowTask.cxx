@@ -8,9 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// code author: Zhiyong Lu (zhiyong.lu@cern.ch)
-// jira: PWGCF-254
+
+/// \file   flowTask.cxx
+/// \author Zhiyong Lu (zhiyong.lu@cern.ch)
+/// \since  Dec/10/2023
+/// \brief  jira: PWGCF-254, task to measure flow observables with cumulant method
 
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPMagField.h>
@@ -52,6 +54,8 @@ using namespace o2::framework::expressions;
 struct FlowTask {
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
+  O2_DEFINE_CONFIGURABLE(cfgCentMin, float, 0.0f, "Minimum centrality")
+  O2_DEFINE_CONFIGURABLE(cfgCentMax, float, 100.0f, "Maximum centrality")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 10.0f, "Maximal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtRefMin, float, 0.2f, "Minimal pT for ref tracks")
@@ -82,8 +86,11 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
+  O2_DEFINE_CONFIGURABLE(cfgOutputGroupNUAWeights, bool, false, "Fill and output group NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
+  O2_DEFINE_CONFIGURABLE(cfgAcceptanceGroup, std::string, "", "CCDB path to group acceptance object")
+  O2_DEFINE_CONFIGURABLE(cfgAcceptanceGroupUse, bool, false, "Apply group acceptance, this option overrides cfgAcceptance")
   O2_DEFINE_CONFIGURABLE(cfgMagnetField, std::string, "GLO/Config/GRPMagField", "CCDB path to Magnet field object")
   O2_DEFINE_CONFIGURABLE(cfgEvSelOccupancy, bool, true, "Occupancy cut")
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
@@ -92,6 +99,7 @@ struct FlowTask {
   Configurable<std::vector<std::string>> cfgUserDefineGFWCorr{"cfgUserDefineGFWCorr", std::vector<std::string>{"refN02 {2} refP02 {-2}", "refN12 {2} refP12 {-2}"}, "User defined GFW CorrelatorConfig"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWName{"cfgUserDefineGFWName", std::vector<std::string>{"Ch02Gap22", "Ch12Gap22"}, "User defined GFW Name"};
   Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
+  Configurable<std::vector<int>> cfgGroupSplitRunNumber{"cfgGroupSplitRunNumber", std::vector<int>{544510, 544653}, "runnumbers for group splitting (suppose run numbers are increasing monotonically) "};
 
   ConfigurableAxis axisVertex{"axisVertex", {40, -20, 20}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -108,30 +116,32 @@ struct FlowTask {
   ConfigurableAxis axisDCAz{"axisDCAz", {200, -2, 2}, "DCA_{z} (cm)"};
   ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -1, 1}, "DCA_{xy} (cm)"};
 
-  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
+  Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex) && (aod::cent::centFT0C > cfgCentMin) && (aod::cent::centFT0C < cfgCentMax);
   Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   // Corrections
   TH1D* mEfficiency = nullptr;
   GFWWeights* mAcceptance = nullptr;
+  TList* mGroupAcceptanceList = nullptr;
   bool correctionsLoaded = false;
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
   HistogramRegistry registry{"registry"};
+  OutputObj<TList> fGroupNUAList{"GroupNUAList", OutputObjHandlingPolicy::AnalysisObject, OutputObjSourceType::OutputObjSource};
 
   // define global variables
   GFW* fGFW = new GFW();
   std::vector<GFW::CorrConfig> corrconfigs;
   TAxis* fPtAxis;
   TRandom3* fRndm = new TRandom3(0);
-  std::vector<std::vector<std::shared_ptr<TProfile>>> BootstrapArray;
+  std::vector<std::vector<std::shared_ptr<TProfile>>> bootstrapArray;
   enum ExtraProfile {
     // here are TProfiles for vn-pt correlations that are not implemented in GFW
     kMeanPt_InGap08 = 0,
@@ -148,9 +158,10 @@ struct FlowTask {
   std::unordered_map<int, TH2*> gHadronicRate;
   ctpRateFetcher mRateFetcher;
   TH2* gCurrentHadronicRate;
+  std::vector<std::shared_ptr<GFWWeights>> groupNUAWeightPtr;
 
-  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
   // Track selection
   TrackSelection myTrackSel;
@@ -167,9 +178,9 @@ struct FlowTask {
 
   void init(InitContext const&)
   {
-    ccdb->setURL(url.value);
+    ccdb->setURL(ccdbUrl.value);
     ccdb->setCaching(true);
-    ccdb->setCreatedNotAfter(nolaterthan.value);
+    ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
 
     // Add some output objects to the histogram registry
     // Event QA
@@ -223,27 +234,48 @@ struct FlowTask {
       registry.add("PtVariance_partB_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
 
       // initial array
-      BootstrapArray.resize(cfgNbootstrap);
+      bootstrapArray.resize(cfgNbootstrap);
       for (int i = 0; i < cfgNbootstrap; i++) {
-        BootstrapArray[i].resize(kCount_ExtraProfile);
+        bootstrapArray[i].resize(kCount_ExtraProfile);
       }
       for (int i = 0; i < cfgNbootstrap; i++) {
-        BootstrapArray[i][kMeanPt_InGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/hMeanPtWithinGap08", i), "", {HistType::kTProfile, {axisIndependent}});
-        BootstrapArray[i][kC22_Gap08_Weff] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22_gap08_Weff", i), "", {HistType::kTProfile, {axisIndependent}});
-        BootstrapArray[i][kC22_Gap08_MeanPt] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22_gap08_trackMeanPt", i), "", {HistType::kTProfile, {axisIndependent}});
-        BootstrapArray[i][kPtVarParA_InGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/PtVariance_partA_WithinGap08", i), "", {HistType::kTProfile, {axisIndependent}});
-        BootstrapArray[i][kPtVarParB_InGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/PtVariance_partB_WithinGap08", i), "", {HistType::kTProfile, {axisIndependent}});
+        bootstrapArray[i][kMeanPt_InGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/hMeanPtWithinGap08", i), "", {HistType::kTProfile, {axisIndependent}});
+        bootstrapArray[i][kC22_Gap08_Weff] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22_gap08_Weff", i), "", {HistType::kTProfile, {axisIndependent}});
+        bootstrapArray[i][kC22_Gap08_MeanPt] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22_gap08_trackMeanPt", i), "", {HistType::kTProfile, {axisIndependent}});
+        bootstrapArray[i][kPtVarParA_InGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/PtVariance_partA_WithinGap08", i), "", {HistType::kTProfile, {axisIndependent}});
+        bootstrapArray[i][kPtVarParB_InGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/PtVariance_partB_WithinGap08", i), "", {HistType::kTProfile, {axisIndependent}});
       }
     }
 
     o2::framework::AxisSpec axis = axisPt;
     int nPtBins = axis.binEdges.size() - 1;
-    double* PtBins = &(axis.binEdges)[0];
-    fPtAxis = new TAxis(nPtBins, PtBins);
+    double* ptBins = &(axis.binEdges)[0];
+    fPtAxis = new TAxis(nPtBins, ptBins);
 
     if (cfgOutputNUAWeights) {
-      fWeights->SetPtBins(nPtBins, PtBins);
+      fWeights->SetPtBins(nPtBins, ptBins);
       fWeights->Init(true, false);
+    }
+
+    TList* groupNUAWeightlist = new TList();
+    groupNUAWeightlist->SetOwner(true);
+    fGroupNUAList.setObject(groupNUAWeightlist);
+
+    if (cfgOutputGroupNUAWeights) {
+      groupNUAWeightPtr.resize(cfgGroupSplitRunNumber.value.size() + 1);
+      for (uint i = 0; i < cfgGroupSplitRunNumber.value.size() + 1; i++) {
+        GFWWeights* groupweight = nullptr;
+        if (i < cfgGroupSplitRunNumber.value.size())
+          groupweight = new GFWWeights(Form("groupweight_%d", cfgGroupSplitRunNumber.value[i]));
+        else
+          groupweight = new GFWWeights(Form("groupweight_last"));
+
+        groupweight->SetPtBins(nPtBins, ptBins);
+        groupweight->Init(true, false);
+        groupNUAWeightlist->Add(groupweight);
+        std::shared_ptr<GFWWeights> sharePtrGroupWeight(groupweight);
+        groupNUAWeightPtr[i] = sharePtrGroupWeight;
+      }
     }
 
     // add in FlowContainer to Get boostrap sample automatically
@@ -254,29 +286,29 @@ struct FlowTask {
     oba->Add(new TNamed("ChFull42", "ChFull42"));
     oba->Add(new TNamed("ChFull24", "ChFull24"));
     oba->Add(new TNamed("ChFull26", "ChFull26"));
-    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+    for (auto i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("ChFull22_pt_%i", i + 1), "ChFull22_pTDiff"));
-    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+    for (auto i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("ChFull24_pt_%i", i + 1), "ChFull24_pTDiff"));
     oba->Add(new TNamed("Ch04Gap22", "Ch04Gap22"));
     oba->Add(new TNamed("Ch06Gap22", "Ch06Gap22"));
     oba->Add(new TNamed("Ch08Gap22", "Ch08Gap22"));
     oba->Add(new TNamed("Ch10Gap22", "Ch10Gap22"));
-    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+    for (auto i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Ch10Gap22_pt_%i", i + 1), "Ch10Gap22_pTDiff"));
     oba->Add(new TNamed("Ch12Gap22", "Ch12Gap22"));
     oba->Add(new TNamed("Ch04Gap32", "Ch04Gap32"));
     oba->Add(new TNamed("Ch06Gap32", "Ch06Gap32"));
     oba->Add(new TNamed("Ch08Gap32", "Ch08Gap32"));
     oba->Add(new TNamed("Ch10Gap32", "Ch10Gap32"));
-    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+    for (auto i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Ch10Gap32_pt_%i", i + 1), "Ch10Gap32_pTDiff"));
     oba->Add(new TNamed("Ch12Gap32", "Ch12Gap32"));
     oba->Add(new TNamed("Ch04Gap42", "Ch04Gap42"));
     oba->Add(new TNamed("Ch06Gap42", "Ch06Gap42"));
     oba->Add(new TNamed("Ch08Gap42", "Ch08Gap42"));
     oba->Add(new TNamed("Ch10Gap42", "Ch10Gap42"));
-    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+    for (auto i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Ch10Gap42_pt_%i", i + 1), "Ch10Gap42_pTDiff"));
     oba->Add(new TNamed("Ch12Gap42", "Ch12Gap42"));
     oba->Add(new TNamed("ChFull422", "ChFull422"));
@@ -292,11 +324,11 @@ struct FlowTask {
     oba->Add(new TNamed("Ch10Gap3232", "Ch10Gap3232"));
     oba->Add(new TNamed("Ch10Gap4242", "Ch10Gap4242"));
     oba->Add(new TNamed("Ch10Gap24", "Ch10Gap24"));
-    std::vector<std::string> UserDefineGFWCorr = cfgUserDefineGFWCorr;
-    std::vector<std::string> UserDefineGFWName = cfgUserDefineGFWName;
-    if (!UserDefineGFWCorr.empty() && !UserDefineGFWName.empty()) {
-      for (uint i = 0; i < UserDefineGFWName.size(); i++) {
-        oba->Add(new TNamed(UserDefineGFWName.at(i).c_str(), UserDefineGFWName.at(i).c_str()));
+    std::vector<std::string> userDefineGFWCorr = cfgUserDefineGFWCorr;
+    std::vector<std::string> userDefineGFWName = cfgUserDefineGFWName;
+    if (!userDefineGFWCorr.empty() && !userDefineGFWName.empty()) {
+      for (uint i = 0; i < userDefineGFWName.size(); i++) {
+        oba->Add(new TNamed(userDefineGFWName.at(i).c_str(), userDefineGFWName.at(i).c_str()));
       }
     }
     fFC->SetName("FlowContainer");
@@ -371,16 +403,16 @@ struct FlowTask {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {3 2} refP10 {-3 -2}", "Ch10Gap3232", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {4 2} refP10 {-4 -2}", "Ch10Gap4242", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {2 2} refP10 {-2 -2}", "Ch10Gap24", kFALSE));
-    if (!UserDefineGFWCorr.empty() && !UserDefineGFWName.empty()) {
+    if (!userDefineGFWCorr.empty() && !userDefineGFWName.empty()) {
       LOGF(info, "User adding GFW CorrelatorConfig:");
       // attentaion: here we follow the index of cfgUserDefineGFWCorr
-      for (uint i = 0; i < UserDefineGFWCorr.size(); i++) {
-        if (i >= UserDefineGFWName.size()) {
-          LOGF(fatal, "The names you provided are more than configurations. UserDefineGFWName.size(): %d > UserDefineGFWCorr.size(): %d", UserDefineGFWName.size(), UserDefineGFWCorr.size());
+      for (uint i = 0; i < userDefineGFWCorr.size(); i++) {
+        if (i >= userDefineGFWName.size()) {
+          LOGF(fatal, "The names you provided are more than configurations. userDefineGFWName.size(): %d > userDefineGFWCorr.size(): %d", userDefineGFWName.size(), userDefineGFWCorr.size());
           break;
         }
-        LOGF(info, "%d: %s %s", i, UserDefineGFWCorr.at(i).c_str(), UserDefineGFWName.at(i).c_str());
-        corrconfigs.push_back(fGFW->GetCorrelatorConfig(UserDefineGFWCorr.at(i).c_str(), UserDefineGFWName.at(i).c_str(), kFALSE));
+        LOGF(info, "%d: %s %s", i, userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str());
+        corrconfigs.push_back(fGFW->GetCorrelatorConfig(userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str(), kFALSE));
       }
     }
     fGFW->CreateRegions();
@@ -418,7 +450,7 @@ struct FlowTask {
   }
 
   template <char... chars>
-  void FillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
+  void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -426,7 +458,7 @@ struct FlowTask {
       return;
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1)
+      if (std::fabs(val) < 1)
         registry.fill(tarName, cent, val, dnx);
       return;
     }
@@ -434,7 +466,7 @@ struct FlowTask {
   }
 
   template <char... chars, char... chars2>
-  void FillpTvnProfile(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, const ConstStr<chars...>& vnWeff, const ConstStr<chars2...>& vnpT, const double& cent)
+  void fillpTvnProfile(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, const ConstStr<chars...>& vnWeff, const ConstStr<chars2...>& vnpT, const double& cent)
   {
     double meanPt = sum_pt / WeffEvent;
     double dnx, val;
@@ -443,7 +475,7 @@ struct FlowTask {
       return;
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1) {
+      if (std::fabs(val) < 1) {
         registry.fill(vnWeff, cent, val, dnx * WeffEvent);
         registry.fill(vnpT, cent, val * meanPt, dnx * WeffEvent);
       }
@@ -452,7 +484,7 @@ struct FlowTask {
     return;
   }
 
-  void FillpTvnProfile(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, std::shared_ptr<TProfile> vnWeff, std::shared_ptr<TProfile> vnpT, const double& cent)
+  void fillpTvnProfile(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, std::shared_ptr<TProfile> vnWeff, std::shared_ptr<TProfile> vnpT, const double& cent)
   {
     double meanPt = sum_pt / WeffEvent;
     double dnx, val;
@@ -461,7 +493,7 @@ struct FlowTask {
       return;
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1) {
+      if (std::fabs(val) < 1) {
         vnWeff->Fill(cent, val, dnx * WeffEvent);
         vnpT->Fill(cent, val * meanPt, dnx * WeffEvent);
       }
@@ -470,7 +502,7 @@ struct FlowTask {
     return;
   }
 
-  void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
+  void fillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -478,16 +510,16 @@ struct FlowTask {
       return;
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1)
+      if (std::fabs(val) < 1)
         fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
       return;
     }
-    for (Int_t i = 1; i <= fPtAxis->GetNbins(); i++) {
+    for (auto i = 1; i <= fPtAxis->GetNbins(); i++) {
       dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
       if (dnx == 0)
         continue;
       val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1)
+      if (std::fabs(val) < 1)
         fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
     }
     return;
@@ -504,6 +536,13 @@ struct FlowTask {
       else
         LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
     }
+    if (cfgAcceptanceGroup.value.empty() == false) {
+      mGroupAcceptanceList = ccdb->getForTimeStamp<TList>(cfgAcceptance, timestamp);
+      if (mGroupAcceptanceList == nullptr) {
+        LOGF(fatal, "Could not load grouped acceptance weights from %s", cfgAcceptanceGroup.value.c_str());
+      }
+      LOGF(info, "Loaded grouped acceptance weights from %s (%p)", cfgAcceptanceGroup.value.c_str(), (void*)mGroupAcceptanceList);
+    }
     if (cfgEfficiency.value.empty() == false) {
       mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
       if (mEfficiency == nullptr) {
@@ -514,7 +553,7 @@ struct FlowTask {
     correctionsLoaded = true;
   }
 
-  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, float phi, float eta, float pt, float vtxz)
+  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, float phi, float eta, float pt, float vtxz, int groupNUAIndex = 0)
   {
     float eff = 1.;
     if (mEfficiency)
@@ -524,6 +563,14 @@ struct FlowTask {
     if (eff == 0)
       return false;
     weight_nue = 1. / eff;
+    if (cfgAcceptanceGroupUse) {
+      if (mGroupAcceptanceList && mGroupAcceptanceList->At(groupNUAIndex)) {
+        weight_nua = reinterpret_cast<GFWWeights*>(mGroupAcceptanceList->At(groupNUAIndex))->GetNUA(phi, eta, vtxz);
+      } else {
+        weight_nua = 1;
+      }
+      return true;
+    }
     if (mAcceptance)
       weight_nua = mAcceptance->GetNUA(phi, eta, vtxz);
     else
@@ -569,7 +616,7 @@ struct FlowTask {
     }
 
     // V0A T0A 5 sigma cut
-    if (cfgEvSelV0AT0ACut && (fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A())))
+    if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A())))
       return 0;
 
     return 1;
@@ -592,7 +639,7 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    if (cfgCutDCAzPtDepEnabled && (fabs(track.dcaZ()) > (0.004f + 0.013f / track.pt())))
+    if (cfgCutDCAzPtDepEnabled && (std::fabs(track.dcaZ()) > (0.004f + 0.013f / track.pt())))
       return false;
 
     if (cfgTrkSelSwitch) {
@@ -603,18 +650,19 @@ struct FlowTask {
   }
 
   template <typename TTrack>
-  bool RejectionTPCoverlap(TTrack track, const int field)
+  bool rejectionTPCoverlap(TTrack track, const int field)
   {
     double phimodn = track.phi();
     if (field < 0) // for negative polarity field
-      phimodn = TMath::TwoPi() - phimodn;
+      phimodn = o2::constants::math::TwoPI - phimodn;
     if (track.sign() < 0) // for negative charge
-      phimodn = TMath::TwoPi() - phimodn;
+      phimodn = o2::constants::math::TwoPI - phimodn;
     if (phimodn < 0)
       LOGF(warning, "phi < 0: %g", phimodn);
 
-    phimodn += TMath::Pi() / 18.0; // to center gap in the middle
-    phimodn = fmod(phimodn, TMath::Pi() / 9.0);
+    float middle = o2::constants::math::TwoPI / 18.0;
+    phimodn += middle; // to center gap in the middle
+    phimodn = fmod(phimodn, o2::constants::math::TwoPI / 9.0);
     registry.fill(HIST("pt_phi_bef"), track.pt(), phimodn);
     if (cfgRejectionTPCsectorOverlap) {
       if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt()))
@@ -641,7 +689,7 @@ struct FlowTask {
     gCurrentHadronicRate = gHadronicRate[mRunNumber];
   }
 
-  void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
+  void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
   {
     registry.fill(HIST("hEventCount"), 0.5);
     if (!collision.sel8())
@@ -651,7 +699,7 @@ struct FlowTask {
     registry.fill(HIST("hEventCount"), 1.5);
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int currentRunNumber = bc.runNumber();
-    for (auto& ExcludedRun : cfgRunRemoveList.value) {
+    for (const auto& ExcludedRun : cfgRunRemoveList.value) {
       if (currentRunNumber == ExcludedRun) {
         return;
       }
@@ -670,7 +718,7 @@ struct FlowTask {
     if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent))
       return;
     registry.fill(HIST("hEventCount"), 3.5);
-    float l_Random = fRndm->Rndm();
+    float lRandom = fRndm->Rndm();
     float vtxz = collision.posZ();
     registry.fill(HIST("hVtxZ"), vtxz);
     registry.fill(HIST("hMult"), tracks.size());
@@ -702,38 +750,58 @@ struct FlowTask {
     float weff = 1, wacc = 1;
     double weffEvent = 0;
     double ptSum = 0., ptSum_Gap08 = 0.;
-    double weffEvent_WithinGap08 = 0., weffEventSquare_WithinGap08 = 0.;
-    double sum_ptSquare_wSquare_WithinGap08 = 0., sum_pt_wSquare_WithinGap08 = 0.;
-    int Magnetfield = 0;
-    double NTracksCorrected = 0;
+    double weffEventWithinGap08 = 0., weffEventSquareWithinGap08 = 0.;
+    double sumptSquarewSquareWithinGap08 = 0., sumptwSquareWithinGap08 = 0.;
+    int magnetfield = 0;
+    double nTracksCorrected = 0;
     if (cfgShowTPCsectorOverlap) {
       // magnet field dependence cut
-      Magnetfield = getMagneticField(bc.timestamp());
+      magnetfield = getMagneticField(bc.timestamp());
     }
     float independent = cent;
     if (cfgUseNch)
       independent = static_cast<float>(tracks.size());
 
-    for (auto& track : tracks) {
+    int groupNUAIndex = 0;
+    if (cfgOutputGroupNUAWeights || cfgAcceptanceGroupUse) {
+      for (uint i = 0; i < cfgGroupSplitRunNumber.value.size(); i++) {
+        if (currentRunNumber < cfgGroupSplitRunNumber.value.at(i)) {
+          break;
+        } else {
+          groupNUAIndex++;
+        }
+      }
+    }
+
+    for (const auto& track : tracks) {
       if (!trackSelected(track))
         continue;
-      if (cfgShowTPCsectorOverlap && !RejectionTPCoverlap(track, Magnetfield))
+      if (cfgShowTPCsectorOverlap && !rejectionTPCoverlap(track, magnetfield))
         continue;
-      bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
-      bool WithinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
-      bool WithinEtaGap08 = (track.eta() >= -0.4) && (track.eta() <= 0.4);
+      bool withinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
+      bool withinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
+      bool withinEtaGap08 = (track.eta() >= -0.4) && (track.eta() <= 0.4);
       if (cfgOutputNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
-          if (WithinPtRef)
+          if (withinPtRef)
             fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
         } else {
           fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
         }
       }
-      if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
+      if (cfgOutputGroupNUAWeights) {
+        if (cfgOutputNUAWeightsRefPt) {
+          if (withinPtRef) {
+            groupNUAWeightPtr[groupNUAIndex]->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+          }
+        } else {
+          groupNUAWeightPtr[groupNUAIndex]->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+        }
+      }
+      if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz, groupNUAIndex))
         continue;
       registry.fill(HIST("hPt"), track.pt());
-      if (WithinPtRef) {
+      if (withinPtRef) {
         registry.fill(HIST("hPhi"), track.phi());
         registry.fill(HIST("hPhiWeighted"), track.phi(), wacc);
         registry.fill(HIST("hEta"), track.eta());
@@ -746,65 +814,65 @@ struct FlowTask {
         registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
         weffEvent += weff;
         ptSum += weff * track.pt();
-        NTracksCorrected += weff;
-        if (WithinEtaGap08) {
+        nTracksCorrected += weff;
+        if (withinEtaGap08) {
           ptSum_Gap08 += weff * track.pt();
-          sum_pt_wSquare_WithinGap08 += weff * weff * track.pt();
-          sum_ptSquare_wSquare_WithinGap08 += weff * weff * track.pt() * track.pt();
-          weffEvent_WithinGap08 += weff;
-          weffEventSquare_WithinGap08 += weff * weff;
+          sumptwSquareWithinGap08 += weff * weff * track.pt();
+          sumptSquarewSquareWithinGap08 += weff * weff * track.pt() * track.pt();
+          weffEventWithinGap08 += weff;
+          weffEventSquareWithinGap08 += weff * weff;
         }
       }
-      if (WithinPtRef)
+      if (withinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
-      if (WithinPtPOI)
+      if (withinPtPOI)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 2);
-      if (WithinPtPOI && WithinPtRef)
+      if (withinPtPOI && withinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 4);
     }
-    registry.fill(HIST("hTrackCorrection2d"), tracks.size(), NTracksCorrected);
+    registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
 
     if (!cfgUseSmallMemory) {
-      double WeffEvent_diff_WithGap08 = weffEvent_WithinGap08 * weffEvent_WithinGap08 - weffEventSquare_WithinGap08;
+      double weffEventDiffWithGap08 = weffEventWithinGap08 * weffEventWithinGap08 - weffEventSquareWithinGap08;
       // Filling TProfile
       // MeanPt
       if (weffEvent > 1e-6)
         registry.fill(HIST("hMeanPt"), independent, ptSum / weffEvent, weffEvent);
-      if (weffEvent_WithinGap08 > 1e-6)
-        registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEvent_WithinGap08, weffEvent_WithinGap08);
+      if (weffEventWithinGap08 > 1e-6)
+        registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, weffEventWithinGap08);
       // v22-Pt
       // c22_gap8 * pt_withGap8
-      if (weffEvent_WithinGap08 > 1e-6)
-        FillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEvent_WithinGap08, HIST("c22_gap08_Weff"), HIST("c22_gap08_trackMeanPt"), independent);
+      if (weffEventWithinGap08 > 1e-6)
+        fillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEventWithinGap08, HIST("c22_gap08_Weff"), HIST("c22_gap08_trackMeanPt"), independent);
       // PtVariance
-      if (WeffEvent_diff_WithGap08 > 1e-6) {
+      if (weffEventDiffWithGap08 > 1e-6) {
         registry.fill(HIST("PtVariance_partA_WithinGap08"), independent,
-                      (ptSum_Gap08 * ptSum_Gap08 - sum_ptSquare_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
-                      WeffEvent_diff_WithGap08);
+                      (ptSum_Gap08 * ptSum_Gap08 - sumptSquarewSquareWithinGap08) / weffEventDiffWithGap08,
+                      weffEventDiffWithGap08);
         registry.fill(HIST("PtVariance_partB_WithinGap08"), independent,
-                      (weffEvent_WithinGap08 * ptSum_Gap08 - sum_pt_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
-                      WeffEvent_diff_WithGap08);
+                      (weffEventWithinGap08 * ptSum_Gap08 - sumptwSquareWithinGap08) / weffEventDiffWithGap08,
+                      weffEventDiffWithGap08);
       }
 
       // Filling Bootstrap Samples
-      int SampleIndex = static_cast<int>(cfgNbootstrap * l_Random);
-      if (weffEvent_WithinGap08 > 1e-6)
-        BootstrapArray[SampleIndex][kMeanPt_InGap08]->Fill(independent, ptSum_Gap08 / weffEvent_WithinGap08, weffEvent_WithinGap08);
-      if (weffEvent_WithinGap08 > 1e-6)
-        FillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEvent_WithinGap08, BootstrapArray[SampleIndex][kC22_Gap08_Weff], BootstrapArray[SampleIndex][kC22_Gap08_MeanPt], independent);
-      if (WeffEvent_diff_WithGap08 > 1e-6) {
-        BootstrapArray[SampleIndex][kPtVarParA_InGap08]->Fill(independent,
-                                                              (ptSum_Gap08 * ptSum_Gap08 - sum_ptSquare_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
-                                                              WeffEvent_diff_WithGap08);
-        BootstrapArray[SampleIndex][kPtVarParB_InGap08]->Fill(independent,
-                                                              (weffEvent_WithinGap08 * ptSum_Gap08 - sum_pt_wSquare_WithinGap08) / WeffEvent_diff_WithGap08,
-                                                              WeffEvent_diff_WithGap08);
+      int sampleIndex = static_cast<int>(cfgNbootstrap * lRandom);
+      if (weffEventWithinGap08 > 1e-6)
+        bootstrapArray[sampleIndex][kMeanPt_InGap08]->Fill(independent, ptSum_Gap08 / weffEventWithinGap08, weffEventWithinGap08);
+      if (weffEventWithinGap08 > 1e-6)
+        fillpTvnProfile(corrconfigs.at(7), ptSum_Gap08, weffEventWithinGap08, bootstrapArray[sampleIndex][kC22_Gap08_Weff], bootstrapArray[sampleIndex][kC22_Gap08_MeanPt], independent);
+      if (weffEventDiffWithGap08 > 1e-6) {
+        bootstrapArray[sampleIndex][kPtVarParA_InGap08]->Fill(independent,
+                                                              (ptSum_Gap08 * ptSum_Gap08 - sumptSquarewSquareWithinGap08) / weffEventDiffWithGap08,
+                                                              weffEventDiffWithGap08);
+        bootstrapArray[sampleIndex][kPtVarParB_InGap08]->Fill(independent,
+                                                              (weffEventWithinGap08 * ptSum_Gap08 - sumptwSquareWithinGap08) / weffEventDiffWithGap08,
+                                                              weffEventDiffWithGap08);
       }
     }
 
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-      FillFC(corrconfigs.at(l_ind), independent, l_Random);
+      fillFC(corrconfigs.at(l_ind), independent, lRandom);
     }
   }
 };

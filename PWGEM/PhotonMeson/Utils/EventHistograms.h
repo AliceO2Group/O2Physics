@@ -21,7 +21,7 @@ namespace o2::aod::pwgem::photonmeson::utils::eventhistogram
 void addEventHistograms(HistogramRegistry* fRegistry)
 {
   // event info
-  auto hCollisionCounter = fRegistry->add<TH1>("Event/before/hCollisionCounter", "collision counter;;Number of events", kTH1F, {{12, 0.5, 12.5}}, false);
+  auto hCollisionCounter = fRegistry->add<TH1>("Event/before/hCollisionCounter", "collision counter;;Number of events", kTH1D, {{12, 0.5, 12.5}}, false);
   hCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
   hCollisionCounter->GetXaxis()->SetBinLabel(2, "No TF border");
   hCollisionCounter->GetXaxis()->SetBinLabel(3, "No ITS ROF border");

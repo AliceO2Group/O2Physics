@@ -75,6 +75,8 @@ struct MeanPtFlucId {
   Configurable<float> cfgMcTofShiftPi{"cfgMcTofShiftPi", 0., "Pion Shift in TOF (MC data) "};
   Configurable<float> cfgMcTofShiftKa{"cfgMcTofShiftKa", 0., "Kaon Shift in TOF (MC data) "};
   Configurable<float> cfgMcTofShiftPr{"cfgMcTofShiftPr", 0., "Proton Shift in TOF (MC data) "};
+  Configurable<bool> cfgPidCut{"cfgPidCut", false, ""};
+  Configurable<bool> cfgPDGCodeOnly{"cfgPDGCodeOnly", true, ""};
   Configurable<bool> cfgMCReco{"cfgMCReco", false, ""};
   Configurable<bool> cfgMCTruth{"cfgMCTruth", false, ""};
   Configurable<bool> cfgPosZ{"cfgPosZ", true, "Position Z"};
@@ -82,6 +84,7 @@ struct MeanPtFlucId {
   Configurable<bool> cfgEvSel1{"cfgEvSel1", true, "kNoSameBunchPileup"};
   Configurable<bool> cfgEvSel2{"cfgEvSel2", true, "kIsGoodZvtxFT0vsPV"};
   Configurable<bool> cfgEvSel3{"cfgEvSel3", true, "kIsVertexITSTPC"};
+  Configurable<bool> cfgRejTrk{"cfgRejTrk", true, "Rejected Tracks"};
   Configurable<bool> cfgInvMass{"cfgInvMass", true, "electron Inv Mass cut selection"};
   Configurable<bool> cfgSelOR{"cfgSelOR", true, "Low OR High momentum "};
   Configurable<bool> cfgSelAND{"cfgSelAND", false, "Low AND High momentum"};
@@ -674,7 +677,8 @@ struct MeanPtFlucId {
   void fillIdParticleQAHistos(T const& track, double rap, double nSigmaTPC, double nSigmaTOF, int& N, double& Q1, double& Q2, double& Q3, double& Q4)
   {
     N++;
-    moments(track.pt(), Q1, Q2, Q3, Q4);
+    double pt = track.pt();
+    moments(pt, Q1, Q2, Q3, Q4);
 
     hist.fill(HIST(Dire[Mode]) + HIST("h_Pt"), track.pt());
     if (track.sign() > 0)
@@ -901,6 +905,113 @@ struct MeanPtFlucId {
           continue;
         }
 
+        //______________________________Reconstructed Level____________________________________________________//
+
+        if (selTrack(track)) {
+          double nSigmaTPCPi = track.tpcNSigmaPi();
+          double nSigmaTPCKa = track.tpcNSigmaKa();
+          double nSigmaTPCPr = track.tpcNSigmaPr();
+          double nSigmaTOFPi = track.tofNSigmaPi();
+          double nSigmaTOFKa = track.tofNSigmaKa();
+          double nSigmaTOFPr = track.tofNSigmaPr();
+          double rapPi = track.rapidity(MassPiPlus);
+          double rapKa = track.rapidity(MassKPlus);
+          double rapPr = track.rapidity(MassProton);
+          double innerParam = track.tpcInnerParam();
+
+          if (std::fabs(track.eta()) < 0.8) {
+            nCh++;
+            ptCh = track.pt();
+            moments(ptCh, q1Ch, q2Ch, q3Ch, q4Ch);
+            fillChargedQAHistos(track);
+          }
+          fillBeforePIDQAHistos(track);
+
+          if (cfgRejTrk == true && rejectTracks(track)) {
+            return;
+          }
+
+          if (cfgInvMass == true && invMassGamma < cfgGammaCut) {
+            continue;
+          }
+
+          if (cfgPDGCodeOnly == true) {
+            if (std::abs(pid) == kPiPlus && std::abs(rapPi) < 0.5 && track.pt() >= cfgCutPiPtMin) {
+              ptPi = track.pt();
+              fillIdParticleQAHistos<QA_Pion>(track, rapPi, nSigmaTPCPi, nSigmaTOFPi, nPi, q1Pi, q2Pi, q3Pi, q4Pi);
+              fillPtMCHist<QA_Pion>(ptPi, pid, kPiPlus, kPiMinus);
+            }
+
+            if (std::abs(pid) == kKPlus && std::abs(rapKa) < 0.5 && track.pt() >= cfgCutKaPtMin) {
+              ptKa = track.pt();
+              fillIdParticleQAHistos<QA_Kaon>(track, rapKa, nSigmaTPCKa, nSigmaTOFKa, nKa, q1Ka, q2Ka, q3Ka, q4Ka);
+              fillPtMCHist<QA_Kaon>(ptKa, pid, kKPlus, kKMinus);
+            }
+
+            if (std::abs(pid) == kProton && std::abs(rapPr) < 0.5 && track.pt() >= cfgCutPrPtMin) {
+              ptPr = track.pt();
+              fillIdParticleQAHistos<QA_Proton>(track, rapPr, nSigmaTPCPr, nSigmaTOFPr, nPr, q1Pr, q2Pr, q3Pr, q4Pr);
+              fillPtMCHist<QA_Proton>(ptPr, pid, kProton, kProtonBar);
+            }
+          }
+
+          if (cfgPidCut == true) {
+            if (cfgSelOR == true && cfgSelAND == false) {
+              if (selLowPi(track, innerParam) == cfgSelLow || selHighPi(track) == cfgSelHigh) {
+                ptPi = track.pt();
+                fillIdParticleQAHistos<QA_Pion>(track, rapPi, nSigmaTPCPi, nSigmaTOFPi, nPi, q1Pi, q2Pi, q3Pi, q4Pi);
+                if (std::abs(pid) == kPiPlus) {
+                  fillPtMCHist<QA_Pion>(ptPi, pid, kPiPlus, kPiMinus);
+                }
+              }
+            } else if (cfgSelOR == false && cfgSelAND == true) {
+              if (selLowPi(track, innerParam) == cfgSelLow && selHighPi(track) == cfgSelHigh) {
+                ptPi = track.pt();
+                fillIdParticleQAHistos<QA_Pion>(track, rapPi, nSigmaTPCPi, nSigmaTOFPi, nPi, q1Pi, q2Pi, q3Pi, q4Pi);
+                if (std::abs(pid) == kPiPlus) {
+                  fillPtMCHist<QA_Pion>(ptPi, pid, kPiPlus, kPiMinus);
+                }
+              }
+            }
+
+            if (cfgSelOR == true && cfgSelAND == false) {
+              if (selLowKa(track, innerParam) == cfgSelLow || selHighKa(track) == cfgSelHigh) {
+                ptKa = track.pt();
+                fillIdParticleQAHistos<QA_Kaon>(track, rapKa, nSigmaTPCKa, nSigmaTOFKa, nKa, q1Ka, q2Ka, q3Ka, q4Ka);
+                if (std::abs(pid) == kKPlus) {
+                  fillPtMCHist<QA_Kaon>(ptKa, pid, kKPlus, kKMinus);
+                }
+              }
+            } else if (cfgSelOR == false && cfgSelAND == true) {
+              if (selLowKa(track, innerParam) == cfgSelLow && selHighKa(track) == cfgSelHigh) {
+                ptKa = track.pt();
+                fillIdParticleQAHistos<QA_Kaon>(track, rapKa, nSigmaTPCKa, nSigmaTOFKa, nKa, q1Ka, q2Ka, q3Ka, q4Ka);
+                if (std::abs(pid) == kKPlus) {
+                  fillPtMCHist<QA_Kaon>(ptKa, pid, kKPlus, kKMinus);
+                }
+              }
+            }
+
+            if (cfgSelOR == true && cfgSelAND == false) {
+              if (selLowPr(track, innerParam) == cfgSelLow || selHighPr(track) == cfgSelHigh) {
+                ptPr = track.pt();
+                fillIdParticleQAHistos<QA_Proton>(track, rapPr, nSigmaTPCPr, nSigmaTOFPr, nPr, q1Pr, q2Pr, q3Pr, q4Pr);
+                if (std::abs(pid) == kProton) {
+                  fillPtMCHist<QA_Proton>(ptPr, pid, kProton, kProtonBar);
+                }
+              }
+            } else if (cfgSelOR == false && cfgSelAND == true) {
+              if (selLowPr(track, innerParam) == cfgSelLow && selHighPr(track) == cfgSelHigh) {
+                ptPr = track.pt();
+                fillIdParticleQAHistos<QA_Proton>(track, rapPr, nSigmaTPCPr, nSigmaTOFPr, nPr, q1Pr, q2Pr, q3Pr, q4Pr);
+                if (std::abs(pid) == kProton) {
+                  fillPtMCHist<QA_Proton>(ptPr, pid, kProton, kProtonBar);
+                }
+              }
+            }
+          }
+        }
+
         //___________________________________Truth Level____________________________________________________//
         auto charge = 0.;
         auto* pd = pdg->GetParticle(pid);
@@ -918,14 +1029,18 @@ struct MeanPtFlucId {
         }
 
         if (mcPart.pt() > cfgCutPtMin && mcPart.pt() < cfgCutPtMax) {
-          if (std::abs(mcPart.y()) > cfgCutRap) {
+
+          if (std::abs(mcPart.eta()) > 0.8) {
             continue;
           }
-
           nChSim++;
           ptChSim = mcPart.pt();
           moments(ptChSim, q1ChSim, q2ChSim, q3ChSim, q4ChSim);
           hist.fill(HIST("Gen/Charged/h_PtTruth"), mcPart.pt());
+
+          if (std::abs(mcPart.y()) > cfgCutRap) {
+            continue;
+          }
 
           if (std::abs(pid) == kPiPlus && mcPart.pt() >= cfgCutPiPtMin) {
             if (cfgSelOR == true && cfgSelAND == false) {
@@ -980,56 +1095,6 @@ struct MeanPtFlucId {
               }
             }
           }
-        }
-
-        //______________________________Reconstructed Level____________________________________________________//
-
-        if (!selTrack(track)) {
-          continue;
-        }
-
-        double nSigmaTPCPi = track.tpcNSigmaPi();
-        double nSigmaTPCKa = track.tpcNSigmaKa();
-        double nSigmaTPCPr = track.tpcNSigmaPr();
-        double nSigmaTOFPi = track.tofNSigmaPi();
-        double nSigmaTOFKa = track.tofNSigmaKa();
-        double nSigmaTOFPr = track.tofNSigmaPr();
-        double rapPi = track.rapidity(MassPiPlus);
-        double rapKa = track.rapidity(MassKPlus);
-        double rapPr = track.rapidity(MassProton);
-
-        if (std::fabs(track.eta()) < 0.8) {
-          nCh++;
-          ptCh = track.pt();
-          moments(ptCh, q1Ch, q2Ch, q3Ch, q4Ch);
-          fillChargedQAHistos(track);
-        }
-        fillBeforePIDQAHistos(track);
-
-        if (rejectTracks(track)) {
-          return;
-        }
-
-        if (cfgInvMass == true && invMassGamma < cfgGammaCut) {
-          continue;
-        }
-
-        if (std::abs(pid) == kPiPlus && track.pt() >= cfgCutPiPtMin) {
-          ptPi = track.pt();
-          fillIdParticleQAHistos<QA_Pion>(track, rapPi, nSigmaTPCPi, nSigmaTOFPi, nPi, q1Pi, q2Pi, q3Pi, q4Pi);
-          fillPtMCHist<QA_Pion>(ptPi, pid, kPiPlus, kPiMinus);
-        }
-
-        if (std::abs(pid) == kKPlus && track.pt() >= cfgCutKaPtMin) {
-          ptKa = track.pt();
-          fillIdParticleQAHistos<QA_Kaon>(track, rapKa, nSigmaTPCKa, nSigmaTOFKa, nKa, q1Ka, q2Ka, q3Ka, q4Ka);
-          fillPtMCHist<QA_Kaon>(ptKa, pid, kKPlus, kKMinus);
-        }
-
-        if (std::abs(pid) == kProton && track.pt() >= cfgCutPrPtMin) {
-          ptPr = track.pt();
-          fillIdParticleQAHistos<QA_Proton>(track, rapPr, nSigmaTPCPr, nSigmaTOFPr, nPr, q1Pr, q2Pr, q3Pr, q4Pr);
-          fillPtMCHist<QA_Proton>(ptPr, pid, kProton, kProtonBar);
         }
       }
       hist.fill(HIST("QA/after/h_vtxZSim"), col.mcCollision().posZ());

@@ -34,3 +34,8 @@ o2physics_add_dpl_workflow(mc-centrality
     SOURCES mcCentrality.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(kink-builder
+    SOURCES kinkBuilder.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+    COMPONENT_NAME Analysis)

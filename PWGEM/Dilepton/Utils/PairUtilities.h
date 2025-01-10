@@ -41,13 +41,19 @@ enum class DileptonAnalysisType : int {
   kVM = 5,
   kHFll = 6,
 };
+
 enum class DileptonPrefilterBit : int {
-  kMee = 0,                       // reject tracks from pi0 dalitz decays at very low mass where S/B > 1
-  kPhiV = 1,                      // reject tracks from photon conversions
-  kSplitOrMergedTrackLS = 2,      // reject split or marged tracks in LS pairs based on momentum deta-dphi at PV
-  kSplitOrMergedTrackULS = 3,     // reject split or marged tracks in ULS pairs based on momentum deta-dphi at PV
-  kSplitOrMergedTrackLSGeom = 4,  // reject split or marged tracks in LS pairs based on geometical distance at a certain propagated radius
-  kSplitOrMergedTrackULSGeom = 5, // reject split or marged tracks in ULS pairs based on geometical distance at a certain propagated radius
+  kElFromPC = 0,    // electron from photon conversion
+  kElFromPi0_1 = 1, // electron from pi0 dalitz decay, threshold 1
+  kElFromPi0_2 = 2, // electron from  pi0 dalitz decay, threshold 2
+  kElFromPi0_3 = 3, // electron from pi0 dalitz decay, threshold 3
+};
+
+enum class DileptonPrefilterBitDerived : int {
+  kMee = 0,                   // reject tracks from pi0 dalitz decays at very low mass where S/B > 1
+  kPhiV = 1,                  // reject tracks from photon conversions
+  kSplitOrMergedTrackLS = 2,  // reject split or marged tracks in LS pairs based on momentum deta-dphi at PV
+  kSplitOrMergedTrackULS = 3, // reject split or marged tracks in ULS pairs based on momentum deta-dphi at PV
 };
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;

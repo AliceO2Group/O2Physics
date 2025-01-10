@@ -41,6 +41,19 @@ void setLabelHistoCands(Histo& hCandidates)
   hCandidates->GetXaxis()->SetBinLabel(SVFitting::Fail + 1, "Run-time error in secondary vertexing");
 }
 
+/// @brief Function to evaluate number of ones in a binary representation of the argument
+/// \param num is the input argument
+int countOnesInBinary(uint8_t num)
+{
+  int count = 0;
+
+  for (int iBit = 0; iBit < 8; iBit++) {
+    count += TESTBIT(num, iBit);
+  }
+
+  return count;
+}
+
 } // namespace o2::hf_trkcandsel
 
 #endif // PWGHF_UTILS_UTILSTRKCANDHF_H_

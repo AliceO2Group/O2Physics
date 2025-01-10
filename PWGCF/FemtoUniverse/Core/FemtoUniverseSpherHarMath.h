@@ -16,7 +16,6 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSESPHERHARMATH_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSESPHERHARMATH_H_
 
-#include <iostream>
 #include <vector>
 #include <algorithm>
 
@@ -25,7 +24,7 @@
 #include "TLorentzVector.h"
 #include "TMath.h"
 
-namespace o2::analysis::femtoUniverse
+namespace o2::analysis::femto_universe
 {
 
 /// \class FemtoUniverseMath
@@ -34,39 +33,39 @@ class FemtoUniverseSpherHarMath
 {
  public:
   /// Values of various coefficients
-  void InitializeYlms()
+  void initializeYlms()
   {
-    double oneoversqrtpi = 1.0 / TMath::Sqrt(TMath::Pi());
+    double oneoversqrtpi = 1.0 / std::sqrt(o2::constants::math::PI);
 
     // l=0 prefactors
     fgPrefactors[0] = 0.5 * oneoversqrtpi;
 
     // l=1 prefactors
-    fgPrefactors[1] = 0.5 * sqrt(3.0 / 2.0) * oneoversqrtpi;
-    fgPrefactors[2] = 0.5 * sqrt(3.0) * oneoversqrtpi;
+    fgPrefactors[1] = 0.5 * std::sqrt(3.0 / 2.0) * oneoversqrtpi;
+    fgPrefactors[2] = 0.5 * std::sqrt(3.0) * oneoversqrtpi;
     fgPrefactors[3] = -fgPrefactors[1];
 
     // l=2 prefactors
-    fgPrefactors[4] = 0.25 * sqrt(15.0 / 2.0) * oneoversqrtpi;
-    fgPrefactors[5] = 0.5 * sqrt(15.0 / 2.0) * oneoversqrtpi;
-    fgPrefactors[6] = 0.25 * sqrt(5.0) * oneoversqrtpi;
+    fgPrefactors[4] = 0.25 * std::sqrt(15.0 / 2.0) * oneoversqrtpi;
+    fgPrefactors[5] = 0.5 * std::sqrt(15.0 / 2.0) * oneoversqrtpi;
+    fgPrefactors[6] = 0.25 * std::sqrt(5.0) * oneoversqrtpi;
     fgPrefactors[7] = -fgPrefactors[5];
     fgPrefactors[8] = fgPrefactors[4];
 
     // l=3 prefactors
-    fgPrefactors[9] = 0.125 * sqrt(35.0) * oneoversqrtpi;
-    fgPrefactors[10] = 0.25 * sqrt(105.0 / 2.0) * oneoversqrtpi;
-    fgPrefactors[11] = 0.125 * sqrt(21.0) * oneoversqrtpi;
-    fgPrefactors[12] = 0.25 * sqrt(7.0) * oneoversqrtpi;
+    fgPrefactors[9] = 0.125 * std::sqrt(35.0) * oneoversqrtpi;
+    fgPrefactors[10] = 0.25 * std::sqrt(105.0 / 2.0) * oneoversqrtpi;
+    fgPrefactors[11] = 0.125 * std::sqrt(21.0) * oneoversqrtpi;
+    fgPrefactors[12] = 0.25 * std::sqrt(7.0) * oneoversqrtpi;
     fgPrefactors[13] = -fgPrefactors[11];
     fgPrefactors[14] = fgPrefactors[10];
     fgPrefactors[15] = -fgPrefactors[9];
 
     // l=4 prefactors
-    fgPrefactors[16] = 3.0 / 16.0 * sqrt(35.0 / 2.0) * oneoversqrtpi;
-    fgPrefactors[17] = 3.0 / 8.0 * sqrt(35.0) * oneoversqrtpi;
-    fgPrefactors[18] = 3.0 / 8.0 * sqrt(5.0 / 2.0) * oneoversqrtpi;
-    fgPrefactors[19] = 3.0 / 8.0 * sqrt(5.0) * oneoversqrtpi;
+    fgPrefactors[16] = 3.0 / 16.0 * std::sqrt(35.0 / 2.0) * oneoversqrtpi;
+    fgPrefactors[17] = 3.0 / 8.0 * std::sqrt(35.0) * oneoversqrtpi;
+    fgPrefactors[18] = 3.0 / 8.0 * std::sqrt(5.0 / 2.0) * oneoversqrtpi;
+    fgPrefactors[19] = 3.0 / 8.0 * std::sqrt(5.0) * oneoversqrtpi;
     fgPrefactors[20] = 3.0 / 16.0 * oneoversqrtpi;
     fgPrefactors[21] = -fgPrefactors[19];
     fgPrefactors[22] = fgPrefactors[18];
@@ -74,12 +73,12 @@ class FemtoUniverseSpherHarMath
     fgPrefactors[24] = fgPrefactors[16];
 
     // l=5 prefactors
-    fgPrefactors[25] = 3.0 / 32.0 * sqrt(77.0) * oneoversqrtpi;
-    fgPrefactors[26] = 3.0 / 16.0 * sqrt(385.0 / 2.0) * oneoversqrtpi;
-    fgPrefactors[27] = 1.0 / 32.0 * sqrt(385.0) * oneoversqrtpi;
-    fgPrefactors[28] = 1.0 / 8.0 * sqrt(1155.0 / 2.0) * oneoversqrtpi;
-    fgPrefactors[29] = 1.0 / 16.0 * sqrt(165.0 / 2.0) * oneoversqrtpi;
-    fgPrefactors[30] = 1.0 / 16.0 * sqrt(11.0) * oneoversqrtpi;
+    fgPrefactors[25] = 3.0 / 32.0 * std::sqrt(77.0) * oneoversqrtpi;
+    fgPrefactors[26] = 3.0 / 16.0 * std::sqrt(385.0 / 2.0) * oneoversqrtpi;
+    fgPrefactors[27] = 1.0 / 32.0 * std::sqrt(385.0) * oneoversqrtpi;
+    fgPrefactors[28] = 1.0 / 8.0 * std::sqrt(1155.0 / 2.0) * oneoversqrtpi;
+    fgPrefactors[29] = 1.0 / 16.0 * std::sqrt(165.0 / 2.0) * oneoversqrtpi;
+    fgPrefactors[30] = 1.0 / 16.0 * std::sqrt(11.0) * oneoversqrtpi;
     fgPrefactors[31] = -fgPrefactors[29];
     fgPrefactors[32] = fgPrefactors[28];
     fgPrefactors[33] = -fgPrefactors[27];
@@ -105,7 +104,7 @@ class FemtoUniverseSpherHarMath
   ///  \param lmax Maximum value of L component
   ///  \param ctheta Value of theta
   ///  \param lbuf values of coefficients
-  void LegendreUpToYlm(int lmax, double ctheta, double* lbuf)
+  void legendreUpToYlm(int lmax, double ctheta, double* lbuf)
   {
     // Calculate a set of legendre polynomials up to a given l
     // with spherical input
@@ -113,7 +112,7 @@ class FemtoUniverseSpherHarMath
     double coss[6];
     sins[0] = 0.0;
     coss[0] = 1.0;
-    sins[1] = sqrt(1 - ctheta * ctheta);
+    sins[1] = std::sqrt(1 - ctheta * ctheta);
     coss[1] = ctheta;
     for (int iter = 2; iter < 6; iter++) {
       sins[iter] = sins[iter - 1] * sins[1];
@@ -165,21 +164,21 @@ class FemtoUniverseSpherHarMath
   }
 
   /// Function to calculate a set of Ylms up to a given l with cartesian input
-  void YlmUpToL(int lmax, double x, double y, double z, std::complex<double>* ylms)
+  void doYlmUpToL(int lmax, double x, double y, double z, std::complex<double>* ylms)
   {
     double ctheta, phi;
 
-    double r = sqrt(x * x + y * y + z * z);
-    if (r < 1e-10 || fabs(z) < 1e-10)
+    double r = std::sqrt(x * x + y * y + z * z);
+    if (r < 1e-10 || std::fabs(z) < 1e-10)
       ctheta = 0.0;
     else
       ctheta = z / r;
-    phi = atan2(y, x);
-    YlmUpToL(lmax, ctheta, phi, ylms);
+    phi = std::atan2(y, x);
+    doYlmUpToL(lmax, ctheta, phi, ylms);
   }
 
   /// Function to calculate a set of Ylms up to a given l with spherical input
-  void YlmUpToL(int lmax, double ctheta, double phi, std::complex<double>* ylms)
+  void doYlmUpToL(int lmax, double ctheta, double phi, std::complex<double>* ylms)
   {
     int lcur = 0;
     double lpol;
@@ -188,12 +187,12 @@ class FemtoUniverseSpherHarMath
     double sins[6];
 
     double lbuf[36];
-    LegendreUpToYlm(lmax, ctheta, lbuf);
-    InitializeYlms();
+    legendreUpToYlm(lmax, ctheta, lbuf);
+    initializeYlms();
 
     for (int iter = 1; iter <= lmax; iter++) {
-      coss[iter - 1] = cos(iter * phi);
-      sins[iter - 1] = sin(iter * phi);
+      coss[iter - 1] = std::cos(iter * phi);
+      sins[iter - 1] = std::sin(iter * phi);
     }
 
     ylms[lcur++] = fgPrefactors[0] * lbuf[0] * std::complex<double>(1, 0);
@@ -212,13 +211,13 @@ class FemtoUniverseSpherHarMath
   }
 
  private:
-  static std::complex<double> Ceiphi(double phi);
+  static std::complex<double> fCeiphi(double phi);
 
   std::array<float, 36> fgPrefactors;
   std::array<float, 10> fgPrefshift;
   std::array<float, 10> fgPlmshift;
 };
 
-} // namespace o2::analysis::femtoUniverse
+} // namespace o2::analysis::femto_universe
 
 #endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSESPHERHARMATH_H_

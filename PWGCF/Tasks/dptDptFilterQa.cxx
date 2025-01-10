@@ -9,7 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file dptDptFilterQa.cxx
+/// \brief basic checks for the behavior of the filter task
+/// \author victor.gonzalez.sebastian@gmail.com
+
 #include <cmath>
+#include <string>
 
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -30,12 +35,12 @@ namespace o2::analysis::dptdptfilterqa
 {
 typedef enum { kRECO = 0,
                kGEN } innerdatatype;
-static constexpr std::string_view dirname[] = {"reconstructed/", "generated/"};
+static constexpr std::string_view Dirname[] = {"reconstructed/", "generated/"};
 } // namespace o2::analysis::dptdptfilterqa
 
 // Checking the filtered tables
-struct DptDptFilterQA {
-  Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, MC, FastMC, OnTheFlyMC. Default data"};
+struct DptDptFilterQa {
+  Configurable<std::string> cfgDataType{"cfgDataType", "data", "Data type: data, MC, FastMC, OnTheFlyMC. Default data"};
   HistogramRegistry histos{"DptDptFilterQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   o2::analysis::dptdptfilter::DataType datatype;
 
@@ -45,17 +50,17 @@ struct DptDptFilterQA {
 
     using namespace o2::analysis::dptdptfilterqa;
 
-    histos.add(TString::Format("%s%s", dirname[dir].data(), "TracksOne").Data(), "Tracks as track one", kTH1F, {{1500, 0.0, 1500.0, "number of tracks"}});
-    histos.add(TString::Format("%s%s", dirname[dir].data(), "TracksTwo").Data(), "Tracks as track two", kTH1F, {{1500, 0.0, 1500.0, "number of tracks"}});
-    histos.add(TString::Format("%s%s", dirname[dir].data(), "TracksOneAndTwo").Data(), "Tracks as track one and as track two", kTH1F, {{1500, 0.0, 1500.0, "number of tracks"}});
-    histos.add(TString::Format("%s%s", dirname[dir].data(), "TracksNone").Data(), "Not selected tracks", kTH1F, {{1500, 0.0, 1500.0, "number of tracks"}});
-    histos.add(TString::Format("%s%s", dirname[dir].data(), "TracksOneUnsel").Data(), "Tracks as track one", kTH1F, {{1500, 0.0, 1500.0, "number of tracks"}});
-    histos.add(TString::Format("%s%s", dirname[dir].data(), "TracksTwoUnsel").Data(), "Tracks as track two", kTH1F, {{1500, 0.0, 1500.0, "number of tracks"}});
-    histos.add(TString::Format("%s%s", dirname[dir].data(), "TracksOneAndTwoUnsel").Data(), "Tracks as track one and as track two", kTH1F, {{1500, 0.0, 1500.0, "number of tracks"}});
-    histos.add(TString::Format("%s%s", dirname[dir].data(), "TracksNoneUnsel").Data(), "Not selected tracks", kTH1F, {{1500, 0.0, 1500.0}});
-    histos.add(TString::Format("%s%s", dirname[dir].data(), "SelectedEvents").Data(), "Selected events", kTH1F, {{2, 0.0, 2.0}});
-    histos.get<TH1>(HIST(dirname[dir]) + HIST("SelectedEvents"))->GetXaxis()->SetBinLabel(1, "Not selected events");
-    histos.get<TH1>(HIST(dirname[dir]) + HIST("SelectedEvents"))->GetXaxis()->SetBinLabel(2, "Selected events");
+    histos.add(TString::Format("%s%s", Dirname[dir].data(), "TracksOne").Data(), "Tracks as track one", kTH1F, {{1500, 0.0, 1500.0, "number of tracks"}});
+    histos.add(TString::Format("%s%s", Dirname[dir].data(), "TracksTwo").Data(), "Tracks as track two", kTH1F, {{1500, 0.0, 1500.0, "number of tracks"}});
+    histos.add(TString::Format("%s%s", Dirname[dir].data(), "TracksOneAndTwo").Data(), "Tracks as track one and as track two", kTH1F, {{1500, 0.0, 1500.0, "number of tracks"}});
+    histos.add(TString::Format("%s%s", Dirname[dir].data(), "TracksNone").Data(), "Not selected tracks", kTH1F, {{1500, 0.0, 1500.0, "number of tracks"}});
+    histos.add(TString::Format("%s%s", Dirname[dir].data(), "TracksOneUnsel").Data(), "Tracks as track one", kTH1F, {{1500, 0.0, 1500.0, "number of tracks"}});
+    histos.add(TString::Format("%s%s", Dirname[dir].data(), "TracksTwoUnsel").Data(), "Tracks as track two", kTH1F, {{1500, 0.0, 1500.0, "number of tracks"}});
+    histos.add(TString::Format("%s%s", Dirname[dir].data(), "TracksOneAndTwoUnsel").Data(), "Tracks as track one and as track two", kTH1F, {{1500, 0.0, 1500.0, "number of tracks"}});
+    histos.add(TString::Format("%s%s", Dirname[dir].data(), "TracksNoneUnsel").Data(), "Not selected tracks", kTH1F, {{1500, 0.0, 1500.0}});
+    histos.add(TString::Format("%s%s", Dirname[dir].data(), "SelectedEvents").Data(), "Selected events", kTH1F, {{2, 0.0, 2.0}});
+    histos.get<TH1>(HIST(Dirname[dir]) + HIST("SelectedEvents"))->GetXaxis()->SetBinLabel(1, "Not selected events");
+    histos.get<TH1>(HIST(Dirname[dir]) + HIST("SelectedEvents"))->GetXaxis()->SetBinLabel(2, "Selected events");
   };
 
   void init(InitContext const&)
@@ -88,40 +93,40 @@ struct DptDptFilterQA {
     using namespace o2::analysis::dptdptfilterqa;
 
     if (collision.collisionaccepted() != uint8_t(true)) {
-      histos.fill(HIST(dirname[dir]) + HIST("SelectedEvents"), 0.5);
+      histos.fill(HIST(Dirname[dir]) + HIST("SelectedEvents"), 0.5);
     } else {
-      histos.fill(HIST(dirname[dir]) + HIST("SelectedEvents"), 1.5);
+      histos.fill(HIST(Dirname[dir]) + HIST("SelectedEvents"), 1.5);
     }
 
-    int ntracks_one = 0;
-    int ntracks_two = 0;
-    int ntracks_one_and_two = 0;
-    int ntracks_none = 0;
-    for (auto& track : tracks) {
+    int nTracksOne = 0;
+    int nTracksTwo = 0;
+    int nTracksOneAndTwo = 0;
+    int nTracksNone = 0;
+    for (auto const& track : tracks) {
       if (!(track.trackacceptedid() < 0) && !(track.trackacceptedid() < 2)) {
         LOGF(fatal, "Task not prepared for identified particles");
       }
       if (track.trackacceptedid() != 0 && track.trackacceptedid() != 1) {
-        ntracks_none++;
+        nTracksNone++;
       }
       if (track.trackacceptedid() == 0) {
-        ntracks_one++;
+        nTracksOne++;
       }
       if (track.trackacceptedid() == 1) {
-        ntracks_two++;
+        nTracksTwo++;
       }
     }
     if (collision.collisionaccepted() != uint8_t(true)) {
       /* control for non selected events */
-      histos.fill(HIST(dirname[dir]) + HIST("TracksOneUnsel"), ntracks_one);
-      histos.fill(HIST(dirname[dir]) + HIST("TracksTwoUnsel"), ntracks_two);
-      histos.fill(HIST(dirname[dir]) + HIST("TracksNoneUnsel"), ntracks_none);
-      histos.fill(HIST(dirname[dir]) + HIST("TracksOneAndTwoUnsel"), ntracks_one_and_two);
+      histos.fill(HIST(Dirname[dir]) + HIST("TracksOneUnsel"), nTracksOne);
+      histos.fill(HIST(Dirname[dir]) + HIST("TracksTwoUnsel"), nTracksTwo);
+      histos.fill(HIST(Dirname[dir]) + HIST("TracksNoneUnsel"), nTracksNone);
+      histos.fill(HIST(Dirname[dir]) + HIST("TracksOneAndTwoUnsel"), nTracksOneAndTwo);
     } else {
-      histos.fill(HIST(dirname[dir]) + HIST("TracksOne"), ntracks_one);
-      histos.fill(HIST(dirname[dir]) + HIST("TracksTwo"), ntracks_two);
-      histos.fill(HIST(dirname[dir]) + HIST("TracksNone"), ntracks_none);
-      histos.fill(HIST(dirname[dir]) + HIST("TracksOneAndTwo"), ntracks_one_and_two);
+      histos.fill(HIST(Dirname[dir]) + HIST("TracksOne"), nTracksOne);
+      histos.fill(HIST(Dirname[dir]) + HIST("TracksTwo"), nTracksTwo);
+      histos.fill(HIST(Dirname[dir]) + HIST("TracksNone"), nTracksNone);
+      histos.fill(HIST(Dirname[dir]) + HIST("TracksOneAndTwo"), nTracksOneAndTwo);
     }
   }
 
@@ -134,7 +139,7 @@ struct DptDptFilterQA {
     LOGF(DPTDPTFILTERLOGCOLLISIONS, "New filtered generated collision with BC id %d and with %d accepted tracks", collision.bcId(), tracks.size());
     processQATask<kGEN>(collision, tracks);
   }
-  PROCESS_SWITCH(DptDptFilterQA, processGeneratorLevel, "Process generator level filter task QA", true);
+  PROCESS_SWITCH(DptDptFilterQa, processGeneratorLevel, "Process generator level filter task QA", true);
 
   void processDetectorLevel(soa::Filtered<aod::DptDptCFAcceptedCollisions>::iterator const& collision, soa::Filtered<aod::ScannedTracks> const& tracks)
   {
@@ -142,11 +147,11 @@ struct DptDptFilterQA {
     LOGF(DPTDPTFILTERLOGCOLLISIONS, "New filtered collision with BC id %d and with %d accepted tracks", collision.bcId(), tracks.size());
     processQATask<kRECO>(collision, tracks);
   }
-  PROCESS_SWITCH(DptDptFilterQA, processDetectorLevel, "Process detector level filter task QA", true);
+  PROCESS_SWITCH(DptDptFilterQa, processDetectorLevel, "Process detector level filter task QA", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<DptDptFilterQA>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<DptDptFilterQa>(cfgc)};
   return workflow;
 }

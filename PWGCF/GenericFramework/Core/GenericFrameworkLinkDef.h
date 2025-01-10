@@ -22,6 +22,7 @@
 #pragma link C++ class ProfileSubset + ;
 #pragma link C++ class FlowContainer + ;
 #pragma link C++ class GFWWeights + ;
+#pragma link C++ class GFWWeightsList + ;
 #pragma link C++ class BootstrapProfile + ;
 #pragma link C++ class FlowPtContainer + ;
 #pragma link C++ class o2::analysis::genericframework::GFWBinningCuts + ;

@@ -45,6 +45,7 @@ class V0PhotonCut : public TNamed
     kRxy,
     kCosPA,
     kPCA,
+    kChi2KF,
     kRZLine,
     kOnWwireIB,
     kOnWwireOB,
@@ -101,6 +102,9 @@ class V0PhotonCut : public TNamed
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kPCA)) {
+      return false;
+    }
+    if (!IsSelectedV0(v0, V0PhotonCuts::kChi2KF)) {
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kRZLine)) {
@@ -280,6 +284,9 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kPCA:
         return v0.pca() <= mMaxPCA;
 
+      case V0PhotonCuts::kChi2KF:
+        return v0.chiSquareNDF() <= mMaxChi2KF;
+
       case V0PhotonCuts::kRZLine:
         return v0.v0radius() > abs(v0.vz()) * std::tan(2 * std::atan(std::exp(-mMaxV0Eta))) - mMaxMarginZ;
 
@@ -437,6 +444,7 @@ class V0PhotonCut : public TNamed
   void SetRxyRange(float min = 0.f, float max = 180.f);
   void SetMinCosPA(float min = 0.95);
   void SetMaxPCA(float max = 2.f);
+  void SetMaxChi2KF(float max = 1e+10);
   void SetMaxMarginZ(float max = 7.f);
   void SetMaxMeePsiPairDep(std::function<float(float)> psiDepCut);
   void SetOnWwireIB(bool flag = false);
@@ -483,6 +491,7 @@ class V0PhotonCut : public TNamed
   float mMinRxy{0.f}, mMaxRxy{180.f};
   float mMinCosPA{0.95};
   float mMaxPCA{2.f};
+  float mMaxChi2KF{1e+10};
   float mMaxMarginZ{7.f};
   std::function<float(float)> mMaxMeePsiPairDep{}; // max mee as a function of psipair
   bool mIsOnWwireIB{false};

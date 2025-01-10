@@ -543,9 +543,7 @@ struct lambdakzeroBuilder {
       }
     }
     if (dcaFitterConfigurations.useMatCorrType == 2) {
-      LOGF(info, "LUT correction requested, loading LUT");
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath));
-      LOGF(info, "LUT load done!");
+      LOGF(info, "LUT correction requested, will load LUT when initializing with timestamp...");
     }
 
     if (doprocessRun2 == false && doprocessRun3 == false && doprocessFindableRun3 == false) {
@@ -739,9 +737,11 @@ struct lambdakzeroBuilder {
     // Set magnetic field value once known
     fitter.setBz(d_bz);
 
-    if (dcaFitterConfigurations.useMatCorrType == 2) {
+    if (dcaFitterConfigurations.useMatCorrType == 2 && !lut) {
       // setMatLUT only after magfield has been initalized
       // (setMatLUT has implicit and problematic init field call if not)
+      LOG(info) << "Loading material look-up table for timestamp: " << timestamp;
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath, timestamp));
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
   }

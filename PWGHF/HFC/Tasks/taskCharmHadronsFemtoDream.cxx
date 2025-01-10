@@ -396,6 +396,14 @@ struct HfTaskCharmHadronsFemtoDream {
           invMass = p2.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
         }
 
+        if (invMass < charmHadMinInvMass || invMass > charmHadMaxInvMass) {
+          continue;
+        }
+
+        if (p2.pt() < charmHadMinPt || p2.pt() > charmHadMaxPt) {
+          continue;
+        }
+
         int charmHadMc = 0;
         int originType = 0;
         if constexpr (isMc) {

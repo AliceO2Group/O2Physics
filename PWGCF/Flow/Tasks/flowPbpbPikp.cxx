@@ -11,7 +11,7 @@
 
 /// \file flowPbpbPikp.cxx
 /// \brief PID flow using the generic framework
-/// \author Preet Bhanjan Pati <bhanjanpreet@gmail.com>
+/// \author Preet Bhanjan Pati <preet.bhanjan.pati@cern.ch>
 
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
@@ -19,6 +19,8 @@
 #include <utility>
 #include <array>
 #include <string>
+
+#include "Math/Vector4D.h"
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -69,6 +71,8 @@ struct FlowPbpbPikp {
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
+  O2_DEFINE_CONFIGURABLE(cfgTpcNsigmaCut, float, 2.0f, "TPC N-sigma cut for pions, kaons, protons")
+  O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 1.8f, "Minimum pt to use TOF N-sigma")
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -78,9 +82,19 @@ struct FlowPbpbPikp {
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {80, -5, 5}, "nsigmaTPC axis"};
   ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
   ConfigurableAxis axisParticles{"axisParticles", {3, 0, 3}, "axis for different hadrons"};
+  ConfigurableAxis axisPhiMass{"axisPhiMass", {10000, 0, 2}, "axis for invariant mass distibution for Phi"};
+  ConfigurableAxis axisTPCsignal{"axisTPCsignal", {10000, 0, 1000}, "axis for TPC signal"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
+  // using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::pidBayes, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
+
+  SliceCache cache;
+  Partition<AodTracks> posTracks = aod::track::signed1Pt > 0.0f;
+  Partition<AodTracks> negTracks = aod::track::signed1Pt < 0.0f;
 
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -89,10 +103,6 @@ struct FlowPbpbPikp {
   std::vector<GFW::CorrConfig> corrconfigs;
   TAxis* fPtAxis;
   TRandom3* fRndm = new TRandom3(0);
-
-  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
-  // using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::pidBayes, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
-  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
 
   void init(InitContext const&)
   {
@@ -106,13 +116,17 @@ struct FlowPbpbPikp {
     histos.add("hMult", "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     histos.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
     histos.add("hPt", "", {HistType::kTH1D, {axisPt}});
+    histos.add("hPhiMass", "", {HistType::kTH1D, {axisPhiMass}});
     histos.add("c22_gap08", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c22_gap08_pi", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c22_gap08_ka", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c22_gap08_pr", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c24_full", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("KplusTPC", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
+    histos.add("KminusTPC", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
     histos.add("TofTpcNsigma", "", {HistType::kTHnSparseD, {{axisParticles, axisNsigmaTPC, axisNsigmaTOF, axisPt}}});
     histos.add("partCount", "", {HistType::kTHnSparseD, {{axisParticles, axisMultiplicity, axisPt}}});
+
     o2::framework::AxisSpec axis = axisPt;
     int nPtBins = axis.binEdges.size() - 1;
     double* ptBins = &(axis.binEdges)[0];
@@ -143,6 +157,8 @@ struct FlowPbpbPikp {
     fGFW->AddRegion("refN08", -0.8, -0.4, 1, 1);
     fGFW->AddRegion("refP08", 0.4, 0.8, 1, 1);
     fGFW->AddRegion("full", -0.8, 0.8, 1, 512);
+    fGFW->AddRegion("poi", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 1024);
+    fGFW->AddRegion("ol", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2048);
 
     // charged parts
     fGFW->AddRegion("poiN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 128);
@@ -171,6 +187,7 @@ struct FlowPbpbPikp {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNpr refN08 | olNpr {2} refP08 {-2}", "Pr08Gap22", kTRUE));
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poi full | ol {2 2 -2 -2}", "ChFull24", kTRUE));
     fGFW->CreateRegions();
   }
 
@@ -181,16 +198,27 @@ struct FlowPbpbPikp {
   };
 
   template <typename TTrack>
+  bool isFakeKaon(TTrack track)
+  {
+    const auto pglobal = track.p();
+    const auto ptpc = track.tpcInnerParam();
+    if (std::abs(pglobal - ptpc) > 0.1) {
+      return true;
+    }
+    return false;
+  }
+
+  template <typename TTrack>
   int getNsigmaPID(TTrack track)
   {
     // Computing Nsigma arrays for pion, kaon, and protons
     std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
     std::array<float, 3> nSigmaCombined = {std::hypot(track.tpcNSigmaPi(), track.tofNSigmaPi()), std::hypot(track.tpcNSigmaKa(), track.tofNSigmaKa()), std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr())};
     int pid = -1;
-    float nsigma = 3.0;
+    float nsigma = cfgTpcNsigmaCut;
 
     // Choose which nSigma to use
-    std::array<float, 3> nSigmaToUse = (track.pt() > 0.4 && track.hasTOF()) ? nSigmaCombined : nSigmaTPC;
+    std::array<float, 3> nSigmaToUse = (track.pt() > cfgTofPtCut && track.hasTOF()) ? nSigmaCombined : nSigmaTPC;
 
     // Select particle with the lowest nsigma
     for (int i = 0; i < 3; ++i) {
@@ -237,6 +265,24 @@ struct FlowPbpbPikp {
     }
     return 0;
   }*/
+
+  template <typename TTrack, typename vector, char... chars>
+  void resurrectParticle(TTrack trackplus, TTrack trackminus, vector plusdaug, vector minusdaug, vector mom, double plusmass, double minusmass, const ConstStr<chars...>& hist)
+  {
+    for (auto const& [partplus, partminus] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(trackplus, trackminus))) {
+      if (getNsigmaPID(partplus) != 2)
+        continue;
+      if (getNsigmaPID(partminus) != 2)
+        continue;
+
+      plusdaug = ROOT::Math::PxPyPzMVector(partplus.px(), partplus.py(), partplus.pz(), plusmass);
+      minusdaug = ROOT::Math::PxPyPzMVector(partminus.px(), partminus.py(), partminus.pz(), minusmass);
+      mom = plusdaug + minusdaug;
+
+      histos.fill(hist, mom.M());
+    }
+    return;
+  }
 
   template <char... chars>
   void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
@@ -287,6 +333,10 @@ struct FlowPbpbPikp {
     return;
   }
 
+  ROOT::Math::PxPyPzMVector Phimom, kplusdaug, kminusdaug;
+  double massKplus = o2::constants::physics::MassKPlus;
+  double massKminus = o2::constants::physics::MassKMinus;
+
   void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
   {
     int nTot = tracks.size();
@@ -302,39 +352,78 @@ struct FlowPbpbPikp {
     histos.fill(HIST("hCent"), collision.centFT0C());
     fGFW->Clear();
     const auto cent = collision.centFT0C();
+
+    auto posSlicedTracks = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto negSlicedTracks = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
     float weff = 1, wacc = 1;
     int pidIndex;
-    for (auto const& track : tracks) {
-      double pt = track.pt();
-      histos.fill(HIST("hPhi"), track.phi());
-      histos.fill(HIST("hEta"), track.eta());
+
+    // resurrectParticle(posSlicedTracks, negSlicedTracks, kplusdaug, kminusdaug, Phimom, massKplus, massKminus, HIST("hPhiMass"));
+
+    for (auto const& trackA : posSlicedTracks) {
+      if (getNsigmaPID(trackA) != 2)
+        continue;
+      if (isFakeKaon(trackA))
+        continue;
+      auto trackAID = trackA.globalIndex();
+
+      for (auto const& trackB : negSlicedTracks) {
+        auto trackBID = trackB.globalIndex();
+        if (getNsigmaPID(trackB) != 2)
+          continue;
+        if (isFakeKaon(trackB))
+          continue;
+        if (trackAID == trackBID)
+          continue;
+
+        histos.fill(HIST("KplusTPC"), trackA.pt(), trackA.tpcSignal());
+        histos.fill(HIST("KminusTPC"), trackB.pt(), trackB.tpcSignal());
+
+        kplusdaug = ROOT::Math::PxPyPzMVector(trackA.px(), trackA.py(), trackA.pz(), massKplus);
+        kminusdaug = ROOT::Math::PxPyPzMVector(trackB.px(), trackB.py(), trackB.pz(), massKminus);
+        Phimom = kplusdaug + kminusdaug;
+
+        histos.fill(HIST("hPhiMass"), Phimom.M());
+      }
+    }
+
+    for (auto const& track1 : tracks) {
+      double pt = track1.pt();
+      histos.fill(HIST("hPhi"), track1.phi());
+      histos.fill(HIST("hEta"), track1.eta());
       histos.fill(HIST("hPt"), pt);
 
-      histos.fill(HIST("TofTpcNsigma"), PIONS, track.tpcNSigmaPi(), track.tofNSigmaPi(), pt);
-      histos.fill(HIST("TofTpcNsigma"), KAONS, track.tpcNSigmaKa(), track.tofNSigmaKa(), pt);
-      histos.fill(HIST("TofTpcNsigma"), PROTONS, track.tpcNSigmaPr(), track.tofNSigmaPr(), pt);
+      histos.fill(HIST("TofTpcNsigma"), PIONS, track1.tpcNSigmaPi(), track1.tofNSigmaPi(), pt);
+      histos.fill(HIST("TofTpcNsigma"), KAONS, track1.tpcNSigmaKa(), track1.tofNSigmaKa(), pt);
+      histos.fill(HIST("TofTpcNsigma"), PROTONS, track1.tpcNSigmaPr(), track1.tofNSigmaPr(), pt);
 
       bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within RF pT range
 
-      // pidIndex = getBayesPIDIndex(track);
-      pidIndex = getNsigmaPID(track);
-      if (withinPtRef)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1);
-      if (withinPtPOI)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 128);
-      if (withinPtPOI && withinPtRef)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 256);
-      fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 512);
+      // pidIndex = getBayesPIDIndex(track1);
+      pidIndex = getNsigmaPID(track1);
+      if (withinPtRef) {
+        fGFW->Fill(track1.eta(), fPtAxis->FindBin(pt) - 1, track1.phi(), wacc * weff, 1);
+        fGFW->Fill(track1.eta(), 1, track1.phi(), wacc * weff, 512);
+      }
+      if (withinPtPOI) {
+        fGFW->Fill(track1.eta(), fPtAxis->FindBin(pt) - 1, track1.phi(), wacc * weff, 128);
+        fGFW->Fill(track1.eta(), fPtAxis->FindBin(pt) - 1, track1.phi(), wacc * weff, 1024);
+      }
+      if (withinPtPOI && withinPtRef) {
+        fGFW->Fill(track1.eta(), fPtAxis->FindBin(pt) - 1, track1.phi(), wacc * weff, 256);
+        fGFW->Fill(track1.eta(), fPtAxis->FindBin(pt) - 1, track1.phi(), wacc * weff, 2048);
+      }
 
       if (pidIndex) {
         histos.fill(HIST("partCount"), pidIndex - 1, cent, pt);
         if (withinPtPOI)
-          fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1 << (pidIndex));
+          fGFW->Fill(track1.eta(), fPtAxis->FindBin(pt) - 1, track1.phi(), wacc * weff, 1 << (pidIndex));
         if (withinPtPOI && withinPtRef)
-          fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1 << (pidIndex + 3));
+          fGFW->Fill(track1.eta(), fPtAxis->FindBin(pt) - 1, track1.phi(), wacc * weff, 1 << (pidIndex + 3));
       }
-    }
+    } // track1 loop ends
 
     // Filling c22 with ROOT TProfile
     fillProfile(corrconfigs.at(0), HIST("c22_gap08"), cent);

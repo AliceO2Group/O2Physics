@@ -19,6 +19,16 @@ using namespace o2::framework;
 struct TracksExtraV002Converter {
   Produces<aod::StoredTracksExtra_002> tracksExtra_002;
 
+  void init(InitContext const&)
+  {
+    if (doprocessV000ToV002 == false && doprocessV001ToV002 == false) {
+      LOGF(fatal, "Neither processV000ToV002 nor processV001ToV002 is enabled. Please choose one!");
+    }
+    if (doprocessV000ToV002 == true && doprocessV001ToV002 == true) {
+      LOGF(fatal, "Both processV000ToV002 and processV001ToV002 are enabled. Please choose only one!");
+    }
+  }
+
   void processV000ToV002(aod::TracksExtra_000 const& tracksExtra_000)
   {
 
@@ -88,7 +98,7 @@ struct TracksExtraV002Converter {
                       track1.trackTimeRes());
     }
   }
-  PROCESS_SWITCH(TracksExtraV002Converter, processV001ToV002, "process v001-to-v002 conversion", false);
+  PROCESS_SWITCH(TracksExtraV002Converter, processV001ToV002, "process v001-to-v002 conversion", true);
 };
 
 /// Spawn the extended table for TracksExtra002 to avoid the call to the internal spawner and a consequent circular dependency
