@@ -8,14 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 /// \file phosElId.cxx
 /// \struct PHOS electron id analysis
 /// \brief Task for calculating electron identification parameters
+///
 /// \author Yeghishe Hambardzumyan, MIPT
 /// \since Apr, 2024
-/// @note Inherits functions and variables from phosAlign & phosPi0.
-/// @note Results will be used for candidate table producing task.
-///
 
 #include <climits>
 #include <cstdlib>
@@ -499,14 +498,7 @@ struct PhosElId {
     if (trackPhi < phiMin || trackPhi > phiMax || std::abs(trackEta) > etaMax) {
       return false;
     }
-    // RecoDecay::constrainAngle;
     const float dphi = 20. * 0.017453293;
-    if (trackPhi < 0.) {
-      trackPhi += o2::constants::math::TwoPI;
-    }
-    if (trackPhi > o2::constants::math::TwoPI) {
-      trackPhi -= o2::constants::math::TwoPI;
-    }
     module = 1 + static_cast<int16_t>((trackPhi - phiMin) / dphi);
     if (module < 1) {
       module = 1;
@@ -655,9 +647,9 @@ struct MassSpectra {
 
     geomPHOS = std::make_unique<o2::phos::Geometry>("PHOS");
 
-    std::vector<float> EpSigmaPars = cfgEpSigmaPars;
+    std::vector<float> epSigmaPars = cfgEpSigmaPars;
     fEpSigmaPhos = new TF1("fEpSigmaPhos", "sqrt([0]*[0]/x/x+[1]*[1]/x+[2]*[2])+[3]", 0.01, 10);
-    fEpSigmaPhos->SetParameters(EpSigmaPars.at(0), EpSigmaPars.at(1), EpSigmaPars.at(2), EpSigmaPars.at(3));
+    fEpSigmaPhos->SetParameters(epSigmaPars.at(0), epSigmaPars.at(1), epSigmaPars.at(2), epSigmaPars.at(3));
   }
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
