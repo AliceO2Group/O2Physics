@@ -12,7 +12,6 @@
 /// \author Alberto Caliva (alberto.caliva@cern.ch), Francesca Ercolessi (francesca.ercolessi@cern.ch)
 /// \since May 22, 2024
 
-#include <TDatabasePDG.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
@@ -155,8 +154,8 @@ struct strangeness_in_jets {
     registryMC.add("number_of_events_mc", "number of events in mc", HistType::kTH1D, {{10, 0, 10, "Event Cuts"}});
 
     // QC Histograms
-    registryQC.add("deltaEtadeltaPhi_jet", "deltaEtadeltaPhi_jet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * o2::constants::math::PI, "#Delta#phi"}});
-    registryQC.add("deltaEtadeltaPhi_ue", "deltaEtadeltaPhi_ue", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * o2::constants::math::PI, "#Delta#phi"}});
+    registryQC.add("deltaEtadeltaPhi_jet", "deltaEtadeltaPhi_jet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, o2::constants::math::PIHalf, "#Delta#phi"}});
+    registryQC.add("deltaEtadeltaPhi_ue", "deltaEtadeltaPhi_ue", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, o2::constants::math::PIHalf, "#Delta#phi"}});
     registryQC.add("NchJetPlusUE", "NchJetPlusUE", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
     registryQC.add("NchJet", "NchJet", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
     registryQC.add("NchUE", "NchUE", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
@@ -743,7 +742,7 @@ struct strangeness_in_jets {
     if (diff <= o2::constants::math::PI)
       delta_phi = diff;
     if (diff > o2::constants::math::PI)
-      delta_phi = 2.0 * o2::constants::math::PI - diff;
+      delta_phi = o2::constants::math::TwoPI - diff;
 
     return delta_phi;
   }
@@ -889,7 +888,7 @@ struct strangeness_in_jets {
     // List of Tracks
     std::vector<TVector3> trk;
 
-    for (auto track : tracks) {
+    for (auto track : tracks) { // o2-linter: disable=[const-ref-in-for-loop]
 
       if (!passedTrackSelectionForJetReconstruction(track))
         continue;
@@ -907,7 +906,7 @@ struct strangeness_in_jets {
     do {
       double dij_min(1e+06), diB_min(1e+06);
       int i_min(0), j_min(0), iB_min(0);
-      for (int i = 0; i < static_cast<int>(trk.size()); i++) {
+      for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
         if (trk[i].Mag() == 0)
           continue;
         double diB = 1.0 / (trk[i].Pt() * trk[i].Pt());
@@ -915,7 +914,7 @@ struct strangeness_in_jets {
           diB_min = diB;
           iB_min = i;
         }
-        for (int j = (i + 1); j < static_cast<int>(trk.size()); j++) {
+        for (int j = (i + 1); j < static_cast<int>(trk.size()); j++) { // o2-linter: disable=[const-ref-in-for-loop]
           if (trk[j].Mag() == 0)
             continue;
           double dij = calculate_dij(trk[i], trk[j], Rjet);
@@ -941,12 +940,12 @@ struct strangeness_in_jets {
 
     // Jet Selection
     std::vector<int> isSelected;
-    for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+    for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
       isSelected.push_back(0);
     }
 
     int n_jets_selected(0);
-    for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+    for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
 
       if ((std::fabs(jet[i].Eta()) + Rjet) > etaMax)
         continue;
@@ -966,7 +965,7 @@ struct strangeness_in_jets {
       double ptJet(0);
       double ptUE(0);
 
-      for (auto track : tracks) {
+      for (auto track : tracks) { // o2-linter: disable=[const-ref-in-for-loop]
 
         if (!passedTrackSelectionForJetReconstruction(track))
           continue;
@@ -1022,11 +1021,11 @@ struct strangeness_in_jets {
 
     // Overlaps
     int nOverlaps(0);
-    for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+    for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
       if (isSelected[i] == 0)
         continue;
 
-      for (int j = 0; j < static_cast<int>(jet.size()); j++) {
+      for (int j = 0; j < static_cast<int>(jet.size()); j++) { // o2-linter: disable=[const-ref-in-for-loop]
         if (isSelected[j] == 0 || i == j)
           continue;
         if (overlap(jet[i], ue1[j], Rjet) || overlap(jet[i], ue2[j], Rjet))
@@ -1048,14 +1047,14 @@ struct strangeness_in_jets {
 
     registryData.fill(HIST("number_of_events_vsmultiplicity"), multiplicity);
 
-    for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+    for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
 
       if (isSelected[i] == 0)
         continue;
 
       // Vzeros
       if (particle_of_interest == option::vzeros) {
-        for (auto& v0 : fullV0s) {
+        for (auto& v0 : fullV0s) { // o2-linter: disable=[const-ref-in-for-loop]
 
           const auto& pos = v0.posTrack_as<StrHadronDaughterTracks>();
           const auto& neg = v0.negTrack_as<StrHadronDaughterTracks>();
@@ -1103,7 +1102,7 @@ struct strangeness_in_jets {
 
       // Cascades
       if (particle_of_interest == option::cascades) {
-        for (auto& casc : Cascades) {
+        for (auto& casc : Cascades) { // o2-linter: disable=[const-ref-in-for-loop]
 
           auto bach = casc.bachelor_as<StrHadronDaughterTracks>();
           auto pos = casc.posTrack_as<StrHadronDaughterTracks>();
@@ -1252,7 +1251,7 @@ struct strangeness_in_jets {
       return;
     registryData.fill(HIST("number_of_events_data"), 12.5);
 
-    for (auto& v0 : fullV0s) {
+    for (auto& v0 : fullV0s) { // o2-linter: disable=[const-ref-in-for-loop]
       const auto& ptrack = v0.posTrack_as<StrHadronDaughterTracks>();
       const auto& ntrack = v0.negTrack_as<StrHadronDaughterTracks>();
 
@@ -1346,7 +1345,7 @@ struct strangeness_in_jets {
 
   void processMCefficiency(SimCollisions const& collisions, MCTracks const& mcTracks, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, const aod::McParticles& mcParticles)
   {
-    for (const auto& collision : collisions) {
+    for (const auto& collision : collisions) { // o2-linter: disable=[const-ref-in-for-loop]
       registryMC.fill(HIST("number_of_events_mc"), 0.5);
       if (!collision.sel8())
         continue;
@@ -1381,8 +1380,8 @@ struct strangeness_in_jets {
 
         int pdg_parent(0);
         bool isPhysPrim = false;
-        for (auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
-          for (auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
+        for (auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
+          for (auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
             if (particleMotherOfNeg == particleMotherOfPos) {
               pdg_parent = particleMotherOfNeg.pdgCode();
               isPhysPrim = particleMotherOfNeg.isPhysicalPrimary();
@@ -1477,9 +1476,9 @@ struct strangeness_in_jets {
           continue;
 
         int pdg_parent(0);
-        for (auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
-          for (auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
-            for (auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) {
+        for (auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
+          for (auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
+            for (auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
               if (particleMotherOfNeg != particleMotherOfPos)
                 continue;
               if (std::fabs(particleMotherOfNeg.pdgCode()) != 3122)
@@ -1563,7 +1562,7 @@ struct strangeness_in_jets {
           registryMC.fill(HIST("pi_minus_rec_tof"), multiplicity, track.pt());
       }
 
-      for (auto& mcParticle : mcParticles_per_coll) {
+      for (auto& mcParticle : mcParticles_per_coll) { // o2-linter: disable=[const-ref-in-for-loop]
 
         if (mcParticle.eta() < etaMin || mcParticle.eta() > etaMax)
           continue;
@@ -1668,7 +1667,7 @@ struct strangeness_in_jets {
       // List of Tracks
       std::vector<TVector3> trk;
 
-      for (auto& particle : mcParticles_per_coll) {
+      for (auto& particle : mcParticles_per_coll) { // o2-linter: disable=[const-ref-in-for-loop]
 
         int pdg = std::fabs(particle.pdgCode());
 
@@ -1704,7 +1703,7 @@ struct strangeness_in_jets {
       do {
         double dij_min(1e+06), diB_min(1e+06);
         int i_min(0), j_min(0), iB_min(0);
-        for (int i = 0; i < static_cast<int>(trk.size()); i++) {
+        for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
           if (trk[i].Mag() == 0)
             continue;
           double diB = 1.0 / (trk[i].Pt() * trk[i].Pt());
@@ -1712,7 +1711,7 @@ struct strangeness_in_jets {
             diB_min = diB;
             iB_min = i;
           }
-          for (int j = (i + 1); j < static_cast<int>(trk.size()); j++) {
+          for (int j = (i + 1); j < static_cast<int>(trk.size()); j++) { // o2-linter: disable=[const-ref-in-for-loop]
             if (trk[j].Mag() == 0)
               continue;
             double dij = calculate_dij(trk[i], trk[j], Rjet);
@@ -1737,12 +1736,12 @@ struct strangeness_in_jets {
 
       // Jet Selection
       std::vector<int> isSelected;
-      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
         isSelected.push_back(0);
       }
 
       int n_jets_selected(0);
-      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
 
         if ((std::fabs(jet[i].Eta()) + Rjet) > etaMax)
           continue;
@@ -1817,13 +1816,13 @@ struct strangeness_in_jets {
       if (n_jets_selected == 0)
         continue;
 
-      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
 
         if (isSelected[i] == 0)
           continue;
 
         // Generated Particles
-        for (auto& particle : mcParticles_per_coll) {
+        for (auto& particle : mcParticles_per_coll) { // o2-linter: disable=[const-ref-in-for-loop]
 
           if (!particle.isPhysicalPrimary())
             continue;
