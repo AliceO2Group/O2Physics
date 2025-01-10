@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+/// \file phosElId.cxx
 /// \struct PHOS electron id analysis
 /// \brief Task for calculating electron identification parameters
 /// \author Yeghishe Hambardzumyan, MIPT
@@ -169,14 +170,14 @@ struct PhosElId {
     std::vector<float> parametersSigmadX = pSigmadX;
     std::vector<float> vPhosShiftX = pPhosShiftX;
     std::vector<float> vPhosShiftZ = pPhosShiftZ;
-    std::vector<float> MeandXPosMod1 = pMeandXPosMod1;
-    std::vector<float> MeandXPosMod2 = pMeandXPosMod2;
-    std::vector<float> MeandXPosMod3 = pMeandXPosMod3;
-    std::vector<float> MeandXPosMod4 = pMeandXPosMod4;
-    std::vector<float> MeandXNegMod1 = pMeandXNegMod1;
-    std::vector<float> MeandXNegMod2 = pMeandXNegMod2;
-    std::vector<float> MeandXNegMod3 = pMeandXNegMod3;
-    std::vector<float> MeandXNegMod4 = pMeandXNegMod4;
+    std::vector<float> meandXPosMod1 = pMeandXPosMod1;
+    std::vector<float> meandXPosMod2 = pMeandXPosMod2;
+    std::vector<float> meandXPosMod3 = pMeandXPosMod3;
+    std::vector<float> meandXPosMod4 = pMeandXPosMod4;
+    std::vector<float> meandXNegMod1 = pMeandXNegMod1;
+    std::vector<float> meandXNegMod2 = pMeandXNegMod2;
+    std::vector<float> meandXNegMod3 = pMeandXNegMod3;
+    std::vector<float> meandXNegMod4 = pMeandXNegMod4;
 
     PhosShiftX = new float[4];
     PhosShiftX[0] = vPhosShiftX.at(0);
@@ -286,15 +287,15 @@ struct PhosElId {
     fMeandXPosMod4 = new TF1("funcMeandx_pos_mod4", "[0]/(x+[1])^[2]", 0.1, 10);
     fMeandXNegMod4 = new TF1("funcMeandx_neg_mod4", "[0]/(x+[1])^[2]", 0.1, 10);
 
-    fMeandXPosMod1->SetParameters(MeandXPosMod1.at(0), MeandXPosMod1.at(1), MeandXPosMod1.at(2));
-    fMeandXPosMod2->SetParameters(MeandXPosMod2.at(0), MeandXPosMod2.at(1), MeandXPosMod2.at(2));
-    fMeandXPosMod3->SetParameters(MeandXPosMod3.at(0), MeandXPosMod3.at(1), MeandXPosMod3.at(2));
-    fMeandXPosMod4->SetParameters(MeandXPosMod4.at(0), MeandXPosMod4.at(1), MeandXPosMod4.at(2));
+    fMeandXPosMod1->SetParameters(meandXPosMod1.at(0), meandXPosMod1.at(1), meandXPosMod1.at(2));
+    fMeandXPosMod2->SetParameters(meandXPosMod2.at(0), meandXPosMod2.at(1), meandXPosMod2.at(2));
+    fMeandXPosMod3->SetParameters(meandXPosMod3.at(0), meandXPosMod3.at(1), meandXPosMod3.at(2));
+    fMeandXPosMod4->SetParameters(meandXPosMod4.at(0), meandXPosMod4.at(1), meandXPosMod4.at(2));
 
-    fMeandXNegMod1->SetParameters(MeandXNegMod1.at(0), MeandXNegMod1.at(1), MeandXNegMod1.at(2));
-    fMeandXNegMod2->SetParameters(MeandXNegMod2.at(0), MeandXNegMod2.at(1), MeandXNegMod2.at(2));
-    fMeandXNegMod3->SetParameters(MeandXNegMod3.at(0), MeandXNegMod3.at(1), MeandXNegMod3.at(2));
-    fMeandXNegMod4->SetParameters(MeandXNegMod4.at(0), MeandXNegMod4.at(1), MeandXNegMod4.at(2));
+    fMeandXNegMod1->SetParameters(meandXNegMod1.at(0), meandXNegMod1.at(1), meandXNegMod1.at(2));
+    fMeandXNegMod2->SetParameters(meandXNegMod2.at(0), meandXNegMod2.at(1), meandXNegMod2.at(2));
+    fMeandXNegMod3->SetParameters(meandXNegMod3.at(0), meandXNegMod3.at(1), meandXNegMod3.at(2));
+    fMeandXNegMod4->SetParameters(meandXNegMod4.at(0), meandXNegMod4.at(1), meandXNegMod4.at(2));
   }
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                aod::CaloClusters const& clusters,
@@ -902,7 +903,7 @@ struct TpcElIdMassSpectrum {
     if (std::fabs(collision.posZ()) > 10.f)
       return;
 
-    for (auto& [track1, track2] : combinations(CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
+    for (auto const& [track1, track2] : combinations(CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
       if (!track1.has_collision() || !track1.hasTPC())
         continue;
       if (!track2.has_collision() || !track2.hasTPC())
