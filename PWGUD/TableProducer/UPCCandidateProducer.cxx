@@ -1602,37 +1602,59 @@ struct UpcCandProducer {
 
     int32_t candID = 0;
 
-    for (auto& pair : bcsMatchedTrIdsGlobal) { // candidates with MFT
+    for (auto& pair : bcsMatchedTrIdsGlobal) {
       auto globalBC = static_cast<int64_t>(pair.first);
-      const auto& fwdTrackIDs = pair.second; // Forward tracks
+      const auto& fwdTrackIDs = pair.second; // Forward tracks (Global with MFT)
       uint32_t nMFTs = fwdTrackIDs.size();
-      std::vector<int64_t> trkCandIDs{};
+      // ensure we have two MFT tracks
+      if (nMFTs != 2) {
+        continue;
+      }
 
-      // Find corresponding midTrackIDs using std::find_if
+      // find the corresponding MCH-MID tracks
       auto midIt = std::find_if(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
                                 [globalBC](const auto& midPair) {
                                   return midPair.first == static_cast<uint64_t>(globalBC);
                                 });
-
       const auto* midTrackIDs = (midIt != bcsMatchedTrIdsMID.end()) ? &midIt->second : nullptr;
 
-      if (nMFTs > fNFwdProngs) // Skip if too many tracks
+      // ensure MCH-MID tracks are available
+      if (!midTrackIDs || midTrackIDs->size() != 2) {
         continue;
+      }
 
-      if (nMFTs == fNFwdProngs) {
+      std::vector<int64_t> trkCandIDs;
 
-        for (auto iMft : fwdTrackIDs) {
-          auto trk = fwdTracks.iteratorAt(iMft);
-          auto trkEta = trk.eta();
+      // retrieve global track eta and apply the logic
+      bool firstInAcceptance = false, secondInAcceptance = false;
 
-          if (trkEta > fMinEtaMFT && trkEta < fMaxEtaMFT) {
-            // Track is within MFT acceptance, store forward track IDs
-            trkCandIDs.push_back(iMft);
-          } else if (midTrackIDs) {
-            // Track is outside MFT acceptance, store corresponding MID track IDs
-            trkCandIDs.insert(trkCandIDs.end(), midTrackIDs->begin(), midTrackIDs->end());
-          }
-        }
+      auto trk1 = fwdTracks.iteratorAt(fwdTrackIDs[0]);
+      auto trk2 = fwdTracks.iteratorAt(fwdTrackIDs[1]);
+      double eta1 = trk1.eta();
+      double eta2 = trk2.eta();
+
+      if (eta1 > fMinEtaMFT && eta1 < fMaxEtaMFT) {
+        firstInAcceptance = true;
+      }
+      if (eta2 > fMinEtaMFT && eta2 < fMaxEtaMFT) {
+        secondInAcceptance = true;
+      }
+
+      // handle the four cases
+      if (!firstInAcceptance && !secondInAcceptance) {
+        // Case 1: Both outside MFT acceptance
+        trkCandIDs.insert(trkCandIDs.end(), midTrackIDs->begin(), midTrackIDs->end());
+      } else if (firstInAcceptance && !secondInAcceptance) {
+        // Case 2: First inside, second outside
+        trkCandIDs.push_back(fwdTrackIDs[0]);    // Keep first global
+        trkCandIDs.push_back((*midTrackIDs)[1]); // Replace second with MCH-MID
+      } else if (!firstInAcceptance && secondInAcceptance) {
+        // Case 3: First outside, second inside
+        trkCandIDs.push_back((*midTrackIDs)[0]); // Replace first with MCH-MID
+        trkCandIDs.push_back(fwdTrackIDs[1]);    // Keep second global
+      } else {
+        // Case 4: Both inside MFT acceptance
+        trkCandIDs.insert(trkCandIDs.end(), fwdTrackIDs.begin(), fwdTrackIDs.end());
       }
 
       uint64_t closestBcMCH = 0;
