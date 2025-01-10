@@ -13,8 +13,8 @@
 ///
 /// \author Youpeng Su (yousu@cern.ch)
 
-#ifndef PWGLF_DATAMODEL_LAMBDAPOLARIZATIONINDUCEDBYJET_H_
-#define PWGLF_DATAMODEL_LAMBDAPOLARIZATIONINDUCEDBYJET_H_
+#ifndef PWGLF_DATAMODEL_LAMBDAJETPOLARIZATION_H_
+#define PWGLF_DATAMODEL_LAMBDAJETPOLARIZATION_H_
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -74,4 +74,4 @@ DECLARE_SOA_TABLE(MyTableLeadingJet, "AOD", "LeadingJet", o2::soa::Index<>, myTa
 
 } // namespace o2::aod
 
-#endif // PWGLF_DATAMODEL_LAMBDAPOLARIZATIONINDUCEDBYJET_H_
+#endif // PWGLF_DATAMODEL_LAMBDAJETPOLARIZATION_H_
