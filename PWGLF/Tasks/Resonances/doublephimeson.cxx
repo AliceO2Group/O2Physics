@@ -17,11 +17,13 @@
 #include <TLorentzVector.h>
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h>
+#include <Math/Vector3D.h>
 #include <TMath.h>
 #include <fairlogger/Logger.h>
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <vector>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
@@ -39,9 +41,10 @@ using namespace o2::soa;
 
 struct doublephimeson {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
+  Configurable<bool> fillDeltaMass{"fillDeltaMass", 1, "Fill Delta Mass"};
   Configurable<bool> fillRotation{"fillRotation", 1, "Fill rotation"};
-  Configurable<int> strategyPID{"strategyPID", 0, "PID strategy"};
+  Configurable<int> strategyPID1{"strategyPID1", 0, "PID strategy 1"};
+  Configurable<int> strategyPID2{"strategyPID2", 0, "PID strategy 2"};
   Configurable<float> minPhiMass{"minPhiMass", 1.01, "Minimum phi mass"};
   Configurable<float> maxPhiMass{"maxPhiMass", 1.03, "Maximum phi mass"};
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selection"};
@@ -54,11 +57,13 @@ struct doublephimeson {
 
   // THnsparse bining
   ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {1500, 2.0, 3.5}, "#it{M} (GeV/#it{c}^{2})"};
+  ConfigurableAxis configThnAxisInvMassPhi{"configThnAxisInvMassPhi", {20, 1.01, 1.03}, "#it{M} (GeV/#it{c}^{2})"};
   ConfigurableAxis configThnAxisDaugherPt{"configThnAxisDaugherPt", {25, 0.0, 50.}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis configThnAxisPt{"configThnAxisPt", {40, 0.0, 20.}, "#it{p}_{T} (GeV/#it{c})"};
-  // ConfigurableAxis configThnAxisKstar{"configThnAxisKstar", {50, 0.0, 0.5}, "#it{k}^{*} (GeV/#it{c})"};
+  ConfigurableAxis configThnAxisKstar{"configThnAxisKstar", {200, 0.0, 2.0}, "#it{k}^{*} (GeV/#it{c})"};
   ConfigurableAxis configThnAxisDeltaR{"configThnAxisDeltaR", {200, 0.0, 2.0}, "#it{k}^{*} (GeV/#it{c})"};
-  ConfigurableAxis configThnAxisPhiMult{"configThnAxisPhiMult", {10, 0.5, 10.5}, "#Phi Multiplicity"};
+  ConfigurableAxis configThnAxisCosTheta{"configThnAxisCosTheta", {5, 0.0, 1.0}, "cos #theta{*}"};
+  // ConfigurableAxis configThnAxisPhiMult{"configThnAxisPhiMult", {10, 0.5, 10.5}, "#Phi Multiplicity"};
 
   // Initialize the ananlysis task
   void init(o2::framework::InitContext&)
@@ -70,15 +75,17 @@ struct doublephimeson {
     histos.add("hPhid2Mass", "hPhid2Mass", kTH2F, {{40, 1.0, 1.04f}, {100, 0.0f, 10.0f}});
 
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisInvMassPhi{configThnAxisInvMassPhi, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisDaughterPt{configThnAxisDaugherPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
-    // const AxisSpec thnAxisKstar{configThnAxisKstar, "#it{k}^{*} (GeV/#it{c})"};
+    const AxisSpec thnAxisKstar{configThnAxisKstar, "#it{k}^{*} (GeV/#it{c})"};
     const AxisSpec thnAxisDeltaR{configThnAxisDeltaR, "#Delta R)"};
-    const AxisSpec thnAxisPhiMult{configThnAxisPhiMult, "#Phi Multiplicity)"};
-
-    histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDaughterPt, thnAxisDaughterPt, thnAxisDeltaR, thnAxisPhiMult});
-    histos.add("SEMassRot", "SEMassRot", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDaughterPt, thnAxisDaughterPt, thnAxisDeltaR, thnAxisPhiMult});
-    histos.add("MEMassUnlike", "MEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDaughterPt, thnAxisDaughterPt, thnAxisDeltaR, thnAxisPhiMult});
+    const AxisSpec thnAxisCosTheta{configThnAxisCosTheta, "cos #theta{*}"};
+    // const AxisSpec thnAxisPhiMult{configThnAxisPhiMult, "#Phi Multiplicity)"};
+    histos.add("SEMass", "SEMass", HistType::kTHnSparseF, {thnAxisInvMassPhi, thnAxisInvMassPhi, thnAxisDaughterPt, thnAxisDaughterPt});
+    histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisKstar, thnAxisCosTheta, thnAxisDeltaR});
+    histos.add("SEMassRot", "SEMassRot", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisKstar, thnAxisCosTheta, thnAxisDeltaR});
+    histos.add("MEMassUnlike", "MEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisKstar, thnAxisCosTheta, thnAxisDeltaR});
   }
 
   // get kstar
@@ -103,6 +110,25 @@ struct doublephimeson {
     trackRelK = PartOneCMS - PartTwoCMS;
     return 0.5 * trackRelK.P();
   }
+
+  // get cosTheta
+  TLorentzVector daughterCMS;
+  ROOT::Math::XYZVector threeVecDauCM, threeVecMother;
+  float getCosTheta(const TLorentzVector mother,
+                    const TLorentzVector daughter)
+  {
+    threeVecMother = mother.Vect();
+    const float beta = mother.Beta();
+    const float betax = beta * std::cos(mother.Phi()) * std::sin(mother.Theta());
+    const float betay = beta * std::sin(mother.Phi()) * std::sin(mother.Theta());
+    const float betaz = beta * std::cos(mother.Theta());
+    const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
+    daughterCMS = boostPRF(daughter);
+    threeVecDauCM = daughterCMS.Vect();
+    float cosThetaStar = TMath::Abs(threeVecDauCM.Dot(threeVecMother) / std::sqrt(threeVecMother.Mag2()) / std::sqrt(threeVecDauCM.Mag2()));
+    return cosThetaStar;
+  }
+
   bool selectionPID(float nsigmaTPC, float nsigmaTOF, int TOFHit, int PIDStrategy, float ptcand)
   {
     if (PIDStrategy == 0) {
@@ -118,7 +144,7 @@ struct doublephimeson {
       }
     }
     if (PIDStrategy == 1) {
-      if (ptcand < 0.6) {
+      if (ptcand < 0.5) {
         if (TOFHit != 1 && TMath::Abs(nsigmaTPC) < cutNsigmaTPC) {
           return true;
         }
@@ -126,14 +152,14 @@ struct doublephimeson {
           return true;
         }
       }
-      if (ptcand >= 0.6) {
+      if (ptcand >= 0.5) {
         if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cutNsigmaTOF) {
           return true;
         }
       }
     }
     if (PIDStrategy == 2) {
-      if (ptcand < 0.6) {
+      if (ptcand < 0.5) {
         if (TOFHit != 1 && TMath::Abs(nsigmaTPC) < cutNsigmaTPC) {
           return true;
         }
@@ -141,7 +167,7 @@ struct doublephimeson {
           return true;
         }
       }
-      if (ptcand >= 0.6 && ptcand < 1.2) {
+      if (ptcand >= 0.5 && ptcand < 1.2) {
         if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cutNsigmaTOF) {
           return true;
         }
@@ -159,7 +185,7 @@ struct doublephimeson {
       }
     }
     if (PIDStrategy == 3) {
-      if (ptcand < 0.6) {
+      if (ptcand < 0.5) {
         if (TOFHit != 1 && TMath::Abs(nsigmaTPC) < cutNsigmaTPC) {
           return true;
         }
@@ -167,7 +193,7 @@ struct doublephimeson {
           return true;
         }
       }
-      if (ptcand >= 0.6 && ptcand < 1.2) {
+      if (ptcand >= 0.5 && ptcand < 1.2) {
         if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cutNsigmaTOF) {
           return true;
         }
@@ -191,7 +217,6 @@ struct doublephimeson {
     if (additionalEvsel && (collision.numPos() < 2 || collision.numNeg() < 2)) {
       return;
     }
-    auto phimult = phitracks.size();
     for (auto phitrackd1 : phitracks) {
       if (phitrackd1.phiMass() < minPhiMass || phitrackd1.phiMass() > maxPhiMass) {
         continue;
@@ -200,13 +225,13 @@ struct doublephimeson {
       auto kaonplusd1pt = TMath::Sqrt(phitrackd1.phid1Px() * phitrackd1.phid1Px() + phitrackd1.phid1Py() * phitrackd1.phid1Py());
       auto kaonminusd1pt = TMath::Sqrt(phitrackd1.phid2Px() * phitrackd1.phid2Px() + phitrackd1.phid2Py() * phitrackd1.phid2Py());
 
-      if (!selectionPID(phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), phitrackd1.phid1TOFHit(), strategyPID, kaonplusd1pt)) {
+      if (!selectionPID(phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), phitrackd1.phid1TOFHit(), strategyPID1, kaonplusd1pt)) {
         continue;
       }
-      if (!selectionPID(phitrackd1.phid2TPC(), phitrackd1.phid2TOF(), phitrackd1.phid2TOFHit(), strategyPID, kaonminusd1pt)) {
+      if (!selectionPID(phitrackd1.phid2TPC(), phitrackd1.phid2TOF(), phitrackd1.phid2TOFHit(), strategyPID1, kaonminusd1pt)) {
         continue;
       }
-
+      // LOGF(info, "pass TOF hit: (%d, %d)",  phitrackd1.phid1TOFHit(),  phitrackd1.phid2TOFHit());
       histos.fill(HIST("hnsigmaTPCKaonPlus"), phitrackd1.phid1TPC(), kaonplusd1pt);
       histos.fill(HIST("hnsigmaTPCKaonMinus"), phitrackd1.phid2TPC(), kaonminusd1pt);
       Phid1.SetXYZM(phitrackd1.phiPx(), phitrackd1.phiPy(), phitrackd1.phiPz(), phitrackd1.phiMass());
@@ -223,10 +248,10 @@ struct doublephimeson {
         auto kaonplusd2pt = TMath::Sqrt(phitrackd2.phid1Px() * phitrackd2.phid1Px() + phitrackd2.phid1Py() * phitrackd2.phid1Py());
         auto kaonminusd2pt = TMath::Sqrt(phitrackd2.phid2Px() * phitrackd2.phid2Px() + phitrackd2.phid2Py() * phitrackd2.phid2Py());
 
-        if (!selectionPID(phitrackd2.phid1TPC(), phitrackd2.phid1TOF(), phitrackd2.phid1TOFHit(), strategyPID, kaonplusd2pt)) {
+        if (!selectionPID(phitrackd2.phid1TPC(), phitrackd2.phid1TOF(), phitrackd2.phid1TOFHit(), strategyPID2, kaonplusd2pt)) {
           continue;
         }
-        if (!selectionPID(phitrackd2.phid2TPC(), phitrackd2.phid2TOF(), phitrackd2.phid2TOFHit(), strategyPID, kaonminusd2pt)) {
+        if (!selectionPID(phitrackd2.phid2TPC(), phitrackd2.phid2TOF(), phitrackd2.phid2TOFHit(), strategyPID2, kaonminusd2pt)) {
           continue;
         }
         if (phitrackd1.phid1Index() == phitrackd2.phid1Index()) {
@@ -237,9 +262,16 @@ struct doublephimeson {
         }
         Phid2.SetXYZM(phitrackd2.phiPx(), phitrackd2.phiPy(), phitrackd2.phiPz(), phitrackd2.phiMass());
         exotic = Phid1 + Phid2;
-        // auto kstar = getkstar(Phid1, Phid2);
+        auto cosThetaStar = getCosTheta(exotic, Phid1);
+        auto kstar = getkstar(Phid1, Phid2);
         auto deltaR = TMath::Sqrt(TMath::Power(Phid1.Phi() - Phid2.Phi(), 2.0) + TMath::Power(Phid1.Eta() - Phid2.Eta(), 2.0));
-        histos.fill(HIST("SEMassUnlike"), exotic.M(), exotic.Pt(), Phid1.Pt(), Phid2.Pt(), deltaR, phimult);
+        if (!fillDeltaMass) {
+          histos.fill(HIST("SEMassUnlike"), exotic.M(), exotic.Pt(), kstar, cosThetaStar, deltaR);
+        }
+        if (fillDeltaMass) {
+          histos.fill(HIST("SEMassUnlike"), exotic.M() - Phid1.M(), exotic.Pt(), kstar, cosThetaStar, deltaR);
+        }
+        histos.fill(HIST("SEMass"), Phid1.M(), Phid2.M(), Phid1.Pt(), Phid2.Pt());
         if (fillRotation) {
           for (int nrotbkg = 0; nrotbkg < 5; nrotbkg++) {
             auto anglestart = 5.0 * TMath::Pi() / 6.0;
@@ -250,9 +282,15 @@ struct doublephimeson {
             auto rotd1py = Phid1.Px() * std::sin(rotangle) + Phid1.Py() * std::cos(rotangle);
             Phid1Rot.SetXYZM(rotd1px, rotd1py, Phid1.Pz(), Phid1.M());
             exoticRot = Phid1Rot + Phid2;
-            // auto kstar_rot = getkstar(Phid1Rot, Phid2);
+            auto cosThetaStar_rot = getCosTheta(exoticRot, Phid1Rot);
+            auto kstar_rot = getkstar(Phid1Rot, Phid2);
             auto deltaR_rot = TMath::Sqrt(TMath::Power(Phid1Rot.Phi() - Phid2.Phi(), 2.0) + TMath::Power(Phid1Rot.Eta() - Phid2.Eta(), 2.0));
-            histos.fill(HIST("SEMassRot"), exoticRot.M(), exoticRot.Pt(), Phid1Rot.Pt(), Phid2.Pt(), deltaR_rot, phimult);
+            if (!fillDeltaMass) {
+              histos.fill(HIST("SEMassRot"), exoticRot.M(), exoticRot.Pt(), kstar_rot, cosThetaStar_rot, deltaR_rot);
+            }
+            if (fillDeltaMass) {
+              histos.fill(HIST("SEMassRot"), exoticRot.M() - Phid1Rot.M(), exoticRot.Pt(), kstar_rot, cosThetaStar_rot, deltaR_rot);
+            }
           }
         }
       }
@@ -277,7 +315,6 @@ struct doublephimeson {
       if (additionalEvsel && (collision2.numPos() < 2 || collision2.numNeg() < 2)) {
         continue;
       }
-      auto phimult = tracks1.size();
       for (auto& [phitrackd1, phitrackd2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         if (phitrackd1.phiMass() < minPhiMass || phitrackd1.phiMass() > maxPhiMass) {
           continue;
@@ -289,28 +326,34 @@ struct doublephimeson {
         auto kaonminusd1pt = TMath::Sqrt(phitrackd1.phid2Px() * phitrackd1.phid2Px() + phitrackd1.phid2Py() * phitrackd1.phid2Py());
         auto kaonplusd2pt = TMath::Sqrt(phitrackd2.phid1Px() * phitrackd2.phid1Px() + phitrackd2.phid1Py() * phitrackd2.phid1Py());
         auto kaonminusd2pt = TMath::Sqrt(phitrackd2.phid2Px() * phitrackd2.phid2Px() + phitrackd2.phid2Py() * phitrackd2.phid2Py());
-        if (!selectionPID(phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), phitrackd1.phid1TOFHit(), strategyPID, kaonplusd1pt)) {
+        if (!selectionPID(phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), phitrackd1.phid1TOFHit(), strategyPID1, kaonplusd1pt)) {
           continue;
         }
-        if (!selectionPID(phitrackd1.phid2TPC(), phitrackd1.phid2TOF(), phitrackd1.phid2TOFHit(), strategyPID, kaonminusd1pt)) {
+        if (!selectionPID(phitrackd1.phid2TPC(), phitrackd1.phid2TOF(), phitrackd1.phid2TOFHit(), strategyPID1, kaonminusd1pt)) {
           continue;
         }
         Phid1.SetXYZM(phitrackd1.phiPx(), phitrackd1.phiPy(), phitrackd1.phiPz(), phitrackd1.phiMass());
-        if (!selectionPID(phitrackd2.phid1TPC(), phitrackd2.phid1TOF(), phitrackd2.phid1TOFHit(), strategyPID, kaonplusd2pt)) {
+        if (!selectionPID(phitrackd2.phid1TPC(), phitrackd2.phid1TOF(), phitrackd2.phid1TOFHit(), strategyPID2, kaonplusd2pt)) {
           continue;
         }
-        if (!selectionPID(phitrackd2.phid2TPC(), phitrackd2.phid2TOF(), phitrackd2.phid2TOFHit(), strategyPID, kaonminusd2pt)) {
+        if (!selectionPID(phitrackd2.phid2TPC(), phitrackd2.phid2TOF(), phitrackd2.phid2TOFHit(), strategyPID2, kaonminusd2pt)) {
           continue;
         }
         Phid2.SetXYZM(phitrackd2.phiPx(), phitrackd2.phiPy(), phitrackd2.phiPz(), phitrackd2.phiMass());
         exotic = Phid1 + Phid2;
-        // auto kstar = getkstar(Phid1, Phid2);
+        auto cosThetaStar = getCosTheta(exotic, Phid1);
+        auto kstar = getkstar(Phid1, Phid2);
         auto deltaR = TMath::Sqrt(TMath::Power(Phid1.Phi() - Phid2.Phi(), 2.0) + TMath::Power(Phid1.Eta() - Phid2.Eta(), 2.0));
-        histos.fill(HIST("MEMassUnlike"), exotic.M(), exotic.Pt(), Phid1.Pt(), Phid2.Pt(), deltaR, phimult);
+        if (!fillDeltaMass) {
+          histos.fill(HIST("MEMassUnlike"), exotic.M(), exotic.Pt(), kstar, cosThetaStar, deltaR);
+        }
+        if (fillDeltaMass) {
+          histos.fill(HIST("MEMassUnlike"), exotic.M() - Phid1.M(), exotic.Pt(), kstar, cosThetaStar, deltaR);
+        }
       }
     }
   }
-  PROCESS_SWITCH(doublephimeson, processMixedEvent, "Process EventMixing for combinatorial background", true);
+  PROCESS_SWITCH(doublephimeson, processMixedEvent, "Process EventMixing for combinatorial background", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<doublephimeson>(cfgc)}; }

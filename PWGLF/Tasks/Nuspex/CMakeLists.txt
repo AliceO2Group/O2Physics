@@ -144,8 +144,8 @@ o2physics_add_dpl_workflow(ebye-mult
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(he3-from-hypertriton-map
-    SOURCES he3FromHypertritonMap.cxx
+o2physics_add_dpl_workflow(nuclei-from-hypertriton-map
+    SOURCES nucleiFromHypertritonMap.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 

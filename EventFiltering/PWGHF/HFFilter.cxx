@@ -155,6 +155,7 @@ struct HfFilter { // Main struct for HF triggers
   o2::vertexing::DCAFitterN<3> df3; // fitter for Charm Hadron vertex (3-prong vertex fitter)
   o2::vertexing::DCAFitterN<2> dfB; // fitter for Beauty Hadron vertex (2-prong vertex fitter)
   o2::vertexing::DCAFitterN<3> dfBtoDstar; // fitter for Beauty Hadron to D* vertex (3-prong vertex fitter)
+  o2::vertexing::DCAFitterN<2> dfStrangeness; // fitter for V0s and cascades (2-prong vertex fitter)
 
   HistogramRegistry registry{"registry"};
   std::shared_ptr<TH1> hProcessedEvents;
@@ -215,6 +216,8 @@ struct HfFilter { // Main struct for HF triggers
     helper.setPtRangeSoftPiSigmaC(ptCuts->get(0u, 4u), ptCuts->get(1u, 4u));
     helper.setPtDeltaMassRangeSigmaC(cutsPtDeltaMassCharmReso->get(0u, 6u), cutsPtDeltaMassCharmReso->get(1u, 6u), cutsPtDeltaMassCharmReso->get(0u, 7u), cutsPtDeltaMassCharmReso->get(1u, 7u), cutsPtDeltaMassCharmReso->get(0u, 8u), cutsPtDeltaMassCharmReso->get(1u, 8u), cutsPtDeltaMassCharmReso->get(0u, 9u), cutsPtDeltaMassCharmReso->get(1u, 9u), cutsPtDeltaMassCharmReso->get(2u, 6u), cutsPtDeltaMassCharmReso->get(2u, 7u), cutsPtDeltaMassCharmReso->get(2u, 8u), cutsPtDeltaMassCharmReso->get(2u, 9u));
     helper.setPtRangeSoftKaonXicResoToSigmaC(ptCuts->get(0u, 5u), ptCuts->get(1u, 5u));
+    helper.setVtxConfiguration(dfStrangeness, true); // (DCAFitterN, useAbsDCA)
+    dfStrangeness.setMatCorrType(matCorr);
     if (activateSecVtxForB) {
       helper.setVtxConfiguration(df2, false); // (DCAFitterN, useAbsDCA)
       helper.setVtxConfiguration(df3, false);
@@ -327,26 +330,28 @@ struct HfFilter { // Main struct for HF triggers
 
   using BigTracksMCPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullDe, aod::pidTOFFullDe, aod::McTrackLabels>;
   using BigTracksPID = soa::Join<aod::Tracks, aod::TracksWCovDcaExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullDe, aod::pidTOFFullDe>;
+  using TracksIUPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi>;
   using CollsWithEvSel = soa::Join<aod::Collisions, aod::EvSels>;
 
   using Hf2ProngsWithMl = soa::Join<aod::Hf2Prongs, aod::Hf2ProngMlProbs>;
   using Hf3ProngsWithMl = soa::Join<aod::Hf3Prongs, aod::Hf3ProngMlProbs>;
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  Preslice<aod::V0Datas> v0sPerCollision = aod::v0data::collisionId;
+  Preslice<aod::V0s> v0sPerCollision = aod::v0::collisionId;
   Preslice<Hf2ProngsWithMl> hf2ProngPerCollision = aod::track_association::collisionId;
   Preslice<Hf3ProngsWithMl> hf3ProngPerCollision = aod::track_association::collisionId;
-  Preslice<aod::CascDatas> cascPerCollision = aod::cascdata::collisionId;
+  Preslice<aod::Cascades> cascPerCollision = aod::cascade::collisionId;
   Preslice<aod::V0PhotonsKF> photonsPerCollision = aod::v0photonkf::collisionId;
 
   void process(CollsWithEvSel const& collisions,
                aod::BCsWithTimestamps const&,
-               aod::V0Datas const& v0s,
-               aod::CascDatas const& cascades,
+               aod::V0s const& v0s,
+               aod::Cascades const& cascades,
                Hf2ProngsWithMl const& cand2Prongs,
                Hf3ProngsWithMl const& cand3Prongs,
                aod::TrackAssoc const& trackIndices,
-               BigTracksPID const&,
+               BigTracksPID const& tracks,
+               TracksIUPID const& tracksIU,
                aod::V0PhotonsKF const& photons,
                aod::V0Legs const&)
   {
@@ -380,6 +385,15 @@ struct HfFilter { // Main struct for HF triggers
           helper.setValuesBB(ccdbApi, bc, std::array{ccdbBBPion.value, ccdbBBAntiPion.value, ccdbBBKaon.value, ccdbBBAntiKaon.value, ccdbBBProton.value, ccdbBBAntiProton.value, ccdbBBProton.value, ccdbBBAntiProton.value}); // dummy for deuteron
         }
 
+        auto bz = o2::base::Propagator::Instance()->getNominalBz();
+        dfStrangeness.setBz(bz);
+        if (activateSecVtxForB) {
+          df2.setBz(bz);
+          df3.setBz(bz);
+          dfB.setBz(bz);
+          dfBtoDstar.setBz(bz);
+        }
+
         currentRun = bc.runNumber();
       }
 
@@ -393,8 +407,8 @@ struct HfFilter { // Main struct for HF triggers
           continue;
         }
 
-        auto trackPos = cand2Prong.prong0_as<BigTracksPID>(); // positive daughter
-        auto trackNeg = cand2Prong.prong1_as<BigTracksPID>(); // negative daughter
+        auto trackPos = tracks.rawIteratorAt(cand2Prong.prong0Id()); // positive daughter
+        auto trackNeg = tracks.rawIteratorAt(cand2Prong.prong1Id()); // negative daughter
 
         auto preselD0 = helper.isDzeroPreselected(trackPos, trackNeg);
         if (!preselD0) {
@@ -471,7 +485,7 @@ struct HfFilter { // Main struct for HF triggers
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
         for (const auto& trackId : trackIdsThisCollision) { // start loop over tracks
-          auto track = trackId.track_as<BigTracksPID>();
+          auto track = tracks.rawIteratorAt(trackId.trackId());
 
           if (track.globalIndex() == trackPos.globalIndex() || track.globalIndex() == trackNeg.globalIndex()) {
             continue;
@@ -559,7 +573,7 @@ struct HfFilter { // Main struct for HF triggers
                   hMassVsPtC[kNCharmParticles]->Fill(ptCand, massDiffDstar);
                 }
                 for (const auto& trackIdB : trackIdsThisCollision) { // start loop over tracks
-                  auto trackB = trackIdB.track_as<BigTracksPID>();
+                  auto trackB = tracks.rawIteratorAt(trackIdB.trackId());
                   if (track.globalIndex() == trackB.globalIndex()) {
                     continue;
                   }
@@ -702,30 +716,21 @@ struct HfFilter { // Main struct for HF triggers
         if (!keepEvent[kV0Charm2P] && isSignalTagged && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1))) {
           auto v0sThisCollision = v0s.sliceBy(v0sPerCollision, thisCollId);
           for (const auto& v0 : v0sThisCollision) {
-            auto posTrack = v0.posTrack_as<BigTracksPID>();
-            auto negTrack = v0.negTrack_as<BigTracksPID>();
-            auto selV0 = helper.isSelectedV0(v0, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod);
+            V0Cand v0Cand;
+            if (!helper.buildV0(v0, tracksIU, collision, dfStrangeness, std::vector{cand2Prong.prong0Id(), cand2Prong.prong1Id()}, v0Cand)) {
+              continue;
+            }
+            auto selV0 = helper.isSelectedV0(v0Cand, activateQA, hV0Selected, hArmPod);
             if (!selV0) {
               continue;
             }
 
-            // propagate to PV
-            gpu::gpustd::array<float, 2> dcaInfo;
-            std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
-            std::array<float, 3> pVecV0Orig = {v0.px(), v0.py(), v0.pz()};
-            std::array<float, 3> posVecV0 = {v0.x(), v0.y(), v0.z()};
             if (!keepEvent[kV0Charm2P] && TESTBIT(selV0, kK0S)) {
-
-              auto trackParK0 = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
-              trackParK0.setPID(o2::track::PID::K0);
-              trackParK0.setAbsCharge(0);
-              o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0, 2.f, matCorr, &dcaInfo);
-              getPxPyPz(trackParK0, pVecV0);
 
               // we first look for a D*+
               for (const auto& trackBachelorId : trackIdsThisCollision) { // start loop over tracks
-                auto trackBachelor = trackBachelorId.track_as<BigTracksPID>();
-                if (trackBachelor.globalIndex() == trackPos.globalIndex() || trackBachelor.globalIndex() == trackNeg.globalIndex()) {
+                auto trackBachelor = tracks.rawIteratorAt(trackBachelorId.trackId());
+                if (trackBachelor.globalIndex() == trackPos.globalIndex() || trackBachelor.globalIndex() == trackNeg.globalIndex() || trackBachelor.globalIndex() == v0.posTrackId() || trackBachelor.globalIndex() == v0.negTrackId()) {
                   continue;
                 }
 
@@ -756,10 +761,10 @@ struct HfFilter { // Main struct for HF triggers
                       if (activateQA) {
                         hMassVsPtC[kNCharmParticles]->Fill(ptDStarCand, massDiffDstar);
                       }
-                      auto pVecReso2Prong = RecoDecay::pVec(pVecDStarCand, pVecV0);
+                      auto pVecReso2Prong = RecoDecay::pVec(pVecDStarCand, v0Cand.mom);
                       auto ptCand = RecoDecay::pt(pVecReso2Prong);
                       if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 3u)) {
-                        auto massDStarK0S = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecBachelor, pVecV0}, std::array{massDausD0[0], massDausD0[1], massPi, massK0S});
+                        auto massDStarK0S = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecBachelor, v0Cand.mom}, std::array{massDausD0[0], massDausD0[1], massPi, massK0S});
                         auto massDiffDsReso = massDStarK0S - massDStarCand;
                         if (cutsPtDeltaMassCharmReso->get(0u, 3u) < massDiffDsReso && massDiffDsReso < cutsPtDeltaMassCharmReso->get(1u, 3u)) {
                           if (activateQA) {
@@ -775,24 +780,19 @@ struct HfFilter { // Main struct for HF triggers
               }
             }
             if (!keepEvent[kV0Charm2P] && (TESTBIT(selV0, kLambda) || TESTBIT(selV0, kAntiLambda))) { // Xic(3055) and Xic(3080) --> since it occupies only a small bandwidth, we might want to keep also wrong sign pairs
-              auto trackParLambda = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
-              trackParLambda.setAbsCharge(0);
-              trackParLambda.setPID(o2::track::PID::Lambda);
-              o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParLambda, 2.f, matCorr, &dcaInfo);
-              getPxPyPz(trackParLambda, pVecV0);
               float massXicStarCand{-999.}, massXicStarBarCand{-999.};
               float massDiffXicStarCand{-999.}, massDiffXicStarBarCand{-999.};
               bool isRightSignXicStar{false}, isRightSignXicStarBar{false};
-              auto pVecReso2Prong = RecoDecay::pVec(pVec2Prong, pVecV0);
+              auto pVecReso2Prong = RecoDecay::pVec(pVec2Prong, v0Cand.mom);
               auto ptCand = RecoDecay::pt(pVecReso2Prong);
               if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 5u)) {
                 if (TESTBIT(selD0, 0)) {
-                  massXicStarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecV0}, std::array{massPi, massKa, massLambda});
+                  massXicStarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, v0Cand.mom}, std::array{massPi, massKa, massLambda});
                   massDiffXicStarCand = massXicStarCand - massD0Cand;
                   isRightSignXicStar = TESTBIT(selV0, kLambda); // right sign if Lambda
                 }
                 if (TESTBIT(selD0, 1)) {
-                  massXicStarBarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecV0}, std::array{massKa, massPi, massLambda});
+                  massXicStarBarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, v0Cand.mom}, std::array{massKa, massPi, massLambda});
                   massDiffXicStarBarCand = massXicStarBarCand - massD0BarCand;
                   isRightSignXicStarBar = TESTBIT(selV0, kAntiLambda); // right sign if AntiLambda
                 }
@@ -838,9 +838,9 @@ struct HfFilter { // Main struct for HF triggers
           continue;
         }
 
-        auto trackFirst = cand3Prong.prong0_as<BigTracksPID>();
-        auto trackSecond = cand3Prong.prong1_as<BigTracksPID>();
-        auto trackThird = cand3Prong.prong2_as<BigTracksPID>();
+        auto trackFirst = tracks.rawIteratorAt(cand3Prong.prong0Id());
+        auto trackSecond = tracks.rawIteratorAt(cand3Prong.prong1Id());
+        auto trackThird = tracks.rawIteratorAt(cand3Prong.prong2Id());
 
         auto trackParFirst = getTrackParCov(trackFirst);
         auto trackParSecond = getTrackParCov(trackSecond);
@@ -971,7 +971,7 @@ struct HfFilter { // Main struct for HF triggers
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
         for (const auto& trackId : trackIdsThisCollision) { // start loop over track indices as associated to this collision in HF code
-          auto track = trackId.track_as<BigTracksPID>();
+          auto track = tracks.rawIteratorAt(trackId.trackId());
           if (track.globalIndex() == trackFirst.globalIndex() || track.globalIndex() == trackSecond.globalIndex() || track.globalIndex() == trackThird.globalIndex()) {
             continue;
           }
@@ -1092,7 +1092,7 @@ struct HfFilter { // Main struct for HF triggers
             for (const auto& trackSoftPiId : trackIdsThisCollision) { // start loop over tracks (soft pi)
 
               // soft pion candidates
-              auto trackSoftPi = trackSoftPiId.track_as<BigTracksPID>();
+              auto trackSoftPi = tracks.rawIteratorAt(trackSoftPiId.trackId());
               auto globalIndexSoftPi = trackSoftPi.globalIndex();
 
               // exclude tracks already used to build the 3-prong candidate
@@ -1249,28 +1249,21 @@ struct HfFilter { // Main struct for HF triggers
 
         if ((!keepEvent[kV0Charm3P] && isGoodDPlus) || (!keepEvent[kSigmaC0K0] && (isGoodLcToPKPi || isGoodLcToPiKP))) {
           for (const auto& v0 : v0sThisCollision) {
-            auto posTrack = v0.posTrack_as<BigTracksPID>();
-            auto negTrack = v0.negTrack_as<BigTracksPID>();
-            auto selV0 = helper.isSelectedV0(v0, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod);
+            V0Cand v0Cand;
+            if (!helper.buildV0(v0, tracksIU, collision, dfStrangeness, std::vector{cand3Prong.prong0Id(), cand3Prong.prong1Id(), cand3Prong.prong2Id()}, v0Cand)) {
+              continue;
+            }
+            auto selV0 = helper.isSelectedV0(v0Cand, activateQA, hV0Selected, hArmPod);
             if (!selV0) {
               continue;
             }
-            gpu::gpustd::array<float, 2> dcaInfo;
-            std::array<float, 3> pVecV0Orig = {v0.px(), v0.py(), v0.pz()};
-            std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
-            std::array<float, 3> posVecV0 = {v0.x(), v0.y(), v0.z()};
 
             // we pair D+ with V0
             if (!keepEvent[kV0Charm3P] && isGoodDPlus) {
               if (!keepEvent[kV0Charm3P] && TESTBIT(selV0, kK0S)) { // Ds2*
-                auto trackParK0S = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
-                trackParK0S.setAbsCharge(0);
-                trackParK0S.setPID(o2::track::PID::K0);
-                o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0S, 2.f, matCorr, &dcaInfo);
-                getPxPyPz(trackParK0S, pVecV0);
-                auto massDsStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massPi, massKa, massPi, massK0S});
+                auto massDsStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, v0Cand.mom}, std::array{massPi, massKa, massPi, massK0S});
                 auto massDiffDsStar = massDsStarCand - massDPlusCand;
-                auto pVecReso3Prong = RecoDecay::pVec(pVec3Prong, pVecV0);
+                auto pVecReso3Prong = RecoDecay::pVec(pVec3Prong, v0Cand.mom);
                 auto ptCand = RecoDecay::pt(pVecReso3Prong);
                 if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 4u)) {
                   if (cutsPtDeltaMassCharmReso->get(0u, 4u) < massDiffDsStar && massDiffDsStar < cutsPtDeltaMassCharmReso->get(1u, 4u)) {
@@ -1282,15 +1275,10 @@ struct HfFilter { // Main struct for HF triggers
                 }
               }
               if (!keepEvent[kV0Charm3P] && (TESTBIT(selV0, kLambda) || TESTBIT(selV0, kAntiLambda))) { // Xic(3055) and Xic(3080) --> since it occupies only a small bandwidth, we might want to keep also wrong sign pairs
-                auto trackParLambda = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
-                trackParLambda.setAbsCharge(0);
-                trackParLambda.setPID(o2::track::PID::Lambda);
-                o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParLambda, 2.f, matCorr, &dcaInfo);
-                getPxPyPz(trackParLambda, pVecV0);
-                auto pVecReso3Prong = RecoDecay::pVec(pVec3Prong, pVecV0);
+                auto pVecReso3Prong = RecoDecay::pVec(pVec3Prong, v0Cand.mom);
                 auto ptCand = RecoDecay::pt(pVecReso3Prong);
                 if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 5u)) {
-                  auto massXicStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massPi, massKa, massPi, massLambda});
+                  auto massXicStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, v0Cand.mom}, std::array{massPi, massKa, massPi, massLambda});
                   auto massDiffXicStar = massXicStarCand - massDPlusCand;
                   bool isRightSign = ((TESTBIT(selV0, kLambda) && sign3Prong > 0) || (TESTBIT(selV0, kAntiLambda) && sign3Prong < 0));
                   if (cutsPtDeltaMassCharmReso->get(0u, 5u) < massDiffXicStar && massDiffXicStar < cutsPtDeltaMassCharmReso->get(1u, 5u)) {
@@ -1315,12 +1303,12 @@ struct HfFilter { // Main struct for HF triggers
               for (const auto& trackSoftPiId : trackIdsThisCollision) { // start loop over tracks (soft pi)
 
                 // soft pion candidates
-                auto trackSoftPi = trackSoftPiId.track_as<BigTracksPID>();
+                auto trackSoftPi = tracks.rawIteratorAt(trackSoftPiId.trackId());
                 auto globalIndexSoftPi = trackSoftPi.globalIndex();
 
                 // exclude tracks already used to build the 3-prong candidate
-                if (globalIndexSoftPi == trackFirst.globalIndex() || globalIndexSoftPi == trackSecond.globalIndex() || globalIndexSoftPi == trackThird.globalIndex()) {
-                  // do not consider as candidate soft pion a track already used to build the current 3-prong candidate
+                if (globalIndexSoftPi == trackFirst.globalIndex() || globalIndexSoftPi == trackSecond.globalIndex() || globalIndexSoftPi == trackThird.globalIndex() || globalIndexSoftPi == v0.posTrackId() || globalIndexSoftPi == v0.negTrackId()) {
+                  // do not consider as candidate soft pion a track already used to build the current 3-prong candidate / V0 candidate
                   continue;
                 }
 
@@ -1353,17 +1341,15 @@ struct HfFilter { // Main struct for HF triggers
                     /// and keep it only if it is in the correct mass range
 
                     float massSigmaCPKPi{-999.}, massSigmaCPiKP{-999.}, deltaMassXicResoPKPi{-999.}, deltaMassXicResoPiKP{-999.};
-                    std::array<float, 3> pVecPiPosK0s = posTrack.pVector();
-                    std::array<float, 3> pVecPiNegK0s = negTrack.pVector();
-                    float ptSigmaCKaon = RecoDecay::pt(pVecSigmaC, pVecPiPosK0s, pVecPiNegK0s);
+                    float ptSigmaCKaon = RecoDecay::pt(pVecSigmaC, v0Cand.mom);
                     if (ptSigmaCKaon > cutsPtDeltaMassCharmReso->get(2u, 10u)) {
                       if (TESTBIT(whichSigmaC, 0)) {
                         massSigmaCPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi}, std::array{massProton, massKa, massPi, massPi});
-                        deltaMassXicResoPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi, pVecPiPosK0s, pVecPiNegK0s}, std::array{massProton, massKa, massPi, massPi, massPi, massPi}) - massSigmaCPKPi;
+                        deltaMassXicResoPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi, v0Cand.mom}, std::array{massProton, massKa, massPi, massPi, massK0S}) - massSigmaCPKPi;
                       }
                       if (TESTBIT(whichSigmaC, 1)) {
                         massSigmaCPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi}, std::array{massPi, massKa, massProton, massPi});
-                        deltaMassXicResoPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi, pVecPiPosK0s, pVecPiNegK0s}, std::array{massPi, massKa, massProton, massPi, massPi, massPi}) - massSigmaCPiKP;
+                        deltaMassXicResoPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi, v0Cand.mom}, std::array{massPi, massKa, massProton, massPi, massK0S}) - massSigmaCPiKP;
                       }
 
                       bool isPKPiOk = (cutsPtDeltaMassCharmReso->get(0u, 10u) < deltaMassXicResoPKPi && deltaMassXicResoPKPi < cutsPtDeltaMassCharmReso->get(1u, 10u));
@@ -1404,35 +1390,43 @@ struct HfFilter { // Main struct for HF triggers
       if (!keepEvent[kCharmBarToXiBach]) {
         auto cascThisColl = cascades.sliceBy(cascPerCollision, thisCollId);
         for (const auto& casc : cascThisColl) {
-          auto bachelorCasc = casc.bachelor_as<BigTracksPID>();
-          auto v0DauPos = casc.posTrack_as<BigTracksPID>();
-          auto v0DauNeg = casc.negTrack_as<BigTracksPID>();
 
-          if (!helper.isSelectedCascade(casc, std::array{bachelorCasc, v0DauPos, v0DauNeg}, collision)) {
+          CascCand cascCand;
+          if (!helper.buildCascade(casc, v0s, tracksIU, collision, dfStrangeness, {}, cascCand)) {
             continue;
           }
-          if (activateQA) {
-            hMassXi->Fill(casc.mXi());
+
+          if (!helper.isSelectedCascade(cascCand)) {
+            continue;
           }
+
+          if (activateQA) {
+            hMassXi->Fill(cascCand.mXi);
+          }
+
+          auto bachelorCascId = casc.bachelorId();
+          auto v0 = v0s.rawIteratorAt(casc.v0Id());
+          auto v0DauPosId = v0.posTrackId();
+          auto v0DauNegId = v0.negTrackId();
 
           auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
           for (const auto& trackId : trackIdsThisCollision) { // start loop over tracks
-            auto track = trackId.track_as<BigTracksPID>();
+            auto track = tracks.rawIteratorAt(trackId.trackId());
 
             // ask for opposite sign daughters (omegac daughters)
-            if (track.sign() * bachelorCasc.sign() >= 0) {
+            if (track.sign() * cascCand.sign > 0) {
               continue;
             }
 
             // check if track is one of the Xi daughters
-            if (track.globalIndex() == bachelorCasc.globalIndex() || track.globalIndex() == v0DauPos.globalIndex() || track.globalIndex() == v0DauNeg.globalIndex()) {
+            if (track.globalIndex() == bachelorCascId || track.globalIndex() == v0DauPosId || track.globalIndex() == v0DauNegId) {
               continue;
             }
 
             // propagate to PV
             gpu::gpustd::array<float, 2> dcaInfo;
-            std::array<float, 3> pVecCascade = {casc.px(), casc.py(), casc.pz()};
-            auto trackParCasc = o2::track::TrackPar(std::array{casc.x(), casc.y(), casc.z()}, pVecCascade, bachelorCasc.sign(), true);
+            std::array<float, 3> pVecCascade = cascCand.mom;
+            auto trackParCasc = o2::track::TrackPar(cascCand.vtx, cascCand.mom, cascCand.sign, true);
             trackParCasc.setPID(o2::track::PID::XiMinus);
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCasc, 2.f, matCorr, &dcaInfo);
             getPxPyPz(trackParCasc, pVecCascade);

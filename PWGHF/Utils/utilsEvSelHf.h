@@ -29,6 +29,7 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGHF/Core/CentralityEstimation.h"
 
 namespace o2::hf_evsel
@@ -337,6 +338,8 @@ struct HfEventSelectionMc {
   float centralityMax{100.f};       // Maximum centrality
 
   // histogram names
+  static constexpr char nameHistGenCollisionsCent[] = "hGenCollisionsCent";
+  std::shared_ptr<TH1> hGenCollisionsCent;
   static constexpr char nameHistParticles[] = "hParticles";
   std::shared_ptr<TH1> hParticles;
 
@@ -344,6 +347,7 @@ struct HfEventSelectionMc {
   /// \param registry reference to the histogram registry
   void addHistograms(o2::framework::HistogramRegistry& registry)
   {
+    hGenCollisionsCent = registry.add<TH1>(nameHistGenCollisionsCent, "HF event counter;T0M;# of generated collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
     hParticles = registry.add<TH1>(nameHistParticles, "HF particle counter;;# of accepted particles", {o2::framework::HistType::kTH1D, {axisEvents}});
     // Puts labels on the collision monitoring histogram.
     setEventRejectionLabels(hParticles);
@@ -436,9 +440,14 @@ struct HfEventSelectionMc {
   }
 
   /// \brief Fills histogram for monitoring event selections satisfied by the collision.
+  /// \param collision analysed collision
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
-  void fillHistograms(const uint16_t rejectionMask)
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
+  void fillHistograms(Coll const& mcCollision, const uint16_t rejectionMask)
   {
+    if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
+      hGenCollisionsCent->Fill(mcCollision.centFT0M());
+    }
     hParticles->Fill(EventRejection::None);
 
     for (std::size_t reason = 1; reason < EventRejection::NEventRejection; reason++) {

@@ -140,36 +140,42 @@ class MomentumSmearer
   void fillVecResoND(THnSparseF* hs_reso)
   {
     LOGP(info, "prepare TH3D");
-    const int npt = hs_reso->GetAxis(0)->GetNbins();
-    const int neta = hs_reso->GetAxis(1)->GetNbins();
-    const int nphi = hs_reso->GetAxis(2)->GetNbins();
-    const int nch = hs_reso->GetAxis(3)->GetNbins();
-    LOGF(info, "npt = %d, neta = %d, nphi = %d, nch = %d without under- and overflow bins", npt, neta, nphi, nch);
+    fNCenBins = hs_reso->GetAxis(0)->GetNbins();
+    fNPtBins = hs_reso->GetAxis(1)->GetNbins();
+    fNEtaBins = hs_reso->GetAxis(2)->GetNbins();
+    fNPhiBins = hs_reso->GetAxis(3)->GetNbins();
+    fNChBins = hs_reso->GetAxis(4)->GetNbins();
+    LOGF(info, "ncen = %d, npt = %d, neta = %d, nphi = %d, nch = %d without under- and overflow bins", fNCenBins, fNPtBins, fNEtaBins, fNPhiBins, fNChBins);
     // fVecResoND.reserve(npt * neta * nphi * nch);
 
-    fVecResoND.resize(npt, std::vector<std::vector<std::vector<TH3D*>>>(neta, std::vector<std::vector<TH3D*>>(nphi, std::vector<TH3D*>(nch))));
-    // auto h3 = reinterpret_cast<TH3D*>(hs_reso->Projection(4, 5, 6));
-    // h3->SetName(Form("h3reso_pt%d_eta%d_phi%d_ch%d", 0, 0, 0, 0));
-    // fVecResoND[0][0][0][0] = h3;
+    fVecResoND.resize(fNCenBins, std::vector<std::vector<std::vector<std::vector<TH3D*>>>>(fNPtBins, std::vector<std::vector<std::vector<TH3D*>>>(fNEtaBins, std::vector<std::vector<TH3D*>>(fNPhiBins, std::vector<TH3D*>(fNChBins)))));
+    // fVecResoND.resize(fNPtBins, std::vector<std::vector<std::vector<TH3D*>>>(fNEtaBins, std::vector<std::vector<TH3D*>>(fNPhiBins, std::vector<TH3D*>(fNChBins))));
+    //  auto h3 = reinterpret_cast<TH3D*>(hs_reso->Projection(4, 5, 6));
+    //  h3->SetName(Form("h3reso_pt%d_eta%d_phi%d_ch%d", 0, 0, 0, 0));
+    //  fVecResoND[0][0][0][0] = h3;
 
-    for (int ipt = 0; ipt < npt; ipt++) {
-      hs_reso->GetAxis(0)->SetRange(ipt + 1, ipt + 1);
-      for (int ieta = 0; ieta < neta; ieta++) {
-        hs_reso->GetAxis(1)->SetRange(ieta + 1, ieta + 1);
-        for (int iphi = 0; iphi < nphi; iphi++) {
-          hs_reso->GetAxis(2)->SetRange(iphi + 1, iphi + 1);
-          for (int ich = 0; ich < nch; ich++) {
-            if (-0.5 < hs_reso->GetAxis(3)->GetBinCenter(ich + 1) && hs_reso->GetAxis(3)->GetBinCenter(ich + 1) < 0.5) {
-              continue;
-            }
-            hs_reso->GetAxis(3)->SetRange(ich + 1, ich + 1);
-            auto h3 = reinterpret_cast<TH3D*>(hs_reso->Projection(4, 5, 6));
-            h3->SetName(Form("h3reso_pt%d_eta%d_phi%d_ch%d", ipt, ieta, iphi, ich));
-            fVecResoND[ipt][ieta][iphi][ich] = h3;
-          } // end of charge loop
-        } // end of phi loop
-      } // end of eta loop
-    } // end of pt loop
+    for (int icen = 0; icen < fNCenBins; icen++) {
+      hs_reso->GetAxis(0)->SetRange(icen + 1, icen + 1);
+      for (int ipt = 0; ipt < fNPtBins; ipt++) {
+        hs_reso->GetAxis(1)->SetRange(ipt + 1, ipt + 1);
+        for (int ieta = 0; ieta < fNEtaBins; ieta++) {
+          hs_reso->GetAxis(2)->SetRange(ieta + 1, ieta + 1);
+          for (int iphi = 0; iphi < fNPhiBins; iphi++) {
+            hs_reso->GetAxis(3)->SetRange(iphi + 1, iphi + 1);
+            for (int ich = 0; ich < fNChBins; ich++) {
+              if (-0.5 < hs_reso->GetAxis(4)->GetBinCenter(ich + 1) && hs_reso->GetAxis(4)->GetBinCenter(ich + 1) < 0.5) {
+                continue;
+              }
+              hs_reso->GetAxis(4)->SetRange(ich + 1, ich + 1);
+              auto h3 = reinterpret_cast<TH3D*>(hs_reso->Projection(5, 6, 7));
+              h3->SetName(Form("h3reso_cen%d_pt%d_eta%d_phi%d_ch%d", icen, ipt, ieta, iphi, ich));
+              h3->Scale(1.f, "width"); // convert ntrack to probability density
+              fVecResoND[icen][ipt][ieta][iphi][ich] = h3;
+            } // end of charge loop
+          } // end of phi loop
+        } // end of eta loop
+      } // end of pt loop
+    } // end of centrality loop
   }
 
   void init()
@@ -360,11 +366,12 @@ class MomentumSmearer
     fInitialized = true;
   }
 
-  void applySmearing(float ptgen, float vargen, float multiply, float& varsmeared, TH2F* fReso, std::vector<TH1F*>& fVecReso)
+  void applySmearing(const float ptgen, const float vargen, const float multiply, float& varsmeared, TH2F* fReso, std::vector<TH1F*>& fVecReso)
   {
+    float ptgen_tmp = ptgen > fMinPtGen ? ptgen : fMinPtGen;
     TAxis* axisPt = fReso->GetXaxis();
     int nBinsPt = axisPt->GetNbins();
-    int ptbin = axisPt->FindBin(ptgen);
+    int ptbin = axisPt->FindBin(ptgen_tmp);
     if (ptbin < 1) {
       ptbin = 1;
     }
@@ -378,7 +385,7 @@ class MomentumSmearer
     varsmeared = vargen - smearing;
   }
 
-  void applySmearing(const int ch, const float ptgen, const float etagen, const float phigen, float& ptsmeared, float& etasmeared, float& phismeared)
+  void applySmearing(const float centrality, const int ch, const float ptgen, const float etagen, const float phigen, float& ptsmeared, float& etasmeared, float& phismeared)
   {
     if (fResType == 0) {
       ptsmeared = ptgen;
@@ -388,7 +395,13 @@ class MomentumSmearer
     }
 
     if (fDoNDSmearing) {
-      applySmearingND(ch, ptgen, etagen, phigen, ptsmeared, etasmeared, phismeared);
+      if (centrality < 0) {
+        ptsmeared = ptgen;
+        etasmeared = etagen;
+        phismeared = phigen;
+        return;
+      }
+      applySmearingND(centrality, ch, ptgen, etagen, phigen, ptsmeared, etasmeared, phismeared);
     } else {
       applySmearing(ptgen, ptgen, ptgen, ptsmeared, fResoPt, fVecResoPt);
       applySmearing(ptgen, etagen, 1., etasmeared, fResoEta, fVecResoEta);
@@ -400,53 +413,53 @@ class MomentumSmearer
     }
   }
 
-  void applySmearingND(const int ch, const float ptgen, const float etagen, const float phigen, float& ptsmeared, float& etasmeared, float& phismeared)
+  void applySmearingND(const float centrality, const int ch, const float ptgen, const float etagen, const float phigen, float& ptsmeared, float& etasmeared, float& phismeared)
   {
-    const int npt = fResoND->GetAxis(0)->GetNbins();
-    const int neta = fResoND->GetAxis(1)->GetNbins();
-    const int nphi = fResoND->GetAxis(2)->GetNbins();
-    const int nch = fResoND->GetAxis(3)->GetNbins();
-    int ptbin = fResoND->GetAxis(0)->FindBin(ptgen);
-    int etabin = fResoND->GetAxis(1)->FindBin(etagen);
-    int phibin = fResoND->GetAxis(2)->FindBin(phigen);
-    int chbin = fResoND->GetAxis(3)->FindBin(ch);
+    float ptgen_tmp = ptgen > fMinPtGen ? ptgen : fMinPtGen;
+    int cenbin = fResoND->GetAxis(0)->FindBin(centrality);
+    int ptbin = fResoND->GetAxis(1)->FindBin(ptgen_tmp);
+    int etabin = fResoND->GetAxis(2)->FindBin(etagen);
+    int phibin = fResoND->GetAxis(3)->FindBin(phigen);
+    int chbin = fResoND->GetAxis(4)->FindBin(ch);
+
+    // protection
+    if (cenbin < 1) {
+      cenbin = 1;
+    } else if (cenbin > fNCenBins) {
+      cenbin = fNCenBins;
+    }
 
     // protection
     if (ptbin < 1) {
       ptbin = 1;
-    } else if (ptbin > npt) {
-      ptbin = npt;
+    } else if (ptbin > fNPtBins) {
+      ptbin = fNPtBins;
     }
 
     // protection
     if (etabin < 1) {
       etabin = 1;
-    } else if (etabin > neta) {
-      etabin = neta;
+    } else if (etabin > fNEtaBins) {
+      etabin = fNEtaBins;
     }
 
     // protection
     if (phibin < 1) {
       phibin = 1;
-    } else if (phibin > nphi) {
-      phibin = nphi;
+    } else if (phibin > fNPhiBins) {
+      phibin = fNPhiBins;
     }
 
     // protection
     if (chbin < 1) {
       chbin = 1;
-    } else if (chbin > nch) {
-      chbin = nch;
+    } else if (chbin > fNChBins) {
+      chbin = fNChBins;
     }
 
-    // ptbin = 1;
-    // etabin = 1;
-    // phibin = 1;
-    // chbin = 1;
-
     double dpt_rel = 0, deta = 0, dphi = 0;
-    if (fVecResoND[ptbin - 1][etabin - 1][phibin - 1][chbin - 1]->GetEntries() > 0) {
-      fVecResoND[ptbin - 1][etabin - 1][phibin - 1][chbin - 1]->GetRandom3(dpt_rel, deta, dphi);
+    if (fVecResoND[cenbin - 1][ptbin - 1][etabin - 1][phibin - 1][chbin - 1]->GetEntries() > 0) {
+      fVecResoND[cenbin - 1][ptbin - 1][etabin - 1][phibin - 1][chbin - 1]->GetRandom3(dpt_rel, deta, dphi);
     }
     ptsmeared = ptgen - dpt_rel * ptgen;
     etasmeared = etagen - deta;
@@ -561,6 +574,7 @@ class MomentumSmearer
     fFromCcdb = true;
   }
   void setTimestamp(int64_t timestamp) { fTimestamp = timestamp; }
+  void setMinPt(float minpt) { fMinPtGen = minpt; }
 
   // getters
   bool getNDSmearing() { return fDoNDSmearing; }
@@ -582,6 +596,7 @@ class MomentumSmearer
   TString getCcdbPathRes() { return fCcdbPathRes; }
   TString getCcdbPathEff() { return fCcdbPathEff; }
   TString getCcdbPathDCA() { return fCcdbPathDCA; }
+  float getMinPt() { return fMinPtGen; }
 
  private:
   bool fInitialized = false;
@@ -607,7 +622,12 @@ class MomentumSmearer
   TH2F* fResoEta;
   TH2F* fResoPhi_Pos;
   TH2F* fResoPhi_Neg;
-  std::vector<std::vector<std::vector<std::vector<TH3D*>>>> fVecResoND;
+  std::vector<std::vector<std::vector<std::vector<std::vector<TH3D*>>>>> fVecResoND;
+  int fNCenBins = 1;
+  int fNPtBins = 1;
+  int fNEtaBins = 1;
+  int fNPhiBins = 1;
+  int fNChBins = 1;
   std::vector<TH1F*> fVecResoPt;
   std::vector<TH1F*> fVecResoEta;
   std::vector<TH1F*> fVecResoPhi_Pos;
@@ -618,6 +638,7 @@ class MomentumSmearer
   int64_t fTimestamp;
   bool fFromCcdb = false;
   Service<ccdb::BasicCCDBManager> fCcdb;
+  float fMinPtGen = -1.f;
 };
 
 #endif // PWGEM_DILEPTON_UTILS_MOMENTUMSMEARER_H_

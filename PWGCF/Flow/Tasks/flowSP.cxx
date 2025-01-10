@@ -478,21 +478,21 @@ struct FlowSP {
         registry.fill(HIST("incl/vnAy_eta"), track.eta(), (uy * qyA) / std::sqrt(std::fabs(corrQQ)));
         registry.fill(HIST("incl/vnCx_eta"), track.eta(), (ux * qxC) / std::sqrt(std::fabs(corrQQ)));
         registry.fill(HIST("incl/vnCy_eta"), track.eta(), (uy * qyC) / std::sqrt(std::fabs(corrQQ)));
-        registry.fill(HIST("incl/vnA_eta"), track.eta(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
+        registry.fill(HIST("incl/vnA_eta"), track.eta(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
         registry.fill(HIST("incl/vnC_eta"), track.eta(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
         registry.fill(HIST("incl/vnAx_pt"), track.pt(), (ux * qxA) / std::sqrt(std::fabs(corrQQ)));
         registry.fill(HIST("incl/vnAy_pt"), track.pt(), (uy * qyA) / std::sqrt(std::fabs(corrQQ)));
         registry.fill(HIST("incl/vnCx_pt"), track.pt(), (ux * qxC) / std::sqrt(std::fabs(corrQQ)));
         registry.fill(HIST("incl/vnCy_pt"), track.pt(), (uy * qyC) / std::sqrt(std::fabs(corrQQ)));
-        registry.fill(HIST("incl/vnA_pt"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
+        registry.fill(HIST("incl/vnA_pt"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
         registry.fill(HIST("incl/vnC_pt"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
         registry.fill(HIST("incl/vnAx_cent"), centrality, (ux * qxA) / std::sqrt(std::fabs(corrQQ)));
         registry.fill(HIST("incl/vnAy_cent"), centrality, (uy * qyA) / std::sqrt(std::fabs(corrQQ)));
         registry.fill(HIST("incl/vnCx_cent"), centrality, (ux * qxC) / std::sqrt(std::fabs(corrQQ)));
         registry.fill(HIST("incl/vnCy_cent"), centrality, (uy * qyC) / std::sqrt(std::fabs(corrQQ)));
-        registry.fill(HIST("incl/vnA_cent"), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
+        registry.fill(HIST("incl/vnA_cent"), centrality, (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
         registry.fill(HIST("incl/vnC_cent"), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
         double vnA = std::cos(cfgHarm * (phi - psiA)) / evPlaneRes;
@@ -516,21 +516,21 @@ struct FlowSP {
           registry.fill(HIST("pos/vnAy_eta"), track.eta(), (uy * qyA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("pos/vnCx_eta"), track.eta(), (ux * qxC) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("pos/vnCy_eta"), track.eta(), (uy * qyC) / std::sqrt(std::fabs(corrQQ)));
-          registry.fill(HIST("pos/vnA_eta"), track.eta(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
+          registry.fill(HIST("pos/vnA_eta"), track.eta(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("pos/vnC_eta"), track.eta(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
           registry.fill(HIST("pos/vnAx_pt"), track.pt(), (ux * qxA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("pos/vnAy_pt"), track.pt(), (uy * qyA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("pos/vnCx_pt"), track.pt(), (ux * qxC) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("pos/vnCy_pt"), track.pt(), (uy * qyC) / std::sqrt(std::fabs(corrQQ)));
-          registry.fill(HIST("pos/vnA_pt"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
+          registry.fill(HIST("pos/vnA_pt"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("pos/vnC_pt"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
           registry.fill(HIST("pos/vnAx_cent"), centrality, (ux * qxA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("pos/vnAy_cent"), centrality, (uy * qyA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("pos/vnCx_cent"), centrality, (ux * qxC) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("pos/vnCy_cent"), centrality, (uy * qyC) / std::sqrt(std::fabs(corrQQ)));
-          registry.fill(HIST("pos/vnA_cent"), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
+          registry.fill(HIST("pos/vnA_cent"), centrality, (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("pos/vnC_cent"), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
           registry.fill(HIST("pos/vnA_eta_EP"), track.eta(), vnA);
@@ -550,20 +550,20 @@ struct FlowSP {
           registry.fill(HIST("neg/vnAy_eta"), track.eta(), (uy * qyA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("neg/vnCx_eta"), track.eta(), (ux * qxC) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("neg/vnCy_eta"), track.eta(), (uy * qyC) / std::sqrt(std::fabs(corrQQ)));
-          registry.fill(HIST("neg/vnA_eta"), track.eta(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
+          registry.fill(HIST("neg/vnA_eta"), track.eta(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("neg/vnC_eta"), track.eta(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
           registry.fill(HIST("neg/vnAx_pt"), track.pt(), (ux * qxA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("neg/vnAy_pt"), track.pt(), (uy * qyA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("neg/vnCx_pt"), track.pt(), (ux * qxC) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("neg/vnCy_pt"), track.pt(), (uy * qyC) / std::sqrt(std::fabs(corrQQ)));
-          registry.fill(HIST("neg/vnA_pt"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
+          registry.fill(HIST("neg/vnA_pt"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("neg/vnC_pt"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("neg/vnAx_cent"), centrality, (ux * qxA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("neg/vnAy_cent"), centrality, (uy * qyA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("neg/vnCx_cent"), centrality, (ux * qxC) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("neg/vnCy_cent"), centrality, (uy * qyC) / std::sqrt(std::fabs(corrQQ)));
-          registry.fill(HIST("neg/vnA_cent"), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
+          registry.fill(HIST("neg/vnA_cent"), centrality, (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("neg/vnC_cent"), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
           registry.fill(HIST("neg/vnA_eta_EP"), track.eta(), vnA);
