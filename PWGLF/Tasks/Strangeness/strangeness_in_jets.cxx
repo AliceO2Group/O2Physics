@@ -1476,8 +1476,8 @@ struct strangeness_in_jets {
           continue;
 
         int pdg_parent(0);
-        for (const auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
-          for (const auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
+        for (const auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {       // o2-linter: disable=[const-ref-in-for-loop]
+          for (const auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {     // o2-linter: disable=[const-ref-in-for-loop]
             for (const auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
               if (particleMotherOfNeg != particleMotherOfPos)
                 continue;
