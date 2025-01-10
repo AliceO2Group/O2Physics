@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no  
+// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "VarManager.h"

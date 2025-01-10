@@ -22,6 +22,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <iostream>
 // other includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
