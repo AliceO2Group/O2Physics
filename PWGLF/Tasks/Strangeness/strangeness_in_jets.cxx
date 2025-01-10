@@ -103,6 +103,28 @@ struct strangeness_in_jets {
   Configurable<float> dcaV0topvMin{"dcaV0topvMin", 0.1f, "Minimum DCA V0 to PV"};
   Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA Daughters"};
 
+  // Re-weighting
+  Configurable<bool> applyReweighting{"applyReweighting", true, "apply reweighting"};
+  Configurable<std::string> url_to_ccdb{"url_to_ccdb", "http://alice-ccdb.cern.ch", "url of the personal ccdb"};
+  Configurable<std::string> path_to_file{"path_to_file", "", "path to file with reweighting"};
+  Configurable<std::string> histo_name_weight_k0_jet{"histo_name_weight_k0_jet", "", "reweighting histogram: K0 in jet"};
+  Configurable<std::string> histo_name_weight_k0_ue{"histo_name_weight_k0_ue", "", "reweighting histogram: K0 in ue"};
+  Configurable<std::string> histo_name_weight_lambda_jet{"histo_name_weight_lambda_jet", "", "reweighting histogram: lambda in jet"};
+  Configurable<std::string> histo_name_weight_lambda_ue{"histo_name_weight_lambda_ue", "", "reweighting histogram: lambda in ue"};
+  Configurable<std::string> histo_name_weight_antilambda_jet{"histo_name_weight_antilambda_jet", "", "reweighting histogram: antilambda in jet"};
+  Configurable<std::string> histo_name_weight_antilambda_ue{"histo_name_weight_antilambda_ue", "", "reweighting histogram: antilambda in ue"};
+
+  // Two-dimensional weights
+  TH2F* twod_weights_k0_jet;
+  TH2F* twod_weights_k0_ue;
+  TH2F* twod_weights_lambda_jet;
+  TH2F* twod_weights_lambda_ue;
+  TH2F* twod_weights_antilambda_jet;
+  TH2F* twod_weights_antilambda_ue;
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi ccdbApi;
+
   // List of Particles
   enum option { vzeros,
                 cascades,
@@ -110,6 +132,23 @@ struct strangeness_in_jets {
 
   void init(InitContext const&)
   {
+    ccdb->setURL(url_to_ccdb.value);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    ccdb->setFatalWhenNull(false);
+
+    if (applyReweighting) {
+      GetReweightingHistograms(ccdb, TString(path_to_file), TString(histo_name_weight_k0_jet), TString(histo_name_weight_k0_ue), TString(histo_name_weight_lambda_jet), TString(histo_name_weight_lambda_ue), TString(histo_name_weight_antilambda_jet), TString(histo_name_weight_antilambda_ue));
+    } else {
+      TH2F* twod_weights_k0_jet = nullptr;
+      TH2F* twod_weights_k0_ue = nullptr;
+      TH2F* twod_weights_lambda_jet = nullptr;
+      TH2F* twod_weights_lambda_ue = nullptr;
+      TH2F* twod_weights_antilambda_jet = nullptr;
+      TH2F* twod_weights_antilambda_ue = nullptr;
+    }
+
     // Event Counters
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
     registryData.add("number_of_events_vsmultiplicity", "number of events in data vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
@@ -172,18 +211,24 @@ struct strangeness_in_jets {
     registryData.add("OmegaNeg_in_ue", "OmegaNeg_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 1.63, 1.71, "m_{p#piK} (GeV/#it{c}^{2})"}});
 
     // Histograms for efficiency (generated)
-    registryMC.add("K0s_generated", "K0s_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
-    registryMC.add("Lambda_generated", "Lambda_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
-    registryMC.add("AntiLambda_generated", "AntiLambda_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("K0s_generated_jet", "K0s_generated_jet", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("K0s_generated_ue", "K0s_generated_ue", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("Lambda_generated_jet", "Lambda_generated_jet", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("Lambda_generated_ue", "Lambda_generated_ue", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("AntiLambda_generated_jet", "AntiLambda_generated_jet", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("AntiLambda_generated_ue", "AntiLambda_generated_ue", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
     registryMC.add("XiPos_generated", "XiPos_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
     registryMC.add("XiNeg_generated", "XiNeg_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
     registryMC.add("OmegaPos_generated", "OmegaPos_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
     registryMC.add("OmegaNeg_generated", "OmegaNeg_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
 
     // Histograms for efficiency (reconstructed)
-    registryMC.add("K0s_reconstructed", "K0s_reconstructed", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
-    registryMC.add("Lambda_reconstructed", "Lambda_reconstructed", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
-    registryMC.add("AntiLambda_reconstructed", "AntiLambda_reconstructed", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("K0s_reconstructed_jet", "K0s_reconstructed_jet", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("K0s_reconstructed_ue", "K0s_reconstructed_ue", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("Lambda_reconstructed_jet", "Lambda_reconstructed_jet", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("Lambda_reconstructed_ue", "Lambda_reconstructed_ue", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("AntiLambda_reconstructed_jet", "AntiLambda_reconstructed_jet", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("AntiLambda_reconstructed_ue", "AntiLambda_reconstructed_ue", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
     registryMC.add("XiPos_reconstructed", "XiPos_reconstructed", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
     registryMC.add("XiNeg_reconstructed", "XiNeg_reconstructed", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
     registryMC.add("OmegaPos_reconstructed", "OmegaPos_reconstructed", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
@@ -208,16 +253,25 @@ struct strangeness_in_jets {
     registryMC.add("Lambda_eta_pt_jet", "Lambda_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
     registryMC.add("Lambda_eta_pt_ue", "Lambda_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
     registryMC.add("Lambda_eta_pt_pythia", "Lambda_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("AntiLambda_eta_pt_jet", "AntiLambda_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("AntiLambda_eta_pt_ue", "AntiLambda_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("AntiLambda_eta_pt_pythia", "AntiLambda_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
 
     // Histograms for 2d reweighting (Xi)
     registryMC.add("Xi_eta_pt_jet", "Xi_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
     registryMC.add("Xi_eta_pt_ue", "Xi_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
     registryMC.add("Xi_eta_pt_pythia", "Xi_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("AntiXi_eta_pt_jet", "AntiXi_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("AntiXi_eta_pt_ue", "AntiXi_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("AntiXi_eta_pt_pythia", "AntiXi_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
 
     // Histograms for 2d reweighting (Omega)
     registryMC.add("Omega_eta_pt_jet", "Omega_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
     registryMC.add("Omega_eta_pt_ue", "Omega_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
     registryMC.add("Omega_eta_pt_pythia", "Omega_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("AntiOmega_eta_pt_jet", "AntiOmega_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("AntiOmega_eta_pt_ue", "AntiOmega_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("AntiOmega_eta_pt_pythia", "AntiOmega_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
 
     // Histograms for efficiency (pions)
     registryMC.add("pi_plus_gen", "pi_plus_gen", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
@@ -766,6 +820,52 @@ struct strangeness_in_jets {
     return false;
   }
 
+  void GetReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histname_k0_jet, TString histname_k0_ue, TString histname_lambda_jet, TString histname_lambda_ue, TString histname_antilambda_jet, TString histname_antilambda_ue)
+  {
+    TList* l = ccdbObj->get<TList>(filepath.Data());
+    if (!l) {
+      LOGP(error, "Could not open the file {}", Form("%s", filepath.Data()));
+        return;
+    }
+    twod_weights_k0_jet = static_cast<TH2F*>(l->FindObject(Form("%s", histname_k0_jet.Data())));
+    if (!twod_weights_k0_jet) {
+      LOGP(error, "Could not open histogram {}", Form("%s", histname_k0_jet.Data()));
+        return;
+    }
+    twod_weights_k0_ue = static_cast<TH2F*>(l->FindObject(Form("%s", histname_k0_ue.Data())));
+    if (!twod_weights_k0_ue) {
+      LOGP(error, "Could not open histogram {}", Form("%s", histname_k0_ue.Data()));
+        return;
+    }
+    twod_weights_lambda_jet = static_cast<TH2F*>(l->FindObject(Form("%s", histname_lambda_jet.Data())));
+    if (!twod_weights_lambda_jet) {
+      LOGP(error, "Could not open histogram {}", Form("%s", histname_lambda_jet.Data()));
+        return;
+    }
+    twod_weights_lambda_ue = static_cast<TH2F*>(l->FindObject(Form("%s", histname_lambda_ue.Data())));
+    if (!twod_weights_lambda_ue) {
+      LOGP(error, "Could not open histogram {}", Form("%s", histname_lambda_ue.Data()));
+        return;
+    }
+    twod_weights_antilambda_jet = static_cast<TH2F*>(l->FindObject(Form("%s", histname_antilambda_jet.Data())));
+    if (!twod_weights_antilambda_jet) {
+      LOGP(error, "Could not open histogram {}", Form("%s", histname_antilambda_jet.Data()));
+        return;
+    }
+    twod_weights_antilambda_ue = static_cast<TH2F*>(l->FindObject(Form("%s", histname_antilambda_ue.Data())));
+      if (!twod_weights_antilambda_ue) {
+        LOGP(error, "Could not open histogram {}", Form("%s", histname_antilambda_ue.Data()));
+          return;
+    }
+
+    LOGP(info, "Opened histogram {}", Form("%s", histname_k0_jet.Data()));
+    LOGP(info, "Opened histogram {}", Form("%s", histname_k0_ue.Data()));
+    LOGP(info, "Opened histogram {}", Form("%s", histname_lambda_jet.Data()));
+    LOGP(info, "Opened histogram {}", Form("%s", histname_lambda_ue.Data()));
+    LOGP(info, "Opened histogram {}", Form("%s", histname_antilambda_jet.Data()));
+    LOGP(info, "Opened histogram {}", Form("%s", histname_antilambda_ue.Data()));
+  }
+    
   void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, StrHadronDaughterTracks const& tracks)
   {
 
@@ -1304,14 +1404,52 @@ struct strangeness_in_jets {
         if (!isPhysPrim)
           continue;
 
+        // Momentum of V0
+        TVector3 momentum_pos(posParticle.px(), posParticle.py(), posParticle.pz());
+        TVector3 momentum_neg(negParticle.px(), negParticle.py(), negParticle.pz());
+        TVector3 momentum_v0 = momentum_pos + momentum_neg;
+
+        double w_k0_jet(1.0), w_k0_ue(1.0), w_lambda_jet(1.0), w_lambda_ue(1.0), w_antilambda_jet(1.0), w_antilambda_ue(1.0);
+        if (applyReweighting) {
+          int ix = twod_weights_k0_jet->GetXaxis()->FindBin(momentum_v0.Pt());
+          int iy = twod_weights_k0_jet->GetYaxis()->FindBin(momentum_v0.Eta());
+          w_k0_jet = twod_weights_k0_jet->GetBinContent(ix, iy);
+          w_k0_ue = twod_weights_k0_ue->GetBinContent(ix, iy);
+          w_lambda_jet = twod_weights_lambda_jet->GetBinContent(ix, iy);
+          w_lambda_ue = twod_weights_lambda_ue->GetBinContent(ix, iy);
+          w_antilambda_jet = twod_weights_antilambda_jet->GetBinContent(ix, iy);
+          w_antilambda_ue = twod_weights_antilambda_ue->GetBinContent(ix, iy);
+
+          // protections
+          if (ix == 0 || ix > twod_weights_k0_jet->GetNbinsX()) {
+            w_k0_jet = 1.0;
+            w_k0_ue = 1.0;
+            w_lambda_jet = 1.0;
+            w_lambda_ue = 1.0;
+            w_antilambda_jet = 1.0;
+            w_antilambda_ue = 1.0;
+          }
+          if (iy == 0 || iy > twod_weights_k0_jet->GetNbinsY()) {
+            w_k0_jet = 1.0;
+            w_k0_ue = 1.0;
+            w_lambda_jet = 1.0;
+            w_lambda_ue = 1.0;
+            w_antilambda_jet = 1.0;
+            w_antilambda_ue = 1.0;
+          }
+        }
+
         if (passedK0ShortSelection(v0, pos, neg) && pdg_parent == 310) {
-          registryMC.fill(HIST("K0s_reconstructed"), multiplicity, v0.pt());
+          registryMC.fill(HIST("K0s_reconstructed_jet"), multiplicity, v0.pt(), w_k0_jet);
+          registryMC.fill(HIST("K0s_reconstructed_ue"), multiplicity, v0.pt(), w_k0_ue);
         }
         if (passedLambdaSelection(v0, pos, neg) && pdg_parent == 3122) {
-          registryMC.fill(HIST("Lambda_reconstructed"), multiplicity, v0.pt());
+          registryMC.fill(HIST("Lambda_reconstructed_jet"), multiplicity, v0.pt(), w_lambda_jet);
+          registryMC.fill(HIST("Lambda_reconstructed_ue"), multiplicity, v0.pt(), w_lambda_ue);
         }
         if (passedAntiLambdaSelection(v0, pos, neg) && pdg_parent == -3122) {
-          registryMC.fill(HIST("AntiLambda_reconstructed"), multiplicity, v0.pt());
+          registryMC.fill(HIST("AntiLambda_reconstructed_jet"), multiplicity, v0.pt(), w_antilambda_jet);
+          registryMC.fill(HIST("AntiLambda_reconstructed_ue"), multiplicity, v0.pt(), w_antilambda_ue);
         }
       }
 
@@ -1432,6 +1570,36 @@ struct strangeness_in_jets {
         if (!mcParticle.isPhysicalPrimary())
           continue;
 
+        double w_k0_jet(1.0), w_k0_ue(1.0), w_lambda_jet(1.0), w_lambda_ue(1.0), w_antilambda_jet(1.0), w_antilambda_ue(1.0);
+        if (applyReweighting) {
+          int ix = twod_weights_k0_jet->GetXaxis()->FindBin(mcParticle.pt());
+          int iy = twod_weights_k0_jet->GetYaxis()->FindBin(mcParticle.eta());
+          w_k0_jet = twod_weights_k0_jet->GetBinContent(ix, iy);
+          w_k0_ue = twod_weights_k0_ue->GetBinContent(ix, iy);
+          w_lambda_jet = twod_weights_lambda_jet->GetBinContent(ix, iy);
+          w_lambda_ue = twod_weights_lambda_ue->GetBinContent(ix, iy);
+          w_antilambda_jet = twod_weights_antilambda_jet->GetBinContent(ix, iy);
+          w_antilambda_ue = twod_weights_antilambda_ue->GetBinContent(ix, iy);
+
+          // protections
+          if (ix == 0 || ix > twod_weights_k0_jet->GetNbinsX()) {
+            w_k0_jet = 1.0;
+            w_k0_ue = 1.0;
+            w_lambda_jet = 1.0;
+            w_lambda_ue = 1.0;
+            w_antilambda_jet = 1.0;
+            w_antilambda_ue = 1.0;
+          }
+          if (iy == 0 || iy > twod_weights_k0_jet->GetNbinsY()) {
+            w_k0_jet = 1.0;
+            w_k0_ue = 1.0;
+            w_lambda_jet = 1.0;
+            w_lambda_ue = 1.0;
+            w_antilambda_jet = 1.0;
+            w_antilambda_ue = 1.0;
+          }
+        }
+          
         // Pi+
         if (mcParticle.pdgCode() == 211) {
           registryMC.fill(HIST("pi_plus_gen"), multiplicity, mcParticle.pt());
@@ -1442,18 +1610,21 @@ struct strangeness_in_jets {
         }
         // K0s
         if (mcParticle.pdgCode() == 310) {
-          registryMC.fill(HIST("K0s_generated"), multiplicity, mcParticle.pt());
+          registryMC.fill(HIST("K0s_generated_jet"), multiplicity, mcParticle.pt(), w_k0_jet);
+          registryMC.fill(HIST("K0s_generated_ue"), multiplicity, mcParticle.pt(), w_k0_ue);
           registryMC.fill(HIST("K0s_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
         }
         // Lambda
         if (mcParticle.pdgCode() == 3122) {
-          registryMC.fill(HIST("Lambda_generated"), multiplicity, mcParticle.pt());
+          registryMC.fill(HIST("Lambda_generated_jet"), multiplicity, mcParticle.pt(), w_lambda_jet);
+          registryMC.fill(HIST("Lambda_generated_ue"), multiplicity, mcParticle.pt(), w_lambda_ue);
           registryMC.fill(HIST("Lambda_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
         }
         // AntiLambda
         if (mcParticle.pdgCode() == -3122) {
-          registryMC.fill(HIST("AntiLambda_generated"), multiplicity, mcParticle.pt());
-          registryMC.fill(HIST("Lambda_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+          registryMC.fill(HIST("AntiLambda_generated_jet"), multiplicity, mcParticle.pt(), w_antilambda_jet);
+          registryMC.fill(HIST("AntiLambda_generated_ue"), multiplicity, mcParticle.pt(), w_antilambda_ue);
+          registryMC.fill(HIST("AntiLambda_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
         }
         // Xi Pos
         if (mcParticle.pdgCode() == -3312) {
@@ -1463,7 +1634,7 @@ struct strangeness_in_jets {
         // Xi Neg
         if (mcParticle.pdgCode() == 3312) {
           registryMC.fill(HIST("XiNeg_generated"), multiplicity, mcParticle.pt());
-          registryMC.fill(HIST("Xi_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+          registryMC.fill(HIST("AntiXi_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
         }
         // Omega Pos
         if (mcParticle.pdgCode() == -3334) {
@@ -1473,7 +1644,7 @@ struct strangeness_in_jets {
         // Omega Neg
         if (mcParticle.pdgCode() == 3334) {
           registryMC.fill(HIST("OmegaNeg_generated"), multiplicity, mcParticle.pt());
-          registryMC.fill(HIST("Omega_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+          registryMC.fill(HIST("AntiOmega_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
         }
       }
     }
@@ -1500,22 +1671,6 @@ struct strangeness_in_jets {
       for (auto& particle : mcParticles_per_coll) {
 
         int pdg = TMath::Abs(particle.pdgCode());
-
-        if (particle.isPhysicalPrimary() && pdg == 211) {
-          registryMC.fill(HIST("Pion_eta_pt_pythia"), particle.pt(), particle.eta());
-        }
-        if (particle.isPhysicalPrimary() && pdg == 310) {
-          registryMC.fill(HIST("K0s_eta_pt_pythia"), particle.pt(), particle.eta());
-        }
-        if (particle.isPhysicalPrimary() && pdg == 3122) {
-          registryMC.fill(HIST("Lambda_eta_pt_pythia"), particle.pt(), particle.eta());
-        }
-        if (particle.isPhysicalPrimary() && pdg == 3312) {
-          registryMC.fill(HIST("Xi_eta_pt_pythia"), particle.pt(), particle.eta());
-        }
-        if (particle.isPhysicalPrimary() && pdg == 3334) {
-          registryMC.fill(HIST("Omega_eta_pt_pythia"), particle.pt(), particle.eta());
-        }
 
         // Select Primary Particles
         double dx = particle.vx() - mccollision.posX();
@@ -1710,6 +1865,14 @@ struct strangeness_in_jets {
               registryMC.fill(HIST("Lambda_eta_pt_ue"), particle.pt(), particle.eta());
             }
           }
+          if (pdg == -3122) {
+            if (deltaR_jet < Rjet) {
+              registryMC.fill(HIST("AntiLambda_eta_pt_jet"), particle.pt(), particle.eta());
+            }
+            if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
+              registryMC.fill(HIST("AntiLambda_eta_pt_ue"), particle.pt(), particle.eta());
+            }
+          }
           if (pdg == 3312) {
             if (deltaR_jet < Rjet) {
               registryMC.fill(HIST("Xi_eta_pt_jet"), particle.pt(), particle.eta());
@@ -1718,12 +1881,28 @@ struct strangeness_in_jets {
               registryMC.fill(HIST("Xi_eta_pt_ue"), particle.pt(), particle.eta());
             }
           }
+          if (pdg == -3312) {
+            if (deltaR_jet < Rjet) {
+              registryMC.fill(HIST("AntiXi_eta_pt_jet"), particle.pt(), particle.eta());
+            }
+            if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
+              registryMC.fill(HIST("AntiXi_eta_pt_ue"), particle.pt(), particle.eta());
+            }
+          }
           if (pdg == 3334) {
             if (deltaR_jet < Rjet) {
               registryMC.fill(HIST("Omega_eta_pt_jet"), particle.pt(), particle.eta());
             }
             if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
               registryMC.fill(HIST("Omega_eta_pt_ue"), particle.pt(), particle.eta());
+            }
+          }
+          if (pdg == -3334) {
+            if (deltaR_jet < Rjet) {
+              registryMC.fill(HIST("AntiOmega_eta_pt_jet"), particle.pt(), particle.eta());
+            }
+            if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
+              registryMC.fill(HIST("AntiOmega_eta_pt_ue"), particle.pt(), particle.eta());
             }
           }
         }
