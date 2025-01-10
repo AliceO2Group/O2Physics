@@ -40,7 +40,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-template <typename JetTable, typename SVIndicesTable, typename SVTable, typename JetTaggingTable>
+template <bool isMCD, typename JetTable, typename SVIndicesTable, typename SVTable, typename JetTaggingTable>
 struct JetTaggerHFTask {
   static constexpr double DefaultCutsMl[1][2] = {{0.5, 0.5}};
 
@@ -173,6 +173,30 @@ struct JetTaggerHFTask {
     }
   }
 
+  template <bool isMC, typename T, typename U>
+  void fillTables(T const& jet, U const& tracks)
+  {
+    int origin = -1;
+    float jetProb = -1.0;
+    if constexpr (isMC) {
+      origin = jet.origin();
+    }
+    if (useJetProb) {
+      if constexpr (isMC) {
+        jetProb = calculateJetProbability(origin, jet, tracks);
+        if (trackProbQA) {
+          evaluateTrackProbQA(origin, jet, tracks, isMC);
+        }
+      } else {
+        jetProb = calculateJetProbability(0, jet, tracks);
+        if (trackProbQA) {
+          evaluateTrackProbQA(0, jet, tracks, isMC);
+        }
+      }
+    }
+    taggingTable(decisionNonML[jet.globalIndex()], jetProb, scoreML[jet.globalIndex()]);
+  }
+
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(InitContext const&)
   {
@@ -241,13 +265,14 @@ struct JetTaggerHFTask {
     if (trackProbQA) {
       AxisSpec trackProbabilityAxis = {binTrackProbability, "Track proability"};
       AxisSpec jetFlavourAxis = {binJetFlavour, "Jet flavour"};
-      if (doprocessFillTablesData) {
-        registry.add("h_pos_track_probability", "positive track probability", {HistType::kTH1F, {{trackProbabilityAxis}}});
-        registry.add("h_neg_track_probability", "negative track probability", {HistType::kTH1F, {{trackProbabilityAxis}}});
-      }
-      if (doprocessFillTablesMCD) {
-        registry.add("h2_pos_track_probability_flavour", "positive track probability", {HistType::kTH2F, {{trackProbabilityAxis}, {jetFlavourAxis}}});
-        registry.add("h2_neg_track_probability_flavour", "negative track probability", {HistType::kTH2F, {{trackProbabilityAxis}, {jetFlavourAxis}}});
+      if (doprocessFillTables) {
+        if (isMCD) {
+          registry.add("h2_pos_track_probability_flavour", "positive track probability", {HistType::kTH2F, {{trackProbabilityAxis}, {jetFlavourAxis}}});
+          registry.add("h2_neg_track_probability_flavour", "negative track probability", {HistType::kTH2F, {{trackProbabilityAxis}, {jetFlavourAxis}}});
+        } else {
+          registry.add("h_pos_track_probability", "positive track probability", {HistType::kTH1F, {{trackProbabilityAxis}}});
+          registry.add("h_neg_track_probability", "negative track probability", {HistType::kTH1F, {{trackProbabilityAxis}}});
+        }
       }
     }
 
@@ -329,41 +354,20 @@ struct JetTaggerHFTask {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processAlgorithmML, "Fill ML evaluation score for charged jets", false);
 
-  void processFillTablesData(JetTable::iterator const& jet, JetTracksExt const& tracks)
+  void processFillTables(std::conditional_t<isMCD, soa::Join<JetTable, aod::ChargedMCDetectorLevelJetFlavourDef>, JetTable>::iterator const& jet, JetTracksExt const& tracks)
   {
-    float jetProb = -1.0;
-    if (useJetProb) {
-      jetProb = calculateJetProbability(0, jet, tracks, false);
-      if (trackProbQA) {
-        evaluateTrackProbQA(0, jet, tracks, false);
-      }
-    }
-    taggingTable(decisionNonML[jet.globalIndex()], jetProb, scoreML[jet.globalIndex()]);
+    fillTables<isMCD>(jet, tracks);
   }
-  PROCESS_SWITCH(JetTaggerHFTask, processFillTablesData, "Fill Tables for tagging decision, jet probability, and ML score on charged jets in data", false);
-
-  void processFillTablesMCD(soa::Join<JetTable, aod::ChargedMCDetectorLevelJetFlavourDef>::iterator const& jet, JetTracksExt const& tracks)
-  {
-    float jetProb = -1.0;
-    int origin = jet.origin();
-    if (useJetProb) {
-      jetProb = calculateJetProbability(origin, jet, tracks);
-      if (trackProbQA) {
-        evaluateTrackProbQA(origin, jet, tracks);
-      }
-    }
-    taggingTable(decisionNonML[jet.globalIndex()], jetProb, scoreML[jet.globalIndex()]);
-  }
-  PROCESS_SWITCH(JetTaggerHFTask, processFillTablesMCD, "Fill Tables for tagging decision, jet probability, and ML score on charged jets in MC", false);
+  PROCESS_SWITCH(JetTaggerHFTask, processFillTables, "Fill Tables for tagging decision, jet probability, and ML score on charged jets", false);
 };
 
-using JetTaggerhfDataCharged = JetTaggerHFTask<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, aod::DataSecondaryVertex3ProngIndices, aod::DataSecondaryVertex3Prongs, aod::ChargedJetTags>;
-using JetTaggerhfMCDCharged = JetTaggerHFTask<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::MCDSecondaryVertex3ProngIndices, aod::MCDSecondaryVertex3Prongs, aod::ChargedMCDetectorLevelJetTags>;
+using JetTaggerhfDataCharged = JetTaggerHFTask<false, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, aod::DataSecondaryVertex3ProngIndices, aod::DataSecondaryVertex3Prongs, aod::ChargedJetTags>;
+using JetTaggerhfMCDCharged = JetTaggerHFTask<true, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::MCDSecondaryVertex3ProngIndices, aod::MCDSecondaryVertex3Prongs, aod::ChargedMCDetectorLevelJetTags>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
 
   return WorkflowSpec{
-    adaptAnalysisTask<JetTaggerhfDataCharged>(cfgc, TaskName{"jet-taggerhf-data-charged"}),
-    adaptAnalysisTask<JetTaggerhfMCDCharged>(cfgc, TaskName{"jet-taggerhf-mcd-charged"})};
+    adaptAnalysisTask<JetTaggerhfDataCharged>(cfgc, SetDefaultProcesses{}, TaskName{"jet-taggerhf-data-charged"}),
+    adaptAnalysisTask<JetTaggerhfMCDCharged>(cfgc, SetDefaultProcesses{}, TaskName{"jet-taggerhf-mcd-charged"})};
 }
