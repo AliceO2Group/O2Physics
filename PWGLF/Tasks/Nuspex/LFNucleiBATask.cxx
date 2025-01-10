@@ -2147,6 +2147,8 @@ struct LFNucleiBATask {
       }
 
       float nITSTr, nITSHe;
+      nITSTr = track.itsNSigmaTr();
+      nITSHe = track.itsNSigmaHe();
 
       heP = track.p();
       antiheP = track.p();
@@ -2313,8 +2315,8 @@ struct LFNucleiBATask {
         isHe = isHelium && track.sign() > 0;
         isAntiHe = isHelium && track.sign() < 0;
       } else {
-        isHe = isHelium && track.sign() > 0 && std::abs(track.itsNSigmaTr()) > nsigmaITSvar.nsigmaITSTr;
-        isAntiHe = isHelium && track.sign() < 0 && std::abs(track.itsNSigmaTr()) > nsigmaITSvar.nsigmaITSTr;
+        isHe = isHelium && track.sign() > 0 && std::abs(nITSTr) > nsigmaITSvar.nsigmaITSTr;
+        isAntiHe = isHelium && track.sign() < 0 && std::abs(nITSTr) > nsigmaITSvar.nsigmaITSTr;
       }
 
       isDeWoDCAxy = isDe && passDCAzCutDe;
@@ -3468,9 +3470,6 @@ struct LFNucleiBATask {
       if (isPVContributorCut && !track.isPVContributor()) {
         continue;
       }
-
-      nITSTr = track.itsNSigmaTr();
-      nITSHe = track.itsNSigmaHe();
 
       if (outFlagOptions.makeDCAAfterCutPlots) {
 
