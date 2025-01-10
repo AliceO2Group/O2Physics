@@ -145,12 +145,12 @@ struct strangeness_in_jets {
     if (applyReweighting) {
       GetReweightingHistograms(ccdb, TString(path_to_file), TString(histo_name_weight_k0_jet), TString(histo_name_weight_k0_ue), TString(histo_name_weight_lambda_jet), TString(histo_name_weight_lambda_ue), TString(histo_name_weight_antilambda_jet), TString(histo_name_weight_antilambda_ue));
     } else {
-      TH2F* twod_weights_k0_jet = nullptr;
-      TH2F* twod_weights_k0_ue = nullptr;
-      TH2F* twod_weights_lambda_jet = nullptr;
-      TH2F* twod_weights_lambda_ue = nullptr;
-      TH2F* twod_weights_antilambda_jet = nullptr;
-      TH2F* twod_weights_antilambda_ue = nullptr;
+      twod_weights_k0_jet = nullptr;
+      twod_weights_k0_ue = nullptr;
+      twod_weights_lambda_jet = nullptr;
+      twod_weights_lambda_ue = nullptr;
+      twod_weights_antilambda_jet = nullptr;
+      twod_weights_antilambda_ue = nullptr;
     }
 
     // Event Counters
