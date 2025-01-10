@@ -190,7 +190,7 @@ struct PhosElId {
     PhosShiftZ[2] = vPhosShiftZ.at(2);
     PhosShiftZ[3] = vPhosShiftZ.at(3);
 
-    const axisSpec
+    const AxisSpec
       axisCounter{1, 0, +1, ""},
       axisP{momentumBinning, "p (GeV/c)"},
       axisPt{momentumBinning, "p_{T} (GeV/c)"},
@@ -617,7 +617,7 @@ struct MassSpectra {
                                            1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
                                            4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
 
-    const axisSpec
+    const AxisSpec
       axisCounter{1, 0, +1, ""},
       axisPt{momentumBinning, "p_{T} (GeV/c)"},
       axisEp{200, 0., 2., "E/p", "E_{cluster}/p_{track}"},
@@ -827,7 +827,7 @@ struct TpcElIdMassSpectrum {
     std::vector<double> momentumBinning = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
                                            1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
                                            4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
-    const axisSpec
+    const AxisSpec
       axisCounter{1, 0, +1, ""},
       axisVTrackX{400, -5., 5., "track vertex x (cm)", "track vertex x (cm)"},
       axisVTrackY{400, -5., 5., "track vertex y (cm)", "track vertex y (cm)"},
