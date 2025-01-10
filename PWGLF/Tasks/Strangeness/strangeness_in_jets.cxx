@@ -155,8 +155,8 @@ struct strangeness_in_jets {
     registryMC.add("number_of_events_mc", "number of events in mc", HistType::kTH1D, {{10, 0, 10, "Event Cuts"}});
 
     // QC Histograms
-    registryQC.add("deltaEtadeltaPhi_jet", "deltaEtadeltaPhi_jet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
-    registryQC.add("deltaEtadeltaPhi_ue", "deltaEtadeltaPhi_ue", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
+    registryQC.add("deltaEtadeltaPhi_jet", "deltaEtadeltaPhi_jet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * o2::constants::math::PI, "#Delta#phi"}});
+    registryQC.add("deltaEtadeltaPhi_ue", "deltaEtadeltaPhi_ue", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * o2::constants::math::PI, "#Delta#phi"}});
     registryQC.add("NchJetPlusUE", "NchJetPlusUE", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
     registryQC.add("NchJet", "NchJet", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
     registryQC.add("NchUE", "NchUE", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
@@ -307,9 +307,9 @@ struct strangeness_in_jets {
       return false;
     if (track.pt() < 0.15)
       return false;
-    if (TMath::Abs(track.dcaXY()) > (par0 + par1 / track.pt()))
+    if (std::fabs(track.dcaXY()) > (par0 + par1 / track.pt()))
       return false;
-    if (TMath::Abs(track.dcaZ()) > (par0 + par1 / track.pt()))
+    if (std::fabs(track.dcaZ()) > (par0 + par1 / track.pt()))
       return false;
     return true;
   }
@@ -333,7 +333,7 @@ struct strangeness_in_jets {
       return false;
     if (track.eta() < etaMin || track.eta() > etaMax)
       return false;
-    if (TMath::Abs(track.dcaZ()) > dcazMax)
+    if (std::fabs(track.dcaZ()) > dcazMax)
       return false;
     return true;
   }
@@ -368,9 +368,9 @@ struct strangeness_in_jets {
       return false;
     if (v0.dcaV0daughters() > dcaV0DaughtersMax)
       return false;
-    if (TMath::Abs(v0.dcapostopv()) < dcapostoPVmin)
+    if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
       return false;
-    if (TMath::Abs(v0.dcanegtopv()) < dcanegtoPVmin)
+    if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
       return false;
 
     // PID Selections (TPC)
@@ -419,9 +419,9 @@ struct strangeness_in_jets {
       return false;
     if (v0.dcaV0daughters() > dcaV0DaughtersMax)
       return false;
-    if (TMath::Abs(v0.dcapostopv()) < dcapostoPVmin)
+    if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
       return false;
-    if (TMath::Abs(v0.dcanegtopv()) < dcanegtoPVmin)
+    if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
       return false;
 
     // PID Selections (TPC)
@@ -470,9 +470,9 @@ struct strangeness_in_jets {
       return false;
     if (v0.dcaV0daughters() > dcaV0DaughtersMax)
       return false;
-    if (TMath::Abs(v0.dcapostopv()) < dcapostoPVmin)
+    if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
       return false;
-    if (TMath::Abs(v0.dcanegtopv()) < dcanegtoPVmin)
+    if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
       return false;
 
     // PID Selections (TPC)
@@ -716,9 +716,9 @@ struct strangeness_in_jets {
   template <typename pionTrack>
   bool isHighPurityPion(const pionTrack& track)
   {
-    if (track.p() < 0.6 && TMath::Abs(track.tpcNSigmaPi()) < 3.0)
+    if (track.p() < 0.6 && std::fabs(track.tpcNSigmaPi()) < 3.0)
       return true;
-    if (track.p() > 0.6 && TMath::Abs(track.tpcNSigmaPi()) < 3.0 && TMath::Abs(track.tofNSigmaPi()) < 3.0)
+    if (track.p() > 0.6 && std::fabs(track.tpcNSigmaPi()) < 3.0 && std::fabs(track.tofNSigmaPi()) < 3.0)
       return true;
     return false;
   }
@@ -738,12 +738,12 @@ struct strangeness_in_jets {
     double delta_phi(0);
     double phi1 = TVector2::Phi_0_2pi(a1);
     double phi2 = TVector2::Phi_0_2pi(a2);
-    double diff = TMath::Abs(phi1 - phi2);
+    double diff = std::fabs(phi1 - phi2);
 
-    if (diff <= TMath::Pi())
+    if (diff <= o2::constants::math::PI)
       delta_phi = diff;
-    if (diff > TMath::Pi())
-      delta_phi = TMath::TwoPi() - diff;
+    if (diff > o2::constants::math::PI)
+      delta_phi = 2.0 * o2::constants::math::PI - diff;
 
     return delta_phi;
   }
@@ -762,7 +762,7 @@ struct strangeness_in_jets {
     if (px == 0 && py != 0) {
 
       uy = -(pz * pz) / py;
-      ux = sign * sqrt(py * py - (pz * pz * pz * pz) / (py * py));
+      ux = sign * std::sqrt(py * py - (pz * pz * pz * pz) / (py * py));
       uz = pz;
       u.SetXYZ(ux, uy, uz);
       return;
@@ -772,7 +772,7 @@ struct strangeness_in_jets {
     if (py == 0 && px != 0) {
 
       ux = -(pz * pz) / px;
-      uy = sign * sqrt(px * px - (pz * pz * pz * pz) / (px * px));
+      uy = sign * std::sqrt(px * px - (pz * pz * pz * pz) / (px * px));
       uz = pz;
       u.SetXYZ(ux, uy, uz);
       return;
@@ -790,7 +790,7 @@ struct strangeness_in_jets {
     }
 
     // Solutions
-    ux = (-b + sign * sqrt(delta)) / (2.0 * a);
+    ux = (-b + sign * std::sqrt(delta)) / (2.0 * a);
     uy = (-pz * pz - px * ux) / py;
     uz = pz;
     u.SetXYZ(ux, uy, uz);
@@ -814,7 +814,7 @@ struct strangeness_in_jets {
   {
     double dx = v1.Eta() - v2.Eta();
     double dy = GetDeltaPhi(v1.Phi(), v2.Phi());
-    double d = sqrt(dx * dx + dy * dy);
+    double d = std::sqrt(dx * dx + dy * dy);
     if (d < 2.0 * R)
       return true;
     return false;
@@ -880,7 +880,7 @@ struct strangeness_in_jets {
     registryData.fill(HIST("number_of_events_data"), 1.5);
 
     // Cut on z-vertex
-    if (TMath::Abs(collision.posZ()) > zVtx)
+    if (std::fabs(collision.posZ()) > zVtx)
       return;
 
     // Event Counter: after z-vertex cut
@@ -948,7 +948,7 @@ struct strangeness_in_jets {
     int n_jets_selected(0);
     for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
-      if ((TMath::Abs(jet[i].Eta()) + Rjet) > etaMax)
+      if ((std::fabs(jet[i].Eta()) + Rjet) > etaMax)
         continue;
 
       // Perpendicular cones
@@ -974,13 +974,13 @@ struct strangeness_in_jets {
 
         double deltaEta_jet = sel_track.Eta() - jet[i].Eta();
         double deltaPhi_jet = GetDeltaPhi(sel_track.Phi(), jet[i].Phi());
-        double deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+        double deltaR_jet = std::sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
         double deltaEta_ue1 = sel_track.Eta() - ue_axis1.Eta();
         double deltaPhi_ue1 = GetDeltaPhi(sel_track.Phi(), ue_axis1.Phi());
-        double deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+        double deltaR_ue1 = std::sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
         double deltaEta_ue2 = sel_track.Eta() - ue_axis2.Eta();
         double deltaPhi_ue2 = GetDeltaPhi(sel_track.Phi(), ue_axis2.Phi());
-        double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+        double deltaR_ue2 = std::sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
         if (deltaR_jet < Rjet) {
           registryQC.fill(HIST("deltaEtadeltaPhi_jet"), deltaEta_jet, deltaPhi_jet);
@@ -1063,13 +1063,13 @@ struct strangeness_in_jets {
 
           float deltaEta_jet = v0dir.Eta() - jet[i].Eta();
           float deltaPhi_jet = GetDeltaPhi(v0dir.Phi(), jet[i].Phi());
-          float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+          float deltaR_jet = std::sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
           float deltaEta_ue1 = v0dir.Eta() - ue1[i].Eta();
           float deltaPhi_ue1 = GetDeltaPhi(v0dir.Phi(), ue1[i].Phi());
-          float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+          float deltaR_ue1 = std::sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
           float deltaEta_ue2 = v0dir.Eta() - ue2[i].Eta();
           float deltaPhi_ue2 = GetDeltaPhi(v0dir.Phi(), ue2[i].Phi());
-          float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+          float deltaR_ue2 = std::sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
           // K0s
           if (passedK0ShortSelection(v0, pos, neg)) {
@@ -1112,13 +1112,13 @@ struct strangeness_in_jets {
           TVector3 cascade_dir(casc.px(), casc.py(), casc.pz());
           float deltaEta_jet = cascade_dir.Eta() - jet[i].Eta();
           float deltaPhi_jet = GetDeltaPhi(cascade_dir.Phi(), jet[i].Phi());
-          float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+          float deltaR_jet = std::sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
           float deltaEta_ue1 = cascade_dir.Eta() - ue1[i].Eta();
           float deltaPhi_ue1 = GetDeltaPhi(cascade_dir.Phi(), ue1[i].Phi());
-          float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+          float deltaR_ue1 = std::sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
           float deltaEta_ue2 = cascade_dir.Eta() - ue2[i].Eta();
           float deltaPhi_ue2 = GetDeltaPhi(cascade_dir.Phi(), ue2[i].Phi());
-          float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+          float deltaR_ue2 = std::sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
           // Xi+
           if (passedXiSelection(casc, pos, neg, bach, collision) &&
@@ -1173,13 +1173,13 @@ struct strangeness_in_jets {
           TVector3 track_dir(track.px(), track.py(), track.pz());
           float deltaEta_jet = track_dir.Eta() - jet[i].Eta();
           float deltaPhi_jet = GetDeltaPhi(track_dir.Phi(), jet[i].Phi());
-          float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+          float deltaR_jet = std::sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
           float deltaEta_ue1 = track_dir.Eta() - ue1[i].Eta();
           float deltaPhi_ue1 = GetDeltaPhi(track_dir.Phi(), ue1[i].Phi());
-          float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+          float deltaR_ue1 = std::sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
           float deltaEta_ue2 = track_dir.Eta() - ue2[i].Eta();
           float deltaPhi_ue2 = GetDeltaPhi(track_dir.Phi(), ue2[i].Phi());
-          float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+          float deltaR_ue2 = std::sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
           bool isInJet = false;
           bool isInUe = false;
@@ -1202,7 +1202,7 @@ struct strangeness_in_jets {
           }
 
           // DCAxy Selection
-          if (TMath::Abs(track.dcaXY()) > dcaxyMax)
+          if (std::fabs(track.dcaXY()) > dcaxyMax)
             continue;
 
           // TPC
@@ -1248,7 +1248,7 @@ struct strangeness_in_jets {
     if (!collision.sel8())
       return;
     registryData.fill(HIST("number_of_events_data"), 11.5);
-    if (TMath::Abs(collision.posZ()) > zVtx)
+    if (std::fabs(collision.posZ()) > zVtx)
       return;
     registryData.fill(HIST("number_of_events_data"), 12.5);
 
@@ -1300,11 +1300,11 @@ struct strangeness_in_jets {
         continue;
       registryQC.fill(HIST("survivedK0"), 9.5);
 
-      if (TMath::Abs(v0.dcapostopv()) < dcapostoPVmin)
+      if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
         continue;
       registryQC.fill(HIST("survivedK0"), 10.5);
 
-      if (TMath::Abs(v0.dcanegtopv()) < dcanegtoPVmin)
+      if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
         continue;
       registryQC.fill(HIST("survivedK0"), 11.5);
 
@@ -1352,7 +1352,7 @@ struct strangeness_in_jets {
         continue;
 
       registryMC.fill(HIST("number_of_events_mc"), 1.5);
-      if (TMath::Abs(collision.posZ()) > 10.0)
+      if (std::fabs(collision.posZ()) > 10.0)
         continue;
 
       registryMC.fill(HIST("number_of_events_mc"), 2.5);
@@ -1482,7 +1482,7 @@ struct strangeness_in_jets {
             for (auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) {
               if (particleMotherOfNeg != particleMotherOfPos)
                 continue;
-              if (TMath::Abs(particleMotherOfNeg.pdgCode()) != 3122)
+              if (std::fabs(particleMotherOfNeg.pdgCode()) != 3122)
                 continue;
               if (!particleMotherOfBach.isPhysicalPrimary())
                 continue;
@@ -1522,7 +1522,7 @@ struct strangeness_in_jets {
           continue;
 
         const auto particle = track.mcParticle();
-        if (TMath::Abs(particle.pdgCode()) != 211)
+        if (std::fabs(particle.pdgCode()) != 211)
           continue;
 
         if (particle.isPhysicalPrimary()) {
@@ -1538,7 +1538,7 @@ struct strangeness_in_jets {
             registryMC.fill(HIST("piminus_dcaxy_sec"), multiplicity, track.pt(), track.dcaXY());
         }
 
-        if (TMath::Abs(track.dcaXY()) > dcaxyMax)
+        if (std::fabs(track.dcaXY()) > dcaxyMax)
           continue;
 
         if (track.tpcNSigmaPi() < nsigmaTPCmin || track.tpcNSigmaPi() > nsigmaTPCmax)
@@ -1658,7 +1658,7 @@ struct strangeness_in_jets {
       registryMC.fill(HIST("number_of_events_mc"), 3.5);
 
       // Selection on z_{vertex}
-      if (TMath::Abs(mccollision.posZ()) > 10)
+      if (std::fabs(mccollision.posZ()) > 10)
         continue;
       registryMC.fill(HIST("number_of_events_mc"), 4.5);
 
@@ -1670,21 +1670,21 @@ struct strangeness_in_jets {
 
       for (auto& particle : mcParticles_per_coll) {
 
-        int pdg = TMath::Abs(particle.pdgCode());
+        int pdg = std::fabs(particle.pdgCode());
 
         // Select Primary Particles
         double dx = particle.vx() - mccollision.posX();
         double dy = particle.vy() - mccollision.posY();
         double dz = particle.vz() - mccollision.posZ();
-        double dcaxy = sqrt(dx * dx + dy * dy);
-        double dcaz = TMath::Abs(dz);
+        double dcaxy = std::sqrt(dx * dx + dy * dy);
+        double dcaz = std::fabs(dz);
         if (particle.pt() < 0.15)
           continue;
         if (dcaxy > (par0 + par1 / particle.pt()))
           continue;
         if (dcaz > (par0 + par1 / particle.pt()))
           continue;
-        if (TMath::Abs(particle.eta()) > 0.8)
+        if (std::fabs(particle.eta()) > 0.8)
           continue;
 
         // PDG Selection
@@ -1744,7 +1744,7 @@ struct strangeness_in_jets {
       int n_jets_selected(0);
       for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
-        if ((TMath::Abs(jet[i].Eta()) + Rjet) > etaMax)
+        if ((std::fabs(jet[i].Eta()) + Rjet) > etaMax)
           continue;
 
         // Perpendicular cones
@@ -1766,19 +1766,19 @@ struct strangeness_in_jets {
           double dx = particle.vx() - mccollision.posX();
           double dy = particle.vy() - mccollision.posY();
           double dz = particle.vz() - mccollision.posZ();
-          double dcaxy = sqrt(dx * dx + dy * dy);
-          double dcaz = TMath::Abs(dz);
+          double dcaxy = std::sqrt(dx * dx + dy * dy);
+          double dcaz = std::fabs(dz);
           if (particle.pt() < 0.15)
             continue;
           if (dcaxy > (par0 + par1 / particle.pt()))
             continue;
           if (dcaz > (par0 + par1 / particle.pt()))
             continue;
-          if (TMath::Abs(particle.eta()) > 0.8)
+          if (std::fabs(particle.eta()) > 0.8)
             continue;
 
           // PDG Selection
-          int pdg = TMath::Abs(particle.pdgCode());
+          int pdg = std::fabs(particle.pdgCode());
           if ((pdg != 11) && (pdg != 211) && (pdg != 321) && (pdg != 2212))
             continue;
 
@@ -1786,13 +1786,13 @@ struct strangeness_in_jets {
 
           double deltaEta_jet = sel_track.Eta() - jet[i].Eta();
           double deltaPhi_jet = GetDeltaPhi(sel_track.Phi(), jet[i].Phi());
-          double deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+          double deltaR_jet = std::sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
           double deltaEta_ue1 = sel_track.Eta() - ue_axis1.Eta();
           double deltaPhi_ue1 = GetDeltaPhi(sel_track.Phi(), ue_axis1.Phi());
-          double deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+          double deltaR_ue1 = std::sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
           double deltaEta_ue2 = sel_track.Eta() - ue_axis2.Eta();
           double deltaPhi_ue2 = GetDeltaPhi(sel_track.Phi(), ue_axis2.Phi());
-          double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+          double deltaR_ue2 = std::sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
           if (deltaR_jet < Rjet) {
             nPartJetPlusUE++;
@@ -1831,15 +1831,15 @@ struct strangeness_in_jets {
           TVector3 particle_dir(particle.px(), particle.py(), particle.pz());
           double deltaEta_jet = particle_dir.Eta() - jet[i].Eta();
           double deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), jet[i].Phi());
-          double deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+          double deltaR_jet = std::sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
           double deltaEta_ue1 = particle_dir.Eta() - ue1[i].Eta();
           double deltaPhi_ue1 = GetDeltaPhi(particle_dir.Phi(), ue1[i].Phi());
-          double deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+          double deltaR_ue1 = std::sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
           double deltaEta_ue2 = particle_dir.Eta() - ue2[i].Eta();
           double deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue2[i].Phi());
-          double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+          double deltaR_ue2 = std::sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
-          int pdg = TMath::Abs(particle.pdgCode());
+          int pdg = std::fabs(particle.pdgCode());
 
           if (pdg == 211) {
             if (deltaR_jet < Rjet) {
