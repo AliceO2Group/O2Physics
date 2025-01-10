@@ -1023,7 +1023,7 @@ struct Phik0shortanalysis {
 
   PROCESS_SWITCH(Phik0shortanalysis, processRecMCPhiQA, "Process for ReCMCQA and Phi in RecMC", false);
 
-  void processRecMCPhiK0S(SimCollisions const& collisions, FullMCTracks const&, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const& mcParticles)
+  void processRecMCPhiK0S(SimCollisions const& collisions, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const& mcParticles)
   {
     for (const auto& collision : collisions) {
       if (!acceptEventQA<true>(collision, false))
@@ -1067,18 +1067,6 @@ struct Phik0shortanalysis {
 
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != 333)
-            continue;
-          auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
-          if (kDaughters.size() != 2)
-            continue;
-          bool isPosKaon = false, isNegKaon = false;
-          for (const auto& kDaughter : kDaughters) {
-            if (kDaughter.pdgCode() == 321)
-              isPosKaon = true;
-            if (kDaughter.pdgCode() == -321)
-              isNegKaon = true;
-          }
-          if (!isPosKaon || !isNegKaon)
             continue;
           if (std::abs(mcParticle.y()) > cfgYAcceptance)
             continue;
@@ -1151,18 +1139,6 @@ struct Phik0shortanalysis {
 
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != 333)
-            continue;
-          auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
-          if (kDaughters.size() != 2)
-            continue;
-          bool isPosKaon = false, isNegKaon = false;
-          for (const auto& kDaughter : kDaughters) {
-            if (kDaughter.pdgCode() == 321)
-              isPosKaon = true;
-            if (kDaughter.pdgCode() == -321)
-              isNegKaon = true;
-          }
-          if (!isPosKaon || !isNegKaon)
             continue;
           if (std::abs(mcParticle.y()) > cfgYAcceptance)
             continue;
