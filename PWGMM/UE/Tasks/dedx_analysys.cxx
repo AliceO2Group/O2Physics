@@ -49,10 +49,6 @@ struct dedx_analysys {
     true,
     true};
 
-  // Corrections
-  // constexpr double Correc[8]{54.3344, 55.1277, 56.0811, 56.7974, 56.9533, 56.4622, 55.8873, 55.1449};
-  // constexpr double Correc[9]{-0.8, -0.6, -0.4, -0.2, 0., 0.2, 0.4, 0.6, 0.8};
-
   // Configurable Parameters
   Configurable<float> minTPCnClsFound{"minTPCnClsFound", 70.0f,
                                       "min number of found TPC clusters"};
@@ -92,9 +88,7 @@ struct dedx_analysys {
   // Histograms names
   static constexpr std::string_view Armenteros[5] = {"Armenteros", "Armenteros_K0S", "Armenteros_Lambda", "Armenteros_AntiLambda", "Armenteros_Gamma"};
   static constexpr std::string_view Qt_vs_alpha[5] = {"Qt_vs_alpha", "Qt_vs_alpha_K0S", "Qt_vs_alpha_Lambda", "Qt_vs_alpha_AntiLambda", "Qt_vs_alpha_Gamma"};
-  static constexpr std::string_view dEdx_vs_Momentum[5] = {"dEdx_vs_Momentum_all", "dEdx_vs_Momentum_02", "dEdx_vs_Momentum_0204", "dEdx_vs_Momentum_0406", "dEdx_vs_Momentum_0608"};
-  static constexpr std::string_view dEdx_vs_Momentum_neg[4] = {"dEdx_vs_Momentum_02neg", "dEdx_vs_Momentum_0204neg", "dEdx_vs_Momentum_0406neg", "dEdx_vs_Momentum_0608neg"};
-  static constexpr std::string_view dEdx_vs_Momentum_pos[4] = {"dEdx_vs_Momentum_02pos", "dEdx_vs_Momentum_0204pos", "dEdx_vs_Momentum_0406pos", "dEdx_vs_Momentum_0608pos"};
+  static constexpr std::string_view dEdx_vs_Momentum[2] = {"dEdx_vs_Momentum_all_beforeCalibration", "dEdx_vs_Momentum_AfterCalibration"};
   static constexpr std::string_view dEdx_vs_Momentum_v0[3] = {"dEdx_vs_Momentum_Pi_v0", "dEdx_vs_Momentum_Pr_v0", "dEdx_vs_Momentum_El_v0"};
   static constexpr std::string_view hInvMass[4] = {"InvMass_K0S", "InvMass_Lambda", "InvMass_AntiLambda", "InvMass_Gamma"};
   static constexpr double EtaCut[9] = {-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
@@ -129,24 +123,17 @@ struct dedx_analysys {
     for (int i = 0; i < 5; ++i) {
       registryDeDx.add(Armenteros[i].data(), Qt_vs_alpha[i].data(), HistType::kTH2F,
                        {{100, -1., 1., "#alpha (a. u.)"}, {100, 0.0, 0.3, "q_T (GeV/c)"}});
-      registryDeDx.add(dEdx_vs_Momentum[i].data(), "dE/dx", HistType::kTH2F,
-                       {{100, -20.0, 20.0, "#it{p}/Z (GeV/c)"}, {100, 0.0, 600.0, "dE/dx (a. u.)"}});
     }
-    // De/Dx for eta cut negative and positive
-    for (int i = 0; i < 4; ++i) {
-
-      registryDeDx.add(dEdx_vs_Momentum_neg[i].data(), "dE/dx", HistType::kTH2F,
-                       {{100, -20.0, 20.0, "#it{p}/Z (GeV/c)"}, {100, 0.0, 600.0, "dE/dx (a. u.)"}});
-
-      registryDeDx.add(dEdx_vs_Momentum_pos[i].data(), "dE/dx", HistType::kTH2F,
-                       {{100, -20.0, 20.0, "#it{p}/Z (GeV/c)"}, {100, 0.0, 600.0, "dE/dx (a. u.)"}});
+    for (int i = 0; i < 2; ++i) {
+      registryDeDx.add(dEdx_vs_Momentum[i].data(), "dE/dx", HistType::kTH3F,
+                       {{100, -20.0, 20.0, "#it{p}/Z (GeV/c)"}, {100, 0.0, 600.0, "dE/dx (a. u.)"}, {100, -0.8, 0.8, "#eta"}});
     }
 
     // De/Dx for v0 particles
     for (int i = 0; i < 3; ++i) {
 
-      registryDeDx.add(dEdx_vs_Momentum_v0[i].data(), "dE/dx", HistType::kTH2F,
-                       {{100, -20.0, 20.0, "#it{p}/Z (GeV/c)"}, {100, 0.0, 600.0, "dE/dx (a. u.)"}});
+      registryDeDx.add(dEdx_vs_Momentum_v0[i].data(), "dE/dx", HistType::kTH3F,
+                       {{100, -20.0, 20.0, "#it{p}/Z (GeV/c)"}, {100, 0.0, 600.0, "dE/dx (a. u.)"}, {100, -0.8, 0.8, "#eta"}});
     }
 
     // Event Counter
@@ -338,8 +325,8 @@ struct dedx_analysys {
         continue;
       float signedP = trk.sign() * trk.tpcInnerParam();
 
-      // DeDx all particles
-      registryDeDx.fill(HIST(dEdx_vs_Momentum[0]), signedP, trk.tpcSignal());
+      // DeDx all particles before calibration
+      registryDeDx.fill(HIST(dEdx_vs_Momentum[0]), signedP, trk.tpcSignal(), trk.eta());
 
       ////////////////////////////////
 
@@ -363,31 +350,7 @@ struct dedx_analysys {
       // After calibration
       for (int i = 0; i < 8; ++i) {
         if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
-          if (i == 0) {
-            registryDeDx.fill(HIST(dEdx_vs_Momentum_neg[0]), signedP, trk.tpcSignal() * 50 / Correction[i]);
-            registryDeDx.fill(HIST(dEdx_vs_Momentum[4]), signedP, trk.tpcSignal() * 50 / Correction[i]);
-          } else if (i == 1) {
-            registryDeDx.fill(HIST(dEdx_vs_Momentum_neg[1]), signedP, trk.tpcSignal() * 50 / Correction[i]);
-            registryDeDx.fill(HIST(dEdx_vs_Momentum[3]), signedP, trk.tpcSignal() * 50 / Correction[i]);
-          } else if (i == 2) {
-            registryDeDx.fill(HIST(dEdx_vs_Momentum_neg[2]), signedP, trk.tpcSignal() * 50 / Correction[i]);
-            registryDeDx.fill(HIST(dEdx_vs_Momentum[2]), signedP, trk.tpcSignal() * 50 / Correction[i]);
-          } else if (i == 3) {
-            registryDeDx.fill(HIST(dEdx_vs_Momentum_neg[3]), signedP, trk.tpcSignal() * 50 / Correction[i]);
-            registryDeDx.fill(HIST(dEdx_vs_Momentum[1]), signedP, trk.tpcSignal() * 50 / Correction[i]);
-          } else if (i == 4) {
-            registryDeDx.fill(HIST(dEdx_vs_Momentum_pos[0]), signedP, trk.tpcSignal() * 50 / Correction[i]);
-            registryDeDx.fill(HIST(dEdx_vs_Momentum[1]), signedP, trk.tpcSignal() * 50 / Correction[i]);
-          } else if (i == 5) {
-            registryDeDx.fill(HIST(dEdx_vs_Momentum_pos[1]), signedP, trk.tpcSignal() * 50 / Correction[i]);
-            registryDeDx.fill(HIST(dEdx_vs_Momentum[2]), signedP, trk.tpcSignal() * 50 / Correction[i]);
-          } else if (i == 6) {
-            registryDeDx.fill(HIST(dEdx_vs_Momentum_pos[2]), signedP, trk.tpcSignal() * 50 / Correction[i]);
-            registryDeDx.fill(HIST(dEdx_vs_Momentum[3]), signedP, trk.tpcSignal() * 50 / Correction[i]);
-          } else if (i == 7) {
-            registryDeDx.fill(HIST(dEdx_vs_Momentum_pos[3]), signedP, trk.tpcSignal() * 50 / Correction[i]);
-            registryDeDx.fill(HIST(dEdx_vs_Momentum[4]), signedP, trk.tpcSignal() * 50 / Correction[i]);
-          }
+          registryDeDx.fill(HIST(dEdx_vs_Momentum[1]), signedP, trk.tpcSignal() * 50 / Correction[i], trk.eta());
         }
       }
     }
@@ -468,11 +431,11 @@ struct dedx_analysys {
         for (int i = 0; i < 8; ++i) {
           if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
 
-            registryDeDx.fill(HIST(dEdx_vs_Momentum_v0[0]), signedPneg, negTrack.tpcSignal() * 50 / Correction[i]);
+            registryDeDx.fill(HIST(dEdx_vs_Momentum_v0[0]), signedPneg, negTrack.tpcSignal() * 50 / Correction[i], negTrack.eta());
           }
           if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
 
-            registryDeDx.fill(HIST(dEdx_vs_Momentum_v0[0]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i]);
+            registryDeDx.fill(HIST(dEdx_vs_Momentum_v0[0]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i], posTrack.eta());
           }
         }
       }
@@ -494,11 +457,11 @@ struct dedx_analysys {
         for (int i = 0; i < 8; ++i) {
           if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
 
-            registryDeDx.fill(HIST(dEdx_vs_Momentum_v0[0]), signedPneg, negTrack.tpcSignal() * 50 / Correction[i]);
+            registryDeDx.fill(HIST(dEdx_vs_Momentum_v0[0]), signedPneg, negTrack.tpcSignal() * 50 / Correction[i], negTrack.eta());
           }
           if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
 
-            registryDeDx.fill(HIST(dEdx_vs_Momentum_v0[1]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i]);
+            registryDeDx.fill(HIST(dEdx_vs_Momentum_v0[1]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i], posTrack.eta());
           }
         }
       }
@@ -521,11 +484,11 @@ struct dedx_analysys {
         for (int i = 0; i < 8; ++i) {
           if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
 
-            registryDeDx.fill(HIST(dEdx_vs_Momentum_v0[1]), signedPneg, negTrack.tpcSignal() * 50 / Correction[i]);
+            registryDeDx.fill(HIST(dEdx_vs_Momentum_v0[1]), signedPneg, negTrack.tpcSignal() * 50 / Correction[i], negTrack.eta());
           }
           if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
 
-            registryDeDx.fill(HIST(dEdx_vs_Momentum_v0[0]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i]);
+            registryDeDx.fill(HIST(dEdx_vs_Momentum_v0[0]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i], posTrack.eta());
           }
         }
       }
@@ -548,11 +511,11 @@ struct dedx_analysys {
         for (int i = 0; i < 8; ++i) {
           if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
 
-            registryDeDx.fill(HIST(dEdx_vs_Momentum_v0[2]), signedPneg, negTrack.tpcSignal() * 50 / Correction[i]);
+            registryDeDx.fill(HIST(dEdx_vs_Momentum_v0[2]), signedPneg, negTrack.tpcSignal() * 50 / Correction[i], negTrack.eta());
           }
           if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
 
-            registryDeDx.fill(HIST(dEdx_vs_Momentum_v0[2]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i]);
+            registryDeDx.fill(HIST(dEdx_vs_Momentum_v0[2]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i], posTrack.eta());
           }
         }
       }
