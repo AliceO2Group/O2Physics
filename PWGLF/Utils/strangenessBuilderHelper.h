@@ -998,7 +998,7 @@ class strangenessBuilderHelper
 } // namespace pwglf
 } // namespace o2
 
-// specific specializations that are foreseen
+// pre-declare specializations: IU, non-IU
 // Run 3 case: tracks at IU
 extern template
 bool o2::pwglf::strangenessBuilderHelper::buildV0Candidate<o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksCovIU>::iterator>(o2::aod::Collision const& collision,
