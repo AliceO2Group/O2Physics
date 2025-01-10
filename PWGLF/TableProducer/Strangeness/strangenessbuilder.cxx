@@ -95,43 +95,15 @@ static constexpr int nTablesConst = 37;
 
 static const std::vector<std::string> parameterNames{"enable"};
 static const int defaultParameters[nTablesConst][nParameters]{
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1}, // index 9
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1}, // index 19
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1}, // index 29
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1},
-  {-1}};
+  {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //0-9
+  {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //10-19
+  {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //20-29
+  {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //30-39
+  {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //40-49
+  {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //50-59
+  {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //60-69
+  {-1}, {-1}, {-1}                                            //70-72
+  };
 
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
@@ -614,14 +586,11 @@ struct StrangenessBuilder {
     straHelper.fitter.setBz(magneticField);
 
     // acquire LUT for this timestamp
+    auto timestamp = bc.timestamp();
     LOG(info) << "Loading material look-up table for timestamp: " << timestamp;
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath, timestamp));
     o2::base::Propagator::Instance()->setMatLUT(lut);
     straHelper.lut = lut;
-
-    LOG(info) << "Fully configured for run: " << bc.runNumber();
-    // mmark this run as configured
-    mRunNumber = bc.runNumber();
 
     return true;
   }
@@ -1066,60 +1035,17 @@ struct StrangenessBuilder {
   template <typename TV0s, typename TCascades, typename TTrackedCascades>
   void markV0sUsedInCascades(TV0s const& v0s, TCascades const& cascades, TTrackedCascades const& trackedCascades)
   {
-    int v0sUsedInCascades = 0;
-    v0sFromCascades.clear();
-    v0Map.clear();
-    v0Map.resize(v0List.size(), -2); // marks not used
-    if (mEnabledTables[kStoredCascCores]) {
-      for (const auto& cascade : cascadeList) {
-        if (v0Map[cascade.v0Id] == -2) {
-          v0sUsedInCascades++;
-        }
-        v0Map[cascade.v0Id] = -1; // marks used (but isn't the index of a properly built V0, which would be >= 0)
-      }
+    v0Map.resize(v0s.size(), -2); // marks not used
+    for (auto& cascade : cascades) {
+      v0Map[cascade.v0Id()] = -1; // marks used (but isn't the index of a properly built V0, which would be >= 0)
     }
-    int trackedCascadeCount = 0;
-    if constexpr (soa::is_table<TTrackedCascades>) {
-      // tracked only created outside of findable mode
-      if (mEnabledTables[kStoredTraCascCores] && mc_findableMode.value == 0) {
-        trackedCascadeCount = trackedCascades.size();
-        for (const auto& trackedCascade : trackedCascades) {
-          auto const& cascade = trackedCascade.cascade();
-          if (v0Map[cascade.v0Id()] == -2) {
-            v0sUsedInCascades++;
-          }
-          v0Map[cascade.v0Id()] = -1; // marks used (but isn't the index of a properly built V0, which would be >= 0)
-        }
-      }
-    }
-    LOGF(debug, "V0 total %i, Cascade total %i, Tracked cascade total %i, V0s flagged used in cascades: %i", v0s.size(), cascades.size(), trackedCascadeCount, v0sUsedInCascades);
   }
 
-  //__________________________________________________
-  template <typename TCollisions, typename TTracks, typename TV0s, typename TMCParticles>
-  void buildV0s(TCollisions const& collisions, TV0s const& v0s, TTracks const& tracks, TMCParticles const& mcParticles)
+  template <class TTracks, typename TCollisions, typename TV0s>
+  void buildV0s(TCollisions const& collisions, TV0s const& v0s)
   {
-    // prepare MC containers (not necessarily used)
-    std::vector<mcV0info> mcV0infos; // V0MCCore information
-    std::vector<bool> mcParticleIsReco;
-
-    if constexpr (soa::is_table<TMCParticles>) {
-      // do this if provided with a mcParticle table as well
-      mcParticleIsReco.resize(mcParticles.size(), false);
-    }
-
-    int nV0s = 0;
     // Loops over all V0s in the time frame
-    histos.fill(HIST("hInputStatistics"), kV0CoresBase, v0s.size());
-    for (size_t iv0 = 0; iv0 < v0List.size(); iv0++) {
-      const auto& v0 = v0List[sorted_v0[iv0]];
-
-      if (!mEnabledTables[kV0CoresBase] && v0Map[iv0] == -2) {
-        // this v0 hasn't been used by cascades and we're not generating V0s, so skip it
-        v0dataLink(-1, -1);
-        continue;
-      }
-
+    for (auto& v0 : v0s) {
       // Get tracks and generate candidate
       // if collisionId positive: get vertex, negative: origin 
       // could be replaced by mean vertex (but without much benefit...)
@@ -1977,84 +1903,13 @@ struct StrangenessBuilder {
       auto const& v0 = cascade.v0();
       auto const& posTrack = v0.template posTrack_as<TTracks>();
       auto const& negTrack = v0.template negTrack_as<TTracks>();
-      auto const& bachTrack = cascade.template bachelor_as<TTracks>();
-      if (!straHelper.buildCascadeCandidate(strangeTrack.collisionId(), pvX, pvY, pvZ,
-                                            posTrack,
-                                            negTrack,
-                                            bachTrack,
-                                            mEnabledTables[kCascBBs],
-                                            cascadeBuilderOpts.useCascadeMomentumAtPrimVtx,
-                                            mEnabledTables[kCascCovs])) {
-        tracascdataLink(-1);
-        interlinks.cascadeToTraCascCores.push_back(-1);
-        continue; // didn't work out, skip
-      }
+      straHelper.buildV0Candidate(collision, posTrack, negTrack, v0.isCollinearV0());
+    }
+  }
 
-      // recalculate DCAxy, DCAz with strange track
-      auto strangeTrackParCov = getTrackParCov(strangeTrack);
-      gpu::gpustd::array<float, 2> dcaInfo;
-      strangeTrackParCov.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, strangeTrackParCov, 2.f, straHelper.fitter.getMatCorrType(), &dcaInfo);
-      straHelper.cascade.cascadeDCAxy = dcaInfo[0];
-      straHelper.cascade.cascadeDCAz = dcaInfo[1];
+  void processPreselectTPCPID(aod::Collisions const& collisions, aod::V0s const& V0s, aod::Cascades const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const& bcs)
+  {
 
-      // get momentum from strange track (should not be very different)
-      strangeTrackParCov.getPxPyPzGlo(straHelper.cascade.cascadeMomentum);
-
-      // accounting
-      nCascades++;
-
-      // generate analysis tables as required
-      if (mEnabledTables[kTraCascIndices]) {
-        tracascidx(cascade.globalIndex(),
-                   straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
-                   straHelper.cascade.bachelorTrack, cascadeTrack.trackId(), straHelper.cascade.collisionId);
-        histos.fill(HIST("hTableBuildingStatistics"), kTraCascIndices);
-      }
-      if (mEnabledTables[kStoredTraCascCores]) {
-        tracascdata(straHelper.cascade.charge, cascadeTrack.xiMass(), cascadeTrack.omegaMass(),
-                    cascadeTrack.decayX(), cascadeTrack.decayY(), cascadeTrack.decayZ(),
-                    straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
-                    straHelper.cascade.positiveMomentum[0], straHelper.cascade.positiveMomentum[1], straHelper.cascade.positiveMomentum[2],
-                    straHelper.cascade.negativeMomentum[0], straHelper.cascade.negativeMomentum[1], straHelper.cascade.negativeMomentum[2],
-                    straHelper.cascade.bachelorMomentum[0], straHelper.cascade.bachelorMomentum[1], straHelper.cascade.bachelorMomentum[2],
-                    straHelper.cascade.cascadeMomentum[0], straHelper.cascade.cascadeMomentum[1], straHelper.cascade.cascadeMomentum[2],
-                    straHelper.cascade.v0DaughterDCA, straHelper.cascade.cascadeDaughterDCA,
-                    straHelper.cascade.positiveDCAxy, straHelper.cascade.negativeDCAxy,
-                    straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz,
-                    cascadeTrack.matchingChi2(), cascadeTrack.topologyChi2(), cascadeTrack.itsClsSize());
-        histos.fill(HIST("hTableBuildingStatistics"), kStoredTraCascCores);
-
-        // interlink always produced if base core table generated
-        tracascdataLink(tracascdata.lastIndex());
-        interlinks.traCascCoreToCascades.push_back(cascade.globalIndex());
-        interlinks.cascadeToTraCascCores.push_back(tracascdata.lastIndex());
-      }
-      if (mEnabledTables[kCascCovs]) {
-        std::array<float, 21> traCovMat = {0.};
-        strangeTrackParCov.getCovXYZPxPyPzGlo(traCovMat);
-        float traCovMatArray[21];
-        for (int ii = 0; ii < 21; ii++) {
-          traCovMatArray[ii] = traCovMat[ii];
-        }
-        tracasccovs(traCovMatArray);
-        histos.fill(HIST("hTableBuildingStatistics"), kCascCovs);
-      }
-
-      //_________________________________________________________
-      // MC handling part (labels only)
-      if constexpr (soa::is_table<TMCParticles>) {
-        // only worry about this if someone else worried about this
-        if ((mEnabledTables[kMcTraCascLabels])) {
-          extractMonteCarloProperties(posTrack, negTrack, bachTrack, mcParticles);
-
-          // Construct label table (note: this will be joinable with KFCascDatas)
-          tracasclabels(thisCascInfo.label);
-          histos.fill(HIST("hTableBuildingStatistics"), kMcTraCascLabels);
-        } // enabled tables check
-      } // constexpr requires mcParticles check
-    } // end loop over cascades
-    LOGF(debug, "Tracked cascades in DF: %i, tracked cascades built: %i", cascadeTracks.size(), nCascades);
   }
 
   //__________________________________________________
@@ -2092,31 +1947,14 @@ struct StrangenessBuilder {
   template <typename TCollisions, typename TMCCollisions, typename TV0s, typename TCascades, typename TTrackedCascades, typename TTracks, typename TBCs, typename TMCParticles>
   void dataProcess(TCollisions const& collisions, TMCCollisions const& mccollisions, TV0s const& v0s, TCascades const& cascades, TTrackedCascades const& trackedCascades, TTracks const& tracks, TBCs const& bcs, TMCParticles const& mcParticles)
   {
-    if (!initCCDB(bcs, collisions))
-      return;
-
-    // reset vectors for cascade interlinks
-    resetInterlinks();
-
-    // prepare v0List, cascadeList
-    prepareBuildingLists(collisions, mccollisions, v0s, cascades, tracks, mcParticles);
-
-    // mark V0s that will be buffered for the cascade building
-    markV0sUsedInCascades(v0List, cascadeList, trackedCascades);
-
-    // build V0s
-    buildV0s(collisions, v0List, tracks, mcParticles);
-
-    // build cascades
-    buildCascades(collisions, cascadeList, tracks, mcParticles);
-    buildKFCascades(collisions, cascadeList, tracks, mcParticles);
-
-    // build tracked cascades only if subscription is Run 3 like (doesn't exist in Run 2)
-    if constexpr (soa::is_table<TTrackedCascades>) {
-      buildTrackedCascades<TTracks>(trackedCascades, mcParticles);
+    if(!initCCDB(bcs, collisions)) return;
+    markV0sUsedInCascades(v0s, cascades);
+    if(mEnabledTables[kV0CoresBase]){ // V0s have been requested
+      buildV0s<TTracks>(collisions, v0s);
     }
-
-    populateCascadeInterlinks();
+    if(mEnabledTables[kStoredCascCores]){ // Cascades have been requested
+      //buildCascades<FullTracksExtIU>(Cascades);
+    }
   }
 
   void processRealData(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
@@ -2126,7 +1964,7 @@ struct StrangenessBuilder {
 
   void processRealDataRun2(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    dataProcess(collisions, static_cast<TObject*>(nullptr), v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, static_cast<TObject*>(nullptr));
+    //dataProcess(collisions, v0s, cascades, tracks, bcs);
   }
 
   void processMonteCarlo(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtLabeledIU const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)

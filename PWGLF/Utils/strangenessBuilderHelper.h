@@ -1000,17 +1000,17 @@ class strangenessBuilderHelper
 
 // pre-declare specializations: IU, non-IU
 // Run 3 case: tracks at IU
-extern template
-bool o2::pwglf::strangenessBuilderHelper::buildV0Candidate<o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksCovIU>::iterator>(o2::aod::Collision const& collision,
-                                                                                                                                                   o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksCovIU>::iterator const& positiveTrack, 
-                                                                                                                                                   o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksCovIU>::iterator const& negativeTrack, 
-                                                                                                                                                   bool useCollinearFit);
+// extern template<>
+// bool o2::pwglf::strangenessBuilderHelper::buildV0Candidate<o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksCovIU>::iterator>(o2::aod::Collision const& collision,
+//                                                                                                                                                    o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksCovIU>::iterator const& positiveTrack, 
+//                                                                                                                                                    o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksCovIU>::iterator const& negativeTrack, 
+//                                                                                                                                                    bool useCollinearFit);
 
-// Run 2 case: tracks at PV
-extern template
-bool o2::pwglf::strangenessBuilderHelper::buildV0Candidate<o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksCov>::iterator>(o2::aod::Collision const& collision,
-                                                                                                                                               o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksCov>::iterator const& positiveTrack, 
-                                                                                                                                               o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksCov>::iterator const& negativeTrack, 
-                                                                                                                                               bool useCollinearFit);
+// // Run 2 case: tracks at PV
+// extern template<>
+// bool o2::pwglf::strangenessBuilderHelper::buildV0Candidate<o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksCov>::iterator>(o2::aod::Collision const& collision,
+//                                                                                                                                                o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksCov>::iterator const& positiveTrack, 
+//                                                                                                                                                o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksCov>::iterator const& negativeTrack, 
+//                                                                                                                                                bool useCollinearFit);
 
 #endif // PWGLF_UTILS_STRANGENESSBUILDERHELPER_H_
