@@ -108,5 +108,5 @@ using JetHfDefinitionCharged = HeavyFlavourDefinitionTask<soa::Join<aod::Charged
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JetHfDefinitionCharged>(cfgc, TaskName{"jet-hf-definition-charged"})};
+    adaptAnalysisTask<JetHfDefinitionCharged>(cfgc, TaskName{"jet-hf-definition-charged"})}; // o2-linter: disable=name/o2-task
 }
