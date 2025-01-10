@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
+// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no 
 //   Configurable workflow for running several DQ or other PWG analyses
 
 #include <cstdint>
@@ -1844,7 +1844,7 @@ struct AnalysisSameEventPairing {
     runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons);
   }
 
-    void processMuonOnlySkimmedMultExtra(MyEventsVtxCovSelectedMultExtra const& events,
+  void processMuonOnlySkimmedMultExtra(MyEventsVtxCovSelectedMultExtra const& events,
                               soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
     runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithMultExtra, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons);
