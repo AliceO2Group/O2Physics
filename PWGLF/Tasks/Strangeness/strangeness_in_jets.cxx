@@ -22,6 +22,8 @@
 #include <cmath>
 #include <vector>
 
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
@@ -37,6 +39,8 @@
 
 using namespace std;
 using namespace o2;
+using namespace o2::soa;
+using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
