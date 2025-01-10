@@ -853,9 +853,9 @@ struct strangeness_in_jets {
       return;
     }
     twod_weights_antilambda_ue = static_cast<TH2F*>(l->FindObject(Form("%s", histname_antilambda_ue.Data())));
-      if (!twod_weights_antilambda_ue) {
-        LOGP(error, "Could not open histogram {}", Form("%s", histname_antilambda_ue.Data()));
-        return;
+    if (!twod_weights_antilambda_ue) {
+      LOGP(error, "Could not open histogram {}", Form("%s", histname_antilambda_ue.Data()));
+      return;
     }
 
     LOGP(info, "Opened histogram {}", Form("%s", histname_k0_jet.Data()));
@@ -865,7 +865,7 @@ struct strangeness_in_jets {
     LOGP(info, "Opened histogram {}", Form("%s", histname_antilambda_jet.Data()));
     LOGP(info, "Opened histogram {}", Form("%s", histname_antilambda_ue.Data()));
   }
-    
+
   void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, StrHadronDaughterTracks const& tracks)
   {
 
