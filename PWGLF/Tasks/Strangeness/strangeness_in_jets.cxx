@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
+/// \file strangeness in jets.cxx
 /// \author Alberto Caliva (alberto.caliva@cern.ch), Francesca Ercolessi (francesca.ercolessi@cern.ch)
 /// \since May 22, 2024
 
@@ -1164,7 +1165,7 @@ struct strangeness_in_jets {
 
       // Pions
       if (particle_of_interest == option::pions) {
-        for (auto track : tracks) {
+        for (auto track : tracks) { // o2-linter: disable=[const-ref-in-for-loop]
 
           if (!passedTrackSelectionForPions(track))
             continue;
@@ -1328,7 +1329,7 @@ struct strangeness_in_jets {
       }
     }
 
-    for (auto& v0 : fullV0s) {
+    for (auto& v0 : fullV0s) { // o2-linter: disable=[const-ref-in-for-loop]
       const auto& ptrack = v0.posTrack_as<StrHadronDaughterTracks>();
       const auto& ntrack = v0.negTrack_as<StrHadronDaughterTracks>();
       if (!passedK0ShortSelection(v0, ptrack, ntrack))
@@ -1362,7 +1363,7 @@ struct strangeness_in_jets {
       auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
       auto tracks_per_coll = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
 
-      for (auto& v0 : v0s_per_coll) {
+      for (auto& v0 : v0s_per_coll) { // o2-linter: disable=[const-ref-in-for-loop]
 
         const auto& pos = v0.posTrack_as<MCTracks>();
         const auto& neg = v0.negTrack_as<MCTracks>();
@@ -1380,11 +1381,10 @@ struct strangeness_in_jets {
 
         int pdg_parent(0);
         bool isPhysPrim = false;
-        for (auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
+        for (auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {   // o2-linter: disable=[const-ref-in-for-loop]
           for (auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
             if (particleMotherOfNeg == particleMotherOfPos) {
               pdg_parent = particleMotherOfNeg.pdgCode();
-              isPhysPrim = particleMotherOfNeg.isPhysicalPrimary();
             }
           }
         }
@@ -1453,7 +1453,7 @@ struct strangeness_in_jets {
       }
 
       // Cascades
-      for (auto& casc : casc_per_coll) {
+      for (auto& casc : casc_per_coll) { // o2-linter: disable=[const-ref-in-for-loop]
         auto bach = casc.template bachelor_as<MCTracks>();
         auto neg = casc.template negTrack_as<MCTracks>();
         auto pos = casc.template posTrack_as<MCTracks>();
@@ -1476,15 +1476,16 @@ struct strangeness_in_jets {
           continue;
 
         int pdg_parent(0);
-        for (auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
-          for (auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
-            for (auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
+        for (const auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
+          for (const auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
+            for (const auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
               if (particleMotherOfNeg != particleMotherOfPos)
                 continue;
               if (std::fabs(particleMotherOfNeg.pdgCode()) != 3122)
                 continue;
               if (!particleMotherOfBach.isPhysicalPrimary())
                 continue;
+
               pdg_parent = particleMotherOfBach.pdgCode();
             }
           }
@@ -1511,7 +1512,7 @@ struct strangeness_in_jets {
       }
 
       // Reconstructed Tracks
-      for (auto track : tracks_per_coll) {
+      for (auto track : tracks_per_coll) { // o2-linter: disable=[const-ref-in-for-loop]
 
         // Get MC Particle
         if (!track.has_mcParticle())
@@ -1759,7 +1760,7 @@ struct strangeness_in_jets {
         double ptJet(0);
         double ptUE(0);
 
-        for (auto& particle : mcParticles_per_coll) {
+        for (auto& particle : mcParticles_per_coll) { // o2-linter: disable=[const-ref-in-for-loop]
 
           // Select Primary Particles
           double dx = particle.vx() - mccollision.posX();
