@@ -191,7 +191,7 @@ struct PhosElId {
     PhosShiftZ[2] = vPhosShiftZ.at(2);
     PhosShiftZ[3] = vPhosShiftZ.at(3);
 
-    const AxisSpec
+    const axisSpec
       axisCounter{1, 0, +1, ""},
       axisP{momentumBinning, "p (GeV/c)"},
       axisPt{momentumBinning, "p_{T} (GeV/c)"},
@@ -625,7 +625,7 @@ struct MassSpectra {
                                            1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
                                            4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
 
-    const AxisSpec
+    const axisSpec
       axisCounter{1, 0, +1, ""},
       axisPt{momentumBinning, "p_{T} (GeV/c)"},
       axisEp{200, 0., 2., "E/p", "E_{cluster}/p_{track}"},
@@ -733,36 +733,36 @@ struct MassSpectra {
         if (TPCel.index() >= track2.index())
           break;
 
-        float mass_2tracks = 0, mom_2tracks = 0, cluE = clust2.e();
-        TLorentzVector P1, P2;
-        P1.SetPxPyPzE(TPCel.px(), TPCel.py(), TPCel.pz(), TPCel.energy(0));
-        P2.SetPxPyPzE(track2.px(), track2.py(), track2.pz(), track2.energy(0));
-        mom_2tracks = (P1 + P2).Pt();
-        mass_2tracks = (P1 + P2).M();
+        float mass2Tracks = 0, mom2Tracks = 0, cluE = clust2.e();
+        TLorentzVector fourVectorP1, fourVectorP2;
+        fourVectorP1.SetPxPyPzE(TPCel.px(), TPCel.py(), TPCel.pz(), TPCel.energy(0));
+        fourVectorP2.SetPxPyPzE(track2.px(), track2.py(), track2.pz(), track2.energy(0));
+        mom2Tracks = (fourVectorP1 + fourVectorP2).Pt();
+        mass2Tracks = (fourVectorP1 + fourVectorP2).M();
         bool elCandidate = (std::fabs(cluE / track2.p() - cfgShiftEp - 1) < cfgNsigmaEp * fEpSigmaPhos->Eval(cluE));
 
         if (TPCel.sign() == track2.sign()) {
           if (posTrack) {
-            mHistManager.fill(HIST("h_eh_pp_mass_spectra_v_Pt"), mass_2tracks, mom_2tracks);
-            mHistManager.fill(HIST("h_eh_pp_mass_spectra_v_E"), mass_2tracks, cluE);
+            mHistManager.fill(HIST("h_eh_pp_mass_spectra_v_Pt"), mass2Tracks, mom2Tracks);
+            mHistManager.fill(HIST("h_eh_pp_mass_spectra_v_E"), mass2Tracks, cluE);
             if (elCandidate) {
-              mHistManager.fill(HIST("h_ee_pp_mass_spectra_v_Pt"), mass_2tracks, mom_2tracks);
-              mHistManager.fill(HIST("h_ee_pp_mass_spectra_v_E"), mass_2tracks, cluE);
+              mHistManager.fill(HIST("h_ee_pp_mass_spectra_v_Pt"), mass2Tracks, mom2Tracks);
+              mHistManager.fill(HIST("h_ee_pp_mass_spectra_v_E"), mass2Tracks, cluE);
             }
           } else {
-            mHistManager.fill(HIST("h_eh_mm_mass_spectra_v_Pt"), mass_2tracks, mom_2tracks);
-            mHistManager.fill(HIST("h_eh_mm_mass_spectra_v_E"), mass_2tracks, cluE);
+            mHistManager.fill(HIST("h_eh_mm_mass_spectra_v_Pt"), mass2Tracks, mom2Tracks);
+            mHistManager.fill(HIST("h_eh_mm_mass_spectra_v_E"), mass2Tracks, cluE);
             if (elCandidate) {
-              mHistManager.fill(HIST("h_ee_mm_mass_spectra_v_Pt"), mass_2tracks, mom_2tracks);
-              mHistManager.fill(HIST("h_ee_mm_mass_spectra_v_E"), mass_2tracks, cluE);
+              mHistManager.fill(HIST("h_ee_mm_mass_spectra_v_Pt"), mass2Tracks, mom2Tracks);
+              mHistManager.fill(HIST("h_ee_mm_mass_spectra_v_E"), mass2Tracks, cluE);
             }
           }
         } else {
-          mHistManager.fill(HIST("h_eh_mp_mass_spectra_v_Pt"), mass_2tracks, mom_2tracks);
-          mHistManager.fill(HIST("h_eh_mp_mass_spectra_v_E"), mass_2tracks, cluE);
+          mHistManager.fill(HIST("h_eh_mp_mass_spectra_v_Pt"), mass2Tracks, mom2Tracks);
+          mHistManager.fill(HIST("h_eh_mp_mass_spectra_v_E"), mass2Tracks, cluE);
           if (elCandidate) {
-            mHistManager.fill(HIST("h_ee_mp_mass_spectra_v_Pt"), mass_2tracks, mom_2tracks);
-            mHistManager.fill(HIST("h_ee_mp_mass_spectra_v_E"), mass_2tracks, cluE);
+            mHistManager.fill(HIST("h_ee_mp_mass_spectra_v_Pt"), mass2Tracks, mom2Tracks);
+            mHistManager.fill(HIST("h_ee_mp_mass_spectra_v_E"), mass2Tracks, cluE);
           }
         }
       }
@@ -835,7 +835,7 @@ struct TpcElIdMassSpectrum {
     std::vector<double> momentumBinning = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
                                            1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
                                            4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
-    const AxisSpec
+    const axisSpec
       axisCounter{1, 0, +1, ""},
       axisVTrackX{400, -5., 5., "track vertex x (cm)", "track vertex x (cm)"},
       axisVTrackY{400, -5., 5., "track vertex y (cm)", "track vertex y (cm)"},
@@ -929,9 +929,9 @@ struct TpcElIdMassSpectrum {
       if (track1.tpcNClsCrossedRows() > cfgTPCnclsCRMax || track2.tpcNClsCrossedRows() > cfgTPCnclsCRMax)
         continue;
 
-      TLorentzVector P1, P2;
-      P1.SetPxPyPzE(track1.px(), track1.py(), track1.pz(), track1.energy(0));
-      P2.SetPxPyPzE(track2.px(), track2.py(), track2.pz(), track2.energy(0));
+      TLorentzVector fourVectorP1, fourVectorP2;
+      fourVectorP1.SetPxPyPzE(track1.px(), track1.py(), track1.pz(), track1.energy(0));
+      fourVectorP2.SetPxPyPzE(track2.px(), track2.py(), track2.pz(), track2.energy(0));
 
       bool inPhosEtaRange1 = std::fabs(track1.eta()) < 0.12;
       bool inPhosEtaRange2 = std::fabs(track2.eta()) < 0.12;
@@ -940,7 +940,7 @@ struct TpcElIdMassSpectrum {
       bool inPhosRange = (inPhosEtaRange1 && inPhosPhiRange1) || (inPhosEtaRange2 && inPhosPhiRange2);
       bool posTrack = track1.sign() * bz > 0;
 
-      double pairMass = (P1 + P2).M(), pairPt = (P1 + P2).Pt();
+      double pairMass = (fourVectorP1 + fourVectorP2).M(), pairPt = (fourVectorP1 + fourVectorP2).Pt();
 
       if (track1.sign() == track2.sign()) {
         if (posTrack) {
@@ -978,9 +978,9 @@ struct TpcElIdMassSpectrum {
             }
             if (matchFlag == 1)
               continue;
-            TLorentzVector P3;
-            P3.SetPxPyPzE(gamma.px(), gamma.py(), gamma.pz(), gamma.e());
-            double tripletMass = (P1 + P2 + P3).M(), tripletPt = (P1 + P2 + P3).Pt();
+            TLorentzVector fourVectorP3;
+            fourVectorP3.SetPxPyPzE(gamma.px(), gamma.py(), gamma.pz(), gamma.e());
+            double tripletMass = (fourVectorP1 + fourVectorP2 + fourVectorP3).M(), tripletPt = (fourVectorP1 + fourVectorP2 + fourVectorP3).Pt();
 
             mHistManager.fill(HIST("h_TPCeePhosGamma_MS_v_3pt"), tripletMass, tripletPt);
             mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
