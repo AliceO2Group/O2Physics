@@ -110,9 +110,10 @@ class strangenessBuilderHelper
   public:
     strangenessBuilderHelper();
     
+    template <typename TTrack>
     bool buildV0Candidate(o2::aod::Collision const& collision,
-                          soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksCovIU>::iterator const& positiveTrack, 
-                          soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksCovIU>::iterator const& negativeTrack, 
+                          TTrack const& positiveTrack, 
+                          TTrack const& negativeTrack, 
                           bool useCollinearFit = false);
 
     o2::base::MatLayerCylSet* lut; // material LUT for DCA fitter

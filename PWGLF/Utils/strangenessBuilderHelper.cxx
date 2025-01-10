@@ -52,10 +52,12 @@ strangenessBuilderHelper::strangenessBuilderHelper() {
 // builds V0 from two tracks. Does not check any conditionals
 // except for DCA fitter convergence (should be minimal overhead)
 // Resulting properties can be checked with strangenessBuilderHelper::v0
+
+template <typename TTrack>
 bool strangenessBuilderHelper::buildV0Candidate(
                                                 o2::aod::Collision const& collision,
-                                                soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksCovIU>::iterator const& positiveTrack, 
-                                                soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksCovIU>::iterator const& negativeTrack, 
+                                                TTrack const& positiveTrack, 
+                                                TTrack const& negativeTrack, 
                                                 bool useCollinearFit){
   // Calculate DCA with respect to the collision associated to the V0, not individual tracks
   gpu::gpustd::array<float, 2> dcaInfo;
