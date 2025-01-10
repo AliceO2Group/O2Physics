@@ -825,37 +825,37 @@ struct strangeness_in_jets {
     TList* l = ccdbObj->get<TList>(filepath.Data());
     if (!l) {
       LOGP(error, "Could not open the file {}", Form("%s", filepath.Data()));
-        return;
+      return;
     }
     twod_weights_k0_jet = static_cast<TH2F*>(l->FindObject(Form("%s", histname_k0_jet.Data())));
     if (!twod_weights_k0_jet) {
       LOGP(error, "Could not open histogram {}", Form("%s", histname_k0_jet.Data()));
-        return;
+      return;
     }
     twod_weights_k0_ue = static_cast<TH2F*>(l->FindObject(Form("%s", histname_k0_ue.Data())));
     if (!twod_weights_k0_ue) {
       LOGP(error, "Could not open histogram {}", Form("%s", histname_k0_ue.Data()));
-        return;
+      return;
     }
     twod_weights_lambda_jet = static_cast<TH2F*>(l->FindObject(Form("%s", histname_lambda_jet.Data())));
     if (!twod_weights_lambda_jet) {
       LOGP(error, "Could not open histogram {}", Form("%s", histname_lambda_jet.Data()));
-        return;
+      return;
     }
     twod_weights_lambda_ue = static_cast<TH2F*>(l->FindObject(Form("%s", histname_lambda_ue.Data())));
     if (!twod_weights_lambda_ue) {
       LOGP(error, "Could not open histogram {}", Form("%s", histname_lambda_ue.Data()));
-        return;
+      return;
     }
     twod_weights_antilambda_jet = static_cast<TH2F*>(l->FindObject(Form("%s", histname_antilambda_jet.Data())));
     if (!twod_weights_antilambda_jet) {
       LOGP(error, "Could not open histogram {}", Form("%s", histname_antilambda_jet.Data()));
-        return;
+      return;
     }
     twod_weights_antilambda_ue = static_cast<TH2F*>(l->FindObject(Form("%s", histname_antilambda_ue.Data())));
       if (!twod_weights_antilambda_ue) {
         LOGP(error, "Could not open histogram {}", Form("%s", histname_antilambda_ue.Data()));
-          return;
+        return;
     }
 
     LOGP(info, "Opened histogram {}", Form("%s", histname_k0_jet.Data()));
@@ -1599,7 +1599,7 @@ struct strangeness_in_jets {
             w_antilambda_ue = 1.0;
           }
         }
-          
+
         // Pi+
         if (mcParticle.pdgCode() == 211) {
           registryMC.fill(HIST("pi_plus_gen"), multiplicity, mcParticle.pt());
