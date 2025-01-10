@@ -226,7 +226,7 @@ struct hstrangecorrelationfilter {
     }
     return true;
   }
-
+  template <class TTrack>
   bool isValidAssocTrack(TTrack assoc)
   {
     if (assoc.eta() > assocEtaMax || assoc.eta() < assocEtaMin) {
@@ -243,7 +243,7 @@ struct hstrangecorrelationfilter {
     }
 
     // do this only if information is available
-    float nSigmaPTCTOF[8] = {-10, -10, -10, -10, -10, -10, -10, -10};
+    float nSigmaTPCTOF[8] = {-10, -10, -10, -10, -10, -10, -10, -10};
     if constexpr (requires { assoc.tofSignal(); }) {
       if (assoc.tofSignal() > 0) {
         if (std::sqrt(assoc.tofNSigmaPi() * assoc.tofNSigmaPi() + assoc.tpcNSigmaPi() * assoc.tpcNSigmaPi()) > assocPionNSigmaTPCFOF)
@@ -256,10 +256,10 @@ struct hstrangecorrelationfilter {
           return false;
         if (assoc.tpcNSigmaKa() < rejectSigma)
           return false;
-        nSigmaPTCTOF[4] = assoc.tofNSigmaPi();
-        nSigmaPTCTOF[5] = assoc.tofNSigmaKa();
-        nSigmaPTCTOF[6] = assoc.tofNSigmaPr();
-        nSigmaPTCTOF[7] = assoc.tofNSigmaEl();
+        nSigmaTPCTOF[4] = assoc.tofNSigmaPi();
+        nSigmaTPCTOF[5] = assoc.tofNSigmaKa();
+        nSigmaTPCTOF[6] = assoc.tofNSigmaPr();
+        nSigmaTPCTOF[7] = assoc.tofNSigmaEl();
       } else {
         if (assoc.tpcNSigmaPi() > assocPionNSigmaTPCFOF)
           return false;
@@ -268,10 +268,10 @@ struct hstrangecorrelationfilter {
         if (assoc.tpcNSigmaKa() < rejectSigma)
           return false;
       }
-      nSigmaPTCTOF[0] = assoc.tpcNSigmaPi();
-      nSigmaPTCTOF[1] = assoc.tpcNSigmaKa();
-      nSigmaPTCTOF[2] = assoc.tpcNSigmaPr();
-      nSigmaPTCTOF[3] = assoc.tpcNSigmaEl();
+      nSigmaTPCTOF[0] = assoc.tpcNSigmaPi();
+      nSigmaTPCTOF[1] = assoc.tpcNSigmaKa();
+      nSigmaTPCTOF[2] = assoc.tpcNSigmaPr();
+      nSigmaTPCTOF[3] = assoc.tpcNSigmaEl();
     }
 
     bool physicalPrimary = false;
@@ -285,20 +285,19 @@ struct hstrangecorrelationfilter {
     }
 
     assocHadrons(
-      track.collisionId(),
+      assoc.collisionId(),
       physicalPrimary,
-      track.globalIndex(),
+      assoc.globalIndex(),
       origPt);
     assocPID(
-      nSigmaPTCTOF[0],
-      nSigmaPTCTOF[1],
-      nSigmaPTCTOF[2],
-      nSigmaPTCTOF[3],
-      nSigmaPTCTOF[4],
-      nSigmaPTCTOF[5],
-      nSigmaPTCTOF[6],
-      nSigmaPTCTOF[7],
-      nSigmaPTCTOF[8]);
+      nSigmaTPCTOF[0],
+      nSigmaTPCTOF[1],
+      nSigmaTPCTOF[2],
+      nSigmaTPCTOF[3],
+      nSigmaTPCTOF[4],
+      nSigmaTPCTOF[5],
+      nSigmaTPCTOF[6],
+      nSigmaTPCTOF[7]);
     return true;
   }
 
@@ -399,7 +398,7 @@ struct hstrangecorrelationfilter {
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if (!isValidAssocTrack)
+      if (!isValidAssocTrack(track))
         continue;
     }
   }
@@ -426,7 +425,7 @@ struct hstrangecorrelationfilter {
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if (!isValidAssocTrack)
+      if (!isValidAssocTrack(track))
         continue;
     }
   }
@@ -453,7 +452,7 @@ struct hstrangecorrelationfilter {
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if (!isValidAssocTrack)
+      if (!isValidAssocTrack(track))
         continue;
     }
   }
@@ -479,7 +478,7 @@ struct hstrangecorrelationfilter {
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if (!isValidAssocTrack)
+      if (!isValidAssocTrack(track))
         continue;
     }
   }
