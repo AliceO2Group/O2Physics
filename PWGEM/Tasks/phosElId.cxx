@@ -58,7 +58,7 @@ using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
-namespace PHOSMatch
+namespace phos_match
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_INDEX_COLUMN(Track, track);
@@ -69,79 +69,72 @@ DECLARE_SOA_COLUMN(SignalPx, signalPx, double);
 DECLARE_SOA_COLUMN(SignalPy, signalPy, double);
 DECLARE_SOA_COLUMN(SignalPz, signalPz, double);
 DECLARE_SOA_COLUMN(SignalE, signalE, double);
-} // namespace PHOSMatch
+} // namespace phos_match
 
-DECLARE_SOA_TABLE(PHOSMatchindexTable, "AOD", "PHSMTCH",                                                   //!
-                  o2::soa::Index<>, PHOSMatch::CollisionId, PHOSMatch::CaloClusterId, PHOSMatch::TrackId); //!
+DECLARE_SOA_TABLE(PHOSMatchindexTable, "AOD", "PHSMTCH",                                                      //!
+                  o2::soa::Index<>, phos_match::CollisionId, phos_match::CaloClusterId, phos_match::TrackId); //!
 
 } // namespace o2::aod
 
-struct phosElId {
+struct PhosElId {
 
-  Produces<o2::aod::PHOSMatchindexTable> phosMatch;
+  Produces<o2::aod::PHOSMatchindexTable> PhosMatch;
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using myTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
+  using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
 
-  Configurable<float> mMinCluE{"mMinCluE", 0.3, "Minimum cluster energy for analysis"};
-  Configurable<float> mMinCluTime{"minCluTime", -25.e-9, "Min. cluster time"};
-  Configurable<float> mMaxCluTime{"mMaxCluTime", 25.e-9, "Max. cluster time"};
-  Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
-  Configurable<int> mMinCluNcell{"minCluNcell", 3, "min cells in cluster"};
+  Configurable<float> mMinCluE{"mMinCluE", 0.3, "Minimum cluster energy for analysis"},
+    mMinCluTime{"minCluTime", -25.e-9, "Min. cluster time"},
+    mMaxCluTime{"mMaxCluTime", 25.e-9, "Max. cluster time"},
+    mDeltaXmin{"mDeltaXmin", -100., "Min for track and cluster coordinate delta"},
+    mDeltaXmax{"mDeltaXmax", 100., "Max for track and cluster coordinate delta"},
+    mDeltaZmin{"mDeltaZmin", -100., "Min for track and cluster coordinate delta"},
+    mDeltaZmax{"mDeltaZmax", 100., "Max for track and cluster coordinate delta"},
+    mEpmin{"mEpmin", -1., "Min for E/p histograms"},
+    mEpmax{"mEpmax", 3., "Max for E/p histograms"},
+    cfgEtaMax{"cfgEtaMax", {0.8f}, "eta ranges"},
+    cfgPtMin{"cfgPtMin", {0.2f}, "pt min"},
+    cfgPtMax{"cfgPtMax", {20.f}, "pt max"},
+    cfgDCAxyMax{"cfgDCAxyMax", {3.f}, "dcaxy max"},
+    cfgDCAzMax{"cfgDCAzMax", {3.f}, "dcaz max"},
+    cfgITSchi2Max{"cfgITSchi2Max", {5.f}, "its chi2 max"},
+    cfgITSnclsMin{"cfgITSnclsMin", {4.5f}, "min number of ITS clusters"},
+    cfgITSnclsMax{"cfgITSnclsMax", {7.5f}, "max number of ITS clusters"},
+    cfgTPCchi2Max{"cfgTPCchi2Max", {4.f}, "tpc chi2 max"},
+    cfgTPCnclsMin{"cfgTPCnclsMin", {90.f}, "min number of TPC clusters"},
+    cfgTPCnclsMax{"cfgTPCnclsMax", {170.f}, "max number of TPC clusters"},
+    cfgTPCnclsCRMin{"cfgTPCnclsCRMin", {80.f}, "min number of TPC crossed rows"},
+    cfgTPCnclsCRMax{"cfgTPCnclsCRMax", {161.f}, "max number of TPC crossed rows"},
+    cfgTPCNSigmaElMin{"cfgTPCNSigmaElMin", {-3.f}, "min TPC nsigma e for inclusion"},
+    cfgTPCNSigmaElMax{"cfgTPCNSigmaElMax", {2.f}, "max TPC nsigma e for inclusion"},
+    cfgTPCNSigmaPiMin{"cfgTPCNSigmaPiMin", {-3.f}, "min TPC nsigma pion for exclusion"},
+    cfgTPCNSigmaPiMax{"cfgTPCNSigmaPiMax", {3.5f}, "max TPC nsigma pion for exclusion"},
+    cfgTPCNSigmaPrMin{"cfgTPCNSigmaPrMin", {-3.f}, "min TPC nsigma proton for exclusion"},
+    cfgTPCNSigmaPrMax{"cfgTPCNSigmaPrMax", {4.f}, "max TPC nsigma proton for exclusion"},
+    cfgTPCNSigmaKaMin{"cfgTPCNSigmaKaMin", {-3.f}, "min TPC nsigma kaon for exclusion"},
+    cfgTPCNSigmaKaMax{"cfgTPCNSigmaKaMax", {4.f}, "max TPC nsigma kaon for exclusion"},
+    cfgTOFNSigmaElMin{"cfgTOFNSigmaElMin", {-3.f}, "min TOF nsigma e for inclusion"},
+    cfgTOFNSigmaElMax{"cfgTOFNSigmaElMax", {3.f}, "max TOF nsigma e for inclusion"},
+    cfgNsigmaTrackMatch{"cfgNsigmaTrackMatch", {2.f}, "PHOS Track Matching Nsigma for inclusion"};
 
-  Configurable<int> nBinsDeltaX{"nBinsDeltaX", 500, "N bins for track and cluster coordinate delta"};
-  Configurable<float> mDeltaXmin{"mDeltaXmin", -100., "Min for track and cluster coordinate delta"};
-  Configurable<float> mDeltaXmax{"mDeltaXmax", 100., "Max for track and cluster coordinate delta"};
+  Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"},
+    mMinCluNcell{"minCluNcell", 3, "min cells in cluster"},
+    nBinsDeltaX{"nBinsDeltaX", 500, "N bins for track and cluster coordinate delta"},
+    nBinsDeltaZ{"nBinsDeltaZ", 500, "N bins for track and cluster coordinate delta"},
+    nBinsEp{"nBinsEp", 400, "N bins for E/p histograms"};
 
-  Configurable<int> nBinsDeltaZ{"nBinsDeltaZ", 500, "N bins for track and cluster coordinate delta"};
-  Configurable<float> mDeltaZmin{"mDeltaZmin", -100., "Min for track and cluster coordinate delta"};
-  Configurable<float> mDeltaZmax{"mDeltaZmax", 100., "Max for track and cluster coordinate delta"};
-
-  Configurable<int> nBinsEp{"nBinsEp", 400, "N bins for E/p histograms"};
-  Configurable<float> mEpmin{"mEpmin", -1., "Min for E/p histograms"};
-  Configurable<float> mEpmax{"mEpmax", 3., "Max for E/p histograms"};
-
-  Configurable<std::vector<float>> pSigma_dz{"pSigma_dz", {0.642, 0., 1.77, 2.725, 0.}, "parameters for sigma dz function"};
-  Configurable<std::vector<float>> pSigma_dx{"pSigma_dx", {2.17769, 1.60275, 2.24136}, "parameters for sigma dx function"};
-
-  Configurable<std::vector<float>> pPhosShiftZ{"pPhosShiftZ", {4.78838, 2.75138, 1.40825, 2.28735}, "Phos coordinate centering Z per module"};
-  Configurable<std::vector<float>> pPhosShiftX{"pPhosShiftX", {2.158702, -1.526772, -0.814658, -1.852678}, "Phos coordinate centering X per module"};
-
-  Configurable<std::vector<float>> pMean_dx_pos_mod1{"pMean_dx_pos_mod1", {-10.57, -0.42, 1.06}, "parameters for mean dx function on module 1 for positive tracks"};
-  Configurable<std::vector<float>> pMean_dx_pos_mod2{"pMean_dx_pos_mod2", {-8.1, -0.42, 1.14}, "parameters for mean dx function on module 2 for positive tracks"};
-  Configurable<std::vector<float>> pMean_dx_pos_mod3{"pMean_dx_pos_mod3", {-8.34, -0.42, 1.04}, "parameters for mean dx function on module 3 for positive tracks"};
-  Configurable<std::vector<float>> pMean_dx_pos_mod4{"pMean_dx_pos_mod4", {-7.38, -0.42, 1.17}, "parameters for mean dx function on module 4 for positive tracks"};
-
-  Configurable<std::vector<float>> pMean_dx_neg_mod1{"pMean_dx_neg_mod1", {9.92, -0.42, 1.29}, "parameters for mean dx function on module 1 for negative tracks"};
-  Configurable<std::vector<float>> pMean_dx_neg_mod2{"pMean_dx_neg_mod2", {7.82, -0.4, 1.34}, "parameters for mean dx function on module 2 for negative tracks"};
-  Configurable<std::vector<float>> pMean_dx_neg_mod3{"pMean_dx_neg_mod3", {8.45, -0.33, 1.5}, "parameters for mean dx function on module 3 for negative tracks"};
-  Configurable<std::vector<float>> pMean_dx_neg_mod4{"pMean_dx_neg_mod4", {7.5, -0.42, 1.25}, "parameters for mean dx function on module 4 for negative tracks"};
-
-  Configurable<float> cfgEtaMax{"cfgEtaMax", {0.8f}, "eta ranges"};
-  Configurable<float> cfgPtMin{"cfgPtMin", {0.2f}, "pt min"};
-  Configurable<float> cfgPtMax{"cfgPtMax", {20.f}, "pt max"};
-  Configurable<float> cfgDCAxyMax{"cfgDCAxyMax", {3.f}, "dcaxy max"};
-  Configurable<float> cfgDCAzMax{"cfgDCAzMax", {3.f}, "dcaz max"};
-  Configurable<float> cfgITSchi2Max{"cfgITSchi2Max", {5.f}, "its chi2 max"};
-  Configurable<float> cfgITSnclsMin{"cfgITSnclsMin", {4.5f}, "min number of ITS clusters"};
-  Configurable<float> cfgITSnclsMax{"cfgITSnclsMax", {7.5f}, "max number of ITS clusters"};
-  Configurable<float> cfgTPCchi2Max{"cfgTPCchi2Max", {4.f}, "tpc chi2 max"};
-  Configurable<float> cfgTPCnclsMin{"cfgTPCnclsMin", {90.f}, "min number of TPC clusters"};
-  Configurable<float> cfgTPCnclsMax{"cfgTPCnclsMax", {170.f}, "max number of TPC clusters"};
-  Configurable<float> cfgTPCnclsCRMin{"cfgTPCnclsCRMin", {80.f}, "min number of TPC crossed rows"};
-  Configurable<float> cfgTPCnclsCRMax{"cfgTPCnclsCRMax", {161.f}, "max number of TPC crossed rows"};
-  Configurable<float> cfgTPCNSigmaElMin{"cfgTPCNSigmaElMin", {-3.f}, "min TPC nsigma e for inclusion"};
-  Configurable<float> cfgTPCNSigmaElMax{"cfgTPCNSigmaElMax", {2.f}, "max TPC nsigma e for inclusion"};
-  Configurable<float> cfgTPCNSigmaPiMin{"cfgTPCNSigmaPiMin", {-3.f}, "min TPC nsigma pion for exclusion"};
-  Configurable<float> cfgTPCNSigmaPiMax{"cfgTPCNSigmaPiMax", {3.5f}, "max TPC nsigma pion for exclusion"};
-  Configurable<float> cfgTPCNSigmaPrMin{"cfgTPCNSigmaPrMin", {-3.f}, "min TPC nsigma proton for exclusion"};
-  Configurable<float> cfgTPCNSigmaPrMax{"cfgTPCNSigmaPrMax", {4.f}, "max TPC nsigma proton for exclusion"};
-  Configurable<float> cfgTPCNSigmaKaMin{"cfgTPCNSigmaKaMin", {-3.f}, "min TPC nsigma kaon for exclusion"};
-  Configurable<float> cfgTPCNSigmaKaMax{"cfgTPCNSigmaKaMax", {4.f}, "max TPC nsigma kaon for exclusion"};
-  Configurable<float> cfgTOFNSigmaElMin{"cfgTOFNSigmaElMin", {-3.f}, "min TOF nsigma e for inclusion"};
-  Configurable<float> cfgTOFNSigmaElMax{"cfgTOFNSigmaElMax", {3.f}, "max TOF nsigma e for inclusion"};
-
-  Configurable<float> cfgNsigmaTrackMatch{"cfgNsigmaTrackMatch", {2.f}, "PHOS Track Matching Nsigma for inclusion"};
+  Configurable<std::vector<float>> pSigmadZ{"pSigmadZ", {0.642, 0., 1.77, 2.725, 0.}, "parameters for sigma dz function"},
+    pSigmadX{"pSigmadX", {2.17769, 1.60275, 2.24136}, "parameters for sigma dx function"},
+    pPhosShiftZ{"pPhosShiftZ", {4.78838, 2.75138, 1.40825, 2.28735}, "Phos coordinate centering Z per module"},
+    pPhosShiftX{"pPhosShiftX", {2.158702, -1.526772, -0.814658, -1.852678}, "Phos coordinate centering X per module"},
+    pMeandXPosMod1{"pMeandXPosMod1", {-10.57, -0.42, 1.06}, "parameters for mean dx function on module 1 for positive tracks"},
+    pMeandXPosMod2{"pMeandXPosMod2", {-8.1, -0.42, 1.14}, "parameters for mean dx function on module 2 for positive tracks"},
+    pMeandXPosMod3{"pMeandXPosMod3", {-8.34, -0.42, 1.04}, "parameters for mean dx function on module 3 for positive tracks"},
+    pMeandXPosMod4{"pMeandXPosMod4", {-7.38, -0.42, 1.17}, "parameters for mean dx function on module 4 for positive tracks"},
+    pMeandXNegMod1{"pMeandXNegMod1", {9.92, -0.42, 1.29}, "parameters for mean dx function on module 1 for negative tracks"},
+    pMeandXNegMod2{"pMeandXNegMod2", {7.82, -0.4, 1.34}, "parameters for mean dx function on module 2 for negative tracks"},
+    pMeandXNegMod3{"pMeandXNegMod3", {8.45, -0.33, 1.5}, "parameters for mean dx function on module 3 for negative tracks"},
+    pMeandXNegMod4{"pMeandXNegMod4", {7.5, -0.42, 1.25}, "parameters for mean dx function on module 4 for negative tracks"};
 
   Filter ptFilter = (aod::track::pt > cfgPtMin) && (aod::track::pt < cfgPtMax);
   Filter etafilter = nabs(aod::track::eta) < cfgEtaMax;
@@ -156,38 +149,38 @@ struct phosElId {
   double bz{0.}; // magnetic field
   int runNumber{0};
 
-  HistogramRegistry mHistManager{"phosElIdHistograms"};
+  HistogramRegistry mHistManager{"PhosElIdHistograms"};
   TF1 *fSigma_dz, *fSigma_dx;
   float *PhosShiftX, *PhosShiftZ;
 
-  TF1* fMean_dx_pos_mod1;
-  TF1* fMean_dx_neg_mod1;
-  TF1* fMean_dx_pos_mod2;
-  TF1* fMean_dx_neg_mod2;
-  TF1* fMean_dx_pos_mod3;
-  TF1* fMean_dx_neg_mod3;
-  TF1* fMean_dx_pos_mod4;
-  TF1* fMean_dx_neg_mod4;
+  TF1* fMeandXPosMod1;
+  TF1* fMeandXNegMod1;
+  TF1* fMeandXPosMod2;
+  TF1* fMeandXNegMod2;
+  TF1* fMeandXPosMod3;
+  TF1* fMeandXNegMod3;
+  TF1* fMeandXPosMod4;
+  TF1* fMeandXNegMod4;
 
   void init(InitContext const&)
   {
     LOG(info) << "Initializing PHOS electron identification analysis task ...";
 
-    std::vector<double> momentum_binning = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
-                                            1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
-                                            4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
-    std::vector<float> parameters_sigma_dz = pSigma_dz;
-    std::vector<float> parameters_sigma_dx = pSigma_dx;
+    std::vector<double> momentumBinning = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
+                                           1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
+                                           4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
+    std::vector<float> parametersSigmadZ = pSigmadZ;
+    std::vector<float> parametersSigmadX = pSigmadX;
     std::vector<float> vPhosShiftX = pPhosShiftX;
     std::vector<float> vPhosShiftZ = pPhosShiftZ;
-    std::vector<float> Mean_dx_pos_mod1 = pMean_dx_pos_mod1;
-    std::vector<float> Mean_dx_pos_mod2 = pMean_dx_pos_mod2;
-    std::vector<float> Mean_dx_pos_mod3 = pMean_dx_pos_mod3;
-    std::vector<float> Mean_dx_pos_mod4 = pMean_dx_pos_mod4;
-    std::vector<float> Mean_dx_neg_mod1 = pMean_dx_neg_mod1;
-    std::vector<float> Mean_dx_neg_mod2 = pMean_dx_neg_mod2;
-    std::vector<float> Mean_dx_neg_mod3 = pMean_dx_neg_mod3;
-    std::vector<float> Mean_dx_neg_mod4 = pMean_dx_neg_mod4;
+    std::vector<float> MeandXPosMod1 = pMeandXPosMod1;
+    std::vector<float> MeandXPosMod2 = pMeandXPosMod2;
+    std::vector<float> MeandXPosMod3 = pMeandXPosMod3;
+    std::vector<float> MeandXPosMod4 = pMeandXPosMod4;
+    std::vector<float> MeandXNegMod1 = pMeandXNegMod1;
+    std::vector<float> MeandXNegMod2 = pMeandXNegMod2;
+    std::vector<float> MeandXNegMod3 = pMeandXNegMod3;
+    std::vector<float> MeandXNegMod4 = pMeandXNegMod4;
 
     PhosShiftX = new float[4];
     PhosShiftX[0] = vPhosShiftX.at(0);
@@ -203,8 +196,8 @@ struct phosElId {
 
     const AxisSpec
       axisCounter{1, 0, +1, ""},
-      axisP{momentum_binning, "p (GeV/c)"},
-      axisPt{momentum_binning, "p_{T} (GeV/c)"},
+      axisP{momentumBinning, "p (GeV/c)"},
+      axisPt{momentumBinning, "p_{T} (GeV/c)"},
       axisEta{200, -0.2, 0.2, "#eta"},
       axisPhi{80, 240, 320, "#varphi"},
       axisE{200, 0, 10, "E (GeV)", "E (GeV)"},
@@ -283,33 +276,33 @@ struct phosElId {
 
     geomPHOS = std::make_unique<o2::phos::Geometry>("PHOS");
     fSigma_dz = new TF1("fSigma_dz", "[0]/(x+[1])^[2]+pol1(3)", 0.3, 10);
-    fSigma_dz->SetParameters(parameters_sigma_dz.at(0), parameters_sigma_dz.at(1), parameters_sigma_dz.at(2), parameters_sigma_dz.at(3), parameters_sigma_dz.at(4));
+    fSigma_dz->SetParameters(parametersSigmadZ.at(0), parametersSigmadZ.at(1), parametersSigmadZ.at(2), parametersSigmadZ.at(3), parametersSigmadZ.at(4));
 
     fSigma_dx = new TF1("fSigma_dx", "[0]/x^[1]+[2]", 0.1, 10);
-    fSigma_dx->SetParameters(parameters_sigma_dx.at(0), parameters_sigma_dx.at(1), parameters_sigma_dx.at(2));
+    fSigma_dx->SetParameters(parametersSigmadX.at(0), parametersSigmadX.at(1), parametersSigmadX.at(2));
 
-    fMean_dx_pos_mod1 = new TF1("funcMeandx_pos_mod1", "[0]/(x+[1])^[2]", 0.1, 10);
-    fMean_dx_neg_mod1 = new TF1("funcMeandx_neg_mod1", "[0]/(x+[1])^[2]", 0.1, 10);
-    fMean_dx_pos_mod2 = new TF1("funcMeandx_pos_mod2", "[0]/(x+[1])^[2]", 0.1, 10);
-    fMean_dx_neg_mod2 = new TF1("funcMeandx_neg_mod2", "[0]/(x+[1])^[2]", 0.1, 10);
-    fMean_dx_pos_mod3 = new TF1("funcMeandx_pos_mod3", "[0]/(x+[1])^[2]", 0.1, 10);
-    fMean_dx_neg_mod3 = new TF1("funcMeandx_neg_mod3", "[0]/(x+[1])^[2]", 0.1, 10);
-    fMean_dx_pos_mod4 = new TF1("funcMeandx_pos_mod4", "[0]/(x+[1])^[2]", 0.1, 10);
-    fMean_dx_neg_mod4 = new TF1("funcMeandx_neg_mod4", "[0]/(x+[1])^[2]", 0.1, 10);
+    fMeandXPosMod1 = new TF1("funcMeandx_pos_mod1", "[0]/(x+[1])^[2]", 0.1, 10);
+    fMeandXNegMod1 = new TF1("funcMeandx_neg_mod1", "[0]/(x+[1])^[2]", 0.1, 10);
+    fMeandXPosMod2 = new TF1("funcMeandx_pos_mod2", "[0]/(x+[1])^[2]", 0.1, 10);
+    fMeandXNegMod2 = new TF1("funcMeandx_neg_mod2", "[0]/(x+[1])^[2]", 0.1, 10);
+    fMeandXPosMod3 = new TF1("funcMeandx_pos_mod3", "[0]/(x+[1])^[2]", 0.1, 10);
+    fMeandXNegMod3 = new TF1("funcMeandx_neg_mod3", "[0]/(x+[1])^[2]", 0.1, 10);
+    fMeandXPosMod4 = new TF1("funcMeandx_pos_mod4", "[0]/(x+[1])^[2]", 0.1, 10);
+    fMeandXNegMod4 = new TF1("funcMeandx_neg_mod4", "[0]/(x+[1])^[2]", 0.1, 10);
 
-    fMean_dx_pos_mod1->SetParameters(Mean_dx_pos_mod1.at(0), Mean_dx_pos_mod1.at(1), Mean_dx_pos_mod1.at(2));
-    fMean_dx_pos_mod2->SetParameters(Mean_dx_pos_mod2.at(0), Mean_dx_pos_mod2.at(1), Mean_dx_pos_mod2.at(2));
-    fMean_dx_pos_mod3->SetParameters(Mean_dx_pos_mod3.at(0), Mean_dx_pos_mod3.at(1), Mean_dx_pos_mod3.at(2));
-    fMean_dx_pos_mod4->SetParameters(Mean_dx_pos_mod4.at(0), Mean_dx_pos_mod4.at(1), Mean_dx_pos_mod4.at(2));
+    fMeandXPosMod1->SetParameters(MeandXPosMod1.at(0), MeandXPosMod1.at(1), MeandXPosMod1.at(2));
+    fMeandXPosMod2->SetParameters(MeandXPosMod2.at(0), MeandXPosMod2.at(1), MeandXPosMod2.at(2));
+    fMeandXPosMod3->SetParameters(MeandXPosMod3.at(0), MeandXPosMod3.at(1), MeandXPosMod3.at(2));
+    fMeandXPosMod4->SetParameters(MeandXPosMod4.at(0), MeandXPosMod4.at(1), MeandXPosMod4.at(2));
 
-    fMean_dx_neg_mod1->SetParameters(Mean_dx_neg_mod1.at(0), Mean_dx_neg_mod1.at(1), Mean_dx_neg_mod1.at(2));
-    fMean_dx_neg_mod2->SetParameters(Mean_dx_neg_mod2.at(0), Mean_dx_neg_mod2.at(1), Mean_dx_neg_mod2.at(2));
-    fMean_dx_neg_mod3->SetParameters(Mean_dx_neg_mod3.at(0), Mean_dx_neg_mod3.at(1), Mean_dx_neg_mod3.at(2));
-    fMean_dx_neg_mod4->SetParameters(Mean_dx_neg_mod4.at(0), Mean_dx_neg_mod4.at(1), Mean_dx_neg_mod4.at(2));
+    fMeandXNegMod1->SetParameters(MeandXNegMod1.at(0), MeandXNegMod1.at(1), MeandXNegMod1.at(2));
+    fMeandXNegMod2->SetParameters(MeandXNegMod2.at(0), MeandXNegMod2.at(1), MeandXNegMod2.at(2));
+    fMeandXNegMod3->SetParameters(MeandXNegMod3.at(0), MeandXNegMod3.at(1), MeandXNegMod3.at(2));
+    fMeandXNegMod4->SetParameters(MeandXNegMod4.at(0), MeandXNegMod4.at(1), MeandXNegMod4.at(2));
   }
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-               aod::CaloClusters& clusters,
-               soa::Filtered<myTracks> const& tracks,
+               aod::CaloClusters const& clusters,
+               soa::Filtered<MyTracks> const& tracks,
                aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -324,7 +317,7 @@ struct phosElId {
       LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
       runNumber = bc.runNumber();
     }
-    if (fabs(collision.posZ()) > 10.f)
+    if (std::fabs(collision.posZ()) > 10.f)
       return;
     mHistManager.fill(HIST("eventCounter"), 0.5);
     if (!collision.alias_bit(mEvSelTrig))
@@ -339,7 +332,7 @@ struct phosElId {
 
     for (auto const& track : tracks) {
 
-      if (!track.has_collision() || fabs(track.dcaXY()) > cfgDCAxyMax || fabs(track.dcaZ()) > cfgDCAzMax || !track.hasTPC() || fabs(track.eta()) > 0.15)
+      if (!track.has_collision() || std::fabs(track.dcaXY()) > cfgDCAxyMax || std::fabs(track.dcaZ()) > cfgDCAzMax || !track.hasTPC() || std::fabs(track.eta()) > 0.15)
         continue;
       if (track.pt() < cfgPtMin || track.pt() > cfgPtMax)
         continue;
@@ -372,9 +365,9 @@ struct phosElId {
       if (track.hasTPC()) {
         float nsigmaTPCEl = track.tpcNSigmaEl();
         float nsigmaTOFEl = track.tofNSigmaEl();
-        bool isTPC_electron = nsigmaTPCEl > cfgTPCNSigmaElMin && nsigmaTPCEl < cfgTPCNSigmaElMax;
-        bool isTOF_electron = nsigmaTOFEl > cfgTOFNSigmaElMin && nsigmaTOFEl < cfgTOFNSigmaElMax;
-        isElectron = isTPC_electron || isTOF_electron;
+        bool isTPCElectron = nsigmaTPCEl > cfgTPCNSigmaElMin && nsigmaTPCEl < cfgTPCNSigmaElMax;
+        bool isTOFElectron = nsigmaTOFEl > cfgTOFNSigmaElMin && nsigmaTOFEl < cfgTOFNSigmaElMax;
+        isElectron = isTPCElectron || isTOFElectron;
 
         float nsigmaTPCPi = track.tpcNSigmaPi();
         float nsigmaTPCKa = track.tpcNSigmaKa();
@@ -443,7 +436,7 @@ struct phosElId {
             mHistManager.fill(HIST("hEp_v_pt_Nsigma_disp_TPC"), Ep, trackPT, module);
             mHistManager.fill(HIST("hEp_v_E_Nsigma_disp_TPC"), Ep, cluE, module);
           }
-          phosMatch(collision.index(), clu.index(), track.index());
+          PhosMatch(collision.index(), clu.index(), track.index());
         }
       }
 
@@ -474,24 +467,24 @@ struct phosElId {
   bool isWithinNSigma(int16_t& mod, float p, float deltaZ, float deltaX)
   {
     if (mod == 1) {
-      if (fabs(deltaZ - PhosShiftZ[0]) > cfgNsigmaTrackMatch * fSigma_dz->Eval(p))
+      if (std::fabs(deltaZ - PhosShiftZ[0]) > cfgNsigmaTrackMatch * fSigma_dz->Eval(p))
         return false;
-      if (fabs(deltaX - fMean_dx_pos_mod1->Eval(p) + PhosShiftX[0]) > cfgNsigmaTrackMatch * fSigma_dx->Eval(p))
+      if (std::fabs(deltaX - fMeandXPosMod1->Eval(p) + PhosShiftX[0]) > cfgNsigmaTrackMatch * fSigma_dx->Eval(p))
         return false;
     } else if (mod == 2) {
-      if (fabs(deltaZ - PhosShiftZ[1]) > cfgNsigmaTrackMatch * fSigma_dz->Eval(p))
+      if (std::fabs(deltaZ - PhosShiftZ[1]) > cfgNsigmaTrackMatch * fSigma_dz->Eval(p))
         return false;
-      if (fabs(deltaX - fMean_dx_pos_mod2->Eval(p) + PhosShiftX[1]) > cfgNsigmaTrackMatch * fSigma_dx->Eval(p))
+      if (std::fabs(deltaX - fMeandXPosMod2->Eval(p) + PhosShiftX[1]) > cfgNsigmaTrackMatch * fSigma_dx->Eval(p))
         return false;
     } else if (mod == 3) {
-      if (fabs(deltaZ - PhosShiftZ[2]) > cfgNsigmaTrackMatch * fSigma_dz->Eval(p))
+      if (std::fabs(deltaZ - PhosShiftZ[2]) > cfgNsigmaTrackMatch * fSigma_dz->Eval(p))
         return false;
-      if (fabs(deltaX - fMean_dx_pos_mod3->Eval(p) + PhosShiftX[2]) > cfgNsigmaTrackMatch * fSigma_dx->Eval(p))
+      if (std::fabs(deltaX - fMeandXPosMod3->Eval(p) + PhosShiftX[2]) > cfgNsigmaTrackMatch * fSigma_dx->Eval(p))
         return false;
     } else if (mod == 4) {
-      if (fabs(deltaZ - PhosShiftZ[3]) > cfgNsigmaTrackMatch * fSigma_dz->Eval(p))
+      if (std::fabs(deltaZ - PhosShiftZ[3]) > cfgNsigmaTrackMatch * fSigma_dz->Eval(p))
         return false;
-      if (fabs(deltaX - fMean_dx_pos_mod4->Eval(p) + PhosShiftX[3]) > cfgNsigmaTrackMatch * fSigma_dx->Eval(p))
+      if (std::fabs(deltaX - fMeandXPosMod4->Eval(p) + PhosShiftX[3]) > cfgNsigmaTrackMatch * fSigma_dx->Eval(p))
         return false;
     }
     return true;
@@ -509,13 +502,13 @@ struct phosElId {
     if (trackPhi < phiMin || trackPhi > phiMax || abs(trackEta) > etaMax) {
       return false;
     }
-
+    // RecoDecay::constrainAngle;
     const float dphi = 20. * 0.017453293;
     if (trackPhi < 0.) {
-      trackPhi += TMath::TwoPi();
+      trackPhi += o2::constants::math::TwoPI;
     }
-    if (trackPhi > TMath::TwoPi()) {
-      trackPhi -= TMath::TwoPi();
+    if (trackPhi > o2::constants::math::TwoPI) {
+      trackPhi -= o2::constants::math::TwoPI;
     }
     module = 1 + static_cast<int16_t>((trackPhi - phiMin) / dphi);
     if (module < 1) {
@@ -526,8 +519,8 @@ struct phosElId {
     }
 
     // get PHOS radius
-    constexpr float shiftY = -1.26;    // Depth-optimized
-    double posL[3] = {0., 0., shiftY}; // local position at the center of module
+    constexpr float ShiftY = -1.26;    // Depth-optimized
+    double posL[3] = {0., 0., ShiftY}; // local position at the center of module
     double posG[3] = {0};
     geomPHOS->getAlignmentMatrix(module)->LocalToMaster(posL, posG);
     double rPHOS = sqrt(posG[0] * posG[0] + posG[1] * posG[1]);
@@ -570,10 +563,10 @@ struct phosElId {
   {
     // Parameterization for full dispersion
     float l2Mean = 1.53126 + 9.50835e+06 / (1. + 1.08728e+07 * pt + 1.73420e+06 * pt * pt);
-    float l1Mean = 1.12365 + 0.123770 * TMath::Exp(-pt * 0.246551) + 5.30000e-03 * pt;
+    float l1Mean = 1.12365 + 0.123770 * std::exp(-pt * 0.246551) + 5.30000e-03 * pt;
     float l2Sigma = 6.48260e-02 + 7.60261e+10 / (1. + 1.53012e+11 * pt + 5.01265e+05 * pt * pt) + 9.00000e-03 * pt;
     float l1Sigma = 4.44719e-04 + 6.99839e-01 / (1. + 1.22497e+00 * pt + 6.78604e-07 * pt * pt) + 9.00000e-03 * pt;
-    float c = -0.35 - 0.550 * TMath::Exp(-0.390730 * pt);
+    float c = -0.35 - 0.550 * std::exp(-0.390730 * pt);
 
     return 0.5 * (l1 - l1Mean) * (l1 - l1Mean) / l1Sigma / l1Sigma +
              0.5 * (l2 - l2Mean) * (l2 - l2Mean) / l2Sigma / l2Sigma +
@@ -582,10 +575,10 @@ struct phosElId {
   }
 };
 
-struct massSpectra {
+struct MassSpectra {
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using myTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
+  using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
 
   Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
 
@@ -625,19 +618,19 @@ struct massSpectra {
   int runNumber{0};
 
   HistogramRegistry mHistManager{"MassSpectraHistograms"};
-  TF1* fEp_sigma_phos;
+  TF1* fEpSigmaPhos;
 
   void init(InitContext const&)
   {
     LOG(info) << "Initializing PHOS electron identification analysis task ...";
 
-    std::vector<double> momentum_binning = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
-                                            1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
-                                            4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
+    std::vector<double> momentumBinning = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
+                                           1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
+                                           4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
 
     const AxisSpec
       axisCounter{1, 0, +1, ""},
-      axisPt{momentum_binning, "p_{T} (GeV/c)"},
+      axisPt{momentumBinning, "p_{T} (GeV/c)"},
       axisEp{200, 0., 2., "E/p", "E_{cluster}/p_{track}"},
       axisE{200, 0, 10, "E (GeV)", "E (GeV)"},
       axisMassSpectrum{4000, 0, 4, "M (GeV/c^{2})", "Mass e^{+}e^{-} (GeV/c^{2})"};
@@ -666,13 +659,13 @@ struct massSpectra {
     geomPHOS = std::make_unique<o2::phos::Geometry>("PHOS");
 
     std::vector<float> EpSigmaPars = cfgEpSigmaPars;
-    fEp_sigma_phos = new TF1("fEp_sigma_phos", "sqrt([0]*[0]/x/x+[1]*[1]/x+[2]*[2])+[3]", 0.01, 10);
-    fEp_sigma_phos->SetParameters(EpSigmaPars.at(0), EpSigmaPars.at(1), EpSigmaPars.at(2), EpSigmaPars.at(3));
+    fEpSigmaPhos = new TF1("fEpSigmaPhos", "sqrt([0]*[0]/x/x+[1]*[1]/x+[2]*[2])+[3]", 0.01, 10);
+    fEpSigmaPhos->SetParameters(EpSigmaPars.at(0), EpSigmaPars.at(1), EpSigmaPars.at(2), EpSigmaPars.at(3));
   }
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                aod::CaloClusters const& clusters,
-               myTracks const& tracks,
+               MyTracks const& tracks,
                o2::aod::PHOSMatchindexTable const& matches,
                aod::BCsWithTimestamps const&)
   {
@@ -688,7 +681,7 @@ struct massSpectra {
       LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
       runNumber = bc.runNumber();
     }
-    if (fabs(collision.posZ()) > 10.f)
+    if (std::fabs(collision.posZ()) > 10.f)
       return;
     mHistManager.fill(HIST("eventCounter"), 0.5);
     if (!collision.alias_bit(mEvSelTrig))
@@ -700,7 +693,7 @@ struct massSpectra {
 
     for (auto const& TPCel : tracks) {
 
-      if (!TPCel.has_collision() || fabs(TPCel.dcaXY()) > cfgDCAxyMax || fabs(TPCel.dcaZ()) > cfgDCAzMax || !TPCel.hasTPC() || fabs(TPCel.eta()) > 0.15)
+      if (!TPCel.has_collision() || std::fabs(TPCel.dcaXY()) > cfgDCAxyMax || std::fabs(TPCel.dcaZ()) > cfgDCAzMax || !TPCel.hasTPC() || std::fabs(TPCel.eta()) > 0.15)
         continue;
       if (TPCel.pt() < cfgPtMin || TPCel.pt() > cfgPtMax)
         continue;
@@ -718,9 +711,9 @@ struct massSpectra {
       bool isElectron = false;
       float nsigmaTPCEl = TPCel.tpcNSigmaEl();
       float nsigmaTOFEl = TPCel.tofNSigmaEl();
-      bool isTPC_electron = nsigmaTPCEl > cfgTPCNSigmaElMin && nsigmaTPCEl < cfgTPCNSigmaElMax;
-      bool isTOF_electron = nsigmaTOFEl > cfgTOFNSigmaElMin && nsigmaTOFEl < cfgTOFNSigmaElMax;
-      isElectron = isTPC_electron || isTOF_electron;
+      bool isTPCElectron = nsigmaTPCEl > cfgTPCNSigmaElMin && nsigmaTPCEl < cfgTPCNSigmaElMax;
+      bool isTOFElectron = nsigmaTOFEl > cfgTOFNSigmaElMin && nsigmaTOFEl < cfgTOFNSigmaElMax;
+      isElectron = isTPCElectron || isTOFElectron;
 
       float nsigmaTPCPi = TPCel.tpcNSigmaPi();
       float nsigmaTPCKa = TPCel.tpcNSigmaKa();
@@ -749,7 +742,7 @@ struct massSpectra {
         P2.SetPxPyPzE(track2.px(), track2.py(), track2.pz(), track2.energy(0));
         mom_2tracks = (P1 + P2).Pt();
         mass_2tracks = (P1 + P2).M();
-        bool elCandidate = (fabs(cluE / track2.p() - cfgShiftEp - 1) < cfgNsigmaEp * fEp_sigma_phos->Eval(cluE));
+        bool elCandidate = (std::fabs(cluE / track2.p() - cfgShiftEp - 1) < cfgNsigmaEp * fEpSigmaPhos->Eval(cluE));
 
         if (TPCel.sign() == track2.sign()) {
           if (posTrack) {
@@ -782,19 +775,19 @@ struct massSpectra {
       auto clust = clusters.iteratorAt(match.caloClusterId());
       auto track = tracks.iteratorAt(match.trackId());
       float cluE = clust.e();
-      float ep_ratio = cluE / track.p();
-      mHistManager.fill(HIST("hEp_v_E"), ep_ratio, cluE);
-      bool elCandidate = (fabs(ep_ratio - cfgShiftEp - 1) < cfgNsigmaEp * fEp_sigma_phos->Eval(cluE));
+      float epRatio = cluE / track.p();
+      mHistManager.fill(HIST("hEp_v_E"), epRatio, cluE);
+      bool elCandidate = (std::fabs(epRatio - cfgShiftEp - 1) < cfgNsigmaEp * fEpSigmaPhos->Eval(cluE));
       if (elCandidate)
-        mHistManager.fill(HIST("hEp_v_E_cutEp"), ep_ratio, cluE);
+        mHistManager.fill(HIST("hEp_v_E_cutEp"), epRatio, cluE);
     }
   }
 };
 
-struct tpcElIdMassSpectrum {
+struct TpcElIdMassSpectrum {
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using myTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
+  using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
 
   Configurable<float> cfgEtaMax{"cfgEtaMax", {0.8f}, "eta ranges"};
   Configurable<float> cfgPtMin{"cfgPtMin", {0.2f}, "pt min"};
@@ -828,9 +821,9 @@ struct tpcElIdMassSpectrum {
   Filter dcazfilter = nabs(aod::track::dcaZ) < cfgDCAzMax;
 
   Filter tpcEl = ((aod::pidtpc::tpcNSigmaEl > cfgTPCNSigmaElMin) && (aod::pidtpc::tpcNSigmaEl < cfgTPCNSigmaElMax)) || ((aod::pidtof::tofNSigmaEl > cfgTOFNSigmaElMin) && (aod::pidtof::tofNSigmaEl < cfgTOFNSigmaElMax));
-  Filter tpcPi_rej = (aod::pidtpc::tpcNSigmaPi < cfgTPCNSigmaPiMin) || (aod::pidtpc::tpcNSigmaPi > cfgTPCNSigmaPiMax);
-  Filter tpcKa_rej = (aod::pidtpc::tpcNSigmaKa < cfgTPCNSigmaKaMin) || (aod::pidtpc::tpcNSigmaKa > cfgTPCNSigmaPrMax);
-  Filter tpcPr_rej = (aod::pidtpc::tpcNSigmaPr < cfgTPCNSigmaPrMin) || (aod::pidtpc::tpcNSigmaPr > cfgTPCNSigmaPrMax);
+  Filter tpcPiRej = (aod::pidtpc::tpcNSigmaPi < cfgTPCNSigmaPiMin) || (aod::pidtpc::tpcNSigmaPi > cfgTPCNSigmaPiMax);
+  Filter tpcKaRej = (aod::pidtpc::tpcNSigmaKa < cfgTPCNSigmaKaMin) || (aod::pidtpc::tpcNSigmaKa > cfgTPCNSigmaPrMax);
+  Filter tpcPrRej = (aod::pidtpc::tpcNSigmaPr < cfgTPCNSigmaPrMin) || (aod::pidtpc::tpcNSigmaPr > cfgTPCNSigmaPrMax);
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   double bz{0.}; // magnetic field
@@ -842,9 +835,9 @@ struct tpcElIdMassSpectrum {
   {
     LOG(info) << "Initializing ee mass spectrum via TPC electron identification analysis task ...";
 
-    std::vector<double> momentum_binning = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
-                                            1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
-                                            4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
+    std::vector<double> momentumBinning = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
+                                           1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
+                                           4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
     const AxisSpec
       axisCounter{1, 0, +1, ""},
       axisVTrackX{400, -5., 5., "track vertex x (cm)", "track vertex x (cm)"},
@@ -853,9 +846,9 @@ struct tpcElIdMassSpectrum {
       axisE{200, 0, 10, "E (GeV)", "E (GeV)"},
       axisMassSpectrum{4000, 0, 4, "M (GeV/c^{2})", "Mass e^{+}e^{-} (GeV/c^{2})"},
       axisMassSpectrumChiC{4000, 0, 4, "M (GeV/c^{2})", "Mass e^{+}e^{-}#gamma (GeV/c^{2})"},
-      axisMassSpectrumChiC_eeRemoved{4000, 0, 4, "M (GeV/c^{2})", "Mass e^{+}e^{-}#gamma - Mass e^{+}e^{-} + Mass J/#psi (GeV/c^{2})"},
+      axisMassSpectrumChiCNoJpsiErrors{4000, 0, 4, "M (GeV/c^{2})", "Mass e^{+}e^{-}#gamma - Mass e^{+}e^{-} + Mass J/#psi (GeV/c^{2})"},
       axisTPC{1000, 0, 200, "TPC signal (dE/dx)"},
-      axisPt{momentum_binning, "p_{T} (GeV/c)"},
+      axisPt{momentumBinning, "p_{T} (GeV/c)"},
       axisPtBig{2000, 0, 20, "p_{T} (GeV/c)"},
       axisEta{600, -3., 3., "#eta"};
 
@@ -867,9 +860,9 @@ struct tpcElIdMassSpectrum {
     mHistManager.add("h_TPCee_MS_pp_v_pt", "Mass e^{+}e^{+} vs momentum e^{+}e^{+} (from TPC candidates)", HistType::kTH2F, {axisMassSpectrum, axisPt});
 
     mHistManager.add("h_TPCeePhosGamma_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma (TPC candidates + Phos photon)", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
-    mHistManager.add("h_TPCeePhosGamma_minusee_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} + Mass J/#psi vs momentum e^{#pm}e^{#mp}#gamma (TPC candidates + Phos photon)", HistType::kTH2F, {axisMassSpectrumChiC_eeRemoved, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} + Mass J/#psi vs momentum e^{#pm}e^{#mp}#gamma (TPC candidates + Phos photon)", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
     mHistManager.add("h_TPCeePhosGamma_MS_v_cluE", "Mass e^{#pm}e^{#mp}#gamma vs cluster Energy left by the photon", HistType::kTH2F, {axisMassSpectrumChiC, axisE});
-    mHistManager.add("h_TPCeePhosGamma_minusee_MS_v_cluE", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} + Mass J/#psi vs cluster Energy left by the photon", HistType::kTH2F, {axisMassSpectrumChiC_eeRemoved, axisE});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_v_cluE", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} + Mass J/#psi vs cluster Energy left by the photon", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisE});
 
     mHistManager.add("h_TPCee_MS_mp_phosRange_v_pt", "Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp} (from TPC candidates) with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
     mHistManager.add("h_TPCee_MS_mm_phosRange_v_pt", "Mass e^{-}e^{-} vs momentum e^{-}e^{-} (from TPC candidates) with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
@@ -893,7 +886,7 @@ struct tpcElIdMassSpectrum {
   }
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                aod::CaloClusters const& clusters,
-               soa::Filtered<myTracks> const& tracks,
+               soa::Filtered<MyTracks> const& tracks,
                o2::aod::PHOSMatchindexTable const& matches,
                aod::BCsWithTimestamps const&)
   {
@@ -910,7 +903,7 @@ struct tpcElIdMassSpectrum {
       runNumber = bc.runNumber();
     }
     mHistManager.fill(HIST("eventCounter"), 0.5);
-    if (fabs(collision.posZ()) > 10.f)
+    if (std::fabs(collision.posZ()) > 10.f)
       return;
 
     for (auto& [track1, track2] : combinations(CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
@@ -943,8 +936,8 @@ struct tpcElIdMassSpectrum {
       P1.SetPxPyPzE(track1.px(), track1.py(), track1.pz(), track1.energy(0));
       P2.SetPxPyPzE(track2.px(), track2.py(), track2.pz(), track2.energy(0));
 
-      bool inPhosEtaRange1 = fabs(track1.eta()) < 0.12;
-      bool inPhosEtaRange2 = fabs(track2.eta()) < 0.12;
+      bool inPhosEtaRange1 = std::fabs(track1.eta()) < 0.12;
+      bool inPhosEtaRange2 = std::fabs(track2.eta()) < 0.12;
       bool inPhosPhiRange1 = (track1.phi() * TMath::RadToDeg() > 250 && track1.phi() * TMath::RadToDeg() < 320);
       bool inPhosPhiRange2 = (track2.phi() * TMath::RadToDeg() > 250 && track2.phi() * TMath::RadToDeg() < 320);
       bool inPhosRange = (inPhosEtaRange1 && inPhosPhiRange1) || (inPhosEtaRange2 && inPhosPhiRange2);
@@ -1033,8 +1026,8 @@ struct tpcElIdMassSpectrum {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{
-    adaptAnalysisTask<phosElId>(cfgc),
-    adaptAnalysisTask<massSpectra>(cfgc),
-    adaptAnalysisTask<tpcElIdMassSpectrum>(cfgc)};
+    adaptAnalysisTask<PhosElId>(cfgc),
+    adaptAnalysisTask<MassSpectra>(cfgc),
+    adaptAnalysisTask<TpcElIdMassSpectrum>(cfgc)};
   return workflow;
 }
