@@ -31,6 +31,8 @@
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/Utils/strangenessBuilderHelper.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -115,7 +117,7 @@ static constexpr int nTablesConst = 73;
 
 static const std::vector<std::string> parameterNames{"enable"};
 static const int defaultParameters[nTablesConst][nParameters]{
-  {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //0-9
+  {-1},  {1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //0-9
   {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //10-19
   {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //20-29
   {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, //30-39
@@ -384,12 +386,38 @@ struct StrangenessBuilder {
       return true;
     }
 
-    // acquire LUT for this timestamp
     auto timestamp = bc.timestamp();
+    o2::parameters::GRPObject* grpo = 0x0;
+    o2::parameters::GRPMagField* grpmag = 0x0;
+    if (doprocessRealDataRun2) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbConfigurations.grpPath, timestamp);
+      if (!grpo) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << ccdbConfigurations.grpPath << " of object GRPObject for timestamp " << timestamp;
+      }
+      o2::base::Propagator::initFieldFromGRP(grpo);
+    } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbConfigurations.grpmagPath, timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << ccdbConfigurations.grpmagPath << " of object GRPMagField for timestamp " << timestamp;
+      }
+      o2::base::Propagator::initFieldFromGRP(grpmag);
+    }
+    // Fetch magnetic field from ccdb for current collision
+    auto magneticField = o2::base::Propagator::Instance()->getNominalBz();
+    LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << magneticField << " kG";
+
+    // Set magnetic field value once known
+    straHelper.fitter.setBz(magneticField);
+
+    // acquire LUT for this timestamp
     LOG(info) << "Loading material look-up table for timestamp: " << timestamp;
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath, timestamp));
     o2::base::Propagator::Instance()->setMatLUT(lut);
     straHelper.lut = lut;
+
+    LOG(info) << "Fully configured for run: " << bc.runNumber();
+    // mmark this run as configured  
+    mRunNumber = bc.runNumber();
 
     return true;
   }
@@ -398,6 +426,7 @@ struct StrangenessBuilder {
   template <typename TV0s, typename TCascades>
   void markV0sUsedInCascades(TV0s const& v0s, TCascades const& cascades)
   {
+    v0sFromCascades.clear();
     v0Map.resize(v0s.size(), -2); // marks not used
     for (auto& cascade : cascades) {
       v0Map[cascade.v0Id()] = -1; // marks used (but isn't the index of a properly built V0, which would be >= 0)
@@ -407,14 +436,28 @@ struct StrangenessBuilder {
   template <class TTracks, typename TCollisions, typename TV0s>
   void buildV0s(TCollisions const& collisions, TV0s const& v0s)
   {
+    int nV0s = 0;
     // Loops over all V0s in the time frame
     for (auto& v0 : v0s) {
+      if(!mEnabledTables[kV0CoresBase] && v0Map[v0.globalIndex()] == -2){
+        // this hasn't been used by cascades and we're not generating V0s, so skip it
+        continue; 
+      }
+
       // Get tracks and generate candidate
       auto const& collision = v0.collision();
       auto const& posTrack = v0.template posTrack_as<TTracks>();
       auto const& negTrack = v0.template negTrack_as<TTracks>();
-      straHelper.buildV0Candidate(collision, posTrack, negTrack, v0.isCollinearV0());
+      if(!straHelper.buildV0Candidate(collision, posTrack, negTrack, v0.isCollinearV0())){ 
+        continue;
+      }
+      nV0s++;
+      if(v0Map[v0.globalIndex()]==-1){
+        v0Map[v0.globalIndex()] = v0sFromCascades.size(); // provide actual valid index in buffer
+        v0sFromCascades.push_back(straHelper.v0);
+      }
     }
+    LOGF(info, "V0s in DF: %i, V0s built: %i, V0s built and buffered for cascades: %i.", v0s.size(), nV0s, v0sFromCascades.size());
   }
 
   void processPreselectTPCPID(aod::Collisions const& collisions, aod::V0s const& V0s, aod::Cascades const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const& bcs)
@@ -428,12 +471,11 @@ struct StrangenessBuilder {
   {
     if(!initCCDB(bcs, collisions)) return;
     markV0sUsedInCascades(v0s, cascades);
-    if(mEnabledTables[kV0CoresBase]){ // V0s have been requested
-      buildV0s<TTracks>(collisions, v0s);
-    }
-    if(mEnabledTables[kStoredCascCores]){ // Cascades have been requested
-      //buildCascades<FullTracksExtIU>(Cascades);
-    }
+
+    // build V0s 
+    buildV0s<TTracks>(collisions, v0s);
+    
+    //buildCascades<FullTracksExtIU>(Cascades);
   }
 
   void processRealData(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
@@ -443,7 +485,7 @@ struct StrangenessBuilder {
 
   void processRealDataRun2(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    //dataProcess(collisions, v0s, cascades, tracks, bcs);
+    dataProcess(collisions, v0s, cascades, tracks, bcs);
   }
 
   void processSimulationFindable(aod::Collisions const& collisions, aod::V0s const& V0s, aod::Cascades const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const& bcs)
