@@ -142,4 +142,3 @@ o2physics_add_dpl_workflow(lambdajetpolarizationbuilder
     SOURCES lambdaJetpolarizationbuilder.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
-    
