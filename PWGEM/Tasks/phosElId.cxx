@@ -8,6 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+/// \struct PHOS electron id analysis
+/// \brief Task for calculating electron identification parameters
+/// \author Yeghishe Hambardzumyan, MIPT
+/// \since Apr, 2024
+/// @note Inherits functions and variables from phosAlign & phosPi0.
+/// @note Results will be used for candidate table producing task.
+///
 
 #include <climits>
 #include <cstdlib>
@@ -23,7 +30,6 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "ReconstructionDataFormats/TrackParametrization.h"
-
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -31,24 +37,14 @@
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
-
 #include "PHOSBase/Geometry.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CommonDataFormat/InteractionRecord.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "DetectorsBase/Propagator.h"
-
 #include "TF1.h"
 #include "TLorentzVector.h"
-
-/// \struct PHOS electron id analysis
-/// \brief Task for calculating electron identification parameters
-/// \author Yeghishe Hambardzumyan, MIPT
-/// \since Apr, 2024
-/// @note Inherits functions and variables from phosAlign & phosPi0.
-/// @note Results will be used for candidate table producing task.
-///
 
 using namespace o2;
 using namespace o2::soa;
@@ -78,7 +74,7 @@ DECLARE_SOA_TABLE(PHOSMatchindexTable, "AOD", "PHSMTCH",                        
 
 struct PhosElId {
 
-  Produces<o2::aod::PHOSMatchindexTable> PhosMatch;
+  Produces<o2::aod::PHOSMatchindexTable> hosMatch;
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
@@ -436,7 +432,7 @@ struct PhosElId {
             mHistManager.fill(HIST("hEp_v_pt_Nsigma_disp_TPC"), Ep, trackPT, module);
             mHistManager.fill(HIST("hEp_v_E_Nsigma_disp_TPC"), Ep, cluE, module);
           }
-          PhosMatch(collision.index(), clu.index(), track.index());
+          hosMatch(collision.index(), clu.index(), track.index());
         }
       }
 
@@ -499,7 +495,7 @@ struct PhosElId {
     const float phiMin = 240. * 0.017453293; // degToRad
     const float phiMax = 323. * 0.017453293; // PHOS+20 cm * degToRad
     const float etaMax = 0.178266;
-    if (trackPhi < phiMin || trackPhi > phiMax || abs(trackEta) > etaMax) {
+    if (trackPhi < phiMin || trackPhi > phiMax || std::abs(trackEta) > etaMax) {
       return false;
     }
     // RecoDecay::constrainAngle;
@@ -523,7 +519,7 @@ struct PhosElId {
     double posL[3] = {0., 0., ShiftY}; // local position at the center of module
     double posG[3] = {0};
     geomPHOS->getAlignmentMatrix(module)->LocalToMaster(posL, posG);
-    double rPHOS = sqrt(posG[0] * posG[0] + posG[1] * posG[1]);
+    double rPHOS = std::sqrt(posG[0] * posG[0] + posG[1] * posG[1]);
     double alpha = (230. + 20. * module) * 0.017453293;
 
     // During main reconstruction track was propagated to radius 460 cm with accounting material
@@ -548,7 +544,7 @@ struct PhosElId {
       return false;
     }
     alpha = trackPar.getAlpha();
-    double ca = cos(alpha), sa = sin(alpha);
+    double ca = std::cos(alpha), sa = std::sin(alpha);
     posG[0] = trackPar.getX() * ca - trackPar.getY() * sa;
     posG[1] = trackPar.getY() * ca + trackPar.getX() * sa;
     posG[2] = trackPar.getZ();
