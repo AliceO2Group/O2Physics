@@ -1743,37 +1743,43 @@ struct AnalysisSameEventPairing {
           isUnambiguous = !((twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)));
           if (pairSign == 0) {
             fHistMan->FillHistClass(histNames[icut][3].Data(), VarManager::fgValues);
-            if (isAmbiInBunch) {
-              fHistMan->FillHistClass(histNames[icut][15].Data(), VarManager::fgValues);
-            }
-            if (isAmbiOutOfBunch) {
-              fHistMan->FillHistClass(histNames[icut][18].Data(), VarManager::fgValues);
-            }
-            if (isUnambiguous) {
-              fHistMan->FillHistClass(histNames[icut][21].Data(), VarManager::fgValues);
+            if constexpr (TPairType == VarManager::kDecayToMuMu) {
+              if (isAmbiInBunch) {
+                fHistMan->FillHistClass(histNames[icut][15].Data(), VarManager::fgValues);
+              }
+              if (isAmbiOutOfBunch) {
+                fHistMan->FillHistClass(histNames[icut][18].Data(), VarManager::fgValues);
+              }
+              if (isUnambiguous) {
+                fHistMan->FillHistClass(histNames[icut][21].Data(), VarManager::fgValues);
+              }
             }
           } else {
             if (pairSign > 0) {
               fHistMan->FillHistClass(histNames[icut][4].Data(), VarManager::fgValues);
-              if (isAmbiInBunch) {
-                fHistMan->FillHistClass(histNames[icut][16].Data(), VarManager::fgValues);
-              }
-              if (isAmbiOutOfBunch) {
-                fHistMan->FillHistClass(histNames[icut][19].Data(), VarManager::fgValues);
-              }
-              if (isUnambiguous) {
-                fHistMan->FillHistClass(histNames[icut][22].Data(), VarManager::fgValues);
+              if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                if (isAmbiInBunch) {
+                  fHistMan->FillHistClass(histNames[icut][16].Data(), VarManager::fgValues);
+                }
+                if (isAmbiOutOfBunch) {
+                  fHistMan->FillHistClass(histNames[icut][19].Data(), VarManager::fgValues);
+                }
+                if (isUnambiguous) {
+                  fHistMan->FillHistClass(histNames[icut][22].Data(), VarManager::fgValues);
+                }
               }
             } else {
               fHistMan->FillHistClass(histNames[icut][5].Data(), VarManager::fgValues);
-              if (isAmbiInBunch) {
-                fHistMan->FillHistClass(histNames[icut][17].Data(), VarManager::fgValues);
-              }
-              if (isAmbiOutOfBunch) {
-                fHistMan->FillHistClass(histNames[icut][20].Data(), VarManager::fgValues);
-              }
-              if (isUnambiguous) {
-                fHistMan->FillHistClass(histNames[icut][23].Data(), VarManager::fgValues);
+              if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                if (isAmbiInBunch) {
+                  fHistMan->FillHistClass(histNames[icut][17].Data(), VarManager::fgValues);
+                }
+                if (isAmbiOutOfBunch) {
+                  fHistMan->FillHistClass(histNames[icut][20].Data(), VarManager::fgValues);
+                }
+                if (isUnambiguous) {
+                  fHistMan->FillHistClass(histNames[icut][23].Data(), VarManager::fgValues);
+                }
               }
             }
           }
@@ -1853,7 +1859,7 @@ struct AnalysisSameEventPairing {
   }
 
   void processMixingBarrelSkimmed(soa::Filtered<MyEventsHashSelected>& events,
-                                  soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& trackAssocs, MyBarrelTracksWithCov const& tracks)
+                                  soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& trackAssocs, aod::ReducedTracks const& tracks)
   {
     runSameSideMixing<pairTypeEE, gkEventFillMap>(events, trackAssocs, tracks, trackAssocsPerCollision);
   }
