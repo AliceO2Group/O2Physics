@@ -967,6 +967,7 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> fCollisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
   Configurable<float> fCenterMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
+  Configurable<bool> fConfigCumulants{"cfgCumulants", false, "If true, fill Cumulants with Weights different than 0"};
 
   // Configurables to create output tree (flat tables or minitree)
   struct : ConfigurableGroup {
@@ -1153,6 +1154,10 @@ struct AnalysisSameEventPairing {
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks1, typename TTracks2>
   void runSameEventPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2)
   {
+          if (fConfigCumulants && VarManager::fgValues[VarManager::kM11REF] == 0) {
+
+        return;
+      }
     if (fCurrentRun != event.runNumber()) {
       if (fUseRemoteField) {
         grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, event.timestamp());
