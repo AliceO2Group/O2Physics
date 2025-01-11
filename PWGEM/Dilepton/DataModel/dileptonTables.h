@@ -372,7 +372,7 @@ DECLARE_SOA_COLUMN(Sign, sign, int8_t);                         //!
 DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);                 //!
 DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);  //!
 DECLARE_SOA_COLUMN(ITSNSigmaEl, itsNSigmaEl, float);            //!
-DECLARE_SOA_COLUMN(ITSNSigmaMu, itsNSigmamu, float);            //!
+DECLARE_SOA_COLUMN(ITSNSigmaMu, itsNSigmaMu, float);            //!
 DECLARE_SOA_COLUMN(ITSNSigmaPi, itsNSigmaPi, float);            //!
 DECLARE_SOA_COLUMN(ITSNSigmaKa, itsNSigmaKa, float);            //!
 DECLARE_SOA_COLUMN(ITSNSigmaPr, itsNSigmaPr, float);            //!
