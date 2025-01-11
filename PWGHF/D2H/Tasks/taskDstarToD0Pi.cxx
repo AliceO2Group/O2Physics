@@ -270,6 +270,12 @@ struct HfTaskDstarToD0Pi {
           if (0.142f < deltaMAntiDstar && deltaMAntiDstar < 0.15f) {
             nCandsSignalRegion++;
           }
+
+          if constexpr (applyMl) {
+            auto mlBdtScore = candDstar.mlProbAntiDstarToD0Pi();
+            registry.fill(HIST("Yield/hDeltaInvMassVsPtVsCentVsBDTScore"), deltaMAntiDstar, candDstar.pt(), centrality, mlBdtScore[0], mlBdtScore[1], mlBdtScore[2]);
+          }
+
           registry.fill(HIST("Yield/hDeltaInvMassDstar3D"), deltaMAntiDstar, candDstar.pt(), centrality);
           registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), deltaMAntiDstar, candDstar.pt());
           registry.fill(HIST("Yield/hInvMassD0"), invD0Bar, candDstar.ptD0());
