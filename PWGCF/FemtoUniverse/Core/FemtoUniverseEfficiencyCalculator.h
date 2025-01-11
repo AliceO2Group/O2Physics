@@ -13,16 +13,21 @@
 /// \brief Abstraction for calculating efficiency and applying corrections with the help of CCDB
 /// \author Dawid Karpiński, WUT Warsaw, dawid.karpinski@cern.ch
 
-#ifndef PWGCF_FEMTOUNIVERSE_CORE_EFFICIENCY_CALCULATOR_H_
-#define PWGCF_FEMTOUNIVERSE_CORE_EFFICIENCY_CALCULATOR_H_
+#ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEFFICIENCYCALCULATOR_H_
+#define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEFFICIENCYCALCULATOR_H_
+
+#include <vector>
+#include <memory>
+#include <map>
+#include <string>
 
 #include "Framework/Configurable.h"
 #include "Framework/AnalysisHelpers.h"
 #include "Framework/CallbackService.h"
 #include "Framework/InitContext.h"
 #include "CCDB/BasicCCDBManager.h"
-#include "FemtoUniverseParticleHisto.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+#include "FemtoUniverseParticleHisto.h"
 
 namespace o2::analysis::femto_universe::efficiency
 {
@@ -41,7 +46,7 @@ struct EfficiencyConfigurableGroup : ConfigurableGroup {
   // TODO: move to separate struct?
   Configurable<std::string> confCCDBUrl{"confCCDBUrl", "http://alice-ccdb.cern.ch", "CCDB URL to be used"};
   Configurable<std::string> confCCDBPath{"confCCDBPath", "", "CCDB base path to where to upload objects"};
-  Configurable<long> confCCDBTimestamp{"confCCDBTimestamp", -1, "Timestamp from which to query CCDB objects"};
+  Configurable<int64_t> confCCDBTimestamp{"confCCDBTimestamp", -1, "Timestamp from which to query CCDB objects"};
 
   // TODO: declare this in task directly?
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> hMCTruth1;
@@ -53,7 +58,7 @@ class EfficiencyCalculator
  public:
   o2::ccdb::BasicCCDBManager& ccdb{o2::ccdb::BasicCCDBManager::instance()};
 
-  EfficiencyCalculator(EfficiencyConfigurableGroup* config) : config(config)
+  explicit EfficiencyCalculator(EfficiencyConfigurableGroup* config) : config(config) // o2-linter: disable=name/function-variable
   {
   }
 
@@ -114,8 +119,8 @@ class EfficiencyCalculator
           }
           LOGF(debug, notify("Found histogram %d: %s"), i + 1, output->GetTitle());
 
-          long now = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-          long oneYear = 365LL * 24 * 60 * 60 * 1000;
+          int64_t now = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+          int64_t oneYear = 365LL * 24 * 60 * 60 * 1000;
 
           if (ccdbApi.storeAsTFileAny(output.get(), ccdbFullPath, createMetadata(i), now, now + oneYear) == 0) {
             LOGF(info, notify("Histogram %d saved successfully"), i + 1);
@@ -204,7 +209,7 @@ class EfficiencyCalculator
 
   template <uint8_t N>
     requires isOneOrTwo<N>
-  auto loadEfficiencyFromCCDB(long timestamp) const -> TH1*
+  auto loadEfficiencyFromCCDB(int64_t timestamp) const -> TH1*
   {
     auto hEff = ccdb.getSpecific<TH1>(ccdbFullPath, timestamp, createMetadata(N - 1));
     if (!hEff || hEff->IsZombie()) {
@@ -234,4 +239,4 @@ class EfficiencyCalculator
 
 } // namespace o2::analysis::femto_universe::efficiency
 
-#endif
+#endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEFFICIENCYCALCULATOR_H_
