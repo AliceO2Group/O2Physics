@@ -1605,7 +1605,7 @@ struct UpcCandProducer {
     for (auto& pair : bcsMatchedTrIdsGlobal) {
       auto globalBC = static_cast<int64_t>(pair.first);
       const auto& fwdTrackIDs = pair.second; // Forward tracks (Global with MFT)
-      if (fwdTrackIDs.size() != 2) { // ensure we have two MFT tracks
+      if (fwdTrackIDs.size() != 2) {         // ensure we have two MFT tracks
         continue;
       }
 
