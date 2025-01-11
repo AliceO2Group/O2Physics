@@ -92,7 +92,7 @@ struct FlowZDCtask {
   ConfigurableAxis axisFT0CAmp{"axisFT0CAmp", {60000, 0, 60000}, "axisFT0CAmp"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
   Partition<aodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
 
   TComplex qTPC;       // init q TPC
@@ -283,125 +283,125 @@ struct FlowZDCtask {
     // collision-based event selection
     if (!collision.sel8())
       return;
-      const auto& foundBC = collision.foundBC_as<BCsRun3>();
-      if (collision.has_foundFT0()) {
-        auto ft0 = collision.foundFT0();
-        for (auto amplitude : ft0.amplitudeA()) {
-          FT0AAmp += amplitude;
-          histos.fill(HIST("hFT0AAmp"), FT0AAmp);
-        }
-        for (auto amplitude : ft0.amplitudeC()) {
-          FT0CAmp += amplitude;
-          histos.fill(HIST("hFT0CAmp"), FT0CAmp);
-        }
+    const auto& foundBC = collision.foundBC_as<BCsRun3>();
+    if (collision.has_foundFT0()) {
+      auto ft0 = collision.foundFT0();
+      for (auto amplitude : ft0.amplitudeA()) {
+        FT0AAmp += amplitude;
+        histos.fill(HIST("hFT0AAmp"), FT0AAmp);
       }
-      double FT0MAmp = FT0AAmp + FT0CAmp;
-      histos.fill(HIST("hFT0MAmp"), FT0MAmp);
-      if (foundBC.has_zdc()) {
-        const auto& zdcread = foundBC.zdc();
-        const auto cent = collision.centFT0C();
-
-        // ZDC data and histogram filling
-        histos.get<TH1>(HIST("ZNAcoll"))->Fill(zdcread.amplitudeZNA());
-        histos.get<TH1>(HIST("ZNCcoll"))->Fill(zdcread.amplitudeZNC());
-        histos.get<TH2>(HIST("ZNvsZEMcoll"))->Fill(zdcread.amplitudeZEM1() + zdcread.amplitudeZEM2(), zdcread.amplitudeZNA() + zdcread.amplitudeZNC());
-        histos.get<TH2>(HIST("ZNAvsZNCcoll"))->Fill(zdcread.amplitudeZNC(), zdcread.amplitudeZNA());
-
-        histos.get<TH1>(HIST("ZEM1coll"))->Fill(zdcread.amplitudeZEM1());
-        histos.get<TH1>(HIST("ZEM2coll"))->Fill(zdcread.amplitudeZEM2());
-
-        float sumZNC = (zdcread.energySectorZNC())[0] + (zdcread.energySectorZNC())[1] + (zdcread.energySectorZNC())[2] + (zdcread.energySectorZNC())[3];
-        float sumZNA = (zdcread.energySectorZNA())[0] + (zdcread.energySectorZNA())[1] + (zdcread.energySectorZNA())[2] + (zdcread.energySectorZNA())[3];
-        float sumZPC = (zdcread.energySectorZPC())[0] + (zdcread.energySectorZPC())[1] + (zdcread.energySectorZPC())[2] + (zdcread.energySectorZPC())[3];
-        float sumZPA = (zdcread.energySectorZPA())[0] + (zdcread.energySectorZPA())[1] + (zdcread.energySectorZPA())[2] + (zdcread.energySectorZPA())[3];
-        float sumZDC = sumZPA + sumZPC + sumZNA + sumZNC;
-        float sumZEM = zdcread.amplitudeZEM1() + zdcread.amplitudeZEM2();
-
-        // common energies
-        float common_sumZNC = (zdcread.energyCommonZNC()) / acceptnace_ZNC;
-        float common_sumZNA = (zdcread.energyCommonZNA()) / acceptnace_ZNA;
-        float common_sumZPC = (zdcread.energyCommonZPC()) / acceptnace_ZPC;
-        float common_sumZPA = (zdcread.energyCommonZPA()) / acceptnace_ZPA;
-        float sumZN = (sumZNC) + (sumZNA);
-        float sumZP = (sumZPC) + (sumZPA);
-
-        histos.fill(HIST("ZNenergy"), sumZN);
-        histos.fill(HIST("ZPenergy"), sumZP);
-        histos.fill(HIST("ZNCenergy"), common_sumZNC);
-        histos.fill(HIST("ZNAenergy"), common_sumZNA);
-        histos.fill(HIST("ZPAenergy"), common_sumZPA);
-        histos.fill(HIST("ZPCenergy"), common_sumZPC);
-        histos.fill(HIST("hZNvsFT0Ccent"), cent, sumZN);
-        histos.fill(HIST("hZPvsFT0Ccent"), cent, sumZP);
-        histos.fill(HIST("hZNvsFT0CAmp"), FT0CAmp, sumZN);
-        histos.fill(HIST("hZPvsFT0CAmp"), FT0CAmp, sumZP);
-        histos.fill(HIST("hZNvsMult"), Ntot, sumZN);
-        histos.fill(HIST("hZPvsMult"), Ntot, sumZP);
-
-        float ratioZN = sumZNC / sumZNA;
-        float ratioZP = sumZPC / sumZPA;
-        pZNratiovscent->Fill(cent, ratioZN);
-        pZPratiovscent->Fill(cent, ratioZP);
-        pZNvsFT0Ccent->Fill(cent, sumZN);
-        pZPvsFT0Ccent->Fill(cent, sumZP);
-
-        histos.get<TH2>(HIST("ZDC_energy_vs_ZEM"))->Fill(sumZEM, sumZDC);
-
-        // Spectator plane angle calculations and histograms
-        const auto Ntot_ZNA = zdcread.amplitudeZNA();
-        const auto Ntot_ZNC = zdcread.amplitudeZNC();
-        double qZNA_real = 0.0;
-        double qZNA_im = 0.0;
-        double qZNC_real = 0.0;
-        double qZNC_im = 0.0;
-        const double phiRadians[4] = {45 * o2::constants::math::PI / 180, 135 *  o2::constants::math::PI / 180, 225 *  o2::constants::math::PI / 180, 315 *  o2::constants::math::PI / 180};
-        std::complex<double> qZNA = std::complex<double>(0.0, 0.0);
-        std::complex<double> qZNC = std::complex<double>(0.0, 0.0);
-
-        for (int sector = 0; sector < 4; ++sector) {
-          float energyZNA = zdcread.energySectorZNA()[sector];
-          float energyZNC = zdcread.energySectorZNC()[sector];
-
-          qZNA += std::complex<double>(std::cos(2 * phiRadians[sector]) * energyZNA / sumZNA, std::sin(2 * phiRadians[sector]) * energyZNA / sumZNA);
-          qZNC += std::complex<double>(std::cos(2 * phiRadians[sector]) * energyZNC / sumZNC, std::sin(2 * phiRadians[sector]) * energyZNC / sumZNC);
-        }
-
-        qZNA_real = qZNA.real() / Ntot_ZNA;
-        qZNA_im = qZNA.imag() / Ntot_ZNA;
-        qZNC_real = qZNC.real() / Ntot_ZNC;
-        qZNC_im = qZNC.imag() / Ntot_ZNC;
-
-        histos.fill(HIST("Acorrelations"), qZNA.real(), qZNA.imag());
-        histos.fill(HIST("RealQHistogramZNA"), qZNA_real);
-        histos.fill(HIST("ImagQHistogramZNA"), qZNA_im);
-        histos.fill(HIST("RealQHistogramZNC"), qZNC_real);
-        histos.fill(HIST("ImagQHistogramZNC"), qZNC_im);
-
-        // Calculate the spectator plane angles for ZNA and ZNC
-        double psiZNA = std::atan2(qZNA.imag(), qZNA.real()) / 2.0;
-        double psiZNC = std::atan2(qZNC.imag(), qZNC.real()) / 2.0;
-
-        // Fill the histograms with the calculated angles
-        histos.fill(HIST("SPAngleZNA"), psiZNA);
-        histos.fill(HIST("SPAngleZNC"), psiZNC);
-
-        double cosPsiDiff = std::cos(psiZNA) - std::cos(psiZNC);
-        double sinPsiDiff = std::sin(psiZNA) - std::sin(psiZNC);
-
-        sumCosPsiDiff += cosPsiDiff;
-        sumSinPsiDiff += sinPsiDiff;
-        ++countEvents;
-
-        if (countEvents > 0) {
-          double runningAverageCosPsiDiff = sumCosPsiDiff / countEvents;
-          double runningAverageSinPsiDiff = sumSinPsiDiff / countEvents;
-          histos.fill(HIST("RunningAverageCosPsiDiff"), runningAverageCosPsiDiff);
-          pCosPsiDifferences->Fill(cent, runningAverageCosPsiDiff);
-          pSinPsiDifferences->Fill(cent, runningAverageSinPsiDiff);
-        }
-        histos.fill(HIST("CosPsiDifferences"), cosPsiDiff);
-        histos.fill(HIST("hSinDifferences"), sinPsiDiff);
+      for (auto amplitude : ft0.amplitudeC()) {
+        FT0CAmp += amplitude;
+        histos.fill(HIST("hFT0CAmp"), FT0CAmp);
       }
+    }
+    double FT0MAmp = FT0AAmp + FT0CAmp;
+    histos.fill(HIST("hFT0MAmp"), FT0MAmp);
+    if (foundBC.has_zdc()) {
+      const auto& zdcread = foundBC.zdc();
+      const auto cent = collision.centFT0C();
+
+      // ZDC data and histogram filling
+      histos.get<TH1>(HIST("ZNAcoll"))->Fill(zdcread.amplitudeZNA());
+      histos.get<TH1>(HIST("ZNCcoll"))->Fill(zdcread.amplitudeZNC());
+      histos.get<TH2>(HIST("ZNvsZEMcoll"))->Fill(zdcread.amplitudeZEM1() + zdcread.amplitudeZEM2(), zdcread.amplitudeZNA() + zdcread.amplitudeZNC());
+      histos.get<TH2>(HIST("ZNAvsZNCcoll"))->Fill(zdcread.amplitudeZNC(), zdcread.amplitudeZNA());
+
+      histos.get<TH1>(HIST("ZEM1coll"))->Fill(zdcread.amplitudeZEM1());
+      histos.get<TH1>(HIST("ZEM2coll"))->Fill(zdcread.amplitudeZEM2());
+
+      float sumZNC = (zdcread.energySectorZNC())[0] + (zdcread.energySectorZNC())[1] + (zdcread.energySectorZNC())[2] + (zdcread.energySectorZNC())[3];
+      float sumZNA = (zdcread.energySectorZNA())[0] + (zdcread.energySectorZNA())[1] + (zdcread.energySectorZNA())[2] + (zdcread.energySectorZNA())[3];
+      float sumZPC = (zdcread.energySectorZPC())[0] + (zdcread.energySectorZPC())[1] + (zdcread.energySectorZPC())[2] + (zdcread.energySectorZPC())[3];
+      float sumZPA = (zdcread.energySectorZPA())[0] + (zdcread.energySectorZPA())[1] + (zdcread.energySectorZPA())[2] + (zdcread.energySectorZPA())[3];
+      float sumZDC = sumZPA + sumZPC + sumZNA + sumZNC;
+      float sumZEM = zdcread.amplitudeZEM1() + zdcread.amplitudeZEM2();
+
+      // common energies
+      float common_sumZNC = (zdcread.energyCommonZNC()) / acceptnace_ZNC;
+      float common_sumZNA = (zdcread.energyCommonZNA()) / acceptnace_ZNA;
+      float common_sumZPC = (zdcread.energyCommonZPC()) / acceptnace_ZPC;
+      float common_sumZPA = (zdcread.energyCommonZPA()) / acceptnace_ZPA;
+      float sumZN = (sumZNC) + (sumZNA);
+      float sumZP = (sumZPC) + (sumZPA);
+
+      histos.fill(HIST("ZNenergy"), sumZN);
+      histos.fill(HIST("ZPenergy"), sumZP);
+      histos.fill(HIST("ZNCenergy"), common_sumZNC);
+      histos.fill(HIST("ZNAenergy"), common_sumZNA);
+      histos.fill(HIST("ZPAenergy"), common_sumZPA);
+      histos.fill(HIST("ZPCenergy"), common_sumZPC);
+      histos.fill(HIST("hZNvsFT0Ccent"), cent, sumZN);
+      histos.fill(HIST("hZPvsFT0Ccent"), cent, sumZP);
+      histos.fill(HIST("hZNvsFT0CAmp"), FT0CAmp, sumZN);
+      histos.fill(HIST("hZPvsFT0CAmp"), FT0CAmp, sumZP);
+      histos.fill(HIST("hZNvsMult"), Ntot, sumZN);
+      histos.fill(HIST("hZPvsMult"), Ntot, sumZP);
+
+      float ratioZN = sumZNC / sumZNA;
+      float ratioZP = sumZPC / sumZPA;
+      pZNratiovscent->Fill(cent, ratioZN);
+      pZPratiovscent->Fill(cent, ratioZP);
+      pZNvsFT0Ccent->Fill(cent, sumZN);
+      pZPvsFT0Ccent->Fill(cent, sumZP);
+
+      histos.get<TH2>(HIST("ZDC_energy_vs_ZEM"))->Fill(sumZEM, sumZDC);
+
+      // Spectator plane angle calculations and histograms
+      const auto Ntot_ZNA = zdcread.amplitudeZNA();
+      const auto Ntot_ZNC = zdcread.amplitudeZNC();
+      double qZNA_real = 0.0;
+      double qZNA_im = 0.0;
+      double qZNC_real = 0.0;
+      double qZNC_im = 0.0;
+      const double phiRadians[4] = {45 * o2::constants::math::PI / 180, 135 * o2::constants::math::PI / 180, 225 * o2::constants::math::PI / 180, 315 * o2::constants::math::PI / 180};
+      std::complex<double> qZNA = std::complex<double>(0.0, 0.0);
+      std::complex<double> qZNC = std::complex<double>(0.0, 0.0);
+
+      for (int sector = 0; sector < 4; ++sector) {
+        float energyZNA = zdcread.energySectorZNA()[sector];
+        float energyZNC = zdcread.energySectorZNC()[sector];
+
+        qZNA += std::complex<double>(std::cos(2 * phiRadians[sector]) * energyZNA / sumZNA, std::sin(2 * phiRadians[sector]) * energyZNA / sumZNA);
+        qZNC += std::complex<double>(std::cos(2 * phiRadians[sector]) * energyZNC / sumZNC, std::sin(2 * phiRadians[sector]) * energyZNC / sumZNC);
+      }
+
+      qZNA_real = qZNA.real() / Ntot_ZNA;
+      qZNA_im = qZNA.imag() / Ntot_ZNA;
+      qZNC_real = qZNC.real() / Ntot_ZNC;
+      qZNC_im = qZNC.imag() / Ntot_ZNC;
+
+      histos.fill(HIST("Acorrelations"), qZNA.real(), qZNA.imag());
+      histos.fill(HIST("RealQHistogramZNA"), qZNA_real);
+      histos.fill(HIST("ImagQHistogramZNA"), qZNA_im);
+      histos.fill(HIST("RealQHistogramZNC"), qZNC_real);
+      histos.fill(HIST("ImagQHistogramZNC"), qZNC_im);
+
+      // Calculate the spectator plane angles for ZNA and ZNC
+      double psiZNA = std::atan2(qZNA.imag(), qZNA.real()) / 2.0;
+      double psiZNC = std::atan2(qZNC.imag(), qZNC.real()) / 2.0;
+
+      // Fill the histograms with the calculated angles
+      histos.fill(HIST("SPAngleZNA"), psiZNA);
+      histos.fill(HIST("SPAngleZNC"), psiZNC);
+
+      double cosPsiDiff = std::cos(psiZNA) - std::cos(psiZNC);
+      double sinPsiDiff = std::sin(psiZNA) - std::sin(psiZNC);
+
+      sumCosPsiDiff += cosPsiDiff;
+      sumSinPsiDiff += sinPsiDiff;
+      ++countEvents;
+
+      if (countEvents > 0) {
+        double runningAverageCosPsiDiff = sumCosPsiDiff / countEvents;
+        double runningAverageSinPsiDiff = sumSinPsiDiff / countEvents;
+        histos.fill(HIST("RunningAverageCosPsiDiff"), runningAverageCosPsiDiff);
+        pCosPsiDifferences->Fill(cent, runningAverageCosPsiDiff);
+        pSinPsiDifferences->Fill(cent, runningAverageSinPsiDiff);
+      }
+      histos.fill(HIST("CosPsiDifferences"), cosPsiDiff);
+      histos.fill(HIST("hSinDifferences"), sinPsiDiff);
+    }
   }
 
   PROCESS_SWITCH(FlowZDCtask, processZdcCollAssoc, "Processing ZDC w. collision association", true);
