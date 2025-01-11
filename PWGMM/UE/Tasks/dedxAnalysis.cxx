@@ -388,12 +388,12 @@ struct dedxAnalysis {
       float pyNeg = negTrack.py();
       float pzNeg = negTrack.pz();
 
-      const float PROTON_MASS = 0.938; // GeV/c^2
-      const float PI_MASS = 0.13957;   // GeV/c^2
-      const float K0S_MASS = 493.677;  // MeV/c^2
-      const float LAMBDA_MASS = 1.115; // GeV/c^2
-      const float GAMMA_MASS = 1.022;  // MeV/c^2
-      const float ELECTRON_MASS = 0.511;      // MeV/c^2
+      const float PROTON_MASS = 0.938;   // GeV/c^2
+      const float PI_MASS = 0.13957;     // GeV/c^2
+      const float K0S_MASS = 493.677;    // MeV/c^2
+      const float LAMBDA_MASS = 1.115;   // GeV/c^2
+      const float GAMMA_MASS = 1.022;    // MeV/c^2
+      const float ELECTRON_MASS = 0.511; // MeV/c^2
 
       //-------------------Armenteros plots--------
 
@@ -439,7 +439,7 @@ struct dedxAnalysis {
         float EposPr = posTrack.energy(PROTON_MASS);
         float EnegPi = negTrack.energy(PI_MASS);
 
-          float InvMass = sqrt((EnegPi + EposPr) * (EnegPi + EposPr) - ((pxNeg + pxPos) * (pxNeg + pxPos) + (pyNeg + pyPos) * (pyNeg + pyPos) + (pzNeg + pzPos) * (pzNeg + pzPos)));
+        float InvMass = sqrt((EnegPi + EposPr) * (EnegPi + EposPr) - ((pxNeg + pxPos) * (pxNeg + pxPos) + (pyNeg + pyPos) * (pyNeg + pyPos) + (pzNeg + pzPos) * (pzNeg + pzPos)));
 
         if (std::abs(InvMass - LAMBDA_MASS) > 0.01) {
           continue;
@@ -466,7 +466,7 @@ struct dedxAnalysis {
         float EposPi = posTrack.energy(PI_MASS);
         float EnegPr = negTrack.energy(PROTON_MASS);
 
-          float InvMass = sqrt((EnegPr + EposPi) * (EnegPr + EposPi) - ((pxNeg + pxPos) * (pxNeg + pxPos) + (pyNeg + pyPos) * (pyNeg + pyPos) + (pzNeg + pzPos) * (pzNeg + pzPos)));
+        float InvMass = sqrt((EnegPr + EposPi) * (EnegPr + EposPi) - ((pxNeg + pxPos) * (pxNeg + pxPos) + (pyNeg + pyPos) * (pyNeg + pyPos) + (pzNeg + pzPos) * (pzNeg + pzPos)));
 
         if (std::abs(InvMass - LAMBDA_MASS) > 0.01) {
           continue;
@@ -493,7 +493,7 @@ struct dedxAnalysis {
         float EposEl = posTrack.energy(ELECTRON_MASS);
         float EnegEl = negTrack.energy(ELECTRON_MASS);
 
-          float InvMass = sqrt((EnegEl + EposEl) * (EnegEl + EposEl) - ((pxNeg + pxPos) * (pxNeg + pxPos) + (pyNeg + pyPos) * (pyNeg + pyPos) + (pzNeg + pzPos) * (pzNeg + pzPos)));
+        float InvMass = sqrt((EnegEl + EposEl) * (EnegEl + EposEl) - ((pxNeg + pxPos) * (pxNeg + pxPos) + (pyNeg + pyPos) * (pyNeg + pyPos) + (pzNeg + pzPos) * (pzNeg + pzPos)));
 
         if (std::abs(InvMass - GAMMA_MASS) > 10) {
           continue;
