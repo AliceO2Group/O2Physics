@@ -131,7 +131,7 @@ struct FlowZDCtask {
 
     const AxisSpec axisPt{nBinsPt, 0, 10, "p_{T} (GeV/c)"};
     const AxisSpec axisCounter{1, 0, +1, ""};
-    const AxisSpec axisPhi{100, 0, o2::constants::math::TwoPIPI, "#phi"};
+    const AxisSpec axisPhi{100, 0, o2::constants::math::TwoPI, "#phi"};
     const AxisSpec axisQ{100, -1, 1, "Q"};
     const AxisSpec axisZNA{100, 0, 200, "energy"};
     const AxisSpec axisQZNA{100, -1, 1, "Q"};
