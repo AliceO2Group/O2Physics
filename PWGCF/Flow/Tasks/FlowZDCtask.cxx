@@ -8,20 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-<<<<<<< HEAD
-
-// o2-analysis-cf-flow-zdc-task --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-track-propagation --aod-file AO2D.root --configuration json://configuration_run3.json |  o2-analysis-timestamp --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-event-selection --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-trackselection --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-centrality-table --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-multiplicity-table --aod-file AO2D.root --configuration json://configuration_run3.json -b
-
-=======
 /// \file   FlowZDCtask.cxx
 /// \author Sabrina Hernandez
-/// \since  08/01/2024
+/// \since  10/01/2024
 /// \brief  task to evaluate flow and neutron skin with information from ZDC
->>>>>>> ad777c681 (adjusted O2 linter and added 2D histograms)
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <vector>
-#include <complex> 
+#include <complex>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
@@ -90,11 +84,7 @@ struct FlowZDCtask {
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.30, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00}, "pt axis for histograms"};
-<<<<<<< HEAD
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {3500, 0, 3500}, "centrality axis for histograms"};
-=======
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2500, 0, 2500}, "centrality axis for histograms"};
->>>>>>> d632a38c11f0e23edc22c48733f9ddfa198ddf5d
   ConfigurableAxis axisEnergy{"axisEnergy", {100, 0, 700}, "energy axis for zdc histos"};
   ConfigurableAxis axisMultTPC{"axisaxisMultTPC", {1000, -0.5f, 1999.5f}, "TPCmultiplicity"};
   ConfigurableAxis axisZN{"axisZN", {5000, 0, 500}, "axisZN"};
@@ -151,11 +141,6 @@ struct FlowZDCtask {
     AxisSpec axisVtxcounts{2, -0.5f, 1.5f, "Vtx info (0=no, 1=yes)"};
     AxisSpec axisZvert{120, -30.f, 30.f, "Vtx z (cm)"};
     AxisSpec axisCent{8, 0.f, 105.f, "centrality"};
-<<<<<<< HEAD
-=======
-    AxisSpec axisMult{2500, 0, 2500.0f, "multiplicity"};
-    AxisSpec axisMultTPC{1000, -0.5f, 1999.5f, "TPCmultiplicity"};
->>>>>>> d632a38c11f0e23edc22c48733f9ddfa198ddf5d
     AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
     AxisSpec axisPtBins{{0., 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.25, 2.5, 2.75, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10., 13., 16., 20.}, "p_{T} (GeV/c)"};
 
@@ -166,11 +151,7 @@ struct FlowZDCtask {
     histos.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
     histos.add("centHistogram", "centHistogram", kTH1F, {axisCent});
     histos.add("multHistogram", "multHistogram", kTH1F, {axisMultiplicity});
-<<<<<<< HEAD
     histos.add("multvsCent", "centrality vs multiplicity", kTH2F, {axisCent, axisMultiplicity});
-=======
-    histos.add("multvsCent", "centrality vs multiplicity", kTH2F, {axisCent, axisMult});
->>>>>>> d632a38c11f0e23edc22c48733f9ddfa198ddf5d
     histos.add("phiHistogram", "phiHistogram", kTH1F, {axisPhi});
     histos.add("TPCmultiplicity", "TPCmultiplicity", kTH1F, {axisMultTPC});
 
@@ -212,13 +193,8 @@ struct FlowZDCtask {
       histos.add("ImagQHistogramZNC", "ImagQHistogramZNC", kTH1F, {axisQZNA});
 
       histos.add("Acorrelations", "Acorrelations", kTH2F, {{axisQZNA}, {axisQZNA}});
-<<<<<<< HEAD
       histos.add("SPAngleZNA", "Spectator Plane Angle ZNA;Angle (radians);Entries", {HistType::kTH1F, {{100, -o2::constants::math::PI, o2::constants::math::PI}}});
       histos.add("SPAngleZNC", "Spectator Plane Angle ZNC;Angle (radians);Entries", {HistType::kTH1F, {{100, -o2::constants::math::PI, o2::constants::math::PI}}});
-=======
-      histos.add("SPAngleZNA", "Spectator Plane Angle ZNA;Angle (radians);Entries", {HistType::kTH1F, {{100, -TMath::Pi(), TMath::Pi()}}});
-      histos.add("SPAngleZNC", "Spectator Plane Angle ZNC;Angle (radians);Entries", {HistType::kTH1F, {{100, -TMath::Pi(), TMath::Pi()}}});
->>>>>>> d632a38c11f0e23edc22c48733f9ddfa198ddf5d
 
       histos.add("RunningAverageCosPsiDiff", "Running Average of cos(psi) Differences;Running Average;Entries", {HistType::kTH1F, {{100, -1, 1}}});
 
@@ -306,7 +282,7 @@ struct FlowZDCtask {
     double FT0CAmp = 0;
     // collision-based event selection
     if (!collision.sel8())
-      return;      
+      return;
       const auto& foundBC = collision.foundBC_as<BCsRun3>();
       if (collision.has_foundFT0()) {
         auto ft0 = collision.foundFT0();
@@ -426,7 +402,6 @@ struct FlowZDCtask {
         histos.fill(HIST("CosPsiDifferences"), cosPsiDiff);
         histos.fill(HIST("hSinDifferences"), sinPsiDiff);
       }
-    
   }
 
   PROCESS_SWITCH(FlowZDCtask, processZdcCollAssoc, "Processing ZDC w. collision association", true);
