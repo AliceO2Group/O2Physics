@@ -529,7 +529,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           weight *= efficiencyCalculator.getWeight<2>(p2);
         }
 
-        sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D);
+        sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, weight);
       }
     }
   }
@@ -583,8 +583,6 @@ struct FemtoUniversePairTaskTrackTrackExtended {
       auto reco = qaRegistry.get<TH1>(HIST("Tracks_two_MC/hPt"));
       efficiencyCalculator.calculate<2>(truth, reco);
     }
-
-    LOG(info) << "PROCESS SAME EVENT MC";
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackTrackExtended, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
