@@ -89,3 +89,9 @@ void EMEventCut::SetRequireNoCollInITSROFStrict(bool flag)
   mRequireNoCollInITSROFStrict = flag;
   LOG(info) << "EM Event Cut, require No collision in ITS ROF strict: " << mRequireNoCollInITSROFStrict;
 }
+
+void EMEventCut::SetRequireNoHighMultCollInPrevRof(bool flag)
+{
+  mRequireNoHighMultCollInPrevRof = flag;
+  LOG(info) << "EM Event Cut, require No HM collision in previous ITS ROF: " << mRequireNoHighMultCollInPrevRof;
+}

@@ -42,6 +42,7 @@ class EMEventCut : public TNamed
     kNoCollInTimeRangeStrict,
     kNoCollInITSROFStandard,
     kNoCollInITSROFStrict,
+    kNoHighMultCollInPrevRof,
     kNCuts
   };
 
@@ -82,6 +83,9 @@ class EMEventCut : public TNamed
       return false;
     }
     if (mRequireNoCollInITSROFStrict && !IsSelected(collision, EMEventCuts::kNoCollInITSROFStrict)) {
+      return false;
+    }
+    if (mRequireNoHighMultCollInPrevRof && !IsSelected(collision, EMEventCuts::kNoHighMultCollInPrevRof)) {
       return false;
     }
     return true;
@@ -127,6 +131,9 @@ class EMEventCut : public TNamed
       case EMEventCuts::kNoCollInITSROFStrict:
         return collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict);
 
+      case EMEventCuts::kNoHighMultCollInPrevRof:
+        return collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof);
+
       default:
         return true;
     }
@@ -145,13 +152,14 @@ class EMEventCut : public TNamed
   void SetRequireNoCollInTimeRangeStrict(bool flag);
   void SetRequireNoCollInITSROFStandard(bool flag);
   void SetRequireNoCollInITSROFStrict(bool flag);
+  void SetRequireNoHighMultCollInPrevRof(bool flag);
 
  private:
-  bool mRequireSel8{true};
+  bool mRequireSel8{false};
   bool mRequireFT0AND{true};
   float mMinZvtx{-10.f}, mMaxZvtx{+10.f};
-  bool mRequireNoTFB{true};
-  bool mRequireNoITSROFB{true};
+  bool mRequireNoTFB{false};
+  bool mRequireNoITSROFB{false};
   bool mRequireNoSameBunchPileup{false};
   bool mRequireVertexITSTPC{false};
   bool mRequireGoodZvtxFT0vsPV{false};
@@ -159,6 +167,7 @@ class EMEventCut : public TNamed
   bool mRequireNoCollInTimeRangeStrict{false};
   bool mRequireNoCollInITSROFStandard{false};
   bool mRequireNoCollInITSROFStrict{false};
+  bool mRequireNoHighMultCollInPrevRof{false};
 
   ClassDef(EMEventCut, 1);
 };

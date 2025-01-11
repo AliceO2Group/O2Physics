@@ -19,11 +19,6 @@ o2physics_add_dpl_workflow(hyhefour-builder
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hyper-kink-reco-task
-    SOURCES hyperKinkRecoTask.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
-    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(hypertriton-reco-task
     SOURCES hyperRecoTask.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
@@ -66,7 +61,7 @@ o2physics_add_dpl_workflow(threebodymcfinder
 
 o2physics_add_dpl_workflow(threebody-reco-task
     SOURCES threebodyRecoTask.cxx
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(ebye-maker
@@ -86,5 +81,15 @@ o2physics_add_dpl_workflow(pidtof-generic
 
 o2physics_add_dpl_workflow(threebody-kf-task
     SOURCES threebodyKFTask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hypernuclei-kf-reco-task
+    SOURCES hypKfRecoTask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hypernuclei-kf-tree-creator
+    SOURCES hypKfTreeCreator.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

@@ -31,7 +31,10 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
-
+//
+#include "string"
+#include "vector"
+#include "set"
 //
 namespace extConfPar
 {
@@ -139,6 +142,7 @@ struct qaMatchEff {
   // Other track settings
   //  TRD presence
   Configurable<int> isTRDThere{"isTRDThere", 2, "Integer to turn the presence of TRD off, on, don't care (0,1,anything else)"};
+  Configurable<int> isTOFThere{"isTOFThere", 2, "Integer to turn the presence of TOF off, on, don't care (0,1,anything else)"};
   //
   Configurable<bool> isitMC{"isitMC", false, "Reading MC files, data if false"};
   Configurable<bool> doDebug{"doDebug", false, "Flag of debug information"};
@@ -1504,6 +1508,11 @@ struct qaMatchEff {
         continue;
       if ((isTRDThere == 0) && track.hasTRD())
         continue;
+      // choose if we keep the track according to the TOF presence requirement
+      if ((isTOFThere == 1) && !track.hasTOF())
+        continue;
+      if ((isTOFThere == 0) && track.hasTOF())
+        continue;
 
       // kinematic track seletions for all tracks
       if (!isTrackSelectedKineCuts(track))
@@ -2363,7 +2372,7 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("data/PID/etahist_tpc_noidminus"))->Fill(track.eta());
             }
           } // not pions, nor kaons, nor protons
-        }   // end if DATA
+        } // end if DATA
         //
         if (trkWITS && isTrackSelectedITSCuts(track)) { ////////////////////////////////////////////   ITS tag inside TPC tagged
           if constexpr (IS_MC) {                        ////////////////////////   MC
@@ -2703,7 +2712,7 @@ struct qaMatchEff {
             // }
           }
         } //  end if ITS
-      }   //  end if TPC
+      } //  end if TPC
       //
       //
       // if (trkWITS) {
@@ -2830,9 +2839,9 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("data/etahist_tpcits_pos"))->Fill(track.eta());
             }
           } //  end if ITS
-        }   //  end if TPC
-            //
-      }     // end positive
+        } //  end if TPC
+          //
+      } // end positive
       //
       // negative only
       if (track.signed1Pt() < 0) {
@@ -2857,9 +2866,9 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("data/etahist_tpcits_neg"))->Fill(track.eta());
             }
           } //  end if ITS
-        }   //  end if TPC
-            //
-      }     // end negative
+        } //  end if TPC
+          //
+      } // end negative
 
       if constexpr (IS_MC) { // MC
         auto mcpart = track.mcParticle();
@@ -2883,7 +2892,7 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/primsec/phihist_tpcits_prim"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/primsec/etahist_tpcits_prim"))->Fill(track.eta());
             } //  end if ITS
-          }   //  end if TPC
+          } //  end if TPC
           //  end if primaries
         } else if (mcpart.getProcess() == 4) {
           //
@@ -2905,7 +2914,7 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/primsec/phihist_tpcits_secd"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/primsec/etahist_tpcits_secd"))->Fill(track.eta());
             } //  end if ITS
-          }   //  end if TPC
+          } //  end if TPC
           // end if secondaries from decay
         } else {
           //
@@ -2927,8 +2936,8 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/primsec/phihist_tpcits_secm"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/primsec/etahist_tpcits_secm"))->Fill(track.eta());
             } //  end if ITS
-          }   //  end if TPC
-        }     // end if secondaries from material
+          } //  end if TPC
+        } // end if secondaries from material
         //
         // protons only
         if (tpPDGCode == 2212) {
@@ -2995,7 +3004,7 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_prminus"))->Fill(track.eta());
               }
             } //  end if ITS
-          }   //  end if TPC
+          } //  end if TPC
         }
         //
         // pions only
@@ -3063,7 +3072,7 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_piminus"))->Fill(track.eta());
               }
             } //  end if ITS
-          }   //  end if TPC
+          } //  end if TPC
           //
           // only primary pions
           if (mcpart.isPhysicalPrimary()) {
@@ -3076,7 +3085,7 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/phihist_tpcits_pi_prim"))->Fill(track.phi());
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_pi_prim"))->Fill(track.eta());
               } //  end if ITS
-            }   //  end if TPC
+            } //  end if TPC
             //  end if primaries
           } else if (mcpart.getProcess() == 4) {
             //
@@ -3090,7 +3099,7 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/phihist_tpcits_pi_secd"))->Fill(track.phi());
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_pi_secd"))->Fill(track.eta());
               } //  end if ITS
-            }   //  end if TPC
+            } //  end if TPC
             // end if secondaries from decay
           } else {
             //
@@ -3104,9 +3113,9 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/phihist_tpcits_pi_secm"))->Fill(track.phi());
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_pi_secm"))->Fill(track.eta());
               } //  end if ITS
-            }   //  end if TPC
-          }     // end if secondaries from material  //
-        }       // end pions only
+            } //  end if TPC
+          } // end if secondaries from material  //
+        } // end pions only
         //
         // no primary/sec-d pions
         if (!((tpPDGCode == 211) && (mcpart.isPhysicalPrimary()))) {
@@ -3130,8 +3139,8 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/PID/etahist_tpcits_nopi"))->Fill(track.eta());
               histos.get<TH1>(HIST("MC/PID/pdghist_num"))->Fill(pdg_fill);
             } //  end if ITS
-          }   //  end if TPC
-        }     // end if not prim/sec-d pi
+          } //  end if TPC
+        } // end if not prim/sec-d pi
         //
         // kaons only
         if (tpPDGCode == 321) {
@@ -3198,7 +3207,7 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_kaminus"))->Fill(track.eta());
               }
             } //  end if ITS
-          }   //  end if TPC
+          } //  end if TPC
         }
         //
         // pions and kaons together
@@ -3212,7 +3221,7 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/PID/phihist_tpcits_piK"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/PID/etahist_tpcits_piK"))->Fill(track.eta());
             } //  end if ITS
-          }   //  end if TPC
+          } //  end if TPC
         }
       }
       //

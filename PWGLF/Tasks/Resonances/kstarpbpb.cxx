@@ -115,6 +115,7 @@ struct kstarpbpb {
   Configurable<bool> like{"like", true, "fill rotation"};
   Configurable<bool> fillOccupancy{"fillOccupancy", false, "fill Occupancy"};
   Configurable<int> cfgOccupancyCut{"cfgOccupancyCut", 500, "Occupancy cut"};
+  Configurable<bool> useSP{"useSP", true, "useSP"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter centralityFilter = nabs(aod::cent::centFT0C) < cfgCutCentrality;
@@ -171,6 +172,9 @@ struct kstarpbpb {
       histos.add("ResFT0CTPC", "ResFT0CTPC", kTH2F, {centAxis, resAxis});
       histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH2F, {centAxis, resAxis});
       histos.add("ResFT0ATPC", "ResFT0ATPC", kTH2F, {centAxis, resAxis});
+      histos.add("ResFT0CTPCSP", "ResFT0CTPCSP", kTH2F, {centAxis, resAxis});
+      histos.add("ResFT0CFT0ASP", "ResFT0CFT0ASP", kTH2F, {centAxis, resAxis});
+      histos.add("ResFT0ATPCSP", "ResFT0ATPCSP", kTH2F, {centAxis, resAxis});
     }
     if (additionalQAplots) {
       // DCA QA
@@ -375,7 +379,7 @@ struct kstarpbpb {
     return result;
   }
   template <typename T>
-  bool isFakeKaon(T const& track, int PID)
+  bool isFakeKaon(T const& track, int /*PID*/)
   {
     const auto pglobal = track.p();
     const auto ptpc = track.tpcInnerParam();
@@ -387,6 +391,7 @@ struct kstarpbpb {
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
   ConfigurableAxis axisEPAngle{"axisEPAngle", {9, -TMath::Pi() / 2, TMath::Pi() / 2}, "event plane angle"};
+  double v2, v2Rot;
 
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, aod::epcalibrationtable::PsiFT0C>;
   ROOT::Math::PxPyPzMVector KstarMother, daughter1, daughter2, kaonrot, kstarrot;
@@ -402,6 +407,9 @@ struct kstarpbpb {
     auto psiFT0C = collision.psiFT0C();
     auto psiFT0A = collision.psiFT0A();
     auto psiTPC = collision.psiTPC();
+    auto QFT0C = collision.qFT0C();
+    auto QFT0A = collision.qFT0A();
+    auto QTPC = collision.qTPC();
     if (fillOccupancy && occupancy >= cfgOccupancyCut) {
       return;
     }
@@ -416,6 +424,9 @@ struct kstarpbpb {
       histos.fill(HIST("ResFT0CTPC"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPC)));
       histos.fill(HIST("ResFT0CFT0A"), centrality, TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
       histos.fill(HIST("ResFT0ATPC"), centrality, TMath::Cos(2.0 * (psiTPC - psiFT0A)));
+      histos.fill(HIST("ResFT0CTPCSP"), centrality, QFT0C * QTPC * TMath::Cos(2.0 * (psiFT0C - psiTPC)));
+      histos.fill(HIST("ResFT0CFT0ASP"), centrality, QFT0C * QFT0A * TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
+      histos.fill(HIST("ResFT0ATPCSP"), centrality, QTPC * QFT0A * TMath::Cos(2.0 * (psiTPC - psiFT0A)));
       histos.fill(HIST("hCentrality"), centrality);
       histos.fill(HIST("hOccupancy"), occupancy);
       histos.fill(HIST("hVtxZ"), collision.posZ());
@@ -461,7 +472,12 @@ struct kstarpbpb {
           continue;
         }
         auto phiminuspsi = GetPhiInRange(KstarMother.Phi() - psiFT0C);
-        auto v2 = TMath::Cos(2.0 * phiminuspsi);
+        if (useSP) {
+          v2 = TMath::Cos(2.0 * phiminuspsi) * QFT0C;
+        }
+        if (!useSP) {
+          v2 = TMath::Cos(2.0 * phiminuspsi);
+        }
         // unlike sign
         if (track1.sign() * track2.sign() < 0) {
           histos.fill(HIST("hSparseV2SASameEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
@@ -480,7 +496,12 @@ struct kstarpbpb {
                 continue;
               }
               auto phiminuspsiRot = GetPhiInRange(kstarrot.Phi() - psiFT0C);
-              auto v2Rot = TMath::Cos(2.0 * phiminuspsiRot);
+              if (useSP) {
+                v2Rot = TMath::Cos(2.0 * phiminuspsiRot) * QFT0C;
+              }
+              if (!useSP) {
+                v2Rot = TMath::Cos(2.0 * phiminuspsiRot);
+              }
               histos.fill(HIST("hSparseV2SASameEventRotational_V2"), kstarrot.M(), kstarrot.Pt(), v2Rot, centrality);
             }
           }
@@ -506,6 +527,7 @@ struct kstarpbpb {
     }
     auto centrality = collision.centFT0C();
     auto multTPC = collision.multNTracksPV();
+    auto QFT0C = collision.qFT0C();
     if (!collision.triggereventep()) {
       return;
     }
@@ -652,7 +674,12 @@ struct kstarpbpb {
           continue;
         }
         auto phiminuspsi = GetPhiInRange(KstarMother.Phi() - psiFT0C);
-        auto v2 = TMath::Cos(2.0 * phiminuspsi);
+        if (useSP) {
+          v2 = TMath::Cos(2.0 * phiminuspsi) * QFT0C;
+        }
+        if (!useSP) {
+          v2 = TMath::Cos(2.0 * phiminuspsi);
+        }
         histos.fill(HIST("hSparseV2SASameEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
         if (fillRotation) {
           for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
@@ -679,7 +706,12 @@ struct kstarpbpb {
               continue;
             }
             auto phiminuspsiRot = GetPhiInRange(kstarrot.Phi() - psiFT0C);
-            auto v2Rot = TMath::Cos(2.0 * phiminuspsiRot);
+            if (useSP) {
+              v2Rot = TMath::Cos(2.0 * phiminuspsiRot) * QFT0C;
+            }
+            if (!useSP) {
+              v2Rot = TMath::Cos(2.0 * phiminuspsiRot);
+            }
             histos.fill(HIST("hSparseV2SASameEventRotational_V2"), kstarrot.M(), kstarrot.Pt(), v2Rot, centrality);
           }
         }
@@ -693,6 +725,7 @@ struct kstarpbpb {
       return;
     }
     auto centrality = collision.centFT0C();
+    auto QFT0C = collision.qFT0C();
     if (!collision.triggereventep()) {
       return;
     }
@@ -786,7 +819,12 @@ struct kstarpbpb {
               continue;
             }
             auto phiminuspsi = GetPhiInRange(KstarMother.Phi() - psiFT0C);
-            auto v2 = TMath::Cos(2.0 * phiminuspsi);
+            if (useSP) {
+              v2 = TMath::Cos(2.0 * phiminuspsi) * QFT0C;
+            }
+            if (!useSP) {
+              v2 = TMath::Cos(2.0 * phiminuspsi);
+            }
             histos.fill(HIST("hSparseV2SAlikeEventNN_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
           }
         } else if (track1pion && track2kaon) {
@@ -798,7 +836,12 @@ struct kstarpbpb {
               continue;
             }
             auto phiminuspsi = GetPhiInRange(KstarMother.Phi() - psiFT0C);
-            auto v2 = TMath::Cos(2.0 * phiminuspsi);
+            if (useSP) {
+              v2 = TMath::Cos(2.0 * phiminuspsi) * QFT0C;
+            }
+            if (!useSP) {
+              v2 = TMath::Cos(2.0 * phiminuspsi);
+            }
             histos.fill(HIST("hSparseV2SAlikeEventPP_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
           }
         }
@@ -842,6 +885,7 @@ struct kstarpbpb {
       auto centrality = collision1.centFT0C();
       auto centrality2 = collision2.centFT0C();
       auto psiFT0C = collision1.psiFT0C();
+      auto QFT0C = collision1.qFT0C();
       bool track1pion = false;
       bool track1kaon = false;
       bool track2pion = false;
@@ -923,7 +967,12 @@ struct kstarpbpb {
           continue;
         }
         auto phiminuspsi = GetPhiInRange(KstarMother.Phi() - psiFT0C);
-        auto v2 = TMath::Cos(2.0 * phiminuspsi);
+        if (useSP) {
+          v2 = TMath::Cos(2.0 * phiminuspsi) * QFT0C;
+        }
+        if (!useSP) {
+          v2 = TMath::Cos(2.0 * phiminuspsi);
+        }
         histos.fill(HIST("hSparseV2SAMixedEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
       }
     }

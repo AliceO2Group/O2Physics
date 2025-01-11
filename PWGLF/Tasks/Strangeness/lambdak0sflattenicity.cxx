@@ -205,9 +205,9 @@ struct lambdak0sflattenicity {
     // Histograms
     // Event selection
     rEventSelection.add("hVertexZ", "hVertexZ",
-                        {HistType::kTH1F, {vertexZAxis}});
+                        {HistType::kTH1D, {vertexZAxis}});
     rEventSelection.add("hEventsSelected", "hEventsSelected",
-                        {HistType::kTH1I, {{12, 0, 12}}});
+                        {HistType::kTH1D, {{12, 0, 12}}});
 
     rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(1, "all");
     rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(2, "sel8");
@@ -222,34 +222,34 @@ struct lambdak0sflattenicity {
     rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(11, "Applied selection");
 
     rEventSelection.add("hFlattenicityDistribution", "hFlattenicityDistribution",
-                        {HistType::kTH1F, {flatAxis}});
+                        {HistType::kTH1D, {flatAxis}});
     if (doprocessRecMC) {
       rEventSelection.add("hFlattenicityDistributionMCGen_Rec", "hFlattenicityDistributionMCGen_Rec",
-                          {HistType::kTH1F, {flatAxis}});
+                          {HistType::kTH1D, {flatAxis}});
       rEventSelection.add("hFlattenicity_Corr_Gen_vs_Rec", "hFlattenicity_Corr_Gen_vs_Rec",
-                          {HistType::kTH2F, {flatAxis, flatAxis}});
+                          {HistType::kTH2D, {flatAxis, flatAxis}});
     }
     if (doprocessGenMC) {
       rEventSelection.add("hVertexZGen", "hVertexZGen",
-                          {HistType::kTH1F, {vertexZAxis}});
+                          {HistType::kTH1D, {vertexZAxis}});
 
       rEventSelection.add("hFlattenicityDistributionMCGen", "hFlattenicityDistributionMCGen",
-                          {HistType::kTH1F, {flatAxis}});
+                          {HistType::kTH1D, {flatAxis}});
 
-      rEventSelection.add("hFlat_RecoColl_MC", "hFlat_RecoColl_MC", {HistType::kTH1F, {flatAxis}});
-      rEventSelection.add("hFlat_RecoColl_MC_INELgt0", "hFlat_RecoColl_MC_INELgt0", {HistType::kTH1F, {flatAxis}});
-      rEventSelection.add("hFlat_GenRecoColl_MC", "hFlat_GenRecoColl_MC", {HistType::kTH1F, {flatAxis}});
-      rEventSelection.add("hFlat_GenRecoColl_MC_INELgt0", "hFlat_GenRecoColl_MC_INELgt0", {HistType::kTH1F, {flatAxis}});
-      rEventSelection.add("hFlat_GenColl_MC", "hFlat_GenColl_MC", {HistType::kTH1F, {flatAxis}});
-      rEventSelection.add("hFlat_GenColl_MC_INELgt0", "hFlat_GenColl_MC_INELgt0", {HistType::kTH1F, {flatAxis}});
-      rEventSelection.add("hNEventsMCGen", "hNEventsMCGen", {HistType::kTH1I, {{4, 0.f, 4.f}}});
+      rEventSelection.add("hFlat_RecoColl_MC", "hFlat_RecoColl_MC", {HistType::kTH1D, {flatAxis}});
+      rEventSelection.add("hFlat_RecoColl_MC_INELgt0", "hFlat_RecoColl_MC_INELgt0", {HistType::kTH1D, {flatAxis}});
+      rEventSelection.add("hFlat_GenRecoColl_MC", "hFlat_GenRecoColl_MC", {HistType::kTH1D, {flatAxis}});
+      rEventSelection.add("hFlat_GenRecoColl_MC_INELgt0", "hFlat_GenRecoColl_MC_INELgt0", {HistType::kTH1D, {flatAxis}});
+      rEventSelection.add("hFlat_GenColl_MC", "hFlat_GenColl_MC", {HistType::kTH1D, {flatAxis}});
+      rEventSelection.add("hFlat_GenColl_MC_INELgt0", "hFlat_GenColl_MC_INELgt0", {HistType::kTH1D, {flatAxis}});
+      rEventSelection.add("hNEventsMCGen", "hNEventsMCGen", {HistType::kTH1D, {{4, 0.f, 4.f}}});
       rEventSelection.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(1, "all");
       rEventSelection.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(2, "zvertex_true");
       rEventSelection.get<TH1>(HIST("hNEventsMCGen"))->GetXaxis()->SetBinLabel(3, "INELgt0_true");
-      rEventSelection.add("hNEventsMCGenReco", "hNEventsMCGenReco", {HistType::kTH1I, {{2, 0.f, 2.f}}});
+      rEventSelection.add("hNEventsMCGenReco", "hNEventsMCGenReco", {HistType::kTH1D, {{2, 0.f, 2.f}}});
       rEventSelection.get<TH1>(HIST("hNEventsMCGenReco"))->GetXaxis()->SetBinLabel(1, "INEL");
       rEventSelection.get<TH1>(HIST("hNEventsMCGenReco"))->GetXaxis()->SetBinLabel(2, "INELgt0");
-      rEventSelection.add("hNEventsMCReco", "hNEventsMCReco", {HistType::kTH1I, {{4, 0.f, 4.f}}});
+      rEventSelection.add("hNEventsMCReco", "hNEventsMCReco", {HistType::kTH1D, {{4, 0.f, 4.f}}});
       rEventSelection.get<TH1>(HIST("hNEventsMCReco"))->GetXaxis()->SetBinLabel(1, "all");
       rEventSelection.get<TH1>(HIST("hNEventsMCReco"))->GetXaxis()->SetBinLabel(2, "pass ev sel");
       rEventSelection.get<TH1>(HIST("hNEventsMCReco"))->GetXaxis()->SetBinLabel(3, "INELgt0");
@@ -257,165 +257,165 @@ struct lambdak0sflattenicity {
     }
     // K0s reconstruction
     // Mass
-    rKzeroShort.add("hMassK0s", "hMassK0s", {HistType::kTH1F, {K0sMassAxis}});
+    rKzeroShort.add("hMassK0s", "hMassK0s", {HistType::kTH1D, {K0sMassAxis}});
     rKzeroShort.add("hMassK0sSelected", "hMassK0sSelected",
-                    {HistType::kTH1F, {K0sMassAxis}});
+                    {HistType::kTH1D, {K0sMassAxis}});
 
     // K0s topological/PID cuts
     rKzeroShort.add("hrapidityK0s", "hrapidityK0s",
-                    {HistType::kTH1F, {{40, -2.0f, 2.0f, "y"}}});
+                    {HistType::kTH1D, {{40, -2.0f, 2.0f, "y"}}});
     rKzeroShort.add("hctauK0s", "hctauK0s",
-                    {HistType::kTH1F, {{40, 0.0f, 40.0f, "c#tau (cm)"}}});
+                    {HistType::kTH1D, {{40, 0.0f, 40.0f, "c#tau (cm)"}}});
     rKzeroShort.add(
       "h2DdecayRadiusK0s", "h2DdecayRadiusK0s",
-      {HistType::kTH1F, {{100, 0.0f, 1.0f, "Decay Radius (cm)"}}});
+      {HistType::kTH1D, {{100, 0.0f, 1.0f, "Decay Radius (cm)"}}});
     rKzeroShort.add("hDCAV0DaughtersK0s", "hDCAV0DaughtersK0s",
-                    {HistType::kTH1F, {{55, 0.0f, 2.2f, "DCA Daughters"}}});
+                    {HistType::kTH1D, {{55, 0.0f, 2.2f, "DCA Daughters"}}});
     rKzeroShort.add("hV0CosPAK0s", "hV0CosPAK0s",
-                    {HistType::kTH1F, {{100, 0.95f, 1.f, "CosPA"}}});
+                    {HistType::kTH1D, {{100, 0.95f, 1.f, "CosPA"}}});
     rKzeroShort.add("hNSigmaPosPionFromK0s", "hNSigmaPosPionFromK0s",
-                    {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
+                    {HistType::kTH2D, {{100, -5.f, 5.f}, {ptAxis}}});
     rKzeroShort.add("hNSigmaNegPionFromK0s", "hNSigmaNegPionFromK0s",
-                    {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
+                    {HistType::kTH2D, {{100, -5.f, 5.f}, {ptAxis}}});
     rKzeroShort.add("hMassK0spT", "hMassK0spT",
-                    {HistType::kTH2F, {{K0sMassAxis}, {ptAxis}}});
+                    {HistType::kTH2D, {{K0sMassAxis}, {ptAxis}}});
     rKzeroShort.add("hMassK0spTFlat", "hMassK0spTFlat",
-                    {HistType::kTH3F, {{K0sMassAxis}, {ptAxis}, {flatAxis}}});
+                    {HistType::kTH3D, {{K0sMassAxis}, {ptAxis}, {flatAxis}}});
     if (doprocessRecMC) {
       rKzeroShort.add("Generated_MCRecoCollCheck_INEL_K0Short", "Generated_MCRecoCollCheck_INEL_K0Short",
-                      {HistType::kTH2F, {{ptAxis}, {flatAxis}}});
+                      {HistType::kTH2D, {{ptAxis}, {flatAxis}}});
     }
 
     if (doprocessGenMC) {
       rKzeroShort.add("pGen_MCGenRecoColl_INEL_K0Short", "pGen_MCGenRecoColl_INEL_K0Short",
-                      {HistType::kTH2F, {ptAxis, flatAxis}});
+                      {HistType::kTH2D, {ptAxis, flatAxis}});
       rKzeroShort.add("Generated_MCRecoColl_INEL_K0Short", "Generated_MCRecoColl_INEL_K0Short",
-                      {HistType::kTH2F, {ptAxis, flatAxis}});
+                      {HistType::kTH2D, {ptAxis, flatAxis}});
       rKzeroShort.add("pGen_MCGenColl_INEL_K0Short", "pGen_MCGenColl_INEL_K0Short",
-                      {HistType::kTH2F, {ptAxis, flatAxis}});
+                      {HistType::kTH2D, {ptAxis, flatAxis}});
       rKzeroShort.add("pGen_MCGenRecoColl_INELgt0_K0Short", "pGen_MCGenRecoColl_INELgt0_K0Short",
-                      {HistType::kTH2F, {ptAxis, flatAxis}});
+                      {HistType::kTH2D, {ptAxis, flatAxis}});
       rKzeroShort.add("Generated_MCRecoColl_INELgt0_K0Short", "Generated_MCRecoColl_INELgt0_K0Short",
-                      {HistType::kTH2F, {ptAxis, flatAxis}});
+                      {HistType::kTH2D, {ptAxis, flatAxis}});
       rKzeroShort.add("Generated_MCRecoCollCheck_INELgt0_K0Short", "Generated_MCRecoCollCheck_INELgt0_K0Short",
-                      {HistType::kTH2F, {ptAxis, flatAxis}});
+                      {HistType::kTH2D, {ptAxis, flatAxis}});
       rKzeroShort.add("pGen_MCGenColl_INELgt0_K0Short", "pGen_MCGenColl_INELgt0_K0Short",
-                      {HistType::kTH2F, {ptAxis, flatAxis}});
+                      {HistType::kTH2D, {ptAxis, flatAxis}});
     }
     // Lambda reconstruction Mass
     rLambda.add("hMassLambda", "hMassLambda",
-                {HistType::kTH1F, {LambdaMassAxis}});
+                {HistType::kTH1D, {LambdaMassAxis}});
     rLambda.add("hMassLambdaSelected", "hMassLambdaSelected",
-                {HistType::kTH1F, {LambdaMassAxis}});
+                {HistType::kTH1D, {LambdaMassAxis}});
 
     // Lambda topological/PID cuts
     rLambda.add("hDCAV0DaughtersLambda", "hDCAV0DaughtersLambda",
-                {HistType::kTH1F, {{55, 0.0f, 2.2f, "DCA Daughters"}}});
+                {HistType::kTH1D, {{55, 0.0f, 2.2f, "DCA Daughters"}}});
     rLambda.add("hV0CosPALambda", "hV0CosPALambda",
-                {HistType::kTH1F, {{100, 0.95f, 1.f, "CosPA"}}});
+                {HistType::kTH1D, {{100, 0.95f, 1.f, "CosPA"}}});
     rLambda.add("hNSigmaPosPionFromLambda", "hNSigmaPosPionFromLambda",
-                {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
+                {HistType::kTH2D, {{100, -5.f, 5.f}, {ptAxis}}});
     rLambda.add("hNSigmaNegPionFromLambda", "hNSigmaNegPionFromLambda",
-                {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
+                {HistType::kTH2D, {{100, -5.f, 5.f}, {ptAxis}}});
     rLambda.add("hrapidityLambda", "hrapidityLambda",
-                {HistType::kTH1F, {{40, -2.0f, 2.0f, "y"}}});
+                {HistType::kTH1D, {{40, -2.0f, 2.0f, "y"}}});
     rLambda.add("hctauLambda", "hctauLambda",
-                {HistType::kTH1F, {{40, 0.0f, 40.0f, "c#tau (cm)"}}});
+                {HistType::kTH1D, {{40, 0.0f, 40.0f, "c#tau (cm)"}}});
     rLambda.add("h2DdecayRadiusLambda", "h2DdecayRadiusLambda",
-                {HistType::kTH1F, {{100, 0.0f, 1.0f, "c#tau (cm)"}}});
+                {HistType::kTH1D, {{100, 0.0f, 1.0f, "c#tau (cm)"}}});
     rLambda.add("hMassLambdapT", "hMassLambdapT",
-                {HistType::kTH2F, {{LambdaMassAxis}, {ptAxis}}});
+                {HistType::kTH2D, {{LambdaMassAxis}, {ptAxis}}});
     rLambda.add("hMassLambdapTFlat", "hMassLambdapTFlat",
-                {HistType::kTH3F, {{LambdaMassAxis}, {ptAxis}, {flatAxis}}});
+                {HistType::kTH3D, {{LambdaMassAxis}, {ptAxis}, {flatAxis}}});
     if (doprocessRecMC) {
       rLambda.add("Generated_MCRecoCollCheck_INEL_Lambda", "Generated_MCRecoCollCheck_INEL_Lambda",
-                  {HistType::kTH2F, {{ptAxis}, {flatAxis}}});
+                  {HistType::kTH2D, {{ptAxis}, {flatAxis}}});
     }
 
     if (doprocessGenMC) {
       rLambda.add("pGen_MCGenRecoColl_INEL_Lambda", "pGen_MCGenRecoColl_INEL_Lambda",
-                  {HistType::kTH2F, {ptAxis, flatAxis}});
+                  {HistType::kTH2D, {ptAxis, flatAxis}});
       rLambda.add("Generated_MCRecoColl_INEL_Lambda", "Generated_MCRecoColl_INEL_Lambda",
-                  {HistType::kTH2F, {ptAxis, flatAxis}});
+                  {HistType::kTH2D, {ptAxis, flatAxis}});
       rLambda.add("pGen_MCGenColl_INEL_Lambda", "pGen_MCGenColl_INEL_Lambda",
-                  {HistType::kTH2F, {ptAxis, flatAxis}});
+                  {HistType::kTH2D, {ptAxis, flatAxis}});
       rLambda.add("pGen_MCGenRecoColl_INELgt0_Lambda", "pGen_MCGenRecoColl_INELgt0_Lambda",
-                  {HistType::kTH2F, {ptAxis, flatAxis}});
+                  {HistType::kTH2D, {ptAxis, flatAxis}});
       rLambda.add("Generated_MCRecoColl_INELgt0_Lambda", "Generated_MCRecoColl_INELgt0_Lambda",
-                  {HistType::kTH2F, {ptAxis, flatAxis}});
+                  {HistType::kTH2D, {ptAxis, flatAxis}});
       rLambda.add("Generated_MCRecoCollCheck_INELgt0_Lambda", "Generated_MCRecoCollCheck_INELgt0_Lambda",
-                  {HistType::kTH2F, {ptAxis, flatAxis}});
+                  {HistType::kTH2D, {ptAxis, flatAxis}});
       rLambda.add("pGen_MCGenColl_INELgt0_Lambda", "pGen_MCGenColl_INELgt0_Lambda",
-                  {HistType::kTH2F, {ptAxis, flatAxis}});
+                  {HistType::kTH2D, {ptAxis, flatAxis}});
     }
     // AntiLambda reconstruction
     // Mass
     rAntiLambda.add("hMassAntiLambda", "hMassAntiLambda",
-                    {HistType::kTH1F, {AntiLambdaMassAxis}});
+                    {HistType::kTH1D, {AntiLambdaMassAxis}});
     rAntiLambda.add("hMassAntiLambdaSelected", "hMassAntiLambdaSelected",
-                    {HistType::kTH1F, {AntiLambdaMassAxis}});
+                    {HistType::kTH1D, {AntiLambdaMassAxis}});
 
     // AntiLambda topological/PID cuts
     rAntiLambda.add("hDCAV0DaughtersAntiLambda", "hDCAV0DaughtersAntiLambda",
-                    {HistType::kTH1F, {{55, 0.0f, 2.2f, "DCA Daughters"}}});
+                    {HistType::kTH1D, {{55, 0.0f, 2.2f, "DCA Daughters"}}});
     rAntiLambda.add("hV0CosPAAntiLambda", "hV0CosPAAntiLambda",
-                    {HistType::kTH1F, {{100, 0.95f, 1.f, "CosPA"}}});
+                    {HistType::kTH1D, {{100, 0.95f, 1.f, "CosPA"}}});
     rAntiLambda.add("hNSigmaPosPionFromAntiLambda",
                     "hNSigmaPosPionFromAntiLambda",
-                    {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
+                    {HistType::kTH2D, {{100, -5.f, 5.f}, {ptAxis}}});
     rAntiLambda.add("hNSigmaNegPionFromAntiLambda",
                     "hNSigmaNegPionFromAntiLambda",
-                    {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
+                    {HistType::kTH2D, {{100, -5.f, 5.f}, {ptAxis}}});
     rAntiLambda.add("hrapidityAntiLambda", "hrapidityAntiLambda",
-                    {HistType::kTH1F, {{40, -2.0f, 2.0f, "y"}}});
+                    {HistType::kTH1D, {{40, -2.0f, 2.0f, "y"}}});
     rAntiLambda.add("hctauAntiLambda", "hctauAntiLambda",
-                    {HistType::kTH1F, {{40, 0.0f, 40.0f, "c#tau (cm)"}}});
+                    {HistType::kTH1D, {{40, 0.0f, 40.0f, "c#tau (cm)"}}});
     rAntiLambda.add("h2DdecayRadiusAntiLambda", "h2DdecayRadiusAntiLambda",
-                    {HistType::kTH1F, {{100, 0.0f, 1.0f, "c#tau (cm)"}}});
+                    {HistType::kTH1D, {{100, 0.0f, 1.0f, "c#tau (cm)"}}});
     rAntiLambda.add("hMassAntiLambdapT", "hMassAntiLambdapT",
-                    {HistType::kTH2F, {{AntiLambdaMassAxis}, {ptAxis}}});
+                    {HistType::kTH2D, {{AntiLambdaMassAxis}, {ptAxis}}});
     rAntiLambda.add("hMassAntiLambdapTFlat", "hMassAntiLambdapTFlat",
-                    {HistType::kTH3F, {{AntiLambdaMassAxis}, {ptAxis}, {flatAxis}}});
+                    {HistType::kTH3D, {{AntiLambdaMassAxis}, {ptAxis}, {flatAxis}}});
     if (doprocessRecMC) {
       rAntiLambda.add("Generated_MCRecoCollCheck_INEL_AntiLambda", "Generated_MCRecoCollCheck_INEL_AntiLambda",
-                      {HistType::kTH2F, {{ptAxis}, {flatAxis}}});
+                      {HistType::kTH2D, {{ptAxis}, {flatAxis}}});
     }
 
     if (doprocessGenMC) {
       rAntiLambda.add("pGen_MCGenRecoColl_INEL_AntiLambda", "pGen_MCGenRecoColl_INEL_AntiLambda",
-                      {HistType::kTH2F, {ptAxis, flatAxis}});
+                      {HistType::kTH2D, {ptAxis, flatAxis}});
       rAntiLambda.add("Generated_MCRecoColl_INEL_AntiLambda", "Generated_MCRecoColl_INEL_AntiLambda",
-                      {HistType::kTH2F, {ptAxis, flatAxis}});
+                      {HistType::kTH2D, {ptAxis, flatAxis}});
       rAntiLambda.add("pGen_MCGenColl_INEL_AntiLambda", "pGen_MCGenColl_INEL_AntiLambda",
-                      {HistType::kTH2F, {ptAxis, flatAxis}});
+                      {HistType::kTH2D, {ptAxis, flatAxis}});
       rAntiLambda.add("pGen_MCGenRecoColl_INELgt0_AntiLambda", "pGen_MCGenRecoColl_INELgt0_AntiLambda",
-                      {HistType::kTH2F, {ptAxis, flatAxis}});
+                      {HistType::kTH2D, {ptAxis, flatAxis}});
       rAntiLambda.add("Generated_MCRecoColl_INELgt0_AntiLambda", "Generated_MCRecoColl_INELgt0_AntiLambda",
-                      {HistType::kTH2F, {ptAxis, flatAxis}});
+                      {HistType::kTH2D, {ptAxis, flatAxis}});
       rAntiLambda.add("Generated_MCRecoCollCheck_INELgt0_AntiLambda", "Generated_MCRecoCollCheck_INELgt0_AntiLambda",
-                      {HistType::kTH2F, {ptAxis, flatAxis}});
+                      {HistType::kTH2D, {ptAxis, flatAxis}});
       rAntiLambda.add("pGen_MCGenColl_INELgt0_AntiLambda", "pGen_MCGenColl_INELgt0_AntiLambda",
-                      {HistType::kTH2F, {ptAxis, flatAxis}});
+                      {HistType::kTH2D, {ptAxis, flatAxis}});
     }
 
     if (flattenicityQA) {
-      rFlattenicity.add("hEv", "Ev", HistType::kTH1F,
+      rFlattenicity.add("hEv", "Ev", HistType::kTH1D,
                         {{6, -0.5, 5.5, "index activated detector"}});
-      rFlattenicity.add("hFV0amplRing1to4", "FV01to4", HistType::kTH1F,
+      rFlattenicity.add("hFV0amplRing1to4", "FV01to4", HistType::kTH1D,
                         {{4000, -0.5, +49999.5, "FV0 amplitude"}});
-      rFlattenicity.add("hFT0Aampl", "FTAampl", HistType::kTH1F,
+      rFlattenicity.add("hFT0Aampl", "FTAampl", HistType::kTH1D,
                         {{50000, -0.5, +199999.5, "FT0A amplitude"}});
-      rFlattenicity.add("hFT0Campl", "FTCampl", HistType::kTH1F,
+      rFlattenicity.add("hFT0Campl", "FTCampl", HistType::kTH1D,
                         {{10000, -0.5, +4999.5, "FT0C amplitude"}});
-      rFlattenicity.add("hFT0C", "FT0C", HistType::kTH1F,
+      rFlattenicity.add("hFT0C", "FT0C", HistType::kTH1D,
                         {{50000, -0.5, 199999.5, "FT0C amplitudes"}});
-      rFlattenicity.add("hFT0A", "FT0A", HistType::kTH1F,
+      rFlattenicity.add("hFT0A", "FT0A", HistType::kTH1D,
                         {{2000, -0.5, 1999.5, "FT0A amplitudes"}});
 
       // estimators
       for (int i_e = 0; i_e < 8; ++i_e) {
         rFlattenicity.add(
-          nhEst[i_e].data(), "", HistType::kTH2F,
+          nhEst[i_e].data(), "", HistType::kTH2D,
           {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()},
            {100, -0.5, +99.5, "Global track"}});
       }
@@ -427,54 +427,54 @@ struct lambdak0sflattenicity {
           {{nBinsEst[i_e], lowEdgeEst[i_e], upEdgeEst[i_e], tEst[i_e].data()}});
       }
 
-      rFlattenicity.add("fMultFv0", "FV0 amp", HistType::kTH1F,
+      rFlattenicity.add("fMultFv0", "FV0 amp", HistType::kTH1D,
                         {{5000, -0.5, +199999.5, "FV0 amplitude"}});
       rFlattenicity.add(
-        "hAmpV0VsCh", "", HistType::kTH2F,
+        "hAmpV0VsCh", "", HistType::kTH2D,
         {{48, -0.5, 47.5, "channel"}, {500, -0.5, +19999.5, "FV0 amplitude"}});
       rFlattenicity.add(
-        "hAmpV0VsChBeforeCalibration", "", HistType::kTH2F,
+        "hAmpV0VsChBeforeCalibration", "", HistType::kTH2D,
         {{48, -0.5, 47.5, "channel"}, {500, -0.5, +19999.5, "FV0 amplitude"}});
 
       rFlattenicity.add(
-        "hAmpT0AVsChBeforeCalibration", "", HistType::kTH2F,
+        "hAmpT0AVsChBeforeCalibration", "", HistType::kTH2D,
         {{24, -0.5, 23.5, "channel"}, {600, -0.5, +5999.5, "FT0A amplitude"}});
       rFlattenicity.add(
-        "hAmpT0CVsChBeforeCalibration", "", HistType::kTH2F,
+        "hAmpT0CVsChBeforeCalibration", "", HistType::kTH2D,
         {{28, -0.5, 27.5, "channel"}, {600, -0.5, +5999.5, "FT0C amplitude"}});
 
       rFlattenicity.add(
-        "hAmpT0AVsCh", "", HistType::kTH2F,
+        "hAmpT0AVsCh", "", HistType::kTH2D,
         {{24, -0.5, 23.5, "channel"}, {600, -0.5, +5999.5, "FT0A amplitude"}});
       rFlattenicity.add(
-        "hAmpT0CVsCh", "", HistType::kTH2F,
+        "hAmpT0CVsCh", "", HistType::kTH2D,
         {{28, -0.5, 27.5, "channel"}, {600, -0.5, +5999.5, "FT0C amplitude"}});
 
-      rFlattenicity.add("hFlatFT0CvsFlatFT0A", "", HistType::kTH2F,
+      rFlattenicity.add("hFlatFT0CvsFlatFT0A", "", HistType::kTH2D,
                         {{20, -0.01, +1.01, "flatenicity (FT0C)"},
                          {20, -0.01, +1.01, "flatenicity (FT0A)"}});
       rFlattenicity.add(
-        "fEtaPhiFv0", "eta vs phi", HistType::kTH2F,
+        "fEtaPhiFv0", "eta vs phi", HistType::kTH2D,
         {{8, 0.0, 2 * M_PI, "#phi (rad)"}, {5, 2.2, 5.1, "#eta"}});
 
-      rFlattenicity.add("hAmpV0vsVtxBeforeCalibration", "", HistType::kTH2F,
+      rFlattenicity.add("hAmpV0vsVtxBeforeCalibration", "", HistType::kTH2D,
                         {{30, -15.0, +15.0, "Trk mult"},
                          {1000, -0.5, +39999.5, "FV0 amplitude"}});
       rFlattenicity.add(
-        "hAmpT0AvsVtxBeforeCalibration", "", HistType::kTH2F,
+        "hAmpT0AvsVtxBeforeCalibration", "", HistType::kTH2D,
         {{30, -15.0, +15.0, "Vtx_z"}, {600, -0.5, +5999.5, "FT0A amplitude"}});
       rFlattenicity.add(
-        "hAmpT0CvsVtxBeforeCalibration", "", HistType::kTH2F,
+        "hAmpT0CvsVtxBeforeCalibration", "", HistType::kTH2D,
         {{30, -15.0, +15.0, "Vtx_z"}, {600, -0.5, +5999.5, "FT0C amplitude"}});
 
-      rFlattenicity.add("hAmpV0vsVtx", "", HistType::kTH2F,
+      rFlattenicity.add("hAmpV0vsVtx", "", HistType::kTH2D,
                         {{30, -15.0, +15.0, "Trk mult"},
                          {1000, -0.5, +39999.5, "FV0 amplitude"}});
       rFlattenicity.add(
-        "hAmpT0AvsVtx", "", HistType::kTH2F,
+        "hAmpT0AvsVtx", "", HistType::kTH2D,
         {{30, -15.0, +15.0, "Vtx_z"}, {600, -0.5, +5999.5, "FT0A amplitude"}});
       rFlattenicity.add(
-        "hAmpT0CvsVtx", "", HistType::kTH2F,
+        "hAmpT0CvsVtx", "", HistType::kTH2D,
         {{30, -15.0, +15.0, "Vtx_z"}, {600, -0.5, +5999.5, "FT0C amplitude"}});
     }
     if (doprocessDataRun3 && (doprocessRecMC || doprocessGenMC)) {

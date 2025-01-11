@@ -12,16 +12,22 @@
 #include <cmath>
 #include <vector>
 #include <map>
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "ReconstructionDataFormats/Vertex.h"
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/DataModel/EventSelection.h"
 #include "CommonConstants/LHCConstants.h"
 #include "DataFormatsFIT/Triggers.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/DataModel/EventSelection.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/Core/SGSelector.h"
@@ -29,11 +35,26 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::dataformats;
 
 struct SGCandProducer {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  // data inputs
+  using CCs = soa::Join<aod::Collisions, aod::EvSels>;
+  using CC = CCs::iterator;
+  using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+  using BC = BCs::iterator;
+  using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+                        aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                        aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
+                        aod::TOFSignal, aod::pidTOFbeta,
+                        aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
+                        aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  using FWs = aod::FwdTracks;
   // get an SGCutparHolder
   SGCutParHolder sameCuts = SGCutParHolder(); // SGCutparHolder
   Configurable<SGCutParHolder> SGCuts{"SGCuts", {}, "SG event cuts"};
+  Configurable<bool> verboseInfo{"verboseInfo", false, "Print general info to terminal; default it false."};
   Configurable<bool> saveAllTracks{"saveAllTracks", true, "save only PV contributors or all tracks associated to a collision"};
   Configurable<bool> savenonPVCITSOnlyTracks{"savenonPVCITSOnlyTracks", false, "save non PV contributors with ITS only information"};
   Configurable<bool> rejectAtTFBoundary{"rejectAtTFBoundary", true, "reject collisions at a TF boundary"};
@@ -45,14 +66,15 @@ struct SGCandProducer {
   // Configurables to decide which tables are filled
   Configurable<bool> fillTrackTables{"fillTrackTables", true, "Fill track tables"};
   Configurable<bool> fillFwdTrackTables{"fillFwdTrackTables", true, "Fill forward track tables"};
-
   //  SG selector
   SGSelector sgSelector;
+  ctpRateFetcher mRateFetcher;
 
   // data tables
   Produces<aod::SGCollisions> outputSGCollisions;
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
+  Produces<aod::UDCollisionSelExtras> outputCollisionSelExtras;
   Produces<aod::UDCollsLabels> outputCollsLabels;
   Produces<aod::UDZdcs> outputZdcs;
   Produces<aod::UDZdcsReduced> udZdcsReduced;
@@ -71,19 +93,6 @@ struct SGCandProducer {
   HistogramRegistry registry{
     "registry",
     {}};
-
-  // data inputs
-  using CCs = soa::Join<aod::Collisions, aod::EvSels>;
-  using CC = CCs::iterator;
-  using BCs = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
-  using BC = BCs::iterator;
-  using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                        aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                        aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
-                        aod::TOFSignal, aod::pidTOFbeta,
-                        aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
-                        aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-  using FWs = aod::FwdTracks;
 
   // function to update UDFwdTracks, UDFwdTracksExtra
   template <typename TFwdTrack>
@@ -164,6 +173,9 @@ struct SGCandProducer {
 
   void init(InitContext&)
   {
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setFatalWhenNull(false);
     sameCuts = (SGCutParHolder)SGCuts;
     registry.add("reco/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{14, -0.5, 13.5}}});
   }
@@ -172,7 +184,8 @@ struct SGCandProducer {
   void process(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
                aod::Zdcs& /*zdcs*/, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
-    LOGF(debug, "<SGCandProducer>  collision %d", collision.globalIndex());
+    if (verboseInfo)
+      LOGF(debug, "<SGCandProducer>  collision %d", collision.globalIndex());
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
     // reject collisions at TF boundaries
     if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
@@ -204,7 +217,25 @@ struct SGCandProducer {
       return;
     }
     registry.get<TH1>(HIST("reco/Stat"))->Fill(6., 1.);
+    int trs = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      trs = 1;
+    }
+    int trofs = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      trofs = 1;
+    }
+    int hmpr = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+      hmpr = 1;
+    }
     auto bc = collision.foundBC_as<BCs>();
+    double ir = 0.;
+    const uint64_t ts = bc.timestamp();
+    const int runnumber = bc.runNumber();
+    if (bc.has_zdc()) {
+      ir = mRateFetcher.fetch(ccdb.service, ts, runnumber, "ZNC hadronic") * 1.e-3;
+    }
     auto newbc = bc;
 
     // obtain slice of compatible BCs
@@ -215,16 +246,25 @@ struct SGCandProducer {
     if (isSGEvent.bc && issgevent < 2) {
       newbc = *(isSGEvent.bc);
     } else {
-      LOGF(info, "No Newbc %i", bc.globalBC());
+      if (verboseInfo)
+        LOGF(info, "No Newbc %i", bc.globalBC());
     }
     registry.get<TH1>(HIST("reco/Stat"))->Fill(issgevent + 8, 1.);
     if (issgevent <= 2) {
-      //    LOGF(info, "Current BC: %i, %i, %i", bc.globalBC(), newbc.globalBC(), issgevent);
+      if (verboseInfo)
+        LOGF(info, "Current BC: %i, %i, %i", bc.globalBC(), newbc.globalBC(), issgevent);
       if (sameCuts.minRgtrwTOF()) {
         if (udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib()) < sameCuts.minRgtrwTOF())
           return;
       }
       upchelpers::FITInfo fitInfo{};
+      uint8_t chFT0A = 0;
+      uint8_t chFT0C = 0;
+      uint8_t chFDDA = 0;
+      uint8_t chFDDC = 0;
+      uint8_t chFV0A = 0;
+      int occ = 0;
+      occ = collision.trackOccupancyInTimeRange();
       udhelpers::getFITinfo(fitInfo, newbc, bcs, ft0s, fv0as, fdds);
       // update SG candidates tables
       int upc_flag = 0;
@@ -245,6 +285,7 @@ struct SGCandProducer {
                            fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
+      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr);
       outputCollsLabels(collision.globalIndex());
       if (newbc.has_zdc()) {
         auto zdc = newbc.zdc();
@@ -281,6 +322,7 @@ struct SGCandProducer {
 
 struct McSGCandProducer {
   // MC tables
+  Configurable<bool> verboseInfoMC{"verboseInfoMC", false, "Print general info to terminal; default it false."};
   Produces<aod::UDMcCollisions> outputMcCollisions;
   Produces<aod::UDMcParticles> outputMcParticles;
   Produces<aod::UDMcCollsLabels> outputMcCollsLabels;
@@ -374,7 +416,8 @@ struct McSGCandProducer {
         auto oldmids = mcpart.mothersIds();
         for (auto oldmid : oldmids) {
           auto m = McParts.rawIteratorAt(oldmid);
-          LOGF(debug, "    m %d", m.globalIndex());
+          if (verboseInfoMC)
+            LOGF(debug, "    m %d", m.globalIndex());
           if (mcPartIsSaved.find(oldmid) != mcPartIsSaved.end()) {
             newval = mcPartIsSaved[oldmid];
           } else {
@@ -392,7 +435,8 @@ struct McSGCandProducer {
           }
           newdids[ii] = newval;
         }
-        LOGF(debug, " ms %i ds %i", oldmids.size(), olddids.size());
+        if (verboseInfoMC)
+          LOGF(debug, " ms %i ds %i", oldmids.size(), olddids.size());
 
         // update UDMcParticles
         outputMcParticles(McCollisionId,
@@ -474,11 +518,14 @@ struct McSGCandProducer {
                  UDCCs const& sgcands, UDTCs const& udtracks,
                  CCs const& /*collisions*/, BCs const& /*bcs*/, TCs const& /*tracks*/)
   {
-    LOGF(info, "Number of McCollisions %d", mccols.size());
-    LOGF(info, "Number of SG candidates %d", sgcands.size());
-    LOGF(info, "Number of UD tracks %d", udtracks.size());
+    if (verboseInfoMC) {
+      LOGF(info, "Number of McCollisions %d", mccols.size());
+      LOGF(info, "Number of SG candidates %d", sgcands.size());
+      LOGF(info, "Number of UD tracks %d", udtracks.size());
+    }
     if (sgcands.size() <= 0) {
-      LOGF(info, "No DG candidates to save!");
+      if (verboseInfoMC)
+        LOGF(info, "No DG candidates to save!");
       return;
     }
 
@@ -519,14 +566,16 @@ struct McSGCandProducer {
         //  colId = -1;
         mcsgId = -1;
       }
-      LOGF(info, "\nStart of loop mcsgId %d mccolId %d", mcsgId, mccolId);
+      if (verboseInfoMC)
+        LOGF(info, "\nStart of loop mcsgId %d mccolId %d", mcsgId, mccolId);
 
       // two cases to consider
       // 1. mcdgId <= mccolId: the event to process is a dgcand. In this case the Mc tables as well as the McLabel tables are updated
       // 2. mccolId < mcdgId: the event to process is an MC event of interest without reconstructed dgcand. In this case only the Mc tables are updated
       if ((!sgcandAtEnd && !mccolAtEnd && (mcsgId <= mccolId)) || mccolAtEnd) {
         // this is case 1.
-        //  LOGF(info, "Doing case 1 with mcsgId %d", mcsgId);
+        if (verboseInfoMC)
+          LOGF(info, "Doing case 1 with mcsgId %d", mcsgId);
 
         // update UDMcCollisions and UDMcColsLabels (for each UDCollision -> UDMcCollisions)
         // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
@@ -537,7 +586,8 @@ struct McSGCandProducer {
         // McParticles are saved
         if (mcsgId >= 0) {
           if (mcColIsSaved.find(mcsgId) == mcColIsSaved.end()) {
-            LOGF(info, "  Saving McCollision %d", mcsgId);
+            if (verboseInfoMC)
+              LOGF(info, "  Saving McCollision %d", mcsgId);
             // update UDMcCollisions
             auto sgcandMcCol = sgcand.collision_as<CCs>().mcCollision();
             updateUDMcCollisions(sgcandMcCol, globBC);
@@ -557,7 +607,8 @@ struct McSGCandProducer {
         } else {
           // If the sgcand has no associated McCollision then only the McParticles which are associated
           // with the tracks of the sgcand are saved
-          // LOGF(info, "  Saving McCollision %d", -1);
+          if (verboseInfoMC)
+            LOGF(info, "  Saving McCollision %d", -1);
 
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
           outputMcCollsLabels(-1);
@@ -587,11 +638,13 @@ struct McSGCandProducer {
         }
       } else {
         // this is case 2.
-        LOGF(info, "Doing case 2");
+        if (verboseInfoMC)
+          LOGF(info, "Doing case 2");
 
         // update UDMcCollisions and UDMcParticles
         if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
-          LOGF(info, "  Saving McCollision %d", mccolId);
+          if (verboseInfoMC)
+            LOGF(info, "  Saving McCollision %d", mccolId);
           // update UDMcCollisions
           updateUDMcCollisions(mccol, globBC);
           mcColIsSaved[mccolId] = outputMcCollisions.lastIndex();
@@ -611,14 +664,16 @@ struct McSGCandProducer {
       }
 
       goon = !sgcandAtEnd || !mccolAtEnd;
-      // LOGF(info, "End of loop mcsgId %d mccolId %d", mcsgId, mccolId);
+      if (verboseInfoMC)
+        LOGF(info, "End of loop mcsgId %d mccolId %d", mcsgId, mccolId);
     }
   }
   PROCESS_SWITCH(McSGCandProducer, processMC, "Produce MC tables", false);
   void processDummy(aod::Collisions const& /*collisions*/)
   {
     // do nothing
-    LOGF(info, "Running dummy process function!");
+    if (verboseInfoMC)
+      LOGF(info, "Running dummy process function!");
   }
   PROCESS_SWITCH(McSGCandProducer, processDummy, "Dummy function", true);
 };

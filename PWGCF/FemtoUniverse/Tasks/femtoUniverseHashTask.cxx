@@ -9,9 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoUniverseReaderTask.cxx
+/// \file femtoUniverseHashTask.cxx
 /// \brief Tasks that reads the track tables used for the pairing
-/// This task is common for all femto analyses
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
@@ -24,34 +23,34 @@
 using namespace o2;
 using namespace o2::framework;
 
-struct femtoUniversePairHashTask {
+struct FemtoUniverseHashTask {
 
-  Configurable<std::vector<float>> CfgVtxBins{"CfgVtxBins", std::vector<float>{-10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  Configurable<std::vector<float>> CfgMultBins{"CfgMultBins", std::vector<float>{0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
-  // Configurable<std::vector<float>> CfgMultBins{"CfgMultBins", std::vector<float>{0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
+  Configurable<std::vector<float>> cfgVtxBins{"cfgVtxBins", std::vector<float>{-10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  Configurable<std::vector<float>> cfgMultBins{"cfgMultBins", std::vector<float>{0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
+  // Configurable<std::vector<float>> cfgMultBins{"cfgMultBins", std::vector<float>{0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
 
-  std::vector<float> CastCfgVtxBins, CastCfgMultBins;
+  std::vector<float> castCfgVtxBins, castCfgMultBins;
 
   Produces<aod::MixingHashes> hashes;
 
   void init(InitContext&)
   {
     /// here the Configurables are passed to std::vectors
-    CastCfgVtxBins = (std::vector<float>)CfgVtxBins;
-    CastCfgMultBins = (std::vector<float>)CfgMultBins;
+    castCfgVtxBins = (std::vector<float>)cfgVtxBins;
+    castCfgMultBins = (std::vector<float>)cfgMultBins;
   }
 
-  void process(o2::aod::FDCollision const& col)
+  void process(o2::aod::FdCollision const& col)
   {
     /// the hash of the collision is computed and written to table
-    hashes(eventmixing::getMixingBin(CastCfgVtxBins, CastCfgMultBins, col.posZ(), col.multV0M()));
+    hashes(eventmixing::getMixingBin(castCfgVtxBins, castCfgMultBins, col.posZ(), col.multV0M()));
   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<femtoUniversePairHashTask>(cfgc)};
+    adaptAnalysisTask<FemtoUniverseHashTask>(cfgc)};
 
   return workflow;
 }

@@ -208,18 +208,23 @@ struct RecoDecay {
   /// Constrains angle to be within a range.
   /// \note Inspired by TVector2::Phi_0_2pi in ROOT.
   /// \param angle  angle
-  /// \param min  minimum of the range
-  /// \return value within [min, min + 2π).
+  /// \param minimum  minimum of the range
+  /// \param harmonic  harmonic number
+  /// \return value of angle within [minimum, minimum + 2π / harmonic).
   template <typename T, typename U = float>
-  static T constrainAngle(T angle, U min = 0.)
+  static T constrainAngle(T angle, U minimum = 0.0F, unsigned int harmonic = 1U)
   {
-    while (angle < min) {
-      angle += o2::constants::math::TwoPI;
+    auto period = o2::constants::math::TwoPI;
+    if (harmonic != 1U) {
+      period /= harmonic;
     }
-    while (angle >= min + o2::constants::math::TwoPI) {
-      angle -= o2::constants::math::TwoPI;
+    while (angle < minimum) {
+      angle += period;
     }
-    return (T)angle;
+    while (angle >= minimum + period) {
+      angle -= period;
+    }
+    return angle;
   }
 
   /// Calculates cosine of pointing angle.
@@ -1072,7 +1077,7 @@ struct RecoDecay {
             auto mother = particlesMC.rawIteratorAt(particleMother.mothersIds().front() - particlesMC.offset());
             auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
             if (PDGParticleIMother < 9 || (PDGParticleIMother > 20 && PDGParticleIMother < 38)) {
-              auto PDGPaticle = std::abs(particleMother.pdgCode());
+              // auto PDGPaticle = std::abs(particleMother.pdgCode());
               if (
                 (PDGParticleIMother / 100 == 5 || // b mesons
                  PDGParticleIMother / 1000 == 5)  // b baryons
@@ -1095,7 +1100,7 @@ struct RecoDecay {
             }
             auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
             // Check status code
-            auto motherStatusCode = std::abs(mother.getGenStatusCode());
+            // auto motherStatusCode = std::abs(mother.getGenStatusCode());
             auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
             // Check mother's PDG code.
             // printf("getMother: ");

@@ -259,7 +259,7 @@ struct PseudorapidityDensityMFT {
                     {HistType::kTH3F, {PhiAxis, EtaAxis, CentAxis}}});
       QAregistry.add({"Events/Centrality/hcentFT0C",
                       " ; cent FT0C",
-                      {HistType::kTH1F, {{1000, 0, 100}}},
+                      {HistType::kTH1F, {CentAxis}},
                       true});
       QAregistry.add(
         {"Tracks/Centrality/Chi2Eta",
@@ -505,11 +505,6 @@ struct PseudorapidityDensityMFT {
     }
   }
 
-  /// Filters - collision
-  Filter filterCollCent = nabs(aod::cent::centFT0C) < cfgCutCent;
-  Filter filterCollZvtx = nabs(aod::collision::posZ) < cfgCutZvtx;
-  Filter filterMcCollZvtx = nabs(aod::mccollision::posZ) < cfgCutZvtx;
-
   /// Filters - tracks
   Filter filtTrkEta = (aod::fwdtrack::eta < trkcuts.cfg_eta_max) &&
                       (aod::fwdtrack::eta > trkcuts.cfg_eta_min);
@@ -536,28 +531,9 @@ struct PseudorapidityDensityMFT {
   using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 
   /// Filtered tables
-  using filtColls = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
-  using filtColl =
-    soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator;
-  using filtCollsCent =
-    soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>>;
-  using filtCollCent = soa::Filtered<
-    soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>>::iterator;
-  using CollsGenCentSmallG =
-    o2::soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions,
-                                   aod::CentFT0Cs, aod::EvSels>>;
-  using filtCollsGenCentSmallG =
-    soa::SmallGroups<soa::Join<aod::McCollisionLabels, filtCollsCent>>;
-  using filtCollsGenCent =
-    soa::Filtered<soa::Join<aod::McCollisionLabels, aod::Collisions,
-                            aod::CentFT0Cs, aod::EvSels>>;
-  using filtMcGenColls = soa::Filtered<aod::McCollisions>;
-  using filtMcGenColl = soa::Filtered<aod::McCollisions>::iterator;
   using filtMftTracks = soa::Filtered<aod::MFTTracks>;
   using filtMcMftTracks = soa::Filtered<MFTTracksLabeled>;
   using filtBestTracks = soa::Filtered<aod::BestCollisionsFwd>;
-  using filtBestTracksJ =
-    soa::Filtered<soa::Join<aod::BestCollisionsFwd, aod::MFTTracks>>;
   using filtParticles = soa::Filtered<aod::McParticles>;
 
   template <typename T>
@@ -921,20 +897,20 @@ struct PseudorapidityDensityMFT {
   }
 
   /// @brief process fnc. to run on DATA and REC MC w/o centrality selection
-  void processDataInclusive(filtColls::iterator const& collision,
+  void processDataInclusive(Colls::iterator const& collision,
                             filtMftTracks const& tracks)
   {
-    processData<filtColls>(collision, tracks);
+    processData<Colls>(collision, tracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processDataInclusive, "Count tracks",
                  false);
 
   /// @brief process fnc. to run on DATA and REC MC w/ FT0C centrality selection
-  void processDataCent(filtCollsCent::iterator const& collision,
+  void processDataCent(CollsCent::iterator const& collision,
                        filtMftTracks const& tracks)
   {
-    processData<filtCollsCent>(collision, tracks);
+    processData<CollsCent>(collision, tracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processDataCent,
@@ -943,10 +919,10 @@ struct PseudorapidityDensityMFT {
   /// @brief process fnc. to run on DATA and REC MC based on BestCollisionsFwd
   /// table w/o centrality selection
   void processDatawBestTracksInclusive(
-    filtColls::iterator const& collision, filtMftTracks const& tracks,
+    Colls::iterator const& collision, filtMftTracks const& tracks,
     soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
   {
-    processDatawBestTracks<filtColls>(collision, tracks, besttracks);
+    processDatawBestTracks<Colls>(collision, tracks, besttracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processDatawBestTracksInclusive,
@@ -955,10 +931,10 @@ struct PseudorapidityDensityMFT {
   /// @brief process fnc. to run on DATA and REC MC based on BestCollisionsFwd
   /// table w/ FT0C centrality selection
   void processDatawBestTracksCent(
-    filtCollsCent::iterator const& collision, filtMftTracks const& tracks,
+    CollsCent::iterator const& collision, filtMftTracks const& tracks,
     soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
   {
-    processDatawBestTracks<filtCollsCent>(collision, tracks, besttracks);
+    processDatawBestTracks<CollsCent>(collision, tracks, besttracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processDatawBestTracksCent,
@@ -1077,12 +1053,12 @@ struct PseudorapidityDensityMFT {
 
   /// @brief process fnc. to run on MC w/o centrality selection
   void processMCInclusive(
-    filtMcGenColls::iterator const& mccollision,
-    soa::SmallGroups<soa::Join<filtColls, aod::McCollisionLabels>> const& collisions,
+    aod::McCollisions::iterator const& mccollision,
+    soa::SmallGroups<soa::Join<Colls, aod::McCollisionLabels>> const& collisions,
     filtParticles const& particles, filtMcMftTracks const& tracks)
   {
-    processMC<filtMcGenColls, filtColls>(mccollision, collisions, particles,
-                                         tracks);
+    processMC<aod::McCollisions, Colls>(mccollision, collisions, particles,
+                                        tracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMCInclusive,
@@ -1090,12 +1066,12 @@ struct PseudorapidityDensityMFT {
 
   /// @brief process fnc. to run on MC w FT0C centrality selection
   void processMCCent(
-    filtMcGenColls::iterator const& mccollision,
-    soa::SmallGroups<soa::Join<filtCollsCent, aod::McCollisionLabels>> const& collisions,
+    aod::McCollisions::iterator const& mccollision,
+    soa::SmallGroups<soa::Join<CollsCent, aod::McCollisionLabels>> const& collisions,
     filtParticles const& particles, filtMcMftTracks const& tracks)
   {
-    processMC<filtMcGenColls, filtCollsCent>(mccollision, collisions, particles,
-                                             tracks);
+    processMC<aod::McCollisions, CollsCent>(mccollision, collisions, particles,
+                                            tracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMCCent,
@@ -1115,7 +1091,7 @@ struct PseudorapidityDensityMFT {
   {
     float c_gen = -1;
     bool atLeastOne = false;
-    int moreThanOne = 0;
+    // int moreThanOne = 0;
     for (auto& collision : collisions) {
       float c_rec = -1;
       if constexpr (C::template contains<aod::CentFT0Cs>()) {
@@ -1132,7 +1108,7 @@ struct PseudorapidityDensityMFT {
           }
         }
         atLeastOne = true;
-        ++moreThanOne;
+        // ++moreThanOne;
         auto z = collision.posZ();
 
         if constexpr (C::template contains<aod::CentFT0Cs>()) {
@@ -1189,14 +1165,14 @@ struct PseudorapidityDensityMFT {
   /// @brief process fnc. to run on MC (inclusive, using aod::BestCollisionsFwd
   /// tracks)
   void processMCwBestTracksInclusive(
-    filtMcGenColls::iterator const& mccollision,
-    soa::SmallGroups<soa::Join<filtColls, aod::McCollisionLabels>> const& collisions,
+    aod::McCollisions::iterator const& mccollision,
+    soa::SmallGroups<soa::Join<Colls, aod::McCollisionLabels>> const& collisions,
     filtParticles const& particles, filtMcMftTracks const& tracks,
     //                                      aod::BestCollisionsFwd const
     //                                      &besttracks
     filtBestTracks const& besttracks)
   {
-    processMCwBestTracks<filtMcGenColls, filtColls>(
+    processMCwBestTracks<aod::McCollisions, Colls>(
       mccollision, collisions, particles, tracks, besttracks);
   }
 
@@ -1206,12 +1182,12 @@ struct PseudorapidityDensityMFT {
   /// @brief process fnc. to run on MC (FT0C centrality, using
   /// aod::BestCollisionsFwd tracks)
   void processMCwBestTracksCent(
-    filtMcGenColls::iterator const& mccollision,
-    soa::SmallGroups<soa::Join<filtCollsCent, aod::McCollisionLabels>> const& collisions,
+    aod::McCollisions::iterator const& mccollision,
+    soa::SmallGroups<soa::Join<CollsCent, aod::McCollisionLabels>> const& collisions,
     filtParticles const& particles, filtMcMftTracks const& tracks,
     filtBestTracks const& besttracks)
   {
-    processMCwBestTracks<filtMcGenColls, filtCollsCent>(
+    processMCwBestTracks<aod::McCollisions, CollsCent>(
       mccollision, collisions, particles, tracks, besttracks);
   }
 
@@ -1463,18 +1439,21 @@ struct PseudorapidityDensityMFT {
   template <typename C>
   void processMcQA(
     typename soa::SmallGroups<soa::Join<C, aod::McCollisionLabels>> const& collisions,
-    filtMcGenColls const& mcCollisions, filtParticles const& /*particles*/,
-    MFTTracksLabeled const& tracks, aod::AmbiguousMFTTracks const& atracks)
+    aod::McCollisions const& mcCollisions,
+    filtParticles const& /*particles*/, MFTTracksLabeled const& tracks,
+    aod::AmbiguousMFTTracks const& atracks)
   {
     for (const auto& collision : collisions) {
       float c_rec = -1;
       if constexpr (C::template contains<aod::CentFT0Cs>()) {
         c_rec = collision.centFT0C();
-        QAregistry.fill(HIST("Events/Centrality/hRecPerGenColls"),
-                        static_cast<float>(collisions.size()) / mcCollisions.size(), c_rec);
+        QAregistry.fill(
+          HIST("Events/Centrality/hRecPerGenColls"),
+          static_cast<float>(collisions.size()) / mcCollisions.size(), c_rec);
       } else {
         QAregistry.fill(HIST("Events/hRecPerGenColls"),
-                        static_cast<float>(collisions.size()) / mcCollisions.size());
+                        static_cast<float>(collisions.size()) /
+                          mcCollisions.size());
       }
 
       if (!isGoodEvent<false>(collision)) {
@@ -1506,12 +1485,11 @@ struct PseudorapidityDensityMFT {
 
   /// @brief process function for QA checks (inclusive)
   void processMcQAInclusive(
-    soa::SmallGroups<soa::Join<filtColls, aod::McCollisionLabels>> const& collisions,
-    filtMcGenColls const& mcCollisions, filtParticles const& particles,
+    soa::SmallGroups<soa::Join<Colls, aod::McCollisionLabels>> const& collisions,
+    aod::McCollisions const& mcCollisions, filtParticles const& particles,
     MFTTracksLabeled const& tracks, aod::AmbiguousMFTTracks const& atracks)
   {
-    processMcQA<filtColls>(collisions, mcCollisions, particles, tracks,
-                           atracks);
+    processMcQA<Colls>(collisions, mcCollisions, particles, tracks, atracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMcQAInclusive,
@@ -1519,12 +1497,12 @@ struct PseudorapidityDensityMFT {
 
   /// @brief process function for QA checks (in FT0 bins)
   void processMcQACent(
-    soa::SmallGroups<soa::Join<filtCollsCent, aod::McCollisionLabels>> const& collisions,
-    filtMcGenColls const& mcCollisions, filtParticles const& particles,
+    soa::SmallGroups<soa::Join<CollsCent, aod::McCollisionLabels>> const& collisions,
+    aod::McCollisions const& mcCollisions, filtParticles const& particles,
     MFTTracksLabeled const& tracks, aod::AmbiguousMFTTracks const& atracks)
   {
-    processMcQA<filtCollsCent>(collisions, mcCollisions, particles, tracks,
-                               atracks);
+    processMcQA<CollsCent>(collisions, mcCollisions, particles, tracks,
+                           atracks);
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMcQACent,
