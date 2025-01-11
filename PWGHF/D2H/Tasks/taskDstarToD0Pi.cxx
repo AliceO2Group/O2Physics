@@ -272,7 +272,7 @@ struct HfTaskDstarToD0Pi {
           }
 
           if constexpr (applyMl) {
-            auto mlBdtScore = candDstar.mlProbAntiDstarToD0Pi();
+            auto mlBdtScore = candDstar.mlProbDstarToD0Pi();
             registry.fill(HIST("Yield/hDeltaInvMassVsPtVsCentVsBDTScore"), deltaMAntiDstar, candDstar.pt(), centrality, mlBdtScore[0], mlBdtScore[1], mlBdtScore[2]);
           }
 
