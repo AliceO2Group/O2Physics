@@ -1695,7 +1695,8 @@ struct AnalysisSameEventPairing {
         bool isAmbiInBunch = false;
         bool isAmbiOutOfBunch = false;
         bool isCorrect_pair = false;
-        if (isCorrectAssoc_leg1 && isCorrectAssoc_leg2)  isCorrect_pair = true;
+        if (isCorrectAssoc_leg1 && isCorrectAssoc_leg2)
+          isCorrect_pair = true;
         for (int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
@@ -1705,7 +1706,7 @@ struct AnalysisSameEventPairing {
               for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {        // loop over MC signals
                 if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
                   fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][0].Data(), VarManager::fgValues); // matched signal
-                  PromptNonPromptSepTable(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kPairTypeSPD],isCorrect_pair);
+                  PromptNonPromptSepTable(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kPairTypeSPD], isCorrect_pair);
                   if (fConfigQA) {
                     if (isCorrectAssoc_leg1 && isCorrectAssoc_leg2) { // correct track-collision association
                       fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][3].Data(), VarManager::fgValues);
