@@ -8,12 +8,20 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+<<<<<<< HEAD
 
 // o2-analysis-cf-flow-zdc-task --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-track-propagation --aod-file AO2D.root --configuration json://configuration_run3.json |  o2-analysis-timestamp --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-event-selection --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-trackselection --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-centrality-table --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-multiplicity-table --aod-file AO2D.root --configuration json://configuration_run3.json -b
 
+=======
+/// \file   FlowZDCtask.cxx
+/// \author Sabrina Hernandez
+/// \since  08/01/2024
+/// \brief  task to evaluate flow and neutron skin with information from ZDC
+>>>>>>> ad777c681 (adjusted O2 linter and added 2D histograms)
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <vector>
+#include <complex> 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
@@ -71,6 +79,7 @@ struct FlowZDCtask {
   // for ZDC info and analysis
   Configurable<int> nBinsADC{"nBinsADC", 1000, "nbinsADC"};
   Configurable<int> nBinsAmp{"nBinsAmp", 1025, "nbinsAmp"};
+  Configurable<int> nBinsFT0Amp{"nBinsFT0Amp", 250000, "nbinsAmp"};
   Configurable<float> MaxZN{"MaxZN", 4099.5, "Max ZN signal"};
   Configurable<float> acceptnace_ZNA{"acceptnace_ZNA", 0.92, "ZNA acceptance factor"};
   Configurable<float> acceptnace_ZNC{"acceptnace_ZNC", 0.90, "ZNC acceptance factor"};
@@ -81,8 +90,13 @@ struct FlowZDCtask {
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.30, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00}, "pt axis for histograms"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2500, 0, 2500}, "centrality axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {3500, 0, 3500}, "centrality axis for histograms"};
   ConfigurableAxis axisEnergy{"axisEnergy", {100, 0, 700}, "energy axis for zdc histos"};
+  ConfigurableAxis axisMultTPC{"axisaxisMultTPC", {1000, -0.5f, 1999.5f}, "TPCmultiplicity"};
+  ConfigurableAxis axisZN{"axisZN", {5000, 0, 500}, "axisZN"};
+  ConfigurableAxis axisZP{"axisZP", {5000, 0, 500}, "axisZP"};
+  ConfigurableAxis axisFT0CAmp{"axisFT0CAmp", {60000, 0, 60000}, "axisFT0CAmp"};
+
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
   Partition<aodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
@@ -107,8 +121,6 @@ struct FlowZDCtask {
   OutputObj<TProfile> ZDC_ZEM_Energy{TProfile("ZDC_ZEM_Energy", "ZDC vs ZEM Energy", 10, 0, 1000)};
   OutputObj<TProfile> pCosPsiDifferences{TProfile("pCosPsiDifferences", "Differences in cos(psi) vs Centrality;Centrality;Mean cos(psi) Difference", 200, 0, 100, -1, 1)};
   OutputObj<TProfile> pSinPsiDifferences{TProfile("pSinPsiDifferences", "Differences in sin(psi) vs Centrality;Centrality;Mean sin(psi) Difference", 200, 0, 100, -1, 1)};
-  OutputObj<TProfile> pZNvsFT0MAmp{TProfile("pZNvsFT0MAmp", "ZN Energy vs FT0M Amplitude", 1025, 0, 1e7, 0, 500)};
-  OutputObj<TProfile> pZPvsFT0MAmp{TProfile("pZPvsFT0MAmp", "ZP Energy vs FT0M Amplitude", 1025, 0, 1e7, 0, 500)};
   OutputObj<TProfile> pZNvsFT0Ccent{TProfile("pZNvsFT0Ccent", "ZN Energy vs FT0C Centrality", 100, 0, 100, 0, 500)};
   OutputObj<TProfile> pZPvsFT0Ccent{TProfile("pZPvsFT0Ccent", "ZP Energy vs FT0C Centrality", 100, 0, 100, 0, 500)};
   OutputObj<TProfile> pZNratiovscent{TProfile("pZNratiovscent", "Ratio ZNC/ZNA vs FT0C Centrality", 100, 0, 100, 0, 5)};
@@ -125,7 +137,7 @@ struct FlowZDCtask {
 
     const AxisSpec axisPt{nBinsPt, 0, 10, "p_{T} (GeV/c)"};
     const AxisSpec axisCounter{1, 0, +1, ""};
-    const AxisSpec axisPhi{100, 0, 2 * TMath::Pi(), "#phi"};
+    const AxisSpec axisPhi{100, 0, 2 * o2::constants::math::PI, "#phi"};
     const AxisSpec axisQ{100, -1, 1, "Q"};
     const AxisSpec axisZNA{100, 0, 200, "energy"};
     const AxisSpec axisQZNA{100, -1, 1, "Q"};
@@ -135,8 +147,6 @@ struct FlowZDCtask {
     AxisSpec axisVtxcounts{2, -0.5f, 1.5f, "Vtx info (0=no, 1=yes)"};
     AxisSpec axisZvert{120, -30.f, 30.f, "Vtx z (cm)"};
     AxisSpec axisCent{8, 0.f, 105.f, "centrality"};
-    AxisSpec axisMult{2500, 0, 2500.0f, "multiplicity"};
-    AxisSpec axisMultTPC{1000, -0.5f, 1999.5f, "TPCmultiplicity"};
     AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
     AxisSpec axisPtBins{{0., 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.25, 2.5, 2.75, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10., 13., 16., 20.}, "p_{T} (GeV/c)"};
 
@@ -147,7 +157,7 @@ struct FlowZDCtask {
     histos.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
     histos.add("centHistogram", "centHistogram", kTH1F, {axisCent});
     histos.add("multHistogram", "multHistogram", kTH1F, {axisMultiplicity});
-    histos.add("multvsCent", "centrality vs multiplicity", kTH2F, {axisCent, axisMult});
+    histos.add("multvsCent", "centrality vs multiplicity", kTH2F, {axisCent, axisMultiplicity});
     histos.add("phiHistogram", "phiHistogram", kTH1F, {axisPhi});
     histos.add("TPCmultiplicity", "TPCmultiplicity", kTH1F, {axisMultTPC});
 
@@ -164,14 +174,14 @@ struct FlowZDCtask {
     histos.add("EnergyZNC", "ZNC Sector Energy", kTH1F, {axisEnergy});
     histos.add("hCentFT0C", "FT0C Centrality Distribution", kTH1F, {{100, 0, 105}});
     histos.add("hZNvsFT0Ccent",
-               "ZN Energy vs FT0C Centrality;Centrality [%];ZN Energy [TeV]",
+               "ZN Energy vs FT0C Centrality",
                kTH2F,
-               {AxisSpec{100, 0, 100, "Centrality [%]"}, AxisSpec{100, 0, 500, "ZN Energy [TeV]"}});
+               {AxisSpec{100, 0, 100, "Centrality [%]"}, AxisSpec{100, 0, 500, "ZN Energy"}});
 
     histos.add("hZPvsFT0Ccent",
-               "ZP Energy vs FT0C Centrality;Centrality [%];ZP Energy [TeV]",
+               "ZP Energy vs FT0C Centrality;Centrality [%];ZP Energy",
                kTH2F,
-               {AxisSpec{100, 0, 100, "Centrality [%]"}, AxisSpec{100, 0, 500, "ZP Energy [TeV]"}});
+               {AxisSpec{100, 0, 100, "Centrality [%]"}, AxisSpec{100, 0, 500, "ZP Energy"}});
     // for q vector recentering
     histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ});
 
@@ -189,8 +199,8 @@ struct FlowZDCtask {
       histos.add("ImagQHistogramZNC", "ImagQHistogramZNC", kTH1F, {axisQZNA});
 
       histos.add("Acorrelations", "Acorrelations", kTH2F, {{axisQZNA}, {axisQZNA}});
-      histos.add("SPAngleZNA", "Spectator Plane Angle ZNA;Angle (radians);Entries", {HistType::kTH1F, {{100, -TMath::Pi(), TMath::Pi()}}});
-      histos.add("SPAngleZNC", "Spectator Plane Angle ZNC;Angle (radians);Entries", {HistType::kTH1F, {{100, -TMath::Pi(), TMath::Pi()}}});
+      histos.add("SPAngleZNA", "Spectator Plane Angle ZNA;Angle (radians);Entries", {HistType::kTH1F, {{100, -o2::constants::math::PI, o2::constants::math::PI}}});
+      histos.add("SPAngleZNC", "Spectator Plane Angle ZNC;Angle (radians);Entries", {HistType::kTH1F, {{100, -o2::constants::math::PI, o2::constants::math::PI}}});
 
       histos.add("RunningAverageCosPsiDiff", "Running Average of cos(psi) Differences;Running Average;Entries", {HistType::kTH1F, {{100, -1, 1}}});
 
@@ -205,18 +215,24 @@ struct FlowZDCtask {
       histos.add("ZPAenergy", "ZP energy side a", kTH1F, {axisEnergy});
       histos.add("ZNenergy", "common zn (a + c sides) energy", kTH1F, {axisEnergy});
       histos.add("ZPenergy", "common zp energy (a + c sides)", kTH1F, {axisEnergy});
-      histos.add("hFT0CAmp", ";Amplitude;counts", kTH1F, {{nBinsAmp, 0, 1e7}});
-      histos.add("hFT0AAmp", ";Amplitude;counts", kTH1F, {{nBinsAmp, 0, 1e7}});
-      histos.add("hFT0MAmp", ";Amplitude;counts", kTH1F, {{nBinsAmp, 0, 1e7}});
-      histos.add("hMultT0A", ";Amplitude;counts", kTH1F, {{nBinsAmp, 0, 250000}});
-      histos.add("hMultT0C", ";Amplitude;counts", kTH1F, {{nBinsAmp, 0, 250000}});
-      histos.add("hMultT0M", ";Amplitude;counts", kTH1F, {{nBinsAmp, 0, 250000}});
+      histos.add("hFT0CAmp", ";Amplitude;counts", kTH1F, {axisFT0CAmp});
+      histos.add("hFT0AAmp", ";Amplitude;counts", kTH1F, {{100000, 0, 100000}});
+      histos.add("hFT0MAmp", ";Amplitude;counts", kTH1F, {{100000, 0, 100000}});
+      histos.add("hMultT0A", ";Amplitude;counts", kTH1F, {{nBinsFT0Amp, 0, 250000}});
+      histos.add("hMultT0C", ";Amplitude;counts", kTH1F, {{nBinsFT0Amp, 0, 250000}});
+      histos.add("hMultT0M", ";Amplitude;counts", kTH1F, {{nBinsFT0Amp, 0, 250000}});
+      histos.add("hZNvsFT0CAmp", "ZN Energy vs FT0C Amplitude", kTH2F, {axisFT0CAmp, axisZN});
+      histos.add("hZPvsFT0CAmp", "ZP Energy vs FT0C Amplitude", kTH2F, {axisFT0CAmp, axisZP});
+      histos.add("hZNvsMult", "ZN Energy vs Multiplicity", kTH2F, {axisMultiplicity, axisZN});
+      histos.add("hZPvsMult", "ZP Energy vs Multiplicity", kTH2F, {axisMultiplicity, axisZP});
     }
   }
 
   void processQVector(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::ZDCMults const& /*zdcMults*/)
   {
     histos.fill(HIST("eventCounter"), 0.5);
+    if (!collision.sel8())
+      return;
     histos.fill(HIST("centHistogram"), collision.centFT0C());
     const auto& tracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     const int multTPC = tracksGrouped.size();
@@ -231,7 +247,7 @@ struct FlowZDCtask {
 
     if (cent < 0.0 && cent > 70)
       return;
-    TComplex qTPC(0, 0); // Starting with a q-vector of zero
+    std::complex<double> qTPC(0, 0); // Starting with a q-vector of zero
 
     for (auto& track : tracks) {
       double phi = track.phi();
@@ -240,14 +256,14 @@ struct FlowZDCtask {
       histos.fill(HIST("phiHistogram"), track.phi());
       histos.fill(HIST("ptHistogram"), track.pt());
 
-      qTPC += TComplex(TMath::Cos(2.0 * phi), TMath::Sin(2.0 * phi));
+      qTPC += std::complex<double>(std::cos(2.0 * phi), std::sin(2.0 * phi));
 
       histos.fill(HIST("multvsCent"), cent, Ntot);
 
     } // end track loop
 
-    qTPC_real = qTPC.Re() / Ntot; // normalize these vectors by the total number of particles
-    qTPC_im = qTPC.Im() / Ntot;
+    qTPC_real = qTPC.real() / Ntot; // normalize these vectors by the total number of particles
+    qTPC_im = qTPC.imag() / Ntot;
 
     histos.fill(HIST("REqHistogram"), qTPC_real);
     histos.fill(HIST("IMqHistogram"), qTPC_im);
@@ -258,31 +274,22 @@ struct FlowZDCtask {
     histos.fill(HIST("revsimag"), qTPC_real, qTPC_im);
   }
   void processZdcCollAssoc(
-    ColEvSels const& cols,
+    aodCollisions::iterator const& collision,
+    aodTracks const& tracks,
     BCsRun3 const& /*bcs*/,
     aod::Zdcs const& /*zdcs*/,
     aod::FT0s const& /*ft0s*/)
   {
+    int Ntot = tracks.size();
     double sumCosPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
     double sumSinPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
     int countEvents = 0;        // initialize Counter for the number of events processed
     double FT0AAmp = 0;
     double FT0CAmp = 0;
-    // init values for ft0 multiplicity
-    float multFT0A = 0.f;
-    float multFT0C = 0.f;
-    float multFT0M = 0.f;
-
     // collision-based event selection
-    for (auto& collision : cols) {
+    if (!collision.sel8())
+      return;      
       const auto& foundBC = collision.foundBC_as<BCsRun3>();
-      multFT0A = collision.multFT0A();
-      multFT0C = collision.multFT0C();
-      multFT0M = multFT0A + multFT0C;
-
-      histos.fill(HIST("hMultT0A"), multFT0A);
-      histos.fill(HIST("hMultT0C"), multFT0C);
-      histos.fill(HIST("hMultT0M"), multFT0M);
       if (collision.has_foundFT0()) {
         auto ft0 = collision.foundFT0();
         for (auto amplitude : ft0.amplitudeA()) {
@@ -332,14 +339,17 @@ struct FlowZDCtask {
         histos.fill(HIST("ZPCenergy"), common_sumZPC);
         histos.fill(HIST("hZNvsFT0Ccent"), cent, sumZN);
         histos.fill(HIST("hZPvsFT0Ccent"), cent, sumZP);
+        histos.fill(HIST("hZNvsFT0CAmp"), FT0CAmp, sumZN);
+        histos.fill(HIST("hZPvsFT0CAmp"), FT0CAmp, sumZP);
+        histos.fill(HIST("hZNvsMult"), Ntot, sumZN);
+        histos.fill(HIST("hZPvsMult"), Ntot, sumZP);
+
         float ratioZN = sumZNC / sumZNA;
         float ratioZP = sumZPC / sumZPA;
         pZNratiovscent->Fill(cent, ratioZN);
         pZPratiovscent->Fill(cent, ratioZP);
         pZNvsFT0Ccent->Fill(cent, sumZN);
         pZPvsFT0Ccent->Fill(cent, sumZP);
-        pZPvsFT0MAmp->Fill(sumZP, FT0MAmp);
-        pZNvsFT0MAmp->Fill(sumZN, FT0MAmp);
 
         histos.get<TH2>(HIST("ZDC_energy_vs_ZEM"))->Fill(sumZEM, sumZDC);
 
@@ -350,38 +360,39 @@ struct FlowZDCtask {
         double qZNA_im = 0.0;
         double qZNC_real = 0.0;
         double qZNC_im = 0.0;
-        const double phiRadians[4] = {45 * TMath::Pi() / 180, 135 * TMath::Pi() / 180, 225 * TMath::Pi() / 180, 315 * TMath::Pi() / 180};
-        TComplex qZNA(0, 0), qZNC(0, 0);
+        const double phiRadians[4] = {45 * o2::constants::math::PI / 180, 135 *  o2::constants::math::PI / 180, 225 *  o2::constants::math::PI / 180, 315 *  o2::constants::math::PI / 180};
+        std::complex<double> qZNA = std::complex<double>(0.0, 0.0);
+        std::complex<double> qZNC = std::complex<double>(0.0, 0.0);
 
         for (int sector = 0; sector < 4; ++sector) {
           float energyZNA = zdcread.energySectorZNA()[sector];
           float energyZNC = zdcread.energySectorZNC()[sector];
 
-          qZNA += TComplex(TMath::Cos(2 * phiRadians[sector]) * energyZNA / sumZNA, TMath::Sin(2 * phiRadians[sector]) * energyZNA / sumZNA);
-          qZNC += TComplex(TMath::Cos(2 * phiRadians[sector]) * energyZNC / sumZNC, TMath::Sin(2 * phiRadians[sector]) * energyZNC / sumZNC);
+          qZNA += std::complex<double>(std::cos(2 * phiRadians[sector]) * energyZNA / sumZNA, std::sin(2 * phiRadians[sector]) * energyZNA / sumZNA);
+          qZNC += std::complex<double>(std::cos(2 * phiRadians[sector]) * energyZNC / sumZNC, std::sin(2 * phiRadians[sector]) * energyZNC / sumZNC);
         }
 
-        qZNA_real = qZNA.Re() / Ntot_ZNA;
-        qZNA_im = qZNA.Im() / Ntot_ZNA;
-        qZNC_real = qZNC.Re() / Ntot_ZNC;
-        qZNC_im = qZNC.Im() / Ntot_ZNC;
+        qZNA_real = qZNA.real() / Ntot_ZNA;
+        qZNA_im = qZNA.imag() / Ntot_ZNA;
+        qZNC_real = qZNC.real() / Ntot_ZNC;
+        qZNC_im = qZNC.imag() / Ntot_ZNC;
 
-        histos.fill(HIST("Acorrelations"), qZNA.Re(), qZNA.Im());
+        histos.fill(HIST("Acorrelations"), qZNA.real(), qZNA.imag());
         histos.fill(HIST("RealQHistogramZNA"), qZNA_real);
         histos.fill(HIST("ImagQHistogramZNA"), qZNA_im);
         histos.fill(HIST("RealQHistogramZNC"), qZNC_real);
         histos.fill(HIST("ImagQHistogramZNC"), qZNC_im);
 
         // Calculate the spectator plane angles for ZNA and ZNC
-        double psiZNA = TMath::ATan2(qZNA.Im(), qZNA.Re()) / 2;
-        double psiZNC = TMath::ATan2(qZNC.Im(), qZNC.Re()) / 2;
+        double psiZNA = std::atan2(qZNA.imag(), qZNA.real()) / 2.0;
+        double psiZNC = std::atan2(qZNC.imag(), qZNC.real()) / 2.0;
 
         // Fill the histograms with the calculated angles
         histos.fill(HIST("SPAngleZNA"), psiZNA);
         histos.fill(HIST("SPAngleZNC"), psiZNC);
 
-        double cosPsiDiff = TMath::Cos(psiZNA) - TMath::Cos(psiZNC);
-        double sinPsiDiff = TMath::Sin(psiZNA) - TMath::Sin(psiZNC);
+        double cosPsiDiff = std::cos(psiZNA) - std::cos(psiZNC);
+        double sinPsiDiff = std::sin(psiZNA) - std::sin(psiZNC);
 
         sumCosPsiDiff += cosPsiDiff;
         sumSinPsiDiff += sinPsiDiff;
@@ -397,7 +408,7 @@ struct FlowZDCtask {
         histos.fill(HIST("CosPsiDifferences"), cosPsiDiff);
         histos.fill(HIST("hSinDifferences"), sinPsiDiff);
       }
-    }
+    
   }
 
   PROCESS_SWITCH(FlowZDCtask, processZdcCollAssoc, "Processing ZDC w. collision association", true);
