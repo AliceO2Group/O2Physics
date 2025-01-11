@@ -436,6 +436,7 @@ class VarManager : public TObject
     kUsedKF,
     kKFMass,
     kKFMassGeoTop,
+    kPairTypeSPD,
 
     kPt1,
     kEta1,
@@ -2600,6 +2601,32 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
   double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
   values[kDeltaPtotTracks] = Ptot1 - Ptot2;
+
+  if constexpr ((pairType == kDecayToEE)) {
+    int layerSPDhit = -9;
+    bool t1Layer0 = t1.itsClusterMap() & (1 << 0);
+    bool t1Layer1 = t1.itsClusterMap() & (1 << 1);
+    bool t1Layer2 = t1.itsClusterMap() & (1 << 2);
+
+    bool t2Layer0 = t2.itsClusterMap() & (1 << 0);
+    bool t2Layer1 = t2.itsClusterMap() & (1 << 1);
+    bool t2Layer2 = t2.itsClusterMap() & (1 << 2);
+
+    if (t1Layer0 && t2Layer0) { // FF (First-First) in layer 0
+      layerSPDhit = 1;
+    } else if ((t1Layer0 && t2Layer1) || (t1Layer1 && t2Layer0)) { // FS (First-Second) across layers 0 and 1
+      layerSPDhit = 2;
+    } else if ((t1Layer0 && t2Layer2) || (t1Layer2 && t2Layer0)) { // FT (First-Third) across layers 0 and 2
+      layerSPDhit = 3;
+    } else if (t1Layer1 && t2Layer1) { // SS (Second-Second) in layer 1
+      layerSPDhit = 4;
+    } else if ((t1Layer1 && t2Layer2) || (t1Layer2 && t2Layer1)) { // ST (Second-Third) across layers 1 and 2
+      layerSPDhit = 5;
+    } else if (t1Layer2 && t2Layer2) { // TT (Third-Third) in layer 2
+      layerSPDhit = 6;
+    }
+    values[kPairTypeSPD] = layerSPDhit;
+  }
 
   if (fgUsedVars[kDeltaPhiPair2]) {
     double phipair2 = v1.Phi() - v2.Phi();
