@@ -92,7 +92,7 @@ struct FlowZDCtask {
   ConfigurableAxis axisFT0CAmp{"axisFT0CAmp", {60000, 0, 60000}, "axisFT0CAmp"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
   Partition<aodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
 
   TComplex qTPC;       // init q TPC
@@ -131,7 +131,7 @@ struct FlowZDCtask {
 
     const AxisSpec axisPt{nBinsPt, 0, 10, "p_{T} (GeV/c)"};
     const AxisSpec axisCounter{1, 0, +1, ""};
-    const AxisSpec axisPhi{100, 0, 2 * o2::constants::math::PI, "#phi"};
+    const AxisSpec axisPhi{100, 0, o2::constants::math::TwoPIPI, "#phi"};
     const AxisSpec axisQ{100, -1, 1, "Q"};
     const AxisSpec axisZNA{100, 0, 200, "energy"};
     const AxisSpec axisQZNA{100, -1, 1, "Q"};
