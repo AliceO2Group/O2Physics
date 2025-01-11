@@ -174,6 +174,7 @@ struct HfTaskDstarToD0Pi {
       registry.add("Yield/hDeltaInvMassVsPtVsCentVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
     }
     if (doprocessMcWML) {
+      registry.add("Efficiency/hPtVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
       registry.add("Efficiency/hPtPromptVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
       registry.add("Efficiency/hPtNonPromptVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
       // registry.add("Efficiency/hPtBkgVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
@@ -332,6 +333,10 @@ struct HfTaskDstarToD0Pi {
         if (candDstarMcRec.isSelDstarToD0Pi()) { // if all selection passed
           registry.fill(HIST("QA/hPtFullRecoDstarRecSig"), ptDstarRecSig);
           registry.fill(HIST("Efficiency/hPtVsCentFullRecoDstarRecSig"), ptDstarRecSig, centrality);
+          if constexpr (applyMl) {
+            auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
+            registry.fill(HIST("Efficiency/hPtVsCentVsBDTScore"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2]);
+          }
         }
         registry.fill(HIST("QA/hCPASkimD0RecSig"), candDstarMcRec.cpaD0());
         registry.fill(HIST("QA/hEtaSkimD0RecSig"), candDstarMcRec.etaD0());
@@ -349,10 +354,8 @@ struct HfTaskDstarToD0Pi {
           if (candDstarMcRec.isSelDstarToD0Pi()) { // if all selection passed
             registry.fill(HIST("QA/hPtFullRecoPromptDstarRecSig"), ptDstarRecSig);
             if constexpr (applyMl) {
-              // LOGF(info, "Deep: Prompt MC Rec Task Dstar: ML applied");
               auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
               registry.fill(HIST("Efficiency/hPtPromptVsCentVsBDTScore"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2]);
-              // LOGF(info, "Deep: Prompt MC Rec Task Dstar: ML applied, Efficiency filled");
             }
           }
         } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) { // only non-prompt signal at reconstruction level
@@ -380,7 +383,6 @@ struct HfTaskDstarToD0Pi {
         }
       }
     } // candidate loop ends
-    // LOGF(info, "Deep: MC Rec Task Dstar finished");
   }
 
   /// @brief This function runs over MC at gen level to obatin efficiency
