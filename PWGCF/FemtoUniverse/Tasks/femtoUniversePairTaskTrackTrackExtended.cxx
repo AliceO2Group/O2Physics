@@ -94,15 +94,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
 
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsOneMCTruth =
     aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) &&
-    //
-    // FIXME: sign is always == -128
-    // aod::femtouniverseparticle::sign == trackonefilter.ConfChargePart1 &&
-    //
     aod::femtouniverseparticle::pidCut == static_cast<uint32_t>(trackonefilter.confPDGCodePartOne) &&
     aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 &&
     aod::femtouniverseparticle::pt > trackonefilter.confPtLowPart1;
-
-  // && ((aod::femtouniverseparticle::cut & ConfCutPartOne) == ConfCutPartOne);
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 1> trackHistoPartOne;
@@ -119,6 +113,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   } tracktwofilter;
   /// Partition for particle 2
   Partition<FilteredFemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == tracktwofilter.confChargePart2) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confPtLowPart2;
+
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsTwoMCReco = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack) && (aod::femtouniverseparticle::sign == tracktwofilter.confChargePart2) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confPtLowPart2;
 
   Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsTwoMCTruth =
