@@ -1605,9 +1605,7 @@ struct UpcCandProducer {
     for (auto& pair : bcsMatchedTrIdsGlobal) {
       auto globalBC = static_cast<int64_t>(pair.first);
       const auto& fwdTrackIDs = pair.second; // Forward tracks (Global with MFT)
-      uint32_t nMFTs = fwdTrackIDs.size();
-      // ensure we have two MFT tracks
-      if (nMFTs != 2) {
+      if (fwdTrackIDs.size() != 2) { // ensure we have two MFT tracks
         continue;
       }
 
@@ -1628,15 +1626,13 @@ struct UpcCandProducer {
       // retrieve global track eta and apply the logic
       bool firstInAcceptance = false, secondInAcceptance = false;
 
-      auto trk1 = fwdTracks.iteratorAt(fwdTrackIDs[0]);
-      auto trk2 = fwdTracks.iteratorAt(fwdTrackIDs[1]);
-      double eta1 = trk1.eta();
-      double eta2 = trk2.eta();
+      const auto& trk1 = fwdTracks.iteratorAt(fwdTrackIDs[0]);
+      const auto& trk2 = fwdTracks.iteratorAt(fwdTrackIDs[1]);
 
-      if (eta1 > fMinEtaMFT && eta1 < fMaxEtaMFT) {
+      if (trk1.eta() > fMinEtaMFT && trk1.eta() < fMaxEtaMFT) {
         firstInAcceptance = true;
       }
-      if (eta2 > fMinEtaMFT && eta2 < fMaxEtaMFT) {
+      if (trk2.eta() > fMinEtaMFT && trk2.eta() < fMaxEtaMFT) {
         secondInAcceptance = true;
       }
 
