@@ -90,15 +90,6 @@ DECLARE_SOA_COLUMN(Lxyee, lxyee, float);
 DECLARE_SOA_COLUMN(Lzee, lzee, float);
 DECLARE_SOA_COLUMN(Typeee, typeee, float);
 DECLARE_SOA_COLUMN(Corrassoc, corrassoc, bool);
-// Candidate columns for prompt-non-prompt JPsi separation - Gen level
-DECLARE_SOA_COLUMN(MCPt, mcpt, float);
-DECLARE_SOA_COLUMN(MCPhi, mcphi, float);
-DECLARE_SOA_COLUMN(MCEta, mceta, float);
-DECLARE_SOA_COLUMN(MCY, mcy, float);
-DECLARE_SOA_COLUMN(MCLxy, mclxy, float);
-DECLARE_SOA_COLUMN(MCTauxy, mctauxy, float);
-DECLARE_SOA_COLUMN(MCLxyz, mclxyz, float);
-DECLARE_SOA_COLUMN(MCTauxyz, mctauxyz, float);
 } // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);                                                            //!  joinable to ReducedEvents
@@ -109,7 +100,6 @@ DECLARE_SOA_TABLE(MuonAmbiguities, "AOD", "DQMUONAMB", dqanalysisflags::MuonAmbi
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsBarrelSelectedPrefilter);                                                  //!  joinable to ReducedTracksAssoc
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBcandidate, dqanalysisflags::deltaMassBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::DCAxyzBetweenProngs, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate, dqanalysisflags::McFlag);
 DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER", dqanalysisflags::Massee, dqanalysisflags::Ptee, dqanalysisflags::Lxyee, dqanalysisflags::Lzee, dqanalysisflags::Typeee, dqanalysisflags::Corrassoc);
-DECLARE_SOA_TABLE(JPsiMCCandidates, "AOD", "MCPSEUDOPROPER", dqanalysisflags::MCPt, dqanalysisflags::MCPhi, dqanalysisflags::MCEta, dqanalysisflags::MCY, dqanalysisflags::MCLxy, dqanalysisflags::MCTauxy, dqanalysisflags::MCLxyz, dqanalysisflags::MCTauxyz);
 } // namespace o2::aod
 
 // Declarations of various short names
@@ -1122,7 +1112,6 @@ struct AnalysisSameEventPairing {
   Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonsInfo> dileptonInfoList;
   Produces<aod::JPsieeCandidates> PromptNonPromptSepTable;
-  Produces<aod::JPsiMCCandidates> MCTable;
 
   o2::base::MatLayerCylSet* fLUT = nullptr;
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
@@ -2789,7 +2778,6 @@ struct AnalysisAsymmetricPairing {
         checked = sig.CheckSignal(true, mctrack);
         if (checked) {
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig.GetName()), VarManager::fgValues);
-          MCTable(VarManager::fgValues[VarManager::kMCPt], VarManager::fgValues[VarManager::kMCPhi], VarManager::fgValues[VarManager::kMCEta], VarManager::fgValues[VarManager::kMCY], VarManager::fgValues[VarManager::kMCLxy], VarManager::fgValues[VarManager::kMCTauxy], VarManager::fgValues[VarManager::kMCLxyz], VarManager::fgValues[VarManager::kMCTauxyz]);
         }
       }
     }
