@@ -149,15 +149,15 @@ struct lambdalambda {
     AxisSpec PVzQaAxis = {300, -15.0, 15.0};
     AxisSpec combAxis = {3, -0.5, 2.5};
 
-    histos.add("Radius_V0V0_full", "", {HistType::kTH3F, {massAxis, ptAxis, RadiusAxis}});
-    histos.add("CPA_V0V0_full", "", {HistType::kTH3F, {massAxis, ptAxis, CPAAxis}});
-    histos.add("Distance_V0V0_full", "", {HistType::kTH3F, {massAxis, ptAxis, DistanceAxis}});
-    histos.add("DCA_V0V0_full", "", {HistType::kTH3F, {massAxis, ptAxis, DCAAxis}});
+    histos.add("Radius_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, RadiusAxis, combAxis}});
+    histos.add("CPA_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, CPAAxis, combAxis}});
+    histos.add("Distance_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DistanceAxis, combAxis}});
+    histos.add("DCA_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCAAxis, combAxis}});
 
-    histos.add("Radius_V0V0_sel", "", {HistType::kTH3F, {massAxis, ptAxis, RadiusAxis}});
-    histos.add("CPA_V0V0_sel", "", {HistType::kTH3F, {massAxis, ptAxis, CPAAxis}});
-    histos.add("Distance_V0V0_sel", "", {HistType::kTH3F, {massAxis, ptAxis, DistanceAxis}});
-    histos.add("DCA_V0V0_sel", "", {HistType::kTH3F, {massAxis, ptAxis, DCAAxis}});
+    histos.add("Radius_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, RadiusAxis, combAxis}});
+    histos.add("CPA_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, CPAAxis, combAxis}});
+    histos.add("Distance_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DistanceAxis, combAxis}});
+    histos.add("DCA_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCAAxis, combAxis}});
 
     histos.add("h_InvMass_same", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
     histos.add("h_InvMass_mixed", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
@@ -300,8 +300,8 @@ struct lambdalambda {
   float getCPA(V01 const& v01, V02 const& v02)
   {
     ROOT::Math::XYZVector v01mom, v02mom;
-    v01mom.SetXYZ(v01.px(), v01.py(), v01.pz());
-    v02mom.SetXYZ(v02.px(), v02.py(), v02.pz());
+    v01mom.SetXYZ(v01.px() / v01.p(), v01.py() / v01.p(), v01.pz() / v01.p());
+    v02mom.SetXYZ(v02.px() / v02.p(), v02.py() / v02.p(), v02.pz() / v02.p());
     return v01mom.Dot(v02mom);
   }
 
@@ -415,16 +415,16 @@ struct lambdalambda {
         if (std::abs(RecoV0V0.Rapidity()) > cfgV0V0RapMax)
           continue;
 
-        histos.fill(HIST("Radius_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getRadius(v01, v02));
-        histos.fill(HIST("CPA_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getCPA(v01, v02));
-        histos.fill(HIST("Distance_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getDistance(v01, v02));
-        histos.fill(HIST("DCA_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getDCAofV0V0(v01, v02));
+        histos.fill(HIST("Radius_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getRadius(v01, v02), V01Tag + V02Tag);
+        histos.fill(HIST("CPA_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getCPA(v01, v02), V01Tag + V02Tag);
+        histos.fill(HIST("Distance_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getDistance(v01, v02), V01Tag + V02Tag);
+        histos.fill(HIST("DCA_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getDCAofV0V0(v01, v02), V01Tag + V02Tag);
 
         if (isSelectedV0V0(v01, v02)) {
-          histos.fill(HIST("Radius_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getRadius(v01, v02));
-          histos.fill(HIST("CPA_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getCPA(v01, v02));
-          histos.fill(HIST("Distance_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getDistance(v01, v02));
-          histos.fill(HIST("DCA_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getDCAofV0V0(v01, v02));
+          histos.fill(HIST("Radius_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getRadius(v01, v02), V01Tag + V02Tag);
+          histos.fill(HIST("CPA_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getCPA(v01, v02), V01Tag + V02Tag);
+          histos.fill(HIST("Distance_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getDistance(v01, v02), V01Tag + V02Tag);
+          histos.fill(HIST("DCA_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getDCAofV0V0(v01, v02), V01Tag + V02Tag);
         }
 
         if (cfgV0V0Sel && !isSelectedV0V0(v01, v02))

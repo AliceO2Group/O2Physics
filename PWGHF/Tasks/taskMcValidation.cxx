@@ -44,6 +44,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_evsel;
 using namespace o2::hf_centrality;
+using namespace o2::hf_occupancy;
 
 namespace
 {
@@ -109,6 +110,7 @@ struct HfTaskMcValidationGen {
   using CollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using CollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using CollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
   PresliceUnsorted<CollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<CollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<CollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
@@ -241,27 +243,6 @@ struct HfTaskMcValidationGen {
     hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
-  /// \brief Function to get MC collision occupancy
-  /// \param collSlice collection of reconstructed collisions
-  /// \return collision occupancy
-  template <typename CCs>
-  int getOccupancyColl(CCs const& collSlice)
-  {
-    float multiplicity{0.f};
-    int occupancy = 0;
-    for (const auto& collision : collSlice) {
-      float collMult{0.f};
-      collMult = collision.numContrib();
-
-      if (collMult > multiplicity) {
-        occupancy = collision.trackOccupancyInTimeRange();
-        multiplicity = collMult;
-      }
-    } // end loop over collisions
-
-    return occupancy;
-  }
-
   template <o2::hf_centrality::CentralityEstimator centEstimator, typename GenColl, typename Particles, typename RecoColls>
   void runCheckGenParticles(GenColl const& mcCollision, Particles const& mcParticles, RecoColls const& recoCollisions, BCsInfo const&, std::array<int, nChannels>& counterPrompt, std::array<int, nChannels>& counterNonPrompt)
   {
@@ -274,7 +255,7 @@ struct HfTaskMcValidationGen {
     float centrality{105.f};
     int occupancy = 0;
     if (storeOccupancy) {
-      occupancy = getOccupancyColl(recoCollisions);
+      occupancy = getOccupancyGenColl(recoCollisions, OccupancyEstimator::Its);
     }
     uint16_t rejectionMask{0};
     if constexpr (centEstimator == CentralityEstimator::FT0C) {
@@ -284,7 +265,7 @@ struct HfTaskMcValidationGen {
     } else if constexpr (centEstimator == CentralityEstimator::None) {
       rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, recoCollisions, centrality);
     }
-    hfEvSelMc.fillHistograms(rejectionMask);
+    hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask);
     if (rejectionMask != 0) {
       return;
     }
@@ -581,7 +562,7 @@ struct HfTaskMcValidationGen {
   } // end processCentFT0C
   PROCESS_SWITCH(HfTaskMcValidationGen, processCentFT0C, "Process generated collisions information with centrality selection using FT0C", false);
 
-  void processCentFT0M(aod::McCollisions const& mcCollisions,
+  void processCentFT0M(McCollisionsCentFT0Ms const& mcCollisions,
                        aod::McParticles const& mcParticles,
                        CollisionsFT0Ms const& recoCollisions,
                        BCsInfo const& bcInfo)

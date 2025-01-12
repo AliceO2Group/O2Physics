@@ -35,7 +35,7 @@
 #include "TPDGCode.h"
 
 using namespace o2;
-using namespace o2::analysis::femtoUniverse;
+using namespace o2::analysis::femto_universe;
 using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -73,7 +73,7 @@ struct femtoUniverseEficiencyTask {
   Configurable<float> cfgDcaXY{"cfgDcaXY", 2.4, "Value of max. DCA_XY"};
   Configurable<float> cfgDcaZ{"cfgDcaZ", 3.2, "Value of max. DCA_Z"};
   /// Event cuts
-  o2::analysis::femtoUniverse::FemtoUniverseCollisionSelection colCuts;
+  o2::analysis::femto_universe::FemtoUniverseCollisionSelection colCuts;
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};

@@ -35,10 +35,12 @@ using namespace o2::framework::expressions;
 namespace
 {
 enum CandTypeSel {
-  SigD0 = 0,     // Signal D0
-  SigD0bar,      // Signal D0bar
-  ReflectedD0,   // Reflected D0
-  ReflectedD0bar // Reflected D0bar
+  SigD0 = 0,      // Signal D0
+  SigD0bar,       // Signal D0bar
+  ReflectedD0,    // Reflected D0
+  ReflectedD0bar, // Reflected D0bar
+  PureSigD0,      // Signal D0 exclude Reflected D0bar
+  PureSigD0bar    // Signal D0bar exclude Reflected D0
 };
 } // namespace
 struct HfTaskD0 {
@@ -63,7 +65,7 @@ struct HfTaskD0 {
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {500, 0, 50}, "Cand. pT bins"};
   ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {20, -1, 1}, "Cand. rapidity bins"};
   ConfigurableAxis thnConfigAxisOrigin{"thnConfigAxisOrigin", {3, -0.5, 2.5}, "Cand. origin type"};
-  ConfigurableAxis thnConfigAxisCandType{"thnConfigAxisCandType", {4, -0.5, 3.5}, "D0 type"};
+  ConfigurableAxis thnConfigAxisCandType{"thnConfigAxisCandType", {6, -0.5, 5.5}, "D0 type"};
   ConfigurableAxis thnConfigAxisGenPtD{"thnConfigAxisGenPtD", {500, 0, 50}, "Gen Pt D"};
   ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
   ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Number of PV contributors"};
@@ -318,16 +320,36 @@ struct HfTaskD0 {
       if constexpr (applyMl) {
         if (candidate.isSelD0() >= selectionFlagD0) {
           registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, hfHelper.yD0(candidate), SigD0);
+          if (candidate.isSelD0bar()) {
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, hfHelper.yD0(candidate), ReflectedD0);
+          } else if (!candidate.isSelD0bar()) {
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, hfHelper.yD0(candidate), PureSigD0);
+          }
         }
         if (candidate.isSelD0bar() >= selectionFlagD0bar) {
           registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, hfHelper.yD0(candidate), SigD0bar);
+          if (candidate.isSelD0()) {
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0bar, ptCandidate, hfHelper.yD0(candidate), ReflectedD0bar);
+          } else if (!candidate.isSelD0()) {
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, hfHelper.yD0(candidate), PureSigD0bar);
+          }
         }
       } else {
         if (candidate.isSelD0() >= selectionFlagD0) {
           registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, hfHelper.yD0(candidate), SigD0);
+          if (candidate.isSelD0bar()) {
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, hfHelper.yD0(candidate), ReflectedD0);
+          } else if (!candidate.isSelD0bar()) {
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, hfHelper.yD0(candidate), PureSigD0);
+          }
         }
         if (candidate.isSelD0bar() >= selectionFlagD0bar) {
           registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, hfHelper.yD0(candidate), SigD0bar);
+          if (candidate.isSelD0()) {
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, hfHelper.yD0(candidate), ReflectedD0bar);
+          } else if (!candidate.isSelD0()) {
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, hfHelper.yD0(candidate), PureSigD0bar);
+          }
         }
       }
     }

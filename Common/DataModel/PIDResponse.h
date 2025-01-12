@@ -94,7 +94,7 @@ template <class T>
 using hasTPCAl = decltype(std::declval<T&>().tpcNSigmaAl());
 
 // PID index as template argument
-#define perSpeciesWrapper(functionName)                       \
+#define PER_SPECIES_WRAPPER(functionName)                     \
   template <o2::track::PID::ID index, typename TrackType>     \
   auto functionName(const TrackType& track)                   \
   {                                                           \
@@ -119,8 +119,8 @@ using hasTPCAl = decltype(std::declval<T&>().tpcNSigmaAl());
     }                                                         \
   }
 
-perSpeciesWrapper(tofNSigma);
-perSpeciesWrapper(tofExpSigma);
+PER_SPECIES_WRAPPER(tofNSigma);
+PER_SPECIES_WRAPPER(tofExpSigma);
 template <o2::track::PID::ID index, typename TrackType>
 auto tofExpSignal(const TrackType& track)
 {
@@ -144,10 +144,10 @@ auto tofExpSignal(const TrackType& track)
     return track.tofExpSignalAl(track.tofSignal());
   }
 }
-perSpeciesWrapper(tofExpSignalDiff);
+PER_SPECIES_WRAPPER(tofExpSignalDiff);
 
-perSpeciesWrapper(tpcNSigma);
-perSpeciesWrapper(tpcExpSigma);
+PER_SPECIES_WRAPPER(tpcNSigma);
+PER_SPECIES_WRAPPER(tpcExpSigma);
 template <o2::track::PID::ID index, typename TrackType>
 auto tpcExpSignal(const TrackType& track)
 {
@@ -171,12 +171,12 @@ auto tpcExpSignal(const TrackType& track)
     return track.tpcExpSignalAl(track.tpcSignal());
   }
 }
-perSpeciesWrapper(tpcExpSignalDiff);
+PER_SPECIES_WRAPPER(tpcExpSignalDiff);
 
-#undef perSpeciesWrapper
+#undef PER_SPECIES_WRAPPER
 
 // PID index as function argument for TOF
-#define perSpeciesWrapper(functionName)                                                                             \
+#define PER_SPECIES_WRAPPER(functionName)                                                                           \
   template <typename TrackType>                                                                                     \
   auto functionName(const o2::track::PID::ID index, const TrackType& track)                                         \
   {                                                                                                                 \
@@ -223,8 +223,8 @@ perSpeciesWrapper(tpcExpSignalDiff);
     }                                                                                                               \
   }
 
-perSpeciesWrapper(tofNSigma);
-perSpeciesWrapper(tofExpSigma);
+PER_SPECIES_WRAPPER(tofNSigma);
+PER_SPECIES_WRAPPER(tofExpSigma);
 template <typename TrackType>
 auto tofExpSignal(const o2::track::PID::ID index, const TrackType& track)
 {
@@ -270,12 +270,12 @@ auto tofExpSignal(const o2::track::PID::ID index, const TrackType& track)
       return 0.f;
   }
 }
-perSpeciesWrapper(tofExpSignalDiff);
+PER_SPECIES_WRAPPER(tofExpSignalDiff);
 
-#undef perSpeciesWrapper
+#undef PER_SPECIES_WRAPPER
 
 // PID index as function argument for TPC
-#define perSpeciesWrapper(functionName)                                                                             \
+#define PER_SPECIES_WRAPPER(functionName)                                                                           \
   template <typename TrackType>                                                                                     \
   auto functionName(const o2::track::PID::ID index, const TrackType& track)                                         \
   {                                                                                                                 \
@@ -322,8 +322,8 @@ perSpeciesWrapper(tofExpSignalDiff);
     }                                                                                                               \
   }
 
-perSpeciesWrapper(tpcNSigma);
-perSpeciesWrapper(tpcExpSigma);
+PER_SPECIES_WRAPPER(tpcNSigma);
+PER_SPECIES_WRAPPER(tpcExpSigma);
 template <typename TrackType>
 auto tpcExpSignal(const o2::track::PID::ID index, const TrackType& track)
 {
@@ -369,9 +369,9 @@ auto tpcExpSignal(const o2::track::PID::ID index, const TrackType& track)
       return 0.f;
   }
 }
-perSpeciesWrapper(tpcExpSignalDiff);
+PER_SPECIES_WRAPPER(tpcExpSignalDiff);
 
-#undef perSpeciesWrapper
+#undef PER_SPECIES_WRAPPER
 
 } // namespace pidutils
 
@@ -408,6 +408,12 @@ DECLARE_SOA_DYNAMIC_COLUMN(EventCollisionTime, eventCollisionTime, //! Event col
                            [](float signal, float tMinusTexp, float texp) -> float { return texp + tMinusTexp - signal; });
 
 } // namespace pidtofsignal
+
+namespace pidtofevtime
+{
+DECLARE_SOA_COLUMN(TOFEvTime, tofEvTime, float);       //! event time for TOF signal. Can be obtained via a combination of detectors e.g. TOF, FT0A, FT0C
+DECLARE_SOA_COLUMN(TOFEvTimeErr, tofEvTimeErr, float); //! event time error for TOF. Can be obtained via a combination of detectors e.g. TOF, FT0A, FT0C
+} // namespace pidtofevtime
 
 namespace pidtofbeta
 {
@@ -533,6 +539,10 @@ DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaAl, tofNSigmaAl); //! Unwrapped (float) nsi
 DECLARE_SOA_TABLE(TOFSignal, "AOD", "TOFSignal", //! Table of the TOF signal
                   pidtofsignal::TOFSignal,
                   pidtofsignal::EventCollisionTime<pidtofsignal::TOFSignal>);
+
+DECLARE_SOA_TABLE(TOFEvTime, "AOD", "TOFEvTime", //! Table of the TOF event time. One entry per track.
+                  pidtofevtime::TOFEvTime,
+                  pidtofevtime::TOFEvTimeErr);
 
 DECLARE_SOA_TABLE(pidTOFFlags, "AOD", "pidTOFFlags", //! Table of the flags for TOF signal quality on the track level
                   pidflags::GoodTOFMatch);
