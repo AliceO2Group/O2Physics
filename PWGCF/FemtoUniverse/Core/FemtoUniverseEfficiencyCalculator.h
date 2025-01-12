@@ -72,7 +72,7 @@ class EfficiencyCalculator
     shouldCalculate = config->confEfficiencyCalculate;
     shouldApplyCorrections = config->confEfficiencyApplyCorrections;
 
-    ccdbFullPath = std::format("{}/{}", config->confCCDBPath.value, folderName);
+    ccdbFullPath = fmt::format("{}/{}", config->confCCDBPath.value, folderName);
 
     if (config->confEfficiencyCalculate) {
       hOutput = {config->hEfficiency1.object, config->hEfficiency2.object};
@@ -178,7 +178,7 @@ class EfficiencyCalculator
  private:
   static inline auto notify(const std::string& msg) -> const std::string
   {
-    return std::format("[EFFICIENCY] {}", msg);
+    return fmt::format("[EFFICIENCY] {}", msg);
   }
 
   static auto isHistogramEmpty(TH1* hist) -> bool
@@ -233,8 +233,8 @@ class EfficiencyCalculator
   o2::ccdb::CcdbApi ccdbApi{};
   std::string ccdbFullPath{};
 
-  static constexpr std::string folderName{"Efficiency"};
-  static constexpr std::array<std::string, 3> histSuffix{"", "_one", "_two"};
+  static constexpr std::string_view folderName{"Efficiency"};
+  static constexpr std::array<std::string_view, 3> histSuffix{"", "_one", "_two"};
 };
 
 } // namespace o2::analysis::femto_universe::efficiency
