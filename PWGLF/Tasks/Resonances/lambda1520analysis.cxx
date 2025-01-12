@@ -99,7 +99,7 @@ struct Lambda1520analysis {
   // Proton
   // Old PID use case
   Configurable<std::vector<double>> protonTPCPIDpTintv{"protonTPCPIDpTintv", {999.}, "pT intervals for Kaon TPC PID cuts"};
-  Configurable<std::vector<double>> protonTPCPIDcuts{"protonTPCPIDcuts", {3} "nSigma list for Kaon TPC PID cuts"};
+  Configurable<std::vector<double>> protonTPCPIDcuts{"protonTPCPIDcuts", {3}, "nSigma list for Kaon TPC PID cuts"};
   Configurable<std::vector<double>> protonTOFPIDpTintv{"protonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
   Configurable<std::vector<double>> protonTOFPIDcuts{"protonTOFPIDcuts", {3}, "nSigma list for Kaon TOF PID cuts"};
   Configurable<double> cMaxTPCnSigmaProtonVETO{"cMaxTPCnSigmaProtonVETO", 3.0, "TPC nSigma VETO cut for Proton"}; // TPC
