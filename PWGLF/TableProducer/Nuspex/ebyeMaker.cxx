@@ -159,6 +159,7 @@ struct CandidateTrack {
   float genpt = -999.f;
   float geneta = -999.f;
   int pdgcode = -999;
+  int pdgcodemoth = -999;
   bool isreco = 0;
   int64_t mcIndex = -999;
   int64_t globalIndex = -999;
@@ -177,6 +178,11 @@ enum selBits {
   kITSPIDMid = BIT(9),
   kTPCPIDTight = BIT(10),
   kTPCPIDMid = BIT(11)
+};
+
+enum PartTypes {
+  kLa = BIT(20),
+  kSig = BIT(21)
 };
 
 struct tagRun2V0MCalibration {
@@ -312,6 +318,23 @@ struct ebyeMaker {
   Preslice<TracksFullIU> perCollisionTracksFullIU = o2::aod::track::collisionId;
   Preslice<aod::V0s> perCollisionV0 = o2::aod::v0::collisionId;
   Preslice<aod::McParticles> perCollisionMcParts = o2::aod::mcparticle::mcCollisionId;
+
+  template<class P>
+  int getPartTypeMother(P const& mcPart)
+  {
+    for (auto& mother : mcPart.template mothers_as<aod::McParticles>()) {
+      int pdgCode = mother.pdgCode();
+      switch (std::abs(pdgCode)) {
+        case 3122:
+          return PartTypes::kLa;
+        case 3222:
+          return PartTypes::kSig;
+        case 3112:
+          return PartTypes::kSig;
+      }
+    }
+    return -1;
+  }
 
   template <class T>
   bool selectV0Daughter(T const& track)
@@ -880,10 +903,13 @@ struct ebyeMaker {
           auto mcTrack = mcLab.template mcParticle_as<aod::McParticles>();
           if (std::abs(mcTrack.pdgCode()) != partPdg[iP])
             continue;
-          if (((mcTrack.flags() & 0x8) && (doprocessMcRun2 || doprocessMiniMcRun2)) || (mcTrack.flags() & 0x2) || (mcTrack.flags() & 0x1))
+          if (((mcTrack.flags() & 0x8) && (doprocessMcRun2 || doprocessMiniMcRun2)) || (mcTrack.flags() & 0x2) || ((mcTrack.flags() & 0x1) && !doprocessMiniMcRun2))
             continue;
-          if (!mcTrack.isPhysicalPrimary())
+
+          if ((!mcTrack.isPhysicalPrimary() && !doprocessMiniMcRun2) || (!mcTrack.isPhysicalPrimary() && !mcTrack.has_mothers() && doprocessMiniMcRun2))
             continue;
+          if (mcTrack.has_mothers())
+            candidateTrack.pdgcodemoth = getPartTypeMother(mcTrack);
 
           auto genPt = std::hypot(mcTrack.px(), mcTrack.py());
           candidateTrack.pdgcode = mcTrack.pdgCode();
@@ -936,7 +962,7 @@ struct ebyeMaker {
       if (std::abs(genEta) > etaMax) {
         continue;
       }
-      if (((mcPart.flags() & 0x8) && (doprocessMcRun2 || doprocessMiniMcRun2)) || (mcPart.flags() & 0x2) || (mcPart.flags() & 0x1))
+      if (((mcPart.flags() & 0x8) && (doprocessMcRun2 || doprocessMiniMcRun2)) || (mcPart.flags() & 0x2) || ((mcPart.flags() & 0x1) && !doprocessMiniMcRun2))
         continue;
       auto pdgCode = mcPart.pdgCode();
       if (std::abs(pdgCode) == 3122) {
@@ -969,13 +995,16 @@ struct ebyeMaker {
         if (std::abs(pdgCode) == partPdg[0]) {
           iP = 0;
         }
-        if (!mcPart.isPhysicalPrimary() && !mcPart.has_mothers())
+        if ((!mcPart.isPhysicalPrimary() && !doprocessMiniMcRun2) || (!mcPart.isPhysicalPrimary() && !mcPart.has_mothers() && doprocessMiniMcRun2))
           continue;
         auto genPt = std::hypot(mcPart.px(), mcPart.py());
         CandidateTrack candTrack;
         candTrack.genpt = genPt;
         candTrack.geneta = mcPart.eta();
         candTrack.pdgcode = pdgCode;
+        if (mcPart.has_mothers())
+          candTrack.pdgcodemoth = getPartTypeMother(mcPart);
+
         auto it = find_if(candidateTracks[iP].begin(), candidateTracks[iP].end(), [&](CandidateTrack trk) { return trk.mcIndex == mcPart.globalIndex(); });
         if (it != candidateTracks[iP].end()) {
           continue;
@@ -1385,6 +1414,11 @@ struct ebyeMaker {
           selMask = getTrackSelMask(candidateTrack);
           // if (candidateTrack.outerPID < -4)
           //   continue;
+          if (candidateTrack.pdgcodemoth > 0)
+            selMask |= candidateTrack.pdgcodemoth;
+        }
+        else {
+          selMask = candidateTrack.pdgcodemoth;
         }
         mcMiniTrkTable(
           miniCollTable.lastIndex(),
