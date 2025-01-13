@@ -856,7 +856,6 @@ struct FemtoUniverseProducerTask {
     return true;
   }
 
-
   template <typename CollisionType, typename TrackType>
   void fillMCTruthCollisions(CollisionType const& col, TrackType const& tracks)
   {
@@ -1740,8 +1739,8 @@ struct FemtoUniverseProducerTask {
                  "Provide experimental data for track track", true);
 
   void processTrackDataCentPP(aod::FemtoFullCollisionCentPP const& col,
-                        aod::BCsWithTimestamps const&,
-                        aod::FemtoFullTracks const& tracks)
+                              aod::BCsWithTimestamps const&,
+                              aod::FemtoFullTracks const& tracks)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -1757,7 +1756,6 @@ struct FemtoUniverseProducerTask {
   }
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTrackDataCentPP,
                  "Provide experimental data for track track", true);
-
 
   // using FilteredFemtoFullTracks = soa::Filtered<FemtoFullTracks>;
   void processTrackPhiData(aod::FemtoFullCollision const& col,
