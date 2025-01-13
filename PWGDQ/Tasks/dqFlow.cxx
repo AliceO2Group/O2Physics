@@ -159,7 +159,7 @@ struct DQEventQvector {
   TRandom3* fRndm = new TRandom3(0);
   TAxis* fPtAxis;
 
-  // Define functions for multiplicity correlation selection 
+  // Define functions for multiplicity correlation selection
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
   TF1* fMultCutLow = nullptr;
@@ -229,7 +229,7 @@ struct DQEventQvector {
 
     fGFW->CreateRegions();
 
-    //Initializing parameters for multiplicity correlation cut
+    // Initializing parameters for multiplicity correlation cut
     if (fMultCut) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
       fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
@@ -398,13 +398,13 @@ struct DQEventQvector {
     float weff = 1.0, wacc = 1.0;
 
     bool passMultCut = true;
-    if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0){
+    if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0) {
       auto multNTracksPV = collision.multNTracksPV();
       if (fMultCut) {
-	float pvlow = fMultPVCutLow->Eval(centrality);
-	float pvhigh = fMultPVCutHigh->Eval(centrality);
-	float multlow = fMultCutLow->Eval(centrality);
-	float multhigh = fMultCutHigh->Eval(centrality);
+        float pvlow = fMultPVCutLow->Eval(centrality);
+        float pvhigh = fMultPVCutHigh->Eval(centrality);
+        float multlow = fMultCutLow->Eval(centrality);
+        float multhigh = fMultCutHigh->Eval(centrality);
         passMultCut = multNTracksPV > pvlow && multNTracksPV < pvhigh && tracks1.size() > multlow && tracks1.size() < multhigh;
       }
     }
