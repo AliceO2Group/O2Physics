@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file detectorOccupancyQa.cxx
+/// \brief Occupancy QA task
+///
+/// \author Igor Altsybeev <Igor.Altsybeev@cern.ch>
+
 #include <vector>
 #include "map"
 
@@ -33,8 +38,8 @@
 #include "TH2F.h"
 #include "TH3.h"
 
-using namespace o2::framework;
 using namespace o2;
+using namespace o2::framework;
 using namespace o2::aod::evsel;
 
 using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparse>;
@@ -46,42 +51,44 @@ using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TrackSelect
 
 struct DetectorOccupancyQaTask {
   // configurables for study of occupancy in time windows
-  Configurable<bool> confAddBasicQAhistos{"AddBasicQAhistos", true, "0 - add basic histograms, 1 - skip"};
-  Configurable<float> confTimeIntervalForOccupancyCalculation{"TimeIntervalForOccupancyCalculation", 100, "Time interval for TPC occupancy calculation, us"};
-  Configurable<float> confOccupancyHistCoeffNtracksForOccupancy{"HistCoeffNtracksForOccupancy", 1., "Coefficient for max nTracks in occupancy histos"};
-  Configurable<float> confOccupancyHistCoeffNbins2D{"HistCoeffNbins2D", 1., "Coefficient for nBins in occupancy 2D histos"};
-  Configurable<float> confOccupancyHistCoeffNbins3D{"HistCoeffNbins3D", 1., "Coefficient for nBins in occupancy 3D histos"};
-  Configurable<float> confCoeffMaxNtracksThisEvent{"CoeffMaxNtracksThisEvent", 1., "Coefficient for max nTracks or FT0 ampl in histos in a given event"};
-  Configurable<bool> confFlagApplyROFborderCut{"ApplyROFborderCut", true, "Use ROF border cut for a current event"};
-  Configurable<bool> confFlagApplyTFborderCut{"ApplyTFborderCut", true, "Use TF border cut for a current event"};
-  Configurable<int> confFlagWhichTimeRange{"FlagWhichTimeRange", 0, "Whicn time range for occupancy calculation: 0 - symmetric, 1 - only past, 2 - only future"};
-  Configurable<int> confFlagUseGlobalTracks{"FlagUseGlobalTracks", 0, "For small time bins, use global tracks counter instead of ITSTPC tracks"};
+  Configurable<bool> confAddBasicQAhistos{"AddBasicQAhistos", true, "0 - add basic histograms, 1 - skip"};                                                              // o2-linter: disable=name/configurable
+  Configurable<float> confTimeIntervalForOccupancyCalculation{"TimeIntervalForOccupancyCalculation", 100, "Time interval for TPC occupancy calculation, us"};           // o2-linter: disable=name/configurable
+  Configurable<float> confOccupancyHistCoeffNtracksForOccupancy{"HistCoeffNtracksForOccupancy", 1., "Coefficient for max nTracks in occupancy histos"};                 // o2-linter: disable=name/configurable
+  Configurable<float> confOccupancyHistCoeffNbins2D{"HistCoeffNbins2D", 1., "Coefficient for nBins in occupancy 2D histos"};                                            // o2-linter: disable=name/configurable
+  Configurable<float> confOccupancyHistCoeffNbins3D{"HistCoeffNbins3D", 1., "Coefficient for nBins in occupancy 3D histos"};                                            // o2-linter: disable=name/configurable
+  Configurable<float> confCoeffMaxNtracksThisEvent{"CoeffMaxNtracksThisEvent", 1., "Coefficient for max nTracks or FT0 ampl in histos in a given event"};               // o2-linter: disable=name/configurable
+  Configurable<bool> confFlagApplyROFborderCut{"ApplyROFborderCut", true, "Use ROF border cut for a current event"};                                                    // o2-linter: disable=name/configurable
+  Configurable<bool> confFlagApplyTFborderCut{"ApplyTFborderCut", true, "Use TF border cut for a current event"};                                                       // o2-linter: disable=name/configurable
+  Configurable<int> confFlagWhichTimeRange{"FlagWhichTimeRange", 0, "Whicn time range for occupancy calculation: 0 - symmetric, 1 - only past, 2 - only future"};       // o2-linter: disable=name/configurable
+  Configurable<bool> confFlagUseGlobalTracks{"FlagUseGlobalTracks", false, "For small time bins, use global tracks counter instead of ITSTPC tracks"};                  // o2-linter: disable=name/configurable
+  Configurable<bool> confFlagUseNoCollInRofStrict{"FlagUseNoCollInRofStrict", false, "Suppress same-ROF events for occupancy historams"};                               // o2-linter: disable=name/configurable
+  Configurable<bool> confFlagUseNoHighMultCollInPrevRof{"FlagUseNoHighMultCollInPrevRof", false, "Suppress high-multiplicity prev-ROF events for occupancy historams"}; // o2-linter: disable=name/configurable
 
   // configuration for small time binning
-  Configurable<float> confTimeIntervalForSmallBins{"TimeIntervalForSmallBins", 100, "Time interval for TPC occupancy calculation in small bins, +/-, us"};
-  Configurable<int> confNumberOfSmallTimeBins{"nSmallTimeBins", 40, "Number of small time bins"};
+  Configurable<float> confTimeIntervalForSmallBins{"TimeIntervalForSmallBins", 100, "Time interval for TPC occupancy calculation in small bins, +/-, us"}; // o2-linter: disable=name/configurable
+  Configurable<int> confNumberOfSmallTimeBins{"nSmallTimeBins", 40, "Number of small time bins"};                                                          // o2-linter: disable=name/configurable
 
   // event and track cuts for given event
-  Configurable<float> confCutVertZMinThisEvent{"VzMinThisEvent", -10, "vZ cut for a current event"};
-  Configurable<float> confCutVertZMaxThisEvent{"VzMaxThisEvent", 10, "vZ cut for a current event"};
-  Configurable<float> confCutPtMinThisEvent{"PtMinThisEvent", 0.2, "pt cut for particles in a current event"};
-  Configurable<float> confCutPtMaxThisEvent{"PtMaxThisEvent", 100., "pt cut for particles in a current event"};
-  Configurable<float> confCutEtaMinTracksThisEvent{"EtaMinTracksThisEvent", -0.8, "eta cut for particles in a current event"};
-  Configurable<float> confCutEtaMaxTracksThisEvent{"EtaMaxTracksThisEvent", 0.8, "eta cut for particles in a current event"};
-  Configurable<int> confCutMinTPCcls{"MinNumTPCcls", 70, "min number of TPC clusters for a current event"};
+  Configurable<float> confCutVertZMinThisEvent{"VzMinThisEvent", -10, "vZ cut for a current event"};                           // o2-linter: disable=name/configurable
+  Configurable<float> confCutVertZMaxThisEvent{"VzMaxThisEvent", 10, "vZ cut for a current event"};                            // o2-linter: disable=name/configurable
+  Configurable<float> confCutPtMinThisEvent{"PtMinThisEvent", 0.2, "pt cut for particles in a current event"};                 // o2-linter: disable=name/configurable
+  Configurable<float> confCutPtMaxThisEvent{"PtMaxThisEvent", 100., "pt cut for particles in a current event"};                // o2-linter: disable=name/configurable
+  Configurable<float> confCutEtaMinTracksThisEvent{"EtaMinTracksThisEvent", -0.8, "eta cut for particles in a current event"}; // o2-linter: disable=name/configurable
+  Configurable<float> confCutEtaMaxTracksThisEvent{"EtaMaxTracksThisEvent", 0.8, "eta cut for particles in a current event"};  // o2-linter: disable=name/configurable
+  Configurable<int> confCutMinTPCcls{"MinNumTPCcls", 70, "min number of TPC clusters for a current event"};                    // o2-linter: disable=name/configurable
 
   // config for QA histograms
-  Configurable<bool> confAddTracksVsFwdHistos{"AddTracksVsFwdHistos", true, "0 - add histograms, 1 - skip"};
-  Configurable<int> nBinsTracks{"nBinsTracks", 400, "N bins in n tracks histo"};
-  Configurable<int> nMaxTracks{"nMaxTracks", 8000, "N max in n tracks histo"};
-  Configurable<int> nMaxGlobalTracks{"nMaxGlobalTracks", 3000, "N max in n tracks histo"};
-  Configurable<int> nBinsMultFwd{"nBinsMultFwd", 400, "N bins in mult fwd histo"};
-  Configurable<float> nMaxMultFwd{"nMaxMultFwd", 200000, "N max in mult fwd histo"};
+  Configurable<bool> confAddTracksVsFwdHistos{"AddTracksVsFwdHistos", true, "0 - add histograms, 1 - skip"}; // o2-linter: disable=name/configurable
+  Configurable<int> nBinsTracks{"nBinsTracks", 400, "N bins in n tracks histo"};                             // o2-linter: disable=name/configurable
+  Configurable<int> nMaxTracks{"nMaxTracks", 8000, "N max in n tracks histo"};                               // o2-linter: disable=name/configurable
+  Configurable<int> nMaxGlobalTracks{"nMaxGlobalTracks", 3000, "N max in n tracks histo"};                   // o2-linter: disable=name/configurable
+  Configurable<int> nBinsMultFwd{"nBinsMultFwd", 400, "N bins in mult fwd histo"};                           // o2-linter: disable=name/configurable
+  Configurable<float> nMaxMultFwd{"nMaxMultFwd", 200000, "N max in mult fwd histo"};                         // o2-linter: disable=name/configurable
 
-  Configurable<int> nBinsOccupancy{"nBinsOccupancy", 150, "N bins for occupancy axis"};
-  Configurable<float> nMaxOccupancy{"nMaxOccupancy", 15000, "N for max of the occupancy axis"};
+  Configurable<int> nBinsOccupancy{"nBinsOccupancy", 150, "N bins for occupancy axis"};         // o2-linter: disable=name/configurable
+  Configurable<float> nMaxOccupancy{"nMaxOccupancy", 15000, "N for max of the occupancy axis"}; // o2-linter: disable=name/configurable
 
-  Configurable<int> nMaxBcInTFforAnalysis{"nMaxBcInTFforAnalysis", -1, "When to stop taking collisions in TF, if -1: take all collisions"};
+  Configurable<int> nMaxBcInTFforAnalysis{"nMaxBcInTFforAnalysis", -1, "When to stop taking collisions in TF, if -1: take all collisions"}; // o2-linter: disable=name/configurable
 
   uint64_t minGlobalBC = 0;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -140,10 +147,10 @@ struct DetectorOccupancyQaTask {
       histos.add("dEdx_vs_Momentum_occupBelow200", "dE/dx", kTH2F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}});
       histos.add("dEdx_vs_Momentum_occupBelow200_kNoCollStd", "dE/dx", kTH2F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}});
       histos.add("dEdx_vs_Momentum_occupAbove4000", "dE/dx", kTH2F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}});
-      AxisSpec axisBinsOccupStudy_dEdx{{0., 500, 1000, 2000, 4000, 6000, 8000, 15000}, "p_{T}"};
-      histos.add("dEdx_vs_Momentum_vs_occup", "dE/dx", kTH3F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}, axisBinsOccupStudy_dEdx});
-      histos.add("dEdx_vs_Momentum_vs_occup_eta_02_04", "dE/dx", kTH3F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}, axisBinsOccupStudy_dEdx});
-      histos.add("dEdx_vs_Momentum_vs_occup_eta_04_02", "dE/dx", kTH3F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}, axisBinsOccupStudy_dEdx});
+      AxisSpec axisBinsOccupStudydEdx{{0., 500, 1000, 2000, 4000, 6000, 8000, 15000}, "p_{T}"};
+      histos.add("dEdx_vs_Momentum_vs_occup", "dE/dx", kTH3F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}, axisBinsOccupStudydEdx});
+      histos.add("dEdx_vs_Momentum_vs_occup_eta_02_04", "dE/dx", kTH3F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}, axisBinsOccupStudydEdx});
+      histos.add("dEdx_vs_Momentum_vs_occup_eta_04_02", "dE/dx", kTH3F, {{1000, -5.0, 5.0, "#it{p}/Z (GeV/c)"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}, axisBinsOccupStudydEdx});
 
       histos.add("dEdx_vs_centr_vs_occup_narrow_p_win", "dE/dx", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, {60, 0, 15000, "occupancy"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}});
 
@@ -165,17 +172,18 @@ struct DetectorOccupancyQaTask {
       histos.add("track_distr_nITStrThisEv_above_2000/hEta_highOccupInNeighbourEvents", ";#eta;n tracks", kTH1D, {{nEtaBins, -1.0, 1.0}});
 
       const int nPhiBins = 800;
-      histos.add("track_distr_nITStrThisEv_10_200/hPhi_lowOccupInTPC", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
-      histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInRecentPast", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
-      histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInCloseFuture", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
-      histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInDistantFuture", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
-      histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInNeighbourEvents", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
+      AxisSpec axisPhi{nPhiBins, 0, TMath::TwoPi(), "#varphi"}; // o2-linter: disable=external-pi
+      histos.add("track_distr_nITStrThisEv_10_200/hPhi_lowOccupInTPC", ";#varphi;n tracks", kTH1D, {axisPhi});
+      histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInRecentPast", ";#varphi;n tracks", kTH1D, {axisPhi});
+      histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInCloseFuture", ";#varphi;n tracks", kTH1D, {axisPhi});
+      histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInDistantFuture", ";#varphi;n tracks", kTH1D, {axisPhi});
+      histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInNeighbourEvents", ";#varphi;n tracks", kTH1D, {axisPhi});
 
-      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_lowOccupInTPC", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
-      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInRecentPast", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
-      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInCloseFuture", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
-      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInDistantFuture", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
-      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInNeighbourEvents", ";#varphi;n tracks", kTH1D, {{nPhiBins, 0, TMath::TwoPi()}});
+      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_lowOccupInTPC", ";#varphi;n tracks", kTH1D, {axisPhi});
+      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInRecentPast", ";#varphi;n tracks", kTH1D, {axisPhi});
+      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInCloseFuture", ";#varphi;n tracks", kTH1D, {axisPhi});
+      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInDistantFuture", ";#varphi;n tracks", kTH1D, {axisPhi});
+      histos.add("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInNeighbourEvents", ";#varphi;n tracks", kTH1D, {axisPhi});
 
       // const int nPtBins = 800;
       AxisSpec axisLogPt{200, 0.05, 40, "p_{T}"};
@@ -393,7 +401,7 @@ struct DetectorOccupancyQaTask {
     const double timeWinOccupancyCalcNS = confTimeIntervalForOccupancyCalculation * 1e3; // ns, to be compared with TPC drift time
     const double bcNS = o2::constants::lhc::LHCBunchSpacingNS;
 
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       const auto& bc = col.foundBC_as<BCsRun3>();
 
       // count tracks of different types
@@ -405,7 +413,7 @@ struct DetectorOccupancyQaTask {
       int nTOFtracks = 0;
       // int nTRDtracks = 0;
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
-      for (auto& track : tracksGrouped) {
+      for (const auto& track : tracksGrouped) {
         if (!track.isPVContributor()) {
           continue;
         }
@@ -450,8 +458,8 @@ struct DetectorOccupancyQaTask {
       vTracksITSTPCperCollPtEtaCuts[colIndex] += nITSTPCtracksPtEtaCuts;
 
       // TF ids within a given cols table
-      int TFid = (bc.globalBC() - bcSOR) / nBCsPerTF;
-      vTFids[colIndex] = TFid;
+      int tfId = (bc.globalBC() - bcSOR) / nBCsPerTF;
+      vTFids[colIndex] = tfId;
 
       // check that this collision has full information inside the time window (taking into account TF borders)
       int64_t bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
@@ -465,7 +473,7 @@ struct DetectorOccupancyQaTask {
     // find for each collision all collisions within the defined time window
     std::vector<std::vector<int>> vCollsInTimeWin;
     std::vector<std::vector<float>> vTimeDeltaForColls; // delta time wrt a given collision
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
       std::vector<int> vCollsAssocToGivenColl;
       std::vector<float> vCollsTimeDeltaWrtGivenColl;
@@ -478,7 +486,7 @@ struct DetectorOccupancyQaTask {
       }
 
       int64_t foundGlobalBC = vFoundGlobalBC[colIndex];
-      int64_t TFid = (foundGlobalBC - bcSOR) / nBCsPerTF;
+      int64_t tfId = (foundGlobalBC - bcSOR) / nBCsPerTF;
 
       // find all collisions in time window before the current one (start with the current collision)
       int32_t minColIndex = colIndex;
@@ -486,8 +494,8 @@ struct DetectorOccupancyQaTask {
         int64_t thisBC = vFoundGlobalBC[minColIndex];
 
         // check if this is still the same TF
-        int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != TFid)
+        int64_t thisTfId = (thisBC - bcSOR) / nBCsPerTF;
+        if (thisTfId != tfId)
           break;
 
         float dt = (thisBC - foundGlobalBC) * bcNS; // ns
@@ -507,8 +515,8 @@ struct DetectorOccupancyQaTask {
       int32_t maxColIndex = colIndex + 1;
       while (maxColIndex < cols.size() && confFlagWhichTimeRange != 1) {
         int64_t thisBC = vFoundGlobalBC[maxColIndex];
-        int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != TFid)
+        int64_t thisTfId = (thisBC - bcSOR) / nBCsPerTF;
+        if (thisTfId != tfId)
           break;
 
         float dt = (thisBC - foundGlobalBC) * bcNS; // ns
@@ -526,7 +534,7 @@ struct DetectorOccupancyQaTask {
 
     // perform the occupancy calculation in the pre-defined time window
     uint32_t orbitAtCollIndexZero = 0;
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
 
       // protection against the TF borders
@@ -581,7 +589,7 @@ struct DetectorOccupancyQaTask {
         float thisColTimeDiff = vCollsTimeDeltaWrtGivenColl[iCol] / 1e3; // ns -> us
 
         // fill this-event time bins
-        if (thisColIndex != colIndex && fabs(thisColTimeDiff) < confTimeIntervalForSmallBins) {
+        if (thisColIndex != colIndex && std::fabs(thisColTimeDiff) < confTimeIntervalForSmallBins) {
           LOGP(debug, " iCol={}/{}, thisColIndex={}, colIndex={}, thisColTimeDiff={} nITS={}", iCol, vCollsAssocToGivenColl.size(), thisColIndex, colIndex, thisColTimeDiff, vTracksITS567perColl[thisColIndex]);
           histos.fill(HIST("thisEventITStracksInTimeBins"), thisColTimeDiff, vTracksITS567perColl[thisColIndex]);
           histos.fill(HIST("thisEventFT0CInTimeBins"), thisColTimeDiff, vAmpFT0CperColl[thisColIndex]);
@@ -643,7 +651,7 @@ struct DetectorOccupancyQaTask {
         histos.fill(HIST("hNumITSTPC_vs_ITS567tracksThisCol_vs_ITS567tracksInTimeWindow_BEFORE_sel"), vTracksITS567perCollPtEtaCuts[colIndex], vTracksITSTPCperCollPtEtaCuts[colIndex], nITS567tracksInTimeWindow - vTracksITS567perColl[colIndex]);
         histos.fill(HIST("hNumITSTPC_vs_ITS567tracksThisCol_vs_FT0CamplInTimeWindow_BEFORE_sel"), vTracksITS567perCollPtEtaCuts[colIndex], vTracksITSTPCperCollPtEtaCuts[colIndex], multFT0CInTimeWindow - multFT0CmainCollision);
 
-        if (sel && fabs(col.posZ()) < 10) {
+        if (sel && std::fabs(col.posZ()) < 10) {
           histos.fill(HIST("hNumITS567tracksInTimeWindowSel"), nITS567tracksInTimeWindowSel);
           histos.fill(HIST("hNumITSTPCtracksInTimeWindowSel"), nITSTPCtracksInTimeWindowSel);
 
@@ -720,7 +728,13 @@ struct DetectorOccupancyQaTask {
         histos.fill(HIST("occupancyInTimeBins_BEFORE_sel"), dt, vTracksITS567perCollPtEtaCuts[colIndex], confFlagUseGlobalTracks ? vTracksGlobalPerCollPtEtaCuts[colIndex] : vTracksITSTPCperCollPtEtaCuts[colIndex], nITStrInTimeBin);
         histos.fill(HIST("occupancyInTimeBins_occupByFT0_BEFORE_sel"), dt, vTracksITS567perCollPtEtaCuts[colIndex], confFlagUseGlobalTracks ? vTracksGlobalPerCollPtEtaCuts[colIndex] : vTracksITSTPCperCollPtEtaCuts[colIndex], nFT0CInTimeBin);
 
-        if (sel && fabs(col.posZ()) < 10) {
+        bool flagFillOccupVsDt = true;
+        if (confFlagUseNoCollInRofStrict && !col.selection_bit(kNoCollInRofStrict))
+          flagFillOccupVsDt = false;
+        if (confFlagUseNoHighMultCollInPrevRof && !col.selection_bit(kNoHighMultCollInPrevRof))
+          flagFillOccupVsDt = false;
+
+        if (sel && std::fabs(col.posZ()) < 10 && flagFillOccupVsDt) {
           histos.fill(HIST("occupancyInTimeBins"), dt, vTracksITS567perCollPtEtaCuts[colIndex], confFlagUseGlobalTracks ? vTracksGlobalPerCollPtEtaCuts[colIndex] : vTracksITSTPCperCollPtEtaCuts[colIndex], nITStrInTimeBin);
           histos.fill(HIST("occupancyInTimeBins_occupByFT0"), dt, vTracksITS567perCollPtEtaCuts[colIndex], confFlagUseGlobalTracks ? vTracksGlobalPerCollPtEtaCuts[colIndex] : vTracksITSTPCperCollPtEtaCuts[colIndex], nFT0CInTimeBin);
 
@@ -760,7 +774,7 @@ struct DetectorOccupancyQaTask {
     } // end of occupancy calculation
 
     // ### occupancy event selection QA
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       // if (!col.sel8()) {
       //   continue;
       // }
@@ -789,7 +803,7 @@ struct DetectorOccupancyQaTask {
       int occupancy = col.trackOccupancyInTimeRange();
 
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
-      for (auto& track : tracksGrouped) {
+      for (const auto& track : tracksGrouped) {
         if (!track.isPVContributor())
           continue;
         if (track.pt() < confCutPtMinThisEvent || track.pt() > confCutPtMaxThisEvent)
@@ -870,7 +884,7 @@ struct DetectorOccupancyQaTask {
           }
         }
 
-        for (auto& track : tracksGrouped) {
+        for (const auto& track : tracksGrouped) {
           if (!track.isPVContributor())
             continue;
           if (track.itsNCls() < 5)

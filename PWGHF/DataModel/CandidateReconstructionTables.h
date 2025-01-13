@@ -484,26 +484,27 @@ DECLARE_SOA_COLUMN(ErrorImpactParameterZ2, errorImpactParameterZ2, float);      
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterZNormalised2, impactParameterZNormalised2, //!
                            [](float dca, float err) -> float { return dca / err; });
 /// prong PID nsigma
-DECLARE_SOA_COLUMN(NProngsContributorsPV, nProngsContributorsPV, uint8_t); //! number of prongs contributing to the primary-vertex reconstruction
-DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);                         //! TPC nSigma for pion hypothesis - prong 0
-DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);                         //! TPC nSigma for pion hypothesis - prong 1
-DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float);                         //! TPC nSigma for pion hypothesis - prong 2
-DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);                         //! TPC nSigma for kaon hypothesis - prong 0
-DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float);                         //! TPC nSigma for kaon hypothesis - prong 1
-DECLARE_SOA_COLUMN(NSigTpcKa2, nSigTpcKa2, float);                         //! TPC nSigma for kaon hypothesis - prong 2
-DECLARE_SOA_COLUMN(NSigTpcPr0, nSigTpcPr0, float);                         //! TPC nSigma for proton hypothesis - prong 0
-DECLARE_SOA_COLUMN(NSigTpcPr1, nSigTpcPr1, float);                         //! TPC nSigma for proton hypothesis - prong 1
-DECLARE_SOA_COLUMN(NSigTpcPr2, nSigTpcPr2, float);                         //! TPC nSigma for proton hypothesis - prong 2
-DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float);                         //! TOF nSigma for pion hypothesis - prong 0
-DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);                         //! TOF nSigma for pion hypothesis - prong 1
-DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float);                         //! TOF nSigma for pion hypothesis - prong 2
-DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);                         //! TOF nSigma for kaon hypothesis - prong 0
-DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);                         //! TOF nSigma for kaon hypothesis - prong 1
-DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float);                         //! TOF nSigma for kaon hypothesis - prong 2
-DECLARE_SOA_COLUMN(NSigTofPr0, nSigTofPr0, float);                         //! TOF nSigma for proton hypothesis - prong 0
-DECLARE_SOA_COLUMN(NSigTofPr1, nSigTofPr1, float);                         //! TOF nSigma for proton hypothesis - prong 1
-DECLARE_SOA_COLUMN(NSigTofPr2, nSigTofPr2, float);                         //! TOF nSigma for proton hypothesis - prong 2
-DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPi0, tpcTofNSigmaPi0,               //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 0
+DECLARE_SOA_COLUMN(NProngsContributorsPV, nProngsContributorsPV, uint8_t);           //! number of prongs contributing to the primary-vertex reconstruction
+DECLARE_SOA_COLUMN(BitmapProngsContributorsPV, bitmapProngsContributorsPV, uint8_t); //! bitmap with booleans indicating prongs contributing to the primary-vertex reconstruction
+DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);                                   //! TPC nSigma for pion hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);                                   //! TPC nSigma for pion hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float);                                   //! TPC nSigma for pion hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);                                   //! TPC nSigma for kaon hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float);                                   //! TPC nSigma for kaon hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTpcKa2, nSigTpcKa2, float);                                   //! TPC nSigma for kaon hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTpcPr0, nSigTpcPr0, float);                                   //! TPC nSigma for proton hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTpcPr1, nSigTpcPr1, float);                                   //! TPC nSigma for proton hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTpcPr2, nSigTpcPr2, float);                                   //! TPC nSigma for proton hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float);                                   //! TOF nSigma for pion hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);                                   //! TOF nSigma for pion hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float);                                   //! TOF nSigma for pion hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);                                   //! TOF nSigma for kaon hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);                                   //! TOF nSigma for kaon hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float);                                   //! TOF nSigma for kaon hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTofPr0, nSigTofPr0, float);                                   //! TOF nSigma for proton hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTofPr1, nSigTofPr1, float);                                   //! TOF nSigma for proton hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTofPr2, nSigTofPr2, float);                                   //! TOF nSigma for proton hypothesis - prong 2
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPi0, tpcTofNSigmaPi0,                         //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 0
                            [](float tpcNSigmaPi0, float tofNSigmaPi0) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi0, tofNSigmaPi0); });
 DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPi1, tpcTofNSigmaPi1, //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 1
                            [](float tpcNSigmaPi1, float tofNSigmaPi1) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi1, tofNSigmaPi1); });
@@ -664,7 +665,7 @@ DECLARE_SOA_TABLE(HfCand2ProngBase, "AOD", "HFCAND2PBASE", //!
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
                   hf_cand::ImpactParameterZ0, hf_cand::ImpactParameterZ1,
                   hf_cand::ErrorImpactParameterZ0, hf_cand::ErrorImpactParameterZ1,
-                  hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_cand::NProngsContributorsPV,
+                  hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_cand::NProngsContributorsPV, hf_cand::BitmapProngsContributorsPV,
                   hf_track_index::HFflag,
                   /* dynamic columns */
                   hf_cand_2prong::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
@@ -970,7 +971,7 @@ DECLARE_SOA_TABLE(HfCand3ProngBase, "AOD", "HFCAND3PBASE", //!
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, hf_cand::ErrorImpactParameter2,
                   hf_cand::ImpactParameterZ0, hf_cand::ImpactParameterZ1, hf_cand::ImpactParameterZ2,
                   hf_cand::ErrorImpactParameterZ0, hf_cand::ErrorImpactParameterZ1, hf_cand::ErrorImpactParameterZ2,
-                  hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_track_index::Prong2Id, hf_cand::NProngsContributorsPV,
+                  hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_track_index::Prong2Id, hf_cand::NProngsContributorsPV, hf_cand::BitmapProngsContributorsPV,
                   hf_track_index::HFflag,
                   /* dynamic columns */
                   hf_cand_3prong::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2>,
@@ -1568,12 +1569,20 @@ DECLARE_SOA_COLUMN(CosPaLambdaToXi, cosPaLambdaToXi, float);
 DECLARE_SOA_COLUMN(CosPaXYLambdaToXi, cosPaXYLambdaToXi, float);
 DECLARE_SOA_COLUMN(InvMassXicPlus, invMassXicPlus, float);
 DECLARE_SOA_COLUMN(InvMassXi, invMassXi, float);
+DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, float);
 DECLARE_SOA_COLUMN(Sign, sign, float);
 DECLARE_SOA_COLUMN(InvMassXiPi0, invMassXiPi0, float);
 DECLARE_SOA_COLUMN(InvMassXiPi1, invMassXiPi1, float);
 DECLARE_SOA_COLUMN(PBachelorPi, pBachelorPi, float);
 DECLARE_SOA_COLUMN(PPiFromLambda, pPiFromLambda, float);
-DECLARE_SOA_COLUMN(PPrFrmoLambda, pPrFromLambda, float);
+DECLARE_SOA_COLUMN(PPrFromLambda, pPrFromLambda, float);
+DECLARE_SOA_COLUMN(DcaXiDaughters, dcaXiDaughters, float);
+DECLARE_SOA_COLUMN(DcaV0Daughters, dcaV0Daughters, float);
+DECLARE_SOA_COLUMN(DcaPosToPV, dcaPosToPV, float);
+DECLARE_SOA_COLUMN(DcaNegToPV, dcaNegToPV, float);
+DECLARE_SOA_COLUMN(DcaBachelorToPV, dcaBachelorToPV, float);
+DECLARE_SOA_COLUMN(DcaXYCascToPV, dcaXYCascToPV, float);
+DECLARE_SOA_COLUMN(DcaZCascToPV, dcaXCascToPV, float);
 // KF specific columns
 DECLARE_SOA_COLUMN(DcaXYPi0Pi1, dcaXYPi0Pi1, float);
 DECLARE_SOA_COLUMN(DcaXYPi0Xi, dcaXYPi0Xi, float);
@@ -1635,9 +1644,11 @@ DECLARE_SOA_TABLE(HfCandXicBase, "AOD", "HFCANDXICBASE",
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ImpactParameter2,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, hf_cand::ErrorImpactParameter2,
                   // cascade specific columns
-                  hf_cand_xic_to_xi_pi_pi::PBachelorPi, hf_cand_xic_to_xi_pi_pi::PPiFromLambda, hf_cand_xic_to_xi_pi_pi::PPrFrmoLambda,
+                  hf_cand_xic_to_xi_pi_pi::PBachelorPi, hf_cand_xic_to_xi_pi_pi::PPiFromLambda, hf_cand_xic_to_xi_pi_pi::PPrFromLambda,
                   hf_cand_xic_to_xi_pi_pi::CosPaXi, hf_cand_xic_to_xi_pi_pi::CosPaXYXi, hf_cand_xic_to_xi_pi_pi::CosPaLambda, hf_cand_xic_to_xi_pi_pi::CosPaXYLambda, hf_cand_xic_to_xi_pi_pi::CosPaLambdaToXi, hf_cand_xic_to_xi_pi_pi::CosPaXYLambdaToXi,
-                  hf_cand_xic_to_xi_pi_pi::InvMassXi, hf_cand_xic_to_xi_pi_pi::InvMassXiPi0, hf_cand_xic_to_xi_pi_pi::InvMassXiPi1,
+                  hf_cand_xic_to_xi_pi_pi::InvMassXi, hf_cand_xic_to_xi_pi_pi::InvMassLambda, hf_cand_xic_to_xi_pi_pi::InvMassXiPi0, hf_cand_xic_to_xi_pi_pi::InvMassXiPi1,
+                  // DCA
+                  hf_cand_xic_to_xi_pi_pi::DcaXiDaughters, hf_cand_xic_to_xi_pi_pi::DcaV0Daughters, hf_cand_xic_to_xi_pi_pi::DcaPosToPV, hf_cand_xic_to_xi_pi_pi::DcaNegToPV, hf_cand_xic_to_xi_pi_pi::DcaBachelorToPV, hf_cand_xic_to_xi_pi_pi::DcaXYCascToPV, hf_cand_xic_to_xi_pi_pi::DcaZCascToPV,
                   // PID
                   hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromXicPlus0, hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromXicPlus1, hf_cand_xic_to_xi_pi_pi::NSigTpcBachelorPi, hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromLambda, hf_cand_xic_to_xi_pi_pi::NSigTpcPrFromLambda,
                   hf_cand_xic_to_xi_pi_pi::NSigTofPiFromXicPlus0, hf_cand_xic_to_xi_pi_pi::NSigTofPiFromXicPlus1, hf_cand_xic_to_xi_pi_pi::NSigTofBachelorPi, hf_cand_xic_to_xi_pi_pi::NSigTofPiFromLambda, hf_cand_xic_to_xi_pi_pi::NSigTofPrFromLambda,

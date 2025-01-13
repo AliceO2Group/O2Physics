@@ -1240,21 +1240,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       //*>~<* step 3 : reconstruc Xic0 with KF
       // Create KF charm bach Pion from track
       KFPTrack kfTrackBachPion = createKFPTrackFromTrack(trackCharmBachelor);
-      KFParticle kfCharmBachPion;
-      KFParticle kfCharmBachPionPlus(kfTrackBachPion, kPiPlus);
-      KFParticle kfCharmBachPionMinus(kfTrackBachPion, kPiMinus);
-
-      auto charmBachCharge = trackCharmBachelor.signed1Pt() > 0 ? +1 : -1;
-
-      if (bachCharge < 0 && charmBachCharge > 0) {
-        kfCharmBachPion = kfCharmBachPionPlus;
-      } 
-      else if (bachCharge > 0 && charmBachCharge < 0) {
-        kfCharmBachPion = kfCharmBachPionMinus;
-      }
-      else {
-        continue;
-      }
+      KFParticle kfCharmBachPion(kfTrackBachPion, kPiPlus);
       const KFParticle* xiC0Daugthers[2] = {&kfCharmBachPion, &kfXi};
 
       // construct XiC0

@@ -1156,12 +1156,13 @@ struct QaEfficiency {
           for (const auto& pdgToCheck : mothersPDGs.value) {
             if (mother.pdgCode() == pdgToCheck) {
               motherIsAccepted = true;
-              break;
-            }
-            if (motherIsAccepted) {
               // Calculate the decay length
               double decayLength = std::sqrt(std::pow(mother.vx() - mother.mcCollision().posX(), 2) + std::pow(mother.vy() - mother.mcCollision().posY(), 2) + std::pow(mother.vz() - mother.mcCollision().posZ(), 2));
               hdecaylengthmother[histogramIndex]->Fill(decayLength);
+              break;
+            }
+            if (motherIsAccepted) {
+              break;
             }
           }
         }
@@ -1260,10 +1261,11 @@ struct QaEfficiency {
             for (const auto& pdgToCheck : mothersPDGs.value) {
               if (mother.pdgCode() == pdgToCheck) {
                 motherIsAccepted = true; // Mother matches the list of specified PDGs
+                hPtmotherGenerated[histogramIndex]->Fill(mother.pt()); // Fill generated pT for mother
                 break;
               }
               if (motherIsAccepted) {
-                hPtmotherGenerated[histogramIndex]->Fill(mother.pt()); // Fill generated pT for mother
+                break;
               }
             }
           }

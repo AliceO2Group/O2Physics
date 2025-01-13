@@ -206,14 +206,22 @@ float rapidity(float mass, float px, float py, float pz)
   return 0.5 * std::log((energy(mass, px, py, pz) + pz) / (energy(mass, px, py, pz) - pz));
 }
 
-double calculateAcoplanarity(double phi_trk1, double phi_trk2)
+double calculateAcoplanarity(double phiTrk1, double phiTrk2)
 // Function to calculate acoplanarity of two tracks based on phi of both tracks, which is in interval (0,2*pi)
 {
-  double aco = std::abs(phi_trk1 - phi_trk2);
+  double aco = std::abs(phiTrk1 - phiTrk2);
   if (aco <= o2::constants::math::PI)
     return aco;
   else
     return (o2::constants::math::TwoPI - aco);
+}
+
+double calculateCollinearity(double etaTrk1, double etaTrk2, double phiTrk1, double phiTrk2)
+// Function to calculate deltaR(trk1,trk2) = sqrt(deltaEta^2+deltaPhi^2)
+{
+  double deltaEta = etaTrk1 - etaTrk2;
+  double deltaPhi = phiTrk1 - phiTrk2;
+  return std::sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
 }
 
 template <typename Ps>

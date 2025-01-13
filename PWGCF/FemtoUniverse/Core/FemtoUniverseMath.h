@@ -19,7 +19,6 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEMATH_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEMATH_H_
 
-#include <iostream>
 #include <vector>
 #include <algorithm>
 
@@ -28,7 +27,7 @@
 #include "TLorentzVector.h"
 #include "TMath.h"
 
-namespace o2::analysis::femtoUniverse
+namespace o2::analysis::femto_universe
 {
 
 /// \class FemtoUniverseMath
@@ -54,14 +53,14 @@ class FemtoUniverseMath
     const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
     const float betaz = beta * std::cos(trackSum.Theta());
 
-    ROOT::Math::PxPyPzMVector PartOneCMS(vecpart1);
-    ROOT::Math::PxPyPzMVector PartTwoCMS(vecpart2);
+    ROOT::Math::PxPyPzMVector partOneCMS(vecpart1);
+    ROOT::Math::PxPyPzMVector partTwoCMS(vecpart2);
 
     const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
-    PartOneCMS = boostPRF(PartOneCMS);
-    PartTwoCMS = boostPRF(PartTwoCMS);
+    partOneCMS = boostPRF(partOneCMS);
+    partTwoCMS = boostPRF(partTwoCMS);
 
-    const ROOT::Math::PxPyPzMVector trackRelK = PartOneCMS - PartTwoCMS;
+    const ROOT::Math::PxPyPzMVector trackRelK = partOneCMS - partTwoCMS;
     return 0.5 * trackRelK.P();
   }
 
@@ -82,17 +81,17 @@ class FemtoUniverseMath
     const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
     const float betaz = beta * std::cos(trackSum.Theta());
 
-    ROOT::Math::PxPyPzMVector PartOneCMS(vecpart1);
-    ROOT::Math::PxPyPzMVector PartTwoCMS(vecpart2);
+    ROOT::Math::PxPyPzMVector partOneCMS(vecpart1);
+    ROOT::Math::PxPyPzMVector partTwoCMS(vecpart2);
 
     const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
-    PartOneCMS = boostPRF(PartOneCMS);
-    PartTwoCMS = boostPRF(PartTwoCMS);
+    partOneCMS = boostPRF(partOneCMS);
+    partTwoCMS = boostPRF(partTwoCMS);
 
-    const ROOT::Math::PtEtaPhiMVector PartOneCMSGeo(PartOneCMS);
-    const ROOT::Math::PtEtaPhiMVector PartTwoCMSGeo(PartTwoCMS);
+    const ROOT::Math::PtEtaPhiMVector partOneCMSGeo(partOneCMS);
+    const ROOT::Math::PtEtaPhiMVector partTwoCMSGeo(partTwoCMS);
 
-    return (PartOneCMSGeo.Theta() - PartTwoCMSGeo.Theta());
+    return (partOneCMSGeo.Theta() - partTwoCMSGeo.Theta());
   }
 
   /// Compute the qij of a pair of particles
@@ -128,21 +127,21 @@ class FemtoUniverseMath
   template <typename T>
   static float getQ3(const T& part1, const float mass1, const T& part2, const float mass2, const T& part3, const float mass3)
   {
-    float E1 = sqrt(pow(part1.px(), 2) + pow(part1.py(), 2) + pow(part1.pz(), 2) + pow(mass1, 2));
-    float E2 = sqrt(pow(part2.px(), 2) + pow(part2.py(), 2) + pow(part2.pz(), 2) + pow(mass2, 2));
-    float E3 = sqrt(pow(part3.px(), 2) + pow(part3.py(), 2) + pow(part3.pz(), 2) + pow(mass3, 2));
+    float e1 = std::sqrt(std::pow(part1.px(), 2) + std::pow(part1.py(), 2) + std::pow(part1.pz(), 2) + std::pow(mass1, 2));
+    float e2 = std::sqrt(std::pow(part2.px(), 2) + std::pow(part2.py(), 2) + std::pow(part2.pz(), 2) + std::pow(mass2, 2));
+    float e3 = std::sqrt(std::pow(part3.px(), 2) + std::pow(part3.py(), 2) + std::pow(part3.pz(), 2) + std::pow(mass3, 2));
 
-    const ROOT::Math::PxPyPzEVector vecpart1(part1.px(), part1.py(), part1.pz(), E1);
-    const ROOT::Math::PxPyPzEVector vecpart2(part2.px(), part2.py(), part2.pz(), E2);
-    const ROOT::Math::PxPyPzEVector vecpart3(part3.px(), part3.py(), part3.pz(), E3);
+    const ROOT::Math::PxPyPzEVector vecpart1(part1.px(), part1.py(), part1.pz(), e1);
+    const ROOT::Math::PxPyPzEVector vecpart2(part2.px(), part2.py(), part2.pz(), e2);
+    const ROOT::Math::PxPyPzEVector vecpart3(part3.px(), part3.py(), part3.pz(), e3);
 
     ROOT::Math::PxPyPzEVector q12 = getqij(vecpart1, vecpart2);
     ROOT::Math::PxPyPzEVector q23 = getqij(vecpart2, vecpart3);
     ROOT::Math::PxPyPzEVector q31 = getqij(vecpart3, vecpart1);
 
-    float Q32 = q12.M2() + q23.M2() + q31.M2();
+    float q32 = q12.M2() + q23.M2() + q31.M2();
 
-    return sqrt(-Q32);
+    return std::sqrt(-q32);
   }
 
   /// Compute the transverse momentum of a pair of particles
@@ -182,11 +181,11 @@ class FemtoUniverseMath
   template <typename T>
   static std::vector<double> newpairfunc(const T& part1, const float mass1, const T& part2, const float mass2, bool isiden)
   {
-    const double E1 = sqrt(pow(part1.px(), 2) + pow(part1.py(), 2) + pow(part1.pz(), 2) + pow(mass1, 2));
-    const double E2 = sqrt(pow(part2.px(), 2) + pow(part2.py(), 2) + pow(part2.pz(), 2) + pow(mass2, 2));
+    const double e1 = std::sqrt(std::pow(part1.px(), 2) + std::pow(part1.py(), 2) + std::pow(part1.pz(), 2) + std::pow(mass1, 2));
+    const double e2 = std::sqrt(std::pow(part2.px(), 2) + std::pow(part2.py(), 2) + std::pow(part2.pz(), 2) + std::pow(mass2, 2));
 
-    const ROOT::Math::PxPyPzEVector vecpart1(part1.px(), part1.py(), part1.pz(), E1);
-    const ROOT::Math::PxPyPzEVector vecpart2(part2.px(), part2.py(), part2.pz(), E2);
+    const ROOT::Math::PxPyPzEVector vecpart1(part1.px(), part1.py(), part1.pz(), e1);
+    const ROOT::Math::PxPyPzEVector vecpart2(part2.px(), part2.py(), part2.pz(), e2);
     const ROOT::Math::PxPyPzEVector trackSum = vecpart1 + vecpart2;
 
     std::vector<double> vect;
@@ -198,9 +197,9 @@ class FemtoUniverseMath
 
     const double tPtSq = (tPx * tPx + tPy * tPy);
     const double tMtSq = (tE * tE - tPz * tPz);
-    const double tM = sqrt(tMtSq - tPtSq);
-    const double tMt = sqrt(tMtSq);
-    const double tPt = sqrt(tPtSq);
+    const double tM = std::sqrt(tMtSq - tPtSq);
+    const double tMt = std::sqrt(tMtSq);
+    const double tPt = std::sqrt(tPtSq);
 
     // Boost to LCMS
 
@@ -209,8 +208,8 @@ class FemtoUniverseMath
 
     const double fDKOut = (part1.px() * tPx + part1.py() * tPy) / tPt;
     const double fDKSide = (-part1.px() * tPy + part1.py() * tPx) / tPt;
-    const double fDKLong = gamma * (part1.pz() - beta * E1);
-    const double fDE = gamma * (E1 - beta * part1.pz());
+    const double fDKLong = gamma * (part1.pz() - beta * e1);
+    const double fDE = gamma * (e1 - beta * part1.pz());
 
     const double px1LCMS = fDKOut;
     const double py1LCMS = fDKSide;
@@ -219,8 +218,8 @@ class FemtoUniverseMath
 
     const double px2LCMS = (part2.px() * tPx + part2.py() * tPy) / tPt;
     const double py2LCMS = (part2.py() * tPx - part2.px() * tPy) / tPt;
-    const double pz2LCMS = gamma * (part2.pz() - beta * E2);
-    const double pE2LCMS = gamma * (E2 - beta * part2.pz());
+    const double pz2LCMS = gamma * (part2.pz() - beta * e2);
+    const double pE2LCMS = gamma * (e2 - beta * part2.pz());
 
     const double fDKOutLCMS = px1LCMS - px2LCMS;
     const double fDKSideLCMS = py1LCMS - py2LCMS;
@@ -236,9 +235,9 @@ class FemtoUniverseMath
     const double fDKLongPRF = fDKLongLCMS;
     const double fKOut = gammaOut * (fDKOut - betaOut * fDE);
 
-    const double qlcms = sqrt(fDKOutLCMS * fDKOutLCMS + fDKSideLCMS * fDKSideLCMS + fDKLongLCMS * fDKLongLCMS);
-    const double qinv = sqrt(fDKOutPRF * fDKOutPRF + fDKSidePRF * fDKSidePRF + fDKLongPRF * fDKLongPRF);
-    const double kstar = sqrt(fKOut * fKOut + fDKSide * fDKSide + fDKLong * fDKLong);
+    const double qlcms = std::sqrt(fDKOutLCMS * fDKOutLCMS + fDKSideLCMS * fDKSideLCMS + fDKLongLCMS * fDKLongLCMS);
+    const double qinv = std::sqrt(fDKOutPRF * fDKOutPRF + fDKSidePRF * fDKSidePRF + fDKLongPRF * fDKLongPRF);
+    const double kstar = std::sqrt(fKOut * fKOut + fDKSide * fDKSide + fDKLong * fDKLong);
 
     if (isiden) {
       vect.push_back(qinv);
@@ -256,6 +255,6 @@ class FemtoUniverseMath
   }
 };
 
-} // namespace o2::analysis::femtoUniverse
+} // namespace o2::analysis::femto_universe
 
 #endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEMATH_H_

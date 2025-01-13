@@ -145,6 +145,8 @@ struct femtoDreamTripletTaskTrackTrackTrack {
     if (ConfIsMC) {
       ThreeBodyQARegistry.add("TrackMC_QA/hMazzachi", ";gen;(reco-gen)/gen", kTH2F, {{100, ConfMinpT, ConfMaxpT}, {300, -1, 1}});
     }
+    ThreeBodyQARegistry.add("TripletTaskQA/hCentrality", ";Centrality; Q3", kTH2F, {{100, 0, 100}, ConfQ3Bins});
+
     sameEventCont.init(&resultRegistry, ConfQ3Bins, ConfMultBins, ConfIsMC);
     mixedEventCont.init(&resultRegistry, ConfQ3Bins, ConfMultBins, ConfIsMC);
     sameEventCont.setPDGCodes(ConfPDGCodePart, ConfPDGCodePart, ConfPDGCodePart);
@@ -242,9 +244,11 @@ struct femtoDreamTripletTaskTrackTrackTrack {
       if (!pairCleaner.isCleanPair(p1, p3, parts)) {
         continue;
       }
+
       // fill pT of all three particles as a function of Q3 for lambda calculations
       ThreeBodyQARegistry.fill(HIST("TripletTaskQA/particle_pT_in_Triplet_SE"), p1.pt(), p2.pt(), p3.pt(), Q3);
       sameEventCont.setTriplet<isMC>(p1, p2, p3, multCol, Q3);
+      ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hCentrality"), centCol, Q3);
     }
   }
 

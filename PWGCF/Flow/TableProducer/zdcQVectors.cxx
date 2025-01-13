@@ -658,7 +658,7 @@ struct ZdcQVectors {
       int sector = tower % 4;
       double energy = std::pow(e[tower], alphaZDC);
       sumZN[side] += energy;
-      xEnZN[side] += (side == 0) ? pxZDC[sector] * energy : -1.0 * pxZDC[sector] * energy;
+      xEnZN[side] += (side == 0) ? -1.0 * pxZDC[sector] * energy : pxZDC[sector] * energy;
       yEnZN[side] += pyZDC[sector] * energy;
     }
 
