@@ -443,6 +443,7 @@ struct StrangenessBuilder {
       int f = enabledTables->get(tableNames[i].c_str(), "enable");
       if (f == 1) {
         mEnabledTables[i] = 1;
+        LOGF(info, "Enabled table: %s", tableNames[i].c_str());
       }
       if (f == -1) {
         // autodetect this table in other devices
