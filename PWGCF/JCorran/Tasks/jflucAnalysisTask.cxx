@@ -117,14 +117,15 @@ struct jflucAnalysisTask {
     pcf2Prong->SetEventCentrality(collision.multiplicity());
     pcf2Prong->SetEventVertex(collision.posZ());
     pcf2Prong->FillQA(poiTracks, 1u); // type = 1, all POI tracks in this list are of the same type
+    pcf2Prong->FillQA(refTracks, 0u);
     qvecsRef.Calculate(refTracks, etamin, etamax);
     pcf2Prong->SetJQVectors(&qvecs, &qvecsRef);
-	const AxisSpec &a = AxisSpec(massAxis);
-	for(uint i = 0; i < a.getNbins(); ++i){
-		qvecs.Calculate(poiTracks, etamin, etamax, a.binEdges[i], a.binEdges[i+1]);
-		pcf2Prong->SetAverageInvariantMass(0.5f*(a.binEdges[i]+a.binEdges[i+1]));
-		pcf2Prong->UserExec(""); //TODO: UserExec needs to be called many times, once for each differential bin. For each of the bins, SetInvariantMass is used
-	}
+    const AxisSpec& a = AxisSpec(massAxis);
+    for (uint i = 0; i < a.getNbins(); ++i) {
+      qvecs.Calculate(poiTracks, etamin, etamax, a.binEdges[i], a.binEdges[i + 1]);
+      pcf2Prong->SetAverageInvariantMass(0.5f * (a.binEdges[i] + a.binEdges[i + 1]));
+      pcf2Prong->UserExec(""); // The analysis needs to be called many times, once for each mass bin. For each of the bins, SetInvariantMass is used
+    }
   }
 
   void processJDerived(aod::JCollision const& collision, soa::Filtered<aod::JTracks> const& tracks)

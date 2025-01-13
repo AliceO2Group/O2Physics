@@ -167,12 +167,12 @@ class JFFlucAnalysis : public TNamed
 
 #define kcNH kH6 // max second dimension + 1
  protected:
-  Float_t fVertex;          //!
-  Float_t fAvgInvariantMass;   //!
-  Float_t fCent;            //!
-  Float_t fImpactParameter; //!
-  UInt_t subeventMask;      //!
-  UInt_t flags;             //!
+  Float_t fVertex;           //!
+  Float_t fAvgInvariantMass; //!
+  Float_t fCent;             //!
+  Float_t fImpactParameter;  //!
+  UInt_t subeventMask;       //!
+  UInt_t flags;              //!
 
   const JQVectorsT* pqvecs;    //!
   const JQVectorsT* pqvecsRef; //!

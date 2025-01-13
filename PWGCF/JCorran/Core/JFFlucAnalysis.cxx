@@ -19,7 +19,7 @@
 
 JFFlucAnalysis::JFFlucAnalysis() : TNamed(),
                                    fVertex(0),
-								   fAvgInvariantMass(0.0f),
+                                   fAvgInvariantMass(0.0f),
                                    fCent(0),
                                    fImpactParameter(-1),
                                    subeventMask(kSubEvent_A | kSubEvent_B),
@@ -33,7 +33,7 @@ JFFlucAnalysis::JFFlucAnalysis() : TNamed(),
 //________________________________________________________________________
 JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : TNamed(),
                                                        fVertex(0),
-									   fAvgInvariantMass(0.0f),
+                                                       fAvgInvariantMass(0.0f),
                                                        fCent(0),
                                                        fImpactParameter(-1),
                                                        subeventMask(kSubEvent_A | kSubEvent_B),
@@ -47,7 +47,7 @@ JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : TNamed(),
 //________________________________________________________________________
 JFFlucAnalysis::JFFlucAnalysis(const JFFlucAnalysis& a) : TNamed(a),
                                                           fVertex(a.fVertex),
-									   fAvgInvariantMass(a.fAvgInvariantMass),
+                                                          fAvgInvariantMass(a.fAvgInvariantMass),
                                                           fCent(a.fCent),
                                                           fImpactParameter(a.fImpactParameter),
                                                           subeventMask(a.subeventMask),
@@ -139,7 +139,7 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/) // NOLINT(readability/casting)
   for (UInt_t i = 0; i < 2; ++i) {
     if ((subeventMask & (1 << i)) == 0)
       continue;
-    decltype(pqvecs->QvectorQCgap[i])& Qa = pqvecs->QvectorQCgap[i]; //this is for one differential bin only.
+    decltype(pqvecs->QvectorQCgap[i])& Qa = pqvecs->QvectorQCgap[i];                                   // this is for one differential bin only.
     decltype(pqvecs->QvectorQCgap[1 - i])& Qb = (pqvecsRef ? pqvecsRef : pqvecs)->QvectorQCgap[1 - i]; // A & B subevents from POI and REF, when given
     Double_t ref_2p = TwoGap(Qa, Qb, 0, 0).Re();
     Double_t ref_3p = ThreeGap(Qa, Qb, 0, 0, 0).Re();
