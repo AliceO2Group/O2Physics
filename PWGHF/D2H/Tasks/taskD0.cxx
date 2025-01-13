@@ -264,7 +264,6 @@ struct HfTaskD0 {
       registry.get<THnSparse>(HIST("hSparseAcc"))->Sumw2();
     }
 
-
     std::vector<AxisSpec> axes = {thnAxisMass, thnAxisPt, thnAxisY, thnAxisCandType};
     if (doprocessMcWithDCAFitterN || doprocessMcWithKFParticle || doprocessMcWithDCAFitterNMl || doprocessMcWithKFParticleMl) {
       axes.push_back(thnAxisPtB);
@@ -376,8 +375,7 @@ struct HfTaskD0 {
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, hfHelper.yD0(candidate), SigD0bar, cent, occ);
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, cent, occ);
           }
-        }
-        else if (storeCentrality && !storeOccupancy) {
+        } else if (storeCentrality && !storeOccupancy) {
           if (candidate.isSelD0() >= selectionFlagD0) {
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, hfHelper.yD0(candidate), SigD0, cent);
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, cent);
@@ -386,8 +384,7 @@ struct HfTaskD0 {
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, hfHelper.yD0(candidate), SigD0bar, cent);
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, cent);
           }
-        }
-        else if (!storeCentrality && storeOccupancy) {
+        } else if (!storeCentrality && storeOccupancy) {
           if (candidate.isSelD0() >= selectionFlagD0) {
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, hfHelper.yD0(candidate), SigD0, occ);
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, occ);
@@ -396,8 +393,7 @@ struct HfTaskD0 {
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, hfHelper.yD0(candidate), SigD0bar, occ);
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, occ);
           }
-        }
-        else {
+        } else {
           if (candidate.isSelD0() >= selectionFlagD0) {
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, hfHelper.yD0(candidate), SigD0);
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0);
@@ -417,8 +413,7 @@ struct HfTaskD0 {
             registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0bar, ptCandidate, hfHelper.yD0(candidate), SigD0bar, cent, occ);
             registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0bar, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, cent, occ);
           }
-        }
-        else if (storeCentrality && !storeOccupancy) {
+        } else if (storeCentrality && !storeOccupancy) {
           if (candidate.isSelD0() >= selectionFlagD0) {
             registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0, ptCandidate, hfHelper.yD0(candidate), SigD0, cent);
             registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, cent);
@@ -427,19 +422,16 @@ struct HfTaskD0 {
             registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0bar, ptCandidate, hfHelper.yD0(candidate), SigD0bar, cent);
             registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0bar, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, cent);
           }
-        }
-        else if (!storeCentrality && storeOccupancy) {
+        } else if (!storeCentrality && storeOccupancy) {
           if (candidate.isSelD0() >= selectionFlagD0) {
             registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0, ptCandidate, hfHelper.yD0(candidate), SigD0, occ);
             registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0, occ);
-
           }
           if (candidate.isSelD0bar() >= selectionFlagD0bar) {
             registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0bar, ptCandidate, hfHelper.yD0(candidate), SigD0bar, occ);
             registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0bar, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar, occ);
           }
-        }
-        else {
+        } else {
           if (candidate.isSelD0() >= selectionFlagD0) {
             registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0, ptCandidate, hfHelper.yD0(candidate), SigD0);
             registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0, ptCandidate, hfHelper.yD0(candidate), candidate.isSelD0bar() ? ReflectedD0 : PureSigD0);
@@ -469,7 +461,7 @@ struct HfTaskD0 {
     processData<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesKF, collisions);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithKFParticle, "process taskD0 with KFParticle", false);
-  //TODO: add processKFParticleCent
+  // TODO: add processKFParticleCent
 
   void processDataWithDCAFitterNMl(D0CandidatesMl const&, Collisions const& collisions)
   {
@@ -488,7 +480,7 @@ struct HfTaskD0 {
     processData<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlKF, collisions);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithKFParticleMl, "process taskD0 with KFParticle and ML selections", false);
-  //TODO: add processKFParticleMlCent
+  // TODO: add processKFParticleMlCent
 
   template <int reconstructionType, bool applyMl, typename CandType, typename CollType>
   void processMc(CandType const& candidates,
@@ -643,27 +635,21 @@ struct HfTaskD0 {
           if constexpr (applyMl) {
             if (storeCentrality && storeOccupancy) {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ);
-            }
-            else if (storeCentrality && !storeOccupancy) {
+            } else if (storeCentrality && !storeOccupancy) {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
-            }
-            else if (!storeCentrality && storeOccupancy) {
+            } else if (!storeCentrality && storeOccupancy) {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ);
-            }
-            else {
+            } else {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
             }
           } else {
             if (storeCentrality && storeOccupancy) {
               registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ);
-            }
-            else if (storeCentrality && !storeOccupancy) {
+            } else if (storeCentrality && !storeOccupancy) {
               registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
-            }
-            else if (!storeCentrality && storeOccupancy) {
+            } else if (!storeCentrality && storeOccupancy) {
               registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ);
-            }
-            else {
+            } else {
               registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
             }
           }
@@ -687,27 +673,21 @@ struct HfTaskD0 {
             if constexpr (applyMl) {
               if (storeCentrality && storeOccupancy) {
                 registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ);
-              }
-              else if (storeCentrality && !storeOccupancy) {
+              } else if (storeCentrality && !storeOccupancy) {
                 registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
-              }
-              else if (!storeCentrality && storeOccupancy) {
+              } else if (!storeCentrality && storeOccupancy) {
                 registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ);
-              }
-              else {
+              } else {
                 registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
               }
             } else {
               if (storeCentrality && storeOccupancy) {
                 registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ);
-              }
-              else if (storeCentrality && !storeOccupancy) {
+              } else if (storeCentrality && !storeOccupancy) {
                 registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
-              }
-              else if (!storeCentrality && storeOccupancy) {
+              } else if (!storeCentrality && storeOccupancy) {
                 registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ);
-              }
-              else {
+              } else {
                 registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
               }
             }
@@ -721,27 +701,21 @@ struct HfTaskD0 {
           if constexpr (applyMl) {
             if (storeCentrality && storeOccupancy) {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ);
-            }
-            else if (storeCentrality && !storeOccupancy) {
+            } else if (storeCentrality && !storeOccupancy) {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
-            }
-            else if (!storeCentrality && storeOccupancy) {
+            } else if (!storeCentrality && storeOccupancy) {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ);
-            }
-            else {
+            } else {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
             }
           } else {
             if (storeCentrality && storeOccupancy) {
               registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ);
-            }
-            else if (storeCentrality && !storeOccupancy) {
+            } else if (storeCentrality && !storeOccupancy) {
               registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
-            }
-            else if (!storeCentrality && storeOccupancy) {
+            } else if (!storeCentrality && storeOccupancy) {
               registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ);
-            }
-            else {
+            } else {
               registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
             }
           }
@@ -752,27 +726,21 @@ struct HfTaskD0 {
             if constexpr (applyMl) {
               if (storeCentrality && storeOccupancy) {
                 registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ);
-              }
-              else if (storeCentrality && !storeOccupancy) {
+              } else if (storeCentrality && !storeOccupancy) {
                 registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
-              }
-              else if (!storeCentrality && storeOccupancy) {
+              } else if (!storeCentrality && storeOccupancy) {
                 registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ);
-              }
-              else {
+              } else {
                 registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
               }
             } else {
               if (storeCentrality && storeOccupancy) {
                 registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ);
-              }
-              else if (storeCentrality && !storeOccupancy) {
+              } else if (storeCentrality && !storeOccupancy) {
                 registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
-              }
-              else if (!storeCentrality && storeOccupancy) {
+              } else if (!storeCentrality && storeOccupancy) {
                 registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, occ);
-              }
-              else {
+              } else {
                 registry.fill(HIST("hMassVsPtVsYVsOriginVsD0Type"), massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors);
               }
             }
@@ -800,7 +768,7 @@ struct HfTaskD0 {
 
         float cent{-1.f};
         float occ{-1.f};
-        if (storeCentrality || storeOccupancy){
+        if (storeCentrality || storeOccupancy) {
           const auto& recoCollsPerMcCollCent = collisions.sliceBy(colPerMcCollisionCent, particle.mcCollision().globalIndex());
           if (storeCentrality && centEstimator != CentralityEstimator::None) {
             cent = getCentralityGenColl(recoCollsPerMcCollCent, centEstimator);
@@ -872,7 +840,7 @@ struct HfTaskD0 {
     processMc<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesMcKF, mcParticles, tracks, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticle, "Process MC with KFParticle", false);
-  //TODO: add the processMcWithKFParticleCent
+  // TODO: add the processMcWithKFParticleCent
 
   void processMcWithDCAFitterNMl(D0CandidatesMlMc const&,
                                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
@@ -903,7 +871,7 @@ struct HfTaskD0 {
     processMc<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlMcKF, mcParticles, tracks, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
-  //TODO: add the processMcWithKFParticleMlCent
+  // TODO: add the processMcWithKFParticleMlCent
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
