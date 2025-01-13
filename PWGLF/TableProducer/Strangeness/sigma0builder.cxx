@@ -76,6 +76,33 @@ struct sigma0builder {
   // Histogram registry
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  // Event selection
+  Configurable<bool> doPPAnalysis{"doPPAnalysis", true, "if in pp, set to true"};
+  struct : ConfigurableGroup {
+    Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
+    Configurable<bool> requireTriggerTVX{"requireTriggerTVX", true, "require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level"};
+    Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
+    Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
+    Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "require events with at least one ITS-TPC track"};
+    Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", true, "require events with PV position along z consistent (within 1 cm) between PV reconstructed using tracks and PV using FT0 A-C time difference"};
+    Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "require events with at least one of vertex contributors matched to TOF"};
+    Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD"};
+    Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
+    Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds"};
+    Configurable<bool> requireNoCollInTimeRangeStrict{"requireNoCollInTimeRangeStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
+    Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds"};
+    Configurable<bool> requireNoCollInTimeRangeVzDep{"requireNoCollInTimeRangeVzDep", false, "reject collisions corrupted by the cannibalism, with other collisions with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ"};
+    Configurable<bool> requireNoCollInROFStd{"requireNoCollInROFStd", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF with mult. above a certain threshold"};
+    Configurable<bool> requireNoCollInROFStrict{"requireNoCollInROFStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF"};
+    Configurable<bool> requireINEL0{"requireINEL0", true, "require INEL>0 event selection"};
+    Configurable<bool> requireINEL1{"requireINEL1", false, "require INEL>1 event selection"};
+    Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position"};
+    Configurable<bool> useFT0CbasedOccupancy{"useFT0CbasedOccupancy", false, "Use sum of FT0-C amplitudes for estimating occupancy? (if not, use track-based definition)"};
+    // fast check on occupancy
+    Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
+    Configurable<float> maxOccupancy{"maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
+  } eventSelections;
+
   // For ML Selection
   Configurable<float> Gamma_MLThreshold{"Gamma_MLThreshold", 0.1, "Decision Threshold value to select gammas"};
   Configurable<float> Lambda_MLThreshold{"Lambda_MLThreshold", 0.1, "Decision Threshold value to select lambdas"};
@@ -145,7 +172,33 @@ struct sigma0builder {
   int nSigmaCandidates = 0;
   void init(InitContext const&)
   {
-    // Event counter
+    // Event Counters
+    histos.add("hEventSelection", "hEventSelection", kTH1F, {{20, -0.5f, +19.5f}});
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "kNoTimeFrameBorder");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(6, "posZ cut");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(7, "kIsVertexITSTPC");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kIsGoodZvtxFT0vsPV");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTOFmatched");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kIsVertexTRDmatched");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "kNoSameBunchPileup");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeStd");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "kNoCollInTimeRangeStrict");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "kNoCollInTimeRangeNarrow");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "kNoCollInTimeRangeVzDep");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStd");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "kNoCollInRofStrict");
+    if (doPPAnalysis) {
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "INEL>0");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "INEL>1");
+    } else {
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "Below min occup.");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "Above max occup.");
+    }
+
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {axisCentrality});
     histos.add("hCandidateBuilderSelection", "hCandidateBuilderSelection", kTH1F, {axisCandSel});
     histos.get<TH1>(HIST("hCandidateBuilderSelection"))->GetXaxis()->SetBinLabel(1, "No Sel");
@@ -232,6 +285,120 @@ struct sigma0builder {
     histos.add("h3dMassSigmasBeforeSel", "h3dMassSigmasBeforeSel", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
     histos.add("h3dMassSigmasAfterSel", "h3dMassSigmasAfterSel", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
   }
+
+  template <typename TCollision>
+  bool IsEventAccepted(TCollision collision, bool fillHists)
+  // check whether the collision passes our collision selections
+  {
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
+    if (eventSelections.requireSel8 && !collision.sel8()) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 1 /* sel8 collisions */);
+    if (eventSelections.requireTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 2 /* FT0 vertex (acceptable FT0C-FT0A time difference) collisions */);
+    if (eventSelections.rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 3 /* Not at ITS ROF border */);
+    if (eventSelections.rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 4 /* Not at TF border */);
+    if (std::abs(collision.posZ()) > eventSelections.maxZVtxPosition) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 5 /* vertex-Z selected */);
+    if (eventSelections.requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 6 /* Contains at least one ITS-TPC track */);
+    if (eventSelections.requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 7 /* PV position consistency check */);
+    if (eventSelections.requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 8 /* PV with at least one contributor matched with TOF */);
+    if (eventSelections.requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 9 /* PV with at least one contributor matched with TRD */);
+    if (eventSelections.rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 10 /* Not at same bunch pile-up */);
+    if (eventSelections.requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds*/);
+    if (eventSelections.requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 12 /* No other collision within +/- 10 microseconds */);
+    if (eventSelections.requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 13 /* No other collision within +/- 2 microseconds */);
+    if (eventSelections.requireNoCollInTimeRangeVzDep && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeVzDependent)) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 14 /* No other collision with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ */);
+    if (eventSelections.requireNoCollInROFStd && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 15 /* No other collision within the same ITS ROF with mult. above a certain threshold */);
+    if (eventSelections.requireNoCollInROFStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 16 /* No other collision within the same ITS ROF */);
+    if (doPPAnalysis) { // we are in pp
+      if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < 1) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 17 /* INEL > 0 */);
+      if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < 2) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 18 /* INEL > 1 */);
+    } else { // we are in Pb-Pb
+      float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
+      if (eventSelections.minOccupancy >= 0 && collisionOccupancy < eventSelections.minOccupancy) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 17 /* Below min occupancy */);
+      if (eventSelections.maxOccupancy >= 0 && collisionOccupancy > eventSelections.maxOccupancy) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 18 /* Above max occupancy */);
+    }
+    return true;
+  }
+
   template <typename TV0Object>
   void runPi0QA(TV0Object const& gamma1, TV0Object const& gamma2)
   {
@@ -603,9 +770,12 @@ struct sigma0builder {
                       fLambdaV0Type, LambdaBDTScore, AntiLambdaBDTScore);
   }
 
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents> const& collisions, V0DerivedMCDatas const& V0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0DerivedMCDatas const& V0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
     for (const auto& coll : collisions) {
+      if (!IsEventAccepted(coll, true)) {
+        return;
+      }
       // Do analysis with collision-grouped V0s, retain full collision information
       const uint64_t collIdx = coll.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionMCDerived, collIdx);
@@ -714,9 +884,12 @@ struct sigma0builder {
     }
   }
 
-  void processSTDSelection(soa::Join<aod::StraCollisions, aod::StraCents> const& collisions, V0StandardDerivedDatas const& V0s, dauTracks const&)
+  void processSTDSelection(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0StandardDerivedDatas const& V0s, dauTracks const&)
   {
     for (const auto& coll : collisions) {
+      if (!IsEventAccepted(coll, true)) {
+        return;
+      }
       // Do analysis with collision-grouped V0s, retain full collision information
       const uint64_t collIdx = coll.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionSTDDerived, collIdx);
@@ -754,9 +927,12 @@ struct sigma0builder {
     }
   }
 
-  void processMLSelection(soa::Join<aod::StraCollisions, aod::StraCents> const& collisions, V0MLDerivedDatas const& V0s, dauTracks const&)
+  void processMLSelection(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0MLDerivedDatas const& V0s, dauTracks const&)
   {
     for (const auto& coll : collisions) {
+      if (!IsEventAccepted(coll, true)) {
+        return;
+      }
       // Do analysis with collision-grouped V0s, retain full collision information
       const uint64_t collIdx = coll.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionMLDerived, collIdx);
