@@ -82,7 +82,7 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<std::string> fdEffCcdbPath{"fdEffCcdbPath", "", "CCDB path for trigger efficiency"};
   Configurable<int64_t> timestampCcdb{"timestampCcdb", -1, "timestamp of the efficiency files used to query in CCDB"};
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  
+
   Service<ccdb::BasicCCDBManager> ccdb;
   std::shared_ptr<TH1> mEfficiencyD = nullptr;
   std::shared_ptr<TH1> mEfficiencyAssociated = nullptr;
@@ -241,7 +241,7 @@ struct HfTaskCorrelationDsHadrons {
       hAssocTracks->GetAxis(2)->SetTitle("multiplicity");
       hAssocTracks->GetAxis(3)->SetTitle("pos z");
     }
-    
+
     // Loading efficiency histograms from CCDB
     if (applyEfficiency && loadAccXEffFromCCDB) {
       ccdb->setURL(ccdbUrl);
