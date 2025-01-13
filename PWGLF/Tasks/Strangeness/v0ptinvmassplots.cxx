@@ -28,6 +28,7 @@ This analysis includes two processes, one for Real Data and one for MC Data swit
 #include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "CommonUtils/StringUtils.h"
 #include <memory>
 #include <vector>
 #include <string>
@@ -35,11 +36,12 @@ This analysis includes two processes, one for Real Data and one for MC Data swit
 // namespace to be used for pt plots and bins
 namespace pthistos
 {
-std::shared_ptr<TH1> KaonPt[20];
+constexpr uint32_t NSIZE = 30;
+std::shared_ptr<TH1> KaonPt[NSIZE];
 static std::vector<std::string> kaonptbins;
-std::shared_ptr<TH1> LambdaPt[20];
+std::shared_ptr<TH1> LambdaPt[NSIZE];
 static std::vector<std::string> lambdaptbins;
-std::shared_ptr<TH1> AntilambdaPt[20];
+std::shared_ptr<TH1> AntilambdaPt[NSIZE];
 static std::vector<std::string> antilambdaptbins;
 } // namespace pthistos
 using namespace o2;
@@ -55,7 +57,7 @@ struct v0ptinvmassplots {
 
   // Configurable for histograms
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
-  Configurable<int> xaxisgenbins{"xaxisgenbins", 20, "Number of bins for Generated Pt Spectrum"};
+  Configurable<int> xaxisgenbins{"xaxisgenbins", pthistos::NSIZE, "Number of bins for Generated Pt Spectrum"}; // is nSIZE ok
   Configurable<float> xaxismingenbin{"xaxismingenbin", 0.0, "Minimum bin value of the Generated Pt Spectrum Plot"};
   Configurable<float> xaxismaxgenbin{"xaxismaxgenbin", 3.0, "Maximum bin value of the Generated Pt Spectrum Plot"};
 
@@ -101,19 +103,9 @@ struct v0ptinvmassplots {
 
     rPtAnalysis.add("hV0PtAll", "hV0PtAll", {HistType::kTH1F, {{nBins, 0.0f, 10.0f}}});
 
-    // setting strings from configurable strings in order to manipulate them
-    size_t commapos = 0;
-    std::string token1;
     // Adding Kzerosh Histograms to registry
     if (kzerosh_analysis == true) {
-      // getting the  bin values for the names of the plots for the five topological cuts
-      std::string kzeroshsetting_ptbins = kzeroshsetting_pt_string;
-      for (int i = 0; i < 21; i++) {                        // we have 21 pt values (for the 20 histos) as they are the ranges
-        commapos = kzeroshsetting_ptbins.find(",");         // find comma that separates the values in the string
-        token1 = kzeroshsetting_ptbins.substr(0, commapos); // store the substring (first individual value)
-        pthistos::kaonptbins.push_back(token1);             //  fill the namespace with the value
-        kzeroshsetting_ptbins.erase(0, commapos + 1);       // erase the value from the set string so it moves to the next
-      }
+      pthistos::kaonptbins = o2::utils::Str::tokenize(kzeroshsetting_pt_string, ',');
       rPtAnalysis.add("hK0ShortReconstructedPtSpectrum", "hK0ShortReconstructedPtSpectrum", {HistType::kTH1F, {ptAxis}});
       rPtAnalysis.add("hMassK0ShortAll", "hMassK0ShortAll", {HistType::kTH1F, {K0ShortMassAxis}});
       rPtAnalysis.add("hK0ShortPtSpectrumBeforeCuts", "hK0ShortPtSpectrumBeforeCuts", {HistType::kTH1F, {ptAxis}});
@@ -121,7 +113,7 @@ struct v0ptinvmassplots {
       rPtAnalysis.add("hK0ShGeneratedPtSpectrum", "hK0ShGeneratedPtSpectrum", {HistType::kTH1F, {GenptAxis}});
       rPtAnalysis.add("hLambdaGeneratedPtSpectrum", "hLambdaGeneratedPtSpectrum", {HistType::kTH1F, {GenptAxis}});
       rPtAnalysis.add("hAntilambdaGeneratedPtSpectrum", "hAntilambdaGeneratedPtSpectrum", {HistType::kTH1F, {GenptAxis}});
-      for (int i = 0; i < 20; i++) {
+      for (uint32_t i = 0; i < pthistos::kaonptbins.size()-1; i++) {
         pthistos::KaonPt[i] = rKaonshMassPlots_per_PtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", pthistos::kaonptbins[i], pthistos::kaonptbins[i + 1]).data(), fmt::format("hPt from {0} to {1}", pthistos::kaonptbins[i], pthistos::kaonptbins[i + 1]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
       }
     }
@@ -129,17 +121,12 @@ struct v0ptinvmassplots {
     if (lambda_analysis == true) {
       // same method as in Kzerosh above
       std::string lambdasetting_ptbins = lambdasetting_pt_string;
-      for (int i = 0; i < 21; i++) {
-        commapos = lambdasetting_ptbins.find(",");
-        token1 = lambdasetting_ptbins.substr(0, commapos);
-        pthistos::lambdaptbins.push_back(token1);
-        lambdasetting_ptbins.erase(0, commapos + 1);
-      }
+      pthistos::lambdaptbins = o2::utils::Str::tokenize(lambdasetting_ptbins, ',');
       rPtAnalysis.add("hLambdaReconstructedPtSpectrum", "hLambdaReconstructedPtSpectrum", {HistType::kTH1F, {ptAxis}});
       rPtAnalysis.add("hMassLambdaAll", "hMassLambdaAll", {HistType::kTH1F, {LambdaMassAxis}});
       rPtAnalysis.add("hLambdaPtSpectrumBeforeCuts", "hLambdaPtSpectrumBeforeCuts", {HistType::kTH1F, {ptAxis}});
       rPtAnalysis.add("hMassLambdaAllAfterCuts", "hMassLambdaAllAfterCuts", {HistType::kTH1F, {LambdaMassAxis}});
-      for (int i = 0; i < 20; i++) {
+      for (u_int32_t i = 0; i < pthistos::lambdaptbins.size() - 1; i++) {
         pthistos::LambdaPt[i] = rLambdaMassPlots_per_PtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", pthistos::lambdaptbins[i], pthistos::lambdaptbins[i + 1]).data(), fmt::format("hPt from {0} to {1}", pthistos::lambdaptbins[i], pthistos::lambdaptbins[i + 1]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
       }
     }
@@ -147,17 +134,12 @@ struct v0ptinvmassplots {
     if (antilambda_analysis == true) {
       // same method as in Lambda and Kzerosh above
       std::string antilambdasetting_ptbins = antilambdasetting_pt_string;
-      for (int i = 0; i < 21; i++) {
-        commapos = antilambdasetting_ptbins.find(",");
-        token1 = antilambdasetting_ptbins.substr(0, commapos);
-        pthistos::antilambdaptbins.push_back(token1);
-        antilambdasetting_ptbins.erase(0, commapos + 1);
-      }
+      pthistos::antilambdaptbins = o2::utils::Str::tokenize(antilambdasetting_ptbins, ',');
       rPtAnalysis.add("hAntilambdaReconstructedPtSpectrum", "hAntilambdaReconstructedPtSpectrum", {HistType::kTH1F, {ptAxis}});
       rPtAnalysis.add("hMassAntilambdaAll", "hMassAntilambdaAll", {HistType::kTH1F, {AntiLambdaMassAxis}});
       rPtAnalysis.add("hAntilambdaPtSpectrumBeforeCuts", "hAntilambdaPtSpectrumBeforeCuts", {HistType::kTH1F, {ptAxis}});
       rPtAnalysis.add("hMassAntilambdaAllAfterCuts", "hMassAntilambdaAllAfterCuts", {HistType::kTH1F, {AntiLambdaMassAxis}});
-      for (int i = 0; i < 20; i++) {
+      for (int i = 0; i < pthistos::antilambdaptbins.size() - 1; i++) {
         pthistos::AntilambdaPt[i] = rAntilambdaMassPlots_per_PtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", pthistos::antilambdaptbins[i], pthistos::antilambdaptbins[i + 1]).data(), fmt::format("hPt from {0} to {1}", pthistos::antilambdaptbins[i], pthistos::antilambdaptbins[i + 1]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
       }
     }

@@ -173,9 +173,7 @@ struct v0topologicalcuts {
     for (uint32_t i = 0; i < cuthistoskzerosh::dcanegtopvcuts.size(); i++) {
       cuthistoskzerosh::dcanegtopCut[i] = rKzeroShort_dcanegtopCut.add<TH1>(fmt::format("hKzerodcanegtopCut_{}", cuthistoskzerosh::dcanegtopvcuts[i]).data(), fmt::format("hKzerodcanegtopCut_{}", cuthistoskzerosh::dcanegtopvcuts[i]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
     }
-    LOG(info) << "error size: " << cuthistoslambda::cospacuts.size() << std::endl;
     for (uint32_t i = 0; i < cuthistoslambda::cospacuts.size(); i++) {
-      LOG(info) << "error: " << (cuthistoslambda::cospacuts[i]).data() << std::endl;
       cuthistoslambda::cospaCut[i] = rLambda_cospaCut.add<TH1>(fmt::format("hLambdacospaCut_{}", cuthistoslambda::cospacuts[i]).data(), fmt::format("hLambdacospaCut_{}", cuthistoslambda::cospacuts[i]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistoslambda::dcacuts.size(); i++) {
