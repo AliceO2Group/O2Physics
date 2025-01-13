@@ -182,12 +182,12 @@ struct HfTaskBplusReduced {
 
   HfHelper hfHelper;
 
-  HistogramRegistry registry{"registry"};
-
   using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
   using CandsD0 = soa::Join<HfRed2Prongs, HfRedPidDau0s, HfRedPidDau1s>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus);
+
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext&)
   {
