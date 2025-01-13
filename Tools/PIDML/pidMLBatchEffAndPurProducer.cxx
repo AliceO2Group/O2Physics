@@ -19,6 +19,9 @@
 #include <cstddef>
 #include <string_view>
 #include <algorithm>
+#include <string>
+#include <vector>
+#include <limits>
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/runDataProcessing.h"

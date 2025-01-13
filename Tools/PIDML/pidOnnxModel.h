@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <cstdio>
 #include <limits>
 #include <optional>
 #include <string>

@@ -12,6 +12,8 @@
 /// This task produces invariant mass vs. momentum and dEdX in TPC vs. momentum
 /// for Kaons using ML PID from the PID ML ONNX Model.
 
+#include <string>
+#include <vector>
 #include <cmath>
 #include <memory>
 #include "Framework/AnalysisTask.h"
