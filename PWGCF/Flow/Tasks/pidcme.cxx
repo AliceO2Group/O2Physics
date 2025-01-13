@@ -639,7 +639,7 @@ struct pidcme { // o2-linter: disable=name/struct
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_PiPi_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_PiPi_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_PiPi_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
-        if (cfgkOpenSsOsCrossCheck){
+        if (cfgkOpenSsOsCrossCheck) {
           histosQA.add<TProfile>(Form("PIDCME/histgamama_PiPi_PP"), "", {HistType::kTProfile, {axisCentMerged}});
           histosQA.add<TProfile>(Form("PIDCME/histgamama_PiPi_NN"), "", {HistType::kTProfile, {axisCentMerged}});
           histosQA.add<TProfile>(Form("PIDCME/histgamama_PiPi_PN"), "", {HistType::kTProfile, {axisCentMerged}});
@@ -659,7 +659,7 @@ struct pidcme { // o2-linter: disable=name/struct
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_KaKa_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_KaKa_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_KaKa_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
-        if (cfgkOpenSsOsCrossCheck){
+        if (cfgkOpenSsOsCrossCheck) {
           histosQA.add<TProfile>(Form("PIDCME/histgamama_KaKa_PP"), "", {HistType::kTProfile, {axisCentMerged}});
           histosQA.add<TProfile>(Form("PIDCME/histgamama_KaKa_NN"), "", {HistType::kTProfile, {axisCentMerged}});
           histosQA.add<TProfile>(Form("PIDCME/histgamama_KaKa_PN"), "", {HistType::kTProfile, {axisCentMerged}});
@@ -679,7 +679,7 @@ struct pidcme { // o2-linter: disable=name/struct
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_PrPr_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_PrPr_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_PrPr_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
-        if(cfgkOpenSsOsCrossCheck){
+        if (cfgkOpenSsOsCrossCheck) {
           histosQA.add<TProfile>(Form("PIDCME/histgamama_PrPr_PP"), "", {HistType::kTProfile, {axisCentMerged}});
           histosQA.add<TProfile>(Form("PIDCME/histgamama_PrPr_NN"), "", {HistType::kTProfile, {axisCentMerged}});
           histosQA.add<TProfile>(Form("PIDCME/histgamama_PrPr_PN"), "", {HistType::kTProfile, {axisCentMerged}});
@@ -699,7 +699,7 @@ struct pidcme { // o2-linter: disable=name/struct
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_PiKa_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_PiKa_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_PiKa_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
-        if(cfgkOpenSsOsCrossCheck){
+        if (cfgkOpenSsOsCrossCheck) {
           histosQA.add<TProfile>(Form("PIDCME/histgamama_PiKa_PP"), "", {HistType::kTProfile, {axisCentMerged}});
           histosQA.add<TProfile>(Form("PIDCME/histgamama_PiKa_NN"), "", {HistType::kTProfile, {axisCentMerged}});
           histosQA.add<TProfile>(Form("PIDCME/histgamama_PiKa_PN"), "", {HistType::kTProfile, {axisCentMerged}});
@@ -719,7 +719,7 @@ struct pidcme { // o2-linter: disable=name/struct
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_PiPr_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_PiPr_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_PiPr_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
-        if(cfgkOpenSsOsCrossCheck){
+        if (cfgkOpenSsOsCrossCheck) {
           histosQA.add<TProfile>(Form("PIDCME/histgamama_PiPr_PP"), "", {HistType::kTProfile, {axisCentMerged}});
           histosQA.add<TProfile>(Form("PIDCME/histgamama_PiPr_NN"), "", {HistType::kTProfile, {axisCentMerged}});
           histosQA.add<TProfile>(Form("PIDCME/histgamama_PiPr_PN"), "", {HistType::kTProfile, {axisCentMerged}});
@@ -739,7 +739,7 @@ struct pidcme { // o2-linter: disable=name/struct
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_KaPr_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_KaPr_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_KaPr_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
-        if(cfgkOpenSsOsCrossCheck){
+        if (cfgkOpenSsOsCrossCheck) {
           histosQA.add<TProfile>(Form("PIDCME/histgamama_KaPr_PP"), "", {HistType::kTProfile, {axisCentMerged}});
           histosQA.add<TProfile>(Form("PIDCME/histgamama_KaPr_NN"), "", {HistType::kTProfile, {axisCentMerged}});
           histosQA.add<TProfile>(Form("PIDCME/histgamama_KaPr_PN"), "", {HistType::kTProfile, {axisCentMerged}});
@@ -759,7 +759,7 @@ struct pidcme { // o2-linter: disable=name/struct
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histgamama_HaHa_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_HaHa_ss_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
         histosQA.add<TProfile3D>(Form("PIDCME/Differential/histdelta_HaHa_os_Dif"), "", {HistType::kTProfile3D, {axisCentMerged, axissumpt, axisdeltaeta}});
-        if(cfgkOpenSsOsCrossCheck){
+        if (cfgkOpenSsOsCrossCheck) {
           histosQA.add<TProfile>(Form("PIDCME/histgamama_HaHa_PP"), "", {HistType::kTProfile, {axisCentMerged}});
           histosQA.add<TProfile>(Form("PIDCME/histgamama_HaHa_NN"), "", {HistType::kTProfile, {axisCentMerged}});
           histosQA.add<TProfile>(Form("PIDCME/histgamama_HaHa_PN"), "", {HistType::kTProfile, {axisCentMerged}});
@@ -894,12 +894,11 @@ struct pidcme { // o2-linter: disable=name/struct
                               std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/Differential/histdelta_PiPi_ss_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
                               std::cos((trk1.phi() - trk2.phi())));
-                if(cfgkOpenSsOsCrossCheck){
-                  if(trk1.sign() > 0 && trk2.sign() > 0){
+                if (cfgkOpenSsOsCrossCheck) {
+                  if (trk1.sign() > 0 && trk2.sign() > 0) {
                     histosQA.fill(HIST("PIDCME/histgamama_PiPi_PP"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_PiPi_PP"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
-                  }
-                  else {
+                  } else {
                     histosQA.fill(HIST("PIDCME/histgamama_PiPi_NN"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_PiPi_NN"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
                   }
@@ -911,12 +910,11 @@ struct pidcme { // o2-linter: disable=name/struct
                               std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/Differential/histdelta_PiPi_os_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
                               std::cos((trk1.phi() - trk2.phi())));
-                if(cfgkOpenSsOsCrossCheck){
-                  if(trk1.sign() > 0 && trk2.sign() < 0){
+                if (cfgkOpenSsOsCrossCheck) {
+                  if (trk1.sign() > 0 && trk2.sign() < 0) {
                     histosQA.fill(HIST("PIDCME/histgamama_PiPi_PN"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_PiPi_PN"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
-                  }
-                  else {
+                  } else {
                     histosQA.fill(HIST("PIDCME/histgamama_PiPi_NP"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_PiPi_NP"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
                   }
@@ -939,12 +937,11 @@ struct pidcme { // o2-linter: disable=name/struct
                               std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/Differential/histdelta_KaKa_ss_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
                               std::cos((trk1.phi() - trk2.phi())));
-                if(cfgkOpenSsOsCrossCheck){
-                  if(trk1.sign() > 0 && trk2.sign() > 0){
+                if (cfgkOpenSsOsCrossCheck) {
+                  if (trk1.sign() > 0 && trk2.sign() > 0) {
                     histosQA.fill(HIST("PIDCME/histgamama_KaKa_PP"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_KaKa_PP"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
-                  }
-                  else {
+                  } else {
                     histosQA.fill(HIST("PIDCME/histgamama_KaKa_NN"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_KaKa_NN"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
                   }
@@ -956,12 +953,11 @@ struct pidcme { // o2-linter: disable=name/struct
                               std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/Differential/histdelta_KaKa_os_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
                               std::cos((trk1.phi() - trk2.phi())));
-                if(cfgkOpenSsOsCrossCheck){
-                  if(trk1.sign() > 0 && trk2.sign() < 0){
+                if (cfgkOpenSsOsCrossCheck) {
+                  if (trk1.sign() > 0 && trk2.sign() < 0) {
                     histosQA.fill(HIST("PIDCME/histgamama_KaKa_PN"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_KaKa_PN"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
-                  }
-                  else {
+                  } else {
                     histosQA.fill(HIST("PIDCME/histgamama_KaKa_NP"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_KaKa_NP"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
                   }
@@ -984,12 +980,11 @@ struct pidcme { // o2-linter: disable=name/struct
                               std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/Differential/histdelta_PrPr_ss_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
                               std::cos((trk1.phi() - trk2.phi())));
-                if(cfgkOpenSsOsCrossCheck){
-                  if(trk1.sign() > 0 && trk2.sign() > 0){
+                if (cfgkOpenSsOsCrossCheck) {
+                  if (trk1.sign() > 0 && trk2.sign() > 0) {
                     histosQA.fill(HIST("PIDCME/histgamama_PrPr_PP"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_PrPr_PP"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
-                  }
-                  else {
+                  } else {
                     histosQA.fill(HIST("PIDCME/histgamama_PrPr_NN"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_PrPr_NN"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
                   }
@@ -1001,12 +996,11 @@ struct pidcme { // o2-linter: disable=name/struct
                               std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/Differential/histdelta_PrPr_os_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
                               std::cos((trk1.phi() - trk2.phi())));
-                if(cfgkOpenSsOsCrossCheck){
-                  if(trk1.sign() > 0 && trk2.sign() < 0){
+                if (cfgkOpenSsOsCrossCheck) {
+                  if (trk1.sign() > 0 && trk2.sign() < 0) {
                     histosQA.fill(HIST("PIDCME/histgamama_PrPr_PN"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_PrPr_PN"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
-                  }
-                  else {
+                  } else {
                     histosQA.fill(HIST("PIDCME/histgamama_PrPr_NP"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_PrPr_NP"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
                   }
@@ -1029,12 +1023,11 @@ struct pidcme { // o2-linter: disable=name/struct
                               std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/Differential/histdelta_PiKa_ss_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
                               std::cos((trk1.phi() - trk2.phi())));
-                if(cfgkOpenSsOsCrossCheck){
-                  if(trk1.sign() > 0 && trk2.sign() > 0){
+                if (cfgkOpenSsOsCrossCheck) {
+                  if (trk1.sign() > 0 && trk2.sign() > 0) {
                     histosQA.fill(HIST("PIDCME/histgamama_PiKa_PP"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_PiKa_PP"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
-                  }
-                  else {
+                  } else {
                     histosQA.fill(HIST("PIDCME/histgamama_PiKa_NN"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_PiKa_NN"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
                   }
@@ -1046,12 +1039,11 @@ struct pidcme { // o2-linter: disable=name/struct
                               std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/Differential/histdelta_PiKa_os_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
                               std::cos((trk1.phi() - trk2.phi())));
-                if(cfgkOpenSsOsCrossCheck){
-                  if(trk1.sign() > 0 && trk2.sign() < 0){
+                if (cfgkOpenSsOsCrossCheck) {
+                  if (trk1.sign() > 0 && trk2.sign() < 0) {
                     histosQA.fill(HIST("PIDCME/histgamama_PiKa_PN"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_PiKa_PN"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
-                  }
-                  else {
+                  } else {
                     histosQA.fill(HIST("PIDCME/histgamama_PiKa_NP"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_PiKa_NP"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
                   }
@@ -1074,12 +1066,11 @@ struct pidcme { // o2-linter: disable=name/struct
                               std::cos((trk1.phi() + trk3.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/Differential/histdelta_PiPr_ss_Dif"), collision.centFT0C(), trk1.pt() + trk3.pt(), std::abs(trk1.eta() - trk3.eta()),
                               std::cos((trk1.phi() - trk3.phi())));
-                if(cfgkOpenSsOsCrossCheck){
-                  if(trk1.sign() > 0 && trk3.sign() > 0){
+                if (cfgkOpenSsOsCrossCheck) {
+                  if (trk1.sign() > 0 && trk3.sign() > 0) {
                     histosQA.fill(HIST("PIDCME/histgamama_PiPr_PP"), collision.centFT0C(), std::cos((trk1.phi() + trk3.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_PiPr_PP"), collision.centFT0C(), std::cos((trk1.phi() - trk3.phi())));
-                  }
-                  else {
+                  } else {
                     histosQA.fill(HIST("PIDCME/histgamama_PiPr_NN"), collision.centFT0C(), std::cos((trk1.phi() + trk3.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_PiPr_NN"), collision.centFT0C(), std::cos((trk1.phi() - trk3.phi())));
                   }
@@ -1091,12 +1082,11 @@ struct pidcme { // o2-linter: disable=name/struct
                               std::cos((trk1.phi() + trk3.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/Differential/histdelta_PiPr_os_Dif"), collision.centFT0C(), trk1.pt() + trk3.pt(), std::abs(trk1.eta() - trk3.eta()),
                               std::cos((trk1.phi() - trk3.phi())));
-                if(cfgkOpenSsOsCrossCheck){
-                  if(trk1.sign() > 0 && trk3.sign() < 0){
+                if (cfgkOpenSsOsCrossCheck) {
+                  if (trk1.sign() > 0 && trk3.sign() < 0) {
                     histosQA.fill(HIST("PIDCME/histgamama_PiPr_PN"), collision.centFT0C(), std::cos((trk1.phi() + trk3.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_PiPr_PN"), collision.centFT0C(), std::cos((trk1.phi() - trk3.phi())));
-                  }
-                  else {
+                  } else {
                     histosQA.fill(HIST("PIDCME/histgamama_PiPr_NP"), collision.centFT0C(), std::cos((trk1.phi() + trk3.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_PiPr_NP"), collision.centFT0C(), std::cos((trk1.phi() - trk3.phi())));
                   }
@@ -1119,12 +1109,11 @@ struct pidcme { // o2-linter: disable=name/struct
                               std::cos((trk2.phi() + trk3.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/Differential/histdelta_KaPr_ss_Dif"), collision.centFT0C(), trk2.pt() + trk3.pt(), std::abs(trk2.eta() - trk3.eta()),
                               std::cos((trk2.phi() - trk3.phi())));
-                if(cfgkOpenSsOsCrossCheck){
-                  if(trk2.sign() > 0 && trk3.sign() > 0){
+                if (cfgkOpenSsOsCrossCheck) {
+                  if (trk2.sign() > 0 && trk3.sign() > 0) {
                     histosQA.fill(HIST("PIDCME/histgamama_KaPr_PP"), collision.centFT0C(), std::cos((trk2.phi() + trk3.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_KaPr_PP"), collision.centFT0C(), std::cos((trk2.phi() - trk3.phi())));
-                  }
-                  else {
+                  } else {
                     histosQA.fill(HIST("PIDCME/histgamama_KaPr_NN"), collision.centFT0C(), std::cos((trk2.phi() + trk3.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_KaPr_NN"), collision.centFT0C(), std::cos((trk2.phi() - trk3.phi())));
                   }
@@ -1136,12 +1125,11 @@ struct pidcme { // o2-linter: disable=name/struct
                               std::cos((trk2.phi() + trk3.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/Differential/histdelta_KaPr_os_Dif"), collision.centFT0C(), trk2.pt() + trk3.pt(), std::abs(trk2.eta() - trk3.eta()),
                               std::cos((trk2.phi() - trk3.phi())));
-                if(cfgkOpenSsOsCrossCheck){
-                  if(trk2.sign() > 0 && trk3.sign() < 0){
+                if (cfgkOpenSsOsCrossCheck) {
+                  if (trk2.sign() > 0 && trk3.sign() < 0) {
                     histosQA.fill(HIST("PIDCME/histgamama_KaPr_PN"), collision.centFT0C(), std::cos((trk2.phi() + trk3.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_KaPr_PN"), collision.centFT0C(), std::cos((trk2.phi() - trk3.phi())));
-                  }
-                  else {
+                  } else {
                     histosQA.fill(HIST("PIDCME/histgamama_KaPr_NP"), collision.centFT0C(), std::cos((trk2.phi() + trk3.phi() - static_cast<float>(nmode) * psiN)));
                     histosQA.fill(HIST("PIDCME/histdelta_KaPr_NP"), collision.centFT0C(), std::cos((trk2.phi() - trk3.phi())));
                   }
@@ -1194,12 +1182,11 @@ struct pidcme { // o2-linter: disable=name/struct
                             std::cos((trk1.phi() + trk2.phi() - static_cast<float>(cfgnMods->at(i)) * psiNGlobal)));
               histosQA.fill(HIST("PIDCME/Differential/histdelta_HaHa_ss_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
                             std::cos((trk1.phi() - trk2.phi())));
-              if(cfgkOpenSsOsCrossCheck){
-                if(trk1.sign() > 0 && trk2.sign() > 0){
+              if (cfgkOpenSsOsCrossCheck) {
+                if (trk1.sign() > 0 && trk2.sign() > 0) {
                   histosQA.fill(HIST("PIDCME/histgamama_HaHa_PP"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(cfgnMods->at(i)) * psiNGlobal)));
                   histosQA.fill(HIST("PIDCME/histdelta_HaHa_PP"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
-                }
-                else {
+                } else {
                   histosQA.fill(HIST("PIDCME/histgamama_HaHa_NN"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(cfgnMods->at(i)) * psiNGlobal)));
                   histosQA.fill(HIST("PIDCME/histdelta_HaHa_NN"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
                 }
@@ -1211,12 +1198,11 @@ struct pidcme { // o2-linter: disable=name/struct
                             std::cos((trk1.phi() + trk2.phi() - static_cast<float>(cfgnMods->at(i)) * psiNGlobal)));
               histosQA.fill(HIST("PIDCME/Differential/histdelta_HaHa_os_Dif"), collision.centFT0C(), trk1.pt() + trk2.pt(), std::abs(trk1.eta() - trk2.eta()),
                             std::cos((trk1.phi() - trk2.phi())));
-              if(cfgkOpenSsOsCrossCheck){
-                if(trk1.sign() > 0 && trk2.sign() < 0){
+              if (cfgkOpenSsOsCrossCheck) {
+                if (trk1.sign() > 0 && trk2.sign() < 0) {
                   histosQA.fill(HIST("PIDCME/histgamama_HaHa_PN"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(cfgnMods->at(i)) * psiNGlobal)));
                   histosQA.fill(HIST("PIDCME/histdelta_HaHa_PN"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
-                }
-                else {
+                } else {
                   histosQA.fill(HIST("PIDCME/histgamama_HaHa_NP"), collision.centFT0C(), std::cos((trk1.phi() + trk2.phi() - static_cast<float>(cfgnMods->at(i)) * psiNGlobal)));
                   histosQA.fill(HIST("PIDCME/histdelta_HaHa_NP"), collision.centFT0C(), std::cos((trk1.phi() - trk2.phi())));
                 }
