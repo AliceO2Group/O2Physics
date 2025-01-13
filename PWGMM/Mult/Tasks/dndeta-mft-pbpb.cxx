@@ -1337,8 +1337,7 @@ struct PseudorapidityDensityMFT {
   /// on BestCollisionsFwd in FT0C bins
   template <typename C, typename MC>
   void processTrkEffBest(
-    typename 
-      soa::Join<C, aod::McCollisionLabels>::iterator const& collision,
+    typename soa::Join<C, aod::McCollisionLabels>::iterator const& collision,
     MC const& /*mccollisions*/, filtParticles const& particles,
     filtMcMftTracks const& /*tracks*/,
     soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
