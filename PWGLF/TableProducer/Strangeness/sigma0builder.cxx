@@ -55,7 +55,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-//using V0DerivedMCDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCDatas>;
+// using V0DerivedMCDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCDatas>;
 using V0DerivedMCDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0CoreMCLabels, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0GammaMLScores>;
 using V0StandardDerivedDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0GammaMLScores>;
 
@@ -423,7 +423,7 @@ struct sigma0builder {
 
     // Check if MC data and populate fIsMC, fIsPi0
     if constexpr (requires { gamma1.motherMCPartId(); gamma2.motherMCPartId(); }) {
-      if (gamma1.has_v0MCCore() && gamma2.has_v0MCCore()){
+      if (gamma1.has_v0MCCore() && gamma2.has_v0MCCore()) {
         fIsMC = true;
         auto gamma1MC = gamma1.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
         auto gamma2MC = gamma2.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
@@ -784,7 +784,7 @@ struct sigma0builder {
 
           if (GammaY < 0.5) {                                                                                                                // rapidity selection
             histos.fill(HIST("MC/h2dPtVsCentrality_GammaBeforeSel"), centrality, gamma.pt());                                                // isgamma
-            histos.fill(HIST("MC/h2dGammaPtResolution"), gamma.pt(), gamma.pt() - RecoDecay::pt(array{gammaMC.pxMC(), gammaMC.pyMC()}));         // pT resolution
+            histos.fill(HIST("MC/h2dGammaPtResolution"), gamma.pt(), gamma.pt() - RecoDecay::pt(array{gammaMC.pxMC(), gammaMC.pyMC()}));     // pT resolution
 
             if (gammaMC.pdgCodeMother() == 3212) {
               histos.fill(HIST("MC/h2dPtVsCentrality_GammaSigma0"), centrality, gamma.pt()); // isgamma from sigma
