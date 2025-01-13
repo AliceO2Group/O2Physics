@@ -396,7 +396,7 @@ struct sigmaanalysis {
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 10.);
       if ((cand.photonRadius() < PhotonMinRadius) || (cand.photonRadius() > PhotonMaxRadius))
         return false;
-      float photonRZLineCut = TMath::Abs(cand.photonZconv())*TMath::Tan(2 * TMath::ATan(TMath::Exp(-PhotonMaxDauEta))) - PhotonLineCutZ0;
+      float photonRZLineCut = TMath::Abs(cand.photonZconv()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-PhotonMaxDauEta))) - PhotonLineCutZ0;
       histos.fill(HIST("GeneralQA/hPhotonZ"), cand.photonZconv());
       histos.fill(HIST("GeneralQA/h2dRZCut"), cand.photonRadius(), photonRZLineCut);
       histos.fill(HIST("GeneralQA/h2dRZPlane"), cand.photonRadius(), cand.photonZconv());
@@ -548,11 +548,11 @@ struct sigmaanalysis {
       histos.fill(HIST("MC/hPtGammaCand_AfterSel"), sigma.photonPt());
       histos.fill(HIST("MC/hPtSigmaCand_AfterSel"), sigma.sigmapT());
 
-      if (sigma.photonCandPDGCode() == 22){
+      if (sigma.photonCandPDGCode() == 22) {
         histos.fill(HIST("MC/hPtTrueGamma_AfterSel"), sigma.photonPt());
-        histos.fill(HIST("MC/h3dGammaPtResolution"), sigma.photonPt(), TMath::Abs((sigma.photonMCPt()-sigma.photonPt())/sigma.photonMCPt()), sigma.photonMass()); // pT resolution
+        histos.fill(HIST("MC/h3dGammaPtResolution"), sigma.photonPt(), TMath::Abs((sigma.photonMCPt() - sigma.photonPt()) / sigma.photonMCPt()), sigma.photonMass()); // pT resolution
       }
-        
+
       // For Lambda PID Studies
       if (fLambdaTPCTOFQA && (sigma.lambdaAlpha() > 0)) {
         histos.fill(HIST("MC/hPtLambdaCand_AfterSel"), sigma.lambdaPt());
@@ -561,7 +561,7 @@ struct sigmaanalysis {
 
         if (sigma.lambdaCandPDGCode() == 3122) {
           histos.fill(HIST("MC/hPtTrueLambda_AfterSel"), sigma.lambdaPt());
-          histos.fill(HIST("MC/h3dLambdaPtResolution"), sigma.lambdaPt(), TMath::Abs((sigma.lambdaMCPt() - sigma.lambdaPt())/sigma.lambdaMCPt()), sigma.lambdaMass()); // pT resolution
+          histos.fill(HIST("MC/h3dLambdaPtResolution"), sigma.lambdaPt(), TMath::Abs((sigma.lambdaMCPt() - sigma.lambdaPt()) / sigma.lambdaMCPt()), sigma.lambdaMass()); // pT resolution
           histos.fill(HIST("MC/h3dTPCvsTOFNSigma_TrueLambdaPr"), sigma.lambdaPosPrTPCNSigma(), sigma.lambdaPrTOFNSigma(), sigma.lambdaPt());
           histos.fill(HIST("MC/h3dTPCvsTOFNSigma_TrueLambdaPi"), sigma.lambdaNegPiTPCNSigma(), sigma.lambdaPiTOFNSigma(), sigma.lambdaPt());
         }
@@ -604,7 +604,7 @@ struct sigmaanalysis {
           histos.fill(HIST("MC/hMassSigma0"), sigma.sigmaMass());
           histos.fill(HIST("MC/hPtSigma0"), sigma.sigmapT());
           histos.fill(HIST("MC/h3dMassSigma0"), sigma.sigmaCentrality(), sigma.sigmapT(), sigma.sigmaMass());
-          histos.fill(HIST("MC/h3dSigma0PtResolution"), sigma.sigmapT(), TMath::Abs((sigma.sigmaMCPt()-sigma.sigmapT())/sigma.sigmaMCPt()), sigma.sigmaMass()); // pT resolution
+          histos.fill(HIST("MC/h3dSigma0PtResolution"), sigma.sigmapT(), TMath::Abs((sigma.sigmaMCPt() - sigma.sigmapT()) / sigma.sigmaMCPt()), sigma.sigmaMass()); // pT resolution
 
         } else {
           // TPC + TOF PID Selections
