@@ -86,9 +86,9 @@ struct femtoDreamDebugCascade {
   void init(InitContext&)
   {
     eventHisto.init(&EventRegistry, false);
-    posChildHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeChildTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, false, ConfCascade_ChildPos_PDGCode.value, true);
-    negChildHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeChildTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, false, ConfCascade_ChildNeg_PDGCode.value, true);
-    bachelorHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeChildTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, false, ConfCascade_Bach_PDGCode.value, true);
+    //posChildHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeChildTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, false, ConfCascade_ChildPos_PDGCode.value, true);
+    //negChildHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeChildTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, false, ConfCascade_ChildNeg_PDGCode.value, true);
+    //bachelorHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeChildTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, false, ConfCascade_Bach_PDGCode.value, true);
     CascadeHistos.init(&CascadeRegistry, ConfBinmult, ConfDummy, ConfCascadeTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfCascadeTempFitVarBins, ConfCascadeChildNsigmaTPCBins, ConfCascadeChildNsigmaTOFBins, ConfCascadeChildNsigmaTPCTOFBins, ConfDummy, ConfCascadeInvMassBins, false, ConfCascade_PDGCode.value, true);
   }
 
@@ -124,9 +124,9 @@ struct femtoDreamDebugCascade {
           (bachChild.pidcut() & ConfCascade_ChildBach_TPCBit) == ConfCascade_ChildBach_TPCBit) {
         
         CascadeHistos.fillQA<false, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M());
-        posChildHistos.fillQA<false, true>(posChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M());
-        negChildHistos.fillQA<false, true>(negChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M());
-        bachelorHistos.fillQA<false, true>(bachChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M());
+        //posChildHistos.fillQA<false, true>(posChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M());
+        //negChildHistos.fillQA<false, true>(negChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M());
+        //bachelorHistos.fillQA<false, true>(bachChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M());
       }
     }
   }

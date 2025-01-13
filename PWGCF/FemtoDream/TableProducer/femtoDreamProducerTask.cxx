@@ -300,6 +300,7 @@ struct femtoDreamProducerTask {
     TrackRegistry.add("AnalysisQA/Mother", "; Bit; Entries", kTH1F, {{4000, -4000, 4000}});
     TrackRegistry.add("AnalysisQA/Particle", "; Bit; Entries", kTH1F, {{4000, -4000, 4000}});
     V0Registry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
+    CascadeRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
     ResoRegistry.add("AnalysisQA/Reso/InvMass", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.8, 1.5}});
     ResoRegistry.add("AnalysisQA/Reso/InvMass_selected", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.8, 1.5}});
     ResoRegistry.add("AnalysisQA/Reso/Daughter1/Pt", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
@@ -403,20 +404,23 @@ struct femtoDreamProducerTask {
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, ConfCascSel.ConfCascV0ChildCharge, femtoDreamTrackSelection::kSign, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kSign)); 
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, ConfCascSel.ConfCascV0ChildEtaMax, femtoDreamTrackSelection::kEtaMax, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kEtaMax)); 
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, ConfCascSel.ConfCascV0ChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kTPCnClsMin)); 
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, ConfCascSel.ConfCascV0ChildDCAMin, femtoDreamTrackSelection::kDCAMin, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kDCAMin)); 
+      //cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, ConfCascSel.ConfCascV0ChildDCAMin, femtoDreamTrackSelection::kDCAMin, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kDCAMin)); 
+      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, ConfCascSel.ConfCascV0ChildDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kLowerLimit); 
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kPosTrack, ConfCascSel.ConfCascV0ChildPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kPIDnSigmaMax)); 
       cascadeCuts.setChildPIDSpecies(femtoDreamCascadeSelection::kPosTrack, ConfCascSel.ConfCascV0ChildPIDspecies);
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, ConfCascSel.ConfCascV0ChildCharge, femtoDreamTrackSelection::kSign, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kSign)); 
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, ConfCascSel.ConfCascV0ChildEtaMax, femtoDreamTrackSelection::kEtaMax, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kEtaMax)); 
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, ConfCascSel.ConfCascV0ChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kTPCnClsMin)); 
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, ConfCascSel.ConfCascV0ChildDCAMin, femtoDreamTrackSelection::kDCAMin, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kDCAMin)); 
+      //cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, ConfCascSel.ConfCascV0ChildDCAMin, femtoDreamTrackSelection::kDCAMin, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kDCAMin)); 
+      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, ConfCascSel.ConfCascV0ChildDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kLowerLimit); 
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kNegTrack, ConfCascSel.ConfCascV0ChildPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kPIDnSigmaMax)); 
       cascadeCuts.setChildPIDSpecies(femtoDreamCascadeSelection::kNegTrack, ConfCascSel.ConfCascV0ChildPIDspecies);
       //Cascade Bachelor Track
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, ConfCascSel.ConfCascBachelorCharge, femtoDreamTrackSelection::kSign, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kSign)); 
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, ConfCascSel.ConfCascBachelorEtaMax, femtoDreamTrackSelection::kEtaMax, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kEtaMax)); 
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, ConfCascSel.ConfCascBachelorTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kTPCnClsMin)); 
-      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, ConfCascSel.ConfCascBachelorDCAMin, femtoDreamTrackSelection::kDCAMin, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kDCAMin)); 
+      //cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, ConfCascSel.ConfCascBachelorDCAMin, femtoDreamTrackSelection::kDCAMin, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kDCAMin)); 
+      cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, ConfCascSel.ConfCascBachelorDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kLowerLimit); 
       cascadeCuts.setChildCuts(femtoDreamCascadeSelection::kBachTrack, ConfCascSel.ConfCascBachelorPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, FemtoDreamTrackSelection::getSelectionType(femtoDreamTrackSelection::kPIDnSigmaMax)); 
       cascadeCuts.setChildPIDSpecies(femtoDreamCascadeSelection::kBachTrack, ConfCascSel.ConfCascBachelorPIDspecies);
 
@@ -567,6 +571,22 @@ struct femtoDreamProducerTask {
                        particle.z(),
                        particle.mK0Short());
     }
+  }
+
+  template <typename ParticleType>
+  void fillDebugCascade(ParticleType)
+  {
+      outputDebugParts(-999., -999., -999., -999., -999., -999., -999.,
+                       -999., -999., -999., -999., -999., -999., -999.,
+                       -999., -999., -999., -999., -999., -999., -999.,
+                       -999., -999., -999., -999.,
+                       -999., //particle.dcaV0daughters(),
+                       -999., //particle.v0radius(),
+                       -999., //particle.x(),
+                       -999., //particle.y(),
+                       -999., //particle.z(),
+                       -999. //particle.mK0Short());
+      );
   }
 
   template <typename CollisionType, typename ParticleType>
@@ -862,13 +882,14 @@ struct femtoDreamProducerTask {
       //get the daughter v0
 
       //QA before the cuts
-      cascadeCuts.fillCascadeQA(col, casc, posTrackCasc, negTrackCasc); //TODO include the bachelor
+      //cascadeCuts.fillCascadeQA(col, casc, posTrackCasc, negTrackCasc); //TODO include the bachelor
+      
       if (!cascadeCuts.isSelectedMinimal(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc)) {
         continue;
       }
       //LOGF(info, "GG Producer: A Xi is selected"); //REMOVE COMMENT
-
       cascadeCuts.fillQA<aod::femtodreamparticle::ParticleType::kCascade>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
+
       //auto cutContainerCasc = cascadeCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, casc, v0daugh, posTrackCasc, negTrackCasc, bachTrackCasc);
       auto cutContainerCasc = cascadeCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
 
@@ -967,6 +988,12 @@ struct femtoDreamProducerTask {
                   9999.,  //mLambda
                   9999.); //mAntiLambda
         */
+       if(ConfIsDebug.value) {
+         fillDebugParticle<true>(posTrackCasc);  // QA for positive daughter
+         fillDebugParticle<true>(negTrackCasc);  // QA for negative daughter
+         fillDebugParticle<true>(bachTrackCasc); // QA for negative daughter
+         fillDebugCascade(casc);                 // QA for Cascade 
+       }
     }
    }
 
