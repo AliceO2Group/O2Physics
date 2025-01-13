@@ -14,6 +14,8 @@
 /// \author Grazia Luparello <grazia.luparello@cern.ch>
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 
+#include <memory>
+#include <string>
 #include <vector>
 
 #include "CCDB/BasicCCDBManager.h"
