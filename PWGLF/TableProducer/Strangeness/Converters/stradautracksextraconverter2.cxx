@@ -24,9 +24,9 @@ struct stradautracksextraconverter2 {
   void process(aod::DauTrackExtras_001 const& dauTrackExtras_001)
   {
     for (auto& values : dauTrackExtras_001) {
-      const int maxFindable = 130; //synthetic findable to ensure range is ok
-      int findableMinusFound = maxFindable-values.tpcClusters();
-      int findableMinusCrossedRows = maxFindable-values.tpcCrossedRows();
+      const int maxFindable = 130; // synthetic findable to ensure range is ok
+      int findableMinusFound = maxFindable - values.tpcClusters();
+      int findableMinusCrossedRows = maxFindable - values.tpcCrossedRows();
       dauTrackExtras_002(values.itsChi2PerNcl(),
                          values.detectorMap(),
                          values.itsClusterSizes(),
