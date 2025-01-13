@@ -22,6 +22,8 @@
 #include <iostream>
 #include <vector>
 #include <TRandom3.h>
+#include <memory>
+#include <string>
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
