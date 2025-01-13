@@ -88,6 +88,7 @@ struct sigmaanalysis {
   Configurable<float> LambdaMaxRap{"LambdaMaxRap", 0.8, "Max lambda rapidity"};
   Configurable<float> LambdaMaxTPCNSigmas{"LambdaMaxTPCNSigmas", 1e+9, "Max TPC NSigmas for daughters"};
   Configurable<float> LambdaMaxTOFNSigmas{"LambdaMaxTOFNSigmas", 1e+9, "Max TOF NSigmas for daughters"};
+  Configurable<float> LambdaMinTPCCrossedRows{"LambdaMinTPCCrossedRows", 50, "Min daughter TPC Crossed Rows"};
 
   //// Photon standard criteria:
   // Configurable<float> PhotonMaxDauPseudoRap{"PhotonMaxDauPseudoRap", 0.9, "Max pseudorapidity of daughter tracks"};
@@ -134,7 +135,7 @@ struct sigmaanalysis {
   ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {500, 0.0f, 50.0f}, "DCA (cm)"};
   ConfigurableAxis axisDCAdau{"axisDCAdau", {50, 0.0f, 5.0f}, "DCA (cm)"};
   ConfigurableAxis axisCosPA{"axisCosPA", {200, 0.5f, 1.0f}, "Cosine of pointing angle"};
-  ConfigurableAxis axisCandSel{"axisCandSel", {26, 0.5f, +26.5f}, "Candidate Selection"};
+  ConfigurableAxis axisCandSel{"axisCandSel", {27, -0.5f, +26.5f}, "Candidate Selection"};
 
   // ML
   ConfigurableAxis MLProb{"MLOutput", {100, 0.0f, 1.0f}, ""};
@@ -171,8 +172,9 @@ struct sigmaanalysis {
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(21, "Lambda Alpha Cut");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(22, "Lambda CosPA Cut");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(23, "Lambda Y Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(24, "Sigma Y Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(25, "Lambda/ALambda PID Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(24, "Lambda TPCCrossedRows Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(25, "Sigma Y Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(26, "Lambda/ALambda PID Cut");
 
     // Photon Selection QA histos
     histos.add("GeneralQA/hPhotonMass", "hPhotonMass", kTH1F, {axisPhotonMass});
@@ -202,6 +204,8 @@ struct sigmaanalysis {
     histos.add("GeneralQA/h2dLambdaArmenteros", "h2dLambdaArmenteros", {HistType::kTH2F, {axisAPAlpha, axisAPQt}});
     histos.add("GeneralQA/hLambdaCosPA", "hLambdaCosPA", kTH1F, {axisCosPA});
     histos.add("GeneralQA/hLambdaY", "hLambdaY", kTH1F, {axisRapidity});
+    histos.add("GeneralQA/hLambdaPosTPCCR", "hLambdaPosTPCCR", kTH1F, {axisTPCrows});
+    histos.add("GeneralQA/hLambdaNegTPCCR", "hLambdaNegTPCCR", kTH1F, {axisTPCrows});
     histos.add("GeneralQA/hSigmaY", "hSigmaY", kTH1F, {axisRapidity});
     histos.add("GeneralQA/hSigmaOPAngle", "hSigmaOPAngle", kTH1F, {{140, 0.0f, +7.0f}});
     histos.add("GeneralQA/h2dTPCvsTOFNSigma_LambdaPr", "h2dTPCvsTOFNSigma_LambdaPr", kTH2F, {{120, -30, 30}, {120, -30, 30}});
@@ -412,12 +416,17 @@ struct sigmaanalysis {
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 22.);
       if (TMath::Abs(cand.lambdaY()) > LambdaMaxRap)
         return false;
-      histos.fill(HIST("GeneralQA/hSigmaY"), cand.sigmaRapidity());
+      histos.fill(HIST("GeneralQA/hLambdaPosTPCCR"), cand.lambdaPosTPCCrossedRows());
+      histos.fill(HIST("GeneralQA/hLambdaNegTPCCR"), cand.lambdaNegTPCCrossedRows());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 23.);
+      if ((cand.lambdaPosTPCCrossedRows() < LambdaMinTPCCrossedRows) || (cand.lambdaNegTPCCrossedRows() < LambdaMinTPCCrossedRows))
+        return false;
+      histos.fill(HIST("GeneralQA/hSigmaY"), cand.sigmaRapidity());
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 24.);
       if (TMath::Abs(cand.sigmaRapidity()) > SigmaMaxRap)
         return false;
       histos.fill(HIST("GeneralQA/hSigmaOPAngle"), cand.sigmaOPAngle());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 24.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 25.);
     }
     return true;
   }
