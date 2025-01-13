@@ -98,7 +98,6 @@ struct HfTaskD0 {
   using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
   using CollisionsWithMcLabelsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
   PresliceUnsorted<CollisionsWithMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
-  PresliceUnsorted<CollisionsWithMcLabelsCent> colPerMcCollisionCent = aod::mccollisionlabel::mcCollisionId;
   SliceCache cache;
 
   Partition<D0Candidates> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
@@ -800,14 +799,11 @@ struct HfTaskD0 {
 
         float cent{-1.f};
         float occ{-1.f};
-        if (storeCentrality || storeOccupancy){
-          const auto& recoCollsPerMcCollCent = collisions.sliceBy(colPerMcCollisionCent, particle.mcCollision().globalIndex());
-          if (storeCentrality && centEstimator != CentralityEstimator::None) {
-            cent = getCentralityGenColl(recoCollsPerMcCollCent, centEstimator);
-          }
-          if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-            occ = getOccupancyGenColl(recoCollsPerMcCollCent, occEstimator);
-          }
+        if (storeCentrality && centEstimator != CentralityEstimator::None) {
+          cent = getCentralityGenColl(recoCollsPerMcColl, centEstimator);
+        }
+        if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
+          occ = getOccupancyGenColl(recoCollsPerMcColl, occEstimator);
         }
 
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
