@@ -163,14 +163,15 @@ struct EmcalCorrectionTask {
     mClusterFactories.setExoticCellInCrossMinAmplitude(exoticCellInCrossMinAmplitude);
     mClusterFactories.setUseWeightExotic(useWeightExotic);
     for (const auto& clusterDefinition : mClusterDefinitions) {
-      mClusterizers.emplace_back(std::make_unique<o2::emcal::Clusterizer<o2::emcal::Cell>>(1E9, clusterDefinition.timeMin, clusterDefinition.timeMax, clusterDefinition.gradientCut, clusterDefinition.doGradientCut, clusterDefinition.seedEnergy, clusterDefinition.minCellEnergy));
+      mClusterizers.emplace_back(std::make_unique<o2::emcal::Clusterizer<o2::emcal::Cell>>(clusterDefinition.timeDiff, clusterDefinition.timeMin, clusterDefinition.timeMax, clusterDefinition.gradientCut, clusterDefinition.doGradientCut, clusterDefinition.seedEnergy, clusterDefinition.minCellEnergy));
       LOG(info) << "Cluster definition initialized: " << clusterDefinition.toString();
       LOG(info) << "timeMin: " << clusterDefinition.timeMin;
       LOG(info) << "timeMax: " << clusterDefinition.timeMax;
+      LOG(info) << "timeDiff: " << clusterDefinition.timeDiff;
       LOG(info) << "gradientCut: " << clusterDefinition.gradientCut;
       LOG(info) << "seedEnergy: " << clusterDefinition.seedEnergy;
       LOG(info) << "minCellEnergy: " << clusterDefinition.minCellEnergy;
-      LOG(info) << "storageID" << clusterDefinition.storageID;
+      LOG(info) << "storageID: " << clusterDefinition.storageID;
     }
     for (const auto& clusterizer : mClusterizers) {
       clusterizer->setGeometry(geometry);

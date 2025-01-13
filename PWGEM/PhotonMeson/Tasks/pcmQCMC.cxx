@@ -70,9 +70,15 @@ struct PCMQCMC {
     Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
     Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"}; // ITS-TPC matched track contributes PV.
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
-    Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1, "min. occupancy"};
-    Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<int> cfgTrackOccupancyMin{"cfgTrackOccupancyMin", -2, "min. occupancy"};
+    Configurable<int> cfgTrackOccupancyMax{"cfgTrackOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<float> cfgFT0COccupancyMin{"cfgFT0COccupancyMin", -2, "min. FT0C occupancy"};
+    Configurable<float> cfgFT0COccupancyMax{"cfgFT0COccupancyMax", 1000000000, "max. FT0C occupancy"};
     Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
+    Configurable<bool> cfgRequireNoCollInTimeRangeStrict{"cfgRequireNoCollInTimeRangeStrict", false, "require no collision in time range strict"};
+    Configurable<bool> cfgRequireNoCollInITSROFStandard{"cfgRequireNoCollInITSROFStandard", false, "require no collision in time range standard"};
+    Configurable<bool> cfgRequireNoCollInITSROFStrict{"cfgRequireNoCollInITSROFStrict", false, "require no collision in time range strict"};
+    Configurable<bool> cfgRequireNoHighMultCollInPrevRof{"cfgRequireNoHighMultCollInPrevRof", false, "require no HM collision in previous ITS ROF"};
   } eventcuts;
 
   V0PhotonCut fV0PhotonCut;
@@ -91,6 +97,7 @@ struct PCMQCMC {
     Configurable<float> cfg_max_qt_ap{"cfg_max_qt_ap", 0.01, "max qT for AP cut"};
     Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.997, "min V0 CosPA"};
     Configurable<float> cfg_max_pca{"cfg_max_pca", 3.0, "max distance btween 2 legs"};
+    Configurable<float> cfg_max_chi2kf{"cfg_max_chi2kf", 1e+10, "max chi2/ndf with KF"};
     Configurable<bool> cfg_require_v0_with_correct_xz{"cfg_require_v0_with_correct_xz", true, "flag to select V0s with correct xz"};
     Configurable<bool> cfg_reject_v0_on_itsib{"cfg_reject_v0_on_itsib", true, "flag to reject V0s on ITSib"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
@@ -171,11 +178,11 @@ struct PCMQCMC {
     fRegistry.add("V0/primary/hPt", "pT;p_{T,#gamma} (GeV/c)", kTH1F, {{2000, 0.0f, 20}}, false);
     fRegistry.add("V0/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {40, -1.0f, 1.0f}}, false);
     fRegistry.add("V0/primary/hRadius", "V0Radius; radius in Z (cm);radius in XY (cm)", kTH2F, {{200, -100, 100}, {200, 0.0f, 100.0f}}, false);
-    fRegistry.add("V0/primary/hCosPA", "V0CosPA;cosine pointing angle", kTH1F, {{100, 0.9f, 1.0f}}, false);
-    fRegistry.add("V0/primary/hCosPA_Rxy", "cos PA vs. R_{xy};R_{xy} (cm);cosine pointing angle", kTH2F, {{200, 0.f, 100.f}, {100, 0.9f, 1.0f}}, false);
+    fRegistry.add("V0/primary/hCosPA", "V0CosPA;cosine pointing angle", kTH1F, {{100, 0.99f, 1.0f}}, false);
+    fRegistry.add("V0/primary/hCosPA_Rxy", "cos PA vs. R_{xy};R_{xy} (cm);cosine pointing angle", kTH2F, {{200, 0.f, 100.f}, {100, 0.99f, 1.0f}}, false);
     fRegistry.add("V0/primary/hPCA", "distance between 2 legs;PCA (cm)", kTH1F, {{500, 0.0f, 5.0f}}, false);
     fRegistry.add("V0/primary/hPCA_Rxy", "distance between 2 legs vs. R_{xy};R_{xy} (cm);PCA (cm)", kTH2F, {{200, 0.f, 100.f}, {500, 0.0f, 5.0f}}, false);
-    fRegistry.add("V0/primary/hPCA_CosPA", "distance between 2 legs vs. cosPA;cosine of pointing angle;PCA (cm)", kTH2F, {{100, 0.9f, 1.f}, {500, 0.0f, 5.0f}}, false);
+    fRegistry.add("V0/primary/hPCA_CosPA", "distance between 2 legs vs. cosPA;cosine of pointing angle;PCA (cm)", kTH2F, {{100, 0.99f, 1.f}, {500, 0.0f, 5.0f}}, false);
     fRegistry.add("V0/primary/hDCAxyz", "DCA to PV;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -5.f, +5.f}, {200, -5.f, +5.f}}, false);
     fRegistry.add("V0/primary/hAPplot", "AP plot;#alpha;q_{T} (GeV/c)", kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}}, false);
     fRegistry.add("V0/primary/hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", kTH2F, {{200, 0.0f, 100.0f}, {100, 0.0f, 0.1f}}, false);
@@ -242,6 +249,10 @@ struct PCMQCMC {
     fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireNoCollInTimeRangeStandard(eventcuts.cfgRequireNoCollInTimeRangeStandard);
+    fEMEventCut.SetRequireNoCollInTimeRangeStrict(eventcuts.cfgRequireNoCollInTimeRangeStrict);
+    fEMEventCut.SetRequireNoCollInITSROFStandard(eventcuts.cfgRequireNoCollInITSROFStandard);
+    fEMEventCut.SetRequireNoCollInITSROFStrict(eventcuts.cfgRequireNoCollInITSROFStrict);
+    fEMEventCut.SetRequireNoHighMultCollInPrevRof(eventcuts.cfgRequireNoHighMultCollInPrevRof);
   }
 
   void DefinePCMCut()
@@ -253,6 +264,7 @@ struct PCMQCMC {
     fV0PhotonCut.SetV0EtaRange(pcmcuts.cfg_min_eta_v0, pcmcuts.cfg_max_eta_v0);
     fV0PhotonCut.SetMinCosPA(pcmcuts.cfg_min_cospa);
     fV0PhotonCut.SetMaxPCA(pcmcuts.cfg_max_pca);
+    fV0PhotonCut.SetMaxChi2KF(pcmcuts.cfg_max_chi2kf);
     fV0PhotonCut.SetRxyRange(pcmcuts.cfg_min_v0radius, pcmcuts.cfg_max_v0radius);
     fV0PhotonCut.SetAPRange(pcmcuts.cfg_max_alpha_ap, pcmcuts.cfg_max_qt_ap);
     fV0PhotonCut.RejectITSib(pcmcuts.cfg_reject_v0_on_itsib);
@@ -279,21 +291,17 @@ struct PCMQCMC {
 
     if (pcmcuts.cfg_require_v0_with_itstpc) {
       fV0PhotonCut.SetRequireITSTPC(true);
-      fV0PhotonCut.SetMaxPCA(1.0);
       fV0PhotonCut.SetRxyRange(4, 40);
     }
     if (pcmcuts.cfg_require_v0_with_itsonly) {
       fV0PhotonCut.SetRequireITSonly(true);
-      fV0PhotonCut.SetMaxPCA(1.0);
       fV0PhotonCut.SetRxyRange(4, 24);
     }
     if (pcmcuts.cfg_require_v0_with_tpconly) {
       fV0PhotonCut.SetRequireTPConly(true);
-      fV0PhotonCut.SetMaxPCA(3.0);
-      fV0PhotonCut.SetRxyRange(36, 90);
+      fV0PhotonCut.SetRxyRange(32, 90);
     }
     if (pcmcuts.cfg_require_v0_on_wwire_ib) {
-      fV0PhotonCut.SetMaxPCA(0.3);
       fV0PhotonCut.SetOnWwireIB(true);
       fV0PhotonCut.SetOnWwireOB(false);
       fV0PhotonCut.SetRxyRange(7, 14);
@@ -407,7 +415,8 @@ struct PCMQCMC {
   }
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  Filter collisionFilter_occupancy = eventcuts.cfgOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgOccupancyMax;
+  Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
+  Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin < o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;

@@ -15,6 +15,8 @@
 /// Inspired by StrangenessTables.h, FemtoDerived.h
 ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
+/// \author Nasir Mehdi Malik <nasir.mehdi.malik@cern.ch>
+///
 
 #ifndef PWGLF_DATAMODEL_LFRESONANCETABLES_H_
 #define PWGLF_DATAMODEL_LFRESONANCETABLES_H_
@@ -112,6 +114,25 @@ DECLARE_SOA_TABLE(ResoEvtPlCollisions, "AOD", "RESOEVTPLCOLL",
                   resocollision::EvtPlResAC,
                   resocollision::EvtPlResBC);
 using ResoEvtPlCollision = ResoEvtPlCollisions::iterator;
+
+// For DF mixing study
+DECLARE_SOA_TABLE(ResoCollisionDFs, "AOD", "RESOCOLLISIONDF",
+                  o2::soa::Index<>,
+                  resocollision::CollisionId,
+                  o2::aod::mult::MultNTracksPV,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
+                  resocollision::Cent,
+                  resocollision::Spherocity,
+                  resocollision::EvtPl,
+                  resocollision::EvtPlResAB,
+                  resocollision::EvtPlResAC,
+                  resocollision::EvtPlResBC,
+                  resocollision::BMagField,
+                  timestamp::Timestamp,
+                  evsel::NumTracksInTimeRange);
+using ResoCollisionDF = ResoCollisionDFs::iterator;
 
 // Resonance Daughters
 // inspired from PWGCF/DataModel/FemtoDerived.h
@@ -230,6 +251,48 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
                   o2::aod::track::TPCChi2NCl);
 using ResoTrack = ResoTracks::iterator;
 
+// For DF mixing study
+DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDFs",
+                  o2::soa::Index<>,
+                  resodaughter::ResoCollisionId,
+                  resodaughter::TrackId,
+                  resodaughter::Pt,
+                  resodaughter::Px,
+                  resodaughter::Py,
+                  resodaughter::Pz,
+                  resodaughter::Eta,
+                  resodaughter::Phi,
+                  resodaughter::Sign,
+                  resodaughter::TPCNClsCrossedRows,
+                  resodaughter::TPCNClsFound,
+                  resodaughter::ITSNCls,
+                  o2::aod::track::DcaXY,
+                  o2::aod::track::DcaZ,
+                  o2::aod::track::X,
+                  o2::aod::track::Alpha,
+                  resodaughter::HasITS,
+                  resodaughter::HasTPC,
+                  resodaughter::HasTOF,
+                  o2::aod::pidtpc::TPCNSigmaPi,
+                  o2::aod::pidtpc::TPCNSigmaKa,
+                  o2::aod::pidtpc::TPCNSigmaPr,
+                  o2::aod::pidtpc::TPCNSigmaEl,
+                  o2::aod::pidtof::TOFNSigmaPi,
+                  o2::aod::pidtof::TOFNSigmaKa,
+                  o2::aod::pidtof::TOFNSigmaPr,
+                  o2::aod::pidtof::TOFNSigmaEl,
+                  o2::aod::track::TPCSignal,
+                  o2::aod::track::PassedITSRefit,
+                  o2::aod::track::PassedTPCRefit,
+                  resodaughter::IsGlobalTrackWoDCA,
+                  resodaughter::IsGlobalTrack,
+                  resodaughter::IsPrimaryTrack,
+                  resodaughter::IsPVContributor,
+                  resodaughter::TPCCrossedRowsOverFindableCls,
+                  o2::aod::track::ITSChi2NCl,
+                  o2::aod::track::TPCChi2NCl);
+using ResoTrackDF = ResoTrackDFs::iterator;
+
 DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0S",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionId,
@@ -307,6 +370,7 @@ DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADES",
                   cascdata::DCAXYCascToPV,
                   cascdata::DCAZCascToPV,
                   cascdata::Sign,
+                  resodaughter::MLambda,
                   resodaughter::MXi,
                   resodaughter::TransRadius,
                   resodaughter::CascTransRadius,

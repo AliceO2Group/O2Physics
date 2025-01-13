@@ -54,12 +54,16 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "Common/DataModel/FT0Corrected.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
+
+using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
 
 struct lambdapolsp {
 
@@ -77,7 +81,7 @@ struct lambdapolsp {
   // Configurable<bool> mycut{"mycut", false, "select tracks based on my cuts"};
   Configurable<bool> tofhit{"tofhit", true, "select tracks based on tof hit"};
   Configurable<bool> globalpt{"globalpt", true, "select tracks based on pt global vs tpc"};
-  Configurable<bool> usefourvectormass{"usefourvectormass", true, "select invariant mass based on four vector"};
+  Configurable<bool> useglobal{"useglobal", true, "flag to use global vs v0 momentum"};
   Configurable<bool> checksign{"checksign", true, "check sign of daughter tracks"};
   Configurable<int> useprofile{"useprofile", 3, "flag to select profile vs Sparse"};
   Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
@@ -100,8 +104,6 @@ struct lambdapolsp {
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> isPVContributor{"isPVContributor", true, "is PV contributor"};
   Configurable<bool> checkwithpub{"checkwithpub", true, "checking results with published"};
-  Configurable<bool> rejectmisident{"rejectmisident", true, "rejecting misidentification"};
-  Configurable<bool> useTPCTOF{"useTPCTOF", true, "flag to use TPC and TOF"};
 
   // Configs for V0
   Configurable<float> ConfV0PtMin{"ConfV0PtMin", 0.f, "Minimum transverse momentum of V0"};
@@ -121,8 +123,6 @@ struct lambdapolsp {
   Configurable<float> ConfDaughTPCnclsMin{"ConfDaughTPCnclsMin", 50.f, "V0 Daugh sel: Min. nCls TPC"};
   Configurable<double> ConfDaughDCAMin{"ConfDaughDCAMin", 0.08f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"};
   Configurable<float> ConfDaughPIDCuts{"ConfDaughPIDCuts", 3, "PID selections for Lambda daughters"};
-  Configurable<float> ConfDaughPIDTPCCuts{"ConfDaughPIDTPCCuts", 3, "PID selections for Lambda daughters in TPC"};
-  Configurable<float> ConfDaughPIDTOFCuts{"ConfDaughPIDTOFCuts", 3, "PID selections for Lambda daughters in TOF"};
 
   Configurable<int> CentNbins{"CentNbins", 16, "Number of bins in cent histograms"};
   Configurable<float> lbinCent{"lbinCent", 0.0, "lower bin value in cent histograms"};
@@ -414,37 +414,11 @@ struct lambdapolsp {
       return false;
       }*/
 
-    if (useTPCTOF) {
-      if (track.pt() < 0.5 && pid == 0 && TMath::Abs(track.tpcNSigmaPr()) > ConfDaughPIDCuts) {
-        return false;
-      }
-      if (track.pt() < 0.5 && pid == 1 && TMath::Abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
-        return false;
-      }
-      if (track.hasTOF()) {
-        if (track.pt() > 0.5 && pid == 0 && TMath::Abs(track.tpcNSigmaPr()) > ConfDaughPIDTPCCuts && TMath::Abs(track.tofNSigmaPr()) > ConfDaughPIDTOFCuts) {
-          return false;
-        }
-        if (track.pt() > 0.5 && pid == 1 && TMath::Abs(track.tpcNSigmaPi()) > ConfDaughPIDTPCCuts && TMath::Abs(track.tofNSigmaPi()) > ConfDaughPIDTOFCuts) {
-          return false;
-        }
-      }
-    } else {
-      if (pid == 0 && TMath::Abs(track.tpcNSigmaPr()) > ConfDaughPIDCuts) {
-        return false;
-      }
-      if (pid == 1 && TMath::Abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
-        return false;
-      }
-      // for misidentification
-      if (rejectmisident) {
-        if (pid == 0 && TMath::Abs(track.tpcNSigmaPi()) < 3.0) {
-          return false;
-        }
-        if (pid == 1 && TMath::Abs(track.tpcNSigmaPr()) < 3.0) {
-          return false;
-        }
-      }
+    if (pid == 0 && TMath::Abs(track.tpcNSigmaPr()) > ConfDaughPIDCuts) {
+      return false;
+    }
+    if (pid == 1 && TMath::Abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
+      return false;
     }
 
     if (pid == 0 && pt < cfgDaughPrPt) {
@@ -454,6 +428,49 @@ struct lambdapolsp {
       return false;
     }
 
+    return true;
+  }
+
+  template <typename TV0>
+  bool isCompatible(TV0 const& v0, int pid /*0: lambda, 1: antilambda*/)
+  {
+    // checks if this V0 is compatible with the requested hypothesis
+
+    // de-ref track extras
+    auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
+    auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
+
+    // check for desired kinematics
+    if (pid == 0 && (v0.positivept() < cfgDaughPrPt || v0.negativept() < cfgDaughPiPt)) {
+      return false; // doesn´t pass lambda pT sels
+    }
+    if (pid == 1 && (v0.positivept() < cfgDaughPiPt || v0.negativept() < cfgDaughPrPt)) {
+      return false; // doesn´t pass antilambda pT sels
+    }
+    if (std::abs(v0.positiveeta()) > ConfDaughEta || std::abs(v0.negativeeta()) > ConfDaughEta) {
+      return false;
+    }
+
+    // check TPC tracking properties
+    if (posTrackExtra.tpcNClsCrossedRows() < 70 || negTrackExtra.tpcNClsCrossedRows() < 70) {
+      return false;
+    }
+    if (posTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin || negTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin) {
+      return false;
+    }
+    if (posTrackExtra.tpcCrossedRowsOverFindableCls() < 0.8 || negTrackExtra.tpcCrossedRowsOverFindableCls() < 0.8) {
+      return false;
+    }
+
+    // check TPC PID
+    if (pid == 0 && ((std::abs(posTrackExtra.tpcNSigmaPr()) > ConfDaughPIDCuts) || (std::abs(negTrackExtra.tpcNSigmaPi()) > ConfDaughPIDCuts))) {
+      return false;
+    }
+    if (pid == 1 && ((std::abs(posTrackExtra.tpcNSigmaPi()) > ConfDaughPIDCuts) || (std::abs(negTrackExtra.tpcNSigmaPr()) > ConfDaughPIDCuts))) {
+      return false;
+    }
+
+    // if we made it this far, it's good
     return true;
   }
 
@@ -469,13 +486,63 @@ struct lambdapolsp {
     return result;
   }
 
-  ROOT::Math::PxPyPzMVector Lambda, Lambdacopy, Proton, Pion, fourVecDauCM;
-  // ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm, beamvector;
+  bool shouldReject(bool LambdaTag, bool aLambdaTag,
+                    const ROOT::Math::PxPyPzMVector& Lambdadummy,
+                    const ROOT::Math::PxPyPzMVector& AntiLambdadummy)
+  {
+    const double minMass = 1.105;
+    const double maxMass = 1.125;
+    return (LambdaTag && aLambdaTag &&
+            (Lambdadummy.M() > minMass && Lambdadummy.M() < maxMass) &&
+            (AntiLambdadummy.M() > minMass && AntiLambdadummy.M() < maxMass));
+  }
+
+  void fillHistograms(bool tag1, bool tag2, const ROOT::Math::PxPyPzMVector& particle,
+                      const ROOT::Math::PxPyPzMVector& daughter,
+                      double psiZDCC, double psiZDCA, double centrality,
+                      double candmass, double candpt, double candeta)
+  {
+
+    ROOT::Math::Boost boost{particle.BoostToCM()};
+    auto fourVecDauCM = boost(daughter);
+    auto phiangle = TMath::ATan2(fourVecDauCM.Py(), fourVecDauCM.Px());
+
+    auto phiminuspsiC = GetPhiInRange(phiangle - psiZDCC);
+    auto phiminuspsiA = GetPhiInRange(phiangle - psiZDCA);
+    auto cosThetaStar = fourVecDauCM.Pz() / fourVecDauCM.P();
+    auto sinThetaStar = TMath::Sqrt(1 - (cosThetaStar * cosThetaStar));
+    auto PolC = TMath::Sin(phiminuspsiC);
+    auto PolA = TMath::Sin(phiminuspsiA);
+
+    auto sinPhiStar = TMath::Sin(GetPhiInRange(phiangle));
+    auto cosPhiStar = TMath::Cos(GetPhiInRange(phiangle));
+    auto sinThetaStarcosphiphiStar = sinThetaStar * TMath::Cos(2 * GetPhiInRange(particle.Phi() - phiangle));
+    auto phiphiStar = GetPhiInRange(particle.Phi() - phiangle);
+
+    // Fill histograms using constructed names
+    if (tag2) {
+      histos.fill(HIST("hSparseAntiLambdaPolA"), candmass, candpt, candeta, PolA, centrality);
+      histos.fill(HIST("hSparseAntiLambdaPolC"), candmass, candpt, candeta, PolC, centrality);
+      histos.fill(HIST("hSparseAntiLambda_corr1a"), candmass, candpt, candeta, sinPhiStar, centrality);
+      histos.fill(HIST("hSparseAntiLambda_corr1b"), candmass, candpt, candeta, cosPhiStar, centrality);
+      histos.fill(HIST("hSparseAntiLambda_corr1c"), candmass, candpt, candeta, phiphiStar, centrality);
+      histos.fill(HIST("hSparseAntiLambda_corr2a"), candmass, candpt, candeta, sinThetaStar, centrality);
+      histos.fill(HIST("hSparseAntiLambda_corr2b"), candmass, candpt, candeta, sinThetaStarcosphiphiStar, centrality);
+    }
+    if (tag1) {
+      histos.fill(HIST("hSparseLambdaPolA"), candmass, candpt, candeta, PolA, centrality);
+      histos.fill(HIST("hSparseLambdaPolC"), candmass, candpt, candeta, PolC, centrality);
+      histos.fill(HIST("hSparseLambda_corr1a"), candmass, candpt, candeta, sinPhiStar, centrality);
+      histos.fill(HIST("hSparseLambda_corr1b"), candmass, candpt, candeta, cosPhiStar, centrality);
+      histos.fill(HIST("hSparseLambda_corr1c"), candmass, candpt, candeta, phiphiStar, centrality);
+      histos.fill(HIST("hSparseLambda_corr2a"), candmass, candpt, candeta, sinThetaStar, centrality);
+      histos.fill(HIST("hSparseLambda_corr2b"), candmass, candpt, candeta, sinThetaStarcosphiphiStar, centrality);
+    }
+  }
+
+  ROOT::Math::PxPyPzMVector Lambda, AntiLambda, Lambdadummy, AntiLambdadummy, Proton, Pion, AntiProton, AntiPion, fourVecDauCM;
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY;
   double phiangle = 0.0;
-  // double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
-  // double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();
-  // double massLambda = TDatabasePDG::Instance()->GetParticle(kLambda0)->Mass();
   double massLambda = o2::constants::physics::MassLambda;
   double massPr = o2::constants::physics::MassProton;
   double massPi = o2::constants::physics::MassPionCharged;
@@ -487,7 +554,8 @@ struct lambdapolsp {
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::SPCalibrationTables, aod::Mults>>;
   // using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
-  using AllTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>>;
+  // using AllTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>>;
+  using AllTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>>;
   using ResoV0s = aod::V0Datas;
 
   // void processData(EventCandidates::iterator const& collision, AllTrackCandidates const&, ResoV0s const& V0s, aod::BCs const&)
@@ -682,7 +750,7 @@ struct lambdapolsp {
           aLambdaTag = 1;
         }
 
-        if (LambdaTag == aLambdaTag)
+        if (!LambdaTag && !aLambdaTag)
           continue;
 
         if (!SelectionV0(collision, v0)) {
@@ -690,91 +758,133 @@ struct lambdapolsp {
         }
 
         if (LambdaTag) {
-          Proton = ROOT::Math::PxPyPzMVector(postrack.px(), postrack.py(), postrack.pz(), massPr);
-          Pion = ROOT::Math::PxPyPzMVector(negtrack.px(), negtrack.py(), negtrack.pz(), massPi);
+          Proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
+          AntiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
+          Lambdadummy = Proton + AntiPion;
         }
         if (aLambdaTag) {
-          Proton = ROOT::Math::PxPyPzMVector(negtrack.px(), negtrack.py(), negtrack.pz(), massPr);
-          Pion = ROOT::Math::PxPyPzMVector(postrack.px(), postrack.py(), postrack.pz(), massPi);
+          AntiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
+          Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
+          AntiLambdadummy = AntiProton + Pion;
         }
-        Lambda = Proton + Pion;
-        Lambdacopy = Proton + Pion;
-        Lambda.SetM(massLambda);
 
-        ROOT::Math::Boost boost{Lambda.BoostToCM()};
-        fourVecDauCM = boost(Proton);
-        threeVecDauCM = fourVecDauCM.Vect();
-        // beamvector = ROOT::Math::XYZVector(0, 0, 1);
-        // eventplaneVec = ROOT::Math::XYZVector(collision.qFT0C(), collision.qFT0A(), 0); //this needs to be changed
-        // eventplaneVecNorm = eventplaneVec.Cross(beamvector); //z'
-        phiangle = TMath::ATan2(fourVecDauCM.Py(), fourVecDauCM.Px());
-        // double phiangledir = fourVecDauCM.Phi();
+        if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
+          continue;
+        }
 
-        auto phiminuspsiC = GetPhiInRange(phiangle - psiZDCC);
-        auto phiminuspsiA = GetPhiInRange(phiangle - psiZDCA);
-        // histos.fill(HIST("hpsiApsiC"), psiZDCA, psiZDCC);
-        // histos.fill(HIST("hpsiApsiC"), GetPhiInRange(GetPhiInRange(phiangle) - GetPhiInRange(psiZDCA)), phiminuspsiA);
-        // histos.fill(HIST("hphiminuspsiA"), (phiminuspsiA));
-        // histos.fill(HIST("hphiminuspsiC"), (phiminuspsiC));
-        // auto cosThetaStar = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
-        auto cosThetaStar = fourVecDauCM.Pz() / fourVecDauCM.P(); // A0 correction
-        auto sinThetaStar = TMath::Sqrt(1 - (cosThetaStar * cosThetaStar));
-        auto PolC = TMath::Sin(phiminuspsiC);
-        auto PolA = TMath::Sin(phiminuspsiA);
-
-        // needed for corrections
-        auto sinPhiStar = TMath::Sin(GetPhiInRange(phiangle));
-        auto cosPhiStar = TMath::Cos(GetPhiInRange(phiangle));
-        auto sinThetaStarcosphiphiStar = sinThetaStar * TMath::Cos(2 * GetPhiInRange(Lambda.Phi() - phiangle)); // A2 correction
-        auto phiphiStar = GetPhiInRange(Lambda.Phi() - phiangle);
-
-        auto candmass = 0.0;
-        auto candpt = 0.0;
-        auto candeta = 0.0;
+        int taga = LambdaTag;
+        int tagb = aLambdaTag;
 
         if (LambdaTag) {
-          if (usefourvectormass) {
-            candmass = Lambdacopy.M();
-            candpt = Lambdacopy.Pt();
-            candeta = Lambdacopy.Eta();
-          } else {
-            candmass = v0.mLambda();
-            candpt = v0.pt();
-            candeta = v0.eta();
-          }
-
-          histos.fill(HIST("hSparseLambdaPolA"), candmass, candpt, candeta, PolA, centrality);
-          histos.fill(HIST("hSparseLambdaPolC"), candmass, candpt, candeta, PolC, centrality);
-          histos.fill(HIST("hSparseLambda_corr1a"), candmass, candpt, candeta, sinPhiStar, centrality);
-          histos.fill(HIST("hSparseLambda_corr1b"), candmass, candpt, candeta, cosPhiStar, centrality);
-          histos.fill(HIST("hSparseLambda_corr1c"), candmass, candpt, candeta, phiphiStar, centrality);
-          histos.fill(HIST("hSparseLambda_corr2a"), candmass, candpt, candeta, sinThetaStar, centrality);
-          histos.fill(HIST("hSparseLambda_corr2b"), candmass, candpt, candeta, sinThetaStarcosphiphiStar, centrality);
+          Lambda = Proton + AntiPion;
+          tagb = 0;
+          fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, centrality, v0.mLambda(), v0.pt(), v0.eta());
         }
 
+        tagb = aLambdaTag;
         if (aLambdaTag) {
-          if (usefourvectormass) {
-            candmass = Lambdacopy.M();
-            candpt = Lambdacopy.Pt();
-            candeta = Lambdacopy.Eta();
-          } else {
-            candmass = v0.mAntiLambda();
-            candpt = v0.pt();
-            candeta = v0.eta();
-          }
-
-          histos.fill(HIST("hSparseAntiLambdaPolA"), candmass, candpt, candeta, PolA, centrality);
-          histos.fill(HIST("hSparseAntiLambdaPolC"), candmass, candpt, candeta, PolC, centrality);
-          histos.fill(HIST("hSparseAntiLambda_corr1a"), candmass, candpt, candeta, sinPhiStar, centrality);
-          histos.fill(HIST("hSparseAntiLambda_corr1b"), candmass, candpt, candeta, cosPhiStar, centrality);
-          histos.fill(HIST("hSparseAntiLambda_corr1c"), candmass, candpt, candeta, phiphiStar, centrality);
-          histos.fill(HIST("hSparseAntiLambda_corr2a"), candmass, candpt, candeta, sinThetaStar, centrality);
-          histos.fill(HIST("hSparseAntiLambda_corr2b"), candmass, candpt, candeta, sinThetaStarcosphiphiStar, centrality);
+          AntiLambda = AntiProton + Pion;
+          taga = 0;
+          fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, centrality, v0.mAntiLambda(), v0.pt(), v0.eta());
         }
       }
     }
   }
   PROCESS_SWITCH(lambdapolsp, processData, "Process data", true);
+
+  // process function for derived data - mimics the functionality of the original data
+  void processDerivedData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP>::iterator const& collision, v0Candidates const& V0s, dauTracks const&)
+  {
+    //___________________________________________________________________________________________________
+    // event selection
+    if (!collision.sel8()) {
+      return;
+    }
+    auto centrality = collision.centFT0C();
+    if (!collision.triggereventsp()) { // provided by StraZDCSP
+      return;
+    }
+
+    if (additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      return;
+    }
+    // histos.fill(HIST("hCentrality2"), centrality);
+    //  if (additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+    if (additionalEvSel2 && (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+      return;
+    }
+    // histos.fill(HIST("hCentrality3"), centrality);
+    if (additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      return;
+    }
+
+    //___________________________________________________________________________________________________
+    // retrieve further info provided by StraZDCSP
+    auto psiZDCC = collision.psiZDCC();
+    auto psiZDCA = collision.psiZDCA();
+
+    // fill histograms
+    histos.fill(HIST("hCentrality"), centrality);
+    if (!checkwithpub) {
+      // histos.fill(HIST("hVtxZ"), collision.posZ());
+      histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
+      if (QA) {
+        histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
+        histos.fill(HIST("hpCosPsiA"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA))));
+        histos.fill(HIST("hpCosPsiC"), centrality, (TMath::Cos(GetPhiInRange(psiZDCC))));
+        histos.fill(HIST("hpSinPsiA"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA))));
+        histos.fill(HIST("hpSinPsiC"), centrality, (TMath::Sin(GetPhiInRange(psiZDCC))));
+      }
+    }
+
+    //___________________________________________________________________________________________________
+    // loop over V0s as necessary
+    for (auto v0 : V0s) {
+      bool LambdaTag = isCompatible(v0, 0);
+      bool aLambdaTag = isCompatible(v0, 1);
+
+      if (!LambdaTag && !aLambdaTag)
+        continue;
+
+      if (!SelectionV0(collision, v0)) {
+        continue;
+      }
+
+      if (LambdaTag) {
+        Proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
+        AntiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
+        Lambdadummy = Proton + AntiPion;
+      }
+      if (aLambdaTag) {
+        AntiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
+        Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
+        AntiLambdadummy = AntiProton + Pion;
+      }
+
+      if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
+        continue;
+      }
+
+      int taga = LambdaTag;
+      int tagb = aLambdaTag;
+
+      if (LambdaTag) {
+        Lambda = Proton + AntiPion;
+        tagb = 0;
+        fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, centrality,
+                       v0.mLambda(), v0.pt(), v0.eta());
+      }
+
+      tagb = aLambdaTag;
+      if (aLambdaTag) {
+        AntiLambda = AntiProton + Pion;
+        taga = 0;
+        fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, centrality,
+                       v0.mAntiLambda(), v0.pt(), v0.eta());
+      }
+    } // end loop over V0s
+  }
+  PROCESS_SWITCH(lambdapolsp, processDerivedData, "Process derived data", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

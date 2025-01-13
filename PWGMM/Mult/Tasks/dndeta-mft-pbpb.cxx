@@ -1091,7 +1091,7 @@ struct PseudorapidityDensityMFT {
   {
     float c_gen = -1;
     bool atLeastOne = false;
-    int moreThanOne = 0;
+    // int moreThanOne = 0;
     for (auto& collision : collisions) {
       float c_rec = -1;
       if constexpr (C::template contains<aod::CentFT0Cs>()) {
@@ -1108,7 +1108,7 @@ struct PseudorapidityDensityMFT {
           }
         }
         atLeastOne = true;
-        ++moreThanOne;
+        // ++moreThanOne;
         auto z = collision.posZ();
 
         if constexpr (C::template contains<aod::CentFT0Cs>()) {

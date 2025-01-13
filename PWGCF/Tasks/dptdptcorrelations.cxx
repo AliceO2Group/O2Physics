@@ -57,7 +57,6 @@ using namespace o2::framework::expressions;
 namespace correlationstask
 {
 using namespace o2::analysis::dptdptfilter;
-float phibinshift = 0.5;
 float etabinwidth = (etaup - etalow) / static_cast<float>(etabins);
 float phibinwidth = (phiup - philow) / static_cast<float>(phibins);
 int deltaetabins = etabins * 2 - 1;
@@ -1134,7 +1133,7 @@ struct DptDptCorrelationsTask {
           if (!corrana) {
             LOGF(fatal, "Mixed events makes not sense to run it without correlations, please configure properly!!");
           }
-          dataCEME[i] = buildCEInstance(range.Data(), false, false, true);
+          dataCEME[i] = buildCEInstance(range.Data(), false, true, true);
         }
       }
       for (int i = 0; i < ncmranges; ++i) {

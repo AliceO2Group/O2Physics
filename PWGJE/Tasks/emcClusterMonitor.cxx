@@ -255,8 +255,8 @@ struct ClusterMonitor {
         mCellTime.push_back(cell.calo().time());
       } // end of loop over cells
       mHistManager.fill(HIST("clusterCellTimeMean"), std::accumulate(mCellTime.begin(), mCellTime.end(), 0.0f) / mCellTime.size());
-      for (int iCell1 = 0; iCell1 < mCellTime.size() - 1; iCell1++) {
-        for (int iCell2 = iCell1 + 1; iCell2 < mCellTime.size(); iCell2++) {
+      for (std::size_t iCell1 = 0; iCell1 < mCellTime.size() - 1; iCell1++) {
+        for (std::size_t iCell2 = iCell1 + 1; iCell2 < mCellTime.size(); iCell2++) {
           mHistManager.fill(HIST("clusterCellTimeDiff"), mCellTime[iCell1] - mCellTime[iCell2]);
         }
       }

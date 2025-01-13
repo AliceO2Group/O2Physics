@@ -118,7 +118,8 @@ enum eEventCuts {
                                    // a) Run 3: "kTVXinTRD" (use optionally for systematics, and only in real data)
                                    // b) Run 2: "kINT7" (at the moment the usage of this one is enfored in fact)
                                    // c) Run 1: TBI 20241209 check if I can use kINT7 also for Run 1
-  eSel7,                           // See def. of sel7 in Ref. b) above. Event selection decision based on V0A & V0C => use only in Run 2 and Run 1. TBI 20240522 I stil need to validate this one over MC
+  eSel7,                           // See def. of sel7 in Ref. b) above. Event selection decision based on V0A & V0C => use only in Run 2 and Run 1.
+                                   // TBI 20240522 I stil need to validate this one over MC
   eSel8,                           // See def. of sel7 in Ref. b) above. Event selection decision based on TVX => use only in Run 3, both for data and MC
                                    // *) As of 20240410, kNoITSROFrameBorder (only in MC) and kNoTimeFrameBorder event selection cuts are part of Sel8
                                    //    See also email from EK from 2024041
@@ -133,10 +134,15 @@ enum eEventCuts {
   eIsVertexTRDmatched,             // at least one of vertex contributors is matched to TRD
   eNoCollInTimeRangeStrict,        // rejects a collision if there are other events in dtime +/- 10 μs, see IA Slide 39 in https://indico.cern.ch/event/1462154/
   eNoCollInTimeRangeStandard,      // rejects a collision if there are other events in dtime +/- 2 μs + additional cuts on multiplicity, see IA Slide 39 in https://indico.cern.ch/event/1462154/
-  eNoCollInRofStrict,              // rejects a collision if there are other events within the same ROF (in-ROF pileup), ROF = "ITS Readout Frames", see IA Slide 39 in https://indico.cern.ch/event/1462154/
+  eNoCollInRofStrict,              // rejects a collision if there are other events within the same ROF (in-ROF pileup), ROF = "ITS Readout Frames",
+                                   // see IA Slide 39 in https://indico.cern.ch/event/1462154/
   eNoCollInRofStandard,            // same as previous + additional cuts on multiplicity, see IA Slide 39 in https://indico.cern.ch/event/1462154/
   eNoHighMultCollInPrevRof,        // veto an event if FT0C amplitude in previous ITS ROF is above threshold (default is >5000 a.e. by FT0C), see IA Slide 39 in https://indico.cern.ch/event/1462154/
+  eIsGoodITSLayer3,                // number of inactive chips on ITS layer 3 is below maximum allowed value
+  eIsGoodITSLayer0123,             // numbers of inactive chips on ITS layers 0-3 are below maximum allowed values
+  eIsGoodITSLayersAll,             // numbers of inactive chips on all ITS layers are below maximum allowed values
   eOccupancyEstimator,             // the default Occupancy estimator, set via configurable. All supported centrality estimators, for QA, etc, are in enum eOccupancyEstimators
+  eMinVertexDistanceFromIP,        // if sqrt(vx^2+vy^2+vz^2) < MinVertexDistanceFromIP, the event is rejected. This way, I remove suspicious events with |vertex| = 0.
   eEventCuts_N
 };
 
@@ -273,6 +279,38 @@ enum eQAEventHistograms2D {
 enum eQAParticleHistograms2D {
   ePt_vs_dcaXY,
   eQAParticleHistograms2D_N
+};
+
+enum eQAParticleEventHistograms2D {
+  // In this category I do correlation <some-particle-property> vs. some-event-property.
+  // The < ... > goes over all particles in that event.
+  // All < ... > over particles are calculated with helper TProfile
+  // For instance: <nITScls> vs. current run duration
+  eCurrentRunDuration_vs_itsNClsEbyE,
+  eCurrentRunDuration_vs_itsNClsNegEtaEbyE,
+  eCurrentRunDuration_vs_itsNClsPosEtaEbyE,
+  eCurrentRunDuration_vs_Eta0804EbyE,
+  eCurrentRunDuration_vs_Eta0400EbyE,
+  eCurrentRunDuration_vs_Eta0004EbyE,
+  eCurrentRunDuration_vs_Eta0408EbyE,
+  eCurrentRunDuration_vs_Pt0005EbyE,
+  eCurrentRunDuration_vs_Pt0510EbyE,
+  eCurrentRunDuration_vs_Pt1050EbyE,
+  eQAParticleEventHistograms2D_N
+};
+
+enum eQAParticleEventProEbyE {
+  eitsNClsEbyE = 1,   // Labels average <itsNCls> in a given event (therefore "EbyE" is appended). Yes, from one, because it runs over bin content and entries in TProfile for most of the time.
+  eitsNClsNegEtaEbyE, // <itsNCls> in a given event for eta < 0
+  eitsNClsPosEtaEbyE, // <itsNCls> in a given event for eta > 0
+  eEta0804EbyE,       // <eta> in a given event for -0.8 < eta < -0.4
+  eEta0400EbyE,       // <eta> in a given event for -0.4 < eta <  0.0
+  eEta0004EbyE,       // <eta> in a given event for  0.0 < eta <  0.4
+  eEta0408EbyE,       // <eta> in a given event for  0.4 < eta <  0.8
+  ePt0005EbyE,        // <pt> in a given event for  0.0 < pt < 0.5
+  ePt0510EbyE,        // <pt> in a given event for  0.5 < pt < 1.0
+  ePt1050EbyE,        // <pt> in a given event for  1.0 < pt < 5.0
+  eQAParticleEventProEbyE_N
 };
 
 enum eReferenceMultiplicityEstimators {

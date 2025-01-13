@@ -44,3 +44,8 @@ o2physics_add_dpl_workflow(resonances-step6
                   SOURCES resonances_step6.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(resonances-combine
+                  SOURCES resonancesCombine.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)

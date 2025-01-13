@@ -61,8 +61,8 @@ struct CorrSparse {
     registry.add("pT", "pT", {HistType::kTH1D, {axisPtTrigger}});
     registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
 
-    registry.add("Sparse_mixed", "", {HistType::kTHnSparseD, {{axisVertex, axisPtTrigger, axisPtAssoc, axisMultiplicity, axisDeltaPhi, axisDeltaEta}}}); // Make the output sparse
-    registry.add("Sparse_same", "", {HistType::kTHnSparseD, {{axisVertex, axisPtTrigger, axisPtAssoc, axisMultiplicity, axisDeltaPhi, axisDeltaEta}}});
+    registry.add("Sparse_mixed", "", {HistType::kTHnSparseF, {{axisVertex, axisPtTrigger, axisPtAssoc, axisMultiplicity, axisDeltaPhi, axisDeltaEta}}}); // Make the output sparse
+    registry.add("Sparse_same", "", {HistType::kTHnSparseF, {{axisVertex, axisPtTrigger, axisPtAssoc, axisMultiplicity, axisDeltaPhi, axisDeltaEta}}});
 
     const int maxMixBin = axisMultiplicity->size() * axisVertex->size();
     registry.add("eventcount", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}}); // histogram to see how many events are in the same and mixed event
@@ -70,7 +70,7 @@ struct CorrSparse {
 
   // fill multiple histograms
   template <typename TCollision, typename TTracks>
-  void fillYield(TCollision collision, float centrality, TTracks tracks) // function to fill the yield and etaphi histograms.
+  void fillYield(TCollision /*collision*/, float /*centrality*/, TTracks tracks) // function to fill the yield and etaphi histograms.
   {
     registry.fill(HIST("Nch"), tracks.size());
     for (auto const& track1 : tracks) {
@@ -83,7 +83,7 @@ struct CorrSparse {
   }
 
   template <typename TCollision>
-  bool fillCollision(TCollision collision, float centrality)
+  bool fillCollision(TCollision collision, float /*centrality*/)
   {
 
     if (!collision.sel8()) {
@@ -153,7 +153,7 @@ struct CorrSparse {
     pair{bindingOnVtxAndMult, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   // the process for filling the mixed events
-  void processMixed(AodCollisions const& collisions, AodTracks const& tracks)
+  void processMixed(AodCollisions const& /*collisions*/, AodTracks const& /*tracks*/)
   {
     for (auto const& [collision1, tracks1, collision2, tracks2] : pair) {
 

@@ -18,19 +18,20 @@ namespace o2::aod
 {
 namespace mult
 {
-DECLARE_SOA_COLUMN(MultFV0A, multFV0A, float); //!
-DECLARE_SOA_COLUMN(MultFV0C, multFV0C, float); //!
-DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float); //!
-DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float); //!
-DECLARE_SOA_COLUMN(MultFDDA, multFDDA, float); //!
-DECLARE_SOA_COLUMN(MultFDDC, multFDDC, float); //!
-DECLARE_SOA_COLUMN(MultZNA, multZNA, float);   //!
-DECLARE_SOA_COLUMN(MultZNC, multZNC, float);   //!
-DECLARE_SOA_COLUMN(MultZEM1, multZEM1, float); //!
-DECLARE_SOA_COLUMN(MultZEM2, multZEM2, float); //!
-DECLARE_SOA_COLUMN(MultZPA, multZPA, float);   //!
-DECLARE_SOA_COLUMN(MultZPC, multZPC, float);   //!
-DECLARE_SOA_DYNAMIC_COLUMN(MultFV0M, multFV0M, //!
+DECLARE_SOA_COLUMN(MultFV0A, multFV0A, float);           //!
+DECLARE_SOA_COLUMN(MultFV0AOuter, multFV0AOuter, float); //!
+DECLARE_SOA_COLUMN(MultFV0C, multFV0C, float);           //!
+DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);           //!
+DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);           //!
+DECLARE_SOA_COLUMN(MultFDDA, multFDDA, float);           //!
+DECLARE_SOA_COLUMN(MultFDDC, multFDDC, float);           //!
+DECLARE_SOA_COLUMN(MultZNA, multZNA, float);             //!
+DECLARE_SOA_COLUMN(MultZNC, multZNC, float);             //!
+DECLARE_SOA_COLUMN(MultZEM1, multZEM1, float);           //!
+DECLARE_SOA_COLUMN(MultZEM2, multZEM2, float);           //!
+DECLARE_SOA_COLUMN(MultZPA, multZPA, float);             //!
+DECLARE_SOA_COLUMN(MultZPC, multZPC, float);             //!
+DECLARE_SOA_DYNAMIC_COLUMN(MultFV0M, multFV0M,           //!
                            [](float multFV0A, float multFV0C) -> float { return multFV0A + multFV0C; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultFT0M, multFT0M, //!
                            [](float multFT0A, float multFT0C) -> float { return multFT0A + multFT0C; });
@@ -47,7 +48,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt1, isInelGt1, //! is INEL > 1
                            [](int multPveta1) -> bool { return multPveta1 > 1; });
 
 // forward track counters
-DECLARE_SOA_COLUMN(MFTNtracks, mftNtracks, int); //!
+DECLARE_SOA_COLUMN(MFTNalltracks, mftNalltracks, int); //! overall counter, uses AO2D coll assoc
+DECLARE_SOA_COLUMN(MFTNtracks, mftNtracks, int);       //! reassigned, uses mult group software
 
 // MC
 DECLARE_SOA_COLUMN(MultMCFT0A, multMCFT0A, int);                       //!
@@ -94,6 +96,8 @@ DECLARE_SOA_COLUMN(TimeToNeNext, timeToNeNext, float);           //!
 DECLARE_SOA_TABLE(FV0Mults, "AOD", "FV0MULT", //! Multiplicity with the FV0 detector
                   mult::MultFV0A, mult::MultFV0C,
                   mult::MultFV0M<mult::MultFV0A, mult::MultFV0C>);
+DECLARE_SOA_TABLE(FV0AOuterMults, "AOD", "FVOAOUTERMULT", //! FV0 without innermost ring
+                  mult::MultFV0AOuter);
 DECLARE_SOA_TABLE(FT0Mults, "AOD", "FT0MULT", //! Multiplicity with the FT0 detector
                   mult::MultFT0A, mult::MultFT0C,
                   mult::MultFT0M<mult::MultFT0A, mult::MultFT0C>);
@@ -113,7 +117,7 @@ DECLARE_SOA_TABLE(PVMults, "AOD", "PVMULT", //! Multiplicity from the PV contrib
                   mult::IsInelGt0<mult::MultNTracksPVeta1>,
                   mult::IsInelGt1<mult::MultNTracksPVeta1>);
 DECLARE_SOA_TABLE(MFTMults, "AOD", "MFTMULT", //! Multiplicity with MFT
-                  mult::MFTNtracks);
+                  mult::MFTNalltracks, mult::MFTNtracks);
 using BarrelMults = soa::Join<TrackletMults, TPCMults, PVMults>;
 using Mults = soa::Join<BarrelMults, FV0Mults, FT0Mults, FDDMults, ZDCMults>;
 using FT0Mult = FT0Mults::iterator;

@@ -2231,7 +2231,7 @@ struct UpcJpsiCentralBarrel {
     processMC(mcCollision, mcParticles);
   }
 
-  void processMCUnskimmed(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions /*, aod::McParticles const& mcParticles, aod::TracksIU const& tracks*/)
+  void processMCUnskimmed(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions /*, aod::McParticles const& mcParticles, aod::TracksIU const& tracks*/)
   {
     processMCU(collisions);
   }

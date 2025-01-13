@@ -65,8 +65,10 @@ struct ResonanceModuleInitializer {
   Service<o2::framework::O2DatabasePDG> pdg; ///< PDG database service
   EventPlaneHelper helperEP;                 ///< Helper for event plane calculations
 
-  Produces<aod::ResoCollisions> resoCollisions;     ///< Output table for resonance collisions
-  Produces<aod::ResoMCCollisions> resoMCCollisions; ///< Output table for MC resonance collisions
+  Produces<aod::ResoCollisions> resoCollisions;             ///< Output table for resonance collisions
+  Produces<aod::ResoMCCollisions> resoMCCollisions;         ///< Output table for MC resonance collisions
+  Produces<aod::ResoSpheroCollisions> resoSpheroCollisions; ///< Output table for spherocity
+  Produces<aod::ResoEvtPlCollisions> resoEvtPlCollisions;   ///< Output table for event plane
 
   // CCDB options
   Configurable<std::string> ccdbURL{"ccdbURL", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -102,8 +104,11 @@ struct ResonanceModuleInitializer {
   Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", false, "Evt sel: apply pileup rejection"};
   Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
 
+  // Spherocity configuration
+  Configurable<int> cfgTrackSphMin{"cfgTrackSphMin", 10, "Number of tracks for Spherocity Calculation"};
+  Configurable<int> cfgTrackSphDef{"cfgTrackSphDef", 0, "Spherocity Definition: |pT| = 1 -> 0, otherwise -> 1"};
+
   // Qvector configuration
-  Configurable<bool> cfgBypassQvec{"cfgBypassQvec", true, "Bypass for qvector task"};
   Configurable<int> cfgEvtPl{"cfgEvtPl", 40500, "Configuration of three subsystems for the event plane and its resolution, 10000*RefA + 100*RefB + S, where FT0C:0, FT0A:1, FT0M:2, FV0A:3, BPos:5, BNeg:6"};
 
   int evtPlRefAId = static_cast<int>(cfgEvtPl / 10000);
@@ -582,6 +587,31 @@ struct ResonanceModuleInitializer {
     fillMCCollision<true>(collision, mcParticles);
   }
   PROCESS_SWITCH(ResonanceModuleInitializer, processRun2MC, "process MC for RUN2", false);
+
+  /**
+   * @brief Processes Spherocity
+   *
+   * @param collision Collision data
+   * @param tracks Track data
+   */
+  void processSpherocity(soa::Filtered<aod::ResoCollisionCandidates>::iterator const& collision, aod::ResoTrackCandidates const& tracks)
+  {
+    float spherocity = computeSpherocity(tracks, cfgTrackSphMin, cfgTrackSphDef);
+    resoSpheroCollisions(collision.globalIndex(), spherocity);
+  }
+  PROCESS_SWITCH(ResonanceModuleInitializer, processSpherocity, "process Spherocity", false);
+
+  /**
+   * @brief Processes Event Plane
+   *
+   * @param collision Collision data with Qvectors
+   * @param tracks Track data
+   */
+  void processEventPlane(soa::Filtered<soa::Join<aod::ResoCollisionCandidates, aod::Qvectors>>::iterator const& collision)
+  {
+    resoEvtPlCollisions(collision.globalIndex(), getEvtPl(collision), getEvtPlRes(collision, evtPlDetId, evtPlRefAId), getEvtPlRes(collision, evtPlDetId, evtPlRefBId), getEvtPlRes(collision, evtPlRefAId, evtPlRefBId));
+  }
+  PROCESS_SWITCH(ResonanceModuleInitializer, processEventPlane, "process Event Plane", false);
 };
 
 /**
@@ -1055,6 +1085,7 @@ struct ResonanceDaughterInitializer {
                     casc.dcaXYCascToPV(),
                     casc.dcaZCascToPV(),
                     casc.sign(),
+                    casc.mLambda(),
                     casc.mXi(),
                     casc.v0radius(), casc.cascradius(), casc.x(), casc.y(), casc.z());
       if constexpr (isMC) {
@@ -1203,7 +1234,7 @@ struct ResonanceDaughterInitializer {
    * @param v0s V0 data
    * @param tracks Track data
    */
-  void processV0Data(aod::ResoCollision const& collision, soa::Filtered<aod::ResoV0Candidates> const& v0s, aod::ResoTrackCandidates const& tracks)
+  void processV0Data(aod::ResoCollision const& collision, aod::ResoV0Candidates const& v0s, aod::ResoTrackCandidates const& tracks)
   {
     fillV0s<false>(collision, v0s, tracks);
   }
@@ -1216,7 +1247,7 @@ struct ResonanceDaughterInitializer {
    * @param v0s V0 data
    * @param tracks Track data
    */
-  void processV0MC(aod::ResoCollision const& collision, soa::Filtered<aod::ResoV0CandidatesMC> const& v0s, aod::ResoTrackCandidatesMC const& tracks)
+  void processV0MC(aod::ResoCollision const& collision, aod::ResoV0CandidatesMC const& v0s, aod::ResoTrackCandidatesMC const& tracks)
   {
     fillV0s<true>(collision, v0s, tracks);
   }
@@ -1229,7 +1260,7 @@ struct ResonanceDaughterInitializer {
    * @param cascades Cascade data
    * @param tracks Track data
    */
-  void processCascData(aod::ResoCollision const& collision, soa::Filtered<aod::ResoCascadesCandidates> const& cascades, aod::ResoTrackCandidates const& tracks)
+  void processCascData(aod::ResoCollision const& collision, aod::ResoCascadesCandidates const& cascades, aod::ResoTrackCandidates const& tracks)
   {
     fillCascades<false>(collision, cascades, tracks);
   }
@@ -1242,7 +1273,7 @@ struct ResonanceDaughterInitializer {
    * @param cascades Cascade data
    * @param tracks Track data
    */
-  void processCascMC(aod::ResoCollision const& collision, soa::Filtered<aod::ResoCascadesCandidatesMC> const& cascades, aod::ResoTrackCandidatesMC const& tracks)
+  void processCascMC(aod::ResoCollision const& collision, aod::ResoCascadesCandidatesMC const& cascades, aod::ResoTrackCandidatesMC const& tracks)
   {
     fillCascades<true>(collision, cascades, tracks);
   }

@@ -46,9 +46,12 @@ struct : ConfigurableGroup {
   Configurable<bool> cfCheckUnderflowAndOverflow{"cfCheckUnderflowAndOverflow", false, "check and bail out if in event and particle histograms there are entries which went to underflow or overflow bins (use only locally)"};
   Configurable<int> cfRebin{"cfRebin", 1, "number of bins of selected heavy 2D histograms are devided with this number"};
   Configurable<bool> cfFillQAEventHistograms2D{"cfFillQAEventHistograms2D", false, "if false, all QA 2D event histograms are not filled. if true, only the ones for which fBookQAEventHistograms2D[...] is true, are filled"};
-  Configurable<vector<string>> cfBookQAEventHistograms2D{"cfBookQAEventHistograms2D", {"1-Multiplicity_vs_ReferenceMultiplicity", "1-Multiplicity_vs_NContributors", "1-Multiplicity_vs_Centrality", "1-Multiplicity_vs_Vertex_z", "1-Multiplicity_vs_Occupancy", "1-ReferenceMultiplicity_vs_NContributors", "1-ReferenceMultiplicity_vs_Centrality", "1-ReferenceMultiplicity_vs_Vertex_z", "1-ReferenceMultiplicity_vs_Occupancy", "1-NContributors_vs_Centrality", "1-NContributors_vs_Vertex_z", "1-NContributors_vs_Occupancy", "1-Centrality_vs_Vertex_z", "1-Centrality_vs_Occupancy", "1-Centrality_vs_ImpactParameter", "1-Vertex_z_vs_Occupancy", "0-MultNTracksPV_vs_MultNTracksGlobal", "0-CentFT0C_vs_CentNTPV", "0-CentFT0M_vs_CentNTPV", "0-CentRun2V0M_vs_CentRun2SPDTracklets", "1-TrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange", "1-CurrentRunDuration_vs_InteractionRate"}, "book (1) or do not book (0) this QA 2D event histogram"};
+  Configurable<vector<string>> cfBookQAEventHistograms2D{"cfBookQAEventHistograms2D", {"1-Multiplicity_vs_ReferenceMultiplicity", "1-Multiplicity_vs_NContributors", "1-Multiplicity_vs_Centrality", "1-Multiplicity_vs_Vertex_z", "1-Multiplicity_vs_Occupancy", "1-ReferenceMultiplicity_vs_NContributors", "1-ReferenceMultiplicity_vs_Centrality", "1-ReferenceMultiplicity_vs_Vertex_z", "1-ReferenceMultiplicity_vs_Occupancy", "1-NContributors_vs_Centrality", "1-NContributors_vs_Vertex_z", "1-NContributors_vs_Occupancy", "1-Centrality_vs_Vertex_z", "1-Centrality_vs_Occupancy", "0-Centrality_vs_ImpactParameter", "1-Vertex_z_vs_Occupancy", "0-MultNTracksPV_vs_MultNTracksGlobal", "0-CentFT0C_vs_CentNTPV", "0-CentFT0M_vs_CentNTPV", "0-CentRun2V0M_vs_CentRun2SPDTracklets", "1-TrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange", "1-CurrentRunDuration_vs_InteractionRate"}, "book (1) or do not book (0) this QA 2D event histogram"};
   Configurable<bool> cfFillQAParticleHistograms2D{"cfFillQAParticleHistograms2D", false, "if false, all QA 2D particle histograms are not filled. if true, only the ones for which fBookQAParticleHistograms2D[...] is true, are filled"};
   Configurable<vector<string>> cfBookQAParticleHistograms2D{"cfBookQAParticleHistograms2D", {"1-Pt_vs_dcaXY"}, "book (1) or do not book (0) this QA 2D particle histogram"};
+  Configurable<bool> cfFillQAParticleEventHistograms2D{"cfFillQAParticleEventHistograms2D", false, "if false, all QA 2D particle event histograms are not filled. if true, only the ones for which fBookQAParticleEventHistograms2D[...] is true, are filled"};
+  Configurable<vector<string>> cfBookQAParticleEventHistograms2D{"cfBookQAParticleEventHistograms2D", {"1-CurrentRunDuration_vs_itsNCls", "1-CurrentRunDuration_vs_itsNClsNegEtaEbyE", "1-CurrentRunDuration_vs_itsNClsPosEtaEbyE", "1-CurrentRunDuration_vs_Eta0804EbyE", "1-CurrentRunDuration_vs_Eta0400EbyE", "1-CurrentRunDuration_vs_Eta0004EbyE", "1-CurrentRunDuration_vs_Eta0408EbyE", "1-CurrentRunDuration_vs_Pt0005EbyE", "1-CurrentRunDuration_vs_Pt0510EbyE", "1-CurrentRunDuration_vs_Pt1050EbyE"}, "book (1) or do not book (0) this QA 2D particle event histogram"};
+
 } cf_qa;
 
 // *) Event histograms:
@@ -59,7 +62,7 @@ struct : ConfigurableGroup {
 
 // *) Event cuts:
 struct : ConfigurableGroup {
-  Configurable<vector<string>> cfUseEventCuts{"cfUseEventCuts", {"1-NumberOfEvents", "1-TotalMultiplicity", "1-Multiplicity", "1-ReferenceMultiplicity", "1-Centrality", "1-Vertex_x", "1-Vertex_y", "1-Vertex_z", "1-NContributors", "1-ImpactParameter", "0-EventPlaneAngle", "1-Occupancy", "1-InteractionRate", "1-CurrentRunDuration", "0-MultMCNParticlesEta08", "0-Trigger", "0-Sel7", "1-Sel8", "1-MultiplicityEstimator", "1-ReferenceMultiplicityEstimator", "1-CentralityEstimator", "1-SelectedEvents", "1-NoSameBunchPileup", "1-IsGoodZvtxFT0vsPV", "1-IsVertexITSTPC", "1-IsVertexTOFmatched", "1-IsVertexTRDmatched", "0-NoCollInTimeRangeStrict", "0-NoCollInTimeRangeStandard", "0-NoCollInRofStrict", "0-NoCollInRofStandard", "0-NoHighMultCollInPrevRof", "1-OccupancyEstimator"}, "use (1) or do not use (0) event cuts"};
+  Configurable<vector<string>> cfUseEventCuts{"cfUseEventCuts", {"1-NumberOfEvents", "1-TotalMultiplicity", "1-Multiplicity", "1-ReferenceMultiplicity", "1-Centrality", "1-Vertex_x", "1-Vertex_y", "1-Vertex_z", "1-NContributors", "1-ImpactParameter", "0-EventPlaneAngle", "1-Occupancy", "1-InteractionRate", "1-CurrentRunDuration", "0-MultMCNParticlesEta08", "0-Trigger", "0-Sel7", "1-Sel8", "1-MultiplicityEstimator", "1-ReferenceMultiplicityEstimator", "1-CentralityEstimator", "1-SelectedEvents", "1-NoSameBunchPileup", "1-IsGoodZvtxFT0vsPV", "1-IsVertexITSTPC", "1-IsVertexTOFmatched", "1-IsVertexTRDmatched", "0-NoCollInTimeRangeStrict", "0-NoCollInTimeRangeStandard", "0-NoCollInRofStrict", "0-NoCollInRofStandard", "0-NoHighMultCollInPrevRof", "0-IsGoodITSLayer3", "0-IsGoodITSLayer0123", "0-IsGoodITSLayersAll", "1-OccupancyEstimator", "1-MinVertexDistanceFromIP"}, "use (1) or do not use (0) event cuts"};
   Configurable<bool> cfUseEventCutCounterAbsolute{"cfUseEventCutCounterAbsolute", false, "profile and save how many times each event cut counter triggered (absolute). Use with care, as this is computationally heavy"};
   Configurable<bool> cfUseEventCutCounterSequential{"cfUseEventCutCounterSequential", false, "profile and save how many times each event cut counter triggered (sequential). Use with care, as this is computationally heavy"};
   Configurable<bool> cfPrintCutCounterContent{"cfPrintCutCounterContent", false, "if true, prints on the screen after each event the content of fEventCutCounterHist[*][*] (all which were booked)"};
@@ -71,10 +74,11 @@ struct : ConfigurableGroup {
   Configurable<vector<float>> cfCentrality{"cfCentrality", {-10., 110.}, "centrality range: {min, max}, with convention: min <= cent < max"};
   Configurable<vector<float>> cfVertex_x{"cfVertex_x", {-10., 10.}, "vertex x position range: {min, max}[cm], with convention: min <= Vx < max"};
   Configurable<vector<float>> cfVertex_y{"cfVertex_y", {-10., 10.}, "vertex y position range: {min, max}[cm], with convention: min <= Vy < max"};
-  Configurable<vector<float>> cfVertex_z{"cfVertex_z", {-10., 10.}, "vertex z position range: {min, max}[cm], with convention: min <= Vz < max"};
+  Configurable<vector<float>> cfVertex_z{"cfVertex_z", {-10, 10.}, "vertex z position range: {min, max}[cm], with convention: min <= Vz < max"};
+  Configurable<float> cfMinVertexDistanceFromIP{"cfMinVertexDistanceFromIP", {0.000001}, "if sqrt(vx^2+vy^2+vz^2) < cfMinVertexDistanceFromIP [cm], the event is reject. IP = nominal Interaction Point."};
   Configurable<vector<int>> cfNContributors{"cfNContributors", {2, 1000000000}, "Number of vertex contributors: {min, max}, with convention: min <= N < max"};
   Configurable<vector<float>> cfImpactParameter{"cfImpactParameter", {-1, 1000000000}, "Impact parameter range (can be used only for sim): {min, max}, with convention: min <= IP < max"};
-  Configurable<vector<float>> cfEventPlaneAngle{"cfEventPlaneAngle", {-1000, 1000000000}, "Event Plane Angle range (can be used only for sim): {min, max}, with convention: min <= EP < max"};
+  Configurable<vector<float>> cfEventPlaneAngle{"cfEventPlaneAngle", {-o2::constants::math::PI, o2::constants::math::TwoPI}, "Event Plane Angle range (can be used only for sim): {min, max}, with convention: min <= EP < max"};
   Configurable<vector<float>> cfOccupancy{"cfOccupancy", {-2, 1000000000}, "Range for occupancy (use cfOccupancyEstimator to set specific estimator): {min, max}, with convention: min <= X < max"};
   Configurable<vector<float>> cfInteractionRate{"cfInteractionRate", {-2, 1000000000}, "Range for interaction rate: {min, max}, with convention: min <= X < max"};
   Configurable<vector<float>> cfCurrentRunDuration{"cfCurrentRunDuration", {-2, 1000000000}, "Range for current run duration (i.e. seconds since start of run) in seconds: {min, max}, with convention: min <= X < max. Only collisions taken in this range (measured from SOR) are taken for analysis"};
@@ -98,6 +102,9 @@ struct : ConfigurableGroup {
   Configurable<bool> cfUseNoCollInRofStrict{"cfUseNoCollInRofStrict", false, "TBI 20240521 explanation"};
   Configurable<bool> cfUseNoCollInRofStandard{"cfUseNoCollInRofStandard", false, "TBI 20240521 explanation"};
   Configurable<bool> cfUseNoHighMultCollInPrevRof{"cfUseNoHighMultCollInPrevRof", false, "TBI 20240521 explanation"};
+  Configurable<bool> cfUseIsGoodITSLayer3{"cfUseIsGoodITSLayer3", false, "TBI 20241220 explanation (or see enum)"};
+  Configurable<bool> cfUseIsGoodITSLayer0123{"cfUseIsGoodITSLayer0123", false, "TBI 20241220 explanation (or see enum)"};
+  Configurable<bool> cfUseIsGoodITSLayersAll{"cfUseIsGoodITSLayersAll", false, "TBI 20241220 explanation (or see enum)"};
   Configurable<string> cfOccupancyEstimator{"cfOccupancyEstimator", "FT0COccupancyInTimeRange", "set here some supported occupancy estimator (TrackOccupancyInTimeRange, FT0COccupancyInTimeRange, ..."};
 } cf_ec;
 
@@ -114,13 +121,13 @@ struct : ConfigurableGroup {
   Configurable<vector<string>> cfUseParticleCuts{"cfUseParticleCuts", {"1-Phi", "1-Pt", "1-Eta", "1-Charge", "1-tpcNClsFindable", "1-tpcNClsShared", "1-tpcNClsFound", "1-tpcNClsCrossedRows", "1-itsNCls", "1-itsNClsInnerBarrel", "1-tpcCrossedRowsOverFindableCls", "1-tpcFoundOverFindableCls", "1-tpcFractionSharedCls", "1-dcaXY", "1-dcaZ", "1-PDG", "0-trackCutFlagFb1", "0-trackCutFlagFb2", "0-isQualityTrack", "0-isPrimaryTrack", "0-isInAcceptanceTrack", "0-isGlobalTrack", "0-PtDependentDCAxyParameterization"}, "Use (1) or do not use (0) particle cuts"};
   Configurable<bool> cfUseParticleCutCounterAbsolute{"cfUseParticleCutCounterAbsolute", false, "profile and save how many times each particle cut counter triggered (absolute). Use with care, as this is computationally heavy"};
   Configurable<bool> cfUseParticleCutCounterSequential{"cfUseParticleCutCounterSequential", false, "profile and save how many times each particle cut counter triggered (sequential). Use with care, as this is computationally heavy"};
-  Configurable<vector<float>> cfPhi{"cfPhi", {0.0, TMath::TwoPi()}, "phi range: {min, max}[rad], with convention: min <= phi < max"};
+  Configurable<vector<float>> cfPhi{"cfPhi", {0.0, o2::constants::math::TwoPI}, "phi range: {min, max}[rad], with convention: min <= phi < max"};
   Configurable<vector<float>> cfPt{"cfPt", {0.2, 5.0}, "pt range: {min, max}[GeV], with convention: min <= pt < max"};
   Configurable<vector<float>> cfEta{"cfEta", {-0.8, 0.8}, "eta range: {min, max}, with convention: min <= eta < max"};
   Configurable<vector<float>> cfCharge{"cfCharge", {-1.5, 1.5}, "particle charge. {-1.5,0} = only negative, {0,1.5} = only positive"};
   Configurable<vector<float>> cftpcNClsFindable{"cftpcNClsFindable", {-1000., 1000.}, "tpcNClsFindable range: {min, max}, with convention: min <= cftpcNClsFindable < max"};
   Configurable<vector<float>> cftpcNClsShared{"cftpcNClsShared", {-1000., 1000.}, "tpcNClsShared range: {min, max}, with convention: min <= cftpcNClsShared < max"};
-  Configurable<vector<float>> cftpcNClsFound{"cftpcNClsFound", {-1000., 1000.}, "tpcNClsFound range: {min, max}, with convention: min <= cftpcNClsFound < max"};
+  Configurable<vector<float>> cftpcNClsFound{"cftpcNClsFound", {70., 1000.}, "tpcNClsFound range: {min, max}, with convention: min <= cftpcNClsFound < max"};
   Configurable<vector<float>> cftpcNClsCrossedRows{"cftpcNClsCrossedRows", {70., 1000.}, "tpcNClsCrossedRows range: {min, max}, with convention: min <= tpcNClsCrossedRows < max"};
   Configurable<vector<float>> cfitsNCls{"cfitsNCls", {5., 1000.}, "itsNCls range: {min, max}, with convention: min <= itsNCls < max"};
   Configurable<vector<float>> cfitsNClsInnerBarrel{"cfitsNClsInnerBarrel", {-1000., 1000.}, "itsNClsInnerBarrel range: {min, max}, with convention: min <= cfitsNClsInnerBarrel < max"};
@@ -148,14 +155,14 @@ struct : ConfigurableGroup {
 // *) Multiparticle correlations:
 struct : ConfigurableGroup {
   Configurable<bool> cfCalculateCorrelations{"cfCalculateCorrelations", false, "calculate or not multiparticle correlations"};
-  Configurable<bool> cfCalculateCorrelationsAsFunctionOfIntegrated{"cfCalculateCorrelationsAsFunctionOfIntegrated", false, "calculate or not correlations as a function of integrated"};
-  Configurable<bool> cfCalculateCorrelationsAsFunctionOfMultiplicity{"cfCalculateCorrelationsAsFunctionOfMultiplicity", false, "calculate or not correlations as a function of multiplicity"};
-  Configurable<bool> cfCalculateCorrelationsAsFunctionOfCentrality{"cfCalculateCorrelationsAsFunctionOfCentrality", false, "calculate or not correlations as a function of centrality"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfIntegrated{"cfCalculateCorrelationsAsFunctionOfIntegrated", true, "calculate or not correlations as a function of integrated"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfMultiplicity{"cfCalculateCorrelationsAsFunctionOfMultiplicity", true, "calculate or not correlations as a function of multiplicity"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfCentrality{"cfCalculateCorrelationsAsFunctionOfCentrality", true, "calculate or not correlations as a function of centrality"};
   Configurable<bool> cfCalculateCorrelationsAsFunctionOfPt{"cfCalculateCorrelationsAsFunctionOfPt", false, "calculate or not correlations as a function of pt"};
   Configurable<bool> cfCalculateCorrelationsAsFunctionOfEta{"cfCalculateCorrelationsAsFunctionOfEta", false, "calculate or not correlations as a function of eta"};
-  Configurable<bool> cfCalculateCorrelationsAsFunctionOfOccupancy{"cfCalculateCorrelationsAsFunctionOfOccupancy", false, "calculate or not correlations as a function of occupancy"};
-  Configurable<bool> cfCalculateCorrelationsAsFunctionOfInteractionRate{"cfCalculateCorrelationsAsFunctionOfInteractionRate", false, "calculate or not correlations as a function of interaction rate"};
-  Configurable<bool> cfCalculateCorrelationsAsFunctionOfCurrentRunDuration{"cfCalculateCorrelationsAsFunctionOfCurrentRunDuration", false, "calculate or not correlations as a function of current run duration (i.e. vs. seconds since start of run)"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfOccupancy{"cfCalculateCorrelationsAsFunctionOfOccupancy", true, "calculate or not correlations as a function of occupancy"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfInteractionRate{"cfCalculateCorrelationsAsFunctionOfInteractionRate", true, "calculate or not correlations as a function of interaction rate"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfCurrentRunDuration{"cfCalculateCorrelationsAsFunctionOfCurrentRunDuration", true, "calculate or not correlations as a function of current run duration (i.e. vs. seconds since start of run)"};
 } cf_mupa;
 
 // *) Test0:
@@ -242,7 +249,7 @@ struct : ConfigurableGroup {
   Configurable<vector<float>> cfFixedLength_cent_bins{"cfFixedLength_cent_bins", {110, 0., 110.}, "nCentBins, centMin, centMax (only for results histograms)"};
   Configurable<vector<float>> cfFixedLength_pt_bins{"cfFixedLength_pt_bins", {1000, 0., 10.}, "nPtBins, ptMin, ptMax (only for results histograms)"};
   Configurable<vector<float>> cfFixedLength_eta_bins{"cfFixedLength_eta_bins", {80, -2., 2.}, "nEtaBins, etaMin, etaMax (only for results histograms)"};
-  Configurable<vector<float>> cfFixedLength_occu_bins{"cfFixedLength_occu_bins", {600, 0., 60000.}, "nOccuBins, occuMin, occuMax (only for results histograms)"};
+  Configurable<vector<float>> cfFixedLength_occu_bins{"cfFixedLength_occu_bins", {200, 0., 60000.}, "nOccuBins, occuMin, occuMax (only for results histograms)"};
   Configurable<vector<float>> cfFixedLength_ir_bins{"cfFixedLength_ir_bins", {1000, 0., 100.}, "nirBins, irMin, irMax (only for results histograms)"};
   Configurable<vector<float>> cfFixedLength_crd_bins{"cfFixedLength_crd_bins", {1000, 0., 10000.}, "nrdBins, rdMin, rdMax (only for results histograms)"};
 
@@ -251,10 +258,10 @@ struct : ConfigurableGroup {
   Configurable<vector<float>> cfVariableLength_mult_bins{"cfVariableLength_mult_bins", {0., 5., 6., 7., 8., 9., 100., 200., 500., 1000., 10000.}, "variable-length multiplicity bins"};
   Configurable<bool> cfUseVariableLength_cent_bins{"cfUseVariableLength_cent_bins", false, "use or not variable-length centrality bins"};
   Configurable<vector<float>> cfVariableLength_cent_bins{"cfVariableLength_cent_bins", {0., 10., 50., 100.}, "variable-length centrality bins"};
-  Configurable<bool> cfUseVariableLength_pt_bins{"cfUseVariableLength_pt_bins", false, "use or not variable-length pt bins"};
-  Configurable<vector<float>> cfVariableLength_pt_bins{"cfVariableLength_pt_bins", {0.20, 0.30, 0.40, 0.65, 1.00, 2.00, 5.00}, "variable-length pt bins"};
-  Configurable<bool> cfUseVariableLength_eta_bins{"cfUseVariableLength_eta_bins", false, "use or not variable-length eta bins"};
-  Configurable<vector<float>> cfVariableLength_eta_bins{"cfVariableLength_eta_bins", {-0.8, 0.0, 0.3, 0.8}, "variable-length eta bins"};
+  Configurable<bool> cfUseVariableLength_pt_bins{"cfUseVariableLength_pt_bins", true, "use or not variable-length pt bins"};
+  Configurable<vector<float>> cfVariableLength_pt_bins{"cfVariableLength_pt_bins", {0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 0.60, 0.80, 1.00, 1.25, 1.50, 1.75, 2.00, 2.50, 3.00, 4.00, 5.00}, "variable-length pt bins"};
+  Configurable<bool> cfUseVariableLength_eta_bins{"cfUseVariableLength_eta_bins", true, "use or not variable-length eta bins"};
+  Configurable<vector<float>> cfVariableLength_eta_bins{"cfVariableLength_eta_bins", {-0.8, -0.6, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.6, 0.8}, "variable-length eta bins"};
   Configurable<bool> cfUseVariableLength_occu_bins{"cfUseVariableLength_occu_bins", false, "use or not variable-length occupancy bins"};
   Configurable<vector<float>> cfVariableLength_occu_bins{"cfVariableLength_occu_bins", {0., 5., 6., 7., 8., 9., 100., 200., 500., 1000., 10000.}, "variable-length occupancy bins"};
   Configurable<bool> cfUseVariableLength_ir_bins{"cfUseVariableLength_ir_bins", false, "use or not variable-length interaction rate bins"};

@@ -55,8 +55,8 @@ void addClusterHistograms(HistogramRegistry* fRegistry, bool do2DQA)
   fRegistry->addClone("Cluster/before/", "Cluster/after/");
 }
 
-template <const int cls_id>
-void fillClusterHistograms(HistogramRegistry* fRegistry, SkimEMCCluster cluster, bool do2DQA, float weight = 1.f)
+template <const int cls_id, typename TCluster>
+void fillClusterHistograms(HistogramRegistry* fRegistry, TCluster cluster, bool do2DQA, float weight = 1.f)
 {
   static constexpr std::string_view cluster_types[2] = {"before/", "after/"};
   fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hE"), cluster.e(), weight);

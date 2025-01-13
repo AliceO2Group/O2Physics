@@ -375,7 +375,7 @@ struct cascadeFlow {
     if (coll.selection_bit(o2::aod::evsel::kNoCollInRofStandard))
       isNoCollInRofStd = 1;
     // TVX in TRD
-    bool isTVXinTRD = 0;
+    // bool isTVXinTRD = 0;
     //    if (coll.alias_bit(kTVXinTRD)) isTVXinTRD = 1;
 
     analysisSample(coll.centFT0C(),
