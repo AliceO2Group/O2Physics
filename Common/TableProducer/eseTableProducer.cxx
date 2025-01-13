@@ -193,7 +193,7 @@ struct EseTableProducer {
     const float centrality = collision.centFT0C();
     float counter{0.5};
     registry.fill(HIST("hESEstat"), counter++);
-    
+
     std::unordered_map<std::string, std::vector<float>*> vMap{
       {"FT0C", &qnpFT0C},
       {"FT0A", &qnpFT0A},
@@ -221,7 +221,6 @@ struct EseTableProducer {
         }
       }
     }
-    
   };
 
   void processESE(CollWithMults::iterator const& collision, aod::BCsWithTimestamps const&, aod::FV0As const&, aod::FT0s const&)
