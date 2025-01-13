@@ -89,7 +89,7 @@ using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCentRun2;
 constexpr static uint32_t gkEventFillMapRun3 = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
 constexpr static uint32_t gkEventFillMapRun3Qvect = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::ObjTypes::CollisionQvectCentr;
-constexpr static uint32_t gkEventFillMapRun3Mult = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
+//constexpr static uint32_t gkEventFillMapRun3Mult = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
 constexpr static uint32_t gkEventFillMapRun3QvectMult = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::ObjTypes::CollisionQvectCentr | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 
@@ -598,7 +598,7 @@ struct DQEventQvector {
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
   void processAllQvector(MyEventsWithCentQvectRun3Mult::iterator const& collisions, MyBcs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks, aod::Zdcs const& zdcs)
   {
-    runFillQvector<gkEventFillMapRun3Qvect, gkTrackFillMap>(collisions, bcs, tracks, zdcs);
+    runFillQvector<gkEventFillMapRun3QvectMult, gkTrackFillMap>(collisions, bcs, tracks, zdcs);
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
