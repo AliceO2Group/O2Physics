@@ -116,7 +116,7 @@ struct PidMlEffAndPurProducer {
       ccdbApi.init(cfgCCDBURL);
     } else {
       pidModel = PidONNXModel<BigTracks>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1,
-                              cfgPid.value, cfgCertainty.value, &cfgDetectorsPLimits.value[0]);
+                                         cfgPid.value, cfgCertainty.value, &cfgDetectorsPLimits.value[0]);
     }
 
     const AxisSpec axisPt{100, 0, 5.0, "pt"};
@@ -153,7 +153,7 @@ struct PidMlEffAndPurProducer {
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
       uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
       pidModel = PidONNXModel<BigTracks>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, timestamp,
-                              cfgPid.value, cfgCertainty.value, &cfgDetectorsPLimits.value[0]);
+                                         cfgPid.value, cfgCertainty.value, &cfgDetectorsPLimits.value[0]);
     }
 
     for (auto& mcPart : mcParticles) {

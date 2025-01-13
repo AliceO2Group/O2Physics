@@ -209,11 +209,11 @@ struct PidMlBatchEffAndPurProducer {
       uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
       for (const int32_t& pid : cfgPids.value)
         models.emplace_back(PidONNXModel<BigTracks>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
-                                         ccdbApi, timestamp, pid, 1.1, &cfgDetectorsPLimits.value[0]));
+                                                    ccdbApi, timestamp, pid, 1.1, &cfgDetectorsPLimits.value[0]));
     } else {
       for (int32_t& pid : cfgPids.value)
         models.emplace_back(PidONNXModel<BigTracks>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
-                                         ccdbApi, -1, pid, 1.1, &cfgDetectorsPLimits.value[0]));
+                                                    ccdbApi, -1, pid, 1.1, &cfgDetectorsPLimits.value[0]));
     }
 
     for (auto& mcPart : mcParticles) {
