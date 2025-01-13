@@ -336,12 +336,19 @@ struct StrangenessBuilder {
 
   // CCDB options
   struct : ConfigurableGroup {
+    std::string prefix = "ccdb";
     Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
     Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
     Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
     Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   } ccdbConfigurations;
+
+  // V0 building options
+  struct : ConfigurableGroup {
+    std::string prefix = "v0BuilderOpts";
+    Configurable<bool> generatePhotonCandidates{"generatePhotonCandidates", false, "generate gamma conversion candidates (V0s using TPC-only tracks)"};
+  } v0BuilderOpts;
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -365,6 +372,7 @@ struct StrangenessBuilder {
       int f = enabledTables->get(tableNames[i].c_str(), "enable");
       if (f == 1) {
         mEnabledTables[i] = 1;
+        LOGF(info, "Enabled table: %s", tableNames[i].c_str());
       }
     }
 
@@ -456,6 +464,49 @@ struct StrangenessBuilder {
         v0Map[v0.globalIndex()] = v0sFromCascades.size(); // provide actual valid index in buffer
         v0sFromCascades.push_back(straHelper.v0);
       }
+      // fill requested cursors only if type is not 0
+      if (v0.v0Type() == 1 || (v0.v0Type() == 1 && v0BuilderOpts.generatePhotonCandidates)) {
+        if(mEnabledTables[kV0Indices]){
+          // for referencing (especially - but not only - when using derived data)
+          v0indices(v0.posTrackId(), v0.negTrackId(),
+                    v0.collisionId(), v0.globalIndex());
+        }
+        if(mEnabledTables[kV0TrackXs]){
+          // further decay chains may need this
+          v0trackXs(straHelper.v0.positiveTrackX, straHelper.v0.negativeTrackX);
+        }
+        if(mEnabledTables[kV0CoresBase]){
+          // standard analysis
+          v0cores(straHelper.v0.position[0], straHelper.v0.position[1], straHelper.v0.position[2],
+                  straHelper.v0.positiveMomentum[0], straHelper.v0.positiveMomentum[1], straHelper.v0.positiveMomentum[2],
+                  straHelper.v0.negativeMomentum[0], straHelper.v0.negativeMomentum[1], straHelper.v0.negativeMomentum[2],
+                  straHelper.v0.daughterDCA,
+                  straHelper.v0.positiveDCAxy,
+                  straHelper.v0.negativeDCAxy,
+                  TMath::Cos(straHelper.v0.pointingAngle),
+                  straHelper.v0.dcaXY,
+                  v0.v0Type());
+        }
+        if(mEnabledTables[kV0TraPosAtDCAs]){
+          // for tracking studies
+          v0dauPositions(straHelper.v0.positivePosition[0], straHelper.v0.positivePosition[1], straHelper.v0.positivePosition[2],
+                         straHelper.v0.negativePosition[0], straHelper.v0.negativePosition[1], straHelper.v0.negativePosition[2]);
+
+        }
+        if(mEnabledTables[kV0TraPosAtIUs]){
+          // for tracking studies
+          std::array<float, 3> positivePositionIU;
+          std::array<float, 3> negativePositionIU;
+          o2::track::TrackPar positiveTrackParam = getTrackPar(posTrack);
+          o2::track::TrackPar negativeTrackParam = getTrackPar(negTrack);
+          positiveTrackParam.getXYZGlo(positivePositionIU);
+          negativeTrackParam.getXYZGlo(negativePositionIU);
+          v0dauPositionsIU(positivePositionIU[0], positivePositionIU[1], positivePositionIU[2],
+                           negativePositionIU[0], negativePositionIU[1], negativePositionIU[2]);
+        }
+      }
+
+
     }
     LOGF(info, "V0s in DF: %i, V0s built: %i, V0s built and buffered for cascades: %i.", v0s.size(), nV0s, v0sFromCascades.size());
   }
