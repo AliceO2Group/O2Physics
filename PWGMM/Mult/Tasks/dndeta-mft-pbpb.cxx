@@ -1205,7 +1205,7 @@ struct PseudorapidityDensityMFT {
   /// as particle-to-MFT-tracks)
   template <typename C, typename MC>
   void processTrkEffIdx(
-    typename soa::Filtered<soa::Join<C, aod::McCollisionLabels>> const& collisions,
+    typename soa::Join<C, aod::McCollisionLabels> const& collisions,
     MC const& /*mccollisions*/, ParticlesI const& /*particles*/,
     MFTTracksLabeled const& tracks)
   {
@@ -1308,7 +1308,7 @@ struct PseudorapidityDensityMFT {
   /// @brief process function to calculate tracking efficiency (inclusive,
   /// indexed)
   void processTrkEffIdxInlusive(
-    soa::Filtered<soa::Join<Colls, aod::McCollisionLabels>> const& collisions,
+    soa::Join<Colls, aod::McCollisionLabels> const& collisions,
     aod::McCollisions const& mccollisions, ParticlesI const& particles,
     MFTTracksLabeled const& tracks)
   {
@@ -1322,7 +1322,7 @@ struct PseudorapidityDensityMFT {
   /// @brief process function to calculate tracking efficiency (FT0 bins,
   /// indexed)
   void processTrkEffIdxCent(
-    soa::Filtered<soa::Join<CollsCent, aod::McCollisionLabels>> const& collisions,
+    soa::Join<CollsCent, aod::McCollisionLabels> const& collisions,
     aod::McCollisions const& mccollisions, ParticlesI const& particles,
     MFTTracksLabeled const& tracks)
   {
@@ -1337,8 +1337,8 @@ struct PseudorapidityDensityMFT {
   /// on BestCollisionsFwd in FT0C bins
   template <typename C, typename MC>
   void processTrkEffBest(
-    typename soa::Filtered<
-      soa::Join<C, aod::McCollisionLabels>>::iterator const& collision,
+    typename 
+      soa::Join<C, aod::McCollisionLabels>::iterator const& collision,
     MC const& /*mccollisions*/, filtParticles const& particles,
     filtMcMftTracks const& /*tracks*/,
     soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
@@ -1401,7 +1401,7 @@ struct PseudorapidityDensityMFT {
   /// @brief process function to calculate tracking efficiency (inclusive, based
   /// on BestCollisionsFwd)
   void processTrkEffBestInclusive(
-    soa::Filtered<soa::Join<Colls, aod::McCollisionLabels>>::iterator const& collision,
+    soa::Join<Colls, aod::McCollisionLabels>::iterator const& collision,
     aod::McCollisions const& mccollisions, filtParticles const& particles,
     filtMcMftTracks const& tracks,
     soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
@@ -1418,7 +1418,7 @@ struct PseudorapidityDensityMFT {
   /// @brief process function to calculate tracking efficiency (in FT0 bins,
   /// based on BestCollisionsFwd)
   void processTrkEffBestCent(
-    soa::Filtered<soa::Join<CollsCent, aod::McCollisionLabels>>::
+    soa::Join<CollsCent, aod::McCollisionLabels>::
       iterator const& collision,
     aod::McCollisions const& mccollisions, filtParticles const& particles,
     filtMcMftTracks const& tracks,
