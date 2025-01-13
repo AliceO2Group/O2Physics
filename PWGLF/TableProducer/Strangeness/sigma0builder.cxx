@@ -56,9 +56,8 @@ using namespace o2::framework::expressions;
 using std::array;
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 //using V0DerivedMCDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCDatas>;
-using V0DerivedMCDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0CoreMCLabels>;
-using V0MLDerivedDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0LambdaMLScores, aod::V0GammaMLScores, aod::V0AntiLambdaMLScores>;
-using V0StandardDerivedDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
+using V0DerivedMCDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0CoreMCLabels, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0GammaMLScores>;
+using V0StandardDerivedDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0GammaMLScores>;
 
 struct sigma0builder {
   SliceCache cache;
@@ -71,7 +70,6 @@ struct sigma0builder {
   // For manual sliceBy
   Preslice<V0DerivedMCDatas> perCollisionMCDerived = o2::aod::v0data::straCollisionId;
   Preslice<V0StandardDerivedDatas> perCollisionSTDDerived = o2::aod::v0data::straCollisionId;
-  Preslice<V0MLDerivedDatas> perCollisionMLDerived = o2::aod::v0data::straCollisionId;
 
   // Histogram registry
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -104,6 +102,7 @@ struct sigma0builder {
   } eventSelections;
 
   // For ML Selection
+  Configurable<bool> useMLScores{"useMLScores", false, "use ML scores to select candidates"};
   Configurable<float> Gamma_MLThreshold{"Gamma_MLThreshold", 0.1, "Decision Threshold value to select gammas"};
   Configurable<float> Lambda_MLThreshold{"Lambda_MLThreshold", 0.1, "Decision Threshold value to select lambdas"};
   Configurable<float> AntiLambda_MLThreshold{"AntiLambda_MLThreshold", 0.1, "Decision Threshold value to select antilambdas"};
@@ -424,15 +423,17 @@ struct sigma0builder {
 
     // Check if MC data and populate fIsMC, fIsPi0
     if constexpr (requires { gamma1.motherMCPartId(); gamma2.motherMCPartId(); }) {
-      fIsMC = true;
-      auto gamma1MC = gamma1.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
-      auto gamma2MC = gamma2.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+      if (gamma1.has_v0MCCore() && gamma2.has_v0MCCore()){
+        fIsMC = true;
+        auto gamma1MC = gamma1.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+        auto gamma2MC = gamma2.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
 
-      if (gamma1MC.pdgCode() == 22 && gamma2MC.pdgCode() == 22 &&
-          gamma1MC.pdgCodeMother() == 111 && gamma2MC.pdgCodeMother() == 111 &&
-          gamma1.motherMCPartId() == gamma2.motherMCPartId()) {
-        fIsPi0 = true;
-        histos.fill(HIST("MC/h2dPtVsMassPi0BeforeSel_SignalOnly"), pi0Pt, pi0Mass);
+        if (gamma1MC.pdgCode() == 22 && gamma2MC.pdgCode() == 22 &&
+            gamma1MC.pdgCodeMother() == 111 && gamma2MC.pdgCodeMother() == 111 &&
+            gamma1.motherMCPartId() == gamma2.motherMCPartId()) {
+          fIsPi0 = true;
+          histos.fill(HIST("MC/h2dPtVsMassPi0BeforeSel_SignalOnly"), pi0Pt, pi0Mass);
+        }
       }
     } else {
       histos.fill(HIST("GeneralQA/h2dPtVsMassPi0BeforeSel_Candidates"), pi0Pt, pi0Mass);
@@ -511,12 +512,7 @@ struct sigma0builder {
     if ((gamma.posTrackExtraId() == lambda.posTrackExtraId()) || (gamma.negTrackExtraId() == lambda.negTrackExtraId()) || (gamma.posTrackExtraId() == lambda.negTrackExtraId()) || (gamma.negTrackExtraId() == lambda.posTrackExtraId()) || (gamma.posTrackExtraId() == lambda.negTrackExtraId()))
       return false;
 
-    if constexpr (
-      requires { gamma.gammaBDTScore(); } &&
-      requires { lambda.lambdaBDTScore(); } &&
-      requires { lambda.antiLambdaBDTScore(); }) {
-
-      LOGF(info, "X-check: ML Selection is on!");
+    if (useMLScores) {
       // Gamma selection:
       if (gamma.gammaBDTScore() <= Gamma_MLThreshold)
         return false;
@@ -642,19 +638,9 @@ struct sigma0builder {
   void fillTables(TV0Object const& lambda, TV0Object const& gamma, TCollision const& coll)
   {
 
-    float GammaBDTScore = -1;
-    float LambdaBDTScore = -1;
-    float AntiLambdaBDTScore = -1;
-
-    if constexpr (
-      requires { gamma.gammaBDTScore(); } &&
-      requires { lambda.lambdaBDTScore(); } &&
-      requires { lambda.antiLambdaBDTScore(); }) {
-
-      GammaBDTScore = gamma.gammaBDTScore();
-      LambdaBDTScore = lambda.lambdaBDTScore();
-      AntiLambdaBDTScore = lambda.antiLambdaBDTScore();
-    }
+    float GammaBDTScore = gamma.gammaBDTScore();
+    float LambdaBDTScore = lambda.lambdaBDTScore();
+    float AntiLambdaBDTScore = lambda.antiLambdaBDTScore();
 
     // Daughters related
     /// Photon
@@ -776,12 +762,13 @@ struct sigma0builder {
   {
     for (const auto& coll : collisions) {
       if (!IsEventAccepted(coll, true)) {
-        return;
+        continue;
       }
       // Do analysis with collision-grouped V0s, retain full collision information
       const uint64_t collIdx = coll.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionMCDerived, collIdx);
 
+      histos.fill(HIST("hEventCentrality"), coll.centFT0C());
       // V0 table sliced
       for (auto& gamma : V0Table_thisCollision) { // selecting photons from Sigma0
         float centrality = coll.centFT0C();
@@ -880,6 +867,13 @@ struct sigma0builder {
                         PhotonCandPDGCode, PhotonCandPDGCodeMother, fIsPhotonPrimary, PhotonMCpT,
                         LambdaCandPDGCode, LambdaCandPDGCodeMother, fIsLambdaPrimary, LambdaMCpT);
 
+          fillTables(lambda, gamma, coll); // filling tables with accepted candidates
+
+          nSigmaCandidates++;
+          if (nSigmaCandidates % 5000 == 0) {
+            LOG(info) << "Sigma0 Candidates built: " << nSigmaCandidates;
+          }
+
           // QA histograms
           // Signal only (sigma0+antisigma0)
           if (fIsSigma || fIsAntiSigma)
@@ -889,11 +883,11 @@ struct sigma0builder {
     }
   }
 
-  void processSTDSelection(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0StandardDerivedDatas const& V0s, dauTracks const&)
+  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0StandardDerivedDatas const& V0s, dauTracks const&)
   {
     for (const auto& coll : collisions) {
       if (!IsEventAccepted(coll, true)) {
-        return;
+        continue;
       }
       // Do analysis with collision-grouped V0s, retain full collision information
       const uint64_t collIdx = coll.globalIndex();
@@ -932,36 +926,8 @@ struct sigma0builder {
     }
   }
 
-  void processMLSelection(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0MLDerivedDatas const& V0s, dauTracks const&)
-  {
-    for (const auto& coll : collisions) {
-      if (!IsEventAccepted(coll, true)) {
-        return;
-      }
-      // Do analysis with collision-grouped V0s, retain full collision information
-      const uint64_t collIdx = coll.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollisionMLDerived, collIdx);
-
-      histos.fill(HIST("hEventCentrality"), coll.centFT0C());
-
-      // V0 table sliced
-      for (auto& gamma : V0Table_thisCollision) {    // selecting photons from Sigma0
-        for (auto& lambda : V0Table_thisCollision) { // selecting lambdas from Sigma0
-          if (!processSigmaCandidate(lambda, gamma))
-            continue;
-
-          nSigmaCandidates++;
-          if (nSigmaCandidates % 5000 == 0) {
-            LOG(info) << "Sigma0 Candidates built: " << nSigmaCandidates;
-          }
-          fillTables(lambda, gamma, coll); // filling tables with accepted candidates
-        }
-      }
-    }
-  }
-  PROCESS_SWITCH(sigma0builder, processMonteCarlo, "Fill sigma0 MC table", false);
-  PROCESS_SWITCH(sigma0builder, processSTDSelection, "Select gammas and lambdas with standard cuts", true);
-  PROCESS_SWITCH(sigma0builder, processMLSelection, "Select gammas and lambdas with ML", false);
+  PROCESS_SWITCH(sigma0builder, processMonteCarlo, "process as if MC data", false);
+  PROCESS_SWITCH(sigma0builder, processRealData, "process as if real data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
