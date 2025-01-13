@@ -45,11 +45,11 @@ void FastTracker::AddLayer(TString name, float r, float z, float x0, float xrho,
   layers.push_back(newLayer);
 }
 
-DetLayer FastTracker::GetLayer(const int layer, bool ignoreBarrelLayers)
+DetLayer FastTracker::GetLayer(int layer, bool ignoreBarrelLayers)
 {
   int layerIdx = layer;
   if (ignoreBarrelLayers) {
-    for (uint32_t il = 0, trackingLayerIdx = 0; trackingLayerIdx <= layer; il++) {
+    for (int il = 0, trackingLayerIdx = 0; trackingLayerIdx <= layer; il++) {
       if (layers[il].type == 0)
         continue;
       trackingLayerIdx++;
