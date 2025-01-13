@@ -55,7 +55,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using V0DerivedMCDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCDatas>;
+//using V0DerivedMCDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCDatas>;
+using V0DerivedMCDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0CoreMCLabels>;
 using V0MLDerivedDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0LambdaMLScores, aod::V0GammaMLScores, aod::V0AntiLambdaMLScores>;
 using V0StandardDerivedDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
 
@@ -255,10 +256,13 @@ struct sigma0builder {
     bool fIsPi0 = false, fIsMC = false;
 
     // Check if MC data and populate fIsMC, fIsPi0
-    if constexpr (requires { gamma1.pdgCode(); gamma2.pdgCode(); }) {
+    if constexpr (requires { gamma1.motherMCPartId(); gamma2.motherMCPartId(); }) {
       fIsMC = true;
-      if (gamma1.pdgCode() == 22 && gamma2.pdgCode() == 22 &&
-          gamma1.pdgCodeMother() == 111 && gamma2.pdgCodeMother() == 111 &&
+      auto gamma1MC = gamma1.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+      auto gamma2MC = gamma2.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+
+      if (gamma1MC.pdgCode() == 22 && gamma2MC.pdgCode() == 22 &&
+          gamma1MC.pdgCodeMother() == 111 && gamma2MC.pdgCodeMother() == 111 &&
           gamma1.motherMCPartId() == gamma2.motherMCPartId()) {
         fIsPi0 = true;
         histos.fill(HIST("MC/h2dPtVsMassPi0BeforeSel_SignalOnly"), pi0Pt, pi0Mass);
@@ -599,7 +603,7 @@ struct sigma0builder {
                       fLambdaV0Type, LambdaBDTScore, AntiLambdaBDTScore);
   }
 
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents> const& collisions, V0DerivedMCDatas const& V0s, dauTracks const&)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents> const& collisions, V0DerivedMCDatas const& V0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
     for (const auto& coll : collisions) {
       // Do analysis with collision-grouped V0s, retain full collision information
@@ -610,43 +614,53 @@ struct sigma0builder {
       for (auto& gamma : V0Table_thisCollision) { // selecting photons from Sigma0
         float centrality = coll.centFT0C();
 
+        if (!gamma.has_v0MCCore())
+          continue;
+
+        auto gammaMC = gamma.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+
         // Auxiliary histograms:
-        if (gamma.pdgCode() == 22) {
+        if (gammaMC.pdgCode() == 22) {
           float GammaY = TMath::Abs(RecoDecay::y(std::array{gamma.px(), gamma.py(), gamma.pz()}, o2::constants::physics::MassGamma));
 
           if (GammaY < 0.5) {                                                                                                                // rapidity selection
             histos.fill(HIST("MC/h2dPtVsCentrality_GammaBeforeSel"), centrality, gamma.pt());                                                // isgamma
-            histos.fill(HIST("MC/h2dGammaPtResolution"), gamma.pt(), gamma.pt() - RecoDecay::pt(array{gamma.pxMC(), gamma.pyMC()}));         // pT resolution
+            histos.fill(HIST("MC/h2dGammaPtResolution"), gamma.pt(), gamma.pt() - RecoDecay::pt(array{gammaMC.pxMC(), gammaMC.pyMC()}));         // pT resolution
 
-            if (gamma.pdgCodeMother() == 3212) {
+            if (gammaMC.pdgCodeMother() == 3212) {
               histos.fill(HIST("MC/h2dPtVsCentrality_GammaSigma0"), centrality, gamma.pt()); // isgamma from sigma
             }
-            if (gamma.pdgCodeMother() == -3212) {
+            if (gammaMC.pdgCodeMother() == -3212) {
               histos.fill(HIST("MC/h2dPtVsCentrality_GammaAntiSigma0"), centrality, gamma.pt()); // isgamma from sigma
             }
           }
         }
-        if (gamma.pdgCode() == 3122) { // Is Lambda
+        if (gammaMC.pdgCode() == 3122) { // Is Lambda
           float LambdaY = TMath::Abs(RecoDecay::y(std::array{gamma.px(), gamma.py(), gamma.pz()}, o2::constants::physics::MassLambda));
           if (LambdaY < 0.5) { // rapidity selection
             histos.fill(HIST("MC/h2dPtVsCentrality_LambdaBeforeSel"), centrality, gamma.pt());
-            histos.fill(HIST("MC/h2dLambdaPtResolution"), gamma.pt(), gamma.pt() - RecoDecay::pt(array{gamma.pxMC(), gamma.pyMC()})); // pT resolution
-            if (gamma.pdgCodeMother() == 3212) {
+            histos.fill(HIST("MC/h2dLambdaPtResolution"), gamma.pt(), gamma.pt() - RecoDecay::pt(array{gammaMC.pxMC(), gammaMC.pyMC()})); // pT resolution
+            if (gammaMC.pdgCodeMother() == 3212) {
               histos.fill(HIST("MC/h2dPtVsCentrality_LambdaSigma0"), centrality, gamma.pt());
             }
           }
         }
-        if (gamma.pdgCode() == -3122) { // Is AntiLambda
+        if (gammaMC.pdgCode() == -3122) { // Is AntiLambda
           float AntiLambdaY = TMath::Abs(RecoDecay::y(std::array{gamma.px(), gamma.py(), gamma.pz()}, o2::constants::physics::MassLambda));
           if (AntiLambdaY < 0.5) { // rapidity selection
             histos.fill(HIST("MC/h2dPtVsCentrality_AntiLambdaBeforeSel"), centrality, gamma.pt());
-            if (gamma.pdgCodeMother() == -3212) {
+            if (gammaMC.pdgCodeMother() == -3212) {
               histos.fill(HIST("MC/h2dPtVsCentrality_LambdaAntiSigma0"), centrality, gamma.pt()); // isantilambda from antisigma
             }
           }
         }
 
         for (auto& lambda : V0Table_thisCollision) { // selecting lambdas from Sigma0
+          if (!lambda.has_v0MCCore())
+            continue;
+
+          auto lambdaMC = lambda.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+
           if (doPi0QA)                               // Pi0 QA study
             runPi0QA(gamma, lambda);
 
@@ -658,12 +672,12 @@ struct sigma0builder {
           float SigmapT = RecoDecay::pt(array{gamma.px() + lambda.px(), gamma.py() + lambda.py()});
           float SigmaY = TMath::Abs(RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, o2::constants::physics::MassSigma0));
 
-          if ((gamma.pdgCode() == 22) && (gamma.pdgCodeMother() == 3212) && (lambda.pdgCode() == 3122) && (lambda.pdgCodeMother() == 3212) && (gamma.motherMCPartId() == lambda.motherMCPartId()) && (SigmaY < 0.5)) {
+          if ((gammaMC.pdgCode() == 22) && (gammaMC.pdgCodeMother() == 3212) && (lambdaMC.pdgCode() == 3122) && (lambdaMC.pdgCodeMother() == 3212) && (gamma.motherMCPartId() == lambda.motherMCPartId()) && (SigmaY < 0.5)) {
             histos.fill(HIST("MC/h2dPtVsCentrality_Sigma0BeforeSel"), centrality, RecoDecay::pt(array{gamma.px() + lambda.px(), gamma.py() + lambda.py()}));
             histos.fill(HIST("MC/h2dSigmaPtVsLambdaPt"), SigmapT, lambda.pt());
             histos.fill(HIST("MC/h2dSigmaPtVsGammaPt"), SigmapT, gamma.pt());
           }
-          if ((gamma.pdgCode() == 22) && (gamma.pdgCodeMother() == -3212) && (lambda.pdgCode() == -3122) && (lambda.pdgCodeMother() == -3212) && (gamma.motherMCPartId() == lambda.motherMCPartId()) && (SigmaY < 0.5))
+          if ((gammaMC.pdgCode() == 22) && (gammaMC.pdgCodeMother() == -3212) && (lambdaMC.pdgCode() == -3122) && (lambdaMC.pdgCodeMother() == -3212) && (gamma.motherMCPartId() == lambda.motherMCPartId()) && (SigmaY < 0.5))
             histos.fill(HIST("MC/h2dPtVsCentrality_AntiSigma0BeforeSel"), centrality, SigmapT);
 
           if (!processSigmaCandidate(lambda, gamma)) // basic selection
@@ -671,18 +685,18 @@ struct sigma0builder {
 
           bool fIsSigma = false;
           bool fIsAntiSigma = false;
-          bool fIsPhotonPrimary = gamma.isPhysicalPrimary();
-          int PhotonCandPDGCode = gamma.pdgCode();
-          int PhotonCandPDGCodeMother = gamma.pdgCodeMother();
-          bool fIsLambdaPrimary = lambda.isPhysicalPrimary();
-          int LambdaCandPDGCode = lambda.pdgCode();
-          int LambdaCandPDGCodeMother = lambda.pdgCodeMother();
+          bool fIsPhotonPrimary = gammaMC.isPhysicalPrimary();
+          int PhotonCandPDGCode = gammaMC.pdgCode();
+          int PhotonCandPDGCodeMother = gammaMC.pdgCodeMother();
+          bool fIsLambdaPrimary = lambdaMC.isPhysicalPrimary();
+          int LambdaCandPDGCode = lambdaMC.pdgCode();
+          int LambdaCandPDGCodeMother = lambdaMC.pdgCodeMother();
 
-          if ((gamma.pdgCode() == 22) && (gamma.pdgCodeMother() == 3212) && (lambda.pdgCode() == 3122) && (lambda.pdgCodeMother() == 3212) && (gamma.motherMCPartId() == lambda.motherMCPartId())) {
+          if ((gammaMC.pdgCode() == 22) && (gammaMC.pdgCodeMother() == 3212) && (lambdaMC.pdgCode() == 3122) && (lambdaMC.pdgCodeMother() == 3212) && (gamma.motherMCPartId() == lambda.motherMCPartId())) {
             fIsSigma = true;
             histos.fill(HIST("MC/h2dPtVsCentrality_Sigma0AfterSel"), centrality, RecoDecay::pt(array{gamma.px() + lambda.px(), gamma.py() + lambda.py()}));
           }
-          if ((gamma.pdgCode() == 22) && (gamma.pdgCodeMother() == -3212) && (lambda.pdgCode() == -3122) && (lambda.pdgCodeMother() == -3212) && (gamma.motherMCPartId() == lambda.motherMCPartId())) {
+          if ((gammaMC.pdgCode() == 22) && (gammaMC.pdgCodeMother() == -3212) && (lambdaMC.pdgCode() == -3122) && (lambdaMC.pdgCodeMother() == -3212) && (gamma.motherMCPartId() == lambda.motherMCPartId())) {
             fIsAntiSigma = true;
             histos.fill(HIST("MC/h2dPtVsCentrality_AntiSigma0AfterSel"), centrality, RecoDecay::pt(array{gamma.px() + lambda.px(), gamma.py() + lambda.py()}));
             // TH3D Mass histogram
