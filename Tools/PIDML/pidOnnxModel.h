@@ -326,7 +326,7 @@ struct PidONNXModel {
   }
 
   std::vector<std::string> mTrainColumns;
-  std::vector<float(*)(const typename T::iterator&)> mGetters;
+  std::vector<float (*)(const typename T::iterator&)> mGetters;
   std::map<std::string, std::pair<float, float>> mScalingParams;
 
   std::shared_ptr<Ort::Env> mEnv = nullptr;
