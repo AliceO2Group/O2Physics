@@ -29,9 +29,6 @@ This analysis includes two processes, one for Real Data and one for MC Data swit
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "CommonUtils/StringUtils.h"
-#include <memory>
-#include <vector>
-#include <string>
 
 // namespace to be used for pt plots and bins
 namespace pthistos
@@ -40,9 +37,9 @@ constexpr uint32_t NSIZE = 30;
 std::shared_ptr<TH1> KaonPt[NSIZE];
 static std::vector<std::string> kaonptbins;
 std::shared_ptr<TH1> LambdaPt[NSIZE];
-static std::vector<std::string> lambdaptbins;
+static std::vector<std::string> lambdaPtBins;
 std::shared_ptr<TH1> AntilambdaPt[NSIZE];
-static std::vector<std::string> antilambdaptbins;
+static std::vector<std::string> antiLambdaPtBins;
 } // namespace pthistos
 using namespace o2;
 using namespace o2::framework;
@@ -121,26 +118,26 @@ struct v0ptinvmassplots {
     if (lambda_analysis == true) {
       // same method as in Kzerosh above
       std::string lambdasetting_ptbins = lambdasetting_pt_string;
-      pthistos::lambdaptbins = o2::utils::Str::tokenize(lambdasetting_ptbins, ',');
+      pthistos::lambdaPtBins = o2::utils::Str::tokenize(lambdasetting_ptbins, ',');
       rPtAnalysis.add("hLambdaReconstructedPtSpectrum", "hLambdaReconstructedPtSpectrum", {HistType::kTH1F, {ptAxis}});
       rPtAnalysis.add("hMassLambdaAll", "hMassLambdaAll", {HistType::kTH1F, {LambdaMassAxis}});
       rPtAnalysis.add("hLambdaPtSpectrumBeforeCuts", "hLambdaPtSpectrumBeforeCuts", {HistType::kTH1F, {ptAxis}});
       rPtAnalysis.add("hMassLambdaAllAfterCuts", "hMassLambdaAllAfterCuts", {HistType::kTH1F, {LambdaMassAxis}});
-      for (u_int32_t i = 0; i < pthistos::lambdaptbins.size() - 1; i++) {
-        pthistos::LambdaPt[i] = rLambdaMassPlots_per_PtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", pthistos::lambdaptbins[i], pthistos::lambdaptbins[i + 1]).data(), fmt::format("hPt from {0} to {1}", pthistos::lambdaptbins[i], pthistos::lambdaptbins[i + 1]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
+      for (u_int32_t i = 0; i < pthistos::lambdaPtBins.size() - 1; i++) {
+        pthistos::LambdaPt[i] = rLambdaMassPlots_per_PtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", pthistos::lambdaPtBins[i], pthistos::lambdaPtBins[i + 1]).data(), fmt::format("hPt from {0} to {1}", pthistos::lambdaPtBins[i], pthistos::lambdaPtBins[i + 1]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
       }
     }
     // Adding Antilambda Histograms
     if (antilambda_analysis == true) {
       // same method as in Lambda and Kzerosh above
       std::string antilambdasetting_ptbins = antilambdasetting_pt_string;
-      pthistos::antilambdaptbins = o2::utils::Str::tokenize(antilambdasetting_ptbins, ',');
+      pthistos::antiLambdaPtBins = o2::utils::Str::tokenize(antilambdasetting_ptbins, ',');
       rPtAnalysis.add("hAntilambdaReconstructedPtSpectrum", "hAntilambdaReconstructedPtSpectrum", {HistType::kTH1F, {ptAxis}});
       rPtAnalysis.add("hMassAntilambdaAll", "hMassAntilambdaAll", {HistType::kTH1F, {AntiLambdaMassAxis}});
       rPtAnalysis.add("hAntilambdaPtSpectrumBeforeCuts", "hAntilambdaPtSpectrumBeforeCuts", {HistType::kTH1F, {ptAxis}});
       rPtAnalysis.add("hMassAntilambdaAllAfterCuts", "hMassAntilambdaAllAfterCuts", {HistType::kTH1F, {AntiLambdaMassAxis}});
-      for (int i = 0; i < pthistos::antilambdaptbins.size() - 1; i++) {
-        pthistos::AntilambdaPt[i] = rAntilambdaMassPlots_per_PtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", pthistos::antilambdaptbins[i], pthistos::antilambdaptbins[i + 1]).data(), fmt::format("hPt from {0} to {1}", pthistos::antilambdaptbins[i], pthistos::antilambdaptbins[i + 1]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
+      for (int i = 0; i < pthistos::antiLambdaPtBins.size() - 1; i++) {
+        pthistos::AntilambdaPt[i] = rAntilambdaMassPlots_per_PtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", pthistos::antiLambdaPtBins[i], pthistos::antiLambdaPtBins[i + 1]).data(), fmt::format("hPt from {0} to {1}", pthistos::antiLambdaPtBins[i], pthistos::antiLambdaPtBins[i + 1]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
       }
     }
   }
@@ -161,7 +158,7 @@ struct v0ptinvmassplots {
   {
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.isPhysicalPrimary()) {
-        if (TMath::Abs(mcParticle.y()) < 0.5f) {
+        if (abs(mcParticle.y()) < 0.5f) {
           if (mcParticle.pdgCode() == 310) // kzero matched
           {
             rPtAnalysis.fill(HIST("hK0ShGeneratedPtSpectrum"), mcParticle.pt());
@@ -195,7 +192,7 @@ struct v0ptinvmassplots {
               rPtAnalysis.fill(HIST("hMassK0ShortAll"), v0.mK0Short());
               rPtAnalysis.fill(HIST("hK0ShortPtSpectrumBeforeCuts"), v0.pt());
               // Implementing best kzero cuts
-              if (v0.v0cosPA() > kaonshsetting_cospa && v0.dcaV0daughters() < kaonshsetting_dcav0dau && v0.v0radius() > kaonshsetting_radius && TMath::Abs(v0.dcapostopv()) > kaonshsetting_dcapostopv && TMath::Abs(v0.dcanegtopv()) > kaonshsetting_dcanegtopv) {
+              if (v0.v0cosPA() > kaonshsetting_cospa && v0.dcaV0daughters() < kaonshsetting_dcav0dau && v0.v0radius() > kaonshsetting_radius && abs(v0.dcapostopv()) > kaonshsetting_dcapostopv && TMath::Abs(v0.dcanegtopv()) > kaonshsetting_dcanegtopv) {
                 rPtAnalysis.fill(HIST("hMassK0ShortAllAfterCuts"), v0.mK0Short());
                 rPtAnalysis.fill(HIST("hK0ShortReconstructedPtSpectrum"), v0.pt());
                 for (int i = 0; i < 20; i++) {
@@ -221,13 +218,13 @@ struct v0ptinvmassplots {
               rPtAnalysis.fill(HIST("hMassLambdaAll"), v0.mLambda());
               rPtAnalysis.fill(HIST("hLambdaPtSpectrumBeforeCuts"), v0.pt());
               // Implementing best lambda cuts
-              if (v0.v0cosPA() > lambdasetting_cospa && v0.dcaV0daughters() < lambdasetting_dcav0dau && v0.v0radius() > lambdasetting_radius && TMath::Abs(v0.dcapostopv()) > lambdasetting_dcapostopv && TMath::Abs(v0.dcanegtopv()) > lambdasetting_dcanegtopv) {
+              if (v0.v0cosPA() > lambdasetting_cospa && v0.dcaV0daughters() < lambdasetting_dcav0dau && v0.v0radius() > lambdasetting_radius && abs(v0.dcapostopv()) > lambdasetting_dcapostopv && TMath::Abs(v0.dcanegtopv()) > lambdasetting_dcanegtopv) {
                 rPtAnalysis.fill(HIST("hMassLambdaAllAfterCuts"), v0.mLambda());
                 rPtAnalysis.fill(HIST("hLambdaReconstructedPtSpectrum"), v0.pt());
                 for (int i = 0; i < 20; i++) {
                   // same as above with kzerosh we fill the 20 lambda namespace histograms within their Pt range
-                  std::string pt1 = pthistos::lambdaptbins[i];
-                  std::string pt2 = pthistos::lambdaptbins[i + 1];
+                  std::string pt1 = pthistos::lambdaPtBins[i];
+                  std::string pt2 = pthistos::lambdaPtBins[i + 1];
                   size_t pos1 = pt1.find("_");
                   size_t pos2 = pt2.find("_");
                   pt1[pos1] = '.';
@@ -247,13 +244,13 @@ struct v0ptinvmassplots {
               rPtAnalysis.fill(HIST("hMassAntilambdaAll"), v0.mAntiLambda());
               rPtAnalysis.fill(HIST("hAntilambdaPtSpectrumBeforeCuts"), v0.pt());
               // Implementing best antilambda cuts
-              if (v0.v0cosPA() > antilambdasetting_cospa && v0.dcaV0daughters() < antilambdasetting_dcav0dau && v0.v0radius() > antilambdasetting_radius && TMath::Abs(v0.dcapostopv()) > antilambdasetting_dcapostopv && TMath::Abs(v0.dcanegtopv()) > antilambdasetting_dcanegtopv) {
+              if (v0.v0cosPA() > antilambdasetting_cospa && v0.dcaV0daughters() < antilambdasetting_dcav0dau && v0.v0radius() > antilambdasetting_radius && abs(v0.dcapostopv()) > antilambdasetting_dcapostopv && TMath::Abs(v0.dcanegtopv()) > antilambdasetting_dcanegtopv) {
                 rPtAnalysis.fill(HIST("hMassAntilambdaAllAfterCuts"), v0.mAntiLambda());
                 rPtAnalysis.fill(HIST("hAntilambdaReconstructedPtSpectrum"), v0.pt());
                 for (int i = 0; i < 20; i++) {
                   // same as above with kzerosh and lambda we fill the 20 anti-lambda namespace histograms within their Pt range
-                  std::string pt1 = pthistos::antilambdaptbins[i];
-                  std::string pt2 = pthistos::antilambdaptbins[i + 1];
+                  std::string pt1 = pthistos::antiLambdaPtBins[i];
+                  std::string pt2 = pthistos::antiLambdaPtBins[i + 1];
                   size_t pos1 = pt1.find("_");
                   size_t pos2 = pt2.find("_");
                   pt1[pos1] = '.';
@@ -281,7 +278,7 @@ struct v0ptinvmassplots {
         // Filling the five Kzero invariant mass plots for different cuts (which are taken from namespace), for full explanation see the first kzero cut filling in the MC process
         rPtAnalysis.fill(HIST("hMassK0ShortAll"), v0.mK0Short());
         // Implementing best kzero cuts
-        if (v0.v0cosPA() > kaonshsetting_cospa && v0.dcaV0daughters() < kaonshsetting_dcav0dau && v0.v0radius() > kaonshsetting_radius && TMath::Abs(v0.dcapostopv()) > kaonshsetting_dcapostopv && TMath::Abs(v0.dcanegtopv()) > kaonshsetting_dcanegtopv) {
+        if (v0.v0cosPA() > kaonshsetting_cospa && v0.dcaV0daughters() < kaonshsetting_dcav0dau && v0.v0radius() > kaonshsetting_radius && abs(v0.dcapostopv()) > kaonshsetting_dcapostopv && TMath::Abs(v0.dcanegtopv()) > kaonshsetting_dcanegtopv) {
           rPtAnalysis.fill(HIST("hMassK0ShortAllAfterCuts"), v0.mK0Short());
           for (int i = 0; i < 20; i++) { // same as above MC-process we fill the namespace histos with the kaon invariant mass of the particle within the pt range of the histo
             std::string pt1 = pthistos::kaonptbins[i];
@@ -303,11 +300,11 @@ struct v0ptinvmassplots {
         // Filling the five lambda invariant mass plots for different cuts (which are taken from namespace), for full explanation see the first kzero cut filling in the MC process
         rPtAnalysis.fill(HIST("hMassLambdaAll"), v0.mLambda());
         // Implementing best lambda cuts
-        if (v0.v0cosPA() > lambdasetting_cospa && v0.dcaV0daughters() < lambdasetting_dcav0dau && v0.v0radius() > lambdasetting_radius && TMath::Abs(v0.dcapostopv()) > lambdasetting_dcapostopv && TMath::Abs(v0.dcanegtopv()) > lambdasetting_dcanegtopv) {
+        if (v0.v0cosPA() > lambdasetting_cospa && v0.dcaV0daughters() < lambdasetting_dcav0dau && v0.v0radius() > lambdasetting_radius && abs(v0.dcapostopv()) > lambdasetting_dcapostopv && TMath::Abs(v0.dcanegtopv()) > lambdasetting_dcanegtopv) {
           rPtAnalysis.fill(HIST("hMassLambdaAllAfterCuts"), v0.mLambda());
           for (int i = 0; i < 20; i++) { // same as above MC-process we fill the namespace histos with the lambda invariant mass of the particle within the pt range of the histo
-            std::string pt1 = pthistos::lambdaptbins[i];
-            std::string pt2 = pthistos::lambdaptbins[i + 1];
+            std::string pt1 = pthistos::lambdaPtBins[i];
+            std::string pt2 = pthistos::lambdaPtBins[i + 1];
             size_t pos1 = pt1.find("_");
             size_t pos2 = pt2.find("_");
             pt1[pos1] = '.';
@@ -325,11 +322,11 @@ struct v0ptinvmassplots {
         // Filling the five Antilambda invariant mass plots for different cuts (which are taken from namespace), for full explanation see the first kzero cut filling in the MC process
         rPtAnalysis.fill(HIST("hMassAntilambdaAll"), v0.mAntiLambda());
         // implementing best antilambda cuts
-        if (v0.v0cosPA() > antilambdasetting_cospa && v0.dcaV0daughters() < antilambdasetting_dcav0dau && v0.v0radius() > antilambdasetting_radius && TMath::Abs(v0.dcapostopv()) > antilambdasetting_dcapostopv && TMath::Abs(v0.dcanegtopv()) > antilambdasetting_dcanegtopv) {
+        if (v0.v0cosPA() > antilambdasetting_cospa && v0.dcaV0daughters() < antilambdasetting_dcav0dau && v0.v0radius() > antilambdasetting_radius && abs(v0.dcapostopv()) > antilambdasetting_dcapostopv && TMath::Abs(v0.dcanegtopv()) > antilambdasetting_dcanegtopv) {
           rPtAnalysis.fill(HIST("hMassAntilambdaAllAfterCuts"), v0.mAntiLambda());
           for (int i = 0; i < 20; i++) { // same as above MC-process we fill the namespace histos with the antilambda invariant mass of the particle within the pt range of the histo
-            std::string pt1 = pthistos::antilambdaptbins[i];
-            std::string pt2 = pthistos::antilambdaptbins[i + 1];
+            std::string pt1 = pthistos::antiLambdaPtBins[i];
+            std::string pt2 = pthistos::antiLambdaPtBins[i + 1];
             size_t pos1 = pt1.find("_");
             size_t pos2 = pt2.find("_");
             pt1[pos1] = '.';
