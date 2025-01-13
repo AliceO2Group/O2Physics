@@ -49,12 +49,12 @@ class FastTracker
   std::vector<std::vector<float>> hits; // bookkeep last added hits
 
   // operational
-  float magneticField;   // in kiloGauss (5 = 0.5T, etc)
-  bool applyZacceptance; // check z acceptance or not
-  float covMatFactor;    // covmat off-diagonal factor to use for covmat fix (negative: no factor)
-  int verboseLevel;      // 0: not verbose, >0 more verbose
-  bool applyMSCorrection;     // Apply correction for multiple scattering
-  bool applyElossCorrection;  // Apply correction for eloss (requires MS correction)
+  float magneticField;       // in kiloGauss (5 = 0.5T, etc)
+  bool applyZacceptance;     // check z acceptance or not
+  float covMatFactor;        // covmat off-diagonal factor to use for covmat fix (negative: no factor)
+  int verboseLevel;          // 0: not verbose, >0 more verbose
+  bool applyMSCorrection;    // Apply correction for multiple scattering
+  bool applyElossCorrection; // Apply correction for eloss (requires MS correction)
 
   uint64_t covMatOK;    // cov mat has negative eigenvals
   uint64_t covMatNotOK; // cov mat has negative eigenvals
