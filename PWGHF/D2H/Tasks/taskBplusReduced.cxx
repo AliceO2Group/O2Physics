@@ -77,6 +77,8 @@ DECLARE_SOA_COLUMN(ImpactParameterBach, impactParameterBach, float);            
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);               //! Impact parameter product of daughters
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                                                     //! Cosine pointing angle of candidate
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                                 //! Cosine pointing angle of candidate in transverse plane
+DECLARE_SOA_COLUMN(CpaD, cpaD, float);                                                   //! Cosine pointing angle of D-meson daughter candidate
+DECLARE_SOA_COLUMN(CpaXYD, cpaXYD, float);                                               //! Cosine pointing angle in transverse plane of D-meson daughter candidate
 DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);                   //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
 DECLARE_SOA_COLUMN(MlScoreSig, mlScoreSig, float);                                       //! ML score for signal class
 DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);                      //! Flag for association with wrong collision
@@ -105,6 +107,8 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_bplus_lite::DecayLengthD,
                   hf_cand_bplus_lite::DecayLengthXYD,
                   hf_cand_bplus_lite::ImpactParameterD,
+                  hf_cand_bplus_lite::CpaD,
+                  hf_cand_bplus_lite::CpaXYD,
                   hf_cand_bplus_lite::PtDmesProngMin,
                   hf_cand_bplus_lite::AbsEtaDmesProngMin,
                   hf_cand_bplus_lite::ItsNClsDmesProngMin,
@@ -594,6 +598,8 @@ struct HfTaskBplusReduced {
           decLenD0,
           decLenXyD0,
           candidate.impactParameter0(),
+          cpaD0,
+          cpaXyD0,
           candD0.ptProngMin(),
           candD0.absEtaProngMin(),
           candD0.itsNClsProngMin(),
