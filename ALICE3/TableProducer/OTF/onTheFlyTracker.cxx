@@ -25,6 +25,9 @@
 
 #include <utility>
 #include <array>
+#include <string>
+#include <map>
+#include <vector>
 
 #include <TGeoGlobalMagField.h>
 #include <TGenPhaseSpace.h>
@@ -1052,13 +1055,13 @@ struct OnTheFlyTracker {
 
       // populate extra tables if required to do so
       if (populateTracksExtra) {
-        tracksExtra(0.0f, (uint32_t)0, (uint8_t)0, (uint8_t)0, (uint8_t)0,
-                    (int8_t)0, (int8_t)0, (uint8_t)0, (uint8_t)0,
+        tracksExtra(0.0f, static_cast<uint32_t>(0), static_cast<uint8_t>(0), static_cast<uint8_t>(0), static_cast<uint8_t>(0),
+                    static_cast<int8_t>(0), static_cast<int8_t>(0), static_cast<uint8_t>(0), static_cast<uint8_t>(0),
                     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
                     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
       }
       if (populateTrackSelection) {
-        trackSelection((uint8_t)0, false, false, false, false, false, false);
+        trackSelection(static_cast<uint8_t>(0), false, false, false, false, false, false);
         trackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
       }
       TracksAlice3(true);
@@ -1100,13 +1103,13 @@ struct OnTheFlyTracker {
 
       // populate extra tables if required to do so
       if (populateTracksExtra) {
-        tracksExtra(0.0f, (uint32_t)0, (uint8_t)0, (uint8_t)0, (uint8_t)0,
-                    (int8_t)0, (int8_t)0, (uint8_t)0, (uint8_t)0,
+        tracksExtra(0.0f, static_cast<uint32_t>(0), static_cast<uint8_t>(0), static_cast<uint8_t>(0), static_cast<uint8_t>(0),
+                    static_cast<int8_t>(0), static_cast<int8_t>(0), static_cast<uint8_t>(0), static_cast<uint8_t>(0),
                     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
                     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
       }
       if (populateTrackSelection) {
-        trackSelection((uint8_t)0, false, false, false, false, false, false);
+        trackSelection(static_cast<uint8_t>(0), false, false, false, false, false, false);
         trackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
       }
       TracksAlice3(false);
