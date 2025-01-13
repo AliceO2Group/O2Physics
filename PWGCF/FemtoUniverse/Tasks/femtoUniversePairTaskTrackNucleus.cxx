@@ -269,9 +269,9 @@ struct FemtoUniversePairTaskTrackNucleus {
     // confNsigmaCombined -> TPC and TOF Sigma (combined) for momentum > confTOFpMin
 
     if (mom < twoobjectsconfigs.confTOFpMin) {
-      return abs(nsigmaTPC) < twoobjectsconfigs.confNsigmaTPC;
+      return std::abs(nsigmaTPC) < twoobjectsconfigs.confNsigmaTPC;
     } else {
-      return hypot(nsigmaTOF, nsigmaTPC) < twoobjectsconfigs.confNsigmaCombined;
+      return std::hypot(nsigmaTOF, nsigmaTPC) < twoobjectsconfigs.confNsigmaCombined;
     }
   }
 
@@ -280,13 +280,13 @@ struct FemtoUniversePairTaskTrackNucleus {
   {
     if (twoobjectsconfigs.isKaonNsigma == true) {
       if (mom < 0.4) {
-        return abs(nsigmaTPCK) < 2;
+        return std::abs(nsigmaTPCK) < 2;
       } else if (mom > 0.4 && mom < 0.45) {
-        return abs(nsigmaTPCK) < 1;
+        return std::abs(nsigmaTPCK) < 1;
       } else if (mom > 0.45 && mom < 0.8) {
-        return (abs(nsigmaTPCK) < 3 && abs(nsigmaTOFK) < 2);
+        return (std::abs(nsigmaTPCK) < 3 && std::abs(nsigmaTOFK) < 2);
       } else if (mom > 0.8 && mom < 1.5) {
-        return (abs(nsigmaTPCK) < 3 && abs(nsigmaTOFK) < 1.5);
+        return (std::abs(nsigmaTPCK) < 3 && std::abs(nsigmaTOFK) < 1.5);
       } else {
         return false;
       }
@@ -300,9 +300,9 @@ struct FemtoUniversePairTaskTrackNucleus {
   {
     if (mom > deuteronconfigs.confPlowDe && mom < deuteronconfigs.confPhighDe) {
       if (mom < deuteronconfigs.confTOFpMinDe) {
-        return (abs(nsigmaTPCDe) < deuteronconfigs.confNsigmaTPCDe);
+        return (std::abs(nsigmaTPCDe) < deuteronconfigs.confNsigmaTPCDe);
       } else {
-        return (abs(nsigmaTOFDe) < deuteronconfigs.confNsigmaTOFDe && (abs(nsigmaTPCDe) < deuteronconfigs.confNsigmaTPCDe));
+        return (std::abs(nsigmaTOFDe) < deuteronconfigs.confNsigmaTOFDe && (std::abs(nsigmaTPCDe) < deuteronconfigs.confNsigmaTPCDe));
       }
     } else {
       return false;
@@ -331,7 +331,7 @@ struct FemtoUniversePairTaskTrackNucleus {
   bool isDeuteronNsigmaPol3Cut(float mom, float nsigmaTPCDe, float nsigmaTOFDe, float tpcSignal)
   {
     if (polcut.confIsPol3 == true) {
-      if (tpcSignal > polcut.polCutParA * pow(mom, 3) + polcut.polCutParB * pow(mom, 2) + polcut.polCutParC * mom + polcut.polCutParD) {
+      if (tpcSignal > polcut.polCutParA * std::pow(mom, 3) + polcut.polCutParB * std::pow(mom, 2) + polcut.polCutParC * mom + polcut.polCutParD) {
         return isDeuteronNsigma(mom, nsigmaTPCDe, nsigmaTOFDe);
       } else {
         return false;
