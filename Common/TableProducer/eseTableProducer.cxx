@@ -22,6 +22,7 @@
 #include <numeric>
 #include <vector>
 #include <tuple>
+#include <unordered_map>
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
