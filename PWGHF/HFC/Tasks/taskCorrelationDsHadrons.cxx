@@ -105,7 +105,7 @@ struct HfTaskCorrelationDsHadrons {
 
   HfHelper hfHelper;
   SliceCache cache;
-  
+
   Service<ccdb::BasicCCDBManager> ccdb;
 
   using DsHadronPair = soa::Join<aod::DsHadronPair, aod::DsHadronRecoInfo>;
