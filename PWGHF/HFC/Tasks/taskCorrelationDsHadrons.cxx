@@ -16,6 +16,7 @@
 
 #include <vector>
 
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -42,6 +43,7 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<bool> useSel8ForEff{"useSel8ForEff", true, "Flag for applying sel8 for collision selection"};
   Configurable<bool> selNoSameBunchPileUpColl{"selNoSameBunchPileUpColl", true, "Flag for rejecting the collisions associated with the same bunch crossing"};
   Configurable<bool> removeCollWSplitVtx{"removeCollWSplitVtx", false, "Flag for rejecting the splitted collisions"};
+  Configurable<bool> loadAccXEffFromCCDB{"loadAccXEffFromCCDB", false, "Flag for loading efficiency distributions from CCDB"};
   // Configurable<bool> doMcCollisionCheck{"doMcCollisionCheck", false, "Flag for applying the collision check and selection based on MC collision info"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds (avoid the case of flag = 0, no outputMlScore)"};
   Configurable<int> nTpcCrossedRaws{"nTpcCrossedRaws", 70, "Number of crossed TPC Rows"};
@@ -73,6 +75,17 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<std::vector<double>> sidebandLeftOuter{"sidebandLeftOuter", {1.9040, 1.9040, 1.9040, 1.9040, 1.9040, 1.9040, 1.9040, 1.9040}, "Outer values of left sideband vs pT"};
   Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", {2.0000, 2.0000, 2.0000, 2.0000, 2.0000, 2.0000, 2.0000, 2.0000}, "Inner values of right sideband vs pT"};
   Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", {2.0320, 2.0320, 2.0320, 2.0320, 2.0320, 2.0320, 2.0320, 2.0320}, "Outer values of right sideband vs pT"};
+  // CCDB configuration
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> associatedEffCcdbPath{"associatedEffCcdbPath", "", "CCDB path for associated efficiency"};
+  Configurable<std::string> promptEffCcdbPath{"promptEffCcdbPath", "", "CCDB path for trigger efficiency"};
+  Configurable<std::string> fdEffCcdbPath{"fdEffCcdbPath", "", "CCDB path for trigger efficiency"};
+  Configurable<int64_t> timestampCcdb{"timestampCcdb", -1, "timestamp of the efficiency files used to query in CCDB"};
+  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  
+  Service<ccdb::BasicCCDBManager> ccdb;
+  std::shared_ptr<TH1> mEfficiencyD = nullptr;
+  std::shared_ptr<TH1> mEfficiencyAssociated = nullptr;
 
   enum CandidateStep {
     kCandidateStepMcGenDsToKKPi = 0,
@@ -228,6 +241,26 @@ struct HfTaskCorrelationDsHadrons {
       hAssocTracks->GetAxis(2)->SetTitle("multiplicity");
       hAssocTracks->GetAxis(3)->SetTitle("pos z");
     }
+    
+    // Loading efficiency histograms from CCDB
+    if (applyEfficiency && loadAccXEffFromCCDB) {
+      ccdb->setURL(ccdbUrl);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
+
+      mEfficiencyD = std::shared_ptr<TH1>(ccdb->getForTimeStamp<TH1F>(promptEffCcdbPath, timestampCcdb));
+      if (mEfficiencyD == nullptr) {
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", promptEffCcdbPath.value.c_str());
+      }
+      LOGF(info, "Loaded trigger efficiency (prompt D) histogram from %s", promptEffCcdbPath.value.c_str());
+
+      mEfficiencyAssociated = std::shared_ptr<TH1>(ccdb->getForTimeStamp<TH1F>(associatedEffCcdbPath, timestampCcdb));
+      if (mEfficiencyAssociated == nullptr) {
+        LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", associatedEffCcdbPath.value.c_str());
+      }
+      LOGF(info, "Loaded associated efficiency histogram from %s", associatedEffCcdbPath.value.c_str());
+    }
   }
 
   void processData(DsHadronPairWithMl const& pairEntries,
@@ -246,6 +279,9 @@ struct HfTaskCorrelationDsHadrons {
       double efficiencyWeightD = 1.;
       if (applyEfficiency) {
         efficiencyWeightD = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
+        if (loadAccXEffFromCCDB) {
+          efficiencyWeightD = 1. / mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD));
+        }
       }
       registry.fill(HIST("hMassDsVsPt"), massD, ptD, efficiencyWeightD);
       registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
@@ -276,6 +312,9 @@ struct HfTaskCorrelationDsHadrons {
       double efficiencyWeight = 1.;
       if (applyEfficiency) {
         efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
+        if (loadAccXEffFromCCDB) {
+          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
+        }
       }
 
       // in signal region
@@ -318,6 +357,9 @@ struct HfTaskCorrelationDsHadrons {
       double efficiencyWeightD = 1.;
       if (applyEfficiency) {
         efficiencyWeightD = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
+        if (loadAccXEffFromCCDB) {
+          efficiencyWeightD = 1. / mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD));
+        }
       }
       if (isDsPrompt) {
         registry.fill(HIST("hMassPromptDsVsPt"), massD, ptD, efficiencyWeightD);
@@ -357,6 +399,9 @@ struct HfTaskCorrelationDsHadrons {
       double efficiencyWeight = 1.;
       if (applyEfficiency) {
         efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
+        if (loadAccXEffFromCCDB) {
+          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
+        }
       }
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
@@ -448,6 +493,9 @@ struct HfTaskCorrelationDsHadrons {
       double efficiencyWeight = 1.;
       if (applyEfficiency) {
         efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
+        if (loadAccXEffFromCCDB) {
+          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
+        }
       }
 
       // in signal region
@@ -487,6 +535,9 @@ struct HfTaskCorrelationDsHadrons {
       double efficiencyWeight = 1.;
       if (applyEfficiency) {
         efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
+        if (loadAccXEffFromCCDB) {
+          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
+        }
       }
 
       // in signal region
@@ -541,6 +592,9 @@ struct HfTaskCorrelationDsHadrons {
       double efficiencyWeight = 1.;
       if (applyEfficiency) {
         efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
+        if (loadAccXEffFromCCDB) {
+          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
+        }
       }
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
