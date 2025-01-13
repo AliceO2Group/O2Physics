@@ -1329,14 +1329,14 @@ struct correlateStrangeness {
         continue;
       }
       Double_t gpt = mcParticle.pt();
-      if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
+      if (std::abs(mcParticle.pdgCode()) == 211 || std::abs(mcParticle.pdgCode()) == 321 || std::abs(mcParticle.pdgCode()) == 2212 || std::abs(mcParticle.pdgCode()) == 11 || std::abs(mcParticle.pdgCode()) == 13) {
         if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
           histos.fill(HIST("hGeneratedQAPtTrigger"), gpt, 0.0f); // step 1: before all selections
         }
       }
 
       if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
-        if (abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
+        if (std::abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
           histos.fill(HIST("hGeneratedQAPtAssociatedK0"), gpt, 0.0f); // step 1: before all selections
         }
       }
@@ -1348,7 +1348,7 @@ struct correlateStrangeness {
       static_for<0, 7>([&](auto i) {
         constexpr int index = i.value;
         if (i == 0 || i == 7) {
-          if (abs(mcParticle.pdgCode()) == pdgCodes[i])
+          if (std::abs(mcParticle.pdgCode()) == pdgCodes[i])
             histos.fill(HIST("Generated/h") + HIST(particlenames[index]), mcParticle.pt(), mcParticle.eta());
         } else {
           if (mcParticle.pdgCode() == pdgCodes[i])
@@ -1383,12 +1383,12 @@ struct correlateStrangeness {
       for (auto const& mcParticle : mcParticles) {
         if (!mcParticle.isPhysicalPrimary())
           continue;
-        if (abs(mcParticle.y()) > 0.5)
+        if (std::abs(mcParticle.y()) > 0.5)
           continue;
         static_for<0, 7>([&](auto i) {
           constexpr int index = i.value;
           if (i == 0 || i == 7) {
-            if (abs(mcParticle.pdgCode()) == pdgCodes[i])
+            if (std::abs(mcParticle.pdgCode()) == pdgCodes[i])
               histos.fill(HIST("GeneratedWithPV/h") + HIST(particlenames[index]) + HIST("_MidYVsMult_TwoPVsOrMore"), mcParticle.pt(), bestCollisionFT0Mpercentile);
           } else {
             if (mcParticle.pdgCode() == pdgCodes[i])
@@ -1422,14 +1422,14 @@ struct correlateStrangeness {
         continue;
       }
       Double_t gpt = mcParticle.pt();
-      if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
+      if (std::abs(mcParticle.pdgCode()) == 211 || std::abs(mcParticle.pdgCode()) == 321 || std::abs(mcParticle.pdgCode()) == 2212 || std::abs(mcParticle.pdgCode()) == 11 || std::abs(mcParticle.pdgCode()) == 13) {
         if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
           histos.fill(HIST("hGeneratedQAPtTrigger"), gpt, 1.0f); // step 2: after event selection
         }
       }
 
       if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
-        if (abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
+        if (std::abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
           histos.fill(HIST("hGeneratedQAPtAssociatedK0"), gpt, 1.0f); // step 2: before all selections
         }
       }
@@ -1441,21 +1441,21 @@ struct correlateStrangeness {
       }
       Double_t geta = mcParticle.eta();
       Double_t gpt = mcParticle.pt();
-      if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13)
+      if (std::abs(mcParticle.pdgCode()) == 211 || std::abs(mcParticle.pdgCode()) == 321 || std::abs(mcParticle.pdgCode()) == 2212 || std::abs(mcParticle.pdgCode()) == 11 || std::abs(mcParticle.pdgCode()) == 13)
         histos.fill(HIST("GeneratedWithPV/hTrigger"), gpt, geta);
       static_for<0, 7>([&](auto i) {
         constexpr int index = i.value;
         if (i == 0 || i == 7) {
-          if (abs(mcParticle.pdgCode()) == pdgCodes[i]) {
+          if (std::abs(mcParticle.pdgCode()) == pdgCodes[i]) {
             histos.fill(HIST("GeneratedWithPV/h") + HIST(particlenames[index]), gpt, geta);
-            if (abs(mcParticle.y()) < 0.5)
+            if (std::abs(mcParticle.y()) < 0.5)
               histos.fill(HIST("GeneratedWithPV/h") + HIST(particlenames[index]) + HIST("_MidYVsMult"), gpt, bestCollisionFT0Mpercentile);
           }
 
         } else {
           if (mcParticle.pdgCode() == pdgCodes[i]) {
             histos.fill(HIST("GeneratedWithPV/h") + HIST(particlenames[index]), gpt, geta);
-            if (abs(mcParticle.y()) < 0.5)
+            if (std::abs(mcParticle.y()) < 0.5)
               histos.fill(HIST("GeneratedWithPV/h") + HIST(particlenames[index]) + HIST("_MidYVsMult"), gpt, bestCollisionFT0Mpercentile);
           }
         }
@@ -1482,14 +1482,14 @@ struct correlateStrangeness {
         continue;
       }
       Double_t gpt = mcParticle.pt();
-      if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
+      if (std::abs(mcParticle.pdgCode()) == 211 || std::abs(mcParticle.pdgCode()) == 321 || std::abs(mcParticle.pdgCode()) == 2212 || std::abs(mcParticle.pdgCode()) == 11 || std::abs(mcParticle.pdgCode()) == 13) {
         if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
           histos.fill(HIST("hClosureQAPtTrigger"), gpt, 0.0f); // step 1: no event selection whatsoever
         }
       }
 
       if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
-        if (abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
+        if (std::abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
           histos.fill(HIST("hClosureQAPtAssociatedK0"), gpt, 0.0f); // step 1: no event selection whatsoever
         }
       }
@@ -1541,14 +1541,14 @@ struct correlateStrangeness {
         continue;
       }
       Double_t gpt = mcParticle.pt();
-      if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
+      if (std::abs(mcParticle.pdgCode()) == 211 || std::abs(mcParticle.pdgCode()) == 321 || std::abs(mcParticle.pdgCode()) == 2212 || std::abs(mcParticle.pdgCode()) == 11 || std::abs(mcParticle.pdgCode()) == 13) {
         if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
           histos.fill(HIST("hClosureQAPtTrigger"), gpt, 1.0f); // step 2: after event selection
         }
       }
 
       if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
-        if (abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
+        if (std::abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
           histos.fill(HIST("hClosureQAPtAssociatedK0"), gpt, 1.0f); // step 2: after event selection
         }
       }
@@ -1563,18 +1563,18 @@ struct correlateStrangeness {
       if (std::abs(geta) > 0.8f) {
         continue;
       }
-      if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
+      if (std::abs(mcParticle.pdgCode()) == 211 || std::abs(mcParticle.pdgCode()) == 321 || std::abs(mcParticle.pdgCode()) == 2212 || std::abs(mcParticle.pdgCode()) == 11 || std::abs(mcParticle.pdgCode()) == 13) {
         if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
           triggerIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
         }
       }
       if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
-        if (abs(mcParticle.pdgCode()) == 211 && doCorrelationPion) {
+        if (std::abs(mcParticle.pdgCode()) == 211 && doCorrelationPion) {
           piIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hPion"), gpt, geta, gphi);
         }
-        if (abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
+        if (std::abs(mcParticle.pdgCode()) == 310 && doCorrelationK0Short) {
           k0ShortIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hK0Short"), gpt, geta, gphi);
         }
