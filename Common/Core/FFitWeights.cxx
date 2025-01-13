@@ -22,8 +22,6 @@
 
 #include <TSpline.h>
 
-
-
 ClassImp(FFitWeights)
 
   FFitWeights::FFitWeights() : TNamed("", ""),
