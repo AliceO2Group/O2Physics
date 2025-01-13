@@ -60,8 +60,10 @@ DECLARE_SOA_COLUMN(PhotonZconv, photonZconv, float);
 DECLARE_SOA_COLUMN(PhotonEta, photonEta, float);
 DECLARE_SOA_COLUMN(PhotonY, photonY, float);
 DECLARE_SOA_COLUMN(PhotonPhi, photonPhi, float);
-DECLARE_SOA_COLUMN(PhotonPosTPCNSigma, photonPosTPCNSigma, float);
-DECLARE_SOA_COLUMN(PhotonNegTPCNSigma, photonNegTPCNSigma, float);
+DECLARE_SOA_COLUMN(PhotonPosTPCNSigmaEl, photonPosTPCNSigmaEl, float);
+DECLARE_SOA_COLUMN(PhotonNegTPCNSigmaEl, photonNegTPCNSigmaEl, float);
+DECLARE_SOA_COLUMN(PhotonPosTPCNSigmaPi, photonPosTPCNSigmaPi, float);
+DECLARE_SOA_COLUMN(PhotonNegTPCNSigmaPi, photonNegTPCNSigmaPi, float);
 DECLARE_SOA_COLUMN(PhotonPosTPCCrossedRows, photonPosTPCCrossedRows, uint8_t);
 DECLARE_SOA_COLUMN(PhotonNegTPCCrossedRows, photonNegTPCCrossedRows, uint8_t);
 DECLARE_SOA_COLUMN(PhotonPosPt, photonPosPt, float);
@@ -94,8 +96,10 @@ DECLARE_SOA_TABLE(SigmaPhotonExtras, "AOD", "SIGMA0PHOTON",
                   sigmaPhotonExtra::PhotonEta,
                   sigmaPhotonExtra::PhotonY,
                   sigmaPhotonExtra::PhotonPhi,
-                  sigmaPhotonExtra::PhotonPosTPCNSigma,
-                  sigmaPhotonExtra::PhotonNegTPCNSigma,
+                  sigmaPhotonExtra::PhotonPosTPCNSigmaEl,
+                  sigmaPhotonExtra::PhotonNegTPCNSigmaEl,
+                  sigmaPhotonExtra::PhotonPosTPCNSigmaPi,
+                  sigmaPhotonExtra::PhotonNegTPCNSigmaPi,
                   sigmaPhotonExtra::PhotonPosTPCCrossedRows,
                   sigmaPhotonExtra::PhotonNegTPCCrossedRows,
                   sigmaPhotonExtra::PhotonPosPt,

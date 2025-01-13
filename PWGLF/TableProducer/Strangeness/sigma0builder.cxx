@@ -674,8 +674,10 @@ struct sigma0builder {
     float fPhotonEta = gamma.eta();
     float fPhotonY = RecoDecay::y(std::array{gamma.px(), gamma.py(), gamma.pz()}, o2::constants::physics::MassGamma);
     float fPhotonPhi = RecoDecay::phi(gamma.px(), gamma.py());
-    float fPhotonPosTPCNSigma = posTrackGamma.tpcNSigmaEl();
-    float fPhotonNegTPCNSigma = negTrackGamma.tpcNSigmaEl();
+    float fPhotonPosTPCNSigmaEl = posTrackGamma.tpcNSigmaEl();
+    float fPhotonNegTPCNSigmaEl = negTrackGamma.tpcNSigmaEl();
+    float fPhotonPosTPCNSigmaPi = posTrackGamma.tpcNSigmaPi();
+    float fPhotonNegTPCNSigmaPi = negTrackGamma.tpcNSigmaPi();
     uint8_t fPhotonPosTPCCrossedRows = posTrackGamma.tpcCrossedRows();
     uint8_t fPhotonNegTPCCrossedRows = negTrackGamma.tpcCrossedRows();
     float fPhotonPosPt = gamma.positivept();
@@ -753,7 +755,7 @@ struct sigma0builder {
 
     sigmaPhotonExtras(fPhotonPt, fPhotonMass, fPhotonQt, fPhotonAlpha, fPhotonRadius,
                       fPhotonCosPA, fPhotonDCADau, fPhotonDCANegPV, fPhotonDCAPosPV, fPhotonZconv,
-                      fPhotonEta, fPhotonY, fPhotonPhi, fPhotonPosTPCNSigma, fPhotonNegTPCNSigma, fPhotonPosTPCCrossedRows,
+                      fPhotonEta, fPhotonY, fPhotonPhi, fPhotonPosTPCNSigmaEl, fPhotonNegTPCNSigmaEl, fPhotonPosTPCNSigmaPi, fPhotonNegTPCNSigmaPi, fPhotonPosTPCCrossedRows,
                       fPhotonNegTPCCrossedRows, fPhotonPosPt, fPhotonNegPt, fPhotonPosEta,
                       fPhotonNegEta, fPhotonPosY, fPhotonNegY, fPhotonPsiPair,
                       fPhotonPosITSCls, fPhotonNegITSCls, fPhotonPosITSClSize, fPhotonNegITSClSize,

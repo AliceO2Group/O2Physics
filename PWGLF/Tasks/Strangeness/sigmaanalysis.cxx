@@ -190,8 +190,8 @@ struct sigmaanalysis {
     histos.add("GeneralQA/hPhotonDCADau", "hPhotonDCADau", kTH1F, {axisDCAdau});
     histos.add("GeneralQA/hPhotonPosTPCCR", "hPhotonPosTPCCR", kTH1F, {axisTPCrows});
     histos.add("GeneralQA/hPhotonNegTPCCR", "hPhotonNegTPCCR", kTH1F, {axisTPCrows});
-    histos.add("GeneralQA/hPhotonPosTPCNSigma", "hPhotonPosTPCNSigma", kTH1F, {{30, -15.0f, 15.0f}});
-    histos.add("GeneralQA/hPhotonNegTPCNSigma", "hPhotonNegTPCNSigma", kTH1F, {{30, -15.0f, 15.0f}});
+    histos.add("GeneralQA/hPhotonPosTPCNSigmaEl", "hPhotonPosTPCNSigmaEl", kTH1F, {{30, -15.0f, 15.0f}});
+    histos.add("GeneralQA/hPhotonNegTPCNSigmaEl", "hPhotonNegTPCNSigmaEl", kTH1F, {{30, -15.0f, 15.0f}});
     histos.add("GeneralQA/hPhotonpT", "hPhotonpT", kTH1F, {axisPt});
     histos.add("GeneralQA/hPhotonY", "hPhotonY", kTH1F, {axisRapidity});
     histos.add("GeneralQA/hPhotonPosEta", "hPhotonPosEta", kTH1F, {axisRapidity});
@@ -364,13 +364,13 @@ struct sigmaanalysis {
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 5.);
       if ((cand.photonPosTPCCrossedRows() < PhotonMinTPCCrossedRows) || (cand.photonNegTPCCrossedRows() < PhotonMinTPCCrossedRows))
         return false;
-      histos.fill(HIST("GeneralQA/hPhotonPosTPCNSigma"), cand.photonPosTPCNSigma());
+      histos.fill(HIST("GeneralQA/hPhotonPosTPCNSigmaEl"), cand.photonPosTPCNSigmaEl());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 6.);
-      if ((cand.photonPosTPCNSigma() != -999.f) && ((cand.photonPosTPCNSigma() < PhotonMinTPCNSigmas) || (cand.photonPosTPCNSigma() > PhotonMaxTPCNSigmas)))
+      if ((cand.photonPosTPCNSigmaEl() != -999.f) && ((cand.photonPosTPCNSigmaEl() < PhotonMinTPCNSigmas) || (cand.photonPosTPCNSigmaEl() > PhotonMaxTPCNSigmas)))
         return false;
-      histos.fill(HIST("GeneralQA/hPhotonNegTPCNSigma"), cand.photonNegTPCNSigma());
+      histos.fill(HIST("GeneralQA/hPhotonNegTPCNSigmaEl"), cand.photonNegTPCNSigmaEl());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 7.);
-      if ((cand.photonNegTPCNSigma() != -999.f) && ((cand.photonNegTPCNSigma() < PhotonMinTPCNSigmas) || (cand.photonNegTPCNSigma() > PhotonMaxTPCNSigmas)))
+      if ((cand.photonNegTPCNSigmaEl() != -999.f) && ((cand.photonNegTPCNSigmaEl() < PhotonMinTPCNSigmas) || (cand.photonNegTPCNSigmaEl() > PhotonMaxTPCNSigmas)))
         return false;
       histos.fill(HIST("GeneralQA/hPhotonpT"), cand.photonPt());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 8.);
