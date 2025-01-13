@@ -43,8 +43,8 @@ DECLARE_SOA_COLUMN(AbsEtaBach, absEtaBach, float);                              
 DECLARE_SOA_COLUMN(ItsNClsBach, itsNClsBach, int);                                       //! Number of ITS clusters of bachelor pion
 DECLARE_SOA_COLUMN(TpcNClsCrossedRowsBach, tpcNClsCrossedRowsBach, int);                 //! Number of TPC crossed rows of prongs of bachelor pion
 DECLARE_SOA_COLUMN(TpcChi2NClBach, tpcChi2NClBach, float);                               //! Maximum TPC chi2 of prongs of D0-meson daughter candidate
-DECLARE_SOA_COLUMN(PtDmesProngMin, ptProngDmesMin, float);                               //! Minimum pT of prongs of D-meson daughter candidate (GeV/c)
-DECLARE_SOA_COLUMN(AbsEtaDmesProngMin, absEtaProngDmesMin, float);                       //! Minimum absolute pseudorapidity of prongs of D-meson daughter candidate
+DECLARE_SOA_COLUMN(PtDmesProngMin, ptDmesProngMin, float);                               //! Minimum pT of prongs of D-meson daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(AbsEtaDmesProngMin, absEtaDmesProngMin, float);                       //! Minimum absolute pseudorapidity of prongs of D-meson daughter candidate
 DECLARE_SOA_COLUMN(ItsNClsDmesProngMin, itsNClsDmesProngMin, int);                       //! Minimum number of ITS clusters of prongs of D-meson daughter candidate
 DECLARE_SOA_COLUMN(TpcNClsCrossedRowsDmesProngMin, tpcNClsCrossedRowsDmesProngMin, int); //! Minimum number of TPC crossed rows of prongs of D-meson daughter candidate
 DECLARE_SOA_COLUMN(TpcChi2NClDmesProngMax, tpcChi2NClDmesProngMax, float);               //! Maximum TPC chi2 of prongs of D-meson daughter candidate
@@ -182,12 +182,12 @@ struct HfTaskBplusReduced {
 
   HfHelper hfHelper;
 
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus);
-
   HistogramRegistry registry{"registry"};
 
   using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
   using CandsD0 = soa::Join<HfRed2Prongs, HfRedPidDau0s, HfRedPidDau1s>;
+
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus);
 
   void init(InitContext&)
   {
