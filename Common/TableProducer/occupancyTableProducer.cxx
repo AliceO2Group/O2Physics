@@ -43,7 +43,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 int32_t nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
-const int nBCinTFgrp80 = 1425;
+// const int nBCinTFgrp80 = 1425;
 // nOrbitsPerTF = run < 534133 ? 128 : 32;
 // for 128 => nBCsPerTF = 456192 , for 32 => nBCsPerTF = 114048
 const int nBCinTF = 114048;         /// CCDB value // to be obtained from CCDB in future
