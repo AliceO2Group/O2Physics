@@ -907,14 +907,14 @@ struct eventQC {
 
   void processEventQC(FilteredMyCollisions const& collisions, FilteredMyTracks const& tracks)
   {
-    auto tracksWithITSPid = soa::Attach<MyTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(tracks);
+    auto tracksWithITSPid = soa::Attach<FilteredMyTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(tracks);
     runQC<false>(collisions, tracksWithITSPid, nullptr, nullptr, nullptr);
   }
   PROCESS_SWITCH(eventQC, processEventQC, "event QC", true);
 
   void processEventQC_Cent_Qvec(FilteredMyCollisions_Qvec const& collisions, FilteredMyTracks const& tracks)
   {
-    auto tracksWithITSPid = soa::Attach<MyTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(tracks);
+    auto tracksWithITSPid = soa::Attach<FilteredMyTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(tracks);
     runQC<false>(collisions, tracksWithITSPid, nullptr, nullptr, nullptr);
   }
   PROCESS_SWITCH(eventQC, processEventQC_Cent_Qvec, "event QC + q vector", false);
@@ -925,7 +925,7 @@ struct eventQC {
 
   void processEventQC_V0_PID(FilteredMyCollisions const& collisions, FilteredMyTracks const& tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, filteredV0s const& v0strhadrons)
   {
-    auto tracksWithITSPid = soa::Attach<MyTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(tracks);
+    auto tracksWithITSPid = soa::Attach<FilteredMyTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(tracks);
     runQC<true>(collisions, tracksWithITSPid, v0photons, v0legs, v0strhadrons);
   }
   PROCESS_SWITCH(eventQC, processEventQC_V0_PID, "event QC + V0 PID", false);
