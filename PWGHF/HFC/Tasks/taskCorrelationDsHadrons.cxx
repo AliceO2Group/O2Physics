@@ -83,7 +83,6 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<int64_t> timestampCcdb{"timestampCcdb", -1, "timestamp of the efficiency files used to query in CCDB"};
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
-  Service<ccdb::BasicCCDBManager> ccdb;
   std::shared_ptr<TH1> mEfficiencyD = nullptr;
   std::shared_ptr<TH1> mEfficiencyAssociated = nullptr;
 
@@ -106,6 +105,8 @@ struct HfTaskCorrelationDsHadrons {
 
   HfHelper hfHelper;
   SliceCache cache;
+  
+  Service<ccdb::BasicCCDBManager> ccdb;
 
   using DsHadronPair = soa::Join<aod::DsHadronPair, aod::DsHadronRecoInfo>;
   using DsHadronPairFull = soa::Join<aod::DsHadronPair, aod::DsHadronRecoInfo, aod::DsHadronGenInfo>;
