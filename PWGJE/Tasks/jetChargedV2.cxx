@@ -774,9 +774,9 @@ struct Jetchargedv2Task {
       return;
     double chi2 = 0.;
     for (int i = 0; i < h_ptsum_sumpt_fit->GetXaxis()->GetNbins(); i++) {
-      if (h_ptsum_sumpt_fit->GetBinContent(i+1) <= 0.)
+      if (h_ptsum_sumpt_fit->GetBinContent(i + 1) <= 0.)
         continue;
-      chi2 += TMath::Power((h_ptsum_sumpt_fit->GetBinContent(i + 1) - fFitModulation_v2v3->Eval(h_ptsum_sumpt_fit->GetXaxis()->GetBinCenter(1 + i))), 2) /h_ptsum_sumpt_fit->GetBinContent(i + 1);
+      chi2 += TMath::Power((h_ptsum_sumpt_fit->GetBinContent(i + 1) - fFitModulation_v2v3->Eval(h_ptsum_sumpt_fit->GetXaxis()->GetBinCenter(1 + i))), 2) / h_ptsum_sumpt_fit->GetBinContent(i + 1);
     }
 
     Double_t ChiSqr = 999.;
