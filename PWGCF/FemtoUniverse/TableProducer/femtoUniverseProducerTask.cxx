@@ -1744,7 +1744,7 @@ struct FemtoUniverseProducerTask {
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    const double ir = 0.0; // fetch IR
+    const double ir = 1.0; // fetch IR
     // fill the tables
     const auto colcheck = fillCollisionsCentPP<false>(col, tracks);
     if (colcheck) {
