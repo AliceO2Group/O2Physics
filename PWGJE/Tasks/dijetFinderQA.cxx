@@ -215,10 +215,10 @@ struct DijetFinderQATask {
 
   void processDijetMCP(soa::Filtered<aod::JetMcCollisions>::iterator const&, soa::Filtered<aod::ChargedMCParticleLevelJets> const& jets)
   {
-    std::vector<std::array<double, 4>> jetPtcuts;
+    std::vector<std::array<double, 3>> jetPtcuts;
     for (auto& jet : jets) {
       fillJetPtHistogramsMCP(jet);
-      jetPtcuts.push_back({jet.px(), jet.py(), jet.pz(), jet.energy()});
+      jetPtcuts.push_back({jet.pt(), jet.eta(), jet.phi()});
     }
 
     if (jetPtcuts.size() >= 2) {
@@ -227,16 +227,18 @@ struct DijetFinderQATask {
 
       for (size_t i = 1; i < jetPtcuts.size() && !found_pair; i++) {
         auto& candidate_jet = jetPtcuts[i];
-        Double_t dphi = fabs(atan2(candidate_jet[1], candidate_jet[0]) - atan2(leading_jet[1], leading_jet[0]));
+        Double_t dphi = fabs(candidate_jet[2] - leading_jet[2]);
         if (dphi > M_PI) {
           dphi = 2 * M_PI - dphi;
         }
         if (dphi > 2 * M_PI / 3) {
-          double E = leading_jet[3] + candidate_jet[3];
-          double px = leading_jet[0] + candidate_jet[0];
-          double py = leading_jet[1] + candidate_jet[1];
-          double pz = leading_jet[2] + candidate_jet[2];
-          double dijet_mass = sqrt(E * E - px * px - py * py - pz * pz);
+          double pt1 = leading_jet[0];
+          double pt2 = candidate_jet[0];
+          double eta1 = leading_jet[1];
+          double eta2 = candidate_jet[1];
+          double phi1 = leading_jet[2];
+          double phi2 = candidate_jet[2];
+          double dijet_mass = sqrt(2 * pt1 * pt2 * (cosh(eta1 - eta2) - cos(phi1 - phi2)));
           fillMassHistogramsMCP(dijet_mass);
           found_pair = true;
         }
@@ -250,10 +252,10 @@ struct DijetFinderQATask {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
-    std::vector<std::array<double, 4>> jetPtcuts;
+    std::vector<std::array<double, 3>> jetPtcuts;
     for (auto& jet : jets) {
       fillJetPtHistogramsMCD(jet);
-      jetPtcuts.push_back({jet.px(), jet.py(), jet.pz(), jet.energy()});
+      jetPtcuts.push_back({jet.pt(), jet.eta(), jet.phi()});
     }
 
     if (jetPtcuts.size() >= 2) {
@@ -262,16 +264,18 @@ struct DijetFinderQATask {
 
       for (size_t i = 1; i < jetPtcuts.size() && !found_pair; i++) {
         auto& candidate_jet = jetPtcuts[i];
-        Double_t dphi = fabs(atan2(candidate_jet[1], candidate_jet[0]) - atan2(leading_jet[1], leading_jet[0]));
+        Double_t dphi = fabs(candidate_jet[2] - leading_jet[2]);
         if (dphi > M_PI) {
           dphi = 2 * M_PI - dphi;
         }
         if (dphi > 2 * M_PI / 3) {
-          double E = leading_jet[3] + candidate_jet[3];
-          double px = leading_jet[0] + candidate_jet[0];
-          double py = leading_jet[1] + candidate_jet[1];
-          double pz = leading_jet[2] + candidate_jet[2];
-          double dijet_mass = sqrt(E * E - px * px - py * py - pz * pz);
+          double pt1 = leading_jet[0];
+          double pt2 = candidate_jet[0];
+          double eta1 = leading_jet[1];
+          double eta2 = candidate_jet[1];
+          double phi1 = leading_jet[2];
+          double phi2 = candidate_jet[2];
+          double dijet_mass = sqrt(2 * pt1 * pt2 * (cosh(eta1 - eta2) - cos(phi1 - phi2)));
           fillMassHistogramsMCD(dijet_mass);
           found_pair = true;
         }
@@ -286,10 +290,10 @@ struct DijetFinderQATask {
       return;
     }
 
-    std::vector<std::array<double, 4>> jetPtcuts;
+    std::vector<std::array<double, 3>> jetPtcuts;
     for (auto& jet : jets) {
       fillJetPtHistogramsData(jet);
-      jetPtcuts.push_back({jet.px(), jet.py(), jet.pz(), jet.energy()});
+      jetPtcuts.push_back({jet.pt(), jet.eta(), jet.phi()});
     }
 
     if (jetPtcuts.size() >= 2) {
@@ -298,16 +302,18 @@ struct DijetFinderQATask {
 
       for (size_t i = 1; i < jetPtcuts.size() && !found_pair; i++) {
         auto& candidate_jet = jetPtcuts[i];
-        Double_t dphi = fabs(atan2(candidate_jet[1], candidate_jet[0]) - atan2(leading_jet[1], leading_jet[0]));
+        Double_t dphi = fabs(candidate_jet[2] - leading_jet[2]);
         if (dphi > M_PI) {
           dphi = 2 * M_PI - dphi;
         }
         if (dphi > 2 * M_PI / 3) {
-          double E = leading_jet[3] + candidate_jet[3];
-          double px = leading_jet[0] + candidate_jet[0];
-          double py = leading_jet[1] + candidate_jet[1];
-          double pz = leading_jet[2] + candidate_jet[2];
-          double dijet_mass = sqrt(E * E - px * px - py * py - pz * pz);
+          double pt1 = leading_jet[0];
+          double pt2 = candidate_jet[0];
+          double eta1 = leading_jet[1];
+          double eta2 = candidate_jet[1];
+          double phi1 = leading_jet[2];
+          double phi2 = candidate_jet[2];
+          double dijet_mass = sqrt(2 * pt1 * pt2 * (cosh(eta1 - eta2) - cos(phi1 - phi2)));
           fillMassHistogramsData(dijet_mass);
           found_pair = true;
         }
@@ -325,15 +331,15 @@ struct DijetFinderQATask {
       return;
     }
 
-    std::vector<std::array<double, 4>> jetPtcuts_D;
-    std::vector<std::array<double, 4>> jetPtcuts_P;
+    std::vector<std::array<double, 3>> jetPtcuts_D;
+    std::vector<std::array<double, 3>> jetPtcuts_P;
 
     for (auto& jet : mcdjets) {
       if (jet.has_matchedJetGeo()) {
         for (auto& matchedJet : jet.template matchedJetPt_as<JetMCPTable>()) {
           if (matchedJet.pt() > setJetPtCut) {
-            jetPtcuts_D.push_back({jet.px(), jet.py(), jet.pz(), jet.energy()});
-            jetPtcuts_P.push_back({matchedJet.px(), matchedJet.py(), matchedJet.pz(), matchedJet.energy()});
+            jetPtcuts_D.push_back({jet.pt(), jet.eta(), jet.phi()});
+            jetPtcuts_P.push_back({matchedJet.pt(), matchedJet.eta(), matchedJet.phi()});
             break;
           }
         }
@@ -349,22 +355,26 @@ struct DijetFinderQATask {
         auto& candidate_jet_D = jetPtcuts_D[i];
         auto& candidate_jet_P = jetPtcuts_P[i];
 
-        Double_t dphi_D = fabs(atan2(candidate_jet_D[1], candidate_jet_D[0]) - atan2(leading_jet_D[1], leading_jet_D[0]));
+        Double_t dphi_D = fabs(candidate_jet_D[2] - leading_jet_D[2]);
         if (dphi_D > M_PI) {
           dphi_D = 2 * M_PI - dphi_D;
         }
         if (dphi_D > 2 * M_PI / 3) {
-          double E_D = leading_jet_D[3] + candidate_jet_D[3];
-          double px_D = leading_jet_D[0] + candidate_jet_D[0];
-          double py_D = leading_jet_D[1] + candidate_jet_D[1];
-          double pz_D = leading_jet_D[2] + candidate_jet_D[2];
-          double dijet_mass_D = sqrt(E_D * E_D - px_D * px_D - py_D * py_D - pz_D * pz_D);
+          double pt1_D = leading_jet_D[0];
+          double pt2_D = candidate_jet_D[0];
+          double eta1_D = leading_jet_D[1];
+          double eta2_D = candidate_jet_D[1];
+          double phi1_D = leading_jet_D[2];
+          double phi2_D = candidate_jet_D[2];
+          double dijet_mass_D = sqrt(2 * pt1_D * pt2_D * (cosh(eta1_D - eta2_D) - cos(phi1_D - phi2_D)));
 
-          double E_P = leading_jet_P[3] + candidate_jet_P[3];
-          double px_P = leading_jet_P[0] + candidate_jet_P[0];
-          double py_P = leading_jet_P[1] + candidate_jet_P[1];
-          double pz_P = leading_jet_P[2] + candidate_jet_P[2];
-          double dijet_mass_P = sqrt(E_P * E_P - px_P * px_P - py_P * py_P - pz_P * pz_P);
+          double pt1_P = leading_jet_P[0];
+          double pt2_P = candidate_jet_P[0];
+          double eta1_P = leading_jet_P[1];
+          double eta2_P = candidate_jet_P[1];
+          double phi1_P = leading_jet_P[2];
+          double phi2_P = candidate_jet_P[2];
+          double dijet_mass_P = sqrt(2 * pt1_P * pt2_P * (cosh(eta1_P - eta2_P) - cos(phi1_P - phi2_P)));
 
           fillMassHistogramsMCMatched(dijet_mass_P, dijet_mass_D);
           found_pair = true;
