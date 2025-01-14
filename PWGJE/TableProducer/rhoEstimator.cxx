@@ -99,7 +99,7 @@ struct RhoEstimatorTask {
     auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, doSparse);
     rhoChargedMcTable(rho, rhoM);
   }
-  PROCESS_SWITCH(RhoEstimatorTask, processChargedMcCollisions, "Fill rho tables for MC collisions using charged tracks", true);
+  PROCESS_SWITCH(RhoEstimatorTask, processChargedMcCollisions, "Fill rho tables for MC collisions using charged tracks", false);
 
   void processD0Collisions(aod::JetCollision const&, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesD0Data const& candidates)
   {
@@ -152,7 +152,7 @@ struct RhoEstimatorTask {
     }
   }
   PROCESS_SWITCH(RhoEstimatorTask, processLcMcCollisions, "Fill rho tables for collisions with Lc MCP candidates", false);
-  /*
+
     void processBplusCollisions(aod::JetCollision const&, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesBplusData const& candidates)
     {
       inputParticles.clear();
@@ -178,7 +178,7 @@ struct RhoEstimatorTask {
       }
     }
     PROCESS_SWITCH(RhoEstimatorTask, processBplusMcCollisions, "Fill rho tables for collisions with Bplus MCP candidates", false);
-  */
+
   void processDielectronCollisions(aod::JetCollision const&, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesDielectronData const& candidates)
   {
     inputParticles.clear();

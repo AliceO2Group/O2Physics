@@ -38,6 +38,19 @@ struct JetDerivedDataProducerDummyLcTask {
   Produces<aod::HfD0McCollBases> d0McCollisionsTable;
   Produces<aod::HfD0PBases> d0ParticlesTable;
 
+  Produces<aod::HfBplusCollBases> bplusCollisionsTable;
+  Produces<aod::HfBplusMcRCollIds> bplusCollisionsMatchingTable;
+  Produces<aod::HfBplusBases> bplussTable;
+  Produces<aod::HfBplusPars> bplusParsTable;
+  Produces<aod::HfBplusParEs> bplusParExtrasTable;
+  Produces<aod::HfBplusParD0s> bplusParD0sTable;
+  Produces<aod::HfBplusSels> bplusSelsTable;
+  Produces<aod::HfBplusMls> bplusMlsTable;
+  Produces<aod::HfBplusMlD0s> bplusMlD0sTable;
+  Produces<aod::HfBplusMcs> bplusMcsTable;
+  Produces<aod::HfBplusMcCollBases> bplusMcCollisionsTable;
+  Produces<aod::HfBplusPBases> bplusParticlesTable;
+
   Produces<aod::ReducedEvents> dielectronCollisionsTable;
   Produces<aod::Dielectrons> dielectronTable;
 

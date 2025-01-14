@@ -179,8 +179,8 @@ DECLARE_JET_TABLES_LEVELS(Charged, JTrackSub, HfD0Bases, HfD0PBases, "C");
 DECLARE_JET_TABLES_LEVELS(Full, JTrackSub, HfD0Bases, HfD0PBases, "F");
 DECLARE_JET_TABLES_LEVELS(Neutral, JTrackSub, HfD0Bases, HfD0PBases, "N");
 DECLARE_JET_TABLES_LEVELS(D0Charged, JTrackD0Sub, HfD0Bases, HfD0PBases, "D0");
-DECLARE_JET_TABLES_LEVELS(LcCharged, JTrackLcSub, Hf3PBases, Hf3PPBases, "Lc");
-DECLARE_JET_TABLES_LEVELS(BplusCharged, JTrackBplusSub, HfCandBplus, HfD0PBases, "BPl");
+DECLARE_JET_TABLES_LEVELS(LcCharged, JTrackLcSub, HfLcBases, HfLcPBases, "Lc");
+DECLARE_JET_TABLES_LEVELS(BplusCharged, JTrackBplusSub, HfBplusBases, HfBplusPBases, "BP");
 DECLARE_JET_TABLES_LEVELS(V0Charged, JTrackSub, V0Cores, JV0Mcs, "V0");
 DECLARE_JET_TABLES_LEVELS(DielectronCharged, JTrackSub, Dielectrons, JDielectronMcs, "DIEL");
 
@@ -219,19 +219,21 @@ using JetParticlesSubD0 = JMcParticleD0Subs;
 using McCollisionsD0 = o2::soa::Join<HfD0McCollBases, JD0McCollisionIds>;
 using CandidatesD0MCP = o2::soa::Join<HfD0PBases, JD0PIds>;
 
-using CollisionsLc = o2::soa::Join<Hf3PCollBases, JLcCollisionIds>;
-using CandidatesLcData = o2::soa::Join<Hf3PBases, Hf3PPars, Hf3PParEs, Hf3PSels, Hf3PMls, JLcIds>;
-using CandidatesLcMCD = o2::soa::Join<Hf3PBases, Hf3PPars, Hf3PParEs, Hf3PSels, Hf3PMls, Hf3PMcs, JLcIds>;
+using CollisionsLc = o2::soa::Join<HfLcCollBases, JLcCollisionIds>;
+using CandidatesLcData = o2::soa::Join<HfLcBases, HfLcPars, HfLcParEs, HfLcSels, HfLcMls, JLcIds>;
+using CandidatesLcMCD = o2::soa::Join<HfLcBases, HfLcPars, HfLcParEs, HfLcSels, HfLcMls, HfLcMcs, JLcIds>;
 using JetTracksSubLc = JTrackLcSubs;
 using JetParticlesSubLc = JMcParticleLcSubs;
-using McCollisionsLc = o2::soa::Join<Hf3PMcCollBases, JLcMcCollisionIds>;
-using CandidatesLcMCP = o2::soa::Join<Hf3PPBases, JLcPIds>;
+using McCollisionsLc = o2::soa::Join<HfLcMcCollBases, JLcMcCollisionIds>;
+using CandidatesLcMCP = o2::soa::Join<HfLcPBases, JLcPIds>;
 
-using CandidatesBplusData = o2::soa::Join<HfCandBplus, HfSelBplusToD0Pi>;
-using CandidatesBplusMCD = o2::soa::Join<HfCandBplus, HfSelBplusToD0Pi, HfCandBplusMcRec>;
+using CollisionsBplus = o2::soa::Join<HfBplusCollBases, JBplusCollisionIds>;
+using CandidatesBplusData = o2::soa::Join<HfBplusBases, HfBplusPars, HfBplusParEs, HfBplusParD0s, HfBplusSels, HfBplusMls, HfBplusMlD0s, JBplusIds>;
+using CandidatesBplusMCD = o2::soa::Join<HfBplusBases, HfBplusPars, HfBplusParEs, HfBplusParD0s, HfBplusSels, HfBplusMls, HfBplusMlD0s, HfBplusMcs, JBplusIds>;
 using JetTracksSubBplus = JTrackBplusSubs;
 using JetParticlesSubBplus = JMcParticleBplusSubs;
-using CandidatesBplusMCP = o2::soa::Join<JMcParticles, HfCandBplusMcGen>;
+using McCollisionsBplus = o2::soa::Join<HfBplusMcCollBases, JBplusMcCollisionIds>;
+using CandidatesBplusMCP = o2::soa::Join<HfBplusPBases, JBplusPIds>;
 
 using CandidatesV0Data = o2::soa::Join<V0Cores, JV0Ids>;
 using CandidatesV0MCD = o2::soa::Join<V0Cores, V0MCCores, JV0Ids>;

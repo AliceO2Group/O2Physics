@@ -52,13 +52,13 @@ DECLARE_SOA_COLUMN(BitMaskTrackThree, bitmaskTrackThree, BitMaskType); //! Bit f
 DECLARE_SOA_COLUMN(Downsample, downsample, bool); //! Flag for downsampling
 } // namespace femtodreamcollision
 
-DECLARE_SOA_TABLE(FDCollisions, "AOD", "FDCOLLISION",
-                  o2::soa::Index<>,
-                  o2::aod::collision::PosZ,
-                  femtodreamcollision::MultV0M,
-                  femtodreamcollision::MultNtr,
-                  femtodreamcollision::Sphericity,
-                  femtodreamcollision::MagField);
+DECLARE_SOA_TABLE_STAGED(FDCollisions, "FDCOLLISION",
+                         o2::soa::Index<>,
+                         o2::aod::collision::PosZ,
+                         femtodreamcollision::MultV0M,
+                         femtodreamcollision::MultNtr,
+                         femtodreamcollision::Sphericity,
+                         femtodreamcollision::MagField);
 using FDCollision = FDCollisions::iterator;
 
 DECLARE_SOA_TABLE(FDColMasks, "AOD", "FDCOLMASK",
@@ -74,16 +74,16 @@ namespace femtodreamMCcollision
 DECLARE_SOA_COLUMN(MultMCgenPartEta08, multMCgenPartEta08, int); //! Multiplicity of the event as given by the generator in |eta|<0.8
 }
 
-DECLARE_SOA_TABLE(FDMCCollisions, "AOD", "FDMCCOLLISION",
-                  o2::soa::Index<>,
-                  femtodreamMCcollision::MultMCgenPartEta08);
+DECLARE_SOA_TABLE_STAGED(FDMCCollisions, "FDMCCOLLISION",
+                         o2::soa::Index<>,
+                         femtodreamMCcollision::MultMCgenPartEta08);
 using FDMCCollision = FDMCCollisions::iterator;
 
 namespace mcfdcolllabel
 {
 DECLARE_SOA_INDEX_COLUMN(FDMCCollision, fdMCCollision); //! MC collision for femtodreamcollision
 }
-DECLARE_SOA_TABLE(FDMCCollLabels, "AOD", "FDMCCollLabel", mcfdcolllabel::FDMCCollisionId);
+DECLARE_SOA_TABLE_STAGED(FDMCCollLabels, "FDMCCollLabel", mcfdcolllabel::FDMCCollisionId);
 
 /// FemtoDreamTrack
 namespace femtodreamparticle
@@ -313,59 +313,59 @@ DECLARE_SOA_TABLE(FDParticlesIndex, "AOD", "FDPARTICLEINDEX", //! Table track in
                   o2::soa::Index<>,
                   fdhf::TrackId);
 
-DECLARE_SOA_TABLE(FDParticles, "AOD", "FDPARTICLE",
-                  o2::soa::Index<>,
-                  femtodreamparticle::FDCollisionId,
-                  femtodreamparticle::Pt,
-                  femtodreamparticle::Eta,
-                  femtodreamparticle::Phi,
-                  femtodreamparticle::PartType,
-                  femtodreamparticle::Cut,
-                  femtodreamparticle::PIDCut,
-                  femtodreamparticle::TempFitVar,
-                  femtodreamparticle::ChildrenIds,
-                  femtodreamparticle::MLambda,
-                  femtodreamparticle::MAntiLambda,
-                  femtodreamparticle::Theta<femtodreamparticle::Eta>,
-                  femtodreamparticle::Px<femtodreamparticle::Pt, femtodreamparticle::Phi>,
-                  femtodreamparticle::Py<femtodreamparticle::Pt, femtodreamparticle::Phi>,
-                  femtodreamparticle::Pz<femtodreamparticle::Pt, femtodreamparticle::Eta>,
-                  femtodreamparticle::P<femtodreamparticle::Pt, femtodreamparticle::Eta>);
+DECLARE_SOA_TABLE_STAGED(FDParticles, "FDPARTICLE",
+                         o2::soa::Index<>,
+                         femtodreamparticle::FDCollisionId,
+                         femtodreamparticle::Pt,
+                         femtodreamparticle::Eta,
+                         femtodreamparticle::Phi,
+                         femtodreamparticle::PartType,
+                         femtodreamparticle::Cut,
+                         femtodreamparticle::PIDCut,
+                         femtodreamparticle::TempFitVar,
+                         femtodreamparticle::ChildrenIds,
+                         femtodreamparticle::MLambda,
+                         femtodreamparticle::MAntiLambda,
+                         femtodreamparticle::Theta<femtodreamparticle::Eta>,
+                         femtodreamparticle::Px<femtodreamparticle::Pt, femtodreamparticle::Phi>,
+                         femtodreamparticle::Py<femtodreamparticle::Pt, femtodreamparticle::Phi>,
+                         femtodreamparticle::Pz<femtodreamparticle::Pt, femtodreamparticle::Eta>,
+                         femtodreamparticle::P<femtodreamparticle::Pt, femtodreamparticle::Eta>);
 using FDParticle = FDParticles::iterator;
 
-DECLARE_SOA_TABLE(FDExtParticles, "AOD", "FDEXTPARTICLE",
-                  femtodreamparticle::Sign,
-                  femtodreamparticle::TPCNClsFound,
-                  track::TPCNClsFindable,
-                  femtodreamparticle::TPCNClsCrossedRows,
-                  track::TPCNClsShared,
-                  track::TPCInnerParam,
-                  femtodreamparticle::ITSNCls,
-                  femtodreamparticle::ITSNClsInnerBarrel,
-                  track::DcaXY,
-                  track::DcaZ,
-                  track::TPCSignal,
-                  femtodreamparticle::TPCNSigmaEl,
-                  femtodreamparticle::TPCNSigmaPi,
-                  femtodreamparticle::TPCNSigmaKa,
-                  femtodreamparticle::TPCNSigmaPr,
-                  femtodreamparticle::TPCNSigmaDe,
-                  femtodreamparticle::TPCNSigmaTr,
-                  femtodreamparticle::TPCNSigmaHe,
-                  femtodreamparticle::TOFNSigmaEl,
-                  femtodreamparticle::TOFNSigmaPi,
-                  femtodreamparticle::TOFNSigmaKa,
-                  femtodreamparticle::TOFNSigmaPr,
-                  femtodreamparticle::TOFNSigmaDe,
-                  femtodreamparticle::TOFNSigmaTr,
-                  femtodreamparticle::TOFNSigmaHe,
-                  femtodreamparticle::DaughDCA,
-                  femtodreamparticle::TransRadius,
-                  femtodreamparticle::DecayVtxX,
-                  femtodreamparticle::DecayVtxY,
-                  femtodreamparticle::DecayVtxZ,
-                  femtodreamparticle::MKaon,
-                  femtodreamparticle::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, femtodreamparticle::TPCNClsCrossedRows>)
+DECLARE_SOA_TABLE_STAGED(FDExtParticles, "FDEXTPARTICLE",
+                         femtodreamparticle::Sign,
+                         femtodreamparticle::TPCNClsFound,
+                         track::TPCNClsFindable,
+                         femtodreamparticle::TPCNClsCrossedRows,
+                         track::TPCNClsShared,
+                         track::TPCInnerParam,
+                         femtodreamparticle::ITSNCls,
+                         femtodreamparticle::ITSNClsInnerBarrel,
+                         track::DcaXY,
+                         track::DcaZ,
+                         track::TPCSignal,
+                         femtodreamparticle::TPCNSigmaEl,
+                         femtodreamparticle::TPCNSigmaPi,
+                         femtodreamparticle::TPCNSigmaKa,
+                         femtodreamparticle::TPCNSigmaPr,
+                         femtodreamparticle::TPCNSigmaDe,
+                         femtodreamparticle::TPCNSigmaTr,
+                         femtodreamparticle::TPCNSigmaHe,
+                         femtodreamparticle::TOFNSigmaEl,
+                         femtodreamparticle::TOFNSigmaPi,
+                         femtodreamparticle::TOFNSigmaKa,
+                         femtodreamparticle::TOFNSigmaPr,
+                         femtodreamparticle::TOFNSigmaDe,
+                         femtodreamparticle::TOFNSigmaTr,
+                         femtodreamparticle::TOFNSigmaHe,
+                         femtodreamparticle::DaughDCA,
+                         femtodreamparticle::TransRadius,
+                         femtodreamparticle::DecayVtxX,
+                         femtodreamparticle::DecayVtxY,
+                         femtodreamparticle::DecayVtxZ,
+                         femtodreamparticle::MKaon,
+                         femtodreamparticle::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, femtodreamparticle::TPCNClsCrossedRows>)
 using FDFullParticle = FDExtParticles::iterator;
 
 /// FemtoDreamTrackMC
@@ -411,25 +411,25 @@ DECLARE_SOA_COLUMN(PDGMCTruth, pdgMCTruth, int);                   //! Particle 
 DECLARE_SOA_COLUMN(MotherPDG, motherPDG, int); //! Checks mother PDG, where mother is the primary particle for that decay chain
 } // namespace femtodreamMCparticle
 
-DECLARE_SOA_TABLE(FDMCParticles, "AOD", "FDMCPARTICLE",
-                  o2::soa::Index<>,
-                  femtodreamMCparticle::PartOriginMCTruth,
-                  femtodreamMCparticle::PDGMCTruth,
-                  femtodreamparticle::Pt,
-                  femtodreamparticle::Eta,
-                  femtodreamparticle::Phi);
+DECLARE_SOA_TABLE_STAGED(FDMCParticles, "FDMCPARTICLE",
+                         o2::soa::Index<>,
+                         femtodreamMCparticle::PartOriginMCTruth,
+                         femtodreamMCparticle::PDGMCTruth,
+                         femtodreamparticle::Pt,
+                         femtodreamparticle::Eta,
+                         femtodreamparticle::Phi);
 using FDMCParticle = FDMCParticles::iterator;
 
-DECLARE_SOA_TABLE(FDExtMCParticles, "AOD", "FDEXTMCPARTICLE",
-                  femtodreamMCparticle::MotherPDG);
+DECLARE_SOA_TABLE_STAGED(FDExtMCParticles, "FDEXTMCPARTICLE",
+                         femtodreamMCparticle::MotherPDG);
 using FDExtMCParticle = FDExtMCParticles::iterator;
 
 namespace mcfdlabel
 {
 DECLARE_SOA_INDEX_COLUMN(FDMCParticle, fdMCParticle); //! MC particle for femtodreamparticle
 } // namespace mcfdlabel
-DECLARE_SOA_TABLE(FDMCLabels, "AOD", "FDMCLabel", //! Table joinable to FemtoDreamParticle containing the MC labels
-                  mcfdlabel::FDMCParticleId);
+DECLARE_SOA_TABLE_STAGED(FDMCLabels, "FDMCLabel", //! Table joinable to FemtoDreamParticle containing the MC labels
+                         mcfdlabel::FDMCParticleId);
 namespace mcfdextlabel
 {
 DECLARE_SOA_INDEX_COLUMN(FDExtMCParticle, fdExtMCParticle); //! MC particle for femtodreamparticle

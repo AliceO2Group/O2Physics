@@ -38,16 +38,29 @@ struct JetDerivedDataProducerDummyDielectronTask {
   Produces<aod::HfD0McCollBases> d0McCollisionsTable;
   Produces<aod::HfD0PBases> d0ParticlesTable;
 
-  Produces<aod::Hf3PCollBases> lcCollisionsTable;
-  Produces<aod::Hf3PMcRCollIds> lcCollisionsMatchingTable;
-  Produces<aod::Hf3PBases> lcsTable;
-  Produces<aod::Hf3PPars> lcParsTable;
-  Produces<aod::Hf3PParEs> lcParExtrasTable;
-  Produces<aod::Hf3PSels> lcSelsTable;
-  Produces<aod::Hf3PMls> lcMlsTable;
-  Produces<aod::Hf3PMcs> lcMcsTable;
-  Produces<aod::Hf3PMcCollBases> lcMcCollisionsTable;
-  Produces<aod::Hf3PPBases> lcParticlesTable;
+  Produces<aod::HfLcCollBases> lcCollisionsTable;
+  Produces<aod::HfLcMcRCollIds> lcCollisionsMatchingTable;
+  Produces<aod::HfLcBases> lcsTable;
+  Produces<aod::HfLcPars> lcParsTable;
+  Produces<aod::HfLcParEs> lcParExtrasTable;
+  Produces<aod::HfLcSels> lcSelsTable;
+  Produces<aod::HfLcMls> lcMlsTable;
+  Produces<aod::HfLcMcs> lcMcsTable;
+  Produces<aod::HfLcMcCollBases> lcMcCollisionsTable;
+  Produces<aod::HfLcPBases> lcParticlesTable;
+
+  Produces<aod::HfBplusCollBases> bplusCollisionsTable;
+  Produces<aod::HfBplusMcRCollIds> bplusCollisionsMatchingTable;
+  Produces<aod::HfBplusBases> bplussTable;
+  Produces<aod::HfBplusPars> bplusParsTable;
+  Produces<aod::HfBplusParEs> bplusParExtrasTable;
+  Produces<aod::HfBplusParD0s> bplusParD0sTable;
+  Produces<aod::HfBplusSels> bplusSelsTable;
+  Produces<aod::HfBplusMls> bplusMlsTable;
+  Produces<aod::HfBplusMlD0s> bplusMlD0sTable;
+  Produces<aod::HfBplusMcs> bplusMcsTable;
+  Produces<aod::HfBplusMcCollBases> bplusMcCollisionsTable;
+  Produces<aod::HfBplusPBases> bplusParticlesTable;
 
   void init(InitContext const&)
   {

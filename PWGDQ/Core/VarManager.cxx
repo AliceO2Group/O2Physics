@@ -9,6 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 #include <cmath>
+#include <iostream>
+#include <vector>
+#include <map>
 #include "PWGDQ/Core/VarManager.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
@@ -378,6 +381,30 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kNTPCtracksInPast] = "";
   fgVariableNames[kNTPCtracksInFuture] = "# TPC tracks in future";
   fgVariableUnits[kNTPCtracksInFuture] = "";
+  fgVariableNames[kNTPCcontribLongA] = "# TPC-A pileup, long time range";
+  fgVariableUnits[kNTPCcontribLongA] = "";
+  fgVariableNames[kNTPCcontribLongC] = "# TPC-C pileup, long time range";
+  fgVariableUnits[kNTPCcontribLongC] = "";
+  fgVariableNames[kNTPCmeanTimeLongA] = "# TPC-A pileup mean time, long time range";
+  fgVariableUnits[kNTPCmeanTimeLongA] = "#mu s";
+  fgVariableNames[kNTPCmeanTimeLongC] = "# TPC-C pileup mean time, long time range";
+  fgVariableUnits[kNTPCmeanTimeLongC] = "#mu s";
+  fgVariableNames[kNTPCmedianTimeLongA] = "# TPC-A pileup median time, long time range";
+  fgVariableUnits[kNTPCmedianTimeLongA] = "#mu s";
+  fgVariableNames[kNTPCmedianTimeLongC] = "# TPC-C pileup median time, long time range";
+  fgVariableUnits[kNTPCmedianTimeLongC] = "#mu s";
+  fgVariableNames[kNTPCcontribShortA] = "# TPC-A pileup, short time range";
+  fgVariableUnits[kNTPCcontribShortA] = "";
+  fgVariableNames[kNTPCcontribShortC] = "# TPC-C pileup, short time range";
+  fgVariableUnits[kNTPCcontribShortC] = "";
+  fgVariableNames[kNTPCmeanTimeShortA] = "# TPC-A pileup mean time, short time range";
+  fgVariableUnits[kNTPCmeanTimeShortA] = "#mu s";
+  fgVariableNames[kNTPCmeanTimeShortC] = "# TPC-C pileup mean time, short time range";
+  fgVariableUnits[kNTPCmeanTimeShortC] = "#mu s";
+  fgVariableNames[kNTPCmedianTimeShortA] = "# TPC-A pileup median time, short time range";
+  fgVariableUnits[kNTPCmedianTimeShortA] = "#mu s";
+  fgVariableNames[kNTPCmedianTimeShortC] = "# TPC-C pileup median time, short time range";
+  fgVariableUnits[kNTPCmedianTimeShortC] = "#mu s";
   fgVariableNames[kPt] = "p_{T}";
   fgVariableUnits[kPt] = "GeV/c";
   fgVariableNames[kInvPt] = "1/p_{T}";
@@ -404,6 +431,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCharge] = "";
   fgVariableNames[kPin] = "p_{IN}";
   fgVariableUnits[kPin] = "GeV/c";
+  fgVariableNames[kPin_leg1] = "p_{IN}";
+  fgVariableUnits[kPin_leg1] = "GeV/c";
   fgVariableNames[kSignedPin] = "p_{IN} x charge";
   fgVariableUnits[kSignedPin] = "GeV/c";
   fgVariableNames[kTOFExpMom] = "TOF expected momentum";
@@ -469,6 +498,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTPCnSigmaPi_Corr] = "";
   fgVariableNames[kTPCnSigmaKa] = "n #sigma_{K}^{TPC}";
   fgVariableUnits[kTPCnSigmaKa] = "";
+  fgVariableNames[kTPCnSigmaKa_leg1] = "n #sigma_{K}^{TPC}";
+  fgVariableUnits[kTPCnSigmaKa_leg1] = "";
   fgVariableNames[kTPCnSigmaKa_Corr] = "n #sigma_{K}^{TPC} Corr.";
   fgVariableUnits[kTPCnSigmaKa_Corr] = "";
   fgVariableNames[kTPCnSigmaPr] = "n #sigma_{p}^{TPC}";
@@ -615,6 +646,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingLzOverErr] = "";
   fgVariableNames[kVertexingLxyzOverErr] = "Pair Lxyz/DLxyz";
   fgVariableUnits[kVertexingLxyzOverErr] = "";
+  fgVariableNames[kCosPointingAngle] = "Cos #theta_{pointing}";
+  fgVariableUnits[kCosPointingAngle] = "";
   fgVariableNames[kKFTrack0DCAxyz] = "Daughter0 DCAxyz";
   fgVariableUnits[kKFTrack0DCAxyz] = "cm";
   fgVariableNames[kKFTrack1DCAxyz] = "Daughter1 DCAxyz";
@@ -763,20 +796,40 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kM01POI] = "";
   fgVariableNames[kM1111REF] = "M_{1111}^{REF} ";
   fgVariableUnits[kM1111REF] = "";
-  fgVariableNames[kM11M1111REF] = "M_{11}_{REF}M_{1111}_{REF} ";
+  fgVariableNames[kM11M1111REF] = "M_{11}_{REF}M_{1111}_{REF}";
   fgVariableUnits[kM11M1111REF] = "";
+  fgVariableNames[kM11M1111REFoverMp] = "M_{11}_{REF}M_{1111}_{REF} / M_{p}  ";
+  fgVariableUnits[kM11M1111REFoverMp] = "";
+  fgVariableNames[kM01M0111POIoverMp] = "M_{01}_{POI}M_{0111}_{POI} / M_{p}";
+  fgVariableUnits[kM01M0111POIoverMp] = "";
   fgVariableNames[kCORR2CORR4REF] = "<2><4>";
   fgVariableUnits[kCORR2CORR4REF] = "";
+  fgVariableNames[kCORR2POICORR4POI] = "<2'><4'>";
+  fgVariableUnits[kCORR2POICORR4POI] = "";
+  fgVariableNames[kCORR2REFCORR4POI] = "<2><4'>";
+  fgVariableUnits[kCORR2REFCORR4POI] = "";
+  fgVariableNames[kCORR2REFCORR2POI] = "<2><2'>";
+  fgVariableUnits[kCORR2REFCORR2POI] = "";
+  fgVariableNames[kM01M0111overMp] = "M_{01}_{POI} M_{0111}_{POI} / M_{p}  ";
+  fgVariableUnits[kM01M0111overMp] = "";
+  fgVariableNames[kM11M0111overMp] = "M_{11}_{REF}M_{0111}_{POI} / M_{p}  ";
+  fgVariableUnits[kM11M0111overMp] = "";
+  fgVariableNames[kM11M01overMp] = "M_{11}_{REF}M_{01}_{POI} / M_{p}  ";
+  fgVariableUnits[kM11M01overMp] = "";
   fgVariableNames[kM0111POI] = "M^{'}_{0111}^{POI} ";
   fgVariableUnits[kM0111POI] = "";
   fgVariableNames[kCORR2REF] = "<2> ";
   fgVariableUnits[kCORR2REF] = "";
+  fgVariableNames[kCORR2REFbydimuons] = "<2> only for events with dimuons";
+  fgVariableUnits[kCORR2REFbydimuons] = "";
   fgVariableNames[kCORR2REFetagap] = "<2-etagap> ";
   fgVariableUnits[kCORR2REFetagap] = "";
   fgVariableNames[kCORR2POI] = "<2'> ";
   fgVariableUnits[kCORR2POI] = "";
   fgVariableNames[kCORR4REF] = "<4> ";
   fgVariableUnits[kCORR4REF] = "";
+  fgVariableNames[kCORR4REFbydimuons] = "<4> only for events with dimuons";
+  fgVariableUnits[kCORR4REFbydimuons] = "";
   fgVariableNames[kCORR4POI] = "<4'> ";
   fgVariableUnits[kCORR4POI] = "";
   fgVariableNames[kM11REFoverMp] = "M_{11}^{REF}/M_{p} ";
@@ -863,6 +916,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCosThetaCS] = "";
   fgVariableNames[kPhiCS] = "#varphi_{CS}";
   fgVariableUnits[kPhiCS] = "rad.";
+  fgVariableNames[kPhiVP] = "#varphi_{VP} - #Psi_{2}";
+  fgVariableUnits[kPhiVP] = "rad.";
   fgVariableNames[kDeltaPhiPair2] = "#Delta#phi";
   fgVariableUnits[kDeltaPhiPair2] = "rad.";
   fgVariableNames[kDeltaEtaPair2] = "#Delta#eta";

@@ -26,22 +26,6 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-/*
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  std::vector<ConfigParamSpec> hfjetworkflows{{"d0-data-charged", VariantType::Int, 1, {"D0 jets charged data"}},
-                                       {"d0-mcd-charged", VariantType::Int, 0, {"D0 jets charged MCD"}},
-                                       {"d0-mcp-charged", VariantType::Int, 0, {"D0 jets charged MCD"}},
-                                       {"bplus-data-charged", VariantType::Int, 0, {"B+ jets charged MCD"}},
-                                       {"bplus-mcd-charged", VariantType::Int, 0, {"B+ jets charged MCD"}},
-                                       {"bplus-mcp-charged", VariantType::Int, 0, {"B+ jets charged MCD"}},
-                                       {"lc-data-charged", VariantType::Int, 0, {"Lc jets charged MCD"}},
-                                       {"lc-mcd-charged", VariantType::Int, 0, {"Lc jets charged MCD"}},
-                                       {"lc-mcp-charged", VariantType::Int, 0, {"Lc jets charged MCD"}}};
-  std::swap(workflowOptions, hfjetworkflows);
-}
-*/
-
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 

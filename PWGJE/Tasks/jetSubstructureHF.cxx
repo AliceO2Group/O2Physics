@@ -243,11 +243,6 @@ struct JetSubstructureHFTask {
     outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairPtVec, pairEnergyVec, pairThetaVec, angularity);
   }
 
-  void processDummy(aod::JetTracks const&)
-  {
-  }
-  PROCESS_SWITCH(JetSubstructureHFTask, processDummy, "Dummy process function turned on by default", true);
-
   void processChargedJetsData(typename JetTableData::iterator const& jet,
                               CandidateTable const& candidates,
                               aod::JetTracks const& tracks)
@@ -291,4 +286,3 @@ struct JetSubstructureHFTask {
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processChargedJetsMCP, "HF jet substructure on MC particle level", false);
 };
-// using JetSubstructureBplus = JetSubstructureHFTask<soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents>,soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents>,soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents>,soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents>, aod::CandidatesBplusData, aod::CandidatesBplusMCP, aod::BplusCJetSSs,aod::BplusCMCDJetSSs,aod::BplusCMCPJetSSs, aod::BplusCEWSJetSSs, aod::JTrackBplusSubs>;

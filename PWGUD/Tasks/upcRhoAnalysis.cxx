@@ -89,9 +89,14 @@ DECLARE_SOA_COLUMN(TrackElPID, trackElPID, std::vector<double>);
 DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, std::vector<double>);
 DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, std::vector<double>);
 DECLARE_SOA_COLUMN(TrackTpcSignal, trackTpcSignal, std::vector<double>);
-DECLARE_SOA_COLUMN(TofClass, tofClass, int);
 } // namespace tree
-DECLARE_SOA_TABLE(Tree, "AOD", "TREE", tree::RunNumber, tree::GlobalBC, tree::NumContrib, tree::PosX, tree::PosY, tree::PosZ, tree::TotalFT0AmplitudeA, tree::TotalFT0AmplitudeC, tree::TotalFV0AmplitudeA, tree::TotalFDDAmplitudeA, tree::TotalFDDAmplitudeC, tree::TimeFT0A, tree::TimeFT0C, tree::TimeFV0A, tree::TimeFDDA, tree::TimeFDDC, tree::EnergyCommonZNA, tree::EnergyCommonZNC, tree::TimeZNA, tree::TimeZNC, tree::NeutronClass, tree::TotalCharge, tree::RhoPt, tree::RhoEta, tree::RhoPhi, tree::RhoM, tree::RhoPhiRandom, tree::RhoPhiCharge, tree::TrackSign, tree::TrackPt, tree::TrackEta, tree::TrackPhi, tree::TrackM, tree::TrackPiPID, tree::TrackElPID, tree::TrackDcaXY, tree::TrackDcaZ, tree::TrackTpcSignal, tree::TofClass);
+DECLARE_SOA_TABLE(Tree, "AOD", "TREE",
+                  tree::RunNumber, tree::GlobalBC, tree::NumContrib,
+                  tree::PosX, tree::PosY, tree::PosZ, tree::TotalFT0AmplitudeA, tree::TotalFT0AmplitudeC, tree::TotalFV0AmplitudeA, tree::TotalFDDAmplitudeA, tree::TotalFDDAmplitudeC,
+                  tree::TimeFT0A, tree::TimeFT0C, tree::TimeFV0A, tree::TimeFDDA, tree::TimeFDDC,
+                  tree::EnergyCommonZNA, tree::EnergyCommonZNC, tree::TimeZNA, tree::TimeZNC, tree::NeutronClass,
+                  tree::TotalCharge, tree::RhoPt, tree::RhoEta, tree::RhoPhi, tree::RhoM, tree::RhoPhiRandom, tree::RhoPhiCharge,
+                  tree::TrackSign, tree::TrackPt, tree::TrackEta, tree::TrackPhi, tree::TrackM, tree::TrackPiPID, tree::TrackElPID, tree::TrackDcaXY, tree::TrackDcaZ, tree::TrackTpcSignal);
 } // namespace o2::aod
 
 struct upcRhoAnalysis {
@@ -99,6 +104,7 @@ struct upcRhoAnalysis {
 
   double PcEtaCut = 0.9; // physics coordination recommendation
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
+  Configurable<bool> do4pi{"do4pi", true, "do 4pi analysis"};
 
   Configurable<double> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "max Z position cut on collisions"};
   Configurable<double> ZNcommonEnergyCut{"ZNcommonEnergyCut", 0.0, "ZN common energy cut"};
@@ -125,12 +131,14 @@ struct upcRhoAnalysis {
   ConfigurableAxis ptAxis{"ptAxis", {1000, 0.0, 10.0}, "p_{T} (GeV/#it{c})"};
   ConfigurableAxis ptCutAxis{"ptCutAxis", {100, 0.0, 0.1}, "p_{T} (GeV/#it{c})"};
   ConfigurableAxis pt2Axis{"pt2Axis", {100, 0.0, 0.01}, "p_{T}^{2} (GeV^{2}/#it{c}^{2})"};
-  ConfigurableAxis etaAxis{"etaAxis", {180, -0.9, 0.9}, "#eta"};
-  ConfigurableAxis yAxis{"yAxis", {180, -0.9, 0.9}, "y"};
+  ConfigurableAxis etaAxis{"etaAxis", {800, -4.0, 4.0}, "#eta"};
+  ConfigurableAxis etaCutAxis{"etaCutAxis", {180, -0.9, 0.9}, "#eta"};
+  ConfigurableAxis yAxis{"yAxis", {400, -4.0, 4.0}, "y"};
+  ConfigurableAxis yCutAxis{"yCutAxis", {180, -0.9, 0.9}, "y"};
   ConfigurableAxis phiAxis{"phiAxis", {180, 0.0, o2::constants::math::TwoPI}, "#phi"};
   ConfigurableAxis phiAsymmAxis{"phiAsymmAxis", {182, -o2::constants::math::PI, o2::constants::math::PI}, "#phi"};
   ConfigurableAxis momentumFromPhiAxis{"momentumFromPhiAxis", {400, -0.1, 0.1}, "p (GeV/#it{c})"};
-  ConfigurableAxis ptQuantileAxis{"ptQuantileAxis", {0, 0.0181689, 0.0263408, 0.0330488, 0.0390369, 0.045058, 0.0512604, 0.0582598, 0.066986, 0.0788085, 0.1}, "p_{T} (GeV/#it{c})"};
+  // ConfigurableAxis ptQuantileAxis{"ptQuantileAxis", {0, 0.0181689, 0.0263408, 0.0330488, 0.0390369, 0.045058, 0.0512604, 0.0582598, 0.066986, 0.0788085, 0.1}, "p_{T} (GeV/#it{c})"};
 
   HistogramRegistry QC{"QC", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry Pions{"Pions", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -183,9 +191,9 @@ struct upcRhoAnalysis {
     QC.add("QC/tracks/raw/hTpcChi2NCl", ";TPC #chi^{2}/N_{cls};counts", kTH1D, {{1000, 0.0, 100.0}});
     QC.add("QC/tracks/raw/hTpcNCls", ";TPC N_{cls} found;counts", kTH1D, {{200, 0.0, 200.0}});
     QC.add("QC/tracks/raw/hTpcNClsCrossedRows", ";TPC crossed rows;counts", kTH1D, {{200, 0.0, 200.0}});
-    QC.add("QC/tracks/raw/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {{1000, 0.0, 10.0}});
-    QC.add("QC/tracks/raw/hEta", ";y;counts", kTH1D, {{180, -0.9, 0.9}});
-    QC.add("QC/tracks/raw/hPhi", ";#phi;counts", kTH1D, {{180, 0.0, o2::constants::math::TwoPI}}); // tracks passing selections
+    QC.add("QC/tracks/raw/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    QC.add("QC/tracks/raw/hEta", ";y;counts", kTH1D, {etaAxis});
+    QC.add("QC/tracks/raw/hPhi", ";#phi;counts", kTH1D, {phiAxis}); // tracks passing selections
     QC.add("QC/tracks/cut/hTpcNSigmaPi2D", ";TPC n#sigma(#pi_{leading});TPC n#sigma(#pi_{subleading});counts", kTH2D, {{400, -10.0, 30.0}, {400, -10.0, 30.0}});
     QC.add("QC/tracks/cut/hTpcNSigmaEl2D", ";TPC n#sigma(e_{leading});TPC n#sigma(e_{subleading});counts", kTH2D, {{400, -10.0, 30.0}, {400, -10.0, 30.0}});
     QC.add("QC/tracks/cut/hTpcSignalVsP", ";p (GeV/#it{c});TPC signal;counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
@@ -206,17 +214,17 @@ struct upcRhoAnalysis {
     // PIONS
     // no selection
     Pions.add("pions/no-selection/unlike-sign/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
-    Pions.add("pions/no-selection/unlike-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaAxis, etaAxis});
+    Pions.add("pions/no-selection/unlike-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaCutAxis, etaCutAxis});
     Pions.add("pions/no-selection/unlike-sign/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
     Pions.add("pions/no-selection/like-sign/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
-    Pions.add("pions/no-selection/like-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaAxis, etaAxis});
+    Pions.add("pions/no-selection/like-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaCutAxis, etaCutAxis});
     Pions.add("pions/no-selection/like-sign/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
     // selected
     Pions.add("pions/selected/unlike-sign/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
-    Pions.add("pions/selected/unlike-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaAxis, etaAxis});
+    Pions.add("pions/selected/unlike-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaCutAxis, etaCutAxis});
     Pions.add("pions/selected/unlike-sign/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
     Pions.add("pions/selected/like-sign/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
-    Pions.add("pions/selected/like-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaAxis, etaAxis});
+    Pions.add("pions/selected/like-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaCutAxis, etaCutAxis});
     Pions.add("pions/selected/like-sign/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
 
     // RAW RHOS
@@ -224,14 +232,17 @@ struct upcRhoAnalysis {
     System.add("system/raw/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
     System.add("system/raw/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
     System.add("system/raw/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/raw/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
     System.add("system/raw/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
     System.add("system/raw/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
     System.add("system/raw/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
     System.add("system/raw/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/raw/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
     System.add("system/raw/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
     System.add("system/raw/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
     System.add("system/raw/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
     System.add("system/raw/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/raw/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
 
     // SELECTED RHOS
     // no selection
@@ -240,45 +251,39 @@ struct upcRhoAnalysis {
     System.add("system/cut/no-selection/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     System.add("system/cut/no-selection/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptCutAxis});
     System.add("system/cut/no-selection/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/cut/no-selection/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
     System.add("system/cut/no-selection/unlike-sign/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/no-selection/unlike-sign/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/no-selection/unlike-sign/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     System.add("system/cut/no-selection/unlike-sign/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     System.add("system/cut/no-selection/unlike-sign/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     System.add("system/cut/no-selection/unlike-sign/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    System.add("system/cut/no-selection/unlike-sign/hTofClassVsM", ";m (GeV/#it{c}^{2});TOF class;counts", kTH2D, {mCutAxis, {4, -0.5, 3.5}});
-    System.add("system/cut/no-selection/unlike-sign/hTofClassVsPt", ";p_{T} (GeV/#it{c});TOF class;counts", kTH2D, {ptCutAxis, {4, -0.5, 3.5}});
-    System.add("system/cut/no-selection/unlike-sign/hTofClassVsY", ";y;TOF class;counts", kTH2D, {yAxis, {4, -0.5, 3.5}});
 
     System.add("system/cut/no-selection/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     System.add("system/cut/no-selection/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
     System.add("system/cut/no-selection/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     System.add("system/cut/no-selection/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptCutAxis});
     System.add("system/cut/no-selection/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/cut/no-selection/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAxis});
     System.add("system/cut/no-selection/like-sign/positive/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/no-selection/like-sign/positive/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/no-selection/like-sign/positive/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     System.add("system/cut/no-selection/like-sign/positive/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     System.add("system/cut/no-selection/like-sign/positive/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     System.add("system/cut/no-selection/like-sign/positive/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    System.add("system/cut/no-selection/like-sign/positive/hTofClassVsM", ";m (GeV/#it{c}^{2});TOF class;counts", kTH2D, {mCutAxis, {4, -0.5, 3.5}});
-    System.add("system/cut/no-selection/like-sign/positive/hTofClassVsPt", ";p_{T} (GeV/#it{c});TOF class;counts", kTH2D, {ptCutAxis, {4, -0.5, 3.5}});
-    System.add("system/cut/no-selection/like-sign/positive/hTofClassVsY", ";y;TOF class;counts", kTH2D, {yAxis, {4, -0.5, 3.5}});
 
     System.add("system/cut/no-selection/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     System.add("system/cut/no-selection/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
     System.add("system/cut/no-selection/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     System.add("system/cut/no-selection/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptCutAxis});
     System.add("system/cut/no-selection/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/cut/no-selection/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAxis});
     System.add("system/cut/no-selection/like-sign/negative/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/no-selection/like-sign/negative/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/no-selection/like-sign/negative/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     System.add("system/cut/no-selection/like-sign/negative/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     System.add("system/cut/no-selection/like-sign/negative/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     System.add("system/cut/no-selection/like-sign/negative/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    System.add("system/cut/no-selection/like-sign/negative/hTofClassVsM", ";m (GeV/#it{c}^{2});TOF class;counts", kTH2D, {mCutAxis, {4, -0.5, 3.5}});
-    System.add("system/cut/no-selection/like-sign/negative/hTofClassVsPt", ";p_{T} (GeV/#it{c});TOF class;counts", kTH2D, {ptCutAxis, {4, -0.5, 3.5}});
-    System.add("system/cut/no-selection/like-sign/negative/hTofClassVsY", ";y;TOF class;counts", kTH2D, {yAxis, {4, -0.5, 3.5}});
 
     // 0n0n
     System.add("system/cut/0n0n/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
@@ -286,6 +291,7 @@ struct upcRhoAnalysis {
     System.add("system/cut/0n0n/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     System.add("system/cut/0n0n/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptCutAxis});
     System.add("system/cut/0n0n/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/cut/0n0n/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
     System.add("system/cut/0n0n/unlike-sign/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0n0n/unlike-sign/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0n0n/unlike-sign/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
@@ -298,6 +304,7 @@ struct upcRhoAnalysis {
     System.add("system/cut/0n0n/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     System.add("system/cut/0n0n/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptCutAxis});
     System.add("system/cut/0n0n/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/cut/0n0n/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0n0n/like-sign/positive/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0n0n/like-sign/positive/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0n0n/like-sign/positive/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
@@ -310,6 +317,7 @@ struct upcRhoAnalysis {
     System.add("system/cut/0n0n/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     System.add("system/cut/0n0n/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptCutAxis});
     System.add("system/cut/0n0n/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/cut/0n0n/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0n0n/like-sign/negative/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0n0n/like-sign/negative/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0n0n/like-sign/negative/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
@@ -323,6 +331,7 @@ struct upcRhoAnalysis {
     System.add("system/cut/Xn0n/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     System.add("system/cut/Xn0n/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptCutAxis});
     System.add("system/cut/Xn0n/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/cut/Xn0n/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/Xn0n/unlike-sign/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/Xn0n/unlike-sign/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/Xn0n/unlike-sign/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
@@ -335,6 +344,7 @@ struct upcRhoAnalysis {
     System.add("system/cut/Xn0n/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     System.add("system/cut/Xn0n/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptCutAxis});
     System.add("system/cut/Xn0n/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/cut/Xn0n/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/Xn0n/like-sign/positive/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/Xn0n/like-sign/positive/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/Xn0n/like-sign/positive/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
@@ -347,6 +357,7 @@ struct upcRhoAnalysis {
     System.add("system/cut/Xn0n/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     System.add("system/cut/Xn0n/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptCutAxis});
     System.add("system/cut/Xn0n/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/cut/Xn0n/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/Xn0n/like-sign/negative/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/Xn0n/like-sign/negative/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/Xn0n/like-sign/negative/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
@@ -360,6 +371,7 @@ struct upcRhoAnalysis {
     System.add("system/cut/0nXn/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     System.add("system/cut/0nXn/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptCutAxis});
     System.add("system/cut/0nXn/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/cut/0nXn/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0nXn/unlike-sign/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0nXn/unlike-sign/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0nXn/unlike-sign/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
@@ -372,6 +384,7 @@ struct upcRhoAnalysis {
     System.add("system/cut/0nXn/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     System.add("system/cut/0nXn/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptCutAxis});
     System.add("system/cut/0nXn/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/cut/0nXn/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0nXn/like-sign/positive/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0nXn/like-sign/positive/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0nXn/like-sign/positive/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
@@ -384,6 +397,7 @@ struct upcRhoAnalysis {
     System.add("system/cut/0nXn/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     System.add("system/cut/0nXn/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptCutAxis});
     System.add("system/cut/0nXn/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/cut/0nXn/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0nXn/like-sign/negative/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0nXn/like-sign/negative/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/0nXn/like-sign/negative/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
@@ -397,6 +411,7 @@ struct upcRhoAnalysis {
     System.add("system/cut/XnXn/unlike-sign/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     System.add("system/cut/XnXn/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptCutAxis});
     System.add("system/cut/XnXn/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/cut/XnXn/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/XnXn/unlike-sign/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/XnXn/unlike-sign/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/XnXn/unlike-sign/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
@@ -409,6 +424,7 @@ struct upcRhoAnalysis {
     System.add("system/cut/XnXn/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     System.add("system/cut/XnXn/like-sign/positive/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptCutAxis});
     System.add("system/cut/XnXn/like-sign/positive/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/cut/XnXn/like-sign/positive/hPhi", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/XnXn/like-sign/positive/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/XnXn/like-sign/positive/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/XnXn/like-sign/positive/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
@@ -421,6 +437,7 @@ struct upcRhoAnalysis {
     System.add("system/cut/XnXn/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     System.add("system/cut/XnXn/like-sign/negative/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptCutAxis});
     System.add("system/cut/XnXn/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
+    System.add("system/cut/XnXn/like-sign/negative/hPhi", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/XnXn/like-sign/negative/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/XnXn/like-sign/negative/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
     System.add("system/cut/XnXn/like-sign/negative/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
@@ -429,32 +446,47 @@ struct upcRhoAnalysis {
     System.add("system/cut/XnXn/like-sign/negative/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
 
     // MC
-    MC.add("MC/QC/hPosXY", ";x (cm);y (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
-    MC.add("MC/QC/hPosZ", ";z (cm);counts", kTH1D, {{400, -20.0, 20.0}});
-    MC.add("MC/QC/hPdgCode", ";pdg code;counts", kTH1D, {{2001, -1000.5, 1000.5}});
-    MC.add("MC/QC/hProducedByGenerator", ";produced by generator;counts", kTH1D, {{2, -0.5, 1.5}});
-    MC.add("MC/QC/hNPions", ";number of pions;counts", kTH1D, {{11, -0.5, 10.5}});
+    MC.add("MC/collisions/hPosXY", ";x (cm);y (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
+    MC.add("MC/collisions/hPosZ", ";z (cm);counts", kTH1D, {{400, -20.0, 20.0}});
+    MC.add("MC/collisions/hNPions", ";number of pions;counts", kTH1D, {{11, -0.5, 10.5}});
+    MC.add("MC/collisions/hNumOfCollisionRecos", ";number of collision reconstructions;counts", kTH1D, {{11, -0.5, 10.5}});
 
-    MC.add("MC/tracks/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    MC.add("MC/tracks/hEta", ";#eta;counts", kTH1D, {etaAxis});
-    MC.add("MC/tracks/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    MC.add("MC/tracks/all/hPdgCode", ";pdg code;counts", kTH1D, {{2001, -1000.5, 1000.5}});
+    MC.add("MC/tracks/all/hProducedByGenerator", ";produced by generator;counts", kTH1D, {{2, -0.5, 1.5}});
+    MC.add("MC/tracks/all/hIsPhysicalPrimary", ";is physical primary;counts", kTH1D, {{2, -0.5, 1.5}});
+    MC.add("MC/tracks/all/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    MC.add("MC/tracks/all/hEta", ";#eta;counts", kTH1D, {etaAxis});
+    MC.add("MC/tracks/all/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    MC.add("MC/tracks/pions/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
+    MC.add("MC/tracks/pions/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaAxis, etaAxis});
+    MC.add("MC/tracks/pions/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
 
     MC.add("MC/system/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
     MC.add("MC/system/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
     MC.add("MC/system/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     MC.add("MC/system/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
     MC.add("MC/system/hY", ";y;counts", kTH1D, {yAxis});
+    MC.add("MC/system/hPhi", ";#phi;counts", kTH1D, {phiAxis});
     MC.add("MC/system/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     MC.add("MC/system/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
 
     // 4 pi QA
-    FourPiQA.add("FourPiQA/tracks/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    FourPiQA.add("FourPiQA/tracks/hEta", ";#eta;counts", kTH1D, {etaAxis});
-    FourPiQA.add("FourPiQA/tracks/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    FourPiQA.add("FourPiQA/system/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    FourPiQA.add("FourPiQA/system/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    FourPiQA.add("FourPiQA/system/hY", ";y;counts", kTH1D, {yAxis});
-    FourPiQA.add("FourPiQA/system/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    if (do4pi) {
+      FourPiQA.add("FourPiQA/reco/tracks/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+      FourPiQA.add("FourPiQA/reco/tracks/hEta", ";#eta;counts", kTH1D, {etaAxis});
+      FourPiQA.add("FourPiQA/reco/tracks/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+      FourPiQA.add("FourPiQA/reco/system/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+      FourPiQA.add("FourPiQA/reco/system/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+      FourPiQA.add("FourPiQA/reco/system/hY", ";y;counts", kTH1D, {yAxis});
+      FourPiQA.add("FourPiQA/reco/system/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+      FourPiQA.add("FourPiQA/MC/tracks/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+      FourPiQA.add("FourPiQA/MC/tracks/hEta", ";#eta;counts", kTH1D, {etaAxis});
+      FourPiQA.add("FourPiQA/MC/tracks/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+      FourPiQA.add("FourPiQA/MC/system/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+      FourPiQA.add("FourPiQA/MC/system/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+      FourPiQA.add("FourPiQA/MC/system/hY", ";y;counts", kTH1D, {yAxis});
+      FourPiQA.add("FourPiQA/MC/system/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    }
   }
 
   template <typename T>
@@ -530,6 +562,15 @@ struct upcRhoAnalysis {
     int charge = 0;
     for (const auto& track : cutTracks)
       charge += track.sign();
+    return charge;
+  }
+
+  template <typename T>
+  int tracksTotalChargeMC(const T& cutTracks) // total charge of selected tracks
+  {
+    int charge = 0;
+    for (const auto& track : cutTracks)
+      charge += track.pdgCode();
     return charge;
   }
 
@@ -667,19 +708,26 @@ struct upcRhoAnalysis {
       LOG(error);
       return;
     }
+    // reonstruct system and calculate total charge, save commonly used values into variables
+    TLorentzVector system = reconstructSystem(cutTracks4Vecs);
+    int totalCharge = tracksTotalCharge(cutTracks);
+    double mass = system.M();
+    double pT = system.Pt();
+    double pTsquare = pT * pT;
+    double rapidity = system.Rapidity();
+    double systemPhi = system.Phi() + o2::constants::math::PI;
 
-    if (cutTracks.size() == 4) {
+    if (do4pi && cutTracks.size() == 4 && totalCharge == 0) {
       // fill out some 4pi QC histograms
       for (int i = 0; i < static_cast<int>(cutTracks.size()); i++) {
-        FourPiQA.fill(HIST("FourPiQA/tracks/hPt"), cutTracks[i].pt());
-        FourPiQA.fill(HIST("FourPiQA/tracks/hEta"), eta(cutTracks[i].px(), cutTracks[i].py(), cutTracks[i].pz()));
-        FourPiQA.fill(HIST("FourPiQA/tracks/hPhi"), phi(cutTracks[i].px(), cutTracks[i].py()));
+        FourPiQA.fill(HIST("FourPiQA/reco/tracks/hPt"), cutTracks[i].pt());
+        FourPiQA.fill(HIST("FourPiQA/reco/tracks/hEta"), eta(cutTracks[i].px(), cutTracks[i].py(), cutTracks[i].pz()));
+        FourPiQA.fill(HIST("FourPiQA/reco/tracks/hPhi"), phi(cutTracks[i].px(), cutTracks[i].py()));
       }
-      TLorentzVector system = reconstructSystem(cutTracks4Vecs);
-      FourPiQA.fill(HIST("FourPiQA/system/hM"), system.M());
-      FourPiQA.fill(HIST("FourPiQA/system/hPt"), system.Pt());
-      FourPiQA.fill(HIST("FourPiQA/system/hY"), system.Rapidity());
-      FourPiQA.fill(HIST("FourPiQA/system/hPhi"), system.Phi());
+      FourPiQA.fill(HIST("FourPiQA/reco/system/hM"), mass);
+      FourPiQA.fill(HIST("FourPiQA/reco/system/hPt"), pT);
+      FourPiQA.fill(HIST("FourPiQA/reco/system/hY"), rapidity);
+      FourPiQA.fill(HIST("FourPiQA/reco/system/hPhi"), systemPhi);
     }
 
     // further consider only two pion systems
@@ -696,13 +744,6 @@ struct upcRhoAnalysis {
     for (int i = 0; i < static_cast<int>(cutTracks.size()); i++)
       QC.fill(HIST("QC/tracks/hSelectionCounter"), 15);
 
-    // reonstruct system and calculate total charge, save commonly used values into variables
-    TLorentzVector system = reconstructSystem(cutTracks4Vecs);
-    int totalCharge = tracksTotalCharge(cutTracks);
-    double mass = system.M();
-    double pT = system.Pt();
-    double pTsquare = pT * pT;
-    double rapidity = system.Rapidity();
     double phiRandom = getPhiRandom(cutTracks4Vecs);
     double phiCharge = getPhiCharge(cutTracks, cutTracks4Vecs);
 
@@ -717,15 +758,6 @@ struct upcRhoAnalysis {
     double subleadingPhi = phi(subleadingMomentumTrack.px(), subleadingMomentumTrack.py());
     // fill TOF hit checker
     QC.fill(HIST("QC/tracks/hTofHitCheck"), leadingMomentumTrack.hasTOF(), subleadingMomentumTrack.hasTOF());
-    int tofClass = -1;
-    if (!leadingMomentumTrack.hasTOF() && !subleadingMomentumTrack.hasTOF())
-      tofClass = 0;
-    else if (leadingMomentumTrack.hasTOF() && !subleadingMomentumTrack.hasTOF())
-      tofClass = 1;
-    else if (!leadingMomentumTrack.hasTOF() && subleadingMomentumTrack.hasTOF())
-      tofClass = 2;
-    else if (leadingMomentumTrack.hasTOF() && subleadingMomentumTrack.hasTOF())
-      tofClass = 3;
 
     // fill tree
     std::vector<int> trackSigns = {leadingMomentumTrack.sign(), subleadingMomentumTrack.sign()};
@@ -738,9 +770,13 @@ struct upcRhoAnalysis {
     std::vector<double> trackDcaXYs = {leadingMomentumTrack.dcaXY(), subleadingMomentumTrack.dcaXY()};
     std::vector<double> trackDcaZs = {leadingMomentumTrack.dcaZ(), subleadingMomentumTrack.dcaZ()};
     std::vector<double> trackTpcSignals = {leadingMomentumTrack.tpcSignal(), subleadingMomentumTrack.tpcSignal()};
-    Tree(collision.runNumber(), collision.globalBC(), collision.numContrib(), collision.posX(), collision.posY(), collision.posZ(), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(), collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(), collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC(), neutronClass,
+    Tree(collision.runNumber(), collision.globalBC(), collision.numContrib(),
+         collision.posX(), collision.posY(), collision.posZ(),
+         collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
+         collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
+         collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC(), neutronClass,
          totalCharge, pT, system.Eta(), system.Phi(), mass, phiRandom, phiCharge,
-         trackSigns, trackPts, trackEtas, trackPhis, trackMs, trackPiPIDs, trackElPIDs, trackDcaXYs, trackDcaZs, trackTpcSignals, tofClass);
+         trackSigns, trackPts, trackEtas, trackPhis, trackMs, trackPiPIDs, trackElPIDs, trackDcaXYs, trackDcaZs, trackTpcSignals);
     // fill raw histograms according to the total charge
     switch (totalCharge) {
       case 0:
@@ -751,6 +787,7 @@ struct upcRhoAnalysis {
         System.fill(HIST("system/raw/unlike-sign/hPt"), pT);
         System.fill(HIST("system/raw/unlike-sign/hPtVsM"), mass, pT);
         System.fill(HIST("system/raw/unlike-sign/hY"), rapidity);
+        System.fill(HIST("system/raw/unlike-sign/hPhi"), systemPhi);
         break;
 
       case 2:
@@ -761,6 +798,7 @@ struct upcRhoAnalysis {
         System.fill(HIST("system/raw/like-sign/positive/hPt"), pT);
         System.fill(HIST("system/raw/like-sign/positive/hPtVsM"), mass, pT);
         System.fill(HIST("system/raw/like-sign/positive/hY"), rapidity);
+        System.fill(HIST("system/raw/like-sign/positive/hPhi"), systemPhi);
         break;
 
       case -2:
@@ -771,6 +809,7 @@ struct upcRhoAnalysis {
         System.fill(HIST("system/raw/like-sign/negative/hPt"), pT);
         System.fill(HIST("system/raw/like-sign/negative/hPtVsM"), mass, pT);
         System.fill(HIST("system/raw/like-sign/negative/hY"), rapidity);
+        System.fill(HIST("system/raw/like-sign/negative/hPhi"), systemPhi);
         break;
 
       default:
@@ -808,21 +847,20 @@ struct upcRhoAnalysis {
         System.fill(HIST("system/cut/no-selection/unlike-sign/hPt2"), pTsquare);
         System.fill(HIST("system/cut/no-selection/unlike-sign/hPtVsM"), mass, pT);
         System.fill(HIST("system/cut/no-selection/unlike-sign/hY"), rapidity);
+        System.fill(HIST("system/cut/no-selection/unlike-sign/hPhi"), systemPhi);
         System.fill(HIST("system/cut/no-selection/unlike-sign/hPhiRandom"), phiRandom);
         System.fill(HIST("system/cut/no-selection/unlike-sign/hPhiCharge"), phiCharge);
         System.fill(HIST("system/cut/no-selection/unlike-sign/hPhiRandomVsM"), mass, phiRandom);
         System.fill(HIST("system/cut/no-selection/unlike-sign/hPhiChargeVsM"), mass, phiCharge);
         System.fill(HIST("system/cut/no-selection/unlike-sign/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
         System.fill(HIST("system/cut/no-selection/unlike-sign/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-        System.fill(HIST("system/cut/no-selection/unlike-sign/hTofClassVsM"), mass, tofClass);
-        System.fill(HIST("system/cut/no-selection/unlike-sign/hTofClassVsPt"), pT, tofClass);
-        System.fill(HIST("system/cut/no-selection/unlike-sign/hTofClassVsY"), rapidity, tofClass);
         if (OnOn) {
           System.fill(HIST("system/cut/0n0n/unlike-sign/hM"), mass);
           System.fill(HIST("system/cut/0n0n/unlike-sign/hPt"), pT);
           System.fill(HIST("system/cut/0n0n/unlike-sign/hPt2"), pTsquare);
           System.fill(HIST("system/cut/0n0n/unlike-sign/hPtVsM"), mass, pT);
           System.fill(HIST("system/cut/0n0n/unlike-sign/hY"), rapidity);
+          System.fill(HIST("system/cut/0n0n/unlike-sign/hPhi"), systemPhi);
           System.fill(HIST("system/cut/0n0n/unlike-sign/hPhiRandom"), phiRandom);
           System.fill(HIST("system/cut/0n0n/unlike-sign/hPhiCharge"), phiCharge);
           System.fill(HIST("system/cut/0n0n/unlike-sign/hPhiRandomVsM"), mass, phiRandom);
@@ -835,6 +873,7 @@ struct upcRhoAnalysis {
           System.fill(HIST("system/cut/Xn0n/unlike-sign/hPt2"), pTsquare);
           System.fill(HIST("system/cut/Xn0n/unlike-sign/hPtVsM"), mass, pT);
           System.fill(HIST("system/cut/Xn0n/unlike-sign/hY"), rapidity);
+          System.fill(HIST("system/cut/Xn0n/unlike-sign/hPhi"), systemPhi);
           System.fill(HIST("system/cut/Xn0n/unlike-sign/hPhiRandom"), phiRandom);
           System.fill(HIST("system/cut/Xn0n/unlike-sign/hPhiCharge"), phiCharge);
           System.fill(HIST("system/cut/Xn0n/unlike-sign/hPhiRandomVsM"), mass, phiRandom);
@@ -847,6 +886,7 @@ struct upcRhoAnalysis {
           System.fill(HIST("system/cut/0nXn/unlike-sign/hPt2"), pTsquare);
           System.fill(HIST("system/cut/0nXn/unlike-sign/hPtVsM"), mass, pT);
           System.fill(HIST("system/cut/0nXn/unlike-sign/hY"), rapidity);
+          System.fill(HIST("system/cut/0nXn/unlike-sign/hPhi"), systemPhi);
           System.fill(HIST("system/cut/0nXn/unlike-sign/hPhiRandom"), phiRandom);
           System.fill(HIST("system/cut/0nXn/unlike-sign/hPhiCharge"), phiCharge);
           System.fill(HIST("system/cut/0nXn/unlike-sign/hPhiRandomVsM"), mass, phiRandom);
@@ -859,6 +899,7 @@ struct upcRhoAnalysis {
           System.fill(HIST("system/cut/XnXn/unlike-sign/hPt2"), pTsquare);
           System.fill(HIST("system/cut/XnXn/unlike-sign/hPtVsM"), mass, pT);
           System.fill(HIST("system/cut/XnXn/unlike-sign/hY"), rapidity);
+          System.fill(HIST("system/cut/XnXn/unlike-sign/hPhi"), systemPhi);
           System.fill(HIST("system/cut/XnXn/unlike-sign/hPhiRandom"), phiRandom);
           System.fill(HIST("system/cut/XnXn/unlike-sign/hPhiCharge"), phiCharge);
           System.fill(HIST("system/cut/XnXn/unlike-sign/hPhiRandomVsM"), mass, phiRandom);
@@ -877,21 +918,20 @@ struct upcRhoAnalysis {
         System.fill(HIST("system/cut/no-selection/like-sign/positive/hPt2"), pTsquare);
         System.fill(HIST("system/cut/no-selection/like-sign/positive/hPtVsM"), mass, pT);
         System.fill(HIST("system/cut/no-selection/like-sign/positive/hY"), rapidity);
+        System.fill(HIST("system/cut/no-selection/like-sign/positive/hPhi"), systemPhi);
         System.fill(HIST("system/cut/no-selection/like-sign/positive/hPhiRandom"), phiRandom);
         System.fill(HIST("system/cut/no-selection/like-sign/positive/hPhiCharge"), phiCharge);
         System.fill(HIST("system/cut/no-selection/like-sign/positive/hPhiRandomVsM"), mass, phiRandom);
         System.fill(HIST("system/cut/no-selection/like-sign/positive/hPhiChargeVsM"), mass, phiCharge);
         System.fill(HIST("system/cut/no-selection/like-sign/positive/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
         System.fill(HIST("system/cut/no-selection/like-sign/positive/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-        System.fill(HIST("system/cut/no-selection/like-sign/positive/hTofClassVsM"), mass, tofClass);
-        System.fill(HIST("system/cut/no-selection/like-sign/positive/hTofClassVsPt"), pT, tofClass);
-        System.fill(HIST("system/cut/no-selection/like-sign/positive/hTofClassVsY"), rapidity, tofClass);
         if (OnOn) {
           System.fill(HIST("system/cut/0n0n/like-sign/positive/hM"), mass);
           System.fill(HIST("system/cut/0n0n/like-sign/positive/hPt"), pT);
           System.fill(HIST("system/cut/0n0n/like-sign/positive/hPt2"), pTsquare);
           System.fill(HIST("system/cut/0n0n/like-sign/positive/hPtVsM"), mass, pT);
           System.fill(HIST("system/cut/0n0n/like-sign/positive/hY"), rapidity);
+          System.fill(HIST("system/cut/0n0n/like-sign/positive/hPhi"), systemPhi);
           System.fill(HIST("system/cut/0n0n/like-sign/positive/hPhiRandom"), phiRandom);
           System.fill(HIST("system/cut/0n0n/like-sign/positive/hPhiCharge"), phiCharge);
           System.fill(HIST("system/cut/0n0n/like-sign/positive/hPhiRandomVsM"), mass, phiRandom);
@@ -904,6 +944,7 @@ struct upcRhoAnalysis {
           System.fill(HIST("system/cut/Xn0n/like-sign/positive/hPt2"), pTsquare);
           System.fill(HIST("system/cut/Xn0n/like-sign/positive/hPtVsM"), mass, pT);
           System.fill(HIST("system/cut/Xn0n/like-sign/positive/hY"), rapidity);
+          System.fill(HIST("system/cut/Xn0n/like-sign/positive/hPhi"), systemPhi);
           System.fill(HIST("system/cut/Xn0n/like-sign/positive/hPhiRandom"), phiRandom);
           System.fill(HIST("system/cut/Xn0n/like-sign/positive/hPhiCharge"), phiCharge);
           System.fill(HIST("system/cut/Xn0n/like-sign/positive/hPhiRandomVsM"), mass, phiRandom);
@@ -916,6 +957,7 @@ struct upcRhoAnalysis {
           System.fill(HIST("system/cut/0nXn/like-sign/positive/hPt2"), pTsquare);
           System.fill(HIST("system/cut/0nXn/like-sign/positive/hPtVsM"), mass, pT);
           System.fill(HIST("system/cut/0nXn/like-sign/positive/hY"), rapidity);
+          System.fill(HIST("system/cut/0nXn/like-sign/positive/hPhi"), systemPhi);
           System.fill(HIST("system/cut/0nXn/like-sign/positive/hPhiRandom"), phiRandom);
           System.fill(HIST("system/cut/0nXn/like-sign/positive/hPhiCharge"), phiCharge);
           System.fill(HIST("system/cut/0nXn/like-sign/positive/hPhiRandomVsM"), mass, phiRandom);
@@ -928,6 +970,7 @@ struct upcRhoAnalysis {
           System.fill(HIST("system/cut/XnXn/like-sign/positive/hPt2"), pTsquare);
           System.fill(HIST("system/cut/XnXn/like-sign/positive/hPtVsM"), mass, pT);
           System.fill(HIST("system/cut/XnXn/like-sign/positive/hY"), rapidity);
+          System.fill(HIST("system/cut/XnXn/like-sign/positive/hPhi"), systemPhi);
           System.fill(HIST("system/cut/XnXn/like-sign/positive/hPhiRandom"), phiRandom);
           System.fill(HIST("system/cut/XnXn/like-sign/positive/hPhiCharge"), phiCharge);
           System.fill(HIST("system/cut/XnXn/like-sign/positive/hPhiRandomVsM"), mass, phiRandom);
@@ -946,21 +989,20 @@ struct upcRhoAnalysis {
         System.fill(HIST("system/cut/no-selection/like-sign/negative/hPt2"), pTsquare);
         System.fill(HIST("system/cut/no-selection/like-sign/negative/hPtVsM"), mass, pT);
         System.fill(HIST("system/cut/no-selection/like-sign/negative/hY"), rapidity);
+        System.fill(HIST("system/cut/no-selection/like-sign/negative/hPhi"), systemPhi);
         System.fill(HIST("system/cut/no-selection/like-sign/negative/hPhiRandom"), phiRandom);
         System.fill(HIST("system/cut/no-selection/like-sign/negative/hPhiCharge"), phiCharge);
         System.fill(HIST("system/cut/no-selection/like-sign/negative/hPhiRandomVsM"), mass, phiRandom);
         System.fill(HIST("system/cut/no-selection/like-sign/negative/hPhiChargeVsM"), mass, phiCharge);
         System.fill(HIST("system/cut/no-selection/like-sign/negative/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
         System.fill(HIST("system/cut/no-selection/like-sign/negative/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-        System.fill(HIST("system/cut/no-selection/like-sign/negative/hTofClassVsM"), mass, tofClass);
-        System.fill(HIST("system/cut/no-selection/like-sign/negative/hTofClassVsPt"), pT, tofClass);
-        System.fill(HIST("system/cut/no-selection/like-sign/negative/hTofClassVsY"), rapidity, tofClass);
         if (OnOn) {
           System.fill(HIST("system/cut/0n0n/like-sign/negative/hM"), mass);
           System.fill(HIST("system/cut/0n0n/like-sign/negative/hPt"), pT);
           System.fill(HIST("system/cut/0n0n/like-sign/negative/hPt2"), pTsquare);
           System.fill(HIST("system/cut/0n0n/like-sign/negative/hPtVsM"), mass, pT);
           System.fill(HIST("system/cut/0n0n/like-sign/negative/hY"), rapidity);
+          System.fill(HIST("system/cut/0n0n/like-sign/negative/hPhi"), systemPhi);
           System.fill(HIST("system/cut/0n0n/like-sign/negative/hPhiRandom"), phiRandom);
           System.fill(HIST("system/cut/0n0n/like-sign/negative/hPhiCharge"), phiCharge);
           System.fill(HIST("system/cut/0n0n/like-sign/negative/hPhiRandomVsM"), mass, phiRandom);
@@ -973,6 +1015,7 @@ struct upcRhoAnalysis {
           System.fill(HIST("system/cut/Xn0n/like-sign/negative/hPt2"), pTsquare);
           System.fill(HIST("system/cut/Xn0n/like-sign/negative/hPtVsM"), mass, pT);
           System.fill(HIST("system/cut/Xn0n/like-sign/negative/hY"), rapidity);
+          System.fill(HIST("system/cut/Xn0n/like-sign/negative/hPhi"), systemPhi);
           System.fill(HIST("system/cut/Xn0n/like-sign/negative/hPhiRandom"), phiRandom);
           System.fill(HIST("system/cut/Xn0n/like-sign/negative/hPhiCharge"), phiCharge);
           System.fill(HIST("system/cut/Xn0n/like-sign/negative/hPhiRandomVsM"), mass, phiRandom);
@@ -985,6 +1028,7 @@ struct upcRhoAnalysis {
           System.fill(HIST("system/cut/0nXn/like-sign/negative/hPt2"), pTsquare);
           System.fill(HIST("system/cut/0nXn/like-sign/negative/hPtVsM"), mass, pT);
           System.fill(HIST("system/cut/0nXn/like-sign/negative/hY"), rapidity);
+          System.fill(HIST("system/cut/0nXn/like-sign/negative/hPhi"), systemPhi);
           System.fill(HIST("system/cut/0nXn/like-sign/negative/hPhiRandom"), phiRandom);
           System.fill(HIST("system/cut/0nXn/like-sign/negative/hPhiCharge"), phiCharge);
           System.fill(HIST("system/cut/0nXn/like-sign/negative/hPhiRandomVsM"), mass, phiRandom);
@@ -997,6 +1041,7 @@ struct upcRhoAnalysis {
           System.fill(HIST("system/cut/XnXn/like-sign/negative/hPt2"), pTsquare);
           System.fill(HIST("system/cut/XnXn/like-sign/negative/hPtVsM"), mass, pT);
           System.fill(HIST("system/cut/XnXn/like-sign/negative/hY"), rapidity);
+          System.fill(HIST("system/cut/XnXn/like-sign/negative/hPhi"), systemPhi);
           System.fill(HIST("system/cut/XnXn/like-sign/negative/hPhiRandom"), phiRandom);
           System.fill(HIST("system/cut/XnXn/like-sign/negative/hPhiCharge"), phiCharge);
           System.fill(HIST("system/cut/XnXn/like-sign/negative/hPhiRandomVsM"), mass, phiRandom);
@@ -1014,50 +1059,78 @@ struct upcRhoAnalysis {
   template <typename C, typename T>
   void processMC(C const& mcCollision, T const& mcParticles)
   {
-    MC.fill(HIST("MC/QC/hPosXY"), mcCollision.posX(), mcCollision.posY());
-    MC.fill(HIST("MC/QC/hPosZ"), mcCollision.posZ());
+    MC.fill(HIST("MC/collisions/hPosXY"), mcCollision.posX(), mcCollision.posY());
+    MC.fill(HIST("MC/collisions/hPosZ"), mcCollision.posZ());
 
     std::vector<decltype(mcParticles.begin())> cutMcParticles;
     std::vector<TLorentzVector> mcParticles4Vecs;
 
     for (auto const& mcParticle : mcParticles) {
-      MC.fill(HIST("MC/QC/hPdgCode"), mcParticle.pdgCode());
-      MC.fill(HIST("MC/QC/hProducedByGenerator"), mcParticle.producedByGenerator());
-      MC.fill(HIST("MC/tracks/hPt"), std::sqrt(mcParticle.px() * mcParticle.px() + mcParticle.py() * mcParticle.py()));
-      MC.fill(HIST("MC/tracks/hEta"), eta(mcParticle.px(), mcParticle.py(), mcParticle.pz()));
-      MC.fill(HIST("MC/tracks/hPhi"), phi(mcParticle.px(), mcParticle.py()));
-      if (!mcParticle.producedByGenerator() || std::abs(mcParticle.pdgCode()) != 211)
+      MC.fill(HIST("MC/tracks/all/hPdgCode"), mcParticle.pdgCode());
+      MC.fill(HIST("MC/tracks/all/hProducedByGenerator"), mcParticle.producedByGenerator());
+      MC.fill(HIST("MC/tracks/all/hIsPhysicalPrimary"), mcParticle.isPhysicalPrimary());
+      MC.fill(HIST("MC/tracks/all/hPt"), pt(mcParticle.px(), mcParticle.py()));
+      MC.fill(HIST("MC/tracks/all/hEta"), eta(mcParticle.px(), mcParticle.py(), mcParticle.pz()));
+      MC.fill(HIST("MC/tracks/all/hPhi"), phi(mcParticle.px(), mcParticle.py()));
+      if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.pdgCode()) != 211)
         continue;
       cutMcParticles.push_back(mcParticle);
       TLorentzVector pion4Vec;
       pion4Vec.SetPxPyPzE(mcParticle.px(), mcParticle.py(), mcParticle.pz(), mcParticle.e());
       mcParticles4Vecs.push_back(pion4Vec);
     }
-    MC.fill(HIST("MC/QC/hNPions"), cutMcParticles.size());
+    MC.fill(HIST("MC/collisions/hNPions"), cutMcParticles.size());
 
-    if (mcParticles4Vecs.size() != 2 || cutMcParticles.size() != 2)
+    if (mcParticles4Vecs.size() != cutMcParticles.size())
       return;
-    if (cutMcParticles[0].pdgCode() * cutMcParticles[1].pdgCode() > 0) // unlike-sign
+    if (tracksTotalChargeMC(cutMcParticles) != 0) // shouldn't happen in theory
       return;
-    TLorentzVector system = mcParticles4Vecs[0] + mcParticles4Vecs[1];
 
+    TLorentzVector system = reconstructSystem(mcParticles4Vecs);
     double mass = system.M();
     double pT = system.Pt();
     double pTsquare = pT * pT;
     double rapidity = system.Rapidity();
+    double systemPhi = system.Phi() + o2::constants::math::PI;
+
+    if (do4pi && cutMcParticles.size() == 4) {
+      for (int i = 0; i < static_cast<int>(cutMcParticles.size()); i++) {
+        FourPiQA.fill(HIST("FourPiQA/MC/tracks/hPt"), pt(cutMcParticles[i].px(), cutMcParticles[i].py()));
+        FourPiQA.fill(HIST("FourPiQA/MC/tracks/hEta"), eta(cutMcParticles[i].px(), cutMcParticles[i].py(), cutMcParticles[i].pz()));
+        FourPiQA.fill(HIST("FourPiQA/MC/tracks/hPhi"), phi(cutMcParticles[i].px(), cutMcParticles[i].py()));
+      }
+      FourPiQA.fill(HIST("FourPiQA/MC/system/hM"), mass);
+      FourPiQA.fill(HIST("FourPiQA/MC/system/hPt"), pT);
+      FourPiQA.fill(HIST("FourPiQA/MC/system/hY"), rapidity);
+      FourPiQA.fill(HIST("FourPiQA/MC/system/hPhi"), systemPhi);
+    }
+
+    if (cutMcParticles.size() != 2)
+      return;
+
+    auto leadingMomentumPion = momentum(cutMcParticles[0].px(), cutMcParticles[0].py(), cutMcParticles[0].pz()) > momentum(cutMcParticles[1].px(), cutMcParticles[1].py(), cutMcParticles[1].pz()) ? cutMcParticles[0] : cutMcParticles[1];
+    auto subleadingMomentumPion = (leadingMomentumPion == cutMcParticles[0]) ? cutMcParticles[1] : cutMcParticles[0];
+    MC.fill(HIST("MC/tracks/pions/hPt"), pt(leadingMomentumPion.px(), leadingMomentumPion.py()), pt(subleadingMomentumPion.px(), subleadingMomentumPion.py()));
+    MC.fill(HIST("MC/tracks/pions/hEta"), eta(leadingMomentumPion.px(), leadingMomentumPion.py(), leadingMomentumPion.pz()), eta(subleadingMomentumPion.px(), subleadingMomentumPion.py(), subleadingMomentumPion.pz()));
+    MC.fill(HIST("MC/tracks/pions/hPhi"), phi(leadingMomentumPion.px(), leadingMomentumPion.py()), phi(subleadingMomentumPion.px(), subleadingMomentumPion.py()));
+
     double phiRandom = getPhiRandom(mcParticles4Vecs);
     double phiCharge = getPhiChargeMC(cutMcParticles, mcParticles4Vecs);
-
-    if (std::abs(rapidity) > systemYCut)
-      return;
 
     MC.fill(HIST("MC/system/hM"), mass);
     MC.fill(HIST("MC/system/hPt"), pT);
     MC.fill(HIST("MC/system/hPtVsM"), mass, pT);
     MC.fill(HIST("MC/system/hPt2"), pTsquare);
     MC.fill(HIST("MC/system/hY"), rapidity);
+    MC.fill(HIST("MC/system/hPhi"), systemPhi);
     MC.fill(HIST("MC/system/hPhiRandom"), phiRandom);
     MC.fill(HIST("MC/system/hPhiCharge"), phiCharge);
+  }
+
+  template <typename C>
+  void checkNumberOfCollisionReconstructions(C const& collisions)
+  {
+    MC.fill(HIST("MC/collisions/hNumOfCollisionRecos"), collisions.size());
   }
 
   void processSGdata(FullUdSgCollision const& collision, FullUdTracks const& tracks)
@@ -1079,6 +1152,12 @@ struct upcRhoAnalysis {
     processMC(mcCollision, mcParticles);
   }
   PROCESS_SWITCH(upcRhoAnalysis, processMCdata, "analyse MC data", false);
+
+  void processCollisionRecoCheck(aod::McCollision const& /* mcCollision */, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions)
+  {
+    checkNumberOfCollisionReconstructions(collisions);
+  }
+  PROCESS_SWITCH(upcRhoAnalysis, processCollisionRecoCheck, "check number of collision reconstructions", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

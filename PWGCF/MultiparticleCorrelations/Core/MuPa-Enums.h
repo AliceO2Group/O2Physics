@@ -95,14 +95,15 @@ enum eVnPsin { eVn = 0,
 enum eEventHistograms {
   eNumberOfEvents = 0,    // Total events = eNumberOfEvents + eBefore, Selected events = eNumberOfEvents + eAfter
   eTotalMultiplicity,     // TBI 20241123 I define it as tracks.size(), but most likely this I do not need this
-  eMultiplicity,          // see documentation below for ebye.fMultiplicity
-  eReferenceMultiplicity, // see documentation below for ebye.fReferenceMultiplicity
+  eMultiplicity,          // see documentation for ebye.fMultiplicity
+  eReferenceMultiplicity, // see documentation for ebye.fReferenceMultiplicity
   eCentrality,            // default centrality estimator
   eVertex_x,
   eVertex_y,
   eVertex_z,
   eNContributors, // number of tracks used for the vertex
   eImpactParameter,
+  eEventPlaneAngle,
   eOccupancy,             // from helper task o2-analysis-event-selection, see also IA's presentation in https://indico.cern.ch/event/1464946, slide 38. Use specific occupancy estimator via eOccupancyEstimator
   eInteractionRate,       // from utility ctpRateFetcher
   eCurrentRunDuration,    // calculated with utility ctpRateFetcher
@@ -113,13 +114,17 @@ enum eEventHistograms {
 enum eEventCuts {
   // a) For available event selection bits, check https://github.com/AliceO2Group/O2Physics/blob/master/Common/CCDB/EventSelectionParams.cxx
   // b) Some settings are configurable, check: https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/eventSelection.cxx
-  eTrigger = eEventHistograms_N,   // Do NOT use eTrigger for Run 3. Validated only for Run 2, and it has to be "kINT7" . TBI 20240522 investigate for Run 1
-  eSel7,                           // See def. of sel7 in Ref. b) above. Event selection decision based on V0A & V0C => use only in Run 2 and Run 1. TBI 20240522 I stil need to validate this one over MC
+  eTrigger = eEventHistograms_N,   // Implemented and validated so far:
+                                   // a) Run 3: "kTVXinTRD" (use optionally for systematics, and only in real data)
+                                   // b) Run 2: "kINT7" (at the moment the usage of this one is enfored in fact)
+                                   // c) Run 1: TBI 20241209 check if I can use kINT7 also for Run 1
+  eSel7,                           // See def. of sel7 in Ref. b) above. Event selection decision based on V0A & V0C => use only in Run 2 and Run 1.
+                                   // TBI 20240522 I stil need to validate this one over MC
   eSel8,                           // See def. of sel7 in Ref. b) above. Event selection decision based on TVX => use only in Run 3, both for data and MC
                                    // *) As of 20240410, kNoITSROFrameBorder (only in MC) and kNoTimeFrameBorder event selection cuts are part of Sel8
                                    //    See also email from EK from 2024041
-  eMultiplicityEstimator,          // see documentation below for ebye.fMultiplicity
-  eReferenceMultiplicityEstimator, // see documentation below for ebye.fReferenceMultiplicity
+  eMultiplicityEstimator,          // see documentation for ebye.fMultiplicity
+  eReferenceMultiplicityEstimator, // see documentation for ebye.fReferenceMultiplicity
   eCentralityEstimator,            // the default centrality estimator, set via configurable. All supported centrality estimators, for QA, etc, are in enum eCentralityEstimators
   eSelectedEvents,                 // selected events = eNumberOfEvents + eAfter => therefore I do not need a special histogram for it
   eNoSameBunchPileup,              // reject collisions in case of pileup with another collision in the same foundBC (emails from IA on 20240404 and EK on 20240410)
@@ -127,7 +132,17 @@ enum eEventCuts {
   eIsVertexITSTPC,                 // at least one ITS-TPC track (reject vertices built from ITS-only tracks) (emails from IA on 20240404 and EK on 20240410
   eIsVertexTOFmatched,             // at least one of vertex contributors is matched to TOF
   eIsVertexTRDmatched,             // at least one of vertex contributors is matched to TRD
+  eNoCollInTimeRangeStrict,        // rejects a collision if there are other events in dtime +/- 10 μs, see IA Slide 39 in https://indico.cern.ch/event/1462154/
+  eNoCollInTimeRangeStandard,      // rejects a collision if there are other events in dtime +/- 2 μs + additional cuts on multiplicity, see IA Slide 39 in https://indico.cern.ch/event/1462154/
+  eNoCollInRofStrict,              // rejects a collision if there are other events within the same ROF (in-ROF pileup), ROF = "ITS Readout Frames",
+                                   // see IA Slide 39 in https://indico.cern.ch/event/1462154/
+  eNoCollInRofStandard,            // same as previous + additional cuts on multiplicity, see IA Slide 39 in https://indico.cern.ch/event/1462154/
+  eNoHighMultCollInPrevRof,        // veto an event if FT0C amplitude in previous ITS ROF is above threshold (default is >5000 a.e. by FT0C), see IA Slide 39 in https://indico.cern.ch/event/1462154/
+  eIsGoodITSLayer3,                // number of inactive chips on ITS layer 3 is below maximum allowed value
+  eIsGoodITSLayer0123,             // numbers of inactive chips on ITS layers 0-3 are below maximum allowed values
+  eIsGoodITSLayersAll,             // numbers of inactive chips on all ITS layers are below maximum allowed values
   eOccupancyEstimator,             // the default Occupancy estimator, set via configurable. All supported centrality estimators, for QA, etc, are in enum eOccupancyEstimators
+  eMinVertexDistanceFromIP,        // if sqrt(vx^2+vy^2+vz^2) < MinVertexDistanceFromIP, the event is rejected. This way, I remove suspicious events with |vertex| = 0.
   eEventCuts_N
 };
 
@@ -248,15 +263,16 @@ enum eQAEventHistograms2D {
   eNContributors_vs_Occupancy,
   eCentrality_vs_Vertex_z,
   eCentrality_vs_Occupancy,
+  eCentrality_vs_ImpactParameter, // [sim] = reconstructed centrality vs. simulated impact parameter. [rec] = ... TBI 20241210
   eVertex_z_vs_Occupancy,
   // ...
   // Specific (everything is hardwired):
+  eMultNTracksPV_vs_MultNTracksGlobal,  // Run 3 multiplicity
   eCentFT0C_vs_CentNTPV,                // Run 3 centrality
   eCentFT0M_vs_CentNTPV,                // Run 3 centrality
   eCentRun2V0M_vs_CentRun2SPDTracklets, // Run 2 centrality (do not use in Run 1 converted, because there is no centrality information)
   eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange,
-  eCurrentRunDuration_vs_InteractionRate,
-  // ...
+  eCurrentRunDuration_vs_InteractionRate, // ...
   eQAEventHistograms2D_N
 };
 
@@ -265,13 +281,46 @@ enum eQAParticleHistograms2D {
   eQAParticleHistograms2D_N
 };
 
+enum eQAParticleEventHistograms2D {
+  // In this category I do correlation <some-particle-property> vs. some-event-property.
+  // The < ... > goes over all particles in that event.
+  // All < ... > over particles are calculated with helper TProfile
+  // For instance: <nITScls> vs. current run duration
+  eCurrentRunDuration_vs_itsNClsEbyE,
+  eCurrentRunDuration_vs_itsNClsNegEtaEbyE,
+  eCurrentRunDuration_vs_itsNClsPosEtaEbyE,
+  eCurrentRunDuration_vs_Eta0804EbyE,
+  eCurrentRunDuration_vs_Eta0400EbyE,
+  eCurrentRunDuration_vs_Eta0004EbyE,
+  eCurrentRunDuration_vs_Eta0408EbyE,
+  eCurrentRunDuration_vs_Pt0005EbyE,
+  eCurrentRunDuration_vs_Pt0510EbyE,
+  eCurrentRunDuration_vs_Pt1050EbyE,
+  eQAParticleEventHistograms2D_N
+};
+
+enum eQAParticleEventProEbyE {
+  eitsNClsEbyE = 1,   // Labels average <itsNCls> in a given event (therefore "EbyE" is appended). Yes, from one, because it runs over bin content and entries in TProfile for most of the time.
+  eitsNClsNegEtaEbyE, // <itsNCls> in a given event for eta < 0
+  eitsNClsPosEtaEbyE, // <itsNCls> in a given event for eta > 0
+  eEta0804EbyE,       // <eta> in a given event for -0.8 < eta < -0.4
+  eEta0400EbyE,       // <eta> in a given event for -0.4 < eta <  0.0
+  eEta0004EbyE,       // <eta> in a given event for  0.0 < eta <  0.4
+  eEta0408EbyE,       // <eta> in a given event for  0.4 < eta <  0.8
+  ePt0005EbyE,        // <pt> in a given event for  0.0 < pt < 0.5
+  ePt0510EbyE,        // <pt> in a given event for  0.5 < pt < 1.0
+  ePt1050EbyE,        // <pt> in a given event for  1.0 < pt < 5.0
+  eQAParticleEventProEbyE_N
+};
+
 enum eReferenceMultiplicityEstimators {
   // Run 3:
   eMultTPC = 0,
-  eMultFV0M,      // ref. mult from helper task o2-analysis-multiplicity-table
-  eMultFT0C,      // ref. mult from helper task o2-analysis-multiplicity-table
-  eMultFT0M,      // ref. mult from helper task o2-analysis-multiplicity-table
-  eMultNTracksPV, // ref. mult from helper task o2-analysis-multiplicity-table
+  eMultFV0M,          // ref. mult from helper task o2-analysis-multiplicity-table
+  eMultFT0C,          // ref. mult from helper task o2-analysis-multiplicity-table
+  eMultFT0M,          // ref. mult from helper task o2-analysis-multiplicity-table
+  eMultNTracksPV,     // ref. mult from helper task o2-analysis-multiplicity-table
+  eMultNTracksGlobal, // ref. mult from helper task o2-analysis-multiplicity-table
   // Run 2:
   eMultTracklets, // ref. mult from helper task o2-analysis-multiplicity-table, use only for Run 2
   eReferenceMultiplicityEstimators_N

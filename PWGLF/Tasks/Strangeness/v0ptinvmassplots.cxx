@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief V0 task for production of invariant mass plots for Optimised Topological Cuts Analysis
+/// \brief V0 task for production of invariant mass plots for Pt Spectrum Analysis
 /// \author Nikolaos Karatzenis (nikolaos.karatzenis@cern.ch)
 /// \author Roman Lietava (roman.lietava@cern.ch)
 
@@ -28,6 +28,9 @@ This analysis includes two processes, one for Real Data and one for MC Data swit
 #include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/PIDResponse.h"
+#include <memory>
+#include <vector>
+#include <string>
 
 // namespace to be used for pt plots and bins
 namespace pthistos

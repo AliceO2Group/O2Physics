@@ -81,6 +81,12 @@ struct ITSResponse {
     return (average * coslInv - exp) / resolution;
   };
 
+  template <o2::track::PID::ID id, typename T>
+  static float nSigmaITS(const T& track)
+  {
+    return nSigmaITS<id>(track.itsClusterSizes(), track.p(), track.eta());
+  }
+
   static void setParameters(float p0, float p1, float p2, float p0_Z2, float p1_Z2, float p2_Z2, float p0_res, float p1_res, float p2_res)
   {
     if (mIsInitialized) {

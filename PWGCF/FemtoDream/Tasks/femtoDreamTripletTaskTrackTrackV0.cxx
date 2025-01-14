@@ -200,9 +200,18 @@ struct femtoDreamTripletTaskTrackTrackV0 {
     ThreeBodyQARegistry.add("TripletTaskQA/hMinvME_AntiLambda", ";Q_{3};M_{inv}", kTH2F, {ConfQ3Bins, ConfInvMassBins});
     ThreeBodyQARegistry.add("TripletTaskQA/particle_pT_in_Triplet_SE", "; p_{T1} ; p_{T2} ; p_{T3} ; Q_{3}", kTHnSparseF, {ConfTempFitVarpTBins, ConfTempFitVarpTBins, ConfTempFitVarpTV0Bins, ConfQ3BinsFor4D});
     ThreeBodyQARegistry.add("TripletTaskQA/particle_pT_in_Triplet_ME", "; p_{T1} ; p_{T2} ; p_{T3} ; Q_{3}", kTHnSparseF, {ConfTempFitVarpTBins, ConfTempFitVarpTBins, ConfTempFitVarpTV0Bins, ConfQ3BinsFor4D});
+    ThreeBodyQARegistry.add("TripletTaskQA/hCentrality", ";Centrality; Q3", kTH2F, {{100, 0, 100}, ConfQ3Bins});
+
     std::vector<double> tmpVecMult = ConfMultBins;
     framework::AxisSpec multAxis = {tmpVecMult, "Multiplicity"};
     ThreeBodyQARegistry.add("TripletTaskQA/hSEMultVSGoodTracks", ";Mult;GoodT", kTH2F, {multAxis, {100, 0, 100}});
+    ThreeBodyQARegistry.add("TripletTaskQA/hTestPairCleaner", ";posDaughtID; negDaughID", kTH2F, {{40, -20, 20}, {40, -20, 20}});
+    ThreeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerPos", ";primaryTrack; posDaughtID", kTH2F, {{40, -20, 20}, {40, -20, 20}});
+    ThreeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerNeg", ";primaryTrack; negDaughtID", kTH2F, {{40, -20, 20}, {40, -20, 20}});
+    ThreeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerPosGlobal", ";primaryTrackGlobal; posDaughtID", kTH2F, {{40, -20, 20}, {40, -20, 20}});
+    ThreeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerNegGlobal", ";primaryTrackGlobal; negDaughtID", kTH2F, {{40, -20, 20}, {40, -20, 20}});
+    ThreeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerPosAfter", ";primaryTrack; posDaughtID", kTH2F, {{40, -20, 20}, {40, -20, 20}});
+    ThreeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerNegAfter", ";primaryTrack; negDaughtID", kTH2F, {{40, -20, 20}, {40, -20, 20}});
 
     sameEventCont.init(&resultRegistry, ConfQ3Bins, ConfMultBins, ConfIsMC);
     mixedEventCont.init(&resultRegistry, ConfQ3Bins, ConfMultBins, ConfIsMC);
@@ -312,6 +321,13 @@ struct femtoDreamTripletTaskTrackTrackV0 {
     for (auto& V0 : groupSelectedV0s) {
       const auto& posChild = parts.iteratorAt(V0.index() - 2);
       const auto& negChild = parts.iteratorAt(V0.index() - 1);
+
+      const auto& childrenPos = posChild.childrenIds();
+      const auto& childrenNeg = negChild.childrenIds();
+      auto posID = childrenPos[0];
+      auto negID = childrenNeg[1];
+      ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleaner"), posID, negID);
+
       if (!((posChild.cut() & Conf_ChildPos_CutV0) == Conf_ChildPos_CutV0 &&
             (posChild.pidcut() & Conf_ChildPos_TPCBitV0) == Conf_ChildPos_TPCBitV0 &&
             (negChild.cut() & Conf_ChildNeg_CutV0) == Conf_ChildNeg_CutV0 &&
@@ -320,6 +336,14 @@ struct femtoDreamTripletTaskTrackTrackV0 {
       }
 
       for (auto& [T1, T2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupSelectedTracks, groupSelectedTracks))) {
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleanerPos"), T1.index(), posID);
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleanerNeg"), T1.index(), negID);
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleanerPos"), T2.index(), posID);
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleanerNeg"), T2.index(), negID);
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleanerPosGlobal"), T1.globalIndex(), posID);
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleanerNegGlobal"), T1.globalIndex(), negID);
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleanerPosGlobal"), T2.globalIndex(), posID);
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleanerNegGlobal"), T2.globalIndex(), negID);
         auto Q3 = FemtoDreamMath::getQ3(T1, mMassOne, T2, mMassTwo, V0, mMassThree);
         // Close pair rejection
         if (ConfIsCPR.value) {
@@ -344,11 +368,16 @@ struct femtoDreamTripletTaskTrackTrackV0 {
         if (!pairCleanerTrackV0.isCleanPair(T1, V0, parts)) {
           continue;
         }
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleanerPosAfter"), T1.index(), posID);
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleanerNegAfter"), T1.index(), negID);
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleanerPosAfter"), T2.index(), posID);
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleanerNegAfter"), T2.index(), negID);
         // fill inv Mass as a function of Q3 for purity fits
         ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hMinvSE_Lambda"), Q3, V0.mLambda());
         ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hMinvSE_AntiLambda"), Q3, V0.mAntiLambda());
         ThreeBodyQARegistry.fill(HIST("TripletTaskQA/particle_pT_in_Triplet_SE"), T1.pt(), T2.pt(), V0.pt(), Q3);
         sameEventCont.setTriplet<isMC>(T1, T2, V0, multCol, Q3);
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hCentrality"), centCol, Q3);
       }
     }
   }

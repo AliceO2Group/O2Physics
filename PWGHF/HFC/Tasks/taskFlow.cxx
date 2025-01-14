@@ -10,6 +10,8 @@
 // or submit itself to any jurisdiction.
 
 /// \file taskFlow.cxx
+/// \brief HF-h correlations in TPC-TPC and TPC-MFT
+/// \author Alexian Lejeune <alexian.lejeune@cern.ch >, Czech Technical University in Prague
 /// \author Katarina Krizkova Gajdosova <katarina.gajdosova@cern.ch>, CERN
 /// \author Maja Kabus <maja.kabus@cern.ch>, CERN
 
@@ -65,6 +67,7 @@ struct HfTaskFlow {
   Configurable<float> etaTrackAssocMax{"etaTrackAssocMax", 0.8f, "max. eta of associated tracks"};
   Configurable<float> ptTrackAssocMin{"ptTrackAssocMin", 0.5f, "min. pT of associated tracks"};
   //  configurables for HF candidates
+  Configurable<float> etaCandidateMax{"etaCandidateMax", 0.8f, "max. eta of HF candidate"};
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for LambdaC"};
@@ -111,11 +114,11 @@ struct HfTaskFlow {
 
   //  HF candidate filter
   //  TODO: use Partition instead of filter
-  Filter candidateFilterD0 = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 ||
-                             aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Filter candidateFilterD0 = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0) ||
+                             (aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar);
 
-  Filter candidateFilterLc = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi ||
-                             aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPiKP;
+  Filter candidateFilterLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi) ||
+                             (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPiKP);
 
   //  Collision filters
   //  FIXME: The filter is applied also on the candidates! Beware!
@@ -220,7 +223,7 @@ struct HfTaskFlow {
     registry.add("Data/TpcTpc/HadronHadron/SameEvent/hPhi", "phi", {HistType::kTH1F, {{100, 0, TwoPI, "#varphi"}}});
     registry.add("Data/TpcTpc/HadronHadron/SameEvent/hYields", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("Data/TpcTpc/HadronHadron/SameEvent/hEtaPhi", "multiplicity vs eta vs phi", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, TwoPI, "#varphi"}}});
-    registry.add("Data/TpcTpc/HadronHadron/SameEvent/hNtracks", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
+    // registry.add("Data/TpcTpc/HadronHadron/SameEvent/hNtracks", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
 
     // Katarina had this :
     registry.add("Data/TpcTpc/HadronHadron/SameEvent/hVzEta", "eta vs. Vz", {HistType::kTH2F, {{100, -4, 4, "#eta"}, {20, -10, 10, "Vz"}}});
@@ -334,7 +337,7 @@ struct HfTaskFlow {
     registry.add("Data/TpcMft/HadronHadron/SameEvent/hPhiTPC", "phiTPC", {HistType::kTH1F, {{100, 0, TwoPI, "#varphi"}}});
     registry.add("Data/TpcMft/HadronHadron/SameEvent/hPtTPC", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
     registry.add("Data/TpcMft/HadronHadron/SameEvent/hYieldsTPC", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
-    registry.add("Data/TpcMft/HadronHadron/SameEvent/hNtracksTPC", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
+    // registry.add("Data/TpcMft/HadronHadron/SameEvent/hNtracksTPC", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
     registry.add("Data/TpcMft/HadronHadron/SameEvent/hMultiplicityTPC", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{500, 0, 500}}});
 
     // DATA : associated particles (MFT tracks) histograms for TPC-MFT h-h same event
@@ -342,8 +345,8 @@ struct HfTaskFlow {
     registry.add("Data/TpcMft/HadronHadron/SameEvent/hEtaMFT", "etaMFT", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
     registry.add("Data/TpcMft/HadronHadron/SameEvent/hPhiMFT", "phiMFT", {HistType::kTH1F, {{100, 0, TwoPI, "#varphi"}}});
     registry.add("Data/TpcMft/HadronHadron/SameEvent/hPtMFT", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
-    registry.add("Data/TpcMft/HadronHadron/SameEvent/hYieldsMFT", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
-    registry.add("Data/TpcMft/HadronHadron/SameEvent/hNtracksMFT", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("Data/TpcMft/HadronHadron/SameEvent/hYieldsMFT", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -5, 0, "#eta"}}});
+    // registry.add("Data/TpcMft/HadronHadron/SameEvent/hNtracksMFT", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
 
     // DATA : histograms for TPC-MFT h-h event mixing for TPC tracks
     registry.add("Data/TpcMft/HadronHadron/MixedEvent/hMultiplicityMixingTPC", "hMultiplicityMixing", {HistType::kTH1F, {{500, 0, 500}}});
@@ -374,7 +377,8 @@ struct HfTaskFlow {
     registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hEtaCandidate", "etaTPC", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hPhiCandidate", "phiTPC", {HistType::kTH1F, {{100, 0, TwoPI, "#varphi"}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hYieldsCandidate", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hNtracksCandidate", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hMultiplicityCandidate", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{500, 0, 500}}});
+    // registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hNtracksCandidate", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
 
     // DATA : trigger particles (candidates) histograms for TPC-MFT HF-h same event
     registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hPtCandidate", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
@@ -401,8 +405,8 @@ struct HfTaskFlow {
     registry.add("Data/TpcMft/HfHadron/SameEvent/hEtaMFT", "etaMFT", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/hPhiMFT", "phiMFT", {HistType::kTH1F, {{100, 0, TwoPI, "#varphi"}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/hPtMFT", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/hYieldsMFT", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/hNtracksMFT", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hYieldsMFT", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -5, 0, "#eta"}}});
+    // registry.add("Data/TpcMft/HfHadron/SameEvent/hNtracksMFT", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
 
     // DATA : histograms for TPC-MFT h-h event mixing for candidates
     registry.add("Data/TpcMft/HfHadron/MixedEvent/hMultiplicityMixingCandidate", "hMultiplicityMixing", {HistType::kTH1F, {{500, 0, 500}}});
@@ -429,7 +433,8 @@ struct HfTaskFlow {
 
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hEventCountSame", "bin", {HistType::kTH1F, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hYieldsCandidate", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hNtracksCandidate", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hMultiplicityCandidate", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{500, 0, 500}}});
+    // registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hNtracksCandidate", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hEtaPhiCandidate", "multiplicity vs eta vs phi in TPC", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, TwoPI, "#varphi"}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hMassVsPt", "3-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hMass", "3-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0., 10.}}});
@@ -437,7 +442,6 @@ struct HfTaskFlow {
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0VsPtProng0", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0VsPtProng1", "3-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0VsPtProng2", "3-prong candidates;prong 2 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{500, 0, 500}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hPtProng0", "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hPtProng1", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
@@ -475,7 +479,7 @@ struct HfTaskFlow {
 
     registry.add("MC/Rec/TpcTpc/HadronHadron/SameEvent/hMultiplicity", "hMultiplicity", {HistType::kTH1F, {{500, 0, 500}}});
     registry.add("MC/Rec/TpcTpc/HadronHadron/SameEvent/hVtxZ", "hVtxZ", {HistType::kTH1F, {{400, -50, 50}}});
-    registry.add("MC/Rec/TpcTpc/HadronHadron/SameEvent/hEventCountSame", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("MC/Rec/TpcTpc/HadronHadron/SameEvent/hEventCountSame", "bin", {HistType::kTH1F, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
     // Katarina had this :
     registry.add("MC/Rec/TpcTpc/HadronHadron/SameEvent/hMultiplicityPrimary", "hMultiplicityPrimary", {HistType::kTH1F, {{500, 0, 500}}});
     //  histograms for MC associated particles
@@ -498,7 +502,7 @@ struct HfTaskFlow {
 
     registry.add("MC/Gen/TpcTpc/HadronHadron/SameEvent/hMultiplicity", "hMultiplicity", {HistType::kTH1F, {{500, 0, 500}}});
     registry.add("MC/Gen/TpcTpc/HadronHadron/SameEvent/hVtxZ", "hVtxZ", {HistType::kTH1F, {{400, -50, 50}}});
-    registry.add("MC/Gen/TpcTpc/HadronHadron/SameEvent/hEventCountSame", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("MC/Gen/TpcTpc/HadronHadron/SameEvent/hEventCountSame", "bin", {HistType::kTH1F, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
     // Katarina had this :
     registry.add("MC/Gen/TpcTpc/HadronHadron/SameEvent/hMultiplicityPrimary", "hMultiplicityPrimary", {HistType::kTH1F, {{500, 0, 500}}});
     //  histograms for MC associated particles
@@ -780,6 +784,7 @@ struct HfTaskFlow {
 
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hEtaCandidate"), candidate.eta());
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hPhiCandidate"), phi);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hMultiplicityCandidate"), multiplicity);
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hEtaPhiCandidate"), multiplicity, candidate.eta(), phi);
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hYieldsCandidate"), multiplicity, pt, candidate.eta());
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hPtCandidate"), pt);
@@ -832,7 +837,7 @@ struct HfTaskFlow {
 
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hYieldsCandidate"), multiplicity, pt, candidate.eta());
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hEtaPhiCandidate"), multiplicity, candidate.eta(), phi);
-    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hNtracksCandidate"), multiplicity);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMultiplicityCandidate"), multiplicity);
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hPt"), pt);
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hPtProng0"), ptProng0);
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hPtProng1"), ptProng1);
@@ -1049,6 +1054,7 @@ struct HfTaskFlow {
   template <typename TTrack>
   bool isAcceptedCandidate(TTrack const& candidate)
   {
+    auto etaCandidate = candidate.eta();
 
     if constexpr (std::is_same_v<HfCandidatesSelLc, TTrack>) { // For now, that means we do LambdaC
       if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
@@ -1057,12 +1063,18 @@ struct HfTaskFlow {
       if (yCandMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandMax) {
         return false;
       }
+      if (etaCandidateMax >= 0. && std::abs(etaCandidate) > etaCandidateMax) {
+        return false;
+      }
       return true;
     } else { // For now, that means we do D0
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         return false;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandMax) {
+        return false;
+      }
+      if (etaCandidateMax >= 0. && std::abs(etaCandidate) > etaCandidateMax) {
         return false;
       }
       return true;
@@ -1287,8 +1299,6 @@ struct HfTaskFlow {
     } // end of loop over tracks 1
   }
 
-  // template <typename TTracksTrig, typename TTracksAssoc, typename TLambda>
-  // void mixCollisions(FilteredCollisionsWSelMult const& collisions, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
   template <typename TCollisions, typename TTracksTrig, typename TTracksAssoc, typename TLambda>
   void mixCollisions(TCollisions const& collisions, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
   {
@@ -1353,7 +1363,7 @@ struct HfTaskFlow {
         } // end of if condition for TPC-TPC or TPC-MFT case
       }
 
-      corrContainer->fillEvent(multiplicityTracks2, CorrelationContainer::kCFStepReconstructed);
+      corrContainer->fillEvent(multiplicityTracks1, CorrelationContainer::kCFStepReconstructed);
       fillCorrelations<CorrelationContainer::kCFStepReconstructed>(corrContainer, tracks1, tracks2, multiplicityTracks1, collision1.posZ(), false);
     }
   }
@@ -1386,7 +1396,7 @@ struct HfTaskFlow {
       int bin = binningWithTracksSize.getBin(binningValues);
 
       const auto multiplicity = tracks2.size(); // get multiplicity of charged hadrons, which is used for slicing in mixing
-      const auto vz = collision1.posZ();
+      // const auto vz = collision1.posZ();
 
       // TO BE DONE : ADD ONE MORE IF CONDITION TO FILL THE MC CASE
       // TODO : FILL NEW PLOTS FOR MCTRUTH ONLY
@@ -1422,7 +1432,8 @@ struct HfTaskFlow {
     //  options are ran at the same time
     //  temporary solution, since other correlation options always have to be ran with h-h, too
     //  TODO: rewrite it in a more intelligent way
-    const auto multiplicity = tracks.size();
+    // const auto multiplicity = tracks.size();
+    const auto multiplicity = collision.multNTracksPV();
     registry.fill(HIST("Data/TpcTpc/HadronHadron/SameEvent/hMultiplicity"), multiplicity);
     registry.fill(HIST("Data/TpcTpc/HadronHadron/SameEvent/hVtxZ"), collision.posZ());
 
@@ -1455,7 +1466,7 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = candidates.size();
+    const auto multiplicity = collision.multNTracksPV();
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
     int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hEventCountSame"), bin);
@@ -1484,7 +1495,7 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = candidates.size();
+    const auto multiplicity = collision.multNTracksPV();
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
     int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hEventCountSame"), bin);
@@ -1507,14 +1518,14 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicityTPC = tracks.size();
+    const auto multiplicity = collision.multNTracksPV();
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
-    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicityTPC));
+    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hEventCountSame"), bin);
 
-    sameTPCMFTChCh->fillEvent(multiplicityTPC, CorrelationContainer::kCFStepReconstructed);
+    sameTPCMFTChCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTChCh, tracks, mftTracks, multiplicityTPC, collision.posZ(), true);
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTChCh, tracks, mftTracks, multiplicity, collision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftChCh, "DATA : Process same-event correlations for TPC-MFT h-h case", false);
 
@@ -1524,6 +1535,7 @@ struct HfTaskFlow {
 
   void processSameTpcMftD0Ch(FilteredCollisionsWSelMult::iterator const& collision,
                              HfCandidatesSelD0 const& candidates,
+                             TracksWDcaSel const& /*tracks*/,
                              aod::MFTTracks const& mftTracks)
   {
     auto fillEventSelectionPlots = true;
@@ -1536,14 +1548,14 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicityCandidates = candidates.size();
+    const auto multiplicity = collision.multNTracksPV();
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
-    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicityCandidates));
+    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hEventCountSame"), bin);
 
-    sameTPCMFTHfCh->fillEvent(multiplicityCandidates, CorrelationContainer::kCFStepReconstructed);
+    sameTPCMFTHfCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTHfCh, candidates, mftTracks, multiplicityCandidates, collision.posZ(), true);
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTHfCh, candidates, mftTracks, multiplicity, collision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftD0Ch, "DATA : Process same-event correlations for TPC-MFT D0-h case", false);
 
@@ -1553,6 +1565,7 @@ struct HfTaskFlow {
 
   void processSameTpcMftLcCh(FilteredCollisionsWSelMult::iterator const& collision,
                              HfCandidatesSelLc const& candidates,
+                             TracksWDcaSel const& /*tracks*/,
                              aod::MFTTracks const& mftTracks)
   {
     auto fillEventSelectionPlots = true;
@@ -1565,14 +1578,14 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicityCandidates = candidates.size();
+    const auto multiplicity = collision.multNTracksPV();
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
-    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicityCandidates));
+    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hEventCountSame"), bin);
 
-    sameTPCMFTHfCh->fillEvent(multiplicityCandidates, CorrelationContainer::kCFStepReconstructed);
+    sameTPCMFTHfCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTHfCh, candidates, mftTracks, multiplicityCandidates, collision.posZ(), true);
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTHfCh, candidates, mftTracks, multiplicity, collision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftLcCh, "DATA : Process same-event correlations for TPC-MFT Lc-h case", false);
 
@@ -1589,7 +1602,7 @@ struct HfTaskFlow {
     //  return;
     //}
 
-    const auto multiplicity = mcTracks.size();
+    const auto multiplicity = mcCollision.multNTracksPV();
     registry.fill(HIST("MC/Rec/TpcTpc/HadronHadron/SameEvent/hMultiplicity"), multiplicity);
     registry.fill(HIST("MC/Rec/TpcTpc/HadronHadron/SameEvent/hVtxZ"), mcCollision.posZ());
 
@@ -1623,7 +1636,9 @@ struct HfTaskFlow {
     //   return;
     // }
 
+    // TODO : check if I have to get my multiplicity based on multNTracksPV or mcParticles.size()
     const auto multiplicity = mcParticles.size(); // Note: these are all MC particles after selection (not only primary)
+    // const auto multiplicity = collision.multNTracksPV();
     registry.fill(HIST("MC/Gen/TpcTpc/HadronHadron/SameEvent/hMultiplicity"), multiplicity);
     registry.fill(HIST("MC/Gen/TpcTpc/HadronHadron/SameEvent/hVtxZ"), mcCollision.posZ());
 
@@ -1656,13 +1671,19 @@ struct HfTaskFlow {
                               TracksWDcaSel const& tracks)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
-      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache); // it's cached, so slicing/grouping happens only once
-      auto size = associatedTracks.size();
-      return size;
+    // auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
+    //   auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache); // it's cached, so slicing/grouping happens only once
+    //   auto size = associatedTracks.size();
+    //   return size;
+    //  };
+
+    auto getMultiplicity = [](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto multiplicity = collision.numContrib();
+      return multiplicity;
     };
 
-    mixCollisions(collisions, tracks, tracks, getTracksSize, mixedTPCTPCChCh);
+    // mixCollisions(collisions, tracks, tracks, getTracksSize, mixedTPCTPCChCh);
+    mixCollisions(collisions, tracks, tracks, getMultiplicity, mixedTPCTPCChCh);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcTpcChCh, "DATA : Process mixed-event correlations for TPC-TPC h-h case", false);
 
@@ -1675,14 +1696,12 @@ struct HfTaskFlow {
                               HfCandidatesSelD0 const& candidates)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
-      // Still o2::aod::track::collisionId with HF ??? -> I don't think so
-      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
-      auto size = associatedTracks.size();
-      return size;
+    auto getMultiplicity = [](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto multiplicity = collision.numContrib();
+      return multiplicity;
     };
 
-    mixCollisions(collisions, candidates, tracks, getTracksSize, mixedTPCTPCHfCh);
+    mixCollisions(collisions, candidates, tracks, getMultiplicity, mixedTPCTPCHfCh);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcTpcD0Ch, "DATA : Process mixed-event correlations for TPC-TPC D0-h case", false);
 
@@ -1715,13 +1734,18 @@ struct HfTaskFlow {
                               aod::MFTTracks const& mftTracks)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&mftTracks, this](FilteredCollisionsWSelMult::iterator const& col) {
-      auto associatedTracks = mftTracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
-      auto size = associatedTracks.size();
-      return size;
+    // auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
+    //   auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
+    //   auto size = associatedTracks.size();
+    //   return size;
+    // };
+
+    auto getMultiplicity = [](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto multiplicity = collision.numContrib();
+      return multiplicity;
     };
 
-    mixCollisions(collisions, tracks, mftTracks, getTracksSize, mixedTPCMFTChCh);
+    mixCollisions(collisions, tracks, mftTracks, getMultiplicity, mixedTPCMFTChCh);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftChCh, "DATA : Process mixed-event correlations for TPC-MFT h-h case", false);
 
@@ -1731,17 +1755,16 @@ struct HfTaskFlow {
 
   void processMixedTpcMftD0Ch(FilteredCollisionsWSelMult const& collisions,
                               HfCandidatesSelD0 const& candidates,
-                              aod::MFTTracks const& mftTracks)
+                              aod::MFTTracks const& mftTracks,
+                              TracksWDcaSel const& /*tracks*/)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&mftTracks, this](FilteredCollisionsWSelMult::iterator const& col) {
-      // Still o2::aod::track::collisionId with HF ??? -> I don't think so
-      auto associatedTracks = mftTracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
-      auto size = associatedTracks.size();
-      return size;
+    auto getMultiplicity = [](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto multiplicity = collision.numContrib();
+      return multiplicity;
     };
 
-    mixCollisions(collisions, candidates, mftTracks, getTracksSize, mixedTPCMFTHfCh);
+    mixCollisions(collisions, candidates, mftTracks, getMultiplicity, mixedTPCMFTHfCh);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftD0Ch, "DATA : Process mixed-event correlations for TPC-MFT D0-h case", false);
 
@@ -1755,14 +1778,12 @@ struct HfTaskFlow {
   {
 
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&mftTracks, this](FilteredCollisionsWSelMult::iterator const& col) {
-      // Still o2::aod::track::collisionId with HF ??? -> I don't think so
-      auto associatedTracks = mftTracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
-      auto size = associatedTracks.size();
-      return size;
+    auto getMultiplicity = [](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto multiplicity = collision.numContrib();
+      return multiplicity;
     };
 
-    mixCollisions(collisions, candidates, mftTracks, getTracksSize, mixedTPCMFTHfCh);
+    mixCollisions(collisions, candidates, mftTracks, getMultiplicity, mixedTPCMFTHfCh);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftLcCh, "DATA : Process mixed-event correlations for TPC-MFT Lc-h case", false);
 

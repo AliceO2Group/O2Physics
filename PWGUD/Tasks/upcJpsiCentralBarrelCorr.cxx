@@ -786,18 +786,39 @@ struct UpcJpsiCentralBarrel {
 
     // MC histograms
     MC.add("MC/hNumberOfMCCollisions", "hNumberOfCollisions", {HistType::kTH1F, {{10, 0, 10}}});
-    MC.add("MC/hNumberOfMCTracks", "hNumberOfMCTracks", {HistType::kTH1F, {{10, 0, 10}}});
+    MC.add("MC/hNumberOfRecoCollisions", "hNumberOfRecoCollisions", {HistType::kTH1F, {{10, 0, 10}}});
+    MC.add("MC/Muon/hNumberOfMCTracks", "hNumberOfMCTracks", {HistType::kTH1F, {{10, 0, 10}}});
+    MC.add("MC/Electron/hNumberOfMCTracks", "hNumberOfMCTracks", {HistType::kTH1F, {{10, 0, 10}}});
+    MC.add("MC/Proton/hNumberOfMCTracks", "hNumberOfMCTracks", {HistType::kTH1F, {{10, 0, 10}}});
     MC.add("MC/hPosZ", "hPosZ", {HistType::kTH1F, {{60, -15, 15}}});
-    MC.add("MC/hPDG", "hPDG", {HistType::kTH1F, {{900, -450, 450}}});
-    MC.add("MC/hEta1", "hEta1", {HistType::kTH1F, {axisEta}});
-    MC.add("MC/hEta2", "hEta2", {HistType::kTH1F, {axisEta}});
-    MC.add("MC/hPhi1", "hPhi1", {HistType::kTH1F, {axisPhi}});
-    MC.add("MC/hPhi2", "hPhi2", {HistType::kTH1F, {axisPhi}});
-    MC.add("MC/hIVM", "hIVM", {HistType::kTH1F, {axisIVM}});
-    MC.add("MC/hRapidity", "hRapidity", {HistType::kTH1F, {axisEta}});
-    MC.add("MC/hPt1", "hPt1", {HistType::kTH1F, {axisPt}});
-    MC.add("MC/hPt2", "hPt2", {HistType::kTH1F, {axisPt}});
-    MC.add("MC/hPt", "hPt", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/hPDG", "hPDG", {HistType::kTH1F, {{200000, -100000, 100000}}});
+    MC.add("MC/Electron/hEta1", "hEta1", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Electron/hEta2", "hEta2", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Electron/hPhi1", "hPhi1", {HistType::kTH1F, {axisPhi}});
+    MC.add("MC/Electron/hPhi2", "hPhi2", {HistType::kTH1F, {axisPhi}});
+    MC.add("MC/Electron/hIVM", "hIVM", {HistType::kTH1F, {axisIVM}});
+    MC.add("MC/Electron/hRapidity", "hRapidity", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Electron/hPt1", "hPt1", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/Electron/hPt2", "hPt2", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/Electron/hPt", "hPt", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/Muon/hEta1", "hEta1", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Muon/hEta2", "hEta2", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Muon/hPhi1", "hPhi1", {HistType::kTH1F, {axisPhi}});
+    MC.add("MC/Muon/hPhi2", "hPhi2", {HistType::kTH1F, {axisPhi}});
+    MC.add("MC/Muon/hIVM", "hIVM", {HistType::kTH1F, {axisIVM}});
+    MC.add("MC/Muon/hRapidity", "hRapidity", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Muon/hPt1", "hPt1", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/Muon/hPt2", "hPt2", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/Muon/hPt", "hPt", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/Proton/hEta1", "hEta1", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Proton/hEta2", "hEta2", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Proton/hPhi1", "hPhi1", {HistType::kTH1F, {axisPhi}});
+    MC.add("MC/Proton/hPhi2", "hPhi2", {HistType::kTH1F, {axisPhi}});
+    MC.add("MC/Proton/hIVM", "hIVM", {HistType::kTH1F, {axisIVM}});
+    MC.add("MC/Proton/hRapidity", "hRapidity", {HistType::kTH1F, {axisEta}});
+    MC.add("MC/Proton/hPt1", "hPt1", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/Proton/hPt2", "hPt2", {HistType::kTH1F, {axisPt}});
+    MC.add("MC/Proton/hPt", "hPt", {HistType::kTH1F, {axisPt}});
   }
 
   bool cutITSLayers(uint8_t itsClusterMap) const
@@ -1227,7 +1248,8 @@ struct UpcJpsiCentralBarrel {
             } else if (OnOn) {
               JPsiToEl.get<TH1>(HIST("JPsiToEl/NotCoherent/OnOn/hIVM"))->Fill(massJpsi);
             }
-          } else {
+          }
+          if (RecoDecay::pt(mother) > 0.2f) {
             JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hIVM"))->Fill(massJpsi);
             if (XnXn) {
               JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/XnXn/hIVM"))->Fill(massJpsi);
@@ -1631,7 +1653,8 @@ struct UpcJpsiCentralBarrel {
             } else if (OnOn) {
               JPsiToMu.get<TH1>(HIST("JPsiToMu/NotCoherent/OnOn/hIVM"))->Fill(massJpsi);
             }
-          } else {
+          }
+          if (RecoDecay::pt(mother) > 0.2f) {
             JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hIVM"))->Fill(massJpsi);
             if (XnXn) {
               JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/XnXn/hIVM"))->Fill(massJpsi);
@@ -2083,44 +2106,106 @@ struct UpcJpsiCentralBarrel {
     MC.get<TH1>(HIST("MC/hNumberOfMCCollisions"))->Fill(1.);
     MC.get<TH1>(HIST("MC/hPosZ"))->Fill(mcCollision.posZ());
 
-    std::array<float, 3> daughPart1;
-    std::array<float, 3> daughPart2;
+    std::array<float, 3> daughPart1Mu;
+    std::array<float, 3> daughPart2Mu;
+    std::array<float, 3> daughPart1El;
+    std::array<float, 3> daughPart2El;
+    std::array<float, 3> daughPart1Pr;
+    std::array<float, 3> daughPart2Pr;
 
     // fill number of particles
     for (auto const& mcParticle : mcParticles) {
-      MC.get<TH1>(HIST("MC/hNumberOfMCTracks"))->Fill(1.);
+      MC.get<TH1>(HIST("MC/Muon/hNumberOfMCTracks"))->Fill(1.);
+      MC.get<TH1>(HIST("MC/Electron/hNumberOfMCTracks"))->Fill(1.);
+      MC.get<TH1>(HIST("MC/Proton/hNumberOfMCTracks"))->Fill(1.);
       MC.get<TH1>(HIST("MC/hPDG"))->Fill(mcParticle.pdgCode());
 
       // check if only muons and physical primaries are present
       if ((mcParticle.pdgCode() == 13) && mcParticle.isPhysicalPrimary()) {
-        daughPart1 = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+        daughPart1Mu = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
 
-        MC.get<TH1>(HIST("MC/hNumberOfMCTracks"))->Fill(2.);
+        MC.get<TH1>(HIST("MC/Muon/hNumberOfMCTracks"))->Fill(2.);
       }
       if ((mcParticle.pdgCode() == -13) && mcParticle.isPhysicalPrimary()) {
-        daughPart2 = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+        daughPart2Mu = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
 
-        MC.get<TH1>(HIST("MC/hNumberOfMCTracks"))->Fill(3.);
+        MC.get<TH1>(HIST("MC/Muon/hNumberOfMCTracks"))->Fill(3.);
+      }
+      if ((mcParticle.pdgCode() == 11) && mcParticle.isPhysicalPrimary()) {
+        daughPart1El = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+
+        MC.get<TH1>(HIST("MC/Electron/hNumberOfMCTracks"))->Fill(2.);
+      }
+      if ((mcParticle.pdgCode() == -11) && mcParticle.isPhysicalPrimary()) {
+        daughPart2El = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+
+        MC.get<TH1>(HIST("MC/Electron/hNumberOfMCTracks"))->Fill(3.);
+      }
+      if ((mcParticle.pdgCode() == 2212) && mcParticle.isPhysicalPrimary()) {
+        daughPart1Pr = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+
+        MC.get<TH1>(HIST("MC/Proton/hNumberOfMCTracks"))->Fill(2.);
+      }
+      if ((mcParticle.pdgCode() == -2212) && mcParticle.isPhysicalPrimary()) {
+        daughPart2Pr = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+
+        MC.get<TH1>(HIST("MC/Proton/hNumberOfMCTracks"))->Fill(3.);
       }
     }
 
     // calculate J/psi system and needed distributions
-    std::array<double, 3> motherPart = {daughPart1[0] + daughPart2[0], daughPart1[1] + daughPart2[1], daughPart1[2] + daughPart2[2]};
+    std::array<double, 3> motherPartMu = {daughPart1Mu[0] + daughPart2Mu[0], daughPart1Mu[1] + daughPart2Mu[1], daughPart1Mu[2] + daughPart2Mu[2]};
+    std::array<double, 3> motherPartEl = {daughPart1El[0] + daughPart2El[0], daughPart1El[1] + daughPart2El[1], daughPart1El[2] + daughPart2El[2]};
+    std::array<double, 3> motherPartPr = {daughPart1Pr[0] + daughPart2Pr[0], daughPart1Pr[1] + daughPart2Pr[1], daughPart1Pr[2] + daughPart2Pr[2]};
 
+    float massEl = o2::constants::physics::MassElectron;
     float massMu = o2::constants::physics::MassMuonMinus;
-    auto arrMom = std::array{daughPart1, daughPart2};
-    float massJpsi = RecoDecay::m(arrMom, std::array{massMu, massMu});
+    float massPr = o2::constants::physics::MassProton;
 
-    MC.get<TH1>(HIST("MC/hEta1"))->Fill(RecoDecay::eta(daughPart1));
-    MC.get<TH1>(HIST("MC/hEta2"))->Fill(RecoDecay::eta(daughPart2));
-    MC.get<TH1>(HIST("MC/hPhi1"))->Fill(RecoDecay::phi(daughPart1));
-    MC.get<TH1>(HIST("MC/hPhi2"))->Fill(RecoDecay::phi(daughPart2));
-    MC.get<TH1>(HIST("MC/hPt1"))->Fill(RecoDecay::pt(daughPart1));
-    MC.get<TH1>(HIST("MC/hPt2"))->Fill(RecoDecay::pt(daughPart2));
-    MC.get<TH1>(HIST("MC/hPt"))->Fill(RecoDecay::pt(motherPart));
-    MC.get<TH1>(HIST("MC/hIVM"))->Fill(massJpsi);
-    MC.get<TH1>(HIST("MC/hRapidity"))->Fill(RecoDecay::y(motherPart, massJpsi));
-  } // end MC process
+    auto arrMomMu = std::array{daughPart1Mu, daughPart2Mu};
+    float massJpsiMu = RecoDecay::m(arrMomMu, std::array{massMu, massMu});
+    auto arrMomEl = std::array{daughPart1El, daughPart2El};
+    float massJpsiEl = RecoDecay::m(arrMomEl, std::array{massEl, massEl});
+    auto arrMomPr = std::array{daughPart1Pr, daughPart2Pr};
+    float massJpsiPr = RecoDecay::m(arrMomPr, std::array{massPr, massPr});
+
+    MC.get<TH1>(HIST("MC/Muon/hEta1"))->Fill(RecoDecay::eta(daughPart1Mu));
+    MC.get<TH1>(HIST("MC/Muon/hEta2"))->Fill(RecoDecay::eta(daughPart2Mu));
+    MC.get<TH1>(HIST("MC/Muon/hPhi1"))->Fill(RecoDecay::phi(daughPart1Mu));
+    MC.get<TH1>(HIST("MC/Muon/hPhi2"))->Fill(RecoDecay::phi(daughPart2Mu));
+    MC.get<TH1>(HIST("MC/Muon/hPt1"))->Fill(RecoDecay::pt(daughPart1Mu));
+    MC.get<TH1>(HIST("MC/Muon/hPt2"))->Fill(RecoDecay::pt(daughPart2Mu));
+    MC.get<TH1>(HIST("MC/Muon/hPt"))->Fill(RecoDecay::pt(motherPartMu));
+    MC.get<TH1>(HIST("MC/Muon/hIVM"))->Fill(massJpsiMu);
+    MC.get<TH1>(HIST("MC/Muon/hRapidity"))->Fill(RecoDecay::y(motherPartMu, massJpsiMu));
+
+    MC.get<TH1>(HIST("MC/Electron/hEta1"))->Fill(RecoDecay::eta(daughPart1El));
+    MC.get<TH1>(HIST("MC/Electron/hEta2"))->Fill(RecoDecay::eta(daughPart2El));
+    MC.get<TH1>(HIST("MC/Electron/hPhi1"))->Fill(RecoDecay::phi(daughPart1El));
+    MC.get<TH1>(HIST("MC/Electron/hPhi2"))->Fill(RecoDecay::phi(daughPart2El));
+    MC.get<TH1>(HIST("MC/Electron/hPt1"))->Fill(RecoDecay::pt(daughPart1El));
+    MC.get<TH1>(HIST("MC/Electron/hPt2"))->Fill(RecoDecay::pt(daughPart2El));
+    MC.get<TH1>(HIST("MC/Electron/hPt"))->Fill(RecoDecay::pt(motherPartEl));
+    MC.get<TH1>(HIST("MC/Electron/hIVM"))->Fill(massJpsiEl);
+    MC.get<TH1>(HIST("MC/Electron/hRapidity"))->Fill(RecoDecay::y(motherPartEl, massJpsiEl));
+
+    MC.get<TH1>(HIST("MC/Proton/hEta1"))->Fill(RecoDecay::eta(daughPart1Pr));
+    MC.get<TH1>(HIST("MC/Proton/hEta2"))->Fill(RecoDecay::eta(daughPart2Pr));
+    MC.get<TH1>(HIST("MC/Proton/hPhi1"))->Fill(RecoDecay::phi(daughPart1Pr));
+    MC.get<TH1>(HIST("MC/Proton/hPhi2"))->Fill(RecoDecay::phi(daughPart2Pr));
+    MC.get<TH1>(HIST("MC/Proton/hPt1"))->Fill(RecoDecay::pt(daughPart1Pr));
+    MC.get<TH1>(HIST("MC/Proton/hPt2"))->Fill(RecoDecay::pt(daughPart2Pr));
+    MC.get<TH1>(HIST("MC/Proton/hPt"))->Fill(RecoDecay::pt(motherPartPr));
+    MC.get<TH1>(HIST("MC/Proton/hIVM"))->Fill(massJpsiPr);
+    MC.get<TH1>(HIST("MC/Proton/hRapidity"))->Fill(RecoDecay::y(motherPartPr, massJpsiPr));
+
+  } // end MC skimmed process
+
+  template <typename C>
+  void processMCU(C const& collisions)
+  {
+    MC.fill(HIST("MC/hNumberOfRecoCollisions"), collisions.size());
+  } // end MC unskimmed process
 
   void processDGrecoLevel(UDCollisionFull const& collision, UDTracksFull const& tracks)
   {
@@ -2146,9 +2231,15 @@ struct UpcJpsiCentralBarrel {
     processMC(mcCollision, mcParticles);
   }
 
+  void processMCUnskimmed(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions /*, aod::McParticles const& mcParticles, aod::TracksIU const& tracks*/)
+  {
+    processMCU(collisions);
+  }
+
   PROCESS_SWITCH(UpcJpsiCentralBarrel, processDGrecoLevel, "Iterate over DG skimmed data.", false);
   PROCESS_SWITCH(UpcJpsiCentralBarrel, processSGrecoLevel, "Iterate over SG skimmed data.", false);
   PROCESS_SWITCH(UpcJpsiCentralBarrel, processMCtruth, "Iterate of MC true data.", true);
+  PROCESS_SWITCH(UpcJpsiCentralBarrel, processMCUnskimmed, "Iterate over unskimmed data.", true);
 }; // end struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

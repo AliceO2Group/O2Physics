@@ -73,13 +73,15 @@ class MCSignal : public TNamed
 
   void SetProngs(std::vector<MCProng> prongs, std::vector<int8_t> commonAncestors);
   void AddProng(MCProng prong, int8_t commonAncestor = -1);
-  void SetDecayChannelIsExclusive(bool option = true)
+  void SetDecayChannelIsExclusive(int nProngs, bool option = true)
   {
     fDecayChannelIsExclusive = option;
+    fNAncestorDirectProngs = nProngs;
   }
-  void SetDecayChannelIsNotExclusive(bool option = true)
+  void SetDecayChannelIsNotExclusive(int nProngs, bool option = true)
   {
     fDecayChannelIsNotExclusive = option;
+    fNAncestorDirectProngs = nProngs;
   }
 
   int GetNProngs() const
@@ -97,6 +99,10 @@ class MCSignal : public TNamed
   bool GetDecayChannelIsNotExclusive() const
   {
     return fDecayChannelIsNotExclusive;
+  }
+  int GetNAncestorDirectProngs() const
+  {
+    return fNAncestorDirectProngs;
   }
 
   template <typename... T>
@@ -117,8 +123,9 @@ class MCSignal : public TNamed
   unsigned int fNProngs;                   // number of prongs
   std::vector<int8_t> fCommonAncestorIdxs; // index of the most recent ancestor, relative to each prong's history
   bool fExcludeCommonAncestor;             // explicitly request that there is no common ancestor
-  bool fDecayChannelIsExclusive;           // if true, then the indicated mother particle has a number of daughters which is equal to the number of prongs defined in this MC signal
-  bool fDecayChannelIsNotExclusive;        // if true, then the indicated mother particle has a number of daughters which is larger than the number of prongs defined in this MC signal
+  bool fDecayChannelIsExclusive;           // if true, then the indicated mother particle has a number of daughters which is equal to the number of direct prongs defined in this MC signal
+  bool fDecayChannelIsNotExclusive;        // if true, then the indicated mother particle has a number of daughters which is larger than the number of direct prongs defined in this MC signal
+  int fNAncestorDirectProngs;              // number of direct prongs belonging to the common ancestor specified by this signal
   int fTempAncestorLabel;
 
   template <typename T>
@@ -162,10 +169,10 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
         //  If these numbers are equal, it means this decay MCSignal match is exclusive (there are no additional prongs for this mother besides the
         //     prongs defined here).
         if (currentMCParticle.has_daughters()) {
-          if (fDecayChannelIsExclusive && currentMCParticle.daughtersIds()[1] - currentMCParticle.daughtersIds()[0] + 1 != fNProngs) {
+          if (fDecayChannelIsExclusive && currentMCParticle.daughtersIds()[1] - currentMCParticle.daughtersIds()[0] + 1 != fNAncestorDirectProngs) {
             return false;
           }
-          if (fDecayChannelIsNotExclusive && currentMCParticle.daughtersIds()[1] - currentMCParticle.daughtersIds()[0] + 1 == fNProngs) {
+          if (fDecayChannelIsNotExclusive && currentMCParticle.daughtersIds()[1] - currentMCParticle.daughtersIds()[0] + 1 == fNAncestorDirectProngs) {
             return false;
           }
         }
