@@ -86,59 +86,59 @@ struct V0PtInvMassPlots {
   Configurable<bool> antiLambdaAnalysis{"antiLambdaAnalysis", true, "Enable Antilambda Pt Analysis"};
 
   // Configurable string for Different Pt Bins
-  Configurable<std::string> kzeroshSettingpt_string{"kzeroSettingptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Kzero Pt Bin Values"};
-  Configurable<std::string> lambdaSettingpt_string{"lambdaSettingptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Lambda Pt Bin Values"};
-  Configurable<std::string> antilambdaSettingpt_string{"antilambdaSettingptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Antilambda Pt Bin Values"};
+  Configurable<std::string> kzeroshSettingptString{"kzeroSettingptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Kzero Pt Bin Values"};
+  Configurable<std::string> lambdaSettingptString{"lambdaSettingptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Lambda Pt Bin Values"};
+  Configurable<std::string> antilambdaSettingptString{"antilambdaSettingptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Antilambda Pt Bin Values"};
 
   void init(InitContext const&)
   {
     // Axes
-    AxisSpec K0ShortMassAxis = {nBins, 0.45f, 0.55f, "#it{M} #pi^{+}#pi^{-} [GeV/#it{c}^{2}]"};
-    AxisSpec LambdaMassAxis = {nBins, 1.085f, 1.145f, "#it{M} p^{+}#pi^{-} [GeV/#it{c}^{2}]"};
-    AxisSpec AntiLambdaMassAxis = {nBins, 1.085f, 1.145f, "#it{M} p^{-}#pi^{+} [GeV/#it{c}^{2}]"};
+    AxisSpec k0ShortMassAxis = {nBins, 0.45f, 0.55f, "#it{M} #pi^{+}#pi^{-} [GeV/#it{c}^{2}]"};
+    AxisSpec lambdaMassAxis = {nBins, 1.085f, 1.145f, "#it{M} p^{+}#pi^{-} [GeV/#it{c}^{2}]"};
+    AxisSpec antiLambdaMassAxis = {nBins, 1.085f, 1.145f, "#it{M} p^{-}#pi^{+} [GeV/#it{c}^{2}]"};
     AxisSpec ptAxis = {nBins, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec GenptAxis = {xaxisGenBins, xaxisMinGenBin, xaxisMaxGenBin, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec genPtAxis = {xaxisGenBins, xaxisMinGenBin, xaxisMaxGenBin, "#it{p}_{T} (GeV/#it{c})"};
 
     rPtAnalysis.add("hV0PtAll", "hV0PtAll", {HistType::kTH1F, {{nBins, 0.0f, 10.0f}}});
 
     // Adding Kzerosh Histograms to registry
     if (kzeroAnalysis == true) {
-      pthistos::kaonptbins = o2::utils::Str::tokenize(kzeroshSettingpt_string, ',');
+      pthistos::kaonptbins = o2::utils::Str::tokenize(kzeroshSettingptString, ',');
       rPtAnalysis.add("hK0ShortReconstructedPtSpectrum", "hK0ShortReconstructedPtSpectrum", {HistType::kTH1F, {ptAxis}});
-      rPtAnalysis.add("hMassK0ShortAll", "hMassK0ShortAll", {HistType::kTH1F, {K0ShortMassAxis}});
+      rPtAnalysis.add("hMassK0ShortAll", "hMassK0ShortAll", {HistType::kTH1F, {k0ShortMassAxis}});
       rPtAnalysis.add("hK0ShortPtSpectrumBeforeCuts", "hK0ShortPtSpectrumBeforeCuts", {HistType::kTH1F, {ptAxis}});
-      rPtAnalysis.add("hMassK0ShortAllAfterCuts", "hMassK0ShortAllAfterCuts", {HistType::kTH1F, {K0ShortMassAxis}});
-      rPtAnalysis.add("hK0ShGeneratedPtSpectrum", "hK0ShGeneratedPtSpectrum", {HistType::kTH1F, {GenptAxis}});
-      rPtAnalysis.add("hLambdaGeneratedPtSpectrum", "hLambdaGeneratedPtSpectrum", {HistType::kTH1F, {GenptAxis}});
-      rPtAnalysis.add("hAntilambdaGeneratedPtSpectrum", "hAntilambdaGeneratedPtSpectrum", {HistType::kTH1F, {GenptAxis}});
+      rPtAnalysis.add("hMassK0ShortAllAfterCuts", "hMassK0ShortAllAfterCuts", {HistType::kTH1F, {k0ShortMassAxis}});
+      rPtAnalysis.add("hK0ShGeneratedPtSpectrum", "hK0ShGeneratedPtSpectrum", {HistType::kTH1F, {genPtAxis}});
+      rPtAnalysis.add("hLambdaGeneratedPtSpectrum", "hLambdaGeneratedPtSpectrum", {HistType::kTH1F, {genPtAxis}});
+      rPtAnalysis.add("hAntilambdaGeneratedPtSpectrum", "hAntilambdaGeneratedPtSpectrum", {HistType::kTH1F, {genPtAxis}});
       for (uint32_t i = 0; i < pthistos::kaonptbins.size() - 1; i++) {
-        pthistos::kaonPt[i] = rKaonshMassPlotsPerPtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", pthistos::kaonptbins[i], pthistos::kaonptbins[i + 1]).data(), fmt::format("hPt from {0} to {1}", pthistos::kaonptbins[i], pthistos::kaonptbins[i + 1]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
+        pthistos::kaonPt[i] = rKaonshMassPlotsPerPtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", pthistos::kaonptbins[i], pthistos::kaonptbins[i + 1]).data(), fmt::format("hPt from {0} to {1}", pthistos::kaonptbins[i], pthistos::kaonptbins[i + 1]).data(), {HistType::kTH1D, {{k0ShortMassAxis}}});
       }
     }
     // Adding Lambda Histograms
     if (lambdaAnalysis == true) {
       // same method as in Kzerosh above
-      std::string lambdaSettingptbins = lambdaSettingpt_string;
+      std::string lambdaSettingptbins = lambdaSettingptString;
       pthistos::lambdaPtBins = o2::utils::Str::tokenize(lambdaSettingptbins, ',');
       rPtAnalysis.add("hLambdaReconstructedPtSpectrum", "hLambdaReconstructedPtSpectrum", {HistType::kTH1F, {ptAxis}});
-      rPtAnalysis.add("hMassLambdaAll", "hMassLambdaAll", {HistType::kTH1F, {LambdaMassAxis}});
+      rPtAnalysis.add("hMassLambdaAll", "hMassLambdaAll", {HistType::kTH1F, {lambdaMassAxis}});
       rPtAnalysis.add("hLambdaPtSpectrumBeforeCuts", "hLambdaPtSpectrumBeforeCuts", {HistType::kTH1F, {ptAxis}});
-      rPtAnalysis.add("hMassLambdaAllAfterCuts", "hMassLambdaAllAfterCuts", {HistType::kTH1F, {LambdaMassAxis}});
+      rPtAnalysis.add("hMassLambdaAllAfterCuts", "hMassLambdaAllAfterCuts", {HistType::kTH1F, {lambdaMassAxis}});
       for (u_int32_t i = 0; i < pthistos::lambdaPtBins.size() - 1; i++) {
-        pthistos::lambdaPt[i] = rLambdaMassPlotsPerPtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", pthistos::lambdaPtBins[i], pthistos::lambdaPtBins[i + 1]).data(), fmt::format("hPt from {0} to {1}", pthistos::lambdaPtBins[i], pthistos::lambdaPtBins[i + 1]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
+        pthistos::lambdaPt[i] = rLambdaMassPlotsPerPtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", pthistos::lambdaPtBins[i], pthistos::lambdaPtBins[i + 1]).data(), fmt::format("hPt from {0} to {1}", pthistos::lambdaPtBins[i], pthistos::lambdaPtBins[i + 1]).data(), {HistType::kTH1D, {{lambdaMassAxis}}});
       }
     }
     // Adding Antilambda Histograms
     if (antiLambdaAnalysis == true) {
       // same method as in Lambda and Kzerosh above
-      std::string antilambdaSettingptbins = antilambdaSettingpt_string;
+      std::string antilambdaSettingptbins = antilambdaSettingptString;
       pthistos::antiLambdaPtBins = o2::utils::Str::tokenize(antilambdaSettingptbins, ',');
       rPtAnalysis.add("hAntilambdaReconstructedPtSpectrum", "hAntilambdaReconstructedPtSpectrum", {HistType::kTH1F, {ptAxis}});
-      rPtAnalysis.add("hMassAntilambdaAll", "hMassAntilambdaAll", {HistType::kTH1F, {AntiLambdaMassAxis}});
+      rPtAnalysis.add("hMassAntilambdaAll", "hMassAntilambdaAll", {HistType::kTH1F, {antiLambdaMassAxis}});
       rPtAnalysis.add("hAntilambdaPtSpectrumBeforeCuts", "hAntilambdaPtSpectrumBeforeCuts", {HistType::kTH1F, {ptAxis}});
-      rPtAnalysis.add("hMassAntilambdaAllAfterCuts", "hMassAntilambdaAllAfterCuts", {HistType::kTH1F, {AntiLambdaMassAxis}});
+      rPtAnalysis.add("hMassAntilambdaAllAfterCuts", "hMassAntilambdaAllAfterCuts", {HistType::kTH1F, {antiLambdaMassAxis}});
       for (u_int32_t i = 0; i < pthistos::antiLambdaPtBins.size() - 1; i++) {
-        pthistos::antiLambdaPt[i] = rAntilambdaMassPlotsPerPtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", pthistos::antiLambdaPtBins[i], pthistos::antiLambdaPtBins[i + 1]).data(), fmt::format("hPt from {0} to {1}", pthistos::antiLambdaPtBins[i], pthistos::antiLambdaPtBins[i + 1]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
+        pthistos::antiLambdaPt[i] = rAntilambdaMassPlotsPerPtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", pthistos::antiLambdaPtBins[i], pthistos::antiLambdaPtBins[i + 1]).data(), fmt::format("hPt from {0} to {1}", pthistos::antiLambdaPtBins[i], pthistos::antiLambdaPtBins[i + 1]).data(), {HistType::kTH1D, {{antiLambdaMassAxis}}});
       }
     }
   }
@@ -153,7 +153,7 @@ struct V0PtInvMassPlots {
   using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels>;
 
   // This is the Process for the MC Generated Data
-  void GenMCprocess(soa::Filtered<aod::McCollisions>::iterator const&,
+  void genMCProcess(soa::Filtered<aod::McCollisions>::iterator const&,
                     const soa::SmallGroups<soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>&,
                     aod::McParticles const& mcParticles)
   {
@@ -177,7 +177,7 @@ struct V0PtInvMassPlots {
     }
   }
   // This is the Process for the MC reconstructed Data
-  void RecMCprocess(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const&,
+  void recMCProcess(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const&,
                     soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
                     DaughterTracks const&, // no need to define a variable for tracks, if we don't access them directly
                     aod::McParticles const& /*mcParticles*/)
@@ -270,7 +270,7 @@ struct V0PtInvMassPlots {
     }
   }
   // This is the process for Real Data
-  void Dataprocess(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const&,
+  void dataProcess(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const&,
                    aod::V0Datas const& V0s)
   {
     for (const auto& v0 : V0s) {
@@ -342,9 +342,9 @@ struct V0PtInvMassPlots {
       }
     }
   }
-  PROCESS_SWITCH(V0PtInvMassPlots, GenMCprocess, "Process Run 3 MC Generated", false);
-  PROCESS_SWITCH(V0PtInvMassPlots, RecMCprocess, "Process Run 3 MC", false);
-  PROCESS_SWITCH(V0PtInvMassPlots, Dataprocess, "Process Run 3 Data,", true);
+  PROCESS_SWITCH(V0PtInvMassPlots, genMCProcess, "Process Run 3 MC Generated", false);
+  PROCESS_SWITCH(V0PtInvMassPlots, recMCProcess, "Process Run 3 MC", false);
+  PROCESS_SWITCH(V0PtInvMassPlots, dataProcess, "Process Run 3 Data,", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
