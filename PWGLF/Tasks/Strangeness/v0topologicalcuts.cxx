@@ -78,29 +78,29 @@ using namespace o2::framework::expressions;
 
 struct v0topologicalcuts {
   // Histogram Registry includes different V0 Parameteres for all V0s and individual MC-V0s with MC-matching
-  HistogramRegistry rV0Parameters_MC_V0match{"V0Parameters_MC_V0Match", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rV0Parameters_MC_K0Smatch{"V0Parameters_MC_K0SMatch", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rV0Parameters_MC_Lambdamatch{"V0Parameters_MC_LambdaMatch", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rV0Parameters_MC_AntiLambdamatch{"V0Parameters_MC_AntiLambdaMatch", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rV0Parameters_MC_V0Match{"V0Parameters_MC_V0Match", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rV0Parameters_MC_K0SMatch{"V0Parameters_MC_K0SMatch", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rV0Parameters_MC_LambdaMatch{"V0Parameters_MC_LambdaMatch", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rV0Parameters_MC_AntiLambdaMatch{"V0Parameters_MC_AntiLambdaMatch", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rV0Parameters_Data{"rV0Parameters_Data", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   // kzero cut Histogram Registry with MC-matching, each will include 20 histograms for 20 different cuts
-  HistogramRegistry rKzeroShort_cospaCut{"KzeroShort_cospaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rKzeroShort_dcaCut{"KzeroShort_dcaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rKzeroShort_v0radiusCut{"KzeroShort_v0radiusCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rKzeroShort_dcapostopCut{"KzeroShort_dcapostopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rKzeroShort_dcanegtopCut{"KzeroShort_dcanegtopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rKzeroShort_cospaCuts{"KzeroShort_cospaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rKzeroShort_dcaCuts{"KzeroShort_dcaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rKzeroShort_v0radiusCuts{"KzeroShort_v0radiusCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rKzeroShort_dcapostopCuts{"KzeroShort_dcapostopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rKzeroShort_dcanegtopCuts{"KzeroShort_dcanegtopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   // lambdas cut histograms with MC-matching (same as in Kzeros above)
-  HistogramRegistry rLambda_cospaCut{"Lambda_cospaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rLambda_dcaCut{"Lambda_dcaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rLambda_v0radiusCut{"Lambda_v0radiusCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rLambda_dcapostopCut{"Lambda_dcapostopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rLambda_dcanegtopCut{"Lambda_dcanegtopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rLambda_cospaCuts{"Lambda_cospaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rLambda_dcaCuts{"Lambda_dcaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rLambda_v0radiusCuts{"Lambda_v0radiusCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rLambda_dcapostopCuts{"Lambda_dcapostopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rLambda_dcanegtopCuts{"Lambda_dcanegtopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   // antilambdas cut histograms with MC-matching (same as in Lambdas an Kzeros above)
-  HistogramRegistry rAntiLambda_cospaCut{"AntiLambda_cospaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rAntiLambda_dcaCut{"AntiLambda_dcaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rAntiLambda_v0radiusCut{"AntiLambda_v0radiusCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rAntiLambda_dcapostopCut{"AntiLambda_dcapostopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry rAntiLambda_dcanegtopCut{"AntiLambda_dcanegtopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rAntiLambda_cospaCuts{"AntiLambda_cospaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rAntiLambda_dcaCuts{"AntiLambda_dcaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rAntiLambda_v0radiusCuts{"AntiLambda_v0radiusCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rAntiLambda_dcapostopCuts{"AntiLambda_dcapostopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rAntiLambda_dcanegtopCuts{"AntiLambda_dcanegtopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Configurable for histograms
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
