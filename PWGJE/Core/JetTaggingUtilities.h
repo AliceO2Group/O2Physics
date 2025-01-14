@@ -38,6 +38,12 @@
 #include "Common/Core/trackUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 
+#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
+#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
+#else
+#include <onnxruntime_cxx_api.h>
+#endif
+
 using namespace o2::constants::physics;
 
 enum JetTaggingSpecies {
@@ -100,6 +106,149 @@ struct BJetSVParams {
   double mDecayLength2DError = 0.0;
   double mDecayLength3D = 0.0;
   double mDecayLength3DError = 0.0;
+};
+
+// ONNX Runtime tensor (Ort::Value) allocator for using customized inputs of ML models.
+class TensorAllocator {
+protected:
+#if !__has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
+  Ort::MemoryInfo mem_info;
+#endif
+public:
+  TensorAllocator()
+#if !__has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
+    : mem_info(Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault))
+#endif
+  {}
+  ~TensorAllocator() = default;
+  template <typename T>
+  Ort::Value createTensor(std::vector<T>& input, std::vector<int64_t>& inputShape) {
+#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
+    return Ort::Experimental::Value::CreateTensor<T>(input.data(), input.size(), inputShape);
+#else
+    return Ort::Value::CreateTensor<T>(mem_info, input.data(), input.size(), inputShape.data(), inputShape.size());
+#endif
+  }
+};
+
+// TensorAllocator for GNN b-jet tagger
+class GNNBjetAllocator : public TensorAllocator {
+private:
+  int64_t nJetFeat;
+  int64_t nTrkFeat;
+  int64_t nFlav;
+  int64_t nTrkOrigin;
+  int64_t maxNNodes;
+
+  std::vector<float> tfJetMean;
+  std::vector<float> tfJetStdev;
+  std::vector<float> tfTrkMean;
+  std::vector<float> tfTrkStdev;
+  
+  std::vector<std::vector<int64_t>> edgesList;
+
+  // Jet feature normalization
+  template <typename T>
+  T jetFeatureTransform(T feat, int idx) const {
+    return (feat - tfJetMean[idx]) / tfJetStdev[idx];
+  }
+
+  // Track feature normalization
+  template <typename T>
+  T trkFeatureTransform(T feat, int idx) const {
+    return (feat - tfTrkMean[idx]) / tfTrkStdev[idx];
+  }
+
+  // Edge input of GNN (fully-connected graph)
+  void setEdgesList(void) {
+    for (int64_t nNodes = 0; nNodes <= maxNNodes; ++nNodes) {
+      std::vector<std::pair<int64_t, int64_t>> edges;
+      // Generate all permutations of (i, j) where i != j
+      for (int64_t i = 0; i < nNodes; ++i) {
+        for (int64_t j = 0; j < nNodes; ++j) {
+          if (i != j) {
+            edges.emplace_back(i, j);
+          }
+        }
+      }
+      // Add self-loops (i, i)
+      for (int64_t i = 0; i < nNodes; ++i) {
+        edges.emplace_back(i, i);
+      }
+      // Flatten
+      std::vector<int64_t> flattenedEdges;
+      for (const auto& edge : edges) {
+        flattenedEdges.push_back(edge.first);
+      }
+      for (const auto& edge : edges) {
+        flattenedEdges.push_back(edge.second);
+      }
+      edgesList.push_back(flattenedEdges);
+    }
+  }
+
+  // Replace NaN in a vector into value
+  template <typename T>
+  static int replaceNaN(std::vector<T>& vec, T value) {
+    int numNaN = 0;
+    for (auto& el : vec) {
+      if (std::isnan(el)) {
+        el = value;
+        ++numNaN;
+      }
+    }
+    return numNaN;
+  }
+
+public:
+  GNNBjetAllocator() : TensorAllocator(), nJetFeat(4), nTrkFeat(13), nFlav(3), nTrkOrigin(5), maxNNodes(40) {}
+  GNNBjetAllocator(int64_t nJetFeat, int64_t nTrkFeat, int64_t nFlav, int64_t nTrkOrigin, std::vector<float>& tfJetMean, std::vector<float>& tfJetStdev, std::vector<float>& tfTrkMean, std::vector<float>& tfTrkStdev, int64_t maxNNodes=40)
+  : TensorAllocator(), nJetFeat(nJetFeat), nTrkFeat(nTrkFeat), nFlav(nFlav), nTrkOrigin(nTrkOrigin), maxNNodes(maxNNodes), tfJetMean(tfJetMean), tfJetStdev(tfJetStdev), tfTrkMean(tfTrkMean), tfTrkStdev(tfTrkStdev)
+  {
+    setEdgesList();
+  }
+  ~GNNBjetAllocator() = default;
+
+  // Copy operator for initializing GNNBjetAllocator using Configurable values
+  GNNBjetAllocator& operator=(const GNNBjetAllocator& other) {
+    nJetFeat = other.nJetFeat;
+    nTrkFeat = other.nTrkFeat;
+    nFlav = other.nFlav;
+    nTrkOrigin = other.nTrkOrigin;
+    maxNNodes = other.maxNNodes;
+    tfJetMean = other.tfJetMean;
+    tfJetStdev = other.tfJetStdev;
+    tfTrkMean = other.tfTrkMean;
+    tfTrkStdev = other.tfTrkStdev;
+    setEdgesList();
+    return *this;
+  }
+
+  // Allocate & Return GNN input tensors (std::vector<Ort::Value>)
+  template <typename T>
+  void getGNNInput(std::vector<T>& jetFeat, std::vector<std::vector<T>>& trkFeat, std::vector<T>& feat, std::vector<Ort::Value>& gnnInput) {
+    int64_t nNodes = trkFeat.size();
+
+    std::vector<int64_t> edgesShape{2, nNodes * nNodes};
+    gnnInput.emplace_back(createTensor(edgesList[nNodes], edgesShape));
+    
+    std::vector<int64_t> featShape{nNodes, nJetFeat + nTrkFeat};
+
+    int numNaN = replaceNaN(jetFeat, 0.f);
+    for (auto& aTrkFeat : trkFeat) {
+      for (size_t i = 0; i < jetFeat.size(); ++i)
+        feat.push_back(jetFeatureTransform(jetFeat[i], i));
+      numNaN += replaceNaN(aTrkFeat, 0.f);
+      for (size_t i = 0; i < aTrkFeat.size(); ++i)
+        feat.push_back(trkFeatureTransform(aTrkFeat[i], i));
+    }
+    
+    gnnInput.emplace_back(createTensor(feat, featShape));
+
+    if (numNaN > 0) {
+      LOGF(info, "NaN found in GNN input feature, number of NaN: %d", numNaN);
+    }
+  }
 };
 
 //________________________________________________________________________
@@ -1005,6 +1154,64 @@ void analyzeJetTrackInfo4ML(AnalysisJet const& analysisJet, AnyTracks const& /*a
   // Sort the tracks based on their IP significance in descending order
   std::sort(tracksParams.begin(), tracksParams.end(), compare);
 }
+
+// Looping over the track info and putting them in the input vector (for GNN b-jet tagging)
+template <typename AnalysisJet, typename AnyTracks, typename AnyOriginalTracks>
+void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, AnyOriginalTracks const& /*origTracks*/, std::vector<std::vector<float>>& tracksParams, float trackPtMin = 0.5, int64_t nMaxConstit = 40)
+{
+  for (const auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
+
+    if (constituent.pt() < trackPtMin) {
+      continue;
+    }
+    
+    int sign = jettaggingutilities::getGeoSign(analysisJet, constituent);
+
+    auto origConstit = constituent.template track_as<AnyOriginalTracks>();
+
+    if (static_cast<int64_t>(tracksParams.size()) < nMaxConstit) {
+      tracksParams.emplace_back(std::vector<float>{constituent.pt(), origConstit.phi(), constituent.eta(), static_cast<float>(constituent.sign()), std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), static_cast<float>(origConstit.itsNCls()), static_cast<float>(origConstit.tpcNClsFound()), static_cast<float>(origConstit.tpcNClsCrossedRows()), origConstit.itsChi2NCl(), origConstit.tpcChi2NCl()});
+    }
+    else {
+      // If there are more than nMaxConstit constituents in the jet, select only 40 constituents with the highest DCA_XY significance.
+      size_t minIdx = 0;
+      for (size_t i = 0; i < tracksParams.size(); ++i) {
+        if (tracksParams[i][4] / tracksParams[i][5] < tracksParams[minIdx][4] / tracksParams[minIdx][5])
+          minIdx = i;
+      }
+      if (std::abs(constituent.dcaXY()) * sign / constituent.sigmadcaXY() > tracksParams[minIdx][4] / tracksParams[minIdx][5])
+        tracksParams[minIdx] = std::vector<float>{constituent.pt(), origConstit.phi(), constituent.eta(), static_cast<float>(constituent.sign()), std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), static_cast<float>(origConstit.itsNCls()), static_cast<float>(origConstit.tpcNClsFound()), static_cast<float>(origConstit.tpcNClsCrossedRows()), origConstit.itsChi2NCl(), origConstit.tpcChi2NCl()};
+    }
+  }
+}
+
+// Discriminant value for GNN b-jet tagging
+template <typename T>
+T Db(const std::vector<T>& logits, double fC = 0.018)
+{
+  auto softmax = [](const std::vector<T>& logits) {
+    std::vector<T> res;
+    T maxLogit = *std::max_element(logits.begin(), logits.end());
+    T sumLogit = 0.;
+    for (size_t i = 0; i < logits.size(); ++i) {
+      res.push_back(std::exp(logits[i] - maxLogit));
+      sumLogit += res[i];
+    }
+    for (size_t i = 0; i < logits.size(); ++i) {
+      res[i] /= sumLogit;
+    }
+    return res;
+  };
+
+  std::vector<T> softmaxLogits = softmax(logits);
+
+  if (softmaxLogits[1] == 0. && softmaxLogits[2] == 0.) {
+    LOG(debug) << "jettaggingutilities::Db, Divide by zero: softmaxLogits = (" << softmaxLogits[0] << ", " << softmaxLogits[1] << ", " << softmaxLogits[2] << ")";
+  }
+
+  return std::log(softmaxLogits[0] / (fC * softmaxLogits[1] + (1. - fC) * softmaxLogits[2]));
+}
+
 }; // namespace jettaggingutilities
 
 #endif // PWGJE_CORE_JETTAGGINGUTILITIES_H_
