@@ -190,6 +190,9 @@ class VarManager : public TObject
     kIsVertexITSTPC,             // At least one ITS-TPC track
     kIsVertexTOFmatched,         // At least one TOF-matched track
     kIsSel8,                     // TVX in Run3
+    kIsGoodITSLayer3,            // number of inactive chips on ITS layer 3 is below maximum allowed value
+    kIsGoodITSLayer0123,         // numbers of inactive chips on ITS layers 0-3 are below maximum allowed values
+    kIsGoodITSLayersAll,         // numbers of inactive chips on all ITS layers are below maximum allowed values
     kIsINT7,
     kIsEMC7,
     kIsINT7inMUON,
@@ -1418,6 +1421,15 @@ void VarManager::FillEvent(T const& event, float* values)
     if (fgUsedVars[kIsSel8]) {
       values[kIsSel8] = event.selection_bit(o2::aod::evsel::kIsTriggerTVX) && event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
     }
+    if (fgUsedVars[kIsGoodITSLayer3]) {
+      values[kIsGoodITSLayer3] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayer3);
+    }
+    if (fgUsedVars[kIsGoodITSLayer0123]) {
+      values[kIsGoodITSLayer0123] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123);
+    }
+    if (fgUsedVars[kIsGoodITSLayersAll]) {
+      values[kIsGoodITSLayersAll] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
+    }
     if (fgUsedVars[kIsINT7]) {
       values[kIsINT7] = (event.alias_bit(kINT7) > 0);
     }
@@ -1571,6 +1583,15 @@ void VarManager::FillEvent(T const& event, float* values)
     }
     if (fgUsedVars[kIsSel8]) {
       values[kIsSel8] = event.selection_bit(o2::aod::evsel::kIsTriggerTVX) && event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
+    }
+    if (fgUsedVars[kIsGoodITSLayer3]) {
+      values[kIsGoodITSLayer3] = (event.selection_bit(o2::aod::evsel::kIsGoodITSLayer3) > 0);
+    }
+    if (fgUsedVars[kIsGoodITSLayer0123]) {
+      values[kIsGoodITSLayer0123] = (event.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123) > 0);
+    }
+    if (fgUsedVars[kIsGoodITSLayersAll]) {
+      values[kIsGoodITSLayersAll] = (event.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) > 0);
     }
     if (fgUsedVars[kIsINT7]) {
       values[kIsINT7] = (event.alias_bit(kINT7) > 0);
