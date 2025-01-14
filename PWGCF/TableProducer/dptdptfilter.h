@@ -135,6 +135,9 @@ enum CollisionSelectionFlags {
   kISVERTEXTOFMATCHEDBIT,   ///< vertex contributor with TOF matched
   kISVERTEXTRDMATCHEDBIT,   ///< vertex contributor with TRD matche
   kOCCUPANCYBIT,            ///< occupancy within limits
+  kISGOODITSLAYER3BIT,      ///< right level of inactive chips for ITS layer 3
+  kISGOODITSLAYER0123BIT,   ///< right level of inactive chips for ITS layers 0,1,2, and 3
+  kISGOODITSLAYERALLBIT,    ///< right level of inactive chips for all seven ITS layers
   kCENTRALITYBIT,           ///< centrality cut passed
   kZVERTEXBIT,              ///< zvtx cut passed
   kSELECTED,                ///< the event has passed all selections
@@ -154,6 +157,18 @@ enum TpcExclusionMethod {
   kNOEXCLUSION = 0, ///< do not exclude tracks within the TPC
   kSTATIC,          ///< exclude tracks statically on the bins of the TPC sector borders; only valid if 72 bins and origin shifted by 0.5
   kDYNAMIC          ///< pT dependent exclusion matching the sector borders a la Alex Dobrin
+};
+
+/// \enum ItsDeadMapsCheckType
+/// \brief Check for the right level of ITS dead chips
+enum ItsDeadMapsCheckType {
+  kNOCHECK = 0,        ///< no check
+  kGOODITSLAYER3,      ///< check good the 3 ITS layer
+  kGOODITSLAYER0123,   ///< check good the 0,1,2,and 3 ITS layers
+  kGOODITSLAYERALL,    ///< check good all ITS layers
+  kNOGOODITSLAYER3,    ///< check no good the  3 ITS layer
+  kNOGOODITSLAYER0123, ///< check no good the 0,1,2,and 3 ITS layers
+  kNOGOODITSLAYERALL   ///< check no good all ITS layers
 };
 
 //============================================================================================
@@ -364,7 +379,9 @@ DataType fDataType = kData;
 CentMultEstimatorType fCentMultEstimator = kV0M;
 TriggerSelectionType fTriggerSelection = kMB;
 OccupancyEstimationType fOccupancyEstimation = kNOOCC; /* the occupancy estimator to use */
-float fMaxOccupancy = 1e6f;                            /* the maximum allowed occupancy */
+ItsDeadMapsCheckType fItsDeadMapCheck = kNOCHECK;      /* the check of the ITS dead maps to use */
+
+float fMaxOccupancy = 1e6f; /* the maximum allowed occupancy */
 
 /* adaptations for the pp nightly checks */
 analysis::CheckRangeCfg traceDCAOutliers;
@@ -524,6 +541,28 @@ inline OccupancyEstimationType getOccupancyEstimator(const std::string& estimato
   }
 }
 
+inline ItsDeadMapsCheckType getItsDeadMapCheck(const std::string& check)
+{
+  if (check.length() == 0 || check == "None") {
+    return kNOCHECK;
+  } else if (check == "goodIts3") {
+    return kGOODITSLAYER3;
+  } else if (check == "goodIts0123") {
+    return kGOODITSLAYER0123;
+  } else if (check == "goodItsAll") {
+    return kGOODITSLAYERALL;
+  } else if (check == "noGoodIts3") {
+    return kNOGOODITSLAYER3;
+  } else if (check == "noGoodIts0123") {
+    return kNOGOODITSLAYER0123;
+  } else if (check == "noGoodItsAll") {
+    return kNOGOODITSLAYERALL;
+  } else {
+    LOGF(fatal, "ITS dead map check %s not implemented", check.c_str());
+    return kNOCHECK;
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////////
 /// Trigger selection
 //////////////////////////////////////////////////////////////////////////////////
@@ -588,6 +627,9 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
         flags.set(kISVERTEXITSTPCBIT, coll.selection_bit(aod::evsel::kIsVertexITSTPC));
         flags.set(kISVERTEXTOFMATCHEDBIT, coll.selection_bit(aod::evsel::kIsVertexTOFmatched));
         flags.set(kISVERTEXTRDMATCHEDBIT, coll.selection_bit(aod::evsel::kIsVertexTRDmatched));
+        flags.set(kISGOODITSLAYER3BIT, coll.selection_bit(aod::evsel::kIsGoodITSLayer3));
+        flags.set(kISGOODITSLAYER0123BIT, coll.selection_bit(aod::evsel::kIsGoodITSLayer0123));
+        flags.set(kISGOODITSLAYERALLBIT, coll.selection_bit(aod::evsel::kIsGoodITSLayersAll));
       };
       switch (fTriggerSelection) {
         case kMB:
@@ -880,7 +922,8 @@ inline bool centralitySelection<aod::McCollision>(aod::McCollision const&, float
 /// Occupancy selection
 //////////////////////////////////////////////////////////////////////////////////
 
-/// \brief get the collision occupancy
+/// \brief select on the collision occupancy
+/// \return true if collison passes the occupancy cut false otherwise
 template <typename CollisionObject>
 inline bool selectOnOccupancy(CollisionObject collision)
 {
@@ -924,9 +967,9 @@ inline bool occupancySelection<aod::CollisionEvSelCent>(aod::CollisionEvSelCent 
 
 /// \brief Occupancy selection for reconstructed and detector level collision tables with Run 2 centrality/multiplicity information
 template <>
-inline bool occupancySelection<aod::CollisionEvSelRun2Cent>(aod::CollisionEvSelRun2Cent const& collision)
+inline bool occupancySelection<aod::CollisionEvSelRun2Cent>(aod::CollisionEvSelRun2Cent const&)
 {
-  return selectOnOccupancy(collision);
+  return true;
 }
 
 /// \brief Occupancy selection for reconstructed and detector level collision tables without centrality/multiplicity information
@@ -952,14 +995,103 @@ inline bool occupancySelection<soa::Join<aod::CollisionsEvSelCent, aod::McCollis
 
 /// \brief Occupancy selection for detector level collision tables with Run 2 centrality/multiplicity
 template <>
-inline bool occupancySelection<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>::iterator const& collision)
+inline bool occupancySelection<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>::iterator const&)
 {
-  return selectOnOccupancy(collision);
+  return true;
 }
 
 /// \brief Occupancy selection for generator level collision table
 template <>
 inline bool occupancySelection<aod::McCollision>(aod::McCollision const&)
+{
+  return true;
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+/// ITS dead maps selection
+//////////////////////////////////////////////////////////////////////////////////
+
+/// \brief select on the ITS dead maps
+/// \return true if the collision passes the ITS dead maps check false otherwise
+template <typename CollisionObject>
+inline bool selectOnItsDeadMaps(CollisionObject coll)
+{
+  auto checkFlag = [](auto flag, bool invert = false) {
+    return flag && !invert;
+  };
+  switch (fItsDeadMapCheck) {
+    case kNOCHECK:
+      return true;
+    case kGOODITSLAYER3:
+      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayer3));
+    case kGOODITSLAYER0123:
+      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayer0123));
+    case kGOODITSLAYERALL:
+      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayersAll));
+    case kNOGOODITSLAYER3:
+      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayer3), true);
+    case kNOGOODITSLAYER0123:
+      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayer0123), true);
+    case kNOGOODITSLAYERALL:
+      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayersAll), true);
+    default:
+      return false;
+  }
+}
+
+/// \brief Occupancy selection by default: unknown subscribed collision table
+template <typename CollisionObject>
+inline bool itsDeadMapsSelection(CollisionObject const&)
+{
+  LOGF(fatal, "Occupancy selection not implemented for this kind of collisions");
+  return false;
+}
+
+/// \brief Occupancy selection for reconstructed and detector level collision tables with centrality/multiplicity information
+template <>
+inline bool itsDeadMapsSelection<aod::CollisionEvSelCent>(aod::CollisionEvSelCent const& collision)
+{
+  return selectOnItsDeadMaps(collision);
+}
+
+/// \brief Occupancy selection for reconstructed and detector level collision tables with Run 2 centrality/multiplicity information
+template <>
+inline bool itsDeadMapsSelection<aod::CollisionEvSelRun2Cent>(aod::CollisionEvSelRun2Cent const&)
+{
+  return true;
+}
+
+/// \brief Occupancy selection for reconstructed and detector level collision tables without centrality/multiplicity information
+template <>
+inline bool itsDeadMapsSelection<aod::CollisionEvSel>(aod::CollisionEvSel const& collision)
+{
+  return selectOnItsDeadMaps(collision);
+}
+
+/// \brief Occupancy selection for detector level collision tables without centrality/multiplicity
+template <>
+inline bool itsDeadMapsSelection<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator const& collision)
+{
+  return selectOnItsDeadMaps(collision);
+}
+
+/// \brief Occupancy selection for detector level collision tables with centrality/multiplicity
+template <>
+inline bool itsDeadMapsSelection<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator const& collision)
+{
+  return selectOnItsDeadMaps(collision);
+}
+
+/// \brief Occupancy selection for detector level collision tables with Run 2 centrality/multiplicity
+template <>
+inline bool itsDeadMapsSelection<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>::iterator const&)
+{
+  return true;
+}
+
+/// \brief Occupancy selection for generator level collision table
+template <>
+inline bool itsDeadMapsSelection<aod::McCollision>(aod::McCollision const&)
 {
   return true;
 }
@@ -978,6 +1110,8 @@ inline bool isEventSelected(CollisionObject const& collision, float& centormult)
 
   bool occupancysel = occupancySelection(collision);
 
+  bool itsdeadmapssel = itsDeadMapsSelection(collision);
+
   bool zvtxsel = false;
   /* TODO: vertex quality checks */
   if (zvtxlow < collision.posZ() && collision.posZ() < zvtxup) {
@@ -995,7 +1129,7 @@ inline bool isEventSelected(CollisionObject const& collision, float& centormult)
 
   bool centmultsel = centralitySelection(collision, centormult);
 
-  bool accepted = trigsel && occupancysel && zvtxsel && centmultsel;
+  bool accepted = trigsel && occupancysel && itsdeadmapssel && zvtxsel && centmultsel;
 
   if (accepted) {
     collisionFlags.set(kSELECTED);

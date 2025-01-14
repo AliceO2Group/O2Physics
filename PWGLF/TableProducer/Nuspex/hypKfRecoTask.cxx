@@ -37,7 +37,7 @@
 #include "DCAFitter/DCAFitterN.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFHypernucleiKfTables.h"
-#include "TRandom.h"
+#include "TRandom3.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 
 // KFParticle
@@ -171,50 +171,36 @@ constexpr double preSelectionsCascades[nCascades][nSelCas]{
 //----------------------------------------------------------------------------------------------------------------
 struct DaughterParticle {
   TString name;
-  int pdgCode;
-  double mass;
-  int charge;
-  double resolution;
+  int pdgCode, charge;
+  double mass, resolution;
   std::vector<double> betheParams;
-
-  DaughterParticle(std::string name_, int pdgCode_, double mass_, int charge_, LabeledArray<double> bethe)
+  bool active;
+  DaughterParticle(std::string name_, int pdgCode_, double mass_, int charge_, LabeledArray<double> bethe) : name(name_), pdgCode(pdgCode_), charge(charge_), mass(mass_), active(false)
   {
-    name = TString(name_);
-    pdgCode = pdgCode_;
-    mass = mass_;
-    charge = charge_;
     resolution = bethe.get(name, "resolution");
     betheParams.clear();
     for (unsigned int i = 0; i < 5; i++)
       betheParams.push_back(bethe.get(name, i));
   }
-}; // class DaughterParticle
+}; // struct DaughterParticle
 
 struct HyperNucleus {
   TString name;
   int pdgCode;
-  double massMax;
-  double massMin;
   bool active;
-  std::vector<int> daughters;
-  std::vector<int> daughterTrackSigns;
-
-  HyperNucleus(std::string name_, int pdgCode_, bool active_, std::vector<int> daughters_, std::vector<int> daughterTrackSigns_)
+  std::vector<int> daughters, daughterTrackSigns;
+  HyperNucleus(std::string name_, int pdgCode_, bool active_, std::vector<int> daughters_, std::vector<int> daughterTrackSigns_) : pdgCode(pdgCode_), active(active_)
   {
-    name = TString(name_);
-    pdgCode = pdgCode_;
-    active = active_;
-    for (const int& d : daughters_)
-      daughters.push_back(d);
-    for (const int& dc : daughterTrackSigns_)
-      daughterTrackSigns.push_back(dc);
+    init(name_, daughters_, daughterTrackSigns_);
   }
-  HyperNucleus(std::string name_, int pdgCode_, bool active_, int hypDaughter, std::vector<int> daughters_, std::vector<int> daughterTrackSigns_)
+  HyperNucleus(std::string name_, int pdgCode_, bool active_, int hypDaughter, std::vector<int> daughters_, std::vector<int> daughterTrackSigns_) : pdgCode(pdgCode_), active(active_)
   {
     daughters.push_back(hypDaughter);
+    init(name_, daughters_, daughterTrackSigns_);
+  }
+  void init(std::string name_, std::vector<int> daughters_, std::vector<int> daughterTrackSigns_)
+  {
     name = TString(name_);
-    pdgCode = pdgCode_;
-    active = active_;
     for (const int& d : daughters_)
       daughters.push_back(d);
     for (const int& dc : daughterTrackSigns_)
@@ -223,83 +209,78 @@ struct HyperNucleus {
   int getNdaughters() { return static_cast<int>(daughters.size()); }
   const char* motherName() { return name.Contains("->") ? ((TString)name(0, name.First("-"))).Data() : name.Data(); }
   const char* daughterNames() { return name.Contains("->") ? ((TString)name(name.First("-") + 2, name.Length())).Data() : ""; }
-}; // class HyperNucleus
+}; // struct HyperNucleus
+
+struct DaughterKf {
+  int64_t daughterTrackId;
+  int hypNucId;
+  KFParticle daughterKfp;
+  float dcaToPv, dcaToPvXY, dcaToPvZ;
+  DaughterKf(int64_t daughterTrackId_, KFParticle daughterKfp_, std::vector<float> vtx) : daughterTrackId(daughterTrackId_), hypNucId(-1), daughterKfp(daughterKfp_)
+  {
+    dcaToPvXY = daughterKfp.GetDistanceFromVertexXY(&vtx[0]);
+    dcaToPv = daughterKfp.GetDistanceFromVertex(&vtx[0]);
+    dcaToPvZ = std::sqrt(dcaToPv * dcaToPv - dcaToPvXY * dcaToPvXY);
+  }
+  DaughterKf(KFParticle daughterKfp_, int hypNucId_) : daughterTrackId(-999), hypNucId(hypNucId_), daughterKfp(daughterKfp_), dcaToPv(-999), dcaToPvXY(-999), dcaToPvZ(-999) {}
+}; // struct DaughterKf
 
 struct HyperNucCandidate {
   int species;
   KFParticle kfp;
-  std::vector<KFParticle> kfpDaughters;
   HyperNucCandidate* hypNucDaughter;
-  std::vector<int64_t> daughterTrackIds;
+  std::vector<DaughterKf*> daughters;
   std::vector<float> recoSV;
-  float devToVtx;
-  float dcaToVtxXY;
-  float dcaToVtxZ;
-  float chi2;
-  bool mcTrue;
-  bool isPhysPrimary;
-  bool isPrimaryCandidate, isSecondaryCandidate, isUsedSecondary;
+  float mass, px, py, pz;
+  float devToPvXY, dcaToPvXY, dcaToPvZ, dcaToVtxXY, dcaToVtxZ, chi2;
+  bool mcTrue, isPhysPrimary, isPrimaryCandidate, isSecondaryCandidate, isUsedSecondary;
   int64_t mcParticleId;
   int tableId;
-
-  HyperNucCandidate(int species_, std::vector<KFParticle> kfpDaughters_, std::vector<int64_t> daughterTrackIds_) : species(species_), hypNucDaughter(0), devToVtx(999), dcaToVtxXY(999), dcaToVtxZ(999), chi2(999), mcTrue(false), isPhysPrimary(false), isPrimaryCandidate(false), isSecondaryCandidate(false), isUsedSecondary(false), mcParticleId(-1), tableId(-1)
+  HyperNucCandidate(int species_, HyperNucCandidate* hypNucDaughter_, std::vector<DaughterKf*> daughters_) : species(species_), hypNucDaughter(hypNucDaughter_), devToPvXY(999), dcaToPvXY(999), dcaToPvZ(999), dcaToVtxXY(999), dcaToVtxZ(999), chi2(999), mcTrue(false), isPhysPrimary(false), isPrimaryCandidate(false), isSecondaryCandidate(false), isUsedSecondary(false), mcParticleId(-1), tableId(-1)
   {
-    for (const auto& kfd : kfpDaughters_)
-      kfpDaughters.push_back(kfd);
-    for (const auto& dt : daughterTrackIds_)
-      daughterTrackIds.push_back(dt);
-    init();
-  }
-  HyperNucCandidate(int species_, HyperNucCandidate* hypNucDaughter_, std::vector<KFParticle> kfpDaughters_, std::vector<int64_t> daughterTrackIds_) : species(species_), hypNucDaughter(hypNucDaughter_), devToVtx(999), dcaToVtxXY(999), dcaToVtxZ(999), chi2(999), mcTrue(false), isPhysPrimary(false), isPrimaryCandidate(false), isSecondaryCandidate(false), isUsedSecondary(false), mcParticleId(-1), tableId(-1)
-  {
-    for (const auto& kfd : kfpDaughters_)
-      kfpDaughters.push_back(kfd);
-    for (const auto& dt : daughterTrackIds_)
-      daughterTrackIds.push_back(dt);
-    init();
-  }
-
-  void init()
-  {
+    for (const auto& d : daughters_)
+      daughters.push_back(d);
     kfp.SetConstructMethod(2);
-    for (size_t i = 0; i < kfpDaughters.size(); i++)
-      kfp.AddDaughter(kfpDaughters.at(i));
+    for (size_t i = 0; i < daughters.size(); i++)
+      kfp.AddDaughter(daughters.at(i)->daughterKfp);
     kfp.TransportToDecayVertex();
     chi2 = kfp.GetChi2() / kfp.GetNDF();
     recoSV.clear();
     recoSV.push_back(kfp.GetX());
     recoSV.push_back(kfp.GetY());
     recoSV.push_back(kfp.GetZ());
+    mass = kfp.GetMass();
+    px = kfp.GetPx();
+    py = kfp.GetPy();
+    pz = kfp.GetPz();
   }
-  bool checkKfp()
+  std::vector<int64_t> daughterTrackIds()
   {
-    if (kfp.GetMass() == 0)
-      return false;
-    if (std::isnan(kfp.GetMass()))
-      return false;
-    return true;
+    std::vector<int64_t> trackIds;
+    for (const auto& daughter : daughters) {
+      const auto& id = daughter->daughterTrackId;
+      if (id >= 0)
+        trackIds.push_back(id);
+    }
+    return trackIds;
   }
-  int getDaughterTableId()
-  {
-    if (hypNucDaughter)
-      return hypNucDaughter->tableId;
-    return -1;
-  }
+  bool checkKfp() { return mass != 0 && !std::isnan(mass); }
+  int getDaughterTableId() { return hypNucDaughter ? hypNucDaughter->tableId : -1; }
   bool isCascade() { return hypNucDaughter != 0; }
   int getSign()
   {
     if (kfp.GetQ() == 0)
-      return kfpDaughters.front().GetQ() / std::abs(kfpDaughters.front().GetQ());
+      return daughters.front()->daughterKfp.GetQ() / std::abs(daughters.front()->daughterKfp.GetQ());
     return kfp.GetQ() / std::abs(kfp.GetQ());
   }
-  int getNdaughters() { return static_cast<int>(kfpDaughters.size()); }
+  int getNdaughters() { return static_cast<int>(daughters.size()); }
   float getDcaTracks() { return getNdaughters() == 2 ? getDcaTracks2() : getMaxDcaToSv(); }
-  float getDcaTracks2() { return kfpDaughters.at(0).GetDistanceFromParticle(kfpDaughters.at(1)); }
+  float getDcaTracks2() { return daughters.at(0)->daughterKfp.GetDistanceFromParticleXY(daughters.at(1)->daughterKfp); }
   float getMaxDcaToSv()
   {
     float maxDca = std::numeric_limits<float>::lowest();
-    for (const auto& daughter : kfpDaughters) {
-      float dca = daughter.GetDistanceFromVertex(&recoSV[0]);
+    for (size_t i = 0; i < daughters.size(); i++) {
+      float dca = daughters.at(i)->daughterKfp.GetDistanceFromVertexXY(&recoSV[0]);
       if (dca > maxDca)
         maxDca = dca;
     }
@@ -309,7 +290,7 @@ struct HyperNucCandidate {
   double getCpa(std::vector<float> vtx)
   {
     kfp.TransportToDecayVertex();
-    return RecoDecay::cpa(std::array{vtx[0], vtx[1], vtx[2]}, std::array{recoSV[0], recoSV[1], recoSV[2]}, std::array{kfp.GetPx(), kfp.GetPy(), kfp.GetPz()});
+    return RecoDecay::cpa(std::array{vtx[0], vtx[1], vtx[2]}, std::array{recoSV[0], recoSV[1], recoSV[2]}, std::array{px, py, pz});
     ;
   }
   float getCt(std::vector<float> vtx)
@@ -319,7 +300,13 @@ struct HyperNucCandidate {
       float tmp = recoSV.at(i) - vtx.at(i);
       dl += (tmp * tmp);
     }
-    return std::sqrt(dl) * kfp.GetMass() / kfp.GetP();
+    return std::sqrt(dl) * mass / std::sqrt(px * px + py * py + pz * pz);
+  }
+  void getDaughterPosMom(int daughter, std::vector<float>& posMom)
+  {
+    auto kfpDaughter = daughters.at(daughter)->daughterKfp;
+    kfpDaughter.TransportToPoint(&recoSV[0]);
+    posMom.assign({kfpDaughter.GetX(), kfpDaughter.GetY(), kfpDaughter.GetZ(), kfpDaughter.GetPx(), kfpDaughter.GetPy(), kfpDaughter.GetPz()});
   }
   float getDcaMotherToVtxXY(std::vector<float> vtx) { return kfp.GetDistanceFromVertexXY(&vtx[0]); }
   float getDcaMotherToVtxZ(std::vector<float> vtx)
@@ -327,15 +314,17 @@ struct HyperNucCandidate {
     kfp.TransportToPoint(&vtx[0]);
     return kfp.GetZ() - vtx[2];
   }
-  void getDaughterPosMom(int daughter, std::vector<float>& posMom)
+  void calcDcaToVtx(KFPVertex& vtx)
   {
-    kfpDaughters.at(daughter).TransportToPoint(&recoSV[0]);
-    posMom.assign({kfpDaughters.at(daughter).GetX(), kfpDaughters.at(daughter).GetY(), kfpDaughters.at(daughter).GetZ(), kfpDaughters.at(daughter).GetPx(), kfpDaughters.at(daughter).GetPy(), kfpDaughters.at(daughter).GetPz()});
+    if (devToPvXY != 999)
+      return;
+    devToPvXY = kfp.GetDeviationFromVertexXY(vtx);
+    dcaToPvXY = kfp.GetDistanceFromVertexXY(vtx);
+    kfp.TransportToVertex(vtx);
+    dcaToPvZ = kfp.GetZ() - vtx.GetZ();
   }
-  void calcDevToVtx(KFPVertex& vtx) { devToVtx = kfp.GetDeviationFromVertexXY(vtx); }
-  void calcDevToVtx(HyperNucCandidate& cand)
+  void calcDcaToVtx(HyperNucCandidate& cand)
   {
-    devToVtx = kfp.GetDeviationFromParticleXY(cand.kfp);
     dcaToVtxXY = getDcaMotherToVtxXY(cand.recoSV);
     dcaToVtxZ = getDcaMotherToVtxZ(cand.recoSV);
   }
@@ -343,26 +332,12 @@ struct HyperNucCandidate {
   {
     KFParticle subDaughter;
     subDaughter.SetConstructMethod(2);
-    subDaughter.AddDaughter(kfpDaughters.at(d1));
-    subDaughter.AddDaughter(kfpDaughters.at(d2));
+    subDaughter.AddDaughter(daughters.at(d1)->daughterKfp);
+    subDaughter.AddDaughter(daughters.at(d2)->daughterKfp);
     subDaughter.TransportToDecayVertex();
     return subDaughter.GetMass();
   }
-  KFParticle getDaughterTrackKfp(int track)
-  {
-    return kfpDaughters.at(track + (isCascade() ? 1 : 0));
-  }
-  float getDcaTrackToVtxXY(int track, std::vector<float> vtx)
-  {
-    return getDaughterTrackKfp(track).GetDistanceFromVertexXY(&vtx[0]);
-  }
-  float getDcaTrackToVtxZ(int track, std::vector<float> vtx)
-  {
-    auto dKfp = getDaughterTrackKfp(track);
-    dKfp.TransportToPoint(&vtx[0]);
-    return dKfp.GetZ() - vtx[2];
-  }
-}; // class HyperNucCandidate
+}; // struct HyperNucCandidate
 
 struct IndexPairs {
   std::vector<std::pair<int64_t, int>> pairs;
@@ -379,7 +354,7 @@ struct IndexPairs {
     }
     return false;
   }
-}; // class IndexPairs
+}; // struct IndexPairs
 
 struct McCollInfo {
   bool hasRecoColl;
@@ -387,7 +362,7 @@ struct McCollInfo {
   bool hasRecoParticle;
   int tableIndex;
   McCollInfo() : hasRecoColl(false), passedEvSel(false), hasRecoParticle(false), tableIndex(-1) {}
-}; // class McCollInfo
+}; // struct McCollInfo
 
 //----------------------------------------------------------------------------------------------------------------
 std::vector<std::shared_ptr<TH2>> hDeDx;
@@ -396,7 +371,7 @@ std::vector<std::shared_ptr<TH1>> hInvMass;
 
 //----------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------
-struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
+struct HypKfRecoTask {
 
   Produces<aod::HypKfMcColls> outputMcCollisionTable;
   Produces<aod::HypKfMcParts> outputMcParticleTable;
@@ -447,22 +422,18 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
 
   std::vector<DaughterParticle> daughterParticles;
   std::vector<std::vector<int64_t>> foundDaughters;
-  std::vector<std::vector<HyperNucCandidate>> singleHyperNucCandidates;  // hypernuclei candidates
-  std::vector<std::vector<HyperNucCandidate>> cascadeHyperNucCandidates; // cascade candidates
-  std::vector<HyperNucleus> singleHyperNuclei;
-  std::vector<HyperNucleus> cascadeHyperNuclei;
-  std::vector<float> primVtx;
-  std::vector<float> cents;
+  std::vector<std::vector<DaughterKf>> foundDaughterKfs, hypNucDaughterKfs;
+  std::vector<std::vector<HyperNucCandidate>> singleHyperNucCandidates, cascadeHyperNucCandidates;
+  std::vector<HyperNucleus> singleHyperNuclei, cascadeHyperNuclei;
+  std::vector<float> primVtx, cents;
   std::vector<McCollInfo> mcCollInfos;
-  IndexPairs trackIndices;
-  IndexPairs mcPartIndices;
+  IndexPairs trackIndices, mcPartIndices;
   KFPVertex kfPrimVtx;
-  bool collHasCandidate, collHasMcTrueCandidate;
-  bool collPassedEvSel;
+  bool collHasCandidate, collHasMcTrueCandidate, collPassedEvSel, activeCascade;
   int64_t mcCollTableIndex;
   int mRunNumber, occupancy;
   float dBz;
-  TRandom rand;
+  TRandom3 rand;
   //----------------------------------------------------------------------------------------------------------------
 
   void init(InitContext const&)
@@ -482,8 +453,11 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
     for (unsigned int i = 0; i < nHyperNuclei; i++) { // create hypernuclei
       singleHyperNuclei.push_back(HyperNucleus(hyperNucNames.at(i), cfgHyperNucPdg->get(i, 0u), cfgHyperNucsActive->get(i, 0u), getDaughterVec(i, cfgHyperNucDaughters), getDaughterSignVec(i, cfgHyperNucSigns)));
     }
+    activeCascade = false;
     for (unsigned int i = 0; i < nCascades; i++) { // create cascades
       cascadeHyperNuclei.push_back(HyperNucleus(cascadeNames.at(i), cfgCascadesPdg->get(i, 0u), cfgCascadesActive->get(i, 0u), getHypDaughterVec(i, cfgCascadeHypDaughter), getDaughterVec(i, cfgCascadeDaughters), getDaughterSignVec(i, cfgCascadeSigns)));
+      if (cfgCascadesActive->get(i, 0u))
+        activeCascade = true;
     }
     // define histogram axes
     const AxisSpec axisMagField{10, -10., 10., "magnetic field"};
@@ -543,10 +517,6 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
         if (std::abs(getTPCnSigma(track, daughterParticles.at(i))) > cfgTrackPIDsettings->get(i, "maxTPCnSigma"))
           continue;
         filldedx(track, i);
-        if (std::abs(track.dcaXY()) < cfgTrackPIDsettings->get(i, "minDcaToPvXY"))
-          continue;
-        if (std::abs(track.dcaZ()) < cfgTrackPIDsettings->get(i, "minDcaToPvZ"))
-          continue;
         if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize"))
           continue;
         if (getMeanItsClsSize(track) > cfgTrackPIDsettings->get(i, "maxITSclsSize"))
@@ -563,29 +533,83 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
   //----------------------------------------------------------------------------------------------------------------
   void checkMCTrueTracks(aod::McTrackLabels const& trackLabels, aod::McParticles const&)
   {
+    std::vector<int> activePdgs;
+    std::vector<std::vector<HyperNucleus>*> hypNucVectors = {&singleHyperNuclei, &cascadeHyperNuclei};
+    for (int vec = 0; vec < 2; vec++) {
+      for (size_t hyperNucIter = 0; hyperNucIter < hypNucVectors.at(vec)->size(); hyperNucIter++) {
+        HyperNucleus* hyperNuc = &(hypNucVectors.at(vec)->at(hyperNucIter));
+        if (!hyperNuc->active)
+          continue;
+        activePdgs.push_back(std::abs(hyperNuc->pdgCode));
+      }
+    }
     for (int i = 0; i < nDaughterParticles; i++) {
       auto& daughterVec = foundDaughters.at(i);
-      for (auto it = daughterVec.begin(); it < daughterVec.end(); it++) {
-        bool mcTrue = true;
+      if (!daughterVec.size())
+        continue;
+      for (auto it = daughterVec.end() - 1; it >= daughterVec.begin(); it--) {
         const auto& mcLab = trackLabels.rawIteratorAt(*it);
         if (!mcLab.has_mcParticle()) {
-          mcTrue = false;
-        } else {
-          const auto& mcPart = mcLab.mcParticle_as<aod::McParticles>();
-          if (std::abs(mcPart.pdgCode()) != daughterParticles.at(i).pdgCode) {
-            mcTrue = false;
-          }
-          if (!mcPart.has_mothers()) {
-            mcTrue = false;
+          daughterVec.erase(it);
+          continue;
+        }
+        const auto& mcPart = mcLab.mcParticle_as<aod::McParticles>();
+        if (std::abs(mcPart.pdgCode()) != daughterParticles.at(i).pdgCode) {
+          daughterVec.erase(it);
+          continue;
+        }
+        if (!mcPart.has_mothers()) {
+          daughterVec.erase(it);
+          continue;
+        }
+        bool isDaughter = false;
+        for (const auto& mother : mcPart.mothers_as<aod::McParticles>()) {
+          if (std::find(activePdgs.begin(), activePdgs.end(), std::abs(mother.pdgCode())) != activePdgs.end()) {
+            isDaughter = true;
           }
         }
-        if (!mcTrue) {
+        if (!isDaughter) {
           daughterVec.erase(it);
+          continue;
         }
       }
     }
   }
   //----------------------------------------------------------------------------------------------------------------
+  void createKFDaughters(TracksFull const& tracks)
+  {
+    std::vector<std::vector<HyperNucleus>*> hypNucVectors = {&singleHyperNuclei, &cascadeHyperNuclei};
+    for (size_t vec = 0; vec < 2; vec++) {
+      for (const auto& hyperNuc : *(hypNucVectors.at(vec))) {
+        if (!hyperNuc.active)
+          continue;
+        for (size_t i = vec; i < hyperNuc.daughters.size(); i++) {
+          if (foundDaughters.at(hyperNuc.daughters.at(i)).size() > 0)
+            daughterParticles.at(hyperNuc.daughters.at(i)).active = true;
+          else
+            break;
+        }
+      }
+    }
+    for (size_t daughterCount = 0; daughterCount < daughterParticles.size(); daughterCount++) {
+      const auto& daughterParticle = daughterParticles.at(daughterCount);
+      if (!daughterParticle.active)
+        continue;
+      const auto& daughterMass = daughterParticle.mass;
+      const auto& daughterCharge = daughterParticle.charge;
+      for (const auto& daughterId : foundDaughters.at(daughterCount)) {
+        const auto& daughterTrack = tracks.rawIteratorAt(daughterId);
+        DaughterKf daughter(daughterId, createKFParticle(daughterTrack, daughterMass, daughterCharge), primVtx);
+        if (std::abs(daughter.dcaToPvXY) < cfgTrackPIDsettings->get(daughterCount, "minDcaToPvXY"))
+          continue;
+        if (std::abs(daughter.dcaToPvZ) < cfgTrackPIDsettings->get(daughterCount, "minDcaToPvZ"))
+          continue;
+        foundDaughterKfs.at(daughterCount).push_back(daughter);
+      }
+    }
+  }
+  //----------------------------------------------------------------------------------------------------------------
+
   void createKFHypernuclei(TracksFull const& tracks)
   {
     // loop over all hypernuclei that are to be reconstructed
@@ -594,80 +618,69 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
       if (!hyperNuc->active)
         continue;
       int nDaughters = hyperNuc->getNdaughters();
-
-      std::vector<std::vector<int64_t>::iterator> it;
+      std::vector<std::vector<DaughterKf>::iterator> it;
       int nCombinations = 1;
       for (int i = 0; i < nDaughters; i++) {
-        nCombinations *= foundDaughters.at(hyperNuc->daughters.at(i)).size();
-        it.push_back(foundDaughters.at(hyperNuc->daughters.at(i)).begin());
+        nCombinations *= foundDaughterKfs.at(hyperNuc->daughters.at(i)).size();
+        it.push_back(foundDaughterKfs.at(hyperNuc->daughters.at(i)).begin());
       }
       if (!nCombinations)
         continue;
-      while (it[0] != foundDaughters.at(hyperNuc->daughters.at(0)).end()) {
-
+      const float reduceFactor = cfgReduce->get(hyperNucIter, 0u);
+      const float minMassPrim = cfgPreSelectionsPrimaries->get(hyperNucIter, "minMass");
+      const float maxMassPrim = cfgPreSelectionsPrimaries->get(hyperNucIter, "maxMass");
+      const float minCtPrim = cfgPreSelectionsPrimaries->get(hyperNucIter, "minCt");
+      const float maxCtPrim = cfgPreSelectionsPrimaries->get(hyperNucIter, "maxCt");
+      const float minCosPaPrim = cfgPreSelectionsPrimaries->get(hyperNucIter, "minCosPa");
+      const float maxDcaTracksPrim = cfgPreSelectionsPrimaries->get(hyperNucIter, "maxDcaTracks");
+      const float maxDcaMotherToPvXYPrim = cfgPreSelectionsPrimaries->get(hyperNucIter, "maxDcaMotherToPvXY");
+      const float maxDcaMotherToPvZPrim = cfgPreSelectionsPrimaries->get(hyperNucIter, "maxDcaMotherToPvZ");
+      const float minMassSec = cfgPreSelectionsSecondaries->get(hyperNucIter, "minMass");
+      const float maxMassSec = cfgPreSelectionsSecondaries->get(hyperNucIter, "maxMass");
+      const float minCtSec = cfgPreSelectionsSecondaries->get(hyperNucIter, "minCt");
+      const float maxCtSec = cfgPreSelectionsSecondaries->get(hyperNucIter, "maxCt");
+      const float maxDcaTracksSec = cfgPreSelectionsSecondaries->get(hyperNucIter, "maxDcaTracks");
+      while (it[0] != foundDaughterKfs.at(hyperNuc->daughters.at(0)).end()) {
         // check for correct signs, avoid double usage of tracks
         bool passedChecks = true;
         int checkSign = 0;
         std::vector<int64_t> vec;
         for (int i = 0; i < nDaughters; i++) {
-          const auto& daughterTrack = tracks.rawIteratorAt(*(it[i]));
+          const auto& daughterTrack = tracks.rawIteratorAt(it[i]->daughterTrackId);
           if (!i)
             checkSign = daughterTrack.sign();
-          if (daughterTrack.sign() != checkSign * hyperNuc->daughterTrackSigns.at(i) || std::find(vec.begin(), vec.end(), *it[i]) != vec.end()) {
+          if (daughterTrack.sign() != checkSign * hyperNuc->daughterTrackSigns.at(i) || std::find(vec.begin(), vec.end(), it[i]->daughterTrackId) != vec.end()) {
             passedChecks = false;
             break;
           }
-          vec.push_back(*it[i]);
+          vec.push_back(it[i]->daughterTrackId);
         }
-        if (passedChecks && rand.Rndm() <= cfgReduce->get((unsigned int)hyperNucIter, 0u)) {
-          // create daugther KFParticles
-          std::vector<int64_t> daughterIds;
-          std::vector<KFParticle> daughterKfps;
+        if (passedChecks && rand.Rndm() <= reduceFactor) {
+          std::vector<DaughterKf*> daughters;
           for (int i = 0; i < nDaughters; i++) {
-            const auto& daughterTrack = tracks.rawIteratorAt(*(it[i]));
-            daughterIds.push_back(*(it[i]));
-            auto daughterMass = daughterParticles.at(hyperNuc->daughters.at(i)).mass;
-            auto daughterCharge = daughterParticles.at(hyperNuc->daughters.at(i)).charge;
-            daughterKfps.push_back(createKFParticle(daughterTrack, daughterMass, daughterCharge));
+            daughters.push_back(&(*it[i]));
           }
-
-          HyperNucCandidate candidate(hyperNucIter, daughterKfps, daughterIds);
-          bool isPrimCandidate = true, isSecCandidate = true;
+          HyperNucCandidate candidate(hyperNucIter, static_cast<HyperNucCandidate*>(0), daughters);
+          // check preselections
           if (candidate.checkKfp()) {
-            // apply pre selections
-            candidate.calcDevToVtx(kfPrimVtx);
-            if (candidate.kfp.GetMass() < cfgPreSelectionsPrimaries->get(hyperNucIter, "minMass") || candidate.kfp.GetMass() > cfgPreSelectionsPrimaries->get(hyperNucIter, "maxMass"))
-              isPrimCandidate = false;
-            if (candidate.getDcaTracks() > cfgPreSelectionsPrimaries->get(hyperNucIter, "maxDcaTracks"))
-              isPrimCandidate = false;
-            if (candidate.getCt(primVtx) < cfgPreSelectionsPrimaries->get(hyperNucIter, "minCt") || candidate.getCt(primVtx) > cfgPreSelectionsPrimaries->get(hyperNucIter, "maxCt"))
-              isPrimCandidate = false;
-            if (candidate.getCpa(primVtx) < cfgPreSelectionsPrimaries->get(hyperNucIter, "minCosPa"))
-              isPrimCandidate = false;
-            if (std::abs(candidate.getDcaMotherToVtxXY(primVtx)) > cfgPreSelectionsPrimaries->get(hyperNucIter, "maxDcaMotherToPvXY"))
-              isPrimCandidate = false;
-            if (std::abs(candidate.getDcaMotherToVtxZ(primVtx)) > cfgPreSelectionsPrimaries->get(hyperNucIter, "maxDcaMotherToPvZ"))
-              isPrimCandidate = false;
-            if (isPrimCandidate) {
-              candidate.isPrimaryCandidate = true;
-              collHasCandidate = true;
+            if (candidate.mass <= maxMassPrim && candidate.mass >= minMassPrim && candidate.getDcaTracks() <= maxDcaTracksPrim && candidate.getCt(primVtx) <= maxCtPrim && candidate.getCt(primVtx) >= minCtPrim && candidate.getCpa(primVtx) >= minCosPaPrim) {
+              candidate.calcDcaToVtx(kfPrimVtx);
+              if (std::abs(candidate.dcaToPvXY) <= maxDcaMotherToPvXYPrim && std::abs(candidate.dcaToPvZ) <= maxDcaMotherToPvZPrim) {
+                candidate.isPrimaryCandidate = true;
+                collHasCandidate = true;
+              }
             }
-            if (candidate.kfp.GetMass() < cfgPreSelectionsSecondaries->get(hyperNucIter, "minMass") || candidate.kfp.GetMass() > cfgPreSelectionsSecondaries->get(hyperNucIter, "maxMass"))
-              isSecCandidate = false;
-            if (candidate.getDcaTracks() > cfgPreSelectionsSecondaries->get(hyperNucIter, "maxDcaTracks"))
-              isSecCandidate = false;
-            if (candidate.getCt(primVtx) < cfgPreSelectionsSecondaries->get(hyperNucIter, "minCt") || candidate.getCt(primVtx) > cfgPreSelectionsSecondaries->get(hyperNucIter, "maxCt"))
-              isSecCandidate = false;
-            if (isSecCandidate) {
+            if (activeCascade && candidate.mass <= maxMassSec && candidate.mass >= minMassSec && candidate.getDcaTracks() <= maxDcaTracksSec && candidate.getCt(primVtx) <= maxCtSec && candidate.getCt(primVtx) >= minCtSec) {
+              candidate.calcDcaToVtx(kfPrimVtx);
               candidate.isSecondaryCandidate = true;
             }
-            if (isPrimCandidate || isSecCandidate)
+            if (candidate.isPrimaryCandidate || candidate.isSecondaryCandidate)
               singleHyperNucCandidates.at(hyperNucIter).push_back(candidate);
           }
         }
         it[nDaughters - 1]++;
-        for (int i = nDaughters - 1; i && it[i] == foundDaughters.at(hyperNuc->daughters.at(i)).end(); i--) {
-          it[i] = foundDaughters.at(hyperNuc->daughters.at(i)).begin();
+        for (int i = nDaughters - 1; i && it[i] == foundDaughterKfs.at(hyperNuc->daughters.at(i)).end(); i--) {
+          it[i] = foundDaughterKfs.at(hyperNuc->daughters.at(i)).begin();
           it[i - 1]++;
         }
       }
@@ -676,7 +689,6 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
   //----------------------------------------------------------------------------------------------------------------
   void createKFCascades(TracksFull const& tracks)
   {
-
     // loop over all cascade hypernuclei that are to be reconstructed
     for (size_t hyperNucIter = 0; hyperNucIter < cascadeHyperNuclei.size(); hyperNucIter++) {
       HyperNucleus* hyperNuc = &(cascadeHyperNuclei.at(hyperNucIter));
@@ -685,86 +697,75 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
       int nDaughters = hyperNuc->getNdaughters();
 
       int nHypNucDaughters = singleHyperNucCandidates.at(hyperNuc->daughters.at(0)).size();
-      std::vector<int64_t> vecHypNucDaughers;
       for (int64_t i = 0; i < static_cast<int64_t>(nHypNucDaughters); i++) {
-        vecHypNucDaughers.push_back(i);
+        if (singleHyperNucCandidates.at(hyperNuc->daughters.at(0)).at(i).isSecondaryCandidate) {
+          auto hypNucDaughter = &(singleHyperNucCandidates.at(hyperNuc->daughters.at(0)).at(i));
+          hypNucDaughterKfs.at(hyperNucIter).push_back(DaughterKf(hypNucDaughter->kfp, i));
+        }
       }
-
-      std::vector<std::vector<int64_t>::iterator> it;
-      int nCombinations = 1;
-      nCombinations *= nHypNucDaughters;
-      it.push_back(vecHypNucDaughers.begin());
+      int nCombinations = hypNucDaughterKfs.at(hyperNucIter).size();
+      std::vector<std::vector<DaughterKf>::iterator> it;
+      it.push_back(hypNucDaughterKfs.at(hyperNucIter).begin());
       for (int i = 1; i < nDaughters; i++) {
-        nCombinations *= foundDaughters.at(hyperNuc->daughters.at(i)).size();
-        it.push_back(foundDaughters.at(hyperNuc->daughters.at(i)).begin());
+        nCombinations *= foundDaughterKfs.at(hyperNuc->daughters.at(i)).size();
+        it.push_back(foundDaughterKfs.at(hyperNuc->daughters.at(i)).begin());
       }
       if (!nCombinations)
         continue;
-      while (it[0] != vecHypNucDaughers.end()) {
-        std::vector<int64_t> daughterIds;
-        std::vector<KFParticle> daughterKfps;
+      const float minMassCas = cfgPreSelectionsCascades->get(hyperNucIter, "minMass");
+      const float maxMassCas = cfgPreSelectionsCascades->get(hyperNucIter, "maxMass");
+      const float minCtCas = cfgPreSelectionsCascades->get(hyperNucIter, "minCt");
+      const float maxCtCas = cfgPreSelectionsCascades->get(hyperNucIter, "maxCt");
+      const float minCosPaCas = cfgPreSelectionsCascades->get(hyperNucIter, "minCosPa");
+      const float maxDcaTracksCas = cfgPreSelectionsCascades->get(hyperNucIter, "maxDcaTracks");
+      const float maxDcaMotherToPvXYCas = cfgPreSelectionsCascades->get(hyperNucIter, "maxDcaMotherToPvXY");
+      const float maxDcaMotherToPvZCas = cfgPreSelectionsCascades->get(hyperNucIter, "maxDcaMotherToPvZ");
+      const float minCtSec = cfgPreSelectionsSecondaries->get(hyperNucIter, "minCt");
+      const float maxCtSec = cfgPreSelectionsSecondaries->get(hyperNucIter, "maxCt");
+      const float minCosPaSvSec = cfgPreSelectionsSecondaries->get(hyperNucIter, "minCosPaSv");
+      const float maxDcaMotherToSvXYSec = cfgPreSelectionsSecondaries->get(hyperNucIter, "maxDcaMotherToSvXY");
+      const float maxDcaMotherToSvZSec = cfgPreSelectionsSecondaries->get(hyperNucIter, "maxDcaMotherToSvZ");
 
+      while (it[0] != hypNucDaughterKfs.at(hyperNucIter).end()) {
         // select hypernuclei daughter KFParticle
-        auto hypNucDaughter = &(singleHyperNucCandidates.at(hyperNuc->daughters.at(0)).at(*it[0]));
+        auto hypNucDaughter = &(singleHyperNucCandidates.at(hyperNuc->daughters.at(0)).at(it[0]->hypNucId));
         // check for correct signs
         int checkSign = hypNucDaughter->getSign();
         bool passedChecks = true;
-        std::vector<int64_t> vec = hypNucDaughter->daughterTrackIds;
+        std::vector<int64_t> vec = hypNucDaughter->daughterTrackIds();
         for (int i = 1; i < nDaughters; i++) {
-          const auto& daughterTrack = tracks.rawIteratorAt(*(it[i]));
-          if (!i)
-            checkSign = daughterTrack.sign();
-          if (daughterTrack.sign() != checkSign * hyperNuc->daughterTrackSigns.at(i) || std::find(vec.begin(), vec.end(), *it[i]) != vec.end()) {
+          const auto& daughterTrack = tracks.rawIteratorAt(it[i]->daughterTrackId);
+          if (daughterTrack.sign() != checkSign * hyperNuc->daughterTrackSigns.at(i) || std::find(vec.begin(), vec.end(), it[i]->daughterTrackId) != vec.end()) {
             passedChecks = false;
             break;
           }
-          vec.push_back(*it[i]);
+          vec.push_back(it[i]->daughterTrackId);
         }
-        if (passedChecks && hypNucDaughter->isSecondaryCandidate) {
-          daughterKfps.push_back(hypNucDaughter->kfp);
+        if (passedChecks) {
+          std::vector<DaughterKf*> daughters;
+          daughters.push_back(&(*it[0]));
           for (int i = 1; i < nDaughters; i++) {
-            daughterIds.push_back(*(it[i]));
-            const auto& daughterTrack = tracks.rawIteratorAt(*(it[i]));
-            auto daughterMass = daughterParticles.at(hyperNuc->daughters.at(i)).mass;
-            auto daughterCharge = daughterParticles.at(hyperNuc->daughters.at(i)).charge;
-            daughterKfps.push_back(createKFParticle(daughterTrack, daughterMass, daughterCharge));
+            daughters.push_back(&(*it[i]));
           }
-
-          HyperNucCandidate candidate(hyperNucIter, hypNucDaughter, daughterKfps, daughterIds);
+          HyperNucCandidate candidate(hyperNucIter, hypNucDaughter, daughters);
           if (candidate.checkKfp()) {
-            hypNucDaughter->calcDevToVtx(candidate);
-            bool isCandidate = true;
-            // apply pre selections for hypernucleus daughter
-            if (hypNucDaughter->getCpa(candidate.recoSV) < cfgPreSelectionsSecondaries->get(hyperNuc->daughters.at(0), "minCosPaSv"))
-              isCandidate = false;
-            if (hypNucDaughter->getDcaMotherToVtxXY(candidate.recoSV) > cfgPreSelectionsSecondaries->get(hyperNuc->daughters.at(0), "maxDcaMotherToSvXY"))
-              isCandidate = false;
-            if (hypNucDaughter->getDcaMotherToVtxZ(candidate.recoSV) > cfgPreSelectionsSecondaries->get(hyperNuc->daughters.at(0), "maxDcaMotherToSvZ"))
-              isCandidate = false;
-            // apply pre selections for cascade
-            if (candidate.kfp.GetMass() < cfgPreSelectionsCascades->get(hyperNucIter, "minMass") || candidate.kfp.GetMass() > cfgPreSelectionsCascades->get(hyperNucIter, "maxMass"))
-              isCandidate = false;
-            if (candidate.getDcaTracks() > cfgPreSelectionsCascades->get(hyperNucIter, "maxDcaTracks"))
-              isCandidate = false;
-            if (candidate.getCt(primVtx) < cfgPreSelectionsCascades->get(hyperNucIter, "minCt") || candidate.getCt(primVtx) > cfgPreSelectionsCascades->get(hyperNucIter, "maxCt"))
-              isCandidate = false;
-            if (candidate.getCpa(primVtx) < cfgPreSelectionsCascades->get(hyperNucIter, "minCosPa"))
-              isCandidate = false;
-            if (std::abs(candidate.getDcaMotherToVtxXY(primVtx)) > cfgPreSelectionsCascades->get(hyperNucIter, "maxDcaMotherToPvXY"))
-              isCandidate = false;
-            if (std::abs(candidate.getDcaMotherToVtxZ(primVtx)) > cfgPreSelectionsCascades->get(hyperNucIter, "maxDcaMotherToPvZ"))
-              isCandidate = false;
-
-            if (isCandidate) {
-              collHasCandidate = true;
-              hypNucDaughter->isUsedSecondary = true;
-              cascadeHyperNucCandidates.at(hyperNucIter).push_back(candidate);
+            // preselections for cascade and hypernucleus daughter
+            if (candidate.mass <= maxMassCas && candidate.mass >= minMassCas && candidate.getDcaTracks() <= maxDcaTracksCas && candidate.getCt(primVtx) >= minCtCas && candidate.getCt(primVtx) <= maxCtCas && hypNucDaughter->getCt(candidate.recoSV) >= minCtSec && hypNucDaughter->getCt(candidate.recoSV) <= maxCtSec && candidate.getCpa(primVtx) >= minCosPaCas && hypNucDaughter->getCpa(candidate.recoSV) >= minCosPaSvSec) {
+              candidate.calcDcaToVtx(kfPrimVtx);
+              if (std::abs(candidate.dcaToPvXY) <= maxDcaMotherToPvXYCas && std::abs(candidate.dcaToPvZ) <= maxDcaMotherToPvZCas) {
+                hypNucDaughter->calcDcaToVtx(candidate);
+                if (hypNucDaughter->dcaToVtxXY <= maxDcaMotherToSvXYSec && hypNucDaughter->dcaToVtxZ <= maxDcaMotherToSvZSec) {
+                  collHasCandidate = true;
+                  hypNucDaughter->isUsedSecondary = true;
+                  cascadeHyperNucCandidates.at(hyperNucIter).push_back(candidate);
+                }
+              }
             }
           }
         }
         it[nDaughters - 1]++;
-        for (int i = nDaughters - 1; i && it[i] == foundDaughters.at(hyperNuc->daughters.at(i)).end(); i--) {
-          it[i] = foundDaughters.at(hyperNuc->daughters.at(i)).begin();
+        for (int i = nDaughters - 1; i && it[i] == foundDaughterKfs.at(hyperNuc->daughters.at(i)).end(); i--) {
+          it[i] = foundDaughterKfs.at(hyperNuc->daughters.at(i)).begin();
           it[i - 1]++;
         }
       }
@@ -774,7 +775,6 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
   void createMCinfo(aod::McTrackLabels const& trackLabels, aod::McCollisionLabels const&, aod::McParticles const& particlesMC, aod::McCollisions const&, bool cascadesOnly = false)
   {
     // check for mcTrue: single (primary & cascade daughter) and cascade hypernuclei
-
     std::vector<std::vector<HyperNucleus>*> hypNucVectors = {&singleHyperNuclei, &cascadeHyperNuclei};
     std::vector<std::vector<std::vector<HyperNucCandidate>>*> candidateVectors = {&singleHyperNucCandidates, &cascadeHyperNucCandidates};
     const int nVecs = candidateVectors.size();
@@ -794,16 +794,16 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
             const auto& mcPart = particlesMC.rawIteratorAt(hypCand.hypNucDaughter->mcParticleId);
             if (!mcPart.has_mothers())
               continue;
-            daughterCount++;
             for (const auto& mother : mcPart.mothers_as<aod::McParticles>()) {
               if (mother.pdgCode() == hyperNuc->pdgCode * hypCand.getSign()) {
                 motherIds.push_back(mother.globalIndex());
                 break;
               }
             }
+            daughterCount++;
           }
-          for (const auto& daughter : hypCand.daughterTrackIds) {
-            const auto& mcLab = trackLabels.rawIteratorAt(daughter);
+          for (const auto& daughter : hypCand.daughters) {
+            const auto& mcLab = trackLabels.rawIteratorAt(daughter->daughterTrackId);
             if (!mcLab.has_mcParticle())
               continue;
             const auto& mcPart = mcLab.mcParticle_as<aod::McParticles>();
@@ -861,10 +861,11 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
             continue;
           if (saveOnlyMcTrue && !hypCand.mcTrue)
             continue;
-          hInvMass[vec * nHyperNuclei + hyperNucIter]->Fill(hypCand.kfp.GetMass());
+          hInvMass[vec * nHyperNuclei + hyperNucIter]->Fill(hypCand.mass);
           std::vector<int> vecDaugtherTracks, vecAddons, vecSubDaughters;
           int daughterCount = 0;
-          for (const auto& daughterTrackId : hypCand.daughterTrackIds) {
+          for (const auto& daughter : hypCand.daughters) {
+            const auto& daughterTrackId = daughter->daughterTrackId;
             int trackTableId;
             if (!trackIndices.getIndex(daughterTrackId, trackTableId)) {
               auto daught = hyperNuc->daughters.at(daughterCount);
@@ -872,7 +873,7 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
               outputTrackTable(
                 hyperNuc->daughters.at(daughterCount) * track.sign(),
                 track.pt(), track.eta(), track.phi(),
-                hypCand.getDcaTrackToVtxXY(daughterCount, primVtx), hypCand.getDcaTrackToVtxZ(daughterCount, primVtx),
+                daughter->dcaToPvXY, daughter->dcaToPvZ,
                 track.tpcNClsFound(), track.tpcChi2NCl(),
                 track.itsClusterSizes(), track.itsChi2NCl(),
                 getRigidity(track), track.tpcSignal(), getTPCnSigma(track, daughterParticles.at(daught)),
@@ -908,10 +909,10 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
             mcPartIndices.getIndex(hypCand.mcParticleId, mcPartTableId) ? mcPartTableId : -1,
             outputCollisionTable.lastIndex(), vecDaugtherTracks, vecAddons, hypCand.getDaughterTableId(), vecSubDaughters,
             (vec * nHyperNuclei + hyperNucIter + 1) * hypCand.getSign(),
-            hypCand.isPrimaryCandidate, hypCand.kfp.GetMass(),
-            hypCand.kfp.GetPx(), hypCand.kfp.GetPy(), hypCand.kfp.GetPz(),
-            hypCand.getDcaMotherToVtxXY(primVtx), hypCand.getDcaMotherToVtxZ(primVtx),
-            hypCand.devToVtx, hypCand.dcaToVtxXY, hypCand.dcaToVtxZ, hypCand.chi2,
+            hypCand.isPrimaryCandidate, hypCand.mass,
+            hypCand.px, hypCand.py, hypCand.pz,
+            hypCand.dcaToPvXY, hypCand.dcaToPvZ, hypCand.devToPvXY,
+            hypCand.dcaToVtxXY, hypCand.dcaToVtxZ, hypCand.chi2,
             hypCand.recoSV.at(0), hypCand.recoSV.at(1), hypCand.recoSV.at(2));
           hypCand.tableId = outputHypNucTable.lastIndex();
         }
@@ -989,6 +990,7 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
       findDaughterParticles(tracksByColl, tracks);
       if (cfgSaveOnlyMcTrue)
         checkMCTrueTracks(trackLabelsMC, particlesMC);
+      createKFDaughters(tracks);
       createKFHypernuclei(tracks);
       createMCinfo(trackLabelsMC, collLabels, particlesMC, mcColls);
       createKFCascades(tracks);
@@ -1013,7 +1015,7 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
       fillTree(tracks, cfgSaveOnlyMcTrue);
     }
   }
-  PROCESS_SWITCH(hypKfRecoTask, processMC, "MC analysis", false);
+  PROCESS_SWITCH(HypKfRecoTask, processMC, "MC analysis", false);
   //----------------------------------------------------------------------------------------------------------------
   void processData(CollisionsFull const& collisions, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::TrackAssoc const& tracksColl)
   {
@@ -1027,6 +1029,7 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
       const uint64_t collIdx = collision.globalIndex();
       auto tracksByColl = tracksColl.sliceBy(perCollision, collIdx);
       findDaughterParticles(tracksByColl, tracks);
+      createKFDaughters(tracks);
       createKFHypernuclei(tracks);
       createKFCascades(tracks);
       if (!collHasCandidate)
@@ -1035,7 +1038,7 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
       fillTree(tracks);
     }
   }
-  PROCESS_SWITCH(hypKfRecoTask, processData, "data analysis", true);
+  PROCESS_SWITCH(HypKfRecoTask, processData, "data analysis", true);
   //----------------------------------------------------------------------------------------------------------------
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
@@ -1078,6 +1081,10 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
   {
     foundDaughters.clear();
     foundDaughters.resize(nDaughterParticles);
+    foundDaughterKfs.clear();
+    foundDaughterKfs.resize(nDaughterParticles);
+    hypNucDaughterKfs.clear();
+    hypNucDaughterKfs.resize(nCascades);
     singleHyperNucCandidates.clear();
     singleHyperNucCandidates.resize(nHyperNuclei);
     cascadeHyperNucCandidates.clear();
@@ -1235,7 +1242,7 @@ struct hypKfRecoTask { // o2-linter: disable=[name/workflow-file][name/struct]
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<hypKfRecoTask>(cfgc)};
+    adaptAnalysisTask<HypKfRecoTask>(cfgc)};
 }
 //----------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------

@@ -44,6 +44,7 @@ using namespace o2::hf_evsel;
 using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_cand_3prong;
 using namespace o2::hf_centrality;
+using namespace o2::hf_occupancy;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -405,7 +406,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = hfEvSel.getOccupancy(collision);
+      float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -423,7 +424,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = hfEvSel.getOccupancy(collision);
+      float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -441,7 +442,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = hfEvSel.getOccupancy(collision);
+      float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -474,6 +475,7 @@ struct HfCandidateCreator3ProngExpressions {
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
@@ -516,11 +518,11 @@ struct HfCandidateCreator3ProngExpressions {
   }
 
   /// Performs MC matching.
-  template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs>
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs, typename McCollisions>
   void runCreator3ProngMc(aod::TracksWMc const& tracks,
                           aod::McParticles const& mcParticles,
                           CCs const& collInfos,
-                          aod::McCollisions const& mcCollisions,
+                          McCollisions const& mcCollisions,
                           BCsInfo const&)
   {
     rowCandidateProng3->bindExternalIndices(&tracks);
@@ -692,7 +694,7 @@ struct HfCandidateCreator3ProngExpressions {
         const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
         rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
       }
-      hfEvSelMc.fillHistograms(rejectionMask);
+      hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask);
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject all gen particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
@@ -816,7 +818,7 @@ struct HfCandidateCreator3ProngExpressions {
   void processMcCentFT0M(aod::TracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
                          McCollisionsFT0Ms const& collInfos,
-                         aod::McCollisions const& mcCollisions,
+                         McCollisionsCentFT0Ms const& mcCollisions,
                          BCsInfo const& BCsInfo)
   {
     runCreator3ProngMc<CentralityEstimator::FT0M>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);

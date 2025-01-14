@@ -55,6 +55,9 @@ using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
+using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::MostProbableEMEventIdsInMC>;
+using MyMCCollision = MyMCCollisions::iterator;
+
 using MyMCElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit, aod::EMPrimaryElectronMCLabels>;
 using MyMCElectron = MyMCElectrons::iterator;
 using FilteredMyMCElectrons = soa::Filtered<MyMCElectrons>;
@@ -79,8 +82,8 @@ struct SingleTrackQCMC {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
-  Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
-  Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
+  // Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
+  // Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
   Configurable<bool> cfgFillQA{"cfgFillQA", false, "flag to fill QA histograms"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
   Configurable<uint> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
@@ -115,6 +118,7 @@ struct SingleTrackQCMC {
   struct : ConfigurableGroup {
     std::string prefix = "dielectroncut_group";
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.2, "min pT for single track"};
+    Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
     Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.8, "max eta for single track"};
     Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +0.8, "max eta for single track"};
     Configurable<float> cfg_min_phi_track{"cfg_min_phi_track", 0.f, "max phi for single track"};
@@ -150,6 +154,15 @@ struct SingleTrackQCMC {
     Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +3.0, "max. TPC n sigma for proton exclusion"};
     Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -3.0, "min. TOF n sigma for electron inclusion"};
     Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +3.0, "max. TOF n sigma for electron inclusion"};
+    Configurable<float> cfg_max_pin_pirejTPC{"cfg_max_pin_pirejTPC", 1e+10, "max. pin for pion rejection in TPC"};
+    Configurable<float> cfg_min_ITSNsigmaKa{"cfg_min_ITSNsigmaKa", -1.0, "min. ITS n sigma for kaon exclusion"};
+    Configurable<float> cfg_max_ITSNsigmaKa{"cfg_max_ITSNsigmaKa", 1e+10, "max. ITS n sigma for kaon exclusion"};
+    Configurable<float> cfg_min_ITSNsigmaPr{"cfg_min_ITSNsigmaPr", -1.0, "min. ITS n sigma for proton exclusion"};
+    Configurable<float> cfg_max_ITSNsigmaPr{"cfg_max_ITSNsigmaPr", 1e+10, "max. ITS n sigma for proton exclusion"};
+    Configurable<float> cfg_min_p_ITSNsigmaKa{"cfg_min_p_ITSNsigmaKa", 0.0, "min p for kaon exclusion in ITS"};
+    Configurable<float> cfg_max_p_ITSNsigmaKa{"cfg_max_p_ITSNsigmaKa", 0.0, "max p for kaon exclusion in ITS"};
+    Configurable<float> cfg_min_p_ITSNsigmaPr{"cfg_min_p_ITSNsigmaPr", 0.0, "min p for proton exclusion in ITS"};
+    Configurable<float> cfg_max_p_ITSNsigmaPr{"cfg_max_p_ITSNsigmaPr", 0.0, "max p for proton exclusion in ITS"};
     Configurable<bool> enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
 
     // configuration for PID ML
@@ -189,10 +202,10 @@ struct SingleTrackQCMC {
 
   struct : ConfigurableGroup {
     std::string prefix = "mctrackcut_group";
-    Configurable<float> min_mcPt{"min_mcPt", 0.2, "min. MC pT"};
-    Configurable<float> max_mcPt{"max_mcPt", 1e+10, "max. MC pT"};
-    Configurable<float> min_mcEta{"min_mcEta", -0.8, "max. MC eta"};
-    Configurable<float> max_mcEta{"max_mcEta", +0.8, "max. MC eta"};
+    Configurable<float> min_mcPt{"min_mcPt", 0.2, "min. MC pT for generated single lepton"};
+    Configurable<float> max_mcPt{"max_mcPt", 1e+10, "max. MC pT single lepton"};
+    Configurable<float> min_mcEta{"min_mcEta", -0.8, "max. MC eta single lepton"};
+    Configurable<float> max_mcEta{"max_mcEta", +0.8, "max. MC eta single lepton"};
   } mctrackcuts;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false}; // 1 HistogramRegistry can keep up to 512 histograms
@@ -268,20 +281,25 @@ struct SingleTrackQCMC {
 
       if (cfgFillQA) {
         fRegistry.add("Track/PID/positive/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
-        fRegistry.add("Track/PID/positive/hTOFbeta", "TOF #beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
-        fRegistry.add("Track/PID/positive/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
-        fRegistry.add("Track/PID/positive/hMeanClusterSizeITSib", "mean cluster size ITS inner barrel;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
-        fRegistry.add("Track/PID/positive/hMeanClusterSizeITSob", "mean cluster size ITS outer barrel;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+        fRegistry.add("Track/PID/positive/hTOFbeta", "TOF #beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
         fRegistry.add("Track/PID/positive/hTOFNsigmaEl", "TOF n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTOFNsigmaMu", "TOF n sigma mu;p_{pv} (GeV/c);n #sigma_{#mu}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTOFNsigmaPi", "TOF n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTOFNsigmaKa", "TOF n sigma ka;p_{pv} (GeV/c);n #sigma_{K}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTOFNsigmaPr", "TOF n sigma pr;p_{pv} (GeV/c);n #sigma_{p}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+        fRegistry.add("Track/PID/positive/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
+        fRegistry.add("Track/PID/positive/hMeanClusterSizeITSib", "mean cluster size ITS inner barrel;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
+        fRegistry.add("Track/PID/positive/hMeanClusterSizeITSob", "mean cluster size ITS outer barrel;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
+        fRegistry.add("Track/PID/positive/hITSNsigmaEl", "ITS n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{ITS}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+        fRegistry.add("Track/PID/positive/hITSNsigmaMu", "ITS n sigma mu;p_{pv} (GeV/c);n #sigma_{#mu}^{ITS}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+        fRegistry.add("Track/PID/positive/hITSNsigmaPi", "ITS n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{ITS}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+        fRegistry.add("Track/PID/positive/hITSNsigmaKa", "ITS n sigma ka;p_{pv} (GeV/c);n #sigma_{K}^{ITS}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+        fRegistry.add("Track/PID/positive/hITSNsigmaPr", "ITS n sigma pr;p_{pv} (GeV/c);n #sigma_{p}^{ITS}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.addClone("Track/PID/positive/", "Track/PID/negative/");
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
@@ -384,7 +402,7 @@ struct SingleTrackQCMC {
     fDielectronCut = DielectronCut("fDielectronCut", "fDielectronCut");
 
     // for track
-    fDielectronCut.SetTrackPtRange(dielectroncuts.cfg_min_pt_track, 1e+10f);
+    fDielectronCut.SetTrackPtRange(dielectroncuts.cfg_min_pt_track, dielectroncuts.cfg_max_pt_track);
     fDielectronCut.SetTrackEtaRange(dielectroncuts.cfg_min_eta_track, dielectroncuts.cfg_max_eta_track);
     fDielectronCut.SetTrackPhiRange(dielectroncuts.cfg_min_phi_track, dielectroncuts.cfg_max_phi_track);
     fDielectronCut.SetMinNClustersTPC(dielectroncuts.cfg_min_ncluster_tpc);
@@ -410,6 +428,11 @@ struct SingleTrackQCMC {
     fDielectronCut.SetTPCNsigmaKaRange(dielectroncuts.cfg_min_TPCNsigmaKa, dielectroncuts.cfg_max_TPCNsigmaKa);
     fDielectronCut.SetTPCNsigmaPrRange(dielectroncuts.cfg_min_TPCNsigmaPr, dielectroncuts.cfg_max_TPCNsigmaPr);
     fDielectronCut.SetTOFNsigmaElRange(dielectroncuts.cfg_min_TOFNsigmaEl, dielectroncuts.cfg_max_TOFNsigmaEl);
+    fDielectronCut.SetMaxPinForPionRejectionTPC(dielectroncuts.cfg_max_pin_pirejTPC);
+    fDielectronCut.SetITSNsigmaKaRange(dielectroncuts.cfg_min_ITSNsigmaKa, dielectroncuts.cfg_max_ITSNsigmaKa);
+    fDielectronCut.SetITSNsigmaPrRange(dielectroncuts.cfg_min_ITSNsigmaPr, dielectroncuts.cfg_max_ITSNsigmaPr);
+    fDielectronCut.SetPRangeForITSNsigmaKa(dielectroncuts.cfg_min_p_ITSNsigmaKa, dielectroncuts.cfg_max_p_ITSNsigmaKa);
+    fDielectronCut.SetPRangeForITSNsigmaPr(dielectroncuts.cfg_min_p_ITSNsigmaPr, dielectroncuts.cfg_max_p_ITSNsigmaPr);
 
     if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
       static constexpr int nClassesMl = 2;
@@ -550,11 +573,16 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
         fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
         fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
-        fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaEl"), track.tpcInnerParam(), track.tofNSigmaEl());
-        fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaMu"), track.tpcInnerParam(), track.tofNSigmaMu());
-        fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaPi"), track.tpcInnerParam(), track.tofNSigmaPi());
-        fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaKa"), track.tpcInnerParam(), track.tofNSigmaKa());
-        fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaPr"), track.tpcInnerParam(), track.tofNSigmaPr());
+        fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
+        fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaMu"), track.p(), track.tofNSigmaMu());
+        fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaPi"), track.p(), track.tofNSigmaPi());
+        fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaKa"), track.p(), track.tofNSigmaKa());
+        fRegistry.fill(HIST("Track/PID/positive/hTOFNsigmaPr"), track.p(), track.tofNSigmaPr());
+        fRegistry.fill(HIST("Track/PID/positive/hITSNsigmaEl"), track.p(), track.itsNSigmaEl());
+        fRegistry.fill(HIST("Track/PID/positive/hITSNsigmaMu"), track.p(), track.itsNSigmaMu());
+        fRegistry.fill(HIST("Track/PID/positive/hITSNsigmaPi"), track.p(), track.itsNSigmaPi());
+        fRegistry.fill(HIST("Track/PID/positive/hITSNsigmaKa"), track.p(), track.itsNSigmaKa());
+        fRegistry.fill(HIST("Track/PID/positive/hITSNsigmaPr"), track.p(), track.itsNSigmaPr());
       }
     } else {
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hs"), track.pt(), track.eta(), track.phi(), dca, -mctrack.pdgCode() / pdg_lepton, weight);
@@ -589,11 +617,16 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
         fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
         fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
-        fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaEl"), track.tpcInnerParam(), track.tofNSigmaEl());
-        fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaMu"), track.tpcInnerParam(), track.tofNSigmaMu());
-        fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaPi"), track.tpcInnerParam(), track.tofNSigmaPi());
-        fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaKa"), track.tpcInnerParam(), track.tofNSigmaKa());
-        fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaPr"), track.tpcInnerParam(), track.tofNSigmaPr());
+        fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
+        fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaMu"), track.p(), track.tofNSigmaMu());
+        fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaPi"), track.p(), track.tofNSigmaPi());
+        fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaKa"), track.p(), track.tofNSigmaKa());
+        fRegistry.fill(HIST("Track/PID/negative/hTOFNsigmaPr"), track.p(), track.tofNSigmaPr());
+        fRegistry.fill(HIST("Track/PID/negative/hITSNsigmaEl"), track.p(), track.itsNSigmaEl());
+        fRegistry.fill(HIST("Track/PID/negative/hITSNsigmaMu"), track.p(), track.itsNSigmaMu());
+        fRegistry.fill(HIST("Track/PID/negative/hITSNsigmaPi"), track.p(), track.itsNSigmaPi());
+        fRegistry.fill(HIST("Track/PID/negative/hITSNsigmaKa"), track.p(), track.itsNSigmaKa());
+        fRegistry.fill(HIST("Track/PID/negative/hITSNsigmaPr"), track.p(), track.itsNSigmaPr());
       }
     }
   }
@@ -763,21 +796,24 @@ struct SingleTrackQCMC {
       }
       fRegistry.fill(HIST("MCEvent/before/hZvtx"), mccollision.posZ());
 
-      auto rec_colls_per_mccoll = collisions.sliceBy(recColperMcCollision, mccollision.globalIndex());
-      uint32_t maxNumContrib = 0;
-      int rec_col_globalIndex = -999;
-      for (auto& rec_col : rec_colls_per_mccoll) {
-        if (rec_col.numContrib() > maxNumContrib) {
-          rec_col_globalIndex = rec_col.globalIndex();
-          maxNumContrib = rec_col.numContrib(); // assign mc collision to collision where the number of contibutor is lager. LF/MM recommendation
-        }
-      }
+      // auto rec_colls_per_mccoll = collisions.sliceBy(recColperMcCollision, mccollision.globalIndex());
+      // if (rec_colls_per_mccoll.size() < 1) {
+      //   continue;
+      // }
+      // uint32_t maxNumContrib = 0;
+      // int rec_col_globalIndex = -999;
+      // for (auto& rec_col : rec_colls_per_mccoll) {
+      //   if (rec_col.numContrib() > maxNumContrib) {
+      //     rec_col_globalIndex = rec_col.globalIndex();
+      //     maxNumContrib = rec_col.numContrib(); // assign mc collision to collision where the number of contibutor is lager. LF/MM recommendation
+      //   }
+      // }
+      // auto collision = collisions.rawIteratorAt(rec_col_globalIndex);
 
-      if (rec_colls_per_mccoll.size() < 1) {
+      if (mccollision.mpemeventId() < 0) {
         continue;
       }
-
-      auto collision = collisions.rawIteratorAt(rec_col_globalIndex);
+      auto collision = collisions.rawIteratorAt(mccollision.mpemeventId());
 
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
@@ -959,7 +995,7 @@ struct SingleTrackQCMC {
   Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), o2::aod::emprimarymuon::isAssociatedToMPC == true || o2::aod::emprimarymuon::isAssociatedToMPC == false, o2::aod::emprimarymuon::isAssociatedToMPC == true);
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
+  // Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin < o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
@@ -968,9 +1004,9 @@ struct SingleTrackQCMC {
   Partition<aod::EMMCParticles> muonsMC = nabs(o2::aod::mcparticle::pdgCode) == 13;     // mu+, mu-
   PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
 
-  PresliceUnsorted<MyCollisions> recColperMcCollision = aod::emmceventlabel::emmceventId;
+  // PresliceUnsorted<MyCollisions> recColperMcCollision = aod::emmceventlabel::emmceventId;
 
-  void processQCMC(FilteredMyCollisions const& collisions, aod::EMMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles, TLeptons const& tracks)
+  void processQCMC(FilteredMyCollisions const& collisions, MyMCCollisions const& mccollisions, aod::EMMCParticles const& mcparticles, TLeptons const& tracks)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (cfgApplyWeightTTCA) {
@@ -992,7 +1028,7 @@ struct SingleTrackQCMC {
   Partition<MySmearedElectrons> electronsMC_smeared = nabs(o2::aod::mcparticle::pdgCode) == 11; // e+, e-
   Partition<MySmearedMuons> muonsMC_smeared = nabs(o2::aod::mcparticle::pdgCode) == 13;         // mu+, mu-
 
-  void processQCMC_Smeared(FilteredMyCollisions const& collisions, aod::EMMCEvents const& mccollisions, TLeptons const& tracks, TSmearedMCParticles const& mcparticles_smeared)
+  void processQCMC_Smeared(FilteredMyCollisions const& collisions, MyMCCollisions const& mccollisions, TLeptons const& tracks, TSmearedMCParticles const& mcparticles_smeared)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (cfgApplyWeightTTCA) {
@@ -1056,7 +1092,7 @@ struct SingleTrackQCMC {
   }
   PROCESS_SWITCH(SingleTrackQCMC, processNorm, "process normalization info", false);
 
-  void processDummy(MyCollisions const&) {}
+  void processDummy(FilteredMyCollisions const&) {}
   PROCESS_SWITCH(SingleTrackQCMC, processDummy, "Dummy function", false);
 };
 

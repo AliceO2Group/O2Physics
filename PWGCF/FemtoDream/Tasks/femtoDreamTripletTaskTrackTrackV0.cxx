@@ -200,6 +200,8 @@ struct femtoDreamTripletTaskTrackTrackV0 {
     ThreeBodyQARegistry.add("TripletTaskQA/hMinvME_AntiLambda", ";Q_{3};M_{inv}", kTH2F, {ConfQ3Bins, ConfInvMassBins});
     ThreeBodyQARegistry.add("TripletTaskQA/particle_pT_in_Triplet_SE", "; p_{T1} ; p_{T2} ; p_{T3} ; Q_{3}", kTHnSparseF, {ConfTempFitVarpTBins, ConfTempFitVarpTBins, ConfTempFitVarpTV0Bins, ConfQ3BinsFor4D});
     ThreeBodyQARegistry.add("TripletTaskQA/particle_pT_in_Triplet_ME", "; p_{T1} ; p_{T2} ; p_{T3} ; Q_{3}", kTHnSparseF, {ConfTempFitVarpTBins, ConfTempFitVarpTBins, ConfTempFitVarpTV0Bins, ConfQ3BinsFor4D});
+    ThreeBodyQARegistry.add("TripletTaskQA/hCentrality", ";Centrality; Q3", kTH2F, {{100, 0, 100}, ConfQ3Bins});
+
     std::vector<double> tmpVecMult = ConfMultBins;
     framework::AxisSpec multAxis = {tmpVecMult, "Multiplicity"};
     ThreeBodyQARegistry.add("TripletTaskQA/hSEMultVSGoodTracks", ";Mult;GoodT", kTH2F, {multAxis, {100, 0, 100}});
@@ -375,6 +377,7 @@ struct femtoDreamTripletTaskTrackTrackV0 {
         ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hMinvSE_AntiLambda"), Q3, V0.mAntiLambda());
         ThreeBodyQARegistry.fill(HIST("TripletTaskQA/particle_pT_in_Triplet_SE"), T1.pt(), T2.pt(), V0.pt(), Q3);
         sameEventCont.setTriplet<isMC>(T1, T2, V0, multCol, Q3);
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hCentrality"), centCol, Q3);
       }
     }
   }
