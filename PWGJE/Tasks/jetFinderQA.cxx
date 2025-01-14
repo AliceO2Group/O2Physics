@@ -72,6 +72,7 @@ struct JetFinderQATask {
   Configurable<bool> checkMcCollisionIsMatched{"checkMcCollisionIsMatched", false, "0: count whole MCcollisions, 1: select MCcollisions which only have their correspond collisions"};
   Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range; only applied to reconstructed collisions (data and mcd jets), not mc collisions (mcp jets)"};
   Configurable<int> trackOccupancyInTimeRangeMin{"trackOccupancyInTimeRangeMin", -999999, "minimum occupancy of tracks in neighbouring collisions in a given time range; only applied to reconstructed collisions (data and mcd jets), not mc collisions (mcp jets)"};
+  Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events; jet-level rejection applied at the jet finder level, here rejection is applied for collision and track process functions"};
 
   std::vector<bool> filledJetR_Both;
   std::vector<bool> filledJetR_Low;
@@ -924,6 +925,9 @@ struct JetFinderQATask {
 
   void processMCCollisionsWeighted(aod::JetMcCollision const& collision)
   {
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
     registry.fill(HIST("h_collision_eventweight_part"), collision.weight());
   }
   PROCESS_SWITCH(JetFinderQATask, processMCCollisionsWeighted, "collision QA for weighted events", false);
@@ -1057,6 +1061,9 @@ struct JetFinderQATask {
   void processTracks(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                      soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
   {
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
@@ -1078,6 +1085,9 @@ struct JetFinderQATask {
                              soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
   {
     float eventWeight = collision.mcCollision().weight();
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
@@ -1097,6 +1107,9 @@ struct JetFinderQATask {
   void processTracksSub(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                         soa::Filtered<aod::JetTracksSub> const& tracks)
   {
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
@@ -1113,6 +1126,9 @@ struct JetFinderQATask {
 
   void processRho(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks)
   {
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
@@ -1141,6 +1157,9 @@ struct JetFinderQATask {
 
   void processRandomConeMCD(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets, soa::Filtered<aod::JetTracks> const& tracks)
   {
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
     randomCone(collision, jets, tracks);
   }
   PROCESS_SWITCH(JetFinderQATask, processRandomConeMCD, "QA for random cone estimation of background fluctuations in mcd", false);
