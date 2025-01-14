@@ -42,10 +42,10 @@ static const std::vector<std::string> tableNames{"V0Indices",           //.0 (st
                                                  "V0CoresBase",         //.1 (standard analyses: V0Data)
                                                  "V0Covs",              //.2
                                                  "CascIndices",         //.3 (standard analyses: CascData)
-                                                 "KFCascIndices",       // 4 (standard analyses: KFCascData)
+                                                 "KFCascIndices",       //.4 (standard analyses: KFCascData)
                                                  "TraCascIndices",      //.5 (standard analyses: TraCascData)
                                                  "StoredCascCores",     //.6 (standard analyses: CascData)
-                                                 "StoredKFCascCores",   // 7 (standard analyses: KFCascData)
+                                                 "StoredKFCascCores",   //.7 (standard analyses: KFCascData)
                                                  "StoredTraCascCores",  //.8 (standard analyses: TraCascData)
                                                  "CascCovs",            //.9
                                                  "KFCascCovs",          // 10
@@ -87,10 +87,10 @@ static const std::vector<std::string> tableNames{"V0Indices",           //.0 (st
                                                  "V0Extras",            // 46 (derived)
                                                  "CascExtras",          // 47 (derived)
                                                  "StraTrackExtras",     // 48 (derived)
-                                                 "CascToTraRefs",       // 49 (derived)
-                                                 "CascToKFRefs",        // 50 (derived)
-                                                 "TraToCascRefs",       // 51 (derived)
-                                                 "KFToCascRefs",        // 52 (derived)
+                                                 "CascToTraRefs",       //.49 (interlink)
+                                                 "CascToKFRefs",        //.50 (interlink)
+                                                 "TraToCascRefs",       //.51 (interlink)
+                                                 "KFToCascRefs",        //.52 (interlink)
                                                  "V0MCMothers",         // 53 (MC/derived)
                                                  "CascMCMothers",       // 54 (MC/derived)
                                                  "MotherMCParts",       // 55 (MC/derived)
