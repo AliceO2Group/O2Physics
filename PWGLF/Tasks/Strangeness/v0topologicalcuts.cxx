@@ -269,8 +269,8 @@ struct v0topologicalcuts {
   // Defining filters for events (event selection)
   // Processed events will be already fulfilling the event selection requirements
   Filter eventFilter = (o2::aod::evsel::sel8 == true);
-  Filter posZFilterMC = (nabs(o2::aod::mccollision::posZ) < cutzvertex);
-  Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
+  Filter posZFilterMC = (nabs(o2::aod::mccollision::posZ) < cutZVertex);
+  Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutZVertex);
 
   // Defining the type of the daughter tracks
   using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCPr>;
