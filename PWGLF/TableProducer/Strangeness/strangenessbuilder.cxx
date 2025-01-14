@@ -38,26 +38,26 @@ using namespace o2;
 using namespace o2::framework;
 
 static constexpr int nParameters = 1;
-static const std::vector<std::string> tableNames{"V0Indices",           // 0 (standard analysis: V0Data)
-                                                 "V0CoresBase",         // 1 (standard analyses: V0Data)
-                                                 "V0Covs",              // 2
-                                                 "CascIndices",         // 3 (standard analyses: CascData)
+static const std::vector<std::string> tableNames{"V0Indices",           //.0 (standard analysis: V0Data)
+                                                 "V0CoresBase",         //.1 (standard analyses: V0Data)
+                                                 "V0Covs",              //.2
+                                                 "CascIndices",         //.3 (standard analyses: CascData)
                                                  "KFCascIndices",       // 4 (standard analyses: KFCascData)
                                                  "TraCascIndices",      // 5 (standard analyses: TraCascData)
-                                                 "StoredCascCores",     // 6 (standard analyses: CascData)
+                                                 "StoredCascCores",     //.6 (standard analyses: CascData)
                                                  "StoredKFCascCores",   // 7 (standard analyses: KFCascData)
                                                  "StoredTraCascCores",  // 8 (standard analyses: TraCascData)
-                                                 "CascCovs",            // 9
+                                                 "CascCovs",            //.9
                                                  "KFCascCovs",          // 10
                                                  "TraCascCovs",         // 11
-                                                 "V0TrackXs",           // 12
-                                                 "CascTrackXs",         // 13
-                                                 "CascBBs",             // 14
-                                                 "V0DauCovs",           // 15 (requested: tracking studies)
-                                                 "V0DauCovIUs",         // 16 (requested: tracking studies)
-                                                 "V0TraPosAtDCAs",      // 17 (requested: tracking studies)
-                                                 "V0TraPosAtIUs",       // 18 (requested: tracking studies)
-                                                 "V0Ivanovs",           // 19 (requested: tracking studies)
+                                                 "V0TrackXs",           //.12
+                                                 "CascTrackXs",         //.13
+                                                 "CascBBs",             //.14
+                                                 "V0DauCovs",           //.15 (requested: tracking studies)
+                                                 "V0DauCovIUs",         //.16 (requested: tracking studies)
+                                                 "V0TraPosAtDCAs",      //.17 (requested: tracking studies)
+                                                 "V0TraPosAtIUs",       //.18 (requested: tracking studies)
+                                                 "V0Ivanovs",           //.19 (requested: tracking studies)
                                                  "McV0Labels",          // 20 (MC/standard analysis)
                                                  "V0MCCores",           // 21 (MC)
                                                  "V0CoreMCLabels",      // 22 (MC)
@@ -567,16 +567,100 @@ struct StrangenessBuilder {
     LOGF(info, "Cascades in DF: %i, cascades built: %i", cascades.size(), nCascades);
   }
 
+  template <class TTracks, typename TCollisions, typename TStrangeTracks>
+  void buildTrackedCascades(TCollisions const& collisions, TStrangeTracks const& cascadeTracks)
+  {
+    if(!mEnabledTables[kStoredTraCascCores]){ 
+      return; // don't do if no request for cascades in place
+    }
+    int nCascades = 0;
+    // Loops over all V0s in the time frame
+    for (auto& cascadeTrack : cascadeTracks) {
+      // Get tracks and generate candidate
+      if (!cascadeTrack.has_track())
+        continue; // safety (should be fine but depends on future stratrack dev)
+
+      auto const& strangeTrack = cascadeTrack.template track_as<TTracks>();
+      auto const& collision = strangeTrack.collision();
+      auto const& cascade = strangeTrack.cascade();
+      auto const& v0 = cascade.v0();
+      auto const& posTrack = v0.template posTrack_as<TTracks>();
+      auto const& negTrack = v0.template negTrack_as<TTracks>();
+      auto const& bachTrack = cascade.template bachelor_as<TTracks>();
+      if(!straHelper.buildCascadeCandidate(collision, 
+                                           posTrack, 
+                                           negTrack, 
+                                           bachTrack, 
+                                           mEnabledTables[kCascBBs],
+                                           false,  
+                                           mEnabledTables[kCascCovs])){
+        continue; // didn't work out, skip
+      }
+
+      // recalculate DCAxy, DCAz with strange track
+      auto strangeTrackParCov = getTrackParCov(strangeTrack);
+      gpu::gpustd::array<float, 2> dcaInfo;
+      strangeTrackParCov.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, strangeTrackParCov, 2.f, straHelper.fitter.getMatCorrType(), &dcaInfo);
+      straHelper.cascade.cascadeDCAxy = dcaInfo[0]; 
+      straHelper.cascade.cascadeDCAz = dcaInfo[1]; 
+
+      // get momentum from strange track (should not be very different)
+      strangeTrackParCov.getPxPyPzGlo(straHelper.cascade.cascadeMomentum);
+
+      // accounting
+      nCascades++;
+
+      // generate analysis tables as required
+      if(mEnabledTables[kTraCascIndices]){
+        cascidx(cascade.globalIndex(),
+                straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
+                straHelper.cascade.bachelorTrack, straHelper.cascade.collisionId);
+      }
+      if (mEnabledTables[kStoredTraCascCores]){
+        cascdata(straHelper.cascade.charge, cascadeTrack.xiMass(), cascadeTrack.omegaMass(),
+                 cascadeTrack.decayX(), cascadeTrack.decayY(), cascadeTrack.decayZ(),
+                 straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
+                 straHelper.cascade.positiveMomentum[0], straHelper.cascade.positiveMomentum[1], straHelper.cascade.positiveMomentum[2],
+                 straHelper.cascade.negativeMomentum[0], straHelper.cascade.negativeMomentum[1], straHelper.cascade.negativeMomentum[2],
+                 straHelper.cascade.bachelorMomentum[0], straHelper.cascade.bachelorMomentum[1], straHelper.cascade.bachelorMomentum[2],
+                 straHelper.cascade.cascadeMomentum[0], straHelper.cascade.cascadeMomentum[1], straHelper.cascade.cascadeMomentum[2],
+                 straHelper.cascade.v0DaughterDCA, straHelper.cascade.cascadeDaughterDCA,
+                 straHelper.cascade.positiveDCAxy, straHelper.cascade.negativeDCAxy,
+                 straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz, 
+                 cascadeTrack.matchingChi2(), cascadeTrack.topologyChi2(), cascadeTrack.itsClsSize());
+      }
+      if (mEnabledTables[kCascTrackXs]) {
+        cascTrackXs(straHelper.cascade.positiveTrackX, straHelper.cascade.negativeTrackX, straHelper.cascade.bachelorTrackX);
+      }
+      if( mEnabledTables[kCascBBs]){
+        cascbb(straHelper.cascade.bachBaryonCosPA, straHelper.cascade.bachBaryonDCAxyToPV);
+      }
+      if (mEnabledTables[kCascCovs]) {
+        std::array<float, 21> traCovMat = {0.};
+        strangeTrackParCov.getCovXYZPxPyPzGlo(traCovMat);
+        float traCovMatArray[21];
+        for (int ii = 0; ii < 21; ii++) {
+          traCovMatArray[ii] = traCovMat[ii];
+        }
+        tracasccovs(traCovMatArray);
+      }
+    }
+    LOGF(info, "Cascades in DF: %i, cascades built: %i", cascadeTracks.size(), nCascades);
+  }
+
   void processPreselectTPCPID(aod::Collisions const& collisions, aod::V0s const& V0s, aod::Cascades const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const& bcs)
   {
 
   }
 
   //__________________________________________________
-  template <typename TCollisions, typename TV0s, typename TCascades, typename TTracks, typename TBCs>
-  void dataProcess(TCollisions const& collisions, TV0s const& v0s, TCascades const& cascades, TTracks const&, TBCs const& bcs)
+  template <typename TCollisions, typename TV0s, typename TCascades, typename TTrackedCascades, typename TTracks, typename TBCs>
+  void dataProcess(TCollisions const& collisions, TV0s const& v0s, TCascades const& cascades, TTrackedCascades const& trackedCascades, TTracks const&, TBCs const& bcs)
   {
     if(!initCCDB(bcs, collisions)) return;
+
+    // mark V0s that will be buffered for the cascade building
     markV0sUsedInCascades(v0s, cascades);
 
     // build V0s 
@@ -584,16 +668,20 @@ struct StrangenessBuilder {
     
     // build cascades
     buildCascades<TTracks>(collisions, cascades);
+
+    if constexpr (requires { TTrackedCascades::iterator; }) {
+      buildTrackedCascades<TTracks>(collisions, trackedCascades);
+    }
   }
 
-  void processRealData(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRealData(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    dataProcess(collisions, v0s, cascades, tracks, bcs);
+    dataProcess(collisions, v0s, cascades, trackedCascades, tracks, bcs);
   }
 
-  void processRealDataRun2(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRealDataRun2(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    dataProcess(collisions, v0s, cascades, tracks, bcs);
+    dataProcess(collisions, v0s, cascades, (TObject*) nullptr, tracks, bcs);
   }
 
   void processSimulationFindable(aod::Collisions const& collisions, aod::V0s const& V0s, aod::Cascades const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const& bcs)
