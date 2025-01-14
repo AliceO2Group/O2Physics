@@ -92,17 +92,17 @@ struct FemtoUniversePairTaskTrackNucleus {
     Configurable<bool> confIsLine{"confIsLine", false, "Enable a separation line for clearer TPC Deuteron Sigma"};
     Configurable<float> linCutPlow{"linCutPlow", 0.0f, "Lower limit of momentum for linear cut of TPC Deuteron Sigma"};
     Configurable<float> linCutPhigh{"linCutPhigh", 1.4f, "Higher limit of momentum for linear cut of TPC Deuteron Sigma"};
-    Configurable<float> linCutParA{"linCutParA", -167.0f, "Parameter 'A' of a linear function 'y = A * x + B'"};
-    Configurable<float> linCutParB{"linCutParB", 300.0f, "Parameter 'B' of a linear function 'y = A * x + B'"};
+    Configurable<float> linCutParA{"linCutParA", -167.0f, "Parameter 'A' of the linear function 'y = A * x + B'"};
+    Configurable<float> linCutParB{"linCutParB", 300.0f, "Parameter 'B' of the linear function 'y = A * x + B'"};
   } lincut;
 
   /// Table for polynomial 3 cut for TPC Deuteron Sigma
   struct : o2::framework::ConfigurableGroup {
     Configurable<bool> confIsPol3{"confIsPol3", false, "Enable a separation polynomial 3 curve for clearer TPC Deuteron Sigma"};
-    Configurable<float> polCutParA{"polCutParA", -52.2f, "Parameter 'A' of a polynomial function 'y = A * x^3 + B * x^2 + C * x + D'"};
-    Configurable<float> polCutParB{"polCutParB", 357.7f, "Parameter 'B' of a polynomial function 'y = A * x^3 + B * x^2 + C * x + D'"};
-    Configurable<float> polCutParC{"polCutParC", -834.7f, "Parameter 'C' of a polynomial function 'y = A * x^3 + B * x^2 + C * x + D'"};
-    Configurable<float> polCutParD{"polCutParD", 705.8f, "Parameter 'D' of a polynomial function 'y = A * x^3 + B * x^2 + C * x + D'"};
+    Configurable<float> polCutParA{"polCutParA", -52.2f, "Parameter 'A' of the polynomial function 'y = A * x^3 + B * x^2 + C * x + D'"};
+    Configurable<float> polCutParB{"polCutParB", 357.7f, "Parameter 'B' of the polynomial function 'y = A * x^3 + B * x^2 + C * x + D'"};
+    Configurable<float> polCutParC{"polCutParC", -834.7f, "Parameter 'C' of the polynomial function 'y = A * x^3 + B * x^2 + C * x + D'"};
+    Configurable<float> polCutParD{"polCutParD", 705.8f, "Parameter 'D' of the polynomial function 'y = A * x^3 + B * x^2 + C * x + D'"};
   } polcut;
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
