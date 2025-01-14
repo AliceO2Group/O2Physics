@@ -448,7 +448,7 @@ struct StrangenessBuilder {
     // Loops over all V0s in the time frame
     for (auto& v0 : v0s) {
       if(!mEnabledTables[kV0CoresBase] && v0Map[v0.globalIndex()] == -2){
-        // this hasn't been used by cascades and we're not generating V0s, so skip it
+        // this v0 hasn't been used by cascades and we're not generating V0s, so skip it
         continue; 
       }
 
@@ -505,10 +505,66 @@ struct StrangenessBuilder {
                            negativePositionIU[0], negativePositionIU[1], negativePositionIU[2]);
         }
       }
-
-
     }
     LOGF(info, "V0s in DF: %i, V0s built: %i, V0s built and buffered for cascades: %i.", v0s.size(), nV0s, v0sFromCascades.size());
+  }
+
+  template <class TTracks, typename TCollisions, typename TCascades>
+  void buildCascades(TCollisions const& collisions, TCascades const& cascades)
+  {
+    if(!mEnabledTables[kStoredCascCores]){ 
+      return; // don't do if no request for cascades in place
+    }
+    int nCascades = 0;
+    // Loops over all V0s in the time frame
+    for (auto& cascade : cascades) {
+      // Get tracks and generate candidate
+      auto const& collision = cascade.collision();
+      auto const& v0 = cascade.v0();
+      auto const& posTrack = v0.template posTrack_as<TTracks>();
+      auto const& negTrack = v0.template negTrack_as<TTracks>();
+      auto const& bachTrack = cascade.template bachelor_as<TTracks>();
+      if(!straHelper.buildCascadeCandidate(collision, 
+                                           v0sFromCascades[v0Map[v0.globalIndex()]],
+                                           posTrack, 
+                                           negTrack, 
+                                           bachTrack, 
+                                           mEnabledTables[kCascBBs],
+                                           false,  
+                                           mEnabledTables[kCascCovs])){
+        continue; // didn't work out, skip
+      }
+      nCascades++;
+
+      // generate analysis tables as required
+      if(mEnabledTables[kCascIndices]){
+        cascidx(cascade.globalIndex(),
+                straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
+                straHelper.cascade.bachelorTrack, straHelper.cascade.collisionId);
+      }
+      if (mEnabledTables[kStoredCascCores]){
+        cascdata(straHelper.cascade.charge, straHelper.cascade.massXi, straHelper.cascade.massOmega,
+                 straHelper.cascade.position[0], straHelper.cascade.position[1], straHelper.cascade.position[2],
+                 straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
+                 straHelper.cascade.positiveMomentum[0], straHelper.cascade.positiveMomentum[1], straHelper.cascade.positiveMomentum[2],
+                 straHelper.cascade.negativeMomentum[0], straHelper.cascade.negativeMomentum[1], straHelper.cascade.negativeMomentum[2],
+                 straHelper.cascade.bachelorMomentum[0], straHelper.cascade.bachelorMomentum[1], straHelper.cascade.bachelorMomentum[2],
+                 straHelper.cascade.cascadeMomentum[0], straHelper.cascade.cascadeMomentum[1], straHelper.cascade.cascadeMomentum[2],
+                 straHelper.cascade.v0DaughterDCA, straHelper.cascade.cascadeDaughterDCA,
+                 straHelper.cascade.positiveDCAxy, straHelper.cascade.negativeDCAxy,
+                 straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz);
+      }
+      if (mEnabledTables[kCascTrackXs]) {
+        cascTrackXs(straHelper.cascade.positiveTrackX, straHelper.cascade.negativeTrackX, straHelper.cascade.bachelorTrackX);
+      }
+      if( mEnabledTables[kCascBBs]){
+        cascbb(straHelper.cascade.bachBaryonCosPA, straHelper.cascade.bachBaryonDCAxyToPV);
+      }
+      if (mEnabledTables[kCascCovs]) {
+        casccovs(straHelper.cascade.covariance);
+      }
+    }
+    LOGF(info, "Cascades in DF: %i, cascades built: %i", cascades.size(), nCascades);
   }
 
   void processPreselectTPCPID(aod::Collisions const& collisions, aod::V0s const& V0s, aod::Cascades const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const& bcs)
@@ -526,7 +582,8 @@ struct StrangenessBuilder {
     // build V0s 
     buildV0s<TTracks>(collisions, v0s);
     
-    //buildCascades<FullTracksExtIU>(Cascades);
+    // build cascades
+    buildCascades<TTracks>(collisions, cascades);
   }
 
   void processRealData(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
