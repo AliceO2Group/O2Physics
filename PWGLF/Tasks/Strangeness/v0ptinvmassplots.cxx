@@ -60,25 +60,25 @@ struct V0PtInvMassPlots {
   Configurable<float> xaxisMaxGenBin{"xaxisMaxGenBin", 3.0, "Maximum bin value of the Generated Pt Spectrum Plot"};
 
   // Configurable Kaonsh Topological Cuts (best cuts determined by v0topologicalcuts task)
-  Configurable<float> kaonshsetting_dcav0dau{"kaonshsetting_dcav0dau", 100.0, "DCA V0 Daughters"};
-  Configurable<float> kaonshsetting_dcapostopv{"kaonshsetting_dcapostopv", 0.05, "DCA Pos To PV"};
-  Configurable<float> kaonshsetting_dcanegtopv{"kaonshsetting_dcanegtopv", 0.05, "DCA Neg To PV"};
-  Configurable<double> kaonshsetting_cospa{"kaonshsetting_cospa", 0.50, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0
-  Configurable<float> kaonshsetting_radius{"kaonshsetting_radius", 0.50, "v0radius"};
+  Configurable<float> kaonshSettingdcav0dau{"kaonshSettingdcav0dau", 100.0, "DCA V0 Daughters"};
+  Configurable<float> kaonshSettingdcapostopv{"kaonshSettingdcapostopv", 0.05, "DCA Pos To PV"};
+  Configurable<float> kaonshSettingdcanegtopv{"kaonshSettingdcanegtopv", 0.05, "DCA Neg To PV"};
+  Configurable<double> kaonshSettingcosPA{"kaonshSettingcosPA", 0.50, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0
+  Configurable<float> kaonshSettingradius{"kaonshSettingradius", 0.50, "v0radius"};
 
   // Configurable Lambda Topological Cuts (best cuts determined by v0topologicalcuts task)
-  Configurable<float> lambdasetting_dcav0dau{"lambdasetting_dcav0dau", 100.0, "DCA V0 Daughters"};
-  Configurable<float> lambdasetting_dcapostopv{"lambdasetting_dcapostopv", 0.05, "DCA Pos To PV"};
-  Configurable<float> lambdasetting_dcanegtopv{"lambdasetting_dcanegtopv", 0.05, "DCA Neg To PV"};
-  Configurable<double> lambdasetting_cospa{"lambdasetting_cospa", 0.50, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0
-  Configurable<float> lambdasetting_radius{"lambdasetting_radius", 0.50, "v0radius"};
+  Configurable<float> lambdaSettingdcav0dau{"lambdaSettingdcav0dau", 100.0, "DCA V0 Daughters"};
+  Configurable<float> lambdaSettingdcapostopv{"lambdaSettingdcapostopv", 0.05, "DCA Pos To PV"};
+  Configurable<float> lambdaSettingdcanegtopv{"lambdaSettingdcanegtopv", 0.05, "DCA Neg To PV"};
+  Configurable<double> lambdaSettingcosPA{"lambdaSettingcosPA", 0.50, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0
+  Configurable<float> lambdaSettingradius{"lambdaSettingradius", 0.50, "v0radius"};
 
   // Configurable Antilambda Topological Cuts (best cuts determined by v0topologicalcuts task)
-  Configurable<float> antilambdasetting_dcav0dau{"antilambdasetting_dcav0dau", 100.0, "DCA V0 Daughters"};
-  Configurable<float> antilambdasetting_dcapostopv{"antilambdasetting_dcapostopv", 0.05, "DCA Pos To PV"};
-  Configurable<float> antilambdasetting_dcanegtopv{"antilambdasetting_dcanegtopv", 0.05, "DCA Neg To PV"};
-  Configurable<double> antilambdasetting_cospa{"antilambdasetting_cospa", 0.50, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0
-  Configurable<float> antilambdasetting_radius{"antilambdasetting_radius", 0.50, "v0radius"};
+  Configurable<float> antilambdaSettingdcav0dau{"antilambdaSettingdcav0dau", 100.0, "DCA V0 Daughters"};
+  Configurable<float> antilambdaSettingdcapostopv{"antilambdaSettingdcapostopv", 0.05, "DCA Pos To PV"};
+  Configurable<float> antilambdaSettingdcanegtopv{"antilambdaSettingdcanegtopv", 0.05, "DCA Neg To PV"};
+  Configurable<double> antilambdaSettingcosPA{"antilambdaSettingcosPA", 0.50, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0
+  Configurable<float> antilambdaSettingradius{"antilambdaSettingradius", 0.50, "v0radius"};
 
   // Configurables for Specific V0s analysis
   Configurable<bool> kzeroAnalysis{"kzeroAnalysis", true, "Enable Kzerosh Pt Analysis"};
@@ -86,9 +86,9 @@ struct V0PtInvMassPlots {
   Configurable<bool> antiLambdaAnalysis{"antiLambdaAnalysis", true, "Enable Antilambda Pt Analysis"};
 
   // Configurable string for Different Pt Bins
-  Configurable<std::string> kzeroshsetting_pt_string{"kzerosetting_ptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Kzero Pt Bin Values"};
-  Configurable<std::string> lambdasetting_pt_string{"lambdasetting_ptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Lambda Pt Bin Values"};
-  Configurable<std::string> antilambdasetting_pt_string{"antilambdasetting_ptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Antilambda Pt Bin Values"};
+  Configurable<std::string> kzeroshSettingpt_string{"kzeroSettingptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Kzero Pt Bin Values"};
+  Configurable<std::string> lambdaSettingpt_string{"lambdaSettingptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Lambda Pt Bin Values"};
+  Configurable<std::string> antilambdaSettingpt_string{"antilambdaSettingptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Antilambda Pt Bin Values"};
 
   void init(InitContext const&)
   {
@@ -103,7 +103,7 @@ struct V0PtInvMassPlots {
 
     // Adding Kzerosh Histograms to registry
     if (kzeroAnalysis == true) {
-      pthistos::kaonptbins = o2::utils::Str::tokenize(kzeroshsetting_pt_string, ',');
+      pthistos::kaonptbins = o2::utils::Str::tokenize(kzeroshSettingpt_string, ',');
       rPtAnalysis.add("hK0ShortReconstructedPtSpectrum", "hK0ShortReconstructedPtSpectrum", {HistType::kTH1F, {ptAxis}});
       rPtAnalysis.add("hMassK0ShortAll", "hMassK0ShortAll", {HistType::kTH1F, {K0ShortMassAxis}});
       rPtAnalysis.add("hK0ShortPtSpectrumBeforeCuts", "hK0ShortPtSpectrumBeforeCuts", {HistType::kTH1F, {ptAxis}});
@@ -118,8 +118,8 @@ struct V0PtInvMassPlots {
     // Adding Lambda Histograms
     if (lambdaAnalysis == true) {
       // same method as in Kzerosh above
-      std::string lambdasetting_ptbins = lambdasetting_pt_string;
-      pthistos::lambdaPtBins = o2::utils::Str::tokenize(lambdasetting_ptbins, ',');
+      std::string lambdaSettingptbins = lambdaSettingpt_string;
+      pthistos::lambdaPtBins = o2::utils::Str::tokenize(lambdaSettingptbins, ',');
       rPtAnalysis.add("hLambdaReconstructedPtSpectrum", "hLambdaReconstructedPtSpectrum", {HistType::kTH1F, {ptAxis}});
       rPtAnalysis.add("hMassLambdaAll", "hMassLambdaAll", {HistType::kTH1F, {LambdaMassAxis}});
       rPtAnalysis.add("hLambdaPtSpectrumBeforeCuts", "hLambdaPtSpectrumBeforeCuts", {HistType::kTH1F, {ptAxis}});
@@ -131,8 +131,8 @@ struct V0PtInvMassPlots {
     // Adding Antilambda Histograms
     if (antiLambdaAnalysis == true) {
       // same method as in Lambda and Kzerosh above
-      std::string antilambdasetting_ptbins = antilambdasetting_pt_string;
-      pthistos::antiLambdaPtBins = o2::utils::Str::tokenize(antilambdasetting_ptbins, ',');
+      std::string antilambdaSettingptbins = antilambdaSettingpt_string;
+      pthistos::antiLambdaPtBins = o2::utils::Str::tokenize(antilambdaSettingptbins, ',');
       rPtAnalysis.add("hAntilambdaReconstructedPtSpectrum", "hAntilambdaReconstructedPtSpectrum", {HistType::kTH1F, {ptAxis}});
       rPtAnalysis.add("hMassAntilambdaAll", "hMassAntilambdaAll", {HistType::kTH1F, {AntiLambdaMassAxis}});
       rPtAnalysis.add("hAntilambdaPtSpectrumBeforeCuts", "hAntilambdaPtSpectrumBeforeCuts", {HistType::kTH1F, {ptAxis}});
@@ -193,7 +193,7 @@ struct V0PtInvMassPlots {
               rPtAnalysis.fill(HIST("hMassK0ShortAll"), v0.mK0Short());
               rPtAnalysis.fill(HIST("hK0ShortPtSpectrumBeforeCuts"), v0.pt());
               // Implementing best kzero cuts
-              if (v0.v0cosPA() > kaonshsetting_cospa && v0.dcaV0daughters() < kaonshsetting_dcav0dau && v0.v0radius() > kaonshsetting_radius && std::abs(v0.dcapostopv()) > kaonshsetting_dcapostopv && std::abs(v0.dcanegtopv()) > kaonshsetting_dcanegtopv) {
+              if (v0.v0cosPA() > kaonshSettingcosPA && v0.dcaV0daughters() < kaonshSettingdcav0dau && v0.v0radius() > kaonshSettingradius && std::abs(v0.dcapostopv()) > kaonshSettingdcapostopv && std::abs(v0.dcanegtopv()) > kaonshSettingdcanegtopv) {
                 rPtAnalysis.fill(HIST("hMassK0ShortAllAfterCuts"), v0.mK0Short());
                 rPtAnalysis.fill(HIST("hK0ShortReconstructedPtSpectrum"), v0.pt());
                 for (int i = 0; i < 20; i++) {
@@ -219,7 +219,7 @@ struct V0PtInvMassPlots {
               rPtAnalysis.fill(HIST("hMassLambdaAll"), v0.mLambda());
               rPtAnalysis.fill(HIST("hLambdaPtSpectrumBeforeCuts"), v0.pt());
               // Implementing best lambda cuts
-              if (v0.v0cosPA() > lambdasetting_cospa && v0.dcaV0daughters() < lambdasetting_dcav0dau && v0.v0radius() > lambdasetting_radius && std::abs(v0.dcapostopv()) > lambdasetting_dcapostopv && std::abs(v0.dcanegtopv()) > lambdasetting_dcanegtopv) {
+              if (v0.v0cosPA() > lambdaSettingcosPA && v0.dcaV0daughters() < lambdaSettingdcav0dau && v0.v0radius() > lambdaSettingradius && std::abs(v0.dcapostopv()) > lambdaSettingdcapostopv && std::abs(v0.dcanegtopv()) > lambdaSettingdcanegtopv) {
                 rPtAnalysis.fill(HIST("hMassLambdaAllAfterCuts"), v0.mLambda());
                 rPtAnalysis.fill(HIST("hLambdaReconstructedPtSpectrum"), v0.pt());
                 for (int i = 0; i < 20; i++) {
@@ -245,7 +245,7 @@ struct V0PtInvMassPlots {
               rPtAnalysis.fill(HIST("hMassAntilambdaAll"), v0.mAntiLambda());
               rPtAnalysis.fill(HIST("hAntilambdaPtSpectrumBeforeCuts"), v0.pt());
               // Implementing best antilambda cuts
-              if (v0.v0cosPA() > antilambdasetting_cospa && v0.dcaV0daughters() < antilambdasetting_dcav0dau && v0.v0radius() > antilambdasetting_radius && std::abs(v0.dcapostopv()) > antilambdasetting_dcapostopv && std::abs(v0.dcanegtopv()) > antilambdasetting_dcanegtopv) {
+              if (v0.v0cosPA() > antilambdaSettingcosPA && v0.dcaV0daughters() < antilambdaSettingdcav0dau && v0.v0radius() > antilambdaSettingradius && std::abs(v0.dcapostopv()) > antilambdaSettingdcapostopv && std::abs(v0.dcanegtopv()) > antilambdaSettingdcanegtopv) {
                 rPtAnalysis.fill(HIST("hMassAntilambdaAllAfterCuts"), v0.mAntiLambda());
                 rPtAnalysis.fill(HIST("hAntilambdaReconstructedPtSpectrum"), v0.pt());
                 for (int i = 0; i < 20; i++) {
@@ -279,7 +279,7 @@ struct V0PtInvMassPlots {
         // Filling the five Kzero invariant mass plots for different cuts (which are taken from namespace), for full explanation see the first kzero cut filling in the MC process
         rPtAnalysis.fill(HIST("hMassK0ShortAll"), v0.mK0Short());
         // Implementing best kzero cuts
-        if (v0.v0cosPA() > kaonshsetting_cospa && v0.dcaV0daughters() < kaonshsetting_dcav0dau && v0.v0radius() > kaonshsetting_radius && std::abs(v0.dcapostopv()) > kaonshsetting_dcapostopv && std::abs(v0.dcanegtopv()) > kaonshsetting_dcanegtopv) {
+        if (v0.v0cosPA() > kaonshSettingcosPA && v0.dcaV0daughters() < kaonshSettingdcav0dau && v0.v0radius() > kaonshSettingradius && std::abs(v0.dcapostopv()) > kaonshSettingdcapostopv && std::abs(v0.dcanegtopv()) > kaonshSettingdcanegtopv) {
           rPtAnalysis.fill(HIST("hMassK0ShortAllAfterCuts"), v0.mK0Short());
           for (int i = 0; i < 20; i++) { // same as above MC-process we fill the namespace histos with the kaon invariant mass of the particle within the pt range of the histo
             std::string pt1 = pthistos::kaonptbins[i];
@@ -301,7 +301,7 @@ struct V0PtInvMassPlots {
         // Filling the five lambda invariant mass plots for different cuts (which are taken from namespace), for full explanation see the first kzero cut filling in the MC process
         rPtAnalysis.fill(HIST("hMassLambdaAll"), v0.mLambda());
         // Implementing best lambda cuts
-        if (v0.v0cosPA() > lambdasetting_cospa && v0.dcaV0daughters() < lambdasetting_dcav0dau && v0.v0radius() > lambdasetting_radius && std::abs(v0.dcapostopv()) > lambdasetting_dcapostopv && std::abs(v0.dcanegtopv()) > lambdasetting_dcanegtopv) {
+        if (v0.v0cosPA() > lambdaSettingcosPA && v0.dcaV0daughters() < lambdaSettingdcav0dau && v0.v0radius() > lambdaSettingradius && std::abs(v0.dcapostopv()) > lambdaSettingdcapostopv && std::abs(v0.dcanegtopv()) > lambdaSettingdcanegtopv) {
           rPtAnalysis.fill(HIST("hMassLambdaAllAfterCuts"), v0.mLambda());
           for (int i = 0; i < 20; i++) { // same as above MC-process we fill the namespace histos with the lambda invariant mass of the particle within the pt range of the histo
             std::string pt1 = pthistos::lambdaPtBins[i];
@@ -323,7 +323,7 @@ struct V0PtInvMassPlots {
         // Filling the five Antilambda invariant mass plots for different cuts (which are taken from namespace), for full explanation see the first kzero cut filling in the MC process
         rPtAnalysis.fill(HIST("hMassAntilambdaAll"), v0.mAntiLambda());
         // implementing best antilambda cuts
-        if (v0.v0cosPA() > antilambdasetting_cospa && v0.dcaV0daughters() < antilambdasetting_dcav0dau && v0.v0radius() > antilambdasetting_radius && std::abs(v0.dcapostopv()) > antilambdasetting_dcapostopv && std::abs(v0.dcanegtopv()) > antilambdasetting_dcanegtopv) {
+        if (v0.v0cosPA() > antilambdaSettingcosPA && v0.dcaV0daughters() < antilambdaSettingdcav0dau && v0.v0radius() > antilambdaSettingradius && std::abs(v0.dcapostopv()) > antilambdaSettingdcapostopv && std::abs(v0.dcanegtopv()) > antilambdaSettingdcanegtopv) {
           rPtAnalysis.fill(HIST("hMassAntilambdaAllAfterCuts"), v0.mAntiLambda());
           for (int i = 0; i < 20; i++) { // same as above MC-process we fill the namespace histos with the antilambda invariant mass of the particle within the pt range of the histo
             std::string pt1 = pthistos::antiLambdaPtBins[i];

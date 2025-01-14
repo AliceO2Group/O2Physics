@@ -35,8 +35,8 @@ This analysis includes two processes, one for Real Data and one for MC Data swit
 // namespaces to be used for the plot names and topological cuts that will be given by a configurable string
 namespace cuthistoskzerosh
 {
-std::shared_ptr<TH1> cospaCut[20];
-static std::vector<std::string> cospacuts;
+std::shared_ptr<TH1> cosPACut[20];
+static std::vector<std::string> cosPAcuts;
 std::shared_ptr<TH1> dcaCut[20];
 static std::vector<std::string> dcacuts;
 std::shared_ptr<TH1> v0radiusCut[20];
@@ -48,8 +48,8 @@ static std::vector<std::string> dcanegtopvcuts;
 } // namespace cuthistoskzerosh
 namespace cuthistoslambda
 {
-std::shared_ptr<TH1> cospaCut[20];
-static std::vector<std::string> cospacuts;
+std::shared_ptr<TH1> cosPACut[20];
+static std::vector<std::string> cosPAcuts;
 std::shared_ptr<TH1> dcaCut[20];
 static std::vector<std::string> dcacuts;
 std::shared_ptr<TH1> v0radiusCut[20];
@@ -61,8 +61,8 @@ static std::vector<std::string> dcanegtopvcuts;
 } // namespace cuthistoslambda
 namespace cuthistosantilambda
 {
-std::shared_ptr<TH1> cospaCut[20];
-static std::vector<std::string> cospacuts;
+std::shared_ptr<TH1> cosPACut[20];
+static std::vector<std::string> cosPAcuts;
 std::shared_ptr<TH1> dcaCut[20];
 static std::vector<std::string> dcacuts;
 std::shared_ptr<TH1> v0radiusCut[20];
@@ -84,19 +84,19 @@ struct V0TopologicalCuts {
   HistogramRegistry rV0ParametersMCAntiLambdamatch{"V0ParametersMCAntiLambdaMatch", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rV0Parameters_Data{"rV0Parameters_Data", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   // kzero cut Histogram Registry with MC-matching, each will include 20 histograms for 20 different cuts
-  HistogramRegistry rKzeroShort_cospaCut{"KzeroShort_cospaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rKzeroShort_cosPACut{"KzeroShort_cosPACuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rKzeroShort_dcaCut{"KzeroShort_dcaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rKzeroShort_v0radiusCut{"KzeroShort_v0radiusCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rKzeroShort_dcapostopCut{"KzeroShort_dcapostopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rKzeroShort_dcanegtopCut{"KzeroShort_dcanegtopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   // lambdas cut histograms with MC-matching (same as in Kzeros above)
-  HistogramRegistry rLambda_cospaCut{"Lambda_cospaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rLambda_cosPACut{"Lambda_cosPACuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rLambda_dcaCut{"Lambda_dcaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rLambda_v0radiusCut{"Lambda_v0radiusCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rLambda_dcapostopCut{"Lambda_dcapostopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rLambda_dcanegtopCut{"Lambda_dcanegtopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   // antilambdas cut histograms with MC-matching (same as in Lambdas an Kzeros above)
-  HistogramRegistry rAntiLambda_cospaCut{"AntiLambda_cospaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rAntiLambda_cosPACut{"AntiLambda_cosPACuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rAntiLambda_dcaCut{"AntiLambda_dcaCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rAntiLambda_v0radiusCut{"AntiLambda_v0radiusCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rAntiLambda_dcapostopCut{"AntiLambda_dcapostopvCuts", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -106,21 +106,21 @@ struct V0TopologicalCuts {
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
 
   // Configurable strings for Kzero cuts
-  Configurable<std::string> kzeroshsetting_cospacuts_string{"kzerosetting_cospacuts", {"0_98,0_981,0_982,0_983,0_984,0_985,0_986,0_987,0_988,0_989,0_99,0_991,0_992,0_993,0_994,0_995,0_996,0_997,0_998,0_999"}, "Kzero cosPA Cut Values"};
+  Configurable<std::string> kzeroshsetting_cosPAcuts_string{"kzerosetting_cosPAcuts", {"0_98,0_981,0_982,0_983,0_984,0_985,0_986,0_987,0_988,0_989,0_99,0_991,0_992,0_993,0_994,0_995,0_996,0_997,0_998,0_999"}, "Kzero cosPA Cut Values"};
   Configurable<std::string> kzeroshsetting_dcacuts_string{"kzerosetting_dcacuts", {"0_3,0_285,0_27,0_255,0_24,0_225,0_21,0_195,0_18,0_165,0_15,0_135,0_12,0_105,0_09,0_075,0_06,0_045,0_03,0_015"}, "Kzero DCA Cut Values"};
   Configurable<std::string> kzeroshsetting_v0radius_string{"kzerosetting_v0radiuscuts", {"0_5,0_51,0_52,0_53,0_54,0_55,0_56,0_57,0_58,0_59,0_6,0_61,0_62,0_63,0_64,0_65,0_66,0_67,0_68,0_69"}, "Kzero V0Radius Cut Values"};
   Configurable<std::string> kzeroshsetting_dcapostopv_string{"kzerosetting_dcapostopvcuts", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "Kzero DCA Pos to PV Cut Values"};
   Configurable<std::string> kzeroshsetting_dcanegtopv_string{"kzerosetting_dcanegtopvcuts", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "KzeroDCA Neg to PV Cut Values"};
 
   // Configurable strings for Lambdacuts
-  Configurable<std::string> lambdasetting_cospacuts_string{"lambdasetting_cospacuts", {"0_98,0_981,0_982,0_983,0_984,0_985,0_986,0_987,0_988,0_989,0_99,0_991,0_992,0_993,0_994"}, "Lambda cosPA Cut Values"};
+  Configurable<std::string> lambdasetting_cosPAcuts_string{"lambdasetting_cosPAcuts", {"0_98,0_981,0_982,0_983,0_984,0_985,0_986,0_987,0_988,0_989,0_99,0_991,0_992,0_993,0_994"}, "Lambda cosPA Cut Values"};
   Configurable<std::string> lambdasetting_dcacuts_string{"lambdasetting_dcacuts", {"0_3,0_285,0_27,0_255,0_24,0_225,0_21,0_195,0_18,0_165,0_15,0_135,0_12,0_105,0_09,0_075,0_06,0_045,0_03,0_015"}, "Lambda DCA Cut Values"};
   Configurable<std::string> lambdasetting_v0radius_string{"lambdasetting_v0radiuscuts", {"0_5,0_51,0_52,0_53,0_54,0_55,0_56,0_57,0_58,0_59,0_6,0_61,0_62,0_63,0_64,0_65,0_66,0_67,0_68,0_69"}, "Lambda V0Radius Cut Values"};
   Configurable<std::string> lambdasetting_dcapostopv_string{"lambdasetting_dcapostopvcuts", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "Lambda DCA Pos to PV Cut Values"};
   Configurable<std::string> lambdasetting_dcanegtopv_string{"lambdasetting_dcanegtopvcuts", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "Lambda DCA Neg to PV Cut Values"};
 
   // Configurable strings for AntiLambdacuts
-  Configurable<std::string> antilambdasetting_cospacuts_string{"antilambdasetting_cospacuts", {"0_98,0_981,0_982,0_983,0_984,0_985,0_986,0_987,0_988,0_989,0_99,0_991,0_992,0_993,0_994,0_995,0_996,0_997,0_998,0_999"}, "Antilambda cosPA Cut Values"};
+  Configurable<std::string> antilambdasetting_cosPAcuts_string{"antilambdasetting_cosPAcuts", {"0_98,0_981,0_982,0_983,0_984,0_985,0_986,0_987,0_988,0_989,0_99,0_991,0_992,0_993,0_994,0_995,0_996,0_997,0_998,0_999"}, "Antilambda cosPA Cut Values"};
   Configurable<std::string> antilambdasetting_dcacuts_string{"antilambdasetting_dcacuts", {"0_3,0_285,0_27,0_255,0_24,0_225,0_21,0_195,0_18,0_165,0_15,0_135,0_12,0_105,0_09,0_075,0_06,0_045,0_03,0_015"}, "Antilambda DCA Cut Values"};
   Configurable<std::string> antilambdasetting_v0radius_string{"antilambdasetting_v0radiuscuts", {"0_5,0_51,0_52,0_53,0_54,0_55,0_56,0_57,0_58,0_59,0_6,0_61,0_62,0_63,0_64,0_65,0_66,0_67,0_68,0_69"}, "Antilambda V0Radius Cut Values"};
   Configurable<std::string> antilambdasetting_dcapostopv_string{"antilambdasetting_dcapostopvcuts", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "Antilambda DCA Pos to PV Cut Values"};
@@ -132,21 +132,21 @@ struct V0TopologicalCuts {
 
     // setting strings from configurable strings in order to manipulate them
     // getting the  cut values for the names of the plots for the five topological cuts
-    cuthistoskzerosh::cospacuts = o2::utils::Str::tokenize(kzeroshsetting_cospacuts_string, ',');
+    cuthistoskzerosh::cosPAcuts = o2::utils::Str::tokenize(kzeroshsetting_cosPAcuts_string, ',');
     cuthistoskzerosh::dcacuts = o2::utils::Str::tokenize(kzeroshsetting_dcacuts_string, ',');
     cuthistoskzerosh::v0radiuscuts = o2::utils::Str::tokenize(kzeroshsetting_v0radius_string, ',');
     cuthistoskzerosh::dcapostopvcuts = o2::utils::Str::tokenize(kzeroshsetting_dcapostopv_string, ',');
     cuthistoskzerosh::dcanegtopvcuts = o2::utils::Str::tokenize(kzeroshsetting_dcanegtopv_string, ',');
 
     // lambda filling namespace with configurable strings (same as in Kzeros above)
-    cuthistoslambda::cospacuts = o2::utils::Str::tokenize(lambdasetting_cospacuts_string, ',');
+    cuthistoslambda::cosPAcuts = o2::utils::Str::tokenize(lambdasetting_cosPAcuts_string, ',');
     cuthistoslambda::dcacuts = o2::utils::Str::tokenize(lambdasetting_dcacuts_string, ',');
     cuthistoslambda::v0radiuscuts = o2::utils::Str::tokenize(lambdasetting_v0radius_string, ',');
     cuthistoslambda::dcapostopvcuts = o2::utils::Str::tokenize(lambdasetting_dcapostopv_string, ',');
     cuthistoslambda::dcanegtopvcuts = o2::utils::Str::tokenize(lambdasetting_dcanegtopv_string, ',');
 
     // antilambda filling namespace with configurable strings (same as in Lambdas and Kzeros above)
-    cuthistosantilambda::cospacuts = o2::utils::Str::tokenize(antilambdasetting_cospacuts_string, ',');
+    cuthistosantilambda::cosPAcuts = o2::utils::Str::tokenize(antilambdasetting_cosPAcuts_string, ',');
     cuthistosantilambda::dcacuts = o2::utils::Str::tokenize(antilambdasetting_dcacuts_string, ',');
     cuthistosantilambda::v0radiuscuts = o2::utils::Str::tokenize(antilambdasetting_v0radius_string, ',');
     cuthistosantilambda::dcapostopvcuts = o2::utils::Str::tokenize(antilambdasetting_dcapostopv_string, ',');
@@ -158,8 +158,8 @@ struct V0TopologicalCuts {
     AxisSpec AntiLambdaMassAxis = {nBins, 1.085f, 1.145f, "#it{M} p^{-}#pi^{+} [GeV/#it{c}^{2}]"};
 
     // adding the invariant mass histograms to their Registries using the namespace for kzeros, lambdas and antilambdas
-    for (uint32_t i = 0; i < cuthistoskzerosh::cospacuts.size(); i++) {
-      cuthistoskzerosh::cospaCut[i] = rKzeroShort_cospaCut.add<TH1>(fmt::format("hKzerocospaCut_{}", cuthistoskzerosh::cospacuts[i]).data(), fmt::format("hKzerocospaCut_{}", cuthistoskzerosh::cospacuts[i]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
+    for (uint32_t i = 0; i < cuthistoskzerosh::cosPAcuts.size(); i++) {
+      cuthistoskzerosh::cosPACut[i] = rKzeroShort_cosPACut.add<TH1>(fmt::format("hKzerocosPACut_{}", cuthistoskzerosh::cosPAcuts[i]).data(), fmt::format("hKzerocosPACut_{}", cuthistoskzerosh::cosPAcuts[i]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistoskzerosh::dcacuts.size(); i++) {
       cuthistoskzerosh::dcaCut[i] = rKzeroShort_dcaCut.add<TH1>(fmt::format("hKzerodcaCut_{}", cuthistoskzerosh::dcacuts[i]).data(), fmt::format("hKzerodcaCut_{}", cuthistoskzerosh::dcacuts[i]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
@@ -173,8 +173,8 @@ struct V0TopologicalCuts {
     for (uint32_t i = 0; i < cuthistoskzerosh::dcanegtopvcuts.size(); i++) {
       cuthistoskzerosh::dcanegtopCut[i] = rKzeroShort_dcanegtopCut.add<TH1>(fmt::format("hKzerodcanegtopCut_{}", cuthistoskzerosh::dcanegtopvcuts[i]).data(), fmt::format("hKzerodcanegtopCut_{}", cuthistoskzerosh::dcanegtopvcuts[i]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
     }
-    for (uint32_t i = 0; i < cuthistoslambda::cospacuts.size(); i++) {
-      cuthistoslambda::cospaCut[i] = rLambda_cospaCut.add<TH1>(fmt::format("hLambdacospaCut_{}", cuthistoslambda::cospacuts[i]).data(), fmt::format("hLambdacospaCut_{}", cuthistoslambda::cospacuts[i]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
+    for (uint32_t i = 0; i < cuthistoslambda::cosPAcuts.size(); i++) {
+      cuthistoslambda::cosPACut[i] = rLambda_cosPACut.add<TH1>(fmt::format("hLambdacosPACut_{}", cuthistoslambda::cosPAcuts[i]).data(), fmt::format("hLambdacosPACut_{}", cuthistoslambda::cosPAcuts[i]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistoslambda::dcacuts.size(); i++) {
       cuthistoslambda::dcaCut[i] = rLambda_dcaCut.add<TH1>(fmt::format("hLambdadcaCut_{}", cuthistoslambda::dcacuts[i]).data(), fmt::format("hLambdadcaCut_{}", cuthistoslambda::dcacuts[i]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
@@ -189,8 +189,8 @@ struct V0TopologicalCuts {
       cuthistoslambda::dcanegtopCut[i] = rLambda_dcanegtopCut.add<TH1>(fmt::format("hLambdadcanegtopCut_{}", cuthistoslambda::dcanegtopvcuts[i]).data(), fmt::format("hLambdadcanegtopCut_{}", cuthistoslambda::dcanegtopvcuts[i]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
     }
 
-    for (uint32_t i = 0; i < cuthistosantilambda::cospacuts.size(); i++) {
-      cuthistosantilambda::cospaCut[i] = rAntiLambda_cospaCut.add<TH1>(fmt::format("hAntiLambdacospaCut_{}", cuthistosantilambda::cospacuts[i]).data(), fmt::format("hAntiLambdacospaCut_{}", cuthistosantilambda::cospacuts[i]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
+    for (uint32_t i = 0; i < cuthistosantilambda::cosPAcuts.size(); i++) {
+      cuthistosantilambda::cosPACut[i] = rAntiLambda_cosPACut.add<TH1>(fmt::format("hAntiLambdacosPACut_{}", cuthistosantilambda::cosPAcuts[i]).data(), fmt::format("hAntiLambdacosPACut_{}", cuthistosantilambda::cosPAcuts[i]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistosantilambda::dcacuts.size(); i++) {
       cuthistosantilambda::dcaCut[i] = rAntiLambda_dcaCut.add<TH1>(fmt::format("hAntiLambdadcaCut_{}", cuthistosantilambda::dcacuts[i]).data(), fmt::format("hAntiLambdadcaCut_{}", cuthistosantilambda::dcacuts[i]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
@@ -280,13 +280,13 @@ struct V0TopologicalCuts {
           rV0ParametersMCK0Smatch.fill(HIST("hDCAPostoPV_KzeroMC_Match"), std::abs(v0.dcapostopv()));
           rV0ParametersMCK0Smatch.fill(HIST("hDCANegtoPV_KzeroMC_Match"), std::abs(v0.dcanegtopv()));
 
-          for (uint32_t j = 0; j < cuthistoskzerosh::cospacuts.size(); j++) {
-            std::string cospacut = cuthistoskzerosh::cospacuts[j]; // Get the current cut value from the namespace
-            size_t pos = cospacut.find("_");                       // find the "_" which needs to change to a "." for it to be a number
-            cospacut[pos] = '.';                                   // change the "_" into an "."
-            const float cospacutvalue = std::stod(cospacut);       // make the string into a float value
-            if (v0.v0cosPA() > cospacutvalue) {                    // enforce the cut value
-              cuthistoskzerosh::cospaCut[j]->Fill(v0.mK0Short());  // fill the corresponding histo from the namespace with the invariant mass (of a Kzero here)
+          for (uint32_t j = 0; j < cuthistoskzerosh::cosPAcuts.size(); j++) {
+            std::string cosPAcut = cuthistoskzerosh::cosPAcuts[j]; // Get the current cut value from the namespace
+            size_t pos = cosPAcut.find("_");                       // find the "_" which needs to change to a "." for it to be a number
+            cosPAcut[pos] = '.';                                   // change the "_" into an "."
+            const float cosPAcutvalue = std::stod(cosPAcut);       // make the string into a float value
+            if (v0.v0cosPA() > cosPAcutvalue) {                    // enforce the cut value
+              cuthistoskzerosh::cosPACut[j]->Fill(v0.mK0Short());  // fill the corresponding histo from the namespace with the invariant mass (of a Kzero here)
             }
           }
           for (uint32_t j = 0; j < cuthistoskzerosh::dcacuts.size(); j++) {
@@ -334,13 +334,13 @@ struct V0TopologicalCuts {
           rV0ParametersMCLambdamatch.fill(HIST("hDCANegtoPV_LambdaMC_Match"), std::abs(v0.dcanegtopv()));
 
           // for explanation look at the first Kzero  plot above
-          for (uint32_t j = 0; j < cuthistoslambda::cospacuts.size(); j++) {
-            std::string cospacutlambda = cuthistoslambda::cospacuts[j];
-            size_t pos = cospacutlambda.find("_");
-            cospacutlambda[pos] = '.';
-            const float cospacutlambdavalue = std::stod(cospacutlambda);
-            if (v0.v0cosPA() > cospacutlambdavalue) {
-              cuthistoslambda::cospaCut[j]->Fill(v0.mLambda());
+          for (uint32_t j = 0; j < cuthistoslambda::cosPAcuts.size(); j++) {
+            std::string cosPAcutlambda = cuthistoslambda::cosPAcuts[j];
+            size_t pos = cosPAcutlambda.find("_");
+            cosPAcutlambda[pos] = '.';
+            const float cosPAcutlambdavalue = std::stod(cosPAcutlambda);
+            if (v0.v0cosPA() > cosPAcutlambdavalue) {
+              cuthistoslambda::cosPACut[j]->Fill(v0.mLambda());
             }
           }
           for (uint32_t j = 0; j < cuthistoslambda::dcacuts.size(); j++) {
@@ -387,13 +387,13 @@ struct V0TopologicalCuts {
           rV0ParametersMCAntiLambdamatch.fill(HIST("hDCAPostoPV_AntiLambdaMC_Match"), std::abs(v0.dcapostopv()));
           rV0ParametersMCAntiLambdamatch.fill(HIST("hDCANegtoPV_AntiLambdaMC_Match"), std::abs(v0.dcanegtopv()));
           // for explanation look at the first Kzero  plot above
-          for (uint32_t j = 0; j < cuthistosantilambda::cospacuts.size(); j++) {
-            std::string cospacutantilambda = cuthistosantilambda::cospacuts[j];
-            size_t pos = cospacutantilambda.find("_");
-            cospacutantilambda[pos] = '.';
-            const float cospacutantilambdavalue = std::stod(cospacutantilambda);
-            if (v0.v0cosPA() > cospacutantilambdavalue) {
-              cuthistosantilambda::cospaCut[j]->Fill(v0.mAntiLambda());
+          for (uint32_t j = 0; j < cuthistosantilambda::cosPAcuts.size(); j++) {
+            std::string cosPAcutantilambda = cuthistosantilambda::cosPAcuts[j];
+            size_t pos = cosPAcutantilambda.find("_");
+            cosPAcutantilambda[pos] = '.';
+            const float cosPAcutantilambdavalue = std::stod(cosPAcutantilambda);
+            if (v0.v0cosPA() > cosPAcutantilambdavalue) {
+              cuthistosantilambda::cosPACut[j]->Fill(v0.mAntiLambda());
             }
           }
           for (uint32_t j = 0; j < cuthistosantilambda::dcacuts.size(); j++) {
@@ -453,13 +453,13 @@ struct V0TopologicalCuts {
       rV0Parameters_Data.fill(HIST("hDCANegtoPV_V0_Data"), std::abs(v0.dcanegtopv()));
 
       // Filling the five Kzero invariant mass plots for different cuts (which are taken from namespace), for full explanation see the first kzero cut filling in the MC process
-      for (uint32_t j = 0; j < cuthistoskzerosh::cospacuts.size(); j++) {
-        std::string cospacut = cuthistoskzerosh::cospacuts[j];
-        size_t pos = cospacut.find("_");
-        cospacut[pos] = '.';
-        const float cospacutvalue = std::stod(cospacut);
-        if (v0.v0cosPA() > cospacutvalue) {
-          cuthistoskzerosh::cospaCut[j]->Fill(v0.mK0Short());
+      for (uint32_t j = 0; j < cuthistoskzerosh::cosPAcuts.size(); j++) {
+        std::string cosPAcut = cuthistoskzerosh::cosPAcuts[j];
+        size_t pos = cosPAcut.find("_");
+        cosPAcut[pos] = '.';
+        const float cosPAcutvalue = std::stod(cosPAcut);
+        if (v0.v0cosPA() > cosPAcutvalue) {
+          cuthistoskzerosh::cosPACut[j]->Fill(v0.mK0Short());
         }
       }
       for (uint32_t j = 0; j < cuthistoskzerosh::dcacuts.size(); j++) {
@@ -499,13 +499,13 @@ struct V0TopologicalCuts {
         }
       }
       // Filling the five Lambda invariant mass plots for different cuts (which are taken from namespace), same as with Kzeros above,for full explanation see the first kzero cut filling in the MC process
-      for (uint32_t j = 0; j < cuthistoslambda::cospacuts.size(); j++) {
-        std::string cospacutlambda = cuthistoslambda::cospacuts[j];
-        size_t pos = cospacutlambda.find("_");
-        cospacutlambda[pos] = '.';
-        const float cospacutlambdavalue = std::stod(cospacutlambda);
-        if (v0.v0cosPA() > cospacutlambdavalue) {
-          cuthistoslambda::cospaCut[j]->Fill(v0.mLambda());
+      for (uint32_t j = 0; j < cuthistoslambda::cosPAcuts.size(); j++) {
+        std::string cosPAcutlambda = cuthistoslambda::cosPAcuts[j];
+        size_t pos = cosPAcutlambda.find("_");
+        cosPAcutlambda[pos] = '.';
+        const float cosPAcutlambdavalue = std::stod(cosPAcutlambda);
+        if (v0.v0cosPA() > cosPAcutlambdavalue) {
+          cuthistoslambda::cosPACut[j]->Fill(v0.mLambda());
         }
       }
       for (uint32_t j = 0; j < cuthistoslambda::dcacuts.size(); j++) {
@@ -545,13 +545,13 @@ struct V0TopologicalCuts {
         }
       }
       // Filling the five Anti-Lambda invariant mass plots for different cuts (which are taken from namespace), same as with Kzeros and Lambdas above,for full explanation see the first kzero cut filling in the MC process
-      for (uint32_t j = 0; j < cuthistosantilambda::cospacuts.size(); j++) {
-        std::string cospacutantilambda = cuthistosantilambda::cospacuts[j];
-        size_t pos = cospacutantilambda.find("_");
-        cospacutantilambda[pos] = '.';
-        const float cospacutantilambdavalue = std::stod(cospacutantilambda);
-        if (v0.v0cosPA() > cospacutantilambdavalue) {
-          cuthistosantilambda::cospaCut[j]->Fill(v0.mAntiLambda());
+      for (uint32_t j = 0; j < cuthistosantilambda::cosPAcuts.size(); j++) {
+        std::string cosPAcutantilambda = cuthistosantilambda::cosPAcuts[j];
+        size_t pos = cosPAcutantilambda.find("_");
+        cosPAcutantilambda[pos] = '.';
+        const float cosPAcutantilambdavalue = std::stod(cosPAcutantilambda);
+        if (v0.v0cosPA() > cosPAcutantilambdavalue) {
+          cuthistosantilambda::cosPACut[j]->Fill(v0.mAntiLambda());
         }
       }
       for (uint32_t j = 0; j < cuthistosantilambda::dcacuts.size(); j++) {
