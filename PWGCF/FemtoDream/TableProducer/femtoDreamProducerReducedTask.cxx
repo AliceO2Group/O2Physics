@@ -15,6 +15,7 @@
 /// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
+#include <vector>
 #include "TMath.h"
 #include <CCDB/BasicCCDBManager.h>
 #include "PWGCF/FemtoDream/Core/femtoDreamCollisionSelection.h"
