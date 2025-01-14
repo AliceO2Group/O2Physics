@@ -218,18 +218,18 @@ struct JetTaggerHFTask {
     if (doprocessAlgorithmGNN) {
       if constexpr (isMC) {
       switch (origin) {
-        case 2:
-          registry.fill(HIST("h_db_b"), scoreML[jet.globalIndex()]);
-          break;
-        case 1:
-          registry.fill(HIST("h_db_c"), scoreML[jet.globalIndex()]);
-          break;
-        case 0:
-        case 3:
-          registry.fill(HIST("h_db_lf"), scoreML[jet.globalIndex()]);
-          break;
-        default:
-          LOGF(debug, "doprocessAlgorithmGNN, Unexpected origin value: %d (%d)", origin, jet.globalIndex());
+          case 2:
+            registry.fill(HIST("h_db_b"), scoreML[jet.globalIndex()]);
+            break;
+          case 1:
+            registry.fill(HIST("h_db_c"), scoreML[jet.globalIndex()]);
+            break;
+          case 0:
+          case 3:
+            registry.fill(HIST("h_db_lf"), scoreML[jet.globalIndex()]);
+            break;
+          default:
+            LOGF(debug, "doprocessAlgorithmGNN, Unexpected origin value: %d (%d)", origin, jet.globalIndex());
         }
       }
       registry.fill(HIST("h2_pt_db"), jet.pt(), scoreML[jet.globalIndex()]);
@@ -380,8 +380,7 @@ struct JetTaggerHFTask {
 
         auto modelOutput = bMlResponse.getModelOutput(gnnInput, 0);
         scoreML[jet.globalIndex()] = jettaggingutilities::Db(modelOutput, fC);
-      }
-      else {
+      } else {
         scoreML[jet.globalIndex()] = -999.;
         LOGF(debug, "doprocessAlgorithmGNN, trkFeat.size() <= 0 (%d)", jet.globalIndex());
       }

@@ -109,20 +109,23 @@ struct BJetSVParams {
 };
 
 // ONNX Runtime tensor (Ort::Value) allocator for using customized inputs of ML models.
-class TensorAllocator {
-protected:
+class TensorAllocator
+{
+ protected:
 #if !__has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
   Ort::MemoryInfo mem_info;
 #endif
-public:
+ public:
   TensorAllocator()
 #if !__has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
     : mem_info(Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault))
 #endif
-  {}
+  {
+  }
   ~TensorAllocator() = default;
   template <typename T>
-  Ort::Value createTensor(std::vector<T>& input, std::vector<int64_t>& inputShape) {
+  Ort::Value createTensor(std::vector<T>& input, std::vector<int64_t>& inputShape)
+  {
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
     return Ort::Experimental::Value::CreateTensor<T>(input.data(), input.size(), inputShape);
 #else
@@ -132,8 +135,9 @@ public:
 };
 
 // TensorAllocator for GNN b-jet tagger
-class GNNBjetAllocator : public TensorAllocator {
-private:
+class GNNBjetAllocator : public TensorAllocator
+{
+ private:
   int64_t nJetFeat;
   int64_t nTrkFeat;
   int64_t nFlav;
@@ -144,23 +148,26 @@ private:
   std::vector<float> tfJetStdev;
   std::vector<float> tfTrkMean;
   std::vector<float> tfTrkStdev;
-  
+
   std::vector<std::vector<int64_t>> edgesList;
 
   // Jet feature normalization
   template <typename T>
-  T jetFeatureTransform(T feat, int idx) const {
+  T jetFeatureTransform(T feat, int idx) const
+  {
     return (feat - tfJetMean[idx]) / tfJetStdev[idx];
   }
 
   // Track feature normalization
   template <typename T>
-  T trkFeatureTransform(T feat, int idx) const {
+  T trkFeatureTransform(T feat, int idx) const
+  {
     return (feat - tfTrkMean[idx]) / tfTrkStdev[idx];
   }
 
   // Edge input of GNN (fully-connected graph)
-  void setEdgesList(void) {
+  void setEdgesList(void)
+  {
     for (int64_t nNodes = 0; nNodes <= maxNNodes; ++nNodes) {
       std::vector<std::pair<int64_t, int64_t>> edges;
       // Generate all permutations of (i, j) where i != j
@@ -189,7 +196,8 @@ private:
 
   // Replace NaN in a vector into value
   template <typename T>
-  static int replaceNaN(std::vector<T>& vec, T value) {
+  static int replaceNaN(std::vector<T>& vec, T value)
+  {
     int numNaN = 0;
     for (auto& el : vec) {
       if (std::isnan(el)) {
@@ -200,17 +208,18 @@ private:
     return numNaN;
   }
 
-public:
+ public:
   GNNBjetAllocator() : TensorAllocator(), nJetFeat(4), nTrkFeat(13), nFlav(3), nTrkOrigin(5), maxNNodes(40) {}
-  GNNBjetAllocator(int64_t nJetFeat, int64_t nTrkFeat, int64_t nFlav, int64_t nTrkOrigin, std::vector<float>& tfJetMean, std::vector<float>& tfJetStdev, std::vector<float>& tfTrkMean, std::vector<float>& tfTrkStdev, int64_t maxNNodes=40)
-  : TensorAllocator(), nJetFeat(nJetFeat), nTrkFeat(nTrkFeat), nFlav(nFlav), nTrkOrigin(nTrkOrigin), maxNNodes(maxNNodes), tfJetMean(tfJetMean), tfJetStdev(tfJetStdev), tfTrkMean(tfTrkMean), tfTrkStdev(tfTrkStdev)
+  GNNBjetAllocator(int64_t nJetFeat, int64_t nTrkFeat, int64_t nFlav, int64_t nTrkOrigin, std::vector<float>& tfJetMean, std::vector<float>& tfJetStdev, std::vector<float>& tfTrkMean, std::vector<float>& tfTrkStdev, int64_t maxNNodes = 40)
+    : TensorAllocator(), nJetFeat(nJetFeat), nTrkFeat(nTrkFeat), nFlav(nFlav), nTrkOrigin(nTrkOrigin), maxNNodes(maxNNodes), tfJetMean(tfJetMean), tfJetStdev(tfJetStdev), tfTrkMean(tfTrkMean), tfTrkStdev(tfTrkStdev)
   {
     setEdgesList();
   }
   ~GNNBjetAllocator() = default;
 
   // Copy operator for initializing GNNBjetAllocator using Configurable values
-  GNNBjetAllocator& operator=(const GNNBjetAllocator& other) {
+  GNNBjetAllocator& operator=(const GNNBjetAllocator& other)
+  {
     nJetFeat = other.nJetFeat;
     nTrkFeat = other.nTrkFeat;
     nFlav = other.nFlav;
@@ -226,12 +235,13 @@ public:
 
   // Allocate & Return GNN input tensors (std::vector<Ort::Value>)
   template <typename T>
-  void getGNNInput(std::vector<T>& jetFeat, std::vector<std::vector<T>>& trkFeat, std::vector<T>& feat, std::vector<Ort::Value>& gnnInput) {
+  void getGNNInput(std::vector<T>& jetFeat, std::vector<std::vector<T>>& trkFeat, std::vector<T>& feat, std::vector<Ort::Value>& gnnInput)
+  {
     int64_t nNodes = trkFeat.size();
 
     std::vector<int64_t> edgesShape{2, nNodes * nNodes};
     gnnInput.emplace_back(createTensor(edgesList[nNodes], edgesShape));
-    
+
     std::vector<int64_t> featShape{nNodes, nJetFeat + nTrkFeat};
 
     int numNaN = replaceNaN(jetFeat, 0.f);
@@ -242,7 +252,7 @@ public:
       for (size_t i = 0; i < aTrkFeat.size(); ++i)
         feat.push_back(trkFeatureTransform(aTrkFeat[i], i));
     }
-    
+
     gnnInput.emplace_back(createTensor(feat, featShape));
 
     if (numNaN > 0) {
@@ -1164,16 +1174,15 @@ void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*
     if (constituent.pt() < trackPtMin) {
       continue;
     }
-    
+
     int sign = jettaggingutilities::getGeoSign(analysisJet, constituent);
 
     auto origConstit = constituent.template track_as<AnyOriginalTracks>();
 
     if (static_cast<int64_t>(tracksParams.size()) < nMaxConstit) {
       tracksParams.emplace_back(std::vector<float>{constituent.pt(), origConstit.phi(), constituent.eta(), static_cast<float>(constituent.sign()), std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), static_cast<float>(origConstit.itsNCls()), static_cast<float>(origConstit.tpcNClsFound()), static_cast<float>(origConstit.tpcNClsCrossedRows()), origConstit.itsChi2NCl(), origConstit.tpcChi2NCl()});
-    }
-    else {
-      // If there are more than nMaxConstit constituents in the jet, select only 40 constituents with the highest DCA_XY significance.
+    } else {
+      // If there are more than nMaxConstit constituents in the jet, select only nMaxConstit constituents with the highest DCA_XY significance.
       size_t minIdx = 0;
       for (size_t i = 0; i < tracksParams.size(); ++i) {
         if (tracksParams[i][4] / tracksParams[i][5] < tracksParams[minIdx][4] / tracksParams[minIdx][5])
