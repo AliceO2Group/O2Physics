@@ -1157,6 +1157,42 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
+  // correlated background
+  if (!nameStr.compare("eePionFromBplus")) {
+    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPion(2, {211, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Pion and electron pair from B+", {pronge, pronge, prongPion}, {2, 2, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeKaonFromBplusViaEverything")) {
+    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(3, {321, 0, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Kaon and electron pair from B+ via everything", {pronge, pronge, prongKaon}, {2, 2, 2});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeKaonFromBplusViaKstar")) { // specific K exited state decays
+    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(3, {321, 323, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Kaon and electron pair from B+ via Kstar", {pronge, pronge, prongKaon}, {2, 2, 2});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeKaonFromBplusViaK1270")) { // specific K exited state decays
+    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(3, {321, 10323, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Kaon and electron pair from B+ via K1270", {pronge, pronge, prongKaon}, {2, 2, 2});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeKaonFromBplusViaK1400")) { // specific K exited state decays
+    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(3, {321, 20323, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Kaon and electron pair from B+ via K1400", {pronge, pronge, prongKaon}, {2, 2, 2});
+    return signal;
+  }
+
   if (!nameStr.compare("Bplus")) {
     MCProng prong(1, {521}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "B+", {prong}, {-1});
@@ -1182,6 +1218,126 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     MCProng prong1(3, {0, 0, 503}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     MCProng prong2(2, {0, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal("everythingFromBeautyANDeverythingFromEverythingFromBeautyPairs", "Everything beauty and everything from everything from beauty hadrons pair", {prong1, prong2}, {2, 1});
+    return signal;
+  }
+
+  //------------------------------------------------------------------------------------
+
+  if (!nameStr.compare("D0")) {
+    MCProng prong(1, {Pdg::kD0}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "D0", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiFromD0")) {
+    MCProng prongKaon(2, {321, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongPion(2, {211, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon and pion pair from D0", {prongKaon, prongPion}, {1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("Dcharged")) {
+    MCProng prong(1, {Pdg::kDPlus}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "D+/-", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("Dplus")) {
+    MCProng prong(1, {Pdg::kDPlus}, {false}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "D+", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("Dminus")) {
+    MCProng prong(1, {-Pdg::kDPlus}, {false}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "D+", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiPiFromDcharged")) {
+    MCProng prongKaon(2, {321, Pdg::kDPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongPion(2, {211, Pdg::kDPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon pion pion triplet from D+/-", {prongKaon, prongPion, prongPion}, {1, 1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiPiFromDplus")) {
+    MCProng prongKaon(2, {-321, Pdg::kDPlus}, {false, false}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongPion(2, {211, Pdg::kDPlus}, {false, false}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon pion pion triplet from D+", {prongKaon, prongPion, prongPion}, {1, 1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiPiFromDminus")) {
+    MCProng prongKaon(2, {321, -Pdg::kDPlus}, {false, false}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongPion(2, {-211, -Pdg::kDPlus}, {false, false}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon pion pion triplet from D-", {prongKaon, prongPion, prongPion}, {1, 1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("Dstar")) {
+    MCProng prong(1, {Pdg::kDStar}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "D*", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("DstarPlus")) {
+    MCProng prong(1, {Pdg::kDStar}, {false}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "D*+", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("DstarMinus")) {
+    MCProng prong(1, {-Pdg::kDStar}, {false}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "D*-", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("pionFromDstar")) {
+    MCProng prong(2, {211, Pdg::kDStar}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Pions from D* decays", {prong}, {1});
+    return signal;
+  }
+  if (!nameStr.compare("D0FromDstar")) {
+    MCProng prong(2, {Pdg::kD0, Pdg::kDStar}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "D0 from D* decays", {prong}, {1});
+    return signal;
+  }
+  if (!nameStr.compare("KFromD0FromDstar")) {
+    MCProng prong(3, {321, Pdg::kD0, Pdg::kDStar}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Kaons from D0 from D* decays", {prong}, {1});
+    return signal;
+  }
+  if (!nameStr.compare("PiFromD0FromDstar")) {
+    MCProng prong(3, {211, Pdg::kD0, Pdg::kDStar}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Pions from D0 from D* decays", {prong}, {1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiFromD0FromDstar")) {
+    MCProng prongKaon(3, {321, Pdg::kD0, Pdg::kDStar}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPion(3, {321, Pdg::kD0, Pdg::kDStar}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Kaon and pion pair from D0 from D* decay", {prongKaon, prongPion}, {1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiPiFromD0FromDstar")) {
+    MCProng prongKaon(3, {321, Pdg::kD0, Pdg::kDStar}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPionSecondary(3, {211, Pdg::kD0, Pdg::kDStar}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPion(2, {211, Pdg::kDStar}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon pion pion triplet from D*", {prongKaon, prongPionSecondary, prongPion}, {2, 2, 1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiPiFromD0FromDstarPlus")) {
+    MCProng prongKaon(3, {-321, Pdg::kD0, Pdg::kDStar}, {false, false, false}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPionSecondary(3, {211, Pdg::kD0, Pdg::kDStar}, {false, false, false}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPion(2, {211, Pdg::kDStar}, {false, false}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon pion pion triplet from D*+", {prongKaon, prongPionSecondary, prongPion}, {2, 2, 1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiPiFromD0FromDstarMinus")) {
+    MCProng prongKaon(3, {321, Pdg::kD0, Pdg::kDStar}, {false, false, false}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPionSecondary(3, {-211, Pdg::kD0, Pdg::kDStar}, {false, false, false}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPion(2, {-211, Pdg::kDStar}, {false, false}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon pion pion triplet from D*-", {prongKaon, prongPionSecondary, prongPion}, {2, 2, 1});
+    return signal;
+  }
+  if (!nameStr.compare("KFromDplus")) {
+    MCProng prong(2, {321, Pdg::kDPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Kaons from D+/- decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("LambdaC")) {
+    MCProng prong(1, {Pdg::kLambdaCPlus}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Lambda_c", {prong}, {-1});
     return signal;
   }
 

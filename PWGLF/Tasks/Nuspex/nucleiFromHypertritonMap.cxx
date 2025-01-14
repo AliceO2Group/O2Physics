@@ -46,7 +46,7 @@ using std::array;
 
 using MCTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::McTrackLabels>;
 
-struct he3FromHypertritonMap {
+struct nucleiFromHypertritonMap {
   HistogramRegistry registryMC{
     "registryMC",
     {},
@@ -70,28 +70,40 @@ struct he3FromHypertritonMap {
   Configurable<float> max_pt{"max_pt", 10.0f, "maximum pt of the tracks"};
   Configurable<int> nbin_pt{"nbin_pt", 50, "number of pt bins"};
   Configurable<int> nbin_dca = {"nbin_dca", 50, "number of DCA bins"};
+  Configurable<bool> saveHelium{"saveHelium", false, "Save helium candidates"};
 
+  int AntideuteronPDG = -1000010020;
   int AntihePDG = -1000020030;
   int AntiHypertritonPDG = -1010010030;
   int AntiHyperHelium4PDG = -1010020040;
 
   void init(InitContext const&)
   {
-    registryMC.add("he3SecPtRec_from_hypertriton", "he3SecPtRec_from_hypertriton", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
-    registryMC.add("he3SecPtRec_from_hyperHe4", "he3SecPtRec_from_hyperHe4", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
     registryMC.add("hypertritonPtgen", "hypertritonPtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
-    registryMC.add("hyperHe4Ptgen", "hyperHe4PtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+    if (saveHelium) {
+      registryMC.add("he3SecPtRec_from_hypertriton", "he3SecPtRec_from_hypertriton", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+      registryMC.add("hyperHe4Ptgen", "hyperHe4PtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+      registryMC.add("he3SecPtRec_from_hyperHe4", "he3SecPtRec_from_hyperHe4", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+    } else {
+      registryMC.add("deutSecPtRec_from_hypertriton", "deutSecPtRec_from_hypertriton", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+    }
   }
 
-  void processMC(aod::McParticles const& mcParticles, const MCTracks& tracks)
+  void processMC(aod::McParticles const& /*mcParticles*/, const MCTracks& tracks)
   {
     for (const auto& track : tracks) {
       if (!track.has_mcParticle()) {
         continue;
       }
       auto mcparticle = track.mcParticle();
-      if (mcparticle.pdgCode() != AntihePDG || mcparticle.isPhysicalPrimary()) {
-        continue;
+      if (saveHelium) {
+        if (mcparticle.pdgCode() != AntihePDG || mcparticle.isPhysicalPrimary()) {
+          continue;
+        }
+      } else {
+        if (mcparticle.pdgCode() != AntideuteronPDG || mcparticle.isPhysicalPrimary()) {
+          continue;
+        }
       }
 
       for (auto& motherparticle : mcparticle.mothers_as<aod::McParticles>()) {
@@ -109,8 +121,12 @@ struct he3FromHypertritonMap {
             continue;
           }
           if (motherparticle.pdgCode() == AntiHypertritonPDG) {
-            registryMC.fill(HIST("he3SecPtRec_from_hypertriton"), 2 * track.pt());
             registryMC.fill(HIST("hypertritonPtgen"), motherparticle.pt());
+            if (saveHelium) {
+              registryMC.fill(HIST("he3SecPtRec_from_hypertriton"), 2 * track.pt());
+            } else {
+              registryMC.fill(HIST("deutSecPtRec_from_hypertriton"), track.pt());
+            }
           }
           if (motherparticle.pdgCode() == AntiHyperHelium4PDG) {
             registryMC.fill(HIST("he3SecPtRec_from_hyperHe4"), 2 * track.pt());
@@ -120,10 +136,10 @@ struct he3FromHypertritonMap {
       }
     }
   }
-  PROCESS_SWITCH(he3FromHypertritonMap, processMC, "Process MC", false);
+  PROCESS_SWITCH(nucleiFromHypertritonMap, processMC, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<he3FromHypertritonMap>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<nucleiFromHypertritonMap>(cfgc)};
 }

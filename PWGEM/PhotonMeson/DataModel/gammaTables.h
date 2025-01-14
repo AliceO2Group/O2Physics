@@ -113,6 +113,7 @@ namespace v0leg
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
+DECLARE_SOA_COLUMN(IsMoved, isMoved, bool);        //! moved by drift manager. relevant to TPConly tracks
 DECLARE_SOA_COLUMN(Px, px, float);                 //! Px at SV
 DECLARE_SOA_COLUMN(Py, py, float);                 //! Py at SV
 DECLARE_SOA_COLUMN(Pz, pz, float);                 //! Pz at SV
@@ -229,7 +230,7 @@ DECLARE_SOA_COLUMN(CosPA, cospa, float);                                //!
 DECLARE_SOA_COLUMN(PCA, pca, float);                                    //!
 DECLARE_SOA_COLUMN(Alpha, alpha, float);                                //!
 DECLARE_SOA_COLUMN(QtArm, qtarm, float);                                //!
-DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float);                  // Chi2 / NDF of the reconstructed V0
+DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float);                  //! Chi2 / NDF of the reconstructed V0
 DECLARE_SOA_COLUMN(SigmaPx2, sigmaPx2, float);                          //! error^2 of px in covariant matrix
 DECLARE_SOA_COLUMN(SigmaPy2, sigmaPy2, float);                          //! error^2 of py in covariant matrix
 DECLARE_SOA_COLUMN(SigmaPz2, sigmaPz2, float);                          //! error^2 of pz in covariant matrix

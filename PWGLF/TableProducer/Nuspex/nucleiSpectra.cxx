@@ -42,6 +42,7 @@
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/Tools/TrackTuner.h"
+#include "Common/Core/RecoDecay.h"
 
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -205,6 +206,7 @@ std::shared_ptr<TH2> hDeltaP[2][5];
 std::shared_ptr<THnSparse> hFlowHists[2][5];
 std::shared_ptr<THnSparse> hDCAHists[2][5];
 std::shared_ptr<THnSparse> hMatchingStudy[2];
+std::shared_ptr<THn> hMatchingStudyHadrons[2];
 o2::base::MatLayerCylSet* lut = nullptr;
 
 std::vector<NucleusCandidate> candidates;
@@ -319,18 +321,6 @@ struct nucleiSpectra {
   using CollWithQvec = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs>::iterator;
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-
-  double getPhiInRange(double phi)
-  {
-    double result = phi;
-    while (result < 0) {
-      result = result + 2. * TMath::Pi() / 2;
-    }
-    while (result > 2. * TMath::Pi() / 2) {
-      result = result - 2. * TMath::Pi() / 2;
-    }
-    return result;
-  }
 
   double computeAbsoDecL(aod::McParticles::iterator particle)
   {
@@ -467,7 +457,8 @@ struct nucleiSpectra {
 
     if (doprocessMatching) {
       for (int iC{0}; iC < 2; ++iC) {
-        nuclei::hMatchingStudy[iC] = spectra.add<THnSparse>(fmt::format("hMatchingStudy{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;n#sigma_{ITS};n#sigma{TPC};n#sigma_{TOF}", HistType::kTHnSparseF, {{20, 1., 9.}, {10, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {50, -5., 5.}, {50, -5., 5.}, {50, 0., 1.}});
+        nuclei::hMatchingStudy[iC] = spectra.add<THnSparse>(fmt::format("hMatchingStudy{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;n#sigma_{ITS};n#sigma{TPC};n#sigma_{TOF};Centrality", HistType::kTHnSparseF, {{20, 1., 9.}, {10, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {50, -5., 5.}, {50, -5., 5.}, {50, 0., 1.}, {8, 0., 80.}});
+        nuclei::hMatchingStudyHadrons[iC] = spectra.add<THn>(fmt::format("hMatchingStudyHadrons{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;Centrality;Track type", HistType::kTHnF, {{23, 0.4, 5.}, {20, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {8, 0., 80.}, {2, -0.5, 1.5}});
       }
     }
 
@@ -646,13 +637,13 @@ struct nucleiSpectra {
 
                 if (cfgFlowHist->get(iS) && doprocessDataFlow) {
                   if constexpr (std::is_same<Tcoll, CollWithEP>::value) {
-                    auto deltaPhiInRange = getPhiInRange(fvector.phi() - collision.psiFT0C());
+                    auto deltaPhiInRange = RecoDecay::constrainAngle(fvector.phi() - collision.psiFT0C(), 0.f, 2);
                     auto v2 = std::cos(2.0 * deltaPhiInRange);
                     nuclei::hFlowHists[iC][iS]->Fill(collision.centFT0C(), fvector.pt(), nSigma[0][iS], tofMasses[iS], v2, track.itsNCls(), track.tpcNClsFound());
                   }
                 } else if (cfgFlowHist->get(iS) && doprocessDataFlowAlternative) {
                   if constexpr (std::is_same<Tcoll, CollWithQvec>::value) {
-                    auto deltaPhiInRange = getPhiInRange(fvector.phi() - computeEventPlane(collision.qvecFT0CIm(), collision.qvecFT0CRe()));
+                    auto deltaPhiInRange = RecoDecay::constrainAngle(fvector.phi() - computeEventPlane(collision.qvecFT0CIm(), collision.qvecFT0CRe()), 0.f, 2);
                     auto v2 = std::cos(2.0 * deltaPhiInRange);
                     nuclei::hFlowHists[iC][iS]->Fill(collision.centFT0C(), fvector.pt(), nSigma[0][iS], tofMasses[iS], v2, track.itsNCls(), track.tpcNClsFound());
                   }
@@ -901,24 +892,29 @@ struct nucleiSpectra {
   }
   PROCESS_SWITCH(nucleiSpectra, processMC, "MC analysis", false);
 
-  void processMatching(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
+  void processMatching(soa::Join<aod::Collisions, aod::EvSels, aod::EPCalibrationTables, aod::CentFT0Cs>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
-    if (!eventSelection(collision)) {
+    if (!eventSelection(collision) || !collision.triggereventep()) {
       return;
     }
+    const float centrality = collision.centFT0C();
     o2::aod::ITSResponse itsResponse;
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (std::abs(track.eta()) > cfgCutEta ||
           track.itsNCls() < 7 ||
-          track.itsChi2NCl() > 36.f ||
-          itsResponse.nSigmaITS<o2::track::PID::Helium3>(track) < -1.) {
+          track.itsChi2NCl() > 36.f) {
         continue;
       }
       double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams->get(4, 0u), cfgBetheBlochParams->get(4, 1u), cfgBetheBlochParams->get(4, 2u), cfgBetheBlochParams->get(4, 3u), cfgBetheBlochParams->get(4, 4u))};
       double expSigma{expBethe * cfgBetheBlochParams->get(4, 5u)};
       double nSigmaTPC{(track.tpcSignal() - expBethe) / expSigma};
       int iC = track.signed1Pt() > 0;
-      nuclei::hMatchingStudy[iC]->Fill(track.pt() * 2, track.phi(), track.eta(), itsResponse.nSigmaITS<o2::track::PID::Helium3>(track), nSigmaTPC, o2::pid::tof::Beta::GetBeta(track));
+      const float pt = track.pt();
+      const float phi = 2.f * RecoDecay::constrainAngle(track.phi() - collision.psiFT0C(), 0.f, 2);
+      nuclei::hMatchingStudyHadrons[iC]->Fill(pt, phi, track.eta(), centrality, track.hasTPC());
+      if (itsResponse.nSigmaITS<o2::track::PID::Helium3>(track) > -1.) {
+        nuclei::hMatchingStudy[iC]->Fill(pt * 2, phi, track.eta(), itsResponse.nSigmaITS<o2::track::PID::Helium3>(track), nSigmaTPC, o2::pid::tof::Beta::GetBeta(track), centrality);
+      }
     }
   }
 

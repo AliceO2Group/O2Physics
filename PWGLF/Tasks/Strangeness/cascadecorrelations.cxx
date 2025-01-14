@@ -720,24 +720,24 @@ struct CascadeCorrelations {
           if (trigger.isSelected() >= 2) {
             if (trigger.sign() > 0 && trigger.bachelorId() == posIdAssoc) {
               // K+ from trigger Omega is the same as proton from assoc lambda
-              registry.fill(HIST("hMEAutoCorrelationOS"), 1);
+              registry.fill(HIST("MixedEvents/hMEAutoCorrelationOS"), 1);
               continue;
             }
             if (trigger.sign() < 0 && trigger.bachelorId() == negIdAssoc) {
               // K- from trigger Omega is the same as antiproton from assoc antilambda
-              registry.fill(HIST("hMEAutoCorrelationOS"), -1);
+              registry.fill(HIST("MixedEvents/hMEAutoCorrelationOS"), -1);
               continue;
             }
           }
           if (assoc.isSelected() >= 2) {
             if (assoc.sign() > 0 && assoc.bachelorId() == posIdTrigg) {
               // K+ from assoc Omega is the same as proton from trigger lambda
-              registry.fill(HIST("hMEAutoCorrelationOS"), 1);
+              registry.fill(HIST("MixedEvents/hMEAutoCorrelationOS"), 1);
               continue;
             }
             if (assoc.sign() < 0 && assoc.bachelorId() == negIdTrigg) {
               // K- from assoc Omega is the same as antiproton from trigger antilambda
-              registry.fill(HIST("hMEAutoCorrelationOS"), -1);
+              registry.fill(HIST("MixedEvents/hMEAutoCorrelationOS"), -1);
               continue;
             }
           }
@@ -777,7 +777,7 @@ struct CascadeCorrelations {
           // make sure to check for autocorrelations - only possible in same-sign correlations (if PID is correct)
           if (posIdTrigg == posIdAssoc && negIdTrigg == negIdAssoc) {
             // LOGF(info, "same v0 in SS correlation! %d %d", v0dataTrigg.v0Id(), v0dataAssoc.v0Id());
-            registry.fill(HIST("hMEAutoCorrelation"), 0);
+            registry.fill(HIST("MixedEvents/hMEAutoCorrelation"), 0);
             continue;
           }
           int bachIdTrigg = trigger.bachelorId();
@@ -785,25 +785,25 @@ struct CascadeCorrelations {
 
           if (bachIdTrigg == bachIdAssoc) {
             // LOGF(info, "same bachelor in SS correlation! %d %d", bachIdTrigg, bachIdAssoc);
-            registry.fill(HIST("hMEAutoCorrelation"), 1);
+            registry.fill(HIST("MixedEvents/hMEAutoCorrelation"), 1);
             continue;
           }
           // check for same tracks in v0's of cascades
           if (negIdTrigg == negIdAssoc || posIdTrigg == posIdAssoc) {
             // LOGF(info, "cascades have a v0-track in common in SS correlation!");
-            registry.fill(HIST("hMEAutoCorrelation"), 2);
+            registry.fill(HIST("MixedEvents/hMEAutoCorrelation"), 2);
             continue;
           }
           if (trigger.sign() < 0) { // neg cascade
             if (negIdTrigg == bachIdAssoc || negIdAssoc == bachIdTrigg) {
               // LOGF(info, "bach of casc == v0-pion of other casc in neg SS correlation!");
-              registry.fill(HIST("hMEAutoCorrelation"), 3);
+              registry.fill(HIST("MixedEvents/hMEAutoCorrelation"), 3);
               continue;
             }
           } else { // pos cascade
             if (posIdTrigg == bachIdAssoc || posIdAssoc == bachIdTrigg) {
               // LOGF(info, "bach of casc == v0-pion of other casc in pos SS correlation!");
-              registry.fill(HIST("hMEAutoCorrelation"), 3);
+              registry.fill(HIST("MixedEvents/hMEAutoCorrelation"), 3);
               continue;
             }
           }

@@ -157,7 +157,7 @@ struct f1protonreducedtable {
                                              {"hEta", "hEta", {HistType::kTH1F, {{20, -1.0f, 1.0f}}}},
                                              {"hNsigmaPtpionTPC", "hNsigmaPtpionTPC", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtpionTOF", "hNsigmaPtpionTOF", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
-                                             {"hNsigmaPtkaonTPC", "hNsigmaPtkaonTPC", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
+                                             {"hNsigmaPtkaonTPC", "hNsigmaPtkaonTPC", {HistType::kTH3F, {{200, -10.0f, 10.0f}, {200, -20.0f, 20.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtkaonTOF", "hNsigmaPtkaonTOF", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtprotonTPC", "hNsigmaPtprotonTPC", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtprotonTOF", "hNsigmaPtprotonTOF", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
@@ -513,27 +513,33 @@ struct f1protonreducedtable {
     std::vector<float> PionCharge = {};
     std::vector<float> KaonCharge = {};
     std::vector<float> ProtonCharge = {};
-    std::vector<float> ProtonChargeFinal = {};
+    // std::vector<float> ProtonChargeFinal = {};
 
     // keep TPC PID of proton
     std::vector<float> ProtonTPCNsigma = {};
-    std::vector<float> ProtonTPCNsigmaFinal = {};
+    // std::vector<float> ProtonTPCNsigmaFinal = {};
 
     // keep TOF PID of proton
     std::vector<float> ProtonTOFNsigma = {};
-    std::vector<float> ProtonTOFNsigmaFinal = {};
+    // std::vector<float> ProtonTOFNsigmaFinal = {};
 
     // keep TOF Hit of proton
     std::vector<int> ProtonTOFHit = {};
-    std::vector<int> ProtonTOFHitFinal = {};
+    // std::vector<int> ProtonTOFHitFinal = {};
 
     // keep TOF Hit of pion
     std::vector<int> PionTOFHit = {};
     std::vector<int> PionTOFHitFinal = {};
+    std::vector<float> PionTPC = {};
+    std::vector<float> PionTPCFinal = {};
 
     // keep TOF Hit of kaon
     std::vector<int> KaonTOFHit = {};
     std::vector<int> KaonTOFHitFinal = {};
+    std::vector<float> KaonTPC = {};
+    std::vector<float> KaonTPCFinal = {};
+    std::vector<float> KaonTPCPionHypo = {};
+    std::vector<float> KaonTPCPionHypoFinal = {};
 
     // keep kaon-kshort mass of f1resonance
     std::vector<float> f1kaonkshortmass = {};
@@ -542,7 +548,8 @@ struct f1protonreducedtable {
     std::vector<float> f1signal = {};
 
     // Prepare vectors for different species
-    std::vector<ROOT::Math::PtEtaPhiMVector> protons, kaons, pions, kshorts, f1resonance, f1resonanced1, f1resonanced2, f1resonanced3, protonsfinal;
+    std::vector<ROOT::Math::PtEtaPhiMVector> protons, kaons, pions, kshorts, f1resonance, f1resonanced1, f1resonanced2, f1resonanced3;
+    // , protonsfinal;
     float kstar = 999.f;
 
     currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
@@ -577,8 +584,8 @@ struct f1protonreducedtable {
         zorroSelected = true;
       }
       if (zorroSelected) {
+        hProcessedEvents->Fill(1.5);
         for (auto& track : tracks) {
-          hProcessedEvents->Fill(1.5);
           if (!isSelectedTrack(track))
             continue;
           qaRegistry.fill(HIST("hDCAxy"), track.dcaXY());
@@ -617,9 +624,11 @@ struct f1protonreducedtable {
             auto PionTOF = 0;
             if (track.sign() > 0) {
               qaRegistry.fill(HIST("hNsigmaPtpionTPC"), nTPCSigmaP[0], track.pt());
+              PionTPC.push_back(nTPCSigmaP[0]);
             }
             if (track.sign() < 0) {
               qaRegistry.fill(HIST("hNsigmaPtpionTPC"), nTPCSigmaN[0], track.pt());
+              PionTPC.push_back(nTPCSigmaN[0]);
             }
             if (track.hasTOF()) {
               qaRegistry.fill(HIST("hNsigmaPtpionTOF"), track.tofNSigmaPi(), track.pt());
@@ -635,10 +644,14 @@ struct f1protonreducedtable {
             KaonCharge.push_back(track.sign());
             auto KaonTOF = 0;
             if (track.sign() > 0) {
-              qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaP[1], track.pt());
+              qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaP[1], nTPCSigmaP[0], track.pt());
+              KaonTPC.push_back(nTPCSigmaP[1]);
+              KaonTPCPionHypo.push_back(nTPCSigmaP[0]);
             }
             if (track.sign() < 0) {
-              qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaN[1], track.pt());
+              qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaN[1], nTPCSigmaN[0], track.pt());
+              KaonTPC.push_back(nTPCSigmaN[1]);
+              KaonTPCPionHypo.push_back(nTPCSigmaN[0]);
             }
             if (track.hasTOF()) {
               qaRegistry.fill(HIST("hNsigmaPtkaonTOF"), track.tofNSigmaKa(), track.pt());
@@ -741,27 +754,22 @@ struct f1protonreducedtable {
                 F1KshortDaughterNegativeIndex.push_back(KshortNegDaughIndex.at(i3));
                 PionTOFHitFinal.push_back(PionTOFHit.at(i1)); // Pion TOF Hit
                 KaonTOFHitFinal.push_back(KaonTOFHit.at(i2)); // Kaon TOF Hit
+                PionTPCFinal.push_back(PionTPC.at(i1));       // Pion TPC
+                KaonTPCFinal.push_back(KaonTPC.at(i2));       // Kaon TPC
+                KaonTPCPionHypoFinal.push_back(KaonTPCPionHypo.at(i2)); // Kaon TPC
                 if (pairsign == 1) {
                   qaRegistry.fill(HIST("hInvMassf1"), F1Vector.M(), F1Vector.Pt());
                   numberF1 = numberF1 + 1;
                   for (auto iproton = protons.begin(); iproton != protons.end(); ++iproton) {
                     auto i4 = std::distance(protons.begin(), iproton);
-                    ProtonVectorDummy = protons.at(i4);
-                    if (numberF1 == 1) {
-                      //////////// Fill final proton information after pairing//////////
-                      ROOT::Math::PtEtaPhiMVector temp(ProtonVectorDummy.Pt(), ProtonVectorDummy.Eta(), ProtonVectorDummy.Phi(), massPr);
-                      protonsfinal.push_back(temp);                           // 4 vector
-                      ProtonChargeFinal.push_back(ProtonCharge.at(i4));       // Charge
-                      ProtonTOFHitFinal.push_back(ProtonTOFHit.at(i4));       // TOF Hit
-                      ProtonTOFNsigmaFinal.push_back(ProtonTOFNsigma.at(i4)); // Nsigma TOF
-                      ProtonTPCNsigmaFinal.push_back(ProtonTPCNsigma.at(i4)); // Nsigma TPC
-                      F1ProtonIndex.push_back(ProtonIndex.at(i4));            // proton index for share track
-                    }
-
-                    if ((ProtonIndex.at(i4) == PionIndex.at(i1)) || (ProtonIndex.at(i4) == KaonIndex.at(i2)) || (ProtonIndex.at(i4) == KshortPosDaughIndex.at(i3)) || (ProtonIndex.at(i4) == KshortNegDaughIndex.at(i3))) {
+                    if (ProtonIndex.at(i4) == PionIndex.at(i1))
                       continue;
-                    }
-
+                    if (ProtonIndex.at(i4) == KaonIndex.at(i2))
+                      continue;
+                    if (ProtonIndex.at(i4) == KshortPosDaughIndex.at(i3))
+                      continue;
+                    if (ProtonIndex.at(i4) == KshortNegDaughIndex.at(i3))
+                      continue;
                     kstar = getkstar(F1Vector, *iproton);
                     qaRegistry.fill(HIST("hkstarDist"), kstar);
                     if (kstar > cMaxRelMom) {
@@ -769,8 +777,19 @@ struct f1protonreducedtable {
                     }
                     qaRegistry.fill(HIST("hInvMassf1kstar"), F1Vector.M(), F1Vector.Pt(), kstar);
                     keepEventF1Proton = true;
+                    /*ProtonVectorDummy = protons.at(i4);
+                    if (numberF1 == 1 && keepEventF1Proton) {
+                                  //////////// Fill final proton information after pairing//////////
+                                  ROOT::Math::PtEtaPhiMVector temp(ProtonVectorDummy.Pt(), ProtonVectorDummy.Eta(), ProtonVectorDummy.Phi(), massPr);
+                                  protonsfinal.push_back(temp);                           // 4 vector
+                                  ProtonChargeFinal.push_back(ProtonCharge.at(i4));       // Charge
+                                  ProtonTOFHitFinal.push_back(ProtonTOFHit.at(i4));       // TOF Hit
+                                  ProtonTOFNsigmaFinal.push_back(ProtonTOFNsigma.at(i4)); // Nsigma TOF
+                                  ProtonTPCNsigmaFinal.push_back(ProtonTPCNsigma.at(i4)); // Nsigma TPC
+                                  F1ProtonIndex.push_back(ProtonIndex.at(i4));            // proton index for share track
+                      }*/
                   }
-                }
+                } // pair sign
               }
             }
           }
@@ -782,7 +801,8 @@ struct f1protonreducedtable {
       qaRegistry.fill(HIST("hEventstat"), 1.5);
       if (keepEventF1Proton) {
         qaRegistry.fill(HIST("hEventstat"), 2.5);
-        auto eventspherocity = ComputeSpherocity(tracks, trackSphMin, trackSphDef);
+        auto eventspherocity = 0.0;
+        // ComputeSpherocity(tracks, trackSphMin, trackSphDef);
         /////////// Fill collision table///////////////
         redf1pevents(bc.globalBC(), currentRunNumber, bc.timestamp(), collision.posZ(), collision.numContrib(), eventspherocity);
         auto indexEvent = redf1pevents.lastIndex();
@@ -793,13 +813,13 @@ struct f1protonreducedtable {
           F1d1dummy = f1resonanced1.at(i5);
           F1d2dummy = f1resonanced2.at(i5);
           F1d3dummy = f1resonanced3.at(i5);
-          f1track(indexEvent, f1signal.at(i5), F1VectorDummy.Px(), F1VectorDummy.Py(), F1VectorDummy.Pz(), F1d1dummy.Px(), F1d1dummy.Py(), F1d1dummy.Pz(), F1d2dummy.Px(), F1d2dummy.Py(), F1d2dummy.Pz(), F1d3dummy.Px(), F1d3dummy.Py(), F1d3dummy.Pz(), PionTOFHitFinal.at(i5), KaonTOFHitFinal.at(i5), F1VectorDummy.M(), f1kaonkshortmass.at(i5), F1PionIndex.at(i5), F1KaonIndex.at(i5), F1KshortDaughterPositiveIndex.at(i5), F1KshortDaughterNegativeIndex.at(i5));
+          f1track(indexEvent, f1signal.at(i5), F1VectorDummy.Px(), F1VectorDummy.Py(), F1VectorDummy.Pz(), F1d1dummy.Px(), F1d1dummy.Py(), F1d1dummy.Pz(), F1d2dummy.Px(), F1d2dummy.Py(), F1d2dummy.Pz(), F1d3dummy.Px(), F1d3dummy.Py(), F1d3dummy.Pz(), PionTOFHitFinal.at(i5), KaonTOFHitFinal.at(i5), PionTPCFinal.at(i5), KaonTPCFinal.at(i5), KaonTPCPionHypoFinal.at(i5), F1VectorDummy.M(), f1kaonkshortmass.at(i5), F1PionIndex.at(i5), F1KaonIndex.at(i5), F1KshortDaughterPositiveIndex.at(i5), F1KshortDaughterNegativeIndex.at(i5));
         }
         //// Fill track table for proton//////////////////
-        for (auto iproton = protonsfinal.begin(); iproton != protonsfinal.end(); ++iproton) {
-          auto i6 = std::distance(protonsfinal.begin(), iproton);
-          ProtonVectorDummy2 = protonsfinal.at(i6);
-          protontrack(indexEvent, ProtonChargeFinal.at(i6), ProtonVectorDummy2.Px(), ProtonVectorDummy2.Py(), ProtonVectorDummy2.Pz(), ProtonTPCNsigmaFinal.at(i6), ProtonTOFHitFinal.at(i6), ProtonTOFNsigmaFinal.at(i6), F1ProtonIndex.at(i6));
+        for (auto iproton = protons.begin(); iproton != protons.end(); ++iproton) {
+          auto i6 = std::distance(protons.begin(), iproton);
+          ProtonVectorDummy2 = protons.at(i6);
+          protontrack(indexEvent, ProtonCharge.at(i6), ProtonVectorDummy2.Px(), ProtonVectorDummy2.Py(), ProtonVectorDummy2.Pz(), ProtonTPCNsigma.at(i6), ProtonTOFHit.at(i6), ProtonTOFNsigma.at(i6), ProtonIndex.at(i6));
         }
       }
     }

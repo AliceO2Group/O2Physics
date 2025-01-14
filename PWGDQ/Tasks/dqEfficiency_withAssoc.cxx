@@ -29,6 +29,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisHelpers.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/Core/HistogramManager.h"
@@ -71,6 +72,7 @@ DECLARE_SOA_COLUMN(MuonAmbiguityOutOfBunch, muonAmbiguityOutOfBunch, int8_t);   
 DECLARE_SOA_BITMAP_COLUMN(IsBarrelSelectedPrefilter, isBarrelSelectedPrefilter, 32); //! Barrel prefilter decisions (joinable to ReducedTracksAssoc)
 // Bcandidate columns for ML analysis of B->Jpsi+K
 DECLARE_SOA_COLUMN(massBcandidate, MBcandidate, float);
+DECLARE_SOA_COLUMN(deltaMassBcandidate, deltaMBcandidate, float);
 DECLARE_SOA_COLUMN(pTBcandidate, PtBcandidate, float);
 DECLARE_SOA_COLUMN(LxyBcandidate, lxyBcandidate, float);
 DECLARE_SOA_COLUMN(LxyzBcandidate, lxyzBcandidate, float);
@@ -89,7 +91,7 @@ DECLARE_SOA_TABLE(BarrelAmbiguities, "AOD", "DQBARRELAMB", dqanalysisflags::Barr
 DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);                                                       //!  joinable to ReducedMuonsAssoc
 DECLARE_SOA_TABLE(MuonAmbiguities, "AOD", "DQMUONAMB", dqanalysisflags::MuonAmbiguityInBunch, dqanalysisflags::MuonAmbiguityOutOfBunch);         //!  joinable to ReducedMuonTracks
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsBarrelSelectedPrefilter);                                                  //!  joinable to ReducedTracksAssoc
-DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::DCAxyzBetweenProngs, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate, dqanalysisflags::McFlag);
+DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBcandidate, dqanalysisflags::deltaMassBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::DCAxyzBetweenProngs, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate, dqanalysisflags::McFlag);
 } // namespace o2::aod
 
 // Declarations of various short names
@@ -106,6 +108,7 @@ using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBa
 using MyBarrelTracksWithCovWithAmbiguities = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities, aod::ReducedTracksBarrelLabels>;
 using MyBarrelTracksWithCovWithAmbiguitiesWithColl = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities, aod::ReducedTracksBarrelLabels, aod::ReducedTracksBarrelInfo>;
 using MyDielectronCandidates = soa::Join<aod::Dielectrons, aod::DielectronsExtra>;
+using MyDitrackCandidates = soa::Join<aod::Ditracks, aod::DitracksExtra>;
 using MyDimuonCandidates = soa::Join<aod::Dimuons, aod::DimuonsExtra>;
 using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsLabels>;
 using MyMuonTracksWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov, aod::ReducedMuonsLabels>;
@@ -215,7 +218,9 @@ struct AnalysisEventSelection {
       // Reset the fValues array and fill event observables
       VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
       VarManager::FillEvent<TEventFillMap>(event);
-      VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent());
+      if (event.has_reducedMCevent()) {
+        VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent());
+      }
 
       bool decision = false;
       // if QA is requested fill histograms before event selections
@@ -1502,6 +1507,7 @@ struct AnalysisSameEventPairing {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
+      uint8_t evSel = event.isEventSelected_raw();
       // Reset the fValues array
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
@@ -1586,9 +1592,9 @@ struct AnalysisSameEventPairing {
           }
           auto t1 = a1.template reducedmuon_as<TTracks>();
           auto t2 = a2.template reducedmuon_as<TTracks>();
-          if (t1.matchMCHTrackId() == t2.matchMCHTrackId())
+          if (t1.matchMCHTrackId() == t2.matchMCHTrackId() && t1.matchMCHTrackId() >= 0)
             continue;
-          if (t1.matchMFTTrackId() == t2.matchMFTTrackId())
+          if (t1.matchMFTTrackId() == t2.matchMFTTrackId() && t1.matchMFTTrackId() >= 0)
             continue;
           sign1 = t1.sign();
           sign2 = t2.sign();
@@ -1644,6 +1650,7 @@ struct AnalysisSameEventPairing {
             dimuonsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
             if (fConfigOptions.flatTables.value) {
               dimuonAllList(event.posX(), event.posY(), event.posZ(), event.numContrib(),
+                            event.selection_raw(), evSel,
                             -999., -999., -999.,
                             VarManager::fgValues[VarManager::kMass],
                             mcDecision,
@@ -1878,6 +1885,922 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
 };
 
+// Run pairing for resonance with legs fulfilling separate cuts (asymmetric decay channel)
+struct AnalysisAsymmetricPairing {
+
+  Produces<aod::Ditracks> ditrackList;
+  Produces<aod::DitracksExtra> ditrackExtraList;
+
+  o2::base::MatLayerCylSet* fLUT = nullptr;
+  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
+
+  // Output objects
+  OutputObj<THashList> fOutputList{"output"};
+
+  // Configurables
+  Configurable<string> fConfigLegCuts{"cfgLegCuts", "", "<leg-A-1>:<leg-B-1>[:<leg-C-1>],[<leg-A-2>:<leg-B-2>[:<leg-C-1>],...]"};
+  Configurable<uint32_t> fConfigLegAFilterMask{"cfgLegAFilterMask", 0, "Filter mask corresponding to cuts in event-selection"};
+  Configurable<uint32_t> fConfigLegBFilterMask{"cfgLegBFilterMask", 0, "Filter mask corresponding to cuts in event-selection"};
+  Configurable<uint32_t> fConfigLegCFilterMask{"cfgLegCFilterMask", 0, "Filter mask corresponding to cuts in event-selection"};
+  Configurable<string> fConfigCommonTrackCuts{"cfgCommonTrackCuts", "", "Comma separated list of cuts to be applied to all legs"};
+  Configurable<string> fConfigPairCuts{"cfgPairCuts", "", "Comma separated list of pair cuts"};
+  Configurable<bool> fConfigSkipAmbiguousIdCombinations{"cfgSkipAmbiguousIdCombinations", true, "Choose whether to skip pairs/triples which pass a stricter combination of cuts, e.g. KKPi triplets for D+ -> KPiPi"};
+
+  Configurable<std::string> fConfigHistogramSubgroups{"cfgAsymmetricPairingHistogramsSubgroups", "barrel,vertexing", "Comma separated list of asymmetric-pairing histogram subgroups"};
+  Configurable<bool> fConfigSameSignHistograms{"cfgSameSignHistograms", false, "Include same sign pair histograms for 2-prong decays"};
+  // Configurable<bool> fConfigAmbiguousHistograms{"cfgAmbiguousHistograms", false, "Include separate histograms for pairs/triplets with ambiguous tracks"};
+  Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+
+  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> fConfigGRPMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<bool> fConfigUseRemoteField{"cfgUseRemoteField", false, "Choose whether to fetch the magnetic field from ccdb or set it manually"};
+  Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
+
+  Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
+  Configurable<bool> fConfigUseAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
+  Configurable<bool> fConfigPropToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
+  Configurable<std::string> fConfigLutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+
+  Configurable<bool> fConfigRunMCGenPair{"cfgRunMCGenPair", false, "Do pairing of true MC particles"};
+  Configurable<std::string> fConfigMCGenSignals{"cfgBarrelMCGenSignals", "", "Comma separated list of MC signals (generated)"};
+  Configurable<std::string> fConfigMCRecSignals{"cfgBarrelMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
+
+  Service<o2::ccdb::BasicCCDBManager> fCCDB;
+
+  HistogramManager* fHistMan;
+
+  std::map<int, std::vector<TString>> fTrackHistNames;
+  std::map<int, std::vector<TString>> fBarrelHistNamesMCmatched;
+  std::vector<AnalysisCompositeCut> fPairCuts;
+
+  std::vector<MCSignal> fRecMCSignals;
+  std::vector<MCSignal> fGenMCSignals;
+
+  // Filter masks to find legs in BarrelTrackCuts table
+  uint32_t fLegAFilterMask;
+  uint32_t fLegBFilterMask;
+  uint32_t fLegCFilterMask;
+  // Map tracking which pair of leg cuts the track cuts participate in
+  std::map<int, uint32_t> fTrackCutFilterMasks;
+  // Filter map for common track cuts
+  uint32_t fCommonTrackCutMask;
+  // Map tracking which common track cut the track cuts correspond to
+  std::map<int, uint32_t> fCommonTrackCutFilterMasks;
+
+  int fNLegCuts;
+  int fNPairCuts = 0;
+  int fNCommonTrackCuts;
+
+  Preslice<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
+
+  // Partitions for triplets and asymmetric pairs
+  Partition<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> legACandidateAssocs = (o2::aod::dqanalysisflags::isBarrelSelected & fConfigLegAFilterMask) > static_cast<uint32_t>(0);
+  Partition<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> legBCandidateAssocs = (o2::aod::dqanalysisflags::isBarrelSelected & fConfigLegBFilterMask) > static_cast<uint32_t>(0);
+  Partition<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> legCCandidateAssocs = (o2::aod::dqanalysisflags::isBarrelSelected & fConfigLegCFilterMask) > static_cast<uint32_t>(0);
+
+  void init(o2::framework::InitContext& context)
+  {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
+    TString histNames = "";
+    std::vector<TString> names;
+
+    // Get the leg cut filter maps
+    fLegAFilterMask = fConfigLegAFilterMask.value;
+    fLegBFilterMask = fConfigLegBFilterMask.value;
+    fLegCFilterMask = fConfigLegCFilterMask.value;
+    // Get the pair cuts
+    TString cutNamesStr = fConfigPairCuts.value;
+    if (!cutNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        fPairCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+      }
+    }
+
+    // Setting the MC rec signal names
+    TString sigNamesStr = fConfigMCRecSignals.value;
+    std::unique_ptr<TObjArray> objRecSigArray(sigNamesStr.Tokenize(","));
+
+    for (int isig = 0; isig < objRecSigArray->GetEntries(); ++isig) {
+      MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objRecSigArray->At(isig)->GetName());
+      if (sig) {
+        fRecMCSignals.push_back(*sig);
+      }
+    }
+
+    // Get the barrel track selection cuts
+    string tempCuts;
+    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", tempCuts, false);
+    TString tempCutsStr = tempCuts;
+    std::unique_ptr<TObjArray> objArray(tempCutsStr.Tokenize(","));
+    // Get the common leg cuts
+    int commonCutIdx;
+    TString commonNamesStr = fConfigCommonTrackCuts.value;
+    if (!commonNamesStr.IsNull()) { // if common track cuts
+      std::unique_ptr<TObjArray> objArrayCommon(commonNamesStr.Tokenize(","));
+      fNCommonTrackCuts = objArrayCommon->GetEntries();
+      for (int icut = 0; icut < fNCommonTrackCuts; ++icut) {
+        commonCutIdx = objArray->IndexOf(objArrayCommon->At(icut));
+        if (commonCutIdx >= 0) {
+          fCommonTrackCutMask |= static_cast<uint32_t>(1) << objArray->IndexOf(objArrayCommon->At(icut));
+          fCommonTrackCutFilterMasks[icut] = static_cast<uint32_t>(1) << objArray->IndexOf(objArrayCommon->At(icut));
+        } else {
+          LOGF(fatal, "Common track cut %s was not calculated upstream. Check the config!", objArrayCommon->At(icut)->GetName());
+        }
+      }
+    }
+    // Check that the leg cut masks make sense
+    if (static_cast<int>(std::floor(TMath::Log2(fLegAFilterMask))) + 1 > objArray->GetEntries()) {
+      LOGF(fatal, "fConfigLegAFilterMask has highest bit at position %d, but track-selection only has %d cuts!", static_cast<int>(std::floor(TMath::Log2(fLegAFilterMask))) + 1, objArray->GetEntries());
+    }
+    if (static_cast<int>(std::floor(TMath::Log2(fLegBFilterMask))) + 1 > objArray->GetEntries()) {
+      LOGF(fatal, "fConfigLegBFilterMask has highest bit at position %d, but track-selection only has %d cuts!", static_cast<int>(std::floor(TMath::Log2(fLegBFilterMask))) + 1, objArray->GetEntries());
+    }
+    if (static_cast<int>(std::floor(TMath::Log2(fLegCFilterMask))) + 1 > objArray->GetEntries()) {
+      LOGF(fatal, "fConfigLegCFilterMask has highest bit at position %d, but track-selection only has %d cuts!", static_cast<int>(std::floor(TMath::Log2(fLegCFilterMask))) + 1, objArray->GetEntries());
+    }
+
+    // Get the cuts defining the legs
+    uint32_t fConstructedLegAFilterMask = 0;
+    uint32_t fConstructedLegBFilterMask = 0;
+    uint32_t fConstructedLegCFilterMask = 0;
+    TString legCutsStr = fConfigLegCuts.value;
+    std::unique_ptr<TObjArray> objArrayLegs(legCutsStr.Tokenize(","));
+    if (objArrayLegs->GetEntries() == 0) {
+      LOG(fatal) << "No cuts defining legs. Check the config!";
+    }
+    fNLegCuts = objArrayLegs->GetEntries();
+    std::vector<bool> isThreeProng;
+    int legAIdx;
+    int legBIdx;
+    int legCIdx;
+    // Loop over leg defining cuts
+    for (int icut = 0; icut < fNLegCuts; ++icut) {
+      TString legsStr = objArrayLegs->At(icut)->GetName();
+      std::unique_ptr<TObjArray> legs(legsStr.Tokenize(":"));
+      if (legs->GetEntries() == 3) {
+        isThreeProng.push_back(true);
+      } else if (legs->GetEntries() == 2) {
+        isThreeProng.push_back(false);
+      } else {
+        LOGF(fatal, "Leg cuts %s has the wrong format and could not be parsed!", legsStr.Data());
+        continue;
+      }
+      // Find leg cuts in the track selection cuts
+      legAIdx = objArray->IndexOf(legs->At(0));
+      if (legAIdx >= 0) {
+        fConstructedLegAFilterMask |= static_cast<uint32_t>(1) << legAIdx;
+        fTrackCutFilterMasks[icut] |= static_cast<uint32_t>(1) << legAIdx;
+      } else {
+        LOGF(fatal, "Leg A cut %s was not calculated upstream. Check the config!", legs->At(0)->GetName());
+        continue;
+      }
+      legBIdx = objArray->IndexOf(legs->At(1));
+      if (legBIdx >= 0) {
+        fConstructedLegBFilterMask |= static_cast<uint32_t>(1) << legBIdx;
+        fTrackCutFilterMasks[icut] |= static_cast<uint32_t>(1) << legBIdx;
+      } else {
+        LOGF(fatal, "Leg B cut %s was not calculated upstream. Check the config!", legs->At(1)->GetName());
+        continue;
+      }
+      if (isThreeProng[icut]) {
+        legCIdx = objArray->IndexOf(legs->At(2));
+        if (legCIdx >= 0) {
+          fConstructedLegCFilterMask |= static_cast<uint32_t>(1) << legCIdx;
+          fTrackCutFilterMasks[icut] |= static_cast<uint32_t>(1) << legCIdx;
+        } else {
+          LOGF(fatal, "Leg C cut %s was not calculated upstream. Check the config!", legs->At(2)->GetName());
+          continue;
+        }
+      }
+      if (isThreeProng[icut]) {
+        names = {
+          Form("TripletsBarrelSE_%s", legsStr.Data())};
+        histNames += Form("%s;", names[0].Data());
+        if (fConfigQA) {
+          names.push_back(Form("TripletsBarrelSE_ambiguous_%s", legsStr.Data()));
+          histNames += Form("%s;", names[1].Data());
+        }
+        fTrackHistNames[icut] = names;
+
+        std::unique_ptr<TObjArray> objArrayCommon(commonNamesStr.Tokenize(","));
+        for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
+          names = {};
+          names.push_back(Form("TripletsBarrelSE_%s_%s", legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName()));
+          histNames += Form("%s;", names[0].Data());
+          fTrackHistNames[fNLegCuts + icut * fNCommonTrackCuts + iCommonCut] = names;
+        }
+
+        TString cutNamesStr = fConfigPairCuts.value;
+        if (!cutNamesStr.IsNull()) { // if pair cuts
+          std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
+          fNPairCuts = objArrayPair->GetEntries();
+          for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) { // loop over pair cuts
+            names = {};
+            names.push_back(Form("TripletsBarrelSE_%s_%s", legsStr.Data(), objArrayPair->At(iPairCut)->GetName()));
+            histNames += Form("%s;", names[0].Data());
+            fTrackHistNames[fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut] = names;
+            for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
+              names = {};
+              names.push_back(Form("TripletsBarrelSE_%s_%s_%s", legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), objArrayPair->At(iPairCut)->GetName()));
+              histNames += Form("%s;", names[0].Data());
+              fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
+            } // end loop (common cuts)
+          } // end loop (pair cuts)
+        } // end if (pair cuts)
+
+        // TODO: assign hist directories for the MC matched triplets for each (leg cut combo,MCsignal) combination
+        if (!sigNamesStr.IsNull()) {
+          for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
+            auto sig = fRecMCSignals.at(isig);
+            int offset = fNLegCuts * isig * (1 + fNCommonTrackCuts + fNPairCuts + fNCommonTrackCuts * fNPairCuts);
+            names = {
+              Form("TripletsBarrelSE_%s_%s", legsStr.Data(), sig.GetName())};
+            histNames += Form("%s;", names[0].Data());
+            fBarrelHistNamesMCmatched[offset + icut] = names;
+
+            for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
+              names = {};
+              names.push_back(Form("TripletsBarrelSE_%s_%s_%s", legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), sig.GetName()));
+              histNames += Form("%s;", names[0].Data());
+              fBarrelHistNamesMCmatched[offset + fNLegCuts + icut * fNCommonTrackCuts + iCommonCut] = names;
+            }
+
+            if (!cutNamesStr.IsNull()) { // if pair cuts
+              std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
+              for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) { // loop over pair cuts
+                names = {};
+                names.push_back(Form("TripletsBarrelSE_%s_%s_%s", legsStr.Data(), objArrayPair->At(iPairCut)->GetName(), sig.GetName()));
+                histNames += Form("%s;", names[0].Data());
+                fBarrelHistNamesMCmatched[offset + fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut] = names;
+                for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
+                  names = {};
+                  names.push_back(Form("TripletsBarrelSE_%s_%s_%s_%s", legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), objArrayPair->At(iPairCut)->GetName(), sig.GetName()));
+                  histNames += Form("%s;", names[0].Data());
+                  fBarrelHistNamesMCmatched[offset + (fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
+                } // end loop (common cuts)
+              } // end loop (pair cuts)
+            } // end if (pair cuts)
+          } // end loop over MC signals
+        } // end if (MC signals)
+      } else {
+        names = {};
+        std::vector<TString> pairHistPrefixes = {"PairsBarrelSEPM"};
+        if (fConfigSameSignHistograms.value) {
+          pairHistPrefixes.push_back("PairsBarrelSEPP");
+          pairHistPrefixes.push_back("PairsBarrelSEMM");
+        }
+        int fNPairHistPrefixes = pairHistPrefixes.size();
+
+        for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
+          names.push_back(Form("%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data()));
+          histNames += Form("%s;", names[iPrefix].Data());
+        }
+        if (fConfigQA) {
+          for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
+            names.push_back(Form("%s_ambiguous_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data()));
+            histNames += Form("%s;", names[fNPairHistPrefixes + iPrefix].Data());
+          }
+        }
+        fTrackHistNames[icut] = names;
+
+        std::unique_ptr<TObjArray> objArrayCommon(commonNamesStr.Tokenize(","));
+        for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
+          names = {};
+          for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
+            names.push_back(Form("%s_%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName()));
+            histNames += Form("%s;", names[iPrefix].Data());
+          }
+          fTrackHistNames[fNLegCuts + icut * fNCommonTrackCuts + iCommonCut] = names;
+        }
+
+        if (!cutNamesStr.IsNull()) { // if pair cuts
+          std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
+          fNPairCuts = objArrayPair->GetEntries();
+          for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) { // loop over pair cuts
+            names = {};
+            for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
+              names.push_back(Form("%s_%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data(), objArrayPair->At(iPairCut)->GetName()));
+              histNames += Form("%s;", names[iPrefix].Data());
+            }
+            fTrackHistNames[fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut] = names;
+            for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
+              names = {};
+              for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
+                names.push_back(Form("%s_%s_%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), objArrayPair->At(iPairCut)->GetName()));
+                histNames += Form("%s;", names[iPrefix].Data());
+              }
+              fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
+            } // end loop (common cuts)
+          } // end loop (pair cuts)
+        } // end if (pair cuts)
+
+        // assign hist directories for the MC matched triplets for each (leg cut combo,MCsignal) combination
+        if (!sigNamesStr.IsNull()) {
+          for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
+            auto sig = fRecMCSignals.at(isig);
+            names = {};
+            int offset = fNLegCuts * isig * (1 + fNCommonTrackCuts + fNPairCuts + fNCommonTrackCuts * fNPairCuts);
+            for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
+              names.push_back(Form("%s_%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data(), sig.GetName()));
+              histNames += Form("%s;", names[iPrefix].Data());
+            }
+            fBarrelHistNamesMCmatched[offset + icut] = names;
+
+            for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
+              names = {};
+              for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
+                names.push_back(Form("%s_%s_%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), sig.GetName()));
+                histNames += Form("%s;", names[iPrefix].Data());
+              }
+              fBarrelHistNamesMCmatched[offset + fNLegCuts + icut * fNCommonTrackCuts + iCommonCut] = names;
+            }
+
+            if (!cutNamesStr.IsNull()) { // if pair cuts
+              std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
+              for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) { // loop over pair cuts
+                names = {};
+                for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
+                  names.push_back(Form("%s_%s_%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data(), objArrayPair->At(iPairCut)->GetName(), sig.GetName()));
+                  histNames += Form("%s;", names[iPrefix].Data());
+                }
+                fBarrelHistNamesMCmatched[offset + fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut] = names;
+                for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
+                  names = {};
+                  for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
+                    names.push_back(Form("%s_%s_%s_%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), objArrayPair->At(iPairCut)->GetName(), sig.GetName()));
+                    histNames += Form("%s;", names[iPrefix].Data());
+                  }
+                  fBarrelHistNamesMCmatched[offset + (fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
+                } // end loop (common cuts)
+              } // end loop (pair cuts)
+            } // end if (pair cuts)
+          } // end loop over MC signals
+        } // end if (MC signals)
+      }
+    }
+
+    // Add histogram classes for each specified MCsignal at the generator level
+    // TODO: create a std::vector of hist classes to be used at Fill time, to avoid using Form in the process function
+    TString sigGenNamesStr = fConfigMCGenSignals.value;
+    std::unique_ptr<TObjArray> objGenSigArray(sigGenNamesStr.Tokenize(","));
+    for (int isig = 0; isig < objGenSigArray->GetEntries(); isig++) {
+      MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objGenSigArray->At(isig)->GetName());
+      if (sig) {
+        if (sig->GetNProngs() == 1) { // NOTE: 1-prong signals required
+          fGenMCSignals.push_back(*sig);
+          histNames += Form("MCTruthGen_%s;", sig->GetName()); // TODO: Add these names to a std::vector to avoid using Form in the process function
+        }
+      }
+    }
+
+    // Make sure the leg cuts are covered by the configured filter masks
+    if (fLegAFilterMask != fConstructedLegAFilterMask) {
+      LOGF(fatal, "cfgLegAFilterMask (%d) is not equal to the mask constructed by the cuts specified in cfgLegCuts (%d)!", fLegAFilterMask, fConstructedLegAFilterMask);
+    }
+    if (fLegBFilterMask != fConstructedLegBFilterMask) {
+      LOGF(fatal, "cfgLegBFilterMask (%d) is not equal to the mask constructed by the cuts specified in cfgLegCuts (%d)!", fLegBFilterMask, fConstructedLegBFilterMask);
+    }
+    if (fLegCFilterMask != fConstructedLegCFilterMask) {
+      LOGF(fatal, "cfgLegCFilterMask (%d) is not equal to the mask constructed by the cuts specified in cfgLegCuts (%d)!", fLegCFilterMask, fConstructedLegCFilterMask);
+    }
+    // Make sure only pairs or only triplets of leg cuts were given
+    int tripletCheckSum = std::count(isThreeProng.begin(), isThreeProng.end(), true);
+    if (tripletCheckSum != 0 && tripletCheckSum != fNLegCuts) {
+      LOGF(fatal, "A mix of pairs and triplets was given as leg cuts. Check your config!");
+    }
+
+    fCurrentRun = 0;
+
+    fCCDB->setURL(fConfigCcdbUrl.value);
+    fCCDB->setCaching(true);
+    fCCDB->setLocalObjectValidityChecking();
+
+    fLUT = o2::base::MatLayerCylSet::rectifyPtrFromFile(fCCDB->get<o2::base::MatLayerCylSet>(fConfigLutPath));
+    VarManager::SetupMatLUTFwdDCAFitter(fLUT);
+
+    VarManager::SetDefaultVarNames();
+    fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
+    fHistMan->SetUseDefaultVariableNames(kTRUE);
+    fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+
+    DefineHistograms(fHistMan, histNames.Data(), fConfigHistogramSubgroups.value.data()); // define all histograms
+    VarManager::SetUseVars(fHistMan->GetUsedVars());                                      // provide the list of required variables so that VarManager knows what to fill
+    fOutputList.setObject(fHistMan->GetMainHistogramList());
+  }
+
+  void initParamsFromCCDB(uint64_t timestamp, bool isTriplets)
+  {
+    if (fConfigUseRemoteField.value) {
+      o2::parameters::GRPMagField* grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigGRPMagPath, timestamp);
+      float magField = 0.0;
+      if (grpmag != nullptr) {
+        magField = grpmag->getNominalL3Field();
+      } else {
+        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", timestamp);
+      }
+      if (isTriplets) {
+        if (fConfigUseKFVertexing.value) {
+          VarManager::SetupThreeProngKFParticle(magField);
+        } else {
+          VarManager::SetupThreeProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value);
+        }
+      } else {
+        if (fConfigUseKFVertexing.value) {
+          VarManager::SetupTwoProngKFParticle(magField);
+        } else {
+          VarManager::SetupTwoProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value); // TODO: get these parameters from Configurables
+        }
+      }
+    } else {
+      if (isTriplets) {
+        if (fConfigUseKFVertexing.value) {
+          VarManager::SetupThreeProngKFParticle(fConfigMagField.value);
+        } else {
+          VarManager::SetupThreeProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value);
+        }
+      } else {
+        if (fConfigUseKFVertexing.value) {
+          VarManager::SetupTwoProngKFParticle(fConfigMagField.value);
+        } else {
+          VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value); // TODO: get these parameters from Configurables
+        }
+      }
+    }
+  }
+
+  // Template function to run same event pairing with asymmetric pairs (e.g. kaon-pion)
+  template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
+  void runAsymmetricPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& /*assocs*/, TTracks const& /*tracks*/, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& /*mcTracks*/)
+  {
+    if (events.size() > 0) { // Additional protection to avoid crashing of events.begin().runNumber()
+      if (fCurrentRun != events.begin().runNumber()) {
+        initParamsFromCCDB(events.begin().timestamp(), false);
+        fCurrentRun = events.begin().runNumber();
+      }
+    }
+
+    std::map<int, std::vector<TString>> histNamesMC = fBarrelHistNamesMCmatched;
+    std::map<int, std::vector<TString>> histNames = fTrackHistNames;
+
+    int sign1 = 0;
+    int sign2 = 0;
+    uint32_t mcDecision = 0;
+    ditrackList.reserve(1);
+    ditrackExtraList.reserve(1);
+
+    constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
+
+    for (auto& event : events) {
+      if (!event.isEventSelected_bit(0)) {
+        continue;
+      }
+      // Reset the fValues array
+      VarManager::ResetValues(0, VarManager::kNVars);
+      VarManager::FillEvent<TEventFillMap>(event, VarManager::fgValues);
+
+      auto groupedLegAAssocs = legACandidateAssocs.sliceBy(preslice, event.globalIndex());
+      if (groupedLegAAssocs.size() == 0) {
+        continue;
+      }
+      auto groupedLegBAssocs = legBCandidateAssocs.sliceBy(preslice, event.globalIndex());
+      if (groupedLegBAssocs.size() == 0) {
+        continue;
+      }
+
+      for (auto& [a1, a2] : combinations(soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs))) {
+
+        uint32_t twoTrackFilter = 0;
+        uint32_t twoTrackCommonFilter = 0;
+        uint32_t pairFilter = 0;
+        bool isPairIdWrong = false;
+        for (int icut = 0; icut < fNLegCuts; ++icut) {
+          // Find leg pair definitions both candidates participate in
+          if ((((a1.isBarrelSelected_raw() & fLegAFilterMask) | (a2.isBarrelSelected_raw() & fLegBFilterMask)) & fTrackCutFilterMasks[icut]) == fTrackCutFilterMasks[icut]) {
+            twoTrackFilter |= static_cast<uint32_t>(1) << icut;
+            // If the supposed pion passes a kaon cut, this is a K+K-. Skip it.
+            if (TPairType == VarManager::kDecayToKPi && fConfigSkipAmbiguousIdCombinations.value) {
+              if (a2.isBarrelSelected_raw() & fLegAFilterMask) {
+                isPairIdWrong = true;
+              }
+            }
+          }
+        }
+
+        if (!twoTrackFilter || isPairIdWrong) {
+          continue;
+        }
+
+        // Find common track cuts both candidates pass
+        twoTrackCommonFilter |= a1.isBarrelSelected_raw() & a2.isBarrelSelected_raw() & fCommonTrackCutMask;
+
+        auto t1 = a1.template reducedtrack_as<TTracks>();
+        auto t2 = a2.template reducedtrack_as<TTracks>();
+
+        // Avoid self-pairs
+        if (t1.globalIndex() == t2.globalIndex()) {
+          continue;
+        }
+
+        sign1 = t1.sign();
+        sign2 = t2.sign();
+        // store the ambiguity number of the two dilepton legs in the last 4 digits of the two-track filter
+        if (t1.barrelAmbiguityInBunch() > 1 || t1.barrelAmbiguityOutOfBunch() > 1) {
+          twoTrackFilter |= static_cast<uint32_t>(1) << 30;
+        }
+        if (t2.barrelAmbiguityInBunch() > 1 || t2.barrelAmbiguityOutOfBunch() > 1) {
+          twoTrackFilter |= static_cast<uint32_t>(1) << 31;
+        }
+
+        // run MC matching for this pair
+        int isig = 0;
+        mcDecision = 0;
+        for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
+          if (t1.has_reducedMCTrack() && t2.has_reducedMCTrack()) {
+            if ((*sig).CheckSignal(true, t1.reducedMCTrack(), t2.reducedMCTrack())) {
+              mcDecision |= static_cast<uint32_t>(1) << isig;
+            }
+          }
+        } // end loop over MC signals
+
+        VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
+        if constexpr (TTwoProngFitter) {
+          VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigPropToPCA);
+        }
+
+        // Fill histograms
+        bool isAmbi = false;
+        for (int icut = 0; icut < fNLegCuts; icut++) {
+          if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+            isAmbi = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
+            if (sign1 * sign2 < 0) {                                                    // +- pairs
+              fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues); // reconstructed, unmatched
+              if (isAmbi && fConfigQA) {
+                fHistMan->FillHistClass(histNames[icut][3].Data(), VarManager::fgValues);
+              }
+            } else if (fConfigSameSignHistograms.value) {
+              if (sign1 > 0) { // ++ pairs
+                fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+                if (isAmbi && fConfigQA) {
+                  fHistMan->FillHistClass(histNames[icut][4].Data(), VarManager::fgValues);
+                }
+              } else { // -- pairs
+                fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+                if (isAmbi && fConfigQA) {
+                  fHistMan->FillHistClass(histNames[icut][5].Data(), VarManager::fgValues);
+                }
+              }
+            }
+            for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
+              int offset = fNLegCuts * isig * (1 + fNCommonTrackCuts + fNPairCuts + fNCommonTrackCuts * fNPairCuts);
+              if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                if (sign1 * sign2 < 0) {
+                  fHistMan->FillHistClass(histNamesMC[offset + icut][0].Data(), VarManager::fgValues);
+                } else if (fConfigSameSignHistograms.value) {
+                  if (sign1 > 0) {
+                    fHistMan->FillHistClass(histNamesMC[offset + icut][1].Data(), VarManager::fgValues);
+                  } else {
+                    fHistMan->FillHistClass(histNamesMC[offset + icut][2].Data(), VarManager::fgValues);
+                  }
+                }
+              }
+            }
+            for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
+              if (twoTrackCommonFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
+                if (sign1 * sign2 < 0) {
+                  fHistMan->FillHistClass(histNames[fNLegCuts + icut * fNCommonTrackCuts + iCommonCut][0].Data(), VarManager::fgValues);
+                } else if (fConfigSameSignHistograms.value) {
+                  if (sign1 > 0) {
+                    fHistMan->FillHistClass(histNames[fNLegCuts + icut * fNCommonTrackCuts + iCommonCut][1].Data(), VarManager::fgValues);
+                  } else {
+                    fHistMan->FillHistClass(histNames[fNLegCuts + icut * fNCommonTrackCuts + iCommonCut][2].Data(), VarManager::fgValues);
+                  }
+                }
+                for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
+                  int offset = fNLegCuts * isig * (1 + fNCommonTrackCuts + fNPairCuts + fNCommonTrackCuts * fNPairCuts);
+                  if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                    if (sign1 * sign2 < 0) {
+                      fHistMan->FillHistClass(histNamesMC[offset + fNLegCuts + icut * fNCommonTrackCuts + iCommonCut][0].Data(), VarManager::fgValues);
+                    } else if (fConfigSameSignHistograms.value) {
+                      if (sign1 > 0) {
+                        fHistMan->FillHistClass(histNamesMC[offset + fNLegCuts + icut * fNCommonTrackCuts + iCommonCut][1].Data(), VarManager::fgValues);
+                      } else {
+                        fHistMan->FillHistClass(histNamesMC[offset + fNLegCuts + icut * fNCommonTrackCuts + iCommonCut][2].Data(), VarManager::fgValues);
+                      }
+                    }
+                  }
+                }
+              }
+            } // end loop (common cuts)
+            for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++) {
+              AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
+              if (!(cut.IsSelected(VarManager::fgValues))) // apply pair cuts
+                continue;
+              pairFilter |= (static_cast<uint32_t>(1) << iPairCut);
+              // Histograms with pair cuts
+              if (sign1 * sign2 < 0) {
+                fHistMan->FillHistClass(histNames[fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut][0].Data(), VarManager::fgValues);
+              } else if (fConfigSameSignHistograms.value) {
+                if (sign1 > 0) {
+                  fHistMan->FillHistClass(histNames[fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut][1].Data(), VarManager::fgValues);
+                } else {
+                  fHistMan->FillHistClass(histNames[fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut][2].Data(), VarManager::fgValues);
+                }
+              }
+              for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
+                int offset = fNLegCuts * isig * (1 + fNCommonTrackCuts + fNPairCuts + fNCommonTrackCuts * fNPairCuts);
+                if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                  if (sign1 * sign2 < 0) {
+                    fHistMan->FillHistClass(histNamesMC[offset + fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut][0].Data(), VarManager::fgValues);
+                  } else if (fConfigSameSignHistograms.value) {
+                    if (sign1 > 0) {
+                      fHistMan->FillHistClass(histNamesMC[offset + fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut][1].Data(), VarManager::fgValues);
+                    } else {
+                      fHistMan->FillHistClass(histNamesMC[offset + fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut][2].Data(), VarManager::fgValues);
+                    }
+                  }
+                }
+              }
+              // Histograms with pair cuts and common track cuts
+              for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
+                if (twoTrackCommonFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
+                  if (sign1 * sign2 < 0) {
+                    fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * (1 + fNPairCuts) + iPairCut][0].Data(), VarManager::fgValues);
+                  } else if (fConfigSameSignHistograms.value) {
+                    if (sign1 > 0) {
+                      fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * (1 + fNPairCuts) + iPairCut][1].Data(), VarManager::fgValues);
+                    } else {
+                      fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * (1 + fNPairCuts) + iPairCut][2].Data(), VarManager::fgValues);
+                    }
+                  }
+                  for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
+                    int offset = fNLegCuts * isig * (1 + fNCommonTrackCuts + fNPairCuts + fNCommonTrackCuts * fNPairCuts);
+                    if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                      if (sign1 * sign2 < 0) {
+                        fHistMan->FillHistClass(histNamesMC[offset + (fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * (1 + fNPairCuts) + iPairCut][0].Data(), VarManager::fgValues);
+                      } else if (fConfigSameSignHistograms.value) {
+                        if (sign1 > 0) {
+                          fHistMan->FillHistClass(histNamesMC[offset + (fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * (1 + fNPairCuts) + iPairCut][1].Data(), VarManager::fgValues);
+                        } else {
+                          fHistMan->FillHistClass(histNamesMC[offset + (fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * (1 + fNPairCuts) + iPairCut][2].Data(), VarManager::fgValues);
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            } // end loop (pair cuts)
+          }
+        } // end loop (cuts)
+        ditrackList(event.globalIndex(), VarManager::fgValues[VarManager::kMass],
+                    VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi],
+                    t1.sign() + t2.sign(), twoTrackFilter, pairFilter, twoTrackCommonFilter);
+        if constexpr (trackHasCov && TTwoProngFitter) {
+          ditrackExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
+        }
+      } // end inner assoc loop (leg A)
+    } // end event loop
+  }
+
+  // Template function to run same event triplets (e.g. D+->K-pi+pi+)
+  template <bool TThreeProngFitter, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
+  void runThreeProng(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& /*assocs*/, TTracks const& tracks, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& /*mcTracks*/, VarManager::PairCandidateType tripletType)
+  {
+    if (events.size() > 0) { // Additional protection to avoid crashing of events.begin().runNumber()
+      if (fCurrentRun != events.begin().runNumber()) {
+        initParamsFromCCDB(events.begin().timestamp(), true);
+        fCurrentRun = events.begin().runNumber();
+      }
+    }
+
+    std::map<int, std::vector<TString>> histNames = fTrackHistNames;
+    std::map<int, std::vector<TString>> histNamesMC = fBarrelHistNamesMCmatched;
+
+    for (auto& event : events) {
+      if (!event.isEventSelected_bit(0)) {
+        continue;
+      }
+      // Reset the fValues array
+      VarManager::ResetValues(0, VarManager::kNVars);
+      VarManager::FillEvent<TEventFillMap>(event, VarManager::fgValues);
+
+      auto groupedLegAAssocs = legACandidateAssocs.sliceBy(preslice, event.globalIndex());
+      if (groupedLegAAssocs.size() == 0) {
+        continue;
+      }
+      auto groupedLegBAssocs = legBCandidateAssocs.sliceBy(preslice, event.globalIndex());
+      if (groupedLegBAssocs.size() == 0) {
+        continue;
+      }
+      auto groupedLegCAssocs = legCCandidateAssocs.sliceBy(preslice, event.globalIndex());
+      if (groupedLegCAssocs.size() == 0) {
+        continue;
+      }
+
+      // Based on triplet type, make suitable combinations of the partitions
+      if (tripletType == VarManager::kTripleCandidateToPKPi) {
+        for (auto& [a1, a2, a3] : combinations(soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs, groupedLegCAssocs))) {
+          readTriplet<TThreeProngFitter, TEventFillMap, TTrackFillMap>(a1, a2, a3, tracks, event, tripletType, histNames, histNamesMC);
+        }
+      } else if (tripletType == VarManager::kTripleCandidateToKPiPi) {
+        for (auto& a1 : groupedLegAAssocs) {
+          for (auto& [a2, a3] : combinations(groupedLegBAssocs, groupedLegCAssocs)) {
+            readTriplet<TThreeProngFitter, TEventFillMap, TTrackFillMap>(a1, a2, a3, tracks, event, tripletType, histNames, histNamesMC);
+          }
+        }
+      } else {
+        LOG(fatal) << "Given tripletType not recognized. Don't know how to make combinations!" << endl;
+      }
+    } // end event loop
+  }
+
+  // Helper function to process triplet
+  template <bool TThreeProngFitter, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TTrackAssoc, typename TTracks, typename TEvent>
+  void readTriplet(TTrackAssoc const& a1, TTrackAssoc const& a2, TTrackAssoc const& a3, TTracks const& /*tracks*/, TEvent const& event, VarManager::PairCandidateType tripletType, std::map<int, std::vector<TString>> histNames, std::map<int, std::vector<TString>> histNamesMC)
+  {
+    uint32_t mcDecision = 0;
+
+    uint32_t threeTrackFilter = 0;
+    uint32_t threeTrackCommonFilter = 0;
+    for (int icut = 0; icut < fNLegCuts; ++icut) {
+      // Find out which leg cut combination the triplet passes
+      if ((((a1.isBarrelSelected_raw() & fLegAFilterMask) | (a2.isBarrelSelected_raw() & fLegBFilterMask) | (a3.isBarrelSelected_raw() & fLegCFilterMask)) & fTrackCutFilterMasks[icut]) == fTrackCutFilterMasks[icut]) {
+        threeTrackFilter |= (static_cast<uint32_t>(1) << icut);
+        if (tripletType == VarManager::kTripleCandidateToPKPi && fConfigSkipAmbiguousIdCombinations.value) {
+          // Check if the supposed pion passes as a proton or kaon, if so, skip this triplet. It is pKp or pKK.
+          if ((a3.isBarrelSelected_raw() & fLegAFilterMask) || (a3.isBarrelSelected_raw() & fLegBFilterMask)) {
+            return;
+          }
+          // Check if the supposed kaon passes as a proton, if so, skip this triplet. It is ppPi.
+          if (a2.isBarrelSelected_raw() & fLegAFilterMask) {
+            return;
+          }
+        }
+        if (tripletType == VarManager::kTripleCandidateToKPiPi && fConfigSkipAmbiguousIdCombinations.value) {
+          // Check if one of the supposed pions pass as a kaon, if so, skip this triplet. It is KKPi.
+          if ((a2.isBarrelSelected_raw() & fLegAFilterMask) || (a3.isBarrelSelected_raw() & fLegAFilterMask)) {
+            return;
+          }
+        }
+      }
+    }
+    if (!threeTrackFilter) {
+      return;
+    }
+
+    // Find common track cuts all candidates pass
+    threeTrackCommonFilter |= a1.isBarrelSelected_raw() & a2.isBarrelSelected_raw() & a3.isBarrelSelected_raw() & fCommonTrackCutMask;
+
+    auto t1 = a1.template reducedtrack_as<TTracks>();
+    auto t2 = a2.template reducedtrack_as<TTracks>();
+    auto t3 = a3.template reducedtrack_as<TTracks>();
+
+    // Avoid self-pairs
+    if (t1 == t2 || t1 == t3 || t2 == t3) {
+      return;
+    }
+
+    // store the ambiguity of the three legs in the last 3 digits of the two-track filter
+    if (t1.barrelAmbiguityInBunch() > 1 || t1.barrelAmbiguityOutOfBunch() > 1) {
+      threeTrackFilter |= (static_cast<uint32_t>(1) << 29);
+    }
+    if (t2.barrelAmbiguityInBunch() > 1 || t2.barrelAmbiguityOutOfBunch() > 1) {
+      threeTrackFilter |= (static_cast<uint32_t>(1) << 30);
+    }
+    if (t3.barrelAmbiguityInBunch() > 1 || t3.barrelAmbiguityOutOfBunch() > 1) {
+      threeTrackFilter |= (static_cast<uint32_t>(1) << 31);
+    }
+
+    // run MC matching for this triplet
+    int isig = 0;
+    mcDecision = 0;
+    for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
+      if (t1.has_reducedMCTrack() && t2.has_reducedMCTrack() && t3.has_reducedMCTrack()) {
+        if ((*sig).CheckSignal(true, t1.reducedMCTrack(), t2.reducedMCTrack(), t3.reducedMCTrack())) {
+          mcDecision |= (static_cast<uint32_t>(1) << isig);
+        }
+      }
+    } // end loop over MC signals
+
+    VarManager::FillTriple(t1, t2, t3, VarManager::fgValues, tripletType);
+    if constexpr (TThreeProngFitter) {
+      VarManager::FillTripletVertexing<TEventFillMap, TTrackFillMap>(event, t1, t2, t3, tripletType);
+    }
+
+    // Fill histograms
+    bool isAmbi = false;
+    for (int icut = 0; icut < fNLegCuts; icut++) {
+      isAmbi = (threeTrackFilter & (static_cast<uint32_t>(1) << 29)) || (threeTrackFilter & (static_cast<uint32_t>(1) << 30)) || (threeTrackFilter & (static_cast<uint32_t>(1) << 31));
+      if (threeTrackFilter & (static_cast<uint32_t>(1) << icut)) {
+        fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+        // TODO: loop over MC signals
+        for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
+          int offset = fNLegCuts * isig * (1 + fNCommonTrackCuts + fNPairCuts + fNCommonTrackCuts * fNPairCuts);
+          if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+            fHistMan->FillHistClass(histNamesMC[offset + icut][0].Data(), VarManager::fgValues); // matched signal
+          }
+        } // end loop (MC signals)
+        if (fConfigQA && isAmbi) {
+          fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+        }
+        for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
+          if (threeTrackCommonFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
+            fHistMan->FillHistClass(histNames[fNLegCuts + icut * fNCommonTrackCuts + iCommonCut][0].Data(), VarManager::fgValues);
+            for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
+              int offset = fNLegCuts * isig * (1 + fNCommonTrackCuts + fNPairCuts + fNCommonTrackCuts * fNPairCuts);
+              if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                fHistMan->FillHistClass(histNamesMC[offset + fNLegCuts + icut * fNCommonTrackCuts + iCommonCut][0].Data(), VarManager::fgValues); // matched signal
+              }
+            } // end loop (MC signals)
+          }
+        } // end loop (common cuts)
+        for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++) {
+          AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
+          if (!(cut.IsSelected(VarManager::fgValues))) { // apply pair cuts
+            continue;
+          }
+          // Histograms with pair cuts
+          fHistMan->FillHistClass(histNames[fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut][0].Data(), VarManager::fgValues);
+          for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
+            int offset = fNLegCuts * isig * (1 + fNCommonTrackCuts + fNPairCuts + fNCommonTrackCuts * fNPairCuts);
+            if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+              fHistMan->FillHistClass(histNamesMC[offset + fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut][0].Data(), VarManager::fgValues); // matched signal
+            }
+          } // end loop (MC signals)
+          // Histograms with pair cuts and common track cuts
+          for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
+            if (threeTrackCommonFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
+              fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut][0].Data(), VarManager::fgValues);
+              for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
+                int offset = fNLegCuts * isig * (1 + fNCommonTrackCuts + fNPairCuts + fNCommonTrackCuts * fNPairCuts);
+                if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                  fHistMan->FillHistClass(histNamesMC[offset + (fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * (1 + fNPairCuts) + iPairCut][0].Data(), VarManager::fgValues); // matched signal
+                }
+              } // end loop (MC signals)
+            }
+          }
+        } // end loop (pair cuts)
+      }
+    } // end loop (cuts)
+  }
+
+  PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+
+  void runMCGen(ReducedMCTracks const& mcTracks)
+  {
+    // loop over mc stack and fill histograms for pure MC truth signals
+    // group all the MC tracks which belong to the MC event corresponding to the current reconstructed event
+    for (auto& mctrack : mcTracks) {
+      VarManager::FillTrackMC(mcTracks, mctrack);
+      // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
+      // NOTE: However, the working model is that the decisions on MC signals are precomputed during skimming and are stored in the mcReducedFlags member.
+      // TODO:  Use the mcReducedFlags to select signals
+      for (auto& sig : fGenMCSignals) {
+        if (sig.GetNProngs() != 1) { // NOTE: 1-prong signals required here
+          continue;
+        }
+        bool checked = false;
+        checked = sig.CheckSignal(true, mctrack);
+        if (checked) {
+          fHistMan->FillHistClass(Form("MCTruthGen_%s", sig.GetName()), VarManager::fgValues);
+        }
+      }
+    }
+  } // end runMCGen
+
+  void processKaonPionSkimmed(MyEventsVtxCovSelected const& events,
+                              soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
+                              MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
+                              ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
+  {
+    runAsymmetricPairing<true, VarManager::kDecayToKPi, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
+    if (fConfigRunMCGenPair)
+      runMCGen(mcTracks);
+  }
+
+  void processKaonPionPionSkimmed(MyEventsVtxCovSelected const& events,
+                                  soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
+                                  MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
+                                  ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
+  {
+    runThreeProng<true, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks, VarManager::kTripleCandidateToKPiPi);
+    if (fConfigRunMCGenPair)
+      runMCGen(mcTracks);
+  }
+
+  void processDummy(MyEvents&)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(AnalysisAsymmetricPairing, processKaonPionSkimmed, "Run kaon pion pairing, with skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisAsymmetricPairing, processKaonPionPionSkimmed, "Run kaon pion pion triplets, with skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisAsymmetricPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", true);
+};
+
 // Combines dileptons with barrel or muon tracks for either resonance or correlation analyses
 // Dileptons produced with all the selection cuts specified in the same-event pairing task are combined with the
 //   tracks passing the fConfigTrackCut cut. The dileptons cuts from the same-event pairing task are auto-detected
@@ -1903,8 +2826,12 @@ struct AnalysisDileptonTrack {
 
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
   int fNCuts;
+  int fNPairCuts;
+  int fNCommonTrackCuts;
+  std::map<int, int> fCommonTrackCutMap;
   int fTrackCutBit;
   std::map<int, TString> fHistNamesDileptonTrack;
+  // std::map<int, TString> fHistNamesDileptonTrackMCmatched;
   std::map<int, std::vector<TString>> fHistNamesDileptonTrackMCmatched;
   std::vector<TString> fHistNamesMCgen;
   std::map<int, TString> fHistNamesDileptons;
@@ -1934,8 +2861,9 @@ struct AnalysisDileptonTrack {
     }
 
     bool isBarrel = context.mOptions.get<bool>("processBarrelSkimmed");
+    bool isBarrelAsymmetric = context.mOptions.get<bool>("processDstarToD0Pi");
     bool isMuon = context.mOptions.get<bool>("processMuonSkimmed");
-    bool isAnyProcessEnabled = isBarrel || isMuon;
+    bool isAnyProcessEnabled = isBarrel || isMuon || isBarrelAsymmetric;
     bool isDummy = context.mOptions.get<bool>("processDummy");
     if (isDummy) {
       if (isAnyProcessEnabled) {
@@ -1972,10 +2900,10 @@ struct AnalysisDileptonTrack {
     // For each track/muon selection used to produce dileptons, create a separate histogram directory using the
     // name of the track/muon cut.
     // Also, create a map which will hold the name of the histogram directories so they can be accessed directly in the pairing loop
-    if (isBarrel || isMuon) {
+    if (isBarrel || isMuon || isBarrelAsymmetric) {
       // get the list of single track and muon cuts computed in the dedicated tasks upstream
       string tempCutsSingle;
-      if (isBarrel) {
+      if (isBarrel || isBarrelAsymmetric) {
         getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", tempCutsSingle, false);
       } else {
         getTaskOptionValue<string>(context, "analysis-muon-selection", "cfgMuonCuts", tempCutsSingle, false);
@@ -1988,6 +2916,7 @@ struct AnalysisDileptonTrack {
       if (objArraySingleCuts->FindObject(fConfigTrackCut.value.data()) == nullptr) {
         LOG(fatal) << " Track cut chosen for the correlation task was not computed in the single-track task! Check it out!";
       }
+      // Loop over single-track/muon task cuts and find the cuts used for the track to be combined with dileptons
       for (int icut = 0; icut < objArraySingleCuts->GetEntries(); ++icut) {
         TString tempStr = objArraySingleCuts->At(icut)->GetName();
         if (tempStr.CompareTo(fConfigTrackCut.value.data()) == 0) {
@@ -1996,31 +2925,99 @@ struct AnalysisDileptonTrack {
       }
       // get the cuts employed for same-event pairing
       string tempCutsPair;
+      string tempCutsAsymPair;
+      string tempCutsAsymCommon;
       if (isBarrel) {
         getTaskOptionValue<string>(context, "analysis-same-event-pairing", "cfgTrackCuts", tempCutsPair, false);
-      } else {
+      } else if (isMuon) {
         getTaskOptionValue<string>(context, "analysis-same-event-pairing", "cfgMuonCuts", tempCutsPair, false);
+      } else if (isBarrelAsymmetric) {
+        getTaskOptionValue<string>(context, "analysis-asymmetric-pairing", "cfgLegCuts", tempCutsPair, false);
+        getTaskOptionValue<string>(context, "analysis-asymmetric-pairing", "cfgPairCuts", tempCutsAsymPair, false);
+        getTaskOptionValue<string>(context, "analysis-asymmetric-pairing", "cfgCommonTrackCuts", tempCutsAsymCommon, false);
       }
+
+      // If asymmetric pair is used, it may have common track cuts
+      TString tempCutsAsymCommonStr = tempCutsAsymCommon;
+      if (!tempCutsAsymCommonStr.IsNull()) { // if common track cuts
+        std::unique_ptr<TObjArray> objArrayCommon(tempCutsAsymCommonStr.Tokenize(","));
+        fNCommonTrackCuts = objArrayCommon->GetEntries();
+        for (int icut = 0; icut < fNCommonTrackCuts; ++icut) {
+          for (int iicut = 0; iicut < objArraySingleCuts->GetEntries(); ++iicut) {
+            if (std::strcmp(objArrayCommon->At(icut)->GetName(), objArraySingleCuts->At(iicut)->GetName()) == 0) {
+              fCommonTrackCutMap[icut] = iicut;
+            }
+          }
+        }
+      }
+
       TString tempCutsPairStr = tempCutsPair;
       if (!tempCutsSingleStr.IsNull() && !tempCutsPairStr.IsNull()) {
         std::unique_ptr<TObjArray> objArray(tempCutsPairStr.Tokenize(","));
         fNCuts = objArray->GetEntries();
-        for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        for (int icut = 0; icut < fNCuts; ++icut) {
           TString tempStr = objArray->At(icut)->GetName();
-          if (objArray->FindObject(tempStr.Data()) != nullptr) {
-            fHistNamesDileptonTrack[icut] = Form("DileptonTrack_%s_%s", tempStr.Data(), fConfigTrackCut.value.data());
-            fHistNamesDileptons[icut] = Form("DileptonsSelected_%s", tempStr.Data());
-            DefineHistograms(fHistMan, fHistNamesDileptonTrack[icut], fConfigHistogramSubgroups.value.data()); // define dilepton-track histograms
-            DefineHistograms(fHistMan, fHistNamesDileptons[icut], "barrel,vertexing");                         // define dilepton histograms
-            std::vector<TString> mcHistNames;
-
-            for (auto& sig : fRecMCSignals) {
-              mcHistNames.push_back(Form("DileptonTrackMCMatched_%s_%s_%s", tempStr.Data(), fConfigTrackCut.value.data(), sig.GetName()));
-              DefineHistograms(fHistMan, mcHistNames[mcHistNames.size() - 1], fConfigHistogramSubgroups.value.data());
+          fHistNamesDileptonTrack[icut] = Form("DileptonTrack_%s_%s", tempStr.Data(), fConfigTrackCut.value.data());
+          fHistNamesDileptons[icut] = Form("DileptonsSelected_%s", tempStr.Data());
+          DefineHistograms(fHistMan, fHistNamesDileptonTrack[icut], fConfigHistogramSubgroups.value.data()); // define dilepton-track histograms
+          DefineHistograms(fHistMan, fHistNamesDileptons[icut], "barrel,vertexing");                         // define dilepton histograms
+          if (!tempCutsAsymCommonStr.IsNull()) {
+            std::unique_ptr<TObjArray> objArrayCommon(tempCutsAsymCommonStr.Tokenize(","));
+            for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
+              fHistNamesDileptonTrack[fNCuts + icut * fNCommonTrackCuts + iCommonCut] = Form("DileptonTrack_%s_%s_%s", tempStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), fConfigTrackCut.value.data());
+              fHistNamesDileptons[fNCuts + icut * fNCommonTrackCuts + iCommonCut] = Form("DileptonsSelected_%s_%s", tempStr.Data(), objArrayCommon->At(iCommonCut)->GetName());
+              DefineHistograms(fHistMan, fHistNamesDileptonTrack[fNCuts + icut * fNCommonTrackCuts + iCommonCut], fConfigHistogramSubgroups.value.data()); // define dilepton-track histograms
+              DefineHistograms(fHistMan, fHistNamesDileptons[fNCuts + icut * fNCommonTrackCuts + iCommonCut], "barrel,vertexing");                         // define dilepton histograms
             }
-            fHistNamesDileptonTrackMCmatched[icut] = mcHistNames;
           }
-        }
+          TString tempCutsAsymPairStr = tempCutsAsymPair;
+          if (!tempCutsAsymPairStr.IsNull()) {
+            std::unique_ptr<TObjArray> objArrayPairCuts(tempCutsAsymPairStr.Tokenize(","));
+            fNPairCuts = objArrayPairCuts->GetEntries();
+            for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) {
+              fHistNamesDileptonTrack[fNCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut] = Form("DileptonTrack_%s_%s_%s", tempStr.Data(), objArrayPairCuts->At(iPairCut)->GetName(), fConfigTrackCut.value.data());
+              fHistNamesDileptons[fNCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut] = Form("DileptonsSelected_%s_%s", tempStr.Data(), objArrayPairCuts->At(iPairCut)->GetName());
+              DefineHistograms(fHistMan, fHistNamesDileptonTrack[fNCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut], fConfigHistogramSubgroups.value.data()); // define dilepton-track histograms
+              DefineHistograms(fHistMan, fHistNamesDileptons[fNCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut], "barrel,vertexing");                         // define dilepton histograms
+              if (!tempCutsAsymCommonStr.IsNull()) {
+                std::unique_ptr<TObjArray> objArrayCommon(tempCutsAsymCommonStr.Tokenize(","));
+                for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
+                  fHistNamesDileptonTrack[(fNCuts * (fNCommonTrackCuts + 1) + fNCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * fNPairCuts + iPairCut] = Form("DileptonTrack_%s_%s_%s_%s", tempStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), objArrayPairCuts->At(iPairCut)->GetName(), fConfigTrackCut.value.data());
+                  fHistNamesDileptons[(fNCuts * (fNCommonTrackCuts + 1) + fNCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * fNPairCuts + iPairCut] = Form("DileptonsSelected_%s_%s_%s", tempStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), objArrayPairCuts->At(iPairCut)->GetName());
+                  DefineHistograms(fHistMan, fHistNamesDileptonTrack[(fNCuts * (fNCommonTrackCuts + 1) + fNCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * fNPairCuts + iPairCut], fConfigHistogramSubgroups.value.data()); // define dilepton-track histograms
+                  DefineHistograms(fHistMan, fHistNamesDileptons[(fNCuts * (fNCommonTrackCuts + 1) + fNCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * fNPairCuts + iPairCut], "barrel,vertexing");                         // define dilepton histograms
+                }
+              }
+            } // end loop (pair cuts)
+          }
+          for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
+            auto sig = fRecMCSignals.at(isig);
+            fHistNamesDileptonTrackMCmatched[icut].push_back(Form("DileptonTrackMCMatched_%s_%s_%s", tempStr.Data(), fConfigTrackCut.value.data(), sig.GetName()));
+            DefineHistograms(fHistMan, fHistNamesDileptonTrackMCmatched[icut].back(), fConfigHistogramSubgroups.value.data());
+            if (!tempCutsAsymCommonStr.IsNull()) {
+              std::unique_ptr<TObjArray> objArrayCommon(tempCutsAsymCommonStr.Tokenize(","));
+              for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
+                fHistNamesDileptonTrackMCmatched[fNCuts + icut * fNCommonTrackCuts + iCommonCut].push_back(Form("DileptonTrackMCMatched_%s_%s_%s_%s", tempStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), fConfigTrackCut.value.data(), sig.GetName()));
+                DefineHistograms(fHistMan, fHistNamesDileptonTrackMCmatched[fNCuts + icut * fNCommonTrackCuts + iCommonCut].back(), fConfigHistogramSubgroups.value.data()); // define dilepton-track histograms
+              }
+            }
+            if (!tempCutsAsymPairStr.IsNull()) {
+              std::unique_ptr<TObjArray> objArrayPairCuts(tempCutsAsymPairStr.Tokenize(","));
+              fNPairCuts = objArrayPairCuts->GetEntries();
+              for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) {
+                fHistNamesDileptonTrackMCmatched[fNCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut].push_back(Form("DileptonTrackMCMatched_%s_%s_%s_%s", tempStr.Data(), objArrayPairCuts->At(iPairCut)->GetName(), fConfigTrackCut.value.data(), sig.GetName()));
+                DefineHistograms(fHistMan, fHistNamesDileptonTrackMCmatched[fNCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut].back(), fConfigHistogramSubgroups.value.data()); // define dilepton-track histograms
+                if (!tempCutsAsymCommonStr.IsNull()) {
+                  std::unique_ptr<TObjArray> objArrayCommon(tempCutsAsymCommonStr.Tokenize(","));
+                  for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
+                    fHistNamesDileptonTrackMCmatched[(fNCuts * (fNCommonTrackCuts + 1) + fNCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * fNPairCuts + iPairCut].push_back(Form("DileptonTrackMCMatched_%s_%s_%s_%s_%s", tempStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), objArrayPairCuts->At(iPairCut)->GetName(), fConfigTrackCut.value.data(), sig.GetName()));
+                    DefineHistograms(fHistMan, fHistNamesDileptonTrackMCmatched[(fNCuts * (fNCommonTrackCuts + 1) + fNCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * fNPairCuts + iPairCut].back(), fConfigHistogramSubgroups.value.data()); // define dilepton-track histograms
+                  } // end loop (common cuts)
+                }
+              } // end loop (pair cuts)
+            }
+          } // end loop (MC signals)
+        } // end loop (leg defining cuts)
       }
       // Add histogram classes for each specified MCsignal at the generator level
       // TODO: create a std::vector of hist classes to be used at Fill time, to avoid using Form in the process function
@@ -2099,12 +3096,29 @@ struct AnalysisDileptonTrack {
       for (int icut = 0; icut < fNCuts; icut++) {
         if (dilepton.filterMap_bit(icut)) {
           fHistMan->FillHistClass(fHistNamesDileptons[icut].Data(), fValuesDilepton);
+          if constexpr (TCandidateType == VarManager::kDstarToD0KPiPi) { // Dielectrons and Dimuons don't have the PairFilterMap column
+            for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
+              if (dilepton.commonFilterMap_bit(fCommonTrackCutMap[iCommonCut])) {
+                fHistMan->FillHistClass(fHistNamesDileptons[fNCuts + icut * fNCommonTrackCuts + iCommonCut].Data(), fValuesDilepton);
+              }
+            }
+            for (int iPairCut = 0; iPairCut < fNPairCuts; iPairCut++) {
+              if (dilepton.pairFilterMap_bit(iPairCut)) {
+                fHistMan->FillHistClass(fHistNamesDileptons[fNCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut].Data(), fValuesDilepton);
+                for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
+                  if (dilepton.commonFilterMap_bit(fCommonTrackCutMap[iCommonCut])) {
+                    fHistMan->FillHistClass(fHistNamesDileptons[(fNCuts * (fNCommonTrackCuts + 1) + fNCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * fNPairCuts + iPairCut].Data(), fValuesDilepton);
+                  }
+                }
+              }
+            }
+          }
         }
       }
 
       // loop over hadrons
       for (auto& assoc : assocs) {
-        if constexpr (TCandidateType == VarManager::kBtoJpsiEEK) {
+        if constexpr (TCandidateType == VarManager::kBtoJpsiEEK || TCandidateType == VarManager::kDstarToD0KPiPi) {
           if (!assoc.isBarrelSelected_bit(fTrackCutBit)) {
             continue;
           }
@@ -2155,16 +3169,49 @@ struct AnalysisDileptonTrack {
                 fHistMan->FillHistClass(fHistNamesDileptonTrackMCmatched[icut][isig], fValuesHadron);
               }
             }
-          }
+            if constexpr (TCandidateType == VarManager::kDstarToD0KPiPi) { // Dielectrons and Dimuons don't have the PairFilterMap column
+              for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
+                if (dilepton.commonFilterMap_bit(fCommonTrackCutMap[iCommonCut])) {
+                  fHistMan->FillHistClass(fHistNamesDileptonTrack[fNCuts + icut * fNCommonTrackCuts + iCommonCut].Data(), fValuesHadron);
+                  for (isig = 0; isig < fRecMCSignals.size(); isig++) {
+                    if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                      fHistMan->FillHistClass(fHistNamesDileptonTrackMCmatched[fNCuts + icut * fNCommonTrackCuts + iCommonCut][isig], fValuesHadron);
+                    }
+                  } // end loop (MC signals)
+                }
+              } // end loop (common track cuts)
+              for (int iPairCut = 0; iPairCut < fNPairCuts; iPairCut++) {
+                if (dilepton.pairFilterMap_bit(iPairCut)) {
+                  fHistMan->FillHistClass(fHistNamesDileptonTrack[fNCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut].Data(), fValuesHadron);
+                  for (isig = 0; isig < fRecMCSignals.size(); isig++) {
+                    if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                      fHistMan->FillHistClass(fHistNamesDileptonTrackMCmatched[fNCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut][isig], fValuesHadron);
+                    }
+                  }
+                  for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
+                    if (dilepton.commonFilterMap_bit(fCommonTrackCutMap[iCommonCut])) {
+                      fHistMan->FillHistClass(fHistNamesDileptonTrack[(fNCuts * (fNCommonTrackCuts + 1) + fNCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * fNPairCuts + iPairCut].Data(), fValuesHadron);
+                      for (isig = 0; isig < fRecMCSignals.size(); isig++) {
+                        if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                          fHistMan->FillHistClass(fHistNamesDileptonTrackMCmatched[(fNCuts * (fNCommonTrackCuts + 1) + fNCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts) + iCommonCut * fNPairCuts + iPairCut][isig], fValuesHadron);
+                        }
+                      } // end loop (MC signals)
+                    }
+                  } // end loop (common track cuts)
+                }
+              } // end loop (pair cuts)
+            }
+          } // end loop (cuts)
         }
         // table to be written out for ML analysis
-        BmesonsTable(fValuesHadron[VarManager::kPairMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz], fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kKFDCAxyzBetweenProngs], fValuesHadron[VarManager::kCosPointingAngle], fValuesHadron[VarManager::kVertexingChi2PCA], mcDecision);
+        BmesonsTable(fValuesHadron[VarManager::kPairMass], fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz], fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kKFDCAxyzBetweenProngs], fValuesHadron[VarManager::kCosPointingAngle], fValuesHadron[VarManager::kVertexingChi2PCA], mcDecision);
       }
     } // end loop over dileptons
   }
 
   Preslice<aod::ReducedTracksAssoc> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
   Preslice<MyDielectronCandidates> dielectronsPerCollision = aod::reducedpair::reducedeventId;
+  Preslice<MyDitrackCandidates> ditracksPerCollision = aod::reducedpair::reducedeventId;
 
   void processBarrelSkimmed(soa::Filtered<MyEventsVtxCovSelected> const& events,
                             soa::Filtered<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> const& assocs,
@@ -2186,6 +3233,26 @@ struct AnalysisDileptonTrack {
       auto groupedBarrelAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
       auto groupedDielectrons = dileptons.sliceBy(dielectronsPerCollision, event.globalIndex());
       runDileptonHadron<VarManager::kBtoJpsiEEK, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, groupedBarrelAssocs, tracks, groupedDielectrons, mcEvents, mcTracks);
+    }
+  }
+
+  void processDstarToD0Pi(soa::Filtered<MyEventsVtxCovSelected> const& events,
+                          soa::Filtered<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> const& assocs,
+                          MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDitrackCandidates> const& ditracks,
+                          ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
+  {
+    // set up KF or DCAfitter
+    if (events.size() == 0) {
+      return;
+    }
+    if (fCurrentRun != events.begin().runNumber()) { // start: runNumber
+      initParamsFromCCDB(events.begin().timestamp());
+      fCurrentRun = events.begin().runNumber();
+    } // end: runNumber
+    for (auto& event : events) {
+      auto groupedBarrelAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
+      auto groupedDitracks = ditracks.sliceBy(ditracksPerCollision, event.globalIndex());
+      runDileptonHadron<VarManager::kDstarToD0KPiPi, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, groupedBarrelAssocs, tracks, groupedDitracks, mcEvents, mcTracks);
     }
   }
 
@@ -2241,6 +3308,7 @@ struct AnalysisDileptonTrack {
   }
 
   PROCESS_SWITCH(AnalysisDileptonTrack, processBarrelSkimmed, "Run barrel dilepton-track pairing, using skimmed data", false);
+  PROCESS_SWITCH(AnalysisDileptonTrack, processDstarToD0Pi, "Run barrel pairing of D0 daughters with pion candidate, using skimmed data", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMuonSkimmed, "Run muon dilepton-track pairing, using skimmed data", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMCGen, "Loop over MC particle stack and fill generator level histograms", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processDummy, "Dummy function", false);
@@ -2254,6 +3322,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<AnalysisMuonSelection>(cfgc),
     adaptAnalysisTask<AnalysisPrefilterSelection>(cfgc),
     adaptAnalysisTask<AnalysisSameEventPairing>(cfgc),
+    adaptAnalysisTask<AnalysisAsymmetricPairing>(cfgc),
     adaptAnalysisTask<AnalysisDileptonTrack>(cfgc)};
 }
 
@@ -2305,6 +3374,10 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
     }
 
     if (classStr.Contains("Pairs")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", histName);
+    }
+
+    if (classStr.Contains("Triplets")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", histName);
     }
 

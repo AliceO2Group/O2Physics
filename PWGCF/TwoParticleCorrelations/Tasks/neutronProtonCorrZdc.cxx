@@ -13,19 +13,25 @@
 /// \brief Correlations between protons and neutrons in the ZDC
 /// \author Olaf Massen <olaf.massen@cern.ch>
 
+#include <string>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
-
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Framework/StaticFor.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+enum EventCounter { kNoSelection = 0,
+                    kQualitySelection = 1,
+                    kMaxCentralitySelection = 2,
+                    kZDCSelection = 3 };
 
 struct NeutronProtonCorrZdc {
   // Histogram registry: an object to hold your histograms
@@ -37,15 +43,14 @@ struct NeutronProtonCorrZdc {
   Configurable<double> cfgZNmax{"cfgZNmax", 350, "Maximum value for ZN signal"};
   Configurable<double> cfgZPmin{"cfgZPmin", -10, "Minimum value for ZP signal"};
   Configurable<double> cfgZPmax{"cfgZPmax", 200, "Maximum value for ZP signal"};
-  Configurable<double> cfgDiffZmin{"cfgDiffZmin", -50, "Minimum value for the diffZ signal"};
+  Configurable<double> cfgDiffZmin{"cfgDiffZmin", -30, "Minimum value for the diffZ signal"};
   Configurable<double> cfgDiffZmax{"cfgDiffZmax", 50, "Maximum value for the diffZ signal"};
   Configurable<int> cfgNBinsAlpha{"cfgNBinsAlpha", 100, "Number of bins for ZDC asymmetry"};
   Configurable<double> cfgAlphaZmin{"cfgAlphaZmin", -1, "Minimum value for ZDC asymmetry"};
   Configurable<double> cfgAlphaZmax{"cfgAlphaZmax", 1, "Maximum value for ZDC asymmetry"};
-  Configurable<bool> cfgProcessRun2{"cfgProcessRun2", false, "Analyse Run 2 converted data"};
-  // Configurable<int> cfgCentralityEstimator{"cfgCentralityEstimator", 0, "Choice of centrality estimator"};//0 for FTOC, 1 for FTOA, 2 for FTOM, 3 for FVOA. //To be included at a later stage
+  Configurable<double> cfgMaxCentrality{"cfgMaxCentrality", 80, "Maximum collision centrality"};
 
-  ConfigurableAxis cfgAxisCent{"cfgAxisCent", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.2f, 4.4f, 4.6f, 4.8f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f, 17.0f, 18.0f, 19.0f, 20.0f, 21.0f, 22.0f, 23.0f, 24.0f, 25.0f, 26.0f, 27.0f, 28.0f, 29.0f, 30.0f, 31.0f, 32.0f, 33.0f, 34.0f, 35.0f, 36.0f, 37.0f, 38.0f, 39.0f, 40.0f, 41.0f, 42.0f, 43.0f, 44.0f, 45.0f, 46.0f, 47.0f, 48.0f, 49.0f, 50.0f, 51.0f, 52.0f, 53.0f, 54.0f, 55.0f, 56.0f, 57.0f, 58.0f, 59.0f, 60.0f, 61.0f, 62.0f, 63.0f, 64.0f, 65.0f, 66.0f, 67.0f, 68.0f, 69.0f, 70.0f, 71.0f, 72.0f, 73.0f, 74.0f, 75.0f, 76.0f, 77.0f, 78.0f, 79.0f, 80.0f, 81.0f, 82.0f, 83.0f, 84.0f, 85.0f, 86.0f, 87.0f, 88.0f, 89.0f, 90.0f, 91.0f, 92.0f, 93.0f, 94.0f, 95.0f, 96.0f, 97.0f, 98.0f, 99.0f, 100.0f}, "Centrality [%]"};
+  ConfigurableAxis cfgAxisCent{"cfgAxisCent", {VARIABLE_WIDTH, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0, 61.0, 62.0, 63.0, 64.0, 65.0, 66.0, 67.0, 68.0, 69.0, 70.0, 71.0, 72.0, 73.0, 74.0, 75.0, 76.0, 77.0, 78.0, 79.0, 80.0, 81.0, 82.0, 83.0, 84.0, 85.0, 86.0, 87.0, 88.0, 89.0, 90.0, 91.0, 92.0, 93.0, 94.0, 95.0, 96.0, 97.0, 98.0, 99.0, 100.0}, "Centrality [%]"};
 
   Filter collisionVtxZ = nabs(aod::collision::posZ) < 10.f;
 
@@ -56,7 +61,7 @@ struct NeutronProtonCorrZdc {
   void init(InitContext const&)
   {
     // define axes you want to use
-    const AxisSpec axisCounter{4, 0, +2, ""};
+    const AxisSpec axisCounter{4, -0.5, 3.5, ""};
     const AxisSpec axisZNSectorSignal{cfgNBinsZN, cfgZNmin, cfgZNmax / 3.};
     const AxisSpec axisZPSectorSignal{cfgNBinsZP, cfgZPmin, cfgZPmax / 3.};
     const AxisSpec axisZNASignal{cfgNBinsZN, cfgZNmin, cfgZNmax, "ZNA (a.u.)"};
@@ -68,173 +73,156 @@ struct NeutronProtonCorrZdc {
     const AxisSpec axisAlphaZ{cfgNBinsAlpha, cfgAlphaZmin, cfgAlphaZmax, "#alpha_{spec}"};
     const AxisSpec axisZDiffSignal{cfgNBinsZN, cfgDiffZmin, cfgDiffZmax, "#Delta E"};
 
+    HistogramConfigSpec defaultZNSectorHist({HistType::kTH2F, {cfgAxisCent, axisZNSectorSignal}});
+    HistogramConfigSpec defaultZPSectorHist({HistType::kTH2F, {cfgAxisCent, axisZPSectorSignal}});
+    HistogramConfigSpec defaultZDCDiffHist({HistType::kTH2F, {cfgAxisCent, axisZDiffSignal}});
+
     // create histograms
     histos.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
-
-    histos.add("ZNASector0Signal", "ZNASector0Signal", kTH1F, {axisZNSectorSignal});
-    histos.add("ZNASector1Signal", "ZNASector1Signal", kTH1F, {axisZNSectorSignal});
-    histos.add("ZNASector2Signal", "ZNASector2Signal", kTH1F, {axisZNSectorSignal});
-    histos.add("ZNASector3Signal", "ZNASector3Signal", kTH1F, {axisZNSectorSignal});
-
-    histos.add("ZNCSector0Signal", "ZNCSector0Signal", kTH1F, {axisZNSectorSignal});
-    histos.add("ZNCSector1Signal", "ZNCSector1Signal", kTH1F, {axisZNSectorSignal});
-    histos.add("ZNCSector2Signal", "ZNCSector2Signal", kTH1F, {axisZNSectorSignal});
-    histos.add("ZNCSector3Signal", "ZNCSector3Signal", kTH1F, {axisZNSectorSignal});
-
-    histos.add("ZPASector0Signal", "ZPASector0Signal", kTH1F, {axisZPSectorSignal});
-    histos.add("ZPASector1Signal", "ZPASector1Signal", kTH1F, {axisZPSectorSignal});
-    histos.add("ZPASector2Signal", "ZPASector2Signal", kTH1F, {axisZPSectorSignal});
-    histos.add("ZPASector3Signal", "ZPASector3Signal", kTH1F, {axisZPSectorSignal});
-
-    histos.add("ZPCSector0Signal", "ZPCSector0Signal", kTH1F, {axisZPSectorSignal});
-    histos.add("ZPCSector1Signal", "ZPCSector1Signal", kTH1F, {axisZPSectorSignal});
-    histos.add("ZPCSector2Signal", "ZPCSector2Signal", kTH1F, {axisZPSectorSignal});
-    histos.add("ZPCSector3Signal", "ZPCSector3Signal", kTH1F, {axisZPSectorSignal});
-
-    histos.add("ZNASignal", "ZNASignal", kTH1F, {axisZNASignal});
-    histos.add("ZNCSignal", "ZNCSignal", kTH1F, {axisZNCSignal});
-    histos.add("ZNSignal", "ZNSignal", kTH1F, {axisZNSignal});
-    histos.add("ZPASignal", "ZPASignal", kTH1F, {axisZPASignal});
-    histos.add("ZPCSignal", "ZPCSignal", kTH1F, {axisZPCSignal});
-    histos.add("ZPSignal", "ZPSignal", kTH1F, {axisZPSignal});
-
-    histos.add("alphaZN", "alphaZN", kTH1F, {axisAlphaZ});
-    histos.add("alphaZP", "alphaZP", kTH1F, {axisAlphaZ});
-
-    histos.add("diffZNASignal", "diffZNASignal", kTH1F, {axisZDiffSignal});
-    histos.add("diffZNCSignal", "diffZNCSignal", kTH1F, {axisZDiffSignal});
-    histos.add("diffZPASignal", "diffZPASignal", kTH1F, {axisZDiffSignal});
-    histos.add("diffZPCSignal", "diffZPCSignal", kTH1F, {axisZDiffSignal});
-    histos.add("diffZNSignal", "diffZNSignal", kTH1F, {axisZDiffSignal});
-    histos.add("diffZPSignal", "diffZPSignal", kTH1F, {axisZDiffSignal});
-
     histos.add("CentralityPercentile", "CentralityPercentile", kTH1F, {cfgAxisCent});
 
-    histos.add("CentvsZNASignal", "FT0CvsZNASignal", kTH2F, {cfgAxisCent, axisZNASignal});
-    histos.add("CentvsZNCSignal", "FT0CvsZNCSignal", kTH2F, {cfgAxisCent, axisZNCSignal});
-    histos.add("CentvsZPASignal", "FT0CvsZPASignal", kTH2F, {cfgAxisCent, axisZPASignal});
-    histos.add("CentvsZPCSignal", "FT0CvsZPCSignal", kTH2F, {cfgAxisCent, axisZPCSignal});
-    histos.add("CentvsZNSignal", "FT0CvsZNSignal", kTH2F, {cfgAxisCent, axisZNSignal});
-    histos.add("CentvsZPSignal", "FT0CvsZPSignal", kTH2F, {cfgAxisCent, axisZPSignal});
+    histos.add("ASide/CentvsZNSector0Signal", "CentvsZNASector0Signal", defaultZNSectorHist);
+    histos.add("ASide/CentvsZNSector1Signal", "CentvsZNASector1Signal", defaultZNSectorHist);
+    histos.add("ASide/CentvsZNSector2Signal", "CentvsZNASector2Signal", defaultZNSectorHist);
+    histos.add("ASide/CentvsZNSector3Signal", "CentvsZNASector3Signal", defaultZNSectorHist);
+    histos.add("ASide/CentvsZPSector0Signal", "CentvsZPASector0Signal", defaultZPSectorHist);
+    histos.add("ASide/CentvsZPSector1Signal", "CentvsZPASector1Signal", defaultZPSectorHist);
+    histos.add("ASide/CentvsZPSector2Signal", "CentvsZPASector2Signal", defaultZPSectorHist);
+    histos.add("ASide/CentvsZPSector3Signal", "CentvsZPASector3Signal", defaultZPSectorHist);
+    histos.add("ASide/CentvsZNSignalSum", "CentvsZNASignalSum", kTH2F, {cfgAxisCent, axisZNASignal});
+    histos.add("ASide/CentvsZNSignalCommon", "CentvsZNASignalCommon", kTH2F, {cfgAxisCent, axisZNASignal});
+    histos.add("ASide/CentvsZPSignalSum", "CentvsZNASignalSum", kTH2F, {cfgAxisCent, axisZPASignal});
+    histos.add("ASide/CentvsZPSignalCommon", "CentvsZNASignalCommon", kTH2F, {cfgAxisCent, axisZPASignal});
+    histos.add("ASide/CentvsdiffZNSignal", "CentvsdiffZNSignal", defaultZDCDiffHist);
+    histos.add("ASide/CentvsdiffZPSignal", "CentvsdiffZPSignal", defaultZDCDiffHist);
+
+    // Cloning the folder
+    histos.addClone("ASide/", "CSide/");
+
+    histos.add("CentvsZNSignalCommon", "CentvsZNSignalCommon", kTH2F, {cfgAxisCent, axisZNSignal});
+    histos.add("CentvsZNSignalSum", "CentvsZNSignalSum", kTH2F, {cfgAxisCent, axisZNSignal});
+    histos.add("CentvsZPSignalCommon", "CentvsZPSignalCommon", kTH2F, {cfgAxisCent, axisZPSignal});
+    histos.add("CentvsZPSignalSum", "CentvsZPSignalSum", kTH2F, {cfgAxisCent, axisZPSignal});
+    histos.add("CentvsAlphaZN", "CentvsAlphaZN", kTH2F, {cfgAxisCent, axisAlphaZ});
+    histos.add("CentvsAlphaZP", "CentvsAlphaZP", kTH2F, {cfgAxisCent, axisAlphaZ});
+    histos.add("CentvsDiffZNSignal", "CentvsDiffZNSignal", defaultZDCDiffHist);
+    histos.add("CentvsDiffZPSignal", "CentvsDiffZPSignal", defaultZDCDiffHist);
+  }
+  template <int side, typename Z>
+  void fillZDCHistos(const float centr, const Z& zdc)
+  {
+    static constexpr std::string_view SubDir[] = {"ASide/", "CSide/"};
+
+    std::array<std::array<float, 4>, 2> znEnergyResponse = {zdc.energySectorZNA(), zdc.energySectorZNC()};
+    std::array<std::array<float, 4>, 2> zpEnergyResponse = {zdc.energySectorZPA(), zdc.energySectorZPC()};
+    std::array<float, 2> znEnergyResponseCommon = {zdc.energyCommonZNA(), zdc.energyCommonZNC()};
+    std::array<float, 2> zpEnergyResponseCommon = {zdc.energyCommonZPA(), zdc.energyCommonZPC()};
+
+    // Fill Neutron ZDC historgrams
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZNSector0Signal"), centr, znEnergyResponse[side][0]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZNSector1Signal"), centr, znEnergyResponse[side][1]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZNSector2Signal"), centr, znEnergyResponse[side][2]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZNSector3Signal"), centr, znEnergyResponse[side][3]);
+
+    float sumZN = znEnergyResponse[side][0] + znEnergyResponse[side][1] + znEnergyResponse[side][2] + znEnergyResponse[side][3];
+
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZNSignalSum"), centr, sumZN);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZNSignalCommon"), centr, znEnergyResponseCommon[side]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsdiffZNSignal"), centr, sumZN - znEnergyResponseCommon[side]);
+
+    // Fill Proton ZDC histograms
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZPSector0Signal"), centr, zpEnergyResponse[side][0]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZPSector1Signal"), centr, zpEnergyResponse[side][1]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZPSector2Signal"), centr, zpEnergyResponse[side][2]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZPSector3Signal"), centr, zpEnergyResponse[side][3]);
+
+    float sumZP = zpEnergyResponse[side][0] + zpEnergyResponse[side][1] + zpEnergyResponse[side][2] + zpEnergyResponse[side][3];
+
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZPSignalSum"), centr, sumZP);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsZPSignalCommon"), centr, zpEnergyResponseCommon[side]);
+    histos.fill(HIST(SubDir[side]) + HIST("CentvsdiffZPSignal"), centr, sumZP - zpEnergyResponseCommon[side]);
   }
 
   void processRun3(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, CentralitiesRun3>>::iterator const& collision, BCsRun3 const&, aod::Zdcs const&)
   {
+    histos.fill(HIST("eventCounter"), EventCounter::kNoSelection);
     if (!collision.sel8()) {
-      histos.fill(HIST("eventCounter"), 0.25);
       return;
     }
+    histos.fill(HIST("eventCounter"), EventCounter::kQualitySelection);
+    if (collision.centFT0C() > cfgMaxCentrality) {
+      return;
+    }
+    histos.fill(HIST("eventCounter"), EventCounter::kMaxCentralitySelection);
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (foundBC.has_zdc()) {
       const auto& zdcread = foundBC.zdc();
       const auto cent = collision.centFT0C();
 
-      histos.fill(HIST("eventCounter"), 1.25);
-      histos.fill(HIST("ZNASignal"), zdcread.energyCommonZNA());
-      histos.fill(HIST("ZNCSignal"), zdcread.energyCommonZNC());
-      histos.fill(HIST("ZPASignal"), zdcread.energyCommonZPA());
-      histos.fill(HIST("ZPCSignal"), zdcread.energyCommonZPC());
-      histos.fill(HIST("ZNASector0Signal"), (zdcread.energySectorZNA())[0]);
-      histos.fill(HIST("ZNASector1Signal"), (zdcread.energySectorZNA())[1]);
-      histos.fill(HIST("ZNASector2Signal"), (zdcread.energySectorZNA())[2]);
-      histos.fill(HIST("ZNASector3Signal"), (zdcread.energySectorZNA())[3]);
-      histos.fill(HIST("ZNCSector0Signal"), (zdcread.energySectorZNC())[0]);
-      histos.fill(HIST("ZNCSector1Signal"), (zdcread.energySectorZNC())[1]);
-      histos.fill(HIST("ZNCSector2Signal"), (zdcread.energySectorZNC())[2]);
-      histos.fill(HIST("ZNCSector3Signal"), (zdcread.energySectorZNC())[3]);
-      histos.fill(HIST("ZPASector0Signal"), (zdcread.energySectorZPA())[0]);
-      histos.fill(HIST("ZPASector1Signal"), (zdcread.energySectorZPA())[1]);
-      histos.fill(HIST("ZPASector2Signal"), (zdcread.energySectorZPA())[2]);
-      histos.fill(HIST("ZPASector3Signal"), (zdcread.energySectorZPA())[3]);
-      histos.fill(HIST("ZPCSector0Signal"), (zdcread.energySectorZPC())[0]);
-      histos.fill(HIST("ZPCSector1Signal"), (zdcread.energySectorZPC())[1]);
-      histos.fill(HIST("ZPCSector2Signal"), (zdcread.energySectorZPC())[2]);
-      histos.fill(HIST("ZPCSector3Signal"), (zdcread.energySectorZPC())[3]);
+      histos.fill(HIST("eventCounter"), EventCounter::kZDCSelection);
+      histos.fill(HIST("CentralityPercentile"), cent);
+
+      fillZDCHistos<0>(cent, zdcread); // Fill A-side
+      fillZDCHistos<1>(cent, zdcread); // Fill C-side
 
       float sumZNC = (zdcread.energySectorZNC())[0] + (zdcread.energySectorZNC())[1] + (zdcread.energySectorZNC())[2] + (zdcread.energySectorZNC())[3];
       float sumZNA = (zdcread.energySectorZNA())[0] + (zdcread.energySectorZNA())[1] + (zdcread.energySectorZNA())[2] + (zdcread.energySectorZNA())[3];
       float sumZPC = (zdcread.energySectorZPC())[0] + (zdcread.energySectorZPC())[1] + (zdcread.energySectorZPC())[2] + (zdcread.energySectorZPC())[3];
       float sumZPA = (zdcread.energySectorZPA())[0] + (zdcread.energySectorZPA())[1] + (zdcread.energySectorZPA())[2] + (zdcread.energySectorZPA())[3];
+
       float alphaZN = (sumZNA - sumZNC) / (sumZNA + sumZNC);
       float alphaZP = (sumZPA - sumZPC) / (sumZPA + sumZPC);
 
-      histos.fill(HIST("alphaZN"), alphaZN);
-      histos.fill(HIST("alphaZP"), alphaZP);
-
-      histos.fill(HIST("diffZNASignal"), sumZNA - zdcread.energyCommonZNA());
-      histos.fill(HIST("diffZNCSignal"), sumZNC - zdcread.energyCommonZNC());
-      histos.fill(HIST("diffZPASignal"), sumZPA - zdcread.energyCommonZPA());
-      histos.fill(HIST("diffZPCSignal"), sumZPC - zdcread.energyCommonZPC());
-      histos.fill(HIST("ZNSignal"), sumZNA + sumZNC);
-      histos.fill(HIST("ZPSignal"), sumZPA + sumZPC);
-      histos.fill(HIST("diffZNSignal"), (sumZNA + sumZNC) - (zdcread.energyCommonZNA() + zdcread.energyCommonZNC()));
-      histos.fill(HIST("diffZPSignal"), (sumZPA + sumZPC) - (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
-      histos.fill(HIST("CentralityPercentile"), cent);
-      histos.fill(HIST("CentvsZNASignal"), cent, sumZNA);
-      histos.fill(HIST("CentvsZNCSignal"), cent, sumZNC);
-      histos.fill(HIST("CentvsZPASignal"), cent, sumZPA);
-      histos.fill(HIST("CentvsZPCSignal"), cent, sumZPC);
-      histos.fill(HIST("CentvsZNSignal"), cent, sumZNA + sumZNC);
-      histos.fill(HIST("CentvsZPSignal"), cent, sumZPA + sumZPC);
+      histos.fill(HIST("CentvsDiffZNSignal"), cent, (sumZNA + sumZNC) - (zdcread.energyCommonZNA() + zdcread.energyCommonZNC()));
+      histos.fill(HIST("CentvsDiffZPSignal"), cent, (sumZPA + sumZPC) - (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
+      histos.fill(HIST("CentvsZNSignalSum"), cent, sumZNA + sumZNC);
+      histos.fill(HIST("CentvsZPSignalSum"), cent, sumZPA + sumZPC);
+      histos.fill(HIST("CentvsZNSignalCommon"), cent, (zdcread.energyCommonZNA() + zdcread.energyCommonZNC()));
+      histos.fill(HIST("CentvsZPSignalCommon"), cent, (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
+      histos.fill(HIST("CentvsAlphaZN"), cent, alphaZN);
+      histos.fill(HIST("CentvsAlphaZP"), cent, alphaZP);
     }
   }
   PROCESS_SWITCH(NeutronProtonCorrZdc, processRun3, "Process analysis for Run 3 data", true);
 
   void processRun2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Run2MatchedSparse, CentralitiesRun2>>::iterator const& collision, aod::BCsWithTimestamps const&, aod::Zdcs const&)
   {
+    histos.fill(HIST("eventCounter"), EventCounter::kNoSelection);
     if (!collision.alias_bit(kINT7)) {
-      histos.fill(HIST("eventCounter"), 0.25);
       return;
     }
+    histos.fill(HIST("eventCounter"), EventCounter::kQualitySelection);
+    if (collision.centRun2V0M() > cfgMaxCentrality) {
+      return;
+    }
+    histos.fill(HIST("eventCounter"), EventCounter::kMaxCentralitySelection);
 
     if (collision.has_zdc()) {
       const auto& zdcread = collision.zdc();
       const auto cent = collision.centRun2V0M();
-      histos.fill(HIST("eventCounter"), 1.25);
-      histos.fill(HIST("ZNASignal"), zdcread.energyCommonZNA());
-      histos.fill(HIST("ZNCSignal"), zdcread.energyCommonZNC());
-      histos.fill(HIST("ZPASignal"), zdcread.energyCommonZPA());
-      histos.fill(HIST("ZPCSignal"), zdcread.energyCommonZPC());
-      histos.fill(HIST("ZNASector0Signal"), (zdcread.energySectorZNA())[0]);
-      histos.fill(HIST("ZNASector1Signal"), (zdcread.energySectorZNA())[1]);
-      histos.fill(HIST("ZNASector2Signal"), (zdcread.energySectorZNA())[2]);
-      histos.fill(HIST("ZNASector3Signal"), (zdcread.energySectorZNA())[3]);
-      histos.fill(HIST("ZNCSector0Signal"), (zdcread.energySectorZNC())[0]);
-      histos.fill(HIST("ZNCSector1Signal"), (zdcread.energySectorZNC())[1]);
-      histos.fill(HIST("ZNCSector2Signal"), (zdcread.energySectorZNC())[2]);
-      histos.fill(HIST("ZNCSector3Signal"), (zdcread.energySectorZNC())[3]);
-      histos.fill(HIST("ZPASector0Signal"), (zdcread.energySectorZPA())[0]);
-      histos.fill(HIST("ZPASector1Signal"), (zdcread.energySectorZPA())[1]);
-      histos.fill(HIST("ZPASector2Signal"), (zdcread.energySectorZPA())[2]);
-      histos.fill(HIST("ZPASector3Signal"), (zdcread.energySectorZPA())[3]);
-      histos.fill(HIST("ZPCSector0Signal"), (zdcread.energySectorZPC())[0]);
-      histos.fill(HIST("ZPCSector1Signal"), (zdcread.energySectorZPC())[1]);
-      histos.fill(HIST("ZPCSector2Signal"), (zdcread.energySectorZPC())[2]);
-      histos.fill(HIST("ZPCSector3Signal"), (zdcread.energySectorZPC())[3]);
+
+      histos.fill(HIST("eventCounter"), EventCounter::kZDCSelection);
+      histos.fill(HIST("CentralityPercentile"), cent);
+
+      fillZDCHistos<0>(cent, zdcread); // Fill A-side
+      fillZDCHistos<1>(cent, zdcread); // Fill C-side
+
       float sumZNC = (zdcread.energySectorZNC())[0] + (zdcread.energySectorZNC())[1] + (zdcread.energySectorZNC())[2] + (zdcread.energySectorZNC())[3];
       float sumZNA = (zdcread.energySectorZNA())[0] + (zdcread.energySectorZNA())[1] + (zdcread.energySectorZNA())[2] + (zdcread.energySectorZNA())[3];
       float sumZPC = (zdcread.energySectorZPC())[0] + (zdcread.energySectorZPC())[1] + (zdcread.energySectorZPC())[2] + (zdcread.energySectorZPC())[3];
       float sumZPA = (zdcread.energySectorZPA())[0] + (zdcread.energySectorZPA())[1] + (zdcread.energySectorZPA())[2] + (zdcread.energySectorZPA())[3];
+
       float alphaZN = (sumZNA - sumZNC) / (sumZNA + sumZNC);
       float alphaZP = (sumZPA - sumZPC) / (sumZPA + sumZPC);
-      histos.fill(HIST("alphaZN"), alphaZN);
-      histos.fill(HIST("alphaZP"), alphaZP);
 
-      histos.fill(HIST("diffZNASignal"), sumZNA - zdcread.energyCommonZNA());
-      histos.fill(HIST("diffZNCSignal"), sumZNC - zdcread.energyCommonZNC());
-      histos.fill(HIST("diffZPASignal"), sumZPA - zdcread.energyCommonZPA());
-      histos.fill(HIST("diffZPCSignal"), sumZPC - zdcread.energyCommonZPC());
-      histos.fill(HIST("ZNSignal"), sumZNA + sumZNC);
-      histos.fill(HIST("ZPSignal"), sumZPA + sumZPC);
-      histos.fill(HIST("diffZNSignal"), (sumZNA + sumZNC) - (zdcread.energyCommonZNA() + zdcread.energyCommonZNC()));
-      histos.fill(HIST("diffZPSignal"), (sumZPA + sumZPC) - (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
-      histos.fill(HIST("CentralityPercentile"), cent);
-      histos.fill(HIST("CentvsZNASignal"), cent, sumZNA);
-      histos.fill(HIST("CentvsZNCSignal"), cent, sumZNC);
-      histos.fill(HIST("CentvsZPASignal"), cent, sumZPA);
-      histos.fill(HIST("CentvsZPCSignal"), cent, sumZPC);
-      histos.fill(HIST("CentvsZNSignal"), cent, sumZNA + sumZNC);
-      histos.fill(HIST("CentvsZPSignal"), cent, sumZPA + sumZPC);
+      histos.fill(HIST("CentvsDiffZNSignal"), cent, (sumZNA + sumZNC) - (zdcread.energyCommonZNA() + zdcread.energyCommonZNC()));
+      histos.fill(HIST("CentvsDiffZPSignal"), cent, (sumZPA + sumZPC) - (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
+      histos.fill(HIST("CentvsZNSignalSum"), cent, sumZNA + sumZNC);
+      histos.fill(HIST("CentvsZPSignalSum"), cent, sumZPA + sumZPC);
+      histos.fill(HIST("CentvsZNSignalCommon"), cent, (zdcread.energyCommonZNA() + zdcread.energyCommonZNC()));
+      histos.fill(HIST("CentvsZPSignalCommon"), cent, (zdcread.energyCommonZPA() + zdcread.energyCommonZPC()));
+      histos.fill(HIST("CentvsAlphaZN"), cent, alphaZN);
+      histos.fill(HIST("CentvsAlphaZP"), cent, alphaZP);
     }
   }
   PROCESS_SWITCH(NeutronProtonCorrZdc, processRun2, "Process analysis for Run 2 converted data", false);

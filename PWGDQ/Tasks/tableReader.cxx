@@ -97,6 +97,7 @@ using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended,
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
 using MyEventsVtxCovSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsVtxCovSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector>;
+using MyEventsVtxCovQvectorExtraWithRefFlow = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra, aod::ReducedEventsRefFlow>;
 using MyEventsVtxCovSelectedQvectorExtraWithRefFlow = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra, aod::ReducedEventsRefFlow>;
 using MyEventsVtxCovSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvectorCentr>;
 using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
@@ -277,6 +278,10 @@ struct AnalysisEventSelection {
   {
     runEventSelection<gkEventFillMapWithQvectorCentrMultExtra>(event);
   }
+  void processSkimmedQVectorExtraRef(MyEventsVtxCovQvectorExtraWithRefFlow::iterator const& event)
+  {
+    runEventSelection<gkEventFillMapWithCovQvectorExtraWithRefFlow>(event);
+  }
   void processDummy(MyEvents&)
   {
     // do nothing
@@ -287,6 +292,7 @@ struct AnalysisEventSelection {
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorCentr, "Run event selection on DQ skimmed events with Q vector from CFW", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorMultExtra, "Run event selection on DQ skimmed events with Q vector from GFW and MultPV", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorCentrMultExtra, "Run event selection on DQ skimmed events with Q vector from CFW and MultPV", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVectorExtraRef, "Run event selection on DQ skimmed events with Q vector and subscribing to reference flow table", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", false);
   // TODO: Add process functions subscribing to Framework Collision
 };
@@ -1308,6 +1314,7 @@ struct AnalysisSameEventPairing {
         dimuonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
         if (fConfigFlatTables.value) {
           dimuonAllList(event.posX(), event.posY(), event.posZ(), event.numContrib(),
+                        event.selection_raw(), 0,
                         -999., -999., -999.,
                         VarManager::fgValues[VarManager::kMass],
                         false,
@@ -1887,7 +1894,7 @@ struct AnalysisDileptonTrackTrack {
     if (!context.mOptions.get<bool>("processDummy")) {
       DefineHistograms(fHistMan, Form("Dileptons_%s", configDileptonCutNamesStr.Data()), fConfigAddDileptonHistogram);
       if (!configQuadruletCutNamesStr.IsNull()) {
-        for (Int_t icut = 0; icut < fQuadrupletCutNames.size(); ++icut) {
+        for (std::size_t icut = 0; icut < fQuadrupletCutNames.size(); ++icut) {
           if (fIsSameTrackCut) {
             DefineHistograms(fHistMan, Form("QuadrupletSEPM_%s", fQuadrupletCutNames[icut].Data()), fConfigAddQuadrupletHistogram);
           } else {
