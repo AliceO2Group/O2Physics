@@ -770,13 +770,13 @@ struct Jetchargedv2Task {
     Int_t NDF = 1;
     Int_t numOfFreePara = 2;
     NDF = (Int_t)fFitModulation_v2v3->GetXaxis()->GetNbins() - numOfFreePara;
-    if (NDF == 0 || static_cast<float>(NDF) <= 0.) 
+    if (NDF == 0 || static_cast<float>(NDF) <= 0.)
       return;
     double chi2 = 0.;
     for (int i = 0; i < h_ptsum_sumpt_fit->GetXaxis()->GetNbins(); i++) {
-      if(h_ptsum_sumpt_fit->GetBinContent(i+1) <= 0.)
+      if (h_ptsum_sumpt_fit->GetBinContent(i+1) <= 0.)
         continue;
-      chi2 += TMath::Power((h_ptsum_sumpt_fit->GetBinContent(i+1) - fFitModulation_v2v3->Eval(h_ptsum_sumpt_fit->GetXaxis()->GetBinCenter(1+i))), 2) /h_ptsum_sumpt_fit->GetBinContent(i+1);
+      chi2 += TMath::Power((h_ptsum_sumpt_fit->GetBinContent(i + 1) - fFitModulation_v2v3->Eval(h_ptsum_sumpt_fit->GetXaxis()->GetBinCenter(1 + i))), 2) /h_ptsum_sumpt_fit->GetBinContent(i + 1);
     }
 
     Double_t ChiSqr = 999.;
@@ -787,13 +787,13 @@ struct Jetchargedv2Task {
     CDFROOT = 1. - ChiSquareCDF(NDF, fFitModulation_v2v3->GetChisquare());
     registry.fill(HIST("h_PvalueCDF_CombinFit"), CDF);
     registry.fill(HIST("h2_PvalueCDFCent_CombinFit"), collision.centrality(), CDF);
-    registry.fill(HIST("h2_Chi2Cent_CombinFit"), collision.centrality(), ChiSqr / (static_cast<float>(NDF)) );
-    registry.fill(HIST("h2_PChi2_CombinFit"), CDF, ChiSqr / (static_cast<float>(NDF)) );
+    registry.fill(HIST("h2_Chi2Cent_CombinFit"), collision.centrality(), ChiSqr / (static_cast<float>(NDF)));
+    registry.fill(HIST("h2_PChi2_CombinFit"), CDF, ChiSqr / (static_cast<float>(NDF)));
     double evtcent = collision.centrality();
     if (evtcent >= 0 && evtcent <= 5) {
-      registry.fill(HIST("h2_PChi2_CombinFitA"), CDF, ChiSqr / (static_cast<float>(NDF)) );
+      registry.fill(HIST("h2_PChi2_CombinFitA"), CDF, ChiSqr / (static_cast<float>(NDF)));
     } else if (evtcent >= 30 && evtcent <= 50) {
-      registry.fill(HIST("h2_PChi2_CombinFitB"), CDF, ChiSqr / (static_cast<float>(NDF)) );
+      registry.fill(HIST("h2_PChi2_CombinFitB"), CDF, ChiSqr / (static_cast<float>(NDF)));
     }
 
     for (uint i = 0; i < cfgnMods->size(); i++) {
