@@ -168,81 +168,81 @@ struct v0topologicalcuts {
 
     // adding the invariant mass histograms to their Registries using the namespace for kzeros, lambdas and antilambdas
     for (uint32_t i = 0; i < cuthistoskzerosh::cospacuts.size(); i++) {
-      cuthistoskzerosh::cospaCut[i] = rKzeroShort_cospaCut.add<TH1>(fmt::format("hKzerocospaCut_{}", cuthistoskzerosh::cospacuts[i]).data(), fmt::format("hKzerocospaCut_{}", cuthistoskzerosh::cospacuts[i]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
+      cuthistoskzerosh::cospaCut[i] = rKzeroShort_cospaCuts.add<TH1>(fmt::format("hKzerocospaCut_{}", cuthistoskzerosh::cospacuts[i]).data(), fmt::format("hKzerocospaCut_{}", cuthistoskzerosh::cospacuts[i]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistoskzerosh::dcacuts.size(); i++) {
-      cuthistoskzerosh::dcaCut[i] = rKzeroShort_dcaCut.add<TH1>(fmt::format("hKzerodcaCut_{}", cuthistoskzerosh::dcacuts[i]).data(), fmt::format("hKzerodcaCut_{}", cuthistoskzerosh::dcacuts[i]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
+      cuthistoskzerosh::dcaCut[i] = rKzeroShort_dcaCuts.add<TH1>(fmt::format("hKzerodcaCut_{}", cuthistoskzerosh::dcacuts[i]).data(), fmt::format("hKzerodcaCut_{}", cuthistoskzerosh::dcacuts[i]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistoskzerosh::v0radiuscuts.size(); i++) {
-      cuthistoskzerosh::v0radiusCut[i] = rKzeroShort_v0radiusCut.add<TH1>(fmt::format("hKzerov0radiusCut_{}", cuthistoskzerosh::v0radiuscuts[i]).data(), fmt::format("hKzerov0radiusCut_{}", cuthistoskzerosh::v0radiuscuts[i]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
+      cuthistoskzerosh::v0radiusCut[i] = rKzeroShort_v0radiusCuts.add<TH1>(fmt::format("hKzerov0radiusCut_{}", cuthistoskzerosh::v0radiuscuts[i]).data(), fmt::format("hKzerov0radiusCut_{}", cuthistoskzerosh::v0radiuscuts[i]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistoskzerosh::dcapostopvcuts.size(); i++) {
-      cuthistoskzerosh::dcapostopCut[i] = rKzeroShort_dcapostopCut.add<TH1>(fmt::format("hKzerodcapostopCut_{}", cuthistoskzerosh::dcapostopvcuts[i]).data(), fmt::format("hKzerodcapostopCut_{}", cuthistoskzerosh::dcapostopvcuts[i]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
+      cuthistoskzerosh::dcapostopCut[i] = rKzeroShort_dcapostopCuts.add<TH1>(fmt::format("hKzerodcapostopCut_{}", cuthistoskzerosh::dcapostopvcuts[i]).data(), fmt::format("hKzerodcapostopCut_{}", cuthistoskzerosh::dcapostopvcuts[i]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistoskzerosh::dcanegtopvcuts.size(); i++) {
-      cuthistoskzerosh::dcanegtopCut[i] = rKzeroShort_dcanegtopCut.add<TH1>(fmt::format("hKzerodcanegtopCut_{}", cuthistoskzerosh::dcanegtopvcuts[i]).data(), fmt::format("hKzerodcanegtopCut_{}", cuthistoskzerosh::dcanegtopvcuts[i]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
+      cuthistoskzerosh::dcanegtopCut[i] = rKzeroShort_dcanegtopCuts.add<TH1>(fmt::format("hKzerodcanegtopCut_{}", cuthistoskzerosh::dcanegtopvcuts[i]).data(), fmt::format("hKzerodcanegtopCut_{}", cuthistoskzerosh::dcanegtopvcuts[i]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistoslambda::cospacuts.size(); i++) {
-      cuthistoslambda::cospaCut[i] = rLambda_cospaCut.add<TH1>(fmt::format("hLambdacospaCut_{}", cuthistoslambda::cospacuts[i]).data(), fmt::format("hLambdacospaCut_{}", cuthistoslambda::cospacuts[i]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
+      cuthistoslambda::cospaCut[i] = rLambda_cospaCuts.add<TH1>(fmt::format("hLambdacospaCut_{}", cuthistoslambda::cospacuts[i]).data(), fmt::format("hLambdacospaCut_{}", cuthistoslambda::cospacuts[i]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistoslambda::dcacuts.size(); i++) {
-      cuthistoslambda::dcaCut[i] = rLambda_dcaCut.add<TH1>(fmt::format("hLambdadcaCut_{}", cuthistoslambda::dcacuts[i]).data(), fmt::format("hLambdadcaCut_{}", cuthistoslambda::dcacuts[i]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
+      cuthistoslambda::dcaCut[i] = rLambda_dcaCuts.add<TH1>(fmt::format("hLambdadcaCut_{}", cuthistoslambda::dcacuts[i]).data(), fmt::format("hLambdadcaCut_{}", cuthistoslambda::dcacuts[i]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistoslambda::v0radiuscuts.size(); i++) {
-      cuthistoslambda::v0radiusCut[i] = rLambda_v0radiusCut.add<TH1>(fmt::format("hLambdav0radiusCut_{}", cuthistoslambda::v0radiuscuts[i]).data(), fmt::format("hLambdav0radiusCut_{}", cuthistoslambda::v0radiuscuts[i]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
+      cuthistoslambda::v0radiusCut[i] = rLambda_v0radiusCuts.add<TH1>(fmt::format("hLambdav0radiusCut_{}", cuthistoslambda::v0radiuscuts[i]).data(), fmt::format("hLambdav0radiusCut_{}", cuthistoslambda::v0radiuscuts[i]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistoslambda::dcapostopvcuts.size(); i++) {
-      cuthistoslambda::dcapostopCut[i] = rLambda_dcapostopCut.add<TH1>(fmt::format("hLambdadcapostopCut_{}", cuthistoslambda::dcapostopvcuts[i]).data(), fmt::format("hLambdadcapostopCut_{}", cuthistoslambda::dcapostopvcuts[i]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
+      cuthistoslambda::dcapostopCut[i] = rLambda_dcapostopCuts.add<TH1>(fmt::format("hLambdadcapostopCut_{}", cuthistoslambda::dcapostopvcuts[i]).data(), fmt::format("hLambdadcapostopCut_{}", cuthistoslambda::dcapostopvcuts[i]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistoslambda::dcanegtopvcuts.size(); i++) {
-      cuthistoslambda::dcanegtopCut[i] = rLambda_dcanegtopCut.add<TH1>(fmt::format("hLambdadcanegtopCut_{}", cuthistoslambda::dcanegtopvcuts[i]).data(), fmt::format("hLambdadcanegtopCut_{}", cuthistoslambda::dcanegtopvcuts[i]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
+      cuthistoslambda::dcanegtopCut[i] = rLambda_dcanegtopCuts.add<TH1>(fmt::format("hLambdadcanegtopCut_{}", cuthistoslambda::dcanegtopvcuts[i]).data(), fmt::format("hLambdadcanegtopCut_{}", cuthistoslambda::dcanegtopvcuts[i]).data(), {HistType::kTH1D, {{LambdaMassAxis}}});
     }
 
     for (uint32_t i = 0; i < cuthistosantilambda::cospacuts.size(); i++) {
-      cuthistosantilambda::cospaCut[i] = rAntiLambda_cospaCut.add<TH1>(fmt::format("hAntiLambdacospaCut_{}", cuthistosantilambda::cospacuts[i]).data(), fmt::format("hAntiLambdacospaCut_{}", cuthistosantilambda::cospacuts[i]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
+      cuthistosantilambda::cospaCut[i] = rAntiLambda_cospaCuts.add<TH1>(fmt::format("hAntiLambdacospaCut_{}", cuthistosantilambda::cospacuts[i]).data(), fmt::format("hAntiLambdacospaCut_{}", cuthistosantilambda::cospacuts[i]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistosantilambda::dcacuts.size(); i++) {
-      cuthistosantilambda::dcaCut[i] = rAntiLambda_dcaCut.add<TH1>(fmt::format("hAntiLambdadcaCut_{}", cuthistosantilambda::dcacuts[i]).data(), fmt::format("hAntiLambdadcaCut_{}", cuthistosantilambda::dcacuts[i]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
+      cuthistosantilambda::dcaCut[i] = rAntiLambda_dcaCuts.add<TH1>(fmt::format("hAntiLambdadcaCut_{}", cuthistosantilambda::dcacuts[i]).data(), fmt::format("hAntiLambdadcaCut_{}", cuthistosantilambda::dcacuts[i]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistosantilambda::v0radiuscuts.size(); i++) {
-      cuthistosantilambda::v0radiusCut[i] = rAntiLambda_v0radiusCut.add<TH1>(fmt::format("hAntiLambdav0radiusCut_{}", cuthistosantilambda::v0radiuscuts[i]).data(), fmt::format("hAntiLambdav0radiusCut_{}", cuthistosantilambda::v0radiuscuts[i]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
+      cuthistosantilambda::v0radiusCut[i] = rAntiLambda_v0radiusCuts.add<TH1>(fmt::format("hAntiLambdav0radiusCut_{}", cuthistosantilambda::v0radiuscuts[i]).data(), fmt::format("hAntiLambdav0radiusCut_{}", cuthistosantilambda::v0radiuscuts[i]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistosantilambda::dcapostopvcuts.size(); i++) {
-      cuthistosantilambda::dcapostopCut[i] = rAntiLambda_dcapostopCut.add<TH1>(fmt::format("hAntiLambdadcapostopCut_{}", cuthistosantilambda::dcapostopvcuts[i]).data(), fmt::format("hAntiLambdadcapostopCut_{}", cuthistosantilambda::dcapostopvcuts[i]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
+      cuthistosantilambda::dcapostopCut[i] = rAntiLambda_dcapostopCuts.add<TH1>(fmt::format("hAntiLambdadcapostopCut_{}", cuthistosantilambda::dcapostopvcuts[i]).data(), fmt::format("hAntiLambdadcapostopCut_{}", cuthistosantilambda::dcapostopvcuts[i]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
     }
     for (uint32_t i = 0; i < cuthistosantilambda::dcanegtopvcuts.size(); i++) {
-      cuthistosantilambda::dcanegtopCut[i] = rAntiLambda_dcanegtopCut.add<TH1>(fmt::format("hAntiLambdadcanegtopCut_{}", cuthistosantilambda::dcanegtopvcuts[i]).data(), fmt::format("hAntiLambdadcanegtopCut_{}", cuthistosantilambda::dcanegtopvcuts[i]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
+      cuthistosantilambda::dcanegtopCut[i] = rAntiLambda_dcanegtopCuts.add<TH1>(fmt::format("hAntiLambdadcanegtopCut_{}", cuthistosantilambda::dcanegtopvcuts[i]).data(), fmt::format("hAntiLambdadcanegtopCut_{}", cuthistosantilambda::dcanegtopvcuts[i]).data(), {HistType::kTH1D, {{AntiLambdaMassAxis}}});
     }
 
     // K0s topological cut histograms added and MC-matched
-    rV0Parameters_MC_V0match.add("hDCAV0Daughters_V0_Match", "hDCAV0Daughters_No_Match", {HistType::kTH1F, {{nBins, 0.0f, 1.2f}}});
-    rV0Parameters_MC_V0match.add("hV0CosPA_V0_Match", "hV0CosPA_No_Match", {HistType::kTH1F, {{nBins, 0.95f, 1.f}}});
-    rV0Parameters_MC_V0match.add("hV0Radius_V0_Match", "hV0Radius_No_Match", {HistType::kTH1F, {{nBins, 0.0f, 5.0f}}});
-    rV0Parameters_MC_V0match.add("hV0Radius_V0_Match_Full", "hV0Radius_No_Match_Full", {HistType::kTH1F, {{nBins, 0.0f, 40.0f}}});
-    rV0Parameters_MC_V0match.add("hDCAPostoPV_V0_Match", "hDCAPostoPV_No_Match", {HistType::kTH1F, {{nBins, 0.0f, 2.0f}}});
-    rV0Parameters_MC_V0match.add("hDCANegtoPV_V0_Match", "hDCANegtoPV_No_Match", {HistType::kTH1F, {{nBins, 0.0f, 2.0f}}});
-    rV0Parameters_MC_V0match.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
+    rV0Parameters_MC_V0Match.add("hDCAV0Daughters_V0_Match", "hDCAV0Daughters_No_Match", {HistType::kTH1F, {{nBins, 0.0f, 1.2f}}});
+    rV0Parameters_MC_V0Match.add("hV0CosPA_V0_Match", "hV0CosPA_No_Match", {HistType::kTH1F, {{nBins, 0.95f, 1.f}}});
+    rV0Parameters_MC_V0Match.add("hV0Radius_V0_Match", "hV0Radius_No_Match", {HistType::kTH1F, {{nBins, 0.0f, 5.0f}}});
+    rV0Parameters_MC_V0Match.add("hV0Radius_V0_Match_Full", "hV0Radius_No_Match_Full", {HistType::kTH1F, {{nBins, 0.0f, 40.0f}}});
+    rV0Parameters_MC_V0Match.add("hDCAPostoPV_V0_Match", "hDCAPostoPV_No_Match", {HistType::kTH1F, {{nBins, 0.0f, 2.0f}}});
+    rV0Parameters_MC_V0Match.add("hDCANegtoPV_V0_Match", "hDCANegtoPV_No_Match", {HistType::kTH1F, {{nBins, 0.0f, 2.0f}}});
+    rV0Parameters_MC_V0Match.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
 
     // kzero match
-    rV0Parameters_MC_K0Smatch.add("hDCAV0Daughters_KzeroMC_Match", "hDCAV0Daughters_KzeroMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 1.2f}}});
-    rV0Parameters_MC_K0Smatch.add("hV0CosPA_KzeroMC_Match", "hV0CosPA_KzeroMC_Match", {HistType::kTH1F, {{nBins, 0.95f, 1.f}}});
-    rV0Parameters_MC_K0Smatch.add("hV0Radius_KzeroMC_Match", "hV0Radius_KzeroMC_Match", {HistType::kTH1F, {{nBins, 0.2f, 5.0f}}});
-    rV0Parameters_MC_K0Smatch.add("hDCAPostoPV_KzeroMC_Match", "hDCAPostoPV_KzeroMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 2.0f}}});
-    rV0Parameters_MC_K0Smatch.add("hDCANegtoPV_KzeroMC_Match", "hDCANegtoPV_KzeroMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 2.0f}}});
+    rV0Parameters_MC_K0SMatch.add("hDCAV0Daughters_KzeroMC_Match", "hDCAV0Daughters_KzeroMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 1.2f}}});
+    rV0Parameters_MC_K0SMatch.add("hV0CosPA_KzeroMC_Match", "hV0CosPA_KzeroMC_Match", {HistType::kTH1F, {{nBins, 0.95f, 1.f}}});
+    rV0Parameters_MC_K0SMatch.add("hV0Radius_KzeroMC_Match", "hV0Radius_KzeroMC_Match", {HistType::kTH1F, {{nBins, 0.2f, 5.0f}}});
+    rV0Parameters_MC_K0SMatch.add("hDCAPostoPV_KzeroMC_Match", "hDCAPostoPV_KzeroMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 2.0f}}});
+    rV0Parameters_MC_K0SMatch.add("hDCANegtoPV_KzeroMC_Match", "hDCANegtoPV_KzeroMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 2.0f}}});
 
     // lambda match
-    rV0Parameters_MC_Lambdamatch.add("hDCAV0Daughters_LambdaMC_Match", "hDCAV0Daughters_LambdaMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 1.2f}}});
-    rV0Parameters_MC_Lambdamatch.add("hV0CosPA_LambdaMC_Match", "hV0CosPA_LambdaMC_Match", {HistType::kTH1F, {{nBins, 0.95f, 1.f}}});
-    rV0Parameters_MC_Lambdamatch.add("hV0Radius_LambdaMC_Match", "hV0Radius_LambdaMC_Match", {HistType::kTH1F, {{nBins, 0.2f, 5.0f}}});
-    rV0Parameters_MC_Lambdamatch.add("hDCAPostoPV_LambdaMC_Match", "hDCAPostoPV_LambdaMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 2.0f}}});
-    rV0Parameters_MC_Lambdamatch.add("hDCANegtoPV_LambdaMC_Match", "hDCANegtoPV_LambdaMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 2.0f}}});
+    rV0Parameters_MC_LambdaMatch.add("hDCAV0Daughters_LambdaMC_Match", "hDCAV0Daughters_LambdaMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 1.2f}}});
+    rV0Parameters_MC_LambdaMatch.add("hV0CosPA_LambdaMC_Match", "hV0CosPA_LambdaMC_Match", {HistType::kTH1F, {{nBins, 0.95f, 1.f}}});
+    rV0Parameters_MC_LambdaMatch.add("hV0Radius_LambdaMC_Match", "hV0Radius_LambdaMC_Match", {HistType::kTH1F, {{nBins, 0.2f, 5.0f}}});
+    rV0Parameters_MC_LambdaMatch.add("hDCAPostoPV_LambdaMC_Match", "hDCAPostoPV_LambdaMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 2.0f}}});
+    rV0Parameters_MC_LambdaMatch.add("hDCANegtoPV_LambdaMC_Match", "hDCANegtoPV_LambdaMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 2.0f}}});
 
     // antilambda match
-    rV0Parameters_MC_AntiLambdamatch.add("hDCAV0Daughters_AntiLambdaMC_Match", "hDCAV0Daughters_AntiLambdaMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 1.2f}}});
-    rV0Parameters_MC_AntiLambdamatch.add("hV0CosPA_AntiLambdaMC_Match", "hV0CosPA_AntiLambdaMC_Match", {HistType::kTH1F, {{nBins, 0.95f, 1.f}}});
-    rV0Parameters_MC_AntiLambdamatch.add("hV0Radius_AntiLambdaMC_Match", "hV0Radius_AntiLambdaMC_Match", {HistType::kTH1F, {{nBins, 0.2f, 5.0f}}});
-    rV0Parameters_MC_AntiLambdamatch.add("hDCAPostoPV_AntiLambdaMC_Match", "hDCAPostoPV_AntiLambdaMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 2.0f}}});
-    rV0Parameters_MC_AntiLambdamatch.add("hDCANegtoPV_AntiLambdaMC_Match", "hDCANegtoPV_AntiLambdaMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 2.0f}}});
+    rV0Parameters_MC_AntiLambdaMatch.add("hDCAV0Daughters_AntiLambdaMC_Match", "hDCAV0Daughters_AntiLambdaMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 1.2f}}});
+    rV0Parameters_MC_AntiLambdaMatch.add("hV0CosPA_AntiLambdaMC_Match", "hV0CosPA_AntiLambdaMC_Match", {HistType::kTH1F, {{nBins, 0.95f, 1.f}}});
+    rV0Parameters_MC_AntiLambdaMatch.add("hV0Radius_AntiLambdaMC_Match", "hV0Radius_AntiLambdaMC_Match", {HistType::kTH1F, {{nBins, 0.2f, 5.0f}}});
+    rV0Parameters_MC_AntiLambdaMatch.add("hDCAPostoPV_AntiLambdaMC_Match", "hDCAPostoPV_AntiLambdaMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 2.0f}}});
+    rV0Parameters_MC_AntiLambdaMatch.add("hDCANegtoPV_AntiLambdaMC_Match", "hDCANegtoPV_AntiLambdaMC_Match", {HistType::kTH1F, {{nBins, 0.0f, 2.0f}}});
 
     // V0s Data
     rV0Parameters_Data.add("hDCAV0Daughters_V0_Data", "hDCAV0Daughters_V0_Data", {HistType::kTH1F, {{nBins, 0.0f, 1.2f}}});
@@ -287,24 +287,24 @@ struct v0topologicalcuts {
     for (const auto& v0 : V0s) {
       if (std::abs(v0.posTrack_as<DaughterTracks>().eta()) < etadau && std::abs(v0.negTrack_as<DaughterTracks>().eta()) < etadau) { // daughters pseudorapidity cut
         // filling histograms with V0 values
-        rV0Parameters_MC_V0match.fill(HIST("hDCAV0Daughters_V0_Match"), v0.dcaV0daughters());
-        rV0Parameters_MC_V0match.fill(HIST("hV0CosPA_V0_Match"), v0.v0cosPA());
-        rV0Parameters_MC_V0match.fill(HIST("hV0Radius_V0_Match"), v0.v0radius());
-        rV0Parameters_MC_V0match.fill(HIST("hV0Radius_V0_Match_Full"), v0.v0radius());
-        rV0Parameters_MC_V0match.fill(HIST("hDCAPostoPV_V0_Match"), v0.dcapostopv());
-        rV0Parameters_MC_V0match.fill(HIST("hDCANegtoPV_V0_Match"), v0.dcanegtopv());
-        rV0Parameters_MC_V0match.fill(HIST("hVertexZRec"), collision.posZ());
+        rV0Parameters_MC_V0Match.fill(HIST("hDCAV0Daughters_V0_Match"), v0.dcaV0daughters());
+        rV0Parameters_MC_V0Match.fill(HIST("hV0CosPA_V0_Match"), v0.v0cosPA());
+        rV0Parameters_MC_V0Match.fill(HIST("hV0Radius_V0_Match"), v0.v0radius());
+        rV0Parameters_MC_V0Match.fill(HIST("hV0Radius_V0_Match_Full"), v0.v0radius());
+        rV0Parameters_MC_V0Match.fill(HIST("hDCAPostoPV_V0_Match"), v0.dcapostopv());
+        rV0Parameters_MC_V0Match.fill(HIST("hDCANegtoPV_V0_Match"), v0.dcanegtopv());
+        rV0Parameters_MC_V0Match.fill(HIST("hVertexZRec"), collision.posZ());
 
         // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
         if (v0.has_mcParticle()) {
           auto v0mcParticle = v0.mcParticle();
           if (v0mcParticle.pdgCode() == 310) {                                                                                    // kzero matched
             if (std::abs(v0.mLambda() - mLambdaPDG) > compv0masscut && std::abs(v0.mAntiLambda() - mLambdaPDG) > compv0masscut) { // Kzero competitive v0 mass cut (cut out Lambdas and Anti-Lambdas)
-              rV0Parameters_MC_K0Smatch.fill(HIST("hDCAV0Daughters_KzeroMC_Match"), v0.dcaV0daughters());
-              rV0Parameters_MC_K0Smatch.fill(HIST("hV0CosPA_KzeroMC_Match"), v0.v0cosPA());
-              rV0Parameters_MC_K0Smatch.fill(HIST("hV0Radius_KzeroMC_Match"), v0.v0radius());
-              rV0Parameters_MC_K0Smatch.fill(HIST("hDCAPostoPV_KzeroMC_Match"), std::abs(v0.dcapostopv()));
-              rV0Parameters_MC_K0Smatch.fill(HIST("hDCANegtoPV_KzeroMC_Match"), std::abs(v0.dcanegtopv()));
+              rV0Parameters_MC_K0SMatch.fill(HIST("hDCAV0Daughters_KzeroMC_Match"), v0.dcaV0daughters());
+              rV0Parameters_MC_K0SMatch.fill(HIST("hV0CosPA_KzeroMC_Match"), v0.v0cosPA());
+              rV0Parameters_MC_K0SMatch.fill(HIST("hV0Radius_KzeroMC_Match"), v0.v0radius());
+              rV0Parameters_MC_K0SMatch.fill(HIST("hDCAPostoPV_KzeroMC_Match"), std::abs(v0.dcapostopv()));
+              rV0Parameters_MC_K0SMatch.fill(HIST("hDCANegtoPV_KzeroMC_Match"), std::abs(v0.dcanegtopv()));
 
               for (uint32_t j = 0; j < cuthistoskzerosh::cospacuts.size(); j++) {
                 std::string cospacut = cuthistoskzerosh::cospacuts[j]; // Get the current cut value from the namespace
@@ -355,11 +355,11 @@ struct v0topologicalcuts {
           }
           if (v0mcParticle.pdgCode() == 3122) {                       // lambda matched
             if (std::abs(v0.mK0Short() - mK0shPDG) > compv0masscut) { // antilambda competitive v0 mass cut (cut out Kaons)
-              rV0Parameters_MC_Lambdamatch.fill(HIST("hDCAV0Daughters_LambdaMC_Match"), v0.dcaV0daughters());
-              rV0Parameters_MC_Lambdamatch.fill(HIST("hV0CosPA_LambdaMC_Match"), v0.v0cosPA());
-              rV0Parameters_MC_Lambdamatch.fill(HIST("hV0Radius_LambdaMC_Match"), v0.v0radius());
-              rV0Parameters_MC_Lambdamatch.fill(HIST("hDCAPostoPV_LambdaMC_Match"), std::abs(v0.dcapostopv()));
-              rV0Parameters_MC_Lambdamatch.fill(HIST("hDCANegtoPV_LambdaMC_Match"), std::abs(v0.dcanegtopv()));
+              rV0Parameters_MC_LambdaMatch.fill(HIST("hDCAV0Daughters_LambdaMC_Match"), v0.dcaV0daughters());
+              rV0Parameters_MC_LambdaMatch.fill(HIST("hV0CosPA_LambdaMC_Match"), v0.v0cosPA());
+              rV0Parameters_MC_LambdaMatch.fill(HIST("hV0Radius_LambdaMC_Match"), v0.v0radius());
+              rV0Parameters_MC_LambdaMatch.fill(HIST("hDCAPostoPV_LambdaMC_Match"), std::abs(v0.dcapostopv()));
+              rV0Parameters_MC_LambdaMatch.fill(HIST("hDCANegtoPV_LambdaMC_Match"), std::abs(v0.dcanegtopv()));
 
               // for explanation look at the first Kzero  plot above
               for (uint32_t j = 0; j < cuthistoslambda::cospacuts.size(); j++) {
@@ -411,11 +411,11 @@ struct v0topologicalcuts {
           }
           if (v0mcParticle.pdgCode() == -3122) {                      // antilambda matched
             if (std::abs(v0.mK0Short() - mK0shPDG) > compv0masscut) { // antilambda competitive v0 mass cut (cut out Kaons)
-              rV0Parameters_MC_AntiLambdamatch.fill(HIST("hDCAV0Daughters_AntiLambdaMC_Match"), v0.dcaV0daughters());
-              rV0Parameters_MC_AntiLambdamatch.fill(HIST("hV0CosPA_AntiLambdaMC_Match"), v0.v0cosPA());
-              rV0Parameters_MC_AntiLambdamatch.fill(HIST("hV0Radius_AntiLambdaMC_Match"), v0.v0radius());
-              rV0Parameters_MC_AntiLambdamatch.fill(HIST("hDCAPostoPV_AntiLambdaMC_Match"), std::abs(v0.dcapostopv()));
-              rV0Parameters_MC_AntiLambdamatch.fill(HIST("hDCANegtoPV_AntiLambdaMC_Match"), std::abs(v0.dcanegtopv()));
+              rV0Parameters_MC_AntiLambdaMatch.fill(HIST("hDCAV0Daughters_AntiLambdaMC_Match"), v0.dcaV0daughters());
+              rV0Parameters_MC_AntiLambdaMatch.fill(HIST("hV0CosPA_AntiLambdaMC_Match"), v0.v0cosPA());
+              rV0Parameters_MC_AntiLambdaMatch.fill(HIST("hV0Radius_AntiLambdaMC_Match"), v0.v0radius());
+              rV0Parameters_MC_AntiLambdaMatch.fill(HIST("hDCAPostoPV_AntiLambdaMC_Match"), std::abs(v0.dcapostopv()));
+              rV0Parameters_MC_AntiLambdaMatch.fill(HIST("hDCANegtoPV_AntiLambdaMC_Match"), std::abs(v0.dcanegtopv()));
               // for explanation look at the first Kzero  plot above
               for (uint32_t j = 0; j < cuthistosantilambda::cospacuts.size(); j++) {
                 std::string cospacutantilambda = cuthistosantilambda::cospacuts[j];
