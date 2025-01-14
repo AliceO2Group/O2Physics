@@ -86,9 +86,9 @@ struct V0PtInvMassPlots {
   Configurable<bool> antiLambdaAnalysis{"antiLambdaAnalysis", true, "Enable Antilambda Pt Analysis"};
 
   // Configurable string for Different Pt Bins
-  Configurable<std::string> kzeroshSettingptString{"kzeroSettingptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Kzero Pt Bin Values"};
-  Configurable<std::string> lambdaSettingptString{"lambdaSettingptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Lambda Pt Bin Values"};
-  Configurable<std::string> antilambdaSettingptString{"antilambdaSettingptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Antilambda Pt Bin Values"};
+  Configurable<std::string> kzeroshSettingPtString{"kzeroSettingptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Kzero Pt Bin Values"};
+  Configurable<std::string> lambdaSettingPtString{"lambdaSettingptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Lambda Pt Bin Values"};
+  Configurable<std::string> antilambdaSettingPtString{"antilambdaSettingptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Antilambda Pt Bin Values"};
 
   void init(InitContext const&)
   {
@@ -103,7 +103,7 @@ struct V0PtInvMassPlots {
 
     // Adding Kzerosh Histograms to registry
     if (kzeroAnalysis == true) {
-      pthistos::kaonptbins = o2::utils::Str::tokenize(kzeroshSettingptString, ',');
+      pthistos::kaonptbins = o2::utils::Str::tokenize(kzeroshSettingPtString, ',');
       rPtAnalysis.add("hK0ShortReconstructedPtSpectrum", "hK0ShortReconstructedPtSpectrum", {HistType::kTH1F, {ptAxis}});
       rPtAnalysis.add("hMassK0ShortAll", "hMassK0ShortAll", {HistType::kTH1F, {k0ShortMassAxis}});
       rPtAnalysis.add("hK0ShortPtSpectrumBeforeCuts", "hK0ShortPtSpectrumBeforeCuts", {HistType::kTH1F, {ptAxis}});
@@ -118,7 +118,7 @@ struct V0PtInvMassPlots {
     // Adding Lambda Histograms
     if (lambdaAnalysis == true) {
       // same method as in Kzerosh above
-      std::string lambdaSettingptbins = lambdaSettingptString;
+      std::string lambdaSettingptbins = lambdaSettingPtString;
       pthistos::lambdaPtBins = o2::utils::Str::tokenize(lambdaSettingptbins, ',');
       rPtAnalysis.add("hLambdaReconstructedPtSpectrum", "hLambdaReconstructedPtSpectrum", {HistType::kTH1F, {ptAxis}});
       rPtAnalysis.add("hMassLambdaAll", "hMassLambdaAll", {HistType::kTH1F, {lambdaMassAxis}});
@@ -131,7 +131,7 @@ struct V0PtInvMassPlots {
     // Adding Antilambda Histograms
     if (antiLambdaAnalysis == true) {
       // same method as in Lambda and Kzerosh above
-      std::string antilambdaSettingptbins = antilambdaSettingptString;
+      std::string antilambdaSettingptbins = antilambdaSettingPtString;
       pthistos::antiLambdaPtBins = o2::utils::Str::tokenize(antilambdaSettingptbins, ',');
       rPtAnalysis.add("hAntilambdaReconstructedPtSpectrum", "hAntilambdaReconstructedPtSpectrum", {HistType::kTH1F, {ptAxis}});
       rPtAnalysis.add("hMassAntilambdaAll", "hMassAntilambdaAll", {HistType::kTH1F, {antiLambdaMassAxis}});
