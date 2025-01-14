@@ -105,10 +105,10 @@ struct v0topologicalcuts {
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
 
   // Configurables for Cuts
-  Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
-  Configurable<float> NSigmaTPCPion{"snigmatpcpion", 4, "NSigmaTPCPion"};
-  Configurable<float> NSigmaTPCProton{"nsigmatpcproton", 4, "NSigmaTPCProton"};
-  Configurable<float> compv0masscut{"competitivev0masscut", 0.01, "CompetitiveV0masscut (GeV)"};
+  Configurable<float> cutZVertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
+  Configurable<float> nSigmaTPCPion{"nSigmaTPCPion", 4, "nSigmaTPCPion"};
+  Configurable<float> nSigmaTPCProton{"nSigmaTOCProton", 4, "nSigmaTPCProton"};
+  Configurable<float> compv0masscut{"compv0masscut", 0.01, "CompetitiveV0masscut (GeV)"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
 
   // Configurable strings for Kzero cuts
@@ -490,7 +490,7 @@ struct v0topologicalcuts {
       rV0Parameters_Data.fill(HIST("hVertexZRec"), collision.posZ());
 
       if (std::abs(v0.posTrack_as<DaughterTracks>().eta()) < etadau && std::abs(v0.negTrack_as<DaughterTracks>().eta()) < etadau) { // daughters pseudorapidity cut
-        if (std::abs(posDaughterTrack.tpcNSigmaPi()) < NSigmaTPCPion && std::abs(negDaughterTrack.tpcNSigmaPi()) < NSigmaTPCPion) { // TPC PID on daughter pions
+        if (std::abs(posDaughterTrack.tpcNSigmaPi()) < nSigmaTPCPion && std::abs(negDaughterTrack.tpcNSigmaPi()) < nSigmaTPCPion) { // TPC PID on daughter pions
           rV0Parameters_Data.fill(HIST("hMassK0ShortAllAfterCutsandTPCPID"), v0.mK0Short());
           if (std::abs(v0.mLambda() - mLambdaPDG) > compv0masscut && std::abs(v0.mAntiLambda() - mLambdaPDG) > compv0masscut) { // antilambda competitive v0 mass cut (cut out Lambdas and Anti-Lambdas)
             rV0Parameters_Data.fill(HIST("hMassK0ShortAllAfterCutTPCPIDCompV0MassCut"), v0.mK0Short());
@@ -542,7 +542,7 @@ struct v0topologicalcuts {
             }
           }
         }
-        if (std::abs(posDaughterTrack.tpcNSigmaPr()) < NSigmaTPCProton && std::abs(negDaughterTrack.tpcNSigmaPi()) < NSigmaTPCPion) { // TPC PID on daughter pion and proton
+        if (std::abs(posDaughterTrack.tpcNSigmaPr()) < nSigmaTPCProton && std::abs(negDaughterTrack.tpcNSigmaPi()) < nSigmaTPCPion) { // TPC PID on daughter pion and proton
           rV0Parameters_Data.fill(HIST("hMassLambdaAllAfterCutsandTPCPID"), v0.mLambda());
           if (std::abs(v0.mK0Short() - mK0shPDG) > compv0masscut) { // lambda competitive v0 mass cut (cut out Kaons)
             // Filling the five Lambda invariant mass plots for different cuts (which are taken from namespace), same as with Kzeros above,for full explanation see the first kzero cut filling in the MC process
@@ -593,7 +593,7 @@ struct v0topologicalcuts {
             }
           }
         }
-        if (std::abs(posDaughterTrack.tpcNSigmaPr()) < NSigmaTPCProton && std::abs(negDaughterTrack.tpcNSigmaPi()) < NSigmaTPCPion) { // TPC PID on daughter pion abd proton
+        if (std::abs(posDaughterTrack.tpcNSigmaPr()) < nSigmaTPCProton && std::abs(negDaughterTrack.tpcNSigmaPi()) < nSigmaTPCPion) { // TPC PID on daughter pion abd proton
           rV0Parameters_Data.fill(HIST("hMassAntilambdaAllAfterCutsandTPCPID"), v0.mAntiLambda());
           if (std::abs(v0.mK0Short() - mK0shPDG) > compv0masscut) { // antilambda competitive v0 mass cut (cut out Kaons)
             // Filling the five Anti-Lambda invariant mass plots for different cuts (which are taken from namespace), same as with Kzeros and Lambdas above,for full explanation see the first kzero cut filling in the MC process
