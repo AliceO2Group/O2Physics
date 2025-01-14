@@ -106,25 +106,25 @@ struct V0TopologicalCuts {
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
 
   // Configurable strings for Kzero cuts
-  Configurable<std::string> kzeroshSettingCosPAcutsString{"kzeroSettingCosPAcuts", {"0_98,0_981,0_982,0_983,0_984,0_985,0_986,0_987,0_988,0_989,0_99,0_991,0_992,0_993,0_994,0_995,0_996,0_997,0_998,0_999"}, "Kzero cosPA Cut Values"};
-  Configurable<std::string> kzeroshSettingDCAcutsString{"kzeroSettingDCAcuts", {"0_3,0_285,0_27,0_255,0_24,0_225,0_21,0_195,0_18,0_165,0_15,0_135,0_12,0_105,0_09,0_075,0_06,0_045,0_03,0_015"}, "Kzero DCA Cut Values"};
-  Configurable<std::string> kzeroshSettingV0radiusString{"kzeroSettingV0radiuscuts", {"0_5,0_51,0_52,0_53,0_54,0_55,0_56,0_57,0_58,0_59,0_6,0_61,0_62,0_63,0_64,0_65,0_66,0_67,0_68,0_69"}, "Kzero V0Radius Cut Values"};
-  Configurable<std::string> kzeroshSettingDCApostopvString{"kzeroSettingDCApostopvcuts", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "Kzero DCA Pos to PV Cut Values"};
-  Configurable<std::string> kzeroshSettingDCAnegtopvString{"kzeroSettingDCAnegtopvcuts", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "KzeroDCA Neg to PV Cut Values"};
+  Configurable<std::string> kzeroshSettingCosPAcutsString{"kzeroshSettingCosPAcutsString", {"0_98,0_981,0_982,0_983,0_984,0_985,0_986,0_987,0_988,0_989,0_99,0_991,0_992,0_993,0_994,0_995,0_996,0_997,0_998,0_999"}, "Kzero cosPA Cut Values"};
+  Configurable<std::string> kzeroshSettingDCAcutsString{"kzeroshSettingDCAcutsStringString", {"0_3,0_285,0_27,0_255,0_24,0_225,0_21,0_195,0_18,0_165,0_15,0_135,0_12,0_105,0_09,0_075,0_06,0_045,0_03,0_015"}, "Kzero DCA Cut Values"};
+  Configurable<std::string> kzeroshSettingV0radiusString{"kzeroshSettingV0radiusString", {"0_5,0_51,0_52,0_53,0_54,0_55,0_56,0_57,0_58,0_59,0_6,0_61,0_62,0_63,0_64,0_65,0_66,0_67,0_68,0_69"}, "Kzero V0Radius Cut Values"};
+  Configurable<std::string> kzeroshSettingDCApostopvString{"kzeroshSettingDCApostopvString", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "Kzero DCA Pos to PV Cut Values"};
+  Configurable<std::string> kzeroshSettingDCAnegtopvString{"kzeroshSettingDCAnegtopvString", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "KzeroDCA Neg to PV Cut Values"};
 
   // Configurable strings for Lambdacuts
-  Configurable<std::string> lambdaSettingCosPAcutsString{"lambdaSettingCosPAcuts", {"0_98,0_981,0_982,0_983,0_984,0_985,0_986,0_987,0_988,0_989,0_99,0_991,0_992,0_993,0_994"}, "Lambda cosPA Cut Values"};
-  Configurable<std::string> lambdaSettingDCAcutsString{"lambdaSettingDCAcuts", {"0_3,0_285,0_27,0_255,0_24,0_225,0_21,0_195,0_18,0_165,0_15,0_135,0_12,0_105,0_09,0_075,0_06,0_045,0_03,0_015"}, "Lambda DCA Cut Values"};
-  Configurable<std::string> lambdaSettingV0radiusString{"lambdaSettingV0radiuscuts", {"0_5,0_51,0_52,0_53,0_54,0_55,0_56,0_57,0_58,0_59,0_6,0_61,0_62,0_63,0_64,0_65,0_66,0_67,0_68,0_69"}, "Lambda V0Radius Cut Values"};
-  Configurable<std::string> lambdaSettingDCApostopvString{"lambdaSettingDCApostopvcuts", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "Lambda DCA Pos to PV Cut Values"};
-  Configurable<std::string> lambdaSettingDCAnegtopvString{"lambdaSettingDCAnegtopvcuts", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "Lambda DCA Neg to PV Cut Values"};
+  Configurable<std::string> lambdaSettingCosPAcutsString{"lambdaSettingCosPAcutsString", {"0_98,0_981,0_982,0_983,0_984,0_985,0_986,0_987,0_988,0_989,0_99,0_991,0_992,0_993,0_994"}, "Lambda cosPA Cut Values"};
+  Configurable<std::string> lambdaSettingDCAcutsString{"lambdaSettingDCAcutsString", {"0_3,0_285,0_27,0_255,0_24,0_225,0_21,0_195,0_18,0_165,0_15,0_135,0_12,0_105,0_09,0_075,0_06,0_045,0_03,0_015"}, "Lambda DCA Cut Values"};
+  Configurable<std::string> lambdaSettingV0radiusString{"lambdaSettingV0radiusString", {"0_5,0_51,0_52,0_53,0_54,0_55,0_56,0_57,0_58,0_59,0_6,0_61,0_62,0_63,0_64,0_65,0_66,0_67,0_68,0_69"}, "Lambda V0Radius Cut Values"};
+  Configurable<std::string> lambdaSettingDCApostopvString{"lambdaSettingDCApostopvString", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "Lambda DCA Pos to PV Cut Values"};
+  Configurable<std::string> lambdaSettingDCAnegtopvString{"lambdaSettingDCAnegtopvString", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "Lambda DCA Neg to PV Cut Values"};
 
   // Configurable strings for AntiLambdacuts
-  Configurable<std::string> antilambdaSettingCosPAcutsString{"antilambdaSettingCosPAcuts", {"0_98,0_981,0_982,0_983,0_984,0_985,0_986,0_987,0_988,0_989,0_99,0_991,0_992,0_993,0_994,0_995,0_996,0_997,0_998,0_999"}, "Antilambda cosPA Cut Values"};
-  Configurable<std::string> antilambdaSettingDCAcutsString{"antilambdaSettingDCAcuts", {"0_3,0_285,0_27,0_255,0_24,0_225,0_21,0_195,0_18,0_165,0_15,0_135,0_12,0_105,0_09,0_075,0_06,0_045,0_03,0_015"}, "Antilambda DCA Cut Values"};
-  Configurable<std::string> antilambdaSettingV0radiusString{"antilambdaSettingV0radiuscuts", {"0_5,0_51,0_52,0_53,0_54,0_55,0_56,0_57,0_58,0_59,0_6,0_61,0_62,0_63,0_64,0_65,0_66,0_67,0_68,0_69"}, "Antilambda V0Radius Cut Values"};
-  Configurable<std::string> antilambdaSettingDCApostopvString{"antilambdaSettingDCApostopvcuts", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "Antilambda DCA Pos to PV Cut Values"};
-  Configurable<std::string> antilambdaSettingDCAnegtopvString{"antilambdaSettingDCAnegtopvcuts", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "Antilambda DCA Neg to PV Cut Values"};
+  Configurable<std::string> antilambdaSettingCosPAcutsString{"antilambdaSettingCosPAcutsString", {"0_98,0_981,0_982,0_983,0_984,0_985,0_986,0_987,0_988,0_989,0_99,0_991,0_992,0_993,0_994,0_995,0_996,0_997,0_998,0_999"}, "Antilambda cosPA Cut Values"};
+  Configurable<std::string> antilambdaSettingDCAcutsString{"antilambdaSettingDCAcutsString", {"0_3,0_285,0_27,0_255,0_24,0_225,0_21,0_195,0_18,0_165,0_15,0_135,0_12,0_105,0_09,0_075,0_06,0_045,0_03,0_015"}, "Antilambda DCA Cut Values"};
+  Configurable<std::string> antilambdaSettingV0radiusString{"antilambdaSettingV0radiusString", {"0_5,0_51,0_52,0_53,0_54,0_55,0_56,0_57,0_58,0_59,0_6,0_61,0_62,0_63,0_64,0_65,0_66,0_67,0_68,0_69"}, "Antilambda V0Radius Cut Values"};
+  Configurable<std::string> antilambdaSettingDCApostopvString{"antilambdaSettingDCApostopvString", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "Antilambda DCA Pos to PV Cut Values"};
+  Configurable<std::string> antilambdaSettingDCAnegtopvString{"antilambdaSettingDCAnegtopvString", {"0_0,0_01,0_02,0_03,0_04,0_05,0_06,0_07,0_08,0_09,0_1,0_11,0_12,0_13,0_14,0_15,0_16,0_17,0_18,0_19"}, "Antilambda DCA Neg to PV Cut Values"};
 
   void init(InitContext const&)
   {
