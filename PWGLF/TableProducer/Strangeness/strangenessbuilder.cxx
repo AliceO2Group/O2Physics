@@ -43,13 +43,13 @@ static const std::vector<std::string> tableNames{"V0Indices",           //.0 (st
                                                  "V0Covs",              //.2
                                                  "CascIndices",         //.3 (standard analyses: CascData)
                                                  "KFCascIndices",       // 4 (standard analyses: KFCascData)
-                                                 "TraCascIndices",      // 5 (standard analyses: TraCascData)
+                                                 "TraCascIndices",      //.5 (standard analyses: TraCascData)
                                                  "StoredCascCores",     //.6 (standard analyses: CascData)
                                                  "StoredKFCascCores",   // 7 (standard analyses: KFCascData)
-                                                 "StoredTraCascCores",  // 8 (standard analyses: TraCascData)
+                                                 "StoredTraCascCores",  //.8 (standard analyses: TraCascData)
                                                  "CascCovs",            //.9
                                                  "KFCascCovs",          // 10
-                                                 "TraCascCovs",         // 11
+                                                 "TraCascCovs",         //.11
                                                  "V0TrackXs",           //.12
                                                  "CascTrackXs",         //.13
                                                  "CascBBs",             //.14
@@ -232,6 +232,13 @@ struct StrangenessBuilder {
   Produces<aod::CascCovs> casccovs;                   // for decay chain reco
   Produces<aod::KFCascCovs> kfcasccovs;               // for decay chain reco
   Produces<aod::TraCascCovs> tracasccovs;             // for decay chain reco
+
+  //__________________________________________________
+  // interlink tables
+  Produces<aod::V0DataLink> v0dataLink;           // de-refs V0s -> V0Data
+  Produces<aod::CascDataLink> cascdataLink;       // de-refs Cascades -> CascData
+  Produces<aod::KFCascDataLink> kfcascdataLink;   // de-refs Cascades -> KFCascData
+  Produces<aod::TraCascDataLink> tracascdataLink; // de-refs Cascades -> TraCascData
 
   //__________________________________________________
   // secondary auxiliary tables
@@ -449,6 +456,7 @@ struct StrangenessBuilder {
     for (auto& v0 : v0s) {
       if(!mEnabledTables[kV0CoresBase] && v0Map[v0.globalIndex()] == -2){
         // this v0 hasn't been used by cascades and we're not generating V0s, so skip it
+        v0dataLink(-1, -1);
         continue; 
       }
 
@@ -457,6 +465,7 @@ struct StrangenessBuilder {
       auto const& posTrack = v0.template posTrack_as<TTracks>();
       auto const& negTrack = v0.template negTrack_as<TTracks>();
       if(!straHelper.buildV0Candidate(collision, posTrack, negTrack, v0.isCollinearV0())){ 
+        v0dataLink(-1, -1);
         continue;
       }
       nV0s++;
@@ -486,6 +495,7 @@ struct StrangenessBuilder {
                   TMath::Cos(straHelper.v0.pointingAngle),
                   straHelper.v0.dcaXY,
                   v0.v0Type());
+          v0dataLink(v0cores.lastIndex(), -1);
         }
         if(mEnabledTables[kV0TraPosAtDCAs]){
           // for tracking studies
@@ -532,6 +542,7 @@ struct StrangenessBuilder {
                                            mEnabledTables[kCascBBs],
                                            false,  
                                            mEnabledTables[kCascCovs])){
+        cascdataLink(-1);
         continue; // didn't work out, skip
       }
       nCascades++;
@@ -553,7 +564,10 @@ struct StrangenessBuilder {
                  straHelper.cascade.v0DaughterDCA, straHelper.cascade.cascadeDaughterDCA,
                  straHelper.cascade.positiveDCAxy, straHelper.cascade.negativeDCAxy,
                  straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz);
+        // interlink always produced if cascades generated
+        cascdataLink(cascdata.lastIndex());
       }
+
       if (mEnabledTables[kCascTrackXs]) {
         cascTrackXs(straHelper.cascade.positiveTrackX, straHelper.cascade.negativeTrackX, straHelper.cascade.bachelorTrackX);
       }
@@ -564,6 +578,7 @@ struct StrangenessBuilder {
         casccovs(straHelper.cascade.covariance);
       }
     }
+      
     LOGF(info, "Cascades in DF: %i, cascades built: %i", cascades.size(), nCascades);
   }
 
@@ -594,6 +609,7 @@ struct StrangenessBuilder {
                                            mEnabledTables[kCascBBs],
                                            false,  
                                            mEnabledTables[kCascCovs])){
+        tracascdataLink(-1);
         continue; // didn't work out, skip
       }
 
@@ -629,6 +645,8 @@ struct StrangenessBuilder {
                  straHelper.cascade.positiveDCAxy, straHelper.cascade.negativeDCAxy,
                  straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz, 
                  cascadeTrack.matchingChi2(), cascadeTrack.topologyChi2(), cascadeTrack.itsClsSize());
+        // interlink always produced if base core table generated
+        tracascdataLink(cascdata.lastIndex());
       }
       if (mEnabledTables[kCascTrackXs]) {
         cascTrackXs(straHelper.cascade.positiveTrackX, straHelper.cascade.negativeTrackX, straHelper.cascade.bachelorTrackX);
