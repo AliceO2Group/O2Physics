@@ -357,6 +357,20 @@ struct StrangenessBuilder {
     Configurable<bool> generatePhotonCandidates{"generatePhotonCandidates", false, "generate gamma conversion candidates (V0s using TPC-only tracks)"};
   } v0BuilderOpts;
 
+  // cascade building options
+  struct : ConfigurableGroup {
+    std::string prefix = "cascadeBuilderOpts";
+    Configurable<bool> useCascadeMomentumAtPrimVtx{"useCascadeMomentumAtPrimVtx", false, "use cascade momentum at PV"};
+
+    // KF building specific
+    Configurable<bool> kfTuneForOmega{"kfTuneForOmega", false, "if enabled, take main cascade properties from Omega fit instead of Xi fit (= default)"};
+    Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct Method"};
+    Configurable<bool> kfUseV0MassConstraint{"kfUseV0MassConstraint", true, "KF: use Lambda mass constraint"};
+    Configurable<bool> kfUseCascadeMassConstraint{"kfUseCascadeMassConstraint", false, "KF: use Cascade mass constraint - WARNING: not adequate for inv mass analysis of Xi"};
+    Configurable<bool> kfDoDCAFitterPreMinimV0{"kfDoDCAFitterPreMinimV0", true, "KF: do DCAFitter pre-optimization before KF fit to include material corrections for V0"};
+    Configurable<bool> kfDoDCAFitterPreMinimCasc{"kfDoDCAFitterPreMinimCasc", true, "KF: do DCAFitter pre-optimization before KF fit to include material corrections for Xi"};
+  } cascadeBuilderOpts;
+
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -540,7 +554,7 @@ struct StrangenessBuilder {
                                            negTrack, 
                                            bachTrack, 
                                            mEnabledTables[kCascBBs],
-                                           false,  
+                                           cascadeBuilderOpts.useCascadeMomentumAtPrimVtx,  
                                            mEnabledTables[kCascCovs])){
         cascdataLink(-1);
         continue; // didn't work out, skip
@@ -555,7 +569,7 @@ struct StrangenessBuilder {
       }
       if (mEnabledTables[kStoredCascCores]){
         cascdata(straHelper.cascade.charge, straHelper.cascade.massXi, straHelper.cascade.massOmega,
-                 straHelper.cascade.position[0], straHelper.cascade.position[1], straHelper.cascade.position[2],
+                 straHelper.cascade.cascadePosition[0], straHelper.cascade.cascadePosition[1], straHelper.cascade.cascadePosition[2],
                  straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
                  straHelper.cascade.positiveMomentum[0], straHelper.cascade.positiveMomentum[1], straHelper.cascade.positiveMomentum[2],
                  straHelper.cascade.negativeMomentum[0], straHelper.cascade.negativeMomentum[1], straHelper.cascade.negativeMomentum[2],
@@ -580,6 +594,70 @@ struct StrangenessBuilder {
     }
       
     LOGF(info, "Cascades in DF: %i, cascades built: %i", cascades.size(), nCascades);
+  }
+
+
+  template <class TTracks, typename TCollisions, typename TCascades>
+  void buildKFCascades(TCollisions const& collisions, TCascades const& cascades)
+  {
+    if(!mEnabledTables[kStoredKFCascCores]){ 
+      return; // don't do if no request for cascades in place
+    }
+    int nCascades = 0;
+    // Loops over all V0s in the time frame
+    for (auto& cascade : cascades) {
+      // Get tracks and generate candidate
+      auto const& collision = cascade.collision();
+      auto const& v0 = cascade.v0();
+      auto const& posTrack = v0.template posTrack_as<TTracks>();
+      auto const& negTrack = v0.template negTrack_as<TTracks>();
+      auto const& bachTrack = cascade.template bachelor_as<TTracks>();
+      if(!straHelper.buildCascadeCandidateWithKF(collision, 
+                                                 posTrack, 
+                                                 negTrack, 
+                                                 bachTrack, 
+                                                 mEnabledTables[kCascBBs], 
+                                                 cascadeBuilderOpts.kfConstructMethod, 
+                                                 cascadeBuilderOpts.kfTuneForOmega, 
+                                                 cascadeBuilderOpts.kfUseV0MassConstraint, 
+                                                 cascadeBuilderOpts.kfUseCascadeMassConstraint, 
+                                                 cascadeBuilderOpts.kfDoDCAFitterPreMinimV0, 
+                                                 cascadeBuilderOpts.kfDoDCAFitterPreMinimCasc)){
+        kfcascdataLink(-1);
+        continue; // didn't work out, skip
+      }
+      nCascades++;
+
+      // generate analysis tables as required
+      if(mEnabledTables[kKFCascIndices]){
+        kfcascidx(cascade.globalIndex(),
+                  straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
+                  straHelper.cascade.bachelorTrack, straHelper.cascade.collisionId);
+      }
+      if (mEnabledTables[kStoredKFCascCores]){
+        kfcascdata(straHelper.cascade.charge, straHelper.cascade.massXi, straHelper.cascade.massOmega,
+                   straHelper.cascade.cascadePosition[0], straHelper.cascade.cascadePosition[1], straHelper.cascade.cascadePosition[2],
+                   straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
+                   straHelper.cascade.positivePosition[0], straHelper.cascade.positivePosition[1], straHelper.cascade.positivePosition[2],
+                   straHelper.cascade.negativePosition[0], straHelper.cascade.negativePosition[1], straHelper.cascade.negativePosition[2],
+                   straHelper.cascade.positiveMomentum[0], straHelper.cascade.positiveMomentum[1], straHelper.cascade.positiveMomentum[2],
+                   straHelper.cascade.negativeMomentum[0], straHelper.cascade.negativeMomentum[1], straHelper.cascade.negativeMomentum[2],
+                   straHelper.cascade.bachelorMomentum[0], straHelper.cascade.bachelorMomentum[1], straHelper.cascade.bachelorMomentum[2],
+                   straHelper.cascade.v0Momentum[0], straHelper.cascade.v0Momentum[1], straHelper.cascade.v0Momentum[2],
+                   straHelper.cascade.cascadeMomentum[0], straHelper.cascade.cascadeMomentum[1], straHelper.cascade.cascadeMomentum[2],
+                   straHelper.cascade.v0DaughterDCA, straHelper.cascade.cascadeDaughterDCA,
+                   straHelper.cascade.positiveDCAxy, straHelper.cascade.negativeDCAxy,
+                   straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz,
+                   straHelper.cascade.kfMLambda, straHelper.cascade.kfV0Chi2, straHelper.cascade.kfCascadeChi2);
+        // interlink always produced if cascades generated
+        kfcascdataLink(kfcascdata.lastIndex());
+      }
+      if (mEnabledTables[kKFCascCovs]) {
+        kfcasccovs(straHelper.cascade.covariance, straHelper.cascade.kfTrackCovarianceV0, straHelper.cascade.kfTrackCovariancePos, straHelper.cascade.kfTrackCovarianceNeg);
+      }
+    }
+      
+    LOGF(info, "KF Cascades in DF: %i, KF cascades built: %i", cascades.size(), nCascades);
   }
 
   template <class TTracks, typename TCollisions, typename TStrangeTracks>
@@ -607,7 +685,7 @@ struct StrangenessBuilder {
                                            negTrack, 
                                            bachTrack, 
                                            mEnabledTables[kCascBBs],
-                                           false,  
+                                           cascadeBuilderOpts.useCascadeMomentumAtPrimVtx,
                                            mEnabledTables[kCascCovs])){
         tracascdataLink(-1);
         continue; // didn't work out, skip
@@ -648,12 +726,6 @@ struct StrangenessBuilder {
         // interlink always produced if base core table generated
         tracascdataLink(cascdata.lastIndex());
       }
-      if (mEnabledTables[kCascTrackXs]) {
-        cascTrackXs(straHelper.cascade.positiveTrackX, straHelper.cascade.negativeTrackX, straHelper.cascade.bachelorTrackX);
-      }
-      if( mEnabledTables[kCascBBs]){
-        cascbb(straHelper.cascade.bachBaryonCosPA, straHelper.cascade.bachBaryonDCAxyToPV);
-      }
       if (mEnabledTables[kCascCovs]) {
         std::array<float, 21> traCovMat = {0.};
         strangeTrackParCov.getCovXYZPxPyPzGlo(traCovMat);
@@ -664,12 +736,7 @@ struct StrangenessBuilder {
         tracasccovs(traCovMatArray);
       }
     }
-    LOGF(info, "Cascades in DF: %i, cascades built: %i", cascadeTracks.size(), nCascades);
-  }
-
-  void processPreselectTPCPID(aod::Collisions const& collisions, aod::V0s const& V0s, aod::Cascades const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const& bcs)
-  {
-
+    LOGF(info, "Tracked cascades in DF: %i, tracked cascades built: %i", cascadeTracks.size(), nCascades);
   }
 
   //__________________________________________________
@@ -686,7 +753,9 @@ struct StrangenessBuilder {
     
     // build cascades
     buildCascades<TTracks>(collisions, cascades);
+    buildKFCascades<TTracks>(collisions, cascades);
 
+    // build tracked cascades only if subscription is Run 3 like (doesn't exist in Run 2)
     if constexpr (requires { TTrackedCascades::iterator; }) {
       buildTrackedCascades<TTracks>(collisions, trackedCascades);
     }
@@ -702,12 +771,11 @@ struct StrangenessBuilder {
     dataProcess(collisions, v0s, cascades, (TObject*) nullptr, tracks, bcs);
   }
 
-  void processSimulationFindable(aod::Collisions const& collisions, aod::V0s const& V0s, aod::Cascades const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const& bcs)
+  void processSimulationFindable(aod::Collisions const& collisions, aod::FindableV0s const& v0s, aod::Cascades const& cascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-
+    dataProcess(collisions, v0s, cascades, (TObject*) nullptr, tracks, bcs);
   }
 
-  PROCESS_SWITCH(StrangenessBuilder, processPreselectTPCPID, "only build candidates compatible with a broad TPC dE/dx configuration", false);
   PROCESS_SWITCH(StrangenessBuilder, processRealData, "process real data", true);
   PROCESS_SWITCH(StrangenessBuilder, processRealDataRun2, "process real data (Run 2)", false);
   PROCESS_SWITCH(StrangenessBuilder, processSimulationFindable, "process simulation findable (requires lambdakzeromcfinder)", false);
