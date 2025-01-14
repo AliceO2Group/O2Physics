@@ -225,10 +225,10 @@ struct StrangenessBuilder {
   // cascade tables
   Produces<aod::CascIndices> cascidx;                 // standard part of CascDatas
   Produces<aod::KFCascIndices> kfcascidx;             // standard part of KFCascDatas
-  Produces<aod::TraCascIndices> trackedcascidx;       // standard part of TraCascDatas
+  Produces<aod::TraCascIndices> tracascidx;           // standard part of TraCascDatas
   Produces<aod::StoredCascCores> cascdata;            // standard part of CascDatas
   Produces<aod::StoredKFCascCores> kfcascdata;        // standard part of KFCascDatas
-  Produces<aod::StoredTraCascCores> trackedcascdata;  // standard part of TraCascDatas
+  Produces<aod::StoredTraCascCores> tracascdata;      // standard part of TraCascDatas
   Produces<aod::CascCovs> casccovs;                   // for decay chain reco
   Produces<aod::KFCascCovs> kfcasccovs;               // for decay chain reco
   Produces<aod::TraCascCovs> tracasccovs;             // for decay chain reco
@@ -381,6 +381,14 @@ struct StrangenessBuilder {
   std::vector<o2::pwglf::v0candidate> v0sFromCascades; // Vector of v0 candidates used in cascades
   std::vector<int> v0Map;                              // index to relate V0s -> v0sFromCascades
 
+  // for establishing CascData/KFData/TraCascData interlnks 
+  std::vector<int> cascCoreToCascades;
+  std::vector<int> kfCascCoreToCascades;
+  std::vector<int> traCascCoreToCascades;
+  std::vector<int> cascadeToCascCores;
+  std::vector<int> cascadeToKFCascCores;
+  std::vector<int> cascadeToTraCascCores;
+
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
@@ -449,6 +457,40 @@ struct StrangenessBuilder {
     mRunNumber = bc.runNumber();
 
     return true;
+  }
+
+  //__________________________________________________
+  void resetInterlinks(){ 
+    cascCoreToCascades.clear();
+    kfCascCoreToCascades.clear();
+    traCascCoreToCascades.clear();
+    cascadeToCascCores.clear();
+    cascadeToKFCascCores.clear();
+    cascadeToTraCascCores.clear();
+  }
+
+  //__________________________________________________
+  void populateCascadeInterlinks(){ 
+    if(mEnabledTables[kCascToKFRefs]){
+      for (auto& cascCore : cascCoreToCascades) {
+        cascToKFRefs(cascadeToKFCascCores[cascCore]);
+      }
+    }
+    if(mEnabledTables[kCascToTraRefs]){
+      for (auto& cascCore : cascCoreToCascades) {
+        cascToTraRefs(cascadeToTraCascCores[cascCore]);
+      }
+    }
+    if(mEnabledTables[kKFToCascRefs]){
+      for (auto& kfCascCore : kfCascCoreToCascades) {
+        kfToCascRefs(cascadeToCascCores[kfCascCore]);
+      }
+    }
+    if(mEnabledTables[kTraToCascRefs]){
+      for (auto& traCascCore : traCascCoreToCascades) {
+        traToCascRefs(cascadeToCascCores[traCascCore]);
+      }
+    }
   }
 
   //__________________________________________________
@@ -557,6 +599,7 @@ struct StrangenessBuilder {
                                            cascadeBuilderOpts.useCascadeMomentumAtPrimVtx,  
                                            mEnabledTables[kCascCovs])){
         cascdataLink(-1);
+        cascadeToCascCores.push_back(-1);
         continue; // didn't work out, skip
       }
       nCascades++;
@@ -580,6 +623,8 @@ struct StrangenessBuilder {
                  straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz);
         // interlink always produced if cascades generated
         cascdataLink(cascdata.lastIndex());
+        cascCoreToCascades.push_back(cascade.globalIndex());
+        cascadeToCascCores.push_back(cascdata.lastIndex());
       }
 
       if (mEnabledTables[kCascTrackXs]) {
@@ -624,6 +669,7 @@ struct StrangenessBuilder {
                                                  cascadeBuilderOpts.kfDoDCAFitterPreMinimV0, 
                                                  cascadeBuilderOpts.kfDoDCAFitterPreMinimCasc)){
         kfcascdataLink(-1);
+        cascadeToKFCascCores.push_back(-1);
         continue; // didn't work out, skip
       }
       nCascades++;
@@ -651,6 +697,8 @@ struct StrangenessBuilder {
                    straHelper.cascade.kfMLambda, straHelper.cascade.kfV0Chi2, straHelper.cascade.kfCascadeChi2);
         // interlink always produced if cascades generated
         kfcascdataLink(kfcascdata.lastIndex());
+        kfCascCoreToCascades.push_back(cascade.globalIndex());
+        cascadeToKFCascCores.push_back(kfcascdata.lastIndex());
       }
       if (mEnabledTables[kKFCascCovs]) {
         kfcasccovs(straHelper.cascade.covariance, straHelper.cascade.kfTrackCovarianceV0, straHelper.cascade.kfTrackCovariancePos, straHelper.cascade.kfTrackCovarianceNeg);
@@ -688,6 +736,7 @@ struct StrangenessBuilder {
                                            cascadeBuilderOpts.useCascadeMomentumAtPrimVtx,
                                            mEnabledTables[kCascCovs])){
         tracascdataLink(-1);
+        cascadeToTraCascCores.push_back(-1);
         continue; // didn't work out, skip
       }
 
@@ -707,12 +756,12 @@ struct StrangenessBuilder {
 
       // generate analysis tables as required
       if(mEnabledTables[kTraCascIndices]){
-        cascidx(cascade.globalIndex(),
-                straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
-                straHelper.cascade.bachelorTrack, straHelper.cascade.collisionId);
+        tracascidx(cascade.globalIndex(),
+                   straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
+                   straHelper.cascade.bachelorTrack, straHelper.cascade.collisionId);
       }
       if (mEnabledTables[kStoredTraCascCores]){
-        cascdata(straHelper.cascade.charge, cascadeTrack.xiMass(), cascadeTrack.omegaMass(),
+        tracascdata(straHelper.cascade.charge, cascadeTrack.xiMass(), cascadeTrack.omegaMass(),
                  cascadeTrack.decayX(), cascadeTrack.decayY(), cascadeTrack.decayZ(),
                  straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
                  straHelper.cascade.positiveMomentum[0], straHelper.cascade.positiveMomentum[1], straHelper.cascade.positiveMomentum[2],
@@ -724,7 +773,9 @@ struct StrangenessBuilder {
                  straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz, 
                  cascadeTrack.matchingChi2(), cascadeTrack.topologyChi2(), cascadeTrack.itsClsSize());
         // interlink always produced if base core table generated
-        tracascdataLink(cascdata.lastIndex());
+        tracascdataLink(tracascdata.lastIndex());
+        traCascCoreToCascades.push_back(cascade.globalIndex());
+        cascadeToTraCascCores.push_back(tracascdata.lastIndex());
       }
       if (mEnabledTables[kCascCovs]) {
         std::array<float, 21> traCovMat = {0.};
@@ -745,6 +796,9 @@ struct StrangenessBuilder {
   {
     if(!initCCDB(bcs, collisions)) return;
 
+    // reset vectors for cascade interlinks
+    resetInterlinks();
+
     // mark V0s that will be buffered for the cascade building
     markV0sUsedInCascades(v0s, cascades);
 
@@ -759,6 +813,8 @@ struct StrangenessBuilder {
     if constexpr (requires { TTrackedCascades::iterator; }) {
       buildTrackedCascades<TTracks>(collisions, trackedCascades);
     }
+
+    populateCascadeInterlinks();
   }
 
   void processRealData(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
