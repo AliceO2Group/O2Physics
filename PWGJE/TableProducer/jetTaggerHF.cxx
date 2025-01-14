@@ -217,7 +217,7 @@ struct JetTaggerHFTask {
     }
     if (doprocessAlgorithmGNN) {
       if constexpr (isMC) {
-      switch (origin) {
+        switch (origin) {
           case 2:
             registry.fill(HIST("h_db_b"), scoreML[jet.globalIndex()]);
             break;
