@@ -136,7 +136,7 @@ struct k892analysis_PbPb {
     AxisSpec invMassAxis = {cInvMassBins, cInvMassStart, cInvMassEnd, "Invariant Mass (GeV/#it{c}^2)"};
     AxisSpec pidQAAxis = {cPIDBins, -cPIDQALimit, cPIDQALimit};
 
-    if (doprocessSameEvent || doprocessSameEventRun2 || doprocessMixedEvent || doprocessMixedEventRun2) {
+    if (doprocessSameEvent || doprocessSameEventRun2 || doprocessMixedEvent || doprocessMixedEventRun2 || doprocessMixedEventMC) {
       // event histograms
       histos.add("QAevent/hEvtCounterSameE", "Number of analyzed Same Events", HistType::kTH1F, {{1, 0.5, 1.5}});
       histos.add("QAevent/hMultiplicityPercentSameE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0f, 120.0f}});
@@ -163,7 +163,7 @@ struct k892analysis_PbPb {
     histos.add("k892invmassDSAnti", "Invariant mass of Anti-K(892)0 different sign", kTH1F, {invMassAxis});
     histos.add("k892invmassLS", "Invariant mass of K(892)0 like sign", kTH1F, {invMassAxis});
     histos.add("k892invmassLSAnti", "Invariant mass of Anti-K(892)0 like sign", kTH1F, {invMassAxis});
-    if (doprocessMixedEvent || doprocessMixedEventRun2) {
+    if (doprocessMixedEvent || doprocessMixedEventRun2 || doprocessMixedEventMC) {
       histos.add("k892invmassME", "Invariant mass of K(892)0 mixed event", kTH1F, {invMassAxis});
       if (additionalMEPlots) {
         histos.add("k892invmassME_DS", "Invariant mass of K(892)0 mixed event DS", kTH1F, {invMassAxis});
@@ -200,7 +200,7 @@ struct k892analysis_PbPb {
     histos.add("h3k892invmassDSAnti", "Invariant mass of Anti-K(892)0 differnt sign", kTH3F, {centAxis, ptAxis, invMassAxis});
     histos.add("h3k892invmassLS", "Invariant mass of K(892)0 same sign", kTH3F, {centAxis, ptAxis, invMassAxis});
     histos.add("h3k892invmassLSAnti", "Invariant mass of Anti-K(892)0 same sign", kTH3F, {centAxis, ptAxis, invMassAxis});
-    if (doprocessMixedEvent || doprocessMixedEventRun2) {
+    if (doprocessMixedEvent || doprocessMixedEventRun2 || doprocessMixedEventMC) {
       histos.add("h3k892invmassME", "Invariant mass of K(892)0 mixed event", kTH3F, {centAxis, ptAxis, invMassAxis});
 
       if (additionalMEPlots) {
@@ -755,6 +755,7 @@ struct k892analysis_PbPb {
   }
   PROCESS_SWITCH(k892analysis_PbPb, processMixedEvent, "Process Mixed event", true);
 
+
   using BinningTypeVtxCentRun2 = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M>;
   void processMixedEventRun2(Run2Events const& collisions, TrackCandidates const& tracks, BCsWithRun2Info const&)
   {
@@ -824,6 +825,54 @@ struct k892analysis_PbPb {
   using EventCandidatesMCrec = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using TrackCandidatesMCrec = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::McTrackLabels>>;
 
+
+
+  ////////////////////////////OCCHIO
+  void processMixedEventMC(EventCandidatesMCrec const& recCollisions, TrackCandidatesMCrec const& RecTracks)
+  {
+    auto tracksTuple = std::make_tuple(RecTracks);
+    BinningTypeVtxCent colBinning{{CfgVtxBins, CfgMultBins}, true};
+    SameKindPair<EventCandidatesMCrec, TrackCandidatesMCrec, BinningTypeVtxCent> pairs{colBinning, cfgNoMixedEvents, -1, recCollisions, tracksTuple, &cache};
+    
+    for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
+
+      if (!collision1.sel8() || !collision2.sel8()) {
+        continue;
+      }
+      if (TMath::Abs(collision1.posZ()) > cfgCutVertex || TMath::Abs(collision2.posZ()) > cfgCutVertex) {
+        continue;
+      }
+      if (timFrameEvsel && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder) )) {
+        continue;
+      }
+      if (additionalEvSel2 && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel3 && (!collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) || !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+        continue;
+      }
+      
+      if (additionalQAeventPlots) {
+        histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
+        histos.fill(HIST("QAevent/hVertexZMixedE"), collision1.posZ());
+        histos.fill(HIST("QAevent/hMultiplicityPercentMixedE"), collision1.centFT0C());
+        histos.fill(HIST("TestME/hCollisionIndexMixedE"), collision1.globalIndex());
+        histos.fill(HIST("TestME/hnTrksMixedE"), tracks1.size());
+      }
+
+      auto tracksPi = tracks1.sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
+      auto tracksKa = tracks2.sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
+      fillHistograms<true, true, false>(collision1, tracksPi, tracksKa);
+            
+    }
+  }
+  PROCESS_SWITCH(k892analysis_PbPb, processMixedEventMC, "Process Mixed event MC", true);
+
+
+
+
+
+  
   void processMC(aod::McCollisions::iterator const& /*mcCollision*/, aod::McParticles& mcParticles, const soa::SmallGroups<EventCandidatesMCrec>& recCollisions, TrackCandidatesMCrec const& RecTracks)
   {
     histos.fill(HIST("hMCrecCollSels"), 0);
