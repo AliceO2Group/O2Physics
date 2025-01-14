@@ -320,7 +320,6 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       const o2::track::TrackParametrization<float>::dim2_t hitpoint = {
         static_cast<float>(xyz1[1]),
         static_cast<float>(xyz1[2])};
-      // LOG(info) << "Using resolution for layer: " << layers[il].name << ". RPhi: " << layers[il].resRPhi << " , Z: " << layers[il].resZ;
       const o2::track::TrackParametrization<float>::dim3_t hitpointcov = {layers[il].resRPhi * layers[il].resRPhi, 0.f, layers[il].resZ * layers[il].resZ};
 
       inwardTrack.update(hitpoint, hitpointcov);
