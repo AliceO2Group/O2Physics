@@ -11,7 +11,11 @@
 //
 // Build hypertriton candidates from V0s and tracks
 
+#include <memory>
+#include <string>
 #include <array>
+#include <vector>
+#include <algorithm>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
