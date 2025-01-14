@@ -320,7 +320,7 @@ struct ebyeMaker {
   Preslice<aod::V0s> perCollisionV0 = o2::aod::v0::collisionId;
   Preslice<aod::McParticles> perCollisionMcParts = o2::aod::mcparticle::mcCollisionId;
 
-  template<class P>
+  template <class P>
   int getPartTypeMother(P const& mcPart)
   {
     for (auto& mother : mcPart.template mothers_as<aod::McParticles>()) {
@@ -328,8 +328,7 @@ struct ebyeMaker {
         return -1;
       int pdgCode = mother.pdgCode();
       switch (std::abs(pdgCode)) {
-        case 3122:
-        {
+        case 3122: {
           int foundPi = 0;
           for (auto& mcDaught : mother.template daughters_as<aod::McParticles>()) {
             if (std::abs(mcDaught.pdgCode()) == 211) {
@@ -928,8 +927,10 @@ struct ebyeMaker {
 
           if (!mcTrack.isPhysicalPrimary() && !doprocessMiniMcRun2)
             continue;
-          if (mcTrack.isPhysicalPrimary()) candidateTrack.pdgcodemoth = PartTypes::kPhysPrim;
-          else if (mcTrack.has_mothers() && iP == 0) candidateTrack.pdgcodemoth = getPartTypeMother(mcTrack);
+          if (mcTrack.isPhysicalPrimary())
+            candidateTrack.pdgcodemoth = PartTypes::kPhysPrim;
+          else if (mcTrack.has_mothers() && iP == 0)
+            candidateTrack.pdgcodemoth = getPartTypeMother(mcTrack);
 
           auto genPt = std::hypot(mcTrack.px(), mcTrack.py());
           candidateTrack.pdgcode = mcTrack.pdgCode();
@@ -1022,8 +1023,10 @@ struct ebyeMaker {
         candTrack.genpt = genPt;
         candTrack.geneta = mcPart.eta();
         candTrack.pdgcode = pdgCode;
-        if (mcPart.isPhysicalPrimary()) candTrack.pdgcodemoth = PartTypes::kPhysPrim;
-        else if (mcPart.has_mothers() && iP == 0) candTrack.pdgcodemoth = getPartTypeMother(mcPart);
+        if (mcPart.isPhysicalPrimary())
+          candTrack.pdgcodemoth = PartTypes::kPhysPrim;
+        else if (mcPart.has_mothers() && iP == 0)
+          candTrack.pdgcodemoth = getPartTypeMother(mcPart);
 
         auto it = find_if(candidateTracks[iP].begin(), candidateTracks[iP].end(), [&](CandidateTrack trk) { return trk.mcIndex == mcPart.globalIndex(); });
         if (it != candidateTracks[iP].end()) {
@@ -1436,11 +1439,11 @@ struct ebyeMaker {
           //   continue;
           if (candidateTrack.pdgcodemoth > 0)
             selMask |= candidateTrack.pdgcodemoth;
-        }
-        else if (candidateTrack.pdgcodemoth > 0){
+        } else if (candidateTrack.pdgcodemoth > 0) {
           selMask = candidateTrack.pdgcodemoth;
         }
-        if (selMask < 0) continue;
+        if (selMask < 0)
+          continue;
         mcMiniTrkTable(
           miniCollTable.lastIndex(),
           candidateTrack.pt,
