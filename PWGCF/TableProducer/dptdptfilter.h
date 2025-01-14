@@ -162,10 +162,13 @@ enum TpcExclusionMethod {
 /// \enum ItsDeadMapsCheckType
 /// \brief Check for the right level of ITS dead chips
 enum ItsDeadMapsCheckType {
-  kNOCHECK = 0,      ///< no check
-  kGOODITSLAYER3,    ///< check the  3 ITS layer
-  kGOODITSLAYER0123, ///< check the 0,1,2,and 3 ITS layers
-  kGOODITSLAYERALL   ///< check the all ITS layers
+  kNOCHECK = 0,        ///< no check
+  kGOODITSLAYER3,      ///< check good the 3 ITS layer
+  kGOODITSLAYER0123,   ///< check good the 0,1,2,and 3 ITS layers
+  kGOODITSLAYERALL,    ///< check good all ITS layers
+  kNOGOODITSLAYER3,    ///< check no good the  3 ITS layer
+  kNOGOODITSLAYER0123, ///< check no good the 0,1,2,and 3 ITS layers
+  kNOGOODITSLAYERALL   ///< check no good all ITS layers
 };
 
 //============================================================================================
@@ -548,6 +551,12 @@ inline ItsDeadMapsCheckType getItsDeadMapCheck(const std::string& check)
     return kGOODITSLAYER0123;
   } else if (check == "goodItsAll") {
     return kGOODITSLAYERALL;
+  } else if (check == "noGoodIts3") {
+    return kNOGOODITSLAYER3;
+  } else if (check == "noGoodIts0123") {
+    return kNOGOODITSLAYER0123;
+  } else if (check == "noGoodItsAll") {
+    return kNOGOODITSLAYERALL;
   } else {
     LOGF(fatal, "ITS dead map check %s not implemented", check.c_str());
     return kNOCHECK;
@@ -1007,27 +1016,24 @@ inline bool occupancySelection<aod::McCollision>(aod::McCollision const&)
 template <typename CollisionObject>
 inline bool selectOnItsDeadMaps(CollisionObject coll)
 {
+  auto checkFlag = [](auto flag, bool invert = false) {
+    return flag && !invert;
+  };
   switch (fItsDeadMapCheck) {
     case kNOCHECK:
       return true;
     case kGOODITSLAYER3:
-      if (coll.selection_bit(aod::evsel::kIsGoodITSLayer3)) {
-        return true;
-      } else {
-        return false;
-      }
+      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayer3));
     case kGOODITSLAYER0123:
-      if (coll.selection_bit(aod::evsel::kIsGoodITSLayer0123)) {
-        return true;
-      } else {
-        return false;
-      }
+      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayer0123));
     case kGOODITSLAYERALL:
-      if (coll.selection_bit(aod::evsel::kIsGoodITSLayersAll)) {
-        return true;
-      } else {
-        return false;
-      }
+      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayersAll));
+    case kNOGOODITSLAYER3:
+      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayer3), true);
+    case kNOGOODITSLAYER0123:
+      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayer0123), true);
+    case kNOGOODITSLAYERALL:
+      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayersAll), true);
     default:
       return false;
   }
