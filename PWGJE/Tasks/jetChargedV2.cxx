@@ -770,7 +770,7 @@ struct Jetchargedv2Task {
       Int_t NDF = 1;
       Int_t numOfFreePara = 2;
       NDF = (Int_t)fFitModulation_v2v3->GetXaxis()->GetNbins() - numOfFreePara;
-      if (NDF == 0 || (float)NDF <= 0.) 
+      if (NDF == 0 || static_cast<NDF> <= 0.) 
         return;
       double chi2 = 0.;
       for (int i = 0; i < h_ptsum_sumpt_fit->GetXaxis()->GetNbins(); i++) {
@@ -787,13 +787,13 @@ struct Jetchargedv2Task {
       CDFROOT = 1. - ChiSquareCDF(NDF, fFitModulation_v2v3->GetChisquare());
       registry.fill(HIST("h_PvalueCDF_CombinFit"), CDF);
       registry.fill(HIST("h2_PvalueCDFCent_CombinFit"), collision.centrality(), CDF);
-      registry.fill(HIST("h2_Chi2Cent_CombinFit"), collision.centrality(), ChiSqr / ((float)NDF) );
-      registry.fill(HIST("h2_PChi2_CombinFit"), CDF, ChiSqr / ((float)NDF) );
+      registry.fill(HIST("h2_Chi2Cent_CombinFit"), collision.centrality(), ChiSqr / (static_cast<NDF>) );
+      registry.fill(HIST("h2_PChi2_CombinFit"), CDF, ChiSqr / (static_cast<NDF>) );
       double evtcent = collision.centrality();
       if (evtcent >= 0 && evtcent <= 5) {
-        registry.fill(HIST("h2_PChi2_CombinFitA"), CDF, ChiSqr / ((float)NDF) );
+        registry.fill(HIST("h2_PChi2_CombinFitA"), CDF, ChiSqr / (static_cast<NDF>) );
       } else if (evtcent >= 30 && evtcent <= 50) {
-        registry.fill(HIST("h2_PChi2_CombinFitB"), CDF, ChiSqr / ((float)NDF) );
+        registry.fill(HIST("h2_PChi2_CombinFitB"), CDF, ChiSqr / (static_cast<NDF>) );
       }
 
       for (uint i = 0; i < cfgnMods->size(); i++) {
