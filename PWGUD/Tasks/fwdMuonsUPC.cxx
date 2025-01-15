@@ -383,7 +383,7 @@ struct fwdMuonsUPC {
         continue;
 
       if (!tr.has_udMcParticle()) {
-        // LOGF(info,"tr does not have mc part");
+        // LOGF(debug,"tr does not have mc part");
         continue;
       }
       // retrieve mc particle from the reco track
@@ -643,7 +643,7 @@ struct fwdMuonsUPC {
 
     // check that all pairs are mu+mu-
     if (std::abs(McPart1.pdgCode()) != 13 && std::abs(McPart2.pdgCode()) != 13)
-      LOGF(info, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
+      LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
 
     // create Lorentz vectors
     TLorentzVector p1, p2;
@@ -712,7 +712,7 @@ struct fwdMuonsUPC {
 
     // check that all pairs are mu+mu-
     if (std::abs(McPart1.pdgCode()) != 13 && std::abs(McPart2.pdgCode()) != 13)
-      LOGF(info, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
+      LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
 
     // V0 selection
     const auto& ampsV0A = cand.amplitudesV0A();
@@ -787,10 +787,10 @@ struct fwdMuonsUPC {
 
     // print info in case of problems
     if (tr1.sign() * McPart1.pdgCode() > 0 || tr2.sign() * McPart2.pdgCode() > 0) {
-      LOGF(info, "Problem: ");
-      LOGF(info, "real: %d | %d", (int)tr1.sign(), (int)tr2.sign());
-      LOGF(info, "mc  : %i | %i", (int)McPart1.pdgCode(), (int)McPart2.pdgCode());
-      LOGF(info, "contrib: %d", (int)cand.numContrib());
+      LOGF(debug, "Problem: ");
+      LOGF(debug, "real: %d | %d", (int)tr1.sign(), (int)tr2.sign());
+      LOGF(debug, "mc  : %i | %i", (int)McPart1.pdgCode(), (int)McPart2.pdgCode());
+      LOGF(debug, "contrib: %d", (int)cand.numContrib());
     }
 
     // fill the histos
@@ -930,7 +930,7 @@ struct fwdMuonsUPC {
     // loop over the candidates
     for (const auto& item : tracksPerCandAll) {
       if (item.second.size() != 4) {
-        LOGF(info, "number track (reco + gen) = %d", item.second.size());
+        LOGF(debug, "number track (reco + gen) = %d", item.second.size());
         continue;
       }
 
@@ -949,7 +949,7 @@ struct fwdMuonsUPC {
       auto nzTrMc2 = McParts.iteratorAt(tr2.udMcParticleId());
 
       if (nzTrMc1 != trMc1)
-        LOGF(info, "diff wrt Nazar!");
+        LOGF(debug, "diff wrt Nazar!");
       processMcRecoCand(cand, tr1, trMc1, tr2, trMc2);
     }
   }
