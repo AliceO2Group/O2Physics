@@ -55,7 +55,7 @@ using namespace o2::framework::expressions;
 using namespace std;
 using std::array;
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using StrCollisionsDatas = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>; 
+using StrCollisionsDatas = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>;
 using V0DerivedDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0GammaMLScores>;
 using V0DerivedMCDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0CoreMCLabels, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0GammaMLScores>;
 using CascDerivedMCDatas = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascBBs, aod::CascCoreMCLabels>;
@@ -100,7 +100,7 @@ struct strderivedGenQA {
     ConfigurableAxis axisMassLambda{"axisMassLambda", {400, 1.0f, 1.2f}, "Mass Lambda"};
     ConfigurableAxis axisMassK0Short{"axisMassK0Short", {400, 0.4f, 0.6f}, "Mass K0Short"};
     ConfigurableAxis axisV0Type{"axisV0Type", {5, 0.0f, 5.0f}, "V0 Type"};
-    ConfigurableAxis axisStraCollisionId{"axisStraCollisionId",{4000, 0.0f, 40000.0f}, "Stra Collision Id"};
+    ConfigurableAxis axisStraCollisionId{"axisStraCollisionId", {4000, 0.0f, 40000.0f}, "Stra Collision Id"};
     ConfigurableAxis axisGlobalIndex{"axisGlobalIndex", {4000, 0.0f, 40000.0f}, "Global Index"};
     ConfigurableAxis axisNCls{"axisNCls", {8, -0.5, 7.5}, "NCls"};
     ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
@@ -122,11 +122,11 @@ struct strderivedGenQA {
     ConfigurableAxis axisOmegaMass{"axisOmegaMass", {400, 1.6f, 1.8f}, "Omega Mass"};
     ConfigurableAxis axisXiMass{"axisXiMass", {400, 1.2f, 1.4f}, "Xi Mass"};
     ConfigurableAxis axisTrackProperties{"axisTrackProperties", {32, -0.5, 31.5f}, "Track Properties"};
-    
+
     // Histogram declarations (can be improved!)
     histos.add("Event/hPosZ", "hPosZ", kTH1F, {axisPosZ});
 
-        // Event Counters
+    // Event Counters
     histos.add("Event/hEventProperties", "hEventProperties", kTH1F, {{20, -0.5f, +19.5f}});
     histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
@@ -136,7 +136,7 @@ struct strderivedGenQA {
     histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(6, "kIsVertexITSTPC");
     histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(7, "kIsGoodZvtxFT0vsPV");
     histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
-    histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(9,  "kIsVertexTRDmatched");
+    histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
     histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
     histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(11, "kNoCollInTimeRangeStd");
     histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeStrict");
@@ -175,7 +175,7 @@ struct strderivedGenQA {
     histos.add("V0/Track/h2dITSNCls", "h2dITSNCls", kTH2F, {axisPt2, axisNCls});
     histos.add("V0/Track/h2dITSChi2PerNcl", "h2dITSChi2PerNcl", kTH2F, {axisPt2, axisChi2PerNcl});
     histos.add("V0/Track/h2dTPCCrossedRows", "h2dTPCCrossedRows", kTH2F, {axisPt2, axisTPCrows});
-    
+
     histos.add("V0/Track/h2dPosTrackProperties", "h2dPosTrackProperties", kTH2F, {axisTrackProperties, axisPt});
     histos.add("V0/Track/h3dTrackPropertiesVspT", "h3dTrackPropertiesVspT", kTH3F, {axisTrackProperties, axisTrackProperties, axisPt});
     histos.add("V0/Track/h2dNegTrackProperties", "h2dNegTrackProperties", kTH2F, {axisTrackProperties, axisPt});
@@ -184,38 +184,38 @@ struct strderivedGenQA {
     histos.add("V0/Track/hTrackCode", "hTrackCode", kTH1F, {axisTrackProperties});
 
     // Set bin labels for all combinations
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(1, "None");                            // Code 0
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(2, "TPC");                             // Code 1
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(3, "ITSTracker");                      // Code 2
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(4, "ITSTracker + TPC");               // Code 3
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(5, "ITSAfterburner");                 // Code 4
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(6, "ITSAfterburner + TPC");           // Code 5
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(7, "ITSAfterburner + ITSTracker");    // Code 6
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(8, "ITSAfterburner + ITSTracker + TPC"); // Code 7
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(9, "TRD");                            // Code 8
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(10, "TRD + TPC");                     // Code 9
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(11, "TRD + ITSTracker");              // Code 10
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(12, "TRD + ITSTracker + TPC");        // Code 11
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(13, "TRD + ITSAfterburner");          // Code 12
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(14, "TRD + ITSAfterburner + TPC");    // Code 13
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(15, "TRD + ITSAfterburner + ITSTracker"); // Code 14
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(1, "None");                                     // Code 0
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(2, "TPC");                                      // Code 1
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(3, "ITSTracker");                               // Code 2
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(4, "ITSTracker + TPC");                         // Code 3
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(5, "ITSAfterburner");                           // Code 4
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(6, "ITSAfterburner + TPC");                     // Code 5
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(7, "ITSAfterburner + ITSTracker");              // Code 6
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(8, "ITSAfterburner + ITSTracker + TPC");        // Code 7
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(9, "TRD");                                      // Code 8
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(10, "TRD + TPC");                               // Code 9
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(11, "TRD + ITSTracker");                        // Code 10
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(12, "TRD + ITSTracker + TPC");                  // Code 11
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(13, "TRD + ITSAfterburner");                    // Code 12
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(14, "TRD + ITSAfterburner + TPC");              // Code 13
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(15, "TRD + ITSAfterburner + ITSTracker");       // Code 14
     histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(16, "TRD + ITSAfterburner + ITSTracker + TPC"); // Code 15
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(17, "TOF");                           // Code 16
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(18, "TOF + TPC");                    // Code 17
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(19, "TOF + ITSTracker");             // Code 18
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(20, "TOF + ITSTracker + TPC");       // Code 19
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(21, "TOF + ITSAfterburner");         // Code 20
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(22, "TOF + ITSAfterburner + TPC");   // Code 21
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(23, "TOF + ITSAfterburner + ITSTracker"); // Code 22
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(17, "TOF");                                     // Code 16
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(18, "TOF + TPC");                               // Code 17
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(19, "TOF + ITSTracker");                        // Code 18
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(20, "TOF + ITSTracker + TPC");                  // Code 19
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(21, "TOF + ITSAfterburner");                    // Code 20
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(22, "TOF + ITSAfterburner + TPC");              // Code 21
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(23, "TOF + ITSAfterburner + ITSTracker");       // Code 22
     histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(24, "TOF + ITSAfterburner + ITSTracker + TPC"); // Code 23
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(25, "TOF + TRD");                    // Code 24
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(26, "TOF + TRD + TPC");             // Code 25
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(27, "TOF + TRD + ITSTracker");      // Code 26
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(28, "TOF + TRD + ITSTracker + TPC"); // Code 27
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(29, "TOF + TRD + ITSAfterburner");  // Code 28
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(30, "TOF + TRD + ITSAfterburner + TPC"); // Code 29
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(25, "TOF + TRD");                               // Code 24
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(26, "TOF + TRD + TPC");                         // Code 25
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(27, "TOF + TRD + ITSTracker");                  // Code 26
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(28, "TOF + TRD + ITSTracker + TPC");            // Code 27
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(29, "TOF + TRD + ITSAfterburner");              // Code 28
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(30, "TOF + TRD + ITSAfterburner + TPC");        // Code 29
     histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(31, "TOF + TRD + ITSAfterburner + ITSTracker"); // Code 30
-    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(32, "All");                         // Code 31
+    histos.get<TH1>(HIST("V0/Track/hTrackCode"))->GetXaxis()->SetBinLabel(32, "All");                                     // Code 31
 
     histos.add("V0/PID/h2dTPCNSigmaEl", "h2dTPCNSigmaEl", kTH2F, {axisPt2, axisTPCNSigma});
     histos.add("V0/PID/h2dTPCNSigmaPr", "h2dTPCNSigmaPr", kTH2F, {axisPt2, axisTPCNSigma});
@@ -410,34 +410,49 @@ struct strderivedGenQA {
   {
     // Event Level
     float centrality = coll.centFT0C();
-    histos.fill(HIST("Event/hPosZ"), coll.posZ()); 
+    histos.fill(HIST("Event/hPosZ"), coll.posZ());
     histos.fill(HIST("Event/hEventProperties"), 0. /* all collisions */);
 
-    if (coll.sel8()) histos.fill(HIST("Event/hEventProperties"), 1.);
-    if (coll.selection_bit(aod::evsel::kIsTriggerTVX)) histos.fill(HIST("Event/hEventProperties"), 2.);
-    if (coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) histos.fill(HIST("Event/hEventProperties"), 3.);
-    if (coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) histos.fill(HIST("Event/hEventProperties"), 4.);
-    if (coll.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) histos.fill(HIST("Event/hEventProperties"), 5.);
-    if (coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) histos.fill(HIST("Event/hEventProperties"), 6.);
-    if (coll.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) histos.fill(HIST("Event/hEventProperties"), 7.);
-    if (coll.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) histos.fill(HIST("Event/hEventProperties"), 8.);
-    if (coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) histos.fill(HIST("Event/hEventProperties"), 9.);
-    if (coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) histos.fill(HIST("Event/hEventProperties"), 10.);
-    if (coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) histos.fill(HIST("Event/hEventProperties"), 11.);
-    if (coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) histos.fill(HIST("Event/hEventProperties"), 12.);
-    if (coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeVzDependent)) histos.fill(HIST("Event/hEventProperties"), 13.);
-    if (coll.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) histos.fill(HIST("Event/hEventProperties"), 14.);
-    if (coll.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) histos.fill(HIST("Event/hEventProperties"), 15.);
-    
+    if (coll.sel8())
+      histos.fill(HIST("Event/hEventProperties"), 1.);
+    if (coll.selection_bit(aod::evsel::kIsTriggerTVX))
+      histos.fill(HIST("Event/hEventProperties"), 2.);
+    if (coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+      histos.fill(HIST("Event/hEventProperties"), 3.);
+    if (coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+      histos.fill(HIST("Event/hEventProperties"), 4.);
+    if (coll.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+      histos.fill(HIST("Event/hEventProperties"), 5.);
+    if (coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+      histos.fill(HIST("Event/hEventProperties"), 6.);
+    if (coll.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
+      histos.fill(HIST("Event/hEventProperties"), 7.);
+    if (coll.selection_bit(o2::aod::evsel::kIsVertexTRDmatched))
+      histos.fill(HIST("Event/hEventProperties"), 8.);
+    if (coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+      histos.fill(HIST("Event/hEventProperties"), 9.);
+    if (coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
+      histos.fill(HIST("Event/hEventProperties"), 10.);
+    if (coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict))
+      histos.fill(HIST("Event/hEventProperties"), 11.);
+    if (coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow))
+      histos.fill(HIST("Event/hEventProperties"), 12.);
+    if (coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeVzDependent))
+      histos.fill(HIST("Event/hEventProperties"), 13.);
+    if (coll.selection_bit(o2::aod::evsel::kNoCollInRofStandard))
+      histos.fill(HIST("Event/hEventProperties"), 14.);
+    if (coll.selection_bit(o2::aod::evsel::kNoCollInRofStrict))
+      histos.fill(HIST("Event/hEventProperties"), 15.);
+
     histos.fill(HIST("Event/hft0cOccupancyInTimeRange"), coll.ft0cOccupancyInTimeRange());
     histos.fill(HIST("Event/htrackOccupancyInTimeRange"), coll.trackOccupancyInTimeRange());
-    histos.fill(HIST("Event/h2dMultFT0C"), centrality, coll.multFT0C()); 
-    histos.fill(HIST("Event/h2dMultNTracksPVeta1"), centrality, coll.multNTracksPVeta1()); 
-    histos.fill(HIST("Event/h2dMultPVTotalContributors"), centrality, coll.multPVTotalContributors()); 
-    histos.fill(HIST("Event/h2dMultAllTracksTPCOnly"), centrality, coll.multAllTracksTPCOnly()); 
-    histos.fill(HIST("Event/h2dMultAllTracksITSTPC"), centrality, coll.multAllTracksITSTPC()); 
-    histos.fill(HIST("Event/h2dNumV0sPerColl"), centrality, V0s.size()); 
-    
+    histos.fill(HIST("Event/h2dMultFT0C"), centrality, coll.multFT0C());
+    histos.fill(HIST("Event/h2dMultNTracksPVeta1"), centrality, coll.multNTracksPVeta1());
+    histos.fill(HIST("Event/h2dMultPVTotalContributors"), centrality, coll.multPVTotalContributors());
+    histos.fill(HIST("Event/h2dMultAllTracksTPCOnly"), centrality, coll.multAllTracksTPCOnly());
+    histos.fill(HIST("Event/h2dMultAllTracksITSTPC"), centrality, coll.multAllTracksITSTPC());
+    histos.fill(HIST("Event/h2dNumV0sPerColl"), centrality, V0s.size());
+
     for (auto const& v0 : V0s) {
 
       // V0-Level
@@ -446,15 +461,15 @@ struct strderivedGenQA {
       float V0Y_K0Short = RecoDecay::y(std::array{v0.px(), v0.py(), v0.pz()}, o2::constants::physics::MassK0Short);
 
       float pT = v0.pt();
-      histos.fill(HIST("V0/hpT"), pT); 
-      histos.fill(HIST("V0/h2dArmenterosP"), v0.alpha(), v0.qtarm()); 
-      histos.fill(HIST("V0/hRadius"), v0.v0radius()); 
-      histos.fill(HIST("V0/hZ"), v0.z()); 
-      histos.fill(HIST("V0/hCosPA"), v0.v0cosPA()); 
-      histos.fill(HIST("V0/hdcaDau"), v0.dcaV0daughters()); 
-      histos.fill(HIST("V0/hdcaNegtopv"), v0.dcanegtopv()); 
-      histos.fill(HIST("V0/hdcaPostopv"), v0.dcapostopv()); 
-      histos.fill(HIST("V0/h2dEtaPhi"), v0.eta(), RecoDecay::phi(v0.px(), v0.py())); 
+      histos.fill(HIST("V0/hpT"), pT);
+      histos.fill(HIST("V0/h2dArmenterosP"), v0.alpha(), v0.qtarm());
+      histos.fill(HIST("V0/hRadius"), v0.v0radius());
+      histos.fill(HIST("V0/hZ"), v0.z());
+      histos.fill(HIST("V0/hCosPA"), v0.v0cosPA());
+      histos.fill(HIST("V0/hdcaDau"), v0.dcaV0daughters());
+      histos.fill(HIST("V0/hdcaNegtopv"), v0.dcanegtopv());
+      histos.fill(HIST("V0/hdcaPostopv"), v0.dcapostopv());
+      histos.fill(HIST("V0/h2dEtaPhi"), v0.eta(), RecoDecay::phi(v0.px(), v0.py()));
       histos.fill(HIST("V0/hYGamma"), V0Y_Gamma);
       histos.fill(HIST("V0/hYLambda"), V0Y_Lambda);
       histos.fill(HIST("V0/hYK0Short"), V0Y_K0Short);
@@ -463,44 +478,44 @@ struct strderivedGenQA {
       histos.fill(HIST("V0/hMassK0Short"), v0.mK0Short());
       histos.fill(HIST("V0/hV0Type"), v0.v0Type());
       histos.fill(HIST("V0/h2dV0Indices"), v0.straCollisionId(), coll.globalIndex()); // cross-check index correctness
-    
+
       // Track-level
       auto posTrack = v0.template posTrackExtra_as<dauTracks>();
       auto negTrack = v0.template negTrackExtra_as<dauTracks>();
 
       uint8_t positiveTrackCode = ((uint8_t(posTrack.hasTPC()) << hasTPC) |
-                                    (uint8_t(posTrack.hasITSTracker()) << hasITSTracker) |
-                                    (uint8_t(posTrack.hasITSAfterburner()) << hasITSAfterburner) |
-                                    (uint8_t(posTrack.hasTRD()) << hasTRD) |
-                                    (uint8_t(posTrack.hasTOF()) << hasTOF));
+                                   (uint8_t(posTrack.hasITSTracker()) << hasITSTracker) |
+                                   (uint8_t(posTrack.hasITSAfterburner()) << hasITSAfterburner) |
+                                   (uint8_t(posTrack.hasTRD()) << hasTRD) |
+                                   (uint8_t(posTrack.hasTOF()) << hasTOF));
 
       uint8_t negativeTrackCode = ((uint8_t(negTrack.hasTPC()) << hasTPC) |
-                                    (uint8_t(negTrack.hasITSTracker()) << hasITSTracker) |
-                                    (uint8_t(negTrack.hasITSAfterburner()) << hasITSAfterburner) |
-                                    (uint8_t(negTrack.hasTRD()) << hasTRD) |
-                                    (uint8_t(negTrack.hasTOF()) << hasTOF));
+                                   (uint8_t(negTrack.hasITSTracker()) << hasITSTracker) |
+                                   (uint8_t(negTrack.hasITSAfterburner()) << hasITSAfterburner) |
+                                   (uint8_t(negTrack.hasTRD()) << hasTRD) |
+                                   (uint8_t(negTrack.hasTOF()) << hasTOF));
 
       histos.fill(HIST("V0/Track/h2dITSNCls"), v0.positivept(), posTrack.itsNCls());
-      histos.fill(HIST("V0/Track/h2dITSNCls"), -1*v0.negativept(), negTrack.itsNCls());
+      histos.fill(HIST("V0/Track/h2dITSNCls"), -1 * v0.negativept(), negTrack.itsNCls());
       histos.fill(HIST("V0/Track/h2dITSChi2PerNcl"), v0.positivept(), posTrack.itsChi2PerNcl());
-      histos.fill(HIST("V0/Track/h2dITSChi2PerNcl"), -1*v0.negativept(), negTrack.itsChi2PerNcl());
+      histos.fill(HIST("V0/Track/h2dITSChi2PerNcl"), -1 * v0.negativept(), negTrack.itsChi2PerNcl());
       histos.fill(HIST("V0/Track/h2dTPCCrossedRows"), v0.positivept(), posTrack.tpcCrossedRows());
-      histos.fill(HIST("V0/Track/h2dTPCCrossedRows"), -1*v0.negativept(), negTrack.tpcCrossedRows());
-      histos.fill(HIST("V0/Track/hTrackCode"), positiveTrackCode); // pos track info
-      histos.fill(HIST("V0/Track/hTrackCode"), negativeTrackCode); // neg track info
+      histos.fill(HIST("V0/Track/h2dTPCCrossedRows"), -1 * v0.negativept(), negTrack.tpcCrossedRows());
+      histos.fill(HIST("V0/Track/hTrackCode"), positiveTrackCode);                                    // pos track info
+      histos.fill(HIST("V0/Track/hTrackCode"), negativeTrackCode);                                    // neg track info
       histos.fill(HIST("V0/Track/h3dTrackPropertiesVspT"), positiveTrackCode, negativeTrackCode, pT); // tracking complete info
-      histos.fill(HIST("V0/Track/h2dPosTrackProperties"), positiveTrackCode, v0.positivept()); // pos track info
-      histos.fill(HIST("V0/Track/h2dNegTrackProperties"), negativeTrackCode, v0.negativept()); // neg track info
+      histos.fill(HIST("V0/Track/h2dPosTrackProperties"), positiveTrackCode, v0.positivept());        // pos track info
+      histos.fill(HIST("V0/Track/h2dNegTrackProperties"), negativeTrackCode, v0.negativept());        // neg track info
 
       // PID (TPC)
       histos.fill(HIST("V0/PID/h2dTPCNSigmaEl"), v0.positivept(), posTrack.tpcNSigmaEl());
-      histos.fill(HIST("V0/PID/h2dTPCNSigmaEl"), -1*v0.negativept(), negTrack.tpcNSigmaEl());
+      histos.fill(HIST("V0/PID/h2dTPCNSigmaEl"), -1 * v0.negativept(), negTrack.tpcNSigmaEl());
       histos.fill(HIST("V0/PID/h2dTPCNSigmaPr"), v0.positivept(), posTrack.tpcNSigmaPr());
-      histos.fill(HIST("V0/PID/h2dTPCNSigmaPr"), -1*v0.negativept(), negTrack.tpcNSigmaPr());
+      histos.fill(HIST("V0/PID/h2dTPCNSigmaPr"), -1 * v0.negativept(), negTrack.tpcNSigmaPr());
       histos.fill(HIST("V0/PID/h2dTPCNSigmaPi"), v0.positivept(), posTrack.tpcNSigmaPi());
-      histos.fill(HIST("V0/PID/h2dTPCNSigmaPi"), -1*v0.negativept(), negTrack.tpcNSigmaPi());
+      histos.fill(HIST("V0/PID/h2dTPCNSigmaPi"), -1 * v0.negativept(), negTrack.tpcNSigmaPi());
       histos.fill(HIST("V0/PID/h2dTPCSignal"), v0.positivept(), posTrack.tpcSignal());
-      histos.fill(HIST("V0/PID/h2dTPCSignal"), -1*v0.negativept(), negTrack.tpcSignal());
+      histos.fill(HIST("V0/PID/h2dTPCSignal"), -1 * v0.negativept(), negTrack.tpcSignal());
 
       // PID (TOF)
       histos.fill(HIST("V0/PID/h2dTOFNSigmaLaPr"), pT, v0.tofNSigmaLaPr());
@@ -511,10 +526,10 @@ struct strderivedGenQA {
       histos.fill(HIST("V0/PID/h2dposTOFDeltaTLaPi"), pT, v0.posTOFDeltaTLaPi());
       histos.fill(HIST("V0/PID/h2dTOFNSigmaALaPr"), pT, v0.tofNSigmaALaPr());
       histos.fill(HIST("V0/PID/h2dTOFNSigmaALaPi"), pT, v0.tofNSigmaALaPi());
-      
+
       histos.fill(HIST("V0/PID/h2dTOFNSigmaK0PiPlus"), pT, v0.tofNSigmaK0PiPlus());
       histos.fill(HIST("V0/PID/h2dTOFNSigmaK0PiMinus"), pT, v0.tofNSigmaK0PiMinus());
-      
+
       // PID TPC + TOF
       histos.fill(HIST("V0/PID/h3dTPCVsTOFNSigmaLaPr"), posTrack.tpcNSigmaPr(), v0.tofNSigmaLaPr(), v0.positivept());
       histos.fill(HIST("V0/PID/h3dTPCVsTOFNSigmaLaPi"), negTrack.tpcNSigmaPi(), v0.tofNSigmaLaPi(), v0.negativept());
@@ -530,7 +545,7 @@ struct strderivedGenQA {
 
       auto v0MC = v0.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
 
-      // General 
+      // General
       histos.fill(HIST("MCV0/h2dPDGV0VsMother"), v0MC.pdgCode(), v0MC.pdgCodeMother());
       histos.fill(HIST("MCV0/h2dPDGV0VsPositive"), v0MC.pdgCode(), v0MC.pdgCodePositive());
       histos.fill(HIST("MCV0/h2dPDGV0VsNegative"), v0MC.pdgCode(), v0MC.pdgCodeNegative());
@@ -541,60 +556,60 @@ struct strderivedGenQA {
       auto negTrack = v0.template negTrackExtra_as<dauTracks>();
 
       // Specific analysis by species:
-      if (v0MC.pdgCode()==22){ // IsGamma
+      if (v0MC.pdgCode() == 22) { // IsGamma
         histos.fill(HIST("MCV0/h2dArmenterosP"), v0.alpha(), v0.qtarm());
-        histos.fill(HIST("MCV0/Gamma/h2dpTResolution"), v0.pt(), v0.pt()-v0MC.ptMC());
-        histos.fill(HIST("MCV0/Gamma/h2dMass"), v0.pt(), v0.mGamma()); 
+        histos.fill(HIST("MCV0/Gamma/h2dpTResolution"), v0.pt(), v0.pt() - v0MC.ptMC());
+        histos.fill(HIST("MCV0/Gamma/h2dMass"), v0.pt(), v0.mGamma());
         histos.fill(HIST("MCV0/Gamma/h2dTPCNSigmaEl"), v0.positivept(), posTrack.tpcNSigmaEl());
-        histos.fill(HIST("MCV0/Gamma/h2dTPCNSigmaEl"), -1*v0.negativept(), negTrack.tpcNSigmaEl());
+        histos.fill(HIST("MCV0/Gamma/h2dTPCNSigmaEl"), -1 * v0.negativept(), negTrack.tpcNSigmaEl());
         histos.fill(HIST("MCV0/Gamma/h2dTPCSignal"), v0.positivept(), posTrack.tpcSignal());
-        histos.fill(HIST("MCV0/Gamma/h2dTPCSignal"), -1*v0.negativept(), negTrack.tpcSignal());
-        histos.fill(HIST("MCV0/Gamma/hRadius"), v0.v0radius()); 
-        histos.fill(HIST("MCV0/Gamma/hCosPA"), v0.v0cosPA()); 
-        histos.fill(HIST("MCV0/Gamma/hdcaDau"), v0.dcaV0daughters()); 
-        histos.fill(HIST("MCV0/Gamma/hdcaNegtopv"), v0.dcanegtopv()); 
-        histos.fill(HIST("MCV0/Gamma/hdcaPostopv"), v0.dcapostopv()); 
+        histos.fill(HIST("MCV0/Gamma/h2dTPCSignal"), -1 * v0.negativept(), negTrack.tpcSignal());
+        histos.fill(HIST("MCV0/Gamma/hRadius"), v0.v0radius());
+        histos.fill(HIST("MCV0/Gamma/hCosPA"), v0.v0cosPA());
+        histos.fill(HIST("MCV0/Gamma/hdcaDau"), v0.dcaV0daughters());
+        histos.fill(HIST("MCV0/Gamma/hdcaNegtopv"), v0.dcanegtopv());
+        histos.fill(HIST("MCV0/Gamma/hdcaPostopv"), v0.dcapostopv());
       }
-      if (v0MC.pdgCode()==3122){ // IsLambda
+      if (v0MC.pdgCode() == 3122) { // IsLambda
         histos.fill(HIST("MCV0/h2dArmenterosP"), v0.alpha(), v0.qtarm());
-        histos.fill(HIST("MCV0/Lambda/h2dpTResolution"), v0.pt(), v0.pt()-v0MC.ptMC()); 
+        histos.fill(HIST("MCV0/Lambda/h2dpTResolution"), v0.pt(), v0.pt() - v0MC.ptMC());
         histos.fill(HIST("MCV0/Lambda/h2dMass"), v0.pt(), v0.mLambda());
         histos.fill(HIST("MCV0/Lambda/h2dTPCNSigmaPr"), v0.positivept(), posTrack.tpcNSigmaPr());
         histos.fill(HIST("MCV0/Lambda/h2dTPCNSigmaPi"), v0.negativept(), negTrack.tpcNSigmaPi());
         histos.fill(HIST("MCV0/Lambda/h2dTPCSignal"), v0.positivept(), posTrack.tpcSignal());
-        histos.fill(HIST("MCV0/Lambda/h2dTPCSignal"), -1*v0.negativept(), negTrack.tpcSignal());
-        histos.fill(HIST("MCV0/Lambda/hRadius"), v0.v0radius()); 
-        histos.fill(HIST("MCV0/Lambda/hCosPA"), v0.v0cosPA()); 
-        histos.fill(HIST("MCV0/Lambda/hdcaDau"), v0.dcaV0daughters()); 
-        histos.fill(HIST("MCV0/Lambda/hdcaNegtopv"), v0.dcanegtopv()); 
-        histos.fill(HIST("MCV0/Lambda/hdcaPostopv"), v0.dcapostopv()); 
+        histos.fill(HIST("MCV0/Lambda/h2dTPCSignal"), -1 * v0.negativept(), negTrack.tpcSignal());
+        histos.fill(HIST("MCV0/Lambda/hRadius"), v0.v0radius());
+        histos.fill(HIST("MCV0/Lambda/hCosPA"), v0.v0cosPA());
+        histos.fill(HIST("MCV0/Lambda/hdcaDau"), v0.dcaV0daughters());
+        histos.fill(HIST("MCV0/Lambda/hdcaNegtopv"), v0.dcanegtopv());
+        histos.fill(HIST("MCV0/Lambda/hdcaPostopv"), v0.dcapostopv());
       }
-      if (v0MC.pdgCode()==-3122){ // IsAntiLambda
+      if (v0MC.pdgCode() == -3122) { // IsAntiLambda
         histos.fill(HIST("MCV0/h2dArmenterosP"), v0.alpha(), v0.qtarm());
-        histos.fill(HIST("MCV0/AntiLambda/h2dpTResolution"), v0.pt(), v0.pt()-v0MC.ptMC());         
+        histos.fill(HIST("MCV0/AntiLambda/h2dpTResolution"), v0.pt(), v0.pt() - v0MC.ptMC());
         histos.fill(HIST("MCV0/AntiLambda/h2dMass"), v0.pt(), v0.mAntiLambda());
         histos.fill(HIST("MCV0/AntiLambda/h2dTPCNSigmaPr"), v0.negativept(), negTrack.tpcNSigmaPr());
         histos.fill(HIST("MCV0/AntiLambda/h2dTPCNSigmaPi"), v0.positivept(), posTrack.tpcNSigmaPi());
         histos.fill(HIST("MCV0/AntiLambda/h2dTPCSignal"), v0.positivept(), posTrack.tpcSignal());
-        histos.fill(HIST("MCV0/AntiLambda/h2dTPCSignal"), -1*v0.negativept(), negTrack.tpcSignal());
-        histos.fill(HIST("MCV0/AntiLambda/hRadius"), v0.v0radius()); 
-        histos.fill(HIST("MCV0/AntiLambda/hCosPA"), v0.v0cosPA()); 
-        histos.fill(HIST("MCV0/AntiLambda/hdcaDau"), v0.dcaV0daughters()); 
-        histos.fill(HIST("MCV0/AntiLambda/hdcaNegtopv"), v0.dcanegtopv()); 
-        histos.fill(HIST("MCV0/AntiLambda/hdcaPostopv"), v0.dcapostopv()); 
+        histos.fill(HIST("MCV0/AntiLambda/h2dTPCSignal"), -1 * v0.negativept(), negTrack.tpcSignal());
+        histos.fill(HIST("MCV0/AntiLambda/hRadius"), v0.v0radius());
+        histos.fill(HIST("MCV0/AntiLambda/hCosPA"), v0.v0cosPA());
+        histos.fill(HIST("MCV0/AntiLambda/hdcaDau"), v0.dcaV0daughters());
+        histos.fill(HIST("MCV0/AntiLambda/hdcaNegtopv"), v0.dcanegtopv());
+        histos.fill(HIST("MCV0/AntiLambda/hdcaPostopv"), v0.dcapostopv());
       }
-      if (v0MC.pdgCode()==310){ // IsK0Short
+      if (v0MC.pdgCode() == 310) { // IsK0Short
         histos.fill(HIST("MCV0/h2dArmenterosP"), v0.alpha(), v0.qtarm());
-        histos.fill(HIST("MCV0/K0Short/h2dpTResolution"), v0.pt(), v0.pt()-v0MC.ptMC()); 
+        histos.fill(HIST("MCV0/K0Short/h2dpTResolution"), v0.pt(), v0.pt() - v0MC.ptMC());
         histos.fill(HIST("MCV0/K0Short/h2dMass"), v0.pt(), v0.mK0Short());
         histos.fill(HIST("MCV0/K0Short/h2dTPCNSigmaPi"), v0.positivept(), posTrack.tpcNSigmaPi());
-        histos.fill(HIST("MCV0/K0Short/h2dTPCNSigmaPi"), -1*v0.negativept(), negTrack.tpcNSigmaPi());
+        histos.fill(HIST("MCV0/K0Short/h2dTPCNSigmaPi"), -1 * v0.negativept(), negTrack.tpcNSigmaPi());
         histos.fill(HIST("MCV0/K0Short/h2dTPCSignal"), v0.positivept(), posTrack.tpcSignal());
-        histos.fill(HIST("MCV0/K0Short/h2dTPCSignal"), -1*v0.negativept(), negTrack.tpcSignal());
-        histos.fill(HIST("MCV0/K0Short/hRadius"), v0.v0radius()); 
-        histos.fill(HIST("MCV0/K0Short/hCosPA"), v0.v0cosPA()); 
-        histos.fill(HIST("MCV0/K0Short/hdcaDau"), v0.dcaV0daughters()); 
-        histos.fill(HIST("MCV0/K0Short/hdcaNegtopv"), v0.dcanegtopv()); 
+        histos.fill(HIST("MCV0/K0Short/h2dTPCSignal"), -1 * v0.negativept(), negTrack.tpcSignal());
+        histos.fill(HIST("MCV0/K0Short/hRadius"), v0.v0radius());
+        histos.fill(HIST("MCV0/K0Short/hCosPA"), v0.v0cosPA());
+        histos.fill(HIST("MCV0/K0Short/hdcaDau"), v0.dcaV0daughters());
+        histos.fill(HIST("MCV0/K0Short/hdcaNegtopv"), v0.dcanegtopv());
         histos.fill(HIST("MCV0/K0Short/hdcaPostopv"), v0.dcapostopv());
       }
     }
@@ -602,85 +617,84 @@ struct strderivedGenQA {
 
   void processDerivedCascades(StrCollisionsDatas::iterator const& coll, CascDerivedDatas const& Cascades, dauTracks const&)
   {
-    for (auto& casc : Cascades) {   
+    for (auto& casc : Cascades) {
       // Cascade level
       float pT = casc.pt();
-      histos.fill(HIST("Casc/Sign"), casc.sign()); 
-      histos.fill(HIST("Casc/hpT"), pT);       
-      histos.fill(HIST("Casc/hV0Radius"), casc.v0radius()); 
-      histos.fill(HIST("Casc/hCascRadius"), casc.cascradius()); 
-      histos.fill(HIST("Casc/hV0CosPA"), casc.v0cosPA(casc.x(), casc.y(), casc.z())); 
-      histos.fill(HIST("Casc/hCascCosPA"), casc.casccosPA(casc.x(), casc.y(), casc.z())); 
-      histos.fill(HIST("Casc/hDCAPosToPV"), casc.dcapostopv()); 
-      histos.fill(HIST("Casc/hDCANegToPV"), casc.dcanegtopv()); 
-      histos.fill(HIST("Casc/hDCABachToPV"), casc.dcabachtopv()); 
-      histos.fill(HIST("Casc/hDCAXYCascToPV"), casc.dcaXYCascToPV()); 
-      histos.fill(HIST("Casc/hDCAZCascToPV"), casc.dcaZCascToPV()); 
-      histos.fill(HIST("Casc/hDCAV0ToPV"), casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())); 
+      histos.fill(HIST("Casc/Sign"), casc.sign());
+      histos.fill(HIST("Casc/hpT"), pT);
+      histos.fill(HIST("Casc/hV0Radius"), casc.v0radius());
+      histos.fill(HIST("Casc/hCascRadius"), casc.cascradius());
+      histos.fill(HIST("Casc/hV0CosPA"), casc.v0cosPA(casc.x(), casc.y(), casc.z()));
+      histos.fill(HIST("Casc/hCascCosPA"), casc.casccosPA(casc.x(), casc.y(), casc.z()));
+      histos.fill(HIST("Casc/hDCAPosToPV"), casc.dcapostopv());
+      histos.fill(HIST("Casc/hDCANegToPV"), casc.dcanegtopv());
+      histos.fill(HIST("Casc/hDCABachToPV"), casc.dcabachtopv());
+      histos.fill(HIST("Casc/hDCAXYCascToPV"), casc.dcaXYCascToPV());
+      histos.fill(HIST("Casc/hDCAZCascToPV"), casc.dcaZCascToPV());
+      histos.fill(HIST("Casc/hDCAV0ToPV"), casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ()));
       histos.fill(HIST("Casc/hDCAV0Dau"), casc.dcaV0daughters());
       histos.fill(HIST("Casc/hDCACascDau"), casc.dcacascdaughters());
-      histos.fill(HIST("Casc/hLambdaMass"), casc.mLambda());      
-      
+      histos.fill(HIST("Casc/hLambdaMass"), casc.mLambda());
+
       // Track level
       auto negTrack = casc.template negTrackExtra_as<dauTracks>();
       auto posTrack = casc.template posTrackExtra_as<dauTracks>();
       auto bachTrack = casc.template bachTrackExtra_as<dauTracks>();
 
       uint8_t positiveTrackCode = ((uint8_t(posTrack.hasTPC()) << hasTPC) |
-                                    (uint8_t(posTrack.hasITSTracker()) << hasITSTracker) |
-                                    (uint8_t(posTrack.hasITSAfterburner()) << hasITSAfterburner) |
-                                    (uint8_t(posTrack.hasTRD()) << hasTRD) |
-                                    (uint8_t(posTrack.hasTOF()) << hasTOF));
+                                   (uint8_t(posTrack.hasITSTracker()) << hasITSTracker) |
+                                   (uint8_t(posTrack.hasITSAfterburner()) << hasITSAfterburner) |
+                                   (uint8_t(posTrack.hasTRD()) << hasTRD) |
+                                   (uint8_t(posTrack.hasTOF()) << hasTOF));
 
       uint8_t negativeTrackCode = ((uint8_t(negTrack.hasTPC()) << hasTPC) |
-                                    (uint8_t(negTrack.hasITSTracker()) << hasITSTracker) |
-                                    (uint8_t(negTrack.hasITSAfterburner()) << hasITSAfterburner) |
-                                    (uint8_t(negTrack.hasTRD()) << hasTRD) |
-                                    (uint8_t(negTrack.hasTOF()) << hasTOF));
+                                   (uint8_t(negTrack.hasITSTracker()) << hasITSTracker) |
+                                   (uint8_t(negTrack.hasITSAfterburner()) << hasITSAfterburner) |
+                                   (uint8_t(negTrack.hasTRD()) << hasTRD) |
+                                   (uint8_t(negTrack.hasTOF()) << hasTOF));
 
       uint8_t bachTrackCode = ((uint8_t(bachTrack.hasTPC()) << hasTPC) |
-                                    (uint8_t(bachTrack.hasITSTracker()) << hasITSTracker) |
-                                    (uint8_t(bachTrack.hasITSAfterburner()) << hasITSAfterburner) |
-                                    (uint8_t(bachTrack.hasTRD()) << hasTRD) |
-                                    (uint8_t(bachTrack.hasTOF()) << hasTOF));
+                               (uint8_t(bachTrack.hasITSTracker()) << hasITSTracker) |
+                               (uint8_t(bachTrack.hasITSAfterburner()) << hasITSAfterburner) |
+                               (uint8_t(bachTrack.hasTRD()) << hasTRD) |
+                               (uint8_t(bachTrack.hasTOF()) << hasTOF));
 
       histos.fill(HIST("Casc/Track/h3dTrackProperties"), positiveTrackCode, negativeTrackCode, bachTrackCode); // complete tracking info
-      histos.fill(HIST("Casc/Track/h2dPosTrackProperties"), positiveTrackCode, casc.positivept()); // positive track info
-      histos.fill(HIST("Casc/Track/h2dNegTrackProperties"), negativeTrackCode, casc.negativept()); // negative track info
-      histos.fill(HIST("Casc/Track/h2dBachTrackProperties"), bachTrackCode, casc.bachelorpt()); // bach track info
+      histos.fill(HIST("Casc/Track/h2dPosTrackProperties"), positiveTrackCode, casc.positivept());             // positive track info
+      histos.fill(HIST("Casc/Track/h2dNegTrackProperties"), negativeTrackCode, casc.negativept());             // negative track info
+      histos.fill(HIST("Casc/Track/h2dBachTrackProperties"), bachTrackCode, casc.bachelorpt());                // bach track info
       histos.fill(HIST("Casc/Track/h2dV0ITSChi2PerNcl"), casc.positivept(), posTrack.itsChi2PerNcl());
-      histos.fill(HIST("Casc/Track/h2dV0ITSChi2PerNcl"), -1*casc.negativept(), negTrack.itsChi2PerNcl());
+      histos.fill(HIST("Casc/Track/h2dV0ITSChi2PerNcl"), -1 * casc.negativept(), negTrack.itsChi2PerNcl());
       histos.fill(HIST("Casc/Track/h2dV0TPCCrossedRows"), casc.positivept(), posTrack.tpcCrossedRows());
-      histos.fill(HIST("Casc/Track/h2dV0TPCCrossedRows"), -1*casc.negativept(), negTrack.tpcCrossedRows());
+      histos.fill(HIST("Casc/Track/h2dV0TPCCrossedRows"), -1 * casc.negativept(), negTrack.tpcCrossedRows());
       histos.fill(HIST("Casc/Track/h2dV0ITSNCls"), casc.positivept(), posTrack.itsNCls());
-      histos.fill(HIST("Casc/Track/h2dV0ITSNCls"), -1*casc.negativept(), negTrack.itsNCls());
+      histos.fill(HIST("Casc/Track/h2dV0ITSNCls"), -1 * casc.negativept(), negTrack.itsNCls());
 
       // PID (TPC)
       histos.fill(HIST("Casc/PID/h2dV0TPCNSigmaPr"), casc.positivept(), posTrack.tpcNSigmaPr());
-      histos.fill(HIST("Casc/PID/h2dV0TPCNSigmaPr"), -1*casc.negativept(), negTrack.tpcNSigmaPr());
+      histos.fill(HIST("Casc/PID/h2dV0TPCNSigmaPr"), -1 * casc.negativept(), negTrack.tpcNSigmaPr());
       histos.fill(HIST("Casc/PID/h2dV0TPCNSigmaPi"), casc.positivept(), posTrack.tpcNSigmaPi());
-      histos.fill(HIST("Casc/PID/h2dV0TPCNSigmaPi"), -1*casc.negativept(), negTrack.tpcNSigmaPi());
+      histos.fill(HIST("Casc/PID/h2dV0TPCNSigmaPi"), -1 * casc.negativept(), negTrack.tpcNSigmaPi());
       histos.fill(HIST("Casc/PID/h2dV0TPCSignal"), casc.positivept(), posTrack.tpcSignal());
-      histos.fill(HIST("Casc/PID/h2dV0TPCSignal"), -1*casc.negativept(), negTrack.tpcSignal());
+      histos.fill(HIST("Casc/PID/h2dV0TPCSignal"), -1 * casc.negativept(), negTrack.tpcSignal());
 
       // PID (TOF)
       histos.fill(HIST("Casc/PID/h2dTOFNSigmaXiLaPi"), pT, casc.tofNSigmaXiLaPi()); //! meson track NSigma from pion <- lambda <- xi expectation
       histos.fill(HIST("Casc/PID/h2dTOFNSigmaXiLaPr"), pT, casc.tofNSigmaXiLaPr()); //! baryon track NSigma from proton <- lambda <- xi expectation
       histos.fill(HIST("Casc/PID/h2dTOFNSigmaXiPi"), pT, casc.tofNSigmaXiPi());     //! bachelor track NSigma from pion <- xi expectation
-      histos.fill(HIST("Casc/PID/h2dTOFNSigmaOmLaPi"), pT, casc.tofNSigmaOmLaPi()); //! meson track NSigma from pion <- lambda <- om expectation     
+      histos.fill(HIST("Casc/PID/h2dTOFNSigmaOmLaPi"), pT, casc.tofNSigmaOmLaPi()); //! meson track NSigma from pion <- lambda <- om expectation
       histos.fill(HIST("Casc/PID/h2dTOFNSigmaOmLaPr"), pT, casc.tofNSigmaOmLaPr()); //! baryon track NSigma from proton <- lambda <- om expectation
       histos.fill(HIST("Casc/PID/h2dTOFNSigmaOmKa"), pT, casc.tofNSigmaOmKa());     //! bachelor track NSigma from kaon <- om expectation
 
       // By particle species
-      if (casc.sign()<0){
+      if (casc.sign() < 0) {
         histos.fill(HIST("Casc/hMassXiMinus"), casc.mXi());
         histos.fill(HIST("Casc/hMassOmegaMinus"), casc.mOmega());
-        histos.fill(HIST("Casc/Track/h2dBachITSNCls"), -1*casc.bachelorpt(), bachTrack.itsNCls());
-        histos.fill(HIST("Casc/Track/h2dBachITSChi2PerNcl"), -1*casc.bachelorpt(), bachTrack.itsChi2PerNcl());
-        histos.fill(HIST("Casc/Track/h2dBachTPCCrossedRows"), -1*casc.bachelorpt(), bachTrack.tpcCrossedRows());
-        histos.fill(HIST("Casc/PID/h2dBachTPCSignal"), -1*casc.bachelorpt(), bachTrack.tpcSignal());
-      }
-      else{
+        histos.fill(HIST("Casc/Track/h2dBachITSNCls"), -1 * casc.bachelorpt(), bachTrack.itsNCls());
+        histos.fill(HIST("Casc/Track/h2dBachITSChi2PerNcl"), -1 * casc.bachelorpt(), bachTrack.itsChi2PerNcl());
+        histos.fill(HIST("Casc/Track/h2dBachTPCCrossedRows"), -1 * casc.bachelorpt(), bachTrack.tpcCrossedRows());
+        histos.fill(HIST("Casc/PID/h2dBachTPCSignal"), -1 * casc.bachelorpt(), bachTrack.tpcSignal());
+      } else {
         histos.fill(HIST("Casc/hMassXiPlus"), casc.mXi());
         histos.fill(HIST("Casc/hMassOmegaPlus"), casc.mOmega());
         histos.fill(HIST("Casc/Track/h2dBachITSNCls"), casc.bachelorpt(), bachTrack.itsNCls());
@@ -694,14 +708,14 @@ struct strderivedGenQA {
   void processMCDerivedCascades(StrCollisionsDatas::iterator const& coll, CascDerivedMCDatas const& Cascades, dauTracks const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
   {
     for (auto& casc : Cascades) {
-      
+
       float pT = casc.pt();
       histos.fill(HIST("MCCasc/hcascMCCore"), casc.has_cascMCCore());
       if (!casc.has_cascMCCore())
         continue;
       auto cascMC = casc.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
 
-      // General 
+      // General
       histos.fill(HIST("MCCasc/h2dPDGV0VsMother"), cascMC.pdgCode(), cascMC.pdgCodeMother());
       histos.fill(HIST("MCCasc/h2dPDGV0VsPositive"), cascMC.pdgCode(), cascMC.pdgCodePositive());
       histos.fill(HIST("MCCasc/h2dPDGV0VsNegative"), cascMC.pdgCode(), cascMC.pdgCodeNegative());
@@ -714,82 +728,82 @@ struct strderivedGenQA {
       auto bachTrack = casc.template bachTrackExtra_as<dauTracks>();
 
       // Specific analysis by species:
-      if (cascMC.pdgCode()==3312){ // XiMinus
-        histos.fill(HIST("MCCasc/XiMinus/h2dpTResolution"), pT, pT-cascMC.ptMC());
-        histos.fill(HIST("MCCasc/XiMinus/h2dMass"), pT, casc.mXi()); 
+      if (cascMC.pdgCode() == 3312) { // XiMinus
+        histos.fill(HIST("MCCasc/XiMinus/h2dpTResolution"), pT, pT - cascMC.ptMC());
+        histos.fill(HIST("MCCasc/XiMinus/h2dMass"), pT, casc.mXi());
         histos.fill(HIST("MCCasc/XiMinus/h2dV0TPCSignal"), casc.positivept(), posTrack.tpcSignal());
-        histos.fill(HIST("MCCasc/XiMinus/h2dV0TPCSignal"), -1*casc.negativept(), negTrack.tpcSignal());
+        histos.fill(HIST("MCCasc/XiMinus/h2dV0TPCSignal"), -1 * casc.negativept(), negTrack.tpcSignal());
         histos.fill(HIST("MCCasc/XiMinus/h2dBachTPCSignal"), casc.bachelorpt(), bachTrack.tpcSignal());
-        histos.fill(HIST("MCCasc/XiMinus/hV0Radius"), casc.v0radius()); 
-        histos.fill(HIST("MCCasc/XiMinus/hCascRadius"), casc.cascradius()); 
-        histos.fill(HIST("MCCasc/XiMinus/hV0CosPA"), casc.v0cosPA(casc.x(), casc.y(), casc.z())); 
-        histos.fill(HIST("MCCasc/XiMinus/hCascCosPA"), casc.casccosPA(casc.x(), casc.y(), casc.z())); 
-        histos.fill(HIST("MCCasc/XiMinus/hDCAPosToPV"), casc.dcapostopv()); 
-        histos.fill(HIST("MCCasc/XiMinus/hDCANegToPV"), casc.dcanegtopv()); 
-        histos.fill(HIST("MCCasc/XiMinus/hDCABachToPV"), casc.dcabachtopv()); 
-        histos.fill(HIST("MCCasc/XiMinus/hDCAXYCascToPV"), casc.dcaXYCascToPV()); 
-        histos.fill(HIST("MCCasc/XiMinus/hDCAZCascToPV"), casc.dcaZCascToPV()); 
-        histos.fill(HIST("MCCasc/XiMinus/hDCAV0ToPV"), casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())); 
+        histos.fill(HIST("MCCasc/XiMinus/hV0Radius"), casc.v0radius());
+        histos.fill(HIST("MCCasc/XiMinus/hCascRadius"), casc.cascradius());
+        histos.fill(HIST("MCCasc/XiMinus/hV0CosPA"), casc.v0cosPA(casc.x(), casc.y(), casc.z()));
+        histos.fill(HIST("MCCasc/XiMinus/hCascCosPA"), casc.casccosPA(casc.x(), casc.y(), casc.z()));
+        histos.fill(HIST("MCCasc/XiMinus/hDCAPosToPV"), casc.dcapostopv());
+        histos.fill(HIST("MCCasc/XiMinus/hDCANegToPV"), casc.dcanegtopv());
+        histos.fill(HIST("MCCasc/XiMinus/hDCABachToPV"), casc.dcabachtopv());
+        histos.fill(HIST("MCCasc/XiMinus/hDCAXYCascToPV"), casc.dcaXYCascToPV());
+        histos.fill(HIST("MCCasc/XiMinus/hDCAZCascToPV"), casc.dcaZCascToPV());
+        histos.fill(HIST("MCCasc/XiMinus/hDCAV0ToPV"), casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ()));
         histos.fill(HIST("MCCasc/XiMinus/hDCAV0Dau"), casc.dcaV0daughters());
         histos.fill(HIST("MCCasc/XiMinus/hDCACascDau"), casc.dcacascdaughters());
         histos.fill(HIST("MCCasc/XiMinus/hLambdaMass"), casc.mLambda());
       }
-      if (cascMC.pdgCode()==-3312){ // XiPlus
-        histos.fill(HIST("MCCasc/XiPlus/h2dpTResolution"), pT, pT-cascMC.ptMC());
-        histos.fill(HIST("MCCasc/XiPlus/h2dMass"), pT, casc.mXi()); 
+      if (cascMC.pdgCode() == -3312) { // XiPlus
+        histos.fill(HIST("MCCasc/XiPlus/h2dpTResolution"), pT, pT - cascMC.ptMC());
+        histos.fill(HIST("MCCasc/XiPlus/h2dMass"), pT, casc.mXi());
         histos.fill(HIST("MCCasc/XiPlus/h2dV0TPCSignal"), casc.positivept(), posTrack.tpcSignal());
-        histos.fill(HIST("MCCasc/XiPlus/h2dV0TPCSignal"), -1*casc.negativept(), negTrack.tpcSignal());
+        histos.fill(HIST("MCCasc/XiPlus/h2dV0TPCSignal"), -1 * casc.negativept(), negTrack.tpcSignal());
         histos.fill(HIST("MCCasc/XiPlus/h2dBachTPCSignal"), casc.bachelorpt(), bachTrack.tpcSignal());
-        histos.fill(HIST("MCCasc/XiPlus/hV0Radius"), casc.v0radius()); 
-        histos.fill(HIST("MCCasc/XiPlus/hCascRadius"), casc.cascradius()); 
-        histos.fill(HIST("MCCasc/XiPlus/hV0CosPA"), casc.v0cosPA(casc.x(), casc.y(), casc.z())); 
-        histos.fill(HIST("MCCasc/XiPlus/hCascCosPA"), casc.casccosPA(casc.x(), casc.y(), casc.z())); 
-        histos.fill(HIST("MCCasc/XiPlus/hDCAPosToPV"), casc.dcapostopv()); 
-        histos.fill(HIST("MCCasc/XiPlus/hDCANegToPV"), casc.dcanegtopv()); 
-        histos.fill(HIST("MCCasc/XiPlus/hDCABachToPV"), casc.dcabachtopv()); 
-        histos.fill(HIST("MCCasc/XiPlus/hDCAXYCascToPV"), casc.dcaXYCascToPV()); 
-        histos.fill(HIST("MCCasc/XiPlus/hDCAZCascToPV"), casc.dcaZCascToPV()); 
-        histos.fill(HIST("MCCasc/XiPlus/hDCAV0ToPV"), casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())); 
+        histos.fill(HIST("MCCasc/XiPlus/hV0Radius"), casc.v0radius());
+        histos.fill(HIST("MCCasc/XiPlus/hCascRadius"), casc.cascradius());
+        histos.fill(HIST("MCCasc/XiPlus/hV0CosPA"), casc.v0cosPA(casc.x(), casc.y(), casc.z()));
+        histos.fill(HIST("MCCasc/XiPlus/hCascCosPA"), casc.casccosPA(casc.x(), casc.y(), casc.z()));
+        histos.fill(HIST("MCCasc/XiPlus/hDCAPosToPV"), casc.dcapostopv());
+        histos.fill(HIST("MCCasc/XiPlus/hDCANegToPV"), casc.dcanegtopv());
+        histos.fill(HIST("MCCasc/XiPlus/hDCABachToPV"), casc.dcabachtopv());
+        histos.fill(HIST("MCCasc/XiPlus/hDCAXYCascToPV"), casc.dcaXYCascToPV());
+        histos.fill(HIST("MCCasc/XiPlus/hDCAZCascToPV"), casc.dcaZCascToPV());
+        histos.fill(HIST("MCCasc/XiPlus/hDCAV0ToPV"), casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ()));
         histos.fill(HIST("MCCasc/XiPlus/hDCAV0Dau"), casc.dcaV0daughters());
         histos.fill(HIST("MCCasc/XiPlus/hDCACascDau"), casc.dcacascdaughters());
         histos.fill(HIST("MCCasc/XiPlus/hLambdaMass"), casc.mLambda());
       }
-      if (cascMC.pdgCode()==3334){ // OmegaMinus
-        histos.fill(HIST("MCCasc/OmegaMinus/h2dpTResolution"), pT, pT-cascMC.ptMC());
-        histos.fill(HIST("MCCasc/OmegaMinus/h2dMass"), pT, casc.mOmega()); 
+      if (cascMC.pdgCode() == 3334) { // OmegaMinus
+        histos.fill(HIST("MCCasc/OmegaMinus/h2dpTResolution"), pT, pT - cascMC.ptMC());
+        histos.fill(HIST("MCCasc/OmegaMinus/h2dMass"), pT, casc.mOmega());
         histos.fill(HIST("MCCasc/OmegaMinus/h2dV0TPCSignal"), casc.positivept(), posTrack.tpcSignal());
-        histos.fill(HIST("MCCasc/OmegaMinus/h2dV0TPCSignal"), -1*casc.negativept(), negTrack.tpcSignal());
+        histos.fill(HIST("MCCasc/OmegaMinus/h2dV0TPCSignal"), -1 * casc.negativept(), negTrack.tpcSignal());
         histos.fill(HIST("MCCasc/OmegaMinus/h2dBachTPCSignal"), casc.bachelorpt(), bachTrack.tpcSignal());
-        histos.fill(HIST("MCCasc/OmegaMinus/hV0Radius"), casc.v0radius()); 
-        histos.fill(HIST("MCCasc/OmegaMinus/hCascRadius"), casc.cascradius()); 
-        histos.fill(HIST("MCCasc/OmegaMinus/hV0CosPA"), casc.v0cosPA(casc.x(), casc.y(), casc.z())); 
-        histos.fill(HIST("MCCasc/OmegaMinus/hCascCosPA"), casc.casccosPA(casc.x(), casc.y(), casc.z())); 
-        histos.fill(HIST("MCCasc/OmegaMinus/hDCAPosToPV"), casc.dcapostopv()); 
-        histos.fill(HIST("MCCasc/OmegaMinus/hDCANegToPV"), casc.dcanegtopv()); 
-        histos.fill(HIST("MCCasc/OmegaMinus/hDCABachToPV"), casc.dcabachtopv()); 
-        histos.fill(HIST("MCCasc/OmegaMinus/hDCAXYCascToPV"), casc.dcaXYCascToPV()); 
-        histos.fill(HIST("MCCasc/OmegaMinus/hDCAZCascToPV"), casc.dcaZCascToPV()); 
-        histos.fill(HIST("MCCasc/OmegaMinus/hDCAV0ToPV"), casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())); 
+        histos.fill(HIST("MCCasc/OmegaMinus/hV0Radius"), casc.v0radius());
+        histos.fill(HIST("MCCasc/OmegaMinus/hCascRadius"), casc.cascradius());
+        histos.fill(HIST("MCCasc/OmegaMinus/hV0CosPA"), casc.v0cosPA(casc.x(), casc.y(), casc.z()));
+        histos.fill(HIST("MCCasc/OmegaMinus/hCascCosPA"), casc.casccosPA(casc.x(), casc.y(), casc.z()));
+        histos.fill(HIST("MCCasc/OmegaMinus/hDCAPosToPV"), casc.dcapostopv());
+        histos.fill(HIST("MCCasc/OmegaMinus/hDCANegToPV"), casc.dcanegtopv());
+        histos.fill(HIST("MCCasc/OmegaMinus/hDCABachToPV"), casc.dcabachtopv());
+        histos.fill(HIST("MCCasc/OmegaMinus/hDCAXYCascToPV"), casc.dcaXYCascToPV());
+        histos.fill(HIST("MCCasc/OmegaMinus/hDCAZCascToPV"), casc.dcaZCascToPV());
+        histos.fill(HIST("MCCasc/OmegaMinus/hDCAV0ToPV"), casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ()));
         histos.fill(HIST("MCCasc/OmegaMinus/hDCAV0Dau"), casc.dcaV0daughters());
         histos.fill(HIST("MCCasc/OmegaMinus/hDCACascDau"), casc.dcacascdaughters());
         histos.fill(HIST("MCCasc/OmegaMinus/hLambdaMass"), casc.mLambda());
       }
-      if (cascMC.pdgCode()==-3334){ // OmegaPlus
-        histos.fill(HIST("MCCasc/OmegaPlus/h2dpTResolution"), pT, pT-cascMC.ptMC());
-        histos.fill(HIST("MCCasc/OmegaPlus/h2dMass"), pT, casc.mOmega()); 
+      if (cascMC.pdgCode() == -3334) { // OmegaPlus
+        histos.fill(HIST("MCCasc/OmegaPlus/h2dpTResolution"), pT, pT - cascMC.ptMC());
+        histos.fill(HIST("MCCasc/OmegaPlus/h2dMass"), pT, casc.mOmega());
         histos.fill(HIST("MCCasc/OmegaPlus/h2dV0TPCSignal"), casc.positivept(), posTrack.tpcSignal());
-        histos.fill(HIST("MCCasc/OmegaPlus/h2dV0TPCSignal"), -1*casc.negativept(), negTrack.tpcSignal());
+        histos.fill(HIST("MCCasc/OmegaPlus/h2dV0TPCSignal"), -1 * casc.negativept(), negTrack.tpcSignal());
         histos.fill(HIST("MCCasc/OmegaPlus/h2dBachTPCSignal"), casc.bachelorpt(), bachTrack.tpcSignal());
-        histos.fill(HIST("MCCasc/OmegaPlus/hV0Radius"), casc.v0radius()); 
-        histos.fill(HIST("MCCasc/OmegaPlus/hCascRadius"), casc.cascradius()); 
-        histos.fill(HIST("MCCasc/OmegaPlus/hV0CosPA"), casc.v0cosPA(casc.x(), casc.y(), casc.z())); 
-        histos.fill(HIST("MCCasc/OmegaPlus/hCascCosPA"), casc.casccosPA(casc.x(), casc.y(), casc.z())); 
-        histos.fill(HIST("MCCasc/OmegaPlus/hDCAPosToPV"), casc.dcapostopv()); 
-        histos.fill(HIST("MCCasc/OmegaPlus/hDCANegToPV"), casc.dcanegtopv()); 
-        histos.fill(HIST("MCCasc/OmegaPlus/hDCABachToPV"), casc.dcabachtopv()); 
-        histos.fill(HIST("MCCasc/OmegaPlus/hDCAXYCascToPV"), casc.dcaXYCascToPV()); 
-        histos.fill(HIST("MCCasc/OmegaPlus/hDCAZCascToPV"), casc.dcaZCascToPV()); 
-        histos.fill(HIST("MCCasc/OmegaPlus/hDCAV0ToPV"), casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())); 
+        histos.fill(HIST("MCCasc/OmegaPlus/hV0Radius"), casc.v0radius());
+        histos.fill(HIST("MCCasc/OmegaPlus/hCascRadius"), casc.cascradius());
+        histos.fill(HIST("MCCasc/OmegaPlus/hV0CosPA"), casc.v0cosPA(casc.x(), casc.y(), casc.z()));
+        histos.fill(HIST("MCCasc/OmegaPlus/hCascCosPA"), casc.casccosPA(casc.x(), casc.y(), casc.z()));
+        histos.fill(HIST("MCCasc/OmegaPlus/hDCAPosToPV"), casc.dcapostopv());
+        histos.fill(HIST("MCCasc/OmegaPlus/hDCANegToPV"), casc.dcanegtopv());
+        histos.fill(HIST("MCCasc/OmegaPlus/hDCABachToPV"), casc.dcabachtopv());
+        histos.fill(HIST("MCCasc/OmegaPlus/hDCAXYCascToPV"), casc.dcaXYCascToPV());
+        histos.fill(HIST("MCCasc/OmegaPlus/hDCAZCascToPV"), casc.dcaZCascToPV());
+        histos.fill(HIST("MCCasc/OmegaPlus/hDCAV0ToPV"), casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ()));
         histos.fill(HIST("MCCasc/OmegaPlus/hDCAV0Dau"), casc.dcaV0daughters());
         histos.fill(HIST("MCCasc/OmegaPlus/hDCACascDau"), casc.dcacascdaughters());
         histos.fill(HIST("MCCasc/OmegaPlus/hLambdaMass"), casc.mLambda());
@@ -808,4 +822,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<strderivedGenQA>(cfgc)};
 }
-
