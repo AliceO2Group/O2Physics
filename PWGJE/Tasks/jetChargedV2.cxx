@@ -245,11 +245,6 @@ struct jetchargedv2Task {
     registry.add("h_jet_pt_rhoareasubtracted", "jet pT rhoareasubtracted;#it{p}_{T,jet} (GeV/#it{c}); entries", {HistType::kTH1F, {jetPtAxisRhoAreaSub}});
     registry.add("h_jet_pt_rholocal", "jet pT rholocal;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {jetPtAxisRhoAreaSub}});
 
-    registry.add("h_recoil_jet_pt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
-    registry.add("h_recoil_jet_eta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
-    registry.add("h_recoil_jet_phi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
-    registry.add("h_recoil_jet_dphi", "hadron-jet #Delta#phi;#Delta#phi_{jet,trigger hadron};entries", {HistType::kTH1F, {{40, -2.0, 2.0}}});
-
     registry.add("leadJetPt", "leadJet Pt ", {HistType::kTH1F, {{200, 0., 200.0}}});
     registry.add("leadJetPhi", "leadJet constituent #phi ", {HistType::kTH1F, {{80, -1.0, 7.}}});
     registry.add("leadJetEta", "leadJet constituent #eta ", {HistType::kTH1F, {{100, -1.0, 1.0}}});
@@ -346,36 +341,6 @@ struct jetchargedv2Task {
   {
     return TMath::Gamma(nDF / 2., x / 2.);
   }
-
-  void processjetQA(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors>>::iterator const& collision,
-                    soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
-                    aod::JetTracks const& tracks)
-  {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
-      return;
-    }
-    double leadingTrackpT = 0.0;
-    double leadingTrackPhi = 0.0;
-    for (auto const& track : tracks) {
-      if (track.pt() > 6.0 && track.pt() < 10.0) {
-        if (track.pt() > leadingTrackpT) {
-          leadingTrackpT = track.pt();
-          leadingTrackPhi = track.phi();
-        }
-      }
-    }
-    if (leadingTrackpT == 0.0)
-      return;
-    for (auto& jet : jets) {
-      if (TMath::Abs(RecoDecay::constrainAngle(RecoDecay::constrainAngle(jet.phi(), -o2::constants::math::PIHalf) - RecoDecay::constrainAngle(leadingTrackPhi, -o2::constants::math::PIHalf), -o2::constants::math::PIHalf) > 0.6)) {
-        registry.fill(HIST("h_recoil_jet_pt"), jet.pt());
-        registry.fill(HIST("h_recoil_jet_eta"), jet.eta());
-        registry.fill(HIST("h_recoil_jet_phi"), jet.phi());
-        registry.fill(HIST("h_recoil_jet_dphi"), jet.phi() - leadingTrackPhi);
-      }
-    }
-  }
-  PROCESS_SWITCH(jetchargedv2Task, processjetQA, "jet rho v2 jet QA", true);
 
   void processInOutJetV2(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors>>::iterator const& collision,
                          soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
@@ -618,7 +583,7 @@ struct jetchargedv2Task {
 
     int nDF = 1;
     int numOfFreePara = 2;
-    nDF = (int)fFitModulationV2v3->GetXaxis()->GetNbins() - numOfFreePara;
+    nDF = static_cast<int>(fFitModulationV2v3->GetXaxis()->GetNbins()) - numOfFreePara;
     if (nDF == 0 || static_cast<float>(nDF) <= 0.)
       return;
     double chi2 = 0.;
