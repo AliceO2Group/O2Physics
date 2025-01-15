@@ -347,7 +347,7 @@ struct FlowSP {
   {
 
     if (track.tpcNClsFound() < cfgNcls)
-        return false;
+      return false;
 
     double phimodn = track.phi();
     if (field < 0) // for negative polarity field
@@ -509,10 +509,10 @@ struct FlowSP {
         registry.fill(HIST("incl/vnA_eta"), track.eta(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
         registry.fill(HIST("incl/vnC_eta"), track.eta(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
-        registry.fill(HIST("incl/vnAxCxUx_eta_MH"), track.eta(), (ux * qxA * qxC)/ corrQQx);
-        registry.fill(HIST("incl/vnAxCyUx_eta_MH"), track.eta(), (ux * qyA * qyC)/ corrQQy);
-        registry.fill(HIST("incl/vnAxCyUy_eta_MH"), track.eta(), (uy * qxA * qyC)/ corrQQx);
-        registry.fill(HIST("incl/vnAyCxUy_eta_MH"), track.eta(), (uy * qyA * qxC)/ corrQQy);
+        registry.fill(HIST("incl/vnAxCxUx_eta_MH"), track.eta(), (ux * qxA * qxC) / corrQQx);
+        registry.fill(HIST("incl/vnAxCyUx_eta_MH"), track.eta(), (ux * qyA * qyC) / corrQQy);
+        registry.fill(HIST("incl/vnAxCyUy_eta_MH"), track.eta(), (uy * qxA * qyC) / corrQQx);
+        registry.fill(HIST("incl/vnAyCxUy_eta_MH"), track.eta(), (uy * qyA * qxC) / corrQQy);
 
         registry.fill(HIST("incl/vnAx_pt"), track.pt(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)));
         registry.fill(HIST("incl/vnAy_pt"), track.pt(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)));
@@ -521,12 +521,11 @@ struct FlowSP {
         registry.fill(HIST("incl/vnA_pt"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
         registry.fill(HIST("incl/vnC_pt"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
-        registry.fill(HIST("incl/vnAxCxUx_pt_MH"), track.pt(), (ux * qxA * qxC)/ corrQQx);
-        registry.fill(HIST("incl/vnAxCyUx_pt_MH"), track.pt(), (ux * qyA * qyC)/ corrQQy);
-        registry.fill(HIST("incl/vnAxCyUy_pt_MH"), track.pt(), (uy * qxA * qyC)/ corrQQx);
-        registry.fill(HIST("incl/vnAyCxUy_pt_MH"), track.pt(), (uy * qyA * qxC)/ corrQQy);
+        registry.fill(HIST("incl/vnAxCxUx_pt_MH"), track.pt(), (ux * qxA * qxC) / corrQQx);
+        registry.fill(HIST("incl/vnAxCyUx_pt_MH"), track.pt(), (ux * qyA * qyC) / corrQQy);
+        registry.fill(HIST("incl/vnAxCyUy_pt_MH"), track.pt(), (uy * qxA * qyC) / corrQQx);
+        registry.fill(HIST("incl/vnAyCxUy_pt_MH"), track.pt(), (uy * qyA * qxC) / corrQQy);
 
-                  
         registry.fill(HIST("incl/vnA_eta_EP"), track.eta(), vnA);
         registry.fill(HIST("incl/vnC_eta_EP"), track.eta(), vnC);
         registry.fill(HIST("incl/vnFull_eta_EP"), track.eta(), vnFull);
@@ -535,9 +534,9 @@ struct FlowSP {
         registry.fill(HIST("incl/vnC_pt_EP"), track.pt(), vnC);
         registry.fill(HIST("incl/vnFull_pt_EP"), track.pt(), vnFull);
 
-        // For integrated v1 take only tracks from eta>0. 
+        // For integrated v1 take only tracks from eta>0.
         // Following https://arxiv.org/pdf/1306.4145
-        if (cfgHarm==1 && track.eta()<0)
+        if (cfgHarm == 1 && track.eta() < 0)
           continue;
 
         registry.fill(HIST("incl/vnAx_cent"), centrality, (ux * qxA) / std::sqrt(std::fabs(corrQQx)));
@@ -547,10 +546,10 @@ struct FlowSP {
         registry.fill(HIST("incl/vnA_cent"), centrality, (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
         registry.fill(HIST("incl/vnC_cent"), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
-        registry.fill(HIST("incl/vnAxCxUx_cent_MH"), centrality, (ux * qxA * qxC)/ corrQQx);
-        registry.fill(HIST("incl/vnAxCyUx_cent_MH"), centrality, (ux * qyA * qyC)/ corrQQy);
-        registry.fill(HIST("incl/vnAxCyUy_cent_MH"), centrality, (uy * qxA * qyC)/ corrQQx);
-        registry.fill(HIST("incl/vnAyCxUy_cent_MH"), centrality, (uy * qyA * qxC)/ corrQQy);
+        registry.fill(HIST("incl/vnAxCxUx_cent_MH"), centrality, (ux * qxA * qxC) / corrQQx);
+        registry.fill(HIST("incl/vnAxCyUx_cent_MH"), centrality, (ux * qyA * qyC) / corrQQy);
+        registry.fill(HIST("incl/vnAxCyUy_cent_MH"), centrality, (uy * qxA * qyC) / corrQQx);
+        registry.fill(HIST("incl/vnAyCxUy_cent_MH"), centrality, (uy * qyA * qxC) / corrQQy);
 
         registry.fill(HIST("incl/vnA_cent_EP"), centrality, vnA);
         registry.fill(HIST("incl/vnC_cent_EP"), centrality, vnC);
@@ -564,10 +563,10 @@ struct FlowSP {
           registry.fill(HIST("pos/vnA_eta"), track.eta(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("pos/vnC_eta"), track.eta(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
-          registry.fill(HIST("pos/vnAxCxUx_eta_MH"), track.eta(), (ux * qxA * qxC)/ corrQQx);
-          registry.fill(HIST("pos/vnAxCyUx_eta_MH"), track.eta(), (ux * qyA * qyC)/ corrQQy);
-          registry.fill(HIST("pos/vnAxCyUy_eta_MH"), track.eta(), (uy * qxA * qyC)/ corrQQx);
-          registry.fill(HIST("pos/vnAyCxUy_eta_MH"), track.eta(), (uy * qyA * qxC)/ corrQQy);
+          registry.fill(HIST("pos/vnAxCxUx_eta_MH"), track.eta(), (ux * qxA * qxC) / corrQQx);
+          registry.fill(HIST("pos/vnAxCyUx_eta_MH"), track.eta(), (ux * qyA * qyC) / corrQQy);
+          registry.fill(HIST("pos/vnAxCyUy_eta_MH"), track.eta(), (uy * qxA * qyC) / corrQQx);
+          registry.fill(HIST("pos/vnAyCxUy_eta_MH"), track.eta(), (uy * qyA * qxC) / corrQQy);
 
           registry.fill(HIST("pos/vnAx_pt"), track.pt(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)));
           registry.fill(HIST("pos/vnAy_pt"), track.pt(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)));
@@ -576,12 +575,11 @@ struct FlowSP {
           registry.fill(HIST("pos/vnA_pt"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("pos/vnC_pt"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
-          registry.fill(HIST("pos/vnAxCxUx_pt_MH"), track.pt(), (ux * qxA * qxC)/ corrQQx);
-          registry.fill(HIST("pos/vnAxCyUx_pt_MH"), track.pt(), (ux * qyA * qyC)/ corrQQy);
-          registry.fill(HIST("pos/vnAxCyUy_pt_MH"), track.pt(), (uy * qxA * qyC)/ corrQQx);
-          registry.fill(HIST("pos/vnAyCxUy_pt_MH"), track.pt(), (uy * qyA * qxC)/ corrQQy);
+          registry.fill(HIST("pos/vnAxCxUx_pt_MH"), track.pt(), (ux * qxA * qxC) / corrQQx);
+          registry.fill(HIST("pos/vnAxCyUx_pt_MH"), track.pt(), (ux * qyA * qyC) / corrQQy);
+          registry.fill(HIST("pos/vnAxCyUy_pt_MH"), track.pt(), (uy * qxA * qyC) / corrQQx);
+          registry.fill(HIST("pos/vnAyCxUy_pt_MH"), track.pt(), (uy * qyA * qxC) / corrQQy);
 
-                    
           registry.fill(HIST("pos/vnA_eta_EP"), track.eta(), vnA);
           registry.fill(HIST("pos/vnC_eta_EP"), track.eta(), vnC);
           registry.fill(HIST("pos/vnFull_eta_EP"), track.eta(), vnFull);
@@ -590,9 +588,9 @@ struct FlowSP {
           registry.fill(HIST("pos/vnC_pt_EP"), track.pt(), vnC);
           registry.fill(HIST("pos/vnFull_pt_EP"), track.pt(), vnFull);
 
-          // For integrated v1 take only tracks from eta>0. 
+          // For integrated v1 take only tracks from eta>0.
           // Following https://arxiv.org/pdf/1306.4145
-          if (cfgHarm==1 && track.eta()<0)
+          if (cfgHarm == 1 && track.eta() < 0)
             continue;
 
           registry.fill(HIST("pos/vnAx_cent"), centrality, (ux * qxA) / std::sqrt(std::fabs(corrQQx)));
@@ -602,10 +600,10 @@ struct FlowSP {
           registry.fill(HIST("pos/vnA_cent"), centrality, (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("pos/vnC_cent"), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
-          registry.fill(HIST("pos/vnAxCxUx_cent_MH"), centrality, (ux * qxA * qxC)/ corrQQx);
-          registry.fill(HIST("pos/vnAxCyUx_cent_MH"), centrality, (ux * qyA * qyC)/ corrQQy);
-          registry.fill(HIST("pos/vnAxCyUy_cent_MH"), centrality, (uy * qxA * qyC)/ corrQQx);
-          registry.fill(HIST("pos/vnAyCxUy_cent_MH"), centrality, (uy * qyA * qxC)/ corrQQy);
+          registry.fill(HIST("pos/vnAxCxUx_cent_MH"), centrality, (ux * qxA * qxC) / corrQQx);
+          registry.fill(HIST("pos/vnAxCyUx_cent_MH"), centrality, (ux * qyA * qyC) / corrQQy);
+          registry.fill(HIST("pos/vnAxCyUy_cent_MH"), centrality, (uy * qxA * qyC) / corrQQx);
+          registry.fill(HIST("pos/vnAyCxUy_cent_MH"), centrality, (uy * qyA * qxC) / corrQQy);
 
           registry.fill(HIST("pos/vnA_cent_EP"), centrality, vnA);
           registry.fill(HIST("pos/vnC_cent_EP"), centrality, vnC);
@@ -618,10 +616,10 @@ struct FlowSP {
           registry.fill(HIST("neg/vnA_eta"), track.eta(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("neg/vnC_eta"), track.eta(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
-          registry.fill(HIST("neg/vnAxCxUx_eta_MH"), track.eta(), (ux * qxA * qxC)/ corrQQx);
-          registry.fill(HIST("neg/vnAxCyUx_eta_MH"), track.eta(), (ux * qyA * qyC)/ corrQQy);
-          registry.fill(HIST("neg/vnAxCyUy_eta_MH"), track.eta(), (uy * qxA * qyC)/ corrQQx);
-          registry.fill(HIST("neg/vnAyCxUy_eta_MH"), track.eta(), (uy * qyA * qxC)/ corrQQy);
+          registry.fill(HIST("neg/vnAxCxUx_eta_MH"), track.eta(), (ux * qxA * qxC) / corrQQx);
+          registry.fill(HIST("neg/vnAxCyUx_eta_MH"), track.eta(), (ux * qyA * qyC) / corrQQy);
+          registry.fill(HIST("neg/vnAxCyUy_eta_MH"), track.eta(), (uy * qxA * qyC) / corrQQx);
+          registry.fill(HIST("neg/vnAyCxUy_eta_MH"), track.eta(), (uy * qyA * qxC) / corrQQy);
 
           registry.fill(HIST("neg/vnAx_pt"), track.pt(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)));
           registry.fill(HIST("neg/vnAy_pt"), track.pt(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)));
@@ -630,11 +628,11 @@ struct FlowSP {
           registry.fill(HIST("neg/vnA_pt"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("neg/vnC_pt"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
-          registry.fill(HIST("neg/vnAxCxUx_pt_MH"), track.pt(), (ux * qxA * qxC)/ corrQQx);
-          registry.fill(HIST("neg/vnAxCyUx_pt_MH"), track.pt(), (ux * qyA * qyC)/ corrQQy);
-          registry.fill(HIST("neg/vnAxCyUy_pt_MH"), track.pt(), (uy * qxA * qyC)/ corrQQx);
-          registry.fill(HIST("neg/vnAyCxUy_pt_MH"), track.pt(), (uy * qyA * qxC)/ corrQQy);
-                    
+          registry.fill(HIST("neg/vnAxCxUx_pt_MH"), track.pt(), (ux * qxA * qxC) / corrQQx);
+          registry.fill(HIST("neg/vnAxCyUx_pt_MH"), track.pt(), (ux * qyA * qyC) / corrQQy);
+          registry.fill(HIST("neg/vnAxCyUy_pt_MH"), track.pt(), (uy * qxA * qyC) / corrQQx);
+          registry.fill(HIST("neg/vnAyCxUy_pt_MH"), track.pt(), (uy * qyA * qxC) / corrQQy);
+
           registry.fill(HIST("neg/vnA_eta_EP"), track.eta(), vnA);
           registry.fill(HIST("neg/vnC_eta_EP"), track.eta(), vnC);
           registry.fill(HIST("neg/vnFull_eta_EP"), track.eta(), vnFull);
@@ -643,9 +641,9 @@ struct FlowSP {
           registry.fill(HIST("neg/vnC_pt_EP"), track.pt(), vnC);
           registry.fill(HIST("neg/vnFull_pt_EP"), track.pt(), vnFull);
 
-          // For integrated v1 take only tracks from eta>0. 
+          // For integrated v1 take only tracks from eta>0.
           // Following https://arxiv.org/pdf/1306.4145
-          if (cfgHarm==1 && track.eta()<0)
+          if (cfgHarm == 1 && track.eta() < 0)
             continue;
 
           registry.fill(HIST("neg/vnAx_cent"), centrality, (ux * qxA) / std::sqrt(std::fabs(corrQQx)));
@@ -655,10 +653,10 @@ struct FlowSP {
           registry.fill(HIST("neg/vnA_cent"), centrality, (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)));
           registry.fill(HIST("neg/vnC_cent"), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)));
 
-          registry.fill(HIST("neg/vnAxCxUx_cent_MH"), centrality, (ux * qxA * qxC)/ corrQQx);
-          registry.fill(HIST("neg/vnAxCyUx_cent_MH"), centrality, (ux * qyA * qyC)/ corrQQy);
-          registry.fill(HIST("neg/vnAxCyUy_cent_MH"), centrality, (uy * qxA * qyC)/ corrQQx);
-          registry.fill(HIST("neg/vnAyCxUy_cent_MH"), centrality, (uy * qyA * qxC)/ corrQQy);
+          registry.fill(HIST("neg/vnAxCxUx_cent_MH"), centrality, (ux * qxA * qxC) / corrQQx);
+          registry.fill(HIST("neg/vnAxCyUx_cent_MH"), centrality, (ux * qyA * qyC) / corrQQy);
+          registry.fill(HIST("neg/vnAxCyUy_cent_MH"), centrality, (uy * qxA * qyC) / corrQQx);
+          registry.fill(HIST("neg/vnAyCxUy_cent_MH"), centrality, (uy * qyA * qxC) / corrQQy);
 
           registry.fill(HIST("neg/vnA_cent_EP"), centrality, vnA);
           registry.fill(HIST("neg/vnC_cent_EP"), centrality, vnC);
