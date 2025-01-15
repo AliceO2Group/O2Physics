@@ -433,10 +433,9 @@ struct HfEventSelectionMc {
     hParticles->Fill(EventRejection::None);
 
     if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
-      if (TESTBIT(rejectionMask, EventRejection::TimeFrameBorderCut) || TESTBIT(rejectionMask, EventRejection::ItsRofBorderCut) || TESTBIT(rejectionMask, EventRejection::PositionZ)) {
-        return;
+      if (!TESTBIT(rejectionMask, EventRejection::TimeFrameBorderCut) && !TESTBIT(rejectionMask, EventRejection::ItsRofBorderCut) && !TESTBIT(rejectionMask, EventRejection::PositionZ)) {
+        hGenCollisionsCent->Fill(mcCollision.centFT0M());
       }
-      hGenCollisionsCent->Fill(mcCollision.centFT0M());
     }
 
     for (std::size_t reason = 1; reason < EventRejection::NEventRejection; reason++) {
