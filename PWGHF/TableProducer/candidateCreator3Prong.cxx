@@ -443,6 +443,10 @@ struct HfCandidateCreator3Prong {
         registry.fill(HIST("hDcaZProngs"), track2.pt(), UndefValueFloat);
       }
 
+      auto [impactParameter0Z, errImpactParameter0Z] = kfCalculateImpactParameterZ(kfFirstProton, KFPV);
+      auto [impactParameter1Z, errImpactParameter1Z] = kfCalculateImpactParameterZ(kfSecondKaon, KFPV);
+      auto [impactParameter2Z, errImpactParameter2Z] = kfCalculateImpactParameterZ(kfThirdProton, KFPV);
+
       const float chi2primFirst = kfCalculateChi2ToPrimaryVertex(kfFirstProton, KFPV);
       const float chi2primSecond = kfCalculateChi2ToPrimaryVertex(kfSecondKaon, KFPV);
       const float chi2primThird = kfCalculateChi2ToPrimaryVertex(kfThirdPion, KFPV);
@@ -512,8 +516,11 @@ struct HfCandidateCreator3Prong {
       registry.fill(HIST("hCovSVXZ"), kfCandPKPi.Covariance(2, 0));
       registry.fill(HIST("hCovSVZZ"), kfCandPKPi.Covariance(2, 2));
 
-      auto errorDecayLength = UndefValueFloat;   // decay length is evaluated using KF tools and saved in the rowCandidateKF table
-      auto errorDecayLengthXY = UndefValueFloat; // these two fields are filled with meaningless values just for preserving the structure of the table
+      auto covMatrixSV = kfCandPKPi.CovarianceMatrix();
+      double phi, theta;
+      getPointDirection(std::array{KFPV.GetX(), KFPV.GetY(), KFPV.GetZ()}, std::array{kfCandPKPi.GetX(), kfCandPKPi.GetY(), kfCandPKPi.GetZ()}, phi, theta);
+      auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
+      auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
 
       auto indexCollision = collision.globalIndex();
       uint8_t bitmapProngsContributorsPV = 0;
@@ -539,8 +546,8 @@ struct HfCandidateCreator3Prong {
                        pProng2.at(0), pProng2.at(1), pProng2.at(2),
                        impactParameter0XY, impactParameter1XY, impactParameter2XY,
                        errImpactParameter0XY, errImpactParameter1XY, errImpactParameter2XY,
-                       UndefValueFloat, UndefValueFloat, UndefValueFloat, // impact parameter Z is not calculated in KF (as in 2-prong as well)
-                       UndefValueFloat, UndefValueFloat, UndefValueFloat, // impact parameter Z error is not calculated in KF (as in 2-prong as well)
+                       impactParameter0Z, impactParameter1Z, impactParameter2Z,
+                       errImpactParameter0Z, errImpactParameter1Z, errImpactParameter2Z,
                        rowTrackIndexProng3.prong0Id(), rowTrackIndexProng3.prong1Id(), rowTrackIndexProng3.prong2Id(), nProngsContributorsPV, bitmapProngsContributorsPV,
                        rowTrackIndexProng3.hfflag());
 
