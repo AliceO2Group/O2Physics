@@ -244,8 +244,6 @@ class strangenessBuilderHelper
         v0.positionCovariance[5] = covVtxV(2, 2);
         std::array<float, 21> covTpositive = {0.};
         std::array<float, 21> covTnegative = {0.};
-        // std::array<float, 6> momentumCovariance;
-        float momentumCovariance[6];
         positiveTrackParam.getCovXYZPxPyPzGlo(covTpositive);
         negativeTrackParam.getCovXYZPxPyPzGlo(covTnegative);
         constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
@@ -424,7 +422,6 @@ class strangenessBuilderHelper
         // store momentum covariance matrix
         std::array<float, 21> covTv0 = {0.};
         std::array<float, 21> covTbachelor = {0.};
-        float covCascade[21];
         // std::array<float, 6> momentumCovariance;
         lV0Track.getCovXYZPxPyPzGlo(covTv0);
         lBachelorTrack.getCovXYZPxPyPzGlo(covTbachelor);
