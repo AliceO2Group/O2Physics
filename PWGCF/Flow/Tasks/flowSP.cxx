@@ -465,9 +465,9 @@ struct FlowSP {
 
       if (cfgLoadAverageQQ) {
         TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir.value, bc.timestamp());
-        TProfile* hcorrQQ = (TProfile*)hcorrList->FindObject("qAqCXY");
-        TProfile* hcorrQQx = (TProfile*)hcorrList->FindObject("qAqCX");
-        TProfile* hcorrQQy = (TProfile*)hcorrList->FindObject("qAqCY");
+        TProfile* hcorrQQ = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCXY"));
+        TProfile* hcorrQQx = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCX"));
+        TProfile* hcorrQQy = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCY"));
         corrQQ = hcorrQQ->GetBinContent(hcorrQQ->FindBin(centrality));
         corrQQx = hcorrQQx->GetBinContent(hcorrQQx->FindBin(centrality));
         corrQQy = hcorrQQy->GetBinContent(hcorrQQy->FindBin(centrality));
@@ -634,7 +634,6 @@ struct FlowSP {
           registry.fill(HIST("neg/vnAxCyUx_pt_MH"), track.pt(), (ux * qyA * qyC)/ corrQQy);
           registry.fill(HIST("neg/vnAxCyUy_pt_MH"), track.pt(), (uy * qxA * qyC)/ corrQQx);
           registry.fill(HIST("neg/vnAyCxUy_pt_MH"), track.pt(), (uy * qyA * qxC)/ corrQQy);
-
                     
           registry.fill(HIST("neg/vnA_eta_EP"), track.eta(), vnA);
           registry.fill(HIST("neg/vnC_eta_EP"), track.eta(), vnC);
