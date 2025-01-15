@@ -96,14 +96,14 @@ struct k892analysis_PbPb {
   Configurable<float> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"}; // TOF
   Configurable<float> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"}; // TPC
   Configurable<float> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"}; // TOF
-  Configurable<bool>  cByPassTOF{"cByPassTOF", false, "By pass TOF PID selection"};            // By pass TOF PID selection
+  Configurable<bool> cByPassTOF{"cByPassTOF", false, "By pass TOF PID selection"};            // By pass TOF PID selection
 
   Configurable<bool> TofandTpcPID{"TOFandTPCPID", false, "apply both TOF and TPC PID"};
 
   Configurable<bool> tpclowpt{"tpclowpt", true, "apply TPC at low pt"};
   Configurable<bool> tofhighpt{"tofhighpt", false, "apply TOF at high pt"};
 
-  //rotational bkg
+  // rotational bkg
   Configurable<int> cfgNoRotations{"cfgNoRotations", 3, "Number of rotations per pair for rotbkg"};
   Configurable<int> rotational_cut{"rotational_cut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
 
@@ -132,7 +132,6 @@ struct k892analysis_PbPb {
 
   TRandom* rand = new TRandom();
 
-  
   void init(o2::framework::InitContext&)
   {
     AxisSpec centAxis = {binsCent, "V0M (%)"};
@@ -448,49 +447,47 @@ struct k892analysis_PbPb {
         }
       }
 
-
       int track1Sign = trk1.sign();
       int track2Sign = trk2.sign();
 
-        
       //// Resonance reconstruction
       lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
       lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
       lResonance = lDecayDaughter1 + lDecayDaughter2;
       // Rapidity cut
       if (abs(lResonance.Rapidity()) >= 0.5)
-	continue;
+        continue;
       if (cfgCutsOnMother && !IsRot) {
-	if (lResonance.Pt() >= cMaxPtMotherCut) // excluding candidates in overflow
-	  continue;
-	if (lResonance.M() >= cMaxMinvMotherCut) // excluding candidates in overflow
-	  continue;
+        if (lResonance.Pt() >= cMaxPtMotherCut) // excluding candidates in overflow
+          continue;
+        if (lResonance.M() >= cMaxMinvMotherCut) // excluding candidates in overflow
+          continue;
       }
-      
+
       //// Un-like sign pair only
       if (track1Sign * track2Sign < 0) {
-	if constexpr (IsRot) { // rotational background
-	  for (int i = 0; i < cfgNoRotations; i++) {
-              float theta2 = rand->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
-              ldaughter_rot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa);
-              lResonance_rot = lDecayDaughter1 + ldaughter_rot;
+        if constexpr (IsRot) { // rotational background
+          for (int i = 0; i < cfgNoRotations; i++) {
+            float theta2 = rand->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
+            ldaughter_rot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa);
+            lResonance_rot = lDecayDaughter1 + ldaughter_rot;
 
-	      if (cfgCutsOnMother) {
-		if (lResonance_rot.Pt() >= cMaxPtMotherCut) // excluding candidates in overflow
-		  continue;
-		if (lResonance_rot.M() >= cMaxMinvMotherCut) // excluding candidates in overflow
-		  continue;
-	      }
+            if (cfgCutsOnMother) {
+              if (lResonance_rot.Pt() >= cMaxPtMotherCut) // excluding candidates in overflow
+                continue;
+              if (lResonance_rot.M() >= cMaxMinvMotherCut) // excluding candidates in overflow
+                continue;
+            }
 
-	      if (track1Sign < 0) {
-		histos.fill(HIST("k892invmassRotDS"), lResonance_rot.M());
-		histos.fill(HIST("h3k892invmassRotDS"), multiplicity, lResonance_rot.Pt(), lResonance_rot.M());
-	      } else if (track1Sign > 0) {
-		histos.fill(HIST("k892invmassRotDSAnti"), lResonance.M());
-		histos.fill(HIST("h3k892invmassRotDSAnti"), multiplicity, lResonance_rot.Pt(), lResonance_rot.M());
-	      }
-	  }
-        } else if constexpr (!IsMix) { //same event
+            if (track1Sign < 0) {
+              histos.fill(HIST("k892invmassRotDS"), lResonance_rot.M());
+              histos.fill(HIST("h3k892invmassRotDS"), multiplicity, lResonance_rot.Pt(), lResonance_rot.M());
+            } else if (track1Sign > 0) {
+              histos.fill(HIST("k892invmassRotDSAnti"), lResonance.M());
+              histos.fill(HIST("h3k892invmassRotDSAnti"), multiplicity, lResonance_rot.Pt(), lResonance_rot.M());
+            }
+          }
+        } else if constexpr (!IsMix) { // same event
           if (track1Sign < 0) {
             histos.fill(HIST("k892invmassDS"), lResonance.M());
             histos.fill(HIST("h3k892invmassDS"), multiplicity, lResonance.Pt(), lResonance.M());
@@ -666,7 +663,6 @@ struct k892analysis_PbPb {
   }
   PROCESS_SWITCH(k892analysis_PbPb, processSameEvent, "Process Same event", true);
 
-
   void processRotationalBkg(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
     if (!collision.sel8()) {
@@ -682,7 +678,7 @@ struct k892analysis_PbPb {
       return;
     }
     //    int occupancy = collision.trackOccupancyInTimeRange();
-    
+
     if (tpclowpt) {
       //+-
       auto candPosPitpc = posPitpc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -711,7 +707,7 @@ struct k892analysis_PbPb {
     }
   }
   PROCESS_SWITCH(k892analysis_PbPb, processRotationalBkg, "Process Rotational Background", false);
-  
+
   ///////***************************************
 
   using Run2Events = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s>; //, aod::TrackletMults>;
@@ -839,7 +835,6 @@ struct k892analysis_PbPb {
   }
   PROCESS_SWITCH(k892analysis_PbPb, processMixedEvent, "Process Mixed event", true);
 
-
   using BinningTypeVtxCentRun2 = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M>;
   void processMixedEventRun2(Run2Events const& collisions, TrackCandidates const& tracks, BCsWithRun2Info const&)
   {
@@ -909,13 +904,12 @@ struct k892analysis_PbPb {
   using EventCandidatesMCrec = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using TrackCandidatesMCrec = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::McTrackLabels>>;
 
-
   void processMixedEventMC(EventCandidatesMCrec const& recCollisions, TrackCandidatesMCrec const& RecTracks)
   {
     auto tracksTuple = std::make_tuple(RecTracks);
     BinningTypeVtxCent colBinning{{CfgVtxBins, CfgMultBins}, true};
     SameKindPair<EventCandidatesMCrec, TrackCandidatesMCrec, BinningTypeVtxCent> pairs{colBinning, cfgNoMixedEvents, -1, recCollisions, tracksTuple, &cache};
-    
+
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (!collision1.sel8() || !collision2.sel8()) {
         continue;
@@ -923,7 +917,7 @@ struct k892analysis_PbPb {
       if (TMath::Abs(collision1.posZ()) > cfgCutVertex || TMath::Abs(collision2.posZ()) > cfgCutVertex) {
         continue;
       }
-      if (timFrameEvsel && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder) )) {
+      if (timFrameEvsel && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
       if (additionalEvSel2 && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
@@ -932,7 +926,7 @@ struct k892analysis_PbPb {
       if (additionalEvSel3 && (!collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) || !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
         continue;
       }
-            
+
       if (additionalQAeventPlots) {
         histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
         histos.fill(HIST("QAevent/hVertexZMixedE"), collision1.posZ());
@@ -942,16 +936,10 @@ struct k892analysis_PbPb {
       }
 
       fillHistograms<true, true, false, false>(collision1, tracks1, tracks2);
-
     }
   }
   PROCESS_SWITCH(k892analysis_PbPb, processMixedEventMC, "Process Mixed event MC", false);
 
-
-
-
-
-  
   void processMC(aod::McCollisions::iterator const& /*mcCollision*/, aod::McParticles& mcParticles, const soa::SmallGroups<EventCandidatesMCrec>& recCollisions, TrackCandidatesMCrec const& RecTracks)
   {
     histos.fill(HIST("hMCrecCollSels"), 0);
