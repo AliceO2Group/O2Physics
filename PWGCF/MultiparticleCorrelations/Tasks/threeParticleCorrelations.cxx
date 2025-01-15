@@ -300,7 +300,7 @@ struct ThreeParticleCorrelations {
             }
 
             assocPID = trackPID(associate);
-	    deltaPhi = RecoDecay::constrainAngle(trigger.phi() - associate.phi(), -constants::math::PIHalf);
+            deltaPhi = RecoDecay::constrainAngle(trigger.phi() - associate.phi(), -constants::math::PIHalf);
             deltaEta = trigger.eta() - associate.eta();
 
             if (candMass >= massLambda - 4 * dGaussSigma && candMass <= massLambda + 4 * dGaussSigma) {
@@ -390,7 +390,7 @@ struct ThreeParticleCorrelations {
           // Purity (PID)
           assocPID = trackPID(track);
 
-          if (track.sign() > 0) {  // Positive tracks
+          if (track.sign() > 0) {     // Positive tracks
             if (assocPID[0] == 0.0) { // Pions
               rMCRegistry.fill(HIST("hSelectPionP"), track.pt());
               if (particle.pdgCode() == kPiPlus) {
@@ -408,7 +408,7 @@ struct ThreeParticleCorrelations {
               }
             }
           } else if (track.sign() < 0) { // Negative tracks
-            if (assocPID[0] == 0.0) {       // Pions
+            if (assocPID[0] == 0.0) {    // Pions
               rMCRegistry.fill(HIST("hSelectPionN"), track.pt());
               if (particle.pdgCode() == kPiMinus) {
                 rMCRegistry.fill(HIST("hTrueSelectPionN"), track.pt());
