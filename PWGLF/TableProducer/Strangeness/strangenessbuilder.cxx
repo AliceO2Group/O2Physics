@@ -130,6 +130,8 @@ static const int defaultParameters[nTablesConst][nParameters]{
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
+using FullTracksExtLabeled = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::McTrackLabels>;
+using FullTracksExtLabeledIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::McTrackLabels>;
 using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
 // For dE/dx association in pre-selection
@@ -1471,7 +1473,12 @@ struct StrangenessBuilder {
     dataProcess(collisions, v0s, cascades, (TObject*) nullptr, tracks, bcs, (TObject*) nullptr);
   }
 
-  void processMonteCarlo(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
+  void processMonteCarlo(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtLabeledIU const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
+  {
+    dataProcess(collisions, v0s, cascades, trackedCascades, tracks, bcs, mcParticles);
+  }
+
+  void processMonteCarloRun2(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtLabeled const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
   {
     dataProcess(collisions, v0s, cascades, trackedCascades, tracks, bcs, mcParticles);
   }
@@ -1483,6 +1490,8 @@ struct StrangenessBuilder {
 
   PROCESS_SWITCH(StrangenessBuilder, processRealData, "process real data", true);
   PROCESS_SWITCH(StrangenessBuilder, processRealDataRun2, "process real data (Run 2)", false);
+  PROCESS_SWITCH(StrangenessBuilder, processMonteCarlo, "process real data", true);
+  PROCESS_SWITCH(StrangenessBuilder, processMonteCarloRun2, "process real data (Run 2)", false);
   PROCESS_SWITCH(StrangenessBuilder, processSimulationFindable, "process simulation findable (requires lambdakzeromcfinder)", false);
 };
 
