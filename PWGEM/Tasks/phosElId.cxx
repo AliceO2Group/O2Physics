@@ -507,7 +507,7 @@ struct PhosElId {
     }
 
     // get PHOS radius
-    constexpr float ShiftY = -1.26;    // Depth-optimized
+    constexpr float ShiftY = -1.26  // Depth-optimized
     double posL[3] = {0., 0., ShiftY}; // local position at the center of module
     double posG[3] = {0};
     geomPHOS->getAlignmentMatrix(module)->LocalToMaster(posL, posG);
@@ -570,33 +570,31 @@ struct MassSpectra {
 
   Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
 
-  Configurable<float> cfgEtaMax{"cfgEtaMax", {0.8f}, "eta ranges"};
-  Configurable<float> cfgPtMin{"cfgPtMin", {0.2f}, "pt min"};
-  Configurable<float> cfgPtMax{"cfgPtMax", {20.f}, "pt max"};
-  Configurable<float> cfgDCAxyMax{"cfgDCAxyMax", {3.f}, "dcaxy max"};
-  Configurable<float> cfgDCAzMax{"cfgDCAzMax", {3.f}, "dcaz max"};
-  Configurable<float> cfgITSchi2Max{"cfgITSchi2Max", {5.f}, "its chi2 max"};
-  Configurable<float> cfgITSnclsMin{"cfgITSnclsMin", {4.5f}, "min number of ITS clusters"};
-  Configurable<float> cfgITSnclsMax{"cfgITSnclsMax", {7.5f}, "max number of ITS clusters"};
-  Configurable<float> cfgTPCchi2Max{"cfgTPCchi2Max", {4.f}, "tpc chi2 max"};
-  Configurable<float> cfgTPCnclsMin{"cfgTPCnclsMin", {90.f}, "min number of TPC clusters"};
-  Configurable<float> cfgTPCnclsMax{"cfgTPCnclsMax", {170.f}, "max number of TPC clusters"};
-  Configurable<float> cfgTPCnclsCRMin{"cfgTPCnclsCRMin", {80.f}, "min number of TPC crossed rows"};
-  Configurable<float> cfgTPCnclsCRMax{"cfgTPCnclsCRMax", {161.f}, "max number of TPC crossed rows"};
-
-  Configurable<float> cfgTPCNSigmaElMin{"cfgTPCNSigmaElMin", {-3.f}, "min TPC nsigma e for inclusion"};
-  Configurable<float> cfgTPCNSigmaElMax{"cfgTPCNSigmaElMax", {2.f}, "max TPC nsigma e for inclusion"};
-  Configurable<float> cfgTPCNSigmaPiMin{"cfgTPCNSigmaPiMin", {-3.f}, "min TPC nsigma pion for exclusion"};
-  Configurable<float> cfgTPCNSigmaPiMax{"cfgTPCNSigmaPiMax", {3.5f}, "max TPC nsigma pion for exclusion"};
-  Configurable<float> cfgTPCNSigmaPrMin{"cfgTPCNSigmaPrMin", {-3.f}, "min TPC nsigma proton for exclusion"};
-  Configurable<float> cfgTPCNSigmaPrMax{"cfgTPCNSigmaPrMax", {4.f}, "max TPC nsigma proton for exclusion"};
-  Configurable<float> cfgTPCNSigmaKaMin{"cfgTPCNSigmaKaMin", {-3.f}, "min TPC nsigma kaon for exclusion"};
-  Configurable<float> cfgTPCNSigmaKaMax{"cfgTPCNSigmaKaMax", {4.f}, "max TPC nsigma kaon for exclusion"};
-  Configurable<float> cfgTOFNSigmaElMin{"cfgTOFNSigmaElMin", {-3.f}, "min TOF nsigma e for inclusion"};
-  Configurable<float> cfgTOFNSigmaElMax{"cfgTOFNSigmaElMax", {3.f}, "max TOF nsigma e for inclusion"};
-
-  Configurable<float> cfgShiftEp{"cfgShiftEp", {0.055f}, "PHOS E/p shift for electrons"};
-  Configurable<float> cfgNsigmaEp{"cfgNsigmaEp", {2.f}, "PHOS E/p nsigma for inclusion"};
+  Configurable<float> cfgEtaMax{"cfgEtaMax", {0.8f}, "eta ranges"},
+    cfgPtMin{"cfgPtMin", {0.2f}, "pt min"},
+    cfgPtMax{"cfgPtMax", {20.f}, "pt max"},
+    cfgDCAxyMax{"cfgDCAxyMax", {3.f}, "dcaxy max"},
+    cfgDCAzMax{"cfgDCAzMax", {3.f}, "dcaz max"},
+    cfgITSchi2Max{"cfgITSchi2Max", {5.f}, "its chi2 max"},
+    cfgITSnclsMin{"cfgITSnclsMin", {4.5f}, "min number of ITS clusters"},
+    cfgITSnclsMax{"cfgITSnclsMax", {7.5f}, "max number of ITS clusters"},
+    cfgTPCchi2Max{"cfgTPCchi2Max", {4.f}, "tpc chi2 max"},
+    cfgTPCnclsMin{"cfgTPCnclsMin", {90.f}, "min number of TPC clusters"},
+    cfgTPCnclsMax{"cfgTPCnclsMax", {170.f}, "max number of TPC clusters"},
+    cfgTPCnclsCRMin{"cfgTPCnclsCRMin", {80.f}, "min number of TPC crossed rows"},
+    cfgTPCnclsCRMax{"cfgTPCnclsCRMax", {161.f}, "max number of TPC crossed rows"},
+    cfgTPCNSigmaElMin{"cfgTPCNSigmaElMin", {-3.f}, "min TPC nsigma e for inclusion"},
+    cfgTPCNSigmaElMax{"cfgTPCNSigmaElMax", {2.f}, "max TPC nsigma e for inclusion"},
+    cfgTPCNSigmaPiMin{"cfgTPCNSigmaPiMin", {-3.f}, "min TPC nsigma pion for exclusion"},
+    cfgTPCNSigmaPiMax{"cfgTPCNSigmaPiMax", {3.5f}, "max TPC nsigma pion for exclusion"},
+    cfgTPCNSigmaPrMin{"cfgTPCNSigmaPrMin", {-3.f}, "min TPC nsigma proton for exclusion"},
+    cfgTPCNSigmaPrMax{"cfgTPCNSigmaPrMax", {4.f}, "max TPC nsigma proton for exclusion"},
+    cfgTPCNSigmaKaMin{"cfgTPCNSigmaKaMin", {-3.f}, "min TPC nsigma kaon for exclusion"},
+    cfgTPCNSigmaKaMax{"cfgTPCNSigmaKaMax", {4.f}, "max TPC nsigma kaon for exclusion"},
+    cfgTOFNSigmaElMin{"cfgTOFNSigmaElMin", {-3.f}, "min TOF nsigma e for inclusion"},
+    cfgTOFNSigmaElMax{"cfgTOFNSigmaElMax", {3.f}, "max TOF nsigma e for inclusion"},
+    cfgShiftEp{"cfgShiftEp", {0.055f}, "PHOS E/p shift for electrons"},
+    cfgNsigmaEp{"cfgNsigmaEp", {2.f}, "PHOS E/p nsigma for inclusion"};
 
   Configurable<std::vector<float>> cfgEpSigmaPars{"cfgEpSigmaPars", {1.3e-02, 1.9e-02, 1.1e-02, 3.e-02}, "E/p sigma function parameters (from alice 3 mc tests + const)"};
 
@@ -615,7 +613,6 @@ struct MassSpectra {
     std::vector<double> momentumBinning = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
                                            1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
                                            4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
-
     const AxisSpec axisCounter{1, 0, +1, ""},
       axisPt{momentumBinning, "p_{T} (GeV/c)"},
       axisEp{200, 0., 2., "E/p", "E_{cluster}/p_{track}"},
@@ -776,41 +773,53 @@ struct TpcElIdMassSpectrum {
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
 
-  Configurable<float> cfgEtaMax{"cfgEtaMax", {0.8f}, "eta ranges"};
-  Configurable<float> cfgPtMin{"cfgPtMin", {0.2f}, "pt min"};
-  Configurable<float> cfgPtMax{"cfgPtMax", {20.f}, "pt max"};
-  Configurable<float> cfgDCAxyMax{"cfgDCAxyMax", {3.f}, "dcaxy max"};
-  Configurable<float> cfgDCAzMax{"cfgDCAzMax", {3.f}, "dcaz max"};
-  Configurable<float> cfgITSchi2Max{"cfgITSchi2Max", {5.f}, "its chi2 max"};
-  Configurable<float> cfgITSnclsMin{"cfgITSnclsMin", {4.5f}, "min number of ITS clusters"};
-  Configurable<float> cfgITSnclsMax{"cfgITSnclsMax", {7.5f}, "max number of ITS clusters"};
-  Configurable<float> cfgTPCchi2Max{"cfgTPCchi2Max", {4.f}, "tpc chi2 max"};
-  Configurable<float> cfgTPCnclsMin{"cfgTPCnclsMin", {90.f}, "min number of TPC clusters"};
-  Configurable<float> cfgTPCnclsMax{"cfgTPCnclsMax", {170.f}, "max number of TPC clusters"};
-  Configurable<float> cfgTPCnclsCRMin{"cfgTPCnclsCRMin", {80.f}, "min number of TPC crossed rows"};
-  Configurable<float> cfgTPCnclsCRMax{"cfgTPCnclsCRMax", {161.f}, "max number of TPC crossed rows"};
-  Configurable<float> cfgTPCNSigmaElMin{"cfgTPCNSigmaElMin", {-3.f}, "min TPC nsigma e for inclusion"};
-  Configurable<float> cfgTPCNSigmaElMax{"cfgTPCNSigmaElMax", {2.f}, "max TPC nsigma e for inclusion"};
-  Configurable<float> cfgTPCNSigmaPiMin{"cfgTPCNSigmaPiMin", {-3.f}, "min TPC nsigma pion for exclusion"};
-  Configurable<float> cfgTPCNSigmaPiMax{"cfgTPCNSigmaPiMax", {3.5f}, "max TPC nsigma pion for exclusion"};
-  Configurable<float> cfgTPCNSigmaPrMin{"cfgTPCNSigmaPrMin", {-3.f}, "min TPC nsigma proton for exclusion"};
-  Configurable<float> cfgTPCNSigmaPrMax{"cfgTPCNSigmaPrMax", {4.f}, "max TPC nsigma proton for exclusion"};
-  Configurable<float> cfgTPCNSigmaKaMin{"cfgTPCNSigmaKaMin", {-3.f}, "min TPC nsigma kaon for exclusion"};
-  Configurable<float> cfgTPCNSigmaKaMax{"cfgTPCNSigmaKaMax", {4.f}, "max TPC nsigma kaon for exclusion"};
-  Configurable<float> cfgTOFNSigmaElMin{"cfgTOFNSigmaElMin", {-3.f}, "min TOF nsigma e for inclusion"};
-  Configurable<float> cfgTOFNSigmaElMax{"cfgTOFNSigmaElMax", {3.f}, "max TOF nsigma e for inclusion"};
+  Configurable<float> mMinCluE{"mMinCluE", 0.1, "Minimum cluster energy for photons in the analysis"},
+    mCutMIPCluE{"mCutMIPCluE", 0.3, "Min cluster energy to reject MIPs in the analysis"},
+    mMaxCluE{"mMaxCluE", 1., "Maximum cluster energy for photons in the analysis"},
+    mMinCluTime{"minCluTime", -25.e-9, "Min. cluster time"},
+    mMaxCluTime{"mMaxCluTime", 25.e-9, "Max. cluster time"},
+    cfgEtaMax{"cfgEtaMax", {0.8f}, "eta ranges"},
+    cfgPtMin{"cfgPtMin", {0.2f}, "pt min"},
+    cfgPtMax{"cfgPtMax", {20.f}, "pt max"},
+    cfgDCAxyMax{"cfgDCAxyMax", {3.f}, "dcaxy max"},
+    cfgDCAzMax{"cfgDCAzMax", {3.f}, "dcaz max"},
+    cfgITSchi2Max{"cfgITSchi2Max", {5.f}, "its chi2 max"},
+    cfgITSnclsMin{"cfgITSnclsMin", {4.5f}, "min number of ITS clusters"},
+    cfgITSnclsMax{"cfgITSnclsMax", {7.5f}, "max number of ITS clusters"},
+    cfgTPCchi2Max{"cfgTPCchi2Max", {4.f}, "tpc chi2 max"},
+    cfgTPCnclsMin{"cfgTPCnclsMin", {90.f}, "min number of TPC clusters"},
+    cfgTPCnclsMax{"cfgTPCnclsMax", {170.f}, "max number of TPC clusters"},
+    cfgTPCnclsCRMin{"cfgTPCnclsCRMin", {80.f}, "min number of TPC crossed rows"},
+    cfgTPCnclsCRMax{"cfgTPCnclsCRMax", {161.f}, "max number of TPC crossed rows"},
+    cfgTPCNSigmaElMin{"cfgTPCNSigmaElMin", {-3.f}, "min TPC nsigma e for inclusion"},
+    cfgTPCNSigmaElMax{"cfgTPCNSigmaElMax", {2.f}, "max TPC nsigma e for inclusion"},
+    cfgTPCNSigmaPiMin{"cfgTPCNSigmaPiMin", {-3.f}, "min TPC nsigma pion for exclusion"},
+    cfgTPCNSigmaPiMax{"cfgTPCNSigmaPiMax", {3.5f}, "max TPC nsigma pion for exclusion"},
+    cfgTPCNSigmaPrMin{"cfgTPCNSigmaPrMin", {-3.f}, "min TPC nsigma proton for exclusion"},
+    cfgTPCNSigmaPrMax{"cfgTPCNSigmaPrMax", {4.f}, "max TPC nsigma proton for exclusion"},
+    cfgTPCNSigmaKaMin{"cfgTPCNSigmaKaMin", {-3.f}, "min TPC nsigma kaon for exclusion"},
+    cfgTPCNSigmaKaMax{"cfgTPCNSigmaKaMax", {4.f}, "max TPC nsigma kaon for exclusion"},
+    cfgTOFNSigmaElMin{"cfgTOFNSigmaElMin", {-3.f}, "min TOF nsigma e for inclusion"},
+    cfgTOFNSigmaElMax{"cfgTOFNSigmaElMax", {3.f}, "max TOF nsigma e for inclusion"},
+    cfgPhosRangeEta{"cfgPhosRangeEta", {0.12f}, "Phos range definition plus minus eta"},
+    cfgPhosRangePhiMin{"cfgPhosRangePhiMin", {230.f}, "Phos range angle phi min"},
+    cfgPhosRangePhiMax{"cfgPhosRangePhiMax", {330.f}, "Phos range angle phi max"},
+    cfgeeMassMin{"cfgeeMassMin", {2.9f}, "J/psi(e+e-) Mass corridor lower limit"},
+    cfgeeMassMax{"cfgeeMassMax", {3.3f}, "J/psi(e+e-) Mass corridor upper limit"},
+    cfgJpsiMass{"cfgJpsiMass", {3.097f}, "J/psi Mass constant"};
 
-  Configurable<float> cfgJpsiMass{"cfgJpsiMass", {3.097f}, "eta ranges"};
+  Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"},
+    mMinCluNcell{"minCluNcell", 3, "min cells in cluster"};
 
-  Filter ptFilter = (aod::track::pt > cfgPtMin) && (aod::track::pt < cfgPtMax);
-  Filter etafilter = nabs(aod::track::eta) < cfgEtaMax;
-  Filter dcaxyfilter = nabs(aod::track::dcaXY) < cfgDCAxyMax;
-  Filter dcazfilter = nabs(aod::track::dcaZ) < cfgDCAzMax;
+  Filter ptFilter = (aod::track::pt > cfgPtMin) && (aod::track::pt < cfgPtMax),
+         etaFilter = nabs(aod::track::eta) < cfgEtaMax,
+         dcaxyFilter = nabs(aod::track::dcaXY) < cfgDCAxyMax,
+         dcazFilter = nabs(aod::track::dcaZ) < cfgDCAzMax;
 
-  Filter tpcEl = ((aod::pidtpc::tpcNSigmaEl > cfgTPCNSigmaElMin) && (aod::pidtpc::tpcNSigmaEl < cfgTPCNSigmaElMax)) || ((aod::pidtof::tofNSigmaEl > cfgTOFNSigmaElMin) && (aod::pidtof::tofNSigmaEl < cfgTOFNSigmaElMax));
-  Filter tpcPiRej = (aod::pidtpc::tpcNSigmaPi < cfgTPCNSigmaPiMin) || (aod::pidtpc::tpcNSigmaPi > cfgTPCNSigmaPiMax);
-  Filter tpcKaRej = (aod::pidtpc::tpcNSigmaKa < cfgTPCNSigmaKaMin) || (aod::pidtpc::tpcNSigmaKa > cfgTPCNSigmaPrMax);
-  Filter tpcPrRej = (aod::pidtpc::tpcNSigmaPr < cfgTPCNSigmaPrMin) || (aod::pidtpc::tpcNSigmaPr > cfgTPCNSigmaPrMax);
+  Filter tpcEl = ((aod::pidtpc::tpcNSigmaEl > cfgTPCNSigmaElMin) && (aod::pidtpc::tpcNSigmaEl < cfgTPCNSigmaElMax)) || ((aod::pidtof::tofNSigmaEl > cfgTOFNSigmaElMin) && (aod::pidtof::tofNSigmaEl < cfgTOFNSigmaElMax)),
+         tpcPiRej = (aod::pidtpc::tpcNSigmaPi < cfgTPCNSigmaPiMin) || (aod::pidtpc::tpcNSigmaPi > cfgTPCNSigmaPiMax),
+         tpcKaRej = (aod::pidtpc::tpcNSigmaKa < cfgTPCNSigmaKaMin) || (aod::pidtpc::tpcNSigmaKa > cfgTPCNSigmaPrMax),
+         tpcPrRej = (aod::pidtpc::tpcNSigmaPr < cfgTPCNSigmaPrMin) || (aod::pidtpc::tpcNSigmaPr > cfgTPCNSigmaPrMax);
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   double bz{0.}; // magnetic field
@@ -830,9 +839,9 @@ struct TpcElIdMassSpectrum {
       axisVTrackY{400, -5., 5., "track vertex y (cm)", "track vertex y (cm)"},
       axisVTrackZ{400, -20., 20., "track vertex z (cm)", "track vertex z (cm)"},
       axisE{200, 0, 10, "E (GeV)", "E (GeV)"},
-      axisMassSpectrum{4000, 0, 4, "M (GeV/c^{2})", "Mass e^{+}e^{-} (GeV/c^{2})"},
-      axisMassSpectrumChiC{4000, 0, 4, "M (GeV/c^{2})", "Mass e^{+}e^{-}#gamma (GeV/c^{2})"},
-      axisMassSpectrumChiCNoJpsiErrors{4000, 0, 4, "M (GeV/c^{2})", "Mass e^{+}e^{-}#gamma - Mass e^{+}e^{-} + Mass J/#psi (GeV/c^{2})"},
+      axisMassSpectrum{1000, 0, 4, "M (GeV/c^{2})", "Mass e^{+}e^{-} (GeV/c^{2})"},
+      axisMassSpectrumChiC{1000, 0, 4, "M (GeV/c^{2})", "Mass e^{+}e^{-}#gamma (GeV/c^{2})"},
+      axisMassSpectrumChiCNoJpsiErrors{250, 3, 4, "M (GeV/c^{2})", "Mass e^{+}e^{-}#gamma - Mass e^{+}e^{-} + Mass J/#psi (GeV/c^{2})"},
       axisTPC{1000, 0, 200, "TPC signal (dE/dx)"},
       axisPt{momentumBinning, "p_{T} (GeV/c)"},
       axisPtBig{2000, 0, 20, "p_{T} (GeV/c)"},
@@ -845,11 +854,6 @@ struct TpcElIdMassSpectrum {
     mHistManager.add("h_TPCee_MS_mm_v_pt", "Mass e^{-}e^{-} vs momentum e^{-}e^{-} (from TPC candidates)", HistType::kTH2F, {axisMassSpectrum, axisPt});
     mHistManager.add("h_TPCee_MS_pp_v_pt", "Mass e^{+}e^{+} vs momentum e^{+}e^{+} (from TPC candidates)", HistType::kTH2F, {axisMassSpectrum, axisPt});
 
-    mHistManager.add("h_TPCeePhosGamma_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma (TPC candidates + Phos photon)", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
-    mHistManager.add("h_TPCeePhosGamma_minusee_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} + Mass J/#psi vs momentum e^{#pm}e^{#mp}#gamma (TPC candidates + Phos photon)", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
-    mHistManager.add("h_TPCeePhosGamma_MS_v_cluE", "Mass e^{#pm}e^{#mp}#gamma vs cluster Energy left by the photon", HistType::kTH2F, {axisMassSpectrumChiC, axisE});
-    mHistManager.add("h_TPCeePhosGamma_minusee_MS_v_cluE", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} + Mass J/#psi vs cluster Energy left by the photon", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisE});
-
     mHistManager.add("h_TPCee_MS_mp_phosRange_v_pt", "Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp} (from TPC candidates) with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
     mHistManager.add("h_TPCee_MS_mm_phosRange_v_pt", "Mass e^{-}e^{-} vs momentum e^{-}e^{-} (from TPC candidates) with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
     mHistManager.add("h_TPCee_MS_pp_phosRange_v_pt", "Mass e^{+}e^{+} vs momentum e^{+}e^{+} (from TPC candidates) with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
@@ -857,6 +861,66 @@ struct TpcElIdMassSpectrum {
     mHistManager.add("h_TPCee_MS_mp_phosRange_kTVXinPHOS_v_pt", "Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp} (from TPC candidates) with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
     mHistManager.add("h_TPCee_MS_mm_phosRange_kTVXinPHOS_v_pt", "Mass e^{-}e^{-} vs momentum e^{-}e^{-} (from TPC candidates) with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
     mHistManager.add("h_TPCee_MS_pp_phosRange_kTVXinPHOS_v_pt", "Mass e^{+}e^{+} vs momentum e^{+}e^{+} (from TPC candidates) with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
+
+    mHistManager.add("h_TPCeePhosGamma_MS_withMatches_v_3pt", "Mass e^{#pm}e^{#mp}Track vs momentum e^{#pm}e^{#mp}Track", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_noMatches_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_noMatches_aroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_noMatches_aroundJpsi_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | DispOK", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_noMatches_aroundJpsi_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_noMatches_notAroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (not around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_noMatches_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | DispOK", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_noMatches_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_aroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_notAroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (not around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | DispOK", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_withMatches_v_3pt", "Mass e^{#pm}e^{#mp}Track vs momentum e^{#pm}e^{#mp}Track | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_noMatches_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_noMatches_aroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_noMatches_aroundJpsi_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | DispOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_noMatches_aroundJpsi_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_noMatches_notAroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (not around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_noMatches_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | DispOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_noMatches_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_aroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_notAroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (not around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | DispOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_isMIP_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | cluE < E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+
+    mHistManager.add("h_TPCeePhosGamma_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma (TPC candidates + Phos cluster)", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_v_cluE", "Mass e^{#pm}e^{#mp}#gamma vs cluster Energy left by the photon", HistType::kTH2F, {axisMassSpectrumChiC, axisE});
+
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_withMatches_v_3pt", "Mass e^{#pm}e^{#mp}Track - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}Track", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_noMatches_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_noMatches_aroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_noMatches_aroundJpsi_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | DispOK", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_noMatches_aroundJpsi_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_noMatches_notAroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp}  (not around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_noMatches_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | DispOK", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_noMatches_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_aroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_notAroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp}  (not around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | DispOK", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_withMatches_v_3pt", "Mass e^{#pm}e^{#mp}Track - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}Track | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_aroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_aroundJpsi_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | DispOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_aroundJpsi_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_notAroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp}  (not around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | DispOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_aroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_notAroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp}  (not around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | DispOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_isMIP_minusee_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | cluE < E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp}  - Mass e^{#pm}e^{#mp} + Mass J/#psi vs momentum e^{#pm}e^{#mp}#gamma (TPC candidates + Phos cluster)", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_v_cluE", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp}  - Mass e^{#pm}e^{#mp} + Mass J/#psi vs cluster Energy left by the photon", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisE});
 
     mHistManager.add("hTrackVX", "Track vertex coordinate X", HistType::kTH1F, {axisVTrackX});
     mHistManager.add("hTrackVY", "Track vertex coordinate Y", HistType::kTH1F, {axisVTrackY});
@@ -872,7 +936,8 @@ struct TpcElIdMassSpectrum {
   }
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                aod::CaloClusters const& clusters,
-               soa::Filtered<MyTracks> const& tracks,
+               MyTracks const& tracks,
+               soa::Filtered<MyTracks> const& filteredTracks,
                o2::aod::PHOSMatchindexTable const& matches,
                aod::BCsWithTimestamps const&)
   {
@@ -892,12 +957,12 @@ struct TpcElIdMassSpectrum {
     if (std::fabs(collision.posZ()) > 10.f)
       return;
 
-    for (auto const& [track1, track2] : combinations(CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
+    for (auto const& [track1, track2] : combinations(CombinationsStrictlyUpperIndexPolicy(filteredTracks, filteredTracks))) {
       if (!track1.has_collision() || !track1.hasTPC())
         continue;
       if (!track2.has_collision() || !track2.hasTPC())
         continue;
-      if (track1.collisionId() != track2.collisionId())
+      if (track1.collisionId() != track2.collisionId()) 
         continue;
       if (!((track1.itsClusterMap() & uint8_t(1)) > 0) || !((track2.itsClusterMap() & uint8_t(1)) > 0))
         continue;
@@ -922,10 +987,10 @@ struct TpcElIdMassSpectrum {
       fourVectorP1.SetPxPyPzE(track1.px(), track1.py(), track1.pz(), track1.energy(0));
       fourVectorP2.SetPxPyPzE(track2.px(), track2.py(), track2.pz(), track2.energy(0));
 
-      bool inPhosEtaRange1 = std::fabs(track1.eta()) < 0.12;
-      bool inPhosEtaRange2 = std::fabs(track2.eta()) < 0.12;
-      bool inPhosPhiRange1 = (track1.phi() * TMath::RadToDeg() > 250 && track1.phi() * TMath::RadToDeg() < 320);
-      bool inPhosPhiRange2 = (track2.phi() * TMath::RadToDeg() > 250 && track2.phi() * TMath::RadToDeg() < 320);
+      bool inPhosEtaRange1 = std::fabs(track1.eta()) < cfgPhosRangeEta;
+      bool inPhosEtaRange2 = std::fabs(track2.eta()) < cfgPhosRangeEta;
+      bool inPhosPhiRange1 = (track1.phi() * TMath::RadToDeg() > cfgPhosRangePhiMin && track1.phi() * TMath::RadToDeg() < cfgPhosRangePhiMax);
+      bool inPhosPhiRange2 = (track2.phi() * TMath::RadToDeg() > cfgPhosRangePhiMin && track2.phi() * TMath::RadToDeg() < cfgPhosRangePhiMax);
       bool inPhosRange = (inPhosEtaRange1 && inPhosPhiRange1) || (inPhosEtaRange2 && inPhosPhiRange2);
       bool posTrack = track1.sign() * bz > 0;
 
@@ -936,14 +1001,14 @@ struct TpcElIdMassSpectrum {
           mHistManager.fill(HIST("h_TPCee_MS_pp_v_pt"), pairMass, pairPt);
           if (inPhosRange) {
             mHistManager.fill(HIST("h_TPCee_MS_pp_phosRange_v_pt"), pairMass, pairPt);
-            if (collision.alias_bit(kTVXinPHOS))
+            if (collision.alias_bit(mEvSelTrig))
               mHistManager.fill(HIST("h_TPCee_MS_pp_phosRange_kTVXinPHOS_v_pt"), pairMass, pairPt);
           }
         } else {
           mHistManager.fill(HIST("h_TPCee_MS_mm_v_pt"), pairMass, pairPt);
           if (inPhosRange) {
             mHistManager.fill(HIST("h_TPCee_MS_mm_phosRange_v_pt"), pairMass, pairPt);
-            if (collision.alias_bit(kTVXinPHOS))
+            if (collision.alias_bit(mEvSelTrig))
               mHistManager.fill(HIST("h_TPCee_MS_mm_phosRange_kTVXinPHOS_v_pt"), pairMass, pairPt);
           }
         }
@@ -951,30 +1016,140 @@ struct TpcElIdMassSpectrum {
         mHistManager.fill(HIST("h_TPCee_MS_mp_v_pt"), pairMass, pairPt);
         if (inPhosRange) {
           mHistManager.fill(HIST("h_TPCee_MS_mp_phosRange_v_pt"), pairMass, pairPt);
-          if (collision.alias_bit(kTVXinPHOS))
+          if (collision.alias_bit(mEvSelTrig))
             mHistManager.fill(HIST("h_TPCee_MS_mp_phosRange_kTVXinPHOS_v_pt"), pairMass, pairPt);
         }
-        if (pairMass < 2.8 && pairMass > 3.3)
-          continue;
-        if (collision.alias_bit(kTVXinPHOS) && clusters.size() != 0) {
+
+        if (collision.alias_bit(mEvSelTrig) && clusters.size() != 0) {
           for (auto const& gamma : clusters) {
-            bool matchFlag = 0;
+            float cluE = gamma.e();
+
+            if (cluE < mMinCluE || cluE > mMaxCluE ||
+                gamma.ncell() < mMinCluNcell ||
+                gamma.time() > mMaxCluTime || gamma.time() < mMinCluTime)
+              continue;
+
+            bool matchFlag = 0,
+                 isJpsi = 0,
+                 isNotMIP = cluE > mCutMIPCluE,
+                 isDispOK = testLambda(cluE, gamma.m02(), gamma.m20());
+
+            if (pairMass > cfgeeMassMin && pairMass < cfgeeMassMax)
+              isJpsi = 1;
+
             for (auto const& match : matches) {
               if (gamma.index() == match.caloClusterId()) {
                 matchFlag = 1;
                 break;
               }
             }
-            if (matchFlag == 1)
-              continue;
+
             TLorentzVector fourVectorP3;
-            fourVectorP3.SetPxPyPzE(gamma.px(), gamma.py(), gamma.pz(), gamma.e());
+            fourVectorP3.SetPxPyPzE(gamma.px(), gamma.py(), gamma.pz(), cluE);
             double tripletMass = (fourVectorP1 + fourVectorP2 + fourVectorP3).M(), tripletPt = (fourVectorP1 + fourVectorP2 + fourVectorP3).Pt();
 
             mHistManager.fill(HIST("h_TPCeePhosGamma_MS_v_3pt"), tripletMass, tripletPt);
             mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
-            mHistManager.fill(HIST("h_TPCeePhosGamma_MS_v_cluE"), tripletMass, gamma.e());
-            mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_v_cluE"), tripletMass - pairMass + cfgJpsiMass, gamma.e());
+
+            mHistManager.fill(HIST("h_TPCeePhosGamma_MS_v_cluE"), tripletMass, cluE);
+            mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_v_cluE"), tripletMass - pairMass + cfgJpsiMass, cluE);
+
+            if (matchFlag) {
+              mHistManager.fill(HIST("h_TPCeePhosGamma_MS_withMatches_v_3pt"), tripletMass, tripletPt);
+              mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_withMatches_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+            } else {
+              mHistManager.fill(HIST("h_TPCeePhosGamma_MS_noMatches_v_3pt"), tripletMass, tripletPt);
+              mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_noMatches_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              if (isJpsi) {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_MS_noMatches_aroundJpsi_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_noMatches_aroundJpsi_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                if (isDispOK) {
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_MS_noMatches_aroundJpsi_DispOK_v_3pt"), tripletMass, tripletPt);
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_noMatches_aroundJpsi_DispOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                } else {
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_MS_noMatches_aroundJpsi_DispNotOK_v_3pt"), tripletMass, tripletPt);
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_noMatches_aroundJpsi_DispNotOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                }
+              } else {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_MS_noMatches_notAroundJpsi_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_noMatches_notAroundJpsi_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              }
+              if (isDispOK) {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_MS_noMatches_DispOK_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_noMatches_DispOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              } else {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_MS_noMatches_DispNotOK_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_noMatches_DispNotOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              }
+            }
+
+            if (isJpsi) {
+              mHistManager.fill(HIST("h_TPCeePhosGamma_MS_aroundJpsi_v_3pt"), tripletMass, tripletPt);
+              mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_aroundJpsi_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+            } else {
+              mHistManager.fill(HIST("h_TPCeePhosGamma_MS_notAroundJpsi_v_3pt"), tripletMass, tripletPt);
+              mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_notAroundJpsi_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+            }
+
+            if (isDispOK) {
+              mHistManager.fill(HIST("h_TPCeePhosGamma_MS_DispOK_v_3pt"), tripletMass, tripletPt);
+              mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_DispOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+            } else {
+              mHistManager.fill(HIST("h_TPCeePhosGamma_MS_DispNotOK_v_3pt"), tripletMass, tripletPt);
+              mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_DispNotOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+            }
+
+            if (isNotMIP) {
+              mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_v_3pt"), tripletMass, tripletPt);
+              mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              if (matchFlag) {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_withMatches_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_withMatches_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              } else {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_noMatches_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                if (isJpsi) {
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_noMatches_aroundJpsi_v_3pt"), tripletMass, tripletPt);
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_aroundJpsi_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                  if (isDispOK) {
+                    mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_noMatches_aroundJpsi_DispOK_v_3pt"), tripletMass, tripletPt);
+                    mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_aroundJpsi_DispOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                  } else {
+                    mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_noMatches_aroundJpsi_DispNotOK_v_3pt"), tripletMass, tripletPt);
+                    mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_aroundJpsi_DispNotOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                  }
+                } else {
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_noMatches_notAroundJpsi_v_3pt"), tripletMass, tripletPt);
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_notAroundJpsi_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                }
+                if (isDispOK) {
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_noMatches_DispOK_v_3pt"), tripletMass, tripletPt);
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_DispOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                } else {
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_noMatches_DispNotOK_v_3pt"), tripletMass, tripletPt);
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_DispNotOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                }
+              }
+
+              if (isJpsi) {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_aroundJpsi_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_aroundJpsi_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              } else {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_notAroundJpsi_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_notAroundJpsi_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              }
+
+              if (isDispOK) {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_DispOK_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_DispOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              } else {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_DispNotOK_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_DispNotOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              }
+            } else {
+              mHistManager.fill(HIST("h_TPCeePhosGamma_isMIP_MS_v_3pt"), tripletMass, tripletPt);
+              mHistManager.fill(HIST("h_TPCeePhosGamma_isMIP_minusee_MS_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+            }
           }
         }
       }
@@ -1006,6 +1181,21 @@ struct TpcElIdMassSpectrum {
       mHistManager.fill(HIST("hTrackVY_Cut"), track1.y());
       mHistManager.fill(HIST("hTrackVZ_Cut"), track1.z());
     }
+  }
+  //_____________________________________________________________________________
+  bool testLambda(float pt, float l1, float l2)
+  {
+    // Parameterization for full dispersion
+    float l2Mean = 1.53126 + 9.50835e+06 / (1. + 1.08728e+07 * pt + 1.73420e+06 * pt * pt);
+    float l1Mean = 1.12365 + 0.123770 * std::exp(-pt * 0.246551) + 5.30000e-03 * pt;
+    float l2Sigma = 6.48260e-02 + 7.60261e+10 / (1. + 1.53012e+11 * pt + 5.01265e+05 * pt * pt) + 9.00000e-03 * pt;
+    float l1Sigma = 4.44719e-04 + 6.99839e-01 / (1. + 1.22497e+00 * pt + 6.78604e-07 * pt * pt) + 9.00000e-03 * pt;
+    float c = -0.35 - 0.550 * std::exp(-0.390730 * pt);
+
+    return 0.5 * (l1 - l1Mean) * (l1 - l1Mean) / l1Sigma / l1Sigma +
+             0.5 * (l2 - l2Mean) * (l2 - l2Mean) / l2Sigma / l2Sigma +
+             0.5 * c * (l1 - l1Mean) * (l2 - l2Mean) / l1Sigma / l2Sigma <
+           4.;
   }
 };
 
