@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 /// \file   FlowZDCtask.cxx
 /// \author Sabrina Hernandez
 /// \since  10/01/2024
@@ -348,8 +349,8 @@ struct FlowZDCtask {
       histos.get<TH2>(HIST("ZDC_energy_vs_ZEM"))->Fill(sumZEM, sumZDC);
 
       // Spectator plane angle calculations and histograms
-      const auto nTot_zna = zdcread.amplitudeZNA();
-      const auto nTot_znc = zdcread.amplitudeZNC();
+      const auto nTotZna = zdcread.amplitudeZNA();
+      const auto nTotZnc = zdcread.amplitudeZNC();
       double qZnaReal = 0.0;
       double qZnaIm = 0.0;
       double qZncReal = 0.0;
@@ -366,10 +367,10 @@ struct FlowZDCtask {
         qZNC += std::complex<double>(std::cos(2 * phiRadians[sector]) * energyZNC / sumZNC, std::sin(2 * phiRadians[sector]) * energyZNC / sumZNC);
       }
 
-      qZnaReal = qZNA.real() / nTot_zna;
-      qZnaIm = qZNA.imag() / nTot_zna;
-      qZncReal = qZNC.real() / nTot_znc;
-      qZncIm = qZNC.imag() / nTot_znc;
+      qZnaReal = qZNA.real() / nTotZna;
+      qZnaIm = qZNA.imag() / nTotZna;
+      qZncReal = qZNC.real() / nTotZnc;
+      qZncIm = qZNC.imag() / nTotZnc;
 
       histos.fill(HIST("Acorrelations"), qZNA.real(), qZNA.imag());
       histos.fill(HIST("RealQHistogramZNA"), qZnaReal);
