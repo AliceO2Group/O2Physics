@@ -551,25 +551,32 @@ struct HfTaskLc {
         registry.fill(HIST("MC/generated/signal/hPhiVsPtGenSig"), particle.phi(), ptGen);
 
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
-          registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, yGen, numPvContributors, ptGenB, originType);
-          registry.fill(HIST("MC/generated/prompt/hPtGenPrompt"), ptGen);
-          registry.fill(HIST("MC/generated/prompt/hEtaGenPrompt"), particle.eta());
-          registry.fill(HIST("MC/generated/prompt/hYGenPrompt"), yGen);
-          registry.fill(HIST("MC/generated/prompt/hPhiGenPrompt"), particle.phi());
-          registry.fill(HIST("MC/generated/prompt/hEtaVsPtGenSigPrompt"), particle.eta(), ptGen);
-          registry.fill(HIST("MC/generated/prompt/hYVsPtGenSigPrompt"), yGen, ptGen);
-          registry.fill(HIST("MC/generated/prompt/hPhiVsPtGenSigPrompt"), particle.phi(), ptGen);
+
+          if (fillThn) {
+            registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, yGen, numPvContributors, ptGenB, originType);
+          } else {
+            registry.fill(HIST("MC/generated/prompt/hPtGenPrompt"), ptGen);
+            registry.fill(HIST("MC/generated/prompt/hEtaGenPrompt"), particle.eta());
+            registry.fill(HIST("MC/generated/prompt/hYGenPrompt"), yGen);
+            registry.fill(HIST("MC/generated/prompt/hPhiGenPrompt"), particle.phi());
+            registry.fill(HIST("MC/generated/prompt/hEtaVsPtGenSigPrompt"), particle.eta(), ptGen);
+            registry.fill(HIST("MC/generated/prompt/hYVsPtGenSigPrompt"), yGen, ptGen);
+            registry.fill(HIST("MC/generated/prompt/hPhiVsPtGenSigPrompt"), particle.phi(), ptGen);
+          }
         }
         if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
           ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
-          registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, yGen, numPvContributors, ptGenB, originType);
-          registry.fill(HIST("MC/generated/nonprompt/hPtGenNonPrompt"), ptGen);
-          registry.fill(HIST("MC/generated/nonprompt/hEtaGenNonPrompt"), particle.eta());
-          registry.fill(HIST("MC/generated/nonprompt/hYGenNonPrompt"), yGen);
-          registry.fill(HIST("MC/generated/nonprompt/hPhiGenNonPrompt"), particle.phi());
-          registry.fill(HIST("MC/generated/nonprompt/hEtaVsPtGenSigNonPrompt"), particle.eta(), ptGen);
-          registry.fill(HIST("MC/generated/nonprompt/hYVsPtGenSigNonPrompt"), yGen, ptGen);
-          registry.fill(HIST("MC/generated/nonprompt/hPhiVsPtGenSigNonPrompt"), particle.phi(), ptGen);
+          if (fillThn) {
+            registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, yGen, numPvContributors, ptGenB, originType);
+          } else {
+            registry.fill(HIST("MC/generated/nonprompt/hPtGenNonPrompt"), ptGen);
+            registry.fill(HIST("MC/generated/nonprompt/hEtaGenNonPrompt"), particle.eta());
+            registry.fill(HIST("MC/generated/nonprompt/hYGenNonPrompt"), yGen);
+            registry.fill(HIST("MC/generated/nonprompt/hPhiGenNonPrompt"), particle.phi());
+            registry.fill(HIST("MC/generated/nonprompt/hEtaVsPtGenSigNonPrompt"), particle.eta(), ptGen);
+            registry.fill(HIST("MC/generated/nonprompt/hYVsPtGenSigNonPrompt"), yGen, ptGen);
+            registry.fill(HIST("MC/generated/nonprompt/hPhiVsPtGenSigNonPrompt"), particle.phi(), ptGen);
+          }
         }
       }
     }
