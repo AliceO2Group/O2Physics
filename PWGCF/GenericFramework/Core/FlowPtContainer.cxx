@@ -518,7 +518,7 @@ double FlowPtContainer::getStdAABBCC(T& inarr)
   std::complex<double> bbcc = inarr[getVectorIndex(0, 2, 2, 0)];
   std::complex<double> aabbc = inarr[getVectorIndex(2, 2, 1, 0)];
   std::complex<double> aabcc = inarr[getVectorIndex(2, 1, 2, 0)];
-  std::complex<double> abbcc = inarr[getVectorIndex(0, 0, 0, 0)];
+  std::complex<double> abbcc = inarr[getVectorIndex(1, 2, 2, 0)];
   std::complex<double> aabbcc = inarr[getVectorIndex(2, 2, 2, 0)];
   return (a * a * b * b * c * c - aa * b * b * c * c - a * a * bb * c * c - a * a * b * b * cc - 4. * a * ab * b * c * c -
           4. * a * ac * b * b * c - 4. * a * a * b * bc * c + 4. * aab * b * c * c + 4. * aac * b * b * c +
@@ -567,7 +567,7 @@ double FlowPtContainer::getStdAABBCD(T& inarr)
   std::complex<double> aacd = inarr[getVectorIndex(2, 0, 1, 1)];
   std::complex<double> abbc = inarr[getVectorIndex(1, 2, 1, 0)];
   std::complex<double> abbd = inarr[getVectorIndex(1, 2, 0, 1)];
-  std::complex<double> abcd = inarr[getVectorIndex(0, 1, 1, 1)];
+  std::complex<double> abcd = inarr[getVectorIndex(1, 1, 1, 1)];
   std::complex<double> bbcd = inarr[getVectorIndex(0, 2, 1, 1)];
   std::complex<double> aabbc = inarr[getVectorIndex(2, 2, 1, 0)];
   std::complex<double> aabbd = inarr[getVectorIndex(2, 2, 0, 1)];
@@ -600,7 +600,7 @@ double FlowPtContainer::getStdAABBDD(T& inarr)
 {
   std::complex<double> a = inarr[getVectorIndex(1, 0, 0, 0)];
   std::complex<double> b = inarr[getVectorIndex(0, 1, 0, 0)];
-  std::complex<double> d = inarr[getVectorIndex(0, 0, 1, 1)];
+  std::complex<double> d = inarr[getVectorIndex(0, 0, 0, 1)];
   std::complex<double> aa = inarr[getVectorIndex(2, 0, 0, 0)];
   std::complex<double> bb = inarr[getVectorIndex(0, 2, 0, 0)];
   std::complex<double> dd = inarr[getVectorIndex(0, 0, 0, 2)];
@@ -622,7 +622,7 @@ double FlowPtContainer::getStdAABBDD(T& inarr)
   std::complex<double> bbdd = inarr[getVectorIndex(0, 2, 0, 2)];
   std::complex<double> aabbd = inarr[getVectorIndex(2, 2, 0, 1)];
   std::complex<double> aabdd = inarr[getVectorIndex(2, 1, 0, 2)];
-  std::complex<double> abbdd = inarr[getVectorIndex(0, 0, 0, 2)];
+  std::complex<double> abbdd = inarr[getVectorIndex(1, 2, 0, 2)];
   std::complex<double> aabbdd = inarr[getVectorIndex(2, 2, 0, 2)];
   return (-120. * aabbdd + 48. * a * abbdd + 16. * abd * abd + 24. * ab * abdd + 24. * abbd * ad +
           8. * abb * add + 48. * aabdd * b - 24. * a * abdd * b - 16. * abd * ad * b - 8. * ab * add * b -
