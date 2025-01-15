@@ -274,9 +274,9 @@ struct Phik0shortanalysis {
     dataPhiK0SHist.add("h4PhiK0SSESCut", "2D Invariant mass of Phi and K0Short for Same Event Deltay < SecondCut", kTHnSparseF, {binnedmultAxis, binnedptK0SAxis, massK0SAxis, sigmassPhiAxis});
 
     // RecMC K0S coupled to Phi
-    mcPhiK0SHist.add("h3RecMCPhiK0SSEInc", "2D Invariant mass of Phi and K0Short for RecMC Inclusive", kTH3F, {binnedmultAxis, binnedptK0SAxis, massK0SAxis});
-    mcPhiK0SHist.add("h3RecMCPhiK0SSEFCut", "2D Invariant mass of Phi and K0Short for RecMC Deltay < FirstCut", kTH3F, {binnedmultAxis, binnedptK0SAxis, massK0SAxis});
-    mcPhiK0SHist.add("h3RecMCPhiK0SSESCut", "2D Invariant mass of Phi and K0Short for RecMC Deltay < SecondCut", kTH3F, {binnedmultAxis, binnedptK0SAxis, massK0SAxis});
+    mcPhiK0SHist.add("h3RecMCPhiK0SInc", "RecoMC K0Short coupled to Phi Inclusive", kTH3F, {binnedmultAxis, binnedptK0SAxis, massK0SAxis});
+    mcPhiK0SHist.add("h3RecMCPhiK0SFCut", "RecoMC K0Short coupled to Phi Deltay < FirstCut", kTH3F, {binnedmultAxis, binnedptK0SAxis, massK0SAxis});
+    mcPhiK0SHist.add("h3RecMCPhiK0SSCut", "RecoMC K0Short coupled to Phi Deltay < SecondCut", kTH3F, {binnedmultAxis, binnedptK0SAxis, massK0SAxis});
 
     // GenMC K0S coupled to Phi
     mcPhiK0SHist.add("h2PhiK0SGenMCInc", "K0Short coupled to Phi for GenMC Inclusive", kTH2F, {binnedmultAxis, binnedptK0SAxis});
@@ -297,10 +297,15 @@ struct Phik0shortanalysis {
     dataPhiPionHist.add("h5PhiPiSEFCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Deltay < FirstCut", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
     dataPhiPionHist.add("h5PhiPiSESCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Deltay < SecondCut", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
 
-    // RecMC Pion coupled to Phi
-    mcPhiPionHist.add("h4RecMCPhiPiSEInc", "Phi Invariant mass vs Pion nSigma TPC/TOF for RecMC Inclusive", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
-    mcPhiPionHist.add("h4RecMCPhiPiSEFCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for RecMC Deltay < FirstCut", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
-    mcPhiPionHist.add("h4RecMCPhiPiSESCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for RecMC Deltay < SecondCut", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
+    // RecMC Pion coupled to Phi with TPC
+    mcPhiPionHist.add("h3RecMCPhiPiTPCInc", "RecoMC Pion coupled to Phi with TPC Inclusive", kTH3F, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}});
+    mcPhiPionHist.add("h3RecMCPhiPiTPCFCut", "RecoMC Pion coupled to Phi with TPC Deltay < FirstCut", kTH3F, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}});
+    mcPhiPionHist.add("h3RecMCPhiPiTPCSCut", "RecoMC Pion coupled to Phi with TPC Deltay < SecondCut", kTH3F, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}});
+
+    // RecMC Pion coupled to Phi with TPC and TOF
+    mcPhiPionHist.add("h4RecMCPhiPiTPCTOFInc", "RecoMC Pion coupled to Phi with TPC and TOF Inclusive", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
+    mcPhiPionHist.add("h4RecMCPhiPiTPCTOFFCut", "RecoMC Pion coupled to Phi with TPC and TOF Deltay < FirstCut", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
+    mcPhiPionHist.add("h4RecMCPhiPiTPCTOFSCut", "RecoMC Pion coupled to Phi with TPC and TOF Deltay < SecondCut", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
 
     // GenMC Pion coupled to Phi
     mcPhiPionHist.add("h2PhiPiGenMCInc", "Pion coupled to Phi for GenMC Inclusive", kTH2F, {binnedmultAxis, binnedptPiAxis});
@@ -351,7 +356,8 @@ struct Phik0shortanalysis {
     mcPhiHist.add("h3PhiRapiditySmearing", "Rapidity Smearing Matrix for Phi", kTH3F, {binnedmultAxis, yAxis, yAxis});
 
     // MCK0S invariant mass and GenMC K0S for computing efficiencies
-    mcK0SHist.add("h3K0SeffInvMass", "Invariant mass of K0Short for Efficiency", kTH3F, {binnedmultAxis, binnedptK0SAxis, massK0SAxis});
+    mcK0SHist.add("h3RecMCK0S", "RecoMC K0Short for Efficiency", kTH3F, {binnedmultAxis, binnedptK0SAxis, massK0SAxis});
+
     mcK0SHist.add("h2K0SGenMC", "K0Short for GenMC", kTH2F, {binnedmultAxis, binnedptK0SAxis});
     mcK0SHist.add("h2K0SGenMCAssocReco", "K0Short for GenMC Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptK0SAxis});
 
@@ -359,7 +365,9 @@ struct Phik0shortanalysis {
     mcK0SHist.add("h4K0SRapiditySmearing", "Rapidity Smearing Matrix for K0Short", kTHnSparseF, {binnedmultAxis, binnedptK0SAxis, yAxis, yAxis});
 
     // MCPion invariant mass and GenMC Pion for computing efficiencies
-    mcPionHist.add("h4PieffInvMass", "Invariant mass of Pion for Efficiency", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
+    mcPionHist.add("h3RecMCPiTPC", "RecoMC Pion for Efficiency with TPC", kTH3F, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}});
+    mcPionHist.add("h4RecMCPiTPCTOF", "RecoMC Pion for Efficiency with TPC and TOF", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
+
     mcPionHist.add("h2PiGenMC", "Pion for GenMC", kTH2F, {binnedmultAxis, binnedptPiAxis});
     mcPionHist.add("h2PiGenMCAssocReco", "Pion for GenMC Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
 
@@ -1058,7 +1066,7 @@ struct Phik0shortanalysis {
         if (std::abs(v0mcparticle.y()) > cfgYAcceptance)
           continue;
 
-        mcK0SHist.fill(HIST("h3K0SeffInvMass"), genmultiplicity, v0.pt(), v0.mK0Short());
+        mcK0SHist.fill(HIST("h3RecMCK0S"), genmultiplicity, v0.pt(), v0.mK0Short());
 
         std::array<bool, 3> isCountedMCPhi{false, false, false};
 
@@ -1069,19 +1077,19 @@ struct Phik0shortanalysis {
             continue;
 
           if (!isCountedMCPhi.at(0)) {
-            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEInc"), genmultiplicity, v0.pt(), v0.mK0Short());
+            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SInc"), genmultiplicity, v0.pt(), v0.mK0Short());
             isCountedMCPhi.at(0) = true;
           }
           if (std::abs(v0mcparticle.y() - mcParticle.y()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(1)) {
-            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEFCut"), genmultiplicity, v0.pt(), v0.mK0Short());
+            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SFCut"), genmultiplicity, v0.pt(), v0.mK0Short());
             isCountedMCPhi.at(1) = true;
           }
           if (std::abs(v0mcparticle.y() - mcParticle.y()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(2)) {
-            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SSESCut"), genmultiplicity, v0.pt(), v0.mK0Short());
+            mcPhiK0SHist.fill(HIST("h3RecMCPhiK0SSCut"), genmultiplicity, v0.pt(), v0.mK0Short());
             isCountedMCPhi.at(2) = true;
           }
         }
@@ -1127,10 +1135,7 @@ struct Phik0shortanalysis {
         if (std::abs(mcTrack.y()) > cfgYAcceptance)
           continue;
 
-        float nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -999);
-        float nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -999);
-
-        mcPionHist.fill(HIST("h4PieffInvMass"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
+        mcPionHist.fill(HIST("h3RecMCPiTPC"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
 
         std::array<bool, 3> isCountedMCPhi{false, false, false};
 
@@ -1141,19 +1146,50 @@ struct Phik0shortanalysis {
             continue;
 
           if (!isCountedMCPhi.at(0)) {
-            mcPhiPionHist.fill(HIST("h4RecMCPhiPiSEInc"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
+            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCInc"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
             isCountedMCPhi.at(0) = true;
           }
           if (std::abs(mcTrack.y() - mcParticle.y()) > cfgFCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(1)) {
-            mcPhiPionHist.fill(HIST("h4RecMCPhiPiSEFCut"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
+            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCFCut"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
             isCountedMCPhi.at(1) = true;
           }
           if (std::abs(mcTrack.y() - mcParticle.y()) > cfgSCutOnDeltaY)
             continue;
           if (!isCountedMCPhi.at(2)) {
-            mcPhiPionHist.fill(HIST("h4RecMCPhiPiSESCut"), genmultiplicity, track.pt(), nsigmaTPC, nsigmaTOF);
+            mcPhiPionHist.fill(HIST("h3RecMCPhiPiTPCSCut"), genmultiplicity, track.pt(), track.tpcNSigmaPi());
+            isCountedMCPhi.at(2) = true;
+          }
+        }
+
+        if (track.pt() >= 0.5 && !tracks.hasTOF())
+          continue;
+
+        mcPionHist.fill(HIST("h4RecMCPiTPCTOF"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+
+        isCountedMCPhi = {false, false, false};
+
+        for (const auto& mcParticle : mcParticlesThisColl) {
+          if (mcParticle.pdgCode() != 333)
+            continue;
+          if (std::abs(mcParticle.y()) > cfgYAcceptance)
+            continue;
+
+          if (!isCountedMCPhi.at(0)) {
+            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFInc"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+            isCountedMCPhi.at(0) = true;
+          }
+          if (std::abs(mcTrack.y() - mcParticle.y()) > cfgFCutOnDeltaY)
+            continue;
+          if (!isCountedMCPhi.at(1)) {
+            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFFCut"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+            isCountedMCPhi.at(1) = true;
+          }
+          if (std::abs(mcTrack.y() - mcParticle.y()) > cfgSCutOnDeltaY)
+            continue;
+          if (!isCountedMCPhi.at(2)) {
+            mcPhiPionHist.fill(HIST("h4RecMCPhiPiTPCTOFSCut"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
             isCountedMCPhi.at(2) = true;
           }
         }
