@@ -81,7 +81,7 @@ struct Lambda1520analysis {
   Configurable<bool> cUseRejNsigma{"cUseRejNsigma", false, "Switch on/off track rejection method to improve purity"};
   Configurable<bool> tofAtHighPt{"tofAtHighPt", false, "Use TOF at high pT"};
   Configurable<bool> cByPassTOF{"cByPassTOF", false, "By pass TOF PID selection"};                    // By pass TOF PID selection
-  Configurable<int> pidCutType{"pidCutType", 1, "pidCutType = 1 for square cut, 2 for circular cut"}; // By pass TOF PID selection
+  Configurable<int> pidCutType{"pidCutType", 2, "pidCutType = 1 for square cut, 2 for circular cut"}; // By pass TOF PID selection
 
   // Kaon
   // Old PID use case
