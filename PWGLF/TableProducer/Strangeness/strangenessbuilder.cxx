@@ -48,7 +48,7 @@ static const std::vector<std::string> tableNames{"V0Indices",           //.0 (st
                                                  "StoredKFCascCores",   //.7 (standard analyses: KFCascData)
                                                  "StoredTraCascCores",  //.8 (standard analyses: TraCascData)
                                                  "CascCovs",            //.9
-                                                 "KFCascCovs",          // 10
+                                                 "KFCascCovs",          //.10
                                                  "TraCascCovs",         //.11
                                                  "V0TrackXs",           //.12
                                                  "CascTrackXs",         //.13
@@ -58,10 +58,10 @@ static const std::vector<std::string> tableNames{"V0Indices",           //.0 (st
                                                  "V0TraPosAtDCAs",      //.17 (requested: tracking studies)
                                                  "V0TraPosAtIUs",       //.18 (requested: tracking studies)
                                                  "V0Ivanovs",           //.19 (requested: tracking studies)
-                                                 "McV0Labels",          // 20 (MC/standard analysis)
-                                                 "V0MCCores",           // 21 (MC)
-                                                 "V0CoreMCLabels",      // 22 (MC)
-                                                 "V0MCCollRefs",        // 23 (MC)
+                                                 "McV0Labels",          //.20 (MC/standard analysis)
+                                                 "V0MCCores",           //.21 (MC)
+                                                 "V0CoreMCLabels",      //.22 (MC)
+                                                 "V0MCCollRefs",        //.23 (MC)
                                                  "McCascLabels",        // 24 (MC/standard analysis)
                                                  "McKFCascLabels",      // 25 (MC)
                                                  "McTraCascLabels",     // 26 (MC)
@@ -355,6 +355,16 @@ struct StrangenessBuilder {
   struct : ConfigurableGroup {
     std::string prefix = "v0BuilderOpts";
     Configurable<bool> generatePhotonCandidates{"generatePhotonCandidates", false, "generate gamma conversion candidates (V0s using TPC-only tracks)"};
+
+    // MC builder options 
+    Configurable<bool> mc_populateV0MCCoresSymmetric{"mc_populateV0MCCoresSymmetric", false, "populate V0MCCores table for derived data analysis, keep V0MCCores joinable with V0Cores"};
+    Configurable<bool> mc_populateV0MCCoresAsymmetric{"mc_populateV0MCCoresAsymmetric", true, "populate V0MCCores table for derived data analysis, create V0Cores -> V0MCCores interlink. Saves only labeled V0s."};
+    Configurable<bool> mc_treatPiToMuDecays{"mc_treatPiToMuDecays", true, "if true, will correctly capture pi -> mu and V0 label will still point to originating V0 decay in those cases. Nota bene: prong info will still be for the muon!"};
+    Configurable<float> mc_rapidityWindow{"mc_rapidityWindow", 0.5, "rapidity window to save non-recoed candidates"};
+    Configurable<bool> mc_addGeneratedK0Short{"mc_addGeneratedK0Short", false, "add V0MCCore entry for generated, not-recoed K0Short"};
+    Configurable<bool> mc_addGeneratedLambda{"mc_addGeneratedLambda", false, "add V0MCCore entry for generated, not-recoed Lambda"};
+    Configurable<bool> mc_addGeneratedAntiLambda{"mc_addGeneratedAntiLambda", false, "add V0MCCore entry for generated, not-recoed AntiLambda"};
+    Configurable<bool> mc_addGeneratedGamma{"mc_addGeneratedGamma", false, "add V0MCCore entry for generated, not-recoed Gamma"};
   } v0BuilderOpts;
 
   // cascade building options
@@ -381,13 +391,37 @@ struct StrangenessBuilder {
   std::vector<o2::pwglf::v0candidate> v0sFromCascades; // Vector of v0 candidates used in cascades
   std::vector<int> v0Map;                              // index to relate V0s -> v0sFromCascades
 
-  // for establishing CascData/KFData/TraCascData interlnks 
-  std::vector<int> cascCoreToCascades;
-  std::vector<int> kfCascCoreToCascades;
-  std::vector<int> traCascCoreToCascades;
-  std::vector<int> cascadeToCascCores;
-  std::vector<int> cascadeToKFCascCores;
-  std::vector<int> cascadeToTraCascCores;
+  // for establishing CascData/KFData/TraCascData interlinks 
+
+  struct{
+    std::vector<int> cascCoreToCascades;
+    std::vector<int> kfCascCoreToCascades;
+    std::vector<int> traCascCoreToCascades;
+    std::vector<int> cascadeToCascCores;
+    std::vector<int> cascadeToKFCascCores;
+    std::vector<int> cascadeToTraCascCores;
+  } interlinks; 
+
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  // Helper struct to contain V0MCCore information prior to filling
+  struct mcV0info {
+    int label = -1;
+    int motherLabel = -1;
+    int pdgCode = 0;
+    int pdgCodeMother = 0;
+    int pdgCodePositive = 0;
+    int pdgCodeNegative = 0;
+    int mcCollision = -1;
+    bool isPhysicalPrimary = false;
+    int processPositive = -1;
+    int processNegative = -1;
+    std::array<float, 3> xyz;
+    std::array<float, 3> posP;
+    std::array<float, 3> negP;
+    std::array<float, 3> momentum;
+  };
+  mcV0info thisInfo;
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -461,34 +495,34 @@ struct StrangenessBuilder {
 
   //__________________________________________________
   void resetInterlinks(){ 
-    cascCoreToCascades.clear();
-    kfCascCoreToCascades.clear();
-    traCascCoreToCascades.clear();
-    cascadeToCascCores.clear();
-    cascadeToKFCascCores.clear();
-    cascadeToTraCascCores.clear();
+    interlinks.cascCoreToCascades.clear();
+    interlinks.kfCascCoreToCascades.clear();
+    interlinks.traCascCoreToCascades.clear();
+    interlinks.cascadeToCascCores.clear();
+    interlinks.cascadeToKFCascCores.clear();
+    interlinks.cascadeToTraCascCores.clear();
   }
 
   //__________________________________________________
   void populateCascadeInterlinks(){ 
     if(mEnabledTables[kCascToKFRefs]){
-      for (auto& cascCore : cascCoreToCascades) {
-        cascToKFRefs(cascadeToKFCascCores[cascCore]);
+      for (auto& cascCore : interlinks.cascCoreToCascades) {
+        cascToKFRefs(interlinks.cascadeToKFCascCores[cascCore]);
       }
     }
     if(mEnabledTables[kCascToTraRefs]){
-      for (auto& cascCore : cascCoreToCascades) {
-        cascToTraRefs(cascadeToTraCascCores[cascCore]);
+      for (auto& cascCore : interlinks.cascCoreToCascades) {
+        cascToTraRefs(interlinks.cascadeToTraCascCores[cascCore]);
       }
     }
     if(mEnabledTables[kKFToCascRefs]){
-      for (auto& kfCascCore : kfCascCoreToCascades) {
-        kfToCascRefs(cascadeToCascCores[kfCascCore]);
+      for (auto& kfCascCore : interlinks.kfCascCoreToCascades) {
+        kfToCascRefs(interlinks.cascadeToCascCores[kfCascCore]);
       }
     }
     if(mEnabledTables[kTraToCascRefs]){
-      for (auto& traCascCore : traCascCoreToCascades) {
-        traToCascRefs(cascadeToCascCores[traCascCore]);
+      for (auto& traCascCore : interlinks.traCascCoreToCascades) {
+        traToCascRefs(interlinks.cascadeToCascCores[traCascCore]);
       }
     }
   }
@@ -504,9 +538,19 @@ struct StrangenessBuilder {
     }
   }
 
-  template <class TTracks, typename TCollisions, typename TV0s>
-  void buildV0s(TCollisions const& collisions, TV0s const& v0s)
+  //__________________________________________________
+  template <class TTracks, typename TCollisions, typename TV0s, typename TMCParticles>
+  void buildV0s(TCollisions const& collisions, TV0s const& v0s, TMCParticles const& mcParticles)
   {
+    // prepare MC containers (not necessarily used)
+    std::vector<mcV0info> mcV0infos; // V0MCCore information
+    std::vector<bool> mcParticleIsReco;
+
+    if constexpr (requires { TMCParticles::iterator; }) {
+      // do this if provided with a mcParticle table as well
+      mcParticleIsReco.resize(mcParticles.size(), false);
+    }
+
     int nV0s = 0;
     // Loops over all V0s in the time frame
     for (auto& v0 : v0s) {
@@ -570,11 +614,239 @@ struct StrangenessBuilder {
           v0dauPositionsIU(positivePositionIU[0], positivePositionIU[1], positivePositionIU[2],
                            negativePositionIU[0], negativePositionIU[1], negativePositionIU[2]);
         }
+
+        //_________________________________________________________
+        // MC handling part
+        if constexpr (requires { TMCParticles::iterator; }) {
+          // only worry about this if someone else worried about this
+          if((mEnabledTables[kV0MCCores] || mEnabledTables[kMcV0Labels] || mEnabledTables[kV0MCCollRefs])){
+            thisInfo.label = -1;
+            thisInfo.motherLabel = -1;
+            thisInfo.pdgCode = 0;
+            thisInfo.pdgCodeMother = 0;
+            thisInfo.pdgCodePositive = 0;
+            thisInfo.pdgCodeNegative = 0;
+            thisInfo.mcCollision = -1;
+            thisInfo.xyz[0] = thisInfo.xyz[1] = thisInfo.xyz[2] = 0.0f;
+            thisInfo.posP[0] = thisInfo.posP[1] = thisInfo.posP[2] = 0.0f;
+            thisInfo.negP[0] = thisInfo.negP[1] = thisInfo.negP[2] = 0.0f;
+            thisInfo.momentum[0] = thisInfo.momentum[1] = thisInfo.momentum[2] = 0.0f;
+
+            // Association check
+            // There might be smarter ways of doing this in the future
+            if (negTrack.has_mcParticle() && posTrack.has_mcParticle()) {
+              auto lMCNegTrack = negTrack.template mcParticle_as<aod::McParticles>();
+              auto lMCPosTrack = posTrack.template mcParticle_as<aod::McParticles>();
+
+              thisInfo.pdgCodePositive = lMCPosTrack.pdgCode();
+              thisInfo.pdgCodeNegative = lMCNegTrack.pdgCode();
+              thisInfo.processPositive = lMCPosTrack.getProcess();
+              thisInfo.processNegative = lMCNegTrack.getProcess();
+              thisInfo.posP[0] = lMCPosTrack.px();
+              thisInfo.posP[1] = lMCPosTrack.py();
+              thisInfo.posP[2] = lMCPosTrack.pz();
+              thisInfo.negP[0] = lMCNegTrack.px();
+              thisInfo.negP[1] = lMCNegTrack.py();
+              thisInfo.negP[2] = lMCNegTrack.pz();
+
+              // check for pi -> mu + antineutrino decay
+              // if present, de-reference original V0 correctly and provide label to original object
+              // NOTA BENE: the prong info will still correspond to a muon, treat carefully!
+              int negOriginating = -1, posOriginating = -1, particleForDecayPositionIdx = -1;
+              negOriginating = getOriginatingParticle(lMCNegTrack, particleForDecayPositionIdx);
+              posOriginating = getOriginatingParticle(lMCPosTrack, particleForDecayPositionIdx);
+
+              if (negOriginating > -1 && negOriginating == posOriginating) {
+                auto originatingV0 = mcParticles.rawIteratorAt(negOriginating);
+                auto particleForDecayPosition = mcParticles.rawIteratorAt(particleForDecayPositionIdx);
+
+                thisInfo.label = originatingV0.globalIndex();
+                thisInfo.xyz[0] = particleForDecayPosition.vx();
+                thisInfo.xyz[1] = particleForDecayPosition.vy();
+                thisInfo.xyz[2] = particleForDecayPosition.vz();
+
+                if (originatingV0.has_mcCollision()) {
+                  thisInfo.mcCollision = originatingV0.mcCollisionId(); // save this reference, please
+                }
+
+                // acquire information
+                thisInfo.pdgCode = originatingV0.pdgCode();
+                thisInfo.isPhysicalPrimary = originatingV0.isPhysicalPrimary();
+                thisInfo.momentum[0] = originatingV0.px();
+                thisInfo.momentum[1] = originatingV0.py();
+                thisInfo.momentum[2] = originatingV0.pz();
+
+                if (originatingV0.has_mothers()) {
+                  for (auto& lV0Mother : originatingV0.template mothers_as<aod::McParticles>()) {
+                    thisInfo.pdgCodeMother = lV0Mother.pdgCode();
+                    thisInfo.motherLabel = lV0Mother.globalIndex();
+                  }
+                }
+              }
+
+            } // end association check
+            // Construct label table (note: this will be joinable with V0Datas!)
+            if(mEnabledTables[kMcV0Labels]){
+              v0labels(thisInfo.label, thisInfo.motherLabel);
+            }
+
+            // Mark mcParticle as recoed (no searching necessary afterwards)
+            if (thisInfo.label > -1) {
+              mcParticleIsReco[thisInfo.label] = true;
+            }
+
+            // ---] Symmetric populate [---
+            // in this approach, V0Cores will be joinable with V0MCCores.
+            // this is the most pedagogical approach, but it is also more limited
+            // and it might use more disk space unnecessarily.
+            if (v0BuilderOpts.mc_populateV0MCCoresSymmetric) {
+              if(mEnabledTables[kV0MCCores]){
+                v0mccores(
+                  thisInfo.label, thisInfo.pdgCode,
+                  thisInfo.pdgCodeMother, thisInfo.pdgCodePositive, thisInfo.pdgCodeNegative,
+                  thisInfo.isPhysicalPrimary, thisInfo.xyz[0], thisInfo.xyz[1], thisInfo.xyz[2],
+                  thisInfo.posP[0], thisInfo.posP[1], thisInfo.posP[2],
+                  thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2],
+                  thisInfo.momentum[0], thisInfo.momentum[1], thisInfo.momentum[2]);
+              }
+              if(mEnabledTables[kV0MCCollRefs]){
+                v0mccollref(thisInfo.mcCollision);
+              }
+
+              // n.b. placing the interlink index here allows for the writing of
+              //      code that is agnostic with respect to the joinability of
+              //      V0Cores and V0MCCores (always dereference -> safe)
+              if(mEnabledTables[kV0CoreMCLabels]){
+                v0CoreMCLabels(v0.globalIndex()); // interlink index
+              }
+            }
+            // ---] Asymmetric populate [---
+            // in this approach, V0Cores will NOT be joinable with V0MCCores.
+            // an additional reference to V0MCCore that IS joinable with V0Cores
+            // will be provided to the user.
+            if (v0BuilderOpts.mc_populateV0MCCoresAsymmetric) {
+              int thisV0MCCoreIndex = -1;
+              // step 1: check if this element is already provided in the table
+              //         using the packedIndices variable calculated above
+              for (uint32_t ii = 0; ii < mcV0infos.size(); ii++) {
+                if (thisInfo.label == mcV0infos[ii].label && mcV0infos[ii].label > -1) {
+                  thisV0MCCoreIndex = ii;
+                  break;                                          // this exists already in list
+                }
+              }
+              if (thisV0MCCoreIndex < 0 && thisInfo.label > -1) {
+                // this V0MCCore does not exist yet. Create it and reference it
+                thisV0MCCoreIndex = mcV0infos.size();
+                mcV0infos.push_back(thisInfo);
+              }
+              if(mEnabledTables[kV0CoreMCLabels]){
+                v0CoreMCLabels(thisV0MCCoreIndex); // interlink index
+              }
+            }
+          } // enabled tables check 
+        } // constexpr requires check
       }
     }
+
+    // finish populating V0MCCores if in asymmetric mode
+    if constexpr (requires { TMCParticles::iterator; }) {
+      if (v0BuilderOpts.mc_populateV0MCCoresAsymmetric && (mEnabledTables[kV0MCCores] || mEnabledTables[kV0MCCollRefs])) {
+        // first step: add any un-recoed v0mmcores that were requested
+        for (auto& mcParticle : mcParticles) {
+          thisInfo.label = -1;
+          thisInfo.motherLabel = -1;
+          thisInfo.pdgCode = 0;
+          thisInfo.pdgCodeMother = -1;
+          thisInfo.pdgCodePositive = -1;
+          thisInfo.pdgCodeNegative = -1;
+          thisInfo.mcCollision = -1;
+          thisInfo.xyz[0] = thisInfo.xyz[1] = thisInfo.xyz[2] = 0.0f;
+          thisInfo.posP[0] = thisInfo.posP[1] = thisInfo.posP[2] = 0.0f;
+          thisInfo.negP[0] = thisInfo.negP[1] = thisInfo.negP[2] = 0.0f;
+          thisInfo.momentum[0] = thisInfo.momentum[1] = thisInfo.momentum[2] = 0.0f;
+
+          if (mcParticleIsReco[mcParticle.globalIndex()] == true)
+            continue; // skip if already created in list
+
+          if (TMath::Abs(mcParticle.y()) > v0BuilderOpts.mc_rapidityWindow)
+            continue; // skip outside midrapidity
+
+          if (
+            (v0BuilderOpts.mc_addGeneratedK0Short && mcParticle.pdgCode() == 310) ||
+            (v0BuilderOpts.mc_addGeneratedLambda && mcParticle.pdgCode() == 3122) ||
+            (v0BuilderOpts.mc_addGeneratedAntiLambda && mcParticle.pdgCode() == -3122) ||
+            (v0BuilderOpts.mc_addGeneratedGamma && mcParticle.pdgCode() == 22)) {
+            thisInfo.pdgCode = mcParticle.pdgCode();
+            thisInfo.isPhysicalPrimary = mcParticle.isPhysicalPrimary();
+            thisInfo.label = mcParticle.globalIndex();
+
+            if (mcParticle.has_mcCollision()) {
+              thisInfo.mcCollision = mcParticle.mcCollisionId(); // save this reference, please
+            }
+
+            //
+            thisInfo.momentum[0] = mcParticle.px();
+            thisInfo.momentum[1] = mcParticle.py();
+            thisInfo.momentum[2] = mcParticle.pz();
+
+            if (mcParticle.has_mothers()) {
+              auto const& mother = mcParticle.template mothers_first_as<aod::McParticles>();
+              thisInfo.pdgCodeMother = mother.pdgCode();
+              thisInfo.motherLabel = mother.globalIndex();
+            }
+            if (mcParticle.has_daughters()) {
+              auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
+
+              for (auto& dau : daughters) {
+                if (dau.getProcess() != 4)
+                  continue;
+
+                if (dau.pdgCode() > 0) {
+                  thisInfo.pdgCodePositive = dau.pdgCode();
+                  thisInfo.processPositive = dau.getProcess();
+                  thisInfo.posP[0] = dau.px();
+                  thisInfo.posP[1] = dau.py();
+                  thisInfo.posP[2] = dau.pz();
+                  thisInfo.xyz[0] = dau.vx();
+                  thisInfo.xyz[1] = dau.vy();
+                  thisInfo.xyz[2] = dau.vz();
+                }
+                if (dau.pdgCode() < 0) {
+                  thisInfo.pdgCodeNegative = dau.pdgCode();
+                  thisInfo.processNegative = dau.getProcess();
+                  thisInfo.negP[0] = dau.px();
+                  thisInfo.negP[1] = dau.py();
+                  thisInfo.negP[2] = dau.pz();
+                }
+              }
+            }
+
+            // if I got here, it means this MC particle was not recoed and is of interest. Add it please
+            mcV0infos.push_back(thisInfo);
+          }
+        }
+
+        for (auto info : mcV0infos) {
+          if(mEnabledTables[kV0MCCores]){
+            v0mccores(
+              info.label, info.pdgCode,
+              info.pdgCodeMother, info.pdgCodePositive, info.pdgCodeNegative,
+              info.isPhysicalPrimary, info.xyz[0], info.xyz[1], info.xyz[2],
+              info.posP[0], info.posP[1], info.posP[2],
+              info.negP[0], info.negP[1], info.negP[2],
+              info.momentum[0], info.momentum[1], info.momentum[2]);
+          }
+          if(mEnabledTables[kV0MCCollRefs]){
+            v0mccollref(info.mcCollision);
+          }
+        }
+      } // end V0MCCores filling in case of MC
+    } // end constexpr requires mcParticles
+
     LOGF(info, "V0s in DF: %i, V0s built: %i, V0s built and buffered for cascades: %i.", v0s.size(), nV0s, v0sFromCascades.size());
   }
 
+  //__________________________________________________
   template <class TTracks, typename TCollisions, typename TCascades>
   void buildCascades(TCollisions const& collisions, TCascades const& cascades)
   {
@@ -599,7 +871,7 @@ struct StrangenessBuilder {
                                            cascadeBuilderOpts.useCascadeMomentumAtPrimVtx,  
                                            mEnabledTables[kCascCovs])){
         cascdataLink(-1);
-        cascadeToCascCores.push_back(-1);
+        interlinks.cascadeToCascCores.push_back(-1);
         continue; // didn't work out, skip
       }
       nCascades++;
@@ -623,8 +895,8 @@ struct StrangenessBuilder {
                  straHelper.cascade.bachelorDCAxy, straHelper.cascade.cascadeDCAxy, straHelper.cascade.cascadeDCAz);
         // interlink always produced if cascades generated
         cascdataLink(cascdata.lastIndex());
-        cascCoreToCascades.push_back(cascade.globalIndex());
-        cascadeToCascCores.push_back(cascdata.lastIndex());
+        interlinks.cascCoreToCascades.push_back(cascade.globalIndex());
+        interlinks.cascadeToCascCores.push_back(cascdata.lastIndex());
       }
 
       if (mEnabledTables[kCascTrackXs]) {
@@ -641,7 +913,7 @@ struct StrangenessBuilder {
     LOGF(info, "Cascades in DF: %i, cascades built: %i", cascades.size(), nCascades);
   }
 
-
+  //__________________________________________________
   template <class TTracks, typename TCollisions, typename TCascades>
   void buildKFCascades(TCollisions const& collisions, TCascades const& cascades)
   {
@@ -669,7 +941,7 @@ struct StrangenessBuilder {
                                                  cascadeBuilderOpts.kfDoDCAFitterPreMinimV0, 
                                                  cascadeBuilderOpts.kfDoDCAFitterPreMinimCasc)){
         kfcascdataLink(-1);
-        cascadeToKFCascCores.push_back(-1);
+        interlinks.cascadeToKFCascCores.push_back(-1);
         continue; // didn't work out, skip
       }
       nCascades++;
@@ -697,8 +969,8 @@ struct StrangenessBuilder {
                    straHelper.cascade.kfMLambda, straHelper.cascade.kfV0Chi2, straHelper.cascade.kfCascadeChi2);
         // interlink always produced if cascades generated
         kfcascdataLink(kfcascdata.lastIndex());
-        kfCascCoreToCascades.push_back(cascade.globalIndex());
-        cascadeToKFCascCores.push_back(kfcascdata.lastIndex());
+        interlinks.kfCascCoreToCascades.push_back(cascade.globalIndex());
+        interlinks.cascadeToKFCascCores.push_back(kfcascdata.lastIndex());
       }
       if (mEnabledTables[kKFCascCovs]) {
         kfcasccovs(straHelper.cascade.covariance, straHelper.cascade.kfTrackCovarianceV0, straHelper.cascade.kfTrackCovariancePos, straHelper.cascade.kfTrackCovarianceNeg);
@@ -708,6 +980,7 @@ struct StrangenessBuilder {
     LOGF(info, "KF Cascades in DF: %i, KF cascades built: %i", cascades.size(), nCascades);
   }
 
+  //__________________________________________________
   template <class TTracks, typename TCollisions, typename TStrangeTracks>
   void buildTrackedCascades(TCollisions const& collisions, TStrangeTracks const& cascadeTracks)
   {
@@ -736,7 +1009,7 @@ struct StrangenessBuilder {
                                            cascadeBuilderOpts.useCascadeMomentumAtPrimVtx,
                                            mEnabledTables[kCascCovs])){
         tracascdataLink(-1);
-        cascadeToTraCascCores.push_back(-1);
+        interlinks.cascadeToTraCascCores.push_back(-1);
         continue; // didn't work out, skip
       }
 
@@ -774,8 +1047,8 @@ struct StrangenessBuilder {
                  cascadeTrack.matchingChi2(), cascadeTrack.topologyChi2(), cascadeTrack.itsClsSize());
         // interlink always produced if base core table generated
         tracascdataLink(tracascdata.lastIndex());
-        traCascCoreToCascades.push_back(cascade.globalIndex());
-        cascadeToTraCascCores.push_back(tracascdata.lastIndex());
+        interlinks.traCascCoreToCascades.push_back(cascade.globalIndex());
+        interlinks.cascadeToTraCascCores.push_back(tracascdata.lastIndex());
       }
       if (mEnabledTables[kCascCovs]) {
         std::array<float, 21> traCovMat = {0.};
@@ -791,8 +1064,39 @@ struct StrangenessBuilder {
   }
 
   //__________________________________________________
-  template <typename TCollisions, typename TV0s, typename TCascades, typename TTrackedCascades, typename TTracks, typename TBCs>
-  void dataProcess(TCollisions const& collisions, TV0s const& v0s, TCascades const& cascades, TTrackedCascades const& trackedCascades, TTracks const&, TBCs const& bcs)
+  // MC kink handling
+  template <typename mcpart>
+  int getOriginatingParticle(mcpart const& part, int& indexForPositionOfDecay)
+  {
+    int returnValue = -1;
+    if (part.has_mothers()) {
+      auto const& motherList = part.template mothers_as<aod::McParticles>();
+      if (motherList.size() == 1) {
+        for (const auto& mother : motherList) {
+          if (std::abs(part.pdgCode()) == 13 && v0BuilderOpts.mc_treatPiToMuDecays) {
+            // muon decay, de-ref mother twice
+            if (mother.has_mothers()) {
+              auto grandMotherList = mother.template mothers_as<aod::McParticles>();
+              if (grandMotherList.size() == 1) {
+                for (const auto& grandMother : grandMotherList) {
+                  returnValue = grandMother.globalIndex();
+                  indexForPositionOfDecay = mother.globalIndex(); // for V0 decay position: grab muon
+                }
+              }
+            }
+          } else {
+            returnValue = mother.globalIndex();
+            indexForPositionOfDecay = part.globalIndex();
+          }
+        }
+      }
+    }
+    return returnValue;
+  }
+
+  //__________________________________________________
+  template <typename TCollisions, typename TV0s, typename TCascades, typename TTrackedCascades, typename TTracks, typename TBCs, typename TMCParticles>
+  void dataProcess(TCollisions const& collisions, TV0s const& v0s, TCascades const& cascades, TTrackedCascades const& trackedCascades, TTracks const&, TBCs const& bcs, TMCParticles const& mcParticles)
   {
     if(!initCCDB(bcs, collisions)) return;
 
@@ -803,7 +1107,7 @@ struct StrangenessBuilder {
     markV0sUsedInCascades(v0s, cascades);
 
     // build V0s 
-    buildV0s<TTracks>(collisions, v0s);
+    buildV0s<TTracks>(collisions, v0s, mcParticles);
     
     // build cascades
     buildCascades<TTracks>(collisions, cascades);
@@ -819,17 +1123,22 @@ struct StrangenessBuilder {
 
   void processRealData(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    dataProcess(collisions, v0s, cascades, trackedCascades, tracks, bcs);
+    dataProcess(collisions, v0s, cascades, trackedCascades, tracks, bcs, (TObject*) nullptr);
   }
 
   void processRealDataRun2(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    dataProcess(collisions, v0s, cascades, (TObject*) nullptr, tracks, bcs);
+    dataProcess(collisions, v0s, cascades, (TObject*) nullptr, tracks, bcs, (TObject*) nullptr);
+  }
+
+  void processMonteCarlo(aod::Collisions const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
+  {
+    dataProcess(collisions, v0s, cascades, trackedCascades, tracks, bcs, mcParticles);
   }
 
   void processSimulationFindable(aod::Collisions const& collisions, aod::FindableV0s const& v0s, aod::Cascades const& cascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    dataProcess(collisions, v0s, cascades, (TObject*) nullptr, tracks, bcs);
+    dataProcess(collisions, v0s, cascades, (TObject*) nullptr, tracks, bcs, (TObject*) nullptr);
   }
 
   PROCESS_SWITCH(StrangenessBuilder, processRealData, "process real data", true);
