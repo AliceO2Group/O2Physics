@@ -238,7 +238,7 @@ struct FlowZDCtask {
     double qTpcReal = 0.0; // Initialize qTPC_real
     double qTpcIm = 0.0;   // init qTPC_imaginary
 
-    Int_t multTrk = tracks.size(); // Tracks are already filtered with GlobalTrack || GlobalTrackSDD
+    int multTrk = tracks.size(); // Tracks are already filtered with GlobalTrack || GlobalTrackSDD
 
     if (cent < 0.0 && cent > 70)
       return;
