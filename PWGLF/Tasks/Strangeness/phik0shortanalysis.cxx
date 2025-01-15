@@ -124,7 +124,7 @@ struct Phik0shortanalysis {
   Configurable<float> dcazMax{"dcazMax", 0.1f, "Maximum DCAz to primary vertex"};
 
   // Configurable on pion pT bins
-  Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
+  Configurable<std::vector<double>> binspTPi{"binspTPi", {0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
 
   // Configurables for delta y selection
   Configurable<int> nBinsy{"nBinsy", 80, "Number of bins in y and deltay axis"};
