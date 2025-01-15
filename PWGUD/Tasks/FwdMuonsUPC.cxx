@@ -921,7 +921,7 @@ struct FwdMuonsUPC {
   // process reco MC (gen info included)
   void processMcReco(CandidatesFwd const& eventCandidates,
                      CompleteFwdTracks const& fwdTracks,
-                     aod::UDMcCollisions const& mcCandidates,
+                     /*aod::UDMcCollisions const& mcCandidates,*/
                      aod::UDMcParticles const& McParts)
   {
     std::unordered_map<int32_t, std::vector<int32_t>> tracksPerCandAll;
@@ -950,6 +950,9 @@ struct FwdMuonsUPC {
 
       if (nzTrMc1 != trMc1)
         LOGF(debug, "diff wrt Nazar!");
+      if (nzTrMc2 != trMc2)
+        LOGF(debug, "diff wrt Nazar!");
+
       processMcRecoCand(cand, tr1, trMc1, tr2, trMc2);
     }
   }
