@@ -636,7 +636,7 @@ struct NucleiHistTask {
 
     if (!isEventSelected(event))
       return;
-      
+
     if (enable_pT_shift_tpc_nSigma) {
       Particle_Tpc_nSigma_shift = new TF1("Particle_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
       auto par = (std::vector<float>)parShiftPt;
