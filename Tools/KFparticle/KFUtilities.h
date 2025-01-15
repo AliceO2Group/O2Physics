@@ -393,9 +393,10 @@ std::pair<float, float> kfCalculateImpactParameterZ(const KFParticle& candidate,
   candidate.GetDistanceFromVertexXY(vtx, distanceToVertexXY, errDistanceToVertexXY);
   const float distanceToVertex = candidate.GetDistanceFromVertex(vtx);
   const float chi2ToVertex = candidate.GetDeviationFromVertex(vtx);
-  const float distanceToVertexZ2 = distanceToVertex*distanceToVertex - distanceToVertexXY*distanceToVertexXY;
+  const float distanceToVertexZ2 = distanceToVertex * distanceToVertex - distanceToVertexXY * distanceToVertexXY;
   const float distanceToVertexZ = distanceToVertexZ2 > 0 ? std::sqrt(distanceToVertexZ2) : -std::sqrt(-distanceToVertexZ2);
-  const float errDistanceToVertexZ2 = (distanceToVertex*distanceToVertex*distanceToVertex*distanceToVertex/chi2ToVertex - distanceToVertexXY*distanceToVertexXY*errDistanceToVertexXY*errDistanceToVertexXY) / distanceToVertexZ2;  const float errDistanceToVertexZ = errDistanceToVertexZ2 > 0 ? std::sqrt(errDistanceToVertexZ2) : -std::sqrt(-errDistanceToVertexZ2);
+  const float errDistanceToVertexZ2 = (distanceToVertex * distanceToVertex * distanceToVertex * distanceToVertex / chi2ToVertex - distanceToVertexXY * distanceToVertexXY * errDistanceToVertexXY * errDistanceToVertexXY) / distanceToVertexZ2;
+  const float errDistanceToVertexZ = errDistanceToVertexZ2 > 0 ? std::sqrt(errDistanceToVertexZ2) : -std::sqrt(-errDistanceToVertexZ2);
   return std::make_pair(distanceToVertexZ, errDistanceToVertexZ);
 }
 
