@@ -269,31 +269,7 @@ struct StrangenessBuilder {
   Produces<aod::CascCoreMCLabels> cascCoreMClabels;  // interlink CascCores -> CascMCCores
   Produces<aod::CascMCCollRefs> cascmccollrefs;      // references MC collisions from MC cascades
 
-  //__________________________________________________
-  // fundamental building blocks of derived data
-  Produces<aod::StraCollision> strangeColl;        // characterises collisions
-  Produces<aod::StraCollLabels> strangeCollLabels; // characterises collisions
-  Produces<aod::StraMCCollisions> strangeMCColl;   // characterises collisions / MC
-  Produces<aod::StraMCCollMults> strangeMCMults;   // characterises collisions / MC mults
-  Produces<aod::StraCents> strangeCents;           // characterises collisions / centrality
-  Produces<aod::StraEvSels> strangeEvSels;         // characterises collisions / centrality / sel8 selection
-  Produces<aod::StraStamps> strangeStamps;         // provides timestamps, run numbers
-  Produces<aod::V0CollRefs> v0collref;             // references collisions from V0s
-  Produces<aod::CascCollRefs> casccollref;         // references collisions from cascades
-  Produces<aod::KFCascCollRefs> kfcasccollref;     // references collisions from KF cascades
-  Produces<aod::TraCascCollRefs> tracasccollref;   // references collisions from tracked cascades
-
-  //__________________________________________________
-  // track extra references
-  Produces<aod::DauTrackExtras> dauTrackExtras;   // daughter track detector properties
-  Produces<aod::DauTrackMCIds> dauTrackMCIds;     // daughter track MC Particle ID
-  Produces<aod::DauTrackTPCPIDs> dauTrackTPCPIDs; // daughter track TPC PID
-  Produces<aod::DauTrackTOFPIDs> dauTrackTOFPIDs; // daughter track TOF PID
-  Produces<aod::V0Extras> v0Extras;               // references DauTracks from V0s
-  Produces<aod::CascExtras> cascExtras;           // references DauTracks from cascades
-  Produces<aod::StraTrackExtras> straTrackExtras; // references DauTracks from tracked cascades (for the actual tracked cascade, not its daughters)
-
-  //__________________________________________________
+//__________________________________________________
   // cascade interlinks
   Produces<aod::CascToTraRefs> cascToTraRefs; // cascades -> tracked
   Produces<aod::CascToKFRefs> cascToKFRefs;   // cascades -> KF
@@ -301,36 +277,60 @@ struct StrangenessBuilder {
   Produces<aod::KFToCascRefs> kfToCascRefs;   // KF -> cascades
 
   //__________________________________________________
+  // fundamental building blocks of derived data
+  // Produces<aod::StraCollision> strangeColl;        // characterises collisions
+  // Produces<aod::StraCollLabels> strangeCollLabels; // characterises collisions
+  // Produces<aod::StraMCCollisions> strangeMCColl;   // characterises collisions / MC
+  // Produces<aod::StraMCCollMults> strangeMCMults;   // characterises collisions / MC mults
+  // Produces<aod::StraCents> strangeCents;           // characterises collisions / centrality
+  // Produces<aod::StraEvSels> strangeEvSels;         // characterises collisions / centrality / sel8 selection
+  // Produces<aod::StraStamps> strangeStamps;         // provides timestamps, run numbers
+  // Produces<aod::V0CollRefs> v0collref;             // references collisions from V0s
+  // Produces<aod::CascCollRefs> casccollref;         // references collisions from cascades
+  // Produces<aod::KFCascCollRefs> kfcasccollref;     // references collisions from KF cascades
+  // Produces<aod::TraCascCollRefs> tracasccollref;   // references collisions from tracked cascades
+
+  //__________________________________________________
+  // track extra references
+  // Produces<aod::DauTrackExtras> dauTrackExtras;   // daughter track detector properties
+  // Produces<aod::DauTrackMCIds> dauTrackMCIds;     // daughter track MC Particle ID
+  // Produces<aod::DauTrackTPCPIDs> dauTrackTPCPIDs; // daughter track TPC PID
+  // Produces<aod::DauTrackTOFPIDs> dauTrackTOFPIDs; // daughter track TOF PID
+  // Produces<aod::V0Extras> v0Extras;               // references DauTracks from V0s
+  // Produces<aod::CascExtras> cascExtras;           // references DauTracks from cascades
+  // Produces<aod::StraTrackExtras> straTrackExtras; // references DauTracks from tracked cascades (for the actual tracked cascade, not its daughters)
+
+  //__________________________________________________
   // mother information
-  Produces<aod::V0MCMothers> v0mothers;       // V0 mother references
-  Produces<aod::CascMCMothers> cascmothers;   // casc mother references
-  Produces<aod::MotherMCParts> motherMCParts; // mc particles for mothers
+  // Produces<aod::V0MCMothers> v0mothers;       // V0 mother references
+  // Produces<aod::CascMCMothers> cascmothers;   // casc mother references
+  // Produces<aod::MotherMCParts> motherMCParts; // mc particles for mothers
 
   //__________________________________________________
   // Q-vectors
-  Produces<aod::StraFT0AQVs> StraFT0AQVs;     // FT0A Q-vector
-  Produces<aod::StraFT0CQVs> StraFT0CQVs;     // FT0C Q-vector
-  Produces<aod::StraFT0MQVs> StraFT0MQVs;     // FT0M Q-vector
-  Produces<aod::StraFV0AQVs> StraFV0AQVs;     // FV0A Q-vector
-  Produces<aod::StraTPCQVs> StraTPCQVs;       // TPC Q-vector
-  Produces<aod::StraFT0CQVsEv> StraFT0CQVsEv; // events used to compute FT0C Q-vector (LF)
-  Produces<aod::StraZDCSP> StraZDCSP;         // ZDC Sums and Products
+  // Produces<aod::StraFT0AQVs> StraFT0AQVs;     // FT0A Q-vector
+  // Produces<aod::StraFT0CQVs> StraFT0CQVs;     // FT0C Q-vector
+  // Produces<aod::StraFT0MQVs> StraFT0MQVs;     // FT0M Q-vector
+  // Produces<aod::StraFV0AQVs> StraFV0AQVs;     // FV0A Q-vector
+  // Produces<aod::StraTPCQVs> StraTPCQVs;       // TPC Q-vector
+  // Produces<aod::StraFT0CQVsEv> StraFT0CQVsEv; // events used to compute FT0C Q-vector (LF)
+  // Produces<aod::StraZDCSP> StraZDCSP;         // ZDC Sums and Products
 
   //__________________________________________________
   // Generated binned data
   // this is a hack while the system does not do better
-  Produces<aod::GeK0Short> geK0Short;
-  Produces<aod::GeLambda> geLambda;
-  Produces<aod::GeAntiLambda> geAntiLambda;
-  Produces<aod::GeXiMinus> geXiMinus;
-  Produces<aod::GeXiPlus> geXiPlus;
-  Produces<aod::GeOmegaMinus> geOmegaMinus;
-  Produces<aod::GeOmegaPlus> geOmegaPlus;
+  // Produces<aod::GeK0Short> geK0Short;
+  // Produces<aod::GeLambda> geLambda;
+  // Produces<aod::GeAntiLambda> geAntiLambda;
+  // Produces<aod::GeXiMinus> geXiMinus;
+  // Produces<aod::GeXiPlus> geXiPlus;
+  // Produces<aod::GeOmegaMinus> geOmegaMinus;
+  // Produces<aod::GeOmegaPlus> geOmegaPlus;
 
   //__________________________________________________
   // Found tags for findable exercise
-  Produces<aod::V0FoundTags> v0FoundTags;
-  Produces<aod::CascFoundTags> cascFoundTags;
+  // Produces<aod::V0FoundTags> v0FoundTags;
+  // Produces<aod::CascFoundTags> cascFoundTags;
 
   //__________________________________________________
   // Debug
