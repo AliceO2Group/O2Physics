@@ -1540,7 +1540,6 @@ struct cascadeBuilder {
     return true;
   }
 
-
   template <class TTrackTo, typename TV0Index, typename TCascade>
   void processCascadeCandidate(TV0Index const& v0index, TCascade const& cascade)
   {
