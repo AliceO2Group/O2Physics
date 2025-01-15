@@ -638,6 +638,7 @@ struct GenericFramework {
       std::vector<GFWWeights*> weights;
       std::vector<std::string> species = {"ref", "ch", "pi", "ka", "pr"};
       for (size_t i = 0; i < species.size(); ++i) {
+        if(dynamic_cast<GFWWeights*>(fWeightList->FindObject(Form("w%i_%s", lastRun, species[i].c_str())))) continue;
         weights.push_back(new GFWWeights(Form("w%i_%s", lastRun, species[i].c_str())));
         if (i == 0) {
           auto it = std::find(ptbinning.begin(), ptbinning.end(), ptrefup);
@@ -650,6 +651,7 @@ struct GenericFramework {
         fWeightList->Add(weights[i]);
       }
     } else {
+      if(dynamic_cast<GFWWeights*>(fWeightList->FindObject(Form("w%i_ch", lastRun)))) return;
       GFWWeights* weight = new GFWWeights(Form("w%i_ch", lastRun));
       weight->SetPtBins(fPtAxis->GetNbins(), &ptbinning[0]);
       weight->Init(true, false);
