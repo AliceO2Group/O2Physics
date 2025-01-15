@@ -39,21 +39,21 @@ namespace hf_ele_mc_red
 {
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(pT, pt, float);
-DECLARE_SOA_COLUMN(SourcePDG, sourcepdg, int);
-DECLARE_SOA_COLUMN(DcaXY, dcaxy, float);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(SourcePdg, sourcePdg, int);
+DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
 DECLARE_SOA_COLUMN(ProductionRadius, productionRadius, float);
 
 } // namespace hf_ele_mc_red
 DECLARE_SOA_TABLE(HFeleMCRedTable, "AOD", "HFELERED",
-                  hf_ele_mc_red::Eta, hf_ele_mc_red::Phi, hf_ele_mc_red::pT, hf_ele_mc_red::SourcePDG, hf_ele_mc_red::DcaXY, hf_ele_mc_red::ProductionRadius);
+                  hf_ele_mc_red::Eta, hf_ele_mc_red::Phi, hf_ele_mc_red::Pt, hf_ele_mc_red::SourcePdg, hf_ele_mc_red::DcaXY, hf_ele_mc_red::ProductionRadius);
 } // namespace o2::aod
 
 /// Electron DCA analysis task
-struct HfTaskElectronDCA {
-  Produces<o2::aod::HFeleMCRedTable> HFeleTable;
+struct HfTreeCreatorElectronDCA {
+  Produces<o2::aod::HFeleMCRedTable> hfEleTable;
 
-  Configurable<float> yCandGenMax{"etaMax", 0.5, "pseudorapidity range"};
+  Configurable<float> etaRange{"etaRange", 0.5, "pseudorapidity range"};
   Configurable<float> pTMin{"pTMin", 0.5, "min pT"};
 
   HfHelper hfHelper;
@@ -76,7 +76,7 @@ struct HfTaskElectronDCA {
   {
     registry.get<TH1>(HIST("hZVertex"))->Fill(collision.posZ());
   }
-  PROCESS_SWITCH(HfTaskElectronDCA, processData, "Process Data", true);
+  PROCESS_SWITCH(HfTreeCreatorElectronDCA, processData, "Process Data", true);
 
   void processMc(aod::Collisions::iterator const& collision,
                  TracksWExtMc const& tracks,
@@ -90,10 +90,12 @@ struct HfTaskElectronDCA {
       registry.get<TH1>(HIST("hpTTracks"))->Fill(track.pt());
       if (track.pt() < pTMin)
         continue;
+      if (std::abs(track.eta()) > etaRange)
+        continue;
       if (track.mcParticleId() < 1)
         continue;
       auto mcTrack = track.mcParticle();
-      if (std::abs(mcTrack.pdgCode()) == 11) {
+      if (std::abs(mcTrack.pdgCode()) == kElectron) {
         bool isConversion = false;
         bool isBeauty = false;
         bool isCharm = false;
@@ -102,14 +104,13 @@ struct HfTaskElectronDCA {
         auto motherTracks = mcTrack.mothers_as<aod::McParticles>();
         int numberOfMothers = motherTracks.size();
         // Categorise the electron sources
-        int Generation = 1;
         int firstMotherPDG = motherTracks[0].pdgCode();
-        if (firstMotherPDG == 22)
+        if (firstMotherPDG == kGamma)
           isConversion = true;
         while (numberOfMothers == 1) // loop through all generations
         {
           pdgCode = motherTracks[0].pdgCode();
-          absPDGCode = abs(pdgCode);
+          absPDGCode = std::abs(pdgCode);
           if (int(absPDGCode / 100) == 4 || int(absPDGCode / 1000) == 4) {
             isCharm = true;
             sourcePDG = pdgCode;
@@ -121,7 +122,6 @@ struct HfTaskElectronDCA {
           auto firstMother = motherTracks[0];
           motherTracks = firstMother.mothers_as<aod::McParticles>();
           numberOfMothers = motherTracks.size();
-          Generation++;
         }
         if (!isBeauty && !isCharm) {
           if (isConversion)
@@ -129,14 +129,14 @@ struct HfTaskElectronDCA {
           else
             sourcePDG = firstMotherPDG;
         }
-        HFeleTable(track.eta(), track.phi(), track.pt(), sourcePDG, track.dcaXY(), productionRadius);
+        hfEleTable(track.eta(), track.phi(), track.pt(), sourcePDG, track.dcaXY(), productionRadius);
       }
     }
   }
-  PROCESS_SWITCH(HfTaskElectronDCA, processMc, "Process MC", false);
+  PROCESS_SWITCH(HfTreeCreatorElectronDCA, processMc, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskElectronDCA>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTreeCreatorElectronDCA>(cfgc)};
 }
