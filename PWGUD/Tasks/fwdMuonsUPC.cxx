@@ -945,10 +945,10 @@ struct fwdMuonsUPC {
 
       // check that the method used here gets the the MC particles
       // as the one used by Nazar
-      auto nz_trMc1 = McParts.iteratorAt(tr1.udMcParticleId());
-      auto nz_trMc2 = McParts.iteratorAt(tr2.udMcParticleId());
+      auto nzTrMc1 = McParts.iteratorAt(tr1.udMcParticleId());
+      auto nzTrMc2 = McParts.iteratorAt(tr2.udMcParticleId());
 
-      if (nz_trMc1 != trMc1)
+      if (nzTrMc1 != trMc1)
         LOGF(info, "diff wrt Nazar!");
       processMcRecoCand(cand, tr1, trMc1, tr2, trMc2);
     }
