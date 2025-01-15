@@ -921,7 +921,7 @@ struct FwdMuonsUPC {
   // process reco MC (gen info included)
   void processMcReco(CandidatesFwd const& eventCandidates,
                      CompleteFwdTracks const& fwdTracks,
-                     /*aod::UDMcCollisions const& mcCandidates,*/
+                     aod::UDMcCollisions const&,
                      aod::UDMcParticles const& McParts)
   {
     std::unordered_map<int32_t, std::vector<int32_t>> tracksPerCandAll;
