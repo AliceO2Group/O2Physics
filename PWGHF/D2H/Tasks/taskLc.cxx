@@ -552,7 +552,7 @@ struct HfTaskLc {
 
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
 
-          if (fillThn) {
+          if (fillTHn) {
             registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, yGen, numPvContributors, ptGenB, originType);
           } else {
             registry.fill(HIST("MC/generated/prompt/hPtGenPrompt"), ptGen);
@@ -566,7 +566,7 @@ struct HfTaskLc {
         }
         if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
           ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
-          if (fillThn) {
+          if (fillTHn) {
             registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, yGen, numPvContributors, ptGenB, originType);
           } else {
             registry.fill(HIST("MC/generated/nonprompt/hPtGenNonPrompt"), ptGen);
