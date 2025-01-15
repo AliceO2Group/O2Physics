@@ -1204,7 +1204,7 @@ class TestNameFileWorkflow(TestSpec):
                 continue
             # Extract struct name.
             words = line.split()
-            if not words[1].isalnum():  # "struct : ..."
+            if not words[1].isidentifier():  # "struct : ..."
                 continue
             struct_name = words[1]
             struct_names.append(struct_name)
