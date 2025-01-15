@@ -663,7 +663,7 @@ struct k892analysis_PbPb {
   }
   PROCESS_SWITCH(k892analysis_PbPb, processSameEvent, "Process Same event", true);
 
-  void processRotationalBkg(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
+  void processRotationalBkg(EventCandidates::iterator const& collision, TrackCandidates const&, aod::BCs const&)
   {
     if (!collision.sel8()) {
       return;
