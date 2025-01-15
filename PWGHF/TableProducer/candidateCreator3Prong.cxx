@@ -148,13 +148,13 @@ struct HfCandidateCreator3Prong {
     }
 
     // histograms
-    registry.add("hMass3PKPi", "3-prong candidates;inv. mass (pK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{1200, 1.8, 3.0}}});
-    registry.add("hMass3PiKP", "3-prong candidates;inv. mass (#pi Kp) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{1200, 1.8, 3.0}}});
-    registry.add("hMass3PiKPi", "3-prong candidates;inv. mass (#pi K#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{600, 1.6, 2.2}}});
-    registry.add("hMass3KKPi", "3-prong candidates;inv. mass (KK #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{600, 1.7, 2.3}}});
-    registry.add("hMass3PiKK", "3-prong candidates;inv. mass (#pi KK) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{600, 1.7, 2.3}}});
-    registry.add("hMass2KPi", "2-prong pairs;inv. mass (K#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{1200, 0.8, 2.0}}});
-    registry.add("hMass2PiK", "2-prong pairs;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{1200, 0.8, 2.0}}});
+    registry.add("hMass3PKPi", "3-prong candidates;inv. mass (pK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{1200, 1.8, 3.0}}});
+    registry.add("hMass3PiKP", "3-prong candidates;inv. mass (#pi Kp) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{1200, 1.8, 3.0}}});
+    registry.add("hMass3PiKPi", "3-prong candidates;inv. mass (#pi K#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{600, 1.6, 2.2}}});
+    registry.add("hMass3KKPi", "3-prong candidates;inv. mass (KK #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{600, 1.7, 2.3}}});
+    registry.add("hMass3PiKK", "3-prong candidates;inv. mass (#pi KK) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{600, 1.7, 2.3}}});
+    registry.add("hMass2KPi", "2-prong pairs;inv. mass (K#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{1200, 0.8, 2.0}}});
+    registry.add("hMass2PiK", "2-prong pairs;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{1200, 0.8, 2.0}}});
     registry.add("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
     registry.add("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     registry.add("hCovPVYY", "3-prong candidates;YY element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
