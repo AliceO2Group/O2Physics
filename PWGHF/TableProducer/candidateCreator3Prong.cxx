@@ -356,56 +356,6 @@ struct HfCandidateCreator3Prong {
     }
   }
 
-  float KFCalculateChi2ToPrimaryVertex(KFParticle track, const KFParticle& vtx)
-  { // track must be passed as a copy
-    const float PvPoint[3] = {vtx.X(), vtx.Y(), vtx.Z()};
-
-    track.TransportToPoint(PvPoint);
-    return track.GetDeviationFromVertex(vtx);
-  }
-
-  std::array<float, 3> KFCalculateProngMomentumInSecondaryVertex(KFParticle track, const KFParticle& vtx)
-  { // track must be passed as a copy
-    const float PvPoint[3] = {vtx.X(), vtx.Y(), vtx.Z()};
-
-    track.TransportToPoint(PvPoint);
-    return {track.GetPx(), track.GetPy(), track.GetPz()};
-  }
-
-  float KFCalculateDistanceBetweenParticles(KFParticle track1, KFParticle track2)
-  { // tracks must be passed as a copy
-    float dS[2];
-    float dsdr[4][6];
-    float params1[8], params2[8];
-    float covs1[36], covs2[36];
-    track1.GetDStoParticle(track2, dS, dsdr);
-    track1.Transport(dS[0], dsdr[0], params1, covs1);
-    track2.Transport(dS[1], dsdr[3], params2, covs2);
-    const float dx = params1[0] - params2[0];
-    const float dy = params1[1] - params2[1];
-    const float dz = params1[2] - params2[2];
-    return std::sqrt(dx * dx + dy * dy + dz * dz);
-  }
-
-  float KFCalculateChi2geoBetweenParticles(KFParticle track1, KFParticle track2)
-  { // tracks must be passed as a copy
-    KFParticle kfPair;
-    const KFParticle* kfDaughters[3] = {&track1, &track2};
-    kfPair.SetConstructMethod(2);
-    kfPair.Construct(kfDaughters, 2);
-
-    return kfPair.Chi2() / kfPair.NDF();
-  }
-
-  std::pair<float, float> KFCalculateLdL(KFParticle candidate, const KFParticle& vtx)
-  { // candidate must be passed as a copy
-    float l, dl;
-    candidate.SetProductionVertex(vtx);
-    candidate.KFParticleBase::GetDecayLength(l, dl);
-
-    return std::make_pair(l, dl);
-  }
-
   template <bool doPvRefit = false, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename Cand>
   void runCreator3ProngWithKFParticle(Coll const&,
                                       Cand const& rowsTrackIndexProng3,
@@ -493,17 +443,17 @@ struct HfCandidateCreator3Prong {
         registry.fill(HIST("hDcaZProngs"), track2.pt(), UndefValueFloat);
       }
 
-      const float chi2primFirst = KFCalculateChi2ToPrimaryVertex(kfFirstProton, KFPV);
-      const float chi2primSecond = KFCalculateChi2ToPrimaryVertex(kfSecondKaon, KFPV);
-      const float chi2primThird = KFCalculateChi2ToPrimaryVertex(kfThirdPion, KFPV);
+      const float chi2primFirst = kfCalculateChi2ToPrimaryVertex(kfFirstProton, KFPV);
+      const float chi2primSecond = kfCalculateChi2ToPrimaryVertex(kfSecondKaon, KFPV);
+      const float chi2primThird = kfCalculateChi2ToPrimaryVertex(kfThirdPion, KFPV);
 
-      const float dcaSecondThird = KFCalculateDistanceBetweenParticles(kfSecondKaon, kfThirdPion);
-      const float dcaFirstThird = KFCalculateDistanceBetweenParticles(kfFirstProton, kfThirdPion);
-      const float dcaFirstSecond = KFCalculateDistanceBetweenParticles(kfFirstProton, kfSecondKaon);
+      const float dcaSecondThird = kfCalculateDistanceBetweenParticles(kfSecondKaon, kfThirdPion);
+      const float dcaFirstThird = kfCalculateDistanceBetweenParticles(kfFirstProton, kfThirdPion);
+      const float dcaFirstSecond = kfCalculateDistanceBetweenParticles(kfFirstProton, kfSecondKaon);
 
-      const float chi2geoSecondThird = KFCalculateChi2geoBetweenParticles(kfSecondKaon, kfThirdPion);
-      const float chi2geoFirstThird = KFCalculateChi2geoBetweenParticles(kfFirstProton, kfThirdPion);
-      const float chi2geoFirstSecond = KFCalculateChi2geoBetweenParticles(kfFirstProton, kfSecondKaon);
+      const float chi2geoSecondThird = kfCalculateChi2geoBetweenParticles(kfSecondKaon, kfThirdPion);
+      const float chi2geoFirstThird = kfCalculateChi2geoBetweenParticles(kfFirstProton, kfThirdPion);
+      const float chi2geoFirstSecond = kfCalculateChi2geoBetweenParticles(kfFirstProton, kfSecondKaon);
 
       // Λc± → p± K∓ π±,  Ξc± → p± K∓ π±
       KFParticle kfCandPKPi;
@@ -550,12 +500,12 @@ struct HfCandidateCreator3Prong {
       const float massPiK = kfPairPiK.GetMass();
 
       const float chi2geo = kfCandPKPi.Chi2() / kfCandPKPi.NDF();
-      const float chi2topo = KFCalculateChi2ToPrimaryVertex(kfCandPKPi, KFPV);
-      const std::pair<float, float> ldl = KFCalculateLdL(kfCandPKPi, KFPV);
+      const float chi2topo = kfCalculateChi2ToPrimaryVertex(kfCandPKPi, KFPV);
+      const std::pair<float, float> ldl = kfCalculateLdL(kfCandPKPi, KFPV);
 
-      std::array<float, 3> pProng0 = KFCalculateProngMomentumInSecondaryVertex(kfFirstProton, kfCandPiKP);
-      std::array<float, 3> pProng1 = KFCalculateProngMomentumInSecondaryVertex(kfSecondKaon, kfCandPiKP);
-      std::array<float, 3> pProng2 = KFCalculateProngMomentumInSecondaryVertex(kfThirdPion, kfCandPiKP);
+      std::array<float, 3> pProng0 = kfCalculateProngMomentumInSecondaryVertex(kfFirstProton, kfCandPiKP);
+      std::array<float, 3> pProng1 = kfCalculateProngMomentumInSecondaryVertex(kfSecondKaon, kfCandPiKP);
+      std::array<float, 3> pProng2 = kfCalculateProngMomentumInSecondaryVertex(kfThirdPion, kfCandPiKP);
 
       registry.fill(HIST("hCovSVXX"), kfCandPKPi.Covariance(0, 0));
       registry.fill(HIST("hCovSVYY"), kfCandPKPi.Covariance(1, 1));
