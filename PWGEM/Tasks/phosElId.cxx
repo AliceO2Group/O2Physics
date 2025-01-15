@@ -507,7 +507,7 @@ struct PhosElId {
     }
 
     // get PHOS radius
-    constexpr float ShiftY = -1.26;  // Depth-optimized
+    constexpr float ShiftY = -1.26;    // Depth-optimized
     double posL[3] = {0., 0., ShiftY}; // local position at the center of module
     double posG[3] = {0};
     geomPHOS->getAlignmentMatrix(module)->LocalToMaster(posL, posG);
@@ -962,7 +962,7 @@ struct TpcElIdMassSpectrum {
         continue;
       if (!track2.has_collision() || !track2.hasTPC())
         continue;
-      if (track1.collisionId() != track2.collisionId()) 
+      if (track1.collisionId() != track2.collisionId())
         continue;
       if (!((track1.itsClusterMap() & uint8_t(1)) > 0) || !((track2.itsClusterMap() & uint8_t(1)) > 0))
         continue;
