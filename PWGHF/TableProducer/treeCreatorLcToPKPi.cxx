@@ -332,7 +332,7 @@ struct HfTreeCreatorLcToPKPi {
   Configurable<float> downSampleBkgPtMax{"downSampleBkgPtMax", 100.f, "Max. pt for background downsampling"};
 
   constexpr static float UndefValueFloat = -999.f;
-  constexpr static float UndefValueInt = -999;
+  constexpr static int UndefValueInt = -999;
   constexpr static float NanoToPico = 1000.f;
 
   HfHelper hfHelper;
