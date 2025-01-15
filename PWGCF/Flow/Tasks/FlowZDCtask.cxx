@@ -87,7 +87,7 @@ struct FlowZDCtask {
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.30, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00}, "pt axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {3500, 0, 3500}, "centrality axis for histograms"};
   ConfigurableAxis axisEnergy{"axisEnergy", {100, 0, 700}, "energy axis for zdc histos"};
-  ConfigurableAxis axismulttpc{"axisaxisMultTPC", {1000, -0.5f, 1999.5f}, "TPCmultiplicity"};
+  ConfigurableAxis axisMultTpc{"axisaxisMultTPC", {1000, -0.5f, 1999.5f}, "TPCmultiplicity"};
   ConfigurableAxis axisZN{"axisZN", {5000, 0, 500}, "axisZN"};
   ConfigurableAxis axisZP{"axisZP", {5000, 0, 500}, "axisZP"};
   ConfigurableAxis axisFT0CAmp{"axisFT0CAmp", {60000, 0, 60000}, "axisFT0CAmp"};
@@ -154,7 +154,7 @@ struct FlowZDCtask {
     histos.add("multHistogram", "multHistogram", kTH1F, {axisMultiplicity});
     histos.add("multvsCent", "centrality vs multiplicity", kTH2F, {axisCent, axisMultiplicity});
     histos.add("phiHistogram", "phiHistogram", kTH1F, {axisPhi});
-    histos.add("TPCmultiplicity", "TPCmultiplicity", kTH1F, {axismulttpc});
+    histos.add("TPCmultiplicity", "TPCmultiplicity", kTH1F, {axisMultTpc});
 
     histos.add("REqHistogram", "REqHistogram", kTH1F, {axisQ});
     histos.add("IMqHistogram", "IMqHistogram", kTH1F, {axisQ});
