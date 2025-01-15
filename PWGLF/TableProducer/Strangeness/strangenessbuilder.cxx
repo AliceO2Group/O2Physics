@@ -1230,8 +1230,8 @@ struct StrangenessBuilder {
   }
 
   //__________________________________________________
-  template <class TTracks, typename TCollisions, typename TCascades>
-  void buildKFCascades(TCollisions const& collisions, TCascades const& cascades)
+  template <class TTracks, typename TCollisions, typename TCascades, typename TMCParticles>
+  void buildKFCascades(TCollisions const& collisions, TCascades const& cascades, TMCParticles const& mcParticles)
   {
     if(!mEnabledTables[kStoredKFCascCores]){ 
       return; // don't do if no request for cascades in place
@@ -1291,14 +1291,26 @@ struct StrangenessBuilder {
       if (mEnabledTables[kKFCascCovs]) {
         kfcasccovs(straHelper.cascade.covariance, straHelper.cascade.kfTrackCovarianceV0, straHelper.cascade.kfTrackCovariancePos, straHelper.cascade.kfTrackCovarianceNeg);
       }
-    }
+
+      //_________________________________________________________
+      // MC handling part (labels only)
+      if constexpr (requires { TMCParticles::iterator; }) {
+        // only worry about this if someone else worried about this
+        if((mEnabledTables[kMcKFCascLabels])){
+          extractMonteCarloProperties(posTrack, negTrack, bachTrack, mcParticles);
+
+          // Construct label table (note: this will be joinable with KFCascDatas)
+          kfcasclabels(thisCascInfo.label, thisCascInfo.motherLabel);
+        } // enabled tables check 
+      } // constexpr requires mcParticles check
+    } // end loop over cascades
       
     LOGF(info, "KF Cascades in DF: %i, KF cascades built: %i", cascades.size(), nCascades);
   }
 
   //__________________________________________________
-  template <class TTracks, typename TCollisions, typename TStrangeTracks>
-  void buildTrackedCascades(TCollisions const& collisions, TStrangeTracks const& cascadeTracks)
+  template <class TTracks, typename TCollisions, typename TStrangeTracks, typename TMCParticles>
+  void buildTrackedCascades(TCollisions const& collisions, TStrangeTracks const& cascadeTracks, TMCParticles const& mcParticles)
   {
     if(!mEnabledTables[kStoredTraCascCores]){ 
       return; // don't do if no request for cascades in place
@@ -1375,7 +1387,19 @@ struct StrangenessBuilder {
         }
         tracasccovs(traCovMatArray);
       }
-    }
+
+      //_________________________________________________________
+      // MC handling part (labels only)
+      if constexpr (requires { TMCParticles::iterator; }) {
+        // only worry about this if someone else worried about this
+        if((mEnabledTables[kMcTraCascLabels])){
+          extractMonteCarloProperties(posTrack, negTrack, bachTrack, mcParticles);
+
+          // Construct label table (note: this will be joinable with KFCascDatas)
+          tracasclabels(thisCascInfo.label, thisCascInfo.motherLabel);
+        } // enabled tables check 
+      } // constexpr requires mcParticles check
+    } // end loop over cascades
     LOGF(info, "Tracked cascades in DF: %i, tracked cascades built: %i", cascadeTracks.size(), nCascades);
   }
 
@@ -1427,11 +1451,11 @@ struct StrangenessBuilder {
     
     // build cascades
     buildCascades<TTracks>(collisions, cascades, mcParticles);
-    buildKFCascades<TTracks>(collisions, cascades);
+    buildKFCascades<TTracks>(collisions, cascades, mcParticles);
 
     // build tracked cascades only if subscription is Run 3 like (doesn't exist in Run 2)
     if constexpr (requires { TTrackedCascades::iterator; }) {
-      buildTrackedCascades<TTracks>(collisions, trackedCascades);
+      buildTrackedCascades<TTracks>(collisions, trackedCascades, mcParticles);
     }
 
     populateCascadeInterlinks();
