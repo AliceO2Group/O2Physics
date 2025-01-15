@@ -11,8 +11,7 @@
 //
 /// \author Yubiao Wang <yubiao.wang@cern.ch>
 /// \file jetChargedV2.cxx
-/// \brief This file contains the implementation for the Charged Jet v2 analysis in the ALICE experiment.
-
+/// \brief This file contains the implementation for the Charged Jet v2 analysis in the ALICE experiment
 
 #include <chrono>
 #include <string>
@@ -71,7 +70,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct jetchargedv2Task {
+struct JetChargedV2 {
   HistogramRegistry registry;
   HistogramRegistry histosQA{"histosQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
@@ -459,7 +458,7 @@ struct jetchargedv2Task {
       }
     }
   }
-  PROCESS_SWITCH(jetchargedv2Task, processInOutJetV2, "Jet V2 in and out of plane", true);
+  PROCESS_SWITCH(JetChargedV2, processInOutJetV2, "Jet V2 in and out of plane", true);
 
   void processSigmaPt(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors>>::iterator const& collision,
                       soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
@@ -739,7 +738,7 @@ struct jetchargedv2Task {
     }
     evtnum += 1;
   }
-  PROCESS_SWITCH(jetchargedv2Task, processSigmaPt, "Sigma pT and bkg as fcn of phi", true);
+  PROCESS_SWITCH(JetChargedV2, processSigmaPt, "Sigma pT and bkg as fcn of phi", true);
 
   void processRandomConeDataV2(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors>>::iterator const& collision,
                                soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
@@ -803,7 +802,7 @@ struct jetchargedv2Task {
       registry.fill(HIST("h3_centrality_deltapT_RandomCornPhi_rhorandomconewithoutleadingjet"), collision.centrality(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho(), rcPhiPsi2, 1.0);
     }
   }
-  PROCESS_SWITCH(jetchargedv2Task, processRandomConeDataV2, "QA for random cone estimation of background fluctuations in data", true);
+  PROCESS_SWITCH(JetChargedV2, processRandomConeDataV2, "QA for random cone estimation of background fluctuations in data", true);
 
   void processTracksQA(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors>>::iterator const& collision,
                        soa::Filtered<aod::JetTracks> const& tracks)
@@ -823,10 +822,10 @@ struct jetchargedv2Task {
       registry.fill(HIST("h2_centrality_track_phi"), collision.centrality(), track.phi());
     }
   }
-  PROCESS_SWITCH(jetchargedv2Task, processTracksQA, "QA for charged tracks", true);
+  PROCESS_SWITCH(JetChargedV2, processTracksQA, "QA for charged tracks", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<jetchargedv2Task>(cfgc, TaskName{"jetChargedV2"})};
+  return WorkflowSpec{adaptAnalysisTask<JetChargedV2>(cfgc, TaskName{"jet-charged-v2"})};
 }
