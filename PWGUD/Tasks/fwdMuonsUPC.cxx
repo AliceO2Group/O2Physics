@@ -642,7 +642,7 @@ struct fwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (std::abs(McPart1.pdgCode()) !=13 && std::abs(McPart2.pdgCode()) != 13)
+    if (std::abs(McPart1.pdgCode()) != 13 && std::abs(McPart2.pdgCode()) != 13)
       LOGF(info, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
 
     // create Lorentz vectors
@@ -711,7 +711,7 @@ struct fwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (std::abs(McPart1.pdgCode()) !=13 && std::abs(McPart2.pdgCode()) != 13)
+    if (std::abs(McPart1.pdgCode()) != 13 && std::abs(McPart2.pdgCode()) != 13)
       LOGF(info, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
 
     // V0 selection
@@ -930,7 +930,7 @@ struct fwdMuonsUPC {
     // loop over the candidates
     for (const auto& item : tracksPerCandAll) {
       if (item.second.size() != 4) {
-        LOGF(info, "number track (reco + gen) = %d",item.second.size());
+        LOGF(info, "number track (reco + gen) = %d", item.second.size());
         continue;
       }
 
@@ -947,8 +947,9 @@ struct fwdMuonsUPC {
       // as the one used by Nazar
       auto nz_trMc1 = McParts.iteratorAt(tr1.udMcParticleId());
       auto nz_trMc2 = McParts.iteratorAt(tr2.udMcParticleId());
-      
-      if(nz_trMc1 != trMc1) LOGF(info, "diff wrt Nazar!");
+
+      if (nz_trMc1 != trMc1)
+        LOGF(info, "diff wrt Nazar!");
       processMcRecoCand(cand, tr1, trMc1, tr2, trMc2);
     }
   }
