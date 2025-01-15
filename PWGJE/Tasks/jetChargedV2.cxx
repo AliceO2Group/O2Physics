@@ -5,11 +5,14 @@
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
 //
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+//
+/// \author Yubiao Wang <yubiao.wang@cern.ch>
 /// \file jetChargedV2.cxx
 /// \brief This file contains the implementation for the Charged Jet v2 analysis in the ALICE experiment.
-///
-/// \author Yubiao Wang <yubiao.wang@cern.ch>
-/// \date 2025
+
 
 #include <chrono>
 #include <string>
@@ -551,7 +554,7 @@ struct jetchargedv2Task {
     fFitModulationV2v3->SetParameter(3, 0.01);
 
     if (ep2 < 0) {
-      fFitModulationV2v3->FixParameter(2, RecoDecay::constrainAngle(ep2 + o2::constants::math::PI * 2)); //MARK
+      fFitModulationV2v3->FixParameter(2, RecoDecay::constrainAngle(ep2 + o2::constants::math::PI * 2));
     } else {
       fFitModulationV2v3->FixParameter(2, ep2);
     }
@@ -596,10 +599,8 @@ struct jetchargedv2Task {
     double chiSqr = 999.;
     double cDF = 1.;
 
-
     chiSqr = chi2;
     cDF = 1. - chiSquareCDF(nDF, chiSqr);
-
 
     registry.fill(HIST("h_PvalueCDF_CombinFit"), cDF);
     registry.fill(HIST("h2_PvalueCDFCent_CombinFit"), collision.centrality(), cDF);
