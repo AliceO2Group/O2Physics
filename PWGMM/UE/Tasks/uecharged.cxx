@@ -88,6 +88,9 @@ struct ueCharged {
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
   Configurable<bool> piluprejection{"piluprejection", true, "Pileup rejection"};
   Configurable<bool> goodzvertex{"goodzvertex", true, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference."};
+  Configurable<bool> sel8{"sel8", true, "Apply the sel8 event selection"};
+  Configurable<bool> removeITSROFBorder{"removeITSROFBorder", false, "Remove ITS Read-Out Frame border and only apply kIsTriggerTVX & kNoTimeFrameBorder (recommended for MC)"};
+  Configurable<bool> manuallyApplysel8{"manuallyApplysel8", false, "Apply manually the event selection criteria considered in sel8, ie. kIsTriggerTVX & kNoTimeFrameBorder & kNoITSROFrameBorder"};
 
   // acceptance cuts
   Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 0.8f, "Eta range for tracks"};
@@ -424,7 +427,15 @@ void ueCharged::processMeas(const C& collision, const T& tracks)
 
   ue.fill(HIST("hCounter"), 0);
 
-  if (!collision.sel8()) {
+  if (sel8 && !collision.sel8()) {
+    return;
+  }
+
+  if (removeITSROFBorder && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
+    return;
+  }
+
+  if (manuallyApplysel8 && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
     return;
   }
 
@@ -720,9 +731,18 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks, const P& part
   phiArrayTrue.clear();
   indexArrayTrue.clear();
 
-  if (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+  if (sel8 && !collision.sel8()) {
     return;
   }
+
+  if (removeITSROFBorder && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
+    return;
+  }
+
+  if (manuallyApplysel8 && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+    return;
+  }
+
   ue.fill(HIST("hCounter"), 1);
 
   if (piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
