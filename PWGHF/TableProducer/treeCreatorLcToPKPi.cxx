@@ -346,30 +346,37 @@ struct HfTreeCreatorLcToPKPi {
     const int flag = candidate.flagMcMatchRec();
     const int origin = candidate.originMcRec();
     const int swapped = candidate.isCandidateSwapped();
-    int status{-1}; // 0 bg, 1 prompt, 2 non-prompt, 3 wrong order of prongs, -1 default value (impossible, should not be the case)
+    enum SigBgStatus : int {
+      kBackground = 0,
+      kPrompt,
+      kNonPrompt,
+      kWrongOrder,
+      kDefault = -1 // impossible, should not be the case, to catch logical error if any
+    };
+    int status{kDefault};
 
     if (std::abs(flag) == (1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi)) {
       if (swapped == 0) {
         if (CandFlag == 0) {
           if (origin == RecoDecay::OriginType::Prompt)
-            status = 1;
+            status = kPrompt;
           else if (origin == RecoDecay::OriginType::NonPrompt)
-            status = 2;
+            status = kNonPrompt;
         } else {
-          status = 3;
+          status = kWrongOrder;
         }
       } else {
         if (CandFlag == 1) {
           if (origin == RecoDecay::OriginType::Prompt)
-            status = 1;
+            status = kPrompt;
           else if (origin == RecoDecay::OriginType::NonPrompt)
-            status = 2;
+            status = kNonPrompt;
         } else {
-          status = 3;
+          status = kWrongOrder;
         }
       }
     } else {
-      status = 0;
+      status = kBackground;
     }
 
     return status;
