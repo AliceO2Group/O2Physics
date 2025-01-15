@@ -438,6 +438,9 @@ struct Phik0shortanalysis {
       return false;
     if (track.tpcChi2NCl() > maxChi2TPC)
       return false;
+
+    if (std::abs(track.eta()) > etaMax)
+      return false;
     return true;
   }
 
@@ -473,6 +476,9 @@ struct Phik0shortanalysis {
 
     if (track.pt() < cMinKaonPtcut)
       return false;
+    if (std::abs(track.eta()) > etaMax)
+      return false;
+
     if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
       return false;
     if (std::abs(track.dcaXY()) > cMaxDCArToPV1 + (cMaxDCArToPV2 / std::pow(track.pt(), cMaxDCArToPV3)))
@@ -539,6 +545,8 @@ struct Phik0shortanalysis {
       return false;
 
     if (track.pt() < 0.3)
+      return false;
+    if (std::abs(track.eta()) > etaMax)
       return false;
 
     if constexpr (isTOFChecked) {
