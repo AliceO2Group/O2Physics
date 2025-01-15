@@ -511,7 +511,7 @@ struct Phik0shortanalysis {
   }
 
   // Topological selection for pions
-  template <typename T>
+  template <bool isTOFChecked, typename T>
   bool selectionPion(const T& track)
   {
     if (!track.hasITS())
@@ -530,11 +530,13 @@ struct Phik0shortanalysis {
     if (track.tpcChi2NCl() > maxChi2TPC)
       return false;
 
-    if (track.pt() < 0.2)
+    if (track.pt() < 0.3)
       return false;
 
-    if (track.pt() >= 0.5 && !track.hasTOF())
-      return false;
+    if constexpr (isTOFChecked) {
+      if (track.pt() >= 0.5 && !track.hasTOF())
+        return false;
+    }
 
     if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
       return false;
@@ -572,26 +574,25 @@ struct Phik0shortanalysis {
   template <bool isMC, typename T>
   void fillInvMassNSigma(const T& Pi, const std::vector<TLorentzVector>& listPhi, float multiplicity, const std::array<float, 3> weights)
   {
-    float nSigmaTPCPi = (Pi.hasTPC() ? Pi.tpcNSigmaPi() : -999);
     float nSigmaTOFPi = (Pi.hasTOF() ? Pi.tofNSigmaPi() : -999);
 
     for (const auto& Phi : listPhi) {
       if constexpr (!isMC) { // same event
-        dataPhiPionHist.fill(HIST("h5PhiPiSEInc"), multiplicity, Pi.pt(), nSigmaTPCPi, nSigmaTOFPi, Phi.M(), weights.at(0));
+        dataPhiPionHist.fill(HIST("h5PhiPiSEInc"), multiplicity, Pi.pt(), Pi.tpcNSigmaPi(), nSigmaTOFPi, Phi.M(), weights.at(0));
         if (std::abs(Pi.rapidity(massPi) - Phi.Rapidity()) > cfgFCutOnDeltaY)
           continue;
-        dataPhiPionHist.fill(HIST("h5PhiPiSEFCut"), multiplicity, Pi.pt(), nSigmaTPCPi, nSigmaTOFPi, Phi.M(), weights.at(1));
+        dataPhiPionHist.fill(HIST("h5PhiPiSEFCut"), multiplicity, Pi.pt(), Pi.tpcNSigmaPi(), nSigmaTOFPi, Phi.M(), weights.at(1));
         if (std::abs(Pi.rapidity(massPi) - Phi.Rapidity()) > cfgSCutOnDeltaY)
           continue;
-        dataPhiPionHist.fill(HIST("h5PhiPiSESCut"), multiplicity, Pi.pt(), nSigmaTPCPi, nSigmaTOFPi, Phi.M(), weights.at(2));
+        dataPhiPionHist.fill(HIST("h5PhiPiSESCut"), multiplicity, Pi.pt(), Pi.tpcNSigmaPi(), nSigmaTOFPi, Phi.M(), weights.at(2));
       } else { // MC event
-        closureMCPhiPionHist.fill(HIST("h5ClosureMCPhiPiSEInc"), multiplicity, Pi.pt(), nSigmaTPCPi, nSigmaTOFPi, Phi.M(), weights.at(0));
+        closureMCPhiPionHist.fill(HIST("h5ClosureMCPhiPiSEInc"), multiplicity, Pi.pt(), Pi.tpcNSigmaPi(), nSigmaTOFPi, Phi.M(), weights.at(0));
         if (std::abs(Pi.rapidity(massPi) - Phi.Rapidity()) > cfgFCutOnDeltaY)
           continue;
-        closureMCPhiPionHist.fill(HIST("h5ClosureMCPhiPiSEFCut"), multiplicity, Pi.pt(), nSigmaTPCPi, nSigmaTOFPi, Phi.M(), weights.at(1));
+        closureMCPhiPionHist.fill(HIST("h5ClosureMCPhiPiSEFCut"), multiplicity, Pi.pt(), Pi.tpcNSigmaPi(), nSigmaTOFPi, Phi.M(), weights.at(1));
         if (std::abs(Pi.rapidity(massPi) - Phi.Rapidity()) > cfgSCutOnDeltaY)
           continue;
-        closureMCPhiPionHist.fill(HIST("h5ClosureMCPhiPiSESCut"), multiplicity, Pi.pt(), nSigmaTPCPi, nSigmaTOFPi, Phi.M(), weights.at(2));
+        closureMCPhiPionHist.fill(HIST("h5ClosureMCPhiPiSESCut"), multiplicity, Pi.pt(), Pi.tpcNSigmaPi(), nSigmaTOFPi, Phi.M(), weights.at(2));
       }
     }
   }
@@ -692,7 +693,7 @@ struct Phik0shortanalysis {
 
         // Loop over all primary pion candidates
         for (const auto& track : fullTracks) {
-          if (!selectionPion(track))
+          if (!selectionPion<true>(track))
             continue;
 
           if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
@@ -809,7 +810,7 @@ struct Phik0shortanalysis {
     for (const auto& track : fullTracks) {
 
       // Pion selection
-      if (!selectionPion(track))
+      if (!selectionPion<true>(track))
         continue;
 
       if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
@@ -991,7 +992,7 @@ struct Phik0shortanalysis {
           if (std::abs(mcTrack.pdgCode()) != 211 || !mcTrack.isPhysicalPrimary())
             continue;
 
-          if (!selectionPion(track))
+          if (!selectionPion<true>(track))
             continue;
 
           if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
@@ -1118,7 +1119,7 @@ struct Phik0shortanalysis {
           continue;
 
         // Pion selection
-        if (!selectionPion(track))
+        if (!selectionPion<false>(track))
           continue;
 
         mcPionHist.fill(HIST("h4PiRapiditySmearing"), genmultiplicity, track.pt(), track.rapidity(massPi), mcTrack.y());
@@ -1243,7 +1244,7 @@ struct Phik0shortanalysis {
         // Loop over all primary pion candidates
         for (const auto& track : fullMCTracks) {
 
-          if (!selectionPion(track))
+          if (!selectionPion<true>(track))
             continue;
 
           if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
@@ -1364,7 +1365,7 @@ struct Phik0shortanalysis {
     for (const auto& track : fullMCTracks) {
 
       // Pion selection
-      if (!selectionPion(track))
+      if (!selectionPion<true>(track))
         continue;
 
       if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
