@@ -507,7 +507,7 @@ struct PhosElId {
     }
 
     // get PHOS radius
-    constexpr float ShiftY = -1.26  // Depth-optimized
+    constexpr float ShiftY = -1.26;  // Depth-optimized
     double posL[3] = {0., 0., ShiftY}; // local position at the center of module
     double posG[3] = {0};
     geomPHOS->getAlignmentMatrix(module)->LocalToMaster(posL, posG);
