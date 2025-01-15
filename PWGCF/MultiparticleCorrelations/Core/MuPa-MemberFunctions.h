@@ -1752,7 +1752,7 @@ void SpecificCuts(TString whichSpecificCuts)
 
     case eLHC15o:
 
-      // In this branch I implement cuts for Run 2 converted datasets which are never meant to be varied during systematic checks for that dataset:
+      // In this branch I implement default cuts and settings for Run 2 datasets:
 
       // Event cuts:
       // ec.fUseEventCuts[eSel7] = kTRUE; // TBI 20250115 ehen i procees in "Rec" some converted Run 2 MC, it removes 99% of events, see enum
