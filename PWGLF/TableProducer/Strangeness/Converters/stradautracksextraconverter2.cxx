@@ -24,15 +24,15 @@ struct stradautracksextraconverter2 {
   void process(aod::DauTrackExtras_001 const& dauTrackExtras_001)
   {
     for (auto& values : dauTrackExtras_001) {
-      const int maxFindable = 159;
-      int findableMinusFound = maxFindable-values.tpcClusters();
-      int findableMinusCrossedRows = maxFindable-values.tpcCrossedRows();
+      const int maxFindable = 130; // synthetic findable to ensure range is ok
+      int findableMinusFound = maxFindable - values.tpcClusters();
+      int findableMinusCrossedRows = maxFindable - values.tpcCrossedRows();
       dauTrackExtras_002(values.itsChi2PerNcl(),
                          values.detectorMap(),
                          values.itsClusterSizes(),
-                         static_cast<uint8_t>(maxFindable),              // findable set to max to ensure proper range
-                         static_cast<int8_t>(findableMinusFound),        // calculated based on max
-                         static_cast<int8_t>(findableMinusCrossedRows)); // calculated based on max
+                         static_cast<uint8_t>(maxFindable),              // findable (unknown in old format)
+                         static_cast<int8_t>(findableMinusFound),        // findable minus found: we know found
+                         static_cast<int8_t>(findableMinusCrossedRows)); // findable minus crossed rows: we know crossed rows
     }
   }
 };
