@@ -84,7 +84,7 @@ struct HfTreeCreatorElectronDCA {
   {
     registry.get<TH1>(HIST("hZVertex"))->Fill(collision.posZ());
     int pdgCode = 0, absPDGCode = 0, sourcePDG = 0;
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (!track.trackCutFlagFb3())
         continue;
       registry.get<TH1>(HIST("hpTTracks"))->Fill(track.pt());
@@ -111,11 +111,11 @@ struct HfTreeCreatorElectronDCA {
         {
           pdgCode = motherTracks[0].pdgCode();
           absPDGCode = std::abs(pdgCode);
-          if (int(absPDGCode / 100) == 4 || int(absPDGCode / 1000) == 4) {
+          if (static_cast<int>(absPDGCode / 100) == 4 || static_cast<int>(absPDGCode / 1000) == 4) {
             isCharm = true;
             sourcePDG = pdgCode;
           }
-          if (int(absPDGCode / 100) == 5 || int(absPDGCode / 1000) == 5) {
+          if (static_cast<int>(absPDGCode / 100) == 5 || static_cast<int>(absPDGCode / 1000) == 5) {
             isBeauty = true;
             sourcePDG = pdgCode; // already in order, since beauty would decay to charm
           }
@@ -125,7 +125,7 @@ struct HfTreeCreatorElectronDCA {
         }
         if (!isBeauty && !isCharm) {
           if (isConversion)
-            sourcePDG = 22;
+            sourcePDG = kGamma;
           else
             sourcePDG = firstMotherPDG;
         }
