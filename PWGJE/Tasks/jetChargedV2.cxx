@@ -111,7 +111,7 @@ struct JetChargedV2 {
   ConfigurableAxis cfgaxisQvec{"cfgaxisQvec", {100, -3, 3}, ""};
   ConfigurableAxis cfgaxisCent{"cfgaxisCent", {90, 0, 90}, ""};
 
-  ConfigurableAxis cfgaxisVnCent{"vnCent", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 50, 70, 100}, " % "};
+  ConfigurableAxis cfgAxisVnCent{"vnCent", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 50, 70, 100}, " % "};
 
   ConfigurableAxis cfgaxisEvtfit{"cfgaxisEvtfit", {10000, 0, 10000}, ""};
   EventPlaneHelper helperEP;
@@ -231,8 +231,8 @@ struct JetChargedV2 {
 
     registry.add("h2_evt_fitpara", "event vs fit parameter; evtnum; parameter", {HistType::kTH2F, {cfgaxisEvtfit, {5, 0., 5}}});
 
-    registry.add("h_v2obs_centrality", "fitparameter v2obs vs centrality ; #centrality", {HistType::kTProfile, {cfgaxisVnCent}});
-    registry.add("h_v3obs_centrality", "fitparameter v3obs vs centrality ; #centrality", {HistType::kTProfile, {cfgaxisVnCent}});
+    registry.add("h_v2obs_centrality", "fitparameter v2obs vs centrality ; #centrality", {HistType::kTProfile, {cfgAxisVnCent}});
+    registry.add("h_v3obs_centrality", "fitparameter v3obs vs centrality ; #centrality", {HistType::kTProfile, {cfgAxisVnCent}});
 
     registry.add("h2_centrality_rhophi", "centrality vs #rho(#varphi); centrality;  #rho(#varphi) ", {HistType::kTH2F, {{120, -10.0, 110.0}, {210, -10.0, 200.0}}});
     registry.add("h2_phi_rhophi", "#varphi vs #rho(#varphi); #varphi - #Psi_{EP,2};  #rho(#varphi) ", {HistType::kTH2F, {{40, 0., o2::constants::math::TwoPI}, {210, -10.0, 200.0}}});
@@ -553,12 +553,12 @@ struct JetChargedV2 {
     fFitModulationV2v3->SetParameter(3, 0.01);
 
     if (ep2 < 0) {
-      fFitModulationV2v3->FixParameter(2, RecoDecay::constrainAngle(ep2 + o2::constants::math::TwoPI));
+      fFitModulationV2v3->FixParameter(2, ep2 + o2::constants::math::TwoPI);
     } else {
       fFitModulationV2v3->FixParameter(2, ep2);
     }
     if (ep3 < 0) {
-      fFitModulationV2v3->FixParameter(4, RecoDecay::constrainAngle(ep3 + o2::constants::math::TwoPI));
+      fFitModulationV2v3->FixParameter(4, ep3 + o2::constants::math::TwoPI);
     } else {
       fFitModulationV2v3->FixParameter(4, ep3);
     }
