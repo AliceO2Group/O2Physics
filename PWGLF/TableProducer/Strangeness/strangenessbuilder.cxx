@@ -670,9 +670,9 @@ struct StrangenessBuilder {
     v0sFromCascades.clear();
     v0Map.clear();
     v0Map.resize(v0s.size(), -2); // marks not used
-    if(mEnabledTables[kStoredCascCores]){
+    if (mEnabledTables[kStoredCascCores]) {
       for (auto& cascade : cascades) {
-        if(v0Map[cascade.v0Id()]==-2){
+        if (v0Map[cascade.v0Id()] == -2) {
           v0sUsedInCascades++;
         }
         v0Map[cascade.v0Id()] = -1; // marks used (but isn't the index of a properly built V0, which would be >= 0)
@@ -680,11 +680,11 @@ struct StrangenessBuilder {
     }
     int trackedCascadeCount = 0;
     if constexpr (soa::is_table<TTrackedCascades>) {
-      if(mEnabledTables[kStoredTraCascCores]){
+      if (mEnabledTables[kStoredTraCascCores]) {
         trackedCascadeCount = trackedCascades.size();
         for (auto& trackedCascade : trackedCascades) {
-          auto const &cascade = trackedCascade.cascade();
-          if(v0Map[cascade.v0Id()]==-2){
+          auto const& cascade = trackedCascade.cascade();
+          if (v0Map[cascade.v0Id()] == -2) {
             v0sUsedInCascades++;
           }
           v0Map[cascade.v0Id()] = -1; // marks used (but isn't the index of a properly built V0, which would be >= 0)
@@ -724,14 +724,14 @@ struct StrangenessBuilder {
         v0dataLink(-1, -1);
         continue;
       }
-      if(v0Map[v0.globalIndex()]==-1){
+      if (v0Map[v0.globalIndex()] == -1) {
         v0Map[v0.globalIndex()] = v0sFromCascades.size(); // provide actual valid index in buffer
         v0sFromCascades.push_back(straHelper.v0);
       }
       // fill requested cursors only if type is not 0
       if (v0.v0Type() == 1 || (v0.v0Type() == 2 && v0BuilderOpts.generatePhotonCandidates)) {
         nV0s++;
-        if(mEnabledTables[kV0Indices]){
+        if (mEnabledTables[kV0Indices]) {
           // for referencing (especially - but not only - when using derived data)
           v0indices(v0.posTrackId(), v0.negTrackId(),
                     v0.collisionId(), v0.globalIndex());
