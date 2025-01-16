@@ -11,6 +11,7 @@
 
 // flow test for QC of synthetic flow exercise
 // cross-PWG effort in tracking studies
+// includes basic tracking, V0s and Cascades
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
