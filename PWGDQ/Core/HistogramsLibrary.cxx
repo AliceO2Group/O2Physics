@@ -105,7 +105,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "MultITSTPCWithPV_MultFT0C", "MultITSTPCWithPV_MultFT0C", false, 150, 0.0, 150.0, VarManager::kMultNTracksITSTPC, 250, 0.0, 2500.0, VarManager::kMultFT0C);
         hm->AddHistogram(histClass, "MultITSTPCWithPV_MultFT0A", "MultITSTPCWithPV_MultFT0A", false, 150, 0.0, 150.0, VarManager::kMultNTracksITSTPC, 250, 0.0, 2500.0, VarManager::kMultFT0A);
         hm->AddHistogram(histClass, "VtxZ_MultITSWithPV", "VtxZ vs MultITSWithPV", false, 240, -12.0, 12.0, VarManager::kVtxZ, 400, 0, 400.0, VarManager::kMultNTracksHasITS);
-        hm->AddHistogram(histClass, "VtxZ_MultTPCWithPV", "VtxZ vs MultTPCWithPV", false, 240, -12.0, 12.0, VarManager::kVtxZ, 400, 0, 400.0, VarManager::kMultNTracksHasTPC); 
+        hm->AddHistogram(histClass, "VtxZ_MultTPCWithPV", "VtxZ vs MultTPCWithPV", false, 240, -12.0, 12.0, VarManager::kVtxZ, 400, 0, 400.0, VarManager::kMultNTracksHasTPC);
         hm->AddHistogram(histClass, "VtxZ_MultITSTPCWithPV", "VtxZ vs MultITSTPCWithPV", false, 240, -12.0, 12.0, VarManager::kVtxZ, 400, 0, 400.0, VarManager::kMultNTracksITSTPC);
         hm->AddHistogram(histClass, "VtxZ_MultITSOnly", "VtxZ vs MultITSOnly", false, 240, -12.0, 12.0, VarManager::kVtxZ, 400, 0, 400.0, VarManager::kMultNTracksITSOnly);
       } else {
