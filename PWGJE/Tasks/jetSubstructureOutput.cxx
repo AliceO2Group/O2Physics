@@ -110,7 +110,7 @@ struct JetSubstructureOutputTask {
     jetMapping.insert(std::make_pair(jet.globalIndex(), jetOutputTable.lastIndex()));
   }
 
-  template <bool isMc, typename T, typename U, typename V, typename M, typename N>
+  template <bool isMCP, typename T, typename U, typename V, typename M, typename N>
   void analyseCharged(T const& collision, U const& jets, V& collisionOutputTable, M& jetOutputTable, N& jetSubstructureOutputTable, std::map<int32_t, int32_t>& jetMapping, float jetPtMin, float eventWeight)
   {
     int nJetInCollision = 0;
@@ -124,13 +124,17 @@ struct JetSubstructureOutputTask {
       }
       for (const auto& jetRadiiValue : jetRadiiValues) {
         if (jet.r() == round(jetRadiiValue * 100.0f)) {
-          if constexpr (!isMc) {
-            if (nJetInCollision == 0) {
-              collisionOutputTable(collision.posZ(), collision.centrality(), collision.eventSel(), eventWeight);
-              collisionIndex = collisionOutputTable.lastIndex();
+          if (nJetInCollision == 0) {
+            float centrality = -1.0;
+            uint8_t eventSel = 0.0;
+            if constexpr (!isMCP) {
+              centrality = collision.centrality();
+              eventSel = collision.eventSel();
             }
-            nJetInCollision++;
+            collisionOutputTable(collision.posZ(), centrality, eventSel, eventWeight);
+            collisionIndex = collisionOutputTable.lastIndex();
           }
+          nJetInCollision++;
           fillJetTables(jet, collisionIndex, jetOutputTable, jetSubstructureOutputTable, jetMapping);
         }
       }
