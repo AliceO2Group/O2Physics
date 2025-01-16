@@ -110,7 +110,7 @@ struct JetChargedV2 {
   ConfigurableAxis cfgAxisQvec{"cfgAxisQvec", {100, -3, 3}, ""};
   ConfigurableAxis cfgAxisCent{"cfgAxisCent", {90, 0, 90}, ""};
 
-  ConfigurableAxis cfgAxisVnCent{"vnCent", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 50, 70, 100}, " % "};
+  ConfigurableAxis cfgAxisVnCent{"cfgAxisVnCent", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 50, 70, 100}, " % "};
 
   ConfigurableAxis cfgAxisEvtfit{"cfgAxisEvtfit", {10000, 0, 10000}, ""};
   EventPlaneHelper helperEP;
@@ -337,6 +337,14 @@ struct JetChargedV2 {
     return true;
   }
 
+  void constrainToZeroToTwoPi(double angle)
+  {
+    angle = RecoDecay::constrainAngle(angle);
+    if (angle < 0) {
+        angle += o2::constants::math::TwoPI;
+    }
+  }
+
   void fillLeadingJetQA(double leadingJetPt, double leadingJetPhi, double leadingJetEta)
   {
     registry.fill(HIST("leadJetPt"), leadingJetPt);
@@ -548,22 +556,12 @@ struct JetChargedV2 {
     fFitModulationV2v3->SetParameter(1, 0.01);
     fFitModulationV2v3->SetParameter(3, 0.01);
 
-    double ep2fix = 0.;
-    double ep3fix = 0.;
-    ep2fix = RecoDecay::constrainAngle(ep2);
-    ep3fix = RecoDecay::constrainAngle(ep3);
-    if (ep2fix < 0) {
-      double ep2para = ep2 + o2::constants::math::TwoPI;
-      fFitModulationV2v3->FixParameter(2, ep2para);
-    } else {
-      fFitModulationV2v3->FixParameter(2, ep2fix);
-    }
-    if (ep3fix < 0) {
-      double ep3para = ep3 + o2::constants::math::TwoPI;
-      fFitModulationV2v3->FixParameter(4, ep3para);
-    } else {
-      fFitModulationV2v3->FixParameter(4, ep3fix);
-    }
+    constrainToZeroToTwoPi(ep2);
+    constrainToZeroToTwoPi(ep3);
+
+    fFitModulationV2v3->FixParameter(2, ep2);
+    fFitModulationV2v3->FixParameter(4, ep3);
+
     hPtsumSumptFit->Fit(fFitModulationV2v3, "V+", "ep", 0, o2::constants::math::TwoPI);
 
     double temppara[5];
