@@ -463,7 +463,7 @@ struct HfTreeCreatorLcToPKPi {
       auto trackNeg = candidate.template prong1_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>(); // positive daughter (negative for the antiparticles)
       auto fillTable = [&](int CandFlag) {
-        double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
+        double pseudoRndm = trackPos1.pt() * 1000. - static_cast<int64_t>(trackPos1.pt() * 1000);
         const int FunctionSelection = CandFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         const int sigbgstatus = DetermineSignalBgStatus(candidate, CandFlag);
         bool isMcCandidateSignal = (sigbgstatus == 1) || (sigbgstatus == 2);
@@ -836,7 +836,7 @@ struct HfTreeCreatorLcToPKPi {
       auto trackNeg = candidate.template prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       auto fillTable = [&](int CandFlag) {
-        double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
+        double pseudoRndm = trackPos1.pt() * 1000. - static_cast<int64_t>(trackPos1.pt() * 1000);
         const int FunctionSelection = CandFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         if (FunctionSelection >= selectionFlagLc && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
           float FunctionInvMass, FunctionInvMassKPi;
