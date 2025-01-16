@@ -17,9 +17,9 @@
 // ensure better computing resource (memory) management.
 //
 //  process functions:
-//  -- processPreselectTPCPID ..: pre-selects TPC dE/dx-compatible candidates.
+//
 //  -- processRealData .........: use this OR processSimulation but NOT both
-//  -- processSimulation .......: use this OR processRealData but NOT both
+//  -- processMonteCarlo .......: use this OR processRealData but NOT both
 //
 
 #include "Framework/runDataProcessing.h"
