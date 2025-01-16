@@ -337,14 +337,6 @@ struct JetChargedV2 {
     return true;
   }
 
-  void constrainToZeroToTwoPi(double angle)
-  {
-    angle = RecoDecay::constrainAngle(angle);
-    if (angle < 0) {
-        angle += o2::constants::math::TwoPI;
-    }
-  }
-
   void fillLeadingJetQA(double leadingJetPt, double leadingJetPhi, double leadingJetEta)
   {
     registry.fill(HIST("leadJetPt"), leadingJetPt);
@@ -556,11 +548,21 @@ struct JetChargedV2 {
     fFitModulationV2v3->SetParameter(1, 0.01);
     fFitModulationV2v3->SetParameter(3, 0.01);
 
-    constrainToZeroToTwoPi(ep2);
-    constrainToZeroToTwoPi(ep3);
+    double ep2fix = 0.;
+    double ep3fix = 0.;
 
-    fFitModulationV2v3->FixParameter(2, ep2);
-    fFitModulationV2v3->FixParameter(4, ep3);
+    if (ep2 < 0) {
+      ep2fix = RecoDecay::constrainAngle(ep2);
+      fFitModulationV2v3->FixParameter(2, ep2fix);
+    } else {
+      fFitModulationV2v3->FixParameter(2, ep2);
+    }
+    if (ep3 < 0) {
+      ep3fix = RecoDecay::constrainAngle(ep3);
+      fFitModulationV2v3->FixParameter(4, ep3fix);
+    } else {
+      fFitModulationV2v3->FixParameter(4, ep3);
+    }
 
     hPtsumSumptFit->Fit(fFitModulationV2v3, "V+", "ep", 0, o2::constants::math::TwoPI);
 
