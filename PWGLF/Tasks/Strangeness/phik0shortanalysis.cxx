@@ -90,6 +90,11 @@ struct Phik0shortanalysis {
   Configurable<float> v0SettingDCANegToPV{"v0SettingDCANegToPV", 0.06, "DCA Neg To PV"};
   Configurable<float> nSigmaCutTPCPion{"nSigmaCutTPCPion", 4.0, "Value of the TPC Nsigma cut for Pions"};
 
+  Configurable<bool> cfgFurtherV0Selection{"cfgFurtherV0Selection", true, "Further V0 selection"};
+  Configurable<float> ctauK0s{"ctauK0s", 20.0f, "C tau K0s(cm)"};
+  Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
+  Configurable<float> v0rejK0s{"v0rejK0s", 0.005, "V0 rej K0s"};
+
   // Configurables on K0S mass
   Configurable<float> lowMK0S{"lowMK0S", 0.48, "Lower limit on K0Short mass"};
   Configurable<float> upMK0S{"upMK0S", 0.52, "Upper limit on K0Short mass"};
@@ -139,6 +144,8 @@ struct Phik0shortanalysis {
   // Constants
   double massKa = o2::constants::physics::MassKPlus;
   double massPi = o2::constants::physics::MassPiPlus;
+  double massK0S = o2::constants::physics::MassK0Short;
+  double massLambda = o2::constants::physics::MassLambda0;
 
   // Defining filters for events (event selection)
   // Processed events will be already fulfilling the event selection requirements
@@ -463,6 +470,19 @@ struct Phik0shortanalysis {
     return true;
   }
 
+  // Further V0 selection
+  template <typename T1, typename T2>
+  bool furtherSelectionV0(const T1& v0, const T2& collision)
+  {
+    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massK0S > ctauK0s)
+      return false;
+    if  (v0.qtarm() < (paramArmenterosCut * std::abs(v0.alpha())))
+      return false;
+    if (std::abs(v0.masslambda() - massLambda) < v0rejK0s)
+      return false;
+    return true;
+  }
+
   // Topological track selection
   template <typename T>
   bool selectionTrackResonance(const T& track)
@@ -672,6 +692,8 @@ struct Phik0shortanalysis {
           // Cut on V0 dynamic columns
           if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
             continue;
+          if (cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
+            continue;
 
           if (!isFilledhV0) {
             candK0SHist.fill(HIST("hDCAV0Daughters"), v0.dcaV0daughters());
@@ -757,6 +779,8 @@ struct Phik0shortanalysis {
 
       // Cut on V0 dynamic columns
       if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
+        continue;
+      if (cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
         continue;
 
       if (std::abs(v0.yK0Short()) > cfgYAcceptance)
@@ -978,6 +1002,8 @@ struct Phik0shortanalysis {
           // Cut on V0 dynamic columns
           if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
             continue;
+          if (cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
+            continue;
 
           if (std::abs(v0.yK0Short()) > cfgYAcceptance)
             continue;
@@ -1069,6 +1095,8 @@ struct Phik0shortanalysis {
         const auto& negDaughterTrack = v0.negTrack_as<V0DauMCTracks>();
 
         if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
+          continue;
+        if (cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
           continue;
 
         mcK0SHist.fill(HIST("h4K0SRapiditySmearing"), genmultiplicity, v0.pt(), v0.yK0Short(), v0mcparticle.y());
@@ -1264,6 +1292,8 @@ struct Phik0shortanalysis {
 
           if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
             continue;
+          if (cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
+            continue;
 
           if (std::abs(v0.yK0Short()) > cfgYAcceptance)
             continue;
@@ -1341,6 +1371,8 @@ struct Phik0shortanalysis {
       const auto& negDaughterTrack = v0.negTrack_as<V0DauMCTracks>();
 
       if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
+        continue;
+      if (cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
         continue;
 
       if (std::abs(v0.yK0Short()) > cfgYAcceptance)
