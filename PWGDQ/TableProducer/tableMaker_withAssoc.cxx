@@ -1362,8 +1362,8 @@ struct TableMaker {
   }
 
   void processPPMuonMFTWithMultsExtra(MyEventsWithMultsExtra const& collisions, BCsWithTimestamps const& bcs,
-                                    MyMuonsWithCov const& muons, MFTTracks const& mftTracks,
-                                    FwdTrackAssoc const& fwdTrackAssocs, MFTTrackAssoc const& mftAssocs)
+                                      MyMuonsWithCov const& muons, MFTTracks const& mftTracks,
+                                      FwdTrackAssoc const& fwdTrackAssocs, MFTTrackAssoc const& mftAssocs)
   {
     fullSkimming<gkEventFillMapWithMultsExtra, 0u, gkMuonFillMapWithCov, gkMFTFillMap>(collisions, bcs, nullptr, nullptr, muons, mftTracks, nullptr, fwdTrackAssocs, mftAssocs);
   }
