@@ -1525,18 +1525,6 @@ struct Phik0shortanalysis {
           continue;
         if (!mcParticle2.isPhysicalPrimary())
           continue;
-        auto kDaughters2 = mcParticle2.daughters_as<aod::McParticles>();
-        if (kDaughters2.size() != 2)
-          continue;
-        bool isPosPion = false, isNegPion = false;
-        for (const auto& kDaughter2 : kDaughters2) {
-          if (kDaughter2.pdgCode() == 211)
-            isPosPion = true;
-          if (kDaughter2.pdgCode() == -211)
-            isNegPion = true;
-        }
-        if (!isPosPion || !isNegPion)
-          continue;
 
         if (std::abs(mcParticle2.y()) > cfgYAcceptance)
           continue;
@@ -1624,18 +1612,6 @@ struct Phik0shortanalysis {
       if (mcParticle1.pdgCode() != 310)
         continue;
       if (!mcParticle1.isPhysicalPrimary())
-        continue;
-      auto kDaughters1 = mcParticle1.daughters_as<aod::McParticles>();
-      if (kDaughters1.size() != 2)
-        continue;
-      bool isPosPion = false, isNegPion = false;
-      for (const auto& kDaughter1 : kDaughters1) {
-        if (kDaughter1.pdgCode() == 211)
-          isPosPion = true;
-        if (kDaughter1.pdgCode() == -211)
-          isNegPion = true;
-      }
-      if (!isPosPion || !isNegPion)
         continue;
       if (std::abs(mcParticle1.y()) > cfgYAcceptance)
         continue;
