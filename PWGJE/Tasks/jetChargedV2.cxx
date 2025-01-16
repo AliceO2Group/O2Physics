@@ -98,7 +98,7 @@ struct JetChargedV2 {
   Configurable<float> randomConeR{"randomConeR", 0.4, "size of random Cone for estimating background fluctuations"};
   Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range; only applied to reconstructed collisions (data and mcd jets), not mc collisions (mcp jets)"};
   Configurable<int> trackOccupancyInTimeRangeMin{"trackOccupancyInTimeRangeMin", -999999, "minimum occupancy of tracks in neighbouring collisions in a given time range; only applied to reconstructed collisions (data and mcd jets), not mc collisions (mcp jets)"};
-  Configurable<int> nTrackCut{"numberTrackCut", 500, "Number of Track Cut"};
+  Configurable<int> numberTrackCut{"numberTrackCut", 500, "Number of Track Cut"};
   //=====================< evt pln >=====================//
   Configurable<bool> cfgAddEvtSel{"cfgAddEvtSel", true, "event selection"};
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2}, "Modulation of interest"};
@@ -111,7 +111,7 @@ struct JetChargedV2 {
   ConfigurableAxis cfgaxisQvec{"cfgaxisQvec", {100, -3, 3}, ""};
   ConfigurableAxis cfgaxisCent{"cfgaxisCent", {90, 0, 90}, ""};
 
-  ConfigurableAxis cfgaxisVnCent{"VnCent", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 50, 70, 100}, " % "};
+  ConfigurableAxis cfgaxisVnCent{"vnCent", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 50, 70, 100}, " % "};
 
   ConfigurableAxis cfgaxisEvtfit{"cfgaxisEvtfit", {10000, 0, 10000}, ""};
   EventPlaneHelper helperEP;
@@ -209,11 +209,11 @@ struct JetChargedV2 {
     registry.add("h_accept_Track_Fit", "all and accept track;Track;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
 
     registry.add("h_ptsum_collnum", "ptsum collnum;collnum;entries", {HistType::kTH1F, {{40, 0.0, 40}}});
-    registry.add("h_ptsum_sumpt", "jet sumpt;sum p_{T};entries", {HistType::kTH1F, {{40, 0., o2::constants::math::PI * 2}}});
-    registry.add("h2_phi_track_eta", "phi vs track eta; #eta (GeV/#it{c}); #varphi", {HistType::kTH2F, {{100, -1.0, 1.0}, {40, 0., o2::constants::math::PI * 2}}});
-    registry.add("h2_phi_track_pt", "phi vs track pT; #it{p}_{T,track} (GeV/#it{c}); #varphi", {HistType::kTH2F, {{200, 0., 200.}, {40, 0., o2::constants::math::PI * 2}}});
-    registry.add("h2_centrality_phi_w_pt", "centrality vs jet #varphi; centrality; entries", {HistType::kTH2F, {{100, 0.0, 100.0}, {40, 0., o2::constants::math::PI * 2}}});
-    registry.add("h2_evtnum_phi_w_pt", "eventNumber vs jet #varphi; #eventNumber; entries", {HistType::kTH2F, {{1000, 0.0, 1000}, {40, 0., o2::constants::math::PI * 2}}});
+    registry.add("h_ptsum_sumpt", "jet sumpt;sum p_{T};entries", {HistType::kTH1F, {{40, 0., o2::constants::math::TwoPI}}});
+    registry.add("h2_phi_track_eta", "phi vs track eta; #eta (GeV/#it{c}); #varphi", {HistType::kTH2F, {{100, -1.0, 1.0}, {40, 0., o2::constants::math::TwoPI}}});
+    registry.add("h2_phi_track_pt", "phi vs track pT; #it{p}_{T,track} (GeV/#it{c}); #varphi", {HistType::kTH2F, {{200, 0., 200.}, {40, 0., o2::constants::math::TwoPI}}});
+    registry.add("h2_centrality_phi_w_pt", "centrality vs jet #varphi; centrality; entries", {HistType::kTH2F, {{100, 0.0, 100.0}, {40, 0., o2::constants::math::TwoPI}}});
+    registry.add("h2_evtnum_phi_w_pt", "eventNumber vs jet #varphi; #eventNumber; entries", {HistType::kTH2F, {{1000, 0.0, 1000}, {40, 0., o2::constants::math::TwoPI}}});
 
     //< fit quality >//
     registry.add("h_PvalueCDF_CombinFit", "cDF #chi^{2}; entries", {HistType::kTH1F, {{50, 0, 1}}});
@@ -227,7 +227,7 @@ struct JetChargedV2 {
     registry.add("h_evtnum_centrlity", "eventNumber vs centrality ; #eventNumber", {HistType::kTH1F, {{1000, 0.0, 1000}}});
     registry.add("h_evtnum_NTrk", "eventNumber vs Number of Track ; #eventNumber", {HistType::kTH1F, {{1000, 0.0, 1000}}});
 
-    registry.add("Thn_evtnum_phi_centrality", "eventNumber vs jet #varphi; #eventNumber; entries", {HistType::kTHnSparseF, {{1000, 0.0, 1000}, {40, 0., o2::constants::math::PI * 2}, {100, 0.0, 100.0}}});
+    registry.add("Thn_evtnum_phi_centrality", "eventNumber vs jet #varphi; #eventNumber; entries", {HistType::kTHnSparseF, {{1000, 0.0, 1000}, {40, 0., o2::constants::math::TwoPI}, {100, 0.0, 100.0}}});
 
     registry.add("h2_evt_fitpara", "event vs fit parameter; evtnum; parameter", {HistType::kTH2F, {cfgaxisEvtfit, {5, 0., 5}}});
 
@@ -235,9 +235,9 @@ struct JetChargedV2 {
     registry.add("h_v3obs_centrality", "fitparameter v3obs vs centrality ; #centrality", {HistType::kTProfile, {cfgaxisVnCent}});
 
     registry.add("h2_centrality_rhophi", "centrality vs #rho(#varphi); centrality;  #rho(#varphi) ", {HistType::kTH2F, {{120, -10.0, 110.0}, {210, -10.0, 200.0}}});
-    registry.add("h2_phi_rhophi", "#varphi vs #rho(#varphi); #varphi - #Psi_{EP,2};  #rho(#varphi) ", {HistType::kTH2F, {{40, 0., o2::constants::math::PI * 2}, {210, -10.0, 200.0}}});
+    registry.add("h2_phi_rhophi", "#varphi vs #rho(#varphi); #varphi - #Psi_{EP,2};  #rho(#varphi) ", {HistType::kTH2F, {{40, 0., o2::constants::math::TwoPI}, {210, -10.0, 200.0}}});
 
-    registry.add("h3_centrality_rhovsphi_phi", "centrality; #rho(#varphi); #Delta#varphi_{jet}", {HistType::kTH3F, {{120, -10.0, 110.0}, {200, 0.0, 200.0}, {40, 0., o2::constants::math::PI * 2}}});
+    registry.add("h3_centrality_rhovsphi_phi", "centrality; #rho(#varphi); #Delta#varphi_{jet}", {HistType::kTH3F, {{120, -10.0, 110.0}, {200, 0.0, 200.0}, {40, 0., o2::constants::math::TwoPI}}});
     //< \sigma p_T at local rho test plot | end >
 
     registry.add("h2_centrality_track_pt", "centrality vs track pT; centrality; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{1200, -10.0, 110.0}, {200, 0., 200.}}});
@@ -252,8 +252,8 @@ struct JetChargedV2 {
     registry.add("leadJetEta", "leadJet constituent #eta ", {HistType::kTH1F, {{100, -1.0, 1.0}}});
 
     //< RC test plots >//
-    registry.add("h3_centrality_deltapT_RandomCornPhi_rhorandomconewithoutleadingjet", "centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho}; #Delta#varphi_{jet}", {HistType::kTH3F, {{120, -10.0, 110.0}, {800, -400.0, 400.0}, {160, 0., o2::constants::math::PI * 2}}});
-    registry.add("h3_centrality_deltapT_RandomCornPhi_localrhovsphiwithoutleadingjet", "centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho}(#varphi); #Delta#varphi_{jet}", {HistType::kTH3F, {{120, -10.0, 110.0}, {800, -400.0, 400.0}, {160, 0., o2::constants::math::PI * 2}}});
+    registry.add("h3_centrality_deltapT_RandomCornPhi_rhorandomconewithoutleadingjet", "centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho}; #Delta#varphi_{jet}", {HistType::kTH3F, {{120, -10.0, 110.0}, {800, -400.0, 400.0}, {160, 0., o2::constants::math::TwoPI}}});
+    registry.add("h3_centrality_deltapT_RandomCornPhi_localrhovsphiwithoutleadingjet", "centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho}(#varphi); #Delta#varphi_{jet}", {HistType::kTH3F, {{120, -10.0, 110.0}, {800, -400.0, 400.0}, {160, 0., o2::constants::math::TwoPI}}});
 
     //< bkg sub plot | end >//
     //< median rho >//
@@ -374,7 +374,7 @@ struct JetChargedV2 {
         }
       }
     }
-    if (nTrk < nTrackCut) {
+    if (nTrk < numberTrackCut) {
       return;
     }
     //=====================< evt pln [n=2->\Psi_2, n=3->\Psi_3] >=====================//
@@ -427,7 +427,7 @@ struct JetChargedV2 {
           }
           phiMinusPsi2 = jet.phi() - evtPl2;
 
-          if ((phiMinusPsi2 < o2::constants::math::PI / 4) || (phiMinusPsi2 >= 7 * o2::constants::math::PI / 4) || (phiMinusPsi2 >= 3 * o2::constants::math::PI / 4 && phiMinusPsi2 < 5 * o2::constants::math::PI / 4)) {
+          if ((phiMinusPsi2 < o2::constants::math::PIQuarter) || (phiMinusPsi2 >= 7 * o2::constants::math::PIQuarter) || (phiMinusPsi2 >= 3 * o2::constants::math::PIQuarter && phiMinusPsi2 < 5 * o2::constants::math::PIQuarter)) {
             registry.fill(HIST("h_jet_pt_in_plane_v2"), jet.pt() - (collision.rho() * jet.area()), 1.0);
             registry.fill(HIST("h2_centrality_jet_pt_in_plane_v2"), collision.centrality(), jet.pt() - (collision.rho() * jet.area()), 1.0);
           } else {
@@ -447,7 +447,7 @@ struct JetChargedV2 {
           }
           phiMinusPsi3 = jet.phi() - evtPl3;
 
-          if ((phiMinusPsi3 < o2::constants::math::PI / 4) || (phiMinusPsi3 >= 7 * o2::constants::math::PI / 4) || (phiMinusPsi3 >= 3 * o2::constants::math::PI / 4 && phiMinusPsi3 < 5 * o2::constants::math::PI / 4)) {
+          if ((phiMinusPsi3 < o2::constants::math::PIQuarter) || (phiMinusPsi3 >= 7 * o2::constants::math::PIQuarter) || (phiMinusPsi3 >= 3 * o2::constants::math::PIQuarter && phiMinusPsi3 < 5 * o2::constants::math::PIQuarter)) {
             registry.fill(HIST("h_jet_pt_in_plane_v3"), jet.pt() - (collision.rho() * jet.area()), 1.0);
             registry.fill(HIST("h2_centrality_jet_pt_in_plane_v3"), collision.centrality(), jet.pt() - (collision.rho() * jet.area()), 1.0);
           } else {
@@ -494,9 +494,9 @@ struct JetChargedV2 {
       registry.fill(HIST("h_evtnum_NTrk"), evtnum, nTrk);
     }
 
-    TH1F* hPtsumSumptFit = new TH1F("h_ptsum_sumpt_fit", "h_ptsum_sumpt fit use", TMath::CeilNint(std::sqrt(nTrk)), 0., o2::constants::math::PI * 2);
+    TH1F* hPtsumSumptFit = new TH1F("h_ptsum_sumpt_fit", "h_ptsum_sumpt fit use", TMath::CeilNint(std::sqrt(nTrk)), 0., o2::constants::math::TwoPI);
 
-    if (nTrk < nTrackCut) {
+    if (nTrk < numberTrackCut) {
       return;
     }
 
@@ -545,24 +545,24 @@ struct JetChargedV2 {
     }
 
     TF1* fFitModulationV2v3 = 0x0;
-    const char* fitFunction_V2v3 = "[0] * (1. + 2. * ([1] * TMath::Cos(2. * (x - [2])) + [3] * TMath::Cos(3. * (x - [4]))))";
-    fFitModulationV2v3 = new TF1("fit_kV3", fitFunction_V2v3, 0, o2::constants::math::PI * 2);
+    const char* fitFunctionV2v3 = "[0] * (1. + 2. * ([1] * std::cos(2. * (x - [2])) + [3] * std::cos(3. * (x - [4]))))";
+    fFitModulationV2v3 = new TF1("fit_kV3", fitFunctionV2v3, 0, o2::constants::math::TwoPI);
     //=========================< set parameter >=========================//
     fFitModulationV2v3->SetParameter(0, 1.);
     fFitModulationV2v3->SetParameter(1, 0.01);
     fFitModulationV2v3->SetParameter(3, 0.01);
 
     if (ep2 < 0) {
-      fFitModulationV2v3->FixParameter(2, RecoDecay::constrainAngle(ep2 + o2::constants::math::PI * 2));
+      fFitModulationV2v3->FixParameter(2, RecoDecay::constrainAngle(ep2 + o2::constants::math::TwoPI));
     } else {
       fFitModulationV2v3->FixParameter(2, ep2);
     }
     if (ep3 < 0) {
-      fFitModulationV2v3->FixParameter(4, RecoDecay::constrainAngle(ep3 + o2::constants::math::PI * 2));
+      fFitModulationV2v3->FixParameter(4, RecoDecay::constrainAngle(ep3 + o2::constants::math::TwoPI));
     } else {
       fFitModulationV2v3->FixParameter(4, ep3);
     }
-    hPtsumSumptFit->Fit(fFitModulationV2v3, "V+", "ep", 0, o2::constants::math::PI * 2);
+    hPtsumSumptFit->Fit(fFitModulationV2v3, "V+", "ep", 0, o2::constants::math::TwoPI);
 
     double temppara[5];
     temppara[0] = fFitModulationV2v3->GetParameter(0);
@@ -639,7 +639,7 @@ struct JetChargedV2 {
           }
           phiMinusPsi2 = jet.phi() - evtPl2;
 
-          if ((phiMinusPsi2 < o2::constants::math::PI / 4) || (phiMinusPsi2 >= 7 * o2::constants::math::PI / 4) || (phiMinusPsi2 >= 3 * o2::constants::math::PI / 4 && phiMinusPsi2 < 5 * o2::constants::math::PI / 4)) {
+          if ((phiMinusPsi2 < o2::constants::math::PIQuarter) || (phiMinusPsi2 >= 7 * o2::constants::math::PIQuarter) || (phiMinusPsi2 >= 3 * o2::constants::math::PIQuarter && phiMinusPsi2 < 5 * o2::constants::math::PIQuarter)) {
             registry.fill(HIST("h_jet_pt_in_plane_v2_rho"), jet.pt() - (rholocal * jet.area()), 1.0);
             registry.fill(HIST("h2_centrality_jet_pt_in_plane_v2_rho"), collision.centrality(), jet.pt() - (rholocal * jet.area()), 1.0);
           } else {
@@ -658,7 +658,7 @@ struct JetChargedV2 {
           }
           phiMinusPsi3 = jet.phi() - evtPl3;
 
-          if ((phiMinusPsi3 < o2::constants::math::PI / 4) || (phiMinusPsi3 >= 7 * o2::constants::math::PI / 4) || (phiMinusPsi3 >= 3 * o2::constants::math::PI / 4 && phiMinusPsi3 < 5 * o2::constants::math::PI / 4)) {
+          if ((phiMinusPsi3 < o2::constants::math::PIQuarter) || (phiMinusPsi3 >= 7 * o2::constants::math::PIQuarter) || (phiMinusPsi3 >= 3 * o2::constants::math::PIQuarter && phiMinusPsi3 < 5 * o2::constants::math::PIQuarter)) {
             registry.fill(HIST("h_jet_pt_in_plane_v3_rho"), jet.pt() - (rholocal * jet.area()), 1.0);
             registry.fill(HIST("h2_centrality_jet_pt_in_plane_v3_rho"), collision.centrality(), jet.pt() - (rholocal * jet.area()), 1.0);
           } else {
@@ -827,5 +827,5 @@ struct JetChargedV2 {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<JetChargedV2>(cfgc, TaskName{"jet-charged-v2"})};
+  return WorkflowSpec{adaptAnalysisTask<JetChargedV2>(cfgc)};
 }
