@@ -476,7 +476,7 @@ struct Phik0shortanalysis {
   {
     if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massK0S > ctauK0s)
       return false;
-    if  (v0.qtarm() < (paramArmenterosCut * std::abs(v0.alpha())))
+    if (v0.qtarm() < (paramArmenterosCut * std::abs(v0.alpha())))
       return false;
     if (std::abs(v0.masslambda() - massLambda) < v0rejK0s)
       return false;
@@ -539,7 +539,7 @@ struct Phik0shortanalysis {
 
     daughter1.SetXYZM(track1.px(), track1.py(), track1.pz(), masscand1); // set the daughter1 4-momentum
     daughter2.SetXYZM(track2.px(), track2.py(), track2.pz(), masscand2); // set the daughter2 4-momentum
-    mother = daughter1 + daughter2;                                                  // calculate the mother 4-momentum
+    mother = daughter1 + daughter2;                                      // calculate the mother 4-momentum
 
     return mother;
   }
