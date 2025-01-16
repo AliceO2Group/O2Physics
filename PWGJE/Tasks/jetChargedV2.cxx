@@ -98,7 +98,6 @@ struct JetChargedV2 {
   Configurable<float> randomConeR{"randomConeR", 0.4, "size of random Cone for estimating background fluctuations"};
   Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range; only applied to reconstructed collisions (data and mcd jets), not mc collisions (mcp jets)"};
   Configurable<int> trackOccupancyInTimeRangeMin{"trackOccupancyInTimeRangeMin", -999999, "minimum occupancy of tracks in neighbouring collisions in a given time range; only applied to reconstructed collisions (data and mcd jets), not mc collisions (mcp jets)"};
-  Configurable<int> numberTrackCut{"numberTrackCut", 500, "Number of Track Cut"};
   //=====================< evt pln >=====================//
   Configurable<bool> cfgAddEvtSel{"cfgAddEvtSel", true, "event selection"};
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2}, "Modulation of interest"};
@@ -107,13 +106,13 @@ struct JetChargedV2 {
   Configurable<std::string> cfgRefAName{"cfgRefAName", "TPCpos", "The name of detector for reference A"};
   Configurable<std::string> cfgRefBName{"cfgRefBName", "TPCneg", "The name of detector for reference B"};
 
-  ConfigurableAxis cfgaxisQvecF{"cfgaxisQvecF", {300, -1, 1}, ""};
-  ConfigurableAxis cfgaxisQvec{"cfgaxisQvec", {100, -3, 3}, ""};
-  ConfigurableAxis cfgaxisCent{"cfgaxisCent", {90, 0, 90}, ""};
+  ConfigurableAxis cfgAxisQvecF{"cfgAxisQvecF", {300, -1, 1}, ""};
+  ConfigurableAxis cfgAxisQvec{"cfgAxisQvec", {100, -3, 3}, ""};
+  ConfigurableAxis cfgAxisCent{"cfgAxisCent", {90, 0, 90}, ""};
 
   ConfigurableAxis cfgAxisVnCent{"vnCent", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 50, 70, 100}, " % "};
 
-  ConfigurableAxis cfgaxisEvtfit{"cfgaxisEvtfit", {10000, 0, 10000}, ""};
+  ConfigurableAxis cfgAxisEvtfit{"cfgAxisEvtfit", {10000, 0, 10000}, ""};
   EventPlaneHelper helperEP;
   int detId;
   int refAId;
@@ -155,6 +154,7 @@ struct JetChargedV2 {
   double evtnum = 0;
   double accptTrack = 0;
   double fitTrack = 0;
+  TH1F* hPtsumSumptFit = nullptr;
 
   void init(o2::framework::InitContext&)
   {
@@ -229,10 +229,16 @@ struct JetChargedV2 {
 
     registry.add("Thn_evtnum_phi_centrality", "eventNumber vs jet #varphi; #eventNumber; entries", {HistType::kTHnSparseF, {{1000, 0.0, 1000}, {40, 0., o2::constants::math::TwoPI}, {100, 0.0, 100.0}}});
 
-    registry.add("h2_evt_fitpara", "event vs fit parameter; evtnum; parameter", {HistType::kTH2F, {cfgaxisEvtfit, {5, 0., 5}}});
+    registry.add("h2_evt_fitpara", "event vs fit parameter; evtnum; parameter", {HistType::kTH2F, {cfgAxisEvtfit, {5, 0., 5}}});
 
     registry.add("h_v2obs_centrality", "fitparameter v2obs vs centrality ; #centrality", {HistType::kTProfile, {cfgAxisVnCent}});
     registry.add("h_v3obs_centrality", "fitparameter v3obs vs centrality ; #centrality", {HistType::kTProfile, {cfgAxisVnCent}});
+
+    registry.add("h_fitparaRho_evtnum", "fitparameter #rho_{0} vs evtnum ; #eventnumber", {HistType::kTH1F, {{1000, 0.0, 1000}}});
+    registry.add("h_fitparaPsi2_evtnum", "fitparameter #Psi_{2} vs evtnum ; #eventnumber", {HistType::kTH1F, {{1000, 0.0, 1000}}});
+    registry.add("h_fitparaPsi3_evtnum", "fitparameter #Psi_{3} vs evtnum ; #eventnumber", {HistType::kTH1F, {{1000, 0.0, 1000}}});
+    registry.add("h_fitparav2obs_evtnum", "fitparameter v2obs vs evtnum ; #eventnumber", {HistType::kTH1F, {{1000, 0.0, 1000}}});
+    registry.add("h_fitparav3obs_evtnum", "fitparameter v3obs vs evtnum ; #eventnumber", {HistType::kTH1F, {{1000, 0.0, 1000}}});
 
     registry.add("h2_centrality_rhophi", "centrality vs #rho(#varphi); centrality;  #rho(#varphi) ", {HistType::kTH2F, {{120, -10.0, 110.0}, {210, -10.0, 200.0}}});
     registry.add("h2_phi_rhophi", "#varphi vs #rho(#varphi); #varphi - #Psi_{EP,2};  #rho(#varphi) ", {HistType::kTH2F, {{40, 0., o2::constants::math::TwoPI}, {210, -10.0, 200.0}}});
@@ -280,9 +286,9 @@ struct JetChargedV2 {
     registry.add("h2_centrality_jet_pt_out_of_plane_v3_rho", "centrality vs #it{p}^{out-of-plane}_{T,jet}; centrality; #it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH2F, {{120, -10.0, 110.0}, jetPtAxisRhoAreaSub}});
 
     //=====================< evt pln plot >=====================//
-    AxisSpec axisCent{cfgaxisCent, "centrality"};
-    AxisSpec axisQvec{cfgaxisQvec, "Q"};
-    AxisSpec axisQvecF{cfgaxisQvecF, "Q"};
+    AxisSpec axisCent{cfgAxisCent, "centrality"};
+    AxisSpec axisQvec{cfgAxisQvec, "Q"};
+    AxisSpec axisQvecF{cfgAxisQvecF, "Q"};
 
     AxisSpec axisEvtPl{360, -constants::math::PI, constants::math::PI};
 
@@ -298,7 +304,6 @@ struct JetChargedV2 {
       histosQA.add(Form("histEvtPlRectrV%d", cfgnMods->at(i)), "", {HistType::kTH2F, {axisEvtPl, axisCent}});
       histosQA.add(Form("histEvtPlTwistV%d", cfgnMods->at(i)), "", {HistType::kTH2F, {axisEvtPl, axisCent}});
       histosQA.add(Form("histEvtPlFinalV%d", cfgnMods->at(i)), "", {HistType::kTH2F, {axisEvtPl, axisCent}});
-      histosQA.add(Form("histEvtPlFinalEvtNumV%d", cfgnMods->at(i)), "", {HistType::kTH1F, {{1000, 0, 1000}}});
     }
     //=====================< evt pln plot | end >=====================//
   }
@@ -374,9 +379,6 @@ struct JetChargedV2 {
         }
       }
     }
-    if (nTrk < numberTrackCut) {
-      return;
-    }
     //=====================< evt pln [n=2->\Psi_2, n=3->\Psi_3] >=====================//
     histosQA.fill(HIST("histCent"), collision.cent());
     for (uint i = 0; i < cfgnMods->size(); i++) {
@@ -393,7 +395,6 @@ struct JetChargedV2 {
           histosQA.fill(HIST("histEvtPlRectrV2"), helperEP.GetEventPlane(collision.qvecRe()[detInd + 1], collision.qvecIm()[detInd + 1], nmode), collision.cent());
           histosQA.fill(HIST("histEvtPlTwistV2"), helperEP.GetEventPlane(collision.qvecRe()[detInd + 2], collision.qvecIm()[detInd + 2], nmode), collision.cent());
           histosQA.fill(HIST("histEvtPlFinalV2"), helperEP.GetEventPlane(collision.qvecRe()[detInd + 3], collision.qvecIm()[detInd + 3], nmode), collision.cent());
-          histosQA.fill(HIST("histEvtPlFinalEvtNumV2"), evtnum, helperEP.GetEventPlane(collision.qvecRe()[detInd + 3], collision.qvecIm()[detInd + 3], nmode));
         }
       } else if (nmode == 3) {
         histosQA.fill(HIST("histQvecUncorV3"), collision.qvecRe()[detInd], collision.qvecIm()[detInd], collision.cent());
@@ -405,7 +406,6 @@ struct JetChargedV2 {
         histosQA.fill(HIST("histEvtPlRectrV3"), helperEP.GetEventPlane(collision.qvecRe()[detInd + 1], collision.qvecIm()[detInd + 1], nmode), collision.cent());
         histosQA.fill(HIST("histEvtPlTwistV3"), helperEP.GetEventPlane(collision.qvecRe()[detInd + 2], collision.qvecIm()[detInd + 2], nmode), collision.cent());
         histosQA.fill(HIST("histEvtPlFinalV3"), helperEP.GetEventPlane(collision.qvecRe()[detInd + 3], collision.qvecIm()[detInd + 3], nmode), collision.cent());
-        histosQA.fill(HIST("histEvtPlFinalEvtNumV3"), evtnum, helperEP.GetEventPlane(collision.qvecRe()[detInd + 3], collision.qvecIm()[detInd + 3], nmode));
       }
 
       if (nmode == 2) {
@@ -494,11 +494,7 @@ struct JetChargedV2 {
       registry.fill(HIST("h_evtnum_NTrk"), evtnum, nTrk);
     }
 
-    TH1F* hPtsumSumptFit = new TH1F("h_ptsum_sumpt_fit", "h_ptsum_sumpt fit use", TMath::CeilNint(std::sqrt(nTrk)), 0., o2::constants::math::TwoPI);
-
-    if (nTrk < numberTrackCut) {
-      return;
-    }
+    hPtsumSumptFit = new TH1F("h_ptsum_sumpt_fit", "h_ptsum_sumpt fit use", TMath::CeilNint(std::sqrt(nTrk)), 0., o2::constants::math::TwoPI);
 
     if (jets.size() > 0) {
       for (auto const& trackfit : tracks) {
@@ -552,15 +548,21 @@ struct JetChargedV2 {
     fFitModulationV2v3->SetParameter(1, 0.01);
     fFitModulationV2v3->SetParameter(3, 0.01);
 
-    if (ep2 < 0) {
-      fFitModulationV2v3->FixParameter(2, ep2 + o2::constants::math::TwoPI);
+    double ep2fix = 0.;
+    double ep3fix = 0.;
+    ep2fix = RecoDecay::constrainAngle(ep2);
+    ep3fix = RecoDecay::constrainAngle(ep3);
+    if (ep2fix < 0) {
+      double ep2para = ep2 + o2::constants::math::TwoPI;
+      fFitModulationV2v3->FixParameter(2, ep2para);
     } else {
-      fFitModulationV2v3->FixParameter(2, ep2);
+      fFitModulationV2v3->FixParameter(2, ep2fix);
     }
-    if (ep3 < 0) {
-      fFitModulationV2v3->FixParameter(4, ep3 + o2::constants::math::TwoPI);
+    if (ep3fix < 0) {
+      double ep3para = ep3 + o2::constants::math::TwoPI;
+      fFitModulationV2v3->FixParameter(4, ep3para);
     } else {
-      fFitModulationV2v3->FixParameter(4, ep3);
+      fFitModulationV2v3->FixParameter(4, ep3fix);
     }
     hPtsumSumptFit->Fit(fFitModulationV2v3, "V+", "ep", 0, o2::constants::math::TwoPI);
 
@@ -573,6 +575,13 @@ struct JetChargedV2 {
     for (int i = 1; i <= 5; i++) {
       registry.fill(HIST("h2_evt_fitpara"), evtnum, i - 0.5, temppara[i - 1]);
     }
+
+    registry.fill(HIST("h_fitparaRho_evtnum"), evtnum, temppara[0]);
+    registry.fill(HIST("h_fitparav2obs_evtnum"), evtnum, temppara[1]);
+    registry.fill(HIST("h_fitparaPsi2_evtnum"), evtnum, temppara[2]);
+    registry.fill(HIST("h_fitparav3obs_evtnum"), evtnum, temppara[3]);
+    registry.fill(HIST("h_fitparaPsi3_evtnum"), evtnum, temppara[4]);
+
     registry.fill(HIST("h_v2obs_centrality"), collision.centrality(), temppara[1]);
     registry.fill(HIST("h_v3obs_centrality"), collision.centrality(), temppara[3]);
 
