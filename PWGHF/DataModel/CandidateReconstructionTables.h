@@ -957,12 +957,12 @@ enum DecayChannelDToKKPi {
 };
 
 // KF related properties
-DECLARE_SOA_COLUMN(KfErrorPVX, kfErrorPVX, float);                       //! error of X coordinate of the event's primary vertex
-DECLARE_SOA_COLUMN(KfErrorPVY, kfErrorPVY, float);                       //! error of Y coordinate of the event's primary vertex
-DECLARE_SOA_COLUMN(KfErrorPVZ, kfErrorPVZ, float);                       //! error of Z coordinate of the event's primary vertex
-DECLARE_SOA_COLUMN(KfErrorX, kfErrorX, float);                           //! error of candidate's decay point X coordinate from the KFParticle fit
-DECLARE_SOA_COLUMN(KfErrorY, kfErrorY, float);                           //! error of candidate's decay point Y coordinate from the KFParticle fit
-DECLARE_SOA_COLUMN(KfErrorZ, kfErrorZ, float);                           //! error of candidate's decay point Z coordinate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfXPVError, kfXPVError, float);                       //! error of X coordinate of the event's primary vertex
+DECLARE_SOA_COLUMN(KfYPVError, kfYPVError, float);                       //! error of Y coordinate of the event's primary vertex
+DECLARE_SOA_COLUMN(KfZPVError, kfZPVError, float);                       //! error of Z coordinate of the event's primary vertex
+DECLARE_SOA_COLUMN(KfXError, kfXError, float);                           //! error of candidate's decay point X coordinate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfYError, kfYError, float);                           //! error of candidate's decay point Y coordinate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfZError, kfZError, float);                           //! error of candidate's decay point Z coordinate from the KFParticle fit
 DECLARE_SOA_COLUMN(KfMassPKPi, kfMassPKPi, float);                       //! mass of the PKPi candidate from the KFParticle fit
 DECLARE_SOA_COLUMN(KfMassPiKP, kfMassPiKP, float);                       //! mass of the PiKP candidate from the KFParticle fit
 DECLARE_SOA_COLUMN(KfMassPiKPi, kfMassPiKPi, float);                     //! mass of the PiKPi candidate from the KFParticle fit
@@ -979,16 +979,16 @@ DECLARE_SOA_COLUMN(KfErrorPz, kfErrorPz, float);                         //! Pz 
 DECLARE_SOA_COLUMN(KfChi2PrimProng0, kfChi2PrimProng0, float);           //! chi2 primary of the first prong
 DECLARE_SOA_COLUMN(KfChi2PrimProng1, kfChi2PrimProng1, float);           //! chi2 primary of the second prong
 DECLARE_SOA_COLUMN(KfChi2PrimProng2, kfChi2PrimProng2, float);           //! chi2 primary of the third prong
-DECLARE_SOA_COLUMN(KfDCAProng0Prong1, kfDCAProng0Prong1, float);         //! DCA between first and second prongs
-DECLARE_SOA_COLUMN(KfDCAProng0Prong2, kfDCAProng0Prong2, float);         //! DCA between first and third prongs
-DECLARE_SOA_COLUMN(KfDCAProng1Prong2, kfDCAProng1Prong2, float);         //! DCA between second and third prongs
-DECLARE_SOA_COLUMN(KfChi2geoProng0Prong1, kfChi2geoProng0Prong1, float); //! chi2 geo between first and second prongs
-DECLARE_SOA_COLUMN(KfChi2geoProng0Prong2, kfChi2geoProng0Prong2, float); //! chi2 geo between first and third prongs
-DECLARE_SOA_COLUMN(KfChi2geoProng1Prong2, kfChi2geoProng1Prong2, float); //! chi2 geo between second and third prongs
-DECLARE_SOA_COLUMN(KfChi2geo, kfChi2geo, float);                         //! chi2 geo of the full candidate
-DECLARE_SOA_COLUMN(KfChi2topo, kfChi2topo, float);                       //! chi2 topo of the full candidate (chi2prim of candidate to PV)
-DECLARE_SOA_COLUMN(KfL, kfL, float);                                     //! decay length
-DECLARE_SOA_COLUMN(KfDeltaL, kfDeltaL, float);                           //! decay length error
+DECLARE_SOA_COLUMN(KfDcaProng0Prong1, kfDcaProng0Prong1, float);         //! DCA between first and second prongs
+DECLARE_SOA_COLUMN(KfDcaProng0Prong2, kfDcaProng0Prong2, float);         //! DCA between first and third prongs
+DECLARE_SOA_COLUMN(KfDcaProng1Prong2, kfDcaProng1Prong2, float);         //! DCA between second and third prongs
+DECLARE_SOA_COLUMN(KfChi2GeoProng0Prong1, kfChi2GeoProng0Prong1, float); //! chi2 geo between first and second prongs
+DECLARE_SOA_COLUMN(KfChi2GeoProng0Prong2, kfChi2GeoProng0Prong2, float); //! chi2 geo between first and third prongs
+DECLARE_SOA_COLUMN(KfChi2GeoProng1Prong2, kfChi2GeoProng1Prong2, float); //! chi2 geo between second and third prongs
+DECLARE_SOA_COLUMN(KfChi2Geo, kfChi2Geo, float);                         //! chi2 geo of the full candidate
+DECLARE_SOA_COLUMN(KfChi2Topo, kfChi2Topo, float);                       //! chi2 topo of the full candidate (chi2prim of candidate to PV)
+DECLARE_SOA_COLUMN(KfDecayLength, kfDecayLength, float);                 //! decay length
+DECLARE_SOA_COLUMN(KfDecayLengthError, kfDecayLengthError, float);       //! decay length error
 
 } // namespace hf_cand_3prong
 
@@ -1040,15 +1040,15 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCand3ProngExt, HfCand3ProngBase, "HFCAND3PEXT"
 using HfCand3Prong = HfCand3ProngExt;
 
 DECLARE_SOA_TABLE(HfCand3ProngKF, "AOD", "HFCAND3PKF",
-                  hf_cand_3prong::KfErrorX, hf_cand_3prong::KfErrorY, hf_cand_3prong::KfErrorZ,
-                  hf_cand_3prong::KfErrorPVX, hf_cand_3prong::KfErrorPVY, hf_cand_3prong::KfErrorPVZ,
+                  hf_cand_3prong::KfXError, hf_cand_3prong::KfYError, hf_cand_3prong::KfZError,
+                  hf_cand_3prong::KfXPVError, hf_cand_3prong::KfYPVError, hf_cand_3prong::KfZPVError,
                   hf_cand_3prong::KfMassPKPi, hf_cand_3prong::KfMassPiKP, hf_cand_3prong::KfMassPiKPi, hf_cand_3prong::KfMassKKPi, hf_cand_3prong::KfMassPiKK, hf_cand_3prong::KfMassKPi, hf_cand_3prong::KfMassPiK,
                   hf_cand_3prong::KfPx, hf_cand_3prong::KfPy, hf_cand_3prong::KfPz,
                   hf_cand_3prong::KfErrorPx, hf_cand_3prong::KfErrorPy, hf_cand_3prong::KfErrorPz,
                   hf_cand_3prong::KfChi2PrimProng0, hf_cand_3prong::KfChi2PrimProng1, hf_cand_3prong::KfChi2PrimProng2,
-                  hf_cand_3prong::KfDCAProng1Prong2, hf_cand_3prong::KfDCAProng0Prong2, hf_cand_3prong::KfDCAProng0Prong1,
-                  hf_cand_3prong::KfChi2geoProng1Prong2, hf_cand_3prong::KfChi2geoProng0Prong2, hf_cand_3prong::KfChi2geoProng0Prong1,
-                  hf_cand_3prong::KfChi2geo, hf_cand_3prong::KfL, hf_cand_3prong::KfDeltaL, hf_cand_3prong::KfChi2topo);
+                  hf_cand_3prong::KfDcaProng1Prong2, hf_cand_3prong::KfDcaProng0Prong2, hf_cand_3prong::KfDcaProng0Prong1,
+                  hf_cand_3prong::KfChi2GeoProng1Prong2, hf_cand_3prong::KfChi2GeoProng0Prong2, hf_cand_3prong::KfChi2GeoProng0Prong1,
+                  hf_cand_3prong::KfChi2Geo, hf_cand_3prong::KfDecayLength, hf_cand_3prong::KfDecayLengthError, hf_cand_3prong::KfChi2Topo);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCand3ProngMcRec, "AOD", "HFCAND3PMCREC", //!
