@@ -44,10 +44,10 @@ struct HfCandidateCreatorMcGenOnly {
   Configurable<bool> fill3Prong{"fill3Prong", false, "fill table for 3 prong candidates"};
   Configurable<bool> fillBplus{"fillBplus", false, "fill table for for B+ candidates"};
   Configurable<bool> fillB0{"fillB0", false, "fill table for B0 candidates"};
-  Configurable<bool> rejectBackground2Prong{"rejectBackground2Prong", true, "Reject particles from background events for 2 prong candidates"};
-  Configurable<bool> rejectBackground3Prong{"rejectBackground3Prong", true, "Reject particles from background events for 3 prong candidates"};
-  Configurable<bool> rejectBackgroundBplus{"rejectBackgroundBplus", true, "Reject particles from background events for B+ candidates"};
-  Configurable<bool> rejectBackgroundB0{"rejectBackgroundB0", true, "Reject particles from background events for B0 candidates"};
+  Configurable<bool> rejectBackground2Prong{"rejectBackground2Prong", false, "Reject particles from PbPb background for 2 prong candidates"};
+  Configurable<bool> rejectBackground3Prong{"rejectBackground3Prong", false, "Reject particles from PbPb background for 3 prong candidates"};
+  Configurable<bool> rejectBackgroundBplus{"rejectBackgroundBplus", false, "Reject particles from PbPb background for B+ candidates"};
+  Configurable<bool> rejectBackgroundB0{"rejectBackgroundB0", false, "Reject particles from PbPb background for B0 candidates"};
   Configurable<bool> createDplus{"createDplus", false, "Create D+ in 3 prong"};
   Configurable<bool> createDs{"createDs", false, "Create Ds in 3 prong"};
   Configurable<bool> createLc{"createLc", false, "Create Lc in 3 prong"};
