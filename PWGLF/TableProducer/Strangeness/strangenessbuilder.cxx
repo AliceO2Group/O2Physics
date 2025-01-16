@@ -666,11 +666,17 @@ struct StrangenessBuilder {
   template <typename TV0s, typename TCascades>
   void markV0sUsedInCascades(TV0s const& v0s, TCascades const& cascades)
   {
+    int v0sUsedInCascades = 0;
     v0sFromCascades.clear();
+    v0Map.clear();
     v0Map.resize(v0s.size(), -2); // marks not used
     for (auto& cascade : cascades) {
+      if(v0Map[cascade.v0Id()]==-2){
+        v0sUsedInCascades++;
+      }
       v0Map[cascade.v0Id()] = -1; // marks used (but isn't the index of a properly built V0, which would be >= 0)
     }
+    LOGF(info, "V0 total %i, Cascade total %i, V0s flagged used in cascades: %i", v0s.size(), cascades.size(), v0sUsedInCascades);
   }
 
   //__________________________________________________
@@ -703,14 +709,14 @@ struct StrangenessBuilder {
         v0dataLink(-1, -1);
         continue;
       }
-      nV0s++;
-      if (v0Map[v0.globalIndex()] == -1) {
+      if(v0Map[v0.globalIndex()]==-1){
         v0Map[v0.globalIndex()] = v0sFromCascades.size(); // provide actual valid index in buffer
         v0sFromCascades.push_back(straHelper.v0);
       }
       // fill requested cursors only if type is not 0
-      if (v0.v0Type() == 1 || (v0.v0Type() == 1 && v0BuilderOpts.generatePhotonCandidates)) {
-        if (mEnabledTables[kV0Indices]) {
+      if (v0.v0Type() == 1 || (v0.v0Type() == 2 && v0BuilderOpts.generatePhotonCandidates)) {
+        nV0s++;
+        if(mEnabledTables[kV0Indices]){
           // for referencing (especially - but not only - when using derived data)
           v0indices(v0.posTrackId(), v0.negTrackId(),
                     v0.collisionId(), v0.globalIndex());
@@ -1628,7 +1634,7 @@ struct StrangenessBuilder {
 
   PROCESS_SWITCH(StrangenessBuilder, processRealData, "process real data", true);
   PROCESS_SWITCH(StrangenessBuilder, processRealDataRun2, "process real data (Run 2)", false);
-  PROCESS_SWITCH(StrangenessBuilder, processMonteCarlo, "process monte carlo", true);
+  PROCESS_SWITCH(StrangenessBuilder, processMonteCarlo, "process monte carlo", false);
   PROCESS_SWITCH(StrangenessBuilder, processMonteCarloRun2, "process monte carlo (Run 2)", false);
   PROCESS_SWITCH(StrangenessBuilder, processSimulationFindable, "process simulation findable (requires lambdakzeromcfinder)", false);
 };
