@@ -1367,7 +1367,7 @@ struct TableMaker {
   {
     fullSkimming<gkEventFillMapWithMultsExtra, 0u, gkMuonFillMapWithCov, gkMFTFillMap>(collisions, bcs, nullptr, nullptr, muons, mftTracks, nullptr, fwdTrackAssocs, mftAssocs);
   }
-                          
+
   // produce the full DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
   void processPbPb(MyEventsWithCentAndMults const& collisions, BCsWithTimestamps const& bcs,
                    MyBarrelTracksWithCov const& tracksBarrel,
