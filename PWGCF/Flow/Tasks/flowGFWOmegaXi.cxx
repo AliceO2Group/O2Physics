@@ -167,10 +167,10 @@ struct FlowGFWOmegaXi {
   TF1* fT0AV0AMean = nullptr;
   TF1* fT0AV0ASigma = nullptr;
 
-  using tracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, tracksPID>>; // tracks filter
-  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;  // collisions filter
-  using daughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, tracksPID>;
+  using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, TracksPID>>; // tracks filter
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;  // collisions filter
+  using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, TracksPID>;
 
   // Declare the pt, mult and phi Axis;
   int nPtBins = 0;
@@ -636,15 +636,15 @@ struct FlowGFWOmegaXi {
     return true;
   }
 
-  void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks, aod::CascDataExt const& Cascades, aod::V0Datas const& V0s, daughterTracks const&)
+  void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, aod::CascDataExt const& Cascades, aod::V0Datas const& V0s, DaughterTracks const&)
   {
-    int Ntot = tracks.size();
-    int CandNum_all[4] = {0, 0, 0, 0};
-    int CandNum[4] = {0, 0, 0, 0};
+    int nTot = tracks.size();
+    int candNum_all[4] = {0, 0, 0, 0};
+    int candNum[4] = {0, 0, 0, 0};
     for (int i = 0; i < 4; i++) {
       registry.fill(HIST("hEventCount"), 0.5, i + 0.5);
     }
-    if (Ntot < 1)
+    if (nTot < 1)
       return;
     fGFW->Clear();
     const auto cent = collision.centFT0C();
@@ -656,7 +656,7 @@ struct FlowGFWOmegaXi {
     loadCorrections(bc.timestamp());
     float vtxz = collision.posZ();
     registry.fill(HIST("hVtxZ"), vtxz);
-    registry.fill(HIST("hMult"), Ntot);
+    registry.fill(HIST("hMult"), nTot);
     registry.fill(HIST("hCent"), collision.centFT0C());
     for (int i = 0; i < 4; i++) {
       registry.fill(HIST("hEventCount"), 1.5, i + 0.5);
@@ -685,8 +685,8 @@ struct FlowGFWOmegaXi {
     }
     // fill GFW of V0 flow
     for (const auto& v0 : V0s) {
-      auto v0posdau = v0.posTrack_as<daughterTracks>();
-      auto v0negdau = v0.negTrack_as<daughterTracks>();
+      auto v0posdau = v0.posTrack_as<DaughterTracks>();
+      auto v0negdau = v0.negTrack_as<DaughterTracks>();
       // check tpc
       bool isK0s = false;
       bool isLambda = false;
@@ -701,7 +701,7 @@ struct FlowGFWOmegaXi {
         if (!setCurrentParticleWeights(weff, wacc, v0, vtxz, 1))
           continue;
         isK0s = true;
-        CandNum_all[0] = CandNum_all[0] + 1;
+        candNum_all[0] = candNum_all[0] + 1;
         registry.fill(HIST("hqaarm_podoafter"), v0.alpha(), v0.qtarm());
       }
       // Lambda and antiLambda
@@ -712,7 +712,7 @@ struct FlowGFWOmegaXi {
         if (!setCurrentParticleWeights(weff, wacc, v0, vtxz, 2))
           continue;
         isLambda = true;
-        CandNum_all[1] = CandNum_all[1] + 1;
+        candNum_all[1] = candNum_all[1] + 1;
       } else if (std::fabs(v0.y()) < 0.5 && std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < cfgv0_mlambdawindow &&
                  (!cfgcheckDauTPC || (std::fabs(v0negdau.tpcNSigmaPr()) < cfgtpcNSigmaCascProton && std::fabs(v0posdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion)) &&
                  (!cfgcheckDauTOF || ((std::fabs(v0negdau.tofNSigmaPr()) < cfgtofNSigmaCascProton || v0posdau.pt() < 0.4) && (std::fabs(v0posdau.tofNSigmaPi()) < cfgtofNSigmaCascPion || v0negdau.pt() < 0.4)))) {
@@ -720,7 +720,7 @@ struct FlowGFWOmegaXi {
         if (!setCurrentParticleWeights(weff, wacc, v0, vtxz, 2))
           continue;
         isLambda = true;
-        CandNum_all[1] = CandNum_all[1] + 1;
+        candNum_all[1] = candNum_all[1] + 1;
       }
       // fill QA before cut
       registry.fill(HIST("hqaV0radiusbefore"), v0.v0radius());
@@ -762,7 +762,7 @@ struct FlowGFWOmegaXi {
       registry.fill(HIST("hqadcapostoPVafter"), v0.dcapostopv());
       registry.fill(HIST("hqadcanegtoPVafter"), v0.dcanegtopv());
       if (isK0s) {
-        CandNum[0] = CandNum[0] + 1;
+        candNum[0] = candNum[0] + 1;
         registry.fill(HIST("InvMassK0s"), v0.pt(), v0.mK0Short(), v0.eta(), cent);
         registry.fill(HIST("hEtaPhiVtxzPOIK0s"), v0.phi(), v0.eta(), vtxz, wacc);
         fGFW->Fill(v0.eta(), fV0PtAxis->FindBin(v0.pt()) - 1 + ((fK0sMass->FindBin(v0.mK0Short()) - 1) * nV0PtBins), v0.phi(), wacc * weff, 8);
@@ -770,7 +770,7 @@ struct FlowGFWOmegaXi {
           fWeightsK0s->Fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
       }
       if (isLambda) {
-        CandNum[1] = CandNum[1] + 1;
+        candNum[1] = candNum[1] + 1;
         registry.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda(), v0.eta(), cent);
         registry.fill(HIST("hEtaPhiVtxzPOILambda"), v0.phi(), v0.eta(), vtxz, wacc);
         fGFW->Fill(v0.eta(), fV0PtAxis->FindBin(v0.pt()) - 1 + ((fLambdaMass->FindBin(v0.mLambda()) - 1) * nV0PtBins), v0.phi(), wacc * weff, 16);
@@ -780,9 +780,9 @@ struct FlowGFWOmegaXi {
     }
     // fill GFW of casc flow
     for (const auto& casc : Cascades) {
-      auto bachelor = casc.bachelor_as<daughterTracks>();
-      auto posdau = casc.posTrack_as<daughterTracks>();
-      auto negdau = casc.negTrack_as<daughterTracks>();
+      auto bachelor = casc.bachelor_as<DaughterTracks>();
+      auto posdau = casc.posTrack_as<DaughterTracks>();
+      auto negdau = casc.negTrack_as<DaughterTracks>();
       // check TPC
       if (cfgcheckDauTPC && (!posdau.hasTPC() || !negdau.hasTPC() || !bachelor.hasTPC())) {
         continue;
@@ -797,7 +797,7 @@ struct FlowGFWOmegaXi {
         if (!setCurrentParticleWeights(weff, wacc, casc, vtxz, 4))
           continue;
         isOmega = true;
-        CandNum_all[3] = CandNum_all[3] + 1;
+        candNum_all[3] = candNum_all[3] + 1;
       } else if (casc.sign() < 0 && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
                  (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaKa()) < cfgtpcNSigmaCascKaon && std::fabs(negdau.tpcNSigmaPr()) < cfgtpcNSigmaCascProton && std::fabs(posdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion)) &&
                  (!cfgcheckDauTOF || ((std::fabs(bachelor.tofNSigmaKa()) < cfgtofNSigmaCascKaon || bachelor.pt() < 0.4) && (std::fabs(negdau.tofNSigmaPr()) < cfgtofNSigmaCascProton || negdau.pt() < 0.4) && (std::fabs(posdau.tofNSigmaPi()) < cfgtofNSigmaCascPion || posdau.pt() < 0.4)))) {
@@ -805,7 +805,7 @@ struct FlowGFWOmegaXi {
         if (!setCurrentParticleWeights(weff, wacc, casc, vtxz, 4))
           continue;
         isOmega = true;
-        CandNum_all[3] = CandNum_all[3] + 1;
+        candNum_all[3] = candNum_all[3] + 1;
       }
       // Xi and antiXi
       if (casc.sign() < 0 && (casc.mXi() > 1.30) && (casc.mXi() < 1.37) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
@@ -815,7 +815,7 @@ struct FlowGFWOmegaXi {
         if (!setCurrentParticleWeights(weff, wacc, casc, vtxz, 3))
           continue;
         isXi = true;
-        CandNum_all[2] = CandNum_all[2] + 1;
+        candNum_all[2] = candNum_all[2] + 1;
       } else if (casc.sign() < 0 && (casc.mXi() > 1.30) && (casc.mXi() < 1.37) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
                  (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaPi()) < cfgtpcNSigmaCascPion && std::fabs(posdau.tpcNSigmaPr()) < cfgtpcNSigmaCascProton && std::fabs(negdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion)) &&
                  (!cfgcheckDauTOF || ((std::fabs(bachelor.tofNSigmaPi()) < cfgtofNSigmaCascPion || bachelor.pt() < 0.4) && (std::fabs(negdau.tofNSigmaPr()) < cfgtofNSigmaCascProton || negdau.pt() < 0.4) && (std::fabs(posdau.tofNSigmaPi()) < cfgtofNSigmaCascPion || posdau.pt() < 0.4)))) {
@@ -823,7 +823,7 @@ struct FlowGFWOmegaXi {
         if (!setCurrentParticleWeights(weff, wacc, casc, vtxz, 3))
           continue;
         isXi = true;
-        CandNum_all[2] = CandNum_all[2] + 1;
+        candNum_all[2] = candNum_all[2] + 1;
       }
       // topological cut
       if (casc.cascradius() < cfgcasc_radius)
@@ -856,7 +856,7 @@ struct FlowGFWOmegaXi {
       if (negdau.itsNCls() < cfgitsclusters)
         continue;
       if (isOmega) {
-        CandNum[3] = CandNum[3] + 1;
+        candNum[3] = candNum[3] + 1;
         registry.fill(HIST("hEtaPhiVtxzPOIOmega"), casc.phi(), casc.eta(), vtxz, wacc);
         registry.fill(HIST("InvMassOmega"), casc.pt(), casc.mOmega(), casc.eta(), cent);
         fGFW->Fill(casc.eta(), fXiPtAxis->FindBin(casc.pt()) - 1 + ((fOmegaMass->FindBin(casc.mOmega()) - 1) * nXiPtBins), casc.phi(), wacc * weff, 4);
@@ -864,7 +864,7 @@ struct FlowGFWOmegaXi {
           fWeightsOmega->Fill(casc.phi(), casc.eta(), vtxz, casc.pt(), cent, 0);
       }
       if (isXi) {
-        CandNum[2] = CandNum[2] + 1;
+        candNum[2] = candNum[2] + 1;
         registry.fill(HIST("hEtaPhiVtxzPOIXi"), casc.phi(), casc.eta(), vtxz, wacc);
         registry.fill(HIST("InvMassXi"), casc.pt(), casc.mXi(), casc.eta(), cent);
         fGFW->Fill(casc.eta(), fXiPtAxis->FindBin(casc.pt()) - 1 + ((fXiMass->FindBin(casc.mXi()) - 1) * nXiPtBins), casc.phi(), wacc * weff, 2);
@@ -873,10 +873,10 @@ struct FlowGFWOmegaXi {
       }
     }
     for (int i = 0; i < 4; i++) {
-      if (CandNum_all[i] > 0) {
+      if (candNum_all[i] > 0) {
         registry.fill(HIST("hEventCount"), 2.5, i + 0.5);
       }
-      if (CandNum[i] > 0) {
+      if (candNum[i] > 0) {
         registry.fill(HIST("hEventCount"), 3.5, i + 0.5);
       }
     }
@@ -910,9 +910,9 @@ struct FlowGFWOmegaXi {
     }
     // Fill subevents flow
     TRandom3* fRdm = new TRandom3(0);
-    double Eventrdm = 10 * fRdm->Rndm();
+    double eventrdm = 10 * fRdm->Rndm();
     for (int j = 1; j <= 10; j++) {
-      if (Eventrdm > (j - 1) && Eventrdm < j)
+      if (eventrdm > (j - 1) && eventrdm < j)
         continue;
       fillProfile(corrconfigs.at(15), refc22[j - 1], cent);
       fillProfile(corrconfigs.at(16), refc24[j - 1], cent);
