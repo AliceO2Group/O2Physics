@@ -50,13 +50,23 @@ int main(int /*argc*/, char* argv[])
       cut.setTrackSelectionFromFile("ConfChild");
       cut.setPIDSelectionFromFile("ConfChild");
     } else if (choice == std::string("C")) {
-      std::cout << "Do you want to select Cascades, V0s or the Bachelor Track (C/V/T)? >";
+      std::cout << "Do you want to select cascades, V0-Daughter tracks of the cascades or the Bachelor track (C/V/B)? >";
       std::cin >> choice;
-      cut.setCascadeSelectionFromFile("ConfCascade");
-      //cut.setV0SelectionFromFile("ConfV0");
-      //cut.setTrackSelectionFromFile("ConfChild");
-      //cut.setPIDSelectionFromFile("ConfChild");
-      //cut.setPIDSelectionFromFile("ConfBachelor");
+      if (choice == std::string("C")){
+        cut.setCascadeSelectionFromFile("ConfCascade");
+        choice = "C";
+      } else if (choice == std::string("V")){
+        cut.setTrackSelectionFromFile("ConfCascV0Child");
+        cut.setPIDSelectionFromFile("ConfCascV0Child");
+        choice = "T"; 
+      } else if (choice == std::string("B")){ 
+        cut.setTrackSelectionFromFile("ConfCascBachelor");
+        cut.setPIDSelectionFromFile("ConfCascBachelor");
+        choice = "T"; 
+      } else {
+        std::cout << "Option not recognized. Break...";
+        return 2;
+      }
     } else {
       std::cout << "Option not recognized. Break...";
       return 2;

@@ -248,7 +248,7 @@ class FemtoDreamParticleHisto
       mHistogramRegistry = registry;
       /// The folder names are defined by the type of the object and the suffix (if applicable)
       std::string tempFitVarAxisTitle;
-      if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack || mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0Child) {
+      if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack || mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child || mParticleType == o2::aod::femtodreamparticle::ParticleType::kCascadeBachelor) {
         /// Track histograms
         tempFitVarAxisTitle = "DCA_{xy} (cm)";
       } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0 || mParticleType == o2::aod::femtodreamparticle::ParticleType::kCascadeV0) {
@@ -314,6 +314,8 @@ class FemtoDreamParticleHisto
     if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kCascade){
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hInvMassCascade"), part.mLambda());
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hpTInvMassCascade"), part.pt(), part.mLambda());
+      //mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hInvMassCascade"), part.mLambda());
+      //mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hpTInvMassCascade"), part.pt(), part.mLambda());
     }
   }
 
@@ -680,7 +682,7 @@ class FemtoDreamParticleHisto
   HistogramRegistry* mHistogramRegistry;                                                                                                             ///< For QA output
   static constexpr o2::aod::femtodreamparticle::ParticleType mParticleType = particleType;                                                           ///< Type of the particle under analysis
   static constexpr int mFolderSuffixType = suffixType;                                                                                               ///< Counter for the folder suffix specified below
-  static constexpr std::string_view mFolderSuffix[8] = {"", "_one", "_two", "_pos", "_neg", "_allSelected", "_allSelected_pos", "_allSelected_neg"}; ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C)
+  static constexpr std::string_view mFolderSuffix[9] = {"", "_one", "_two", "_pos", "_neg", "_allSelected", "_allSelected_pos", "_allSelected_neg", "_bach"}; ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C)
   int mPDG = 0;                                                                                                                                      ///< PDG code of the selected particle
 };
 } // namespace o2::analysis::femtoDream

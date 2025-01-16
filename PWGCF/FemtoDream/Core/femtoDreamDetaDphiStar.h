@@ -145,8 +145,9 @@ class FemtoDreamDetaDphiStar
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
       /// Track-Track combination
       // check if provided particles are in agreement with the class instantiation
-      if (part1.partType() != o2::aod::femtodreamparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtodreamparticle::ParticleType::kTrack) {
-        LOG(fatal) << "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide kTrack,kTrack candidates.";
+      if (part1.partType() != o2::aod::femtodreamparticle::ParticleType::kTrack || !(part2.partType() == o2::aod::femtodreamparticle::ParticleType::kTrack || part2.partType() == o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child)) { //hotfix to use the CPR
+        //LOG(fatal) << "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide kTrack,kTrack candidates.";
+        LOGF(fatal, "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide kTrack,kTrack candidates. Currently: %i", part2.partType());
         return false;
       }
       auto deta = part1.eta() - part2.eta();
