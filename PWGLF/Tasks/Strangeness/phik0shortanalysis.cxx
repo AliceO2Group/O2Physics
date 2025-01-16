@@ -478,7 +478,7 @@ struct Phik0shortanalysis {
       return false;
     if (v0.qtarm() < (paramArmenterosCut * std::abs(v0.alpha())))
       return false;
-    if (std::abs(v0.masslambda() - massLambda) < v0rejK0s)
+    if (std::abs(v0.mLambda() - massLambda) < v0rejK0s)
       return false;
     return true;
   }
@@ -1201,7 +1201,7 @@ struct Phik0shortanalysis {
           }
         }
 
-        if (track.pt() >= 0.5 && !tracks.hasTOF())
+        if (track.pt() >= 0.5 && !track.hasTOF())
           continue;
 
         mcPionHist.fill(HIST("h4RecMCPiTPCTOF"), genmultiplicity, track.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
