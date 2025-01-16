@@ -567,7 +567,7 @@ struct StrangenessBuilder {
     for (int i = 0; i < nTables; i++) {
       // printout to be improved in the future
       if (mEnabledTables[i]) {
-        LOGF(info, "Table enabled: %s", tableNames[i]);
+        LOGF(info, " -~> Table enabled: %s", tableNames[i]);
       }
     }
     LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
@@ -663,20 +663,35 @@ struct StrangenessBuilder {
   }
 
   //__________________________________________________
-  template <typename TV0s, typename TCascades>
-  void markV0sUsedInCascades(TV0s const& v0s, TCascades const& cascades)
+  template <typename TV0s, typename TCascades, typename TTrackedCascades>
+  void markV0sUsedInCascades(TV0s const& v0s, TCascades const& cascades, TTrackedCascades const& trackedCascades)
   {
     int v0sUsedInCascades = 0;
     v0sFromCascades.clear();
     v0Map.clear();
     v0Map.resize(v0s.size(), -2); // marks not used
-    for (auto& cascade : cascades) {
-      if(v0Map[cascade.v0Id()]==-2){
-        v0sUsedInCascades++;
+    if(mEnabledTables[kStoredCascCores]){
+      for (auto& cascade : cascades) {
+        if(v0Map[cascade.v0Id()]==-2){
+          v0sUsedInCascades++;
+        }
+        v0Map[cascade.v0Id()] = -1; // marks used (but isn't the index of a properly built V0, which would be >= 0)
       }
-      v0Map[cascade.v0Id()] = -1; // marks used (but isn't the index of a properly built V0, which would be >= 0)
     }
-    LOGF(info, "V0 total %i, Cascade total %i, V0s flagged used in cascades: %i", v0s.size(), cascades.size(), v0sUsedInCascades);
+    int trackedCascadeCount = 0;
+    if constexpr (soa::is_table<TTrackedCascades>) {
+      if(mEnabledTables[kStoredTraCascCores]){
+        trackedCascadeCount = trackedCascades.size();
+        for (auto& trackedCascade : trackedCascades) {
+          auto const &cascade = trackedCascade.cascade();
+          if(v0Map[cascade.v0Id()]==-2){
+            v0sUsedInCascades++;
+          }
+          v0Map[cascade.v0Id()] = -1; // marks used (but isn't the index of a properly built V0, which would be >= 0)
+        }
+      }
+    }
+    LOGF(info, "V0 total %i, Cascade total %i, Tracked cascade total %i, V0s flagged used in cascades: %i", v0s.size(), cascades.size(), trackedCascadeCount, v0sUsedInCascades);
   }
 
   //__________________________________________________
@@ -687,7 +702,7 @@ struct StrangenessBuilder {
     std::vector<mcV0info> mcV0infos; // V0MCCore information
     std::vector<bool> mcParticleIsReco;
 
-    if constexpr (requires { TMCParticles::iterator; }) {
+    if constexpr (soa::is_table<TMCParticles>) {
       // do this if provided with a mcParticle table as well
       mcParticleIsReco.resize(mcParticles.size(), false);
     }
@@ -760,7 +775,7 @@ struct StrangenessBuilder {
 
         //_________________________________________________________
         // MC handling part
-        if constexpr (requires { TMCParticles::iterator; }) {
+        if constexpr (soa::is_table<TMCParticles>) {
           // only worry about this if someone else worried about this
           if ((mEnabledTables[kV0MCCores] || mEnabledTables[kMcV0Labels] || mEnabledTables[kV0MCCollRefs])) {
             thisInfo.label = -1;
@@ -892,7 +907,7 @@ struct StrangenessBuilder {
     }
 
     // finish populating V0MCCores if in asymmetric mode
-    if constexpr (requires { TMCParticles::iterator; }) {
+    if constexpr (soa::is_table<TMCParticles>) {
       if (v0BuilderOpts.mc_populateV0MCCoresAsymmetric && (mEnabledTables[kV0MCCores] || mEnabledTables[kV0MCCollRefs])) {
         // first step: add any un-recoed v0mmcores that were requested
         for (auto& mcParticle : mcParticles) {
@@ -1092,7 +1107,7 @@ struct StrangenessBuilder {
     std::vector<mcCascinfo> mcCascinfos; // V0MCCore information
     std::vector<bool> mcParticleIsReco;
 
-    if constexpr (requires { TMCParticles::iterator; }) {
+    if constexpr (soa::is_table<TMCParticles>) {
       // do this if provided with a mcParticle table as well
       mcParticleIsReco.resize(mcParticles.size(), false);
     }
@@ -1158,7 +1173,7 @@ struct StrangenessBuilder {
 
       //_________________________________________________________
       // MC handling part
-      if constexpr (requires { TMCParticles::iterator; }) {
+      if constexpr (soa::is_table<TMCParticles>) {
         // only worry about this if someone else worried about this
         if ((mEnabledTables[kCascMCCores] || mEnabledTables[kMcCascLabels] || mEnabledTables[kCascMCCollRefs])) {
           extractMonteCarloProperties(posTrack, negTrack, bachTrack, mcParticles);
@@ -1256,7 +1271,7 @@ struct StrangenessBuilder {
 
     //_________________________________________________________
     // MC handling part
-    if constexpr (requires { TMCParticles::iterator; }) {
+    if constexpr (soa::is_table<TMCParticles>) {
       if ((mEnabledTables[kCascMCCores] || mEnabledTables[kMcCascLabels] || mEnabledTables[kCascMCCollRefs])) {
         // now populate V0MCCores if in asymmetric mode
         if (cascadeBuilderOpts.mc_populateCascMCCoresAsymmetric) {
@@ -1439,13 +1454,13 @@ struct StrangenessBuilder {
 
       //_________________________________________________________
       // MC handling part (labels only)
-      if constexpr (requires { TMCParticles::iterator; }) {
+      if constexpr (soa::is_table<TMCParticles>) {
         // only worry about this if someone else worried about this
         if ((mEnabledTables[kMcKFCascLabels])) {
           extractMonteCarloProperties(posTrack, negTrack, bachTrack, mcParticles);
 
           // Construct label table (note: this will be joinable with KFCascDatas)
-          kfcasclabels(thisCascInfo.label, thisCascInfo.motherLabel);
+          kfcasclabels(thisCascInfo.label);
         } // enabled tables check
       } // constexpr requires mcParticles check
     } // end loop over cascades
@@ -1469,7 +1484,7 @@ struct StrangenessBuilder {
 
       auto const& strangeTrack = cascadeTrack.template track_as<TTracks>();
       auto const& collision = strangeTrack.collision();
-      auto const& cascade = strangeTrack.cascade();
+      auto const& cascade = cascadeTrack.cascade();
       auto const& v0 = cascade.v0();
       auto const& posTrack = v0.template posTrack_as<TTracks>();
       auto const& negTrack = v0.template negTrack_as<TTracks>();
@@ -1504,7 +1519,7 @@ struct StrangenessBuilder {
       if (mEnabledTables[kTraCascIndices]) {
         tracascidx(cascade.globalIndex(),
                    straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
-                   straHelper.cascade.bachelorTrack, straHelper.cascade.collisionId);
+                   straHelper.cascade.bachelorTrack, cascadeTrack.trackId(), straHelper.cascade.collisionId);
       }
       if (mEnabledTables[kStoredTraCascCores]) {
         tracascdata(straHelper.cascade.charge, cascadeTrack.xiMass(), cascadeTrack.omegaMass(),
@@ -1535,13 +1550,13 @@ struct StrangenessBuilder {
 
       //_________________________________________________________
       // MC handling part (labels only)
-      if constexpr (requires { TMCParticles::iterator; }) {
+      if constexpr (soa::is_table<TMCParticles>) {
         // only worry about this if someone else worried about this
         if ((mEnabledTables[kMcTraCascLabels])) {
           extractMonteCarloProperties(posTrack, negTrack, bachTrack, mcParticles);
 
           // Construct label table (note: this will be joinable with KFCascDatas)
-          tracasclabels(thisCascInfo.label, thisCascInfo.motherLabel);
+          tracasclabels(thisCascInfo.label);
         } // enabled tables check
       } // constexpr requires mcParticles check
     } // end loop over cascades
@@ -1590,7 +1605,7 @@ struct StrangenessBuilder {
     resetInterlinks();
 
     // mark V0s that will be buffered for the cascade building
-    markV0sUsedInCascades(v0s, cascades);
+    markV0sUsedInCascades(v0s, cascades, trackedCascades);
 
     // build V0s
     buildV0s<TTracks>(v0s, mcParticles);
@@ -1600,7 +1615,7 @@ struct StrangenessBuilder {
     buildKFCascades<TTracks>(cascades, mcParticles);
 
     // build tracked cascades only if subscription is Run 3 like (doesn't exist in Run 2)
-    if constexpr (requires { TTrackedCascades::iterator; }) {
+    if constexpr (soa::is_table<TTrackedCascades>) {
       buildTrackedCascades<TTracks>(trackedCascades, mcParticles);
     }
 
