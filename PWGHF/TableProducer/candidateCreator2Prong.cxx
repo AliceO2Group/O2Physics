@@ -44,6 +44,7 @@
 #include "Tools/KFparticle/KFUtilities.h"
 
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/HfMcGenHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
@@ -839,47 +840,7 @@ struct HfCandidateCreator2ProngExpressions {
         }
         continue;
       }
-
-      // Match generated particles.
-      for (const auto& particle : mcParticlesPerMcColl) {
-        flag = 0;
-        origin = 0;
-        std::vector<int> idxBhadMothers{};
-        // Reject particles from background events
-        if (particle.fromBackgroundEvent() && rejectBackground) {
-          rowMcMatchGen(flag, origin, -1);
-          continue;
-        }
-
-        // D0(bar) → π± K∓
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
-          flag = sign * (1 << DecayType::D0ToPiK);
-        }
-
-        // J/ψ → e+ e−
-        if (flag == 0) {
-          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true)) {
-            flag = 1 << DecayType::JpsiToEE;
-          }
-        }
-
-        // J/ψ → μ+ μ−
-        if (flag == 0) {
-          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
-            flag = 1 << DecayType::JpsiToMuMu;
-          }
-        }
-
-        // Check whether the particle is non-prompt (from a b quark).
-        if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-        }
-        if (origin == RecoDecay::OriginType::NonPrompt) {
-          rowMcMatchGen(flag, origin, idxBhadMothers[0]);
-        } else {
-          rowMcMatchGen(flag, origin, -1);
-        }
-      }
+      hf_mcgen_helper::fill2ProngMcMatchGen(mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
     }
   }
 

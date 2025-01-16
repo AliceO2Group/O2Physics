@@ -44,6 +44,7 @@
 #include "Tools/KFparticle/KFUtilities.h"
 
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/HfMcGenHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
@@ -1048,96 +1049,7 @@ struct HfCandidateCreator3ProngExpressions {
         }
         continue;
       }
-
-      // Match generated particles.
-      for (const auto& particle : mcParticlesPerMcColl) {
-        flag = 0;
-        origin = 0;
-        channel = 0;
-        arrDaughIndex.clear();
-        std::vector<int> idxBhadMothers{};
-        // Reject particles from background events
-        if (particle.fromBackgroundEvent() && rejectBackground) {
-          rowMcMatchGen(flag, origin, channel, -1);
-          continue;
-        }
-
-        // D± → π± K∓ π±
-        if (createDplus) {
-          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-            flag = sign * (1 << DecayType::DplusToPiKPi);
-          }
-        }
-
-        // Ds± → K± K∓ π± and D± → K± K∓ π±
-        if (flag == 0 && createDs) {
-          bool isDplus = false;
-          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-            // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
-            // TODO: move to different and explicit flags
-            flag = sign * (1 << DecayType::DsToKKPi);
-          } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-            // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
-            // TODO: move to different and explicit flags
-            flag = sign * (1 << DecayType::DsToKKPi);
-            isDplus = true;
-          }
-          if (flag != 0) {
-            RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
-            if (arrDaughIndex.size() == 2) {
-              for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
-                auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
-                arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
-              }
-              if ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0])) {
-                channel = isDplus ? DecayChannelDToKKPi::DplusToPhiPi : DecayChannelDToKKPi::DsToPhiPi;
-              } else if ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0])) {
-                channel = isDplus ? DecayChannelDToKKPi::DplusToK0starK : DecayChannelDToKKPi::DsToK0starK;
-              }
-            }
-          }
-        }
-
-        // Λc± → p± K∓ π±
-        if (flag == 0 && createLc) {
-          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-            flag = sign * (1 << DecayType::LcToPKPi);
-
-            // Flagging the different Λc± → p± K∓ π± decay channels
-            RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
-            if (arrDaughIndex.size() == 2) {
-              for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
-                auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
-                arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
-              }
-              if ((arrPDGDaugh[0] == arrPDGResonant1[0] && arrPDGDaugh[1] == arrPDGResonant1[1]) || (arrPDGDaugh[0] == arrPDGResonant1[1] && arrPDGDaugh[1] == arrPDGResonant1[0])) {
-                channel = 1;
-              } else if ((arrPDGDaugh[0] == arrPDGResonant2[0] && arrPDGDaugh[1] == arrPDGResonant2[1]) || (arrPDGDaugh[0] == arrPDGResonant2[1] && arrPDGDaugh[1] == arrPDGResonant2[0])) {
-                channel = 2;
-              } else if ((arrPDGDaugh[0] == arrPDGResonant3[0] && arrPDGDaugh[1] == arrPDGResonant3[1]) || (arrPDGDaugh[0] == arrPDGResonant3[1] && arrPDGDaugh[1] == arrPDGResonant3[0])) {
-                channel = 3;
-              }
-            }
-          }
-        }
-
-        // Ξc± → p± K∓ π±
-        if (flag == 0 && createXic) {
-          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-            flag = sign * (1 << DecayType::XicToPKPi);
-          }
-        }
-
-        // Check whether the particle is non-prompt (from a b quark).
-        if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-        }
-        if (origin == RecoDecay::OriginType::NonPrompt) {
-          rowMcMatchGen(flag, origin, channel, idxBhadMothers[0]);
-        } else {
-          rowMcMatchGen(flag, origin, channel, -1);
-        }
-      }
+      hf_mcgen_helper::fill3ProngMcMatchGen(mcParticlesPerMcColl, rowMcMatchGen, rejectBackground, createDplus, createDs, createLc, createXic);
     }
   }
 

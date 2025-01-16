@@ -26,6 +26,7 @@
 #include "Common/DataModel/CollisionAssociationTables.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/HfMcGenHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
@@ -448,20 +449,7 @@ struct HfCandidateCreatorB0Expressions {
       rowMcMatchRec(flag, origin, debug);
     } // rec
 
-    // Match generated particles.
-    for (const auto& particle : mcParticles) {
-      flag = 0;
-      origin = 0;
-      // B0 → D- π+
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kB0, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true)) {
-        // D- → π- K+ π-
-        auto candDMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-        if (RecoDecay::isMatchedMCGen(mcParticles, candDMC, -static_cast<int>(Pdg::kDPlus), std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
-          flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
-        }
-      }
-      rowMcMatchGen(flag, origin);
-    } // gen
+    hf_mcgen_helper::fillB0McMatchGen(mcParticles, rowMcMatchGen); // gen
   }   // processMc
   PROCESS_SWITCH(HfCandidateCreatorB0Expressions, processMc, "Process MC", false);
 }; // struct

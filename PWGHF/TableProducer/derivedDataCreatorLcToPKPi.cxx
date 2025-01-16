@@ -112,6 +112,9 @@ struct HfDerivedDataCreatorLcToPKPi {
     if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
+    if (confDerData.fillMcRCollId && doprocessMcGenOnly) {
+      LOGP(fatal, "fillMcRCollId and processMcGenOnly cannot be enabled at the same time.");
+    }
     rowsCommon.init(confDerData);
   }
 
@@ -387,6 +390,14 @@ struct HfDerivedDataCreatorLcToPKPi {
     rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcMlAll, "Process MC with ML", false);
+
+  void processMcGenOnly(TypeMcCollisions const& mcCollisions,
+                        MatchedGenCandidatesMc const& mcParticles)
+  {
+    rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+  }
+  PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcGenOnly, "Process MCGen only", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

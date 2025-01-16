@@ -33,6 +33,7 @@
 #include "Common/DataModel/CollisionAssociationTables.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/HfMcGenHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
@@ -386,31 +387,7 @@ struct HfCandidateCreatorBplusExpressions {
       }
       rowMcMatchRec(flag, origin);
     }
-
-    // Match generated particles.
-    for (const auto& particle : mcParticles) {
-      flag = 0;
-      origin = 0;
-      signB = 0;
-      signD0 = 0;
-      int indexGenD0 = -1;
-
-      // B± → D0bar(D0) π± → (K± π∓) π±
-      std::vector<int> arrayDaughterB;
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kBPlus, std::array{-kD0pdg, +kPiPlus}, true, &signB, 1, &arrayDaughterB)) {
-        // D0(bar) → π± K∓
-        for (auto iD : arrayDaughterB) {
-          auto candDaughterMC = mcParticles.rawIteratorAt(iD);
-          if (std::abs(candDaughterMC.pdgCode()) == kD0pdg) {
-            indexGenD0 = RecoDecay::isMatchedMCGen(mcParticles, candDaughterMC, Pdg::kD0, std::array{-kKPlus, +kPiPlus}, true, &signD0, 1);
-          }
-        }
-        if (indexGenD0 > -1) {
-          flag = signB * (1 << hf_cand_bplus::DecayType::BplusToD0Pi);
-        }
-      }
-      rowMcMatchGen(flag, origin);
-    } // B candidate
+    hf_mcgen_helper::fillBplusMcMatchGen(mcParticles, rowMcMatchGen); // gen
   }   // process
   PROCESS_SWITCH(HfCandidateCreatorBplusExpressions, processMc, "Process MC", false);
 }; // struct
