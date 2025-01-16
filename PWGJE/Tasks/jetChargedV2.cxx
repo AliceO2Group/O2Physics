@@ -745,6 +745,7 @@ struct JetChargedV2 {
       }
       registry.fill(HIST("h3_centrality_deltapT_RandomCornPhi_localrhovsphiwithoutleadingjet"), collision.centrality(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * rholocal, rcPhiPsi2, 1.0);
     }
+    hPtsumSumptFit->Reset();
     evtnum += 1;
   }
   PROCESS_SWITCH(JetChargedV2, processSigmaPt, "Sigma pT and bkg as fcn of phi", true);
