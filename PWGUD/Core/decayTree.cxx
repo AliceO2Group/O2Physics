@@ -9,6 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <utility>
+#include <cstdio>
+#include <map>
+#include <string>
+#include <vector>
+
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
 #include "decayTree.h"

@@ -13,6 +13,8 @@
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 // \since  01.03.2024
 
+#include <string>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 

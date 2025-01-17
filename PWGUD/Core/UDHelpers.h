@@ -18,6 +18,7 @@
 
 #include <vector>
 #include <bitset>
+
 #include "TLorentzVector.h"
 #include "Framework/Logger.h"
 #include "DataFormatsFT0/Digit.h"
@@ -741,14 +742,14 @@ int64_t sameMCCollision(T tracks, aod::McCollisions, aod::McParticles)
           colID = mccol.globalIndex();
         } else {
           if (colID != mccol.globalIndex()) {
-            return (int64_t)-1;
+            return static_cast<int64_t>(-1);
           }
         }
       } else {
-        return (int64_t)-1;
+        return static_cast<int64_t>(-1);
       }
     } else {
-      return (int64_t)-1;
+      return static_cast<int64_t>(-1);
     }
   }
 
