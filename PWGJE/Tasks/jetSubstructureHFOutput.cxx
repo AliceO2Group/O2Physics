@@ -166,13 +166,17 @@ struct JetSubstructureHFOutputTask {
           if (candidateTableIndex != candidateMap.end()) {
             candidateIndex = candidateTableIndex->second;
           }
-          if constexpr (!isMCP) {
-            if (nJetInCollision == 0) {
-              collisionOutputTable(collision.posZ(), collision.centrality(), collision.eventSel(), eventWeight);
-              collisionIndex = collisionOutputTable.lastIndex();
+          if (nJetInCollision == 0) {
+            float centrality = -1.0;
+            uint8_t eventSel = 0.0;
+            if constexpr (!isMCP) {
+              centrality = collision.centrality();
+              eventSel = collision.eventSel();
             }
-            nJetInCollision++;
+            collisionOutputTable(collision.posZ(), centrality, eventSel, eventWeight);
+            collisionIndex = collisionOutputTable.lastIndex();
           }
+          nJetInCollision++;
           fillJetTables(jet, candidate, collisionIndex, candidateIndex, jetOutputTable, jetSubstructureOutputTable, jetMap);
         }
       }
