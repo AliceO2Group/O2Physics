@@ -22,6 +22,7 @@
 #include <TLorentzVector.h>
 #include <TDatabasePDG.h>
 #include "TGrid.h"
+#include "TF1.h"
 #include <string>
 
 #include "CCDB/BasicCCDBManager.h"
