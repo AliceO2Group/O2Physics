@@ -111,9 +111,10 @@ static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
 enum TrackType {
-  kNoChild,    //! Not a V0 child
+  kNoChild,    //! Not any child
   kPosChild,   //! Positive V0 child
   kNegChild,   //! Negative V0 child
+  kBachelor,   //! Bachelor Cascade child
   kNTrackTypes //! Number of child types
 };
 
