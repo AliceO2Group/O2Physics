@@ -117,6 +117,19 @@ struct nuclei_in_jets {
   Configurable<bool> setDCAselectionPtDep{"setDCAselectionPtDep", true, "require pt dependent selection"};
   Configurable<bool> applyReweighting{"applyReweighting", true, "apply reweighting"};
 
+  // Bethe-bloch Parametrization of ITS cluster size
+  Configurable<double> bbPar0{"bbPar0", 0.0005398062, "Bethe Bloch Par 0"};
+  Configurable<double> bbPar1{"bbPar1", 107.8740579695, "Bethe Bloch Par 1"};
+  Configurable<double> bbPar2{"bbPar2", 0.0014741633, "Bethe Bloch Par 2"};
+  Configurable<double> bbPar3{"bbPar3", 1.0516904808, "Bethe Bloch Par 3"};
+  Configurable<double> bbPar4{"bbPar4", -9.1992805220, "Bethe Bloch Par 4"};
+  Configurable<double> bbPar5{"bbPar5", 37.1569852511, "Bethe Bloch Par 5"};
+  Configurable<double> bbPar6{"bbPar6", 2.3000000000, "Bethe Bloch Par 6"};
+  Configurable<double> bbPar7{"bbPar7", 0.9382720882, "Bethe Bloch Par 7"};
+  Configurable<double> bbPar8{"bbPar8", 1.0, "Bethe Bloch Par 8"};
+  Configurable<double> resolClsSize{"resolClsSize", 0.21, "Resolution of cls size distribution"};
+  Configurable<double> nSigmaClsSizeMax{"nSigmaClsSizeMax", 1.0, "nSigma cut on cluster size"};
+
   Configurable<std::string> url_to_ccdb{"url_to_ccdb", "http://alice-ccdb.cern.ch", "url of the personal ccdb"};
   Configurable<std::string> path_to_file{"path_to_file", "", "path to file with reweighting"};
   Configurable<std::string> histo_name_weight_antip_jet{"histo_name_weight_antip_jet", "", "reweighting histogram: antip in jet"};
@@ -232,6 +245,18 @@ struct nuclei_in_jets {
     registryMC.add("antiproton_eta_pt_pythia", "antiproton_eta_pt_pythia", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {20, -1.0, 1.0, "#it{#eta}"}});
     registryMC.add("antiproton_eta_pt_jet", "antiproton_eta_pt_jet", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {20, -1.0, 1.0, "#it{#eta}"}});
     registryMC.add("antiproton_eta_pt_ue", "antiproton_eta_pt_ue", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {20, -1.0, 1.0, "#it{#eta}"}});
+
+    // Bethe-Bloch
+    TF1 *bbClsSize = new TF1("bbClsSize", BetheBloch, 0.1, 10, 9);
+    bbClsSize->SetParameter(0, bbPar0);
+    bbClsSize->SetParameter(1, bbPar1);
+    bbClsSize->SetParameter(2, bbPar2);
+    bbClsSize->SetParameter(3, bbPar3);
+    bbClsSize->SetParameter(4, bbPar4);
+    bbClsSize->SetParameter(5, bbPar5);
+    bbClsSize->SetParameter(6, bbPar6);
+    bbClsSize->SetParameter(7, bbPar7);
+    bbClsSize->SetParameter(8, bbPar8);
   }
 
   // Single-Track Selection for Particles inside Jets
@@ -424,6 +449,25 @@ struct nuclei_in_jets {
     if (theta > o2::constants::math::PIHalf)
       lambda = theta - o2::constants::math::PIHalf;
     return lambda;
+  }
+
+  double BetheBloch(double *x, double *par)
+  {
+    // 5 parameters for the bethe bloch from 0 to 4
+    // 1 parameter for the mip mpar[5]
+    // 1 parameter for the charge exponent mpar[6]
+    // 1 parameter for the mass mpar[7]
+    // 1 parameter for the charge mpar[8]
+    return par[5] * BetheBlochAleph(x[0] / par[7], par[0], par[1], par[2], par[3], par[4]) * TMath::Power(par[8], par[6]);
+  }
+  
+  double BetheBlochAleph(double bg, double kp1, double kp2, double kp3, double kp4, double kp5)
+  {
+    double beta = bg / std::sqrt(1.0 + bg * bg);
+    double aa = std::pow(beta, kp4);
+    double bb = std::pow(1.0 / bg, kp5);
+    bb = std::log(kp3 + bb);
+    return (kp2 - aa - bb) * kp1 / aa;
   }
 
   void GetReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histname_antip_jet, TString histname_antip_ue)
@@ -650,6 +694,7 @@ struct nuclei_in_jets {
         double nsigmaTOFDe = track.tofNSigmaDe();
         double nsigmaTPCHe = track.tpcNSigmaHe();
         double pt = track.pt();
+        double momentum = track.p();
         double dcaxy = track.dcaXY();
         double dcaz = track.dcaZ();
 
@@ -664,11 +709,11 @@ struct nuclei_in_jets {
         }
         averageItsClusterSize = averageItsClusterSize / static_cast<double>(nItsCls);
         double lambda = trackInclination(track.eta());
-
-        double avgClsCosLMin(0.0); // pt-dependent selection will be implemented
-        double avgClsCosLMax(5.0); // pt-dependent selection will be implemented
+        double avgClsCosL = averageItsClusterSize * std::cos(lambda);
+        double nsigma = (avgClsCosL - bbClsSize->Eval(momentum)) / (resolClsSize * bbClsSize->Eval(momentum));
+          
         bool isItsSelected = false;
-        if (averageItsClusterSize * std::cos(lambda) > avgClsCosLMin && averageItsClusterSize * std::cos(lambda) < avgClsCosLMax) {
+        if (std::fabs(nsigma) < nSigmaClsSizeMax) {
           isItsSelected = true;
         }
 
