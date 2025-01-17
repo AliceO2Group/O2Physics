@@ -340,43 +340,50 @@ struct HfTreeCreatorLcToPKPi {
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
   using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>;
 
+  // number showing MC status of the candidate (signal or background, prompt or non-prompt etc.)
+  enum SigBgStatus : int {
+    Background = 0, // combinatorial background, at least one of the prongs do not originate from the Lc decay
+    Prompt, // signal with Lc produced directly in the event
+    NonPrompt, // signal with Lc produced aftewards the event, e.g. during decay of beauty particle
+    WrongOrder, // all the prongs are from Lc decay, but proton and pion hypothesis are swapped
+    Default = -1 // impossible, should not be the case, to catch logical error if any
+  };
+
+  /// \brief function which determines if the candidate corresponds to MC-particle or belongs to a combinatorial background
+  /// \param candidate candidate to be checked for being signal or background
+  /// \param CandFlag 0 for PKPi hypothesis and 1 for PiKP hypothesis
+  /// \return SigBgStatus enum with value encoding MC status of the candidate
   template <typename CandType>
-  int DetermineSignalBgStatus(const CandType& candidate, int CandFlag)
+  SigBgStatus determineSignalBgStatus(const CandType& candidate, int CandFlag)
   {
     const int flag = candidate.flagMcMatchRec();
     const int origin = candidate.originMcRec();
     const int swapped = candidate.isCandidateSwapped();
-    enum SigBgStatus : int {
-      kBackground = 0,
-      kPrompt,
-      kNonPrompt,
-      kWrongOrder,
-      kDefault = -1 // impossible, should not be the case, to catch logical error if any
-    };
-    int status{kDefault};
+
+    SigBgStatus status{Default};
 
     if (std::abs(flag) == (1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi)) {
       if (swapped == 0) {
         if (CandFlag == 0) {
           if (origin == RecoDecay::OriginType::Prompt)
-            status = kPrompt;
+            status = Prompt;
           else if (origin == RecoDecay::OriginType::NonPrompt)
-            status = kNonPrompt;
+            status = NonPrompt;
         } else {
-          status = kWrongOrder;
+          status = WrongOrder;
         }
       } else {
         if (CandFlag == 1) {
           if (origin == RecoDecay::OriginType::Prompt)
-            status = kPrompt;
+            status = Prompt;
           else if (origin == RecoDecay::OriginType::NonPrompt)
-            status = kNonPrompt;
+            status = NonPrompt;
         } else {
-          status = kWrongOrder;
+          status = WrongOrder;
         }
       }
     } else {
-      status = kBackground;
+      status = Background;
     }
 
     return status;
@@ -465,8 +472,8 @@ struct HfTreeCreatorLcToPKPi {
       auto fillTable = [&](int CandFlag) {
         double pseudoRndm = trackPos1.pt() * 1000. - static_cast<int64_t>(trackPos1.pt() * 1000);
         const int FunctionSelection = CandFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
-        const int sigbgstatus = DetermineSignalBgStatus(candidate, CandFlag);
-        bool isMcCandidateSignal = (sigbgstatus == 1) || (sigbgstatus == 2);
+        const int sigbgstatus = determineSignalBgStatus(candidate, CandFlag);
+        bool isMcCandidateSignal = (sigbgstatus == Prompt) || (sigbgstatus == NonPrompt);
         if (FunctionSelection >= selectionFlagLc && (/*keep all*/ (!keepOnlySignalMc && !keepOnlyBkg) || /*keep only signal*/ (keepOnlySignalMc && isMcCandidateSignal) || /*keep only background and downsample it*/ (keepOnlyBkg && !isMcCandidateSignal && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))))) {
           float FunctionInvMass, FunctionInvMassKPi;
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
