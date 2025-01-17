@@ -397,6 +397,9 @@ enum ParticleOriginMCTruth {
   kWrongCollision,             //! particle, that was associated wrongly to the collision
   kSecondaryDaughterLambda,    //! Daughter from a Lambda decay
   kSecondaryDaughterSigmaplus, //! Daughter from a Sigma^plus decay
+  kSecondaryDaughterSigma0,    //! Daughter from a Sigma^0 decay
+  kSecondaryDaughterXiMinus,   //! Daughter from a Xi^- decay
+  kSecondaryDaughterXi0,       //! Daughter from a Xi^0 decay
   kElse,                       //! none of the above; (NOTE: used to catch bugs. will be removed once MC usage is properly validated)
   kNOriginMCTruthTypes
 };

@@ -216,6 +216,10 @@ struct femtoDreamProducerTask {
 
     int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
     TrackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
+    TrackRegistry.add("AnalysisQA/getGenStatusCode", "; Bit; Entries", kTH1F, {{200, 0, 200}});
+    TrackRegistry.add("AnalysisQA/getProcess", "; Bit; Entries", kTH1F, {{200, 0, 200}});
+    TrackRegistry.add("AnalysisQA/Mother", "; Bit; Entries", kTH1F, {{4000, -4000, 4000}});
+    TrackRegistry.add("AnalysisQA/Particle", "; Bit; Entries", kTH1F, {{4000, -4000, 4000}});
     V0Registry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
     ResoRegistry.add("AnalysisQA/Reso/InvMass", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.8, 1.5}});
     ResoRegistry.add("AnalysisQA/Reso/InvMass_selected", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.8, 1.5}});
@@ -442,11 +446,14 @@ struct femtoDreamProducerTask {
       // get corresponding MC particle and its info
       auto particleMC = particle.mcParticle();
       auto pdgCode = particleMC.pdgCode();
+      TrackRegistry.fill(HIST("AnalysisQA/Particle"), pdgCode);
       int particleOrigin = 99;
       int pdgCodeMother = -1;
       // get list of mothers, but it could be empty (for example in case of injected light nuclei)
       auto motherparticlesMC = particleMC.template mothers_as<aod::McParticles>();
       // check pdg code
+      TrackRegistry.fill(HIST("AnalysisQA/getGenStatusCode"), particleMC.getGenStatusCode());
+      TrackRegistry.fill(HIST("AnalysisQA/getProcess"), particleMC.getProcess());
       // if this fails, the particle is a fake
       if (abs(pdgCode) == abs(ConfTrkPDGCode.value)) {
         // check first if particle is from pile up
@@ -464,6 +471,7 @@ struct femtoDreamProducerTask {
           // get direct mother
           auto motherparticleMC = motherparticlesMC.front();
           pdgCodeMother = motherparticleMC.pdgCode();
+          TrackRegistry.fill(HIST("AnalysisQA/Mother"), pdgCodeMother);
           particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
           // check if particle is material
           // particle is from inelastic hadronic interaction -> getProcess() == 23
