@@ -44,7 +44,7 @@
 #include "Tools/KFparticle/KFUtilities.h"
 
 #include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Core/HfMcGenHelper.h"
+#include "PWGHF/Core/HfMcGenUtility.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
@@ -840,7 +840,7 @@ struct HfCandidateCreator2ProngExpressions {
         }
         continue;
       }
-      hf_mcgen_helper::fill2ProngMcMatchGen(mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
+      hf_mc_gen::fillMcMatchGen2Prong(mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
     }
   }
 

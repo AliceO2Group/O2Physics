@@ -33,7 +33,7 @@
 #include "Common/DataModel/CollisionAssociationTables.h"
 
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/HfMcGenHelper.h"
+#include "PWGHF/Core/HfMcGenUtility.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
@@ -366,7 +366,6 @@ struct HfCandidateCreatorBplusExpressions {
     int8_t signB = 0, signD0 = 0;
     int8_t flag = 0;
     int8_t origin = 0;
-    int kD0pdg = Pdg::kD0;
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
@@ -387,7 +386,7 @@ struct HfCandidateCreatorBplusExpressions {
       }
       rowMcMatchRec(flag, origin);
     }
-    hf_mcgen_helper::fillBplusMcMatchGen(mcParticles, rowMcMatchGen); // gen
+    hf_mc_gen::fillMcMatchGenBplus(mcParticles, rowMcMatchGen); // gen
   }   // process
   PROCESS_SWITCH(HfCandidateCreatorBplusExpressions, processMc, "Process MC", false);
 }; // struct

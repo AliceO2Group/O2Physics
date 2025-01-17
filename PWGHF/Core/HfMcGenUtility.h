@@ -9,13 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HfMcGenHelper.h
-/// \brief helper functions for HF McGen workflows
+/// \file HfMcGenUtility.h
+/// \brief utility functions for HF McGen workflows
 ///
 /// \author Nima Zardoshti, nima.zardoshti@cern.ch, CERN
 
-#ifndef PWGHF_CORE_HFMCGENHELPER_H_
-#define PWGHF_CORE_HFMCGENHELPER_H_
+#ifndef PWGHF_CORE_HFMCGENUTILITY_H_
+#define PWGHF_CORE_HFMCGENUTILITY_H_
 
 #include <TPDGCode.h>
 #include "CommonConstants/PhysicsConstants.h"
@@ -24,11 +24,11 @@
 
 using namespace o2::constants::physics;
 
-namespace hf_mcgen_helper
+namespace hf_mc_gen
 {
 
 template <typename T, typename U>
-void fill2ProngMcMatchGen(T const& mcParticles, U& rowMcMatchGen, bool rejectBackground)
+void fillMcMatchGen2Prong(T const& mcParticles, U& rowMcMatchGen, bool rejectBackground)
 {
 
   // Match generated particles.
@@ -75,7 +75,7 @@ void fill2ProngMcMatchGen(T const& mcParticles, U& rowMcMatchGen, bool rejectBac
 }
 
 template <typename T, typename U>
-void fill3ProngMcMatchGen(T const& mcParticles, U& rowMcMatchGen, bool rejectBackground, bool createDplus, bool createDs, bool createLc, bool createXic)
+void fillMcMatchGen3Prong(T const& mcParticles, U& rowMcMatchGen, bool rejectBackground, bool createDplus, bool createDs, bool createLc, bool createXic)
 {
 
   // Match generated particles.
@@ -177,7 +177,7 @@ void fill3ProngMcMatchGen(T const& mcParticles, U& rowMcMatchGen, bool rejectBac
 }
 
 template <typename T, typename U>
-void fillBplusMcMatchGen(T const& mcParticles, U& rowMcMatchGen)
+void fillMcMatchGenBplus(T const& mcParticles, U& rowMcMatchGen)
 {
 
   // Match generated particles.
@@ -207,7 +207,7 @@ void fillBplusMcMatchGen(T const& mcParticles, U& rowMcMatchGen)
 }
 
 template <typename T, typename U>
-void fillB0McMatchGen(T const& mcParticles, U& rowMcMatchGen)
+void fillMcMatchGenB0(T const& mcParticles, U& rowMcMatchGen)
 {
 
   // Match generated particles.
@@ -227,6 +227,6 @@ void fillB0McMatchGen(T const& mcParticles, U& rowMcMatchGen)
   } // gen
 }
 
-} // namespace hf_mcgen_helper
+} // namespace hf_mc_gen
 
-#endif // PWGHF_CORE_HFMCGENHELPER_H_
+#endif // PWGHF_CORE_HFMCGENUTILITY_H_

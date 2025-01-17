@@ -26,7 +26,7 @@
 #include "Common/DataModel/CollisionAssociationTables.h"
 
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/HfMcGenHelper.h"
+#include "PWGHF/Core/HfMcGenUtility.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
@@ -449,7 +449,7 @@ struct HfCandidateCreatorB0Expressions {
       rowMcMatchRec(flag, origin, debug);
     } // rec
 
-    hf_mcgen_helper::fillB0McMatchGen(mcParticles, rowMcMatchGen); // gen
+    hf_mc_gen::fillMcMatchGenB0(mcParticles, rowMcMatchGen); // gen
   }   // processMc
   PROCESS_SWITCH(HfCandidateCreatorB0Expressions, processMc, "Process MC", false);
 }; // struct

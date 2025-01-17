@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateCreatorMcGenOnly.cxx
+/// \file candidateCreatorMcGen.cxx
 /// \brief McGen only selection of heavy-flavour particles
 ///
 /// \author Nima Zardoshti, nima.zardoshti@cern.ch, CERN
@@ -26,7 +26,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
 
-#include "PWGHF/Core/HfMcGenHelper.h"
+#include "PWGHF/Core/HfMcGenUtility.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 using namespace o2;
@@ -34,7 +34,7 @@ using namespace o2::analysis;
 using namespace o2::framework;
 
 /// Reconstruction of heavy-flavour 2-prong decay candidates
-struct HfCandidateCreatorMcGenOnly {
+struct HfCandidateCreatorMcGen {
 
   Produces<aod::HfCand2ProngMcGen> rowMcMatchGen2Prong;
   Produces<aod::HfCand3ProngMcGen> rowMcMatchGen3Prong;
@@ -60,23 +60,22 @@ struct HfCandidateCreatorMcGenOnly {
                aod::McParticles const& mcParticles)
   {
     if (fill2Prong) {
-      hf_mcgen_helper::fill2ProngMcMatchGen(mcParticles, rowMcMatchGen2Prong, rejectBackground2Prong);
+      hf_mc_gen::fillMcMatchGen2Prong(mcParticles, rowMcMatchGen2Prong, rejectBackground2Prong);
     }
     if (fill3Prong) {
-      hf_mcgen_helper::fill3ProngMcMatchGen(mcParticles, rowMcMatchGen3Prong, rejectBackground3Prong, createDplus, createDs, createLc, createXic);
+      hf_mc_gen::fillMcMatchGen3Prong(mcParticles, rowMcMatchGen3Prong, rejectBackground3Prong, createDplus, createDs, createLc, createXic);
     }
     if (fillBplus) {
-      hf_mcgen_helper::fillBplusMcMatchGen(mcParticles, rowMcMatchGenBplus);
+      hf_mc_gen::fillMcMatchGenBplus(mcParticles, rowMcMatchGenBplus);
     }
     if (fillB0) {
-      hf_mcgen_helper::fillB0McMatchGen(mcParticles, rowMcMatchGenB0);
+      hf_mc_gen::fillMcMatchGenB0(mcParticles, rowMcMatchGenB0);
     }
   }
-  PROCESS_SWITCH(HfCandidateCreatorMcGenOnly, process, "Process candidates", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateCreatorMcGenOnly>(cfgc, TaskName{"hf-candidate-creator-mcgen-only"})};
+    adaptAnalysisTask<HfCandidateCreatorMcGen>(cfgc)};
 }
