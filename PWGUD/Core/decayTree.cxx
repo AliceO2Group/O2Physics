@@ -195,7 +195,7 @@ void resonance::Print()
     fpidSelector.Print();
   } else {
     LOGF(info, "      Angle cuts");
-    for (const auto anglecut : fangleCuts) {
+    for (const auto& anglecut : fangleCuts) {
       anglecut->Print();
     }
   }
@@ -883,11 +883,11 @@ bool decayTree::init(std::string const& parFile, o2::framework::HistogramRegistr
 void decayTree::updateParents()
 {
   // reset parents
-  for (const auto res : fResonances) {
+  for (const auto& res : fResonances) {
     res->clearParents();
   }
 
-  for (const auto res : fResonances) {
+  for (const auto& res : fResonances) {
     for (const auto& daughName : res->getDaughters()) {
       auto daugh = getResonance(daughName);
       daugh->addParent(res->name());
@@ -899,7 +899,7 @@ void decayTree::reset()
 {
   fStatus = 0;
   fChargeState = -1;
-  for (const auto res : fResonances) {
+  for (const auto& res : fResonances) {
     res->reset();
   }
 }
@@ -914,7 +914,7 @@ void decayTree::updateStatus()
   bool isULS = true;
   bool isLS = true;
   fStatus = 1;
-  for (const auto res : fResonances) {
+  for (const auto& res : fResonances) {
     if (res->status() < 3) {
       return;
     }
@@ -942,11 +942,11 @@ void decayTree::Print()
   LOGF(info, "  dBCRange: %d : %d", fdBCMin, fdBCMax);
   LOGF(info, "  FITVetoes: [ %d %d %d %d %d ]", fFITvetos[0], fFITvetos[1], fFITvetos[2], fFITvetos[3], fFITvetos[4]);
   LOGF(info, "  ULS states");
-  for (const auto chstat : fULSstates) {
+  for (const auto& chstat : fULSstates) {
     LOGF(info, "    %d", chstat);
   }
   LOGF(info, "  LS states");
-  for (const auto chstat : fLSstates) {
+  for (const auto& chstat : fLSstates) {
     LOGF(info, "    %d", chstat);
   }
   LOGF(info, "");
@@ -954,14 +954,14 @@ void decayTree::Print()
   LOGF(info, "  nResonances: %d", fResonances.size());
   LOGF(info, "  nFinals: %d", fnFinals);
   LOGF(info, "  Resonances");
-  for (const auto res : fResonances) {
+  for (const auto& res : fResonances) {
     res->Print();
   }
 }
 
 resonance* decayTree::getResonance(std::string name)
 {
-  for (const auto res : fResonances) {
+  for (const auto& res : fResonances) {
     if (res->name() == name) {
       return res;
     }
@@ -972,7 +972,7 @@ resonance* decayTree::getResonance(std::string name)
 
 resonance* decayTree::getFinal(int counter)
 {
-  for (const auto res : fResonances) {
+  for (const auto& res : fResonances) {
     if (res->counter() == counter) {
       return res;
     }
@@ -992,7 +992,7 @@ std::vector<resonance*> decayTree::getFinals(resonance* res)
     } else {
       for (const auto& d2Name : d1->getDaughters()) {
         auto d2 = getResonance(d2Name);
-        for (const auto d3 : getFinals(d2)) {
+        for (const auto& d3 : getFinals(d2)) {
           resFinals.push_back(d3);
         }
       }
@@ -1005,10 +1005,10 @@ std::vector<resonance*> decayTree::getFinals(resonance* res)
 void decayTree::checkAngles()
 {
   // loop over resonances
-  for (const auto res : fResonances) {
+  for (const auto& res : fResonances) {
     auto anglecuts = res->getAngleCuts();
     // loop over angle cuts
-    for (const auto anglecut : anglecuts) {
+    for (const auto& anglecut : anglecuts) {
       auto rnames = anglecut->rNames();
       auto anglerange = anglecut->angleRange();
 

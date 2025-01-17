@@ -83,7 +83,7 @@ class pidSelector
   bool goodTrack(TTs track)
   {
     // loop over pidcuts
-    for (const auto pidcut : fpidCuts) {
+    for (const auto& pidcut : fpidCuts) {
 
       float mom = 0.;
       float detValue = 0.;
@@ -503,9 +503,9 @@ class decayTree
 
     // loop over possible combinations
     LOGF(debug, "New event");
-    for (const auto comb : combs) {
+    for (const auto& comb : combs) {
       std::string scomb("");
-      for (auto i : comb) {
+      for (const auto& i : comb) {
         scomb.append(" ").append(std::to_string(i));
       }
       LOGF(debug, "  combination:%s", scomb);
@@ -519,7 +519,7 @@ class decayTree
 
       // loop over resonances and compute
       reset();
-      for (const auto res : fResonances) {
+      for (const auto& res : fResonances) {
         computeResonance(res, tracks, comb);
       }
 
@@ -531,7 +531,7 @@ class decayTree
       if (fStatus >= 2) {
         goodCombs.push_back(newHash);
         std::map<std::string, reconstructedParticle> recResonances;
-        for (const auto res : fResonances) {
+        for (const auto& res : fResonances) {
           recResonances.insert({res->name(), reconstructedParticle(res->name(), res->IVM(), comb)});
         }
 
@@ -559,7 +559,7 @@ class decayTree
 
     // results["ULS"] contains the ULS results
     // results["LS"] contains the LS results
-    for (const auto cc : fccs) {
+    for (const auto& cc : fccs) {
       // result is a std::vector<std::map<std::string, reconstructedParticle>>
       for (auto result : results[cc]) {
 
@@ -851,7 +851,7 @@ class decayTree
     std::string hname;
     std::string annot;
     fhistPointers.clear();
-    for (const auto res : getResonances()) {
+    for (const auto& res : getResonances()) {
       auto max = AxisSpec(res->nmassBins(), res->massHistRange()[0], res->massHistRange()[1]);
       auto momax = AxisSpec(res->nmomBins(), res->momHistRange()[0], res->momHistRange()[1]);
 

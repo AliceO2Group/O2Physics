@@ -520,7 +520,7 @@ struct McDGCandProducer {
         // mothers
         newmids.clear();
         auto oldmids = mcpart.mothersIds();
-        for (const auto oldmid : oldmids) {
+        for (const auto& oldmid : oldmids) {
           auto m = McParts.rawIteratorAt(oldmid);
           LOGF(debug, "    m %d", m.globalIndex());
           if (mcPartIsSaved.find(oldmid) != mcPartIsSaved.end()) {
