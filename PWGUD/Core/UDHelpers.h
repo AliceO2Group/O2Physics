@@ -789,33 +789,46 @@ bool isSTARLightJPsimumu(T MCparts)
 }
 
 // -----------------------------------------------------------------------------
+// PbPb di electron production
+// [15, 11, 13], [15, 11, 13]
+template <typename T>
+bool isUpcgen(T MCparts)
+{
+  if (MCparts.size() < 4) {
+    return false;
+  } else {
+    auto pid1 = std::abs(MCparts.iteratorAt(0).pdgCode());
+    auto pid2 = std::abs(MCparts.iteratorAt(1).pdgCode());
+    if (pid1 != 11 && pid1 != 13 && pid1 != 15)
+      return false;
+    if (pid2 != 11 && pid2 != 13 && pid2 != 15)
+      return false;
+  }
+  return true;
+}
+
+// -----------------------------------------------------------------------------
 // In pp events produced with GRANIITTI the stack starts with
-// 22212/22212/99/22212/2212/99/90
+// 22212/22212/22212/2212/[211,321,]/[211,321,]
 template <typename T>
 bool isGraniittiCDE(T MCparts)
 {
 
-  for (auto MCpart : MCparts) {
-    LOGF(debug, " MCpart.pdgCode() %d", MCpart.pdgCode());
-  }
-  LOGF(debug, "");
+  //for (auto MCpart : MCparts) {
+  //  LOGF(info, " MCpart.pdgCode() %d", MCpart.pdgCode());
+  //}
+  //LOGF(debug, "");
 
-  if (MCparts.size() < 7) {
+  if (MCparts.size() < 6) {
     return false;
   } else {
     if (MCparts.iteratorAt(0).pdgCode() != 2212)
       return false;
     if (MCparts.iteratorAt(1).pdgCode() != 2212)
       return false;
-    if (MCparts.iteratorAt(2).pdgCode() != 99)
+    if (MCparts.iteratorAt(2).pdgCode() != 2212)
       return false;
     if (MCparts.iteratorAt(3).pdgCode() != 2212)
-      return false;
-    if (MCparts.iteratorAt(4).pdgCode() != 2212)
-      return false;
-    if (MCparts.iteratorAt(5).pdgCode() != 99)
-      return false;
-    if (MCparts.iteratorAt(6).pdgCode() != 90)
       return false;
   }
 
@@ -841,6 +854,11 @@ int isOfInterest(T MCparts)
   // STARLIGHT J/Psi -> mu+ + mu-
   if (isSTARLightJPsimumu(MCparts)) {
     return 3;
+  }
+
+  // Upcgen
+  if (isUpcgen(MCparts)) {
+    return 4;
   }
 
   return 0;
