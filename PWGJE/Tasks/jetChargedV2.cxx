@@ -350,25 +350,13 @@ struct JetChargedV2 {
   }
 
   void processInOutJetV2(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors>>::iterator const& collision,
-                         soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
-                         aod::JetTracks const& tracks)
+                         soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
-    }
-
-    double leadingJetPt = -1;
-    double leadingJetEta = -1;
-
-    // auto collJets = jets.sliceBy(jetsPerJCollision, collision.globalIndex());
-    for (const auto& jet : jets) {
-      if (jet.pt() > leadingJetPt) {
-        leadingJetPt = jet.pt();
-        leadingJetEta = jet.eta();
-      }
     }
     //=====================< evt pln [n=2->\Psi_2, n=3->\Psi_3] >=====================//
     histosQA.fill(HIST("histCent"), collision.cent());
