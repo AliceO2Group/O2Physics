@@ -127,6 +127,7 @@ struct TaskPi0FlowEMC {
   EMCPhotonCut fEMCCut;
   struct : ConfigurableGroup {
     std::string prefix = "emccuts";
+    Configurable<std::string> clusterDefinition{"clusterDefinition", "kV3Default", "Clusterizer to be selected, e.g. V3Default"};
     Configurable<float> cfgEMCminTime{"cfgEMCminTime", -25., "Minimum cluster time for EMCal time cut"};
     Configurable<float> cfgEMCmaxTime{"cfgEMCmaxTime", +30., "Maximum cluster time for EMCal time cut"};
     Configurable<float> cfgEMCminM02{"cfgEMCminM02", 0.1, "Minimum M02 for EMCal M02 cut"};
@@ -222,6 +223,7 @@ struct TaskPi0FlowEMC {
     fEMCCut.SetM02Range(emccuts.cfgEMCminM02, emccuts.cfgEMCmaxM02);
     fEMCCut.SetTimeRange(emccuts.cfgEMCminTime, emccuts.cfgEMCmaxTime);
     fEMCCut.SetUseExoticCut(emccuts.cfgEMCUseExoticCut);
+    fEMCCut.SetClusterizer(emccuts.clusterDefinition);
   }
 
   void init(InitContext&)
