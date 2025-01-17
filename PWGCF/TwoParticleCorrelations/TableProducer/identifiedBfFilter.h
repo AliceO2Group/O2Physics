@@ -703,50 +703,6 @@ inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
 //////////////////////////////////////////////////////////////////////////////////
 /// Track selection
 //////////////////////////////////////////////////////////////////////////////////
-template <typename TrackObject, typename CollisionObject>
-float CalculateDCA(TrackObject const& track,CollisionObject const& collision, int vtx)
-{
-  float dca;
-  // propagate track to DCA to the vertex
-  float sn, cs;
-  auto alp = track.alpha();
-  math_utils::detail::sincos<float>(alp, sn, cs);
-  auto x = track.x(), y = track.y(), snp = track.snp(), csp = math_utils::detail::sqrt<float>((1.f - snp) * (1.f + snp));
-  auto xv = collision.posX() * cs + collision.posX() * sn, yv = -collision.posX() * sn + collision.posY() * cs, zv = collision.posZ();
-
-  x -= xv;
-  y -= yv;
-  // Estimate the impact parameter neglecting the track curvature
-
-  auto crv = 0;
-  auto tgfv = -(crv * x - snp) / (crv * y + csp);
-  sn = tgfv / math_utils::detail::sqrt<float>(1.f + tgfv * tgfv);
-  cs = math_utils::detail::sqrt<float>((1. - sn) * (1. + sn));
-  cs = (math_utils::detail::abs<float>(tgfv) > o2::constants::math::Almost0) ? sn / tgfv : o2::constants::math::Almost1;
-
-  x = xv * cs + yv * sn;
-  //yv = -xv * sn + yv * cs;
-  xv = x;
-
-  math_utils::detail::sincos<float>(alp, sn, cs);
-
-  if(vtx == 0){
-    if (fabs(track.x())>fabs(track.y())){
-      dca = track.y() - yv;
-    } else{
-      dca = track.x() - xv;
-    }
-    if(dca>10.0){
-      std::cout<<"Big dca: "<<dca<<std::endl;
-      std::cout<<"x: "<<track.x()<<std::endl;
-      std::cout<<"y: "<<track.y()<<std::endl;
-      std::cout<<"yv: "<<yv<<std::endl;
-    }
-  } else if(vtx == 1){
-    dca = track.z() - zv;
-  }
-  return dca;
-}
 
 template <typename TrackObject, typename CollisionObject>
 inline bool matchTrackType(TrackObject const& track, CollisionObject const& collision)
@@ -757,8 +713,6 @@ inline bool matchTrackType(TrackObject const& track, CollisionObject const& coll
     for (auto filter : trackFilters) {
       if (filter->IsSelected(track)) {
         if (dca2Dcut) {
-          //float dcaxy = CalculateDCA(track, collision, 0);
-          //float dcaz = CalculateDCA(track, collision, 1);
           if (track.dcaXY() * track.dcaXY() / maxDCAxy / maxDCAxy + track.dcaZ() * track.dcaZ() / maxDCAz / maxDCAz > 1) {
             return false;
           } else {
