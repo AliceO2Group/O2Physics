@@ -155,7 +155,7 @@ void resonance::updateStatus()
   if (fIVM.Eta() < fetaMin || fIVM.Eta() > fetaMax) {
     return;
   }
-  
+
   // good candidate
   fStatus = 3;
 }
@@ -526,7 +526,7 @@ bool decayTree::init(std::string const& parFile, o2::framework::HistogramRegistr
         if (static_cast<int>(ulsstate.Size()) != fnFinals) {
           LOGF(error, "%s with wrong number of elements!", itemName);
           return false;
-        } 
+        }
         charges.clear();
         for (auto& ch : ulsstate) {
           charges.push_back(ch.GetInt());
@@ -554,7 +554,7 @@ bool decayTree::init(std::string const& parFile, o2::framework::HistogramRegistr
         if (static_cast<int>(lsstate.Size()) != fnFinals) {
           LOGF(error, "%s with wrong number of elements!", itemName);
           return false;
-        } 
+        }
         charges.clear();
         for (auto& ch : lsstate) {
           charges.push_back(ch.GetInt());
@@ -972,7 +972,7 @@ resonance* decayTree::getResonance(std::string name)
     }
   }
   LOGF(error, "A resonance %s does not exists!", name);
-  return new resonance();   // is needed to satisfy return type
+  return new resonance(); // is needed to satisfy return type
 }
 
 resonance* decayTree::getFinal(int counter)
@@ -983,7 +983,7 @@ resonance* decayTree::getFinal(int counter)
     }
   }
   LOGF(error, "The final %d does not exists!", counter);
-  return new resonance();   // is needed to satisfy return type
+  return new resonance(); // is needed to satisfy return type
 }
 
 std::vector<resonance*> decayTree::getFinals(resonance* res)
@@ -1005,7 +1005,7 @@ std::vector<resonance*> decayTree::getFinals(resonance* res)
   }
   return resFinals;
 }
-                                                                                                                                                                                                                                                                                                                                
+
 // apply anglecuts
 void decayTree::checkAngles()
 {
@@ -1016,12 +1016,12 @@ void decayTree::checkAngles()
     for (auto anglecut : anglecuts) {
       auto rnames = anglecut->rNames();
       auto anglerange = anglecut->angleRange();
-      
+
       // compute angle between two resonances
       auto lv1 = getResonance(rnames.first)->IVM();
       auto lv2 = getResonance(rnames.second)->IVM();
       auto ang = lv1.Angle(lv2.Vect());
-      
+
       // apply cut
       if (ang < anglerange.first || ang > anglerange.second) {
         res->setStatus(2);
@@ -1038,8 +1038,8 @@ int decayTree::chargeState(std::vector<int> chs)
   if (static_cast<int>(chs.size()) == fnFinals) {
     // loop over elements of chargestate
     chargeState = 0;
-    for (auto ind=0; ind < fnFinals; ind++) {
-      chargeState += (chs[ind]>0)*std::pow(2, ind);
+    for (auto ind = 0; ind < fnFinals; ind++) {
+      chargeState += (chs[ind] > 0) * std::pow(2, ind);
     }
   }
   return chargeState;
@@ -1047,10 +1047,10 @@ int decayTree::chargeState(std::vector<int> chs)
 void decayTree::updateChargeState()
 {
   fChargeState = 0;
-    
+
   // loop over all finals
-  for (auto ind=0; ind < fnFinals; ind++) {
-    fChargeState += (getFinal(ind)->charge()>0)*std::pow(2, ind);
+  for (auto ind = 0; ind < fnFinals; ind++) {
+    fChargeState += (getFinal(ind)->charge() > 0) * std::pow(2, ind);
   }
 }
 

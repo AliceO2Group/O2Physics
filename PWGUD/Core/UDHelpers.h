@@ -814,10 +814,10 @@ template <typename T>
 bool isGraniittiCDE(T MCparts)
 {
 
-  //for (auto MCpart : MCparts) {
-  //  LOGF(info, " MCpart.pdgCode() %d", MCpart.pdgCode());
-  //}
-  //LOGF(debug, "");
+  // for (auto MCpart : MCparts) {
+  //   LOGF(info, " MCpart.pdgCode() %d", MCpart.pdgCode());
+  // }
+  // LOGF(debug, "");
 
   if (MCparts.size() < 6) {
     return false;

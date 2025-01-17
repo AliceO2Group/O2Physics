@@ -25,9 +25,9 @@ class pidSelector
 {
  public:
   // constructor/destructor
-  pidSelector(){};
+  pidSelector() {};
   explicit pidSelector(std::vector<std::vector<double>>& pidcuts);
-  ~pidSelector(){};
+  ~pidSelector() {};
 
   // setter
   void clear();
@@ -131,7 +131,7 @@ class pidSelector
           }
         }
       }
-      
+
       // inclusive / exclusive
       if (pidcut[2] > 0 && (detValue < pidcut[6] || detValue > pidcut[7])) {
         return false;
@@ -156,13 +156,13 @@ class angleCut
 {
  public:
   // constructor/destructor
-  angleCut(){};
+  angleCut() {};
   explicit angleCut(std::pair<std::string, std::string> rNames, double angleMin, double angleMax);
-  ~angleCut(){};
+  ~angleCut() {};
 
   std::pair<std::string, std::string> rNames() { return fRnames; }
   std::pair<double, double> angleRange() { return std::pair<double, double>{fAngleMin, fAngleMax}; }
-  
+
   void Print();
 
  private:
@@ -178,14 +178,14 @@ class reconstructedParticle
 {
  public:
   // constructor/destructor
-  reconstructedParticle(){};
+  reconstructedParticle() {};
   explicit reconstructedParticle(std::string name, TLorentzVector ivm, std::vector<int>& comb)
   {
     fName = name;
     fIVM = ivm;
     fComb = comb;
   };
-  ~reconstructedParticle(){};
+  ~reconstructedParticle() {};
 
   std::string name() { return fName; }
   TLorentzVector lv() { return fIVM; }
@@ -209,14 +209,14 @@ class reconstructedEvent
 {
  public:
   // constructor/destructor
-  reconstructedEvent(){};
+  reconstructedEvent() {};
   explicit reconstructedEvent(recResType recs, int chargeState, std::vector<int>& comb)
   {
     fRecs = recs;
     fComb = comb;
     fChargeState = chargeState;
   };
-  ~reconstructedEvent(){};
+  ~reconstructedEvent() {};
 
   recResType recResonances() { return fRecs; }
   std::vector<int> comb() { return fComb; }
@@ -235,7 +235,7 @@ class resonance
  public:
   // constructor/destructor
   resonance();
-  ~resonance(){};
+  ~resonance() {};
 
   // setters
   void init();
@@ -393,7 +393,7 @@ class resonance
         fStatus = 2;
       }
       // dcaxyz
-      auto lim = fdcaxyMax + std::pow(0.0350/track.pt(), 1.1);
+      auto lim = fdcaxyMax + std::pow(0.0350 / track.pt(), 1.1);
       if (std::abs(track.dcaXY()) > lim || std::abs(track.dcaZ()) > fdcazMax) {
         fStatus = 2;
       }
@@ -531,7 +531,7 @@ class decayTree
         for (auto res : fResonances) {
           recResonances.insert({res->name(), reconstructedParticle(res->name(), res->IVM(), comb)});
         }
-        
+
         if (fStatus == 2) {
           ULSresults.push_back(recResonances);
         } else {
@@ -654,7 +654,7 @@ class decayTree
               if (d1->isFinal() && d2->isFinal()) {
                 auto tr1 = tracks.begin() + result[d1->name()].comb()[d1->counter()];
                 auto tr2 = tracks.begin() + result[d2->name()].comb()[d2->counter()];
-                
+
                 // TPC signal vs TPC signal
                 hname = base;
                 hname.append("TPCsignal_").append(d1->name()).append(d2->name());
@@ -782,7 +782,7 @@ class decayTree
 
   // check all angle requirements
   void checkAngles();
-  
+
   // compute the charge state
   int chargeState(std::vector<int> chs);
   void updateChargeState();
@@ -948,7 +948,7 @@ class decayTree
             hname.append("Mvsangle_").append(d1->name()).append(d2->name());
             annot = std::string("M versus angle; M (").append(res->name()).append(") GeV/c^{2}; Angle (").append(d1->name()).append(", ").append(d2->name()).append(")");
             fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {HistType::kTH2F, {max, angax}})});
-          
+
             // both daughters are finals
             if (d1->isFinal() && d2->isFinal()) {
               hname = base;

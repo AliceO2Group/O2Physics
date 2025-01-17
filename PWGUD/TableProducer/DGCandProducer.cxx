@@ -72,13 +72,9 @@ struct DGCandProducer {
 
   // ctpRateFetcher
   ctpRateFetcher mRateFetcher;
-  
+
   // initialize histogram registry
-  HistogramRegistry registry { "registry", {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    false,
-    true
-  };
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   // data inputs
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
@@ -285,7 +281,7 @@ struct DGCandProducer {
     LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
     const uint64_t ts = bc.timestamp();
     const int runnumber = bc.runNumber();
-    
+
     int trs = 0;
     if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       trs = 1;
@@ -311,8 +307,8 @@ struct DGCandProducer {
     occ = collision.trackOccupancyInTimeRange();
 
     if (cfgSkimmedProcessing) {
-     // update ccdb setting for zorro
-     if (mRunNumber != bc.runNumber()) {
+      // update ccdb setting for zorro
+      if (mRunNumber != bc.runNumber()) {
         mRunNumber = bc.runNumber();
         zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerName.value);
         zorro.populateHistRegistry(registry, bc.runNumber());
