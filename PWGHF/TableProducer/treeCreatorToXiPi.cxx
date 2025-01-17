@@ -251,9 +251,9 @@ struct HfTreeCreatorToXiPi {
   SliceCache cache;
   Preslice<aod::HfCandToXiPi> candXicPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
 
-  using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs >;
-  using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra >;
-  using MyEventTable = soa::Join<aod::Collisions, aod::EvSels, aod::PVMultZeqs, Cents >;
+  using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>;
+  using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
+  using MyEventTable = soa::Join<aod::Collisions, aod::EvSels, aod::PVMultZeqs, Cents>;
 
   void init(InitContext const&)
   {
@@ -507,7 +507,7 @@ struct HfTreeCreatorToXiPi {
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataFull, "Process data with full information w/o centrality", true);
 
   void processDataFullWithCentrality(MyEventTable const& collisions, MyTrackTable const&,
-                       soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
+                                     soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
