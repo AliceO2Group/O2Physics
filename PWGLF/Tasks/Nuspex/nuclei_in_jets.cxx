@@ -136,6 +136,18 @@ struct nuclei_in_jets {
   Configurable<std::string> histo_name_weight_antip_jet{"histo_name_weight_antip_jet", "", "reweighting histogram: antip in jet"};
   Configurable<std::string> histo_name_weight_antip_ue{"histo_name_weight_antip_ue", "", "reweighting histogram: antip in ue"};
 
+  // Bethe-Bloch
+  TF1* bbClsSize = new TF1("bbClsSize", BetheBloch, 0.1, 10, 9);
+  bbClsSize->SetParameter(0, bbPar0);
+  bbClsSize->SetParameter(1, bbPar1);
+  bbClsSize->SetParameter(2, bbPar2);
+  bbClsSize->SetParameter(3, bbPar3);
+  bbClsSize->SetParameter(4, bbPar4);
+  bbClsSize->SetParameter(5, bbPar5);
+  bbClsSize->SetParameter(6, bbPar6);
+  bbClsSize->SetParameter(7, bbPar7);
+  bbClsSize->SetParameter(8, bbPar8);
+
   TH2F* twod_weights_antip_jet;
   TH2F* twod_weights_antip_ue;
 
@@ -246,18 +258,6 @@ struct nuclei_in_jets {
     registryMC.add("antiproton_eta_pt_pythia", "antiproton_eta_pt_pythia", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {20, -1.0, 1.0, "#it{#eta}"}});
     registryMC.add("antiproton_eta_pt_jet", "antiproton_eta_pt_jet", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {20, -1.0, 1.0, "#it{#eta}"}});
     registryMC.add("antiproton_eta_pt_ue", "antiproton_eta_pt_ue", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {20, -1.0, 1.0, "#it{#eta}"}});
-
-    // Bethe-Bloch
-    TF1* bbClsSize = new TF1("bbClsSize", BetheBloch, 0.1, 10, 9);
-    bbClsSize->SetParameter(0, bbPar0);
-    bbClsSize->SetParameter(1, bbPar1);
-    bbClsSize->SetParameter(2, bbPar2);
-    bbClsSize->SetParameter(3, bbPar3);
-    bbClsSize->SetParameter(4, bbPar4);
-    bbClsSize->SetParameter(5, bbPar5);
-    bbClsSize->SetParameter(6, bbPar6);
-    bbClsSize->SetParameter(7, bbPar7);
-    bbClsSize->SetParameter(8, bbPar8);
   }
 
   // Single-Track Selection for Particles inside Jets
