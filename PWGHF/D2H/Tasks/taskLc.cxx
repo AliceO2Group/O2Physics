@@ -551,7 +551,9 @@ struct HfTaskLc {
         registry.fill(HIST("MC/generated/signal/hPhiVsPtGenSig"), particle.phi(), ptGen);
 
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
-          registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, yGen, numPvContributors, ptGenB, originType);
+          if (fillTHn) {
+            registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, yGen, numPvContributors, ptGenB, originType);
+          }
           registry.fill(HIST("MC/generated/prompt/hPtGenPrompt"), ptGen);
           registry.fill(HIST("MC/generated/prompt/hEtaGenPrompt"), particle.eta());
           registry.fill(HIST("MC/generated/prompt/hYGenPrompt"), yGen);
@@ -562,7 +564,9 @@ struct HfTaskLc {
         }
         if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
           ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
-          registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, yGen, numPvContributors, ptGenB, originType);
+          if (fillTHn) {
+            registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, yGen, numPvContributors, ptGenB, originType);
+          }
           registry.fill(HIST("MC/generated/nonprompt/hPtGenNonPrompt"), ptGen);
           registry.fill(HIST("MC/generated/nonprompt/hEtaGenNonPrompt"), particle.eta());
           registry.fill(HIST("MC/generated/nonprompt/hYGenNonPrompt"), yGen);

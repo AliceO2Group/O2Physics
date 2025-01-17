@@ -504,6 +504,30 @@ struct NucleiHistTask {
   Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "Remove TF border"};
   Configurable<bool> removeNoTimeFrameBorder{"removeNoTimeFrameBorder", false, "Remove TF border"};
 
+  TF1* Particle_Tpc_nSigma_shift = 0;
+  Configurable<bool> enable_pT_shift_tpc_nSigma{"enable_pT_shift_tpc_nSigma", false, "Enable Data TPC nSigma recentering by TF1"};
+  Configurable<std::vector<float>> parShiftPt{"parShiftPt", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "Parameters for pT shift."};
+
+  TF1* Pion_Tpc_nSigma_shift = 0;
+  TF1* Proton_Tpc_nSigma_shift = 0;
+  TF1* Deuteron_Tpc_nSigma_shift = 0;
+  TF1* Triton_Tpc_nSigma_shift = 0;
+  TF1* He3_Tpc_nSigma_shift = 0;
+  TF1* He4_Tpc_nSigma_shift = 0;
+
+  Configurable<bool> enable_pT_shift_pion_tpc_nSigma{"enable_pT_shift_pion_tpc_nSigma", false, "Enable MC Pi plus TPC nSigma recentering by TF1"};
+  Configurable<bool> enable_pT_shift_proton_tpc_nSigma{"enable_pT_shift_proton_tpc_nSigma", false, "Enable MC Proton TPC nSigma recentering by TF1"};
+  Configurable<bool> enable_pT_shift_deuteron_tpc_nSigma{"enable_pT_shift_deuteron_tpc_nSigma", false, "Enable MC Deuteron TPC nSigma recentering by TF1"};
+  Configurable<bool> enable_pT_shift_triton_tpc_nSigma{"enable_pT_shift_triton_tpc_nSigma", false, "Enable MC Triton TPC nSigma recentering by TF1"};
+  Configurable<bool> enable_pT_shift_He3_tpc_nSigma{"enable_pT_shift_He3_tpc_nSigma", false, "Enable MC Helium-3 TPC nSigma recentering by TF1"};
+  Configurable<bool> enable_pT_shift_He4_tpc_nSigma{"enable_pT_shift_He4_tpc_nSigma", false, "Enable MC Helium-4 TPC nSigma recentering by TF1"};
+  Configurable<std::vector<float>> parShiftPtPion{"parShiftPtPion", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Pi plus pT shift."};
+  Configurable<std::vector<float>> parShiftPtProton{"parShiftPtProton", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Proton pT shift."};
+  Configurable<std::vector<float>> parShiftPtDeuteron{"parShiftPtDeuteron", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Deuteron pT shift."};
+  Configurable<std::vector<float>> parShiftPtTriton{"parShiftPtTriton", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Triton pT shift."};
+  Configurable<std::vector<float>> parShiftPtHe3{"parShiftPtHe3", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Helium-3 pT shift."};
+  Configurable<std::vector<float>> parShiftPtHe4{"parShiftPtHe4", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Alpha pT shift."};
+
   //***********************************************************************************
 
   template <typename CollisionType>
@@ -612,6 +636,12 @@ struct NucleiHistTask {
 
     if (!isEventSelected(event))
       return;
+
+    if (enable_pT_shift_tpc_nSigma) {
+      Particle_Tpc_nSigma_shift = new TF1("Particle_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPt;
+      Particle_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
     for (auto track : tracks) {
 
       float TPCnSigma_particle = -100;
@@ -673,6 +703,11 @@ struct NucleiHistTask {
         default:
           continue;
           break;
+      }
+
+      if (enable_pT_shift_tpc_nSigma) {
+        float nSigma_shift = Particle_Tpc_nSigma_shift->Eval(momentum);
+        TPCnSigma_particle -= nSigma_shift;
       }
 
       histTrackcuts_data_particle->AddBinContent(1);
@@ -804,6 +839,13 @@ struct NucleiHistTask {
   {
     if (!isEventSelected(event))
       return;
+
+    if (enable_pT_shift_tpc_nSigma) {
+      Particle_Tpc_nSigma_shift = new TF1("Particle_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPt;
+      Particle_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+
     if (event_selection_sel8 && event.sel8())
       spectra_reg.fill(HIST("histCentrality"), event.centFT0C());
     if (!event_selection_sel8)
@@ -872,6 +914,11 @@ struct NucleiHistTask {
         default:
           continue;
           break;
+      }
+
+      if (enable_pT_shift_tpc_nSigma) {
+        float nSigma_shift = Particle_Tpc_nSigma_shift->Eval(momentum);
+        TPCnSigma_particle -= nSigma_shift;
       }
 
       spectra_reg.fill(HIST("histEtaWithOverFlow"), track.eta());
@@ -1128,6 +1175,37 @@ struct NucleiHistTask {
     if (!isEventSelected(collisions))
       return;
 
+    if (enable_pT_shift_pion_tpc_nSigma) {
+      Pion_Tpc_nSigma_shift = new TF1("Pion_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtPion;
+      Pion_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+    if (enable_pT_shift_proton_tpc_nSigma) {
+      Proton_Tpc_nSigma_shift = new TF1("Proton_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtProton;
+      Proton_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+    if (enable_pT_shift_deuteron_tpc_nSigma) {
+      Deuteron_Tpc_nSigma_shift = new TF1("Deuteron_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtDeuteron;
+      Deuteron_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+    if (enable_pT_shift_triton_tpc_nSigma) {
+      Triton_Tpc_nSigma_shift = new TF1("Triton_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtTriton;
+      Triton_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+    if (enable_pT_shift_He3_tpc_nSigma) {
+      He3_Tpc_nSigma_shift = new TF1("He3_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtHe3;
+      He3_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+    if (enable_pT_shift_He4_tpc_nSigma) {
+      He4_Tpc_nSigma_shift = new TF1("He4_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtHe4;
+      He4_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+
     for (auto& track : tracks) {
       histTrackcuts_MC->AddBinContent(1);
       const auto particle = track.mcParticle();
@@ -1351,6 +1429,31 @@ struct NucleiHistTask {
       float nSigmaTriton = track.tpcNSigmaTr();
       float nSigmaHe3 = track.tpcNSigmaHe();
       float nSigmaHe4 = track.tpcNSigmaAl();
+
+      if (enable_pT_shift_pion_tpc_nSigma) {
+        float nSigmaPion_shift = Pion_Tpc_nSigma_shift->Eval(track.pt());
+        nSigmaPion -= nSigmaPion_shift;
+      }
+      if (enable_pT_shift_proton_tpc_nSigma) {
+        float nSigmaProton_shift = Proton_Tpc_nSigma_shift->Eval(track.pt());
+        nSigmaProton -= nSigmaProton_shift;
+      }
+      if (enable_pT_shift_deuteron_tpc_nSigma) {
+        float nSigmaDeuteron_shift = Deuteron_Tpc_nSigma_shift->Eval(track.pt());
+        nSigmaDeuteron -= nSigmaDeuteron_shift;
+      }
+      if (enable_pT_shift_triton_tpc_nSigma) {
+        float nSigmaTriton_shift = Triton_Tpc_nSigma_shift->Eval(track.pt());
+        nSigmaTriton -= nSigmaTriton_shift;
+      }
+      if (enable_pT_shift_He3_tpc_nSigma) {
+        float nSigmaHe3_shift = He3_Tpc_nSigma_shift->Eval(track.pt() * 2.0);
+        nSigmaHe3 -= nSigmaHe3_shift;
+      }
+      if (enable_pT_shift_He4_tpc_nSigma) {
+        float nSigmaHe4_shift = He4_Tpc_nSigma_shift->Eval(track.pt() * 2.0);
+        nSigmaHe4 -= nSigmaHe4_shift;
+      }
 
       if (track.sign() > 0) {
         MC_recon_reg.fill(HIST("histTpcNsigmaDataPi"), track.pt(), nSigmaPion);
