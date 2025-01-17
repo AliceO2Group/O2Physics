@@ -641,11 +641,39 @@ struct eventQC {
   template <typename TTrack>
   bool isSelectedTrack(TTrack const& track)
   {
+    if (!track.hasITS() || !track.hasTPC()) {
+      return false;
+    }
+
+    if (track.pt() < trackcuts.cfg_min_pt_track || trackcuts.cfg_max_pt_track < track.pt()) {
+      return false;
+    }
+
+    if (track.eta() < trackcuts.cfg_min_eta_track || trackcuts.cfg_max_eta_track < track.eta()) {
+      return false;
+    }
+
+    if (fabs(track.dcaXY()) > trackcuts.cfg_max_dcaxy) {
+      return false;
+    }
+
+    if (fabs(track.dcaZ()) > trackcuts.cfg_max_dcaz) {
+      return false;
+    }
+
+    if (track.itsChi2NCl() > trackcuts.cfg_max_chi2its) {
+      return false;
+    }
+
     if (track.itsNCls() < trackcuts.cfg_min_ncluster_its) {
       return false;
     }
 
     if (track.itsNClsInnerBarrel() < trackcuts.cfg_min_ncluster_itsib) {
+      return false;
+    }
+
+    if (track.tpcChi2NCl() > trackcuts.cfg_max_chi2tpc) {
       return false;
     }
 
