@@ -247,7 +247,7 @@ struct nuclei_in_jets {
     registryMC.add("antiproton_eta_pt_ue", "antiproton_eta_pt_ue", HistType::kTH2F, {{200, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {20, -1.0, 1.0, "#it{#eta}"}});
 
     // Bethe-Bloch
-    TF1 *bbClsSize = new TF1("bbClsSize", BetheBloch, 0.1, 10, 9);
+    TF1* bbClsSize = new TF1("bbClsSize", BetheBloch, 0.1, 10, 9);
     bbClsSize->SetParameter(0, bbPar0);
     bbClsSize->SetParameter(1, bbPar1);
     bbClsSize->SetParameter(2, bbPar2);
@@ -451,7 +451,7 @@ struct nuclei_in_jets {
     return lambda;
   }
 
-  double BetheBloch(double *x, double *par)
+  double BetheBloch(double* x, double* par)
   {
     // 5 parameters for the bethe bloch from 0 to 4
     // 1 parameter for the mip mpar[5]
