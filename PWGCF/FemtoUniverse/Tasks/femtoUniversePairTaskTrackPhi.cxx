@@ -454,14 +454,14 @@ struct FemtoUniversePairTaskTrackPhi {
     registryMCreco.add("MCrecoPpos", "MC reco proton;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
     registryMCreco.add("MCrecoPneg", "MC reco antiproton;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
 
-    trackHistoPartPhi.init(&qaRegistry, confBinsTempFitVarpT.value, confBinsTempFitVarInvMass.value, ConfBothTracks.confIsMC.value, 333);
-    trackHistoPartTrack.init(&qaRegistry, confBinsTempFitVarpT.value, confBinsTempFitVar.value, ConfBothTracks.confIsMC.value, ConfTrack.confTrackPDGCode.value);
+    trackHistoPartPhi.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarInvMass, ConfBothTracks.confIsMC.value, 333);
+    trackHistoPartTrack.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVar, ConfBothTracks.confIsMC.value, ConfTrack.confTrackPDGCode.value);
 
     mixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     mixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
 
-    sameEventAngularCont.init(&resultRegistry, confBinskstar.value, confBinsMult.value, confBinskT.value, confBinsmT.value, confBins3Dmult.value, confBins3DmT.value, ConfBothTracks.confBinsEta.value, ConfBothTracks.confBinsPhi.value, ConfBothTracks.confIsMC.value, ConfBothTracks.confUse3D.value);
-    mixedEventAngularCont.init(&resultRegistry, confBinskstar.value, confBinsMult.value, confBinskT.value, confBinsmT.value, confBins3Dmult.value, confBins3DmT.value, ConfBothTracks.confBinsEta.value, ConfBothTracks.confBinsPhi.value, ConfBothTracks.confIsMC.value, ConfBothTracks.confUse3D.value);
+    sameEventAngularCont.init(&resultRegistry, confBinskstar, confBinsMult, confBinskT, confBinsmT, confBins3Dmult, confBins3DmT, ConfBothTracks.confBinsEta, ConfBothTracks.confBinsPhi, ConfBothTracks.confIsMC, ConfBothTracks.confUse3D);
+    mixedEventAngularCont.init(&resultRegistry, confBinskstar, confBinsMult, confBinskT, confBinsmT, confBins3Dmult, confBins3DmT, ConfBothTracks.confBinsEta, ConfBothTracks.confBinsPhi, ConfBothTracks.confIsMC, ConfBothTracks.confUse3D);
 
     sameEventAngularCont.setPDGCodes(333, ConfTrack.confTrackPDGCode.value);
     mixedEventAngularCont.setPDGCodes(333, ConfTrack.confTrackPDGCode.value);
