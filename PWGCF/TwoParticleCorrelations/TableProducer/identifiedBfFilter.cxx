@@ -1619,11 +1619,6 @@ void IdentifiedBfFilterTracks::fillTrackHistosBeforeSelection(TrackObject const&
   } else {
     fhPtNegB->Fill(track.pt());
   }
-
-  //float dcaxy = CalculateDCA(track, collision,0);
-  //float dcaz = CalculateDCA(track, collision,1);
-  //fhDCAxyB->Fill(dcaxy);
-  //fhDCAzB->Fill(dcaz);
   fhDCAxyB->Fill(track.dcaXY());
   fhDCAzB->Fill(track.dcaZ());
   fhDCAxyzB->Fill(track.dcaXY(),track.dcaZ());
@@ -1643,10 +1638,6 @@ void IdentifiedBfFilterTracks::fillTrackHistosAfterSelection(TrackObject const& 
     fhPtYA->Fill(track.pt(),track.eta());
     fhChi2A->Fill(track.tpcChi2NCl());
     fhITSNclA->Fill(track.itsNCls());
-    //float dcaxy = CalculateDCA(track, collision, 0);
-    //float dcaz = CalculateDCA(track, collision, 1);
-    //fhDCAxyA->Fill(dcaxy);
-    //fhDCAzA->Fill(dcaz);
     fhDCAxyA->Fill(track.dcaXY());
     fhDCAzA->Fill(track.dcaZ());
     fhDCAxyzA->Fill(track.dcaXY(),track.dcaZ());
