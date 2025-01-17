@@ -460,7 +460,7 @@ struct nuclei_in_jets {
     // 1 parameter for the charge mpar[8]
     return par[5] * BetheBlochAleph(x[0] / par[7], par[0], par[1], par[2], par[3], par[4]) * TMath::Power(par[8], par[6]);
   }
-  
+
   double BetheBlochAleph(double bg, double kp1, double kp2, double kp3, double kp4, double kp5)
   {
     double beta = bg / std::sqrt(1.0 + bg * bg);
@@ -711,7 +711,7 @@ struct nuclei_in_jets {
         double lambda = trackInclination(track.eta());
         double avgClsCosL = averageItsClusterSize * std::cos(lambda);
         double nsigma = (avgClsCosL - bbClsSize->Eval(momentum)) / (resolClsSize * bbClsSize->Eval(momentum));
-          
+
         bool isItsSelected = false;
         if (std::fabs(nsigma) < nSigmaClsSizeMax) {
           isItsSelected = true;
