@@ -15,10 +15,13 @@
 #include <vector>
 #include <string>
 #include <map>
-#include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/Vertex.h"
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UPCHelpers.h"
@@ -29,17 +32,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct DGCandProducer {
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  ctpRateFetcher mRateFetcher;
-  // get a DGCutparHolder
-  DGCutparHolder diffCuts = DGCutparHolder();
-  Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
-  Configurable<bool> saveAllTracks{"saveAllTracks", true, "save only PV contributors or all tracks associated to a collision"};
-  Configurable<bool> fillFIThistos{"fillFIThistos", false, "fill the histograms with the FIT amplitudes"};
-
-  // DG selector
-  DGSelector dgSelector;
-
   // data tables
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
@@ -57,10 +49,36 @@ struct DGCandProducer {
   Produces<aod::UDFwdTracksExtra> outputFwdTracksExtra;
   Produces<aod::UDTracksLabels> outputTracksLabel;
 
+  // get a DGCutparHolder
+  DGCutparHolder diffCuts = DGCutparHolder();
+  Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+
+  // DG selector
+  DGSelector dgSelector;
+
+  // configurables
+  Configurable<bool> saveAllTracks{"saveAllTracks", true, "save only PV contributors or all tracks associated to a collision"};
+  Configurable<bool> fillFIThistos{"fillFIThistos", false, "fill the histograms with the FIT amplitudes"};
+
+  // zorro object
+  int mRunNumber;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+  Configurable<std::string> cfgCCDBurl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> cfgZorroCCDBpath{"cfgZorroCCDBpath", "/Users/m/mpuccio/EventFiltering/OTS/", "path to the zorro ccdb objects"};
+  Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
+  Configurable<std::string> triggerName{"triggerName", "fUDiff,fUDdiffSmall,fUDiffLarge", "Name of the software trigger"};
+
+  // ctpRateFetcher
+  ctpRateFetcher mRateFetcher;
+  
   // initialize histogram registry
-  HistogramRegistry registry{
-    "registry",
-    {}};
+  HistogramRegistry registry { "registry", {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    false,
+    true
+  };
 
   // data inputs
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
@@ -203,14 +221,20 @@ struct DGCandProducer {
   void init(InitContext&)
   {
     LOGF(debug, "<DGCandProducer> beginning of init reached");
-    ccdb->setURL("http://alice-ccdb.cern.ch");
+    // initialize zorro
+    mRunNumber = -1;
+    zorroSummary.setObject(zorro.getZorroSummary());
+    zorro.setBaseCCDBPath(cfgZorroCCDBpath.value);
+    ccdb->setURL(cfgCCDBurl);
     ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    // DGCuts
     diffCuts = (DGCutparHolder)DGCuts;
 
-    const int nXbinsInStatH = 25;
-
     // add histograms for the different process functions
+    const int nXbinsInStatH = 26;
     registry.add("reco/Stat", "Cut statistics;; Collisions", {HistType::kTH1F, {{nXbinsInStatH, -0.5, static_cast<float>(nXbinsInStatH - 0.5)}}});
     registry.add("reco/pt1Vspt2", "2 prong events, p_{T} versus p_{T}", {HistType::kTH2F, {{100, -3., 3.}, {100, -3., 3.0}}});
     registry.add("reco/TPCsignal1", "2 prong events, TPC signal versus p_{T} of particle 1", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
@@ -232,9 +256,10 @@ struct DGCandProducer {
     registry.add("reco/fddA", "FDDA amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH - 0.5}, {13, -0.5, 12.5}}});
     registry.add("reco/fddC", "FDDC amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH - 0.5}, {13, -0.5, 12.5}}});
 
-    std::string labels[nXbinsInStatH] = {"all", "hasBC", "accepted", "FITveto", "MID trk", "global not PV trk", "not global PV trk",
+    std::string labels[nXbinsInStatH] = {"all", "hasBC", "zorro", "accepted", "FITveto", "MID trk", "global not PV trk", "not global PV trk",
                                          "ITS-only PV trk", "TOF PV trk fraction", "n PV trks", "PID", "pt", "eta", "net charge",
-                                         "inv mass", "evsel TF border", "evsel no pile-up", "evsel ITSROF", "evsel z-vtx", "evsel ITSTPC vtx", "evsel TRD vtx", "evsel TOF vtx", "", "", ""};
+                                         "inv mass", "evsel TF border", "evsel no pile-up", "evsel ITSROF", "evsel z-vtx", "evsel ITSTPC vtx",
+                                         "evsel TRD vtx", "evsel TOF vtx", "", "", ""};
 
     registry.get<TH1>(HIST("reco/Stat"))->SetNdivisions(nXbinsInStatH, "X");
     for (int iXbin(1); iXbin < nXbinsInStatH + 1; iXbin++) {
@@ -257,6 +282,10 @@ struct DGCandProducer {
     }
     registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
     auto bc = collision.foundBC_as<BCs>();
+    LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
+    const uint64_t ts = bc.timestamp();
+    const int runnumber = bc.runNumber();
+    
     int trs = 0;
     if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       trs = 1;
@@ -270,8 +299,6 @@ struct DGCandProducer {
       hmpr = 1;
     }
     double ir = 0.;
-    const uint64_t ts = bc.timestamp();
-    const int runnumber = bc.runNumber();
     if (bc.has_zdc()) {
       ir = mRateFetcher.fetch(ccdb.service, ts, runnumber, "ZNC hadronic") * 1.e-3;
     }
@@ -282,7 +309,15 @@ struct DGCandProducer {
     uint8_t chFV0A = 0;
     int occ = 0;
     occ = collision.trackOccupancyInTimeRange();
-    LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
+
+    if (cfgSkimmedProcessing) {
+     // update ccdb setting for zorro
+     if (mRunNumber != bc.runNumber()) {
+        mRunNumber = bc.runNumber();
+        zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerName.value);
+        zorro.populateHistRegistry(registry, bc.runNumber());
+      }
+    }
 
     // fill FIT histograms
     fillFIThistograms(bc);
@@ -295,9 +330,18 @@ struct DGCandProducer {
     auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
 
     // save DG candidates
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(isDGEvent + 2, 1.);
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(isDGEvent + 3, 1.);
     if (isDGEvent == 0) {
       LOGF(debug, "<DGCandProducer>  Data: good collision!");
+
+      if (cfgSkimmedProcessing) {
+        // let zorro do the accounting
+        auto zorroDecision = zorro.isSelected(bc.globalBC());
+        LOGF(info, "<DGCandProducer>  zorroDecision %d", zorroDecision);
+        if (zorroDecision) {
+          registry.get<TH1>(HIST("reco/Stat"))->Fill(2, 1.);
+        }
+      }
 
       // fill FITInfo
       upchelpers::FITInfo fitInfo{};
