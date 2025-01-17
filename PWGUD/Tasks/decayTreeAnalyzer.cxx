@@ -50,7 +50,7 @@ struct decayTreeAnalyzer {
     "registry",
     {}};
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     // goodRun selector
     grsel.init(goodRunsFile);

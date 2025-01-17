@@ -508,7 +508,7 @@ class decayTree
 
     // loop over possible combinations
     LOGF(debug, "New event");
-    for (const auto& comb : combs) {
+    for (auto& comb : combs) {
       std::string scomb("");
       for (const auto& i : comb) {
         scomb.append(" ").append(std::to_string(i));
@@ -824,7 +824,7 @@ class decayTree
     } else {
       // is a resonance
       // loop over daughters
-      for (const auto daughName : res->getDaughters()) {
+      for (const auto& daughName : res->getDaughters()) {
         auto daugh = getResonance(daughName);
         computeResonance(daugh, tracks, comb);
         ivm += daugh->IVM();

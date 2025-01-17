@@ -266,7 +266,7 @@ struct DGCandProducer {
     LOGF(debug, "<DGCandProducer> end of init reached");
   }
 
-  // process function for real data
+  // process function for reconstructed data
   void process(CC const& collision, BCs const& bcs, TCs const& tracks, FWs const& fwdtracks,
                aod::Zdcs const& /*zdcs*/, aod::FV0As const& fv0as, aod::FT0s const& ft0s, aod::FDDs const& fdds)
   {
@@ -451,6 +451,7 @@ struct McDGCandProducer {
   template <typename TMcCollision>
   void updateUDMcCollisions(TMcCollision const& mccol)
   {
+    LOGF(debug, "<updateUDMcCollisions>");
     // save mccol
     auto bc = mccol.template bc_as<BCs>();
     outputMcCollisions(bc.globalBC(),
@@ -466,6 +467,8 @@ struct McDGCandProducer {
   template <typename TMcParticle>
   void updateUDMcParticle(TMcParticle const& McPart, int64_t McCollisionId, std::map<int64_t, int64_t>& mcPartIsSaved)
   {
+    LOGF(debug, "<updateUDMcParticle> McCollisionId %d", McCollisionId);
+
     // save McPart
     // mother and daughter indices are set to -1
     // ATTENTION: this can be improved to also include mother and daughter indices
@@ -492,7 +495,23 @@ struct McDGCandProducer {
   template <typename TMcParticles>
   void updateUDMcParticles(TMcParticles const& McParts, int64_t McCollisionId, std::map<int64_t, int64_t>& mcPartIsSaved)
   {
-    LOGF(debug, "number of McParticles %d", McParts.size());
+    LOGF(debug, "<updateUDMcParticles> number of McParticles %d", McParts.size());
+    LOGF(debug, "                      McCollisionId %d", McCollisionId);
+
+    /*
+    LOGF(info, "PStack");
+    for (auto const& part : McParts) {
+      LOGF(info, "P - Id %d PID %d", part.globalIndex(), part.pdgCode());
+      for (auto const& mother : part.template mothers_as<aod::McParticles>()) {
+        LOGF(info, "  M - Id %d PID %d", mother.globalIndex(), mother.pdgCode());
+      }
+      for (auto const& daughter : part.template daughters_as<aod::McParticles>()) {
+        LOGF(info, "  D - Id %d PID %d", daughter.globalIndex(), daughter.pdgCode());
+      }
+    }
+    LOGF(info, "");
+    */
+
     // save McParts
     // new mother and daughter ids
     std::vector<int32_t> newmids;
@@ -627,9 +646,9 @@ struct McDGCandProducer {
                  UDCCs const& dgcands, UDTCs const& udtracks,
                  CCs const& /*collisions*/, BCs const& /*bcs*/, TCs const& /*tracks*/)
   {
-    LOGF(info, "Number of McCollisions %d", mccols.size());
-    LOGF(info, "Number of DG candidates %d", dgcands.size());
-    LOGF(info, "Number of UD tracks %d", udtracks.size());
+    LOGF(debug, "Number of McCollisions %d", mccols.size());
+    LOGF(debug, "Number of DG candidates %d", dgcands.size());
+    LOGF(debug, "Number of UD tracks %d", udtracks.size());
     if (dgcands.size() <= 0) {
       LOGF(info, "No DG candidates to save!");
       return;
@@ -721,7 +740,12 @@ struct McDGCandProducer {
               auto track = dgtrack.track_as<TCs>();
               if (track.has_mcParticle()) {
                 auto mcPart = track.mcParticle();
-                updateUDMcParticle(mcPart, -1, mcPartIsSaved);
+                auto mcCol = mcPart.mcCollision();
+                if (mcColIsSaved.find(mcCol.globalIndex()) == mcColIsSaved.end()) {
+                  updateUDMcCollisions(mcCol);
+                  mcColIsSaved[mcCol.globalIndex()] = outputMcCollisions.lastIndex();
+                }
+                updateUDMcParticle(mcPart, mcColIsSaved[mcCol.globalIndex()], mcPartIsSaved);
                 updateUDMcTrackLabel(dgtrack, mcPartIsSaved);
               } else {
                 outputMcTrackLabels(-1, track.mcMask());
