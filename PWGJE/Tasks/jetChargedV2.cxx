@@ -371,7 +371,6 @@ struct JetChargedV2 {
       }
     }
 
-    int nTrk = 0;
     if (jets.size() > 0) {
       for (auto const& track : tracks) {
         if (jetderiveddatautilities::selectTrack(track, trackSelection) && (std::fabs(track.eta() - leadingJetEta) > jetRadius) && track.pt() >= 0.2 && track.pt() <= 5.) {
