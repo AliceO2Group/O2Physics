@@ -1016,7 +1016,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     }
   }
 
-  //Magnus composite cuts -----------------------------------------------------------------------------------------------------------------
+  // Magnus composite cuts -----------------------------------------------------------------------------------------------------------------
 
   AnalysisCompositeCut* magnus_PID111 = new AnalysisCompositeCut("magnus_PID111", "");
   magnus_PID111->AddCut(GetAnalysisCut("pidJpsi_magnus_ele1"));
@@ -4578,7 +4578,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  //Magnus cuts ----------------------------------------------------------
+  // Magnus cuts ----------------------------------------------------------
 
   if (!nameStr.compare("pidJpsi_magnus_ele1")) {
     cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 4.0);
