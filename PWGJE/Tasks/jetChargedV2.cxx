@@ -370,13 +370,6 @@ struct JetChargedV2 {
         leadingJetEta = jet.eta();
       }
     }
-
-    if (jets.size() > 0) {
-      for (auto const& track : tracks) {
-        if (jetderiveddatautilities::selectTrack(track, trackSelection) && (std::fabs(track.eta() - leadingJetEta) > jetRadius) && track.pt() >= 0.2 && track.pt() <= 5.) {
-        }
-      }
-    }
     //=====================< evt pln [n=2->\Psi_2, n=3->\Psi_3] >=====================//
     histosQA.fill(HIST("histCent"), collision.cent());
     for (uint i = 0; i < cfgnMods->size(); i++) {
