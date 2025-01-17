@@ -95,7 +95,7 @@ struct FlowZDCtask {
   ConfigurableAxis axisFT0MAmp{"axisFT0MAmp", {10000, 0, 10000}, "axisFT0MAmp"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
   Partition<AodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
 
   std::complex<double> qTPC;       // init q TPC
@@ -289,15 +289,15 @@ struct FlowZDCtask {
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
-    for (const auto& amplitude : ft0.amplitudeA()) {
-      histos.fill(HIST("hFT0AAmp"), amplitude);
-      ft0aAmp += amplitude;
+      for (const auto& amplitude : ft0.amplitudeA()) {
+        histos.fill(HIST("hFT0AAmp"), amplitude);
+        ft0aAmp += amplitude;
+      }
+      for (const auto& amplitude : ft0.amplitudeC()) {
+        histos.fill(HIST("hFT0CAmp"), amplitude);
+        ft0cAmp += amplitude;
+      }
     }
-    for (const auto& amplitude : ft0.amplitudeC()) {
-      histos.fill(HIST("hFT0CAmp"), amplitude);
-      ft0cAmp += amplitude;
-    }
-  }
     double ft0mAmp = ft0aAmp + ft0cAmp;
     histos.fill(HIST("hFT0MAmp"), ft0mAmp);
     if (foundBC.has_zdc()) {
