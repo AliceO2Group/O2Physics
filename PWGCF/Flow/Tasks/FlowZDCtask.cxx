@@ -297,7 +297,7 @@ struct FlowZDCtask {
       histos.fill(HIST("hFT0CAmp"), amplitude);
       ft0cAmp += amplitude;
     }
-    }
+  }
     double ft0mAmp = ft0aAmp + ft0cAmp;
     histos.fill(HIST("hFT0MAmp"), ft0mAmp);
     if (foundBC.has_zdc()) {
