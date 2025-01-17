@@ -163,7 +163,6 @@ DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 
 DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
                   full::IsEventSel8, full::IsEventSelZ,
-                  full::CollisionId,
                   full::McCollisionId,
                   collision::NumContrib,
                   collision::PosX,
@@ -214,7 +213,6 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::FlagMcMatchRec, full::DebugMcRec, full::OriginRec, full::CollisionMatched);
 
 DECLARE_SOA_TABLE(HfToXiPiLites, "AOD", "HFTOXIPILITE",
-                  full::CollisionId,
                   full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
                   full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
@@ -249,11 +247,16 @@ struct HfTreeCreatorToXiPi {
   Produces<o2::aod::HfToXiPiEvs> rowEv;
 
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
-  Configurable<bool> useCentrality{"useCentrality", false, "Decide whether to use centrality information"};
 
-  using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>;
-  using MyEventTable = soa::Join<aod::Collisions, aod::EvSels, aod::PVMultZeqs, Cents>;
-  using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
+  //HfHelper hfHelper;
+  SliceCache cache;
+  //using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;  
+  //Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId;
+  Preslice<aod::HfCandToXiPi> candXicPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
+
+  using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs >;
+  using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra >;
+  using MyEventTable = soa::Join<aod::Collisions, aod::EvSels, aod::PVMultZeqs, Cents >;
 
   void init(InitContext const&)
   {
@@ -262,7 +265,7 @@ struct HfTreeCreatorToXiPi {
     }
   }
 
-  template <typename T>
+  template <bool useCentrality, typename T>
   void fillEvent(const T& collision, float cutZPv)
   {
     float centFT0A = -1.f;
@@ -280,7 +283,6 @@ struct HfTreeCreatorToXiPi {
 
     rowEv(
       collision.sel8(), std::abs(collision.posZ()) < cutZPv,
-      collision.globalIndex(),
       -1,
       collision.numContrib(),
       collision.posX(),
@@ -300,7 +302,7 @@ struct HfTreeCreatorToXiPi {
   void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
   {
     rowCandidateFull(
-      candidate.collisionId(),
+      rowEv.lastIndex(),
       candidate.xPv(),
       candidate.yPv(),
       candidate.zPv(),
@@ -418,7 +420,6 @@ struct HfTreeCreatorToXiPi {
     if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
 
       rowCandidateLite(
-        candidate.collisionId(),
         candidate.xPv(),
         candidate.yPv(),
         candidate.zPv(),
@@ -497,7 +498,7 @@ struct HfTreeCreatorToXiPi {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent(collision, zPvCut);
+      fillEvent<false>(collision, zPvCut);
     }
 
     // Filling candidate properties
@@ -506,7 +507,27 @@ struct HfTreeCreatorToXiPi {
       fillCandidate(candidate, -7, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataFull, "Process data with full information", true);
+  PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataFull, "Process data with full information w/o centrality", true);
+
+  void processDataFullWithCentrality(MyEventTable const& collisions, MyTrackTable const&,
+                       soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto groupedXicCandidates = candidates.sliceBy(candXicPerCollision, thisCollId);
+      auto sizeTableCand = groupedXicCandidates.size();
+      fillEvent<true>(collision, zPvCut);
+
+      // Filling candidate properties
+      rowCandidateFull.reserve(sizeTableCand);
+      for (const auto& candidate : groupedXicCandidates) {
+        fillCandidate(candidate, -7, -7, RecoDecay::OriginType::None, false);
+      }
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataFullWithCentrality, "Process data with full information with centrality", false);
 
   void processMcFullXic0(MyEventTable const& collisions, MyTrackTable const&,
                          soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
@@ -514,7 +535,7 @@ struct HfTreeCreatorToXiPi {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent(collision, zPvCut);
+      fillEvent<false>(collision, zPvCut);
     }
 
     // Filling candidate properties
@@ -523,7 +544,27 @@ struct HfTreeCreatorToXiPi {
       fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcFullXic0, "Process MC with full information for xic0", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcFullXic0, "Process MC with full information for xic0 w/o centrality", false);
+
+  void processMcFullXic0WithCentrality(MyEventTable const& collisions, MyTrackTable const&,
+                                       soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto groupedXicCandidates = candidates.sliceBy(candXicPerCollision, thisCollId);
+      auto sizeTableCand = groupedXicCandidates.size();
+      fillEvent<true>(collision, zPvCut);
+
+      // Filling candidate properties
+      rowCandidateFull.reserve(sizeTableCand);
+      for (const auto& candidate : groupedXicCandidates) {
+        fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+      }
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcFullXic0WithCentrality, "Process MC with full information for xic0 with centrality", false);
 
   void processMcFullOmegac0(MyEventTable const& collisions, MyTrackTable const&,
                             soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfOmegacToXiPiMCRec> const& candidates)
@@ -531,7 +572,7 @@ struct HfTreeCreatorToXiPi {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent(collision, zPvCut);
+      fillEvent<false>(collision, zPvCut);
     }
 
     // Filling candidate properties
@@ -548,7 +589,7 @@ struct HfTreeCreatorToXiPi {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent(collision, zPvCut);
+      fillEvent<false>(collision, zPvCut);
     }
 
     // Filling candidate properties
@@ -565,7 +606,7 @@ struct HfTreeCreatorToXiPi {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent(collision, zPvCut);
+      fillEvent<false>(collision, zPvCut);
     }
 
     // Filling candidate properties
@@ -582,7 +623,7 @@ struct HfTreeCreatorToXiPi {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent(collision, zPvCut);
+      fillEvent<false>(collision, zPvCut);
     }
 
     // Filling candidate properties
