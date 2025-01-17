@@ -343,10 +343,10 @@ struct HfTreeCreatorLcToPKPi {
   // number showing MC status of the candidate (signal or background, prompt or non-prompt etc.)
   enum SigBgStatus : int {
     Background = 0, // combinatorial background, at least one of the prongs do not originate from the Lc decay
-    Prompt, // signal with Lc produced directly in the event
-    NonPrompt, // signal with Lc produced aftewards the event, e.g. during decay of beauty particle
-    WrongOrder, // all the prongs are from Lc decay, but proton and pion hypothesis are swapped
-    Default = -1 // impossible, should not be the case, to catch logical error if any
+    Prompt,         // signal with Lc produced directly in the event
+    NonPrompt,      // signal with Lc produced aftewards the event, e.g. during decay of beauty particle
+    WrongOrder,     // all the prongs are from Lc decay, but proton and pion hypothesis are swapped
+    Default = -1    // impossible, should not be the case, to catch logical error if any
   };
 
   /// \brief function which determines if the candidate corresponds to MC-particle or belongs to a combinatorial background
