@@ -665,7 +665,6 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeDecVtxZ"), decVtx.at(2));
   }
   }
-  //LOGF(info, "GG CascadeSelection: Passing Xi!"); //REMOVE COMMENT
   
   
   //v0 criteria
@@ -757,7 +756,6 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
       return false;
     }
   */
-  //LOGF(info, "GG CascadeSelection: A Xi is selected!"); //REMOVE COMMENT
   return true;
 }
 
@@ -823,9 +821,9 @@ std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col 
 {
   //Cut bit
   //auto outputV0Daugh = V0DaughSel.getCutContainer<cutContainerType>(v0Daugh, posTrack, negTrack);
-  auto outputPosTrack = PosDaughTrack.getCutContainer<cutContainerType>(posTrack, casc.positivept(), casc.positiveeta(), casc.dcapostopv());
-  auto outputNegTrack = NegDaughTrack.getCutContainer<cutContainerType>(negTrack, casc.negativept(), casc.negativeeta(), casc.dcanegtopv());
-  auto outputBachTrack = BachTrack.getCutContainer<cutContainerType>(bachTrack, casc.bachelorpt(), casc.bacheloreta(), casc.dcabachtopv());
+  auto outputPosTrack = PosDaughTrack.getCutContainer<false, cutContainerType>(posTrack, casc.positivept(), casc.positiveeta(), casc.dcapostopv());
+  auto outputNegTrack = NegDaughTrack.getCutContainer<false, cutContainerType>(negTrack, casc.negativept(), casc.negativeeta(), casc.dcanegtopv());
+  auto outputBachTrack = BachTrack.getCutContainer<false, cutContainerType>(bachTrack, casc.bachelorpt(), casc.bacheloreta(), casc.dcabachtopv());
   cutContainerType output = 0;
   size_t counter = 0;
 
@@ -937,13 +935,6 @@ std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col 
     //}
   } //for loop
 
-    /*
-    outputV0Daugh.at(0), //daughter V0
-    outputV0Daugh.at(1), //posDaughterCuts
-    outputV0Daugh.at(2), //posDaughterPID
-    outputV0Daugh.at(3), //negDaughterCuts
-    outputV0Daugh.at(4), //negDaugherPID
-    */
   return {
     output,
     outputPosTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),

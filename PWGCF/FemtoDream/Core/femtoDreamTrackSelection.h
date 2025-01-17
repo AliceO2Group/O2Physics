@@ -284,7 +284,7 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
                                                                                         femtoDreamSelection::kLowerLimit,
                                                                                         femtoDreamSelection::kAbsUpperLimit,
                                                                                         femtoDreamSelection::kAbsUpperLimit,
-                                                                                        femtoDreamSelection::kAbsUpperLimit,
+                                                                                        femtoDreamSelection::kAbsUpperLimit,   // <-----TODO this should be a lower limit, no??
                                                                                         femtoDreamSelection::kAbsUpperLimit}; ///< Map to match a variable with its type
 
   static constexpr std::string_view mSelectionHelper[kNtrackSelection] = {"Sign of the track",

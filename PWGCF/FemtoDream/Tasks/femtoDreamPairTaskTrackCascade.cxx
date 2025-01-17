@@ -62,15 +62,13 @@ struct femtoDreamPairTaskTrackCascade {
     Configurable<float> MultPercentileMin{"MultPercentileMin", 0, "Minimum Multiplicity Percentile"};
     Configurable<float> MultPercentileMax{"MultPercentileMax", 100, "Maximum Multiplicity Percentile"};
   } EventSel;
-  //Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= EventSel.MultMin && aod::femtodreamcollision::multNtr <= EventSel.MultMax;
-  //Filter EventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= EventSel.MultPercentileMin && aod::femtodreamcollision::multV0M <= EventSel.MultPercentileMax;
+  Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= EventSel.MultMin && aod::femtodreamcollision::multNtr <= EventSel.MultMax;
+  Filter EventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= EventSel.MultPercentileMin && aod::femtodreamcollision::multV0M <= EventSel.MultPercentileMax;
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
   //using FilteredCollisions = soa::Filtered<FDCollisions>;
   using FilteredCollisions = FDCollisions;
   using FilteredCollision = FilteredCollisions::iterator;
-  //using FilteredMaskedCollisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks, FDDownSample>>;
-  //using FilteredMaskedCollision = FilteredMaskedCollisions::iterator;
   using FDMCParts = soa::Join<aod::FDParticles, aod::FDMCLabels>;
   using FDMCPart = FDMCParts::iterator;
   femtodreamcollision::BitMaskType BitMask = 1;
@@ -287,7 +285,7 @@ struct femtoDreamPairTaskTrackCascade {
       } //cut bits of children
     }
   }
-  void processSameMasked(FilteredCollision const& col, FDParticles const& parts)
+  void processSameEvent(FilteredCollision const& col, FDParticles const& parts)
   {
     //if ((col.bitmaskTrackOne() & BitMask) != BitMask || (col.bitmaskTrackTwo() & BitMask) != BitMask) {
     //  return;
@@ -297,7 +295,7 @@ struct femtoDreamPairTaskTrackCascade {
     auto SliceCascade2 = PartitionCascade2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent<false>(SliceTrk1, SliceCascade2, parts, col);
   }
-  PROCESS_SWITCH(femtoDreamPairTaskTrackCascade, processSameMasked, "Enable processing same event", true);
+  PROCESS_SWITCH(femtoDreamPairTaskTrackCascade, processSameEvent, "Enable processing same event", true);
   
   
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
@@ -310,16 +308,13 @@ struct femtoDreamPairTaskTrackCascade {
       // there is an issue when the partition is passed directly
       // workaround for now, change back once it is fixed
       for (auto const& [collision1, collision2] : soa::selfCombinations(policy, Mixing.Depth.value, -1, cols, cols)) {
-        //LOGF(info, "GG Mixing: entering the mixing");
         // make sure that tracks in same events are not mixed
         if (collision1.globalIndex() == collision2.globalIndex()) {
-          //LOGF(info, "GG Mixing: Rejecting same collisions");
           continue;
         }
         auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
         auto SliceCasc2 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
         for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceCasc2))) {
-          //LOGF(info, "GG Mixing: Pairing the pairs");
           const auto& posChild = parts.iteratorAt(p2.index() - 3);
           const auto& negChild = parts.iteratorAt(p2.index() - 2);
           const auto& bachChild = parts.iteratorAt(p2.index() - 1);
@@ -343,14 +338,13 @@ struct femtoDreamPairTaskTrackCascade {
               }
             }
           }
+          
+          // Pair cleaner not needed in the mixing
           //if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-          //  LOGF(info, "GG Mixing: Entering Pair Cleaner");
           //  continue;
           //}
 
-          //LOGF(info, "GG Mixing: Filling the histos");
           mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.smearingByOrigin);
-          //LOGF(info, "GG Mixing: ALIVE");
         }
       }
   }
