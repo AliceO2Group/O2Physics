@@ -12,22 +12,25 @@
 #ifndef PWGUD_CORE_DECAYTREE_H_
 #define PWGUD_CORE_DECAYTREE_H_
 
-#include "TLorentzVector.h"
-#include "TDatabasePDG.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
+#include "TLorentzVector.h"
+#include "TDatabasePDG.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
 // -----------------------------------------------------------------------------
 class pidSelector
 {
  public:
   // constructor/destructor
-  pidSelector() {};
+  pidSelector() {}
   explicit pidSelector(std::vector<std::vector<double>>& pidcuts);
-  ~pidSelector() {};
+  ~pidSelector() {}
 
   // setter
   void clear();
@@ -80,7 +83,7 @@ class pidSelector
   bool goodTrack(TTs track)
   {
     // loop over pidcuts
-    for (auto pidcut : fpidCuts) {
+    for (const auto pidcut : fpidCuts) {
 
       float mom = 0.;
       float detValue = 0.;
@@ -156,9 +159,9 @@ class angleCut
 {
  public:
   // constructor/destructor
-  angleCut() {};
+  angleCut() {}
   explicit angleCut(std::pair<std::string, std::string> rNames, double angleMin, double angleMax);
-  ~angleCut() {};
+  ~angleCut() {}
 
   std::pair<std::string, std::string> rNames() { return fRnames; }
   std::pair<double, double> angleRange() { return std::pair<double, double>{fAngleMin, fAngleMax}; }
@@ -178,14 +181,14 @@ class reconstructedParticle
 {
  public:
   // constructor/destructor
-  reconstructedParticle() {};
+  reconstructedParticle() {}
   explicit reconstructedParticle(std::string name, TLorentzVector ivm, std::vector<int>& comb)
   {
     fName = name;
     fIVM = ivm;
     fComb = comb;
   };
-  ~reconstructedParticle() {};
+  ~reconstructedParticle() {}
 
   std::string name() { return fName; }
   TLorentzVector lv() { return fIVM; }
@@ -209,14 +212,14 @@ class reconstructedEvent
 {
  public:
   // constructor/destructor
-  reconstructedEvent() {};
+  reconstructedEvent() {}
   explicit reconstructedEvent(recResType recs, int chargeState, std::vector<int>& comb)
   {
     fRecs = recs;
     fComb = comb;
     fChargeState = chargeState;
   };
-  ~reconstructedEvent() {};
+  ~reconstructedEvent() {}
 
   recResType recResonances() { return fRecs; }
   std::vector<int> comb() { return fComb; }
@@ -235,13 +238,13 @@ class resonance
  public:
   // constructor/destructor
   resonance();
-  ~resonance() {};
+  ~resonance() {}
 
   // setters
   void init();
   void reset();
 
-  void setisFinal() { fisFinal = true; };
+  void setisFinal() { fisFinal = true; }
   void setCounter(int counter) { fCounter = counter; }
   void setName(std::string name) { fName = name; }
   void setStatus(int status) { fStatus = status; }
@@ -311,10 +314,10 @@ class resonance
   void updateStatus();
 
   // getters
-  bool isFinal() { return fisFinal; };
+  bool isFinal() { return fisFinal; }
   int counter() { return fCounter; }
-  std::string name() { return fName; };
-  int status() { return fStatus; };
+  std::string name() { return fName; }
+  int status() { return fStatus; }
   int pid() { return fPID; }
   int pidFun() { return fPIDfun; }
   std::vector<int> detectorHits() { return fdetectorHits; }
@@ -456,7 +459,7 @@ class decayTree
 {
  public:
   // constructor/destructor
-  decayTree();
+  decayTree() {}
   ~decayTree() {}
 
   // setters
@@ -468,7 +471,7 @@ class decayTree
   void updateStatus();
 
   // getters
-  int nFinals() { return fnFinals; };
+  int nFinals() { return fnFinals; }
   std::vector<resonance*> getResonances() { return fResonances; }
   resonance* getResonance(std::string name);
   resonance* getFinal(int counter);
@@ -500,7 +503,7 @@ class decayTree
 
     // loop over possible combinations
     LOGF(debug, "New event");
-    for (auto comb : combs) {
+    for (const auto comb : combs) {
       std::string scomb("");
       for (auto i : comb) {
         scomb.append(" ").append(std::to_string(i));
@@ -516,7 +519,7 @@ class decayTree
 
       // loop over resonances and compute
       reset();
-      for (auto res : fResonances) {
+      for (const auto res : fResonances) {
         computeResonance(res, tracks, comb);
       }
 
@@ -528,7 +531,7 @@ class decayTree
       if (fStatus >= 2) {
         goodCombs.push_back(newHash);
         std::map<std::string, reconstructedParticle> recResonances;
-        for (auto res : fResonances) {
+        for (const auto res : fResonances) {
           recResonances.insert({res->name(), reconstructedParticle(res->name(), res->IVM(), comb)});
         }
 
@@ -556,7 +559,7 @@ class decayTree
 
     // results["ULS"] contains the ULS results
     // results["LS"] contains the LS results
-    for (auto cc : fccs) {
+    for (const auto cc : fccs) {
       // result is a std::vector<std::map<std::string, reconstructedParticle>>
       for (auto result : results[cc]) {
 
@@ -739,7 +742,7 @@ class decayTree
   //  2: ULS accepted
   //  3: LS accepted
   int fStatus;
-  TDatabasePDG* fPDG;
+  Service<o2::framework::O2DatabasePDG> fPDG;
 
   // event requierements
   int fnTracksMin;
@@ -816,7 +819,7 @@ class decayTree
     } else {
       // is a resonance
       // loop over daughters
-      for (auto daughName : res->getDaughters()) {
+      for (const auto daughName : res->getDaughters()) {
         auto daugh = getResonance(daughName);
         computeResonance(daugh, tracks, comb);
         ivm += daugh->IVM();
@@ -848,12 +851,12 @@ class decayTree
     std::string hname;
     std::string annot;
     fhistPointers.clear();
-    for (auto res : getResonances()) {
+    for (const auto res : getResonances()) {
       auto max = AxisSpec(res->nmassBins(), res->massHistRange()[0], res->massHistRange()[1]);
       auto momax = AxisSpec(res->nmomBins(), res->momHistRange()[0], res->momHistRange()[1]);
 
       // M-pT, M-eta, pT-eta
-      for (auto cc : fccs) {
+      for (const auto& cc : fccs) {
         base = cc;
         base.append("/").append(res->name()).append("/");
         hname = base + "mpt";
@@ -972,8 +975,8 @@ class decayTree
           fhistPointers.insert({hname, registry.add(hname.c_str(), annot.c_str(), {HistType::kTH1F, {dcazax}})});
 
           // nSIgma[TPC, TOF] vs pT
-          for (auto det : fdets) {
-            for (auto part : fparts) {
+          for (const auto& det : fdets) {
+            for (const auto& part : fparts) {
               hname = base;
               hname.append("nS").append(part).append(det);
               annot = std::string("nSigma_").append(det).append(" versus p; p (").append(res->name()).append(") GeV/c; nSigma_{").append(det).append(", ").append(part).append("} (").append(res->name()).append(")");

@@ -47,7 +47,7 @@ void pidSelector::clear()
 
 int pidSelector::pid2ind(int pid)
 {
-  switch (abs(pid)) {
+  switch (std::abs(pid)) {
     case 11: // electron
       return 0;
     case 211: // pion
@@ -66,7 +66,7 @@ int pidSelector::pid2ind(int pid)
 void pidSelector::Print()
 {
   LOGF(info, "      PID cuts");
-  for (auto cut : fpidCuts) {
+  for (const auto& cut : fpidCuts) {
     LOGF(info, "        [ %.0f %.0f %.0f %.0f %.0f %.2f %.2f %.2f ]", cut[0], cut[1], cut[2], cut[3], cut[4], cut[5], cut[6], cut[7]);
   }
 }
@@ -172,7 +172,7 @@ void resonance::Print()
     LOGF(info, "      maximum dca_XY : %f", fdcaxyMax);
     LOGF(info, "      maximum dca_Z: %f", fdcazMax);
     LOGF(info, "      parents");
-    for (auto parent : fParents) {
+    for (const auto& parent : fParents) {
       LOGF(info, "        %s", parent);
     }
   } else {
@@ -180,11 +180,11 @@ void resonance::Print()
     LOGF(info, "    %s", fName);
     LOGF(info, "      status: %d", fStatus);
     LOGF(info, "      parents");
-    for (auto parent : fParents) {
+    for (const auto& parent : fParents) {
       LOGF(info, "        %s", parent);
     }
     LOGF(info, "      daughters");
-    for (auto daugh : fDaughters) {
+    for (const auto& daugh : fDaughters) {
       LOGF(info, "        %s", daugh);
     }
   }
@@ -195,7 +195,7 @@ void resonance::Print()
     fpidSelector.Print();
   } else {
     LOGF(info, "      Angle cuts");
-    for (auto anglecut : fangleCuts) {
+    for (const auto anglecut : fangleCuts) {
       anglecut->Print();
     }
   }
@@ -212,11 +212,6 @@ void resonance::Print()
 
 // -----------------------------------------------------------------------------
 // decayTree
-decayTree::decayTree()
-{
-  fPDG = TDatabasePDG::Instance();
-}
-
 bool decayTree::init(std::string const& parFile, o2::framework::HistogramRegistry& registry)
 {
   // initialisation of constants
@@ -275,7 +270,7 @@ bool decayTree::init(std::string const& parFile, o2::framework::HistogramRegistr
   // loop over finals
   fnFinals = 0;
   auto fins = decTree[itemName].GetArray();
-  for (auto& fin : fins) {
+  for (const auto& fin : fins) {
     if (!fin.IsObject()) {
       LOGF(error, "Check the parameter file! %s must be objects!", itemName);
       return false;
@@ -437,13 +432,13 @@ bool decayTree::init(std::string const& parFile, o2::framework::HistogramRegistr
     if (fin.HasMember(itemName)) {
       if (fin[itemName].IsArray()) {
         auto pidcuts = fin[itemName].GetArray();
-        for (auto& pidcut : pidcuts) {
+        for (const auto& pidcut : pidcuts) {
           if (pidcut.HasMember("pidcut")) {
             if (pidcut["pidcut"].IsArray()) {
               auto vals = pidcut["pidcut"].GetArray();
               if (vals.Size() == 8) {
                 std::vector<double> vs;
-                for (auto& val : vals) {
+                for (const auto& val : vals) {
                   vs.push_back(val.GetFloat());
                 }
                 vcuts.push_back(vs);
@@ -520,7 +515,7 @@ bool decayTree::init(std::string const& parFile, o2::framework::HistogramRegistr
       return false;
     }
     auto ulsstates = decTree[itemName].GetArray();
-    for (auto& obj : ulsstates) {
+    for (const auto& obj : ulsstates) {
       if (obj.IsArray()) {
         auto ulsstate = obj.GetArray();
         if (static_cast<int>(ulsstate.Size()) != fnFinals) {
@@ -528,7 +523,7 @@ bool decayTree::init(std::string const& parFile, o2::framework::HistogramRegistr
           return false;
         }
         charges.clear();
-        for (auto& ch : ulsstate) {
+        for (const auto& ch : ulsstate) {
           charges.push_back(ch.GetInt());
         }
         LOGF(info, "adding charge state %d", chargeState(charges));
@@ -548,7 +543,7 @@ bool decayTree::init(std::string const& parFile, o2::framework::HistogramRegistr
       return false;
     }
     auto lsstates = decTree[itemName].GetArray();
-    for (auto& obj : lsstates) {
+    for (const auto& obj : lsstates) {
       if (obj.IsArray()) {
         auto lsstate = obj.GetArray();
         if (static_cast<int>(lsstate.Size()) != fnFinals) {
@@ -556,7 +551,7 @@ bool decayTree::init(std::string const& parFile, o2::framework::HistogramRegistr
           return false;
         }
         charges.clear();
-        for (auto& ch : lsstate) {
+        for (const auto& ch : lsstate) {
           charges.push_back(ch.GetInt());
         }
         fLSstates.push_back(chargeState(charges));
@@ -581,7 +576,7 @@ bool decayTree::init(std::string const& parFile, o2::framework::HistogramRegistr
 
     // loop over resonances
     auto ress = decTree[itemName].GetArray();
-    for (auto& res : ress) {
+    for (const auto& res : ress) {
       if (!res.IsObject()) {
         LOGF(error, "Check the parameter file! %s must be objects!", itemName);
         return false;
@@ -614,7 +609,7 @@ bool decayTree::init(std::string const& parFile, o2::framework::HistogramRegistr
           auto daughs = res[itemName].GetArray();
           if (daughs.Size() >= 2) {
             daughters.clear();
-            for (auto& daugh : daughs) {
+            for (const auto& daugh : daughs) {
               daughters.push_back(daugh.GetString());
             }
             newRes->setDaughters(daughters);
@@ -703,7 +698,7 @@ bool decayTree::init(std::string const& parFile, o2::framework::HistogramRegistr
       if (res.HasMember(itemName)) {
         if (res[itemName].IsArray()) {
           auto anglecuts = res[itemName].GetArray();
-          for (auto& anglecut : anglecuts) {
+          for (const auto& anglecut : anglecuts) {
             if (anglecut.HasMember("pair")) {
               if (anglecut["pair"].IsArray()) {
                 auto daughters = anglecut["pair"].GetArray();
@@ -888,12 +883,12 @@ bool decayTree::init(std::string const& parFile, o2::framework::HistogramRegistr
 void decayTree::updateParents()
 {
   // reset parents
-  for (auto res : fResonances) {
+  for (const auto res : fResonances) {
     res->clearParents();
   }
 
-  for (auto res : fResonances) {
-    for (auto daughName : res->getDaughters()) {
+  for (const auto res : fResonances) {
+    for (const auto& daughName : res->getDaughters()) {
       auto daugh = getResonance(daughName);
       daugh->addParent(res->name());
     }
@@ -904,7 +899,7 @@ void decayTree::reset()
 {
   fStatus = 0;
   fChargeState = -1;
-  for (auto res : fResonances) {
+  for (const auto res : fResonances) {
     res->reset();
   }
 }
@@ -919,7 +914,7 @@ void decayTree::updateStatus()
   bool isULS = true;
   bool isLS = true;
   fStatus = 1;
-  for (auto res : fResonances) {
+  for (const auto res : fResonances) {
     if (res->status() < 3) {
       return;
     }
@@ -947,11 +942,11 @@ void decayTree::Print()
   LOGF(info, "  dBCRange: %d : %d", fdBCMin, fdBCMax);
   LOGF(info, "  FITVetoes: [ %d %d %d %d %d ]", fFITvetos[0], fFITvetos[1], fFITvetos[2], fFITvetos[3], fFITvetos[4]);
   LOGF(info, "  ULS states");
-  for (auto chstat : fULSstates) {
+  for (const auto chstat : fULSstates) {
     LOGF(info, "    %d", chstat);
   }
   LOGF(info, "  LS states");
-  for (auto chstat : fLSstates) {
+  for (const auto chstat : fLSstates) {
     LOGF(info, "    %d", chstat);
   }
   LOGF(info, "");
@@ -959,14 +954,14 @@ void decayTree::Print()
   LOGF(info, "  nResonances: %d", fResonances.size());
   LOGF(info, "  nFinals: %d", fnFinals);
   LOGF(info, "  Resonances");
-  for (auto res : fResonances) {
+  for (const auto res : fResonances) {
     res->Print();
   }
 }
 
 resonance* decayTree::getResonance(std::string name)
 {
-  for (auto res : fResonances) {
+  for (const auto res : fResonances) {
     if (res->name() == name) {
       return res;
     }
@@ -977,7 +972,7 @@ resonance* decayTree::getResonance(std::string name)
 
 resonance* decayTree::getFinal(int counter)
 {
-  for (auto res : fResonances) {
+  for (const auto res : fResonances) {
     if (res->counter() == counter) {
       return res;
     }
@@ -990,14 +985,14 @@ std::vector<resonance*> decayTree::getFinals(resonance* res)
 {
   std::vector<resonance*> resFinals;
 
-  for (auto d1Name : res->getDaughters()) {
+  for (const auto& d1Name : res->getDaughters()) {
     auto d1 = getResonance(d1Name);
     if (d1->isFinal()) {
       resFinals.push_back(d1);
     } else {
-      for (auto d2Name : d1->getDaughters()) {
+      for (const auto& d2Name : d1->getDaughters()) {
         auto d2 = getResonance(d2Name);
-        for (auto d3 : getFinals(d2)) {
+        for (const auto d3 : getFinals(d2)) {
           resFinals.push_back(d3);
         }
       }
@@ -1010,10 +1005,10 @@ std::vector<resonance*> decayTree::getFinals(resonance* res)
 void decayTree::checkAngles()
 {
   // loop over resonances
-  for (auto res : fResonances) {
+  for (const auto res : fResonances) {
     auto anglecuts = res->getAngleCuts();
     // loop over angle cuts
-    for (auto anglecut : anglecuts) {
+    for (const auto anglecut : anglecuts) {
       auto rnames = anglecut->rNames();
       auto anglerange = anglecut->angleRange();
 
@@ -1198,8 +1193,8 @@ std::vector<std::vector<int>> decayTree::combinations(int nPool)
 
   // permute the combinations
   std::vector<std::vector<int>> copes;
-  for (auto comb : combs) {
-    for (auto perm : fPermutations) {
+  for (const auto& comb : combs) {
+    for (const auto& perm : fPermutations) {
       std::vector<int> cope(fnFinals, 0);
       for (auto jj = 0; jj < fnFinals; jj++) {
         cope[perm[jj]] = comb[jj];

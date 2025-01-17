@@ -266,8 +266,8 @@ struct DGCandProducer {
   }
 
   // process function for real data
-  void process(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
-               aod::Zdcs& /*zdcs*/, aod::FV0As& fv0as, aod::FT0s& ft0s, aod::FDDs& fdds)
+  void process(CC const& collision, BCs const& bcs, TCs const& tracks, FWs const& fwdtracks,
+               aod::Zdcs const& /*zdcs*/, aod::FV0As const& fv0as, aod::FT0s const& ft0s, aod::FDDs const& fdds)
   {
     LOGF(debug, "<DGCandProducer>  collision %d", collision.globalIndex());
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
@@ -365,14 +365,14 @@ struct DGCandProducer {
       outputCollsLabels(collision.globalIndex());
 
       // update DGTracks tables
-      for (auto& track : tracks) {
+      for (const auto& track : tracks) {
         if (saveAllTracks || track.isPVContributor()) {
           updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
         }
       }
 
       // update DGFwdTracks tables
-      for (auto& fwdtrack : fwdtracks) {
+      for (const auto& fwdtrack : fwdtracks) {
         updateUDFwdTrackTables(fwdtrack, bc.globalBC());
       }
 
@@ -399,7 +399,7 @@ struct DGCandProducer {
         auto cnt = 0;
         float pt1 = 0., pt2 = 0.;
         float signalTPC1 = 0., signalTPC2 = 0.;
-        for (auto tr : tracks) {
+        for (const auto& tr : tracks) {
           if (tr.isPVContributor()) {
             cnt++;
             switch (cnt) {
@@ -503,7 +503,7 @@ struct McDGCandProducer {
     // This is needed to be able to assign the new daughter indices
     std::map<int64_t, int64_t> oldnew;
     auto lastId = outputMcParticles.lastIndex();
-    for (auto mcpart : McParts) {
+    for (const auto& mcpart : McParts) {
       auto oldId = mcpart.globalIndex();
       if (mcPartIsSaved.find(oldId) != mcPartIsSaved.end()) {
         oldnew[oldId] = mcPartIsSaved[oldId];
@@ -514,13 +514,13 @@ struct McDGCandProducer {
     }
 
     // all particles of the McCollision are saved
-    for (auto mcpart : McParts) {
+    for (const auto& mcpart : McParts) {
       LOGF(debug, "  p (%d) %d", mcpart.pdgCode(), mcpart.globalIndex());
       if (mcPartIsSaved.find(mcpart.globalIndex()) == mcPartIsSaved.end()) {
         // mothers
         newmids.clear();
         auto oldmids = mcpart.mothersIds();
-        for (auto oldmid : oldmids) {
+        for (const auto oldmid : oldmids) {
           auto m = McParts.rawIteratorAt(oldmid);
           LOGF(debug, "    m %d", m.globalIndex());
           if (mcPartIsSaved.find(oldmid) != mcPartIsSaved.end()) {
@@ -589,7 +589,7 @@ struct McDGCandProducer {
   void updateUDMcTrackLabels(TTrack const& udtracks, std::map<int64_t, int64_t>& mcPartIsSaved)
   {
     // loop over all tracks
-    for (auto udtrack : udtracks) {
+    for (const auto& udtrack : udtracks) {
       // udtrack (UDTCs) -> track (TCs) -> mcTrack (McParticles) -> udMcTrack (UDMcParticles)
       auto trackId = udtrack.trackId();
       if (trackId >= 0) {
@@ -715,7 +715,7 @@ struct McDGCandProducer {
 
           // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
           // loop over tracks of dgcand
-          for (auto dgtrack : dgTracks) {
+          for (const auto& dgtrack : dgTracks) {
             if (dgtrack.has_track()) {
               auto track = dgtrack.track_as<TCs>();
               if (track.has_mcParticle()) {
