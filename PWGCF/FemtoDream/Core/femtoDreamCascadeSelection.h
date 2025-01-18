@@ -515,7 +515,6 @@ void FemtoDreamCascadeSelection::init(HistogramRegistry* QAregistry, HistogramRe
   nCascadeDCANegToPV = getNSelections(femtoDreamCascadeSelection::kCascadeDCANegToPV);
   nCascadeDCABachToPV = getNSelections(femtoDreamCascadeSelection::kCascadeDCABachToPV);
   */ 
-  //TODO v0mass??? 
 
 
 
@@ -587,16 +586,16 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   if (invMassLambda < fV0InvMassLowLimit || invMassLambda > fV0InvMassUpLimit) {
     return false;
   }
-  else{
-    mQAHistogramRegistry->fill(HIST("CascadeQA/hInvMassV0"), invMassLambda);
-  }
+  //else{
+  //  mQAHistogramRegistry->fill(HIST("CascadeQA/hInvMassV0"), invMassLambda);
+  //}
   
   if (invMass < fInvMassLowLimit || invMass > fInvMassUpLimit) {
     return false;
   }
-  else{
-    mQAHistogramRegistry->fill(HIST("CascadeQA/hInvMassCascade"), invMass);
-  }
+  //else{
+  //  mQAHistogramRegistry->fill(HIST("CascadeQA/hInvMassCascade"), invMass);
+  //}
   
   /* 
   if (fRejectCompetingMass) {
@@ -611,59 +610,28 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   if (nCascadePtMin > 0 && cascade.pt() < fCascadePtMin) {
     return false;
   }
-  else{
-   mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadePt"), cascade.pt());
-  }
-  
   if (nCascadePtMax > 0 && cascade.pt() > fCascadePtMax) {
     return false;
   }
-  else{
-   mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadePt"), cascade.pt());
-  }
-  
   if (nCascadeEtaMax > 0 && std::abs(cascade.eta()) > fCascadeEtaMax) {
     return false;
   }
-  else{
-   mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeEta"), cascade.eta());
-  }
-  
   if (nCascadeDCADaughMax > 0 && cascade.dcacascdaughters() > fCascadeDCADaughMax) {
     return false;
   }
-  else{
-   mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeDCADaugh"), cascade.dcacascdaughters());
-  }
-  
   if (fCascadeCPAMin > 0 && cpaCasc < fCascadeCPAMin) {
     return false;
   }
-  else{
-   mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeCPA"), cpaCasc);
-  }
-  
   if (nCascadeTranRadMin > 0 && cascade.cascradius() < fCascadeTranRadMin) {
     return false;
   }
-  else{
-  mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeTranRad"), cascade.cascradius());
-  }
-  
   if (nCascadeTranRadMax > 0 && cascade.cascradius() > fCascadeTranRadMax) {
     return false;
   }
-  else{
-  mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeTranRad"), cascade.cascradius());
-  }
-  
   for (size_t i = 0; i < decVtx.size(); i++) {
     if (nCascadeDecVtxMax > 0 && decVtx.at(i) > fCascadeDecVtxMax) {
       return false;
     }
-  else{
-  mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeDecVtxZ"), decVtx.at(2));
-  }
   }
   
   
@@ -671,48 +639,22 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   if (nCascadeV0DCADaughMax > 0 && cascade.dcaV0daughters() > fCascadeV0DCADaughMax) {
     return false;
   }
-  else{
-  mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeV0DCADaugh"), cascade.dcaV0daughters());
-  }
-  
   if (nCascadeV0CPAMin> 0 && cpav0 < fCascadeV0CPAMin) {
     return false;
   }
-  else{
-  mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeV0CPA"), cpav0);
-  }
-  
   if (nCascadeV0TranRadMin> 0 && cascade.v0radius() < fCascadeV0TranRadMin) {
     return false;
   }
-  else{
-  mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeV0TranRad"), cascade.v0radius());
-  }
-  
   if (nCascadeV0TranRadMax> 0 && cascade.v0radius() > fCascadeV0TranRadMax) {
     return false;
   }
-  else{
-  mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeV0TranRad"), cascade.v0radius());
-  }
-
-  /* 
   if (nCascadeV0DCAToPVMin > 0 && abs(dcav0topv) < fCascadeV0DCAToPVMin) {
     return false;
   }
-  else{
-  mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeV0DCAToPV"), dcav0topv);
-  }
-  
   if (nCascadeV0DCAToPVMax > 0 && abs(dcav0topv) > fCascadeV0DCAToPVMax) {
     return false;
   }
-  else{
-  mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeV0DCAToPV"), dcav0topv);
-  }
-  */
-  //Chech the selection criteria for the tracks as well (TODO) 
-  /*
+  //Chech the selection criteria for the tracks as well 
   if (!PosDaughTrack.isSelectedMinimal(posTrack)) {
     return false;
   }
@@ -722,7 +664,6 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   if (!BachTrack.isSelectedMinimal(bachTrack)) {
     return false;
   }
-  */ 
   
   
   /*
@@ -737,25 +678,6 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   }
   */ 
   
-  
-
-
-  /*
-    // check that track combinations for V0 or antiV0 would be fulfilling PID
-    float nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
-    // antiV0
-    auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
-    auto nSigmaPiPos = posTrack.tpcNSigmaPi();
-    // v0
-    auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
-    auto nSigmaPrPos = posTrack.tpcNSigmaPr();
-    if (!(abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-          abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) &&
-        !(abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-          abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax)) {
-      return false;
-    }
-  */
   return true;
 }
 
@@ -842,7 +764,8 @@ std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col 
   auto nSigmaPrPos = posTrack.tpcNSigmaPr();
   float nSigmaPIDOffsetTPC = 0.;
 
-  //TODO: improve the selection of the Xi candidates (now I select only Xi/ antiXi based on the daughter Lambda)
+  //negative charge: Antiparticle (Xi+)
+  //positive charge: Particle (Xi-) 
   if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
     sign = -1.;
   } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {

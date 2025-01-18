@@ -209,8 +209,6 @@ struct femtoDreamProducerTask {
     Configurable<std::vector<float>> ConfCascBachelorDCAMin{"ConfCascBachelorDCAMin", std::vector<float>{0.05f, 0.06f}, "Cascade Bachelor sel:  Max. DCA Daugh to PV (cm)"};
     Configurable<std::vector<float>> ConfCascBachelorPIDnSigmaMax{"ConfCascBachelorPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "Cascade Bachelor sel: Max. PID nSigma TPC"};
     Configurable<std::vector<int>> ConfCascBachelorPIDspecies{"ConfCascBachelorPIDspecies", std::vector<int>{o2::track::PID::Pion}, "Cascade Bachelor sel: Particles species for PID"};
-    
-    
     /*
     Configurable<std::vector<float>> ConfCascadeDCAPosToPV{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeDCAPosToPV, "ConfCascade"), std::vector<float>{0.1f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeDCAPosToPV, "Cascade selection: ")};
     Configurable<std::vector<float>> ConfCascadeDCANegToPV{FemtoDreamCascadeSelection::getSelectionName(femtoDreamCascadeSelection::kCascadeDCANegToPV, "ConfCascade"), std::vector<float>{0.1f}, FemtoDreamCascadeSelection::getSelectionHelper(femtoDreamCascadeSelection::kCascadeDCANegToPV, "Cascade selection: ")};
@@ -259,7 +257,6 @@ struct femtoDreamProducerTask {
 
   void init(InitContext&)
   {
-    /*
     if (doprocessData == false && doprocessData_noCentrality == false && doprocessData_CentPbPb == false && doprocessMC == false && doprocessMC_noCentrality == false && doprocessMC_CentPbPb == false) {
       LOGF(fatal, "Neither processData nor processMC enabled. Please choose one.");
     }
@@ -268,7 +265,6 @@ struct femtoDreamProducerTask {
            "Cannot enable more than one process switch at the same time. "
            "Please choose one.");
     }
-    */
 
     int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
     TrackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
