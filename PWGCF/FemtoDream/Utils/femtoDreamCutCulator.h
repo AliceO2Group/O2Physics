@@ -18,7 +18,6 @@
 #ifndef PWGCF_FEMTODREAM_UTILS_FEMTODREAMCUTCULATOR_H_
 #define PWGCF_FEMTODREAM_UTILS_FEMTODREAMCUTCULATOR_H_
 
-#include <filesystem>
 #include <bitset>
 #include <functional>
 #include <iostream>

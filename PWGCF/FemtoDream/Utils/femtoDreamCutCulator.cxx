@@ -29,9 +29,9 @@ using namespace o2::analysis::femtoDream;
 int main(int /*argc*/, char* argv[])
 {
   std::string configFileName(argv[1]);
-  std::filesystem::path configFile{configFileName};
-
-  if (std::filesystem::exists(configFile)) {
+  std::ifstream configFile(configFileName); 
+  
+  if (configFile.is_open()) {
     FemtoDreamCutculator cut;
     cut.init(argv[1]);
 
@@ -97,7 +97,8 @@ int main(int /*argc*/, char* argv[])
 
   } else {
     std::cout << "The configuration file " << configFileName
-              << " could not be found.";
+              << " could not be found or could not be opened.";
+    return 1;
   }
 
   return 0;
