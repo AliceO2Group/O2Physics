@@ -140,6 +140,9 @@ struct PhotonHBT {
     Configurable<bool> cfgRequireNoCollInITSROFStandard{"cfgRequireNoCollInITSROFStandard", false, "require no collision in time range standard"};
     Configurable<bool> cfgRequireNoCollInITSROFStrict{"cfgRequireNoCollInITSROFStrict", false, "require no collision in time range strict"};
     Configurable<bool> cfgRequireNoHighMultCollInPrevRof{"cfgRequireNoHighMultCollInPrevRof", false, "require no HM collision in previous ITS ROF"};
+    Configurable<bool> cfgRequireGoodITSLayer3{"cfgRequireGoodITSLayer3", false, "number of inactive chips on ITS layer 3 are below threshold "};
+    Configurable<bool> cfgRequireGoodITSLayer0123{"cfgRequireGoodITSLayer0123", false, "number of inactive chips on ITS layers 0-3 are below threshold "};
+    Configurable<bool> cfgRequireGoodITSLayersAll{"cfgRequireGoodITSLayersAll", false, "number of inactive chips on all ITS layers are below threshold "};
   } eventcuts;
 
   V0PhotonCut fV0PhotonCut;
@@ -474,8 +477,8 @@ struct PhotonHBT {
       }
     }
 
-    fRegistry.add("Pair/same/hDeltaEtaDeltaPhi_Photon", "distance between 2 photons in #eta-#varphi plane;#Delta#varphi (rad.);#Delta#eta", kTH2D, {{180, -M_PI, M_PI}, {200, -1, +1}}, true); // deta, dphi of photon momentum
-    fRegistry.add("Pair/same/hDeltaEtaDeltaPhi_Leg", "distance between 2 LS tracks in #eta-#varphi plane;#Delta#varphi (rad.);#Delta#eta", kTH2D, {{180, -M_PI, M_PI}, {200, -1, +1}}, true);  // deta, dphi of track momentum
+    fRegistry.add("Pair/same/hDeltaEtaDeltaPhi_Photon", "distance between 2 photons in #eta-#varphi plane;#Delta#varphi (rad.);#Delta#eta", kTH2D, {{180, -M_PI, M_PI}, {400, -2, +2}}, true); // deta, dphi of photon momentum
+    fRegistry.add("Pair/same/hDeltaEtaDeltaPhi_Leg", "distance between 2 LS tracks in #eta-#varphi plane;#Delta#varphi (rad.);#Delta#eta", kTH2D, {{180, -M_PI, M_PI}, {400, -2, +2}}, true);  // deta, dphi of track momentum
     if constexpr (pairtype == ggHBTPairType::kPCMPCM) {
       fRegistry.add("Pair/same/hDeltaRDeltaZ", "diphoton distance in RZ;#Deltar = #sqrt{(#Deltax)^{2} + (#Deltay)^{2}} (cm);|#Deltaz| (cm)", kTH2D, {{100, 0, 50}, {100, 0, 50}}, true); // dr, dz of conversion points
     }
@@ -499,6 +502,9 @@ struct PhotonHBT {
     fEMEventCut.SetRequireNoCollInITSROFStandard(eventcuts.cfgRequireNoCollInITSROFStandard);
     fEMEventCut.SetRequireNoCollInITSROFStrict(eventcuts.cfgRequireNoCollInITSROFStrict);
     fEMEventCut.SetRequireNoHighMultCollInPrevRof(eventcuts.cfgRequireNoHighMultCollInPrevRof);
+    fEMEventCut.SetRequireGoodITSLayer3(eventcuts.cfgRequireGoodITSLayer3);
+    fEMEventCut.SetRequireGoodITSLayer0123(eventcuts.cfgRequireGoodITSLayer0123);
+    fEMEventCut.SetRequireGoodITSLayersAll(eventcuts.cfgRequireGoodITSLayersAll);
   }
 
   void DefinePCMCut()

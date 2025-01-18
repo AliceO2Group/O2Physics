@@ -112,6 +112,9 @@ struct SingleTrackQCMC {
     Configurable<bool> cfgRequireNoCollInITSROFStandard{"cfgRequireNoCollInITSROFStandard", false, "require no collision in time range standard"};
     Configurable<bool> cfgRequireNoCollInITSROFStrict{"cfgRequireNoCollInITSROFStrict", false, "require no collision in time range strict"};
     Configurable<bool> cfgRequireNoHighMultCollInPrevRof{"cfgRequireNoHighMultCollInPrevRof", false, "require no HM collision in previous ITS ROF"};
+    Configurable<bool> cfgRequireGoodITSLayer3{"cfgRequireGoodITSLayer3", false, "number of inactive chips on ITS layer 3 are below threshold "};
+    Configurable<bool> cfgRequireGoodITSLayer0123{"cfgRequireGoodITSLayer0123", false, "number of inactive chips on ITS layers 0-3 are below threshold "};
+    Configurable<bool> cfgRequireGoodITSLayersAll{"cfgRequireGoodITSLayersAll", false, "number of inactive chips on all ITS layers are below threshold "};
   } eventcuts;
 
   DielectronCut fDielectronCut;
@@ -394,6 +397,9 @@ struct SingleTrackQCMC {
     fEMEventCut.SetRequireNoCollInITSROFStandard(eventcuts.cfgRequireNoCollInITSROFStandard);
     fEMEventCut.SetRequireNoCollInITSROFStrict(eventcuts.cfgRequireNoCollInITSROFStrict);
     fEMEventCut.SetRequireNoHighMultCollInPrevRof(eventcuts.cfgRequireNoHighMultCollInPrevRof);
+    fEMEventCut.SetRequireGoodITSLayer3(eventcuts.cfgRequireGoodITSLayer3);
+    fEMEventCut.SetRequireGoodITSLayer0123(eventcuts.cfgRequireGoodITSLayer0123);
+    fEMEventCut.SetRequireGoodITSLayersAll(eventcuts.cfgRequireGoodITSLayersAll);
   }
 
   o2::analysis::MlResponseDielectronSingleTrack<float> mlResponseSingleTrack;
@@ -1083,6 +1089,27 @@ struct SingleTrackQCMC {
       }
       if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 12.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 13.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 14.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 15.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 16.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 17.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 18.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 19.0);
       }
       if (!fEMEventCut.IsSelected(collision)) {
         continue;

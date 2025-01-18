@@ -180,9 +180,10 @@ struct TableMaker {
 
   // Zorro selection
   struct : ConfigurableGroup {
-    Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
+    Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro"};
     Configurable<std::string> fConfigZorroTrigMask{"cfgZorroTriggerMask", "fDiMuon", "DQ Trigger masks: fSingleE,fLMeeIMR,fLMeeHMR,fDiElectron,fSingleMuLow,fSingleMuHigh,fDiMuon"};
     Configurable<bool> fConfigRunZorroSel{"cfgRunZorroSel", false, "Select events with trigger mask"};
+    Configurable<uint64_t> fBcTolerance{"cfgBcTolerance", 100, "Number of BCs of margin for software triggers"};
   } fConfigZorro;
 
   // Steer QA output
@@ -798,9 +799,10 @@ struct TableMaker {
 
       if (fConfigZorro.fConfigRunZorro) {
         zorro.setBaseCCDBPath(fConfigCCDB.fConfigCcdbPathZorro.value);
+        zorro.setBCtolerance(fConfigZorro.fBcTolerance);
         zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorro.fConfigZorroTrigMask.value);
         zorro.populateExternalHists(fCurrentRun, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroInfo)), reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
-        bool zorroSel = zorro.isSelected(bc.globalBC(), 100UL, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
+        bool zorroSel = zorro.isSelected(bc.globalBC(), fConfigZorro.fBcTolerance, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
         if (zorroSel) {
           tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
         }
@@ -1300,9 +1302,9 @@ struct TableMaker {
       }
     } // end loop over skimmed collisions
 
-    LOG(info) << "Skims in this TF: " << fCollIndexMap.size() << " collisions; " << trackBasic.lastIndex() << " barrel tracks; "
-              << muonBasic.lastIndex() << " muon tracks; " << mftTrack.lastIndex() << " MFT tracks; ";
-    LOG(info) << "      " << trackBarrelAssoc.lastIndex() << " barrel assocs; " << muonAssoc.lastIndex() << " muon assocs; " << mftAssoc.lastIndex() << " MFT assoc";
+    // LOG(info) << "Skims in this TF: " << fCollIndexMap.size() << " collisions; " << trackBasic.lastIndex() << " barrel tracks; "
+    //<< muonBasic.lastIndex() << " muon tracks; " << mftTrack.lastIndex() << " MFT tracks; ";
+    // LOG(info) << "      " << trackBarrelAssoc.lastIndex() << " barrel assocs; " << muonAssoc.lastIndex() << " muon assocs; " << mftAssoc.lastIndex() << " MFT assoc";
   }
 
   // produce the full DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), subscribe to the DQ event filter (filter-pp or filter-PbPb)

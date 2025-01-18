@@ -86,17 +86,20 @@ struct sigmaanalysis {
   Configurable<float> LambdaMinv0cospa{"LambdaMinv0cospa", 0.95, "Min V0 CosPA"};
   Configurable<float> LambdaWindow{"LambdaWindow", 0.015, "Mass window around expected (in GeV/c2)"};
   Configurable<float> LambdaMaxRap{"LambdaMaxRap", 0.8, "Max lambda rapidity"};
+  Configurable<float> LambdaMaxDauEta{"LambdaMaxDauEta", 0.8, "Max pseudorapidity of daughter tracks"};
   Configurable<float> LambdaMaxTPCNSigmas{"LambdaMaxTPCNSigmas", 1e+9, "Max TPC NSigmas for daughters"};
   Configurable<float> LambdaMaxTOFNSigmas{"LambdaMaxTOFNSigmas", 1e+9, "Max TOF NSigmas for daughters"};
+  Configurable<float> LambdaMinTPCCrossedRows{"LambdaMinTPCCrossedRows", 50, "Min daughter TPC Crossed Rows"};
 
   //// Photon standard criteria:
-  // Configurable<float> PhotonMaxDauPseudoRap{"PhotonMaxDauPseudoRap", 0.9, "Max pseudorapidity of daughter tracks"};
   Configurable<float> PhotonDauMinPt{"PhotonDauMinPt", 0.0, "Min daughter pT (GeV/c)"};
   Configurable<float> PhotonMinDCADauToPv{"PhotonMinDCADauToPv", 0.0, "Min DCA daughter To PV (cm)"};
   Configurable<float> PhotonMaxDCAV0Dau{"PhotonMaxDCAV0Dau", 3.5, "Max DCA V0 Daughters (cm)"};
   Configurable<float> PhotonMinTPCCrossedRows{"PhotonMinTPCCrossedRows", 0, "Min daughter TPC Crossed Rows"};
   Configurable<float> PhotonMinTPCNSigmas{"PhotonMinTPCNSigmas", -7, "Min TPC NSigmas for daughters"};
   Configurable<float> PhotonMaxTPCNSigmas{"PhotonMaxTPCNSigmas", 7, "Max TPC NSigmas for daughters"};
+  Configurable<float> PiMaxTPCNSigmas{"PiMaxTPCNSigmas", 1, "Max TPC NSigmas for pi rejection"};
+  Configurable<float> piMaxpT{"piMaxpT", 3.5, "Max pT for pi rejection"};
   Configurable<float> PhotonMinPt{"PhotonMinPt", 0.0, "Min photon pT (GeV/c)"};
   Configurable<float> PhotonMaxPt{"PhotonMaxPt", 50.0, "Max photon pT (GeV/c)"};
   Configurable<float> PhotonMaxRap{"PhotonMaxRap", 0.5, "Max photon rapidity"};
@@ -107,7 +110,9 @@ struct sigmaanalysis {
   Configurable<float> PhotonMaxAlpha{"PhotonMaxAlpha", 0.95, "Max photon alpha absolute value (AP plot)"};
   Configurable<float> PhotonMinV0cospa{"PhotonMinV0cospa", 0.80, "Min V0 CosPA"};
   Configurable<float> PhotonMaxMass{"PhotonMaxMass", 0.10, "Max photon mass (GeV/c^{2})"};
-  // TODO: Include PsiPair selection
+  Configurable<float> PhotonPsiPairMax{"PhotonPsiPairMax", 1e+9, "maximum psi angle of the track pair"};
+  Configurable<float> PhotonMaxDauEta{"PhotonMaxDauEta", 0.8, "Max pseudorapidity of daughter tracks"};
+  Configurable<float> PhotonLineCutZ0{"PhotonLineCutZ0", 7.0, "The offset for the linecute used in the Z vs R plot"};
 
   Configurable<float> SigmaMaxRap{"SigmaMaxRap", 0.5, "Max sigma0 rapidity"};
 
@@ -115,6 +120,7 @@ struct sigmaanalysis {
   // base properties
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Centrality"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "p_{T} (GeV/c)"};
+  ConfigurableAxis axisDeltaPt{"axisDeltaPt", {100, 0.0, +1.0}, "#Delta(p_{T})"};
   ConfigurableAxis axisRapidity{"axisRapidity", {100, -2.0f, 2.0f}, "Rapidity"};
 
   // Invariant Mass
@@ -134,7 +140,8 @@ struct sigmaanalysis {
   ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {500, 0.0f, 50.0f}, "DCA (cm)"};
   ConfigurableAxis axisDCAdau{"axisDCAdau", {50, 0.0f, 5.0f}, "DCA (cm)"};
   ConfigurableAxis axisCosPA{"axisCosPA", {200, 0.5f, 1.0f}, "Cosine of pointing angle"};
-  ConfigurableAxis axisCandSel{"axisCandSel", {26, 0.5f, +26.5f}, "Candidate Selection"};
+  ConfigurableAxis axisPsiPair{"axisPsiPair", {500, -5.0f, 5.0f}, "Psipair for photons"};
+  ConfigurableAxis axisCandSel{"axisCandSel", {28, -0.5f, +27.5f}, "Candidate Selection"};
 
   // ML
   ConfigurableAxis MLProb{"MLOutput", {100, 0.0f, 1.0f}, ""};
@@ -154,25 +161,27 @@ struct sigmaanalysis {
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(4, "Photon DCAToPV Cut");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(5, "Photon DCADau Cut");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(6, "Photon TPCCrossedRows Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(7, "Photon PosTPCSigma Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(8, "Photon NegTPCSigma Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(7, "Photon TPCNSigmaEl Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(8, "Photon TPCNSigmaPi Cut");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(9, "Photon Pt Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(10, "Photon Y Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(10, "Photon Y/Eta Cuts");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(11, "Photon Radius Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(12, "Photon Zconv Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(12, "Photon RZ line Cut");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(13, "Photon QT Cut");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(14, "Photon Alpha Cut");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(15, "Photon CosPA Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(16, "Lambda Mass Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(17, "Lambda DCAToPV Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(18, "Lambda Radius Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(19, "Lambda DCADau Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(20, "Lambda QT Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(21, "Lambda Alpha Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(22, "Lambda CosPA Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(23, "Lambda Y Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(24, "Sigma Y Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(25, "Lambda/ALambda PID Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(16, "Photon PsiPair Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(17, "Lambda Mass Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(18, "Lambda DCAToPV Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(19, "Lambda Radius Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(20, "Lambda DCADau Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(21, "Lambda QT Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(22, "Lambda Alpha Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(23, "Lambda CosPA Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(24, "Lambda Y/Eta Cuts");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(25, "Lambda TPCCrossedRows Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(26, "Sigma Y Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(27, "Lambda/ALambda PID Cut");
 
     // Photon Selection QA histos
     histos.add("GeneralQA/hPhotonMass", "hPhotonMass", kTH1F, {axisPhotonMass});
@@ -183,14 +192,22 @@ struct sigmaanalysis {
     histos.add("GeneralQA/hPhotonDCADau", "hPhotonDCADau", kTH1F, {axisDCAdau});
     histos.add("GeneralQA/hPhotonPosTPCCR", "hPhotonPosTPCCR", kTH1F, {axisTPCrows});
     histos.add("GeneralQA/hPhotonNegTPCCR", "hPhotonNegTPCCR", kTH1F, {axisTPCrows});
-    histos.add("GeneralQA/hPhotonPosTPCNSigma", "hPhotonPosTPCNSigma", kTH1F, {{30, -15.0f, 15.0f}});
-    histos.add("GeneralQA/hPhotonNegTPCNSigma", "hPhotonNegTPCNSigma", kTH1F, {{30, -15.0f, 15.0f}});
+    histos.add("GeneralQA/h2dPhotonPosTPCNSigmaEl", "h2dPhotonPosTPCNSigmaEl", {HistType::kTH2F, {axisPt, {30, -15.0f, 15.0f}}});
+    histos.add("GeneralQA/h2dPhotonNegTPCNSigmaEl", "h2dPhotonNegTPCNSigmaEl", {HistType::kTH2F, {axisPt, {30, -15.0f, 15.0f}}});
+    histos.add("GeneralQA/h2dPhotonPosTPCNSigmaPi", "h2dPhotonPosTPCNSigmaPi", {HistType::kTH2F, {axisPt, {30, -15.0f, 15.0f}}});
+    histos.add("GeneralQA/h2dPhotonNegTPCNSigmaPi", "h2dPhotonNegTPCNSigmaPi", {HistType::kTH2F, {axisPt, {30, -15.0f, 15.0f}}});
     histos.add("GeneralQA/hPhotonpT", "hPhotonpT", kTH1F, {axisPt});
     histos.add("GeneralQA/hPhotonY", "hPhotonY", kTH1F, {axisRapidity});
+    histos.add("GeneralQA/hPhotonPosEta", "hPhotonPosEta", kTH1F, {axisRapidity});
+    histos.add("GeneralQA/hPhotonNegEta", "hPhotonNegEta", kTH1F, {axisRapidity});
     histos.add("GeneralQA/hPhotonRadius", "hPhotonRadius", kTH1F, {axisRadius});
     histos.add("GeneralQA/hPhotonZ", "hPhotonZ", kTH1F, {{240, 0.0f, 120.0f}});
+    histos.add("GeneralQA/h2dRZCut", "h2dRZCut", {HistType::kTH2F, {{240, -120.0f, 120.0f}, axisRadius}});
+    histos.add("GeneralQA/h2dRZPlane", "h2dRZPlane", {HistType::kTH2F, {{240, -120.0f, 120.0f}, axisRadius}});
+
     histos.add("GeneralQA/h2dPhotonArmenteros", "h2dPhotonArmenteros", {HistType::kTH2F, {axisAPAlpha, axisAPQt}});
     histos.add("GeneralQA/hPhotonCosPA", "hPhotonCosPA", kTH1F, {axisCosPA});
+    histos.add("GeneralQA/hPhotonPsiPair", "hPhotonPsiPair", kTH1F, {axisPsiPair});
 
     // Lambda Selection QA histos
     histos.add("GeneralQA/hLambdaMass", "hLambdaMass", kTH1F, {axisLambdaMass});
@@ -202,12 +219,16 @@ struct sigmaanalysis {
     histos.add("GeneralQA/h2dLambdaArmenteros", "h2dLambdaArmenteros", {HistType::kTH2F, {axisAPAlpha, axisAPQt}});
     histos.add("GeneralQA/hLambdaCosPA", "hLambdaCosPA", kTH1F, {axisCosPA});
     histos.add("GeneralQA/hLambdaY", "hLambdaY", kTH1F, {axisRapidity});
+    histos.add("GeneralQA/hLambdaPosEta", "hLambdaPosEta", kTH1F, {axisRapidity});
+    histos.add("GeneralQA/hLambdaNegEta", "hLambdaNegEta", kTH1F, {axisRapidity});
+    histos.add("GeneralQA/hLambdaPosTPCCR", "hLambdaPosTPCCR", kTH1F, {axisTPCrows});
+    histos.add("GeneralQA/hLambdaNegTPCCR", "hLambdaNegTPCCR", kTH1F, {axisTPCrows});
     histos.add("GeneralQA/hSigmaY", "hSigmaY", kTH1F, {axisRapidity});
     histos.add("GeneralQA/hSigmaOPAngle", "hSigmaOPAngle", kTH1F, {{140, 0.0f, +7.0f}});
-    histos.add("GeneralQA/h2dTPCvsTOFNSigma_LambdaPr", "h2dTPCvsTOFNSigma_LambdaPr", kTH2F, {{120, -30, 30}, {120, -30, 30}});
-    histos.add("GeneralQA/h2dTPCvsTOFNSigma_LambdaPi", "h2dTPCvsTOFNSigma_LambdaPi", kTH2F, {{120, -30, 30}, {120, -30, 30}});
-    histos.add("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPr", "h2dTPCvsTOFNSigma_ALambdaPr", kTH2F, {{120, -30, 30}, {120, -30, 30}});
-    histos.add("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPi", "h2dTPCvsTOFNSigma_ALambdaPi", kTH2F, {{120, -30, 30}, {120, -30, 30}});
+    histos.add("GeneralQA/h2dTPCvsTOFNSigma_LambdaPr", "h2dTPCvsTOFNSigma_LambdaPr", {HistType::kTH2F, {{120, -30, 30}, {120, -30, 30}}});
+    histos.add("GeneralQA/h2dTPCvsTOFNSigma_LambdaPi", "h2dTPCvsTOFNSigma_LambdaPi", {HistType::kTH2F, {{120, -30, 30}, {120, -30, 30}}});
+    histos.add("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPr", "h2dTPCvsTOFNSigma_ALambdaPr", {HistType::kTH2F, {{120, -30, 30}, {120, -30, 30}}});
+    histos.add("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPi", "h2dTPCvsTOFNSigma_ALambdaPi", {HistType::kTH2F, {{120, -30, 30}, {120, -30, 30}}});
 
     histos.add("GeneralQA/hPhotonMassSelected", "hPhotonMassSelected", kTH1F, {axisPhotonMass});
     histos.add("GeneralQA/hLambdaMassSelected", "hLambdaMassSelected", kTH1F, {axisLambdaMass});
@@ -295,6 +316,11 @@ struct sigmaanalysis {
       //// TPC+TOF PID
       histos.add("MC/hPtTrueLambda_passedTPCTOFPID", "hPtTrueLambda_passedTPCTOFPID", kTH1F, {axisPt});
       histos.add("MC/hPtLambdaCandidates_passedTPCTOFPID", "hPtLambdaCandidates_passedTPCTOFPID", kTH1F, {axisPt});
+
+      // pT Resolution:
+      histos.add("MC/h3dLambdaPtResolution", "h3dLambdaPtResolution", kTH3F, {axisPt, axisDeltaPt, axisLambdaMass});
+      histos.add("MC/h3dGammaPtResolution", "h3dGammaPtResolution", kTH3F, {axisPt, axisDeltaPt, axisPhotonMass});
+      histos.add("MC/h3dSigma0PtResolution", "h3dSigma0PtResolution", kTH3F, {axisPt, axisDeltaPt, axisSigmaMass});
     }
   }
 
@@ -342,29 +368,40 @@ struct sigmaanalysis {
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 5.);
       if ((cand.photonPosTPCCrossedRows() < PhotonMinTPCCrossedRows) || (cand.photonNegTPCCrossedRows() < PhotonMinTPCCrossedRows))
         return false;
-      histos.fill(HIST("GeneralQA/hPhotonPosTPCNSigma"), cand.photonPosTPCNSigma());
+      histos.fill(HIST("GeneralQA/h2dPhotonPosTPCNSigmaEl"), cand.photonPosPt(), cand.photonPosTPCNSigmaEl());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 6.);
-      if ((cand.photonPosTPCNSigma() != -999.f) && ((cand.photonPosTPCNSigma() < PhotonMinTPCNSigmas) || (cand.photonPosTPCNSigma() > PhotonMaxTPCNSigmas)))
+      if ((cand.photonPosTPCNSigmaEl() != -999.f) && ((cand.photonPosTPCNSigmaEl() < PhotonMinTPCNSigmas) || (cand.photonPosTPCNSigmaEl() > PhotonMaxTPCNSigmas)))
         return false;
-      histos.fill(HIST("GeneralQA/hPhotonNegTPCNSigma"), cand.photonNegTPCNSigma());
+      histos.fill(HIST("GeneralQA/h2dPhotonNegTPCNSigmaEl"), cand.photonNegPt(), cand.photonNegTPCNSigmaEl());
+      if ((cand.photonNegTPCNSigmaEl() != -999.f) && ((cand.photonNegTPCNSigmaEl() < PhotonMinTPCNSigmas) || (cand.photonNegTPCNSigmaEl() > PhotonMaxTPCNSigmas)))
+        return false;
+      histos.fill(HIST("GeneralQA/h2dPhotonPosTPCNSigmaPi"), cand.photonPosPt(), cand.photonPosTPCNSigmaPi());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 7.);
-      if ((cand.photonNegTPCNSigma() != -999.f) && ((cand.photonNegTPCNSigma() < PhotonMinTPCNSigmas) || (cand.photonNegTPCNSigma() > PhotonMaxTPCNSigmas)))
+      if ((cand.photonPosTPCNSigmaPi() != -999.f) && ((TMath::Abs(cand.photonPosTPCNSigmaPi()) < PiMaxTPCNSigmas) && cand.photonPosPt() <= piMaxpT))
+        return false;
+      histos.fill(HIST("GeneralQA/h2dPhotonNegTPCNSigmaPi"), cand.photonNegPt(), cand.photonNegTPCNSigmaPi());
+      if ((cand.photonNegTPCNSigmaPi() != -999.f) && ((TMath::Abs(cand.photonNegTPCNSigmaPi()) < PiMaxTPCNSigmas) && cand.photonNegPt() <= piMaxpT))
         return false;
       histos.fill(HIST("GeneralQA/hPhotonpT"), cand.photonPt());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 8.);
       if ((cand.photonPt() < PhotonMinPt) || (cand.photonPt() > PhotonMaxPt))
         return false;
       histos.fill(HIST("GeneralQA/hPhotonY"), cand.photonY());
+      histos.fill(HIST("GeneralQA/hPhotonPosEta"), cand.photonPosEta());
+      histos.fill(HIST("GeneralQA/hPhotonNegEta"), cand.photonNegEta());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 9.);
-      if ((TMath::Abs(cand.photonY()) > PhotonMaxRap))
+      if ((TMath::Abs(cand.photonY()) > PhotonMaxRap) || (TMath::Abs(cand.photonPosEta()) > PhotonMaxDauEta) || (TMath::Abs(cand.photonNegEta()) > PhotonMaxDauEta))
         return false;
       histos.fill(HIST("GeneralQA/hPhotonRadius"), cand.photonRadius());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 10.);
       if ((cand.photonRadius() < PhotonMinRadius) || (cand.photonRadius() > PhotonMaxRadius))
         return false;
+      float photonRZLineCut = TMath::Abs(cand.photonZconv()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-PhotonMaxDauEta))) - PhotonLineCutZ0;
       histos.fill(HIST("GeneralQA/hPhotonZ"), cand.photonZconv());
+      histos.fill(HIST("GeneralQA/h2dRZCut"), cand.photonRadius(), photonRZLineCut);
+      histos.fill(HIST("GeneralQA/h2dRZPlane"), cand.photonRadius(), cand.photonZconv());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 11.);
-      if (TMath::Abs(cand.photonZconv()) > PhotonMaxZ)
+      if ((TMath::Abs(cand.photonRadius()) < photonRZLineCut) || (TMath::Abs(cand.photonZconv()) > PhotonMaxZ))
         return false;
       histos.fill(HIST("GeneralQA/h2dPhotonArmenteros"), cand.photonAlpha(), cand.photonQt());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 12.);
@@ -378,46 +415,57 @@ struct sigmaanalysis {
       if (cand.photonCosPA() < PhotonMinV0cospa)
         return false;
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 15.);
+      histos.fill(HIST("GeneralQA/hPhotonPsiPair"), cand.photonPsiPair());
+      if (TMath::Abs(cand.photonPsiPair()) > PhotonPsiPairMax)
+        return false;
 
       // Lambda selection
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 16.);
       histos.fill(HIST("GeneralQA/hLambdaMass"), cand.lambdaMass());
       histos.fill(HIST("GeneralQA/hAntiLambdaMass"), cand.antilambdaMass());
       if ((TMath::Abs(cand.lambdaMass() - 1.115683) > LambdaWindow) && (TMath::Abs(cand.antilambdaMass() - 1.115683) > LambdaWindow))
         return false;
       histos.fill(HIST("GeneralQA/hLambdaDCANegToPV"), cand.lambdaDCANegPV());
       histos.fill(HIST("GeneralQA/hLambdaDCAPosToPV"), cand.lambdaDCAPosPV());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 16.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 17.);
       if ((TMath::Abs(cand.lambdaDCAPosPV()) < LambdaMinDCAPosToPv) || (TMath::Abs(cand.lambdaDCANegPV()) < LambdaMinDCANegToPv))
         return false;
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 17.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 18.);
       histos.fill(HIST("GeneralQA/hLambdaRadius"), cand.lambdaRadius());
       if ((cand.lambdaRadius() < LambdaMinv0radius) || (cand.lambdaRadius() > LambdaMaxv0radius))
         return false;
       histos.fill(HIST("GeneralQA/hLambdaDCADau"), cand.lambdaDCADau());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 18.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 19.);
       if (TMath::Abs(cand.lambdaDCADau()) > LambdaMaxDCAV0Dau)
         return false;
       histos.fill(HIST("GeneralQA/h2dLambdaArmenteros"), cand.lambdaAlpha(), cand.lambdaQt());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 19.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 20.);
       if ((cand.lambdaQt() < LambdaMinQt) || (cand.lambdaQt() > LambdaMaxQt))
         return false;
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 20.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 21.);
       if ((TMath::Abs(cand.lambdaAlpha()) < LambdaMinAlpha) || (TMath::Abs(cand.lambdaAlpha()) > LambdaMaxAlpha))
         return false;
       histos.fill(HIST("GeneralQA/hLambdaCosPA"), cand.lambdaCosPA());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 21.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 22.);
       if (cand.lambdaCosPA() < LambdaMinv0cospa)
         return false;
       histos.fill(HIST("GeneralQA/hLambdaY"), cand.lambdaY());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 22.);
-      if (TMath::Abs(cand.lambdaY()) > LambdaMaxRap)
+      histos.fill(HIST("GeneralQA/hLambdaPosEta"), cand.lambdaPosEta());
+      histos.fill(HIST("GeneralQA/hLambdaNegEta"), cand.lambdaNegEta());
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 23.);
+      if ((TMath::Abs(cand.lambdaY()) > LambdaMaxRap) || (TMath::Abs(cand.lambdaPosEta()) > LambdaMaxDauEta) || (TMath::Abs(cand.lambdaNegEta()) > LambdaMaxDauEta))
+        return false;
+      histos.fill(HIST("GeneralQA/hLambdaPosTPCCR"), cand.lambdaPosTPCCrossedRows());
+      histos.fill(HIST("GeneralQA/hLambdaNegTPCCR"), cand.lambdaNegTPCCrossedRows());
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 24.);
+      if ((cand.lambdaPosTPCCrossedRows() < LambdaMinTPCCrossedRows) || (cand.lambdaNegTPCCrossedRows() < LambdaMinTPCCrossedRows))
         return false;
       histos.fill(HIST("GeneralQA/hSigmaY"), cand.sigmaRapidity());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 23.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 25.);
       if (TMath::Abs(cand.sigmaRapidity()) > SigmaMaxRap)
         return false;
       histos.fill(HIST("GeneralQA/hSigmaOPAngle"), cand.sigmaOPAngle());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 24.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 26.);
     }
     return true;
   }
@@ -500,8 +548,10 @@ struct sigmaanalysis {
       histos.fill(HIST("MC/hPtGammaCand_AfterSel"), sigma.photonPt());
       histos.fill(HIST("MC/hPtSigmaCand_AfterSel"), sigma.sigmapT());
 
-      if (sigma.photonCandPDGCode() == 22)
+      if (sigma.photonCandPDGCode() == 22) {
         histos.fill(HIST("MC/hPtTrueGamma_AfterSel"), sigma.photonPt());
+        histos.fill(HIST("MC/h3dGammaPtResolution"), sigma.photonPt(), TMath::Abs((sigma.photonMCPt() - sigma.photonPt()) / sigma.photonMCPt()), sigma.photonMass()); // pT resolution
+      }
 
       // For Lambda PID Studies
       if (fLambdaTPCTOFQA && (sigma.lambdaAlpha() > 0)) {
@@ -511,6 +561,7 @@ struct sigmaanalysis {
 
         if (sigma.lambdaCandPDGCode() == 3122) {
           histos.fill(HIST("MC/hPtTrueLambda_AfterSel"), sigma.lambdaPt());
+          histos.fill(HIST("MC/h3dLambdaPtResolution"), sigma.lambdaPt(), TMath::Abs((sigma.lambdaMCPt() - sigma.lambdaPt()) / sigma.lambdaMCPt()), sigma.lambdaMass()); // pT resolution
           histos.fill(HIST("MC/h3dTPCvsTOFNSigma_TrueLambdaPr"), sigma.lambdaPosPrTPCNSigma(), sigma.lambdaPrTOFNSigma(), sigma.lambdaPt());
           histos.fill(HIST("MC/h3dTPCvsTOFNSigma_TrueLambdaPi"), sigma.lambdaNegPiTPCNSigma(), sigma.lambdaPiTOFNSigma(), sigma.lambdaPt());
         }
@@ -553,6 +604,7 @@ struct sigmaanalysis {
           histos.fill(HIST("MC/hMassSigma0"), sigma.sigmaMass());
           histos.fill(HIST("MC/hPtSigma0"), sigma.sigmapT());
           histos.fill(HIST("MC/h3dMassSigma0"), sigma.sigmaCentrality(), sigma.sigmapT(), sigma.sigmaMass());
+          histos.fill(HIST("MC/h3dSigma0PtResolution"), sigma.sigmapT(), TMath::Abs((sigma.sigmaMCPt() - sigma.sigmapT()) / sigma.sigmaMCPt()), sigma.sigmaMass()); // pT resolution
 
         } else {
           // TPC + TOF PID Selections

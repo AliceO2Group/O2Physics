@@ -1503,8 +1503,11 @@ struct LFNucleiBATask {
       histos.add<TH2>("tracks/triton/h2antiTritonVspTNSigmaTPC", "NSigmaTPC(#bar{t}) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
     }
     if (enableHe) {
-      histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaITS", "NSigmaITS(He) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
-      histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaITS", "NSigmaITS(#bar{He}) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
+      histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaITSHe", "NSigmaITS(He) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS(He)", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
+      histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaITSHe", "NSigmaITS(#bar{He}) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS(#bar{He})", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
+
+      histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaITSTr", "NSigmaITS(t) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS(t)", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
+      histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaITSTr", "NSigmaITS(#bar{t}) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS(#bar{t})", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
 
       histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaTPC", "NSigmaTPC(He) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptZHeAxis}, {sigmaTPCAxis}});
       histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaTPC", "NSigmaTPC(#bar{He}) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptZHeAxis}, {sigmaTPCAxis}});
@@ -4033,13 +4036,15 @@ struct LFNucleiBATask {
       if (isHeWoTPCpid) {
         if (outFlagOptions.enableExpSignalTPC)
           histos.fill(HIST("tracks/helium/h2HeliumTPCExpSignalDiffVsPt"), hePt, track.tpcExpSignalDiffHe());
-        histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaITS"), hePt, nITSHe);
+        histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaITSTr"), hePt, nITSTr);
+        histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaITSHe"), hePt, nITSHe);
         histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaTPC"), hePt, track.tpcNSigmaHe());
       }
       if (isAntiHeWoTPCpid) {
         if (outFlagOptions.enableExpSignalTPC)
           histos.fill(HIST("tracks/helium/h2antiHeliumTPCExpSignalDiffVsPt"), antihePt, track.tpcExpSignalDiffHe());
-        histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaITS"), antihePt, nITSHe);
+        histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaITSTr"), antihePt, nITSTr);
+        histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaITSHe"), antihePt, nITSHe);
         histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaTPC"), antihePt, track.tpcNSigmaHe());
       }
 
