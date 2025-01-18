@@ -17,6 +17,7 @@
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Barbara Chytla, WUT Warsaw, barbara.chytla@cern.ch
 /// \author Shirajum Monira, WUT Warsaw, shirajum.monira@cern.ch
+/// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
 
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMCASCADESELECTION_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMCASCADESELECTION_H_
@@ -330,7 +331,7 @@ class FemtoDreamCascadeSelection
   FemtoDreamTrackSelection BachTrack;
   //FemtoDreamV0Selection V0DaughSel;
 
-  static constexpr int kNcascadeSelection = 16; //TODO can I do less ?
+  static constexpr int kNcascadeSelection = 16;
 
   static constexpr std::string_view mSelectionNames[kNcascadeSelection] = {
     "Sign", "PtMin", "PtMax", "EtaMax", "DCAcascDaugh", "CPAMin", "TranRadMin", "TranRadMax", "DecVtxMax",                   //Cascade Selections
