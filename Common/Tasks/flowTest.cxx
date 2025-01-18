@@ -152,15 +152,15 @@ struct flowTest {
 
   void processCascade(aod::McParticles const& mcParticles, LabeledCascades const& cascades, recoTracks const&, aod::McCollisions const&)
   {
-    std::vector<bool> isRecoed; 
-    isRecoed.resize(mcParticles.size(),false);
-    for(auto const& cascade : cascades){ 
-      if(cascade.has_mcParticle()){
+    std::vector<bool> isRecoed;
+    isRecoed.resize(mcParticles.size(), false);
+    for (auto const& cascade : cascades) {
+      if (cascade.has_mcParticle()) {
         isRecoed[cascade.mcParticleId()] = true;
       }
     }
 
-    for(auto const& mcParticle : mcParticles){ 
+    for (auto const& mcParticle : mcParticles) {
       auto mcCollision = mcParticle.mcCollision();
       float imp = mcCollision.impactParameter();
 
@@ -197,15 +197,15 @@ struct flowTest {
 
   void processV0s(aod::McParticles const& mcParticles, LabeledV0s const& v0s, recoTracks const&, aod::McCollisions const&)
   {
-    std::vector<bool> isRecoed; 
-    isRecoed.resize(mcParticles.size(),false);
-    for(auto const& v0 : v0s){ 
-      if(v0.has_mcParticle()){
+    std::vector<bool> isRecoed;
+    isRecoed.resize(mcParticles.size(), false);
+    for (auto const& v0 : v0s) {
+      if (v0.has_mcParticle()) {
         isRecoed[v0.mcParticleId()] = true;
       }
     }
 
-    for(auto const& mcParticle : mcParticles){ 
+    for (auto const& mcParticle : mcParticles) {
       auto mcCollision = mcParticle.mcCollision();
       float imp = mcCollision.impactParameter();
 
