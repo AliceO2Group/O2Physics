@@ -77,6 +77,7 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoSameBunchPileup, bool, true, "rejects collisions which are associated with the same found-by-T0 bunch crossing")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodZvtxFT0vsPV, bool, true, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference, use this cut at low multiplicities with caution")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoCollInTimeRangeStandard, bool, true, "no collisions in specified time range")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayersAll, bool, true, "cut time intervals with dead ITS staves")
   O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
   O2_DEFINE_CONFIGURABLE(cfgEvSelV0AT0ACut, bool, true, "V0A T0A 5 sigma cut")
   O2_DEFINE_CONFIGURABLE(cfgGetInteractionRate, bool, false, "Get interaction rate from CCDB")
@@ -597,6 +598,11 @@ struct FlowTask {
     }
     if (cfgEvSelkNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       // no collisions in specified time range
+      return 0;
+    }
+    if (cfgEvSelkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      // from Jan 9 2025 AOT meeting
+      // cut time intervals with dead ITS staves
       return 0;
     }
     auto multNTracksPV = collision.multNTracksPV();

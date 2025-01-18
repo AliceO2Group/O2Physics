@@ -430,10 +430,13 @@ struct HfEventSelectionMc {
   template <o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
   void fillHistograms(Coll const& mcCollision, const uint16_t rejectionMask)
   {
-    if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
-      hGenCollisionsCent->Fill(mcCollision.centFT0M());
-    }
     hParticles->Fill(EventRejection::None);
+
+    if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
+      if (!TESTBIT(rejectionMask, EventRejection::TimeFrameBorderCut) && !TESTBIT(rejectionMask, EventRejection::ItsRofBorderCut) && !TESTBIT(rejectionMask, EventRejection::PositionZ)) {
+        hGenCollisionsCent->Fill(mcCollision.centFT0M());
+      }
+    }
 
     for (std::size_t reason = 1; reason < EventRejection::NEventRejection; reason++) {
       if (TESTBIT(rejectionMask, reason)) {

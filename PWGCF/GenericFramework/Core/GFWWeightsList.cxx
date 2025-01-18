@@ -46,6 +46,9 @@ void GFWWeightsList::addGFWWeightsByName(const char* weightName, int nPtBins, do
   if (!list) {
     init("weightList");
   }
+  if (reinterpret_cast<GFWWeights*>(list->FindObject(weightName))) {
+    return;
+  }
   GFWWeights* weight = new GFWWeights(weightName);
   weight->SetPtBins(nPtBins, ptBins);
   weight->Init(addData, addMC);
@@ -65,6 +68,9 @@ void GFWWeightsList::addGFWWeightsByRun(int runNumber, int nPtBins, double* ptBi
 {
   if (!list) {
     init("weightList");
+  }
+  if (runNumerMap.contains(runNumber)) {
+    return;
   }
   GFWWeights* weight = new GFWWeights(Form("weight_%d", runNumber));
   weight->SetPtBins(nPtBins, ptBins);

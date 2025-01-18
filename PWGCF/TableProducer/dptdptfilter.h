@@ -1017,7 +1017,7 @@ template <typename CollisionObject>
 inline bool selectOnItsDeadMaps(CollisionObject coll)
 {
   auto checkFlag = [](auto flag, bool invert = false) {
-    return flag && !invert;
+    return invert ? !flag : flag;
   };
   switch (fItsDeadMapCheck) {
     case kNOCHECK:
