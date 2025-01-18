@@ -90,7 +90,9 @@ struct FlowZDCtask {
   ConfigurableAxis axisMultTpc{"axisMultTpc", {1000, -0.5f, 1999.5f}, "TPCmultiplicity"};
   ConfigurableAxis axisZN{"axisZN", {5000, 0, 500}, "axisZN"};
   ConfigurableAxis axisZP{"axisZP", {5000, 0, 500}, "axisZP"};
-  ConfigurableAxis axisFT0CAmp{"axisFT0CAmp", {60000, 0, 60000}, "axisFT0CAmp"};
+  ConfigurableAxis axisFT0CAmp{"axisFT0CAmp", {5000, 0, 5000}, "axisFT0CAmp"};
+  ConfigurableAxis axisFT0AAmp{"axisFT0AAmp", {5000, 0, 5000}, "axisFT0AAmp"};
+  ConfigurableAxis axisFT0MAmp{"axisFT0MAmp", {10000, 0, 10000}, "axisFT0MAmp"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
@@ -211,8 +213,8 @@ struct FlowZDCtask {
       histos.add("ZNenergy", "common zn (a + c sides) energy", kTH1F, {axisEnergy});
       histos.add("ZPenergy", "common zp energy (a + c sides)", kTH1F, {axisEnergy});
       histos.add("hFT0CAmp", ";Amplitude;counts", kTH1F, {axisFT0CAmp});
-      histos.add("hFT0AAmp", ";Amplitude;counts", kTH1F, {{100000, 0, 100000}});
-      histos.add("hFT0MAmp", ";Amplitude;counts", kTH1F, {{100000, 0, 100000}});
+      histos.add("hFT0AAmp", ";Amplitude;counts", kTH1F, {axisFT0AAmp});
+      histos.add("hFT0MAmp", ";Amplitude;counts", kTH1F, {axisFT0MAmp});
       histos.add("hMultT0A", ";Amplitude;counts", kTH1F, {{nBinsFT0Amp, 0, 250000}});
       histos.add("hMultT0C", ";Amplitude;counts", kTH1F, {{nBinsFT0Amp, 0, 250000}});
       histos.add("hMultT0M", ";Amplitude;counts", kTH1F, {{nBinsFT0Amp, 0, 250000}});
@@ -288,12 +290,12 @@ struct FlowZDCtask {
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
       for (const auto& amplitude : ft0.amplitudeA()) {
+        histos.fill(HIST("hFT0AAmp"), amplitude);
         ft0aAmp += amplitude;
-        histos.fill(HIST("hFT0AAmp"), ft0aAmp);
       }
       for (const auto& amplitude : ft0.amplitudeC()) {
+        histos.fill(HIST("hFT0CAmp"), amplitude);
         ft0cAmp += amplitude;
-        histos.fill(HIST("hFT0CAmp"), ft0cAmp);
       }
     }
     double ft0mAmp = ft0aAmp + ft0cAmp;

@@ -356,39 +356,11 @@ struct femtoDreamProducerTask {
     }
   }
 
-  template <bool isTrackOrV0, bool isV0Daughter, typename ParticleType>
+  template <bool isTrackOrV0, bool hasItsPid, typename ParticleType>
   void fillDebugParticle(ParticleType const& particle)
   {
     if constexpr (isTrackOrV0) {
-      if constexpr (isV0Daughter) {
-        outputDebugParts(particle.sign(),
-                         (uint8_t)particle.tpcNClsFound(),
-                         particle.tpcNClsFindable(),
-                         (uint8_t)particle.tpcNClsCrossedRows(),
-                         particle.tpcNClsShared(),
-                         particle.tpcInnerParam(),
-                         particle.itsNCls(),
-                         particle.itsNClsInnerBarrel(),
-                         particle.dcaXY(),
-                         particle.dcaZ(),
-                         particle.tpcSignal(),
-                         particle.tpcNSigmaEl(),
-                         particle.tpcNSigmaPi(),
-                         particle.tpcNSigmaKa(),
-                         particle.tpcNSigmaPr(),
-                         particle.tpcNSigmaDe(),
-                         particle.tpcNSigmaTr(),
-                         particle.tpcNSigmaHe(),
-                         particle.tofNSigmaEl(),
-                         particle.tofNSigmaPi(),
-                         particle.tofNSigmaKa(),
-                         particle.tofNSigmaPr(),
-                         particle.tofNSigmaDe(),
-                         particle.tofNSigmaTr(),
-                         particle.tofNSigmaHe(),
-                         -999., -999., -999., -999., -999., -999., -999.,
-                         -999., -999., -999., -999., -999., -999., -999.);
-      } else {
+      if constexpr (hasItsPid) {
         outputDebugParts(particle.sign(),
                          (uint8_t)particle.tpcNClsFound(),
                          particle.tpcNClsFindable(),
@@ -423,6 +395,34 @@ struct femtoDreamProducerTask {
                          particle.itsNSigmaTr(),
                          particle.itsNSigmaHe(),
                          -999., -999., -999., -999., -999., -999.);
+      } else {
+        outputDebugParts(particle.sign(),
+                         (uint8_t)particle.tpcNClsFound(),
+                         particle.tpcNClsFindable(),
+                         (uint8_t)particle.tpcNClsCrossedRows(),
+                         particle.tpcNClsShared(),
+                         particle.tpcInnerParam(),
+                         particle.itsNCls(),
+                         particle.itsNClsInnerBarrel(),
+                         particle.dcaXY(),
+                         particle.dcaZ(),
+                         particle.tpcSignal(),
+                         particle.tpcNSigmaEl(),
+                         particle.tpcNSigmaPi(),
+                         particle.tpcNSigmaKa(),
+                         particle.tpcNSigmaPr(),
+                         particle.tpcNSigmaDe(),
+                         particle.tpcNSigmaTr(),
+                         particle.tpcNSigmaHe(),
+                         particle.tofNSigmaEl(),
+                         particle.tofNSigmaPi(),
+                         particle.tofNSigmaKa(),
+                         particle.tofNSigmaPr(),
+                         particle.tofNSigmaDe(),
+                         particle.tofNSigmaTr(),
+                         particle.tofNSigmaHe(),
+                         -999., -999., -999., -999., -999., -999., -999.,
+                         -999., -999., -999., -999., -999., -999., -999.);
       }
     } else {
       outputDebugParts(-999., -999., -999., -999., -999., -999., -999.,
@@ -512,7 +512,7 @@ struct femtoDreamProducerTask {
       outputCollsMCLabels(-1);
     }
   }
-  template <bool isMC, bool useCentrality, bool analysePbPb, typename V0Type, typename TrackType, typename TrackTypeWithItsPid, typename CollisionType>
+  template <bool isMC, bool hasItsPid, bool useCentrality, bool analysePbPb, typename CollisionType, typename TrackType, typename TrackTypeWithItsPid, typename V0Type>
   void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, TrackTypeWithItsPid const& tracksWithItsPid, V0Type const& fullV0s)
   {
     // If triggering is enabled, select only events which were triggered wit our triggers
@@ -578,11 +578,7 @@ struct femtoDreamProducerTask {
       trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild>(track);
       // the bit-wise container of the systematic variations is obtained
       std::array<o2::aod::femtodreamparticle::cutContainerType, 2> cutContainer;
-      if (ConfUseItsPid.value) {
-        cutContainer = trackCuts.getCutContainer<true, aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
-      } else {
-        cutContainer = trackCuts.getCutContainer<false, aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
-      }
+      cutContainer = trackCuts.getCutContainer<hasItsPid, aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
 
       // now the table is filled
       outputParts(outputCollision.lastIndex(),
@@ -595,7 +591,7 @@ struct femtoDreamProducerTask {
                   track.dcaXY(), childIDs, 0, 0);
       tmpIDtrack.push_back(track.globalIndex());
       if (ConfIsDebug.value) {
-        fillDebugParticle<true, false>(track);
+        fillDebugParticle<true, hasItsPid>(track);
       }
 
       if constexpr (isMC) {
@@ -707,9 +703,9 @@ struct femtoDreamProducerTask {
                     v0.mLambda(),
                     v0.mAntiLambda());
         if (ConfIsDebug.value) {
-          fillDebugParticle<true, true>(postrack); // QA for positive daughter
-          fillDebugParticle<true, true>(negtrack); // QA for negative daughter
-          fillDebugParticle<false, false>(v0);     // QA for v0
+          fillDebugParticle<true, false>(postrack); // QA for positive daughter
+          fillDebugParticle<true, false>(negtrack); // QA for negative daughter
+          fillDebugParticle<false, false>(v0);      // QA for v0
         }
         if constexpr (isMC) {
           fillMCParticle(col, v0, o2::aod::femtodreamparticle::ParticleType::kV0);
@@ -794,7 +790,11 @@ struct femtoDreamProducerTask {
     // fill the tables
     auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
                                         aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
-    fillCollisionsAndTracksAndV0<false, true, false>(col, tracks, tracksWithItsPid, fullV0s);
+    if (ConfUseItsPid.value) {
+      fillCollisionsAndTracksAndV0<false, true, true, false>(col, tracks, tracksWithItsPid, fullV0s);
+    } else {
+      fillCollisionsAndTracksAndV0<false, false, true, false>(col, tracks, tracks, fullV0s);
+    }
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData,
                  "Provide experimental data", true);
@@ -810,7 +810,11 @@ struct femtoDreamProducerTask {
     // fill the tables
     auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
                                         aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
-    fillCollisionsAndTracksAndV0<false, false, false>(col, tracks, tracksWithItsPid, fullV0s);
+    if (ConfUseItsPid.value) {
+      fillCollisionsAndTracksAndV0<false, true, false, false>(col, tracks, tracksWithItsPid, fullV0s);
+    } else {
+      fillCollisionsAndTracksAndV0<false, false, false, false>(col, tracks, tracks, fullV0s);
+    }
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData_noCentrality,
                  "Provide experimental data without centrality information", false);
@@ -826,7 +830,11 @@ struct femtoDreamProducerTask {
     // fill the tables
     auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
                                         aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
-    fillCollisionsAndTracksAndV0<false, true, true>(col, tracks, tracksWithItsPid, fullV0s);
+    if (ConfUseItsPid.value) {
+      fillCollisionsAndTracksAndV0<false, true, true, true>(col, tracks, tracksWithItsPid, fullV0s);
+    } else {
+      fillCollisionsAndTracksAndV0<false, false, true, true>(col, tracks, tracks, fullV0s);
+    }
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData_CentPbPb,
                  "Provide experimental data with centrality information for PbPb collisions", false);
@@ -841,9 +849,7 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    auto tracksWithItsPid = soa::Attach<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
-                                        aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
-    fillCollisionsAndTracksAndV0<true, true, false>(col, tracks, tracksWithItsPid, fullV0s);
+    fillCollisionsAndTracksAndV0<false, false, true, false>(col, tracks, tracks, fullV0s);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC, "Provide MC data", false);
 
@@ -857,9 +863,7 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    auto tracksWithItsPid = soa::Attach<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
-                                        aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
-    fillCollisionsAndTracksAndV0<true, false, false>(col, tracks, tracksWithItsPid, fullV0s);
+    fillCollisionsAndTracksAndV0<true, false, false, false>(col, tracks, tracks, fullV0s);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC_noCentrality, "Provide MC data without requiring a centrality calibration", false);
 
@@ -873,9 +877,7 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    auto tracksWithItsPid = soa::Attach<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
-                                        aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
-    fillCollisionsAndTracksAndV0<true, true, true>(col, tracks, tracksWithItsPid, fullV0s);
+    fillCollisionsAndTracksAndV0<true, false, true, true>(col, tracks, tracks, fullV0s);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC_CentPbPb, "Provide MC data with centrality information for PbPb collisions", false);
 };
