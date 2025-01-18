@@ -117,7 +117,7 @@ class FemtoDreamDetaDphiStar
       }
     }
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
-      for (int i = 0; i < 3; i++){
+      for (int i = 0; i < 3; i++) {
         std::string dirName = static_cast<std::string>(dirNames[3]);
         histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
@@ -132,7 +132,6 @@ class FemtoDreamDetaDphiStar
           histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
           histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
         }
-
       }
     }
   }
@@ -145,8 +144,8 @@ class FemtoDreamDetaDphiStar
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && (mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack || mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child)) {
       /// Track-Track combination
       // check if provided particles are in agreement with the class instantiation
-      if (part1.partType() != o2::aod::femtodreamparticle::ParticleType::kTrack || !(part2.partType() == o2::aod::femtodreamparticle::ParticleType::kTrack || part2.partType() == o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child)) { //hotfix to use the CPR
-        //LOG(fatal) << "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide kTrack,kTrack candidates.";
+      if (part1.partType() != o2::aod::femtodreamparticle::ParticleType::kTrack || !(part2.partType() == o2::aod::femtodreamparticle::ParticleType::kTrack || part2.partType() == o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child)) { // hotfix to use the CPR
+        // LOG(fatal) << "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide kTrack,kTrack candidates.";
         LOGF(fatal, "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide kTrack,kTrack candidates. Currently: %i", part2.partType());
         return false;
       }
@@ -447,7 +446,6 @@ class FemtoDreamDetaDphiStar
               }
             }
 
-          
           } else if (atWhichRadiiToSelect == 0) {
             if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
               pass = true;

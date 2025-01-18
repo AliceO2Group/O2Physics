@@ -90,10 +90,10 @@ namespace femtodreamparticle
 {
 /// Distinuishes the different particle types
 enum ParticleType {
-  kTrack,           //! Track
-  kV0,              //! V0
-  kV0Child,         //! Child track of a V0
-  kCascade,         //! Cascade
+  kTrack,   //! Track
+  kV0,      //! V0
+  kV0Child, //! Child track of a V0
+  kCascade, //! Cascade
   kCascadeV0,
   kCascadeV0Child,
   kCascadeBachelor, //! Bachelor track of a cascade

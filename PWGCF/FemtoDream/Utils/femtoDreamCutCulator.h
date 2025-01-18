@@ -201,8 +201,8 @@ class FemtoDreamCutculator
   /// \param type Type of the track selection
   /// \param prefix Prefix which is added to the name of the Configurable
   void setCascadeSelection(femtoDreamCascadeSelection::CascadeSel obs,
-                      femtoDreamSelection::SelectionType type,
-                      const char* prefix)
+                           femtoDreamSelection::SelectionType type,
+                           const char* prefix)
   {
     auto tmpVec =
       setSelection(FemtoDreamCascadeSelection::getSelectionName(obs, prefix));
@@ -210,7 +210,7 @@ class FemtoDreamCutculator
       mCascadeSel.setSelection(tmpVec, obs, type);
     }
   }
-  
+
   /// Automatically retrieves V0 selections from the dpl-config.json
   /// \param prefix Prefix which is added to the name of the Configurable
   void setCascadeSelectionFromFile(const char* prefix)

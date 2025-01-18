@@ -67,7 +67,7 @@ struct femtoDreamProducerTaskForSpecificAnalysis {
   Configurable<float> Conf_maxInvMass_V0{"Conf_maxInvMass_V0", 1.15, "Maximum invariant mass of V0 (particle)"};
   Configurable<float> Conf_minInvMassAnti_V0{"Conf_minInvMassAnti_V0", 1.08, "Minimum invariant mass of V0 (antiparticle)"};
   Configurable<float> Conf_maxInvMassAnti_V0{"Conf_maxInvMassAnti_V0", 1.15, "Maximum invariant mass of V0 (antiparticle)"};
-  /// Cascade selection 
+  /// Cascade selection
   Configurable<float> Conf_minInvMass_Cascade{"Conf_minInvMass_Cascade", 1.2, "Minimum invariant mass of Cascade (particle)"};
   Configurable<float> Conf_maxInvMass_Cascade{"Conf_maxInvMass_Cascade", 1.5, "Maximum invariant mass of Cascade (particle)"};
 
@@ -76,7 +76,7 @@ struct femtoDreamProducerTaskForSpecificAnalysis {
   Partition<aod::FDParticles> SelectedCascades = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kCascade));
 
   HistogramRegistry EventRegistry{"EventRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
-  
+
   static constexpr uint32_t kSignPlusMask = 1 << 1;
 
   template <typename T>
@@ -208,7 +208,6 @@ struct femtoDreamProducerTaskForSpecificAnalysis {
   }
   PROCESS_SWITCH(femtoDreamProducerTaskForSpecificAnalysis, processCollisionsWithNTracksAndNV0, "Enable producing data with ppp collisions for data", true);
 
-
   /// This function stores accepted collisions in derived data
   /// @tparam PartitionType
   /// @tparam PartType
@@ -219,7 +218,7 @@ struct femtoDreamProducerTaskForSpecificAnalysis {
   template <bool isMC, typename PartitionType, typename PartType>
   void createSpecifiedDerivedData_TrkCascade(o2::aod::FDCollision& col, PartitionType groupSelectedTracks, PartitionType groupSelectedCascades, PartType parts)
   {
-    
+
     /// check tracks
     int tracksCount = 0;
     int antitracksCount = 0;
@@ -230,24 +229,24 @@ struct femtoDreamProducerTaskForSpecificAnalysis {
         tracksCount++;
       }
     }
-    
+
     /// check Cascades
     int CascadeCount = 0;
     int antiCascadeCount = 0;
     for (auto& casc : groupSelectedCascades) {
-      if ((casc.cut() & kSignPlusMask) == kSignPlusMask){
+      if ((casc.cut() & kSignPlusMask) == kSignPlusMask) {
         CascadeCount++;
-      } else{
+      } else {
         antiCascadeCount++;
       }
     }
-    
+
     std::vector<int> tmpIDtrack;
-    
+
     if ((CascadeCount >= ConfNumberOfCascades && tracksCount >= ConfNumberOfTracks) || (antiCascadeCount >= ConfNumberOfCascades && antitracksCount >= ConfNumberOfTracks)) {
       EventRegistry.fill(HIST("hStatistiscs"), 1);
       outputCollision(col.posZ(), col.multV0M(), col.multNtr(), col.sphericity(), col.magField());
-      
+
       for (auto& femtoParticle : parts) {
         if (aod::femtodreamparticle::ParticleType::kTrack == femtoParticle.partType()) {
           std::vector<int> childIDs = {0, 0};
@@ -268,19 +267,31 @@ struct femtoDreamProducerTaskForSpecificAnalysis {
           std::vector<int> childIDs = {0, 0, 0};
           const auto& children = femtoParticle.childrenIds();
           int childId = 0;
-          if (children[0] != 0){ childId = children[0]; } 
-          else if (children[1] != 0){ childId = children[1]; }
-          else if (children[2] != 0){ childId = children[2]; }
+          if (children[0] != 0) {
+            childId = children[0];
+          } else if (children[1] != 0) {
+            childId = children[1];
+          } else if (children[2] != 0) {
+            childId = children[2];
+          }
 
           if (childId != -1) {
             int rowInPrimaryTrackTable = getRowDaughters(childId, tmpIDtrack);
-            if (children[0] != 0){ childIDs = std::vector<int>{rowInPrimaryTrackTable, 0, 0}; } 
-            else if (children[1] != 0){ childIDs = std::vector<int>{0, rowInPrimaryTrackTable, 0}; } 
-            else if (children[2] != 0){ childIDs = std::vector<int>{0, 0, rowInPrimaryTrackTable}; } 
+            if (children[0] != 0) {
+              childIDs = std::vector<int>{rowInPrimaryTrackTable, 0, 0};
+            } else if (children[1] != 0) {
+              childIDs = std::vector<int>{0, rowInPrimaryTrackTable, 0};
+            } else if (children[2] != 0) {
+              childIDs = std::vector<int>{0, 0, rowInPrimaryTrackTable};
+            }
           } else {
-            if (children[0] != 0){ childIDs = std::vector<int>{-1, 0, 0}; } 
-            else if (children[1] != 0){ childIDs = std::vector<int>{0, -1, 0}; } 
-            else if (children[2] != 0){ childIDs = std::vector<int>{0, 0, -1}; } 
+            if (children[0] != 0) {
+              childIDs = std::vector<int>{-1, 0, 0};
+            } else if (children[1] != 0) {
+              childIDs = std::vector<int>{0, -1, 0};
+            } else if (children[2] != 0) {
+              childIDs = std::vector<int>{0, 0, -1};
+            }
           }
           outputParts(outputCollision.lastIndex(),
                       femtoParticle.pt(),
@@ -314,10 +325,7 @@ struct femtoDreamProducerTaskForSpecificAnalysis {
     } else {
       EventRegistry.fill(HIST("hStatistiscs"), 2);
     }
-
-
-   }
-
+  }
 
   /// process function to create derived data with only collisions containing n tracks
   /// \param col subscribe to the collision table (Data)

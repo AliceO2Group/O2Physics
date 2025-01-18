@@ -43,7 +43,7 @@ struct femtoDreamDebugCascade {
   Configurable<int> ConfCascade_ChildPos_PDGCode{"ConfCascade_PosChild_PDGCode", 2212, "Positive Child - PDG code"};
   Configurable<int> ConfCascade_ChildNeg_PDGCode{"ConfCascade_NegChild_PDGCode", 211, "Negative Child- PDG code"};
   Configurable<int> ConfCascade_Bach_PDGCode{"ConfCascade_Bach_PDGCode", 211, "Bachelor Child- PDG code"};
-  
+
   Configurable<aod::femtodreamparticle::cutContainerType> ConfCascade_CutBit{"ConfCascade_CutBit", 338, "Cascade - Selection bit from cutCulator"};
   ConfigurableAxis ConfCascadeTempFitVarBins{"ConfCascadeTempFitVarBins", {300, 0.95, 1.}, "Cascade: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfCascadeTempFitVarMomentumBins{"ConfCascadeTempFitVarMomentumBins", {20, 0.5, 4.05}, "Cascade: pT binning of the pT vs. TempFitVar plot"};
@@ -116,18 +116,18 @@ struct femtoDreamDebugCascade {
       // check cuts on V0 children
       if (posChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kCascadeV0Child) &&
           negChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kCascadeV0Child) &&
-          bachChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kCascadeBachelor)){
-        
-        if( ConfUseChildCuts &&
-          !((posChild.cut() & ConfCascade_ChildPos_CutBit) == ConfCascade_ChildPos_CutBit &&
-          (posChild.pidcut() & ConfCascade_ChildPos_TPCBit) == ConfCascade_ChildPos_TPCBit && 
-          (negChild.cut() & ConfCascade_ChildNeg_CutBit) == ConfCascade_ChildNeg_CutBit &&
-          (negChild.pidcut() & ConfCascade_ChildNeg_TPCBit) == ConfCascade_ChildNeg_TPCBit &&
-          (bachChild.cut() & ConfCascade_ChildBach_CutBit) == ConfCascade_ChildBach_CutBit &&
-          (bachChild.pidcut() & ConfCascade_ChildBach_TPCBit) == ConfCascade_ChildBach_TPCBit)) {
-            continue;
-          }
-        CascadeHistos.fillQA<false, false>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M()); //set isDebug to true
+          bachChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kCascadeBachelor)) {
+
+        if (ConfUseChildCuts &&
+            !((posChild.cut() & ConfCascade_ChildPos_CutBit) == ConfCascade_ChildPos_CutBit &&
+              (posChild.pidcut() & ConfCascade_ChildPos_TPCBit) == ConfCascade_ChildPos_TPCBit &&
+              (negChild.cut() & ConfCascade_ChildNeg_CutBit) == ConfCascade_ChildNeg_CutBit &&
+              (negChild.pidcut() & ConfCascade_ChildNeg_TPCBit) == ConfCascade_ChildNeg_TPCBit &&
+              (bachChild.cut() & ConfCascade_ChildBach_CutBit) == ConfCascade_ChildBach_CutBit &&
+              (bachChild.pidcut() & ConfCascade_ChildBach_TPCBit) == ConfCascade_ChildBach_TPCBit)) {
+          continue;
+        }
+        CascadeHistos.fillQA<false, false>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M()); // set isDebug to true
         posChildHistos.fillQA<false, true>(posChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M());
         negChildHistos.fillQA<false, true>(negChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M());
         bachelorHistos.fillQA<false, true>(bachChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfCascadeTempFitVarMomentum.value), col.multNtr(), col.multV0M());

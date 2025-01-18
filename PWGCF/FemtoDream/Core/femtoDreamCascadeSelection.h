@@ -53,22 +53,22 @@ enum CascadeSel {
   kCascadeTranRadMin,
   kCascadeTranRadMax,
   kCascadeDecVtxMax,
-  
+
   kCascadeV0DCADaughMax,
   kCascadeV0CPAMin,
   kCascadeV0TranRadMin,
   kCascadeV0TranRadMax,
   kCascadeV0DCAtoPVMin,
   kCascadeV0DCAtoPVMax
-  //kNcascadeSelection
-  //kCascadeV0MassMin,
-  //kCascadeV0MassMax
-}; 
-  /*
-  kCascadeDCAPosToPV,
-  kCascadeDCANegToPV,
-  kCascadeDCABachToPV,
-  */
+  // kNcascadeSelection
+  // kCascadeV0MassMin,
+  // kCascadeV0MassMax
+};
+/*
+kCascadeDCAPosToPV,
+kCascadeDCANegToPV,
+kCascadeDCABachToPV,
+*/
 
 enum ChildTrackType { kPosTrack,
                       kNegTrack,
@@ -101,7 +101,7 @@ class FemtoDreamCascadeSelection
       nCascadeTranRadMin(0),
       nCascadeTranRadMax(0),
       nCascadeDecVtxMax(0),
-      /* 
+      /*
       nCascadeDCAPosToPV(0),
       nCascadeDCANegToPV(0),
       nCascadeDCABachToPV(0),
@@ -112,7 +112,6 @@ class FemtoDreamCascadeSelection
       nCascadeV0TranRadMax(0),
       nCascadeV0DCAToPVMin(0),
       nCascadeV0DCAToPVMax(0),
-
 
       fCascadePtMin(9999999),
       fCascadePtMax(-9999999),
@@ -134,7 +133,6 @@ class FemtoDreamCascadeSelection
       fCascadeV0DCAToPVMin(9999999),
       fCascadeV0DCAToPVMax(-9999999),
 
-
       fV0InvMassLowLimit(1.05),
       fV0InvMassUpLimit(1.3),
       fInvMassLowLimit(1.25),
@@ -143,7 +141,7 @@ class FemtoDreamCascadeSelection
       fInvMassCompetingLowLimit(1.5),
       fInvMassCompetingUpLimit(2.0),
       isCascOmega(false)
-      /*,nSigmaPIDOffsetTPC(0.)*/
+  /*,nSigmaPIDOffsetTPC(0.)*/
   {
   }
 
@@ -209,7 +207,7 @@ class FemtoDreamCascadeSelection
     outString += suffix;
     return outString;
   }
-  
+
   /// Helper function to obtain the index of a given selection variable for consistent naming of the configurables
   /// \param obs Cascade selection variable (together with prefix) got from file
   /// \param prefix Additional prefix for the output of the configurable
@@ -225,7 +223,7 @@ class FemtoDreamCascadeSelection
     }
     LOGF(info, "Variable %s not found", obs);
     return -1;
-  } 
+  }
 
   /// Helper function to obtain the type of a given selection variable for consistent naming of the configurables
   /// \param iSel Casc selection variable whose type is returned
@@ -254,7 +252,7 @@ class FemtoDreamCascadeSelection
     fInvMassLowLimit = lowLimit;
     fInvMassUpLimit = upLimit;
   }
-  
+
   void setV0InvMassLimits(float lowLimit, float upLimit)
   {
     fV0InvMassLowLimit = lowLimit;
@@ -280,7 +278,7 @@ class FemtoDreamCascadeSelection
   int nCascadeTranRadMin;
   int nCascadeTranRadMax;
   int nCascadeDecVtxMax;
-  /* 
+  /*
   int nCascadeDCAPosToPV;
   int nCascadeDCANegToPV;
   int nCascadeDCABachToPV;
@@ -300,18 +298,18 @@ class FemtoDreamCascadeSelection
   float fCascadeTranRadMin;
   float fCascadeTranRadMax;
   float fCascadeDecVtxMax;
-  /* 
+  /*
   float fCascadeDCAPosToPV;
   float fCascadeDCANegToPV;
   float fCascadeDCABachToPV;
-  */  
+  */
   float fCascadeV0DCADaughMax;
   float fCascadeV0CPAMin;
   float fCascadeV0TranRadMin;
   float fCascadeV0TranRadMax;
   float fCascadeV0DCAToPVMin;
   float fCascadeV0DCAToPVMax;
-  
+
   float fV0InvMassLowLimit;
   float fV0InvMassUpLimit;
 
@@ -329,16 +327,16 @@ class FemtoDreamCascadeSelection
   FemtoDreamTrackSelection PosDaughTrack;
   FemtoDreamTrackSelection NegDaughTrack;
   FemtoDreamTrackSelection BachTrack;
-  //FemtoDreamV0Selection V0DaughSel;
+  // FemtoDreamV0Selection V0DaughSel;
 
   static constexpr int kNcascadeSelection = 16;
 
   static constexpr std::string_view mSelectionNames[kNcascadeSelection] = {
-    "Sign", "PtMin", "PtMax", "EtaMax", "DCAcascDaugh", "CPAMin", "TranRadMin", "TranRadMax", "DecVtxMax",                   //Cascade Selections
-    "DCAv0daughMax", "v0CPAMin", "v0TranRadMin", "v0TranRadMax", "DCAV0ToPVMin", "DCAV0ToPVMax"};                            //CascadeV0 selections
-    //"kV0MassMin", "V0MassMax"}; //CascadeV0 selections
-    // "DCAPosToPV", "DCANegToPV", "DCABachToPV",                                                             //Cascade daughter track selections
-    // }; //<< Name of the different selections
+    "Sign", "PtMin", "PtMax", "EtaMax", "DCAcascDaugh", "CPAMin", "TranRadMin", "TranRadMax", "DecVtxMax", // Cascade Selections
+    "DCAv0daughMax", "v0CPAMin", "v0TranRadMin", "v0TranRadMax", "DCAV0ToPVMin", "DCAV0ToPVMax"};          // CascadeV0 selections
+  //"kV0MassMin", "V0MassMax"}; //CascadeV0 selections
+  // "DCAPosToPV", "DCANegToPV", "DCABachToPV",                                                             //Cascade daughter track selections
+  // }; //<< Name of the different selections
 
   static constexpr femtoDreamSelection::SelectionType
     mSelectionTypes[kNcascadeSelection]{
@@ -351,24 +349,23 @@ class FemtoDreamCascadeSelection
       femtoDreamSelection::kLowerLimit, // cascade tran rad min
       femtoDreamSelection::kUpperLimit, // cascade tran rad max
       femtoDreamSelection::kUpperLimit, // cascade maximum distance of decay vertex to PV
-      
+
       femtoDreamSelection::kUpperLimit, // v0 daughters DCA max
       femtoDreamSelection::kLowerLimit, // v0 cos PA min
       femtoDreamSelection::kLowerLimit, // v0 tran rad min
       femtoDreamSelection::kUpperLimit, // v0 tran rad max
       femtoDreamSelection::kLowerLimit, // v0 minimum distance of decay vertex to PV
       femtoDreamSelection::kUpperLimit  // v0 maximum distance of decay vertex to PV
-      //femtoDreamSelection::kLowerLimit, // v0 mass min
-      //femtoDreamSelection::kUpperLimit // v0 mass max
+      // femtoDreamSelection::kLowerLimit, // v0 mass min
+      // femtoDreamSelection::kUpperLimit // v0 mass max
     }; ///< Map to match a variable with
        ///< its type
-      
-      /*
-      femtoDreamSelection::kLowerLimit, // DCA pos to PV max
-      femtoDreamSelection::kLowerLimit, // DCA neg to PV max
-      femtoDreamSelection::kLowerLimit, // DCA bach to PV max
-      */
-      
+
+  /*
+  femtoDreamSelection::kLowerLimit, // DCA pos to PV max
+  femtoDreamSelection::kLowerLimit, // DCA neg to PV max
+  femtoDreamSelection::kLowerLimit, // DCA bach to PV max
+  */
 
   static constexpr std::string_view mSelectionHelper[kNcascadeSelection] = {
     "Cascade particle sign (+1 or -1)",
@@ -380,7 +377,7 @@ class FemtoDreamCascadeSelection
     "Minimum cascade transverse radius (cm)",
     "Maximum cascade transverse radius (cm)",
     "Maximum distance of cascade from primary vertex",
-    
+
     "Maximum DCA between v0 daughters (cm)",
     "Minimum Cosine of Pointing Angle for v0",
     "Minimum v0 transverse radius (cm)",
@@ -391,15 +388,15 @@ class FemtoDreamCascadeSelection
     //"Maximum V0 mass"
   }; ///< Helper information for the
      ///< different selections
-    
-    /*
-    "Maximum DCA of positive track form primary vertex",
-    "Maximum DCA of negative track form primary vertex",
-    "Maximum DCA of bachelor track form primary vertex",
 
-    }; ///< Helper information for the
-                        ///< different selections             ///< different selections
-    */ 
+  /*
+  "Maximum DCA of positive track form primary vertex",
+  "Maximum DCA of negative track form primary vertex",
+  "Maximum DCA of bachelor track form primary vertex",
+
+  }; ///< Helper information for the
+                      ///< different selections             ///< different selections
+  */
 }; // namespace femtoDream
 
 template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::ParticleType daugh, o2::aod::femtodreamparticle::ParticleType bach, typename cutContainerType>
@@ -409,9 +406,9 @@ void FemtoDreamCascadeSelection::init(HistogramRegistry* QAregistry, HistogramRe
   if (QAregistry && Registry) {
     mHistogramRegistry = Registry;
     mQAHistogramRegistry = QAregistry;
-    //fillSelectionHistogram<part>();  // cascade
-    //fillSelectionHistogram<daugh>(); // pos, neg
-    //fillSelectionHistogram<bach>();  // bach
+    // fillSelectionHistogram<part>();  // cascade
+    // fillSelectionHistogram<daugh>(); // pos, neg
+    // fillSelectionHistogram<bach>();  // bach
 
     AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec etaAxis = {100, -2.0f, 2.0f, "#it{#eta}"};
@@ -421,11 +418,10 @@ void FemtoDreamCascadeSelection::init(HistogramRegistry* QAregistry, HistogramRe
     AxisSpec tranRadAxis = {1000, 0.0f, 100.0f, "#it{r}_{xy} (cm)"};
     AxisSpec decVtxAxis = {2000, 0, 200, "#it{Vtx}_{z} (cm)"};
     AxisSpec massAxisCascade = {2200, 1.25f, 1.8f, "m_{#Cascade} (GeV/#it{c}^{2})"};
-    
+
     AxisSpec DCAToPVAxis = {1000, -10.0f, 10.0f, "DCA to PV (cm)"};
-    
+
     AxisSpec massAxisV0 = {600, 0.0f, 3.0f, "m_{#V0} (GeV/#it{c}^{2})"};
-    
 
     /// \todo this should be an automatic check in the parent class, and the
     /// return type should be templated
@@ -448,7 +444,7 @@ void FemtoDreamCascadeSelection::init(HistogramRegistry* QAregistry, HistogramRe
     mQAHistogramRegistry->add((folderName + "/hDecVtxY").c_str(), "; Decay vertex y position; Entries", kTH1F, {tranRadAxis});
     mQAHistogramRegistry->add((folderName + "/hDecVtxZ").c_str(), "; Decay vertex z position; Entries", kTH1F, {tranRadAxis});
     mQAHistogramRegistry->add((folderName + "/hInvMass").c_str(), "; Invariant mass; Entries", kTH1F, {tranRadAxis});
-    
+
     mQAHistogramRegistry->add((folderName + "/hV0DCADaugh").c_str(), "; V0-daughters DCA; Entries", kTH1F, {DCADaughAxis});
     mQAHistogramRegistry->add((folderName + "/hV0CPA").c_str(), "; V0 cos PA; Entries", kTH1F, {CPAAxis});
     mQAHistogramRegistry->add((folderName + "/hV0TranRad").c_str(), "; V0 transverse radius; Entries", kTH1F, {tranRadAxis});
@@ -458,11 +454,11 @@ void FemtoDreamCascadeSelection::init(HistogramRegistry* QAregistry, HistogramRe
     PosDaughTrack.init<aod::femtodreamparticle::ParticleType::kCascadeV0Child,
                        aod::femtodreamparticle::TrackType::kPosChild,
                        aod::femtodreamparticle::cutContainerType>(mQAHistogramRegistry, mHistogramRegistry);
-    
+
     NegDaughTrack.init<aod::femtodreamparticle::ParticleType::kCascadeV0Child,
                        aod::femtodreamparticle::TrackType::kNegChild,
                        aod::femtodreamparticle::cutContainerType>(mQAHistogramRegistry, mHistogramRegistry);
-    
+
     BachTrack.init<aod::femtodreamparticle::ParticleType::kCascadeBachelor,
                    aod::femtodreamparticle::TrackType::kBachelor,
                    aod::femtodreamparticle::cutContainerType>(mQAHistogramRegistry, mHistogramRegistry);
@@ -484,8 +480,8 @@ void FemtoDreamCascadeSelection::init(HistogramRegistry* QAregistry, HistogramRe
     mQAHistogramRegistry->add("CascadeQA/hCascadeV0TranRad", "V0 transverse radius", kTH1F, {tranRadAxis});
     mQAHistogramRegistry->add("CascadeQA/hCascadeV0DCAToPV", "DCA of the V0 to the PV", kTH1F, {massAxisV0});
     mQAHistogramRegistry->add("CascadeQA/hInvMassV0", "Invariant mass Cascade V0", kTH1F, {massAxisV0});
-    
-    /* 
+
+    /*
     // Dauchter Tracks
     mQAHistogramRegistry->add("CascadeQA/hCascadeDCAPosToPV", "Pos V0 daughter DCA to primary vertex", kTH1F, {DCAToPVAxis});
     mQAHistogramRegistry->add("CascadeQA/hCascadeDCANegToPV", "Neg V0 daughter DCA to primary vertex", kTH1F, {DCAToPVAxis});
@@ -503,21 +499,19 @@ void FemtoDreamCascadeSelection::init(HistogramRegistry* QAregistry, HistogramRe
   nCascadeTranRadMin = getNSelections(femtoDreamCascadeSelection::kCascadeTranRadMin);
   nCascadeTranRadMax = getNSelections(femtoDreamCascadeSelection::kCascadeTranRadMax);
   nCascadeDecVtxMax = getNSelections(femtoDreamCascadeSelection::kCascadeDecVtxMax);
-  
+
   nCascadeV0DCADaughMax = getNSelections(femtoDreamCascadeSelection::kCascadeV0DCADaughMax);
   nCascadeV0CPAMin = getNSelections(femtoDreamCascadeSelection::kCascadeV0CPAMin);
   nCascadeV0TranRadMin = getNSelections(femtoDreamCascadeSelection::kCascadeV0TranRadMin);
   nCascadeV0TranRadMax = getNSelections(femtoDreamCascadeSelection::kCascadeV0TranRadMax);
   nCascadeV0DCAToPVMin = getNSelections(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMin);
-  nCascadeV0DCAToPVMax = getNSelections(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax); 
-  
+  nCascadeV0DCAToPVMax = getNSelections(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax);
+
   /*
   nCascadeDCAPosToPV = getNSelections(femtoDreamCascadeSelection::kCascadeDCAPosToPV);
   nCascadeDCANegToPV = getNSelections(femtoDreamCascadeSelection::kCascadeDCANegToPV);
   nCascadeDCABachToPV = getNSelections(femtoDreamCascadeSelection::kCascadeDCABachToPV);
-  */ 
-
-
+  */
 
   fCascadePtMin = getMinimalSelection(femtoDreamCascadeSelection::kCascadePtMin,
                                       femtoDreamSelection::kLowerLimit);
@@ -535,7 +529,7 @@ void FemtoDreamCascadeSelection::init(HistogramRegistry* QAregistry, HistogramRe
                                            femtoDreamSelection::kUpperLimit);
   fCascadeDecVtxMax = getMinimalSelection(femtoDreamCascadeSelection::kCascadeDecVtxMax,
                                           femtoDreamSelection::kAbsUpperLimit);
-  
+
   fCascadeV0DCADaughMax = getMinimalSelection(femtoDreamCascadeSelection::kCascadeV0DCADaughMax,
                                               femtoDreamSelection::kUpperLimit);
   fCascadeV0CPAMin = getMinimalSelection(femtoDreamCascadeSelection::kCascadeV0CPAMin,
@@ -548,11 +542,11 @@ void FemtoDreamCascadeSelection::init(HistogramRegistry* QAregistry, HistogramRe
                                              femtoDreamSelection::kLowerLimit);
   fCascadeV0DCAToPVMax = getMinimalSelection(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax,
                                              femtoDreamSelection::kUpperLimit);
-  //fV0InvMassLowLimit = getMinimalSelection(femtoDreamCascadeSelection::kCascadeV0MassMin,
-  //                                         femtoDreamSelection::kLowerLimit);
-  //fV0InvMassUpLimit = getMinimalSelection(femtoDreamCascadeSelection::kCascadeV0MassMax,
-  //                                        femtoDreamSelection::kUpperLimit);
-   
+  // fV0InvMassLowLimit = getMinimalSelection(femtoDreamCascadeSelection::kCascadeV0MassMin,
+  //                                          femtoDreamSelection::kLowerLimit);
+  // fV0InvMassUpLimit = getMinimalSelection(femtoDreamCascadeSelection::kCascadeV0MassMax,
+  //                                         femtoDreamSelection::kUpperLimit);
+
   /*
   fCascadeDCAPosToPV = getMinimalSelection(femtoDreamCascadeSelection::kCascadeDCAPosToPV,
                                            femtoDreamSelection::kLowerLimit);
@@ -560,7 +554,7 @@ void FemtoDreamCascadeSelection::init(HistogramRegistry* QAregistry, HistogramRe
                                            femtoDreamSelection::kLowerLimit);
   fCascadeDCABachToPV = getMinimalSelection(femtoDreamCascadeSelection::kCascadeDCABachToPV,
                                             femtoDreamSelection::kLowerLimit);
-  */ 
+  */
   isCascOmega = isSelectCascOmega;
 }
 
@@ -581,24 +575,24 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   const float cpaCasc = cascade.casccosPA(col.posX(), col.posY(), col.posZ());
   const float dcav0topv = cascade.dcav0topv(col.posX(), col.posY(), col.posZ());
   const float invMassLambda = cascade.mLambda();
-  //const float invMass = isCascOmega ? cascade.mOmega() : cascade.mXi();
+  // const float invMass = isCascOmega ? cascade.mOmega() : cascade.mXi();
   const float invMass = cascade.mXi();
-  
+
   if (invMassLambda < fV0InvMassLowLimit || invMassLambda > fV0InvMassUpLimit) {
     return false;
   }
-  //else{
-  //  mQAHistogramRegistry->fill(HIST("CascadeQA/hInvMassV0"), invMassLambda);
-  //}
-  
+  // else{
+  //   mQAHistogramRegistry->fill(HIST("CascadeQA/hInvMassV0"), invMassLambda);
+  // }
+
   if (invMass < fInvMassLowLimit || invMass > fInvMassUpLimit) {
     return false;
   }
-  //else{
-  //  mQAHistogramRegistry->fill(HIST("CascadeQA/hInvMassCascade"), invMass);
-  //}
-  
-  /* 
+  // else{
+  //   mQAHistogramRegistry->fill(HIST("CascadeQA/hInvMassCascade"), invMass);
+  // }
+
+  /*
   if (fRejectCompetingMass) {
     const float invMassCompeting = isCascOmega ? cascade.mXi() : cascade.mOmega();
     if (invMassCompeting > fInvMassCompetingLowLimit &&
@@ -634,19 +628,18 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
       return false;
     }
   }
-  
-  
-  //v0 criteria
+
+  // v0 criteria
   if (nCascadeV0DCADaughMax > 0 && cascade.dcaV0daughters() > fCascadeV0DCADaughMax) {
     return false;
   }
-  if (nCascadeV0CPAMin> 0 && cpav0 < fCascadeV0CPAMin) {
+  if (nCascadeV0CPAMin > 0 && cpav0 < fCascadeV0CPAMin) {
     return false;
   }
-  if (nCascadeV0TranRadMin> 0 && cascade.v0radius() < fCascadeV0TranRadMin) {
+  if (nCascadeV0TranRadMin > 0 && cascade.v0radius() < fCascadeV0TranRadMin) {
     return false;
   }
-  if (nCascadeV0TranRadMax> 0 && cascade.v0radius() > fCascadeV0TranRadMax) {
+  if (nCascadeV0TranRadMax > 0 && cascade.v0radius() > fCascadeV0TranRadMax) {
     return false;
   }
   if (nCascadeV0DCAToPVMin > 0 && abs(dcav0topv) < fCascadeV0DCAToPVMin) {
@@ -655,7 +648,7 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   if (nCascadeV0DCAToPVMax > 0 && abs(dcav0topv) > fCascadeV0DCAToPVMax) {
     return false;
   }
-  //Chech the selection criteria for the tracks as well 
+  // Chech the selection criteria for the tracks as well
   if (!PosDaughTrack.isSelectedMinimal(posTrack)) {
     return false;
   }
@@ -665,8 +658,7 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   if (!BachTrack.isSelectedMinimal(bachTrack)) {
     return false;
   }
-  
-  
+
   /*
   if (nCascadeDCAPosToPV > 0 && abs(cascade.dcapostopv()) < fCascadeDCAPosToPV) {
     return false;
@@ -677,8 +669,8 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   if (nCascadeDCABachToPV > 0 && abs(cascade.dcabachtopv()) < fCascadeDCABachToPV) {
     return false;
   }
-  */ 
-  
+  */
+
   return true;
 }
 
@@ -695,12 +687,12 @@ void FemtoDreamCascadeSelection::fillCascadeQA(Col const& col, Casc const& casca
   const std::vector<float> decVtx = {cascade.x(), cascade.y(), cascade.z()};
   const float cpaCasc = cascade.casccosPA(col.posX(), col.posY(), col.posZ());
   const float invMass = isCascOmega ? cascade.mOmega() : cascade.mXi();
-  
+
   const float cpav0 = cascade.v0cosPA(col.posX(), col.posY(), col.posZ());
   const float dcav0topv = cascade.dcav0topv(col.posX(), col.posY(), col.posZ());
   const float invMassLambda = cascade.mLambda();
 
-  //Cascade
+  // Cascade
   mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadePt"), cascade.pt());
   mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeEta"), cascade.eta());
   mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadePhi"), cascade.phi());
@@ -716,8 +708,8 @@ void FemtoDreamCascadeSelection::fillCascadeQA(Col const& col, Casc const& casca
   mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeDCAPosToPV"), cascade.dcapostopv());
   mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeDCANegToPV"), cascade.dcanegtopv());
   mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeDCABachToPV"), cascade.dcabachtopv());
-  */ 
-  //V0 (Lambda)
+  */
+  // V0 (Lambda)
   mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeV0DCADaugh"), cascade.dcaV0daughters());
   mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeV0CPA"), cpav0);
   mQAHistogramRegistry->fill(HIST("CascadeQA/hCascadeV0TranRad"), cascade.v0radius());
@@ -742,31 +734,31 @@ void FemtoDreamCascadeSelection::fillCascadeQA(Col const& col, Casc const& casca
 template <typename cutContainerType, typename Col, typename Casc, typename Track>
 std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col const& col, Casc const& casc, Track const& posTrack, Track const& negTrack, Track const& bachTrack)
 {
-  //Cut bit
-  //auto outputV0Daugh = V0DaughSel.getCutContainer<cutContainerType>(v0Daugh, posTrack, negTrack);
+  // Cut bit
+  // auto outputV0Daugh = V0DaughSel.getCutContainer<cutContainerType>(v0Daugh, posTrack, negTrack);
   auto outputPosTrack = PosDaughTrack.getCutContainer<false, cutContainerType>(posTrack, casc.positivept(), casc.positiveeta(), casc.dcapostopv());
   auto outputNegTrack = NegDaughTrack.getCutContainer<false, cutContainerType>(negTrack, casc.negativept(), casc.negativeeta(), casc.dcanegtopv());
   auto outputBachTrack = BachTrack.getCutContainer<false, cutContainerType>(bachTrack, casc.bachelorpt(), casc.bacheloreta(), casc.dcabachtopv());
   cutContainerType output = 0;
   size_t counter = 0;
 
-  //auto xiMassNominal = o2::constants::physics::MassXiMinus;
-  //auto xiMassHypothesis = casc.mXi();
-  //auto antiXiMassHypothesis = casc.mAntiXi();
-  //auto diffXi = abs(xiMassNominal - xiMassHypothesis);
-  //auto diffAntiXi = abs(xiMassNominal - antiXiMassHypothesis);
+  // auto xiMassNominal = o2::constants::physics::MassXiMinus;
+  // auto xiMassHypothesis = casc.mXi();
+  // auto antiXiMassHypothesis = casc.mAntiXi();
+  // auto diffXi = abs(xiMassNominal - xiMassHypothesis);
+  // auto diffAntiXi = abs(xiMassNominal - antiXiMassHypothesis);
 
   float sign = 0.;
   int nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
-  
+
   auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
   auto nSigmaPiPos = posTrack.tpcNSigmaPi();
   auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
   auto nSigmaPrPos = posTrack.tpcNSigmaPr();
   float nSigmaPIDOffsetTPC = 0.;
 
-  //negative charge: Antiparticle (Xi+)
-  //positive charge: Particle (Xi-) 
+  // negative charge: Antiparticle (Xi+)
+  // positive charge: Particle (Xi-)
   if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
     sign = -1.;
   } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
@@ -778,10 +770,9 @@ std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col 
   const auto cpav0 = casc.v0cosPA(col.posX(), col.posY(), col.posZ());
   const auto dcav0topv = casc.dcav0topv(col.posX(), col.posY(), col.posZ());
 
-
   float observable = 0.;
   for (auto& sel : mSelections) {
-    
+
     const auto selVariable = sel.getSelectionVariable();
     switch (selVariable) {
       case (femtoDreamCascadeSelection::kCascadeSign):
@@ -814,9 +805,9 @@ std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col 
           auto decVtxValue = decVtx.at(i);
           sel.checkSelectionSetBit(decVtxValue, output, counter, nullptr);
         }
-      continue;
-      break;
-      
+        continue;
+        break;
+
       case (femtoDreamCascadeSelection::kCascadeV0DCADaughMax):
         observable = casc.dcaV0daughters();
         break;
@@ -830,34 +821,34 @@ std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col 
         observable = casc.v0radius();
         break;
       case (femtoDreamCascadeSelection::kCascadeV0DCAtoPVMin):
-        observable = dcav0topv; 
+        observable = dcav0topv;
         break;
       case (femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax):
-        observable = dcav0topv; 
+        observable = dcav0topv;
         break;
-      //case (femtoDreamCascadeSelection::kCascadeV0MassMin):
-      //  observable = casc.mLambda(); 
-      //  break;
-      //case (femtoDreamCascadeSelection::kCascadeV0MassMax):
-      //  observable = casc.mLambda(); 
-      //  break;
-      
-      /*
-      case (femtoDreamCascadeSelection::kCascadeDCAPosToPV):
-        observable = casc.dcapostopv();
-        break;
-      case (femtoDreamCascadeSelection::kCascadeDCANegToPV):
-        observable = casc.dcanegtopv();
-        break;
-      case (femtoDreamCascadeSelection::kCascadeDCABachToPV):
-        observable = casc.dcabachtopv();
-        break;
-      */ 
+        // case (femtoDreamCascadeSelection::kCascadeV0MassMin):
+        //   observable = casc.mLambda();
+        //   break;
+        // case (femtoDreamCascadeSelection::kCascadeV0MassMax):
+        //   observable = casc.mLambda();
+        //   break;
 
-    } //switch
+        /*
+        case (femtoDreamCascadeSelection::kCascadeDCAPosToPV):
+          observable = casc.dcapostopv();
+          break;
+        case (femtoDreamCascadeSelection::kCascadeDCANegToPV):
+          observable = casc.dcanegtopv();
+          break;
+        case (femtoDreamCascadeSelection::kCascadeDCABachToPV):
+          observable = casc.dcabachtopv();
+          break;
+        */
+
+    } // switch
     sel.checkSelectionSetBit(observable, output, counter, nullptr);
     //}
-  } //for loop
+  } // for loop
 
   return {
     output,
@@ -877,7 +868,7 @@ void FemtoDreamCascadeSelection::fillQA(Col const& col, Casc const& casc, Track 
   const float cpaCasc = casc.casccosPA(col.posX(), col.posY(), col.posZ());
   const float cpav0 = casc.v0cosPA(col.posX(), col.posY(), col.posZ());
   const float dcav0topv = casc.dcav0topv(col.posX(), col.posY(), col.posZ());
-  
+
   if (mQAHistogramRegistry) {
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hPt"), casc.pt());
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hEta"), casc.eta());
@@ -889,7 +880,7 @@ void FemtoDreamCascadeSelection::fillQA(Col const& col, Casc const& casc, Track 
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDecVtxY"), decVtx.at(1));
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hDecVtxZ"), decVtx.at(2));
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hInvMass"), casc.mXi());
-  
+
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hV0DCADaugh"), casc.dcaV0daughters());
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hV0CPA"), cpav0);
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/hV0TranRad"), casc.v0radius());
