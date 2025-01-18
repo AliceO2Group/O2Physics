@@ -543,7 +543,7 @@ struct JetChargedV2 {
       fFitModulationV2v3->FixParameter(4, ep3);
     }
 
-    hPtsumSumptFit->Fit(fFitModulationV2v3, "V+", "ep", 0, o2::constants::math::TwoPI);
+    hPtsumSumptFit->Fit(fFitModulationV2v3, "Q", "ep", 0, o2::constants::math::TwoPI);
 
     double temppara[5];
     temppara[0] = fFitModulationV2v3->GetParameter(0);
