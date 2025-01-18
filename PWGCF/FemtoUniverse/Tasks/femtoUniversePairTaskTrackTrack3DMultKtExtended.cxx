@@ -609,6 +609,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
     auto thegroupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
     bool fillQA = true;
+    randgen = new TRandom2(0);
 
     if (cfgProcessPM) {
       doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 1, fillQA);
@@ -621,6 +622,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
     if (cfgProcessMM) {
       doSameEvent<true>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 3, fillQA);
     }
+    delete randgen;
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrack3DMultKtExtended, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
@@ -774,6 +776,8 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
                            soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
                            o2::aod::FdMCParticles&)
   {
+    randgen = new TRandom2(0);
+
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
 
       const int multiplicityCol = collision1.multV0M();
@@ -804,6 +808,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         doMixedEvent<true>(groupPartsOne, groupPartsTwo, parts, magFieldTesla1, multiplicityCol, 3);
       }
     }
+    delete randgen;
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrack3DMultKtExtended, processMixedEventMC, "Enable processing mixed events MC", false);
 };
