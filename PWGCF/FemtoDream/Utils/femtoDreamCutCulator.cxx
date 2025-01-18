@@ -13,7 +13,6 @@
 /// \brief Executable that encodes physical selection criteria in a bit-wise
 /// selection \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#include <filesystem>
 #include <iostream>
 #include <random>
 #include <string>
