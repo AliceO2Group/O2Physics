@@ -454,7 +454,7 @@ struct nuclei_in_jets {
     return lambda;
   }
 
-  double BetheBloch(double* x, double* par)
+  static double BetheBloch(double* x, double* par)
   {
     // 5 parameters for the bethe bloch from 0 to 4
     // 1 parameter for the mip mpar[5]
@@ -464,7 +464,7 @@ struct nuclei_in_jets {
     return par[5] * BetheBlochAleph(x[0] / par[7], par[0], par[1], par[2], par[3], par[4]) * TMath::Power(par[8], par[6]);
   }
 
-  double BetheBlochAleph(double bg, double kp1, double kp2, double kp3, double kp4, double kp5)
+  static double BetheBlochAleph(double bg, double kp1, double kp2, double kp3, double kp4, double kp5)
   {
     double beta = bg / std::sqrt(1.0 + bg * bg);
     double aa = std::pow(beta, kp4);
