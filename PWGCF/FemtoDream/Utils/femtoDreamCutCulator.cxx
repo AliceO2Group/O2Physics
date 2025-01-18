@@ -29,8 +29,8 @@ using namespace o2::analysis::femtoDream;
 int main(int /*argc*/, char* argv[])
 {
   std::string configFileName(argv[1]);
-  std::ifstream configFile(configFileName); 
-  
+  std::ifstream configFile(configFileName);
+
   if (configFile.is_open()) {
     FemtoDreamCutculator cut;
     cut.init(argv[1]);
