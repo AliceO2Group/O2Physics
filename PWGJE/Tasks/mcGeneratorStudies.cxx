@@ -137,7 +137,7 @@ struct MCGeneratorStudies {
           auto mcParticles_inColl = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
 
           for (auto& mcParticle : mcParticles_inColl) {
-            if (mcParticle.pdgCode() != 0 && mcParticle.pdgCode() != mSelectedParticleCode)
+            if (mSelectedParticleCode != 0 && mcParticle.pdgCode() != mSelectedParticleCode)
               continue;
             if (fabs(mcParticle.y()) > mRapidityCut)
               continue;
@@ -162,7 +162,7 @@ struct MCGeneratorStudies {
       auto mcParticles_inColl = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
 
       for (auto& mcParticle : mcParticles_inColl) {
-        if (mcParticle.pdgCode() != 0 && mcParticle.pdgCode() != mSelectedParticleCode)
+        if (mSelectedParticleCode != 0 && mcParticle.pdgCode() != mSelectedParticleCode)
           continue;
         if (fabs(mcParticle.y()) > mRapidityCut)
           continue;

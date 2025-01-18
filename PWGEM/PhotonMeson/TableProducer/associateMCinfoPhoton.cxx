@@ -141,19 +141,19 @@ struct AssociateMCInfoPhoton {
       auto groupedMcTracks = mcTracks.sliceBy(perMcCollision, mcCollision.globalIndex());
 
       for (auto& mctrack : groupedMcTracks) { // store necessary information for denominator of efficiency
-        if ((mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) && abs(mctrack.y()) < 0.9f && mctrack.pt() < 20.f) {
-          auto binNumber = hBinFinder->FindBin(mctrack.pt(), abs(mctrack.y())); // caution: pack
-          switch (abs(mctrack.pdgCode())) {
+        if ((mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) && std::abs(mctrack.y()) < 0.9f && mctrack.pt() < 20.f) {
+          auto binNumber = hBinFinder->FindBin(mctrack.pt(), std::abs(mctrack.y())); // caution: pack
+          switch (std::abs(mctrack.pdgCode())) {
             case 22:
-              registry.fill(HIST("Generated/h2PtY_Gamma"), mctrack.pt(), abs(mctrack.y()));
+              registry.fill(HIST("Generated/h2PtY_Gamma"), mctrack.pt(), std::abs(mctrack.y()));
               genGamma[binNumber]++;
               break;
             case 111:
-              registry.fill(HIST("Generated/h2PtY_Pi0"), mctrack.pt(), abs(mctrack.y()));
+              registry.fill(HIST("Generated/h2PtY_Pi0"), mctrack.pt(), std::abs(mctrack.y()));
               genPi0[binNumber]++;
               break;
             case 221:
-              registry.fill(HIST("Generated/h2PtY_Eta"), mctrack.pt(), abs(mctrack.y()));
+              registry.fill(HIST("Generated/h2PtY_Eta"), mctrack.pt(), std::abs(mctrack.y()));
               genEta[binNumber]++;
               break;
             default:
@@ -173,26 +173,26 @@ struct AssociateMCInfoPhoton {
       mceventlabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
 
       for (auto& mctrack : groupedMcTracks) { // store necessary information for denominator of efficiency
-        if (mctrack.pt() < 1e-3 || abs(mctrack.vz()) > 250 || sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) > max_rxy_gen) {
+        if (mctrack.pt() < 1e-3 || std::abs(mctrack.vz()) > 250 || sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) > max_rxy_gen) {
           continue;
         }
         int pdg = mctrack.pdgCode();
-        if (abs(pdg) > 1e+9) {
+        if (std::abs(pdg) > 1e+9) {
           continue;
         }
 
         // Note that pi0 from weak decay gives producedByGenerator() = false
         // LOGF(info,"index = %d , mc track pdg = %d , producedByGenerator =  %d , isPhysicalPrimary = %d", mctrack.index(), mctrack.pdgCode(), mctrack.producedByGenerator(), mctrack.isPhysicalPrimary());
 
-        if (abs(pdg) == 11 && mctrack.has_mothers() && !(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) { // secondary electrons. i.e. ele/pos from photon conversions.
-          int motherid = mctrack.mothersIds()[0];                                                                         // first mother index
+        if (std::abs(pdg) == 11 && mctrack.has_mothers() && !(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) { // secondary electrons. i.e. ele/pos from photon conversions.
+          int motherid = mctrack.mothersIds()[0];                                                                              // first mother index
           auto mp = mcTracks.iteratorAt(motherid);
 
-          if (sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) < abs(mctrack.vz()) * std::tan(2 * std::atan(std::exp(-max_eta_gen_secondary))) - margin_z_gen) {
+          if (sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) < std::abs(mctrack.vz()) * std::tan(2 * std::atan(std::exp(-max_eta_gen_secondary))) - margin_z_gen) {
             continue;
           }
 
-          if (mp.pdgCode() == 22 && (mp.isPhysicalPrimary() || mp.producedByGenerator()) && abs(mp.eta()) < max_eta_gen_secondary) {
+          if (mp.pdgCode() == 22 && (mp.isPhysicalPrimary() || mp.producedByGenerator()) && std::abs(mp.eta()) < max_eta_gen_secondary) {
             // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
             if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) { // store electron information. !!Not photon!!
               fNewLabels[mctrack.globalIndex()] = fCounters[0];
@@ -276,8 +276,8 @@ struct AssociateMCInfoPhoton {
               motherid = -999;
             }
           } // end of mother chain loop
-        }   // end of leg loop
-      }     // end of v0 loop
+        } // end of leg loop
+      } // end of v0 loop
     }
 
     if constexpr (static_cast<bool>(system & kElectron)) {
