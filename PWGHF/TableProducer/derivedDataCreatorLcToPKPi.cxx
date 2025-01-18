@@ -112,9 +112,6 @@ struct HfDerivedDataCreatorLcToPKPi {
     if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
-    if (confDerData.fillMcRCollId && doprocessMcGenOnly) {
-      LOGP(fatal, "fillMcRCollId and processMcGenOnly cannot be enabled at the same time.");
-    }
     rowsCommon.init(confDerData);
   }
 

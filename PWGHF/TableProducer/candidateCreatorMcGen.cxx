@@ -26,8 +26,8 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
 
-#include "PWGHF/Core/HfMcGenUtility.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsMcGen.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -46,15 +46,11 @@ struct HfCandidateCreatorMcGen {
   Configurable<bool> fillB0{"fillB0", false, "fill table for B0 candidates"};
   Configurable<bool> rejectBackground2Prong{"rejectBackground2Prong", false, "Reject particles from PbPb background for 2 prong candidates"};
   Configurable<bool> rejectBackground3Prong{"rejectBackground3Prong", false, "Reject particles from PbPb background for 3 prong candidates"};
-  Configurable<bool> rejectBackgroundBplus{"rejectBackgroundBplus", false, "Reject particles from PbPb background for B+ candidates"};
-  Configurable<bool> rejectBackgroundB0{"rejectBackgroundB0", false, "Reject particles from PbPb background for B0 candidates"};
   Configurable<bool> createDplus{"createDplus", false, "Create D+ in 3 prong"};
   Configurable<bool> createDs{"createDs", false, "Create Ds in 3 prong"};
   Configurable<bool> createLc{"createLc", false, "Create Lc in 3 prong"};
   Configurable<bool> createXic{"createXic", false, "Create Xic in 3 prong"};
   Configurable<float> minPosZ{"minPosZ", 10.0, "min z position of promary vertex"};
-
-  // Filter filterSelectMcCollisions = nabs(aod::mcCollision::posZ) < minPosZ;
 
   void process(aod::McCollision const&,
                aod::McParticles const& mcParticles)

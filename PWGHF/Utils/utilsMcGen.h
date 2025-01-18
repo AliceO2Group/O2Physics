@@ -9,13 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HfMcGenUtility.h
+/// \file utilsMcGen.h
 /// \brief utility functions for HF McGen workflows
 ///
 /// \author Nima Zardoshti, nima.zardoshti@cern.ch, CERN
 
-#ifndef PWGHF_CORE_HFMCGENUTILITY_H_
-#define PWGHF_CORE_HFMCGENUTILITY_H_
+#ifndef PWGHF_UTILS_UTILSMCGEN_H_
+#define PWGHF_UTILS_UTILSMCGEN_H_
 
 #include <TPDGCode.h>
 #include "CommonConstants/PhysicsConstants.h"
@@ -192,7 +192,7 @@ void fillMcMatchGenBplus(T const& mcParticles, U& rowMcMatchGen)
     std::vector<int> arrayDaughterB;
     if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kBPlus, std::array{-Pdg::kD0, +kPiPlus}, true, &signB, 1, &arrayDaughterB)) {
       // D0(bar) → π± K∓
-      for (auto iD : arrayDaughterB) {
+      for (const auto iD : arrayDaughterB) {
         auto candDaughterMC = mcParticles.rawIteratorAt(iD);
         if (std::abs(candDaughterMC.pdgCode()) == Pdg::kD0) {
           indexGenD0 = RecoDecay::isMatchedMCGen(mcParticles, candDaughterMC, Pdg::kD0, std::array{-kKPlus, +kPiPlus}, true, &signD0, 1);
@@ -229,4 +229,4 @@ void fillMcMatchGenB0(T const& mcParticles, U& rowMcMatchGen)
 
 } // namespace hf_mc_gen
 
-#endif // PWGHF_CORE_HFMCGENUTILITY_H_
+#endif // PWGHF_UTILS_UTILSMCGEN_H_
