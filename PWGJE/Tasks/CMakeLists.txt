@@ -104,10 +104,6 @@ o2physics_add_dpl_workflow(jet-substructure-bplus
                         SOURCES jetChargedV2.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
-    o2physics_add_dpl_workflow(jet-charged-v2ept
-                        SOURCES jetChargedV2EPTable.cxx
-                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-finder-d0-qa
                         SOURCES jetFinderD0QA.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
