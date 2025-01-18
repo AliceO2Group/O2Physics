@@ -218,6 +218,11 @@ void resonance::Print()
 
 // -----------------------------------------------------------------------------
 // decayTree
+decayTree::decayTree()
+{
+  fPDG = TDatabasePDG::Instance();
+}
+
 bool decayTree::init(std::string const& parFile, o2::framework::HistogramRegistry& registry)
 {
   // initialisation of constants

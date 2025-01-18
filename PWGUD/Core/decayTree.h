@@ -464,7 +464,7 @@ class decayTree
 {
  public:
   // constructor/destructor
-  decayTree() {}
+  decayTree();
   ~decayTree() {}
 
   // setters
@@ -524,7 +524,7 @@ class decayTree
 
       // loop over resonances and compute
       reset();
-      for (const auto& res : fResonances) {
+      for (auto res : fResonances) {
         computeResonance(res, tracks, comb);
       }
 
@@ -747,7 +747,7 @@ class decayTree
   //  2: ULS accepted
   //  3: LS accepted
   int fStatus;
-  Service<o2::framework::O2DatabasePDG> fPDG;
+  TDatabasePDG* fPDG;
 
   // event requierements
   int fnTracksMin;
@@ -811,7 +811,7 @@ class decayTree
     // is this a final state or a resonance
     if (res->isFinal()) {
       // is a final
-      TParticlePDG* pdgparticle = fPDG->GetParticle(res->pid());
+      auto pdgparticle = fPDG->GetParticle(res->pid());
       auto track = (tracks.begin() + comb[res->counter()]);
       ivm.SetXYZM(track.px(), track.py(), track.pz(), pdgparticle->Mass());
       res->setIVM(ivm);
