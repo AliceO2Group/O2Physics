@@ -843,7 +843,6 @@ struct femtoDreamProducerTask {
     }
     if (ConfIsActivateCascade.value) {
     for (auto& casc : fullCascades) {
-      //LOGF(info, "GG Producer: Enter the Xi Loop"); //REMOVE COMMENT
       //get the daughter tracks
       const auto& posTrackCasc = casc.template posTrack_as<TrackType>();
       const auto& negTrackCasc = casc.template negTrack_as<TrackType>();
@@ -853,12 +852,11 @@ struct femtoDreamProducerTask {
       //get the daughter v0
 
       //QA before the cuts
-      //cascadeCuts.fillCascadeQA(col, casc, posTrackCasc, negTrackCasc); //TODO include the bachelor
+      cascadeCuts.fillCascadeQA(col, casc, posTrackCasc, negTrackCasc); //TODO include the bachelor
       
       if (!cascadeCuts.isSelectedMinimal(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc)) {
         continue;
       }
-      //LOGF(info, "GG Producer: A Xi is selected"); //REMOVE COMMENT
       cascadeCuts.fillQA<aod::femtodreamparticle::ParticleType::kCascade>(col, casc, posTrackCasc, negTrackCasc, bachTrackCasc);
 
       //auto cutContainerCasc = cascadeCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, casc, v0daugh, posTrackCasc, negTrackCasc, bachTrackCasc);
@@ -947,9 +945,9 @@ struct femtoDreamProducerTask {
       //------
 
        if(ConfIsDebug.value) {
-         fillDebugParticle<true, true>(posTrackCasc);  // QA for positive daughter
-         fillDebugParticle<true, true>(negTrackCasc);  // QA for negative daughter
-         fillDebugParticle<true, true>(bachTrackCasc); // QA for negative daughter
+         fillDebugParticle<true, false>(posTrackCasc);  // QA for positive daughter
+         fillDebugParticle<true, false>(negTrackCasc);  // QA for negative daughter
+         fillDebugParticle<true, false>(bachTrackCasc); // QA for negative daughter
          fillDebugCascade(casc);                 // QA for Cascade 
        }
     }
@@ -1064,12 +1062,12 @@ struct femtoDreamProducerTask {
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData_noCentrality,
                  "Provide experimental data without centrality information", false);
-  /*
-  void
-    processData_CentPbPb(aod::FemtoFullCollision_CentPbPb const& col,
-                         aod::BCsWithTimestamps const&,
-                         aod::FemtoFullTracks const& tracks,
-                         o2::aod::V0Datas const& fullV0s)
+  
+  void processData_CentPbPb(aod::FemtoFullCollision_CentPbPb const& col,
+                            aod::BCsWithTimestamps const&,
+                            aod::FemtoFullTracks const& tracks,
+                            o2::aod::V0Datas const& fullV0s,
+                            o2::aod::CascDatas const& fullCascades)
   {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
@@ -1077,25 +1075,26 @@ struct femtoDreamProducerTask {
     auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
                                         aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
     if (ConfUseItsPid.value) {
-      fillCollisionsAndTracksAndV0<false, true, true, true>(col, tracks, tracksWithItsPid, fullV0s);
+      fillCollisionsAndTracksAndV0AndCascade<false, true, true, true>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
     } else {
-      fillCollisionsAndTracksAndV0<false, false, true, true>(col, tracks, tracks, fullV0s);
+      fillCollisionsAndTracksAndV0AndCascade<false, false, true, true>(col, tracks, tracks, fullV0s, fullCascades);
     }
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData_CentPbPb,
                  "Provide experimental data with centrality information for PbPb collisions", false);
-
+  
   void processMC(aod::FemtoFullCollisionMC const& col,
                  aod::BCsWithTimestamps const&,
                  soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
                  aod::FemtoFullMCgenCollisions const&,
                  aod::McParticles const&,
-                 soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
+                 soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s, /// \todo with FilteredFullV0s
+                 soa::Join<o2::aod::CascDatas, aod::McCascLabels> const& fullCascades)
   {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0<false, false, true, false>(col, tracks, tracks, fullV0s);
+    fillCollisionsAndTracksAndV0AndCascade<false, false, true, false>(col, tracks, tracks, fullV0s, fullCascades);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC, "Provide MC data", false);
 
@@ -1104,12 +1103,13 @@ struct femtoDreamProducerTask {
                               soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
                               aod::FemtoFullMCgenCollisions const&,
                               aod::McParticles const&,
-                              soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
+                              soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s, /// \todo with FilteredFullV0s
+                              soa::Join<o2::aod::CascDatas, aod::McCascLabels> const& fullCascades)
   {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0<true, false, false, false>(col, tracks, tracks, fullV0s);
+    fillCollisionsAndTracksAndV0AndCascade<true, false, false, false>(col, tracks, tracks, fullV0s, fullCascades);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC_noCentrality, "Provide MC data without requiring a centrality calibration", false);
 
@@ -1118,15 +1118,15 @@ struct femtoDreamProducerTask {
                           soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
                           aod::FemtoFullMCgenCollisions const&,
                           aod::McParticles const&,
-                          soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
+                          soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s, /// \todo with FilteredFullV0s
+                          soa::Join<o2::aod::CascDatas, aod::McCascLabels> const& fullCascades)
   {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0<true, false, true, true>(col, tracks, tracks, fullV0s);
+    fillCollisionsAndTracksAndV0AndCascade<true, false, true, true>(col, tracks, tracks, fullV0s, fullCascades);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC_CentPbPb, "Provide MC data with centrality information for PbPb collisions", false);
-*/
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
