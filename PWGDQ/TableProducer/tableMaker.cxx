@@ -1565,7 +1565,7 @@ struct TableMaker {
 
   // Produce muon tables only, with centrality and muon cov matrix -------------------------------------------------------------------------------------------------
   void processMuonOnlyWithCovAndCentMults(MyEventsWithCentAndMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
-                                     soa::Filtered<MyMuonsWithCov> const& tracksMuon)
+                                          soa::Filtered<MyMuonsWithCov> const& tracksMuon)
   {
     fullSkimming<gkEventFillMapWithCentAndMults, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
   }
@@ -1626,7 +1626,7 @@ struct TableMaker {
   }
 
   void processAssociatedMuonOnlyWithCovAndCentMults(MyEventsWithCentAndMults const& collisions, aod::BCsWithTimestamps const& bcs,
-                                               soa::Filtered<MyMuonsCollWithCov> const& tracksMuon, aod::AmbiguousFwdTracks const&, aod::FwdTrackAssoc const& fwdtrackIndices)
+                                                    soa::Filtered<MyMuonsCollWithCov> const& tracksMuon, aod::AmbiguousFwdTracks const&, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
