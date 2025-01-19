@@ -75,7 +75,7 @@ struct cascademlselection {
 
   std::map<std::string, std::string> metadata;
 
-  Produces<aod::CascXiMLScores> xiMLSelections;   // optionally aggregate information from ML output for posterior analysis (derived data)
+  Produces<aod::CascXiMLScores> xiMLSelections;    // optionally aggregate information from ML output for posterior analysis (derived data)
   Produces<aod::CascOmMLScores> omegaMLSelections; // optionally aggregate information from ML output for posterior analysis (derived data)
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -137,7 +137,7 @@ struct cascademlselection {
       }
       mRunNumber = collision.runNumber();
       timeStampML = collision.timestamp();
-    } 
+    }
     if constexpr (requires { collision.template bc_as<aod::BCsWithTimestamps>(); }) { // we are in original data
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       if (mRunNumber == bc.runNumber()) {
@@ -277,7 +277,7 @@ struct cascademlselection {
   void processStandardData(aod::Collision const& collision, CascOriginalDatas const& cascades)
   {
     initCCDB(collision);
-  
+
     histos.fill(HIST("hEventVertexZ"), collision.posZ());
     for (auto& casc : cascades) {
       nCandidates++;
