@@ -1819,9 +1819,9 @@ struct FemtoUniverseProducerTask {
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTrackCentRun2Data, "Provide experimental data for Run 2 with centrality for track track", false);
 
   void processTrackV0CentRun2Data(aod::FemtoFullCollisionCentRun2 const& col,
-                                aod::BCsWithTimestamps const&,
-                                soa::Filtered<aod::FemtoFullTracks> const& tracks,
-                                aod::V0Datas const& fullV0s)
+                                  aod::BCsWithTimestamps const&,
+                                  soa::Filtered<aod::FemtoFullTracks> const& tracks,
+                                  aod::V0Datas const& fullV0s)
   {
     // get magnetic field for run
     auto bc = col.bc_as<aod::BCsWithTimestamps>();
@@ -1837,7 +1837,6 @@ struct FemtoUniverseProducerTask {
     }
   }
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTrackV0CentRun2Data, "Provide experimental data for Run 2 with centrality for track V0", false);
-
 
   void processTrackCentRun3Data(aod::FemtoFullCollisionCentRun3 const& col,
                                 aod::BCsWithTimestamps const&,

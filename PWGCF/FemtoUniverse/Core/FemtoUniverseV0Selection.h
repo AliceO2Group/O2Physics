@@ -694,12 +694,12 @@ void FemtoUniverseV0Selection::fillQA(C const& /*col*/, V const& v0, T const& po
     mHistogramRegistry->fill(
       HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) +
         HIST("/hInvMassLambdaAntiLambda"),
-      v0.mLambda(), v0.mAntiLambda());    
-      mHistogramRegistry->fill(
+      v0.mLambda(), v0.mAntiLambda());
+    mHistogramRegistry->fill(
       HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) +
         HIST("/hInvMassAntiLambdavsPt"),
       v0.mAntiLambda(), v0.pt());
-      mHistogramRegistry->fill(
+    mHistogramRegistry->fill(
       HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) +
         HIST("/hInvMassLambdavsPt"),
       v0.mLambda(), v0.pt());
