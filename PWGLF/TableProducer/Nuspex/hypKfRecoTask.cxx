@@ -231,6 +231,7 @@ struct HyperNucCandidate {
   HyperNucCandidate* hypNucDaughter;
   std::vector<DaughterKf*> daughters;
   std::vector<float> recoSV;
+  std::vector<std::vector<float>> daughterPosMoms;
   float mass, px, py, pz;
   float devToPvXY, dcaToPvXY, dcaToPvZ, dcaToVtxXY, dcaToVtxZ, chi2;
   bool mcTrue, isPhysPrimary, isPrimaryCandidate, isSecondaryCandidate, isUsedSecondary;
@@ -274,13 +275,15 @@ struct HyperNucCandidate {
     return kfp.GetQ() / std::abs(kfp.GetQ());
   }
   int getNdaughters() { return static_cast<int>(daughters.size()); }
-  float getDcaTracks() { return getNdaughters() == 2 ? getDcaTracks2() : getMaxDcaToSv(); }
-  float getDcaTracks2() { return daughters.at(0)->daughterKfp.GetDistanceFromParticleXY(daughters.at(1)->daughterKfp); }
-  float getMaxDcaToSv()
+  float getDcaTracks()
   {
+    if (!daughterPosMoms.size())
+      setDaughterPosMoms();
     float maxDca = std::numeric_limits<float>::lowest();
     for (size_t i = 0; i < daughters.size(); i++) {
-      float dca = daughters.at(i)->daughterKfp.GetDistanceFromVertexXY(&recoSV[0]);
+      float dx = daughterPosMoms.at(i).at(0) - recoSV[0];
+      float dy = daughterPosMoms.at(i).at(1) - recoSV[1];
+      const float dca = std::sqrt(dx * dx + dy * dy);
       if (dca > maxDca)
         maxDca = dca;
     }
@@ -289,9 +292,7 @@ struct HyperNucCandidate {
   float getDcaMotherToVertex(std::vector<float> vtx) { return kfp.GetDistanceFromVertex(&vtx[0]); }
   double getCpa(std::vector<float> vtx)
   {
-    kfp.TransportToDecayVertex();
     return RecoDecay::cpa(std::array{vtx[0], vtx[1], vtx[2]}, std::array{recoSV[0], recoSV[1], recoSV[2]}, std::array{px, py, pz});
-    ;
   }
   float getCt(std::vector<float> vtx)
   {
@@ -302,11 +303,19 @@ struct HyperNucCandidate {
     }
     return std::sqrt(dl) * mass / std::sqrt(px * px + py * py + pz * pz);
   }
-  void getDaughterPosMom(int daughter, std::vector<float>& posMom)
+  void setDaughterPosMoms()
   {
+    for (size_t i = 0; i < daughters.size(); i++) {
+      daughterPosMoms.push_back(getDaughterPosMom(i));
+    }
+  }
+  std::vector<float> getDaughterPosMom(int daughter)
+  {
+    std::vector<float> posMom;
     auto kfpDaughter = daughters.at(daughter)->daughterKfp;
     kfpDaughter.TransportToPoint(&recoSV[0]);
     posMom.assign({kfpDaughter.GetX(), kfpDaughter.GetY(), kfpDaughter.GetZ(), kfpDaughter.GetPx(), kfpDaughter.GetPy(), kfpDaughter.GetPz()});
+    return posMom;
   }
   float getDcaMotherToVtxXY(std::vector<float> vtx) { return kfp.GetDistanceFromVertexXY(&vtx[0]); }
   float getDcaMotherToVtxZ(std::vector<float> vtx)
@@ -720,11 +729,11 @@ struct HypKfRecoTask {
       const float maxDcaTracksCas = cfgPreSelectionsCascades->get(hyperNucIter, "maxDcaTracks");
       const float maxDcaMotherToPvXYCas = cfgPreSelectionsCascades->get(hyperNucIter, "maxDcaMotherToPvXY");
       const float maxDcaMotherToPvZCas = cfgPreSelectionsCascades->get(hyperNucIter, "maxDcaMotherToPvZ");
-      const float minCtSec = cfgPreSelectionsSecondaries->get(hyperNucIter, "minCt");
-      const float maxCtSec = cfgPreSelectionsSecondaries->get(hyperNucIter, "maxCt");
-      const float minCosPaSvSec = cfgPreSelectionsSecondaries->get(hyperNucIter, "minCosPaSv");
-      const float maxDcaMotherToSvXYSec = cfgPreSelectionsSecondaries->get(hyperNucIter, "maxDcaMotherToSvXY");
-      const float maxDcaMotherToSvZSec = cfgPreSelectionsSecondaries->get(hyperNucIter, "maxDcaMotherToSvZ");
+      const float minCtSec = cfgPreSelectionsSecondaries->get(hyperNuc->daughters.at(0), "minCt");
+      const float maxCtSec = cfgPreSelectionsSecondaries->get(hyperNuc->daughters.at(0), "maxCt");
+      const float minCosPaSvSec = cfgPreSelectionsSecondaries->get(hyperNuc->daughters.at(0), "minCosPaSv");
+      const float maxDcaMotherToSvXYSec = cfgPreSelectionsSecondaries->get(hyperNuc->daughters.at(0), "maxDcaMotherToSvXY");
+      const float maxDcaMotherToSvZSec = cfgPreSelectionsSecondaries->get(hyperNuc->daughters.at(0), "maxDcaMotherToSvZ");
 
       while (it[0] != hypNucDaughterKfs.at(hyperNucIter).end()) {
         // select hypernuclei daughter KFParticle
@@ -803,6 +812,8 @@ struct HypKfRecoTask {
             daughterCount++;
           }
           for (const auto& daughter : hypCand.daughters) {
+            if (daughter->daughterTrackId < 0)
+              continue;
             const auto& mcLab = trackLabels.rawIteratorAt(daughter->daughterTrackId);
             if (!mcLab.has_mcParticle())
               continue;
@@ -866,6 +877,8 @@ struct HypKfRecoTask {
           int daughterCount = 0;
           for (const auto& daughter : hypCand.daughters) {
             const auto& daughterTrackId = daughter->daughterTrackId;
+            if (daughterTrackId < 0)
+              continue;
             int trackTableId;
             if (!trackIndices.getIndex(daughterTrackId, trackTableId)) {
               auto daught = hyperNuc->daughters.at(daughterCount);
@@ -888,8 +901,7 @@ struct HypKfRecoTask {
             daughterCount++;
           }
           for (int i = 0; i < hypCand.getNdaughters(); i++) {
-            std::vector<float> posMom;
-            hypCand.getDaughterPosMom(i, posMom);
+            std::vector<float>& posMom = hypCand.daughterPosMoms.at(i);
             outputDaughterAddonTable(
               posMom.at(0), posMom.at(1), posMom.at(2), posMom.at(3), posMom.at(4), posMom.at(5));
             vecAddons.push_back(outputDaughterAddonTable.lastIndex());
