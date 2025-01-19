@@ -128,7 +128,7 @@ struct HfCandidateSelectorToOmegaPi {
   Configurable<bool> applyKFpreselections{"applyKFpreselections", true, "Apply KFParticle related rejection"};
   Configurable<bool> applyCompetingCascRejection{"applyCompetingCascRejection", true, "Apply competing Xi(for Omegac0) rejection"};
   Configurable<float> cascaderejMassWindow{"cascaderejMassWindow", 0.01, "competing Xi(for Omegac0) rejection mass window"};
-  Configurable<float> v0ldlmin{"v0ldlmin", 3., "Minimum value of l/dl of V0"};    //l/dl and Chi2 are to be determined
+  Configurable<float> v0ldlmin{"v0ldlmin", 3., "Minimum value of l/dl of V0"}; // l/dl and Chi2 are to be determined
   Configurable<float> cascldlmin{"cascldlmin", 1., "Minimum value of l/dl of casc"};
   Configurable<float> omegacldlmax{"omegacldlmax", 5., "Maximum value of l/dl of Omegac"};
   Configurable<float> ctauOmegacmax{"ctauOmegacmax", 0.4, "lifetime τ of Omegac"};
@@ -144,7 +144,6 @@ struct HfCandidateSelectorToOmegaPi {
   Configurable<float> decayLenXYLambdamin{"decayLenXYLambdamin", 0., "Minimum decay lengthXY of V0"};
   Configurable<float> cosPaCascToOmegacmin{"cosPaCascToOmegacmin", 0.995, "Minimum cosPA of cascade<-Omegac"};
   Configurable<float> cosPaV0ToCascmin{"cosPaV0ToCascmin", 0.99, "Minimum cosPA of V0<-cascade"};
-
 
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
@@ -397,36 +396,35 @@ struct HfCandidateSelectorToOmegaPi {
         registry.fill(HIST("hSelPtPiFromCharm"), 1);
       }
 
-
-      //KFParticle Preselections(kfsel)
+      // KFParticle Preselections(kfsel)
       if (applyKFpreselections) {
 
         bool inputKF = false;
-        if(resultSelections) {
+        if (resultSelections) {
           inputKF = true;
           registry.fill(HIST("hSelKFstatus"), 0);
         }
-        
+
         //  Competing Ξ rejection(KF)
         if (applyCompetingCascRejection) {
           if (std::abs(candidate.cascRejectInvmass() - o2::constants::physics::MassXiMinus) < cascaderejMassWindow) {
-          resultSelections = false;
-          registry.fill(HIST("hSelCompetingCasc"), 0);
+            resultSelections = false;
+            registry.fill(HIST("hSelCompetingCasc"), 0);
           } else {
-          registry.fill(HIST("hSelCompetingCasc"), 1);
-          registry.fill(HIST("hInvMassXiMinus_rej_cut"), candidate.cascRejectInvmass());
+            registry.fill(HIST("hSelCompetingCasc"), 1);
+            registry.fill(HIST("hInvMassXiMinus_rej_cut"), candidate.cascRejectInvmass());
           }
         }
 
-        //v0&Casc&Omegac ldl selection
+        // v0&Casc&Omegac ldl selection
         if ((candidate.v0ldl() < v0ldlmin) || (candidate.cascldl() < cascldlmin) || (candidate.omegacldl() > omegacldlmax)) {
           resultSelections = false;
           registry.fill(HIST("hSelV0_Casc_Omegacldl"), 0);
         } else {
           registry.fill(HIST("hSelV0_Casc_Omegacldl"), 1);
         }
-        
-        //Omegac ctau selsection
+
+        // Omegac ctau selsection
         if (candidate.ctauOmegac() > ctauOmegacmax) {
           resultSelections = false;
           registry.fill(HIST("hSelctauOmegac"), 0);
@@ -434,42 +432,41 @@ struct HfCandidateSelectorToOmegaPi {
           registry.fill(HIST("hSelctauOmegac"), 1);
         }
 
-        //Chi2Geo/NDF V0&Casc&Omegac selection
+        // Chi2Geo/NDF V0&Casc&Omegac selection
         if ((candidate.v0Chi2OverNdf() > v0Chi2OverNdfmax) || (candidate.cascChi2OverNdf() > cascChi2OverNdfmax) || (candidate.omegacChi2OverNdf() > omegacChi2OverNdfmax)) {
-        resultSelections = false;
-        registry.fill(HIST("hSelChi2GeooverNDFV0_Casc_Omegac"), 0);
+          resultSelections = false;
+          registry.fill(HIST("hSelChi2GeooverNDFV0_Casc_Omegac"), 0);
         } else {
-        registry.fill(HIST("hSelChi2GeooverNDFV0_Casc_Omegac"), 1);
+          registry.fill(HIST("hSelChi2GeooverNDFV0_Casc_Omegac"), 1);
         }
 
-        //Chi2Topo/NDF (chi2TopoV0ToCasc chi2TopoOmegacToPv chi2TopoCascToOmegac chi2TopoCascToPv) selection  (???????????/NDF of which particle????????)
+        // Chi2Topo/NDF (chi2TopoV0ToCasc chi2TopoOmegacToPv chi2TopoCascToOmegac chi2TopoCascToPv) selection  (???????????/NDF of which particle????????)
         if ((candidate.chi2TopoV0ToCasc() > chi2TopoV0ToCascmax) || (candidate.chi2TopoOmegacToPv() > chi2TopoOmegacToPvmax) || (candidate.chi2TopoCascToOmegac() > chi2TopoCascToOmegacmax) || (candidate.chi2TopoCascToPv() > chi2TopoCascToPvmax)) {
-        resultSelections = false;
-        registry.fill(HIST("hSelChi2TopooverNDFV0_Casc_Omegac"), 0);
+          resultSelections = false;
+          registry.fill(HIST("hSelChi2TopooverNDFV0_Casc_Omegac"), 0);
         } else {
-        registry.fill(HIST("hSelChi2TopooverNDFV0_Casc_Omegac"), 1);
+          registry.fill(HIST("hSelChi2TopooverNDFV0_Casc_Omegac"), 1);
         }
 
-        //DecaylengthXY of Omegac&Casc&V0 selection
+        // DecaylengthXY of Omegac&Casc&V0 selection
         if ((std::abs(candidate.decayLenXYOmegac()) > decayLenXYOmegacmax) || (std::abs(candidate.decayLenXYCasc()) < decayLenXYCascmin) || (std::abs(candidate.decayLenXYLambda()) < decayLenXYLambdamin)) {
-        resultSelections = false;
-        registry.fill(HIST("hSeldecayLenXYOmegac_Casc_V0"), 0);
+          resultSelections = false;
+          registry.fill(HIST("hSeldecayLenXYOmegac_Casc_V0"), 0);
         } else {
-        registry.fill(HIST("hSeldecayLenXYOmegac_Casc_V0"), 1);
+          registry.fill(HIST("hSeldecayLenXYOmegac_Casc_V0"), 1);
         }
 
-        //KFPA cut cosPaCascToOmegac cosPaV0ToCasc
+        // KFPA cut cosPaCascToOmegac cosPaV0ToCasc
         if ((candidate.cosPaCascToOmegac() < cosPaCascToOmegacmin) || (candidate.cosPaV0ToCasc() < cosPaV0ToCascmin)) {
-        resultSelections = false;
-        registry.fill(HIST("hSelcosPaCascToOmegac_V0ToCasc"), 0);
+          resultSelections = false;
+          registry.fill(HIST("hSelcosPaCascToOmegac_V0ToCasc"), 0);
         } else {
-        registry.fill(HIST("hSelcosPaCascToOmegac_V0ToCasc"), 1);
+          registry.fill(HIST("hSelcosPaCascToOmegac_V0ToCasc"), 1);
         }
 
-        if(resultSelections && inputKF) {
+        if (resultSelections && inputKF) {
           registry.fill(HIST("hSelKFstatus"), 1);
         }
-
       }
 
       //  TPC clusters selections
