@@ -67,7 +67,7 @@ using CascOriginalDatas = soa::Join<aod::CascIndices, aod::CascCores>;
 // For derived data analysis
 using CascDerivedDatas = soa::Join<aod::CascCores, aod::CascExtras, aod::CascCollRefs>;
 
-struct cascademlselecttion {
+struct cascademlselection {
   o2::ml::OnnxModel mlModelXiMinus;
   o2::ml::OnnxModel mlModelXiPlus;
   o2::ml::OnnxModel mlModelOmegaMinus;
@@ -97,10 +97,10 @@ struct cascademlselecttion {
   // Machine learning evaluation for pre-selection and corresponding information generation
   struct : ConfigurableGroup {
     // ML classifiers: master flags to populate ML Selection tables
-    Configurable<bool> calculateXiMinusScores{"mlConfigurations.calculateXiMinusScores", false, "calculate XiMinus ML scores"};
-    Configurable<bool> calculateXiPlusScores{"mlConfigurations.calculateXiPlusScores", false, "calculate XiPlus ML scores"};
-    Configurable<bool> calculateOmegaMinusScores{"mlConfigurations.calculateOmegaMinusScores", false, "calculate OmegaMinus ML scores"};
-    Configurable<bool> calculateOmegaPlusScores{"mlConfigurations.calculateOmegaPlusScores", false, "calculate OmegaPlus ML scores"};
+    Configurable<bool> calculateXiMinusScores{"mlConfigurations.calculateXiMinusScores", true, "calculate XiMinus ML scores"};
+    Configurable<bool> calculateXiPlusScores{"mlConfigurations.calculateXiPlusScores", true, "calculate XiPlus ML scores"};
+    Configurable<bool> calculateOmegaMinusScores{"mlConfigurations.calculateOmegaMinusScores", true, "calculate OmegaMinus ML scores"};
+    Configurable<bool> calculateOmegaPlusScores{"mlConfigurations.calculateOmegaPlusScores", true, "calculate OmegaPlus ML scores"};
 
     // ML input for ML calculation
     Configurable<std::string> modelPathCCDB{"mlConfigurations.modelPathCCDB", "", "ML Model path in CCDB"};
@@ -231,21 +231,33 @@ struct cascademlselecttion {
                                      0.0f, 0.0f};
 
     // calculate scores
-    if (mlConfigurations.calculateXiMinusScores && cand.sign() < 0) {
-      float* xiMinusProbability = mlModelXiMinus.evalModel(inputFeatures);
-      xiMLSelections(xiMinusProbability[1]);
+    if (cand.sign() < 0) {
+      if (mlConfigurations.calculateXiMinusScores) {
+        float* xiMinusProbability = mlModelXiMinus.evalModel(inputFeatures);
+        xiMLSelections(xiMinusProbability[1]);
+      } else {
+        xiMLSelections(-1);
+      }
+      if (mlConfigurations.calculateOmegaMinusScores) {
+        float* omegaMinusProbability = mlModelOmegaMinus.evalModel(inputFeatures);
+        omegaMLSelections(omegaMinusProbability[1]);
+      } else {
+        omegaMLSelections(-1);
+      }
     }
-    if (mlConfigurations.calculateXiPlusScores && cand.sign() > 0) {
-      float* xiPlusProbability = mlModelXiPlus.evalModel(inputFeatures);
-      xiMLSelections(xiPlusProbability[1]);
-    }
-    if (mlConfigurations.calculateOmegaMinusScores && cand.sign() < 0) {
-      float* omegaMinusProbability = mlModelOmegaMinus.evalModel(inputFeatures);
-      omegaMLSelections(omegaMinusProbability[1]);
-    }
-    if (mlConfigurations.calculateOmegaPlusScores && cand.sign() > 0) {
-      float* omegaPlusProbability = mlModelOmegaPlus.evalModel(inputFeatures);
-      omegaMLSelections(omegaPlusProbability[1]);
+    if (cand.sign() > 0) {
+      if (mlConfigurations.calculateXiPlusScores) {
+        float* xiPlusProbability = mlModelXiPlus.evalModel(inputFeatures);
+        xiMLSelections(xiPlusProbability[1]);
+      } else {
+        xiMLSelections(-1);
+      }
+      if (mlConfigurations.calculateOmegaPlusScores) {
+        float* omegaPlusProbability = mlModelOmegaPlus.evalModel(inputFeatures);
+        omegaMLSelections(omegaPlusProbability[1]);
+      } else {
+        omegaMLSelections(-1);
+      }
     }
   }
 
@@ -276,11 +288,11 @@ struct cascademlselecttion {
     }
   }
 
-  PROCESS_SWITCH(cascademlselecttion, processStandardData, "Process standard data", false);
-  PROCESS_SWITCH(cascademlselecttion, processDerivedData, "Process derived data", true);
+  PROCESS_SWITCH(cascademlselection, processStandardData, "Process standard data", false);
+  PROCESS_SWITCH(cascademlselection, processDerivedData, "Process derived data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<cascademlselecttion>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<cascademlselection>(cfgc)};
 }
