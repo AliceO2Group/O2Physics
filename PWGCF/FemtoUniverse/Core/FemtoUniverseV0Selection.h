@@ -589,7 +589,7 @@ std::array<CutContainerType, 5>
   const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};
 
   float observable = 0.;
-  for (const auto& sel : mSelections) {
+  for (auto& sel : mSelections) { //o2-linter: disable=const-ref-in-for-loop
     const auto selVariable = sel.getSelectionVariable();
     if (selVariable == femto_universe_v0_selection::kV0DecVtxMax) {
       for (size_t i = 0; i < decVtx.size(); ++i) {
