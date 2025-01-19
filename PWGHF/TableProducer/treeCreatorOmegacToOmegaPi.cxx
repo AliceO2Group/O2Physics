@@ -147,7 +147,7 @@ DECLARE_SOA_COLUMN(CascChi2OverNdf, cascChi2OverNdf, float);
 DECLARE_SOA_COLUMN(OmegacChi2OverNdf, omegacChi2OverNdf, float);
 DECLARE_SOA_COLUMN(MassV0Chi2OverNdf, massV0Chi2OverNdf, float);
 DECLARE_SOA_COLUMN(MassCascChi2OverNdf, massCascChi2OverNdf, float);
-
+DECLARE_SOA_COLUMN(CascRejectInvmass, cascRejectInvmass, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToOmegaPiEvs, "AOD", "HFTOOMEPIEV",
@@ -195,7 +195,7 @@ DECLARE_SOA_TABLE(HfKfOmegacFulls, "AOD", "HFKFOMEGACFULL",
                   full::V0Ndf, full::CascNdf, full::OmegacNdf,
                   full::MassV0Ndf, full::MassCascNdf,
                   full::V0Chi2OverNdf, full::CascChi2OverNdf, full::OmegacChi2OverNdf,
-                  full::MassV0Chi2OverNdf, full::MassCascChi2OverNdf,
+                  full::MassV0Chi2OverNdf, full::MassCascChi2OverNdf, full::CascRejectInvmass,
                   full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched);
 } // namespace o2::aod
 
@@ -355,6 +355,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
         candidate.omegacChi2OverNdf(),
         candidate.massV0Chi2OverNdf(),
         candidate.massCascChi2OverNdf(),
+        candidate.cascRejectInvmass(),
         flagMc,
         originMc,
         collisionMatched);

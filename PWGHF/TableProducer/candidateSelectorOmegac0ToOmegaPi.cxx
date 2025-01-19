@@ -43,10 +43,10 @@ struct HfCandidateSelectorToOmegaPi {
   // LF analysis selections
   Configurable<double> radiusCascMin{"radiusCascMin", 0.5, "Min cascade radius"};
   Configurable<double> radiusV0Min{"radiusV0Min", 1.1, "Min V0 radius"};
-  Configurable<double> cosPAV0Min{"cosPAV0Min", 0.97, "Min valueCosPA V0"};
-  Configurable<double> cosPACascMin{"cosPACascMin", 0.97, "Min value CosPA cascade"};
-  Configurable<double> dcaCascDauMax{"dcaCascDauMax", 1.0, "Max DCA cascade daughters"};
-  Configurable<double> dcaV0DauMax{"dcaV0DauMax", 1.0, "Max DCA V0 daughters"};
+  Configurable<double> cosPAV0Min{"cosPAV0Min", 0.99, "Min valueCosPA V0"};
+  Configurable<double> cosPACascMin{"cosPACascMin", 0.995, "Min value CosPA cascade"};
+  Configurable<double> dcaCascDauMax{"dcaCascDauMax", 1.4, "Max DCA cascade daughters"};
+  Configurable<double> dcaV0DauMax{"dcaV0DauMax", 1.4, "Max DCA V0 daughters"};
   Configurable<float> dcaBachToPvMin{"dcaBachToPvMin", 0.04, "DCA Bach To PV"};
   Configurable<float> dcaNegToPvMin{"dcaNegToPvMin", 0.06, "DCA Neg To PV"};
   Configurable<float> dcaPosToPvMin{"dcaPosToPvMin", 0.06, "DCA Pos To PV"};
@@ -60,24 +60,24 @@ struct HfCandidateSelectorToOmegaPi {
 
   // kinematic selections
   Configurable<double> etaTrackCharmBachMax{"etaTrackCharmBachMax", 0.8, "Max absolute value of eta for charm baryon bachelor"};
-  Configurable<double> etaTrackLFDauMax{"etaTrackLFDauMax", 1.0, "Max absolute value of eta for V0 and cascade daughters"};
+  Configurable<double> etaTrackLFDauMax{"etaTrackLFDauMax", 0.8, "Max absolute value of eta for V0 and cascade daughters"};
   Configurable<double> ptKaFromCascMin{"ptKaFromCascMin", 0.15, "Min pT kaon <- casc"};
   Configurable<double> ptPiFromCharmBaryonMin{"ptPiFromCharmBaryonMin", 0.2, "Min pT pi <- charm baryon"};
 
   Configurable<double> impactParameterXYPiFromCharmBaryonMin{"impactParameterXYPiFromCharmBaryonMin", 0., "Min dcaxy pi from charm baryon track to PV"};
-  Configurable<double> impactParameterXYPiFromCharmBaryonMax{"impactParameterXYPiFromCharmBaryonMax", 10., "Max dcaxy pi from charm baryon track to PV"};
+  Configurable<double> impactParameterXYPiFromCharmBaryonMax{"impactParameterXYPiFromCharmBaryonMax", 0.03, "Max dcaxy pi from charm baryon track to PV"};
   Configurable<double> impactParameterZPiFromCharmBaryonMin{"impactParameterZPiFromCharmBaryonMin", 0., "Min dcaz pi from charm baryon track to PV"};
   Configurable<double> impactParameterZPiFromCharmBaryonMax{"impactParameterZPiFromCharmBaryonMax", 10., "Max dcaz pi from charm baryon track to PV"};
 
   Configurable<double> impactParameterXYCascMin{"impactParameterXYCascMin", 0., "Min dcaxy cascade track to PV"};
-  Configurable<double> impactParameterXYCascMax{"impactParameterXYCascMax", 10., "Max dcaxy cascade track to PV"};
+  Configurable<double> impactParameterXYCascMax{"impactParameterXYCascMax", 0.4, "Max dcaxy cascade track to PV"};
   Configurable<double> impactParameterZCascMin{"impactParameterZCascMin", 0., "Min dcaz cascade track to PV"};
   Configurable<double> impactParameterZCascMax{"impactParameterZCascMax", 10., "Max dcaz cascade track to PV"};
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
 
-  Configurable<double> dcaCharmBaryonDauMax{"dcaCharmBaryonDauMax", 2.0, "Max DCA charm baryon daughters"};
+  Configurable<double> dcaCharmBaryonDauMax{"dcaCharmBaryonDauMax", 0.5, "Max DCA charm baryon daughters"};
 
   // PID options
   Configurable<bool> usePidTpcOnly{"usePidTpcOnly", false, "Perform PID using only TPC"};
@@ -123,6 +123,28 @@ struct HfCandidateSelectorToOmegaPi {
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pi <- charm baryon"};
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- charm baryon"};
   Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 36, "Maximum value of chi2 fit over ITS clusters for pi <- charm baryon"};
+
+  // KF selection
+  Configurable<bool> applyKFpreselections{"applyKFpreselections", true, "Apply KFParticle related rejection"};
+  Configurable<bool> applyCompetingCascRejection{"applyCompetingCascRejection", true, "Apply competing Xi(for Omegac0) rejection"};
+  Configurable<float> cascaderejMassWindow{"cascaderejMassWindow", 0.01, "competing Xi(for Omegac0) rejection mass window"};
+  Configurable<float> v0ldlmin{"v0ldlmin", 3., "Minimum value of l/dl of V0"};    //l/dl and Chi2 are to be determined
+  Configurable<float> cascldlmin{"cascldlmin", 1., "Minimum value of l/dl of casc"};
+  Configurable<float> omegacldlmax{"omegacldlmax", 5., "Maximum value of l/dl of Omegac"};
+  Configurable<float> ctauOmegacmax{"ctauOmegacmax", 0.4, "lifetime τ of Omegac"};
+  Configurable<float> v0Chi2OverNdfmax{"v0Chi2OverNdfmax", 100., "Maximum chi2Geo/NDF of V0"};
+  Configurable<float> cascChi2OverNdfmax{"cascChi2OverNdfmax", 100., "Maximum chi2Geo/NDF of casc"};
+  Configurable<float> omegacChi2OverNdfmax{"omegacChi2OverNdfmax", 100., "Maximum chi2Geo/NDF of Omegac"};
+  Configurable<float> chi2TopoV0ToCascmax{"chi2TopoV0ToCascmax", 100., "Maximum chi2Topo/NDF of V0ToCas"};
+  Configurable<float> chi2TopoOmegacToPvmax{"chi2TopoOmegacToPvmax", 100., "Maximum chi2Topo/NDF of OmegacToPv"};
+  Configurable<float> chi2TopoCascToOmegacmax{"chi2TopoCascToOmegacmax", 100., "Maximum chi2Topo/NDF of CascToOmegac"};
+  Configurable<float> chi2TopoCascToPvmax{"chi2TopoCascToPvmax", 100., "Maximum chi2Topo/NDF of CascToPv"};
+  Configurable<float> decayLenXYOmegacmax{"decayLenXYOmegacmax", 1.5, "Maximum decay lengthXY of Omegac"};
+  Configurable<float> decayLenXYCascmin{"decayLenXYCascmin", 1., "Minimum decay lengthXY of Cascade"};
+  Configurable<float> decayLenXYLambdamin{"decayLenXYLambdamin", 0., "Minimum decay lengthXY of V0"};
+  Configurable<float> cosPaCascToOmegacmin{"cosPaCascToOmegacmin", 0.995, "Minimum cosPA of cascade<-Omegac"};
+  Configurable<float> cosPaV0ToCascmin{"cosPaV0ToCascmin", 0.99, "Minimum cosPA of V0<-cascade"};
+
 
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
@@ -192,9 +214,18 @@ struct HfCandidateSelectorToOmegaPi {
     registry.add("hSelMassCharmBaryon", "hSelMassCharmBaryon;status;entries", {HistType::kTH1F, {axisSel}});
     registry.add("hSelDcaXYToPvV0Daughters", "hSelDcaXYToPvV0Daughters;status;entries", {HistType::kTH1F, {axisSel}});
     registry.add("hSelDcaXYToPvKaFromCasc", "hSelDcaXYToPvKaFromCasc;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelCompetingCasc", "hSelCompetingCasc;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelKFstatus", "hSelKFstatus;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelV0_Casc_Omegacldl", "hSelV0_Casc_Omegacldl;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelctauOmegac", "hSelctauOmegac;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelChi2GeooverNDFV0_Casc_Omegac", "hSelChi2GeooverNDFV0_Casc_Omegac;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelChi2TopooverNDFV0_Casc_Omegac", "hSelChi2TopooverNDFV0_Casc_Omegac;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSeldecayLenXYOmegac_Casc_V0", "hSeldecayLenXYOmegac_Casc_V0;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelcosPaCascToOmegac_V0ToCasc", "hSelcosPaCascToOmegac_V0ToCasc;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hInvMassXiMinus_rej_cut", "hInvMassXiMinus_rej_cut", kTH1D, {{1000, 1.25f, 1.65f}});
   }
 
-  void process(aod::HfCandToOmegaPi const& candidates,
+  void process(soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf> const& candidates,
                TracksSel const& tracks,
                TracksSelLf const& lfTracks)
   {
@@ -364,6 +395,81 @@ struct HfCandidateSelectorToOmegaPi {
         registry.fill(HIST("hSelPtPiFromCharm"), 0);
       } else {
         registry.fill(HIST("hSelPtPiFromCharm"), 1);
+      }
+
+
+      //KFParticle Preselections(kfsel)
+      if (applyKFpreselections) {
+
+        bool inputKF = false;
+        if(resultSelections) {
+          inputKF = true;
+          registry.fill(HIST("hSelKFstatus"), 0);
+        }
+        
+        //  Competing Ξ rejection(KF)
+        if (applyCompetingCascRejection) {
+          if (std::abs(candidate.cascRejectInvmass() - o2::constants::physics::MassXiMinus) < cascaderejMassWindow) {
+          resultSelections = false;
+          registry.fill(HIST("hSelCompetingCasc"), 0);
+          } else {
+          registry.fill(HIST("hSelCompetingCasc"), 1);
+          registry.fill(HIST("hInvMassXiMinus_rej_cut"), candidate.cascRejectInvmass());
+          }
+        }
+
+        //v0&Casc&Omegac ldl selection
+        if ((candidate.v0ldl() < v0ldlmin) || (candidate.cascldl() < cascldlmin) || (candidate.omegacldl() > omegacldlmax)) {
+          resultSelections = false;
+          registry.fill(HIST("hSelV0_Casc_Omegacldl"), 0);
+        } else {
+          registry.fill(HIST("hSelV0_Casc_Omegacldl"), 1);
+        }
+        
+        //Omegac ctau selsection
+        if (candidate.ctauOmegac() > ctauOmegacmax) {
+          resultSelections = false;
+          registry.fill(HIST("hSelctauOmegac"), 0);
+        } else {
+          registry.fill(HIST("hSelctauOmegac"), 1);
+        }
+
+        //Chi2Geo/NDF V0&Casc&Omegac selection
+        if ((candidate.v0Chi2OverNdf() > v0Chi2OverNdfmax) || (candidate.cascChi2OverNdf() > cascChi2OverNdfmax) || (candidate.omegacChi2OverNdf() > omegacChi2OverNdfmax)) {
+        resultSelections = false;
+        registry.fill(HIST("hSelChi2GeooverNDFV0_Casc_Omegac"), 0);
+        } else {
+        registry.fill(HIST("hSelChi2GeooverNDFV0_Casc_Omegac"), 1);
+        }
+
+        //Chi2Topo/NDF (chi2TopoV0ToCasc chi2TopoOmegacToPv chi2TopoCascToOmegac chi2TopoCascToPv) selection  (???????????/NDF of which particle????????)
+        if ((candidate.chi2TopoV0ToCasc() > chi2TopoV0ToCascmax) || (candidate.chi2TopoOmegacToPv() > chi2TopoOmegacToPvmax) || (candidate.chi2TopoCascToOmegac() > chi2TopoCascToOmegacmax) || (candidate.chi2TopoCascToPv() > chi2TopoCascToPvmax)) {
+        resultSelections = false;
+        registry.fill(HIST("hSelChi2TopooverNDFV0_Casc_Omegac"), 0);
+        } else {
+        registry.fill(HIST("hSelChi2TopooverNDFV0_Casc_Omegac"), 1);
+        }
+
+        //DecaylengthXY of Omegac&Casc&V0 selection
+        if ((std::abs(candidate.decayLenXYOmegac()) > decayLenXYOmegacmax) || (std::abs(candidate.decayLenXYCasc()) < decayLenXYCascmin) || (std::abs(candidate.decayLenXYLambda()) < decayLenXYLambdamin)) {
+        resultSelections = false;
+        registry.fill(HIST("hSeldecayLenXYOmegac_Casc_V0"), 0);
+        } else {
+        registry.fill(HIST("hSeldecayLenXYOmegac_Casc_V0"), 1);
+        }
+
+        //KFPA cut cosPaCascToOmegac cosPaV0ToCasc
+        if ((candidate.cosPaCascToOmegac() < cosPaCascToOmegacmin) || (candidate.cosPaV0ToCasc() < cosPaV0ToCascmin)) {
+        resultSelections = false;
+        registry.fill(HIST("hSelcosPaCascToOmegac_V0ToCasc"), 0);
+        } else {
+        registry.fill(HIST("hSelcosPaCascToOmegac_V0ToCasc"), 1);
+        }
+
+        if(resultSelections && inputKF) {
+          registry.fill(HIST("hSelKFstatus"), 1);
+        }
+
       }
 
       //  TPC clusters selections
