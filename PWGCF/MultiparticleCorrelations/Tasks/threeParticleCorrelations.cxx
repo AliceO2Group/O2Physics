@@ -136,9 +136,9 @@ struct ThreeParticleCorrelations {
     rQARegistry.add("hNSigmaKaon", "hNSigmaKaon", {HistType::kTH2D, {{201, -5.025, 5.025}, {201, -5.025, 5.025}}});
     rQARegistry.add("hNSigmaProton", "hNSigmaProton", {HistType::kTH2D, {{201, -5.025, 5.025}, {201, -5.025, 5.025}}});
 
-    rQARegistry.add("hTPCPion", "hTPCPion", {HistType::kTH2D, {{trackPtAxis}, {1000, -50, 50}}});
-    rQARegistry.add("hTPCKaon", "hTPCKaon", {HistType::kTH2D, {{trackPtAxis}, {1000, -50, 50}}});
-    rQARegistry.add("hTPCProton", "hTPCProton", {HistType::kTH2D, {{trackPtAxis}, {1000, -50, 50}}});
+    rQARegistry.add("hTPCPion", "hTPCPion", {HistType::kTH2D, {{trackPtAxis}, {241, -6, 6}}});
+    rQARegistry.add("hTPCKaon", "hTPCKaon", {HistType::kTH2D, {{trackPtAxis}, {241, -6, 6}}});
+    rQARegistry.add("hTPCProton", "hTPCProton", {HistType::kTH2D, {{trackPtAxis}, {241, -6, 6}}});
     rQARegistry.add("hTOFPion", "hTOFPion", {HistType::kTH2D, {{trackPtAxis}, {1000, -50, 50}}});
     rQARegistry.add("hTOFKaon", "hTOFKaon", {HistType::kTH2D, {{trackPtAxis}, {1000, -50, 50}}});
     rQARegistry.add("hTOFProton", "hTOFProton", {HistType::kTH2D, {{trackPtAxis}, {1000, -50, 50}}});
@@ -509,30 +509,25 @@ struct ThreeParticleCorrelations {
 
     static double pid[2]; // {PID, NSigma}
 
-    double nSigmaTPC[3], nSigma[3];
-    double nSigmaTOF[3] = {0.0, 0.0, 0.0};
-    nSigmaTPC[0] = track.tpcNSigmaPi();
-    nSigmaTPC[1] = track.tpcNSigmaKa();
-    nSigmaTPC[2] = track.tpcNSigmaPr();
-    if (track.hasTOF()) {
-      nSigmaTOF[0] = track.tofNSigmaPi();
-      nSigmaTOF[1] = track.tofNSigmaKa();
-      nSigmaTOF[2] = track.tofNSigmaPr();
-    }
+    double nSigma[3];
+    double nSigmaTOF[3];
+    nSigmaTOF[0] = track.tofNSigmaPi();
+    nSigmaTOF[1] = track.tofNSigmaKa();
+    nSigmaTOF[2] = track.tofNSigmaPr();
 
-    nSigma[0] = std::sqrt(std::pow(nSigmaTPC[0], 2) + std::pow(nSigmaTOF[0], 2));
-    nSigma[1] = std::sqrt(std::pow(nSigmaTPC[1], 2) + std::pow(nSigmaTOF[1], 2));
-    nSigma[2] = std::sqrt(std::pow(nSigmaTPC[2], 2) + std::pow(nSigmaTOF[2], 2));
+    nSigma[0] = std::abs(nSigmaTOF[0]);
+    nSigma[1] = std::abs(nSigmaTOF[1]);
+    nSigma[2] = std::abs(nSigmaTOF[2]);
 
     if (nSigma[0] <= std::min(nSigma[1], nSigma[2])) { // Pions
       pid[0] = 0.0;
-      pid[1] = nSigma[0];
+      pid[1] = nSigmaTOF[0];
     } else if (nSigma[1] <= std::min(nSigma[0], nSigma[2])) { // Kaons
       pid[0] = 1.0;
-      pid[1] = nSigma[1];
+      pid[1] = nSigmaTOF[1];
     } else if (nSigma[2] < std::min(nSigma[0], nSigma[1])) { // Protons
       pid[0] = 2.0;
-      pid[1] = nSigma[2];
+      pid[1] = nSigmaTOF[2];
     }
 
     return pid;
@@ -690,11 +685,11 @@ struct ThreeParticleCorrelations {
   bool radialDistanceFilter(const V0Cand& v0, const TrackCand& track, double B, bool Mix)
   {
 
-    const auto& dProton = v0.template posTrack_as<MyFilteredTracks>();
-    const auto& dPion = v0.template negTrack_as<MyFilteredTracks>();
+    auto dProton = v0.template posTrack_as<MyFilteredTracks>();
+    auto dPion = v0.template negTrack_as<MyFilteredTracks>();
     if (v0Sign(v0) == -1) {
-      const auto& dProton = v0.template negTrack_as<MyFilteredTracks>();
-      const auto& dPion = v0.template posTrack_as<MyFilteredTracks>();
+      dProton = v0.template negTrack_as<MyFilteredTracks>();
+      dPion = v0.template posTrack_as<MyFilteredTracks>();
     }
     
     double dEtaProton = dProton.eta() - track.eta();
