@@ -83,6 +83,8 @@ struct JetHadronRecoil {
                               {"hSignalPtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
                               {"hReferencePt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{150, 0, 150}}}},
                               {"hSignalPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{150, 0, 150}}}},
+                              {"hSignalTriggers", "trigger p_{T};p_{T,trig};entries", {HistType::kTH1F, {{150, 0, 150}}}},
+                              {"hReferenceTriggers", "trigger p_{T};p_{T,trig};entries", {HistType::kTH1F, {{150, 0, 150}}}},
                               {"hSignalLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
                               {"hReferenceLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
                               {"hJetSignalMultiplicity", "jet multiplicity;N_{jets};entries", {HistType::kTH1F, {{10, 0, 10}}}},
@@ -165,10 +167,12 @@ struct JetHadronRecoil {
       }
       if (isSigCol && track.pt() < ptTTsigMax && track.pt() > ptTTsigMin) {
         phiTTAr.push_back(track.phi());
+        registry.fill(HIST("hSignalPt"), track.pt(), weight);
         nTT++;
       }
       if (!isSigCol && track.pt() < ptTTrefMax && track.pt() > ptTTrefMin) {
         phiTTAr.push_back(track.phi());
+        registry.fill(HIST("hReferencePt"), track.pt(), weight);
         nTT++;
       }
       registry.fill(HIST("hPtTrack"), track.pt(), weight);

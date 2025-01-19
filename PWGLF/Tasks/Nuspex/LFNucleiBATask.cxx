@@ -98,8 +98,10 @@ struct LFNucleiBATask {
   } nsigmaTPCvar;
 
   struct : ConfigurableGroup {
-    Configurable<float> nsigmaITSTr{"nsigmaITSTr", 3.f, "Value of the Nsigma ITS cut for tritons"};
-    Configurable<float> nsigmaITSHe{"nsigmaITSHe", 3.f, "Value of the Nsigma ITS cut for helium-3"};
+    Configurable<bool> useITSTrCut{"useITSTrCut", false, "Select Helium if NOT compatible with triton hypothesis (via SigmaITS)"};
+    Configurable<float> nsigmaITSTr{"nsigmaITSTr", 3.f, "Value of the Nsigma ITS cut for tritons ( > nSigmaITSTr)"};
+    // Configurable<bool> useITSHeCut{"useITSHeCut", false, "Select Helium if compatible with helium hypothesis (via SigmaITS)"};
+    // Configurable<float> nsigmaITSHe{"nsigmaITSHe", 3.f, "Value of the Nsigma ITS cut for helium-3 ( < nSigmaITSHe)"};
   } nsigmaITSvar;
 
   // Set additional cuts (used for debug)
@@ -114,7 +116,7 @@ struct LFNucleiBATask {
   ConfigurableAxis binsdEdx{"binsdEdx", {600, 0.f, 3000.f}, ""};
   ConfigurableAxis binsBeta{"binsBeta", {120, 0.0, 1.2}, ""};
   ConfigurableAxis binsDCA{"binsDCA", {400, -1.f, 1.f}, ""};
-  ConfigurableAxis binsSigmaITS{"binsSigmaITS", {1000, -100, 100}, ""};
+  ConfigurableAxis binsSigmaITS{"binsSigmaITS", {200, -20, 20}, ""};
   ConfigurableAxis binsSigmaTPC{"binsSigmaTPC", {1000, -100, 100}, ""};
   ConfigurableAxis binsSigmaTOF{"binsSigmaTOF", {1000, -100, 100}, ""};
   ConfigurableAxis binsMassPr{"binsMassPr", {100, -1., 1.f}, ""};
@@ -1501,8 +1503,11 @@ struct LFNucleiBATask {
       histos.add<TH2>("tracks/triton/h2antiTritonVspTNSigmaTPC", "NSigmaTPC(#bar{t}) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
     }
     if (enableHe) {
-      histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaITS", "NSigmaITS(He) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
-      histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaITS", "NSigmaITS(#bar{He}) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
+      histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaITSHe", "NSigmaITS(He) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS(He)", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
+      histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaITSHe", "NSigmaITS(#bar{He}) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS(#bar{He})", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
+
+      histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaITSTr", "NSigmaITS(t) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS(t)", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
+      histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaITSTr", "NSigmaITS(#bar{t}) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaITS(#bar{t})", HistType::kTH2F, {{ptZHeAxis}, {sigmaITSAxis}});
 
       histos.add<TH2>("tracks/helium/h2HeliumVspTNSigmaTPC", "NSigmaTPC(He) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptZHeAxis}, {sigmaTPCAxis}});
       histos.add<TH2>("tracks/helium/h2antiHeliumVspTNSigmaTPC", "NSigmaTPC(#bar{He}) vs pT/z; #it{p}_{T}/z (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptZHeAxis}, {sigmaTPCAxis}});
@@ -2052,6 +2057,7 @@ struct LFNucleiBATask {
     }
 
     auto tracksWithITS = soa::Attach<TracksType,
+                                     aod::pidits::ITSNSigmaTr,
                                      aod::pidits::ITSNSigmaHe>(tracks);
 
     for (auto& track : tracksWithITS) {
@@ -2143,8 +2149,9 @@ struct LFNucleiBATask {
           break;
       }
 
-      // float nITSTr;
-      float nITSHe;
+      float nITSTr, nITSHe;
+      nITSTr = track.itsNSigmaTr();
+      nITSHe = track.itsNSigmaHe();
 
       heP = track.p();
       antiheP = track.p();
@@ -2306,8 +2313,14 @@ struct LFNucleiBATask {
       isHelium = enableHe && heRapCut;
       isDe = isDeuteron && track.sign() > 0;
       isAntiDe = isDeuteron && track.sign() < 0;
-      isHe = isHelium && track.sign() > 0;
-      isAntiHe = isHelium && track.sign() < 0;
+
+      if (!nsigmaITSvar.useITSTrCut) {
+        isHe = isHelium && track.sign() > 0;
+        isAntiHe = isHelium && track.sign() < 0;
+      } else {
+        isHe = isHelium && track.sign() > 0 && std::abs(nITSTr) > nsigmaITSvar.nsigmaITSTr;
+        isAntiHe = isHelium && track.sign() < 0 && std::abs(nITSTr) > nsigmaITSvar.nsigmaITSTr;
+      }
 
       isDeWoDCAxy = isDe && passDCAzCutDe;
       isAntiDeWoDCAxy = isAntiDe && passDCAzCutAntiDe;
@@ -3461,9 +3474,6 @@ struct LFNucleiBATask {
         continue;
       }
 
-      // nITSTr = o2::aod::ITSResponse.nSigmaITS<o2::track::PID::Triton>(track);
-      nITSHe = track.itsNSigmaHe();
-
       if (outFlagOptions.makeDCAAfterCutPlots) {
 
         if (isHeWTPCpid) {
@@ -4026,13 +4036,15 @@ struct LFNucleiBATask {
       if (isHeWoTPCpid) {
         if (outFlagOptions.enableExpSignalTPC)
           histos.fill(HIST("tracks/helium/h2HeliumTPCExpSignalDiffVsPt"), hePt, track.tpcExpSignalDiffHe());
-        histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaITS"), hePt, nITSHe);
+        histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaITSTr"), hePt, nITSTr);
+        histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaITSHe"), hePt, nITSHe);
         histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaTPC"), hePt, track.tpcNSigmaHe());
       }
       if (isAntiHeWoTPCpid) {
         if (outFlagOptions.enableExpSignalTPC)
           histos.fill(HIST("tracks/helium/h2antiHeliumTPCExpSignalDiffVsPt"), antihePt, track.tpcExpSignalDiffHe());
-        histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaITS"), antihePt, nITSHe);
+        histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaITSTr"), antihePt, nITSTr);
+        histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaITSHe"), antihePt, nITSHe);
         histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaTPC"), antihePt, track.tpcNSigmaHe());
       }
 

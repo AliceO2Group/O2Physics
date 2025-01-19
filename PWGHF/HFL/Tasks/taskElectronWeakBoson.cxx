@@ -65,9 +65,12 @@ struct HfTaskElectronWeakBoson {
   Configurable<float> m02Min{"m02Min", 0.1, "Minimum M02"};
   Configurable<float> m02Max{"m02Max", 0.9, "Maximum M02"};
   Configurable<float> rMatchMax{"rMatchMax", 0.05, "cluster - track matching cut"};
+  Configurable<float> eopMin{"eopMin", 0.9, "Minimum eop"};
+  Configurable<float> eopMax{"eopMax", 1.3, "Maximum eop"};
 
   Configurable<float> rIsolation{"rIsolation", 0.3, "cone radius for isolation cut"};
   Configurable<float> energyIsolationMax{"energyIsolationMax", 0.1, "isolation cut on energy"};
+  Configurable<int> trackIsolationMax{"trackIsolationMax", 3, "Maximum number of tracks in isolation cone"};
 
   using SelectedClusters = o2::aod::EMCALClusters;
   // PbPb
@@ -114,6 +117,7 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisITSNCls{20, 0.0, 20, "counts"};
     const AxisSpec axisEMCtime{200, -100.0, 100, "EMC time"};
     const AxisSpec axisIsoEnergy{100, 0, 1, "Isolation energy(GeV/C)"};
+    const AxisSpec axisIsoTrack{20, -0.5, 19.5, "Isolation Track"};
 
     // create registrygrams
     registry.add("hZvtx", "Z vertex", kTH1F, {axisZvtx});
@@ -135,9 +139,11 @@ struct HfTaskElectronWeakBoson {
     registry.add("hMatchEta", "Match in Eta", kTH2F, {{axisEta}, {axisEta}});
     registry.add("hEop", "energy momentum match", kTH2F, {{axisPt}, {axisEop}});
     registry.add("hEopIsolation", "energy momentum match after isolation", kTH2F, {{axisPt}, {axisEop}});
+    registry.add("hEopIsolationTr", "energy momentum match after isolationTr", kTH2F, {{axisPt}, {axisEop}});
     registry.add("hEopNsigTPC", "Eop vs. Nsigma", kTH2F, {{axisNsigma}, {axisEop}});
     registry.add("hEMCtime", "EMC timing", kTH1F, {axisEMCtime});
     registry.add("hIsolationEnergy", "Isolation Energy", kTH2F, {{axisE}, {axisIsoEnergy}});
+    registry.add("hIsolationTrack", "Isolation Track", kTH2F, {{axisE}, {axisIsoTrack}});
   }
   bool isIsolatedCluster(const o2::aod::EMCALCluster& cluster,
                          const SelectedClusters& clusters)
@@ -171,6 +177,33 @@ struct HfTaskElectronWeakBoson {
     registry.fill(HIST("hIsolationEnergy"), cluster.energy(), isoEnergy);
 
     return (isoEnergy < energyIsolationMax);
+  }
+  bool isIsolatedTrack(double etaEle,
+                       double phiEle,
+                       float ptEle,
+                       TrackEle const& tracks)
+  {
+    int trackCount = 0;
+
+    for (const auto& track : tracks) {
+      // skip the reference track
+      if (std::abs(track.pt() - ptEle) < 1e-4)
+        continue;
+
+      double dEta = track.eta() - etaEle;
+      double dPhi = track.phi() - phiEle;
+      dPhi = RecoDecay::constrainAngle(dPhi, -o2::constants::math::PI);
+
+      double deltaR = std::sqrt(dEta * dEta + dPhi * dPhi);
+
+      if (deltaR < rIsolation) {
+        trackCount++;
+      }
+    }
+
+    registry.fill(HIST("hIsolationTrack"), ptEle, trackCount);
+
+    return (trackCount <= trackIsolationMax);
   }
 
   void process(soa::Filtered<aod::Collisions>::iterator const& collision,
@@ -226,6 +259,8 @@ struct HfTaskElectronWeakBoson {
       double rMin = 999.9;
       double dPhiMin = 999.9;
       double dEtaMin = 999.9;
+      bool isIsolated = false;
+      bool isIsolatedTr = false;
 
       if (tracksofcluster.size()) {
         int nMatch = 0;
@@ -266,7 +301,6 @@ struct HfTaskElectronWeakBoson {
               continue;
 
             const auto& cluster = match.emcalcluster_as<SelectedClusters>();
-            bool isIsolated = isIsolatedCluster(cluster, emcClusters);
 
             double eop = energyEmc / match.track_as<TrackEle>().p();
             // LOG(info) << "E/p" << eop;
@@ -276,8 +310,17 @@ struct HfTaskElectronWeakBoson {
             if (match.track_as<TrackEle>().tpcNSigmaEl() > nsigTpcMin && match.track_as<TrackEle>().tpcNSigmaEl() < nsigTpcMax) {
               registry.fill(HIST("hEop"), match.track_as<TrackEle>().pt(), eop);
 
+              if (eop > eopMin && eop < eopMax) {
+                isIsolated = isIsolatedCluster(cluster, emcClusters);
+                isIsolatedTr = isIsolatedTrack(track.phi(), track.eta(), track.pt(), tracks);
+              }
+
               if (isIsolated) {
                 registry.fill(HIST("hEopIsolation"), match.track_as<TrackEle>().pt(), eop);
+              }
+
+              if (isIsolatedTr) {
+                registry.fill(HIST("hEopIsolationTr"), match.track_as<TrackEle>().pt(), eop);
               }
             }
           }

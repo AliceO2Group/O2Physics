@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file fwdMuonsUPC.cxx
+/// \file FwdMuonsUPC.cxx
 /// \brief perform some selections on fwd events and saves the results
 
 /// executable name o2-analysis-ud-fwd-muon-upc
@@ -164,7 +164,7 @@ const float kEtaMin = -4.0;
 const float kEtaMax = -2.5;
 const float kPtMin = 0.;
 
-struct fwdMuonsUPC {
+struct FwdMuonsUPC {
 
   // a pdg object
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -373,7 +373,7 @@ struct fwdMuonsUPC {
 
   // template function that fills a map with the collision id of each udmccollision as key
   // and a vector with the tracks
-  // map == (key, element) == (udCollisionId, vector(track1, mcPart1, udCollisionId1, track2, mcPart2, udCollisionId2))
+  // map == (key, element) == (udCollisionId, vector(track1, mcPart1, track2, mcPart2))
   template <typename TTracks>
   void collectRecoCandID(std::unordered_map<int32_t, std::vector<int32_t>>& tracksPerCand, TTracks& tracks)
   {
@@ -383,7 +383,7 @@ struct fwdMuonsUPC {
         continue;
 
       if (!tr.has_udMcParticle()) {
-        // LOGF(info,"tr does not have mc part");
+        // LOGF(debug,"tr does not have mc part");
         continue;
       }
       // retrieve mc particle from the reco track
@@ -391,7 +391,6 @@ struct fwdMuonsUPC {
 
       tracksPerCand[candId].push_back(tr.globalIndex());
       tracksPerCand[candId].push_back(mcPart.globalIndex());
-      tracksPerCand[candId].push_back(mcPart.udMcCollisionId());
     }
   }
 
@@ -643,8 +642,8 @@ struct fwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (McPart1.pdgCode() + McPart2.pdgCode() != 0)
-      LOGF(info, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
+    if (std::abs(McPart1.pdgCode()) != 13 && std::abs(McPart2.pdgCode()) != 13)
+      LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
 
     // create Lorentz vectors
     TLorentzVector p1, p2;
@@ -710,6 +709,11 @@ struct fwdMuonsUPC {
                          CompleteFwdTracks::iterator const& tr1, aod::UDMcParticles::iterator const& McPart1,
                          CompleteFwdTracks::iterator const& tr2, aod::UDMcParticles::iterator const& McPart2)
   {
+
+    // check that all pairs are mu+mu-
+    if (std::abs(McPart1.pdgCode()) != 13 && std::abs(McPart2.pdgCode()) != 13)
+      LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
+
     // V0 selection
     const auto& ampsV0A = cand.amplitudesV0A();
     const auto& ampsRelBCsV0A = cand.ampRelBCsV0A();
@@ -783,10 +787,10 @@ struct fwdMuonsUPC {
 
     // print info in case of problems
     if (tr1.sign() * McPart1.pdgCode() > 0 || tr2.sign() * McPart2.pdgCode() > 0) {
-      LOGF(info, "Problem: ");
-      LOGF(info, "real: %d | %d", (int)tr1.sign(), (int)tr2.sign());
-      LOGF(info, "mc  : %i | %i", (int)McPart1.pdgCode(), (int)McPart2.pdgCode());
-      LOGF(info, "contrib: %d", (int)cand.numContrib());
+      LOGF(debug, "Problem: ");
+      LOGF(debug, "real: %d | %d", (int)tr1.sign(), (int)tr2.sign());
+      LOGF(debug, "mc  : %i | %i", (int)McPart1.pdgCode(), (int)McPart2.pdgCode());
+      LOGF(debug, "contrib: %d", (int)cand.numContrib());
     }
 
     // fill the histos
@@ -890,7 +894,7 @@ struct fwdMuonsUPC {
     }
   }
 
-  PROCESS_SWITCH(fwdMuonsUPC, processData, "", true);
+  PROCESS_SWITCH(FwdMuonsUPC, processData, "", true);
 
   // process MC Truth
   void processMcGen(aod::UDMcCollisions const& mccollisions, aod::UDMcParticles const& McParts)
@@ -912,12 +916,12 @@ struct fwdMuonsUPC {
       processMcGenCand(cand, tr1, tr2);
     }
   }
-  PROCESS_SWITCH(fwdMuonsUPC, processMcGen, "", false);
+  PROCESS_SWITCH(FwdMuonsUPC, processMcGen, "", false);
 
   // process reco MC (gen info included)
   void processMcReco(CandidatesFwd const& eventCandidates,
                      CompleteFwdTracks const& fwdTracks,
-                     aod::UDMcCollisions const& mcCandidates,
+                     aod::UDMcCollisions const&,
                      aod::UDMcParticles const& McParts)
   {
     std::unordered_map<int32_t, std::vector<int32_t>> tracksPerCandAll;
@@ -925,42 +929,39 @@ struct fwdMuonsUPC {
 
     // loop over the candidates
     for (const auto& item : tracksPerCandAll) {
-      if (item.second.size() != 6) {
-        // LOGF(info, "error: reco track(s) not gen");
+      if (item.second.size() != 4) {
+        LOGF(debug, "number track (reco + gen) = %d", item.second.size());
         continue;
       }
 
-      int32_t trId1 = item.second[0];
-      int32_t trId2 = item.second[3]; //[2]
+      // get the reco candidate
+      auto cand = eventCandidates.iteratorAt(item.first);
 
-      int32_t candID = item.first;
-      auto cand = eventCandidates.iteratorAt(candID);
-      auto tr1 = fwdTracks.iteratorAt(trId1);
-      auto tr2 = fwdTracks.iteratorAt(trId2);
+      // get reco tracks and corresponding gen particles
+      auto tr1 = fwdTracks.iteratorAt(item.second[0]);
+      auto trMc1 = McParts.iteratorAt(item.second[1]);
+      auto tr2 = fwdTracks.iteratorAt(item.second[2]);
+      auto trMc2 = McParts.iteratorAt(item.second[3]);
 
-      auto trMcId1 = item.second[1];
-      auto trMcId2 = item.second[4];
-      auto trMc1 = McParts.iteratorAt(trMcId1);
-      auto trMc2 = McParts.iteratorAt(trMcId2);
+      // check that the method used here gets the the MC particles
+      // as the one used by Nazar
+      auto nzTrMc1 = McParts.iteratorAt(tr1.udMcParticleId());
+      auto nzTrMc2 = McParts.iteratorAt(tr2.udMcParticleId());
 
-      auto mcCandID1 = mcCandidates.iteratorAt(item.second[2]);
-      auto mcCandID2 = mcCandidates.iteratorAt(item.second[5]);
+      if (nzTrMc1 != trMc1)
+        LOGF(debug, "diff wrt Nazar!");
+      if (nzTrMc2 != trMc2)
+        LOGF(debug, "diff wrt Nazar!");
 
-      if (mcCandID1 != mcCandID2) {
-        // LOGF(info, "mc tracks belong to different collisions");
-      }
-
-      // auto mcTr1 = McParts.iteratorAt(tr1.udMcParticleId());
-      // auto mcTr2 = McParts.iteratorAt(tr2.udMcParticleId());
       processMcRecoCand(cand, tr1, trMc1, tr2, trMc2);
     }
   }
-  PROCESS_SWITCH(fwdMuonsUPC, processMcReco, "", false);
+  PROCESS_SWITCH(FwdMuonsUPC, processMcReco, "", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<fwdMuonsUPC>(cfgc),
+    adaptAnalysisTask<FwdMuonsUPC>(cfgc),
   };
 }

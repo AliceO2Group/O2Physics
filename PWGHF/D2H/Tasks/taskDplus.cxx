@@ -28,22 +28,15 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
-
-enum OccupancyEstimator { None = 0,
-                          ITS,
-                          FT0C };
-
-enum BHadMothers { NotMatched = 0,
-                   BPlus,
-                   BZero,
-                   Bs,
-                   LambdaBZero };
+using namespace o2::hf_occupancy;
 
 /// D± analysis task
 struct HfTaskDplus {
@@ -455,10 +448,10 @@ struct HfTaskDplus {
         if (storeCentrality || storeOccupancy) {
           auto collision = candidate.template collision_as<CollisionsCent>();
           if (storeCentrality && centEstimator != CentralityEstimator::None) {
-            cent = getCentrality(collision);
+            cent = getCentralityColl(collision, centEstimator);
           }
           if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-            occ = getOccupancy(collision);
+            occ = getOccupancyColl(collision, occEstimator);
           }
         }
 
@@ -506,10 +499,10 @@ struct HfTaskDplus {
         if (storeCentrality || storeOccupancy) {
           auto collision = candidate.template collision_as<McRecoCollisionsCent>();
           if (storeCentrality && centEstimator != CentralityEstimator::None) {
-            cent = getCentrality(collision);
+            cent = getCentralityColl(collision, centEstimator);
           }
           if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-            occ = getOccupancy(collision);
+            occ = getOccupancyColl(collision, occEstimator);
           }
         }
 
@@ -526,10 +519,10 @@ struct HfTaskDplus {
         }
         auto collision = candidate.template collision_as<McRecoCollisionsCent>();
         if (storeCentrality && centEstimator != CentralityEstimator::None) {
-          cent = getCentrality(collision);
+          cent = getCentralityColl(collision, centEstimator);
         }
         if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-          occ = getOccupancy(collision);
+          occ = getOccupancyColl(collision, occEstimator);
         }
         fillHistoMCRec<false>(candidate);
         fillSparseML<true, false>(candidate, ptBhad, flagBHad, cent, occ);
@@ -556,10 +549,10 @@ struct HfTaskDplus {
       const auto recoCollsPerGenMcColl = mcRecoCollisions.sliceBy(recoColPerMcCollision, mcGenCollision.globalIndex());
       const auto mcParticlesPerGenMcColl = mcGenParticles.sliceBy(mcParticlesPerMcCollision, mcGenCollision.globalIndex());
       if (storeCentrality && centEstimator != CentralityEstimator::None) {
-        cent = getMcGenCollCentrality(recoCollsPerGenMcColl);
+        cent = getCentralityGenColl(recoCollsPerGenMcColl, centEstimator);
       }
       if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-        occ = getMcGenCollOccupancy(recoCollsPerGenMcColl);
+        occ = getOccupancyGenColl(recoCollsPerGenMcColl, occEstimator);
       }
 
       for (const auto& particle : mcParticlesPerGenMcColl) {
@@ -580,108 +573,6 @@ struct HfTaskDplus {
         }
       }
     }
-  }
-
-  /// Get the occupancy
-  /// \param collision is the collision with the occupancy information
-  /// \return collision occupancy
-  template <typename Coll>
-  float getOccupancy(Coll const& collision)
-  {
-    float occupancy = -999.;
-    switch (occEstimator) {
-      case OccupancyEstimator::ITS:
-        occupancy = collision.trackOccupancyInTimeRange();
-        break;
-      case OccupancyEstimator::FT0C:
-        occupancy = collision.ft0cOccupancyInTimeRange();
-        break;
-      default:
-        LOG(warning) << "Occupancy estimator not valid. Possible values are ITS or FT0C. Fallback to ITS";
-        occupancy = collision.trackOccupancyInTimeRange();
-        break;
-    }
-    return occupancy;
-  }
-
-  /// \brief Function to get MC collision occupancy
-  /// \param collSlice collection of reconstructed collisions associated to a generated one
-  /// \return generated MC collision occupancy
-  template <typename CCs>
-  int getMcGenCollOccupancy(CCs const& collSlice)
-  {
-    float multiplicity{0.f};
-    int occupancy = 0;
-    for (const auto& collision : collSlice) {
-      float collMult{0.f};
-      collMult = collision.numContrib();
-      if (collMult > multiplicity) {
-        occupancy = getOccupancy(collision);
-        multiplicity = collMult;
-      }
-    } // end loop over collisions
-
-    return occupancy;
-  }
-
-  /// Get the centrality
-  /// \param collision is the collision with the centrality information
-  /// \return collision centrality
-  template <typename Coll>
-  float getCentrality(Coll const& collision)
-  {
-    float cent = -999.;
-    switch (centEstimator) {
-      case CentralityEstimator::FT0C:
-        cent = collision.centFT0C();
-        break;
-      case CentralityEstimator::FT0M:
-        cent = collision.centFT0M();
-        break;
-      default:
-        LOG(warning) << "Centrality estimator not valid. Possible values are FT0C, FT0M. Fallback to FT0C";
-        cent = collision.centFT0C();
-        break;
-    }
-    return cent;
-  }
-
-  /// \brief Function to get MC collision centrality
-  /// \param collSlice collection of reconstructed collisions associated to a generated one
-  /// \return generated MC collision centrality
-  template <typename CCs>
-  float getMcGenCollCentrality(CCs const& collSlice)
-  {
-    float centrality{-1};
-    float multiplicity{0.f};
-    for (const auto& collision : collSlice) {
-      float collMult = collision.numContrib();
-      if (collMult > multiplicity) {
-        centrality = getCentrality(collision);
-        multiplicity = collMult;
-      }
-    }
-    return centrality;
-  }
-
-  /// Convert the B hadron mother PDG for non prompt candidates to a flag
-  /// \param pdg of the b hadron mother
-  /// \return integer map to specific mothers' PDG codes
-  int getBHadMotherFlag(const int& flagBHad)
-  {
-    if (std::abs(flagBHad) == o2::constants::physics::kBPlus) {
-      return BHadMothers::BPlus;
-    }
-    if (std::abs(flagBHad) == o2::constants::physics::kB0) {
-      return BHadMothers::BZero;
-    }
-    if (std::abs(flagBHad) == o2::constants::physics::kBS) {
-      return BHadMothers::Bs;
-    }
-    if (std::abs(flagBHad) == o2::constants::physics::kLambdaB0) {
-      return BHadMothers::LambdaBZero;
-    }
-    return BHadMothers::NotMatched;
   }
 
   // process functions
