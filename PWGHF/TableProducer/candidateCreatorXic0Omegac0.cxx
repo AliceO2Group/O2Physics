@@ -308,6 +308,7 @@ struct HfCandidateCreatorXic0Omegac0 {
     registry.add("hCosPAV0", "hCosPAV0", kTH1D, {{5000, 0.0f, 1.0f}});                                                // new
     registry.add("hDcaCascDau", "hDcaCascDau", kTH1D, {{1000, -0.1f, 100.0f}});                                       // new
     registry.add("hDcaV0Dau", "hDcaV0Dau", kTH1D, {{1000, -0.1f, 100.0f}});                                           // new
+    registry.add("hDcaXYToPvKa", "hDcaXYToPvKa", kTH1D, {{1000, -0.1f, 100.0f}});                                     // new
     registry.add("hImpactParBachFromCharmBaryonXY", "hImpactParBachFromCharmBaryonXY", kTH1D, {{1000, -5.0f, 5.0f}}); // new
     registry.add("hImpactParBachFromCharmBaryonZ", "hImpactParBachFromCharmBaryonZ", kTH1D, {{1000, -30.0f, 30.0f}}); // new
     registry.add("hImpactParCascXY", "hImpactParCascXY", kTH1D, {{1000, -5.0f, 5.0f}});                               // new
