@@ -329,6 +329,10 @@ void FemtoUniverseV0Selection::init(HistogramRegistry* registry)
                             kTH1F, {massAxisAntiLambda});
     mHistogramRegistry->add((folderName + "/hInvMassLambdaAntiLambda").c_str(),
                             "", kTH2F, {massAxisLambda, massAxisAntiLambda});
+    mHistogramRegistry->add((folderName + "/hInvMassAntiLambdavsPt").c_str(),
+                            "; ; #it{p}_{T} (GeV/#it{c})", kTH2F, {massAxisAntiLambda, {8, 0.0, 5.0}});
+    mHistogramRegistry->add((folderName + "/hInvMassLambdavsPt").c_str(),
+                            "; ; #it{p}_{T} (GeV/#it{c})", kTH2F, {massAxisLambda, {8, 0.0, 5.0}});
 
     posDaughTrack.init<aod::femtouniverseparticle::ParticleType::kV0Child,
                        aod::femtouniverseparticle::TrackType::kPosChild,
@@ -690,7 +694,15 @@ void FemtoUniverseV0Selection::fillQA(C const& /*col*/, V const& v0, T const& po
     mHistogramRegistry->fill(
       HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) +
         HIST("/hInvMassLambdaAntiLambda"),
-      v0.mLambda(), v0.mAntiLambda());
+      v0.mLambda(), v0.mAntiLambda());    
+      mHistogramRegistry->fill(
+      HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) +
+        HIST("/hInvMassAntiLambdavsPt"),
+      v0.mAntiLambda(), v0.pt());
+      mHistogramRegistry->fill(
+      HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) +
+        HIST("/hInvMassLambdavsPt"),
+      v0.mLambda(), v0.pt());
   }
 
   posDaughTrack.fillQA<aod::femtouniverseparticle::ParticleType::kV0Child,
