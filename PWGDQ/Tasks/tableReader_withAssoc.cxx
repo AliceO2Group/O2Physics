@@ -3,7 +3,7 @@
 // All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
-// License v3 (GPL Version 3), copied verbatim in the file "COPYING". 
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
 //
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
@@ -1845,7 +1845,7 @@ struct AnalysisSameEventPairing {
   }
 
   void processMuonOnlySkimmedMultExtra(MyEventsVtxCovSelectedMultExtra const& events,
-                              soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
+                                       soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
     runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithMultExtra, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons);
   }
