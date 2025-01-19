@@ -95,7 +95,7 @@ struct ThreeParticleCorrelations {
   TH1D** hEffPions = new TH1D*[2];
   TH1D** hEffKaons = new TH1D*[2];
   TH1D** hEffProtons = new TH1D*[2];
-  
+
   // Correlation variables
   int triggSign;
   double candMass;
@@ -305,7 +305,7 @@ struct ThreeParticleCorrelations {
 
   void processMixed(MyFilteredCollisions const&, MyFilteredV0s const&, MyFilteredTracks const&, aod::BCsWithTimestamps const&)
   {
-    
+
     // Start of the Mixed-events Correlations
     for (const auto& [coll_1, v0_1, coll_2, track_2] : pair) {
 
@@ -472,11 +472,10 @@ struct ThreeParticleCorrelations {
       }
       LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
     }
-    
+
     return 0.1 * (grpo->getNominalL3Field()); // 1 T = 10 kG
   }
 
-  
   double trackEff(TH1D** efficiencies, int sign, double pT)
   {
 
@@ -573,7 +572,7 @@ struct ThreeParticleCorrelations {
           return kFALSE;
         }
       } else if (track.pt() > 1.5 && track.pt() < 2.3) {
-        if (track.tofNSigmaPi() < -4.0 ||track.tofNSigmaPi() > 0.0) {
+        if (track.tofNSigmaPi() < -4.0 || track.tofNSigmaPi() > 0.0) {
           return kFALSE;
         }
       } else if (track.pt() > 2.3) {
@@ -691,7 +690,7 @@ struct ThreeParticleCorrelations {
       dProton = v0.template negTrack_as<MyFilteredTracks>();
       dPion = v0.template posTrack_as<MyFilteredTracks>();
     }
-    
+
     double dEtaProton = dProton.eta() - track.eta();
     double dEtaPion = dPion.eta() - track.eta();
     if (std::abs(dEtaProton) > 0.02 && std::abs(dEtaPion) > 0.02) {
@@ -701,41 +700,41 @@ struct ThreeParticleCorrelations {
     double phiStarProton, phiStarPion;
     double dPhiProton = dProton.phi() - track.phi();
     double dPhiPion = dPion.phi() - track.phi();
-    double phaseProton = (-0.3*B*dProton.sign()) / (2*dProton.pt());
-    double phasePion = (-0.3*B*dPion.sign()) / (2*dPion.pt());
-    double phaseTrack = (-0.3*B*track.sign()) / (2*track.pt());
+    double phaseProton = (-0.3 * B * dProton.sign()) / (2 * dProton.pt());
+    double phasePion = (-0.3 * B * dPion.sign()) / (2 * dPion.pt());
+    double phaseTrack = (-0.3 * B * track.sign()) / (2 * track.pt());
 
     for (double r = 0.8; r <= 2.5; r += 0.01) {
-      phiStarProton = RecoDecay::constrainAngle(dPhiProton + std::asin(phaseProton*r) - std::asin(phaseTrack*r), -constants::math::PIHalf);
-      phiStarPion = RecoDecay::constrainAngle(dPhiPion + std::asin(phasePion*r) - std::asin(phaseTrack*r), -constants::math::PIHalf);
-      
+      phiStarProton = RecoDecay::constrainAngle(dPhiProton + std::asin(phaseProton * r) - std::asin(phaseTrack * r), -constants::math::PIHalf);
+      phiStarPion = RecoDecay::constrainAngle(dPhiPion + std::asin(phasePion * r) - std::asin(phaseTrack * r), -constants::math::PIHalf);
+
       if (r == 0.8) {
-	if (!Mix) {
-	  rPhiStarRegistry.fill(HIST("hSEProtonPreCut"), phiStarProton, dEtaProton);
-	  rPhiStarRegistry.fill(HIST("hSEPionPreCut"), phiStarPion, dEtaPion);
-	} else {
-	  rPhiStarRegistry.fill(HIST("hMEProtonPreCut"), phiStarProton, dEtaProton);
-	  rPhiStarRegistry.fill(HIST("hMEPionPreCut"), phiStarPion, dEtaPion);
-	}
+        if (!Mix) {
+          rPhiStarRegistry.fill(HIST("hSEProtonPreCut"), phiStarProton, dEtaProton);
+          rPhiStarRegistry.fill(HIST("hSEPionPreCut"), phiStarPion, dEtaPion);
+        } else {
+          rPhiStarRegistry.fill(HIST("hMEProtonPreCut"), phiStarProton, dEtaProton);
+          rPhiStarRegistry.fill(HIST("hMEPionPreCut"), phiStarPion, dEtaPion);
+        }
       }
-      
+
       if ((std::abs(dEtaProton) <= 0.02 && std::abs(phiStarProton) <= 0.045) || (std::abs(dEtaPion) <= 0.02 && std::abs(phiStarPion) <= 0.045)) {
-	return kFALSE;
+        return kFALSE;
       }
-      
+
       if (r == 0.8) {
-	if (!Mix) {
-	  rPhiStarRegistry.fill(HIST("hSEProtonPostCut"), phiStarProton, dEtaProton);
-	  rPhiStarRegistry.fill(HIST("hSEPionPostCut"), phiStarPion, dEtaPion);
-	} else {
-	  rPhiStarRegistry.fill(HIST("hMEProtonPostCut"), phiStarProton, dEtaProton);
-	  rPhiStarRegistry.fill(HIST("hMEPionPostCut"), phiStarPion, dEtaPion);
-	}
+        if (!Mix) {
+          rPhiStarRegistry.fill(HIST("hSEProtonPostCut"), phiStarProton, dEtaProton);
+          rPhiStarRegistry.fill(HIST("hSEPionPostCut"), phiStarPion, dEtaPion);
+        } else {
+          rPhiStarRegistry.fill(HIST("hMEProtonPostCut"), phiStarProton, dEtaProton);
+          rPhiStarRegistry.fill(HIST("hMEPionPostCut"), phiStarPion, dEtaPion);
+        }
       }
     }
 
     return kTRUE;
-  }   
+  }
 };
 
 //==================================================================================================================================================================================================================
