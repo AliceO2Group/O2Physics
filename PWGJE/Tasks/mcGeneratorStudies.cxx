@@ -43,6 +43,12 @@ struct MCGeneratorStudies {
   Configurable<bool> mRequireGammaGammaDecay{"requireGammaGammaDecay", false, "Only count generated particles that decayed into two photons"};
   Configurable<bool> mRequireEMCCellContent{"requireEMCCellContent", false, "Ask forEMCal cell content instead of the kTVXinEMC trigger"};
 
+  Configurable<bool> mRequireTVX{"mRequireTVX", true, "require FT0AND in event cut"};
+  Configurable<bool> mRequireSel8{"mRequireSel8", true, "require sel8 in event cut"};
+  Configurable<bool> mRequireNoSameBunchPileup{"mRequireNoSameBunchPileup", true, "require no same bunch pileup in event cut"};
+  Configurable<bool> mRequireGoodZvtxFT0vsPV{"mRequireGoodZvtxFT0vsPV", true, "require good Zvtx between FT0 vs. PV in event cut"};
+  Configurable<bool> mRequireEMCReadoutInMB{"mRequireEMCReadoutInMB", true, "require the EMC to be read out in an MB collision (kTVXinEMC)"};
+
   void init(InitContext const&)
   {
     AxisSpec pTAxis{250, 0., 25., "#it{p}_{T} (GeV/#it{c})"};
@@ -121,7 +127,7 @@ struct MCGeneratorStudies {
       mHistManager.fill(HIST("NCollisionsMCCollisions"), collisionsInFoundBC.size(), MCCollisionsBC.size());
       mHistManager.fill(HIST("hBCCounter"), 1);
 
-      if (bc.selection_bit(aod::evsel::kIsTriggerTVX)) { // Count BCs with TVX trigger with and without a collision, as well as the generated particles within
+      if (!mRequireTVX || bc.selection_bit(aod::evsel::kIsTriggerTVX)) { // Count BCs with TVX trigger with and without a collision, as well as the generated particles within
 
         mHistManager.fill(HIST("NTVXCollisionsMCCollisions"), collisionsInFoundBC.size(), mcCollisions.size());
 
@@ -174,17 +180,17 @@ struct MCGeneratorStudies {
         mHistManager.fill(HIST("Yield"), mcParticle.pt());
         if (isAccepted(mcParticle, mcParticles))
           mHistManager.fill(HIST("Yield_Accepted"), mcParticle.pt());
-        if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        if (!mRequireTVX || collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
           mHistManager.fill(HIST("Yield_T"), mcParticle.pt());
           if (abs(collision.posZ()) < mVertexCut) {
             mHistManager.fill(HIST("Yield_TZ"), mcParticle.pt());
-            if (collision.sel8()) {
+            if (!mRequireSel8 || collision.sel8()) {
               mHistManager.fill(HIST("Yield_TZS"), mcParticle.pt());
-              if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+              if (!mRequireGoodZvtxFT0vsPV || collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
                 mHistManager.fill(HIST("Yield_TZSG"), mcParticle.pt());
-                if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+                if (!mRequireNoSameBunchPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
                   mHistManager.fill(HIST("Yield_TZSGU"), mcParticle.pt());
-                  if (mRequireEMCCellContent ? collision.isemcreadout() : collision.alias_bit(kTVXinEMC)) {
+                  if (!mRequireEMCReadoutInMB || (mRequireEMCCellContent ? collision.isemcreadout() : collision.alias_bit(kTVXinEMC))) {
                     mHistManager.fill(HIST("Yield_TZSGUE"), mcParticle.pt());
                     if (isAccepted(mcParticle, mcParticles))
                       mHistManager.fill(HIST("Yield_TZSGUE_Accepted"), mcParticle.pt());
@@ -260,17 +266,17 @@ struct MCGeneratorStudies {
     fRegistry->fill(HIST("hEMCollisionCounter"), 13.0);
 
     fRegistry->fill(HIST("hCollisionCounter"), 1);
-    if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+    if (!mRequireTVX || collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       fRegistry->fill(HIST("hCollisionCounter"), 2);
       if (abs(collision.posZ()) < mVertexCut) {
         fRegistry->fill(HIST("hCollisionCounter"), 3);
-        if (collision.sel8()) {
+        if (!mRequireSel8 || collision.sel8()) {
           fRegistry->fill(HIST("hCollisionCounter"), 4);
-          if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+          if (!mRequireGoodZvtxFT0vsPV || collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
             fRegistry->fill(HIST("hCollisionCounter"), 5);
-            if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+            if (!mRequireNoSameBunchPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
               fRegistry->fill(HIST("hCollisionCounter"), 6);
-              if (mRequireEMCCellContent ? collision.isemcreadout() : collision.alias_bit(kTVXinEMC))
+              if (!mRequireEMCReadoutInMB || (mRequireEMCCellContent ? collision.isemcreadout() : collision.alias_bit(kTVXinEMC)))
                 fRegistry->fill(HIST("hCollisionCounter"), 7);
             }
           }
