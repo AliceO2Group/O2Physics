@@ -14,6 +14,10 @@
 /// \author Biao Zhang <biao.zhang@cern.ch>, Heidelberg University
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+#include <set>
+#include <vector>
+#include <algorithm>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
