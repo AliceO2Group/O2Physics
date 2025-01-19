@@ -680,8 +680,9 @@ struct RecoDecay {
   /// \param depthMax  maximum decay tree level to check; Daughters up to this level will be considered. If -1, all levels are considered.
   /// \param nPiToMu  number of pion prongs decayed to a muon
   /// \param nKaToPi  number of kaon prongs decayed to a pion
+  /// \param nInteractionsWithMaterial  number of daughter particles that interacted with material
   /// \return index of the mother particle if the mother and daughters are correct, -1 otherwise
-  template <bool acceptFlavourOscillation = false, bool checkProcess = false, bool acceptIncompleteReco = false, bool acceptTrackDecay = false, std::size_t N, typename T, typename U>
+  template <bool acceptFlavourOscillation = false, bool checkProcess = false, bool acceptIncompleteReco = false, bool acceptTrackDecay = false, bool acceptTrackIntWithMaterial = false, std::size_t N, typename T, typename U>
   static int getMatchedMCRec(const T& particlesMC,
                              const std::array<U, N>& arrDaughters,
                              int PDGMother,
@@ -690,7 +691,8 @@ struct RecoDecay {
                              int8_t* sign = nullptr,
                              int depthMax = 1,
                              int8_t* nPiToMu = nullptr,
-                             int8_t* nKaToPi = nullptr)
+                             int8_t* nKaToPi = nullptr,
+                             int8_t* nInteractionsWithMaterial = nullptr)
   {
     // Printf("MC Rec: Expected mother PDG: %d", PDGMother);
     int8_t coefFlavourOscillation = 1;     // 1 if no B0(s) flavour oscillation occured, -1 else
@@ -735,6 +737,25 @@ struct RecoDecay {
           // K → π
           nKaToPiLocal++;
           particleI = motherI;
+        }
+      }
+      if constexpr (acceptTrackIntWithMaterial) {
+        // Replace the MC particle associated with the prong by its mother for part → part due to material interactions.
+        // It keeps looking at the mother iteratively, until it finds a particle from decay or primary
+        auto process = particleI.getProcess();
+        auto pdgI = std::abs(particleI.pdgCode());
+        auto pdgMotherI = std::abs(particleI.pdgCode());
+        while (process != kPDecay && process != kPPrimary && pdgI == pdgMotherI) {
+          auto motherI = particleI.template mothers_first_as<T>();
+          pdgI = std::abs(particleI.pdgCode());
+          pdgMotherI = std::abs(motherI.pdgCode());
+          if (pdgI == pdgMotherI) {
+            particleI = motherI;
+            process = particleI.getProcess();
+            if (process == kPDecay || kPPrimary) { // we found the original daughter that interacted with material
+              nInteractionsWithMaterial++;
+            }
+          }
         }
       }
       arrDaughtersIndex[iProng] = particleI.globalIndex();
