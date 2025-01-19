@@ -928,7 +928,7 @@ struct TableMaker {
       bool zorroSel = zorro.isSelected(bc.globalBC(), useZorro.fBcTolerance, reinterpret_cast<TH2D*>(fStatsList->At(4)));
       if (zorroSel) {
         tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
-dq-mult-corr-flow      }
+      }
       if (useZorro.fConfigRunZorroSel && (!zorroSel || !fEventCut->IsSelected(VarManager::fgValues))) {
         return;
       }
