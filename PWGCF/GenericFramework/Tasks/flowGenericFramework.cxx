@@ -45,6 +45,7 @@
 #include <TProfile.h>
 #include <TRandom3.h>
 #include <TF1.h>
+#include <TPDGCode.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -743,11 +744,11 @@ struct GenericFramework {
 
       int pidIndex = 0;
       if (cfgUsePID) {
-        if (mcParticle.pdgCode() == 211)
+        if (std::abs(mcParticle.pdgCode()) == kPiPlus)
           pidIndex = 1;
-        if (mcParticle.pdgCode() == 321)
+        if (std::abs(mcParticle.pdgCode()) == kKPlus)
           pidIndex = 2;
-        if (mcParticle.pdgCode() == 2212)
+        if (std::abs(mcParticle.pdgCode()) == kProton)
           pidIndex = 3;
       }
 
@@ -772,11 +773,11 @@ struct GenericFramework {
 
       int pidIndex = 0;
       if (cfgUsePID) {
-        if (track.pdgCode() == 211)
+        if (std::abs(track.pdgCode()) == kPiPlus)
           pidIndex = 1;
-        if (track.pdgCode() == 321)
+        if (std::abs(track.pdgCode()) == kKPlus)
           pidIndex = 2;
-        if (track.pdgCode() == 2212)
+        if (std::abs(track.pdgCode()) == kProton)
           pidIndex = 3;
       }
 
