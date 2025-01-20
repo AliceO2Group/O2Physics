@@ -1157,6 +1157,42 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
+  // correlated background
+  if (!nameStr.compare("eePionFromBplus")) {
+    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPion(2, {211, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Pion and electron pair from B+", {pronge, pronge, prongPion}, {2, 2, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeKaonFromBplusViaEverything")) {
+    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(3, {321, 0, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Kaon and electron pair from B+ via everything", {pronge, pronge, prongKaon}, {2, 2, 2});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeKaonFromBplusViaKstar")) { // specific K exited state decays
+    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(3, {321, 323, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Kaon and electron pair from B+ via Kstar", {pronge, pronge, prongKaon}, {2, 2, 2});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeKaonFromBplusViaK1270")) { // specific K exited state decays
+    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(3, {321, 10323, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Kaon and electron pair from B+ via K1270", {pronge, pronge, prongKaon}, {2, 2, 2});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeKaonFromBplusViaK1400")) { // specific K exited state decays
+    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(3, {321, 20323, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Kaon and electron pair from B+ via K1400", {pronge, pronge, prongKaon}, {2, 2, 2});
+    return signal;
+  }
+
   if (!nameStr.compare("Bplus")) {
     MCProng prong(1, {521}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "B+", {prong}, {-1});

@@ -15,8 +15,9 @@
 /// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
+#include <vector>
 #include "TMath.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamCollisionSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
@@ -28,6 +29,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "ReconstructionDataFormats/Track.h"
@@ -266,7 +268,7 @@ struct femtoDreamProducerReducedTask {
       trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild>(track);
       // an array of two bit-wise containers of the systematic variations is obtained
       // one container for the track quality cuts and one for the PID cuts
-      auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
+      auto cutContainer = trackCuts.getCutContainer<true, aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
 
       // now the table is filled
       outputParts(outputCollision.lastIndex(),
@@ -307,6 +309,14 @@ struct femtoDreamProducerReducedTask {
                          track.tofNSigmaDe(),
                          track.tofNSigmaTr(),
                          track.tofNSigmaHe(),
+                         -1,
+                         track.itsNSigmaEl(),
+                         track.itsNSigmaPi(),
+                         track.itsNSigmaKa(),
+                         track.itsNSigmaPr(),
+                         track.itsNSigmaDe(),
+                         track.itsNSigmaTr(),
+                         track.itsNSigmaHe(),
                          -999., -999., -999., -999., -999., -999.);
       }
     }
@@ -317,8 +327,11 @@ struct femtoDreamProducerReducedTask {
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+
+    auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
+                                        aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
     // fill the tables
-    fillCollisionsAndTracks<false, true>(col, tracks);
+    fillCollisionsAndTracks<false, true>(col, tracksWithItsPid);
   }
   PROCESS_SWITCH(femtoDreamProducerReducedTask, processData, "Provide experimental data", true);
 
@@ -329,8 +342,10 @@ struct femtoDreamProducerReducedTask {
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    auto tracksWithItsPid = soa::Attach<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
+                                        aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
     // fill the tables
-    fillCollisionsAndTracks<true, true>(col, tracks);
+    fillCollisionsAndTracks<true, true>(col, tracksWithItsPid);
   }
   PROCESS_SWITCH(femtoDreamProducerReducedTask, processMC, "Provide MC data", false);
 
@@ -341,8 +356,10 @@ struct femtoDreamProducerReducedTask {
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    auto tracksWithItsPid = soa::Attach<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
+                                        aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
     // fill the tables
-    fillCollisionsAndTracks<true, false>(col, tracks);
+    fillCollisionsAndTracks<true, false>(col, tracksWithItsPid);
   }
   PROCESS_SWITCH(femtoDreamProducerReducedTask, processMC_noCentrality, "Provide MC data", false);
 };

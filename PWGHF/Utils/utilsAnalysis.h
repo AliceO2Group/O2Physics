@@ -21,6 +21,33 @@
 
 namespace o2::analysis
 {
+
+enum BHadMothers { NotMatched = 0,
+                   BPlus,
+                   BZero,
+                   Bs,
+                   LambdaBZero };
+
+/// Convert the B hadron mother PDG for non prompt candidates to a flag
+/// \param pdg of the b hadron mother
+/// \return integer map to specific mothers' PDG codes
+BHadMothers getBHadMotherFlag(const int flagBHad)
+{
+  if (std::abs(flagBHad) == o2::constants::physics::kBPlus) {
+    return BHadMothers::BPlus;
+  }
+  if (std::abs(flagBHad) == o2::constants::physics::kB0) {
+    return BHadMothers::BZero;
+  }
+  if (std::abs(flagBHad) == o2::constants::physics::kBS) {
+    return BHadMothers::Bs;
+  }
+  if (std::abs(flagBHad) == o2::constants::physics::kLambdaB0) {
+    return BHadMothers::LambdaBZero;
+  }
+  return BHadMothers::NotMatched;
+}
+
 /// Finds pT bin in an array.
 /// \param bins  array of pT bins
 /// \param value  pT

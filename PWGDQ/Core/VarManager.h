@@ -189,7 +189,10 @@ class VarManager : public TObject
     kIsGoodZvtxFT0vsPV,          // No collisions w/ difference between z_ {PV, tracks} and z_{PV FT0A-C}
     kIsVertexITSTPC,             // At least one ITS-TPC track
     kIsVertexTOFmatched,         // At least one TOF-matched track
-    kIsSel8,                     // TVX in Run3
+    kIsSel8,                     // TVX in Run3 && No time frame border && No ITS read out frame border (from event selection)
+    kIsGoodITSLayer3,            // number of inactive chips on ITS layer 3 is below maximum allowed value
+    kIsGoodITSLayer0123,         // numbers of inactive chips on ITS layers 0-3 are below maximum allowed values
+    kIsGoodITSLayersAll,         // numbers of inactive chips on all ITS layers are below maximum allowed values
     kIsINT7,
     kIsEMC7,
     kIsINT7inMUON,
@@ -441,6 +444,8 @@ class VarManager : public TObject
     kEta1,
     kPhi1,
     kCharge1,
+    kPin_leg1,
+    kTPCnSigmaKa_leg1,
     kPt2,
     kEta2,
     kPhi2,
@@ -1416,6 +1421,15 @@ void VarManager::FillEvent(T const& event, float* values)
     if (fgUsedVars[kIsSel8]) {
       values[kIsSel8] = event.selection_bit(o2::aod::evsel::kIsTriggerTVX) && event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
     }
+    if (fgUsedVars[kIsGoodITSLayer3]) {
+      values[kIsGoodITSLayer3] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayer3);
+    }
+    if (fgUsedVars[kIsGoodITSLayer0123]) {
+      values[kIsGoodITSLayer0123] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123);
+    }
+    if (fgUsedVars[kIsGoodITSLayersAll]) {
+      values[kIsGoodITSLayersAll] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
+    }
     if (fgUsedVars[kIsINT7]) {
       values[kIsINT7] = (event.alias_bit(kINT7) > 0);
     }
@@ -1569,6 +1583,15 @@ void VarManager::FillEvent(T const& event, float* values)
     }
     if (fgUsedVars[kIsSel8]) {
       values[kIsSel8] = event.selection_bit(o2::aod::evsel::kIsTriggerTVX) && event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
+    }
+    if (fgUsedVars[kIsGoodITSLayer3]) {
+      values[kIsGoodITSLayer3] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayer3);
+    }
+    if (fgUsedVars[kIsGoodITSLayer0123]) {
+      values[kIsGoodITSLayer0123] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123);
+    }
+    if (fgUsedVars[kIsGoodITSLayersAll]) {
+      values[kIsGoodITSLayersAll] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
     }
     if (fgUsedVars[kIsINT7]) {
       values[kIsINT7] = (event.alias_bit(kINT7) > 0);
@@ -2577,6 +2600,9 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   if constexpr (pairType == kDecayToKPi) {
     m1 = o2::constants::physics::MassKaonCharged;
     m2 = o2::constants::physics::MassPionCharged;
+    // Make the TPC information of the kaon available for pair histograms
+    values[kPin_leg1] = t1.tpcInnerParam();
+    values[kTPCnSigmaKa_leg1] = t1.tpcNSigmaKa();
   }
 
   if constexpr (pairType == kElectronMuon) {
