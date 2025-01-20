@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file flowPbpbReso.cxx
+/// \file resonancesGfwFlow.cxx
 /// \brief PID flow for resonances using the generic framework
 /// \author Preet Bhanjan Pati <preet.bhanjan.pati@cern.ch>
 
@@ -55,7 +55,7 @@ using namespace std;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct FlowPbpbReso {
+struct ResonancesGfwFlow {
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> noLaterThan{"noLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
@@ -337,5 +337,5 @@ struct FlowPbpbReso {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<FlowPbpbReso>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<ResonancesGfwFlow>(cfgc)};
 }
