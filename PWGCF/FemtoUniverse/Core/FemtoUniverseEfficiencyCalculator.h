@@ -97,7 +97,7 @@ class EfficiencyCalculator
       shouldUploadOnStop = true;
 
       auto& callbacks = ic.services().get<CallbackService>();
-      callbacks.set<o2::framework::CallbackService::Id::Stop>([this]() {
+      callbacks.set<o2::framework::CallbackService::Id::EndOfStream>([this](EndOfStreamContext&) {
         for (auto i = 0UL; i < hOutput.size(); i++) {
           const auto& output = hOutput[i];
 
