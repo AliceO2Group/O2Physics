@@ -149,12 +149,20 @@ struct TOFCalibConfig {
             paramCollection.print();
             LOG(fatal) << "Cannot get default pass for calibration " << mReconstructionPassDefault;
           } else {
-            mRespParamsV3.setResolutionParametrization(paramCollection.getPars(mReconstructionPassDefault));
+            if (metadataInfo.isRun3()) {
+              mRespParamsV3.setResolutionParametrization(paramCollection.getPars(mReconstructionPassDefault));
+            } else {
+              mRespParamsV3.setResolutionParametrizationRun2(paramCollection.getPars(mReconstructionPassDefault));
+            }
             mRespParamsV3.setMomentumChargeShiftParameters(paramCollection.getPars(mReconstructionPassDefault));
           }
         }
       } else { // Pass is available, load non standard parameters
-        mRespParamsV3.setResolutionParametrization(paramCollection.getPars(mReconstructionPass));
+        if (metadataInfo.isRun3()) {
+          mRespParamsV3.setResolutionParametrization(paramCollection.getPars(mReconstructionPass));
+        } else {
+          mRespParamsV3.setResolutionParametrizationRun2(paramCollection.getPars(mReconstructionPass));
+        }
         mRespParamsV3.setMomentumChargeShiftParameters(paramCollection.getPars(mReconstructionPass));
       }
     } else if (!mEnableTimeDependentResponse) { // Loading it from CCDB
@@ -169,12 +177,20 @@ struct TOFCalibConfig {
             paramCollection->print();
             LOG(fatal) << "Cannot get default pass for calibration " << mReconstructionPassDefault;
           } else {
-            mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPassDefault));
+            if (metadataInfo.isRun3()) {
+              mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPassDefault));
+            } else {
+              mRespParamsV3.setResolutionParametrizationRun2(paramCollection->getPars(mReconstructionPassDefault));
+            }
             mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(mReconstructionPassDefault));
           }
         }
       } else { // Pass is available, load non standard parameters
-        mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPass));
+        if (metadataInfo.isRun3()) {
+          mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPass));
+        } else {
+          mRespParamsV3.setResolutionParametrizationRun2(paramCollection->getPars(mReconstructionPass));
+        }
         mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(mReconstructionPass));
       }
     }
@@ -252,12 +268,20 @@ struct TOFCalibConfig {
             paramCollection->print();
             LOG(fatal) << "Cannot get default pass for calibration " << mReconstructionPassDefault;
           } else { // Found the default case
-            mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPassDefault));
+            if (metadataInfo.isRun3()) {
+              mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPassDefault));
+            } else {
+              mRespParamsV3.setResolutionParametrizationRun2(paramCollection->getPars(mReconstructionPassDefault));
+            }
             mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(mReconstructionPassDefault));
           }
         }
       } else { // Found the non default case
-        mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPass));
+        if (metadataInfo.isRun3()) {
+          mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPass));
+        } else {
+          mRespParamsV3.setResolutionParametrizationRun2(paramCollection->getPars(mReconstructionPass));
+        }
         mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(mReconstructionPass));
       }
     }
@@ -419,7 +443,7 @@ struct tofSignal {
     if (enableTablepidTOFFlags) {
       tableFlags.reserve(tracks.size());
     }
-    for (auto& trk : tracks) {
+    for (const auto& trk : tracks) {
       const float& sig = o2::pid::tof::TOFSignal<Run3Trks::iterator>::GetTOFSignal(trk);
       if (enableQaHistograms) {
         histos.fill(HIST("tofSignal"), sig);
@@ -446,7 +470,7 @@ struct tofSignal {
     if (enableTablepidTOFFlags) {
       tableFlags.reserve(tracks.size());
     }
-    for (auto& trk : tracks) {
+    for (const auto& trk : tracks) {
       table(o2::pid::tof::TOFSignal<Run2Trks::iterator>::GetTOFSignal(trk));
       if (!enableTablepidTOFFlags) {
         continue;
@@ -611,7 +635,7 @@ struct tofEventTime {
   Preslice<Run3TrksWtof> perCollision = aod::track::collisionId;
   template <o2::track::PID::ID pid>
   using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<Run3TrksWtof::iterator, pid>;
-  void processRun3(Run3TrksWtof& tracks,
+  void processRun3(Run3TrksWtof const& tracks,
                    aod::FT0s const&,
                    EvTimeCollisionsFT0 const&,
                    aod::BCsWithTimestamps const& bcs)
@@ -718,7 +742,7 @@ struct tofEventTime {
           } else {
             tableFlags(flags);
           }
-          tableEvTime(eventTime / sumOfWeights, sqrt(1. / sumOfWeights));
+          tableEvTime(eventTime / sumOfWeights, std::sqrt(1. / sumOfWeights));
           if (enableTableEvTimeTOFOnly) {
             tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), t0TOF[0], t0TOF[1], evTimeMakerTOF.mEventTimeMultiplicity);
           }
