@@ -224,6 +224,24 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
     printMomentumChargeShiftParameters();
   }
 
+  // Time shift for post calibration
+  void setTimeShiftParameters(std::unordered_map<std::string, float> const& pars, bool positive)
+  {
+    std::string baseOpt = positive ? "TimeShift.Pos." : "TimeShift.Neg.";
+
+    if (pars.count(baseOpt + "GetN") == 0) { // If the map does not contain the number of eta bins, we assume that no correction has to be applied
+      return;
+    }
+    const int nPoints = static_cast<int>(pars.at(baseOpt + "GetN"));
+    if (nPoints <= 0) {
+      LOG(fatal) << "TOFResoParamsV2 shift: time must be positive";
+    }
+    TGraph graph;
+    for (int i = 0; i < nPoints; ++i) {
+      graph.AddPoint(pars.at(Form("TimeShift.eta%i", i)), pars.at(Form("TimeShift.cor%i", i)));
+    }
+    setTimeShiftParameters(&graph, positive);
+  }
   void setTimeShiftParameters(std::string const& filename, std::string const& objname, bool positive)
   {
     TFile f(filename.c_str(), "READ");
@@ -404,8 +422,7 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
 
   void setResolutionParametrization(std::unordered_map<std::string, float> const& pars)
   {
-    static constexpr std::array<const char*, 9> particleNames = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
-    for (int i = 0; i < 9; ++i) {
+    for (int i = 0; i < 9; i++) {
       const std::string baseOpt = Form("tofResTrack.%s_", particleNames[i]);
       // Check if a key begins with a string
       for (const auto& [key, value] : pars) {
@@ -422,12 +439,29 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
       }
     }
     // Print a summary
-    for (int i = 0; i < 9; ++i) {
+    for (int i = 0; i < 9; i++) {
       if (!mResolution[i]) {
         LOG(info) << "Resolution function for " << particleNames[i] << " not provided, using default " << mDefaultResoParams[i];
         mResolution[i] = new TF2(Form("tofResTrack.%s_Default", particleNames[i]), mDefaultResoParams[i], 0., 20, -1, 1.);
       }
       LOG(info) << "Resolution function for " << particleNames[i] << " is " << mResolution[i]->GetName() << " with formula " << mResolution[i]->GetFormula()->GetExpFormula();
+    }
+  }
+
+  void setResolutionParametrizationRun2(std::unordered_map<std::string, float> const& pars)
+  {
+    std::array<std::string, 13> paramNames{"TrkRes.Pi.P0", "TrkRes.Pi.P1", "TrkRes.Pi.P2", "TrkRes.Pi.P3", "time_resolution",
+                                           "TrkRes.Ka.P0", "TrkRes.Ka.P1", "TrkRes.Ka.P2", "TrkRes.Ka.P3",
+                                           "TrkRes.Pr.P0", "TrkRes.Pr.P1", "TrkRes.Pr.P2", "TrkRes.Pr.P3"};
+    // Now we override the parametrization to use the Run 2 one
+    for (int i = 0; i < 9; i++) {
+      if (mResolution[i]) {
+        delete mResolution[i];
+      }
+      mResolution[i] = new TF2(Form("tofResTrack.%s_Run2", particleNames[i]), "-10", 0., 20, -1, 1.); // With negative values the old one is used
+    }
+    for (int i = 0; i < 13; i++) {
+      setParameter(i, pars.at(paramNames[i]));
     }
   }
 
@@ -437,11 +471,34 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
     return mResolution[pid]->Eval(p, eta);
   }
 
+  void Save(const char* filename) const
+  {
+    TFile f(filename, "RECREATE");
+    for (auto* h : mResolution) {
+      h->Write();
+    }
+    if (gPosEtaTimeCorr) {
+      // gPosEtaTimeCorr->SetName("gPosEtaTimeCorr");
+      // gPosEtaTimeCorr->Write();
+    } else {
+      TNamed("NOgPosEtaTimeCorr", "not available").Write("NOgPosEtaTimeCorr");
+    }
+    if (gNegEtaTimeCorr) {
+      // gNegEtaTimeCorr->SetName("gNegEtaTimeCorr");
+      // gNegEtaTimeCorr->Write("gNegEtaTimeCorr");
+    } else {
+      TNamed("NOgNegEtaTimeCorr", "not available").Write("NOgNegEtaTimeCorr");
+    }
+    TNamed(Form("mEtaN=%i", mEtaN), "value").Write();
+    TNamed(Form("mEtaStart=%f", mEtaStart), "value").Write();
+    TNamed(Form("mEtaStop=%f", mEtaStop), "value").Write();
+    TNamed(Form("mInvEtaWidth=%f", mInvEtaWidth), "value").Write();
+  }
+
   void printResolution() const
   {
-    static constexpr std::array<const char*, 9> particleNames = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
     // Print a summary
-    for (int i = 0; i < 9; ++i) {
+    for (int i = 0; i < 9; i++) {
       if (!mResolution[i]) {
         LOG(info) << "Resolution function for " << particleNames[i] << " is not defined yet";
         continue;
@@ -474,6 +531,7 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
                                                                  "315*TMath::Power((TMath::Max(x-0.811,0.1))*(1-0.4235*y*y),-0.783)",
                                                                  "157*TMath::Power((TMath::Max(x-0.556,0.1))*(1-0.4235*y*y),-0.783)",
                                                                  "216*TMath::Power((TMath::Max(x-0.647,0.1))*(1-0.4235*y*y),-0.76)"};
+  static constexpr std::array<const char*, 9> particleNames = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
 
   // Time shift for post calibration
   TGraph* gPosEtaTimeCorr = nullptr; /// Time shift correction for positive tracks
