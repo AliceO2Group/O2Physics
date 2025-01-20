@@ -95,3 +95,21 @@ void EMEventCut::SetRequireNoHighMultCollInPrevRof(bool flag)
   mRequireNoHighMultCollInPrevRof = flag;
   LOG(info) << "EM Event Cut, require No HM collision in previous ITS ROF: " << mRequireNoHighMultCollInPrevRof;
 }
+
+void EMEventCut::SetRequireGoodITSLayer3(bool flag)
+{
+  mRequireGoodITSLayer3 = flag;
+  LOG(info) << "EM Event Cut, require GoodITSLayer3: " << mRequireGoodITSLayer3;
+}
+
+void EMEventCut::SetRequireGoodITSLayer0123(bool flag)
+{
+  mRequireGoodITSLayer0123 = flag;
+  LOG(info) << "EM Event Cut, require GoodITSLayer0123: " << mRequireGoodITSLayer0123;
+}
+
+void EMEventCut::SetRequireGoodITSLayersAll(bool flag)
+{
+  mRequireGoodITSLayersAll = flag;
+  LOG(info) << "EM Event Cut, require GoodITSLayersAll: " << mRequireGoodITSLayersAll;
+}

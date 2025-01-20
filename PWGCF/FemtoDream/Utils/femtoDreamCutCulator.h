@@ -338,22 +338,40 @@ class FemtoDreamCutculator
     std::sort(mPIDValues.begin(), mPIDValues.end(), std::greater<>());
     int Bit = 0;
 
+    std::cout << "Activate ITS PID (only valid for tracks)? (y/n)";
+    std::string choicePID;
+    std::cin >> choicePID;
+
     std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
-    for (std::size_t i = 0; i < mPIDspecies.size(); i++) {
-      for (std::size_t j = 0; j < mPIDValues.size(); j++) {
-        std::cout << "Species " << o2::track::PID::getName(mPIDspecies.at(i)) << " with |NSigma|<" << mPIDValues.at(j) << std::endl;
-        Bit = (2 * mPIDspecies.size() * (mPIDValues.size() - (j + 1)) + 1) + (mPIDspecies.size() - (1 + i)) * 2;
-        std::cout << "Bit for Nsigma TPC: " << (1 << (Bit + 1)) << std::endl;
-        std::cout << "Bit for Nsigma TPCTOF: " << (1 << Bit) << std::endl;
-        std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
+    if (choicePID == std::string("n")) {
+      for (std::size_t i = 0; i < mPIDspecies.size(); i++) {
+        for (std::size_t j = 0; j < mPIDValues.size(); j++) {
+          std::cout << "Species " << o2::track::PID::getName(mPIDspecies.at(i)) << " with |NSigma|<" << mPIDValues.at(j) << std::endl;
+          Bit = (2 * mPIDspecies.size() * (mPIDValues.size() - (j + 1)) + 1) + (mPIDspecies.size() - (1 + i)) * 2;
+          std::cout << "Bit for Nsigma TPC: " << (1 << (Bit + 1)) << std::endl;
+          std::cout << "Bit for Nsigma TPCTOF: " << (1 << Bit) << std::endl;
+          std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
+        }
+        if (SysChecks) {
+          // Seed the random number generator
+          // Select a random element
+          randomIndex = uni(rng);
+          std::cout << "Nsigma TPC: " << mPIDValues[randomIndex] << std::endl;
+          randomIndex = uni(rng);
+          std::cout << "Nsigma TPCTOF: " << mPIDValues[randomIndex] << std::endl;
+        }
       }
-      if (SysChecks) {
-        // Seed the random number generator
-        // Select a random element
-        randomIndex = uni(rng);
-        std::cout << "Nsigma TPC: " << mPIDValues[randomIndex] << std::endl;
-        randomIndex = uni(rng);
-        std::cout << "Nsigma TPCTOF: " << mPIDValues[randomIndex] << std::endl;
+    } else {
+      for (std::size_t i = 0; i < mPIDspecies.size(); i++) {
+        for (std::size_t j = 0; j < mPIDValues.size(); j++) {
+          std::cout << "Species " << o2::track::PID::getName(mPIDspecies.at(i)) << " with |NSigma|<" << mPIDValues.at(j) << std::endl;
+          // Bit = (2 * mPIDspecies.size() * (mPIDValues.size() - (j + 1)) + 1) + (mPIDspecies.size() - (1 + i)) * 2;
+          Bit = (3 * mPIDspecies.size() * (mPIDValues.size() - (j + 1)) + 1) + (mPIDspecies.size() - (1 + i)) * 3;
+          std::cout << "Bit for Nsigma TPC: " << (1 << (Bit + 2)) << std::endl;
+          std::cout << "Bit for Nsigma TPCTOF: " << (1 << (Bit + 1)) << std::endl;
+          std::cout << "Bit for Nsigma ITS: " << (1 << Bit) << std::endl;
+          std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
+        }
       }
     }
   }

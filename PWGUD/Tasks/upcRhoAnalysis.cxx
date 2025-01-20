@@ -61,10 +61,10 @@ DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);
 DECLARE_SOA_COLUMN(TimeFDDA, timeFDDA, float);
 DECLARE_SOA_COLUMN(TimeFDDC, timeFDDC, float);
 // ZDC info
-// DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
-// DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
-// DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
-// DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
+DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
+DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
+DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
+DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
 DECLARE_SOA_COLUMN(NeutronClass, neutronClass, int);
 // Rhos
 DECLARE_SOA_COLUMN(TotalCharge, totalCharge, int);
@@ -94,7 +94,7 @@ DECLARE_SOA_TABLE(Tree, "AOD", "TREE",
                   tree::RunNumber, tree::GlobalBC, tree::NumContrib,
                   tree::PosX, tree::PosY, tree::PosZ, tree::TotalFT0AmplitudeA, tree::TotalFT0AmplitudeC, tree::TotalFV0AmplitudeA, tree::TotalFDDAmplitudeA, tree::TotalFDDAmplitudeC,
                   tree::TimeFT0A, tree::TimeFT0C, tree::TimeFV0A, tree::TimeFDDA, tree::TimeFDDC,
-                  /* tree::EnergyCommonZNA, tree::EnergyCommonZNC, tree::TimeZNA, tree::TimeZNC, */ tree::NeutronClass,
+                  tree::EnergyCommonZNA, tree::EnergyCommonZNC, tree::TimeZNA, tree::TimeZNC, tree::NeutronClass,
                   tree::TotalCharge, tree::RhoPt, tree::RhoEta, tree::RhoPhi, tree::RhoM, tree::RhoPhiRandom, tree::RhoPhiCharge,
                   tree::TrackSign, tree::TrackPt, tree::TrackEta, tree::TrackPhi, tree::TrackM, tree::TrackPiPID, tree::TrackElPID, tree::TrackDcaXY, tree::TrackDcaZ, tree::TrackTpcSignal);
 } // namespace o2::aod
@@ -133,7 +133,8 @@ struct upcRhoAnalysis {
   ConfigurableAxis pt2Axis{"pt2Axis", {100, 0.0, 0.01}, "p_{T}^{2} (GeV^{2}/#it{c}^{2})"};
   ConfigurableAxis etaAxis{"etaAxis", {800, -4.0, 4.0}, "#eta"};
   ConfigurableAxis etaCutAxis{"etaCutAxis", {180, -0.9, 0.9}, "#eta"};
-  ConfigurableAxis yAxis{"yAxis", {180, -0.9, 0.9}, "y"};
+  ConfigurableAxis yAxis{"yAxis", {400, -4.0, 4.0}, "y"};
+  ConfigurableAxis yCutAxis{"yCutAxis", {180, -0.9, 0.9}, "y"};
   ConfigurableAxis phiAxis{"phiAxis", {180, 0.0, o2::constants::math::TwoPI}, "#phi"};
   ConfigurableAxis phiAsymmAxis{"phiAsymmAxis", {182, -o2::constants::math::PI, o2::constants::math::PI}, "#phi"};
   ConfigurableAxis momentumFromPhiAxis{"momentumFromPhiAxis", {400, -0.1, 0.1}, "p (GeV/#it{c})"};
@@ -448,6 +449,7 @@ struct upcRhoAnalysis {
     MC.add("MC/collisions/hPosXY", ";x (cm);y (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
     MC.add("MC/collisions/hPosZ", ";z (cm);counts", kTH1D, {{400, -20.0, 20.0}});
     MC.add("MC/collisions/hNPions", ";number of pions;counts", kTH1D, {{11, -0.5, 10.5}});
+    MC.add("MC/collisions/hNumOfCollisionRecos", ";number of collision reconstructions;counts", kTH1D, {{11, -0.5, 10.5}});
 
     MC.add("MC/tracks/all/hPdgCode", ";pdg code;counts", kTH1D, {{2001, -1000.5, 1000.5}});
     MC.add("MC/tracks/all/hProducedByGenerator", ";produced by generator;counts", kTH1D, {{2, -0.5, 1.5}});
@@ -772,7 +774,7 @@ struct upcRhoAnalysis {
          collision.posX(), collision.posY(), collision.posZ(),
          collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
          collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
-         /* collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC(), */ neutronClass,
+         collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC(), neutronClass,
          totalCharge, pT, system.Eta(), system.Phi(), mass, phiRandom, phiCharge,
          trackSigns, trackPts, trackEtas, trackPhis, trackMs, trackPiPIDs, trackElPIDs, trackDcaXYs, trackDcaZs, trackTpcSignals);
     // fill raw histograms according to the total charge
@@ -1125,6 +1127,12 @@ struct upcRhoAnalysis {
     MC.fill(HIST("MC/system/hPhiCharge"), phiCharge);
   }
 
+  template <typename C>
+  void checkNumberOfCollisionReconstructions(C const& collisions)
+  {
+    MC.fill(HIST("MC/collisions/hNumOfCollisionRecos"), collisions.size());
+  }
+
   void processSGdata(FullUdSgCollision const& collision, FullUdTracks const& tracks)
   {
     if (collision.gapSide() != 2)
@@ -1144,6 +1152,12 @@ struct upcRhoAnalysis {
     processMC(mcCollision, mcParticles);
   }
   PROCESS_SWITCH(upcRhoAnalysis, processMCdata, "analyse MC data", false);
+
+  void processCollisionRecoCheck(aod::McCollision const& /* mcCollision */, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions)
+  {
+    checkNumberOfCollisionReconstructions(collisions);
+  }
+  PROCESS_SWITCH(upcRhoAnalysis, processCollisionRecoCheck, "check number of collision reconstructions", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

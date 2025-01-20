@@ -141,7 +141,7 @@ struct JetDerivedDataWriter {
     Produces<aod::StoredHfBplusPars> storedBplusParsTable;
     Produces<aod::StoredHfBplusParEs> storedBplusParExtrasTable;
     Produces<aod::StoredHfBplusParD0s> storedBplusParD0sTable;
-    Produces<aod::JDumBplusSels> storedBplusSelsDummyTable;
+    Produces<aod::StoredHfBplusSels> storedBplusSelsTable;
     Produces<aod::StoredHfBplusMls> storedBplusMlsTable;
     Produces<aod::StoredHfBplusMlD0s> storedBplusMlD0sTable;
     Produces<aod::StoredHfBplusMcs> storedBplusMcsTable;
@@ -525,7 +525,7 @@ struct JetDerivedDataWriter {
         }
         for (const auto& Bplus : Bpluss) {
           int32_t BplusIndex = -1;
-          jethfutilities::fillHFCandidateTable<false>(Bplus, collisionBplusIndex, products.storedBplussTable, products.storedBplusParsTable, products.storedBplusParExtrasTable, products.storedBplusParD0sTable, products.storedBplusSelsDummyTable, products.storedBplusMlsTable, products.storedBplusMlD0sTable, products.storedBplusMcsTable, BplusIndex);
+          jethfutilities::fillHFCandidateTable<false>(Bplus, collisionBplusIndex, products.storedBplussTable, products.storedBplusParsTable, products.storedBplusParExtrasTable, products.storedBplusParD0sTable, products.storedBplusSelsTable, products.storedBplusMlsTable, products.storedBplusMlD0sTable, products.storedBplusMcsTable, BplusIndex);
 
           int32_t prong0Id = -1;
           int32_t prong1Id = -1;
@@ -904,7 +904,7 @@ struct JetDerivedDataWriter {
             const auto lcsPerCollision = Bpluss.sliceBy(BplussPerCollision, collision.globalIndex());
             for (const auto& Bplus : lcsPerCollision) {
               int32_t BplusIndex = -1;
-              jethfutilities::fillHFCandidateTable<true>(Bplus, collisionBplusIndex, products.storedBplussTable, products.storedBplusParsTable, products.storedBplusParExtrasTable, products.storedBplusParD0sTable, products.storedBplusSelsDummyTable, products.storedBplusMlsTable, products.storedBplusMlD0sTable, products.storedBplusMcsTable, BplusIndex);
+              jethfutilities::fillHFCandidateTable<true>(Bplus, collisionBplusIndex, products.storedBplussTable, products.storedBplusParsTable, products.storedBplusParExtrasTable, products.storedBplusParD0sTable, products.storedBplusSelsTable, products.storedBplusMlsTable, products.storedBplusMlD0sTable, products.storedBplusMcsTable, BplusIndex);
 
               int32_t prong0Id = -1;
               int32_t prong1Id = -1;

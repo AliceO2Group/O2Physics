@@ -39,7 +39,8 @@ using std::array;
 
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 using CollEventPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraFT0CQVsEv, aod::StraTPCQVs>::iterator;
-using CollEventPlaneCentralFW = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraTPCQVs>::iterator;
+using CollEventAndSpecPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraFT0CQVsEv, aod::StraTPCQVs, aod::StraZDCSP>::iterator;
+using CollEventPlaneCentralFW = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraTPCQVs, aod::StraZDCSP>::iterator;
 using MCCollisionsStra = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>;
 using CascCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs>;
 using CascMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascCoreMCLabels>;
@@ -345,7 +346,7 @@ struct cascadeFlow {
   }
 
   template <class collision_t, class cascade_t>
-  void fillAnalysedTable(collision_t coll, cascade_t casc, float v2CSP, float v2CEP, float PsiT0C, float BDTresponseXi, float BDTresponseOmega, int pdgCode)
+  void fillAnalysedTable(collision_t coll, bool hasEventPlane, bool hasSpectatorPlane, cascade_t casc, float v2CSP, float v2CEP, float v1SP_ZDCA, float v1SP_ZDCC, float PsiT0C, float BDTresponseXi, float BDTresponseOmega, int pdgCode)
   {
     double masses[2]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
     ROOT::Math::PxPyPzMVector cascadeVector[2], lambdaVector, protonVector;
@@ -370,17 +371,21 @@ struct cascadeFlow {
     bool isNoCollInTimeRangeStd = 0;
     if (coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
       isNoCollInTimeRangeStd = 1;
+
     // IN-ROF pile-up rejection
     bool isNoCollInRofStd = 0;
     if (coll.selection_bit(o2::aod::evsel::kNoCollInRofStandard))
       isNoCollInRofStd = 1;
+
     // TVX in TRD
-    bool isTVXinTRD = 0;
+    // bool isTVXinTRD = 0;
     //    if (coll.alias_bit(kTVXinTRD)) isTVXinTRD = 1;
 
     analysisSample(coll.centFT0C(),
                    isNoCollInTimeRangeStd,
                    isNoCollInRofStd,
+                   hasEventPlane,
+                   hasSpectatorPlane,
                    casc.sign(),
                    casc.pt(),
                    casc.eta(),
@@ -389,6 +394,8 @@ struct cascadeFlow {
                    casc.mOmega(),
                    v2CSP,
                    v2CEP,
+                   v1SP_ZDCA,
+                   v1SP_ZDCC,
                    PsiT0C,
                    BDTresponseXi,
                    BDTresponseOmega,
@@ -418,6 +425,7 @@ struct cascadeFlow {
     resolution.add("QVectorsNormT0CTPCA", "QVectorsNormT0CTPCA", HistType::kTH2F, {axisQVsNorm, CentAxis});
     resolution.add("QVectorsNormT0CTPCC", "QVectorsNormT0CTPCC", HistType::kTH2F, {axisQVsNorm, CentAxis});
     resolution.add("QVectorsNormTPCAC", "QVectorsNormTPCCB", HistType::kTH2F, {axisQVsNorm, CentAxis});
+    resolution.add("QVectorsSpecPlane", "QVectorsSpecPlane", HistType::kTH2F, {axisQVsNorm, CentAxis});
 
     histos.add("hNEvents", "hNEvents", {HistType::kTH1F, {{10, 0.f, 10.f}}});
     for (Int_t n = 1; n <= histos.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
@@ -427,6 +435,7 @@ struct cascadeFlow {
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
     histos.add("hPsiT0C", "hPsiT0C", HistType::kTH1D, {{100, -TMath::Pi(), TMath::Pi()}});
     histos.add("hPsiT0CvsCentFT0C", "hPsiT0CvsCentFT0C", HistType::kTH2D, {CentAxis, {100, -TMath::Pi(), TMath::Pi()}});
+    histos.add("hPsiZDCA_vs_ZDCC", "hPsiZDCA_vs_ZDCC", HistType::kTH2D, {{100, -TMath::Pi(), TMath::Pi()}, {100, -TMath::Pi(), TMath::Pi()}});
     histos.add("hEventNchCorrelation", "hEventNchCorrelation", kTH2F, {{5000, 0, 5000}, {5000, 0, 2500}});
     histos.add("hEventPVcontributorsVsCentrality", "hEventPVcontributorsVsCentrality", kTH2F, {{100, 0, 100}, {5000, 0, 5000}});
     histos.add("hEventGlobalTracksVsCentrality", "hEventGlobalTracksVsCentrality", kTH2F, {{100, 0, 100}, {2500, 0, 2500}});
@@ -451,6 +460,8 @@ struct cascadeFlow {
     histos.add("hcascminuspsiT0C", "hcascminuspsiT0C", HistType::kTH1F, {{100, 0, TMath::Pi()}});
     histos.add("hv2CEPvsFT0C", "hv2CEPvsFT0C", HistType::kTH2F, {CentAxis, {100, -1, 1}});
     histos.add("hv2CEPvsv2CSP", "hv2CEPvsV2CSP", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
+    histos.add("hv1EPvsv1SP", "hV1EPvsV1SP", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
+    histos.add("hv1SP_ZDCA_vs_ZDCC", "hv1SP_ZDCA_vs_ZDCC", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
 
     histosMCGen.add("h2DGenXiEta08", "h2DGenXiEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
     histosMCGen.add("h2DGenOmegaEta08", "h2DGenOmegaEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
@@ -580,7 +591,7 @@ struct cascadeFlow {
     }
   }
 
-  void processAnalyseData(CollEventPlane const& coll, CascCandidates const& Cascades, DauTracks const&)
+  void processAnalyseData(CollEventAndSpecPlane const& coll, CascCandidates const& Cascades, DauTracks const&)
   {
 
     if (!AcceptEvent(coll, 1)) {
@@ -591,6 +602,17 @@ struct cascadeFlow {
     if (isGoodEventEP && !coll.triggereventep()) {
       return;
     }
+
+    // event has event plane
+    bool hasEventPlane = 0;
+    if (coll.triggereventep())
+      hasEventPlane = 1;
+
+    // event has spectator plane
+    bool hasSpectatorPlane = 0;
+    if (coll.triggereventsp())
+      hasSpectatorPlane = 1;
+
     histos.fill(HIST("hNEvents"), 9.5);
     histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
     histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksPVeta1());
@@ -602,9 +624,12 @@ struct cascadeFlow {
     ROOT::Math::XYZVector eventplaneVecT0C{coll.qvecFT0CRe(), coll.qvecFT0CIm(), 0};
     ROOT::Math::XYZVector eventplaneVecTPCA{coll.qvecBPosRe(), coll.qvecBPosIm(), 0};
     ROOT::Math::XYZVector eventplaneVecTPCC{coll.qvecBNegRe(), coll.qvecBNegIm(), 0};
+    ROOT::Math::XYZVector spectatorplaneVecZDCA{std::cos(coll.psiZDCA()), std::sin(coll.psiZDCA()), 0}; // eta positive = projectile
+    ROOT::Math::XYZVector spectatorplaneVecZDCC{std::cos(coll.psiZDCC()), std::sin(coll.psiZDCC()), 0}; // eta negative = target
 
     const float PsiT0C = std::atan2(coll.qvecFT0CIm(), coll.qvecFT0CRe()) * 0.5f;
     histos.fill(HIST("hPsiT0C"), PsiT0C);
+    histos.fill(HIST("hPsiZDCA_vs_ZDCC"), coll.psiZDCC(), coll.psiZDCA());
     histos.fill(HIST("hPsiT0CvsCentFT0C"), coll.centFT0C(), PsiT0C);
 
     resolution.fill(HIST("QVectorsT0CTPCA"), eventplaneVecT0C.Dot(eventplaneVecTPCA), coll.centFT0C());
@@ -613,6 +638,7 @@ struct cascadeFlow {
     resolution.fill(HIST("QVectorsNormT0CTPCA"), eventplaneVecT0C.Dot(eventplaneVecTPCA) / (coll.qTPCR() * coll.sumAmplFT0C()), coll.centFT0C());
     resolution.fill(HIST("QVectorsNormT0CTPCC"), eventplaneVecT0C.Dot(eventplaneVecTPCC) / (coll.qTPCL() * coll.sumAmplFT0C()), coll.centFT0C());
     resolution.fill(HIST("QVectorsNormTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC) / (coll.qTPCR() * coll.qTPCL()), coll.centFT0C());
+    resolution.fill(HIST("QVectorsSpecPlane"), spectatorplaneVecZDCC.Dot(spectatorplaneVecZDCA), coll.centFT0C());
 
     std::vector<float> bdtScore[2];
     for (auto& casc : Cascades) {
@@ -678,9 +704,18 @@ struct cascadeFlow {
       auto v2CSP = cascQvec.Dot(eventplaneVecT0C); // not normalised by amplitude
       auto cascminuspsiT0C = GetPhiInRange(casc.phi() - PsiT0C);
       auto v2CEP = TMath::Cos(2.0 * cascminuspsiT0C);
+      ROOT::Math::XYZVector cascUvec{std::cos(casc.phi()), std::sin(casc.phi()), 0};
+      auto v1SP_ZDCA = cascUvec.Dot(spectatorplaneVecZDCA);
+      auto v1SP_ZDCC = cascUvec.Dot(spectatorplaneVecZDCC);
+      auto v1EP_ZDCA = TMath::Cos(casc.phi() - coll.psiZDCA());
+      auto v1EP_ZDCC = TMath::Cos(casc.phi() - coll.psiZDCC());
+      float v1SP = 0.5 * (v1SP_ZDCA - v1SP_ZDCC);
+      float v1EP = 0.5 * (v1EP_ZDCA - v1EP_ZDCC); // same as v1SP
 
       histos.fill(HIST("hv2CEPvsFT0C"), coll.centFT0C(), v2CEP);
       histos.fill(HIST("hv2CEPvsv2CSP"), v2CSP, v2CEP);
+      histos.fill(HIST("hv1EPvsv1SP"), v1SP, v1EP);
+      histos.fill(HIST("hv1SP_ZDCA_vs_ZDCC"), v1SP_ZDCC, v1SP_ZDCA);
       histos.fill(HIST("hCascadePhi"), casc.phi());
       histos.fill(HIST("hcascminuspsiT0C"), cascminuspsiT0C);
       double values[4]{casc.mXi(), casc.pt(), v2CSP, coll.centFT0C()};
@@ -698,7 +733,7 @@ struct cascadeFlow {
         BDTresponse[1] = bdtScore[1][1];
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
-        fillAnalysedTable(coll, casc, v2CSP, v2CEP, PsiT0C, BDTresponse[0], BDTresponse[1], 0);
+        fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, PsiT0C, BDTresponse[0], BDTresponse[1], 0);
     }
   }
 
@@ -716,6 +751,16 @@ struct cascadeFlow {
       }
     }
 
+    // event has event plane
+    bool hasEventPlane = 0;
+    if (abs(coll.qvecFT0CRe()) > 990 || abs(coll.qvecFT0CIm()) > 990 || abs(coll.qvecBNegRe()) > 990 || abs(coll.qvecBNegIm()) > 990 || abs(coll.qvecBPosRe()) > 990 || abs(coll.qvecBPosIm()) > 990)
+      hasEventPlane = 1;
+
+    // event has spectator plane
+    bool hasSpectatorPlane = 0;
+    if (coll.triggereventsp())
+      hasSpectatorPlane = 1;
+
     histos.fill(HIST("hNEvents"), 9.5);
     histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
     histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksPVeta1());
@@ -727,6 +772,9 @@ struct cascadeFlow {
     ROOT::Math::XYZVector eventplaneVecT0C{coll.qvecFT0CRe(), coll.qvecFT0CIm(), 0};
     ROOT::Math::XYZVector eventplaneVecTPCA{coll.qvecBPosRe(), coll.qvecBPosIm(), 0};
     ROOT::Math::XYZVector eventplaneVecTPCC{coll.qvecBNegRe(), coll.qvecBNegIm(), 0};
+    ROOT::Math::XYZVector spectatorplaneVecZDCA{std::cos(coll.psiZDCA()), std::sin(coll.psiZDCA()), 0}; // eta positive = projectile
+    ROOT::Math::XYZVector spectatorplaneVecZDCC{std::cos(coll.psiZDCC()), std::sin(coll.psiZDCC()), 0}; // eta negative = target
+
     float NormQvT0C = sqrt(eventplaneVecT0C.Dot(eventplaneVecT0C));
     float NormQvTPCA = sqrt(eventplaneVecTPCA.Dot(eventplaneVecTPCA));
     float NormQvTPCC = sqrt(eventplaneVecTPCC.Dot(eventplaneVecTPCC));
@@ -741,6 +789,7 @@ struct cascadeFlow {
     resolution.fill(HIST("QVectorsNormT0CTPCA"), eventplaneVecT0C.Dot(eventplaneVecTPCA) / (NormQvT0C * NormQvTPCA), coll.centFT0C());
     resolution.fill(HIST("QVectorsNormT0CTPCC"), eventplaneVecT0C.Dot(eventplaneVecTPCC) / (NormQvT0C * NormQvTPCC), coll.centFT0C());
     resolution.fill(HIST("QVectorsNormTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC) / (NormQvTPCA * NormQvTPCC), coll.centFT0C());
+    resolution.fill(HIST("QVectorsSpecPlane"), spectatorplaneVecZDCC.Dot(spectatorplaneVecZDCA), coll.centFT0C());
 
     std::vector<float> bdtScore[2];
     for (auto& casc : Cascades) {
@@ -806,9 +855,18 @@ struct cascadeFlow {
       auto v2CSP = cascQvec.Dot(eventplaneVecT0C);
       auto cascminuspsiT0C = GetPhiInRange(casc.phi() - PsiT0C);
       auto v2CEP = TMath::Cos(2.0 * cascminuspsiT0C);
+      ROOT::Math::XYZVector cascUvec{std::cos(casc.phi()), std::sin(casc.phi()), 0};
+      auto v1SP_ZDCA = cascUvec.Dot(spectatorplaneVecZDCA);
+      auto v1SP_ZDCC = cascUvec.Dot(spectatorplaneVecZDCC);
+      auto v1EP_ZDCA = TMath::Cos(casc.phi() - coll.psiZDCA());
+      auto v1EP_ZDCC = TMath::Cos(casc.phi() - coll.psiZDCC());
+      float v1SP = 0.5 * (v1SP_ZDCA - v1SP_ZDCC);
+      float v1EP = 0.5 * (v1EP_ZDCA - v1EP_ZDCC); // same as v1SP
 
       histos.fill(HIST("hv2CEPvsFT0C"), coll.centFT0C(), v2CEP);
       histos.fill(HIST("hv2CEPvsv2CSP"), v2CSP, v2CEP);
+      histos.fill(HIST("hv1EPvsv1SP"), v1SP, v1EP);
+      histos.fill(HIST("hv1SP_ZDCA_vs_ZDCC"), v1SP_ZDCC, v1SP_ZDCA);
       histos.fill(HIST("hCascadePhi"), casc.phi());
       histos.fill(HIST("hcascminuspsiT0C"), cascminuspsiT0C);
       double values[4]{casc.mXi(), casc.pt(), v2CSP, coll.centFT0C()};
@@ -826,7 +884,7 @@ struct cascadeFlow {
         BDTresponse[1] = bdtScore[1][1];
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
-        fillAnalysedTable(coll, casc, v2CSP, v2CEP, PsiT0C, BDTresponse[0], BDTresponse[1], 0);
+        fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, PsiT0C, BDTresponse[0], BDTresponse[1], 0);
     }
   }
 
@@ -836,6 +894,9 @@ struct cascadeFlow {
     if (!AcceptEvent(coll, 1)) {
       return;
     }
+
+    bool hasEventPlane = 0;     // no info at the moment
+    bool hasSpectatorPlane = 0; // no infor at the moment
 
     histos.fill(HIST("hNEvents"), 9.5);
     histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
@@ -940,6 +1001,8 @@ struct cascadeFlow {
       const float PsiT0C = 0; // not defined in MC for now
       auto v2CSP = 0;         // not defined in MC for now
       auto v2CEP = 0;         // not defined in MC for now
+      auto v1SP_ZDCA = 0;     // not defined in MC for now
+      auto v1SP_ZDCC = 0;     // not defined in MC for now
 
       if (isApplyML) {
         BDTresponse[0] = bdtScore[0][1];
@@ -950,7 +1013,7 @@ struct cascadeFlow {
           continue;
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
-        fillAnalysedTable(coll, casc, v2CSP, v2CEP, PsiT0C, BDTresponse[0], BDTresponse[1], pdgCode);
+        fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, PsiT0C, BDTresponse[0], BDTresponse[1], pdgCode);
     }
   }
 

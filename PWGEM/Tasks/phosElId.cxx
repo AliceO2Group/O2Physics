@@ -9,6 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file phosElId.cxx
+/// \struct PHOS electron id analysis
+/// \brief Task for calculating electron identification parameters
+///
+/// \author Yeghishe Hambardzumyan, MIPT
+/// \since Apr, 2024
+
 #include <climits>
 #include <cstdlib>
 #include <map>
@@ -23,7 +30,6 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "ReconstructionDataFormats/TrackParametrization.h"
-
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -31,24 +37,14 @@
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
-
 #include "PHOSBase/Geometry.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CommonDataFormat/InteractionRecord.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "DetectorsBase/Propagator.h"
-
 #include "TF1.h"
 #include "TLorentzVector.h"
-
-/// \struct PHOS electron id analysis
-/// \brief Task for calculating electron identification parameters
-/// \author Yeghishe Hambardzumyan, MIPT
-/// \since Apr, 2024
-/// @note Inherits functions and variables from phosAlign & phosPi0.
-/// @note Results will be used for candidate table producing task.
-///
 
 using namespace o2;
 using namespace o2::soa;
@@ -58,7 +54,7 @@ using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
-namespace PHOSMatch
+namespace phos_match
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_INDEX_COLUMN(Track, track);
@@ -69,77 +65,72 @@ DECLARE_SOA_COLUMN(SignalPx, signalPx, double);
 DECLARE_SOA_COLUMN(SignalPy, signalPy, double);
 DECLARE_SOA_COLUMN(SignalPz, signalPz, double);
 DECLARE_SOA_COLUMN(SignalE, signalE, double);
-} // namespace PHOSMatch
+} // namespace phos_match
 
-DECLARE_SOA_TABLE(PHOSMatchindexTable, "AOD", "PHSMTCH",                                                   //!
-                  o2::soa::Index<>, PHOSMatch::CollisionId, PHOSMatch::CaloClusterId, PHOSMatch::TrackId); //!
+DECLARE_SOA_TABLE(PHOSMatchindexTable, "AOD", "PHSMTCH",                                                      //!
+                  o2::soa::Index<>, phos_match::CollisionId, phos_match::CaloClusterId, phos_match::TrackId); //!
 
 } // namespace o2::aod
 
-struct phosElId {
+struct PhosElId {
 
-  Produces<o2::aod::PHOSMatchindexTable> phosMatch;
+  Produces<o2::aod::PHOSMatchindexTable> hosMatch;
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using myTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
+  using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
 
-  Configurable<float> mMinCluE{"mMinCluE", 0.3, "Minimum cluster energy for analysis"};
-  Configurable<float> mMinCluTime{"minCluTime", -25.e-9, "Min. cluster time"};
-  Configurable<float> mMaxCluTime{"mMaxCluTime", 25.e-9, "Max. cluster time"};
-  Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
-  Configurable<int> mMinCluNcell{"minCluNcell", 3, "min cells in cluster"};
+  Configurable<float> mMinCluE{"mMinCluE", 0.3, "Minimum cluster energy for analysis"},
+    mMinCluTime{"minCluTime", -25.e-9, "Min. cluster time"},
+    mMaxCluTime{"mMaxCluTime", 25.e-9, "Max. cluster time"},
+    mDeltaXmin{"mDeltaXmin", -100., "Min for track and cluster coordinate delta"},
+    mDeltaXmax{"mDeltaXmax", 100., "Max for track and cluster coordinate delta"},
+    mDeltaZmin{"mDeltaZmin", -100., "Min for track and cluster coordinate delta"},
+    mDeltaZmax{"mDeltaZmax", 100., "Max for track and cluster coordinate delta"},
+    mEpmin{"mEpmin", -1., "Min for E/p histograms"},
+    mEpmax{"mEpmax", 3., "Max for E/p histograms"},
+    cfgEtaMax{"cfgEtaMax", {0.8f}, "eta ranges"},
+    cfgPtMin{"cfgPtMin", {0.2f}, "pt min"},
+    cfgPtMax{"cfgPtMax", {20.f}, "pt max"},
+    cfgDCAxyMax{"cfgDCAxyMax", {3.f}, "dcaxy max"},
+    cfgDCAzMax{"cfgDCAzMax", {3.f}, "dcaz max"},
+    cfgITSchi2Max{"cfgITSchi2Max", {5.f}, "its chi2 max"},
+    cfgITSnclsMin{"cfgITSnclsMin", {4.5f}, "min number of ITS clusters"},
+    cfgITSnclsMax{"cfgITSnclsMax", {7.5f}, "max number of ITS clusters"},
+    cfgTPCchi2Max{"cfgTPCchi2Max", {4.f}, "tpc chi2 max"},
+    cfgTPCnclsMin{"cfgTPCnclsMin", {90.f}, "min number of TPC clusters"},
+    cfgTPCnclsMax{"cfgTPCnclsMax", {170.f}, "max number of TPC clusters"},
+    cfgTPCnclsCRMin{"cfgTPCnclsCRMin", {80.f}, "min number of TPC crossed rows"},
+    cfgTPCnclsCRMax{"cfgTPCnclsCRMax", {161.f}, "max number of TPC crossed rows"},
+    cfgTPCNSigmaElMin{"cfgTPCNSigmaElMin", {-3.f}, "min TPC nsigma e for inclusion"},
+    cfgTPCNSigmaElMax{"cfgTPCNSigmaElMax", {2.f}, "max TPC nsigma e for inclusion"},
+    cfgTPCNSigmaPiMin{"cfgTPCNSigmaPiMin", {-3.f}, "min TPC nsigma pion for exclusion"},
+    cfgTPCNSigmaPiMax{"cfgTPCNSigmaPiMax", {3.5f}, "max TPC nsigma pion for exclusion"},
+    cfgTPCNSigmaPrMin{"cfgTPCNSigmaPrMin", {-3.f}, "min TPC nsigma proton for exclusion"},
+    cfgTPCNSigmaPrMax{"cfgTPCNSigmaPrMax", {4.f}, "max TPC nsigma proton for exclusion"},
+    cfgTPCNSigmaKaMin{"cfgTPCNSigmaKaMin", {-3.f}, "min TPC nsigma kaon for exclusion"},
+    cfgTPCNSigmaKaMax{"cfgTPCNSigmaKaMax", {4.f}, "max TPC nsigma kaon for exclusion"},
+    cfgTOFNSigmaElMin{"cfgTOFNSigmaElMin", {-3.f}, "min TOF nsigma e for inclusion"},
+    cfgTOFNSigmaElMax{"cfgTOFNSigmaElMax", {3.f}, "max TOF nsigma e for inclusion"},
+    cfgNsigmaTrackMatch{"cfgNsigmaTrackMatch", {2.f}, "PHOS Track Matching Nsigma for inclusion"};
 
-  Configurable<int> nBinsDeltaX{"nBinsDeltaX", 500, "N bins for track and cluster coordinate delta"};
-  Configurable<float> mDeltaXmin{"mDeltaXmin", -100., "Min for track and cluster coordinate delta"};
-  Configurable<float> mDeltaXmax{"mDeltaXmax", 100., "Max for track and cluster coordinate delta"};
+  Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"},
+    mMinCluNcell{"minCluNcell", 3, "min cells in cluster"},
+    nBinsDeltaX{"nBinsDeltaX", 500, "N bins for track and cluster coordinate delta"},
+    nBinsDeltaZ{"nBinsDeltaZ", 500, "N bins for track and cluster coordinate delta"},
+    nBinsEp{"nBinsEp", 400, "N bins for E/p histograms"};
 
-  Configurable<int> nBinsDeltaZ{"nBinsDeltaZ", 500, "N bins for track and cluster coordinate delta"};
-  Configurable<float> mDeltaZmin{"mDeltaZmin", -100., "Min for track and cluster coordinate delta"};
-  Configurable<float> mDeltaZmax{"mDeltaZmax", 100., "Max for track and cluster coordinate delta"};
-
-  Configurable<int> nBinsEp{"nBinsEp", 400, "N bins for E/p histograms"};
-  Configurable<float> mEpmin{"mEpmin", -1., "Min for E/p histograms"};
-  Configurable<float> mEpmax{"mEpmax", 3., "Max for E/p histograms"};
-
-  Configurable<std::vector<float>> pSigma_dz{"pSigma_dz", {0.642, 0., 1.77, 2.725, 0.}, "parameters for sigma dz function"};
-  Configurable<std::vector<float>> pSigma_dx{"pSigma_dx", {2.17769, 1.60275, 2.24136}, "parameters for sigma dx function"};
-
-  Configurable<std::vector<float>> pPhosShiftZ{"pPhosShiftZ", {4.78838, 2.75138, 1.40825, 2.28735}, "Phos coordinate centering Z per module"};
-  Configurable<std::vector<float>> pPhosShiftX{"pPhosShiftX", {2.158702, -1.526772, -0.814658, -1.852678}, "Phos coordinate centering X per module"};
-
-  Configurable<std::vector<float>> pMean_dx_pos_mod1{"pMean_dx_pos_mod1", {-10.57, -0.42, 1.06}, "parameters for mean dx function on module 1 for positive tracks"};
-  Configurable<std::vector<float>> pMean_dx_pos_mod2{"pMean_dx_pos_mod2", {-8.1, -0.42, 1.14}, "parameters for mean dx function on module 2 for positive tracks"};
-  Configurable<std::vector<float>> pMean_dx_pos_mod3{"pMean_dx_pos_mod3", {-8.34, -0.42, 1.04}, "parameters for mean dx function on module 3 for positive tracks"};
-  Configurable<std::vector<float>> pMean_dx_pos_mod4{"pMean_dx_pos_mod4", {-7.38, -0.42, 1.17}, "parameters for mean dx function on module 4 for positive tracks"};
-
-  Configurable<std::vector<float>> pMean_dx_neg_mod1{"pMean_dx_neg_mod1", {9.92, -0.42, 1.29}, "parameters for mean dx function on module 1 for negative tracks"};
-  Configurable<std::vector<float>> pMean_dx_neg_mod2{"pMean_dx_neg_mod2", {7.82, -0.4, 1.34}, "parameters for mean dx function on module 2 for negative tracks"};
-  Configurable<std::vector<float>> pMean_dx_neg_mod3{"pMean_dx_neg_mod3", {8.45, -0.33, 1.5}, "parameters for mean dx function on module 3 for negative tracks"};
-  Configurable<std::vector<float>> pMean_dx_neg_mod4{"pMean_dx_neg_mod4", {7.5, -0.42, 1.25}, "parameters for mean dx function on module 4 for negative tracks"};
-
-  Configurable<float> cfgEtaMax{"cfgEtaMax", {0.8f}, "eta ranges"};
-  Configurable<float> cfgPtMin{"cfgPtMin", {0.2f}, "pt min"};
-  Configurable<float> cfgPtMax{"cfgPtMax", {20.f}, "pt max"};
-  Configurable<float> cfgDCAxyMax{"cfgDCAxyMax", {3.f}, "dcaxy max"};
-  Configurable<float> cfgDCAzMax{"cfgDCAzMax", {3.f}, "dcaz max"};
-  Configurable<float> cfgITSchi2Max{"cfgITSchi2Max", {5.f}, "its chi2 max"};
-  Configurable<float> cfgITSnclsMin{"cfgITSnclsMin", {4.5f}, "min number of ITS clusters"};
-  Configurable<float> cfgITSnclsMax{"cfgITSnclsMax", {7.5f}, "max number of ITS clusters"};
-  Configurable<float> cfgTPCchi2Max{"cfgTPCchi2Max", {4.f}, "tpc chi2 max"};
-  Configurable<float> cfgTPCnclsMin{"cfgTPCnclsMin", {90.f}, "min number of TPC clusters"};
-  Configurable<float> cfgTPCnclsMax{"cfgTPCnclsMax", {170.f}, "max number of TPC clusters"};
-  Configurable<float> cfgTPCnclsCRMin{"cfgTPCnclsCRMin", {80.f}, "min number of TPC crossed rows"};
-  Configurable<float> cfgTPCnclsCRMax{"cfgTPCnclsCRMax", {161.f}, "max number of TPC crossed rows"};
-  Configurable<float> cfgTPCNSigmaElMin{"cfgTPCNSigmaElMin", {-3.f}, "min TPC nsigma e for inclusion"};
-  Configurable<float> cfgTPCNSigmaElMax{"cfgTPCNSigmaElMax", {2.f}, "max TPC nsigma e for inclusion"};
-  Configurable<float> cfgTPCNSigmaPiMin{"cfgTPCNSigmaPiMin", {-3.f}, "min TPC nsigma pion for exclusion"};
-  Configurable<float> cfgTPCNSigmaPiMax{"cfgTPCNSigmaPiMax", {3.5f}, "max TPC nsigma pion for exclusion"};
-  Configurable<float> cfgTPCNSigmaPrMin{"cfgTPCNSigmaPrMin", {-3.f}, "min TPC nsigma proton for exclusion"};
-  Configurable<float> cfgTPCNSigmaPrMax{"cfgTPCNSigmaPrMax", {4.f}, "max TPC nsigma proton for exclusion"};
-  Configurable<float> cfgTPCNSigmaKaMin{"cfgTPCNSigmaKaMin", {-3.f}, "min TPC nsigma kaon for exclusion"};
-  Configurable<float> cfgTPCNSigmaKaMax{"cfgTPCNSigmaKaMax", {4.f}, "max TPC nsigma kaon for exclusion"};
-  Configurable<float> cfgTOFNSigmaElMin{"cfgTOFNSigmaElMin", {-3.f}, "min TOF nsigma e for inclusion"};
-  Configurable<float> cfgTOFNSigmaElMax{"cfgTOFNSigmaElMax", {3.f}, "max TOF nsigma e for inclusion"};
+  Configurable<std::vector<float>> pSigmadZ{"pSigmadZ", {0.642, 0., 1.77, 2.725, 0.}, "parameters for sigma dz function"},
+    pSigmadX{"pSigmadX", {2.17769, 1.60275, 2.24136}, "parameters for sigma dx function"},
+    pPhosShiftZ{"pPhosShiftZ", {4.78838, 2.75138, 1.40825, 2.28735}, "Phos coordinate centering Z per module"},
+    pPhosShiftX{"pPhosShiftX", {2.158702, -1.526772, -0.814658, -1.852678}, "Phos coordinate centering X per module"},
+    pMeandXPosMod1{"pMeandXPosMod1", {-10.57, -0.42, 1.06}, "parameters for mean dx function on module 1 for positive tracks"},
+    pMeandXPosMod2{"pMeandXPosMod2", {-8.1, -0.42, 1.14}, "parameters for mean dx function on module 2 for positive tracks"},
+    pMeandXPosMod3{"pMeandXPosMod3", {-8.34, -0.42, 1.04}, "parameters for mean dx function on module 3 for positive tracks"},
+    pMeandXPosMod4{"pMeandXPosMod4", {-7.38, -0.42, 1.17}, "parameters for mean dx function on module 4 for positive tracks"},
+    pMeandXNegMod1{"pMeandXNegMod1", {9.92, -0.42, 1.29}, "parameters for mean dx function on module 1 for negative tracks"},
+    pMeandXNegMod2{"pMeandXNegMod2", {7.82, -0.4, 1.34}, "parameters for mean dx function on module 2 for negative tracks"},
+    pMeandXNegMod3{"pMeandXNegMod3", {8.45, -0.33, 1.5}, "parameters for mean dx function on module 3 for negative tracks"},
+    pMeandXNegMod4{"pMeandXNegMod4", {7.5, -0.42, 1.25}, "parameters for mean dx function on module 4 for negative tracks"};
 
   Filter ptFilter = (aod::track::pt > cfgPtMin) && (aod::track::pt < cfgPtMax);
   Filter etafilter = nabs(aod::track::eta) < cfgEtaMax;
@@ -154,38 +145,38 @@ struct phosElId {
   double bz{0.}; // magnetic field
   int runNumber{0};
 
-  HistogramRegistry mHistManager{"phosElIdHistograms"};
+  HistogramRegistry mHistManager{"PhosElIdHistograms"};
   TF1 *fSigma_dz, *fSigma_dx;
   float *PhosShiftX, *PhosShiftZ;
 
-  TF1* fMean_dx_pos_mod1;
-  TF1* fMean_dx_neg_mod1;
-  TF1* fMean_dx_pos_mod2;
-  TF1* fMean_dx_neg_mod2;
-  TF1* fMean_dx_pos_mod3;
-  TF1* fMean_dx_neg_mod3;
-  TF1* fMean_dx_pos_mod4;
-  TF1* fMean_dx_neg_mod4;
+  TF1* fMeandXPosMod1;
+  TF1* fMeandXNegMod1;
+  TF1* fMeandXPosMod2;
+  TF1* fMeandXNegMod2;
+  TF1* fMeandXPosMod3;
+  TF1* fMeandXNegMod3;
+  TF1* fMeandXPosMod4;
+  TF1* fMeandXNegMod4;
 
   void init(InitContext const&)
   {
     LOG(info) << "Initializing PHOS electron identification analysis task ...";
 
-    std::vector<double> momentum_binning = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
-                                            1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
-                                            4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
-    std::vector<float> parameters_sigma_dz = pSigma_dz;
-    std::vector<float> parameters_sigma_dx = pSigma_dx;
+    std::vector<double> momentumBinning = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
+                                           1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
+                                           4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
+    std::vector<float> parametersSigmadZ = pSigmadZ;
+    std::vector<float> parametersSigmadX = pSigmadX;
     std::vector<float> vPhosShiftX = pPhosShiftX;
     std::vector<float> vPhosShiftZ = pPhosShiftZ;
-    std::vector<float> Mean_dx_pos_mod1 = pMean_dx_pos_mod1;
-    std::vector<float> Mean_dx_pos_mod2 = pMean_dx_pos_mod2;
-    std::vector<float> Mean_dx_pos_mod3 = pMean_dx_pos_mod3;
-    std::vector<float> Mean_dx_pos_mod4 = pMean_dx_pos_mod4;
-    std::vector<float> Mean_dx_neg_mod1 = pMean_dx_neg_mod1;
-    std::vector<float> Mean_dx_neg_mod2 = pMean_dx_neg_mod2;
-    std::vector<float> Mean_dx_neg_mod3 = pMean_dx_neg_mod3;
-    std::vector<float> Mean_dx_neg_mod4 = pMean_dx_neg_mod4;
+    std::vector<float> meandXPosMod1 = pMeandXPosMod1;
+    std::vector<float> meandXPosMod2 = pMeandXPosMod2;
+    std::vector<float> meandXPosMod3 = pMeandXPosMod3;
+    std::vector<float> meandXPosMod4 = pMeandXPosMod4;
+    std::vector<float> meandXNegMod1 = pMeandXNegMod1;
+    std::vector<float> meandXNegMod2 = pMeandXNegMod2;
+    std::vector<float> meandXNegMod3 = pMeandXNegMod3;
+    std::vector<float> meandXNegMod4 = pMeandXNegMod4;
 
     PhosShiftX = new float[4];
     PhosShiftX[0] = vPhosShiftX.at(0);
@@ -199,10 +190,9 @@ struct phosElId {
     PhosShiftZ[2] = vPhosShiftZ.at(2);
     PhosShiftZ[3] = vPhosShiftZ.at(3);
 
-    const AxisSpec
-      axisCounter{1, 0, +1, ""},
-      axisP{momentum_binning, "p (GeV/c)"},
-      axisPt{momentum_binning, "p_{T} (GeV/c)"},
+    const AxisSpec axisCounter{1, 0, +1, ""},
+      axisP{momentumBinning, "p (GeV/c)"},
+      axisPt{momentumBinning, "p_{T} (GeV/c)"},
       axisEta{200, -0.2, 0.2, "#eta"},
       axisPhi{80, 240, 320, "#varphi"},
       axisE{200, 0, 10, "E (GeV)", "E (GeV)"},
@@ -256,70 +246,58 @@ struct phosElId {
     mHistManager.add("hdXpmod_neg", "dx,p_{tr},module negative tracks", HistType::kTH3F, {axisdX, axisPt, axisModes});
 
     mHistManager.add("hCluE_v_pt_disp", "Cluster energy vs p | OK dispersion", HistType::kTH3F, {axisE, axisPt, axisModes});
-    mHistManager.add("hCluE_v_pt_1sigma", "Cluster energy vs p within trackmatch 1sigma", HistType::kTH3F, {axisE, axisPt, axisModes});
-    mHistManager.add("hCluE_v_pt_1sigma_disp", "Cluster energy vs p within trackmatch 1sigma | OK dispersion", HistType::kTH3F, {axisE, axisPt, axisModes});
-    mHistManager.add("hCluE_v_pt_2sigma", "Cluster energy vs p within trackmatch 2sigma", HistType::kTH3F, {axisE, axisPt, axisModes});
-    mHistManager.add("hCluE_v_pt_2sigma_disp", "Cluster energy vs p within trackmatch 2sigma | OK dispersion", HistType::kTH3F, {axisE, axisPt, axisModes});
+    mHistManager.add("hCluE_v_pt_Nsigma", "Cluster energy vs p within trackmatch Nsigma", HistType::kTH3F, {axisE, axisPt, axisModes});
+    mHistManager.add("hCluE_v_pt_Nsigma_disp", "Cluster energy vs p within trackmatch Nsigma | OK dispersion", HistType::kTH3F, {axisE, axisPt, axisModes});
 
     mHistManager.add("hCluE_v_pt_disp_TPC", "Cluster energy vs p | OK dispersion", HistType::kTH3F, {axisE, axisPt, axisModes});
-    mHistManager.add("hCluE_v_pt_1sigma_TPC", "Cluster energy vs p within trackmatch 1sigma", HistType::kTH3F, {axisE, axisPt, axisModes});
-    mHistManager.add("hCluE_v_pt_1sigma_disp_TPC", "Cluster energy vs p within trackmatch 1sigma | OK dispersion", HistType::kTH3F, {axisE, axisPt, axisModes});
-    mHistManager.add("hCluE_v_pt_2sigma_TPC", "Cluster energy vs p within trackmatch 2sigma", HistType::kTH3F, {axisE, axisPt, axisModes});
-    mHistManager.add("hCluE_v_pt_2sigma_disp_TPC", "Cluster energy vs p within trackmatch 2sigma | OK dispersion", HistType::kTH3F, {axisE, axisPt, axisModes});
+    mHistManager.add("hCluE_v_pt_Nsigma_TPC", "Cluster energy vs p within trackmatch Nsigma", HistType::kTH3F, {axisE, axisPt, axisModes});
+    mHistManager.add("hCluE_v_pt_Nsigma_disp_TPC", "Cluster energy vs p within trackmatch Nsigma | OK dispersion", HistType::kTH3F, {axisE, axisPt, axisModes});
 
     mHistManager.add("hEp_v_pt_disp", "E/p ratio vs p | OK dispersion", HistType::kTH3F, {axisEp, axisPt, axisModes});
-    mHistManager.add("hEp_v_pt_1sigma", "E/p ratio vs p within trackmatch 1sigma", HistType::kTH3F, {axisEp, axisPt, axisModes});
-    mHistManager.add("hEp_v_pt_1sigma_disp", "E/p ratio vs p within trackmatch 1sigma | OK dispersion", HistType::kTH3F, {axisEp, axisPt, axisModes});
-    mHistManager.add("hEp_v_pt_2sigma", "E/p ratio vs p within trackmatch 2sigma", HistType::kTH3F, {axisEp, axisPt, axisModes});
-    mHistManager.add("hEp_v_pt_2sigma_disp", "E/p ratio vs p within trackmatch 2sigma | OK dispersion", HistType::kTH3F, {axisEp, axisPt, axisModes});
+    mHistManager.add("hEp_v_pt_Nsigma", "E/p ratio vs p within trackmatch Nsigma", HistType::kTH3F, {axisEp, axisPt, axisModes});
+    mHistManager.add("hEp_v_pt_Nsigma_disp", "E/p ratio vs p within trackmatch Nsigma | OK dispersion", HistType::kTH3F, {axisEp, axisPt, axisModes});
 
     mHistManager.add("hEp_v_E_disp", "E/p ratio vs cluster E | OK dispersion", HistType::kTH3F, {axisEp, axisE, axisModes});
-    mHistManager.add("hEp_v_E_1sigma", "E/p ratio vs cluster E within trackmatch 1sigma", HistType::kTH3F, {axisEp, axisE, axisModes});
-    mHistManager.add("hEp_v_E_1sigma_disp", "E/p ratio vs cluster E within trackmatch 1sigma | OK dispersion", HistType::kTH3F, {axisEp, axisE, axisModes});
-    mHistManager.add("hEp_v_E_2sigma", "E/p ratio vs cluster E within trackmatch 2sigma", HistType::kTH3F, {axisEp, axisE, axisModes});
-    mHistManager.add("hEp_v_E_2sigma_disp", "E/p ratio vs cluster E within trackmatch 2sigma | OK dispersion", HistType::kTH3F, {axisEp, axisE, axisModes});
+    mHistManager.add("hEp_v_E_Nsigma", "E/p ratio vs cluster E within trackmatch Nsigma", HistType::kTH3F, {axisEp, axisE, axisModes});
+    mHistManager.add("hEp_v_E_Nsigma_disp", "E/p ratio vs cluster E within trackmatch Nsigma | OK dispersion", HistType::kTH3F, {axisEp, axisE, axisModes});
 
     mHistManager.add("hEp_v_pt_disp_TPC", "E/p ratio vs p | OK dispersion", HistType::kTH3F, {axisEp, axisPt, axisModes});
-    mHistManager.add("hEp_v_pt_1sigma_TPC", "E/p ratio vs p within trackmatch 1sigma", HistType::kTH3F, {axisEp, axisPt, axisModes});
-    mHistManager.add("hEp_v_pt_1sigma_disp_TPC", "E/p ratio vs p within trackmatch 1sigma | OK dispersion", HistType::kTH3F, {axisEp, axisPt, axisModes});
-    mHistManager.add("hEp_v_pt_2sigma_TPC", "E/p ratio vs p within trackmatch 2sigma", HistType::kTH3F, {axisEp, axisPt, axisModes});
-    mHistManager.add("hEp_v_pt_2sigma_disp_TPC", "E/p ratio vs p within trackmatch 2sigma | OK dispersion", HistType::kTH3F, {axisEp, axisPt, axisModes});
+    mHistManager.add("hEp_v_pt_Nsigma_TPC", "E/p ratio vs p within trackmatch Nsigma", HistType::kTH3F, {axisEp, axisPt, axisModes});
+    mHistManager.add("hEp_v_pt_Nsigma_disp_TPC", "E/p ratio vs p within trackmatch Nsigma | OK dispersion", HistType::kTH3F, {axisEp, axisPt, axisModes});
 
     mHistManager.add("hEp_v_E_disp_TPC", "E/p ratio vs cluster E | OK dispersion", HistType::kTH3F, {axisEp, axisE, axisModes});
-    mHistManager.add("hEp_v_E_1sigma_TPC", "E/p ratio vs cluster E within trackmatch 1sigma", HistType::kTH3F, {axisEp, axisE, axisModes});
-    mHistManager.add("hEp_v_E_1sigma_disp_TPC", "E/p ratio vs cluster E within trackmatch 1sigma | OK dispersion", HistType::kTH3F, {axisEp, axisE, axisModes});
-    mHistManager.add("hEp_v_E_2sigma_TPC", "E/p ratio vs cluster E within trackmatch 2sigma", HistType::kTH3F, {axisEp, axisE, axisModes});
-    mHistManager.add("hEp_v_E_2sigma_disp_TPC", "E/p ratio vs cluster E within trackmatch 2sigma | OK dispersion", HistType::kTH3F, {axisEp, axisE, axisModes});
+    mHistManager.add("hEp_v_E_Nsigma_TPC", "E/p ratio vs cluster E within trackmatch Nsigma", HistType::kTH3F, {axisEp, axisE, axisModes});
+    mHistManager.add("hEp_v_E_Nsigma_disp_TPC", "E/p ratio vs cluster E within trackmatch Nsigma | OK dispersion", HistType::kTH3F, {axisEp, axisE, axisModes});
 
     geomPHOS = std::make_unique<o2::phos::Geometry>("PHOS");
     fSigma_dz = new TF1("fSigma_dz", "[0]/(x+[1])^[2]+pol1(3)", 0.3, 10);
-    fSigma_dz->SetParameters(parameters_sigma_dz.at(0), parameters_sigma_dz.at(1), parameters_sigma_dz.at(2), parameters_sigma_dz.at(3), parameters_sigma_dz.at(4));
+    fSigma_dz->SetParameters(parametersSigmadZ.at(0), parametersSigmadZ.at(1), parametersSigmadZ.at(2), parametersSigmadZ.at(3), parametersSigmadZ.at(4));
 
     fSigma_dx = new TF1("fSigma_dx", "[0]/x^[1]+[2]", 0.1, 10);
-    fSigma_dx->SetParameters(parameters_sigma_dx.at(0), parameters_sigma_dx.at(1), parameters_sigma_dx.at(2));
+    fSigma_dx->SetParameters(parametersSigmadX.at(0), parametersSigmadX.at(1), parametersSigmadX.at(2));
 
-    fMean_dx_pos_mod1 = new TF1("funcMeandx_pos_mod1", "[0]/(x+[1])^[2]", 0.1, 10);
-    fMean_dx_neg_mod1 = new TF1("funcMeandx_neg_mod1", "[0]/(x+[1])^[2]", 0.1, 10);
-    fMean_dx_pos_mod2 = new TF1("funcMeandx_pos_mod2", "[0]/(x+[1])^[2]", 0.1, 10);
-    fMean_dx_neg_mod2 = new TF1("funcMeandx_neg_mod2", "[0]/(x+[1])^[2]", 0.1, 10);
-    fMean_dx_pos_mod3 = new TF1("funcMeandx_pos_mod3", "[0]/(x+[1])^[2]", 0.1, 10);
-    fMean_dx_neg_mod3 = new TF1("funcMeandx_neg_mod3", "[0]/(x+[1])^[2]", 0.1, 10);
-    fMean_dx_pos_mod4 = new TF1("funcMeandx_pos_mod4", "[0]/(x+[1])^[2]", 0.1, 10);
-    fMean_dx_neg_mod4 = new TF1("funcMeandx_neg_mod4", "[0]/(x+[1])^[2]", 0.1, 10);
+    fMeandXPosMod1 = new TF1("funcMeandx_pos_mod1", "[0]/(x+[1])^[2]", 0.1, 10);
+    fMeandXNegMod1 = new TF1("funcMeandx_neg_mod1", "[0]/(x+[1])^[2]", 0.1, 10);
+    fMeandXPosMod2 = new TF1("funcMeandx_pos_mod2", "[0]/(x+[1])^[2]", 0.1, 10);
+    fMeandXNegMod2 = new TF1("funcMeandx_neg_mod2", "[0]/(x+[1])^[2]", 0.1, 10);
+    fMeandXPosMod3 = new TF1("funcMeandx_pos_mod3", "[0]/(x+[1])^[2]", 0.1, 10);
+    fMeandXNegMod3 = new TF1("funcMeandx_neg_mod3", "[0]/(x+[1])^[2]", 0.1, 10);
+    fMeandXPosMod4 = new TF1("funcMeandx_pos_mod4", "[0]/(x+[1])^[2]", 0.1, 10);
+    fMeandXNegMod4 = new TF1("funcMeandx_neg_mod4", "[0]/(x+[1])^[2]", 0.1, 10);
 
-    fMean_dx_pos_mod1->SetParameters(Mean_dx_pos_mod1.at(0), Mean_dx_pos_mod1.at(1), Mean_dx_pos_mod1.at(2));
-    fMean_dx_pos_mod2->SetParameters(Mean_dx_pos_mod2.at(0), Mean_dx_pos_mod2.at(1), Mean_dx_pos_mod2.at(2));
-    fMean_dx_pos_mod3->SetParameters(Mean_dx_pos_mod3.at(0), Mean_dx_pos_mod3.at(1), Mean_dx_pos_mod3.at(2));
-    fMean_dx_pos_mod4->SetParameters(Mean_dx_pos_mod4.at(0), Mean_dx_pos_mod4.at(1), Mean_dx_pos_mod4.at(2));
+    fMeandXPosMod1->SetParameters(meandXPosMod1.at(0), meandXPosMod1.at(1), meandXPosMod1.at(2));
+    fMeandXPosMod2->SetParameters(meandXPosMod2.at(0), meandXPosMod2.at(1), meandXPosMod2.at(2));
+    fMeandXPosMod3->SetParameters(meandXPosMod3.at(0), meandXPosMod3.at(1), meandXPosMod3.at(2));
+    fMeandXPosMod4->SetParameters(meandXPosMod4.at(0), meandXPosMod4.at(1), meandXPosMod4.at(2));
 
-    fMean_dx_neg_mod1->SetParameters(Mean_dx_neg_mod1.at(0), Mean_dx_neg_mod1.at(1), Mean_dx_neg_mod1.at(2));
-    fMean_dx_neg_mod2->SetParameters(Mean_dx_neg_mod2.at(0), Mean_dx_neg_mod2.at(1), Mean_dx_neg_mod2.at(2));
-    fMean_dx_neg_mod3->SetParameters(Mean_dx_neg_mod3.at(0), Mean_dx_neg_mod3.at(1), Mean_dx_neg_mod3.at(2));
-    fMean_dx_neg_mod4->SetParameters(Mean_dx_neg_mod4.at(0), Mean_dx_neg_mod4.at(1), Mean_dx_neg_mod4.at(2));
+    fMeandXNegMod1->SetParameters(meandXNegMod1.at(0), meandXNegMod1.at(1), meandXNegMod1.at(2));
+    fMeandXNegMod2->SetParameters(meandXNegMod2.at(0), meandXNegMod2.at(1), meandXNegMod2.at(2));
+    fMeandXNegMod3->SetParameters(meandXNegMod3.at(0), meandXNegMod3.at(1), meandXNegMod3.at(2));
+    fMeandXNegMod4->SetParameters(meandXNegMod4.at(0), meandXNegMod4.at(1), meandXNegMod4.at(2));
   }
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-               aod::CaloClusters& clusters,
-               soa::Filtered<myTracks> const& tracks,
+               aod::CaloClusters const& clusters,
+               soa::Filtered<MyTracks> const& tracks,
                aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -334,7 +312,7 @@ struct phosElId {
       LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
       runNumber = bc.runNumber();
     }
-    if (fabs(collision.posZ()) > 10.f)
+    if (std::fabs(collision.posZ()) > 10.f)
       return;
     mHistManager.fill(HIST("eventCounter"), 0.5);
     if (!collision.alias_bit(mEvSelTrig))
@@ -349,7 +327,7 @@ struct phosElId {
 
     for (auto const& track : tracks) {
 
-      if (!track.has_collision() || fabs(track.dcaXY()) > cfgDCAxyMax || fabs(track.dcaZ()) > cfgDCAzMax || !track.hasTPC() || fabs(track.eta()) > 0.15)
+      if (!track.has_collision() || std::fabs(track.dcaXY()) > cfgDCAxyMax || std::fabs(track.dcaZ()) > cfgDCAzMax || !track.hasTPC() || std::fabs(track.eta()) > 0.15)
         continue;
       if (track.pt() < cfgPtMin || track.pt() > cfgPtMax)
         continue;
@@ -382,9 +360,9 @@ struct phosElId {
       if (track.hasTPC()) {
         float nsigmaTPCEl = track.tpcNSigmaEl();
         float nsigmaTOFEl = track.tofNSigmaEl();
-        bool isTPC_electron = nsigmaTPCEl > cfgTPCNSigmaElMin && nsigmaTPCEl < cfgTPCNSigmaElMax;
-        bool isTOF_electron = nsigmaTOFEl > cfgTOFNSigmaElMin && nsigmaTOFEl < cfgTOFNSigmaElMax;
-        isElectron = isTPC_electron || isTOF_electron;
+        bool isTPCElectron = nsigmaTPCEl > cfgTPCNSigmaElMin && nsigmaTPCEl < cfgTPCNSigmaElMax;
+        bool isTOFElectron = nsigmaTOFEl > cfgTOFNSigmaElMin && nsigmaTOFEl < cfgTOFNSigmaElMax;
+        isElectron = isTPCElectron || isTOFElectron;
 
         float nsigmaTPCPi = track.tpcNSigmaPi();
         float nsigmaTPCKa = track.tpcNSigmaKa();
@@ -396,7 +374,7 @@ struct phosElId {
           isElectron = true;
       }
 
-      bool posTrack = (track.sign() > 0 && bz > 0) || (track.sign() < 0 && bz < 0);
+      bool posTrack = track.sign() * bz > 0;
       for (auto const& clu : clusters) {
         if (module != clu.mod())
           continue;
@@ -434,46 +412,26 @@ struct phosElId {
             mHistManager.fill(HIST("hEp_v_E_disp_TPC"), Ep, cluE, module);
           }
         }
-        if (!isWithin2Sigma(module, trackPT, dZ, dX))
+        if (!isWithinNSigma(module, trackPT, dZ, dX))
           continue;
-        mHistManager.fill(HIST("hCluE_v_pt_2sigma"), cluE, trackPT, module);
-        mHistManager.fill(HIST("hEp_v_pt_2sigma"), Ep, trackPT, module);
-        mHistManager.fill(HIST("hEp_v_E_2sigma"), Ep, cluE, module);
+        mHistManager.fill(HIST("hCluE_v_pt_Nsigma"), cluE, trackPT, module);
+        mHistManager.fill(HIST("hEp_v_pt_Nsigma"), Ep, trackPT, module);
+        mHistManager.fill(HIST("hEp_v_E_Nsigma"), Ep, cluE, module);
         if (isElectron) {
-          mHistManager.fill(HIST("hCluE_v_pt_2sigma_TPC"), cluE, trackPT, module);
-          mHistManager.fill(HIST("hEp_v_pt_2sigma_TPC"), Ep, trackPT, module);
-          mHistManager.fill(HIST("hEp_v_E_2sigma_TPC"), Ep, cluE, module);
+          mHistManager.fill(HIST("hCluE_v_pt_Nsigma_TPC"), cluE, trackPT, module);
+          mHistManager.fill(HIST("hEp_v_pt_Nsigma_TPC"), Ep, trackPT, module);
+          mHistManager.fill(HIST("hEp_v_E_Nsigma_TPC"), Ep, cluE, module);
         }
         if (isDispOK) {
-          mHistManager.fill(HIST("hCluE_v_pt_2sigma_disp"), cluE, trackPT, module);
-          mHistManager.fill(HIST("hEp_v_pt_2sigma_disp"), Ep, trackPT, module);
-          mHistManager.fill(HIST("hEp_v_E_2sigma_disp"), Ep, cluE, module);
+          mHistManager.fill(HIST("hCluE_v_pt_Nsigma_disp"), cluE, trackPT, module);
+          mHistManager.fill(HIST("hEp_v_pt_Nsigma_disp"), Ep, trackPT, module);
+          mHistManager.fill(HIST("hEp_v_E_Nsigma_disp"), Ep, cluE, module);
           if (isElectron) {
-            mHistManager.fill(HIST("hCluE_v_pt_2sigma_disp_TPC"), cluE, trackPT, module);
-            mHistManager.fill(HIST("hEp_v_pt_2sigma_disp_TPC"), Ep, trackPT, module);
-            mHistManager.fill(HIST("hEp_v_E_2sigma_disp_TPC"), Ep, cluE, module);
+            mHistManager.fill(HIST("hCluE_v_pt_Nsigma_disp_TPC"), cluE, trackPT, module);
+            mHistManager.fill(HIST("hEp_v_pt_Nsigma_disp_TPC"), Ep, trackPT, module);
+            mHistManager.fill(HIST("hEp_v_E_Nsigma_disp_TPC"), Ep, cluE, module);
           }
-          phosMatch(collision.index(), clu.index(), track.index());
-        }
-        if (isWithin1Sigma(module, trackPT, dZ, dX)) {
-          mHistManager.fill(HIST("hCluE_v_pt_1sigma"), cluE, trackPT, module);
-          mHistManager.fill(HIST("hEp_v_pt_1sigma"), Ep, trackPT, module);
-          mHistManager.fill(HIST("hEp_v_E_1sigma"), Ep, cluE, module);
-          if (isElectron) {
-            mHistManager.fill(HIST("hCluE_v_pt_1sigma_TPC"), cluE, trackPT, module);
-            mHistManager.fill(HIST("hEp_v_pt_1sigma_TPC"), Ep, trackPT, module);
-            mHistManager.fill(HIST("hEp_v_E_1sigma_TPC"), Ep, cluE, module);
-          }
-          if (isDispOK) {
-            mHistManager.fill(HIST("hCluE_v_pt_1sigma_disp"), cluE, trackPT, module);
-            mHistManager.fill(HIST("hEp_v_pt_1sigma_disp"), Ep, trackPT, module);
-            mHistManager.fill(HIST("hEp_v_E_1sigma_disp"), Ep, cluE, module);
-            if (isElectron) {
-              mHistManager.fill(HIST("hCluE_v_pt_1sigma_disp_TPC"), cluE, trackPT, module);
-              mHistManager.fill(HIST("hEp_v_pt_1sigma_disp_TPC"), Ep, trackPT, module);
-              mHistManager.fill(HIST("hEp_v_E_1sigma_disp_TPC"), Ep, cluE, module);
-            }
-          }
+          hosMatch(collision.index(), clu.index(), track.index());
         }
       }
 
@@ -501,53 +459,27 @@ struct phosElId {
     } // end of cluster loop
   }
 
-  bool isWithin2Sigma(int16_t& mod, float p, float deltaZ, float deltaX)
+  bool isWithinNSigma(int16_t& mod, float p, float deltaZ, float deltaX)
   {
     if (mod == 1) {
-      if (fabs(deltaZ - PhosShiftZ[0]) > 2 * fSigma_dz->Eval(p))
+      if (std::fabs(deltaZ - PhosShiftZ[0]) > cfgNsigmaTrackMatch * fSigma_dz->Eval(p))
         return false;
-      if (fabs(deltaX - fMean_dx_pos_mod1->Eval(p) + PhosShiftX[0]) > 2 * fSigma_dx->Eval(p))
-        return false;
-    } else if (mod == 2) {
-      if (fabs(deltaZ - PhosShiftZ[1]) > 2 * fSigma_dz->Eval(p))
-        return false;
-      if (fabs(deltaX - fMean_dx_pos_mod2->Eval(p) + PhosShiftX[1]) > 2 * fSigma_dx->Eval(p))
-        return false;
-    } else if (mod == 3) {
-      if (fabs(deltaZ - PhosShiftZ[2]) > 2 * fSigma_dz->Eval(p))
-        return false;
-      if (fabs(deltaX - fMean_dx_pos_mod3->Eval(p) + PhosShiftX[2]) > 2 * fSigma_dx->Eval(p))
-        return false;
-    } else if (mod == 4) {
-      if (fabs(deltaZ - PhosShiftZ[3]) > 2 * fSigma_dz->Eval(p))
-        return false;
-      if (fabs(deltaX - fMean_dx_pos_mod4->Eval(p) + PhosShiftX[3]) > 2 * fSigma_dx->Eval(p))
-        return false;
-    }
-    return true;
-  }
-
-  bool isWithin1Sigma(int16_t& mod, float p, float deltaZ, float deltaX)
-  {
-    if (mod == 1) {
-      if (fabs(deltaZ - PhosShiftZ[0]) > fSigma_dz->Eval(p))
-        return false;
-      if (fabs(deltaX - fMean_dx_pos_mod1->Eval(p) + PhosShiftX[0]) > fSigma_dx->Eval(p))
+      if (std::fabs(deltaX - fMeandXPosMod1->Eval(p) + PhosShiftX[0]) > cfgNsigmaTrackMatch * fSigma_dx->Eval(p))
         return false;
     } else if (mod == 2) {
-      if (fabs(deltaZ - PhosShiftZ[1]) > fSigma_dz->Eval(p))
+      if (std::fabs(deltaZ - PhosShiftZ[1]) > cfgNsigmaTrackMatch * fSigma_dz->Eval(p))
         return false;
-      if (fabs(deltaX - fMean_dx_pos_mod2->Eval(p) + PhosShiftX[1]) > fSigma_dx->Eval(p))
+      if (std::fabs(deltaX - fMeandXPosMod2->Eval(p) + PhosShiftX[1]) > cfgNsigmaTrackMatch * fSigma_dx->Eval(p))
         return false;
     } else if (mod == 3) {
-      if (fabs(deltaZ - PhosShiftZ[2]) > fSigma_dz->Eval(p))
+      if (std::fabs(deltaZ - PhosShiftZ[2]) > cfgNsigmaTrackMatch * fSigma_dz->Eval(p))
         return false;
-      if (fabs(deltaX - fMean_dx_pos_mod3->Eval(p) + PhosShiftX[2]) > fSigma_dx->Eval(p))
+      if (std::fabs(deltaX - fMeandXPosMod3->Eval(p) + PhosShiftX[2]) > cfgNsigmaTrackMatch * fSigma_dx->Eval(p))
         return false;
     } else if (mod == 4) {
-      if (fabs(deltaZ - PhosShiftZ[3]) > fSigma_dz->Eval(p))
+      if (std::fabs(deltaZ - PhosShiftZ[3]) > cfgNsigmaTrackMatch * fSigma_dz->Eval(p))
         return false;
-      if (fabs(deltaX - fMean_dx_pos_mod4->Eval(p) + PhosShiftX[3]) > fSigma_dx->Eval(p))
+      if (std::fabs(deltaX - fMeandXPosMod4->Eval(p) + PhosShiftX[3]) > cfgNsigmaTrackMatch * fSigma_dx->Eval(p))
         return false;
     }
     return true;
@@ -562,17 +494,10 @@ struct phosElId {
     const float phiMin = 240. * 0.017453293; // degToRad
     const float phiMax = 323. * 0.017453293; // PHOS+20 cm * degToRad
     const float etaMax = 0.178266;
-    if (trackPhi < phiMin || trackPhi > phiMax || abs(trackEta) > etaMax) {
+    if (trackPhi < phiMin || trackPhi > phiMax || std::abs(trackEta) > etaMax) {
       return false;
     }
-
     const float dphi = 20. * 0.017453293;
-    if (trackPhi < 0.) {
-      trackPhi += TMath::TwoPi();
-    }
-    if (trackPhi > TMath::TwoPi()) {
-      trackPhi -= TMath::TwoPi();
-    }
     module = 1 + static_cast<int16_t>((trackPhi - phiMin) / dphi);
     if (module < 1) {
       module = 1;
@@ -582,11 +507,11 @@ struct phosElId {
     }
 
     // get PHOS radius
-    constexpr float shiftY = -1.26;    // Depth-optimized
-    double posL[3] = {0., 0., shiftY}; // local position at the center of module
+    constexpr float ShiftY = -1.26;    // Depth-optimized
+    double posL[3] = {0., 0., ShiftY}; // local position at the center of module
     double posG[3] = {0};
     geomPHOS->getAlignmentMatrix(module)->LocalToMaster(posL, posG);
-    double rPHOS = sqrt(posG[0] * posG[0] + posG[1] * posG[1]);
+    double rPHOS = std::sqrt(posG[0] * posG[0] + posG[1] * posG[1]);
     double alpha = (230. + 20. * module) * 0.017453293;
 
     // During main reconstruction track was propagated to radius 460 cm with accounting material
@@ -611,7 +536,7 @@ struct phosElId {
       return false;
     }
     alpha = trackPar.getAlpha();
-    double ca = cos(alpha), sa = sin(alpha);
+    double ca = std::cos(alpha), sa = std::sin(alpha);
     posG[0] = trackPar.getX() * ca - trackPar.getY() * sa;
     posG[1] = trackPar.getY() * ca + trackPar.getX() * sa;
     posG[2] = trackPar.getZ();
@@ -626,10 +551,10 @@ struct phosElId {
   {
     // Parameterization for full dispersion
     float l2Mean = 1.53126 + 9.50835e+06 / (1. + 1.08728e+07 * pt + 1.73420e+06 * pt * pt);
-    float l1Mean = 1.12365 + 0.123770 * TMath::Exp(-pt * 0.246551) + 5.30000e-03 * pt;
+    float l1Mean = 1.12365 + 0.123770 * std::exp(-pt * 0.246551) + 5.30000e-03 * pt;
     float l2Sigma = 6.48260e-02 + 7.60261e+10 / (1. + 1.53012e+11 * pt + 5.01265e+05 * pt * pt) + 9.00000e-03 * pt;
     float l1Sigma = 4.44719e-04 + 6.99839e-01 / (1. + 1.22497e+00 * pt + 6.78604e-07 * pt * pt) + 9.00000e-03 * pt;
-    float c = -0.35 - 0.550 * TMath::Exp(-0.390730 * pt);
+    float c = -0.35 - 0.550 * std::exp(-0.390730 * pt);
 
     return 0.5 * (l1 - l1Mean) * (l1 - l1Mean) / l1Sigma / l1Sigma +
              0.5 * (l2 - l2Mean) * (l2 - l2Mean) / l2Sigma / l2Sigma +
@@ -638,37 +563,38 @@ struct phosElId {
   }
 };
 
-struct massSpectra {
+struct MassSpectra {
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using myTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
+  using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
 
   Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
 
-  Configurable<float> cfgEtaMax{"cfgEtaMax", {0.8f}, "eta ranges"};
-  Configurable<float> cfgPtMin{"cfgPtMin", {0.2f}, "pt min"};
-  Configurable<float> cfgPtMax{"cfgPtMax", {20.f}, "pt max"};
-  Configurable<float> cfgDCAxyMax{"cfgDCAxyMax", {3.f}, "dcaxy max"};
-  Configurable<float> cfgDCAzMax{"cfgDCAzMax", {3.f}, "dcaz max"};
-  Configurable<float> cfgITSchi2Max{"cfgITSchi2Max", {5.f}, "its chi2 max"};
-  Configurable<float> cfgITSnclsMin{"cfgITSnclsMin", {4.5f}, "min number of ITS clusters"};
-  Configurable<float> cfgITSnclsMax{"cfgITSnclsMax", {7.5f}, "max number of ITS clusters"};
-  Configurable<float> cfgTPCchi2Max{"cfgTPCchi2Max", {4.f}, "tpc chi2 max"};
-  Configurable<float> cfgTPCnclsMin{"cfgTPCnclsMin", {90.f}, "min number of TPC clusters"};
-  Configurable<float> cfgTPCnclsMax{"cfgTPCnclsMax", {170.f}, "max number of TPC clusters"};
-  Configurable<float> cfgTPCnclsCRMin{"cfgTPCnclsCRMin", {80.f}, "min number of TPC crossed rows"};
-  Configurable<float> cfgTPCnclsCRMax{"cfgTPCnclsCRMax", {161.f}, "max number of TPC crossed rows"};
-
-  Configurable<float> cfgTPCNSigmaElMin{"cfgTPCNSigmaElMin", {-3.f}, "min TPC nsigma e for inclusion"};
-  Configurable<float> cfgTPCNSigmaElMax{"cfgTPCNSigmaElMax", {2.f}, "max TPC nsigma e for inclusion"};
-  Configurable<float> cfgTPCNSigmaPiMin{"cfgTPCNSigmaPiMin", {-3.f}, "min TPC nsigma pion for exclusion"};
-  Configurable<float> cfgTPCNSigmaPiMax{"cfgTPCNSigmaPiMax", {3.5f}, "max TPC nsigma pion for exclusion"};
-  Configurable<float> cfgTPCNSigmaPrMin{"cfgTPCNSigmaPrMin", {-3.f}, "min TPC nsigma proton for exclusion"};
-  Configurable<float> cfgTPCNSigmaPrMax{"cfgTPCNSigmaPrMax", {4.f}, "max TPC nsigma proton for exclusion"};
-  Configurable<float> cfgTPCNSigmaKaMin{"cfgTPCNSigmaKaMin", {-3.f}, "min TPC nsigma kaon for exclusion"};
-  Configurable<float> cfgTPCNSigmaKaMax{"cfgTPCNSigmaKaMax", {4.f}, "max TPC nsigma kaon for exclusion"};
-  Configurable<float> cfgTOFNSigmaElMin{"cfgTOFNSigmaElMin", {-3.f}, "min TOF nsigma e for inclusion"};
-  Configurable<float> cfgTOFNSigmaElMax{"cfgTOFNSigmaElMax", {3.f}, "max TOF nsigma e for inclusion"};
+  Configurable<float> cfgEtaMax{"cfgEtaMax", {0.8f}, "eta ranges"},
+    cfgPtMin{"cfgPtMin", {0.2f}, "pt min"},
+    cfgPtMax{"cfgPtMax", {20.f}, "pt max"},
+    cfgDCAxyMax{"cfgDCAxyMax", {3.f}, "dcaxy max"},
+    cfgDCAzMax{"cfgDCAzMax", {3.f}, "dcaz max"},
+    cfgITSchi2Max{"cfgITSchi2Max", {5.f}, "its chi2 max"},
+    cfgITSnclsMin{"cfgITSnclsMin", {4.5f}, "min number of ITS clusters"},
+    cfgITSnclsMax{"cfgITSnclsMax", {7.5f}, "max number of ITS clusters"},
+    cfgTPCchi2Max{"cfgTPCchi2Max", {4.f}, "tpc chi2 max"},
+    cfgTPCnclsMin{"cfgTPCnclsMin", {90.f}, "min number of TPC clusters"},
+    cfgTPCnclsMax{"cfgTPCnclsMax", {170.f}, "max number of TPC clusters"},
+    cfgTPCnclsCRMin{"cfgTPCnclsCRMin", {80.f}, "min number of TPC crossed rows"},
+    cfgTPCnclsCRMax{"cfgTPCnclsCRMax", {161.f}, "max number of TPC crossed rows"},
+    cfgTPCNSigmaElMin{"cfgTPCNSigmaElMin", {-3.f}, "min TPC nsigma e for inclusion"},
+    cfgTPCNSigmaElMax{"cfgTPCNSigmaElMax", {2.f}, "max TPC nsigma e for inclusion"},
+    cfgTPCNSigmaPiMin{"cfgTPCNSigmaPiMin", {-3.f}, "min TPC nsigma pion for exclusion"},
+    cfgTPCNSigmaPiMax{"cfgTPCNSigmaPiMax", {3.5f}, "max TPC nsigma pion for exclusion"},
+    cfgTPCNSigmaPrMin{"cfgTPCNSigmaPrMin", {-3.f}, "min TPC nsigma proton for exclusion"},
+    cfgTPCNSigmaPrMax{"cfgTPCNSigmaPrMax", {4.f}, "max TPC nsigma proton for exclusion"},
+    cfgTPCNSigmaKaMin{"cfgTPCNSigmaKaMin", {-3.f}, "min TPC nsigma kaon for exclusion"},
+    cfgTPCNSigmaKaMax{"cfgTPCNSigmaKaMax", {4.f}, "max TPC nsigma kaon for exclusion"},
+    cfgTOFNSigmaElMin{"cfgTOFNSigmaElMin", {-3.f}, "min TOF nsigma e for inclusion"},
+    cfgTOFNSigmaElMax{"cfgTOFNSigmaElMax", {3.f}, "max TOF nsigma e for inclusion"},
+    cfgShiftEp{"cfgShiftEp", {0.055f}, "PHOS E/p shift for electrons"},
+    cfgNsigmaEp{"cfgNsigmaEp", {2.f}, "PHOS E/p nsigma for inclusion"};
 
   Configurable<std::vector<float>> cfgEpSigmaPars{"cfgEpSigmaPars", {1.3e-02, 1.9e-02, 1.1e-02, 3.e-02}, "E/p sigma function parameters (from alice 3 mc tests + const)"};
 
@@ -678,19 +604,18 @@ struct massSpectra {
   int runNumber{0};
 
   HistogramRegistry mHistManager{"MassSpectraHistograms"};
-  TF1* fEp_sigma_phos;
+  TF1* fEpSigmaPhos;
 
   void init(InitContext const&)
   {
     LOG(info) << "Initializing PHOS electron identification analysis task ...";
 
-    std::vector<double> momentum_binning = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
-                                            1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
-                                            4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
-
-    const AxisSpec
-      axisCounter{1, 0, +1, ""},
-      axisPt{momentum_binning, "p_{T} (GeV/c)"},
+    std::vector<double> momentumBinning = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
+                                           1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
+                                           4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
+    const AxisSpec axisCounter{1, 0, +1, ""},
+      axisPt{momentumBinning, "p_{T} (GeV/c)"},
+      axisEp{200, 0., 2., "E/p", "E_{cluster}/p_{track}"},
       axisE{200, 0, 10, "E (GeV)", "E (GeV)"},
       axisMassSpectrum{4000, 0, 4, "M (GeV/c^{2})", "Mass e^{+}e^{-} (GeV/c^{2})"};
 
@@ -712,16 +637,19 @@ struct massSpectra {
     mHistManager.add("h_eh_mp_mass_spectra_v_E", "Mass e^{#pm}h^{#mp} vs cluster E e^{#pm}h^{#mp}", HistType::kTH2F, {axisMassSpectrum, axisE});
     mHistManager.add("h_ee_mp_mass_spectra_v_E", "Mass e^{#pm}e^{#mp} vs cluster E e^{#pm}e^{#mp}", HistType::kTH2F, {axisMassSpectrum, axisE});
 
+    mHistManager.add("hEp_v_E", "E/p ratio vs cluster E", HistType::kTH2F, {axisEp, axisE});
+    mHistManager.add("hEp_v_E_cutEp", "E/p ratio vs cluster E within nSigma corridor", HistType::kTH2F, {axisEp, axisE});
+
     geomPHOS = std::make_unique<o2::phos::Geometry>("PHOS");
 
-    std::vector<float> EpSigmaPars = cfgEpSigmaPars;
-    fEp_sigma_phos = new TF1("fEp_sigma_phos", "sqrt([0]*[0]/x/x+[1]*[1]/x+[2]*[2])+[3]", 0.01, 10);
-    fEp_sigma_phos->SetParameters(EpSigmaPars.at(0), EpSigmaPars.at(1), EpSigmaPars.at(2), EpSigmaPars.at(3));
+    std::vector<float> epSigmaPars = cfgEpSigmaPars;
+    fEpSigmaPhos = new TF1("fEpSigmaPhos", "sqrt([0]*[0]/x/x+[1]*[1]/x+[2]*[2])+[3]", 0.01, 10);
+    fEpSigmaPhos->SetParameters(epSigmaPars.at(0), epSigmaPars.at(1), epSigmaPars.at(2), epSigmaPars.at(3));
   }
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                aod::CaloClusters const& clusters,
-               myTracks const& tracks,
+               MyTracks const& tracks,
                o2::aod::PHOSMatchindexTable const& matches,
                aod::BCsWithTimestamps const&)
   {
@@ -737,7 +665,7 @@ struct massSpectra {
       LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
       runNumber = bc.runNumber();
     }
-    if (fabs(collision.posZ()) > 10.f)
+    if (std::fabs(collision.posZ()) > 10.f)
       return;
     mHistManager.fill(HIST("eventCounter"), 0.5);
     if (!collision.alias_bit(mEvSelTrig))
@@ -749,7 +677,7 @@ struct massSpectra {
 
     for (auto const& TPCel : tracks) {
 
-      if (!TPCel.has_collision() || fabs(TPCel.dcaXY()) > cfgDCAxyMax || fabs(TPCel.dcaZ()) > cfgDCAzMax || !TPCel.hasTPC() || fabs(TPCel.eta()) > 0.15)
+      if (!TPCel.has_collision() || std::fabs(TPCel.dcaXY()) > cfgDCAxyMax || std::fabs(TPCel.dcaZ()) > cfgDCAzMax || !TPCel.hasTPC() || std::fabs(TPCel.eta()) > 0.15)
         continue;
       if (TPCel.pt() < cfgPtMin || TPCel.pt() > cfgPtMax)
         continue;
@@ -767,9 +695,9 @@ struct massSpectra {
       bool isElectron = false;
       float nsigmaTPCEl = TPCel.tpcNSigmaEl();
       float nsigmaTOFEl = TPCel.tofNSigmaEl();
-      bool isTPC_electron = nsigmaTPCEl > cfgTPCNSigmaElMin && nsigmaTPCEl < cfgTPCNSigmaElMax;
-      bool isTOF_electron = nsigmaTOFEl > cfgTOFNSigmaElMin && nsigmaTOFEl < cfgTOFNSigmaElMax;
-      isElectron = isTPC_electron || isTOF_electron;
+      bool isTPCElectron = nsigmaTPCEl > cfgTPCNSigmaElMin && nsigmaTPCEl < cfgTPCNSigmaElMax;
+      bool isTOFElectron = nsigmaTOFEl > cfgTOFNSigmaElMin && nsigmaTOFEl < cfgTOFNSigmaElMax;
+      isElectron = isTPCElectron || isTOFElectron;
 
       float nsigmaTPCPi = TPCel.tpcNSigmaPi();
       float nsigmaTPCKa = TPCel.tpcNSigmaKa();
@@ -781,6 +709,7 @@ struct massSpectra {
         isElectron = true;
       if (!isElectron)
         continue;
+      bool posTrack = TPCel.sign() * bz > 0;
 
       for (auto const& match : matches) {
         auto clust2 = clusters.iteratorAt(match.caloClusterId());
@@ -791,82 +720,106 @@ struct massSpectra {
         if (TPCel.index() >= track2.index())
           break;
 
-        float mass_2tracks = 0, mom_2tracks = 0, cluE = clust2.e();
-        TLorentzVector P1, P2;
-        P1.SetPxPyPzE(TPCel.px(), TPCel.py(), TPCel.pz(), TPCel.energy(0));
-        P2.SetPxPyPzE(track2.px(), track2.py(), track2.pz(), track2.energy(0));
-        mom_2tracks = (P1 + P2).Pt();
-        mass_2tracks = (P1 + P2).M();
-        bool posTrack = (TPCel.sign() > 0 && bz > 0) || (TPCel.sign() < 0 && bz < 0);
-        bool elCandidate = (fabs(clust2.e() / track2.p() - 1) < 2 * fEp_sigma_phos->Eval(mom_2tracks));
+        float mass2Tracks = 0, mom2Tracks = 0, cluE = clust2.e();
+        TLorentzVector fourVectorP1, fourVectorP2;
+        fourVectorP1.SetPxPyPzE(TPCel.px(), TPCel.py(), TPCel.pz(), TPCel.energy(0));
+        fourVectorP2.SetPxPyPzE(track2.px(), track2.py(), track2.pz(), track2.energy(0));
+        mom2Tracks = (fourVectorP1 + fourVectorP2).Pt();
+        mass2Tracks = (fourVectorP1 + fourVectorP2).M();
+        bool elCandidate = (std::fabs(cluE / track2.p() - cfgShiftEp - 1) < cfgNsigmaEp * fEpSigmaPhos->Eval(cluE));
 
         if (TPCel.sign() == track2.sign()) {
           if (posTrack) {
-            mHistManager.fill(HIST("h_eh_pp_mass_spectra_v_Pt"), mass_2tracks, mom_2tracks);
-            mHistManager.fill(HIST("h_eh_pp_mass_spectra_v_E"), mass_2tracks, cluE);
+            mHistManager.fill(HIST("h_eh_pp_mass_spectra_v_Pt"), mass2Tracks, mom2Tracks);
+            mHistManager.fill(HIST("h_eh_pp_mass_spectra_v_E"), mass2Tracks, cluE);
             if (elCandidate) {
-              mHistManager.fill(HIST("h_ee_pp_mass_spectra_v_Pt"), mass_2tracks, mom_2tracks);
-              mHistManager.fill(HIST("h_ee_pp_mass_spectra_v_E"), mass_2tracks, cluE);
+              mHistManager.fill(HIST("h_ee_pp_mass_spectra_v_Pt"), mass2Tracks, mom2Tracks);
+              mHistManager.fill(HIST("h_ee_pp_mass_spectra_v_E"), mass2Tracks, cluE);
             }
           } else {
-            mHistManager.fill(HIST("h_eh_mm_mass_spectra_v_Pt"), mass_2tracks, mom_2tracks);
-            mHistManager.fill(HIST("h_eh_mm_mass_spectra_v_E"), mass_2tracks, cluE);
+            mHistManager.fill(HIST("h_eh_mm_mass_spectra_v_Pt"), mass2Tracks, mom2Tracks);
+            mHistManager.fill(HIST("h_eh_mm_mass_spectra_v_E"), mass2Tracks, cluE);
             if (elCandidate) {
-              mHistManager.fill(HIST("h_ee_mm_mass_spectra_v_Pt"), mass_2tracks, mom_2tracks);
-              mHistManager.fill(HIST("h_ee_mm_mass_spectra_v_E"), mass_2tracks, cluE);
+              mHistManager.fill(HIST("h_ee_mm_mass_spectra_v_Pt"), mass2Tracks, mom2Tracks);
+              mHistManager.fill(HIST("h_ee_mm_mass_spectra_v_E"), mass2Tracks, cluE);
             }
           }
         } else {
-          mHistManager.fill(HIST("h_eh_mp_mass_spectra_v_Pt"), mass_2tracks, mom_2tracks);
-          mHistManager.fill(HIST("h_eh_mp_mass_spectra_v_E"), mass_2tracks, cluE);
+          mHistManager.fill(HIST("h_eh_mp_mass_spectra_v_Pt"), mass2Tracks, mom2Tracks);
+          mHistManager.fill(HIST("h_eh_mp_mass_spectra_v_E"), mass2Tracks, cluE);
           if (elCandidate) {
-            mHistManager.fill(HIST("h_ee_mp_mass_spectra_v_Pt"), mass_2tracks, mom_2tracks);
-            mHistManager.fill(HIST("h_ee_mp_mass_spectra_v_E"), mass_2tracks, cluE);
+            mHistManager.fill(HIST("h_ee_mp_mass_spectra_v_Pt"), mass2Tracks, mom2Tracks);
+            mHistManager.fill(HIST("h_ee_mp_mass_spectra_v_E"), mass2Tracks, cluE);
           }
         }
       }
     } // end of double loop
+
+    for (auto const& match : matches) {
+      auto clust = clusters.iteratorAt(match.caloClusterId());
+      auto track = tracks.iteratorAt(match.trackId());
+      float cluE = clust.e();
+      float epRatio = cluE / track.p();
+      mHistManager.fill(HIST("hEp_v_E"), epRatio, cluE);
+      bool elCandidate = (std::fabs(epRatio - cfgShiftEp - 1) < cfgNsigmaEp * fEpSigmaPhos->Eval(cluE));
+      if (elCandidate)
+        mHistManager.fill(HIST("hEp_v_E_cutEp"), epRatio, cluE);
+    }
   }
 };
 
-struct tpcElIdMassSpectrum {
+struct TpcElIdMassSpectrum {
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using myTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
+  using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
 
-  Configurable<float> cfgEtaMax{"cfgEtaMax", {0.8f}, "eta ranges"};
-  Configurable<float> cfgPtMin{"cfgPtMin", {0.2f}, "pt min"};
-  Configurable<float> cfgPtMax{"cfgPtMax", {20.f}, "pt max"};
-  Configurable<float> cfgDCAxyMax{"cfgDCAxyMax", {3.f}, "dcaxy max"};
-  Configurable<float> cfgDCAzMax{"cfgDCAzMax", {3.f}, "dcaz max"};
-  Configurable<float> cfgITSchi2Max{"cfgITSchi2Max", {5.f}, "its chi2 max"};
-  Configurable<float> cfgITSnclsMin{"cfgITSnclsMin", {4.5f}, "min number of ITS clusters"};
-  Configurable<float> cfgITSnclsMax{"cfgITSnclsMax", {7.5f}, "max number of ITS clusters"};
-  Configurable<float> cfgTPCchi2Max{"cfgTPCchi2Max", {4.f}, "tpc chi2 max"};
-  Configurable<float> cfgTPCnclsMin{"cfgTPCnclsMin", {90.f}, "min number of TPC clusters"};
-  Configurable<float> cfgTPCnclsMax{"cfgTPCnclsMax", {170.f}, "max number of TPC clusters"};
-  Configurable<float> cfgTPCnclsCRMin{"cfgTPCnclsCRMin", {80.f}, "min number of TPC crossed rows"};
-  Configurable<float> cfgTPCnclsCRMax{"cfgTPCnclsCRMax", {161.f}, "max number of TPC crossed rows"};
-  Configurable<float> cfgTPCNSigmaElMin{"cfgTPCNSigmaElMin", {-3.f}, "min TPC nsigma e for inclusion"};
-  Configurable<float> cfgTPCNSigmaElMax{"cfgTPCNSigmaElMax", {2.f}, "max TPC nsigma e for inclusion"};
-  Configurable<float> cfgTPCNSigmaPiMin{"cfgTPCNSigmaPiMin", {-3.f}, "min TPC nsigma pion for exclusion"};
-  Configurable<float> cfgTPCNSigmaPiMax{"cfgTPCNSigmaPiMax", {3.5f}, "max TPC nsigma pion for exclusion"};
-  Configurable<float> cfgTPCNSigmaPrMin{"cfgTPCNSigmaPrMin", {-3.f}, "min TPC nsigma proton for exclusion"};
-  Configurable<float> cfgTPCNSigmaPrMax{"cfgTPCNSigmaPrMax", {4.f}, "max TPC nsigma proton for exclusion"};
-  Configurable<float> cfgTPCNSigmaKaMin{"cfgTPCNSigmaKaMin", {-3.f}, "min TPC nsigma kaon for exclusion"};
-  Configurable<float> cfgTPCNSigmaKaMax{"cfgTPCNSigmaKaMax", {4.f}, "max TPC nsigma kaon for exclusion"};
-  Configurable<float> cfgTOFNSigmaElMin{"cfgTOFNSigmaElMin", {-3.f}, "min TOF nsigma e for inclusion"};
-  Configurable<float> cfgTOFNSigmaElMax{"cfgTOFNSigmaElMax", {3.f}, "max TOF nsigma e for inclusion"};
+  Configurable<float> mMinCluE{"mMinCluE", 0.1, "Minimum cluster energy for photons in the analysis"},
+    mCutMIPCluE{"mCutMIPCluE", 0.3, "Min cluster energy to reject MIPs in the analysis"},
+    mMaxCluE{"mMaxCluE", 1., "Maximum cluster energy for photons in the analysis"},
+    mMinCluTime{"minCluTime", -25.e-9, "Min. cluster time"},
+    mMaxCluTime{"mMaxCluTime", 25.e-9, "Max. cluster time"},
+    cfgEtaMax{"cfgEtaMax", {0.8f}, "eta ranges"},
+    cfgPtMin{"cfgPtMin", {0.2f}, "pt min"},
+    cfgPtMax{"cfgPtMax", {20.f}, "pt max"},
+    cfgDCAxyMax{"cfgDCAxyMax", {3.f}, "dcaxy max"},
+    cfgDCAzMax{"cfgDCAzMax", {3.f}, "dcaz max"},
+    cfgITSchi2Max{"cfgITSchi2Max", {5.f}, "its chi2 max"},
+    cfgITSnclsMin{"cfgITSnclsMin", {4.5f}, "min number of ITS clusters"},
+    cfgITSnclsMax{"cfgITSnclsMax", {7.5f}, "max number of ITS clusters"},
+    cfgTPCchi2Max{"cfgTPCchi2Max", {4.f}, "tpc chi2 max"},
+    cfgTPCnclsMin{"cfgTPCnclsMin", {90.f}, "min number of TPC clusters"},
+    cfgTPCnclsMax{"cfgTPCnclsMax", {170.f}, "max number of TPC clusters"},
+    cfgTPCnclsCRMin{"cfgTPCnclsCRMin", {80.f}, "min number of TPC crossed rows"},
+    cfgTPCnclsCRMax{"cfgTPCnclsCRMax", {161.f}, "max number of TPC crossed rows"},
+    cfgTPCNSigmaElMin{"cfgTPCNSigmaElMin", {-3.f}, "min TPC nsigma e for inclusion"},
+    cfgTPCNSigmaElMax{"cfgTPCNSigmaElMax", {2.f}, "max TPC nsigma e for inclusion"},
+    cfgTPCNSigmaPiMin{"cfgTPCNSigmaPiMin", {-3.f}, "min TPC nsigma pion for exclusion"},
+    cfgTPCNSigmaPiMax{"cfgTPCNSigmaPiMax", {3.5f}, "max TPC nsigma pion for exclusion"},
+    cfgTPCNSigmaPrMin{"cfgTPCNSigmaPrMin", {-3.f}, "min TPC nsigma proton for exclusion"},
+    cfgTPCNSigmaPrMax{"cfgTPCNSigmaPrMax", {4.f}, "max TPC nsigma proton for exclusion"},
+    cfgTPCNSigmaKaMin{"cfgTPCNSigmaKaMin", {-3.f}, "min TPC nsigma kaon for exclusion"},
+    cfgTPCNSigmaKaMax{"cfgTPCNSigmaKaMax", {4.f}, "max TPC nsigma kaon for exclusion"},
+    cfgTOFNSigmaElMin{"cfgTOFNSigmaElMin", {-3.f}, "min TOF nsigma e for inclusion"},
+    cfgTOFNSigmaElMax{"cfgTOFNSigmaElMax", {3.f}, "max TOF nsigma e for inclusion"},
+    cfgPhosRangeEta{"cfgPhosRangeEta", {0.12f}, "Phos range definition plus minus eta"},
+    cfgPhosRangePhiMin{"cfgPhosRangePhiMin", {230.f}, "Phos range angle phi min"},
+    cfgPhosRangePhiMax{"cfgPhosRangePhiMax", {330.f}, "Phos range angle phi max"},
+    cfgeeMassMin{"cfgeeMassMin", {2.9f}, "J/psi(e+e-) Mass corridor lower limit"},
+    cfgeeMassMax{"cfgeeMassMax", {3.3f}, "J/psi(e+e-) Mass corridor upper limit"},
+    cfgJpsiMass{"cfgJpsiMass", {3.097f}, "J/psi Mass constant"};
 
-  Filter ptFilter = (aod::track::pt > cfgPtMin) && (aod::track::pt < cfgPtMax);
-  Filter etafilter = nabs(aod::track::eta) < cfgEtaMax;
-  Filter dcaxyfilter = nabs(aod::track::dcaXY) < cfgDCAxyMax;
-  Filter dcazfilter = nabs(aod::track::dcaZ) < cfgDCAzMax;
+  Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"},
+    mMinCluNcell{"minCluNcell", 3, "min cells in cluster"};
 
-  Filter tpcEl = ((aod::pidtpc::tpcNSigmaEl > cfgTPCNSigmaElMin) && (aod::pidtpc::tpcNSigmaEl < cfgTPCNSigmaElMax)) || ((aod::pidtof::tofNSigmaEl > cfgTOFNSigmaElMin) && (aod::pidtof::tofNSigmaEl < cfgTOFNSigmaElMax));
-  Filter tpcPi_rej = (aod::pidtpc::tpcNSigmaPi < cfgTPCNSigmaPiMin) || (aod::pidtpc::tpcNSigmaPi > cfgTPCNSigmaPiMax);
-  Filter tpcKa_rej = (aod::pidtpc::tpcNSigmaKa < cfgTPCNSigmaKaMin) || (aod::pidtpc::tpcNSigmaKa > cfgTPCNSigmaPrMax);
-  Filter tpcPr_rej = (aod::pidtpc::tpcNSigmaPr < cfgTPCNSigmaPrMin) || (aod::pidtpc::tpcNSigmaPr > cfgTPCNSigmaPrMax);
+  Filter ptFilter = (aod::track::pt > cfgPtMin) && (aod::track::pt < cfgPtMax),
+         etaFilter = nabs(aod::track::eta) < cfgEtaMax,
+         dcaxyFilter = nabs(aod::track::dcaXY) < cfgDCAxyMax,
+         dcazFilter = nabs(aod::track::dcaZ) < cfgDCAzMax;
+
+  Filter tpcEl = ((aod::pidtpc::tpcNSigmaEl > cfgTPCNSigmaElMin) && (aod::pidtpc::tpcNSigmaEl < cfgTPCNSigmaElMax)) || ((aod::pidtof::tofNSigmaEl > cfgTOFNSigmaElMin) && (aod::pidtof::tofNSigmaEl < cfgTOFNSigmaElMax)),
+         tpcPiRej = (aod::pidtpc::tpcNSigmaPi < cfgTPCNSigmaPiMin) || (aod::pidtpc::tpcNSigmaPi > cfgTPCNSigmaPiMax),
+         tpcKaRej = (aod::pidtpc::tpcNSigmaKa < cfgTPCNSigmaKaMin) || (aod::pidtpc::tpcNSigmaKa > cfgTPCNSigmaPrMax),
+         tpcPrRej = (aod::pidtpc::tpcNSigmaPr < cfgTPCNSigmaPrMin) || (aod::pidtpc::tpcNSigmaPr > cfgTPCNSigmaPrMax);
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   double bz{0.}; // magnetic field
@@ -878,34 +831,96 @@ struct tpcElIdMassSpectrum {
   {
     LOG(info) << "Initializing ee mass spectrum via TPC electron identification analysis task ...";
 
-    std::vector<double> momentum_binning = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
-                                            1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
-                                            4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
-    const AxisSpec
-      axisCounter{1, 0, +1, ""},
+    std::vector<double> momentumBinning = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
+                                           1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
+                                           4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.};
+    const AxisSpec axisCounter{1, 0, +1, ""},
       axisVTrackX{400, -5., 5., "track vertex x (cm)", "track vertex x (cm)"},
       axisVTrackY{400, -5., 5., "track vertex y (cm)", "track vertex y (cm)"},
       axisVTrackZ{400, -20., 20., "track vertex z (cm)", "track vertex z (cm)"},
-      axisMassSpectrum{4000, 0, 4, "M (GeV/c^{2})", "Mass e^{+}e^{-} (GeV/c^{2})"},
+      axisE{200, 0, 10, "E (GeV)", "E (GeV)"},
+      axisMassSpectrum{1000, 0, 4, "M (GeV/c^{2})", "Mass e^{+}e^{-} (GeV/c^{2})"},
+      axisMassSpectrumChiC{1000, 0, 4, "M (GeV/c^{2})", "Mass e^{+}e^{-}#gamma (GeV/c^{2})"},
+      axisMassSpectrumChiCNoJpsiErrors{250, 3, 4, "M (GeV/c^{2})", "Mass e^{+}e^{-}#gamma - Mass e^{+}e^{-} + Mass J/#psi (GeV/c^{2})"},
       axisTPC{1000, 0, 200, "TPC signal (dE/dx)"},
-      axisPt{momentum_binning, "p_{T} (GeV/c)"},
+      axisPt{momentumBinning, "p_{T} (GeV/c)"},
       axisPtBig{2000, 0, 20, "p_{T} (GeV/c)"},
       axisEta{600, -3., 3., "#eta"};
 
     mHistManager.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
     mHistManager.add("hTPCspectra_isElectronRej", "isElectron with rejection | TPC dE/dx spectra", HistType::kTH2F, {axisPt, axisTPC});
 
-    mHistManager.add("h_TPCee_MS_mp", "Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp} (from TPC candidates) vs pair pt", HistType::kTH2F, {axisMassSpectrum, axisPt});
-    mHistManager.add("h_TPCee_MS_mm", "Mass e^{-}e^{-} vs momentum e^{-}e^{-} (from TPC candidates) vs pair pt", HistType::kTH2F, {axisMassSpectrum, axisPt});
-    mHistManager.add("h_TPCee_MS_pp", "Mass e^{+}e^{+} vs momentum e^{+}e^{+} (from TPC candidates) vs pair pt", HistType::kTH2F, {axisMassSpectrum, axisPt});
+    mHistManager.add("h_TPCee_MS_mp_v_pt", "Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp} (from TPC candidates)", HistType::kTH2F, {axisMassSpectrum, axisPt});
+    mHistManager.add("h_TPCee_MS_mm_v_pt", "Mass e^{-}e^{-} vs momentum e^{-}e^{-} (from TPC candidates)", HistType::kTH2F, {axisMassSpectrum, axisPt});
+    mHistManager.add("h_TPCee_MS_pp_v_pt", "Mass e^{+}e^{+} vs momentum e^{+}e^{+} (from TPC candidates)", HistType::kTH2F, {axisMassSpectrum, axisPt});
 
-    mHistManager.add("h_TPCee_MS_mp_phosRange", "Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp} (from TPC candidates) vs pair pt with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
-    mHistManager.add("h_TPCee_MS_mm_phosRange", "Mass e^{-}e^{-} vs momentum e^{-}e^{-} (from TPC candidates) vs pair pt with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
-    mHistManager.add("h_TPCee_MS_pp_phosRange", "Mass e^{+}e^{+} vs momentum e^{+}e^{+} (from TPC candidates) vs pair pt with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
+    mHistManager.add("h_TPCee_MS_mp_phosRange_v_pt", "Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp} (from TPC candidates) with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
+    mHistManager.add("h_TPCee_MS_mm_phosRange_v_pt", "Mass e^{-}e^{-} vs momentum e^{-}e^{-} (from TPC candidates) with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
+    mHistManager.add("h_TPCee_MS_pp_phosRange_v_pt", "Mass e^{+}e^{+} vs momentum e^{+}e^{+} (from TPC candidates) with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
 
-    mHistManager.add("h_TPCee_MS_mp_phosRange_kTVXinPHOS", "Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp} (from TPC candidates) vs pair pt with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
-    mHistManager.add("h_TPCee_MS_mm_phosRange_kTVXinPHOS", "Mass e^{-}e^{-} vs momentum e^{-}e^{-} (from TPC candidates) vs pair pt with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
-    mHistManager.add("h_TPCee_MS_pp_phosRange_kTVXinPHOS", "Mass e^{+}e^{+} vs momentum e^{+}e^{+} (from TPC candidates) vs pair pt with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
+    mHistManager.add("h_TPCee_MS_mp_phosRange_kTVXinPHOS_v_pt", "Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp} (from TPC candidates) with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
+    mHistManager.add("h_TPCee_MS_mm_phosRange_kTVXinPHOS_v_pt", "Mass e^{-}e^{-} vs momentum e^{-}e^{-} (from TPC candidates) with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
+    mHistManager.add("h_TPCee_MS_pp_phosRange_kTVXinPHOS_v_pt", "Mass e^{+}e^{+} vs momentum e^{+}e^{+} (from TPC candidates) with one e in phos acceptance range", HistType::kTH2F, {axisMassSpectrum, axisPt});
+
+    mHistManager.add("h_TPCeePhosGamma_MS_withMatches_v_3pt", "Mass e^{#pm}e^{#mp}Track vs momentum e^{#pm}e^{#mp}Track", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_noMatches_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_noMatches_aroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_noMatches_aroundJpsi_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | DispOK", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_noMatches_aroundJpsi_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_noMatches_notAroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (not around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_noMatches_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | DispOK", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_noMatches_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_aroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_notAroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (not around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | DispOK", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_withMatches_v_3pt", "Mass e^{#pm}e^{#mp}Track vs momentum e^{#pm}e^{#mp}Track | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_noMatches_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_noMatches_aroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_noMatches_aroundJpsi_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | DispOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_noMatches_aroundJpsi_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_noMatches_notAroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (not around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_noMatches_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | DispOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_noMatches_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_aroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_notAroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma (not around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | DispOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_MS_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_isMIP_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma | cluE < E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+
+    mHistManager.add("h_TPCeePhosGamma_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma vs momentum e^{#pm}e^{#mp}#gamma (TPC candidates + Phos cluster)", HistType::kTH2F, {axisMassSpectrumChiC, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_MS_v_cluE", "Mass e^{#pm}e^{#mp}#gamma vs cluster Energy left by the photon", HistType::kTH2F, {axisMassSpectrumChiC, axisE});
+
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_withMatches_v_3pt", "Mass e^{#pm}e^{#mp}Track - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}Track", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_noMatches_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_noMatches_aroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_noMatches_aroundJpsi_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | DispOK", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_noMatches_aroundJpsi_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_noMatches_notAroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp}  (not around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_noMatches_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | DispOK", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_noMatches_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_aroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_notAroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp}  (not around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | DispOK", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_withMatches_v_3pt", "Mass e^{#pm}e^{#mp}Track - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}Track | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_aroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_aroundJpsi_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | DispOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_aroundJpsi_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_notAroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp}  (not around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | DispOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_aroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} (around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_notAroundJpsi_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp}  (not around J/#psi) vs momentum e^{#pm}e^{#mp}#gamma | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_DispOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | DispOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_notMIP_minusee_MS_DispNotOK_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | DispNotOK | cluE > E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_isMIP_minusee_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp} vs momentum e^{#pm}e^{#mp}#gamma | cluE < E_{MIP}", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_v_3pt", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp}  - Mass e^{#pm}e^{#mp} + Mass J/#psi vs momentum e^{#pm}e^{#mp}#gamma (TPC candidates + Phos cluster)", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisPt});
+    mHistManager.add("h_TPCeePhosGamma_minusee_MS_v_cluE", "Mass e^{#pm}e^{#mp}#gamma - Mass e^{#pm}e^{#mp}  - Mass e^{#pm}e^{#mp} + Mass J/#psi vs cluster Energy left by the photon", HistType::kTH2F, {axisMassSpectrumChiCNoJpsiErrors, axisE});
 
     mHistManager.add("hTrackVX", "Track vertex coordinate X", HistType::kTH1F, {axisVTrackX});
     mHistManager.add("hTrackVY", "Track vertex coordinate Y", HistType::kTH1F, {axisVTrackY});
@@ -920,7 +935,10 @@ struct tpcElIdMassSpectrum {
     mHistManager.add("hTrackEta_Cut", "Track eta after cut", HistType::kTH1F, {axisEta});
   }
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-               soa::Filtered<myTracks> const& tracks,
+               aod::CaloClusters const& clusters,
+               MyTracks const& tracks,
+               soa::Filtered<MyTracks> const& filteredTracks,
+               o2::aod::PHOSMatchindexTable const& matches,
                aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -936,10 +954,10 @@ struct tpcElIdMassSpectrum {
       runNumber = bc.runNumber();
     }
     mHistManager.fill(HIST("eventCounter"), 0.5);
-    if (fabs(collision.posZ()) > 10.f)
+    if (std::fabs(collision.posZ()) > 10.f)
       return;
 
-    for (auto& [track1, track2] : combinations(CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
+    for (auto const& [track1, track2] : combinations(CombinationsStrictlyUpperIndexPolicy(filteredTracks, filteredTracks))) {
       if (!track1.has_collision() || !track1.hasTPC())
         continue;
       if (!track2.has_collision() || !track2.hasTPC())
@@ -965,39 +983,174 @@ struct tpcElIdMassSpectrum {
       if (track1.tpcNClsCrossedRows() > cfgTPCnclsCRMax || track2.tpcNClsCrossedRows() > cfgTPCnclsCRMax)
         continue;
 
-      TLorentzVector P1, P2;
-      P1.SetPxPyPzE(track1.px(), track1.py(), track1.pz(), track1.energy(0));
-      P2.SetPxPyPzE(track2.px(), track2.py(), track2.pz(), track2.energy(0));
+      TLorentzVector fourVectorP1, fourVectorP2;
+      fourVectorP1.SetPxPyPzE(track1.px(), track1.py(), track1.pz(), track1.energy(0));
+      fourVectorP2.SetPxPyPzE(track2.px(), track2.py(), track2.pz(), track2.energy(0));
 
-      bool inPhosEtaRange1 = fabs(track1.eta()) < 0.12;
-      bool inPhosEtaRange2 = fabs(track2.eta()) < 0.12;
-      bool inPhosPhiRange1 = (track1.phi() * TMath::RadToDeg() > 250 && track1.phi() * TMath::RadToDeg() < 320);
-      bool inPhosPhiRange2 = (track2.phi() * TMath::RadToDeg() > 250 && track2.phi() * TMath::RadToDeg() < 320);
+      bool inPhosEtaRange1 = std::fabs(track1.eta()) < cfgPhosRangeEta;
+      bool inPhosEtaRange2 = std::fabs(track2.eta()) < cfgPhosRangeEta;
+      bool inPhosPhiRange1 = (track1.phi() * TMath::RadToDeg() > cfgPhosRangePhiMin && track1.phi() * TMath::RadToDeg() < cfgPhosRangePhiMax);
+      bool inPhosPhiRange2 = (track2.phi() * TMath::RadToDeg() > cfgPhosRangePhiMin && track2.phi() * TMath::RadToDeg() < cfgPhosRangePhiMax);
       bool inPhosRange = (inPhosEtaRange1 && inPhosPhiRange1) || (inPhosEtaRange2 && inPhosPhiRange2);
-      bool posTrack = (track1.sign() > 0 && bz > 0) || (track1.sign() < 0 && bz < 0);
+      bool posTrack = track1.sign() * bz > 0;
+
+      double pairMass = (fourVectorP1 + fourVectorP2).M(), pairPt = (fourVectorP1 + fourVectorP2).Pt();
 
       if (track1.sign() == track2.sign()) {
         if (posTrack) {
-          mHistManager.fill(HIST("h_TPCee_MS_pp"), (P1 + P2).M(), (P1 + P2).Pt());
+          mHistManager.fill(HIST("h_TPCee_MS_pp_v_pt"), pairMass, pairPt);
           if (inPhosRange) {
-            mHistManager.fill(HIST("h_TPCee_MS_pp_phosRange"), (P1 + P2).M(), (P1 + P2).Pt());
-            if (collision.alias_bit(kTVXinPHOS))
-              mHistManager.fill(HIST("h_TPCee_MS_pp_phosRange_kTVXinPHOS"), (P1 + P2).M(), (P1 + P2).Pt());
+            mHistManager.fill(HIST("h_TPCee_MS_pp_phosRange_v_pt"), pairMass, pairPt);
+            if (collision.alias_bit(mEvSelTrig))
+              mHistManager.fill(HIST("h_TPCee_MS_pp_phosRange_kTVXinPHOS_v_pt"), pairMass, pairPt);
           }
         } else {
-          mHistManager.fill(HIST("h_TPCee_MS_mm"), (P1 + P2).M(), (P1 + P2).Pt());
+          mHistManager.fill(HIST("h_TPCee_MS_mm_v_pt"), pairMass, pairPt);
           if (inPhosRange) {
-            mHistManager.fill(HIST("h_TPCee_MS_mm_phosRange"), (P1 + P2).M(), (P1 + P2).Pt());
-            if (collision.alias_bit(kTVXinPHOS))
-              mHistManager.fill(HIST("h_TPCee_MS_mm_phosRange_kTVXinPHOS"), (P1 + P2).M(), (P1 + P2).Pt());
+            mHistManager.fill(HIST("h_TPCee_MS_mm_phosRange_v_pt"), pairMass, pairPt);
+            if (collision.alias_bit(mEvSelTrig))
+              mHistManager.fill(HIST("h_TPCee_MS_mm_phosRange_kTVXinPHOS_v_pt"), pairMass, pairPt);
           }
         }
       } else {
-        mHistManager.fill(HIST("h_TPCee_MS_mp"), (P1 + P2).M(), (P1 + P2).Pt());
+        mHistManager.fill(HIST("h_TPCee_MS_mp_v_pt"), pairMass, pairPt);
         if (inPhosRange) {
-          mHistManager.fill(HIST("h_TPCee_MS_mp_phosRange"), (P1 + P2).M(), (P1 + P2).Pt());
-          if (collision.alias_bit(kTVXinPHOS))
-            mHistManager.fill(HIST("h_TPCee_MS_mp_phosRange_kTVXinPHOS"), (P1 + P2).M(), (P1 + P2).Pt());
+          mHistManager.fill(HIST("h_TPCee_MS_mp_phosRange_v_pt"), pairMass, pairPt);
+          if (collision.alias_bit(mEvSelTrig))
+            mHistManager.fill(HIST("h_TPCee_MS_mp_phosRange_kTVXinPHOS_v_pt"), pairMass, pairPt);
+        }
+
+        if (collision.alias_bit(mEvSelTrig) && clusters.size() != 0) {
+          for (auto const& gamma : clusters) {
+            float cluE = gamma.e();
+
+            if (cluE < mMinCluE || cluE > mMaxCluE ||
+                gamma.ncell() < mMinCluNcell ||
+                gamma.time() > mMaxCluTime || gamma.time() < mMinCluTime)
+              continue;
+
+            bool matchFlag = 0,
+                 isJpsi = 0,
+                 isNotMIP = cluE > mCutMIPCluE,
+                 isDispOK = testLambda(cluE, gamma.m02(), gamma.m20());
+
+            if (pairMass > cfgeeMassMin && pairMass < cfgeeMassMax)
+              isJpsi = 1;
+
+            for (auto const& match : matches) {
+              if (gamma.index() == match.caloClusterId()) {
+                matchFlag = 1;
+                break;
+              }
+            }
+
+            TLorentzVector fourVectorP3;
+            fourVectorP3.SetPxPyPzE(gamma.px(), gamma.py(), gamma.pz(), cluE);
+            double tripletMass = (fourVectorP1 + fourVectorP2 + fourVectorP3).M(), tripletPt = (fourVectorP1 + fourVectorP2 + fourVectorP3).Pt();
+
+            mHistManager.fill(HIST("h_TPCeePhosGamma_MS_v_3pt"), tripletMass, tripletPt);
+            mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+
+            mHistManager.fill(HIST("h_TPCeePhosGamma_MS_v_cluE"), tripletMass, cluE);
+            mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_v_cluE"), tripletMass - pairMass + cfgJpsiMass, cluE);
+
+            if (matchFlag) {
+              mHistManager.fill(HIST("h_TPCeePhosGamma_MS_withMatches_v_3pt"), tripletMass, tripletPt);
+              mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_withMatches_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+            } else {
+              mHistManager.fill(HIST("h_TPCeePhosGamma_MS_noMatches_v_3pt"), tripletMass, tripletPt);
+              mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_noMatches_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              if (isJpsi) {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_MS_noMatches_aroundJpsi_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_noMatches_aroundJpsi_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                if (isDispOK) {
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_MS_noMatches_aroundJpsi_DispOK_v_3pt"), tripletMass, tripletPt);
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_noMatches_aroundJpsi_DispOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                } else {
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_MS_noMatches_aroundJpsi_DispNotOK_v_3pt"), tripletMass, tripletPt);
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_noMatches_aroundJpsi_DispNotOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                }
+              } else {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_MS_noMatches_notAroundJpsi_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_noMatches_notAroundJpsi_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              }
+              if (isDispOK) {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_MS_noMatches_DispOK_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_noMatches_DispOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              } else {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_MS_noMatches_DispNotOK_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_noMatches_DispNotOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              }
+            }
+
+            if (isJpsi) {
+              mHistManager.fill(HIST("h_TPCeePhosGamma_MS_aroundJpsi_v_3pt"), tripletMass, tripletPt);
+              mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_aroundJpsi_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+            } else {
+              mHistManager.fill(HIST("h_TPCeePhosGamma_MS_notAroundJpsi_v_3pt"), tripletMass, tripletPt);
+              mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_notAroundJpsi_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+            }
+
+            if (isDispOK) {
+              mHistManager.fill(HIST("h_TPCeePhosGamma_MS_DispOK_v_3pt"), tripletMass, tripletPt);
+              mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_DispOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+            } else {
+              mHistManager.fill(HIST("h_TPCeePhosGamma_MS_DispNotOK_v_3pt"), tripletMass, tripletPt);
+              mHistManager.fill(HIST("h_TPCeePhosGamma_minusee_MS_DispNotOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+            }
+
+            if (isNotMIP) {
+              mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_v_3pt"), tripletMass, tripletPt);
+              mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              if (matchFlag) {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_withMatches_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_withMatches_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              } else {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_noMatches_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                if (isJpsi) {
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_noMatches_aroundJpsi_v_3pt"), tripletMass, tripletPt);
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_aroundJpsi_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                  if (isDispOK) {
+                    mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_noMatches_aroundJpsi_DispOK_v_3pt"), tripletMass, tripletPt);
+                    mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_aroundJpsi_DispOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                  } else {
+                    mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_noMatches_aroundJpsi_DispNotOK_v_3pt"), tripletMass, tripletPt);
+                    mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_aroundJpsi_DispNotOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                  }
+                } else {
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_noMatches_notAroundJpsi_v_3pt"), tripletMass, tripletPt);
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_notAroundJpsi_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                }
+                if (isDispOK) {
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_noMatches_DispOK_v_3pt"), tripletMass, tripletPt);
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_DispOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                } else {
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_noMatches_DispNotOK_v_3pt"), tripletMass, tripletPt);
+                  mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_noMatches_DispNotOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+                }
+              }
+
+              if (isJpsi) {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_aroundJpsi_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_aroundJpsi_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              } else {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_notAroundJpsi_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_notAroundJpsi_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              }
+
+              if (isDispOK) {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_DispOK_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_DispOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              } else {
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_MS_DispNotOK_v_3pt"), tripletMass, tripletPt);
+                mHistManager.fill(HIST("h_TPCeePhosGamma_notMIP_minusee_MS_DispNotOK_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+              }
+            } else {
+              mHistManager.fill(HIST("h_TPCeePhosGamma_isMIP_MS_v_3pt"), tripletMass, tripletPt);
+              mHistManager.fill(HIST("h_TPCeePhosGamma_isMIP_minusee_MS_v_3pt"), tripletMass - pairMass + cfgJpsiMass, tripletPt);
+            }
+          }
         }
       }
     }
@@ -1029,13 +1182,28 @@ struct tpcElIdMassSpectrum {
       mHistManager.fill(HIST("hTrackVZ_Cut"), track1.z());
     }
   }
+  //_____________________________________________________________________________
+  bool testLambda(float pt, float l1, float l2)
+  {
+    // Parameterization for full dispersion
+    float l2Mean = 1.53126 + 9.50835e+06 / (1. + 1.08728e+07 * pt + 1.73420e+06 * pt * pt);
+    float l1Mean = 1.12365 + 0.123770 * std::exp(-pt * 0.246551) + 5.30000e-03 * pt;
+    float l2Sigma = 6.48260e-02 + 7.60261e+10 / (1. + 1.53012e+11 * pt + 5.01265e+05 * pt * pt) + 9.00000e-03 * pt;
+    float l1Sigma = 4.44719e-04 + 6.99839e-01 / (1. + 1.22497e+00 * pt + 6.78604e-07 * pt * pt) + 9.00000e-03 * pt;
+    float c = -0.35 - 0.550 * std::exp(-0.390730 * pt);
+
+    return 0.5 * (l1 - l1Mean) * (l1 - l1Mean) / l1Sigma / l1Sigma +
+             0.5 * (l2 - l2Mean) * (l2 - l2Mean) / l2Sigma / l2Sigma +
+             0.5 * c * (l1 - l1Mean) * (l2 - l2Mean) / l1Sigma / l2Sigma <
+           4.;
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{
-    adaptAnalysisTask<phosElId>(cfgc),
-    adaptAnalysisTask<massSpectra>(cfgc),
-    adaptAnalysisTask<tpcElIdMassSpectrum>(cfgc)};
+    adaptAnalysisTask<PhosElId>(cfgc),
+    adaptAnalysisTask<MassSpectra>(cfgc),
+    adaptAnalysisTask<TpcElIdMassSpectrum>(cfgc)};
   return workflow;
 }

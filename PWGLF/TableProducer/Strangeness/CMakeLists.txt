@@ -53,7 +53,7 @@ o2physics_add_dpl_workflow(cascqaanalysis
 
 o2physics_add_dpl_workflow(hstrangecorrelationfilter
     SOURCES hStrangeCorrelationFilter.cxx
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(double-casc-tree-creator
@@ -105,6 +105,11 @@ o2physics_add_dpl_workflow(st-coll-ids
 o2physics_add_dpl_workflow(strangederivedbuilder
     SOURCES strangederivedbuilder.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strangenessbuilder
+    SOURCES strangenessbuilder.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase KFParticle::KFParticle
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(v0-selector

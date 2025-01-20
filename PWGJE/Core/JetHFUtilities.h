@@ -494,8 +494,8 @@ void fillHFMcCollisionTable(T const& mcCollision, U& HFMcCollisionTable, int32_t
   HFMcCollisionTableIndex = HFMcCollisionTable.lastIndex();
 }
 
-template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O>
-void fillD0CandidateTable(T const& candidate, U& D0ParTable, V& D0ParETable, M& D0SelectionFlagTable, N& D0MlTable, O& D0MCDTable)
+template <bool isMc, typename T, typename U, typename V, typename M, typename N>
+void fillD0CandidateTable(T const& candidate, U& D0ParTable, V& D0ParETable, M& D0MlTable, N& D0MCDTable)
 {
   D0ParTable(
     candidate.chi2PCA(),
@@ -547,8 +547,6 @@ void fillD0CandidateTable(T const& candidate, U& D0ParTable, V& D0ParETable, M& 
     candidate.cosThetaStar(),
     candidate.ct());
 
-  D0SelectionFlagTable(candidate.candidateSelFlag());
-
   std::vector<float> mlScoresVector;
   auto mlScoresSpan = candidate.mlScores();
   std::copy(mlScoresSpan.begin(), mlScoresSpan.end(), std::back_inserter(mlScoresVector));
@@ -559,8 +557,8 @@ void fillD0CandidateTable(T const& candidate, U& D0ParTable, V& D0ParETable, M& 
   }
 }
 
-template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O>
-void fillLcCandidateTable(T const& candidate, U& LcParTable, V& LcParETable, M& LcSelectionFlagTable, N& LcMlTable, O& LcMCDTable)
+template <bool isMc, typename T, typename U, typename V, typename M, typename N>
+void fillLcCandidateTable(T const& candidate, U& LcParTable, V& LcParETable, M& LcMlTable, N& LcMCDTable)
 {
 
   LcParTable(
@@ -620,8 +618,6 @@ void fillLcCandidateTable(T const& candidate, U& LcParTable, V& LcParETable, M& 
     candidate.errorImpactParameter1(),
     candidate.errorImpactParameter2(),
     candidate.ct());
-
-  LcSelectionFlagTable(candidate.candidateSelFlag());
 
   std::vector<float> mlScoresVector;
   auto mlScoresSpan = candidate.mlScores();
@@ -714,12 +710,13 @@ void fillHFCandidateTable(T const& candidate, int32_t collisionIndex, U& HFBaseT
 {
   HFBaseTable(collisionIndex, candidate.pt(), candidate.eta(), candidate.phi(), candidate.m(), candidate.y());
   HFCandidateTableIndex = HFBaseTable.lastIndex();
+  HFSelectionFlagTable(candidate.candidateSelFlag());
 
   if constexpr (isD0Candidate<T>()) {
-    fillD0CandidateTable<isMc>(candidate, HFParTable, HFParETable, HFSelectionFlagTable, HFMlTable, HFMCDTable);
+    fillD0CandidateTable<isMc>(candidate, HFParTable, HFParETable, HFMlTable, HFMCDTable);
   }
   if constexpr (isLcCandidate<T>()) {
-    fillLcCandidateTable<isMc>(candidate, HFParTable, HFParETable, HFSelectionFlagTable, HFMlTable, HFMCDTable);
+    fillLcCandidateTable<isMc>(candidate, HFParTable, HFParETable, HFMlTable, HFMCDTable);
   }
   if constexpr (isBplusCandidate<T>()) {
     fillBplusCandidateTable<isMc>(candidate, HFParTable, HFParETable, HFParDaughterTable, HFMlTable, HFMlDaughterTable, HFMCDTable);

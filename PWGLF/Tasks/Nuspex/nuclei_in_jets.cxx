@@ -415,6 +415,17 @@ struct nuclei_in_jets {
     return false;
   }
 
+  double trackInclination(double eta)
+  {
+    double lambda(0);
+    double theta = 2.0 * std::atan(std::exp(-eta));
+    if (theta <= o2::constants::math::PIHalf)
+      lambda = o2::constants::math::PIHalf - theta;
+    if (theta > o2::constants::math::PIHalf)
+      lambda = theta - o2::constants::math::PIHalf;
+    return lambda;
+  }
+
   void GetReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histname_antip_jet, TString histname_antip_ue)
   {
     TList* l = ccdbObj->get<TList>(filepath.Data());
@@ -596,24 +607,6 @@ struct nuclei_in_jets {
     registryQC.fill(HIST("event_selection_jets"), 1.5); // events with pTjet>10 GeV/c selected
     //************************************************************************************************************************************
 
-    // Leading Track
-    double pt_max(0);
-
-    // Loop over Reconstructed Tracks
-    for (auto const& track : tracks) {
-
-      if (!passedTrackSelectionForJetReconstruction(track))
-        continue;
-
-      if (track.pt() > pt_max) {
-        pt_max = track.pt();
-      }
-    }
-    // Event Counter: Skip Events with pt<pt_leading_min
-    if (pt_max < 5.0)
-      return;
-    registryQC.fill(HIST("event_selection_jets"), 2.5); // events with pTleading > 5 GeV/c selected
-
     // Overlaps
     int nOverlaps(0);
     for (int i = 0; i < static_cast<int>(jet.size()); i++) {
@@ -660,6 +653,25 @@ struct nuclei_in_jets {
         double dcaxy = track.dcaXY();
         double dcaz = track.dcaZ();
 
+        // ITS Cluster size
+        double averageItsClusterSize(0);
+        int nItsCls(0);
+        for (int i = 0; i < 7; i++) {
+          int clusterSize = track.itsClsSizeInLayer(i);
+          averageItsClusterSize += static_cast<double>(clusterSize);
+          if (clusterSize > 0)
+            nItsCls++;
+        }
+        averageItsClusterSize = averageItsClusterSize / static_cast<double>(nItsCls);
+        double lambda = trackInclination(track.eta());
+
+        double avgClsCosLMin(0.0); // pt-dependent selection will be implemented
+        double avgClsCosLMax(5.0); // pt-dependent selection will be implemented
+        bool isItsSelected = false;
+        if (averageItsClusterSize * std::cos(lambda) > avgClsCosLMin && averageItsClusterSize * std::cos(lambda) < avgClsCosLMax) {
+          isItsSelected = true;
+        }
+
         TVector3 particle_dir(track.px(), track.py(), track.pz());
         double deltaEta_jet = particle_dir.Eta() - jet[i].Eta();
         double deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), jet[i].Phi());
@@ -693,10 +705,12 @@ struct nuclei_in_jets {
 
           if (track.sign() < 0) { // only antimatter
             // Antiproton
-            if (pt < max_pt_for_nsigmaTPC)
-              registryData.fill(HIST("antiproton_jet_tpc"), pt, nsigmaTPCPr);
-            if (pt >= min_pt_for_nsigmaTOF && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
-              registryData.fill(HIST("antiproton_jet_tof"), pt, nsigmaTOFPr);
+            if (isItsSelected) {
+              if (pt < max_pt_for_nsigmaTPC)
+                registryData.fill(HIST("antiproton_jet_tpc"), pt, nsigmaTPCPr);
+              if (pt >= min_pt_for_nsigmaTOF && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
+                registryData.fill(HIST("antiproton_jet_tof"), pt, nsigmaTOFPr);
+            }
 
             // Antideuteron
             if (pt < max_pt_for_nsigmaTPC)
@@ -723,11 +737,12 @@ struct nuclei_in_jets {
 
           if (track.sign() < 0) { // only antimatter
             // Antiproton
-            if (pt < max_pt_for_nsigmaTPC)
-              registryData.fill(HIST("antiproton_ue_tpc"), pt, nsigmaTPCPr);
-            if (pt >= min_pt_for_nsigmaTOF && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
-              registryData.fill(HIST("antiproton_ue_tof"), pt, nsigmaTOFPr);
-
+            if (isItsSelected) {
+              if (pt < max_pt_for_nsigmaTPC)
+                registryData.fill(HIST("antiproton_ue_tpc"), pt, nsigmaTPCPr);
+              if (pt >= min_pt_for_nsigmaTOF && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
+                registryData.fill(HIST("antiproton_ue_tof"), pt, nsigmaTOFPr);
+            }
             // Antideuteron
             if (pt < max_pt_for_nsigmaTPC)
               registryData.fill(HIST("antideuteron_ue_tpc"), pt, nsigmaTPCDe);

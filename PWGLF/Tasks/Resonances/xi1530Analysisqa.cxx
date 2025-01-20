@@ -489,11 +489,11 @@ struct xi1530analysisqa {
     // Topological Cuts for Cascades
     if (track.dcabachtopv() < cDCABachlorToPVcut)
       return false;
-    if (track.cascdaughDCA() > cDCAXiDaugtherscut)
+    if (track.cascDaughDCA() > cDCAXiDaugtherscut)
       return false;
     if (track.cascCosPA() < cCosPACasc)
       return false;
-    if (track.casctransRadius() > cMaxCascradiuscut || track.casctransRadius() < cMinCascradiuscut)
+    if (track.cascTransRadius() > cMaxCascradiuscut || track.cascTransRadius() < cMinCascradiuscut)
       return false;
     // if (std::abs(track.mXi() - XiMass) > cMasswindowCasccut)
     //     return false;
