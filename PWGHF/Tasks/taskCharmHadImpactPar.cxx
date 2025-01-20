@@ -33,7 +33,6 @@ using namespace o2::framework::expressions;
 enum Channel : uint8_t {
   DplusToKPiPi = 0,
   DzeroToKPi,
-  LcToPKPi,
   NChannels
 };
 
@@ -82,24 +81,21 @@ struct HfTaskCharmHadImpactPar {
   using CandDplusDataWithMl = soa::Filtered<soa::Join<CandDplusData, aod::HfMlDplusToPiKPi>>;
   using CandDzeroData = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
   using CandDzeroDataWithMl = soa::Filtered<soa::Join<CandDzeroData, aod::HfMlD0>>;
-  using CandLcData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
-  using CandLcDataWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfMlLcToPKPi>>;
 
   Filter filterDplusFlag = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
   Filter filterDzeroFlag = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
-  Filter filterLcFlag = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlag || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlag;
 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext&)
   {
-    std::array<bool, 6> doprocess{doprocessDplus, doprocessDplusWithMl, doprocessDzero, doprocessDzeroWithMl, doprocessLc, doprocessLcWithMl};
+    std::array<bool, 4> doprocess{doprocessDplus, doprocessDplusWithMl, doprocessDzero, doprocessDzeroWithMl};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "Only one process function should be enabled! Please check your configuration!");
     }
-    if (doprocessDplus || doprocessDzero || doprocessLc) {
+    if (doprocessDplus || doprocessDzero) {
       registry.add("hMassPtImpParPhiY", ";#it{M} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});dca XY (#mum); phi; y;", HistType::kTHnSparseF, {axisMass, axisPt, axisImpPar, axisPhi, axisY});
-    } else if (doprocessDplusWithMl || doprocessDzeroWithMl || doprocessLcWithMl) {
+    } else if (doprocessDplusWithMl || doprocessDzeroWithMl) {
       registry.add("hMassPtImpParPhiY", ";#it{M} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});dca XY (#mum); phi; y; ML score 0;ML score 1; ML score 2;", HistType::kTHnSparseF, {axisMass, axisPt, axisImpPar, axisPhi, axisY, axisMlScore0, axisMlScore1, axisMlScore2});
     }
   }
@@ -148,31 +144,6 @@ struct HfTaskCharmHadImpactPar {
           registry.fill(HIST("hMassPtImpParPhiY"), invMass, candidate.pt(), candidate.impactParameterXY(), candidate.phi(), yCand);
         }
       }
-    } else if constexpr (channel == Channel::LcToPKPi) {
-      if (candidate.isSelLcToPKPi()) { // Lc -> pKpi
-        invMass = hfHelper.invMassLcToPKPi(candidate);
-        yCand = hfHelper.yLc(candidate);
-        if constexpr (withMl) {
-          for (auto iScore{0u}; iScore < candidate.mlProbLcToPKPi().size(); ++iScore) {
-            outputMl[iScore] = candidate.mlProbLcToPKPi()[iScore];
-          }
-          registry.fill(HIST("hMassPtImpParPhiY"), invMass, candidate.pt(), candidate.impactParameterXY(), candidate.phi(), yCand, outputMl[0], outputMl[1], outputMl[2]);
-        } else {
-          registry.fill(HIST("hMassPtImpParPhiY"), invMass, candidate.pt(), candidate.impactParameterXY(), candidate.phi(), yCand);
-        }
-      }
-      if (candidate.isSelLcToPiKP()) {
-        invMass = hfHelper.invMassLcToPiKP(candidate);
-        yCand = hfHelper.yLc(candidate);
-        if constexpr (withMl) {
-          for (auto iScore{0u}; iScore < candidate.mlProbLcToPiKP().size(); ++iScore) {
-            outputMl[iScore] = candidate.mlProbLcToPiKP()[iScore];
-          }
-          registry.fill(HIST("hMassPtImpParPhiY"), invMass, candidate.pt(), candidate.impactParameterXY(), candidate.phi(), yCand, outputMl[0], outputMl[1], outputMl[2]);
-        } else {
-          registry.fill(HIST("hMassPtImpParPhiY"), invMass, candidate.pt(), candidate.impactParameterXY(), candidate.phi(), yCand);
-        }
-      }
     }
   }
 
@@ -208,25 +179,6 @@ struct HfTaskCharmHadImpactPar {
         if constexpr (withMl) {
           for (auto iScore{0u}; iScore < candidate.mlProbD0bar().size(); ++iScore) {
             outputMl[iScore] = candidate.mlProbD0bar()[iScore];
-          }
-        }
-      }
-    } else if constexpr (channel == Channel::LcToPKPi) {
-      if (candidate.isSelLcToPKPi()) { // Lc -> pKpi
-        invMass = hfHelper.invMassLcToPKPi(candidate);
-        yCand = hfHelper.yLc(candidate);
-        if constexpr (withMl) {
-          for (auto iScore{0u}; iScore < candidate.mlProbLcToPKPi().size(); ++iScore) {
-            outputMl[iScore] = candidate.mlProbLcToPKPi()[iScore];
-          }
-        }
-      }
-      if (candidate.isSelLcToPiKP()) { // Lc -> piKp
-        invMass = hfHelper.invMassLcToPiKP(candidate);
-        yCand = hfHelper.yLc(candidate);
-        if constexpr (withMl) {
-          for (auto iScore{0u}; iScore < candidate.mlProbLcToPiKP().size(); ++iScore) {
-            outputMl[iScore] = candidate.mlProbLcToPiKP()[iScore];
           }
         }
       }
@@ -279,18 +231,6 @@ struct HfTaskCharmHadImpactPar {
     runAnalysis<Channel::DzeroToKPi, true>(candidates);
   }
   PROCESS_SWITCH(HfTaskCharmHadImpactPar, processDzeroWithMl, "Process D0 with ML", false);
-
-  void processLc(CandLcData const& candidates)
-  {
-    runAnalysis<Channel::LcToPKPi, false>(candidates);
-  }
-  PROCESS_SWITCH(HfTaskCharmHadImpactPar, processLc, "Process Lc w/o ML", false);
-
-  void processLcWithMl(CandLcDataWithMl const& candidates)
-  {
-    runAnalysis<Channel::LcToPKPi, true>(candidates);
-  }
-  PROCESS_SWITCH(HfTaskCharmHadImpactPar, processLcWithMl, "Process Lc with ML", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
