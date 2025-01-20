@@ -262,19 +262,19 @@ struct itsPidQa {
     for (const auto& track : tracksWithPid) {
       histos.fill(HIST("event/trackselection"), 1.f);
       if (!track.isGlobalTrack()) { // Skipping non global tracks
-        continue
+        continue;
       }
       histos.fill(HIST("event/trackselection"), 2.f);
       if (!track.hasITS()) { // Skipping tracks without ITS
-        continue
+        continue;
       }
       histos.fill(HIST("event/trackselection"), 3.f);
       if (!track.hasTPC()) { // Skipping tracks without TPC
-        continue
+        continue;
       }
       histos.fill(HIST("event/trackselection"), 4.f);
       if (track.tpcNClsFound() < minTPCNcls) { // Skipping tracks without enough TPC clusters
-        continue
+        continue;
       }
 
       histos.fill(HIST("event/trackselection"), 5.f);
@@ -285,7 +285,6 @@ struct itsPidQa {
       histos.fill(HIST("event/length"), track.length());
       histos.fill(HIST("event/pt"), track.pt());
       histos.fill(HIST("event/p"), track.p());
-      // histos.fill(HIST("event/ptreso"), track.p(), track.sigma1Pt() * track.pt() * track.pt());
 
       bool discard = false;
       for (int id = 0; id < 9; id++) {
