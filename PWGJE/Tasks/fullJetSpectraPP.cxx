@@ -215,6 +215,16 @@ struct FullJetSpectrapp {
       registry.add("h_Detjet_ntracks", "#it{p}_{T,track};#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0., 350.}}});
       registry.add("h2_full_jet_chargedconstituents", "Number of charged constituents at Det Level;#it{p}_{T,jet} (GeV/#it{c});N_{ch}", {HistType::kTH2F, {{350, 0., 350.}, {100, 0., 100.}}});
       registry.add("h2_full_jet_neutralconstituents", "Number of neutral constituents at Det Level;#it{p}_{T,jet} (GeV/#it{c});N_{ne}", {HistType::kTH2F, {{350, 0., 350.}, {100, 0., 100.}}});
+      registry.add("h_full_jet_chargedconstituents_pt", "track pT;#it{p}^{T,jet}_{track} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0., 350.}}});
+      registry.add("h_full_jet_chargedconstituents_eta", "track #eta;#eta^{jet}_{track};entries", {HistType::kTH1F, {{100, -1., 1.}}});
+      registry.add("h_full_jet_chargedconstituents_phi", "track #varphi;#varphi^{jet}_{track};entries", {HistType::kTH1F, {{160, 0., 7.}}});
+      registry.add("h_full_jet_chargedconstituents_energy", "track energy;Energy of tracks;entries", {HistType::kTH1F, {{400, 0., 400.}}});
+      registry.add("h_full_jet_chargedconstituents_energysum", "track energy sum;Sum of track energy per event;entries", {HistType::kTH1F, {{400, 0., 400.}}});
+      registry.add("h_full_jet_neutralconstituents_pt", "cluster pT;#it{p}^{T,jet}_{cluster} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
+      registry.add("h_full_jet_neutralconstituents_eta", "cluster #eta;#eta^{jet}_{cluster};entries", {HistType::kTH1F, {{100, -1., 1.}}});
+      registry.add("h_full_jet_neutralconstituents_phi", "cluster #varphi;#varphi^{jet}_{cluster};entries", {HistType::kTH1F, {{160, 0., 7.}}});
+      registry.add("h_full_jet_neutralconstituents_energy", "cluster energy;Energy of cluster;entries", {HistType::kTH1F, {{400, 0., 400.}}});
+      registry.add("h_full_jet_neutralconstituents_energysum", "cluster energy sum;Sum of cluster energy per event;entries", {HistType::kTH1F, {{400, 0., 400.}}});
       registry.add("h2_full_jettrack_pt", "#it{p}_{T,jet} vs #it{p}_{T,track}; #it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{350, 0., 350.}, {200, 0., 200.}}});
       registry.add("h2_full_jettrack_eta", "jet #eta vs jet_track #eta; #eta_{jet};#eta_{track}", {HistType::kTH2F, {{100, -1., 1.}, {500, -5., 5.}}});
       registry.add("h2_full_jettrack_phi", "jet #varphi vs jet_track #varphi; #varphi_{jet}; #varphi_{track}", {HistType::kTH2F, {{160, 0., 7.}, {160, -1., 7.}}});
@@ -237,6 +247,12 @@ struct FullJetSpectrapp {
       registry.add("h_Partjet_ntracks", "#it{p}_{T,constituent};#it{p}_{T_constituent} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0., 350.}}});
       registry.add("h2_full_jet_chargedconstituents_part", "Number of charged constituents at Part Level;#it{p}_{T,jet} (GeV/#it{c});N_{ch}", {HistType::kTH2F, {{350, 0., 350.}, {100, 0., 100.}}});
       registry.add("h2_full_jet_neutralconstituents_part", "Number of neutral constituents at Part Level;#it{p}_{T,jet} (GeV/#it{c});N_{ne}", {HistType::kTH2F, {{350, 0., 350.}, {100, 0., 100.}}});
+      registry.add("h_full_jet_neutralconstituents_pt_part", "#it{p}_{T} of neutral constituents at Part Level;#it{p}_{T,ne} (GeV/#it{c}); entries", {HistType::kTH1F, {{350, 0., 350.}}});
+      registry.add("h_full_jet_neutralconstituents_eta_part", "#eta of neutral constituents at Part Level;#eta_{ne};entries", {HistType::kTH1F, {{350, 0., 350.}}});
+      registry.add("h_full_jet_neutralconstituents_phi_part", "#varphi of neutral constituents at Part Level;#varphi_{ne};entries", {HistType::kTH1F, {{350, 0., 350.}}});
+      registry.add("h_full_jet_neutralconstituents_energy_part", "neutral constituents' energy;Energy of neutral constituents;entries", {HistType::kTH1F, {{400, 0., 400.}}});
+      registry.add("h_full_jet_neutralconstituents_energysum_part", "neutral constituents' energy sum;Sum of neutral constituents' energy per event;entries", {HistType::kTH1F, {{400, 0., 400.}}});
+
       registry.add("h2_jettrack_pt_part", "#it{p}_{T,jet} vs #it{p}_{T_track}; #it{p}_{T_jet} (GeV/#it{c});#it{p}_{T_track} (GeV/#it{c})", {HistType::kTH2F, {{350, 0., 350.}, {200, 0., 200.}}});
       registry.add("h2_jettrack_eta_part", "jet #eta vs jet_track #eta; #eta_{jet};#eta_{track}", {HistType::kTH2F, {{100, -1., 1.}, {500, -5., 5.}}});
       registry.add("h2_jettrack_phi_part", "jet #varphi vs jet_track #varphi; #varphi_{jet}; #varphi_{track}", {HistType::kTH2F, {{160, 0., 7.}, {160, -1., 7.}}});
@@ -347,6 +363,7 @@ struct FullJetSpectrapp {
   void fillJetHistograms(T const& jet, float weight = 1.0)
   {
     float neutralEnergy = 0.0;
+    double sumtrackE = 0.0;
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       registry.fill(HIST("h_full_jet_pt"), jet.pt(), weight);
       registry.fill(HIST("h_full_jet_eta"), jet.eta(), weight);
@@ -358,12 +375,22 @@ struct FullJetSpectrapp {
 
       for (auto& cluster : jet.template clusters_as<aod::JetClusters>()) {
         registry.fill(HIST("h2_full_jet_neutralconstituents"), jet.pt(), jet.clustersIds().size(), weight);
+
         neutralEnergy += cluster.energy();
+        double clusterpt = cluster.energy() / std::cosh(cluster.eta());
+        registry.fill(HIST("h_full_jet_neutralconstituents_pt"), clusterpt, weight);
+        registry.fill(HIST("h_full_jet_neutralconstituents_eta"), cluster.eta(), weight);
+        registry.fill(HIST("h_full_jet_neutralconstituents_phi"), cluster.phi(), weight);
+        registry.fill(HIST("h_full_jet_neutralconstituents_energy"), cluster.energy(), weight);
+        registry.fill(HIST("h_full_jet_neutralconstituents_energysum"), neutralEnergy, weight);
+
       }
       auto NEF = neutralEnergy / jet.energy();
       registry.fill(HIST("h2_full_jet_NEF"), jet.pt(), NEF, weight);
 
       for (auto& jettrack : jet.template tracks_as<aod::JetTracks>()) {
+        sumtrackE += jettrack.energy();
+
         registry.fill(HIST("h_Detjet_ntracks"), jettrack.pt(), weight);
         registry.fill(HIST("h2_full_jet_chargedconstituents"), jet.pt(), jet.tracksIds().size(), weight);
         registry.fill(HIST("h2_full_jettrack_pt"), jet.pt(), jettrack.pt(), weight);
@@ -371,6 +398,11 @@ struct FullJetSpectrapp {
         registry.fill(HIST("h2_full_jettrack_phi"), jet.phi(), jettrack.phi(), weight);
 
         registry.fill(HIST("h2_track_etaphi"), jettrack.eta(), jettrack.phi(), weight);
+        registry.fill(HIST("h_full_jet_chargedconstituents_pt"), jettrack.pt(), weight);
+        registry.fill(HIST("h_full_jet_chargedconstituents_eta"), jettrack.eta(), weight);
+        registry.fill(HIST("h_full_jet_chargedconstituents_phi"), jettrack.phi(), weight);
+        registry.fill(HIST("h_full_jet_chargedconstituents_energy"), jettrack.energy(), weight);
+        registry.fill(HIST("h_full_jet_chargedconstituents_energysum"), sumtrackE, weight);
       }
     } // jet.r()
   }
@@ -410,7 +442,15 @@ struct FullJetSpectrapp {
         if (pdgParticle->Charge() == 0) {
           neutralconsts++;
           neutralEnergy += constituent.e(); // neutral jet constituents at particle level
+          double clusterpt = constituent.e() / std::cosh(constituent.eta());
           registry.fill(HIST("h2_full_jet_neutralconstituents_part"), jet.pt(), neutralconsts, weight);
+          registry.fill(HIST("h_full_jet_neutralconstituents_pt_part"), clusterpt, weight);
+          registry.fill(HIST("h_full_jet_neutralconstituents_eta_part"), constituent.eta(), weight);
+          registry.fill(HIST("h_full_jet_neutralconstituents_phi_part"), constituent.phi(), weight);
+          registry.fill(HIST("h_full_jet_neutralconstituents_energy_part"), constituent.e(), weight);
+          registry.fill(HIST("h_full_jet_neutralconstituents_energysum_part"), neutralEnergy, weight);
+
+
         } else {
           chargedconsts++;
           registry.fill(HIST("h2_full_jet_chargedconstituents_part"), jet.pt(), chargedconsts, weight); // charged jet constituents at particle level
@@ -472,7 +512,8 @@ struct FullJetSpectrapp {
           registry.fill(HIST("h_full_matchedmcpjet_tablesize"), jetTag.size(), weight);
           registry.fill(HIST("h_full_matchedmcpjet_ntracks"), jetTag.tracksIds().size(), weight);
           registry.fill(HIST("h2_matchedjet_etaphiPart"), jetTag.eta(), jetTag.phi(), weight);
-          // JES
+
+          // JES for fulljets
           registry.fill(HIST("h2_full_jet_energyscaleDet"), jetBase.pt(), (jetBase.pt() - jetTag.pt()) / jetTag.pt(), weight);
           registry.fill(HIST("h2_full_jet_energyscalePart"), jetTag.pt(), (jetBase.pt() - jetTag.pt()) / jetTag.pt(), weight);
           registry.fill(HIST("h3_full_jet_energyscalePart"), jetBase.r() / 100.0, jetTag.pt(), (jetBase.pt() - jetTag.pt()) / jetTag.pt(), weight);
@@ -500,7 +541,7 @@ struct FullJetSpectrapp {
           registry.fill(HIST("h_full_matchedmcpjet_ntracks"), jetTag.tracksIds().size(), weight);
 
           registry.fill(HIST("h2_matchedjet_etaphiPart"), jetTag.eta(), jetTag.phi(), weight);
-          // JES
+          // JES for fulljets
           registry.fill(HIST("h2_full_jet_energyscaleDet"), jetBase.pt(), (jetBase.pt() - jetTag.pt()) / jetTag.pt(), weight);
           registry.fill(HIST("h2_full_jet_energyscalePart"), jetTag.pt(), (jetBase.pt() - jetTag.pt()) / jetTag.pt(), weight);
           registry.fill(HIST("h3_full_jet_energyscalePart"), jetBase.r() / 100.0, jetTag.pt(), (jetBase.pt() - jetTag.pt()) / jetTag.pt(), weight);
@@ -646,7 +687,10 @@ struct FullJetSpectrapp {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-
+      if (doMBGapTrigger && jet.eventWeight() == 1) {
+        continue;
+      }
+      // std::cout << "MCD jet.eventWeight() is: " << jet.eventWeight() << std::endl;
       fillJetHistograms(jet, jet.eventWeight());
     }
   }
@@ -672,8 +716,17 @@ struct FullJetSpectrapp {
     if (!isAcceptedJet<aod::JetParticles>(jet)) {
       return;
     }
+    // std::cout << jet.eventWeight() << std::endl;
+    if (doMBGapTrigger && jet.eventWeight()== 1) {
+      return;
+      // std::cout << jet.eventWeight() << std::endl;
+    }
+    // std::cout << "MCP jet.eventWeight() is: " << jet.eventWeight() << std::endl;
 
     fillMCPHistograms(jet, jet.eventWeight());
+    // } else {
+    //   return;
+    // }
   }
   PROCESS_SWITCH(FullJetSpectrapp, processJetsMCPWeighted, "Full Jets at Particle Level on weighted events", false);
 
@@ -782,7 +835,10 @@ struct FullJetSpectrapp {
   void processJetsMCPMCDMatchedWeighted(soa::Filtered<soa::Join<EMCCollisions, aod::JMcCollisionLbs>>::iterator const& collision, JetTableMCDMatchedWeightedJoined const& mcdjets, JetTableMCPMatchedWeightedJoined const& mcpjets, aod::JMcCollisions const&, aod::JetTracks const&, aod::JetClusters const&, aod::JetParticles const&)
   {
     float eventWeight = collision.mcCollision().weight();
-    registry.fill(HIST("h_collisions_weighted"), 1.0, eventWeight); // total events
+    if (doMBGapTrigger && eventWeight == 1) {
+      return;
+    }
+    registry.fill(HIST("h_collisions_weighted"), 1.0, eventWeight); // total events with eventWeight!=1
     bool eventAccepted = false;
     int fakemcdjet = 0;
     int fakemcpjet = 0;
@@ -855,12 +911,18 @@ struct FullJetSpectrapp {
   {
     bool eventAccepted = false;
     float eventWeight = collision.mcCollision().weight();
-    registry.fill(HIST("h_collisions_weighted"), 1.0, eventWeight); // total events
+    if (eventWeight == 1) {
+      return;
+    }
+    // registry.fill(HIST("h_collisions_weighted"), 1.0, eventWeight); // total events
 
     // set "doMBGapTrigger" to true only if you are testing with MB Gap-triggers
     if (doMBGapTrigger && eventWeight == 1) {
       return;
     }
+    // std::cout << "Tracks eventWeight() is: " << eventWeight << std::endl;
+
+    registry.fill(HIST("h_collisions_weighted"), 1.0, eventWeight); // total events
 
     if (doEMCALEventWorkaround) {
       if (collision.isEmcalReadout() && !collision.isAmbiguous()) { // i.e. EMCAL has a cell content
