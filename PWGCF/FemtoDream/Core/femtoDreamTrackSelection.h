@@ -24,6 +24,8 @@
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamObjectSelection.h"
@@ -129,6 +131,14 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   template <typename T>
   auto getNsigmaTOF(T const& track, o2::track::PID pid);
 
+  /// Computes the n_sigma for a track and a particle-type hypothesis in the ITS
+  /// \tparam T Data type of the track
+  /// \param track Track for which PID is evaluated
+  /// \param pid Particle species for which PID is evaluated
+  /// \return Value of n_{sigma, ITS}
+  template <typename T>
+  auto getNsigmaITS(T const& track, o2::track::PID pid);
+
   /// Checks whether the most open combination of all selection criteria is fulfilled
   /// \tparam T Data type of the track
   /// \param track Track
@@ -146,7 +156,7 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   /// \param Eta eta of the track
   /// \param Dca dca of the track with respect to primary vertex
   /// \return The bit-wise container for the selections, separately with all selection criteria, and the PID
-  template <typename cutContainerType, typename T, typename R>
+  template <bool useItsPid = false, typename cutContainerType, typename T, typename R>
   std::array<cutContainerType, 2> getCutContainer(T const& track, R Pt, R Eta, R Dcaxy);
 
   /// Some basic QA histograms
@@ -291,7 +301,7 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
                                                                           "Maximal DCA_z (cm)",
                                                                           "Minimal DCA (cm)",
                                                                           "Maximal PID (nSigma)"}; ///< Helper information for the different selections
-};                                                                                                 // namespace femtoDream
+}; // namespace femtoDream
 
 template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::TrackType tracktype, typename cutContainerType>
 void FemtoDreamTrackSelection::init(HistogramRegistry* QAregistry, HistogramRegistry* Registry)
@@ -385,6 +395,28 @@ auto FemtoDreamTrackSelection::getNsigmaTOF(T const& track, o2::track::PID pid)
 }
 
 template <typename T>
+auto FemtoDreamTrackSelection::getNsigmaITS(T const& track, o2::track::PID pid)
+{
+  if (pid == o2::track::PID::Electron) {
+    return track.itsNSigmaEl();
+  } else if (pid == o2::track::PID::Pion) {
+    return track.itsNSigmaPi();
+  } else if (pid == o2::track::PID::Kaon) {
+    return track.itsNSigmaKa();
+  } else if (pid == o2::track::PID::Proton) {
+    return track.itsNSigmaPr();
+  } else if (pid == o2::track::PID::Deuteron) {
+    return track.itsNSigmaDe();
+  } else if (pid == o2::track::PID::Triton) {
+    return track.itsNSigmaTr();
+  } else if (pid == o2::track::PID::Helium3) {
+    return track.itsNSigmaHe();
+  }
+  // if nothing matched, return default value
+  return -999.f;
+}
+
+template <typename T>
 bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track)
 {
   const auto pT = track.pt();
@@ -460,7 +492,7 @@ bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track)
   return true;
 }
 
-template <typename cutContainerType, typename T, typename R>
+template <bool useItsPid, typename cutContainerType, typename T, typename R>
 std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T const& track, R Pt, R Eta, R Dca)
 {
   cutContainerType output = 0;
@@ -479,23 +511,30 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
   const auto dcaZ = track.dcaZ();
   const auto dca = Dca;
 
-  std::vector<float> pidTPC, pidTOF;
+  std::vector<float> pidTPC, pidTOF, pidITS;
   for (auto it : mPIDspecies) {
     pidTPC.push_back(getNsigmaTPC(track, it));
     pidTOF.push_back(getNsigmaTOF(track, it));
+    if constexpr (useItsPid) {
+      pidITS.push_back(getNsigmaITS(track, it));
+    }
   }
 
   float observable = 0.;
   for (auto& sel : mSelections) {
     const auto selVariable = sel.getSelectionVariable();
     if (selVariable == femtoDreamTrackSelection::kPIDnSigmaMax) {
-      /// PID needs to be handled a bit differently since we may need more than one species
+      /// PID needsgetNsigmaITSto be handled a bit differently since we may need more than one species
       for (size_t i = 0; i < mPIDspecies.size(); ++i) {
         auto pidTPCVal = pidTPC.at(i) - nSigmaPIDOffsetTPC;
         auto pidTOFVal = pidTOF.at(i) - nSigmaPIDOffsetTOF;
         auto pidComb = std::sqrt(pidTPCVal * pidTPCVal + pidTOFVal * pidTOFVal);
         sel.checkSelectionSetBitPID(pidTPCVal, outputPID);
         sel.checkSelectionSetBitPID(pidComb, outputPID);
+        if constexpr (useItsPid) {
+          auto pidITSVal = pidITS.at(i);
+          sel.checkSelectionSetBitPID(pidITSVal, outputPID);
+        }
       }
     } else {
       /// for the rest it's all the same

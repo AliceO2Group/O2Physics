@@ -37,6 +37,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
+using namespace o2::hf_occupancy;
 using namespace o2::hf_evsel;
 
 enum DecayChannel { DplusToPiKPi = 0,
@@ -330,32 +331,6 @@ struct HfTaskFlowCharmHadrons {
     }
   }
 
-  /// Get the centrality
-  /// \param collision is the collision with the centrality information
-  float getCentrality(CollsWithQvecs::iterator const& collision)
-  {
-    float cent = -999.;
-    switch (centEstimator) {
-      case CentralityEstimator::FV0A:
-        cent = collision.centFV0A();
-        break;
-      case CentralityEstimator::FT0M:
-        cent = collision.centFT0M();
-        break;
-      case CentralityEstimator::FT0A:
-        cent = collision.centFT0A();
-        break;
-      case CentralityEstimator::FT0C:
-        cent = collision.centFT0C();
-        break;
-      default:
-        LOG(warning) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C. Fallback to V0A";
-        cent = collision.centFV0A();
-        break;
-    }
-    return cent;
-  }
-
   /// Check if the collision is selected
   /// \param collision is the collision with the Q vector information
   /// \param bc is the bunch crossing with timestamp information
@@ -366,9 +341,9 @@ struct HfTaskFlowCharmHadrons {
                       aod::BCsWithTimestamps const&,
                       float& centrality)
   {
-    float occupancy = hfEvSel.getOccupancy(collision, occEstimator);
+    float occupancy = getOccupancyColl(collision, occEstimator);
     const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-    centrality = getCentrality(collision);
+    centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
 
     /// monitor the satisfied event selections
     hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
@@ -431,14 +406,14 @@ struct HfTaskFlowCharmHadrons {
   void runFlowAnalysis(CollsWithQvecs::iterator const& collision,
                        T1 const& candidates)
   {
-    float cent = getCentrality(collision);
+    float cent = o2::hf_centrality::getCentralityColl(collision, centEstimator);
     if (cent < centralityMin || cent > centralityMax) {
       return;
     }
     float occupancy = 0.;
     uint16_t hfevflag{};
     if (occEstimator != 0) {
-      occupancy = hfEvSel.getOccupancy(collision, occEstimator);
+      occupancy = getOccupancyColl(collision, occEstimator);
       registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
       hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
     }
@@ -632,7 +607,7 @@ struct HfTaskFlowCharmHadrons {
                          aod::BCsWithTimestamps const& bcs)
   {
     float centrality{-1.f};
-    if (!isCollSelected<o2::hf_centrality::CentralityEstimator::None>(collision, bcs, centrality)) {
+    if (!isCollSelected<o2::hf_centrality::CentralityEstimator::FT0C>(collision, bcs, centrality)) {
       // no selection on the centrality is applied on purpose to allow for the resolution study in post-processing
       return;
     }

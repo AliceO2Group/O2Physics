@@ -175,6 +175,14 @@ DECLARE_SOA_COLUMN(TOFNSigmaPr, tofNSigmaPr, float); //! Nsigma separation with 
 DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float); //! Nsigma separation with the TOF detector for deuteron
 DECLARE_SOA_COLUMN(TOFNSigmaTr, tofNSigmaTr, float); //! Nsigma separation with the TOF detector for triton
 DECLARE_SOA_COLUMN(TOFNSigmaHe, tofNSigmaHe, float); //! Nsigma separation with the TOF detector for helium3
+DECLARE_SOA_COLUMN(ITSSignal, itsSignal, float);
+DECLARE_SOA_COLUMN(ITSNSigmaEl, itsNSigmaEl, float); //! Nsigma separation with the Its detector for electron
+DECLARE_SOA_COLUMN(ITSNSigmaPi, itsNSigmaPi, float); //! Nsigma separation with the Its detector for pion
+DECLARE_SOA_COLUMN(ITSNSigmaKa, itsNSigmaKa, float); //! Nsigma separation with the Its detector for kaon
+DECLARE_SOA_COLUMN(ITSNSigmaPr, itsNSigmaPr, float); //! Nsigma separation with the Its detector for proton
+DECLARE_SOA_COLUMN(ITSNSigmaDe, itsNSigmaDe, float); //! Nsigma separation with the Its detector for deuteron
+DECLARE_SOA_COLUMN(ITSNSigmaTr, itsNSigmaTr, float); //! Nsigma separation with the Its detector for triton
+DECLARE_SOA_COLUMN(ITSNSigmaHe, itsNSigmaHe, float); //! Nsigma separation with the Its detector for helium3
 DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);       //! DCA between daughters
 DECLARE_SOA_COLUMN(TransRadius, transRadius, float); //! Transverse radius of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);     //! X position of the decay vertex
@@ -359,6 +367,14 @@ DECLARE_SOA_TABLE_STAGED(FDExtParticles, "FDEXTPARTICLE",
                          femtodreamparticle::TOFNSigmaDe,
                          femtodreamparticle::TOFNSigmaTr,
                          femtodreamparticle::TOFNSigmaHe,
+                         femtodreamparticle::ITSSignal,
+                         femtodreamparticle::ITSNSigmaEl,
+                         femtodreamparticle::ITSNSigmaPi,
+                         femtodreamparticle::ITSNSigmaKa,
+                         femtodreamparticle::ITSNSigmaPr,
+                         femtodreamparticle::ITSNSigmaDe,
+                         femtodreamparticle::ITSNSigmaTr,
+                         femtodreamparticle::ITSNSigmaHe,
                          femtodreamparticle::DaughDCA,
                          femtodreamparticle::TransRadius,
                          femtodreamparticle::DecayVtxX,
@@ -381,6 +397,9 @@ enum ParticleOriginMCTruth {
   kWrongCollision,             //! particle, that was associated wrongly to the collision
   kSecondaryDaughterLambda,    //! Daughter from a Lambda decay
   kSecondaryDaughterSigmaplus, //! Daughter from a Sigma^plus decay
+  kSecondaryDaughterSigma0,    //! Daughter from a Sigma^0 decay
+  kSecondaryDaughterXiMinus,   //! Daughter from a Xi^- decay
+  kSecondaryDaughterXi0,       //! Daughter from a Xi^0 decay
   kElse,                       //! none of the above; (NOTE: used to catch bugs. will be removed once MC usage is properly validated)
   kNOriginMCTruthTypes
 };
@@ -457,3 +476,4 @@ using MixingHash = MixingHashes::iterator;
 } // namespace o2::aod
 
 #endif // PWGCF_DATAMODEL_FEMTODERIVED_H_
+       //

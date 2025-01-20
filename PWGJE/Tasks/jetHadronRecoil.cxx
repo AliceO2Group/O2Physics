@@ -83,6 +83,8 @@ struct JetHadronRecoil {
                               {"hSignalPtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
                               {"hReferencePt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{150, 0, 150}}}},
                               {"hSignalPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{150, 0, 150}}}},
+                              {"hSignalTriggers", "trigger p_{T};p_{T,trig};entries", {HistType::kTH1F, {{150, 0, 150}}}},
+                              {"hReferenceTriggers", "trigger p_{T};p_{T,trig};entries", {HistType::kTH1F, {{150, 0, 150}}}},
                               {"hSignalLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
                               {"hReferenceLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
                               {"hJetSignalMultiplicity", "jet multiplicity;N_{jets};entries", {HistType::kTH1F, {{10, 0, 10}}}},
@@ -165,10 +167,12 @@ struct JetHadronRecoil {
       }
       if (isSigCol && track.pt() < ptTTsigMax && track.pt() > ptTTsigMin) {
         phiTTAr.push_back(track.phi());
+        registry.fill(HIST("hSignalPt"), track.pt(), weight);
         nTT++;
       }
       if (!isSigCol && track.pt() < ptTTrefMax && track.pt() > ptTTrefMin) {
         phiTTAr.push_back(track.phi());
+        registry.fill(HIST("hReferencePt"), track.pt(), weight);
         nTT++;
       }
       registry.fill(HIST("hPtTrack"), track.pt(), weight);
@@ -192,6 +196,9 @@ struct JetHadronRecoil {
     }
 
     for (const auto& jet : jets) {
+      if (jet.tracksIds().size() == 1) {
+        continue;
+      }
       if (jet.pt() > pTHatMaxMCD * pTHat) {
         continue;
       }
@@ -313,6 +320,9 @@ struct JetHadronRecoil {
     }
 
     for (const auto& jet : jets) {
+      if (jet.tracksIds().size() == 1) {
+        continue;
+      }
       if (jet.pt() > pTHatMaxMCP * pTHat) {
         continue;
       }
@@ -387,12 +397,18 @@ struct JetHadronRecoil {
     double dRp = 0;
 
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
+    if (jetBase.tracksIds().size() == 1) {
+      return;
+    }
     if (jetBase.pt() > pTHatMaxMCD * pTHat) {
       return;
     }
 
     for (const auto& mcdjetWTA : mcdjetsWTA) {
       double djet = RecoDecay::sqrtSumOfSquares(RecoDecay::constrainAngle(jetBase.phi() - mcdjetWTA.phi(), -o2::constants::math::PI), jetBase.eta() - mcdjetWTA.eta());
+      if (mcdjetWTA.tracksIds().size() == 1) {
+        continue;
+      }
       if (mcdjetWTA.pt() > pTHatMaxMCD * pTHat) {
         continue;
       }
@@ -404,11 +420,17 @@ struct JetHadronRecoil {
 
     if (jetBase.has_matchedJetGeo()) {
       for (const auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
+        if (jetTag.tracksIds().size() == 1) {
+          continue;
+        }
         if (jetTag.pt() > pTHatMaxMCP * pTHat) {
           continue;
         }
         for (const auto& mcpjetWTA : mcpjetsWTA) {
           double djetp = RecoDecay::sqrtSumOfSquares(RecoDecay::constrainAngle(jetTag.phi() - mcpjetWTA.phi(), -o2::constants::math::PI), jetTag.eta() - mcpjetWTA.eta());
+          if (mcpjetWTA.tracksIds().size() == 1) {
+            continue;
+          }
           if (mcpjetWTA.pt() > pTHatMaxMCP * pTHat) {
             continue;
           }
