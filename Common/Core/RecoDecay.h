@@ -668,9 +668,11 @@ struct RecoDecay {
   }
 
   /// Checks whether the reconstructed decay candidate is the expected decay.
-  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
-  /// \param acceptIncompleteReco  switch to accept candidates with only part of the daughters reconstructed
+  /// \tparam acceptFlavourOscillation  switch to accept flavour oscillastion (i.e. B0 -> B0bar -> D+pi-)
+  /// \tparam checkProcess  switch to accept only decay daughters by checking the production process of MC particles
+  /// \tparam acceptIncompleteReco  switch to accept candidates with only part of the daughters reconstructed
   /// \tparam acceptTrackDecay  switch to accept candidates with daughter tracks of pions and kaons which decayed
+  /// \tparam acceptTrackIntWithMaterial switch to accept candidates with final (i.e. p, K, pi) daughter tracks interacting with material
   /// \param particlesMC  table with MC particles
   /// \param arrDaughters  array of candidate daughters
   /// \param PDGMother  expected mother PDG code
