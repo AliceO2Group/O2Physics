@@ -41,8 +41,8 @@ namespace o2::pid::tof
 {
 
 // Utility values (to remove!)
-static constexpr float kCSPEED = TMath::C() * 1.0e2f * 1.0e-12f; /// Speed of light in TOF units (cm/ps)
-static constexpr float kCSPEDDInv = 1.f / kCSPEED;               /// Inverse of the Speed of light in TOF units (ps/cm)
+//static constexpr float kCSPEED = TMath::C() * 1.0e2f * 1.0e-12f; /// Speed of light in TOF units (cm/ps)
+//static constexpr float kCSPEDDInv = 1.f / kCSPEED;               /// Inverse of the Speed of light in TOF units (ps/cm)
 static constexpr float defaultReturnValue = -999.f;              /// Default return value in case TOF measurement is not available
 
 /// \brief Class to handle the the TOF detector response for the TOF beta measurement
