@@ -60,7 +60,7 @@ struct QaSignChargeMC {
                o2::aod::McParticles const&)
   {
     for (auto const& track : tracks) {
-      if (abs(track.eta()) > 0.8) {
+      if (std::abs(track.eta()) > 0.8) {
         continue;
       }
       if (!track.hasITS()) {
@@ -73,7 +73,7 @@ struct QaSignChargeMC {
         continue;
       }
       if (absPDG) {
-        if (abs(track.mcParticle().pdgCode()) != PDG) {
+        if (std::abs(track.mcParticle().pdgCode()) != PDG) {
           continue;
         }
       } else {

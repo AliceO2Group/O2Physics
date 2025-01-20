@@ -231,7 +231,7 @@ struct tofPidBetaQa {
 
     histos.fill(HIST("event/evsel"), 2);
 
-    if (abs(collision.posZ()) > 10.f) {
+    if (std::abs(collision.posZ()) > 10.f) {
       return;
     }
 

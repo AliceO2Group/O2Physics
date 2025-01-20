@@ -291,10 +291,10 @@ struct perfK0sResolution {
     if (!ntrack.hasTPC() || !ptrack.hasTPC()) {
       return false;
     }
-    if (abs(ntrack.tpcNSigmaPi()) > nMaxTPCNsigma) {
+    if (std::abs(ntrack.tpcNSigmaPi()) > nMaxTPCNsigma) {
       return false;
     }
-    if (abs(ptrack.tpcNSigmaPi()) > nMaxTPCNsigma) {
+    if (std::abs(ptrack.tpcNSigmaPi()) > nMaxTPCNsigma) {
       return false;
     }
     if (ntrack.tpcNClsCrossedRows() < extraCutTPCClusters || ptrack.tpcNClsCrossedRows() < extraCutTPCClusters) {

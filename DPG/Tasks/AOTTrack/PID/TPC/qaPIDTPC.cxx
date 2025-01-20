@@ -396,7 +396,7 @@ struct tpcPidQa {
       }
 
       if (applyRapidityCut) {
-        if (abs(t.rapidity(PID::getMass(id))) > 0.5) {
+        if (std::abs(t.rapidity(PID::getMass(id))) > 0.5) {
           continue;
         }
       }
