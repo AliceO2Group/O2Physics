@@ -55,12 +55,12 @@ struct itsPidQa {
   Configurable<LabeledArray<int>> enabledTables{"enabledTables",
                                                 {defaultParameters[0], 9, nParameters, tableNames, parameterNames},
                                                 "Produce QA for this species: 0 - no, 1 - yes"};
-  Configurable<LabeledArray<int>> tofSelection{"tofSelection",
-                                               {defaultPIDSelection[0], 9, nParameters, tableNames, parameterNames},
-                                               "Selection on the TOF nsigma"};
-  Configurable<LabeledArray<int>> tpcSelection{"tpcSelection",
-                                               {defaultPIDSelection[0], 9, nParameters, tableNames, parameterNames},
-                                               "Selection on the TPC nsigma"};
+  Configurable<LabeledArray<float>> tofSelection{"tofSelection",
+                                                 {defaultPIDSelection[0], 9, nParameters, tableNames, parameterNames},
+                                                 "Selection on the TOF nsigma"};
+  Configurable<LabeledArray<float>> tpcSelection{"tpcSelection",
+                                                 {defaultPIDSelection[0], 9, nParameters, tableNames, parameterNames},
+                                                 "Selection on the TPC nsigma"};
 
   Configurable<int> logAxis{"logAxis", 1, "Flag to use a log momentum axis"};
   Configurable<int> nBinsP{"nBinsP", 3000, "Number of bins for the momentum"};
@@ -144,37 +144,6 @@ struct itsPidQa {
     }
     LOG(info) << "QA PID ITS histograms:";
     histos.print();
-  }
-
-  template <bool fillHistograms, typename CollisionType, typename TrackType>
-  bool isEventSelected(const CollisionType& collision, const TrackType& /*tracks*/)
-  {
-
-    if constexpr (fillHistograms) {
-      histos.fill(HIST("event/evsel"), 1);
-    }
-    if (applyEvSel == 1) {
-      if (!collision.sel7()) {
-        return false;
-      }
-    } else if (applyEvSel == 2) {
-      if (!collision.sel8()) {
-        return false;
-      }
-    }
-
-    if constexpr (fillHistograms) {
-      histos.fill(HIST("event/evsel"), 2);
-    }
-
-    if (abs(collision.posZ()) > 10.f) {
-      return false;
-    }
-    if constexpr (fillHistograms) {
-      histos.fill(HIST("event/evsel"), 3);
-      histos.fill(HIST("event/vertexz"), collision.posZ());
-    }
-    return true;
   }
 
   template <bool fillHistograms, typename CollisionType, typename TrackType>
@@ -351,15 +320,35 @@ struct itsPidQa {
                                      aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe,
                                      aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe, aod::pidits::ITSNSigmaAl>(tracks);
 
-    isEventSelected<true>(collision, tracks);
+    histos.fill(HIST("event/evsel"), 1);
+    switch (applyEvSel.value) {
+      case 1:
+        if (!collision.sel7()) {
+          return;
+        }
+      case 2:
+        if (!collision.sel8()) {
+          return;
+        }
+    }
+
+    histos.fill(HIST("event/evsel"), 2);
+
+    if (abs(collision.posZ()) > 10.f) {
+      return;
+    }
+    histos.fill(HIST("event/evsel"), 3);
+    histos.fill(HIST("event/vertexz"), collision.posZ());
+    return;
+
     for (const auto& track : tracksWithPid) {
       isTrackSelected<true>(collision, track);
       bool discard = false;
       for (int id = 0; id < 9; id++) {
-        if (std::abs(nsigmaTPC(track, id)) > tpcSelValue[id]) {
+        if (std::abs(nsigmaTPC(track, id)) > tpcSelValues[id]) {
           discard = true;
         }
-        if (std::abs(nsigmaTOF(track, id)) > tofSelValue[id]) {
+        if (std::abs(nsigmaTOF(track, id)) > tofSelValues[id]) {
           discard = true;
         }
       }
