@@ -650,10 +650,15 @@ struct FemtoUniversePairTaskTrackTrackExtended {
         }
       }
 
+      float weight = efficiencyCalculator.getWeight<1>(p1);
+      if (!confIsSame) {
+        weight *= efficiencyCalculator.getWeight<2>(p2);
+      }
+
       if (swpart)
-        mixedEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D);
+        mixedEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, weight);
       else
-        mixedEventCont.setPair<isMC>(p2, p1, multCol, twotracksconfigs.confUse3D);
+        mixedEventCont.setPair<isMC>(p2, p1, multCol, twotracksconfigs.confUse3D, weight);
 
       swpart = !swpart;
     }
