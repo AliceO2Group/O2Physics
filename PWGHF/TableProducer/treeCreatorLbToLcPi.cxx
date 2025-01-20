@@ -21,8 +21,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
-#include "ALICE3/DataModel/RICH.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -34,6 +32,7 @@ namespace o2::aod
 {
 namespace full
 {
+DECLARE_SOA_COLUMN(ImpactParameterXY, impactParameterXY, float);
 DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);
@@ -52,20 +51,23 @@ DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);
-DECLARE_SOA_COLUMN(CPA, cpa, float);
-DECLARE_SOA_COLUMN(CPAXY, cpaXY, float);
+DECLARE_SOA_COLUMN(CPA, cPA, float);
+DECLARE_SOA_COLUMN(CPAXY, cPAXY, float);
 DECLARE_SOA_COLUMN(Ct, ct, float);
-DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
+DECLARE_SOA_COLUMN(McFlag, mcFlag, int8_t);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
-DECLARE_SOA_COLUMN(NSigRICHTrk0Pi, nsigRICHTrk0Pi, float);
-DECLARE_SOA_COLUMN(NSigfRICHTrk0Pi, nsigfRICHTrk0Pi, float);
-DECLARE_SOA_COLUMN(NSigTOFTrk0Pi, nsigTOFTrk0Pi, float);
+DECLARE_SOA_COLUMN(SignTrk0, signTrk0, int16_t);
+DECLARE_SOA_COLUMN(NSigTOFTrk0Pi, nSigTOFTrk0Pi, float);
+DECLARE_SOA_COLUMN(NSigTPCTrk0Pi, nSigTPCTrk0Pi, float);
 // Lc selection parameters
 DECLARE_SOA_COLUMN(LcM, lcM, float);
 DECLARE_SOA_COLUMN(LcCt, lcCt, float);
 DECLARE_SOA_COLUMN(LcY, lcY, float);
 DECLARE_SOA_COLUMN(LcE, lcE, float);
 DECLARE_SOA_COLUMN(LcEta, lcEta, float);
+DECLARE_SOA_COLUMN(LcVertexX, lcVertexX, float);
+DECLARE_SOA_COLUMN(LcVertexY, lcVertexY, float);
+DECLARE_SOA_COLUMN(LcVertexZ, lcVertexZ, float);
 DECLARE_SOA_COLUMN(LcCPA, lcCPA, float);
 DECLARE_SOA_COLUMN(LcCPAXY, lcCPAXY, float);
 DECLARE_SOA_COLUMN(LcChi2PCA, lcChi2PCA, float);
@@ -73,39 +75,58 @@ DECLARE_SOA_COLUMN(LcDecayLength, lcDecayLength, float);
 DECLARE_SOA_COLUMN(LcDecayLengthXY, lcDecayLengthXY, float);
 DECLARE_SOA_COLUMN(LcDecayLengthNormalised, lcDecayLengthNormalised, float);
 DECLARE_SOA_COLUMN(LcImpactParameter0, lcImpactParameter0, float);
+DECLARE_SOA_COLUMN(LcImpactParameterError0, lcImpactParameterError0, float);
 DECLARE_SOA_COLUMN(LcImpactParameter1, lcImpactParameter1, float);
+DECLARE_SOA_COLUMN(LcImpactParameterError1, lcImpactParameterError1, float);
 DECLARE_SOA_COLUMN(LcImpactParameter2, lcImpactParameter2, float);
-DECLARE_SOA_COLUMN(NSigRICHTrk1Pi, nSigRICHTrk1Pi, float);
-DECLARE_SOA_COLUMN(NSigRICHTrk1Pr, nSigRICHTrk1Pr, float);
-DECLARE_SOA_COLUMN(NSigRICHTrk2Ka, nSigRICHTrk2Ka, float);
-DECLARE_SOA_COLUMN(NSigRICHTrk3Pi, nSigRICHTrk3Pi, float);
-DECLARE_SOA_COLUMN(NSigRICHTrk3Pr, nSigRICHTrk3Pr, float);
-DECLARE_SOA_COLUMN(NSigfRICHTrk1Pi, nSigfRICHTrk1Pi, float);
-DECLARE_SOA_COLUMN(NSigfRICHTrk1Pr, nSigfRICHTrk1Pr, float);
-DECLARE_SOA_COLUMN(NSigfRICHTrk2Ka, nSigfRICHTrk2Ka, float);
-DECLARE_SOA_COLUMN(NSigfRICHTrk3Pi, nSigfRICHTrk3Pi, float);
-DECLARE_SOA_COLUMN(NSigfRICHTrk3Pr, nSigfRICHTrk3Pr, float);
-DECLARE_SOA_COLUMN(NSigTOFTrk1Pi, nSigTOFrk1Pi, float);
-DECLARE_SOA_COLUMN(NSigTOFTrk1Pr, nSigTOFrk1Pr, float);
-DECLARE_SOA_COLUMN(NSigTOFTrk2Ka, nSigTOFrk2Ka, float);
-DECLARE_SOA_COLUMN(NSigTOFTrk3Pi, nSigTOFrk3Pi, float);
-DECLARE_SOA_COLUMN(NSigTOFTrk3Pr, nSigTOFrk3Pr, float);
+DECLARE_SOA_COLUMN(LcImpactParameterError2, lcImpactParameterError2, float);
+DECLARE_SOA_COLUMN(LcPx0, lcPx0, float);
+DECLARE_SOA_COLUMN(LcPy0, lcPy0, float);
+DECLARE_SOA_COLUMN(LcPz0, lcPz0, float);
+DECLARE_SOA_COLUMN(LcPx1, lcPx1, float);
+DECLARE_SOA_COLUMN(LcPy1, lcPy1, float);
+DECLARE_SOA_COLUMN(LcPz1, lcPz1, float);
+DECLARE_SOA_COLUMN(LcPx2, lcPx2, float);
+DECLARE_SOA_COLUMN(LcPy2, lcPy2, float);
+DECLARE_SOA_COLUMN(LcPz2, lcPz2, float);
+DECLARE_SOA_COLUMN(LcSignProng0, lcSignProng0, int16_t);
+DECLARE_SOA_COLUMN(LcSignProng1, lcSignProng1, int16_t);
+DECLARE_SOA_COLUMN(LcSignProng2, lcSignProng2, int16_t);
+DECLARE_SOA_COLUMN(LcNSigTPCPi0, lcNSigTPCPi0, float);
+DECLARE_SOA_COLUMN(LcNSigTPCK0, lcNSigTPCK0, float);
+DECLARE_SOA_COLUMN(LcNSigTPCPr0, lcNSigTPCPr0, float);
+DECLARE_SOA_COLUMN(LcNSigTPCPi1, lcNSigTPCPi1, float);
+DECLARE_SOA_COLUMN(LcNSigTPCK1, lcNSigTPCK1, float);
+DECLARE_SOA_COLUMN(LcNSigTPCPr1, lcNSigTPCPr1, float);
+DECLARE_SOA_COLUMN(LcNSigTPCPi2, lcNSigTPCPi2, float);
+DECLARE_SOA_COLUMN(LcNSigTPCK2, lcNSigTPCK2, float);
+DECLARE_SOA_COLUMN(LcNSigTPCPr2, lcNSigTPCPr2, float);
+DECLARE_SOA_COLUMN(LcNSigTOFPr0, lcNSigTOFPr0, float);
+DECLARE_SOA_COLUMN(LcNSigTOFK1, lcNSigTOFK1, float);
+DECLARE_SOA_COLUMN(LcNSigTOFPi2, lcNSigTOFPi2, float);
 } // namespace full
 
 // put the arguments into the table
 DECLARE_SOA_TABLE(HfCandLbFulls, "AOD", "HFCANDLBFULL",
+                  collision::PosX, collision::PosY, collision::PosZ,
+                  hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
+                  hf_cand::ErrorDecayLength, hf_cand::ErrorDecayLengthXY,
+                  hf_cand::Chi2PCA,
+                  full::ImpactParameterXY,
                   full::RSecondaryVertex,
                   full::DecayLength,
                   full::DecayLengthXY,
                   full::DecayLengthNormalised,
                   full::DecayLengthXYNormalised,
-                  hf_cand::Chi2PCA,
                   full::ImpactParameterNormalised0,
                   full::PtProng0,
                   full::PProng0,
                   full::ImpactParameterNormalised1,
                   full::PtProng1,
                   full::PProng1,
+                  full::SignTrk0,
+                  full::NSigTOFTrk0Pi,
+                  full::NSigTPCTrk0Pi,
                   hf_cand::PxProng0,
                   hf_cand::PyProng0,
                   hf_cand::PzProng0,
@@ -116,29 +137,20 @@ DECLARE_SOA_TABLE(HfCandLbFulls, "AOD", "HFCANDLBFULL",
                   hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
-                  full::NSigTOFTrk0Pi,
-                  full::NSigRICHTrk0Pi,
-                  full::NSigRICHTrk1Pi,
-                  full::NSigRICHTrk1Pr,
-                  full::NSigRICHTrk2Ka,
-                  full::NSigRICHTrk3Pi,
-                  full::NSigRICHTrk3Pr,
-                  full::NSigfRICHTrk0Pi,
-                  full::NSigfRICHTrk1Pi,
-                  full::NSigfRICHTrk1Pr,
-                  full::NSigfRICHTrk2Ka,
-                  full::NSigfRICHTrk3Pi,
-                  full::NSigfRICHTrk3Pr,
-                  full::NSigTOFTrk1Pi,
-                  full::NSigTOFTrk1Pr,
-                  full::NSigTOFTrk2Ka,
-                  full::NSigTOFTrk3Pi,
-                  full::NSigTOFTrk3Pr,
+                  full::LcNSigTPCPi0, full::LcNSigTPCK0, full::LcNSigTPCPr0,
+                  full::LcNSigTPCPi1, full::LcNSigTPCK1, full::LcNSigTPCPr1,
+                  full::LcNSigTPCPi2, full::LcNSigTPCK2, full::LcNSigTPCPr2,
+                  full::LcNSigTOFPr0,
+                  full::LcNSigTOFK1,
+                  full::LcNSigTOFPi2,
                   full::LcM,
                   full::LcCt,
                   full::LcY,
                   full::LcE,
                   full::LcEta,
+                  full::LcVertexX,
+                  full::LcVertexY,
+                  full::LcVertexZ,
                   full::LcCPA,
                   full::LcCPAXY,
                   full::LcChi2PCA,
@@ -146,8 +158,17 @@ DECLARE_SOA_TABLE(HfCandLbFulls, "AOD", "HFCANDLBFULL",
                   full::LcDecayLengthXY,
                   full::LcDecayLengthNormalised,
                   full::LcImpactParameter0,
+                  full::LcImpactParameterError0,
                   full::LcImpactParameter1,
+                  full::LcImpactParameterError1,
                   full::LcImpactParameter2,
+                  full::LcImpactParameterError2,
+                  full::LcPx0, full::LcPy0, full::LcPz0,
+                  full::LcPx1, full::LcPy1, full::LcPz1,
+                  full::LcPx2, full::LcPy2, full::LcPz2,
+                  full::LcSignProng0,
+                  full::LcSignProng1,
+                  full::LcSignProng2,
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
@@ -158,47 +179,22 @@ DECLARE_SOA_TABLE(HfCandLbFulls, "AOD", "HFCANDLBFULL",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  full::MCflag,
+                  full::McFlag,
                   full::OriginMcRec);
 
 } // namespace o2::aod
 
-namespace o2::aod
-{
-namespace hf_track_index_alice3_pid
-{
-DECLARE_SOA_INDEX_COLUMN(Track, track); //!
-DECLARE_SOA_INDEX_COLUMN(RICH, rich);   //!
-DECLARE_SOA_INDEX_COLUMN(FRICH, frich); //!
-} // namespace hf_track_index_alice3_pid
-
-DECLARE_SOA_INDEX_TABLE_USER(HfTrackIndexALICE3PID, Tracks, "HFTRKIDXA3PID", //!
-                             hf_track_index_alice3_pid::TrackId,
-                             hf_track_index_alice3_pid::RICHId,
-                             hf_track_index_alice3_pid::FRICHId);
-} // namespace o2::aod
-
-struct HfTreeCreatorLbToLcPiAlice3PidIndexBuilder {
-  Builds<o2::aod::HfTrackIndexALICE3PID> index;
-
-  void init(InitContext&) {}
-};
-
 /// Writes the full information in an output TTree
 struct HfTreeCreatorLbToLcPi {
   Produces<o2::aod::HfCandLbFulls> rowCandidateFull;
-
   HfHelper hfHelper;
 
-  using TracksWPid = soa::Join<aod::Tracks, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::HfTrackIndexALICE3PID>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
-  void process(soa::Join<aod::HfCandLb, aod::HfCandLbMcRec, aod::HfSelLbToLcPi> const& candidates,
-               soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const&,
-               TracksWPid const&,
-               aod::FRICHs const&,
-               aod::RICHs const&)
+  void process(soa::Join<aod::HfCandLb, aod::HfSelLbToLcPi> const& candidates,
+               soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&,
+               TracksWPid const&)
   {
-
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
@@ -206,121 +202,97 @@ struct HfTreeCreatorLbToLcPi {
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY) {
-        if (FunctionSelection >= 1) {
-          auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc>>();
-          auto track0 = candidate.prong1_as<TracksWPid>(); // daughter pion track
-          auto track1 = candLc.prong0_as<TracksWPid>();    // granddaughter tracks (lc decay particles)
-          auto track2 = candLc.prong1_as<TracksWPid>();
-          auto track3 = candLc.prong2_as<TracksWPid>();
+        auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
+        auto track0 = candidate.prong1_as<TracksWPid>(); // daughter pion track
+        auto track1 = candLc.prong0_as<TracksWPid>();    // granddaughter tracks (lc decay particles)
+        auto track2 = candLc.prong1_as<TracksWPid>();
+        auto track3 = candLc.prong2_as<TracksWPid>();
 
-          auto RICHTrk0Pi = -5000.0;
-          auto RICHTrk1Pi = -5000.0;
-          auto RICHTrk1P = -5000.0;
-          auto RICHTrk2K = -5000.0;
-          auto RICHTrk3Pi = -5000.0;
-          auto RICHTrk3P = -5000.0;
+        auto tempConst = -1; // For data
 
-          auto fRICHTrk0Pi = -5000.0;
-          auto fRICHTrk1Pi = -5000.0;
-          auto fRICHTrk1P = -5000.0;
-          auto fRICHTrk2K = -5000.0;
-          auto fRICHTrk3Pi = -5000.0;
-          auto fRICHTrk3P = -5000.0;
-
-          if (track0.has_rich())
-            RICHTrk0Pi = track0.rich().richNsigmaPi();
-          if (track1.has_rich()) {
-            RICHTrk1Pi = track1.rich().richNsigmaPi();
-            RICHTrk1P = track1.rich().richNsigmaPr();
-          }
-          if (track2.has_rich())
-            RICHTrk2K = track2.rich().richNsigmaKa();
-          if (track3.has_rich()) {
-            RICHTrk3Pi = track3.rich().richNsigmaPi();
-            RICHTrk3P = track3.rich().richNsigmaPr();
-          }
-
-          if (track0.has_frich())
-            fRICHTrk0Pi = track0.frich().frichNsigmaPi();
-          if (track1.has_frich()) {
-            fRICHTrk1Pi = track1.frich().frichNsigmaPi();
-            fRICHTrk1P = track1.frich().frichNsigmaPr();
-          }
-          if (track2.has_frich())
-            fRICHTrk2K = track2.frich().frichNsigmaKa();
-          if (track3.has_frich()) {
-            fRICHTrk3Pi = track3.frich().frichNsigmaPi();
-            fRICHTrk3P = track3.frich().frichNsigmaPr();
-          }
-
-          rowCandidateFull(
-            candidate.rSecondaryVertex(),
-            candidate.decayLength(),
-            candidate.decayLengthXY(),
-            candidate.decayLengthNormalised(),
-            candidate.decayLengthXYNormalised(),
-            candidate.chi2PCA(),
-            candidate.impactParameterNormalised0(),
-            candidate.ptProng0(),
-            RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-            candidate.impactParameterNormalised1(),
-            candidate.ptProng1(),
-            RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-            candidate.pxProng0(),
-            candidate.pyProng0(),
-            candidate.pzProng0(),
-            candidate.pxProng1(),
-            candidate.pyProng1(),
-            candidate.pzProng1(),
-            candidate.impactParameter0(),
-            candidate.impactParameter1(),
-            candidate.errorImpactParameter0(),
-            candidate.errorImpactParameter1(),
-            track0.tofNSigmaPi(),
-            RICHTrk0Pi,
-            RICHTrk1Pi,
-            RICHTrk1P,
-            RICHTrk2K,
-            RICHTrk3Pi,
-            RICHTrk3P,
-            fRICHTrk0Pi,
-            fRICHTrk1Pi,
-            fRICHTrk1P,
-            fRICHTrk2K,
-            fRICHTrk3Pi,
-            fRICHTrk3P,
-            track1.tofNSigmaPi(),
-            track1.tofNSigmaPr(),
-            track2.tofNSigmaKa(),
-            track3.tofNSigmaPi(),
-            track3.tofNSigmaPr(),
-            hfHelper.invMassLcToPKPi(candLc),
-            hfHelper.ctLc(candLc),
-            hfHelper.yLc(candLc),
-            hfHelper.eLc(candLc),
-            candLc.eta(),
-            candLc.cpa(),
-            candLc.cpaXY(),
-            candLc.chi2PCA(),
-            candLc.decayLength(),
-            candLc.decayLengthXY(),
-            candLc.decayLengthXYNormalised(),
-            candLc.impactParameter0(),
-            candLc.impactParameter1(),
-            candLc.impactParameter2(),
-            FunctionSelection,
-            FunctionInvMass,
-            candidate.pt(),
-            candidate.p(),
-            candidate.cpa(),
-            candidate.cpaXY(),
-            FunctionCt,
-            candidate.eta(),
-            candidate.phi(),
-            FunctionY,
-            candidate.flagMcMatchRec(),
-            candidate.originMcRec());
-        }
+        rowCandidateFull(
+          candidate.posX(),
+          candidate.posY(),
+          candidate.posZ(),
+          candidate.xSecondaryVertex(),
+          candidate.ySecondaryVertex(),
+          candidate.zSecondaryVertex(),
+          candidate.errorDecayLength(),
+          candidate.errorDecayLengthXY(),
+          candidate.chi2PCA(),
+          candidate.impactParameterXY(),
+          candidate.rSecondaryVertex(),
+          candidate.decayLength(),
+          candidate.decayLengthXY(),
+          candidate.decayLengthNormalised(),
+          candidate.decayLengthXYNormalised(),
+          candidate.impactParameterNormalised0(),
+          candidate.ptProng0(),
+          RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+          candidate.impactParameterNormalised1(),
+          candidate.ptProng1(),
+          RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+          track0.sign(),
+          track0.tofNSigmaPi(),
+          track0.tpcNSigmaPi(),
+          candidate.pxProng0(),
+          candidate.pyProng0(),
+          candidate.pzProng0(),
+          candidate.pxProng1(),
+          candidate.pyProng1(),
+          candidate.pzProng1(),
+          candidate.impactParameter0(),
+          candidate.impactParameter1(),
+          candidate.errorImpactParameter0(),
+          candidate.errorImpactParameter1(),
+          track1.tpcNSigmaPi(),
+          track1.tpcNSigmaKa(),
+          track1.tpcNSigmaPr(),
+          track2.tpcNSigmaPi(),
+          track2.tpcNSigmaKa(),
+          track2.tpcNSigmaPr(),
+          track3.tpcNSigmaPi(),
+          track3.tpcNSigmaKa(),
+          track3.tpcNSigmaPr(),
+          track1.tofNSigmaPr(),
+          track2.tofNSigmaKa(),
+          track3.tofNSigmaPi(),
+          hfHelper.invMassLcToPKPi(candLc),
+          hfHelper.ctLc(candLc),
+          hfHelper.yLc(candLc),
+          hfHelper.eLc(candLc),
+          candLc.eta(),
+          candLc.xSecondaryVertex(),
+          candLc.ySecondaryVertex(),
+          candLc.zSecondaryVertex(),
+          candLc.cpa(),
+          candLc.cpaXY(),
+          candLc.chi2PCA(),
+          candLc.decayLength(),
+          candLc.decayLengthXY(),
+          candLc.decayLengthXYNormalised(),
+          candLc.impactParameter0(),
+          candLc.errorImpactParameter0(),
+          candLc.impactParameter1(),
+          candLc.errorImpactParameter1(),
+          candLc.impactParameter2(),
+          candLc.errorImpactParameter2(),
+          track1.px(), track1.py(), track1.pz(),
+          track2.px(), track2.py(), track2.pz(),
+          track3.px(), track3.py(), track3.pz(),
+          track1.sign(), track2.sign(), track3.sign(),
+          FunctionSelection,
+          FunctionInvMass,
+          candidate.pt(),
+          candidate.p(),
+          candidate.cpa(),
+          candidate.cpaXY(),
+          FunctionCt,
+          candidate.eta(),
+          candidate.phi(),
+          FunctionY,
+          tempConst,
+          tempConst);
       };
       fillTable(candidate.isSelLbToLcPi(), hfHelper.invMassLbToLcPi(candidate), hfHelper.ctLb(candidate), hfHelper.yLb(candidate));
     }
@@ -330,7 +302,6 @@ struct HfTreeCreatorLbToLcPi {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow;
-  workflow.push_back(adaptAnalysisTask<HfTreeCreatorLbToLcPiAlice3PidIndexBuilder>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTreeCreatorLbToLcPi>(cfgc));
   return workflow;
 }

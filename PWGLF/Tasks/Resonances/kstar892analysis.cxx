@@ -18,6 +18,7 @@
 
 #include <TLorentzVector.h>
 #include "TF1.h"
+#include <vector>
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -602,7 +603,7 @@ struct kstar892analysis {
           }
 
           // MC histograms
-          if (trk1.motherPDG() < 0) {
+          if (trk1.motherPDG() > 0) {
             histos.fill(HIST("k892Rec"), lResonance.Pt(), multiplicity);
             histos.fill(HIST("ImpactParPlots/k892Rec"), lResonance.Pt(), impactpar);
             histos.fill(HIST("k892Recinvmass"), lResonance.M());

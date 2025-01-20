@@ -38,13 +38,13 @@ using namespace o2::framework::expressions;
 // Track selection =====================================================================
 
 /// Track selection
-struct HfTrackIndexSkimCreatorTagSelTracks {
-  Produces<aod::HfSelTrack> rowSelectedTrack;
+struct HfSkimCreatorMiniTagSelTracks {
+  Produces<aod::HfTSelTrack> rowSelectedTrack;
 
   // 2-prong cuts
-  Configurable<double> ptTrackMin{"ptTrackMin", 0.3, "min. track pT for 2 prong candidate"};
-  Configurable<double> etaTrackMax{"etaTrackMax", 0.8, "max. pseudorapidity for 2 prong candidate"};
-  Configurable<double> dcaTrackMin{"dcaTrackMin", 0.0025, "min. DCA for 2 prong candidate"};
+  Configurable<float> ptTrackMin{"ptTrackMin", 0.3, "min. track pT for 2 prong candidate"};
+  Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. pseudorapidity for 2 prong candidate"};
+  Configurable<float> dcaTrackMin{"dcaTrackMin", 0.0025, "min. DCA for 2 prong candidate"};
 
   using TracksWDcaSel = soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackSelection>;
 
@@ -110,21 +110,21 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
 /// Track index skim creator
 /// Pre-selection of 2-prong secondary vertices
-struct HfTrackIndexSkimCreator {
-  Produces<aod::HfTrackIndexProng2> rowTrackIndexProng2;
+struct HfSkimCreatorMini {
+  Produces<aod::HfT2Prongs> rowTrackIndexProng2;
 
   // vertexing parameters
-  Configurable<double> magneticField{"magneticField", 5., "magnetic field [kG]"};
+  Configurable<float> magneticField{"magneticField", 5., "magnetic field [kG]"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
-  Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
-  Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
-  Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
-  Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
+  Configurable<float> maxR{"maxR", 200., "reject PCA's above this radius"};
+  Configurable<float> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<float> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
+  Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
 
   o2::vertexing::DCAFitterN<2> fitter; // 2-prong vertex fitter
 
-  using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::HfSelTrack>>;
+  using SelectedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCov, aod::HfTSelTrack>>;
 
   Filter filterSelectTracks = aod::hf_seltrack::isSelProng == true;
 
@@ -166,7 +166,12 @@ struct HfTrackIndexSkimCreator {
         auto trackParVarNeg1 = getTrackParCov(trackNeg1);
 
         // secondary vertex reconstruction and further 2-prong selections
-        if (fitter.process(trackParVarPos1, trackParVarNeg1) == 0) {
+        int nVtxFromFitter = 0;
+        try {
+          nVtxFromFitter = fitter.process(trackParVarPos1, trackParVarNeg1);
+        } catch (...) {
+        }
+        if (nVtxFromFitter == 0) {
           continue;
         }
         //  get secondary vertex
@@ -197,6 +202,6 @@ struct HfTrackIndexSkimCreator {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfTrackIndexSkimCreatorTagSelTracks>(cfgc),
-    adaptAnalysisTask<HfTrackIndexSkimCreator>(cfgc)};
+    adaptAnalysisTask<HfSkimCreatorMiniTagSelTracks>(cfgc),
+    adaptAnalysisTask<HfSkimCreatorMini>(cfgc)};
 }

@@ -62,6 +62,8 @@ struct SecondaryVertexReconstruction {
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<double> maxRsv{"maxRsv", 999., "max. radius of the reconstruced SV"};
+  Configurable<double> maxZsv{"maxZsv", 999., "max. Z coordinates of the reconstruced SV"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<float> ptMinTrack{"ptMinTrack", -1., "min. track pT"};
@@ -94,6 +96,7 @@ struct SecondaryVertexReconstruction {
       registry.add("hFeNProngs", "n-prong Energy fraction carried by the SV from the jet;#it{f}_{E};nProngs;entries", {HistType::kTH2F, {{100, 0., 1.0}, nProngsBins}});
       registry.add("hDcaXYNProngs", "DCAxy of n-prong candidate daughters;#it{p}_{T} (GeV/#it{c});#it{d}_{xy} (#mum);nProngs;entries", {HistType::kTH3F, {{100, 0., 20.}, {200, -500., 500.}, nProngsBins}});
       registry.add("hDcaZNProngs", "DCAz of n-prong candidate daughters;#it{p}_{T} (GeV/#it{c});#it{d}_{z} (#mum);nProngs;entries", {HistType::kTH3F, {{100, 0., 20.}, {200, -500., 500.}, nProngsBins}});
+      registry.add("hDispersion", "Vertex dispersion;#sigma_{vtx};nProngs;entries", {HistType::kTH2F, {{200, 0., 1.0}, nProngsBins}});
     }
 
     df2.setPropagateToPCA(propagateToPCA);
@@ -121,9 +124,9 @@ struct SecondaryVertexReconstruction {
 
   Filter trackCuts = (aod::jtrack::pt > ptMinTrack && aod::jtrack::eta > etaMinTrack && aod::jtrack::eta < etaMaxTrack);
 
-  using JetCollisionwPIs = soa::Join<JetCollisions, aod::JCollisionPIs>;
-  using JetTracksData = soa::Filtered<soa::Join<JetTracks, aod::JTrackPIs>>;
-  using JetTracksMCDwPIs = soa::Filtered<soa::Join<JetTracksMCD, aod::JTrackPIs>>;
+  using JetCollisionwPIs = soa::Join<aod::JetCollisions, aod::JCollisionPIs>;
+  using JetTracksData = soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackPIs>>;
+  using JetTracksMCDwPIs = soa::Filtered<soa::Join<aod::JetTracksMCD, aod::JTrackPIs>>;
   using OriginalTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TrackSelection, aod::TracksDCA, aod::TracksDCACov>;
 
   template <unsigned int numProngs, bool externalMagneticField, typename AnyCollision, typename AnyJet, typename AnyParticles>
@@ -173,9 +176,25 @@ struct SecondaryVertexReconstruction {
         return;
       }
 
-      const auto& secondaryVertex = df.getPCACandidate();
+      const auto& secondaryVertex = df.getPCACandidatePos();
+      if (std::sqrt(secondaryVertex[0] * secondaryVertex[0] + secondaryVertex[1] * secondaryVertex[1]) > maxRsv || std::abs(secondaryVertex[2]) > maxZsv) {
+        return;
+      }
+
+      float dispersion = 0.;
+      for (unsigned int inum = 0; inum < numProngs; ++inum) {
+        o2::dataformats::VertexBase sv(o2::math_utils::Point3D<float>{secondaryVertex[0], secondaryVertex[1], secondaryVertex[2]}, std::array<float, 6>{0});
+        o2::dataformats::DCA dcaSV;
+        auto& prong = df.getTrack(inum);
+        prong.propagateToDCA(sv, bz, &dcaSV);
+        dispersion += (dcaSV.getY() * dcaSV.getY() + dcaSV.getZ() * dcaSV.getZ());
+      }
+      dispersion = std::sqrt(dispersion / numProngs);
+
       auto chi2PCA = df.getChi2AtPCACandidate();
       auto covMatrixPCA = df.calcPCACovMatrixFlat();
+
+      registry.fill(HIST("hDispersion"), dispersion, numProngs);
 
       // get track impact parameters
       // This modifies track momenta!
@@ -215,7 +234,7 @@ struct SecondaryVertexReconstruction {
                           arrayMomenta[0][0] + arrayMomenta[1][0] + arrayMomenta[2][0],
                           arrayMomenta[0][1] + arrayMomenta[1][1] + arrayMomenta[2][1],
                           arrayMomenta[0][2] + arrayMomenta[1][2] + arrayMomenta[2][2],
-                          energySV, massSV, chi2PCA, errorDecayLength, errorDecayLengthXY);
+                          energySV, massSV, chi2PCA, dispersion, errorDecayLength, errorDecayLengthXY);
         svIndices.push_back(sv3prongTableData.lastIndex());
       } else if ((doprocessData2Prongs || doprocessData2ProngsExternalMagneticField) && numProngs == 2) {
         sv2prongTableData(analysisJet.globalIndex(),
@@ -224,7 +243,7 @@ struct SecondaryVertexReconstruction {
                           arrayMomenta[0][0] + arrayMomenta[1][0],
                           arrayMomenta[0][1] + arrayMomenta[1][1],
                           arrayMomenta[0][2] + arrayMomenta[1][2],
-                          energySV, massSV, chi2PCA, errorDecayLength, errorDecayLengthXY);
+                          energySV, massSV, chi2PCA, dispersion, errorDecayLength, errorDecayLengthXY);
         svIndices.push_back(sv2prongTableData.lastIndex());
       } else if ((doprocessMCD3Prongs || doprocessMCD3ProngsExternalMagneticField) && numProngs == 3) {
         sv3prongTableMCD(analysisJet.globalIndex(),
@@ -233,7 +252,7 @@ struct SecondaryVertexReconstruction {
                          arrayMomenta[0][0] + arrayMomenta[1][0] + arrayMomenta[2][0],
                          arrayMomenta[0][1] + arrayMomenta[1][1] + arrayMomenta[2][1],
                          arrayMomenta[0][2] + arrayMomenta[1][2] + arrayMomenta[2][2],
-                         energySV, massSV, chi2PCA, errorDecayLength, errorDecayLengthXY);
+                         energySV, massSV, chi2PCA, dispersion, errorDecayLength, errorDecayLengthXY);
         svIndices.push_back(sv3prongTableMCD.lastIndex());
       } else if ((doprocessMCD2Prongs || doprocessMCD2ProngsExternalMagneticField) && numProngs == 2) {
         sv2prongTableMCD(analysisJet.globalIndex(),
@@ -242,7 +261,7 @@ struct SecondaryVertexReconstruction {
                          arrayMomenta[0][0] + arrayMomenta[1][0],
                          arrayMomenta[0][1] + arrayMomenta[1][1],
                          arrayMomenta[0][2] + arrayMomenta[1][2],
-                         energySV, massSV, chi2PCA, errorDecayLength, errorDecayLengthXY);
+                         energySV, massSV, chi2PCA, dispersion, errorDecayLength, errorDecayLengthXY);
         svIndices.push_back(sv2prongTableMCD.lastIndex());
       } else {
         LOG(error) << "No process specified\n";

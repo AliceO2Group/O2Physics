@@ -11,17 +11,12 @@
 
 o2physics_add_dpl_workflow(decay3bodybuilder
     SOURCES decay3bodybuilder.cxx
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter KFParticle::KFParticle O2Physics::AnalysisCore O2::TOFBase
+    PUBLIC_LINK_LIBRARIES O2::DCAFitter KFParticle::KFParticle O2Physics::AnalysisCore O2::TOFBase O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hyhefour-builder
     SOURCES hyhe4builder.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(hyper-kink-reco-task
-    SOURCES hyperKinkRecoTask.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hypertriton-reco-task
@@ -44,9 +39,9 @@ o2physics_add_dpl_workflow(nucleustreecreator
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lithium4analysis
-    SOURCES lithium4analysis.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+o2physics_add_dpl_workflow(he3hadronfemto
+    SOURCES he3HadronFemto.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(nuclei-spectra
@@ -66,7 +61,7 @@ o2physics_add_dpl_workflow(threebodymcfinder
 
 o2physics_add_dpl_workflow(threebody-reco-task
     SOURCES threebodyRecoTask.cxx
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(ebye-maker
@@ -82,4 +77,19 @@ o2physics_add_dpl_workflow(cluster-studies-tree-creator
 o2physics_add_dpl_workflow(pidtof-generic
     SOURCES pidTOFGeneric.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFBase
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(threebody-kf-task
+    SOURCES threebodyKFTask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hypernuclei-kf-reco-task
+    SOURCES hypKfRecoTask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hypernuclei-kf-tree-creator
+    SOURCES hypKfTreeCreator.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

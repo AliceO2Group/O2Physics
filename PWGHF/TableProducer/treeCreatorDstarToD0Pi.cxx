@@ -293,21 +293,50 @@ struct HfTreeCreatorDstarToD0Pi {
       originMc = candidate.originMcRec();
     }
 
-    auto prong0 = candidate.template prong0_as<TracksWPid>();
-    auto prong1 = candidate.template prong1_as<TracksWPid>();
+    TracksWPid::iterator prong0;
+    TracksWPid::iterator prong1;
     auto prongSoftPi = candidate.template prongPi_as<TracksWPid>();
 
     float massD0{-1.f};
     float massDStar{-1.f};
     float cosThetaD0{-1.f};
+    float impParameterProng0{-999.}, impParameterProng1{-999.};
+    // float errorImpParameterProng0{-999.}, errorImpParameterProng1{-999.};
+    float impParameterNormalisedProng0{-999.}, impParameterNormalisedProng1{-999.};
+    float ptProng0{-999.}, ptProng1{-999.};
+    float pProng0{-999.}, pProng1{-999.};
     if (candidate.signSoftPi() > 0) {
       massD0 = candidate.invMassD0();
       massDStar = candidate.invMassDstar();
       cosThetaD0 = candidate.cosThetaStarD0();
+      prong0 = candidate.template prong0_as<TracksWPid>(); // pion
+      prong1 = candidate.template prong1_as<TracksWPid>(); // kaon
+      ptProng0 = candidate.ptProng0();
+      ptProng1 = candidate.ptProng1();
+      impParameterProng0 = candidate.impactParameter0();
+      impParameterProng1 = candidate.impactParameter1();
+      // errorImpParameterProng0 = candidate.errorImpactParameter0();
+      // errorImpParameterProng1 = candidate.errorImpactParameter1();
+      impParameterNormalisedProng0 = candidate.impactParameterNormalised0();
+      impParameterNormalisedProng1 = candidate.impactParameterNormalised1();
+      pProng0 = RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0());
+      pProng1 = RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1());
     } else {
       massD0 = candidate.invMassD0Bar();
       massDStar = candidate.invMassAntiDstar();
       cosThetaD0 = candidate.cosThetaStarD0Bar();
+      prong0 = candidate.template prong1_as<TracksWPid>(); // pion
+      prong1 = candidate.template prong0_as<TracksWPid>(); // kaon
+      ptProng0 = candidate.ptProng1();
+      ptProng1 = candidate.ptProng0();
+      impParameterProng0 = candidate.impactParameter1();
+      impParameterProng1 = candidate.impactParameter0();
+      // errorImpParameterProng0 = candidate.errorImpactParameter1();
+      // errorImpParameterProng1 = candidate.errorImpactParameter0();
+      impParameterNormalisedProng0 = candidate.impactParameterNormalised1();
+      impParameterNormalisedProng1 = candidate.impactParameterNormalised0();
+      pProng0 = RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1());
+      pProng1 = RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0());
     }
 
     if (fillCandidateLiteTable) {
@@ -322,14 +351,14 @@ struct HfTreeCreatorDstarToD0Pi {
         candidate.deltaIPNormalisedMaxD0(),
         candidate.impactParameterProductD0(),
         cosThetaD0,
-        candidate.ptProng0(),
-        candidate.ptProng1(),
+        ptProng0,
+        ptProng1,
         candidate.ptSoftPi(),
-        candidate.impactParameter0(),
-        candidate.impactParameter1(),
+        impParameterProng0,
+        impParameterProng1,
         candidate.impParamSoftPi(),
-        candidate.impactParameterNormalised0(),
-        candidate.impactParameterNormalised1(),
+        impParameterNormalisedProng0,
+        impParameterNormalisedProng1,
         candidate.normalisedImpParamSoftPi(),
         prong0.tpcNSigmaPi(),
         prong0.tpcNSigmaKa(),
@@ -385,17 +414,17 @@ struct HfTreeCreatorDstarToD0Pi {
         candidate.deltaIPNormalisedMaxD0(),
         candidate.impactParameterProductD0(),
         cosThetaD0,
-        RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-        RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+        pProng0,
+        pProng1,
         RecoDecay::p(candidate.pxSoftPi(), candidate.pySoftPi(), candidate.pzSoftPi()),
-        candidate.ptProng0(),
-        candidate.ptProng1(),
+        ptProng0,
+        ptProng1,
         candidate.ptSoftPi(),
-        candidate.impactParameter0(),
-        candidate.impactParameter1(),
+        impParameterProng0,
+        impParameterProng1,
         candidate.impParamSoftPi(),
-        candidate.impactParameterNormalised0(),
-        candidate.impactParameterNormalised1(),
+        impParameterNormalisedProng0,
+        impParameterNormalisedProng1,
         candidate.normalisedImpParamSoftPi(),
         candidate.errorImpactParameter0(),
         candidate.errorImpactParameter1(),
@@ -457,7 +486,7 @@ struct HfTreeCreatorDstarToD0Pi {
     }
     for (const auto& candidate : candidates) {
       if (downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
+        float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
@@ -498,7 +527,7 @@ struct HfTreeCreatorDstarToD0Pi {
       }
       for (const auto& candidate : reconstructedCandBkg) {
         if (downSampleBkgFactor < 1.) {
-          float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
+          float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
           if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
             continue;
           }

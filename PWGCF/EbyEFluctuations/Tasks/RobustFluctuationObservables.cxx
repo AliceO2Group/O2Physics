@@ -14,6 +14,9 @@
 
 #include <iostream>
 #include <string>
+#include <memory>
+#include <vector>
+#include <map>
 
 #include "TF1.h"
 #include "TGraphErrors.h"
@@ -82,7 +85,7 @@ struct RobustFluctuationObservables {
   // for vertex vs time:
   bool flagShowInfo = false;
   int lastRunNumber = -1;
-  int nBCsPerOrbit = 3564;
+  uint64_t nBCsPerOrbit = 3564;
 
   // bc position correlations
   int64_t prevOrbit = -1;
@@ -101,7 +104,7 @@ struct RobustFluctuationObservables {
   int64_t orbitSOR = -1;
   // int64_t bcSORbis = -1; // global bc of the start of the first orbit - try alternative
   int64_t nBCsPerTF = 1; // 128*3564; // duration of TF in bcs
-  int64_t TFid = -1;     // count time frames in a given run
+  uint64_t TFid = 0;     // count time frames in a given run
   bool flagWaitForNewTF = false;
   uint32_t nOrbitsPerTF = 0;
 
@@ -154,7 +157,7 @@ struct RobustFluctuationObservables {
   // hand-made ITS ROF cut
   Configurable<int> nITSROF{"nITSROF", 6, "nITSROF"};
   Configurable<int> nITSROF_BC_offset{"nITSROF_BC_offset", 65, "nITSROF_BC_offset"};
-  Configurable<int> nITSROF_BC_cutWidth{"nITSROF_BC_cutWidth", 40, "nITSROF_BC_cutWidth"};
+  Configurable<uint64_t> nITSROF_BC_cutWidth{"nITSROF_BC_cutWidth", 40, "nITSROF_BC_cutWidth"};
   // Configurable<int> nITSROF_middle_cut_forITSonlyVert{"nITSROF_middle_cut_forITSonlyVert", 198/2 /*ROF=198 in pp*/, "nITSROF_middle_cut_forITSonlyVert"};
   // Configurable<int> nNoITSonlyVertices{"nNoITSonlyVertices", false, "nITSROF_middle_cut_forITSonlyVert"};
 
@@ -163,7 +166,7 @@ struct RobustFluctuationObservables {
   Configurable<float> cutVzTrackT0diffUpper{"cutVzTrackT0diffUpper", 1., "cutVzTrackT0diffUpper, cm"};
 
   // splitting of the orbit into several BC ranges
-  Configurable<std::vector<int>> vSplitBCpointsOfTheOrbit{"SplitBCpointsOfTheOrbit", {1200, 2000, 3000}, "BC split points of the orbit"};
+  Configurable<std::vector<uint64_t>> vSplitBCpointsOfTheOrbit{"SplitBCpointsOfTheOrbit", {1200, 2000, 3000}, "BC split points of the orbit"};
 
   // orbit QA
   uint32_t orbitAtCollIndexZero = 0;
@@ -968,7 +971,7 @@ struct RobustFluctuationObservables {
     }
 
     if (myDF_ID >= 0 && myDF_ID < nHistQAplotsDF) {
-      int diffOrbits = (int32_t)orbit - (int32_t)orbitAtCollIndexZero;
+      int diffOrbits = static_cast<int32_t>(orbit) - static_cast<int32_t>(orbitAtCollIndexZero);
       TString strDF = Form("DF_%d", static_cast<int>(DF_ID_raw));
       fV_h1D_Orbit_vs_CollIndex[myDF_ID]->Fill(collision.index(), diffOrbits);
       fV_h1D_Orbit_vs_CollIndex[myDF_ID]->SetTitle(strDF);
@@ -1474,23 +1477,23 @@ struct RobustFluctuationObservables {
     // ##### check how often we analyze collision in the same BC (and also the vZ difference)
     if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       if (prevBC != 9999) {
-        int32_t diff = (int32_t)collBC - (int32_t)prevBC;
+        int32_t diff = static_cast<int32_t>(collBC) - static_cast<int32_t>(prevBC);
         histosEvent.fill(HIST("hBC_DIFF_to_previous"), diff);
         if (diff == 0)
           histosEvent.fill(HIST("hBC_DIFF_to_previous_vZvZ_2D"), vZ, prev_vZ);
       }
       if (prevBcInTF >= 0) {
-        int32_t diffBcInTF = (int32_t)bcInTF - (int32_t)prevBcInTF;
+        int32_t diffBcInTF = static_cast<int32_t>(bcInTF) - static_cast<int32_t>(prevBcInTF);
         histosEvent.fill(HIST("hBCinTF_DIFF_to_previous"), diffBcInTF);
       }
       if (prevFoundBcInTF >= 0) {
-        int32_t diffGlobalBcInTF = (int32_t)foundBcInTF - (int32_t)prevFoundBcInTF;
+        int32_t diffGlobalBcInTF = static_cast<int32_t>(foundBcInTF) - static_cast<int32_t>(prevFoundBcInTF);
         histosEvent.fill(HIST("hBCinTF_DIFF_to_previous_FOUND_BC"), diffGlobalBcInTF);
       }
 
       // global found BC:
       if (prevGlobalFoundBC != 9999) {
-        int32_t diff = (int32_t)globalFoundBC - (int32_t)prevGlobalFoundBC;
+        int32_t diff = static_cast<int32_t>(globalFoundBC) - static_cast<int32_t>(prevGlobalFoundBC);
         histosEvent.fill(HIST("hBC_DIFF_to_previous_FOUND_BC"), diff);
 
         if (counterPVcontributorsAfterTPCcuts > 0) {
@@ -1620,8 +1623,8 @@ struct RobustFluctuationObservables {
 
       histosEventBcInTF.fill(HIST("hGlobalTracks_vs_bcInTF"), bcInTF, nTracksGlobalAccepted);
     }
-    histosEvent.fill(HIST("hOrbitStartFromCollIndexZeroAft"), (int32_t)orbit - (int32_t)orbitAtCollIndexZero);
-    histosEvent.fill(HIST("h2D_Orbit_vs_CollIndex_Aft"), collision.index(), (int32_t)orbit - (int32_t)orbitAtCollIndexZero);
+    histosEvent.fill(HIST("hOrbitStartFromCollIndexZeroAft"), static_cast<int32_t>(orbit) - static_cast<int32_t>(orbitAtCollIndexZero));
+    histosEvent.fill(HIST("h2D_Orbit_vs_CollIndex_Aft"), collision.index(), static_cast<int32_t>(orbit) - static_cast<int32_t>(orbitAtCollIndexZero));
 
     histosEvent.fill(HIST("hMF"), magneticField);
     int MFsign = magneticField > 0 ? +1 : -1;
@@ -1680,11 +1683,11 @@ struct RobustFluctuationObservables {
     histosEvent.fill(HIST("hBCFound_Aft"), globalFoundBC);
     histosEvent.fill(HIST("h2D_numContrib_vs_BC"), collBC, collision.numContrib());
 
-    int64_t diffFoundBC_vs_BC = (int64_t)globalFoundBC - (int64_t)collBC;
+    int64_t diffFoundBC_vs_BC = static_cast<int64_t>(globalFoundBC) - static_cast<int64_t>(collBC);
     histosEvent.fill(HIST("h2D_diffFoundBC_vs_BC"), collBC, diffFoundBC_vs_BC);
 
     if (collision.has_foundBC())
-      histosEvent.fill(HIST("h2D_diffFoundBC_vs_BC_inTF"), collBC, (int64_t)foundBcInTF - (int64_t)bcInTF);
+      histosEvent.fill(HIST("h2D_diffFoundBC_vs_BC_inTF"), collBC, static_cast<int64_t>(foundBcInTF) - static_cast<int64_t>(bcInTF));
 
     // with FT0 conditions
     if (isFT0) {

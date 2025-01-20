@@ -54,7 +54,7 @@ namespace jetv0utilities
 template <typename T>
 constexpr bool isV0Candidate()
 {
-  return std::is_same_v<std::decay_t<T>, CandidatesV0Data::iterator> || std::is_same_v<std::decay_t<T>, CandidatesV0Data::filtered_iterator> || std::is_same_v<std::decay_t<T>, CandidatesV0MCD::iterator> || std::is_same_v<std::decay_t<T>, CandidatesV0MCD::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesV0Data::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesV0Data::filtered_iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesV0MCD::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesV0MCD::filtered_iterator>;
 }
 
 /**
@@ -63,7 +63,7 @@ constexpr bool isV0Candidate()
 template <typename T>
 constexpr bool isV0McCandidate()
 {
-  return std::is_same_v<std::decay_t<T>, CandidatesV0MCP::iterator> || std::is_same_v<std::decay_t<T>, CandidatesV0MCP::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesV0MCP::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesV0MCP::filtered_iterator>;
 }
 
 /**
@@ -82,7 +82,7 @@ constexpr bool isV0Table()
 template <typename T>
 constexpr bool isV0McTable()
 {
-  return std::is_same_v<std::decay_t<T>, CandidatesV0MCP> || std::is_same_v<std::decay_t<T>, o2::soa::Filtered<CandidatesV0MCP>>; // note not optimal way but needed for jetfindingutilities::analyseParticles()
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesV0MCP> || std::is_same_v<std::decay_t<T>, o2::soa::Filtered<o2::aod::CandidatesV0MCP>>; // note not optimal way but needed for jetfindingutilities::analyseParticles()
 }
 
 /**

@@ -116,7 +116,7 @@ struct DqCumulantFlow {
   ConfigurableAxis axisEta{"axisEta", {40, -6.0, 1.5}, "eta axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {100, 0, 20}, "pt axis for histograms"};
   ConfigurableAxis axisMass{"axisMass", {40, 2, 4}, "mass axis for histograms"};
-  Configurable<uint8_t> fConfigNPow{"cfgNPow", 0, "Power of weights for Q vector"};
+  Configurable<uint> fConfigNPow{"cfgNPow", 0, "Power of weights for Q vector"};
   // Configurables for the reference flow
   Configurable<string> fConfigTrackCuts{"cfgLeptonCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
   Configurable<float> fConfigCutPtMin{"cfgCutPtMin", 1.0f, "Minimal pT for tracks"};

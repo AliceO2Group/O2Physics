@@ -432,7 +432,7 @@ struct cascadefinderQA {
 
 /// Extends the cascdata table with expression columns
 struct cascadeinitializer {
-  Spawns<aod::CascCore> cascdataext;
+  Spawns<aod::CascCores> cascdataext;
   void init(InitContext const&) {}
 };
 

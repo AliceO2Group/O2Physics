@@ -45,6 +45,7 @@ class V0PhotonCut : public TNamed
     kRxy,
     kCosPA,
     kPCA,
+    kChi2KF,
     kRZLine,
     kOnWwireIB,
     kOnWwireOB,
@@ -54,6 +55,7 @@ class V0PhotonCut : public TNamed
     kTPCNCls,
     kTPCCrossedRows,
     kTPCCrossedRowsOverNCls,
+    kTPCFracSharedClusters,
     kTPCChi2NDF,
     kTPCNsigmaEl,
     kTPCNsigmaPi,
@@ -71,8 +73,6 @@ class V0PhotonCut : public TNamed
     kRequireTPCTRDTOF,
     kNCuts
   };
-
-  static const char* mCutNames[static_cast<int>(V0PhotonCuts::kNCuts)];
 
   template <class TLeg, typename TV0>
   bool IsSelected(TV0 const& v0) const
@@ -102,6 +102,9 @@ class V0PhotonCut : public TNamed
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kPCA)) {
+      return false;
+    }
+    if (!IsSelectedV0(v0, V0PhotonCuts::kChi2KF)) {
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kRZLine)) {
@@ -226,6 +229,9 @@ class V0PhotonCut : public TNamed
     if (!IsSelectedTrack(track, V0PhotonCuts::kTPCCrossedRowsOverNCls)) {
       return false;
     }
+    if (!IsSelectedTrack(track, V0PhotonCuts::kTPCFracSharedClusters)) {
+      return false;
+    }
     if (!IsSelectedTrack(track, V0PhotonCuts::kTPCChi2NDF)) {
       return false;
     }
@@ -236,31 +242,6 @@ class V0PhotonCut : public TNamed
       return false;
     }
     return true;
-  }
-
-  template <typename T>
-  uint32_t IsSelectedMask(T const& track) const
-  {
-    uint32_t flag = 0;
-
-    auto setFlag = [&](const V0PhotonCuts& cut) {
-      if (IsSelectedTrack(track, cut)) {
-        flag |= 1UL << static_cast<int>(cut);
-      }
-    };
-
-    setFlag(V0PhotonCuts::kV0PtRange);
-    setFlag(V0PhotonCuts::kV0EtaRange);
-    setFlag(V0PhotonCuts::kTrackPtRange);
-    setFlag(V0PhotonCuts::kTrackEtaRange);
-    setFlag(V0PhotonCuts::kTPCNCls);
-    setFlag(V0PhotonCuts::kTPCCrossedRows);
-    setFlag(V0PhotonCuts::kTPCCrossedRowsOverNCls);
-    setFlag(V0PhotonCuts::kTPCChi2NDF);
-    setFlag(V0PhotonCuts::kDCAxy);
-    setFlag(V0PhotonCuts::kDCAz);
-
-    return flag;
   }
 
   template <typename T>
@@ -302,6 +283,9 @@ class V0PhotonCut : public TNamed
 
       case V0PhotonCuts::kPCA:
         return v0.pca() <= mMaxPCA;
+
+      case V0PhotonCuts::kChi2KF:
+        return v0.chiSquareNDF() <= mMaxChi2KF;
 
       case V0PhotonCuts::kRZLine:
         return v0.v0radius() > abs(v0.vz()) * std::tan(2 * std::atan(std::exp(-mMaxV0Eta))) - mMaxMarginZ;
@@ -373,6 +357,9 @@ class V0PhotonCut : public TNamed
 
       case V0PhotonCuts::kTPCCrossedRowsOverNCls:
         return track.tpcCrossedRowsOverFindableCls() >= mMinNCrossedRowsOverFindableClustersTPC;
+
+      case V0PhotonCuts::kTPCFracSharedClusters:
+        return track.tpcFractionSharedCls() <= mMaxFracSharedClustersTPC;
 
       case V0PhotonCuts::kTPCChi2NDF:
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
@@ -457,6 +444,7 @@ class V0PhotonCut : public TNamed
   void SetRxyRange(float min = 0.f, float max = 180.f);
   void SetMinCosPA(float min = 0.95);
   void SetMaxPCA(float max = 2.f);
+  void SetMaxChi2KF(float max = 1e+10);
   void SetMaxMarginZ(float max = 7.f);
   void SetMaxMeePsiPairDep(std::function<float(float)> psiDepCut);
   void SetOnWwireIB(bool flag = false);
@@ -468,6 +456,7 @@ class V0PhotonCut : public TNamed
   void SetMinNClustersTPC(int minNClustersTPC);
   void SetMinNCrossedRowsTPC(int minNCrossedRowsTPC);
   void SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRowsOverFindableClustersTPC);
+  void SetMaxFracSharedClustersTPC(float max);
   void SetChi2PerClusterTPC(float min, float max);
   void SetNClustersITS(int min, int max);
   void SetChi2PerClusterITS(float min, float max);
@@ -488,9 +477,6 @@ class V0PhotonCut : public TNamed
   void SetRequireTPCTRDTOF(bool flag);
   void SetDisableITSonly(bool flag);
 
-  /// @brief Print the track selection
-  void print() const;
-
  private:
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement;
   static const std::pair<int8_t, std::set<uint8_t>> its_ob_Requirement;
@@ -505,6 +491,7 @@ class V0PhotonCut : public TNamed
   float mMinRxy{0.f}, mMaxRxy{180.f};
   float mMinCosPA{0.95};
   float mMaxPCA{2.f};
+  float mMaxChi2KF{1e+10};
   float mMaxMarginZ{7.f};
   std::function<float(float)> mMaxMeePsiPairDep{}; // max mee as a function of psipair
   bool mIsOnWwireIB{false};
@@ -524,6 +511,7 @@ class V0PhotonCut : public TNamed
   int mMinNCrossedRowsTPC{0};                                          // min number of crossed rows in TPC
   float mMinChi2PerClusterTPC{-1e10f}, mMaxChi2PerClusterTPC{1e10f};   // max tpc fit chi2 per TPC cluster
   float mMinNCrossedRowsOverFindableClustersTPC{0.f};                  // min ratio crossed rows / findable clusters
+  float mMaxFracSharedClustersTPC{999.f};                              // max ratio shared clusters / clusters in TPC
   int mMinNClustersITS{0}, mMaxNClustersITS{7};                        // range in number of ITS clusters
   float mMinChi2PerClusterITS{-1e10f}, mMaxChi2PerClusterITS{1e10f};   // max its fit chi2 per ITS cluster
   float mMinMeanClusterSizeITS{-1e10f}, mMaxMeanClusterSizeITS{1e10f}; // max <its cluster size> x cos(Lmabda)

@@ -25,6 +25,7 @@
 #include <string>
 
 #include "Framework/HistogramRegistry.h"
+#include "Common/Core/RecoDecay.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
 
 #include "Math/Vector4D.h"
@@ -33,10 +34,10 @@
 
 using namespace o2::framework;
 
-namespace o2::analysis::femtoUniverse
+namespace o2::analysis::femto_universe
 {
 
-namespace femtoUniverseContainer
+namespace femto_universe_container
 {
 /// Femtoscopic observable to be computed
 enum Observable { kstar ///< kstar
@@ -46,7 +47,7 @@ enum Observable { kstar ///< kstar
 enum EventType { same, ///< Pair from same event
                  mixed ///< Pair from mixed event
 };
-}; // namespace femtoUniverseContainer
+}; // namespace femto_universe_container
 
 /// \class FemtoUniverseContainer
 /// \brief Container for all histogramming related to the correlation function. The two
@@ -54,7 +55,7 @@ enum EventType { same, ///< Pair from same event
 /// are filled according to the specified observable
 /// \tparam eventType Type of the event (same/mixed)
 /// \tparam obs Observable to be computed (k*/Q_inv/...)
-template <femtoUniverseContainer::EventType eventType, femtoUniverseContainer::Observable obs>
+template <femto_universe_container::EventType eventType, femto_universe_container::Observable obs>
 class FemtoUniverseContainer
 {
  public:
@@ -71,7 +72,7 @@ class FemtoUniverseContainer
   /// \param kTAxis axis object for the kT axis
   /// \param mTAxis axis object for the mT axis
   template <typename T>
-  void init_base(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis, T kTAxis, T mTAxis, T multAxis3D, T mTAxis3D, T etaAxis, T phiAxis, bool use3dplots)
+  void initBase(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis, T kTAxis, T mTAxis, T multAxis3D, T mTAxis3D, T etaAxis, T phiAxis, bool use3dplots)
   {
     mHistogramRegistry->add((folderName + "/relPairDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
     mHistogramRegistry->add((folderName + "/relPairkT").c_str(), "; #it{k}_{T} (GeV/#it{c}); Entries", kTH1F, {kTAxis});
@@ -95,7 +96,7 @@ class FemtoUniverseContainer
   /// \param folderName Name of the directory in the output file (no suffix for reconstructed data/ Monte Carlo; "_MC" for Monte Carlo Truth)
   /// \param femtoObsAxis axis object for the femto observable axis
   template <typename T>
-  void init_MC(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis, T mTAxis)
+  void initMC(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis, T mTAxis)
   {
     mHistogramRegistry->add((folderName + "/relPairDist_ReconNoFake").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
     mHistogramRegistry->add((folderName + "/relPairkstarmT_ReconNoFake").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis, mTAxis});
@@ -106,8 +107,8 @@ class FemtoUniverseContainer
   }
 
   /// Templated function to initialize the histograms for the task
-  /// Always calls init_base to initialize the histograms for data/ Monte Carlo reconstructed
-  /// In case of Monte Carlo, calls init_base again for Monte Carlo truth and the specialized function init_MC for additional histogramms
+  /// Always calls initBase to initialize the histograms for data/ Monte Carlo reconstructed
+  /// In case of Monte Carlo, calls initBase again for Monte Carlo truth and the specialized function initMC for additional histogramms
   /// \tparam T type of the configurable for the axis configuration
   /// \param registry Histogram registry to be passed
   /// \param kstarBins k* binning for the histograms
@@ -122,7 +123,7 @@ class FemtoUniverseContainer
   {
     mHistogramRegistry = registry;
     std::string femtoObs;
-    if constexpr (mFemtoObs == femtoUniverseContainer::Observable::kstar) {
+    if constexpr (FemtoObs == femto_universe_container::Observable::kstar) {
       femtoObs = "#it{k*} (GeV/#it{c})";
     }
     std::vector<double> tmpVecMult = multBins;
@@ -135,18 +136,18 @@ class FemtoUniverseContainer
     framework::AxisSpec mTAxis3D = {mTBins3D, "#it{m}_{T} (GeV/#it{c})"};
 
     // angular correlations
-    mPhiLow = (-static_cast<int>(phiBins / 4) + 0.5) * 2. * o2::constants::math::PI / phiBins;
-    mPhiHigh = 2 * o2::constants::math::PI + (-static_cast<int>(phiBins / 4) + 0.5) * 2. * o2::constants::math::PI / phiBins;
+    mPhiLow = (-static_cast<int>(phiBins / 4) + 0.5) * o2::constants::math::TwoPI / phiBins;
+    mPhiHigh = o2::constants::math::TwoPI + (-static_cast<int>(phiBins / 4) + 0.5) * o2::constants::math::TwoPI / phiBins;
     framework::AxisSpec phiAxis = {phiBins, mPhiLow, mPhiHigh};
     framework::AxisSpec etaAxis = {etaBins, -2.0, 2.0};
 
-    std::string folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kRecon]);
+    std::string folderName = static_cast<std::string>(FolderSuffix[EventType]) + static_cast<std::string>(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kRecon]);
 
-    init_base(folderName, femtoObs, femtoObsAxis, multAxis, kTAxis, mTAxis, multAxis3D, mTAxis3D, etaAxis, phiAxis, use3dplots);
+    initBase(folderName, femtoObs, femtoObsAxis, multAxis, kTAxis, mTAxis, multAxis3D, mTAxis3D, etaAxis, phiAxis, use3dplots);
     if (isMC) {
-      folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kTruth]);
-      init_base(folderName, femtoObs, femtoObsAxis, multAxis, kTAxis, mTAxis, multAxis3D, mTAxis3D, etaAxis, phiAxis, use3dplots);
-      init_MC(folderName, femtoObs, femtoObsAxis, multAxis, mTAxis);
+      folderName = static_cast<std::string>(FolderSuffix[EventType]) + static_cast<std::string>(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kTruth]);
+      initBase(folderName, femtoObs, femtoObsAxis, multAxis, kTAxis, mTAxis, multAxis3D, mTAxis3D, etaAxis, phiAxis, use3dplots);
+      initMC(folderName, femtoObs, femtoObsAxis, multAxis, mTAxis);
     }
   }
 
@@ -167,33 +168,33 @@ class FemtoUniverseContainer
   /// \param part1 Particle one
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
-  template <o2::aod::femtouniverseMCparticle::MCType mc, typename T>
-  void setPair_base(const float femtoObs, const float mT, T const& part1, T const& part2, const int mult, bool use3dplots, float weight = 1.0f)
+  template <o2::aod::femtouniverse_mc_particle::MCType mc, typename T>
+  void setPairBase(const float femtoObs, const float mT, T const& part1, T const& part2, const int mult, bool use3dplots, float weight = 1.0f)
   {
     const float kT = FemtoUniverseMath::getkT(part1, mMassOne, part2, mMassTwo);
-    delta_eta = part1.eta() - part2.eta();
-    delta_phi = part1.phi() - part2.phi();
+    deltaEta = part1.eta() - part2.eta();
+    deltaPhi = part1.phi() - part2.phi();
 
-    while (delta_phi < mPhiLow) {
-      delta_phi += o2::constants::math::TwoPI;
+    while (deltaPhi < mPhiLow) {
+      deltaPhi += o2::constants::math::TwoPI;
     }
-    while (delta_phi > mPhiHigh) {
-      delta_phi -= o2::constants::math::TwoPI;
+    while (deltaPhi > mPhiHigh) {
+      deltaPhi -= o2::constants::math::TwoPI;
     }
 
-    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/relPairDist"), femtoObs, weight);
-    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/relPairkT"), kT, weight);
-    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/relPairkstarkT"), femtoObs, kT, weight);
-    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/relPairkstarmT"), femtoObs, mT, weight);
-    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/relPairkstarMult"), femtoObs, mult, weight);
-    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/kstarPtPart1"), femtoObs, part1.pt(), weight);
-    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/kstarPtPart2"), femtoObs, part2.pt(), weight);
-    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/MultPtPart1"), part1.pt(), mult, weight);
-    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/MultPtPart2"), part2.pt(), mult, weight);
-    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/PtPart1PtPart2"), part1.pt(), part2.pt(), weight);
-    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/DeltaEtaDeltaPhi"), delta_phi, delta_eta, weight);
+    mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/relPairDist"), femtoObs, weight);
+    mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/relPairkT"), kT, weight);
+    mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarkT"), femtoObs, kT, weight);
+    mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarmT"), femtoObs, mT, weight);
+    mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarMult"), femtoObs, mult, weight);
+    mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/kstarPtPart1"), femtoObs, part1.pt(), weight);
+    mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/kstarPtPart2"), femtoObs, part2.pt(), weight);
+    mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/MultPtPart1"), part1.pt(), mult, weight);
+    mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/MultPtPart2"), part2.pt(), mult, weight);
+    mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/PtPart1PtPart2"), part1.pt(), part2.pt(), weight);
+    mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/DeltaEtaDeltaPhi"), deltaPhi, deltaEta, weight);
     if (use3dplots) {
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/relPairkstarmTMult"), femtoObs, mT, mult, weight);
+      mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarmTMult"), femtoObs, mT, mult, weight);
     }
   }
 
@@ -201,25 +202,25 @@ class FemtoUniverseContainer
   /// Fills MC truth specific histogramms:
   /// - kstar distribution plots with RECONSTRUCTED information but ONLY for non-fake candidates; needed for purity calculations of tracks
   /// - kstar resolution matrix
-  /// Note: Standard histogramms with MC truth information are filled with the setPair_base function
+  /// Note: Standard histogramms with MC truth information are filled with the setPairBase function
   /// \param part1 Particle one
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
-  void setPair_MC(const float femtoObsMC, const float femtoObs, const float mT, const int mult)
+  void setPairMC(const float femtoObsMC, const float femtoObs, const float mT, const int mult)
   {
     if (mHistogramRegistry) {
       // Fill the kstar distributions with the reconstructed information but only for particles with the right PDG code
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kTruth]) + HIST("/relPairDist_ReconNoFake"), femtoObs);
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kTruth]) + HIST("/relPairkstarmT_ReconNoFake"), femtoObs, mT);
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kTruth]) + HIST("/relPairkstarMult_ReconNoFake"), femtoObs, mult);
+      mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kTruth]) + HIST("/relPairDist_ReconNoFake"), femtoObs);
+      mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kTruth]) + HIST("/relPairkstarmT_ReconNoFake"), femtoObs, mT);
+      mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kTruth]) + HIST("/relPairkstarMult_ReconNoFake"), femtoObs, mult);
 
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kTruth]) + HIST("/kstar_resolution"), femtoObsMC, femtoObs);
+      mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kTruth]) + HIST("/kstar_resolution"), femtoObsMC, femtoObs);
     }
   }
 
   /// Templated function to handle data/ Monte Carlo reconstructed and Monte Carlo truth
-  /// Always calls setPair_base to compute the observables with reconstructed data
-  /// In case of Monte Carlo, calls setPair_base with MC info and specialized function setPair_MC for additional histogramms
+  /// Always calls setPairBase to compute the observables with reconstructed data
+  /// In case of Monte Carlo, calls setPairBase with MC info and specialized function setPairMC for additional histogramms
   /// \tparam T type of the femtouniverseparticle
   /// \param part1 Particle one
   /// \param part2 Particle two
@@ -229,51 +230,51 @@ class FemtoUniverseContainer
   {
     float femtoObs, femtoObsMC;
     // Calculate femto observable and the mT with reconstructed information
-    if constexpr (mFemtoObs == femtoUniverseContainer::Observable::kstar) {
+    if constexpr (FemtoObs == femto_universe_container::Observable::kstar) {
       femtoObs = FemtoUniverseMath::getkstar(part1, mMassOne, part2, mMassTwo);
     }
     const float mT = FemtoUniverseMath::getmT(part1, mMassOne, part2, mMassTwo);
 
     if (mHistogramRegistry) {
-      setPair_base<o2::aod::femtouniverseMCparticle::MCType::kRecon>(femtoObs, mT, part1, part2, mult, use3dplots, weight);
+      setPairBase<o2::aod::femtouniverse_mc_particle::MCType::kRecon>(femtoObs, mT, part1, part2, mult, use3dplots, weight);
 
       if constexpr (isMC) {
         if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
           // calculate the femto observable and the mT with MC truth information
-          if constexpr (mFemtoObs == femtoUniverseContainer::Observable::kstar) {
+          if constexpr (FemtoObs == femto_universe_container::Observable::kstar) {
             femtoObsMC = FemtoUniverseMath::getkstar(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
           }
           const float mTMC = FemtoUniverseMath::getmT(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
 
-          if (abs(part1.fdMCParticle().pdgMCTruth()) == abs(mPDGOne) && abs(part2.fdMCParticle().pdgMCTruth()) == abs(mPDGTwo)) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
-            setPair_base<o2::aod::femtouniverseMCparticle::MCType::kTruth>(femtoObsMC, mTMC, part1.fdMCParticle(), part2.fdMCParticle(), mult, use3dplots, weight);
-            setPair_MC(femtoObsMC, femtoObs, mT, mult);
+          if (std::abs(part1.fdMCParticle().pdgMCTruth()) == std::abs(mPDGOne) && std::abs(part2.fdMCParticle().pdgMCTruth()) == std::abs(mPDGTwo)) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
+            setPairBase<o2::aod::femtouniverse_mc_particle::MCType::kTruth>(femtoObsMC, mTMC, part1.fdMCParticle(), part2.fdMCParticle(), mult, use3dplots, weight);
+            setPairMC(femtoObsMC, femtoObs, mT, mult);
           } else {
-            mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);
+            mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);
           }
 
         } else {
-          mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kTruth]) + HIST("/hNoMCtruthPairsCounter"), 0);
+          mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kTruth]) + HIST("/hNoMCtruthPairsCounter"), 0);
         }
       }
     }
   }
 
  protected:
-  HistogramRegistry* mHistogramRegistry = nullptr;                                  ///< For QA output
-  static constexpr std::string_view mFolderSuffix[2] = {"SameEvent", "MixedEvent"}; ///< Folder naming for the output according to mEventType
-  static constexpr femtoUniverseContainer::Observable mFemtoObs = obs;              ///< Femtoscopic observable to be computed (according to femtoUniverseContainer::Observable)
-  static constexpr int mEventType = eventType;                                      ///< Type of the event (same/mixed, according to femtoUniverseContainer::EventType)
-  float mMassOne = 0.f;                                                             ///< PDG mass of particle 1
-  float mMassTwo = 0.f;                                                             ///< PDG mass of particle 2
-  int mPDGOne = 0;                                                                  ///< PDG code of particle 1
-  int mPDGTwo = 0;                                                                  ///< PDG code of particle 2
+  HistogramRegistry* mHistogramRegistry = nullptr;                                 ///< For QA output
+  static constexpr std::string_view FolderSuffix[2] = {"SameEvent", "MixedEvent"}; ///< Folder naming for the output according to EventType
+  static constexpr femto_universe_container::Observable FemtoObs = obs;            ///< Femtoscopic observable to be computed (according to femto_universe_container::Observable)
+  static constexpr int EventType = eventType;                                      ///< Type of the event (same/mixed, according to femto_universe_container::EventType)
+  float mMassOne = 0.f;                                                            ///< PDG mass of particle 1
+  float mMassTwo = 0.f;                                                            ///< PDG mass of particle 2
+  int mPDGOne = 0;                                                                 ///< PDG code of particle 1
+  int mPDGTwo = 0;                                                                 ///< PDG code of particle 2
   double mPhiLow;
   double mPhiHigh;
-  double delta_eta;
-  double delta_phi;
+  double deltaEta;
+  double deltaPhi;
 };
 
-} // namespace o2::analysis::femtoUniverse
+} // namespace o2::analysis::femto_universe
 
 #endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECONTAINER_H_

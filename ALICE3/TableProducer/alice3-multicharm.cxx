@@ -499,7 +499,7 @@ struct alice3multicharm {
             continue; // do not take if radius too small, likely a primary combination
 
           o2::dataformats::DCA dcaInfo;
-          float xicdcaXY = 1e+10, xicdcaZ = 1e+10;
+          float xicdcaXY = 1e+10;
           o2::track::TrackParCov xicTrackCopy(xicTrack); // paranoia
 
           o2::vertexing::PVertex primaryVertex;
@@ -507,7 +507,6 @@ struct alice3multicharm {
 
           if (xicTrackCopy.propagateToDCA(primaryVertex, magneticField, &dcaInfo)) {
             xicdcaXY = dcaInfo.getY();
-            xicdcaZ = dcaInfo.getZ();
           }
 
           histos.fill(HIST("hMassXiC"), thisXiCcandidate.mass);
@@ -543,10 +542,9 @@ struct alice3multicharm {
 
             o2::track::TrackParCov xiccTrack(thisXiCCcandidate.xyz, momentumCC, thisXiCCcandidate.parentTrackCovMatrix, +2);
 
-            float xiccdcaXY = 1e+10, xiccdcaZ = 1e+10;
+            float xiccdcaXY = 1e+10;
             if (xiccTrack.propagateToDCA(primaryVertex, magneticField, &dcaInfo)) {
               xiccdcaXY = dcaInfo.getY();
-              xiccdcaZ = dcaInfo.getZ();
             }
 
             // produce multi-charm table for posterior analysis

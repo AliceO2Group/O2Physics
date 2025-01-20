@@ -19,7 +19,7 @@ o2physics_add_dpl_workflow(ue-zdc-analysis
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(ue-lambdak0sflattenicity
-                    SOURCES lambdak0sflattenicity.cxx
+o2physics_add_dpl_workflow(dedx-analysis
+                    SOURCES dedx_analysys.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

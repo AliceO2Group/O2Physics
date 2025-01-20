@@ -107,8 +107,8 @@ struct lambdakzeropid {
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
 
   // manual
+  Configurable<int> useCustomRunNumber{"useCustomRunNumber", false, "Use custom timestamp"};
   Configurable<int> manualRunNumber{"manualRunNumber", 544122, "manual run number if no collisions saved"};
-  Configurable<uint64_t> manualTimeStamp{"manualTimeStamp", 1696549226920, "manual time stamp if no collisions saved"};
 
   ConfigurableAxis axisEta{"axisEta", {20, -1.0f, +1.0f}, "#eta"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {2000, -1000.0f, +1000.0f}, "delta-time (ps)"};
@@ -327,7 +327,7 @@ struct lambdakzeropid {
     }
   }
 
-  void initCCDB(int runNumber, uint64_t timeStamp)
+  void initCCDB(int runNumber)
   {
     if (mRunNumber == runNumber) {
       return;
@@ -341,34 +341,33 @@ struct lambdakzeropid {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
-      mVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, timeStamp);
+      mVtx = ccdb->getForRun<o2::dataformats::MeanVertexObject>(mVtxPath, runNumber);
       mRunNumber = runNumber;
       return;
     }
 
-    auto run3grp_timestamp = timeStamp;
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    o2::parameters::GRPObject* grpo = ccdb->getForRun<o2::parameters::GRPObject>(grpPath, runNumber);
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       // Fetch magnetic field from ccdb for current collision
       d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+      LOG(info) << "Retrieved GRP for run " << runNumber << " with magnetic field of " << d_bz << " kZG";
     } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(grpmagPath, runNumber);
       if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for run " << runNumber;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
       // Fetch magnetic field from ccdb for current collision
       d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      mVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, timeStamp);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+      mVtx = ccdb->getForRun<o2::dataformats::MeanVertexObject>(mVtxPath, runNumber);
+      LOG(info) << "Retrieved GRP for run " << runNumber << " with magnetic field of " << d_bz << " kZG";
     }
 
     // if TOF Nsigma desired
     if (doNSigmas) {
-      nSigmaCalibObjects = ccdb->getForTimeStamp<TList>(nSigmaPath, timeStamp);
+      nSigmaCalibObjects = ccdb->getForRun<TList>(nSigmaPath, runNumber);
       if (nSigmaCalibObjects) {
         LOGF(info, "loaded TList with this many objects: %i", nSigmaCalibObjects->GetEntries());
 
@@ -593,12 +592,12 @@ struct lambdakzeropid {
   void processStandardData(aod::Collisions const& collisions, V0OriginalDatas const& V0s, TracksWithAllExtras const&, aod::BCsWithTimestamps const& /*bcs*/)
   {
     // Fire up CCDB with first collision in record. If no collisions, bypass
-    if (collisions.size() > 0) {
+    if (useCustomRunNumber || collisions.size() < 1) {
+      initCCDB(manualRunNumber);
+    } else {
       auto collision = collisions.begin();
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc.runNumber(), bc.timestamp());
-    } else {
-      initCCDB(manualRunNumber, manualTimeStamp);
+      initCCDB(bc.runNumber());
     }
 
     for (const auto& V0 : V0s) {
@@ -621,11 +620,11 @@ struct lambdakzeropid {
   void processDerivedData(soa::Join<aod::StraCollisions, aod::StraStamps> const& collisions, V0DerivedDatas const& V0s, dauTracks const&)
   {
     // Fire up CCDB with first collision in record. If no collisions, bypass
-    if (collisions.size() > 0) {
-      auto collision = collisions.begin();
-      initCCDB(collision.runNumber(), collision.timestamp());
+    if (useCustomRunNumber || collisions.size() < 1) {
+      initCCDB(manualRunNumber);
     } else {
-      initCCDB(manualRunNumber, manualTimeStamp);
+      auto collision = collisions.begin();
+      initCCDB(collision.runNumber());
     }
 
     for (const auto& V0 : V0s) {

@@ -137,7 +137,7 @@ struct mchAlignRecordTask {
 
     // Configuration for chamber fixing
     auto chambers = fFixChamber.value;
-    for (int i = 0; i < chambers.length(); ++i) {
+    for (std::size_t i = 0; i < chambers.length(); ++i) {
       if (chambers[i] == ',')
         continue;
       int chamber = chambers[i] - '0';

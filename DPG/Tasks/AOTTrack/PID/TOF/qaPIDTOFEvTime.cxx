@@ -335,17 +335,17 @@ struct tofPidCollisionTimeQa {
         histos.fill(HIST("trackSelection"), 4.5f);
 
         // Recompute quantities with event times
-        const float& betaTOF = trk.evTimeTOFMult() > 1 ? o2::pid::tof::Beta<TrksData::iterator>::GetBeta(trk, trk.evTimeTOF()) : 999.f;
-        const float& betaT0A = collision.t0ACorrectedValid() ? o2::pid::tof::Beta<TrksData::iterator>::GetBeta(trk, collision.t0ACorrected() * 1000.f) : 999.f;
-        const float& betaT0C = collision.t0CCorrectedValid() ? o2::pid::tof::Beta<TrksData::iterator>::GetBeta(trk, collision.t0CCorrected() * 1000.f) : 999.f;
-        const float& betaT0AC = collision.t0ACValid() ? o2::pid::tof::Beta<TrksData::iterator>::GetBeta(trk, collision.t0AC() * 1000.f) : 999.f;
+        const float& betaTOF = trk.evTimeTOFMult() > 1 ? o2::pid::tof::Beta::GetBeta(trk, trk.evTimeTOF()) : 999.f;
+        const float& betaT0A = collision.t0ACorrectedValid() ? o2::pid::tof::Beta::GetBeta(trk, collision.t0ACorrected() * 1000.f) : 999.f;
+        const float& betaT0C = collision.t0CCorrectedValid() ? o2::pid::tof::Beta::GetBeta(trk, collision.t0CCorrected() * 1000.f) : 999.f;
+        const float& betaT0AC = collision.t0ACValid() ? o2::pid::tof::Beta::GetBeta(trk, collision.t0AC() * 1000.f) : 999.f;
 
-        const float& massTOF = trk.evTimeTOFMult() > 1 ? o2::pid::tof::TOFMass<TrksData::iterator>::GetTOFMass(trk, betaTOF) : 999.f;
-        const float& massT0A = collision.t0ACorrectedValid() ? o2::pid::tof::TOFMass<TrksData::iterator>::GetTOFMass(trk, betaT0A) : 999.f;
-        const float& massT0C = collision.t0CCorrectedValid() ? o2::pid::tof::TOFMass<TrksData::iterator>::GetTOFMass(trk, betaT0C) : 999.f;
-        const float& massT0AC = collision.t0ACValid() ? o2::pid::tof::TOFMass<TrksData::iterator>::GetTOFMass(trk, betaT0AC) : 999.f;
+        const float& massTOF = trk.evTimeTOFMult() > 1 ? o2::pid::tof::TOFMass::GetTOFMass(trk, betaTOF) : 999.f;
+        const float& massT0A = collision.t0ACorrectedValid() ? o2::pid::tof::TOFMass::GetTOFMass(trk, betaT0A) : 999.f;
+        const float& massT0C = collision.t0CCorrectedValid() ? o2::pid::tof::TOFMass::GetTOFMass(trk, betaT0C) : 999.f;
+        const float& massT0AC = collision.t0ACValid() ? o2::pid::tof::TOFMass::GetTOFMass(trk, betaT0AC) : 999.f;
 
-        const float& deltaPi = trk.tofSignal() - trk.tofEvTime() - o2::pid::tof::ExpTimes<TrksData::iterator, o2::track::PID::Pion>::GetExpectedSignal(trk);
+        const float& deltaPi = trk.tofSignal() - trk.tofEvTime() - trk.tofExpTimePi();
 
         histos.fill(HIST("tofbeta/inclusive"), trk.p(), trk.beta());
         histos.fill(HIST("tofmass/inclusive"), trk.p(), trk.mass());
@@ -367,6 +367,10 @@ struct tofPidCollisionTimeQa {
         histos.fill(HIST("tofmass/EvTimeT0COnly"), trk.p(), massT0C);
         histos.fill(HIST("tofmass/EvTimeT0ACOnly"), trk.p(), massT0AC);
 
+        if (trk.p() > minPReso && trk.p() < maxPReso) {
+          histos.fill(HIST("deltaVsMult/pi"), trk.evTimeTOFMult(), deltaPi);
+          histos.fill(HIST("deltaVsReso/pi"), trk.evTimeTOFMult(), deltaPi);
+        }
         if (enableDebug) {
 
           histos.fill(HIST("withtof/p"), trk.p());
@@ -375,10 +379,6 @@ struct tofPidCollisionTimeQa {
           histos.fill(HIST("withtof/tofSignal"), trk.tofSignal());
           histos.fill(HIST("withtof/beta"), trk.p(), trk.beta());
           histos.fill(HIST("withtof/delta"), trk.p(), deltaPi);
-          if (trk.p() > minPReso && trk.p() < maxPReso) {
-            histos.fill(HIST("deltaVsMult/pi"), trk.evTimeTOFMult(), deltaPi);
-            histos.fill(HIST("deltaVsReso/pi"), trk.evTimeTOFMult(), deltaPi);
-          }
 
           histos.fill(HIST("withtof/expP"), trk.p(), trk.tofExpMom());
           histos.fill(HIST("withtof/mass"), trk.mass());
@@ -455,13 +455,12 @@ struct tofPidCollisionTimeQa {
         continue;
       }
       const auto& collisionMC = collision.mcCollision_as<aod::McCollisions>();
-      const int64_t bcMCtime = static_cast<int64_t>((collisionMC.t() + 2.f) / o2::constants::lhc::LHCBunchSpacingNS);
-      const float eventtimeMC = (collisionMC.t() - bcMCtime * o2::constants::lhc::LHCBunchSpacingNS) * 1000.f;
+      const float eventtimeMC = collisionMC.t() * 1000.f;
 
       if (trk.has_mcParticle()) {
         const auto& particle = trk.mcParticle();
         const auto& mcCollTimeMinusFormationTime = particle.vt() - collisionMC.t();
-        const auto& mcTOFvalue = trk.tofSignal() - eventtimeMC - trk.tofExpTime(2);
+        const auto& mcTOFvalue = trk.tofSignal() - eventtimeMC - trk.tofExpTimePi();
         LOG(debug) << "Track " << particle.vt() << " vs " << eventtimeMC;
         switch (particle.pdgCode()) {
           case 211:

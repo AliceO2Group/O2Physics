@@ -11,6 +11,10 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+
+#include <map>
+#include <string>
+#include <memory>
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -137,8 +141,8 @@ struct AnalysisEventSelection {
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
     Configurable<float> cfgCentFT0CMin{"cfgCentralityMin", -1000000000.f, "min. centrality"};
     Configurable<float> cfgCentFT0CMax{"cfgCentralityMax", 1000000000.f, "max. centrality"};
-    Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1000000000, "min. occupancy"};
-    Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<int> cfgTrackOccupancyMin{"cfgTrackOccupancyMin", -1000000000, "min. occupancy"};
+    Configurable<int> cfgTrackOccupancyMax{"cfgTrackOccupancyMax", 1000000000, "max. occupancy"};
   } eventcuts;
 
   HistogramManager* fHistMan = nullptr;
@@ -233,7 +237,7 @@ struct AnalysisEventSelection {
     if (eventcuts.cfgRequireGoodZvtxFT0vsPV)
       cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
     cut->AddCut(VarManager::kCentFT0C, eventcuts.cfgCentFT0CMin, eventcuts.cfgCentFT0CMax);
-    cut->AddCut(VarManager::kTrackOccupancyInTimeRange, eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
+    cut->AddCut(VarManager::kTrackOccupancyInTimeRange, eventcuts.cfgTrackOccupancyMin, eventcuts.cfgTrackOccupancyMax);
     return cut;
   }
 
@@ -289,7 +293,7 @@ struct AnalysisTrackSelection {
   Configurable<std::string> fConfigRunPeriods{"cfgRunPeriods", "LHC22f", "run periods for used data"};
   Configurable<bool> fConfigDummyRunlist{"cfgDummyRunlist", false, "If true, use dummy runlist"};
   Configurable<int> fConfigInitRunNumber{"cfgInitRunNumber", 543215, "Initial run number used in run by run checks"};
-  Configurable<int> fConfigNbTrackCut{"cfgNbTrackCut", 1, "Number of cuts including prefilter cut, need to be below 30"};
+  Configurable<std::size_t> fConfigNbTrackCut{"cfgNbTrackCut", 1, "Number of cuts including prefilter cut, need to be below 30"};
 
   std::vector<AnalysisCompositeCut> fTrackCuts;
   struct : ConfigurableGroup {
@@ -341,10 +345,9 @@ struct AnalysisTrackSelection {
   {
     fCurrentRun = 0;
 
-    int nbofcuts = fConfigNbTrackCut;
-    if (nbofcuts > 0 && CheckSize()) {
-      for (unsigned int icut = 0; icut < nbofcuts; ++icut) {
-        AnalysisCompositeCut* cut = new AnalysisCompositeCut(Form("trackcut%d", icut), Form("trackcut%d", icut));
+    if (fConfigNbTrackCut > 0 && CheckSize()) {
+      for (std::size_t icut = 0; icut < fConfigNbTrackCut; ++icut) {
+        AnalysisCompositeCut* cut = new AnalysisCompositeCut(Form("trackcut%zu", icut), Form("trackcut%zu", icut));
         cut->AddCut(GetTrackCut(icut));
         cut->AddCut(GetPIDCut(icut));
         fTrackCuts.push_back(*cut);
@@ -639,7 +642,7 @@ struct AnalysisTrackSelection {
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, iCut++) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
           if (iCut != fConfigPrefilterCutId) {
-            filterMap |= (uint32_t(1) << iCut);
+            filterMap |= (static_cast<uint32_t>(1) << iCut);
           }
           if (iCut == fConfigPrefilterCutId) {
             prefilterSelected = true;
@@ -791,7 +794,7 @@ struct AnalysisEventMixing {
   // single particle selection tasks to preserve the correspondence between the track cut name and its
   //  bit position in the cuts bitmap
   // TODO: Create a configurable to specify exactly on which of the bits one should run the event mixing
-  Configurable<int> fConfigNbTrackCut{"cfgNbTrackCut", 1, "Number of cuts without prefilter cut, need to be consistent with the track selection"};
+  Configurable<std::size_t> fConfigNbTrackCut{"cfgNbTrackCut", 1, "Number of cuts without prefilter cut, need to be consistent with the track selection"};
   Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 100, "Number of Events stored for event mixing"};
   Configurable<std::string> fConfigAddEventMixingHistogram{"cfgAddEventMixingHistogram", "", "Comma separated list of histograms"};
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -828,14 +831,14 @@ struct AnalysisEventMixing {
     // Keep track of all the histogram class names to avoid composing strings in the event mixing pairing
     TString histNames = "";
     if (fConfigNbTrackCut > 0 && fConfigNbTrackCut < 31) {
-      for (int icut = 0; icut < fConfigNbTrackCut; ++icut) {
+      for (std::size_t icut = 0; icut < fConfigNbTrackCut; ++icut) {
         std::vector<TString> names = {
-          Form("PairsBarrelMEPM_trackcut%d", icut),
-          Form("PairsBarrelMEPP_trackcut%d", icut),
-          Form("PairsBarrelMEMM_trackcut%d", icut)};
+          Form("PairsBarrelMEPM_trackcut%zu", icut),
+          Form("PairsBarrelMEPP_trackcut%zu", icut),
+          Form("PairsBarrelMEMM_trackcut%zu", icut)};
         histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
         fTrackHistNames.push_back(names);
-        fTwoTrackFilterMask |= (uint32_t(1) << icut);
+        fTwoTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
       }
     }
 
@@ -854,12 +857,12 @@ struct AnalysisEventMixing {
     uint32_t twoTrackFilter = 0;
     for (auto& track1 : tracks1) {
       for (auto& track2 : tracks2) {
-        twoTrackFilter = uint32_t(track1.isBarrelSelected()) & uint32_t(track2.isBarrelSelected()) & fTwoTrackFilterMask;
+        twoTrackFilter = static_cast<uint32_t>(track1.isBarrelSelected()) & static_cast<uint32_t>(track2.isBarrelSelected()) & fTwoTrackFilterMask;
 
         if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
           continue;
         }
-        VarManager::FillPairME<TPairType>(track1, track2);
+        VarManager::FillPairME<TEventFillMap, TPairType>(track1, track2);
 
         constexpr bool eventHasQvector = (VarManager::ObjTypes::ReducedEventQvector > 0);
         if constexpr (eventHasQvector) {
@@ -871,7 +874,7 @@ struct AnalysisEventMixing {
         }
 
         for (unsigned int icut = 0; icut < ncuts; icut++) {
-          if (twoTrackFilter & (uint32_t(1) << icut)) {
+          if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             if (track1.sign() * track2.sign() < 0) {
               fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
             } else {
@@ -882,9 +885,9 @@ struct AnalysisEventMixing {
               }
             }
           } // end if (filter bits)
-        }   // end for (cuts)
-      }     // end for (track2)
-    }       // end for (track1)
+        } // end for (cuts)
+      } // end for (track2)
+    } // end for (track1)
   }
 
   // barrel-barrel and muon-muon event mixing
@@ -948,8 +951,8 @@ struct AnalysisSameEventPairing {
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   OutputObj<THashList> fOutputList{"output"};
-  Configurable<int> fConfigNbTrackCut{"cfgNbTrackCut", 1, "Number of track cuts without prefilter cut, need to be consistent with the track selection"};
-  Configurable<int> fConfigNbPairCut{"cfgNbPairCut", 1, "Number of pair cuts, need to be below 4 right now"};
+  Configurable<std::size_t> fConfigNbTrackCut{"cfgNbTrackCut", 1, "Number of track cuts without prefilter cut, need to be consistent with the track selection"};
+  Configurable<std::size_t> fConfigNbPairCut{"cfgNbPairCut", 1, "Number of pair cuts, need to be below 4 right now"};
   Configurable<string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<string> ccdbPath{"ccdb-path", "Users/lm", "base path to the ccdb object"};
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
@@ -1069,35 +1072,34 @@ struct AnalysisSameEventPairing {
     std::vector<TString> names;
 
     if (fConfigNbPairCut > 0 && CheckSize()) {
-      for (int icut = 0; icut < fConfigNbPairCut; ++icut) {
+      for (std::size_t icut = 0; icut < fConfigNbPairCut; ++icut) {
         fPairCuts.push_back(*GetPairCut(icut));
       }
     }
 
     if (fConfigNbTrackCut > 0 && fConfigNbTrackCut < 31) {   // if track cuts
-      for (int icut = 0; icut < fConfigNbTrackCut; ++icut) { // loop over track cuts
-        fTwoTrackFilterMask |= (uint32_t(1) << icut);
+      for (std::size_t icut = 0; icut < fConfigNbTrackCut; ++icut) { // loop over track cuts
+        fTwoTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
         // no pair cuts
         names = {
-          Form("PairsBarrelSEPM_trackcut%d", icut),
-          Form("PairsBarrelSEPP_trackcut%d", icut),
-          Form("PairsBarrelSEMM_trackcut%d", icut)};
+          Form("PairsBarrelSEPM_trackcut%zu", icut),
+          Form("PairsBarrelSEPP_trackcut%zu", icut),
+          Form("PairsBarrelSEMM_trackcut%zu", icut)};
         histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
         fTrackHistNames.push_back(names);
 
-        unsigned int npaircuts = fPairCuts.size();
-        for (int iPairCut = 0; iPairCut < npaircuts; ++iPairCut) { // loop over pair cuts
+        for (std::size_t iPairCut = 0; iPairCut < fPairCuts.size(); ++iPairCut) { // loop over pair cuts
           names = {
-            Form("PairsBarrelSEPM_trackcut%d_paircut%d", icut, iPairCut),
-            Form("PairsBarrelSEPP_trackcut%d_paircut%d", icut, iPairCut),
-            Form("PairsBarrelSEMM_trackcut%d_paircut%d", icut, iPairCut)};
+            Form("PairsBarrelSEPM_trackcut%zu_paircut%zu", icut, iPairCut),
+            Form("PairsBarrelSEPP_trackcut%zu_paircut%zu", icut, iPairCut),
+            Form("PairsBarrelSEMM_trackcut%zu_paircut%zu", icut, iPairCut)};
 
           histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
 
           fTrackHistNames.push_back(names);
-        }   // end loop (pair cuts)
-      }     // end loop (track cuts)
-    }       // end if (track cuts)
+        } // end loop (pair cuts)
+      } // end loop (track cuts)
+    } // end if (track cuts)
 
     VarManager::SetCollisionSystem((TString)fCollisionSystem, fCenterMassEnergy); // set collision system and center of mass energy
 
@@ -1125,7 +1127,7 @@ struct AnalysisSameEventPairing {
     uint32_t twoTrackFilter = 0;
 
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
-      twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected()) & fTwoTrackFilterMask;
+      twoTrackFilter = static_cast<uint32_t>(t1.isBarrelSelected()) & static_cast<uint32_t>(t2.isBarrelSelected()) & fTwoTrackFilterMask;
 
       if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
         continue;
@@ -1143,8 +1145,8 @@ struct AnalysisSameEventPairing {
       }
 
       int iCut = 0;
-      for (int icut = 0; icut < fConfigNbTrackCut; icut++) {
-        if (twoTrackFilter & (uint32_t(1) << icut)) {
+      for (std::size_t icut = 0; icut < fConfigNbTrackCut; icut++) {
+        if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
           if (t1.sign() * t2.sign() < 0) {
             fHistMan->FillHistClass(histNames[iCut][0].Data(), VarManager::fgValues);
           } else {
@@ -1168,12 +1170,12 @@ struct AnalysisSameEventPairing {
                 fHistMan->FillHistClass(histNames[iCut][2].Data(), VarManager::fgValues);
               }
             }
-          }      // end loop (pair cuts)
+          } // end loop (pair cuts)
         } else { // end if (filter bits)
           iCut = iCut + 1 + fPairCuts.size();
         }
       } // end loop (cuts)
-    }   // end loop over pairs
+    } // end loop over pairs
   }
 
   void processDecayToEESkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)

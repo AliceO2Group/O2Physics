@@ -32,6 +32,7 @@ namespace jetcollision
 DECLARE_SOA_COLUMN(PosZ, posZ, float);             //!
 DECLARE_SOA_COLUMN(Centrality, centrality, float); //!
 DECLARE_SOA_COLUMN(EventSel, eventSel, uint8_t);   //!
+DECLARE_SOA_COLUMN(EventWeight, eventWeight, float); //!
 } // namespace jetcollision
 
 namespace jetsubstructure
@@ -68,7 +69,7 @@ DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, int); //!
     DECLARE_SOA_DYNAMIC_COLUMN(Dummy##_jet_type_, dummy##_jet_type_, []() -> int { return 0; });                                                                                                                                                                                                                                                                                                                           \
   }                                                                                                                                                                                                                                                                                                                                                                                                                        \
                                                                                                                                                                                                                                                                                                                                                                                                                            \
-  DECLARE_SOA_TABLE(_jet_type_##COs, "AOD", _jet_description_ "CO", jetcollision::PosZ, jetcollision::Centrality, jetcollision::EventSel, _name_##collisionoutput::Dummy##_jet_type_<>);                                                                                                                                                                                                                                   \
+  DECLARE_SOA_TABLE(_jet_type_##COs, "AOD", _jet_description_ "CO", jetcollision::PosZ, jetcollision::Centrality, jetcollision::EventSel, jetcollision::EventWeight, _name_##collisionoutput::Dummy##_jet_type_<>);                                                                                                                                                                                                        \
   using _jet_type_##CO = _jet_type_##COs::iterator;                                                                                                                                                                                                                                                                                                                                                                        \
                                                                                                                                                                                                                                                                                                                                                                                                                            \
   namespace _name_##jetoutput                                                                                                                                                                                                                                                                                                                                                                                              \
@@ -121,8 +122,8 @@ DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, int); //!
 
 JETSUBSTRUCTURE_TABLES_DEF(C, "C", CJetCOs, "CJETCO", CEWSJetCOs, "CEWSJETCO", CMCDJetCOs, "CMCDJETCO", CMCPJetCOs, "CMCPJETCO");
 JETSUBSTRUCTURE_TABLES_DEF(D0C, "D0C", HfD0Bases, "HFD0BASE", HfD0Bases, "HFD0BASE", HfD0Bases, "HFD0BASE", HfD0PBases, "HFD0PBASE");
-JETSUBSTRUCTURE_TABLES_DEF(LcC, "LCC", Hf3PBases, "HF3PBASE", Hf3PBases, "HF3PBASE", Hf3PBases, "HF3PBASE", Hf3PPBases, "HF3PPBASE");
-JETSUBSTRUCTURE_TABLES_DEF(BplusC, "BPLUSC", HfD0Bases, "HFD0BASE", HfD0Bases, "HFD0BASE", HfD0Bases, "HFD0BASE", HfD0PBases, "HFD0PBASE");
+JETSUBSTRUCTURE_TABLES_DEF(LcC, "LCC", HfLcBases, "HFLcBASE", HfLcBases, "HFLcBASE", HfLcBases, "HFLcBASE", HfLcPBases, "HFLcPBASE");
+JETSUBSTRUCTURE_TABLES_DEF(BplusC, "BPC", HfBplusBases, "HFBPBASE", HfBplusBases, "HFBPBASE", HfBplusBases, "HFBPBASE", HfBplusPBases, "HFBPPBASE");
 JETSUBSTRUCTURE_TABLES_DEF(DielectronC, "DIELC", Dielectrons, "RTDIELECTRON", Dielectrons, "RTDIELECTRON", Dielectrons, "RTDIELECTRON", JDielectronMcs, "JDIELMC");
 
 } // namespace o2::aod

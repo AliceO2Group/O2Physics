@@ -37,6 +37,7 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/Configurable.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
@@ -49,13 +50,34 @@ namespace o2::aod
 namespace track_tuner
 {
 DECLARE_SOA_COLUMN(TunedQOverPt, tunedQOverPt, float);
+
+/// configuration source
+enum configSource : int { InputString = 1,
+                          Configurables };
 } // namespace track_tuner
 
 DECLARE_SOA_TABLE(TrackTunerTable, "AOD", "TRACKTUNERTABLE", //!
                   track_tuner::TunedQOverPt);
 } // namespace o2::aod
 
-struct TrackTuner {
+struct TrackTuner : o2::framework::ConfigurableGroup {
+
+  std::string prefix = "trackTuner"; // JSON group name
+  o2::framework::Configurable<bool> cfgDebugInfo{"debugInfo", false, "Flag to switch on the debug printout"};
+  o2::framework::Configurable<bool> cfgUpdateTrackDCAs{"updateTrackDCAs", false, "Flag to enable the DCA smearing"};
+  o2::framework::Configurable<bool> cfgUpdateTrackCovMat{"updateTrackCovMat", false, "Flag to enable the DCA covariance-matrix smearing"};
+  o2::framework::Configurable<bool> cfgUpdateCurvature{"updateCurvature", false, "Flag to enable the Q/Pt smearing after the propagation to the production point"};
+  o2::framework::Configurable<bool> cfgUpdateCurvatureIU{"updateCurvatureIU", false, "Flag to enable the Q/Pt smearing before the propagation to the production point"};
+  o2::framework::Configurable<bool> cfgUpdatePulls{"updatePulls", false, "Flag to enable the pulls smearing"};
+  o2::framework::Configurable<bool> cfgIsInputFileFromCCDB{"isInputFileFromCCDB", false, "True: files from CCDB; False: fils from local path (debug)"};
+  o2::framework::Configurable<std::string> cfgPathInputFile{"pathInputFile", "", "Path to file containing DCAxy, DCAz graphs from data and MC"};
+  o2::framework::Configurable<std::string> cfgNameInputFile{"nameInputFile", "", "Name of the file containing DCAxy, DCAz graphs from data and MC"};
+  o2::framework::Configurable<std::string> cfgPathFileQoverPt{"pathFileQoverPt", "", "Path to file containing Q/Pt correction graphs from data and MC"};
+  o2::framework::Configurable<std::string> cfgNameFileQoverPt{"nameFileQoverPt", "", "Name of file containing Q/Pt correction graphs from data and MC"};
+  o2::framework::Configurable<bool> cfgUsePvRefitCorrections{"usePvRefitCorrections", false, "Flag to establish whether to use corrections obtained with or w/o PV refit"};
+  o2::framework::Configurable<float> cfgQOverPtMC{"qOverPtMC", -1., "Scaling factor on q/pt of MC"};
+  o2::framework::Configurable<float> cfgQOverPtData{"qOverPtData", -1., "Scaling factor on q/pt of data"};
+
   ///////////////////////////////
   /// parameters to be configured
   bool debugInfo = false;
@@ -66,13 +88,15 @@ struct TrackTuner {
   bool updatePulls = false;
   bool isInputFileFromCCDB = false;   // query input file from CCDB or local folder
   std::string pathInputFile = "";     // Path to file containing DCAxy, DCAz graphs from data and MC
-  std::string nameInputFile = "";     // Common Name of different files containing graphs, found in the above paths
-  std::string pathFileQoverPt = "";   // Path to file containing D0 sigma graphs from data and MC
+  std::string nameInputFile = "";     // Name of the file containing DCAxy, DCAz graphs from data and MC
+  std::string pathFileQoverPt = "";   // Path to file containing Q/Pt correction graphs from data and MC (only one proxy provided, i.e. D0 sigma graphs from data and MC)
   std::string nameFileQoverPt = "";   // file name containing Q/Pt correction graphs from data and MC
   bool usePvRefitCorrections = false; // establish whether to use corrections obtained with or w/o PV refit
-  float qOverPtMC = -1.;              // 1/pt old
-  float qOverPtData = -1.;            // 1/pt new
+  float qOverPtMC = -1.;              // 1/pt MC
+  float qOverPtData = -1.;            // 1/pt data
   ///////////////////////////////
+  bool isConfigFromString = false;
+  bool isConfigFromConfigurables = false;
 
   o2::ccdb::CcdbApi ccdbApi;
   std::map<std::string, std::string> metadata;
@@ -98,11 +122,31 @@ struct TrackTuner {
   std::unique_ptr<TGraphErrors> grDcaZPullVsPtPionMC;
   std::unique_ptr<TGraphErrors> grDcaZPullVsPtPionData;
 
-  /// @brief Function to configure the TrackTuner parameters
+  /// @brief Function doing a few sanity-checks on the configurations
+  void checkConfig()
+  {
+    /// check configuration source
+    if (isConfigFromString && isConfigFromConfigurables) {
+      LOG(fatal) << " [ isConfigFromString==kTRUE and isConfigFromConfigurables==kTRUE ] Configuration done both via string and via configurables -> Only one of them can be set to kTRUE at once! Please refer to the trackTuner documentation.";
+    }
+    /// check Q/pt update
+    if ((updateCurvatureIU) && (updateCurvature)) {
+      LOG(fatal) << " [ updateCurvatureIU==kTRUE and updateCurvature==kTRUE ] -> Only one of them can be set to kTRUE at once! Please refer to the trackTuner documentation.";
+    }
+  }
+
+  /// @brief Function to configure the TrackTuner parameters with an input string
   /// @param inputString Input string with all parameter configuration. Format: <name>=<value>|<name>=<value>
   /// @return String with the values of all parameters after configurations are listed, to cross check that everything worked well
   std::string configParams(std::string inputString)
   {
+
+    LOG(info) << "[TrackTuner] /*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/";
+    LOG(info) << "[TrackTuner] /*/*/                                             /*/*/";
+    LOG(info) << "[TrackTuner] /*/*/   Configuring the TrackTuner via a string   /*/*/";
+    LOG(info) << "[TrackTuner] /*/*/                                             /*/*/";
+    LOG(info) << "[TrackTuner] /*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/";
+
     std::string delimiter = "|";
     std::string assignmentSymbol = "=";
 
@@ -167,7 +211,7 @@ struct TrackTuner {
     LOG(info) << "[TrackTuner]";
     LOG(info) << "[TrackTuner] >>> Parameters before the custom settings";
     LOG(info) << "[TrackTuner]     debugInfo = " << debugInfo;
-    LOG(info) << "[TrackTuner]     updateTrackDCAs = " << UpdateTrackDCAs;
+    LOG(info) << "[TrackTuner]     updateTrackDCAs = " << updateTrackDCAs;
     LOG(info) << "[TrackTuner]     updateTrackCovMat = " << updateTrackCovMat;
     LOG(info) << "[TrackTuner]     updateCurvature = " << updateCurvature;
     LOG(info) << "[TrackTuner]     updateCurvatureIU = " << updateCurvatureIU;
@@ -294,9 +338,91 @@ struct TrackTuner {
     outputString += ", qOverPtData=" + std::to_string(qOverPtData);
     LOG(info) << "[TrackTuner]     qOverPtData = " << qOverPtData;
 
-    if ((updateCurvatureIU) && (updateCurvature)) {
-      LOG(fatal) << " [ updateCurvatureIU==kTRUE and updateCurvature==kTRUE ] -> Only one of them can be set to kTRUE at once! Please refer to the trackTuner documentation.";
-    }
+    /// declare that the configuration is done via an input string
+    isConfigFromString = true;
+
+    /// sanity-checks on the configurations
+    checkConfig();
+
+    return outputString;
+  }
+
+  /// @brief Function to configure the TrackTuner parameters with an input string
+  /// @return String with the values of all parameters after configurations are listed, to cross check that everything worked well
+  std::string configParams()
+  {
+
+    LOG(info) << "[TrackTuner] /=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#";
+    LOG(info) << "[TrackTuner] /=/#/                                                               /=/#/";
+    LOG(info) << "[TrackTuner] /=/#/   Configuring the TrackTuner using the input Configurables    /=/#/";
+    LOG(info) << "[TrackTuner] /=/#/                                                               /=/#/";
+    LOG(info) << "[TrackTuner] /=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/=/#/";
+
+    std::string outputString = "";
+    LOG(info) << "[TrackTuner] ";
+    LOG(info) << "[TrackTuner] >>> Parameters after the custom settings";
+    // Configure debugInfo
+    debugInfo = cfgDebugInfo;
+    LOG(info) << "[TrackTuner]     debugInfo = " << debugInfo;
+    outputString += "debugInfo=" + std::to_string(debugInfo);
+    // Configure updateTrackDCAs
+    updateTrackDCAs = cfgUpdateTrackDCAs;
+    LOG(info) << "[TrackTuner]     updateTrackDCAs = " << updateTrackDCAs;
+    outputString += ", updateTrackDCAs=" + std::to_string(updateTrackDCAs);
+    // Configure updateTrackCovMat
+    updateTrackCovMat = cfgUpdateTrackCovMat;
+    LOG(info) << "[TrackTuner]     updateTrackCovMat = " << updateTrackCovMat;
+    outputString += ", updateTrackCovMat=" + std::to_string(updateTrackCovMat);
+    // Configure updateCurvature
+    updateCurvature = cfgUpdateCurvature;
+    LOG(info) << "[TrackTuner]     updateCurvature = " << updateCurvature;
+    outputString += ", updateCurvature=" + std::to_string(updateCurvature);
+    // Configure updateCurvatureIU
+    updateCurvatureIU = cfgUpdateCurvatureIU;
+    LOG(info) << "[TrackTuner]     updateCurvatureIU = " << updateCurvatureIU;
+    outputString += ", updateCurvatureIU=" + std::to_string(updateCurvatureIU);
+    // Configure updatePulls
+    updatePulls = cfgUpdatePulls;
+    LOG(info) << "[TrackTuner]     updatePulls = " << updatePulls;
+    outputString += ", updatePulls=" + std::to_string(updatePulls);
+    // Configure isInputFileFromCCDB
+    isInputFileFromCCDB = cfgIsInputFileFromCCDB;
+    LOG(info) << "[TrackTuner]     isInputFileFromCCDB = " << isInputFileFromCCDB;
+    outputString += ", isInputFileFromCCDB=" + std::to_string(isInputFileFromCCDB);
+    // Configure pathInputFile
+    pathInputFile = cfgPathInputFile;
+    outputString += ", pathInputFile=" + pathInputFile;
+    LOG(info) << "[TrackTuner]     pathInputFile = " << pathInputFile;
+    // Configure pathInputFile
+    pathFileQoverPt = cfgPathFileQoverPt;
+    outputString += ", pathFileQoverPt=" + pathFileQoverPt;
+    LOG(info) << "[TrackTuner]     pathFileQoverPt = " << pathFileQoverPt;
+    // Configure nameInputFile
+    nameInputFile = cfgNameInputFile;
+    outputString += ", nameInputFile=" + nameInputFile;
+    LOG(info) << "[TrackTuner]     nameInputFile = " << nameInputFile;
+    // Configure nameFileQoverPt
+    nameFileQoverPt = cfgNameFileQoverPt;
+    outputString += ", nameFileQoverPt=" + nameFileQoverPt;
+    LOG(info) << "[TrackTuner]     nameFileQoverPt = " << nameFileQoverPt;
+    // Configure usePvRefitCorrections
+    usePvRefitCorrections = cfgUsePvRefitCorrections;
+    outputString += ", usePvRefitCorrections=" + std::to_string(usePvRefitCorrections);
+    LOG(info) << "[TrackTuner]     usePvRefitCorrections = " << usePvRefitCorrections;
+    // Configure qOverPtMC
+    qOverPtMC = cfgQOverPtMC;
+    outputString += ", qOverPtMC=" + std::to_string(qOverPtMC);
+    LOG(info) << "[TrackTuner]     qOverPtMC = " << qOverPtMC;
+    // Configure qOverPtData
+    qOverPtData = cfgQOverPtData;
+    outputString += ", qOverPtData=" + std::to_string(qOverPtData);
+    LOG(info) << "[TrackTuner]     qOverPtData = " << qOverPtData;
+
+    /// declare that the configuration is done via the Configurables
+    isConfigFromConfigurables = true;
+
+    /// sanity-checks on the configurations
+    checkConfig();
 
     return outputString;
   }
@@ -431,7 +557,7 @@ struct TrackTuner {
         qOverPtMC = std::max(0.0, evalGraph(ptMC, grOneOverPtPionMC.get()));
         qOverPtData = std::max(0.0, evalGraph(ptMC, grOneOverPtPionData.get()));
       } // qOverPtMC, qOverPtData block ends here
-    }   // updateCurvature, updateCurvatureIU block ends here
+    } // updateCurvature, updateCurvatureIU block ends here
 
     if (updateTrackDCAs) {
       dcaXYMeanMC = evalGraph(ptMC, grDcaXYMeanVsPtPionMC.get());
@@ -720,7 +846,7 @@ struct TrackTuner {
           trackParCov.setCov(sigma1Pt2, 14);
         }
       } // ---> track cov matrix elements for 1/Pt ends here
-    }   // ---> updateTrackCovMat block ends here
+    } // ---> updateTrackCovMat block ends here
 
     if (updatePulls) {
       double ratioDCAxyPulls = 1.0;

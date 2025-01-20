@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// Table definitions for EMCAL analysis clusters
-//
+/// \file EMCALClusters.h
+/// \brief Table definitions for EMCAL analysis clusters
 /// \author Raymond Ehlers <raymond.ehlers@cern.ch>, ORNL
 
 #ifndef PWGJE_DATAMODEL_EMCALCLUSTERS_H_
@@ -27,35 +27,64 @@ namespace emcalcluster
 {
 
 // define global cluster definitions
-// the V1 algorithm is not yet implemented, but the V3 algorithm is
 // New definitions should be added here!
-const EMCALClusterDefinition kV1Default(ClusterAlgorithm_t::kV1, 0, 1, "kV1Default", 0.5, 0.1, -10000, 10000, true, 0.03);       // dummy
-const EMCALClusterDefinition kV1Variation1(ClusterAlgorithm_t::kV3, 1, 1, "kV1Variation1", 0.3, 0.1, -10000, 10000, true, 0.03); // dummy
-const EMCALClusterDefinition kV1Variation2(ClusterAlgorithm_t::kV3, 2, 1, "kV1Variation2", 0.2, 0.1, -10000, 10000, true, 0.03); // dummy
-const EMCALClusterDefinition kV3Default(ClusterAlgorithm_t::kV3, 10, 1, "kV3Default", 0.5, 0.1, -10000, 10000, true, 0.03);
-const EMCALClusterDefinition kV3Variation1(ClusterAlgorithm_t::kV3, 11, 1, "kV3Variation1", 0.5, 0.1, -10000, 10000, true, 0.);
-const EMCALClusterDefinition kV3Variation2(ClusterAlgorithm_t::kV3, 12, 1, "kV3Variation2", 0.5, 0.1, -10000, 10000, false, 0.);
-const EMCALClusterDefinition kV3Variation3(ClusterAlgorithm_t::kV3, 13, 1, "kV3Variation3", 0.5, 0.1, -10000, 10000, true, 20.);
+const EMCALClusterDefinition kV3NoSplit(ClusterAlgorithm_t::kV3, 0, 1, "kV3NoSplit", 0.5, 0.1, -10000, 10000, 20000, false, 0., false);
+const EMCALClusterDefinition kV3NoSplitLowSeed(ClusterAlgorithm_t::kV3, 1, 1, "kV3NoSplitLowSeed", 0.3, 0.1, -10000, 10000, 20000, false, 0., false);
+const EMCALClusterDefinition kV3NoSplitLowerSeed(ClusterAlgorithm_t::kV3, 2, 1, "kV3NoSplitLowerSeed", 0.2, 0.1, -10000, 10000, 20000, false, 0., false);
+const EMCALClusterDefinition kV3Default(ClusterAlgorithm_t::kV3, 10, 1, "kV3Default", 0.5, 0.1, -10000, 10000, 20000, true, 0.03, false);
+const EMCALClusterDefinition kV3MostSplit(ClusterAlgorithm_t::kV3, 11, 1, "kV3MostSplit", 0.5, 0.1, -10000, 10000, 20000, true, 0., false);
+const EMCALClusterDefinition kV3LowSeed(ClusterAlgorithm_t::kV3, 12, 1, "kV3LowSeed", 0.3, 0.1, -10000, 10000, 20000, true, 0.03, false);
+const EMCALClusterDefinition kV3MostSplitLowSeed(ClusterAlgorithm_t::kV3, 13, 1, "kV3MostSplitLowSeed", 0.3, 0.1, -10000, 10000, 20000, true, 0., false);
+const EMCALClusterDefinition kV3StrictTime(ClusterAlgorithm_t::kV3, 20, 1, "kV3StrictTime", 0.5, 0.1, -500, 500, 20000, true, 0.03, false);
+const EMCALClusterDefinition kV3StricterTime(ClusterAlgorithm_t::kV3, 21, 1, "kV3StricterTime", 0.5, 0.1, -100, 100, 20000, true, 0.03, false);
+const EMCALClusterDefinition kV3MostStrictTime(ClusterAlgorithm_t::kV3, 22, 1, "kV3MostStrictTime", 0.5, 0.1, -50, 50, 20000, true, 0.03, false);
+const EMCALClusterDefinition kV3Default5x5(ClusterAlgorithm_t::kV3, 30, 1, "kV3Default5x5", 0.5, 0.1, -10000, 10000, 20000, true, 0.03, true);
+const EMCALClusterDefinition kV3SmallTimeDiff(ClusterAlgorithm_t::kV3, 40, 1, "kV3SmallTimeDiff", 0.5, 0.1, -10000, 10000, 500, true, 0.03, false);
+const EMCALClusterDefinition kV3SmallerTimeDiff(ClusterAlgorithm_t::kV3, 41, 1, "kV3SmallerTimeDiff", 0.5, 0.1, -10000, 10000, 100, true, 0.03, false);
+const EMCALClusterDefinition kV3SmallestTimeDiff(ClusterAlgorithm_t::kV3, 42, 1, "kV3SmallestTimeDiff", 0.5, 0.1, -10000, 10000, 50, true, 0.03, false);
+const EMCALClusterDefinition kV3MostSplitSmallTimeDiff(ClusterAlgorithm_t::kV3, 43, 1, "kV3MostSplitSmallTimeDiff", 0.5, 0.1, -10000, 10000, 500, true, 0., false);
+const EMCALClusterDefinition kV3MostSplitSmallerTimeDiff(ClusterAlgorithm_t::kV3, 44, 1, "kV3MostSplitSmallerTimeDiff", 0.5, 0.1, -10000, 10000, 100, true, 0., false);
+const EMCALClusterDefinition kV3MostSplitSmallestTimeDiff(ClusterAlgorithm_t::kV3, 45, 1, "kV3MostSplitSmallestTimeDiff", 0.5, 0.1, -10000, 10000, 50, true, 0., false);
 
 /// \brief function returns EMCALClusterDefinition for the given name
 /// \param name name of the cluster definition
 /// \return EMCALClusterDefinition for the given name
 const EMCALClusterDefinition getClusterDefinitionFromString(const std::string& clusterDefinitionName)
 {
-  if (clusterDefinitionName == "kV1Default") {
-    return kV1Default;
-  } else if (clusterDefinitionName == "kV1Variation1") {
-    return kV1Variation1;
-  } else if (clusterDefinitionName == "kV1Variation2") {
-    return kV1Variation2;
+  if (clusterDefinitionName == "kV3NoSplit") {
+    return kV3NoSplit;
+  } else if (clusterDefinitionName == "kV3NoSplitLowSeed") {
+    return kV3NoSplitLowSeed;
+  } else if (clusterDefinitionName == "kV3NoSplitLowerSeed") {
+    return kV3NoSplitLowerSeed;
   } else if (clusterDefinitionName == "kV3Default") {
     return kV3Default;
-  } else if (clusterDefinitionName == "kV3Variation1") {
-    return kV3Variation1;
-  } else if (clusterDefinitionName == "kV3Variation2") {
-    return kV3Variation2;
-  } else if (clusterDefinitionName == "kV3Variation3") {
-    return kV3Variation3;
+  } else if (clusterDefinitionName == "kV3MostSplit") {
+    return kV3MostSplit;
+  } else if (clusterDefinitionName == "kV3LowSeed") {
+    return kV3LowSeed;
+  } else if (clusterDefinitionName == "kV3MostSplitLowSeed") {
+    return kV3MostSplitLowSeed;
+  } else if (clusterDefinitionName == "kV3StrictTime") {
+    return kV3StrictTime;
+  } else if (clusterDefinitionName == "kV3StricterTime") {
+    return kV3StricterTime;
+  } else if (clusterDefinitionName == "kV3MostStrictTime") {
+    return kV3MostStrictTime;
+  } else if (clusterDefinitionName == "kV3Default5x5") {
+    return kV3Default5x5;
+  } else if (clusterDefinitionName == "kV3SmallTimeDiff") {
+    return kV3SmallTimeDiff;
+  } else if (clusterDefinitionName == "kV3SmallerTimeDiff") {
+    return kV3SmallerTimeDiff;
+  } else if (clusterDefinitionName == "kV3SmallestTimeDiff") {
+    return kV3SmallestTimeDiff;
+  } else if (clusterDefinitionName == "kV3MostSplitSmallTimeDiff") {
+    return kV3MostSplitSmallTimeDiff;
+  } else if (clusterDefinitionName == "kV3MostSplitSmallerTimeDiff") {
+    return kV3MostSplitSmallerTimeDiff;
+  } else if (clusterDefinitionName == "kV3MostSplitSmallestTimeDiff") {
+    return kV3MostSplitSmallestTimeDiff;
   } else {
     throw std::invalid_argument("Cluster definition name not recognized");
   }

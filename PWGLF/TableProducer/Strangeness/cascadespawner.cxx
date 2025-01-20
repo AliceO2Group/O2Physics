@@ -35,7 +35,7 @@ using namespace o2::framework::expressions;
 
 /// Extends the cascdata table with expression columns
 struct cascadespawner {
-  Spawns<aod::CascCore> cascdataext;
+  Spawns<aod::CascCores> cascdataext;
   void init(InitContext const&) {}
 };
 

@@ -57,13 +57,11 @@ struct CFTutorialTask3 {
   // ...
 
   Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 3191978, "Particle 2 - Selection bit"};
-  // additional configurables for particle 1
+  // additional configurables for particle 2
   // ...
 
-  // more configurables for PID selection
-  // ...
-
-  /// Partitions for particle 1 and particle 2
+  // Partitions for particle 1 and particle 2
+  // add PID selection to partition definition
   Partition<FilteredFDParts> PartsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
   Partition<FilteredFDParts> PartsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
 
@@ -96,40 +94,27 @@ struct CFTutorialTask3 {
   void process(FilteredFDCollision const& col, FilteredFDParts const& /*parts*/)
   {
 
-    /// event QA
+    // event QA
     HistRegistry.fill(HIST("Event/hZvtx"), col.posZ());
 
     // generate partition of particels
     auto GroupPartsOne = PartsOne->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto GroupPartsTwo = PartsTwo->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
 
-    /// QA for particle 1
+    // QA for particle 1
     for (auto& part : GroupPartsOne) {
-
-      // TODO:
-      // add function for PID selection from FemtoUtils
-      // if (PID cut) {
-
       HistRegistry.fill(HIST("Particle1/hPt"), part.pt());
       HistRegistry.fill(HIST("Particle1/hEta"), part.eta());
       HistRegistry.fill(HIST("Particle1/hPhi"), part.phi());
-
-      // }
     }
 
-    /// QA for particle 2
-    /// skip QA if particle 1 & 2 are the same
+    // QA for particle 2
+    // skip QA if particle 1 & 2 are the same
     if (ConfIsSame.value == false) {
       for (auto& part : GroupPartsTwo) {
-        // TODO:
-        // add function for PID selection from FemtoUtils
-        // if (PID cut) {
-
         HistRegistry.fill(HIST("Particle2/hPt"), part.pt());
         HistRegistry.fill(HIST("Particle2/hEta"), part.eta());
         HistRegistry.fill(HIST("Particle2/hPhi"), part.phi());
-
-        // }
       }
     }
   }

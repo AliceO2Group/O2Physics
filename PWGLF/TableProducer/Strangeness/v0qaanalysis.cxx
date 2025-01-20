@@ -248,7 +248,7 @@ struct LfV0qaanalysis {
               v0.negTrack_as<DauTracks>().tofNSigmaPr(), v0.posTrack_as<DauTracks>().tofNSigmaPr(),
               v0.negTrack_as<DauTracks>().tofNSigmaPi(), v0.posTrack_as<DauTracks>().tofNSigmaPi(),
               v0.posTrack_as<DauTracks>().hasTOF(), v0.negTrack_as<DauTracks>().hasTOF(), lPDG, isPhysicalPrimary,
-              collision.centFT0M(), collision.centFV0A(), evFlag);
+              collision.centFT0M(), collision.centFV0A(), evFlag, v0.alpha(), v0.qtarm());
       }
     }
   }
@@ -294,7 +294,7 @@ struct LfV0qaanalysis {
         }
         auto v0mcparticle = v0.mcParticle();
 
-        if (abs(v0mcparticle.y()) > 0.5f) {
+        if (std::abs(v0mcparticle.y()) > 0.5f) {
           continue;
         }
 
@@ -360,7 +360,7 @@ struct LfV0qaanalysis {
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPr(), v0.posTrack_as<DauTracksMC>().tofNSigmaPr(),
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPi(), v0.posTrack_as<DauTracksMC>().tofNSigmaPi(),
                 v0.posTrack_as<DauTracksMC>().hasTOF(), v0.negTrack_as<DauTracksMC>().hasTOF(), lPDG, isprimary,
-                mcCollision.centFT0M(), cent, evFlag);
+                mcCollision.centFT0M(), cent, evFlag, v0.alpha(), v0.qtarm());
         }
       }
 
@@ -372,7 +372,7 @@ struct LfV0qaanalysis {
           continue;
         }
 
-        if (abs(mcParticle.y()) > 0.5f) {
+        if (std::abs(mcParticle.y()) > 0.5f) {
           continue;
         }
 
@@ -432,7 +432,7 @@ struct LfV0qaanalysis {
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
-      if (abs(mcParticle.y()) > 0.5f) {
+      if (std::abs(mcParticle.y()) > 0.5f) {
         continue;
       }
 
@@ -491,7 +491,7 @@ struct LfV0qaanalysis {
           continue;
         }
 
-        if (abs(mcParticle.y()) > 0.5f) {
+        if (std::abs(mcParticle.y()) > 0.5f) {
           continue;
         }
 
@@ -543,7 +543,7 @@ struct LfV0qaanalysis {
         continue;
       }
 
-      if (abs(mcParticle.y()) > 0.5f) {
+      if (std::abs(mcParticle.y()) > 0.5f) {
         continue;
       }
 

@@ -44,10 +44,15 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using filteredColl = soa::Filtered<soa::Join<JetCollisions, aod::JChTrigSels, aod::EvSels>>::iterator;
+using filteredColl = soa::Filtered<soa::Join<aod::JetCollisions, aod::JChTrigSels, aod::EvSels>>::iterator;
 using filteredJTracks = soa::Filtered<soa::Join<aod::JTracks, aod::JTrackPIs, aod::JTrackExtras>>;
 using filteredJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
 using joinedTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
+
+float DcaXYPtCut(float tracPt)
+{
+  return 0.0105f + 0.0350f / pow(tracPt, 1.1f);
+}
 
 // What this task should do
 // Event by event fill
@@ -78,9 +83,14 @@ struct ChJetTriggerQATask {
   Configurable<bool> bAddSupplementHistosToOutput{"bAddAdditionalHistosToOutput", false, "add supplementary histos to the output"};
 
   Configurable<float> phiAngleRestriction{"phiAngleRestriction", 0.3, "angle to restrict track phi for plotting tpc momentum"};
+  Configurable<float> dcaXY_multFact{"dcaXY_multFact", 3., "mult factor to relax pT dependent dcaXY cut for quality tracks"};
+  Configurable<float> dcaZ_cut{"dcaZ_cut", 3., "cut on dcaZ for quality tracks"};
 
   ConfigurableAxis dcaXY_Binning{"dcaXY_Binning", {100, -5., 5.}, ""};
-  ConfigurableAxis dcaZ_Binning{"dcaZ_Binning", {100, -5., 5.}, ""};
+  ConfigurableAxis dcaZ_Binning{"dcaZ_Binning", {100, -3., 3.}, ""};
+
+  ConfigurableAxis xPhiAxis{"xPhiAxis", {180, 0., TMath::TwoPi()}, ""};
+  ConfigurableAxis yQ1pTAxis{"yQ1pTAxis", {200, -0.5, 0.5}, ""};
 
   float fiducialVolume; // 0.9 - jetR
 
@@ -116,10 +126,12 @@ struct ChJetTriggerQATask {
     spectra.add("globalP_tpcglobalPDiff_phirestrict", "difference of global and TPC inner momentum vs global momentum with selection applied restricted phi", {HistType::kTH2F, {{100, 0., +100.}, {200, -100., +100.}}});
     spectra.add("global1overP_tpcglobalPDiff_phirestrict", "difference of 1/p global and TPC inner momentum vs global momentum with selection applied restricted phi", {HistType::kTH2F, {{100, 0., +100.}, {500, -8., +8.}}});
 
-    spectra.add("DCAx_track_Phi_pT", "track DCAx vs phi & pT of global tracks w. nITSClusters #ge 4", kTH3F, {dcaXY_Binning, {60, 0., TMath::TwoPi()}, {100, 0., 100.}});
-    spectra.add("DCAy_track_Phi_pT", "track DCAy vs phi & pT of global tracks w. nITSClusters #ge 4", kTH3F, {dcaXY_Binning, {60, 0., TMath::TwoPi()}, {100, 0., 100.}});
-    spectra.add("DCAz_track_Phi_pT", "track DCAz vs phi & pT of global tracks w. nITSClusters #ge 4", kTH3F, {dcaZ_Binning, {60, 0., TMath::TwoPi()}, {100, 0., 100.}});
-    spectra.add("nITSClusters_TrackPt", "Number of ITS hits vs phi & pT of global tracks", kTH3F, {{7, 1., 8.}, {60, 0., TMath::TwoPi()}, {100, 0., 100.}});
+    spectra.add("DCAxy_track_Phi_pT", "track DCAxy vs phi & pT of tracks w. nITSClusters #geq 4", kTH3F, {dcaXY_Binning, {60, 0., TMath::TwoPi()}, {100, 0., 100.}});
+    spectra.add("DCAz_track_Phi_pT", "track DCAz vs phi & pT of tracks w. nITSClusters #geq 4", kTH3F, {dcaZ_Binning, {60, 0., TMath::TwoPi()}, {100, 0., 100.}});
+    spectra.add("nITSClusters_TrackPt", "Number of ITS hits vs phi & pT of tracks", kTH3F, {{7, 1., 8.}, {60, 0., TMath::TwoPi()}, {100, 0., 100.}});
+    spectra.add("ptphiQualityTracks", "pT vs phi of quality tracks", {HistType::kTH2F, {{100, 0., 100.}, {60, 0, TMath::TwoPi()}}});
+    spectra.add("ptphiAllTracks", "pT vs phi of all tracks", {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}});
+    spectra.add("phi_Q1pT", "Track phi vs. q/pT", kTH2F, {xPhiAxis, yQ1pTAxis});
 
     // Supplementary plots
     if (bAddSupplementHistosToOutput) {
@@ -192,13 +204,18 @@ struct ChJetTriggerQATask {
           spectra.fill(HIST("globalP_tpcglobalPDiff_withoutcuts_phirestrict"), track.p(), track.p() - originalTrack.tpcInnerParam());
         }
 
+        spectra.fill(HIST("ptphiAllTracks"), track.pt(), track.phi());
+
         if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
           continue;
         }
 
-        if (originalTrack.itsNCls() >= 4) { // correspond to number of track hits in ITS layers
-          spectra.fill(HIST("DCAx_track_Phi_pT"), track.dcaX(), track.phi(), track.pt());
-          spectra.fill(HIST("DCAy_track_Phi_pT"), track.dcaY(), track.phi(), track.pt());
+        spectra.fill(HIST("phi_Q1pT"), originalTrack.phi(), originalTrack.sign() / originalTrack.pt());
+        spectra.fill(HIST("ptphiQualityTracks"), track.pt(), track.phi());
+
+        bool bDcaCondition = (fabs(track.dcaZ()) < dcaZ_cut) && (fabs(track.dcaXY()) < dcaXY_multFact * DcaXYPtCut(track.pt()));
+        if (originalTrack.itsNCls() >= 4 && bDcaCondition) { // correspond to number of track hits in ITS layers
+          spectra.fill(HIST("DCAxy_track_Phi_pT"), track.dcaXY(), track.phi(), track.pt());
           spectra.fill(HIST("DCAz_track_Phi_pT"), track.dcaZ(), track.phi(), track.pt());
         }
 

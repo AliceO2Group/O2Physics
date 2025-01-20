@@ -75,8 +75,9 @@ struct CandidateDilepton {
 
 // Declarations of various short names
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
-using MyD0CandidatesSelected = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
-using MyD0CandidatesSelectedWithBdt = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>;
+using MyD0CandidatesSelected = soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0>;
+using MyD0CandidatesSelectedWithBdt = soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfMlD0>;
+using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
 using MyBarrelTracksSelectedWithColl = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelInfo>;
 using MyMuonTracksSelectedWithColl = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsInfo>;
@@ -91,6 +92,8 @@ struct tableMakerJpsiHf {
   // Produce derived tables
   Produces<RedJpDmColls> redCollisions;
   Produces<RedJpDmDmesons> redDmesons;
+  Produces<RedJpDmDmDau0s> redDmesDau0;
+  Produces<RedJpDmDmDau1s> redDmesDau1;
   Produces<RedJpDmDmesBdts> redDmesBdts;
   Produces<RedJpDmD0Masss> redD0Masses;
   Produces<RedJpDmDileptons> redDileptons;
@@ -244,7 +247,7 @@ struct tableMakerJpsiHf {
   // Template function to run pair - hadron combinations
   // TODO: generalise to all charm-hadron species
   template <bool withDca, bool withBdt, int TPairType, uint32_t TTrackFillMap /* gkMuonFillMapWithColl or gkTrackFillMapWithColl*/, typename TDqTrack, typename THfTrack>
-  void runDileptonDmeson(TDqTrack const& leptons, THfTrack const& dmesons, MyEvents::iterator const& collision)
+  void runDileptonDmeson(TDqTrack const& leptons, THfTrack const& dmesons, MyEvents::iterator const& collision, TracksWithExtra const&)
   {
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDileptonCharmHadron);
 
@@ -345,6 +348,11 @@ struct tableMakerJpsiHf {
           }
           if (!isDmesonFilled) {
             redDmesons(indexRed, dmeson.px(), dmeson.py(), dmeson.pz(), dmeson.xSecondaryVertex(), dmeson.ySecondaryVertex(), dmeson.zSecondaryVertex(), 0, 0);
+            auto trackProng0 = dmeson.template prong0_as<TracksWithExtra>();
+            auto trackProng1 = dmeson.template prong1_as<TracksWithExtra>();
+            // one table for each daughter with single track variables
+            redDmesDau0(trackProng0.pt(), trackProng0.eta(), trackProng0.itsNCls(), trackProng0.tpcNClsCrossedRows(), dmeson.nSigTpcPi0(), dmeson.nSigTofPi0(), dmeson.nSigTpcKa0(), dmeson.nSigTofKa0());
+            redDmesDau1(trackProng1.pt(), trackProng1.eta(), trackProng1.itsNCls(), trackProng1.tpcNClsCrossedRows(), dmeson.nSigTpcPi1(), dmeson.nSigTofPi1(), dmeson.nSigTpcKa1(), dmeson.nSigTofKa1());
             filledDmesonIds.push_back(dmesonIdx);
           }
           std::array<float, 6> scores = {999., -999., -999., 999., -999., -999.}; // D0 + D0bar
@@ -385,7 +393,7 @@ struct tableMakerJpsiHf {
   }
 
   // process J/psi(->mumu) - D0
-  void processJspiToMuMuD0(MyEvents const& collisions, MyMuonTracksSelectedWithColl const& muonCandidates, soa::Filtered<MyD0CandidatesSelected> const& selectedD0Candidates)
+  void processJspiToMuMuD0(MyEvents const& collisions, MyMuonTracksSelectedWithColl const& muonCandidates, soa::Filtered<MyD0CandidatesSelected> const& selectedD0Candidates, TracksWithExtra const& barrelTracks)
   {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
@@ -393,12 +401,12 @@ struct tableMakerJpsiHf {
     for (auto const& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0Candidates.sliceBy(perCollisionDmeson, collision.globalIndex());
       auto groupedLeptonCandidates = muonCandidates.sliceBy(perCollisionMuons, collision.globalIndex());
-      runDileptonDmeson<false, false, VarManager::kDecayToMuMu, gkMuonFillMapWithColl>(groupedLeptonCandidates, groupedDmesonCandidates, collision);
+      runDileptonDmeson<false, false, VarManager::kDecayToMuMu, gkMuonFillMapWithColl>(groupedLeptonCandidates, groupedDmesonCandidates, collision, barrelTracks);
     }
   }
 
   // process J/psi(->ee) - D0
-  void processJspiToEED0(MyEvents const& collisions, MyBarrelTracksSelectedWithColl const& electronCandidates, soa::Filtered<MyD0CandidatesSelected> const& selectedD0Candidates)
+  void processJspiToEED0(MyEvents const& collisions, MyBarrelTracksSelectedWithColl const& electronCandidates, soa::Filtered<MyD0CandidatesSelected> const& selectedD0Candidates, TracksWithExtra const& barrelTracks)
   {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
@@ -406,12 +414,12 @@ struct tableMakerJpsiHf {
     for (auto const& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0Candidates.sliceBy(perCollisionDmeson, collision.globalIndex());
       auto groupedLeptonCandidates = electronCandidates.sliceBy(perCollisionElectrons, collision.globalIndex());
-      runDileptonDmeson<false, false, VarManager::kDecayToEE, gkTrackFillMapWithColl>(groupedLeptonCandidates, groupedDmesonCandidates, collision);
+      runDileptonDmeson<false, false, VarManager::kDecayToEE, gkTrackFillMapWithColl>(groupedLeptonCandidates, groupedDmesonCandidates, collision, barrelTracks);
     }
   }
 
   // process J/psi(->mumu) - D0 adding the BDT output scores to the D0 table
-  void processJspiToMuMuD0WithBdt(MyEvents const& collisions, MyMuonTracksSelectedWithColl const& muonCandidates, soa::Filtered<MyD0CandidatesSelectedWithBdt> const& selectedD0CandidatesWithBdt)
+  void processJspiToMuMuD0WithBdt(MyEvents const& collisions, MyMuonTracksSelectedWithColl const& muonCandidates, soa::Filtered<MyD0CandidatesSelectedWithBdt> const& selectedD0CandidatesWithBdt, TracksWithExtra const& barrelTracks)
   {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
@@ -419,12 +427,12 @@ struct tableMakerJpsiHf {
     for (auto const& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0CandidatesWithBdt.sliceBy(perCollisionDmesonWithBdt, collision.globalIndex());
       auto groupedLeptonCandidates = muonCandidates.sliceBy(perCollisionMuons, collision.globalIndex());
-      runDileptonDmeson<false, true, VarManager::kDecayToMuMu, gkMuonFillMapWithColl>(groupedLeptonCandidates, groupedDmesonCandidates, collision);
+      runDileptonDmeson<false, true, VarManager::kDecayToMuMu, gkMuonFillMapWithColl>(groupedLeptonCandidates, groupedDmesonCandidates, collision, barrelTracks);
     }
   }
 
   // process J/psi(->ee) - D0 adding the BDT output scores to the D0 table
-  void processJspiToEED0WithBdt(MyEvents const& collisions, MyBarrelTracksSelectedWithColl const& electronCandidates, soa::Filtered<MyD0CandidatesSelectedWithBdt> const& selectedD0CandidatesWithBdt)
+  void processJspiToEED0WithBdt(MyEvents const& collisions, MyBarrelTracksSelectedWithColl const& electronCandidates, soa::Filtered<MyD0CandidatesSelectedWithBdt> const& selectedD0CandidatesWithBdt, TracksWithExtra const& barrelTracks)
   {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
@@ -432,7 +440,7 @@ struct tableMakerJpsiHf {
     for (auto const& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0CandidatesWithBdt.sliceBy(perCollisionDmesonWithBdt, collision.globalIndex());
       auto groupedLeptonCandidates = electronCandidates.sliceBy(perCollisionElectrons, collision.globalIndex());
-      runDileptonDmeson<false, true, VarManager::kDecayToEE, gkTrackFillMapWithColl>(groupedLeptonCandidates, groupedDmesonCandidates, collision);
+      runDileptonDmeson<false, true, VarManager::kDecayToEE, gkTrackFillMapWithColl>(groupedLeptonCandidates, groupedDmesonCandidates, collision, barrelTracks);
     }
   }
 

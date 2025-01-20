@@ -40,14 +40,15 @@ class TPCVDriftManager
   void update(uint64_t timestamp) noexcept
   {
     // Check validity of already present obj, otherwise update
-    if (mVD != nullptr && (timestamp > mVD->firstTime || timestamp < mVD->lastTime)) {
+    if (mVD != nullptr && (timestamp > static_cast<uint64_t>(mVD->firstTime) || timestamp < static_cast<uint64_t>(mVD->lastTime))) {
       return;
     }
 
     // Update Obj
     mVD = mCCDB->getForTimeStamp<o2::tpc::VDriftCorrFact>("TPC/Calib/VDriftTgl", timestamp);
-    if (mVD == nullptr) {
-      LOGP(error, "Got nullptr from ccdb for VDriftCorrFact for {}", timestamp);
+    if (mVD == nullptr || mVD->firstTime < 0 || mVD->lastTime < 0) {
+      LOGP(error, "Got invalid VDriftCorrFact for {}", timestamp);
+      mValid = false;
       return;
     }
 
@@ -56,6 +57,7 @@ class TPCVDriftManager
     // Update factors
     mTPCVDriftNS = mVD->refVDrift * mVD->corrFact * 1e-3;
 
+    mValid = true;
     LOGP(info, "Updated VDrift for timestamp {} with vdrift={:.7f} (cm/ns)", mVD->creationTime, mTPCVDriftNS);
   }
 
@@ -63,21 +65,24 @@ class TPCVDriftManager
   [[nodiscard]] bool moveTPCTrack(const Collision& col, const TrackExtra& trackExtra, Track& track) noexcept
   {
     ++mCalls;
+
+    // Check if there is a good object available otherwise pretend everything is fine
+    if (!mValid) {
+      if (mInvalid < mWarningLimit) {
+        LOGP(warn, "No VDrift object available, pretending track to be correct");
+        if (mInvalid == mWarningLimit - 1) {
+          LOGP(warn, "Silencing further warnings!");
+        }
+      }
+      ++mInvalid;
+      return true;
+    }
+
     // track is fine, or cannot be moved has information is not available
     if (!(trackExtra.flags() & o2::aod::track::TrackFlags::TrackTimeAsym)) {
       ++mNoFlag;
       return true;
     }
-
-    // Check if there is a good object available otherwise pretend everything is fine
-    if (mVD == nullptr) {
-      LOGP(warn, "No VDrift object available, pretending track to be correct");
-      ++mNull;
-      return true;
-    }
-
-    // FS TODO
-    // add geometrical check for constrained tracks, e.g., tracks which cross the central pad.
 
     // TPC time is given relative to the closest BC in ns
     float tTB, tTBErr;
@@ -91,17 +96,17 @@ class TPCVDriftManager
       ++mColResPos;
       // The TPC track can be associated to a different BC than the one the collision under assumption is;
       // we need to calculate the difference and subtract this from the trackTime()
-      const auto& trackBC = trackExtra.template collision_as<Collisions>().template foundBC_as<BCs>().globalBC();
-      const auto& colBC = col.template foundBC_as<BCs>().globalBC();
+      const auto trackBC = trackExtra.template collision_as<Collisions>().template foundBC_as<BCs>().globalBC();
+      const auto colBC = col.template foundBC_as<BCs>().globalBC();
       float sign{1.f};
       uint64_t diffBC{0};
       if (colBC < trackBC) {
-        sign = 1.f;
+        sign = -1.f;
         diffBC = (trackBC - colBC);
       } else {
         diffBC = (colBC - trackBC);
       }
-      float diffBCNS = sign * diffBC * o2::constants::lhc::LHCBunchSpacingNS;
+      float diffBCNS = sign * static_cast<float>(diffBC) * static_cast<float>(o2::constants::lhc::LHCBunchSpacingNS);
       tTB = col.collisionTime() + diffBCNS;
       tTBErr = col.collisionTimeRes();
     }
@@ -111,8 +116,8 @@ class TPCVDriftManager
     if (dDriftErr < 0.f || dDrift > 250.f) { // we cannot move a track outside the drift volume
       if (mOutside < mWarningLimit) {
         LOGP(warn, "Skipping correction outside of tpc volume with dDrift={} +- {}", dDrift, dDriftErr);
-        const auto& trackBC = trackExtra.template collision_as<Collisions>().template foundBC_as<BCs>().globalBC();
-        const auto& colBC = col.template foundBC_as<BCs>().globalBC();
+        const auto trackBC = trackExtra.template collision_as<Collisions>().template foundBC_as<BCs>().globalBC();
+        const auto colBC = col.template foundBC_as<BCs>().globalBC();
         int diffBC = colBC - trackBC;
         LOGP(info, "ct={}; ctr={}; tTB={}; t0={}; dTime={}; dDrift={}; tgl={}:   colBC={}   trackBC={}  diffBC={}", col.collisionTime(), col.collisionTimeRes(), tTB, trackExtra.trackTime(), dTime, dDrift, track.getTgl(), colBC, trackBC, diffBC);
         if (mOutside == mWarningLimit - 1) {
@@ -136,10 +141,11 @@ class TPCVDriftManager
 
   void print() noexcept
   {
-    LOGP(info, "TPC corrections called: {}; Moved Tracks: {}; Constrained Tracks={}; No Flag: {}; NULL: {}; Outside: {}; ColResPos {}; ColResNeg {};", mCalls, mMovedTrks, mConstrained, mNoFlag, mNull, mOutside, mColResPos, mColResNeg);
+    LOGP(info, "TPC corrections called: {}; Moved Tracks: {}; Constrained Tracks={}; No Flag: {}; NULL: {}; Outside: {}; ColResPos {}; ColResNeg {};", mCalls, mMovedTrks, mConstrained, mNoFlag, mInvalid, mOutside, mColResPos, mColResNeg);
   }
 
  private:
+  bool mValid{false};
   // Factors
   float mTPCVDriftNS{0.f}; // drift velocity in cm/ns
 
@@ -152,7 +158,7 @@ class TPCVDriftManager
   // Counters
   unsigned int mCalls{0};       // total number of calls
   unsigned int mMovedTrks{0};   // number of moved tracks
-  unsigned int mNull{0};        // number of tracks where no drift object was available
+  unsigned int mInvalid{0};     // number of tracks where no drift object was available
   unsigned int mColResNeg{0};   // number of collisions with negative resolution
   unsigned int mColResPos{0};   // number of collisions with positive resolution
   unsigned int mNoFlag{0};      // number of tracks without flag set

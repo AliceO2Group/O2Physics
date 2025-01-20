@@ -54,19 +54,37 @@ namespace jetfindingutilities
 {
 
 /**
+ * returns true if the object is from the JDummys table
+ */
+template <typename T>
+constexpr bool isDummy()
+{
+  return std::is_same_v<std::decay_t<T>, o2::aod::JDummys::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::JDummys::filtered_iterator>;
+}
+
+/**
+ * returns true if the table is a JDummys table
+ */
+template <typename T>
+constexpr bool isDummyTable()
+{
+  return isDummy<typename T::iterator>() || isDummy<typename T::filtered_iterator>();
+}
+
+/**
  * returns true if the cluster is from an EMCAL table
  */
 template <typename T>
 constexpr bool isEMCALCluster()
 {
-  return std::is_same_v<std::decay_t<T>, JetClusters::iterator> || std::is_same_v<std::decay_t<T>, JetClusters::filtered_iterator> || std::is_same_v<std::decay_t<T>, JetClustersMCD::iterator> || std::is_same_v<std::decay_t<T>, JetClustersMCD::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::JetClusters::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::JetClusters::filtered_iterator> || std::is_same_v<std::decay_t<T>, o2::aod::JetClustersMCD::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::JetClustersMCD::filtered_iterator>;
 }
 
 /**
  * returns true if the table is an EMCAL table
  */
 template <typename T>
-constexpr bool isEMCALTable()
+constexpr bool isEMCALClusterTable()
 {
   return isEMCALCluster<typename T::iterator>() || isEMCALCluster<typename T::filtered_iterator>();
 }
@@ -318,7 +336,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
  * @param pdgDatabase database of pdg codes
  * @param candidate optional hf candidiate
  */
-template <typename T, typename U>
+template <bool checkIsDaughter, typename T, typename U>
 void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::string particleSelection, int jetTypeParticleLevel, T const& particles, o2::framework::Service<o2::framework::O2DatabasePDG> pdgDatabase, std::optional<U> const& candidate = std::nullopt)
 {
   for (auto& particle : particles) {
@@ -348,9 +366,11 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::stri
         if (cand.mcParticleId() == particle.globalIndex()) {
           continue;
         }
-        auto hfParticle = cand.template mcParticle_as<T>();
-        if (jetcandidateutilities::isDaughterParticle(hfParticle, particle.globalIndex())) {
-          continue;
+        if constexpr (checkIsDaughter) {
+          auto hfParticle = cand.template mcParticle_as<T>();
+          if (jetcandidateutilities::isDaughterParticle(hfParticle, particle.globalIndex())) {
+            continue;
+          }
         }
       }
     }

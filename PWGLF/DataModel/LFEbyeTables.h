@@ -22,7 +22,7 @@ namespace LFEbyeCollTable
 {
 DECLARE_SOA_COLUMN(Centrality, centrality, uint8_t);
 DECLARE_SOA_COLUMN(Zvtx, zvtx, float);
-DECLARE_SOA_COLUMN(ZvtxMask, zvtxMask, uint8_t);
+DECLARE_SOA_COLUMN(ZvtxMask, zvtxMask, int8_t);
 DECLARE_SOA_COLUMN(TriggerMask, triggerMask, uint8_t);
 DECLARE_SOA_COLUMN(Ntracklets, ntracklets, uint8_t);
 DECLARE_SOA_COLUMN(V0Multiplicity, v0Multiplicity, uint8_t);
@@ -66,10 +66,10 @@ DECLARE_SOA_COLUMN(GenPt, genPt, float);
 DECLARE_SOA_COLUMN(GenEta, genEta, float);
 DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
 DECLARE_SOA_COLUMN(IsReco, isReco, bool);
-DECLARE_SOA_COLUMN(EtaMask, etaMask, uint8_t);
+DECLARE_SOA_COLUMN(EtaMask, etaMask, int8_t);
 DECLARE_SOA_COLUMN(SelMask, selMask, int);
 DECLARE_SOA_COLUMN(OuterPID, outerPID, float);
-DECLARE_SOA_COLUMN(GenEtaMask, genEtaMask, uint8_t);
+DECLARE_SOA_COLUMN(GenEtaMask, genEtaMask, int8_t);
 } // namespace LFEbyeTable
 
 DECLARE_SOA_TABLE(NucleiEbyeTables, "AOD", "NUCLEBYETABLE",

@@ -44,6 +44,11 @@ o2physics_add_dpl_workflow(task-correlation-dstar-hadrons
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-correlation-hfe-hadrons
+                    SOURCES taskCorrelationHfeHadrons.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-correlation-lc-hadrons
                     SOURCES taskCorrelationLcHadrons.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

@@ -1,25 +1,27 @@
 {
     "internal-dpl-clock": "",
     "internal-dpl-aod-reader": {
+        "aod-file-private": "AO2D.root",
+        "aod-max-io-rate": "0",
         "time-limit": "0",
         "orbit-offset-enumeration": "0",
         "orbit-multiplier-enumeration": "0",
         "start-value-enumeration": "0",
         "end-value-enumeration": "-1",
-        "step-value-enumeration": "1",
-        "aod-file": "AO2D.root"
+        "step-value-enumeration": "1"
     },
     "internal-dpl-aod-spawner": "",
     "bc-converter": "",
     "timestamp-task": {
+        "fatalOnInvalidTimestamp": "false",
         "verbose": "false",
         "rct-path": "RCT/Info/RunInformation",
         "orbit-reset-path": "CTP/Calib/OrbitReset",
         "ccdb-url": "http://alice-ccdb.cern.ch",
-        "isRun2MC": "false"
+        "isRun2MC": "-1"
     },
     "tracks-extra-converter": "",
-    "zdc-converter": "",
+    "tracks-extra-spawner": "",
     "track-propagation": {
         "ccdb-url": "http://alice-ccdb.cern.ch",
         "lutPath": "GLO/Param/MatLUT",
@@ -27,8 +29,75 @@
         "grpmagPath": "GLO/Config/GRPMagField",
         "mVtxPath": "GLO/Calib/MeanVertex",
         "minPropagationDistance": "83.0999985",
+        "useTrackTuner": "false",
+        "fillTrackTunerTable": "false",
+        "trackTunerParams": "debugInfo=0|updateTrackDCAs=1|updateTrackCovMat=1|updateCurvature=0|updateCurvatureIU=0|updatePulls=0|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/PbPb2022|nameInputFile=trackTuner_DataLHC22sPass5_McLHC22l1b2_run529397.root|pathFileQoverPt=Users/h/hsharma/qOverPtGraphs|nameFileQoverPt=D0sigma_Data_removal_itstps_MC_LHC22b1b.root|usePvRefitCorrections=0|qOverPtMC=-1.|qOverPtData=-1.",
+        "axisPtQA": {
+            "values": [
+                "0",
+                "0",
+                "0.1",
+                "0.2",
+                "0.3",
+                "0.4",
+                "0.5",
+                "0.6",
+                "0.7",
+                "0.8",
+                "0.9",
+                "1",
+                "1.1",
+                "1.2",
+                "1.3",
+                "1.4",
+                "1.5",
+                "1.6",
+                "1.7",
+                "1.8",
+                "1.9",
+                "2",
+                "2.2",
+                "2.4",
+                "2.6",
+                "2.8",
+                "3",
+                "3.2",
+                "3.4",
+                "3.6",
+                "3.8",
+                "4",
+                "4.4",
+                "4.8",
+                "5.2",
+                "5.6",
+                "6",
+                "6.5",
+                "7",
+                "7.5",
+                "8",
+                "9",
+                "10",
+                "11",
+                "12",
+                "13",
+                "14",
+                "15",
+                "17",
+                "19",
+                "21",
+                "23",
+                "25",
+                "30",
+                "35",
+                "40",
+                "50"
+            ]
+        },
         "processStandard": "false",
-        "processCovariance": "true"
+        "processStandardWithPID": "false",
+        "processCovarianceMc": "false",
+        "processCovariance": "true",
+        "processCovarianceWithPID": "false"
     },
     "track-selection": {
         "isRun3": "true",
@@ -42,12 +111,12 @@
         "etaMin": "-0.8",
         "etaMax": "0.8"
     },
-    "hf-track-index-skim-creator-tag-sel-tracks": {
+    "hf-skim-creator-mini-tag-sel-tracks": {
         "ptTrackMin": "0.3",
         "etaTrackMax": "0.8",
         "dcaTrackMin": "0.0025"
     },
-    "hf-track-index-skim-creator": {
+    "hf-skim-creator-mini": {
         "magneticField": "5",
         "propagateToPCA": "true",
         "useAbsDCA": "false",

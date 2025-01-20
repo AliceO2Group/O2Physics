@@ -394,7 +394,7 @@ struct fv0Qa {
 
       FillConditionHistograms("FV0BC", localCollisionBCFV0);
 
-      for (int i = 0; i < fv0.amplitude().size(); i++) {
+      for (std::size_t i = 0; i < fv0.amplitude().size(); i++) {
         FillConditionHistograms("FV0ChannelAmplitude", fv0.amplitude()[i]);
         FillConditionHistograms("FV0AmplitudePerChannel", fv0.channel()[i], fv0.amplitude()[i]);
         sum(totalAmplitudes, fv0.amplitude()[i]);

@@ -9,11 +9,17 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// ========================
-//
-// This code runs loop over EMCal clusters for EMCal QC.
-//    Please write to: nicolas.strangmann@cern.ch
+/// EMCAL QC Task
+///
+/// \file emcalQC.cxx
+///
+/// \brief Task that runs basic EMCal cluster QA for derived data in the EM format
+///
+/// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) Goethe University Frankfurt
+///
 
+#include <string>
+#include <vector>
 #include <array>
 #include "TString.h"
 #include "THashList.h"
@@ -42,16 +48,16 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMEventsWeight>;
 using MyCollision = MyCollisions::iterator;
 
 using MyEMCClusters = soa::Join<aod::SkimEMCClusters, aod::EMCEMEventIds>;
 using MyEMCCluster = MyEMCClusters::iterator;
 
-struct emcalQC {
+struct EmcalQC {
 
   Configurable<bool> cfgDo2DQA{"cfgDo2DQA", true, "perform 2 dimensional cluster QA"};
-  ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis confVtxBins{"confVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
 
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -68,25 +74,27 @@ struct emcalQC {
     Configurable<bool> cfgRequireEMCHardwareTriggered{"cfgRequireEMCHardwareTriggered", false, "require the EMC to be hardware triggered (kEMC7 or kDMC7)"};
     Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1, "min. occupancy"};
     Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<bool> onlyKeepWeightedEvents{"onlyKeepWeightedEvents", false, "flag to keep only weighted events (for JJ MCs) and remove all MB events (with weight = 1)"};
   } eventcuts;
 
   EMCPhotonCut fEMCCut;
   struct : ConfigurableGroup {
     std::string prefix = "emccut_group";
+    Configurable<std::string> clusterDefinition{"clusterDefinition", "kV3Default", "Clusterizer to be selected, e.g. V3Default"};
     Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle"};
-    Configurable<float> EMC_minTime{"EMC_minTime", -20., "Minimum cluster time for EMCal time cut"};
-    Configurable<float> EMC_maxTime{"EMC_maxTime", +25., "Maximum cluster time for EMCal time cut"};
-    Configurable<float> EMC_minM02{"EMC_minM02", 0.1, "Minimum M02 for EMCal M02 cut"};
-    Configurable<float> EMC_maxM02{"EMC_maxM02", 0.7, "Maximum M02 for EMCal M02 cut"};
-    Configurable<float> EMC_minE{"EMC_minE", 0.7, "Minimum cluster energy for EMCal energy cut"};
-    Configurable<int> EMC_minNCell{"EMC_minNCell", 1, "Minimum number of cells per cluster for EMCal NCell cut"};
-    Configurable<std::vector<float>> EMC_TM_Eta{"EMC_TM_Eta", {0.01f, 4.07f, -2.5f}, "|eta| <= [0]+(pT+[1])^[2] for EMCal track matching"};
-    Configurable<std::vector<float>> EMC_TM_Phi{"EMC_TM_Phi", {0.015f, 3.65f, -2.f}, "|phi| <= [0]+(pT+[1])^[2] for EMCal track matching"};
-    Configurable<float> EMC_Eoverp{"EMC_Eoverp", 1.75, "Minimum cluster energy over track momentum for EMCal track matching"};
-    Configurable<bool> EMC_UseExoticCut{"EMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
+    Configurable<float> minClusterTime{"minClusterTime", -20., "Minimum cluster time for EMCal time cut"};
+    Configurable<float> maxClusterTime{"maxClusterTime", +25., "Maximum cluster time for EMCal time cut"};
+    Configurable<float> minM02{"minM02", 0.1, "Minimum M02 for EMCal M02 cut"};
+    Configurable<float> maxM02{"maxM02", 0.7, "Maximum M02 for EMCal M02 cut"};
+    Configurable<float> minClusterE{"minClusterE", 0.7, "Minimum cluster energy for EMCal energy cut"};
+    Configurable<int> minNCell{"minNCell", 1, "Minimum number of cells per cluster for EMCal NCell cut"};
+    Configurable<std::vector<float>> tmEta{"tmEta", {0.01f, 4.07f, -2.5f}, "|eta| <= [0]+(pT+[1])^[2] for EMCal track matching"};
+    Configurable<std::vector<float>> tmPhi{"tmPhi", {0.015f, 3.65f, -2.f}, "|phi| <= [0]+(pT+[1])^[2] for EMCal track matching"};
+    Configurable<float> tmEoverP{"tmEoverP", 1.75, "Minimum cluster energy over track momentum for EMCal track matching"};
+    Configurable<bool> useExoticCut{"useExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
   } emccuts;
 
-  void DefineEMEventCut()
+  void defineEMEventCut()
   {
     fEMEventCut = EMPhotonEventCut("fEMEventCut", "fEMEventCut");
     fEMEventCut.SetRequireSel8(eventcuts.cfgRequireSel8);
@@ -99,55 +107,89 @@ struct emcalQC {
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
-    fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
-  void DefineEMCCut()
+  void defineEMCCut()
   {
-    const float a = emccuts.EMC_TM_Eta->at(0);
-    const float b = emccuts.EMC_TM_Eta->at(1);
-    const float c = emccuts.EMC_TM_Eta->at(2);
+    const float a = emccuts.tmEta->at(0);
+    const float b = emccuts.tmEta->at(1);
+    const float c = emccuts.tmEta->at(2);
 
-    const float d = emccuts.EMC_TM_Phi->at(0);
-    const float e = emccuts.EMC_TM_Phi->at(1);
-    const float f = emccuts.EMC_TM_Phi->at(2);
+    const float d = emccuts.tmPhi->at(0);
+    const float e = emccuts.tmPhi->at(1);
+    const float f = emccuts.tmPhi->at(2);
     LOGF(info, "EMCal track matching parameters : a = %f, b = %f, c = %f, d = %f, e = %f, f = %f", a, b, c, d, e, f);
 
-    fEMCCut.SetMinE(emccuts.EMC_minE);
-    fEMCCut.SetMinNCell(emccuts.EMC_minNCell);
-    fEMCCut.SetM02Range(emccuts.EMC_minM02, emccuts.EMC_maxM02);
-    fEMCCut.SetTimeRange(emccuts.EMC_minTime, emccuts.EMC_maxTime);
+    fEMCCut.SetClusterizer(emccuts.clusterDefinition);
+    fEMCCut.SetMinE(emccuts.minClusterE);
+    fEMCCut.SetMinNCell(emccuts.minNCell);
+    fEMCCut.SetM02Range(emccuts.minM02, emccuts.maxM02);
+    fEMCCut.SetTimeRange(emccuts.minClusterTime, emccuts.maxClusterTime);
 
-    fEMCCut.SetTrackMatchingEta([&a, &b, &c](float pT) { return a + pow(pT + b, c); });
-    fEMCCut.SetTrackMatchingPhi([&d, &e, &f](float pT) { return d + pow(pT + e, f); });
+    fEMCCut.SetTrackMatchingEta([a, b, c](float pT) { return a + std::pow(pT + b, c); });
+    fEMCCut.SetTrackMatchingPhi([d, e, f](float pT) { return d + std::pow(pT + e, f); });
 
-    fEMCCut.SetMinEoverP(emccuts.EMC_Eoverp);
-    fEMCCut.SetUseExoticCut(emccuts.EMC_UseExoticCut);
+    fEMCCut.SetMinEoverP(emccuts.tmEoverP);
+    fEMCCut.SetUseExoticCut(emccuts.useExoticCut);
   }
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
-  std::vector<float> zvtx_bin_edges;
+  std::vector<float> zVtxBinEdges;
 
   void init(InitContext&)
   {
-    zvtx_bin_edges = std::vector<float>(ConfVtxBins.value.begin(), ConfVtxBins.value.end());
-    zvtx_bin_edges.erase(zvtx_bin_edges.begin());
+    zVtxBinEdges = std::vector<float>(confVtxBins.value.begin(), confVtxBins.value.end());
+    zVtxBinEdges.erase(zVtxBinEdges.begin());
 
-    DefineEMCCut();
-    DefineEMEventCut();
+    defineEMCCut();
+    defineEMEventCut();
 
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
+    auto hEMCCollisionCounter = fRegistry.add<TH1>("Event/hEMCCollisionCounter", "Number of collisions after event cuts", HistType::kTH1D, {{7, 0.5, 7.5}}, false);
+    hEMCCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
+    hEMCCollisionCounter->GetXaxis()->SetBinLabel(2, "+TVX");         // TVX
+    hEMCCollisionCounter->GetXaxis()->SetBinLabel(3, "+|z|<10cm");    // TVX with z < 10cm
+    hEMCCollisionCounter->GetXaxis()->SetBinLabel(4, "+Sel8");        // TVX with z < 10cm and Sel8
+    hEMCCollisionCounter->GetXaxis()->SetBinLabel(5, "+Good z vtx");  // TVX with z < 10cm and Sel8 and good z xertex
+    hEMCCollisionCounter->GetXaxis()->SetBinLabel(6, "+unique");      // TVX with z < 10cm and Sel8 and good z xertex and unique (only collision in the BC)
+    hEMCCollisionCounter->GetXaxis()->SetBinLabel(7, "+EMC readout"); // TVX with z < 10cm and Sel8 and good z xertex and unique (only collision in the BC) and kTVXinEMC
     o2::aod::pwgem::photonmeson::utils::clusterhistogram::addClusterHistograms(&fRegistry, cfgDo2DQA);
   }
 
-  Preslice<aod::SkimEMCClusters> perCollision = aod::skimmedcluster::collisionId;
+  Preslice<MyEMCClusters> perCollision = aod::emccluster::emeventId;
 
-  void processQC(MyCollisions const& collisions, aod::SkimEMCClusters const& clusters)
+  void processQC(MyCollisions const& collisions, MyEMCClusters const& clusters)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
+
+      if (eventcuts.onlyKeepWeightedEvents && std::fabs(collision.weight() - 1.) < 1E-10) {
+        continue;
+      }
+
+      fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 1);
+      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 2);
+        if (std::abs(collision.posZ()) < eventcuts.cfgZvtxMax) {
+          fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 3);
+          if (collision.sel8()) {
+            fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 4);
+            if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+              fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 5);
+              if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+                fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 6);
+                if (collision.alias_bit(kTVXinEMC))
+                  fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 7);
+              }
+            }
+          }
+        }
+      }
 
       o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision);
       if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+      if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
         continue;
       }
 
@@ -155,24 +197,28 @@ struct emcalQC {
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
 
-      auto clusters_per_coll = clusters.sliceBy(perCollision, collision.collisionId());
-      fRegistry.fill(HIST("Cluster/before/hNgamma"), clusters_per_coll.size());
-      int ng = 0;
-      for (auto& cluster : clusters_per_coll) {
+      auto clustersPerColl = clusters.sliceBy(perCollision, collision.collisionId());
+      fRegistry.fill(HIST("Cluster/before/hNgamma"), clustersPerColl.size(), collision.weight());
+      int ngBefore = 0;
+      int ngAfter = 0;
+      for (const auto& cluster : clustersPerColl) {
         // Fill the cluster properties before applying any cuts
-        o2::aod::pwgem::photonmeson::utils::clusterhistogram::fillClusterHistograms<0>(&fRegistry, cluster, cfgDo2DQA);
+        if (!fEMCCut.IsSelectedEMCal(EMCPhotonCut::EMCPhotonCuts::kDefinition, cluster))
+          continue;
+        ngBefore++;
+        o2::aod::pwgem::photonmeson::utils::clusterhistogram::fillClusterHistograms<0>(&fRegistry, cluster, cfgDo2DQA, collision.weight());
 
         // Apply cuts one by one and fill in hClusterQualityCuts histogram
-        fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), 0., cluster.e());
+        fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), 0., cluster.e(), collision.weight());
 
         // Define two boleans to see, whether the cluster "survives" the EMC cluster cuts to later check, whether the cuts in this task align with the ones in EMCPhotonCut.h:
         bool survivesIsSelectedEMCalCuts = true;                        // Survives "manual" cuts listed in this task
         bool survivesIsSelectedCuts = fEMCCut.IsSelected<int>(cluster); // Survives the cutlist defines in EMCPhotonCut.h, which is also used in the Pi0Eta task
 
-        for (int icut = 0; icut < static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts); icut++) { // Loop through different cut observables
+        for (int icut = 1; icut < static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts); icut++) { // Loop through different cut observables, start at 1 to ignore ClusterDefinition
           EMCPhotonCut::EMCPhotonCuts specificcut = static_cast<EMCPhotonCut::EMCPhotonCuts>(icut);
           if (!fEMCCut.IsSelectedEMCal(specificcut, cluster)) { // Check whether cluster passes this cluster requirement, if not, fill why in the next row
-            fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), icut + 1, cluster.e());
+            fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), icut, cluster.e(), collision.weight());
             survivesIsSelectedEMCalCuts = false;
           }
         }
@@ -182,23 +228,23 @@ struct emcalQC {
         }
 
         if (survivesIsSelectedCuts) {
-          o2::aod::pwgem::photonmeson::utils::clusterhistogram::fillClusterHistograms<1>(&fRegistry, cluster, cfgDo2DQA);
-          fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), 7., cluster.e());
-          ng++;
+          o2::aod::pwgem::photonmeson::utils::clusterhistogram::fillClusterHistograms<1>(&fRegistry, cluster, cfgDo2DQA, collision.weight());
+          fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), 7., cluster.e(), collision.weight());
+          ngAfter++;
         }
       }
-      fRegistry.fill(HIST("Cluster/after/hNgamma"), ng);
+      fRegistry.fill(HIST("Cluster/before/hNgamma"), ngBefore, collision.weight());
+      fRegistry.fill(HIST("Cluster/after/hNgamma"), ngAfter, collision.weight());
     } // end of collision loop
-  }   // end of process
+  } // end of process
 
   void processDummy(MyCollisions const&) {}
 
-  PROCESS_SWITCH(emcalQC, processQC, "run EMCal QC", false);
-  PROCESS_SWITCH(emcalQC, processDummy, "Dummy function", true);
+  PROCESS_SWITCH(EmcalQC, processQC, "run EMCal QC", false);
+  PROCESS_SWITCH(EmcalQC, processDummy, "Dummy function", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<emcalQC>(cfgc, TaskName{"emcal-qc"})};
+  return WorkflowSpec{adaptAnalysisTask<EmcalQC>(cfgc)};
 }

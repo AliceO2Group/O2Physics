@@ -14,6 +14,9 @@
 // This code runs loop over dalitz ee table for dalitz QC.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <string>
+#include <vector>
+
 #include "TString.h"
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
@@ -246,7 +249,6 @@ struct DalitzEEQCMC {
     fEMEventCut.SetRequireNoSameBunchPileup(eventcuts.cfgRequireNoSameBunchPileup);
     fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
-    fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
   void DefineDileptonCut()
@@ -375,7 +377,7 @@ struct DalitzEEQCMC {
               break;
           }
         } // end of primary/secondary selection
-      }   // end of primary selection for same mother
+      } // end of primary selection for same mother
     }
 
     // fill track info that belong to true pairs.
@@ -454,6 +456,9 @@ struct DalitzEEQCMC {
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+      if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
+        continue;
+      }
       o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision);
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
@@ -488,6 +493,9 @@ struct DalitzEEQCMC {
       }
 
       if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+      if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
         continue;
       }
       auto mccollision = collision.emmcevent_as<aod::EMMCEvents>();
@@ -551,7 +559,7 @@ struct DalitzEEQCMC {
           }
         }
       } // end of true ULS pair loop
-    }   // end of collision loop
+    } // end of collision loop
   }
   PROCESS_SWITCH(DalitzEEQCMC, processGen, "run genrated info", true);
 

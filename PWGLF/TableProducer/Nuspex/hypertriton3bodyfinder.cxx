@@ -687,14 +687,17 @@ struct hypertriton3bodyFinder {
     auto Track0Par = getTrackPar(dPtrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
     auto Track0dcaXY = dcaInfo[0];
+    auto Track0dca = std::sqrt(Track0dcaXY * Track0dcaXY + dcaInfo[1] * dcaInfo[1]);
 
     auto Track1Par = getTrackPar(dNtrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track1Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
     auto Track1dcaXY = dcaInfo[0];
+    auto Track1dca = std::sqrt(Track1dcaXY * Track1dcaXY + dcaInfo[1] * dcaInfo[1]);
 
     auto Track2Par = getTrackPar(dBachtrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track2Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
     auto Track2dcaXY = dcaInfo[0];
+    auto Track2dca = std::sqrt(Track2dcaXY * Track2dcaXY + dcaInfo[1] * dcaInfo[1]);
 
     // H3L DCA Check
     // auto track3B = o2::track::TrackParCov(vertexXYZ, p3B, fitter3body.calcPCACovMatrixFlat(), t2.sign());
@@ -712,6 +715,7 @@ struct hypertriton3bodyFinder {
       p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
       fitter3body.getChi2AtPCACandidate(),
       Track0dcaXY, Track1dcaXY, Track2dcaXY,
+      Track0dca, Track1dca, Track2dca,
       0); // To be fixed
   }
   //------------------------------------------------------------------

@@ -13,9 +13,14 @@
 /// \author Sofia Tomassini, Gleb Romanenko, Nicolò Jacazio
 /// \since 31 May 2023
 
+#include <vector>
+#include <map>
+#include <memory>
+#include <utility>
+
 #include <TParameter.h>
 #include <TH1F.h>
-#include <vector>
+#include <TLorentzVector.h>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -31,9 +36,6 @@
 
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 #include "PWGCF/Femto3D/Core/femto3dPairTask.h"
-
-#include "TLorentzVector.h"
-#include "TDatabasePDG.h"
 
 using namespace o2;
 using namespace o2::soa;
@@ -297,12 +299,12 @@ struct K0MixedEvents {
       }
 
       registry.fill(HIST("Trks"), 1);
-      const float& vtxZ = track.singleCollSel_as<FilteredCollisions>().posZ();
+      const float vtxZ = track.singleCollSel_as<FilteredCollisions>().posZ();
       registry.fill(HIST("VTX"), vtxZ);
-      if (abs(vtxZ) > _vertexZ)
+      if (std::abs(vtxZ) > _vertexZ)
         continue;
       registry.fill(HIST("eta"), track.pt(), track.eta());
-      if (abs(track.rapidity(particle_mass(_particlePDG_1))) > _maxy) {
+      if (std::abs(track.rapidity(particle_mass(_particlePDG_1))) > _maxy) {
         continue;
       }
       registry.fill(HIST("rapidity_first"), track.pt(), track.rapidity(particle_mass(_particlePDG_1)));

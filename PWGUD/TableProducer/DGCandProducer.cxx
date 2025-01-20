@@ -12,8 +12,14 @@
 // \brief Saves relevant information of DG candidates
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 
+#include <vector>
+#include <string>
+#include <map>
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "ReconstructionDataFormats/Vertex.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/Core/DGSelector.h"
@@ -23,6 +29,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct DGCandProducer {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  ctpRateFetcher mRateFetcher;
   // get a DGCutparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
   Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
@@ -35,6 +43,7 @@ struct DGCandProducer {
   // data tables
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
+  Produces<aod::UDCollisionSelExtras> outputCollisionSelExtras;
   Produces<aod::UDCollsLabels> outputCollsLabels;
   Produces<aod::UDZdcs> outputZdcs;
   Produces<aod::UDZdcsReduced> outputZdcsReduced;
@@ -136,8 +145,10 @@ struct DGCandProducer {
   template <typename TBC>
   void fillFIThistograms(TBC const& bc)
   {
+    LOGF(debug, "");
     std::array<bool, 5> triggers{{true, !udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits()),
                                   udhelpers::TVX(bc), udhelpers::TSC(bc), udhelpers::TCE(bc)}};
+    LOGF(debug, "triggers %d %d %d %d %d", triggers[0], triggers[1], triggers[2], triggers[3], triggers[4]);
     if (bc.has_foundFV0()) {
       auto fv0 = bc.foundFV0();
       auto ampA = udhelpers::FV0AmplitudeA(fv0);
@@ -192,7 +203,9 @@ struct DGCandProducer {
   void init(InitContext&)
   {
     LOGF(debug, "<DGCandProducer> beginning of init reached");
-
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setFatalWhenNull(false);
     diffCuts = (DGCutparHolder)DGCuts;
 
     const int nXbinsInStatH = 25;
@@ -212,11 +225,12 @@ struct DGCandProducer {
     //   4: TCE              8: no TCE
     //   9: IsBBXXX         10: !IsBBXXX
     //  11: kNoBGXXX        12: !kNoBGXXX
-    registry.add("reco/fv0", "FV0 amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
-    registry.add("reco/ft0A", "FT0A amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
-    registry.add("reco/ft0C", "FT0C amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
-    registry.add("reco/fddA", "FDDA amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
-    registry.add("reco/fddC", "FDDC amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
+    const int nXbinsFITH = 201;
+    registry.add("reco/fv0", "FV0 amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH - 0.5}, {13, -0.5, 12.5}}});
+    registry.add("reco/ft0A", "FT0A amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH - 0.5}, {13, -0.5, 12.5}}});
+    registry.add("reco/ft0C", "FT0C amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH - 0.5}, {13, -0.5, 12.5}}});
+    registry.add("reco/fddA", "FDDA amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH - 0.5}, {13, -0.5, 12.5}}});
+    registry.add("reco/fddC", "FDDC amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH - 0.5}, {13, -0.5, 12.5}}});
 
     std::string labels[nXbinsInStatH] = {"all", "hasBC", "accepted", "FITveto", "MID trk", "global not PV trk", "not global PV trk",
                                          "ITS-only PV trk", "TOF PV trk fraction", "n PV trks", "PID", "pt", "eta", "net charge",
@@ -243,6 +257,31 @@ struct DGCandProducer {
     }
     registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
     auto bc = collision.foundBC_as<BCs>();
+    int trs = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      trs = 1;
+    }
+    int trofs = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      trofs = 1;
+    }
+    int hmpr = 0;
+    if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+      hmpr = 1;
+    }
+    double ir = 0.;
+    const uint64_t ts = bc.timestamp();
+    const int runnumber = bc.runNumber();
+    if (bc.has_zdc()) {
+      ir = mRateFetcher.fetch(ccdb.service, ts, runnumber, "ZNC hadronic") * 1.e-3;
+    }
+    uint8_t chFT0A = 0;
+    uint8_t chFT0C = 0;
+    uint8_t chFDDA = 0;
+    uint8_t chFDDC = 0;
+    uint8_t chFV0A = 0;
+    int occ = 0;
+    occ = collision.trackOccupancyInTimeRange();
     LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
 
     // fill FIT histograms
@@ -262,12 +301,16 @@ struct DGCandProducer {
 
       // fill FITInfo
       upchelpers::FITInfo fitInfo{};
-      udhelpers::getFITinfo(fitInfo, bc.globalBC(), bcs, ft0s, fv0as, fdds);
+      udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
 
       // update DG candidates tables
       auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
+      int upc_flag = 0;
+      ushort flags = collision.flags();
+      if (flags & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode)
+        upc_flag = 1;
       outputCollisions(bc.globalBC(), bc.runNumber(),
-                       collision.posX(), collision.posY(), collision.posZ(),
+                       collision.posX(), collision.posY(), collision.posZ(), upc_flag,
                        collision.numContrib(), udhelpers::netCharge<true>(tracks),
                        rtrwTOF);
       outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
@@ -278,6 +321,7 @@ struct DGCandProducer {
                            fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
+      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr);
       outputCollsLabels(collision.globalIndex());
 
       // update DGTracks tables
@@ -367,7 +411,8 @@ struct McDGCandProducer {
   void updateUDMcCollisions(TMcCollision const& mccol)
   {
     // save mccol
-    outputMcCollisions(mccol.bcId(),
+    auto bc = mccol.template bc_as<BCs>();
+    outputMcCollisions(bc.globalBC(),
                        mccol.generatorsID(),
                        mccol.posX(),
                        mccol.posY(),
@@ -406,38 +451,59 @@ struct McDGCandProducer {
   template <typename TMcParticles>
   void updateUDMcParticles(TMcParticles const& McParts, int64_t McCollisionId, std::map<int64_t, int64_t>& mcPartIsSaved)
   {
+    LOGF(debug, "number of McParticles %d", McParts.size());
     // save McParts
     // new mother and daughter ids
     std::vector<int32_t> newmids;
     int32_t newdids[2] = {-1, -1};
     int64_t newval = -1;
 
+    // Determine the particle indices within the UDMcParticles table
+    // before filling the table
+    // This is needed to be able to assign the new daughter indices
+    std::map<int64_t, int64_t> oldnew;
+    auto lastId = outputMcParticles.lastIndex();
+    for (auto mcpart : McParts) {
+      auto oldId = mcpart.globalIndex();
+      if (mcPartIsSaved.find(oldId) != mcPartIsSaved.end()) {
+        oldnew[oldId] = mcPartIsSaved[oldId];
+      } else {
+        lastId++;
+        oldnew[oldId] = lastId;
+      }
+    }
+
     // all particles of the McCollision are saved
     for (auto mcpart : McParts) {
+      LOGF(debug, "  p (%d) %d", mcpart.pdgCode(), mcpart.globalIndex());
       if (mcPartIsSaved.find(mcpart.globalIndex()) == mcPartIsSaved.end()) {
-        // correct mother and daughter IDs
+        // mothers
         newmids.clear();
         auto oldmids = mcpart.mothersIds();
-        for (uint ii = 0; ii < oldmids.size(); ii++) {
-          if (mcPartIsSaved.find(oldmids[ii]) != mcPartIsSaved.end()) {
-            newval = mcPartIsSaved[oldmids[ii]];
-            LOGF(debug, " mid %i / %i", oldmids[ii], newval);
+        for (auto oldmid : oldmids) {
+          auto m = McParts.rawIteratorAt(oldmid);
+          LOGF(debug, "    m %d", m.globalIndex());
+          if (mcPartIsSaved.find(oldmid) != mcPartIsSaved.end()) {
+            newval = mcPartIsSaved[oldmid];
           } else {
             newval = -1;
           }
+          LOGF(debug, "    mid o %i n %i", oldmid, newval);
           newmids.push_back(newval);
         }
+
+        // daughters
         auto olddids = mcpart.daughtersIds();
         for (uint ii = 0; ii < olddids.size(); ii++) {
-          if (mcPartIsSaved.find(olddids[ii]) != mcPartIsSaved.end()) {
-            newval = mcPartIsSaved[olddids[ii]];
-            LOGF(debug, " did %i / %i", olddids[ii], newval);
+          if (oldnew.find(olddids[ii]) != oldnew.end()) {
+            newval = oldnew[olddids[ii]];
           } else {
             newval = -1;
           }
+          LOGF(debug, "    did o %i n %i", olddids[ii], newval);
           newdids[ii] = newval;
         }
-        LOGF(debug, " ms %i ds %i", oldmids.size(), olddids.size());
+        LOGF(debug, "    ms %i ds %i", oldmids.size(), olddids.size());
 
         // update UDMcParticles
         outputMcParticles(McCollisionId,
@@ -452,6 +518,7 @@ struct McDGCandProducer {
                           mcpart.pz(),
                           mcpart.e());
         mcPartIsSaved[mcpart.globalIndex()] = outputMcParticles.lastIndex();
+        LOGF(debug, "  mcpart %d -> udmcpart %d", mcpart.globalIndex(), mcPartIsSaved[mcpart.globalIndex()]);
       }
     }
   }
@@ -543,29 +610,33 @@ struct McDGCandProducer {
     // advance dgcand and mccol until both are AtEnd
     int64_t mccolId = mccol.globalIndex();
     int64_t mcdgId = -1;
+    int64_t colId = -1;
     auto dgcandAtEnd = dgcand == lastdgcand;
     auto mccolAtEnd = mccol == lastmccol;
-    bool goon = true;
+    bool goon = !dgcandAtEnd || !mccolAtEnd;
+
     while (goon) {
-      // check if dgcand has an associated McCollision
-      if (!dgcand.has_collision()) {
-        mcdgId = -1;
-      } else {
+      // check if dgcand has an associated Collision and McCollision
+      if (dgcand.has_collision()) {
         auto dgcandCol = dgcand.collision_as<CCs>();
-        if (!dgcandCol.has_mcCollision()) {
-          mcdgId = -1;
-        } else {
+        colId = dgcandCol.globalIndex();
+        if (dgcandCol.has_mcCollision()) {
           mcdgId = dgcandCol.mcCollision().globalIndex();
+        } else {
+          mcdgId = -1;
         }
+      } else {
+        colId = -1;
+        mcdgId = -1;
       }
-      LOGF(info, "\nStart of loop mcdgId %d mccolId %d", mcdgId, mccolId);
+      LOGF(debug, "");
+      LOGF(debug, "dgcand %d mcdgId %d colId %d mccolId %d - UDMcCollsLabels %d UDMcCollisions %d", dgcand.globalIndex(), mcdgId, colId, mccolId, outputMcCollsLabels.lastIndex(), outputMcCollisions.lastIndex());
 
       // two cases to consider
-      // 1. the event to process is a dgcand. In this case the Mc tables as well as the McLabel tables are updated
-      // 2. the event to process is an event of interest. In this case only the Mc tables are updated
+      // 1. mcdgId <= mccolId: the event to process is a dgcand. In this case the Mc tables as well as the McLabel tables are updated
+      // 2. mccolId < mcdgId: the event to process is an MC event of interest without reconstructed dgcand. In this case only the Mc tables are updated
       if ((!dgcandAtEnd && !mccolAtEnd && (mcdgId <= mccolId)) || mccolAtEnd) {
         // this is case 1.
-        LOGF(info, "Doing case 1 with mcdgId %d", mcdgId);
 
         // update UDMcCollisions and UDMcColsLabels (for each UDCollision -> UDMcCollisions)
         // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
@@ -576,14 +647,15 @@ struct McDGCandProducer {
         // McParticles are saved
         if (mcdgId >= 0) {
           if (mcColIsSaved.find(mcdgId) == mcColIsSaved.end()) {
-            LOGF(info, "  Saving McCollision %d", mcdgId);
             // update UDMcCollisions
+            LOGF(debug, "  writing mcCollision %d to UDMcCollisions", mcdgId);
             auto dgcandMcCol = dgcand.collision_as<CCs>().mcCollision();
             updateUDMcCollisions(dgcandMcCol);
             mcColIsSaved[mcdgId] = outputMcCollisions.lastIndex();
           }
 
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
+          LOGF(debug, "  writing %d to outputMcCollsLabels", mcColIsSaved[mcdgId]);
           outputMcCollsLabels(mcColIsSaved[mcdgId]);
 
           // update UDMcParticles
@@ -596,9 +668,9 @@ struct McDGCandProducer {
         } else {
           // If the dgcand has no associated McCollision then only the McParticles which are associated
           // with the tracks of the dgcand are saved
-          LOGF(info, "  Saving McCollision %d", -1);
 
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
+          LOGF(debug, "  writing %d to UDMcCollsLabels", -1);
           outputMcCollsLabels(-1);
 
           // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
@@ -626,12 +698,12 @@ struct McDGCandProducer {
         }
       } else {
         // this is case 2.
-        LOGF(info, "Doing case 2");
 
         // update UDMcCollisions and UDMcParticles
         if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
-          LOGF(info, "  Saving McCollision %d", mccolId);
+
           // update UDMcCollisions
+          LOGF(debug, "  writing mcCollision %d to UDMcCollisions", mccolId);
           updateUDMcCollisions(mccol);
           mcColIsSaved[mccolId] = outputMcCollisions.lastIndex();
 
@@ -648,9 +720,8 @@ struct McDGCandProducer {
           mccolAtEnd = true;
         }
       }
-
+      LOGF(debug, "  UDMcCollsLabels %d (of %d) UDMcCollisions %d", outputMcCollsLabels.lastIndex(), dgcands.size() - 1, outputMcCollisions.lastIndex());
       goon = !dgcandAtEnd || !mccolAtEnd;
-      LOGF(info, "End of loop mcdgId %d mccolId %d", mcdgId, mccolId);
     }
   }
   PROCESS_SWITCH(McDGCandProducer, processMC, "Produce MC tables", false);

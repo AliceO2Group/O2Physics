@@ -30,11 +30,11 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
+#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 
 using namespace o2;
-using namespace o2::analysis::femtoUniverse;
+using namespace o2::analysis::femto_universe;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
@@ -57,7 +57,7 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
 
   /// Partition for particle 1
   Partition<aod::FDParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) &&
-                                         aod::femtouniverseparticle::pt < ConfPtHighPart1 && aod::femtouniverseparticle::pt > ConfPtLowPart1&& nabs(aod::femtouniverseparticle::eta) < ConfEtaMax;
+                                         (aod::femtouniverseparticle::pt < ConfPtHighPart1) && (aod::femtouniverseparticle::pt > ConfPtLowPart1) && (nabs(aod::femtouniverseparticle::eta) < ConfEtaMax);
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> trackHistoPartOne;
@@ -71,7 +71,7 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
 
   /// Partition for particle 2
   Partition<aod::FDParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) &&
-                                         aod::femtouniverseparticle::pt < ConfPtHighPart2 && aod::femtouniverseparticle::pt > ConfPtLowPart2&& nabs(aod::femtouniverseparticle::eta) < ConfEtaMax;
+                                         (aod::femtouniverseparticle::pt < ConfPtHighPart2) && (aod::femtouniverseparticle::pt > ConfPtLowPart2) && (nabs(aod::femtouniverseparticle::eta) < ConfEtaMax);
 
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 2> trackHistoPartTwo;
@@ -106,8 +106,8 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   Configurable<int> ConfPhiBins{"ConfPhiBins", 29, "Number of phi bins in deta dphi"};
   Configurable<int> ConfEtaBins{"ConfEtaBins", 29, "Number of eta bins in deta dphi"};
 
-  FemtoUniverseContainer<femtoUniverseContainer::EventType::same, femtoUniverseContainer::Observable::kstar> sameEventCont;
-  FemtoUniverseContainer<femtoUniverseContainer::EventType::mixed, femtoUniverseContainer::Observable::kstar> mixedEventCont;
+  FemtoUniverseContainer<femto_universe_container::EventType::same, femto_universe_container::Observable::kstar> sameEventCont;
+  FemtoUniverseContainer<femto_universe_container::EventType::mixed, femto_universe_container::Observable::kstar> mixedEventCont;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, aod::femtouniverseparticle::ParticleType::kMCTruthTrack> pairCleaner;
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -161,7 +161,7 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
 
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
-      if (!ConfNoPDGPartOne && part.pidcut() != ConfPDGCodePartOne) {
+      if (!ConfNoPDGPartOne && part.tempFitVar() != ConfPDGCodePartOne) {
         continue;
       }
       trackHistoPartOne.fillQA<isMC, false>(part);
@@ -169,34 +169,53 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
 
     if (!ConfIsSame) {
       for (auto& part : groupPartsTwo) {
-        if (!ConfNoPDGPartTwo && part.pidcut() != ConfPDGCodePartTwo) {
+        if (!ConfNoPDGPartTwo && part.tempFitVar() != ConfPDGCodePartTwo) {
           continue;
         }
         trackHistoPartTwo.fillQA<isMC, false>(part);
       }
     }
     /// Now build the combinations
-    for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsTwo))) {
-      // track cleaning
-      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-        continue;
-      }
-      if ((!ConfNoPDGPartOne && p2.pidcut() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.pidcut() != ConfPDGCodePartTwo)) {
-        continue;
-      }
-      if (swpart)
-        sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
-      else
-        sameEventCont.setPair<isMC>(p2, p1, multCol, ConfUse3D);
+    if (!ConfIsSame) {
+      // Build the combinations for pairs of non-identical particles
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        // track cleaning
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
+        if ((!ConfNoPDGPartOne && p2.tempFitVar() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.tempFitVar() != ConfPDGCodePartTwo)) {
+          continue;
+        }
+        if (swpart)
+          sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+        else
+          sameEventCont.setPair<isMC>(p2, p1, multCol, ConfUse3D);
 
-      swpart = !swpart;
+        swpart = !swpart;
+      }
+    } else {
+      // Build the combinations for pairs of identical pairs
+      for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        // track cleaning
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
+        if ((!ConfNoPDGPartOne && p2.tempFitVar() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.tempFitVar() != ConfPDGCodePartTwo)) {
+          continue;
+        }
+        if (swpart)
+          sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+        else
+          sameEventCont.setPair<isMC>(p2, p1, multCol, ConfUse3D);
+
+        swpart = !swpart;
+      }
     }
   }
-
   /// process function for to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processSameEvent(o2::aod::FDCollision& col,
+  void processSameEvent(o2::aod::FdCollision& col,
                         o2::aod::FDParticles& parts)
   {
     fillCollision(col);
@@ -225,7 +244,7 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
     fNeventsProcessed++;
 
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-      if ((!ConfNoPDGPartOne && p2.pidcut() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.pidcut() != ConfPDGCodePartTwo)) {
+      if ((!ConfNoPDGPartOne && p2.tempFitVar() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.tempFitVar() != ConfPDGCodePartTwo)) {
         continue;
       }
       if (swpart)
@@ -240,7 +259,7 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   /// process function for to call doMixedEvent with Data
   /// @param cols subscribe to the collisions table (Data)
   /// @param parts subscribe to the femtoUniverseParticleTable
-  void processMixedEvent(o2::aod::FDCollisions& cols,
+  void processMixedEvent(o2::aod::FdCollisions& cols,
                          o2::aod::FDParticles& parts)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {

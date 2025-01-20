@@ -21,13 +21,14 @@
 #include <vector>
 
 #include "PWGHF/Core/HfMlResponse.h"
+#include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_BPLUS(FEATURE)                                         \
-  {                                                                     \
-#FEATURE, static_cast < uint8_t>(InputFeaturesBplusToD0Pi::FEATURE) \
+#define FILL_MAP_BPLUS(FEATURE)                                       \
+  {                                                                   \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesBplusToD0Pi::FEATURE) \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
@@ -58,30 +59,16 @@
     break;                                                       \
   }
 
-namespace o2::pid_tpc_tof_utils
-{
-template <typename T1>
-float getTpcTofNSigmaPi1(const T1& prong1)
-{
-  float defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
-
-  bool hasTpc = prong1.hasTPC();
-  bool hasTof = prong1.hasTOF();
-
-  if (hasTpc && hasTof) {
-    float tpcNSigma = prong1.tpcNSigmaPi();
-    float tofNSigma = prong1.tofNSigmaPi();
-    return sqrt(.5f * tpcNSigma * tpcNSigma + .5f * tofNSigma * tofNSigma);
+// where OBJECT is named candidateD , FEATURE = GETTER and INDEX is the index of the vector
+#define CHECK_AND_FILL_VEC_D0_INDEX(FEATURE, GETTER1, GETTER2, INDEX) \
+  case static_cast<uint8_t>(InputFeaturesBplusToD0Pi::FEATURE): {     \
+    if (pdgCode == o2::constants::physics::kD0) {                     \
+      inputFeatures.emplace_back((candidateD0.GETTER1())[INDEX]);     \
+    } else {                                                          \
+      inputFeatures.emplace_back((candidateD0.GETTER2())[INDEX]);     \
+    }                                                                 \
+    break;                                                            \
   }
-  if (hasTpc) {
-    return abs(prong1.tpcNSigmaPi());
-  }
-  if (hasTof) {
-    return abs(prong1.tofNSigmaPi());
-  }
-  return defaultNSigma;
-}
-} // namespace o2::pid_tpc_tof_utils
 
 namespace o2::analysis
 {
@@ -100,9 +87,9 @@ enum class InputFeaturesBplusToD0Pi : uint8_t {
   cpa,
   cpaXY,
   maxNormalisedDeltaIP,
-  prong0MlScoreBkg,
-  prong0MlScorePrompt,
-  prong0MlScoreNonprompt,
+  prong0MlProbBkg,
+  prong0MlProbPrompt,
+  prong0MlProbNonPrompt,
   tpcNSigmaPi1,
   tofNSigmaPi1,
   tpcTofNSigmaPi1
@@ -121,9 +108,11 @@ class HfMlResponseBplusToD0Pi : public HfMlResponse<TypeOutputScore>
   /// \param candidate is the B+ candidate
   /// \param prong1 is the candidate's prong1
   /// \return inputFeatures vector
-  template <bool withDmesMl, typename T1, typename T2>
+  template <bool withDmesMl, typename T1, typename T2, typename T3>
   std::vector<float> getInputFeatures(T1 const& candidate,
-                                      T2 const& prong1)
+                                      T2 const& candidateD0,
+                                      int const& pdgCode,
+                                      T3 const& prong1)
   {
     std::vector<float> inputFeatures;
 
@@ -143,9 +132,9 @@ class HfMlResponseBplusToD0Pi : public HfMlResponse<TypeOutputScore>
           CHECK_AND_FILL_VEC_BPLUS(cpa);
           CHECK_AND_FILL_VEC_BPLUS(cpaXY);
           CHECK_AND_FILL_VEC_BPLUS(maxNormalisedDeltaIP);
-          CHECK_AND_FILL_VEC_BPLUS(prong0MlScoreBkg);
-          CHECK_AND_FILL_VEC_BPLUS(prong0MlScorePrompt);
-          CHECK_AND_FILL_VEC_BPLUS(prong0MlScoreNonprompt);
+          CHECK_AND_FILL_VEC_D0_INDEX(prong0MlProbBkg, mlProbD0, mlProbD0bar, 0);
+          CHECK_AND_FILL_VEC_D0_INDEX(prong0MlProbPrompt, mlProbD0, mlProbD0bar, 1);
+          CHECK_AND_FILL_VEC_D0_INDEX(prong0MlProbNonPrompt, mlProbD0, mlProbD0bar, 2);
           // TPC PID variable
           CHECK_AND_FILL_VEC_BPLUS_FULL(prong1, tpcNSigmaPi1, tpcNSigmaPi);
           // TOF PID variable
@@ -199,9 +188,9 @@ class HfMlResponseBplusToD0Pi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_BPLUS(cpa),
       FILL_MAP_BPLUS(cpaXY),
       FILL_MAP_BPLUS(maxNormalisedDeltaIP),
-      FILL_MAP_BPLUS(prong0MlScoreBkg),
-      FILL_MAP_BPLUS(prong0MlScorePrompt),
-      FILL_MAP_BPLUS(prong0MlScoreNonprompt),
+      FILL_MAP_BPLUS(prong0MlProbBkg),
+      FILL_MAP_BPLUS(prong0MlProbPrompt),
+      FILL_MAP_BPLUS(prong0MlProbNonPrompt),
       // TPC PID variable
       FILL_MAP_BPLUS(tpcNSigmaPi1),
       // TOF PID variable

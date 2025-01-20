@@ -102,9 +102,21 @@ struct collisionsInfo {
   using MFs = aod::MFTTracks;
   using FWs = aod::FwdTracks;
 
-  void process(CC const& collision, BCs const& bct0s,
-               TCs& tracks, /* MFs& mfttracks,*/ FWs& fwdtracks, aod::FT0s& /*ft0s*/, aod::FV0As& /*fv0as*/, aod::FDDs& /*fdds*/,
-               aod::McCollisions& /*McCols*/, aod::McParticles& /*McParts*/)
+  // filter for global tracks
+  Filter globalTrackFilter = requireGlobalTrackInFilter();
+  using globalTracks = soa::Filtered<TCs>;
+
+  void process(CC const& collision,
+               BCs const& bct0s,
+               TCs& tracks,
+               /* MFs& mfttracks,*/
+               FWs& fwdtracks,
+               globalTracks& goodTracks,
+               aod::FT0s& /*ft0s*/,
+               aod::FV0As& /*fv0as*/,
+               aod::FDDs& /*fdds*/,
+               aod::McCollisions& /*McCols*/,
+               aod::McParticles& /*McParts*/)
   {
 
     // obtain slice of compatible BCs
@@ -123,8 +135,6 @@ struct collisionsInfo {
     }
 
     // global tracks
-    Partition<TCs> goodTracks = requireGlobalTrackInFilter();
-    goodTracks.bindTable(tracks);
     int cntGlobal = goodTracks.size();
 
     // count tracks

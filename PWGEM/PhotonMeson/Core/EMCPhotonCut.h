@@ -34,7 +34,8 @@ class EMCPhotonCut : public TNamed
 
   enum class EMCPhotonCuts : int {
     // cluster cut
-    kEnergy = 0,
+    kDefinition = 0,
+    kEnergy,
     kNCell,
     kM02,
     kTiming,
@@ -49,6 +50,9 @@ class EMCPhotonCut : public TNamed
   template <typename T, typename Cluster>
   bool IsSelected(Cluster const& cluster) const
   {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kDefinition, cluster)) {
+      return false;
+    }
     if (!IsSelectedEMCal(EMCPhotonCuts::kEnergy, cluster)) {
       return false;
     }
@@ -61,7 +65,7 @@ class EMCPhotonCut : public TNamed
     if (!IsSelectedEMCal(EMCPhotonCuts::kTiming, cluster)) {
       return false;
     }
-    if (!IsSelectedEMCal(EMCPhotonCuts::kTM, cluster)) {
+    if (mUseTM && (!IsSelectedEMCal(EMCPhotonCuts::kTM, cluster))) {
       return false;
     }
     if (!IsSelectedEMCal(EMCPhotonCuts::kExotic, cluster)) {
@@ -75,6 +79,9 @@ class EMCPhotonCut : public TNamed
   bool IsSelectedEMCal(const EMCPhotonCuts& cut, Cluster const& cluster) const
   {
     switch (cut) {
+      case EMCPhotonCuts::kDefinition:
+        return cluster.definition() == mDefinition;
+
       case EMCPhotonCuts::kEnergy:
         return cluster.e() > mMinE;
 
@@ -113,6 +120,7 @@ class EMCPhotonCut : public TNamed
   }
 
   // Setters
+  void SetClusterizer(std::string clusterDefinitionString = "kV3Default");
   void SetMinE(float min = 0.7f);
   void SetMinNCell(int min = 1);
   void SetM02Range(float min = 0.1f, float max = 0.7f);
@@ -121,12 +129,14 @@ class EMCPhotonCut : public TNamed
   void SetTrackMatchingPhi(std::function<float(float)> funcTM);
   void SetMinEoverP(float min = 0.7f);
   void SetUseExoticCut(bool flag = true);
+  void SetUseTM(bool flag = true);
 
   /// @brief Print the cluster selection
   void print() const;
 
  private:
   // EMCal cluster cuts
+  int mDefinition{10};      ///< clusterizer definition
   float mMinE{0.7f};        ///< minimum energy
   int mMinNCell{1};         ///< minimum number of cells per cluster
   float mMinM02{0.1f};      ///< minimum M02 for a cluster
@@ -135,6 +145,7 @@ class EMCPhotonCut : public TNamed
   float mMaxTime{25.f};     ///< maximum cluster timing
   float mMinEoverP{1.75f};  ///< minimum cluster energy over track momentum ratio needed for the pair to be considered matched
   bool mUseExoticCut{true}; ///< flag to decide if the exotic cluster cut is to be checked or not
+  bool mUseTM{true};        ///< flag to decide if track matching cut is to be checek or not
 
   std::function<float(float)> mTrackMatchingEta{}; ///< function to get check if a pre matched track and cluster pair is considered an actual match for eta
   std::function<float(float)> mTrackMatchingPhi{}; ///< function to get check if a pre matched track and cluster pair is considered an actual match for phi

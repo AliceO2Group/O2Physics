@@ -9,14 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <cmath>
-#include <vector>
-#include <deque>
 #include <algorithm>
+#include <cmath>
+#include <deque>
+#include <string>
+#include <vector>
+#include <utility>
 
-#include "Framework/runDataProcessing.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -34,7 +38,7 @@ double deltaTimeColl(BCcoll const bccoll1, BCcoll const bccoll2)
   auto coll2 = std::get<aod::Collision>(bccoll2);
   auto bc1 = std::get<aod::BC>(bccoll1);
   auto bc2 = std::get<aod::BC>(bccoll2);
-  int64_t tmpDT = int64_t(bc1.globalBC()) - int64_t(bc2.globalBC());
+  int64_t tmpDT = static_cast<int64_t>(bc1.globalBC()) - static_cast<int64_t>(bc2.globalBC());
   double deltaT = tmpDT * LHCBunchSpacingNS + coll1.collisionTime() - coll2.collisionTime();
   return deltaT;
 }
@@ -57,6 +61,9 @@ DECLARE_SOA_TABLE(VtxQAtable, "AOD", "VTXQATABLE",
 } // namespace o2::aod
 
 struct vertexQA {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  ctpRateFetcher mRateFetcher;
+
   Produces<o2::aod::VtxQAtable> vtxQAtable;
 
   Configurable<int> storeTree{"storeTree", 1000, "Store in tree collisions from BC's with more than 'storeTree' vertices, for in-depth analysis"};
@@ -87,9 +94,14 @@ struct vertexQA {
   ConfigurableAxis nContribAxis{"nContribBins", {1000, 0, 5000}, "Binning for number of contributors to PV"};
   ConfigurableAxis nContribDiffAxis{"nContribDiffBins", {1000, -5000, 5000}, "Binning for the difference in number of contributors to PV"};
 
+  ConfigurableAxis irBinning{"IRbinning", {500, 0, 100}, "Binning for the interaction rate (kHz)"};
+  Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Source of the interaction rate"};
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   std::deque<BCcoll> colls;
+
+  int64_t mFirstBCid = -1;
 
   void init(InitContext const&)
   {
@@ -121,6 +133,11 @@ struct vertexQA {
 
     histos.add<TH2>("nContribITSRofTimeSeriesHistogram", ";#it{N}_{contrib}^{1};#it{N}_{contrib}^{2}", HistType::kTH2F, {nContribAxis, nContribAxis});
     histos.add<TH1>("tDiffDuplicateTimeSeriesHistogram", ";#Delta#it{t}_{vtx} (ns);Entries", HistType::kTH1F, {tDiffVtxAxisExtend});
+    histos.add<TH2>("tIRvsCollisionRateHistogram", Form(";IR from %s (kHz);IR from reconstructed vertices (kHz)", irSource.value.data()), HistType::kTH2D, {irBinning, irBinning});
+
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setFatalWhenNull(false);
   }
 
   void process(aod::BC const& bc, aod::Collisions const& collisions)
@@ -231,6 +248,48 @@ struct vertexQA {
       }
     }
   }
+  PROCESS_SWITCH(vertexQA, process, "Standard vertex QA", true);
+
+  void processIR(aod::BCsWithTimestamps const& bcs, aod::Collisions const& collisions)
+  {
+    if (collisions.size() <= 2) {
+      return;
+    }
+
+    std::vector<int64_t> jumps{0ll};
+    int64_t lastBC = bcs.rawIteratorAt(0).globalBC();
+    for (auto bc : bcs) {
+      if (bc.globalBC() - lastBC > 3564 * 32) { // 32 orbits
+        jumps.push_back(bc.globalIndex());
+        lastBC = bc.globalBC();
+      }
+    }
+    uint64_t jumpsSentinel{1};
+    std::vector<int64_t> collisionsIndices{0ll};
+    for (auto col : collisions) {
+      if (jumpsSentinel == jumps.size()) {
+        break;
+      }
+      if (col.bcId() > jumps[jumpsSentinel]) {
+        collisionsIndices.push_back(col.globalIndex());
+        jumpsSentinel++;
+      }
+    }
+    jumps.push_back(bcs.size());
+    collisionsIndices.push_back(collisions.size());
+
+    for (size_t i{0}; i < jumps.size() - 1; ++i) {
+      auto startBC = bcs.rawIteratorAt(jumps[i]);
+      auto endBC = bcs.rawIteratorAt(jumps[i + 1] - 1);
+      double startIR = mRateFetcher.fetch(ccdb.service, startBC.timestamp(), startBC.runNumber(), irSource.value);
+      double endIR = mRateFetcher.fetch(ccdb.service, endBC.timestamp(), endBC.runNumber(), irSource.value);
+      double deltaT = (endBC.globalBC() - startBC.globalBC()) * LHCBunchSpacingNS * 1.e-9;
+      double collisionRate = (collisionsIndices[i + 1] - collisionsIndices[i]) / deltaT; /// -1 to remove the bias of the collisions at extremities?
+      double ir = (startIR + endIR) * 0.5;
+      histos.fill(HIST("tIRvsCollisionRateHistogram"), ir * 1.e-3, collisionRate * 1.e-3);
+    }
+  }
+  PROCESS_SWITCH(vertexQA, processIR, "Checks on interaction rate", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

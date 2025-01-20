@@ -9,8 +9,13 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-# TOF
+# ITS
+o2physics_add_dpl_workflow(pid-its
+    SOURCES pidITS.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
+# TOF
 o2physics_add_dpl_workflow(pid-tof-base
                     SOURCES pidTOFBase.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFBase

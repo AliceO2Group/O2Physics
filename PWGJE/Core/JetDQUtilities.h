@@ -52,7 +52,7 @@ namespace jetdqutilities
 template <typename T>
 constexpr bool isDielectronCandidate()
 {
-  return std::is_same_v<std::decay_t<T>, CandidatesDielectronData::iterator> || std::is_same_v<std::decay_t<T>, CandidatesDielectronData::filtered_iterator> || std::is_same_v<std::decay_t<T>, CandidatesDielectronMCD::iterator> || std::is_same_v<std::decay_t<T>, CandidatesDielectronMCD::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDielectronData::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDielectronData::filtered_iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDielectronMCD::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDielectronMCD::filtered_iterator>;
 }
 
 /**
@@ -61,7 +61,7 @@ constexpr bool isDielectronCandidate()
 template <typename T>
 constexpr bool isDielectronMcCandidate()
 {
-  return std::is_same_v<std::decay_t<T>, CandidatesDielectronMCP::iterator> || std::is_same_v<std::decay_t<T>, CandidatesDielectronMCP::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDielectronMCP::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDielectronMCP::filtered_iterator>;
 }
 
 /**
@@ -188,11 +188,7 @@ auto slicedPerDielectronCollision(T const& table, U const& /*candidates*/, V con
 template <typename T>
 int getDielectronCandidateCollisionId(T const& candidate)
 {
-  if constexpr (isDielectronCandidate<T>()) {
-    return candidate.reducedeventId();
-  } else {
-    return -1;
-  }
+  return candidate.reducedeventId();
 }
 
 /**
@@ -275,11 +271,7 @@ float getDielectronTablePDGMass()
 template <typename T>
 float getDielectronCandidateInvariantMass(T const& candidate)
 {
-  if constexpr (isDielectronCandidate<T>()) {
-    return candidate.mass();
-  } else {
-    return -1.0;
-  }
+  return candidate.mass();
 }
 
 template <typename T, typename U>

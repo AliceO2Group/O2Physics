@@ -36,6 +36,8 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <string>
+#include <vector>
 #include <cmath>
 #include <array>
 #include <cstdlib>
@@ -263,6 +265,7 @@ struct lambdakzeroBuilder {
   static constexpr float defaultLambdaWindowParameters[1][4] = {{1.17518e-03, 1.24099e-04, 5.47937e-03, 3.08009e-01}};
   Configurable<LabeledArray<float>> massCutK0{"massCutK0", {defaultK0MassWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for K0"};
   Configurable<LabeledArray<float>> massCutLambda{"massCutLambda", {defaultLambdaWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for Lambda"};
+  Configurable<float> massCutPhoton{"massCutPhoton", 0.2, "Photon max mass"};
   Configurable<float> massWindownumberOfSigmas{"massWindownumberOfSigmas", 5e+6, "number of sigmas around mass peaks to keep"};
   Configurable<bool> massWindowWithTPCPID{"massWindowWithTPCPID", false, "when checking mass windows, correlate with TPC dE/dx"};
   Configurable<float> massWindowSafetyMargin{"massWindowSafetyMargin", 0.001, "Extra mass window safety margin"};
@@ -540,9 +543,7 @@ struct lambdakzeroBuilder {
       }
     }
     if (dcaFitterConfigurations.useMatCorrType == 2) {
-      LOGF(info, "LUT correction requested, loading LUT");
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath));
-      LOGF(info, "LUT load done!");
+      LOGF(info, "LUT correction requested, will load LUT when initializing with timestamp...");
     }
 
     if (doprocessRun2 == false && doprocessRun3 == false && doprocessFindableRun3 == false) {
@@ -736,9 +737,11 @@ struct lambdakzeroBuilder {
     // Set magnetic field value once known
     fitter.setBz(d_bz);
 
-    if (dcaFitterConfigurations.useMatCorrType == 2) {
+    if (dcaFitterConfigurations.useMatCorrType == 2 && !lut) {
       // setMatLUT only after magfield has been initalized
       // (setMatLUT has implicit and problematic init field call if not)
+      LOG(info) << "Loading material look-up table for timestamp: " << timestamp;
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath, timestamp));
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
   }
@@ -977,15 +980,18 @@ struct lambdakzeroBuilder {
     bool desiredMassK0Short = false;
     bool desiredMassLambda = false;
     bool desiredMassAntiLambda = false;
+    bool desiredMassGamma = false;
 
     if (massWindownumberOfSigmas > 1e+3) {
       desiredMassK0Short = true;    // safety fallback
       desiredMassLambda = true;     // safety fallback
       desiredMassAntiLambda = true; // safety fallback
+      desiredMassGamma = true;      // safety fallback
     } else {
       desiredMassK0Short = TMath::Abs(v0candidate.k0ShortMass - o2::constants::physics::MassKaonNeutral) < massWindownumberOfSigmas * getMassSigmaK0Short(lPt) + massWindowSafetyMargin;
       desiredMassLambda = TMath::Abs(v0candidate.lambdaMass - o2::constants::physics::MassLambda) < massWindownumberOfSigmas * getMassSigmaLambda(lPt) + massWindowSafetyMargin;
       desiredMassAntiLambda = TMath::Abs(v0candidate.antiLambdaMass - o2::constants::physics::MassLambda) < massWindownumberOfSigmas * getMassSigmaLambda(lPt) + massWindowSafetyMargin;
+      desiredMassGamma = TMath::Abs(lGammaMass) < massCutPhoton;
     }
 
     // check if user requested to correlate mass requirement with TPC PID
@@ -993,6 +999,7 @@ struct lambdakzeroBuilder {
     bool dEdxK0Short = V0.isdEdxK0Short() || !massWindowWithTPCPID;
     bool dEdxLambda = V0.isdEdxLambda() || !massWindowWithTPCPID;
     bool dEdxAntiLambda = V0.isdEdxAntiLambda() || !massWindowWithTPCPID;
+    bool dEdxGamma = V0.isdEdxGamma() || !massWindowWithTPCPID;
 
     // check proper lifetime if asked for
     bool passML2P_K0Short = lML2P_K0Short < lifetimecut->get("lifetimecutK0S") || lifetimecut->get("lifetimecutK0S") > 1000;
@@ -1003,6 +1010,8 @@ struct lambdakzeroBuilder {
     if (passML2P_Lambda && dEdxLambda && desiredMassLambda)
       keepCandidate = true;
     if (passML2P_Lambda && dEdxAntiLambda && desiredMassAntiLambda)
+      keepCandidate = true;
+    if (dEdxGamma && desiredMassGamma)
       keepCandidate = true;
 
     if (!keepCandidate)
@@ -1182,16 +1191,11 @@ struct lambdakzeroBuilder {
         if (V0.v0Type() > 1 && !storePhotonCandidates)
           continue;
 
-        if (mlConfigurations.calculateK0ShortScores ||
-            mlConfigurations.calculateLambdaScores ||
-            mlConfigurations.calculateAntiLambdaScores ||
-            mlConfigurations.calculateGammaScores) {
-          // at this stage, the candidate is interesting -> populate table
-          gammaMLSelections(gammaScore);
-          lambdaMLSelections(lambdaScore);
-          antiLambdaMLSelections(antiLambdaScore);
-          k0ShortMLSelections(k0ShortScore);
-        }
+        // at this stage, the candidate is interesting -> populate table
+        gammaMLSelections(gammaScore);
+        lambdaMLSelections(lambdaScore);
+        antiLambdaMLSelections(antiLambdaScore);
+        k0ShortMLSelections(k0ShortScore);
 
         // populates the various tables for analysis
         statisticsRegistry.v0stats[kCountStandardV0]++;
@@ -1560,7 +1564,7 @@ struct lambdakzeroPreselector {
   void checkAndFinalize()
   {
     // parse + publish tag table now
-    for (int ii = 0; ii < selectionMask.size(); ii++) {
+    for (std::size_t ii = 0; ii < selectionMask.size(); ii++) {
       histos.fill(HIST("hPreselectorStatistics"), 0.0f); // all V0s
       bool validV0 = bitcheck(selectionMask[ii], bitTrackQuality);
       if (validV0) {

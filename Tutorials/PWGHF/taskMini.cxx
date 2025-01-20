@@ -41,17 +41,17 @@ using namespace o2::framework::expressions;
 
 /// Candidate creator
 /// Reconstruction of heavy-flavour 2-prong decay candidates
-struct HfCandidateCreator2Prong {
-  Produces<aod::HfCandProng2Base> rowCandidateBase;
+struct HfTaskMiniCandidateCreator2Prong {
+  Produces<aod::HfTCand2ProngBase> rowCandidateBase;
 
   // vertexing parameters
-  Configurable<double> magneticField{"magneticField", 5., "magnetic field [kG]"};
+  Configurable<float> magneticField{"magneticField", 5., "magnetic field [kG]"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
-  Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
-  Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
-  Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
-  Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
+  Configurable<float> maxR{"maxR", 200., "reject PCA's above this radius"};
+  Configurable<float> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<float> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
+  Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
 
   o2::vertexing::DCAFitterN<2> fitter; // 2-prong vertex fitter
   double massPiK{0.};
@@ -74,7 +74,7 @@ struct HfCandidateCreator2Prong {
   }
 
   void process(aod::Collisions const&,
-               aod::HfTrackIndexProng2 const& rowsTrackIndexProng2,
+               aod::HfT2Prongs const& rowsTrackIndexProng2,
                TracksWithCov const&)
   {
     // loop over pairs of track indices
@@ -119,27 +119,27 @@ struct HfCandidateCreator2Prong {
 };
 
 /// Helper extension task
-/// Extends the base table with expression columns (see the HfCandProng2Ext table).
-struct HfCandidateCreator2ProngExpressions {
-  Spawns<aod::HfCandProng2Ext> rowCandidateProng2;
+/// Extends the base table with expression columns (see the HfTCand2ProngExt table).
+struct HfTaskMiniCandidateCreator2ProngExpressions {
+  Spawns<aod::HfTCand2ProngExt> rowCandidateProng2;
   void init(InitContext const&) {}
 };
 
 // Candidate selection =====================================================================
 
 /// D0 candidate selector
-struct HfCandidateSelectorD0 {
-  Produces<aod::HfSelCandidateD0> hfSelD0Candidate;
+struct HfTaskMiniCandidateSelectorD0 {
+  Produces<aod::HfTSelD0> hfSelD0Candidate;
 
-  Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
-  Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
+  Configurable<float> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
+  Configurable<float> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // TPC
-  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
-  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 5., "Upper bound of track pT for TPC PID"};
-  Configurable<double> nSigmaTpc{"nSigmaTpc", 3., "Nsigma cut on TPC only"};
+  Configurable<float> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
+  Configurable<float> ptPidTpcMax{"ptPidTpcMax", 5., "Upper bound of track pT for TPC PID"};
+  Configurable<float> nSigmaTpc{"nSigmaTpc", 3., "Nsigma cut on TPC only"};
   // topological cuts
-  Configurable<double> cpaMin{"cpaMin", 0.98, "Min. cosine of pointing angle"};
-  Configurable<double> massWindow{"massWindow", 0.4, "Half-width of the invariant-mass window"};
+  Configurable<float> cpaMin{"cpaMin", 0.98, "Min. cosine of pointing angle"};
+  Configurable<float> massWindow{"massWindow", 0.4, "Half-width of the invariant-mass window"};
 
   HfHelper hfHelper;
   TrackSelectorPi selectorPion;
@@ -195,7 +195,7 @@ struct HfCandidateSelectorD0 {
     return true;
   }
 
-  void process(aod::HfCandProng2 const& candidates,
+  void process(aod::HfTCand2Prong const& candidates,
                TracksWithPid const&)
   {
     // looping over 2-prong candidates
@@ -273,13 +273,13 @@ struct HfCandidateSelectorD0 {
 // Analysis task =====================================================================
 
 /// D0 analysis task
-struct HfTaskD0 {
+struct HfTaskMiniD0 {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection flag for D0 bar"};
 
   HfHelper hfHelper;
 
-  Partition<soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<soa::Join<aod::HfTCand2Prong, aod::HfTSelD0>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   HistogramRegistry registry{
     "registry",
@@ -295,7 +295,7 @@ struct HfTaskD0 {
     registry.add("hCpaVsPtCand", strTitle + ";" + "cosine of pointing angle" + ";" + strPt + ";" + strEntries, {HistType::kTH2F, {{110, -1.1, 1.1}, {100, 0., 10.}}});
   }
 
-  void process(soa::Join<aod::HfCandProng2, aod::HfSelCandidateD0> const& /*candidates*/)
+  void process(soa::Join<aod::HfTCand2Prong, aod::HfTSelD0> const& /*candidates*/)
   {
     for (const auto& candidate : selectedD0Candidates) {
       if (candidate.isSelD0() >= selectionFlagD0) {
@@ -314,8 +314,8 @@ struct HfTaskD0 {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateCreator2Prong>(cfgc),
-    adaptAnalysisTask<HfCandidateCreator2ProngExpressions>(cfgc),
-    adaptAnalysisTask<HfCandidateSelectorD0>(cfgc),
-    adaptAnalysisTask<HfTaskD0>(cfgc)};
+    adaptAnalysisTask<HfTaskMiniCandidateCreator2Prong>(cfgc, TaskName{"hf-task-mini-candidate-creator-2prong"}),                        // o2-linter: disable=name/o2-task
+    adaptAnalysisTask<HfTaskMiniCandidateCreator2ProngExpressions>(cfgc, TaskName{"hf-task-mini-candidate-creator-2prong-expressions"}), // o2-linter: disable=name/o2-task
+    adaptAnalysisTask<HfTaskMiniCandidateSelectorD0>(cfgc),
+    adaptAnalysisTask<HfTaskMiniD0>(cfgc)};
 }

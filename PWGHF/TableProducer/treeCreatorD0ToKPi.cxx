@@ -217,9 +217,9 @@ struct HfTreeCreatorD0ToKPi {
 
   HfHelper hfHelper;
 
-  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
-  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
-  using SelectedCandidatesMcKf = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
+  // using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
+  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
+  using SelectedCandidatesMcKf = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
@@ -251,8 +251,8 @@ struct HfTreeCreatorD0ToKPi {
       runNumber);
   }
 
-  template <typename T, typename U>
-  auto fillTable(const T& candidate, const U& prong0, const U& prong1, int candFlag, double invMass, double cosThetaStar, double topoChi2,
+  template <typename T>
+  auto fillTable(const T& candidate, int candFlag, double invMass, double cosThetaStar, double topoChi2,
                  double ct, double y, double e, int8_t flagMc, int8_t origin)
   {
     if (fillCandidateLiteTable) {
@@ -268,18 +268,18 @@ struct HfTreeCreatorD0ToKPi {
         candidate.impactParameter1(),
         candidate.impactParameterNormalised0(),
         candidate.impactParameterNormalised1(),
-        prong0.tpcNSigmaPi(),
-        prong0.tpcNSigmaKa(),
-        prong0.tofNSigmaPi(),
-        prong0.tofNSigmaKa(),
-        prong0.tpcTofNSigmaPi(),
-        prong0.tpcTofNSigmaKa(),
-        prong1.tpcNSigmaPi(),
-        prong1.tpcNSigmaKa(),
-        prong1.tofNSigmaPi(),
-        prong1.tofNSigmaKa(),
-        prong1.tpcTofNSigmaPi(),
-        prong1.tpcTofNSigmaKa(),
+        candidate.nSigTpcPi0(),
+        candidate.nSigTpcKa0(),
+        candidate.nSigTofPi0(),
+        candidate.nSigTofKa0(),
+        candidate.tpcTofNSigmaPi0(),
+        candidate.tpcTofNSigmaKa0(),
+        candidate.nSigTpcPi1(),
+        candidate.nSigTpcKa1(),
+        candidate.nSigTofPi1(),
+        candidate.nSigTofKa1(),
+        candidate.tpcTofNSigmaPi1(),
+        candidate.tpcTofNSigmaKa1(),
         1 << candFlag,
         invMass,
         candidate.pt(),
@@ -326,18 +326,18 @@ struct HfTreeCreatorD0ToKPi {
         candidate.impactParameter1(),
         candidate.errorImpactParameter0(),
         candidate.errorImpactParameter1(),
-        prong0.tpcNSigmaPi(),
-        prong0.tpcNSigmaKa(),
-        prong0.tofNSigmaPi(),
-        prong0.tofNSigmaKa(),
-        prong0.tpcTofNSigmaPi(),
-        prong0.tpcTofNSigmaKa(),
-        prong1.tpcNSigmaPi(),
-        prong1.tpcNSigmaKa(),
-        prong1.tofNSigmaPi(),
-        prong1.tofNSigmaKa(),
-        prong1.tpcTofNSigmaPi(),
-        prong1.tpcTofNSigmaKa(),
+        candidate.nSigTpcPi0(),
+        candidate.nSigTpcKa0(),
+        candidate.nSigTofPi0(),
+        candidate.nSigTofKa0(),
+        candidate.tpcTofNSigmaPi0(),
+        candidate.tpcTofNSigmaKa0(),
+        candidate.nSigTpcPi1(),
+        candidate.nSigTpcKa1(),
+        candidate.nSigTofPi1(),
+        candidate.nSigTofKa1(),
+        candidate.tpcTofNSigmaPi1(),
+        candidate.tpcTofNSigmaKa1(),
         1 << candFlag,
         invMass,
         candidate.maxNormalisedDeltaIP(),
@@ -361,7 +361,7 @@ struct HfTreeCreatorD0ToKPi {
   template <int reconstructionType, typename CandType>
   void processData(aod::Collisions const& collisions,
                    CandType const& candidates,
-                   TracksWPid const&, aod::BCs const&)
+                   aod::Tracks const&, aod::BCs const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -382,8 +382,6 @@ struct HfTreeCreatorD0ToKPi {
           continue;
         }
       }
-      auto prong0 = candidate.template prong0_as<TracksWPid>();
-      auto prong1 = candidate.template prong1_as<TracksWPid>();
       double yD = hfHelper.yD0(candidate);
       double eD = hfHelper.eD0(candidate);
       double ctD = hfHelper.ctD0(candidate);
@@ -398,17 +396,17 @@ struct HfTreeCreatorD0ToKPi {
         massD0bar = hfHelper.invMassD0barToKPi(candidate);
       }
       if (candidate.isSelD0()) {
-        fillTable(candidate, prong0, prong1, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, yD, eD, 0, 0);
+        fillTable(candidate, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, yD, eD, 0, 0);
       }
       if (candidate.isSelD0bar()) {
-        fillTable(candidate, prong0, prong1, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, 0, 0);
+        fillTable(candidate, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, 0, 0);
       }
     }
   }
 
   void processDataWithDCAFitterN(aod::Collisions const& collisions,
-                                 soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> const& candidates,
-                                 TracksWPid const& tracks,
+                                 soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0>> const& candidates,
+                                 aod::Tracks const& tracks,
                                  aod::BCs const& bcs)
   {
     processData<aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, tracks, bcs);
@@ -416,8 +414,8 @@ struct HfTreeCreatorD0ToKPi {
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processDataWithDCAFitterN, "Process data with DCAFitterN", true);
 
   void processDataWithKFParticle(aod::Collisions const& collisions,
-                                 soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0>> const& candidates,
-                                 TracksWPid const& tracks,
+                                 soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngKF, aod::HfSelD0>> const& candidates,
+                                 aod::Tracks const& tracks,
                                  aod::BCs const& bcs)
   {
     processData<aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, tracks, bcs);
@@ -429,7 +427,7 @@ struct HfTreeCreatorD0ToKPi {
                  aod::McCollisions const&,
                  CandType const& candidates,
                  MatchedGenCandidatesMc const& mcParticles,
-                 TracksWPid const&,
+                 aod::Tracks const&,
                  aod::BCs const&)
   {
     // Filling event properties
@@ -461,8 +459,6 @@ struct HfTreeCreatorD0ToKPi {
           continue;
         }
       }
-      auto prong0 = candidate.template prong0_as<TracksWPid>();
-      auto prong1 = candidate.template prong1_as<TracksWPid>();
       double yD = hfHelper.yD0(candidate);
       double eD = hfHelper.eD0(candidate);
       double ctD = hfHelper.ctD0(candidate);
@@ -477,10 +473,10 @@ struct HfTreeCreatorD0ToKPi {
         massD0bar = hfHelper.invMassD0barToKPi(candidate);
       }
       if (candidate.isSelD0()) {
-        fillTable(candidate, prong0, prong1, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+        fillTable(candidate, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
       }
       if (candidate.isSelD0bar()) {
-        fillTable(candidate, prong0, prong1, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+        fillTable(candidate, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
       }
     }
 
@@ -505,7 +501,7 @@ struct HfTreeCreatorD0ToKPi {
                                      aod::McCollisions const& mcCollisions,
                                      SelectedCandidatesMc const&,
                                      MatchedGenCandidatesMc const& mcParticles,
-                                     TracksWPid const& tracks,
+                                     aod::Tracks const& tracks,
                                      aod::BCs const& bcs)
   {
     processMc<aod::hf_cand::VertexerType::DCAFitter, false, true>(collisions, mcCollisions, reconstructedCandSig, mcParticles, tracks, bcs);
@@ -516,7 +512,7 @@ struct HfTreeCreatorD0ToKPi {
                                      aod::McCollisions const& mcCollisions,
                                      SelectedCandidatesMc const&,
                                      MatchedGenCandidatesMc const& mcParticles,
-                                     TracksWPid const& tracks,
+                                     aod::Tracks const& tracks,
                                      aod::BCs const& bcs)
   {
     processMc<aod::hf_cand::VertexerType::DCAFitter, true, false>(collisions, mcCollisions, reconstructedCandBkg, mcParticles, tracks, bcs);
@@ -527,7 +523,7 @@ struct HfTreeCreatorD0ToKPi {
                                  aod::McCollisions const& mcCollisions,
                                  SelectedCandidatesMc const& candidates,
                                  MatchedGenCandidatesMc const& mcParticles,
-                                 TracksWPid const& tracks,
+                                 aod::Tracks const& tracks,
                                  aod::BCs const& bcs)
   {
     processMc<aod::hf_cand::VertexerType::DCAFitter, false, false>(collisions, mcCollisions, candidates, mcParticles, tracks, bcs);
@@ -538,7 +534,7 @@ struct HfTreeCreatorD0ToKPi {
                                       aod::McCollisions const& mcCollisions,
                                       SelectedCandidatesMcKf const&,
                                       MatchedGenCandidatesMc const& mcParticles,
-                                      TracksWPid const& tracks,
+                                      aod::Tracks const& tracks,
                                       aod::BCs const& bcs)
   {
     processMc<aod::hf_cand::VertexerType::KfParticle, false, true>(collisions, mcCollisions, reconstructedCandSigKF, mcParticles, tracks, bcs);
@@ -549,7 +545,7 @@ struct HfTreeCreatorD0ToKPi {
                                       aod::McCollisions const& mcCollisions,
                                       SelectedCandidatesMcKf const&,
                                       MatchedGenCandidatesMc const& mcParticles,
-                                      TracksWPid const& tracks,
+                                      aod::Tracks const& tracks,
                                       aod::BCs const& bcs)
   {
     processMc<aod::hf_cand::VertexerType::KfParticle, true, false>(collisions, mcCollisions, reconstructedCandBkgKF, mcParticles, tracks, bcs);
@@ -560,7 +556,7 @@ struct HfTreeCreatorD0ToKPi {
                                   aod::McCollisions const& mcCollisions,
                                   SelectedCandidatesMcKf const& candidates,
                                   MatchedGenCandidatesMc const& mcParticles,
-                                  TracksWPid const& tracks,
+                                  aod::Tracks const& tracks,
                                   aod::BCs const& bcs)
   {
     processMc<aod::hf_cand::VertexerType::KfParticle, false, false>(collisions, mcCollisions, candidates, mcParticles, tracks, bcs);

@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <cstdint>
 #include <vector>
+#include <string>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -227,6 +228,11 @@ struct femtoDreamPairTaskTrackV0 {
 
   void init(InitContext& context)
   {
+    // setup binnnig policy for mixing
+    colBinningMult = {{Mixing.BinVztx, Mixing.BinMult}, true};
+    colBinningMultPercentile = {{Mixing.BinVztx, Mixing.BinMultPercentile}, true};
+    colBinningMultMultPercentile = {{Mixing.BinVztx, Mixing.BinMult, Mixing.BinMultPercentile}, true};
+
     eventHisto.init(&Registry, Option.IsMC);
     trackHistoPartOne.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.pTTrack, Option.Dummy, Option.Dummy, Binning.TempFitVarTrack, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track1.PDGCode);
     trackHistoPartTwo.init(&Registry, Binning.multTempFit, Option.Dummy, Binning.pTV0, Option.Dummy, Option.Dummy, Binning.TempFitVarV0, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Binning.InvMass, Option.IsMC, V02.PDGCode);

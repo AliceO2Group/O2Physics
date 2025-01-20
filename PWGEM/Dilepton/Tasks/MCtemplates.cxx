@@ -333,9 +333,9 @@ struct AnalysisTrackSelection {
             fHistMan->FillHistClass(fHistNamesMCMatched[j][i].Data(), VarManager::fgValues);
           }
         } // end loop over cuts
-      }   // end loop over MC signals
-    }     // end loop over tracks
-  }
+      } // end loop over MC signals
+    } // end loop over tracks
+  } // end runTrackSelection
 
   template <typename TTracksMC>
   void runMCGenTrack(TTracksMC const& groupedMCTracks)

@@ -171,7 +171,7 @@ struct tpcPidQaSignal {
       return false;
     }
     histos.fill(HIST("trksel"), 6);
-    if (pidInTracking != -1 && (track.pidForTracking() != std::abs(pidInTracking))) {
+    if (pidInTracking != -1 && (track.pidForTracking() != static_cast<unsigned int>(std::abs(pidInTracking)))) {
       return false;
     }
     histos.fill(HIST("trksel"), 7);
@@ -281,7 +281,7 @@ struct tpcPidQaSignal {
   void processNoEvSel(soa::Filtered<TrackCandidates> const& tracks, aod::Collisions const& collisions)
   {
     histos.fill(HIST("event/evsel"), 1, collisions.size());
-    LOG(info) << "Processing " << collisions.size() << " collisions with " << tracks.size() << " tracks";
+    LOG(debug) << "Processing " << collisions.size() << " collisions with " << tracks.size() << " tracks";
     processTracks(tracks);
   }
   PROCESS_SWITCH(tpcPidQaSignal, processNoEvSel, "Process without event selection", true);
@@ -290,7 +290,7 @@ struct tpcPidQaSignal {
   void processMoreTrkSel(soa::Filtered<soa::Join<aod::TrackSelection, TrackCandidates>> const& tracks, aod::Collisions const& collisions)
   {
     histos.fill(HIST("event/evsel"), 1, collisions.size());
-    LOG(info) << "Processing " << collisions.size() << " collisions with " << tracks.size() << " tracks";
+    LOG(debug) << "Processing " << collisions.size() << " collisions with " << tracks.size() << " tracks";
     processTracks(tracks);
   }
   PROCESS_SWITCH(tpcPidQaSignal, processMoreTrkSel, "Process without event selection", false);

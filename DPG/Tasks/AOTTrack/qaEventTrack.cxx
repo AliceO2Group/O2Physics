@@ -93,6 +93,13 @@ struct qaEventTrack {
   // options to check the track variables only for PV contributors
   Configurable<bool> checkOnlyPVContributor{"checkOnlyPVContributor", false, "check the track variables only for primary vertex contributors"};
 
+  // options to force or not the presence of TRD (debug)
+  struct : ConfigurableGroup {
+    Configurable<bool> activateChecksTRD{"activateChecksTRD", false, "Activate the checks wityh TRD - force the track to have or not have TRD"};
+    Configurable<bool> forceTRD{"forceTRD", false, "Force the track to have TRD"};
+    Configurable<bool> forceNotTRD{"forceNotTRD", false, "Force the track not to have TRD"};
+  } checksTRD;
+
   // configurable binning of histograms
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
   ConfigurableAxis binsInvPt{"binsInvPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
@@ -150,6 +157,13 @@ struct qaEventTrack {
     if (((doprocessData || doprocessMC) && (doprocessRun2ConvertedData || doprocessRun2ConvertedMC))) {
       LOGF(info, "Mixing process functions for Run 2 and Run 3 data, returning...");
       return;
+    }
+
+    if (checksTRD.activateChecksTRD) {
+      std::array<bool, 2> casesTRD = {checksTRD.forceTRD, checksTRD.forceNotTRD};
+      if (std::accumulate(casesTRD.begin(), casesTRD.end(), 0) != 1) {
+        LOGP(fatal, "One and only one case between forceTRD and forceNotTRD can be true at a time. Fix it!");
+      }
     }
 
     //
@@ -1498,6 +1512,17 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     if (!isSelectedTrack<IS_MC>(track)) {
       continue;
     }
+    // TRD checks (debug)
+    if (checksTRD.activateChecksTRD) {
+      if (checksTRD.forceTRD && !track.hasTRD()) {
+        /// We want only tracks that match TRD, but the current one does not match it. Let's skip it.
+        continue;
+      }
+      if (checksTRD.forceNotTRD && track.hasTRD()) {
+        /// We want only tracks that do not match TRD, but the current one matches it. Let's skip it.
+        continue;
+      }
+    }
     // fill kinematic variables
     histos.fill(HIST("Tracks/Kine/pt"), track.pt());
     if (track.sign() > 0) {
@@ -1593,7 +1618,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
           sign = pdgInfo->Charge() / abs(pdgInfo->Charge());
         }
         // resolution plots
-        if (doExtraPIDqa && track.pidForTracking() != std::abs(PartIdentifier)) {
+        if (doExtraPIDqa && track.pidForTracking() != static_cast<unsigned int>(std::abs(PartIdentifier))) {
           // full eta range
           histos.fill(HIST("Tracks/Kine/resoPtVsptmcWrongPIDinTrk"), track.pt() - particle.pt(), particle.pt());
           histos.fill(HIST("Tracks/Kine/resoPtVsptmcScaledWrongPIDinTrk"), (track.pt() - particle.pt()) / particle.pt(), particle.pt());
@@ -1626,7 +1651,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
         }
 
         // optionally check for PID in tracking: select tracks with correct PID in tracking
-        if (checkPIDforTracking && track.pidForTracking() != std::abs(PartIdentifier)) {
+        if (checkPIDforTracking && track.pidForTracking() != static_cast<unsigned int>(std::abs(PartIdentifier))) {
           continue;
         }
 

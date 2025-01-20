@@ -17,6 +17,9 @@
 
 #include "Common/DataModel/EventSelection.h"
 
+#include "PWGUD/DataModel/UDTables.h"
+#include "PWGUD/Core/SGSelector.h"
+
 #include <TH1D.h>
 
 using namespace o2;
@@ -25,13 +28,22 @@ using namespace o2::framework::expressions;
 
 using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 using CCs = soa::Join<aod::Collisions, aod::EvSels>;
+using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>::iterator;
 
 struct UpcEventITSROFcounter {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  SGSelector sgSelector;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<int> nTracksForUPCevent{"nTracksForUPCevent", 16, {"Maximum of tracks defining a UPC collision"}};
+
+  Configurable<bool> useTrueGap{"useTrueGap", true, {"Calculate gapSide for a given FV0/FT0/ZDC thresholds"}};
+  Configurable<float> cutMyGapSideFV0{"FV0", -1, "FV0A threshold for SG selector"};
+  Configurable<float> cutMyGapSideFT0A{"FT0A", 150., "FT0A threshold for SG selector"};
+  Configurable<float> cutMyGapSideFT0C{"FT0C", 50., "FT0C threshold for SG selector"};
+  Configurable<float> cutMyGapSideZDC{"ZDC", 10., "ZDC threshold for SG selector"};
+  ConfigurableAxis axisRunNumbers{"axisRunNumbers", {1400, 544000.5, 545400.5}, "Range of run numbers"};
 
   void init(InitContext&)
   {
@@ -41,9 +53,18 @@ struct UpcEventITSROFcounter {
     histos.add("Events/hCountCollisionsInROFborderMatching", ";;Number of collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
     histos.add("Events/hCountUPCcollisionsInROFborderMatching", ";;Number of UPC (mult < 17) collision (-)", HistType::kTH1D, {{11, -0.5, 10.5}});
 
+    histos.add("Runs/hStdModeCollDG", ";Run number;Number of events (-)", HistType::kTH1D, {axisRunNumbers});
+    histos.add("Runs/hUpcModeCollDG", ";Run number;Number of events (-)", HistType::kTH1D, {axisRunNumbers});
+    histos.add("Runs/hStdModeCollSG1", ";Run number;Number of events (-)", HistType::kTH1D, {axisRunNumbers});
+    histos.add("Runs/hUpcModeCollSG1", ";Run number;Number of events (-)", HistType::kTH1D, {axisRunNumbers});
+    histos.add("Runs/hStdModeCollSG0", ";Run number;Number of events (-)", HistType::kTH1D, {axisRunNumbers});
+    histos.add("Runs/hUpcModeCollSG0", ";Run number;Number of events (-)", HistType::kTH1D, {axisRunNumbers});
+    histos.add("Runs/hStdModeCollNG", ";Run number;Number of events (-)", HistType::kTH1D, {axisRunNumbers});
+    histos.add("Runs/hUpcModeCollNG", ";Run number;Number of events (-)", HistType::kTH1D, {axisRunNumbers});
+
   } // end init
 
-  void process(BCsWithRun3Matchings const& bcs, CCs const& collisions)
+  void processCounterPerITSROF(BCsWithRun3Matchings const& bcs, CCs const& collisions)
   {
     int nAllColls = 0;
     int nUPCcolls = 0;
@@ -119,7 +140,40 @@ struct UpcEventITSROFcounter {
     }
   }
 
-  PROCESS_SWITCH(UpcEventITSROFcounter, process, "Counts number of collisions within ITSROF", true);
+  void processCounterPerRun(FullSGUDCollision const& coll)
+  {
+
+    int gapSide = coll.gapSide();
+    int trueGapSide = sgSelector.trueGap(coll, cutMyGapSideFV0, cutMyGapSideFT0A, cutMyGapSideFT0C, cutMyGapSideZDC);
+    if (useTrueGap) {
+      gapSide = trueGapSide;
+    }
+
+    if (coll.flags() == 0) {
+      if (gapSide == 2) {
+        histos.get<TH1>(HIST("Runs/hStdModeCollDG"))->Fill(coll.runNumber());
+      } else if (gapSide == 1) {
+        histos.get<TH1>(HIST("Runs/hStdModeCollSG1"))->Fill(coll.runNumber());
+      } else if (gapSide == 0) {
+        histos.get<TH1>(HIST("Runs/hStdModeCollSG0"))->Fill(coll.runNumber());
+      } else {
+        histos.get<TH1>(HIST("Runs/hStdModeCollNG"))->Fill(coll.runNumber());
+      }
+    } else {
+      if (gapSide == 2) {
+        histos.get<TH1>(HIST("Runs/hUpcModeCollDG"))->Fill(coll.runNumber());
+      } else if (gapSide == 1) {
+        histos.get<TH1>(HIST("Runs/hUpcModeCollSG1"))->Fill(coll.runNumber());
+      } else if (gapSide == 0) {
+        histos.get<TH1>(HIST("Runs/hUpcModeCollSG0"))->Fill(coll.runNumber());
+      } else {
+        histos.get<TH1>(HIST("Runs/hUpcModeCollNG"))->Fill(coll.runNumber());
+      }
+    }
+  }
+
+  PROCESS_SWITCH(UpcEventITSROFcounter, processCounterPerITSROF, "Counts number of collisions per ITSROF", false);
+  PROCESS_SWITCH(UpcEventITSROFcounter, processCounterPerRun, "Counts number of whatever per RUN", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

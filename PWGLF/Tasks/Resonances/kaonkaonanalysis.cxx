@@ -123,6 +123,7 @@ struct kaonkaonAnalysisRun3 {
   // MC
   Configurable<bool> isMC{"isMC", false, "Run MC"};
   Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
+  TRandom* rn = new TRandom();
 
   void init(o2::framework::InitContext&)
   {
@@ -312,7 +313,6 @@ struct kaonkaonAnalysisRun3 {
   template <typename T1, typename T2, typename T3>
   void FillinvMass(const T1& candidate1, const T2& candidate2, const T3& framecalculation, float multiplicity, bool unlike, bool mix, bool likesign, bool rotation, float massd1, float massd2)
   {
-    TRandom* rn = new TRandom();
     int track1Sign = candidate1.sign();
     int track2Sign = candidate2.sign();
     TLorentzVector vec1, vec2, vec3, vec4, vec5;
@@ -437,8 +437,6 @@ struct kaonkaonAnalysisRun3 {
         daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa); // Kplus
         daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa); // Kminus
 
-        auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-        auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
         ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massKa); // Kaon
         TLorentzVector lv1, lv2, lv3;
         lv1.SetPtEtaPhiM(track1.pt(), track1.eta(), track1.phi(), massKa);
@@ -485,6 +483,8 @@ struct kaonkaonAnalysisRun3 {
             FillinvMass(track1, track2, cosThetaStarBeam, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
           }
         } else if (activateTHnSparseCosThStarRandom) {
+          auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+          auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
           ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
           auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
 
@@ -550,8 +550,6 @@ struct kaonkaonAnalysisRun3 {
           daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa); // Kplus
           daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massKa); // Kminus
 
-          auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-          auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
           ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massKa); // Kaon
           TLorentzVector lv1, lv2, lv3;
           lv1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), massKa);
@@ -594,6 +592,8 @@ struct kaonkaonAnalysisRun3 {
               FillinvMass(t1, t2, cosThetaStarBeam, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
             }
           } else if (activateTHnSparseCosThStarRandom) {
+            auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+            auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
             ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
             auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
 
@@ -647,8 +647,6 @@ struct kaonkaonAnalysisRun3 {
           daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa); // Kplus
           daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massKa); // Kminus
 
-          auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-          auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
           ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massKa); // Kaon
           TLorentzVector lv1, lv2, lv3;
           lv1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), massKa);
@@ -691,6 +689,8 @@ struct kaonkaonAnalysisRun3 {
               FillinvMass(t1, t2, cosThetaStarBeam, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
             }
           } else if (activateTHnSparseCosThStarRandom) {
+            auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+            auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
             ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
             auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
 

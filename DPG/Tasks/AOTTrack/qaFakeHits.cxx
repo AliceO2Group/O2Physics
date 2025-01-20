@@ -114,7 +114,6 @@ struct QaFakeHits {
     const int histogramIndex = id + pdgSign * nSpecies;
 
     const TString tagPt = Form("%s ", partName);
-
     hPtAll[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/all", PDGs[histogramIndex]), "All tracks " + tagPt, kTH1D, {axisPt});
     hPtITS[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mismatched/its", PDGs[histogramIndex]), "ITS mismatch " + tagPt, kTH1D, {axisPt});
     hPtTPC[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mismatched/tpc", PDGs[histogramIndex]), "TPC mismatch " + tagPt, kTH1D, {axisPt});

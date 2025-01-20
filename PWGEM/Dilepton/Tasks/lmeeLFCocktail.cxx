@@ -10,986 +10,543 @@
 // or submit itself to any jurisdiction.
 //
 //
-// Analysis task for lmee light flavour cocktail
+/// \file lmeeLFCocktail.cxx
+/// \analysis task for lmee light flavour cocktail
+/// \author Daniel Samitz, <daniel.samitz@cern.ch>, SMI Vienna
 
+#include <map>
 #include <vector>
-#include "Framework/Task.h"
+#include <string>
+
+#include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/Logger.h"
-#include "SimulationDataFormat/MCTrack.h"
-#include "PWGEM/Dilepton/Utils/MomentumSmearer.h"
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "TFile.h"
-#include "TF1.h"
-#include "TRandom.h"
-#include "TDatabasePDG.h"
-#include "TGenPhaseSpace.h"
-#include "TGrid.h"
-#include "TTree.h"
-#include <nlohmann/json.hpp>
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
+using namespace o2;
 using namespace o2::framework;
-using namespace ROOT::Math;
 
-struct eeTTree {
-  float fd1DCA;
-  float fd2DCA;
-  float fpairDCA;
-  float fd1origpt;
-  float fd1origp;
-  float fd1origeta;
-  float fd1origphi;
-  float fd2origpt;
-  float fd2origp;
-  float fd2origeta;
-  float fd2origphi;
-  float fd1pt;
-  float fd1p;
-  float fd1eta;
-  float fd1phi;
-  float fd2pt;
-  float fd2p;
-  float fd2eta;
-  float fd2phi;
-  float feeorigpt;
-  float feeorigp;
-  float feeorigm;
-  float feeorigeta;
-  float feeorigphi;
-  float feeorigphiv;
-  float feept;
-  float feemt;
-  float feep;
-  float feem;
-  float feeeta;
-  float feephi;
-  float feephiv;
-  float fmotherpt;
-  float fmothermt;
-  float fmotherp;
-  float fmotherm;
-  float fmothereta;
-  float fmotherphi;
-  int fID;
-  int fdectyp;
-  int fdau3pdg;
-  float fweight;
-  float fwEffpT;
-  float fwMultpT;
-  float fwMultmT;
-  float fwMultpT2;
-  float fwMultmT2;
-  bool fpass;
-  float feeorigrap; // only in histogram, not in tree?
-  float feerap;     // only in histogram, not in tree?
-};
+using McParticlesSmeared = soa::Join<aod::McParticles, aod::SmearedElectrons>;
 
 struct lmeelfcocktail {
-  OutputObj<TTree> tree{"eeTTree"};
+
+  enum recLevel {
+    kGen = 0,
+    kRec,
+    kNRecLevels
+  };
+
+  struct mesonInfo {
+    TString name;
+    std::vector<int> decayModes;
+  };
+
+  std::map<int, TString> decays = {
+    {-1, "e_e/"},
+    {-2, "e_e_e_e/"},
+    {22, "gamma_e_e/"},
+    {223, "omega_e_e/"},
+    {211 * 211, "pi_pi_e_e/"},
+    {111, "pi0_e_e/"},
+    {221, "eta_e_e/"}};
+
+  std::map<int, mesonInfo> mesons = {
+    {111, {"pi0/", {22, -2}}},
+    {221, {"eta/", {22, 211 * 211, -2}}},
+    {331, {"etaP/", {22, 223, 211 * 211}}},
+    {113, {"rho/", {-1}}},
+    {223, {"omega/", {-1, 111}}},
+    {333, {"phi/", {-1, 111, 221}}},
+    {443, {"Jpsi/", {-1}}},
+    {100443, {"psi2S/", {-1}}},
+    {553, {"Upsilon/", {-1}}}};
+
+  std::map<TString, int> histogramId;
+
+  std::vector<TString> stage = {"gen/", "rec/"};
 
   HistogramRegistry registry{"registry", {}};
-  Int_t nInputParticles = 17;
-  std::vector<TString> fParticleListNames = {"Pi0", "Eta", "EtaP", "EtaP_dalitz_photon", "EtaP_dalitz_omega", "Rho", "Omega", "Omega_2body", "Omega_dalitz", "Phi", "Phi_2body", "Phi_dalitz_eta", "Phi_dalitz_pi0", "Jpsi", "Jpsi_2body", "Jpsi_radiative", "Virtual_Photon"};
-  TH1F* fhwEffpT;
-  TH1F* fhwMultpT;
-  TH1F* fhwMultmT;
-  TH1F* fhwMultpT2;
-  TH1F* fhwMultmT2;
-  TH1F* fhKW;
-  TF1* ffVPHpT;
 
-  std::vector<std::shared_ptr<TH1>> fmee_orig, fmotherpT_orig, fphi_orig, frap_orig, fmee_orig_wALT, fmotherpT_orig_wALT, fmee, fphi, frap, fmee_wALT;
-  std::vector<std::shared_ptr<TH2>> fpteevsmee_wALT, fpteevsmee_orig_wALT, fpteevsmee_orig, fpteevsmee;
+  Configurable<bool> fConfigApplyDEtaDPhi{"cfgApplyDEtaDPhi", false, "flag to apply deta-phi cut"};
+  Configurable<float> fConfigMinDEta{"cfgMinDEta", 0.02, "minimum deta"};
+  Configurable<float> fConfigMinDPhi{"cfgMinDPhi", 0.2, "minimum dphi"};
 
-  eeTTree treeWords;
-
-  std::vector<double> DCATemplateEdges;
-  int nbDCAtemplate;
-  TH1F** fh_DCAtemplates;
-
-  MomentumSmearer smearer;
-
-  Double_t eMass;
-
-  Configurable<int> fCollisionSystem{"cfgCollisionSystem", 200, "set the collision system"};
-  Configurable<bool> fConfigWriteTTree{"cfgWriteTTree", false, "write tree output"};
-  Configurable<bool> fConfigDoPairing{"cfgDoPairing", true, "do like and unlike sign pairing"};
   Configurable<float> fConfigMaxEta{"cfgMaxEta", 0.8, "maxium |eta|"};
   Configurable<float> fConfigMinPt{"cfgMinPt", 0.2, "minium pT"};
   Configurable<float> fConfigMaxPt{"cfgMaxPt", 8.0, "maximum pT"};
-  Configurable<int> fConfigNBinsMee{"cfgNBinsMee", 1200, "number of bins in invariant mass"};
-  Configurable<float> fConfigMinMee{"cfgMinMee", 0.0, "lowest bin in invariant mass"};
-  Configurable<float> fConfigMaxMee{"cfgMaxMee", 6.0, "highest bin in invariant mass"};
-  Configurable<int> fConfigNBinsPtee{"cfgNBinsPtee", 400, "number of bins in pT"};
-  Configurable<float> fConfigMinPtee{"cfgMinPtee", 0.0, "lowest bin in pT"};
-  Configurable<float> fConfigMaxPtee{"cfgMaxPtee", 10.0, "hightest bin in pT"};
-  Configurable<int> fConfigALTweight{"cfgALTweight", 1, "set alternative weighting type"};
-  Configurable<std::string> fConfigResFileName{"cfgResFileName", "", "name of resolution file"};
-  Configurable<std::string> fConfigEffFileName{"cfgEffFileName", "", "name of efficiency file"};
-  Configurable<float> fConfigMinOpAng{"cfgMinOpAng", 0.050, "minimum opening angle"};
-  Configurable<int> fConfigNBinsPhi{"cfgNBinsPhi", 240, "number of bins in phi"};
-  Configurable<int> fConfigNBinsRap{"cfgNBinsRap", 240, "number of bins in rap"};
-  Configurable<float> fConfigMaxAbsRap{"cfgMaxAbsRap", 1.2, "bin range in rap"};
-  Configurable<std::string> fConfigEffHistName{"cfgEffHistName", "fhwEffpT", "hisogram name in efficiency file"};
-  Configurable<std::string> fConfigResPHistName{"cfgResPHistName", "ptSlices", "histogram name for p in resolution file"};
-  Configurable<std::string> fConfigResPtHistName{"cfgResPtHistName", "RelPtResArrCocktail", "histogram name for pt in resolution file"};
-  Configurable<std::string> fConfigResEtaHistName{"cfgResEtaHistName", "EtaResArr", "histogram name for eta in resolution file"};
-  Configurable<std::string> fConfigResPhiPosHistName{"cfgResPhiPosHistName", "PhiPosResArr", "histogram name for phi pos in resolution file"};
-  Configurable<std::string> fConfigResPhiNegHistName{"cfgResPhiNegHistName", "PhiEleResArr", "hisogram for phi neg in resolution file"};
-  Configurable<std::string> fConfigDCAFileName{"cfgDCAFileName", "", "DCA file name"};
-  Configurable<std::string> fConfigDCAHistName{"cfgDCAHistName", "fh_DCAtemplate", "histogram name in DCA file"};
-  Configurable<std::string> fConfigMultFileName{"cfgMultFileName", "", "multiplicity file name"};
-  Configurable<std::string> fConfigMultHistPtName{"cfgMultHistPtName", "fhwMultpT", "hisogram name for pt in multiplicity file"};
-  Configurable<std::string> fConfigMultHistPt2Name{"cfgMultHistPt2Name", "fhwMultpT_upperlimit", "histogram name for pt 2 in multiplicity file"};
-  Configurable<std::string> fConfigMultHistMtName{"cfgMultHistMtName", "fhwMultmT", "histogram name for mt in multiplicity file"};
-  Configurable<std::string> fConfigMultHistMt2Name{"cfgMultHistMt2Name", "fhwMultmT_upperlimit", "histogram name for mt 2 in multiplicity file"};
-  Configurable<float> fConfigKWMax{"cfgKWMax", 1.1, "upper bound of Kroll-Wada"};
-  Configurable<bool> fConfigDoVirtPh{"cfgDoVirtPh", false, "generate one virt. photon for each pion"};
-  Configurable<std::string> fConfigPhotonPtFileName{"cfgPhotonPtFileName", "", "file name for photon pT parametrization"};
-  Configurable<std::string> fConfigPhotonPtDirName{"cfgPhotonPtDirName", "", "directory name for photon pT parametrization"};
-  Configurable<std::string> fConfigPhotonPtFuncName{"cfgPhotonPtFuncName", "111_pt", "function name for photon pT parametrization"};
+  Configurable<float> fConfigMinOpAng{"cfgMinOpAng", 0, "minimum opening angle"};
+  Configurable<float> fConfigMinPtee{"cfgMinPtee", 0, "minimum pair pT"};
+  Configurable<float> fConfigMaxRapee{"cfgMaxRapee", 999., "maximum pair rapidity"};
+  ConfigurableAxis fConfigMeeBins{"cfgMeeBins", {600, 0.f, 6.f}, "Mee binning"};
+  ConfigurableAxis fConfigPteeBins{"cfgPteeBins", {400, 0.f, 10.f}, "pTee binning"};
+  ConfigurableAxis fConfigCos2DPhi{"cfgCos2DPhi", {200, -1.f, +1.f}, "cos(2x(phiee-PsiRP)) binning"}; // for dilepton v2.
+  ConfigurableAxis fConfigPtBins{"cfgPtBins", {200, 0.f, 10.f}, "pT binning"};
+  ConfigurableAxis fConfigEtaBins{"cfgEtaBins", {200, -5.f, 5.f}, "eta binning"};
+  ConfigurableAxis fConfigPhiBins{"cfgPhiBins", {200, -TMath::Pi(), TMath::Pi()}, "phi binning"};
+  ConfigurableAxis fConfigPhiVBins{"cfgPhiVBins", {200, 0, TMath::Pi()}, "phiV binning"};
+  ConfigurableAxis fConfigOpAngBins{"cfgOpAngBins", {200, 0, TMath::Pi()}, "opening angle binning"};
+  ConfigurableAxis fConfigDcaBins{"cfgDcaBins", {VARIABLE_WIDTH, 0., 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 3., 4., 5., 7., 10.}, "dca binning"};
 
-  ConfigurableAxis fConfigPtBins{"cfgPtBins", {VARIABLE_WIDTH, 0., 0.5, 1, 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8.}, "pT bins"};
-  ConfigurableAxis fConfigMBins{"cfgMBins", {VARIABLE_WIDTH, 0., 0.08, 0.14, 0.2, 1.1, 2.7, 2.8, 3.2, 5.0}, "mee bins"};
-  ConfigurableAxis fConfigDCABins{"cfgDCABins", {VARIABLE_WIDTH, 0., 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 3., 4., 5., 7., 10.}, "DCA bins"};
+  std::vector<std::shared_ptr<TH1>> histograms1D;
+  std::vector<std::shared_ptr<TH2>> histograms2D;
+  std::vector<std::shared_ptr<THnSparse>> histogramsND;
 
-  Configurable<std::vector<double>> fConfigDCATemplateEdges{"cfgDCATemplateEdges", {0., .3, .4, .6, 1., 2.}, "DCA template edges"};
-
-  void init(o2::framework::InitContext&)
+  template <typename T, typename U>
+  bool from_primary(T& p1, U& mcParticles)
   {
-    if (fConfigWriteTTree) {
-      SetTree();
+    if (!p1.has_mothers()) {
+      return false;
     }
-    SetHistograms();
-    DCATemplateEdges = fConfigDCATemplateEdges;
-    nbDCAtemplate = DCATemplateEdges.size();
-    DCATemplateEdges.push_back(10000000.);
-
-    if ((TString(fConfigEffFileName).BeginsWith("alien://") && TString(fConfigEffFileName).EndsWith(".root")) || (TString(fConfigResFileName).BeginsWith("alien://") && TString(fConfigResFileName).EndsWith(".root")) || (TString(fConfigDCAFileName).BeginsWith("alien://") && TString(fConfigDCAFileName).EndsWith(".root")) || (TString(fConfigMultFileName).BeginsWith("alien://") && TString(fConfigMultFileName).EndsWith(".root")) || (TString(fConfigPhotonPtFileName).BeginsWith("alien://") && TString(fConfigPhotonPtFileName).EndsWith(".root"))) {
-      LOGP(info, "Connecting to grid via TGrid");
-      TGrid::Connect("alien://");
+    auto mother = mcParticles.iteratorAt(p1.mothersIds()[0]);
+    if (mother.has_mothers()) {
+      return false;
     }
-
-    GetEffHisto(TString(fConfigEffFileName), TString(fConfigEffHistName));
-    InitSmearer(TString(fConfigResFileName), TString(fConfigResPtHistName), TString(fConfigResEtaHistName), TString(fConfigResPhiPosHistName), TString(fConfigResPhiNegHistName));
-    GetDCATemplates(TString(fConfigDCAFileName), TString(fConfigDCAHistName));
-    GetMultHisto(TString(fConfigMultFileName), TString(fConfigMultHistPtName), TString(fConfigMultHistPt2Name), TString(fConfigMultHistMtName), TString(fConfigMultHistMt2Name));
-    if (fConfigDoVirtPh) {
-      GetPhotonPtParametrization(TString(fConfigPhotonPtFileName), TString(fConfigPhotonPtDirName), TString(fConfigPhotonPtFuncName));
-    }
-
-    eMass = (TDatabasePDG::Instance()->GetParticle(11))->Mass();
-
-    fillKrollWada();
+    return true;
   }
 
-  void run(o2::framework::ProcessingContext& pc)
+  bool isAcceptedSingle(ROOT::Math::PtEtaPhiMVector p1)
   {
-    // get number of events per timeframe
-    auto Nparts = pc.inputs().getNofParts(0);
+    if (p1.Pt() < fConfigMinPt)
+      return false;
+    if (p1.Pt() > fConfigMaxPt)
+      return false;
+    if (fabs(p1.Eta()) > fConfigMaxEta)
+      return false;
+    return true;
+  }
 
-    for (auto i = 0U; i < Nparts; ++i) {
-      registry.fill(HIST("NEvents"), 0.5);
-      // get the tracks
-      auto mctracks = pc.inputs().get<std::vector<o2::MCTrack>>("mctracks", i);
+  bool isAcceptedPair(ROOT::Math::PtEtaPhiMVector p1, ROOT::Math::PtEtaPhiMVector p2)
+  {
+    if (!isAcceptedSingle(p1)) {
+      return false;
+    }
+    if (!isAcceptedSingle(p2)) {
+      return false;
+    }
+    ROOT::Math::PtEtaPhiMVector p12 = p1 + p2;
+    if (p12.Pt() < fConfigMinPtee) {
+      return false;
+    }
+    if (o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(p1.Px(), p1.Py(), p1.Pz(), p2.Px(), p2.Py(), p2.Pz()) < fConfigMinOpAng) {
+      return false;
+    }
+    if (fabs(p12.Rapidity()) > fConfigMaxRapee) {
+      return false;
+    }
 
-      std::vector<PxPyPzEVector> eBuff;
-      std::vector<int8_t> echBuff;
-      std::vector<Double_t> eweightBuff;
+    float deta = p1.Eta() - p2.Eta();
+    float dphi = p1.Phi() - p2.Phi();
+    o2::math_utils::bringToPMPi(dphi);
+    if (fConfigApplyDEtaDPhi && std::pow(deta / fConfigMinDEta, 2) + std::pow(dphi / fConfigMinDPhi, 2) < 1.f) {
+      return false;
+    }
+    return true;
+  }
 
-      bool skipNext = false;
+  template <typename T>
+  bool isAcceptedPair(T& p1, T& p2)
+  {
+    ROOT::Math::PtEtaPhiMVector v1(p1.ptSmeared(), p1.etaSmeared(), p1.phiSmeared(), o2::constants::physics::MassElectron);
+    ROOT::Math::PtEtaPhiMVector v2(p2.ptSmeared(), p2.etaSmeared(), p2.phiSmeared(), o2::constants::physics::MassElectron);
+    return isAcceptedPair(v1, v2);
+  }
 
-      int trackID = -1;
-      //  Loop over all MC particle
-      for (auto& mctrack : mctracks) {
-        trackID++;
-        if (o2::mcgenstatus::getHepMCStatusCode(mctrack.getStatusCode()) != 1)
+  template <typename T>
+  bool isAcceptedSingle(T& p1)
+  {
+    ROOT::Math::PtEtaPhiMVector v1(p1.ptSmeared(), p1.etaSmeared(), p1.phiSmeared(), o2::constants::physics::MassElectron);
+    return isAcceptedSingle(v1);
+  }
+
+  void addHistogram1D_stage(TString histname, AxisSpec axis, int& i, TString s)
+  {
+    i++;
+    TString name = s + histname;
+    histogramId[name] = i;
+    histograms1D.push_back(registry.add<TH1>(name, histname, HistType::kTH1F, {axis}, true));
+    for (auto const& [pdg, meson] : mesons) {
+      i++;
+      name = s + meson.name + histname;
+      histogramId[name] = i;
+      histograms1D.push_back(registry.add<TH1>(name, histname, HistType::kTH1F, {axis}, true));
+      for (auto const& mode : meson.decayModes) {
+        i++;
+        name = s + meson.name + decays[mode] + histname;
+        histogramId[name] = i;
+        histograms1D.push_back(registry.add<TH1>(name, histname, HistType::kTH1F, {axis}, true));
+      }
+    }
+  }
+
+  void addHistogram1D(TString histname, AxisSpec axis, int& i)
+  {
+    for (auto s : stage) {
+      addHistogram1D_stage(histname, axis, i, s);
+    }
+  }
+
+  void addHistogram1D_mother(TString histname, AxisSpec axis, int& i) // mother histograms only for gen. level, no decay channels
+  {
+    i++;
+    TString name = stage[0] + histname;
+    histogramId[name] = i;
+    histograms1D.push_back(registry.add<TH1>(name, histname, HistType::kTH1F, {axis}, true));
+    for (auto const& [pdg, meson] : mesons) {
+      i++;
+      name = stage[0] + meson.name + histname;
+      histogramId[name] = i;
+      histograms1D.push_back(registry.add<TH1>(name, histname, HistType::kTH1F, {axis}, true));
+    }
+  }
+
+  void addHistogram2D_stage(TString histname, AxisSpec axis1, AxisSpec axis2, int& i, TString s)
+  {
+    i++;
+    TString name = s + histname;
+    histogramId[name] = i;
+    histograms2D.push_back(registry.add<TH2>(name, histname, HistType::kTH2F, {axis1, axis2}, true));
+    for (auto const& [pdg, meson] : mesons) {
+      i++;
+      name = s + meson.name + histname;
+      histogramId[name] = i;
+      histograms2D.push_back(registry.add<TH2>(name, histname, HistType::kTH2F, {axis1, axis2}, true));
+      for (auto const& mode : meson.decayModes) {
+        i++;
+        name = s + meson.name + decays[mode] + histname;
+        histogramId[name] = i;
+        histograms2D.push_back(registry.add<TH2>(name, histname, HistType::kTH2F, {axis1, axis2}, true));
+      }
+    }
+  }
+
+  void addHistogram2D(TString histname, AxisSpec axis1, AxisSpec axis2, int& i)
+  {
+    for (auto s : stage) {
+      addHistogram2D_stage(histname, axis1, axis2, i, s);
+    }
+  }
+
+  template <typename TAxes>
+  void addHistogramND_stage(TString histname, TAxes const& axes, int& i, TString s)
+  {
+    i++;
+    TString name = s + histname;
+    histogramId[name] = i;
+    histogramsND.push_back(registry.add<THnSparse>(name, histname, HistType::kTHnSparseF, axes, true));
+    for (auto const& [pdg, meson] : mesons) {
+      i++;
+      name = s + meson.name + histname;
+      histogramId[name] = i;
+      histogramsND.push_back(registry.add<THnSparse>(name, histname, HistType::kTHnSparseF, axes, true));
+      for (auto const& mode : meson.decayModes) {
+        i++;
+        name = s + meson.name + decays[mode] + histname;
+        histogramId[name] = i;
+        histogramsND.push_back(registry.add<THnSparse>(name, histname, HistType::kTHnSparseF, axes, true));
+      }
+    }
+  }
+
+  template <typename TAxes>
+  void addHistogramND(TString histname, TAxes const& axes, int& i)
+  {
+    for (auto s : stage) {
+      addHistogramND_stage(histname, axes, i, s);
+    }
+  }
+
+  void fillHistogram1D(TString histname, int s, int pdg, int other_daughter_pdg, float value, float weight)
+  {
+    histograms1D[histogramId[stage[s] + histname]]->Fill(value, weight);
+    histograms1D[histogramId[stage[s] + mesons[pdg].name + histname]]->Fill(value, weight);
+    histograms1D[histogramId[stage[s] + mesons[pdg].name + decays[other_daughter_pdg] + histname]]->Fill(value, weight);
+  }
+
+  void fillHistogram1D_mother(TString histname, int pdg, float value, float weight)
+  {
+    histograms1D[histogramId[stage[0] + histname]]->Fill(value, weight);
+    histograms1D[histogramId[stage[0] + mesons[pdg].name + histname]]->Fill(value, weight);
+  }
+
+  void fillHistogram2D(TString histname, int s, int pdg, int other_daughter_pdg, float value1, float value2, float weight)
+  {
+    histograms2D[histogramId[stage[s] + histname]]->Fill(value1, value2, weight);
+    histograms2D[histogramId[stage[s] + mesons[pdg].name + histname]]->Fill(value1, value2, weight);
+    histograms2D[histogramId[stage[s] + mesons[pdg].name + decays[other_daughter_pdg] + histname]]->Fill(value1, value2, weight);
+  }
+
+  void fillHistogramND(TString histname, int s, int pdg, int other_daughter_pdg, double* values, double weight)
+  {
+    histogramsND[histogramId[stage[s] + histname]]->Fill(values, weight);
+    histogramsND[histogramId[stage[s] + mesons[pdg].name + histname]]->Fill(values, weight);
+    histogramsND[histogramId[stage[s] + mesons[pdg].name + decays[other_daughter_pdg] + histname]]->Fill(values, weight);
+  }
+
+  void init(InitContext& context)
+  {
+    registry.add<TH1>("NEvents", "NEvents", HistType::kTH1F, {{1, 0., 1.}}, false);
+
+    AxisSpec mass_axis = {fConfigMeeBins, "m_{ee} (GeV/#it{c}^{2})"};
+    AxisSpec ptee_axis = {fConfigPteeBins, "#it{p}_{T,ee} (GeV/#it{c})"};
+    AxisSpec cos2dphi_axis = {fConfigCos2DPhi, "cos(2(#varphi_{ee} - #Psi_{RP}))"}; // PsiRP = 0 rad. in generator.
+    AxisSpec eta_axis = {fConfigEtaBins, "#it{#eta}_{e}"};
+    AxisSpec pt_axis = {fConfigPtBins, "#it{p}_{T,e} (GeV/c)"};
+    AxisSpec phi_axis = {fConfigPhiBins, "#it{#varphi}_{e}"};
+    AxisSpec phiV_axis = {fConfigPhiVBins, "#it{#varphi}_{V,ee}"};
+    AxisSpec opAng_axis = {fConfigOpAngBins, "#it{#omega}_{ee}"};
+    AxisSpec eta_axis_mother = {fConfigEtaBins, "#it{#eta}_{mother}"};
+    AxisSpec pt_axis_mother = {fConfigPtBins, "#it{p}_{T,mother} (GeV/#it{c})"};
+    AxisSpec phi_axis_mother = {fConfigPhiBins, "#it{#varphi}_{mother}"};
+    AxisSpec dca_axis = {fConfigDcaBins, "DCA_{e}"};
+    AxisSpec dcaee_axis = {fConfigDcaBins, "DCA_{ee}"};
+
+    if (context.mOptions.get<bool>("processPairing")) {
+      registry.add<TH2>("gen/ULS", "ULS gen.", HistType::kTH2F, {mass_axis, ptee_axis}, true);
+      registry.add<TH2>("gen/LSpp", "LS++ gen.", HistType::kTH2F, {mass_axis, ptee_axis}, true);
+      registry.add<TH2>("gen/LSmm", "LS-- gen.", HistType::kTH2F, {mass_axis, ptee_axis}, true);
+      registry.add<TH2>("rec/ULS", "ULS rec.", HistType::kTH2F, {mass_axis, ptee_axis}, true);
+      registry.add<TH2>("rec/LSpp", "LS++ rec.", HistType::kTH2F, {mass_axis, ptee_axis}, true);
+      registry.add<TH2>("rec/LSmm", "LS-- rec.", HistType::kTH2F, {mass_axis, ptee_axis}, true);
+    }
+    if (context.mOptions.get<bool>("processCocktail")) {
+      int i = -1;
+      addHistogram1D("Pt", pt_axis, i);
+      addHistogram1D("Eta", eta_axis, i);
+      addHistogram1D("Phi", phi_axis, i);
+      addHistogram1D_mother("Mother_Pt", pt_axis_mother, i);
+      addHistogram1D_mother("Mother_Eta", eta_axis_mother, i);
+      addHistogram1D_mother("Mother_Phi", phi_axis_mother, i);
+      addHistogram1D("PhiV", phiV_axis, i);
+      addHistogram1D("OpAng", opAng_axis, i);
+      addHistogram1D("Mee", mass_axis, i);
+      addHistogram1D("Ptee", ptee_axis, i);
+      // addHistogram1D_stage("Dca", dca_axis, i, "rec/");
+      // addHistogram1D_stage("Dcaee", dcaee_axis, i, "rec/");
+      i = -1;
+      // addHistogram2D_stage("DcaVsPt", dca_axis, pt_axis, i, "rec/");
+      // addHistogram2D_stage("DcaeeVsPtee", dcaee_axis, ptee_axis, i, "rec/");
+      // addHistogram2D_stage("DcaeeVsMee", dcaee_axis, mass_axis, i, "rec/");
+      i = -1;
+      addHistogramND("MeeVsPteeVsCos2DPhiRP", std::vector<AxisSpec>{mass_axis, ptee_axis, cos2dphi_axis}, i);
+    }
+  }
+
+  void processCocktail(aod::McCollision const&, McParticlesSmeared const& mcParticles)
+  {
+    registry.fill(HIST("NEvents"), 0.5);
+
+    for (auto const& particle : mcParticles) {
+      if (particle.has_mothers()) {
+        continue;
+      }
+      int pdg = abs(particle.pdgCode());
+      if (mesons.find(pdg) == mesons.end()) {
+        LOG(error) << "Found mother particle with pdg = " << pdg << " that is not in list of mesons";
+      }
+      if (!particle.has_daughters()) {
+        LOG(error) << "Found meson with pdg = " << pdg << "that has no daughters";
+      }
+
+      int other_daughter_pdg = -1;
+      int nEle = 0;
+      int nPos = 0;
+
+      ROOT::Math::PtEtaPhiMVector pEleGen, pPosGen, pEleRec, pPosRec;
+      float weight(1.), effEle(1.), effPos(1.); //, dcaEle(0.), dcaPos(0.);
+      for (const auto& daughter : particle.daughters_as<McParticlesSmeared>()) {
+        int temp_pdg = daughter.pdgCode();
+        if (temp_pdg == 11) {
+          ROOT::Math::PtEtaPhiMVector temp_p_gen(daughter.pt(), daughter.eta(), daughter.phi(), o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector temp_p(daughter.ptSmeared(), daughter.etaSmeared(), daughter.phiSmeared(), o2::constants::physics::MassElectron);
+          pEleGen = temp_p_gen;
+          pEleRec = temp_p;
+          weight = daughter.weight();
+          effEle = daughter.efficiency();
+          // dcaEle = daughter.dca();
+          nEle++;
           continue;
-        if (abs(mctrack.GetPdgCode()) == 11) {
-          // get the electron
-          //---------------
-          if (fConfigDoPairing) {
-            // LS and ULS spectra
-            PxPyPzEVector e, dielectron;
-            int8_t ech, dielectron_ch;
-            Double_t eweight, dielectron_weight;
-            e.SetPxPyPzE(mctrack.Px(), mctrack.Py(), mctrack.Pz(),
-                         mctrack.GetEnergy());
-            if (mctrack.GetPdgCode() > 0) {
-              ech = 1.;
-            } else {
-              ech = -1.;
-            }
-            eweight = mctrack.getWeight();
-            // put in the buffer
-            //-----------------
-            eBuff.push_back(e);
-            echBuff.push_back(ech);
-            eweightBuff.push_back(eweight);
-            // loop the buffer and pair
-            //------------------------
-            for (Int_t jj = eBuff.size() - 2; jj >= 0; jj--) {
-              dielectron = eBuff.at(jj) + e;
-              dielectron_ch = (echBuff.at(jj) + ech) / 2;
-              dielectron_weight = eweightBuff.at(jj) * eweight;
-
-              if (dielectron_ch == 0)
-                registry.fill(HIST("ULS_orig"), dielectron.M(), dielectron.Pt(), dielectron_weight);
-              if (dielectron_ch > 0)
-                registry.fill(HIST("LSpp_orig"), dielectron.M(), dielectron.Pt(), dielectron_weight);
-              if (dielectron_ch < 0)
-                registry.fill(HIST("LSmm_orig"), dielectron.M(), dielectron.Pt(), dielectron_weight);
-              if (e.Pt() > fConfigMinPt && eBuff.at(jj).Pt() > fConfigMinPt && e.Pt() < fConfigMaxPt && eBuff.at(jj).Pt() < fConfigMaxPt && TMath::Abs(e.Eta()) < fConfigMaxEta && TMath::Abs(eBuff.at(jj).Eta()) < fConfigMaxEta && e.Vect().Unit().Dot(eBuff.at(jj).Vect().Unit()) < TMath::Cos(fConfigMinOpAng)) {
-                if (dielectron_ch == 0)
-                  registry.fill(HIST("ULS"), dielectron.M(), dielectron.Pt(), dielectron_weight);
-                if (dielectron_ch > 0)
-                  registry.fill(HIST("LSpp"), dielectron.M(), dielectron.Pt(), dielectron_weight);
-                if (dielectron_ch < 0)
-                  registry.fill(HIST("LSmm"), dielectron.M(), dielectron.Pt(), dielectron_weight);
-              }
-            }
-          }
-
-          if (skipNext) {
-            skipNext = false;
-            continue; // skip if marked as second electron
-          }
-
-          if (!(mctrack.getMotherTrackId() > -1))
-            continue; // has no mother
-
-          auto const& mother = mctracks[mctrack.getMotherTrackId()];
-
-          if (mother.getMotherTrackId() > -1)
-            continue; // mother is not primary
-
-          if (mctrack.getSecondMotherTrackId() - mctrack.getMotherTrackId() > 0)
-            continue; // more than one mother
-
-          // skip for the moment other particles rather than pi0, eta, etaprime,
-          // omega, rho, phi.
-          switch (mother.GetPdgCode()) {
-            case 111:
-              break;
-            case 221:
-              break;
-            case 331:
-              break;
-            case 113:
-              break;
-            case 223:
-              break;
-            case 333:
-              break;
-            case 443:
-              break;
-            default:
-              continue;
-          }
-
-          /*
-          // Not sure about this cut. From GammaConv group. Harmless a priori.
-          if (!(fabs(mctrack.GetEnergy() - mctrack.Pz()) > 0.))
-            continue;
-
-          // ???? this applied only to first daughter!
-          Double_t yPre = (mctrack.GetEnergy() + mctrack.Pz()) / (mctrack.GetEnergy() - mctrack.Pz());
-          Double_t y = 0.5 * TMath::Log(yPre);
-          if (fConfigDoRapidityCut) { // Apply rapidity cut on mother consistent with GammaConv group. (??? but it is not applied on mother?)
-            if (yPre <= 0.)
-              continue;
-            if (TMath::Abs(y) > fConfigRapidityCut)
-              continue;
-          } else {
-            if (yPre == 0.)
-              continue;
-          }*/
-
-          treeWords.fdectyp = mother.getLastDaughterTrackId() - mother.getFirstDaughterTrackId() + 1; // fdectyp: decay type (based on number of daughters).
-          if (treeWords.fdectyp > 4)
-            continue; // exclude five or more particles decay
-
-          if (trackID == mctracks.size())
-            continue; // no particle left in the list
-          auto mctrack2 = mctracks[trackID + 1];
-          if (!(mctrack2.getMotherTrackId() == mctrack.getMotherTrackId()))
-            continue; // no matching second electron
-          if (!(mctrack.getSecondMotherTrackId() == -1))
-            continue; // second daughter has more than one mother
-          if (!(abs(mctrack2.GetPdgCode()) == 11))
-            continue; // not an electron
-
-          skipNext = true; // is matching electron --> next particle in list will be skipped
-
-          PxPyPzEVector dau1, dau2, ee;
-          dau1.SetPxPyPzE(mctrack.Px(), mctrack.Py(), mctrack.Pz(), mctrack.GetEnergy());
-          dau2.SetPxPyPzE(mctrack2.Px(), mctrack2.Py(), mctrack2.Pz(), mctrack2.GetEnergy());
-
-          // create dielectron before resolution effects:
-          ee = dau1 + dau2;
-
-          // get info of the other particles in the decay:
-          treeWords.fdau3pdg = 0;
-          for (Int_t jj = mother.getFirstDaughterTrackId(); jj <= mother.getLastDaughterTrackId(); jj++) {
-            if (jj == trackID || jj == trackID + 1) {
-              continue; // first or second electron
-            }
-            auto mctrack3 = mctracks[jj];
-            treeWords.fdau3pdg = abs(mctrack3.GetPdgCode());
-          }
-
-          // get index for histograms
-          Int_t hindex[3];
-          for (Int_t jj = 0; jj < 3; jj++) {
-            hindex[jj] = -1;
-          }
-          switch (mother.GetPdgCode()) {
-            case 111:
-              hindex[0] = 0;
-              break;
-            case 221:
-              hindex[0] = 1;
-              break;
-            case 331:
-              hindex[0] = 2;
-              if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 22)
-                hindex[1] = 3;
-              if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 223)
-                hindex[1] = 4;
-              break;
-            case 113:
-              hindex[0] = 5;
-              break;
-            case 223:
-              hindex[0] = 6;
-              if (treeWords.fdectyp == 2)
-                hindex[1] = 7;
-              if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 111)
-                hindex[1] = 8;
-              break;
-            case 333:
-              hindex[0] = 9;
-              if (treeWords.fdectyp == 2)
-                hindex[1] = 10;
-              if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 221)
-                hindex[1] = 11;
-              if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 111)
-                hindex[1] = 12;
-              break;
-            case 443:
-              hindex[0] = 13;
-              if (treeWords.fdectyp == 2)
-                hindex[1] = 14;
-              if (treeWords.fdectyp == 3 && treeWords.fdau3pdg == 22)
-                hindex[1] = 15;
-              break;
-          }
-
-          hindex[2] = nInputParticles;
-
-          if (hindex[0] < 0) {
-            LOGP(error, "hindex[0]<0");
-            continue;
-          }
-
-          // Fill tree words before resolution/acceptance
-          treeWords.fd1origpt = dau1.Pt();
-          treeWords.fd1origp = dau1.P();
-          treeWords.fd1origeta = dau1.Eta();
-          treeWords.fd1origphi = dau1.Phi();
-          treeWords.fd2origpt = dau2.Pt();
-          treeWords.fd2origp = dau2.P();
-          treeWords.fd2origeta = dau2.Eta();
-          treeWords.fd2origphi = dau2.Phi();
-          treeWords.feeorigpt = ee.Pt();
-          treeWords.feeorigp = ee.P();
-          treeWords.feeorigm = ee.M();
-          treeWords.feeorigeta = ee.Eta();
-          treeWords.feeorigrap = ee.Rapidity();
-          treeWords.feeorigphi = ee.Phi();
-          if (mctrack.GetPdgCode() > 0) {
-            treeWords.feeorigphiv = PhiV(dau1, dau2);
-          } else {
-            treeWords.feeorigphiv = PhiV(dau2, dau1);
-          }
-
-          // get the efficiency weight
-          Int_t effbin = fhwEffpT->FindBin(treeWords.fd1origpt);
-          treeWords.fwEffpT = fhwEffpT->GetBinContent(effbin);
-          effbin = fhwEffpT->FindBin(treeWords.fd2origpt);
-          treeWords.fwEffpT = treeWords.fwEffpT * fhwEffpT->GetBinContent(effbin);
-
-          // Resolution and acceptance
-          //-------------------------
-          int ch1 = 1;
-          int ch2 = 1;
-          if (mctrack.GetPdgCode() > 0) {
-            ch1 = -1;
-          }
-          if (mctrack2.GetPdgCode() > 0) {
-            ch2 = -1;
-          }
-          dau1 = applySmearingPxPyPzE(ch1, dau1);
-          dau2 = applySmearingPxPyPzE(ch2, dau2);
-
-          treeWords.fd1pt = dau1.Pt();
-          treeWords.fd1eta = dau1.Eta();
-          treeWords.fd2pt = dau2.Pt();
-          treeWords.fd2eta = dau2.Eta();
-          treeWords.fpass = true;
-          if (treeWords.fd1pt < fConfigMinPt || treeWords.fd2pt < fConfigMinPt)
-            treeWords.fpass = false; // leg pT cut
-          if (treeWords.fd1pt > fConfigMaxPt || treeWords.fd2pt > fConfigMaxPt)
-            treeWords.fpass = false; // leg pT cut
-          if (dau1.Vect().Unit().Dot(dau2.Vect().Unit()) > TMath::Cos(fConfigMinOpAng))
-            treeWords.fpass = false; // opening angle cut
-          if (TMath::Abs(treeWords.fd1eta) > fConfigMaxEta || TMath::Abs(treeWords.fd2eta) > fConfigMaxEta)
-            treeWords.fpass = false;
-
-          // get the pair DCA (based in smeared pT)
-          for (int jj = 0; jj < nbDCAtemplate; jj++) { // loop over DCA templates
-            if (dau1.Pt() >= DCATemplateEdges[jj] && dau1.Pt() < DCATemplateEdges[jj + 1]) {
-              treeWords.fd1DCA = fh_DCAtemplates[jj]->GetRandom();
-            }
-            if (dau2.Pt() >= DCATemplateEdges[jj] && dau2.Pt() < DCATemplateEdges[jj + 1]) {
-              treeWords.fd2DCA = fh_DCAtemplates[jj]->GetRandom();
-            }
-          }
-          treeWords.fpairDCA = sqrt((pow(treeWords.fd1DCA, 2) + pow(treeWords.fd2DCA, 2)) / 2);
-
-          // Fill tree words after resolution/acceptance
-          ee = dau1 + dau2;
-          treeWords.fd1p = dau1.P();
-          treeWords.fd1phi = dau1.Phi();
-          treeWords.fd2p = dau2.P();
-          treeWords.fd2phi = dau2.Phi();
-          treeWords.feept = ee.Pt();
-          treeWords.feemt = ee.Mt();
-          treeWords.feep = ee.P();
-          treeWords.feem = ee.M();
-          treeWords.feeeta = ee.Eta();
-          treeWords.feerap = ee.Rapidity();
-          treeWords.feephi = ee.Phi();
-          if (mctrack.GetPdgCode() > 0) {
-            treeWords.feephiv = PhiV(dau1, dau2);
-          } else {
-            treeWords.feephiv = PhiV(dau2, dau1);
-          }
-          treeWords.fmotherpt = mother.GetPt();
-          treeWords.fmotherm = sqrt(pow(mother.GetEnergy(), 2) + pow(mother.GetP(), 2));
-          treeWords.fmothermt = sqrt(pow(treeWords.fmotherm, 2) + pow(treeWords.fmotherpt, 2));
-          treeWords.fmotherp = mother.GetP();
-          treeWords.fmothereta = mother.GetEta();
-          treeWords.fmotherphi = mother.GetPhi();
-          treeWords.fID = mother.GetPdgCode();
-          treeWords.fweight = mctrack.getWeight(); // get particle weight from generator
-
-          // get multiplicity based weight:
-          int iwbin = fhwMultpT->FindBin(treeWords.fmotherpt);
-          treeWords.fwMultpT = fhwMultpT->GetBinContent(iwbin);   // pT weight
-          treeWords.fwMultpT2 = fhwMultpT2->GetBinContent(iwbin); // pT weight
-          double min_mT = fhwMultmT->GetBinLowEdge(1);            // consider as minimum valid mT value the edge of the weight histo.
-          if (treeWords.fmothermt > min_mT) {
-            iwbin = fhwMultmT->FindBin(treeWords.fmothermt);
-            treeWords.fwMultmT = fhwMultmT->GetBinContent(iwbin);   // mT weight
-            treeWords.fwMultmT2 = fhwMultmT2->GetBinContent(iwbin); // mT weight
-          } else {
-            LOGP(error, "Generated particle with mT < Pion mass cannot be weighted");
-            treeWords.fwMultmT = 0.;
-            treeWords.fwMultmT2 = 0.;
-          }
-
-          // Which ALT weight to use?:
-          Double_t fwALT = treeWords.fwEffpT; // by default use pt efficiency weight
-          if (fConfigALTweight == 1)
-            fwALT = treeWords.fwMultmT; // mT multiplicity weight
-          if (fConfigALTweight == 11)
-            fwALT = treeWords.fwMultmT2; // mT multiplicity weight, higher mult
-          if (fConfigALTweight == 2)
-            fwALT = treeWords.fwMultpT; // pT multiplicity weight
-          if (fConfigALTweight == 22)
-            fwALT = treeWords.fwMultpT2; // pT multiplicity weight, higher mult
-
-          // fill the tree
-          if (fConfigWriteTTree) {
-            tree->Fill();
-          }
-
-          // fill the histograms
-          if (treeWords.fdectyp < 4) {         // why here <4 and before <5 ???
-            for (Int_t jj = 0; jj < 3; jj++) { // fill the different hindex -> particles
-              if (hindex[jj] > -1) {
-                fmee_orig[hindex[jj]]->Fill(treeWords.feeorigm, treeWords.fweight);
-                if (fConfigALTweight == 1 || fConfigALTweight == 11) {
-                  fmotherpT_orig[hindex[jj]]->Fill(treeWords.fmothermt, treeWords.fweight);
-                } else if (fConfigALTweight == 2 || fConfigALTweight == 22 || fConfigALTweight == 0) {
-                  fmotherpT_orig[hindex[jj]]->Fill(treeWords.fmotherpt, treeWords.fweight);
-                }
-                fpteevsmee_orig[hindex[jj]]->Fill(treeWords.feeorigm, treeWords.feept, treeWords.fweight);
-                fphi_orig[hindex[jj]]->Fill(treeWords.feeorigphi, treeWords.fweight);
-                frap_orig[hindex[jj]]->Fill(treeWords.feeorigrap, treeWords.fweight);
-                fmee_orig_wALT[hindex[jj]]->Fill(treeWords.feeorigm, treeWords.fweight * fwALT);
-                fpteevsmee_orig_wALT[hindex[jj]]->Fill(treeWords.feeorigm, treeWords.feept, treeWords.fweight * fwALT);
-                if (fConfigALTweight == 1 || fConfigALTweight == 11) {
-                  fmotherpT_orig_wALT[hindex[jj]]->Fill(treeWords.fmothermt, treeWords.fweight * fwALT);
-                } else if (fConfigALTweight == 2 || fConfigALTweight == 22 || fConfigALTweight == 0) {
-                  fmotherpT_orig_wALT[hindex[jj]]->Fill(treeWords.fmotherpt, treeWords.fweight * fwALT);
-                }
-                if (treeWords.fpass) {
-                  fmee[hindex[jj]]->Fill(treeWords.feem, treeWords.fweight);
-                  fpteevsmee[hindex[jj]]->Fill(treeWords.feem, treeWords.feept, treeWords.fweight);
-                  fphi[hindex[jj]]->Fill(treeWords.feephi, treeWords.fweight);
-                  frap[hindex[jj]]->Fill(treeWords.feerap, treeWords.fweight);
-                  registry.fill(HIST("DCAeevsmee"), treeWords.feem, treeWords.fpairDCA, treeWords.fweight);
-                  registry.fill(HIST("DCAeevsptee"), treeWords.feept, treeWords.fpairDCA, treeWords.fweight);
-                  fmee_wALT[hindex[jj]]->Fill(treeWords.feem, treeWords.fweight * fwALT);
-                  fpteevsmee_wALT[hindex[jj]]->Fill(treeWords.feem, treeWords.feept, treeWords.fweight * fwALT);
-                }
-              }
-            }
-          }
-
-          if (fConfigDoVirtPh) {
-            // Virtual photon generation
-            //-------------------------
-            // We will generate one virtual photon per histogrammed pion
-            if (mother.GetPdgCode() == 111) {
-              // get mass and pt from histos and flat eta and phi
-              Double_t VPHpT = ffVPHpT->GetRandom();
-              Double_t VPHmass = fhKW->GetRandom();
-              Double_t VPHeta = -1. + gRandom->Rndm() * 2.;
-              Double_t VPHphi = 2.0 * TMath::ACos(-1.) * gRandom->Rndm();
-              TLorentzVector beam;
-              beam.SetPtEtaPhiM(VPHpT, VPHeta, VPHphi, VPHmass);
-              Double_t decaymasses[2] = {(TDatabasePDG::Instance()->GetParticle(11))->Mass(), (TDatabasePDG::Instance()->GetParticle(11))->Mass()};
-              TGenPhaseSpace VPHgen;
-              Bool_t SetDecay;
-              SetDecay = VPHgen.SetDecay(beam, 2, decaymasses);
-              if (SetDecay == 0)
-                LOGP(error, "Decay not permitted by kinematics");
-              Double_t VPHweight = VPHgen.Generate();
-              // get electrons from the decay
-              TLorentzVector *decay1, *decay2;
-              decay1 = VPHgen.GetDecay(0);
-              decay2 = VPHgen.GetDecay(1);
-              dau1.SetPxPyPzE(decay1->Px(), decay1->Py(), decay1->Pz(), decay1->E());
-              dau2.SetPxPyPzE(decay2->Px(), decay2->Py(), decay2->Pz(), decay2->E());
-
-              // create dielectron before resolution effects:
-              ee = dau1 + dau2;
-
-              // get index for histograms
-              hindex[0] = nInputParticles - 1;
-              hindex[1] = -1;
-              hindex[2] = -1;
-
-              // Fill tree words before resolution/acceptance
-              treeWords.fd1origpt = dau1.Pt();
-              treeWords.fd1origp = dau1.P();
-              treeWords.fd1origeta = dau1.Eta();
-              treeWords.fd1origphi = dau1.Phi();
-              treeWords.fd2origpt = dau2.Pt();
-              treeWords.fd2origp = dau2.P();
-              treeWords.fd2origeta = dau2.Eta();
-              treeWords.fd2origphi = dau2.Phi();
-              treeWords.feeorigpt = ee.Pt();
-              treeWords.feeorigp = ee.P();
-              treeWords.feeorigm = ee.M();
-              treeWords.feeorigeta = ee.Eta();
-              treeWords.feeorigrap = ee.Rapidity();
-              treeWords.feeorigphi = ee.Phi();
-              treeWords.feeorigphiv = PhiV(dau1, dau2);
-
-              // get the efficiency weight
-              Int_t effbin = fhwEffpT->FindBin(treeWords.fd1origpt);
-              treeWords.fwEffpT = fhwEffpT->GetBinContent(effbin);
-              effbin = fhwEffpT->FindBin(treeWords.fd2origpt);
-              treeWords.fwEffpT = treeWords.fwEffpT * fhwEffpT->GetBinContent(effbin);
-
-              // Resolution and acceptance
-              //-------------------------
-              dau1 = applySmearingPxPyPzE(1, dau1);
-              dau2 = applySmearingPxPyPzE(-1, dau2);
-              treeWords.fpass = true;
-              if (dau1.Pt() < fConfigMinPt || dau2.Pt() < fConfigMinPt)
-                treeWords.fpass = false; // leg pT cut
-              if (dau1.Pt() > fConfigMaxPt || dau2.Pt() > fConfigMaxPt)
-                treeWords.fpass = false; // leg pT cut
-              if (dau1.Vect().Unit().Dot(dau2.Vect().Unit()) > TMath::Cos(fConfigMinOpAng))
-                treeWords.fpass = false; // opening angle cut
-              if (TMath::Abs(dau1.Eta()) > fConfigMaxEta || TMath::Abs(dau2.Eta()) > fConfigMaxEta)
-                treeWords.fpass = false;
-
-              treeWords.fpairDCA = 10000.; // ??
-
-              // Fill tree words after resolution/acceptance
-              ee = dau1 + dau2;
-              treeWords.fd1pt = dau1.Pt();
-              treeWords.fd1p = dau1.P();
-              treeWords.fd1eta = dau1.Eta();
-              treeWords.fd1phi = dau1.Phi();
-              treeWords.fd2pt = dau2.Pt();
-              treeWords.fd2p = dau2.P();
-              treeWords.fd2eta = dau2.Eta();
-              treeWords.fd2phi = dau2.Phi();
-              treeWords.feept = ee.Pt();
-              treeWords.feemt = ee.Mt();
-              treeWords.feep = ee.P();
-              treeWords.feem = ee.M();
-              treeWords.feeeta = ee.Eta();
-              treeWords.feerap = ee.Rapidity();
-              treeWords.feephi = ee.Phi();
-              treeWords.feephiv = PhiV(dau1, dau2);
-              treeWords.fmotherpt = beam.Pt();
-              treeWords.fmothermt = sqrt(pow(beam.M(), 2) + pow(beam.Pt(), 2));
-              treeWords.fmotherp = beam.P();
-              treeWords.fmotherm = beam.M();
-              treeWords.fmothereta = beam.Eta();
-              treeWords.fmotherphi = beam.Phi();
-              treeWords.fID = 0; // set ID to Zero for VPH
-              treeWords.fweight = VPHweight;
-              // get multiplicity based weight:
-              treeWords.fwMultmT = 1; // no weight for photons so far
-
-              // Fill the tree
-              if (fConfigWriteTTree) { // many parameters not set for photons: d1DCA,fd2DCA, fdectyp,fdau3pdg,fwMultpT,fwMultpT2,fwMultmT2
-                tree->Fill();
-              }
-
-              // Fill the histograms
-              for (Int_t jj = 0; jj < 3; jj++) { // fill the different hindex -> particles
-                if (hindex[jj] > -1) {
-                  fmee_orig[hindex[jj]]->Fill(treeWords.feeorigm, VPHweight);
-                  fpteevsmee_orig[hindex[jj]]->Fill(treeWords.feeorigm, treeWords.feept, VPHweight);
-                  fphi_orig[hindex[jj]]->Fill(treeWords.feeorigphi, VPHweight);
-                  frap_orig[hindex[jj]]->Fill(treeWords.feeorigrap, VPHweight);
-                  fmotherpT_orig[hindex[jj]]->Fill(treeWords.fmotherpt, treeWords.fweight);
-                  if (treeWords.fpass) {
-                    fmee[hindex[jj]]->Fill(treeWords.feem, VPHweight);
-                    fpteevsmee[hindex[jj]]->Fill(treeWords.feem, treeWords.feept, VPHweight);
-                    fphi[hindex[jj]]->Fill(treeWords.feephi, VPHweight);
-                    frap[hindex[jj]]->Fill(treeWords.feerap, VPHweight);
-                  }
-                }
-              }
-
-            } // mother.pdgCode()==111
-          }   // fConfigDoVirtPh
-
-        } // abs(pdgCode())==11
-
-      } // loop over mctracks
-
-      // Clear buffers
-      eBuff.clear();
-      echBuff.clear();
-      eweightBuff.clear();
-    }
-  }
-
-  Double_t PhiV(PxPyPzEVector e1, PxPyPzEVector e2)
-  {
-    Double_t outPhiV;
-    XYZVector p1 = e1.Vect();
-    XYZVector p2 = e2.Vect();
-    XYZVector p12 = p1 + p2;
-    XYZVector u = p12.Unit();
-    XYZVector p1u = p1.Unit();
-    XYZVector p2u = p2.Unit();
-    XYZVector v = p1u.Cross(p2u);
-    XYZVector w = u.Cross(v);
-    XYZVector zu(0, 0, 1);
-    XYZVector wc = u.Cross(zu);
-    outPhiV = TMath::ACos(wc.Unit().Dot(w.Unit()));
-    return outPhiV;
-  }
-
-  PxPyPzEVector applySmearingPxPyPzE(int ch, PxPyPzEVector vec)
-  {
-    PxPyPzEVector vecsmeared;
-    float ptsmeared, etasmeared, phismeared;
-    smearer.applySmearing(ch, vec.Pt(), vec.Eta(), vec.Phi(), ptsmeared, etasmeared, phismeared);
-    float sPx = ptsmeared * cos(phismeared);
-    float sPy = ptsmeared * sin(phismeared);
-    float sPz = ptsmeared * sinh(etasmeared);
-    float sP = ptsmeared * cosh(etasmeared);
-    float sE = sqrt(sP * sP + eMass * eMass);
-
-    vecsmeared.SetPxPyPzE(sPx, sPy, sPz, sE);
-
-    return vecsmeared;
-  }
-
-  void SetHistograms()
-  {
-
-    AxisSpec ptAxis = {fConfigNBinsPtee, fConfigMinPtee, fConfigMaxPtee, "#it{p}_{T,ee} (GeV/c)"};
-    AxisSpec mAxis = {fConfigNBinsMee, fConfigMinMee, fConfigMaxMee, "#it{m}_{ee} (GeV/c^{2})"};
-    AxisSpec phiAxis = {fConfigNBinsPhi, -TMath::TwoPi() / 2, TMath::TwoPi() / 2, "#it{phi}_{ee}"};
-    AxisSpec rapAxis = {fConfigNBinsRap, -fConfigMaxAbsRap, fConfigMaxAbsRap, "#it{y}_{ee}"};
-
-    registry.add<TH1>("NEvents", "NEvents", HistType::kTH1F, {{1, 0, 1}}, false);
-
-    if (fConfigDoPairing) {
-      registry.add<TH2>("ULS", "ULS", HistType::kTH2F, {mAxis, ptAxis}, true);
-      registry.add<TH2>("LSpp", "LSpp", HistType::kTH2F, {mAxis, ptAxis}, true);
-      registry.add<TH2>("LSmm", "LSmm", HistType::kTH2F, {mAxis, ptAxis}, true);
-
-      registry.add<TH2>("ULS_orig", "ULS_orig", HistType::kTH2F, {mAxis, ptAxis}, true);
-      registry.add<TH2>("LSpp_orig", "LSpp_orig", HistType::kTH2F, {mAxis, ptAxis}, true);
-      registry.add<TH2>("LSmm_orig", "LSmm_orig", HistType::kTH2F, {mAxis, ptAxis}, true);
-    }
-
-    registry.add<TH2>("DCAeevsmee", "DCAeevsmee", HistType::kTH2F, {{fConfigMBins, "#it{m}_{ee} (GeV/c^{2})"}, {fConfigDCABins, "DCA_{xy}^{ee} (cm)"}}, true);
-    registry.add<TH2>("DCAeevsptee", "DCAeevsptee", HistType::kTH2F, {{fConfigPtBins, "#it{p}_{T,ee} (GeV/c)"}, {fConfigDCABins, "DCA_{xy}^{ee} (cm)"}}, true);
-
-    for (auto& particle : fParticleListNames) {
-      fmee.push_back(registry.add<TH1>(Form("mee_%s", particle.Data()), Form("mee_%s", particle.Data()), HistType::kTH1F, {mAxis}, true));
-      fmee_orig.push_back(registry.add<TH1>(Form("mee_orig_%s", particle.Data()), Form("mee_orig_%s", particle.Data()), HistType::kTH1F, {mAxis}, true));
-      fmotherpT_orig.push_back(registry.add<TH1>(Form("motherpT_orig_%s", particle.Data()), Form("motherpT_orig_%s", particle.Data()), HistType::kTH1F, {ptAxis}, true));
-      fphi.push_back(registry.add<TH1>(Form("phi_%s", particle.Data()), Form("phi_%s", particle.Data()), HistType::kTH1F, {phiAxis}, true));
-      fphi_orig.push_back(registry.add<TH1>(Form("phi_orig_%s", particle.Data()), Form("phi_orig_%s", particle.Data()), HistType::kTH1F, {phiAxis}, true));
-      frap.push_back(registry.add<TH1>(Form("rap_%s", particle.Data()), Form("rap_%s", particle.Data()), HistType::kTH1F, {rapAxis}, true));
-      frap_orig.push_back(registry.add<TH1>(Form("rap_orig_%s", particle.Data()), Form("rap_orig_%s", particle.Data()), HistType::kTH1F, {rapAxis}, true));
-      fpteevsmee.push_back(registry.add<TH2>(Form("pteevsmee_%s", particle.Data()), Form("pteevsmee_%s", particle.Data()), HistType::kTH2F, {mAxis, ptAxis}, true));
-      fpteevsmee_orig.push_back(registry.add<TH2>(Form("pteevsmee_orig_%s", particle.Data()), Form("pteevsmee_orig_%s", particle.Data()), HistType::kTH2F, {mAxis, ptAxis}, true));
-      fmee_wALT.push_back(registry.add<TH1>(Form("mee_wALT_%s", particle.Data()), Form("mee_wALT_%s", particle.Data()), HistType::kTH1F, {mAxis}, true));
-      fmee_orig_wALT.push_back(registry.add<TH1>(Form("mee_orig_wALT_%s", particle.Data()), Form("mee_orig_wALT_%s", particle.Data()), HistType::kTH1F, {mAxis}, true));
-      fmotherpT_orig_wALT.push_back(registry.add<TH1>(Form("motherpT_orig_wALT_%s", particle.Data()), Form("motherpT_orig_wALT%s", particle.Data()), HistType::kTH1F, {ptAxis}, true));
-      fpteevsmee_wALT.push_back(registry.add<TH2>(Form("pteevsmee_wALT%s", particle.Data()), Form("pteevsmee_wALT_%s", particle.Data()), HistType::kTH2F, {mAxis, ptAxis}, true));
-      fpteevsmee_orig_wALT.push_back(registry.add<TH2>(Form("pteevsmee_orig_wALT%s", particle.Data()), Form("pteevsmee_orig_wALT_%s", particle.Data()), HistType::kTH2F, {mAxis, ptAxis}, true));
-    }
-
-    fmee.push_back(registry.add<TH1>("mee", "mee", HistType::kTH1F, {mAxis}, true));
-    fmee_orig.push_back(registry.add<TH1>("mee_orig", "mee_orig", HistType::kTH1F, {mAxis}, true));
-    fmotherpT_orig.push_back(registry.add<TH1>("motherpT_orig", "motherpT_orig", HistType::kTH1F, {ptAxis}, true));
-    fphi.push_back(registry.add<TH1>("phi", "phi", HistType::kTH1F, {phiAxis}, true));
-    fphi_orig.push_back(registry.add<TH1>("phi_orig", "phi_orig", HistType::kTH1F, {phiAxis}, true));
-    frap.push_back(registry.add<TH1>("rap", "rap", HistType::kTH1F, {rapAxis}, true));
-    frap_orig.push_back(registry.add<TH1>("rap_orig", "rap_orig", HistType::kTH1F, {rapAxis}, true));
-    fpteevsmee.push_back(registry.add<TH2>("pteevsmee", "pteevsmee", HistType::kTH2F, {mAxis, ptAxis}, true));
-    fpteevsmee_orig.push_back(registry.add<TH2>("pteevsmee_orig", "pteevsmee_orig", HistType::kTH2F, {mAxis, ptAxis}, true));
-    fmee_wALT.push_back(registry.add<TH1>("mee_wALT", "mee_wALT", HistType::kTH1F, {mAxis}, true));
-    fmee_orig_wALT.push_back(registry.add<TH1>("mee_orig_wALT", "mee_orig_wALT", HistType::kTH1F, {mAxis}, true));
-    fmotherpT_orig_wALT.push_back(registry.add<TH1>("motherpT_orig_wALT", "motherpT_orig_wALT", HistType::kTH1F, {ptAxis}, true));
-    fpteevsmee_wALT.push_back(registry.add<TH2>("pteevsmee_wALT", "pteevsmee_wALT", HistType::kTH2F, {mAxis, ptAxis}, true));
-    fpteevsmee_orig_wALT.push_back(registry.add<TH2>("pteevsmee_orig_wALT", "pteevsmee_orig_wALT", HistType::kTH2F, {mAxis, ptAxis}, true));
-  }
-
-  void SetTree()
-  {
-    tree.setObject(new TTree("eeTTree", "eeTTree"));
-
-    tree->Branch("fd1DCA", &treeWords.fd1DCA, "fd1DCA/F");
-    tree->Branch("fd2DCA", &treeWords.fd2DCA, "fd2DCA/F");
-    tree->Branch("fpairDCA", &treeWords.fpairDCA, "fpairDCA/F");
-    tree->Branch("fd1origpt", &treeWords.fd1origpt, "fd1origpt/F");
-    tree->Branch("fd1origp", &treeWords.fd1origp, "fd1origp/F");
-    tree->Branch("fd1origeta", &treeWords.fd1origeta, "fd1origeta/F");
-    tree->Branch("fd1origphi", &treeWords.fd1origphi, "fd1origphi/F");
-    tree->Branch("fd2origpt", &treeWords.fd2origpt, "fd2origpt/F");
-    tree->Branch("fd2origp", &treeWords.fd2origp, "fd2origp/F");
-    tree->Branch("fd2origeta", &treeWords.fd2origeta, "fd2origeta/F");
-    tree->Branch("fd2origphi", &treeWords.fd2origphi, "fd2origphi/F");
-    tree->Branch("fd1pt", &treeWords.fd1pt, "fd1pt/F");
-    tree->Branch("fd1p", &treeWords.fd1p, "fd1p/F");
-    tree->Branch("fd1eta", &treeWords.fd1eta, "fd1eta/F");
-    tree->Branch("fd1phi", &treeWords.fd1phi, "fd1phi/F");
-    tree->Branch("fd2pt", &treeWords.fd2pt, "fd2pt/F");
-    tree->Branch("fd2p", &treeWords.fd2p, "fd2p/F");
-    tree->Branch("fd2eta", &treeWords.fd2eta, "fd2eta/F");
-    tree->Branch("fd2phi", &treeWords.fd2phi, "fd2phi/F");
-    tree->Branch("feeorigpt", &treeWords.feeorigpt, "feeorigpt/F");
-    tree->Branch("feeorigp", &treeWords.feeorigp, "feeorigp/F");
-    tree->Branch("feeorigm", &treeWords.feeorigm, "feeorigm/F");
-    tree->Branch("feeorigeta", &treeWords.feeorigeta, "feeorigeta/F");
-    tree->Branch("feeorigphi", &treeWords.feeorigphi, "feeorigphi/F");
-    tree->Branch("feeorigphiv", &treeWords.feeorigphiv, "feeorigphiv/F");
-    tree->Branch("feept", &treeWords.feept, "feept/F");
-    tree->Branch("feemt", &treeWords.feemt, "feemt/F");
-    tree->Branch("feep", &treeWords.feep, "feep/F");
-    tree->Branch("feem", &treeWords.feem, "feem/F");
-    tree->Branch("feeeta", &treeWords.feeeta, "feeeta/F");
-    tree->Branch("feephi", &treeWords.feephi, "feephi/F");
-    tree->Branch("feephiv", &treeWords.feephiv, "feephiv/F");
-    tree->Branch("fmotherpt", &treeWords.fmotherpt, "fmotherpt/F");
-    tree->Branch("fmothermt", &treeWords.fmothermt, "fmothermt/F");
-    tree->Branch("fmotherp", &treeWords.fmotherp, "fmotherp/F");
-    tree->Branch("fmotherm", &treeWords.fmotherm, "fmotherm/F");
-    tree->Branch("fmothereta", &treeWords.fmothereta, "fmothereta/F");
-    tree->Branch("fmotherphi", &treeWords.fmotherphi, "fmotherphi/F");
-    tree->Branch("fID", &treeWords.fID, "fID/I");
-    tree->Branch("fdectyp", &treeWords.fdectyp, "fdectyp/I");
-    tree->Branch("fdau3pdg", &treeWords.fdau3pdg, "fdau3pdg/I");
-    tree->Branch("fweight", &treeWords.fweight, "fweight/F");
-    tree->Branch("fwEffpT", &treeWords.fwEffpT, "fwEffpT/F");
-    tree->Branch("fwMultpT", &treeWords.fwMultpT, "fwMultpT/F");
-    tree->Branch("fwMultmT", &treeWords.fwMultmT, "fwMultmT/F");
-    tree->Branch("fwMultpT2", &treeWords.fwMultpT2, "fwMultpT2/F");
-    tree->Branch("fwMultmT2", &treeWords.fwMultmT2, "fwMultmT2/F");
-    tree->Branch("fpass", &treeWords.fpass, "fpass/B");
-  }
-
-  void GetEffHisto(TString filename, TString histname)
-  {
-    // get efficiency histo
-    LOGP(info, "Set Efficiency histo");
-    // Get Efficiency weight file:
-    TFile* fFile = TFile::Open(filename.Data());
-    if (!fFile) {
-      LOGP(error, "Could not open Efficiency file {}", filename.Data());
-      return;
-    }
-    if (fFile->GetListOfKeys()->Contains(histname.Data())) {
-      fhwEffpT = reinterpret_cast<TH1F*>(fFile->Get(histname.Data())); // histo: eff weight in function of pT.
-      fhwEffpT->SetDirectory(nullptr);
-    } else {
-      LOGP(error, "Could not open histogram {} from file {}", histname.Data(), filename.Data());
-    }
-
-    fFile->Close();
-  }
-
-  void InitSmearer(TString filename, TString ptHistName, TString etaHistName, TString phiPosHistName, TString phiNegHistName)
-  {
-    smearer.setResFileName(filename);
-    smearer.setResPtHistName(ptHistName);
-    smearer.setResEtaHistName(etaHistName);
-    smearer.setResPhiPosHistName(phiPosHistName);
-    smearer.setResPhiNegHistName(phiNegHistName);
-    smearer.init();
-  }
-
-  void GetDCATemplates(TString filename, TString histname)
-  {
-    // get dca tamplates
-    LOGP(info, "Set DCA templates");
-    // Get  file:
-    TFile* fFile = TFile::Open(filename.Data());
-    if (!fFile) {
-      LOGP(error, "Could not open DCATemplate file {}", filename.Data());
-      return;
-    }
-    fh_DCAtemplates = new TH1F*[nbDCAtemplate];
-    for (int jj = 0; jj < nbDCAtemplate; jj++) {
-      if (fFile->GetListOfKeys()->Contains(Form("%s%d", histname.Data(), jj + 1))) {
-        fh_DCAtemplates[jj] = reinterpret_cast<TH1F*>(fFile->Get(Form("%s%d", histname.Data(), jj + 1)));
-      } else {
-        LOGP(error, "Could not open {}{} from file {}", histname.Data(), jj + 1, filename.Data());
-      }
-    }
-    fFile->Close();
-  }
-
-  void GetMultHisto(TString filename, TString histnamept, TString histnamept2, TString histnamemt, TString histnamemt2)
-  {
-    // get multiplicity weights
-    LOGP(info, "Set Multiplicity weight files");
-    TFile* fFile = TFile::Open(filename.Data());
-    if (!fFile) {
-      LOGP(error, "Could not open Multiplicity weight file {}", filename.Data());
-      return;
-    }
-
-    if (fFile->GetListOfKeys()->Contains(histnamept.Data())) {
-      fhwMultpT = reinterpret_cast<TH1F*>(fFile->Get(histnamept.Data())); // histo: multiplicity weight in function of pT.
-    } else {
-      LOGP(error, "Could not open {} from file {}", histnamept.Data(), filename.Data());
-    }
-
-    if (fFile->GetListOfKeys()->Contains(histnamemt.Data())) {
-      fhwMultmT = reinterpret_cast<TH1F*>(fFile->Get(histnamemt.Data())); // histo: multiplicity weight in function of mT.
-    } else {
-      LOGP(error, "Could not open {} from file {}", histnamemt.Data(), filename.Data());
-    }
-
-    if (fFile->GetListOfKeys()->Contains(histnamept2.Data())) {
-      fhwMultpT2 = reinterpret_cast<TH1F*>(fFile->Get(histnamept2.Data())); // histo: multiplicity weight in function of pT.
-    } else {
-      LOGP(error, "Could not open {} from file {}", histnamept2.Data(), filename.Data());
-    }
-
-    if (fFile->GetListOfKeys()->Contains(histnamemt2.Data())) {
-      fhwMultmT2 = reinterpret_cast<TH1F*>(fFile->Get(histnamemt2)); // histo: multiplicity weight in function of mT.
-    } else {
-      LOGP(error, "Could not open {} from file {}", histnamemt2.Data(), filename.Data());
-    }
-    fFile->Close();
-  }
-
-  void GetPhotonPtParametrization(TString filename, TString dirname, TString funcname)
-  {
-    LOGP(info, "Set photon parametrization");
-
-    if (filename.EndsWith(".root")) { // read from ROOT file
-      TFile* fFile = TFile::Open(filename.Data());
-      if (!fFile) {
-        LOGP(error, "Could not open photon parametrization from file {}", filename.Data());
-        return;
-      }
-      bool good = false;
-      if (fFile->GetListOfKeys()->Contains(dirname.Data())) {
-        TDirectory* dir = fFile->GetDirectory(dirname.Data());
-        if (dir->GetListOfKeys()->Contains(funcname.Data())) {
-          ffVPHpT = reinterpret_cast<TF1*>(dir->Get(funcname.Data()));
-          ffVPHpT->SetNpx(10000);
-          good = true;
         }
+        if (temp_pdg == -11) {
+          ROOT::Math::PtEtaPhiMVector temp_p_gen(daughter.pt(), daughter.eta(), daughter.phi(), o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector temp_p(daughter.ptSmeared(), daughter.etaSmeared(), daughter.phiSmeared(), o2::constants::physics::MassElectron);
+          pPosGen = temp_p_gen;
+          pPosRec = temp_p;
+          effPos = daughter.efficiency();
+          // dcaPos = daughter.dca();
+          nPos++;
+          continue;
+        }
+        other_daughter_pdg = abs(other_daughter_pdg * temp_pdg);
       }
-      if (!good) {
-        LOGP(error, "Could not open photon parametrization {}/{} from file {}", dirname.Data(), funcname.Data(), filename.Data());
+      if (!(((nEle == 1) && (nPos == 1)) || ((nEle == 2) && (nPos == 2)))) {
+        LOG(error) << "Found decay with wrong number of electrons in decay of meson with pdg " << pdg << ": nElectrons = " << nEle << ", nPositrons = " << nPos;
+        continue;
       }
-      fFile->Close();
-    } else if (filename.EndsWith(".json")) { // read from JSON file
-      std::ifstream fFile(filename.Data());
-      if (!fFile) {
-        LOGP(error, "Could not open photon parametrization from file {}", filename.Data());
-        return;
+      if ((nEle == 2) && (nPos == 2) && (other_daughter_pdg == -1)) {
+        other_daughter_pdg = -2;
+        weight = 2 * weight;
       }
-      nlohmann::json paramfile = nlohmann::json::parse(fFile);
-      if (paramfile.contains(dirname.Data())) {
-        nlohmann::json dir = paramfile[dirname.Data()];
-        if (dir.contains(funcname.Data())) {
-          std::string formula = dir[funcname.Data()];
-          ffVPHpT = new TF1(TString(funcname.Data()), TString(formula), 0, 100);
-          if (ffVPHpT) {
-            ffVPHpT->SetNpx(10000);
-            return;
+      auto this_meson_decays = mesons[pdg].decayModes;
+      if (std::find(this_meson_decays.begin(), this_meson_decays.end(), other_daughter_pdg) == this_meson_decays.end()) {
+        LOG(error) << "Found decay with code = " << other_daughter_pdg << " that is not in list of decays of meson with pdg " << pdg;
+        continue;
+      }
+
+      for (int s = 0; s < kNRecLevels; s++) { // s=0: gen, s=1: rec
+
+        ROOT::Math::PtEtaPhiMVector pEle, pPos;
+        float pairWeight(1.), weightEle(1.), weightPos(1.);
+        bool acceptedEle(true), acceptedPos(true), acceptedPair(true);
+
+        if (s == kGen) {
+          pEle = pEleGen;
+          pPos = pPosGen;
+          pairWeight = weight;
+          weightEle = weight;
+          weightPos = weight;
+          acceptedEle = true;
+          acceptedPos = true;
+          acceptedPair = true;
+        } else if (s == kRec) {
+          pEle = pEleRec;
+          pPos = pPosRec;
+          pairWeight = weight * effEle * effPos;
+          weightEle = weight * effEle;
+          weightPos = weight * effPos;
+          acceptedEle = isAcceptedSingle(pEle);
+          acceptedPos = isAcceptedSingle(pPos);
+          acceptedPair = isAcceptedPair(pEle, pPos);
+        }
+
+        // single track histograms
+        if (acceptedEle)
+          fillHistogram1D("Pt", s, pdg, other_daughter_pdg, pEle.Pt(), weightEle);
+        if (acceptedPos)
+          fillHistogram1D("Pt", s, pdg, other_daughter_pdg, pPos.Pt(), weightPos);
+
+        if (acceptedEle)
+          fillHistogram1D("Eta", s, pdg, other_daughter_pdg, pEle.Eta(), weightEle);
+        if (acceptedPos)
+          fillHistogram1D("Eta", s, pdg, other_daughter_pdg, pPos.Eta(), weightPos);
+
+        if (acceptedEle)
+          fillHistogram1D("Phi", s, pdg, other_daughter_pdg, pEle.Phi(), weightEle);
+        if (acceptedPos)
+          fillHistogram1D("Phi", s, pdg, other_daughter_pdg, pPos.Phi(), weightPos);
+
+        if (s == kRec) { // dca only at rec. level
+          if (acceptedEle) {
+            // fillHistogram1D("Dca", s, pdg, other_daughter_pdg, dcaEle, weightEle);
+            // fillHistogram2D("DcaVsPt", s, pdg, other_daughter_pdg, dcaEle, pEle.Pt(), weightEle);
+          }
+          if (acceptedPos) {
+            // fillHistogram1D("Dca", s, pdg, other_daughter_pdg, dcaPos, weightPos);
+            // fillHistogram2D("DcaVsPt", s, pdg, other_daughter_pdg, dcaPos, pPos.Pt(), weightPos);
+          }
+        }
+
+        // mother histograms
+        if (s == kGen) { // only at gen. level
+          fillHistogram1D_mother("Mother_Pt", pdg, particle.pt(), weight);
+          fillHistogram1D_mother("Mother_Eta", pdg, particle.eta(), weight);
+          fillHistogram1D_mother("Mother_Phi", pdg, particle.phi(), weight);
+        }
+
+        // pair historams
+        if (acceptedPair) {
+          ROOT::Math::PtEtaPhiMVector p12 = pEle + pPos;
+          float mee = p12.M();
+          float ptee = p12.Pt();
+          float opAng = o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(pPos.Px(), pPos.Py(), pPos.Pz(), pEle.Px(), pEle.Py(), pEle.Pz());
+          float phiV = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pPos.Px(), pPos.Py(), pPos.Pz(), pEle.Px(), pEle.Py(), pEle.Pz(), 1, -1, 1);
+          // float dcaee = sqrt((pow(dcaEle, 2) + pow(dcaPos, 2)) / 2);
+          float cos2dphi = std::cos(2.f * p12.Phi()); // PsiRP = 0 rad.
+          double values[3] = {mee, ptee, cos2dphi};
+          fillHistogramND("MeeVsPteeVsCos2DPhiRP", s, pdg, other_daughter_pdg, values, pairWeight);
+          fillHistogram1D("Mee", s, pdg, other_daughter_pdg, mee, pairWeight);
+          fillHistogram1D("Ptee", s, pdg, other_daughter_pdg, ptee, pairWeight);
+          fillHistogram1D("PhiV", s, pdg, other_daughter_pdg, phiV, pairWeight);
+          fillHistogram1D("OpAng", s, pdg, other_daughter_pdg, opAng, pairWeight);
+          if (s == kRec) { // dca only at rec. level
+            // fillHistogram1D("Dcaee", s, pdg, other_daughter_pdg, dcaee, pairWeight);
+            // fillHistogram2D("DcaeeVsPtee", s, pdg, other_daughter_pdg, dcaee, ptee, pairWeight);
+            // fillHistogram2D("DcaeeVsMee", s, pdg, other_daughter_pdg, dcaee, mee, pairWeight);
           }
         }
       }
-      LOGP(error, "Could not open photon parametrization {}/{} from file {}", dirname.Data(), funcname.Data(), filename.Data());
-      return;
-    } else { // neither ROOT nor JSON
-      LOGP(error, "Not compatible file format for {}", filename.Data());
-    }
-  }
 
-  void fillKrollWada()
+    } // end particle loop
+  }
+  PROCESS_SWITCH(lmeelfcocktail, processCocktail, "Process cocktail", true);
+
+  // ULS and LS spectra
+  Preslice<McParticlesSmeared> perCollision = aod::mcparticle::mcCollisionId;
+  Partition<McParticlesSmeared> Electrons = (aod::mcparticle::pdgCode == 11);
+  Partition<McParticlesSmeared> Positrons = (aod::mcparticle::pdgCode == -11);
+
+  void processPairing(aod::McCollisions const& mcCollisions, McParticlesSmeared const& mcParticles)
   {
-    // Build Kroll-wada for virtual photon mass parametrization:
-    Double_t KWmass = 0.;
-    Int_t KWnbins = 10000;
-    Float_t KWmin = 2. * eMass;
-    Double_t KWbinwidth = (fConfigKWMax - KWmin) / (Double_t)KWnbins;
-    fhKW = new TH1F("fhKW", "fhKW", KWnbins, KWmin, fConfigKWMax);
-    for (Int_t ibin = 1; ibin <= KWnbins; ibin++) {
-      KWmass = KWmin + (Double_t)(ibin - 1) * KWbinwidth + KWbinwidth / 2.0;
-      fhKW->AddBinContent(ibin, 2. * (1. / 137.03599911) / 3. / 3.14159265359 / KWmass * sqrt(1. - 4. * eMass * eMass / KWmass / KWmass) * (1. + 2. * eMass * eMass / KWmass / KWmass));
+
+    for (auto const& mcCollision : mcCollisions) {
+      auto const electronsGrouped = Electrons->sliceBy(perCollision, mcCollision.globalIndex());
+      auto const positronsGrouped = Positrons->sliceBy(perCollision, mcCollision.globalIndex());
+
+      // ULS spectrum
+      for (auto const& [p1, p2] : combinations(o2::soa::CombinationsFullIndexPolicy(electronsGrouped, positronsGrouped))) {
+        if (!(from_primary(p1, mcParticles) && from_primary(p2, mcParticles))) {
+          continue;
+        }
+        ROOT::Math::PtEtaPhiMVector v1_gen(p1.pt(), p1.eta(), p1.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v2_gen(p2.pt(), p2.eta(), p2.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v12_gen = v1_gen + v2_gen;
+        registry.fill(HIST("gen/ULS"), v12_gen.M(), v12_gen.Pt(), p1.weight() * p2.weight());
+        if (isAcceptedPair(p1, p2)) {
+          ROOT::Math::PtEtaPhiMVector v1(p1.ptSmeared(), p1.etaSmeared(), p1.phiSmeared(), o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v2(p2.ptSmeared(), p2.etaSmeared(), p2.phiSmeared(), o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          registry.fill(HIST("rec/ULS"), v12.M(), v12.Pt(), p1.weight() * p2.weight() * p1.efficiency() * p2.efficiency());
+        }
+      }
+      // LS spectra
+      for (auto& [p1, p2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(electronsGrouped, electronsGrouped))) {
+        if (!(from_primary(p1, mcParticles) && from_primary(p2, mcParticles))) {
+          continue;
+        }
+        ROOT::Math::PtEtaPhiMVector v1_gen(p1.pt(), p1.eta(), p1.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v2_gen(p2.pt(), p2.eta(), p2.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v12_gen = v1_gen + v2_gen;
+        registry.fill(HIST("gen/LSmm"), v12_gen.M(), v12_gen.Pt(), p1.weight() * p2.weight());
+        if (isAcceptedPair(p1, p2)) {
+          ROOT::Math::PtEtaPhiMVector v1(p1.ptSmeared(), p1.etaSmeared(), p1.phiSmeared(), o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v2(p2.ptSmeared(), p2.etaSmeared(), p2.phiSmeared(), o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          registry.fill(HIST("rec/LSmm"), v12.M(), v12.Pt(), p1.weight() * p2.weight() * p1.efficiency() * p2.efficiency());
+        }
+      }
+      for (auto& [p1, p2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(positronsGrouped, positronsGrouped))) {
+        if (!(from_primary(p1, mcParticles) && from_primary(p2, mcParticles))) {
+          continue;
+        }
+        ROOT::Math::PtEtaPhiMVector v1_gen(p1.pt(), p1.eta(), p1.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v2_gen(p2.pt(), p2.eta(), p2.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v12_gen = v1_gen + v2_gen;
+        registry.fill(HIST("gen/LSpp"), v12_gen.M(), v12_gen.Pt(), p1.weight() * p2.weight());
+        if (isAcceptedPair(p1, p2)) {
+          ROOT::Math::PtEtaPhiMVector v1(p1.ptSmeared(), p1.etaSmeared(), p1.phiSmeared(), o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v2(p2.ptSmeared(), p2.etaSmeared(), p2.phiSmeared(), o2::constants::physics::MassElectron);
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          registry.fill(HIST("rec/LSpp"), v12.M(), v12.Pt(), p1.weight() * p2.weight() * p1.efficiency() * p2.efficiency());
+        }
+      }
     }
   }
+  PROCESS_SWITCH(lmeelfcocktail, processPairing, "Process ULS and LS pairing", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec specs;
-  std::vector<InputSpec> inputs;
-  inputs.emplace_back("mctracks", "MC", "MCTRACKS", 0., Lifetime::Timeframe);
-  DataProcessorSpec dSpec = adaptAnalysisTask<lmeelfcocktail>(cfgc, TaskName{"em-lmee-lf-cocktail"});
-  dSpec.inputs = inputs;
-  specs.emplace_back(dSpec);
-  return specs;
+  return WorkflowSpec{
+    adaptAnalysisTask<lmeelfcocktail>(cfgc, TaskName("em-lmee-lf-cocktail"))};
 }
