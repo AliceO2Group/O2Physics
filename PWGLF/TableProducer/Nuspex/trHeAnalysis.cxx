@@ -34,8 +34,10 @@
 #include <TF1.h>
 #include <TLorentzVector.h>
 
-namespace o2::aod {
-namespace h3_data {
+namespace o2::aod
+{
+namespace h3_data
+{
 DECLARE_SOA_COLUMN(TPt, tPt, float);
 DECLARE_SOA_COLUMN(TEta, tEta, float);
 DECLARE_SOA_COLUMN(TPhi, tPhi, float);
@@ -67,7 +69,8 @@ DECLARE_SOA_TABLE(H3Data, "AOD", "h3_data", h3_data::TPt, h3_data::TEta,
                   h3_data::TItsChi2NCl, h3_data::TPassedTpcRefit,
                   h3_data::TPassedItsRefit, h3_data::TRigidity,
                   h3_data::TItsClusterSize);
-namespace he_data {
+namespace he_data
+{
 DECLARE_SOA_COLUMN(TPt, tPt, float);
 DECLARE_SOA_COLUMN(TEta, tEta, float);
 DECLARE_SOA_COLUMN(TPhi, tPhi, float);
@@ -100,34 +103,36 @@ DECLARE_SOA_TABLE(HeData, "AOD", "he_data", he_data::TPt, he_data::TEta,
                   he_data::TPassedItsRefit, he_data::TRigidity,
                   he_data::TItsClusterSize);
 } // namespace o2::aod
-namespace {
+namespace
+{
 const int nBetheParams = 6;
 const int nParticles = 2;
 static const std::vector<std::string> particleNames{"triton", "helion"};
 static const std::vector<int> particlePdgCodes{
-    o2::constants::physics::kTriton, o2::constants::physics::kHelium3};
+  o2::constants::physics::kTriton, o2::constants::physics::kHelium3};
 static const std::vector<float> particleMasses{
-    o2::constants::physics::MassTriton, o2::constants::physics::MassHelium3};
+  o2::constants::physics::MassTriton, o2::constants::physics::MassHelium3};
 static const std::vector<int> particleCharge{1, 2};
 static const std::vector<std::string> betheBlochParNames{
-    "p0", "p1", "p2", "p3", "p4", "resolution"};
+  "p0", "p1", "p2", "p3", "p4", "resolution"};
 constexpr float betheBlochDefault[nParticles][nBetheParams]{
-    {0.313129, 181.664226, 2779397163087.684082, 2.130773, 29.609643,
-     0.09},                                                     // triton
-    {70.584685, 3.196364, 0.133878, 2.731736, 1.675617, 0.09}}; // Helion
+  {0.313129, 181.664226, 2779397163087.684082, 2.130773, 29.609643,
+   0.09},                                                     // triton
+  {70.584685, 3.196364, 0.133878, 2.731736, 1.675617, 0.09}}; // Helion
 
 } // namespace
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using TracksFull =
-    soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
-              o2::aod::TracksDCA, aod::pidTOFmass, aod::pidTOFbeta,
-              aod::pidTPCLfFullTr, aod::pidTPCLfFullHe,
-              aod::TOFSignal, aod::TrackSelectionExtension>;
+  soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
+            o2::aod::TracksDCA, aod::pidTOFmass, aod::pidTOFbeta,
+            aod::pidTPCLfFullTr, aod::pidTPCLfFullHe,
+            aod::TOFSignal, aod::TrackSelectionExtension>;
 
-class Particle {
-public:
+class Particle
+{
+ public:
   TString name;
   int pdgCode;
   float mass;
@@ -136,14 +141,15 @@ public:
   std::vector<float> betheParams;
 
   Particle(const std::string name_, int pdgCode_, float mass_, int charge_,
-           LabeledArray<float> bethe) {
+           LabeledArray<float> bethe)
+  {
     name = TString(name_);
     pdgCode = pdgCode_;
     mass = mass_;
     charge = charge_;
 
     resolution =
-        bethe.get(name, "resolution"); // Access the "resolution" parameter
+      bethe.get(name, "resolution"); // Access the "resolution" parameter
 
     betheParams.clear();
     for (int i = 0; i < 5; ++i) {
@@ -156,7 +162,9 @@ struct trHeAnalysis {
   Produces<o2::aod::H3Data> H3Data;
   Produces<o2::aod::HeData> HeData;
   HistogramRegistry histos{
-      "Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+    "Histos",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject};
   std::vector<Particle> particles;
   Configurable<bool> enableTr{"enableTr", true,
                               "Flag to enable triton analysis."};
@@ -352,24 +360,24 @@ struct trHeAnalysis {
     Configurable<bool> useSel8{"useSel8", true,
                                "Use Sel8 for run3 Event Selection"};
     Configurable<bool> tvxTrigger{
-        "tvxTrigger", false, "Use TVX for Event Selection (default w/ Sel8)"};
+      "tvxTrigger", false, "Use TVX for Event Selection (default w/ Sel8)"};
     Configurable<bool> removeTFBorder{
-        "removeTFBorder", false, "Remove TimeFrame border (default w/ Sel8)"};
+      "removeTFBorder", false, "Remove TimeFrame border (default w/ Sel8)"};
     Configurable<bool> removeITSROFBorder{
-        "removeITSROFBorder", false,
-        "Remove ITS Read-Out Frame border (default w/ Sel8)"};
+      "removeITSROFBorder", false,
+      "Remove ITS Read-Out Frame border (default w/ Sel8)"};
   } evselOptions;
 
   Configurable<bool> cfgTPCPidMethod{
-      "cfgTPCPidMethod", false,
-      "Using own or built in bethe parametrization"}; // false for built in
-                                                      // method
+    "cfgTPCPidMethod", false,
+    "Using own or built in bethe parametrization"}; // false for built in
+                                                    // method
   // Set the multiplity event limits
   Configurable<float> cfgLowMultCut{
-      "cfgLowMultCut", 0.0f, "Accepted multiplicity percentage lower limit"};
+    "cfgLowMultCut", 0.0f, "Accepted multiplicity percentage lower limit"};
   Configurable<float> cfgHighMultCut{
-      "cfgHighMultCut", 100.0f,
-      "Accepted multiplicity percentage higher limit"};
+    "cfgHighMultCut", 100.0f,
+    "Accepted multiplicity percentage higher limit"};
 
   // Set the z-vertex event cut limits
   Configurable<float> cfgHighCutVertex{"cfgHighCutVertex", 10.0f,
@@ -379,7 +387,7 @@ struct trHeAnalysis {
 
   // Set the quality cuts for tracks
   Configurable<bool> rejectFakeTracks{
-      "rejectFakeTracks", false, "Flag to reject ITS-TPC fake tracks (for MC)"};
+    "rejectFakeTracks", false, "Flag to reject ITS-TPC fake tracks (for MC)"};
   Configurable<float> cfgCutITSClusters{"cfgCutITSClusters", -1.f,
                                         "Minimum number of ITS clusters"};
   Configurable<float> cfgCutTPCXRows{"cfgCutTPCXRows", -1.f,
@@ -388,8 +396,8 @@ struct trHeAnalysis {
                                         "Minimum number of found TPC clusters"};
   Configurable<int> nITSLayer{"nITSLayer", 0, "ITS Layer (0-6)"};
   Configurable<float> cfgCutTPCcrRowToFindableCl{
-      "cfgCutTPCcrRowToFindableCl", 0.8f,
-      "Minimum ratio of crossed rows to findable cluster in TPC"};
+    "cfgCutTPCcrRowToFindableCl", 0.8f,
+    "Minimum ratio of crossed rows to findable cluster in TPC"};
   Configurable<float> cfgCutmaxChi2TPC{"cfgCutmaxChi2TPC", 4.f,
                                        "Maximum chi2 per cluster for TPC"};
   Configurable<float> cfgCutmaxChi2ITS{"cfgCutmaxChi2ITS", 36.f,
@@ -398,15 +406,15 @@ struct trHeAnalysis {
   // Set the kinematic and PID cuts for tracks
   struct : ConfigurableGroup {
     Configurable<float> pCut{
-        "pCut", 0.3f, "Value of the p selection for spectra (default 0.3)"};
+      "pCut", 0.3f, "Value of the p selection for spectra (default 0.3)"};
     Configurable<float> etaCut{
-        "etaCut", 0.8f, "Value of the eta selection for spectra (default 0.8)"};
+      "etaCut", 0.8f, "Value of the eta selection for spectra (default 0.8)"};
     Configurable<float> yLowCut{
-        "yLowCut", -1.0f,
-        "Value of the low rapidity selection for spectra (default -1.0)"};
+      "yLowCut", -1.0f,
+      "Value of the low rapidity selection for spectra (default -1.0)"};
     Configurable<float> yHighCut{
-        "yHighCut", 1.0f,
-        "Value of the high rapidity selection for spectra (default 1.0)"};
+      "yHighCut", 1.0f,
+      "Value of the high rapidity selection for spectra (default 1.0)"};
   } kinemOptions;
 
   struct : ConfigurableGroup {
@@ -416,12 +424,13 @@ struct trHeAnalysis {
                                     "Value of the Nsigma TPC cut for helium-3"};
   } nsigmaTPCvar;
   Configurable<LabeledArray<float>> cfgBetheBlochParams{
-      "cfgBetheBlochParams",
-      {betheBlochDefault[0], nParticles, nBetheParams, particleNames,
-       betheBlochParNames},
-      "TPC Bethe-Bloch parameterisation for light nuclei"};
+    "cfgBetheBlochParams",
+    {betheBlochDefault[0], nParticles, nBetheParams, particleNames,
+     betheBlochParNames},
+    "TPC Bethe-Bloch parameterisation for light nuclei"};
 
-  void init(o2::framework::InitContext &) {
+  void init(o2::framework::InitContext&)
+  {
     const AxisSpec pAxis{binsPt, "#it{p} (GeV/#it{c})"};
     const AxisSpec ptAxis{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec ptHeAxis{binsPtHe, "#it{p}_{T} (GeV/#it{c})"};
@@ -447,25 +456,25 @@ struct trHeAnalysis {
                     "<-dE/dx> (a.u.)",
                     HistType::kTH2F, {{400, -8.f, 8.f}, {dedxAxis}});
     histos.add<TH2>(
-        "histogram/TOFbetaVsP",
-        "TOF #beta vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta",
-        HistType::kTH2F, {{250, -5.f, 5.f}, {betaAxis}});
+      "histogram/TOFbetaVsP",
+      "TOF #beta vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta",
+      HistType::kTH2F, {{250, -5.f, 5.f}, {betaAxis}});
     histos.add<TH2>("histogram/H3/H3-TPCsignVsTPCmomentum",
                     "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC "
                     "<-dE/dx> (a.u.)",
                     HistType::kTH2F, {{400, -8.f, 8.f}, {dedxAxis}});
     histos.add<TH2>(
-        "histogram/H3/H3-TOFbetaVsP",
-        "TOF #beta vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta",
-        HistType::kTH2F, {{250, -5.f, 5.f}, {betaAxis}});
+      "histogram/H3/H3-TOFbetaVsP",
+      "TOF #beta vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta",
+      HistType::kTH2F, {{250, -5.f, 5.f}, {betaAxis}});
     histos.add<TH2>("histogram/He/He-TPCsignVsTPCmomentum",
                     "TPC <-dE/dX> vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TPC "
                     "<-dE/dx> (a.u.)",
                     HistType::kTH2F, {{400, -8.f, 8.f}, {dedxAxis}});
     histos.add<TH2>(
-        "histogram/He/He-TOFbetaVsP",
-        "TOF #beta vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta",
-        HistType::kTH2F, {{250, -5.f, 5.f}, {betaAxis}});
+      "histogram/He/He-TOFbetaVsP",
+      "TOF #beta vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta",
+      HistType::kTH2F, {{250, -5.f, 5.f}, {betaAxis}});
     histos.add<TH1>("event/eventSelection", "eventSelection", HistType::kTH1D,
                     {{7, -0.5, 6.5}});
     auto h = histos.get<TH1>(HIST("event/eventSelection"));
@@ -494,8 +503,9 @@ struct trHeAnalysis {
                                    cfgBetheBlochParams));
     }
   }
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const &event,
-               TracksFull const &tracks) {
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& event,
+               TracksFull const& tracks)
+  {
     bool trRapCut = kFALSE;
     bool heRapCut = kFALSE;
     histos.fill(HIST("event/eventSelection"), 0);
@@ -511,49 +521,49 @@ struct trHeAnalysis {
       return;
     histos.fill(HIST("event/eventSelection"), 6);
     if (cfgTPCPidMethod) {
-      for (const auto &track : tracks) {
+      for (const auto& track : tracks) {
         trRapCut =
-            track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton)) >
-                kinemOptions.yLowCut &&
-            track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton)) <
-                kinemOptions.yHighCut;
+          track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton)) >
+            kinemOptions.yLowCut &&
+          track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton)) <
+            kinemOptions.yHighCut;
         heRapCut =
-            track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3)) >
-                kinemOptions.yLowCut &&
-            track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3)) <
-                kinemOptions.yHighCut;
-        histos.fill(HIST("histogram/cuts"), 0); 
+          track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3)) >
+            kinemOptions.yLowCut &&
+          track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3)) <
+            kinemOptions.yHighCut;
+        histos.fill(HIST("histogram/cuts"), 0);
         if (std::abs(track.tpcInnerParam()) < kinemOptions.pCut) {
-          histos.fill(HIST("histogram/cuts"), 1);  
-          continue; 
+          histos.fill(HIST("histogram/cuts"), 1);
+          continue;
         }
         if (std::abs(track.eta()) >= kinemOptions.etaCut) {
-          histos.fill(HIST("histogram/cuts"), 2);  
-          continue;  
+          histos.fill(HIST("histogram/cuts"), 2);
+          continue;
         }
         if (track.tpcNClsFound() < cfgCutTPCClusters) {
-          histos.fill(HIST("histogram/cuts"), 3);  
-          continue;  
+          histos.fill(HIST("histogram/cuts"), 3);
+          continue;
         }
         if (track.itsNCls() < cfgCutITSClusters) {
-          histos.fill(HIST("histogram/cuts"), 4); 
-          continue;  
+          histos.fill(HIST("histogram/cuts"), 4);
+          continue;
         }
         if (track.tpcNClsCrossedRows() < cfgCutTPCXRows) {
-          histos.fill(HIST("histogram/cuts"), 5);  
-          continue;  
+          histos.fill(HIST("histogram/cuts"), 5);
+          continue;
         }
         if (track.itsChi2NCl() > cfgCutmaxChi2ITS) {
-          histos.fill(HIST("histogram/cuts"), 6); 
-          continue;  
+          histos.fill(HIST("histogram/cuts"), 6);
+          continue;
         }
         if (track.tpcChi2NCl() > cfgCutmaxChi2TPC) {
-          histos.fill(HIST("histogram/cuts"), 7);  
-          continue;  
+          histos.fill(HIST("histogram/cuts"), 7);
+          continue;
         }
         if (track.tpcCrossedRowsOverFindableCls() <= cfgCutTPCcrRowToFindableCl) {
-          histos.fill(HIST("histogram/cuts"), 8);  
-          continue;  
+          histos.fill(HIST("histogram/cuts"), 8);
+          continue;
         }
         histos.fill(HIST("histogram/pT"), track.pt());
         histos.fill(HIST("histogram/p"), track.p());
@@ -590,7 +600,7 @@ struct trHeAnalysis {
             bool TPassedItsRefit = track.passedITSRefit();
             float TRigidity = track.tpcInnerParam();
             float TItsClusterSize =
-                getMeanItsClsSize(track) / std::cosh(track.eta());
+              getMeanItsClsSize(track) / std::cosh(track.eta());
             H3Data(TPt, TEta, TPhi, TCharge, TH3DeDx, TnSigmaTpc, TTofSignalH3,
                    TDcaXY, TDcaZ, TSigmaYX, TSigmaXYZ, TSigmaZ, TnTpcCluster,
                    TnItsCluster, TTpcChi2NCl, TItsChi2NCl, TPassedTpcRefit,
@@ -625,7 +635,7 @@ struct trHeAnalysis {
             bool TPassedItsRefit = track.passedITSRefit();
             float TRigidity = track.tpcInnerParam();
             float TItsClusterSize =
-                getMeanItsClsSize(track) / std::cosh(track.eta());
+              getMeanItsClsSize(track) / std::cosh(track.eta());
             HeData(TPt, TEta, TPhi, TCharge, THeDeDx, TnSigmaTpc, TTofSignalHe,
                    TDcaXY, TDcaZ, TSigmaYX, TSigmaXYZ, TSigmaZ, TnTpcCluster,
                    TnItsCluster, TTpcChi2NCl, TItsChi2NCl, TPassedTpcRefit,
@@ -635,49 +645,49 @@ struct trHeAnalysis {
       }
     }
     if (!cfgTPCPidMethod) {
-      for (const auto &track : tracks) {
+      for (const auto& track : tracks) {
         trRapCut =
-            track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton)) >
-                kinemOptions.yLowCut &&
-            track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton)) <
-                kinemOptions.yHighCut;
+          track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton)) >
+            kinemOptions.yLowCut &&
+          track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton)) <
+            kinemOptions.yHighCut;
         heRapCut =
-            track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3)) >
-                kinemOptions.yLowCut &&
-            track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3)) <
-                kinemOptions.yHighCut;
-        histos.fill(HIST("histogram/cuts"), 0); 
+          track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3)) >
+            kinemOptions.yLowCut &&
+          track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3)) <
+            kinemOptions.yHighCut;
+        histos.fill(HIST("histogram/cuts"), 0);
         if (std::abs(track.tpcInnerParam()) < kinemOptions.pCut) {
-          histos.fill(HIST("histogram/cuts"), 1);  
-          continue; 
+          histos.fill(HIST("histogram/cuts"), 1);
+          continue;
         }
         if (std::abs(track.eta()) < kinemOptions.etaCut) {
-          histos.fill(HIST("histogram/cuts"), 2);  
-          continue;  
+          histos.fill(HIST("histogram/cuts"), 2);
+          continue;
         }
         if (track.tpcNClsFound() < cfgCutTPCClusters) {
-          histos.fill(HIST("histogram/cuts"), 3);  
-          continue;  
+          histos.fill(HIST("histogram/cuts"), 3);
+          continue;
         }
         if (track.itsNCls() < cfgCutITSClusters) {
-          histos.fill(HIST("histogram/cuts"), 4); 
-          continue;  
+          histos.fill(HIST("histogram/cuts"), 4);
+          continue;
         }
         if (track.tpcNClsCrossedRows() < cfgCutTPCXRows) {
-          histos.fill(HIST("histogram/cuts"), 5);  
-          continue;  
+          histos.fill(HIST("histogram/cuts"), 5);
+          continue;
         }
         if (track.itsChi2NCl() > cfgCutmaxChi2ITS) {
-          histos.fill(HIST("histogram/cuts"), 6); 
-          continue;  
+          histos.fill(HIST("histogram/cuts"), 6);
+          continue;
         }
         if (track.tpcChi2NCl() > cfgCutmaxChi2TPC) {
-          histos.fill(HIST("histogram/cuts"), 7);  
-          continue;  
+          histos.fill(HIST("histogram/cuts"), 7);
+          continue;
         }
         if (track.tpcCrossedRowsOverFindableCls() <= cfgCutTPCcrRowToFindableCl) {
-          histos.fill(HIST("histogram/cuts"), 8);  
-          continue;  
+          histos.fill(HIST("histogram/cuts"), 8);
+          continue;
         }
         histos.fill(HIST("histogram/pT"), track.pt());
         histos.fill(HIST("histogram/p"), track.p());
@@ -713,7 +723,7 @@ struct trHeAnalysis {
             bool TPassedItsRefit = track.passedITSRefit();
             float TRigidity = track.tpcInnerParam();
             float TItsClusterSize =
-                getMeanItsClsSize(track) / std::cosh(track.eta());
+              getMeanItsClsSize(track) / std::cosh(track.eta());
             H3Data(TPt, TEta, TPhi, TCharge, TH3DeDx, TnSigmaTpc, TTofSignalH3,
                    TDcaXY, TDcaZ, TSigmaYX, TSigmaXYZ, TSigmaZ, TnTpcCluster,
                    TnItsCluster, TTpcChi2NCl, TItsChi2NCl, TPassedTpcRefit,
@@ -747,7 +757,7 @@ struct trHeAnalysis {
             bool TPassedItsRefit = track.passedITSRefit();
             float TRigidity = track.tpcInnerParam();
             float TItsClusterSize =
-                getMeanItsClsSize(track) / std::cosh(track.eta());
+              getMeanItsClsSize(track) / std::cosh(track.eta());
             HeData(TPt, TEta, TPhi, TCharge, THeDeDx, TnSigmaTpc, TTofSignalHe,
                    TDcaXY, TDcaZ, TSigmaYX, TSigmaXYZ, TSigmaZ, TnTpcCluster,
                    TnItsCluster, TTpcChi2NCl, TItsChi2NCl, TPassedTpcRefit,
@@ -759,23 +769,26 @@ struct trHeAnalysis {
   }
 
   template <class T>
-  float getTPCnSigma(T const &track, Particle const &particle) {
+  float getTPCnSigma(T const& track, Particle const& particle)
+  {
     const float rigidity = track.tpcInnerParam();
     if (!track.hasTPC())
       return -999;
 
     float expBethe{tpc::BetheBlochAleph(
-        static_cast<float>(particle.charge * rigidity / particle.mass),
-        particle.betheParams[0], particle.betheParams[1],
-        particle.betheParams[2], particle.betheParams[3],
-        particle.betheParams[4])};
+      static_cast<float>(particle.charge * rigidity / particle.mass),
+      particle.betheParams[0], particle.betheParams[1],
+      particle.betheParams[2], particle.betheParams[3],
+      particle.betheParams[4])};
     float expSigma{expBethe * particle.resolution};
     float sigmaTPC =
-        static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
+      static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
     return sigmaTPC;
   }
 
-  template <class T> float getMeanItsClsSize(T const &track) {
+  template <class T>
+  float getMeanItsClsSize(T const& track)
+  {
     int sum = 0, n = 0;
     for (int i = 0; i < 8; i++) {
       sum += (track.itsClusterSizes() >> (4 * i) & 15);
@@ -786,8 +799,9 @@ struct trHeAnalysis {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{
-      adaptAnalysisTask<trHeAnalysis>(cfgc),
+    adaptAnalysisTask<trHeAnalysis>(cfgc),
   };
 }
