@@ -15,6 +15,10 @@
 /// \author Chiara Zampolli, <Chiara.Zampolli@cern.ch>, CERN
 ///         Paul Buehler, <paul.buehler@oeaw.ac.at>, Vienna
 
+#include <string>
+#include <memory>
+#include <vector>
+
 #include <TPDGCode.h>
 
 #include "CommonConstants/PhysicsConstants.h"
