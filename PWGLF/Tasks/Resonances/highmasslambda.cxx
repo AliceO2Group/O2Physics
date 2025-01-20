@@ -77,6 +77,7 @@ struct highmasslambda {
   // fill output
   Configurable<bool> fillQA{"fillQA", false, "fillQA"};
   Configurable<bool> useSP{"useSP", false, "useSP"};
+  // Configurable<bool> additionalEvselITS{"additionalEvselITS", true, "additionalEvselITS"};
   Configurable<bool> useSignDCAV0{"useSignDCAV0", true, "useSignDCAV0"};
   Configurable<bool> fillDefault{"fillDefault", false, "fill Occupancy"};
   Configurable<int> cfgOccupancyCut{"cfgOccupancyCut", 2500, "Occupancy cut"};
@@ -560,7 +561,9 @@ struct highmasslambda {
     if (!collision.sel8() || !collision.triggereventep() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return;
     }
-
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      return;
+    }
     auto centrality = collision.centFT0C();
     auto multTPC = collision.multNTracksPV();
     histos.fill(HIST("hFTOCvsTPCNoCut"), centrality, multTPC);
@@ -763,6 +766,12 @@ struct highmasslambda {
         continue;
       }
       if (collision1.bcId() == collision2.bcId()) {
+        continue;
+      }
+      if (!collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      if (!collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
       auto centrality = collision1.centFT0C();
