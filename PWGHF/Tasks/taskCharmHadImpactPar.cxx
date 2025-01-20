@@ -14,6 +14,8 @@
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+#include <vector>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -31,6 +33,7 @@ using namespace o2::framework::expressions;
 enum Channel : uint8_t {
   DplusToKPiPi = 0,
   DzeroToKPi,
+  LcToPKPi,
   NChannels
 };
 
@@ -38,26 +41,26 @@ namespace o2::aod
 {
 namespace hf_charm_cand_lite
 {
-DECLARE_SOA_COLUMN(M, m, float);                          //! Invariant mass of candidate (GeV/c2)
-DECLARE_SOA_COLUMN(Pt, pt, float);                        //! Transverse momentum of candidate (GeV/c)
-DECLARE_SOA_COLUMN(Y, y, float);                          //! Rapidity of candidate
-DECLARE_SOA_COLUMN(Eta, eta, float);                      //! Pseudorapidity of candidate
-DECLARE_SOA_COLUMN(Phi, phi, float);                      //! Azimuth angle of candidate
-DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);        //! ML score for background class
-DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);     //! ML Prompt score for prompt class
-DECLARE_SOA_COLUMN(MlScoreNonPrompt, mlScoreNonPrompt, float);  //! ML Non Prompt score for non prompt class
-}
+DECLARE_SOA_COLUMN(M, m, float);                                 //! Invariant mass of candidate (GeV/c2)
+DECLARE_SOA_COLUMN(Pt, pt, float);                               //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(Y, y, float);                                 //! Rapidity of candidate
+DECLARE_SOA_COLUMN(Phi, phi, float);                             //! Azimuth angle of candidate
+DECLARE_SOA_COLUMN(ImpactParameterXY, impactParameterXY, float); //! Dca XY of candidate
+DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);               //! ML score for background class
+DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);         //! ML Prompt score for prompt class
+DECLARE_SOA_COLUMN(MlScoreNonPrompt, mlScoreNonPrompt, float);   //! ML Non Prompt score for non prompt class
+} // namespace hf_charm_cand_lite
 
 DECLARE_SOA_TABLE(HfCharmCandLites, "AOD", "HFCHARMCANDLITE", //! Table with some B+ properties
                   hf_charm_cand_lite::M,
                   hf_charm_cand_lite::Pt,
                   hf_charm_cand_lite::Y,
-                  hf_charm_cand_lite::Eta,
                   hf_charm_cand_lite::Phi,
+                  hf_charm_cand_lite::ImpactParameterXY,
                   hf_charm_cand_lite::MlScoreBkg,
                   hf_charm_cand_lite::MlScorePrompt,
                   hf_charm_cand_lite::MlScoreNonPrompt);
-}
+} // namespace o2::aod
 
 struct HfTaskCharmHadImpactPar {
   Produces<aod::HfCharmCandLites> hfCharmCandLite;
@@ -66,8 +69,8 @@ struct HfTaskCharmHadImpactPar {
   Configurable<int> fillLightTreeCandidate{"fillLightTreeCandidate", 0, "Flag to store charm hadron features"};
   ConfigurableAxis axisPt{"axisPt", {0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 10.f, 12.f, 16.f, 24.f, 36.f, 50.f}, "axis for pT of charm hadron"};
   ConfigurableAxis axisMass{"axisMass", {250, 1.65f, 2.15f}, "axis for mass of charm hadron"};
-  ConfigurableAxis axisPhi{"axisPhi", {100, 0.f, 2*PI}, "axis for azimuthal angle of charm hadron"};
-  ConfigurableAxis axisEta{"axisEta", {100, -2.f, 2.f}, "axis for pseudorapidity of charm hadron"};
+  ConfigurableAxis axisPhi{"axisPhi", {180, 0.f, 2 * PI}, "axis for azimuthal angle of charm hadron"};
+  ConfigurableAxis axisY{"axisY", {20, -1.f, 1.f}, "axis for rapidity of charm hadron"};
   ConfigurableAxis axisImpPar{"axisImpPar", {2000, -500.f, 500.f}, "axis for impact-parameter of charm hadron"};
   ConfigurableAxis axisMlScore0{"axisMlScore0", {100, 0.f, 1.f}, "axis for ML output score 0"};
   ConfigurableAxis axisMlScore1{"axisMlScore1", {100, 0.f, 1.f}, "axis for ML output score 1"};
@@ -79,24 +82,25 @@ struct HfTaskCharmHadImpactPar {
   using CandDplusDataWithMl = soa::Filtered<soa::Join<CandDplusData, aod::HfMlDplusToPiKPi>>;
   using CandDzeroData = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
   using CandDzeroDataWithMl = soa::Filtered<soa::Join<CandDzeroData, aod::HfMlD0>>;
+  using CandLcData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
+  using CandLcDataWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfMlLcToPKPi>>;
 
   Filter filterDplusFlag = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
   Filter filterDzeroFlag = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
+  Filter filterLcFlag = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlag || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlag;
 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext&)
   {
-    std::array<bool, 4> doprocess{doprocessDplus, doprocessDplusWithMl, doprocessDzero, doprocessDzeroWithMl};
+    std::array<bool, 6> doprocess{doprocessDplus, doprocessDplusWithMl, doprocessDzero, doprocessDzeroWithMl, doprocessLc, doprocessLcWithMl};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "Only one process function should be enabled! Please check your configuration!");
     }
-    if (doprocessDplus || doprocessDzero) {
-      registry.add("hMassPtImpPar", ";#it{M} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});dca XY (#mum);", HistType::kTHnSparseF, {axisMass, axisPt, axisImpPar});
-      registry.add("hMassPtPhiEta", ";#it{M} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); phi; eta;", HistType::kTHnSparseF, {axisMass, axisPt, axisImpPar, axisPhi, axisEta});
-    } else if (doprocessDplusWithMl || doprocessDzeroWithMl) {
-      registry.add("hMassPtImpPar", ";#it{M} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});dca XY (#mum);ML score 0;ML score 1; ML score 2;", HistType::kTHnSparseF, {axisMass, axisPt, axisImpPar, axisMlScore0, axisMlScore1, axisMlScore2});
-      registry.add("hMassPtPhiEta", ";#it{M} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); phi; eta; ML score 0;ML score 1; ML score 2;", HistType::kTHnSparseF, {axisMass, axisPt, axisImpPar, axisPhi, axisEta, axisMlScore0, axisMlScore1, axisMlScore2});
+    if (doprocessDplus || doprocessDzero || doprocessLc) {
+      registry.add("hMassPtImpParPhiY", ";#it{M} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});dca XY (#mum); phi; y;", HistType::kTHnSparseF, {axisMass, axisPt, axisImpPar, axisPhi, axisY});
+    } else if (doprocessDplusWithMl || doprocessDzeroWithMl || doprocessLcWithMl) {
+      registry.add("hMassPtImpParPhiY", ";#it{M} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});dca XY (#mum); phi; y; ML score 0;ML score 1; ML score 2;", HistType::kTHnSparseF, {axisMass, axisPt, axisImpPar, axisPhi, axisY, axisMlScore0, axisMlScore1, axisMlScore2});
     }
   }
 
@@ -107,43 +111,66 @@ struct HfTaskCharmHadImpactPar {
   {
     std::vector<float> outputMl = {-999., -999., -999.};
     float invMass{-1.f};
+    float yCand{-999.f};
     if constexpr (channel == Channel::DplusToKPiPi) { // D+ -> Kpipi
       invMass = hfHelper.invMassDplusToPiKPi(candidate);
+      yCand = hfHelper.yDplus(candidate);
       if constexpr (withMl) {
         for (auto iScore{0u}; iScore < candidate.mlProbDplusToPiKPi().size(); ++iScore) {
           outputMl[iScore] = candidate.mlProbDplusToPiKPi()[iScore];
         }
-        registry.fill(HIST("hMassPtImpPar"), invMass, candidate.pt(), candidate.impactParameterXY(), outputMl[0], outputMl[1], outputMl[2]);
-        registry.fill(HIST("hMassPtPhiEta"), invMass, candidate.pt(), candidate.phi(), candidate.eta(), outputMl[0], outputMl[1], outputMl[2]);
+        registry.fill(HIST("hMassPtImpParPhiY"), invMass, candidate.pt(), candidate.impactParameterXY(), candidate.phi(), yCand, outputMl[0], outputMl[1], outputMl[2]);
       } else {
-        registry.fill(HIST("hMassPtImpPar"), invMass, candidate.pt(), candidate.impactParameterXY());
-        registry.fill(HIST("hMassPtPhiEta"), invMass, candidate.pt(), candidate.phi(), candidate.eta());
+        registry.fill(HIST("hMassPtImpParPhiY"), invMass, candidate.pt(), candidate.impactParameterXY(), candidate.phi(), yCand);
       }
     } else if constexpr (channel == Channel::DzeroToKPi) {
       if (candidate.isSelD0()) { // D0 -> Kpi
         invMass = hfHelper.invMassD0ToPiK(candidate);
+        yCand = hfHelper.yD0(candidate);
         if constexpr (withMl) {
           for (auto iScore{0u}; iScore < candidate.mlProbD0().size(); ++iScore) {
             outputMl[iScore] = candidate.mlProbD0()[iScore];
           }
-          registry.fill(HIST("hMassPtImpPar"), invMass, candidate.pt(), candidate.impactParameterXY(), outputMl[0], outputMl[1], outputMl[2]);
-          registry.fill(HIST("hMassPtPhiEta"), invMass, candidate.pt(), candidate.phi(), candidate.eta(), outputMl[0], outputMl[1], outputMl[2]);
+          registry.fill(HIST("hMassPtImpParPhiY"), invMass, candidate.pt(), candidate.impactParameterXY(), candidate.phi(), yCand, outputMl[0], outputMl[1], outputMl[2]);
         } else {
-          registry.fill(HIST("hMassPtImpPar"), invMass, candidate.pt(), candidate.impactParameterXY());
-          registry.fill(HIST("hMassPtPhiEta"), invMass, candidate.pt(), candidate.phi(), candidate.eta());
+          registry.fill(HIST("hMassPtImpParPhiY"), invMass, candidate.pt(), candidate.impactParameterXY(), candidate.phi(), yCand);
         }
       }
       if (candidate.isSelD0bar()) {
         invMass = hfHelper.invMassD0barToKPi(candidate);
+        yCand = hfHelper.yD0(candidate);
         if constexpr (withMl) {
           for (auto iScore{0u}; iScore < candidate.mlProbD0bar().size(); ++iScore) {
             outputMl[iScore] = candidate.mlProbD0bar()[iScore];
           }
-          registry.fill(HIST("hMassPtImpPar"), invMass, candidate.pt(), candidate.impactParameterXY(), outputMl[0], outputMl[1], outputMl[2]);
-          registry.fill(HIST("hMassPtPhiEta"), invMass, candidate.pt(), candidate.phi(), candidate.eta(), outputMl[0], outputMl[1], outputMl[2]);
+          registry.fill(HIST("hMassPtImpParPhiY"), invMass, candidate.pt(), candidate.impactParameterXY(), candidate.phi(), yCand, outputMl[0], outputMl[1], outputMl[2]);
         } else {
-          registry.fill(HIST("hMassPtImpPar"), invMass, candidate.pt(), candidate.impactParameterXY());
-          registry.fill(HIST("hMassPtPhiEta"), invMass, candidate.pt(), candidate.phi(), candidate.eta(), outputMl[0], outputMl[1], outputMl[2]);
+          registry.fill(HIST("hMassPtImpParPhiY"), invMass, candidate.pt(), candidate.impactParameterXY(), candidate.phi(), yCand);
+        }
+      }
+    } else if constexpr (channel == Channel::LcToPKPi) {
+      if (candidate.isSelLcToPKPi()) { // Lc -> pKpi
+        invMass = hfHelper.invMassLcToPKPi(candidate);
+        yCand = hfHelper.yLc(candidate);
+        if constexpr (withMl) {
+          for (auto iScore{0u}; iScore < candidate.mlProbLcToPKPi().size(); ++iScore) {
+            outputMl[iScore] = candidate.mlProbLcToPKPi()[iScore];
+          }
+          registry.fill(HIST("hMassPtImpParPhiY"), invMass, candidate.pt(), candidate.impactParameterXY(), candidate.phi(), yCand, outputMl[0], outputMl[1], outputMl[2]);
+        } else {
+          registry.fill(HIST("hMassPtImpParPhiY"), invMass, candidate.pt(), candidate.impactParameterXY(), candidate.phi(), yCand);
+        }
+      }
+      if (candidate.isSelLcToPiKP()) {
+        invMass = hfHelper.invMassLcToPiKP(candidate);
+        yCand = hfHelper.yLc(candidate);
+        if constexpr (withMl) {
+          for (auto iScore{0u}; iScore < candidate.mlProbLcToPiKP().size(); ++iScore) {
+            outputMl[iScore] = candidate.mlProbLcToPiKP()[iScore];
+          }
+          registry.fill(HIST("hMassPtImpParPhiY"), invMass, candidate.pt(), candidate.impactParameterXY(), candidate.phi(), yCand, outputMl[0], outputMl[1], outputMl[2]);
+        } else {
+          registry.fill(HIST("hMassPtImpParPhiY"), invMass, candidate.pt(), candidate.impactParameterXY(), candidate.phi(), yCand);
         }
       }
     }
@@ -184,17 +211,36 @@ struct HfTaskCharmHadImpactPar {
           }
         }
       }
+    } else if constexpr (channel == Channel::LcToPKPi) {
+      if (candidate.isSelLcToPKPi()) { // Lc -> pKpi
+        invMass = hfHelper.invMassLcToPKPi(candidate);
+        yCand = hfHelper.yLc(candidate);
+        if constexpr (withMl) {
+          for (auto iScore{0u}; iScore < candidate.mlProbLcToPKPi().size(); ++iScore) {
+            outputMl[iScore] = candidate.mlProbLcToPKPi()[iScore];
+          }
+        }
+      }
+      if (candidate.isSelLcToPiKP()) { // Lc -> piKp
+        invMass = hfHelper.invMassLcToPiKP(candidate);
+        yCand = hfHelper.yLc(candidate);
+        if constexpr (withMl) {
+          for (auto iScore{0u}; iScore < candidate.mlProbLcToPiKP().size(); ++iScore) {
+            outputMl[iScore] = candidate.mlProbLcToPiKP()[iScore];
+          }
+        }
+      }
     }
     hfCharmCandLite(
-          // Charm candidate meson features
-          invMass,
-          candidate.pt(),
-          yCand,
-          candidate.eta(),
-          candidate.phi(),
-          outputMl[0],
-          outputMl[1],
-          outputMl[2]);
+      // Charm candidate meson features
+      invMass,
+      candidate.pt(),
+      yCand,
+      candidate.phi(),
+      candidate.impactParameterXY(),
+      outputMl[0],
+      outputMl[1],
+      outputMl[2]);
   }
 
   /// \param candidates are reconstructed candidates
@@ -203,7 +249,7 @@ struct HfTaskCharmHadImpactPar {
   {
     for (auto const& candidate : candidates) {
       fillSparse<channel, withMl>(candidate);
-      if(fillLightTreeCandidate){
+      if (fillLightTreeCandidate) {
         fillTree<channel, withMl>(candidate);
       }
     }
@@ -233,6 +279,18 @@ struct HfTaskCharmHadImpactPar {
     runAnalysis<Channel::DzeroToKPi, true>(candidates);
   }
   PROCESS_SWITCH(HfTaskCharmHadImpactPar, processDzeroWithMl, "Process D0 with ML", false);
+
+  void processLc(CandLcData const& candidates)
+  {
+    runAnalysis<Channel::LcToPKPi, false>(candidates);
+  }
+  PROCESS_SWITCH(HfTaskCharmHadImpactPar, processLc, "Process Lc w/o ML", false);
+
+  void processLcWithMl(CandLcDataWithMl const& candidates)
+  {
+    runAnalysis<Channel::LcToPKPi, true>(candidates);
+  }
+  PROCESS_SWITCH(HfTaskCharmHadImpactPar, processLcWithMl, "Process Lc with ML", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
