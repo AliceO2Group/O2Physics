@@ -372,7 +372,7 @@ void FlowPtContainer::fillVnDeltaPtProfiles(const double& centmult, const double
       continue;
     for (auto i = 0; i <= m; ++i) {
       if (cmDen[m] != 0) {
-        dynamic_cast<BootstrapProfile*>(fCovList->At(fillCounter))->FillProfile(centmult, flowval * ((i == m) ? cmVal[0] : cmVal[m * (m - 1) / 2 + (m - i)]), (fEventWeight == UnityWeight) ? 1.0 : flowtuples * cmDen[m], rn);
+        dynamic_cast<BootstrapProfile*>(fCovList->At(fillCounter))->FillProfile(centmult, flowval * ((i == m) ? cmVal[0] : cmVal[m * (m - 1) / 2 + i + 1]), (fEventWeight == UnityWeight) ? 1.0 : flowtuples * cmDen[m], rn);
       }
       ++fillCounter;
     }
@@ -447,31 +447,31 @@ void FlowPtContainer::fillCMProfiles(const double& centmult, const double& rn)
   if (mpar < 1 || cmDen[1] == 0)
     return;
   cmVal.push_back(sumP[getVectorIndex(1, 1)] / cmDen[1]);
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(0))->FillProfile(centmult, cmVal[1], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[0], rn);
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(0))->FillProfile(centmult, cmVal[1], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[1], rn);
   if (mpar < 2 || sumP[getVectorIndex(2, 0)] == 0 || cmDen[2] == 0)
     return;
   cmVal.push_back(1 / cmDen[2] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] - sumP[getVectorIndex(2, 2)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(1))->FillProfile(centmult, cmVal[2], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[1], rn);
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(1))->FillProfile(centmult, cmVal[2], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[2], rn);
   cmVal.push_back(-2 * 1 / cmDen[2] * (sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 1)] - sumP[getVectorIndex(2, 1)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(2))->FillProfile(centmult, cmVal[3], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[1], rn);
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(2))->FillProfile(centmult, cmVal[3], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[2], rn);
   if (mpar < 3 || sumP[getVectorIndex(3, 0)] == 0 || cmDen[3] == 0)
     return;
   cmVal.push_back(1 / cmDen[3] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] - 3 * sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(1, 1)] + 2 * sumP[getVectorIndex(3, 3)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(3))->FillProfile(centmult, cmVal[4], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[2], rn);
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(3))->FillProfile(centmult, cmVal[4], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[3], rn);
   cmVal.push_back(-3 * 1 / cmDen[3] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 0)] - 2 * sumP[getVectorIndex(2, 1)] * sumP[getVectorIndex(1, 1)] + 2 * sumP[getVectorIndex(3, 2)] - sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(1, 0)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(4))->FillProfile(centmult, cmVal[5], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[2], rn);
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(4))->FillProfile(centmult, cmVal[5], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[3], rn);
   cmVal.push_back(3 * 1 / cmDen[3] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] - 2 * sumP[getVectorIndex(2, 1)] * sumP[getVectorIndex(1, 0)] + 2 * sumP[getVectorIndex(3, 1)] - sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(2, 0)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(5))->FillProfile(centmult, cmVal[6], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[2], rn);
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(5))->FillProfile(centmult, cmVal[6], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[3], rn);
   if (mpar < 4 || sumP[getVectorIndex(4, 0)] == 0 || cmDen[4] == 0)
     return;
   cmVal.push_back(1 / cmDen[4] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] - 6 * sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] + 3 * sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(2, 2)] + 8 * sumP[getVectorIndex(3, 3)] * sumP[getVectorIndex(1, 1)] - 6 * sumP[getVectorIndex(4, 4)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(6))->FillProfile(centmult, cmVal[7], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[3], rn);
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(6))->FillProfile(centmult, cmVal[7], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[4], rn);
   cmVal.push_back(-4 * 1 / cmDen[4] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 0)] - 3 * sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 0)] - 3 * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(2, 1)] + 3 * sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(2, 1)] + 6 * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(3, 2)] - 6 * sumP[getVectorIndex(4, 3)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(7))->FillProfile(centmult, cmVal[8], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[3], rn);
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(7))->FillProfile(centmult, cmVal[8], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[4], rn);
   cmVal.push_back(6 * 1 / cmDen[4] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] - sumP[getVectorIndex(2, 2)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] - sumP[getVectorIndex(2, 0)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 1)] + sumP[getVectorIndex(2, 0)] * sumP[getVectorIndex(2, 2)] - 4 * sumP[getVectorIndex(2, 1)] * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 0)] + 4 * sumP[getVectorIndex(3, 2)] * sumP[getVectorIndex(1, 0)] + 4 * sumP[getVectorIndex(3, 1)] * sumP[getVectorIndex(1, 1)] + 2 * sumP[getVectorIndex(2, 1)] * sumP[getVectorIndex(2, 1)] - 6 * sumP[getVectorIndex(4, 2)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(8))->FillProfile(centmult, cmVal[9], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[3], rn);
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(8))->FillProfile(centmult, cmVal[9], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[4], rn);
   cmVal.push_back(-4 * 1 / cmDen[4] * (sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] - 3 * sumP[getVectorIndex(2, 1)] * sumP[getVectorIndex(1, 0)] * sumP[getVectorIndex(1, 0)] - 3 * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(2, 0)] * sumP[getVectorIndex(1, 0)] + 3 * sumP[getVectorIndex(2, 1)] * sumP[getVectorIndex(2, 0)] + 2 * sumP[getVectorIndex(1, 1)] * sumP[getVectorIndex(3, 0)] + 6 * sumP[getVectorIndex(3, 1)] * sumP[getVectorIndex(1, 0)] - 6 * sumP[getVectorIndex(4, 1)]));
-  dynamic_cast<BootstrapProfile*>(fCMTermList->At(9))->FillProfile(centmult, cmVal[10], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[3], rn);
+  dynamic_cast<BootstrapProfile*>(fCMTermList->At(9))->FillProfile(centmult, cmVal[10], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDen[4], rn);
   return;
 }
 void FlowPtContainer::fillArray(FillType a, FillType b, double c, double d)
