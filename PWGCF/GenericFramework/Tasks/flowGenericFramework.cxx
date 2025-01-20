@@ -104,6 +104,7 @@ struct GenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgOccupancySelection, int, -999, "Max occupancy selection, -999 to disable");
   O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileupCut, bool, true, "kNoSameBunchPileupCut");
   O2_DEFINE_CONFIGURABLE(cfgIsGoodZvtxFT0vsPV, bool, true, "kIsGoodZvtxFT0vsPV");
+  O2_DEFINE_CONFIGURABLE(cfgIsGoodITSLayersAll, bool, true, "kIsGoodITSLayersAll");
   O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, true, "kNoCollInTimeRangeStandard");
   O2_DEFINE_CONFIGURABLE(cfgDoOccupancySel, bool, true, "Bool for event selection on detector occupancy");
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, true, "Use additional evenr cut on mult correlations");
@@ -267,8 +268,9 @@ struct GenericFramework {
       registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(6, "kIsGoodZvtxFT0vsPV");
       registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(7, "kNoCollInTimeRangeStandard");
       registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(8, "kIsVertexITSTPC");
-      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(9, "after Mult cuts");
-      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(10, "has track + within cent");
+      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(9, "kIsGoodITSLayersAll");
+      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(10, "after Mult cuts");
+      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(11, "has track + within cent");
     }
 
     if (regions.GetSize() < 0)
@@ -538,6 +540,13 @@ struct GenericFramework {
       }
       registry.fill(HIST("eventQA/eventSel"), 7.5);
     }
+
+    if (cfgIsGoodITSLayersAll) {
+      if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        return 0;
+      }
+      registry.fill(HIST("eventQA/eventSel"), 8.5);
+    }
     float vtxz = -999;
     if (collision.numContrib() > 1) {
       vtxz = collision.posZ();
@@ -560,7 +569,7 @@ struct GenericFramework {
       return 0;
     if (multTrk > fMultCutHigh->Eval(centrality))
       return 0;
-    registry.fill(HIST("eventQA/eventSel"), 8.5);
+    registry.fill(HIST("eventQA/eventSel"), 9.5);
     /* 22s
     if (multNTracksPV < fMultPVCutLow->Eval(centrality))
       return 0;
@@ -701,7 +710,7 @@ struct GenericFramework {
       return;
     if (centrality < centbinning.front() || centrality > centbinning.back())
       return;
-    registry.fill(HIST("eventQA/eventSel"), 9.5);
+    registry.fill(HIST("eventQA/eventSel"), 10.5);
     float vtxz = collision.posZ();
     fGFW->Clear();
     fFCpt->clearVector();
