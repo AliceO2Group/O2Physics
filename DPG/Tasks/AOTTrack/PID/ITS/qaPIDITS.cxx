@@ -161,34 +161,26 @@ struct itsPidQa {
   {
     switch (id) {
       case o2::track::PID::Electron:
-        nsigma = track.itsNSigmaEl();
-        break;
+        return track.itsNSigmaEl();
       case o2::track::PID::Muon:
-        nsigma = track.itsNSigmaMu();
-        break;
+        return track.itsNSigmaMu();
       case o2::track::PID::Pion:
-        nsigma = track.itsNSigmaPi();
-        break;
+        return track.itsNSigmaPi();
       case o2::track::PID::Kaon:
-        nsigma = track.itsNSigmaKa();
-        break;
+        return track.itsNSigmaKa();
       case o2::track::PID::Proton:
-        nsigma = track.itsNSigmaPr();
-        break;
+        return track.itsNSigmaPr();
       case o2::track::PID::Deuteron:
-        nsigma = track.itsNSigmaDe();
-        break;
+        return track.itsNSigmaDe();
       case o2::track::PID::Triton:
-        nsigma = track.itsNSigmaTr();
-        break;
+        return track.itsNSigmaTr();
       case o2::track::PID::Helium3:
-        nsigma = track.itsNSigmaHe();
-        break;
+        return track.itsNSigmaHe();
       case o2::track::PID::Alpha:
-        nsigma = track.itsNSigmaAl();
-        break;
+        return track.itsNSigmaAl();
       default:
         LOG(fatal) << "PID not implemented";
+        return 0.f;
     }
   }
   template <typename TrackType>
@@ -196,34 +188,26 @@ struct itsPidQa {
   {
     switch (id) {
       case o2::track::PID::Electron:
-        nsigma = track.tofNSigmaEl();
-        break;
+        return track.tofNSigmaEl();
       case o2::track::PID::Muon:
-        nsigma = track.tofNSigmaMu();
-        break;
+        return track.tofNSigmaMu();
       case o2::track::PID::Pion:
-        nsigma = track.tofNSigmaPi();
-        break;
+        return track.tofNSigmaPi();
       case o2::track::PID::Kaon:
-        nsigma = track.tofNSigmaKa();
-        break;
+        return track.tofNSigmaKa();
       case o2::track::PID::Proton:
-        nsigma = track.tofNSigmaPr();
-        break;
+        return track.tofNSigmaPr();
       case o2::track::PID::Deuteron:
-        nsigma = track.tofNSigmaDe();
-        break;
+        return track.tofNSigmaDe();
       case o2::track::PID::Triton:
-        nsigma = track.tofNSigmaTr();
-        break;
+        return track.tofNSigmaTr();
       case o2::track::PID::Helium3:
-        nsigma = track.tofNSigmaHe();
-        break;
+        return track.tofNSigmaHe();
       case o2::track::PID::Alpha:
-        nsigma = track.tofNSigmaAl();
-        break;
+        return track.tofNSigmaAl();
       default:
         LOG(fatal) << "PID not implemented";
+        return 0.f;
     }
   }
   template <typename TrackType>
@@ -231,34 +215,26 @@ struct itsPidQa {
   {
     switch (id) {
       case o2::track::PID::Electron:
-        nsigma = track.tpcNSigmaEl();
-        break;
+        return track.tpcNSigmaEl();
       case o2::track::PID::Muon:
-        nsigma = track.tpcNSigmaMu();
-        break;
+        return track.tpcNSigmaMu();
       case o2::track::PID::Pion:
-        nsigma = track.tpcNSigmaPi();
-        break;
+        return track.tpcNSigmaPi();
       case o2::track::PID::Kaon:
-        nsigma = track.tpcNSigmaKa();
-        break;
+        return track.tpcNSigmaKa();
       case o2::track::PID::Proton:
-        nsigma = track.tpcNSigmaPr();
-        break;
+        return track.tpcNSigmaPr();
       case o2::track::PID::Deuteron:
-        nsigma = track.tpcNSigmaDe();
-        break;
+        return track.tpcNSigmaDe();
       case o2::track::PID::Triton:
-        nsigma = track.tpcNSigmaTr();
-        break;
+        return track.tpcNSigmaTr();
       case o2::track::PID::Helium3:
-        nsigma = track.tpcNSigmaHe();
-        break;
+        return track.tpcNSigmaHe();
       case o2::track::PID::Alpha:
-        nsigma = track.tpcNSigmaAl();
-        break;
+        return track.tpcNSigmaAl();
       default:
         LOG(fatal) << "PID not implemented";
+        return 0.f;
     }
   }
 
