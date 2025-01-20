@@ -695,14 +695,14 @@ struct RecoDecay {
                              int8_t* nInteractionsWithMaterial = nullptr)
   {
     // Printf("MC Rec: Expected mother PDG: %d", PDGMother);
-    int8_t coefFlavourOscillation = 1;     // 1 if no B0(s) flavour oscillation occured, -1 else
-    int8_t sgn = 0;                        // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGMother)
-    int8_t nPiToMuLocal = 0;               // number of pion prongs decayed to a muon
-    int8_t nKaToPiLocal = 0;               // number of kaon prongs decayed to a pion
-    int8_t nInteractionsWithMaterial = 0;  // number of interactions with material
-    int indexMother = -1;                  // index of the mother particle
-    std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters of the mother of the first provided daughter
-    std::array<int, N> arrDaughtersIndex;  // array of indices of provided daughters
+    int8_t coefFlavourOscillation = 1;          // 1 if no B0(s) flavour oscillation occured, -1 else
+    int8_t sgn = 0;                             // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGMother)
+    int8_t nPiToMuLocal = 0;                    // number of pion prongs decayed to a muon
+    int8_t nKaToPiLocal = 0;                    // number of kaon prongs decayed to a pion
+    int8_t nInteractionsWithMaterialLocal = 0;  // number of interactions with material
+    int indexMother = -1;                       // index of the mother particle
+    std::vector<int> arrAllDaughtersIndex;      // vector of indices of all daughters of the mother of the first provided daughter
+    std::array<int, N> arrDaughtersIndex;       // array of indices of provided daughters
     if (sign) {
       *sign = sgn;
     }
@@ -754,7 +754,7 @@ struct RecoDecay {
             particleI = motherI;
             process = particleI.getProcess();
             if (process == kPDecay || kPPrimary) { // we found the original daughter that interacted with material
-              nInteractionsWithMaterial++;
+              nInteractionsWithMaterialLocal++;
             }
           }
         }
@@ -837,6 +837,11 @@ struct RecoDecay {
       }
       if (nKaToPi) {
         *nKaToPi = nKaToPiLocal;
+      }
+    }
+    if constexpr (acceptTrackIntWithMaterial) {
+      if (nInteractionsWithMaterialLocal) {
+        *nInteractionsWithMaterial = nInteractionsWithMaterialLocal;
       }
     }
     return indexMother;
