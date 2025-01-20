@@ -753,7 +753,7 @@ struct RecoDecay {
           if (pdgI == pdgMotherI) {
             particleI = motherI;
             process = particleI.getProcess();
-            if (process == kPDecay || kPPrimary) { // we found the original daughter that interacted with material
+            if (process == kPDecay || process == kPPrimary) { // we found the original daughter that interacted with material
               nInteractionsWithMaterialLocal++;
             }
           }
