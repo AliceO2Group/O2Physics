@@ -16,6 +16,8 @@
 ///
 /// \author Matthias Herzer <matthias.herzer@cern.ch>, Goethe University Frankfurt
 ///
+#include <string>
+#include <vector>
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/trackUtilities.h"
