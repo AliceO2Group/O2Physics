@@ -306,37 +306,6 @@ struct itsPidQa {
           }
         }
         const float nsigma = nsigmaITS(track, id);
-        switch (id) {
-          case o2::track::PID::Electron:
-            nsigma = track.itsNSigmaEl();
-            break;
-          case o2::track::PID::Muon:
-            nsigma = track.itsNSigmaMu();
-            break;
-          case o2::track::PID::Pion:
-            nsigma = track.itsNSigmaPi();
-            break;
-          case o2::track::PID::Kaon:
-            nsigma = track.itsNSigmaKa();
-            break;
-          case o2::track::PID::Proton:
-            nsigma = track.itsNSigmaPr();
-            break;
-          case o2::track::PID::Deuteron:
-            nsigma = track.itsNSigmaDe();
-            break;
-          case o2::track::PID::Triton:
-            nsigma = track.itsNSigmaTr();
-            break;
-          case o2::track::PID::Helium3:
-            nsigma = track.itsNSigmaHe();
-            break;
-          case o2::track::PID::Alpha:
-            nsigma = track.itsNSigmaAl();
-            break;
-          default:
-            LOG(fatal) << "PID not implemented";
-        }
         if (track.sign() > 0) {
           hNsigmaPos[id]->Fill(track.p(), nsigma);
         } else {
