@@ -32,6 +32,8 @@ using namespace o2::framework::expressions;
 struct RhoEstimatorTask {
   Produces<aod::BkgChargedRhos> rhoChargedTable;
   Produces<aod::BkgChargedMcRhos> rhoChargedMcTable;
+  Produces<aod::BkgChargedPerpRhos> rhoChargedPerpTable;
+  Produces<aod::BkgChargedMcPerpRhos> rhoChargedMcPerpTable;
   Produces<aod::BkgD0Rhos> rhoD0Table;
   Produces<aod::BkgD0McRhos> rhoD0McTable;
   Produces<aod::BkgLcRhos> rhoLcTable;
@@ -88,7 +90,9 @@ struct RhoEstimatorTask {
     inputParticles.clear();
     jetfindingutilities::analyseTracks<soa::Filtered<aod::JetTracks>, soa::Filtered<aod::JetTracks>::iterator>(inputParticles, tracks, trackSelection, trackingEfficiency);
     auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, doSparse);
+    auto [rhoPerpCone, rhoMPerpCone] = bkgSub.estimateRhoPerpCone(inputParticles, inputParticles);
     rhoChargedTable(rho, rhoM);
+    rhoChargedPerpTable(rhoPerpCone, rhoMPerpCone);
   }
   PROCESS_SWITCH(RhoEstimatorTask, processChargedCollisions, "Fill rho tables for collisions using charged tracks", true);
 
@@ -153,31 +157,31 @@ struct RhoEstimatorTask {
   }
   PROCESS_SWITCH(RhoEstimatorTask, processLcMcCollisions, "Fill rho tables for collisions with Lc MCP candidates", false);
 
-    void processBplusCollisions(aod::JetCollision const&, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesBplusData const& candidates)
-    {
+  void processBplusCollisions(aod::JetCollision const&, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesBplusData const& candidates)
+  {
+    inputParticles.clear();
+    for (auto& candidate : candidates) {
       inputParticles.clear();
-      for (auto& candidate : candidates) {
-        inputParticles.clear();
-        jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, trackingEfficiency, std::optional{candidate});
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, trackingEfficiency, std::optional{candidate});
 
-        auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, doSparse);
-        rhoBplusTable(rho, rhoM);
-      }
+      auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, doSparse);
+      rhoBplusTable(rho, rhoM);
     }
-    PROCESS_SWITCH(RhoEstimatorTask, processBplusCollisions, "Fill rho tables for collisions with Bplus candidates", false);
+  }
+  PROCESS_SWITCH(RhoEstimatorTask, processBplusCollisions, "Fill rho tables for collisions with Bplus candidates", false);
 
-    void processBplusMcCollisions(aod::JetMcCollision const&, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesBplusMCP const& candidates)
-    {
+  void processBplusMcCollisions(aod::JetMcCollision const&, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesBplusMCP const& candidates)
+  {
+    inputParticles.clear();
+    for (auto& candidate : candidates) {
       inputParticles.clear();
-      for (auto& candidate : candidates) {
-        inputParticles.clear();
-        jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, 1, particles, pdgDatabase, std::optional{candidate});
+      jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, 1, particles, pdgDatabase, std::optional{candidate});
 
-        auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, doSparse);
-        rhoBplusMcTable(rho, rhoM);
-      }
+      auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, doSparse);
+      rhoBplusMcTable(rho, rhoM);
     }
-    PROCESS_SWITCH(RhoEstimatorTask, processBplusMcCollisions, "Fill rho tables for collisions with Bplus MCP candidates", false);
+  }
+  PROCESS_SWITCH(RhoEstimatorTask, processBplusMcCollisions, "Fill rho tables for collisions with Bplus MCP candidates", false);
 
   void processDielectronCollisions(aod::JetCollision const&, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesDielectronData const& candidates)
   {
