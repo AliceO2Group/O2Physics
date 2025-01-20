@@ -457,7 +457,6 @@ struct HfEventSelectionMc {
         hRecCollisionsCentMc->Fill(mcCollision.centFT0M());
       }
     }
-
   }
 };
 } // namespace o2::hf_evsel
