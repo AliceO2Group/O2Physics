@@ -168,9 +168,11 @@ struct FemtoUniversePairTaskTrackPhi {
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 2> trackHistoPartTrack;
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> hMCTruth1;
 
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kPhi, 0> trackHistoPartPhi;
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 2> hMCTruth2;
 
   /// Histogramming for Event
   FemtoUniverseEventHisto eventHisto;
@@ -206,6 +208,9 @@ struct FemtoUniversePairTaskTrackPhi {
   HistogramRegistry registryMCtruth{"registryMCtruth", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryMCreco{"registryMCreco", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryPhiMinvBackground{"registryPhiMinvBackground", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+
+  OutputObj<TH1F> hEfficiency1{TH1F("Efficiency_part1", "Efficiency origin/generated part1; p_{T} (GeV/c); Efficiency", 100, 0, 4)};
+  OutputObj<TH1F> hEfficiency2{TH1F("Efficiency_part2", "Efficiency origin/generated part2; p_{T} (GeV/c); Efficiency", 100, 0, 4)};
 
   Configurable<bool> confDoEfficiency{"confDoEfficiency", true, "Do efficiency corrections."};
   EfficiencyConfigurableGroup effConfGroup;
@@ -402,13 +407,13 @@ struct FemtoUniversePairTaskTrackPhi {
 
   void init(InitContext& ic)
   {
-    effConfGroup.hEfficiency1.setObject(new TH1F("Efficiency_part1", "Efficiency origin/generated part1; p_{T} (GeV/c); Efficiency", 100, 0, 4));
-    effConfGroup.hMCTruth1.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, ConfTrack.confTrackPDGCode, false);
+    hEfficiency1.setObject(new TH1F("Efficiency_part1", "Efficiency origin/generated part1; p_{T} (GeV/c); Efficiency", 100, 0, 4));
+    hMCTruth1.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, ConfTrack.confTrackPDGCode, false);
 
-    effConfGroup.hEfficiency2.setObject(new TH1F("Efficiency_part2", "Efficiency origin/generated part2; p_{T} (GeV/c); Efficiency", 100, 0, 4));
-    effConfGroup.hMCTruth2.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, 333, false);
+    hEfficiency2.setObject(new TH1F("Efficiency_part2", "Efficiency origin/generated part2; p_{T} (GeV/c); Efficiency", 100, 0, 4));
+    hMCTruth2.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, 333, false);
 
-    efficiencyCalculator.init();
+    efficiencyCalculator.init(hEfficiency1.object, hEfficiency2.object);
     efficiencyCalculator.uploadOnStop(ic);
 
     eventHisto.init(&qaRegistry);
@@ -673,10 +678,10 @@ struct FemtoUniversePairTaskTrackPhi {
       fillCollision(col);
 
       auto groupMCTruthTrack = partsTrackMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-      efficiencyCalculator.doMCTruth<1>(groupMCTruthTrack);
+      efficiencyCalculator.doMCTruth<1>(hMCTruth1, groupMCTruthTrack);
 
       auto groupMCTruthPhi = partsPhiMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-      efficiencyCalculator.doMCTruth<2>(groupMCTruthPhi);
+      efficiencyCalculator.doMCTruth<2>(hMCTruth2, groupMCTruthPhi);
 
       auto groupMCRecoTrack = partsTrackMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
       auto groupMCRecoPhi = partsPhiMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);

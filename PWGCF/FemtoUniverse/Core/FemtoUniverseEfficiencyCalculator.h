@@ -22,7 +22,6 @@
 #include <string>
 
 #include "Framework/Configurable.h"
-#include "Framework/AnalysisHelpers.h"
 #include "Framework/CallbackService.h"
 #include "Framework/InitContext.h"
 #include "CCDB/BasicCCDBManager.h"
@@ -37,20 +36,13 @@ concept isOneOrTwo = T == 1 || T == 2;
 struct EfficiencyConfigurableGroup : ConfigurableGroup {
   Configurable<bool> confEfficiencyCalculate{"confEfficiencyCalculate", false, "Should calculate efficiency"};
   Configurable<bool> confEfficiencyApplyCorrections{"confEfficiencyApplyCorrections", false, "Should apply corrections from efficiency"};
+  Configurable<std::vector<std::string>> confEfficiencyCCDBLabels{"confEfficiencyCCDBLabels", {}, "Labels for efficiency objects in CCDB"};
 
-  Configurable<std::vector<std::string>> confCCDBLabels{"confCCDBLabels", std::vector<std::string>{"label1", "label2"}, "Labels for efficiency objects in CCDB"};
-
-  OutputObj<TH1F> hEfficiency1{"Efficiency part1"};
-  OutputObj<TH1F> hEfficiency2{"Efficiency part2"};
-
-  // TODO: move to separate struct?
+  // NOTE: in the future we might move the below configurables to a separate struct, eg. CCDBConfigurableGroup
   Configurable<std::string> confCCDBUrl{"confCCDBUrl", "http://alice-ccdb.cern.ch", "CCDB URL to be used"};
   Configurable<std::string> confCCDBPath{"confCCDBPath", "", "CCDB base path to where to upload objects"};
-  Configurable<int64_t> confCCDBTimestamp{"confCCDBTimestamp", -1, "Timestamp from which to query CCDB objects"};
-
-  // TODO: declare this in task directly?
-  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> hMCTruth1;
-  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 2> hMCTruth2;
+  Configurable<int64_t> confCCDBTimestamp{"confCCDBTimestamp", -1, "Timestamp from which to query CCDB objects (default: latest)"};
+  Configurable<int64_t> confCCDBLifetime{"confCCDBLifetime", 365LL * 24 * 60 * 60 * 1000, "Lifetime of uploaded objects (default: 1 year)"};
 };
 
 class EfficiencyCalculator
@@ -62,7 +54,7 @@ class EfficiencyCalculator
   {
   }
 
-  auto init() -> void
+  auto init(std::shared_ptr<TH1F> hEfficiency1, std::shared_ptr<TH1F> hEfficiency2) -> void
   {
     ccdbApi.init(config->confCCDBUrl);
     ccdb.setURL(config->confCCDBUrl);
@@ -75,7 +67,7 @@ class EfficiencyCalculator
     ccdbFullPath = fmt::format("{}/{}", config->confCCDBPath.value, folderName);
 
     if (config->confEfficiencyCalculate) {
-      hOutput = {config->hEfficiency1.object, config->hEfficiency2.object};
+      hOutput = {hEfficiency1, hEfficiency2};
     }
 
     if (config->confEfficiencyApplyCorrections) {
@@ -88,14 +80,10 @@ class EfficiencyCalculator
 
   template <uint8_t N>
     requires isOneOrTwo<N>
-  auto doMCTruth(auto particles) const -> void
+  auto doMCTruth(FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, N> hMCTruth, auto particles) const -> void
   {
     for (const auto& particle : particles) {
-      if constexpr (N == 1) {
-        config->hMCTruth1.fillQA<false, false>(particle);
-      } else if constexpr (N == 2) {
-        config->hMCTruth2.fillQA<false, false>(particle);
-      }
+      hMCTruth.template fillQA<false, false>(particle);
     }
   }
 
@@ -120,9 +108,8 @@ class EfficiencyCalculator
           LOGF(debug, notify("Found histogram %d: %s"), i + 1, output->GetTitle());
 
           int64_t now = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-          int64_t oneYear = 365LL * 24 * 60 * 60 * 1000;
 
-          if (ccdbApi.storeAsTFileAny(output.get(), ccdbFullPath, createMetadata(i), now, now + oneYear) == 0) {
+          if (ccdbApi.storeAsTFileAny(output.get(), ccdbFullPath, createMetadata(i), now, now + config->confCCDBLifetime) == 0) {
             LOGF(info, notify("Histogram %d saved successfully"), i + 1);
           } else {
             LOGF(fatal, notify("Histogram %d save failed"), i + 1);
@@ -199,11 +186,11 @@ class EfficiencyCalculator
 
   auto createMetadata(uint8_t partNo) const -> std::map<std::string, std::string>
   {
-    if (config->confCCDBLabels->size() != 2) {
+    if (config->confEfficiencyCCDBLabels->size() != 2) {
       LOGF(fatal, notify("CCDB labels configurable should be exactly of size 2"));
     }
     return std::map<std::string, std::string>{
-      {"label", config->confCCDBLabels.value[partNo]} //
+      {"label", config->confEfficiencyCCDBLabels.value[partNo]} //
     };
   }
 
@@ -227,7 +214,7 @@ class EfficiencyCalculator
   bool shouldCalculate = false;
   bool shouldApplyCorrections = false;
 
-  std::array<std::shared_ptr<TH1>, 2> hOutput{};
+  std::array<std::shared_ptr<TH1F>, 2> hOutput{};
   std::array<TH1*, 2> hLoaded{};
 
   o2::ccdb::CcdbApi ccdbApi{};
