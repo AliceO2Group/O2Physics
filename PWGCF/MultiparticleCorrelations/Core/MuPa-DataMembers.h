@@ -78,6 +78,7 @@ struct EventByEventQuantities {
   Float_t fOccupancy = 0.;             // event-by-event occupancy. Value of the default occupancy estimator, set via configurable cfOccupancyEstimator
   Float_t fInteractionRate = 0.;       // event-by-event interaction rate
   Float_t fCurrentRunDuration = 0.;    // how many seconds after start of run this collision was taken, i.e. seconds after start of run (SOR)
+  Float_t fVz = 0.;                    // vertex z position
 } ebye;                                // "ebye" is a common label for objects in this struct
 
 // *) QA:
@@ -219,7 +220,7 @@ struct MultiparticleCorrelations {
   bool fCalculateCorrelations = false;                                       // calculate and store integrated correlations
   TProfile* fCorrelationsPro[4][gMaxHarmonic][eAsFunctionOf_N] = {{{NULL}}}; //! multiparticle correlations
                                                                              //  [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=gMaxHarmonic]
-                                                                             //  [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy]
+                                                                             //  [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy, ...]
   Bool_t fCalculateCorrelationsAsFunctionOf[eAsFunctionOf_N] = {false};      //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy, ...]
                                                                              //  As of 20241111, 3=pT and 4=eta are not implemented, see void CalculateKineCorrelations(...)
 } mupa;                                                                      // "mupa" is a common label for objects in this struct

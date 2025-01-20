@@ -42,6 +42,12 @@ enum class EMAnaType : int {
 };
 } // namespace o2::aod::pwgem::dilepton::smearing
 
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsCent, aod::EMMCEventLabels>;
+using MyCollision = MyCollisions::iterator;
+
+using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::MostProbableEMEventIdsInMC>;
+using MyMCCollision = MyMCCollisions::iterator;
+
 struct ApplySmearing {
 
   Produces<aod::SmearedElectrons> smearedelectron;
@@ -185,8 +191,6 @@ struct ApplySmearing {
     smearer_GlobalMuon.init();
   }
 
-  PresliceUnsorted<aod::EMMCEventLabels> recColperMcCollision = aod::emmceventlabel::emmceventId;
-
   template <o2::aod::pwgem::dilepton::smearing::EMAnaType type, typename TTracksMC, typename TCollisions, typename TMCCollisions>
   void applySmearing(TTracksMC const& tracksMC, TCollisions const& collisions, TMCCollisions const&)
   {
@@ -201,18 +205,8 @@ struct ApplySmearing {
       float centrality = -1.f;
       if constexpr (type == o2::aod::pwgem::dilepton::smearing::EMAnaType::kEfficiency) {
         auto mccollision = mctrack.template emmcevent_as<TMCCollisions>();
-        auto rec_colls_per_mccoll = collisions.sliceBy(recColperMcCollision, mccollision.globalIndex());
-        uint32_t maxNumContrib = 0;
-        int rec_col_globalIndex = -999;
-        for (auto& rec_col : rec_colls_per_mccoll) {
-          if (rec_col.numContrib() > maxNumContrib) {
-            rec_col_globalIndex = rec_col.globalIndex();
-            maxNumContrib = rec_col.numContrib(); // assign mc collision to collision where the number of contibutor is lager. LF/MM recommendation
-          }
-        }
-
-        if (rec_colls_per_mccoll.size() > 0) { // if mc collisions are not reconstructed, such mc collisions should not enter efficiency calculation.
-          auto collision = collisions.rawIteratorAt(rec_col_globalIndex);
+        if (mccollision.mpemeventId() > 0) { // if mc collisions are not reconstructed, such mc collisions should not enter efficiency calculation.
+          auto collision = collisions.rawIteratorAt(mccollision.mpemeventId());
           centrality = std::array{collision.centFT0M(), collision.centFT0A(), collision.centFT0C()}[cfgCentEstimator];
         } else {
           ptsmeared = ptgen;
@@ -265,7 +259,7 @@ struct ApplySmearing {
     } // end of mc track loop
   }
 
-  void processMCanalysisEM(aod::EMMCParticles const& tracksMC, soa::Join<aod::EMEvents, aod::EMEventsCent, aod::EMMCEventLabels> const& collisions, aod::EMMCEvents const& mccollisions)
+  void processMCanalysisEM(aod::EMMCParticles const& tracksMC, MyCollisions const& collisions, MyMCCollisions const& mccollisions)
   {
     applySmearing<o2::aod::pwgem::dilepton::smearing::EMAnaType::kEfficiency>(tracksMC, collisions, mccollisions);
   }
@@ -350,10 +344,8 @@ struct CheckSmearing {
     }
   }
 
-  PresliceUnsorted<aod::EMMCEventLabels> recColperMcCollision = aod::emmceventlabel::emmceventId;
-
-  template <o2::aod::pwgem::dilepton::smearing::EMAnaType type, typename TTracksMC, typename TCollisions, typename TMCCollisions>
-  void Check(TTracksMC const& tracksMC, TCollisions const& collisions, TMCCollisions const&)
+  template <o2::aod::pwgem::dilepton::smearing::EMAnaType type, typename TTracksMC, typename TMCCollisions>
+  void Check(TTracksMC const& tracksMC, TMCCollisions const&)
   {
     for (auto& mctrack : tracksMC) {
       if (abs(mctrack.pdgCode()) != fPdgCode) {
@@ -362,8 +354,7 @@ struct CheckSmearing {
 
       if constexpr (type == o2::aod::pwgem::dilepton::smearing::EMAnaType::kEfficiency) {
         auto mccollision = mctrack.template emmcevent_as<TMCCollisions>();
-        auto rec_colls_per_mccoll = collisions.sliceBy(recColperMcCollision, mccollision.globalIndex());
-        if (rec_colls_per_mccoll.size() < 1) { // if mc collisions are not reconstructed, such mc collisions should not enter efficiency calculation.
+        if (mccollision.mpemeventId() < 0) { // if mc collisions are not reconstructed, such mc collisions should not enter efficiency calculation.
           continue;
         }
       }
@@ -386,9 +377,9 @@ struct CheckSmearing {
     } // end of mctrack loop
   }
 
-  void processCheckMCanalysisEM(EMMCParticlesWithSmearing const& tracksMC, soa::Join<aod::EMEvents, aod::EMEventsCent, aod::EMMCEventLabels> const& collisions, aod::EMMCEvents const& mccollisions)
+  void processCheckMCanalysisEM(EMMCParticlesWithSmearing const& tracksMC, MyMCCollisions const& mccollisions)
   {
-    Check<o2::aod::pwgem::dilepton::smearing::EMAnaType::kEfficiency>(tracksMC, collisions, mccollisions);
+    Check<o2::aod::pwgem::dilepton::smearing::EMAnaType::kEfficiency>(tracksMC, mccollisions);
   }
 
   // void processCheckMCanalysisDQ(MyReducedTracks const& tracksMC)
@@ -398,7 +389,7 @@ struct CheckSmearing {
 
   void processCheckCocktail(MyCocktailTracks const& tracksMC)
   {
-    Check<o2::aod::pwgem::dilepton::smearing::EMAnaType::kCocktail>(tracksMC, nullptr, nullptr);
+    Check<o2::aod::pwgem::dilepton::smearing::EMAnaType::kCocktail>(tracksMC, nullptr);
   }
 
   void processDummyMCanalysisEM(aod::EMMCParticles const&) {}

@@ -486,13 +486,63 @@ struct lambdapolsp {
     return result;
   }
 
-  ROOT::Math::PxPyPzMVector Lambda, Lambdacopy, Proton, Pion, fourVecDauCM;
-  // ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm, beamvector;
+  bool shouldReject(bool LambdaTag, bool aLambdaTag,
+                    const ROOT::Math::PxPyPzMVector& Lambdadummy,
+                    const ROOT::Math::PxPyPzMVector& AntiLambdadummy)
+  {
+    const double minMass = 1.105;
+    const double maxMass = 1.125;
+    return (LambdaTag && aLambdaTag &&
+            (Lambdadummy.M() > minMass && Lambdadummy.M() < maxMass) &&
+            (AntiLambdadummy.M() > minMass && AntiLambdadummy.M() < maxMass));
+  }
+
+  void fillHistograms(bool tag1, bool tag2, const ROOT::Math::PxPyPzMVector& particle,
+                      const ROOT::Math::PxPyPzMVector& daughter,
+                      double psiZDCC, double psiZDCA, double centrality,
+                      double candmass, double candpt, double candeta)
+  {
+
+    ROOT::Math::Boost boost{particle.BoostToCM()};
+    auto fourVecDauCM = boost(daughter);
+    auto phiangle = TMath::ATan2(fourVecDauCM.Py(), fourVecDauCM.Px());
+
+    auto phiminuspsiC = GetPhiInRange(phiangle - psiZDCC);
+    auto phiminuspsiA = GetPhiInRange(phiangle - psiZDCA);
+    auto cosThetaStar = fourVecDauCM.Pz() / fourVecDauCM.P();
+    auto sinThetaStar = TMath::Sqrt(1 - (cosThetaStar * cosThetaStar));
+    auto PolC = TMath::Sin(phiminuspsiC);
+    auto PolA = TMath::Sin(phiminuspsiA);
+
+    auto sinPhiStar = TMath::Sin(GetPhiInRange(phiangle));
+    auto cosPhiStar = TMath::Cos(GetPhiInRange(phiangle));
+    auto sinThetaStarcosphiphiStar = sinThetaStar * TMath::Cos(2 * GetPhiInRange(particle.Phi() - phiangle));
+    auto phiphiStar = GetPhiInRange(particle.Phi() - phiangle);
+
+    // Fill histograms using constructed names
+    if (tag2) {
+      histos.fill(HIST("hSparseAntiLambdaPolA"), candmass, candpt, candeta, PolA, centrality);
+      histos.fill(HIST("hSparseAntiLambdaPolC"), candmass, candpt, candeta, PolC, centrality);
+      histos.fill(HIST("hSparseAntiLambda_corr1a"), candmass, candpt, candeta, sinPhiStar, centrality);
+      histos.fill(HIST("hSparseAntiLambda_corr1b"), candmass, candpt, candeta, cosPhiStar, centrality);
+      histos.fill(HIST("hSparseAntiLambda_corr1c"), candmass, candpt, candeta, phiphiStar, centrality);
+      histos.fill(HIST("hSparseAntiLambda_corr2a"), candmass, candpt, candeta, sinThetaStar, centrality);
+      histos.fill(HIST("hSparseAntiLambda_corr2b"), candmass, candpt, candeta, sinThetaStarcosphiphiStar, centrality);
+    }
+    if (tag1) {
+      histos.fill(HIST("hSparseLambdaPolA"), candmass, candpt, candeta, PolA, centrality);
+      histos.fill(HIST("hSparseLambdaPolC"), candmass, candpt, candeta, PolC, centrality);
+      histos.fill(HIST("hSparseLambda_corr1a"), candmass, candpt, candeta, sinPhiStar, centrality);
+      histos.fill(HIST("hSparseLambda_corr1b"), candmass, candpt, candeta, cosPhiStar, centrality);
+      histos.fill(HIST("hSparseLambda_corr1c"), candmass, candpt, candeta, phiphiStar, centrality);
+      histos.fill(HIST("hSparseLambda_corr2a"), candmass, candpt, candeta, sinThetaStar, centrality);
+      histos.fill(HIST("hSparseLambda_corr2b"), candmass, candpt, candeta, sinThetaStarcosphiphiStar, centrality);
+    }
+  }
+
+  ROOT::Math::PxPyPzMVector Lambda, AntiLambda, Lambdadummy, AntiLambdadummy, Proton, Pion, AntiProton, AntiPion, fourVecDauCM;
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY;
   double phiangle = 0.0;
-  // double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
-  // double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();
-  // double massLambda = TDatabasePDG::Instance()->GetParticle(kLambda0)->Mass();
   double massLambda = o2::constants::physics::MassLambda;
   double massPr = o2::constants::physics::MassProton;
   double massPi = o2::constants::physics::MassPionCharged;
@@ -700,7 +750,7 @@ struct lambdapolsp {
           aLambdaTag = 1;
         }
 
-        if (LambdaTag == aLambdaTag)
+        if (!LambdaTag && !aLambdaTag)
           continue;
 
         if (!SelectionV0(collision, v0)) {
@@ -708,83 +758,34 @@ struct lambdapolsp {
         }
 
         if (LambdaTag) {
-          if (useglobal) {
-            Proton = ROOT::Math::PxPyPzMVector(postrack.px(), postrack.py(), postrack.pz(), massPr);
-            Pion = ROOT::Math::PxPyPzMVector(negtrack.px(), negtrack.py(), negtrack.pz(), massPi);
-          } else {
-            Proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
-            Pion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
-          }
+          Proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
+          AntiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
+          Lambdadummy = Proton + AntiPion;
         }
         if (aLambdaTag) {
-          if (useglobal) {
-            Proton = ROOT::Math::PxPyPzMVector(negtrack.px(), negtrack.py(), negtrack.pz(), massPr);
-            Pion = ROOT::Math::PxPyPzMVector(postrack.px(), postrack.py(), postrack.pz(), massPi);
-          } else {
-            Proton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
-            Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
-          }
+          AntiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
+          Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
+          AntiLambdadummy = AntiProton + Pion;
         }
-        Lambda = Proton + Pion;
-        // Lambda.SetM(massLambda);
 
-        ROOT::Math::Boost boost{Lambda.BoostToCM()};
-        fourVecDauCM = boost(Proton);
-        threeVecDauCM = fourVecDauCM.Vect();
-        // beamvector = ROOT::Math::XYZVector(0, 0, 1);
-        // eventplaneVec = ROOT::Math::XYZVector(collision.qFT0C(), collision.qFT0A(), 0); //this needs to be changed
-        // eventplaneVecNorm = eventplaneVec.Cross(beamvector); //z'
-        phiangle = TMath::ATan2(fourVecDauCM.Py(), fourVecDauCM.Px());
-        // double phiangledir = fourVecDauCM.Phi();
+        if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
+          continue;
+        }
 
-        auto phiminuspsiC = GetPhiInRange(phiangle - psiZDCC);
-        auto phiminuspsiA = GetPhiInRange(phiangle - psiZDCA);
-        // histos.fill(HIST("hpsiApsiC"), psiZDCA, psiZDCC);
-        // histos.fill(HIST("hpsiApsiC"), GetPhiInRange(GetPhiInRange(phiangle) - GetPhiInRange(psiZDCA)), phiminuspsiA);
-        // histos.fill(HIST("hphiminuspsiA"), (phiminuspsiA));
-        // histos.fill(HIST("hphiminuspsiC"), (phiminuspsiC));
-        // auto cosThetaStar = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
-        auto cosThetaStar = fourVecDauCM.Pz() / fourVecDauCM.P(); // A0 correction
-        auto sinThetaStar = TMath::Sqrt(1 - (cosThetaStar * cosThetaStar));
-        auto PolC = TMath::Sin(phiminuspsiC);
-        auto PolA = TMath::Sin(phiminuspsiA);
-
-        // needed for corrections
-        auto sinPhiStar = TMath::Sin(GetPhiInRange(phiangle));
-        auto cosPhiStar = TMath::Cos(GetPhiInRange(phiangle));
-        auto sinThetaStarcosphiphiStar = sinThetaStar * TMath::Cos(2 * GetPhiInRange(Lambda.Phi() - phiangle)); // A2 correction
-        auto phiphiStar = GetPhiInRange(Lambda.Phi() - phiangle);
-
-        auto candmass = 0.0;
-        auto candpt = 0.0;
-        auto candeta = 0.0;
+        int taga = LambdaTag;
+        int tagb = aLambdaTag;
 
         if (LambdaTag) {
-          candmass = v0.mLambda();
-          candpt = v0.pt();
-          candeta = v0.eta();
-
-          histos.fill(HIST("hSparseLambdaPolA"), candmass, candpt, candeta, PolA, centrality);
-          histos.fill(HIST("hSparseLambdaPolC"), candmass, candpt, candeta, PolC, centrality);
-          histos.fill(HIST("hSparseLambda_corr1a"), candmass, candpt, candeta, sinPhiStar, centrality);
-          histos.fill(HIST("hSparseLambda_corr1b"), candmass, candpt, candeta, cosPhiStar, centrality);
-          histos.fill(HIST("hSparseLambda_corr1c"), candmass, candpt, candeta, phiphiStar, centrality);
-          histos.fill(HIST("hSparseLambda_corr2a"), candmass, candpt, candeta, sinThetaStar, centrality);
-          histos.fill(HIST("hSparseLambda_corr2b"), candmass, candpt, candeta, sinThetaStarcosphiphiStar, centrality);
+          Lambda = Proton + AntiPion;
+          tagb = 0;
+          fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, centrality, v0.mLambda(), v0.pt(), v0.eta());
         }
 
+        tagb = aLambdaTag;
         if (aLambdaTag) {
-          candmass = v0.mAntiLambda();
-          candpt = v0.pt();
-          candeta = v0.eta();
-
-          histos.fill(HIST("hSparseAntiLambdaPolA"), candmass, candpt, candeta, PolA, centrality);
-          histos.fill(HIST("hSparseAntiLambdaPolC"), candmass, candpt, candeta, PolC, centrality);
-          histos.fill(HIST("hSparseAntiLambda_corr1a"), candmass, candpt, candeta, sinPhiStar, centrality);
-          histos.fill(HIST("hSparseAntiLambda_corr1b"), candmass, candpt, candeta, cosPhiStar, centrality);
-          histos.fill(HIST("hSparseAntiLambda_corr1c"), candmass, candpt, candeta, phiphiStar, centrality);
-          histos.fill(HIST("hSparseAntiLambda_corr2a"), candmass, candpt, candeta, sinThetaStar, centrality);
-          histos.fill(HIST("hSparseAntiLambda_corr2b"), candmass, candpt, candeta, sinThetaStarcosphiphiStar, centrality);
+          AntiLambda = AntiProton + Pion;
+          taga = 0;
+          fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, centrality, v0.mAntiLambda(), v0.pt(), v0.eta());
         }
       }
     }
@@ -842,7 +843,7 @@ struct lambdapolsp {
       bool LambdaTag = isCompatible(v0, 0);
       bool aLambdaTag = isCompatible(v0, 1);
 
-      if (LambdaTag == aLambdaTag)
+      if (!LambdaTag && !aLambdaTag)
         continue;
 
       if (!SelectionV0(collision, v0)) {
@@ -851,71 +852,35 @@ struct lambdapolsp {
 
       if (LambdaTag) {
         Proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
-        Pion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
+        AntiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
+        Lambdadummy = Proton + AntiPion;
       }
       if (aLambdaTag) {
-        Proton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
+        AntiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
         Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
+        AntiLambdadummy = AntiProton + Pion;
       }
-      Lambda = Proton + Pion;
 
-      ROOT::Math::Boost boost{Lambda.BoostToCM()};
-      fourVecDauCM = boost(Proton);
-      threeVecDauCM = fourVecDauCM.Vect();
-      // beamvector = ROOT::Math::XYZVector(0, 0, 1);
-      // eventplaneVec = ROOT::Math::XYZVector(collision.qFT0C(), collision.qFT0A(), 0); //this needs to be changed
-      // eventplaneVecNorm = eventplaneVec.Cross(beamvector); //z'
-      phiangle = TMath::ATan2(fourVecDauCM.Py(), fourVecDauCM.Px());
-      // double phiangledir = fourVecDauCM.Phi();
+      if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
+        continue;
+      }
 
-      auto phiminuspsiC = GetPhiInRange(phiangle - psiZDCC);
-      auto phiminuspsiA = GetPhiInRange(phiangle - psiZDCA);
-      // histos.fill(HIST("hpsiApsiC"), psiZDCA, psiZDCC);
-      // histos.fill(HIST("hpsiApsiC"), GetPhiInRange(GetPhiInRange(phiangle) - GetPhiInRange(psiZDCA)), phiminuspsiA);
-      // histos.fill(HIST("hphiminuspsiA"), (phiminuspsiA));
-      // histos.fill(HIST("hphiminuspsiC"), (phiminuspsiC));
-      // auto cosThetaStar = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
-      auto cosThetaStar = fourVecDauCM.Pz() / fourVecDauCM.P(); // A0 correction
-      auto sinThetaStar = TMath::Sqrt(1 - (cosThetaStar * cosThetaStar));
-      auto PolC = TMath::Sin(phiminuspsiC);
-      auto PolA = TMath::Sin(phiminuspsiA);
-
-      // needed for corrections
-      auto sinPhiStar = TMath::Sin(GetPhiInRange(phiangle));
-      auto cosPhiStar = TMath::Cos(GetPhiInRange(phiangle));
-      auto sinThetaStarcosphiphiStar = sinThetaStar * TMath::Cos(2 * GetPhiInRange(Lambda.Phi() - phiangle)); // A2 correction
-      auto phiphiStar = GetPhiInRange(Lambda.Phi() - phiangle);
-
-      auto candmass = 0.0;
-      auto candpt = 0.0;
-      auto candeta = 0.0;
+      int taga = LambdaTag;
+      int tagb = aLambdaTag;
 
       if (LambdaTag) {
-        candmass = v0.mLambda();
-        candpt = v0.pt();
-        candeta = v0.eta();
-
-        histos.fill(HIST("hSparseLambdaPolA"), candmass, candpt, candeta, PolA, centrality);
-        histos.fill(HIST("hSparseLambdaPolC"), candmass, candpt, candeta, PolC, centrality);
-        histos.fill(HIST("hSparseLambda_corr1a"), candmass, candpt, candeta, sinPhiStar, centrality);
-        histos.fill(HIST("hSparseLambda_corr1b"), candmass, candpt, candeta, cosPhiStar, centrality);
-        histos.fill(HIST("hSparseLambda_corr1c"), candmass, candpt, candeta, phiphiStar, centrality);
-        histos.fill(HIST("hSparseLambda_corr2a"), candmass, candpt, candeta, sinThetaStar, centrality);
-        histos.fill(HIST("hSparseLambda_corr2b"), candmass, candpt, candeta, sinThetaStarcosphiphiStar, centrality);
+        Lambda = Proton + AntiPion;
+        tagb = 0;
+        fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, centrality,
+                       v0.mLambda(), v0.pt(), v0.eta());
       }
 
+      tagb = aLambdaTag;
       if (aLambdaTag) {
-        candmass = v0.mAntiLambda();
-        candpt = v0.pt();
-        candeta = v0.eta();
-
-        histos.fill(HIST("hSparseAntiLambdaPolA"), candmass, candpt, candeta, PolA, centrality);
-        histos.fill(HIST("hSparseAntiLambdaPolC"), candmass, candpt, candeta, PolC, centrality);
-        histos.fill(HIST("hSparseAntiLambda_corr1a"), candmass, candpt, candeta, sinPhiStar, centrality);
-        histos.fill(HIST("hSparseAntiLambda_corr1b"), candmass, candpt, candeta, cosPhiStar, centrality);
-        histos.fill(HIST("hSparseAntiLambda_corr1c"), candmass, candpt, candeta, phiphiStar, centrality);
-        histos.fill(HIST("hSparseAntiLambda_corr2a"), candmass, candpt, candeta, sinThetaStar, centrality);
-        histos.fill(HIST("hSparseAntiLambda_corr2b"), candmass, candpt, candeta, sinThetaStarcosphiphiStar, centrality);
+        AntiLambda = AntiProton + Pion;
+        taga = 0;
+        fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, centrality,
+                       v0.mAntiLambda(), v0.pt(), v0.eta());
       }
     } // end loop over V0s
   }
