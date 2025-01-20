@@ -453,30 +453,6 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
     return mResolution[pid]->Eval(p, eta);
   }
 
-  void Save(const char* filename) const
-  {
-    TFile f(filename, "RECREATE");
-    for (auto* h : mResolution) {
-      h->Write();
-    }
-    if (gPosEtaTimeCorr) {
-      // gPosEtaTimeCorr->SetName("gPosEtaTimeCorr");
-      // gPosEtaTimeCorr->Write();
-    } else {
-      TNamed("NOgPosEtaTimeCorr", "not available").Write("NOgPosEtaTimeCorr");
-    }
-    if (gNegEtaTimeCorr) {
-      // gNegEtaTimeCorr->SetName("gNegEtaTimeCorr");
-      // gNegEtaTimeCorr->Write("gNegEtaTimeCorr");
-    } else {
-      TNamed("NOgNegEtaTimeCorr", "not available").Write("NOgNegEtaTimeCorr");
-    }
-    TNamed(Form("mEtaN=%i", mEtaN), "value").Write();
-    TNamed(Form("mEtaStart=%f", mEtaStart), "value").Write();
-    TNamed(Form("mEtaStop=%f", mEtaStop), "value").Write();
-    TNamed(Form("mInvEtaWidth=%f", mInvEtaWidth), "value").Write();
-  }
-
   void printResolution() const
   {
     // Print a summary
