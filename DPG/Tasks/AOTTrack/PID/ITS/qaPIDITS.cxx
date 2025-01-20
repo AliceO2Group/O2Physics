@@ -73,7 +73,6 @@ struct itsPidQa {
   ConfigurableAxis expSigmaBins{"expSigmaBins", {200, 0.f, 200.f}, "Binning in expected Sigma"};
   ConfigurableAxis nSigmaBins{"nSigmaBins", {401, -10.025f, 10.025f}, "Binning in NSigma"};
   ConfigurableAxis dEdxBins{"dEdxBins", {5000, 0.f, 5000.f}, "Binning in dE/dx"};
-  Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
   Configurable<bool> enableDeDxPlot{"enableDeDxPlot", true, "Enables the dEdx plot (reduces memory footprint if off)"};
@@ -115,13 +114,13 @@ struct itsPidQa {
     h = histos.add<TH1>("event/particlehypo", "", kTH1D, {{10, 0, 10, "PID in tracking"}});
     for (int id = 0; id < 9; id++) {
       h->GetXaxis()->SetBinLabel(id + 1, PID::getName(id));
-      tpcSelValue[id] = tpcSelection->get(tableNames[id].c_str(), "enable");
-      if (tpcSelValue[id] <= 0.f) {
-        tpcSelValue[id] = 999.f;
+      tpcSelValues[id] = tpcSelection->get(tableNames[id].c_str(), "enable");
+      if (tpcSelValues[id] <= 0.f) {
+        tpcSelValues[id] = 999.f;
       }
-      tofSelValue[id] = tofSelection->get(tableNames[id].c_str(), "enable");
-      if (tofSelValue[id] <= 0.f) {
-        tofSelValue[id] = 999.f;
+      tofSelValues[id] = tofSelection->get(tableNames[id].c_str(), "enable");
+      if (tofSelValues[id] <= 0.f) {
+        tofSelValues[id] = 999.f;
       }
     }
     histos.add("event/eta", "", kTH1D, {etaAxis});
@@ -146,57 +145,8 @@ struct itsPidQa {
     histos.print();
   }
 
-  template <bool fillHistograms, typename CollisionType, typename TrackType>
-  bool isTrackSelected(const CollisionType& /*collision*/, const TrackType& track)
-  {
-    if constexpr (fillHistograms) {
-      histos.fill(HIST("event/trackselection"), 1.f);
-    }
-    if (!track.isGlobalTrack()) { // Skipping non global tracks
-      return false;
-    }
-    if constexpr (fillHistograms) {
-      histos.fill(HIST("event/trackselection"), 2.f);
-    }
-    if (!track.hasITS()) { // Skipping tracks without ITS
-      return false;
-    }
-    if constexpr (fillHistograms) {
-      histos.fill(HIST("event/trackselection"), 3.f);
-    }
-    if (!track.hasTPC()) { // Skipping tracks without TPC
-      return false;
-    }
-    if constexpr (fillHistograms) {
-      histos.fill(HIST("event/trackselection"), 4.f);
-    }
-    if (track.tpcNClsFound() < minTPCNcls) { // Skipping tracks without enough TPC clusters
-      return false;
-    }
-
-    if constexpr (fillHistograms) {
-      histos.fill(HIST("event/trackselection"), 5.f);
-      histos.fill(HIST("event/particlehypo"), track.pidForTracking());
-      histos.fill(HIST("event/eta"), track.eta());
-      histos.fill(HIST("event/phi"), track.phi());
-      histos.fill(HIST("event/etaphi"), track.eta(), track.phi());
-      histos.fill(HIST("event/length"), track.length());
-      histos.fill(HIST("event/pt"), track.pt());
-      histos.fill(HIST("event/p"), track.p());
-      // histos.fill(HIST("event/ptreso"), track.p(), track.sigma1Pt() * track.pt() * track.pt());
-    }
-    return true;
-  }
-
-  Filter eventFilter = (applyEvSel.node() == 0) ||
-                       ((applyEvSel.node() == 1) && (o2::aod::evsel::sel7 == true)) ||
-                       ((applyEvSel.node() == 2) && (o2::aod::evsel::sel8 == true));
-  Filter trackFilter = ((trackSelection.node() == 0) ||
-                        ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
-                        ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
-                        ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
-                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
-                        ((trackSelection.node() == 5) && requireInAcceptanceTracksInFilter()));
+  Filter eventFilter = (o2::aod::evsel::sel8 == true);
+  Filter trackFilter = (requireGlobalTrackInFilter());
   using CollisionCandidate = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
                                     aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi,
@@ -321,15 +271,8 @@ struct itsPidQa {
                                      aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe, aod::pidits::ITSNSigmaAl>(tracks);
 
     histos.fill(HIST("event/evsel"), 1);
-    switch (applyEvSel.value) {
-      case 1:
-        if (!collision.sel7()) {
-          return;
-        }
-      case 2:
-        if (!collision.sel8()) {
-          return;
-        }
+    if (!collision.sel8()) {
+      return;
     }
 
     histos.fill(HIST("event/evsel"), 2);
@@ -339,10 +282,35 @@ struct itsPidQa {
     }
     histos.fill(HIST("event/evsel"), 3);
     histos.fill(HIST("event/vertexz"), collision.posZ());
-    return;
 
     for (const auto& track : tracksWithPid) {
-      isTrackSelected<true>(collision, track);
+      histos.fill(HIST("event/trackselection"), 1.f);
+      if (!track.isGlobalTrack()) { // Skipping non global tracks
+        continue
+      }
+      histos.fill(HIST("event/trackselection"), 2.f);
+      if (!track.hasITS()) { // Skipping tracks without ITS
+        continue
+      }
+      histos.fill(HIST("event/trackselection"), 3.f);
+      if (!track.hasTPC()) { // Skipping tracks without TPC
+        continue
+      }
+      histos.fill(HIST("event/trackselection"), 4.f);
+      if (track.tpcNClsFound() < minTPCNcls) { // Skipping tracks without enough TPC clusters
+        continue
+      }
+
+      histos.fill(HIST("event/trackselection"), 5.f);
+      histos.fill(HIST("event/particlehypo"), track.pidForTracking());
+      histos.fill(HIST("event/eta"), track.eta());
+      histos.fill(HIST("event/phi"), track.phi());
+      histos.fill(HIST("event/etaphi"), track.eta(), track.phi());
+      histos.fill(HIST("event/length"), track.length());
+      histos.fill(HIST("event/pt"), track.pt());
+      histos.fill(HIST("event/p"), track.p());
+      // histos.fill(HIST("event/ptreso"), track.p(), track.sigma1Pt() * track.pt() * track.pt());
+
       bool discard = false;
       for (int id = 0; id < 9; id++) {
         if (std::abs(nsigmaTPC(track, id)) > tpcSelValues[id]) {
