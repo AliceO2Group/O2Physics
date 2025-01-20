@@ -383,7 +383,6 @@ struct FullJetSpectrapp {
         registry.fill(HIST("h_full_jet_neutralconstituents_phi"), cluster.phi(), weight);
         registry.fill(HIST("h_full_jet_neutralconstituents_energy"), cluster.energy(), weight);
         registry.fill(HIST("h_full_jet_neutralconstituents_energysum"), neutralEnergy, weight);
-
       }
       auto NEF = neutralEnergy / jet.energy();
       registry.fill(HIST("h2_full_jet_NEF"), jet.pt(), NEF, weight);
@@ -449,7 +448,6 @@ struct FullJetSpectrapp {
           registry.fill(HIST("h_full_jet_neutralconstituents_phi_part"), constituent.phi(), weight);
           registry.fill(HIST("h_full_jet_neutralconstituents_energy_part"), constituent.e(), weight);
           registry.fill(HIST("h_full_jet_neutralconstituents_energysum_part"), neutralEnergy, weight);
-
 
         } else {
           chargedconsts++;
@@ -717,7 +715,7 @@ struct FullJetSpectrapp {
       return;
     }
     // std::cout << jet.eventWeight() << std::endl;
-    if (doMBGapTrigger && jet.eventWeight()== 1) {
+    if (doMBGapTrigger && jet.eventWeight() == 1) {
       return;
       // std::cout << jet.eventWeight() << std::endl;
     }
