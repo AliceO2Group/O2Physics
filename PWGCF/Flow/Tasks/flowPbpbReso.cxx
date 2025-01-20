@@ -181,7 +181,7 @@ struct FlowPbpbReso {
     pz2 = candidate2.pz();
     p1 = candidate1.p();
     p2 = candidate2.p();
-    angle = TMath::ACos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
+    angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
     if (cfgUsePointingAngle && angle < cfgPointingAnglePhi) {
       return false;
     }
@@ -215,10 +215,10 @@ struct FlowPbpbReso {
   template <typename T>
   bool selectionPIDpTdependent(const T& candidate)
   {
-    if (candidate.pt() < 0.5 && TMath::Abs(candidate.tpcNSigmaKa()) < cfgTpcNsigmaCut) {
+    if (candidate.pt() < 0.5 && std::abs(candidate.tpcNSigmaKa()) < cfgTpcNsigmaCut) {
       return true;
     }
-    if (candidate.pt() >= 0.5 && candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Abs(candidate.tpcNSigmaKa()) < cfgTpcNsigmaCut && TMath::Abs(candidate.tofNSigmaKa()) < cfgTofNsigmaCut) {
+    if (candidate.pt() >= 0.5 && candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && std::abs(candidate.tpcNSigmaKa()) < cfgTpcNsigmaCut && std::abs(candidate.tofNSigmaKa()) < cfgTofNsigmaCut) {
       return true;
     }
     if (!useGlobalTrack && !candidate.hasTPC()) {
@@ -229,10 +229,10 @@ struct FlowPbpbReso {
   template <typename T>
   bool selectionPID(const T& candidate)
   {
-    if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < cfgTpcNsigmaCut) {
+    if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < cfgTpcNsigmaCut) {
       return true;
     }
-    if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Abs(candidate.tpcNSigmaKa()) < cfgTpcNsigmaCut && TMath::Abs(candidate.tofNSigmaKa()) < cfgTofNsigmaCut) {
+    if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && std::abs(candidate.tpcNSigmaKa()) < cfgTpcNsigmaCut && std::abs(candidate.tofNSigmaKa()) < cfgTofNsigmaCut) {
       return true;
     }
     return false;
@@ -243,39 +243,15 @@ struct FlowPbpbReso {
   {
     const auto pglobal = track.p();
     const auto ptpc = track.tpcInnerParam();
-    if (TMath::Abs(pglobal - ptpc) > cfgFakePartCut) {
+    if (std::abs(pglobal - ptpc) > cfgFakePartCut) {
       return true;
     }
     return false;
   }
 
-  double GetPhiInRange(double phi)
-  {
-    double result = phi;
-    while (result < 0) {
-      result = result + 2. * TMath::Pi() / 2;
-    }
-    while (result > 2. * TMath::Pi() / 2) {
-      result = result - 2. * TMath::Pi() / 2;
-    }
-    return result;
-  }
-
-  double GetDeltaPsiSubInRange(double psi1, double psi2)
-  {
-    double delta = psi1 - psi2;
-    if (TMath::Abs(delta) > TMath::Pi() / 2) {
-      if (delta > 0.)
-        delta -= 2. * TMath::Pi() / 2;
-      else
-        delta += 2. * TMath::Pi() / 2;
-    }
-    return delta;
-  }
-
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, o2::aod::evsel::NumTracksInTimeRange>;
-  ROOT::Math::PxPyPzMVector PhiMom, KaonPlus, KaonMinus;
-  double massKaplus = o2::constants::physics::MassKPlus;
+  ROOT::Math::PxPyPzMVector phiMom, kaonPlus, kaonminus;
+  double massKaPlus = o2::constants::physics::MassKPlus;
 
   void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracksWithoutBayes const& tracks)
   {
@@ -303,7 +279,7 @@ struct FlowPbpbReso {
     auto posSlicedTracks = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negSlicedTracks = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-    for (auto track1 : posSlicedTracks) {
+    for (auto const& track1 : posSlicedTracks) {
       // track selection
       if (!selectionTrack(track1)) {
         continue;
@@ -319,7 +295,7 @@ struct FlowPbpbReso {
       histos.fill(HIST("KaplusTOF"), track1.pt(), track1.tofNSigmaKa());
       auto track1ID = track1.globalIndex();
 
-      for (auto track2 : negSlicedTracks) {
+      for (auto const& track2 : negSlicedTracks) {
         // track selection
         if (!selectionTrack(track2)) {
           continue;
@@ -346,13 +322,13 @@ struct FlowPbpbReso {
         }
         histos.fill(HIST("KaminusTPC"), track2.pt(), track2.tpcNSigmaKa());
         histos.fill(HIST("KaminusTOF"), track2.pt(), track2.tofNSigmaKa());
-        KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKaplus);
-        KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKaplus);
-        PhiMom = KaonPlus + KaonMinus;
-        if (TMath::Abs(PhiMom.Rapidity()) < confRapidity) {
-          histos.fill(HIST("hPhiMass_sparse"), PhiMom.M(), PhiMom.Pt(), cent);
-          histos.fill(HIST("hPhi"), PhiMom.Phi());
-          histos.fill(HIST("hEta"), PhiMom.Eta());
+        kaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKaPlus);
+        kaonminus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKaPlus);
+        phiMom = kaonPlus + kaonminus;
+        if (std::abs(phiMom.Rapidity()) < confRapidity) {
+          histos.fill(HIST("hPhiMass_sparse"), phiMom.M(), phiMom.Pt(), cent);
+          histos.fill(HIST("hPhi"), phiMom.Phi());
+          histos.fill(HIST("hEta"), phiMom.Eta());
         }
       } //  end of track 2
     } // end of track 1
