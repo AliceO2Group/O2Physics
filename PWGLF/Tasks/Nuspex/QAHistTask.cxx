@@ -18,6 +18,7 @@
 #include <TObjArray.h>
 #include <string>
 #include <vector>
+
 #include "ReconstructionDataFormats/Track.h"
 
 #include "Framework/AnalysisTask.h"
@@ -318,7 +319,7 @@ struct QAHistTask {
       QA_reg.fill(HIST("histpTCorralation"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt());
 
       float TPCnSigma_particle = -100;
-      float TOFnSigma_particle = -100;
+
       float momentum;
       TLorentzVector lorentzVector{};
 
@@ -326,43 +327,36 @@ struct QAHistTask {
         case 0: // pi plus/minus
           lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
           TPCnSigma_particle = track.tpcNSigmaPi();
-          TOFnSigma_particle = track.tofNSigmaPi();
           momentum = track.pt();
           break;
         case 1: // (anti)kaon
           lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
           TPCnSigma_particle = track.tpcNSigmaKa();
-          TOFnSigma_particle = track.tofNSigmaKa();
           momentum = track.pt();
           break;
         case 2: // (anti)proton
           lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
           TPCnSigma_particle = track.tpcNSigmaPr();
-          TOFnSigma_particle = track.tofNSigmaPr();
           momentum = track.pt();
           break;
         case 3: // (anti)deuteron
           lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
           TPCnSigma_particle = track.tpcNSigmaDe();
-          TOFnSigma_particle = track.tofNSigmaDe();
           momentum = track.pt();
           break;
         case 4: // (anti)triton
           lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
           TPCnSigma_particle = track.tpcNSigmaTr();
-          TOFnSigma_particle = track.tofNSigmaTr();
           momentum = track.pt();
           break;
         case 5: // (anti)Helium-3
           lorentzVector.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
           TPCnSigma_particle = track.tpcNSigmaHe();
-          TOFnSigma_particle = track.tofNSigmaHe();
           momentum = track.pt() * 2.0;
           break;
         case 6: // (anti)Helium-4
           lorentzVector.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
           TPCnSigma_particle = track.tpcNSigmaAl();
-          TOFnSigma_particle = track.tofNSigmaAl();
           momentum = track.pt() * 2.0;
           break;
         default:
@@ -383,13 +377,13 @@ struct QAHistTask {
       float Chi2perClusterITS = track.itsChi2NCl();
 
       if (track.sign() > 0) {
-        QA_reg.fill(HIST("histDcaVsPtData_particle"), track.pt(), track.dcaXY());
-        QA_reg.fill(HIST("histDcaZVsPtData_particle"), track.pt(), track.dcaZ());
+        QA_reg.fill(HIST("histDcaVsPtData_particle"), momentum, track.dcaXY());
+        QA_reg.fill(HIST("histDcaZVsPtData_particle"), momentum, track.dcaZ());
       }
 
       if (track.sign() < 0) {
-        QA_reg.fill(HIST("histDcaVsPtData_antiparticle"), track.pt(), track.dcaXY());
-        QA_reg.fill(HIST("histDcaZVsPtData_antiparticle"), track.pt(), track.dcaZ());
+        QA_reg.fill(HIST("histDcaVsPtData_antiparticle"), momentum, track.dcaXY());
+        QA_reg.fill(HIST("histDcaZVsPtData_antiparticle"), momentum, track.dcaZ());
       }
 
       if (custom_Track_selection && (TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z || TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || track.length() < minTrackLength || track.length() > maxTrackLength || track.tpcNClsFindable() < minTPCNClsFindable || track.tpcNClsShared() > maxTPCNClsShared || track.tpcFoundOverFindableCls() < minTPCFoundOverFindable || track.tpcFoundOverFindableCls() > maxTPCFoundOverFindable)) {
@@ -406,24 +400,24 @@ struct QAHistTask {
         continue;
       }
 
-      if (track.pt() < pTmin || track.pt() > pTmax)
+      if (momentum < pTmin || momentum > pTmax)
         continue;
 
-      QA_reg.fill(HIST("histTpcSignalData"), track.pt() * track.sign(), track.tpcSignal());
-      QA_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows());
-      QA_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
-      QA_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel());
-      QA_reg.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl());
-      QA_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
+      QA_reg.fill(HIST("histTpcSignalData"), momentum * track.sign(), track.tpcSignal());
+      QA_reg.fill(HIST("histNClusterTPC"), momentum, track.tpcNClsCrossedRows());
+      QA_reg.fill(HIST("histNClusterITS"), momentum, track.itsNCls());
+      QA_reg.fill(HIST("histNClusterITSib"), momentum, track.itsNClsInnerBarrel());
+      QA_reg.fill(HIST("histChi2TPC"), momentum, track.tpcChi2NCl());
+      QA_reg.fill(HIST("histChi2ITS"), momentum, track.itsChi2NCl());
       QA_reg.fill(HIST("histChi2ITSvsITSnCls"), track.itsChi2NCl(), track.itsNCls());
       QA_reg.fill(HIST("histChi2ITSvsITSibnCls"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
       QA_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNCls());
       QA_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
-      QA_reg.fill(HIST("histTPCnClsFindable"), track.pt(), track.tpcNClsFindable());
-      QA_reg.fill(HIST("histTPCnClsFindableMinusFound"), track.pt(), track.tpcNClsFindableMinusFound());
-      QA_reg.fill(HIST("histTPCnClsFindableMinusCrossedRows"), track.pt(), track.tpcNClsFindableMinusCrossedRows());
-      QA_reg.fill(HIST("histTPCnClsShared"), track.pt(), track.tpcNClsShared());
-      QA_reg.fill(HIST("histChi2TOF"), track.pt(), track.tofChi2());
+      QA_reg.fill(HIST("histTPCnClsFindable"), momentum, track.tpcNClsFindable());
+      QA_reg.fill(HIST("histTPCnClsFindableMinusFound"), momentum, track.tpcNClsFindableMinusFound());
+      QA_reg.fill(HIST("histTPCnClsFindableMinusCrossedRows"), momentum, track.tpcNClsFindableMinusCrossedRows());
+      QA_reg.fill(HIST("histTPCnClsShared"), momentum, track.tpcNClsShared());
+      QA_reg.fill(HIST("histChi2TOF"), momentum, track.tofChi2());
       QA_reg.fill(HIST("histTrackLength"), track.length());
       QA_reg.fill(HIST("histTPCCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
       QA_reg.fill(HIST("histTPCFoundOverFindable"), track.tpcFoundOverFindableCls());
@@ -446,37 +440,37 @@ struct QAHistTask {
 
         Float_t TOFmass2 = ((track.mass()) * (track.mass()));
 
-        QA_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
-        QA_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta());
+        QA_reg.fill(HIST("histTOFm2"), momentum, TOFmass2);
+        QA_reg.fill(HIST("histTofSignalData"), momentum * track.sign(), track.beta());
       }
 
       if (TMath::Abs(TPCnSigma_particle) < nsigmacut) {
 
-        QA_species.fill(HIST("histpTCorralation"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt());
+        QA_species.fill(HIST("histpTCorralation"), track.sign() * momentum, track.tpcInnerParam() - momentum);
 
         if (track.sign() > 0) {
-          particle_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
-          particle_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
-          particle_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
-          particle_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows());
-          particle_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
-          particle_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel());
-          particle_reg.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl());
-          particle_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
+          particle_reg.fill(HIST("histDcaVsPtData"), momentum, track.dcaXY());
+          particle_reg.fill(HIST("histDcaZVsPtData"), momentum, track.dcaZ());
+          particle_reg.fill(HIST("histTpcSignalData"), momentum, track.tpcSignal());
+          particle_reg.fill(HIST("histNClusterTPC"), momentum, track.tpcNClsCrossedRows());
+          particle_reg.fill(HIST("histNClusterITS"), momentum, track.itsNCls());
+          particle_reg.fill(HIST("histNClusterITSib"), momentum, track.itsNClsInnerBarrel());
+          particle_reg.fill(HIST("histChi2TPC"), momentum, track.tpcChi2NCl());
+          particle_reg.fill(HIST("histChi2ITS"), momentum, track.itsChi2NCl());
           particle_reg.fill(HIST("histChi2ITSvsITSnCls"), track.itsChi2NCl(), track.itsNCls());
           particle_reg.fill(HIST("histChi2ITSvsITSibnCls"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
           particle_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNCls());
           particle_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
-          particle_reg.fill(HIST("histTPCnClsFindable"), track.pt(), track.tpcNClsFindable());
-          particle_reg.fill(HIST("histTPCnClsFindableMinusFound"), track.pt(), track.tpcNClsFindableMinusFound());
-          particle_reg.fill(HIST("histTPCnClsFindableMinusCrossedRows"), track.pt(), track.tpcNClsFindableMinusCrossedRows());
-          particle_reg.fill(HIST("histTPCnClsShared"), track.pt(), track.tpcNClsShared());
-          particle_reg.fill(HIST("histChi2TOF"), track.pt(), track.tofChi2());
+          particle_reg.fill(HIST("histTPCnClsFindable"), momentum, track.tpcNClsFindable());
+          particle_reg.fill(HIST("histTPCnClsFindableMinusFound"), momentum, track.tpcNClsFindableMinusFound());
+          particle_reg.fill(HIST("histTPCnClsFindableMinusCrossedRows"), momentum, track.tpcNClsFindableMinusCrossedRows());
+          particle_reg.fill(HIST("histTPCnClsShared"), momentum, track.tpcNClsShared());
+          particle_reg.fill(HIST("histChi2TOF"), momentum, track.tofChi2());
           particle_reg.fill(HIST("histTrackLength"), track.length());
           particle_reg.fill(HIST("histTPCCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
           particle_reg.fill(HIST("histTPCFoundOverFindable"), track.tpcFoundOverFindableCls());
           particle_reg.fill(HIST("histTPCFractionSharedCls"), track.tpcFractionSharedCls());
-          particle_reg.fill(HIST("histpTCorralation"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt());
+          particle_reg.fill(HIST("histpTCorralation"), track.sign() * momentum, track.tpcInnerParam() - momentum);
 
           if (track.hasTOF()) {
 
@@ -495,33 +489,33 @@ struct QAHistTask {
 
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
 
-            particle_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
-            particle_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta());
+            particle_reg.fill(HIST("histTOFm2"), momentum, TOFmass2);
+            particle_reg.fill(HIST("histTofSignalData"), momentum * track.sign(), track.beta());
           }
         }
         if (track.sign() < 0) {
-          aparticle_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
-          aparticle_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
-          aparticle_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
-          aparticle_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows());
-          aparticle_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
-          aparticle_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel());
-          aparticle_reg.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl());
-          aparticle_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
+          aparticle_reg.fill(HIST("histDcaVsPtData"), momentum, track.dcaXY());
+          aparticle_reg.fill(HIST("histDcaZVsPtData"), momentum, track.dcaZ());
+          aparticle_reg.fill(HIST("histTpcSignalData"), momentum, track.tpcSignal());
+          aparticle_reg.fill(HIST("histNClusterTPC"), momentum, track.tpcNClsCrossedRows());
+          aparticle_reg.fill(HIST("histNClusterITS"), momentum, track.itsNCls());
+          aparticle_reg.fill(HIST("histNClusterITSib"), momentum, track.itsNClsInnerBarrel());
+          aparticle_reg.fill(HIST("histChi2TPC"), momentum, track.tpcChi2NCl());
+          aparticle_reg.fill(HIST("histChi2ITS"), momentum, track.itsChi2NCl());
           aparticle_reg.fill(HIST("histChi2ITSvsITSnCls"), track.itsChi2NCl(), track.itsNCls());
           aparticle_reg.fill(HIST("histChi2ITSvsITSibnCls"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
           aparticle_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNCls());
           aparticle_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
-          aparticle_reg.fill(HIST("histTPCnClsFindable"), track.pt(), track.tpcNClsFindable());
-          aparticle_reg.fill(HIST("histTPCnClsFindableMinusFound"), track.pt(), track.tpcNClsFindableMinusFound());
-          aparticle_reg.fill(HIST("histTPCnClsFindableMinusCrossedRows"), track.pt(), track.tpcNClsFindableMinusCrossedRows());
-          aparticle_reg.fill(HIST("histTPCnClsShared"), track.pt(), track.tpcNClsShared());
-          aparticle_reg.fill(HIST("histChi2TOF"), track.pt(), track.tofChi2());
+          aparticle_reg.fill(HIST("histTPCnClsFindable"), momentum, track.tpcNClsFindable());
+          aparticle_reg.fill(HIST("histTPCnClsFindableMinusFound"), momentum, track.tpcNClsFindableMinusFound());
+          aparticle_reg.fill(HIST("histTPCnClsFindableMinusCrossedRows"), momentum, track.tpcNClsFindableMinusCrossedRows());
+          aparticle_reg.fill(HIST("histTPCnClsShared"), momentum, track.tpcNClsShared());
+          aparticle_reg.fill(HIST("histChi2TOF"), momentum, track.tofChi2());
           aparticle_reg.fill(HIST("histTrackLength"), track.length());
           aparticle_reg.fill(HIST("histTPCCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
           aparticle_reg.fill(HIST("histTPCFoundOverFindable"), track.tpcFoundOverFindableCls());
           aparticle_reg.fill(HIST("histTPCFractionSharedCls"), track.tpcFractionSharedCls());
-          aparticle_reg.fill(HIST("histpTCorralation"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt());
+          aparticle_reg.fill(HIST("histpTCorralation"), track.sign() * momentum, track.tpcInnerParam() - momentum);
 
           if (track.hasTOF()) {
 
@@ -540,8 +534,8 @@ struct QAHistTask {
 
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
 
-            aparticle_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
-            aparticle_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta());
+            aparticle_reg.fill(HIST("histTOFm2"), momentum, TOFmass2);
+            aparticle_reg.fill(HIST("histTofSignalData"), momentum * track.sign(), track.beta());
           }
         }
       }
