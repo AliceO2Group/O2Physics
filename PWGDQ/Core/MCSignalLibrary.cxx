@@ -1489,7 +1489,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Inclusive X(3872)", {prong}, {-1});
     return signal;
   }
-  
+
   if (!nameStr.compare("JpsiFromX3872")) {
     MCProng prong(1, {443}, {true}, {false}, {0}, {0}, {false}, false, {9920443}, {false});
     signal = new MCSignal(name, "Jpsi from X3872", {prong}, {-1});
