@@ -38,6 +38,7 @@
 #include "GFW.h"
 #include "GFWCumulant.h"
 #include "GFWWeights.h"
+#include "GFWWeightsList.h"
 #include "FlowContainer.h"
 #include "TList.h"
 #include <TProfile.h>
@@ -62,6 +63,7 @@ struct FlowRunbyRun {
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
+  O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 30, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
   O2_DEFINE_CONFIGURABLE(cfgDynamicRunNumber, bool, false, "Add runNumber during runtime")
   Configurable<std::vector<int>> cfgRunNumbers{"cfgRunNumbers", std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}, "Preconfigured run numbers"};
@@ -84,7 +86,7 @@ struct FlowRunbyRun {
 
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
-  OutputObj<TList> fWeightList{"WeightList", OutputObjHandlingPolicy::AnalysisObject, OutputObjSourceType::OutputObjSource};
+  OutputObj<GFWWeightsList> fGFWWeightsList{GFWWeightsList("GFWWeightsList")};
   HistogramRegistry registry{"registry"};
 
   // define global variables
@@ -97,7 +99,6 @@ struct FlowRunbyRun {
   std::vector<int> runNumbers;                                        // vector of run numbers
   std::map<int, std::vector<std::shared_ptr<TH1>>> th1sList;          // map of histograms for all runs
   std::map<int, std::vector<std::shared_ptr<TProfile>>> profilesList; // map of profiles for all runs
-  std::map<int, GFWWeights*> weightsList;                             // map of weights for all runs
   enum OutputTH1Names {
     // here are TProfiles for vn-pt correlations that are not implemented in GFW
     hPhi = 0,
@@ -122,9 +123,7 @@ struct FlowRunbyRun {
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
 
-    TList* weightlist = new TList();
-    weightlist->SetOwner(true);
-    fWeightList.setObject(weightlist);
+    fGFWWeightsList->init("weightList");
 
     // Add output histograms to the registry
     runNumbers = cfgRunNumbers;
@@ -148,7 +147,7 @@ struct FlowRunbyRun {
     }
     fFC->SetName("FlowContainer");
     fFC->SetXAxis(fPtAxis);
-    fFC->Initialize(oba, axisIndependent, 1);
+    fFC->Initialize(oba, axisIndependent, cfgNbootstrap);
     delete oba;
 
     fGFW->AddRegion("full", -0.8, 0.8, 1, 1);
@@ -230,11 +229,7 @@ struct FlowRunbyRun {
     o2::framework::AxisSpec axis = axisPt;
     int nPtBins = axis.binEdges.size() - 1;
     double* ptBins = &(axis.binEdges)[0];
-    GFWWeights* weight = new GFWWeights(Form("weight_%d", runNumber));
-    weight->SetPtBins(nPtBins, ptBins);
-    weight->Init(true, false);
-    fWeightList->Add(weight);
-    weightsList.insert(std::make_pair(runNumber, weight));
+    fGFWWeightsList->addGFWWeightsByRun(runNumber, nPtBins, ptBins, true, false);
   }
 
   void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
@@ -277,10 +272,21 @@ struct FlowRunbyRun {
         fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 1);
       }
       if (cfgOutputNUAWeightsRefPt) {
-        if (withinPtRef)
-          weightsList[runNumber]->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
+        if (withinPtRef) {
+          GFWWeights* weight = fGFWWeightsList->getGFWWeightsByRun(runNumber);
+          if (!weight) {
+            LOGF(fatal, "Could not find the weight for run %d", runNumber);
+            return;
+          }
+          weight->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
+        }
       } else {
-        weightsList[runNumber]->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
+        GFWWeights* weight = fGFWWeightsList->getGFWWeightsByRun(runNumber);
+        if (!weight) {
+          LOGF(fatal, "Could not find the weight for run %d", runNumber);
+          return;
+        }
+        weight->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
       }
     }
 

@@ -339,15 +339,24 @@ struct AngularCorrelationsInJets {
   {                                                        // reject any track that has nsigma < 3 for more than 1 species
     if (track.tpcNSigmaStoreEl() < nsigmaRejection || track.tpcNSigmaStoreMu() < nsigmaRejection || track.tpcNSigmaStorePi() < nsigmaRejection || track.tpcNSigmaStoreKa() < nsigmaRejection || track.tpcNSigmaStoreTr() < nsigmaRejection || track.tpcNSigmaStoreAl() < nsigmaRejection)
       return false;
-    switch (species) {
-      case 1: // (anti)proton
-        return (track.tpcNSigmaPr() < nsigmaRejection && track.tpcNSigmaDe() > nsigmaRejection && track.tpcNSigmaHe() > nsigmaRejection);
+    switch (species) { // guard against nsigmaRejection being lower than nsigma cuts that are applied before this function
+      case 1:          // proton
+        return (track.tpcNSigmaPr() < protonNsigma && track.tpcNSigmaDe() > nsigmaRejection && track.tpcNSigmaHe() > nsigmaRejection);
         break;
-      case 2: // (anti)deuteron
-        return (track.tpcNSigmaDe() < nsigmaRejection && track.tpcNSigmaPr() > nsigmaRejection && track.tpcNSigmaHe() > nsigmaRejection);
+      case 2: // antiproton
+        return (track.tpcNSigmaPr() < antiprotonNsigma && track.tpcNSigmaDe() > nsigmaRejection && track.tpcNSigmaHe() > nsigmaRejection);
         break;
-      case 3: // (anti)helium-3
-        return (track.tpcNSigmaHe() < nsigmaRejection && track.tpcNSigmaDe() > nsigmaRejection && track.tpcNSigmaPr() > nsigmaRejection);
+      case 3: // deuteron
+        return (track.tpcNSigmaDe() < nucleiNsigma && track.tpcNSigmaPr() > nsigmaRejection && track.tpcNSigmaHe() > nsigmaRejection);
+        break;
+      case 4: // antideuteron
+        return (track.tpcNSigmaDe() < antinucleiNsigma && track.tpcNSigmaPr() > nsigmaRejection && track.tpcNSigmaHe() > nsigmaRejection);
+        break;
+      case 5: // helium-3
+        return (track.tpcNSigmaHe() < nucleiNsigma && track.tpcNSigmaDe() > nsigmaRejection && track.tpcNSigmaPr() > nsigmaRejection);
+        break;
+      case 6: // antihelium-3
+        return (track.tpcNSigmaHe() < antinucleiNsigma && track.tpcNSigmaDe() > nsigmaRejection && track.tpcNSigmaPr() > nsigmaRejection);
         break;
       default:
         return false;
@@ -425,7 +434,7 @@ struct AngularCorrelationsInJets {
       double tofNsigma = track.hasTOF() ? track.tofNSigmaPr() : 999;
       if ((track.pt() < antiprotonTPCTOFpT && (TMath::Abs(track.tpcNSigmaPr()) > antiprotonNsigma)) || (track.pt() > antiprotonTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaPr() * track.tpcNSigmaPr() + tofNsigma * tofNsigma) > antiprotonNsigma)))
         return false;
-      if (!singleSpeciesTPCNSigma(track, 1))
+      if (!singleSpeciesTPCNSigma(track, 2))
         return false;
     } else { // for yields
       // DCA
@@ -474,7 +483,7 @@ struct AngularCorrelationsInJets {
         double tofNsigma = track.hasTOF() ? track.tofNSigmaDe() : 999;
         if ((track.pt() < nucleiTPCTOFpT && (TMath::Abs(track.tpcNSigmaDe()) > nucleiNsigma)) || (track.pt() > nucleiTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaDe() * track.tpcNSigmaDe() + tofNsigma * tofNsigma) > nucleiNsigma)))
           return false;
-        if (!singleSpeciesTPCNSigma(track, 2))
+        if (!singleSpeciesTPCNSigma(track, 3))
           return false;
       } else { // for yields
         // DCA
@@ -514,7 +523,7 @@ struct AngularCorrelationsInJets {
         double tofNsigma = track.hasTOF() ? track.tofNSigmaHe() : 999;
         if ((track.pt() < nucleiTPCTOFpT && (TMath::Abs(track.tpcNSigmaHe()) > nucleiNsigma)) || (track.pt() > nucleiTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaHe() * track.tpcNSigmaHe() + tofNsigma * tofNsigma) > nucleiNsigma)))
           return false;
-        if (!singleSpeciesTPCNSigma(track, 3))
+        if (!singleSpeciesTPCNSigma(track, 5))
           return false;
       } else { // for yields
         // DCA
@@ -565,7 +574,7 @@ struct AngularCorrelationsInJets {
         double tofNsigma = track.hasTOF() ? track.tofNSigmaDe() : 999;
         if ((track.pt() < antinucleiTPCTOFpT && (TMath::Abs(track.tpcNSigmaDe()) > antinucleiNsigma)) || (track.pt() > antinucleiTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaDe() * track.tpcNSigmaDe() + tofNsigma * tofNsigma) > antinucleiNsigma)))
           return false;
-        if (!singleSpeciesTPCNSigma(track, 2))
+        if (!singleSpeciesTPCNSigma(track, 4))
           return false;
       } else { // for yields
         // DCA
@@ -605,7 +614,7 @@ struct AngularCorrelationsInJets {
         double tofNsigma = track.hasTOF() ? track.tofNSigmaHe() : 999;
         if ((track.pt() < antinucleiTPCTOFpT && (TMath::Abs(track.tpcNSigmaHe()) > antinucleiNsigma)) || (track.pt() > antinucleiTPCTOFpT && (TMath::Sqrt(track.tpcNSigmaHe() * track.tpcNSigmaHe() + tofNsigma * tofNsigma) > antinucleiNsigma)))
           return false;
-        if (!singleSpeciesTPCNSigma(track, 3))
+        if (!singleSpeciesTPCNSigma(track, 6))
           return false;
       } else { // for yields
         // DCA
@@ -834,7 +843,7 @@ struct AngularCorrelationsInJets {
       return jetCounter;
     registryData.fill(HIST("hPtTotalSubJetPerp"), subtractedJetPerp.pt());
     registryData.fill(HIST("hPtTotalSubJetArea"), subtractedJetArea.pt());
-    registryQA.fill(HIST("hRhoEstimateArea"), jet.pt(), rho);
+    registryQA.fill(HIST("hRhoEstimateArea"), jet.pt(), rho); // switch to subtracted jet pt
     registryQA.fill(HIST("hRhoMEstimateArea"), jet.pt(), rhoM);
     registryQA.fill(HIST("hRhoEstimatePerp"), jet.pt(), rhoPerp);
     registryQA.fill(HIST("hRhoMEstimatePerp"), jet.pt(), rhoMPerp);

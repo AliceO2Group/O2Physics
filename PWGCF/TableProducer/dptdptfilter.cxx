@@ -106,6 +106,9 @@ const char* eventSelectionSteps[knCollisionSelectionFlags] = {
   "ISVERTEXTOFMATCHED",
   "ISVERTEXTRDMATCHED",
   "OCCUPANCY",
+  "ISGOODITSLAYER3",
+  "ISGOODITSLAYER0123",
+  "ISGOODITSLAYERALL",
   "CENTRALITY",
   "ZVERTEX",
   "SELECTED"};
@@ -363,6 +366,10 @@ struct DptDptFilter {
   Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M,CL0,CL1,FV0A,FT0M,FT0A,FT0C,NTPV,NOCM: none. Default V0M"};
   Configurable<std::string> cfgOccupancyEstimation{"occestimation", "None", "Occupancy estimation: None, Tracks, FT0C. Default None"};
   Configurable<float> cfgMaxOccupancy{"occmax", 1e6f, "Maximum allowed occupancy. Depends on the occupancy estimation"};
+  struct : ConfigurableGroup {
+    std::string prefix = "cfgEventSelection";
+    Configurable<std::string> itsDeadMaps{"itsDeadMaps", "", "Level of inactive chips: nocheck(empty), goodIts3, goodIts0123, goodItsAll. Default empty"};
+  } cfgEventSelection;
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
   Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
   Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB,VTXTOFMATCHED,VTXTRDMATCHED,VTXTRDTOFMATCHED,None. Default MB"};
@@ -421,6 +428,8 @@ struct DptDptFilter {
     /* the occupancy selection */
     fOccupancyEstimation = getOccupancyEstimator(cfgOccupancyEstimation);
     fMaxOccupancy = cfgMaxOccupancy;
+    /* the ITS dead map check */
+    fItsDeadMapCheck = getItsDeadMapCheck(cfgEventSelection.itsDeadMaps);
 
     /* the trigger selection */
     fTriggerSelection = getTriggerSelection(cfgTriggSel);

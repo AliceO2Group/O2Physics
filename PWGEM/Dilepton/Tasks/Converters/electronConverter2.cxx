@@ -25,13 +25,13 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-struct electronConverter1 {
-  Produces<aod::EMPrimaryElectrons_001> track_001;
+struct electronConverter2 {
+  Produces<aod::EMPrimaryElectrons_002> track_002;
 
-  void process(aod::EMPrimaryElectrons_000 const& tracks)
+  void process(aod::EMPrimaryElectrons_001 const& tracks)
   {
     for (auto& track : tracks) {
-      track_001(track.collisionId(),
+      track_002(track.collisionId(),
                 track.trackId(),
                 track.sign(),
                 track.pt(),
@@ -57,9 +57,9 @@ struct electronConverter1 {
                 track.tofNSigmaPi(),
                 track.tofNSigmaKa(),
                 track.tofNSigmaPr(),
-                track.itsClusterSizes(),
+                track.itsClusterSizes(), 0, 0, 0, 0, 0,
                 track.itsChi2NCl(),
-                -1.f,
+                track.tofChi2(),
                 track.detectorMap(),
                 track.x(),
                 track.alpha(),
@@ -74,5 +74,5 @@ struct electronConverter1 {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<electronConverter1>(cfgc, TaskName{"electron-converter1"})};
+  return WorkflowSpec{adaptAnalysisTask<electronConverter2>(cfgc, TaskName{"electron-converter2"})};
 }
