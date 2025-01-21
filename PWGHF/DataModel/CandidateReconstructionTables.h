@@ -586,8 +586,9 @@ DECLARE_SOA_COLUMN(KfTopolChi2OverNdf, kfTopolChi2OverNdf, float); //! chi2overn
 DECLARE_SOA_COLUMN(PtBhadMotherPart, ptBhadMotherPart, float); //! pt of the first B-hadron mother particle (only in case of non-prompt)
 DECLARE_SOA_COLUMN(PdgBhadMotherPart, pdgBhadMotherPart, int); //! pdg of the first B-hadron mother particle (only in case of non-prompt)
 DECLARE_SOA_COLUMN(IdxBhadMotherPart, idxBhadMotherPart, int); //! index of the first B-hadron mother particle (only in case of non-prompt)
-// Kink topology mc flag
-DECLARE_SOA_COLUMN(NTracksDecayed, nTracksDecayed, int8_t); //! number of tracks matched with kinked decay topology
+// Kink topology and material interaction mc flags
+DECLARE_SOA_COLUMN(NTracksDecayed, nTracksDecayed, int8_t);                       //! number of tracks matched with kinked decay topology
+DECLARE_SOA_COLUMN(NInteractionsWithMaterial, nInteractionsWithMaterial, int8_t); //! number of tracks matched after interaction with material
 
 // method of secondary-vertex reconstruction
 enum VertexerType { DCAFitter = 0,
@@ -735,7 +736,8 @@ DECLARE_SOA_TABLE(HfCand2ProngMcRec, "AOD", "HFCAND2PMCREC", //!
                   hf_cand_2prong::OriginMcRec,
                   hf_cand::PtBhadMotherPart,
                   hf_cand::PdgBhadMotherPart,
-                  hf_cand::NTracksDecayed);
+                  hf_cand::NTracksDecayed,
+                  hf_cand::NInteractionsWithMaterial);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCand2ProngMcGen, "AOD", "HFCAND2PMCGEN", //!
@@ -1058,7 +1060,8 @@ DECLARE_SOA_TABLE(HfCand3ProngMcRec, "AOD", "HFCAND3PMCREC", //!
                   hf_cand_3prong::FlagMcDecayChanRec,
                   hf_cand::PtBhadMotherPart,
                   hf_cand::PdgBhadMotherPart,
-                  hf_cand::NTracksDecayed);
+                  hf_cand::NTracksDecayed,
+                  hf_cand::NInteractionsWithMaterial);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCand3ProngMcGen, "AOD", "HFCAND3PMCGEN", //!
@@ -2404,7 +2407,8 @@ DECLARE_SOA_TABLE(HfCandDstarMcRec, "AOD", "HFCANDDSTRMCREC",
                   hf_cand_dstar::OriginMcRec,
                   hf_cand::PtBhadMotherPart,
                   hf_cand::PdgBhadMotherPart,
-                  hf_cand::NTracksDecayed);
+                  hf_cand::NTracksDecayed,
+                  hf_cand::NInteractionsWithMaterial);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandDstarMcGen, "AOD", "HFCANDDSTRMCGEN",

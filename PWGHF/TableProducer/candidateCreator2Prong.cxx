@@ -684,6 +684,7 @@ struct HfCandidateCreator2ProngExpressions {
   // Configuration
   o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
   o2::framework::Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
+  o2::framework::Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", false, "Match also candidates with tracks that interact with material"};
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
 
@@ -732,6 +733,7 @@ struct HfCandidateCreator2ProngExpressions {
     int8_t flag = 0;
     int8_t origin = 0;
     int8_t nKinkedTracks = 0;
+    int8_t nInteractionsWithMaterial = 0;
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
@@ -753,15 +755,19 @@ struct HfCandidateCreator2ProngExpressions {
           }
         }
         if (fromBkg) {
-          rowMcMatchRec(flag, origin, -1.f, 0, 0);
+          rowMcMatchRec(flag, origin, -1.f, 0, 0, 0);
           continue;
         }
       }
       std::vector<int> idxBhadMothers{};
 
       // D0(bar) → π± K∓
-      if (matchKinkedDecayTopology) {
-        indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, &nKinkedTracks);
+      if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+        indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, &nKinkedTracks, &nInteractionsWithMaterial);
+      } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
+        indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, &nKinkedTracks);
+      } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+        indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
       } else {
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
       }
@@ -771,7 +777,11 @@ struct HfCandidateCreator2ProngExpressions {
 
       // J/ψ → e+ e−
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true);
+        if (matchInteractionsWithMaterial) {
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
+        } else {
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true);
+        }
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToEE;
         }
@@ -779,7 +789,11 @@ struct HfCandidateCreator2ProngExpressions {
 
       // J/ψ → μ+ μ−
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
+        if (matchInteractionsWithMaterial) {
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
+        } else {
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
+        }
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToMuMu;
         }
@@ -792,9 +806,9 @@ struct HfCandidateCreator2ProngExpressions {
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        rowMcMatchRec(flag, origin, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks);
+        rowMcMatchRec(flag, origin, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks, nInteractionsWithMaterial);
       } else {
-        rowMcMatchRec(flag, origin, -1.f, 0, nKinkedTracks);
+        rowMcMatchRec(flag, origin, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
       }
     }
 
