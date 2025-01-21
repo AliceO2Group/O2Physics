@@ -21,6 +21,7 @@
 
 #include <vector>
 
+#include "TRandom.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -207,7 +208,7 @@ struct qaEventTrackLiteProducer {
     if (std::abs(collision.posZ()) > selectMaxVtxZ) {
       return;
     }
-    if (fractionOfSampledEvents < 1.f && (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) > fractionOfSampledEvents) { // Skip events that are not sampled
+    if (fractionOfSampledEvents < 1.f && (gRandom->Uniform()) > fractionOfSampledEvents) { // Skip events that are not sampled
       return;
     }
     if (nTableEventCounter > targetNumberOfEvents) { // Skip events if target is reached
