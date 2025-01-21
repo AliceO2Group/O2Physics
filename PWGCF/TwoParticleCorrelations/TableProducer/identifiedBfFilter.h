@@ -85,9 +85,9 @@ enum SpeciesPairMatch {
   kIdBfProtonProton      ///< Proton-Proton
 };
 
-const char* speciesName[kIdBfNoOfSpecies+1] = {"e", "pi", "ka", "p","ha"};
+const char* speciesName[kIdBfNoOfSpecies + 1] = {"e", "pi", "ka", "p", "ha"};
 
-const char* speciesTitle[kIdBfNoOfSpecies+1] = {"e", "#pi", "K", "p","ha"};
+const char* speciesTitle[kIdBfNoOfSpecies + 1] = {"e", "#pi", "K", "p", "ha"};
 
 const int speciesChargeValue1[kIdBfNoOfSpecies] = {
   0, //< electron
@@ -726,8 +726,6 @@ inline bool matchTrackType(TrackObject const& track)
     return false;
   }
 }
-
-
 
 /// \brief Accepts or not the passed track
 /// \param track the track of interest
