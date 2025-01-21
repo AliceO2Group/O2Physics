@@ -63,9 +63,9 @@ struct FemtoUniversePairTaskTrackPhi {
 
   Service<o2::framework::O2DatabasePDG> pdgMC;
 
-  using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  Filter trackCutFilter = requireGlobalTrackInFilter();
-  using FilteredFemtoFullParticles = soa::Filtered<FemtoFullParticles>;
+  // using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
+  // Filter trackCutFilter = requireGlobalTrackInFilter();
+  using FilteredFemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
 
   SliceCache cache;
   Preslice<FilteredFemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;

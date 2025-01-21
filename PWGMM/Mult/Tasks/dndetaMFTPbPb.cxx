@@ -8,7 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
+//
+///
 /// \brief  Task for calculating dNdeta in Pb-Pb collisions using MFT detector
 /// \author Gyula Bencedi, gyula.bencedi@cern.ch
 /// \since  Nov 2024
@@ -820,7 +821,7 @@ struct DndetaMFTPbPb {
     }
   }
 
-  PROCESS_SWITCH(PseudorapidityDensityMFT, processTagging,
+  PROCESS_SWITCH(DndetaMFTPbPb, processTagging,
                  "Collect event sample stats", true);
 
   template <typename C>
@@ -897,7 +898,7 @@ struct DndetaMFTPbPb {
     processData<Colls>(collision, tracks);
   }
 
-  PROCESS_SWITCH(PseudorapidityDensityMFT, processDataInclusive, "Count tracks",
+  PROCESS_SWITCH(DndetaMFTPbPb, processDataInclusive, "Count tracks",
                  false);
 
   /// @brief process fnc. to run on DATA and REC MC w/ FT0C centrality selection
@@ -907,7 +908,7 @@ struct DndetaMFTPbPb {
     processData<CollsCent>(collision, tracks);
   }
 
-  PROCESS_SWITCH(PseudorapidityDensityMFT, processDataCent,
+  PROCESS_SWITCH(DndetaMFTPbPb, processDataCent,
                  "Count tracks in FT0C bins", false);
 
   /// @brief process fnc. to run on DATA and REC MC based on BestCollisionsFwd
@@ -919,7 +920,7 @@ struct DndetaMFTPbPb {
     processDatawBestTracks<Colls>(collision, tracks, besttracks);
   }
 
-  PROCESS_SWITCH(PseudorapidityDensityMFT, processDatawBestTracksInclusive,
+  PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksInclusive,
                  "Count tracks based on BestCollisionsFwd table", false);
 
   /// @brief process fnc. to run on DATA and REC MC based on BestCollisionsFwd
@@ -931,7 +932,7 @@ struct DndetaMFTPbPb {
     processDatawBestTracks<CollsCent>(collision, tracks, besttracks);
   }
 
-  PROCESS_SWITCH(PseudorapidityDensityMFT, processDatawBestTracksCent,
+  PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksCent,
                  "Count tracks in FT0C bins based on BestCollisionsFwd table",
                  false);
 
@@ -1055,7 +1056,7 @@ struct DndetaMFTPbPb {
                                         tracks);
   }
 
-  PROCESS_SWITCH(PseudorapidityDensityMFT, processMCInclusive,
+  PROCESS_SWITCH(DndetaMFTPbPb, processMCInclusive,
                  "Count MC particles", false);
 
   /// @brief process fnc. to run on MC w FT0C centrality selection
@@ -1068,7 +1069,7 @@ struct DndetaMFTPbPb {
                                             tracks);
   }
 
-  PROCESS_SWITCH(PseudorapidityDensityMFT, processMCCent,
+  PROCESS_SWITCH(DndetaMFTPbPb, processMCCent,
                  "Count MC particles in FT0C bins", false);
 
   PresliceUnsorted<aod::BestCollisionsFwd> perColU =
@@ -1170,7 +1171,7 @@ struct DndetaMFTPbPb {
       mccollision, collisions, particles, tracks, besttracks);
   }
 
-  PROCESS_SWITCH(PseudorapidityDensityMFT, processMCwBestTracksInclusive,
+  PROCESS_SWITCH(DndetaMFTPbPb, processMCwBestTracksInclusive,
                  "Count MC particles using aod::BestCollisionsFwd", false);
 
   /// @brief process fnc. to run on MC (FT0C centrality, using
@@ -1185,7 +1186,7 @@ struct DndetaMFTPbPb {
       mccollision, collisions, particles, tracks, besttracks);
   }
 
-  PROCESS_SWITCH(PseudorapidityDensityMFT, processMCwBestTracksCent,
+  PROCESS_SWITCH(DndetaMFTPbPb, processMCwBestTracksCent,
                  "Count MC particles in FT0C bins using aod::BestCollisionsFwd",
                  false);
 
@@ -1310,7 +1311,7 @@ struct DndetaMFTPbPb {
                                                particles, tracks);
   }
 
-  PROCESS_SWITCH(PseudorapidityDensityMFT, processTrkEffIdxInlusive,
+  PROCESS_SWITCH(DndetaMFTPbPb, processTrkEffIdxInlusive,
                  "Process tracking efficiency (inclusive)", false);
 
   /// @brief process function to calculate tracking efficiency (FT0 bins,
@@ -1324,7 +1325,7 @@ struct DndetaMFTPbPb {
                                                    particles, tracks);
   }
 
-  PROCESS_SWITCH(PseudorapidityDensityMFT, processTrkEffIdxCent,
+  PROCESS_SWITCH(DndetaMFTPbPb, processTrkEffIdxCent,
                  "Process tracking efficiency in FT0 bins", false);
 
   /// @brief process function to calculate tracking efficiency (indexed) based
@@ -1403,7 +1404,7 @@ struct DndetaMFTPbPb {
                                                 particles, tracks, besttracks);
   }
 
-  PROCESS_SWITCH(PseudorapidityDensityMFT, processTrkEffBestInclusive,
+  PROCESS_SWITCH(DndetaMFTPbPb, processTrkEffBestInclusive,
                  "Process tracking efficiency (inclusive, based on BestCollisionsFwd)",
                  false);
 
@@ -1419,7 +1420,7 @@ struct DndetaMFTPbPb {
       collision, mccollisions, particles, tracks, besttracks);
   }
 
-  PROCESS_SWITCH(PseudorapidityDensityMFT, processTrkEffBestCent,
+  PROCESS_SWITCH(DndetaMFTPbPb, processTrkEffBestCent,
                  "Process tracking efficiency (in FT0 bins, based on BestCollisionsFwd)",
                  false);
 
@@ -1482,7 +1483,7 @@ struct DndetaMFTPbPb {
     processMcQA<Colls>(collisions, mcCollisions, particles, tracks, atracks);
   }
 
-  PROCESS_SWITCH(PseudorapidityDensityMFT, processMcQAInclusive,
+  PROCESS_SWITCH(DndetaMFTPbPb, processMcQAInclusive,
                  "Process MC QA checks (inclusive)", false);
 
   /// @brief process function for QA checks (in FT0 bins)
@@ -1495,11 +1496,11 @@ struct DndetaMFTPbPb {
                            atracks);
   }
 
-  PROCESS_SWITCH(PseudorapidityDensityMFT, processMcQACent,
+  PROCESS_SWITCH(DndetaMFTPbPb, processMcQACent,
                  "Process MC QA checks (in FT0 bins)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<PseudorapidityDensityMFT>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<DndetaMFTPbPb>(cfgc)};
 }

@@ -1389,6 +1389,7 @@ struct strangeness_in_jets {
           for (auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
             if (particleMotherOfNeg == particleMotherOfPos) {
               pdg_parent = particleMotherOfNeg.pdgCode();
+              isPhysPrim = particleMotherOfNeg.isPhysicalPrimary();
             }
           }
         }
@@ -1843,7 +1844,7 @@ struct strangeness_in_jets {
           double deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue2[i].Phi());
           double deltaR_ue2 = std::sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
-          int pdg = std::fabs(particle.pdgCode());
+          int pdg = particle.pdgCode();
 
           if (pdg == 211) {
             if (deltaR_jet < Rjet) {
