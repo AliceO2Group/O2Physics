@@ -1026,18 +1026,18 @@ struct IdentifiedBfFilterTracks {
 
   template <typename TrackObject>
   inline MatchRecoGenSpecies IdentifyTrack(TrackObject const& track);
-  template <typename TrackObject, typename CollisionObject>
-  int8_t AcceptTrack(TrackObject const& track, CollisionObject const& collision);
+  template <typename TrackObject>
+  int8_t AcceptTrack(TrackObject const& track);
   template <typename ParticleObject, typename MCCollisionObject>
   int8_t AcceptParticle(ParticleObject& particle, MCCollisionObject const& mccollision);
   template <typename CollisionObjects, typename TrackObject>
   int8_t selectTrackAmbiguousCheck(CollisionObjects const& collisions, TrackObject const& track);
   template <typename ParticleObject>
   inline MatchRecoGenSpecies IdentifyParticle(ParticleObject const& particle);
-  template <typename TrackObject, typename CollisionObject>
-  void fillTrackHistosBeforeSelection(TrackObject const& track, CollisionObject const& collision);
-  template <typename TrackObject, typename CollisionObject>
-  void fillTrackHistosAfterSelection(TrackObject const& track, MatchRecoGenSpecies sp, CollisionObject const& collision);
+  template <typename TrackObject>
+  void fillTrackHistosBeforeSelection(TrackObject const& track);
+  template <typename TrackObject>
+  void fillTrackHistosAfterSelection(TrackObject const& track, MatchRecoGenSpecies sp);
   template <typename ParticleObject, typename MCCollisionObject>
   void fillParticleHistosBeforeSelection(ParticleObject const& particle,
                                          MCCollisionObject const& collision,
@@ -1428,8 +1428,8 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
 /// For the time being we keep the convention
 /// - positive track pid even
 /// - negative track pid odd
-template <typename TrackObject, typename CollisionObject>
-inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track, CollisionObject const& collision)
+template <typename TrackObject>
+inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
 {
   fillTrackHistosBeforeSelection(track, collision); // <Fill "before selection" histo
 
@@ -1591,8 +1591,8 @@ int8_t IdentifiedBfFilterTracks::selectTrackAmbiguousCheck(CollisionObjects cons
   }
 }
 
-template <typename TrackObject, typename CollisionObject>
-void IdentifiedBfFilterTracks::fillTrackHistosBeforeSelection(TrackObject const& track, CollisionObject const& collision)
+template <typename TrackObject>
+void IdentifiedBfFilterTracks::fillTrackHistosBeforeSelection(TrackObject const& track)
 {
   fhXYB->Fill(track.x(), track.y());
   fhYZB->Fill(track.y(), track.z());
@@ -1618,8 +1618,8 @@ void IdentifiedBfFilterTracks::fillTrackHistosBeforeSelection(TrackObject const&
   fhDCAxyzB->Fill(track.dcaXY(), track.dcaZ());
 }
 
-template <typename TrackObject, typename CollisionObject>
-void IdentifiedBfFilterTracks::fillTrackHistosAfterSelection(TrackObject const& track, MatchRecoGenSpecies sp, CollisionObject const& collision)
+template <typename TrackObject>
+void IdentifiedBfFilterTracks::fillTrackHistosAfterSelection(TrackObject const& track, MatchRecoGenSpecies sp)
 {
   /* the charged species should have been called first so avoid double counting */
   if (sp == kIdBfCharged) {
