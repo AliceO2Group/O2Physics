@@ -91,7 +91,7 @@ struct TaskPi0FlowEMC {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<bool> cfgDoRotation{"cfgDoRotation", true, "Flag to enable rotation background method"};
   Configurable<int> cfgDownsampling{"cfgDownsampling", 1, "Calculate rotation background only for every <value> collision"};
-  Configurable<int> cfgEMCalMapLevel{"cfgEMCalMapLevel", 2, "Different levels of correction for the rotation background, the smaller number includes the level of the higher number (4: none, 3: only inside EMCal, 2: exclude bad channels, 1: remove edges)"};  
+  Configurable<int> cfgEMCalMapLevel{"cfgEMCalMapLevel", 2, "Different levels of correction for the rotation background, the smaller number includes the level of the higher number (4: none, 3: only inside EMCal, 2: exclude bad channels, 1: remove edges)"};
   Configurable<float> cfgRotAngle{"cfgRotAngle", std::move(const_cast<float&>(o2::constants::math::PIHalf)), "Angle used for the rotation method"};
   Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
 
@@ -173,7 +173,7 @@ struct TaskPi0FlowEMC {
   SliceCache cache;
   EventPlaneHelper epHelper;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int runNow = 0; 
+  int runNow = 0;
   int runBefore = -1;
 
   Filter clusterFilter = aod::skimmedcluster::time >= emccuts.cfgEMCminTime && aod::skimmedcluster::time <= emccuts.cfgEMCmaxTime && aod::skimmedcluster::m02 >= emccuts.cfgEMCminM02 && aod::skimmedcluster::m02 <= emccuts.cfgEMCmaxM02 && skimmedcluster::e >= emccuts.cfgEMCminE;
@@ -202,12 +202,14 @@ struct TaskPi0FlowEMC {
   float epsilon = 1.e-8;
 
   // To access the 1D array
-  inline int getIndex(int iEta, int iPhi) {
+  inline int getIndex(int iEta, int iPhi)
+  {
     return iEta * nBinsPhi + iPhi;
   }
 
   // Function to access the lookup table
-  inline int8_t checkEtaPhi1D(double eta, double phi) {
+  inline int8_t checkEtaPhi1D(double eta, double phi)
+  {
     if (eta < etaMin || eta > etaMax || phi < phiMin || phi > phiMax) {
       return 3; // Out of bounds
     }
@@ -288,8 +290,6 @@ struct TaskPi0FlowEMC {
     const AxisSpec thAxisCN{8, 0.5, 8.5, "#it{c}_{n}"};
     const AxisSpec thAxisSN{8, 0.5, 8.5, "#it{s}_{n}"};
     const AxisSpec thAxisCPUTime{1000, 0, 10000, "#it{t} (#mus)"};
-
-
 
     registry.add("hSparsePi0Flow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
     registry.add("hSparseBkgFlow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
@@ -610,11 +610,11 @@ struct TaskPi0FlowEMC {
 
           // Check conditions for the cell
           if (isTooCloseToEdge(cellID, 1)) {
-              lookupTable1D[getIndex(iEta, iPhi)] = 2; // Edge
+            lookupTable1D[getIndex(iEta, iPhi)] = 2; // Edge
           } else if (isCellMasked(cellID)) {
-              lookupTable1D[getIndex(iEta, iPhi)] = 1; // Bad
+            lookupTable1D[getIndex(iEta, iPhi)] = 1; // Bad
           } else {
-              lookupTable1D[getIndex(iEta, iPhi)] = 0; // Good
+            lookupTable1D[getIndex(iEta, iPhi)] = 0; // Good
           }
         } catch (o2::emcal::InvalidPositionException& e) {
           lookupTable1D[getIndex(iEta, iPhi)] = 3; // Outside geometry
@@ -649,7 +649,6 @@ struct TaskPi0FlowEMC {
       registry.fill(HIST("mesonQA/hClusterBackEtaPhiBefore"), RecoDecay::constrainAngle(photon1.Phi()), photon1.Eta()); // before check but after rotation
       registry.fill(HIST("mesonQA/hClusterBackEtaPhiBefore"), RecoDecay::constrainAngle(photon2.Phi()), photon2.Eta()); // before check but after rotation
     }
-
 
     if (checkEtaPhi1D(photon1.Eta(), RecoDecay::constrainAngle(photon1.Phi())) >= cfgEMCalMapLevel.value) {
       iCellIDPhoton1 = -1;
@@ -880,7 +879,7 @@ struct TaskPi0FlowEMC {
         // selection based on QVector
         continue;
       }
-      runNow = collision.runNumber(); 
+      runNow = collision.runNumber();
       if (runNow != runBefore) {
         initCCDB(collision);
         runBefore = runNow;
@@ -997,7 +996,7 @@ struct TaskPi0FlowEMC {
         // selection based on QVector
         continue;
       }
-      runNow = c1.runNumber(); 
+      runNow = c1.runNumber();
       if (runNow != runBefore) {
         initCCDB(c1);
         runBefore = runNow;
@@ -1190,7 +1189,7 @@ struct TaskPi0FlowEMC {
         // selection based on QVector
         continue;
       }
-      runNow = collision.runNumber(); 
+      runNow = collision.runNumber();
       if (runNow != runBefore) {
         initCCDB(collision);
         runBefore = runNow;
