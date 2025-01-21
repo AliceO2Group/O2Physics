@@ -76,6 +76,8 @@ DECLARE_SOA_COLUMN(MD1, mD1, float);
 DECLARE_SOA_COLUMN(MD2, mD2, float);
 DECLARE_SOA_COLUMN(DeltaMD1, deltaMD1, float);
 DECLARE_SOA_COLUMN(DeltaMD2, deltaMD2, float);
+DECLARE_SOA_COLUMN(MDDPi, mDDPi, float);
+DECLARE_SOA_COLUMN(DeltaMDDPi, deltaMDDPi, float);
 DECLARE_SOA_COLUMN(EtaD1, etaD1, float);
 DECLARE_SOA_COLUMN(EtaD2, etaD2, float);
 DECLARE_SOA_COLUMN(EtaSoftPi, etaSoftPi, float);
@@ -131,6 +133,8 @@ DECLARE_SOA_TABLE(HfCandTccFulls, "AOD", "HFCANDTCCFULL",
                   full::MD2,
                   full::DeltaMD1,
                   full::DeltaMD2,
+                  full::MDDPi,
+                  full::DeltaMDDPi,
                   full::EtaD1,
                   full::EtaD2,
                   full::EtaSoftPi,
@@ -180,8 +184,10 @@ struct HfTreeCreatorTccToD0D0Pi {
   Configurable<int> softPiItsHitsMin{"softPiItsHitsMin", 1, "Minimum number of ITS layers crossed by the soft pion among those in \"softPiItsHitMap\""};
   Configurable<float> softPiDcaXYMax{"softPiDcaXYMax", 0.065, "Soft pion max dcaXY (cm)"};
   Configurable<float> softPiDcaZMax{"softPiDcaZMax", 0.065, "Soft pion max dcaZ (cm)"};
+  Configurable<float> candMassMax{"candMassMax", 4.5, "candidate max mass ((GeV/c2)"};
+  Configurable<float> candMassMin{"candMassMin", 3.5, "candidate min mass ((GeV/c2)"};
 
-  float massPi, massKa;
+  float massPi, massKa, massD0PDG;
 
   HfHelper hfHelper;
   TrackSelection softPiCuts;
@@ -201,7 +207,7 @@ struct HfTreeCreatorTccToD0D0Pi {
   void init(InitContext const&)
   {
     massPi = MassPiPlus;
-    massKa = MassKPlus;
+    massD0PDG = MassD0;
 
     std::array<bool, 1> doprocess{doprocessDataWithML};
     if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
@@ -352,8 +358,18 @@ struct HfTreeCreatorTccToD0D0Pi {
           auto massKpipi1 = RecoDecay::m(std::array{pVecPosD1Dau, pVecNegD1Dau, pVecSoftPion}, std::array{massD1Daus[0], massD1Daus[1], massPi});
           auto massKpipi2 = RecoDecay::m(std::array{pVecPosD2Dau, pVecNegD2Dau, pVecSoftPion}, std::array{massD2Daus[0], massD2Daus[1], massPi});
 
-          deltaMassD01 = massKpipi1 - massD01;
-          deltaMassD02 = massKpipi2 - massD02;
+          deltaMassD01 = massKpipi1 - massD0PDG;
+          deltaMassD02 = massKpipi2 - massD0PDG;
+
+          std::array<float, 3> pVecD1{candidateD1.px(), candidateD1.py(), candidateD1.pz()};
+          std::array<float, 3> pVecD2{candidateD2.px(), candidateD2.py(), candidateD2.pz()};
+          auto arrayMomentaDDpi = std::array{pVecD1, pVecD2, pVecSoftPion};
+          const auto massD0D0Pi = RecoDecay::m(std::move(arrayMomentaDDpi), std::array{massD0PDG, massD0PDG, massPi});
+          const auto deltaMassD0D0Pi = massD0D0Pi - (massD0PDG + massD0PDG);
+
+          if (massD0D0Pi < candMassMin || massD0D0Pi > candMassMax) {
+            continue;
+          }
 
           rowCandidateFull(
             candidateD1.collisionId(),
@@ -381,6 +397,8 @@ struct HfTreeCreatorTccToD0D0Pi {
             massD02,
             deltaMassD01,
             deltaMassD02,
+            massD0D0Pi,
+            deltaMassD0D0Pi,
             candidateD1.eta(),
             candidateD2.eta(),
             trackPion.eta(),
