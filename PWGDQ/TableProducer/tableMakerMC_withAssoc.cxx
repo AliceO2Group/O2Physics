@@ -722,34 +722,34 @@ struct TableMakerMC {
         fMftIndexMap[track.globalIndex()] = mftTrack.lastIndex();
         if (!track.has_mcParticle()) {
           mftLabels(-1, 0, 0); // this is the case when there is no matched MCParticle
-      } else {
-        auto mctrack = track.template mcParticle_as<aod::McParticles>();
-        VarManager::FillTrackMC(mcTracks, mctrack);
+        } else {
+          auto mctrack = track.template mcParticle_as<aod::McParticles>();
+          VarManager::FillTrackMC(mcTracks, mctrack);
 
-        mcflags = 0;
-        int i = 0; // runs over the MC signals
-        // check all the specified signals and fill histograms for MC truth matched tracks
-        for (auto& sig : fMCSignals) {
-          if (sig.CheckSignal(true, mctrack)) {
-            mcflags |= (static_cast<uint16_t>(1) << i);
-            // If detailed QA is on, fill histograms for each MC signal and track cut combination
-            if (fDoDetailedQA) {
-                  fHistMan->FillHistClass(Form("MFTTrack_%s", sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
+          mcflags = 0;
+          int i = 0; // runs over the MC signals
+          // check all the specified signals and fill histograms for MC truth matched tracks
+          for (auto& sig : fMCSignals) {
+            if (sig.CheckSignal(true, mctrack)) {
+              mcflags |= (static_cast<uint16_t>(1) << i);
+              // If detailed QA is on, fill histograms for each MC signal and track cut combination
+              if (fDoDetailedQA) {
+                fHistMan->FillHistClass(Form("MFTTrack_%s", sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
+              }
             }
+            i++;
           }
-          i++;
-        }
 
-        // if the MC truth particle corresponding to this reconstructed track is not already written,
-        //   add it to the skimmed stack
-        if (!(fLabelsMap.find(mctrack.globalIndex()) != fLabelsMap.end())) {
-          fLabelsMap[mctrack.globalIndex()] = trackCounter;
-          fLabelsMapReversed[trackCounter] = mctrack.globalIndex();
-          fMCFlags[mctrack.globalIndex()] = mcflags;
-          trackCounter++;
+          // if the MC truth particle corresponding to this reconstructed track is not already written,
+          //   add it to the skimmed stack
+          if (!(fLabelsMap.find(mctrack.globalIndex()) != fLabelsMap.end())) {
+            fLabelsMap[mctrack.globalIndex()] = trackCounter;
+            fLabelsMapReversed[trackCounter] = mctrack.globalIndex();
+            fMCFlags[mctrack.globalIndex()] = mcflags;
+            trackCounter++;
+          }
+          mftLabels(fLabelsMap.find(mctrack.globalIndex())->second, track.mcMask(), mcflags);
         }
-        mftLabels(fLabelsMap.find(mctrack.globalIndex())->second, track.mcMask(), mcflags);
-      }
       }
       mftAssoc(fCollIndexMap[collision.globalIndex()], fMftIndexMap[track.globalIndex()]);
     }
@@ -762,15 +762,14 @@ struct TableMakerMC {
     for (const auto& muon : muons) {
       if (static_cast<int>(muon.trackType()) < 2) {
         auto muonID = muon.matchMCHTrackId();
-	auto chi2 = muon.chi2MatchMCHMFT();
-	if (mCandidates.find(muonID) == mCandidates.end())
-	{
-	  mCandidates[muonID] = {chi2, muon.globalIndex()};
-	} else {
+        auto chi2 = muon.chi2MatchMCHMFT();
+        if (mCandidates.find(muonID) == mCandidates.end()) {
+          mCandidates[muonID] = {chi2, muon.globalIndex()};
+        } else {
           if (chi2 < mCandidates[muonID].first) {
             mCandidates[muonID] = {chi2, muon.globalIndex()};
-	  }
-	}
+          }
+        }
       }
     }
     for (auto& pairCand : mCandidates) {
@@ -796,10 +795,10 @@ struct TableMakerMC {
     for (const auto& assoc : muonAssocs) {
       // get the muon
       auto muon = assoc.template fwdtrack_as<TMuons>();
-      if (fConfigVariousOptions.fKeepBestMatch && static_cast<int>(muon.trackType()) < 2){
+      if (fConfigVariousOptions.fKeepBestMatch && static_cast<int>(muon.trackType()) < 2) {
         if (fBestMatch.find(muon.globalIndex()) == fBestMatch.end()) {
           continue;
-	}
+        }
       }
 
       trackFilteringTag = uint8_t(0);
@@ -1052,9 +1051,9 @@ struct TableMakerMC {
         if constexpr (static_cast<bool>(TMuonFillMap)) {
           if constexpr (static_cast<bool>(TMFTFillMap)) {
             auto groupedMuonIndices = fwdTrackAssocs.sliceBy(fwdtrackIndicesPerCollision, origIdx);
-	    if (fConfigVariousOptions.fKeepBestMatch){
-	      skimBestMuonMatches(muons);
-	    }
+            if (fConfigVariousOptions.fKeepBestMatch) {
+              skimBestMuonMatches(muons);
+            }
             skimMuons<TMuonFillMap, TMFTFillMap>(collision, muons, groupedMuonIndices, mcParticles, mftTracks);
           } else {
             auto groupedMuonIndices = fwdTrackAssocs.sliceBy(fwdtrackIndicesPerCollision, origIdx);
