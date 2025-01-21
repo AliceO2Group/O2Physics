@@ -1431,7 +1431,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
 template <typename TrackObject>
 inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
 {
-  fillTrackHistosBeforeSelection(track, collision); // <Fill "before selection" histo
+  fillTrackHistosBeforeSelection(track); // <Fill "before selection" histo
 
   /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
@@ -1440,9 +1440,9 @@ inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
     }
   }
 
-  if (matchTrackType(track, collision)) {
+  if (matchTrackType(track)) {
     if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
-      fillTrackHistosAfterSelection(track, kIdBfCharged, collision);
+      fillTrackHistosAfterSelection(track, kIdBfCharged);
       MatchRecoGenSpecies sp = kWrongSpecies;
       if (recoIdMethod == 0) {
         sp = kIdBfCharged;
@@ -1464,7 +1464,7 @@ inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
         return -1;
       }
       if (!(sp < 0)) {
-        fillTrackHistosAfterSelection(track, sp, collision); //<Fill accepted track histo with PID
+        fillTrackHistosAfterSelection(track, sp); //<Fill accepted track histo with PID
         if (track.sign() > 0) {                   // if positive
           trkMultPos[sp]++; //<< Update Particle Multiplicity
           return speciesChargeValue1[sp];
@@ -1587,7 +1587,7 @@ int8_t IdentifiedBfFilterTracks::selectTrackAmbiguousCheck(CollisionObjects cons
       /* feedback of no ambiguous tracks only if checks required */
       fhAmbiguousTrackType->Fill(tracktype, multiplicityclass);
     }
-    return AcceptTrack(track, collisions.iteratorAt(track.collisionId()));
+    return AcceptTrack(track);
   }
 }
 
