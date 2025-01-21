@@ -57,8 +57,6 @@ enum PairTypeOfSelMassSel {
 using McParticlesPlus2Prong = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
 
 struct HfCorrelatorDMesonPairs {
-  SliceCache cache;
-  Preslice<aod::HfCand2ProngWPid> perCol2Prong = aod::hf_cand::collisionId;
 
   Produces<aod::D0Pair> entryD0Pair;
   Produces<aod::D0PairMl> entryD0PairMl;
@@ -92,6 +90,8 @@ struct HfCorrelatorDMesonPairs {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   HfHelper hfHelper;
+  SliceCache cache;
+  Preslice<aod::HfCand2ProngWPid> perCol2Prong = aod::hf_cand::collisionId;
 
   o2::analysis::HfMlResponseD0ToKPi<float> hfMlResponse;
   o2::ccdb::CcdbApi ccdbApi;
@@ -333,7 +333,7 @@ struct HfCorrelatorDMesonPairs {
   /// Fill PID related plots for D0 and D0bar
   /// \param candidate is candidate
   template <typename T>
-  void AnalysePid(const T& candidate)
+  void analysePid(const T& candidate)
   {
     if (candidate.isSelD0() >= selectionFlagD0) {
       registry.fill(HIST("PID/hTofNSigmaPi"), candidate.ptProng0(), candidate.nSigTofPi0());
@@ -356,7 +356,7 @@ struct HfCorrelatorDMesonPairs {
   /// Fill counters for D0 and D0bar
   /// \param selectedD0Candidates contains all D0 candidates
   template <typename T>
-  void GetCountersPerEvent(const T& selectedD0Candidates)
+  void getCountersPerEvent(const T& selectedD0Candidates)
   {
     int nDevent = 0, nDbarevent = 0, nDDbarevent = 0, nDorDbarevent = 0;
     for (const auto& candidate : selectedD0Candidates) {
@@ -368,7 +368,7 @@ struct HfCorrelatorDMesonPairs {
       }
       auto candidateType1 = assignCandidateTypeD0<false>(candidate); // Candidate type attribution
       registry.fill(HIST("hPtCand"), candidate.pt());
-      if (abs(hfHelper.yD0(candidate)) > yCandMax) {
+      if (std::abs(hfHelper.yD0(candidate)) > yCandMax) {
         continue;
       }
       if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
@@ -485,10 +485,10 @@ struct HfCorrelatorDMesonPairs {
                    soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0> const& candidates, aod::Tracks const&)
   {
     for (const auto& candidate : candidates) {
-      AnalysePid(candidate);
+      analysePid(candidate);
     }
     auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    GetCountersPerEvent(selectedD0CandidatesGrouped);
+    getCountersPerEvent(selectedD0CandidatesGrouped);
     // protection against empty tables to be sliced
     if (selectedD0Candidates.size() <= 1) {
       return;
@@ -498,7 +498,7 @@ struct HfCorrelatorDMesonPairs {
       outputMlD0Cand1.clear();
       outputMlD0barCand1.clear();
 
-      if (abs(hfHelper.yD0(candidate1)) > yCandMax) {
+      if (std::abs(hfHelper.yD0(candidate1)) > yCandMax) {
         continue;
       }
       if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
@@ -541,7 +541,7 @@ struct HfCorrelatorDMesonPairs {
         outputMlD0Cand2.clear();
         outputMlD0barCand2.clear();
 
-        if (abs(hfHelper.yD0(candidate2)) > yCandMax) {
+        if (std::abs(hfHelper.yD0(candidate2)) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
@@ -591,10 +591,10 @@ struct HfCorrelatorDMesonPairs {
   void processMcRec(aod::Collision const& collision, soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates, aod::Tracks const&)
   {
     for (const auto& candidate : candidates) {
-      AnalysePid(candidate);
+      analysePid(candidate);
     }
     auto selectedD0CandidatesGroupedMc = selectedD0CandidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    GetCountersPerEvent(selectedD0CandidatesGroupedMc);
+    getCountersPerEvent(selectedD0CandidatesGroupedMc);
     // protection against empty tables to be sliced
     if (selectedD0CandidatesMc.size() <= 1) {
       return;
@@ -611,7 +611,7 @@ struct HfCorrelatorDMesonPairs {
       auto prong0Cand1 = candidate1.template prong0_as<aod::Tracks>();
       auto prong1Cand1 = candidate1.template prong1_as<aod::Tracks>();
 
-      if (abs(hfHelper.yD0(candidate1)) > yCandMax) {
+      if (std::abs(hfHelper.yD0(candidate1)) > yCandMax) {
         continue;
       }
       if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
@@ -695,7 +695,7 @@ struct HfCorrelatorDMesonPairs {
         auto prong0Cand2 = candidate2.template prong0_as<aod::Tracks>();
         auto prong1Cand2 = candidate2.template prong1_as<aod::Tracks>();
 
-        if (abs(hfHelper.yD0(candidate2)) > yCandMax) {
+        if (std::abs(hfHelper.yD0(candidate2)) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
@@ -802,7 +802,7 @@ struct HfCorrelatorDMesonPairs {
       if (std::abs(particle.pdgCode()) != Pdg::kD0) {
         continue;
       }
-      if (abs(particle.y()) > yCandMax) {
+      if (std::abs(particle.y()) > yCandMax) {
         continue;
       }
       if (ptCandMin >= 0. && particle.pt() < ptCandMin) {
@@ -847,7 +847,7 @@ struct HfCorrelatorDMesonPairs {
       }
       registry.fill(HIST("hPtCandMcGen"), particle1.pt());
 
-      if (abs(particle1.y()) > yCandMax) {
+      if (std::abs(particle1.y()) > yCandMax) {
         continue;
       }
       if (ptCandMin >= 0. && particle1.pt() < ptCandMin) {
@@ -886,7 +886,7 @@ struct HfCorrelatorDMesonPairs {
         if (std::abs(particle2.pdgCode()) != Pdg::kD0) {
           continue;
         }
-        if (abs(particle2.y()) > yCandMax) {
+        if (std::abs(particle2.y()) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && particle2.pt() < ptCandMin) {
