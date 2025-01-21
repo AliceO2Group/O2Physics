@@ -175,7 +175,7 @@ struct HfTreeCreatorTccToD0D0Pi {
   Produces<o2::aod::HfCandTccFulls> rowCandidateFull;
   Produces<o2::aod::HfCandD0FullEvs> rowCandidateFullEvents;
 
-  // Configurable<float> ptMinSoftPion{"ptMinSoftPion", 0.0, "Min pt for the softpion"};
+  Configurable<float> ptMinSoftPion{"ptMinSoftPion", 0.0, "Min pt for the softpion"};
   Configurable<bool> usePionIsGlobalTrackWoDCA{"usePionIsGlobalTrackWoDCA", true, "check isGlobalTrackWoDCA status for pions"};
 
   Configurable<float> softPiEtaMax{"softPiEtaMax", 0.9f, "Soft pion max value for pseudorapidity (abs vale)"};
@@ -184,8 +184,7 @@ struct HfTreeCreatorTccToD0D0Pi {
   Configurable<int> softPiItsHitsMin{"softPiItsHitsMin", 1, "Minimum number of ITS layers crossed by the soft pion among those in \"softPiItsHitMap\""};
   Configurable<float> softPiDcaXYMax{"softPiDcaXYMax", 0.065, "Soft pion max dcaXY (cm)"};
   Configurable<float> softPiDcaZMax{"softPiDcaZMax", 0.065, "Soft pion max dcaZ (cm)"};
-  Configurable<float> candMassMax{"candMassMax", 4.5, "candidate max mass ((GeV/c2)"};
-  Configurable<float> candMassMin{"candMassMin", 3.5, "candidate min mass ((GeV/c2)"};
+  Configurable<float> deltaMassCanMax{"deltaMassCanMax", 2, "delta candidate max mass (DDPi-D0D0) ((GeV/c2)"};
 
   float massPi, massKa, massD0PDG;
 
@@ -224,7 +223,7 @@ struct HfTreeCreatorTccToD0D0Pi {
       softPiCuts.SetMaxDcaZ(99999);
     }
     // kinematics
-    // softPiCuts.SetPtRange(0.001, 1000.); // pt
+    softPiCuts.SetPtRange(ptMinSoftPion, 1000.);         // pt
     softPiCuts.SetEtaRange(-softPiEtaMax, softPiEtaMax); // eta
     // ITS chi2
     softPiCuts.SetMaxChi2PerClusterITS(softPiChi2Max);
@@ -367,7 +366,7 @@ struct HfTreeCreatorTccToD0D0Pi {
           const auto massD0D0Pi = RecoDecay::m(std::move(arrayMomentaDDpi), std::array{massD0PDG, massD0PDG, massPi});
           const auto deltaMassD0D0Pi = massD0D0Pi - (massD01 + massD02);
 
-          if (massD0D0Pi < candMassMin || massD0D0Pi > candMassMax) {
+          if (deltaMassD0D0Pi > deltaMassCanMax) {
             continue;
           }
 
