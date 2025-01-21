@@ -90,8 +90,8 @@ DECLARE_SOA_COLUMN(YD2, yD2, float);
 DECLARE_SOA_COLUMN(YSoftPi, ySoftPi, float);
 DECLARE_SOA_COLUMN(NSigTpcSoftPi, nSigTpcSoftPi, float);
 DECLARE_SOA_COLUMN(NSigTofSoftPi, nSigTofSoftPi, float);
-DECLARE_SOA_COLUMN(MLScoreD1, mlScoreD1, float);
-DECLARE_SOA_COLUMN(MLScoreD2, mlScoreD2, float);
+DECLARE_SOA_COLUMN(MlScoreD1, mlScoreD1, float);
+DECLARE_SOA_COLUMN(MlScoreD2, mlScoreD2, float);
 DECLARE_SOA_COLUMN(DecayLengthD1, decayLengthD1, float);
 DECLARE_SOA_COLUMN(DecayLengthD2, decayLengthD2, float);
 DECLARE_SOA_COLUMN(CpaD1, cpaD1, float);
@@ -147,8 +147,8 @@ DECLARE_SOA_TABLE(HfCandTccFulls, "AOD", "HFCANDTCCFULL",
                   full::YSoftPi,
                   full::NSigTpcSoftPi,
                   full::NSigTofSoftPi,
-                  full::MLScoreD1,
-                  full::MLScoreD2,
+                  full::MlScoreD1,
+                  full::MlScoreD2,
                   full::DecayLengthD1,
                   full::DecayLengthD2,
                   full::CpaD1,
