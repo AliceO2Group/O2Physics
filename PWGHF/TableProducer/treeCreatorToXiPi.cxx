@@ -253,7 +253,8 @@ struct HfTreeCreatorToXiPi {
 
   using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>;
   using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
-  using MyEventTable = soa::Join<aod::Collisions, aod::EvSels, aod::PVMultZeqs, Cents>;
+  using MyEventTable = soa::Join<aod::Collisions, aod::EvSels>;  
+  using MyEventTableWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::PVMultZeqs, Cents>;
 
   void init(InitContext const&)
   {
