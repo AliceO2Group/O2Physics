@@ -62,8 +62,8 @@ DECLARE_SOA_INDEX_COLUMN_FULL(FoundFV0, foundFV0, int, FV0As, "_foundFV0"); //! 
 DECLARE_SOA_INDEX_COLUMN_FULL(FoundFDD, foundFDD, int, FDDs, "_foundFDD");  //! FDD entry index in FDDs table (-1 if doesn't exist)
 DECLARE_SOA_INDEX_COLUMN_FULL(FoundZDC, foundZDC, int, Zdcs, "_foundZDC");  //! ZDC entry index in ZDCs table (-1 if doesn't exist)
 DECLARE_SOA_COLUMN(BcInTF, bcInTF, int);                                    //! Position of a (found) bunch crossing inside a given timeframe
-DECLARE_SOA_COLUMN(NumTracksInTimeRange, trackOccupancyInTimeRange, int);   //! Occupancy in specified time interval by a number of tracks from nearby collisions
-DECLARE_SOA_COLUMN(SumAmpFT0CInTimeRange, ft0cOccupancyInTimeRange, float); //! Occupancy in specified time interval by a sum of FT0C amplitudes from nearby collisions
+DECLARE_SOA_COLUMN(NumTracksInTimeRange, trackOccupancyInTimeRange, int);   //! Occupancy in specified time interval by a number of tracks from nearby collisions // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(SumAmpFT0CInTimeRange, ft0cOccupancyInTimeRange, float); //! Occupancy in specified time interval by a sum of FT0C amplitudes from nearby collisions // o2-linter: disable=name/o2-column
 } // namespace evsel
 
 // bc-joinable event selection decisions
