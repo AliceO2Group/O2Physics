@@ -358,14 +358,14 @@ struct HfTreeCreatorTccToD0D0Pi {
           auto massKpipi1 = RecoDecay::m(std::array{pVecPosD1Dau, pVecNegD1Dau, pVecSoftPion}, std::array{massD1Daus[0], massD1Daus[1], massPi});
           auto massKpipi2 = RecoDecay::m(std::array{pVecPosD2Dau, pVecNegD2Dau, pVecSoftPion}, std::array{massD2Daus[0], massD2Daus[1], massPi});
 
-          deltaMassD01 = massKpipi1 - massD0PDG;
-          deltaMassD02 = massKpipi2 - massD0PDG;
+          deltaMassD01 = massKpipi1 - massD01;
+          deltaMassD02 = massKpipi2 - massD02;
 
           std::array<float, 3> pVecD1{candidateD1.px(), candidateD1.py(), candidateD1.pz()};
           std::array<float, 3> pVecD2{candidateD2.px(), candidateD2.py(), candidateD2.pz()};
           auto arrayMomentaDDpi = std::array{pVecD1, pVecD2, pVecSoftPion};
           const auto massD0D0Pi = RecoDecay::m(std::move(arrayMomentaDDpi), std::array{massD0PDG, massD0PDG, massPi});
-          const auto deltaMassD0D0Pi = massD0D0Pi - (massD0PDG + massD0PDG);
+          const auto deltaMassD0D0Pi = massD0D0Pi - (massD01 + massD02);
 
           if (massD0D0Pi < candMassMin || massD0D0Pi > candMassMax) {
             continue;
