@@ -507,7 +507,7 @@ struct HfTreeCreatorToXiPi {
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataFull, "Process data with full information w/o centrality", true);
 
-  void processDataFullWithCentrality(MyEventTable const& collisions, MyTrackTable const&,
+  void processDataFullWithCentrality(MyEventTableWithCent const& collisions, MyTrackTable const&,
                                      soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling event properties
