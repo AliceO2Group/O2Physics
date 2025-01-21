@@ -463,6 +463,10 @@ struct FemtoUniverseProducerTask {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
     if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data || doprocessTrackDataCentPP) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent || doprocessTrackCentRun3DataMC) == true) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackV0CentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data || doprocessTrackDataCentPP) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent) == false) {
+      LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
+    }
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackV0CentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data || doprocessTrackDataCentPP) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent) == true) {
       LOGF(fatal,
            "Cannot enable process Data and process MC at the same time. "
            "Please choose one.");
@@ -1756,7 +1760,7 @@ struct FemtoUniverseProducerTask {
     }
   }
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTrackDataCentPP,
-                 "Provide experimental data for track track", true);
+                 "Provide experimental data for track track", false);
 
   // using FilteredFemtoFullTracks = soa::Filtered<FemtoFullTracks>;
   void processTrackPhiData(aod::FemtoFullCollision const& col,
@@ -1884,6 +1888,26 @@ struct FemtoUniverseProducerTask {
     }
   }
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTrackCentRun2Data, "Provide experimental data for Run 2 with centrality for track track", false);
+
+  void processTrackV0CentRun2Data(aod::FemtoFullCollisionCentRun2 const& col,
+                                  aod::BCsWithTimestamps const&,
+                                  soa::Filtered<aod::FemtoFullTracks> const& tracks,
+                                  aod::V0Datas const& fullV0s)
+  {
+    // get magnetic field for run
+    auto bc = col.bc_as<aod::BCsWithTimestamps>();
+    getMagneticFieldTesla(bc);
+    const double ir = 0.0; // fetch IR
+
+    // fill the tables
+    const auto colcheck = fillCollisionsCentRun2<false>(col);
+    if (colcheck) {
+      fillCollisionsCentRun3ColExtra<false>(col, ir);
+      fillTracks<false>(tracks);
+      fillV0<false>(col, fullV0s, tracks);
+    }
+  }
+  PROCESS_SWITCH(FemtoUniverseProducerTask, processTrackV0CentRun2Data, "Provide experimental data for Run 2 with centrality for track V0", false);
 
   void processTrackCentRun3Data(aod::FemtoFullCollisionCentRun3 const& col,
                                 aod::BCsWithTimestamps const&,

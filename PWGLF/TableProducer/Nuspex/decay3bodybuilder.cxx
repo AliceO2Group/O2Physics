@@ -952,7 +952,7 @@ struct decay3bodyBuilder {
       registry.fill(HIST("QA/Event/hVtxCovYZ"), collision.covYZ());
     }
 
-    registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxAll);
+    registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxAll);
 
     auto trackParCovPos = getTrackParCov(trackPos);
     auto trackParCovNeg = getTrackParCov(trackNeg);
@@ -996,13 +996,13 @@ struct decay3bodyBuilder {
     if (trackPos.sign() != +1 || trackNeg.sign() != -1) {
       return;
     }
-    registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxCharge);
+    registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxCharge);
 
     // track eta
     if (abs(trackPos.eta()) > kfparticleConfigurations.maxEta || abs(trackNeg.eta()) > kfparticleConfigurations.maxEta || abs(trackBach.eta()) > kfparticleConfigurations.maxEta) {
       return;
     }
-    registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxEta);
+    registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxEta);
 
     // number of TPC clusters
     if (trackBach.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsBach) {
@@ -1013,7 +1013,7 @@ struct decay3bodyBuilder {
     } else if (!isMatter && ((kfparticleConfigurations.useTPCforPion && trackPos.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsPion) || trackNeg.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsProton)) {
       return;
     }
-    registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxTPCNcls);
+    registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxTPCNcls);
 
     // number of TPC crossed rows
     if (trackBach.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRows) {
@@ -1024,7 +1024,7 @@ struct decay3bodyBuilder {
     } else if (!isMatter && ((kfparticleConfigurations.useTPCforPion && trackPos.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRowsPion) || trackNeg.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRows)) {
       return;
     }
-    registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxTPCRows);
+    registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxTPCRows);
 
     // TPC PID
     float tpcNsigmaProton;
@@ -1051,7 +1051,7 @@ struct decay3bodyBuilder {
         return;
       }
     }
-    registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxTPCPID);
+    registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxTPCPID);
     LOG(debug) << "Basic track selections done.";
 
     // TOF PID of deuteron (set motherhyp correctly)
@@ -1105,13 +1105,13 @@ struct decay3bodyBuilder {
     } else if (!isMatter && (fabs(TrackPosDcaXY) <= kfparticleConfigurations.mindcaXYPionPV || fabs(TrackNegDcaXY) <= kfparticleConfigurations.mindcaXYProtonPV)) {
       return;
     }
-    registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxDCAxyPV);
+    registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxDCAxyPV);
     if (isMatter && (fabs(TrackNegDcaZ) <= kfparticleConfigurations.mindcaZPionPV || fabs(TrackPosDcaZ) <= kfparticleConfigurations.mindcaZProtonPV)) {
       return;
     } else if (!isMatter && (fabs(TrackPosDcaZ) <= kfparticleConfigurations.mindcaZPionPV || fabs(TrackNegDcaZ) <= kfparticleConfigurations.mindcaZProtonPV)) {
       return;
     }
-    registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxDCAzPV);
+    registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxDCAzPV);
     // SVertexer selection bachelor track for event mixing
     if (isEventMixing && kfparticleConfigurations.applySVertexerCuts && TrackBachDca < 0.05) {
       return;
@@ -1181,7 +1181,7 @@ struct decay3bodyBuilder {
       LOG(debug) << "V0 mass constraint applied.";
       KFV0 = KFV0Mass;
     }
-    registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxV0MassConst);
+    registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxV0MassConst);
 
     // -------- STEP 3: fit three body vertex --------
     // Create KFParticle object from deuteron track
@@ -1204,6 +1204,7 @@ struct decay3bodyBuilder {
         kfPionDaughters.push_back(kfpPion);         // transported to HtVtx
         kfDeuteronDaughters.push_back(kfpDeuteron); // transported to HtVtx
         kf3bodyVtxCandidates.push_back(KFHt);
+        registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxhasSV);
       }
     } else if (kfparticleConfigurations.rotateDeuteron) { // Case 2
       for (int i = 0; i < nRotations; i++) {
@@ -1215,6 +1216,7 @@ struct decay3bodyBuilder {
         kfPionDaughters.push_back(kfpPion);         // transported to HtVtx
         kfDeuteronDaughters.push_back(kfpDeuteron); // rotated and transported to HtVtx
         kf3bodyVtxCandidates.push_back(KFHt);
+        registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxhasSV);
       }
     } else { // Case 3
       KFParticle KFHt;
@@ -1223,7 +1225,7 @@ struct decay3bodyBuilder {
       kfPionDaughters.push_back(kfpPion);         // transported to HtVtx
       kfDeuteronDaughters.push_back(kfpDeuteron); // transported to HtVtx
       kf3bodyVtxCandidates.push_back(KFHt);
-      registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxhasSV);
+      registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxhasSV);
     }
 
     for (int i = 0; i < nRotations; i++) {
@@ -1234,21 +1236,21 @@ struct decay3bodyBuilder {
         continue;
       }
       float DCAvtxDaughters3D = kfProtonDaughters[i].GetDistanceFromParticle(kfPionDaughters[i]) + kfProtonDaughters[i].GetDistanceFromParticle(kfDeuteronDaughters[i]) + kfPionDaughters[i].GetDistanceFromParticle(kfDeuteronDaughters[i]);
-      registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxDcaDau);
+      registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxDcaDau);
       LOG(debug) << "DCA selection after vertex fit applied.";
 
       // daughter DCAs to vertex
       if (kfProtonDaughters[i].GetDistanceFromVertexXY(kf3bodyVtxCandidates[i]) >= kfparticleConfigurations.maxDcaXYSVDau || kfPionDaughters[i].GetDistanceFromVertexXY(kf3bodyVtxCandidates[i]) >= kfparticleConfigurations.maxDcaXYSVDau || kfDeuteronDaughters[i].GetDistanceFromVertexXY(kf3bodyVtxCandidates[i]) >= kfparticleConfigurations.maxDcaXYSVDau) {
         continue;
       }
-      registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxDcaDauVtx);
+      registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxDcaDauVtx);
       LOG(debug) << "DCA to vertex selection after vertex fit applied.";
 
       // daughter pT
       if (kfProtonDaughters[i].GetPt() < kfparticleConfigurations.minPtProton || kfProtonDaughters[i].GetPt() > kfparticleConfigurations.maxPtProton || kfPionDaughters[i].GetPt() < kfparticleConfigurations.minPtPion || kfPionDaughters[i].GetPt() > kfparticleConfigurations.maxPtPion || kfDeuteronDaughters[i].GetPt() < kfparticleConfigurations.minPtDeuteron || kfDeuteronDaughters[i].GetPt() > kfparticleConfigurations.maxPtDeuteron) {
         continue;
       }
-      registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxDauPt);
+      registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxDauPt);
       LOG(debug) << "Daughter pT selection applied.";
 
       // -------- STEP 5: candidate selection and constraint after geometrical vertex fit --------
@@ -1257,13 +1259,13 @@ struct decay3bodyBuilder {
       if (std::abs(rapHt) > kfparticleConfigurations.maxRapidityHt) {
         continue;
       }
-      registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxRap);
+      registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxRap);
 
       // Pt selection
       if (kf3bodyVtxCandidates[i].GetPt() <= kfparticleConfigurations.minPtHt || kf3bodyVtxCandidates[i].GetPt() >= kfparticleConfigurations.maxPtHt) {
         continue;
       }
-      registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxPt);
+      registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxPt);
 
       // Mass window
       float massHt, sigmaMassHt;
@@ -1271,26 +1273,26 @@ struct decay3bodyBuilder {
       if (massHt <= kfparticleConfigurations.minMassHt || massHt >= kfparticleConfigurations.maxMassHt) {
         continue;
       }
-      registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxMass);
+      registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxMass);
 
       // cos(PA) to PV
       if (std::abs(cpaFromKF(kf3bodyVtxCandidates[i], kfpv)) <= kfparticleConfigurations.minCosPA) {
         continue;
       }
-      registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxCosPA);
+      registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxCosPA);
 
       // cos(PA) xy to PV
       if (std::abs(cpaXYFromKF(kf3bodyVtxCandidates[i], kfpv)) <= kfparticleConfigurations.minCosPAxy) {
         continue;
       }
-      registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxCosPAXY);
+      registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxCosPAXY);
 
       // chi2 geometrical
       float chi2geoNDF = kf3bodyVtxCandidates[i].GetChi2() / kf3bodyVtxCandidates[i].GetNDF();
       if (chi2geoNDF >= kfparticleConfigurations.maxChi2geo) {
         continue;
       }
-      registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxChi2geo);
+      registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxChi2geo);
       LOG(debug) << "Basic selections after vertex fit done.";
 
       // ctau before topo constraint
@@ -1306,14 +1308,14 @@ struct decay3bodyBuilder {
         LOG(error) << "Exception caught KFParticle process call: Topological constraint failed";
         continue;
       }
-      registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxTopoConstr); // to check if topo constraint fails
+      registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxTopoConstr); // to check if topo constraint fails
       // get topological chi2
       float chi2topoNDF = KFHtPV.GetChi2() / KFHtPV.GetNDF();
       KFHtPV.TransportToDecayVertex();
       if (kfparticleConfigurations.applyTopoSel && chi2topoNDF >= kfparticleConfigurations.maxChi2topo) {
         continue;
       }
-      registry.fill(HIST("Counter/hVtx3BodyCounterKFParticle"), kKfVtxChi2topo);
+      registry.fill(HIST("Counters/hVtx3BodyCounterKFParticle"), kKfVtxChi2topo);
 
       // additional selections from SVertexer for event mixing
       float radius3body = sqrt(kf3bodyVtxCandidates[i].GetX() * kf3bodyVtxCandidates[i].GetX() + kf3bodyVtxCandidates[i].GetY() * kf3bodyVtxCandidates[i].GetY());
@@ -1432,7 +1434,7 @@ struct decay3bodyBuilder {
     } // end loop over rotations
 
     // fill event counter hist (has selected candidate) --> only filled once per vertex even in rotation case
-    registry.fill(HIST("Counter/hEventCounterKFParticle"), 3.5);
+    registry.fill(HIST("Counters/hEventCounterKFParticle"), 3.5);
   } // end buildVtx3BodyDataTableKFParticle
 
   //------------------------------------------------------------------
@@ -1588,23 +1590,23 @@ struct decay3bodyBuilder {
       if (kfparticleConfigurations.cfgSkimmedProcessing) {
         isZorroSelected = zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
         if (isZorroSelected) {
-          registry.fill(HIST("Counter/hEventCounterZorro"), 0.);
+          registry.fill(HIST("Counters/hEventCounterZorro"), 0.);
         }
       }
 
       // event selection
-      registry.fill(HIST("Counter/hEventCounterKFParticle"), 0.5);
+      registry.fill(HIST("Counters/hEventCounterKFParticle"), 0.5);
       if (kfparticleConfigurations.doSel8selection && !collision.sel8()) {
         continue;
       }
-      registry.fill(HIST("Counter/hEventCounterKFParticle"), 1.5);
+      registry.fill(HIST("Counters/hEventCounterKFParticle"), 1.5);
       if (kfparticleConfigurations.doPosZselection && abs(collision.posZ()) > 10.f) {
         continue;
       }
-      registry.fill(HIST("Counter/hEventCounterKFParticle"), 2.5);
+      registry.fill(HIST("Counters/hEventCounterKFParticle"), 2.5);
 
       if (isZorroSelected) {
-        registry.fill(HIST("hCounter/EventCounterZorro"), 1.);
+        registry.fill(HIST("Counters/hEventCounterZorro"), 1.);
       }
 
       // slice Decay3Body table by collision
@@ -1687,15 +1689,15 @@ struct decay3bodyBuilder {
     // same process as processRun3withKFParticle but with nRotations set according to configurable
     for (const auto& collision : collisions) {
       // event selection
-      registry.fill(HIST("Counter/hEventCounterKFParticle"), 0.5);
+      registry.fill(HIST("Counters/hEventCounterKFParticle"), 0.5);
       if (kfparticleConfigurations.doSel8selection && !collision.sel8()) {
         continue;
       }
-      registry.fill(HIST("Counter/hEventCounterKFParticle"), 1.5);
+      registry.fill(HIST("Counters/hEventCounterKFParticle"), 1.5);
       if (kfparticleConfigurations.doPosZselection && abs(collision.posZ()) > 10.f) {
         continue;
       }
-      registry.fill(HIST("Counter/hEventCounterKFParticle"), 2.5);
+      registry.fill(HIST("Counters/hEventCounterKFParticle"), 2.5);
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);

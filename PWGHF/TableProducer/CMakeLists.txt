@@ -42,7 +42,7 @@ o2physics_add_dpl_workflow(candidate-creator-2prong
 
 o2physics_add_dpl_workflow(candidate-creator-3prong
                     SOURCES candidateCreator3Prong.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator-b0
