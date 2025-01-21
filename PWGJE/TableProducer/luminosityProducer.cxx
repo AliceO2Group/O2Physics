@@ -92,10 +92,8 @@ struct LuminosityProducer {
     int readCollisionCounter = 0;
     int readCollisionWithTVXCounter = 0;
     int readCollisionWithTVXAndZVertexAndSel8Counter = 0;
-    int readCollisionWithTVXAndZVertexAndSel8FullCounter = 0;
     int readCollisionWithTVXAndZVertexAndSel8FullPbPbCounter = 0;
     int readCollisionWithTVXAndZVertexAndSelMCCounter = 0;
-    int readCollisionWithTVXAndZVertexAndSelMCFullCounter = 0;
     int readCollisionWithTVXAndZVertexAndSelMCFullPbPbCounter = 0;
     int readCollisionWithTVXAndZVertexAndSelUnanchoredMCCounter = 0;
     int readCollisionWithTVXAndZVertexAndSelTVXCounter = 0; // redundant but we keep it
@@ -111,17 +109,11 @@ struct LuminosityProducer {
         if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8)) {
           readCollisionWithTVXAndZVertexAndSel8Counter++;
         }
-        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8Full)) {
-          readCollisionWithTVXAndZVertexAndSel8FullCounter++;
-        }
         if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8FullPbPb)) {
           readCollisionWithTVXAndZVertexAndSel8FullPbPbCounter++;
         }
         if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::selMC)) {
           readCollisionWithTVXAndZVertexAndSelMCCounter++;
-        }
-        if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::selMCFull)) {
-          readCollisionWithTVXAndZVertexAndSelMCFullCounter++;
         }
         if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::selMCFullPbPb)) {
           readCollisionWithTVXAndZVertexAndSelMCFullPbPbCounter++;
@@ -143,10 +135,8 @@ struct LuminosityProducer {
     std::vector<int> previousReadCounts;
     std::vector<int> previousReadCountsWithTVX;
     std::vector<int> previousReadCountsWithTVXAndZVertexAndSel8;
-    std::vector<int> previousReadCountsWithTVXAndZVertexAndSel8Full;
     std::vector<int> previousReadCountsWithTVXAndZVertexAndSel8FullPbPb;
     std::vector<int> previousReadCountsWithTVXAndZVertexAndSelMC;
-    std::vector<int> previousReadCountsWithTVXAndZVertexAndSelMCFull;
     std::vector<int> previousReadCountsWithTVXAndZVertexAndSelMCFullPbPb;
     std::vector<int> previousReadCountsWithTVXAndZVertexAndSelUnanchoredMC;
     std::vector<int> previousReadCountsWithTVXAndZVertexAndSelTVX;
@@ -158,10 +148,8 @@ struct LuminosityProducer {
       auto readCollisionCounterSpan = collisionCount.readCounts();
       auto readCollisionWithTVXCounterSpan = collisionCount.readCountsWithTVX();
       auto readCollisionWithTVXAndZVertexAndSel8CounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSel8();
-      auto readCollisionWithTVXAndZVertexAndSel8FullCounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSel8Full();
       auto readCollisionWithTVXAndZVertexAndSel8FullPbPbCounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSel8FullPbPb();
       auto readCollisionWithTVXAndZVertexAndSelMCCounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSelMC();
-      auto readCollisionWithTVXAndZVertexAndSelMCFullCounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSelMCFull();
       auto readCollisionWithTVXAndZVertexAndSelMCFullPbPbCounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSelMCFullPbPb();
       auto readCollisionWithTVXAndZVertexAndSelUnanchoredMCCounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSelUnanchoredMC();
       auto readCollisionWithTVXAndZVertexAndSelTVXCounterSpan = collisionCount.readCountsWithTVXAndZVertexAndSelTVX();
@@ -172,10 +160,8 @@ struct LuminosityProducer {
         std::copy(readCollisionCounterSpan.begin(), readCollisionCounterSpan.end(), std::back_inserter(previousReadCounts));
         std::copy(readCollisionWithTVXCounterSpan.begin(), readCollisionWithTVXCounterSpan.end(), std::back_inserter(previousReadCountsWithTVX));
         std::copy(readCollisionWithTVXAndZVertexAndSel8CounterSpan.begin(), readCollisionWithTVXAndZVertexAndSel8CounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSel8));
-        std::copy(readCollisionWithTVXAndZVertexAndSel8FullCounterSpan.begin(), readCollisionWithTVXAndZVertexAndSel8FullCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSel8Full));
         std::copy(readCollisionWithTVXAndZVertexAndSel8FullPbPbCounterSpan.begin(), readCollisionWithTVXAndZVertexAndSel8FullPbPbCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSel8FullPbPb));
         std::copy(readCollisionWithTVXAndZVertexAndSelMCCounterSpan.begin(), readCollisionWithTVXAndZVertexAndSelMCCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSelMC));
-        std::copy(readCollisionWithTVXAndZVertexAndSelMCFullCounterSpan.begin(), readCollisionWithTVXAndZVertexAndSelMCFullCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSelMCFull));
         std::copy(readCollisionWithTVXAndZVertexAndSelMCFullPbPbCounterSpan.begin(), readCollisionWithTVXAndZVertexAndSelMCFullPbPbCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSelMCFullPbPb));
         std::copy(readCollisionWithTVXAndZVertexAndSelUnanchoredMCCounterSpan.begin(), readCollisionWithTVXAndZVertexAndSelUnanchoredMCCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSelUnanchoredMC));
         std::copy(readCollisionWithTVXAndZVertexAndSelTVXCounterSpan.begin(), readCollisionWithTVXAndZVertexAndSelTVXCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndZVertexAndSelTVX));
@@ -187,10 +173,8 @@ struct LuminosityProducer {
           previousReadCounts[i] += readCollisionCounterSpan[i];
           previousReadCountsWithTVX[i] += readCollisionWithTVXCounterSpan[i];
           previousReadCountsWithTVXAndZVertexAndSel8[i] += readCollisionWithTVXAndZVertexAndSel8CounterSpan[i];
-          previousReadCountsWithTVXAndZVertexAndSel8Full[i] += readCollisionWithTVXAndZVertexAndSel8FullCounterSpan[i];
           previousReadCountsWithTVXAndZVertexAndSel8FullPbPb[i] += readCollisionWithTVXAndZVertexAndSel8FullPbPbCounterSpan[i];
           previousReadCountsWithTVXAndZVertexAndSelMC[i] += readCollisionWithTVXAndZVertexAndSelMCCounterSpan[i];
-          previousReadCountsWithTVXAndZVertexAndSelMCFull[i] += readCollisionWithTVXAndZVertexAndSelMCFullCounterSpan[i];
           previousReadCountsWithTVXAndZVertexAndSelMCFullPbPb[i] += readCollisionWithTVXAndZVertexAndSelMCFullPbPbCounterSpan[i];
           previousReadCountsWithTVXAndZVertexAndSelUnanchoredMC[i] += readCollisionWithTVXAndZVertexAndSelUnanchoredMCCounterSpan[i];
           previousReadCountsWithTVXAndZVertexAndSelTVX[i] += readCollisionWithTVXAndZVertexAndSelTVXCounterSpan[i];
@@ -203,17 +187,15 @@ struct LuminosityProducer {
     previousReadCounts.push_back(readCollisionCounter);
     previousReadCountsWithTVX.push_back(readCollisionWithTVXCounter);
     previousReadCountsWithTVXAndZVertexAndSel8.push_back(readCollisionWithTVXAndZVertexAndSel8Counter);
-    previousReadCountsWithTVXAndZVertexAndSel8Full.push_back(readCollisionWithTVXAndZVertexAndSel8FullCounter);
     previousReadCountsWithTVXAndZVertexAndSel8FullPbPb.push_back(readCollisionWithTVXAndZVertexAndSel8FullPbPbCounter);
     previousReadCountsWithTVXAndZVertexAndSelMC.push_back(readCollisionWithTVXAndZVertexAndSelMCCounter);
-    previousReadCountsWithTVXAndZVertexAndSelMCFull.push_back(readCollisionWithTVXAndZVertexAndSelMCFullCounter);
     previousReadCountsWithTVXAndZVertexAndSelMCFullPbPb.push_back(readCollisionWithTVXAndZVertexAndSelMCFullPbPbCounter);
     previousReadCountsWithTVXAndZVertexAndSelUnanchoredMC.push_back(readCollisionWithTVXAndZVertexAndSelUnanchoredMCCounter);
     previousReadCountsWithTVXAndZVertexAndSelTVX.push_back(readCollisionWithTVXAndZVertexAndSelTVXCounter);
     previousReadCountsWithTVXAndZVertexAndSel7.push_back(readCollisionWithTVXAndZVertexAndSel7Counter);
     previousReadCountsWithTVXAndZVertexAndSel7KINT7.push_back(readCollisionWithTVXAndZVertexAndSel7KINT7Counter);
 
-    storedCollisionCountsTable(previousReadCounts, previousReadCountsWithTVX, previousReadCountsWithTVXAndZVertexAndSel8, previousReadCountsWithTVXAndZVertexAndSel8Full, previousReadCountsWithTVXAndZVertexAndSel8FullPbPb, previousReadCountsWithTVXAndZVertexAndSelMC, previousReadCountsWithTVXAndZVertexAndSelMCFull, previousReadCountsWithTVXAndZVertexAndSelMCFullPbPb, previousReadCountsWithTVXAndZVertexAndSelUnanchoredMC, previousReadCountsWithTVXAndZVertexAndSelTVX, previousReadCountsWithTVXAndZVertexAndSel7, previousReadCountsWithTVXAndZVertexAndSel7KINT7);
+    storedCollisionCountsTable(previousReadCounts, previousReadCountsWithTVX, previousReadCountsWithTVXAndZVertexAndSel8, previousReadCountsWithTVXAndZVertexAndSel8FullPbPb, previousReadCountsWithTVXAndZVertexAndSelMC, previousReadCountsWithTVXAndZVertexAndSelMCFullPbPb, previousReadCountsWithTVXAndZVertexAndSelUnanchoredMC, previousReadCountsWithTVXAndZVertexAndSelTVX, previousReadCountsWithTVXAndZVertexAndSel7, previousReadCountsWithTVXAndZVertexAndSel7KINT7);
   }
   PROCESS_SWITCH(LuminosityProducer, processStoreCollisionCounting, "write out collision counting output table", true);
 };

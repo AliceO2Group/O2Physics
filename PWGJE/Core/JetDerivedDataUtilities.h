@@ -29,15 +29,16 @@ static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(2
 
 enum JCollisionSel {
   sel8 = 0,
-  sel8Full = 1,
+  sel8NoCollInTimeRangeStandard = 1,
   sel8FullPbPb = 2,
-  selMC = 3,
-  selMCFull = 4,
-  selMCFullPbPb = 5,
-  selUnanchoredMC = 6,
-  selTVX = 7,
-  sel7 = 8,
-  sel7KINT7 = 9
+  sel8FullPbPbTestGoodZvtx = 3,
+  sel8FullPbPbOld = 4,
+  selMC = 5,
+  selMCFullPbPb = 6,
+  selUnanchoredMC = 7,
+  selTVX = 8,
+  sel7 = 9,
+  sel7KINT7 = 10
 };
 
 template <typename T>
@@ -54,17 +55,20 @@ int initialiseEventSelection(std::string eventSelection)
   if (eventSelection == "sel8") {
     return JCollisionSel::sel8;
   }
-  if (eventSelection == "sel8Full") {
-    return JCollisionSel::sel8Full;
+  if (eventSelection == "sel8NoCollInTimeRangeStandard") {
+    return JCollisionSel::sel8NoCollInTimeRangeStandard;
   }
   if (eventSelection == "sel8FullPbPb") {
     return JCollisionSel::sel8FullPbPb;
   }
+  if (eventSelection == "sel8FullPbPbTestGoodZvtx") {
+    return JCollisionSel::sel8FullPbPbTestGoodZvtx;
+  }
+  if (eventSelection == "sel8FullPbPbOld") {
+    return JCollisionSel::sel8FullPbPbOld;
+  }
   if (eventSelection == "selMC") {
     return JCollisionSel::selMC;
-  }
-  if (eventSelection == "selMCFull") {
-    return JCollisionSel::selMCFull;
   }
   if (eventSelection == "selMCFullPbPb") {
     return JCollisionSel::selMCFullPbPb;
@@ -90,10 +94,21 @@ uint16_t setEventSelectionBit(T const& collision)
   uint16_t bit = 0;
   if (collision.sel8()) {
     SETBIT(bit, JCollisionSel::sel8);
+
+    //old selection
     if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      SETBIT(bit, JCollisionSel::sel8Full);
       if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        SETBIT(bit, JCollisionSel::sel8FullPbPbOld);
+      }
+    }
+    //new selection
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      SETBIT(bit, JCollisionSel::sel8NoCollInTimeRangeStandard);
+      if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
         SETBIT(bit, JCollisionSel::sel8FullPbPb);
+        if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+          SETBIT(bit, JCollisionSel::sel8FullPbPbTestGoodZvtx);
+        }
       }
     }
   }
@@ -107,12 +122,9 @@ uint16_t setEventSelectionBit(T const& collision)
     SETBIT(bit, JCollisionSel::selTVX);
     SETBIT(bit, JCollisionSel::selUnanchoredMC);
     if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      SETBIT(bit, JCollisionSel::selMC);
-      if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-        SETBIT(bit, JCollisionSel::selMCFull);
-        if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-          SETBIT(bit, JCollisionSel::selMCFullPbPb);
-        }
+      SETBIT(bit, JCollisionSel::selMC); // sel8 minus the kNoITSROFrameBorder cut
+      if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) && collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+        SETBIT(bit, JCollisionSel::selMCFullPbPb);
       }
     }
   }
