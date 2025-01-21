@@ -193,7 +193,10 @@ struct HfTreeCreatorTccToD0D0Pi {
   using TracksPid = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using TracksWPid = soa::Join<aod::TracksWCovDcaExtra, TracksPid, aod::TrackSelection>;
 
-  using CollisionsWCentMult = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+  using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
+  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
+
   using SelectedCandidatesMl = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfMlD0>>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
@@ -205,7 +208,7 @@ struct HfTreeCreatorTccToD0D0Pi {
   void init(InitContext const&)
   {
 
-    std::array<bool, 1> doprocess{doprocessDataWithML};
+    std::array<bool, 3> doprocess{doprocessDataWithMl, doprocessDataWithMlWithFT0C, doprocessDataWithMlWithFT0M};
     if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
@@ -427,7 +430,7 @@ struct HfTreeCreatorTccToD0D0Pi {
     } // end of loop first D0
   }
 
-  void processDataWithML(CollisionsWCentMult const& collisions,
+  void processDataWithMl(Collisions const& collisions,
                          SelectedCandidatesMl const& candidates,
                          aod::TrackAssoc const& trackIndices,
                          TracksWPid const& tracks,
@@ -444,7 +447,45 @@ struct HfTreeCreatorTccToD0D0Pi {
       runCandCreatorData<aod::hf_cand::VertexerType::DCAFitter>(collision, candwD0ThisColl, trackIdsThisCollision, tracks, bcs);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorTccToD0D0Pi, processDataWithML, "Process data with DCAFitterN", true);
+  PROCESS_SWITCH(HfTreeCreatorTccToD0D0Pi, processDataWithMl, "Process data with DCAFitterN with the ML method and without centrality", false);
+
+  void processDataWithMlWithFT0C(CollisionsWithFT0C const& collisions,
+                                 SelectedCandidatesMl const& candidates,
+                                 aod::TrackAssoc const& trackIndices,
+                                 TracksWPid const& tracks,
+                                 aod::BCs const& bcs)
+  {
+    for (const auto& collision : collisions) {
+      rowCandidateFullEvents.reserve(collisions.size());
+      fillEvent(collision, 0, collision.bc().runNumber());
+      auto thisCollId = collision.globalIndex();
+      auto candwD0ThisColl = candidates.sliceBy(candsD0PerCollisionWithMl, thisCollId);
+      if (candwD0ThisColl.size() <= 1)
+        continue; // only loop the collision that include at least 2 D candidates
+      auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runCandCreatorData<aod::hf_cand::VertexerType::DCAFitter>(collision, candwD0ThisColl, trackIdsThisCollision, tracks, bcs);
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorTccToD0D0Pi, processDataWithMlWithFT0C, "Process data with DCAFitterN with the ML method and with FT0C centrality", true);
+
+  void processDataWithMlWithFT0M(CollisionsWithFT0M const& collisions,
+                                 SelectedCandidatesMl const& candidates,
+                                 aod::TrackAssoc const& trackIndices,
+                                 TracksWPid const& tracks,
+                                 aod::BCs const& bcs)
+  {
+    for (const auto& collision : collisions) {
+      rowCandidateFullEvents.reserve(collisions.size());
+      fillEvent(collision, 0, collision.bc().runNumber());
+      auto thisCollId = collision.globalIndex();
+      auto candwD0ThisColl = candidates.sliceBy(candsD0PerCollisionWithMl, thisCollId);
+      if (candwD0ThisColl.size() <= 1)
+        continue; // only loop the collision that include at least 2 D candidates
+      auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runCandCreatorData<aod::hf_cand::VertexerType::DCAFitter>(collision, candwD0ThisColl, trackIdsThisCollision, tracks, bcs);
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorTccToD0D0Pi, processDataWithMlWithFT0M, "Process data with DCAFitterN with the ML method and with FT0M centrality", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
