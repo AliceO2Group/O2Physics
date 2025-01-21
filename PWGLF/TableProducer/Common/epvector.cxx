@@ -114,7 +114,7 @@ struct epvector {
 
   void init(o2::framework::InitContext&)
   {
-    std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
+    std::vector<double> occupancyBinning = {-0.5, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
 
     const AxisSpec centAxis{configAxisCentrality, "V0M (%)"};
     // AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
