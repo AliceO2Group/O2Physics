@@ -79,10 +79,8 @@ DECLARE_SOA_COLUMN(ChargedHFTriggerSel, chargedHFTriggerSel, uint8_t);
 DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8, readCountsWithTVXAndZVertexAndSel8, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8Full, readCountsWithTVXAndZVertexAndSel8Full, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8FullPbPb, readCountsWithTVXAndZVertexAndSel8FullPbPb, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelMC, readCountsWithTVXAndZVertexAndSelMC, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelMCFull, readCountsWithTVXAndZVertexAndSelMCFull, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelMCFullPbPb, readCountsWithTVXAndZVertexAndSelMCFullPbPb, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelUnanchoredMC, readCountsWithTVXAndZVertexAndSelUnanchoredMC, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelTVX, readCountsWithTVXAndZVertexAndSelTVX, std::vector<int>);
@@ -132,10 +130,8 @@ DECLARE_SOA_TABLE_STAGED(CollisionCounts, "COLLCOUNT",
                          jcollision::ReadCounts,
                          jcollision::ReadCountsWithTVX,
                          jcollision::ReadCountsWithTVXAndZVertexAndSel8,
-                         jcollision::ReadCountsWithTVXAndZVertexAndSel8Full,
                          jcollision::ReadCountsWithTVXAndZVertexAndSel8FullPbPb,
                          jcollision::ReadCountsWithTVXAndZVertexAndSelMC,
-                         jcollision::ReadCountsWithTVXAndZVertexAndSelMCFull,
                          jcollision::ReadCountsWithTVXAndZVertexAndSelMCFullPbPb,
                          jcollision::ReadCountsWithTVXAndZVertexAndSelUnanchoredMC,
                          jcollision::ReadCountsWithTVXAndZVertexAndSelTVX,
