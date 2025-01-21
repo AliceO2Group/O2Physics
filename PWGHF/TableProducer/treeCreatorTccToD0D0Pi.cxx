@@ -99,9 +99,9 @@ DECLARE_SOA_COLUMN(CpaD2, cpaD2, float);
 DECLARE_SOA_COLUMN(SignSoftPi, signSoftPi, float);
 DECLARE_SOA_COLUMN(DcaXYSoftPi, dcaXYSoftPi, float);
 DECLARE_SOA_COLUMN(DcaZSoftPi, dcaZSoftPi, float);
-DECLARE_SOA_COLUMN(NITSClsSoftPi, nitsClsSoftPi, float);
-DECLARE_SOA_COLUMN(NTPCClsCrossedRowsSoftPi, ntpcClsCrossedRows, float);
-DECLARE_SOA_COLUMN(NTPCChi2NClSoftPi, ntpcChi2NClSoftPi, float);
+DECLARE_SOA_COLUMN(NITSClsSoftPi, nITSClsSoftPi, float);
+DECLARE_SOA_COLUMN(NTPCClsCrossedRowsSoftPi, nTPCClsCrossedRowsSoftPi, float);
+DECLARE_SOA_COLUMN(NTPCChi2NClSoftPi, nTPCChi2NClSoftPi, float);
 DECLARE_SOA_COLUMN(CentOfCand, centOfCand, float);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
@@ -187,8 +187,6 @@ struct HfTreeCreatorTccToD0D0Pi {
   Configurable<float> softPiDcaZMax{"softPiDcaZMax", 0.065, "Soft pion max dcaZ (cm)"};
   Configurable<float> deltaMassCanMax{"deltaMassCanMax", 2, "delta candidate max mass (DDPi-D0D0) ((GeV/c2)"};
 
-  float massPi, massKa, massD0PDG;
-
   HfHelper hfHelper;
   TrackSelection softPiCuts;
 
@@ -206,8 +204,6 @@ struct HfTreeCreatorTccToD0D0Pi {
 
   void init(InitContext const&)
   {
-    massPi = MassPiPlus;
-    massD0PDG = MassD0;
 
     std::array<bool, 1> doprocess{doprocessDataWithML};
     if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
@@ -344,19 +340,22 @@ struct HfTreeCreatorTccToD0D0Pi {
           std::array<float, 3> pVecNegD1Dau{trackNegD1Dau.pVector()};
           std::array<float, 3> pVecPosD2Dau{trackPosD2Dau.pVector()};
           std::array<float, 3> pVecNegD2Dau{trackNegD2Dau.pVector()};
-          std::array<float, 3> pVecSoftPion = trackPion.pVector();
-          std::array<float, 2> massD1Daus{massPi, massKa};
-          std::array<float, 2> massD2Daus{massPi, massKa};
+          std::array<float, 3> pVecSoftPion = {trackPion.pVector()};
+          std::array<double, 2> massD1Daus{MassPiPlus, MassKPlus};
+          std::array<double, 2> massD2Daus{MassPiPlus, MassKPlus};
 
           if (candidateD1.isSelD0bar()) {
-            massD1Daus[0] = massKa, massD1Daus[1] = massPi;
+
+            massD1Daus[0] = MassKPlus;
+            massD1Daus[1] = MassPiPlus;
           }
           if (candidateD2.isSelD0bar()) {
-            massD2Daus[0] = massKa, massD2Daus[1] = massPi;
+            massD2Daus[0] = MassKPlus;
+            massD2Daus[1] = MassPiPlus;
           }
 
-          auto massKpipi1 = RecoDecay::m(std::array{pVecPosD1Dau, pVecNegD1Dau, pVecSoftPion}, std::array{massD1Daus[0], massD1Daus[1], massPi});
-          auto massKpipi2 = RecoDecay::m(std::array{pVecPosD2Dau, pVecNegD2Dau, pVecSoftPion}, std::array{massD2Daus[0], massD2Daus[1], massPi});
+          auto massKpipi1 = RecoDecay::m(std::array{pVecPosD1Dau, pVecNegD1Dau, pVecSoftPion}, std::array{massD1Daus[0], massD1Daus[1], MassPiPlus});
+          auto massKpipi2 = RecoDecay::m(std::array{pVecPosD2Dau, pVecNegD2Dau, pVecSoftPion}, std::array{massD2Daus[0], massD2Daus[1], MassPiPlus});
 
           deltaMassD01 = massKpipi1 - massD01;
           deltaMassD02 = massKpipi2 - massD02;
@@ -364,7 +363,7 @@ struct HfTreeCreatorTccToD0D0Pi {
           std::array<float, 3> pVecD1{candidateD1.px(), candidateD1.py(), candidateD1.pz()};
           std::array<float, 3> pVecD2{candidateD2.px(), candidateD2.py(), candidateD2.pz()};
           auto arrayMomentaDDpi = std::array{pVecD1, pVecD2, pVecSoftPion};
-          const auto massD0D0Pi = RecoDecay::m(std::move(arrayMomentaDDpi), std::array{massD0PDG, massD0PDG, massPi});
+          const auto massD0D0Pi = RecoDecay::m(std::move(arrayMomentaDDpi), std::array{MassD0, MassD0, MassPiPlus});
           const auto deltaMassD0D0Pi = massD0D0Pi - (massD01 + massD02);
 
           if (deltaMassD0D0Pi > deltaMassCanMax) {
@@ -449,7 +448,5 @@ struct HfTreeCreatorTccToD0D0Pi {
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow;
-  workflow.push_back(adaptAnalysisTask<HfTreeCreatorTccToD0D0Pi>(cfgc));
-  return workflow;
+  return WorkflowSpec{adaptAnalysisTask<HfTreeCreatorTccToD0D0Pi>(cfgc)};
 }
