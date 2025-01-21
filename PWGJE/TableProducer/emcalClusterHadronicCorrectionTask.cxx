@@ -119,7 +119,7 @@ struct EmcalClusterHadronicCorrectionTask {
     registry.add("h_matchedtracks", "Total matched tracks; track status;entries", {HistType::kTH1F, {{1, 0.5, 1.5}}});
   }
 
-  Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == mClusterDefinition) && (o2::aod::emcalcluster::time >= minTime) && (o2::aod::emcalcluster::time <= maxTime) && (o2::aod::emcalcluster::m02 > minM02) && (o2::aod::emcalcluster::m02 < maxM02);
+  Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == mClusterDefinition);
   Filter trackSelection = (o2::aod::track::pt >= minTrackPt);
   // The matching of clusters and tracks is already centralised in the EMCAL framework.
   // One only needs to apply a filter on matched clusters
