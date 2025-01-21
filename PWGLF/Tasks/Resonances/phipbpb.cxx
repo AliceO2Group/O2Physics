@@ -80,6 +80,7 @@ struct phipbpb {
   Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 3000, "Occupancy cut"};
   // track
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
+  Configurable<bool> additionalEvselITS{"additionalEvselITS", true, "Additional event selcection for ITS"};
   Configurable<bool> removefaketrak{"removefaketrack", true, "Remove fake track from momentum difference"};
   Configurable<float> ConfFakeKaonCut{"ConfFakeKaonCut", 0.1, "Cut based on track from momentum difference"};
   Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use Global track"};
@@ -387,6 +388,9 @@ struct phipbpb {
     if (additionalEvsel && !eventSelected(collision, centrality)) {
       return;
     }
+    if (additionalEvselITS && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      return;
+    }
     histos.fill(HIST("hFTOCvsTPCSelected"), centrality, multTPC);
     histos.fill(HIST("hPsiFT0C"), centrality, occupancy, psiFT0C);
     histos.fill(HIST("hPsiFT0A"), centrality, occupancy, psiFT0A);
@@ -525,7 +529,12 @@ struct phipbpb {
       if (additionalEvsel && !eventSelected(collision2, centrality2)) {
         continue;
       }
-
+      if (additionalEvselITS && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      if (additionalEvselITS && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
       for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         if (track1.sign() * track2.sign() > 0) {
           continue;
