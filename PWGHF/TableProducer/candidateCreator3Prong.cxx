@@ -917,9 +917,9 @@ struct HfCandidateCreator3ProngExpressions {
         if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks, &nInteractionsWithMaterial);
         } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
-          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks);        
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks);
         } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-          indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2, nullptr, &nInteractionsWithMaterial);        
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2, nullptr, &nInteractionsWithMaterial);
         } else {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
         }
@@ -929,7 +929,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks, &nInteractionsWithMaterial);
           } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
             indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks);
-          }  else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+          } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
             indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2, nullptr, &nInteractionsWithMaterial);
           } else {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
@@ -998,7 +998,7 @@ struct HfCandidateCreator3ProngExpressions {
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks, &nInteractionsWithMaterial);
         } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks);
-        }  else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+        } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2, nullptr, &nInteractionsWithMaterial);
         } else {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
