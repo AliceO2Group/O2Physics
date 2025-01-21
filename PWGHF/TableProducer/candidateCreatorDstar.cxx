@@ -604,7 +604,7 @@ struct HfCandidateCreatorDstarExpressions {
         indexRecDstar = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughtersDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2, &nKinkedTracksDstar);
         // D0(bar) → π± K∓
         indexRecD0 = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughtersofD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 1, &nKinkedTracksD0);
-      }  else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+      } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
         // D*± → D0(bar) π±
         indexRecDstar = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughtersDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2, nullptr, &nInteractionsWithMaterialDstar);
         // D0(bar) → π± K∓

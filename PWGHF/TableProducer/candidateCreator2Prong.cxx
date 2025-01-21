@@ -766,7 +766,7 @@ struct HfCandidateCreator2ProngExpressions {
         indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, &nKinkedTracks, &nInteractionsWithMaterial);
       } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
         indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, &nKinkedTracks);
-      }  else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+      } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
         indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
       } else {
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
