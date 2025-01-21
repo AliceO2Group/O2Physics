@@ -407,10 +407,10 @@ struct highmasslambda {
   template <typename T>
   bool selectionPID2(const T& candidate)
   {
-    if (candidate.tpcInnerParam() < 0.9 && candidate.tpcNSigmaPr() > -nsigmaCutTPC && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+    if (candidate.tpcInnerParam() < 1.0 && candidate.tpcNSigmaPr() > -nsigmaCutTPC && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.tpcInnerParam() >= 0.9 && candidate.tpcInnerParam() < 2.0 && candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -nsigmaCutTPC && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
+    if (candidate.tpcInnerParam() >= 1.0 && candidate.tpcInnerParam() < 2.0 && candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -nsigmaCutTPC && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
       return true;
     }
     if (candidate.tpcInnerParam() >= 2.0 && candidate.tpcNSigmaPr() > -nsigmaCutTPC && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
