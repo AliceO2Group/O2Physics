@@ -62,135 +62,135 @@ using CascDerivedMCDatas = soa::Join<aod::CascCollRefs, aod::CascCores, aod::Cas
 using CascDerivedDatas = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascBBs>;
 
 struct strderivedGenQA {
-    HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-    // pack track quality but separte also afterburner
-    // dynamic range: 0-31
-    enum selection : int { hasTPC = 0,
-                            hasITSTracker,
-                            hasITSAfterburner,
-                            hasTRD,
-                            hasTOF };
+  // pack track quality but separte also afterburner
+  // dynamic range: 0-31
+  enum selection : int { hasTPC = 0,
+                         hasITSTracker,
+                         hasITSAfterburner,
+                         hasTRD,
+                         hasTOF };
 
-    Configurable<bool> doPPAnalysis{"doPPAnalysis", true, "if in pp, set to true"};
+  Configurable<bool> doPPAnalysis{"doPPAnalysis", true, "if in pp, set to true"};
 
-    struct : ConfigurableGroup {
-        Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
-        Configurable<bool> requireTriggerTVX{"requireTriggerTVX", true, "require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level"};
-        Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
-        Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
-        Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "require events with at least one ITS-TPC track"};
-        Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", true, "require events with PV position along z consistent (within 1 cm) between PV reconstructed using tracks and PV using FT0 A-C time difference"};
-        Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "require events with at least one of vertex contributors matched to TOF"};
-        Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD"};
-        Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
-        Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds"};
-        Configurable<bool> requireNoCollInTimeRangeStrict{"requireNoCollInTimeRangeStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
-        Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds"};
-        Configurable<bool> requireNoCollInTimeRangeVzDep{"requireNoCollInTimeRangeVzDep", false, "reject collisions corrupted by the cannibalism, with other collisions with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ"};
-        Configurable<bool> requireNoCollInROFStd{"requireNoCollInROFStd", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF with mult. above a certain threshold"};
-        Configurable<bool> requireNoCollInROFStrict{"requireNoCollInROFStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF"};
-        Configurable<bool> requireINEL0{"requireINEL0", true, "require INEL>0 event selection"};
-        Configurable<bool> requireINEL1{"requireINEL1", false, "require INEL>1 event selection"};
+  struct : ConfigurableGroup {
+    Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
+    Configurable<bool> requireTriggerTVX{"requireTriggerTVX", true, "require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level"};
+    Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
+    Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
+    Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "require events with at least one ITS-TPC track"};
+    Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", true, "require events with PV position along z consistent (within 1 cm) between PV reconstructed using tracks and PV using FT0 A-C time difference"};
+    Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "require events with at least one of vertex contributors matched to TOF"};
+    Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD"};
+    Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
+    Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds"};
+    Configurable<bool> requireNoCollInTimeRangeStrict{"requireNoCollInTimeRangeStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
+    Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds"};
+    Configurable<bool> requireNoCollInTimeRangeVzDep{"requireNoCollInTimeRangeVzDep", false, "reject collisions corrupted by the cannibalism, with other collisions with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ"};
+    Configurable<bool> requireNoCollInROFStd{"requireNoCollInROFStd", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF with mult. above a certain threshold"};
+    Configurable<bool> requireNoCollInROFStrict{"requireNoCollInROFStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF"};
+    Configurable<bool> requireINEL0{"requireINEL0", true, "require INEL>0 event selection"};
+    Configurable<bool> requireINEL1{"requireINEL1", false, "require INEL>1 event selection"};
 
-        Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position"};
+    Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position"};
 
-        Configurable<bool> useFT0CbasedOccupancy{"useFT0CbasedOccupancy", false, "Use sum of FT0-C amplitudes for estimating occupancy? (if not, use track-based definition)"};
-        // fast check on occupancy
-        Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
-        Configurable<float> maxOccupancy{"maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
-    } eventSelections;
+    Configurable<bool> useFT0CbasedOccupancy{"useFT0CbasedOccupancy", false, "Use sum of FT0-C amplitudes for estimating occupancy? (if not, use track-based definition)"};
+    // fast check on occupancy
+    Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
+    Configurable<float> maxOccupancy{"maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
+  } eventSelections;
 
-    struct : ConfigurableGroup {
-      Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
+  struct : ConfigurableGroup {
+    Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
 
-      // Selection criteria: acceptance
-      Configurable<float> rapidityCut{"rapidityCut", 0.5, "rapidity"};
-      Configurable<float> daughterEtaCut{"daughterEtaCut", 0.8, "max eta for daughters"};
+    // Selection criteria: acceptance
+    Configurable<float> rapidityCut{"rapidityCut", 0.5, "rapidity"};
+    Configurable<float> daughterEtaCut{"daughterEtaCut", 0.8, "max eta for daughters"};
 
-      // Standard 5 topological criteria
-      Configurable<float> v0cospa{"v0cospa", 0.97, "min V0 CosPA"};
-      Configurable<float> dcav0dau{"dcav0dau", 1.0, "max DCA V0 Daughters (cm)"};
-      Configurable<float> dcanegtopv{"dcanegtopv", .05, "min DCA Neg To PV (cm)"};
-      Configurable<float> dcapostopv{"dcapostopv", .05, "min DCA Pos To PV (cm)"};
-      Configurable<float> v0radius{"v0radius", 1.2, "minimum V0 radius (cm)"};
-      Configurable<float> v0radiusMax{"v0radiusMax", 1E5, "maximum V0 radius (cm)"};
+    // Standard 5 topological criteria
+    Configurable<float> v0cospa{"v0cospa", 0.97, "min V0 CosPA"};
+    Configurable<float> dcav0dau{"dcav0dau", 1.0, "max DCA V0 Daughters (cm)"};
+    Configurable<float> dcanegtopv{"dcanegtopv", .05, "min DCA Neg To PV (cm)"};
+    Configurable<float> dcapostopv{"dcapostopv", .05, "min DCA Pos To PV (cm)"};
+    Configurable<float> v0radius{"v0radius", 1.2, "minimum V0 radius (cm)"};
+    Configurable<float> v0radiusMax{"v0radiusMax", 1E5, "maximum V0 radius (cm)"};
 
-      // Additional selection on the AP plot (exclusive for K0Short)
-      // original equation: lArmPt*5>TMath::Abs(lArmAlpha)
-      Configurable<float> armPodCut{"armPodCut", 5.0f, "pT * (cut) > |alpha|, AP cut. Negative: no cut"};
+    // Additional selection on the AP plot (exclusive for K0Short)
+    // original equation: lArmPt*5>TMath::Abs(lArmAlpha)
+    Configurable<float> armPodCut{"armPodCut", 5.0f, "pT * (cut) > |alpha|, AP cut. Negative: no cut"};
 
-      // Track quality
-      Configurable<int> minTPCrows{"minTPCrows", 70, "minimum TPC crossed rows"};
-      Configurable<int> minITSclusters{"minITSclusters", -1, "minimum ITS clusters"};
-      Configurable<bool> skipTPConly{"skipTPConly", false, "skip V0s comprised of at least one TPC only prong"};
-      Configurable<bool> requirePosITSonly{"requirePosITSonly", false, "require that positive track is ITSonly (overrides TPC quality)"};
-      Configurable<bool> requireNegITSonly{"requireNegITSonly", false, "require that negative track is ITSonly (overrides TPC quality)"};
-      Configurable<bool> rejectPosITSafterburner{"rejectPosITSafterburner", false, "reject positive track formed out of afterburner ITS tracks"};
-      Configurable<bool> rejectNegITSafterburner{"rejectNegITSafterburner", false, "reject negative track formed out of afterburner ITS tracks"};
+    // Track quality
+    Configurable<int> minTPCrows{"minTPCrows", 70, "minimum TPC crossed rows"};
+    Configurable<int> minITSclusters{"minITSclusters", -1, "minimum ITS clusters"};
+    Configurable<bool> skipTPConly{"skipTPConly", false, "skip V0s comprised of at least one TPC only prong"};
+    Configurable<bool> requirePosITSonly{"requirePosITSonly", false, "require that positive track is ITSonly (overrides TPC quality)"};
+    Configurable<bool> requireNegITSonly{"requireNegITSonly", false, "require that negative track is ITSonly (overrides TPC quality)"};
+    Configurable<bool> rejectPosITSafterburner{"rejectPosITSafterburner", false, "reject positive track formed out of afterburner ITS tracks"};
+    Configurable<bool> rejectNegITSafterburner{"rejectNegITSafterburner", false, "reject negative track formed out of afterburner ITS tracks"};
 
-      // PID (TPC/TOF)
-      Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
-      Configurable<float> TofPidNsigmaCutLaPr{"TofPidNsigmaCutLaPr", 1e+6, "TofPidNsigmaCutLaPr"};
-      Configurable<float> TofPidNsigmaCutLaPi{"TofPidNsigmaCutLaPi", 1e+6, "TofPidNsigmaCutLaPi"};
-      Configurable<float> TofPidNsigmaCutK0Pi{"TofPidNsigmaCutK0Pi", 1e+6, "TofPidNsigmaCutK0Pi"};
+    // PID (TPC/TOF)
+    Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
+    Configurable<float> TofPidNsigmaCutLaPr{"TofPidNsigmaCutLaPr", 1e+6, "TofPidNsigmaCutLaPr"};
+    Configurable<float> TofPidNsigmaCutLaPi{"TofPidNsigmaCutLaPi", 1e+6, "TofPidNsigmaCutLaPi"};
+    Configurable<float> TofPidNsigmaCutK0Pi{"TofPidNsigmaCutK0Pi", 1e+6, "TofPidNsigmaCutK0Pi"};
 
-      // PID (TOF)
-      Configurable<float> maxDeltaTimeProton{"maxDeltaTimeProton", 1e+9, "check maximum allowed time"};
-      Configurable<float> maxDeltaTimePion{"maxDeltaTimePion", 1e+9, "check maximum allowed time"};
-    } v0Selections;
+    // PID (TOF)
+    Configurable<float> maxDeltaTimeProton{"maxDeltaTimeProton", 1e+9, "check maximum allowed time"};
+    Configurable<float> maxDeltaTimePion{"maxDeltaTimePion", 1e+9, "check maximum allowed time"};
+  } v0Selections;
 
-    // Axis declarations
-    ConfigurableAxis axisPosZ{"axisPosZ", {100, -50.0f, 50.0f}, "Z Position"};
-    ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Centrality"};
+  // Axis declarations
+  ConfigurableAxis axisPosZ{"axisPosZ", {100, -50.0f, 50.0f}, "Z Position"};
+  ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Centrality"};
 
-    // Boolean axes
-    ConfigurableAxis axisBool{"axisBool", {2, 0.0f, 2.0f}, "axisBool"};
-    ConfigurableAxis axisFt0cOccupancyInTimeRange{"axisFt0cOccupancyInTimeRange", {50, 0, 80000}, "FT0C occupancy"};
-    ConfigurableAxis axisTrackOccupancyInTimeRange{"axisTrackOccupancyInTimeRange", {50, 0, 5000}, "Track occupancy"};
-    ConfigurableAxis axisMultFT0C{"axisMultFT0C", {1000, 0, 100000}, "FT0C amplitude"};
-    ConfigurableAxis axisMultNTracksPVeta1{"axisMultNTracksPVeta1", {200, 0, 6000}, "Mult NTracks PV eta 1"};
-    ConfigurableAxis axisMultPVTotalContributors{"axisMultPVTotalContributors", {200, 0, 6000}, "Number of PV Contributors"};
-    ConfigurableAxis axisMultAllTracksTPCOnly{"axisMultAllTracksTPCOnly", {200, 0, 6000}, "Mult All Tracks TPC Only"};
-    ConfigurableAxis axisMultAllTracksITSTPC{"axisMultAllTracksITSTPC", {200, 0, 6000}, "Mult All Tracks ITS TPC"};
-    ConfigurableAxis axisNch{"axisNch", {500, 0.0f, +5000.0f}, "Number of charged particles"};
-    ConfigurableAxis axisNumV0sPerColl{"axisNumV0sPerColl", {50000, -0.5f, 49999.5f}, "Num V0s Per Coll"};
-    ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "Pt Axis"};
-    ConfigurableAxis axisPt2{"axisPt2", {VARIABLE_WIDTH, -50.0f, -40.0f, -35.0f, -30.0f, -25.0f, -23.0f, -21.0f, -19.0f, -17.0f, -15.0f, -14.0f, -13.0f, -12.0f, -11.0f, -10.0f, -9.0f, -8.0f, -7.5f, -7.0f, -6.5f, -6.0f, -5.6f, -5.2f, -4.8f, -4.4f, -4.0f, -3.8f, -3.6f, -3.4f, -3.2f, -3.0f, -2.8f, -2.6f, -2.4f, -2.2f, -2.0f, -1.9f, -1.8f, -1.7f, -1.6f, -1.5f, -1.4f, -1.3f, -1.2f, -1.1f, -1.0f, -0.9f, -0.8f, -0.7f, -0.6f, -0.5f, -0.4f, -0.3f, -0.2f, -0.1f, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "Pt Axis"};
-    ConfigurableAxis axisAlpha{"axisAlpha", {220, -1.1f, 1.1f}, "Alpha"};
-    ConfigurableAxis axisQtarm{"axisQtarm", {220, 0.0f, 0.5f}, "Qtarm"};
-    ConfigurableAxis axisCosPA{"axisCosPA", {240, 0.0f, 1.2f}, "CosPA"};
-    ConfigurableAxis axisDCAdau{"axisDCAdau", {50, 0.0f, 5.0f}, "DCA V0 Daughters"};
-    ConfigurableAxis axisEta{"axisEta", {100, -3.0f, 3.0f}, "Eta"};
-    ConfigurableAxis axisPhi{"axisPhi", {100, 0.0f, TMath::TwoPi()}, "Phi"};
-    ConfigurableAxis axisMassGamma{"axisMassGamma", {400, 0.0f, 0.5f}, "Mass Gamma"};
-    ConfigurableAxis axisMassLambda{"axisMassLambda", {400, 1.0f, 1.2f}, "Mass Lambda"};
-    ConfigurableAxis axisMassK0Short{"axisMassK0Short", {400, 0.4f, 0.6f}, "Mass K0Short"};
-    ConfigurableAxis axisV0Type{"axisV0Type", {5, 0.0f, 5.0f}, "V0 Type"};
-    ConfigurableAxis axisStraCollisionId{"axisStraCollisionId", {4000, 0.0f, 40000.0f}, "Stra Collision Id"};
-    ConfigurableAxis axisGlobalIndex{"axisGlobalIndex", {4000, 0.0f, 40000.0f}, "Global Index"};
-    ConfigurableAxis axisNCls{"axisNCls", {8, -0.5, 7.5}, "NCls"};
-    ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
-    ConfigurableAxis axisChi2PerNcl{"axisChi2PerNcl", {100, 0, 40}, "Chi2 Per Ncl"};
-    ConfigurableAxis axisTPCNSigma{"axisTPCNSigma", {100, -50.0f, 50.0f}, "TPC N Sigma"};
-    ConfigurableAxis axisTPCSignal{"axisTPCSignal", {400, -100.0, 300.0}, "TPC Signal"};
-    ConfigurableAxis axisTOFNSigma{"axisTOFNSigma", {100, -50.0f, 50.0f}, "TOF N Sigma"};
-    ConfigurableAxis axisTOFDeltaT{"axisTOFDeltaT", {200, -1000.0f, +1000.0f}, "TOF Delta T"};
-    ConfigurableAxis axisPtResolution{"axisPtResolution", {100, -1.0f, 1.0f}, "Pt Resolution"};
-    ConfigurableAxis axisPDGCode{"axisPDGCode", {10001, -5000.5f, +5000.5f}, "PDG Code"};
-    ConfigurableAxis axisV0Radius{"axisV0Radius", {400, 0.0f, 200.0f}, "V0 Radius"};
-    ConfigurableAxis axisCascRadius{"axisCascRadius", {500, 0.0f, 50.0f}, "Casc Radius"};
-    ConfigurableAxis axisDCAToPV{"axisDCAToPV", {500, -50.0f, 50.0f}, "DCA Dau to PV"};
-    ConfigurableAxis axisDCAXYCascToPV{"axisDCAXYCascToPV", {1000, 0.0f, 10.0f}, "DCA XY Casc to PV"};
-    ConfigurableAxis axisDCAZCascToPV{"axisDCAZCascToPV", {500, -10.0f, 10.0f}, "DCA Z Casc to PV"};
-    ConfigurableAxis axisDCAV0ToPV{"axisDCAV0ToPV", {1000, -10.0f, 10.0f}, "DCA V0 to PV"};
-    ConfigurableAxis axisDCAV0Dau{"axisDCAV0Dau", {1000, 0.0f, 10.0f}, "DCA V0 Daughters"};
-    ConfigurableAxis axisDCACascDau{"axisDCACascDau", {1000, 0.0f, 10.0f}, "DCA Casc Daughters"};
-    ConfigurableAxis axisOmegaMass{"axisOmegaMass", {400, 1.6f, 1.8f}, "Omega Mass"};
-    ConfigurableAxis axisXiMass{"axisXiMass", {400, 1.2f, 1.4f}, "Xi Mass"};
-    ConfigurableAxis axisTrackProperties{"axisTrackProperties", {32, -0.5, 31.5f}, "Track Properties"};
+  // Boolean axes
+  ConfigurableAxis axisBool{"axisBool", {2, 0.0f, 2.0f}, "axisBool"};
+  ConfigurableAxis axisFt0cOccupancyInTimeRange{"axisFt0cOccupancyInTimeRange", {50, 0, 80000}, "FT0C occupancy"};
+  ConfigurableAxis axisTrackOccupancyInTimeRange{"axisTrackOccupancyInTimeRange", {50, 0, 5000}, "Track occupancy"};
+  ConfigurableAxis axisMultFT0C{"axisMultFT0C", {1000, 0, 100000}, "FT0C amplitude"};
+  ConfigurableAxis axisMultNTracksPVeta1{"axisMultNTracksPVeta1", {200, 0, 6000}, "Mult NTracks PV eta 1"};
+  ConfigurableAxis axisMultPVTotalContributors{"axisMultPVTotalContributors", {200, 0, 6000}, "Number of PV Contributors"};
+  ConfigurableAxis axisMultAllTracksTPCOnly{"axisMultAllTracksTPCOnly", {200, 0, 6000}, "Mult All Tracks TPC Only"};
+  ConfigurableAxis axisMultAllTracksITSTPC{"axisMultAllTracksITSTPC", {200, 0, 6000}, "Mult All Tracks ITS TPC"};
+  ConfigurableAxis axisNch{"axisNch", {500, 0.0f, +5000.0f}, "Number of charged particles"};
+  ConfigurableAxis axisNumV0sPerColl{"axisNumV0sPerColl", {50000, -0.5f, 49999.5f}, "Num V0s Per Coll"};
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "Pt Axis"};
+  ConfigurableAxis axisPt2{"axisPt2", {VARIABLE_WIDTH, -50.0f, -40.0f, -35.0f, -30.0f, -25.0f, -23.0f, -21.0f, -19.0f, -17.0f, -15.0f, -14.0f, -13.0f, -12.0f, -11.0f, -10.0f, -9.0f, -8.0f, -7.5f, -7.0f, -6.5f, -6.0f, -5.6f, -5.2f, -4.8f, -4.4f, -4.0f, -3.8f, -3.6f, -3.4f, -3.2f, -3.0f, -2.8f, -2.6f, -2.4f, -2.2f, -2.0f, -1.9f, -1.8f, -1.7f, -1.6f, -1.5f, -1.4f, -1.3f, -1.2f, -1.1f, -1.0f, -0.9f, -0.8f, -0.7f, -0.6f, -0.5f, -0.4f, -0.3f, -0.2f, -0.1f, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "Pt Axis"};
+  ConfigurableAxis axisAlpha{"axisAlpha", {220, -1.1f, 1.1f}, "Alpha"};
+  ConfigurableAxis axisQtarm{"axisQtarm", {220, 0.0f, 0.5f}, "Qtarm"};
+  ConfigurableAxis axisCosPA{"axisCosPA", {240, 0.0f, 1.2f}, "CosPA"};
+  ConfigurableAxis axisDCAdau{"axisDCAdau", {50, 0.0f, 5.0f}, "DCA V0 Daughters"};
+  ConfigurableAxis axisEta{"axisEta", {100, -3.0f, 3.0f}, "Eta"};
+  ConfigurableAxis axisPhi{"axisPhi", {100, 0.0f, TMath::TwoPi()}, "Phi"};
+  ConfigurableAxis axisMassGamma{"axisMassGamma", {400, 0.0f, 0.5f}, "Mass Gamma"};
+  ConfigurableAxis axisMassLambda{"axisMassLambda", {400, 1.0f, 1.2f}, "Mass Lambda"};
+  ConfigurableAxis axisMassK0Short{"axisMassK0Short", {400, 0.4f, 0.6f}, "Mass K0Short"};
+  ConfigurableAxis axisV0Type{"axisV0Type", {5, 0.0f, 5.0f}, "V0 Type"};
+  ConfigurableAxis axisStraCollisionId{"axisStraCollisionId", {4000, 0.0f, 40000.0f}, "Stra Collision Id"};
+  ConfigurableAxis axisGlobalIndex{"axisGlobalIndex", {4000, 0.0f, 40000.0f}, "Global Index"};
+  ConfigurableAxis axisNCls{"axisNCls", {8, -0.5, 7.5}, "NCls"};
+  ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
+  ConfigurableAxis axisChi2PerNcl{"axisChi2PerNcl", {100, 0, 40}, "Chi2 Per Ncl"};
+  ConfigurableAxis axisTPCNSigma{"axisTPCNSigma", {100, -50.0f, 50.0f}, "TPC N Sigma"};
+  ConfigurableAxis axisTPCSignal{"axisTPCSignal", {400, -100.0, 300.0}, "TPC Signal"};
+  ConfigurableAxis axisTOFNSigma{"axisTOFNSigma", {100, -50.0f, 50.0f}, "TOF N Sigma"};
+  ConfigurableAxis axisTOFDeltaT{"axisTOFDeltaT", {200, -1000.0f, +1000.0f}, "TOF Delta T"};
+  ConfigurableAxis axisPtResolution{"axisPtResolution", {100, -1.0f, 1.0f}, "Pt Resolution"};
+  ConfigurableAxis axisPDGCode{"axisPDGCode", {10001, -5000.5f, +5000.5f}, "PDG Code"};
+  ConfigurableAxis axisV0Radius{"axisV0Radius", {400, 0.0f, 200.0f}, "V0 Radius"};
+  ConfigurableAxis axisCascRadius{"axisCascRadius", {500, 0.0f, 50.0f}, "Casc Radius"};
+  ConfigurableAxis axisDCAToPV{"axisDCAToPV", {500, -50.0f, 50.0f}, "DCA Dau to PV"};
+  ConfigurableAxis axisDCAXYCascToPV{"axisDCAXYCascToPV", {1000, 0.0f, 10.0f}, "DCA XY Casc to PV"};
+  ConfigurableAxis axisDCAZCascToPV{"axisDCAZCascToPV", {500, -10.0f, 10.0f}, "DCA Z Casc to PV"};
+  ConfigurableAxis axisDCAV0ToPV{"axisDCAV0ToPV", {1000, -10.0f, 10.0f}, "DCA V0 to PV"};
+  ConfigurableAxis axisDCAV0Dau{"axisDCAV0Dau", {1000, 0.0f, 10.0f}, "DCA V0 Daughters"};
+  ConfigurableAxis axisDCACascDau{"axisDCACascDau", {1000, 0.0f, 10.0f}, "DCA Casc Daughters"};
+  ConfigurableAxis axisOmegaMass{"axisOmegaMass", {400, 1.6f, 1.8f}, "Omega Mass"};
+  ConfigurableAxis axisXiMass{"axisXiMass", {400, 1.2f, 1.4f}, "Xi Mass"};
+  ConfigurableAxis axisTrackProperties{"axisTrackProperties", {32, -0.5, 31.5f}, "Track Properties"};
 
-    PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
+  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
 
   void init(InitContext const&)
   {
@@ -580,7 +580,7 @@ struct strderivedGenQA {
 
     return true;
   }
-  
+
   // ______________________________________________________
   // Simulated processing
   // Return the list of indices to the recoed collision associated to a given MC collision.
