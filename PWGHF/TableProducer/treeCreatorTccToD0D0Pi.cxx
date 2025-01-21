@@ -204,11 +204,6 @@ struct HfTreeCreatorTccToD0D0Pi {
 
   void init(InitContext const&)
   {
-
-    std::array<bool, 1> doprocess{doprocessDataWithML};
-    if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
-      LOGP(fatal, "Only one process function can be enabled at a time.");
-    }
     // soft pion setting take from Sigmac analysis by mattia
     /// apply the global-track w/o dca cuts for soft pion BEFORE ALL OTHER CUSTOM CUTS
     if (usePionIsGlobalTrackWoDCA) {
@@ -444,7 +439,6 @@ struct HfTreeCreatorTccToD0D0Pi {
       runCandCreatorData<aod::hf_cand::VertexerType::DCAFitter>(collision, candwD0ThisColl, trackIdsThisCollision, tracks, bcs);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorTccToD0D0Pi, processDataWithML, "Process data with DCAFitterN", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
