@@ -1124,7 +1124,7 @@ struct StrangenessBuilder {
       auto const& posTrack = v0.template posTrack_as<TTracks>();
       auto const& negTrack = v0.template negTrack_as<TTracks>();
       auto const& bachTrack = cascade.template bachelor_as<TTracks>();
-      if(v0Map[v0.globalIndex()]<0){
+      if (v0Map[v0.globalIndex()] < 0) {
         // this V0 hasn't been stored / cached
         cascdataLink(-1);
         interlinks.cascadeToCascCores.push_back(-1);
