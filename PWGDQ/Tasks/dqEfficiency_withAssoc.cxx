@@ -1648,10 +1648,10 @@ struct AnalysisSameEventPairing {
 
           if constexpr (TTwoProngFitter) {
             dimuonsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
-            if (fConfigOptions.flatTables.value) {
+            if (fConfigOptions.flatTables.value && t1.has_reducedMCTrack() && t2.has_reducedMCTrack()) {
               dimuonAllList(event.posX(), event.posY(), event.posZ(), event.numContrib(),
                             event.selection_raw(), evSel,
-                            -999., -999., -999.,
+                            event.reducedMCevent().mcPosX(), event.reducedMCevent().mcPosY(), event.reducedMCevent().mcPosZ(),
                             VarManager::fgValues[VarManager::kMass],
                             mcDecision,
                             VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), VarManager::fgValues[VarManager::kVertexingChi2PCA],
@@ -1661,14 +1661,14 @@ struct AnalysisSameEventPairing {
                             VarManager::fgValues[VarManager::kPt1], VarManager::fgValues[VarManager::kEta1], VarManager::fgValues[VarManager::kPhi1], t1.sign(),
                             VarManager::fgValues[VarManager::kPt2], VarManager::fgValues[VarManager::kEta2], VarManager::fgValues[VarManager::kPhi2], t2.sign(),
                             t1.fwdDcaX(), t1.fwdDcaY(), t2.fwdDcaX(), t2.fwdDcaY(),
-                            0., 0.,
+                            t1.mcMask(), t2.mcMask(),
                             t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(),
                             t1.chi2MatchMCHMFT(), t2.chi2MatchMCHMFT(),
                             t1.chi2(), t2.chi2(),
-                            -999., -999., -999., -999.,
-                            -999., -999., -999., -999.,
-                            -999., -999., -999., -999.,
-                            -999., -999., -999., -999.,
+			    t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(), t1.reducedMCTrack().e(),
+                            t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(), t2.reducedMCTrack().e(),
+                            t1.reducedMCTrack().vx(), t1.reducedMCTrack().vy(), t1.reducedMCTrack().vz(), t1.reducedMCTrack().vt(),
+                            t2.reducedMCTrack().vx(), t2.reducedMCTrack().vy(), t2.reducedMCTrack().vz(), t2.reducedMCTrack().vt(),
                             (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 30)), (twoTrackFilter & (static_cast<uint32_t>(1) << 29)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)),
                             -999.0, -999.0, -999.0, -999.0, -999.0,
                             -999.0, -999.0, -999.0, -999.0, -999.0,
