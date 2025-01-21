@@ -113,11 +113,11 @@ void FastTracker::AddSiliconALICE3v1()
   float resZOT = 0.00100;    // 5 mum
   float eff = 1.00;
 
-  layers.push_back(DetLayer{"bpipe0", 0.48, 250, 0.00042, 2.772e-02, 0.0f, 0.0f, 0.0f, 1}); // 150 mum Be
+  layers.push_back(DetLayer{"bpipe0", 0.48, 250, 0.00042, 2.772e-02, 0.0f, 0.0f, 0.0f, 0}); // 150 mum Be
   layers.push_back(DetLayer{"B00", 0.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1});
   layers.push_back(DetLayer{"B01", 1.2, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1});
   layers.push_back(DetLayer{"B02", 2.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1});
-  layers.push_back(DetLayer{"bpipe1", 3.7, 250, 0.0014, 9.24e-02, 0.0f, 0.0f, 0.0f, 1}); // 500 mum Be
+  layers.push_back(DetLayer{"bpipe1", 3.7, 250, 0.0014, 9.24e-02, 0.0f, 0.0f, 0.0f, 0}); // 500 mum Be
   layers.push_back(DetLayer{"B03", 3.75, 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
   layers.push_back(DetLayer{"B04", 7., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
   layers.push_back(DetLayer{"B05", 12., 250, x0OT, xrhoOB, resRPhiOT, resZOT, eff, 1});
