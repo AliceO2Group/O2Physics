@@ -15,6 +15,7 @@
 
 #include <cmath>
 #include <TRandom3.h>
+#include <string>
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -42,7 +43,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct occupancyQATask {
+struct OccupancyQATask {
 
   HistogramRegistry registry;
 
@@ -111,7 +112,7 @@ struct occupancyQATask {
       registry.fill(HIST("h2_occupancy_ntracksselptetacuts_postsel8"), occupancy, nTracksInAcceptanceAndSelected);
     }
   }
-  PROCESS_SWITCH(occupancyQATask, processEventsJetData, "occupancy QA on jet derived data", true);
+  PROCESS_SWITCH(OccupancyQATask, processEventsJetData, "occupancy QA on jet derived data", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<occupancyQATask>(cfgc, TaskName{"occupancy-qa"})}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<OccupancyQATask>(cfgc, TaskName{"occupancy-qa"})}; }

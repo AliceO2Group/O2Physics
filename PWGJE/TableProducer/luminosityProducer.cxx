@@ -14,6 +14,9 @@
 ///
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
+#include <algorithm>
+#include <vector>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
