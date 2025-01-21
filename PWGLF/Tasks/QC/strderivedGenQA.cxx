@@ -22,6 +22,7 @@
 #include <Math/Vector4D.h>
 #include <cmath>
 #include <array>
+#include <vector>
 #include <cstdlib>
 
 #include <TFile.h>
