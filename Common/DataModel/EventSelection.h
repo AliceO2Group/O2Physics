@@ -8,6 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file EventSelection.h
+/// \brief Definitions of event selection tables
+///
+/// \author Evgeny Kryshen <evgeny.kryshen@cern.ch> and Igor Altsybeev <Igor.Altsybeev@cern.ch>
+
 #ifndef COMMON_DATAMODEL_EVENTSELECTION_H_
 #define COMMON_DATAMODEL_EVENTSELECTION_H_
 
@@ -45,19 +51,19 @@ enum Run2EventCuts {
 
 namespace evsel
 {
-DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);                                //! Bitmask of fired trigger aliases (see TriggerAliases.h for definitions)
-DECLARE_SOA_BITMAP_COLUMN(Selection, selection, 64);                        //! Bitmask of selection flags (see EventSelectionParams.h for definitions)
-DECLARE_SOA_BITMAP_COLUMN(Qc, qc, 32);                                      //! Bitmask of qc flags
-DECLARE_SOA_COLUMN(Sel7, sel7, bool);                                       //! Event selection decision based on V0A & V0C
-DECLARE_SOA_COLUMN(Sel8, sel8, bool);                                       //! Event selection decision based on TVX
-DECLARE_SOA_INDEX_COLUMN_FULL(FoundBC, foundBC, int, BCs, "_foundBC");      //! BC entry index in BCs table (-1 if doesn't exist)
-DECLARE_SOA_INDEX_COLUMN_FULL(FoundFT0, foundFT0, int, FT0s, "_foundFT0");  //! FT0 entry index in FT0s table (-1 if doesn't exist)
-DECLARE_SOA_INDEX_COLUMN_FULL(FoundFV0, foundFV0, int, FV0As, "_foundFV0"); //! FV0 entry index in FV0As table (-1 if doesn't exist)
-DECLARE_SOA_INDEX_COLUMN_FULL(FoundFDD, foundFDD, int, FDDs, "_foundFDD");  //! FDD entry index in FDDs table (-1 if doesn't exist)
-DECLARE_SOA_INDEX_COLUMN_FULL(FoundZDC, foundZDC, int, Zdcs, "_foundZDC");  //! ZDC entry index in ZDCs table (-1 if doesn't exist)
-DECLARE_SOA_COLUMN(BcInTF, bcInTF, int);                                    //! Position of a (found) bunch crossing inside a given timeframe
-DECLARE_SOA_COLUMN(NumTracksInTimeRange, trackOccupancyInTimeRange, int);   //! Occupancy in specified time interval by a number of tracks from nearby collisions
-DECLARE_SOA_COLUMN(SumAmpFT0CInTimeRange, ft0cOccupancyInTimeRange, float); //! Occupancy in specified time interval by a sum of FT0C amplitudes from nearby collisions
+DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);                                   //! Bitmask of fired trigger aliases (see TriggerAliases.h for definitions)
+DECLARE_SOA_BITMAP_COLUMN(Selection, selection, 64);                           //! Bitmask of selection flags (see EventSelectionParams.h for definitions)
+DECLARE_SOA_BITMAP_COLUMN(Qc, qc, 32);                                         //! Bitmask of qc flags
+DECLARE_SOA_COLUMN(Sel7, sel7, bool);                                          //! Event selection decision based on V0A & V0C
+DECLARE_SOA_COLUMN(Sel8, sel8, bool);                                          //! Event selection decision based on TVX
+DECLARE_SOA_INDEX_COLUMN_FULL(FoundBC, foundBC, int, BCs, "_foundBC");         //! BC entry index in BCs table (-1 if doesn't exist)
+DECLARE_SOA_INDEX_COLUMN_FULL(FoundFT0, foundFT0, int, FT0s, "_foundFT0");     //! FT0 entry index in FT0s table (-1 if doesn't exist)
+DECLARE_SOA_INDEX_COLUMN_FULL(FoundFV0, foundFV0, int, FV0As, "_foundFV0");    //! FV0 entry index in FV0As table (-1 if doesn't exist)
+DECLARE_SOA_INDEX_COLUMN_FULL(FoundFDD, foundFDD, int, FDDs, "_foundFDD");     //! FDD entry index in FDDs table (-1 if doesn't exist)
+DECLARE_SOA_INDEX_COLUMN_FULL(FoundZDC, foundZDC, int, Zdcs, "_foundZDC");     //! ZDC entry index in ZDCs table (-1 if doesn't exist)
+DECLARE_SOA_COLUMN(BcInTF, bcInTF, int);                                       //! Position of a (found) bunch crossing inside a given timeframe
+DECLARE_SOA_COLUMN(TrackOccupancyInTimeRange, trackOccupancyInTimeRange, int); //! Occupancy in specified time interval by a number of tracks from nearby collisions
+DECLARE_SOA_COLUMN(Ft0cOccupancyInTimeRange, ft0cOccupancyInTimeRange, float); //! Occupancy in specified time interval by a sum of FT0C amplitudes from nearby collisions
 } // namespace evsel
 
 // bc-joinable event selection decisions
@@ -78,8 +84,8 @@ DECLARE_SOA_TABLE(EvSels, "AOD", "EVSEL", //!
                   evsel::FoundFDDId,
                   evsel::FoundZDCId,
                   evsel::BcInTF,
-                  evsel::NumTracksInTimeRange,
-                  evsel::SumAmpFT0CInTimeRange);
+                  evsel::TrackOccupancyInTimeRange,
+                  evsel::Ft0cOccupancyInTimeRange);
 using EvSel = EvSels::iterator;
 } // namespace o2::aod
 
