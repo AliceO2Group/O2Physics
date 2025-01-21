@@ -16,6 +16,7 @@
 
 #include <vector>
 #include <map>
+#include <string>
 
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
