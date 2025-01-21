@@ -1844,7 +1844,7 @@ struct strangeness_in_jets {
           double deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue2[i].Phi());
           double deltaR_ue2 = std::sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
-          int pdg = std::fabs(particle.pdgCode());
+          int pdg = particle.pdgCode();
 
           if (pdg == 211) {
             if (deltaR_jet < Rjet) {
