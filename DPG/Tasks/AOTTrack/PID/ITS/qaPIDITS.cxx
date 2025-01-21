@@ -46,6 +46,91 @@ static constexpr int Np = 9;
 std::array<std::shared_ptr<TH2>, Np> hNsigmaPos;
 std::array<std::shared_ptr<TH2>, Np> hNsigmaNeg;
 
+template <typename TrackType>
+float nsigmaITS(const TrackType& track, const o2::track::PID::ID id)
+{
+  switch (id) {
+    case o2::track::PID::Electron:
+      return track.itsNSigmaEl();
+    case o2::track::PID::Muon:
+      return track.itsNSigmaMu();
+    case o2::track::PID::Pion:
+      return track.itsNSigmaPi();
+    case o2::track::PID::Kaon:
+      return track.itsNSigmaKa();
+    case o2::track::PID::Proton:
+      return track.itsNSigmaPr();
+    case o2::track::PID::Deuteron:
+      return track.itsNSigmaDe();
+    case o2::track::PID::Triton:
+      return track.itsNSigmaTr();
+    case o2::track::PID::Helium3:
+      return track.itsNSigmaHe();
+    case o2::track::PID::Alpha:
+      return track.itsNSigmaAl();
+    default:
+      LOG(fatal) << "PID not implemented";
+      return 0.f;
+  }
+}
+template <typename TrackType>
+float nsigmaTOF(const TrackType& track, const o2::track::PID::ID id)
+{
+  switch (id) {
+    case o2::track::PID::Electron:
+      return track.tofNSigmaEl();
+    case o2::track::PID::Muon:
+      return track.tofNSigmaMu();
+    case o2::track::PID::Pion:
+      return track.tofNSigmaPi();
+    case o2::track::PID::Kaon:
+      return track.tofNSigmaKa();
+    case o2::track::PID::Proton:
+      return track.tofNSigmaPr();
+    case o2::track::PID::Deuteron:
+      return track.tofNSigmaDe();
+    case o2::track::PID::Triton:
+      return track.tofNSigmaTr();
+    case o2::track::PID::Helium3:
+      return track.tofNSigmaHe();
+    case o2::track::PID::Alpha:
+      return track.tofNSigmaAl();
+    default:
+      LOG(fatal) << "PID not implemented";
+      return 0.f;
+  }
+}
+template <typename TrackType>
+float nsigmaTPC(const TrackType& track, const o2::track::PID::ID id)
+{
+  switch (id) {
+    case o2::track::PID::Electron:
+      return track.tpcNSigmaEl();
+    case o2::track::PID::Muon:
+      return track.tpcNSigmaMu();
+    case o2::track::PID::Pion:
+      return track.tpcNSigmaPi();
+    case o2::track::PID::Kaon:
+      return track.tpcNSigmaKa();
+    case o2::track::PID::Proton:
+      return track.tpcNSigmaPr();
+    case o2::track::PID::Deuteron:
+      return track.tpcNSigmaDe();
+    case o2::track::PID::Triton:
+      return track.tpcNSigmaTr();
+    case o2::track::PID::Helium3:
+      return track.tpcNSigmaHe();
+    case o2::track::PID::Alpha:
+      return track.tpcNSigmaAl();
+    default:
+      LOG(fatal) << "PID not implemented";
+      return 0.f;
+  }
+}
+
+float tpcSelValues[9];
+float tofSelValues[9];
+
 /// Task to produce the ITS QA plots
 struct itsPidQa {
   static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
@@ -80,8 +165,6 @@ struct itsPidQa {
   ConfigurableAxis tpcNclsBins{"tpcNclsBins", {16, 0, 160}, "Binning in number of clusters in TPC"};
   Configurable<bool> fillTHnSparses{"fillTHnSparses", false, "Flag to fill multidimensional histograms for nsigma vs pt, eta, Ncls"};
 
-  float tpcSelValues[9];
-  float tofSelValues[9];
   void init(o2::framework::InitContext&)
   {
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
@@ -155,89 +238,6 @@ struct itsPidQa {
                                     aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
                                     aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe,
                                     aod::pidTOFTr, aod::pidTOFHe, aod::pidTOFAl>;
-
-  template <typename TrackType>
-  float nsigmaITS(const TrackType& track, const o2::track::PID::ID id)
-  {
-    switch (id) {
-      case o2::track::PID::Electron:
-        return track.itsNSigmaEl();
-      case o2::track::PID::Muon:
-        return track.itsNSigmaMu();
-      case o2::track::PID::Pion:
-        return track.itsNSigmaPi();
-      case o2::track::PID::Kaon:
-        return track.itsNSigmaKa();
-      case o2::track::PID::Proton:
-        return track.itsNSigmaPr();
-      case o2::track::PID::Deuteron:
-        return track.itsNSigmaDe();
-      case o2::track::PID::Triton:
-        return track.itsNSigmaTr();
-      case o2::track::PID::Helium3:
-        return track.itsNSigmaHe();
-      case o2::track::PID::Alpha:
-        return track.itsNSigmaAl();
-      default:
-        LOG(fatal) << "PID not implemented";
-        return 0.f;
-    }
-  }
-  template <typename TrackType>
-  float nsigmaTOF(const TrackType& track, const o2::track::PID::ID id)
-  {
-    switch (id) {
-      case o2::track::PID::Electron:
-        return track.tofNSigmaEl();
-      case o2::track::PID::Muon:
-        return track.tofNSigmaMu();
-      case o2::track::PID::Pion:
-        return track.tofNSigmaPi();
-      case o2::track::PID::Kaon:
-        return track.tofNSigmaKa();
-      case o2::track::PID::Proton:
-        return track.tofNSigmaPr();
-      case o2::track::PID::Deuteron:
-        return track.tofNSigmaDe();
-      case o2::track::PID::Triton:
-        return track.tofNSigmaTr();
-      case o2::track::PID::Helium3:
-        return track.tofNSigmaHe();
-      case o2::track::PID::Alpha:
-        return track.tofNSigmaAl();
-      default:
-        LOG(fatal) << "PID not implemented";
-        return 0.f;
-    }
-  }
-  template <typename TrackType>
-  float nsigmaTPC(const TrackType& track, const o2::track::PID::ID id)
-  {
-    switch (id) {
-      case o2::track::PID::Electron:
-        return track.tpcNSigmaEl();
-      case o2::track::PID::Muon:
-        return track.tpcNSigmaMu();
-      case o2::track::PID::Pion:
-        return track.tpcNSigmaPi();
-      case o2::track::PID::Kaon:
-        return track.tpcNSigmaKa();
-      case o2::track::PID::Proton:
-        return track.tpcNSigmaPr();
-      case o2::track::PID::Deuteron:
-        return track.tpcNSigmaDe();
-      case o2::track::PID::Triton:
-        return track.tpcNSigmaTr();
-      case o2::track::PID::Helium3:
-        return track.tpcNSigmaHe();
-      case o2::track::PID::Alpha:
-        return track.tpcNSigmaAl();
-      default:
-        LOG(fatal) << "PID not implemented";
-        return 0.f;
-    }
-  }
-
   void process(CollisionCandidate const& collision,
                soa::Filtered<TrackCandidates> const& tracks)
   {
@@ -253,7 +253,7 @@ struct itsPidQa {
 
     histos.fill(HIST("event/evsel"), 2);
 
-    if (abs(collision.posZ()) > 10.f) {
+    if (std::abs(collision.posZ()) > 10.f) {
       return;
     }
     histos.fill(HIST("event/evsel"), 3);
