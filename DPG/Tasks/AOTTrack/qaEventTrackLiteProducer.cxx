@@ -315,7 +315,7 @@ struct QaEventTrackLiteProducer {
     }
     for (const auto& collision : collisions) {
 
-      if (fractionOfSampledEvents < 1.f && (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) > fractionOfSampledEvents) { // Skip events that are not sampled
+      if (fractionOfSampledEvents < 1.f && (gRandom->Uniform()) > fractionOfSampledEvents) { // Skip events that are not sampled
         return;
       }
       nTableEventCounter++;
