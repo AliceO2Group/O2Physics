@@ -107,7 +107,6 @@ TH2F* fhPtYA = nullptr;
 TH1F* fhChi2A = nullptr;
 TH1I* fhITSNclA = nullptr;
 
-
 TH2F* fhNSigmaTPC[kIdBfNoOfSpecies] = {nullptr};
 TH2F* fhNSigmaTOF[kIdBfNoOfSpecies] = {nullptr};
 TH2F* fhNSigmaCombo[kIdBfNoOfSpecies] = {nullptr};
@@ -170,7 +169,6 @@ TH2F* fhTruePtYB = nullptr;
 TH2F* fhTruePhiYA = nullptr;
 TH2F* fhTruePtYA = nullptr;
 
-
 TH1F* fhTrueEtaB = nullptr;
 TH1F* fhTrueEtaA = nullptr;
 
@@ -184,7 +182,6 @@ TH1F* fhTrueDCAxyBid = nullptr;
 TH1F* fhTrueDCAzA = nullptr;
 TH2F* fhTrueDCAxyzB = nullptr;
 TH2F* fhTrueDCAxyzA = nullptr;
-
 
 //============================================================================================
 // The IdentifiedBfFilter multiplicity counters
@@ -441,7 +438,7 @@ void IdentifiedBfFilter::processWithoutCent(aod::CollisionEvSel const& collision
 }
 
 void IdentifiedBfFilter::processWithCentPID(aod::CollisionEvSelCent const& collision, IdBfFullTracksPID const& ftracks)
-{ 
+{
   processReconstructed(collision, ftracks, getCentMultPercentile(collision));
 }
 
@@ -820,25 +817,25 @@ struct IdentifiedBfFilterTracks {
         fhCompatibleCollisionsZVtxRms = new TH2F("fHistCompatibleCollisionsZVtxRms", "Compatible collisions #it{z}_{vtx} RMS;#sigma_{#it{z}_{vtx}};Multiplicity (%);counts", 100, -10.0, 10.0, 101, -0.5, 100.5);
       }
 
-      for(int sp = 0; sp < kIdBfNoOfSpecies; ++sp){
+      for (int sp = 0; sp < kIdBfNoOfSpecies; ++sp) {
         fhNSigmaTPC[sp] = new TH2F(TString::Format("fhNSigmaTPC_%s", speciesName[sp]).Data(),
-                            TString::Format("N Sigma from TPC vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
-                            48, -6, 6,
-                                    ptbins, ptlow, ptup);
+                                   TString::Format("N Sigma from TPC vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
+                                   48, -6, 6,
+                                   ptbins, ptlow, ptup);
         fhNSigmaTOF[sp] = new TH2F(TString::Format("fhNSigmaTOF_%s", speciesName[sp]).Data(),
-                                    TString::Format("N Sigma from TOF vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
-                                    48, -6, 6,
-                                    ptbins, ptlow, ptup);
+                                   TString::Format("N Sigma from TOF vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
+                                   48, -6, 6,
+                                   ptbins, ptlow, ptup);
         fhNSigmaCombo[sp] = new TH2F(TString::Format("fhNSigmaCombo_%s", speciesName[sp]).Data(),
-                                      TString::Format("N Sigma from Combo vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
-                                      48, -6, 6,
-                                      ptbins, ptlow, ptup);
+                                     TString::Format("N Sigma from Combo vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
+                                     48, -6, 6,
+                                     ptbins, ptlow, ptup);
         fhNSigmaTPC_IdTrks[sp] = new TH2F(TString::Format("fhNSigmaTPC_IdTrks_%s", speciesName[sp]).Data(),
                                           TString::Format("N Sigma from TPC vs P for Identified %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
                                           48, -6, 6,
                                           ptbins, ptlow, ptup);
       }
-      LOGF(info,"Making histos");
+      LOGF(info, "Making histos");
 
       for (int sp = 0; sp < kIdBfNoOfSpecies + 1; ++sp) {
         fhPA[sp] = new TH1F(TString::Format("fHistPA_%s", speciesName[sp]).Data(),
@@ -867,11 +864,11 @@ struct IdentifiedBfFilterTracks {
                                     ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
       }
       fhdEdxA[kIdBfNoOfSpecies + 1] = new TH2F(TString::Format("fhdEdxA_WrongSpecies").Data(),
-                                           TString::Format("dE/dx vs P reconstructed Wrong Species; P (GeV/c); dE/dx (a.u.)").Data(),
-                                           ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
+                                               TString::Format("dE/dx vs P reconstructed Wrong Species; P (GeV/c); dE/dx (a.u.)").Data(),
+                                               ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
       fhdEdxIPTPCA[kIdBfNoOfSpecies + 1] = new TH2F(TString::Format("fhdEdxIPTPCA_WrongSpecies").Data(),
-                                                TString::Format("dE/dx vs P_{IP} reconstructed Wrong Species; P (GeV/c); dE/dx (a.u.)").Data(),
-                                                ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
+                                                    TString::Format("dE/dx vs P_{IP} reconstructed Wrong Species; P (GeV/c); dE/dx (a.u.)").Data(),
+                                                    ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
       /* add the hstograms to the output list */
       fOutputList->Add(fhXYB);
       fOutputList->Add(fhYZB);
@@ -967,7 +964,7 @@ struct IdentifiedBfFilterTracks {
       fhTrueDCAxyA = new TH1F("TrueDCAxyA", "DCA_{xy} distribution for generated;DCA_{xy};counts (cm)", 1000, -4., 4.0);
       fhTrueDCAzB = new TH1F("TrueDCAzB", "DCA_{z} distribution for generated before;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
       fhTrueDCAzA = new TH1F("TrueDCAzA", "DCA_{z} distribution for generated;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
-      fhTrueDCAxyzB = new TH2F("TrueDCAxyzB", "DCA_{xy} vs DCA_{z} distribution for generated before;DCA_{xy} (cm);DCA_{z} (cm);counts", 1000, -4.0, 4.0,1000, -4.0, 4.0);
+      fhTrueDCAxyzB = new TH2F("TrueDCAxyzB", "DCA_{xy} vs DCA_{z} distribution for generated before;DCA_{xy} (cm);DCA_{z} (cm);counts", 1000, -4.0, 4.0, 1000, -4.0, 4.0);
       fhTrueDCAxyzA = new TH2F("TrueDCAxyzA", "DCA_{xy} vs DCA_{z} distribution for generated after;DCA_{xy} (cm);DCA_{z} (cm);counts", 1000, -4.0, 4.0, 1000, -4.0, 4.0);
 
       for (int sp = 0; sp < kIdBfNoOfSpecies + 1; ++sp) {
@@ -1014,7 +1011,6 @@ struct IdentifiedBfFilterTracks {
       fOutputList->Add(fhTrueDCAzA);
       fOutputList->Add(fhTrueDCAxyzB);
       fOutputList->Add(fhTrueDCAxyzA);
-
 
       for (int sp = 0; sp < kIdBfNoOfSpecies + 1; ++sp) {
         fOutputList->Add(fhTruePA[sp]);
@@ -1128,12 +1124,12 @@ struct IdentifiedBfFilterTracks {
 
     for (auto& particle : particles) {
       int8_t pid = -1;
-      if(particle.isPhysicalPrimary()){
+      if (particle.isPhysicalPrimary()) {
         TParticlePDG* pdgpart = fPDG->GetParticle(particle.pdgCode());
         float charge = 0;
-        if (pdgpart != nullptr){
+        if (pdgpart != nullptr) {
           charge = getCharge(pdgpart->Charge());
-          //print charge
+          // print charge
         }
         fhTrueCharge->Fill(charge);
         if (charge != 0) {
@@ -1155,14 +1151,13 @@ struct IdentifiedBfFilterTracks {
         }
 
       } else {
-        if((particle.mcCollisionId() == 0) && traceCollId0){
+        if ((particle.mcCollisionId() == 0) && traceCollId0) {
           LOGF(IDENTIFIEDBFFILTERLOGTRACKS, "Particle %d not Physical Primary", particle.globalIndex());
         }
       }
       if (!fullDerivedData) {
         gentracksinfo(pid);
       }
-
     }
     LOGF(info,
          "Processed %d accepted generated collisions out of a total of %d with  %d accepted particles out of a "
@@ -1383,7 +1378,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
   float min_nsigma = 999.0f;
   MatchRecoGenSpecies sp_min_nsigma = kWrongSpecies;
   for (int sp = 0; sp < kIdBfNoOfSpecies; ++sp) {
-    if (fabs(nsigmas[sp]) < fabs(min_nsigma)) {  // Check if species nsigma is less than current nsigma
+    if (fabs(nsigmas[sp]) < fabs(min_nsigma)) { // Check if species nsigma is less than current nsigma
       min_nsigma = nsigmas[sp];                // If yes, set species nsigma to current nsigma
       sp_min_nsigma = MatchRecoGenSpecies(sp); // set current species sp number to current sp
     }
@@ -1496,12 +1491,11 @@ inline int8_t IdentifiedBfFilterTracks::AcceptParticle(ParticleObject& particle,
   }
   TParticlePDG* pdgpart = fPDG->GetParticle(particle.pdgCode());
   float charge = 0;
-  if (pdgpart != nullptr){
+  if (pdgpart != nullptr) {
     charge = getCharge(pdgpart->Charge());
   }
 
-
-  if (particle.isPhysicalPrimary() && fabs(charge)>0.0) {
+  if (particle.isPhysicalPrimary() && fabs(charge) > 0.0) {
     if ((particle.mcCollisionId() == 0) && traceCollId0) {
       LOGF(info, "Particle %d passed isPhysicalPrimary", particle.globalIndex());
     }
@@ -1600,14 +1594,14 @@ int8_t IdentifiedBfFilterTracks::selectTrackAmbiguousCheck(CollisionObjects cons
 template <typename TrackObject, typename CollisionObject>
 void IdentifiedBfFilterTracks::fillTrackHistosBeforeSelection(TrackObject const& track, CollisionObject const& collision)
 {
-  fhXYB->Fill(track.x(),track.y());
-  fhYZB->Fill(track.y(),track.z());
+  fhXYB->Fill(track.x(), track.y());
+  fhYZB->Fill(track.y(), track.z());
   fhNClustersB->Fill(track.tpcNClsFound());
-  fhPhiYB->Fill(track.phi(),track.eta());
-  fhPtYB->Fill(track.pt(),track.eta());
+  fhPhiYB->Fill(track.phi(), track.eta());
+  fhPtYB->Fill(track.pt(), track.eta());
   fhChi2B->Fill(track.tpcChi2NCl());
   fhITSNclB->Fill(track.itsNCls());
-  
+
   fhPB->Fill(track.p());
   fhPtB->Fill(track.pt());
   fhEtaB->Fill(track.eta());
@@ -1621,7 +1615,7 @@ void IdentifiedBfFilterTracks::fillTrackHistosBeforeSelection(TrackObject const&
   }
   fhDCAxyB->Fill(track.dcaXY());
   fhDCAzB->Fill(track.dcaZ());
-  fhDCAxyzB->Fill(track.dcaXY(),track.dcaZ());
+  fhDCAxyzB->Fill(track.dcaXY(), track.dcaZ());
 }
 
 template <typename TrackObject, typename CollisionObject>
@@ -1631,16 +1625,16 @@ void IdentifiedBfFilterTracks::fillTrackHistosAfterSelection(TrackObject const& 
   if (sp == kIdBfCharged) {
     fhEtaA->Fill(track.eta());
     fhPhiA->Fill(track.phi());
-    fhXYA->Fill(track.x(),track.y());
-    fhYZA->Fill(track.y(),track.z());
+    fhXYA->Fill(track.x(), track.y());
+    fhYZA->Fill(track.y(), track.z());
     fhNClustersA->Fill(track.tpcNClsFound());
-    fhPhiYA->Fill(track.phi(),track.eta());
-    fhPtYA->Fill(track.pt(),track.eta());
+    fhPhiYA->Fill(track.phi(), track.eta());
+    fhPtYA->Fill(track.pt(), track.eta());
     fhChi2A->Fill(track.tpcChi2NCl());
     fhITSNclA->Fill(track.itsNCls());
     fhDCAxyA->Fill(track.dcaXY());
     fhDCAzA->Fill(track.dcaZ());
-    fhDCAxyzA->Fill(track.dcaXY(),track.dcaZ());
+    fhDCAxyzA->Fill(track.dcaXY(), track.dcaZ());
 
     if (track.dcaXY() < 1.0) {
       fhFineDCAxyA->Fill(track.dcaXY());
@@ -1663,8 +1657,8 @@ void IdentifiedBfFilterTracks::fillTrackHistosAfterSelection(TrackObject const& 
 template <typename ParticleObject, typename MCCollisionObject>
 void IdentifiedBfFilterTracks::fillParticleHistosBeforeSelection(ParticleObject const& particle, MCCollisionObject const& collision, float charge)
 {
-  fhTruePhiYB->Fill(particle.phi(),particle.eta());
-  fhTruePtYB->Fill(particle.pt(),particle.eta());
+  fhTruePhiYB->Fill(particle.phi(), particle.eta());
+  fhTruePtYB->Fill(particle.pt(), particle.eta());
   fhTruePB->Fill(particle.p());
   fhTruePtB->Fill(particle.pt());
   fhTrueEtaB->Fill(particle.eta());
@@ -1684,8 +1678,8 @@ void IdentifiedBfFilterTracks::fillParticleHistosBeforeSelection(ParticleObject 
   fhTrueDCAxyB->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
                                  (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
   fhTrueDCAxyzB->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())),
-                                 (particle.vz() - collision.posZ()));
+                                  (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())),
+                      (particle.vz() - collision.posZ()));
   fhTrueDCAzB->Fill((particle.vz() - collision.posZ()));
 }
 
@@ -1694,8 +1688,8 @@ void IdentifiedBfFilterTracks::fillParticleHistosAfterSelection(ParticleObject c
 {
   /* the charged species should have been called first so avoid double counting */
   if (sp == kIdBfCharged) {
-    fhTruePhiYA->Fill(particle.phi(),particle.eta());
-    fhTruePtYA->Fill(particle.pt(),particle.eta());
+    fhTruePhiYA->Fill(particle.phi(), particle.eta());
+    fhTruePtYA->Fill(particle.pt(), particle.eta());
     fhTrueEtaA->Fill(particle.eta());
     fhTruePhiA->Fill(particle.phi());
     float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
@@ -1710,8 +1704,8 @@ void IdentifiedBfFilterTracks::fillParticleHistosAfterSelection(ParticleObject c
                                    (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
     fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
     fhTrueDCAxyzA->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())),
-                                (particle.vz() - collision.posZ()));
+                                    (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())),
+                        (particle.vz() - collision.posZ()));
   }
   fhTruePA[sp]->Fill(particle.p());
   fhTruePtA[sp]->Fill(particle.pt());
@@ -1720,7 +1714,6 @@ void IdentifiedBfFilterTracks::fillParticleHistosAfterSelection(ParticleObject c
   } else {
     fhTruePtNegA[sp]->Fill(particle.pt());
   }
-
 }
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
