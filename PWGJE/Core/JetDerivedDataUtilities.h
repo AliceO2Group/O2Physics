@@ -95,13 +95,13 @@ uint16_t setEventSelectionBit(T const& collision)
   if (collision.sel8()) {
     SETBIT(bit, JCollisionSel::sel8);
 
-    //old selection
+    // old selection
     if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         SETBIT(bit, JCollisionSel::sel8FullPbPbOld);
       }
     }
-    //new selection
+    // new selection
     if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       SETBIT(bit, JCollisionSel::sel8NoCollInTimeRangeStandard);
       if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
