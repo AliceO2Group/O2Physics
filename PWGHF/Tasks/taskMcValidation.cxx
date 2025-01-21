@@ -91,7 +91,7 @@ static constexpr std::array<std::array<int, 5>, nChannels> arrPDGFinal5Prong = {
 static constexpr std::string_view labels[nChannels] = {"D^{0} #rightarrow K#pi", "D*^{+} #rightarrow D^{0}#pi", "D^{+} #rightarrow K#pi#pi", "D^{+} #rightarrow KK#pi", "D_{s}^{+} #rightarrow #Phi#pi #rightarrow KK#pi",
                                                        "D_{s}^{+} #rightarrow #bar{K}^{*0}K #rightarrow KK#pi", "D_{s}1 #rightarrow D*^{+}K^{0}_{s}", "D_{s}2* #rightarrow D^{+}K^{0}_{s}", "D1^{0} #rightarrow D*^{+}#pi",
                                                        "D2^{*} #rightarrow D^{+}#pi",
-                                                       "B^{0} #rightarrow D^{-}#pi","B^{+} #rightarrow D^{0}#pi",
+                                                       "B^{0} #rightarrow D^{-}#pi", "B^{+} #rightarrow D^{0}#pi",
                                                        "#Lambda_{c}^{+} #rightarrow pK#pi",
                                                        "#Lambda_{c}^{+} #rightarrow pK^{0}_{s}", "#Xi_{c}^{+} #rightarrow pK#pi",
                                                        "#Xi_{c}^{+} #rightarrow #Xi#pi#pi", "#Xi_{c}^{0} #rightarrow #Xi#pi", "#Omega_{c}^{0} #rightarrow #Omega#pi", "#Omega_{c}^{0} #rightarrow #Xi#pi"};
