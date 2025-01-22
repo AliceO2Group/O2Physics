@@ -274,7 +274,7 @@ struct upcQuarkoniaCentralBarrel {
       float dcaXYPtCut = 0.0105f + 0.0350f / pow(track.pt(), 1.1f);
       if (std::fabs(track.dcaXY()) > dcaXYPtCut)
         return false;
-    } else { 
+    } else {
       if (std::fabs(track.dcaXY()) > trackSelections.dcaxytopv)
         return false;
     }
@@ -462,9 +462,8 @@ struct upcQuarkoniaCentralBarrel {
             if (protonMother.pdgCode() == 100443 && protonMother.pdgCode() == antiProtonMother.pdgCode()) { // Psi(2S)
               histos.fill(HIST("PPbar/h2dInvMassTruePsi2S"), ptmc, invmass);
             }
-
           }
-        } 
+        }
       }
     }
 
@@ -525,7 +524,7 @@ struct upcQuarkoniaCentralBarrel {
     std::vector<bool> selProtonIndices(fullTracks.size(), false);
     std::vector<bool> selAntiProtonIndices(fullTracks.size(), false);
     for (const auto& track : fullTracks) {
-      if (track.sign() > 0 ) {
+      if (track.sign() > 0) {
         selProtonIndices[track.globalIndex() - fullTracks.offset()] = isTrackSelected(track);
       } else {
         selAntiProtonIndices[track.globalIndex() - fullTracks.offset()] = isTrackSelected(track);
@@ -556,7 +555,7 @@ struct upcQuarkoniaCentralBarrel {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  void processMonteCarlo(soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::SGCollisions, aod::UDCollisionSelExtras, aod::UDMcCollsLabels>::iterator const& collision, soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels> const& fullTracks, aod::UDMcCollisions const& /*mccollisions*/, aod::UDMcParticles const& fullMCTracks) 
+  void processMonteCarlo(soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::SGCollisions, aod::UDCollisionSelExtras, aod::UDMcCollsLabels>::iterator const& collision, soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels> const& fullTracks, aod::UDMcCollisions const& /*mccollisions*/, aod::UDMcParticles const& fullMCTracks)
   {
     int selGapSide = -1; // only useful in case one wants to use this task in Pb-Pb UPC
     fillEventHistograms(collision, selGapSide);
@@ -568,11 +567,11 @@ struct upcQuarkoniaCentralBarrel {
     std::vector<bool> selAntiProtonIndices(fullTracks.size(), false);
     for (const auto& track : fullTracks) {
       if (!track.has_udMcParticle())
-          continue;
+        continue;
 
       auto trackMC = fullMCTracks.iteratorAt(track.udMcParticle().globalIndex());
 
-      if (track.sign() > 0 ) {
+      if (track.sign() > 0) {
         selProtonIndices[track.globalIndex() - fullTracks.offset()] = isTrackSelected(track) && (!doMCAssociation || checkMCAssociation(track, trackMC));
       } else {
         selAntiProtonIndices[track.globalIndex() - fullTracks.offset()] = isTrackSelected(track) && (!doMCAssociation || checkMCAssociation(track, trackMC));
