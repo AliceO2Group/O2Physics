@@ -164,7 +164,6 @@ struct FlowSP {
     AxisSpec multpvAxis = {4000, 0, 4000, "N_{ch} (PV)"};
 
     int ptbins = ptbinning.size() - 1;
-    TAxis* fPtAxis = new TAxis(ptbins, &ptbinning[0]);
 
     if (cfgFillWeights) {
       fWeights->SetPtBins(ptbins, &ptbinning[0]);
@@ -335,7 +334,8 @@ struct FlowSP {
       cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights")));
       cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_positive")));
       cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_negative")));
-      if (cfg.mAcceptance.size() < 3)
+      int sizeAcc = cfg.mAcceptance.size(); 
+      if (sizeAcc < 3)
         LOGF(warning, "Could not load acceptance weights from %s", cfgAcceptance.value.c_str());
       else
         LOGF(info, "Loaded acceptance weights from %s", cfgAcceptance.value.c_str());
@@ -347,7 +347,8 @@ struct FlowSP {
       cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency")));
       cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_pos")));
       cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_neg")));
-      if (cfg.mEfficiency.size() < 3) {
+      int sizeEff = cfg.mEfficiency.size(); 
+      if (sizeEff < 3) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
       LOGF(info, "Loaded efficiency histogram from %s", cfgEfficiency.value.c_str());
@@ -361,14 +362,16 @@ struct FlowSP {
   bool setCurrentParticleWeights(int pID, float& weight_nue, float& weight_nua, const float& phi, const float& eta, const float& pt, const float& vtxz)
   {
     float eff = 1.;
-    if (cfg.mEfficiency.size() > pID)
+    int sizeEff = cfg.mEfficiency.size();
+    if (sizeEff > pID)
       eff = cfg.mEfficiency[pID]->GetBinContent(cfg.mEfficiency[pID]->FindBin(pt));
     else
       eff = 1.0;
     if (eff == 0)
       return false;
     weight_nue = 1. / eff;
-    if (cfg.mAcceptance.size() > pID)
+    int sizeAcc = cfg.mAcceptance.size();
+    if (sizeAcc > pID)
       weight_nua = cfg.mAcceptance[pID]->GetNUA(phi, eta, vtxz);
     else
       weight_nua = 1;
