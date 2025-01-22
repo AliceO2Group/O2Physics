@@ -54,21 +54,20 @@ class EfficiencyCalculator
   {
   }
 
-  auto init(std::shared_ptr<TH1F> hEfficiency1, std::shared_ptr<TH1F> hEfficiency2) -> void
+  auto init() -> void
   {
     ccdbApi.init(config->confCCDBUrl);
     ccdb.setURL(config->confCCDBUrl);
     ccdb.setLocalObjectValidityChecking();
     ccdb.setFatalWhenNull(false);
 
+    int64_t now = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb.setCreatedNotAfter(now);
+
     shouldCalculate = config->confEfficiencyCalculate;
     shouldApplyCorrections = config->confEfficiencyApplyCorrections;
 
     ccdbFullPath = fmt::format("{}/{}", config->confCCDBPath.value, folderName);
-
-    if (config->confEfficiencyCalculate) {
-      hOutput = {hEfficiency1, hEfficiency2};
-    }
 
     if (config->confEfficiencyApplyCorrections) {
       hLoaded = {
@@ -139,27 +138,28 @@ class EfficiencyCalculator
 
   template <uint8_t N>
     requires isOneOrTwo<N>
-  auto calculate(std::shared_ptr<TH1> truth, std::shared_ptr<TH1> reco) const
+  auto calculate(std::shared_ptr<TH1> hEff, std::shared_ptr<TH1> hTruth, std::shared_ptr<TH1> hReco)
   {
     if (!shouldCalculate) {
       return;
     }
 
-    if (!truth || !reco) {
+    if (!hTruth || !hReco) {
       LOGF(error, notify("MC Truth & MC Reco histograms cannot be null"));
       return;
     }
 
-    auto hEff = hOutput[N - 1];
     if (!hEff) {
-      LOGF(error, notify("No OutputObj specified for particle %d histogram"), N);
+      LOGF(error, notify("No target histogram to fill specified for particle %d"), N);
       return;
     }
 
     for (auto bin = 0; bin < hEff->GetNbinsX(); bin++) {
-      auto denom = truth->GetBinContent(bin);
-      hEff->SetBinContent(bin, denom == 0 ? 0 : reco->GetBinContent(bin) / denom);
+      auto denom = hTruth->GetBinContent(bin);
+      hEff->SetBinContent(bin, denom == 0 ? 0 : hReco->GetBinContent(bin) / denom);
     }
+
+    hOutput[N - 1] = hEff;
   }
 
  private:
@@ -214,7 +214,7 @@ class EfficiencyCalculator
   bool shouldCalculate = false;
   bool shouldApplyCorrections = false;
 
-  std::array<std::shared_ptr<TH1F>, 2> hOutput{};
+  std::array<std::shared_ptr<TH1>, 2> hOutput{};
   std::array<TH1*, 2> hLoaded{};
 
   o2::ccdb::CcdbApi ccdbApi{};

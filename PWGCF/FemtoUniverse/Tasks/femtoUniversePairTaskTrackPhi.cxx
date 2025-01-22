@@ -209,9 +209,6 @@ struct FemtoUniversePairTaskTrackPhi {
   HistogramRegistry registryMCreco{"registryMCreco", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryPhiMinvBackground{"registryPhiMinvBackground", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
-  OutputObj<TH1F> hEfficiency1{TH1F("Efficiency_part1", "Efficiency origin/generated part1; p_{T} (GeV/c); Efficiency", 100, 0, 4)};
-  OutputObj<TH1F> hEfficiency2{TH1F("Efficiency_part2", "Efficiency origin/generated part2; p_{T} (GeV/c); Efficiency", 100, 0, 4)};
-
   Configurable<bool> confDoEfficiency{"confDoEfficiency", true, "Do efficiency corrections."};
   EfficiencyConfigurableGroup effConfGroup;
   EfficiencyCalculator efficiencyCalculator{&effConfGroup};
@@ -407,13 +404,13 @@ struct FemtoUniversePairTaskTrackPhi {
 
   void init(InitContext& ic)
   {
-    hEfficiency1.setObject(new TH1F("Efficiency_part1", "Efficiency origin/generated part1; p_{T} (GeV/c); Efficiency", 100, 0, 4));
     hMCTruth1.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, ConfTrack.confTrackPDGCode, false);
+    qaRegistry.add("Efficiency/part1", "Efficiency origin/generated part1; p_{T} (GeV/c); Efficiency", kTH1F, {{100, 0, 4}});
 
-    hEfficiency2.setObject(new TH1F("Efficiency_part2", "Efficiency origin/generated part2; p_{T} (GeV/c); Efficiency", 100, 0, 4));
     hMCTruth2.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, 333, false);
+    qaRegistry.add("Efficiency/part2", "Efficiency origin/generated part2; p_{T} (GeV/c); Efficiency", kTH1F, {{100, 0, 4}});
 
-    efficiencyCalculator.init(hEfficiency1.object, hEfficiency2.object);
+    efficiencyCalculator.init();
     efficiencyCalculator.uploadOnStop(ic);
 
     eventHisto.init(&qaRegistry);
@@ -693,11 +690,13 @@ struct FemtoUniversePairTaskTrackPhi {
 
     auto truthTrack = qaRegistry.get<TH1>(HIST("MCTruthTracks_one/hPt"));
     auto recoTrack = qaRegistry.get<TH1>(HIST("Tracks_one_MC/hPt"));
-    efficiencyCalculator.calculate<1>(truthTrack, recoTrack);
+    auto effTrack = qaRegistry.get<TH1>(HIST("Efficiency/part1"));
+    efficiencyCalculator.calculate<1>(effTrack, truthTrack, recoTrack);
 
     auto truthPhi = qaRegistry.get<TH1>(HIST("MCTruthTracks_two/hPt"));
     auto recoPhi = qaRegistry.get<TH1>(HIST("Tracks_two_MC/hPt"));
-    efficiencyCalculator.calculate<2>(truthPhi, recoPhi);
+    auto effPhi = qaRegistry.get<TH1>(HIST("Efficiency/part2"));
+    efficiencyCalculator.calculate<2>(effPhi, truthPhi, recoPhi);
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
