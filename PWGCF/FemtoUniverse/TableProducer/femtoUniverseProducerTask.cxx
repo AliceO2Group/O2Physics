@@ -914,10 +914,10 @@ struct FemtoUniverseProducerTask {
     if (!colCuts.isSelectedRun3(col) || (occupancy < confTPCOccupancyMin || occupancy > confTPCOccupancyMax)) {
       return false;
     } else {
-      if (col.selection_bit(aod::evsel::kNoSameBunchPileup) && 
-          col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && 
-          col.selection_bit(aod::evsel::kIsGoodITSLayersAll) && 
-          col.selection_bit(aod::evsel::kNoCollInRofStandard) && 
+      if (col.selection_bit(aod::evsel::kNoSameBunchPileup) &&
+          col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
+          col.selection_bit(aod::evsel::kIsGoodITSLayersAll) &&
+          col.selection_bit(aod::evsel::kNoCollInRofStandard) &&
           col.selection_bit(aod::evsel::kNoHighMultCollInPrevRof)) {
         outputCollision(vtxZ, cent, multNtr, 2, mMagField);
         return true;
