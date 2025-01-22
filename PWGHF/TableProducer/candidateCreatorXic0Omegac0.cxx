@@ -815,7 +815,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       //__________________________________________
       //*>~<* step 2 : reconstruct cascade(Omega) with KF
       const KFParticle* omegaDaugthers[2] = {&kfBachKaon, &kfV0};
-      const KFParticle* omegaDaugthersrej[2] = {&kfBachrej, &kfV0}; // rej
+      const KFParticle* omegaDaugthersRej[2] = {&kfBachRej, &kfV0}; // rej
       // construct cascade
       KFParticle kfOmega;
       KFParticle kfOmegarej; // rej
