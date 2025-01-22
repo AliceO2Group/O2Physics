@@ -230,8 +230,7 @@ struct HfCandidateSelectorToOmegaPi {
                TracksSel const& tracks,
                TracksSelLf const& lfTracks)
   {
-    if constexpr (std::is_same_v<CandidateType, aod::HfOmegacKf>) 
-    {
+    if constexpr (std::is_same_v<CandidateType, aod::HfOmegacKf>) {
       // looping over charm baryon candidates
       for (const auto& candidate : candidates) {
 
@@ -626,8 +625,8 @@ struct HfCandidateSelectorToOmegaPi {
         }
 
         hfSelToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
-                      trackPiFromCharm.tpcNSigmaPi(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
-                      trackPiFromCharm.tofNSigmaPi(), trackKaFromCasc.tofNSigmaKa(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
+                       trackPiFromCharm.tpcNSigmaPi(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
+                       trackPiFromCharm.tofNSigmaPi(), trackKaFromCasc.tofNSigmaKa(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
 
         if (resultSelections) {
           if (!statusPidLambda) {
