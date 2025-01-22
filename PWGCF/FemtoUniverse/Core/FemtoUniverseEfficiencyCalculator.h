@@ -82,7 +82,7 @@ class EfficiencyCalculator
 
   template <uint8_t N>
     requires isOneOrTwo<N>
-  auto doMCTruth(FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, N> hMCTruth, auto particles) const -> void
+  auto doMCTruth(FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, N>& hMCTruth, const auto& particles) const -> void
   {
     for (const auto& particle : particles) {
       hMCTruth.template fillQA<false, false>(particle);
@@ -99,7 +99,7 @@ class EfficiencyCalculator
       shouldUploadOnStop = true;
 
       auto& callbacks = ic.services().get<CallbackService>();
-      callbacks.set<o2::framework::CallbackService::Id::EndOfStream>([this](EndOfStreamContext&) {
+      callbacks.set<o2::framework::CallbackService::Id::Stop>([this]() {
         for (auto i = 0UL; i < hOutput.size(); i++) {
           const auto& output = hOutput[i];
 
@@ -125,7 +125,7 @@ class EfficiencyCalculator
 
   template <uint8_t N>
     requires isOneOrTwo<N>
-  auto getWeight(auto const& particle) const -> float
+  auto getWeight(const auto& particle) const -> float
   {
     auto weight = 1.0f;
     auto hEff = hLoaded[N - 1];
@@ -187,7 +187,7 @@ class EfficiencyCalculator
     return true;
   }
 
-  auto createMetadata(uint8_t partNo) const -> std::map<std::string, std::string>
+  auto createMetadata(const uint8_t partNo) const -> std::map<std::string, std::string>
   {
     if (config->confEfficiencyCCDBLabels->size() != 2) {
       LOGF(fatal, notify("CCDB labels configurable should be exactly of size 2"));
@@ -199,7 +199,7 @@ class EfficiencyCalculator
 
   template <uint8_t N>
     requires isOneOrTwo<N>
-  auto loadEfficiencyFromCCDB(int64_t timestamp) const -> TH1*
+  auto loadEfficiencyFromCCDB(const int64_t timestamp) const -> TH1*
   {
     auto hEff = ccdb.getSpecific<TH1>(ccdbFullPath, timestamp, createMetadata(N - 1));
     if (!hEff || hEff->IsZombie()) {
