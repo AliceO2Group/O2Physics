@@ -56,3 +56,11 @@ o2physics_add_library(UPCCutparHolder
 o2physics_target_root_dictionary(UPCCutparHolder
                                  HEADERS UPCCutparHolder.h
                                  LINKDEF UPCCutparHolderLinkDef.h)
+
+o2physics_add_library(decayTree
+                      SOURCES decayTree.cxx
+                      PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ROOT::EG RapidJSON::RapidJSON)
+
+o2physics_target_root_dictionary(decayTree
+                                 HEADERS decayTree.h
+                                 LINKDEF decayTreeLinkDef.h)
