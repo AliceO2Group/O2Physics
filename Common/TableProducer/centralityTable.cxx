@@ -60,7 +60,7 @@ static const std::vector<std::string> tableNames{"CentRun2V0Ms",
                                                  "CentFT0Cs",
                                                  "CentFDDMs",
                                                  "CentNTPVs",
-                                                 "CentNGlobals", 
+                                                 "CentNGlobals",
                                                  "CentMFTs"};
 static const std::vector<std::string> parameterNames{"Enable"};
 static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
@@ -446,7 +446,7 @@ struct CentralityTable {
             bool enableCentFT0 = true,
             bool enableCentFDD = true,
             bool enableCentNTPV = true,
-            bool enableCentNGlobal = false, 
+            bool enableCentNGlobal = false,
             bool enableCentMFT = false,
             typename CollisionType>
   void produceRun3Tables(CollisionType const& collisions)
@@ -702,7 +702,7 @@ struct CentralityTable {
 
   void processRun3Complete(soa::Join<aod::Collisions, aod::PVMults, aod::MultZeqs, aod::EvSels, aod::MultsGlobal, aod::MFTMults> const& collisions, BCsWithTimestamps const&)
   {
-    produceRun3Tables<true,true,true,true,true,true>(collisions);
+    produceRun3Tables<true, true, true, true, true, true>(collisions);
   }
 
   void processRun3(soa::Join<aod::Collisions, aod::PVMults, aod::MultZeqs, aod::EvSels> const& collisions, BCsWithTimestamps const&)
