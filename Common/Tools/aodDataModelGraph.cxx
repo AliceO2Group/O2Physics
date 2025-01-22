@@ -11,7 +11,8 @@
 #include <fmt/printf.h>
 #include "Framework/AnalysisDataModel.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
