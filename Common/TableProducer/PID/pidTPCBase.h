@@ -19,7 +19,7 @@
 #define COMMON_TABLEPRODUCER_PID_PIDTPCBASE_H_
 
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 namespace o2::aod
 {
