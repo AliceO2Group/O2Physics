@@ -813,7 +813,7 @@ struct NucleiInJets {
       }
     }
   }
-  PROCESS_SWITCH(nucleiInJets, processData, "Process Data", true);
+  PROCESS_SWITCH(NucleiInJets, processData, "Process Data", true);
 
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   Preslice<MCTracks> perCollision = o2::aod::track::collisionId;
@@ -988,7 +988,7 @@ struct NucleiInJets {
       }
     }
   }
-  PROCESS_SWITCH(nucleiInJets, processEfficiency, "process efficiency", false);
+  PROCESS_SWITCH(NucleiInJets, processEfficiency, "process efficiency", false);
 
   void processSecondaryAntiprotons(SimCollisions const& collisions, MCTracks const& mcTracks, aod::McCollisions const&, const aod::McParticles&)
   {
@@ -1173,7 +1173,7 @@ struct NucleiInJets {
       }
     }
   }
-  PROCESS_SWITCH(nucleiInJets, processSecondaryAntiprotons, "process secondary antiprotons", false);
+  PROCESS_SWITCH(NucleiInJets, processSecondaryAntiprotons, "process secondary antiprotons", false);
 
   void processAntiprotonReweighting(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
@@ -1397,10 +1397,10 @@ struct NucleiInJets {
       }
     }
   }
-  PROCESS_SWITCH(nucleiInJets, processAntiprotonReweighting, "Process antiproton reweighting", false);
+  PROCESS_SWITCH(NucleiInJets, processAntiprotonReweighting, "Process antiproton reweighting", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<nucleiInJets>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<NucleiInJets>(cfgc)};
 }
