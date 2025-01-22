@@ -9,10 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <fmt/printf.h>
 #include <utility>
 #include <string>
 #include <cstdio>
-#include <fmt/printf.h>
 #include "Framework/AnalysisDataModel.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "Common/DataModel/PIDResponseTOF.h"

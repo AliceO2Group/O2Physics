@@ -288,21 +288,21 @@ struct binning {
   template <typename T>
   static void packInTable(const float& valueToBin, T& table)
   {
-    if (valueToBin <= binningType::binned_min) {
-      table(binningType::underflowBin);
-    } else if (valueToBin >= binningType::binned_max) {
-      table(binningType::overflowBin);
+    if (valueToBin <= binned_min) {
+      table(underflowBin);
+    } else if (valueToBin >= binned_max) {
+      table(overflowBin);
     } else if (valueToBin >= 0) {
-      table(static_cast<typename binningType::binned_t>((valueToBin / binningType::bin_width) + 0.5f));
+      table(static_cast<typename binned_t>((valueToBin / bin_width) + 0.5f));
     } else {
-      table(static_cast<typename binningType::binned_t>((valueToBin / binningType::bin_width) - 0.5f));
+      table(static_cast<typename binned_t>((valueToBin / bin_width) - 0.5f));
     }
   }
 
   // Function to unpack a binned value into a float
-  static float unPackInTable(const typename binningType::binned_t& valueToUnpack)
+  static float unPackInTable(const typename binned_t& valueToUnpack)
   {
-    return binningType::bin_width * static_cast<float>(valueToUnpack);
+    return bin_width * static_cast<float>(valueToUnpack);
   }
 };
 
