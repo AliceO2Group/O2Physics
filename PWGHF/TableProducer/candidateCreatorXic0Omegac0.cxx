@@ -2502,4 +2502,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<HfCandidateCreatorXic0Omegac0>(cfgc),
     adaptAnalysisTask<HfCandidateCreatorXic0Omegac0Mc>(cfgc)};
 }
- 
