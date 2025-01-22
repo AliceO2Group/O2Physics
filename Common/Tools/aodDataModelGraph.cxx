@@ -8,6 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+#include <utility>
+#include <string>
+#include <cstdio>
 #include <fmt/printf.h>
 #include "Framework/AnalysisDataModel.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -88,8 +92,13 @@ template <typename T>
 Style getStyleFor()
 {
   auto label = MetadataTrait<T>::metadata::tableLabel();
-  auto entry = std::find_if(tableStyles.begin(), tableStyles.end(), [&](auto&& x) { if (std::string(label).find(x.first) != std::string::npos) { return true;
-}return false; });
+  auto entry = std::find_if(tableStyles.begin(), tableStyles.end(),
+                            [&](auto&& x) {
+                              if (std::string(label).find(x.first) != std::string::npos) {
+                                return true;
+                              }
+                              return false;
+                            });
   if (entry != tableStyles.end()) {
     auto value = *entry;
     return styles[value.second];

@@ -16,6 +16,8 @@
 /// \since  03/05/2024
 ///
 
+#include <string>
+
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "TH1F.h"

@@ -16,6 +16,12 @@
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
+#include <utility>
+#include <algorithm>
+#include <vector>
+#include <memory>
+#include <string>
+
 // O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
