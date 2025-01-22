@@ -334,7 +334,7 @@ struct FlowSP {
       cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights")));
       cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_positive")));
       cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_negative")));
-      int sizeAcc = cfg.mAcceptance.size(); 
+      int sizeAcc = cfg.mAcceptance.size();
       if (sizeAcc < 3)
         LOGF(warning, "Could not load acceptance weights from %s", cfgAcceptance.value.c_str());
       else
@@ -347,7 +347,7 @@ struct FlowSP {
       cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency")));
       cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_pos")));
       cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_neg")));
-      int sizeEff = cfg.mEfficiency.size(); 
+      int sizeEff = cfg.mEfficiency.size();
       if (sizeEff < 3) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
