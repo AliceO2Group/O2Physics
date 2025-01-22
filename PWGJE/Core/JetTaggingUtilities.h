@@ -653,7 +653,7 @@ float getJetProbability(std::vector<std::unique_ptr<T>> const& fResoFuncjets, U 
       continue;
 
     float probTrack = -1;
-    // jtrack.pt() 범위에 따라 적절한 fResoFuncjet 선택
+    // choose the proper resolution function for the track based on its pt.
     if (track.pt() >= 0.0 && track.pt() < 0.5) {
       probTrack = getTrackProbability(fResoFuncjets.at(0), track, minSignImpXYSig);
     } else if (track.pt() >= 0.5 && track.pt() < 1.0) {
