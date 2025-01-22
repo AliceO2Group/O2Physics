@@ -249,6 +249,15 @@ struct f1protonreducedtable {
   }
 
   template <typename T>
+  bool selectionGlobalTrack(const T& candidate)
+  {
+    if (!(candidate.isGlobalTrack() && candidate.isPVContributor())) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename T>
   double updatePID(T const& track, double bgScaling, std::vector<double> BB)
   {
     double expBethe = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScaling), BB[0], BB[1], BB[2], BB[3], BB[4]);
@@ -586,8 +595,12 @@ struct f1protonreducedtable {
       if (zorroSelected) {
         hProcessedEvents->Fill(1.5);
         for (auto& track : tracks) {
-          if (!isSelectedTrack(track))
+          if (!isSelectedTrack(track)) {
             continue;
+          }
+          if (!selectionGlobalTrack(track)) {
+            continue;
+          }
           qaRegistry.fill(HIST("hDCAxy"), track.dcaXY());
           qaRegistry.fill(HIST("hDCAz"), track.dcaZ());
           qaRegistry.fill(HIST("hEta"), track.eta());

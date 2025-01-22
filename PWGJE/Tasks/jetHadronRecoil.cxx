@@ -79,23 +79,23 @@ struct JetHadronRecoil {
                               {"hPtTrack", "Track p_{T};p_{T};entries", {HistType::kTH1F, {{200, 0, 200}}}},
                               {"hEtaTrack", "Track #eta;#eta;entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"hPhiTrack", "Track #phi;#phi;entries", {HistType::kTH1F, {{160, -1.0, 7.0}}}},
-                              {"hReferencePtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
-                              {"hSignalPtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
-                              {"hReferencePt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{150, 0, 150}}}},
-                              {"hSignalPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{150, 0, 150}}}},
+                              {"hReferencePtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, o2::constants::math::TwoPI}, {250, -100, 150}}}},
+                              {"hSignalPtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, o2::constants::math::TwoPI}, {250, -100, 150}}}},
+                              {"hReferencePt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{250, -100, 150}}}},
+                              {"hSignalPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{250, -100, 150}}}},
                               {"hSignalTriggers", "trigger p_{T};p_{T,trig};entries", {HistType::kTH1F, {{150, 0, 150}}}},
                               {"hReferenceTriggers", "trigger p_{T};p_{T,trig};entries", {HistType::kTH1F, {{150, 0, 150}}}},
-                              {"hSignalLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
-                              {"hReferenceLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
+                              {"hSignalLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{250, -100, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
+                              {"hReferenceLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{250, -100, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
                               {"hJetSignalMultiplicity", "jet multiplicity;N_{jets};entries", {HistType::kTH1F, {{10, 0, 10}}}},
                               {"hJetReferenceMultiplicity", "jet multiplicity;N_{jets};entries", {HistType::kTH1F, {{10, 0, 10}}}},
-                              {"hJetSignalConstituentMultiplicity", "jet constituent multiplicity;p_{T,jet};#Delta#phi;N_{constituents}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, o2::constants::math::TwoPI}, {50, 0, 50}}}},
-                              {"hJetReferenceConstituentMultiplicity", "jet constituent multiplicity;p_{T,jet};#Delta#phi;N_{constituents}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, o2::constants::math::TwoPI}, {50, 0, 50}}}},
-                              {"hJetSignalConstituentPt", "jet constituent p_{T};p_{T,jet};#Delta#phi;p_{T,constituent}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
-                              {"hJetReferenceConstituentPt", "jet constituent p_{T};p_{T,jet};#Delta#phi;p_{T,constituent}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
+                              {"hJetSignalConstituentMultiplicity", "jet constituent multiplicity;p_{T,jet};#Delta#phi;N_{constituents}", {HistType::kTH3F, {{250, -100, 150}, {100, 0, o2::constants::math::TwoPI}, {50, 0, 50}}}},
+                              {"hJetReferenceConstituentMultiplicity", "jet constituent multiplicity;p_{T,jet};#Delta#phi;N_{constituents}", {HistType::kTH3F, {{250, -100, 150}, {100, 0, o2::constants::math::TwoPI}, {50, 0, 50}}}},
+                              {"hJetSignalConstituentPt", "jet constituent p_{T};p_{T,jet};#Delta#phi;p_{T,constituent}", {HistType::kTH3F, {{250, -100, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
+                              {"hJetReferenceConstituentPt", "jet constituent p_{T};p_{T,jet};#Delta#phi;p_{T,constituent}", {HistType::kTH3F, {{250, -100, 150}, {100, 0, o2::constants::math::TwoPI}, {150, 0, 150}}}},
                               {"hSigEventTriggers", "N_{triggers};events", {HistType::kTH1F, {{10, 0, 10}}}},
                               {"hRefEventTriggers", "N_{triggers};events", {HistType::kTH1F, {{10, 0, 10}}}},
-                              {"hJetPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{200, 0, 200}}}},
+                              {"hJetPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{300, -100, 200}}}},
                               {"hJetEta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"hJetPhi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{160, -1.0, 7.0}}}},
                               {"hPtPart", "Particle p_{T};p_{T};entries", {HistType::kTH1F, {{200, 0, 200}}}},
@@ -103,21 +103,21 @@ struct JetHadronRecoil {
                               {"hPhiPart", "Particle #phi;#phi;entries", {HistType::kTH1F, {{160, -1.0, 7.0}}}},
                               {"hDeltaR", "#DeltaR;#DeltaR;#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
                               {"hDeltaRPart", "Particle #DeltaR;#DeltaR;#frac{1}{N_{jets}}#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
-                              {"hDeltaRpT", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {50, 0.0, 0.15}}}},
+                              {"hDeltaRpT", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{300, -100, 200}, {50, 0.0, 0.15}}}},
                               {"hDeltaRpTPart", "Particle jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {50, 0.0, 0.15}}}},
                               {"hDeltaRSignal", "#DeltaR;#DeltaR;#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
                               {"hDeltaRSignalPart", "Particle #DeltaR;#DeltaR;#frac{1}{N_{jets}}#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
-                              {"hDeltaRpTSignal", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {50, 0.0, 0.15}}}},
+                              {"hDeltaRpTSignal", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{300, -100, 200}, {50, 0.0, 0.15}}}},
                               {"hDeltaRpTSignalPart", "Particle jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {50, 0.0, 0.15}}}},
-                              {"hDeltaRpTDPhiSignal", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{200, 0, 200}, {100, 0, o2::constants::math::TwoPI}, {50, 0.0, 0.15}}}},
+                              {"hDeltaRpTDPhiSignal", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{300, -100, 200}, {100, 0, o2::constants::math::TwoPI}, {50, 0.0, 0.15}}}},
                               {"hDeltaRpTDPhiSignalPart", "Particle jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{200, 0, 200}, {100, 0, o2::constants::math::TwoPI}, {50, 0.0, 0.15}}}},
                               {"hDeltaRReference", "#DeltaR;#DeltaR;#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
                               {"hDeltaRPartReference", "Particle #DeltaR;#DeltaR;#frac{1}{N_{jets}}#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
-                              {"hDeltaRpTReference", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {50, 0.0, 0.15}}}},
+                              {"hDeltaRpTReference", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{300, -100, 200}, {50, 0.0, 0.15}}}},
                               {"hDeltaRpTPartReference", "Particle jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {50, 0.0, 0.15}}}},
-                              {"hDeltaRpTDPhiReference", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{200, 0, 200}, {100, 0, o2::constants::math::TwoPI}, {50, 0.0, 0.15}}}},
+                              {"hDeltaRpTDPhiReference", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{300, -100, 200}, {100, 0, o2::constants::math::TwoPI}, {50, 0.0, 0.15}}}},
                               {"hDeltaRpTDPhiReferencePart", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{200, 0, 200}, {100, 0, o2::constants::math::TwoPI}, {50, 0.0, 0.15}}}},
-                              {"hPtMatched", "p_{T} matching;p_{T,det};p_{T,part}", {HistType::kTH2F, {{200, 0, 200}, {200, 0, 200}}}},
+                              {"hPtMatched", "p_{T} matching;p_{T,det};p_{T,part}", {HistType::kTH2F, {{300, -100, 200}, {200, 0, 200}}}},
                               {"hPhiMatched", "#phi matching;#phi_{det};#phi_{part}", {HistType::kTH2F, {{160, -1.0, 7.0}, {160, -1.0, 7.0}}}},
                               {"hDeltaRMatched", "#DeltaR matching;#DeltaR_{det};#DeltaR_{part}", {HistType::kTH2F, {{50, 0.0, 0.15}, {50, 0.0, 0.15}}}},
                               {"hPtMatched1d", "p_{T} matching 1d;p_{T,part}", {HistType::kTH1F, {{200, 0, 200}}}},
@@ -125,7 +125,7 @@ struct JetHadronRecoil {
                               {"hPtResolution", "p_{T} resolution;p_{T,part};Relative Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -5.0, 5.0}}}},
                               {"hPhiResolution", "#phi resolution;#p{T,part};Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -7.0, 7.0}}}},
                               {"hDeltaRResolution", "#DeltaR Resolution;p_{T,part};Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -0.15, 0.15}}}},
-                              {"hFullMatching", "Full 6D matching;p_{T,det};p_{T,part};#phi_{det};#phi_{part};#DeltaR_{det};#DeltaR_{part}", {HistType::kTHnSparseD, {{200, 0, 200}, {200, 0, 200}, {160, -1.0, 7.0}, {160, -1.0, 7.0}, {50, 0.0, 0.15}, {50, 0.0, 0.15}}}}}};
+                              {"hFullMatching", "Full 6D matching;p_{T,det};p_{T,part};#phi_{det};#phi_{part};#DeltaR_{det};#DeltaR_{part}", {HistType::kTHnSparseD, {{300, -100, 200}, {200, 0, 200}, {160, -1.0, 7.0}, {160, -1.0, 7.0}, {50, 0.0, 0.15}, {50, 0.0, 0.15}}}}}};
 
   int eventSelection = -1;
   int trackSelection = -1;
@@ -145,7 +145,7 @@ struct JetHadronRecoil {
   }
 
   template <typename T, typename U, typename W>
-  void fillHistograms(T const& jets, W const& /*jetsWTA*/, U const& tracks, float weight = 1.0)
+  void fillHistograms(T const& jets, W const& /*jetsWTA*/, U const& tracks, float weight = 1.0, float rho = 0.0)
   {
     bool isSigCol;
     std::vector<double> phiTTAr;
@@ -202,7 +202,7 @@ struct JetHadronRecoil {
       if (jet.pt() > pTHatMaxMCD * pTHat) {
         continue;
       }
-      registry.fill(HIST("hJetPt"), jet.pt(), weight);
+      registry.fill(HIST("hJetPt"), jet.pt() - (rho * jet.area()), weight);
       registry.fill(HIST("hJetEta"), jet.eta(), weight);
       registry.fill(HIST("hJetPhi"), jet.phi(), weight);
       for (const auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
@@ -210,7 +210,7 @@ struct JetHadronRecoil {
         double deltaEta = jetWTA.eta() - jet.eta();
         double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
         registry.fill(HIST("hDeltaR"), dR, weight);
-        registry.fill(HIST("hDeltaRpT"), jet.pt(), dR, weight);
+        registry.fill(HIST("hDeltaRpT"), jet.pt() - (rho * jet.area()), dR, weight);
       }
       if (nTT > 0) {
         float dphi = RecoDecay::constrainAngle(jet.phi() - phiTT);
@@ -220,23 +220,23 @@ struct JetHadronRecoil {
             double deltaEta = jetWTA.eta() - jet.eta();
             double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
             if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
-              registry.fill(HIST("hDeltaRpTSignal"), jet.pt(), dR, weight);
+              registry.fill(HIST("hDeltaRpTSignal"), jet.pt() - (rho * jet.area()), dR, weight);
               registry.fill(HIST("hDeltaRSignal"), dR, weight);
             }
-            registry.fill(HIST("hDeltaRpTDPhiSignal"), jet.pt(), dphi, dR, weight);
+            registry.fill(HIST("hDeltaRpTDPhiSignal"), jet.pt() - (rho * jet.area()), dphi, dR, weight);
           }
-          registry.fill(HIST("hSignalPtDPhi"), dphi, jet.pt(), weight);
+          registry.fill(HIST("hSignalPtDPhi"), dphi, jet.pt() - (rho * jet.area()), weight);
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
-            registry.fill(HIST("hSignalPt"), jet.pt(), weight);
+            registry.fill(HIST("hSignalPt"), jet.pt() - (rho * jet.area()), weight);
           }
-          registry.fill(HIST("hJetSignalConstituentMultiplicity"), jet.pt(), dphi, jet.tracksIds().size(), weight);
+          registry.fill(HIST("hJetSignalConstituentMultiplicity"), jet.pt() - (rho * jet.area()), dphi, jet.tracksIds().size(), weight);
           for (const auto& constituent : jet.template tracks_as<U>()) {
             if (constituent.pt() > leadingPT) {
               leadingPT = constituent.pt();
             }
-            registry.fill(HIST("hJetSignalConstituentPt"), jet.pt(), dphi, constituent.pt(), weight);
+            registry.fill(HIST("hJetSignalConstituentPt"), jet.pt() - (rho * jet.area()), dphi, constituent.pt(), weight);
           }
-          registry.fill(HIST("hSignalLeadingTrack"), jet.pt(), dphi, leadingPT, weight);
+          registry.fill(HIST("hSignalLeadingTrack"), jet.pt() - (rho * jet.area()), dphi, leadingPT, weight);
         }
         if (!isSigCol) {
           for (const auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
@@ -244,23 +244,23 @@ struct JetHadronRecoil {
             double deltaEta = jetWTA.eta() - jet.eta();
             double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
             if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
-              registry.fill(HIST("hDeltaRpTReference"), jet.pt(), dR, weight);
+              registry.fill(HIST("hDeltaRpTReference"), jet.pt() - (rho * jet.area()), dR, weight);
               registry.fill(HIST("hDeltaRReference"), dR, weight);
             }
-            registry.fill(HIST("hDeltaRpTDPhiReference"), jet.pt(), dphi, dR, weight);
+            registry.fill(HIST("hDeltaRpTDPhiReference"), jet.pt() - (rho * jet.area()), dphi, dR, weight);
           }
-          registry.fill(HIST("hReferencePtDPhi"), dphi, jet.pt(), weight);
+          registry.fill(HIST("hReferencePtDPhi"), dphi, jet.pt() - (rho * jet.area()), weight);
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
-            registry.fill(HIST("hReferencePt"), jet.pt(), weight);
+            registry.fill(HIST("hReferencePt"), jet.pt() - (rho * jet.area()), weight);
           }
-          registry.fill(HIST("hJetReferenceConstituentMultiplicity"), jet.pt(), dphi, jet.tracksIds().size(), weight);
+          registry.fill(HIST("hJetReferenceConstituentMultiplicity"), jet.pt() - (rho * jet.area()), dphi, jet.tracksIds().size(), weight);
           for (const auto& constituent : jet.template tracks_as<U>()) {
             if (constituent.pt() > leadingPT) {
               leadingPT = constituent.pt();
             }
-            registry.fill(HIST("hJetReferenceConstituentPt"), jet.pt(), dphi, constituent.pt(), weight);
+            registry.fill(HIST("hJetReferenceConstituentPt"), jet.pt() - (rho * jet.area()), dphi, constituent.pt(), weight);
           }
-          registry.fill(HIST("hReferenceLeadingTrack"), jet.pt(), dphi, leadingPT, weight);
+          registry.fill(HIST("hReferenceLeadingTrack"), jet.pt() - (rho * jet.area()), dphi, leadingPT, weight);
         }
       }
     }
@@ -391,7 +391,7 @@ struct JetHadronRecoil {
   }
 
   template <typename T, typename V, typename W, typename U>
-  void fillMatchedHistograms(T const& jetBase, V const& mcdjetsWTA, W const& mcpjetsWTA, U const&, float weight = 1.0)
+  void fillMatchedHistograms(T const& jetBase, V const& mcdjetsWTA, W const& mcpjetsWTA, U const&, float weight = 1.0, float rho = 0.0)
   {
     double dR = 0;
     double dRp = 0;
@@ -439,13 +439,13 @@ struct JetHadronRecoil {
             break;
           }
         }
-        registry.fill(HIST("hPtMatched"), jetBase.pt(), jetTag.pt(), weight);
+        registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
         registry.fill(HIST("hPhiMatched"), jetBase.phi(), jetTag.phi(), weight);
-        registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - jetBase.pt()) / jetTag.pt(), weight);
+        registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - (jetBase.pt() - (rho * jetBase.area()))) / jetTag.pt(), weight);
         registry.fill(HIST("hPhiResolution"), jetTag.pt(), jetTag.phi() - jetBase.phi(), weight);
         registry.fill(HIST("hDeltaRMatched"), dR, dRp, weight);
         registry.fill(HIST("hDeltaRResolution"), jetTag.pt(), dRp - dR, weight);
-        registry.fill(HIST("hFullMatching"), jetBase.pt(), jetTag.pt(), jetBase.phi(), jetTag.phi(), dR, dRp, weight);
+        registry.fill(HIST("hFullMatching"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), jetBase.phi(), jetTag.phi(), dR, dRp, weight);
         registry.fill(HIST("hPtMatched1d"), jetTag.pt(), weight);
         registry.fill(HIST("hDeltaRMatched1d"), dRp, weight);
       }
@@ -468,6 +468,22 @@ struct JetHadronRecoil {
   }
   PROCESS_SWITCH(JetHadronRecoil, processData, "process data", true);
 
+  void processDataWithRhoSubtraction(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision,
+                                     soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetsMatchedToCharged1Jets>> const& jets,
+                                     soa::Filtered<soa::Join<aod::Charged1Jets, aod::Charged1JetConstituents, aod::Charged1JetsMatchedToChargedJets>> const& jetsWTA,
+                                     soa::Filtered<aod::JetTracks> const& tracks)
+  {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      return;
+    }
+    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+      return;
+    }
+    registry.fill(HIST("hZvtxSelected"), collision.posZ());
+    fillHistograms(jets, jetsWTA, tracks, 1.0, collision.rho());
+  }
+  PROCESS_SWITCH(JetHadronRecoil, processDataWithRhoSubtraction, "process data with rho subtraction", true);
+
   void processMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                   soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToCharged1MCDetectorLevelJets>> const& jets,
                   soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents, aod::Charged1MCDetectorLevelJetsMatchedToChargedMCDetectorLevelJets>> const& jetsWTA,
@@ -483,6 +499,22 @@ struct JetHadronRecoil {
     fillHistograms(jets, jetsWTA, tracks);
   }
   PROCESS_SWITCH(JetHadronRecoil, processMCD, "process MC detector level", false);
+
+  void processMCDWithRhoSubtraction(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision,
+                                    soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToCharged1MCDetectorLevelJets>> const& jets,
+                                    soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents, aod::Charged1MCDetectorLevelJetsMatchedToChargedMCDetectorLevelJets>> const& jetsWTA,
+                                    soa::Filtered<aod::JetTracks> const& tracks)
+  {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      return;
+    }
+    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+      return;
+    }
+    registry.fill(HIST("hZvtxSelected"), collision.posZ());
+    fillHistograms(jets, jetsWTA, tracks, 1.0, collision.rho());
+  }
+  PROCESS_SWITCH(JetHadronRecoil, processMCDWithRhoSubtraction, "process MC detector level with rho subtraction", false);
 
   void processMCDWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
                           aod::JMcCollisions const&,
@@ -500,6 +532,23 @@ struct JetHadronRecoil {
     fillHistograms(jets, jetsWTA, tracks, collision.mcCollision().weight());
   }
   PROCESS_SWITCH(JetHadronRecoil, processMCDWeighted, "process MC detector level with event weights", false);
+
+  void processMCDWeightedWithRhoSubtraction(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::BkgChargedRhos>>::iterator const& collision,
+                                            aod::JMcCollisions const&,
+                                            soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToCharged1MCDetectorLevelJets>> const& jets,
+                                            soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents, aod::Charged1MCDetectorLevelJetsMatchedToChargedMCDetectorLevelJets>> const& jetsWTA,
+                                            soa::Filtered<aod::JetTracks> const& tracks)
+  {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      return;
+    }
+    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+      return;
+    }
+    registry.fill(HIST("hZvtxSelected"), collision.posZ(), collision.mcCollision().weight());
+    fillHistograms(jets, jetsWTA, tracks, collision.mcCollision().weight(), collision.rho());
+  }
+  PROCESS_SWITCH(JetHadronRecoil, processMCDWeightedWithRhoSubtraction, "process MC detector level with event weights and rho subtraction", false);
 
   void processMCP(aod::JetMcCollision const& collision,
                   soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToCharged1MCParticleLevelJets>> const& jets,
@@ -550,6 +599,29 @@ struct JetHadronRecoil {
   }
   PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatched, "process MC matched (inc jets)", false);
 
+  void processJetsMCPMCDMatchedWithRhoSubtraction(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator const& collision,
+                                                  soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
+                                                  soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents>> const& mcdjetsWTA,
+                                                  soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents>> const& mcpjetsWTA,
+                                                  aod::JetTracks const&,
+                                                  aod::JetParticles const&,
+                                                  aod::JetMcCollisions const&,
+                                                  soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& mcpjets)
+  {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      return;
+    }
+    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+      return;
+    }
+    registry.fill(HIST("hZvtxSelected"), collision.posZ());
+    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(partJetsPerCollision, collision.mcCollisionId());
+    for (const auto& mcdjet : mcdjets) {
+      fillMatchedHistograms(mcdjet, mcdjetsWTA, mcpjetsWTACut, mcpjets, 1.0, collision.rho());
+    }
+  }
+  PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatchedWithRhoSubtraction, "process MC matched (inc jets) with rho subtraction", false);
+
   void processJetsMCPMCDMatchedWeighted(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
                                         soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetEventWeights>> const& mcdjets,
                                         soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents>> const& mcdjetsWTA,
@@ -572,6 +644,29 @@ struct JetHadronRecoil {
     }
   }
   PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatchedWeighted, "process MC matched with event weights (inc jets)", false);
+
+  void processJetsMCPMCDMatchedWeightedWithRhoSubtraction(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator const& collision,
+                                                          soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetEventWeights>> const& mcdjets,
+                                                          soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents>> const& mcdjetsWTA,
+                                                          soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents>> const& mcpjetsWTA,
+                                                          aod::JetTracks const&,
+                                                          aod::JetParticles const&,
+                                                          aod::JetMcCollisions const&,
+                                                          soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets, aod::ChargedMCParticleLevelJetEventWeights>> const& mcpjets)
+  {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      return;
+    }
+    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+      return;
+    }
+    registry.fill(HIST("hZvtxSelected"), collision.posZ());
+    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(partJetsPerCollision, collision.mcCollisionId());
+    for (const auto& mcdjet : mcdjets) {
+      fillMatchedHistograms(mcdjet, mcdjetsWTA, mcpjetsWTACut, mcpjets, mcdjet.eventWeight(), collision.rho());
+    }
+  }
+  PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatchedWeightedWithRhoSubtraction, "process MC matched with event weights (inc jets) and rho subtraction", false);
 
   void processRecoilJetsMCPMCDMatched(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
                                       soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
