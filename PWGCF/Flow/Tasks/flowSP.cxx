@@ -125,7 +125,7 @@ struct FlowSP {
   TF1* fMultCutHigh = nullptr;
   TF1* fMultMultPVCut = nullptr;
 
-  enum selectionCriteria { 
+  enum SelectionCriteria { 
     evSel_FilteredEvent,
     evSel_sel8,
     evSel_occupancy,
@@ -542,71 +542,71 @@ struct FlowSP {
   template <ChargeType ct, typename TrackObject>
   inline void fillHistograms(TrackObject track, float wacc, float weff, double ux, double uy, double uxMH, double uyMH, double qxA, double qyA, double qxC, double qyC, double corrQQx, double corrQQy, double corrQQ, double vnA, double vnC, double vnFull, double centrality, double vz)
   {
-        static constexpr std::string_view charge[] = {"incl/", "pos/", "neg/"};
+        static constexpr std::string_view Charge[] = {"incl/", "pos/", "neg/"};
 
-        registry.fill(HIST(charge[ct]) + HIST("QA/hPt"), track.pt() );
-        registry.fill(HIST(charge[ct]) + HIST("QA/hPhi"), track.phi() );
-        registry.fill(HIST(charge[ct]) + HIST("QA/hEta"), track.eta() );
-        registry.fill(HIST(charge[ct]) + HIST("QA/hPhi_Eta_vz"), track.phi(), track.eta(), vz);
-        registry.fill(HIST(charge[ct]) + HIST("QA/hDCAxy"), track.dcaXY());
-        registry.fill(HIST(charge[ct]) + HIST("QA/hDCAz"), track.dcaZ());
+        registry.fill(HIST(Charge[ct]) + HIST("QA/hPt"), track.pt() );
+        registry.fill(HIST(Charge[ct]) + HIST("QA/hPhi"), track.phi() );
+        registry.fill(HIST(Charge[ct]) + HIST("QA/hEta"), track.eta() );
+        registry.fill(HIST(Charge[ct]) + HIST("QA/hPhi_Eta_vz"), track.phi(), track.eta(), vz);
+        registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAxy"), track.dcaXY());
+        registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAz"), track.dcaZ());
 
-        registry.fill(HIST(charge[ct]) + HIST("vnAx_eta"), track.eta(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnAy_eta"), track.eta(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnCx_eta"), track.eta(), (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnCy_eta"), track.eta(), (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnA_eta"), track.eta(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnC_eta"), track.eta(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAx_eta"), track.eta(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAy_eta"), track.eta(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnCx_eta"), track.eta(), (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnCy_eta"), track.eta(), (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnA_eta"), track.eta(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnC_eta"), track.eta(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
-        registry.fill(HIST(charge[ct]) + HIST("vnAxCxUx_eta_MH"), track.eta(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnAxCyUx_eta_MH"), track.eta(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnAxCyUy_eta_MH"), track.eta(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnAyCxUy_eta_MH"), track.eta(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_eta_MH"), track.eta(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_eta_MH"), track.eta(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_eta_MH"), track.eta(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_eta_MH"), track.eta(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
 
-        registry.fill(HIST(charge[ct]) + HIST("vnAx_pt"), track.pt(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnAy_pt"), track.pt(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnCx_pt"), track.pt(), (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnCy_pt"), track.pt(), (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnA_pt"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnC_pt"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAx_pt"), track.pt(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAy_pt"), track.pt(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnCx_pt"), track.pt(), (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnCy_pt"), track.pt(), (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnA_pt"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnC_pt"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
-        registry.fill(HIST(charge[ct]) + HIST("vnAxCxUx_pt_MH"), track.pt(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnAxCyUx_pt_MH"), track.pt(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnAxCyUy_pt_MH"), track.pt(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnAyCxUy_pt_MH"), track.pt(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_pt_MH"), track.pt(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_pt_MH"), track.pt(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_pt_MH"), track.pt(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_pt_MH"), track.pt(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
 
-        registry.fill(HIST(charge[ct]) + HIST("vnA_eta_EP"), track.eta(), vnA, wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnC_eta_EP"), track.eta(), vnC, wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnFull_eta_EP"), track.eta(), vnFull, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnA_eta_EP"), track.eta(), vnA, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnC_eta_EP"), track.eta(), vnC, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnFull_eta_EP"), track.eta(), vnFull, wacc * weff);
 
-        registry.fill(HIST(charge[ct]) + HIST("vnA_pt_EP"), track.pt(), vnA, wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnC_pt_EP"), track.pt(), vnC, wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnFull_pt_EP"), track.pt(), vnFull, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_EP"), track.pt(), vnA, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_EP"), track.pt(), vnC, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnFull_pt_EP"), track.pt(), vnFull, wacc * weff);
 
         // For integrated v1 take only tracks from eta>0.
         // Following https://arxiv.org/pdf/1306.4145
          if(track.eta() < 0 && cfgHarm == 1) {
-          registry.fill(HIST(charge[ct]) + HIST("vnA_cent_minEta"), centrality, -1.0*(uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
-          registry.fill(HIST(charge[ct]) + HIST("vnC_cent_minEta"), centrality, -1.0*(uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+          registry.fill(HIST(Charge[ct]) + HIST("vnA_cent_minEta"), centrality, -1.0*(uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+          registry.fill(HIST(Charge[ct]) + HIST("vnC_cent_minEta"), centrality, -1.0*(uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
-          registry.fill(HIST(charge[ct]) + HIST("vnA_pt_odd"), track.pt(), -1.0*(uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
-          registry.fill(HIST(charge[ct]) + HIST("vnC_pt_odd"), track.pt(), -1.0*(uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+          registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_odd"), track.pt(), -1.0*(uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+          registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_odd"), track.pt(), -1.0*(uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
         } else {
-         registry.fill(HIST(charge[ct]) + HIST("vnA_cent_plusEta"), centrality, (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
-         registry.fill(HIST(charge[ct]) + HIST("vnC_cent_plusEta"), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+         registry.fill(HIST(Charge[ct]) + HIST("vnA_cent_plusEta"), centrality, (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+         registry.fill(HIST(Charge[ct]) + HIST("vnC_cent_plusEta"), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
-         registry.fill(HIST(charge[ct]) + HIST("vnA_pt_odd"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
-         registry.fill(HIST(charge[ct]) + HIST("vnC_pt_odd"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+         registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_odd"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+         registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_odd"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
         }
 
-        registry.fill(HIST(charge[ct]) + HIST("vnAxCxUx_cent_MH"), centrality, (uxMH * qxA * qxC) / corrQQx, wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnAxCyUx_cent_MH"), centrality, (uxMH * qyA * qyC) / corrQQy, wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnAxCyUy_cent_MH"), centrality, (uyMH * qxA * qyC) / corrQQx, wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnAyCxUy_cent_MH"), centrality, (uyMH * qyA * qxC) / corrQQy, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_cent_MH"), centrality, (uxMH * qxA * qxC) / corrQQx, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_cent_MH"), centrality, (uxMH * qyA * qyC) / corrQQy, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_cent_MH"), centrality, (uyMH * qxA * qyC) / corrQQx, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_cent_MH"), centrality, (uyMH * qyA * qxC) / corrQQy, wacc * weff);
 
-        registry.fill(HIST(charge[ct]) + HIST("vnA_cent_EP"), centrality, vnA, wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnC_cent_EP"), centrality, vnC, wacc * weff);
-        registry.fill(HIST(charge[ct]) + HIST("vnFull_cent_EP"), centrality, vnFull, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnA_cent_EP"), centrality, vnA, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnC_cent_EP"), centrality, vnC, wacc * weff);
+        registry.fill(HIST(Charge[ct]) + HIST("vnFull_cent_EP"), centrality, vnFull, wacc * weff);
   }
 
   void process(UsedCollisions::iterator const& collision, aod::BCsWithTimestamps const&, UsedTracks const& tracks)
