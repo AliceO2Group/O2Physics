@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file utilsMcGen.h
-/// \brief utility functions for HF McGen workflows
+/// \brief utility functions for HF Mc gen. workflows
 ///
 /// \author Nima Zardoshti, nima.zardoshti@cern.ch, CERN
 
@@ -18,11 +18,12 @@
 #define PWGHF_UTILS_UTILSMCGEN_H_
 
 #include <TPDGCode.h>
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/RecoDecay.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
-using namespace o2::constants::physics;
+#include "CommonConstants/PhysicsConstants.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 namespace hf_mc_gen
 {
@@ -30,6 +31,7 @@ namespace hf_mc_gen
 template <typename T, typename U>
 void fillMcMatchGen2Prong(T const& mcParticles, U& rowMcMatchGen, bool rejectBackground)
 {
+  using namespace o2::constants::physics;
 
   // Match generated particles.
   for (const auto& particle : mcParticles) {
@@ -77,6 +79,7 @@ void fillMcMatchGen2Prong(T const& mcParticles, U& rowMcMatchGen, bool rejectBac
 template <typename T, typename U>
 void fillMcMatchGen3Prong(T const& mcParticles, U& rowMcMatchGen, bool rejectBackground, bool createDplus, bool createDs, bool createLc, bool createXic)
 {
+  using namespace o2::constants::physics;
 
   // Match generated particles.
   for (const auto& particle : mcParticles) {
@@ -179,6 +182,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U& rowMcMatchGen, bool rejectBac
 template <typename T, typename U>
 void fillMcMatchGenBplus(T const& mcParticles, U& rowMcMatchGen)
 {
+  using namespace o2::constants::physics;
 
   // Match generated particles.
   for (const auto& particle : mcParticles) {
@@ -209,6 +213,7 @@ void fillMcMatchGenBplus(T const& mcParticles, U& rowMcMatchGen)
 template <typename T, typename U>
 void fillMcMatchGenB0(T const& mcParticles, U& rowMcMatchGen)
 {
+  using namespace o2::constants::physics;
 
   // Match generated particles.
   for (const auto& particle : mcParticles) {

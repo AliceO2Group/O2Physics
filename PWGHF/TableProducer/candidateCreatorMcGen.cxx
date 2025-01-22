@@ -50,7 +50,6 @@ struct HfCandidateCreatorMcGen {
   Configurable<bool> createDs{"createDs", false, "Create Ds in 3 prong"};
   Configurable<bool> createLc{"createLc", false, "Create Lc in 3 prong"};
   Configurable<bool> createXic{"createXic", false, "Create Xic in 3 prong"};
-  Configurable<float> minPosZ{"minPosZ", 10.0, "min z position of promary vertex"};
 
   void process(aod::McCollision const&,
                aod::McParticles const& mcParticles)

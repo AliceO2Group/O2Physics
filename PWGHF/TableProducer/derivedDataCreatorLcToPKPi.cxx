@@ -393,7 +393,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   {
     rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
   }
-  PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcGenOnly, "Process MCGen only", false);
+  PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcGenOnly, "Process MC gen. only", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
