@@ -103,12 +103,12 @@ struct FlowSP {
   //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
 
-  // from Generic Framework 
- struct Config {
+  // from Generic Framework
+  struct Config {
     std::vector<TH1D*> mEfficiency = {};
     std::vector<GFWWeights*> mAcceptance = {};
     bool correctionsLoaded = false;
-    int lastRunNumber = 0; 
+    int lastRunNumber = 0;
   } cfg;
 
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
@@ -125,7 +125,7 @@ struct FlowSP {
   TF1* fMultCutHigh = nullptr;
   TF1* fMultMultPVCut = nullptr;
 
-  enum SelectionCriteria { 
+  enum SelectionCriteria {
     evSel_FilteredEvent,
     evSel_sel8,
     evSel_occupancy,
@@ -136,14 +136,14 @@ struct FlowSP {
     evSel_kIsVertexITSTPC,
     evSel_MultCuts,
     evSel_CentCuts,
-    evSel_kIsGoodITSLayersAll, 
+    evSel_kIsGoodITSLayersAll,
     evSel_isSelectedZDC,
     nEventSelections
   };
 
-  enum ChargeType { 
-    kInclusive, 
-    kPositive, 
+  enum ChargeType {
+    kInclusive,
+    kPositive,
     kNegative
   };
 
@@ -259,10 +259,10 @@ struct FlowSP {
     registry.add<TProfile>("incl/vnAxCyUy_cent_MH", "", kTProfile, {axisCent});
     registry.add<TProfile>("incl/vnAyCxUy_cent_MH", "", kTProfile, {axisCent});
 
-    // track QA for pos, neg, incl 
-    registry.add<TH1>("incl/QA/hPt", "", kTH1D, {axisPt}); 
-    registry.add<TH1>("incl/QA/hPhi", "", kTH1D, {axisPhi}); 
-    registry.add<TH1>("incl/QA/hEta", "", kTH1D, {axisEta}); 
+    // track QA for pos, neg, incl
+    registry.add<TH1>("incl/QA/hPt", "", kTH1D, {axisPt});
+    registry.add<TH1>("incl/QA/hPhi", "", kTH1D, {axisPhi});
+    registry.add<TH1>("incl/QA/hEta", "", kTH1D, {axisEta});
     registry.add<TH3>("incl/QA/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
     registry.add<TH1>("incl/QA/hDCAxy", "", kTH1D, {axisDCAxy});
     registry.add<TH1>("incl/QA/hDCAz", "", kTH1D, {axisDCAz});
@@ -275,18 +275,18 @@ struct FlowSP {
     registry.add<TProfile>("qAqCXY", "", kTProfile, {axisCent});
 
     registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_FilteredEvent+1, "Filtered event");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_sel8+1, "Sel8");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_occupancy+1, "kOccupancy");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kTVXinTRD+1, "kTVXinTRD");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoSameBunchPileup+1, "kNoSameBunchPileup");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodZvtxFT0vsPV+1, "kIsGoodZvtxFT0vsPV");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoCollInTimeRangeStandard+1, "kNoCollInTimeRangeStandard");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsVertexITSTPC+1, "kIsVertexITSTPC");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_MultCuts+1, "Mult cuts (Alex)");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_CentCuts+1,"Cenrality range");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll+1, "kkIsGoodITSLayersAll");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_isSelectedZDC+1,"isSelected");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_FilteredEvent + 1, "Filtered event");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_sel8 + 1, "Sel8");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_occupancy + 1, "kOccupancy");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kTVXinTRD + 1, "kTVXinTRD");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoSameBunchPileup + 1, "kNoSameBunchPileup");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsVertexITSTPC + 1, "kIsVertexITSTPC");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_MultCuts + 1, "Mult cuts (Alex)");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_CentCuts + 1, "Cenrality range");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_isSelectedZDC + 1, "isSelected");
 
     if (cfgUseAdditionalEventCut) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
@@ -323,10 +323,10 @@ struct FlowSP {
     return grpo->getNominalL3Field();
   }
 
-  // From Generic Framework 
-    void loadCorrections(uint64_t timestamp)
+  // From Generic Framework
+  void loadCorrections(uint64_t timestamp)
   {
-    // corrections saved on CCDB as TList {incl, pos, neg} of GFWWeights (acc) TH1D (eff) objects! 
+    // corrections saved on CCDB as TList {incl, pos, neg} of GFWWeights (acc) TH1D (eff) objects!
     if (cfg.correctionsLoaded)
       return;
 
@@ -339,22 +339,26 @@ struct FlowSP {
         LOGF(warning, "Could not load acceptance weights from %s", cfgAcceptance.value.c_str());
       else
         LOGF(info, "Loaded acceptance weights from %s", cfgAcceptance.value.c_str());
-    } else {LOGF(info, "cfgAcceptance empty! No corrections loaded"); }
+    } else {
+      LOGF(info, "cfgAcceptance empty! No corrections loaded");
+    }
     if (cfgEfficiency.value.empty() == false) {
       TList* listCorrections = ccdb->getForTimeStamp<TList>(cfgEfficiency, timestamp);
       cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency")));
       cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_pos")));
       cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_neg")));
-      if (cfg.mEfficiency.size() <3) {
+      if (cfg.mEfficiency.size() < 3) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
       LOGF(info, "Loaded efficiency histogram from %s", cfgEfficiency.value.c_str());
-    } else {LOGF(info, "cfgEfficiency empty! No corrections loaded"); }
+    } else {
+      LOGF(info, "cfgEfficiency empty! No corrections loaded");
+    }
     cfg.correctionsLoaded = true;
   }
 
-  // From Generic Framework 
-    bool setCurrentParticleWeights(int pID, float& weight_nue, float& weight_nua, const float& phi, const float& eta, const float& pt, const float& vtxz)
+  // From Generic Framework
+  bool setCurrentParticleWeights(int pID, float& weight_nue, float& weight_nua, const float& phi, const float& eta, const float& pt, const float& vtxz)
   {
     float eff = 1.;
     if (cfg.mEfficiency.size() > pID)
@@ -378,12 +382,12 @@ struct FlowSP {
       return 0;
     registry.fill(HIST("hEventCount"), evSel_sel8);
 
-    //Occupancy 
-    if(cfgDoOccupancySel){
-       auto occupancy = collision.trackOccupancyInTimeRange();
-       if(occupancy > cfgMaxOccupancy){ 
-          return 0; 
-       }
+    // Occupancy
+    if (cfgDoOccupancySel) {
+      auto occupancy = collision.trackOccupancyInTimeRange();
+      if (occupancy > cfgMaxOccupancy) {
+        return 0;
+      }
       registry.fill(HIST("hEventCount"), evSel_occupancy);
     }
 
@@ -428,8 +432,7 @@ struct FlowSP {
       registry.fill(HIST("hEventCount"), evSel_kIsVertexITSTPC);
     }
 
-
-    if(cfgUseAdditionalEventCut){  
+    if (cfgUseAdditionalEventCut) {
       float vtxz = -999;
       if (collision.numContrib() > 1) {
         vtxz = collision.posZ();
@@ -488,11 +491,11 @@ struct FlowSP {
     phimodn += o2::constants::math::PI / 18.0; // to center gap in the middle
     phimodn = fmod(phimodn, o2::constants::math::PI / 9.0);
     registry.fill(HIST("QA/before/pt_phi"), track.pt(), phimodn);
-    
-    if(cfgUseAdditionalTrackCut){
+
+    if (cfgUseAdditionalTrackCut) {
       if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt()))
         return false; // reject track
-      }
+    }
     registry.fill(HIST("QA/after/pt_phi"), track.pt(), phimodn);
     return true;
   }
@@ -542,71 +545,71 @@ struct FlowSP {
   template <ChargeType ct, typename TrackObject>
   inline void fillHistograms(TrackObject track, float wacc, float weff, double ux, double uy, double uxMH, double uyMH, double qxA, double qyA, double qxC, double qyC, double corrQQx, double corrQQy, double corrQQ, double vnA, double vnC, double vnFull, double centrality, double vz)
   {
-        static constexpr std::string_view Charge[] = {"incl/", "pos/", "neg/"};
+    static constexpr std::string_view Charge[] = {"incl/", "pos/", "neg/"};
 
-        registry.fill(HIST(Charge[ct]) + HIST("QA/hPt"), track.pt() );
-        registry.fill(HIST(Charge[ct]) + HIST("QA/hPhi"), track.phi() );
-        registry.fill(HIST(Charge[ct]) + HIST("QA/hEta"), track.eta() );
-        registry.fill(HIST(Charge[ct]) + HIST("QA/hPhi_Eta_vz"), track.phi(), track.eta(), vz);
-        registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAxy"), track.dcaXY());
-        registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAz"), track.dcaZ());
+    registry.fill(HIST(Charge[ct]) + HIST("QA/hPt"), track.pt());
+    registry.fill(HIST(Charge[ct]) + HIST("QA/hPhi"), track.phi());
+    registry.fill(HIST(Charge[ct]) + HIST("QA/hEta"), track.eta());
+    registry.fill(HIST(Charge[ct]) + HIST("QA/hPhi_Eta_vz"), track.phi(), track.eta(), vz);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAxy"), track.dcaXY());
+    registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAz"), track.dcaZ());
 
-        registry.fill(HIST(Charge[ct]) + HIST("vnAx_eta"), track.eta(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnAy_eta"), track.eta(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnCx_eta"), track.eta(), (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnCy_eta"), track.eta(), (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnA_eta"), track.eta(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnC_eta"), track.eta(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnAx_eta"), track.eta(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnAy_eta"), track.eta(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnCx_eta"), track.eta(), (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnCy_eta"), track.eta(), (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnA_eta"), track.eta(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnC_eta"), track.eta(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
-        registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_eta_MH"), track.eta(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_eta_MH"), track.eta(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_eta_MH"), track.eta(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_eta_MH"), track.eta(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_eta_MH"), track.eta(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_eta_MH"), track.eta(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_eta_MH"), track.eta(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_eta_MH"), track.eta(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
 
-        registry.fill(HIST(Charge[ct]) + HIST("vnAx_pt"), track.pt(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnAy_pt"), track.pt(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnCx_pt"), track.pt(), (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnCy_pt"), track.pt(), (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnA_pt"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnC_pt"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnAx_pt"), track.pt(), (ux * qxA) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnAy_pt"), track.pt(), (uy * qyA) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnCx_pt"), track.pt(), (ux * qxC) / std::sqrt(std::fabs(corrQQx)), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnCy_pt"), track.pt(), (uy * qyC) / std::sqrt(std::fabs(corrQQy)), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnA_pt"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnC_pt"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
-        registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_pt_MH"), track.pt(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_pt_MH"), track.pt(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_pt_MH"), track.pt(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_pt_MH"), track.pt(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_pt_MH"), track.pt(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_pt_MH"), track.pt(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_pt_MH"), track.pt(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_pt_MH"), track.pt(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
 
-        registry.fill(HIST(Charge[ct]) + HIST("vnA_eta_EP"), track.eta(), vnA, wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnC_eta_EP"), track.eta(), vnC, wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnFull_eta_EP"), track.eta(), vnFull, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnA_eta_EP"), track.eta(), vnA, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnC_eta_EP"), track.eta(), vnC, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnFull_eta_EP"), track.eta(), vnFull, wacc * weff);
 
-        registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_EP"), track.pt(), vnA, wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_EP"), track.pt(), vnC, wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnFull_pt_EP"), track.pt(), vnFull, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_EP"), track.pt(), vnA, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_EP"), track.pt(), vnC, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnFull_pt_EP"), track.pt(), vnFull, wacc * weff);
 
-        // For integrated v1 take only tracks from eta>0.
-        // Following https://arxiv.org/pdf/1306.4145
-         if(track.eta() < 0 && cfgHarm == 1) {
-          registry.fill(HIST(Charge[ct]) + HIST("vnA_cent_minEta"), centrality, -1.0*(uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
-          registry.fill(HIST(Charge[ct]) + HIST("vnC_cent_minEta"), centrality, -1.0*(uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+    // For integrated v1 take only tracks from eta>0.
+    // Following https://arxiv.org/pdf/1306.4145
+    if (track.eta() < 0 && cfgHarm == 1) {
+      registry.fill(HIST(Charge[ct]) + HIST("vnA_cent_minEta"), centrality, -1.0 * (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnC_cent_minEta"), centrality, -1.0 * (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
-          registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_odd"), track.pt(), -1.0*(uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
-          registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_odd"), track.pt(), -1.0*(uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
-        } else {
-         registry.fill(HIST(Charge[ct]) + HIST("vnA_cent_plusEta"), centrality, (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
-         registry.fill(HIST(Charge[ct]) + HIST("vnC_cent_plusEta"), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_odd"), track.pt(), -1.0 * (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_odd"), track.pt(), -1.0 * (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+    } else {
+      registry.fill(HIST(Charge[ct]) + HIST("vnA_cent_plusEta"), centrality, (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnC_cent_plusEta"), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
-         registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_odd"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
-         registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_odd"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
-        }
+      registry.fill(HIST(Charge[ct]) + HIST("vnA_pt_odd"), track.pt(), (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("vnC_pt_odd"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
+    }
 
-        registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_cent_MH"), centrality, (uxMH * qxA * qxC) / corrQQx, wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_cent_MH"), centrality, (uxMH * qyA * qyC) / corrQQy, wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_cent_MH"), centrality, (uyMH * qxA * qyC) / corrQQx, wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_cent_MH"), centrality, (uyMH * qyA * qxC) / corrQQy, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_cent_MH"), centrality, (uxMH * qxA * qxC) / corrQQx, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_cent_MH"), centrality, (uxMH * qyA * qyC) / corrQQy, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_cent_MH"), centrality, (uyMH * qxA * qyC) / corrQQx, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_cent_MH"), centrality, (uyMH * qyA * qxC) / corrQQy, wacc * weff);
 
-        registry.fill(HIST(Charge[ct]) + HIST("vnA_cent_EP"), centrality, vnA, wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnC_cent_EP"), centrality, vnC, wacc * weff);
-        registry.fill(HIST(Charge[ct]) + HIST("vnFull_cent_EP"), centrality, vnFull, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnA_cent_EP"), centrality, vnA, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnC_cent_EP"), centrality, vnC, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("vnFull_cent_EP"), centrality, vnFull, wacc * weff);
   }
 
   void process(UsedCollisions::iterator const& collision, aod::BCsWithTimestamps const&, UsedTracks const& tracks)
@@ -616,12 +619,12 @@ struct FlowSP {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
 
-    if(bc.runNumber()!= cfg.lastRunNumber){ 
+    if (bc.runNumber() != cfg.lastRunNumber) {
       // load corrections again for new run!
-      cfg.correctionsLoaded = false; 
-      cfg.lastRunNumber = bc.runNumber(); 
+      cfg.correctionsLoaded = false;
+      cfg.lastRunNumber = bc.runNumber();
     }
-    
+
     loadCorrections(bc.timestamp());
 
     auto centrality = collision.centFT0C();
@@ -640,7 +643,7 @@ struct FlowSP {
       double qxC = collision.qxC();
       double qyC = collision.qyC();
 
-      double vtxz = collision.posZ(); 
+      double vtxz = collision.posZ();
 
       double psiA = 1.0 * std::atan2(qyA, qxA);
       registry.fill(HIST("hSPplaneA"), psiA, 1);
@@ -689,7 +692,7 @@ struct FlowSP {
       }
 
       for (const auto& track : tracks) {
-        registry.fill(HIST("QA/before/hPt_inclusive"), track.pt()); 
+        registry.fill(HIST("QA/before/hPt_inclusive"), track.pt());
 
         float weff = 1, wacc = 1;
         float weffP = 1, waccP = 1;
@@ -702,12 +705,14 @@ struct FlowSP {
           continue;
         bool pos = (track.sign() > 0) ? true : false;
 
-        if (cfgFillWeights){
+        if (cfgFillWeights) {
           fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
-        } else if (cfgFillWeightsPOS){
-          if(pos) fWeightsPOS->Fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
-        } else if(cfgFillWeightsNEG){
-          if(!pos) fWeightsNEG->Fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
+        } else if (cfgFillWeightsPOS) {
+          if (pos)
+            fWeightsPOS->Fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
+        } else if (cfgFillWeightsNEG) {
+          if (!pos)
+            fWeightsNEG->Fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
         }
 
         if (!setCurrentParticleWeights(kInclusive, weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
