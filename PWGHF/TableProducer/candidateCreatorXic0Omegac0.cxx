@@ -759,7 +759,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       KFParticle kfPosPr(kfTrack0, kProton);
       KFParticle kfNegPi(kfTrack1, kPiMinus);
       KFParticle kfNegKa(kfTrackBach, kKMinus);
-      KFParticle kfNegPirRej(kfTrackBach, kPiMinus); // rej
+      KFParticle kfNegPiRej(kfTrackBach, kPiMinus); // rej
       KFParticle kfPosPi(kfTrack0, kPiPlus);
       KFParticle kfNegPr(kfTrack1, kProton);
       KFParticle kfPosKa(kfTrackBach, kKPlus);
