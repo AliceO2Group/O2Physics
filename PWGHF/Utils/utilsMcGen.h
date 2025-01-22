@@ -17,6 +17,8 @@
 #ifndef PWGHF_UTILS_UTILSMCGEN_H_
 #define PWGHF_UTILS_UTILSMCGEN_H_
 
+#include <vector>
+
 #include <TPDGCode.h>
 
 #include "CommonConstants/PhysicsConstants.h"
