@@ -93,6 +93,24 @@ struct JetTaggerHFTask {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
+  // GNN configuration
+  Configurable<double> fC{"fC", 0.018, "Parameter f_c for D_b calculation"};
+  Configurable<int64_t> nJetFeat{"nJetFeat", 4, "Number of jet GNN input features"};
+  Configurable<int64_t> nTrkFeat{"nTrkFeat", 13, "Number of track GNN input features"};
+  Configurable<int64_t> nTrkOrigin{"nTrkOrigin", 5, "Number of track origin categories"};
+  Configurable<std::vector<float>> transformFeatureJetMean{"transformFeatureJetMean",
+                                                           std::vector<float>{3.7093048e+01, 3.1462731e+00, -8.9617318e-04, 4.5036483e+00},
+                                                           "Mean values for each GNN input feature (jet)"};
+  Configurable<std::vector<float>> transformFeatureJetStdev{"transformFeatureJetStdev",
+                                                            std::vector<float>{3.9559139e+01, 1.8156786e+00, 2.8845072e-01, 4.6293869e+00},
+                                                            "Stdev values for each GNN input feature (jet)"};
+  Configurable<std::vector<float>> transformFeatureTrkMean{"transformFeatureTrkMean",
+                                                           std::vector<float>{5.8772368e+00, 3.1470699e+00, -1.4703944e-03, 1.9976571e-03, 1.7700187e-03, 3.5821514e-03, 1.9987826e-03, 7.3673888e-03, 6.6411214e+00, 1.3810074e+02, 1.4888744e+02, 6.5751970e-01, 1.6469173e+00},
+                                                           "Mean values for each GNN input feature (track)"};
+  Configurable<std::vector<float>> transformFeatureTrkStdev{"transformFeatureTrkStdev",
+                                                            std::vector<float>{9.2763824e+00, 1.8162115e+00, 3.1512174e-01, 9.9999982e-01, 5.6147423e-02, 2.3086982e-02, 1.6523319e+00, 4.8507337e-02, 8.1565088e-01, 1.2891182e+01, 1.1064601e+01, 9.5457840e-01, 2.8930053e-01},
+                                                            "Stdev values for each GNN input feature (track)"};
+
   // axis spec
   ConfigurableAxis binTrackProbability{"binTrackProbability", {100, 0.f, 1.f}, ""};
   ConfigurableAxis binJetFlavour{"binJetFlavour", {6, -0.5, 5.5}, ""};
@@ -101,6 +119,7 @@ struct JetTaggerHFTask {
   o2::ccdb::CcdbApi ccdbApi;
 
   using JetTracksExt = soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>;
+  using OriginalTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TrackSelection, aod::TracksDCA, aod::TracksDCACov, aod::TracksExtra>;
 
   bool useResoFuncFromIncJet = false;
   int maxOrder = -1;
@@ -114,6 +133,8 @@ struct JetTaggerHFTask {
 
   std::vector<uint16_t> decisionNonML;
   std::vector<float> scoreML;
+
+  jettaggingutilities::GNNBjetAllocator tensorAlloc;
 
   template <typename T, typename U>
   float calculateJetProbability(int origin, T const& jet, U const& tracks, bool const& isMC = false)
@@ -193,6 +214,25 @@ struct JetTaggerHFTask {
           evaluateTrackProbQA(0, jet, tracks, isMC);
         }
       }
+    }
+    if (doprocessAlgorithmGNN) {
+      if constexpr (isMC) {
+        switch (origin) {
+          case 2:
+            registry.fill(HIST("h_db_b"), scoreML[jet.globalIndex()]);
+            break;
+          case 1:
+            registry.fill(HIST("h_db_c"), scoreML[jet.globalIndex()]);
+            break;
+          case 0:
+          case 3:
+            registry.fill(HIST("h_db_lf"), scoreML[jet.globalIndex()]);
+            break;
+          default:
+            LOGF(debug, "doprocessAlgorithmGNN, Unexpected origin value: %d (%d)", origin, jet.globalIndex());
+        }
+      }
+      registry.fill(HIST("h2_pt_db"), jet.pt(), scoreML[jet.globalIndex()]);
     }
     taggingTable(decisionNonML[jet.globalIndex()], jetProb, scoreML[jet.globalIndex()]);
   }
@@ -276,7 +316,7 @@ struct JetTaggerHFTask {
       }
     }
 
-    if (doprocessAlgorithmML) {
+    if (doprocessAlgorithmML || doprocessAlgorithmGNN) {
       bMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
@@ -286,6 +326,14 @@ struct JetTaggerHFTask {
       }
       // bMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       bMlResponse.init();
+    }
+
+    if (doprocessAlgorithmGNN) {
+      tensorAlloc = jettaggingutilities::GNNBjetAllocator(nJetFeat.value, nTrkFeat.value, nClassesMl.value, nTrkOrigin.value, transformFeatureJetMean.value, transformFeatureJetStdev.value, transformFeatureTrkMean.value, transformFeatureTrkStdev.value, nJetConst);
+      registry.add("h_db_b", "#it{D}_{b} b-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -10., 35.}}});
+      registry.add("h_db_c", "#it{D}_{b} c-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -10., 35.}}});
+      registry.add("h_db_lf", "#it{D}_{b} lf-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -10., 35.}}});
+      registry.add("h2_pt_db", "#it{p}_{T} vs. #it{D}_{b};#it{p}_{T}^{ch jet} (GeV/#it{c}^{2});#it{D}_{b}", {HistType::kTH2F, {{100, 0., 200.}, {50, -10., 35.}}});
     }
   }
 
@@ -313,6 +361,29 @@ struct JetTaggerHFTask {
       bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
 
       scoreML[analysisJet.globalIndex()] = output[0];
+    }
+  }
+
+  template <typename AnyJets, typename AnyTracks, typename AnyOriginalTracks>
+  void analyzeJetAlgorithmGNN(AnyJets const& jets, AnyTracks const& tracks, AnyOriginalTracks const& origTracks)
+  {
+    for (const auto& jet : jets) {
+      std::vector<std::vector<float>> trkFeat;
+      jettaggingutilities::analyzeJetTrackInfo4GNN(jet, tracks, origTracks, trkFeat, trackPtMin, nJetConst);
+
+      std::vector<float> jetFeat{jet.pt(), jet.phi(), jet.eta(), jet.mass()};
+
+      if (trkFeat.size() > 0) {
+        std::vector<float> feat;
+        std::vector<Ort::Value> gnnInput;
+        tensorAlloc.getGNNInput(jetFeat, trkFeat, feat, gnnInput);
+
+        auto modelOutput = bMlResponse.getModelOutput(gnnInput, 0);
+        scoreML[jet.globalIndex()] = jettaggingutilities::Db(modelOutput, fC);
+      } else {
+        scoreML[jet.globalIndex()] = -999.;
+        LOGF(debug, "doprocessAlgorithmGNN, trkFeat.size() <= 0 (%d)", jet.globalIndex());
+      }
     }
   }
 
@@ -353,6 +424,12 @@ struct JetTaggerHFTask {
     analyzeJetAlgorithmML(allJets, allTracks, allSVs);
   }
   PROCESS_SWITCH(JetTaggerHFTask, processAlgorithmML, "Fill ML evaluation score for charged jets", false);
+
+  void processAlgorithmGNN(JetTable const& jets, JetTracksExt const& jtracks, OriginalTracks const& origTracks)
+  {
+    analyzeJetAlgorithmGNN(jets, jtracks, origTracks);
+  }
+  PROCESS_SWITCH(JetTaggerHFTask, processAlgorithmGNN, "Fill GNN evaluation score (D_b) for charged jets", false);
 
   void processFillTables(std::conditional_t<isMCD, soa::Join<JetTable, aod::ChargedMCDetectorLevelJetFlavourDef>, JetTable>::iterator const& jet, JetTracksExt const& tracks)
   {
