@@ -474,7 +474,8 @@ struct HfCorrelatorDMesonPairs {
     entryD0Pair(ptCand1, ptCand2, yCand1, yCand2, massDCand1, massDbarCand1, massDCand2, massDbarCand2, pairType, candidateType1, candidateType2);
   }
 
-  void fillMcHistos(int8_t matchedRec1, int8_t matchedRec2, int8_t isTrueDCand1, int8_t isTrueDbarCand1, int8_t isTrueDCand2, int8_t isTrueDbarCand2) {
+  void fillMcHistos(int8_t matchedRec1, int8_t matchedRec2, int8_t isTrueDCand1, int8_t isTrueDbarCand1, int8_t isTrueDCand2, int8_t isTrueDbarCand2)
+  {
     // Fill hMatchingMcRec - Cand 1
     registry.fill(HIST("hMatchingMcRec"), 1);
     if (matchedRec1 == 1) {
@@ -514,7 +515,6 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hSelectionStatus"), 25);
     }
   }
-
 
   /// D0(bar)-D0(bar) correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(aod::Collision const& collision,
@@ -639,8 +639,8 @@ struct HfCorrelatorDMesonPairs {
         } else {
           // Fill entries
           fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, hfHelper.yD0(candidate1), hfHelper.yD0(candidate2),
-                      candidate1.pt(), candidate2.pt(), hfHelper.invMassD0ToPiK(candidate1), hfHelper.invMassD0barToKPi(candidate1),
-                      hfHelper.invMassD0ToPiK(candidate2), hfHelper.invMassD0barToKPi(candidate2));
+                    candidate1.pt(), candidate2.pt(), hfHelper.invMassD0ToPiK(candidate1), hfHelper.invMassD0barToKPi(candidate1),
+                    hfHelper.invMassD0ToPiK(candidate2), hfHelper.invMassD0barToKPi(candidate2));
         }
       } // end inner loop (Cand2)
     } // end outer loop (Cand1)
@@ -823,7 +823,7 @@ struct HfCorrelatorDMesonPairs {
         } else {
           // Fill tables
           fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, yCandidate1, yCandidate2,
-                  ptCandidate1, ptCandidate2, massD0Cand1, massD0barCand1, massD0Cand2, massD0barCand2);
+                    ptCandidate1, ptCandidate2, massD0Cand1, massD0barCand1, massD0Cand2, massD0barCand2);
           fillMcHistos(matchedRec1, matchedRec2, isTrueDCand1, isTrueDbarCand1, isTrueDCand2, isTrueDbarCand2);
           entryD0PairMcInfo(originRec1, originRec2, matchedRec1, matchedRec2);
         }
