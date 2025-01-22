@@ -586,8 +586,9 @@ DECLARE_SOA_COLUMN(KfTopolChi2OverNdf, kfTopolChi2OverNdf, float); //! chi2overn
 DECLARE_SOA_COLUMN(PtBhadMotherPart, ptBhadMotherPart, float); //! pt of the first B-hadron mother particle (only in case of non-prompt)
 DECLARE_SOA_COLUMN(PdgBhadMotherPart, pdgBhadMotherPart, int); //! pdg of the first B-hadron mother particle (only in case of non-prompt)
 DECLARE_SOA_COLUMN(IdxBhadMotherPart, idxBhadMotherPart, int); //! index of the first B-hadron mother particle (only in case of non-prompt)
-// Kink topology mc flag
-DECLARE_SOA_COLUMN(NTracksDecayed, nTracksDecayed, int8_t); //! number of tracks matched with kinked decay topology
+// Kink topology and material interaction mc flags
+DECLARE_SOA_COLUMN(NTracksDecayed, nTracksDecayed, int8_t);                       //! number of tracks matched with kinked decay topology
+DECLARE_SOA_COLUMN(NInteractionsWithMaterial, nInteractionsWithMaterial, int8_t); //! number of tracks matched after interaction with material
 
 // method of secondary-vertex reconstruction
 enum VertexerType { DCAFitter = 0,
@@ -735,7 +736,8 @@ DECLARE_SOA_TABLE(HfCand2ProngMcRec, "AOD", "HFCAND2PMCREC", //!
                   hf_cand_2prong::OriginMcRec,
                   hf_cand::PtBhadMotherPart,
                   hf_cand::PdgBhadMotherPart,
-                  hf_cand::NTracksDecayed);
+                  hf_cand::NTracksDecayed,
+                  hf_cand::NInteractionsWithMaterial);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCand2ProngMcGen, "AOD", "HFCAND2PMCGEN", //!
@@ -956,6 +958,40 @@ enum DecayChannelDToKKPi {
   DplusToK0starK // used to describe D+ in MC production for Ds analysis
 };
 
+// KF related properties
+DECLARE_SOA_COLUMN(KfXPVError, kfXPVError, float);                       //! error of X coordinate of the event's primary vertex
+DECLARE_SOA_COLUMN(KfYPVError, kfYPVError, float);                       //! error of Y coordinate of the event's primary vertex
+DECLARE_SOA_COLUMN(KfZPVError, kfZPVError, float);                       //! error of Z coordinate of the event's primary vertex
+DECLARE_SOA_COLUMN(KfXError, kfXError, float);                           //! error of candidate's decay point X coordinate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfYError, kfYError, float);                           //! error of candidate's decay point Y coordinate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfZError, kfZError, float);                           //! error of candidate's decay point Z coordinate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassPKPi, kfMassPKPi, float);                       //! mass of the PKPi candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassPiKP, kfMassPiKP, float);                       //! mass of the PiKP candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassPiKPi, kfMassPiKPi, float);                     //! mass of the PiKPi candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassKKPi, kfMassKKPi, float);                       //! mass of the KKPi candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassPiKK, kfMassPiKK, float);                       //! mass of the PiKK candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassKPi, kfMassKPi, float);                         //! mass of the KPi pair from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassPiK, kfMassPiK, float);                         //! mass of the PiK pair from the KFParticle fit
+DECLARE_SOA_COLUMN(KfPx, kfPx, float);                                   //! Px of the candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfPy, kfPy, float);                                   //! Py of the candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfPz, kfPz, float);                                   //! Pz of the candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfErrorPx, kfErrorPx, float);                         //! Px error of the candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfErrorPy, kfErrorPy, float);                         //! Py error of the candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfErrorPz, kfErrorPz, float);                         //! Pz error of the candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfChi2PrimProng0, kfChi2PrimProng0, float);           //! chi2 primary of the first prong
+DECLARE_SOA_COLUMN(KfChi2PrimProng1, kfChi2PrimProng1, float);           //! chi2 primary of the second prong
+DECLARE_SOA_COLUMN(KfChi2PrimProng2, kfChi2PrimProng2, float);           //! chi2 primary of the third prong
+DECLARE_SOA_COLUMN(KfDcaProng0Prong1, kfDcaProng0Prong1, float);         //! DCA between first and second prongs
+DECLARE_SOA_COLUMN(KfDcaProng0Prong2, kfDcaProng0Prong2, float);         //! DCA between first and third prongs
+DECLARE_SOA_COLUMN(KfDcaProng1Prong2, kfDcaProng1Prong2, float);         //! DCA between second and third prongs
+DECLARE_SOA_COLUMN(KfChi2GeoProng0Prong1, kfChi2GeoProng0Prong1, float); //! chi2 geo between first and second prongs
+DECLARE_SOA_COLUMN(KfChi2GeoProng0Prong2, kfChi2GeoProng0Prong2, float); //! chi2 geo between first and third prongs
+DECLARE_SOA_COLUMN(KfChi2GeoProng1Prong2, kfChi2GeoProng1Prong2, float); //! chi2 geo between second and third prongs
+DECLARE_SOA_COLUMN(KfChi2Geo, kfChi2Geo, float);                         //! chi2 geo of the full candidate
+DECLARE_SOA_COLUMN(KfChi2Topo, kfChi2Topo, float);                       //! chi2 topo of the full candidate (chi2prim of candidate to PV)
+DECLARE_SOA_COLUMN(KfDecayLength, kfDecayLength, float);                 //! decay length
+DECLARE_SOA_COLUMN(KfDecayLengthError, kfDecayLengthError, float);       //! decay length error
+
 } // namespace hf_cand_3prong
 
 // 3-prong decay candidate table
@@ -1005,6 +1041,17 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCand3ProngExt, HfCand3ProngBase, "HFCAND3PEXT"
 
 using HfCand3Prong = HfCand3ProngExt;
 
+DECLARE_SOA_TABLE(HfCand3ProngKF, "AOD", "HFCAND3PKF",
+                  hf_cand_3prong::KfXError, hf_cand_3prong::KfYError, hf_cand_3prong::KfZError,
+                  hf_cand_3prong::KfXPVError, hf_cand_3prong::KfYPVError, hf_cand_3prong::KfZPVError,
+                  hf_cand_3prong::KfMassPKPi, hf_cand_3prong::KfMassPiKP, hf_cand_3prong::KfMassPiKPi, hf_cand_3prong::KfMassKKPi, hf_cand_3prong::KfMassPiKK, hf_cand_3prong::KfMassKPi, hf_cand_3prong::KfMassPiK,
+                  hf_cand_3prong::KfPx, hf_cand_3prong::KfPy, hf_cand_3prong::KfPz,
+                  hf_cand_3prong::KfErrorPx, hf_cand_3prong::KfErrorPy, hf_cand_3prong::KfErrorPz,
+                  hf_cand_3prong::KfChi2PrimProng0, hf_cand_3prong::KfChi2PrimProng1, hf_cand_3prong::KfChi2PrimProng2,
+                  hf_cand_3prong::KfDcaProng1Prong2, hf_cand_3prong::KfDcaProng0Prong2, hf_cand_3prong::KfDcaProng0Prong1,
+                  hf_cand_3prong::KfChi2GeoProng1Prong2, hf_cand_3prong::KfChi2GeoProng0Prong2, hf_cand_3prong::KfChi2GeoProng0Prong1,
+                  hf_cand_3prong::KfChi2Geo, hf_cand_3prong::KfDecayLength, hf_cand_3prong::KfDecayLengthError, hf_cand_3prong::KfChi2Topo);
+
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCand3ProngMcRec, "AOD", "HFCAND3PMCREC", //!
                   hf_cand_3prong::FlagMcMatchRec,
@@ -1013,7 +1060,8 @@ DECLARE_SOA_TABLE(HfCand3ProngMcRec, "AOD", "HFCAND3PMCREC", //!
                   hf_cand_3prong::FlagMcDecayChanRec,
                   hf_cand::PtBhadMotherPart,
                   hf_cand::PdgBhadMotherPart,
-                  hf_cand::NTracksDecayed);
+                  hf_cand::NTracksDecayed,
+                  hf_cand::NInteractionsWithMaterial);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCand3ProngMcGen, "AOD", "HFCAND3PMCGEN", //!
@@ -2360,7 +2408,8 @@ DECLARE_SOA_TABLE(HfCandDstarMcRec, "AOD", "HFCANDDSTRMCREC",
                   hf_cand_dstar::OriginMcRec,
                   hf_cand::PtBhadMotherPart,
                   hf_cand::PdgBhadMotherPart,
-                  hf_cand::NTracksDecayed);
+                  hf_cand::NTracksDecayed,
+                  hf_cand::NInteractionsWithMaterial);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandDstarMcGen, "AOD", "HFCANDDSTRMCGEN",

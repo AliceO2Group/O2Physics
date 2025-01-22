@@ -45,6 +45,7 @@
 #include <TProfile.h>
 #include <TRandom3.h>
 #include <TF1.h>
+#include <TPDGCode.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -104,6 +105,7 @@ struct GenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgOccupancySelection, int, -999, "Max occupancy selection, -999 to disable");
   O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileupCut, bool, true, "kNoSameBunchPileupCut");
   O2_DEFINE_CONFIGURABLE(cfgIsGoodZvtxFT0vsPV, bool, true, "kIsGoodZvtxFT0vsPV");
+  O2_DEFINE_CONFIGURABLE(cfgIsGoodITSLayersAll, bool, true, "kIsGoodITSLayersAll");
   O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, true, "kNoCollInTimeRangeStandard");
   O2_DEFINE_CONFIGURABLE(cfgDoOccupancySel, bool, true, "Bool for event selection on detector occupancy");
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, true, "Use additional evenr cut on mult correlations");
@@ -267,8 +269,9 @@ struct GenericFramework {
       registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(6, "kIsGoodZvtxFT0vsPV");
       registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(7, "kNoCollInTimeRangeStandard");
       registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(8, "kIsVertexITSTPC");
-      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(9, "after Mult cuts");
-      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(10, "has track + within cent");
+      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(9, "kIsGoodITSLayersAll");
+      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(10, "after Mult cuts");
+      registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(11, "has track + within cent");
     }
 
     if (regions.GetSize() < 0)
@@ -538,6 +541,13 @@ struct GenericFramework {
       }
       registry.fill(HIST("eventQA/eventSel"), 7.5);
     }
+
+    if (cfgIsGoodITSLayersAll) {
+      if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        return 0;
+      }
+      registry.fill(HIST("eventQA/eventSel"), 8.5);
+    }
     float vtxz = -999;
     if (collision.numContrib() > 1) {
       vtxz = collision.posZ();
@@ -560,7 +570,7 @@ struct GenericFramework {
       return 0;
     if (multTrk > fMultCutHigh->Eval(centrality))
       return 0;
-    registry.fill(HIST("eventQA/eventSel"), 8.5);
+    registry.fill(HIST("eventQA/eventSel"), 9.5);
     /* 22s
     if (multNTracksPV < fMultPVCutLow->Eval(centrality))
       return 0;
@@ -638,6 +648,8 @@ struct GenericFramework {
       std::vector<GFWWeights*> weights;
       std::vector<std::string> species = {"ref", "ch", "pi", "ka", "pr"};
       for (size_t i = 0; i < species.size(); ++i) {
+        if (dynamic_cast<GFWWeights*>(fWeightList->FindObject(Form("w%i_%s", lastRun, species[i].c_str()))))
+          continue;
         weights.push_back(new GFWWeights(Form("w%i_%s", lastRun, species[i].c_str())));
         if (i == 0) {
           auto it = std::find(ptbinning.begin(), ptbinning.end(), ptrefup);
@@ -650,6 +662,8 @@ struct GenericFramework {
         fWeightList->Add(weights[i]);
       }
     } else {
+      if (dynamic_cast<GFWWeights*>(fWeightList->FindObject(Form("w%i_ch", lastRun))))
+        return;
       GFWWeights* weight = new GFWWeights(Form("w%i_ch", lastRun));
       weight->SetPtBins(fPtAxis->GetNbins(), &ptbinning[0]);
       weight->Init(true, false);
@@ -699,7 +713,7 @@ struct GenericFramework {
       return;
     if (centrality < centbinning.front() || centrality > centbinning.back())
       return;
-    registry.fill(HIST("eventQA/eventSel"), 9.5);
+    registry.fill(HIST("eventQA/eventSel"), 10.5);
     float vtxz = collision.posZ();
     fGFW->Clear();
     fFCpt->clearVector();
@@ -732,11 +746,11 @@ struct GenericFramework {
 
       int pidIndex = 0;
       if (cfgUsePID) {
-        if (mcParticle.pdgCode() == 211)
+        if (std::abs(mcParticle.pdgCode()) == kPiPlus)
           pidIndex = 1;
-        if (mcParticle.pdgCode() == 321)
+        if (std::abs(mcParticle.pdgCode()) == kKPlus)
           pidIndex = 2;
-        if (mcParticle.pdgCode() == 2212)
+        if (std::abs(mcParticle.pdgCode()) == kProton)
           pidIndex = 3;
       }
 
@@ -761,11 +775,11 @@ struct GenericFramework {
 
       int pidIndex = 0;
       if (cfgUsePID) {
-        if (track.pdgCode() == 211)
+        if (std::abs(track.pdgCode()) == kPiPlus)
           pidIndex = 1;
-        if (track.pdgCode() == 321)
+        if (std::abs(track.pdgCode()) == kKPlus)
           pidIndex = 2;
-        if (track.pdgCode() == 2212)
+        if (std::abs(track.pdgCode()) == kProton)
           pidIndex = 3;
       }
 
