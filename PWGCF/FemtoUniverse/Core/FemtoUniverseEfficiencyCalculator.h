@@ -37,11 +37,11 @@ struct EfficiencyConfigurableGroup : ConfigurableGroup {
   Configurable<bool> confEfficiencyCalculate{"confEfficiencyCalculate", false, "Should calculate efficiency"};
   Configurable<bool> confEfficiencyApplyCorrections{"confEfficiencyApplyCorrections", false, "Should apply corrections from efficiency"};
   Configurable<std::vector<std::string>> confEfficiencyCCDBLabels{"confEfficiencyCCDBLabels", {}, "Labels for efficiency objects in CCDB"};
+  ConfigurableAxis confEfficiencyCCDBTimestamps{"confEfficiencyCCDBTimestamps", {-1, -1}, "Timestamps from which to query CCDB objects (default: -1 for both)"};
 
   // NOTE: in the future we might move the below configurables to a separate struct, eg. CCDBConfigurableGroup
   Configurable<std::string> confCCDBUrl{"confCCDBUrl", "http://alice-ccdb.cern.ch", "CCDB URL to be used"};
   Configurable<std::string> confCCDBPath{"confCCDBPath", "", "CCDB base path to where to upload objects"};
-  Configurable<int64_t> confCCDBTimestamp{"confCCDBTimestamp", -1, "Timestamp from which to query CCDB objects (default: latest)"};
   Configurable<int64_t> confCCDBLifetime{"confCCDBLifetime", 365LL * 24 * 60 * 60 * 1000, "Lifetime of uploaded objects (default: 1 year)"};
 };
 
@@ -70,9 +70,12 @@ class EfficiencyCalculator
     ccdbFullPath = fmt::format("{}/{}", config->confCCDBPath.value, folderName);
 
     if (config->confEfficiencyApplyCorrections) {
+      if (config->confEfficiencyCCDBTimestamps->size() != 2) {
+        LOGF(fatal, notify("CCDB timestamps configurable should be exactly of size 2"));
+      }
       hLoaded = {
-        loadEfficiencyFromCCDB<1>(config->confCCDBTimestamp),
-        loadEfficiencyFromCCDB<2>(config->confCCDBTimestamp) //
+        loadEfficiencyFromCCDB<1>(config->confEfficiencyCCDBTimestamps.value[0]),
+        loadEfficiencyFromCCDB<2>(config->confEfficiencyCCDBTimestamps.value[1]) //
       };
     }
   }
