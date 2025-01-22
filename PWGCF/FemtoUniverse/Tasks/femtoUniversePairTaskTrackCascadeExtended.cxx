@@ -112,6 +112,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   FemtoUniverseContainer<femto_universe_container::EventType::same, femto_universe_container::Observable::kstar> sameEventCont;
   FemtoUniverseContainer<femto_universe_container::EventType::mixed, femto_universe_container::Observable::kstar> mixedEventCont;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kCascade> pairCleaner;
+  FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kCascade> pairCleanerCasc;
 
   HistogramRegistry rXiQA{"xi", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -379,7 +380,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
       if (!invMCascade(p2.mLambda(), p2.mAntiLambda()))
         return;
       // track cleaning
-      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+      if (!pairCleanerCasc.isCleanPair(p1, p2, parts)) {
         return;
       }
       const auto& posChild1 = parts.iteratorAt(p1.index() - 3);
@@ -488,7 +489,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
         if (!isParticleTPC(posChild2, CascChildTable[confCascType2][0]) || !isParticleTPC(negChild2, CascChildTable[confCascType2][1]) || !isParticleTPC(bachelor2, CascChildTable[confCascType2][2]))
           return;
         // track cleaning
-        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+        if (!pairCleanerCasc.isCleanPair(p1, p2, parts)) {
           continue;
         }
 
