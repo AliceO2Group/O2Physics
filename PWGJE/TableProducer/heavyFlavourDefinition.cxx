@@ -67,12 +67,16 @@ struct HeavyFlavourDefinitionTask {
     for (auto const& mcdjet : mcdjets) {
       auto const particlesPerColl = particles.sliceBy(particlesPerCollision, collision.mcCollisionId());
       int8_t origin = -1;
-      for (auto const& mcpjet : mcdjet.template matchedJetGeo_as<soa::Join<JetTableMCP, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>()) {
-        if (searchUpToQuark) {
-          origin = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
-        } else {
-          origin = jettaggingutilities::getJetFlavorHadron(mcpjet, particlesPerColl);
+      if (mcdjet.has_matchedJetGeo()) {
+        for (auto const& mcpjet : mcdjet.template matchedJetGeo_as<soa::Join<JetTableMCP, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>()) {
+          if (searchUpToQuark) {
+            origin = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
+          } else {
+            origin = jettaggingutilities::getJetFlavorHadron(mcpjet, particlesPerColl);
+          }
         }
+      } else {
+        origin = JetTaggingSpecies::none;
       }
       flavourTableMCD(origin);
     }
