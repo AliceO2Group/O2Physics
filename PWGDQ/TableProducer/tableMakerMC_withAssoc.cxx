@@ -21,6 +21,8 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <utility>
+#include <unordered_map>
 #include "TList.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
