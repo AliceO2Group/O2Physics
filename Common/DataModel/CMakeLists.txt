@@ -10,17 +10,20 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_header_only_library(DataModel
-                                  HEADERS CaloClusters.h
-                                          Centrality.h
-                                          EventSelection.h
-                                          FT0Corrected.h
-                                          Multiplicity.h
-                                          PIDResponse.h
-                                          CollisionAssociationTables.h
-                                          TrackSelectionTables.h
-                                          McCollisionExtra.h
-                                          Qvectors.h
-                                          MatchMFTFT0.h
-                                          MftmchMatchingML.h
-                                          ZDCInterCalib.h
-                                          EseTable.h)
+        HEADERS CaloClusters.h
+        Centrality.h
+        EventSelection.h
+        FT0Corrected.h
+        Multiplicity.h
+        PIDResponse.h
+        PIDResponseITS.h
+        PIDResponseTOF.h
+        PIDResponseTPC.h
+        CollisionAssociationTables.h
+        TrackSelectionTables.h
+        McCollisionExtra.h
+        Qvectors.h
+        MatchMFTFT0.h
+        MftmchMatchingML.h
+        ZDCInterCalib.h
+        EseTable.h)
