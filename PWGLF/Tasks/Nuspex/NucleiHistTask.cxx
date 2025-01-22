@@ -497,6 +497,7 @@ struct NucleiHistTask {
   Configurable<bool> requireGoldenChi2{"requireGoldenChi2", false, "Enable the requirement of GoldenChi2"};
   Configurable<bool> event_selection_sel8{"event_selection_sel8", true, "Enable sel8 event selection"};
   Configurable<bool> event_selection_MC_sel8{"event_selection_MC_sel8", true, "Enable sel8 event selection in MC processing"};
+  Configurable<bool> require_PhysicalPrimary_MC_reco{"require_PhysicalPrimary_MC_reco", true, "Enable PhysicalPrimary selection in reconstructed MC processing"};
   Configurable<bool> require_PhysicalPrimary_MC_gen{"require_PhysicalPrimary_MC_gen", true, "Enable PhysicalPrimary selection in generated MC processing"};
   Configurable<bool> removeITSROFrameBorder{"removeITSROFrameBorder", false, "Remove TF border"};
   Configurable<bool> removeNoSameBunchPileup{"removeNoSameBunchPileup", false, "Remove TF border"};
@@ -1285,7 +1286,7 @@ struct NucleiHistTask {
         }
       }
 
-      if (!particle.isPhysicalPrimary())
+      if (require_PhysicalPrimary_MC_reco && !particle.isPhysicalPrimary())
         continue;
       histTrackcuts_MC->AddBinContent(2);
       TLorentzVector lorentzVector_particle_MC{};
