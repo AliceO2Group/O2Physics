@@ -40,9 +40,9 @@ void addEventHistograms(HistogramRegistry* fRegistry)
   hCollisionCounter->GetXaxis()->SetBinLabel(14, "NoCollInRofStandard");
   hCollisionCounter->GetXaxis()->SetBinLabel(15, "NoCollInRofStrict");
   hCollisionCounter->GetXaxis()->SetBinLabel(16, "NoHighMultCollInPrevRof");
-  hCollisionCounter->GetXaxis()->SetBinLabel(17, "NoHighMultCollInPrevRof");
-  hCollisionCounter->GetXaxis()->SetBinLabel(18, "NoHighMultCollInPrevRof");
-  hCollisionCounter->GetXaxis()->SetBinLabel(19, "NoHighMultCollInPrevRof");
+  hCollisionCounter->GetXaxis()->SetBinLabel(17, "IsGoodITSLayer3");
+  hCollisionCounter->GetXaxis()->SetBinLabel(18, "IsGoodITSLayer0123");
+  hCollisionCounter->GetXaxis()->SetBinLabel(19, "IsGoodITSLayersAll");
   hCollisionCounter->GetXaxis()->SetBinLabel(20, "Calibrated Q vector");
   hCollisionCounter->GetXaxis()->SetBinLabel(21, "accepted");
 
