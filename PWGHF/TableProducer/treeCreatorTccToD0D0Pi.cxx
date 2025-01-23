@@ -222,7 +222,7 @@ struct HfTreeCreatorTccToD0D0Pi {
       softPiCuts.SetMaxDcaZ(99999);
     }
     // kinematics
-    softPiCuts.SetPtRange(, 1000.);         // pt
+    softPiCuts.SetPtRange(ptMinSoftPion, 1000.);         // pt
     softPiCuts.SetEtaRange(-softPiEtaMax, softPiEtaMax); // eta
     // ITS chi2
     softPiCuts.SetMaxChi2PerClusterITS(softPiChi2Max);
