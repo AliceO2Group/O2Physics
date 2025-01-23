@@ -16,6 +16,7 @@
 /// \author Deepa Thomas <deepa.thomas@cern.ch>, UT Austin
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 
+#include <algorithm>
 #include <string>
 #include <vector>
 

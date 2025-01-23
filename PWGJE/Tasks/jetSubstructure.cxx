@@ -67,6 +67,7 @@ struct JetSubstructureTask {
   std::vector<float> pairEnergyVec;
   std::vector<float> pairThetaVec;
   float angularity;
+  float leadingConstituentPt;
 
   HistogramRegistry registry;
 
@@ -177,7 +178,11 @@ struct JetSubstructureTask {
   void jetSubstructureSimple(T const& jet, U const& /*tracks*/)
   {
     angularity = 0.0;
+    leadingConstituentPt = 0.0;
     for (auto& constituent : jet.template tracks_as<U>()) {
+      if (constituent.pt() >= leadingConstituentPt) {
+        leadingConstituentPt = constituent.pt();
+      }
       angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
     }
     angularity /= (jet.pt() * (jet.r() / 100.f));
@@ -194,7 +199,7 @@ struct JetSubstructureTask {
     jetReclustering<false, isSubtracted>(jet);
     jetPairing(jet, tracks);
     jetSubstructureSimple(jet, tracks);
-    outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairPtVec, pairEnergyVec, pairThetaVec, angularity);
+    outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairPtVec, pairEnergyVec, pairThetaVec, angularity, leadingConstituentPt);
   }
 
   void processDummy(aod::JetTracks const&)
@@ -234,7 +239,7 @@ struct JetSubstructureTask {
     jetReclustering<true, false>(jet);
     jetPairing(jet, particles);
     jetSubstructureSimple(jet, particles);
-    jetSubstructureMCPTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairPtVec, pairEnergyVec, pairThetaVec, angularity);
+    jetSubstructureMCPTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairPtVec, pairEnergyVec, pairThetaVec, angularity, leadingConstituentPt);
   }
   PROCESS_SWITCH(JetSubstructureTask, processChargedJetsMCP, "charged jet substructure on MC particle level", false);
 };

@@ -67,6 +67,13 @@ struct strangeness_in_jets {
   Configurable<bool> requireNoOverlap{"requireNoOverlap", false, "require no overlap between jets and UE cones"};
   Configurable<float> par0{"par0", 0.004f, "par 0"};
   Configurable<float> par1{"par1", 0.013f, "par 1"};
+  // Axis parameters
+  struct : ConfigurableGroup {
+    ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "Binning of the pT axis"};
+
+    ConfigurableAxis binsDca{"binsDca", {VARIABLE_WIDTH, -3.0, -2.95, -2.9, -2.85, -2.8, -2.75, -2.7, -2.65, -2.6, -2.55, -2.5, -2.45, -2.4, -2.35, -2.3, -2.25, -2.2, -2.15, -2.1, -2.05, -2.0, -1.975, -1.95, -1.925, -1.9, -1.875, -1.85, -1.825, -1.8, -1.775, -1.75, -1.725, -1.7, -1.675, -1.65, -1.625, -1.6, -1.575, -1.55, -1.525, -1.5, -1.475, -1.45, -1.425, -1.4, -1.375, -1.35, -1.325, -1.3, -1.275, -1.25, -1.225, -1.2, -1.175, -1.15, -1.125, -1.1, -1.075, -1.05, -1.025, -1.0, -0.99, -0.98, -0.97, -0.96, -0.95, -0.94, -0.93, -0.92, -0.91, -0.9, -0.89, -0.88, -0.87, -0.86, -0.85, -0.84, -0.83, -0.82, -0.81, -0.8, -0.79, -0.78, -0.77, -0.76, -0.75, -0.74, -0.73, -0.72, -0.71, -0.7, -0.69, -0.68, -0.67, -0.66, -0.65, -0.64, -0.63, -0.62, -0.61, -0.6, -0.59, -0.58, -0.57, -0.56, -0.55, -0.54, -0.53, -0.52, -0.51, -0.5, -0.49, -0.48, -0.47, -0.46, -0.45, -0.44, -0.43, -0.42, -0.41, -0.4, -0.396, -0.392, -0.388, -0.384, -0.38, -0.376, -0.372, -0.368, -0.364, -0.36, -0.356, -0.352, -0.348, -0.344, -0.34, -0.336, -0.332, -0.328, -0.324, -0.32, -0.316, -0.312, -0.308, -0.304, -0.3, -0.296, -0.292, -0.288, -0.284, -0.28, -0.276, -0.272, -0.268, -0.264, -0.26, -0.256, -0.252, -0.248, -0.244, -0.24, -0.236, -0.232, -0.228, -0.224, -0.22, -0.216, -0.212, -0.208, -0.204, -0.2, -0.198, -0.196, -0.194, -0.192, -0.19, -0.188, -0.186, -0.184, -0.182, -0.18, -0.178, -0.176, -0.174, -0.172, -0.17, -0.168, -0.166, -0.164, -0.162, -0.16, -0.158, -0.156, -0.154, -0.152, -0.15, -0.148, -0.146, -0.144, -0.142, -0.14, -0.138, -0.136, -0.134, -0.132, -0.13, -0.128, -0.126, -0.124, -0.122, -0.12, -0.118, -0.116, -0.114, -0.112, -0.11, -0.108, -0.106, -0.104, -0.102, -0.1, -0.099, -0.098, -0.097, -0.096, -0.095, -0.094, -0.093, -0.092, -0.091, -0.09, -0.089, -0.088, -0.087, -0.086, -0.085, -0.084, -0.083, -0.082, -0.081, -0.08, -0.079, -0.078, -0.077, -0.076, -0.075, -0.074, -0.073, -0.072, -0.071, -0.07, -0.069, -0.068, -0.067, -0.066, -0.065, -0.064, -0.063, -0.062, -0.061, -0.06, -0.059, -0.058, -0.057, -0.056, -0.055, -0.054, -0.053, -0.052, -0.051, -0.05, -0.049, -0.048, -0.047, -0.046, -0.045, -0.044, -0.043, -0.042, -0.041, -0.04, -0.039, -0.038, -0.037, -0.036, -0.035, -0.034, -0.033, -0.032, -0.031, -0.03, -0.029, -0.028, -0.027, -0.026, -0.025, -0.024, -0.023, -0.022, -0.021, -0.02, -0.019, -0.018, -0.017, -0.016, -0.015, -0.014, -0.013, -0.012, -0.011, -0.01, -0.009, -0.008, -0.007, -0.006, -0.005, -0.004, -0.003, -0.002, -0.001, -0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02, 0.021, 0.022, 0.023, 0.024, 0.025, 0.026, 0.027, 0.028, 0.029, 0.03, 0.031, 0.032, 0.033, 0.034, 0.035, 0.036, 0.037, 0.038, 0.039, 0.04, 0.041, 0.042, 0.043, 0.044, 0.045, 0.046, 0.047, 0.048, 0.049, 0.05, 0.051, 0.052, 0.053, 0.054, 0.055, 0.056, 0.057, 0.058, 0.059, 0.06, 0.061, 0.062, 0.063, 0.064, 0.065, 0.066, 0.067, 0.068, 0.069, 0.07, 0.071, 0.072, 0.073, 0.074, 0.075, 0.076, 0.077, 0.078, 0.079, 0.08, 0.081, 0.082, 0.083, 0.084, 0.085, 0.086, 0.087, 0.088, 0.089, 0.09, 0.091, 0.092, 0.093, 0.094, 0.095, 0.096, 0.097, 0.098, 0.099, 0.1, 0.102, 0.104, 0.106, 0.108, 0.11, 0.112, 0.114, 0.116, 0.118, 0.12, 0.122, 0.124, 0.126, 0.128, 0.13, 0.132, 0.134, 0.136, 0.138, 0.14, 0.142, 0.144, 0.146, 0.148, 0.15, 0.152, 0.154, 0.156, 0.158, 0.16, 0.162, 0.164, 0.166, 0.168, 0.17, 0.172, 0.174, 0.176, 0.178, 0.18, 0.182, 0.184, 0.186, 0.188, 0.19, 0.192, 0.194, 0.196, 0.198, 0.2, 0.204, 0.208, 0.212, 0.216, 0.22, 0.224, 0.228, 0.232, 0.236, 0.24, 0.244, 0.248, 0.252, 0.256, 0.26, 0.264, 0.268, 0.272, 0.276, 0.28, 0.284, 0.288, 0.292, 0.296, 0.3, 0.304, 0.308, 0.312, 0.316, 0.32, 0.324, 0.328, 0.332, 0.336, 0.34, 0.344, 0.348, 0.352, 0.356, 0.36, 0.364, 0.368, 0.372, 0.376, 0.38, 0.384, 0.388, 0.392, 0.396, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.5, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.6, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.8, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.0, 1.025, 1.05, 1.075, 1.1, 1.125, 1.15, 1.175, 1.2, 1.225, 1.25, 1.275, 1.3, 1.325, 1.35, 1.375, 1.4, 1.425, 1.45, 1.475, 1.5, 1.525, 1.55, 1.575, 1.6, 1.625, 1.65, 1.675, 1.7, 1.725, 1.75, 1.775, 1.8, 1.825, 1.85, 1.875, 1.9, 1.925, 1.95, 1.975, 2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0}, "Binning of DCA xy and z axis"};
+
+  } binsOptions;
 
   // Track Parameters
   Configurable<float> minITSnCls{"minITSnCls", 4.0f, "min number of ITS clusters"};
@@ -86,6 +93,8 @@ struct strangeness_in_jets {
   Configurable<float> nsigmaTPCmax{"nsigmaTPCmax", +3.0f, "Maximum nsigma TPC"};
   Configurable<float> nsigmaTOFmin{"nsigmaTOFmin", -3.0f, "Minimum nsigma TOF"};
   Configurable<float> nsigmaTOFmax{"nsigmaTOFmax", +3.0f, "Maximum nsigma TOF"};
+  Configurable<float> nsigmaTOFminPionMC{"nsigmaTOFminPionMC", -6.0f, "Minimum nsigma TOF for pion in MC"};
+  Configurable<float> nsigmaTOFmaxPionMC{"nsigmaTOFmaxPionMC", +6.0f, "Maximum nsigma TOF for pion in MC"};
   Configurable<float> dcaxyMax{"dcaxyMax", 0.1f, "Maximum DCAxy to primary vertex"};
   Configurable<float> dcazMax{"dcazMax", 0.1f, "Maximum DCAz to primary vertex"};
   Configurable<bool> requireITS{"requireITS", false, "require ITS hit"};
@@ -111,6 +120,10 @@ struct strangeness_in_jets {
   Configurable<bool> applyReweighting{"applyReweighting", true, "apply reweighting"};
   Configurable<std::string> url_to_ccdb{"url_to_ccdb", "http://alice-ccdb.cern.ch", "url of the personal ccdb"};
   Configurable<std::string> path_to_file{"path_to_file", "", "path to file with reweighting"};
+  Configurable<std::string> histo_name_weight_piplus_jet{"histo_name_weight_piplus_jet", "", "reweighting histogram: Pi Plus in jet"};
+  Configurable<std::string> histo_name_weight_piplus_ue{"histo_name_weight_piplus_ue", "", "reweighting histogram: Pi Plus in ue"};
+  Configurable<std::string> histo_name_weight_piminus_jet{"histo_name_weight_piminus_jet", "", "reweighting histogram: Pi Minus in jet"};
+  Configurable<std::string> histo_name_weight_piminus_ue{"histo_name_weight_piminus_ue", "", "reweighting histogram: Pi Minus in ue"};
   Configurable<std::string> histo_name_weight_k0_jet{"histo_name_weight_k0_jet", "", "reweighting histogram: K0 in jet"};
   Configurable<std::string> histo_name_weight_k0_ue{"histo_name_weight_k0_ue", "", "reweighting histogram: K0 in ue"};
   Configurable<std::string> histo_name_weight_lambda_jet{"histo_name_weight_lambda_jet", "", "reweighting histogram: lambda in jet"};
@@ -119,6 +132,10 @@ struct strangeness_in_jets {
   Configurable<std::string> histo_name_weight_antilambda_ue{"histo_name_weight_antilambda_ue", "", "reweighting histogram: antilambda in ue"};
 
   // Two-dimensional weights
+  TH2F* twod_weights_piplus_jet = nullptr;
+  TH2F* twod_weights_piplus_ue = nullptr;
+  TH2F* twod_weights_piminus_jet = nullptr;
+  TH2F* twod_weights_piminus_ue = nullptr;
   TH2F* twod_weights_k0_jet;
   TH2F* twod_weights_k0_ue;
   TH2F* twod_weights_lambda_jet;
@@ -177,20 +194,26 @@ struct strangeness_in_jets {
     // Multiplicity Binning
     std::vector<double> multBinning = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
     AxisSpec multAxis = {multBinning, "FT0C percentile"};
+    const AxisSpec etaAxis{18, -0.9, 0.9, "#eta"};
+    const AxisSpec ptAxis{binsOptions.binsPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec nsigmaTOFAxis{200, -10, 10, "n#sigma_{TOF}"};
+    const AxisSpec nsigmaTPCAxis{200, -10, 10, "n#sigma_{TPC}"};
+    const AxisSpec dcaAxis{binsOptions.binsDca, "DCA_{xy} (cm)"};
 
     // Histograms for pions (data)
-    registryData.add("piplus_tpc_in_jet", "piplus_tpc_in_jet", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10, 10, "n#sigma_{TPC}"}});
-    registryData.add("piplus_tof_in_jet", "piplus_tof_in_jet", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10, 10, "n#sigma_{TOF}"}});
-    registryData.add("piplus_tpc_in_ue", "piplus_tpc_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10, 10, "n#sigma_{TPC}"}});
-    registryData.add("piplus_tof_in_ue", "piplus_tof_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10, 10, "n#sigma_{TOF}"}});
-    registryData.add("piminus_tpc_in_jet", "piminus_tpc_in_jet", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10, 10, "n#sigma_{TPC}"}});
-    registryData.add("piminus_tof_in_jet", "piminus_tof_in_jet", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10, 10, "n#sigma_{TOF}"}});
-    registryData.add("piminus_tpc_in_ue", "piminus_tpc_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10, 10, "n#sigma_{TPC}"}});
-    registryData.add("piminus_tof_in_ue", "piminus_tof_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10, 10, "n#sigma_{TOF}"}});
-    registryData.add("piplus_dcaxy_in_jet", "piplus_dcaxy_in_jet", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
-    registryData.add("piplus_dcaxy_in_ue", "piplus_dcaxy_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
-    registryData.add("piminus_dcaxy_in_jet", "piminus_dcaxy_in_jet", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
-    registryData.add("piminus_dcaxy_in_ue", "piminus_dcaxy_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
+    registryData.add("piplus_tpc_in_jet", "piplus_tpc_in_jet", HistType::kTH3F, {multBinning, ptAxis, nsigmaTPCAxis});
+    registryData.add("piplus_tof_in_jet", "piplus_tof_in_jet", HistType::kTH3F, {multBinning, ptAxis, nsigmaTOFAxis});
+    registryData.add("piplus_tpc_in_ue", "piplus_tpc_in_ue", HistType::kTH3F, {multBinning, ptAxis, nsigmaTPCAxis});
+    registryData.add("piplus_tof_in_ue", "piplus_tof_in_ue", HistType::kTH3F, {multBinning, ptAxis, nsigmaTOFAxis});
+    registryData.add("piminus_tpc_in_jet", "piminus_tpc_in_jet", HistType::kTH3F, {multBinning, ptAxis, nsigmaTPCAxis});
+    registryData.add("piminus_tof_in_jet", "piminus_tof_in_jet", HistType::kTH3F, {multBinning, ptAxis, nsigmaTOFAxis});
+    registryData.add("piminus_tpc_in_ue", "piminus_tpc_in_ue", HistType::kTH3F, {multBinning, ptAxis, nsigmaTPCAxis});
+    registryData.add("piminus_tof_in_ue", "piminus_tof_in_ue", HistType::kTH3F, {multBinning, ptAxis, nsigmaTOFAxis});
+
+    registryData.add("piplus_dcaxy_in_jet", "piplus_dcaxy_in_jet", HistType::kTH3F, {multBinning, ptAxis, dcaAxis});
+    registryData.add("piplus_dcaxy_in_ue", "piplus_dcaxy_in_ue", HistType::kTH3F, {multBinning, ptAxis, dcaAxis});
+    registryData.add("piminus_dcaxy_in_jet", "piminus_dcaxy_in_jet", HistType::kTH3F, {multBinning, ptAxis, dcaAxis});
+    registryData.add("piminus_dcaxy_in_ue", "piminus_dcaxy_in_ue", HistType::kTH3F, {multBinning, ptAxis, dcaAxis});
 
     // Histograms for lambda (data)
     registryData.add("Lambda_in_jet", "Lambda_in_jet", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 1.09, 1.14, "m_{p#pi} (GeV/#it{c}^{2})"}});
@@ -244,52 +267,59 @@ struct strangeness_in_jets {
     registryMC.add("AntiLambda_reconstructed_incl", "AntiLambda_reconstructed_incl", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
 
     // Histograms for 2d reweighting (pion)
-    registryMC.add("Pion_eta_pt_jet", "Pion_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("Pion_eta_pt_ue", "Pion_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("Pion_eta_pt_pythia", "Pion_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("Pion_eta_pt_jet", "Pion_eta_pt_jet", HistType::kTH2F, {ptAxis, etaAxis});
+    registryMC.add("Pion_eta_pt_ue", "Pion_eta_pt_ue", HistType::kTH2F, {ptAxis, etaAxis});
+    registryMC.add("Pion_eta_pt_pythia", "Pion_eta_pt_pythia", HistType::kTH2F, {ptAxis, etaAxis});
 
     // Histograms for 2d reweighting (K0s)
-    registryMC.add("K0s_eta_pt_jet", "K0s_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("K0s_eta_pt_ue", "K0s_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("K0s_eta_pt_pythia", "K0s_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("K0s_eta_pt_jet", "K0s_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("K0s_eta_pt_ue", "K0s_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("K0s_eta_pt_pythia", "K0s_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
 
     // Histograms for 2d reweighting (Lambda)
-    registryMC.add("Lambda_eta_pt_jet", "Lambda_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("Lambda_eta_pt_ue", "Lambda_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("Lambda_eta_pt_pythia", "Lambda_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("AntiLambda_eta_pt_jet", "AntiLambda_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("AntiLambda_eta_pt_ue", "AntiLambda_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("AntiLambda_eta_pt_pythia", "AntiLambda_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("Lambda_eta_pt_jet", "Lambda_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("Lambda_eta_pt_ue", "Lambda_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("Lambda_eta_pt_pythia", "Lambda_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("AntiLambda_eta_pt_jet", "AntiLambda_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("AntiLambda_eta_pt_ue", "AntiLambda_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("AntiLambda_eta_pt_pythia", "AntiLambda_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
 
     // Histograms for 2d reweighting (Xi)
-    registryMC.add("Xi_eta_pt_jet", "Xi_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("Xi_eta_pt_ue", "Xi_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("Xi_eta_pt_pythia", "Xi_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("AntiXi_eta_pt_jet", "AntiXi_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("AntiXi_eta_pt_ue", "AntiXi_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("AntiXi_eta_pt_pythia", "AntiXi_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("Xi_eta_pt_jet", "Xi_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("Xi_eta_pt_ue", "Xi_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("Xi_eta_pt_pythia", "Xi_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("AntiXi_eta_pt_jet", "AntiXi_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("AntiXi_eta_pt_ue", "AntiXi_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("AntiXi_eta_pt_pythia", "AntiXi_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
 
     // Histograms for 2d reweighting (Omega)
-    registryMC.add("Omega_eta_pt_jet", "Omega_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("Omega_eta_pt_ue", "Omega_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("Omega_eta_pt_pythia", "Omega_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("AntiOmega_eta_pt_jet", "AntiOmega_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("AntiOmega_eta_pt_ue", "AntiOmega_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
-    registryMC.add("AntiOmega_eta_pt_pythia", "AntiOmega_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("Omega_eta_pt_jet", "Omega_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("Omega_eta_pt_ue", "Omega_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("Omega_eta_pt_pythia", "Omega_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("AntiOmega_eta_pt_jet", "AntiOmega_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("AntiOmega_eta_pt_ue", "AntiOmega_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
+    registryMC.add("AntiOmega_eta_pt_pythia", "AntiOmega_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
 
     // Histograms for efficiency (pions)
-    registryMC.add("pi_plus_gen", "pi_plus_gen", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
-    registryMC.add("pi_plus_rec_tpc", "pi_plus_rec_tpc", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
-    registryMC.add("pi_plus_rec_tof", "pi_plus_rec_tof", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
-    registryMC.add("pi_minus_gen", "pi_minus_gen", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
-    registryMC.add("pi_minus_rec_tpc", "pi_minus_rec_tpc", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
-    registryMC.add("pi_minus_rec_tof", "pi_minus_rec_tof", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("pi_plus_gen_in_jet", "pi_plus_gen_in_jet", HistType::kTH2F, {multBinning, ptAxis});
+    registryMC.add("pi_plus_rec_in_jet_tpc", "pi_plus_rec_in_jet_tpc", HistType::kTH2F, {multBinning, ptAxis});
+    registryMC.add("pi_plus_rec_in_jet_tof", "pi_plus_rec_in_jet_tof", HistType::kTH2F, {multBinning, ptAxis});
+    registryMC.add("pi_plus_gen_in_ue", "pi_plus_gen_in_ue", HistType::kTH2F, {multBinning, ptAxis});
+    registryMC.add("pi_plus_rec_in_ue_tpc", "pi_plus_rec_in_ue_tpc", HistType::kTH2F, {multBinning, ptAxis});
+    registryMC.add("pi_plus_rec_in_ue_tof", "pi_plus_rec_in_ue_tof", HistType::kTH2F, {multBinning, ptAxis});
+
+    registryMC.add("pi_minus_gen_in_jet", "pi_minus_gen_in_jet", HistType::kTH2F, {multBinning, ptAxis});
+    registryMC.add("pi_minus_rec_in_jet_tpc", "pi_minus_rec_in_jet_tpc", HistType::kTH2F, {multBinning, ptAxis});
+    registryMC.add("pi_minus_rec_in_jet_tof", "pi_minus_rec_in_jet_tof", HistType::kTH2F, {multBinning, ptAxis});
+    registryMC.add("pi_minus_gen_in_ue", "pi_minus_gen_in_ue", HistType::kTH2F, {multBinning, ptAxis});
+    registryMC.add("pi_minus_rec_in_ue_tpc", "pi_minus_rec_in_ue_tpc", HistType::kTH2F, {multBinning, ptAxis});
+    registryMC.add("pi_minus_rec_in_ue_tof", "pi_minus_rec_in_ue_tof", HistType::kTH2F, {multBinning, ptAxis});
 
     // MC Templates
-    registryMC.add("piplus_dcaxy_prim", "piplus_dcaxy_prim", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
-    registryMC.add("piminus_dcaxy_prim", "piminus_dcaxy_prim", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
-    registryMC.add("piplus_dcaxy_sec", "piplus_dcaxy_sec", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
-    registryMC.add("piminus_dcaxy_sec", "piminus_dcaxy_sec", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
+    registryMC.add("piplus_dcaxy_prim", "piplus_dcaxy_prim", HistType::kTH3F, {multBinning, ptAxis, dcaAxis});
+    registryMC.add("piminus_dcaxy_prim", "piminus_dcaxy_prim", HistType::kTH3F, {multBinning, ptAxis, dcaAxis});
+    registryMC.add("piplus_dcaxy_sec", "piplus_dcaxy_sec", HistType::kTH3F, {multBinning, ptAxis, dcaAxis});
+    registryMC.add("piminus_dcaxy_sec", "piminus_dcaxy_sec", HistType::kTH3F, {multBinning, ptAxis, dcaAxis});
   }
 
   template <typename chargedTrack>
@@ -831,6 +861,24 @@ struct strangeness_in_jets {
       LOGP(error, "Could not open the file {}", Form("%s", filepath.Data()));
       return;
     }
+
+    if (histo_name_weight_piplus_jet.value != "") {
+      twod_weights_piplus_jet = ccdbObj->get<TH2F>(filepath.Data());
+      LOG(info) << "Getting weight histogram for piplus in jet from " << histo_name_weight_piplus_jet.value;
+    }
+    if (histo_name_weight_piplus_ue.value != "") {
+      twod_weights_piplus_ue = ccdbObj->get<TH2F>(filepath.Data());
+      LOG(info) << "Getting weight histogram for piplus in ue from " << histo_name_weight_piplus_ue.value;
+    }
+    if (histo_name_weight_piminus_jet.value != "") {
+      twod_weights_piminus_jet = ccdbObj->get<TH2F>(filepath.Data());
+      LOG(info) << "Getting weight histogram for piminus in jet from " << histo_name_weight_piminus_jet.value;
+    }
+    if (histo_name_weight_piminus_ue.value != "") {
+      twod_weights_piminus_ue = ccdbObj->get<TH2F>(filepath.Data());
+      LOG(info) << "Getting weight histogram for piminus in ue from " << histo_name_weight_piminus_ue.value;
+    }
+
     twod_weights_k0_jet = static_cast<TH2F*>(l->FindObject(Form("%s", histname_k0_jet.Data())));
     if (!twod_weights_k0_jet) {
       LOGP(error, "Could not open histogram {}", Form("%s", histname_k0_jet.Data()));
@@ -893,7 +941,7 @@ struct strangeness_in_jets {
     // List of Tracks
     std::vector<TVector3> trk;
 
-    for (auto track : tracks) { // o2-linter: disable=[const-ref-in-for-loop]
+    for (const auto& track : tracks) {
 
       if (!passedTrackSelectionForJetReconstruction(track))
         continue;
@@ -911,7 +959,7 @@ struct strangeness_in_jets {
     do {
       double dij_min(1e+06), diB_min(1e+06);
       int i_min(0), j_min(0), iB_min(0);
-      for (int i = 0; i < static_cast<int>(trk.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
+      for (int i = 0; i < static_cast<int>(trk.size()); i++) {
         if (trk[i].Mag() == 0)
           continue;
         double diB = 1.0 / (trk[i].Pt() * trk[i].Pt());
@@ -919,7 +967,7 @@ struct strangeness_in_jets {
           diB_min = diB;
           iB_min = i;
         }
-        for (int j = (i + 1); j < static_cast<int>(trk.size()); j++) { // o2-linter: disable=[const-ref-in-for-loop]
+        for (int j = (i + 1); j < static_cast<int>(trk.size()); j++) {
           if (trk[j].Mag() == 0)
             continue;
           double dij = calculate_dij(trk[i], trk[j], Rjet);
@@ -945,12 +993,12 @@ struct strangeness_in_jets {
 
     // Jet Selection
     std::vector<int> isSelected;
-    for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
+    for (int i = 0; i < static_cast<int>(jet.size()); i++) {
       isSelected.push_back(0);
     }
 
     int n_jets_selected(0);
-    for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
+    for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
       if ((std::fabs(jet[i].Eta()) + Rjet) > etaMax)
         continue;
@@ -970,7 +1018,7 @@ struct strangeness_in_jets {
       double ptJet(0);
       double ptUE(0);
 
-      for (auto track : tracks) { // o2-linter: disable=[const-ref-in-for-loop]
+      for (const auto& track : tracks) {
 
         if (!passedTrackSelectionForJetReconstruction(track))
           continue;
@@ -1026,11 +1074,11 @@ struct strangeness_in_jets {
 
     // Overlaps
     int nOverlaps(0);
-    for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
+    for (int i = 0; i < static_cast<int>(jet.size()); i++) {
       if (isSelected[i] == 0)
         continue;
 
-      for (int j = 0; j < static_cast<int>(jet.size()); j++) { // o2-linter: disable=[const-ref-in-for-loop]
+      for (int j = 0; j < static_cast<int>(jet.size()); j++) {
         if (isSelected[j] == 0 || i == j)
           continue;
         if (overlap(jet[i], ue1[j], Rjet) || overlap(jet[i], ue2[j], Rjet))
@@ -1052,14 +1100,14 @@ struct strangeness_in_jets {
 
     registryData.fill(HIST("number_of_events_vsmultiplicity"), multiplicity);
 
-    for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
+    for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
       if (isSelected[i] == 0)
         continue;
 
       // Vzeros
       if (particle_of_interest == option::vzeros) {
-        for (auto& v0 : fullV0s) { // o2-linter: disable=[const-ref-in-for-loop]
+        for (const auto& v0 : fullV0s) {
 
           const auto& pos = v0.posTrack_as<StrHadronDaughterTracks>();
           const auto& neg = v0.negTrack_as<StrHadronDaughterTracks>();
@@ -1107,7 +1155,7 @@ struct strangeness_in_jets {
 
       // Cascades
       if (particle_of_interest == option::cascades) {
-        for (auto& casc : Cascades) { // o2-linter: disable=[const-ref-in-for-loop]
+        for (const auto& casc : Cascades) {
 
           auto bach = casc.bachelor_as<StrHadronDaughterTracks>();
           auto pos = casc.posTrack_as<StrHadronDaughterTracks>();
@@ -1169,7 +1217,7 @@ struct strangeness_in_jets {
 
       // Pions
       if (particle_of_interest == option::pions) {
-        for (auto track : tracks) { // o2-linter: disable=[const-ref-in-for-loop]
+        for (const auto& track : tracks) {
 
           if (!passedTrackSelectionForPions(track))
             continue;
@@ -1256,7 +1304,7 @@ struct strangeness_in_jets {
       return;
     registryData.fill(HIST("number_of_events_data"), 12.5);
 
-    for (auto& v0 : fullV0s) { // o2-linter: disable=[const-ref-in-for-loop]
+    for (const auto& v0 : fullV0s) {
       const auto& ptrack = v0.posTrack_as<StrHadronDaughterTracks>();
       const auto& ntrack = v0.negTrack_as<StrHadronDaughterTracks>();
 
@@ -1333,7 +1381,7 @@ struct strangeness_in_jets {
       }
     }
 
-    for (auto& v0 : fullV0s) { // o2-linter: disable=[const-ref-in-for-loop]
+    for (const auto& v0 : fullV0s) {
       const auto& ptrack = v0.posTrack_as<StrHadronDaughterTracks>();
       const auto& ntrack = v0.negTrack_as<StrHadronDaughterTracks>();
       if (!passedK0ShortSelection(v0, ptrack, ntrack))
@@ -1350,7 +1398,7 @@ struct strangeness_in_jets {
 
   void processMCefficiency(SimCollisions const& collisions, MCTracks const& mcTracks, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, const aod::McParticles& mcParticles)
   {
-    for (const auto& collision : collisions) { // o2-linter: disable=[const-ref-in-for-loop]
+    for (const auto& collision : collisions) {
       registryMC.fill(HIST("number_of_events_mc"), 0.5);
       if (!collision.sel8())
         continue;
@@ -1367,7 +1415,7 @@ struct strangeness_in_jets {
       auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
       auto tracks_per_coll = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
 
-      for (auto& v0 : v0s_per_coll) { // o2-linter: disable=[const-ref-in-for-loop]
+      for (const auto& v0 : v0s_per_coll) {
 
         const auto& pos = v0.posTrack_as<MCTracks>();
         const auto& neg = v0.negTrack_as<MCTracks>();
@@ -1385,10 +1433,11 @@ struct strangeness_in_jets {
 
         int pdg_parent(0);
         bool isPhysPrim = false;
-        for (auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {   // o2-linter: disable=[const-ref-in-for-loop]
-          for (auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
+        for (const auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
+          for (const auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
             if (particleMotherOfNeg == particleMotherOfPos) {
               pdg_parent = particleMotherOfNeg.pdgCode();
+              isPhysPrim = particleMotherOfNeg.isPhysicalPrimary();
             }
           }
         }
@@ -1457,7 +1506,7 @@ struct strangeness_in_jets {
       }
 
       // Cascades
-      for (auto& casc : casc_per_coll) { // o2-linter: disable=[const-ref-in-for-loop]
+      for (const auto& casc : casc_per_coll) {
         auto bach = casc.template bachelor_as<MCTracks>();
         auto neg = casc.template negTrack_as<MCTracks>();
         auto pos = casc.template posTrack_as<MCTracks>();
@@ -1480,9 +1529,9 @@ struct strangeness_in_jets {
           continue;
 
         int pdg_parent(0);
-        for (const auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {       // o2-linter: disable=[const-ref-in-for-loop]
-          for (const auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {     // o2-linter: disable=[const-ref-in-for-loop]
-            for (const auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) { // o2-linter: disable=[const-ref-in-for-loop]
+        for (const auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
+          for (const auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
+            for (const auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) {
               if (particleMotherOfNeg != particleMotherOfPos)
                 continue;
               if (std::fabs(particleMotherOfNeg.pdgCode()) != 3122)
@@ -1516,7 +1565,7 @@ struct strangeness_in_jets {
       }
 
       // Reconstructed Tracks
-      for (auto track : tracks_per_coll) { // o2-linter: disable=[const-ref-in-for-loop]
+      for (const auto& track : tracks_per_coll) {
 
         // Get MC Particle
         if (!track.has_mcParticle())
@@ -1551,31 +1600,80 @@ struct strangeness_in_jets {
         if (!particle.isPhysicalPrimary())
           continue;
 
-        if (track.sign() > 0)
-          registryMC.fill(HIST("pi_plus_rec_tpc"), multiplicity, track.pt());
-        if (track.sign() < 0)
-          registryMC.fill(HIST("pi_minus_rec_tpc"), multiplicity, track.pt());
+        double w_piplus_jet(1.0), w_piplus_ue(1.0);
+        double w_piminus_jet(1.0), w_piminus_ue(1.0);
+        if (applyReweighting) {
+          auto getWeight = [&](TH2F* histo) {
+            if (!histo)
+              return 1.0;
+            const int bx = histo->GetXaxis()->FindBin(track.pt());
+            const int by = histo->GetYaxis()->FindBin(track.eta());
+            if (bx <= 0 || bx > histo->GetNbinsX()) {
+              return 1.0;
+            }
+            if (by <= 0 || by > histo->GetNbinsX()) {
+              return 1.0;
+            }
+            return histo->GetBinContent(bx, by);
+          };
+          w_piplus_jet = getWeight(twod_weights_piplus_jet);
+          w_piplus_ue = getWeight(twod_weights_piplus_ue);
+          w_piminus_jet = getWeight(twod_weights_piminus_jet);
+          w_piminus_ue = getWeight(twod_weights_piminus_ue);
+        }
+
+        if (track.sign() > 0) {
+          registryMC.fill(HIST("pi_plus_rec_in_jet_tpc"), multiplicity, track.pt(), w_piplus_jet);
+          registryMC.fill(HIST("pi_plus_rec_in_ue_tpc"), multiplicity, track.pt(), w_piplus_ue);
+        } else {
+          registryMC.fill(HIST("pi_minus_rec_in_jet_tpc"), multiplicity, track.pt(), w_piminus_jet);
+          registryMC.fill(HIST("pi_minus_rec_in_ue_tpc"), multiplicity, track.pt(), w_piminus_ue);
+        }
 
         if (!track.hasTOF())
           continue;
-        if (track.tofNSigmaPi() < nsigmaTOFmin || track.tofNSigmaPi() > nsigmaTOFmax)
+        if (track.tofNSigmaPi() < nsigmaTOFminPionMC || track.tofNSigmaPi() > nsigmaTOFmaxPionMC)
           continue;
 
-        if (track.sign() > 0)
-          registryMC.fill(HIST("pi_plus_rec_tof"), multiplicity, track.pt());
-        if (track.sign() < 0)
-          registryMC.fill(HIST("pi_minus_rec_tof"), multiplicity, track.pt());
+        if (track.sign() > 0) {
+          registryMC.fill(HIST("pi_plus_rec_in_jet_tof"), multiplicity, track.pt(), w_piplus_jet);
+          registryMC.fill(HIST("pi_plus_rec_in_ue_tof"), multiplicity, track.pt(), w_piplus_ue);
+        } else {
+          registryMC.fill(HIST("pi_minus_rec_in_jet_tof"), multiplicity, track.pt(), w_piminus_jet);
+          registryMC.fill(HIST("pi_minus_rec_in_ue_tof"), multiplicity, track.pt(), w_piminus_ue);
+        }
       }
 
-      for (auto& mcParticle : mcParticles_per_coll) { // o2-linter: disable=[const-ref-in-for-loop]
+      for (const auto& mcParticle : mcParticles_per_coll) {
 
         if (mcParticle.eta() < etaMin || mcParticle.eta() > etaMax)
           continue;
         if (!mcParticle.isPhysicalPrimary())
           continue;
 
+        double w_piplus_jet(1.0), w_piplus_ue(1.0);
+        double w_piminus_jet(1.0), w_piminus_ue(1.0);
         double w_k0_jet(1.0), w_k0_ue(1.0), w_lambda_jet(1.0), w_lambda_ue(1.0), w_antilambda_jet(1.0), w_antilambda_ue(1.0);
         if (applyReweighting) {
+          auto getWeight = [&](TH2F* histo) {
+            if (!histo) {
+              return 1.0;
+            }
+            const int bx = histo->GetXaxis()->FindBin(mcParticle.pt());
+            const int by = histo->GetYaxis()->FindBin(mcParticle.eta());
+            if (bx <= 0 || bx > histo->GetNbinsX()) {
+              return 1.0;
+            }
+            if (by <= 0 || by > histo->GetNbinsX()) {
+              return 1.0;
+            }
+            return histo->GetBinContent(bx, by);
+          };
+          w_piplus_jet = getWeight(twod_weights_piplus_jet);
+          w_piplus_ue = getWeight(twod_weights_piplus_ue);
+          w_piminus_jet = getWeight(twod_weights_piminus_jet);
+          w_piminus_ue = getWeight(twod_weights_piminus_ue);
+
           int ix = twod_weights_k0_jet->GetXaxis()->FindBin(mcParticle.pt());
           int iy = twod_weights_k0_jet->GetYaxis()->FindBin(mcParticle.eta());
           w_k0_jet = twod_weights_k0_jet->GetBinContent(ix, iy);
@@ -1604,51 +1702,46 @@ struct strangeness_in_jets {
           }
         }
 
-        // Pi+
-        if (mcParticle.pdgCode() == 211) {
-          registryMC.fill(HIST("pi_plus_gen"), multiplicity, mcParticle.pt());
-        }
-        // Pi-
-        if (mcParticle.pdgCode() == -211) {
-          registryMC.fill(HIST("pi_minus_gen"), multiplicity, mcParticle.pt());
-        }
-        // K0s
-        if (mcParticle.pdgCode() == 310) {
-          registryMC.fill(HIST("K0s_generated_jet"), multiplicity, mcParticle.pt(), w_k0_jet);
-          registryMC.fill(HIST("K0s_generated_ue"), multiplicity, mcParticle.pt(), w_k0_ue);
-          registryMC.fill(HIST("K0s_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
-        }
-        // Lambda
-        if (mcParticle.pdgCode() == 3122) {
-          registryMC.fill(HIST("Lambda_generated_jet"), multiplicity, mcParticle.pt(), w_lambda_jet);
-          registryMC.fill(HIST("Lambda_generated_ue"), multiplicity, mcParticle.pt(), w_lambda_ue);
-          registryMC.fill(HIST("Lambda_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
-        }
-        // AntiLambda
-        if (mcParticle.pdgCode() == -3122) {
-          registryMC.fill(HIST("AntiLambda_generated_jet"), multiplicity, mcParticle.pt(), w_antilambda_jet);
-          registryMC.fill(HIST("AntiLambda_generated_ue"), multiplicity, mcParticle.pt(), w_antilambda_ue);
-          registryMC.fill(HIST("AntiLambda_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
-        }
-        // Xi Pos
-        if (mcParticle.pdgCode() == -3312) {
-          registryMC.fill(HIST("XiPos_generated"), multiplicity, mcParticle.pt());
-          registryMC.fill(HIST("Xi_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
-        }
-        // Xi Neg
-        if (mcParticle.pdgCode() == 3312) {
-          registryMC.fill(HIST("XiNeg_generated"), multiplicity, mcParticle.pt());
-          registryMC.fill(HIST("AntiXi_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
-        }
-        // Omega Pos
-        if (mcParticle.pdgCode() == -3334) {
-          registryMC.fill(HIST("OmegaPos_generated"), multiplicity, mcParticle.pt());
-          registryMC.fill(HIST("Omega_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
-        }
-        // Omega Neg
-        if (mcParticle.pdgCode() == 3334) {
-          registryMC.fill(HIST("OmegaNeg_generated"), multiplicity, mcParticle.pt());
-          registryMC.fill(HIST("AntiOmega_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+        switch (mcParticle.pdgCode()) {
+          case 211: // Pi+
+            registryMC.fill(HIST("pi_plus_gen_in_jet"), multiplicity, mcParticle.pt(), w_piplus_jet);
+            registryMC.fill(HIST("pi_plus_gen_in_ue"), multiplicity, mcParticle.pt(), w_piplus_ue);
+            break;
+          case -211: // Pi-
+            registryMC.fill(HIST("pi_minus_gen_in_jet"), multiplicity, mcParticle.pt(), w_piminus_jet);
+            registryMC.fill(HIST("pi_minus_gen_in_ue"), multiplicity, mcParticle.pt(), w_piminus_ue);
+            break;
+          case 310: // K0s
+            registryMC.fill(HIST("K0s_generated_jet"), multiplicity, mcParticle.pt(), w_k0_jet);
+            registryMC.fill(HIST("K0s_generated_ue"), multiplicity, mcParticle.pt(), w_k0_ue);
+            registryMC.fill(HIST("K0s_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+            break;
+          case 3122: // Lambda
+            registryMC.fill(HIST("Lambda_generated_jet"), multiplicity, mcParticle.pt(), w_lambda_jet);
+            registryMC.fill(HIST("Lambda_generated_ue"), multiplicity, mcParticle.pt(), w_lambda_ue);
+            registryMC.fill(HIST("Lambda_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+            break;
+          case -3122: // AntiLambda
+            registryMC.fill(HIST("AntiLambda_generated_jet"), multiplicity, mcParticle.pt(), w_antilambda_jet);
+            registryMC.fill(HIST("AntiLambda_generated_ue"), multiplicity, mcParticle.pt(), w_antilambda_ue);
+            registryMC.fill(HIST("AntiLambda_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+            break;
+          case -3312: // Xi Pos
+            registryMC.fill(HIST("XiPos_generated"), multiplicity, mcParticle.pt());
+            registryMC.fill(HIST("Xi_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+            break;
+          case 3312: // Xi Neg
+            registryMC.fill(HIST("XiNeg_generated"), multiplicity, mcParticle.pt());
+            registryMC.fill(HIST("AntiXi_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+            break;
+          case -3334: // Omega Pos
+            registryMC.fill(HIST("OmegaPos_generated"), multiplicity, mcParticle.pt());
+            registryMC.fill(HIST("Omega_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+            break;
+          case 3334: // Omega Neg
+            registryMC.fill(HIST("OmegaNeg_generated"), multiplicity, mcParticle.pt());
+            registryMC.fill(HIST("AntiOmega_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+            break;
         }
       }
     }
@@ -1672,7 +1765,7 @@ struct strangeness_in_jets {
       // List of Tracks
       std::vector<TVector3> trk;
 
-      for (auto& particle : mcParticles_per_coll) { // o2-linter: disable=[const-ref-in-for-loop]
+      for (const auto& particle : mcParticles_per_coll) {
 
         int pdg = std::fabs(particle.pdgCode());
 
@@ -1741,12 +1834,12 @@ struct strangeness_in_jets {
 
       // Jet Selection
       std::vector<int> isSelected;
-      for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
         isSelected.push_back(0);
       }
 
       int n_jets_selected(0);
-      for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
         if ((std::fabs(jet[i].Eta()) + Rjet) > etaMax)
           continue;
@@ -1764,7 +1857,7 @@ struct strangeness_in_jets {
         double ptJet(0);
         double ptUE(0);
 
-        for (auto& particle : mcParticles_per_coll) { // o2-linter: disable=[const-ref-in-for-loop]
+        for (const auto& particle : mcParticles_per_coll) {
 
           // Select Primary Particles
           double dx = particle.vx() - mccollision.posX();
@@ -1821,13 +1914,13 @@ struct strangeness_in_jets {
       if (n_jets_selected == 0)
         continue;
 
-      for (int i = 0; i < static_cast<int>(jet.size()); i++) { // o2-linter: disable=[const-ref-in-for-loop]
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
         if (isSelected[i] == 0)
           continue;
 
         // Generated Particles
-        for (auto& particle : mcParticles_per_coll) { // o2-linter: disable=[const-ref-in-for-loop]
+        for (const auto& particle : mcParticles_per_coll) {
 
           if (!particle.isPhysicalPrimary())
             continue;
@@ -1843,7 +1936,7 @@ struct strangeness_in_jets {
           double deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue2[i].Phi());
           double deltaR_ue2 = std::sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
-          int pdg = std::fabs(particle.pdgCode());
+          int pdg = particle.pdgCode();
 
           if (pdg == 211) {
             if (deltaR_jet < Rjet) {
