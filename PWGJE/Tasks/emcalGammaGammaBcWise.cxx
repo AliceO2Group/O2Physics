@@ -16,11 +16,11 @@
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt
 ///
 
+#include <CommonConstants/MathConstants.h>
 #include <vector>
 #include "TLorentzVector.h"
 #include "TVector3.h"
 
-#include <CommonConstants/MathConstants.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
