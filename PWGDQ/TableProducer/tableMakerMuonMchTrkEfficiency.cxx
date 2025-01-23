@@ -18,8 +18,10 @@
 ///
 /// \author Zaida Conesa del Valle <zaida.conesa.del.valle@cern.ch>
 ///
-#include <iostream>
+
 #include <vector>
+#include <memory>
+#include <string>
 #include <algorithm>
 #include <TH1F.h>
 #include <TH3F.h>
