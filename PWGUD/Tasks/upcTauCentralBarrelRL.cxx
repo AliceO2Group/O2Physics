@@ -2392,5 +2392,5 @@ struct UpcTauRl {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<UpcTauRl>(cfgc, TaskName{"upc-tau-rl"})};
+    adaptAnalysisTask<UpcTauRl>(cfgc)};
 }
