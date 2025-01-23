@@ -448,12 +448,8 @@ struct MeanPtFlucId {
   {
     if (track.pt() >= cfgCutPiPtMin &&
         track.p() <= cfgCutPiThrsldP &&
-        ((!track.hasTOF() &&
-          ((std::fabs(track.tpcNSigmaPi() - cfgMcTpcShiftPi) < cfgCutNSig3 && p <= cfgCutPiP1) ||
-           (std::fabs(track.tpcNSigmaPi() - cfgMcTpcShiftPi) < cfgCutNSig2 && p > cfgCutPiP1 && p <= cfgCutPiP2))) ||
-         (track.hasTOF() &&
-          std::fabs(track.tpcNSigmaPi() - cfgMcTpcShiftPi) < cfgCutNSig3 &&
-          std::fabs(track.tofNSigmaPi() - cfgMcTofShiftPi) < cfgCutNSig3))) {
+        ((std::fabs(track.tpcNSigmaPi() - cfgMcTpcShiftPi) < cfgCutNSig3 && p <= cfgCutPiP1) ||
+         (std::fabs(track.tpcNSigmaPi() - cfgMcTpcShiftPi) < cfgCutNSig2 && p > cfgCutPiP1 && p <= cfgCutPiP2))) {
 
       if (std::abs(track.rapidity(MassPiPlus)) < cfgCutRap) {
         return true;
@@ -468,12 +464,8 @@ struct MeanPtFlucId {
   {
     if (track.pt() >= cfgCutKaPtMin &&
         track.p() <= cfgCutKaThrsldP &&
-        ((!track.hasTOF() &&
-          ((std::fabs(track.tpcNSigmaKa() - cfgMcTpcShiftKa) < cfgCutNSig3 && p <= cfgCutKaP1) ||
-           (std::fabs(track.tpcNSigmaKa() - cfgMcTpcShiftKa) < cfgCutNSig2 && p > cfgCutKaP1 && p <= cfgCutKaP2))) ||
-         (track.hasTOF() &&
-          std::fabs(track.tpcNSigmaKa() - cfgMcTpcShiftKa) < cfgCutNSig3 &&
-          std::fabs(track.tofNSigmaKa() - cfgMcTofShiftKa) < cfgCutNSig3))) {
+        ((std::fabs(track.tpcNSigmaKa() - cfgMcTpcShiftKa) < cfgCutNSig3 && p <= cfgCutKaP1) ||
+         (std::fabs(track.tpcNSigmaKa() - cfgMcTpcShiftKa) < cfgCutNSig2 && p > cfgCutKaP1 && p <= cfgCutKaP2))) {
 
       if (std::abs(track.rapidity(MassKPlus)) < cfgCutRap) {
         return true;
@@ -489,12 +481,8 @@ struct MeanPtFlucId {
   {
     if (track.pt() >= cfgCutPrPtMin &&
         track.p() <= cfgCutPrThrsldP &&
-        ((!track.hasTOF() &&
-          ((std::fabs(track.tpcNSigmaPr() - cfgMcTpcShiftPr) < cfgCutNSig3 && p <= cfgCutPrP1) ||
-           (std::fabs(track.tpcNSigmaPr() - cfgMcTpcShiftPr) < cfgCutNSig2 && p > cfgCutPrP1 && p <= cfgCutPrP2))) ||
-         (track.hasTOF() &&
-          std::fabs(track.tpcNSigmaPr() - cfgMcTpcShiftPr) < cfgCutNSig3 &&
-          std::fabs(track.tofNSigmaPr() - cfgMcTofShiftPr) < cfgCutNSig3))) {
+        ((std::fabs(track.tpcNSigmaPr() - cfgMcTpcShiftPr) < cfgCutNSig3 && p <= cfgCutPrP1) ||
+         (std::fabs(track.tpcNSigmaPr() - cfgMcTpcShiftPr) < cfgCutNSig2 && p > cfgCutPrP1 && p <= cfgCutPrP2))) {
 
       if (std::abs(track.rapidity(MassProton)) < cfgCutRap) {
         return true;
@@ -532,6 +520,23 @@ struct MeanPtFlucId {
          (std::fabs(track.tofNSigmaKa() - cfgMcTofShiftKa) < cfgCutNSig2 && track.p() > cfgCutKaP3))) {
 
       if (std::abs(track.rapidity(MassKPlus)) < cfgCutRap) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // PID selction cuts for High momentum Protons
+  template <typename T>
+  bool selHighPr(T const& track)
+  {
+    if (track.hasTOF() &&
+        track.p() > cfgCutPrThrsldP &&
+        std::fabs(track.tpcNSigmaPr() - cfgMcTpcShiftPr) < cfgCutNSig3 &&
+        std::fabs(track.tofNSigmaPr() - cfgMcTofShiftPr) < cfgCutNSig3) {
+
+      if (std::abs(track.rapidity(MassProton)) < cfgCutRap) {
         return true;
       }
     }
