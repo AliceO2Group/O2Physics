@@ -352,6 +352,7 @@ struct JetTaggerHFTask {
         }
         LOG(info) << "defined parameters of resolution function from CCDB";
         useResoFuncFromIncJet = true;
+        break;
       default:
         LOG(fatal) << "undefined parameters of resolution function. Fix it!";
         break;

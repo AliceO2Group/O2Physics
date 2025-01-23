@@ -315,7 +315,7 @@ struct BJetTaggingML {
 
   using MCDJetTable = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetFlavourDef, aod::MCDSecondaryVertex3ProngIndices, aod::ChargedMCDetectorLevelJetTags, aod::ChargedMCDetectorLevelJetEventWeights>>;
   using MCPJetTable = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets, aod::ChargedMCParticleLevelJetFlavourDef, aod::ChargedMCParticleLevelJetEventWeights>>;
-  using FilteredCollisionMCD = soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>;
+  using FilteredCollisionMCD = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionPIs>>;
 
   Preslice<MCPJetTable> mcpJetsPerCollision = aod::jet::mcCollisionId;
 
@@ -443,7 +443,7 @@ struct BJetTaggingML {
   PROCESS_SWITCH(BJetTaggingML, processMCJets, "jet information in MC", false);
 
   Filter mccollisionFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
-  using FilteredCollisionMCP = soa::Filtered<aod::JMcCollisions>;
+  using FilteredCollisionMCP = soa::Filtered<aod::JetMcCollisions>;
 
   void processMCTruthJets(FilteredCollisionMCP::iterator const& /*collision*/, MCPJetTable const& MCPjets, aod::JetParticles const& /*MCParticles*/)
   {
