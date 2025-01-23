@@ -476,7 +476,8 @@ struct HfCorrelatorDMesonPairs {
     entryD0Pair(ptCand1, ptCand2, yCand1, yCand2, phiCand1, phiCand2, massDCand1, massDbarCand1, massDCand2, massDbarCand2, pairType, candidateType1, candidateType2);
   }
 
-  void fillMcHistos(int8_t matchedRec1, int8_t matchedRec2, int8_t isTrueDCand1, int8_t isTrueDbarCand1, int8_t isTrueDCand2, int8_t isTrueDbarCand2) {
+  void fillMcHistos(int8_t matchedRec1, int8_t matchedRec2, int8_t isTrueDCand1, int8_t isTrueDbarCand1, int8_t isTrueDCand2, int8_t isTrueDbarCand2)
+  {
     // Fill hMatchingMcRec - Cand 1
     registry.fill(HIST("hMatchingMcRec"), 1);
     if (matchedRec1 == 1) {
