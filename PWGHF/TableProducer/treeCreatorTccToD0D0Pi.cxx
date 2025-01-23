@@ -273,7 +273,7 @@ struct HfTreeCreatorTccToD0D0Pi {
                           aod::TrackAssoc const& trackIndices,
                           TrkType const& track, aod::BCs const&)
   {
-    // Filling event properties
+    rowCandidateFull.reserve(candidates.size());
     for (const auto& candidateD1 : candidates) {
       for (auto candidateD2 = candidateD1 + 1; candidateD2 != candidates.end(); ++candidateD2) {
         for (const auto& trackId : trackIndices) {
@@ -436,8 +436,8 @@ struct HfTreeCreatorTccToD0D0Pi {
                          TracksWPid const& tracks,
                          aod::BCs const& bcs)
   {
+    rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      rowCandidateFullEvents.reserve(collisions.size());
       fillEvent(collision, 0, collision.bc().runNumber());
       auto thisCollId = collision.globalIndex();
       auto candwD0ThisColl = candidates.sliceBy(candsD0PerCollisionWithMl, thisCollId);
@@ -455,8 +455,8 @@ struct HfTreeCreatorTccToD0D0Pi {
                                  TracksWPid const& tracks,
                                  aod::BCs const& bcs)
   {
+    rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      rowCandidateFullEvents.reserve(collisions.size());
       fillEvent(collision, 0, collision.bc().runNumber());
       auto thisCollId = collision.globalIndex();
       auto candwD0ThisColl = candidates.sliceBy(candsD0PerCollisionWithMl, thisCollId);
@@ -474,8 +474,8 @@ struct HfTreeCreatorTccToD0D0Pi {
                                  TracksWPid const& tracks,
                                  aod::BCs const& bcs)
   {
+    rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      rowCandidateFullEvents.reserve(collisions.size());
       fillEvent(collision, 0, collision.bc().runNumber());
       auto thisCollId = collision.globalIndex();
       auto candwD0ThisColl = candidates.sliceBy(candsD0PerCollisionWithMl, thisCollId);
