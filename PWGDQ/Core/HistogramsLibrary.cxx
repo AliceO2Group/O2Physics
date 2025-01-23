@@ -104,6 +104,11 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "MultITSWithPV_MultFT0A", "MultITSWithPV_MultFT0A", false, 150, 0.0, 150.0, VarManager::kMultNTracksHasITS, 250, 0.0, 2500.0, VarManager::kMultFT0A);
         hm->AddHistogram(histClass, "MultITSTPCWithPV_MultFT0C", "MultITSTPCWithPV_MultFT0C", false, 150, 0.0, 150.0, VarManager::kMultNTracksITSTPC, 250, 0.0, 2500.0, VarManager::kMultFT0C);
         hm->AddHistogram(histClass, "MultITSTPCWithPV_MultFT0A", "MultITSTPCWithPV_MultFT0A", false, 150, 0.0, 150.0, VarManager::kMultNTracksITSTPC, 250, 0.0, 2500.0, VarManager::kMultFT0A);
+        hm->AddHistogram(histClass, "VtxZ_MultITSWithPV", "VtxZ vs MultITSWithPV", false, 240, -12.0, 12.0, VarManager::kVtxZ, 400, 0, 400.0, VarManager::kMultNTracksHasITS);
+        hm->AddHistogram(histClass, "VtxZ_MultTPCWithPV", "VtxZ vs MultTPCWithPV", false, 240, -12.0, 12.0, VarManager::kVtxZ, 400, 0, 400.0, VarManager::kMultNTracksHasTPC);
+        hm->AddHistogram(histClass, "VtxZ_MultITSTPCWithPV", "VtxZ vs MultITSTPCWithPV", false, 240, -12.0, 12.0, VarManager::kVtxZ, 400, 0, 400.0, VarManager::kMultNTracksITSTPC);
+        hm->AddHistogram(histClass, "VtxZ_MultITSOnly", "VtxZ vs MultITSOnly", false, 240, -12.0, 12.0, VarManager::kVtxZ, 400, 0, 400.0, VarManager::kMultNTracksITSOnly);
+
       } else {
         hm->AddHistogram(histClass, "MultTPC", "MultTPC", false, 200, 0.0, 50000.0, VarManager::kMultTPC);
         hm->AddHistogram(histClass, "MultTPC_vsTimeSOR", "MultTPC vs time from SOR", true, 10000, 0.0, 1000.0, VarManager::kTimeFromSOR, 10, 0.0, 50000.0, VarManager::kMultTPC);
@@ -870,8 +875,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "PtMC", "MC pT", false, 200, 0.0, 20.0, VarManager::kMCPt);
     hm->AddHistogram(histClass, "EtaMC", "MC #eta", false, 50, -5.0, 5.0, VarManager::kMCEta);
     hm->AddHistogram(histClass, "PhiMC", "MC #phi", false, 50, -6.3, 6.3, VarManager::kMCPhi);
-    hm->AddHistogram(histClass, "MCY", "MC y", false, 50, -5.0, 5.0, VarManager::kMCY);
-    hm->AddHistogram(histClass, "Pt_Rapidity", "MC pT vs MC y", false, 120, 0.0, 30.0, VarManager::kMCPt, 1000, -5.0, 5.0, VarManager::kMCY);
+    hm->AddHistogram(histClass, "YMC", "MC y", false, 50, -5.0, 5.0, VarManager::kMCY);
+    hm->AddHistogram(histClass, "CentFT0CMC", "MC Cent. FT0C", false, 18, 0., 90., VarManager::kCentFT0C);
+    hm->AddHistogram(histClass, "PtMC_YMC", "MC pT vs MC y", false, 120, 0.0, 30.0, VarManager::kMCPt, 1000, -5.0, 5.0, VarManager::kMCY);
     hm->AddHistogram(histClass, "EtaMC_PtMC", "", false, 40, -2.0, 2.0, VarManager::kMCEta, 200, 0.0, 20.0, VarManager::kMCPt);
     hm->AddHistogram(histClass, "VzMC", "MC vz", false, 100, -15.0, 15.0, VarManager::kMCVz);
     hm->AddHistogram(histClass, "VzMC_VtxZMC", "MC vz vs MC vtxZ", false, 50, -15.0, 15.0, VarManager::kMCVz, 50, -15.0, 15.0, VarManager::kMCVtxZ);
@@ -906,6 +912,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       if (subGroupStr.Contains("mult")) {
         hm->AddHistogram(histClass, "Mass_Pt_MultFV0A", "", false, 200, 0.0, 5.0, VarManager::kMass, 40, 0.0, 40.0, VarManager::kPt, 100, 0.0, 25000.0, VarManager::kMultFV0A);
         hm->AddHistogram(histClass, "Mass_VtxNcontribReal", "Mass vs VtxNcontribReal", false, 200, 0.0, 5.0, VarManager::kMass, 200, 0, 200.0, VarManager::kVtxNcontribReal);
+        hm->AddHistogram(histClass, "MultITSWithPV", "MultITSWithPV", false, 200, 0, 200.0, VarManager::kMultNTracksHasITS);
+        hm->AddHistogram(histClass, "MultTPCWithPV", "MultTPCWithPV", false, 200, 0, 200.0, VarManager::kMultNTracksHasTPC);
+        hm->AddHistogram(histClass, "MultITSTPCWithPV", "MultITSTPCWithPV", false, 200, 0, 200.0, VarManager::kMultNTracksITSTPC);
+        hm->AddHistogram(histClass, "Mass_MultITSWithPV", "Mass vs MultITSWithPV", false, 200, 0.0, 5.0, VarManager::kMass, 200, 0, 200.0, VarManager::kMultNTracksHasITS);
+        hm->AddHistogram(histClass, "Mass_MultTPCWithPV", "Mass vs MultTPCWithPV", false, 200, 0.0, 5.0, VarManager::kMass, 200, 0, 200.0, VarManager::kMultNTracksHasTPC);
+        hm->AddHistogram(histClass, "Mass_MultITSTPCWithPV", "Mass vs MultITSTPCWithPV", false, 200, 0.0, 5.0, VarManager::kMass, 200, 0, 200.0, VarManager::kMultNTracksITSTPC);
       }
       if (subGroupStr.Contains("polarization")) {
         hm->AddHistogram(histClass, "cosThetaHE", "", false, 100, -1., 1., VarManager::kCosThetaHE);
@@ -939,6 +951,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "LxyzProj", "", false, 1000, -1.0, 1.0, VarManager::kVertexingLxyzProjected);
         hm->AddHistogram(histClass, "TauzProj", "", false, 1000, -0.03, 0.03, VarManager::kVertexingTauzProjected);
         hm->AddHistogram(histClass, "TauxyProj", "", false, 1000, -0.03, 0.03, VarManager::kVertexingTauxyProjected);
+        hm->AddHistogram(histClass, "TauxyProj_Mass_Pt", "", false, 50, 2.0, 4.0, VarManager::kMass, 10, 0.0, 20.0, VarManager::kPt, 1000, -0.03, 0.03, VarManager::kVertexingTauxyProjected);
+        hm->AddHistogram(histClass, "TauzProj_Mass_Pt", "", false, 50, 2.0, 4.0, VarManager::kMass, 10, 0.0, 20.0, VarManager::kPt, 1000, -0.03, 0.03, VarManager::kVertexingTauzProjected);
         hm->AddHistogram(histClass, "TauxyzProj", "", false, 1000, -0.03, 0.03, VarManager::kVertexingTauxyzProjected);
         hm->AddHistogram(histClass, "LxyProj_Pt", "", false, 10, 0.0, 20.0, VarManager::kPt, 1000, -1.0, 1.0, VarManager::kVertexingLxyProjected);
         hm->AddHistogram(histClass, "LxyProj_Mass_Pt", "", false, 50, 2.0, 4.0, VarManager::kMass, 10, 0.0, 20.0, VarManager::kPt, 1000, -1.0, 1.0, VarManager::kVertexingLxyProjected);

@@ -14,6 +14,8 @@
 ///
 /// \author Federica Zanone, Heidelberg University
 
+#include <vector>
+
 #include "TMCProcess.h" // for VMC Particle Production Process
 
 #include "CommonConstants/PhysicsConstants.h"

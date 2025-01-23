@@ -217,3 +217,8 @@ o2physics_add_dpl_workflow(exclusive-rho-to-four-pi
                            SOURCES exclusiveRhoTo4Pi.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(upc-quarkonia-central-barrel
+                           SOURCES upcQuarkoniaCentralBarrel.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)

@@ -520,8 +520,10 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/ElectronMuPi/hNeventsPtCuts", ";Selection (-);Number of events (-)", HistType::kTH1D, {{20, -0.5, 19.5}});
       histos.add("EventTwoTracks/ElectronMuPi/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMass});
       histos.add("EventTwoTracks/ElectronMuPi/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
-      histos.add("EventTwoTracks/ElectronMuPi/PionsSelection/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMass});
-      histos.add("EventTwoTracks/ElectronMuPi/PionsSelection/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
+      histos.add("EventTwoTracks/ElectronMuPi/PionsSelection/hInvariantMass", ";Invariant mass (#pi^{+}#pi^{-}) (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMass});
+      histos.add("EventTwoTracks/ElectronMuPi/PionsSelection/hInvariantMassWide", ";Invariant mass (#pi^{+}#pi^{-}) (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
+      histos.add("EventTwoTracks/ElectronMuPi/KstarSelection/hInvariantMass", ";Invariant mass (K*#pi) (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMass});
+      histos.add("EventTwoTracks/ElectronMuPi/KstarSelection/hInvariantMassWide", ";Invariant mass (K*#pi) (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
       histos.add("EventTwoTracks/ElectronMuPi/hAcoplanarity", ";#Delta#phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisAcoplanarity});
       histos.add("EventTwoTracks/ElectronMuPi/hCollinearity", ";#DeltaR (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisCollinearity});
       histos.add("EventTwoTracks/ElectronMuPi/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMom});
@@ -1257,11 +1259,22 @@ struct UpcTauCentralBarrelRL {
         double electronPt = (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
         double electronE = (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].E() : daug[1].E();
         double mupionE = (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].E() : daug[0].E();
+
+        TLorentzVector motherOfPiKaon, kaon;
+        if (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) {
+          kaon.SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(321), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+          motherOfPiKaon = kaon + daug[1];
+        } else {
+          kaon.SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(321), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+          motherOfPiKaon = daug[0] + kaon;
+        }
         histos.get<TH1>(HIST("Events/hChannels"))->Fill(CH_EMUPI);
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hInvariantMass"))->Fill(mother.M());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hInvariantMassWide"))->Fill(mother.M());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/PionsSelection/hInvariantMass"))->Fill(motherOfPions.M());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/PionsSelection/hInvariantMassWide"))->Fill(motherOfPions.M());
+        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/hInvariantMass"))->Fill(motherOfPiKaon.M());
+        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/hInvariantMassWide"))->Fill(motherOfPiKaon.M());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hAcoplanarity"))->Fill(acoplanarity);
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hCollinearity"))->Fill(collinearity);
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hMotherP"))->Fill(mother.P());

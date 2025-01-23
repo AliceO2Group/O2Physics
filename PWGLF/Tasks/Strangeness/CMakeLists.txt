@@ -99,6 +99,11 @@ o2physics_add_dpl_workflow(lambdapolsp
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(cascpolsp
+    SOURCES cascpolsp.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(strangeness-in-jets
     SOURCES strangeness_in_jets.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

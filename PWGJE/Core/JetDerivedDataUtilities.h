@@ -40,9 +40,17 @@ enum JCollisionSel {
   sel7KINT7 = 9
 };
 
+enum JCollisionSubGeneratorId {
+  none = -1,
+  mbGap = 0
+};
+
 template <typename T>
-bool selectCollision(T const& collision, int eventSelection = -1)
+bool selectCollision(T const& collision, int eventSelection = -1, bool skipMBGapEvents = true)
 {
+  if (skipMBGapEvents && collision.subGeneratorId() == JCollisionSubGeneratorId::mbGap) {
+    return false;
+  }
   if (eventSelection == -1) {
     return true;
   }
