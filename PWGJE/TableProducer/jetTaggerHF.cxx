@@ -93,7 +93,6 @@ struct JetTaggerHFTask {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-
   Configurable<std::string> IPparameterPathsCCDB{"IPparameterPathsCCDB", "Users/l/leehy/LHC24g4/", "Paths for fitting parameters of resolution functions for IP method on CCDB"};
   Configurable<std::vector<int64_t>> IPtimestampCCDB{"IPtimestampCCDB", std::vector<int64_t>{1737027389227, 1737027391774, 1737027393668, 1737027395548, 1737027397505, 1737027399396, 1737027401294}, "timestamp of the resolution function for IP method used to query in CCDB"};
   Configurable<bool> usepTcategorize{"usepTcategorize", false, "p_T categorize TF1 function with Inclusive jet"};
