@@ -48,6 +48,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 
 struct UpcTauRl {
 
@@ -2397,12 +2398,12 @@ struct UpcTauRl {
 
   } // end processTestMC
 
-  PROCESS_SWITCH(UpcTauCentralBarrelRL, processDataDG, "Iterate UD tables with measured data created by DG-Candidate-Producer.", false);
-  PROCESS_SWITCH(UpcTauCentralBarrelRL, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
-  PROCESS_SWITCH(UpcTauCentralBarrelRL, processMCrecDG, "Iterate Monte Carlo UD tables with reconstructed data created by DG-Candidate-Producer. Similar to processDataDG but uses association to truth level.", false);
-  PROCESS_SWITCH(UpcTauCentralBarrelRL, processMCrecSG, "Iterate Monte Carlo UD tables with reconstructed data created by SG-Candidate-Producer. Similar to processDataSG but uses association to truth level and trueGap is not available.", false);
-  PROCESS_SWITCH(UpcTauCentralBarrelRL, processMCgen, "Iterate Monte Carlo UD tables with truth data.", false);
-  PROCESS_SWITCH(UpcTauCentralBarrelRL, processTestMC, "Simple test of indices in MC sample.", false);
+  PROCESS_SWITCH(UpcTauRl, processDataDG, "Iterate UD tables with measured data created by DG-Candidate-Producer.", false);
+  PROCESS_SWITCH(UpcTauRl, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
+  PROCESS_SWITCH(UpcTauRl, processMCrecDG, "Iterate Monte Carlo UD tables with reconstructed data created by DG-Candidate-Producer. Similar to processDataDG but uses association to truth level.", false);
+  PROCESS_SWITCH(UpcTauRl, processMCrecSG, "Iterate Monte Carlo UD tables with reconstructed data created by SG-Candidate-Producer. Similar to processDataSG but uses association to truth level and trueGap is not available.", false);
+  PROCESS_SWITCH(UpcTauRl, processMCgen, "Iterate Monte Carlo UD tables with truth data.", false);
+  PROCESS_SWITCH(UpcTauRl, processTestMC, "Simple test of indices in MC sample.", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
