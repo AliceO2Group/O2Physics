@@ -271,12 +271,14 @@ struct HfTreeCreatorToXiPi {
     float centFT0M = -1.f;
     float centFV0A = -1.f;
     float centFDDM = -1.f;
-    if (useCentrality) {
+    float multZeqNTracksPV = -1.f;
+    if constexpr (useCentrality) {
       centFT0A = collision.centFT0A();
       centFT0C = collision.centFT0C();
       centFT0M = collision.centFT0M();
       centFV0A = collision.centFV0A();
       centFDDM = collision.centFDDM();
+      multZeqNTracksPV = collision.multZeqNTracksPV();
     }
 
     rowEv(
@@ -293,7 +295,7 @@ struct HfTreeCreatorToXiPi {
       centFT0M,
       centFV0A,
       centFDDM,
-      collision.multZeqNTracksPV());
+      multZeqNTracksPV);
   }
 
   template <typename T>
