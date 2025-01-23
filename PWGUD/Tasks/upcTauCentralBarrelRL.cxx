@@ -49,7 +49,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct UpcTauCentralBarrelRL {
+struct UpcTauRl {
 
   // Global varialbes
   bool isMC = false;
@@ -2392,5 +2392,5 @@ struct UpcTauCentralBarrelRL {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<UpcTauCentralBarrelRL>(cfgc, TaskName{"upc-tau-rl"})};
+    adaptAnalysisTask<UpcTauRl>(cfgc, TaskName{"upc-tau-rl"})};
 }
