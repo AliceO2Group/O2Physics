@@ -16,15 +16,16 @@
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt
 ///
 
+#include <vector>
+#include <CommonConstants/MathConstants.h>
+#include "TLorentzVector.h"
+#include "TVector3.h"
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Common/DataModel/EventSelection.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
-
-#include "TLorentzVector.h"
-#include "TVector3.h"
-#include <CommonConstants/MathConstants.h>
 
 #include "DataFormatsFT0/Digit.h"
 
