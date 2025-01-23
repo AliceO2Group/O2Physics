@@ -45,6 +45,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 
 struct UpcTauCentralBarrelRL {
 
@@ -101,8 +102,8 @@ struct UpcTauCentralBarrelRL {
   struct : ConfigurableGroup {
     Configurable<bool> applyTauEventSelection{"applyTauEventSelection", true, {"Select tau event."}};
     Configurable<bool> cutOppositeCharge{"cutOppositeCharge", true, {"Tracks have opposite charge."}};
-    Configurable<float> cutMaxAcoplanarity{"cutMaxAcoplanarity", 4 * o2::constants::math::PI / 5, {"Opening angle of the tracks. What is more goes away."}};
-    Configurable<float> cutMinAcoplanarity{"cutMinAcoplanarity", 2 * o2::constants::math::PI / 5, {"Opening angle of the tracks. What is less goes away."}};
+    Configurable<float> cutMaxAcoplanarity{"cutMaxAcoplanarity", 2 * o2::constants::math::TwoPI / 5, {"Opening angle of the tracks. What is more goes away."}};
+    Configurable<float> cutMinAcoplanarity{"cutMinAcoplanarity", o2::constants::math::TwoPI / 5, {"Opening angle of the tracks. What is less goes away."}};
     Configurable<bool> cutElectronHasTOF{"cutElectronHasTOF", true, {"Electron is required to hit TOF."}};
     Configurable<bool> cutGoodElectron{"cutGoodElectron", true, {"Select good electron."}};
     Configurable<bool> cutOutRho{"cutOutRho", false, {"Cut out rho mass under two tracks are pions hypothesis"}};
@@ -926,8 +927,8 @@ struct UpcTauCentralBarrelRL {
     daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
     daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
     mother = daug[0] + daug[1];
-    pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(kPiPlus), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-    pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(kPiMinus), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+    pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPiPlus, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+    pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPiMinus, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
     motherOfPions = pion[0] + pion[1];
     int enumTrk1 = enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC));
     if (cutTauEvent.cutOppositeCharge && (trkDaug1.sign() * trkDaug2.sign() > 0))
