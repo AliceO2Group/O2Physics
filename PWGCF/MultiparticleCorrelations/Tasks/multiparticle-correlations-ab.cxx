@@ -26,7 +26,7 @@ using namespace o2::framework;
 
 // *) Run 3:
 using BCs_Run3 = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>; // TBI 20241126 under testing
-// Remark 1: I have already timestamp in workflow, due to track-propagation. With Run3MatchedToBCSparse, I can use bc.has_zdc()
+// Remark 1: I have already timestamp in workflow, due to track-propagation. With Run3MatchedToBCSparse, I can use bc.has_zdc() TBI 20250112 is this redundant, I nowhere use bc.has_zdc()
 // Remark 2: For consistency with notation below, drop _Run3 and instead use _Run2 and _Run1
 
 // using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::MultsGlobal, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>; // TBI 20241209 validating "MultsGlobal"
@@ -187,7 +187,6 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // A) Process only reconstructed data:
-  //  void processRec(CollisionRec const& collision, aod::BCs const&, TracksRec const& tracks)
   void processRec(CollisionRec const& collision, BCs_Run3 const& bcs, TracksRec const& tracks)
   {
     // Remark: Do not use here LOGF(fatal, ...) or LOGF(info, ...), because their stdout/stderr is suppressed. Use them in regular member functions instead.

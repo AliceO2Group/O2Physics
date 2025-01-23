@@ -49,6 +49,7 @@
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsPid.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
+#include "PWGHF/Utils/utilsMcGen.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -56,6 +57,7 @@ using namespace o2::hf_evsel;
 using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_cand_2prong;
 using namespace o2::hf_centrality;
+using namespace o2::hf_occupancy;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::aod::pid_tpc_tof_utils;
@@ -627,7 +629,7 @@ struct HfCandidateCreator2Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = hfEvSel.getOccupancy(collision);
+      float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -645,7 +647,7 @@ struct HfCandidateCreator2Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = hfEvSel.getOccupancy(collision);
+      float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -663,7 +665,7 @@ struct HfCandidateCreator2Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = hfEvSel.getOccupancy(collision);
+      float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -683,12 +685,14 @@ struct HfCandidateCreator2ProngExpressions {
   // Configuration
   o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
   o2::framework::Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
+  o2::framework::Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", false, "Match also candidates with tracks that interact with material"};
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
 
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
@@ -716,11 +720,11 @@ struct HfCandidateCreator2ProngExpressions {
   }
 
   /// Performs MC matching.
-  template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs>
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs, typename McCollisions>
   void runCreator2ProngMc(aod::TracksWMc const& tracks,
                           aod::McParticles const& mcParticles,
                           CCs const& collInfos,
-                          aod::McCollisions const& mcCollisions,
+                          McCollisions const& mcCollisions,
                           BCsInfo const&)
   {
     rowCandidateProng2->bindExternalIndices(&tracks);
@@ -730,6 +734,7 @@ struct HfCandidateCreator2ProngExpressions {
     int8_t flag = 0;
     int8_t origin = 0;
     int8_t nKinkedTracks = 0;
+    int8_t nInteractionsWithMaterial = 0;
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
@@ -751,15 +756,19 @@ struct HfCandidateCreator2ProngExpressions {
           }
         }
         if (fromBkg) {
-          rowMcMatchRec(flag, origin, -1.f, 0, 0);
+          rowMcMatchRec(flag, origin, -1.f, 0, 0, 0);
           continue;
         }
       }
       std::vector<int> idxBhadMothers{};
 
       // D0(bar) → π± K∓
-      if (matchKinkedDecayTopology) {
-        indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, &nKinkedTracks);
+      if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+        indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, &nKinkedTracks, &nInteractionsWithMaterial);
+      } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
+        indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, &nKinkedTracks);
+      } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+        indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
       } else {
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
       }
@@ -769,7 +778,11 @@ struct HfCandidateCreator2ProngExpressions {
 
       // J/ψ → e+ e−
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true);
+        if (matchInteractionsWithMaterial) {
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
+        } else {
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true);
+        }
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToEE;
         }
@@ -777,7 +790,11 @@ struct HfCandidateCreator2ProngExpressions {
 
       // J/ψ → μ+ μ−
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
+        if (matchInteractionsWithMaterial) {
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
+        } else {
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
+        }
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToMuMu;
         }
@@ -790,9 +807,9 @@ struct HfCandidateCreator2ProngExpressions {
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        rowMcMatchRec(flag, origin, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks);
+        rowMcMatchRec(flag, origin, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks, nInteractionsWithMaterial);
       } else {
-        rowMcMatchRec(flag, origin, -1.f, 0, nKinkedTracks);
+        rowMcMatchRec(flag, origin, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
       }
     }
 
@@ -803,17 +820,19 @@ struct HfCandidateCreator2ProngExpressions {
       // Slice the collisions table to get the collision info for the current MC collision
       float centrality{-1.f};
       uint16_t rejectionMask{0};
+      int nSplitColl = 0;
       if constexpr (centEstimator == CentralityEstimator::FT0C) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
         rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
       } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
+        nSplitColl = collSlice.size();
         rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
       } else if constexpr (centEstimator == CentralityEstimator::None) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
         rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
       }
-      hfEvSelMc.fillHistograms(rejectionMask);
+      hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask, nSplitColl);
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject all particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
@@ -821,47 +840,7 @@ struct HfCandidateCreator2ProngExpressions {
         }
         continue;
       }
-
-      // Match generated particles.
-      for (const auto& particle : mcParticlesPerMcColl) {
-        flag = 0;
-        origin = 0;
-        std::vector<int> idxBhadMothers{};
-        // Reject particles from background events
-        if (particle.fromBackgroundEvent() && rejectBackground) {
-          rowMcMatchGen(flag, origin, -1);
-          continue;
-        }
-
-        // D0(bar) → π± K∓
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
-          flag = sign * (1 << DecayType::D0ToPiK);
-        }
-
-        // J/ψ → e+ e−
-        if (flag == 0) {
-          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true)) {
-            flag = 1 << DecayType::JpsiToEE;
-          }
-        }
-
-        // J/ψ → μ+ μ−
-        if (flag == 0) {
-          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
-            flag = 1 << DecayType::JpsiToMuMu;
-          }
-        }
-
-        // Check whether the particle is non-prompt (from a b quark).
-        if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-        }
-        if (origin == RecoDecay::OriginType::NonPrompt) {
-          rowMcMatchGen(flag, origin, idxBhadMothers[0]);
-        } else {
-          rowMcMatchGen(flag, origin, -1);
-        }
-      }
+      hf_mc_gen::fillMcMatchGen2Prong(mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
     }
   }
 
@@ -888,7 +867,7 @@ struct HfCandidateCreator2ProngExpressions {
   void processMcCentFT0M(aod::TracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
                          McCollisionsFT0Ms const& collInfos,
-                         aod::McCollisions const& mcCollisions,
+                         McCollisionsCentFT0Ms const& mcCollisions,
                          BCsInfo const& BCsInfo)
   {
     runCreator2ProngMc<CentralityEstimator::FT0M>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);

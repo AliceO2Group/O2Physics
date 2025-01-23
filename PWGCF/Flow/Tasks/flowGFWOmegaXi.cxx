@@ -9,8 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// In case of questions please write to:
+/// \file   flowGFWOmegaXi.cxx
 /// \author Fuchun Cui(fcui@cern.ch)
+/// \since  Sep/13/2024
+/// \brief  This task is to caculate V0s and cascades flow by GenericFramework
 
 #include <CCDB/BasicCCDBManager.h>
 #include <vector>
@@ -50,16 +52,16 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 namespace
 {
-std::shared_ptr<TProfile> REFc22[10];
-std::shared_ptr<TProfile> REFc24[10];
-std::shared_ptr<TProfile3D> K0sc22[10];
-std::shared_ptr<TProfile3D> K0sc24[10];
-std::shared_ptr<TProfile3D> Lambdac22[10];
-std::shared_ptr<TProfile3D> Lambdac24[10];
-std::shared_ptr<TProfile3D> Xic22[10];
-std::shared_ptr<TProfile3D> Xic24[10];
-std::shared_ptr<TProfile3D> Omegac22[10];
-std::shared_ptr<TProfile3D> Omegac24[10];
+std::shared_ptr<TProfile> refc22[10];
+std::shared_ptr<TProfile> refc24[10];
+std::shared_ptr<TProfile3D> k0sc22[10];
+std::shared_ptr<TProfile3D> k0sc24[10];
+std::shared_ptr<TProfile3D> lambdac22[10];
+std::shared_ptr<TProfile3D> lambdac24[10];
+std::shared_ptr<TProfile3D> xic22[10];
+std::shared_ptr<TProfile3D> xic24[10];
+std::shared_ptr<TProfile3D> omegac22[10];
+std::shared_ptr<TProfile3D> omegac24[10];
 } // namespace
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
@@ -114,21 +116,21 @@ struct FlowGFWOmegaXi {
   O2_DEFINE_CONFIGURABLE(cfgAcceptancePath, std::vector<std::string>, (std::vector<std::string>{"Users/f/fcui/NUA/NUAREFPartical", "Users/f/fcui/NUA/NUAK0s", "Users/f/fcui/NUA/NUALambda", "Users/f/fcui/NUA/NUAXi", "Users/f/fcui/NUA/NUAOmega"}), "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency object")
 
-  ConfigurableAxis cfgaxisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
-  ConfigurableAxis cfgaxisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
-  ConfigurableAxis cfgaxisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
-  ConfigurableAxis cfgaxisPt{"axisPtREF", {VARIABLE_WIDTH, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00, 3.50, 4.00, 4.50, 5.00, 5.50, 6.00, 10.0}, "pt (GeV)"};
-  ConfigurableAxis cfgaxisPtXi{"axisPtXi", {VARIABLE_WIDTH, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.9, 4.9, 5.9, 9.9}, "pt (GeV)"};
-  ConfigurableAxis cfgaxisPtOmega{"axisPtOmega", {VARIABLE_WIDTH, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.9, 4.9, 5.9, 9.9}, "pt (GeV)"};
-  ConfigurableAxis cfgaxisPtV0{"axisPtV0", {VARIABLE_WIDTH, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.9, 4.9, 5.9, 9.9}, "pt (GeV)"};
-  ConfigurableAxis cfgaxisOmegaminusMassforflow{"axismassOmegaFlow", {16, 1.63f, 1.71f}, "Inv. Mass (GeV)"};
-  ConfigurableAxis cfgaxisXiminusMassforflow{"axismassXiFlow", {14, 1.3f, 1.37f}, "Inv. Mass (GeV)"};
-  ConfigurableAxis cfgaxisK0sMassforflow{"axismassK0sFlow", {40, 0.4f, 0.6f}, "Inv. Mass (GeV)"};
-  ConfigurableAxis cfgaxisLambdaMassforflow{"axismassLambdaFlow", {32, 1.08f, 1.16f}, "Inv. Mass (GeV)"};
+  ConfigurableAxis cfgaxisVertex{"cfgaxisVertex", {20, -10, 10}, "vertex axis for histograms"};
+  ConfigurableAxis cfgaxisPhi{"cfgaxisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
+  ConfigurableAxis cfgaxisEta{"cfgaxisEta", {40, -1., 1.}, "eta axis for histograms"};
+  ConfigurableAxis cfgaxisPt{"cfgaxisPt", {VARIABLE_WIDTH, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00, 3.50, 4.00, 4.50, 5.00, 5.50, 6.00, 10.0}, "pt (GeV)"};
+  ConfigurableAxis cfgaxisPtXi{"cfgaxisPtXi", {VARIABLE_WIDTH, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.9, 4.9, 5.9, 9.9}, "pt (GeV)"};
+  ConfigurableAxis cfgaxisPtOmega{"cfgaxisPtOmega", {VARIABLE_WIDTH, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.9, 4.9, 5.9, 9.9}, "pt (GeV)"};
+  ConfigurableAxis cfgaxisPtV0{"cfgaxisPtV0", {VARIABLE_WIDTH, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.9, 4.9, 5.9, 9.9}, "pt (GeV)"};
+  ConfigurableAxis cfgaxisOmegaMassforflow{"cfgaxisOmegaMassforflow", {16, 1.63f, 1.71f}, "Inv. Mass (GeV)"};
+  ConfigurableAxis cfgaxisXiMassforflow{"cfgaxisXiMassforflow", {14, 1.3f, 1.37f}, "Inv. Mass (GeV)"};
+  ConfigurableAxis cfgaxisK0sMassforflow{"cfgaxisK0sMassforflow", {40, 0.4f, 0.6f}, "Inv. Mass (GeV)"};
+  ConfigurableAxis cfgaxisLambdaMassforflow{"cfgaxisLambdaMassforflow", {32, 1.08f, 1.16f}, "Inv. Mass (GeV)"};
 
   AxisSpec axisMultiplicity{{0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
-  AxisSpec axisOmegaminusMass = {80, 1.63f, 1.71f, "Inv. Mass (GeV)"};
-  AxisSpec axisXiminusMass = {70, 1.3f, 1.37f, "Inv. Mass (GeV)"};
+  AxisSpec axisOmegaMass = {80, 1.63f, 1.71f, "Inv. Mass (GeV)"};
+  AxisSpec axisXiMass = {70, 1.3f, 1.37f, "Inv. Mass (GeV)"};
   AxisSpec axisK0sMass = {400, 0.4f, 0.6f, "Inv. Mass (GeV)"};
   AxisSpec axisLambdaMass = {160, 1.08f, 1.16f, "Inv. Mass (GeV)"};
 
@@ -145,8 +147,8 @@ struct FlowGFWOmegaXi {
   OutputObj<GFWWeights> fWeightsREF{GFWWeights("weightsREF")};
   OutputObj<GFWWeights> fWeightsK0s{GFWWeights("weightsK0s")};
   OutputObj<GFWWeights> fWeightsLambda{GFWWeights("weightsLambda")};
-  OutputObj<GFWWeights> fWeightsXi{GFWWeights("weightsXiMinus")};
-  OutputObj<GFWWeights> fWeightsOmega{GFWWeights("weightsOmegaMinus")};
+  OutputObj<GFWWeights> fWeightsXi{GFWWeights("weightsXi")};
+  OutputObj<GFWWeights> fWeightsOmega{GFWWeights("weightsOmega")};
 
   // define global variables
   GFW* fGFW = new GFW(); // GFW class used from main src
@@ -166,8 +168,8 @@ struct FlowGFWOmegaXi {
   TF1* fT0AV0ASigma = nullptr;
 
   using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, TracksPID>>; // tracks filter
-  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;  // collisions filter
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, TracksPID>>; // tracks filter
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;  // collisions filter
   using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, TracksPID>;
 
   // Declare the pt, mult and phi Axis;
@@ -202,6 +204,7 @@ struct FlowGFWOmegaXi {
 
     // Add some output objects to the histogram registry
     registry.add("hPhi", "", {HistType::kTH1D, {cfgaxisPhi}});
+    registry.add("hPhicorr", "", {HistType::kTH1D, {cfgaxisPhi}});
     registry.add("hEta", "", {HistType::kTH1D, {cfgaxisEta}});
     registry.add("hVtxZ", "", {HistType::kTH1D, {cfgaxisVertex}});
     registry.add("hMult", "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
@@ -244,32 +247,32 @@ struct FlowGFWOmegaXi {
     registry.add("c22dpt", ";Centrality  (%) ; C_{2}{2}", {HistType::kTProfile2D, {cfgaxisPt, axisMultiplicity}});
     registry.add("c24dpt", ";Centrality  (%) ; C_{2}{4}", {HistType::kTProfile2D, {cfgaxisPt, axisMultiplicity}});
     // pt-diff cumulant of flow
-    registry.add("Xic22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisXiminusMassforflow, axisMultiplicity}});
-    registry.add("Omegac22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisOmegaminusMassforflow, axisMultiplicity}});
+    registry.add("Xic22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisXiMassforflow, axisMultiplicity}});
+    registry.add("Omegac22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisOmegaMassforflow, axisMultiplicity}});
     registry.add("K0sc22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisK0sMassforflow, axisMultiplicity}});
     registry.add("Lambdac22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisLambdaMassforflow, axisMultiplicity}});
-    registry.add("Xic24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisXiminusMassforflow, axisMultiplicity}});
-    registry.add("Omegac24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisOmegaminusMassforflow, axisMultiplicity}});
+    registry.add("Xic24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisXiMassforflow, axisMultiplicity}});
+    registry.add("Omegac24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisOmegaMassforflow, axisMultiplicity}});
     registry.add("K0sc24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisK0sMassforflow, axisMultiplicity}});
     registry.add("Lambdac24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisLambdaMassforflow, axisMultiplicity}});
     // for Jackknife
     for (int i = 1; i <= 10; i++) {
-      REFc22[i - 1] = registry.add<TProfile>(Form("Jackknife/REF/c22_%d", i), ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
-      REFc24[i - 1] = registry.add<TProfile>(Form("Jackknife/REF/c24_%d", i), ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
-      Xic22[i - 1] = registry.add<TProfile3D>(Form("Jackknife/Xi/Xic22dpt_%d", i), ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisXiminusMassforflow, axisMultiplicity}});
-      Omegac22[i - 1] = registry.add<TProfile3D>(Form("Jackknife/Omega/Omegac22dpt_%d", i), ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisOmegaminusMassforflow, axisMultiplicity}});
-      K0sc22[i - 1] = registry.add<TProfile3D>(Form("Jackknife/K0s/K0sc22dpt_%d", i), ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisK0sMassforflow, axisMultiplicity}});
-      Lambdac22[i - 1] = registry.add<TProfile3D>(Form("Jackknife/Lambda/Lambdac22dpt_%d", i), ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisLambdaMassforflow, axisMultiplicity}});
-      Xic24[i - 1] = registry.add<TProfile3D>(Form("Jackknife/Xi/Xic24dpt_%d", i), ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisXiminusMassforflow, axisMultiplicity}});
-      Omegac24[i - 1] = registry.add<TProfile3D>(Form("Jackknife/Omega/Omegac24dpt_%d", i), ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisOmegaminusMassforflow, axisMultiplicity}});
-      K0sc24[i - 1] = registry.add<TProfile3D>(Form("Jackknife/K0s/K0sc24dpt_%d", i), ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisK0sMassforflow, axisMultiplicity}});
-      Lambdac24[i - 1] = registry.add<TProfile3D>(Form("Jackknife/Lambda/Lambdac24dpt_%d", i), ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisLambdaMassforflow, axisMultiplicity}});
+      refc22[i - 1] = registry.add<TProfile>(Form("Jackknife/REF/c22_%d", i), ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+      refc24[i - 1] = registry.add<TProfile>(Form("Jackknife/REF/c24_%d", i), ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
+      xic22[i - 1] = registry.add<TProfile3D>(Form("Jackknife/Xi/Xic22dpt_%d", i), ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisXiMassforflow, axisMultiplicity}});
+      omegac22[i - 1] = registry.add<TProfile3D>(Form("Jackknife/Omega/Omegac22dpt_%d", i), ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisOmegaMassforflow, axisMultiplicity}});
+      k0sc22[i - 1] = registry.add<TProfile3D>(Form("Jackknife/K0s/K0sc22dpt_%d", i), ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisK0sMassforflow, axisMultiplicity}});
+      lambdac22[i - 1] = registry.add<TProfile3D>(Form("Jackknife/Lambda/Lambdac22dpt_%d", i), ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisLambdaMassforflow, axisMultiplicity}});
+      xic24[i - 1] = registry.add<TProfile3D>(Form("Jackknife/Xi/Xic24dpt_%d", i), ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisXiMassforflow, axisMultiplicity}});
+      omegac24[i - 1] = registry.add<TProfile3D>(Form("Jackknife/Omega/Omegac24dpt_%d", i), ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisOmegaMassforflow, axisMultiplicity}});
+      k0sc24[i - 1] = registry.add<TProfile3D>(Form("Jackknife/K0s/K0sc24dpt_%d", i), ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisK0sMassforflow, axisMultiplicity}});
+      lambdac24[i - 1] = registry.add<TProfile3D>(Form("Jackknife/Lambda/Lambdac24dpt_%d", i), ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisLambdaMassforflow, axisMultiplicity}});
     }
     // InvMass(GeV) of casc and v0
-    registry.add("InvMassXiMinus_all", "", {HistType::kTHnSparseF, {cfgaxisPtXi, axisXiminusMass, cfgaxisEta, axisMultiplicity}});
-    registry.add("InvMassOmegaMinus_all", "", {HistType::kTHnSparseF, {cfgaxisPtXi, axisOmegaminusMass, cfgaxisEta, axisMultiplicity}});
-    registry.add("InvMassOmegaMinus", "", {HistType::kTHnSparseF, {cfgaxisPtXi, axisOmegaminusMass, cfgaxisEta, axisMultiplicity}});
-    registry.add("InvMassXiMinus", "", {HistType::kTHnSparseF, {cfgaxisPtXi, axisXiminusMass, cfgaxisEta, axisMultiplicity}});
+    registry.add("InvMassXi_all", "", {HistType::kTHnSparseF, {cfgaxisPtXi, axisXiMass, cfgaxisEta, axisMultiplicity}});
+    registry.add("InvMassOmega_all", "", {HistType::kTHnSparseF, {cfgaxisPtXi, axisOmegaMass, cfgaxisEta, axisMultiplicity}});
+    registry.add("InvMassOmega", "", {HistType::kTHnSparseF, {cfgaxisPtXi, axisOmegaMass, cfgaxisEta, axisMultiplicity}});
+    registry.add("InvMassXi", "", {HistType::kTHnSparseF, {cfgaxisPtXi, axisXiMass, cfgaxisEta, axisMultiplicity}});
     registry.add("InvMassK0s_all", "", {HistType::kTHnSparseF, {cfgaxisPtV0, axisK0sMass, cfgaxisEta, axisMultiplicity}});
     registry.add("InvMassLambda_all", "", {HistType::kTHnSparseF, {cfgaxisPtV0, axisLambdaMass, cfgaxisEta, axisMultiplicity}});
     registry.add("InvMassK0s", "", {HistType::kTHnSparseF, {cfgaxisPtV0, axisK0sMass, cfgaxisEta, axisMultiplicity}});
@@ -308,6 +311,7 @@ struct FlowGFWOmegaXi {
     fGFW->AddRegion("poiP10dpt", 0.4, 0.8, nPtBins, 32);
     fGFW->AddRegion("poifulldpt", -0.8, 0.8, nPtBins, 32);
     fGFW->AddRegion("poioldpt", -0.8, 0.8, nPtBins, 1);
+
     int nXiptMassBins = nXiPtBins * cfgXiMassbins;
     fGFW->AddRegion("poiXiPdpt", 0.4, 0.8, nXiptMassBins, 2);
     fGFW->AddRegion("poiXiNdpt", -0.8, -0.4, nXiptMassBins, 2);
@@ -387,7 +391,7 @@ struct FlowGFWOmegaXi {
 
   // input HIST("name")
   template <char... chars>
-  void FillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
+  void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -403,7 +407,7 @@ struct FlowGFWOmegaXi {
   }
 
   // input shared_ptr<TProfile>
-  void FillProfile(const GFW::CorrConfig& corrconf, std::shared_ptr<TProfile> TProfile, const double& cent)
+  void fillProfile(const GFW::CorrConfig& corrconf, std::shared_ptr<TProfile> TProfile, const double& cent)
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
@@ -419,7 +423,7 @@ struct FlowGFWOmegaXi {
   }
 
   template <char... chars>
-  void FillProfilepT(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const int& ptbin, const double& cent)
+  void fillProfilepT(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const int& ptbin, const double& cent)
   {
     float dnx = 0;
     float val = 0;
@@ -435,7 +439,7 @@ struct FlowGFWOmegaXi {
 
   // input HIST("name")
   template <char... chars>
-  void FillProfilepTMass(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const int& ptbin, const int& PDGCode, const float& cent)
+  void fillProfilepTMass(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const int& ptbin, const int& PDGCode, const float& cent)
   {
     int nMassBins = 0;
     int nptbins = 0;
@@ -480,7 +484,7 @@ struct FlowGFWOmegaXi {
   }
 
   // input shared_ptr<TProfile3D>
-  void FillProfilepTMass(const GFW::CorrConfig& corrconf, std::shared_ptr<TProfile3D> TProfile3D, const int& ptbin, const int& PDGCode, const float& cent)
+  void fillProfilepTMass(const GFW::CorrConfig& corrconf, std::shared_ptr<TProfile3D> TProfile3D, const int& ptbin, const int& PDGCode, const float& cent)
   {
     int nMassBins = 0;
     int nptbins = 0;
@@ -598,10 +602,14 @@ struct FlowGFWOmegaXi {
       // no collisions in specified time range
       return 0;
     }
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      // cut time intervals with dead ITS staves
+      return 0;
+    }
     float vtxz = -999;
     if (collision.numContrib() > 1) {
       vtxz = collision.posZ();
-      float zRes = TMath::Sqrt(collision.covZZ());
+      float zRes = std::sqrt(collision.covZZ());
       if (zRes > 0.25 && collision.numContrib() < 20)
         vtxz = -999;
     }
@@ -628,15 +636,15 @@ struct FlowGFWOmegaXi {
     return true;
   }
 
-  void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks, aod::CascDataExt const& Cascades, aod::V0Datas const& V0s, DaughterTracks&)
+  void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, aod::CascDataExt const& Cascades, aod::V0Datas const& V0s, DaughterTracks const&)
   {
-    int Ntot = tracks.size();
-    int CandNum_all[4] = {0, 0, 0, 0};
-    int CandNum[4] = {0, 0, 0, 0};
+    int nTot = tracks.size();
+    int candNumAll[4] = {0, 0, 0, 0};
+    int candNum[4] = {0, 0, 0, 0};
     for (int i = 0; i < 4; i++) {
       registry.fill(HIST("hEventCount"), 0.5, i + 0.5);
     }
-    if (Ntot < 1)
+    if (nTot < 1)
       return;
     fGFW->Clear();
     const auto cent = collision.centFT0C();
@@ -648,7 +656,7 @@ struct FlowGFWOmegaXi {
     loadCorrections(bc.timestamp());
     float vtxz = collision.posZ();
     registry.fill(HIST("hVtxZ"), vtxz);
-    registry.fill(HIST("hMult"), Ntot);
+    registry.fill(HIST("hMult"), nTot);
     registry.fill(HIST("hCent"), collision.centFT0C());
     for (int i = 0; i < 4; i++) {
       registry.fill(HIST("hEventCount"), 1.5, i + 0.5);
@@ -657,10 +665,11 @@ struct FlowGFWOmegaXi {
     float weff = 1;
     float wacc = 1;
     // fill GFW ref flow
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (!setCurrentParticleWeights(weff, wacc, track, vtxz, 0))
         continue;
       registry.fill(HIST("hPhi"), track.phi());
+      registry.fill(HIST("hPhicorr"), track.phi(), wacc);
       registry.fill(HIST("hEta"), track.eta());
       registry.fill(HIST("hEtaPhiVtxzREF"), track.phi(), track.eta(), vtxz, wacc);
       registry.fill(HIST("hPt"), track.pt());
@@ -675,30 +684,43 @@ struct FlowGFWOmegaXi {
         fWeightsREF->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
     }
     // fill GFW of V0 flow
-    for (auto& v0 : V0s) {
+    for (const auto& v0 : V0s) {
       auto v0posdau = v0.posTrack_as<DaughterTracks>();
       auto v0negdau = v0.negTrack_as<DaughterTracks>();
       // check tpc
-      int PDGCode = 0;
+      bool isK0s = false;
+      bool isLambda = false;
       // fill QA
       registry.fill(HIST("hqaarm_podobefore"), v0.alpha(), v0.qtarm());
       // check daughter TPC and TOF
-      if (v0.qtarm() / std::fabs(v0.alpha()) > cfgv0_ArmPodocut &&
+      // K0short
+      if (v0.qtarm() / std::fabs(v0.alpha()) > cfgv0_ArmPodocut && std::fabs(v0.y()) < 0.5 && std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < cfgv0_mk0swindow &&
           (!cfgcheckDauTPC || (std::fabs(v0posdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion && std::fabs(v0negdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion)) &&
-          (!cfgcheckDauTOF || (std::fabs(v0posdau.tofNSigmaPi()) < cfgtofNSigmaCascPion && std::fabs(v0negdau.tofNSigmaPi()) < cfgtofNSigmaCascPion))) {
+          (!cfgcheckDauTOF || ((std::fabs(v0posdau.tofNSigmaPi()) < cfgtofNSigmaCascPion || v0posdau.pt() < 0.4) && (std::fabs(v0negdau.tofNSigmaPi()) < cfgtofNSigmaCascPion || v0negdau.pt() < 0.4)))) {
         registry.fill(HIST("InvMassK0s_all"), v0.pt(), v0.mK0Short(), v0.eta(), cent);
         if (!setCurrentParticleWeights(weff, wacc, v0, vtxz, 1))
           continue;
-        PDGCode = kK0Short;
-        CandNum_all[0] = CandNum_all[0] + 1;
+        isK0s = true;
+        candNumAll[0] = candNumAll[0] + 1;
         registry.fill(HIST("hqaarm_podoafter"), v0.alpha(), v0.qtarm());
-      } else if ((!cfgcheckDauTPC || (std::fabs(v0posdau.tpcNSigmaPr()) < cfgtpcNSigmaCascProton && std::fabs(v0negdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion)) &&
-                 (!cfgcheckDauTOF || (std::fabs(v0posdau.tofNSigmaPr()) < cfgtofNSigmaCascProton && std::fabs(v0negdau.tofNSigmaPi()) < cfgtofNSigmaCascPion))) {
+      }
+      // Lambda and antiLambda
+      if (std::fabs(v0.y()) < 0.5 && std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < cfgv0_mlambdawindow &&
+          (!cfgcheckDauTPC || (std::fabs(v0posdau.tpcNSigmaPr()) < cfgtpcNSigmaCascProton && std::fabs(v0negdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion)) &&
+          (!cfgcheckDauTOF || ((std::fabs(v0posdau.tofNSigmaPr()) < cfgtofNSigmaCascProton || v0posdau.pt() < 0.4) && (std::fabs(v0negdau.tofNSigmaPi()) < cfgtofNSigmaCascPion || v0negdau.pt() < 0.4)))) {
         registry.fill(HIST("InvMassLambda_all"), v0.pt(), v0.mLambda(), v0.eta(), cent);
         if (!setCurrentParticleWeights(weff, wacc, v0, vtxz, 2))
           continue;
-        PDGCode = kLambda0;
-        CandNum_all[1] = CandNum_all[1] + 1;
+        isLambda = true;
+        candNumAll[1] = candNumAll[1] + 1;
+      } else if (std::fabs(v0.y()) < 0.5 && std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < cfgv0_mlambdawindow &&
+                 (!cfgcheckDauTPC || (std::fabs(v0negdau.tpcNSigmaPr()) < cfgtpcNSigmaCascProton && std::fabs(v0posdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion)) &&
+                 (!cfgcheckDauTOF || ((std::fabs(v0negdau.tofNSigmaPr()) < cfgtofNSigmaCascProton || v0negdau.pt() < 0.4) && (std::fabs(v0posdau.tofNSigmaPi()) < cfgtofNSigmaCascPion || v0posdau.pt() < 0.4)))) {
+        registry.fill(HIST("InvMassLambda_all"), v0.pt(), v0.mLambda(), v0.eta(), cent);
+        if (!setCurrentParticleWeights(weff, wacc, v0, vtxz, 2))
+          continue;
+        isLambda = true;
+        candNumAll[1] = candNumAll[1] + 1;
       }
       // fill QA before cut
       registry.fill(HIST("hqaV0radiusbefore"), v0.v0radius());
@@ -739,28 +761,25 @@ struct FlowGFWOmegaXi {
       registry.fill(HIST("hqadcaV0dauafter"), v0.dcaV0daughters());
       registry.fill(HIST("hqadcapostoPVafter"), v0.dcapostopv());
       registry.fill(HIST("hqadcanegtoPVafter"), v0.dcanegtopv());
-      if (PDGCode == kK0Short) {
-        if (std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < cfgv0_mk0swindow) {
-          CandNum[0] = CandNum[0] + 1;
-          registry.fill(HIST("InvMassK0s"), v0.pt(), v0.mK0Short(), v0.eta(), cent);
-          registry.fill(HIST("hEtaPhiVtxzPOIK0s"), v0.phi(), v0.eta(), vtxz, wacc);
-          fGFW->Fill(v0.eta(), fV0PtAxis->FindBin(v0.pt()) - 1 + ((fK0sMass->FindBin(v0.mK0Short()) - 1) * nV0PtBins), v0.phi(), wacc * weff, 8);
-          if (cfgOutputNUAWeights)
-            fWeightsK0s->Fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
-        }
-      } else if (PDGCode == kLambda0) {
-        if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda0) < cfgv0_mlambdawindow) {
-          CandNum[1] = CandNum[1] + 1;
-          registry.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda(), v0.eta(), cent);
-          registry.fill(HIST("hEtaPhiVtxzPOILambda"), v0.phi(), v0.eta(), vtxz, wacc);
-          fGFW->Fill(v0.eta(), fV0PtAxis->FindBin(v0.pt()) - 1 + ((fLambdaMass->FindBin(v0.mLambda()) - 1) * nV0PtBins), v0.phi(), wacc * weff, 16);
-          if (cfgOutputNUAWeights)
-            fWeightsLambda->Fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
-        }
+      if (isK0s) {
+        candNum[0] = candNum[0] + 1;
+        registry.fill(HIST("InvMassK0s"), v0.pt(), v0.mK0Short(), v0.eta(), cent);
+        registry.fill(HIST("hEtaPhiVtxzPOIK0s"), v0.phi(), v0.eta(), vtxz, wacc);
+        fGFW->Fill(v0.eta(), fV0PtAxis->FindBin(v0.pt()) - 1 + ((fK0sMass->FindBin(v0.mK0Short()) - 1) * nV0PtBins), v0.phi(), wacc * weff, 8);
+        if (cfgOutputNUAWeights)
+          fWeightsK0s->Fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
+      }
+      if (isLambda) {
+        candNum[1] = candNum[1] + 1;
+        registry.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda(), v0.eta(), cent);
+        registry.fill(HIST("hEtaPhiVtxzPOILambda"), v0.phi(), v0.eta(), vtxz, wacc);
+        fGFW->Fill(v0.eta(), fV0PtAxis->FindBin(v0.pt()) - 1 + ((fLambdaMass->FindBin(v0.mLambda()) - 1) * nV0PtBins), v0.phi(), wacc * weff, 16);
+        if (cfgOutputNUAWeights)
+          fWeightsLambda->Fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
       }
     }
     // fill GFW of casc flow
-    for (auto& casc : Cascades) {
+    for (const auto& casc : Cascades) {
       auto bachelor = casc.bachelor_as<DaughterTracks>();
       auto posdau = casc.posTrack_as<DaughterTracks>();
       auto negdau = casc.negTrack_as<DaughterTracks>();
@@ -768,21 +787,43 @@ struct FlowGFWOmegaXi {
       if (cfgcheckDauTPC && (!posdau.hasTPC() || !negdau.hasTPC() || !bachelor.hasTPC())) {
         continue;
       }
-      int PDGCode = 0;
-      if (casc.sign() < 0 && std::fabs(casc.yOmega()) < cfgCasc_rapidity && std::fabs(bachelor.tpcNSigmaKa()) < cfgtpcNSigmaCascKaon && std::fabs(posdau.tpcNSigmaPr()) < cfgtpcNSigmaCascProton && std::fabs(negdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion && std::fabs(bachelor.tofNSigmaKa()) < cfgtofNSigmaCascKaon && std::fabs(posdau.tofNSigmaPr()) < cfgtofNSigmaCascProton && std::fabs(negdau.tofNSigmaPi()) < cfgtofNSigmaCascPion) {
-        registry.fill(HIST("InvMassOmegaMinus_all"), casc.pt(), casc.mOmega(), casc.eta(), cent);
+      bool isOmega = false;
+      bool isXi = false;
+      // Omega and antiOmega
+      if (casc.sign() < 0 && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
+          (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaKa()) < cfgtpcNSigmaCascKaon && std::fabs(posdau.tpcNSigmaPr()) < cfgtpcNSigmaCascProton && std::fabs(negdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion)) &&
+          (!cfgcheckDauTOF || ((std::fabs(bachelor.tofNSigmaKa()) < cfgtofNSigmaCascKaon || bachelor.pt() < 0.4) && (std::fabs(posdau.tofNSigmaPr()) < cfgtofNSigmaCascProton || posdau.pt() < 0.4) && (std::fabs(negdau.tofNSigmaPi()) < cfgtofNSigmaCascPion || negdau.pt() < 0.4)))) {
+        registry.fill(HIST("InvMassOmega_all"), casc.pt(), casc.mOmega(), casc.eta(), cent);
         if (!setCurrentParticleWeights(weff, wacc, casc, vtxz, 4))
           continue;
-        PDGCode = kOmegaMinus;
-        CandNum_all[3] = CandNum_all[3] + 1;
-      } else if (casc.sign() < 0 && std::fabs(casc.yXi()) < cfgCasc_rapidity && std::fabs(bachelor.tpcNSigmaPi()) < cfgtpcNSigmaCascPion && std::fabs(posdau.tpcNSigmaPr()) < cfgtpcNSigmaCascProton && std::fabs(negdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion && std::fabs(bachelor.tofNSigmaPi()) < cfgtofNSigmaCascPion && std::fabs(posdau.tofNSigmaPr()) < cfgtofNSigmaCascProton && std::fabs(negdau.tofNSigmaPi()) < cfgtofNSigmaCascPion) {
-        registry.fill(HIST("InvMassXiMinus_all"), casc.pt(), casc.mXi(), casc.eta(), cent);
+        isOmega = true;
+        candNumAll[3] = candNumAll[3] + 1;
+      } else if (casc.sign() < 0 && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
+                 (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaKa()) < cfgtpcNSigmaCascKaon && std::fabs(negdau.tpcNSigmaPr()) < cfgtpcNSigmaCascProton && std::fabs(posdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion)) &&
+                 (!cfgcheckDauTOF || ((std::fabs(bachelor.tofNSigmaKa()) < cfgtofNSigmaCascKaon || bachelor.pt() < 0.4) && (std::fabs(negdau.tofNSigmaPr()) < cfgtofNSigmaCascProton || negdau.pt() < 0.4) && (std::fabs(posdau.tofNSigmaPi()) < cfgtofNSigmaCascPion || posdau.pt() < 0.4)))) {
+        registry.fill(HIST("InvMassOmega_all"), casc.pt(), casc.mOmega(), casc.eta(), cent);
+        if (!setCurrentParticleWeights(weff, wacc, casc, vtxz, 4))
+          continue;
+        isOmega = true;
+        candNumAll[3] = candNumAll[3] + 1;
+      }
+      // Xi and antiXi
+      if (casc.sign() < 0 && (casc.mXi() > 1.30) && (casc.mXi() < 1.37) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
+          (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaPi()) < cfgtpcNSigmaCascPion && std::fabs(posdau.tpcNSigmaPr()) < cfgtpcNSigmaCascProton && std::fabs(negdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion)) &&
+          (!cfgcheckDauTOF || ((std::fabs(bachelor.tofNSigmaPi()) < cfgtofNSigmaCascPion || bachelor.pt() < 0.4) && (std::fabs(posdau.tofNSigmaPr()) < cfgtofNSigmaCascProton || posdau.pt() < 0.4) && (std::fabs(negdau.tofNSigmaPi()) < cfgtofNSigmaCascPion || negdau.pt() < 0.4)))) {
+        registry.fill(HIST("InvMassXi_all"), casc.pt(), casc.mXi(), casc.eta(), cent);
         if (!setCurrentParticleWeights(weff, wacc, casc, vtxz, 3))
           continue;
-        PDGCode = kXiMinus;
-        CandNum_all[2] = CandNum_all[2] + 1;
-      } else {
-        continue;
+        isXi = true;
+        candNumAll[2] = candNumAll[2] + 1;
+      } else if (casc.sign() < 0 && (casc.mXi() > 1.30) && (casc.mXi() < 1.37) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
+                 (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaPi()) < cfgtpcNSigmaCascPion && std::fabs(negdau.tpcNSigmaPr()) < cfgtpcNSigmaCascProton && std::fabs(posdau.tpcNSigmaPi()) < cfgtpcNSigmaCascPion)) &&
+                 (!cfgcheckDauTOF || ((std::fabs(bachelor.tofNSigmaPi()) < cfgtofNSigmaCascPion || bachelor.pt() < 0.4) && (std::fabs(negdau.tofNSigmaPr()) < cfgtofNSigmaCascProton || negdau.pt() < 0.4) && (std::fabs(posdau.tofNSigmaPi()) < cfgtofNSigmaCascPion || posdau.pt() < 0.4)))) {
+        registry.fill(HIST("InvMassXi_all"), casc.pt(), casc.mXi(), casc.eta(), cent);
+        if (!setCurrentParticleWeights(weff, wacc, casc, vtxz, 3))
+          continue;
+        isXi = true;
+        candNumAll[2] = candNumAll[2] + 1;
       }
       // topological cut
       if (casc.cascradius() < cfgcasc_radius)
@@ -814,86 +855,82 @@ struct FlowGFWOmegaXi {
         continue;
       if (negdau.itsNCls() < cfgitsclusters)
         continue;
-      if (PDGCode == kOmegaMinus) {
-        CandNum[3] = CandNum[3] + 1;
+      if (isOmega) {
+        candNum[3] = candNum[3] + 1;
         registry.fill(HIST("hEtaPhiVtxzPOIOmega"), casc.phi(), casc.eta(), vtxz, wacc);
-        registry.fill(HIST("InvMassOmegaMinus"), casc.pt(), casc.mOmega(), casc.eta(), cent);
-        if ((casc.pt() < cfgCutPtPOIMax) && (casc.pt() > cfgCutPtPOIMin) && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71)) {
-          fGFW->Fill(casc.eta(), fXiPtAxis->FindBin(casc.pt()) - 1 + ((fOmegaMass->FindBin(casc.mOmega()) - 1) * nXiPtBins), casc.phi(), wacc * weff, 4);
-        }
+        registry.fill(HIST("InvMassOmega"), casc.pt(), casc.mOmega(), casc.eta(), cent);
+        fGFW->Fill(casc.eta(), fXiPtAxis->FindBin(casc.pt()) - 1 + ((fOmegaMass->FindBin(casc.mOmega()) - 1) * nXiPtBins), casc.phi(), wacc * weff, 4);
         if (cfgOutputNUAWeights)
           fWeightsOmega->Fill(casc.phi(), casc.eta(), vtxz, casc.pt(), cent, 0);
       }
-      if (PDGCode == kXiMinus) {
-        CandNum[2] = CandNum[2] + 1;
+      if (isXi) {
+        candNum[2] = candNum[2] + 1;
         registry.fill(HIST("hEtaPhiVtxzPOIXi"), casc.phi(), casc.eta(), vtxz, wacc);
-        registry.fill(HIST("InvMassXiMinus"), casc.pt(), casc.mXi(), casc.eta(), cent);
-        if ((casc.pt() < cfgCutPtPOIMax) && (casc.pt() > cfgCutPtPOIMin) && (casc.mXi() > 1.30) && (casc.mXi() < 1.37)) {
-          fGFW->Fill(casc.eta(), fXiPtAxis->FindBin(casc.pt()) - 1 + ((fXiMass->FindBin(casc.mXi()) - 1) * nXiPtBins), casc.phi(), wacc * weff, 2);
-        }
+        registry.fill(HIST("InvMassXi"), casc.pt(), casc.mXi(), casc.eta(), cent);
+        fGFW->Fill(casc.eta(), fXiPtAxis->FindBin(casc.pt()) - 1 + ((fXiMass->FindBin(casc.mXi()) - 1) * nXiPtBins), casc.phi(), wacc * weff, 2);
         if (cfgOutputNUAWeights)
           fWeightsXi->Fill(casc.phi(), casc.eta(), vtxz, casc.pt(), cent, 0);
       }
     }
     for (int i = 0; i < 4; i++) {
-      if (CandNum_all[i] > 0) {
+      if (candNumAll[i] > 0) {
         registry.fill(HIST("hEventCount"), 2.5, i + 0.5);
       }
-      if (CandNum[i] > 0) {
+      if (candNum[i] > 0) {
         registry.fill(HIST("hEventCount"), 3.5, i + 0.5);
       }
     }
     // Filling cumulant with ROOT TProfile and loop for all ptBins
-    FillProfile(corrconfigs.at(15), HIST("c22"), cent);
-    FillProfile(corrconfigs.at(16), HIST("c24"), cent);
-    FillProfile(corrconfigs.at(17), HIST("K0sc22"), cent);
-    FillProfile(corrconfigs.at(18), HIST("K0sc22"), cent);
-    FillProfile(corrconfigs.at(19), HIST("Lambdac22"), cent);
-    FillProfile(corrconfigs.at(20), HIST("Lambdac22"), cent);
+    fillProfile(corrconfigs.at(15), HIST("c22"), cent);
+    fillProfile(corrconfigs.at(16), HIST("c24"), cent);
+    fillProfile(corrconfigs.at(17), HIST("K0sc22"), cent);
+    fillProfile(corrconfigs.at(18), HIST("K0sc22"), cent);
+    fillProfile(corrconfigs.at(19), HIST("Lambdac22"), cent);
+    fillProfile(corrconfigs.at(20), HIST("Lambdac22"), cent);
     for (int i = 1; i <= nPtBins; i++) {
-      FillProfilepT(corrconfigs.at(0), HIST("c22dpt"), i, cent);
-      FillProfilepT(corrconfigs.at(1), HIST("c22dpt"), i, cent);
-      FillProfilepT(corrconfigs.at(2), HIST("c24dpt"), i, cent);
+      fillProfilepT(corrconfigs.at(0), HIST("c22dpt"), i, cent);
+      fillProfilepT(corrconfigs.at(1), HIST("c22dpt"), i, cent);
+      fillProfilepT(corrconfigs.at(2), HIST("c24dpt"), i, cent);
     }
     for (int i = 1; i <= nV0PtBins; i++) {
-      FillProfilepTMass(corrconfigs.at(9), HIST("K0sc22dpt"), i, kK0Short, cent);
-      FillProfilepTMass(corrconfigs.at(10), HIST("K0sc22dpt"), i, kK0Short, cent);
-      FillProfilepTMass(corrconfigs.at(11), HIST("K0sc24dpt"), i, kK0Short, cent);
-      FillProfilepTMass(corrconfigs.at(12), HIST("Lambdac22dpt"), i, kLambda0, cent);
-      FillProfilepTMass(corrconfigs.at(13), HIST("Lambdac22dpt"), i, kLambda0, cent);
-      FillProfilepTMass(corrconfigs.at(14), HIST("Lambdac24dpt"), i, kLambda0, cent);
+      fillProfilepTMass(corrconfigs.at(9), HIST("K0sc22dpt"), i, kK0Short, cent);
+      fillProfilepTMass(corrconfigs.at(10), HIST("K0sc22dpt"), i, kK0Short, cent);
+      fillProfilepTMass(corrconfigs.at(11), HIST("K0sc24dpt"), i, kK0Short, cent);
+      fillProfilepTMass(corrconfigs.at(12), HIST("Lambdac22dpt"), i, kLambda0, cent);
+      fillProfilepTMass(corrconfigs.at(13), HIST("Lambdac22dpt"), i, kLambda0, cent);
+      fillProfilepTMass(corrconfigs.at(14), HIST("Lambdac24dpt"), i, kLambda0, cent);
     }
     for (int i = 1; i <= nXiPtBins; i++) {
-      FillProfilepTMass(corrconfigs.at(3), HIST("Xic22dpt"), i, kXiMinus, cent);
-      FillProfilepTMass(corrconfigs.at(4), HIST("Xic22dpt"), i, kXiMinus, cent);
-      FillProfilepTMass(corrconfigs.at(5), HIST("Xic24dpt"), i, kXiMinus, cent);
-      FillProfilepTMass(corrconfigs.at(6), HIST("Omegac22dpt"), i, kOmegaMinus, cent);
-      FillProfilepTMass(corrconfigs.at(7), HIST("Omegac22dpt"), i, kOmegaMinus, cent);
-      FillProfilepTMass(corrconfigs.at(8), HIST("Omegac24dpt"), i, kOmegaMinus, cent);
+      fillProfilepTMass(corrconfigs.at(3), HIST("Xic22dpt"), i, kXiMinus, cent);
+      fillProfilepTMass(corrconfigs.at(4), HIST("Xic22dpt"), i, kXiMinus, cent);
+      fillProfilepTMass(corrconfigs.at(5), HIST("Xic24dpt"), i, kXiMinus, cent);
+      fillProfilepTMass(corrconfigs.at(6), HIST("Omegac22dpt"), i, kOmegaMinus, cent);
+      fillProfilepTMass(corrconfigs.at(7), HIST("Omegac22dpt"), i, kOmegaMinus, cent);
+      fillProfilepTMass(corrconfigs.at(8), HIST("Omegac24dpt"), i, kOmegaMinus, cent);
     }
     // Fill subevents flow
     TRandom3* fRdm = new TRandom3(0);
-    double Eventrdm = 10 * fRdm->Rndm();
+    double eventrdm = 10 * fRdm->Rndm();
     for (int j = 1; j <= 10; j++) {
-      if (Eventrdm > (j - 1) && Eventrdm < j)
+      if (eventrdm > (j - 1) && eventrdm < j)
         continue;
-      FillProfile(corrconfigs.at(15), REFc22[j - 1], cent);
-      FillProfile(corrconfigs.at(16), REFc24[j - 1], cent);
+      fillProfile(corrconfigs.at(15), refc22[j - 1], cent);
+      fillProfile(corrconfigs.at(16), refc24[j - 1], cent);
       for (int i = 1; i <= nV0PtBins; i++) {
-        FillProfilepTMass(corrconfigs.at(9), K0sc22[j - 1], i, kK0Short, cent);
-        FillProfilepTMass(corrconfigs.at(10), K0sc22[j - 1], i, kK0Short, cent);
-        FillProfilepTMass(corrconfigs.at(11), K0sc24[j - 1], i, kK0Short, cent);
-        FillProfilepTMass(corrconfigs.at(12), Lambdac22[j - 1], i, kLambda0, cent);
-        FillProfilepTMass(corrconfigs.at(13), Lambdac22[j - 1], i, kLambda0, cent);
-        FillProfilepTMass(corrconfigs.at(14), Lambdac24[j - 1], i, kLambda0, cent);
+        fillProfilepTMass(corrconfigs.at(9), k0sc22[j - 1], i, kK0Short, cent);
+        fillProfilepTMass(corrconfigs.at(10), k0sc22[j - 1], i, kK0Short, cent);
+        fillProfilepTMass(corrconfigs.at(11), k0sc24[j - 1], i, kK0Short, cent);
+        fillProfilepTMass(corrconfigs.at(12), lambdac22[j - 1], i, kLambda0, cent);
+        fillProfilepTMass(corrconfigs.at(13), lambdac22[j - 1], i, kLambda0, cent);
+        fillProfilepTMass(corrconfigs.at(14), lambdac24[j - 1], i, kLambda0, cent);
       }
       for (int i = 1; i <= nXiPtBins; i++) {
-        FillProfilepTMass(corrconfigs.at(3), Xic22[j - 1], i, kXiMinus, cent);
-        FillProfilepTMass(corrconfigs.at(4), Xic22[j - 1], i, kXiMinus, cent);
-        FillProfilepTMass(corrconfigs.at(5), Xic24[j - 1], i, kXiMinus, cent);
-        FillProfilepTMass(corrconfigs.at(6), Omegac22[j - 1], i, kOmegaMinus, cent);
-        FillProfilepTMass(corrconfigs.at(7), Omegac22[j - 1], i, kOmegaMinus, cent);
-        FillProfilepTMass(corrconfigs.at(8), Omegac24[j - 1], i, kOmegaMinus, cent);
+        fillProfilepTMass(corrconfigs.at(3), xic22[j - 1], i, kXiMinus, cent);
+        fillProfilepTMass(corrconfigs.at(4), xic22[j - 1], i, kXiMinus, cent);
+        fillProfilepTMass(corrconfigs.at(5), xic24[j - 1], i, kXiMinus, cent);
+        fillProfilepTMass(corrconfigs.at(6), omegac22[j - 1], i, kOmegaMinus, cent);
+        fillProfilepTMass(corrconfigs.at(7), omegac22[j - 1], i, kOmegaMinus, cent);
+        fillProfilepTMass(corrconfigs.at(8), omegac24[j - 1], i, kOmegaMinus, cent);
       }
     }
   }

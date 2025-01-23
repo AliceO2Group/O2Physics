@@ -72,6 +72,7 @@ DECLARE_SOA_COLUMN(MuonAmbiguityOutOfBunch, muonAmbiguityOutOfBunch, int8_t);   
 DECLARE_SOA_BITMAP_COLUMN(IsBarrelSelectedPrefilter, isBarrelSelectedPrefilter, 32); //! Barrel prefilter decisions (joinable to ReducedTracksAssoc)
 // Bcandidate columns for ML analysis of B->Jpsi+K
 DECLARE_SOA_COLUMN(massBcandidate, MBcandidate, float);
+DECLARE_SOA_COLUMN(deltaMassBcandidate, deltaMBcandidate, float);
 DECLARE_SOA_COLUMN(pTBcandidate, PtBcandidate, float);
 DECLARE_SOA_COLUMN(LxyBcandidate, lxyBcandidate, float);
 DECLARE_SOA_COLUMN(LxyzBcandidate, lxyzBcandidate, float);
@@ -90,7 +91,7 @@ DECLARE_SOA_TABLE(BarrelAmbiguities, "AOD", "DQBARRELAMB", dqanalysisflags::Barr
 DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);                                                       //!  joinable to ReducedMuonsAssoc
 DECLARE_SOA_TABLE(MuonAmbiguities, "AOD", "DQMUONAMB", dqanalysisflags::MuonAmbiguityInBunch, dqanalysisflags::MuonAmbiguityOutOfBunch);         //!  joinable to ReducedMuonTracks
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsBarrelSelectedPrefilter);                                                  //!  joinable to ReducedTracksAssoc
-DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::DCAxyzBetweenProngs, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate, dqanalysisflags::McFlag);
+DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBcandidate, dqanalysisflags::deltaMassBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::DCAxyzBetweenProngs, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate, dqanalysisflags::McFlag);
 } // namespace o2::aod
 
 // Declarations of various short names
@@ -1591,9 +1592,9 @@ struct AnalysisSameEventPairing {
           }
           auto t1 = a1.template reducedmuon_as<TTracks>();
           auto t2 = a2.template reducedmuon_as<TTracks>();
-          if (t1.matchMCHTrackId() == t2.matchMCHTrackId())
+          if (t1.matchMCHTrackId() == t2.matchMCHTrackId() && t1.matchMCHTrackId() >= 0)
             continue;
-          if (t1.matchMFTTrackId() == t2.matchMFTTrackId())
+          if (t1.matchMFTTrackId() == t2.matchMFTTrackId() && t1.matchMFTTrackId() >= 0)
             continue;
           sign1 = t1.sign();
           sign2 = t2.sign();
@@ -1939,8 +1940,10 @@ struct AnalysisAsymmetricPairing {
   uint32_t fLegAFilterMask;
   uint32_t fLegBFilterMask;
   uint32_t fLegCFilterMask;
-  // Map tracking which pair of leg cuts the track cuts participate in
-  std::map<int, uint32_t> fTrackCutFilterMasks;
+  // Maps tracking which combination of leg cuts the track cuts participate in
+  std::map<int, uint32_t> fConstructedLegAFilterMasksMap;
+  std::map<int, uint32_t> fConstructedLegBFilterMasksMap;
+  std::map<int, uint32_t> fConstructedLegCFilterMasksMap;
   // Filter map for common track cuts
   uint32_t fCommonTrackCutMask;
   // Map tracking which common track cut the track cuts correspond to
@@ -2052,7 +2055,7 @@ struct AnalysisAsymmetricPairing {
       legAIdx = objArray->IndexOf(legs->At(0));
       if (legAIdx >= 0) {
         fConstructedLegAFilterMask |= static_cast<uint32_t>(1) << legAIdx;
-        fTrackCutFilterMasks[icut] |= static_cast<uint32_t>(1) << legAIdx;
+        fConstructedLegAFilterMasksMap[icut] |= static_cast<uint32_t>(1) << legAIdx;
       } else {
         LOGF(fatal, "Leg A cut %s was not calculated upstream. Check the config!", legs->At(0)->GetName());
         continue;
@@ -2060,7 +2063,7 @@ struct AnalysisAsymmetricPairing {
       legBIdx = objArray->IndexOf(legs->At(1));
       if (legBIdx >= 0) {
         fConstructedLegBFilterMask |= static_cast<uint32_t>(1) << legBIdx;
-        fTrackCutFilterMasks[icut] |= static_cast<uint32_t>(1) << legBIdx;
+        fConstructedLegBFilterMasksMap[icut] |= static_cast<uint32_t>(1) << legBIdx;
       } else {
         LOGF(fatal, "Leg B cut %s was not calculated upstream. Check the config!", legs->At(1)->GetName());
         continue;
@@ -2069,7 +2072,7 @@ struct AnalysisAsymmetricPairing {
         legCIdx = objArray->IndexOf(legs->At(2));
         if (legCIdx >= 0) {
           fConstructedLegCFilterMask |= static_cast<uint32_t>(1) << legCIdx;
-          fTrackCutFilterMasks[icut] |= static_cast<uint32_t>(1) << legCIdx;
+          fConstructedLegCFilterMasksMap[icut] |= static_cast<uint32_t>(1) << legCIdx;
         } else {
           LOGF(fatal, "Leg C cut %s was not calculated upstream. Check the config!", legs->At(2)->GetName());
           continue;
@@ -2378,7 +2381,7 @@ struct AnalysisAsymmetricPairing {
         bool isPairIdWrong = false;
         for (int icut = 0; icut < fNLegCuts; ++icut) {
           // Find leg pair definitions both candidates participate in
-          if ((((a1.isBarrelSelected_raw() & fLegAFilterMask) | (a2.isBarrelSelected_raw() & fLegBFilterMask)) & fTrackCutFilterMasks[icut]) == fTrackCutFilterMasks[icut]) {
+          if ((a1.isBarrelSelected_raw() & fConstructedLegAFilterMasksMap[icut]) && (a2.isBarrelSelected_raw() & fConstructedLegBFilterMasksMap[icut])) {
             twoTrackFilter |= static_cast<uint32_t>(1) << icut;
             // If the supposed pion passes a kaon cut, this is a K+K-. Skip it.
             if (TPairType == VarManager::kDecayToKPi && fConfigSkipAmbiguousIdCombinations.value) {
@@ -2625,8 +2628,8 @@ struct AnalysisAsymmetricPairing {
     uint32_t threeTrackFilter = 0;
     uint32_t threeTrackCommonFilter = 0;
     for (int icut = 0; icut < fNLegCuts; ++icut) {
-      // Find out which leg cut combination the triplet passes
-      if ((((a1.isBarrelSelected_raw() & fLegAFilterMask) | (a2.isBarrelSelected_raw() & fLegBFilterMask) | (a3.isBarrelSelected_raw() & fLegCFilterMask)) & fTrackCutFilterMasks[icut]) == fTrackCutFilterMasks[icut]) {
+      // Find out which leg cut combinations the triplet passes
+      if ((a1.isBarrelSelected_raw() & fConstructedLegAFilterMasksMap[icut]) && (a2.isBarrelSelected_raw() & fConstructedLegBFilterMasksMap[icut]) && (a3.isBarrelSelected_raw() & fConstructedLegCFilterMasksMap[icut])) {
         threeTrackFilter |= (static_cast<uint32_t>(1) << icut);
         if (tripletType == VarManager::kTripleCandidateToPKPi && fConfigSkipAmbiguousIdCombinations.value) {
           // Check if the supposed pion passes as a proton or kaon, if so, skip this triplet. It is pKp or pKK.
@@ -2660,6 +2663,17 @@ struct AnalysisAsymmetricPairing {
     // Avoid self-pairs
     if (t1 == t2 || t1 == t3 || t2 == t3) {
       return;
+    }
+    // Check charge
+    if (tripletType == VarManager::kTripleCandidateToKPiPi) {
+      if (!((t1.sign() == -1 && t2.sign() == 1 && t3.sign() == 1) || (t1.sign() == 1 && t2.sign() == -1 && t3.sign() == -1))) {
+        return;
+      }
+    }
+    if (tripletType == VarManager::kTripleCandidateToPKPi) {
+      if (!((t1.sign() == 1 && t2.sign() == -1 && t3.sign() == 1) || (t1.sign() == -1 && t2.sign() == 1 && t3.sign() == -1))) {
+        return;
+      }
     }
 
     // store the ambiguity of the three legs in the last 3 digits of the two-track filter
@@ -3117,12 +3131,36 @@ struct AnalysisDileptonTrack {
 
       // loop over hadrons
       for (auto& assoc : assocs) {
-        if constexpr (TCandidateType == VarManager::kBtoJpsiEEK || TCandidateType == VarManager::kDstarToD0KPiPi) {
+        if constexpr (TCandidateType == VarManager::kBtoJpsiEEK) {
           if (!assoc.isBarrelSelected_bit(fTrackCutBit)) {
             continue;
           }
           auto track = assoc.template reducedtrack_as<TTracks>();
           if (track.globalIndex() == dilepton.index0Id() || track.globalIndex() == dilepton.index1Id()) {
+            continue;
+          }
+          VarManager::FillDileptonHadron(dilepton, track, fValuesHadron);
+          VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron);
+
+          auto trackMC = track.reducedMCTrack();
+          mcDecision = 0;
+          isig = 0;
+          for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
+            if ((*sig).CheckSignal(true, lepton1MC, lepton2MC, trackMC)) {
+              mcDecision |= (static_cast<uint32_t>(1) << isig);
+            }
+          }
+        }
+        if constexpr (TCandidateType == VarManager::kDstarToD0KPiPi) {
+          if (!assoc.isBarrelSelected_bit(fTrackCutBit)) {
+            continue;
+          }
+          auto track = assoc.template reducedtrack_as<TTracks>();
+          if (track.globalIndex() == dilepton.index0Id() || track.globalIndex() == dilepton.index1Id()) {
+            continue;
+          }
+          // Check that the charge combination makes sense for D*+ -> D0 pi+ or D*- -> D0bar pi-
+          if (!((track.sign() == 1 && lepton1.sign() == -1 && lepton2.sign() == 1) || (track.sign() == -1 && lepton1.sign() == 1 && lepton2.sign() == -1))) {
             continue;
           }
           VarManager::FillDileptonHadron(dilepton, track, fValuesHadron);
@@ -3203,7 +3241,7 @@ struct AnalysisDileptonTrack {
           } // end loop (cuts)
         }
         // table to be written out for ML analysis
-        BmesonsTable(fValuesHadron[VarManager::kPairMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz], fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kKFDCAxyzBetweenProngs], fValuesHadron[VarManager::kCosPointingAngle], fValuesHadron[VarManager::kVertexingChi2PCA], mcDecision);
+        BmesonsTable(fValuesHadron[VarManager::kPairMass], fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz], fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kKFDCAxyzBetweenProngs], fValuesHadron[VarManager::kCosPointingAngle], fValuesHadron[VarManager::kVertexingChi2PCA], mcDecision);
       }
     } // end loop over dileptons
   }

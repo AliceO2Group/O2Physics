@@ -15,6 +15,10 @@
 ///
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
+#include <string>
+#include <set>
+#include <vector>
+
 #include "CCDB/BasicCCDBManager.h" // for dca recalculation
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPMagField.h" // for dca recalculation

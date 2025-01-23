@@ -17,7 +17,11 @@
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 
+#include <algorithm>
 #include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
