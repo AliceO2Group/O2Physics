@@ -8,10 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
 /// \file upcTauCentralBarrelRL.cxx
 /// \brief Personal task to analyze tau events from UPC collisions
-/// \author Roman Lavicka, roman.lavicka@cern.ch
+///
+/// \author Roman Lavicka <roman.lavicka@cern.ch>, Austrian Academy of Sciences & SMI
 /// \since  12.07.2022
+//
 
 // C++ headers
 #include <set>
