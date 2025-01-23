@@ -175,7 +175,7 @@ struct HfTreeCreatorTccToD0D0Pi {
   Produces<o2::aod::HfCandTccLites> rowCandidateLite;
   Produces<o2::aod::HfCandTccFullEvs> rowCandidateFullEvents;
 
-  Configurable<float> ptMinSoftPion{"ptMinSoftPion", 0.0, "Min pt for the softpion"};
+  Configurable<float> ptMinSoftPion{"ptMinSoftPion", 0.0, "Min pt for the soft pion"};
   Configurable<bool> usePionIsGlobalTrackWoDCA{"usePionIsGlobalTrackWoDCA", true, "check isGlobalTrackWoDCA status for pions"};
 
   Configurable<float> softPiEtaMax{"softPiEtaMax", 0.9f, "Soft pion max value for pseudorapidity (abs vale)"};
@@ -222,7 +222,7 @@ struct HfTreeCreatorTccToD0D0Pi {
       softPiCuts.SetMaxDcaZ(99999);
     }
     // kinematics
-    softPiCuts.SetPtRange(ptMinSoftPion, 1000.);         // pt
+    softPiCuts.SetPtRange(, 1000.);         // pt
     softPiCuts.SetEtaRange(-softPiEtaMax, softPiEtaMax); // eta
     // ITS chi2
     softPiCuts.SetMaxChi2PerClusterITS(softPiChi2Max);
