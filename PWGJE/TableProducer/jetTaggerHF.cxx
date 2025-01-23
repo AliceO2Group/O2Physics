@@ -19,6 +19,8 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <map>
+#include <utility>
 
 #include <TF1.h>
 #include <TH1.h>
