@@ -529,6 +529,11 @@ struct UpcTauRl {
       histos.add("EventTwoTracks/ElectronMuPi/KstarSelection/hInvariantMassWide", ";Invariant mass (K*#pi) (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
       histos.add("EventTwoTracks/ElectronMuPi/KstarSelection/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisInvMassWide, confAxis.zzAxisPt});
       histos.add("EventTwoTracks/ElectronMuPi/KstarSelection/hIMKvsIMe", ";#pi+K invariant mass (GeV/c^{2});#pi+e invariant mass (GeV/c^{2})", HistType::kTH2D, {confAxis.zzAxisInvMassWide, confAxis.zzAxisInvMassWide});
+      histos.add("EventTwoTracks/ElectronMuPi/KstarSelection/eMomentaCut/hInvariantMass", ";Invariant mass (K*#pi) (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMass});
+      histos.add("EventTwoTracks/ElectronMuPi/KstarSelection/eMomentaCut/hInvariantMassWide", ";Invariant mass (K*#pi) (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisInvMassWide});
+      histos.add("EventTwoTracks/ElectronMuPi/KstarSelection/eMomentaCut/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisInvMassWide, confAxis.zzAxisPt});
+      histos.add("EventTwoTracks/ElectronMuPi/KstarSelection/eMomentaCut/hIMKvsIMe", ";#pi+K invariant mass (GeV/c^{2});#pi+e invariant mass (GeV/c^{2})", HistType::kTH2D, {confAxis.zzAxisInvMassWide, confAxis.zzAxisInvMassWide});
+      histos.add("EventTwoTracks/ElectronMuPi/KstarSelection/eMomentaCut/hElectronPwideVsOtherPwide", ";Electron #it{p} (GeV/c); #mu/#pi #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMomWide, confAxis.zzAxisMomWide});
       histos.add("EventTwoTracks/ElectronMuPi/hAcoplanarity", ";#Delta#phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisAcoplanarity});
       histos.add("EventTwoTracks/ElectronMuPi/hCollinearity", ";#DeltaR (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisCollinearity});
       histos.add("EventTwoTracks/ElectronMuPi/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMom});
@@ -1282,6 +1287,13 @@ struct UpcTauRl {
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/hInvariantMassWide"))->Fill(motherOfPiKaon.M());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/hMotherMassVsPt"))->Fill(motherOfPiKaon.M(), motherOfPiKaon.Pt());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/hIMKvsIMe"))->Fill(motherOfPiKaon.M(), mother.M());
+        if (electronPt < 0.8) {
+          histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/eMomentaCut/hInvariantMass"))->Fill(motherOfPiKaon.M());
+          histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/eMomentaCut/hInvariantMassWide"))->Fill(motherOfPiKaon.M());
+          histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/eMomentaCut/hMotherMassVsPt"))->Fill(motherOfPiKaon.M(), motherOfPiKaon.Pt());
+          histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/eMomentaCut/hIMKvsIMe"))->Fill(motherOfPiKaon.M(), mother.M());
+          histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/eMomentaCut/hElectronPwideVsOtherPwide"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[0].P() : daug[1].P(), (enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].P() : daug[0].P());
+        }
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hAcoplanarity"))->Fill(acoplanarity);
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hCollinearity"))->Fill(collinearity);
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hMotherP"))->Fill(mother.P());
