@@ -749,7 +749,7 @@ struct UpcTauCentralBarrelRL {
   bool isFulfillsITSHitRequirementsReinstatement(uint8_t itsClusterMap) const
   {
     constexpr uint8_t bit = 1;
-    for (auto& itsRequirement : cutMyRequiredITSHits) {
+    for (const auto& itsRequirement : cutMyRequiredITSHits) {
       auto hits = std::count_if(itsRequirement.second.begin(), itsRequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (bit << requiredLayer); });
       if ((itsRequirement.first == -1) && (hits > 0)) {
         return false; // no hits were required in specified layers
@@ -926,8 +926,8 @@ struct UpcTauCentralBarrelRL {
     daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
     daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
     mother = daug[0] + daug[1];
-    pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(kPiPlus), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-    pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(kPiMinus), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+    pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPionCharged, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+    pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
     motherOfPions = pion[0] + pion[1];
     int enumTrk1 = enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC));
     if (cutTauEvent.cutOppositeCharge && (trkDaug1.sign() * trkDaug2.sign() > 0))
@@ -1054,11 +1054,11 @@ struct UpcTauCentralBarrelRL {
       daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
       daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       mother = daug[0] + daug[1];
-      pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPiPlus, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-      pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPiMinus, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPionCharged, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+      pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       motherOfPions = pion[0] + pion[1];
-      muon[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassMuonPlus, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-      muon[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassMuonMinus, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      muon[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassMuon, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+      muon[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassMuon, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       motherOfMuons = muon[0] + muon[1];
       const auto acoplanarity = calculateAcoplanarity(daug[0].Phi(), daug[1].Phi());
       const auto collinearity = calculateCollinearity(daug[0].Eta(), daug[1].Eta(), daug[0].Phi(), daug[1].Phi());
@@ -1688,10 +1688,10 @@ struct UpcTauCentralBarrelRL {
       const auto& trkDaug2 = reconstructedBarrelTracks.iteratorAt(vecPVidx[1]);
       daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
       daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-      pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(kPiPlus), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-      pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(kPiMinus), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-      muon[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(kMuonPlus), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-      muon[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(kMuonMinus), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPionCharged, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+      pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      muon[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassMuon, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+      muon[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassMuon, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       if (cutTauEvent.applyTauEventSelection && !selectedTauEvent(trkDaug1, trkDaug2)) {
         return;
       }
