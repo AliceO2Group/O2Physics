@@ -800,6 +800,55 @@ float getJetProbability(T const& fResoFuncjet, U const& jet, V const& /*tracks*/
   return jetProb;
 }
 
+// overloading for the case of using resolution function for each pt range
+template <typename T, typename U, typename V>
+float getJetProbability(std::vector<std::unique_ptr<T>> const& fResoFuncjets, U const& jet, V const& /*tracks*/, float trackDcaXYMax, float trackDcaZMax, float minSignImpXYSig = -10)
+{
+  std::vector<float> jetTracksPt;
+  float trackjetProb = 1.;
+
+  for (auto const& track : jet.template tracks_as<V>()) {
+    if (!trackAcceptanceWithDca(track, trackDcaXYMax, trackDcaZMax))
+      continue;
+
+    float probTrack = -1;
+    // choose the proper resolution function for the track based on its pt.
+    if (track.pt() >= 0.0 && track.pt() < 0.5) {
+      probTrack = getTrackProbability(fResoFuncjets.at(0), track, minSignImpXYSig);
+    } else if (track.pt() >= 0.5 && track.pt() < 1.0) {
+      probTrack = getTrackProbability(fResoFuncjets.at(1), track, minSignImpXYSig);
+    } else if (track.pt() >= 1.0 && track.pt() < 2.0) {
+      probTrack = getTrackProbability(fResoFuncjets.at(2), track, minSignImpXYSig);
+    } else if (track.pt() >= 2.0 && track.pt() < 4.0) {
+      probTrack = getTrackProbability(fResoFuncjets.at(3), track, minSignImpXYSig);
+    } else if (track.pt() >= 4.0 && track.pt() < 6.0) {
+      probTrack = getTrackProbability(fResoFuncjets.at(4), track, minSignImpXYSig);
+    } else if (track.pt() >= 6.0 && track.pt() < 9.0) {
+      probTrack = getTrackProbability(fResoFuncjets.at(5), track, minSignImpXYSig);
+    } else if (track.pt() >= 9.0) {
+      probTrack = getTrackProbability(fResoFuncjets.at(6), track, minSignImpXYSig);
+    }
+
+    auto geoSign = getGeoSign(jet, track);
+    if (geoSign > 0) { // only take positive sign track for JP calculation
+      trackjetProb *= probTrack;
+      jetTracksPt.push_back(track.pt());
+    }
+  }
+
+  float jetProb = -1.;
+  if (jetTracksPt.size() < 2)
+    return -1;
+
+  float sumjetProb = 0.;
+  for (std::vector<float>::size_type i = 0; i < jetTracksPt.size(); i++) {
+    sumjetProb += (std::pow(-1 * std::log(trackjetProb), static_cast<int>(i)) / TMath::Factorial(i));
+  }
+
+  jetProb = trackjetProb * sumjetProb;
+  return jetProb;
+}
+
 // For secaondy vertex method utilites
 template <typename ProngType, typename JetType>
 typename ProngType::iterator jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2PCAMin, float prongChi2PCAMax, float prongsigmaLxyMax, float prongIPxyMin, float prongIPxyMax, bool doXYZ = false, bool* checkSv = nullptr)
