@@ -76,7 +76,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct V0TopologicalCuts {
+struct v0topologicalcuts {
   // Histogram Registry includes different V0 Parameteres for all V0s and individual MC-V0s with MC-matching
   HistogramRegistry rV0ParametersMCV0match{"V0ParametersMCV0Match", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rV0ParametersMCK0Smatch{"V0ParametersMCK0SMatch", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -674,12 +674,12 @@ struct V0TopologicalCuts {
       }
     }
   }
-  PROCESS_SWITCH(V0TopologicalCuts, recMCProcess, "Process Run 3 MC:Reconstructed", true);
-  PROCESS_SWITCH(V0TopologicalCuts, dataProcess, "Process Run 3 Data,", false);
+  PROCESS_SWITCH(v0topologicalcuts, recMCProcess, "Process Run 3 MC:Reconstructed", true);
+  PROCESS_SWITCH(v0topologicalcuts, dataProcess, "Process Run 3 Data,", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<V0TopologicalCuts>(cfgc)};
+    adaptAnalysisTask<v0topologicalcuts>(cfgc)};
 }
