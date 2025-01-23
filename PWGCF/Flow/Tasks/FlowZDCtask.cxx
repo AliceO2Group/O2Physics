@@ -179,8 +179,8 @@ struct FlowZDCtask {
                "ZP Energy vs FT0C Centrality;Centrality [%];ZP Energy",
                kTH2F,
                {AxisSpec{100, 0, 100, "Centrality [%]"}, AxisSpec{100, 0, 500, "ZP Energy"}});
-    // for q vector recentering
-    histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ});
+    histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ}); // for q vector recentering
+    histos.add("hYield", "Nch vs pT", kTH2F, { axisMultiplicity, axisPt}); 
 
     if (doprocessZdcCollAssoc) { // Check if the process function for ZDCCollAssoc is enabled
       histos.add("ZNAcoll", "ZNAcoll; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZn}}});
@@ -248,7 +248,7 @@ struct FlowZDCtask {
 
     for (const auto& track : tracks) {
       double phi = track.phi();
-
+      
       histos.fill(HIST("etaHistogram"), track.eta());
       histos.fill(HIST("phiHistogram"), track.phi());
       histos.fill(HIST("ptHistogram"), track.pt());
@@ -256,6 +256,7 @@ struct FlowZDCtask {
       qTPC += std::complex<double>(std::cos(2.0 * phi), std::sin(2.0 * phi));
 
       histos.fill(HIST("multvsCent"), cent, nTot);
+      histos.fill(HIST("hYield"), nTot, track.pt());
 
     } // end track loop
 
@@ -290,14 +291,14 @@ struct FlowZDCtask {
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
       for (const auto& amplitude : ft0.amplitudeA()) {
-        histos.fill(HIST("hFT0AAmp"), amplitude);
         ft0aAmp += amplitude;
       }
       for (const auto& amplitude : ft0.amplitudeC()) {
-        histos.fill(HIST("hFT0CAmp"), amplitude);
         ft0cAmp += amplitude;
       }
     }
+    histos.fill(HIST("hFT0AAmp"), ft0aAmp);
+    histos.fill(HIST("hFT0CAmp"), ft0cAmp);
     double ft0mAmp = ft0aAmp + ft0cAmp;
     histos.fill(HIST("hFT0MAmp"), ft0mAmp);
     if (foundBC.has_zdc()) {
