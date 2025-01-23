@@ -1077,7 +1077,9 @@ enum DecayType2Prong { XiczeroOmegaczeroToXiPi = 0,
                        OmegaczeroToOmegaPi,
                        OmegaczeroToOmegaK,
                        N2ProngDecays }; // always keep N2ProngDecays at the end
-
+// mapping of construct method
+enum ConstructMethod { DcaFitter = 0,
+                       KfParticle };
 // mapping of decay types
 enum DecayType3Prong { XicplusToXiPiPi = 0,
                        N3ProngDecays }; // always keep N3ProngDecays at the end

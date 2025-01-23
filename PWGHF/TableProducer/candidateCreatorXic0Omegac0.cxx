@@ -773,7 +773,7 @@ struct HfCandidateCreatorXic0Omegac0 {
         kfPos = kfPosPr;
         kfNeg = kfNegPi;
         kfBachKaon = kfNegKa;
-        kfBachPionRej = kfNegPirRej; // rej
+        kfBachPionRej = kfNegPiRej; // rej
       } else {
         kfPos = kfPosPi;
         kfNeg = kfNegPr;
