@@ -1435,7 +1435,7 @@ struct Derivedcascadeanalysis {
       int bestCollisionIndex = -1;
       float centrality = 100.5f;
       int nCollisions = 0;
-      Float_t nChEta05 = -1;
+      float nChEta05 = -1;
       for (auto const& collision : groupedCollisions) {
         if (!isEventAccepted(collision, false)) {
           continue;
