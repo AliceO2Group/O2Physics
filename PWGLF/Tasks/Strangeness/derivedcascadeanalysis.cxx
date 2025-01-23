@@ -343,6 +343,7 @@ struct Derivedcascadeanalysis {
     if (doprocessCascadesMCforEff) {
       histos.add("hGenEvents", "", HistType::kTH2F, {{axisNch}, {2, 0, 2}});
       histos.add("hCentralityVsMultMC", "", kTH2F, {{101, 0.0f, 101.0f}, axisNch});
+      histos.add("hRecMultVsMultMC", "", kTH2F, {axisNch, axisNch});
       histos.add("hGenMultMCFT0C", "", kTH1F, {{500, 0, 5000}});
       histos.add("hGenMCNParticlesEta10", "", kTH1F, {{500, 0, 5000}});
 
@@ -1434,6 +1435,7 @@ struct Derivedcascadeanalysis {
       int bestCollisionIndex = -1;
       float centrality = 100.5f;
       int nCollisions = 0;
+      Float_t nChEta05 = -1;
       for (auto const& collision : groupedCollisions) {
         if (!isEventAccepted(collision, false)) {
           continue;
@@ -1443,6 +1445,7 @@ struct Derivedcascadeanalysis {
           biggestNContribs = collision.multPVTotalContributors();
           bestCollisionIndex = collision.globalIndex();
           centrality = collision.centFT0C();
+          nChEta05 = collision.multNTracksPVeta1();
           if (!usePbPbCentrality)
             centrality = collision.centFT0M();
         }
@@ -1456,6 +1459,7 @@ struct Derivedcascadeanalysis {
       histos.fill(HIST("hCentralityVsNcoll_afterEvSel"), centrality, nCollisions + 0.5);
 
       histos.fill(HIST("hCentralityVsMultMC"), centrality, mcCollision.multMCNParticlesEta05());
+      histos.fill(HIST("hRecMultVsMultMC"), nChEta05, mcCollision.multMCNParticlesEta05());
 
       histos.fill(HIST("hGenMultMCFT0C"), mcCollision.multMCFT0C());
       histos.fill(HIST("hGenMCNParticlesEta10"), mcCollision.multMCNParticlesEta10());
