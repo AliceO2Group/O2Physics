@@ -14,6 +14,9 @@
 ///
 /// \author Evgeny Kryshen <evgeny.kryshen@cern.ch> and Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
+#include <map>
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -41,8 +44,8 @@ const AxisSpec axisSparseDcaR{100, -5., 5., "DCA_{r}, cm"};
 const AxisSpec axisSparseDcaZ{100, -5., 5., "DCA_{z}, cm"};
 
 struct TimeDependentQaTask {
-  Configurable<double> confTimeBinWidthInSec{"TimeBinWidthInSec", 0.25, "Width of time bins in seconds"};
-  Configurable<int> confTakeVerticesWithUPCsettings{"ConsiderVerticesWithUPCsettings", 0, "Take vertices: 0 - all , 1 - only without UPC settings, 2 - only with UPC settings"};
+  Configurable<double> confTimeBinWidthInSec{"TimeBinWidthInSec", 0.25, "Width of time bins in seconds"};                                                                        // o2-linter: disable=name/configurable
+  Configurable<int> confTakeVerticesWithUPCsettings{"ConsiderVerticesWithUPCsettings", 0, "Take vertices: 0 - all , 1 - only without UPC settings, 2 - only with UPC settings"}; // o2-linter: disable=name/configurable
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   o2::tpc::TPCMShapeCorrection mshape; // object for simple access
@@ -125,7 +128,7 @@ struct TimeDependentQaTask {
       histos.add("hSecondsCsideChi2NClTpcGlobal", "", kTH2F, {axisSeconds, axisChi2});
       histos.add("hSecondsCsideTpcFractionSharedClsGlobal_nTPCclsCut80", "", kTH2F, {axisSeconds, axisFraction});
 
-      const AxisSpec axisPhi{64, 0, TMath::TwoPi(), "#varphi"};
+      const AxisSpec axisPhi{64, 0, TMath::TwoPi(), "#varphi"}; // o2-linter: disable=external-pi
       const AxisSpec axisEta{10, -0.8, 0.8, "#eta"};
       histos.add("hSecondsITSlayer0vsPhi", "", kTH2F, {axisSeconds, axisPhi});
       histos.add("hSecondsITSlayer1vsPhi", "", kTH2F, {axisSeconds, axisPhi});
