@@ -108,7 +108,7 @@ struct V0TopologicalCuts {
   // Configurables for Cuts
   Configurable<float> cutZVertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<float> nSigmaTPCPion{"nSigmaTPCPion", 4, "nSigmaTPCPion"};
-  Configurable<float> nSigmaTPCProton{"nSigmaTOCProton", 4, "nSigmaTPCProton"};
+  Configurable<float> nSigmaTPCProton{"nSigmaTPCProton", 4, "nSigmaTPCProton"};
   Configurable<float> compv0masscut{"compv0masscut", 0.01, "CompetitiveV0masscut (GeV)"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
 
