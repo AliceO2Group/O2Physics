@@ -306,7 +306,7 @@ struct rho770analysis {
   }
   PROCESS_SWITCH(rho770analysis, processMCLight, "Process Event for MC", false);
 
-  void processMCTrue(ResoMCCols::iterator const& collision, aod::ResoMCParents& resoParents)
+  void processMCTrue(ResoMCCols::iterator const& collision, aod::ResoMCParents const& resoParents)
   {
     auto multiplicity = collision.cent();
 
