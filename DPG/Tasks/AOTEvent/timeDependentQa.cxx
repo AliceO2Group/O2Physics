@@ -211,7 +211,7 @@ struct TimeDependentQaTask {
         histos.fill(HIST("hSecondsTracksMshape"), secFromSOR);
       }
 
-      if (track.hasTPC() && track.hasITS() && fabs(track.eta()) < 0.8 && fabs(track.pt()) > 0.2) {
+      if (track.hasTPC() && track.hasITS() && std::fabs(track.eta()) < 0.8 && std::fabs(track.pt()) > 0.2) {
         if (track.tgl() > 0.) {
           histos.fill(HIST("hSecondsAsideNumTracksGlobal"), secFromSOR);
           histos.fill(HIST("hSecondsAsideSumDcaRglobal"), secFromSOR, dcaR);
