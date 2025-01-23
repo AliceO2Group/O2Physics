@@ -259,7 +259,7 @@ struct rho770analysis {
           histos.fill(HIST("hInvMass_K0s_LSmm"), reco.M(), reco.Pt(), collision.cent());
         }
       }
-            
+
       if ((selPion(trk1) && selKaon(trk2)) || (selKaon(trk1) && selPion(trk2))) {
         if (selPion(trk1) && selKaon(trk2)) {
           part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
