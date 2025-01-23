@@ -31,8 +31,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/Core/RecoDecay.h"
 
-#include <TPDGCode.h>
 #include <vector>
+#include <TPDGCode.h>
 
 using namespace o2;
 using namespace o2::framework;
