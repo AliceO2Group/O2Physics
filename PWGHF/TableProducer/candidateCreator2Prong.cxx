@@ -840,7 +840,7 @@ struct HfCandidateCreator2ProngExpressions {
         }
         continue;
       }
-      hf_mc_gen::fillMcMatchGen2Prong(mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
+      hf_mc_gen::fillMcMatchGen2Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
     }
   }
 

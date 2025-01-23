@@ -30,13 +30,13 @@
 namespace hf_mc_gen
 {
 
-template <typename T, typename U>
-void fillMcMatchGen2Prong(T const& mcParticles, U& rowMcMatchGen, bool rejectBackground)
+template <typename T, typename U, typename V>
+void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground)
 {
   using namespace o2::constants::physics;
 
   // Match generated particles.
-  for (const auto& particle : mcParticles) {
+  for (const auto& particle : mcParticlesPerMcColl) {
     int8_t flag = 0;
     int8_t origin = 0;
     int8_t sign = 0;
@@ -78,13 +78,13 @@ void fillMcMatchGen2Prong(T const& mcParticles, U& rowMcMatchGen, bool rejectBac
   }
 }
 
-template <typename T, typename U>
-void fillMcMatchGen3Prong(T const& mcParticles, U& rowMcMatchGen, bool rejectBackground, bool createDplus, bool createDs, bool createLc, bool createXic)
+template <typename T, typename U, typename V>
+void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground, bool createDplus, bool createDs, bool createLc, bool createXic)
 {
   using namespace o2::constants::physics;
 
   // Match generated particles.
-  for (const auto& particle : mcParticles) {
+  for (const auto& particle : mcParticlesPerMcColl) {
     int8_t flag = 0;
     int8_t origin = 0;
     int8_t channel = 0;
