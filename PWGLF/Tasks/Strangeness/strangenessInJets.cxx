@@ -1856,7 +1856,7 @@ struct StrangenessInJets {
 
         double nPartJetPlusUE(0);
         double ptJetPlusUE(0);
-        double ptJet(0);
+        // double ptJet(0);
         double ptUE(0);
 
         for (const auto& particle : mcParticlesPerColl) {
@@ -1904,7 +1904,7 @@ struct StrangenessInJets {
             ptUE = ptUE + selectedTrack.Pt();
           }
         }
-        ptJet = ptJetPlusUE - 0.5 * ptUE;
+        // ptJet = ptJetPlusUE - 0.5 * ptUE;
 
         if (ptJetPlusUE < minimumJetPt)
           continue;
