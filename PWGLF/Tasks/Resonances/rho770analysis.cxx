@@ -251,7 +251,7 @@ struct rho770analysis {
               }
             }
           }
-        }else if (trk1.sign() > 0 && trk2.sign() > 0) {
+        } else if (trk1.sign() > 0 && trk2.sign() > 0) {
           histos.fill(HIST("hInvMass_rho770_LSpp"), reco.M(), reco.Pt(), collision.cent());
           histos.fill(HIST("hInvMass_K0s_LSpp"), reco.M(), reco.Pt(), collision.cent());
         } else if (trk1.sign() < 0 && trk2.sign() < 0) {
@@ -324,16 +324,16 @@ struct rho770analysis {
       truthpar.SetPxPyPzE(part.px(), part.py(), part.pz(), part.e());
       auto mass = truthpar.M();
 
-      if (collision.isVtxIn10()){
+      if (collision.isVtxIn10()) {
         histos.fill(HIST("MCL/hpT_rho770_GEN"), 0, mass, part.pt(), multiplicity);
       }
-      if (collision.isVtxIn10() && collision.isInSel8()){
+      if (collision.isVtxIn10() && collision.isInSel8()) {
         histos.fill(HIST("MCL/hpT_rho770_GEN"), 1, mass, part.pt(), multiplicity);
       }
-      if (collision.isVtxIn10() && collision.isTriggerTVX()){
+      if (collision.isVtxIn10() && collision.isTriggerTVX()) {
         histos.fill(HIST("MCL/hpT_rho770_GEN"), 2, mass, part.pt(), multiplicity);
       }
-      if (collision.isInAfterAllCuts()){
+      if (collision.isInAfterAllCuts()) {
         histos.fill(HIST("MCL/hpT_rho770_GEN"), 3, mass, part.pt(), multiplicity);
       }
     }
