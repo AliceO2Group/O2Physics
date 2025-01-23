@@ -127,6 +127,7 @@ struct UpcTauRl {
     Configurable<float> cutMaxPionNsigmaPi{"cutMaxPionNsigmaPi", -4.0, {"Good pi hypo in. Lower n sigma cut on pi hypo of selected electron. What is less goes away."}};
     Configurable<float> cutMinPionNsigmaKa{"cutMinPionNsigmaKa", -4.0, {"Good Ka hypo out. Lower n sigma cut on Ka hypo of selected electron. What is more till upper cut goes away."}};
     Configurable<float> cutMaxPionNsigmaKa{"cutMaxPionNsigmaKa", 4.0, {"Good Ka hypo out. Upper n sigma cut on Ka hypo of selected electron. What is less till lower cut goes away."}};
+    Configurable<float> cutElectronPt{"cutElectronPt", 0.9, {"Pt, where PiKaon invariant mass histos will split."}};
   } cutTauEvent;
 
   struct : ConfigurableGroup {
@@ -1293,7 +1294,7 @@ struct UpcTauRl {
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/hInvariantMassWide"))->Fill(motherOfPiKaon.M());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/hMotherMassVsPt"))->Fill(motherOfPiKaon.M(), motherOfPiKaon.Pt());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/hIMKvsIMe"))->Fill(motherOfPiKaon.M(), mother.M());
-        if (electronPt < 0.8) {
+        if (electronPt < cutTauEvent.cutElectronPt) {
           histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/eMomentaCutLow/hInvariantMass"))->Fill(motherOfPiKaon.M());
           histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/eMomentaCutLow/hInvariantMassWide"))->Fill(motherOfPiKaon.M());
           histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/eMomentaCutLow/hMotherMassVsPt"))->Fill(motherOfPiKaon.M(), motherOfPiKaon.Pt());
