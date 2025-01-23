@@ -222,6 +222,11 @@ struct EmcalCorrectionTask {
     hCollisionType->GetXaxis()->SetBinLabel(1, "no collision");
     hCollisionType->GetXaxis()->SetBinLabel(2, "normal collision");
     hCollisionType->GetXaxis()->SetBinLabel(3, "mult. collisions");
+    mHistManager.add("hBCMatchErrors", "hBCMatchErrors;;#it{N}_{BC}", O2HistType::kTH1D, {{3, -0.5, 2.5}});
+    auto hBCMatchErrors = mHistManager.get<TH1>(HIST("hBCMatchErrors"));
+    hBCMatchErrors->GetXaxis()->SetBinLabel(1, "Normal");
+    hBCMatchErrors->GetXaxis()->SetBinLabel(2, "Wrong collisionID order");
+    hBCMatchErrors->GetXaxis()->SetBinLabel(3, "foundBCId != globalIndex");
     mHistManager.add("hClusterType", "hClusterType;;#it{count}", O2HistType::kTH1D, {{3, -0.5, 2.5}});
     auto hClusterType = mHistManager.get<TH1>(HIST("hClusterType"));
     hClusterType->GetXaxis()->SetBinLabel(1, "no collision");
@@ -254,6 +259,7 @@ struct EmcalCorrectionTask {
   {
     LOG(debug) << "Starting process full.";
 
+    int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
     std::unordered_map<uint64_t, int> numberCollsInBC; // Number of collisions mapped to the global BC index of all BCs
@@ -314,7 +320,13 @@ struct EmcalCorrectionTask {
         if (collisionsInFoundBC.size() == 1) {
           // dummy loop to get the first collision
           for (const auto& col : collisionsInFoundBC) {
+            if (previousCollisionId > col.globalIndex()) {
+              mHistManager.fill(HIST("hBCMatchErrors"), 1);
+              continue;
+            }
+            previousCollisionId = col.globalIndex();
             if (col.foundBCId() == bc.globalIndex()) {
+              mHistManager.fill(HIST("hBCMatchErrors"), 0); // CollisionID ordered and foundBC matches -> Fill as healthy
               mHistManager.fill(HIST("hCollisionTimeReso"), col.collisionTimeRes());
               mHistManager.fill(HIST("hCollPerBC"), 1);
               mHistManager.fill(HIST("hCollisionType"), 1);
@@ -329,6 +341,8 @@ struct EmcalCorrectionTask {
               // Store the clusters in the table where a matching collision could
               // be identified.
               fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, indexMapPair, trackGlobalIndex);
+            } else {
+              mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
           }
         } else { // ambiguous
@@ -370,6 +384,7 @@ struct EmcalCorrectionTask {
   {
     LOG(debug) << "Starting process full.";
 
+    int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
     std::unordered_map<uint64_t, int> numberCollsInBC; // Number of collisions mapped to the global BC index of all BCs
@@ -434,7 +449,13 @@ struct EmcalCorrectionTask {
         if (collisionsInFoundBC.size() == 1) {
           // dummy loop to get the first collision
           for (const auto& col : collisionsInFoundBC) {
+            if (previousCollisionId > col.globalIndex()) {
+              mHistManager.fill(HIST("hBCMatchErrors"), 1);
+              continue;
+            }
+            previousCollisionId = col.globalIndex();
             if (col.foundBCId() == bc.globalIndex()) {
+              mHistManager.fill(HIST("hBCMatchErrors"), 0); // CollisionID ordered and foundBC matches -> Fill as healthy
               mHistManager.fill(HIST("hCollPerBC"), 1);
               mHistManager.fill(HIST("hCollisionType"), 1);
               math_utils::Point3D<float> vertexPos = {col.posX(), col.posY(), col.posZ()};
@@ -448,6 +469,8 @@ struct EmcalCorrectionTask {
               // Store the clusters in the table where a matching collision could
               // be identified.
               fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, indexMapPair, trackGlobalIndex);
+            } else {
+              mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
           }
         } else { // ambiguous
@@ -486,6 +509,7 @@ struct EmcalCorrectionTask {
   void processStandalone(aod::BCs const& bcs, aod::Collisions const& collisions, FilteredCells const& cells)
   {
     LOG(debug) << "Starting process standalone.";
+    int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
     for (const auto& bc : bcs) {
@@ -536,6 +560,12 @@ struct EmcalCorrectionTask {
         if (collisionsInBC.size() == 1) {
           // dummy loop to get the first collision
           for (const auto& col : collisionsInBC) {
+            if (previousCollisionId > col.globalIndex()) {
+              mHistManager.fill(HIST("hBCMatchErrors"), 1);
+              continue;
+            }
+            previousCollisionId = col.globalIndex();
+            mHistManager.fill(HIST("hBCMatchErrors"), 0); // CollisionID ordered and foundBC matches -> Fill as healthy
             mHistManager.fill(HIST("hCollPerBC"), 1);
             mHistManager.fill(HIST("hCollisionType"), 1);
             math_utils::Point3D<float> vertexPos = {col.posX(), col.posY(), col.posZ()};
