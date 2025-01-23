@@ -16,6 +16,10 @@
 ///
 /// \author Tanu Gahlaut <tanu.gahlaut@cern.ch>
 
+
+#include <vector>
+#include <TPDGCode.h>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -30,9 +34,6 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/Core/RecoDecay.h"
-
-#include <vector>
-#include <TPDGCode.h>
 
 using namespace o2;
 using namespace o2::framework;
