@@ -291,11 +291,9 @@ struct FlowZDCtask {
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
       for (const auto& amplitude : ft0.amplitudeA()) {
-        histos.fill(HIST("hFT0AAmp"), amplitude);
         ft0aAmp += amplitude;
       }
       for (const auto& amplitude : ft0.amplitudeC()) {
-        histos.fill(HIST("hFT0CAmp"), amplitude);
         ft0cAmp += amplitude;
       }
     }
