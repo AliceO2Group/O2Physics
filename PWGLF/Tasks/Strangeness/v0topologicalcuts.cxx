@@ -681,5 +681,5 @@ struct V0TopologicalCuts {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<V0TopologicalCuts>(cfgc)};
+    adaptAnalysisTask<v0topologicalcuts>(cfgc)};
 }
