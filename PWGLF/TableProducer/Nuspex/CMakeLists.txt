@@ -93,3 +93,8 @@ o2physics_add_dpl_workflow(hypernuclei-kf-tree-creator
     SOURCES hypKfTreeCreator.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(tr-he-analysis
+    SOURCES trHeAnalysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
