@@ -156,8 +156,10 @@ struct JetFinderQATask {
       registry.add("h3_centrality_occupancy_jet_pt", "centrality; occupancy; #it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH3F, {{120, -10.0, 110.0}, {60, 0, 30000}, jetPtAxis}});
     }
 
-    if (doprocessJetsRhoAreaSubData || doprocessJetsRhoAreaSubMCD) {
+    if (doprocessJetsRhoAreaSubData || doprocessJetsRhoAreaSubMCD || doprocessJetsRhoPerpSubData || doprocessJetsRhoPerpSubMCD) {
 
+      registry.add("h2_leadingjet_pt_rho", "#it{p}_{T,leading jet} vs #rho (GeV/#it{c});#it{p}_{T,leading jet} (GeV/#it{c});#rho (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, 0.0, 10.0}}});
+      registry.add("h2_leadingjet_pt_rhoM", "#it{p}_{T,leading jet} vs #rho_{M} (GeV/#it{c});#it{p}_{T,jet} (GeV/#it{c});#rho_{M} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, 0.0, 10.0}}});
       registry.add("h_jet_pt_rhoareasubtracted", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {jetPtAxisRhoAreaSub}});
       registry.add("h_jet_eta_rhoareasubtracted", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {jetEtaAxis}});
       registry.add("h_jet_phi_rhoareasubtracted", "jet #varphi;#varphi_{jet};entries", {HistType::kTH1F, {{160, -1.0, 7.}}});
@@ -200,19 +202,19 @@ struct JetFinderQATask {
     }
 
     if (doprocessRho) {
-      registry.add("h2_centrality_ntracks", "; centrality; N_{tracks};", {HistType::kTH2F, {{1100, 0., 110.0}, {10000, 0.0, 10000.0}}});
+      registry.add("h2_centrality_ntracks", "; centrality; N_{tracks};", {HistType::kTH2F, {{1200, -10.0, 110.0}, {10000, 0.0, 10000.0}}});
       registry.add("h2_ntracks_rho", "; N_{tracks}; #it{rho} (GeV/area);", {HistType::kTH2F, {{10000, 0.0, 10000.0}, {400, 0.0, 400.0}}});
       registry.add("h2_ntracks_rhom", "; N_{tracks}; #it{rho}_{m} (GeV/area);", {HistType::kTH2F, {{10000, 0.0, 10000.0}, {100, 0.0, 100.0}}});
-      registry.add("h2_centrality_rho", "; centrality; #it{rho} (GeV/area);", {HistType::kTH2F, {{1100, 0., 110.}, {400, 0., 400.0}}});
-      registry.add("h2_centrality_rhom", ";centrality; #it{rho}_{m} (GeV/area)", {HistType::kTH2F, {{1100, 0., 110.}, {100, 0., 100.0}}});
+      registry.add("h2_centrality_rho", "; centrality; #it{rho} (GeV/area);", {HistType::kTH2F, {{1200, -10.0, 110.0}, {400, 0., 400.0}}});
+      registry.add("h2_centrality_rhom", ";centrality; #it{rho}_{m} (GeV/area)", {HistType::kTH2F, {{1200, -10.0, 110.0}, {100, 0., 100.0}}});
     }
 
     if (doprocessRandomConeData || doprocessRandomConeMCD) {
-      registry.add("h2_centrality_rhorandomcone", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, {800, -400.0, 400.0}}});
-      registry.add("h2_centrality_rhorandomconerandomtrackdirection", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, {800, -400.0, 400.0}}});
-      registry.add("h2_centrality_rhorandomconewithoutleadingjet", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, {800, -400.0, 400.0}}});
-      registry.add("h2_centrality_rhorandomconerandomtrackdirectionwithoutoneleadingjets", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, {800, -400.0, 400.0}}});
-      registry.add("h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, {800, -400.0, 400.0}}});
+      registry.add("h2_centrality_rhorandomcone", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1200, -10.0, 110.0}, {800, -400.0, 400.0}}});
+      registry.add("h2_centrality_rhorandomconerandomtrackdirection", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1200, -10.0, 110.0}, {800, -400.0, 400.0}}});
+      registry.add("h2_centrality_rhorandomconewithoutleadingjet", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1200, -10.0, 110.0}, {800, -400.0, 400.0}}});
+      registry.add("h2_centrality_rhorandomconerandomtrackdirectionwithoutoneleadingjets", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1200, -10.0, 110.0}, {800, -400.0, 400.0}}});
+      registry.add("h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1200, -10.0, 110.0}, {800, -400.0, 400.0}}});
     }
 
     if (doprocessJetsMCP || doprocessJetsMCPWeighted) {
@@ -664,29 +666,30 @@ struct JetFinderQATask {
           }
         }
       }
-    }
 
-    registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
+      registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
 
-    // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles, removing tracks from 2 leading jets
-    double randomConePtWithoutOneLeadJet = 0;
-    double randomConePtWithoutTwoLeadJet = 0;
-    for (auto const& track : tracks) {
-      if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
-        float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, 2 * M_PI) - randomConePhi, static_cast<float>(-M_PI)); // ignores actual phi of track
-        float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax) - randomConeEta;                                            // ignores actual eta of track
-        if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
-          if (!trackIsInJet(track, jets.iteratorAt(0))) {
-            randomConePtWithoutOneLeadJet += track.pt();
-            if (!trackIsInJet(track, jets.iteratorAt(1))) {
-              randomConePtWithoutTwoLeadJet += track.pt();
+      // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles, removing tracks from 2 leading jets
+      double randomConePtWithoutOneLeadJet = 0;
+      double randomConePtWithoutTwoLeadJet = 0;
+      for (auto const& track : tracks) {
+        if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
+          float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, 2 * M_PI) - randomConePhi, static_cast<float>(-M_PI)); // ignores actual phi of track
+          float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax) - randomConeEta;                                            // ignores actual eta of track
+          if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
+            if (!trackIsInJet(track, jets.iteratorAt(0))) {
+              randomConePtWithoutOneLeadJet += track.pt();
+              if (jets.size() > 1 && !trackIsInJet(track, jets.iteratorAt(1))) {
+                randomConePtWithoutTwoLeadJet += track.pt();
+              }
             }
           }
         }
       }
+
+      registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithoutoneleadingjets"), collision.centrality(), randomConePtWithoutOneLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
+      registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets"), collision.centrality(), randomConePtWithoutTwoLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
     }
-    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithoutoneleadingjets"), collision.centrality(), randomConePtWithoutOneLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
-    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets"), collision.centrality(), randomConePtWithoutTwoLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
   }
 
   void processJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, aod::JetTracks const&)
@@ -713,12 +716,18 @@ struct JetFinderQATask {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    bool leadingJetFilled = false;
     for (auto jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
+      }
+      if (!leadingJetFilled) {
+        registry.fill(HIST("h2_leadingjet_pt_rho"), jet.pt(), collision.rho());
+        registry.fill(HIST("h2_leadingjet_pt_rhoM"), jet.pt(), collision.rhoM());
+        leadingJetFilled = true;
       }
       fillRhoAreaSubtractedHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.rho());
     }
@@ -732,6 +741,7 @@ struct JetFinderQATask {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    bool leadingJetFilled = false;
     for (auto jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -739,10 +749,65 @@ struct JetFinderQATask {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
+      if (!leadingJetFilled) {
+        registry.fill(HIST("h2_leadingjet_pt_rho"), jet.pt(), collision.rho());
+        registry.fill(HIST("h2_leadingjet_pt_rhoM"), jet.pt(), collision.rhoM());
+        leadingJetFilled = true;
+      }
       fillRhoAreaSubtractedHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.rho());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsRhoAreaSubMCD, "jet finder QA for rho-area subtracted mcd jets", false);
+
+  void processJetsRhoPerpSubData(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedPerpRhos>>::iterator const& collision,
+                                 soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
+                                 aod::JetTracks const&)
+  {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    bool leadingJetFilled = false;
+    for (auto jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetTracks>(jet)) {
+        continue;
+      }
+      if (!leadingJetFilled) {
+        registry.fill(HIST("h2_leadingjet_pt_rho"), jet.pt(), collision.rho());
+        registry.fill(HIST("h2_leadingjet_pt_rhoM"), jet.pt(), collision.rhoM());
+        leadingJetFilled = true;
+      }
+      fillRhoAreaSubtractedHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.rho());
+    }
+  }
+  PROCESS_SWITCH(JetFinderQATask, processJetsRhoPerpSubData, "jet finder QA for rho-perpendicular-cone subtracted jets", false);
+
+  void processJetsRhoPerpSubMCD(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedPerpRhos>>::iterator const& collision,
+                                soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets,
+                                aod::JetTracks const&)
+  {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    bool leadingJetFilled = false;
+    for (auto jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetTracks>(jet)) {
+        continue;
+      }
+      if (!leadingJetFilled) {
+        registry.fill(HIST("h2_leadingjet_pt_rho"), jet.pt(), collision.rho());
+        registry.fill(HIST("h2_leadingjet_pt_rhoM"), jet.pt(), collision.rhoM());
+        leadingJetFilled = true;
+      }
+      fillRhoAreaSubtractedHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.rho());
+    }
+  }
+  PROCESS_SWITCH(JetFinderQATask, processJetsRhoPerpSubMCD, "jet finder QA for rho-perpendicular-cone subtracted mcd jets", false);
 
   void processEvtWiseConstSubJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents> const& jets, aod::JetTracksSub const&)
   {

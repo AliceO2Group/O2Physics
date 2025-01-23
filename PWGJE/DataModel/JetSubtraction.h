@@ -93,53 +93,65 @@ DECLARE_SOA_TABLE(BkgChargedMcRhos, "AOD", "BkgCMcRho",
                   bkgrho::RhoM,
                   o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE(BkgD0Rhos, "AOD", "BkgD0Rho",
+DECLARE_SOA_TABLE(BkgChargedPerpRhos, "AOD", "BkgCPerpRho",
                   o2::soa::Index<>,
                   bkgrho::Rho,
                   bkgrho::RhoM,
                   o2::soa::Marker<2>);
 
-DECLARE_SOA_TABLE(BkgD0McRhos, "AOD", "BkgD0McRho",
+DECLARE_SOA_TABLE(BkgChargedMcPerpRhos, "AOD", "BkgCMcPerpRho",
                   o2::soa::Index<>,
                   bkgrho::Rho,
                   bkgrho::RhoM,
                   o2::soa::Marker<3>);
 
-DECLARE_SOA_TABLE(BkgLcRhos, "AOD", "BkgLcRho",
+DECLARE_SOA_TABLE(BkgD0Rhos, "AOD", "BkgD0Rho",
                   o2::soa::Index<>,
                   bkgrho::Rho,
                   bkgrho::RhoM,
                   o2::soa::Marker<4>);
 
-DECLARE_SOA_TABLE(BkgLcMcRhos, "AOD", "BkgLcMcRho",
+DECLARE_SOA_TABLE(BkgD0McRhos, "AOD", "BkgD0McRho",
                   o2::soa::Index<>,
                   bkgrho::Rho,
                   bkgrho::RhoM,
                   o2::soa::Marker<5>);
 
-DECLARE_SOA_TABLE(BkgBplusRhos, "AOD", "BkgRho",
+DECLARE_SOA_TABLE(BkgLcRhos, "AOD", "BkgLcRho",
                   o2::soa::Index<>,
                   bkgrho::Rho,
                   bkgrho::RhoM,
                   o2::soa::Marker<6>);
 
-DECLARE_SOA_TABLE(BkgBplusMcRhos, "AOD", "BkgBPMcRho",
+DECLARE_SOA_TABLE(BkgLcMcRhos, "AOD", "BkgLcMcRho",
                   o2::soa::Index<>,
                   bkgrho::Rho,
                   bkgrho::RhoM,
                   o2::soa::Marker<7>);
 
-DECLARE_SOA_TABLE(BkgDielectronRhos, "AOD", "BkgDIELRho",
+DECLARE_SOA_TABLE(BkgBplusRhos, "AOD", "BkgRho",
                   o2::soa::Index<>,
                   bkgrho::Rho,
                   bkgrho::RhoM,
                   o2::soa::Marker<8>);
 
-DECLARE_SOA_TABLE(BkgDielectronMcRhos, "AOD", "BkgDIELMcRho",
+DECLARE_SOA_TABLE(BkgBplusMcRhos, "AOD", "BkgBPMcRho",
                   o2::soa::Index<>,
                   bkgrho::Rho,
                   bkgrho::RhoM,
                   o2::soa::Marker<9>);
+
+DECLARE_SOA_TABLE(BkgDielectronRhos, "AOD", "BkgDIELRho",
+                  o2::soa::Index<>,
+                  bkgrho::Rho,
+                  bkgrho::RhoM,
+                  o2::soa::Marker<10>);
+
+DECLARE_SOA_TABLE(BkgDielectronMcRhos, "AOD", "BkgDIELMcRho",
+                  o2::soa::Index<>,
+                  bkgrho::Rho,
+                  bkgrho::RhoM,
+                  o2::soa::Marker<11>);
 
 DECLARE_SOA_TABLE(JTrackSubs, "AOD", "JTrackSubs",
                   o2::soa::Index<>,
