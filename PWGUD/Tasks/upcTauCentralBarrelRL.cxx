@@ -69,10 +69,10 @@ struct UpcTauCentralBarrelRL {
   struct : ConfigurableGroup {
     Configurable<int> whichGapSide{"whichGapSide", 2, {"0 for side A, 1 for side C, 2 for both sides"}};
     Configurable<bool> useTrueGap{"useTrueGap", true, {"Calculate gapSide for a given FV0/FT0/ZDC thresholds"}};
-    Configurable<float> cutTrueGapSideFV0{"TrueGapFV0", -1, "FV0A threshold for SG selector"};
-    Configurable<float> cutTrueGapSideFT0A{"TrueGapFT0A", 150., "FT0A threshold for SG selector"};
-    Configurable<float> cutTrueGapSideFT0C{"TrueGapFT0C", 50., "FT0C threshold for SG selector"};
-    Configurable<float> cutTrueGapSideZDC{"TrueGapZDC", 0., "ZDC threshold for SG selector. 0 is <1n, 4.2 is <2n, 6.7 is <3n, 9.5 is <4n, 12.5 is <5n"};
+    Configurable<float> cutTrueGapSideFV0{"trueGapFV0", -1, "FV0A threshold for SG selector"};
+    Configurable<float> cutTrueGapSideFT0A{"trueGapFT0A", 150., "FT0A threshold for SG selector"};
+    Configurable<float> cutTrueGapSideFT0C{"trueGapFT0C", 50., "FT0C threshold for SG selector"};
+    Configurable<float> cutTrueGapSideZDC{"trueGapZDC", 0., "ZDC threshold for SG selector. 0 is <1n, 4.2 is <2n, 6.7 is <3n, 9.5 is <4n, 12.5 is <5n"};
     Configurable<float> cutFITtime{"cutFITtime", 40., "Maximum FIT time allowed. Default is 40ns"};
     Configurable<bool> applyAcceptanceSelection{"applyAcceptanceSelection", false, {"Select events in ALICE CB acceptance set with cutTrackEta"}};
     Configurable<float> cutTrackEta{"cutTrackEta", 0.9, "Cut on central barrel track eta in absolute values."};
@@ -749,11 +749,11 @@ struct UpcTauCentralBarrelRL {
   bool isFulfillsITSHitRequirementsReinstatement(uint8_t itsClusterMap) const
   {
     constexpr uint8_t bit = 1;
-    for (const auto& ITSrequirement : cutMyRequiredITSHits) {
-      auto hits = std::count_if(ITSrequirement.second.begin(), ITSrequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (bit << requiredLayer); });
-      if ((ITSrequirement.first == -1) && (hits > 0)) {
+    for (const auto& kITSrequirement : cutMyRequiredITSHits) {
+      auto hits = std::count_if(kITSrequirement.second.begin(), kITSrequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (bit << requiredLayer); });
+      if ((kITSrequirement.first == -1) && (hits > 0)) {
         return false; // no hits were required in specified layers
-      } else if (hits < ITSrequirement.first) {
+      } else if (hits < kITSrequirement.first) {
         return false; // not enough hits found in specified layers
       }
     }
