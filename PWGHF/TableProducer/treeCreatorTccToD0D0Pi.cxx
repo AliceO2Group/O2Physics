@@ -273,7 +273,7 @@ struct HfTreeCreatorTccToD0D0Pi {
                           aod::TrackAssoc const& trackIndices,
                           TrkType const& track, aod::BCs const&)
   {
-    rowCandidateFull.reserve(candidates.size());
+    rowCandidateFull.reserve(trackIndices.size()); // candidates size dependence on soft pi size
     for (const auto& candidateD1 : candidates) {
       for (auto candidateD2 = candidateD1 + 1; candidateD2 != candidates.end(); ++candidateD2) {
         for (const auto& trackId : trackIndices) {
