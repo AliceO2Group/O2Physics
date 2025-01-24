@@ -105,6 +105,7 @@ DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONSA", dqanalysisflags::massBc
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
 using MyEventsMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedZdcs>;
+using MyEventsMultExtraZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedZdcs>;
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts>;
 using MyEventsMultExtraSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::EventCuts>;
 using MyEventsVtxCovSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
@@ -112,7 +113,7 @@ using MyEventsHashSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExt
 using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
 using MyEventsVtxCovSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector>;
-using MyEventsVtxCovZdcSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedZdcs, aod::EventCuts>;
+using MyEventsVtxCovZdcSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedZdcs, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
 using MyEventsHashSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector>;
 
@@ -131,10 +132,10 @@ using MyMuonTracksSelectedWithColl = soa::Join<aod::ReducedMuons, aod::ReducedMu
 
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
-constexpr static uint32_t gkEventFillMapWithZdc = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedZdc;
 constexpr static uint32_t gkEventFillMapWithCov = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov;
-constexpr static uint32_t gkEventFillMapWithCovZdc = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ReducedZdc;
 constexpr static uint32_t gkEventFillMapWithMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra;
+constexpr static uint32_t gkEventFillMapWithMultExtraZdc = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra | VarManager::ReducedZdc;
+constexpr static uint32_t gkEventFillMapWithCovZdcMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ReducedZdc | VarManager::ReducedEventMultExtra;
 // constexpr static uint32_t gkEventFillMapWithQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventQvector;
 // constexpr static uint32_t gkEventFillMapWithCovQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
@@ -391,15 +392,15 @@ struct AnalysisEventSelection {
     runEventSelection<gkEventFillMap>(events);
     publishSelections<gkEventFillMap>(events);
   }
-  void processSkimmedWithZdc(MyEventsZdc const& events)
-  {
-    runEventSelection<gkEventFillMapWithZdc>(events);
-    publishSelections<gkEventFillMapWithZdc>(events);
-  }
   void processSkimmedWithMultExtra(MyEventsMultExtra const& events)
   {
     runEventSelection<gkEventFillMapWithMultExtra>(events);
     publishSelections<gkEventFillMapWithMultExtra>(events);
+  }
+  void processSkimmedWithMultExtraZdc(MyEventsMultExtraZdc const& events)
+  {
+    runEventSelection<gkEventFillMapWithMultExtraZdc>(events);
+    publishSelections<gkEventFillMapWithMultExtraZdc>(events);
   }
   void processDummy(MyEvents&)
   {
@@ -407,8 +408,8 @@ struct AnalysisEventSelection {
   }
 
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmed, "Run event selection on DQ skimmed events", false);
-  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithZdc, "Run event selection on DQ skimmed events, with ZDC", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtra, "Run event selection on DQ skimmed events, with mult extra", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdc, "Run event selection on DQ skimmed events, with mult extra and ZDC", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", false);
 };
 
@@ -2531,25 +2532,25 @@ struct AnalysisAsymmetricPairing {
     } // end loop (cuts)
   }
 
-  void processKaonPionSkimmed(MyEventsVtxCovZdcSelected const& events,
+  void processKaonPionSkimmed(MyEventsVtxCovZdcSelectedMultExtra const& events,
                               soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
                               MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
-    runAsymmetricPairing<true, VarManager::kDecayToKPi, gkEventFillMapWithCovZdc, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
+    runAsymmetricPairing<true, VarManager::kDecayToKPi, gkEventFillMapWithCovZdcMultExtra, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
-  void processKaonPionPionSkimmed(MyEventsVtxCovZdcSelected const& events,
+  void processKaonPionPionSkimmed(MyEventsVtxCovZdcSelectedMultExtra const& events,
                                   soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
                                   MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
-    runThreeProng<true, gkEventFillMapWithCovZdc, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, VarManager::kTripleCandidateToKPiPi);
+    runThreeProng<true, gkEventFillMapWithCovZdcMultExtra, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, VarManager::kTripleCandidateToKPiPi);
   }
 
-  void processProtonKaonPionSkimmed(MyEventsVtxCovZdcSelected const& events,
+  void processProtonKaonPionSkimmed(MyEventsVtxCovZdcSelectedMultExtra const& events,
                                     soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
                                     MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
-    runThreeProng<true, gkEventFillMapWithCovZdc, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, VarManager::kTripleCandidateToPKPi);
+    runThreeProng<true, gkEventFillMapWithCovZdcMultExtra, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, VarManager::kTripleCandidateToPKPi);
   }
 
   void processDummy(MyEvents&)
