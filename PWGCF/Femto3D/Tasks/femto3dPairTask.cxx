@@ -18,6 +18,9 @@
 #include <random>
 #include <chrono>
 #include <vector>
+#include <map>
+#include <memory>
+#include <utility>
 #include <TParameter.h>
 #include <TH1F.h>
 

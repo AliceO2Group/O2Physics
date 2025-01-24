@@ -14,6 +14,9 @@
 /// \since 31 May 2023
 
 #include <vector>
+#include <map>
+#include <memory>
+#include <utility>
 #include <TParameter.h>
 #include <TH1F.h>
 

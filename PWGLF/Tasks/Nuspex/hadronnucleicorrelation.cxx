@@ -19,6 +19,10 @@
 #include <TH2.h>
 #include <TList.h>
 #include <vector>
+#include <string>
+#include <map>
+#include <memory>
+#include <utility>
 #include <TVector2.h>
 #include <TVector3.h>
 #include "TGrid.h"

@@ -13,6 +13,10 @@
 /// \author Sofia Tomassini, Gleb Romanenko, Nicolò Jacazio
 /// \since 31 May 2023
 
+#include <vector>
+#include <memory>
+#include <utility>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
