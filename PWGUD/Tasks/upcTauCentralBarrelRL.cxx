@@ -923,7 +923,7 @@ struct UpcTauRl {
       return false;
     if (cutTauEvent.cutElectronHasTOF && !electronCandidate.hasTOF())
       return false;
-    if (electronCandidate.hasTOF()){
+    if (electronCandidate.hasTOF()) {
       if (electronCandidate.tofNSigmaKa() > cutTauEvent.cutMinElectronTofNsigmaKa && electronCandidate.tofNSigmaKa() < cutTauEvent.cutMaxElectronTofNsigmaKa)
         return false;
     }
