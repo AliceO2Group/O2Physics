@@ -33,6 +33,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 
 #include "GFWPowerArray.h"
 #include "GFW.h"
@@ -64,8 +65,13 @@ struct FlowRunbyRun {
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 30, "Number of subsamples")
+  O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "NUA weights are filled in ref pt bins")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
   O2_DEFINE_CONFIGURABLE(cfgDynamicRunNumber, bool, false, "Add runNumber during runtime")
+  O2_DEFINE_CONFIGURABLE(cfgGetInteractionRate, bool, false, "Get interaction rate from CCDB")
+  O2_DEFINE_CONFIGURABLE(cfgUseInteractionRateCut, bool, false, "Use events with low interaction rate")
+  O2_DEFINE_CONFIGURABLE(cfgCutMaxIR, float, 50.0f, "maximum interaction rate (kHz)")
+  O2_DEFINE_CONFIGURABLE(cfgCutMinIR, float, 0.0f, "minimum interaction rate (kHz)")
   Configurable<std::vector<int>> cfgRunNumbers{"cfgRunNumbers", std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}, "Preconfigured run numbers"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWCorr{"cfgUserDefineGFWCorr", std::vector<std::string>{"refN10 {2} refP10 {-2}"}, "User defined GFW CorrelatorConfig"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWName{"cfgUserDefineGFWName", std::vector<std::string>{"Ch10Gap22"}, "User defined GFW Name"};
@@ -113,6 +119,12 @@ struct FlowRunbyRun {
     c22_gap10,
     kCount_TProfileNames
   };
+  int mRunNumber{-1};
+  uint64_t mSOR{0};
+  double mMinSeconds{-1.};
+  std::unordered_map<int, TH2*> gHadronicRate;
+  ctpRateFetcher mRateFetcher;
+  TH2* gCurrentHadronicRate;
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
@@ -225,11 +237,31 @@ struct FlowRunbyRun {
     profiles[c22_gap10] = registry.add<TProfile>(Form("%d/c22_gap10", runNumber), "", {HistType::kTProfile, {axisIndependent}});
     profilesList.insert(std::make_pair(runNumber, profiles));
 
-    // weightsList
-    o2::framework::AxisSpec axis = axisPt;
-    int nPtBins = axis.binEdges.size() - 1;
-    double* ptBins = &(axis.binEdges)[0];
-    fGFWWeightsList->addGFWWeightsByRun(runNumber, nPtBins, ptBins, true, false);
+    if (cfgOutputNUAWeights) {
+      // weightsList
+      o2::framework::AxisSpec axis = axisPt;
+      int nPtBins = axis.binEdges.size() - 1;
+      double* ptBins = &(axis.binEdges)[0];
+      fGFWWeightsList->addGFWWeightsByRun(runNumber, nPtBins, ptBins, true, false);
+    }
+
+  }
+
+  void initHadronicRate(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+    mRunNumber = bc.runNumber();
+    if (gHadronicRate.find(mRunNumber) == gHadronicRate.end()) {
+      auto runDuration = ccdb->getRunDuration(mRunNumber);
+      mSOR = runDuration.first;
+      mMinSeconds = std::floor(mSOR * 1.e-3);                /// round tsSOR to the highest integer lower than tsSOR
+      double maxSec = std::ceil(runDuration.second * 1.e-3); /// round tsEOR to the lowest integer higher than tsEOR
+      const AxisSpec axisSeconds{static_cast<int>((maxSec - mMinSeconds) / 20.f), 0, maxSec - mMinSeconds, "Seconds since SOR"};
+      gHadronicRate[mRunNumber] = registry.add<TH2>(Form("HadronicRate/%i", mRunNumber), ";Time since SOR (s);Hadronic rate (kHz)", kTH2D, {axisSeconds, {510, 0., 51.}}).get();
+    }
+    gCurrentHadronicRate = gHadronicRate[mRunNumber];
   }
 
   void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
@@ -240,6 +272,14 @@ struct FlowRunbyRun {
       return;
     // detect run number
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    if (cfgGetInteractionRate) {
+      initHadronicRate(bc);
+      double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
+      double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
+      if (cfgUseInteractionRateCut && (hadronicRate < cfgCutMinIR || hadronicRate > cfgCutMaxIR)) // cut on hadronic rate
+        return;
+      gCurrentHadronicRate->Fill(seconds, hadronicRate);
+    }
     int runNumber = bc.runNumber();
     float lRandom = fRndm->Rndm();
     if (runNumber != lastRunNumer) {
@@ -271,8 +311,17 @@ struct FlowRunbyRun {
       if (withinPtRef) {
         fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 1);
       }
-      if (cfgOutputNUAWeightsRefPt) {
-        if (withinPtRef) {
+      if (cfgOutputNUAWeights) {
+        if (cfgOutputNUAWeightsRefPt) {
+          if (withinPtRef) {
+            GFWWeights* weight = fGFWWeightsList->getGFWWeightsByRun(runNumber);
+            if (!weight) {
+              LOGF(fatal, "Could not find the weight for run %d", runNumber);
+              return;
+            }
+            weight->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
+          }
+        } else {
           GFWWeights* weight = fGFWWeightsList->getGFWWeightsByRun(runNumber);
           if (!weight) {
             LOGF(fatal, "Could not find the weight for run %d", runNumber);
@@ -280,14 +329,8 @@ struct FlowRunbyRun {
           }
           weight->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
         }
-      } else {
-        GFWWeights* weight = fGFWWeightsList->getGFWWeightsByRun(runNumber);
-        if (!weight) {
-          LOGF(fatal, "Could not find the weight for run %d", runNumber);
-          return;
-        }
-        weight->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
       }
+      
     }
 
     // Filling TProfile
