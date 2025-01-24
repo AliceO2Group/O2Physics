@@ -2016,7 +2016,7 @@ struct StrangenessInJets {
               if (deltaRue1 < rJet || deltaRue2 < rJet) {
                 registryMC.fill(HIST("AntiOmega_eta_pt_ue"), particle.pt(), particle.eta());
               }
-              break
+              break;
           }
         }
       }
