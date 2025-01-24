@@ -13,8 +13,12 @@
 /// \brief Task for analyzing efficiency of proton, and net-proton distributions in MC reconstructed and generated
 /// \author Swati Saha
 
+#include <cstdlib>
+#include <cmath>
+#include <array>
+#include <vector>
+#include <string>
 #include <CCDB/BasicCCDBManager.h>
-
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/ASoAHelpers.h"
@@ -34,12 +38,6 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
-
-#include <cstdlib>
-#include <cmath>
-#include <array>
-#include <vector>
-#include <string>
 #include <TList.h>
 #include <TProfile.h>
 #include <TProfile2D.h>
@@ -56,9 +54,6 @@
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <TF1.h>
-#include <Math/Vector4D.h>
-#include <Math/Vector3D.h>
-#include <Math/GenVector/Boost.h>
 
 namespace o2::aod
 {
