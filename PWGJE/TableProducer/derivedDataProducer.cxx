@@ -144,11 +144,13 @@ struct JetDerivedDataProducerTask {
     }
   }
 
-  void processClearMaps(aod::Collisions const&)
+  void processClearMaps(aod::Collisions const& collisions)
   {
     trackCollisionMapping.clear();
     if (!doprocessMcCollisionLabels) {
-      jCollisionMcInfosTable(-1.0, jetderiveddatautilities::JCollisionSubGeneratorId::none); // fill a dummy weights table if not MC
+      for (int i = 0; i < collisions.size(); i++) {
+        jCollisionMcInfosTable(-1.0, jetderiveddatautilities::JCollisionSubGeneratorId::none); // fill a dummy weights table if not MC
+      }
     }
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processClearMaps, "clears all maps", true);
