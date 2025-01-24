@@ -59,51 +59,51 @@
 namespace o2::aod
 {
 
-namespace GenEbyeCollTable
+namespace gen_ebyecolltable
 {
 DECLARE_SOA_COLUMN(CentralityGen, centralityGen, uint8_t);
 DECLARE_SOA_COLUMN(NetProtNoGen, netProtNoGen, float);   //! net proton no. in an event
 DECLARE_SOA_COLUMN(ProtNoGen, protNoGen, float);         //! proton no. in an event
 DECLARE_SOA_COLUMN(AntiProtNoGen, antiProtNoGen, float); //! antiproton no. in an event
-} // namespace GenEbyeCollTable
+} // namespace gen_ebyecolltable
 
 DECLARE_SOA_TABLE(ProtGenCollEbyeTables, "AOD", "PROTGENCOLLEBYETABLE",
-                  GenEbyeCollTable::CentralityGen,
-                  GenEbyeCollTable::NetProtNoGen,
-                  GenEbyeCollTable::ProtNoGen,
-                  GenEbyeCollTable::AntiProtNoGen);
+                  gen_ebyecolltable::CentralityGen,
+                  gen_ebyecolltable::NetProtNoGen,
+                  gen_ebyecolltable::ProtNoGen,
+                  gen_ebyecolltable::AntiProtNoGen);
 using ProtGenCollEbyeTable = ProtGenCollEbyeTables::iterator;
 
-namespace RecEbyeCollTable
+namespace rec_ebyecolltable
 {
 DECLARE_SOA_COLUMN(CentralityRec, centralityRec, uint8_t);
 DECLARE_SOA_COLUMN(NetProtNoRec, netProtNoRec, float);   //! net proton no. in an event
 DECLARE_SOA_COLUMN(ProtNoRec, protNoRec, float);         //! proton no. in an event
 DECLARE_SOA_COLUMN(AntiProtNoRec, antiProtNoRec, float); //! antiproton no. in an event
-} // namespace RecEbyeCollTable
+} // namespace rec_ebyecolltable
 
 DECLARE_SOA_TABLE(ProtRecCollEbyeTables, "AOD", "PROTRECCOLLEBYETABLE",
                   o2::soa::Index<>,
-                  RecEbyeCollTable::CentralityRec,
-                  RecEbyeCollTable::NetProtNoRec,
-                  RecEbyeCollTable::ProtNoRec,
-                  RecEbyeCollTable::AntiProtNoRec);
+                  rec_ebyecolltable::CentralityRec,
+                  rec_ebyecolltable::NetProtNoRec,
+                  rec_ebyecolltable::ProtNoRec,
+                  rec_ebyecolltable::AntiProtNoRec);
 using ProtRecCollEbyeTable = ProtRecCollEbyeTables::iterator;
 
-namespace RecEbyeTrackTable
+namespace rec_ebyetracktable
 {
 DECLARE_SOA_INDEX_COLUMN(ProtRecCollEbyeTable, protRecCollEbyeTable);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Charge, charge, int);
-} // namespace RecEbyeTrackTable
+} // namespace rec_ebyetracktable
 
 DECLARE_SOA_TABLE(ProtRecCompleteEbyeTables, "AOD", "PROTRECCOMPLETEEBYETABLE",
                   o2::soa::Index<>,
-                  RecEbyeTrackTable::ProtRecCollEbyeTableId,
-                  RecEbyeTrackTable::Pt,
-                  RecEbyeTrackTable::Eta,
-                  RecEbyeTrackTable::Charge);
+                  rec_ebyetracktable::ProtRecCollEbyeTableId,
+                  rec_ebyetracktable::Pt,
+                  rec_ebyetracktable::Eta,
+                  rec_ebyetracktable::Charge);
 using ProtRecCompleteEbyeTable = ProtRecCompleteEbyeTables::iterator;
 
 } // namespace o2::aod
@@ -133,8 +133,8 @@ struct NetProtonCumulantsMC {
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<int64_t> cfgNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> cfgUrl{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<int64_t> ccdbNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> ccdbUrl{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -294,18 +294,18 @@ struct NetProtonCumulantsMC {
     }
     auto cent = 0;
 
-    int Nchinel = 0;
+    int nchInel = 0;
     for (const auto& mcParticle : mcParticles) {
       auto pdgcode = std::abs(mcParticle.pdgCode());
       if (mcParticle.isPhysicalPrimary() && (pdgcode == 211 || pdgcode == 321 || pdgcode == 2212 || pdgcode == 11 || pdgcode == 13)) {
         if (std::abs(mcParticle.eta()) < 1.0) {
-          Nchinel = Nchinel + 1;
+          nchInel = nchInel + 1;
         }
       }
     }
-    if (Nchinel > 0 && std::abs(mcCollision.posZ()) < cfgCutVertex)
+    if (nchInel > 0 && std::abs(mcCollision.posZ()) < cfgCutVertex)
       histos.fill(HIST("hMC"), 2.5);
-    std::vector<int64_t> SelectedEvents(collisions.size());
+    std::vector<int64_t> selectedEvents(collisions.size());
     int nevts = 0;
 
     for (const auto& collision : collisions) {
@@ -314,10 +314,10 @@ struct NetProtonCumulantsMC {
       }
       cent = collision.centFT0M();
 
-      SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+      selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
     }
-    SelectedEvents.resize(nevts);
-    const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end();
+    selectedEvents.resize(nevts);
+    const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
     histos.fill(HIST("hMC"), 3.5);
     if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
