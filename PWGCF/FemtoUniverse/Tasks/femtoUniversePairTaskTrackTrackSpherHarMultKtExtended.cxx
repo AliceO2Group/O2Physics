@@ -776,8 +776,8 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
   void processMixedEventMCCent(o2::aod::FdCollisions& cols,
-                           soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
-                           o2::aod::FdMCParticles&)
+                               soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
+                               o2::aod::FdMCParticles&)
   {
     randgen = new TRandom2(0);
 
@@ -820,8 +820,8 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
   void processMixedEventMCNtr(o2::aod::FdCollisions& cols,
-                           soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
-                           o2::aod::FdMCParticles&)
+                              soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
+                              o2::aod::FdMCParticles&)
   {
     randgen = new TRandom2(0);
 
