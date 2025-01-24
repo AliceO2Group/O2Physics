@@ -27,10 +27,12 @@ namespace o2::aod
 namespace hf_correlation_d_meson_pair
 {
 // Kinematic info
-DECLARE_SOA_COLUMN(PtCand1, ptCand1, float); //! Transverse momentum of first candidate
-DECLARE_SOA_COLUMN(PtCand2, ptCand2, float); //! Transverse momentum of second candidate
-DECLARE_SOA_COLUMN(YCand1, yCand1, float);   //! Rapidity of first candidate
-DECLARE_SOA_COLUMN(YCand2, yCand2, float);   //! Rapidity of second candidate
+DECLARE_SOA_COLUMN(PtCand1, ptCand1, float);   //! Transverse momentum of first candidate
+DECLARE_SOA_COLUMN(PtCand2, ptCand2, float);   //! Transverse momentum of second candidate
+DECLARE_SOA_COLUMN(YCand1, yCand1, float);     //! Rapidity of first candidate
+DECLARE_SOA_COLUMN(YCand2, yCand2, float);     //! Rapidity of second candidate
+DECLARE_SOA_COLUMN(PhiCand1, phiCand1, float); //! Azimuthal angle of first candidate
+DECLARE_SOA_COLUMN(PhiCand2, phiCand2, float); //! Azimuthal angle of second candidate
 // Invariant mass
 DECLARE_SOA_COLUMN(MDCand1, mDCand1, float);                 //! Invariant mass of first candidate as D
 DECLARE_SOA_COLUMN(MDbarCand1, mDbarCand1, float);           //! Invariant mass of first candidate as Dbar
@@ -58,6 +60,8 @@ DECLARE_SOA_COLUMN(MlProbD0barCand2, mlProbD0barCand2, std::vector<float>); //!
                     hf_correlation_d_meson_pair::PtCand2,                               \
                     hf_correlation_d_meson_pair::YCand1,                                \
                     hf_correlation_d_meson_pair::YCand2,                                \
+                    hf_correlation_d_meson_pair::PhiCand1,                              \
+                    hf_correlation_d_meson_pair::PhiCand2,                              \
                     hf_correlation_d_meson_pair::MDCand1,                               \
                     hf_correlation_d_meson_pair::MDbarCand1,                            \
                     hf_correlation_d_meson_pair::MDCand2,                               \
