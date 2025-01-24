@@ -85,54 +85,37 @@ struct DedxAnalysis {
   Configurable<float> maxDCAxy{"maxDCAxy", 0.1f, "maxDCAxy"};
   Configurable<float> maxDCAz{"maxDCAz", 0.1f, "maxDCAz"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
+  Configurable<bool> calibrationMode{"calibrationMode", false, "calibration mode"};
   // Histograms names
-  static constexpr std::string_view kArmenteros[5] = {"Armenteros", "Armenteros_K0S", "Armenteros_Lambda", "Armenteros_AntiLambda", "Armenteros_Gamma"};
-  static constexpr std::string_view kQtvsAlpha[5] = {"Qt_vs_alpha", "Qt_vs_alpha_K0S", "Qt_vs_alpha_Lambda", "Qt_vs_alpha_AntiLambda", "Qt_vs_alpha_Gamma"};
-  static constexpr std::string_view kDedxvsMomentum[2] = {"dEdx_vs_Momentum_all_beforeCalibration", "dEdx_vs_Momentum_AfterCalibration"};
-  static constexpr std::string_view kDedxvsMomentumV0[3] = {"dEdx_vs_Momentum_Pi_v0", "dEdx_vs_Momentum_Pr_v0", "dEdx_vs_Momentum_El_v0"};
-  static constexpr std::string_view kInvMass[4] = {"InvMass_K0S", "InvMass_Lambda", "InvMass_AntiLambda", "InvMass_Gamma"};
+  static constexpr std::string_view kDedxvsMomentum[4] = {"dEdx_vs_Momentum_all", "dEdx_vs_Momentum_Pi_v0", "dEdx_vs_Momentum_Pr_v0", "dEdx_vs_Momentum_El_v0"};
   static constexpr double EtaCut[9] = {-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
-  static constexpr double Correction[8] = {54.3344, 55.1277, 56.0811, 56.7974, 56.9533, 56.4622, 55.8873, 55.1449};
+  static constexpr double Correction[8] = {56.0452, 56.632, 57.2627, 57.8265, 57.8403, 57.5441, 57.2386, 56.7532};
 
   void init(InitContext const&)
   {
+    if (calibrationMode) {
+      // MIP for pions
+      registryDeDx.add(
+        "hdEdxMIP_vs_eta", "dE/dx", HistType::kTH2F,
+        {{8, -0.8, 0.8, "#eta"}, {100, 0.0, 600.0, "dE/dx MIP (a. u.)"}});
+      registryDeDx.add(
+        "hdEdxMIP_vs_phi", "dE/dx", HistType::kTH2F,
+        {{100, 0.0, 6.4, "#phi"}, {100, 0.0, 600.0, "dE/dx MIP (a. u.)"}});
 
-    // MIP for pions
-    registryDeDx.add(
-      "hdEdxMIP_vs_eta", "dE/dx", HistType::kTH2F,
-      {{100, -0.8, 0.8, "#eta"}, {100, 0.0, 600.0, "dE/dx MIP (a. u.)"}});
-    registryDeDx.add(
-      "hdEdxMIP_vs_phi", "dE/dx", HistType::kTH2F,
-      {{100, 0.0, 6.4, "#phi"}, {100, 0.0, 600.0, "dE/dx MIP (a. u.)"}});
-    registryDeDx.add(
-      "hdEdxMIP_vs_eta_AfterCorr", "dE/dx", HistType::kTH2F,
-      {{100, -0.8, 0.8, "#eta"}, {100, 0.0, 600.0, "dE/dx MIP (a. u.)"}});
-    ////////////////////////////////
-    registryDeDx.add(kInvMass[0].data(), "mass", HistType::kTH1F,
-                     {{100, 400, 600, "m (MeV/c)"}});
-    registryDeDx.add(kInvMass[1].data(), "mass", HistType::kTH1F,
-                     {{100, 1.08, 1.25, "m (GeV/c)"}});
-    registryDeDx.add(kInvMass[2].data(), "mass", HistType::kTH1F,
-                     {{100, 1.08, 1.25, "m (GeV/c)"}});
-    registryDeDx.add(kInvMass[3].data(), "mass", HistType::kTH1F,
-                     {{100, 0.9, 2.0, "m (MeV/c)"}});
-    // Armenteros plot and De/Dx for eta cut inclusive
-    for (int i = 0; i < 5; ++i) {
-      registryDeDx.add(kArmenteros[i].data(), kQtvsAlpha[i].data(), HistType::kTH2F,
-                       {{100, -1., 1., "#alpha (a. u.)"}, {100, 0.0, 0.3, "q_T (GeV/c)"}});
+    } else {
+      registryDeDx.add(
+        "hdEdxMIP_vs_eta_calibrated", "dE/dx", HistType::kTH2F,
+        {{8, -0.8, 0.8, "#eta"}, {10, 30.0, 70.0, "dE/dx MIP (a. u.)"}});
+      registryDeDx.add(
+        "hdEdxMIP_vs_phi", "dE/dx", HistType::kTH2F,
+        {{100, 0.0, 6.4, "#phi"}, {10, 30.0, 70.0, "dE/dx MIP (a. u.)"}});
+
+      // De/Dx for ch and v0 particles
+      for (int i = 0; i < 4; ++i) {
+        registryDeDx.add(kDedxvsMomentum[i].data(), "dE/dx", HistType::kTH3F,
+                         {{100, -20, 20, "#it{p}/Z (GeV/c)"}, {100, 0.0, 600.0, "dE/dx (a. u.)"}, {8, -0.8, 0.8, "#eta"}});
+      }
     }
-    for (int i = 0; i < 2; ++i) {
-      registryDeDx.add(kDedxvsMomentum[i].data(), "dE/dx", HistType::kTH3F,
-                       {{100, -20.0, 20.0, "#it{p}/Z (GeV/c)"}, {100, 0.0, 600.0, "dE/dx (a. u.)"}, {100, -0.8, 0.8, "#eta"}});
-    }
-
-    // De/Dx for v0 particles
-    for (int i = 0; i < 3; ++i) {
-
-      registryDeDx.add(kDedxvsMomentumV0[i].data(), "dE/dx", HistType::kTH3F,
-                       {{100, -20.0, 20.0, "#it{p}/Z (GeV/c)"}, {100, 0.0, 600.0, "dE/dx (a. u.)"}, {100, -0.8, 0.8, "#eta"}});
-    }
-
     // Event Counter
     registryDeDx.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{100, -20.0, +20.0, "z_{vtx} (cm)"}});
   }
@@ -322,186 +305,157 @@ struct DedxAnalysis {
         continue;
       float signedP = trk.sign() * trk.tpcInnerParam();
 
-      // DeDx all particles before calibration
-      registryDeDx.fill(HIST(kDedxvsMomentum[0]), signedP, trk.tpcSignal(), trk.eta());
-
-      ////////////////////////////////
-
       // MIP for pions
       if (trk.tpcInnerParam() >= 0.25 && trk.tpcInnerParam() <= 0.35) {
-        registryDeDx.fill(HIST("hdEdxMIP_vs_eta"), trk.eta(), trk.tpcSignal());
-        registryDeDx.fill(HIST("hdEdxMIP_vs_phi"), trk.phi(), trk.tpcSignal());
-        // After calibration
-
-        for (int i = 0; i < 8; ++i) {
-          if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
-            registryDeDx.fill(HIST("hdEdxMIP_vs_eta_AfterCorr"), trk.eta(), trk.tpcSignal() * 50 / Correction[i]);
+        if (calibrationMode) {
+          registryDeDx.fill(HIST("hdEdxMIP_vs_eta"), trk.eta(), trk.tpcSignal());
+          registryDeDx.fill(HIST("hdEdxMIP_vs_phi"), trk.phi(), trk.tpcSignal());
+        } else {
+          registryDeDx.fill(HIST("hdEdxMIP_vs_phi"), trk.phi(), trk.tpcSignal());
+          for (int i = 0; i < 8; ++i) {
+            if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
+              registryDeDx.fill(HIST("hdEdxMIP_vs_eta_calibrated"), trk.eta(), trk.tpcSignal() * 50 / Correction[i]);
+            }
           }
         }
       }
 
-      // After calibration
-      for (int i = 0; i < 8; ++i) {
-        if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
-          registryDeDx.fill(HIST(kDedxvsMomentum[1]), signedP, trk.tpcSignal() * 50 / Correction[i], trk.eta());
+      if (!calibrationMode) {
+        for (int i = 0; i < 8; ++i) {
+          if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
+            registryDeDx.fill(HIST(kDedxvsMomentum[0]), signedP, trk.tpcSignal() * 50 / Correction[i], trk.eta());
+          }
         }
       }
     }
 
     // Loop over Reconstructed V0s
-    for (const auto& v0 : fullV0s) {
+    if (!calibrationMode) {
+      for (const auto& v0 : fullV0s) {
 
-      // Standard V0 Selections
-      if (!passedV0Selection(v0, collision)) {
-        continue;
-      }
-
-      if (v0.dcaV0daughters() > dcaV0DaughtersMax) {
-        continue;
-      }
-
-      // Positive and Negative Tracks
-      const auto& posTrack = v0.posTrack_as<PIDTracks>();
-      const auto& negTrack = v0.negTrack_as<PIDTracks>();
-
-      if (!posTrack.passedTPCRefit())
-        continue;
-      if (!negTrack.passedTPCRefit())
-        continue;
-
-      float signedPpos = posTrack.sign() * posTrack.tpcInnerParam();
-      float signedPneg = negTrack.sign() * negTrack.tpcInnerParam();
-
-      float pxV0 = v0.px();
-      float pyV0 = v0.py();
-      float pzV0 = v0.pz();
-      float pV0 = std::sqrt(pxV0 * pxV0 + pyV0 * pyV0 + pzV0 * pzV0);
-
-      float pxPos = posTrack.px();
-      float pyPos = posTrack.py();
-      float pzPos = posTrack.pz();
-
-      float pxNeg = negTrack.px();
-      float pyNeg = negTrack.py();
-      float pzNeg = negTrack.pz();
-
-      const float gammaMass = 2 * MassElectron; // GeV/c^2
-
-      //-------------------Armenteros plots--------
-
-      float plPos = (pxPos * pxV0 + pyPos * pyV0 + pzPos * pzV0) / pV0;
-      float plNeg = (pxNeg * pxV0 + pyNeg * pyV0 + pzNeg * pzV0) / pV0;
-
-      float alpha = (plPos - plNeg) / (plPos + plNeg);
-      float pPos = std::sqrt(pxPos * pxPos + pyPos * pyPos + pzPos * pzPos);
-      float qt = std::sqrt(pPos * pPos - plPos * plPos);
-
-      registryDeDx.fill(HIST(kArmenteros[0]), alpha, qt);
-
-      //-------------------------------------------
-
-      // K0s Selection
-      if (passedK0Selection(v0, negTrack, posTrack, collision)) {
-        float ePosPi = posTrack.energy(MassPionCharged);
-        float eNegPi = negTrack.energy(MassPionCharged);
-
-        float invMass = std::sqrt((eNegPi + ePosPi) * (eNegPi + ePosPi) - ((pxNeg + pxPos) * (pxNeg + pxPos) + (pyNeg + pyPos) * (pyNeg + pyPos) + (pzNeg + pzPos) * (pzNeg + pzPos)));
-
-        if (std::abs(invMass - MassK0Short) > 0.01) {
+        // Standard V0 Selections
+        if (!passedV0Selection(v0, collision)) {
           continue;
         }
 
-        registryDeDx.fill(HIST(kInvMass[0]), invMass * 1000);
-        registryDeDx.fill(HIST(kArmenteros[1]), alpha, qt);
-
-        for (int i = 0; i < 8; ++i) {
-          if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
-
-            registryDeDx.fill(HIST(kDedxvsMomentumV0[0]), signedPneg, negTrack.tpcSignal() * 50 / Correction[i], negTrack.eta());
-          }
-          if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
-
-            registryDeDx.fill(HIST(kDedxvsMomentumV0[0]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i], posTrack.eta());
-          }
-        }
-      }
-
-      // Lambda Selection
-      if (passedLambdaSelection(v0, negTrack, posTrack, collision)) {
-        float ePosPr = posTrack.energy(MassProton);
-        float eNegPi = negTrack.energy(MassPionCharged);
-
-        float invMass = std::sqrt((eNegPi + ePosPr) * (eNegPi + ePosPr) - ((pxNeg + pxPos) * (pxNeg + pxPos) + (pyNeg + pyPos) * (pyNeg + pyPos) + (pzNeg + pzPos) * (pzNeg + pzPos)));
-
-        if (std::abs(invMass - MassLambda) > 0.01) {
+        if (v0.dcaV0daughters() > dcaV0DaughtersMax) {
           continue;
         }
 
-        registryDeDx.fill(HIST(kInvMass[1]), invMass);
-        registryDeDx.fill(HIST(kArmenteros[2]), alpha, qt);
+        // Positive and Negative Tracks
+        const auto& posTrack = v0.posTrack_as<PIDTracks>();
+        const auto& negTrack = v0.negTrack_as<PIDTracks>();
 
-        for (int i = 0; i < 8; ++i) {
-          if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
-
-            registryDeDx.fill(HIST(kDedxvsMomentumV0[0]), signedPneg, negTrack.tpcSignal() * 50 / Correction[i], negTrack.eta());
-          }
-          if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
-
-            registryDeDx.fill(HIST(kDedxvsMomentumV0[1]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i], posTrack.eta());
-          }
-        }
-      }
-
-      // AntiLambda Selection
-      if (passedAntiLambdaSelection(v0, negTrack, posTrack, collision)) {
-
-        float ePosPi = posTrack.energy(MassPionCharged);
-        float eNegPr = negTrack.energy(MassProton);
-
-        float invMass = std::sqrt((eNegPr + ePosPi) * (eNegPr + ePosPi) - ((pxNeg + pxPos) * (pxNeg + pxPos) + (pyNeg + pyPos) * (pyNeg + pyPos) + (pzNeg + pzPos) * (pzNeg + pzPos)));
-
-        if (std::abs(invMass - MassLambda) > 0.01) {
+        if (!posTrack.passedTPCRefit())
           continue;
-        }
-
-        registryDeDx.fill(HIST(kInvMass[2]), invMass);
-        registryDeDx.fill(HIST(kArmenteros[3]), alpha, qt);
-
-        for (int i = 0; i < 8; ++i) {
-          if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
-
-            registryDeDx.fill(HIST(kDedxvsMomentumV0[1]), signedPneg, negTrack.tpcSignal() * 50 / Correction[i], negTrack.eta());
-          }
-          if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
-
-            registryDeDx.fill(HIST(kDedxvsMomentumV0[0]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i], posTrack.eta());
-          }
-        }
-      }
-
-      // Gamma Selection
-      if (passedGammaSelection(v0, negTrack, posTrack, collision)) {
-
-        float ePosEl = posTrack.energy(MassElectron);
-        float eNegEl = negTrack.energy(MassElectron);
-
-        float invMass = std::sqrt((eNegEl + ePosEl) * (eNegEl + ePosEl) - ((pxNeg + pxPos) * (pxNeg + pxPos) + (pyNeg + pyPos) * (pyNeg + pyPos) + (pzNeg + pzPos) * (pzNeg + pzPos)));
-
-        if (std::abs(invMass - gammaMass) > 0.0015) {
+        if (!negTrack.passedTPCRefit())
           continue;
+
+        float signedPpos = posTrack.sign() * posTrack.tpcInnerParam();
+        float signedPneg = negTrack.sign() * negTrack.tpcInnerParam();
+
+        float pxPos = posTrack.px();
+        float pyPos = posTrack.py();
+        float pzPos = posTrack.pz();
+
+        float pxNeg = negTrack.px();
+        float pyNeg = negTrack.py();
+        float pzNeg = negTrack.pz();
+
+        const float gammaMass = 2 * MassElectron; // GeV/c^2
+
+        // K0s Selection
+        if (passedK0Selection(v0, negTrack, posTrack, collision)) {
+          float ePosPi = posTrack.energy(MassPionCharged);
+          float eNegPi = negTrack.energy(MassPionCharged);
+
+          float invMass = std::sqrt((eNegPi + ePosPi) * (eNegPi + ePosPi) - ((pxNeg + pxPos) * (pxNeg + pxPos) + (pyNeg + pyPos) * (pyNeg + pyPos) + (pzNeg + pzPos) * (pzNeg + pzPos)));
+
+          if (std::abs(invMass - MassK0Short) > 0.01) {
+            continue;
+          }
+
+          for (int i = 0; i < 8; ++i) {
+            if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
+
+              registryDeDx.fill(HIST(kDedxvsMomentum[1]), signedPneg, negTrack.tpcSignal() * 50 / Correction[i], negTrack.eta());
+            }
+            if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
+
+              registryDeDx.fill(HIST(kDedxvsMomentum[1]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i], posTrack.eta());
+            }
+          }
         }
 
-        registryDeDx.fill(HIST(kInvMass[3]), invMass * 1000);
-        registryDeDx.fill(HIST(kArmenteros[4]), alpha, qt);
+        // Lambda Selection
+        if (passedLambdaSelection(v0, negTrack, posTrack, collision)) {
 
-        for (int i = 0; i < 8; ++i) {
-          if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
+          float ePosPr = posTrack.energy(MassProton);
+          float eNegPi = negTrack.energy(MassPionCharged);
 
-            registryDeDx.fill(HIST(kDedxvsMomentumV0[2]), signedPneg, negTrack.tpcSignal() * 50 / Correction[i], negTrack.eta());
+          float invMass = std::sqrt((eNegPi + ePosPr) * (eNegPi + ePosPr) - ((pxNeg + pxPos) * (pxNeg + pxPos) + (pyNeg + pyPos) * (pyNeg + pyPos) + (pzNeg + pzPos) * (pzNeg + pzPos)));
+
+          if (std::abs(invMass - MassLambda) > 0.01) {
+            continue;
           }
-          if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
 
-            registryDeDx.fill(HIST(kDedxvsMomentumV0[2]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i], posTrack.eta());
+          for (int i = 0; i < 8; ++i) {
+            if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
+
+              registryDeDx.fill(HIST(kDedxvsMomentum[1]), signedPneg, negTrack.tpcSignal() * 50 / Correction[i], negTrack.eta());
+            }
+            if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
+
+              registryDeDx.fill(HIST(kDedxvsMomentum[2]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i], posTrack.eta());
+            }
+          }
+        }
+
+        // AntiLambda Selection
+        if (passedAntiLambdaSelection(v0, negTrack, posTrack, collision)) {
+
+          float ePosPi = posTrack.energy(MassPionCharged);
+          float eNegPr = negTrack.energy(MassProton);
+
+          float invMass = std::sqrt((eNegPr + ePosPi) * (eNegPr + ePosPi) - ((pxNeg + pxPos) * (pxNeg + pxPos) + (pyNeg + pyPos) * (pyNeg + pyPos) + (pzNeg + pzPos) * (pzNeg + pzPos)));
+
+          if (std::abs(invMass - MassLambda) > 0.01) {
+            continue;
+          }
+
+          for (int i = 0; i < 8; ++i) {
+            if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
+
+              registryDeDx.fill(HIST(kDedxvsMomentum[2]), signedPneg, negTrack.tpcSignal() * 50 / Correction[i], negTrack.eta());
+            }
+            if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
+
+              registryDeDx.fill(HIST(kDedxvsMomentum[1]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i], posTrack.eta());
+            }
+          }
+        }
+
+        // Gamma Selection
+        if (passedGammaSelection(v0, negTrack, posTrack, collision)) {
+
+          float ePosEl = posTrack.energy(MassElectron);
+          float eNegEl = negTrack.energy(MassElectron);
+
+          float invMass = std::sqrt((eNegEl + ePosEl) * (eNegEl + ePosEl) - ((pxNeg + pxPos) * (pxNeg + pxPos) + (pyNeg + pyPos) * (pyNeg + pyPos) + (pzNeg + pzPos) * (pzNeg + pzPos)));
+
+          if (std::abs(invMass - gammaMass) > 0.0015) {
+            continue;
+          }
+
+          for (int i = 0; i < 8; ++i) {
+            if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
+
+              registryDeDx.fill(HIST(kDedxvsMomentum[3]), signedPneg, negTrack.tpcSignal() * 50 / Correction[i], negTrack.eta());
+            }
+            if (posTrack.eta() > EtaCut[i] && posTrack.eta() < EtaCut[i + 1]) {
+
+              registryDeDx.fill(HIST(kDedxvsMomentum[3]), signedPpos, posTrack.tpcSignal() * 50 / Correction[i], posTrack.eta());
+            }
           }
         }
       }

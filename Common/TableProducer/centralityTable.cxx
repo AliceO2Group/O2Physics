@@ -44,7 +44,9 @@ static constexpr int kCentFT0As = 8;
 static constexpr int kCentFT0Cs = 9;
 static constexpr int kCentFDDMs = 10;
 static constexpr int kCentNTPVs = 11;
-static constexpr int nTables = 12;
+static constexpr int kCentNGlobals = 12;
+static constexpr int kCentMFTs = 13;
+static constexpr int nTables = 14;
 static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{"CentRun2V0Ms",
                                                  "CentRun2V0As",
@@ -57,9 +59,11 @@ static const std::vector<std::string> tableNames{"CentRun2V0Ms",
                                                  "CentFT0As",
                                                  "CentFT0Cs",
                                                  "CentFDDMs",
-                                                 "CentNTPVs"};
+                                                 "CentNTPVs",
+                                                 "CentNGlobals",
+                                                 "CentMFTs"};
 static const std::vector<std::string> parameterNames{"Enable"};
-static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
+static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
 struct CentralityTable {
   Produces<aod::CentRun2V0Ms> centRun2V0M;
@@ -74,6 +78,8 @@ struct CentralityTable {
   Produces<aod::CentFT0Cs> centFT0C;
   Produces<aod::CentFDDMs> centFDDM;
   Produces<aod::CentNTPVs> centNTPV;
+  Produces<aod::CentNGlobals> centNGlobals;
+  Produces<aod::CentMFTs> centMFTs;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<LabeledArray<int>> enabledTables{"enabledTables",
                                                 {defaultParameters[0], nTables, nParameters, tableNames, parameterNames},
@@ -162,6 +168,8 @@ struct CentralityTable {
   calibrationInfo FT0CInfo = calibrationInfo("FT0C");
   calibrationInfo FDDMInfo = calibrationInfo("FDD");
   calibrationInfo NTPVInfo = calibrationInfo("NTracksPV");
+  calibrationInfo NGlobalInfo = calibrationInfo("NGlobal");
+  calibrationInfo MFTInfo = calibrationInfo("MFT");
   std::vector<int> mEnabledTables; // Vector of enabled tables
   std::array<bool, nTables> isTableEnabled;
 
@@ -438,6 +446,8 @@ struct CentralityTable {
             bool enableCentFT0 = true,
             bool enableCentFDD = true,
             bool enableCentNTPV = true,
+            bool enableCentNGlobal = false,
+            bool enableCentMFT = false,
             typename CollisionType>
   void produceRun3Tables(CollisionType const& collisions)
   {
@@ -461,6 +471,12 @@ struct CentralityTable {
           break;
         case kCentNTPVs:
           centNTPV.reserve(collisions.size());
+          break;
+        case kCentNGlobals:
+          centNGlobals.reserve(collisions.size());
+          break;
+        case kCentMFTs:
+          centMFTs.reserve(collisions.size());
           break;
         default:
           LOGF(fatal, "Table %d not supported in Run3", table);
@@ -505,6 +521,8 @@ struct CentralityTable {
         FT0CInfo.mCalibrationStored = false;
         FDDMInfo.mCalibrationStored = false;
         NTPVInfo.mCalibrationStored = false;
+        NGlobalInfo.mCalibrationStored = false;
+        MFTInfo.mCalibrationStored = false;
         if (callst != nullptr) {
           if (produceHistograms) {
             listCalib->Add(callst->Clone(Form("%i", bc.runNumber())));
@@ -551,6 +569,12 @@ struct CentralityTable {
                 break;
               case kCentNTPVs:
                 getccdb(NTPVInfo, ccdbConfig.genName);
+                break;
+              case kCentNGlobals:
+                getccdb(NGlobalInfo, ccdbConfig.genName);
+                break;
+              case kCentMFTs:
+                getccdb(MFTInfo, ccdbConfig.genName);
                 break;
               default:
                 LOGF(fatal, "Table %d not supported in Run3", table);
@@ -658,12 +682,27 @@ struct CentralityTable {
               populateTable(centNTPV, NTPVInfo, collision.multZeqNTracksPV());
             }
             break;
+          case kCentNGlobals:
+            if constexpr (enableCentNGlobal) {
+              populateTable(centNGlobals, NGlobalInfo, collision.multNTracksGlobal());
+            }
+            break;
+          case kCentMFTs:
+            if constexpr (enableCentMFT) {
+              populateTable(centMFTs, MFTInfo, collision.mftNtracks());
+            }
+            break;
           default:
             LOGF(fatal, "Table %d not supported in Run3", table);
             break;
         }
       }
     }
+  }
+
+  void processRun3Complete(soa::Join<aod::Collisions, aod::PVMults, aod::MultZeqs, aod::EvSels, aod::MultsGlobal, aod::MFTMults> const& collisions, BCsWithTimestamps const&)
+  {
+    produceRun3Tables<true, true, true, true, true, true>(collisions);
   }
 
   void processRun3(soa::Join<aod::Collisions, aod::PVMults, aod::MultZeqs, aod::EvSels> const& collisions, BCsWithTimestamps const&)

@@ -54,6 +54,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "Common/DataModel/PIDResponseITS.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -66,7 +67,6 @@ struct highmasslambda {
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdg;
-
   // CCDB options
   // Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   // Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
@@ -92,7 +92,7 @@ struct highmasslambda {
   Configurable<bool> rejectPID{"rejectPID", true, "pion, kaon, electron rejection"};
   Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.0, "cut TOF beta"};
   Configurable<bool> ispTdifferentialDCA{"ispTdifferentialDCA", true, "is pT differential DCA"};
-  Configurable<bool> isPVContributor{"isPVContributor", true, "is PV contributor"};
+  Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use global track"};
   Configurable<float> confMinRot{"confMinRot", 5.0 * TMath::Pi() / 6.0, "Minimum of rotation"};
   Configurable<float> confMaxRot{"confMaxRot", 7.0 * TMath::Pi() / 6.0, "Maximum of rotation"};
   Configurable<float> confRapidity{"confRapidity", 0.8, "cut on Rapidity"};
@@ -172,7 +172,7 @@ struct highmasslambda {
 
   void init(o2::framework::InitContext&)
   {
-    std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
+    std::vector<double> occupancyBinning = {-0.5, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
     // std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.012, 0.014, 0.016, 0.02, 0.03, 0.05, 0.1, 0.5, 1.0};
     std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.0012, 0.0014, 0.0016, 0.002, 0.0025, 0.003, 0.004, 0.005, 0.006, 0.008, 0.01, 0.015, 0.02, 0.04, 0.05, 0.06, 0.08, 0.1, 0.3, 1.0};
     std::vector<double> ptProtonBinning = {0.2, 0.3, 0.5, 0.6, 0.8, 1.2, 1.4, 1.6, 2.0, 3.0, 4.0, 6.0};
@@ -270,10 +270,10 @@ struct highmasslambda {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (isPVContributor && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster && candidate.itsNClsInnerBarrel() >= 1)) {
+    if (useGlobalTrack && !(candidate.isGlobalTrackWoDCA() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
       return false;
     }
-    if (!isPVContributor && !(candidate.isGlobalTrackWoDCA() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster && candidate.itsNClsInnerBarrel() >= 1)) {
+    if (!useGlobalTrack && !(candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
       return false;
     }
 
@@ -386,81 +386,35 @@ struct highmasslambda {
     return true;
   }
 
-  // TPC TOF
+  // TOF Veto
   template <typename T>
   bool selectionPID1(const T& candidate)
   {
-    if (candidate.tpcInnerParam() < 0.85 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
-      return true;
-    }
-    if (candidate.tpcInnerParam() >= 0.85) {
-      if (candidate.hasTOF()) {
-        if (candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
-          return true;
-        }
+    if (candidate.hasTOF()) {
+      if (candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -nsigmaCutTPC && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
+        return true;
       }
-      if (!candidate.hasTOF()) {
-        if (candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
-          return true;
-        }
+    }
+    if (!candidate.hasTOF()) {
+      if (candidate.tpcNSigmaPr() > -nsigmaCutTPC && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+        return true;
       }
     }
     return false;
   }
 
-  // TOF Veto
+  // TPC TOF
   template <typename T>
   bool selectionPID2(const T& candidate)
   {
-    if (candidate.tpcInnerParam() < 0.85 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+    if (candidate.tpcInnerParam() < 1.0 && candidate.tpcNSigmaPr() > -nsigmaCutTPC && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.tpcInnerParam() >= 0.85 && candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
+    if (candidate.tpcInnerParam() >= 1.0 && candidate.tpcInnerParam() < 2.0 && candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -nsigmaCutTPC && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
       return true;
     }
-    return false;
-  }
-
-  // TOF veto loose
-  template <typename T>
-  bool selectionPID3(const T& candidate)
-  {
-    if (candidate.tpcInnerParam() < 0.85 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+    if (candidate.tpcInnerParam() >= 2.0 && candidate.tpcNSigmaPr() > -nsigmaCutTPC && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
       return true;
-    }
-    if (candidate.tpcInnerParam() >= 0.85) {
-      if (candidate.hasTOF()) {
-        if (candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
-          return true;
-        }
-      }
-      if (!candidate.hasTOF()) {
-        if (candidate.tpcInnerParam() < 1.5 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  // TOF veto very loose
-  template <typename T>
-  bool selectionPID4(const T& candidate)
-  {
-    if (candidate.tpcInnerParam() < 0.85 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
-      return true;
-    }
-    if (candidate.tpcInnerParam() >= 0.85) {
-      if (candidate.hasTOF()) {
-        if (candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
-          return true;
-        }
-      }
-      if (!candidate.hasTOF()) {
-        if (candidate.tpcInnerParam() < 1.8 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
-          return true;
-        }
-      }
     }
     return false;
   }
@@ -564,6 +518,7 @@ struct highmasslambda {
     if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return;
     }
+    o2::aod::ITSResponse itsResponse;
     auto centrality = collision.centFT0C();
     auto multTPC = collision.multNTracksPV();
     histos.fill(HIST("hFTOCvsTPCNoCut"), centrality, multTPC);
@@ -611,13 +566,9 @@ struct highmasslambda {
       if (PIDstrategy == 1 && !selectionPID2(track1)) {
         continue;
       }
-      if (PIDstrategy == 2 && !selectionPID3(track1)) {
+      if (track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < 2.5)) {
         continue;
       }
-      if (PIDstrategy == 3 && !selectionPID4(track1)) {
-        continue;
-      }
-
       if (track1.hasTOF()) {
         histos.fill(HIST("hNsigmaProtonTOFPre"), track1.tofNSigmaPr(), track1.pt());
       }
@@ -774,6 +725,7 @@ struct highmasslambda {
       if (!collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
+      o2::aod::ITSResponse itsResponse;
       auto centrality = collision1.centFT0C();
       auto psiFT0C = collision1.psiFT0C();
       auto QFT0C = collision1.qFT0C();
@@ -797,10 +749,7 @@ struct highmasslambda {
         if (PIDstrategy == 1 && !selectionPID2(track1)) {
           continue;
         }
-        if (PIDstrategy == 2 && !selectionPID3(track1)) {
-          continue;
-        }
-        if (PIDstrategy == 3 && !selectionPID4(track1)) {
+        if (track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < 2.5)) {
           continue;
         }
 

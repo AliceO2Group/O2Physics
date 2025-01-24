@@ -14,6 +14,8 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
+#include <string>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
