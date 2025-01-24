@@ -63,10 +63,10 @@ namespace o2::aod
 
 namespace GenEbyeCollTable
 {
-DECLARE_SOA_COLUMN(CentralityGen, centralitygen, uint8_t);
-DECLARE_SOA_COLUMN(NetProtNoGen, net_prot_no_gen, float);  //! net proton no. in an event
-DECLARE_SOA_COLUMN(ProtNoGen, prot_no_gen, float);         //! proton no. in an event
-DECLARE_SOA_COLUMN(AntiProtNoGen, antiprot_no_gen, float); //! antiproton no. in an event
+DECLARE_SOA_COLUMN(CentralityGen, centralityGen, uint8_t);
+DECLARE_SOA_COLUMN(NetProtNoGen, netProtNoGen, float);   //! net proton no. in an event
+DECLARE_SOA_COLUMN(ProtNoGen, protNoGen, float);         //! proton no. in an event
+DECLARE_SOA_COLUMN(AntiProtNoGen, antiprotNoGen, float); //! antiproton no. in an event
 } // namespace GenEbyeCollTable
 
 DECLARE_SOA_TABLE(ProtGenCollEbyeTables, "AOD", "PROTGENCOLLEBYETABLE",
@@ -78,10 +78,10 @@ using ProtGenCollEbyeTable = ProtGenCollEbyeTables::iterator;
 
 namespace RecEbyeCollTable
 {
-DECLARE_SOA_COLUMN(CentralityRec, centralityrec, uint8_t);
-DECLARE_SOA_COLUMN(NetProtNoRec, net_prot_no_rec, float);  //! net proton no. in an event
-DECLARE_SOA_COLUMN(ProtNoRec, prot_no_rec, float);         //! proton no. in an event
-DECLARE_SOA_COLUMN(AntiProtNoRec, antiprot_no_rec, float); //! antiproton no. in an event
+DECLARE_SOA_COLUMN(CentralityRec, centralityRec, uint8_t);
+DECLARE_SOA_COLUMN(NetProtNoRec, netProtNoRec, float);   //! net proton no. in an event
+DECLARE_SOA_COLUMN(ProtNoRec, protNoRec, float);         //! proton no. in an event
+DECLARE_SOA_COLUMN(AntiProtNoRec, antiprotNoRec, float); //! antiproton no. in an event
 } // namespace RecEbyeCollTable
 
 DECLARE_SOA_TABLE(ProtRecCollEbyeTables, "AOD", "PROTRECCOLLEBYETABLE",
@@ -94,7 +94,7 @@ using ProtRecCollEbyeTable = ProtRecCollEbyeTables::iterator;
 
 namespace RecEbyeTrackTable
 {
-DECLARE_SOA_INDEX_COLUMN(ProtRecCollEbyeTable, protreccollEbyeTable);
+DECLARE_SOA_INDEX_COLUMN(ProtRecCollEbyeTable, protRecCollEbyeTable);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Charge, charge, int);
@@ -107,6 +107,7 @@ DECLARE_SOA_TABLE(ProtRecCompleteEbyeTables, "AOD", "PROTRECCOMPLETEEBYETABLE",
                   RecEbyeTrackTable::Eta,
                   RecEbyeTrackTable::Charge);
 using ProtRecCompleteEbyeTable = ProtRecCompleteEbyeTables::iterator;
+
 } // namespace o2::aod
 
 using namespace o2;
