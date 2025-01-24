@@ -11,6 +11,11 @@
 // Author: Swati Saha
 
 #include <CCDB/BasicCCDBManager.h>
+#include <cmath>
+#include <array>
+#include <cstdlib>
+#include <vector>
+#include <string>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -49,12 +54,7 @@
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
 #include <Math/Vector4D.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <vector>
 #include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
 #include "Math/GenVector/Boost.h"
 #include "TF1.h"
 
@@ -240,9 +240,9 @@ struct NetProtonCumulantsMC {
       }
     }
     if (candidate.hasTOF() && candidate.pt() > cfgCutPtUpperTPC && candidate.pt() < 5.0f) {
-      const float combNSigmaPr = std::sqrt(pow(candidate.tpcNSigmaPr(), 2.0) + pow(candidate.tofNSigmaPr(), 2.0));
-      const float combNSigmaPi = std::sqrt(pow(candidate.tpcNSigmaPi(), 2.0) + pow(candidate.tofNSigmaPi(), 2.0));
-      const float combNSigmaKa = std::sqrt(pow(candidate.tpcNSigmaKa(), 2.0) + pow(candidate.tofNSigmaKa(), 2.0));
+      const float combNSigmaPr = std::sqrt(std::pow(candidate.tpcNSigmaPr(), 2.0) + std::pow(candidate.tofNSigmaPr(), 2.0));
+      const float combNSigmaPi = std::sqrt(std::pow(candidate.tpcNSigmaPi(), 2.0) + std::pow(candidate.tofNSigmaPi(), 2.0));
+      const float combNSigmaKa = std::sqrt(std::pow(candidate.tpcNSigmaKa(), 2.0) + std::pow(candidate.tofNSigmaKa(), 2.0));
 
       int flag2 = 0;
       if (combNSigmaPr < 3.0)
