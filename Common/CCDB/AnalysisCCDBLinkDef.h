@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file AnalysisCCDBLinkDef.h
+/// \brief Dictionary definitions
+///
+/// \author Evgeny Kryshen <evgeny.kryshen@cern.ch>
+
 #pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
