@@ -899,7 +899,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
     }
     delete randgen;
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackTrack3DMultKtExtended, processMixedEventMCNtr, "Enable processing mixed events MC", false);  
+  PROCESS_SWITCH(femtoUniversePairTaskTrackTrack3DMultKtExtended, processMixedEventMCNtr, "Enable processing mixed events MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
