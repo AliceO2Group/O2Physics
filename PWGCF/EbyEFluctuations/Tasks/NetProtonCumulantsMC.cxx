@@ -32,7 +32,6 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 
-
 #include "TList.h"
 #include "TProfile.h"
 #include "TProfile2D.h"
@@ -65,32 +64,32 @@ namespace o2::aod
 namespace GenEbyeCollTable
 {
 DECLARE_SOA_COLUMN(CentralityGen, centralitygen, uint8_t);
-DECLARE_SOA_COLUMN(NetProtNoGen, net_prot_no_gen, float); //! net proton no. in an event
-DECLARE_SOA_COLUMN(ProtNoGen, prot_no_gen, float); //! proton no. in an event
+DECLARE_SOA_COLUMN(NetProtNoGen, net_prot_no_gen, float);  //! net proton no. in an event
+DECLARE_SOA_COLUMN(ProtNoGen, prot_no_gen, float);         //! proton no. in an event
 DECLARE_SOA_COLUMN(AntiProtNoGen, antiprot_no_gen, float); //! antiproton no. in an event
 } // namespace GenEbyeCollTable
 
 DECLARE_SOA_TABLE(ProtGenCollEbyeTables, "AOD", "PROTGENCOLLEBYETABLE",
                   GenEbyeCollTable::CentralityGen,
-		  GenEbyeCollTable::NetProtNoGen,
-		  GenEbyeCollTable::ProtNoGen,
-		  GenEbyeCollTable::AntiProtNoGen);
+                  GenEbyeCollTable::NetProtNoGen,
+                  GenEbyeCollTable::ProtNoGen,
+                  GenEbyeCollTable::AntiProtNoGen);
 using ProtGenCollEbyeTable = ProtGenCollEbyeTables::iterator;
 
 namespace RecEbyeCollTable
 {
 DECLARE_SOA_COLUMN(CentralityRec, centralityrec, uint8_t);
-DECLARE_SOA_COLUMN(NetProtNoRec, net_prot_no_rec, float); //! net proton no. in an event
-DECLARE_SOA_COLUMN(ProtNoRec, prot_no_rec, float); //! proton no. in an event
+DECLARE_SOA_COLUMN(NetProtNoRec, net_prot_no_rec, float);  //! net proton no. in an event
+DECLARE_SOA_COLUMN(ProtNoRec, prot_no_rec, float);         //! proton no. in an event
 DECLARE_SOA_COLUMN(AntiProtNoRec, antiprot_no_rec, float); //! antiproton no. in an event
 } // namespace RecEbyeCollTable
 
 DECLARE_SOA_TABLE(ProtRecCollEbyeTables, "AOD", "PROTRECCOLLEBYETABLE",
-		  o2::soa::Index<>,
+                  o2::soa::Index<>,
                   RecEbyeCollTable::CentralityRec,
-		  RecEbyeCollTable::NetProtNoRec,
-		  RecEbyeCollTable::ProtNoRec,
-		  RecEbyeCollTable::AntiProtNoRec);
+                  RecEbyeCollTable::NetProtNoRec,
+                  RecEbyeCollTable::ProtNoRec,
+                  RecEbyeCollTable::AntiProtNoRec);
 using ProtRecCollEbyeTable = ProtRecCollEbyeTables::iterator;
 
 namespace RecEbyeTrackTable
@@ -106,7 +105,7 @@ DECLARE_SOA_TABLE(ProtRecCompleteEbyeTables, "AOD", "PROTRECCOMPLETEEBYETABLE",
                   RecEbyeTrackTable::ProtRecCollEbyeTableId,
                   RecEbyeTrackTable::Pt,
                   RecEbyeTrackTable::Eta,
-		  RecEbyeTrackTable::Charge);
+                  RecEbyeTrackTable::Charge);
 using ProtRecCompleteEbyeTable = ProtRecCompleteEbyeTables::iterator;
 } // namespace o2::aod
 
@@ -132,7 +131,7 @@ struct NetProtonCumulantsMC {
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
-  
+
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
@@ -143,7 +142,7 @@ struct NetProtonCumulantsMC {
   // Filter command for rec (data/MC)***********
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex && (aod::evsel::sel8 == true);
   Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl) && (aod::track::itsChi2NCl < cfgCutItsChi2NCl) && (aod::track::dcaZ < cfgCutDCAz) && (aod::track::dcaXY < cfgCutDCAxy);
-  
+
   // filtering collisions and tracks for real data***********
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>>;
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullEl, aod::pidTOFFullEl>>;
@@ -160,7 +159,7 @@ struct NetProtonCumulantsMC {
   // // filtering collisions and particles for MC gen data***********
   // using myMCGenCollision = soa::Filtered<aod::McCollisions>::iterator;
   // using myMCParticles = soa::Filtered<aod::McParticles>;
- 
+
   // Equivalent of the AliRoot task UserCreateOutputObjects
   void init(o2::framework::InitContext&)
   {
@@ -178,7 +177,7 @@ struct NetProtonCumulantsMC {
 
     // MC event counts
     histos.add("hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
-    
+
     // histograms for events
     histos.add("hZvtx_after_sel", "Vertex dist. after event selection;Z (cm)", kTH1F, {vtxZAxis});
     histos.add("Centrec", "MCRec Multiplicity percentile from FT0M (%)", kTH1F, {{100, 0.0, 100.0}});
@@ -232,38 +231,32 @@ struct NetProtonCumulantsMC {
     //! ----------------------------------------------------------------------
     int flag = 0; //! pid check main flag
 
-    if (candidate.pt() > 0.2f && candidate.pt() <= cfgCutPtUpperTPC)
-      {
-	if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPC)
-	  {
-	    flag = 1;
-	  }
-	if (candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < cfgnSigmaCutTOF)
-	  {
-	    flag = 1;
-	  }
+    if (candidate.pt() > 0.2f && candidate.pt() <= cfgCutPtUpperTPC) {
+      if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPC) {
+        flag = 1;
       }
-    if (candidate.hasTOF() && candidate.pt() > cfgCutPtUpperTPC && candidate.pt() < 5.0f)
-      {
-	const float combNSigmaPr = std::sqrt(pow(candidate.tpcNSigmaPr(), 2.0) + pow(candidate.tofNSigmaPr(), 2.0));
-	const float combNSigmaPi = std::sqrt(pow(candidate.tpcNSigmaPi(), 2.0) + pow(candidate.tofNSigmaPi(), 2.0));
-	const float combNSigmaKa = std::sqrt(pow(candidate.tpcNSigmaKa(), 2.0) + pow(candidate.tofNSigmaKa(), 2.0));
+      if (candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < cfgnSigmaCutTOF) {
+        flag = 1;
+      }
+    }
+    if (candidate.hasTOF() && candidate.pt() > cfgCutPtUpperTPC && candidate.pt() < 5.0f) {
+      const float combNSigmaPr = std::sqrt(pow(candidate.tpcNSigmaPr(), 2.0) + pow(candidate.tofNSigmaPr(), 2.0));
+      const float combNSigmaPi = std::sqrt(pow(candidate.tpcNSigmaPi(), 2.0) + pow(candidate.tofNSigmaPi(), 2.0));
+      const float combNSigmaKa = std::sqrt(pow(candidate.tpcNSigmaKa(), 2.0) + pow(candidate.tofNSigmaKa(), 2.0));
 
-	int flag2 = 0;
-	if (combNSigmaPr < 3.0)
-	  flag2 += 1;
-	if (combNSigmaPi < 3.0)
-	  flag2 += 1;
-	if (combNSigmaKa < 3.0)
-	  flag2 += 1;
-	if (!(flag2 > 1) && !(combNSigmaPr > combNSigmaPi) && !(combNSigmaPr > combNSigmaKa))
-	  {
-	    if (combNSigmaPr < cfgnSigmaCutCombTPCTOF)
-	      {
-		flag = 1;
-	      }
-	  }
+      int flag2 = 0;
+      if (combNSigmaPr < 3.0)
+        flag2 += 1;
+      if (combNSigmaPi < 3.0)
+        flag2 += 1;
+      if (combNSigmaKa < 3.0)
+        flag2 += 1;
+      if (!(flag2 > 1) && !(combNSigmaPr > combNSigmaPi) && !(combNSigmaPr > combNSigmaKa)) {
+        if (combNSigmaPr < cfgnSigmaCutCombTPCTOF) {
+          flag = 1;
+        }
       }
+    }
     if (flag == 1)
       return true;
     else
@@ -274,31 +267,26 @@ struct NetProtonCumulantsMC {
   bool selectionPIDnew(const T& candidate)
   {
     //! if pt < threshold
-    if (candidate.pt() > 0.2f && candidate.pt() <= cfgCutPtUpperTPC)
-      {
-	if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaPi()) > cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaKa()) > cfgnSigmaCutTPC)
-	  {
-	    return true;
-	  }
-	if (candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaPi()) > cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaKa()) > cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < cfgnSigmaCutTOF && std::abs(candidate.tofNSigmaPi()) > cfgnSigmaCutTOF && std::abs(candidate.tofNSigmaKa()) > cfgnSigmaCutTOF)
-	  {
-	    return true;
-	  }
+    if (candidate.pt() > 0.2f && candidate.pt() <= cfgCutPtUpperTPC) {
+      if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaPi()) > cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaKa()) > cfgnSigmaCutTPC) {
+        return true;
       }
+      if (candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaPi()) > cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaKa()) > cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < cfgnSigmaCutTOF && std::abs(candidate.tofNSigmaPi()) > cfgnSigmaCutTOF && std::abs(candidate.tofNSigmaKa()) > cfgnSigmaCutTOF) {
+        return true;
+      }
+    }
 
     //! if pt > threshold
-    if (candidate.pt() > cfgCutPtUpperTPC)
-      {
-	if (candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaPi()) > cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaKa()) > cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < cfgnSigmaCutTOF && std::abs(candidate.tofNSigmaPi()) > cfgnSigmaCutTOF && std::abs(candidate.tofNSigmaKa()) > cfgnSigmaCutTOF)
-	  {
-	    return true;
-	  }
+    if (candidate.pt() > cfgCutPtUpperTPC) {
+      if (candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaPi()) > cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaKa()) > cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < cfgnSigmaCutTOF && std::abs(candidate.tofNSigmaPi()) > cfgnSigmaCutTOF && std::abs(candidate.tofNSigmaKa()) > cfgnSigmaCutTOF) {
+        return true;
       }
+    }
     return false;
   }
-  
+
   Produces<aod::ProtGenCollEbyeTables> gen_ebye_collisions; //! MC Gen table creation
-  
+
   void processMCGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
     histos.fill(HIST("hMC"), 0.5);
@@ -306,7 +294,7 @@ struct NetProtonCumulantsMC {
       histos.fill(HIST("hMC"), 1.5);
     }
     auto cent = 0;
-    
+
     int Nchinel = 0;
     for (auto& mcParticle : mcParticles) {
       auto pdgcode = std::abs(mcParticle.pdgCode());
@@ -320,13 +308,13 @@ struct NetProtonCumulantsMC {
       histos.fill(HIST("hMC"), 2.5);
     std::vector<int64_t> SelectedEvents(collisions.size());
     int nevts = 0;
-    
+
     for (const auto& collision : collisions) {
       if (!collision.sel8() || std::abs(collision.mcCollision().posZ()) > cfgCutVertex) {
         continue;
       }
       cent = collision.centFT0M();
-      
+
       SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
     }
     SelectedEvents.resize(nevts);
@@ -337,46 +325,40 @@ struct NetProtonCumulantsMC {
     }
     histos.fill(HIST("hMC"), 4.5);
     histos.fill(HIST("Centgen"), cent);
-    
+
     // creating phi, pt, eta dstribution of generted MC particles
 
     float n_prot = 0.0;
     float n_antiprot = 0.0;
 
-    for (const auto& mcParticle : mcParticles)
-      {
-	if (mcParticle.isPhysicalPrimary())
-	  {
-	    if ((mcParticle.pt() > cfgCutPtLower) && (mcParticle.pt() < 5.0f) && (std::abs(mcParticle.eta()) < 0.8f))
-	      {
-		histos.fill(HIST("hgenPtAll"), mcParticle.pt());
-		histos.fill(HIST("hgenEtaAll"), mcParticle.eta());
-		histos.fill(HIST("hgenPhiAll"), mcParticle.phi());
-      
-		if (std::abs(mcParticle.pdgCode()) == 2212 /*&& std::abs(mcParticle.y()) < 0.5*/)
-		  {
-		    if (mcParticle.pdgCode() == 2212)
-		      {
-			histos.fill(HIST("hgenPtProton"), mcParticle.pt()); //! hist for p gen
-			histos.fill(HIST("hgenPtDistProtonVsCentrality"), mcParticle.pt(), cent);
-			histos.fill(HIST("hgenEtaProton"), mcParticle.eta());
-			histos.fill(HIST("hgenPhiProton"), mcParticle.phi());
-			if (mcParticle.pt() < cfgCutPtUpper)
-			  n_prot = n_prot + 1.0;
-		      }
-		    if (mcParticle.pdgCode() == -2212)
-		      {
-			histos.fill(HIST("hgenPtAntiproton"), mcParticle.pt()); //! hist for anti-p gen
-			histos.fill(HIST("hgenPtDistAntiprotonVsCentrality"), mcParticle.pt(), cent);
-			histos.fill(HIST("hgenEtaAntiproton"), mcParticle.eta());
-			histos.fill(HIST("hgenPhiAntiproton"), mcParticle.phi());
-			if (mcParticle.pt() < cfgCutPtUpper)
-			  n_antiprot = n_antiprot + 1.0;
-		      }
-		  }
-	      }
-	  }
-      } //! end particle loop
+    for (const auto& mcParticle : mcParticles) {
+      if (mcParticle.isPhysicalPrimary()) {
+        if ((mcParticle.pt() > cfgCutPtLower) && (mcParticle.pt() < 5.0f) && (std::abs(mcParticle.eta()) < 0.8f)) {
+          histos.fill(HIST("hgenPtAll"), mcParticle.pt());
+          histos.fill(HIST("hgenEtaAll"), mcParticle.eta());
+          histos.fill(HIST("hgenPhiAll"), mcParticle.phi());
+
+          if (std::abs(mcParticle.pdgCode()) == 2212 /*&& std::abs(mcParticle.y()) < 0.5*/) {
+            if (mcParticle.pdgCode() == 2212) {
+              histos.fill(HIST("hgenPtProton"), mcParticle.pt()); //! hist for p gen
+              histos.fill(HIST("hgenPtDistProtonVsCentrality"), mcParticle.pt(), cent);
+              histos.fill(HIST("hgenEtaProton"), mcParticle.eta());
+              histos.fill(HIST("hgenPhiProton"), mcParticle.phi());
+              if (mcParticle.pt() < cfgCutPtUpper)
+                n_prot = n_prot + 1.0;
+            }
+            if (mcParticle.pdgCode() == -2212) {
+              histos.fill(HIST("hgenPtAntiproton"), mcParticle.pt()); //! hist for anti-p gen
+              histos.fill(HIST("hgenPtDistAntiprotonVsCentrality"), mcParticle.pt(), cent);
+              histos.fill(HIST("hgenEtaAntiproton"), mcParticle.eta());
+              histos.fill(HIST("hgenPhiAntiproton"), mcParticle.phi());
+              if (mcParticle.pt() < cfgCutPtUpper)
+                n_antiprot = n_antiprot + 1.0;
+            }
+          }
+        }
+      }
+    } //! end particle loop
 
     float net_prot = n_prot - n_antiprot;
     histos.fill(HIST("hgenNetProtonVsCentrality"), net_prot, cent);
@@ -389,80 +371,72 @@ struct NetProtonCumulantsMC {
   }
   PROCESS_SWITCH(NetProtonCumulantsMC, processMCGen, "Process Generated", true);
 
-  Produces<aod::ProtRecCollEbyeTables> rec_ebye_collisions; //! MC Rec table creation
+  Produces<aod::ProtRecCollEbyeTables> rec_ebye_collisions;              //! MC Rec table creation
   Produces<aod::ProtRecCompleteEbyeTables> rec_ebye_complete_collisions; //! MC Rec table creation with tracks
-  
+
   void processMCRec(myMCRecCollision const& collision, myMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
   {
-    if (!collision.has_mcCollision())
-      {
-	return;
-      }
+    if (!collision.has_mcCollision()) {
+      return;
+    }
     auto cent = collision.centFT0M();
     histos.fill(HIST("Centrec"), cent);
     histos.fill(HIST("hMC"), 5.5);
-    histos.fill(HIST("hZvtx_after_sel"),collision.posZ());
+    histos.fill(HIST("hZvtx_after_sel"), collision.posZ());
 
     float n_prot = 0.0;
     float n_antiprot = 0.0;
-  
+
     // Start of the Monte-Carlo reconstructed tracks
-    for (const auto& track : tracks)
+    for (const auto& track : tracks) {
+      if (!track.has_mcParticle()) //! check if track has corresponding MC particle
       {
-	if (!track.has_mcParticle()) //! check if track has corresponding MC particle
-	  {
-	    continue;
-	  }
-	if (!track.isPVContributor()) //! track check as used in data
-	  {
-	    continue;
-	  }
+        continue;
+      }
+      if (!track.isPVContributor()) //! track check as used in data
+      {
+        continue;
+      }
 
-	auto particle = track.mcParticle();
-        if (particle.isPhysicalPrimary())
-	  {
-	    histos.fill(HIST("hrecPtAll"), particle.pt());
-	    histos.fill(HIST("hrecEtaAll"), particle.eta());
-	    histos.fill(HIST("hrecPhiAll"), particle.phi());
+      auto particle = track.mcParticle();
+      if (particle.isPhysicalPrimary()) {
+        histos.fill(HIST("hrecPtAll"), particle.pt());
+        histos.fill(HIST("hrecEtaAll"), particle.eta());
+        histos.fill(HIST("hrecPhiAll"), particle.phi());
 
-	    bool trackSelected;
-	    if (cfgPIDchoice == 0)
-	      trackSelected = selectionPIDold(track);
-	    if (cfgPIDchoice == 1)
-	      trackSelected = selectionPIDnew(track);
-	    
-	    if (trackSelected)
-	      {
-		rec_ebye_complete_collisions(rec_ebye_collisions.lastIndex(), particle.pt(), particle.eta(), track.sign());
-		if (track.sign() > 0)
-		  {
-		    histos.fill(HIST("hrecPtProton"), particle.pt()); //! hist for p rec
-		    histos.fill(HIST("hrecPtDistProtonVsCentrality"), particle.pt(), cent);
-		    histos.fill(HIST("hrecEtaProton"), particle.eta());
-		    histos.fill(HIST("hrecPhiProton"), particle.phi());
-		    if (particle.pt() < cfgCutPtUpper)
-		      n_prot = n_prot + 1.0;
-		    if (particle.pdgCode() == 2212)
-		      {
-			histos.fill(HIST("hrecTruePtProton"), particle.pt()); //! hist for p purity
-		      }
-		  }
-		if (track.sign() < 0)
-		  {
-		    histos.fill(HIST("hrecPtAntiproton"), particle.pt()); //! hist for anti-p rec
-		    histos.fill(HIST("hrecPtDistAntiprotonVsCentrality"), particle.pt(), cent);
-		    histos.fill(HIST("hrecEtaAntiproton"), particle.eta());
-		    histos.fill(HIST("hrecPhiAntiproton"), particle.phi());
-		    if (particle.pt() < cfgCutPtUpper)
-		      n_antiprot = n_antiprot + 1.0;
-		    if (particle.pdgCode() == -2212)
-		      {
-			histos.fill(HIST("hrecTruePtAntiproton"), particle.pt()); //! hist for anti-p purity
-		      }
-		  }
-	      } //! checking PID
-	  } //! checking if primary		
-      } //! end track loop
+        bool trackSelected;
+        if (cfgPIDchoice == 0)
+          trackSelected = selectionPIDold(track);
+        if (cfgPIDchoice == 1)
+          trackSelected = selectionPIDnew(track);
+
+        if (trackSelected) {
+          rec_ebye_complete_collisions(rec_ebye_collisions.lastIndex(), particle.pt(), particle.eta(), track.sign());
+          if (track.sign() > 0) {
+            histos.fill(HIST("hrecPtProton"), particle.pt()); //! hist for p rec
+            histos.fill(HIST("hrecPtDistProtonVsCentrality"), particle.pt(), cent);
+            histos.fill(HIST("hrecEtaProton"), particle.eta());
+            histos.fill(HIST("hrecPhiProton"), particle.phi());
+            if (particle.pt() < cfgCutPtUpper)
+              n_prot = n_prot + 1.0;
+            if (particle.pdgCode() == 2212) {
+              histos.fill(HIST("hrecTruePtProton"), particle.pt()); //! hist for p purity
+            }
+          }
+          if (track.sign() < 0) {
+            histos.fill(HIST("hrecPtAntiproton"), particle.pt()); //! hist for anti-p rec
+            histos.fill(HIST("hrecPtDistAntiprotonVsCentrality"), particle.pt(), cent);
+            histos.fill(HIST("hrecEtaAntiproton"), particle.eta());
+            histos.fill(HIST("hrecPhiAntiproton"), particle.phi());
+            if (particle.pt() < cfgCutPtUpper)
+              n_antiprot = n_antiprot + 1.0;
+            if (particle.pdgCode() == -2212) {
+              histos.fill(HIST("hrecTruePtAntiproton"), particle.pt()); //! hist for anti-p purity
+            }
+          }
+        } //! checking PID
+      } //! checking if primary
+    } //! end track loop
 
     float net_prot = n_prot - n_antiprot;
     histos.fill(HIST("hrecNetProtonVsCentrality"), net_prot, cent);
