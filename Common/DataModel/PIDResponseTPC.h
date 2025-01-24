@@ -293,9 +293,9 @@ struct binning {
     } else if (valueToBin >= binned_max) {
       table(overflowBin);
     } else if (valueToBin >= 0) {
-      table(static_cast<typename binned_t>((valueToBin / bin_width) + 0.5f));
+      table(static_cast<binned_t>((valueToBin / bin_width) + 0.5f));
     } else {
-      table(static_cast<typename binned_t>((valueToBin / bin_width) - 0.5f));
+      table(static_cast<binned_t>((valueToBin / bin_width) - 0.5f));
     }
   }
 
