@@ -81,7 +81,7 @@ struct BcSelectionTask {
   bool isPP = 1;                         // default value
   TriggerAliases* aliases = nullptr;
   EventSelectionParams* par = nullptr;
-  std::map<uint64_t, uint32_t>* mapQC = nullptr;
+  std::map<uint64_t, uint32_t>* mapRCT = nullptr;
   std::map<int64_t, std::vector<int16_t>> mapInactiveChips; // number of inactive chips vs orbit per layer
   int64_t prevOrbitForInactiveChips = 0;                    // cached next stored orbit in the inactive chip map
   int64_t nextOrbitForInactiveChips = 0;                    // cached previous stored orbit in the inactive chip map
@@ -243,9 +243,9 @@ struct BcSelectionTask {
         histos.get<TH1>(HIST("hCounterTVX"))->Fill(Form("%d", bc.runNumber()), 1);
       }
 
-      uint32_t qc = 0;
+      uint32_t rct = 0;
       // Fill bc selection columns
-      bcsel(alias, selection, qc, foundFT0, foundFV0, foundFDD, foundZDC);
+      bcsel(alias, selection, rct, foundFT0, foundFV0, foundFDD, foundZDC);
     }
   }
   PROCESS_SWITCH(BcSelectionTask, processRun2, "Process Run2 event selection", true);
@@ -318,12 +318,12 @@ struct BcSelectionTask {
       std::map<std::string, std::string> metadata;
       metadata["run"] = Form("%d", run);
       ccdb->setFatalWhenNull(0);
-      mapQC = ccdb->getSpecific<std::map<uint64_t, uint32_t>>("Users/j/jian/RCT", ts, metadata);
+      mapRCT = ccdb->getSpecific<std::map<uint64_t, uint32_t>>("Users/j/jian/RCT", ts, metadata);
       ccdb->setFatalWhenNull(1);
-      if (mapQC == nullptr) {
-        LOGP(info, "qc object missing... inserting dummy qc flags");
-        mapQC = new std::map<uint64_t, uint32_t>;
-        mapQC->insert(std::pair<uint64_t, uint32_t>(sorTimestamp, 0));
+      if (mapRCT == nullptr) {
+        LOGP(info, "rct object missing... inserting dummy rct flags");
+        mapRCT = new std::map<uint64_t, uint32_t>;
+        mapRCT->insert(std::pair<uint64_t, uint32_t>(sorTimestamp, 0));
       }
     }
 
@@ -340,12 +340,12 @@ struct BcSelectionTask {
 
     // bc loop
     for (auto bc : bcs) { // o2-linter: disable=const-ref-in-for-loop
-      // store qc flags
-      auto itqc = mapQC->upper_bound(bc.timestamp());
-      if (itqc != mapQC->begin())
-        itqc--;
-      uint32_t qc = itqc->second;
-      LOGP(debug, "sor={} eor={} ts={} qc={}", sorTimestamp, eorTimestamp, bc.timestamp(), qc);
+      // store rct flags
+      auto itrct = mapRCT->upper_bound(bc.timestamp());
+      if (itrct != mapRCT->begin())
+        itrct--;
+      uint32_t rct = itrct->second;
+      LOGP(debug, "sor={} eor={} ts={} rct={}", sorTimestamp, eorTimestamp, bc.timestamp(), rct);
 
       uint32_t alias{0};
       // workaround for pp2022 (trigger info is shifted by -294 bcs)
@@ -527,7 +527,7 @@ struct BcSelectionTask {
       }
 
       // Fill bc selection columns
-      bcsel(alias, selection, qc, foundFT0, foundFV0, foundFDD, foundZDC);
+      bcsel(alias, selection, rct, foundFT0, foundFV0, foundFDD, foundZDC);
     }
   }
   PROCESS_SWITCH(BcSelectionTask, processRun3, "Process Run3 event selection", false);
@@ -698,8 +698,8 @@ struct EventSelectionTask {
     selection |= (spdClusters < par->fSPDClsVsTklA + nTkl * par->fSPDClsVsTklB) ? BIT(kNoSPDClsVsTklBG) : 0;
     selection |= !(nTkl < 6 && multV0C012 > par->fV0C012vsTklA + nTkl * par->fV0C012vsTklB) ? BIT(kNoV0C012vsTklBG) : 0;
 
-    // copy qc flags from bcsel table
-    uint32_t qc = bc.qc_raw();
+    // copy rct flags from bcsel table
+    uint32_t rct = bc.rct_raw();
 
     // apply int7-like selections
     bool sel7 = 1;
@@ -726,7 +726,7 @@ struct EventSelectionTask {
       }
     }
 
-    evsel(alias, selection, qc, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, 0, 0, 0);
+    evsel(alias, selection, rct, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, 0, 0, 0);
   }
   PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
@@ -781,8 +781,8 @@ struct EventSelectionTask {
         int32_t foundFDD = bc.foundFDDId();
         int32_t foundZDC = bc.foundZDCId();
         int bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
-        uint32_t qc = 0;
-        evsel(bc.alias_raw(), bc.selection_raw(), qc, kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, bcInTF, -1, -1);
+        uint32_t rct = 0;
+        evsel(bc.alias_raw(), bc.selection_raw(), rct, kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, bcInTF, -1, -1);
       }
       return;
     }
@@ -1196,8 +1196,8 @@ struct EventSelectionTask {
       selection |= (vNoCollInSameRofStandard[colIndex] && vNoCollInSameRofWithCloseVz[colIndex]) ? BIT(kNoCollInRofStandard) : 0;
       selection |= vNoHighMultCollInPrevRof[colIndex] ? BIT(kNoHighMultCollInPrevRof) : 0;
 
-      // copy qc flags from bcsel table
-      uint32_t qc = bc.qc_raw();
+      // copy rct flags from bcsel table
+      uint32_t rct = bc.rct_raw();
 
       // apply int7-like selections
       bool sel7 = 0;
@@ -1218,7 +1218,7 @@ struct EventSelectionTask {
 
       int bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
 
-      evsel(alias, selection, qc, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, bcInTF,
+      evsel(alias, selection, rct, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, bcInTF,
             vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
     }
   }

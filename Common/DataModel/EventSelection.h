@@ -53,7 +53,7 @@ namespace evsel
 {
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);                                //! Bitmask of fired trigger aliases (see TriggerAliases.h for definitions)
 DECLARE_SOA_BITMAP_COLUMN(Selection, selection, 64);                        //! Bitmask of selection flags (see EventSelectionParams.h for definitions)
-DECLARE_SOA_BITMAP_COLUMN(Qc, qc, 32);                                      //! Bitmask of qc flags
+DECLARE_SOA_BITMAP_COLUMN(Rct, rct, 32);                                    //! Bitmask of RCT flags
 DECLARE_SOA_COLUMN(Sel7, sel7, bool);                                       //! Event selection decision based on V0A & V0C
 DECLARE_SOA_COLUMN(Sel8, sel8, bool);                                       //! Event selection decision based on TVX
 DECLARE_SOA_INDEX_COLUMN_FULL(FoundBC, foundBC, int, BCs, "_foundBC");      //! BC entry index in BCs table (-1 if doesn't exist)
@@ -68,14 +68,14 @@ DECLARE_SOA_COLUMN(SumAmpFT0CInTimeRange, ft0cOccupancyInTimeRange, float); //! 
 
 // bc-joinable event selection decisions
 DECLARE_SOA_TABLE(BcSels, "AOD", "BCSEL", //!
-                  evsel::Alias, evsel::Selection, evsel::Qc, evsel::FoundFT0Id, evsel::FoundFV0Id, evsel::FoundFDDId, evsel::FoundZDCId);
+                  evsel::Alias, evsel::Selection, evsel::Rct, evsel::FoundFT0Id, evsel::FoundFV0Id, evsel::FoundFDDId, evsel::FoundZDCId);
 using BcSel = BcSels::iterator;
 
 // collision-joinable event selection decisions
 DECLARE_SOA_TABLE(EvSels, "AOD", "EVSEL", //!
                   evsel::Alias,
                   evsel::Selection,
-                  evsel::Qc,
+                  evsel::Rct,
                   evsel::Sel7,
                   evsel::Sel8,
                   evsel::FoundBCId,
