@@ -13,12 +13,12 @@
 /// \brief Task for analyzing efficiency of proton, and net-proton distributions in MC reconstructed and generated
 /// \author Swati Saha
 
+#include <CCDB/BasicCCDBManager.h>
 #include <cstdlib>
 #include <cmath>
 #include <array>
 #include <vector>
 #include <string>
-#include <CCDB/BasicCCDBManager.h>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/ASoAHelpers.h"
