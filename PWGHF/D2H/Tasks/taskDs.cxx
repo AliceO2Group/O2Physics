@@ -207,6 +207,10 @@ struct HfTaskDs {
           histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, axesWithNpv);
         }
       } else if (doprocessDataWithMlAndCentFT0C || doprocessDataWithMlAndCentFT0M || doprocessDataWithMlAndCentNTracksPV || doprocessDataWithMl || doprocessMcWithMlAndCentFT0C || doprocessMcWithMlAndCentFT0M || doprocessMcWithMlAndCentNTracksPV || doprocessMcWithMl) {
+        if (i == DataType::McBkg && !fillMcBkgHistos) {
+          continue;
+        }
+
         if (i == DataType::Data) { // If data do not fill PV contributors in sparse
           histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, axesMl);
         } else if (i == DataType::McDsNonPrompt) { // If data do not fill PV contributors in sparse
