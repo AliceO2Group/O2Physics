@@ -112,9 +112,11 @@ DECLARE_SOA_COLUMN(S12A, s12a, float);         //! Weighted multiplicity (p = 1,
 DECLARE_SOA_COLUMN(S13A, s13a, float);         //! Weighted multiplicity (p = 1, k = 3)
 DECLARE_SOA_COLUMN(S31A, s31a, float);         //! Weighted multiplicity (p = 3, k = 1)
 DECLARE_SOA_COLUMN(CORR2REF, corr2ref, float); //!  Ref Flow correlator <2>
+DECLARE_SOA_COLUMN(CORR2REFetagap, corr2refetagap, float); //!  Ref Flow correlator <2>
 DECLARE_SOA_COLUMN(CORR4REF, corr4ref, float); //!  Ref Flow correlator <4>
 DECLARE_SOA_COLUMN(M11REF, m11ref, float);     //!  Weighted multiplicity of <<2>> for reference flow
 DECLARE_SOA_COLUMN(M1111REF, m1111ref, float); //!  Weighted multiplicity of <<4>> for reference flow
+DECLARE_SOA_COLUMN(M11REFetagap, m11refetagap, float); //!  Weighted multiplicity of <<2>>  etagap for reference flow
 } // namespace reducedevent
 
 DECLARE_SOA_TABLE_STAGED(ReducedEvents, "REDUCEDEVENT", //!   Main event information table
@@ -166,7 +168,7 @@ DECLARE_SOA_TABLE(ReducedEventsQvectorCentrExtra, "AOD", "REQVECCTREXTA", //!   
                   reducedevent::QvecBAllRe, reducedevent::QvecBAllIm, reducedevent::NTrkBAll);
 
 DECLARE_SOA_TABLE(ReducedEventsRefFlow, "AOD", "REREFFLOW", //!    Event Ref Flow information
-                  reducedevent::M11REF, reducedevent::M1111REF, reducedevent::CORR2REF, reducedevent::CORR4REF, cent::CentFT0C);
+                  reducedevent::M11REF, reducedevent::M11REFetagap, reducedevent::M1111REF, reducedevent::CORR2REF, reducedevent::CORR2REFetagap, reducedevent::CORR4REF, cent::CentFT0C);
 
 DECLARE_SOA_TABLE(ReducedEventsQvectorZN, "AOD", "REQVECTORZN", //!    Event Q-vector information from ZNs detectors
                   reducedevent::Q1ZNAX, reducedevent::Q1ZNAY, reducedevent::Q1ZNCX, reducedevent::Q1ZNCY);
@@ -639,6 +641,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, ReducedTracks, "_0"); //! Ind
 DECLARE_SOA_INDEX_COLUMN_FULL(Index1, index1, int, ReducedTracks, "_1"); //! Index to second prong
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, Tracks, "_0");        //! Index of first prong in Tracks table
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1");        //! Index of second prong in Tracks table
+DECLARE_SOA_BITMAP_COLUMN(EventSelection, evSelection, 8);               //! Event selection bits (ambiguity, splitting candidate)
 DECLARE_SOA_COLUMN(Mass, mass, float);                                   //!
 DECLARE_SOA_COLUMN(Pt, pt, float);                                       //!
 DECLARE_SOA_COLUMN(Eta, eta, float);                                     //!
@@ -781,6 +784,7 @@ DECLARE_SOA_TABLE(DielectronsAll, "AOD", "RTDIELECTRONALL", //!
 
 DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
+                  evsel::Selection, reducedpair::EventSelection,
                   reducedevent::MCPosX, reducedevent::MCPosY, reducedevent::MCPosZ,
                   reducedpair::Mass,
                   reducedpair::McDecision,

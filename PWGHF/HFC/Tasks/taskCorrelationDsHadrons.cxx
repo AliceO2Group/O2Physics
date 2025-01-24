@@ -14,6 +14,11 @@
 /// \author Grazia Luparello <grazia.luparello@cern.ch>
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -40,6 +45,7 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<bool> useSel8ForEff{"useSel8ForEff", true, "Flag for applying sel8 for collision selection"};
   Configurable<bool> selNoSameBunchPileUpColl{"selNoSameBunchPileUpColl", true, "Flag for rejecting the collisions associated with the same bunch crossing"};
   Configurable<bool> removeCollWSplitVtx{"removeCollWSplitVtx", false, "Flag for rejecting the splitted collisions"};
+  Configurable<bool> loadAccXEffFromCCDB{"loadAccXEffFromCCDB", false, "Flag for loading efficiency distributions from CCDB"};
   // Configurable<bool> doMcCollisionCheck{"doMcCollisionCheck", false, "Flag for applying the collision check and selection based on MC collision info"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds (avoid the case of flag = 0, no outputMlScore)"};
   Configurable<int> nTpcCrossedRaws{"nTpcCrossedRaws", 70, "Number of crossed TPC Rows"};
@@ -59,8 +65,8 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
   Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for assoc particle efficiency"};
-  Configurable<std::vector<double>> mlOutputPrompt{"mlScorePrompt", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt"};
-  Configurable<std::vector<double>> mlOutputBkg{"mlScoreBkg", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for bkg"};
+  Configurable<std::vector<double>> mlOutputPrompt{"mlOutputPrompt", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt"};
+  Configurable<std::vector<double>> mlOutputBkg{"mlOutputBkg", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for bkg"};
   Configurable<std::vector<double>> binsPtEfficiencyD{"binsPtEfficiencyD", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for D-meson efficiency"};
   Configurable<std::vector<double>> binsPtEfficiencyHad{"binsPtEfficiencyHad", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for associated particle efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", {1., 1., 1., 1., 1., 1.}, "efficiency values for Ds meson"};
@@ -71,15 +77,16 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<std::vector<double>> sidebandLeftOuter{"sidebandLeftOuter", {1.9040, 1.9040, 1.9040, 1.9040, 1.9040, 1.9040, 1.9040, 1.9040}, "Outer values of left sideband vs pT"};
   Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", {2.0000, 2.0000, 2.0000, 2.0000, 2.0000, 2.0000, 2.0000, 2.0000}, "Inner values of right sideband vs pT"};
   Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", {2.0320, 2.0320, 2.0320, 2.0320, 2.0320, 2.0320, 2.0320, 2.0320}, "Outer values of right sideband vs pT"};
-  ConfigurableAxis binsMassD{"binsMassD", {200, 1.7, 2.25}, "inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
-  ConfigurableAxis binsBdtScore{"binsBdtScore", {100, 0., 1.}, "Bdt output scores"};
-  ConfigurableAxis binsEta{"binsEta", {100, -2., 2.}, "#it{#eta}"};
-  ConfigurableAxis binsPhi{"binsPhi", {64, -PIHalf, 3. * PIHalf}, "#it{#varphi}"};
-  ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 8000.}, "Multiplicity as FT0M signal amplitude"};
-  ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
-  ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
+  // CCDB configuration
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> associatedEffCcdbPath{"associatedEffCcdbPath", "", "CCDB path for associated efficiency"};
+  Configurable<std::string> promptEffCcdbPath{"promptEffCcdbPath", "", "CCDB path for trigger efficiency"};
+  Configurable<std::string> fdEffCcdbPath{"fdEffCcdbPath", "", "CCDB path for trigger efficiency"};
+  Configurable<int64_t> timestampCcdb{"timestampCcdb", -1, "timestamp of the efficiency files used to query in CCDB"};
+  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
-  HfHelper hfHelper;
+  std::shared_ptr<TH1> mEfficiencyD = nullptr;
+  std::shared_ptr<TH1> mEfficiencyAssociated = nullptr;
 
   enum CandidateStep {
     kCandidateStepMcGenDsToKKPi = 0,
@@ -98,7 +105,14 @@ struct HfTaskCorrelationDsHadrons {
                         kAssocTrackStepRecoSpecies,
                         kAssocTrackNSteps };
 
+  HfHelper hfHelper;
+  SliceCache cache;
+
+  Service<ccdb::BasicCCDBManager> ccdb;
+
+  using DsHadronPair = soa::Join<aod::DsHadronPair, aod::DsHadronRecoInfo>;
   using DsHadronPairFull = soa::Join<aod::DsHadronPair, aod::DsHadronRecoInfo, aod::DsHadronGenInfo>;
+  using DsHadronPairWithMl = soa::Join<aod::DsHadronPair, aod::DsHadronRecoInfo, aod::DsHadronMlInfo, aod::TrackRecoInfo>;
   using DsHadronPairFullWithMl = soa::Join<aod::DsHadronPair, aod::DsHadronRecoInfo, aod::DsHadronGenInfo, aod::DsHadronMlInfo, aod::TrackRecoInfo>;
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi, aod::HfCand3ProngMcRec>>; // flagDsFilter applied
   using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;                                                         // flagDsFilter applied
@@ -106,6 +120,20 @@ struct HfTaskCorrelationDsHadrons {
 
   Filter flagDsFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::DsToKKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs);
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
+
+  Preslice<CandDsMcReco> perCollisionCand = o2::aod::hf_cand::collisionId;
+  Preslice<CandDsMcGen> perCollisionCandMc = o2::aod::mcparticle::mcCollisionId;
+  Preslice<TracksWithMc> perCollision = o2::aod::track::collisionId;
+  Preslice<o2::aod::McParticles> perCollisionMc = o2::aod::mcparticle::mcCollisionId;
+  PresliceUnsorted<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::McCollisionLabels>> collPerCollMc = o2::aod::mccollisionlabel::mcCollisionId;
+
+  ConfigurableAxis binsMassD{"binsMassD", {200, 1.7, 2.25}, "inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
+  ConfigurableAxis binsBdtScore{"binsBdtScore", {100, 0., 1.}, "Bdt output scores"};
+  ConfigurableAxis binsEta{"binsEta", {100, -2., 2.}, "#it{#eta}"};
+  ConfigurableAxis binsPhi{"binsPhi", {64, -PIHalf, 3. * PIHalf}, "#it{#varphi}"};
+  ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 8000.}, "Multiplicity as FT0M signal amplitude"};
+  ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
+  ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -216,9 +244,29 @@ struct HfTaskCorrelationDsHadrons {
       hAssocTracks->GetAxis(2)->SetTitle("multiplicity");
       hAssocTracks->GetAxis(3)->SetTitle("pos z");
     }
+
+    // Loading efficiency histograms from CCDB
+    if (applyEfficiency && loadAccXEffFromCCDB) {
+      ccdb->setURL(ccdbUrl);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
+
+      mEfficiencyD = std::shared_ptr<TH1>(ccdb->getForTimeStamp<TH1F>(promptEffCcdbPath, timestampCcdb));
+      if (mEfficiencyD == nullptr) {
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", promptEffCcdbPath.value.c_str());
+      }
+      LOGF(info, "Loaded trigger efficiency (prompt D) histogram from %s", promptEffCcdbPath.value.c_str());
+
+      mEfficiencyAssociated = std::shared_ptr<TH1>(ccdb->getForTimeStamp<TH1F>(associatedEffCcdbPath, timestampCcdb));
+      if (mEfficiencyAssociated == nullptr) {
+        LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", associatedEffCcdbPath.value.c_str());
+      }
+      LOGF(info, "Loaded associated efficiency histogram from %s", associatedEffCcdbPath.value.c_str());
+    }
   }
 
-  void processData(DsHadronPairFullWithMl const& pairEntries,
+  void processData(DsHadronPairWithMl const& pairEntries,
                    aod::DsCandRecoInfo const& candidates)
   {
     for (const auto& candidate : candidates) {
@@ -234,6 +282,9 @@ struct HfTaskCorrelationDsHadrons {
       double efficiencyWeightD = 1.;
       if (applyEfficiency) {
         efficiencyWeightD = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
+        if (loadAccXEffFromCCDB) {
+          efficiencyWeightD = 1. / mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD));
+        }
       }
       registry.fill(HIST("hMassDsVsPt"), massD, ptD, efficiencyWeightD);
       registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
@@ -264,6 +315,9 @@ struct HfTaskCorrelationDsHadrons {
       double efficiencyWeight = 1.;
       if (applyEfficiency) {
         efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
+        if (loadAccXEffFromCCDB) {
+          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
+        }
       }
 
       // in signal region
@@ -306,6 +360,9 @@ struct HfTaskCorrelationDsHadrons {
       double efficiencyWeightD = 1.;
       if (applyEfficiency) {
         efficiencyWeightD = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
+        if (loadAccXEffFromCCDB) {
+          efficiencyWeightD = 1. / mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD));
+        }
       }
       if (isDsPrompt) {
         registry.fill(HIST("hMassPromptDsVsPt"), massD, ptD, efficiencyWeightD);
@@ -345,6 +402,9 @@ struct HfTaskCorrelationDsHadrons {
       double efficiencyWeight = 1.;
       if (applyEfficiency) {
         efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
+        if (loadAccXEffFromCCDB) {
+          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
+        }
       }
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
@@ -410,7 +470,7 @@ struct HfTaskCorrelationDsHadrons {
   }
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processMcGen, "Process MC Gen mode", false);
 
-  void processDataME(DsHadronPairFullWithMl const& pairEntries)
+  void processDataME(DsHadronPairWithMl const& pairEntries)
   {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
@@ -436,6 +496,9 @@ struct HfTaskCorrelationDsHadrons {
       double efficiencyWeight = 1.;
       if (applyEfficiency) {
         efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
+        if (loadAccXEffFromCCDB) {
+          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
+        }
       }
 
       // in signal region
@@ -459,6 +522,48 @@ struct HfTaskCorrelationDsHadrons {
     }
   }
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processDataME, "Process data ME", false);
+
+  void processDerivedDataME(DsHadronPair const& pairEntries)
+  {
+    for (const auto& pairEntry : pairEntries) {
+      // define variables for widely used quantities
+      float deltaPhi = pairEntry.deltaPhi();
+      float deltaEta = pairEntry.deltaEta();
+      float ptD = pairEntry.ptD();
+      float ptHadron = pairEntry.ptHadron();
+      float massD = pairEntry.mD();
+      int poolBin = pairEntry.poolBin();
+      int ptBinD = o2::analysis::findBin(binsPtD, ptD);
+
+      double efficiencyWeight = 1.;
+      if (applyEfficiency) {
+        efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
+        if (loadAccXEffFromCCDB) {
+          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
+        }
+      }
+
+      // in signal region
+      if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
+        registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
+      }
+      // in sideband left region
+      if (massD > sidebandLeftOuter->at(ptBinD) && massD < sidebandLeftInner->at(ptBinD)) {
+        registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hDeltaEtaPtIntSidebandLeft"), deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaPhiPtIntSidebandLeft"), deltaPhi, efficiencyWeight);
+      }
+      // in sideband right region
+      if (massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD)) {
+        registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hDeltaEtaPtIntSidebandRight"), deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaPhiPtIntSidebandRight"), deltaPhi, efficiencyWeight);
+      }
+    }
+  }
+  PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processDerivedDataME, "Process derived data ME", false);
 
   /// D-Hadron correlation pair filling task, from pair tables - for MC reco-level analysis (candidates matched to true signal only, but also bkg sources are studied)
   void processMcRecME(DsHadronPairFullWithMl const& pairEntries)
@@ -490,6 +595,9 @@ struct HfTaskCorrelationDsHadrons {
       double efficiencyWeight = 1.;
       if (applyEfficiency) {
         efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
+        if (loadAccXEffFromCCDB) {
+          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
+        }
       }
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
@@ -523,11 +631,6 @@ struct HfTaskCorrelationDsHadrons {
     }
   }
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processMcRecME, "Process MC Reco ME", false);
-
-  SliceCache cache;
-  Preslice<CandDsMcReco> perCollisionCand = o2::aod::hf_cand::collisionId;
-  Preslice<CandDsMcGen> perCollisionCandMc = o2::aod::mcparticle::mcCollisionId;
-  PresliceUnsorted<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::McCollisionLabels>> collPerCollMc = o2::aod::mccollisionlabel::mcCollisionId;
 
   /// Ds-Hadron correlation - for calculating candidate reconstruction efficiency using MC reco-level analysis
   void processMcCandEfficiency(soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::McCollisionLabels> const& collisions,
@@ -726,9 +829,6 @@ struct HfTaskCorrelationDsHadrons {
     }
   }
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processMcCandEfficiencyWoColl, "Process MC for calculating candidate reconstruction efficiency", false);
-
-  Preslice<TracksWithMc> perCollision = o2::aod::track::collisionId;
-  Preslice<o2::aod::McParticles> perCollisionMc = o2::aod::mcparticle::mcCollisionId;
 
   /// Ds-Hadron correlation - for calculating associated particle tracking efficiency using MC reco-level analysis
   void processMcTrackEfficiency(soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::McCollisionLabels> const& collisions,

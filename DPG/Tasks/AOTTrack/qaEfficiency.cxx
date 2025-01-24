@@ -365,7 +365,7 @@ struct QaEfficiency {
     hPtItsTpcTofStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated", PDGs[histogramIndex]), "Generated (from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtmotherGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated_mother", PDGs[histogramIndex]), "Generated Mother " + tagPt, kTH1D, {axisPt});
-    hdecaylengthmother[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/decayLength", PDGs[histogramIndex]), "Decay Length of mother particle" + tagPt, kTH1D, {axisPt});
+    hdecaylengthmother[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/decayLength", PDGs[histogramIndex]), "Decay Length of mother particle" + tagPt, kTH1D, {axisDecayLength});
 
     // Ter
     hPtItsTpcTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (from secondary weak decays) " + tagPt, kTH1D, {axisPt});
@@ -1156,12 +1156,13 @@ struct QaEfficiency {
           for (const auto& pdgToCheck : mothersPDGs.value) {
             if (mother.pdgCode() == pdgToCheck) {
               motherIsAccepted = true;
-              break;
-            }
-            if (motherIsAccepted) {
               // Calculate the decay length
               double decayLength = std::sqrt(std::pow(mother.vx() - mother.mcCollision().posX(), 2) + std::pow(mother.vy() - mother.mcCollision().posY(), 2) + std::pow(mother.vz() - mother.mcCollision().posZ(), 2));
               hdecaylengthmother[histogramIndex]->Fill(decayLength);
+              break;
+            }
+            if (motherIsAccepted) {
+              break;
             }
           }
         }
@@ -1260,10 +1261,11 @@ struct QaEfficiency {
             for (const auto& pdgToCheck : mothersPDGs.value) {
               if (mother.pdgCode() == pdgToCheck) {
                 motherIsAccepted = true; // Mother matches the list of specified PDGs
+                hPtmotherGenerated[histogramIndex]->Fill(mother.pt()); // Fill generated pT for mother
                 break;
               }
               if (motherIsAccepted) {
-                hPtmotherGenerated[histogramIndex]->Fill(mother.pt()); // Fill generated pT for mother
+                break;
               }
             }
           }

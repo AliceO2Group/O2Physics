@@ -74,6 +74,10 @@ class FemtoDreamContainerThreeBody
 
     mHistogramRegistry->add((folderName + "/relTripletDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
     mHistogramRegistry->add((folderName + "/relTripletQ3Mult").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
+    mHistogramRegistry->add((folderName + "/mT1").c_str(), ";mT; Q3", kTH2F, {{1000, 0, 25}, femtoObsAxis});
+    mHistogramRegistry->add((folderName + "/mT2").c_str(), ";mT; Q3", kTH2F, {{1000, 0, 25}, femtoObsAxis});
+    mHistogramRegistry->add((folderName + "/mT3").c_str(), ";mT; Q3", kTH2F, {{1000, 0, 25}, femtoObsAxis});
+    mHistogramRegistry->add((folderName + "/mTAverage").c_str(), ";mT; Q3", kTH2F, {{1000, 0, 25}, femtoObsAxis});
   }
 
   /// Initializes specialized Monte Carlo truth histograms for the task in case of three-body femtoscopy
@@ -145,6 +149,7 @@ class FemtoDreamContainerThreeBody
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
   void setTriplet_base(const float femtoObs, T const& /*part1*/, T const& /*part2*/, T const& /*part3*/, const int mult)
   {
+    // FILL MAIN Q3 info
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relTripletDist"), femtoObs);
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relTripletQ3Mult"), femtoObs, mult);
   }
@@ -180,6 +185,15 @@ class FemtoDreamContainerThreeBody
   void setTriplet(T const& part1, T const& part2, T const& part3, const int mult, const float femtoObs)
   {
     float femtoObsMC;
+    float mT1 = FemtoDreamMath::getmT(part1, mMassOne, part2, mMassTwo);
+    float mT2 = FemtoDreamMath::getmT(part2, mMassTwo, part3, mMassThree);
+    float mT3 = FemtoDreamMath::getmT(part1, mMassOne, part3, mMassThree);
+    float mTAverage = (mT1 + mT2 + mT3) / 3.;
+    // FILL mT info
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kRecon]) + HIST("/mT1"), mT1, femtoObs);
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kRecon]) + HIST("/mT2"), mT2, femtoObs);
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kRecon]) + HIST("/mT3"), mT3, femtoObs);
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kRecon]) + HIST("/mTAverage"), mTAverage, femtoObs);
 
     if (mHistogramRegistry) {
       setTriplet_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(femtoObs, part1, part2, part3, mult);

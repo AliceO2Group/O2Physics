@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateSelectorToXiPi.cxx
+/// \file candidateSelectorXic0ToXiPiKf.cxx
 /// \brief Xic0 → Xi Pi selection task
 /// \author Ran Tu <ran.tu@cern.ch>, Fudan University
 
@@ -29,11 +29,11 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::analysis;
 
-enum pidInfoStored {
-  kPiFromLam = 0,
-  kPrFromLam,
-  kPiFromCasc,
-  kPiFromCharm
+enum PidInfoStored {
+  KPiFromLam = 0,
+  KPrFromLam,
+  KPiFromCasc,
+  KPiFromCharm
 };
 
 /// Struct for applying Xic0 -> Xi pi selection cuts
@@ -407,28 +407,28 @@ struct HfCandidateSelectorXic0ToXiPiKf {
       }
 
       if (trackPiFromLam.hasTPC()) {
-        SETBIT(infoTpcStored, kPiFromLam);
+        SETBIT(infoTpcStored, KPiFromLam);
       }
       if (trackPrFromLam.hasTPC()) {
-        SETBIT(infoTpcStored, kPrFromLam);
+        SETBIT(infoTpcStored, KPiFromLam);
       }
       if (trackPiFromCasc.hasTPC()) {
-        SETBIT(infoTpcStored, kPiFromCasc);
+        SETBIT(infoTpcStored, KPiFromCasc);
       }
       if (trackPiFromCharm.hasTPC()) {
-        SETBIT(infoTpcStored, kPiFromCharm);
+        SETBIT(infoTpcStored, KPiFromCharm);
       }
       if (trackPiFromLam.hasTOF()) {
-        SETBIT(infoTofStored, kPiFromLam);
+        SETBIT(infoTofStored, KPiFromLam);
       }
       if (trackPrFromLam.hasTOF()) {
-        SETBIT(infoTofStored, kPrFromLam);
+        SETBIT(infoTofStored, KPiFromLam);
       }
       if (trackPiFromCasc.hasTOF()) {
-        SETBIT(infoTofStored, kPiFromCasc);
+        SETBIT(infoTofStored, KPiFromCasc);
       }
       if (trackPiFromCharm.hasTOF()) {
-        SETBIT(infoTofStored, kPiFromCharm);
+        SETBIT(infoTofStored, KPiFromCharm);
       }
 
       if (usePidTpcOnly) {

@@ -119,8 +119,8 @@ enum eEventCuts {
                                    // b) Run 2: "kINT7" (at the moment the usage of this one is enfored in fact)
                                    // c) Run 1: TBI 20241209 check if I can use kINT7 also for Run 1
   eSel7,                           // See def. of sel7 in Ref. b) above. Event selection decision based on V0A & V0C => use only in Run 2 and Run 1.
-                                   // TBI 20240522 I stil need to validate this one over MC
-  eSel8,                           // See def. of sel7 in Ref. b) above. Event selection decision based on TVX => use only in Run 3, both for data and MC
+                                   // TBI 20250115 it removes 99% of events in MC LHC21i6a, check this further
+  eSel8,                           // See def. of sel8 in Ref. b) above. Event selection decision based on TVX => use only in Run 3, both for data and MC
                                    // *) As of 20240410, kNoITSROFrameBorder (only in MC) and kNoTimeFrameBorder event selection cuts are part of Sel8
                                    //    See also email from EK from 2024041
   eMultiplicityEstimator,          // see documentation for ebye.fMultiplicity
@@ -129,17 +129,30 @@ enum eEventCuts {
   eSelectedEvents,                 // selected events = eNumberOfEvents + eAfter => therefore I do not need a special histogram for it
   eNoSameBunchPileup,              // reject collisions in case of pileup with another collision in the same foundBC (emails from IA on 20240404 and EK on 20240410)
   eIsGoodZvtxFT0vsPV,              // small difference between z-vertex from PV and from FT0 (emails from IA on 20240404 and EK on 20240410)
+                                   // Avoid using kIsGoodZvtxFT0vsPV selection bit for Pb-Pb 2024 apass1, see IA email from 20250115.
+                                   // Therefore, until further notice, use this one in LHC23zzh, but not in LHC24ar and LHC24as
   eIsVertexITSTPC,                 // at least one ITS-TPC track (reject vertices built from ITS-only tracks) (emails from IA on 20240404 and EK on 20240410
   eIsVertexTOFmatched,             // at least one of vertex contributors is matched to TOF
   eIsVertexTRDmatched,             // at least one of vertex contributors is matched to TRD
   eNoCollInTimeRangeStrict,        // rejects a collision if there are other events in dtime +/- 10 μs, see IA Slide 39 in https://indico.cern.ch/event/1462154/
+                                   // 20250122 Per feedback from IA, use this one only as a part of systematic check, and use eNoCollInTimeRangeStandard by default
   eNoCollInTimeRangeStandard,      // rejects a collision if there are other events in dtime +/- 2 μs + additional cuts on multiplicity, see IA Slide 39 in https://indico.cern.ch/event/1462154/
   eNoCollInRofStrict,              // rejects a collision if there are other events within the same ROF (in-ROF pileup), ROF = "ITS Readout Frames",
                                    // see IA Slide 39 in https://indico.cern.ch/event/1462154/
+                                   // 20250122 Per feedback from IA, use this one only as a part of systematic check, and use eNoCollInRofStandard by default
   eNoCollInRofStandard,            // same as previous + additional cuts on multiplicity, see IA Slide 39 in https://indico.cern.ch/event/1462154/
   eNoHighMultCollInPrevRof,        // veto an event if FT0C amplitude in previous ITS ROF is above threshold (default is >5000 a.e. by FT0C), see IA Slide 39 in https://indico.cern.ch/event/1462154/
+                                   // 20250122 Per feedback from IA, use it only in 2023 PbPb data (e.g. eLHC23zzh), in 2024 PbPb data this one has no effect (do not use in eLHC24ar and eLHC24as)
+  eIsGoodITSLayer3,                // number of inactive chips on ITS layer 3 is below maximum allowed value
+  eIsGoodITSLayer0123,             // numbers of inactive chips on ITS layers 0-3 are below maximum allowed values
+  eIsGoodITSLayersAll,             // numbers of inactive chips on all ITS layers are below maximum allowed values
   eOccupancyEstimator,             // the default Occupancy estimator, set via configurable. All supported centrality estimators, for QA, etc, are in enum eOccupancyEstimators
   eMinVertexDistanceFromIP,        // if sqrt(vx^2+vy^2+vz^2) < MinVertexDistanceFromIP, the event is rejected. This way, I remove suspicious events with |vertex| = 0.
+  // ...
+  eCentralityWeights, // used for centrality flattening. Remember that this event cut must be implemented very last,
+                      // therefore I have it separately implemented for Run 3,2,1 in EventCuts() at the very end in each case.
+                      // Use only for small non-uniformity in centrality distribution (e.g. of the biggest dip in distribution is up to 20% compared to uniform part of cent. distribution),
+                      // otherwise this flattening is too costly in terms of statistics.
   eEventCuts_N
 };
 
@@ -151,16 +164,21 @@ enum eParticleHistograms {
   eEta,
   eCharge, // Charge: positive: 1, negative: -1
 
-  // from o2::aod::TracksExtra_001
+  // from o2::aod::TracksExtra_001 - I keep the ordering here the same as in the TracksExtra_001 table
   etpcNClsFindable,
   etpcNClsShared,
+  eitsChi2NCl, // TBI 20250110 I see for this one [478682:track-selection]: [15:35:00][INFO] Track selection, set max chi2 per cluster ITS: 36
+               //              But even with open particle cuts, this distribution doesn't cross 30... There is a sudden drop round 22, but when I apply other cuts
+               //              that tail is gone already.
   etpcNClsFound,
   etpcNClsCrossedRows,
   eitsNCls,
   eitsNClsInnerBarrel,
   etpcCrossedRowsOverFindableCls,
-  etpcFoundOverFindableCls,
+  etpcFoundOverFindableCls, // TBI 20250110 I keep this one in sync with values for etpcCrossedRowsOverFindableCls
   etpcFractionSharedCls,
+  etpcChi2NCl, // TBI 20250110 this one shall resemble aodTrack->GetTPCchi2()/aodTrack->GetTPCNcls(), but cross-check with the experts. Particles with tpcChi2NCl > 4. I reject now by default.
+               //              See what I documented in AliPhysics below // task->SetParticleCuts("TPCChi2perNDF",4.,-44); // VAL
 
   // from o2::aod::TracksDCA
   edcaXY,
@@ -181,14 +199,36 @@ enum eParticleHistograms2D { // All 2D histograms are first implemented in eQAPa
 
 enum eParticleCuts {
 
-  // from o2::aod::TrackSelection
-  etrackCutFlagFb1 = eParticleHistograms_N, // do not use in Run 2 and 1
-  etrackCutFlagFb2,                         // do not use in Run 2 and 1
-  eisQualityTrack,                          // not validated in Run 3, but it can be used in Run 2 and Run 1 (for the latter, it yields to large NUA)
-  eisPrimaryTrack,
-  eisInAcceptanceTrack, // TBI 20240516 check and document how acceptance window is defined
-  eisGlobalTrack,       // not validated in Run 3, but it can be used in Run 2 and Run 1 (for the latter, it yields to real holes in NUA)
-
+  // from o2::aod::TrackSelection (https://aliceo2group.github.io/analysis-framework/docs/datamodel/helperTaskTables.html#o2-analysis-trackselection)
+  etrackCutFlag = eParticleHistograms_N, // General selection, with centrally tuned particle cuts for tpcNClsFound, itsNCls, etc.
+                                         // As of 20250113, this cut still has not effect, neither in Run 3 nor in converted Run 2. Use instead trackCutFlagFb1 and/or trackCutFlagFb2 below.
+  etrackCutFlagFb1,                      // Global tracks in Run 3. Closest possible match to global track definition in Run 2, which are selected with eisGlobalTrack.
+                                         // For the definition, see:
+                                         //  a) "filtbit1" in https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/trackselection.cxx#L128
+                                         //  b) "getGlobalTrackSelectionRun3ITSMatch" in https://github.com/AliceO2Group/O2Physics/blob/master/Common/Core/TrackSelectionDefaults.cxx#L43
+                                         // When I use this flag, make sure I do NOT cut on something on which this cut is already cutting by default (e.g. pt-dependent DCA xy cut)
+  etrackCutFlagFb2,                      // Global tracks in Run 3, similar as etrackCutFlagFb1, but more stringent (since 2 points in ITS are required in inner barrel (IB)).
+                                         // Unlike etrackCutFlagFb1 (1 ITS point is required), it produces a 20% dip in azimuthal acceptance for 1.2 < phi < 1.6, in LHC24ar/559545
+                                         // DCAxy and z are significantly further depleted, when compared to etrackCutFlagFb1
+  eisQualityTrack,                       // Do not use in Run 3, but it can be used in Run 2 and Run 1 (for the latter, it yields to large NUA - TBI 20250114 check this again)
+  eisPrimaryTrack,                       // Validated in Run 3. See also isPVContributor
+  eisInAcceptanceTrack,                  // kInAcceptanceTracks = kPtRange | kEtaRange . Pt is open, and |eta| < 0.8.
+                                         // But after I already cut directly on 0.2 < pt < 5.0 and |eta| < 0.8, it has no effect.
+                                         // Can be used both in Run 3 and Run 2.
+                                         // TBI 20250113 remove this cut eventually from the code, because I cut direcly on  0.2 < pt < 5.0 and |eta| < 0.8 in any case.
+  eisGlobalTrack,                        // Do not use in Run 3, it can be used directly only in Run 2 and Run 1, see definition in:
+                                         //   https://github.com/AliceO2Group/O2Physics/blob/master/Common/Core/TrackSelectionDefaults.cxx#L23
+                                         // For Run 3 global tracks, I need to use TrackSelection getGlobalTrackSelectionRun3ITSMatch(int matching, int passFlag) from
+                                         //   https://github.com/AliceO2Group/O2Physics/blob/master/Common/Core/TrackSelectionDefaults.cxx#L43
+                                         // That is precisely definition of filtBit1 in https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/trackselection.cxx
+                                         // So: etrackCutFlagFb1 in Run 3 is a closest match to eisGlobalTrack in Run 2
+  eisPVContributor,                      // Run 3: Has this track contributed to the collision vertex fit
+                                         // Tracks used in vertex fit are flagged as "contributors" (-> track.isPVContributor() for AO2D tracks). Such a track is
+                                         // allowed to contribute to only one PV. => See further details in RS presentation https://indico.cern.ch/event/1453901/timetable/#12-track-reconstruction
+                                         // This cut affects significantly distributions of other tracking parameters. Most notably, after using this cut, DCAz distribution is reduced to ~ 1mm range.
+                                         // But for global tracks in any case we request very stringent DCA cut.
+                                         // pt and eta distributions are only mildly affected.
+                                         // It's not the same as isPrimaryTrack cut, albeit there is an overlap.
   // special treatment:
   ePtDependentDCAxyParameterization,
 
@@ -204,6 +244,7 @@ enum eAsFunctionOf {
   AFO_OCCUPANCY,          // vs. default "occupancy" variable which is (at the moment) "FT0COccupancyInTimeRange" (alternative is "TrackOccupancyInTimeRange")
   AFO_INTERACTIONRATE,    // vs. "interation rate"
   AFO_CURRENTRUNDURATION, // vs. "current run duration", i.e. vs "seconds since start of run"
+  AFO_VZ,                 // vs. "vertex z position"
   eAsFunctionOf_N
 }; // prefix is needed, to avoid conflict with enum eKinematics
 
@@ -348,7 +389,14 @@ enum eEventCounter {
 };
 
 enum eSpecificCuts {
+  // Run 3:
   eLHC23zzh,
+  eLHC24ar,
+  eLHC24as,
+  // Run 2:
+  eLHC15o,
+  // Run 1:
+  // ...
   eSpecificCuts_N
 };
 

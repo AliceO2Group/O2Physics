@@ -13,7 +13,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <tuple>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/DataModel/Centrality.h"
@@ -43,7 +42,10 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+namespace
+{
 struct NPCascCandidate {
+  int64_t mcParticleId;
   int64_t trackGlobID;
   int64_t trackITSID;
   int64_t collisionID;
@@ -57,6 +59,8 @@ struct NPCascCandidate {
   int pdgCodeITStrack;
   bool isFromBeauty;
   bool isFromCharm;
+  uint16_t pvContributors;
+  float pvTimeResolution;
   float pvX;
   float pvY;
   float pvZ;
@@ -123,8 +127,26 @@ struct daughtersDCA {
   float pionDCAz;
 };
 
-namespace
+std::array<bool, 2> isFromHF(auto& particle)
 {
+  bool fromBeauty = false;
+  bool fromCharm = false;
+  if (particle.has_mothers()) {
+    auto mom = particle.template mothers_as<aod::McParticles>()[0];
+    int pdgCodeMom = mom.pdgCode();
+    fromBeauty = std::abs(pdgCodeMom) / 5000 == 1 || std::abs(pdgCodeMom) / 500 == 1 || std::abs(pdgCodeMom) == 5;
+    fromCharm = std::abs(pdgCodeMom) / 4000 == 1 || std::abs(pdgCodeMom) / 400 == 1 || std::abs(pdgCodeMom) == 4;
+    while (mom.has_mothers()) {
+      const auto grandma = mom.template mothers_as<aod::McParticles>()[0];
+      int pdgCodeGrandma = std::abs(grandma.pdgCode());
+      fromBeauty = fromBeauty || (pdgCodeGrandma / 5000 == 1 || pdgCodeGrandma / 500 == 1 || pdgCodeGrandma == 5);
+      fromCharm = fromCharm || (pdgCodeGrandma / 4000 == 1 || pdgCodeGrandma / 400 == 1 || pdgCodeGrandma == 4);
+      mom = grandma;
+    }
+  }
+  return {fromBeauty, fromCharm};
+}
+
 static constexpr int nParticles{4};
 static constexpr int nCutsPID{2};
 static const std::vector<std::string> matterOrNot{"Matter", "Antimatter"};
@@ -139,10 +161,6 @@ static constexpr float cutsPID[nParticles][nCutsPID]{
 std::shared_ptr<TH2> h2TPCsignal[nParticles];
 std::shared_ptr<TH2> h2TPCnSigma[nParticles];
 
-std::shared_ptr<TH1> invMassBCOmega;
-std::shared_ptr<TH1> invMassACOmega;
-std::shared_ptr<TH1> invMassBCXi;
-std::shared_ptr<TH1> invMassACXi;
 std::shared_ptr<TH1> invMassBCV0;
 std::shared_ptr<TH1> invMassACV0;
 
@@ -170,14 +188,13 @@ struct NonPromptCascadeTask {
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> cfgGRPmagPath{"cfgGRPmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> cfgGRPpath{"cfgGRPpath", "GLO/GRP/GRP", "Path of the grp file"};
 
   Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 70, "Minimum number of TPC clusters"};
   Configurable<LabeledArray<float>> cfgCutsPID{"particlesCutsPID", {cutsPID[0], nParticles, nCutsPID, particlesNames, cutsNames}, "Nuclei PID selections"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber = 0;
-  float bz = 0.f;
+  float mBz = 0.f;
 
   HistogramRegistry registry{
     "registry",
@@ -232,31 +249,24 @@ struct NonPromptCascadeTask {
       return;
     }
     mRunNumber = bc.runNumber();
-    auto timestamp = bc.timestamp();
 
-    if (o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(cfgGRPpath, timestamp)) {
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      bz = grpo->getNominalL3Field();
-    } else if (o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(cfgGRPmagPath, timestamp)) {
+    if (o2::parameters::GRPMagField* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(cfgGRPmagPath, mRunNumber)) {
       o2::base::Propagator::initFieldFromGRP(grpmag);
-      bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(debug) << "bz = " << bz;
-    } else {
-      LOG(fatal) << "Got nullptr from CCDB for path " << cfgGRPmagPath << " of object GRPMagField and " << cfgGRPpath << " of object GRPObject for timestamp " << timestamp;
+      mBz = static_cast<float>(grpmag->getNominalL3Field());
+    }
+
+    if (static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value) == o2::base::Propagator::MatCorrType::USEMatCorrLUT) {
+      auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForRun<o2::base::MatLayerCylSet>("GLO/Param/MatLUT", mRunNumber));
+      o2::base::Propagator::Instance(true)->setMatLUT(lut);
     }
   }
 
   void init(InitContext const&)
   {
     ccdb->setURL(ccdbUrl);
-    ccdb->setFatalWhenNull(false);
+    ccdb->setFatalWhenNull(true);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-
-    if (static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value) == o2::base::Propagator::MatCorrType::USEMatCorrLUT) {
-      auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
-      o2::base::Propagator::Instance(true)->setMatLUT(lut);
-    }
 
     std::vector<double> ptBinning = {0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 2.8, 3.2, 3.6, 4.0, 4.4, 4.8, 5.2, 5.6, 6.0};
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
@@ -277,10 +287,6 @@ struct NonPromptCascadeTask {
     cutsXi->GetXaxis()->SetBinLabel(5, "nSigmaTPCprotontrack");
     cutsXi->GetXaxis()->SetBinLabel(6, "nSigmaTPCpiontrack");
 
-    invMassBCOmega = registry.add<TH1>("h_invariantmass_beforeCuts_Omega", "Invariant Mass (GeV/#it{c}^{2})", HistType::kTH1D, {{125, 1.650, 1.700, "Invariant Mass (GeV/#it{c}^{2})"}});
-    invMassACOmega = registry.add<TH1>("h_invariantmass_afterCuts_Omega", "Invariant Mass (GeV/#it{c}^{2})", HistType::kTH1D, {{125, 1.650, 1.700, "Invariant Mass (GeV/#it{c}^{2})"}});
-    invMassBCXi = registry.add<TH1>("h_invariantmass_beforeCuts_Xi", "Invariant Mass (GeV/#it{c}^{2})", HistType::kTH1D, {{125, 1.296, 1.346, "Invariant Mass (GeV/#it{c}^{2})"}});
-    invMassACXi = registry.add<TH1>("h_invariantmass_afterCuts_Xi", "Invariant Mass (GeV/#it{c}^{2})", HistType::kTH1D, {{125, 1.296, 1.346, "Invariant Mass (GeV/#it{c}^{2})"}});
     invMassBCV0 = registry.add<TH1>("h_invariantmass_beforeCuts_V0", "Invariant Mass (GeV/#it{c}^{2})", HistType::kTH1D, {{125, 1.090, 1.140, "Invariant Mass (GeV/#it{c}^{2})"}});
     invMassACV0 = registry.add<TH1>("h_invariantmass_afterCuts_V0", "Invariant Mass (GeV/#it{c}^{2})", HistType::kTH1D, {{125, 1.090, 1.140, "Invariant Mass (GeV/#it{c}^{2})"}});
   }
@@ -292,7 +298,7 @@ struct NonPromptCascadeTask {
     auto trackCovTrk = getTrackParCov(track);
     o2::dataformats::DCA impactParameterTrk;
 
-    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovTrk, bz, 2.f, matCorr, &impactParameterTrk)) {
+    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovTrk, mBz, 2.f, matCorr, &impactParameterTrk)) {
       if (protonTrack.hasTPC() && pionTrack.hasTPC()) {
         if (isOmega) {
           registry.fill(HIST("h_dca_Omega"), std::sqrt(impactParameterTrk.getR2()));
@@ -322,7 +328,7 @@ struct NonPromptCascadeTask {
 
     auto trackCovBach = getTrackParCov(bachelor);
     o2::dataformats::DCA impactParameterBach;
-    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovBach, bz, 2.f, matCorr, &impactParameterBach)) {
+    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovBach, mBz, 2.f, matCorr, &impactParameterBach)) {
       if (isOmega) {
         if (bachelor.sign() < 0) {
           registry.fill(HIST("h_bachdcaxyM_Omega"), impactParameterBach.getY());
@@ -349,7 +355,7 @@ struct NonPromptCascadeTask {
 
     auto trackCovNtrack = getTrackParCov(pionTrack);
     o2::dataformats::DCA impactParameterPiontrack;
-    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovNtrack, bz, 2.f, matCorr, &impactParameterPiontrack)) {
+    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovNtrack, mBz, 2.f, matCorr, &impactParameterPiontrack)) {
       if (isOmega) {
         registry.fill(HIST("h_ntrackdcavspt_Omega"), impactParameterPiontrack.getY(), pionTrack.pt());
       }
@@ -358,7 +364,7 @@ struct NonPromptCascadeTask {
 
     auto trackCovPtrack = getTrackParCov(protonTrack);
     o2::dataformats::DCA impactParameterProtontrack;
-    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovPtrack, bz, 2.f, matCorr, &impactParameterProtontrack)) {
+    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovPtrack, mBz, 2.f, matCorr, &impactParameterProtontrack)) {
       if (isOmega) {
         registry.fill(HIST("h_ptrackdcavspt_Omega"), impactParameterProtontrack.getY(), protonTrack.pt());
       }
@@ -373,44 +379,20 @@ struct NonPromptCascadeTask {
     dDCA.pionDCAz = impactParameterPiontrack.getZ();
   }
 
-  void processTrackedCascadesMC(CollisionCandidatesRun3MC const& collisions,
-                                aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
-                                aod::V0s const& /*v0s*/, TracksExtMC const& /*tracks*/,
-                                aod::McParticles const& mcParticles, aod::McCollisions const&, aod::BCsWithTimestamps const&)
+  template <typename TrackType, typename CollisionType>
+  void fillCandidatesVector(CollisionType const&, auto const& trackedCascades)
   {
-
     candidates.clear();
-    std::vector<int> mcParticleId;
-
-    auto isFromHF = [&](auto particle) -> std::tuple<bool, bool> {
-      bool fromBeauty = false;
-      bool fromCharm = false;
-      if (particle.has_mothers()) {
-        auto mom = particle.template mothers_as<aod::McParticles>()[0];
-        int pdgCodeMom = mom.pdgCode();
-        fromBeauty = std::abs(pdgCodeMom) / 5000 == 1 || std::abs(pdgCodeMom) / 500 == 1 || std::abs(pdgCodeMom) == 5;
-        fromCharm = std::abs(pdgCodeMom) / 4000 == 1 || std::abs(pdgCodeMom) / 400 == 1 || std::abs(pdgCodeMom) == 4;
-        while (mom.has_mothers()) {
-          const auto grandma = mom.template mothers_as<aod::McParticles>()[0];
-          int pdgCodeGrandma = std::abs(grandma.pdgCode());
-          fromBeauty = fromBeauty || (pdgCodeGrandma / 5000 == 1 || pdgCodeGrandma / 500 == 1 || pdgCodeGrandma == 5);
-          fromCharm = fromCharm || (pdgCodeGrandma / 4000 == 1 || pdgCodeGrandma / 400 == 1 || pdgCodeGrandma == 4);
-          mom = grandma;
-        }
-      }
-      return {fromBeauty, fromCharm};
-    };
-
     for (const auto& trackedCascade : trackedCascades) {
-      auto collision = trackedCascade.collision_as<CollisionCandidatesRun3MC>();
 
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto collision = trackedCascade.template collision_as<CollisionType>();
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
       const auto primaryVertex = getPrimaryVertex(collision);
 
       o2::vertexing::DCAFitterN<2> df2;
-      df2.setBz(bz);
+      df2.setBz(mBz);
       df2.setPropagateToPCA(propToDCA);
       df2.setMaxR(maxR);
       df2.setMaxDZIni(maxDZIni);
@@ -418,17 +400,19 @@ struct NonPromptCascadeTask {
       df2.setMinRelChi2Change(minRelChi2Change);
       df2.setUseAbsDCA(useAbsDCA);
 
-      const auto& track = trackedCascade.track_as<TracksExtMC>();
-      const auto& ITStrack = trackedCascade.itsTrack_as<TracksExtMC>();
+      const auto& track = trackedCascade.template track_as<TrackType>();
+      const auto& ITStrack = trackedCascade.template itsTrack_as<TrackType>();
       const auto& casc = trackedCascade.cascade();
-      const auto& bachelor = casc.bachelor_as<TracksExtMC>();
+      const auto& bachelor = casc.template bachelor_as<TrackType>();
       const auto& v0 = casc.v0();
-      const auto& ptrack = v0.posTrack_as<TracksExtMC>();
-      const auto& ntrack = v0.negTrack_as<TracksExtMC>();
+      const auto& ptrack = v0.template posTrack_as<TrackType>();
+      const auto& ntrack = v0.template negTrack_as<TrackType>();
       const auto& protonTrack = bachelor.sign() > 0 ? ntrack : ptrack;
       const auto& pionTrack = bachelor.sign() > 0 ? ptrack : ntrack;
+      bool hasReassociatedClusters = (track.itsNCls() != ITStrack.itsNCls());
 
       std::array<std::array<float, 3>, 2> momenta;
+      std::array<float, 3> v0Pos;
       std::array<double, 2> masses;
 
       // track propagation
@@ -439,9 +423,6 @@ struct NonPromptCascadeTask {
 
       float cascCpa = -1;
       float v0Cpa = -1;
-
-      std::array<float, 3> v0Pos = {-999., -999., -999.};
-
       if (df2.process(getTrackParCov(pionTrack), getTrackParCov(protonTrack))) {
         trackParCovV0 = df2.createParentTrackParCov(0); // V0 track retrieved from p and pi daughters
         v0Pos = {trackParCovV0.getX(), trackParCovV0.getY(), trackParCovV0.getZ()};
@@ -460,6 +441,7 @@ struct NonPromptCascadeTask {
       } else {
         continue;
       }
+      float deltaPtITSCascade = std::hypot(cascadeMomentum[0], cascadeMomentum[1]) - ITStrack.pt();
 
       // PV
       registry.fill(HIST("h_PV_x"), primaryVertex.getX());
@@ -480,283 +462,39 @@ struct NonPromptCascadeTask {
       momenta[1] = {pionTrack.px(), pionTrack.py(), pionTrack.pz()};
       const auto v0mass = RecoDecay::m(momenta, masses);
 
-      invMassBCOmega->Fill(massOmega);
+      //// Omega hypohesis -> rejecting Xi, we don't do it in the MC as we can identify the particle with the MC truth
+      bool isOmega{std::abs(massXi - constants::physics::MassXiMinus) > 0.005};
 
-      invMassBCXi->Fill(massXi);
-      invMassBCV0->Fill(v0mass);
+      std::array<bool, 2> fromHF{false, false};
+      bool isGoodMatch{false}, isGoodCascade{false};
+      int itsTrackPDG{0}, pdgCodeMom{0};
+      int64_t mcParticleID{-1};
 
-      registry.fill(HIST("h_PIDcutsOmega"), 0, massOmega);
-      registry.fill(HIST("h_PIDcutsXi"), 0, massXi);
-
-      int bachKaonNClusTPC = -1;
-      int bachPionNClusTPC = -1;
-      int bachKaonNClusITS = -1;
-      int bachPionNClusITS = -1;
-
-      bachPionNClusTPC = bachelor.tpcNClsFound(); /// by default cascade = Xi
-      bachPionNClusITS = bachelor.itsNCls();      /// by default cascade = Xi
-
-      bool bachKaonHasTOF = 0;
-      bool bachPionHasTOF = 0;
-
-      bachPionHasTOF = bachelor.hasTOF();
-
-      // if (!bachelor.hasTOF() && !ptrack.hasTOF() && !ntrack.hasTOF()) {
-      //   LOG(debug) << "no TOF: " << bachelor.hasTOF() << "/" << ptrack.hasTOF() << "/" << ntrack.hasTOF();
-      //   continue;
-      // }
-
-      registry.fill(HIST("h_PIDcutsOmega"), 1, massOmega);
-      registry.fill(HIST("h_PIDcutsXi"), 1, massXi);
-
-      if (protonTrack.tpcNClsFound() < cfgCutNclusTPC || pionTrack.tpcNClsFound() < cfgCutNclusTPC) {
-        LOG(debug) << "no tpcNClsFound: " << bachelor.tpcNClsFound() << "/" << protonTrack.tpcNClsFound() << "/" << pionTrack.tpcNClsFound();
-        continue;
-      }
-
-      registry.fill(HIST("h_PIDcutsOmega"), 2, massOmega);
-      registry.fill(HIST("h_PIDcutsXi"), 2, massXi);
-
-      // QA PID
-      float nSigmaTPC[nParticles]{bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(), protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi()};
-
-      if (bachelor.hasTPC()) { // same cuts for Omega and Xi
-        LOG(debug) << "TPCSignal bachelor " << bachelor.sign() << "/" << bachelor.tpcInnerParam() << "/" << bachelor.tpcSignal();
-        if (nSigmaTPC[0] < cfgCutsPID->get(0u, 0u) || nSigmaTPC[0] > cfgCutsPID->get(0u, 1u)) {
-          continue;
-        }
-      }
-      registry.fill(HIST("h_PIDcutsOmega"), 3, massOmega);
-      registry.fill(HIST("h_PIDcutsXi"), 3, massXi);
-
-      LOG(debug) << "TPCSignal protonTrack " << protonTrack.sign() << "/" << protonTrack.tpcInnerParam() << "/" << protonTrack.tpcSignal();
-      if (nSigmaTPC[2] < cfgCutsPID->get(2u, 0u) || nSigmaTPC[2] > cfgCutsPID->get(2u, 1u)) {
-        continue;
-      }
-
-      registry.fill(HIST("h_PIDcutsOmega"), 4, massOmega);
-      registry.fill(HIST("h_PIDcutsXi"), 4, massXi);
-
-      LOG(debug) << "TPCSignal ntrack " << pionTrack.sign() << "/" << pionTrack.tpcInnerParam() << "/" << pionTrack.tpcSignal();
-      if (nSigmaTPC[3] < cfgCutsPID->get(3u, 0u) || nSigmaTPC[3] > cfgCutsPID->get(3u, 1u)) {
-        continue;
-      }
-
-      registry.fill(HIST("h_PIDcutsXi"), 5, massXi);
-
-      registry.fill(HIST("h_PIDcutsOmega"), 5, massOmega);
-      invMassACOmega->Fill(massOmega);
-      registry.fill(HIST("h_massvspt_Omega"), massOmega, track.pt());
-
-      registry.fill(HIST("h_PIDcutsXi"), 5, massXi);
-
-      invMassACXi->Fill(massXi);
-      registry.fill(HIST("h_massvspt_Xi"), massXi, track.pt());
-
-      invMassACV0->Fill(v0mass);
-      registry.fill(HIST("h_massvspt_V0"), v0mass, track.pt());
-
-      motherDCA mDCA;
-      fillCascadeDCA(track, protonTrack, pionTrack, primaryVertex, true, mDCA); // always filling in MC
-
-      LOGF(debug, "protonTrack (id: %d, pdg: %d) has mother %d", protonTrack.mcParticleId(),
-           protonTrack.mcParticle().pdgCode(), protonTrack.mcParticle().has_mothers() ? protonTrack.mcParticle().mothersIds()[0] : -1);
-      LOGF(debug, "pionTrack (id: %d, pdg: %d) has mother %d", pionTrack.mcParticleId(),
-           pionTrack.mcParticle().pdgCode(), pionTrack.mcParticle().has_mothers() ? pionTrack.mcParticle().mothersIds()[0] : -1);
-
-      LOG(debug) << "bachelor with PDG code: " << bachelor.mcParticle().pdgCode() << ". Charge: " << bachelor.sign();
-      if (ptrack.mcParticle().has_mothers() && pionTrack.mcParticle().has_mothers() &&
-          protonTrack.mcParticle().mothersIds()[0] == pionTrack.mcParticle().mothersIds()[0]) {
-        const auto v0part = protonTrack.mcParticle().mothers_as<aod::McParticles>()[0];
-        LOG(debug) << "v0 with PDG code: " << v0part.pdgCode();
-      }
-      daughtersDCA dDCA;
-      fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, true, dDCA); // always filling in MC
-
-      bool isGoodCascade = false;
-
-      int motherParticleID = -1;
-
-      std::tuple<bool, bool> fromHF{false, false};
-      if (protonTrack.mcParticle().has_mothers() && pionTrack.mcParticle().has_mothers() && bachelor.mcParticle().has_mothers()) {
-        if (protonTrack.mcParticle().mothersIds()[0] == pionTrack.mcParticle().mothersIds()[0]) {
-          const auto v0part = protonTrack.mcParticle().mothers_first_as<aod::McParticles>();
-          if (std::abs(v0part.pdgCode()) == 3122 && v0part.has_mothers()) {
-            const auto motherV0 = v0part.mothers_as<aod::McParticles>()[0];
-            // const auto motherBach = bachelor.mcParticle().mothers_as<aod::McParticles>()[0];
-            if (v0part.mothersIds()[0] == bachelor.mcParticle().mothersIds()[0]) {
-              if (std::abs(motherV0.pdgCode()) == 3312 || abs(motherV0.pdgCode()) == 3334) {
-                isGoodCascade = true;
-                fromHF = isFromHF(motherV0);
-                motherParticleID = v0part.mothersIds()[0];
+      if constexpr (TrackType::template contains<aod::McTrackLabels>()) {
+        if (protonTrack.mcParticle().has_mothers() && pionTrack.mcParticle().has_mothers() && bachelor.mcParticle().has_mothers()) {
+          if (protonTrack.mcParticle().mothersIds()[0] == pionTrack.mcParticle().mothersIds()[0]) {
+            const auto v0part = protonTrack.mcParticle().template mothers_first_as<aod::McParticles>();
+            if (std::abs(v0part.pdgCode()) == 3122 && v0part.has_mothers()) {
+              const auto motherV0 = v0part.template mothers_as<aod::McParticles>()[0];
+              if (v0part.mothersIds()[0] == bachelor.mcParticle().mothersIds()[0]) {
+                if (std::abs(motherV0.pdgCode()) == 3312 || std::abs(motherV0.pdgCode()) == 3334) {
+                  isGoodCascade = true;
+                  isOmega = (std::abs(motherV0.pdgCode()) == 3334);
+                  fromHF = isFromHF(motherV0);
+                  mcParticleID = v0part.mothersIds()[0];
+                }
               }
             }
           }
         }
-      }
+        isGoodMatch = ((mcParticleID == ITStrack.mcParticleId())) ? true : false;
 
-      bool isGoodMatch = ((motherParticleID == ITStrack.mcParticleId())) ? true : false;
-
-      int pdgCodeMom = 0;
-      if (isGoodMatch) {
-        pdgCodeMom = track.mcParticle().has_mothers() ? track.mcParticle().mothers_as<aod::McParticles>()[0].pdgCode() : 0;
-      }
-      int itsTrackPDG = ITStrack.has_mcParticle() ? ITStrack.mcParticle().pdgCode() : 0;
-      float deltaPtITSCascade = std::hypot(cascadeMomentum[0], cascadeMomentum[1]) - ITStrack.pt();
-      bool hasReassociatedClusters = (track.itsNCls() != ITStrack.itsNCls());
-      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), deltaPtITSCascade, trackedCascade.itsClsSize(), hasReassociatedClusters, isGoodMatch, isGoodCascade, pdgCodeMom, itsTrackPDG, std::get<0>(fromHF), std::get<1>(fromHF),
-                                              primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
-                                              track.pt(), track.eta(), track.phi(),
-                                              protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
-                                              mDCA.DCAxy, mDCA.DCAz, dDCA.protonDCAxy, dDCA.protonDCAz, dDCA.pionDCAxy, dDCA.pionDCAz, dDCA.bachDCAxy, dDCA.bachDCAz,
-                                              cascCpa, v0Cpa,
-                                              massXi, massOmega, v0mass,
-                                              std::hypot(trackedCascade.decayX(), trackedCascade.decayY()), std::hypot(v0Pos[0], v0Pos[1]), std::hypot(trackedCascade.decayX(), trackedCascade.decayY(), trackedCascade.decayZ()), std::hypot(v0Pos[0], v0Pos[1], v0Pos[2]),
-                                              track.itsNCls(), protonTrack.itsNCls(), pionTrack.itsNCls(), bachKaonNClusITS, bachPionNClusITS, protonTrack.tpcNClsFound(), pionTrack.tpcNClsFound(), bachKaonNClusTPC, bachPionNClusTPC,
-                                              protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi(), bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(),
-                                              protonTrack.hasTOF(), pionTrack.hasTOF(), bachKaonHasTOF, bachPionHasTOF,
-                                              protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi()});
-
-      if (track.mcParticleId() < -1 || track.mcParticleId() >= mcParticles.size()) {
-        mcParticleId.push_back(-1);
-      } else {
-        mcParticleId.push_back(track.mcParticleId());
-      }
-    } // end loop over tracked cascades
-
-    for (size_t i = 0; i < candidates.size(); ++i) {
-      if (mcParticleId[i] < 0) {
-        continue;
-      }
-      auto particle = mcParticles.iteratorAt(mcParticleId[i]);
-      auto& c = candidates[i];
-      auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
-      auto label = collisions.iteratorAt(c.collisionID);
-
-      NPCTableMC(c.matchingChi2, c.deltaPt, c.itsClusSize, c.hasReassociatedCluster, c.isGoodMatch, c.isGoodCascade, c.pdgCodeMom, c.pdgCodeITStrack, c.isFromBeauty, c.isFromCharm,
-                 c.pvX, c.pvY, c.pvZ,
-                 c.cascPt, c.cascEta, c.cascPhi,
-                 c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
-                 c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,
-                 c.casccosPA, c.v0cosPA,
-                 c.massXi, c.massOmega, c.massV0,
-                 c.cascRadius, c.v0radius, c.cascLength, c.v0length,
-                 c.cascNClusITS, c.protonNClusITS, c.pionNClusITS, c.bachKaonNClusITS, c.bachPionNClusITS, c.protonNClusTPC, c.pionNClusTPC, c.bachKaonNClusTPC, c.bachPionNClusTPC,
-                 c.protonTPCNSigma, c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma,
-                 c.protonHasTOF, c.pionHasTOF, c.bachKaonHasTOF, c.bachPionHasTOF,
-                 c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
-                 particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), mcCollision.posX() - particle.vx(), mcCollision.posY() - particle.vy(), mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == label.mcCollisionId());
-    }
-
-    for (const auto& p : mcParticles) {
-      auto absCode = std::abs(p.pdgCode());
-      if (absCode != 3312 && absCode != 3334) {
-        continue;
-      }
-      auto fromHF = isFromHF(p);
-      int pdgCodeMom = p.has_mothers() ? p.mothers_as<aod::McParticles>()[0].pdgCode() : 0;
-      auto mcCollision = p.mcCollision_as<aod::McCollisions>();
-
-      NPCTableGen(p.pt(), p.eta(), p.phi(), p.pdgCode(), pdgCodeMom, mcCollision.posX() - p.vx(), mcCollision.posY() - p.vy(), mcCollision.posZ() - p.vz(), std::get<0>(fromHF), std::get<1>(fromHF));
-    }
-  }
-  PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesMC, "process cascades from strangeness tracking: MC analysis", true);
-
-  void processTrackedCascadesData(CollisionCandidatesRun3 const& /*collisions*/,
-                                  aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
-                                  aod::V0s const& /*v0s*/, TracksExtData const& /*tracks*/,
-                                  aod::BCsWithTimestamps const&)
-  {
-    candidates.clear();
-    for (const auto& trackedCascade : trackedCascades) {
-      bool isOmega{false};
-
-      auto collision = trackedCascade.collision_as<CollisionCandidatesRun3>();
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-
-      const auto primaryVertex = getPrimaryVertex(collision);
-
-      o2::vertexing::DCAFitterN<2> df2;
-      df2.setBz(bz);
-      df2.setPropagateToPCA(propToDCA);
-      df2.setMaxR(maxR);
-      df2.setMaxDZIni(maxDZIni);
-      df2.setMinParamChange(minParamChange);
-      df2.setMinRelChi2Change(minRelChi2Change);
-      df2.setUseAbsDCA(useAbsDCA);
-
-      const auto& track = trackedCascade.track_as<TracksExtData>();
-      const auto& ITStrack = trackedCascade.itsTrack_as<TracksExtData>();
-      const auto& casc = trackedCascade.cascade();
-      const auto& bachelor = casc.bachelor_as<TracksExtData>();
-      const auto& v0 = casc.v0();
-      const auto& ptrack = v0.posTrack_as<TracksExtData>();
-      const auto& ntrack = v0.negTrack_as<TracksExtData>();
-      const auto& protonTrack = bachelor.sign() > 0 ? ntrack : ptrack;
-      const auto& pionTrack = bachelor.sign() > 0 ? ptrack : ntrack;
-      bool hasReassociatedClusters = (track.itsNCls() != ITStrack.itsNCls());
-
-      std::array<std::array<float, 3>, 2> momenta;
-      std::array<double, 2> masses;
-
-      // track propagation
-      o2::track::TrackParCov trackParCovV0;
-      o2::track::TrackPar trackParV0;
-      o2::track::TrackPar trackParBachelor;
-      std::array<float, 3> cascadeMomentum;
-
-      float cascCpa = -1;
-      float v0Cpa = -1;
-
-      std::array<float, 3> v0Pos = {-999., -999., -999.};
-
-      if (df2.process(getTrackParCov(pionTrack), getTrackParCov(protonTrack))) {
-        trackParCovV0 = df2.createParentTrackParCov(0); // V0 track retrieved from p and pi daughters
-        v0Pos = {trackParCovV0.getX(), trackParCovV0.getY(), trackParCovV0.getZ()};
-        if (df2.process(trackParCovV0, getTrackParCov(bachelor))) {
-          trackParV0 = df2.getTrackParamAtPCA(0);
-          trackParBachelor = df2.getTrackParamAtPCA(1);
-          trackParV0.getPxPyPzGlo(momenta[0]);       // getting the V0 momentum
-          trackParBachelor.getPxPyPzGlo(momenta[1]); // getting the bachelor momentum
-          df2.createParentTrackParCov().getPxPyPzGlo(cascadeMomentum);
-          std::array<float, 3> pvPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
-          cascCpa = RecoDecay::cpa(pvPos, df2.getPCACandidate(), cascadeMomentum);
-          v0Cpa = RecoDecay::cpa(pvPos, df2.getPCACandidate(), momenta[0]);
-        } else {
-          continue;
+        if (isGoodMatch) {
+          pdgCodeMom = track.mcParticle().has_mothers() ? track.mcParticle().template mothers_as<aod::McParticles>()[0].pdgCode() : 0;
         }
-      } else {
-        continue;
-      }
-      float deltaPtITSCascade = std::hypot(cascadeMomentum[0], cascadeMomentum[1]) - ITStrack.pt();
-
-      // PV
-      registry.fill(HIST("h_PV_x"), primaryVertex.getX());
-      registry.fill(HIST("h_PV_y"), primaryVertex.getY());
-      registry.fill(HIST("h_PV_z"), primaryVertex.getZ());
-
-      // Omega
-      masses = {o2::constants::physics::MassLambda0, o2::constants::physics::MassKPlus};
-      const auto massOmega = RecoDecay::m(momenta, masses);
-
-      // Xi
-      masses = {o2::constants::physics::MassLambda0, o2::constants::physics::MassPiPlus};
-      const auto massXi = RecoDecay::m(momenta, masses);
-
-      // Lambda
-      masses = {o2::constants::physics::MassProton, o2::constants::physics::MassPiMinus};
-      momenta[0] = {protonTrack.px(), protonTrack.py(), protonTrack.pz()};
-      momenta[1] = {pionTrack.px(), pionTrack.py(), pionTrack.pz()};
-      const auto v0mass = RecoDecay::m(momenta, masses);
-
-      ////Omega hypohesis -> rejecting Xi
-      if (std::abs(massXi - constants::physics::MassXiMinus) > 0.005) {
-        isOmega = true;
-        invMassBCOmega->Fill(massOmega);
+        itsTrackPDG = ITStrack.has_mcParticle() ? ITStrack.mcParticle().pdgCode() : 0;
       }
 
-      invMassBCXi->Fill(massXi);
       invMassBCV0->Fill(v0mass);
 
       registry.fill(HIST("h_PIDcutsXi"), 0, massXi);
@@ -833,13 +571,10 @@ struct NonPromptCascadeTask {
 
       if (isOmega) {
         registry.fill(HIST("h_PIDcutsOmega"), 5, massOmega);
-        invMassACOmega->Fill(massOmega);
         registry.fill(HIST("h_massvspt_Omega"), massOmega, track.pt());
       }
 
       registry.fill(HIST("h_PIDcutsXi"), 5, massXi);
-
-      invMassACXi->Fill(massXi);
       registry.fill(HIST("h_massvspt_Xi"), massXi, track.pt());
 
       invMassACV0->Fill(v0mass);
@@ -850,8 +585,8 @@ struct NonPromptCascadeTask {
       daughtersDCA dDCA;
       fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega, dDCA);
 
-      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), deltaPtITSCascade, trackedCascade.itsClsSize(), hasReassociatedClusters, 0, 0, 0, 0, 0, 0,
-                                              primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
+      candidates.emplace_back(NPCascCandidate{mcParticleID, track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), deltaPtITSCascade, trackedCascade.itsClsSize(), hasReassociatedClusters, isGoodMatch, isGoodCascade, pdgCodeMom, itsTrackPDG, fromHF[0], fromHF[1],
+                                              collision.numContrib(), collision.collisionTimeRes(), primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
                                               mDCA.DCAxy, mDCA.DCAz, dDCA.protonDCAxy, dDCA.protonDCAz, dDCA.pionDCAxy, dDCA.pionDCAz, dDCA.bachDCAxy, dDCA.bachDCAz,
@@ -863,11 +598,64 @@ struct NonPromptCascadeTask {
                                               protonTrack.hasTOF(), pionTrack.hasTOF(), bachKaonHasTOF, bachPionHasTOF,
                                               protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi()});
     }
+  }
 
+  void processTrackedCascadesMC(CollisionCandidatesRun3MC const& collisions,
+                                aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
+                                aod::V0s const& /*v0s*/, TracksExtMC const& /*tracks*/,
+                                aod::McParticles const& mcParticles, aod::McCollisions const&, aod::BCsWithTimestamps const&)
+  {
+
+    fillCandidatesVector<TracksExtMC>(collisions, trackedCascades);
+
+    for (size_t i = 0; i < candidates.size(); ++i) {
+
+      if (candidates[i].mcParticleId < 0) {
+        continue;
+      }
+      auto particle = mcParticles.iteratorAt(candidates[i].mcParticleId);
+      auto& c = candidates[i];
+      auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
+      auto label = collisions.iteratorAt(c.collisionID);
+
+      NPCTableMC(c.matchingChi2, c.deltaPt, c.itsClusSize, c.hasReassociatedCluster, c.isGoodMatch, c.isGoodCascade, c.pdgCodeMom, c.pdgCodeITStrack, c.isFromBeauty, c.isFromCharm,
+                 c.pvContributors, c.pvTimeResolution, c.pvX, c.pvY, c.pvZ,
+                 c.cascPt, c.cascEta, c.cascPhi,
+                 c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
+                 c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,
+                 c.casccosPA, c.v0cosPA,
+                 c.massXi, c.massOmega, c.massV0,
+                 c.cascRadius, c.v0radius, c.cascLength, c.v0length,
+                 c.cascNClusITS, c.protonNClusITS, c.pionNClusITS, c.bachKaonNClusITS, c.bachPionNClusITS, c.protonNClusTPC, c.pionNClusTPC, c.bachKaonNClusTPC, c.bachPionNClusTPC,
+                 c.protonTPCNSigma, c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma,
+                 c.protonHasTOF, c.pionHasTOF, c.bachKaonHasTOF, c.bachPionHasTOF,
+                 c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
+                 particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), mcCollision.posX() - particle.vx(), mcCollision.posY() - particle.vy(), mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == label.mcCollisionId());
+    }
+
+    for (const auto& p : mcParticles) {
+      auto absCode = std::abs(p.pdgCode());
+      if (absCode != 3312 && absCode != 3334) {
+        continue;
+      }
+      auto fromHF = isFromHF(p);
+      int pdgCodeMom = p.has_mothers() ? p.mothers_as<aod::McParticles>()[0].pdgCode() : 0;
+      auto mcCollision = p.mcCollision_as<aod::McCollisions>();
+
+      NPCTableGen(p.pt(), p.eta(), p.phi(), p.pdgCode(), pdgCodeMom, mcCollision.posX() - p.vx(), mcCollision.posY() - p.vy(), mcCollision.posZ() - p.vz(), fromHF[0], fromHF[1]);
+    }
+  }
+  PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesMC, "process cascades from strangeness tracking: MC analysis", true);
+
+  void processTrackedCascadesData(CollisionCandidatesRun3 const& collisions,
+                                  aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
+                                  aod::V0s const& /*v0s*/, TracksExtData const& /*tracks*/,
+                                  aod::BCsWithTimestamps const&)
+  {
+    fillCandidatesVector<TracksExtData>(collisions, trackedCascades);
     for (const auto& c : candidates) {
-
       NPCTable(c.matchingChi2, c.deltaPt, c.itsClusSize, c.hasReassociatedCluster,
-               c.pvX, c.pvY, c.pvZ,
+               c.pvContributors, c.pvTimeResolution, c.pvX, c.pvY, c.pvZ,
                c.cascPt, c.cascEta, c.cascPhi,
                c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
                c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,

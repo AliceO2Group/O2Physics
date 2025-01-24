@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file treeCreatorToXiPi.cxx
+/// \file treeCreatorXic0ToXiPiKf.cxx
 /// \brief Writer of the xic0 to Xi Pi candidates in the form of flat tables to be stored in TTrees.
 ///        In this file are defined and filled the output tables
 ///

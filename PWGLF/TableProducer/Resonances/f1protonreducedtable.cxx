@@ -46,6 +46,7 @@
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
+#include "Common/DataModel/PIDResponseITS.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -157,7 +158,7 @@ struct f1protonreducedtable {
                                              {"hEta", "hEta", {HistType::kTH1F, {{20, -1.0f, 1.0f}}}},
                                              {"hNsigmaPtpionTPC", "hNsigmaPtpionTPC", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtpionTOF", "hNsigmaPtpionTOF", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
-                                             {"hNsigmaPtkaonTPC", "hNsigmaPtkaonTPC", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
+                                             {"hNsigmaPtkaonTPC", "hNsigmaPtkaonTPC", {HistType::kTH3F, {{200, -10.0f, 10.0f}, {200, -20.0f, 20.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtkaonTOF", "hNsigmaPtkaonTOF", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtprotonTPC", "hNsigmaPtprotonTPC", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtprotonTOF", "hNsigmaPtprotonTOF", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
@@ -243,6 +244,15 @@ struct f1protonreducedtable {
       return false;
     }
     if (ConfTrkITSRefit && !track.hasITS()) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename T>
+  bool selectionGlobalTrack(const T& candidate)
+  {
+    if (!(candidate.isGlobalTrack() && candidate.isPVContributor())) {
       return false;
     }
     return true;
@@ -493,6 +503,7 @@ struct f1protonreducedtable {
 
   void processF1ProtonReducedTable(EventCandidates::iterator const& collision, aod::BCsWithTimestamps const&, PrimaryTrackCandidates const& tracks, ResoV0s const& V0s)
   {
+    o2::aod::ITSResponse itsResponse;
     bool keepEventF1Proton = false;
     int numberF1 = 0;
     // keep track of indices
@@ -530,10 +541,16 @@ struct f1protonreducedtable {
     // keep TOF Hit of pion
     std::vector<int> PionTOFHit = {};
     std::vector<int> PionTOFHitFinal = {};
+    std::vector<float> PionTPC = {};
+    std::vector<float> PionTPCFinal = {};
 
     // keep TOF Hit of kaon
     std::vector<int> KaonTOFHit = {};
     std::vector<int> KaonTOFHitFinal = {};
+    std::vector<float> KaonTPC = {};
+    std::vector<float> KaonTPCFinal = {};
+    std::vector<float> KaonTPCPionHypo = {};
+    std::vector<float> KaonTPCPionHypoFinal = {};
 
     // keep kaon-kshort mass of f1resonance
     std::vector<float> f1kaonkshortmass = {};
@@ -580,8 +597,12 @@ struct f1protonreducedtable {
       if (zorroSelected) {
         hProcessedEvents->Fill(1.5);
         for (auto& track : tracks) {
-          if (!isSelectedTrack(track))
+          if (!isSelectedTrack(track)) {
             continue;
+          }
+          if (!selectionGlobalTrack(track)) {
+            continue;
+          }
           qaRegistry.fill(HIST("hDCAxy"), track.dcaXY());
           qaRegistry.fill(HIST("hDCAz"), track.dcaZ());
           qaRegistry.fill(HIST("hEta"), track.eta());
@@ -610,7 +631,7 @@ struct f1protonreducedtable {
               nTPCSigmaN[0] = updatePID(track, bgScalingPion, BBAntipion);
           }
 
-          if ((track.sign() > 0 && SelectionPID(track, strategyPIDPion, 0, nTPCSigmaP[0])) || (track.sign() < 0 && SelectionPID(track, strategyPIDPion, 0, nTPCSigmaN[0]))) {
+          if ((track.sign() > 0 && SelectionPID(track, strategyPIDPion, 0, nTPCSigmaP[0]) && (itsResponse.nSigmaITS<o2::track::PID::Pion>(track) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Pion>(track) < 3.0)) || (track.sign() < 0 && SelectionPID(track, strategyPIDPion, 0, nTPCSigmaN[0]) && (itsResponse.nSigmaITS<o2::track::PID::Pion>(track) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Pion>(track) < 3.0))) {
             ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massPi);
             pions.push_back(temp);
             PionIndex.push_back(track.globalIndex());
@@ -618,9 +639,11 @@ struct f1protonreducedtable {
             auto PionTOF = 0;
             if (track.sign() > 0) {
               qaRegistry.fill(HIST("hNsigmaPtpionTPC"), nTPCSigmaP[0], track.pt());
+              PionTPC.push_back(nTPCSigmaP[0]);
             }
             if (track.sign() < 0) {
               qaRegistry.fill(HIST("hNsigmaPtpionTPC"), nTPCSigmaN[0], track.pt());
+              PionTPC.push_back(nTPCSigmaN[0]);
             }
             if (track.hasTOF()) {
               qaRegistry.fill(HIST("hNsigmaPtpionTOF"), track.tofNSigmaPi(), track.pt());
@@ -629,17 +652,21 @@ struct f1protonreducedtable {
             PionTOFHit.push_back(PionTOF);
           }
 
-          if ((track.pt() > cMinKaonPt && track.sign() > 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaP[1])) || (track.pt() > cMinKaonPt && track.sign() < 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaN[1]))) {
+          if ((track.pt() > cMinKaonPt && track.sign() > 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaP[1]) && (itsResponse.nSigmaITS<o2::track::PID::Kaon>(track) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track) < 3.0)) || (track.pt() > cMinKaonPt && track.sign() < 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaN[1]) && (itsResponse.nSigmaITS<o2::track::PID::Kaon>(track) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track) < 3.0))) {
             ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massKa);
             kaons.push_back(temp);
             KaonIndex.push_back(track.globalIndex());
             KaonCharge.push_back(track.sign());
             auto KaonTOF = 0;
             if (track.sign() > 0) {
-              qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaP[1], track.pt());
+              qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaP[1], nTPCSigmaP[0], track.pt());
+              KaonTPC.push_back(nTPCSigmaP[1]);
+              KaonTPCPionHypo.push_back(nTPCSigmaP[0]);
             }
             if (track.sign() < 0) {
-              qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaN[1], track.pt());
+              qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaN[1], nTPCSigmaN[0], track.pt());
+              KaonTPC.push_back(nTPCSigmaN[1]);
+              KaonTPCPionHypo.push_back(nTPCSigmaN[0]);
             }
             if (track.hasTOF()) {
               qaRegistry.fill(HIST("hNsigmaPtkaonTOF"), track.tofNSigmaKa(), track.pt());
@@ -648,7 +675,7 @@ struct f1protonreducedtable {
             KaonTOFHit.push_back(KaonTOF);
           }
 
-          if ((track.pt() < cMaxProtonPt && track.sign() > 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaP[2])) || (track.pt() < cMaxProtonPt && track.sign() < 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaN[2]))) {
+          if ((track.pt() < cMaxProtonPt && track.sign() > 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaP[2]) && (itsResponse.nSigmaITS<o2::track::PID::Proton>(track) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track) < 3.0)) || (track.pt() < cMaxProtonPt && track.sign() < 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaN[2]) && (itsResponse.nSigmaITS<o2::track::PID::Proton>(track) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track) < 3.0))) {
             ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massPr);
             protons.push_back(temp);
             ProtonIndex.push_back(track.globalIndex());
@@ -742,6 +769,9 @@ struct f1protonreducedtable {
                 F1KshortDaughterNegativeIndex.push_back(KshortNegDaughIndex.at(i3));
                 PionTOFHitFinal.push_back(PionTOFHit.at(i1)); // Pion TOF Hit
                 KaonTOFHitFinal.push_back(KaonTOFHit.at(i2)); // Kaon TOF Hit
+                PionTPCFinal.push_back(PionTPC.at(i1));       // Pion TPC
+                KaonTPCFinal.push_back(KaonTPC.at(i2));       // Kaon TPC
+                KaonTPCPionHypoFinal.push_back(KaonTPCPionHypo.at(i2)); // Kaon TPC
                 if (pairsign == 1) {
                   qaRegistry.fill(HIST("hInvMassf1"), F1Vector.M(), F1Vector.Pt());
                   numberF1 = numberF1 + 1;
@@ -798,7 +828,7 @@ struct f1protonreducedtable {
           F1d1dummy = f1resonanced1.at(i5);
           F1d2dummy = f1resonanced2.at(i5);
           F1d3dummy = f1resonanced3.at(i5);
-          f1track(indexEvent, f1signal.at(i5), F1VectorDummy.Px(), F1VectorDummy.Py(), F1VectorDummy.Pz(), F1d1dummy.Px(), F1d1dummy.Py(), F1d1dummy.Pz(), F1d2dummy.Px(), F1d2dummy.Py(), F1d2dummy.Pz(), F1d3dummy.Px(), F1d3dummy.Py(), F1d3dummy.Pz(), PionTOFHitFinal.at(i5), KaonTOFHitFinal.at(i5), F1VectorDummy.M(), f1kaonkshortmass.at(i5), F1PionIndex.at(i5), F1KaonIndex.at(i5), F1KshortDaughterPositiveIndex.at(i5), F1KshortDaughterNegativeIndex.at(i5));
+          f1track(indexEvent, f1signal.at(i5), F1VectorDummy.Px(), F1VectorDummy.Py(), F1VectorDummy.Pz(), F1d1dummy.Px(), F1d1dummy.Py(), F1d1dummy.Pz(), F1d2dummy.Px(), F1d2dummy.Py(), F1d2dummy.Pz(), F1d3dummy.Px(), F1d3dummy.Py(), F1d3dummy.Pz(), PionTOFHitFinal.at(i5), KaonTOFHitFinal.at(i5), PionTPCFinal.at(i5), KaonTPCFinal.at(i5), KaonTPCPionHypoFinal.at(i5), F1VectorDummy.M(), f1kaonkshortmass.at(i5), F1PionIndex.at(i5), F1KaonIndex.at(i5), F1KshortDaughterPositiveIndex.at(i5), F1KshortDaughterNegativeIndex.at(i5));
         }
         //// Fill track table for proton//////////////////
         for (auto iproton = protons.begin(); iproton != protons.end(); ++iproton) {

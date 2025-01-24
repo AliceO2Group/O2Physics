@@ -108,7 +108,7 @@ struct HfCandidateSelectorLc {
 
   void init(InitContext const&)
   {
-    std::array<bool, 2> processes = {doprocessNoBayesPid, doprocessBayesPid};
+    std::array<bool, 4> processes = {doprocessNoBayesPidWithDCAFitterN, doprocessBayesPidWithDCAFitterN, doprocessNoBayesPidWithKFParticle, doprocessBayesPidWithKFParticle};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
@@ -232,7 +232,7 @@ struct HfCandidateSelectorLc {
   /// \param trackPion is the track with the pion hypothesis
   /// \param trackKaon is the track with the kaon hypothesis
   /// \return true if candidate passes all cuts for the given Conjugate
-  template <typename T1, typename T2>
+  template <aod::hf_cand::VertexerType reconstructionType, typename T1, typename T2>
   bool selectionTopolConjugate(const T1& candidate, const T2& trackProton, const T2& trackKaon, const T2& trackPion)
   {
 
@@ -248,32 +248,34 @@ struct HfCandidateSelectorLc {
     }
 
     // cut on Lc->pKpi, piKp mass values
-    if (trackProton.globalIndex() == candidate.prong0Id()) {
-      if (std::abs(hfHelper.invMassLcToPKPi(candidate) - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
-        return false;
+    /// cut on the Kpi pair invariant mass, to study Lc->pK*(->Kpi)
+    float massLc, massKPi;
+    if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
+      if (trackProton.globalIndex() == candidate.prong0Id()) {
+        massLc = hfHelper.invMassLcToPKPi(candidate);
+        massKPi = hfHelper.invMassKPiPairLcToPKPi(candidate);
+      } else {
+        massLc = hfHelper.invMassLcToPiKP(candidate);
+        massKPi = hfHelper.invMassKPiPairLcToPiKP(candidate);
       }
-    } else {
-      if (std::abs(hfHelper.invMassLcToPiKP(candidate) - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
-        return false;
+    } else if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+      if (trackProton.globalIndex() == candidate.prong0Id()) {
+        massLc = candidate.kfMassPKPi();
+        massKPi = candidate.kfMassKPi();
+      } else {
+        massLc = candidate.kfMassPiKP();
+        massKPi = candidate.kfMassPiK();
       }
+    }
+
+    if (std::abs(massLc - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
+      return false;
     }
 
     /// cut on the Kpi pair invariant mass, to study Lc->pK*(->Kpi)
     const double cutMassKPi = cuts->get(pTBin, "mass (Kpi)");
-    if (cutMassKPi > 0) {
-      if (trackProton.globalIndex() == candidate.prong0Id()) {
-        // inspecting the pKpi hypothesis
-        // K: prong1, pi: prong 2
-        if (std::abs(hfHelper.invMassKPiPairLcToPKPi(candidate) - massK0Star892) > cutMassKPi) {
-          return false;
-        }
-      } else {
-        // inspecting the piKp hypothesis
-        // K: prong1, pi: prong 0
-        if (std::abs(hfHelper.invMassKPiPairLcToPiKP(candidate) - massK0Star892) > cutMassKPi) {
-          return false;
-        }
-      }
+    if (cutMassKPi > 0 && std::abs(massKPi - massK0Star892) > cutMassKPi) {
+      return false;
     }
 
     return true;
@@ -306,10 +308,11 @@ struct HfCandidateSelectorLc {
   }
 
   /// \brief function to apply Lc selections
+  /// \param reconstructionType is the reconstruction type (DCAFitterN or KFParticle)
   /// \param candidates Lc candidate table
   /// \param tracks track table
-  template <bool useBayesPid = false, typename TTracks>
-  void runSelectLc(aod::HfCand3Prong const& candidates, TTracks const&)
+  template <bool useBayesPid = false, aod::hf_cand::VertexerType reconstructionType, typename CandType, typename TTracks>
+  void runSelectLc(CandType const& candidates, TTracks const&)
   {
     // looping over 3-prong candidates
     for (const auto& candidate : candidates) {
@@ -364,8 +367,8 @@ struct HfCandidateSelectorLc {
       }
 
       // conjugate-dependent topological selection for Lc
-      bool topolLcToPKPi = selectionTopolConjugate(candidate, trackPos1, trackNeg, trackPos2);
-      bool topolLcToPiKP = selectionTopolConjugate(candidate, trackPos2, trackNeg, trackPos1);
+      bool topolLcToPKPi = selectionTopolConjugate<reconstructionType>(candidate, trackPos1, trackNeg, trackPos2);
+      bool topolLcToPiKP = selectionTopolConjugate<reconstructionType>(candidate, trackPos2, trackNeg, trackPos1);
 
       if (!topolLcToPKPi && !topolLcToPiKP) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
@@ -481,25 +484,45 @@ struct HfCandidateSelectorLc {
     }
   }
 
-  /// \brief process function w/o Bayes PID
+  /// \brief process function w/o Bayes PID with DCAFitterN
   /// \param candidates Lc candidate table
   /// \param tracks track table
-  void processNoBayesPid(aod::HfCand3Prong const& candidates,
-                         TracksSel const& tracks)
+  void processNoBayesPidWithDCAFitterN(aod::HfCand3Prong const& candidates,
+                                       TracksSel const& tracks)
   {
-    runSelectLc<false>(candidates, tracks);
+    runSelectLc<false, aod::hf_cand::VertexerType::DCAFitter>(candidates, tracks);
   }
-  PROCESS_SWITCH(HfCandidateSelectorLc, processNoBayesPid, "Process Lc selection w/o Bayes PID", true);
+  PROCESS_SWITCH(HfCandidateSelectorLc, processNoBayesPidWithDCAFitterN, "Process Lc selection w/o Bayes PID with DCAFitterN", true);
 
-  /// \brief process function with Bayes PID
+  /// \brief process function with Bayes PID with DCAFitterN
   /// \param candidates Lc candidate table
   /// \param tracks track table with Bayes PID information
-  void processBayesPid(aod::HfCand3Prong const& candidates,
-                       TracksSelBayesPid const& tracks)
+  void processBayesPidWithDCAFitterN(aod::HfCand3Prong const& candidates,
+                                     TracksSelBayesPid const& tracks)
   {
-    runSelectLc<true>(candidates, tracks);
+    runSelectLc<true, aod::hf_cand::VertexerType::DCAFitter>(candidates, tracks);
   }
-  PROCESS_SWITCH(HfCandidateSelectorLc, processBayesPid, "Process Lc selection with Bayes PID", false);
+  PROCESS_SWITCH(HfCandidateSelectorLc, processBayesPidWithDCAFitterN, "Process Lc selection with Bayes PID with DCAFitterN", false);
+
+  /// \brief process function w/o Bayes PID with KFParticle
+  /// \param candidates Lc candidate table
+  /// \param tracks track table
+  void processNoBayesPidWithKFParticle(soa::Join<aod::HfCand3Prong, aod::HfCand3ProngKF> const& candidates,
+                                       TracksSel const& tracks)
+  {
+    runSelectLc<false, aod::hf_cand::VertexerType::KfParticle>(candidates, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorLc, processNoBayesPidWithKFParticle, "Process Lc selection w/o Bayes PID with KFParticle", false);
+
+  /// \brief process function with Bayes PID with KFParticle
+  /// \param candidates Lc candidate table
+  /// \param tracks track table with Bayes PID information
+  void processBayesPidWithKFParticle(soa::Join<aod::HfCand3Prong, aod::HfCand3ProngKF> const& candidates,
+                                     TracksSelBayesPid const& tracks)
+  {
+    runSelectLc<true, aod::hf_cand::VertexerType::KfParticle>(candidates, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorLc, processBayesPidWithKFParticle, "Process Lc selection with Bayes PID with KFParticle", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

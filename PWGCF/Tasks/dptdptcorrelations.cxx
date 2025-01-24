@@ -1133,7 +1133,7 @@ struct DptDptCorrelationsTask {
           if (!corrana) {
             LOGF(fatal, "Mixed events makes not sense to run it without correlations, please configure properly!!");
           }
-          dataCEME[i] = buildCEInstance(range.Data(), false, false, true);
+          dataCEME[i] = buildCEInstance(range.Data(), false, true, true);
         }
       }
       for (int i = 0; i < ncmranges; ++i) {
