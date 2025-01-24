@@ -589,7 +589,7 @@ struct FlowTask {
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
       return 0;
     }
-    if (cfgEvSelkNoSameBunchPileup) 
+    if (cfgEvSelkNoSameBunchPileup)
       registry.fill(HIST("hEventCountSpecific"), 1.5);
     if (cfgEvSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
@@ -657,7 +657,7 @@ struct FlowTask {
   {
     registry.fill(HIST("hEventCountTentative"), 0.5);
     // Regradless of the event selection, fill the event counter histograms
-    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) 
+    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
       registry.fill(HIST("hEventCountTentative"), 1.5);
     if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
       registry.fill(HIST("hEventCountTentative"), 2.5);
@@ -673,11 +673,10 @@ struct FlowTask {
     auto occupancy = collision.trackOccupancyInTimeRange();
     if (!(occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh))
       registry.fill(HIST("hEventCountTentative"), 7.5);
-    if(!((multNTracksPV < fMultPVCutLow->Eval(centrality)) || (multNTracksPV > fMultPVCutHigh->Eval(centrality)) || (multTrk < fMultCutLow->Eval(centrality)) || (multTrk > fMultCutHigh->Eval(centrality))))
+    if (!((multNTracksPV < fMultPVCutLow->Eval(centrality)) || (multNTracksPV > fMultPVCutHigh->Eval(centrality)) || (multTrk < fMultCutLow->Eval(centrality)) || (multTrk > fMultCutHigh->Eval(centrality))))
       registry.fill(HIST("hEventCountTentative"), 8.5);
     if (!(std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A())))
       registry.fill(HIST("hEventCountTentative"), 9.5);
-
   }
 
   template <typename TTrack>

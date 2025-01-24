@@ -244,7 +244,6 @@ struct FlowRunbyRun {
       double* ptBins = &(axis.binEdges)[0];
       fGFWWeightsList->addGFWWeightsByRun(runNumber, nPtBins, ptBins, true, false);
     }
-
   }
 
   void initHadronicRate(aod::BCsWithTimestamps::iterator const& bc)
@@ -330,7 +329,6 @@ struct FlowRunbyRun {
           weight->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
         }
       }
-      
     }
 
     // Filling TProfile
