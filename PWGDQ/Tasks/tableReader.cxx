@@ -843,7 +843,7 @@ struct AnalysisEventMixing {
 
       VarManager::FillTwoMixEvents<TEventFillMap>(event1, event2, tracks1, tracks2);
       if (fConfigFlowReso) {
-        VarManager::FillEventFlowResoFactor(ResoFlowSP, ResoFlowEP);
+        VarManager::FillTwoMixEventsFlowResoFactor(ResoFlowSP, ResoFlowEP);
       }
       runMixedPairing<TEventFillMap, TPairType>(tracks1, tracks2);
     } // end event loop
