@@ -52,7 +52,6 @@
 #include <TH2F.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include <TDatabasePDG.h>
 #include <Math/Vector4D.h>
 #include "Math/Vector3D.h"
 #include "Math/GenVector/Boost.h"
@@ -188,9 +187,9 @@ struct NetProtonCumulantsMC {
     histos.add("hgenPtAll", "Generated All particles;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
     histos.add("hgenPtProton", "Generated Protons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
     histos.add("hgenPtAntiproton", "Generated Antiprotons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
-    histos.add("hgenPhiAll", "Generated All particles;#phi", kTH1F, {{100, 0., 2. * M_PI}});
-    histos.add("hgenPhiProton", "Generated Protons;#phi", kTH1F, {{100, 0., 2. * M_PI}});
-    histos.add("hgenPhiAntiproton", "Generated Antiprotons;#phi", kTH1F, {{100, 0., 2. * M_PI}});
+    histos.add("hgenPhiAll", "Generated All particles;#phi", kTH1F, {{100, 0., 7.}});
+    histos.add("hgenPhiProton", "Generated Protons;#phi", kTH1F, {{100, 0., 7.}});
+    histos.add("hgenPhiAntiproton", "Generated Antiprotons;#phi", kTH1F, {{100, 0., 7.}});
     histos.add("hgenEtaAll", "Generated All particles;#eta", kTH1F, {{100, -2.01, 2.01}});
     histos.add("hgenEtaProton", "Generated Proton;#eta", kTH1F, {{100, -2.01, 2.01}});
     histos.add("hgenEtaAntiproton", "Generated Antiprotons;#eta", kTH1F, {{100, -2.01, 2.01}});
@@ -209,9 +208,9 @@ struct NetProtonCumulantsMC {
     histos.add("hrecPtAntiproton", "Reconstructed Antiprotons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
     histos.add("hrecTruePtProton", "Reconstructed pdgcode verified protons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
     histos.add("hrecTruePtAntiproton", "Reconstructed pdgcode verified Antiprotons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
-    histos.add("hrecPhiAll", "Reconstructed All particles;#phi", kTH1F, {{100, 0., 2. * M_PI}});
-    histos.add("hrecPhiProton", "Reconstructed Protons;#phi", kTH1F, {{100, 0., 2. * M_PI}});
-    histos.add("hrecPhiAntiproton", "Reconstructed Antiprotons;#phi", kTH1F, {{100, 0., 2. * M_PI}});
+    histos.add("hrecPhiAll", "Reconstructed All particles;#phi", kTH1F, {{100, 0., 7.}});
+    histos.add("hrecPhiProton", "Reconstructed Protons;#phi", kTH1F, {{100, 0., 7.}});
+    histos.add("hrecPhiAntiproton", "Reconstructed Antiprotons;#phi", kTH1F, {{100, 0., 7.}});
     histos.add("hrecEtaAll", "Reconstructed All particles;#eta", kTH1F, {{100, -2.01, 2.01}});
     histos.add("hrecEtaProton", "Reconstructed Proton;#eta", kTH1F, {{100, -2.01, 2.01}});
     histos.add("hrecEtaAntiproton", "Reconstructed Antiprotons;#eta", kTH1F, {{100, -2.01, 2.01}});
@@ -288,7 +287,7 @@ struct NetProtonCumulantsMC {
 
   Produces<aod::ProtGenCollEbyeTables> gen_ebye_collisions; //! MC Gen table creation
 
-  void processMCGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
+  void processMCGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
     histos.fill(HIST("hMC"), 0.5);
     if (std::abs(mcCollision.posZ()) < cfgCutVertex) {
@@ -297,7 +296,7 @@ struct NetProtonCumulantsMC {
     auto cent = 0;
 
     int Nchinel = 0;
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
       auto pdgcode = std::abs(mcParticle.pdgCode());
       if (mcParticle.isPhysicalPrimary() && (pdgcode == 211 || pdgcode == 321 || pdgcode == 2212 || pdgcode == 11 || pdgcode == 13)) {
         if (std::abs(mcParticle.eta()) < 1.0) {
