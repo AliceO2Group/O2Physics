@@ -269,9 +269,13 @@ struct StrangenessInJets {
     registryMC.add("AntiLambda_reconstructed_incl", "AntiLambda_reconstructed_incl", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
 
     // Histograms for 2d reweighting (pion)
-    registryMC.add("Pion_eta_pt_jet", "Pion_eta_pt_jet", HistType::kTH2F, {ptAxis, etaAxis});
-    registryMC.add("Pion_eta_pt_ue", "Pion_eta_pt_ue", HistType::kTH2F, {ptAxis, etaAxis});
-    registryMC.add("Pion_eta_pt_pythia", "Pion_eta_pt_pythia", HistType::kTH2F, {ptAxis, etaAxis});
+    registryMC.add("pi_plus_eta_pt_jet", "pi_plus_eta_pt_jet", HistType::kTH2F, {ptAxis, etaAxis});
+    registryMC.add("pi_plus_eta_pt_ue", "pi_plus_eta_pt_ue", HistType::kTH2F, {ptAxis, etaAxis});
+    registryMC.add("pi_plus_eta_pt_pythia", "pi_plus_eta_pt_pythia", HistType::kTH2F, {ptAxis, etaAxis});
+
+    registryMC.add("pi_minus_eta_pt_jet", "pi_minus_eta_pt_jet", HistType::kTH2F, {ptAxis, etaAxis});
+    registryMC.add("pi_minus_eta_pt_ue", "pi_minus_eta_pt_ue", HistType::kTH2F, {ptAxis, etaAxis});
+    registryMC.add("pi_minus_eta_pt_pythia", "pi_minus_eta_pt_pythia", HistType::kTH2F, {ptAxis, etaAxis});
 
     // Histograms for 2d reweighting (K0s)
     registryMC.add("K0s_eta_pt_jet", "K0s_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, etaAxis});
@@ -1708,10 +1712,12 @@ struct StrangenessInJets {
           case 211: // Pi+
             registryMC.fill(HIST("pi_plus_gen_in_jet"), multiplicity, mcParticle.pt(), wPiplusJet);
             registryMC.fill(HIST("pi_plus_gen_in_ue"), multiplicity, mcParticle.pt(), wPiplusUe);
+            registryMC.fill(HIST("pi_plus_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
           case -211: // Pi-
             registryMC.fill(HIST("pi_minus_gen_in_jet"), multiplicity, mcParticle.pt(), wPiminusJet);
             registryMC.fill(HIST("pi_minus_gen_in_ue"), multiplicity, mcParticle.pt(), wPiminusUe);
+            registryMC.fill(HIST("pi_minus_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
           case 310: // K0s
             registryMC.fill(HIST("K0s_generated_jet"), multiplicity, mcParticle.pt(), wK0jet);
@@ -1928,81 +1934,89 @@ struct StrangenessInJets {
             continue;
 
           TVector3 particleDir(particle.px(), particle.py(), particle.pz());
-          double deltaEtaJet = particleDir.Eta() - jet[i].Eta();
-          double deltaPhiJet = getDeltaPhi(particleDir.Phi(), jet[i].Phi());
-          double deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
-          double deltaEtaUe1 = particleDir.Eta() - ue1[i].Eta();
-          double deltaPhiUe1 = getDeltaPhi(particleDir.Phi(), ue1[i].Phi());
-          double deltaRue1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
-          double deltaEtaUe2 = particleDir.Eta() - ue2[i].Eta();
-          double deltaPhiUe2 = getDeltaPhi(particleDir.Phi(), ue2[i].Phi());
-          double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+          const double deltaEtaJet = particleDir.Eta() - jet[i].Eta();
+          const double deltaPhiJet = getDeltaPhi(particleDir.Phi(), jet[i].Phi());
+          const double deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+          const double deltaEtaUe1 = particleDir.Eta() - ue1[i].Eta();
+          const double deltaPhiUe1 = getDeltaPhi(particleDir.Phi(), ue1[i].Phi());
+          const double deltaRue1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+          const double deltaEtaUe2 = particleDir.Eta() - ue2[i].Eta();
+          const double deltaPhiUe2 = getDeltaPhi(particleDir.Phi(), ue2[i].Phi());
+          const double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
-          int pdg = particle.pdgCode();
-
-          if (pdg == 211) {
-            if (deltaRjet < rJet) {
-              registryMC.fill(HIST("Pion_eta_pt_jet"), particle.pt(), particle.eta());
-            }
-            if (deltaRue1 < rJet || deltaRue2 < rJet) {
-              registryMC.fill(HIST("Pion_eta_pt_ue"), particle.pt(), particle.eta());
-            }
-          }
-          if (pdg == 310) {
-            if (deltaRjet < rJet) {
-              registryMC.fill(HIST("K0s_eta_pt_jet"), particle.pt(), particle.eta());
-            }
-            if (deltaRue1 < rJet || deltaRue2 < rJet) {
-              registryMC.fill(HIST("K0s_eta_pt_ue"), particle.pt(), particle.eta());
-            }
-          }
-          if (pdg == 3122) {
-            if (deltaRjet < rJet) {
-              registryMC.fill(HIST("Lambda_eta_pt_jet"), particle.pt(), particle.eta());
-            }
-            if (deltaRue1 < rJet || deltaRue2 < rJet) {
-              registryMC.fill(HIST("Lambda_eta_pt_ue"), particle.pt(), particle.eta());
-            }
-          }
-          if (pdg == -3122) {
-            if (deltaRjet < rJet) {
-              registryMC.fill(HIST("AntiLambda_eta_pt_jet"), particle.pt(), particle.eta());
-            }
-            if (deltaRue1 < rJet || deltaRue2 < rJet) {
-              registryMC.fill(HIST("AntiLambda_eta_pt_ue"), particle.pt(), particle.eta());
-            }
-          }
-          if (pdg == 3312) {
-            if (deltaRjet < rJet) {
-              registryMC.fill(HIST("Xi_eta_pt_jet"), particle.pt(), particle.eta());
-            }
-            if (deltaRue1 < rJet || deltaRue2 < rJet) {
-              registryMC.fill(HIST("Xi_eta_pt_ue"), particle.pt(), particle.eta());
-            }
-          }
-          if (pdg == -3312) {
-            if (deltaRjet < rJet) {
-              registryMC.fill(HIST("AntiXi_eta_pt_jet"), particle.pt(), particle.eta());
-            }
-            if (deltaRue1 < rJet || deltaRue2 < rJet) {
-              registryMC.fill(HIST("AntiXi_eta_pt_ue"), particle.pt(), particle.eta());
-            }
-          }
-          if (pdg == 3334) {
-            if (deltaRjet < rJet) {
-              registryMC.fill(HIST("Omega_eta_pt_jet"), particle.pt(), particle.eta());
-            }
-            if (deltaRue1 < rJet || deltaRue2 < rJet) {
-              registryMC.fill(HIST("Omega_eta_pt_ue"), particle.pt(), particle.eta());
-            }
-          }
-          if (pdg == -3334) {
-            if (deltaRjet < rJet) {
-              registryMC.fill(HIST("AntiOmega_eta_pt_jet"), particle.pt(), particle.eta());
-            }
-            if (deltaRue1 < rJet || deltaRue2 < rJet) {
-              registryMC.fill(HIST("AntiOmega_eta_pt_ue"), particle.pt(), particle.eta());
-            }
+          switch (particle.pdgCode()) {
+            case 211:
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("pi_plus_eta_pt_jet"), particle.pt(), particle.eta());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("pi_plus_eta_pt_ue"), particle.pt(), particle.eta());
+              }
+              break;
+            case -211:
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("pi_minus_eta_pt_jet"), particle.pt(), particle.eta());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("pi_minus_eta_pt_ue"), particle.pt(), particle.eta());
+              }
+              break;
+            case 310:
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("K0s_eta_pt_jet"), particle.pt(), particle.eta());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("K0s_eta_pt_ue"), particle.pt(), particle.eta());
+              }
+              break;
+            case 3122:
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("Lambda_eta_pt_jet"), particle.pt(), particle.eta());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("Lambda_eta_pt_ue"), particle.pt(), particle.eta());
+              }
+              break;
+            case -3122:
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("AntiLambda_eta_pt_jet"), particle.pt(), particle.eta());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("AntiLambda_eta_pt_ue"), particle.pt(), particle.eta());
+              }
+              break;
+            case 3312:
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("Xi_eta_pt_jet"), particle.pt(), particle.eta());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("Xi_eta_pt_ue"), particle.pt(), particle.eta());
+              }
+              break;
+            case -3312:
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("AntiXi_eta_pt_jet"), particle.pt(), particle.eta());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("AntiXi_eta_pt_ue"), particle.pt(), particle.eta());
+              }
+              break;
+            case 3334:
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("Omega_eta_pt_jet"), particle.pt(), particle.eta());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("Omega_eta_pt_ue"), particle.pt(), particle.eta());
+              }
+              break;
+            case -3334:
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("AntiOmega_eta_pt_jet"), particle.pt(), particle.eta());
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("AntiOmega_eta_pt_ue"), particle.pt(), particle.eta());
+              }
+              break;
           }
         }
       }
