@@ -105,7 +105,7 @@ o2physics_add_dpl_workflow(cascpolsp
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(strangeness-in-jets
-    SOURCES strangeness_in_jets.cxx
+    SOURCES strangenessInJets.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 

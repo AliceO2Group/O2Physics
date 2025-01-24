@@ -55,10 +55,10 @@ struct HfCandidateCreatorMcGen {
                aod::McParticles const& mcParticles)
   {
     if (fill2Prong) {
-      hf_mc_gen::fillMcMatchGen2Prong(mcParticles, rowMcMatchGen2Prong, rejectBackground2Prong);
+      hf_mc_gen::fillMcMatchGen2Prong(mcParticles, mcParticles, rowMcMatchGen2Prong, rejectBackground2Prong);
     }
     if (fill3Prong) {
-      hf_mc_gen::fillMcMatchGen3Prong(mcParticles, rowMcMatchGen3Prong, rejectBackground3Prong, createDplus, createDs, createLc, createXic);
+      hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticles, rowMcMatchGen3Prong, rejectBackground3Prong, createDplus, createDs, createLc, createXic);
     }
     if (fillBplus) {
       hf_mc_gen::fillMcMatchGenBplus(mcParticles, rowMcMatchGenBplus);
