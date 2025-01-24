@@ -18,6 +18,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <vector>
+#include <unordered_map>
 #include <map>
 #include <string>
 #include <memory>
