@@ -837,24 +837,21 @@ struct mcPidTof {
         if (fullTable) {
           tablePIDFullPi(-999.f, -999.f);
         } else {
-          aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                                tablePIDPi);
+          aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDPi);
         }
         break;
       case idxKa:
         if (fullTable) {
           tablePIDFullKa(-999.f, -999.f);
         } else {
-          aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                                tablePIDKa);
+          aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDKa);
         }
         break;
       case idxPr:
         if (fullTable) {
           tablePIDFullPr(-999.f, -999.f);
         } else {
-          aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                                tablePIDPr);
+          aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDPr);
         }
         break;
       default:
@@ -975,7 +972,7 @@ struct mcPidTof {
                 nSigma = applyMcRecalib(pidId, trk.pt(), nSigma);
               }
             }
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nSigma, tablePIDPi);
+            aod::pidtof_tiny::binning::packInTable(nSigma, tablePIDPi);
             break;
           }
           case idxKa: {
@@ -985,7 +982,7 @@ struct mcPidTof {
                 nSigma = applyMcRecalib(pidId, trk.pt(), nSigma);
               }
             }
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nSigma, tablePIDKa);
+            aod::pidtof_tiny::binning::packInTable(nSigma, tablePIDKa);
             break;
           }
           case idxPr: {
@@ -995,7 +992,7 @@ struct mcPidTof {
                 nSigma = applyMcRecalib(pidId, trk.pt(), nSigma);
               }
             }
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nSigma, tablePIDPr);
+            aod::pidtof_tiny::binning::packInTable(nSigma, tablePIDPr);
             break;
           }
           default:

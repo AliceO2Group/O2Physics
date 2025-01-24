@@ -694,8 +694,8 @@ struct lfTpcPid {
           bb = BetheBlochNeg##Particle(trk);                                                        \
           expSigma = BetheBlochResNeg##Particle(trk, bb);                                           \
         }                                                                                           \
-        aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() - bb) / expSigma,    \
-                                                              tablePID##Particle);                  \
+        aod::pidtpc_tiny::binning::packInTable((trk.tpcSignal() - bb) / expSigma,                   \
+                                               tablePID##Particle);                                 \
       }                                                                                             \
     }                                                                                               \
   }                                                                                                 \

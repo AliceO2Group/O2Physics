@@ -58,12 +58,12 @@ bool process(std::string outputName, int nevents = 100000)
   for (int i = 0; i < nevents; i++) {
     float nsigma = gRandom->Gaus(0, 1);
     hgaus->Fill(nsigma);
-    aod::pidutils::packInTable<T>(nsigma, container);
+    T::packInTable(nsigma, container);
     hgausPacked->Fill(container.unpack());
 
     nsigma = gRandom->Uniform(-10, 10);
     huniform->Fill(nsigma);
-    aod::pidutils::packInTable<T>(nsigma, container);
+    T::packInTable(nsigma, container);
     huniformPacked->Fill(container.unpack());
   }
 

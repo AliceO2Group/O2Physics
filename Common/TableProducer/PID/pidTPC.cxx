@@ -458,7 +458,7 @@ struct tpcPid {
     if (flagFull)
       tableFull(expSigma, nSigma);
     if (flagTiny)
-      aod::pidutils::packInTable<aod::pidtpc_tiny::binning>(nSigma, tableTiny);
+      aod::pidtpc_tiny::binning::packInTable(nSigma, tableTiny);
   };
 
   void processStandard(Coll const& collisions, Trks const& tracks, aod::BCsWithTimestamps const& bcs)
