@@ -467,43 +467,6 @@ struct FlowTask {
     return;
   }
 
-  template <char... chars, char... chars2>
-  void fillpTvnProfile(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, const ConstStr<chars...>& vnWeff, const ConstStr<chars2...>& vnpT, const double& cent)
-  {
-    double meanPt = sum_pt / WeffEvent;
-    double dnx, val;
-    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
-    if (dnx == 0)
-      return;
-    if (!corrconf.pTDif) {
-      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (std::fabs(val) < 1) {
-        registry.fill(vnWeff, cent, val, dnx * WeffEvent);
-        registry.fill(vnpT, cent, val * meanPt, dnx * WeffEvent);
-      }
-      return;
-    }
-    return;
-  }
-
-  void fillpTvnProfile(const GFW::CorrConfig& corrconf, const double& sum_pt, const double& WeffEvent, std::shared_ptr<TProfile> vnWeff, std::shared_ptr<TProfile> vnpT, const double& cent)
-  {
-    double meanPt = sum_pt / WeffEvent;
-    double dnx, val;
-    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
-    if (dnx == 0)
-      return;
-    if (!corrconf.pTDif) {
-      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (std::fabs(val) < 1) {
-        vnWeff->Fill(cent, val, dnx * WeffEvent);
-        vnpT->Fill(cent, val * meanPt, dnx * WeffEvent);
-      }
-      return;
-    }
-    return;
-  }
-
   void fillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
   {
     double dnx, val;
@@ -770,10 +733,6 @@ struct FlowTask {
 
     // track weights
     float weff = 1, wacc = 1;
-    double weffEvent = 0;
-    double ptSum = 0., ptSum_Gap08 = 0.;
-    double weffEventWithinGap08 = 0., weffEventSquareWithinGap08 = 0.;
-    double sumptSquarewSquareWithinGap08 = 0., sumptwSquareWithinGap08 = 0.;
     double nTracksCorrected = 0;
     float independent = cent;
     if (cfgUseNch)
@@ -795,7 +754,6 @@ struct FlowTask {
         continue;
       bool withinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
-      bool withinEtaGap08 = (track.eta() >= -0.4) && (track.eta() <= 0.4);
       if (cfgOutputNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
           if (withinPtRef)
@@ -828,16 +786,7 @@ struct FlowTask {
         registry.fill(HIST("hnTPCCrossedRow"), track.tpcNClsCrossedRows());
         registry.fill(HIST("hDCAz"), track.dcaZ(), track.pt());
         registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
-        weffEvent += weff;
-        ptSum += weff * track.pt();
         nTracksCorrected += weff;
-        if (withinEtaGap08) {
-          ptSum_Gap08 += weff * track.pt();
-          sumptwSquareWithinGap08 += weff * weff * track.pt();
-          sumptSquarewSquareWithinGap08 += weff * weff * track.pt() * track.pt();
-          weffEventWithinGap08 += weff;
-          weffEventSquareWithinGap08 += weff * weff;
-        }
       }
       if (withinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
