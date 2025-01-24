@@ -9,12 +9,30 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <array>
 #include <cstdlib>
 #include <vector>
 #include <string>
+#include <TList.h>
+#include <TProfile.h>
+#include <TProfile2D.h>
+#include <TRandom3.h>
+#include <TMath.h>
+#include <TH1F.h>
+#include <TDirectory.h>
+#include <THn.h>
+#include <TLorentzVector.h>
+#include <TMath.h>
+#include <TObjArray.h>
+#include <TFile.h>
+#include <TH2F.h>
+#include <TLorentzVector.h>
+#include <TPDGCode.h>
+#include <Math/Vector4D.h>
+#include <Math/Vector3D.h>
+#include <Math/GenVector/Boost.h>
+#include <TF1.h>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -36,25 +54,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 
-#include "TList.h"
-#include "TProfile.h"
-#include "TProfile2D.h"
-#include "TRandom3.h"
-#include "TMath.h"
-#include <TH1F.h>
-#include <TDirectory.h>
-#include <THn.h>
-#include <TLorentzVector.h>
-#include <TMath.h>
-#include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
-#include <Math/Vector4D.h>
-#include "Math/Vector3D.h"
-#include "Math/GenVector/Boost.h"
-#include "TF1.h"
+#include <CCDB/BasicCCDBManager.h>
 
 namespace o2::aod
 {
