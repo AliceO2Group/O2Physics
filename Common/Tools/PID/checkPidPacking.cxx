@@ -35,7 +35,7 @@ bool process(std::string outputName, int nevents = 100000)
     NsigmaContainer() {}
     void operator()(const int8_t& packed) { mPacked = packed; }
     int8_t mPacked = 0;
-    float unpack() { return aod::pidutils::unPackInTable<T>(mPacked); }
+    float unpack() { return T::unPackInTable(mPacked); }
   } container;
 
   TH1F* hgaus = new TH1F("hgaus", "", 20 / T::bin_width,

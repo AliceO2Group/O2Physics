@@ -300,7 +300,7 @@ struct binning {
   }
 
   // Function to unpack a binned value into a float
-  static float unPackInTable(const typename binned_t& valueToUnpack)
+  static float unPackInTable(const binned_t& valueToUnpack)
   {
     return bin_width * static_cast<float>(valueToUnpack);
   }
