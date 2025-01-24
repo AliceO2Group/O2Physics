@@ -66,7 +66,7 @@ namespace GenEbyeCollTable
 DECLARE_SOA_COLUMN(CentralityGen, centralityGen, uint8_t);
 DECLARE_SOA_COLUMN(NetProtNoGen, netProtNoGen, float);   //! net proton no. in an event
 DECLARE_SOA_COLUMN(ProtNoGen, protNoGen, float);         //! proton no. in an event
-DECLARE_SOA_COLUMN(AntiProtNoGen, antiprotNoGen, float); //! antiproton no. in an event
+DECLARE_SOA_COLUMN(AntiProtNoGen, antiProtNoGen, float); //! antiproton no. in an event
 } // namespace GenEbyeCollTable
 
 DECLARE_SOA_TABLE(ProtGenCollEbyeTables, "AOD", "PROTGENCOLLEBYETABLE",
@@ -81,7 +81,7 @@ namespace RecEbyeCollTable
 DECLARE_SOA_COLUMN(CentralityRec, centralityRec, uint8_t);
 DECLARE_SOA_COLUMN(NetProtNoRec, netProtNoRec, float);   //! net proton no. in an event
 DECLARE_SOA_COLUMN(ProtNoRec, protNoRec, float);         //! proton no. in an event
-DECLARE_SOA_COLUMN(AntiProtNoRec, antiprotNoRec, float); //! antiproton no. in an event
+DECLARE_SOA_COLUMN(AntiProtNoRec, antiProtNoRec, float); //! antiproton no. in an event
 } // namespace RecEbyeCollTable
 
 DECLARE_SOA_TABLE(ProtRecCollEbyeTables, "AOD", "PROTRECCOLLEBYETABLE",
@@ -135,8 +135,8 @@ struct NetProtonCumulantsMC {
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<int64_t> cfgNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> cfgUrl{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -145,13 +145,13 @@ struct NetProtonCumulantsMC {
   Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl) && (aod::track::itsChi2NCl < cfgCutItsChi2NCl) && (aod::track::dcaZ < cfgCutDCAz) && (aod::track::dcaXY < cfgCutDCAxy);
 
   // filtering collisions and tracks for real data***********
-  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>>;
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullEl, aod::pidTOFFullEl>>;
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>>;
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullEl, aod::pidTOFFullEl>>;
 
   // filtering collisions and tracks for MC rec data***********
-  using myMCRecCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs, aod::McCollisionLabels>>;
-  using myMCRecCollision = myMCRecCollisions::iterator;
-  using myMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::McTrackLabels>>;
+  using MyMCRecCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs, aod::McCollisionLabels>>;
+  using MyMCRecCollision = myMCRecCollisions::iterator;
+  using MyMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::McTrackLabels>>;
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFV0As, aod::CentFDDMs>;
 
   // // Filter command for gen ***************
@@ -329,8 +329,8 @@ struct NetProtonCumulantsMC {
 
     // creating phi, pt, eta dstribution of generted MC particles
 
-    float n_prot = 0.0;
-    float n_antiprot = 0.0;
+    float nProt = 0.0;
+    float nAntiprot = 0.0;
 
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.isPhysicalPrimary()) {
@@ -346,7 +346,7 @@ struct NetProtonCumulantsMC {
               histos.fill(HIST("hgenEtaProton"), mcParticle.eta());
               histos.fill(HIST("hgenPhiProton"), mcParticle.phi());
               if (mcParticle.pt() < cfgCutPtUpper)
-                n_prot = n_prot + 1.0;
+                nProt = nProt + 1.0;
             }
             if (mcParticle.pdgCode() == -2212) {
               histos.fill(HIST("hgenPtAntiproton"), mcParticle.pt()); //! hist for anti-p gen
@@ -354,28 +354,28 @@ struct NetProtonCumulantsMC {
               histos.fill(HIST("hgenEtaAntiproton"), mcParticle.eta());
               histos.fill(HIST("hgenPhiAntiproton"), mcParticle.phi());
               if (mcParticle.pt() < cfgCutPtUpper)
-                n_antiprot = n_antiprot + 1.0;
+                nAntiprot = nAntiprot + 1.0;
             }
           }
         }
       }
     } //! end particle loop
 
-    float net_prot = n_prot - n_antiprot;
-    histos.fill(HIST("hgenNetProtonVsCentrality"), net_prot, cent);
-    histos.fill(HIST("hgenProtonVsCentrality"), n_prot, cent);
-    histos.fill(HIST("hgenAntiprotonVsCentrality"), n_antiprot, cent);
-    histos.fill(HIST("hgenProfileTotalProton"), cent, (n_prot + n_antiprot));
-    histos.fill(HIST("hgenProfileProton"), cent, n_prot);
-    histos.fill(HIST("hgenProfileAntiproton"), cent, n_antiprot);
-    gen_ebye_collisions(cent, net_prot, n_prot, n_antiprot);
+    float net_prot = nProt - nAntiprot;
+    histos.fill(HIST("hgenNetProtonVsCentrality"), netProt, cent);
+    histos.fill(HIST("hgenProtonVsCentrality"), nProt, cent);
+    histos.fill(HIST("hgenAntiprotonVsCentrality"), nAntiprot, cent);
+    histos.fill(HIST("hgenProfileTotalProton"), cent, (nProt + nAntiprot));
+    histos.fill(HIST("hgenProfileProton"), cent, nProt);
+    histos.fill(HIST("hgenProfileAntiproton"), cent, nAntiprot);
+    gen_ebye_collisions(cent, net_prot, nProt, nAntiprot);
   }
   PROCESS_SWITCH(NetProtonCumulantsMC, processMCGen, "Process Generated", true);
 
   Produces<aod::ProtRecCollEbyeTables> rec_ebye_collisions;              //! MC Rec table creation
   Produces<aod::ProtRecCompleteEbyeTables> rec_ebye_complete_collisions; //! MC Rec table creation with tracks
 
-  void processMCRec(myMCRecCollision const& collision, myMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
+  void processMCRec(MyMCRecCollision const& collision, MyMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
   {
     if (!collision.has_mcCollision()) {
       return;
@@ -385,8 +385,8 @@ struct NetProtonCumulantsMC {
     histos.fill(HIST("hMC"), 5.5);
     histos.fill(HIST("hZvtx_after_sel"), collision.posZ());
 
-    float n_prot = 0.0;
-    float n_antiprot = 0.0;
+    float nProt = 0.0;
+    float nAntiprot = 0.0;
 
     // Start of the Monte-Carlo reconstructed tracks
     for (const auto& track : tracks) {
@@ -405,7 +405,7 @@ struct NetProtonCumulantsMC {
         histos.fill(HIST("hrecEtaAll"), particle.eta());
         histos.fill(HIST("hrecPhiAll"), particle.phi());
 
-        bool trackSelected;
+        bool trackSelected = false;
         if (cfgPIDchoice == 0)
           trackSelected = selectionPIDold(track);
         if (cfgPIDchoice == 1)
@@ -419,7 +419,7 @@ struct NetProtonCumulantsMC {
             histos.fill(HIST("hrecEtaProton"), particle.eta());
             histos.fill(HIST("hrecPhiProton"), particle.phi());
             if (particle.pt() < cfgCutPtUpper)
-              n_prot = n_prot + 1.0;
+              nProt = nProt + 1.0;
             if (particle.pdgCode() == 2212) {
               histos.fill(HIST("hrecTruePtProton"), particle.pt()); //! hist for p purity
             }
@@ -430,7 +430,7 @@ struct NetProtonCumulantsMC {
             histos.fill(HIST("hrecEtaAntiproton"), particle.eta());
             histos.fill(HIST("hrecPhiAntiproton"), particle.phi());
             if (particle.pt() < cfgCutPtUpper)
-              n_antiprot = n_antiprot + 1.0;
+              nAntiprot = nAntiprot + 1.0;
             if (particle.pdgCode() == -2212) {
               histos.fill(HIST("hrecTruePtAntiproton"), particle.pt()); //! hist for anti-p purity
             }
@@ -439,14 +439,14 @@ struct NetProtonCumulantsMC {
       } //! checking if primary
     } //! end track loop
 
-    float net_prot = n_prot - n_antiprot;
-    histos.fill(HIST("hrecNetProtonVsCentrality"), net_prot, cent);
-    histos.fill(HIST("hrecProtonVsCentrality"), n_prot, cent);
-    histos.fill(HIST("hrecAntiprotonVsCentrality"), n_antiprot, cent);
-    histos.fill(HIST("hrecProfileTotalProton"), cent, (n_prot + n_antiprot));
-    histos.fill(HIST("hrecProfileProton"), cent, n_prot);
-    histos.fill(HIST("hrecProfileAntiproton"), cent, n_antiprot);
-    rec_ebye_collisions(cent, net_prot, n_prot, n_antiprot);
+    float netProt = nProt - nAntiprot;
+    histos.fill(HIST("hrecNetProtonVsCentrality"), netProt, cent);
+    histos.fill(HIST("hrecProtonVsCentrality"), nProt, cent);
+    histos.fill(HIST("hrecAntiprotonVsCentrality"), nAntiprot, cent);
+    histos.fill(HIST("hrecProfileTotalProton"), cent, (nProt + nAntiprot));
+    histos.fill(HIST("hrecProfileProton"), cent, nProt);
+    histos.fill(HIST("hrecProfileAntiproton"), cent, nAntiprot);
+    rec_ebye_collisions(cent, netProt, nProt, nAntiprot);
   }
   PROCESS_SWITCH(NetProtonCumulantsMC, processMCRec, "Process Generated", true);
 };
