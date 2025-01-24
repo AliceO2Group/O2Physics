@@ -41,7 +41,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-template <typename JetTableData, typename TagTableData, typename JetTableMCD, typename weightMCD, typename TagTableMCD, typename JetTableMCP, typename weightMCP, typename TagTableMCP, typename JetTableMCDMCP, typename JetTableMCPMCD>
+template <typename JetTableData, typename TagTableData, typename JetTableMCD, typename weightMCD, typename TagTableMCD, typename JetTableMCP, typename weightMCP, typename JetTableMCDMCP, typename JetTableMCPMCD>
 struct JetTaggerHFQA {
 
   // task on/off configuration
@@ -958,7 +958,7 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsMCDWeighted, "Fill impact parameter imformation for mcd jets", false);
 
-  void processIPsMCP(soa::Join<JetTableMCP, TagTableMCP> const& mcpjets, aod::JetParticles const&, aod::JetMcCollisions const&, soa::Filtered<aod::JetCollisionsMCD> const& collisions)
+  void processIPsMCP(JetTableMCP const& mcpjets, aod::JetParticles const&, aod::JetMcCollisions const&, soa::Filtered<aod::JetCollisionsMCD> const& collisions)
   {
     for (auto const& mcpjet : mcpjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcpjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -979,7 +979,7 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsMCP, "Fill impact parameter imformation for mcp jets", false);
 
-  void processIPsMCPWeighted(soa::Filtered<aod::JetCollisionsMCD> const& collisions, soa::Join<JetTableMCP, TagTableMCP, aod::ChargedMCParticleLevelJetEventWeights> const& mcpjets, aod::JetParticles const&)
+  void processIPsMCPWeighted(soa::Filtered<aod::JetCollisionsMCD> const& collisions, soa::Join<JetTableMCP, aod::ChargedMCParticleLevelJetEventWeights> const& mcpjets, aod::JetParticles const&)
   {
     for (auto const& mcpjet : mcpjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcpjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -1330,7 +1330,7 @@ using JetTaggerQAChargedDataJets = soa::Join<aod::ChargedJets, aod::ChargedJetCo
 using JetTaggerQAChargedMCDJets = soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetFlavourDef>;
 using JetTaggerQAChargedMCPJets = soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetFlavourDef>;
 
-using JetTaggerhfQACharged = JetTaggerHFQA<JetTaggerQAChargedDataJets, aod::ChargedJetTags, JetTaggerQAChargedMCDJets, aod::ChargedMCDetectorLevelJetEventWeights, aod::ChargedMCDetectorLevelJetTags, JetTaggerQAChargedMCPJets, aod::ChargedMCParticleLevelJetEventWeights, aod::ChargedMCParticleLevelJetTags, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>;
+using JetTaggerhfQACharged = JetTaggerHFQA<JetTaggerQAChargedDataJets, aod::ChargedJetTags, JetTaggerQAChargedMCDJets, aod::ChargedMCDetectorLevelJetEventWeights, aod::ChargedMCDetectorLevelJetTags, JetTaggerQAChargedMCPJets, aod::ChargedMCParticleLevelJetEventWeights, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

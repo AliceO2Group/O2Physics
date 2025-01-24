@@ -96,8 +96,14 @@ struct JetTaggerHFTask {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   Configurable<std::string> IPparameterPathsCCDB{"IPparameterPathsCCDB", "Users/l/leehy/LHC24g4/", "Paths for fitting parameters of resolution functions for IP method on CCDB"};
-  Configurable<std::vector<int64_t>> IPtimestampCCDB{"IPtimestampCCDB", std::vector<int64_t>{1737027389227, 1737027391774, 1737027393668, 1737027395548, 1737027397505, 1737027399396, 1737027401294}, "timestamp of the resolution function for IP method used to query in CCDB"};
-  Configurable<bool> usepTcategorize{"usepTcategorize", false, "p_T categorize TF1 function with Inclusive jet"};
+  Configurable<int64_t> IPtimestampCCDBCate0{"IPtimestampCCDBCate0", 1737027389227, "timestamp of the resolution function for IP method used to query in CCDB (category 0)"};
+  Configurable<int64_t> IPtimestampCCDBCate1{"IPtimestampCCDBCate1", 1737027391774, "timestamp of the resolution function for IP method used to query in CCDB (category 1)"};
+  Configurable<int64_t> IPtimestampCCDBCate2{"IPtimestampCCDBCate2", 1737027393668, "timestamp of the resolution function for IP method used to query in CCDB (category 2)"};
+  Configurable<int64_t> IPtimestampCCDBCate3{"IPtimestampCCDBCate3", 1737027395548, "timestamp of the resolution function for IP method used to query in CCDB (category 3)"};
+  Configurable<int64_t> IPtimestampCCDBCate4{"IPtimestampCCDBCate4", 1737027397505, "timestamp of the resolution function for IP method used to query in CCDB (category 4)"};
+  Configurable<int64_t> IPtimestampCCDBCate5{"IPtimestampCCDBCate5", 1737027399396, "timestamp of the resolution function for IP method used to query in CCDB (category 5)"};
+  Configurable<int64_t> IPtimestampCCDBCate6{"IPtimestampCCDBCate6", 1737027401294, "timestamp of the resolution function for IP method used to query in CCDB (category 6)"};
+  Configurable<bool> usepTcategorize{"usepTcategorize", false, "p_T categorize TF1 function with Inclusive jet"}; // TODO: it doesn't work due to similar timestamp. it should be fixed as soon as possible to change directory
 
   // GNN configuration
   Configurable<double> fC{"fC", 0.018, "Parameter f_c for D_b calculation"};
@@ -286,13 +292,13 @@ struct JetTaggerHFTask {
     if (usepTcategorize) {
       std::map<std::string, std::string> metadata; // dummy meta data (will be updated)
       // fill the timestamp directly of each TF1 according to p_T track range
-      CCDB_ResoFunc_0 = ccdbApi.retrieveFromTFileAny<TF1>(IPparameterPathsCCDB, metadata, IPtimestampCCDB->at(0)); // 0 < p_T < 0.5
-      CCDB_ResoFunc_1 = ccdbApi.retrieveFromTFileAny<TF1>(IPparameterPathsCCDB, metadata, IPtimestampCCDB->at(1)); // 0.5 < p_T < 1
-      CCDB_ResoFunc_2 = ccdbApi.retrieveFromTFileAny<TF1>(IPparameterPathsCCDB, metadata, IPtimestampCCDB->at(2)); // 1 < p_T < 2
-      CCDB_ResoFunc_3 = ccdbApi.retrieveFromTFileAny<TF1>(IPparameterPathsCCDB, metadata, IPtimestampCCDB->at(3)); // 2 < p_T < 4
-      CCDB_ResoFunc_4 = ccdbApi.retrieveFromTFileAny<TF1>(IPparameterPathsCCDB, metadata, IPtimestampCCDB->at(4)); // 4 < p_T < 6
-      CCDB_ResoFunc_5 = ccdbApi.retrieveFromTFileAny<TF1>(IPparameterPathsCCDB, metadata, IPtimestampCCDB->at(5)); // 6 < p_T < 9
-      CCDB_ResoFunc_6 = ccdbApi.retrieveFromTFileAny<TF1>(IPparameterPathsCCDB, metadata, IPtimestampCCDB->at(6)); // 9 < p_T
+      CCDB_ResoFunc_0 = ccdbApi.retrieveFromTFileAny<TF1>(IPparameterPathsCCDB, metadata, IPtimestampCCDBCate0); // 0 < p_T < 0.5
+      CCDB_ResoFunc_1 = ccdbApi.retrieveFromTFileAny<TF1>(IPparameterPathsCCDB, metadata, IPtimestampCCDBCate1); // 0.5 < p_T < 1
+      CCDB_ResoFunc_2 = ccdbApi.retrieveFromTFileAny<TF1>(IPparameterPathsCCDB, metadata, IPtimestampCCDBCate2); // 1 < p_T < 2
+      CCDB_ResoFunc_3 = ccdbApi.retrieveFromTFileAny<TF1>(IPparameterPathsCCDB, metadata, IPtimestampCCDBCate3); // 2 < p_T < 4
+      CCDB_ResoFunc_4 = ccdbApi.retrieveFromTFileAny<TF1>(IPparameterPathsCCDB, metadata, IPtimestampCCDBCate4); // 4 < p_T < 6
+      CCDB_ResoFunc_5 = ccdbApi.retrieveFromTFileAny<TF1>(IPparameterPathsCCDB, metadata, IPtimestampCCDBCate5); // 6 < p_T < 9
+      CCDB_ResoFunc_6 = ccdbApi.retrieveFromTFileAny<TF1>(IPparameterPathsCCDB, metadata, IPtimestampCCDBCate6); // 9 < p_T
     }
 
     maxOrder = numCount + 1; // 0: untagged, >1 : N ordering
