@@ -81,7 +81,7 @@ struct BcSelectionTask {
   bool isPP = 1;                         // default value
   TriggerAliases* aliases = nullptr;
   EventSelectionParams* par = nullptr;
-  std::map<int64_t, int32_t> mapQC;
+  std::map<uint64_t, uint32_t>* mapQC = nullptr;
   std::map<int64_t, std::vector<int16_t>> mapInactiveChips; // number of inactive chips vs orbit per layer
   int64_t prevOrbitForInactiveChips = 0;                    // cached next stored orbit in the inactive chip map
   int64_t nextOrbitForInactiveChips = 0;                    // cached previous stored orbit in the inactive chip map
@@ -318,18 +318,12 @@ struct BcSelectionTask {
       std::map<std::string, std::string> metadata;
       metadata["run"] = Form("%d", run);
       ccdb->setFatalWhenNull(0);
-      auto qcObject = ccdb->getSpecific<std::vector<std::pair<int64_t, int32_t>>>("Users/j/jian/RCT", ts, metadata);
+      mapQC = ccdb->getSpecific<std::map<uint64_t, uint32_t>>("Users/j/jian/RCT", ts, metadata);
       ccdb->setFatalWhenNull(1);
-      mapQC.clear();
-      if (qcObject != nullptr) {
-        LOGP(debug, "sor={} eor={}", sorTimestamp, eorTimestamp);
-        for (const auto& p : *qcObject) {
-          mapQC.insert(p);
-          LOGP(debug, "ts={} qc={}", p.first, p.second);
-        }
-      } else {
+      if (mapQC == nullptr) {
         LOGP(info, "qc object missing... inserting dummy qc flags");
-        mapQC.insert(std::pair<int64_t, int32_t>(sorTimestamp, 0));
+        mapQC = new std::map<uint64_t, uint32_t>;
+        mapQC->insert(std::pair<uint64_t, uint32_t>(sorTimestamp, 0));
       }
     }
 
@@ -347,8 +341,8 @@ struct BcSelectionTask {
     // bc loop
     for (auto bc : bcs) { // o2-linter: disable=const-ref-in-for-loop
       // store qc flags
-      auto itqc = mapQC.upper_bound(bc.timestamp());
-      if (itqc != mapQC.begin())
+      auto itqc = mapQC->upper_bound(bc.timestamp());
+      if (itqc != mapQC->begin())
         itqc--;
       uint32_t qc = itqc->second;
       LOGP(debug, "sor={} eor={} ts={} qc={}", sorTimestamp, eorTimestamp, bc.timestamp(), qc);
