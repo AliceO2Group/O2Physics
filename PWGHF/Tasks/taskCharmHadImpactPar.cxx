@@ -237,3 +237,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<HfTaskCharmHadImpactPar>(cfgc)};
 }
+ 
