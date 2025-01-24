@@ -544,23 +544,6 @@ struct MeanPtFlucId {
     return false;
   }
 
-  // PID selction cuts for High momentum Protons
-  template <typename T>
-  bool selHighPr(T const& track)
-  {
-    if (track.hasTOF() &&
-        track.p() > cfgCutPrThrsldP &&
-        std::fabs(track.tpcNSigmaPr() - cfgMcTpcShiftPr) < cfgCutNSig3 &&
-        std::fabs(track.tofNSigmaPr() - cfgMcTofShiftPr) < cfgCutNSig3) {
-
-      if (std::abs(track.rapidity(MassProton)) < cfgCutRap) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
   // To find the pT bin
   int findBin(float pT, const std::vector<float>& bins)
   {
