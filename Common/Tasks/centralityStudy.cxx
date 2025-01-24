@@ -369,7 +369,7 @@ struct centralityStudy {
     if (doNGlobalTracksVsRawSignals) {
       histos.fill(HIST("hNGlobalTracksVsFT0A"), collision.multFT0A(), collision.multNTracksGlobal());
       histos.fill(HIST("hNGlobalTracksVsFT0C"), collision.multFT0C(), collision.multNTracksGlobal());
-      histos.fill(HIST("hNGlobalTracksVsFT0M"), collision.multFT0A()+collision.multFT0C(), collision.multNTracksGlobal());
+      histos.fill(HIST("hNGlobalTracksVsFT0M"), collision.multFT0A() + collision.multFT0C(), collision.multNTracksGlobal());
       histos.fill(HIST("hNGlobalTracksVsFV0A"), collision.multFV0A(), collision.multNTracksGlobal());
       histos.fill(HIST("hNGlobalTracksVsFDDA"), collision.multFDDA(), collision.multNTracksGlobal());
       histos.fill(HIST("hNGlobalTracksVsFDDC"), collision.multFDDC(), collision.multNTracksGlobal());
