@@ -121,6 +121,8 @@ struct UpcTauRl {
     Configurable<float> cutMaxElectronNsigmaKa{"cutMaxElectronNsigmaKa", 4.0, {"Good Ka hypo out. Upper n sigma cut on Ka hypo of selected electron. What is less till lower cut goes away."}};
     Configurable<float> cutMinElectronNsigmaPr{"cutMinElectronNsigmaPr", -4.0, {"Good Pr hypo out. Lower n sigma cut on Pr hypo of selected electron. What is more till upper cut goes away."}};
     Configurable<float> cutMaxElectronNsigmaPr{"cutMaxElectronNsigmaPr", 4.0, {"Good Pr hypo out. Upper n sigma cut on Pr hypo of selected electron. What is less till lower cut goes away."}};
+    Configurable<float> cutMinElectronTofNsigmaKa{"cutMinElectronTofNsigmaKa", -4.0, {"Good Ka TOF hypo out. Lower n sigma cut on Ka TOF hypo of selected electron. What is more till upper cut goes away."}};
+    Configurable<float> cutMaxElectronTofNsigmaKa{"cutMaxElectronTofNsigmaKa", 4.0, {"Good Ka TOF hypo out. Upper n sigma cut on Ka TOF hypo of selected electron. What is less till lower cut goes away."}};
     Configurable<bool> cutPionHasTOF{"cutPionHasTOF", true, {"Pion is required to hit TOF."}};
     Configurable<bool> cutGoodMupion{"cutGoodMupion", true, {"Select good muon/pion."}};
     Configurable<float> cutMinPionNsigmaPi{"cutMinPionNsigmaPi", 4.0, {"Good pi hypo in. Upper n sigma cut on pi hypo of selected electron. What is more goes away."}};
@@ -911,8 +913,6 @@ struct UpcTauRl {
   template <typename T>
   bool selectedGoodElectron(T const& electronCandidate)
   {
-    if (cutTauEvent.cutElectronHasTOF && !electronCandidate.hasTOF())
-      return false;
     if (electronCandidate.tpcNSigmaEl() < cutTauEvent.cutMaxElectronNsigmaEl || electronCandidate.tpcNSigmaEl() > cutTauEvent.cutMinElectronNsigmaEl)
       return false;
     if (electronCandidate.tpcNSigmaPi() > cutTauEvent.cutMinElectronNsigmaPi && electronCandidate.tpcNSigmaPi() < cutTauEvent.cutMaxElectronNsigmaPi)
@@ -921,17 +921,23 @@ struct UpcTauRl {
       return false;
     if (electronCandidate.tpcNSigmaPr() > cutTauEvent.cutMinElectronNsigmaPr && electronCandidate.tpcNSigmaPr() < cutTauEvent.cutMaxElectronNsigmaPr)
       return false;
+    if (cutTauEvent.cutElectronHasTOF && !electronCandidate.hasTOF())
+      return false;
+    if (electronCandidate.hasTOF()){
+      if (electronCandidate.tofNSigmaKa() > cutTauEvent.cutMinElectronTofNsigmaKa && electronCandidate.tofNSigmaKa() < cutTauEvent.cutMaxElectronTofNsigmaKa)
+        return false;
+    }
     return true;
   }
 
   template <typename T>
   bool selectedGoodPion(T const& pionCandidate)
   {
-    if (cutTauEvent.cutPionHasTOF && !pionCandidate.hasTOF())
-      return false;
     if (pionCandidate.tpcNSigmaPi() < cutTauEvent.cutMaxPionNsigmaPi || pionCandidate.tpcNSigmaPi() > cutTauEvent.cutMinPionNsigmaPi)
       return false;
     if (pionCandidate.tpcNSigmaKa() > cutTauEvent.cutMinPionNsigmaKa && pionCandidate.tpcNSigmaKa() < cutTauEvent.cutMaxPionNsigmaKa)
+      return false;
+    if (cutTauEvent.cutPionHasTOF && !pionCandidate.hasTOF())
       return false;
     return true;
   }
