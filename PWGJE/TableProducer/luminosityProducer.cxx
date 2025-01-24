@@ -19,6 +19,7 @@
 #include "Framework/ASoA.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
 using namespace o2;
@@ -87,7 +88,7 @@ struct LuminosityProducer {
   }
   PROCESS_SWITCH(LuminosityProducer, processStoreBCCounting, "write out bc counting output table", true);
 
-  void processStoreCollisionCounting(aod::JCollisions const& collisions, aod::CollisionCounts const& collisionCounts)
+  void processStoreCollisionCounting(aod::JetCollisions const& collisions, aod::CollisionCounts const& collisionCounts)
   {
     int readCollisionCounter = 0;
     int readCollisionWithTVXCounter = 0;

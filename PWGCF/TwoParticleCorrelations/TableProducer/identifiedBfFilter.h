@@ -26,6 +26,7 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "MathUtils/Utils.h"
 #include <TDatabasePDG.h>
 
 namespace o2
@@ -59,6 +60,11 @@ enum MatchRecoGenSpecies {
   kWrongSpecies = -1
 };
 
+constexpr int pdgcodeEl = 11;
+constexpr int pdgcodePi = 211;
+constexpr int pdgcodeKa = 321;
+constexpr int pdgcodePr = 2212;
+
 /// \enum SpeciesPairMatch
 /// \brief The species pair considered by the matching test
 enum SpeciesPairMatch {
@@ -79,9 +85,9 @@ enum SpeciesPairMatch {
   kIdBfProtonProton      ///< Proton-Proton
 };
 
-const char* speciesName[kIdBfNoOfSpecies] = {"e", "pi", "ka", "p"};
+const char* speciesName[kIdBfNoOfSpecies + 1] = {"e", "pi", "ka", "p", "ha"};
 
-const char* speciesTitle[kIdBfNoOfSpecies] = {"e", "#pi", "K", "p"};
+const char* speciesTitle[kIdBfNoOfSpecies + 1] = {"e", "#pi", "K", "p", "ha"};
 
 const int speciesChargeValue1[kIdBfNoOfSpecies] = {
   0, //< electron
@@ -690,6 +696,7 @@ inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
   }
 
   bool centmultsel = centralitySelection(collision, centormult);
+
   return trigsel && zvtxsel && centmultsel;
 }
 
@@ -742,14 +749,9 @@ void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
   }
 }
 
-template <typename ParticleObject>
-inline float getCharge(ParticleObject& particle)
+inline float getCharge(float pdgCharge)
 {
-  float charge = 0.0;
-  TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
-  if (pdgparticle != nullptr) {
-    charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0);
-  }
+  float charge = (pdgCharge / 3 >= 1) ? 1.0 : ((pdgCharge / 3 <= -1) ? -1.0 : 0);
   return charge;
 }
 

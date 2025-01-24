@@ -288,6 +288,7 @@ void DefaultConfiguration()
   ec.fEventCutName[eIsGoodITSLayersAll] = "IsGoodITSLayersAll";
   ec.fEventCutName[eOccupancyEstimator] = "OccupancyEstimator";
   ec.fEventCutName[eMinVertexDistanceFromIP] = "MinVertexDistanceFromIP";
+  ec.fEventCutName[eCentralityWeights] = "CentralityWeights";
   for (Int_t t = 0; t < eEventCuts_N; t++) {
     if (ec.fEventCutName[t].EqualTo("")) {
       LOGF(fatal, "\033[1;31m%s at line %d : event cut name is not set for ec.fEventCutName[%d]. The last cut name which was set is \"%s\" \033[0m", __FUNCTION__, __LINE__, t, ec.fEventCutName[t - 1].Data());
@@ -495,6 +496,7 @@ void DefaultConfiguration()
   iv.fInternalValidationForceBailout = cf_iv.cfInternalValidationForceBailout;
   iv.fnEventsInternalValidation = cf_iv.cfnEventsInternalValidation;
   iv.fRescaleWithTheoreticalInput = cf_iv.cfRescaleWithTheoreticalInput;
+  iv.fHarmonicsOptionInternalValidation = new TString(cf_iv.cfHarmonicsOptionInternalValidation);
 
   // *) Results histograms:
   //    Define axis titles:
@@ -1412,6 +1414,7 @@ void DefaultCuts()
   ec.fUseEventCuts[eIsGoodITSLayersAll] = Alright(lUseEventCuts[eIsGoodITSLayersAll]);
   ec.fUseEventCuts[eOccupancyEstimator] = Alright(lUseEventCuts[eOccupancyEstimator]);
   ec.fUseEventCuts[eMinVertexDistanceFromIP] = Alright(lUseEventCuts[eMinVertexDistanceFromIP]);
+  ec.fUseEventCuts[eCentralityWeights] = Alright(lUseEventCuts[eCentralityWeights]);
 
   // **) event cuts defined via booleans:
   ec.fUseEventCuts[eSel7] = ec.fUseEventCuts[eSel7] && cf_ec.cfUseSel7;
@@ -1429,6 +1432,7 @@ void DefaultCuts()
   ec.fUseEventCuts[eIsGoodITSLayer3] = ec.fUseEventCuts[eIsGoodITSLayer3] && cf_ec.cfUseIsGoodITSLayer3;
   ec.fUseEventCuts[eIsGoodITSLayer0123] = ec.fUseEventCuts[eIsGoodITSLayer0123] && cf_ec.cfUseIsGoodITSLayer0123;
   ec.fUseEventCuts[eIsGoodITSLayersAll] = ec.fUseEventCuts[eIsGoodITSLayersAll] && cf_ec.cfUseIsGoodITSLayersAll;
+  ec.fUseEventCuts[eCentralityWeights] = ec.fUseEventCuts[eCentralityWeights] && cf_cw.cfUseCentralityWeights;
 
   // **) event cuts defined via [min, max):
   //     Remark: I use this one also for events cuts set only via min or via max.
@@ -1701,11 +1705,9 @@ void SpecificCuts(TString whichSpecificCuts)
       ec.fUseEventCuts[eSel7] = kFALSE;
       ec.fUseEventCuts[eSel8] = kTRUE;
       ec.fUseEventCuts[eNoSameBunchPileup] = kTRUE;
-      ec.fUseEventCuts[eIsGoodZvtxFT0vsPV] = kTRUE;
       ec.fUseEventCuts[eIsVertexITSTPC] = kTRUE;
-      ec.fUseEventCuts[eNoCollInTimeRangeStrict] = kTRUE;
-      ec.fUseEventCuts[eNoCollInRofStrict] = kTRUE;
-      ec.fUseEventCuts[eNoHighMultCollInPrevRof] = kTRUE;
+      ec.fUseEventCuts[eNoCollInTimeRangeStandard] = kTRUE;
+      ec.fUseEventCuts[eNoCollInRofStandard] = kTRUE;
 
       // Particle cuts:
       pc.fUseParticleCuts[eitsNCls] = kTRUE;
@@ -2249,6 +2251,12 @@ void InsanityChecksBeforeBooking()
       LOGF(fatal, "\033[1;31m%s at line %d : iv.fnEventsInternalValidation <= 0 => Set number of events to positive integer\033[0m", __FUNCTION__, __LINE__);
     }
 
+    if (!(iv.fHarmonicsOptionInternalValidation->EqualTo("constant", TString::kIgnoreCase) ||
+          iv.fHarmonicsOptionInternalValidation->EqualTo("correlated", TString::kIgnoreCase) ||
+          iv.fHarmonicsOptionInternalValidation->EqualTo("persistent", TString::kIgnoreCase))) {
+      LOGF(fatal, "\033[1;31m%s at line %d : fHarmonicsOptionInternalValidation = %s is not supported. \033[0m", __FUNCTION__, __LINE__, iv.fHarmonicsOptionInternalValidation->Data());
+    }
+
     if (iv.fRescaleWithTheoreticalInput && (nl.fCalculateNestedLoops || nl.fCalculateCustomNestedLoops || nl.fCalculateKineCustomNestedLoops)) {
       LOGF(fatal, "\033[1;31m%s at line %d : rescaling with theoretical input is not supported when cross-check is done with nested loops. \033[0m", __FUNCTION__, __LINE__);
     }
@@ -2310,12 +2318,14 @@ void InsanityChecksAfterBooking()
   // ...
 
   // b) Insanity checks on internal validation:
-
   if (iv.fUseInternalValidation) {
 
     // **) Check that rescaling is used only when it makes sense:
     if (iv.fRescaleWithTheoreticalInput && iv.fHarmonicsOptionInternalValidation->EqualTo("correlated")) {
       LOGF(fatal, "\033[1;31m%s at line %d : rescaling with theoretical input doesn't make sanse for fHarmonicsOptionInternalValidation = \"correlated\". \033[0m", __FUNCTION__, __LINE__);
+    }
+    if (iv.fRescaleWithTheoreticalInput && iv.fHarmonicsOptionInternalValidation->EqualTo("persistent")) {
+      LOGF(fatal, "\033[1;31m%s at line %d : rescaling with theoretical input doesn't make sanse for fHarmonicsOptionInternalValidation = \"persistent\". \033[0m", __FUNCTION__, __LINE__);
     }
 
     // **) Print a warning if this histogram is not booked:
@@ -3733,12 +3743,12 @@ void BookCentralityWeightsHistograms()
 
   // a) Book the profile holding flags:
   cw.fCentralityWeightsFlagsPro =
-    new TProfile("fWeightsFlagsPro", "flags for centrality weights", 1, 0., 1.);
+    new TProfile("fCentralityWeightsFlagsPro", "flags for centrality weights", 1, 0., 1.);
   cw.fCentralityWeightsFlagsPro->SetStats(kFALSE);
   cw.fCentralityWeightsFlagsPro->SetLineColor(eColor);
   cw.fCentralityWeightsFlagsPro->SetFillColor(eFillColor);
   cw.fCentralityWeightsFlagsPro->GetXaxis()->SetLabelSize(0.05);
-  cw.fCentralityWeightsFlagsPro->GetXaxis()->SetBinLabel(1, "TBI 20241118 I need to store here name of centrality esimator for which centrality weights were calculated");
+  cw.fCentralityWeightsFlagsPro->GetXaxis()->SetBinLabel(1, TString::Format("Use centrality weights for estimator %s", ec.fsEventCuts[eCentralityEstimator].Data()));
   if (cw.fUseCentralityWeights) {
     cw.fCentralityWeightsFlagsPro->Fill(0.5, 1.); // TBI 20241118 shall I automate this?
   }
@@ -3832,9 +3842,6 @@ void BookNestedLoopsHistograms()
     {
       for (Int_t v = 0; v < eAsFunctionOf_N; v++) {
 
-        // if(PTKINE == v  && !fCalculatePtCorrelations){continue;}
-        // if(ETAKINE == v  && !fCalculateEtaCorrelations){continue;}
-
         if (!res.fResultsPro[v]) {
           LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
         }
@@ -3862,9 +3869,11 @@ void BookNestedLoopsHistograms()
 
   // d) Few quick insanity checks on booking:
   if (nl.fNestedLoopsPro[0][0][AFO_INTEGRATED] && !TString(nl.fNestedLoopsPro[0][0][AFO_INTEGRATED]->GetXaxis()->GetTitle()).EqualTo("integrated")) {
+    LOGF(info, "\033[1;33mnl.fNestedLoopsPro[0][0][AFO_INTEGRATED]->GetXaxis()->GetTitle() = %s \033[0m", nl.fNestedLoopsPro[0][0][AFO_INTEGRATED]->GetXaxis()->GetTitle());
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__); // ordering in enum eAsFunctionOf is not the same as in TString fResultsProXaxisTitle[eAsFunctionOf_N]
   }
-  if (nl.fNestedLoopsPro[0][0][AFO_PT] && !TString(nl.fNestedLoopsPro[0][0][AFO_PT]->GetXaxis()->GetTitle()).EqualTo("p_{T}")) {
+  if (nl.fNestedLoopsPro[0][0][AFO_PT] && !TString(nl.fNestedLoopsPro[0][0][AFO_PT]->GetXaxis()->GetTitle()).EqualTo("pt")) { // I do not need here fancy formatting
+    LOGF(info, "\033[1;33mnl.fNestedLoopsPro[0][0][AFO_PT]->GetXaxis()->GetTitle() = %s \033[0m", nl.fNestedLoopsPro[0][0][AFO_PT]->GetXaxis()->GetTitle());
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__); // ordering in enum eAsFunctionOf is not the same as in TString fResultsProXaxisTitle[eAsFunctionOf_N]
   }
 
@@ -4032,7 +4041,7 @@ void BookInternalValidationHistograms()
   }
 
   // a) Book the profile holding flags:
-  iv.fInternalValidationFlagsPro = new TProfile("fInternalValidationFlagsPro", "flags for internal validation", 3, 0., 3.);
+  iv.fInternalValidationFlagsPro = new TProfile("fInternalValidationFlagsPro", "flags for internal validation", 4, 0., 4.);
   iv.fInternalValidationFlagsPro->SetStats(kFALSE);
   iv.fInternalValidationFlagsPro->SetLineColor(eColor);
   iv.fInternalValidationFlagsPro->SetFillColor(eFillColor);
@@ -4045,23 +4054,12 @@ void BookInternalValidationHistograms()
   iv.fInternalValidationFlagsPro->Fill(1.5, iv.fnEventsInternalValidation);
   iv.fInternalValidationFlagsPro->GetXaxis()->SetBinLabel(3, "fRescaleWithTheoreticalInput");
   iv.fInternalValidationFlagsPro->Fill(2.5, iv.fRescaleWithTheoreticalInput);
-
-  /* TBI 20240423 I have to re-think where to fill the remaining bins of this profile. It feels now I have to fill it on the bottom, after all objects for internal validation are booked.
-                  The problem here is that I do not book all objects below, unless I really do internal validation.
-  iv.fInternalValidationFlagsPro->GetXaxis()->SetBinLabel(4, Form("fHarmonicsOptionInternalValidation = %s", iv.fHarmonicsOptionInternalValidation->Data()));
-  iv.fInternalValidationFlagsPro->Fill(3.5, 1);
-  */
+  iv.fInternalValidationFlagsPro->GetXaxis()->SetBinLabel(4, TString::Format("option = %s", iv.fHarmonicsOptionInternalValidation->Data()));
+  iv.fInternalValidationFlagsPro->Fill(3.5, 1); // redundant, because here I only care about bin label, but preserves symmetry in this code snippet...
 
   // *) Book object beyond this line only if internal validation was requested:
   if (!iv.fUseInternalValidation) {
     return;
-  }
-
-  // *) TBI
-  iv.fHarmonicsOptionInternalValidation = new TString(cf_iv.cfHarmonicsOptionInternalValidation);
-  if (!(iv.fHarmonicsOptionInternalValidation->EqualTo("constant", TString::kIgnoreCase) ||
-        iv.fHarmonicsOptionInternalValidation->EqualTo("correlated", TString::kIgnoreCase))) {
-    LOGF(fatal, "\033[1;31m%s at line %d : fHarmonicsOptionInternalValidation = %s is not supported. \033[0m", __FUNCTION__, __LINE__, iv.fHarmonicsOptionInternalValidation->Data());
   }
 
   // b) Book and fill container vn amplitudes:
@@ -4157,10 +4155,11 @@ void InternalValidation()
 {
   // Internal validation against theoretical values in on-the-fly study for all implemented correlators.
 
-  // Last update: 20241111
+  // Last update: 20250121
 
   // To do:
-  // 20231114 Do I need to add support for diff. weights also here?
+  // 20250121 At the moment, I do not support here differential phi weights. If I decide to add that feature, basically I need to generalize Accept() for 2D case,
+  //          where e.g. phi(pt) weights will be given with some toy 2D pdf.
 
   // *) Set and propagate some fake run number;
   // *) Fetch the weights for this particular run number. Do it only once;
@@ -4187,7 +4186,7 @@ void InternalValidation()
   if (!pw.fParticleWeightsAreFetched) {
     if (pw.fUseWeights[wPHI] || pw.fUseWeights[wPT] || pw.fUseWeights[wETA] || pw.fUseDiffWeights[wPHIPT] || pw.fUseDiffWeights[wPHIETA]) {
       GetParticleWeights();
-      pw.fParticleWeightsAreFetched = kTRUE;
+      pw.fParticleWeightsAreFetched = true;
     }
   }
 
@@ -4198,9 +4197,9 @@ void InternalValidation()
   if (iv.fHarmonicsOptionInternalValidation->EqualTo("constant")) {
     // For this option, vn's and psin's are constant for all simulated events, therefore I can configure fPhiPDF outside of loop over events.
     // Remark: The last parameter [18] is a random reaction plane, keep in sync with fPhiPDF->SetParameter(18,fReactionPlane); below
-    //         Keep also in sync with const Int_t gMaxHarmonic = 9; in *GlobalConstants.h
+    //         Keep also in sync with const int gMaxHarmonic = 9; in *GlobalConstants.h
     fPhiPDF = new TF1("fPhiPDF", "1 + 2.*[0]*TMath::Cos(x-[1]-[18]) + 2.*[2]*TMath::Cos(2.*(x-[3]-[18])) + 2.*[4]*TMath::Cos(3.*(x-[5]-[18])) + 2.*[6]*TMath::Cos(4.*(x-[7]-[18])) + 2.*[8]*TMath::Cos(5.*(x-[9]-[18])) + 2.*[10]*TMath::Cos(6.*(x-[11]-[18])) + 2.*[12]*TMath::Cos(7.*(x-[13]-[18])) + 2.*[14]*TMath::Cos(8.*(x-[15]-[18])) + 2.*[16]*TMath::Cos(9.*(x-[17]-[18]))", 0., TMath::TwoPi());
-    for (Int_t h = 0; h < gMaxHarmonic; h++) {
+    for (int h = 0; h < gMaxHarmonic; h++) {
       fPhiPDF->SetParName(2 * h, Form("v_{%d}", h + 1));       // set name v_n
       fPhiPDF->SetParName(2 * h + 1, Form("Psi_{%d}", h + 1)); // set name psi_n
       // initialize v_n:
@@ -4215,52 +4214,85 @@ void InternalValidation()
       } else {
         fPhiPDF->SetParameter(2 * h + 1, 0.);
       }
-    } // for(Int_t h=0;h<gMaxHarmonic;h++)
+    } // for(int h=0;h<gMaxHarmonic;h++)
     // cross-check set vn's and psin's:
 
     if (tc.fVerbose) {
       LOGF(info, "=> This is initial configuration for p.d.f. used in internal validation:");
-      for (Int_t h = 0; h < 2 * gMaxHarmonic; h++) {
+      for (int h = 0; h < 2 * gMaxHarmonic; h++) {
         LOGF(info, Form("%d %s = %f", h, fPhiPDF->GetParName(h), fPhiPDF->GetParameter(h)));
       }
       LOGF(info, "Remark: Parameter [18] at the moment is reaction plane.\n");
     } // if (tc.fVerbose) {
+
   } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("correlated")) { // if(iv.fHarmonicsOptionInternalValidation->EqualTo("constant"))
     // For this option, three selected vn's (v1,v2,v3) are correlated, and all psin's are set to zero, for simplicity.
     // Remark: The last parameter [3] is a random reaction plane, keep in sync with fPhiPDF->SetParameter(3,fReactionPlane); below
-    //         Keep also in sync with const Int_t gMaxHarmonic = 9; in *GlobalConstants.h
+    //         Keep also in sync with const int gMaxHarmonic = 9; in *GlobalConstants.h
+
+    // Azimuthal angles are sampled from this pdf:
     fPhiPDF = new TF1("fPhiPDF", "1 + 2.*[0]*TMath::Cos(x-[3]) + 2.*[1]*TMath::Cos(2.*(x-[3])) + 2.*[2]*TMath::Cos(3.*(x-[3]))", 0., TMath::TwoPi());
     // With this parameterization, I have:
     //  [0] => v1
     //  [1] => v2
     //  [2] => v3
     //  [3] => RP
+    fPhiPDF->SetParName(0, "v_{1}");
+    fPhiPDF->SetParName(1, "v_{2}");
+    fPhiPDF->SetParName(2, "v_{3}");
+    fPhiPDF->SetParName(3, "RP");
 
+    // vn amplitudes are sampled e-b-e from this pdf:
     fvnPDF = new TF3("fvnPDF", "x + 2.*y - 3.*z", 0.07, 0.08, 0.06, 0.07, 0.05, 0.06); // v1 \in [0.07,0.08], v2 \in [0.06,0.07], v3 \in [0.05,0.06]
     // check for example message 'W-TF3::GetRandom3: function:fvnPDF has 27000 negative values: abs assumed' in the log file
-    fvnPDF->SetParName(0, "v_{1}");
-    fvnPDF->SetParName(1, "v_{2}");
-    fvnPDF->SetParName(2, "v_{3}");
-    fvnPDF->SetParName(3, "RP");
-    // Both amplitudes v1-v3 and RP are sampled e-b-e, and then set in fPhiPDF below
-  } // else if(fHarmonicsOptionInternalValidation->EqualTo("correlated"))
+    // All the amplitudes v1, v2 and v3, and RP are determined e-b-e, and then set in fPhiPDF below
+
+  } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("persistent")) { // if(iv.fHarmonicsOptionInternalValidation->EqualTo("persistent"))
+    // For this option, three selected vn's (v1,v2,v3) are correlated in the same way as in "correlated" case, but in addition, the persistent
+    // non-vanishing correlation among SPCs Psi1, Psi2 and Psi3 is introduced, in the same way as in arXiv:1901.06968, Sec. II D.
+
+    // Remark: In this example, there is no Reaction Plane, instead Psi1 and Psi2 are sampled uniformly, and the equation for Psi3 is hardwired,
+    //         to introduce strong and persistent SPC correlation, see arXiv:1901.06968, Sec. II D.
+    //         Keep also in sync with const int gMaxHarmonic = 9; in *GlobalConstants.h
+
+    // Azimuthal angles are sampled from this pdf:
+    fPhiPDF = new TF1("fPhiPDF", "1 + 2.*[0]*TMath::Cos(x-[3]) + 2.*[1]*TMath::Cos(2.*(x-[4])) + 2.*[2]*TMath::Cos(3.*(x-[5]))", 0., TMath::TwoPi());
+    // With this parameterization, I have:
+    //  [0] => v1
+    //  [1] => v2
+    //  [2] => v3
+    //  [3] => Psi1
+    //  [4] => Psi2
+    //  [5] => Psi3
+    fPhiPDF->SetParName(0, "v_{1}");
+    fPhiPDF->SetParName(1, "v_{2}");
+    fPhiPDF->SetParName(2, "v_{3}");
+    fPhiPDF->SetParName(3, "Psi_{1}");
+    fPhiPDF->SetParName(4, "Psi_{2}");
+    fPhiPDF->SetParName(5, "Psi_{3}");
+
+    // vn amplitudes are sampled e-b-e from this pdf (yes, for simplicity, I keep it the same as in "correlated" case):
+    fvnPDF = new TF3("fvnPDF", "x + 2.*y - 3.*z", 0.07, 0.08, 0.06, 0.07, 0.05, 0.06); // v1 \in [0.07,0.08], v2 \in [0.06,0.07], v3 \in [0.05,0.06]
+    // check for example message 'W-TF3::GetRandom3: function:fvnPDF has 27000 negative values: abs assumed' in the log file
+    // All the amplitudes v1, v2 and v3, and symmetry planes Psi_{1}, Psi_{2} and Psi_{3} are determined e-b-e, and then set in fPhiPDF below
+  } // else if(fHarmonicsOptionInternalValidation->EqualTo("persistent"))
 
   // b) Loop over on-the-fly events:
-  Double_t v1 = 0., v2 = 0., v3 = 0.;
-  for (Int_t e = 0; e < static_cast<int>(iv.fnEventsInternalValidation); e++) {
+  double v1 = 0., v2 = 0., v3 = 0.;
+  for (int e = 0; e < static_cast<int>(iv.fnEventsInternalValidation); e++) {
 
     // b0) Reset ebye quantities:
     ResetEventByEventQuantities();
 
     // b1) Determine multiplicity, centrality, reaction plane and configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e:
-    Int_t nMult = static_cast<int>(gRandom->Uniform(iv.fMultRangeInternalValidation[eMin], iv.fMultRangeInternalValidation[eMax]));
+    int nMult = static_cast<int>(gRandom->Uniform(iv.fMultRangeInternalValidation[eMin], iv.fMultRangeInternalValidation[eMax]));
 
-    Double_t fReactionPlane = gRandom->Uniform(0., TMath::TwoPi()); // no cast is needed, since Uniform(...) returns double
+    double fReactionPlane = gRandom->Uniform(0., TMath::TwoPi()); // no cast is needed, since Uniform(...) returns double
     if (iv.fHarmonicsOptionInternalValidation->EqualTo("constant")) {
       fPhiPDF->SetParameter(18, fReactionPlane);
     } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("correlated")) {
       fPhiPDF->SetParameter(3, fReactionPlane);
-    }
+    } // Remark: I do not need here anything for option "persistent", because RP is not used for that case. See below how 3 symmetry planes are introduced with persistent correlation
 
     ebye.fCentrality = static_cast<float>(gRandom->Uniform(0., 100.));           // this is perfectly fine for this exercise
     ebye.fOccupancy = static_cast<float>(gRandom->Uniform(0., 10000.));          // this is perfectly fine for this exercise
@@ -4282,28 +4314,49 @@ void InternalValidation()
 
     // ... here I could implement some event cuts, if necessary ...
 
-    // configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e:
+    // configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e, for option "correlated":
     if (iv.fHarmonicsOptionInternalValidation->EqualTo("correlated")) {
       // Sample 3 correlated vn's from TF3 fvnPDF, and with them initialize fPhiPDF:
       fvnPDF->GetRandom3(v1, v2, v3);
       fPhiPDF->SetParameter(0, v1);
       fPhiPDF->SetParameter(1, v2);
       fPhiPDF->SetParameter(2, v3);
-      // reaction plane is set above
+      // reaction plane is set above already
     } // if(fHarmonicsOptionInternalValidation->EqualTo("correlated"))
 
+    // configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e, for option "persistent":
+    if (iv.fHarmonicsOptionInternalValidation->EqualTo("persistent")) {
+
+      // Sample 3 correlated vn's from TF3 fvnPDF, and with them initialize fPhiPDF:
+      fvnPDF->GetRandom3(v1, v2, v3);
+      fPhiPDF->SetParameter(0, v1);
+      fPhiPDF->SetParameter(1, v2);
+      fPhiPDF->SetParameter(2, v3);
+
+      // Persistent symmetry plane correlation:
+      double Psi1 = gRandom->Uniform(0., o2::constants::math::TwoPI);
+      double Psi2 = gRandom->Uniform(0., o2::constants::math::TwoPI);
+      double Psi3 = (1. / 3.) * ((o2::constants::math::PI / 4.) + 2. * Psi2 + Psi1); // see arXiv:1901.06968, Sec. II D.
+      fPhiPDF->SetParameter(3, Psi1);
+      fPhiPDF->SetParameter(4, Psi2);
+      fPhiPDF->SetParameter(5, Psi3);
+
+      // Remark: reaction plane is not needed for case "persistent"
+
+    } // if(fHarmonicsOptionInternalValidation->EqualTo("persistent"))
+
     // b3) Loop over particles:
-    Double_t dPhi = 0.;
-    Double_t dPt = 0.;
-    Double_t dEta = 0.;
+    double dPhi = 0.;
+    double dPt = 0.;
+    double dEta = 0.;
 
     // *) Define min and max ranges for sampling:
-    Double_t dPt_min = res.fResultsPro[AFO_PT]->GetXaxis()->GetBinLowEdge(1);                                           // yes, low edge of first bin is pt min
-    Double_t dPt_max = res.fResultsPro[AFO_PT]->GetXaxis()->GetBinLowEdge(1 + res.fResultsPro[AFO_PT]->GetNbinsX());    // yes, low edge of overflow bin is max pt
-    Double_t dEta_min = res.fResultsPro[AFO_ETA]->GetXaxis()->GetBinLowEdge(1);                                         // yes, low edge of first bin is eta min
-    Double_t dEta_max = res.fResultsPro[AFO_ETA]->GetXaxis()->GetBinLowEdge(1 + res.fResultsPro[AFO_ETA]->GetNbinsX()); // yes, low edge of overflow bin is max eta
+    double dPt_min = res.fResultsPro[AFO_PT]->GetXaxis()->GetBinLowEdge(1);                                           // yes, low edge of first bin is pt min
+    double dPt_max = res.fResultsPro[AFO_PT]->GetXaxis()->GetBinLowEdge(1 + res.fResultsPro[AFO_PT]->GetNbinsX());    // yes, low edge of overflow bin is max pt
+    double dEta_min = res.fResultsPro[AFO_ETA]->GetXaxis()->GetBinLowEdge(1);                                         // yes, low edge of first bin is eta min
+    double dEta_max = res.fResultsPro[AFO_ETA]->GetXaxis()->GetBinLowEdge(1 + res.fResultsPro[AFO_ETA]->GetNbinsX()); // yes, low edge of overflow bin is max eta
 
-    for (Int_t p = 0; p < nMult; p++) {
+    for (int p = 0; p < nMult; p++) {
       // Particle angle:
       dPhi = fPhiPDF->GetRandom();
 
@@ -4362,7 +4415,7 @@ void InternalValidation()
       // *) Differential q-vectors:
       // **) pt-dependence:
       if (qv.fCalculateQvectors && (mupa.fCalculateCorrelationsAsFunctionOf[AFO_PT] || t0.fCalculateTest0AsFunctionOf[AFO_PT]) && !es.fCalculateEtaSeparations) {
-        // In this branch I do not need eta separation, so the ligher call can be executed:
+        // In this branch I do not need eta separation, so the lighter call can be executed:
         this->Fillqvector(dPhi, dPt, PTq); // first 2 arguments are passed by reference, 3rd argument is enum
       } else if (es.fCalculateEtaSeparations && es.fCalculateEtaSeparationsAsFunctionOf[AFO_PT]) {
         // In this branch I do need eta separation, so the heavier call must be executed:
@@ -4387,7 +4440,7 @@ void InternalValidation()
         break;
       }
 
-    } // for(Int_t p=0;p<nMult;p++)
+    } // for(int p=0;p<nMult;p++)
 
     // *) Determine multiplicity of this event, for all "vs. mult" results:
     DetermineMultiplicity();
@@ -4435,7 +4488,7 @@ void InternalValidation()
       }
     }
 
-  } // for(Int_t e=0;e<e<static_cast<int>(iv.fnEventsInternalValidation);e++)
+  } // for(int e=0;e<e<static_cast<int>(iv.fnEventsInternalValidation);e++)
 
   // *) Print info on the current event number (total):
   if (tc.fVerboseEventCounter) {
@@ -5839,6 +5892,22 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
 
     // ...
 
+    //  *) Centrality weights (flattening):
+    // Remark 1: Since I am getting centrality weights from centrality distribution AFTER all the events cuts, flattening must be applied here after all other event cuts:
+    // Remark 2: Whatever I change here, change also in the corresponding branch for Run 2 and Run 1.
+    //           Yes, I have to replicate for this special event cut the same code, since in each case it has to be applied at the very end.
+    if (ec.fUseEventCuts[eCentralityWeights]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eRec, eCentralityWeights, eCutCounterBinning);
+      } else if (gRandom->Uniform(0, 1) > CentralityWeight(ebye.fCentrality)) { // yes, since centralityWeight is normalized probability (see CentralityWeight(...))
+        if (!EventCut(eRec, eCentralityWeights, cutModus)) {
+          return kFALSE;
+        }
+      }
+    }
+
+    // Remark: If I need any further event cut, implement it BEFORE event cut "Centrality weights (flattening)", which must be implemented last.
+
     // ... and corresponding MC truth simulated (Run 3 specific):
     // See https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx
     // See https://aliceo2group.github.io/analysis-framework/docs/datamodel/ao2dTables.html#montecarlo
@@ -5888,6 +5957,22 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     }
 
     // ...
+
+    //  *) Centrality weights (flattening):
+    // Remark 1: Since I am getting centrality weights from centrality distribution AFTER all the events cuts, flattening must be applied here after all other event cuts:
+    // Remark 2: Whatever I change here, change also in the corresponding branch for Run 3.
+    //           Yes, I have to replicate for this special event cut the same code, since in each case it has to be applied at the very end.
+    if (ec.fUseEventCuts[eCentralityWeights]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eRec, eCentralityWeights, eCutCounterBinning);
+      } else if (gRandom->Uniform(0, 1) > CentralityWeight(ebye.fCentrality)) { // yes, since centralityWeight is normalized probability (see CentralityWeight(...))
+        if (!EventCut(eRec, eCentralityWeights, cutModus)) {
+          return kFALSE;
+        }
+      }
+    }
+
+    // Remark: If I need any further event cut, implement it BEFORE event cut "Centrality weights (flattening)", which must be implemented last.
 
     // ... and corresponding MC truth simulated:
     // See https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx
@@ -9658,7 +9743,7 @@ TH1D* GetHistogramWithCentralityWeights(const char* filePath, const char* runNum
 
   // TBI 20241118 Shall I merge this function with GetHistogramWithWeights(...) as there is a bit of code bloat?
 
-  // TBI 20241021 Strictly speaking, I do not need to pass here first 2 arguments, "filePath" and "runNumber", because they are initialized at call from data members.
+  // TBI 20241021 Strictly speaking, I do not need to pass here 2 arguments, "filePath" and "runNumber", because they are initialized at call from data members.
   //              But since this function is called only once, it's not an important performance loss. But re-think the design here eventually.
 
   // a) Return value;
@@ -9684,8 +9769,7 @@ TH1D* GetHistogramWithCentralityWeights(const char* filePath, const char* runNum
   // b) Basic protection for arguments:
   // ...
 
-  // c) Determine from filePath if the file in on a local machine, or in home
-  // dir AliEn, or in CCDB:
+  // c) Determine from filePath if the file in on a local machine, or in home dir AliEn, or in CCDB:
   //    Algorithm: If filePath begins with "/alice/cern.ch/" then it's in home
   //    dir AliEn. If filePath begins with "/alice-ccdb.cern.ch/" then it's in
   //    CCDB. Therefore, files in AliEn and CCDB must be specified with abs path,
@@ -9769,8 +9853,7 @@ TH1D* GetHistogramWithCentralityWeights(const char* filePath, const char* runNum
     // f) Handle the local case:
     //    TBI 20231008 In principle, also for the local case in O2, I could
     //    maintain the same local structure of weights as it was in AliPhysics.
-    //                 But for simplicity, in O2 I organize local weights in the
-    //                 same way as in AliEn or CCDB.
+    //    But for simplicity, in O2 I organize local weights in the same way as in AliEn or CCDB.
 
     // Check if the external ROOT file exists at specified path:
     if (gSystem->AccessPathName(filePath, kFileExists)) {
@@ -9783,60 +9866,82 @@ TH1D* GetHistogramWithCentralityWeights(const char* filePath, const char* runNum
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
-    // xxxxxxxxxxxx  TBI 20241124 remove this code
-
-    hist = reinterpret_cast<TH1D*>(centralityWeightsFile->Get("FT0C_Default list name")); // TBI 20241122 temporary workaround
-    if (!hist) {
-      Exit();
-    }
-    hist->SetDirectory(0);
-    hist->SetTitle(Form("%s, %s", filePath, runNumber)); // I have to do it here, because only here I have "filePath" available
-    return hist;
-
-    // xxxxxxxxxxxx
-
     /*
-        centralityWeightsFile->GetObject("ccdb_object", baseList); // TBI 20231008 for simplicity, hardwired name
-                                                                   // of base TList is "ccdb_object" also for
-                                                                   // local case, see if I need to change this
+        // xxxxxxxxxxxx  TBI 20241124 remove this code
 
-        if (!baseList) {
-          // centralityWeightsFile->ls();
-          LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+        hist = reinterpret_cast<TH1D*>(centralityWeightsFile->Get("FT0C_Default list name")); // TBI 20241122 temporary workaround
+        if (!hist) {
+          Exit();
         }
+        hist->SetDirectory(0);
+        hist->SetTitle(Form("%s, %s", filePath, runNumber)); // I have to do it here, because only here I have "filePath" available
+        return hist;
 
-        listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
-        if (!listWithRuns) {
-          TString runNumberWithLeadingZeroes = "000";
-          runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
-          listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
-          if (!listWithRuns) {
-            LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-          }
-        }
+        // xxxxxxxxxxxx
     */
+
+    centralityWeightsFile->GetObject("ccdb_object", baseList); // TBI 20231008 for simplicity, hardwired name
+                                                               // of base TList is "ccdb_object" also for
+                                                               // local case, see if I need to change this
+
+    if (!baseList) {
+      // centralityWeightsFile->ls();
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+
+    listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
+    if (!listWithRuns) {
+      TString runNumberWithLeadingZeroes = "000";
+      runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
+      listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+      if (!listWithRuns) {
+        LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      }
+    }
 
   } // else {
 
   // g) The final touch on histogram with centrality weights:
-
-  // TBI 20241211 unify code below with how I implemented below for particle weights
+  TString histName = "";
 
   // fetch histogram directly from this list:
-  hist = reinterpret_cast<TH1D*>(listWithRuns->FindObject(Form("%s_%s", ec.fsEventCuts[eCentralityEstimator].Data(), tc.fTaskName.Data())));
+  // Remark: histName must be formated as e.g. "FT0C_multiparticle-correlations-a-b" for default analysis, or "FT0C_multiparticle-correlations-a-b_someCut"
+
+  // Isolate short centrality estimator name, e.g. "FT0C" or "V0M" TBI 20250122 move this to utility function, because I have the same code in FancyFormatting()
+  TString tmp = ec.fsEventCuts[eCentralityEstimator]; // I have to introduce local TString tmp, because ReplaceAll replaces in-place
+  if (tmp.BeginsWith("CentRun2")) {
+    tmp.ReplaceAll("CentRun2", ""); // "CentRun2V0M" => "V0M"
+  } else if (tmp.BeginsWith("Cent")) {
+    tmp.ReplaceAll("Cent", ""); // "CentFT0C" => FT0C"
+  } else {
+    LOGF(fatal, "\033[1;31m%s at line %d : the case tmp = %s is not supported yet\033[0m", __FUNCTION__, __LINE__, tmp.Data());
+  }
+
+  histName = TString::Format("%s_multiparticle-correlations-a-b", tmp.Data()); // I can hardwire here the name, as long as my main task name is struct MultiparticleCorrelationsAB
+  if (!tc.fTaskName.EqualTo("")) {
+    // for non-default analysis (e.g. in subwagon), append still "_someName", where "someName" is subwagon = taskname
+    histName += "_";
+    histName += tc.fTaskName;
+  }
+
+  LOGF(info, "\033[1;33m%s at line %d : fetching directly hist with name = %s\033[0m", __FUNCTION__, __LINE__, histName.Data());
+  hist = reinterpret_cast<TH1D*>(listWithRuns->FindObject(histName.Data()));
   // if the previous search failed, descend recursively also into the nested lists:
   if (!hist) {
-    hist = reinterpret_cast<TH1D*>(GetObjectFromList(listWithRuns, Form("%s_%s", ec.fsEventCuts[eCentralityEstimator].Data(), tc.fTaskName.Data())));
+    LOGF(info, "\033[1;33m%s at line %d : previous attempt failed, fetching instead recursively hist with name = %s\033[0m", __FUNCTION__, __LINE__, histName.Data());
+    hist = reinterpret_cast<TH1D*>(GetObjectFromList(listWithRuns, histName.Data()));
   }
   if (!hist) {
-    hist = reinterpret_cast<TH1D*>(GetObjectFromList(listWithRuns, Form("%s", ec.fsEventCuts[eCentralityEstimator].Data()))); // yes, for some simple tests I can have only histogram named e.g. 'CentFT0C'
+    histName = tmp; // yes, for some simple tests I can have only histogram named e.g. 'FT0C'
+    LOGF(info, "\033[1;33m%s at line %d : last attempt, fetching instead hist with trivial name = %s\033[0m", __FUNCTION__, __LINE__, histName.Data());
+    hist = reinterpret_cast<TH1D*>(GetObjectFromList(listWithRuns, histName.Data()));
   }
   if (!hist) {
     listWithRuns->ls();
-    LOGF(fatal, "\033[1;31m%s at line %d : \033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d : couldn't fetch hist with name = %s\033[0m", __FUNCTION__, __LINE__, histName.Data());
   }
   hist->SetDirectory(0);
-  hist->SetTitle(Form("%s, %s", filePath, runNumber)); // I have to do it here, because only here I have "filePath" available
+  hist->SetTitle(Form("%s, %s", filePath, runNumber)); // I have to do it here, because only here I have "filePath" av
 
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
@@ -10652,6 +10757,44 @@ void GetCentralityWeights()
   }
 
 } // void GetCentralityWeights()
+
+//============================================================
+
+double CentralityWeight(const Double_t& value) // centrality value
+{
+  // Determine centrality weight.
+
+  // Ported directly from Double_t AliAnalysisTaskMuPa::CentralityWeight(const Double_t &value)
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
+
+  if (!cw.fCentralityWeightsHist) {
+    LOGF(fatal, "\033[1;31m%s at line %d : cw.fCentralityWeightsHist is NULL. \033[0m", __FUNCTION__, __LINE__);
+  }
+
+  int bin = cw.fCentralityWeightsHist->FindBin(value);
+  double weight = 0.;
+  if (bin > cw.fCentralityWeightsHist->GetNbinsX()) {
+    weight = 0.; // we are in the overflow, ignore this case
+  } else {
+    weight = cw.fCentralityWeightsHist->GetBinContent(bin) * cw.fCentralityWeightsHist->GetBinWidth(bin); // yes, since fCentralityWeightsHist is normalized p.d.f.
+                                                                                                          // (I ensure that with the macro which makes centrality weights)
+  }
+
+  // In this context, it is assumed that centrality weight is a normalized probability (I ensure that with the macro which makes centrality weights):
+  if (weight < 0. || weight > 1.) {
+    LOGF(fatal, "\033[1;31m%s at line %d : weight = %f \033[0m", __FUNCTION__, __LINE__, weight);
+  }
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
+  return weight;
+
+} // double CentralityWeight(const Double_t& value)
 
 //============================================================
 
@@ -12377,7 +12520,7 @@ void MainLoopOverParticles(T const& tracks)
     // *) Differential q-vectors:
     // **) pt-dependence:
     if (qv.fCalculateQvectors && (mupa.fCalculateCorrelationsAsFunctionOf[AFO_PT] || t0.fCalculateTest0AsFunctionOf[AFO_PT]) && !es.fCalculateEtaSeparations) {
-      // In this branch I do not need eta separation, so the ligher call can be executed:
+      // In this branch I do not need eta separation, so the lighter call can be executed:
       this->Fillqvector(dPhi, dPt, PTq); // first 2 arguments are passed by reference, 3rd argument is enum
     } else if (es.fCalculateEtaSeparations && es.fCalculateEtaSeparationsAsFunctionOf[AFO_PT]) {
       // In this branch I do need eta separation, so the heavier call must be executed:

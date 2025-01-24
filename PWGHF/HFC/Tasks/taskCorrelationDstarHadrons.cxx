@@ -14,6 +14,8 @@
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 /// \author Shyam Kumar <shyam.kumar@cern.ch>
 
+#include <vector>
+
 // Framework
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"

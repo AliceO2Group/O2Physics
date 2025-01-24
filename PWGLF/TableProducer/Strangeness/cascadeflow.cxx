@@ -353,7 +353,7 @@ struct cascadeFlow {
     float cosThetaStarLambda[2], cosThetaStarProton;
     lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), o2::constants::physics::MassLambda);
     ROOT::Math::Boost lambdaBoost{lambdaVector.BoostToCM()};
-    if (casc.sign() < 0) {
+    if (casc.sign() > 0) {
       protonVector.SetCoordinates(casc.pxneg(), casc.pyneg(), casc.pzneg(), o2::constants::physics::MassProton);
     } else {
       protonVector.SetCoordinates(casc.pxpos(), casc.pypos(), casc.pzpos(), o2::constants::physics::MassProton);

@@ -64,6 +64,7 @@ struct JetDerivedDataProducerTask {
   Produces<aod::JBCs> jBCsTable;
   Produces<aod::JBCPIs> jBCParentIndexTable;
   Produces<aod::JCollisions> jCollisionsTable;
+  Produces<aod::JCollisionMcInfos> jCollisionMcInfosTable;
   Produces<aod::JCollisionPIs> jCollisionsParentIndexTable;
   Produces<aod::JCollisionBCs> jCollisionsBunchCrossingIndexTable;
   Produces<aod::JEMCCollisionLbs> jCollisionsEMCalLabelTable;
@@ -146,6 +147,9 @@ struct JetDerivedDataProducerTask {
   void processClearMaps(aod::Collisions const&)
   {
     trackCollisionMapping.clear();
+    if (!doprocessMcCollisionLabels) {
+      jCollisionMcInfosTable(-1.0, jetderiveddatautilities::JCollisionSubGeneratorId::none); // fill a dummy weights table if not MC
+    }
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processClearMaps, "clears all maps", true);
 
@@ -212,21 +216,22 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processEMCalCollisionLabels, "produces derived collision labels for EMCal", false);
 
-  void processMcCollisionLabels(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision)
+  void processMcCollisionLabels(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&)
   {
-
     if (collision.has_mcCollision()) {
       jMcCollisionsLabelTable(collision.mcCollisionId());
+      jCollisionMcInfosTable(collision.mcCollision().weight(), collision.mcCollision().getSubGeneratorId());
     } else {
       jMcCollisionsLabelTable(-1);
+      jCollisionMcInfosTable(-1.0, jetderiveddatautilities::JCollisionSubGeneratorId::none);
     }
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisionLabels, "produces derived MC collision labels table", false);
 
-  void processMcCollisions(aod::McCollision const& McCollision)
+  void processMcCollisions(aod::McCollision const& mcCollision)
   {
-    jMcCollisionsTable(McCollision.posX(), McCollision.posY(), McCollision.posZ(), McCollision.weight());
-    jMcCollisionsParentIndexTable(McCollision.globalIndex());
+    jMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.weight(), mcCollision.getSubGeneratorId());
+    jMcCollisionsParentIndexTable(mcCollision.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisions, "produces derived MC collision table", false);
 
