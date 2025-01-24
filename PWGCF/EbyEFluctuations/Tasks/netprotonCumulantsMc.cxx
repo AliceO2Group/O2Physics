@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file netprotonCumulantsMc.cxx
+/// \brief Task for analyzing efficiency of proton, and net-proton distributions in MC reconstructed and generated
+/// \author Swati Saha
+
 #include <cmath>
 #include <array>
 #include <cstdlib>
@@ -112,7 +116,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct NetProtonCumulantsMC {
+struct NetprotonCumulantsMc {
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   // tracks
@@ -133,8 +137,8 @@ struct NetProtonCumulantsMC {
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<int64_t> ccdbNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> ccdbUrl{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -368,7 +372,7 @@ struct NetProtonCumulantsMC {
     histos.fill(HIST("hgenProfileAntiproton"), cent, nAntiprot);
     genEbyeCollisions(cent, netProt, nProt, nAntiprot);
   }
-  PROCESS_SWITCH(NetProtonCumulantsMC, processMCGen, "Process Generated", true);
+  PROCESS_SWITCH(NetprotonCumulantsMc, processMCGen, "Process Generated", true);
 
   Produces<aod::ProtRecCollEbyeTables> recEbyeCollisions;             //! MC Rec table creation
   Produces<aod::ProtRecCompleteEbyeTables> recEbyeCompleteCollisions; //! MC Rec table creation with tracks
@@ -446,11 +450,11 @@ struct NetProtonCumulantsMC {
     histos.fill(HIST("hrecProfileAntiproton"), cent, nAntiprot);
     recEbyeCollisions(cent, netProt, nProt, nAntiprot);
   }
-  PROCESS_SWITCH(NetProtonCumulantsMC, processMCRec, "Process Generated", true);
+  PROCESS_SWITCH(NetprotonCumulantsMc, processMCRec, "Process Generated", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<NetProtonCumulantsMC>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<NetprotonCumulantsMc>(cfgc)};
   return workflow;
 }
