@@ -14,6 +14,7 @@
 ///
 /// \author Rahul Verma (rahul.verma@iitb.ac.in) :: Sadhana Dash (sadhana@phy.iitb.ac.in)
 
+#include <algorithm>
 #include <vector>
 
 #include "Framework/runDataProcessing.h"
