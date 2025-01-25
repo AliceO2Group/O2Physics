@@ -126,6 +126,7 @@ struct MultiplicityTable {
   } ccdbConfig;
 
   Configurable<bool> produceHistograms{"produceHistograms", false, {"Option to produce debug histograms"}};
+  Configurable<bool> autoSetupFromMetadata{"autoSetupFromMetadata", true, {"Autosetup the Run 2 and Run 3 processing from the metadata"}};
 
   int mRunNumber;
   bool lCalibLoaded;
@@ -146,11 +147,15 @@ struct MultiplicityTable {
   unsigned int randomSeed = 0;
   void init(InitContext& context)
   {
-    if (metadataInfo.isFullyDefined() && !doprocessRun2 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
-      if (metadataInfo.isRun3()) {
-        doprocessRun3.value = true;
-      } else {
-        doprocessRun2.value = false;
+    // If both Run 2 and Run 3 data process flags are enabled then we check the metadata
+    if (autoSetupFromMetadata && metadataInfo.isFullyDefined()) {
+      LOG(info) << "Autosetting the processing from the metadata";
+      if (doprocessRun2 == true && doprocessRun3 == true) {
+        if (metadataInfo.isRun3()) {
+          doprocessRun2 = false;
+        } else {
+          doprocessRun3 = false;
+        }
       }
     }
 
@@ -792,7 +797,7 @@ struct MultiplicityTable {
   }
 
   // Process switches
-  PROCESS_SWITCH(MultiplicityTable, processRun2, "Produce Run 2 multiplicity tables", false);
+  PROCESS_SWITCH(MultiplicityTable, processRun2, "Produce Run 2 multiplicity tables", true);
   PROCESS_SWITCH(MultiplicityTable, processRun3, "Produce Run 3 multiplicity tables", true);
   PROCESS_SWITCH(MultiplicityTable, processGlobalTrackingCounters, "Produce Run 3 global counters", false);
   PROCESS_SWITCH(MultiplicityTable, processMC, "Produce MC multiplicity tables", false);
