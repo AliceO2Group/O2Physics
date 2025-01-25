@@ -82,12 +82,16 @@ DECLARE_SOA_COLUMN(AntiProtNoRec, antiProtNoRec, float); //! antiproton no. in a
 } // namespace rec_ebyecolltable
 
 DECLARE_SOA_TABLE(ProtRecCollEbyeTables, "AOD", "PROTRECCOLLEBYETABLE",
-                  o2::soa::Index<>,
                   rec_ebyecolltable::CentralityRec,
                   rec_ebyecolltable::NetProtNoRec,
                   rec_ebyecolltable::ProtNoRec,
                   rec_ebyecolltable::AntiProtNoRec);
 using ProtRecCollEbyeTable = ProtRecCollEbyeTables::iterator;
+
+DECLARE_SOA_TABLE(ProtRecCollTables, "AOD", "PROTRECCOLLTABLE",
+                  o2::soa::Index<>,
+                  rec_ebyecolltable::CentralityRec);
+using ProtRecCollTable = ProtRecCollTables::iterator;
 
 namespace rec_ebyetracktable
 {
@@ -370,6 +374,7 @@ struct NetprotonCumulantsMc {
   PROCESS_SWITCH(NetprotonCumulantsMc, processMCGen, "Process Generated", true);
 
   Produces<aod::ProtRecCollEbyeTables> recEbyeCollisions;             //! MC Rec table creation
+  Produces<aod::ProtRecCollTables> recCollisions;                     //! MC Rec table creation
   Produces<aod::ProtRecCompleteEbyeTables> recEbyeCompleteCollisions; //! MC Rec table creation with tracks
 
   void processMCRec(MyMCRecCollision const& collision, MyMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
@@ -381,6 +386,7 @@ struct NetprotonCumulantsMc {
     histos.fill(HIST("Centrec"), cent);
     histos.fill(HIST("hMC"), 5.5);
     histos.fill(HIST("hZvtx_after_sel"), collision.posZ());
+    recCollisions(cent);
 
     float nProt = 0.0;
     float nAntiprot = 0.0;
@@ -409,7 +415,7 @@ struct NetprotonCumulantsMc {
           trackSelected = selectionPIDnew(track);
 
         if (trackSelected) {
-          recEbyeCompleteCollisions(recEbyeCollisions.lastIndex(), particle.pt(), particle.eta(), track.sign());
+          recEbyeCompleteCollisions(recCollisions.lastIndex(), particle.pt(), particle.eta(), track.sign());
           if (track.sign() > 0) {
             histos.fill(HIST("hrecPtProton"), particle.pt()); //! hist for p rec
             histos.fill(HIST("hrecPtDistProtonVsCentrality"), particle.pt(), cent);
