@@ -197,11 +197,11 @@ struct CentralityTable {
       if (f == 1) {
         if (tableNames[i].find("Run2") != std::string::npos) {
           if (doprocessRun3) {
-            LOG(fatal) << "Cannot enable Run2 table `" << tableNames[i] << "` while running in Run3 mode. Please check and disable them.");
+            LOG(fatal) << "Cannot enable Run2 table `" << tableNames[i] << "` while running in Run3 mode. Please check and disable them.";
           }
         } else {
           if (doprocessRun2) {
-            LOG(fatal) << "Cannot enable Run3 table `" << tableNames[i] << "` while running in Run2 mode. Please check and disable them.");
+            LOG(fatal) << "Cannot enable Run3 table `" << tableNames[i] << "` while running in Run2 mode. Please check and disable them.";
           }
         }
         isTableEnabled[i] = true;
