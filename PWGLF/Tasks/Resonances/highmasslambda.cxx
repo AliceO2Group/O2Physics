@@ -293,11 +293,16 @@ struct highmasslambda {
     if (candidate.tpcInnerParam() < 1.0 && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.tpcInnerParam() >= 1.0 && candidate.tpcInnerParam() < 2.0 && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
+    if (candidate.tpcInnerParam() >= 1.0 && candidate.tpcInnerParam() < 2.0 && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC && candidate.hasTOF() && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
       return true;
     }
-    if (candidate.tpcInnerParam() >= 2.0 && candidate.tpcNSigmaPr() > -nsigmaCutTPC && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
-      return true;
+    if (candidate.tpcInnerParam() >= 2.0) {
+      if (candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
+        return true;
+      }
+      if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
+        return true;
+      }
     }
     return false;
   }
