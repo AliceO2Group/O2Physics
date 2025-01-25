@@ -407,7 +407,7 @@ struct highmasslambda {
     }
     o2::aod::ITSResponse itsResponse;
     auto centrality = collision.centFT0C();
-    auto multTPC = collision.multNTracksPV();
+    // auto multTPC = collision.multNTracksPV();
     int occupancy = collision.trackOccupancyInTimeRange();
     if (occupancy > cfgOccupancyCut) {
       return;
@@ -619,7 +619,7 @@ struct highmasslambda {
     }
     o2::aod::ITSResponse itsResponse;
     auto centrality = collision.centFT0C();
-    auto multTPC = collision.multNTracksPV();
+    // auto multTPC = collision.multNTracksPV();
     auto psiFT0C = collision.psiFT0C();
     auto psiFT0A = collision.psiFT0A();
     auto psiTPC = collision.psiTPC();
