@@ -32,13 +32,12 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct isospin_fluctuation {
-  // Hisogram redistry:
-  HistogramRegistry recoEvent{"recoEvent", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry recoV0s{"recoV0s", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry recoK0s{"recoK0s", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry recoTracks{"recoTracks", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry recoAnalysis{"recoAnalysis", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry recoLambda{"recoLambda", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  // Hisogram registry:
+  HistogramRegistry recoV0s{"recoV0s", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry recoEvent{"recoEvent", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry recoK0s{"recoK0s", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry recoTracks{"recoTracks", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry recoAnalysis{"recoAnalysis", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // PDG data base
   Service<o2::framework::O2DatabasePDG> pdgDB;
@@ -60,758 +59,373 @@ struct isospin_fluctuation {
 
   void init(InitContext const&)
   {
-    // Print output histograms statistics
-    // LOG(info) << "Starting Init";
-    LOGF(info, "Starting init");
-
-    std::vector<double> AxisSquarredArray;
-    AxisSquarredArray.push_back(-1.5);
-    AxisSquarredArray.push_back(-0.5);
-    for (int i = 1; i < 1000; i++) {
-      AxisSquarredArray.push_back(static_cast<double>(i * i) - 0.5);
-      AxisSquarredArray.push_back(static_cast<double>(i * i) + 0.5);
-    }
-
     // Axes
-    // const AxisSpec axisCounts{1, 0., 1., ""};
-    AxisSpec Axis_K0sMass = {200, 0.40f, 0.60f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
-    AxisSpec Axis_LambdaMass = {200, 1.f, 1.2F, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
-    AxisSpec Axis_XiMass = {200, 1.28f, 1.36f, "#it{M}_{inv} [GEv/#it{c}^{2}]"};
+    const AxisSpec axisK0sMass = {200, 0.40f, 0.60f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
+    const AxisSpec axisLambdaMass = {200, 1.f, 1.2f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
 
-    AxisSpec Axis_vertexZ = {30, -15., 15., "vrtx_{Z} [cm]"};
-    AxisSpec Axis_centFT0C = {1020, -1.0, 101.0, "centFT0C(percentile)"};
+    const AxisSpec axisVertexZ = {30, -15., 15., "vrtx_{Z} [cm]"};
+    const AxisSpec axisCentFT0C = {1020, -1.0, 101.0, "centFT0C(percentile)"};
 
-    AxisSpec Axis_p = {200, 0.0f, 10.0f, "#it{p} (GeV/#it{c})"};
-    AxisSpec Axis_pt = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec Axis_tpcInnerParam = {200, 0.0f, 10.0f, "#it{p}_{tpcInnerParam} (GeV/#it{c})"};
-    AxisSpec Axis_tofExpMom = {200, 0.0f, 10.0f, "#it{p}_{tofExpMom} (GeV/#it{c})"};
+    const AxisSpec axisP = {200, 0.0f, 10.0f, "#it{p} (GeV/#it{c})"};
+    const AxisSpec axisPt = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisTPCInnerParam = {200, 0.0f, 10.0f, "#it{p}_{tpcInnerParam} (GeV/#it{c})"};
+    const AxisSpec axisTOFExpMom = {200, 0.0f, 10.0f, "#it{p}_{tofExpMom} (GeV/#it{c})"};
 
-    AxisSpec Axis_eta = {100, -5, 5, "#eta"};
-    AxisSpec Axis_phi = {90, -1, 8, "#phi (radians)"};
-    AxisSpec Axis_rapidity = {200, -10, 10, "Rapidity (y)"};
-    AxisSpec Axis_dcaXY = {2000, -100, 100, "dcaXY"};
-    AxisSpec Axis_dcaZ = {2000, -100, 100, "dcaZ"};
-    AxisSpec Axis_Sign = {10, -5, 5, "track.sign"};
+    const AxisSpec axisEta = {100, -5, 5, "#eta"};
+    const AxisSpec axisPhi = {90, -1, 8, "#phi (radians)"};
+    const AxisSpec axisRapidity = {200, -10, 10, "Rapidity (y)"};
+    const AxisSpec axisDcaXY = {100, -5, 5, "dcaXY"};
+    const AxisSpec axisDcaZ = {100, -5, 5, "dcaZ"};
+    const AxisSpec axisDcaXYwide = {2000, -100, 100, "dcaXY"};
+    const AxisSpec axisDcaZwide = {2000, -100, 100, "dcaZ"};
+    const AxisSpec axisSign = {10, -5, 5, "track.sign"};
 
-    AxisSpec Axis_Mult = {1200, -10, 110};
-    AxisSpec Axis_particleCount = {510, -10, 500};
-    AxisSpec SquareCountAxis1 = {250000, -1, 249999, "SquaredCountAxis"};
-    AxisSpec VectorAxis = AxisSquarredArray;
+    const AxisSpec axisTPCSignal = {100, -1, 1000, "tpcSignal"};
+    const AxisSpec axisTOFBeta = {40, -2.0, 2.0, "tofBeta"};
 
-    AxisSpec Axis_tpcSignal = {10010, -1, 1000, "tpcSignal"};
-    AxisSpec Axis_tofBeta = {400, -2.0, 2.0, "tofBeta"};
+    const AxisSpec axisTPCSignalFine = {10010, -1, 1000, "tpcSignal"};
+    const AxisSpec axisTOFBetaFine = {10010, -1, 1000, "tpcSignal"};
 
-    AxisSpec Axis_tpcNSigmaPi = {200, -10.0, 10.0, "n#sigma_{TPC}^{Pi}"};
-    AxisSpec Axis_tofNSigmaPi = {200, -10.0, 10.0, "n#sigma_{TOF}^{Pi}"};
-    AxisSpec Axis_tpcNSigmaKa = {200, -10.0, 10.0, "n#sigma_{TPC}^{Ka}"};
-    AxisSpec Axis_tofNSigmaKa = {200, -10.0, 10.0, "n#sigma_{TOF}^{Ka}"};
-    AxisSpec Axis_tpcNSigmaPr = {200, -10.0, 10.0, "n#sigma_{TPC}^{Pr}"};
-    AxisSpec Axis_tofNSigmaPr = {200, -10.0, 10.0, "n#sigma_{TOF}^{Pr}"};
-    AxisSpec Axis_tpcNSigmaEl = {200, -10.0, 10.0, "n#sigma_{TPC}^{El}"};
-    AxisSpec Axis_tofNSigmaEl = {200, -10.0, 10.0, "n#sigma_{TOF}^{El}"};
-    AxisSpec Axis_tpcNSigmaDe = {200, -10.0, 10.0, "n#sigma_{TPC}^{De}"};
-    AxisSpec Axis_tofNSigmaDe = {200, -10.0, 10.0, "n#sigma_{TOF}^{De}"};
+    const AxisSpec axisTPCNSigma = {200, -10.0, 10.0, "n#sigma_{TPC}"};
+    const AxisSpec axisTOFNSigma = {200, -10.0, 10.0, "n#sigma_{TOF}"};
 
-    AxisSpec Axis_tpcNClsCrossedRows = {200, -1.5, 198.5, "tpcNClsCrossedRows"};
-    AxisSpec Axis_isGlobalTrack = {4, -1, 3, "isGobalTrack"};
-    AxisSpec Axis_isK0sDau = {4, -1, 3, "isK0sDau"};
+    const AxisSpec axisTPCNSigmaPi = {200, -10.0, 10.0, "n#sigma_{TPC}^{Pi}"};
+    const AxisSpec axisTOFNSigmaPi = {200, -10.0, 10.0, "n#sigma_{TOF}^{Pi}"};
 
-    AxisSpec Axis_00 = Axis_p;             // p              //0
-    AxisSpec Axis_01 = Axis_pt;            // pt             //1
-    AxisSpec Axis_02 = Axis_tpcInnerParam; // tpcInnerParam  //2
-    AxisSpec Axis_03 = Axis_tofExpMom;     // tofExpMom      //3
+    const AxisSpec axisTPCNClsCrossedRows = {200, -1.5, 198.5, "tpcNClsCrossedRows"};
+    const AxisSpec axisIsPVContributor = {4, -1, 3, "isPVContributor"};
+    const AxisSpec axisIsGlobalTrack = {4, -1, 3, "isGobalTrack"};
+    const AxisSpec axisIsK0sDau = {4, -1, 3, "isK0sDau"};
 
-    AxisSpec Axis_05 = Axis_tpcSignal; // tpcSignal      //5
-    AxisSpec Axis_06 = Axis_tofBeta;   // Axis_tofBeta   //
+    const AxisSpec axisDcapostopv = {100000, -50, 50, "dcapostopv"};
+    const AxisSpec axisDcanegtopv = {100000, -50, 50, "dcanegtopv"};
+    const AxisSpec axisDcaV0daughters = {2000, -10.0, 10.0, "dcaV0daughters"};
+    const AxisSpec axisV0cosPA = {3000, -1.5, 1.5, "v0cosPA"};
+    const AxisSpec axisV0radius = {100000, -50, 50, "v0radius"};
 
-    AxisSpec Axis_20 = Axis_tpcNSigmaPi; // tpcNSigmaPi    //5
-    AxisSpec Axis_21 = Axis_tofNSigmaPi; // tofNSigmaPi
-    AxisSpec Axis_22 = Axis_tpcNSigmaKa; // tpcNSigmaKa    //5
-    AxisSpec Axis_23 = Axis_tofNSigmaKa; // tofNSigmaKa
-    AxisSpec Axis_24 = Axis_tpcNSigmaPr; // tpcNSigmaPr    //5
-    AxisSpec Axis_25 = Axis_tofNSigmaPr; // tofNSigmaPr
-    AxisSpec Axis_26 = Axis_tpcNSigmaEl; // tpcNSigmaEl    //5
-    AxisSpec Axis_27 = Axis_tofNSigmaEl; // tofNSigmaEl
-    AxisSpec Axis_28 = Axis_tpcNSigmaDe; // tpcNSigmaDe    //5
-    AxisSpec Axis_29 = Axis_tofNSigmaDe; // tofNSigmaDe
+    const AxisSpec axisParticleCount1 = {60, -10, 50, "particleCount"};
+    const AxisSpec axisParticleCount2 = {260, -10, 250, "particleCount"};
+    const AxisSpec axisParticleCount3 = {1060, -10, 1050, "particleCount"};
 
-    // Histograms
-    // V0 Information
-    recoV0s.add("hV0s_0_0_00_hV0TagCount", "hV0s_0_0_00_hV0TagCount", {HistType::kTH1F, {{12, -2, 10}}});         // 001 = Kaon, 010 = Lambda, 100 = AnitLambda
-    recoV0s.add("hV0s_0_0_00_hTrueV0TagCount", "hV0s_0_0_00_hTrueV0TagCount", {HistType::kTH1F, {{12, -2, 10}}}); // 001 = Kaon, 010 = Lambda, 100 = AnitLambda
+    HistogramConfigSpec hist_p_dcaXY({HistType::kTH2F, {axisP, axisDcaXY}});
+    HistogramConfigSpec hist_pt_dcaXY({HistType::kTH2F, {axisPt, axisDcaXY}});
+    HistogramConfigSpec hist_tpcInnerParam_dcaXY({HistType::kTH2F, {axisTPCInnerParam, axisDcaXY}});
+    HistogramConfigSpec hist_tofExpMom_dcaXY({HistType::kTH2F, {axisTOFExpMom, axisDcaXY}});
 
-    recoV0s.add("hV0s_0_0_01_K0s_Mass_Full", "hV0s_0_0_01_K0s_Mass_Full", {HistType::kTH1F, {Axis_K0sMass}});
-    recoV0s.add("hV0s_0_0_02_Lambda_Mass_Full", "hV0s_0_0_02_Lambda_Mass_Full", {HistType::kTH1F, {Axis_LambdaMass}});
-    recoV0s.add("hV0s_0_0_03_AntiLambda_Mass_Full", "hV0s_0_0_03_AntiLambda_Mass_Full", {HistType::kTH1F, {Axis_LambdaMass}});
+    HistogramConfigSpec hist_p_dcaZ({HistType::kTH2F, {axisP, axisDcaZ}});
+    HistogramConfigSpec hist_pt_dcaZ({HistType::kTH2F, {axisPt, axisDcaZ}});
+    HistogramConfigSpec hist_tpcInnerParam_dcaZ({HistType::kTH2F, {axisTPCInnerParam, axisDcaZ}});
+    HistogramConfigSpec hist_tofExpMom_dcaZ({HistType::kTH2F, {axisTOFExpMom, axisDcaZ}});
 
-    // K0s topological/PID cuts
-    recoV0s.add("hV0s_0_1_01_K0s_dcapostopv", "hV0s_K0s_dcapostopv", {HistType::kTH1F, {{100000, -50, 50}}});
-    recoV0s.add("hV0s_0_1_02_K0s_dcanegtopv", "hV0s_K0s_dcanegtopv", {HistType::kTH1F, {{100000, -50, 50}}});
-    recoV0s.add("hV0s_0_1_03_K0s_dcaV0daughters", "hV0s_K0s_dcaV0daughters", {HistType::kTH1F, {{2000, -10.0, 10.0}}});
-    recoV0s.add("hV0s_0_1_04_K0s_v0cosPA", "hV0s_K0s_v0cosPA", {HistType::kTH1F, {{3000, -1.5, 1.5}}});
-    recoV0s.add("hV0s_0_1_05_K0s_v0radius", "hV0s_K0s_v0radius", {HistType::kTH1F, {{100000, -50, 50}}});
+    HistogramConfigSpec hist_p_pt({HistType::kTH2F, {axisP, axisPt}});
+    HistogramConfigSpec hist_p_tpcInnerParam({HistType::kTH2F, {axisP, axisTPCInnerParam}});
+    HistogramConfigSpec hist_p_tofExpMom({HistType::kTH2F, {axisP, axisTOFExpMom}});
+
+    HistogramConfigSpec hist_p_tpcSignal({HistType::kTH2F, {axisP, axisTPCSignal}});
+    HistogramConfigSpec hist_tpcInnerParam_tpcSignal({HistType::kTH2F, {axisTPCInnerParam, axisTPCSignal}});
+    HistogramConfigSpec hist_tofExpMom_tpcSignal({HistType::kTH2F, {axisTOFExpMom, axisTPCSignal}});
+
+    HistogramConfigSpec hist_p_beta({HistType::kTH2F, {axisP, axisTOFBeta}});
+    HistogramConfigSpec hist_tpcInnerParam_beta({HistType::kTH2F, {axisTPCInnerParam, axisTOFBeta}});
+    HistogramConfigSpec hist_tofExpMom_beta({HistType::kTH2F, {axisTOFExpMom, axisTOFBeta}});
+
+    HistogramConfigSpec hist_p_tpcNSigma({HistType::kTH2F, {axisP, axisTPCNSigma}});
+    HistogramConfigSpec hist_pt_tpcNSigma({HistType::kTH2F, {axisPt, axisTPCNSigma}});
+    HistogramConfigSpec hist_tpcInnerParam_tpcNSigma({HistType::kTH2F, {axisTPCInnerParam, axisTPCNSigma}});
+    HistogramConfigSpec hist_tofExpMom_tpcNSigma({HistType::kTH2F, {axisTOFExpMom, axisTPCNSigma}});
+    HistogramConfigSpec hist_p_tofNSigma({HistType::kTH2F, {axisP, axisTOFNSigma}});
+    HistogramConfigSpec hist_pt_tofNSigma({HistType::kTH2F, {axisPt, axisTOFNSigma}});
+    HistogramConfigSpec hist_tpcInnerParam_tofNSigma({HistType::kTH2F, {axisTPCInnerParam, axisTOFNSigma}});
+    HistogramConfigSpec hist_tofExpMom_tofNSigma({HistType::kTH2F, {axisTOFExpMom, axisTOFNSigma}});
+    HistogramConfigSpec hist_tpcNSigma_tofNSigma({HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
+
+    recoV0s.add("v0Table/Full/h01_K0s_Mass", "K0s_Mass", {HistType::kTH1F, {axisK0sMass}});
+    recoV0s.add("v0Table/Full/h02_Lambda_Mass", "Lambda_Mass", {HistType::kTH1F, {axisLambdaMass}});
+    recoV0s.add("v0Table/Full/h03_AntiLambda_Mass", "AntiLambda_Mass", {HistType::kTH1F, {axisLambdaMass}});
+    recoV0s.add("v0Table/Full/h04_v0DaughterCollisionIndexTag", "hV0s_K0s_v0DaughterCollisionIndexTag", {HistType::kTH1D, {{22, -1.0, 10.0}}});
+    recoV0s.add("v0Table/Full/h05_V0Tag", "V0Tag", {HistType::kTH1F, {{12, -2, 10}}}); // 001 = Kaon, 010 = Lambda, 100 = AnitLambda
+
+    // Topological Cuts
+    recoV0s.add("v0Table/Full/h06_dcapostopv", "dcapostopv", kTH1F, {axisDcapostopv});
+    recoV0s.add("v0Table/Full/h07_dcanegtopv", "dcanegtopv", kTH1F, {axisDcanegtopv});
+    recoV0s.add("v0Table/Full/h08_dcaV0daughters", "dcaV0daughters", kTH1F, {axisDcaV0daughters});
+    recoV0s.add("v0Table/Full/h09_v0cosPA", "v0cosPA", kTH1F, {axisV0cosPA});
+    recoV0s.add("v0Table/Full/h10_v0radius", "v0radius", kTH1F, {axisV0radius});
 
     // K0s-FullInformation
-    recoV0s.add("hV0s_table_0_2_01_K0s_Mass_Selected", "hV0s_table_0_2_01_K0s_Mass_Selected", {HistType::kTH1F, {Axis_K0sMass}});
-    recoV0s.add("hV0s_table_0_2_02_K0s_P", "hV0s_table_0_2_02_K0s_P", {HistType::kTH1F, {Axis_p}});
-    recoV0s.add("hV0s_table_0_2_03_K0s_Pt", "hV0s_table_0_2_03_K0s_Pt", {HistType::kTH1F, {Axis_pt}});
-    recoV0s.add("hV0s_table_0_2_04_K0s_Eta", "hV0s_table_0_2_04_K0s_Eta", {HistType::kTH1F, {Axis_eta}});
-    recoV0s.add("hV0s_table_0_2_05_K0s_Phi", "hV0s_table_0_2_05_K0s_Phi", {HistType::kTH1F, {Axis_phi}});
-    recoV0s.add("hV0s_table_0_2_06_K0s_Rapidity", "hV0s_table_0_2_06_K0s_Rapidity", {HistType::kTH1F, {Axis_rapidity}});
+    recoV0s.add("v0Table/Full/h11_mass", "mass", kTH1F, {axisK0sMass});
+    recoV0s.add("v0Table/Full/h12_p", "p", kTH1F, {axisP});
+    recoV0s.add("v0Table/Full/h13_pt", "pt", kTH1F, {axisPt});
+    recoV0s.add("v0Table/Full/h14_eta", "eta", kTH1F, {axisEta});
+    recoV0s.add("v0Table/Full/h15_phi", "phi", kTH1F, {axisPhi});
+    recoV0s.add("v0Table/Full/h16_rapidity", "rapidity", kTH1F, {axisRapidity});
 
-    // Pion identification from K0s
-    recoV0s.add("hV0s_table_0_3_01_K0s_Pi_P", "hV0s_table_0_3_01_K0s_Pi_P", kTH1F, {Axis_p});
-    recoV0s.add("hV0s_table_0_3_01_K0s_Pi_Pt", "hV0s_table_0_3_01_K0s_Pi_Pt", kTH1F, {Axis_pt});                                  // Axis_pt            ;
-    recoV0s.add("hV0s_table_0_3_01_K0s_Pi_tpcInnerParam", "hV0s_table_0_3_01_K0s_Pi_tpcInnerParam", kTH1F, {Axis_tpcInnerParam}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_table_0_3_01_K0s_Pi_tofExpMom", "hV0s_table_0_3_01_K0s_Pi_tofExpMom", kTH1F, {Axis_tofExpMom});             // Axis_tofExpMom     ;
+    // K0s-Daughter Info
+    recoV0s.add("v0Table/Full/Pi/tpcId/h01_p", "p", kTH1F, {axisP});
+    recoV0s.add("v0Table/Full/Pi/tpcId/h02_pt", "pt", kTH1F, {axisPt});
+    recoV0s.add("v0Table/Full/Pi/tpcId/h03_tpcInnerParam", "tpcInnerParam", kTH1F, {axisTPCInnerParam});
+    recoV0s.add("v0Table/Full/Pi/tpcId/h04_tofExpMom", "tofExpMom", kTH1F, {axisTOFExpMom});
+    recoV0s.add("v0Table/Full/Pi/tpcId/h05_eta", "eta", kTH1F, {axisEta});
+    recoV0s.add("v0Table/Full/Pi/tpcId/h06_phi", "phi", kTH1F, {axisPhi});
+    recoV0s.add("v0Table/Full/Pi/tpcId/h07_rapidity", "rapidity", kTH1F, {axisRapidity});
+    recoV0s.add("v0Table/Full/Pi/tpcId/h08_isPVContributor", "isPVContributor", kTH1F, {axisIsPVContributor});
+    recoV0s.add("v0Table/Full/Pi/tpcId/h09_isGlobalTrack", "isGlobalTrack", kTH1F, {axisIsGlobalTrack});
+    recoV0s.add("v0Table/Full/Pi/tpcId/h10_dcaXY", "dcaXY", kTH1F, {axisDcaXY});
+    recoV0s.add("v0Table/Full/Pi/tpcId/h11_dcaZ", "dcaZ", kTH1F, {axisDcaZ});
 
-    recoV0s.add("hV0s_table_0_3_02_K0s_Pi_Eta", "hV0s_table_0_3_02_K0s_Pi_Eta", {HistType::kTH1F, {Axis_eta}});
-    recoV0s.add("hV0s_table_0_3_03_K0s_Pi_Phi", "hV0s_table_0_3_03_K0s_Pi_Phi", {HistType::kTH1F, {Axis_phi}});
-    recoV0s.add("hV0s_table_0_3_04_K0s_Pi_Rapidity", "hV0s_table_0_3_04_K0s_Pi_Rapidity", {HistType::kTH1F, {Axis_rapidity}});
-    recoV0s.add("hV0s_table_0_3_05_K0s_Pi_isPVContributor", "hV0s_table_0_3_05_K0s_Pi_isPVContributor", kTH1D, {{4, -1, 3}});
-    recoV0s.add("hV0s_table_0_3_06_K0s_Pi_isGlobalTrack", "hV0s_table_0_3_06_K0s_Pi_isGlobalTrack", kTH1D, {{4, -1, 3}});
-    recoV0s.add("hV0s_table_0_3_07_K0s_Pi_DcaXY", "hV0s_table_0_3_07_K0s_Pi_DcaXY", kTH1D, {Axis_dcaXY});
-    recoV0s.add("hV0s_table_0_3_08_K0s_Pi_DcaZ", "hV0s_table_0_3_08_K0s_Pi_DcaZ", kTH1D, {Axis_dcaZ});
+    recoV0s.add("v0Table/Full/Pi/tpcId/h12_p_dcaXY", "p_dcaXY", kTH2F, {axisP, axisDcaXY});
+    recoV0s.add("v0Table/Full/Pi/tpcId/h13_p_dcaZ", "p_dcaZ", kTH2F, {axisP, axisDcaZ});
+    recoV0s.add("v0Table/Full/Pi/tpcId/h14_pt_dcaXY", "pt_dcaXY", kTH2F, {axisP, axisDcaXY});
+    recoV0s.add("v0Table/Full/Pi/tpcId/h15_pt_dcaZ", "pt_dcaZ", kTH2F, {axisP, axisDcaZ});
+    recoV0s.add("v0Table/Full/Pi/tpcId/h16_dcaXYwide", "dcaXYwide", kTH1F, {axisDcaXYwide});
+    recoV0s.add("v0Table/Full/Pi/tpcId/h17_dcaZwide", "dcaZwide", kTH1F, {axisDcaZwide});
 
+    // K0s-Daughter identification
     // momemtum
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_01", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_01", kTH2F, {Axis_00, Axis_01}); // Axis_pt            ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_02", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_02", kTH2F, {Axis_00, Axis_02}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_03", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_03", kTH2F, {Axis_00, Axis_03}); // Axis_tofExpMom     ;
+    recoV0s.add("v0Table/Full/Pi/tpcId/h20_p_pt", "p_pt", hist_p_pt);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h21_p_tpcInnerParam", "p_tpcInnerParam", hist_p_tpcInnerParam);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h22_p_tofExpMom", "p_tofExpMom", hist_p_tofExpMom);
     // tpcSignal
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_05", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // Axis_p             ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_02_05", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_03_05", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // Axis_tofExpMom     ;
+    recoV0s.add("v0Table/Full/Pi/tpcId/h23_p_tpcSignal", "p_tpcSignal", hist_p_tpcSignal);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h24_tpcInnerParam_tpcSignal", "tpcInnerParam_tpcSignal", hist_tpcInnerParam_tpcSignal);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h25_tofExpMom_tpcSignal", "tofExpMom_tpcSignal", hist_tofExpMom_tpcSignal);
     // tofBeta
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_06", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // Axis_p             ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_02_06", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_03_06", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // Axis_tofExpMom     ;
+    recoV0s.add("v0Table/Full/Pi/tpcId/h26_p_beta", "p_beta", hist_p_beta);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h27_tpcInnerParam_beta", "tpcInnerParam_beta", hist_tpcInnerParam_beta);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h28_tofExpMom_beta", "tofExpMom_beta", hist_tofExpMom_beta);
     // Look at Pion
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_20", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_20", kTH2F, {Axis_00, Axis_20}); // Axis_p             ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_01_20", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_01_20", kTH2F, {Axis_01, Axis_20}); // Axis_pt            ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_02_20", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_02_20", kTH2F, {Axis_02, Axis_20}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_03_20", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_03_20", kTH2F, {Axis_03, Axis_20}); // Axis_tofExpMom     ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_21", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_21", kTH2F, {Axis_00, Axis_21}); // Axis_p             ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_01_21", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_01_21", kTH2F, {Axis_01, Axis_21}); // Axis_pt            ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_02_21", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_02_21", kTH2F, {Axis_02, Axis_21}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_03_21", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_03_21", kTH2F, {Axis_03, Axis_21}); // Axis_tofExpMom     ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_20_21", "hV0s_table_0_3_10_K0s_Pi_Id0_Axis_20_21", kTH2F, {Axis_20, Axis_21}); // Axis_tpcInnerParam ;
+    recoV0s.add("v0Table/Full/Pi/tpcId/h29_p_tpcNSigma", "p_tpcNSigma", hist_p_tpcNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h30_pt_tpcNSigma", "pt_tpcNSigma", hist_pt_tpcNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h31_tpcInnerParam_tpcNSigma", "tpcInnerParam_tpcNSigma", hist_tpcInnerParam_tpcNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h32_tofExpMom_tpcNSigma", "tofExpMom_tpcNSigma", hist_tofExpMom_tpcNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h33_p_tofNSigma", "p_tofNSigma", hist_p_tofNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h34_pt_tofNSigma", "pt_tofNSigma", hist_pt_tofNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h35_tpcInnerParam_tofNSigma", "tpcInnerParam_tofNSigma", hist_tpcInnerParam_tofNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h36_tofExpMom_tofNSigma", "tofExpMom_tofNSigma", hist_tofExpMom_tofNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h37_tpcNSigma_tofNSigma", "tpcNSigma_tofNSigma", hist_tpcNSigma_tofNSigma);
 
-    // momemtum
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_01", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_01", kTH2F, {Axis_00, Axis_01}); // Axis_pt            ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_02", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_02", kTH2F, {Axis_00, Axis_02}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_03", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_03", kTH2F, {Axis_00, Axis_03}); // Axis_tofExpMom     ;
-    // tpcSignal
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_05", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // Axis_p             ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_02_05", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_03_05", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // Axis_tofExpMom     ;
-    // tofBeta
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_06", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // Axis_p             ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_02_06", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_03_06", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // Axis_tofExpMom     ;
-    // Look at Pion
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_20", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_20", kTH2F, {Axis_00, Axis_20}); // Axis_p             ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_01_20", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_01_20", kTH2F, {Axis_01, Axis_20}); // Axis_pt            ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_02_20", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_02_20", kTH2F, {Axis_02, Axis_20}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_03_20", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_03_20", kTH2F, {Axis_03, Axis_20}); // Axis_tofExpMom     ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_21", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_21", kTH2F, {Axis_00, Axis_21}); // Axis_p             ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_01_21", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_01_21", kTH2F, {Axis_01, Axis_21}); // Axis_pt            ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_02_21", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_02_21", kTH2F, {Axis_02, Axis_21}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_03_21", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_03_21", kTH2F, {Axis_03, Axis_21}); // Axis_tofExpMom     ;
-    recoV0s.add("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_20_21", "hV0s_table_0_3_10_K0s_Pi_Id1_Axis_20_21", kTH2F, {Axis_20, Axis_21}); // Axis_tpcInnerParam ;
-    // K0s-FullInformation
+    recoV0s.addClone("v0Table/Full/Pi/tpcId/", "v0Table/Full/Pi/tofId/"); // for identification using tof+tpc
+    recoV0s.addClone("v0Table/Full/Pi/tpcId/", "v0Table/Full/Pi/NoId/");  // for unidentified case // to observe and debug
 
-    // K0s-Selected
-    //  Mass
-    recoV0s.add("hV0s_0_2_01_K0s_Mass_DynamicCuts", "hV0s_K0s_Mass_DynamicCuts", {HistType::kTH1F, {Axis_K0sMass}});
+    recoV0s.addClone("v0Table/Full/", "v0Table/postK0sCheck/");
+    recoV0s.addClone("v0Table/Full/", "v0Table/postMassCut/");
+    recoV0s.addClone("v0Table/Full/", "v0Table/postSelectionCut/");
 
-    // Pt, eta, phi, rapidity of K0s
-    recoV0s.add("hV0s_0_2_01_K0s_Mass_Selected_LambdaMass", "hV0s_0_2_01_K0s_Mass_Selected_LambdaMass", {HistType::kTH1F, {Axis_LambdaMass}});
-    recoV0s.add("hV0s_0_2_01_K0s_Mass_Selected_AntiLambdaMass", "hV0s_0_2_01_K0s_Mass_Selected_AntiLambdaMass", {HistType::kTH1F, {Axis_LambdaMass}});
-    recoV0s.add("hV0s_0_2_01_K0s_Mass_Selected", "hV0s_0_2_01_K0s_Mass_Selected", {HistType::kTH1F, {Axis_K0sMass}});
-    recoV0s.add("hV0s_0_2_02_K0s_P", "hV0s_0_2_02_K0s_P", {HistType::kTH1F, {Axis_p}});
-    recoV0s.add("hV0s_0_2_03_K0s_Pt", "hV0s_0_2_03_K0s_Pt", {HistType::kTH1F, {Axis_pt}});
-    recoV0s.add("hV0s_0_2_04_K0s_Eta", "hV0s_0_2_04_K0s_Eta", {HistType::kTH1F, {Axis_eta}});
-    recoV0s.add("hV0s_0_2_05_K0s_Phi", "hV0s_0_2_05_K0s_Phi", {HistType::kTH1F, {Axis_phi}});
-    recoV0s.add("hV0s_0_2_06_K0s_Rapidity", "hV0s_0_2_06_K0s_Rapidity", {HistType::kTH1F, {Axis_rapidity}});
+    recoV0s.add("v0Table/postSelectionCut/hTrueV0TagCount", "hTrueV0TagCount", {HistType::kTH1F, {{12, -2, 10}}}); // 001 = Kaon, 010 = Lambda, 100 = AnitLambda
+    recoV0s.add("v0Table/postSelectionCut/nCommonPionOfDifferentK0s", "nCommonPionOfDifferentK0s", {HistType::kTH1D, {{44, -2, 20}}});
 
-    // Pion identification from K0s
-    recoV0s.add("hV0s_0_3_01_K0s_Pi_P", "hV0s_0_3_01_K0s_Pi_P", kTH1F, {Axis_p});
-    recoV0s.add("hV0s_0_3_01_K0s_Pi_Pt", "hV0s_0_3_01_K0s_Pi_Pt", kTH1F, {Axis_pt});                                  // Axis_pt            ;
-    recoV0s.add("hV0s_0_3_01_K0s_Pi_tpcInnerParam", "hV0s_0_3_01_K0s_Pi_tpcInnerParam", kTH1F, {Axis_tpcInnerParam}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_0_3_01_K0s_Pi_tofExpMom", "hV0s_0_3_01_K0s_Pi_tofExpMom", kTH1F, {Axis_tofExpMom});             // Axis_tofExpMom     ;
-
-    recoV0s.add("hV0s_0_3_02_K0s_Pi_Eta", "hV0s_0_3_02_K0s_Pi_Eta", {HistType::kTH1F, {Axis_eta}});
-    recoV0s.add("hV0s_0_3_03_K0s_Pi_Phi", "hV0s_0_3_03_K0s_Pi_Phi", {HistType::kTH1F, {Axis_phi}});
-    recoV0s.add("hV0s_0_3_04_K0s_Pi_Rapidity", "hV0s_0_3_04_K0s_Pi_Rapidity", {HistType::kTH1F, {Axis_rapidity}});
-    recoV0s.add("hV0s_0_3_05_K0s_Pi_isPVContributor", "hV0s_0_3_05_K0s_Pi_isPVContributor", kTH1D, {{4, -1, 3}});
-    recoV0s.add("hV0s_0_3_06_K0s_Pi_isGlobalTrack", "hV0s_0_3_06_K0s_Pi_isGlobalTrack", kTH1D, {{4, -1, 3}});
-    recoV0s.add("hV0s_0_3_07_K0s_Pi_DcaXY", "hV0s_0_3_07_K0s_Pi_DcaXY", kTH1D, {Axis_dcaXY});
-    recoV0s.add("hV0s_0_3_08_K0s_Pi_DcaZ", "hV0s_0_3_08_K0s_Pi_DcaZ", kTH1D, {Axis_dcaZ});
-
-    // momemtum
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_01", "hV0s_0_3_10_K0s_Pi_Id0_Axis_00_01", kTH2F, {Axis_00, Axis_01}); // Axis_pt            ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_02", "hV0s_0_3_10_K0s_Pi_Id0_Axis_00_02", kTH2F, {Axis_00, Axis_02}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_03", "hV0s_0_3_10_K0s_Pi_Id0_Axis_00_03", kTH2F, {Axis_00, Axis_03}); // Axis_tofExpMom     ;
-    // tpcSignal
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_05", "hV0s_0_3_10_K0s_Pi_Id0_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // Axis_p             ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_02_05", "hV0s_0_3_10_K0s_Pi_Id0_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_03_05", "hV0s_0_3_10_K0s_Pi_Id0_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // Axis_tofExpMom     ;
-    // tofBeta
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_06", "hV0s_0_3_10_K0s_Pi_Id0_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // Axis_p             ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_02_06", "hV0s_0_3_10_K0s_Pi_Id0_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_03_06", "hV0s_0_3_10_K0s_Pi_Id0_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // Axis_tofExpMom     ;
-    // Look at Pion
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_20", "hV0s_0_3_10_K0s_Pi_Id0_Axis_00_20", kTH2F, {Axis_00, Axis_20}); // Axis_p             ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_01_20", "hV0s_0_3_10_K0s_Pi_Id0_Axis_01_20", kTH2F, {Axis_01, Axis_20}); // Axis_pt            ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_02_20", "hV0s_0_3_10_K0s_Pi_Id0_Axis_02_20", kTH2F, {Axis_02, Axis_20}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_03_20", "hV0s_0_3_10_K0s_Pi_Id0_Axis_03_20", kTH2F, {Axis_03, Axis_20}); // Axis_tofExpMom     ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_21", "hV0s_0_3_10_K0s_Pi_Id0_Axis_00_21", kTH2F, {Axis_00, Axis_21}); // Axis_p             ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_01_21", "hV0s_0_3_10_K0s_Pi_Id0_Axis_01_21", kTH2F, {Axis_01, Axis_21}); // Axis_pt            ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_02_21", "hV0s_0_3_10_K0s_Pi_Id0_Axis_02_21", kTH2F, {Axis_02, Axis_21}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_03_21", "hV0s_0_3_10_K0s_Pi_Id0_Axis_03_21", kTH2F, {Axis_03, Axis_21}); // Axis_tofExpMom     ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id0_Axis_20_21", "hV0s_0_3_10_K0s_Pi_Id0_Axis_20_21", kTH2F, {Axis_20, Axis_21}); // Axis_tpcInnerParam ;
-
-    // momemtum
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_01", "hV0s_0_3_10_K0s_Pi_Id1_Axis_00_01", kTH2F, {Axis_00, Axis_01}); // Axis_pt            ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_02", "hV0s_0_3_10_K0s_Pi_Id1_Axis_00_02", kTH2F, {Axis_00, Axis_02}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_03", "hV0s_0_3_10_K0s_Pi_Id1_Axis_00_03", kTH2F, {Axis_00, Axis_03}); // Axis_tofExpMom     ;
-    // tpcSignal
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_05", "hV0s_0_3_10_K0s_Pi_Id1_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // Axis_p             ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_02_05", "hV0s_0_3_10_K0s_Pi_Id1_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_03_05", "hV0s_0_3_10_K0s_Pi_Id1_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // Axis_tofExpMom     ;
-    // tofBeta
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_06", "hV0s_0_3_10_K0s_Pi_Id1_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // Axis_p             ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_02_06", "hV0s_0_3_10_K0s_Pi_Id1_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_03_06", "hV0s_0_3_10_K0s_Pi_Id1_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // Axis_tofExpMom     ;
-    // Look at Pion
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_20", "hV0s_0_3_10_K0s_Pi_Id1_Axis_00_20", kTH2F, {Axis_00, Axis_20}); // Axis_p             ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_01_20", "hV0s_0_3_10_K0s_Pi_Id1_Axis_01_20", kTH2F, {Axis_01, Axis_20}); // Axis_pt            ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_02_20", "hV0s_0_3_10_K0s_Pi_Id1_Axis_02_20", kTH2F, {Axis_02, Axis_20}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_03_20", "hV0s_0_3_10_K0s_Pi_Id1_Axis_03_20", kTH2F, {Axis_03, Axis_20}); // Axis_tofExpMom     ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_21", "hV0s_0_3_10_K0s_Pi_Id1_Axis_00_21", kTH2F, {Axis_00, Axis_21}); // Axis_p             ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_01_21", "hV0s_0_3_10_K0s_Pi_Id1_Axis_01_21", kTH2F, {Axis_01, Axis_21}); // Axis_pt            ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_02_21", "hV0s_0_3_10_K0s_Pi_Id1_Axis_02_21", kTH2F, {Axis_02, Axis_21}); // Axis_tpcInnerParam ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_03_21", "hV0s_0_3_10_K0s_Pi_Id1_Axis_03_21", kTH2F, {Axis_03, Axis_21}); // Axis_tofExpMom     ;
-    recoV0s.add("hV0s_0_3_10_K0s_Pi_Id1_Axis_20_21", "hV0s_0_3_10_K0s_Pi_Id1_Axis_20_21", kTH2F, {Axis_20, Axis_21}); // Axis_tpcInnerParam ;
-
-    recoV0s.add("hV0s_0_4_01_K0s_v0DaughterCollisionIndexTag", "hV0s_K0s_v0DaughterCollisionIndexTag", {HistType::kTH1D, {{22, -1.0, 10.0}}});
-    recoV0s.add("hV0s_0_4_02_K0s_nCommonPionOfDifferentK0s", "hV0s_K0s_nCommonPionOfDifferentK0s", {HistType::kTH1D, {{44, -2, 20}}});
-    // K0s-Selected
-    //
     // Event Selection
-    recoEvent.add("hCollisionCount", "hCollisionCount", {HistType::kTH1D, {{1, 0, 1}}});
-    recoEvent.add("hVertexXRec", "hVertexXRec", {HistType::kTH1D, {{10000, -0.2, 0.2}}});
-    recoEvent.add("hVertexYRec", "hVertexYRec", {HistType::kTH1D, {{10000, -0.2, 0.2}}});
-    recoEvent.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {Axis_vertexZ}});
-    recoEvent.add("hV0Size", "hV0Size", {HistType::kTH1F, {{60, -10, 50}}});
-    recoEvent.add("hCascadeSize", "hCascadeSize", {HistType::kTH1F, {{60, -10, 50}}});
-    recoEvent.add("hCentrality", "hCentrality", {HistType::kTH1F, {Axis_centFT0C}});
+    recoEvent.add("recoEvent/h01_CollisionCount", "CollisionCount", {HistType::kTH1D, {{1, 0, 1}}});
+    recoEvent.add("recoEvent/h02_VertexXRec", "VertexXRec", {HistType::kTH1D, {{1000, -0.2, 0.2}}});
+    recoEvent.add("recoEvent/h03_VertexYRec", "VertexYRec", {HistType::kTH1D, {{1000, -0.2, 0.2}}});
+    recoEvent.add("recoEvent/h04_VertexZRec", "VertexZRec", {HistType::kTH1F, {axisVertexZ}});
+    recoEvent.add("recoEvent/h05_Centrality", "Centrality", {HistType::kTH1F, {axisCentFT0C}});
+    recoEvent.add("recoEvent/h06_V0Size", "V0Size", {HistType::kTH1F, {{60, -10, 50}}});
+    recoEvent.add("recoEvent/h07_TracksSize", "TracksSize", {HistType::kTH1F, {axisParticleCount2}});
+    recoEvent.add("recoEvent/h08_nTrack", "nTrack", {HistType::kTH1F, {axisParticleCount2}});
+    recoEvent.add("recoEvent/h09_nK0s", "nK0s", {HistType::kTH1F, {axisParticleCount1}});
+    recoEvent.add("recoEvent/h10_nPiPlus", "nPiPlus", {HistType::kTH1F, {axisParticleCount2}});
+    recoEvent.add("recoEvent/h11_nPiMinus", "nPiMinus", {HistType::kTH1F, {axisParticleCount2}});
+    recoEvent.add("recoEvent/h12_nKaPlus", "nKaPlus", {HistType::kTH1F, {axisParticleCount1}});
+    recoEvent.add("recoEvent/h13_nKaMinus", "nKaMinus", {HistType::kTH1F, {axisParticleCount1}});
+    recoEvent.add("recoEvent/h14_nProton", "nProton", {HistType::kTH1F, {axisParticleCount1}});
+    recoEvent.add("recoEvent/h15_nPBar", "nPBar", {HistType::kTH1F, {axisParticleCount1}});
+    recoEvent.add("recoEvent/h16_nElPlus", "nElPlus", {HistType::kTH1F, {axisParticleCount1}});
+    recoEvent.add("recoEvent/h17_nElMinus", "nElMinus", {HistType::kTH1F, {axisParticleCount1}});
+    recoEvent.add("recoEvent/h18_nDePlus", "nDePlus", {HistType::kTH1F, {axisParticleCount1}});
+    recoEvent.add("recoEvent/h19_nDeMinus", "nDeMinus", {HistType::kTH1F, {axisParticleCount1}});
+
     //
     // K0s reconstruction
-    // K0s topological/PID cuts
-    recoK0s.add("hK0s_1_01_dcapostopv", "hK0s_dcapostopv", {HistType::kTH1F, {{100000, -50, 50}}});
-    recoK0s.add("hK0s_1_02_dcanegtopv", "hK0s_dcanegtopv", {HistType::kTH1F, {{100000, -50, 50}}});
-    recoK0s.add("hK0s_1_03_dcaV0daughters", "hK0s_dcaV0daughters", {HistType::kTH1F, {{2000, -10.0, 10.0}}});
-    recoK0s.add("hK0s_1_04_v0cosPA", "hK0s_v0cosPA", {HistType::kTH1F, {{3000, -1.5, 1.5}}});
-    recoK0s.add("hK0s_1_05_v0radius", "hK0s_v0radius", {HistType::kTH1F, {{100000, -50, 50}}});
-    // Mass
-    recoK0s.add("hK0s_2_00_Mass_Full", "hK0s_Mass_Full", {HistType::kTH1F, {Axis_K0sMass}});
-    recoK0s.add("hK0s_2_01_Mass_DynamicCuts", "hK0s_Mass_DynamicCuts", {HistType::kTH1F, {Axis_K0sMass}});
+    recoK0s.add("recoK0s/PreSel/h01_K0s_Mass", "K0s_Mass", {HistType::kTH1F, {axisK0sMass}});
+    recoK0s.add("recoK0s/PreSel/h02_Lambda_Mass", "Lambda_Mass", {HistType::kTH1F, {axisLambdaMass}});
+    recoK0s.add("recoK0s/PreSel/h03_AntiLambda_Mass", "AntiLambda_Mass", {HistType::kTH1F, {axisLambdaMass}});
+    recoK0s.add("recoK0s/PreSel/h04_v0DaughterCollisionIndexTag", "hV0s_K0s_v0DaughterCollisionIndexTag", {HistType::kTH1D, {{22, -1.0, 10.0}}});
+    recoK0s.add("recoK0s/PreSel/h05_V0Tag", "V0Tag", {HistType::kTH1F, {{12, -2, 10}}}); // 001 = Kaon, 010 = Lambda, 100 = AnitLambda
 
-    // Pt, eta, phi, rapidity of K0s
-    recoK0s.add("hK0s_2_01_K0s_Mass_Selected_LambdaMass", "hK0s_2_01_K0s_Mass_Selected_LambdaMass", {HistType::kTH1F, {Axis_LambdaMass}});
-    recoK0s.add("hK0s_2_01_K0s_Mass_Selected_AntiLambdaMass", "hK0s_2_01_K0s_Mass_Selected_AntiLambdaMass", {HistType::kTH1F, {Axis_LambdaMass}});
-    recoK0s.add("hK0s_2_01_Mass_Selected", "hK0s_Mass_Selected", {HistType::kTH1F, {Axis_K0sMass}});
-    recoK0s.add("hK0s_2_02_P", "hK0s_2_02_P", {HistType::kTH1F, {Axis_p}});
-    recoK0s.add("hK0s_2_03_Pt", "hK0s_Pt", {HistType::kTH1F, {Axis_pt}});
-    recoK0s.add("hK0s_2_04_Eta", "hK0s_Eta", {HistType::kTH1F, {Axis_eta}});
-    recoK0s.add("hK0s_2_05_Phi", "hK0s_Phi", {HistType::kTH1F, {Axis_phi}});
-    recoK0s.add("hK0s_2_06_Rapidity", "hK0s_Rapidity", {HistType::kTH1F, {Axis_rapidity}});
+    // Topological Cuts
+    recoK0s.add("recoK0s/PreSel/h06_dcapostopv", "dcapostopv", kTH1F, {axisDcapostopv});
+    recoK0s.add("recoK0s/PreSel/h07_dcanegtopv", "dcanegtopv", kTH1F, {axisDcanegtopv});
+    recoK0s.add("recoK0s/PreSel/h08_dcaV0daughters", "dcaV0daughters", kTH1F, {axisDcaV0daughters});
+    recoK0s.add("recoK0s/PreSel/h09_v0cosPA", "v0cosPA", kTH1F, {axisV0cosPA});
+    recoK0s.add("recoK0s/PreSel/h10_v0radius", "v0radius", kTH1F, {axisV0radius});
 
-    // Pion identification from K0s
-    recoK0s.add("hK0s_3_01_Pion_P", "hK0s_3_01_Pion_P", kTH1F, {Axis_p});
-    recoK0s.add("hK0s_3_01_Pion_Pt", "hK0s_3_01_Pion_Pt", kTH1F, {Axis_pt});                                  // Axis_pt            ;
-    recoK0s.add("hK0s_3_01_Pion_tpcInnerParam", "hK0s_3_01_Pion_tpcInnerParam", kTH1F, {Axis_tpcInnerParam}); // Axis_tpcInnerParam ;
-    recoK0s.add("hK0s_3_01_Pion_tofExpMom", "hK0s_3_01_Pion_tofExpMom", kTH1F, {Axis_tofExpMom});             // Axis_tofExpMom     ;
+    // K0s-FullInformation
+    recoK0s.add("recoK0s/PreSel/h11_mass", "mass", kTH1F, {axisK0sMass});
+    recoK0s.add("recoK0s/PreSel/h12_p", "p", kTH1F, {axisP});
+    recoK0s.add("recoK0s/PreSel/h13_pt", "pt", kTH1F, {axisPt});
+    recoK0s.add("recoK0s/PreSel/h14_eta", "eta", kTH1F, {axisEta});
+    recoK0s.add("recoK0s/PreSel/h15_phi", "phi", kTH1F, {axisPhi});
+    recoK0s.add("recoK0s/PreSel/h16_rapidity", "rapidity", kTH1F, {axisRapidity});
 
-    recoK0s.add("hK0s_3_02_Pion_Eta", "hK0s_Pi_Eta", {HistType::kTH1F, {Axis_eta}});
-    recoK0s.add("hK0s_3_03_Pion_Phi", "hK0s_Pi_Phi", {HistType::kTH1F, {Axis_phi}});
-    recoK0s.add("hK0s_3_04_Pion_Rapidity", "hK0s_Pi_Rapidity", {HistType::kTH1F, {Axis_rapidity}});
-    recoK0s.add("hK0s_3_05_Daughter_isPVContributor", "hK0s_Daughter_isPVContributor", kTH1D, {{4, -1, 3}});
-    recoK0s.add("hK0s_3_06_Daughter_isGlobalTrack", "hK0s_Daughter_isGlobalTrack", kTH1D, {{4, -1, 3}});
-    recoK0s.add("hK0s_3_07_Daughter_DcaXY", "hK0s_Daughter_DcaXY", kTH1D, {Axis_dcaXY});
-    recoK0s.add("hK0s_3_08_Daughter_DcaZ", "hK0s_Daughter_DcaZ", kTH1D, {Axis_dcaZ});
+    // K0s-Daughter Info
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h01_p", "p", kTH1F, {axisP});
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h02_pt", "pt", kTH1F, {axisPt});
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h03_tpcInnerParam", "tpcInnerParam", kTH1F, {axisTPCInnerParam});
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h04_tofExpMom", "tofExpMom", kTH1F, {axisTOFExpMom});
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h05_eta", "eta", kTH1F, {axisEta});
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h06_phi", "phi", kTH1F, {axisPhi});
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h07_rapidity", "rapidity", kTH1F, {axisRapidity});
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h08_isPVContributor", "isPVContributor", kTH1F, {axisIsPVContributor});
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h09_isGlobalTrack", "isGlobalTrack", kTH1F, {axisIsGlobalTrack});
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h10_dcaXY", "dcaXY", kTH1F, {axisDcaXY});
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h11_dcaZ", "dcaZ", kTH1F, {axisDcaZ});
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h12_p_dcaXY", "p_dcaXY", kTH2F, {axisP, axisDcaXY});
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h13_p_dcaZ", "p_dcaZ", kTH2F, {axisP, axisDcaZ});
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h14_pt_dcaXY", "pt_dcaXY", kTH2F, {axisP, axisDcaXY});
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h15_pt_dcaZ", "pt_dcaZ", kTH2F, {axisP, axisDcaZ});
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h16_dcaXYwide", "dcaXYwide", kTH1F, {axisDcaXYwide});
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h17_dcaZwide", "dcaZwide", kTH1F, {axisDcaZwide});
 
+    // K0s-Daughter identification
     // momemtum
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_00_01", "htrack_Axis_00_01", kTH2F, {Axis_00, Axis_01}); // Axis_pt            ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_00_02", "htrack_Axis_00_02", kTH2F, {Axis_00, Axis_02}); // Axis_tpcInnerParam ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_00_03", "htrack_Axis_00_03", kTH2F, {Axis_00, Axis_03}); // Axis_tofExpMom     ;
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h20_p_pt", "p_pt", hist_p_pt);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h21_p_tpcInnerParam", "p_tpcInnerParam", hist_p_tpcInnerParam);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h22_p_tofExpMom", "p_tofExpMom", hist_p_tofExpMom);
     // tpcSignal
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_00_05", "htrack_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // Axis_p             ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_02_05", "htrack_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // Axis_tpcInnerParam ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_03_05", "htrack_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // Axis_tofExpMom     ;
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h23_p_tpcSignal", "p_tpcSignal", hist_p_tpcSignal);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h24_tpcInnerParam_tpcSignal", "tpcInnerParam_tpcSignal", hist_tpcInnerParam_tpcSignal);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h25_tofExpMom_tpcSignal", "tofExpMom_tpcSignal", hist_tofExpMom_tpcSignal);
     // tofBeta
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_00_06", "htrack_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // Axis_p             ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_02_06", "htrack_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // Axis_tpcInnerParam ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_03_06", "htrack_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // Axis_tofExpMom     ;
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h26_p_beta", "p_beta", hist_p_beta);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h27_tpcInnerParam_beta", "tpcInnerParam_beta", hist_tpcInnerParam_beta);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h28_tofExpMom_beta", "tofExpMom_beta", hist_tofExpMom_beta);
     // Look at Pion
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_00_20", "htrack_Axis_00_20", kTH2F, {Axis_00, Axis_20}); // Axis_p             ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_01_20", "htrack_Axis_01_20", kTH2F, {Axis_01, Axis_20}); // Axis_pt            ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_02_20", "htrack_Axis_02_20", kTH2F, {Axis_02, Axis_20}); // Axis_tpcInnerParam ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_03_20", "htrack_Axis_03_20", kTH2F, {Axis_03, Axis_20}); // Axis_tofExpMom     ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_00_21", "htrack_Axis_00_21", kTH2F, {Axis_00, Axis_21}); // Axis_p             ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_01_21", "htrack_Axis_01_21", kTH2F, {Axis_01, Axis_21}); // Axis_pt            ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_02_21", "htrack_Axis_02_21", kTH2F, {Axis_02, Axis_21}); // Axis_tpcInnerParam ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_03_21", "htrack_Axis_03_21", kTH2F, {Axis_03, Axis_21}); // Axis_tofExpMom     ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id0_Axis_20_21", "htrack_Axis_20_21", kTH2F, {Axis_20, Axis_21}); // Axis_tpcInnerParam ;
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h29_p_tpcNSigma", "p_tpcNSigma", hist_p_tpcNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h30_pt_tpcNSigma", "pt_tpcNSigma", hist_pt_tpcNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h31_tpcInnerParam_tpcNSigma", "tpcInnerParam_tpcNSigma", hist_tpcInnerParam_tpcNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h32_tofExpMom_tpcNSigma", "tofExpMom_tpcNSigma", hist_tofExpMom_tpcNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h33_p_tofNSigma", "p_tofNSigma", hist_p_tofNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h34_pt_tofNSigma", "pt_tofNSigma", hist_pt_tofNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h35_tpcInnerParam_tofNSigma", "tpcInnerParam_tofNSigma", hist_tpcInnerParam_tofNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h36_tofExpMom_tofNSigma", "tofExpMom_tofNSigma", hist_tofExpMom_tofNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h37_tpcNSigma_tofNSigma", "tpcNSigma_tofNSigma", hist_tpcNSigma_tofNSigma);
 
-    // momemtum
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_00_01", "htrack_Axis_00_01", kTH2F, {Axis_00, Axis_01}); // Axis_pt            ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_00_02", "htrack_Axis_00_02", kTH2F, {Axis_00, Axis_02}); // Axis_tpcInnerParam ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_00_03", "htrack_Axis_00_03", kTH2F, {Axis_00, Axis_03}); // Axis_tofExpMom     ;
-    // tpcSignal
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_00_05", "htrack_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // Axis_p             ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_02_05", "htrack_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // Axis_tpcInnerParam ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_03_05", "htrack_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // Axis_tofExpMom     ;
-    // tofBeta
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_00_06", "htrack_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // Axis_p             ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_02_06", "htrack_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // Axis_tpcInnerParam ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_03_06", "htrack_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // Axis_tofExpMom     ;
-    // Look at Pion
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_00_20", "htrack_Axis_00_20", kTH2F, {Axis_00, Axis_20}); // Axis_p             ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_01_20", "htrack_Axis_01_20", kTH2F, {Axis_01, Axis_20}); // Axis_pt            ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_02_20", "htrack_Axis_02_20", kTH2F, {Axis_02, Axis_20}); // Axis_tpcInnerParam ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_03_20", "htrack_Axis_03_20", kTH2F, {Axis_03, Axis_20}); // Axis_tofExpMom     ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_00_21", "htrack_Axis_00_21", kTH2F, {Axis_00, Axis_21}); // Axis_p             ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_01_21", "htrack_Axis_01_21", kTH2F, {Axis_01, Axis_21}); // Axis_pt            ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_02_21", "htrack_Axis_02_21", kTH2F, {Axis_02, Axis_21}); // Axis_tpcInnerParam ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_03_21", "htrack_Axis_03_21", kTH2F, {Axis_03, Axis_21}); // Axis_tofExpMom     ;
-    recoK0s.add("hK0s_3_10_K0s_Pi_Id1_Axis_20_21", "htrack_Axis_20_21", kTH2F, {Axis_20, Axis_21}); // Axis_tpcInnerParam ;
+    recoK0s.addClone("recoK0s/PreSel/Pi/tpcId/", "recoK0s/PreSel/Pi/tofId/"); // for identification using tof+tpc
+    recoK0s.addClone("recoK0s/PreSel/Pi/tpcId/", "recoK0s/PreSel/Pi/NoId/");  // for unidentified case // to observe and debug
 
-    recoK0s.add("hK0s_4_01_v0DaughterCollisionIndexTag", "hK0s_v0DaughterCollisionIndexTag", {HistType::kTH1D, {{9, -1, 10}}});
+    recoK0s.addClone("recoK0s/PreSel/", "recoK0s/PostSel/"); // for unidentified case // to observe and debug
 
-    recoK0s.add("hK0s_5_01_centFTOC_mK0s", "hK0s_5_01_centFTOC_mK0s", kTH2F, {Axis_centFT0C, Axis_K0sMass});
-    //
-    // Lambda reconstruction
-    // // Mass
-    recoLambda.add("hLambda_Mass_Full", "hLambda_Mass_Full", {HistType::kTH1F, {Axis_LambdaMass}});
-    recoLambda.add("hAntiLambda_Mass_Full", "hAntiLambda_Mass_Full", {HistType::kTH1F, {Axis_LambdaMass}});
+    recoK0s.add("recoK0s/PostSel/mK0s_vs_centFTOC", "mK0s_vs_centFTOC", kTH2F, {axisCentFT0C, axisK0sMass});
+
     // Tracks reconstruction
     // FullTrack
-    recoTracks.add("htracks_00_1_0_FullTrack_P", "hTracks_SelectedTrack_P", {HistType::kTH1F, {Axis_p}});
-    recoTracks.add("htracks_00_1_0_FullTrack_tpcInnerParam", "hTracks_SelectedTrack_tpcInnerParam", {HistType::kTH1F, {Axis_tpcInnerParam}});
-    recoTracks.add("htracks_00_1_0_FullTrack_tofExpMom", "hTracks_SelectedTrack_tofExpMom", {HistType::kTH1F, {Axis_tofExpMom}});
-
-    recoTracks.add("hTracks_00_1_1_FullTrack_Pt", "hTracks_FullTrack_Pt", {HistType::kTH1F, {Axis_pt}});
-    recoTracks.add("hTracks_00_1_2_FullTrack_Eta", "hTracks_FullTrack_Eta", {HistType::kTH1F, {Axis_eta}});
-    recoTracks.add("hTracks_00_1_3_FullTrack_Phi", "hTracks_FullTrack_Phi", {HistType::kTH1F, {Axis_phi}});
-    recoTracks.add("hTracks_00_1_4_FullTrack_DcaXY", "hTracks_FullTrack_DcaXY", {HistType::kTH1F, {Axis_dcaXY}});
-    recoTracks.add("hTracks_00_1_5_FullTrack_DcaZ", "hTracks_FullTrack_DcaZ", {HistType::kTH1F, {Axis_dcaZ}});
-    recoTracks.add("hTracks_00_1_6_FullTrack_Sign", "hTracks_FullTrack_Sign", {HistType::kTH1D, {Axis_Sign}});
-
-    // DcaXY
-    recoTracks.add("htracks_00_1_7_FullTrack_00_DcaXY", "htracks_FullTrack_00_DcaXY", kTH2F, {Axis_00, Axis_dcaXY});
-    recoTracks.add("htracks_00_1_7_FullTrack_01_DcaXY", "htracks_FullTrack_01_DcaXY", kTH2F, {Axis_01, Axis_dcaXY});
-    recoTracks.add("htracks_00_1_7_FullTrack_02_DcaXY", "htracks_FullTrack_02_DcaXY", kTH2F, {Axis_02, Axis_dcaXY});
-    recoTracks.add("htracks_00_1_7_FullTrack_03_DcaXY", "htracks_FullTrack_03_DcaXY", kTH2F, {Axis_03, Axis_dcaXY});
-
-    // DcaZ
-    recoTracks.add("htracks_00_1_7_FullTrack_00_DcaZ", "htracks_FullTrack_00_DcaZ", kTH2F, {Axis_00, Axis_dcaZ});
-    recoTracks.add("htracks_00_1_7_FullTrack_01_DcaZ", "htracks_FullTrack_01_DcaZ", kTH2F, {Axis_01, Axis_dcaZ});
-    recoTracks.add("htracks_00_1_7_FullTrack_02_DcaZ", "htracks_FullTrack_02_DcaZ", kTH2F, {Axis_02, Axis_dcaZ});
-    recoTracks.add("htracks_00_1_7_FullTrack_03_DcaZ", "htracks_FullTrack_03_DcaZ", kTH2F, {Axis_03, Axis_dcaZ});
-
-    // momemtum
-    recoTracks.add("hTracks_00_2_1_FullTrack_Axis_00_01", "htrack_Axis_00_01", kTH2F, {Axis_00, Axis_01}); // Axis_pt            ;
-    recoTracks.add("hTracks_00_2_2_FullTrack_Axis_00_02", "htrack_Axis_00_02", kTH2F, {Axis_00, Axis_02}); // Axis_tpcInnerParam ;
-    recoTracks.add("hTracks_00_2_3_FullTrack_Axis_00_03", "htrack_Axis_00_03", kTH2F, {Axis_00, Axis_03}); // Axis_tofExpMom     ;
-
-    // tpcSignal
-    recoTracks.add("hTracks_00_3_1_FullTrack_Axis_00_05", "htrack_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // Axis_p             ;
-    recoTracks.add("hTracks_00_3_2_FullTrack_Axis_02_05", "htrack_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // Axis_tpcInnerParam ;
-    recoTracks.add("hTracks_00_3_3_FullTrack_Axis_03_05", "htrack_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // Axis_tofExpMom     ;
-
-    // tofBeta
-    recoTracks.add("hTracks_00_4_1_FullTrack_Axis_00_06", "htrack_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // Axis_p             ;
-    recoTracks.add("hTracks_00_4_2_FullTrack_Axis_02_06", "htrack_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // Axis_tpcInnerParam ;
-    recoTracks.add("hTracks_00_4_3_FullTrack_Axis_03_06", "htrack_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // Axis_tofExpMom     ;
-
-    // Look at Pion
-    recoTracks.add("hTracks_00_5_1_FullTrack_Axis_00_20", "htrack_Axis_00_20", kTH2F, {Axis_00, Axis_20}); // Axis_p             ;
-    recoTracks.add("hTracks_00_5_2_FullTrack_Axis_01_20", "htrack_Axis_01_20", kTH2F, {Axis_01, Axis_20}); // Axis_pt            ;
-    recoTracks.add("hTracks_00_5_3_FullTrack_Axis_02_20", "htrack_Axis_02_20", kTH2F, {Axis_02, Axis_20}); // Axis_tpcInnerParam ;
-    recoTracks.add("hTracks_00_5_4_FullTrack_Axis_03_20", "htrack_Axis_03_20", kTH2F, {Axis_03, Axis_20}); // Axis_tofExpMom     ;
-    recoTracks.add("hTracks_00_5_5_FullTrack_Axis_00_21", "htrack_Axis_00_21", kTH2F, {Axis_00, Axis_21}); // Axis_p             ;
-    recoTracks.add("hTracks_00_5_6_FullTrack_Axis_01_21", "htrack_Axis_01_21", kTH2F, {Axis_01, Axis_21}); // Axis_pt            ;
-    recoTracks.add("hTracks_00_5_7_FullTrack_Axis_02_21", "htrack_Axis_02_21", kTH2F, {Axis_02, Axis_21}); // Axis_tpcInnerParam ;
-    recoTracks.add("hTracks_00_5_8_FullTrack_Axis_03_21", "htrack_Axis_03_21", kTH2F, {Axis_03, Axis_21}); // Axis_tofExpMom     ;
-    recoTracks.add("hTracks_00_5_9_FullTrack_Axis_20_21", "htrack_Axis_20_21", kTH2F, {Axis_20, Axis_21}); // Axis_tpcInnerParam ;
-    // Pion
-    // Look at Kaon
-    recoTracks.add("hTracks_00_6_1_FullTrack_Axis_00_22", "htrack_Axis_00_22", kTH2F, {Axis_00, Axis_22}); // Axis_p             ;
-    recoTracks.add("hTracks_00_6_2_FullTrack_Axis_01_22", "htrack_Axis_01_22", kTH2F, {Axis_01, Axis_22}); // Axis_pt            ;
-    recoTracks.add("hTracks_00_6_3_FullTrack_Axis_02_22", "htrack_Axis_02_22", kTH2F, {Axis_02, Axis_22}); // Axis_tpcInnerParam ;
-    recoTracks.add("hTracks_00_6_4_FullTrack_Axis_03_22", "htrack_Axis_03_22", kTH2F, {Axis_03, Axis_22}); // Axis_tofExpMom     ;
-    recoTracks.add("hTracks_00_6_5_FullTrack_Axis_00_23", "htrack_Axis_00_23", kTH2F, {Axis_00, Axis_23}); // Axis_p             ;
-    recoTracks.add("hTracks_00_6_6_FullTrack_Axis_01_23", "htrack_Axis_01_23", kTH2F, {Axis_01, Axis_23}); // Axis_pt            ;
-    recoTracks.add("hTracks_00_6_7_FullTrack_Axis_02_23", "htrack_Axis_02_23", kTH2F, {Axis_02, Axis_23}); // Axis_tpcInnerParam ;
-    recoTracks.add("hTracks_00_6_8_FullTrack_Axis_03_23", "htrack_Axis_03_23", kTH2F, {Axis_03, Axis_23}); // Axis_tofExpMom     ;
-    recoTracks.add("hTracks_00_6_9_FullTrack_Axis_22_23", "htrack_Axis_22_23", kTH2F, {Axis_22, Axis_23}); // Axis_tpcInnerParam ;
-    // Kaon
-    // Look at Proton
-    recoTracks.add("hTracks_00_7_1_FullTrack_Axis_00_24", "htrack_Axis_00_24", kTH2F, {Axis_00, Axis_24}); // Axis_p             ;
-    recoTracks.add("hTracks_00_7_2_FullTrack_Axis_01_24", "htrack_Axis_01_24", kTH2F, {Axis_01, Axis_24}); // Axis_pt            ;
-    recoTracks.add("hTracks_00_7_3_FullTrack_Axis_02_24", "htrack_Axis_02_24", kTH2F, {Axis_02, Axis_24}); // Axis_tpcInnerParam ;
-    recoTracks.add("hTracks_00_7_4_FullTrack_Axis_03_24", "htrack_Axis_03_24", kTH2F, {Axis_03, Axis_24}); // Axis_tofExpMom     ;
-    recoTracks.add("hTracks_00_7_5_FullTrack_Axis_00_25", "htrack_Axis_00_25", kTH2F, {Axis_00, Axis_25}); // Axis_p             ;
-    recoTracks.add("hTracks_00_7_6_FullTrack_Axis_01_25", "htrack_Axis_01_25", kTH2F, {Axis_01, Axis_25}); // Axis_pt            ;
-    recoTracks.add("hTracks_00_7_7_FullTrack_Axis_02_25", "htrack_Axis_02_25", kTH2F, {Axis_02, Axis_25}); // Axis_tpcInnerParam ;
-    recoTracks.add("hTracks_00_7_8_FullTrack_Axis_03_25", "htrack_Axis_03_25", kTH2F, {Axis_03, Axis_25}); // Axis_tofExpMom     ;
-    recoTracks.add("hTracks_00_7_9_FullTrack_Axis_24_25", "htrack_Axis_24_25", kTH2F, {Axis_24, Axis_25}); // Axis_tpcInnerParam ;
-    // Proton
-    // Look at Electron
-    recoTracks.add("hTracks_00_8_1_FullTrack_Axis_00_26", "htrack_Axis_00_26", kTH2F, {Axis_00, Axis_26}); // Axis_p             ;
-    recoTracks.add("hTracks_00_8_2_FullTrack_Axis_01_26", "htrack_Axis_01_26", kTH2F, {Axis_01, Axis_26}); // Axis_pt            ;
-    recoTracks.add("hTracks_00_8_3_FullTrack_Axis_02_26", "htrack_Axis_02_26", kTH2F, {Axis_02, Axis_26}); // Axis_tpcInnerParam ;
-    recoTracks.add("hTracks_00_8_4_FullTrack_Axis_03_26", "htrack_Axis_03_26", kTH2F, {Axis_03, Axis_26}); // Axis_tofExpMom     ;
-    recoTracks.add("hTracks_00_8_5_FullTrack_Axis_00_27", "htrack_Axis_00_27", kTH2F, {Axis_00, Axis_27}); // Axis_p             ;
-    recoTracks.add("hTracks_00_8_6_FullTrack_Axis_01_27", "htrack_Axis_01_27", kTH2F, {Axis_01, Axis_27}); // Axis_pt            ;
-    recoTracks.add("hTracks_00_8_7_FullTrack_Axis_02_27", "htrack_Axis_02_27", kTH2F, {Axis_02, Axis_27}); // Axis_tpcInnerParam ;
-    recoTracks.add("hTracks_00_8_8_FullTrack_Axis_03_27", "htrack_Axis_03_27", kTH2F, {Axis_03, Axis_27}); // Axis_tofExpMom     ;
-    recoTracks.add("hTracks_00_8_9_FullTrack_Axis_26_27", "htrack_Axis_26_27", kTH2F, {Axis_26, Axis_27}); // Axis_tpcInnerParam ;
-    // Electron
-    // Look at Deuteron
-    recoTracks.add("hTracks_00_9_1_FullTrack_Axis_00_28", "htrack_Axis_00_28", kTH2F, {Axis_00, Axis_28}); // Axis_p             ;
-    recoTracks.add("hTracks_00_9_2_FullTrack_Axis_01_28", "htrack_Axis_01_28", kTH2F, {Axis_01, Axis_28}); // Axis_pt            ;
-    recoTracks.add("hTracks_00_9_3_FullTrack_Axis_02_28", "htrack_Axis_02_28", kTH2F, {Axis_02, Axis_28}); // Axis_tpcInnerParam ;
-    recoTracks.add("hTracks_00_9_4_FullTrack_Axis_03_28", "htrack_Axis_03_28", kTH2F, {Axis_03, Axis_28}); // Axis_tofExpMom     ;
-    recoTracks.add("hTracks_00_9_5_FullTrack_Axis_00_29", "htrack_Axis_00_29", kTH2F, {Axis_00, Axis_29}); // Axis_p             ;
-    recoTracks.add("hTracks_00_9_6_FullTrack_Axis_01_29", "htrack_Axis_01_29", kTH2F, {Axis_01, Axis_29}); // Axis_pt            ;
-    recoTracks.add("hTracks_00_9_7_FullTrack_Axis_02_29", "htrack_Axis_02_29", kTH2F, {Axis_02, Axis_29}); // Axis_tpcInnerParam ;
-    recoTracks.add("hTracks_00_9_8_FullTrack_Axis_03_29", "htrack_Axis_03_29", kTH2F, {Axis_03, Axis_29}); // Axis_tofExpMom     ;
-    recoTracks.add("hTracks_00_9_9_FullTrack_Axis_28_29", "htrack_Axis_28_29", kTH2F, {Axis_28, Axis_29}); // Axis_tpcInnerParam ;
-    // Deuteron
-    // FullTrack
-
-    // SelectedTrack
-    recoTracks.add("htracks_11_1_0_SelectedTrack_P", "hTracks_SelectedTrack_P", {HistType::kTH1F, {Axis_p}});
-    recoTracks.add("htracks_11_1_0_SelectedTrack_tpcInnerParam", "hTracks_SelectedTrack_tpcInnerParam", {HistType::kTH1F, {Axis_tpcInnerParam}});
-    recoTracks.add("htracks_11_1_0_SelectedTrack_tofExpMom", "hTracks_SelectedTrack_tofExpMom", {HistType::kTH1F, {Axis_tofExpMom}});
-
-    recoTracks.add("htracks_11_1_1_SelectedTrack_Pt", "hTracks_SelectedTrack_Pt", {HistType::kTH1F, {Axis_pt}});
-    recoTracks.add("htracks_11_1_2_SelectedTrack_Eta", "hTracks_SelectedTrack_Eta", {HistType::kTH1F, {Axis_eta}});
-    recoTracks.add("htracks_11_1_3_SelectedTrack_Phi", "hTracks_SelectedTrack_Phi", {HistType::kTH1F, {Axis_phi}});
-    recoTracks.add("htracks_11_1_4_SelectedTrack_DcaXY", "hTracks_SelectedTrack_DcaXY", {HistType::kTH1F, {Axis_dcaXY}});
-    recoTracks.add("htracks_11_1_5_SelectedTrack_DcaZ", "hTracks_SelectedTrack_DcaZ", {HistType::kTH1F, {Axis_dcaZ}});
-    recoTracks.add("htracks_11_1_6_SelectedTrack_Sign", "hTracks_SelectedTrack_Sign", {HistType::kTH1D, {Axis_Sign}});
+    recoTracks.add("recoTracks/PreSel/h01_p", "p", {HistType::kTH1F, {axisP}});
+    recoTracks.add("recoTracks/PreSel/h02_pt", "pt", {HistType::kTH1F, {axisPt}});
+    recoTracks.add("recoTracks/PreSel/h03_tpcInnerParam", "tpcInnerParam", {HistType::kTH1F, {axisTPCInnerParam}});
+    recoTracks.add("recoTracks/PreSel/h04_tofExpMom", "tofExpMom", {HistType::kTH1F, {axisTOFExpMom}});
+    recoTracks.add("recoTracks/PreSel/h05_eta", "eta", {HistType::kTH1F, {axisEta}});
+    recoTracks.add("recoTracks/PreSel/h06_phi", "phi", {HistType::kTH1F, {axisPhi}});
+    recoTracks.add("recoTracks/PreSel/h07_dcaXY", "dcaXY", {HistType::kTH1F, {axisDcaXY}});
+    recoTracks.add("recoTracks/PreSel/h08_dcaZ", "dcaZ", {HistType::kTH1F, {axisDcaZ}});
+    recoTracks.add("recoTracks/PreSel/h09_sign", "sign", {HistType::kTH1D, {axisSign}});
 
     // DcaXY
-    recoTracks.add("htracks_11_1_7_SelectedTrack_00_DcaXY", "htracks_SelectedTrack_00_DcaXY", kTH2F, {Axis_00, Axis_dcaXY});
-    recoTracks.add("htracks_11_1_7_SelectedTrack_01_DcaXY", "htracks_SelectedTrack_01_DcaXY", kTH2F, {Axis_01, Axis_dcaXY});
-    recoTracks.add("htracks_11_1_7_SelectedTrack_02_DcaXY", "htracks_SelectedTrack_02_DcaXY", kTH2F, {Axis_02, Axis_dcaXY});
-    recoTracks.add("htracks_11_1_7_SelectedTrack_03_DcaXY", "htracks_SelectedTrack_03_DcaXY", kTH2F, {Axis_03, Axis_dcaXY});
+    recoTracks.add("recoTracks/PreSel/h10_p_dcaXY", "p_dcaXY", hist_p_dcaXY);
+    recoTracks.add("recoTracks/PreSel/h11_pt_dcaXY", "pt_dcaXY", hist_pt_dcaXY);
+    recoTracks.add("recoTracks/PreSel/h12_tpcInnerParam_dcaXY", "tpcInnerParam_dcaXY", hist_tpcInnerParam_dcaXY);
+    recoTracks.add("recoTracks/PreSel/h13_tofExpMom_dcaXY", "tofExpMom_dcaXY", hist_tofExpMom_dcaXY);
 
     // DcaZ
-    recoTracks.add("htracks_11_1_7_SelectedTrack_00_DcaZ", "htracks_SelectedTrack_00_DcaZ", kTH2F, {Axis_00, Axis_dcaZ});
-    recoTracks.add("htracks_11_1_7_SelectedTrack_01_DcaZ", "htracks_SelectedTrack_01_DcaZ", kTH2F, {Axis_01, Axis_dcaZ});
-    recoTracks.add("htracks_11_1_7_SelectedTrack_02_DcaZ", "htracks_SelectedTrack_02_DcaZ", kTH2F, {Axis_02, Axis_dcaZ});
-    recoTracks.add("htracks_11_1_7_SelectedTrack_03_DcaZ", "htracks_SelectedTrack_03_DcaZ", kTH2F, {Axis_03, Axis_dcaZ});
+    recoTracks.add("recoTracks/PreSel/h14_p_dcaZ", "p_dcaZ", hist_p_dcaZ);
+    recoTracks.add("recoTracks/PreSel/h15_pt_dcaZ", "pt_dcaZ", hist_pt_dcaZ);
+    recoTracks.add("recoTracks/PreSel/h16_tpcInnerParam_dcaZ", "tpcInnerParam_dcaZ", hist_tpcInnerParam_dcaZ);
+    recoTracks.add("recoTracks/PreSel/h17_tofExpMom_dcaZ", "tofExpMom_dcaZ", hist_tofExpMom_dcaZ);
 
     // momemtum
-    recoTracks.add("htracks_11_2_1_SelectedTrack_Axis_00_01", "htrack_Axis_00_01", kTH2F, {Axis_00, Axis_01}); // Axis_pt            ;
-    recoTracks.add("htracks_11_2_2_SelectedTrack_Axis_00_02", "htrack_Axis_00_02", kTH2F, {Axis_00, Axis_02}); // Axis_tpcInnerParam ;
-    recoTracks.add("htracks_11_2_3_SelectedTrack_Axis_00_03", "htrack_Axis_00_03", kTH2F, {Axis_00, Axis_03}); // Axis_tofExpMom     ;
+    recoTracks.add("recoTracks/PreSel/h20_p_pt", "p_pt", hist_p_pt);
+    recoTracks.add("recoTracks/PreSel/h21_p_tpcInnerParam", "p_tpcInnerParam", hist_p_tpcInnerParam);
+    recoTracks.add("recoTracks/PreSel/h22_p_tofExpMom", "p_tofExpMom", hist_p_tofExpMom);
 
     // tpcSignal
-    recoTracks.add("htracks_11_3_1_SelectedTrack_Axis_00_05", "htrack_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // Axis_p             ;
-    recoTracks.add("htracks_11_3_2_SelectedTrack_Axis_02_05", "htrack_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // Axis_tpcInnerParam ;
-    recoTracks.add("htracks_11_3_3_SelectedTrack_Axis_03_05", "htrack_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // Axis_tofExpMom     ;
+    recoTracks.add("recoTracks/PreSel/h23_p_tpcSignal", "p_tpcSignal", hist_p_tpcSignal);
+    recoTracks.add("recoTracks/PreSel/h24_tpcInnerParam_tpcSignal", "tpcInnerParam_tpcSignal", hist_tpcInnerParam_tpcSignal);
+    recoTracks.add("recoTracks/PreSel/h25_tofExpMom_tpcSignal", "tofExpMom_tpcSignal", hist_tofExpMom_tpcSignal);
 
     // tofBeta
-    recoTracks.add("htracks_11_4_1_SelectedTrack_Axis_00_06", "htrack_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // Axis_p             ;
-    recoTracks.add("htracks_11_4_2_SelectedTrack_Axis_02_06", "htrack_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // Axis_tpcInnerParam ;
-    recoTracks.add("htracks_11_4_3_SelectedTrack_Axis_03_06", "htrack_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // Axis_tofExpMom     ;
+    recoTracks.add("recoTracks/PreSel/h26_p_beta", "p_beta", hist_p_beta);
+    recoTracks.add("recoTracks/PreSel/h27_tpcInnerParam_beta", "tpcInnerParam_beta", hist_tpcInnerParam_beta);
+    recoTracks.add("recoTracks/PreSel/h28_tofExpMom_beta", "tofExpMom_beta", hist_tofExpMom_beta);
 
     // Look at Pion
-    recoTracks.add("htracks_11_5_1_SelectedTrack_Axis_00_20", "htrack_Axis_00_20", kTH2F, {Axis_00, Axis_20}); // Axis_p             ;
-    recoTracks.add("htracks_11_5_2_SelectedTrack_Axis_01_20", "htrack_Axis_01_20", kTH2F, {Axis_01, Axis_20}); // Axis_pt            ;
-    recoTracks.add("htracks_11_5_3_SelectedTrack_Axis_02_20", "htrack_Axis_02_20", kTH2F, {Axis_02, Axis_20}); // Axis_tpcInnerParam ;
-    recoTracks.add("htracks_11_5_4_SelectedTrack_Axis_03_20", "htrack_Axis_03_20", kTH2F, {Axis_03, Axis_20}); // Axis_tofExpMom     ;
-    recoTracks.add("htracks_11_5_5_SelectedTrack_Axis_00_21", "htrack_Axis_00_21", kTH2F, {Axis_00, Axis_21}); // Axis_p             ;
-    recoTracks.add("htracks_11_5_6_SelectedTrack_Axis_01_21", "htrack_Axis_01_21", kTH2F, {Axis_01, Axis_21}); // Axis_pt            ;
-    recoTracks.add("htracks_11_5_7_SelectedTrack_Axis_02_21", "htrack_Axis_02_21", kTH2F, {Axis_02, Axis_21}); // Axis_tpcInnerParam ;
-    recoTracks.add("htracks_11_5_8_SelectedTrack_Axis_03_21", "htrack_Axis_03_21", kTH2F, {Axis_03, Axis_21}); // Axis_tofExpMom     ;
-    recoTracks.add("htracks_11_5_9_SelectedTrack_Axis_20_21", "htrack_Axis_20_21", kTH2F, {Axis_20, Axis_21}); // Axis_tpcInnerParam ;
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h29_p_tpcNSigma", "p_tpcNSigma", hist_p_tpcNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h30_pt_tpcNSigma", "pt_tpcNSigma", hist_pt_tpcNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h31_tpcInnerParam_tpcNSigma", "tpcInnerParam_tpcNSigma", hist_tpcInnerParam_tpcNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h32_tofExpMom_tpcNSigma", "tofExpMom_tpcNSigma", hist_tofExpMom_tpcNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h33_p_tofNSigma", "p_tofNSigma", hist_p_tofNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h34_pt_tofNSigma", "pt_tofNSigma", hist_pt_tofNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h35_tpcInnerParam_tofNSigma", "tpcInnerParam_tofNSigma", hist_tpcInnerParam_tofNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h36_tofExpMom_tofNSigma", "tofExpMom_tofNSigma", hist_tofExpMom_tofNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h37_tpcNSigma_tofNSigma", "tpcNSigma_tofNSigma", hist_tpcNSigma_tofNSigma);
     // Pion
-    // Look at Kaon
-    recoTracks.add("htracks_11_6_1_SelectedTrack_Axis_00_22", "htrack_Axis_00_22", kTH2F, {Axis_00, Axis_22}); // Axis_p             ;
-    recoTracks.add("htracks_11_6_2_SelectedTrack_Axis_01_22", "htrack_Axis_01_22", kTH2F, {Axis_01, Axis_22}); // Axis_pt            ;
-    recoTracks.add("htracks_11_6_3_SelectedTrack_Axis_02_22", "htrack_Axis_02_22", kTH2F, {Axis_02, Axis_22}); // Axis_tpcInnerParam ;
-    recoTracks.add("htracks_11_6_4_SelectedTrack_Axis_03_22", "htrack_Axis_03_22", kTH2F, {Axis_03, Axis_22}); // Axis_tofExpMom     ;
-    recoTracks.add("htracks_11_6_5_SelectedTrack_Axis_00_23", "htrack_Axis_00_23", kTH2F, {Axis_00, Axis_23}); // Axis_p             ;
-    recoTracks.add("htracks_11_6_6_SelectedTrack_Axis_01_23", "htrack_Axis_01_23", kTH2F, {Axis_01, Axis_23}); // Axis_pt            ;
-    recoTracks.add("htracks_11_6_7_SelectedTrack_Axis_02_23", "htrack_Axis_02_23", kTH2F, {Axis_02, Axis_23}); // Axis_tpcInnerParam ;
-    recoTracks.add("htracks_11_6_8_SelectedTrack_Axis_03_23", "htrack_Axis_03_23", kTH2F, {Axis_03, Axis_23}); // Axis_tofExpMom     ;
-    recoTracks.add("htracks_11_6_9_SelectedTrack_Axis_22_23", "htrack_Axis_22_23", kTH2F, {Axis_22, Axis_23}); // Axis_tpcInnerParam ;
-    // Kaon
-    // Look at Proton
-    recoTracks.add("htracks_11_7_1_SelectedTrack_Axis_00_24", "htrack_Axis_00_24", kTH2F, {Axis_00, Axis_24}); // Axis_p             ;
-    recoTracks.add("htracks_11_7_2_SelectedTrack_Axis_01_24", "htrack_Axis_01_24", kTH2F, {Axis_01, Axis_24}); // Axis_pt            ;
-    recoTracks.add("htracks_11_7_3_SelectedTrack_Axis_02_24", "htrack_Axis_02_24", kTH2F, {Axis_02, Axis_24}); // Axis_tpcInnerParam ;
-    recoTracks.add("htracks_11_7_4_SelectedTrack_Axis_03_24", "htrack_Axis_03_24", kTH2F, {Axis_03, Axis_24}); // Axis_tofExpMom     ;
-    recoTracks.add("htracks_11_7_5_SelectedTrack_Axis_00_25", "htrack_Axis_00_25", kTH2F, {Axis_00, Axis_25}); // Axis_p             ;
-    recoTracks.add("htracks_11_7_6_SelectedTrack_Axis_01_25", "htrack_Axis_01_25", kTH2F, {Axis_01, Axis_25}); // Axis_pt            ;
-    recoTracks.add("htracks_11_7_7_SelectedTrack_Axis_02_25", "htrack_Axis_02_25", kTH2F, {Axis_02, Axis_25}); // Axis_tpcInnerParam ;
-    recoTracks.add("htracks_11_7_8_SelectedTrack_Axis_03_25", "htrack_Axis_03_25", kTH2F, {Axis_03, Axis_25}); // Axis_tofExpMom     ;
-    recoTracks.add("htracks_11_7_9_SelectedTrack_Axis_24_25", "htrack_Axis_24_25", kTH2F, {Axis_24, Axis_25}); // Axis_tpcInnerParam ;
-    // Proton
-    // Look at Electron
-    recoTracks.add("htracks_11_8_1_SelectedTrack_Axis_00_26", "htrack_Axis_00_26", kTH2F, {Axis_00, Axis_26}); // Axis_p             ;
-    recoTracks.add("htracks_11_8_2_SelectedTrack_Axis_01_26", "htrack_Axis_01_26", kTH2F, {Axis_01, Axis_26}); // Axis_pt            ;
-    recoTracks.add("htracks_11_8_3_SelectedTrack_Axis_02_26", "htrack_Axis_02_26", kTH2F, {Axis_02, Axis_26}); // Axis_tpcInnerParam ;
-    recoTracks.add("htracks_11_8_4_SelectedTrack_Axis_03_26", "htrack_Axis_03_26", kTH2F, {Axis_03, Axis_26}); // Axis_tofExpMom     ;
-    recoTracks.add("htracks_11_8_5_SelectedTrack_Axis_00_27", "htrack_Axis_00_27", kTH2F, {Axis_00, Axis_27}); // Axis_p             ;
-    recoTracks.add("htracks_11_8_6_SelectedTrack_Axis_01_27", "htrack_Axis_01_27", kTH2F, {Axis_01, Axis_27}); // Axis_pt            ;
-    recoTracks.add("htracks_11_8_7_SelectedTrack_Axis_02_27", "htrack_Axis_02_27", kTH2F, {Axis_02, Axis_27}); // Axis_tpcInnerParam ;
-    recoTracks.add("htracks_11_8_8_SelectedTrack_Axis_03_27", "htrack_Axis_03_27", kTH2F, {Axis_03, Axis_27}); // Axis_tofExpMom     ;
-    recoTracks.add("htracks_11_8_9_SelectedTrack_Axis_26_27", "htrack_Axis_26_27", kTH2F, {Axis_26, Axis_27}); // Axis_tpcInnerParam ;
-    // Electron
-    // Look at Deuteron
-    recoTracks.add("htracks_11_9_1_SelectedTrack_Axis_00_28", "htrack_Axis_00_28", kTH2F, {Axis_00, Axis_28}); // Axis_p             ;
-    recoTracks.add("htracks_11_9_2_SelectedTrack_Axis_01_28", "htrack_Axis_01_28", kTH2F, {Axis_01, Axis_28}); // Axis_pt            ;
-    recoTracks.add("htracks_11_9_3_SelectedTrack_Axis_02_28", "htrack_Axis_02_28", kTH2F, {Axis_02, Axis_28}); // Axis_tpcInnerParam ;
-    recoTracks.add("htracks_11_9_4_SelectedTrack_Axis_03_28", "htrack_Axis_03_28", kTH2F, {Axis_03, Axis_28}); // Axis_tofExpMom     ;
-    recoTracks.add("htracks_11_9_5_SelectedTrack_Axis_00_29", "htrack_Axis_00_29", kTH2F, {Axis_00, Axis_29}); // Axis_p             ;
-    recoTracks.add("htracks_11_9_6_SelectedTrack_Axis_01_29", "htrack_Axis_01_29", kTH2F, {Axis_01, Axis_29}); // Axis_pt            ;
-    recoTracks.add("htracks_11_9_7_SelectedTrack_Axis_02_29", "htrack_Axis_02_29", kTH2F, {Axis_02, Axis_29}); // Axis_tpcInnerParam ;
-    recoTracks.add("htracks_11_9_8_SelectedTrack_Axis_03_29", "htrack_Axis_03_29", kTH2F, {Axis_03, Axis_29}); // Axis_tofExpMom     ;
-    recoTracks.add("htracks_11_9_9_SelectedTrack_Axis_28_29", "htrack_Axis_28_29", kTH2F, {Axis_28, Axis_29}); // Axis_tpcInnerParam ;
-    // Deuteron
-    // SelectedTrack
+
+    recoTracks.addClone("recoTracks/PreSel/Pi/", "recoTracks/PreSel/Ka/"); // Kaon
+    recoTracks.addClone("recoTracks/PreSel/Pi/", "recoTracks/PreSel/Pr/"); // Proton
+    recoTracks.addClone("recoTracks/PreSel/Pi/", "recoTracks/PreSel/El/"); // Electron
+    recoTracks.addClone("recoTracks/PreSel/Pi/", "recoTracks/PreSel/De/"); // Deuteron
+
+    // Write Code for naming the axis for Identified Particles
+
+    // Selection
+    recoTracks.addClone("recoTracks/PreSel/", "recoTracks/PostSel/");
     //
+
     // Analysis
+    // momemtum
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h20_p_pt", "p_pt", hist_p_pt);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h21_p_tpcInnerParam", "p_tpcInnerParam", hist_p_tpcInnerParam);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h22_p_tofExpMom", "p_tofExpMom", hist_p_tofExpMom);
+    // tpcSignal
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h23_p_tpcSignal", "p_tpcSignal", hist_p_tpcSignal);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h24_tpcInnerParam_tpcSignal", "tpcInnerParam_tpcSignal", hist_tpcInnerParam_tpcSignal);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h25_tofExpMom_tpcSignal", "tofExpMom_tpcSignal", hist_tofExpMom_tpcSignal);
+    // tofBeta
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h26_p_beta", "p_beta", hist_p_beta);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h27_tpcInnerParam_beta", "tpcInnerParam_beta", hist_tpcInnerParam_beta);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h28_tofExpMom_beta", "tofExpMom_beta", hist_tofExpMom_beta);
     // Pion
-    // tpcSignal
-    recoAnalysis.add("hAnalysis_11_Pi_Id0_1_Axis_00_05", "hAnalysis_11_Pi_Id0_1_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // track.p            (),track.tpcSignal()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id0_1_Axis_02_05", "hAnalysis_11_Pi_Id0_1_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // track.tpcInnerParam(),track.tpcSignal()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id0_1_Axis_03_05", "hAnalysis_11_Pi_Id0_1_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // track.tofExpMom    (),track.tpcSignal()) ;//Axis_tofExpMom     ;
-    // tofBeta
-    recoAnalysis.add("hAnalysis_11_Pi_Id0_2_Axis_00_06", "hAnalysis_11_Pi_Id0_2_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // track.p            (),track.beta()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id0_2_Axis_02_06", "hAnalysis_11_Pi_Id0_2_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // track.tpcInnerParam(),track.beta()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id0_2_Axis_03_06", "hAnalysis_11_Pi_Id0_2_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // track.tofExpMom    (),track.beta()) ;//Axis_tofExpMom     ;
-    // Pion
-    recoAnalysis.add("hAnalysis_11_Pi_Id0_3_1_Axis_00_20", "hAnalysis_11_Pi_Id0_3_1_Axis_00_20", kTH2F, {Axis_00, Axis_20}); // track.p            (),track.tpcNSigmaPi()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id0_3_2_Axis_01_20", "hAnalysis_11_Pi_Id0_3_2_Axis_01_20", kTH2F, {Axis_01, Axis_20}); // track.pt           (),track.tpcNSigmaPi()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id0_3_3_Axis_02_20", "hAnalysis_11_Pi_Id0_3_3_Axis_02_20", kTH2F, {Axis_02, Axis_20}); // track.tpcInnerParam(),track.tpcNSigmaPi()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id0_3_4_Axis_03_20", "hAnalysis_11_Pi_Id0_3_4_Axis_03_20", kTH2F, {Axis_03, Axis_20}); // track.tofExpMom    (),track.tpcNSigmaPi()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id0_3_5_Axis_00_21", "hAnalysis_11_Pi_Id0_3_5_Axis_00_21", kTH2F, {Axis_00, Axis_21}); // track.p            (),track.tofNSigmaPi()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id0_3_6_Axis_01_21", "hAnalysis_11_Pi_Id0_3_6_Axis_01_21", kTH2F, {Axis_01, Axis_21}); // track.pt           (),track.tofNSigmaPi()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id0_3_7_Axis_02_21", "hAnalysis_11_Pi_Id0_3_7_Axis_02_21", kTH2F, {Axis_02, Axis_21}); // track.tpcInnerParam(),track.tofNSigmaPi()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id0_3_8_Axis_03_21", "hAnalysis_11_Pi_Id0_3_8_Axis_03_21", kTH2F, {Axis_03, Axis_21}); // track.tofExpMom    (),track.tofNSigmaPi()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id0_3_9_Axis_20_21", "hAnalysis_11_Pi_Id0_3_9_Axis_20_21", kTH2F, {Axis_20, Axis_21}); // track.tpcNSigmaPi  (),track.tofNSigmaPi()) ;//Axis_tpcInnerParam ;
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h29_p_tpcNSigma", "p_tpcNSigma", hist_p_tpcNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h30_pt_tpcNSigma", "pt_tpcNSigma", hist_pt_tpcNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h31_tpcInnerParam_tpcNSigma", "tpcInnerParam_tpcNSigma", hist_tpcInnerParam_tpcNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h32_tofExpMom_tpcNSigma", "tofExpMom_tpcNSigma", hist_tofExpMom_tpcNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h33_p_tofNSigma", "p_tofNSigma", hist_p_tofNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h34_pt_tofNSigma", "pt_tofNSigma", hist_pt_tofNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h35_tpcInnerParam_tofNSigma", "tpcInnerParam_tofNSigma", hist_tpcInnerParam_tofNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h36_tofExpMom_tofNSigma", "tofExpMom_tofNSigma", hist_tofExpMom_tofNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h37_tpcNSigma_tofNSigma", "tpcNSigma_tofNSigma", hist_tpcNSigma_tofNSigma);
 
-    // tpcSignal
-    recoAnalysis.add("hAnalysis_11_Pi_Id1_1_Axis_00_05", "hAnalysis_11_Pi_Id1_1_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // track.p            (),track.tpcSignal()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id1_1_Axis_02_05", "hAnalysis_11_Pi_Id1_1_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // track.tpcInnerParam(),track.tpcSignal()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id1_1_Axis_03_05", "hAnalysis_11_Pi_Id1_1_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // track.tofExpMom    (),track.tpcSignal()) ;//Axis_tofExpMom     ;
-    // tofBeta
-    recoAnalysis.add("hAnalysis_11_Pi_Id1_2_Axis_00_06", "hAnalysis_11_Pi_Id1_2_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // track.p            (),track.beta()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id1_2_Axis_02_06", "hAnalysis_11_Pi_Id1_2_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // track.tpcInnerParam(),track.beta()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id1_2_Axis_03_06", "hAnalysis_11_Pi_Id1_2_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // track.tofExpMom    (),track.beta()) ;//Axis_tofExpMom     ;
-    // Pion
-    recoAnalysis.add("hAnalysis_11_Pi_Id1_3_1_Axis_00_20", "hAnalysis_11_Pi_Id1_3_1_Axis_00_20", kTH2F, {Axis_00, Axis_20}); // track.p            (),track.tpcNSigmaPi()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id1_3_2_Axis_01_20", "hAnalysis_11_Pi_Id1_3_2_Axis_01_20", kTH2F, {Axis_01, Axis_20}); // track.pt           (),track.tpcNSigmaPi()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id1_3_3_Axis_02_20", "hAnalysis_11_Pi_Id1_3_3_Axis_02_20", kTH2F, {Axis_02, Axis_20}); // track.tpcInnerParam(),track.tpcNSigmaPi()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id1_3_4_Axis_03_20", "hAnalysis_11_Pi_Id1_3_4_Axis_03_20", kTH2F, {Axis_03, Axis_20}); // track.tofExpMom    (),track.tpcNSigmaPi()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id1_3_5_Axis_00_21", "hAnalysis_11_Pi_Id1_3_5_Axis_00_21", kTH2F, {Axis_00, Axis_21}); // track.p            (),track.tofNSigmaPi()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id1_3_6_Axis_01_21", "hAnalysis_11_Pi_Id1_3_6_Axis_01_21", kTH2F, {Axis_01, Axis_21}); // track.pt           (),track.tofNSigmaPi()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id1_3_7_Axis_02_21", "hAnalysis_11_Pi_Id1_3_7_Axis_02_21", kTH2F, {Axis_02, Axis_21}); // track.tpcInnerParam(),track.tofNSigmaPi()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id1_3_8_Axis_03_21", "hAnalysis_11_Pi_Id1_3_8_Axis_03_21", kTH2F, {Axis_03, Axis_21}); // track.tofExpMom    (),track.tofNSigmaPi()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_11_Pi_Id1_3_9_Axis_20_21", "hAnalysis_11_Pi_Id1_3_9_Axis_20_21", kTH2F, {Axis_20, Axis_21}); // track.tpcNSigmaPi  (),track.tofNSigmaPi()) ;//Axis_tpcInnerParam ;
-    // Pion
+    recoAnalysis.addClone("recoAnalysis/Pi/tpcId/", "recoAnalysis/Pi/tofId/");
+    recoAnalysis.addClone("recoAnalysis/Pi/", "recoAnalysis/Ka/"); // Kaon
+    recoAnalysis.addClone("recoAnalysis/Pi/", "recoAnalysis/Pr/"); // Proton
+    recoAnalysis.addClone("recoAnalysis/Pi/", "recoAnalysis/El/"); // Electron
+    recoAnalysis.addClone("recoAnalysis/Pi/", "recoAnalysis/De/"); // Deuteron
 
-    // Kaon
-    // tpcSignal
-    recoAnalysis.add("hAnalysis_12_Ka_Id0_1_Axis_00_05", "hAnalysis_12_Ka_Id0_1_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // track.p            (),track.tpcSignal()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id0_1_Axis_02_05", "hAnalysis_12_Ka_Id0_1_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // track.tpcInnerParam(),track.tpcSignal()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id0_1_Axis_03_05", "hAnalysis_12_Ka_Id0_1_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // track.tofExpMom    (),track.tpcSignal()) ;//Axis_tofExpMom     ;
-    // tofBeta
-    recoAnalysis.add("hAnalysis_12_Ka_Id0_2_Axis_00_06", "hAnalysis_12_Ka_Id0_2_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // track.p            (),track.beta()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id0_2_Axis_02_06", "hAnalysis_12_Ka_Id0_2_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // track.tpcInnerParam(),track.beta()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id0_2_Axis_03_06", "hAnalysis_12_Ka_Id0_2_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // track.tofExpMom    (),track.beta()) ;//Axis_tofExpMom     ;
-    // Kaon
-    recoAnalysis.add("hAnalysis_12_Ka_Id0_3_1_Axis_00_22", "hAnalysis_12_Ka_Id0_3_1_Axis_00_22", kTH2F, {Axis_00, Axis_22}); // track.p            (),track.tpcNSigmaKa()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id0_3_2_Axis_01_22", "hAnalysis_12_Ka_Id0_3_2_Axis_01_22", kTH2F, {Axis_01, Axis_22}); // track.pt           (),track.tpcNSigmaKa()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id0_3_3_Axis_02_22", "hAnalysis_12_Ka_Id0_3_3_Axis_02_22", kTH2F, {Axis_02, Axis_22}); // track.tpcInnerParam(),track.tpcNSigmaKa()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id0_3_4_Axis_03_22", "hAnalysis_12_Ka_Id0_3_4_Axis_03_22", kTH2F, {Axis_03, Axis_22}); // track.tofExpMom    (),track.tpcNSigmaKa()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id0_3_5_Axis_00_23", "hAnalysis_12_Ka_Id0_3_5_Axis_00_23", kTH2F, {Axis_00, Axis_23}); // track.p            (),track.tofNSigmaKa()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id0_3_6_Axis_01_23", "hAnalysis_12_Ka_Id0_3_6_Axis_01_23", kTH2F, {Axis_01, Axis_23}); // track.pt           (),track.tofNSigmaKa()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id0_3_7_Axis_02_23", "hAnalysis_12_Ka_Id0_3_7_Axis_02_23", kTH2F, {Axis_02, Axis_23}); // track.tpcInnerParam(),track.tofNSigmaKa()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id0_3_8_Axis_03_23", "hAnalysis_12_Ka_Id0_3_8_Axis_03_23", kTH2F, {Axis_03, Axis_23}); // track.tofExpMom    (),track.tofNSigmaKa()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id0_3_9_Axis_22_23", "hAnalysis_12_Ka_Id0_3_9_Axis_22_23", kTH2F, {Axis_22, Axis_23}); // track.tpcNSigmaKa  (),track.tofNSigmaKa()) ;//Axis_tpcInnerParam ;
+    recoAnalysis.add("recoAnalysis/SelectedTrack_IdentificationTag", "SelectedTrack_IdentificationTag", kTH1D, {{34, -1.5, 32.5, "trackTAG"}});
+    recoAnalysis.add("recoAnalysis/RejectedTrack_RejectionTag", "RejectedTrack_RejectionTag", kTH1D, {{16, -1.5, 6.5, "rejectionTAG"}});
 
-    // tpcSignal
-    recoAnalysis.add("hAnalysis_12_Ka_Id1_1_Axis_00_05", "hAnalysis_12_Ka_Id1_1_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // track.p            (),track.tpcSignal()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id1_1_Axis_02_05", "hAnalysis_12_Ka_Id1_1_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // track.tpcInnerParam(),track.tpcSignal()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id1_1_Axis_03_05", "hAnalysis_12_Ka_Id1_1_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // track.tofExpMom    (),track.tpcSignal()) ;//Axis_tofExpMom     ;
-    // tofBeta
-    recoAnalysis.add("hAnalysis_12_Ka_Id1_2_Axis_00_06", "hAnalysis_12_Ka_Id1_2_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // track.p            (),track.beta()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id1_2_Axis_02_06", "hAnalysis_12_Ka_Id1_2_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // track.tpcInnerParam(),track.beta()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id1_2_Axis_03_06", "hAnalysis_12_Ka_Id1_2_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // track.tofExpMom    (),track.beta()) ;//Axis_tofExpMom     ;
-    // Kaon
-    recoAnalysis.add("hAnalysis_12_Ka_Id1_3_1_Axis_00_22", "hAnalysis_12_Ka_Id1_3_1_Axis_00_22", kTH2F, {Axis_00, Axis_22}); // track.p            (),track.tpcNSigmaKa()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id1_3_2_Axis_01_22", "hAnalysis_12_Ka_Id1_3_2_Axis_01_22", kTH2F, {Axis_01, Axis_22}); // track.pt           (),track.tpcNSigmaKa()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id1_3_3_Axis_02_22", "hAnalysis_12_Ka_Id1_3_3_Axis_02_22", kTH2F, {Axis_02, Axis_22}); // track.tpcInnerParam(),track.tpcNSigmaKa()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id1_3_4_Axis_03_22", "hAnalysis_12_Ka_Id1_3_4_Axis_03_22", kTH2F, {Axis_03, Axis_22}); // track.tofExpMom    (),track.tpcNSigmaKa()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id1_3_5_Axis_00_23", "hAnalysis_12_Ka_Id1_3_5_Axis_00_23", kTH2F, {Axis_00, Axis_23}); // track.p            (),track.tofNSigmaKa()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id1_3_6_Axis_01_23", "hAnalysis_12_Ka_Id1_3_6_Axis_01_23", kTH2F, {Axis_01, Axis_23}); // track.pt           (),track.tofNSigmaKa()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id1_3_7_Axis_02_23", "hAnalysis_12_Ka_Id1_3_7_Axis_02_23", kTH2F, {Axis_02, Axis_23}); // track.tpcInnerParam(),track.tofNSigmaKa()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id1_3_8_Axis_03_23", "hAnalysis_12_Ka_Id1_3_8_Axis_03_23", kTH2F, {Axis_03, Axis_23}); // track.tofExpMom    (),track.tofNSigmaKa()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_12_Ka_Id1_3_9_Axis_22_23", "hAnalysis_12_Ka_Id1_3_9_Axis_22_23", kTH2F, {Axis_22, Axis_23}); // track.tpcNSigmaKa  (),track.tofNSigmaKa()) ;//Axis_tpcInnerParam ;
-    // Kaon
+    recoAnalysis.add("recoAnalysis/Sparse_Full_K0sPiKa", "Sparse_Full_K0sPiKa", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nK0s"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nPiPlus"}, {500, -1.5, 498.5, "nPiMinus"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}});
+    recoAnalysis.add("recoAnalysis/Sparse_Full_K0sPrDe", "Sparse_Full_K0sPrDe", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nK0s"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nProton"}, {500, -1.5, 498.5, "nPBar"}, {500, -1.5, 498.5, "nDePlus"}, {500, -1.5, 498.5, "nDeMinus"}});
+    recoAnalysis.add("recoAnalysis/Sparse_Full_K0sKaEl", "Sparse_Full_K0sKaEl", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nK0s"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}, {500, -1.5, 498.5, "nElPlus"}, {500, -1.5, 498.5, "nElMinus"}});
+    recoAnalysis.add("recoAnalysis/Sparse_Full_PiKaPr", "Sparse_Full_PiKaPr", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nPiPlus"}, {500, -1.5, 498.5, "nPiMinus"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}, {500, -1.5, 498.5, "nProton"}, {500, -1.5, 498.5, "nPBar"}});
+    recoAnalysis.add("recoAnalysis/Sparse_Full_PiElDe", "Sparse_Full_PiElDe", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nPiPlus"}, {500, -1.5, 498.5, "nPiMinus"}, {500, -1.5, 498.5, "nElPlus"}, {500, -1.5, 498.5, "nElMinus"}, {500, -1.5, 498.5, "nDePlus"}, {500, -1.5, 498.5, "nDeMinus"}});
+    recoAnalysis.add("recoAnalysis/Sparse_Full_KaPrDe", "Sparse_Full_KaPrDe", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}, {500, -1.5, 498.5, "nProton"}, {500, -1.5, 498.5, "nPBar"}, {500, -1.5, 498.5, "nDePlus"}, {500, -1.5, 498.5, "nDeMinus"}});
+    recoAnalysis.add("recoAnalysis/Sparse_Full_PrElDe", "Sparse_Full_PrElDe", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nProton"}, {500, -1.5, 498.5, "nPBar"}, {500, -1.5, 498.5, "nElPlus"}, {500, -1.5, 498.5, "nElMinus"}, {500, -1.5, 498.5, "nDePlus"}, {500, -1.5, 498.5, "nDeMinus"}});
 
-    // Proton
-    // tpcSignal
-    recoAnalysis.add("hAnalysis_13_Pr_Id0_1_Axis_00_05", "hAnalysis_13_Pr_Id0_1_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // track.p            (),track.tpcSignal()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id0_1_Axis_02_05", "hAnalysis_13_Pr_Id0_1_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // track.tpcInnerParam(),track.tpcSignal()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id0_1_Axis_03_05", "hAnalysis_13_Pr_Id0_1_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // track.tofExpMom    (),track.tpcSignal()) ;//Axis_tofExpMom     ;
-    // tofBeta
-    recoAnalysis.add("hAnalysis_13_Pr_Id0_2_Axis_00_06", "hAnalysis_13_Pr_Id0_2_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // track.p            (),track.beta()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id0_2_Axis_02_06", "hAnalysis_13_Pr_Id0_2_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // track.tpcInnerParam(),track.beta()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id0_2_Axis_03_06", "hAnalysis_13_Pr_Id0_2_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // track.tofExpMom    (),track.beta()) ;//Axis_tofExpMom     ;
-    // Proton
-    recoAnalysis.add("hAnalysis_13_Pr_Id0_3_1_Axis_00_24", "hAnalysis_13_Pr_Id0_3_1_Axis_00_24", kTH2F, {Axis_00, Axis_24}); // track.p            (),track.tpcNSigmaPr()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id0_3_2_Axis_01_24", "hAnalysis_13_Pr_Id0_3_2_Axis_01_24", kTH2F, {Axis_01, Axis_24}); // track.pt           (),track.tpcNSigmaPr()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id0_3_3_Axis_02_24", "hAnalysis_13_Pr_Id0_3_3_Axis_02_24", kTH2F, {Axis_02, Axis_24}); // track.tpcInnerParam(),track.tpcNSigmaPr()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id0_3_4_Axis_03_24", "hAnalysis_13_Pr_Id0_3_4_Axis_03_24", kTH2F, {Axis_03, Axis_24}); // track.tofExpMom    (),track.tpcNSigmaPr()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id0_3_5_Axis_00_25", "hAnalysis_13_Pr_Id0_3_5_Axis_00_25", kTH2F, {Axis_00, Axis_25}); // track.p            (),track.tofNSigmaPr()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id0_3_6_Axis_01_25", "hAnalysis_13_Pr_Id0_3_6_Axis_01_25", kTH2F, {Axis_01, Axis_25}); // track.pt           (),track.tofNSigmaPr()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id0_3_7_Axis_02_25", "hAnalysis_13_Pr_Id0_3_7_Axis_02_25", kTH2F, {Axis_02, Axis_25}); // track.tpcInnerParam(),track.tofNSigmaPr()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id0_3_8_Axis_03_25", "hAnalysis_13_Pr_Id0_3_8_Axis_03_25", kTH2F, {Axis_03, Axis_25}); // track.tofExpMom    (),track.tofNSigmaPr()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id0_3_9_Axis_24_25", "hAnalysis_13_Pr_Id0_3_9_Axis_24_25", kTH2F, {Axis_24, Axis_25}); // track.tpcNSigmaPr  (),track.tofNSigmaPr()) ;//Axis_tpcInnerParam ;
-
-    // tpcSignal
-    recoAnalysis.add("hAnalysis_13_Pr_Id1_1_Axis_00_05", "hAnalysis_13_Pr_Id1_1_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // track.p            (),track.tpcSignal()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id1_1_Axis_02_05", "hAnalysis_13_Pr_Id1_1_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // track.tpcInnerParam(),track.tpcSignal()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id1_1_Axis_03_05", "hAnalysis_13_Pr_Id1_1_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // track.tofExpMom    (),track.tpcSignal()) ;//Axis_tofExpMom     ;
-    // tofBeta
-    recoAnalysis.add("hAnalysis_13_Pr_Id1_2_Axis_00_06", "hAnalysis_13_Pr_Id1_2_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // track.p            (),track.beta()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id1_2_Axis_02_06", "hAnalysis_13_Pr_Id1_2_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // track.tpcInnerParam(),track.beta()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id1_2_Axis_03_06", "hAnalysis_13_Pr_Id1_2_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // track.tofExpMom    (),track.beta()) ;//Axis_tofExpMom     ;
-    // Proton
-    recoAnalysis.add("hAnalysis_13_Pr_Id1_3_1_Axis_00_24", "hAnalysis_13_Pr_Id1_3_1_Axis_00_24", kTH2F, {Axis_00, Axis_24}); // track.p            (),track.tpcNSigmaPr()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id1_3_2_Axis_01_24", "hAnalysis_13_Pr_Id1_3_2_Axis_01_24", kTH2F, {Axis_01, Axis_24}); // track.pt           (),track.tpcNSigmaPr()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id1_3_3_Axis_02_24", "hAnalysis_13_Pr_Id1_3_3_Axis_02_24", kTH2F, {Axis_02, Axis_24}); // track.tpcInnerParam(),track.tpcNSigmaPr()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id1_3_4_Axis_03_24", "hAnalysis_13_Pr_Id1_3_4_Axis_03_24", kTH2F, {Axis_03, Axis_24}); // track.tofExpMom    (),track.tpcNSigmaPr()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id1_3_5_Axis_00_25", "hAnalysis_13_Pr_Id1_3_5_Axis_00_25", kTH2F, {Axis_00, Axis_25}); // track.p            (),track.tofNSigmaPr()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id1_3_6_Axis_01_25", "hAnalysis_13_Pr_Id1_3_6_Axis_01_25", kTH2F, {Axis_01, Axis_25}); // track.pt           (),track.tofNSigmaPr()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id1_3_7_Axis_02_25", "hAnalysis_13_Pr_Id1_3_7_Axis_02_25", kTH2F, {Axis_02, Axis_25}); // track.tpcInnerParam(),track.tofNSigmaPr()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id1_3_8_Axis_03_25", "hAnalysis_13_Pr_Id1_3_8_Axis_03_25", kTH2F, {Axis_03, Axis_25}); // track.tofExpMom    (),track.tofNSigmaPr()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_13_Pr_Id1_3_9_Axis_24_25", "hAnalysis_13_Pr_Id1_3_9_Axis_24_25", kTH2F, {Axis_24, Axis_25}); // track.tpcNSigmaPr  (),track.tofNSigmaPr()) ;//Axis_tpcInnerParam ;
-    // Proton
-
-    // Electron
-    // tpcSignal
-    recoAnalysis.add("hAnalysis_14_El_Id0_1_Axis_00_05", "hAnalysis_14_El_Id0_1_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // track.p            (),track.tpcSignal()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_14_El_Id0_1_Axis_02_05", "hAnalysis_14_El_Id0_1_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // track.tpcInnerParam(),track.tpcSignal()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_14_El_Id0_1_Axis_03_05", "hAnalysis_14_El_Id0_1_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // track.tofExpMom    (),track.tpcSignal()) ;//Axis_tofExpMom     ;
-    // tofBeta
-    recoAnalysis.add("hAnalysis_14_El_Id0_2_Axis_00_06", "hAnalysis_14_El_Id0_2_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // track.p            (),track.beta()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_14_El_Id0_2_Axis_02_06", "hAnalysis_14_El_Id0_2_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // track.tpcInnerParam(),track.beta()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_14_El_Id0_2_Axis_03_06", "hAnalysis_14_El_Id0_2_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // track.tofExpMom    (),track.beta()) ;//Axis_tofExpMom     ;
-    // Electron
-    recoAnalysis.add("hAnalysis_14_El_Id0_3_1_Axis_00_26", "hAnalysis_14_El_Id0_3_1_Axis_00_26", kTH2F, {Axis_00, Axis_26}); // track.p            (),track.tpcNSigmaEl()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_14_El_Id0_3_2_Axis_01_26", "hAnalysis_14_El_Id0_3_2_Axis_01_26", kTH2F, {Axis_01, Axis_26}); // track.pt           (),track.tpcNSigmaEl()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_14_El_Id0_3_3_Axis_02_26", "hAnalysis_14_El_Id0_3_3_Axis_02_26", kTH2F, {Axis_02, Axis_26}); // track.tpcInnerParam(),track.tpcNSigmaEl()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_14_El_Id0_3_4_Axis_03_26", "hAnalysis_14_El_Id0_3_4_Axis_03_26", kTH2F, {Axis_03, Axis_26}); // track.tofExpMom    (),track.tpcNSigmaEl()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_14_El_Id0_3_5_Axis_00_27", "hAnalysis_14_El_Id0_3_5_Axis_00_27", kTH2F, {Axis_00, Axis_27}); // track.p            (),track.tofNSigmaEl()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_14_El_Id0_3_6_Axis_01_27", "hAnalysis_14_El_Id0_3_6_Axis_01_27", kTH2F, {Axis_01, Axis_27}); // track.pt           (),track.tofNSigmaEl()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_14_El_Id0_3_7_Axis_02_27", "hAnalysis_14_El_Id0_3_7_Axis_02_27", kTH2F, {Axis_02, Axis_27}); // track.tpcInnerParam(),track.tofNSigmaEl()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_14_El_Id0_3_8_Axis_03_27", "hAnalysis_14_El_Id0_3_8_Axis_03_27", kTH2F, {Axis_03, Axis_27}); // track.tofExpMom    (),track.tofNSigmaEl()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_14_El_Id0_3_9_Axis_26_27", "hAnalysis_14_El_Id0_3_9_Axis_26_27", kTH2F, {Axis_26, Axis_27}); // track.tpcNSigmaEl  (),track.tofNSigmaEl()) ;//Axis_tpcInnerParam ;
-
-    // tpcSignal
-    recoAnalysis.add("hAnalysis_14_El_Id1_1_Axis_00_05", "hAnalysis_14_El_Id1_1_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // track.p            (),track.tpcSignal()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_14_El_Id1_1_Axis_02_05", "hAnalysis_14_El_Id1_1_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // track.tpcInnerParam(),track.tpcSignal()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_14_El_Id1_1_Axis_03_05", "hAnalysis_14_El_Id1_1_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // track.tofExpMom    (),track.tpcSignal()) ;//Axis_tofExpMom     ;
-    // tofBeta
-    recoAnalysis.add("hAnalysis_14_El_Id1_2_Axis_00_06", "hAnalysis_14_El_Id1_2_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // track.p            (),track.beta()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_14_El_Id1_2_Axis_02_06", "hAnalysis_14_El_Id1_2_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // track.tpcInnerParam(),track.beta()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_14_El_Id1_2_Axis_03_06", "hAnalysis_14_El_Id1_2_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // track.tofExpMom    (),track.beta()) ;//Axis_tofExpMom     ;
-    // Electron
-    recoAnalysis.add("hAnalysis_14_El_Id1_3_1_Axis_00_26", "hAnalysis_14_El_Id1_3_1_Axis_00_26", kTH2F, {Axis_00, Axis_26}); // track.p            (),track.tpcNSigmaEl()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_14_El_Id1_3_2_Axis_01_26", "hAnalysis_14_El_Id1_3_2_Axis_01_26", kTH2F, {Axis_01, Axis_26}); // track.pt           (),track.tpcNSigmaEl()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_14_El_Id1_3_3_Axis_02_26", "hAnalysis_14_El_Id1_3_3_Axis_02_26", kTH2F, {Axis_02, Axis_26}); // track.tpcInnerParam(),track.tpcNSigmaEl()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_14_El_Id1_3_4_Axis_03_26", "hAnalysis_14_El_Id1_3_4_Axis_03_26", kTH2F, {Axis_03, Axis_26}); // track.tofExpMom    (),track.tpcNSigmaEl()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_14_El_Id1_3_5_Axis_00_27", "hAnalysis_14_El_Id1_3_5_Axis_00_27", kTH2F, {Axis_00, Axis_27}); // track.p            (),track.tofNSigmaEl()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_14_El_Id1_3_6_Axis_01_27", "hAnalysis_14_El_Id1_3_6_Axis_01_27", kTH2F, {Axis_01, Axis_27}); // track.pt           (),track.tofNSigmaEl()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_14_El_Id1_3_7_Axis_02_27", "hAnalysis_14_El_Id1_3_7_Axis_02_27", kTH2F, {Axis_02, Axis_27}); // track.tpcInnerParam(),track.tofNSigmaEl()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_14_El_Id1_3_8_Axis_03_27", "hAnalysis_14_El_Id1_3_8_Axis_03_27", kTH2F, {Axis_03, Axis_27}); // track.tofExpMom    (),track.tofNSigmaEl()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_14_El_Id1_3_9_Axis_26_27", "hAnalysis_14_El_Id1_3_9_Axis_26_27", kTH2F, {Axis_26, Axis_27}); // track.tpcNSigmaEl  (),track.tofNSigmaEl()) ;//Axis_tpcInnerParam ;
-    // Electron
-
-    // Deuteron
-    // tpcSignal
-    recoAnalysis.add("hAnalysis_15_De_Id0_1_Axis_00_05", "hAnalysis_15_De_Id0_1_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // track.p            (),track.tpcSignal()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_15_De_Id0_1_Axis_02_05", "hAnalysis_15_De_Id0_1_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // track.tpcInnerParam(),track.tpcSignal()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_15_De_Id0_1_Axis_03_05", "hAnalysis_15_De_Id0_1_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // track.tofExpMom    (),track.tpcSignal()) ;//Axis_tofExpMom     ;
-    // tofBeta
-    recoAnalysis.add("hAnalysis_15_De_Id0_2_Axis_00_06", "hAnalysis_15_De_Id0_2_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // track.p            (),track.beta()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_15_De_Id0_2_Axis_02_06", "hAnalysis_15_De_Id0_2_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // track.tpcInnerParam(),track.beta()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_15_De_Id0_2_Axis_03_06", "hAnalysis_15_De_Id0_2_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // track.tofExpMom    (),track.beta()) ;//Axis_tofExpMom     ;
-    // Deuteron
-    recoAnalysis.add("hAnalysis_15_De_Id0_3_1_Axis_00_28", "hAnalysis_15_De_Id0_3_1_Axis_00_28", kTH2F, {Axis_00, Axis_28}); // track.p            (),track.tpcNSigmaDe()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_15_De_Id0_3_2_Axis_01_28", "hAnalysis_15_De_Id0_3_2_Axis_01_28", kTH2F, {Axis_01, Axis_28}); // track.pt           (),track.tpcNSigmaDe()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_15_De_Id0_3_3_Axis_02_28", "hAnalysis_15_De_Id0_3_3_Axis_02_28", kTH2F, {Axis_02, Axis_28}); // track.tpcInnerParam(),track.tpcNSigmaDe()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_15_De_Id0_3_4_Axis_03_28", "hAnalysis_15_De_Id0_3_4_Axis_03_28", kTH2F, {Axis_03, Axis_28}); // track.tofExpMom    (),track.tpcNSigmaDe()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_15_De_Id0_3_5_Axis_00_29", "hAnalysis_15_De_Id0_3_5_Axis_00_29", kTH2F, {Axis_00, Axis_29}); // track.p            (),track.tofNSigmaDe()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_15_De_Id0_3_6_Axis_01_29", "hAnalysis_15_De_Id0_3_6_Axis_01_29", kTH2F, {Axis_01, Axis_29}); // track.pt           (),track.tofNSigmaDe()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_15_De_Id0_3_7_Axis_02_29", "hAnalysis_15_De_Id0_3_7_Axis_02_29", kTH2F, {Axis_02, Axis_29}); // track.tpcInnerParam(),track.tofNSigmaDe()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_15_De_Id0_3_8_Axis_03_29", "hAnalysis_15_De_Id0_3_8_Axis_03_29", kTH2F, {Axis_03, Axis_29}); // track.tofExpMom    (),track.tofNSigmaDe()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_15_De_Id0_3_9_Axis_28_29", "hAnalysis_15_De_Id0_3_9_Axis_28_29", kTH2F, {Axis_28, Axis_29}); // track.tpcNSigmaDe  (),track.tofNSigmaDe()) ;//Axis_tpcInnerParam ;
-
-    // tpcSignal
-    recoAnalysis.add("hAnalysis_15_De_Id1_1_Axis_00_05", "hAnalysis_15_De_Id1_1_Axis_00_05", kTH2F, {Axis_00, Axis_05}); // track.p            (),track.tpcSignal()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_15_De_Id1_1_Axis_02_05", "hAnalysis_15_De_Id1_1_Axis_02_05", kTH2F, {Axis_02, Axis_05}); // track.tpcInnerParam(),track.tpcSignal()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_15_De_Id1_1_Axis_03_05", "hAnalysis_15_De_Id1_1_Axis_03_05", kTH2F, {Axis_03, Axis_05}); // track.tofExpMom    (),track.tpcSignal()) ;//Axis_tofExpMom     ;
-    // tofBeta
-    recoAnalysis.add("hAnalysis_15_De_Id1_2_Axis_00_06", "hAnalysis_15_De_Id1_2_Axis_00_06", kTH2F, {Axis_00, Axis_06}); // track.p            (),track.beta()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_15_De_Id1_2_Axis_02_06", "hAnalysis_15_De_Id1_2_Axis_02_06", kTH2F, {Axis_02, Axis_06}); // track.tpcInnerParam(),track.beta()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_15_De_Id1_2_Axis_03_06", "hAnalysis_15_De_Id1_2_Axis_03_06", kTH2F, {Axis_03, Axis_06}); // track.tofExpMom    (),track.beta()) ;//Axis_tofExpMom     ;
-    // Deuteron
-    recoAnalysis.add("hAnalysis_15_De_Id1_3_1_Axis_00_28", "hAnalysis_15_De_Id1_3_1_Axis_00_28", kTH2F, {Axis_00, Axis_28}); // track.p            (),track.tpcNSigmaDe()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_15_De_Id1_3_2_Axis_01_28", "hAnalysis_15_De_Id1_3_2_Axis_01_28", kTH2F, {Axis_01, Axis_28}); // track.pt           (),track.tpcNSigmaDe()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_15_De_Id1_3_3_Axis_02_28", "hAnalysis_15_De_Id1_3_3_Axis_02_28", kTH2F, {Axis_02, Axis_28}); // track.tpcInnerParam(),track.tpcNSigmaDe()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_15_De_Id1_3_4_Axis_03_28", "hAnalysis_15_De_Id1_3_4_Axis_03_28", kTH2F, {Axis_03, Axis_28}); // track.tofExpMom    (),track.tpcNSigmaDe()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_15_De_Id1_3_5_Axis_00_29", "hAnalysis_15_De_Id1_3_5_Axis_00_29", kTH2F, {Axis_00, Axis_29}); // track.p            (),track.tofNSigmaDe()) ;//Axis_p             ;
-    recoAnalysis.add("hAnalysis_15_De_Id1_3_6_Axis_01_29", "hAnalysis_15_De_Id1_3_6_Axis_01_29", kTH2F, {Axis_01, Axis_29}); // track.pt           (),track.tofNSigmaDe()) ;//Axis_pt            ;
-    recoAnalysis.add("hAnalysis_15_De_Id1_3_7_Axis_02_29", "hAnalysis_15_De_Id1_3_7_Axis_02_29", kTH2F, {Axis_02, Axis_29}); // track.tpcInnerParam(),track.tofNSigmaDe()) ;//Axis_tpcInnerParam ;
-    recoAnalysis.add("hAnalysis_15_De_Id1_3_8_Axis_03_29", "hAnalysis_15_De_Id1_3_8_Axis_03_29", kTH2F, {Axis_03, Axis_29}); // track.tofExpMom    (),track.tofNSigmaDe()) ;//Axis_tofExpMom     ;
-    recoAnalysis.add("hAnalysis_15_De_Id1_3_9_Axis_28_29", "hAnalysis_15_De_Id1_3_9_Axis_28_29", kTH2F, {Axis_28, Axis_29}); // track.tpcNSigmaDe  (),track.tofNSigmaDe()) ;//Axis_tpcInnerParam ;
-    // Deuteron
-
-    recoAnalysis.add("hAnalysis_4_SelectedTrack_IdentificationTag", "hAnalysis_SelectedTrack_IdentificationTag", {HistType::kTH1D, {{34, -1.5, 32.5, "trackTAG"}}});
-    recoAnalysis.add("hAnalysis_4_RejectedTrack_RejectionTag", "hAnalysis_RejectedTrack_RejectionTag", {HistType::kTH1D, {{16, -1.5, 6.5, "rejectionTAG"}}});
-
-    recoAnalysis.add("hAnalysis_5_Sparse_Full_K0sPiKa", "hAnalysis_5_Sparse_Full_K0sPiKa", kTHnSparseD, {Axis_centFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nK0s"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nPiPlus"}, {500, -1.5, 498.5, "nPiMinus"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}});
-    recoAnalysis.add("hAnalysis_5_Sparse_Full_K0sPrDe", "hAnalysis_5_Sparse_Full_K0sPrDe", kTHnSparseD, {Axis_centFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nK0s"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nProton"}, {500, -1.5, 498.5, "nPBar"}, {500, -1.5, 498.5, "nDePlus"}, {500, -1.5, 498.5, "nDeMinus"}});
-    recoAnalysis.add("hAnalysis_5_Sparse_Full_K0sKaEl", "hAnalysis_5_Sparse_Full_K0sKaEl", kTHnSparseD, {Axis_centFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nK0s"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}, {500, -1.5, 498.5, "nElPlus"}, {500, -1.5, 498.5, "nElMinus"}});
-    recoAnalysis.add("hAnalysis_5_Sparse_Full_PiKaPr", "hAnalysis_5_Sparse_Full_PiKaPr", kTHnSparseD, {Axis_centFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nPiPlus"}, {500, -1.5, 498.5, "nPiMinus"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}, {500, -1.5, 498.5, "nProton"}, {500, -1.5, 498.5, "nPBar"}});
-    recoAnalysis.add("hAnalysis_5_Sparse_Full_PiElDe", "hAnalysis_5_Sparse_Full_PiElDe", kTHnSparseD, {Axis_centFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nPiPlus"}, {500, -1.5, 498.5, "nPiMinus"}, {500, -1.5, 498.5, "nElPlus"}, {500, -1.5, 498.5, "nElMinus"}, {500, -1.5, 498.5, "nDePlus"}, {500, -1.5, 498.5, "nDeMinus"}});
-    recoAnalysis.add("hAnalysis_5_Sparse_Full_KaPrDe", "hAnalysis_5_Sparse_Full_KaPrDe", kTHnSparseD, {Axis_centFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}, {500, -1.5, 498.5, "nProton"}, {500, -1.5, 498.5, "nPBar"}, {500, -1.5, 498.5, "nDePlus"}, {500, -1.5, 498.5, "nDeMinus"}});
-    recoAnalysis.add("hAnalysis_5_Sparse_Full_PrElDe", "hAnalysis_5_Sparse_Full_PrElDe", kTHnSparseD, {Axis_centFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nProton"}, {500, -1.5, 498.5, "nPBar"}, {500, -1.5, 498.5, "nElPlus"}, {500, -1.5, 498.5, "nElMinus"}, {500, -1.5, 498.5, "nDePlus"}, {500, -1.5, 498.5, "nDeMinus"}});
-
-    recoAnalysis.add("hAnalysis_5_Sparse_newDynm_K0s_Ka", "hAnalysis_Sparse_newDynm_K0s_Ka", kTHnSparseD, {Axis_centFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nK0s"}, {500, -1.5, 498.5, "nKaon"}, {10000, -1.5, 9998.5, "(nK0s)^{2}"}, {250000, -1.5, 249998.5, "(nKaon)^{2}"}, {500, -1.5, 498.5, "(nK0s*nKaon)"}});
-    recoAnalysis.add("hAnalysis_5_Sparse_newDynm_Kp_Km", "hAnalysis_Sparse_newDynm_Kp_Km", kTHnSparseD, {Axis_centFT0C, {2000, -1.5, 1998.5, "nTrack"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}, {250000, -1.5, 249998.5, "(nKaPlus)^{2}"}, {250000, -1.5, 249998.5, "(nKaMinus)^{2}"}, {250000, -1.5, 249998.5, "(nKaPlus*nKaMinus)"}});
-    recoAnalysis.add("hTest", "hTest", kTH1D, {VectorAxis});
+    recoAnalysis.add("recoAnalysis/Sparse_newDynm_K0s_Ka", "Sparse_newDynm_K0s_Ka", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nK0s"}, {500, -1.5, 498.5, "nKaon"}, {10000, -1.5, 9998.5, "(nK0s)^{2}"}, {250000, -1.5, 249998.5, "(nKaon)^{2}"}, {500, -1.5, 498.5, "(nK0s*nKaon)"}});
+    recoAnalysis.add("recoAnalysis/Sparse_newDynm_Kp_Km", "Sparse_newDynm_Kp_Km", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}, {250000, -1.5, 249998.5, "(nKaPlus)^{2}"}, {250000, -1.5, 249998.5, "(nKaMinus)^{2}"}, {250000, -1.5, 249998.5, "(nKaPlus*nKaMinus)"}});
     //
+
     // Printing the Stored Registry information
     LOG(info) << "Printing Stored Registry Information";
-    LOG(info) << "Printing RecoEvent ";
+    LOG(info) << " DEBUG :: 01- recoV0s.print()";
+    recoV0s.print();
+    LOG(info) << " DEBUG :: 02- recoEvent.print()";
     recoEvent.print();
-    LOG(info) << "Printing RecoK0s ";
+    LOG(info) << " DEBUG :: 03- recoK0s.print()";
     recoK0s.print();
-    LOG(info) << "Printing RecoAnalysis ";
+    LOG(info) << " DEBUG :: 04- recoTracks.print()";
+    recoTracks.print();
+    LOG(info) << " DEBUG :: 05- recoAnalysis.print()";
     recoAnalysis.print();
   }
 
@@ -888,12 +502,9 @@ struct isospin_fluctuation {
   template <typename T>
   bool selPionTOF(T track)
   {
-    if (track.p() <= 0.75
-        // && (TMath::Power(track.tpcNSigmaPi(),2)+TMath::Power(track.tofNSigmaPi(),2)) < 9.0
-        && TMath::Abs(track.tpcNSigmaPi()) < 3.0 && TMath::Abs(track.tofNSigmaPi()) < 3.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0) {
+    if (track.p() <= 0.75 && TMath::Abs(track.tpcNSigmaPi()) < 3.0 && TMath::Abs(track.tofNSigmaPi()) < 3.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0) {
       return true;
     } else if (0.75 < track.p() // after p = 0.75, Pi and Ka lines of nSigma 3.0 will start intersecting
-                                //  && (TMath::Power(track.tpcNSigmaPi(),2)+TMath::Power(track.tofNSigmaPi(),2)) < 8.0
                && TMath::Abs(track.tpcNSigmaPi()) < 2.0 && TMath::Abs(track.tofNSigmaPi()) < 2.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0 && TMath::Abs(track.tofNSigmaKa()) > 3.0 && TMath::Abs(track.tofNSigmaPr()) > 3.0 && TMath::Abs(track.tofNSigmaDe()) > 3.0) {
       return true;
     }
@@ -904,9 +515,7 @@ struct isospin_fluctuation {
   template <typename T>
   bool selKaonTOF(T track)
   {
-    if (track.p() <= 0.75
-        // && (TMath::Power(track.tpcNSigmaKa(),2)+TMath::Power(track.tofNSigmaKa(),2)) < 9.0
-        && TMath::Abs(track.tpcNSigmaKa()) < 3.0 && TMath::Abs(track.tofNSigmaKa()) < 3.0) {
+    if (track.p() <= 0.75 && TMath::Abs(track.tpcNSigmaKa()) < 3.0 && TMath::Abs(track.tofNSigmaKa()) < 3.0) {
       return true;
     }
     if (0.75 < track.p() && track.p() <= 1.30 // after 0.75 Pi and Ka lines of nSigma 3.0 will start intersecting
@@ -914,7 +523,6 @@ struct isospin_fluctuation {
       return true;
     }
     if (1.30 < track.p() // after 1.30 Pr and Ka lines of nSigma 3.0 will start intersecting
-                         //  && (TMath::Power(track.tpcNSigmaKa(),2)+TMath::Power(track.tofNSigmaKa(),2)) < 8.0
         && TMath::Abs(track.tpcNSigmaKa()) < 2.0 && TMath::Abs(track.tofNSigmaKa()) < 2.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0 && TMath::Abs(track.tofNSigmaPi()) > 3.0 && TMath::Abs(track.tofNSigmaPr()) > 3.0 && TMath::Abs(track.tofNSigmaDe()) > 3.0) {
       return true;
     }
@@ -925,9 +533,7 @@ struct isospin_fluctuation {
   template <typename T>
   bool selProtonTOF(T track)
   {
-    if (track.p() <= 1.30
-        // && (TMath::Power(track.tpcNSigmaPr(),2)+TMath::Power(track.tofNSigmaPr(),2)) < 9.0
-        && TMath::Abs(track.tpcNSigmaPr()) < 3.0 && TMath::Abs(track.tofNSigmaPr()) < 3.0) {
+    if (track.p() <= 1.30 && TMath::Abs(track.tpcNSigmaPr()) < 3.0 && TMath::Abs(track.tofNSigmaPr()) < 3.0) {
       return true;
     }
     if (1.30 < track.p() && track.p() <= 3.10                                                                                                                                                                                                                 // after 1.30 Pr and Ka lines of nSigma 3.0 will start intersecting
@@ -936,7 +542,6 @@ struct isospin_fluctuation {
       return true;
     }
     if (3.10 < track.p() // after 3.10 Pr and De lines of nSigma 3.0 will start intersecting
-                         //  && (TMath::Power(track.tpcNSigmaPr(),2)+TMath::Power(track.tofNSigmaPr(),2)) < 8.0
         && TMath::Abs(track.tpcNSigmaPr()) < 2.0 && TMath::Abs(track.tofNSigmaPr()) < 2.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0 && TMath::Abs(track.tofNSigmaPi()) > 3.0 && TMath::Abs(track.tofNSigmaKa()) > 3.0 && TMath::Abs(track.tofNSigmaDe()) > 3.0) {
       return true;
     }
@@ -947,14 +552,11 @@ struct isospin_fluctuation {
   template <typename T>
   bool selDeuteronTOF(T track)
   {
-    if (track.p() <= 3.10
-        // && (TMath::Power(track.tpcNSigmaDe(),2)+TMath::Power(track.tofNSigmaDe(),2)) < 9.0
-        && TMath::Abs(track.tpcNSigmaDe()) < 3.0 && TMath::Abs(track.tofNSigmaDe()) < 3.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0 && TMath::Abs(track.tofNSigmaPi()) > 3.0 && TMath::Abs(track.tofNSigmaKa()) > 3.0 && TMath::Abs(track.tofNSigmaPr()) > 3.0) {
+    if (track.p() <= 3.10 && TMath::Abs(track.tpcNSigmaDe()) < 3.0 && TMath::Abs(track.tofNSigmaDe()) < 3.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0 && TMath::Abs(track.tofNSigmaPi()) > 3.0 && TMath::Abs(track.tofNSigmaKa()) > 3.0 && TMath::Abs(track.tofNSigmaPr()) > 3.0) {
       return true;
     }
-    if (3.10 < track.p()                                                                                                                                                                                                                                      // after 3.10 De and Pr lines of nSigma 3.0 will start intersecting
-        && TMath::Abs(track.tpcNSigmaDe()) < 2.0 && TMath::Abs(track.tofNSigmaDe()) < 2.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0 && TMath::Abs(track.tofNSigmaPi()) > 3.0 && TMath::Abs(track.tofNSigmaKa()) > 3.0 && TMath::Abs(track.tofNSigmaPr()) > 3.0 // Some Deuteron contamination is still coming in p dependent cuts
-    ) {
+    if (3.10 < track.p() // after 3.10 De and Pr lines of nSigma 3.0 will start intersecting
+        && TMath::Abs(track.tpcNSigmaDe()) < 2.0 && TMath::Abs(track.tofNSigmaDe()) < 2.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0 && TMath::Abs(track.tofNSigmaPi()) > 3.0 && TMath::Abs(track.tofNSigmaKa()) > 3.0 && TMath::Abs(track.tofNSigmaPr()) > 3.0) {
       return true;
     }
     return false;
@@ -1087,597 +689,67 @@ struct isospin_fluctuation {
     }
     return false;
   }
-  //
-
-  enum pidTagValue {
-    tagOther = 0,
-    tagPion = 1,
-    tagKaon = 2,
-    tagProton = 4,
-    tagElectron = 8,
-    tagDeuteron = 16
-  };
 
   template <typename T>
-  int FindTrackTag(T track)
+  int findV0Tag(const T& posDaughterTrack, const T& negDaughterTrack, int& posPiIdMethod, int& posPrIdMethod, int& negPiIdMethod, int& negPrIdMethod)
   {
-    int tempPID = tagOther;
-    // 0- Some other particle
-    // 1- Pion
-    // 2- Kaon
-    // 4- Proton
-    // 8- Electron
-    int PiIdMethod = -1;
-    int KaIdMethod = -1;
-    int PrIdMethod = -1;
-    int ElIdMethod = -1;
-    int DeIdMethod = -1;
-    if (selPion(track, PiIdMethod)) {
-      tempPID += tagPion;
-    }
-    if (selKaon(track, KaIdMethod)) {
-      tempPID += tagKaon;
-    }
-    if (selProton(track, PrIdMethod)) {
-      tempPID += tagProton;
-    }
-    if (selElectron(track, ElIdMethod)) {
-      tempPID += tagElectron;
-    }
-    if (selDeuteron(track, DeIdMethod)) {
-      tempPID += tagDeuteron;
-    }
-
-    return tempPID;
-  }
-
-  // V0 PID checks
-  template <typename T>
-  bool V0SelPion(T track, int& IdMethod)
-  {
-    if (selPion(track, IdMethod)) {
-      return true;
-    }
-    return false;
-  }
-
-  template <typename T>
-  bool V0SelProton(T track, int& IdMethod)
-  {
-    if (selProton(track, IdMethod)) {
-      return true;
-    }
-    return false;
-  }
-
-  template <typename T>
-  int FindV0Tag(T posDaughterTrack, T negDaughterTrack, int& posPiIdMethod, int& posPrIdMethod, int& negPiIdMethod, int& negPrIdMethod)
-  {
-
     bool posIsPion = false;
     bool posIsProton = false;
     bool negIsPion = false;
     bool negIsProton = false;
 
-    int V0TagValue = 0;
+    int v0TagValue = 0;
 
     // Check if positive track is pion or proton
-    if (V0SelPion(posDaughterTrack, posPiIdMethod))
+    if (selPion(posDaughterTrack, posPiIdMethod))
       posIsPion = true; // Coming From K0s    -> PiPlus + PiMinus and AntiLambda -> PiPlus + AntiProton
-    if (V0SelProton(posDaughterTrack, posPrIdMethod))
+    if (selProton(posDaughterTrack, posPrIdMethod))
       posIsProton = true; // Coming From Lambda -> proton + PiMinus
-    if (V0SelPion(negDaughterTrack, negPiIdMethod))
+    if (selPion(negDaughterTrack, negPiIdMethod))
       negIsPion = true; // Coming From K0s       -> PiPlus + PiMinus and Lambda -> proton + PiMinus
-    if (V0SelProton(negDaughterTrack, negPrIdMethod))
+    if (selProton(negDaughterTrack, negPrIdMethod))
       negIsProton = true; // Coming From AntiLambda -> PiPlus + AntiProton
 
     if (posIsPion && negIsPion) {
-      V0TagValue += 1;
-    } // It is K0s
+      v0TagValue += 1; // It is K0s
+    }
     if (posIsProton && negIsPion) {
-      V0TagValue += 2;
-    } // It is Lambda
+      v0TagValue += 2; // It is Lambda
+    }
     if (posIsPion && negIsProton) {
-      V0TagValue += 4;
-    } // It is AntiLambda
+      v0TagValue += 4; // It is AntiLambda
+    }
+    return v0TagValue;
+  }
 
-    return V0TagValue;
+  template <typename T, typename U>
+  int findCollisionIndexTag(const T& v0, const U& posDaughterTrack, const U& negDaughterTrack)
+  {
+    int v0daughterCollisionIndexTag = 0;
+    if (v0.collisionId() == posDaughterTrack.collisionId()) {
+      v0daughterCollisionIndexTag = +1;
+    }
+    if (v0.collisionId() == negDaughterTrack.collisionId()) {
+      v0daughterCollisionIndexTag = +2;
+    }
+    if (posDaughterTrack.collisionId() == negDaughterTrack.collisionId()) {
+      v0daughterCollisionIndexTag = +4;
+    }
+    return v0daughterCollisionIndexTag;
   }
 
   template <typename T>
   bool selK0s(T v0)
   {
-    if (mLowK0s < v0.mK0Short() && v0.mK0Short() < mHighK0s && 0.1 < v0.pt() && v0.pt() < 1.5
-        //  && TMath::Abs(v0.eta()) < 0.5
-        && TMath::Abs(v0.rapidity(pdgDB->Mass(310))) < 0.5) {
+    if (mLowK0s < v0.mK0Short() && v0.mK0Short() < mHighK0s && 0.1 < v0.pt() && v0.pt() < 1.5 && TMath::Abs(v0.rapidity(pdgDB->Mass(310))) < 0.5) {
       return true;
     } else {
       return false;
     }
   }
 
-  // Insertion Sort  // Using insertion sort when array is almost sorted
-  void InsertionSortVector(std::vector<int64_t>& UnsortedVector)
-  {
-    for (uint i = 1; i < UnsortedVector.size(); i++) {
-      int currentElement = UnsortedVector[i]; // Element to be Inserted at correct position
-      int j;                                  //(j+1) is the correct position of current element
-      for (j = i - 1; j >= 0 && (UnsortedVector[j] > currentElement); j--) {
-        UnsortedVector[j + 1] = UnsortedVector[j];
-      }
-      UnsortedVector[j + 1] = currentElement;
-    }
-  }
-
-  // 03-Sorting a Vector Of Vector
-  void InsertionSortVectorOfVector(std::vector<std::vector<int64_t>>& UnsortedVector)
-  {
-    for (uint i = 1; i < UnsortedVector.size(); i++) {
-      std::vector<int64_t> currentElement = UnsortedVector[i]; // Element to be Inserted at correct position
-      int j;                                                   //(j+1) is the correct position of current element
-      for (j = i - 1; j >= 0 && (UnsortedVector[j][0] > currentElement[0]); j--) {
-        UnsortedVector[j + 1] = UnsortedVector[j];
-      }
-      UnsortedVector[j + 1] = currentElement;
-    }
-  }
-
   template <typename T>
-  int64_t FindIteratorPosition(int64_t globalIDX, T tracks)
-  {
-    int64_t iterPos = 0;
-    for (auto trk : tracks) {
-      if (trk.globalIndex() == globalIDX) {
-        return iterPos;
-      } else if (trk.globalIndex() > globalIDX) {
-        return -1;
-      }
-      iterPos++;
-    }
-    return -1; // -1 means track is not in the table
-  }
-
-  template <typename T, typename U, typename V>
-  void fillV0_K0sFullInformation(T v0, U posDaughterTrack, V negDaughterTrack, int posIdMethod, int negIdMethod)
-  {
-    recoV0s.fill(HIST("hV0s_table_0_2_01_K0s_Mass_Selected"), v0.mK0Short());
-    recoV0s.fill(HIST("hV0s_table_0_2_02_K0s_P"), v0.p());
-    recoV0s.fill(HIST("hV0s_table_0_2_03_K0s_Pt"), v0.pt());
-    recoV0s.fill(HIST("hV0s_table_0_2_04_K0s_Eta"), v0.eta());
-    recoV0s.fill(HIST("hV0s_table_0_2_05_K0s_Phi"), v0.phi());
-    recoV0s.fill(HIST("hV0s_table_0_2_06_K0s_Rapidity"), v0.rapidity(pdgDB->Mass(310)));
-
-    // posDaughterTrack
-    recoV0s.fill(HIST("hV0s_table_0_3_01_K0s_Pi_P"), posDaughterTrack.p());
-    recoV0s.fill(HIST("hV0s_table_0_3_01_K0s_Pi_Pt"), posDaughterTrack.pt());                       // Axis_pt            ;
-    recoV0s.fill(HIST("hV0s_table_0_3_01_K0s_Pi_tpcInnerParam"), posDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-    recoV0s.fill(HIST("hV0s_table_0_3_01_K0s_Pi_tofExpMom"), posDaughterTrack.tofExpMom());         // Axis_tofExpMom     ;
-
-    recoV0s.fill(HIST("hV0s_table_0_3_02_K0s_Pi_Eta"), posDaughterTrack.eta());
-    recoV0s.fill(HIST("hV0s_table_0_3_03_K0s_Pi_Phi"), posDaughterTrack.phi());
-    recoV0s.fill(HIST("hV0s_table_0_3_04_K0s_Pi_Rapidity"), posDaughterTrack.rapidity(pdgDB->Mass(211)));
-    recoV0s.fill(HIST("hV0s_table_0_3_05_K0s_Pi_isPVContributor"), posDaughterTrack.isPVContributor());
-    recoV0s.fill(HIST("hV0s_table_0_3_06_K0s_Pi_isGlobalTrack"), posDaughterTrack.isGlobalTrack());
-    recoV0s.fill(HIST("hV0s_table_0_3_07_K0s_Pi_DcaXY"), posDaughterTrack.dcaXY());
-    recoV0s.fill(HIST("hV0s_table_0_3_08_K0s_Pi_DcaZ"), posDaughterTrack.dcaZ());
-    if (posIdMethod == 0) {
-      // momemtum
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_01"), posDaughterTrack.p(), posDaughterTrack.pt());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_02"), posDaughterTrack.p(), posDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_03"), posDaughterTrack.p(), posDaughterTrack.tofExpMom());     // Axis_tofExpMom     ;
-      // tpcSignal
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_05"), posDaughterTrack.p(), posDaughterTrack.tpcSignal());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_02_05"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tpcSignal()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_03_05"), posDaughterTrack.tofExpMom(), posDaughterTrack.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_06"), posDaughterTrack.p(), posDaughterTrack.beta());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_02_06"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.beta()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_03_06"), posDaughterTrack.tofExpMom(), posDaughterTrack.beta());     // Axis_tofExpMom     ;
-      // Look at Pion
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_20"), posDaughterTrack.p(), posDaughterTrack.tpcNSigmaPi());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_01_20"), posDaughterTrack.pt(), posDaughterTrack.tpcNSigmaPi());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_02_20"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tpcNSigmaPi()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_03_20"), posDaughterTrack.tofExpMom(), posDaughterTrack.tpcNSigmaPi());     // Axis_tofExpMom     ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_21"), posDaughterTrack.p(), posDaughterTrack.tofNSigmaPi());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_01_21"), posDaughterTrack.pt(), posDaughterTrack.tofNSigmaPi());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_02_21"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tofNSigmaPi()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_03_21"), posDaughterTrack.tofExpMom(), posDaughterTrack.tofNSigmaPi());     // Axis_tofExpMom     ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_20_21"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tofNSigmaPi());   // Axis_tpcInnerParam ;
-    }
-    if (posIdMethod == 1) {
-      // momemtum
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_01"), posDaughterTrack.p(), posDaughterTrack.pt());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_02"), posDaughterTrack.p(), posDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_03"), posDaughterTrack.p(), posDaughterTrack.tofExpMom());     // Axis_tofExpMom     ;
-      // tpcSignal
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_05"), posDaughterTrack.p(), posDaughterTrack.tpcSignal());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_02_05"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tpcSignal()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_03_05"), posDaughterTrack.tofExpMom(), posDaughterTrack.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_06"), posDaughterTrack.p(), posDaughterTrack.beta());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_02_06"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.beta()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_03_06"), posDaughterTrack.tofExpMom(), posDaughterTrack.beta());     // Axis_tofExpMom     ;
-      // Look at Pion
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_20"), posDaughterTrack.p(), posDaughterTrack.tpcNSigmaPi());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_01_20"), posDaughterTrack.pt(), posDaughterTrack.tpcNSigmaPi());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_02_20"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tpcNSigmaPi()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_03_20"), posDaughterTrack.tofExpMom(), posDaughterTrack.tpcNSigmaPi());     // Axis_tofExpMom     ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_21"), posDaughterTrack.p(), posDaughterTrack.tofNSigmaPi());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_01_21"), posDaughterTrack.pt(), posDaughterTrack.tofNSigmaPi());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_02_21"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tofNSigmaPi()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_03_21"), posDaughterTrack.tofExpMom(), posDaughterTrack.tofNSigmaPi());     // Axis_tofExpMom     ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_20_21"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tofNSigmaPi());   // Axis_tpcInnerParam ;
-    }
-    //
-    // negDaughterTrack
-    recoV0s.fill(HIST("hV0s_table_0_3_01_K0s_Pi_P"), negDaughterTrack.p());
-    recoV0s.fill(HIST("hV0s_table_0_3_01_K0s_Pi_Pt"), negDaughterTrack.pt());                       // Axis_pt            ;
-    recoV0s.fill(HIST("hV0s_table_0_3_01_K0s_Pi_tpcInnerParam"), negDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-    recoV0s.fill(HIST("hV0s_table_0_3_01_K0s_Pi_tofExpMom"), negDaughterTrack.tofExpMom());         // Axis_tofExpMom     ;
-
-    recoV0s.fill(HIST("hV0s_table_0_3_02_K0s_Pi_Eta"), negDaughterTrack.eta());
-    recoV0s.fill(HIST("hV0s_table_0_3_03_K0s_Pi_Phi"), negDaughterTrack.phi());
-    recoV0s.fill(HIST("hV0s_table_0_3_04_K0s_Pi_Rapidity"), negDaughterTrack.rapidity(pdgDB->Mass(211)));
-    recoV0s.fill(HIST("hV0s_table_0_3_05_K0s_Pi_isPVContributor"), negDaughterTrack.isPVContributor());
-    recoV0s.fill(HIST("hV0s_table_0_3_06_K0s_Pi_isGlobalTrack"), negDaughterTrack.isGlobalTrack());
-    recoV0s.fill(HIST("hV0s_table_0_3_07_K0s_Pi_DcaXY"), negDaughterTrack.dcaXY());
-    recoV0s.fill(HIST("hV0s_table_0_3_08_K0s_Pi_DcaZ"), negDaughterTrack.dcaZ());
-    if (negIdMethod == 0) {
-      // momemtum
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_01"), negDaughterTrack.p(), negDaughterTrack.pt());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_02"), negDaughterTrack.p(), negDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_03"), negDaughterTrack.p(), negDaughterTrack.tofExpMom());     // Axis_tofExpMom     ;
-      // tpcSignal
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_05"), negDaughterTrack.p(), negDaughterTrack.tpcSignal());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_02_05"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tpcSignal()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_03_05"), negDaughterTrack.tofExpMom(), negDaughterTrack.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_06"), negDaughterTrack.p(), negDaughterTrack.beta());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_02_06"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.beta()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_03_06"), negDaughterTrack.tofExpMom(), negDaughterTrack.beta());     // Axis_tofExpMom     ;
-      // Look at Pion
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_20"), negDaughterTrack.p(), negDaughterTrack.tpcNSigmaPi());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_01_20"), negDaughterTrack.pt(), negDaughterTrack.tpcNSigmaPi());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_02_20"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tpcNSigmaPi()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_03_20"), negDaughterTrack.tofExpMom(), negDaughterTrack.tpcNSigmaPi());     // Axis_tofExpMom     ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_00_21"), negDaughterTrack.p(), negDaughterTrack.tofNSigmaPi());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_01_21"), negDaughterTrack.pt(), negDaughterTrack.tofNSigmaPi());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_02_21"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tofNSigmaPi()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_03_21"), negDaughterTrack.tofExpMom(), negDaughterTrack.tofNSigmaPi());     // Axis_tofExpMom     ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id0_Axis_20_21"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tofNSigmaPi());   // Axis_tpcInnerParam ;
-    }
-    if (negIdMethod == 1) {
-      // momemtum
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_01"), negDaughterTrack.p(), negDaughterTrack.pt());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_02"), negDaughterTrack.p(), negDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_03"), negDaughterTrack.p(), negDaughterTrack.tofExpMom());     // Axis_tofExpMom     ;
-      // tpcSignal
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_05"), negDaughterTrack.p(), negDaughterTrack.tpcSignal());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_02_05"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tpcSignal()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_03_05"), negDaughterTrack.tofExpMom(), negDaughterTrack.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_06"), negDaughterTrack.p(), negDaughterTrack.beta());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_02_06"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.beta()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_03_06"), negDaughterTrack.tofExpMom(), negDaughterTrack.beta());     // Axis_tofExpMom     ;
-      // Look at Pion
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_20"), negDaughterTrack.p(), negDaughterTrack.tpcNSigmaPi());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_01_20"), negDaughterTrack.pt(), negDaughterTrack.tpcNSigmaPi());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_02_20"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tpcNSigmaPi()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_03_20"), negDaughterTrack.tofExpMom(), negDaughterTrack.tpcNSigmaPi());     // Axis_tofExpMom     ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_00_21"), negDaughterTrack.p(), negDaughterTrack.tofNSigmaPi());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_01_21"), negDaughterTrack.pt(), negDaughterTrack.tofNSigmaPi());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_02_21"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tofNSigmaPi()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_03_21"), negDaughterTrack.tofExpMom(), negDaughterTrack.tofNSigmaPi());     // Axis_tofExpMom     ;
-      recoV0s.fill(HIST("hV0s_table_0_3_10_K0s_Pi_Id1_Axis_20_21"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tofNSigmaPi());   // Axis_tpcInnerParam ;
-    }
-    //
-  }
-
-  template <typename T, typename U, typename V>
-  void fillV0_K0sSelectedInformation(T v0, U posDaughterTrack, V negDaughterTrack, int posIdMethod, int negIdMethod)
-  {
-    recoV0s.fill(HIST("hV0s_0_2_01_K0s_Mass_Selected_LambdaMass"), v0.mLambda());
-    recoV0s.fill(HIST("hV0s_0_2_01_K0s_Mass_Selected_AntiLambdaMass"), v0.mAntiLambda());
-    recoV0s.fill(HIST("hV0s_0_2_01_K0s_Mass_Selected"), v0.mK0Short());
-    recoV0s.fill(HIST("hV0s_0_2_02_K0s_P"), v0.p());
-    recoV0s.fill(HIST("hV0s_0_2_03_K0s_Pt"), v0.pt());
-    recoV0s.fill(HIST("hV0s_0_2_04_K0s_Eta"), v0.eta());
-    recoV0s.fill(HIST("hV0s_0_2_05_K0s_Phi"), v0.phi());
-    recoV0s.fill(HIST("hV0s_0_2_06_K0s_Rapidity"), v0.rapidity(pdgDB->Mass(310)));
-
-    // posDaughterTrack
-    recoV0s.fill(HIST("hV0s_0_3_01_K0s_Pi_P"), posDaughterTrack.p());
-    recoV0s.fill(HIST("hV0s_0_3_01_K0s_Pi_Pt"), posDaughterTrack.pt());                       // Axis_pt            ;
-    recoV0s.fill(HIST("hV0s_0_3_01_K0s_Pi_tpcInnerParam"), posDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-    recoV0s.fill(HIST("hV0s_0_3_01_K0s_Pi_tofExpMom"), posDaughterTrack.tofExpMom());         // Axis_tofExpMom     ;
-
-    recoV0s.fill(HIST("hV0s_0_3_02_K0s_Pi_Eta"), posDaughterTrack.eta());
-    recoV0s.fill(HIST("hV0s_0_3_03_K0s_Pi_Phi"), posDaughterTrack.phi());
-    recoV0s.fill(HIST("hV0s_0_3_04_K0s_Pi_Rapidity"), posDaughterTrack.rapidity(pdgDB->Mass(211)));
-    recoV0s.fill(HIST("hV0s_0_3_05_K0s_Pi_isPVContributor"), posDaughterTrack.isPVContributor());
-    recoV0s.fill(HIST("hV0s_0_3_06_K0s_Pi_isGlobalTrack"), posDaughterTrack.isGlobalTrack());
-    recoV0s.fill(HIST("hV0s_0_3_07_K0s_Pi_DcaXY"), posDaughterTrack.dcaXY());
-    recoV0s.fill(HIST("hV0s_0_3_08_K0s_Pi_DcaZ"), posDaughterTrack.dcaZ());
-    if (posIdMethod == 0) {
-      // momemtum
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_01"), posDaughterTrack.p(), posDaughterTrack.pt());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_02"), posDaughterTrack.p(), posDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_03"), posDaughterTrack.p(), posDaughterTrack.tofExpMom());     // Axis_tofExpMom     ;
-      // tpcSignal
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_05"), posDaughterTrack.p(), posDaughterTrack.tpcSignal());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_02_05"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tpcSignal()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_03_05"), posDaughterTrack.tofExpMom(), posDaughterTrack.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_06"), posDaughterTrack.p(), posDaughterTrack.beta());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_02_06"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.beta()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_03_06"), posDaughterTrack.tofExpMom(), posDaughterTrack.beta());     // Axis_tofExpMom     ;
-      // Look at Pion
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_20"), posDaughterTrack.p(), posDaughterTrack.tpcNSigmaPi());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_01_20"), posDaughterTrack.pt(), posDaughterTrack.tpcNSigmaPi());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_02_20"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tpcNSigmaPi()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_03_20"), posDaughterTrack.tofExpMom(), posDaughterTrack.tpcNSigmaPi());     // Axis_tofExpMom     ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_21"), posDaughterTrack.p(), posDaughterTrack.tofNSigmaPi());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_01_21"), posDaughterTrack.pt(), posDaughterTrack.tofNSigmaPi());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_02_21"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tofNSigmaPi()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_03_21"), posDaughterTrack.tofExpMom(), posDaughterTrack.tofNSigmaPi());     // Axis_tofExpMom     ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_20_21"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tofNSigmaPi());   // Axis_tpcInnerParam ;
-    }
-    if (posIdMethod == 1) {
-      // momemtum
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_01"), posDaughterTrack.p(), posDaughterTrack.pt());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_02"), posDaughterTrack.p(), posDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_03"), posDaughterTrack.p(), posDaughterTrack.tofExpMom());     // Axis_tofExpMom     ;
-      // tpcSignal
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_05"), posDaughterTrack.p(), posDaughterTrack.tpcSignal());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_02_05"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tpcSignal()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_03_05"), posDaughterTrack.tofExpMom(), posDaughterTrack.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_06"), posDaughterTrack.p(), posDaughterTrack.beta());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_02_06"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.beta()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_03_06"), posDaughterTrack.tofExpMom(), posDaughterTrack.beta());     // Axis_tofExpMom     ;
-      // Look at Pion
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_20"), posDaughterTrack.p(), posDaughterTrack.tpcNSigmaPi());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_01_20"), posDaughterTrack.pt(), posDaughterTrack.tpcNSigmaPi());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_02_20"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tpcNSigmaPi()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_03_20"), posDaughterTrack.tofExpMom(), posDaughterTrack.tpcNSigmaPi());     // Axis_tofExpMom     ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_21"), posDaughterTrack.p(), posDaughterTrack.tofNSigmaPi());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_01_21"), posDaughterTrack.pt(), posDaughterTrack.tofNSigmaPi());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_02_21"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tofNSigmaPi()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_03_21"), posDaughterTrack.tofExpMom(), posDaughterTrack.tofNSigmaPi());     // Axis_tofExpMom     ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_20_21"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tofNSigmaPi());   // Axis_tpcInnerParam ;
-    }
-    //
-
-    // negDaughterTrack
-    recoV0s.fill(HIST("hV0s_0_3_01_K0s_Pi_P"), negDaughterTrack.p());
-    recoV0s.fill(HIST("hV0s_0_3_01_K0s_Pi_Pt"), negDaughterTrack.pt());                       // Axis_pt            ;
-    recoV0s.fill(HIST("hV0s_0_3_01_K0s_Pi_tpcInnerParam"), negDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-    recoV0s.fill(HIST("hV0s_0_3_01_K0s_Pi_tofExpMom"), negDaughterTrack.tofExpMom());         // Axis_tofExpMom     ;
-
-    recoV0s.fill(HIST("hV0s_0_3_02_K0s_Pi_Eta"), negDaughterTrack.eta());
-    recoV0s.fill(HIST("hV0s_0_3_03_K0s_Pi_Phi"), negDaughterTrack.phi());
-    recoV0s.fill(HIST("hV0s_0_3_04_K0s_Pi_Rapidity"), negDaughterTrack.rapidity(pdgDB->Mass(211)));
-    recoV0s.fill(HIST("hV0s_0_3_05_K0s_Pi_isPVContributor"), negDaughterTrack.isPVContributor());
-    recoV0s.fill(HIST("hV0s_0_3_06_K0s_Pi_isGlobalTrack"), negDaughterTrack.isGlobalTrack());
-    recoV0s.fill(HIST("hV0s_0_3_07_K0s_Pi_DcaXY"), negDaughterTrack.dcaXY());
-    recoV0s.fill(HIST("hV0s_0_3_08_K0s_Pi_DcaZ"), negDaughterTrack.dcaZ());
-    if (negIdMethod == 0) {
-      // momemtum
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_01"), negDaughterTrack.p(), negDaughterTrack.pt());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_02"), negDaughterTrack.p(), negDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_03"), negDaughterTrack.p(), negDaughterTrack.tofExpMom());     // Axis_tofExpMom     ;
-      // tpcSignal
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_05"), negDaughterTrack.p(), negDaughterTrack.tpcSignal());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_02_05"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tpcSignal()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_03_05"), negDaughterTrack.tofExpMom(), negDaughterTrack.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_06"), negDaughterTrack.p(), negDaughterTrack.beta());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_02_06"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.beta()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_03_06"), negDaughterTrack.tofExpMom(), negDaughterTrack.beta());     // Axis_tofExpMom     ;
-      // Look at Pion
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_20"), negDaughterTrack.p(), negDaughterTrack.tpcNSigmaPi());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_01_20"), negDaughterTrack.pt(), negDaughterTrack.tpcNSigmaPi());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_02_20"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tpcNSigmaPi()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_03_20"), negDaughterTrack.tofExpMom(), negDaughterTrack.tpcNSigmaPi());     // Axis_tofExpMom     ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_00_21"), negDaughterTrack.p(), negDaughterTrack.tofNSigmaPi());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_01_21"), negDaughterTrack.pt(), negDaughterTrack.tofNSigmaPi());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_02_21"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tofNSigmaPi()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_03_21"), negDaughterTrack.tofExpMom(), negDaughterTrack.tofNSigmaPi());     // Axis_tofExpMom     ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id0_Axis_20_21"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tofNSigmaPi());   // Axis_tpcInnerParam ;
-    }
-    if (negIdMethod == 1) {
-      // momemtum
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_01"), negDaughterTrack.p(), negDaughterTrack.pt());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_02"), negDaughterTrack.p(), negDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_03"), negDaughterTrack.p(), negDaughterTrack.tofExpMom());     // Axis_tofExpMom     ;
-      // tpcSignal
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_05"), negDaughterTrack.p(), negDaughterTrack.tpcSignal());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_02_05"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tpcSignal()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_03_05"), negDaughterTrack.tofExpMom(), negDaughterTrack.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_06"), negDaughterTrack.p(), negDaughterTrack.beta());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_02_06"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.beta()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_03_06"), negDaughterTrack.tofExpMom(), negDaughterTrack.beta());     // Axis_tofExpMom     ;
-      // Look at Pion
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_20"), negDaughterTrack.p(), negDaughterTrack.tpcNSigmaPi());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_01_20"), negDaughterTrack.pt(), negDaughterTrack.tpcNSigmaPi());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_02_20"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tpcNSigmaPi()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_03_20"), negDaughterTrack.tofExpMom(), negDaughterTrack.tpcNSigmaPi());     // Axis_tofExpMom     ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_00_21"), negDaughterTrack.p(), negDaughterTrack.tofNSigmaPi());             // Axis_p             ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_01_21"), negDaughterTrack.pt(), negDaughterTrack.tofNSigmaPi());            // Axis_pt            ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_02_21"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tofNSigmaPi()); // Axis_tpcInnerParam ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_03_21"), negDaughterTrack.tofExpMom(), negDaughterTrack.tofNSigmaPi());     // Axis_tofExpMom     ;
-      recoV0s.fill(HIST("hV0s_0_3_10_K0s_Pi_Id1_Axis_20_21"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tofNSigmaPi());   // Axis_tpcInnerParam ;
-    }
-    //
-
-    int v0daughterCollisionIndexTag = 0;
-    if (v0.collisionId() == posDaughterTrack.collisionId()) {
-      v0daughterCollisionIndexTag = +1;
-    }
-    if (v0.collisionId() == negDaughterTrack.collisionId()) {
-      v0daughterCollisionIndexTag = +2;
-    }
-    if (posDaughterTrack.collisionId() == negDaughterTrack.collisionId()) {
-      v0daughterCollisionIndexTag = +4;
-    }
-    recoV0s.fill(HIST("hV0s_0_4_01_K0s_v0DaughterCollisionIndexTag"), v0daughterCollisionIndexTag);
-  }
-
-  template <typename T, typename U, typename V>
-  void fillK0sSelectedInformation(T v0, U posDaughterTrack, V negDaughterTrack, int posIdMethod, int negIdMethod)
-  {
-    recoK0s.fill(HIST("hK0s_2_01_K0s_Mass_Selected_LambdaMass"), v0.mLambda());
-    recoK0s.fill(HIST("hK0s_2_01_K0s_Mass_Selected_AntiLambdaMass"), v0.mAntiLambda());
-    recoK0s.fill(HIST("hK0s_2_01_Mass_Selected"), v0.mK0Short());
-    recoK0s.fill(HIST("hK0s_2_02_P"), v0.p());
-    recoK0s.fill(HIST("hK0s_2_03_Pt"), v0.pt());
-    recoK0s.fill(HIST("hK0s_2_04_Eta"), v0.eta());
-    recoK0s.fill(HIST("hK0s_2_05_Phi"), v0.phi());
-    recoK0s.fill(HIST("hK0s_2_06_Rapidity"), v0.rapidity(pdgDB->Mass(310)));
-
-    // posDaughterTrack
-    recoK0s.fill(HIST("hK0s_3_01_Pion_P"), posDaughterTrack.p());
-    recoK0s.fill(HIST("hK0s_3_01_Pion_Pt"), posDaughterTrack.pt());                       // Axis_pt            ;
-    recoK0s.fill(HIST("hK0s_3_01_Pion_tpcInnerParam"), posDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-    recoK0s.fill(HIST("hK0s_3_01_Pion_tofExpMom"), posDaughterTrack.tofExpMom());         // Axis_tofExpMom     ;
-
-    recoK0s.fill(HIST("hK0s_3_02_Pion_Eta"), posDaughterTrack.eta());
-    recoK0s.fill(HIST("hK0s_3_03_Pion_Phi"), posDaughterTrack.phi());
-    recoK0s.fill(HIST("hK0s_3_04_Pion_Rapidity"), posDaughterTrack.rapidity(pdgDB->Mass(211)));
-    recoK0s.fill(HIST("hK0s_3_05_Daughter_isPVContributor"), posDaughterTrack.isPVContributor());
-    recoK0s.fill(HIST("hK0s_3_06_Daughter_isGlobalTrack"), posDaughterTrack.isGlobalTrack());
-    recoK0s.fill(HIST("hK0s_3_07_Daughter_DcaXY"), posDaughterTrack.dcaXY());
-    recoK0s.fill(HIST("hK0s_3_08_Daughter_DcaZ"), posDaughterTrack.dcaZ());
-
-    if (posIdMethod == 0) {
-      // momemtum
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_00_01"), posDaughterTrack.p(), posDaughterTrack.pt());            // Axis_pt            ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_00_02"), posDaughterTrack.p(), posDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_00_03"), posDaughterTrack.p(), posDaughterTrack.tofExpMom());     // Axis_tofExpMom     ;
-      // tpcSignal
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_00_05"), posDaughterTrack.p(), posDaughterTrack.tpcSignal());             // Axis_p             ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_02_05"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tpcSignal()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_03_05"), posDaughterTrack.tofExpMom(), posDaughterTrack.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_00_06"), posDaughterTrack.p(), posDaughterTrack.beta());             // Axis_p             ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_02_06"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.beta()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_03_06"), posDaughterTrack.tofExpMom(), posDaughterTrack.beta());     // Axis_tofExpMom     ;
-      // Look at Pion
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_00_20"), posDaughterTrack.p(), posDaughterTrack.tpcNSigmaPi());             // Axis_p             ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_01_20"), posDaughterTrack.pt(), posDaughterTrack.tpcNSigmaPi());            // Axis_pt            ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_02_20"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tpcNSigmaPi()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_03_20"), posDaughterTrack.tofExpMom(), posDaughterTrack.tpcNSigmaPi());     // Axis_tofExpMom     ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_00_21"), posDaughterTrack.p(), posDaughterTrack.tofNSigmaPi());             // Axis_p             ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_01_21"), posDaughterTrack.pt(), posDaughterTrack.tofNSigmaPi());            // Axis_pt            ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_02_21"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tofNSigmaPi()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_03_21"), posDaughterTrack.tofExpMom(), posDaughterTrack.tofNSigmaPi());     // Axis_tofExpMom     ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_20_21"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tofNSigmaPi());   // Axis_tpcInnerParam ;
-    }
-    if (posIdMethod == 1) {
-      // momemtum
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_00_01"), posDaughterTrack.p(), posDaughterTrack.pt());            // Axis_pt            ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_00_02"), posDaughterTrack.p(), posDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_00_03"), posDaughterTrack.p(), posDaughterTrack.tofExpMom());     // Axis_tofExpMom     ;
-      // tpcSignal
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_00_05"), posDaughterTrack.p(), posDaughterTrack.tpcSignal());             // Axis_p             ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_02_05"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tpcSignal()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_03_05"), posDaughterTrack.tofExpMom(), posDaughterTrack.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_00_06"), posDaughterTrack.p(), posDaughterTrack.beta());             // Axis_p             ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_02_06"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.beta()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_03_06"), posDaughterTrack.tofExpMom(), posDaughterTrack.beta());     // Axis_tofExpMom     ;
-      // Look at Pion
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_00_20"), posDaughterTrack.p(), posDaughterTrack.tpcNSigmaPi());             // Axis_p             ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_01_20"), posDaughterTrack.pt(), posDaughterTrack.tpcNSigmaPi());            // Axis_pt            ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_02_20"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tpcNSigmaPi()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_03_20"), posDaughterTrack.tofExpMom(), posDaughterTrack.tpcNSigmaPi());     // Axis_tofExpMom     ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_00_21"), posDaughterTrack.p(), posDaughterTrack.tofNSigmaPi());             // Axis_p             ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_01_21"), posDaughterTrack.pt(), posDaughterTrack.tofNSigmaPi());            // Axis_pt            ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_02_21"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tofNSigmaPi()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_03_21"), posDaughterTrack.tofExpMom(), posDaughterTrack.tofNSigmaPi());     // Axis_tofExpMom     ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_20_21"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tofNSigmaPi());   // Axis_tpcInnerParam ;
-    }
-    // negDaughterTrack
-    recoK0s.fill(HIST("hK0s_3_01_Pion_P"), negDaughterTrack.p());
-    recoK0s.fill(HIST("hK0s_3_01_Pion_Pt"), negDaughterTrack.pt());                       // Axis_pt            ;
-    recoK0s.fill(HIST("hK0s_3_01_Pion_tpcInnerParam"), negDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-    recoK0s.fill(HIST("hK0s_3_01_Pion_tofExpMom"), negDaughterTrack.tofExpMom());         // Axis_tofExpMom     ;
-
-    recoK0s.fill(HIST("hK0s_3_02_Pion_Eta"), negDaughterTrack.eta());
-    recoK0s.fill(HIST("hK0s_3_03_Pion_Phi"), negDaughterTrack.phi());
-    recoK0s.fill(HIST("hK0s_3_04_Pion_Rapidity"), negDaughterTrack.rapidity(pdgDB->Mass(211)));
-    recoK0s.fill(HIST("hK0s_3_05_Daughter_isPVContributor"), negDaughterTrack.isPVContributor());
-    recoK0s.fill(HIST("hK0s_3_06_Daughter_isGlobalTrack"), negDaughterTrack.isGlobalTrack());
-    recoK0s.fill(HIST("hK0s_3_07_Daughter_DcaXY"), negDaughterTrack.dcaXY());
-    recoK0s.fill(HIST("hK0s_3_08_Daughter_DcaZ"), negDaughterTrack.dcaZ());
-
-    if (negIdMethod == 0) {
-      // momemtum
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_00_01"), negDaughterTrack.p(), negDaughterTrack.pt());            // Axis_pt            ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_00_02"), negDaughterTrack.p(), negDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_00_03"), negDaughterTrack.p(), negDaughterTrack.tofExpMom());     // Axis_tofExpMom     ;
-      // tpcSignal
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_00_05"), negDaughterTrack.p(), negDaughterTrack.tpcSignal());             // Axis_p             ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_02_05"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tpcSignal()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_03_05"), negDaughterTrack.tofExpMom(), negDaughterTrack.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_00_06"), negDaughterTrack.p(), negDaughterTrack.beta());             // Axis_p             ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_02_06"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.beta()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_03_06"), negDaughterTrack.tofExpMom(), negDaughterTrack.beta());     // Axis_tofExpMom     ;
-      // Look at Pion
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_00_20"), negDaughterTrack.p(), negDaughterTrack.tpcNSigmaPi());             // Axis_p             ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_01_20"), negDaughterTrack.pt(), negDaughterTrack.tpcNSigmaPi());            // Axis_pt            ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_02_20"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tpcNSigmaPi()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_03_20"), negDaughterTrack.tofExpMom(), negDaughterTrack.tpcNSigmaPi());     // Axis_tofExpMom     ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_00_21"), negDaughterTrack.p(), negDaughterTrack.tofNSigmaPi());             // Axis_p             ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_01_21"), negDaughterTrack.pt(), negDaughterTrack.tofNSigmaPi());            // Axis_pt            ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_02_21"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tofNSigmaPi()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_03_21"), negDaughterTrack.tofExpMom(), negDaughterTrack.tofNSigmaPi());     // Axis_tofExpMom     ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id0_Axis_20_21"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tofNSigmaPi());   // Axis_tpcInnerParam ;
-    }
-    if (negIdMethod == 1) {
-      // momemtum
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_00_01"), negDaughterTrack.p(), negDaughterTrack.pt());            // Axis_pt            ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_00_02"), negDaughterTrack.p(), negDaughterTrack.tpcInnerParam()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_00_03"), negDaughterTrack.p(), negDaughterTrack.tofExpMom());     // Axis_tofExpMom     ;
-      // tpcSignal
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_00_05"), negDaughterTrack.p(), negDaughterTrack.tpcSignal());             // Axis_p             ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_02_05"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tpcSignal()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_03_05"), negDaughterTrack.tofExpMom(), negDaughterTrack.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_00_06"), negDaughterTrack.p(), negDaughterTrack.beta());             // Axis_p             ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_02_06"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.beta()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_03_06"), negDaughterTrack.tofExpMom(), negDaughterTrack.beta());     // Axis_tofExpMom     ;
-      // Look at Pion
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_00_20"), negDaughterTrack.p(), negDaughterTrack.tpcNSigmaPi());             // Axis_p             ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_01_20"), negDaughterTrack.pt(), negDaughterTrack.tpcNSigmaPi());            // Axis_pt            ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_02_20"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tpcNSigmaPi()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_03_20"), negDaughterTrack.tofExpMom(), negDaughterTrack.tpcNSigmaPi());     // Axis_tofExpMom     ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_00_21"), negDaughterTrack.p(), negDaughterTrack.tofNSigmaPi());             // Axis_p             ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_01_21"), negDaughterTrack.pt(), negDaughterTrack.tofNSigmaPi());            // Axis_pt            ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_02_21"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tofNSigmaPi()); // Axis_tpcInnerParam ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_03_21"), negDaughterTrack.tofExpMom(), negDaughterTrack.tofNSigmaPi());     // Axis_tofExpMom     ;
-      recoK0s.fill(HIST("hK0s_3_10_K0s_Pi_Id1_Axis_20_21"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tofNSigmaPi());   // Axis_tpcInnerParam ;
-    }
-    //
-
-    int v0daughterCollisionIndexTag = 0;
-    if (v0.collisionId() == posDaughterTrack.collisionId()) {
-      v0daughterCollisionIndexTag = +1;
-    }
-    if (v0.collisionId() == negDaughterTrack.collisionId()) {
-      v0daughterCollisionIndexTag = +2;
-    }
-    if (posDaughterTrack.collisionId() == negDaughterTrack.collisionId()) {
-      v0daughterCollisionIndexTag = +4;
-    }
-
-    recoK0s.fill(HIST("hK0s_4_01_v0DaughterCollisionIndexTag"), v0daughterCollisionIndexTag);
-  }
-
-  template <typename T>
-  void FindRepeatEntries(std::vector<int64_t> ParticleList, T hist)
+  void findRepeatedEntries(std::vector<int64_t> ParticleList, T hist)
   {
     for (uint ii = 0; ii < ParticleList.size(); ii++) {
       int nCommonCount = 0; // checking the repeat number of track
@@ -1693,23 +765,8 @@ struct isospin_fluctuation {
     }
   }
 
-  void FillNewListFromOldList(std::vector<int64_t>& NewList, std::vector<int64_t> OldList)
-  {
-    for (uint ii = 0; ii < OldList.size(); ii++) {
-      bool RepeatEntry = false;
-      for (uint jj = 0; jj < NewList.size(); jj++) {
-        if (OldList[ii] == NewList[jj]) {
-          RepeatEntry = true;
-        }
-      }
-      if (!RepeatEntry) {
-        NewList.push_back(OldList[ii]);
-      }
-    }
-  }
-
   template <typename T>
-  bool checkTrackSelection(T track, std::vector<int64_t> DauParticleList, uint& skippingPosition, int& rejectionTag)
+  bool checkTrackSelection(const T& track, const std::vector<int64_t>& DauParticleList, uint& skippingPosition, int& rejectionTag)
   {
     if (track.tpcNClsCrossedRows() < 70) {
       rejectionTag = 1;
@@ -1728,7 +785,6 @@ struct isospin_fluctuation {
     if (track.globalIndex() == DauParticleList[skippingPosition]) {
       FlagDaughterTrack = true;
       skippingPosition++;
-      // LOG(info) <<"*******************iEvent = "<<iEvent<<" :: ID = "<<collIdx<<" :: index skipping = "<<track.globalIndex();
     }
     if (FlagDaughterTrack) {
       rejectionTag = 4;
@@ -1741,423 +797,221 @@ struct isospin_fluctuation {
     return true;
   }
 
-  template <typename T>
-  void FillFullTrackQA(T track)
+  enum histRegEnum {
+    v0TableFull = 0,
+    v0TablePostK0sCheck,
+    v0TablePostMassCut,
+    v0TablePostSelectionCut,
+    recoK0sPreSel,
+    recoK0sPostSel,
+    recoTrackPreSel,
+    recoTrackPostSel,
+    recoAnalysisDir
+  };
+
+  static constexpr std::string_view histRegDir[] = {
+    "v0Table/Full/",
+    "v0Table/postK0sCheck/",
+    "v0Table/postMassCut/",
+    "v0Table/postSelectionCut/",
+    "recoK0s/PreSel/",
+    "recoK0s/PostSel/",
+    "recoTracks/PreSel/",
+    "recoTracks/PostSel/",
+    "recoAnalysis/"};
+
+  enum pidEnum {
+    kPi = 0, // dont use kPion, kKaon, as these enumeration
+    kKa,     // are already defined in $ROOTSYS/root/include/TPDGCode.h
+    kPr,
+    kEl,
+    kDe
+  };
+
+  static constexpr std::string_view pidDir[] = {
+    "Pi/",
+    "Ka/",
+    "Pr/",
+    "El/",
+    "De/"};
+
+  enum detEnum {
+    tpcId = 0,
+    tofId,
+    NoId
+  };
+
+  static constexpr std::string_view detDir[] = {
+    "tpcId/",
+    "tofId/",
+    "NoId/"};
+
+  template <int Mode, int pidMode, int detMode, bool fillSignal, typename H, typename T>
+  void fillIdentificationQA(H histReg, const T& track)
   {
-    // FullTrack Information
-    recoTracks.fill(HIST("htracks_00_1_0_FullTrack_P"), track.p());
-    recoTracks.fill(HIST("htracks_00_1_0_FullTrack_tpcInnerParam"), track.tpcInnerParam());
-    recoTracks.fill(HIST("htracks_00_1_0_FullTrack_tofExpMom"), track.tofExpMom());
+    float tpcNSigmaVal = -999, tofNSigmaVal = -999;
+    switch (pidMode) {
+      case kPi:
+        tpcNSigmaVal = track.tpcNSigmaPi();
+        tofNSigmaVal = track.tofNSigmaPi();
+        break;
+      case kKa:
+        tpcNSigmaVal = track.tpcNSigmaKa();
+        tofNSigmaVal = track.tofNSigmaKa();
+        break;
+      case kPr:
+        tpcNSigmaVal = track.tpcNSigmaPr();
+        tofNSigmaVal = track.tofNSigmaPr();
+        break;
+      case kEl:
+        tpcNSigmaVal = track.tpcNSigmaEl();
+        tofNSigmaVal = track.tofNSigmaEl();
+        break;
+      case kDe:
+        tpcNSigmaVal = track.tpcNSigmaDe();
+        tofNSigmaVal = track.tofNSigmaDe();
+        break;
+      default:
+        tpcNSigmaVal = -999, tofNSigmaVal = -999;
+        break;
+    }
 
-    recoTracks.fill(HIST("hTracks_00_1_1_FullTrack_Pt"), track.pt());
-    recoTracks.fill(HIST("hTracks_00_1_2_FullTrack_Eta"), track.eta());
-    recoTracks.fill(HIST("hTracks_00_1_3_FullTrack_Phi"), track.phi());
-    recoTracks.fill(HIST("hTracks_00_1_4_FullTrack_DcaXY"), track.dcaXY());
-    recoTracks.fill(HIST("hTracks_00_1_5_FullTrack_DcaZ"), track.dcaZ());
-    recoTracks.fill(HIST("hTracks_00_1_6_FullTrack_Sign"), track.sign());
+    if (fillSignal) {
+      // momemtum
+      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h20_p_pt"), track.p(), track.pt());
+      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h21_p_tpcInnerParam"), track.p(), track.tpcInnerParam());
+      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h22_p_tofExpMom"), track.p(), track.tofExpMom());
+      // tpcSignal
+      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h23_p_tpcSignal"), track.p(), track.tpcSignal());
+      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h24_tpcInnerParam_tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
+      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h25_tofExpMom_tpcSignal"), track.tofExpMom(), track.tpcSignal());
+      // tofBeta
+      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h26_p_beta"), track.p(), track.beta());
+      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h27_tpcInnerParam_beta"), track.tpcInnerParam(), track.beta());
+      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h28_tofExpMom_beta"), track.tofExpMom(), track.beta());
+    }
+    // NSigma
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h29_p_tpcNSigma"), track.p(), tpcNSigmaVal);
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h30_pt_tpcNSigma"), track.pt(), tpcNSigmaVal);
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h31_tpcInnerParam_tpcNSigma"), track.tpcInnerParam(), tpcNSigmaVal);
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h32_tofExpMom_tpcNSigma"), track.tofExpMom(), tpcNSigmaVal);
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h33_p_tofNSigma"), track.p(), tofNSigmaVal);
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h34_pt_tofNSigma"), track.pt(), tofNSigmaVal);
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h35_tpcInnerParam_tofNSigma"), track.tpcInnerParam(), tofNSigmaVal);
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h36_tofExpMom_tofNSigma"), track.tofExpMom(), tofNSigmaVal);
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h37_tpcNSigma_tofNSigma"), tpcNSigmaVal, tofNSigmaVal);
+  }
 
+  template <int Mode, typename T>
+  void fillTrackQA(T track)
+  {
+    // FullTrack
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h01_p"), track.p());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h02_pt"), track.pt());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h03_tpcInnerParam"), track.tpcInnerParam());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h04_tofExpMom"), track.tofExpMom());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h05_eta"), track.eta());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h06_phi"), track.phi());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h07_dcaXY"), track.dcaXY());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h08_dcaZ"), track.dcaZ());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h09_sign"), track.sign());
     // DcaXY
-    recoTracks.fill(HIST("htracks_00_1_7_FullTrack_00_DcaXY"), track.p(), track.dcaXY());
-    recoTracks.fill(HIST("htracks_00_1_7_FullTrack_01_DcaXY"), track.pt(), track.dcaXY());
-    recoTracks.fill(HIST("htracks_00_1_7_FullTrack_02_DcaXY"), track.tpcInnerParam(), track.dcaXY());
-    recoTracks.fill(HIST("htracks_00_1_7_FullTrack_03_DcaXY"), track.tofExpMom(), track.dcaXY());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h10_p_dcaXY"), track.p(), track.dcaXY());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h11_pt_dcaXY"), track.pt(), track.dcaXY());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h12_tpcInnerParam_dcaXY"), track.tpcInnerParam(), track.dcaXY());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h13_tofExpMom_dcaXY"), track.tofExpMom(), track.dcaXY());
 
     // DcaZ
-    recoTracks.fill(HIST("htracks_00_1_7_FullTrack_00_DcaZ"), track.p(), track.dcaZ());
-    recoTracks.fill(HIST("htracks_00_1_7_FullTrack_01_DcaZ"), track.pt(), track.dcaZ());
-    recoTracks.fill(HIST("htracks_00_1_7_FullTrack_02_DcaZ"), track.tpcInnerParam(), track.dcaZ());
-    recoTracks.fill(HIST("htracks_00_1_7_FullTrack_03_DcaZ"), track.tofExpMom(), track.dcaZ());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h14_p_dcaZ"), track.p(), track.dcaZ());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h15_pt_dcaZ"), track.pt(), track.dcaZ());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h16_tpcInnerParam_dcaZ"), track.tpcInnerParam(), track.dcaZ());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h17_tofExpMom_dcaZ"), track.tofExpMom(), track.dcaZ());
 
     // momemtum
-    recoTracks.fill(HIST("hTracks_00_2_1_FullTrack_Axis_00_01"), track.p(), track.pt());            // Axis_pt            ;
-    recoTracks.fill(HIST("hTracks_00_2_2_FullTrack_Axis_00_02"), track.p(), track.tpcInnerParam()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("hTracks_00_2_3_FullTrack_Axis_00_03"), track.p(), track.tofExpMom());     // Axis_tofExpMom     ;
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h20_p_pt"), track.p(), track.pt());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h21_p_tpcInnerParam"), track.p(), track.tpcInnerParam());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h22_p_tofExpMom"), track.p(), track.tofExpMom());
 
     // tpcSignal
-    recoTracks.fill(HIST("hTracks_00_3_1_FullTrack_Axis_00_05"), track.p(), track.tpcSignal());             // Axis_p             ;
-    recoTracks.fill(HIST("hTracks_00_3_2_FullTrack_Axis_02_05"), track.tpcInnerParam(), track.tpcSignal()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("hTracks_00_3_3_FullTrack_Axis_03_05"), track.tofExpMom(), track.tpcSignal());     // Axis_tofExpMom     ;
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h23_p_tpcSignal"), track.p(), track.tpcSignal());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h24_tpcInnerParam_tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h25_tofExpMom_tpcSignal"), track.tofExpMom(), track.tpcSignal());
 
     // tofBeta
-    recoTracks.fill(HIST("hTracks_00_4_1_FullTrack_Axis_00_06"), track.p(), track.beta());             // Axis_p             ;
-    recoTracks.fill(HIST("hTracks_00_4_2_FullTrack_Axis_02_06"), track.tpcInnerParam(), track.beta()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("hTracks_00_4_3_FullTrack_Axis_03_06"), track.tofExpMom(), track.beta());     // Axis_tofExpMom     ;
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h26_p_beta"), track.p(), track.beta());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h27_tpcInnerParam_beta"), track.tpcInnerParam(), track.beta());
+    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h28_tofExpMom_beta"), track.tofExpMom(), track.beta());
 
-    // Look at Pion
-    recoTracks.fill(HIST("hTracks_00_5_1_FullTrack_Axis_00_20"), track.p(), track.tpcNSigmaPi());             // Axis_p             ;
-    recoTracks.fill(HIST("hTracks_00_5_2_FullTrack_Axis_01_20"), track.pt(), track.tpcNSigmaPi());            // Axis_pt            ;
-    recoTracks.fill(HIST("hTracks_00_5_3_FullTrack_Axis_02_20"), track.tpcInnerParam(), track.tpcNSigmaPi()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("hTracks_00_5_4_FullTrack_Axis_03_20"), track.tofExpMom(), track.tpcNSigmaPi());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("hTracks_00_5_5_FullTrack_Axis_00_21"), track.p(), track.tofNSigmaPi());             // Axis_p             ;
-    recoTracks.fill(HIST("hTracks_00_5_6_FullTrack_Axis_01_21"), track.pt(), track.tofNSigmaPi());            // Axis_pt            ;
-    recoTracks.fill(HIST("hTracks_00_5_7_FullTrack_Axis_02_21"), track.tpcInnerParam(), track.tofNSigmaPi()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("hTracks_00_5_8_FullTrack_Axis_03_21"), track.tofExpMom(), track.tofNSigmaPi());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("hTracks_00_5_9_FullTrack_Axis_20_21"), track.tpcNSigmaPi(), track.tofNSigmaPi());   // Axis_tpcInnerParam ;
-    // Pion
-    // Look at Kaon
-    recoTracks.fill(HIST("hTracks_00_6_1_FullTrack_Axis_00_22"), track.p(), track.tpcNSigmaKa());             // Axis_p             ;
-    recoTracks.fill(HIST("hTracks_00_6_2_FullTrack_Axis_01_22"), track.pt(), track.tpcNSigmaKa());            // Axis_pt            ;
-    recoTracks.fill(HIST("hTracks_00_6_3_FullTrack_Axis_02_22"), track.tpcInnerParam(), track.tpcNSigmaKa()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("hTracks_00_6_4_FullTrack_Axis_03_22"), track.tofExpMom(), track.tpcNSigmaKa());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("hTracks_00_6_5_FullTrack_Axis_00_23"), track.p(), track.tofNSigmaKa());             // Axis_p             ;
-    recoTracks.fill(HIST("hTracks_00_6_6_FullTrack_Axis_01_23"), track.pt(), track.tofNSigmaKa());            // Axis_pt            ;
-    recoTracks.fill(HIST("hTracks_00_6_7_FullTrack_Axis_02_23"), track.tpcInnerParam(), track.tofNSigmaKa()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("hTracks_00_6_8_FullTrack_Axis_03_23"), track.tofExpMom(), track.tofNSigmaKa());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("hTracks_00_6_9_FullTrack_Axis_22_23"), track.tpcNSigmaKa(), track.tofNSigmaKa());   // Axis_tpcInnerParam ;
-    // Kaon
-    // Look at Proton
-    recoTracks.fill(HIST("hTracks_00_7_1_FullTrack_Axis_00_24"), track.p(), track.tpcNSigmaPr());             // Axis_p             ;
-    recoTracks.fill(HIST("hTracks_00_7_2_FullTrack_Axis_01_24"), track.pt(), track.tpcNSigmaPr());            // Axis_pt            ;
-    recoTracks.fill(HIST("hTracks_00_7_3_FullTrack_Axis_02_24"), track.tpcInnerParam(), track.tpcNSigmaPr()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("hTracks_00_7_4_FullTrack_Axis_03_24"), track.tofExpMom(), track.tpcNSigmaPr());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("hTracks_00_7_5_FullTrack_Axis_00_25"), track.p(), track.tofNSigmaPr());             // Axis_p             ;
-    recoTracks.fill(HIST("hTracks_00_7_6_FullTrack_Axis_01_25"), track.pt(), track.tofNSigmaPr());            // Axis_pt            ;
-    recoTracks.fill(HIST("hTracks_00_7_7_FullTrack_Axis_02_25"), track.tpcInnerParam(), track.tofNSigmaPr()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("hTracks_00_7_8_FullTrack_Axis_03_25"), track.tofExpMom(), track.tofNSigmaPr());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("hTracks_00_7_9_FullTrack_Axis_24_25"), track.tpcNSigmaPr(), track.tofNSigmaPr());   // Axis_tpcInnerParam ;
-    // Proton
-    // Look at Electron
-    recoTracks.fill(HIST("hTracks_00_8_1_FullTrack_Axis_00_26"), track.p(), track.tpcNSigmaEl());             // Axis_p             ;
-    recoTracks.fill(HIST("hTracks_00_8_2_FullTrack_Axis_01_26"), track.pt(), track.tpcNSigmaEl());            // Axis_pt            ;
-    recoTracks.fill(HIST("hTracks_00_8_3_FullTrack_Axis_02_26"), track.tpcInnerParam(), track.tpcNSigmaEl()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("hTracks_00_8_4_FullTrack_Axis_03_26"), track.tofExpMom(), track.tpcNSigmaEl());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("hTracks_00_8_5_FullTrack_Axis_00_27"), track.p(), track.tofNSigmaEl());             // Axis_p             ;
-    recoTracks.fill(HIST("hTracks_00_8_6_FullTrack_Axis_01_27"), track.pt(), track.tofNSigmaEl());            // Axis_pt            ;
-    recoTracks.fill(HIST("hTracks_00_8_7_FullTrack_Axis_02_27"), track.tpcInnerParam(), track.tofNSigmaEl()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("hTracks_00_8_8_FullTrack_Axis_03_27"), track.tofExpMom(), track.tofNSigmaEl());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("hTracks_00_8_9_FullTrack_Axis_26_27"), track.tpcNSigmaEl(), track.tofNSigmaEl());   // Axis_tpcInnerParam ;
-    // Electron
-    // Look at Deuteron
-    recoTracks.fill(HIST("hTracks_00_9_1_FullTrack_Axis_00_28"), track.p(), track.tpcNSigmaDe());             // Axis_p             ;
-    recoTracks.fill(HIST("hTracks_00_9_2_FullTrack_Axis_01_28"), track.pt(), track.tpcNSigmaDe());            // Axis_pt            ;
-    recoTracks.fill(HIST("hTracks_00_9_3_FullTrack_Axis_02_28"), track.tpcInnerParam(), track.tpcNSigmaDe()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("hTracks_00_9_4_FullTrack_Axis_03_28"), track.tofExpMom(), track.tpcNSigmaDe());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("hTracks_00_9_5_FullTrack_Axis_00_29"), track.p(), track.tofNSigmaDe());             // Axis_p             ;
-    recoTracks.fill(HIST("hTracks_00_9_6_FullTrack_Axis_01_29"), track.pt(), track.tofNSigmaDe());            // Axis_pt            ;
-    recoTracks.fill(HIST("hTracks_00_9_7_FullTrack_Axis_02_29"), track.tpcInnerParam(), track.tofNSigmaDe()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("hTracks_00_9_8_FullTrack_Axis_03_29"), track.tofExpMom(), track.tofNSigmaDe());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("hTracks_00_9_9_FullTrack_Axis_28_29"), track.tpcNSigmaDe(), track.tofNSigmaDe());   // Axis_tpcInnerParam ;
-    // Deuteron
-    //
+    fillIdentificationQA<Mode, kPi, NoId, false>(recoTracks, track); // Look at Pion
+    fillIdentificationQA<Mode, kKa, NoId, false>(recoTracks, track); // Look at Kaon
+    fillIdentificationQA<Mode, kPr, NoId, false>(recoTracks, track); // Look at Proton
+    fillIdentificationQA<Mode, kEl, NoId, false>(recoTracks, track); // Look at Electron
+    fillIdentificationQA<Mode, kDe, NoId, false>(recoTracks, track); // Look at Deuteron
   }
 
-  template <typename T>
-  void FillSelectedTrackQA(T track)
+  template <int Mode, int pidMode, int detMode, typename H, typename T>
+  void fillV0DaughterQA(H histReg, const T& track, double particleMass)
   {
-    // Full Track Information
-    recoTracks.fill(HIST("htracks_11_1_0_SelectedTrack_P"), track.p());
-    recoTracks.fill(HIST("htracks_11_1_0_SelectedTrack_tpcInnerParam"), track.tpcInnerParam());
-    recoTracks.fill(HIST("htracks_11_1_0_SelectedTrack_tofExpMom"), track.tofExpMom());
+    // K0s-Daughter Info
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h01_p"), track.p());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h02_pt"), track.pt());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h03_tpcInnerParam"), track.tpcInnerParam());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h04_tofExpMom"), track.tofExpMom());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h05_eta"), track.eta());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h06_phi"), track.phi());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h07_rapidity"), track.rapidity(particleMass));
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h08_isPVContributor"), track.isPVContributor());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h09_isGlobalTrack"), track.isGlobalTrack());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h10_dcaXY"), track.dcaXY());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h11_dcaZ"), track.dcaZ());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h12_p_dcaXY"), track.p(), track.dcaXY());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h13_p_dcaZ"), track.p(), track.dcaZ());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h14_pt_dcaXY"), track.pt(), track.dcaXY());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h15_pt_dcaZ"), track.pt(), track.dcaZ());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h16_dcaXYwide"), track.dcaXY());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h17_dcaZwide"), track.dcaZ());
 
-    recoTracks.fill(HIST("htracks_11_1_1_SelectedTrack_Pt"), track.pt());
-    recoTracks.fill(HIST("htracks_11_1_2_SelectedTrack_Eta"), track.eta());
-    recoTracks.fill(HIST("htracks_11_1_3_SelectedTrack_Phi"), track.phi());
-    recoTracks.fill(HIST("htracks_11_1_4_SelectedTrack_DcaXY"), track.dcaXY());
-    recoTracks.fill(HIST("htracks_11_1_5_SelectedTrack_DcaZ"), track.dcaZ());
-    recoTracks.fill(HIST("htracks_11_1_6_SelectedTrack_Sign"), track.sign());
-
-    // DcaXY
-    recoTracks.fill(HIST("htracks_11_1_7_SelectedTrack_00_DcaXY"), track.p(), track.dcaXY());
-    recoTracks.fill(HIST("htracks_11_1_7_SelectedTrack_01_DcaXY"), track.pt(), track.dcaXY());
-    recoTracks.fill(HIST("htracks_11_1_7_SelectedTrack_02_DcaXY"), track.tpcInnerParam(), track.dcaXY());
-    recoTracks.fill(HIST("htracks_11_1_7_SelectedTrack_03_DcaXY"), track.tofExpMom(), track.dcaXY());
-
-    // DcaZ
-    recoTracks.fill(HIST("htracks_11_1_7_SelectedTrack_00_DcaZ"), track.p(), track.dcaZ());
-    recoTracks.fill(HIST("htracks_11_1_7_SelectedTrack_01_DcaZ"), track.pt(), track.dcaZ());
-    recoTracks.fill(HIST("htracks_11_1_7_SelectedTrack_02_DcaZ"), track.tpcInnerParam(), track.dcaZ());
-    recoTracks.fill(HIST("htracks_11_1_7_SelectedTrack_03_DcaZ"), track.tofExpMom(), track.dcaZ());
-
-    // momemtum
-    recoTracks.fill(HIST("htracks_11_2_1_SelectedTrack_Axis_00_01"), track.p(), track.pt());            // Axis_pt            ;
-    recoTracks.fill(HIST("htracks_11_2_2_SelectedTrack_Axis_00_02"), track.p(), track.tpcInnerParam()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("htracks_11_2_3_SelectedTrack_Axis_00_03"), track.p(), track.tofExpMom());     // Axis_tofExpMom     ;
-
-    // tpcSignal
-    recoTracks.fill(HIST("htracks_11_3_1_SelectedTrack_Axis_00_05"), track.p(), track.tpcSignal());             // Axis_p             ;
-    recoTracks.fill(HIST("htracks_11_3_2_SelectedTrack_Axis_02_05"), track.tpcInnerParam(), track.tpcSignal()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("htracks_11_3_3_SelectedTrack_Axis_03_05"), track.tofExpMom(), track.tpcSignal());     // Axis_tofExpMom     ;
-
-    // tofBeta
-    recoTracks.fill(HIST("htracks_11_4_1_SelectedTrack_Axis_00_06"), track.p(), track.beta());             // Axis_p             ;
-    recoTracks.fill(HIST("htracks_11_4_2_SelectedTrack_Axis_02_06"), track.tpcInnerParam(), track.beta()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("htracks_11_4_3_SelectedTrack_Axis_03_06"), track.tofExpMom(), track.beta());     // Axis_tofExpMom     ;
-
-    // Look at Pion
-    recoTracks.fill(HIST("htracks_11_5_1_SelectedTrack_Axis_00_20"), track.p(), track.tpcNSigmaPi());             // Axis_p             ;
-    recoTracks.fill(HIST("htracks_11_5_2_SelectedTrack_Axis_01_20"), track.pt(), track.tpcNSigmaPi());            // Axis_pt            ;
-    recoTracks.fill(HIST("htracks_11_5_3_SelectedTrack_Axis_02_20"), track.tpcInnerParam(), track.tpcNSigmaPi()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("htracks_11_5_4_SelectedTrack_Axis_03_20"), track.tofExpMom(), track.tpcNSigmaPi());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("htracks_11_5_5_SelectedTrack_Axis_00_21"), track.p(), track.tofNSigmaPi());             // Axis_p             ;
-    recoTracks.fill(HIST("htracks_11_5_6_SelectedTrack_Axis_01_21"), track.pt(), track.tofNSigmaPi());            // Axis_pt            ;
-    recoTracks.fill(HIST("htracks_11_5_7_SelectedTrack_Axis_02_21"), track.tpcInnerParam(), track.tofNSigmaPi()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("htracks_11_5_8_SelectedTrack_Axis_03_21"), track.tofExpMom(), track.tofNSigmaPi());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("htracks_11_5_9_SelectedTrack_Axis_20_21"), track.tpcNSigmaPi(), track.tofNSigmaPi());   // Axis_tpcInnerParam ;
-    // Pion
-    // Look at Kaon
-    recoTracks.fill(HIST("htracks_11_6_1_SelectedTrack_Axis_00_22"), track.p(), track.tpcNSigmaKa());             // Axis_p             ;
-    recoTracks.fill(HIST("htracks_11_6_2_SelectedTrack_Axis_01_22"), track.pt(), track.tpcNSigmaKa());            // Axis_pt            ;
-    recoTracks.fill(HIST("htracks_11_6_3_SelectedTrack_Axis_02_22"), track.tpcInnerParam(), track.tpcNSigmaKa()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("htracks_11_6_4_SelectedTrack_Axis_03_22"), track.tofExpMom(), track.tpcNSigmaKa());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("htracks_11_6_5_SelectedTrack_Axis_00_23"), track.p(), track.tofNSigmaKa());             // Axis_p             ;
-    recoTracks.fill(HIST("htracks_11_6_6_SelectedTrack_Axis_01_23"), track.pt(), track.tofNSigmaKa());            // Axis_pt            ;
-    recoTracks.fill(HIST("htracks_11_6_7_SelectedTrack_Axis_02_23"), track.tpcInnerParam(), track.tofNSigmaKa()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("htracks_11_6_8_SelectedTrack_Axis_03_23"), track.tofExpMom(), track.tofNSigmaKa());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("htracks_11_6_9_SelectedTrack_Axis_22_23"), track.tpcNSigmaKa(), track.tofNSigmaKa());   // Axis_tpcInnerParam ;
-    // Kaon
-    // Look at Proton
-    recoTracks.fill(HIST("htracks_11_7_1_SelectedTrack_Axis_00_24"), track.p(), track.tpcNSigmaPr());             // Axis_p             ;
-    recoTracks.fill(HIST("htracks_11_7_2_SelectedTrack_Axis_01_24"), track.pt(), track.tpcNSigmaPr());            // Axis_pt            ;
-    recoTracks.fill(HIST("htracks_11_7_3_SelectedTrack_Axis_02_24"), track.tpcInnerParam(), track.tpcNSigmaPr()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("htracks_11_7_4_SelectedTrack_Axis_03_24"), track.tofExpMom(), track.tpcNSigmaPr());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("htracks_11_7_5_SelectedTrack_Axis_00_25"), track.p(), track.tofNSigmaPr());             // Axis_p             ;
-    recoTracks.fill(HIST("htracks_11_7_6_SelectedTrack_Axis_01_25"), track.pt(), track.tofNSigmaPr());            // Axis_pt            ;
-    recoTracks.fill(HIST("htracks_11_7_7_SelectedTrack_Axis_02_25"), track.tpcInnerParam(), track.tofNSigmaPr()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("htracks_11_7_8_SelectedTrack_Axis_03_25"), track.tofExpMom(), track.tofNSigmaPr());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("htracks_11_7_9_SelectedTrack_Axis_24_25"), track.tpcNSigmaPr(), track.tofNSigmaPr());   // Axis_tpcInnerParam ;
-    // Proton
-    // Look at Electron
-    recoTracks.fill(HIST("htracks_11_8_1_SelectedTrack_Axis_00_26"), track.p(), track.tpcNSigmaEl());             // Axis_p             ;
-    recoTracks.fill(HIST("htracks_11_8_2_SelectedTrack_Axis_01_26"), track.pt(), track.tpcNSigmaEl());            // Axis_pt            ;
-    recoTracks.fill(HIST("htracks_11_8_3_SelectedTrack_Axis_02_26"), track.tpcInnerParam(), track.tpcNSigmaEl()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("htracks_11_8_4_SelectedTrack_Axis_03_26"), track.tofExpMom(), track.tpcNSigmaEl());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("htracks_11_8_5_SelectedTrack_Axis_00_27"), track.p(), track.tofNSigmaEl());             // Axis_p             ;
-    recoTracks.fill(HIST("htracks_11_8_6_SelectedTrack_Axis_01_27"), track.pt(), track.tofNSigmaEl());            // Axis_pt            ;
-    recoTracks.fill(HIST("htracks_11_8_7_SelectedTrack_Axis_02_27"), track.tpcInnerParam(), track.tofNSigmaEl()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("htracks_11_8_8_SelectedTrack_Axis_03_27"), track.tofExpMom(), track.tofNSigmaEl());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("htracks_11_8_9_SelectedTrack_Axis_26_27"), track.tpcNSigmaEl(), track.tofNSigmaEl());   // Axis_tpcInnerParam ;
-    // Electron
-    // Look at Deuteron
-    recoTracks.fill(HIST("htracks_11_9_1_SelectedTrack_Axis_00_28"), track.p(), track.tpcNSigmaDe());             // Axis_p             ;
-    recoTracks.fill(HIST("htracks_11_9_2_SelectedTrack_Axis_01_28"), track.pt(), track.tpcNSigmaDe());            // Axis_pt            ;
-    recoTracks.fill(HIST("htracks_11_9_3_SelectedTrack_Axis_02_28"), track.tpcInnerParam(), track.tpcNSigmaDe()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("htracks_11_9_4_SelectedTrack_Axis_03_28"), track.tofExpMom(), track.tpcNSigmaDe());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("htracks_11_9_5_SelectedTrack_Axis_00_29"), track.p(), track.tofNSigmaDe());             // Axis_p             ;
-    recoTracks.fill(HIST("htracks_11_9_6_SelectedTrack_Axis_01_29"), track.pt(), track.tofNSigmaDe());            // Axis_pt            ;
-    recoTracks.fill(HIST("htracks_11_9_7_SelectedTrack_Axis_02_29"), track.tpcInnerParam(), track.tofNSigmaDe()); // Axis_tpcInnerParam ;
-    recoTracks.fill(HIST("htracks_11_9_8_SelectedTrack_Axis_03_29"), track.tofExpMom(), track.tofNSigmaDe());     // Axis_tofExpMom     ;
-    recoTracks.fill(HIST("htracks_11_9_9_SelectedTrack_Axis_28_29"), track.tpcNSigmaDe(), track.tofNSigmaDe());   // Axis_tpcInnerParam ;
-    // Deuteron
-    //
+    fillIdentificationQA<Mode, kPi, detMode, true>(histReg, track);
   }
 
-  template <typename T>
-  void fillPionQA(T track, int IdMethod)
+  template <int Mode, typename H, typename T, typename U>
+  void fillV0QA(H histReg, const T& v0, const U& posDaughterTrack, const U& negDaughterTrack, const int& v0Tag, const int& v0DauCollisionIndexTag, const int& posPiIdMethod, const int& negPiIdMethod)
   {
-    if (IdMethod == 0) {
-      // tpcSignal
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id0_1_Axis_00_05"), track.p(), track.tpcSignal());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id0_1_Axis_02_05"), track.tpcInnerParam(), track.tpcSignal()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id0_1_Axis_03_05"), track.tofExpMom(), track.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id0_2_Axis_00_06"), track.p(), track.beta());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id0_2_Axis_02_06"), track.tpcInnerParam(), track.beta()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id0_2_Axis_03_06"), track.tofExpMom(), track.beta());     // Axis_tofExpMom     ;
+    histReg.fill(HIST(histRegDir[Mode]) + HIST("h01_K0s_Mass"), v0.mK0Short());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST("h02_Lambda_Mass"), v0.mLambda());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST("h03_AntiLambda_Mass"), v0.mAntiLambda());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST("h04_v0DaughterCollisionIndexTag"), v0DauCollisionIndexTag);
+    histReg.fill(HIST(histRegDir[Mode]) + HIST("h05_V0Tag"), v0Tag);
 
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id0_3_1_Axis_00_20"), track.p(), track.tpcNSigmaPi());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id0_3_2_Axis_01_20"), track.pt(), track.tpcNSigmaPi());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id0_3_3_Axis_02_20"), track.tpcInnerParam(), track.tpcNSigmaPi()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id0_3_4_Axis_03_20"), track.tofExpMom(), track.tpcNSigmaPi());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id0_3_5_Axis_00_21"), track.p(), track.tofNSigmaPi());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id0_3_6_Axis_01_21"), track.pt(), track.tofNSigmaPi());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id0_3_7_Axis_02_21"), track.tpcInnerParam(), track.tofNSigmaPi()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id0_3_8_Axis_03_21"), track.tofExpMom(), track.tofNSigmaPi());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id0_3_9_Axis_20_21"), track.tpcNSigmaPi(), track.tofNSigmaPi());   // Axis_tpcInnerParam ;
-    } else if (IdMethod == 1) {
-      // tpcSignal
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id1_1_Axis_00_05"), track.p(), track.tpcSignal());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id1_1_Axis_02_05"), track.tpcInnerParam(), track.tpcSignal()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id1_1_Axis_03_05"), track.tofExpMom(), track.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id1_2_Axis_00_06"), track.p(), track.beta());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id1_2_Axis_02_06"), track.tpcInnerParam(), track.beta()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id1_2_Axis_03_06"), track.tofExpMom(), track.beta());     // Axis_tofExpMom     ;
+    // Topological Cuts
+    histReg.fill(HIST(histRegDir[Mode]) + HIST("h06_dcapostopv"), v0.dcapostopv());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST("h07_dcanegtopv"), v0.dcanegtopv());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST("h08_dcaV0daughters"), v0.dcaV0daughters());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST("h09_v0cosPA"), v0.v0cosPA());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST("h10_v0radius"), v0.v0radius());
 
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id1_3_1_Axis_00_20"), track.p(), track.tpcNSigmaPi());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id1_3_2_Axis_01_20"), track.pt(), track.tpcNSigmaPi());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id1_3_3_Axis_02_20"), track.tpcInnerParam(), track.tpcNSigmaPi()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id1_3_4_Axis_03_20"), track.tofExpMom(), track.tpcNSigmaPi());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id1_3_5_Axis_00_21"), track.p(), track.tofNSigmaPi());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id1_3_6_Axis_01_21"), track.pt(), track.tofNSigmaPi());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id1_3_7_Axis_02_21"), track.tpcInnerParam(), track.tofNSigmaPi()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id1_3_8_Axis_03_21"), track.tofExpMom(), track.tofNSigmaPi());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_11_Pi_Id1_3_9_Axis_20_21"), track.tpcNSigmaPi(), track.tofNSigmaPi());   // Axis_tpcInnerParam ;
+    // K0s-FullInformation
+    histReg.fill(HIST(histRegDir[Mode]) + HIST("h11_mass"), v0.mK0Short());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST("h12_p"), v0.p());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST("h13_pt"), v0.pt());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST("h14_eta"), v0.eta());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST("h15_phi"), v0.phi());
+    histReg.fill(HIST(histRegDir[Mode]) + HIST("h16_rapidity"), v0.rapidity(pdgDB->Mass(310)));
+
+    if (posPiIdMethod == 0) {
+      fillV0DaughterQA<Mode, kPi, tpcId>(histReg, posDaughterTrack, pdgDB->Mass(2212));
+    } else if (posPiIdMethod == 1) {
+      fillV0DaughterQA<Mode, kPi, tofId>(histReg, posDaughterTrack, pdgDB->Mass(2212));
+    } else if (posPiIdMethod == -1) {
+      fillV0DaughterQA<Mode, kPi, NoId>(histReg, posDaughterTrack, pdgDB->Mass(2212));
     }
-  }
 
-  template <typename T>
-  void fillKaonQA(T track, int IdMethod)
-  {
-    if (IdMethod == 0) {
-      // tpcSignal
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id0_1_Axis_00_05"), track.p(), track.tpcSignal());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id0_1_Axis_02_05"), track.tpcInnerParam(), track.tpcSignal()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id0_1_Axis_03_05"), track.tofExpMom(), track.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id0_2_Axis_00_06"), track.p(), track.beta());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id0_2_Axis_02_06"), track.tpcInnerParam(), track.beta()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id0_2_Axis_03_06"), track.tofExpMom(), track.beta());     // Axis_tofExpMom     ;
-
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id0_3_1_Axis_00_22"), track.p(), track.tpcNSigmaKa());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id0_3_2_Axis_01_22"), track.pt(), track.tpcNSigmaKa());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id0_3_3_Axis_02_22"), track.tpcInnerParam(), track.tpcNSigmaKa()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id0_3_4_Axis_03_22"), track.tofExpMom(), track.tpcNSigmaKa());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id0_3_5_Axis_00_23"), track.p(), track.tofNSigmaKa());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id0_3_6_Axis_01_23"), track.pt(), track.tofNSigmaKa());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id0_3_7_Axis_02_23"), track.tpcInnerParam(), track.tofNSigmaKa()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id0_3_8_Axis_03_23"), track.tofExpMom(), track.tofNSigmaKa());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id0_3_9_Axis_22_23"), track.tpcNSigmaKa(), track.tofNSigmaKa());   // Axis_tpcInnerParam ;
-    } else if (IdMethod == 1) {
-      // tpcSignal
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id1_1_Axis_00_05"), track.p(), track.tpcSignal());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id1_1_Axis_02_05"), track.tpcInnerParam(), track.tpcSignal()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id1_1_Axis_03_05"), track.tofExpMom(), track.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id1_2_Axis_00_06"), track.p(), track.beta());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id1_2_Axis_02_06"), track.tpcInnerParam(), track.beta()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id1_2_Axis_03_06"), track.tofExpMom(), track.beta());     // Axis_tofExpMom     ;
-
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id1_3_1_Axis_00_22"), track.p(), track.tpcNSigmaKa());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id1_3_2_Axis_01_22"), track.pt(), track.tpcNSigmaKa());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id1_3_3_Axis_02_22"), track.tpcInnerParam(), track.tpcNSigmaKa()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id1_3_4_Axis_03_22"), track.tofExpMom(), track.tpcNSigmaKa());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id1_3_5_Axis_00_23"), track.p(), track.tofNSigmaKa());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id1_3_6_Axis_01_23"), track.pt(), track.tofNSigmaKa());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id1_3_7_Axis_02_23"), track.tpcInnerParam(), track.tofNSigmaKa()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id1_3_8_Axis_03_23"), track.tofExpMom(), track.tofNSigmaKa());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_12_Ka_Id1_3_9_Axis_22_23"), track.tpcNSigmaKa(), track.tofNSigmaKa());   // Axis_tpcInnerParam ;
-    }
-  }
-
-  template <typename T>
-  void fillProtonQA(T track, int IdMethod)
-  {
-    if (IdMethod == 0) {
-      // tpcSignal
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id0_1_Axis_00_05"), track.p(), track.tpcSignal());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id0_1_Axis_02_05"), track.tpcInnerParam(), track.tpcSignal()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id0_1_Axis_03_05"), track.tofExpMom(), track.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id0_2_Axis_00_06"), track.p(), track.beta());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id0_2_Axis_02_06"), track.tpcInnerParam(), track.beta()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id0_2_Axis_03_06"), track.tofExpMom(), track.beta());     // Axis_tofExpMom     ;
-
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id0_3_1_Axis_00_24"), track.p(), track.tpcNSigmaPr());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id0_3_2_Axis_01_24"), track.pt(), track.tpcNSigmaPr());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id0_3_3_Axis_02_24"), track.tpcInnerParam(), track.tpcNSigmaPr()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id0_3_4_Axis_03_24"), track.tofExpMom(), track.tpcNSigmaPr());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id0_3_5_Axis_00_25"), track.p(), track.tofNSigmaPr());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id0_3_6_Axis_01_25"), track.pt(), track.tofNSigmaPr());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id0_3_7_Axis_02_25"), track.tpcInnerParam(), track.tofNSigmaPr()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id0_3_8_Axis_03_25"), track.tofExpMom(), track.tofNSigmaPr());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id0_3_9_Axis_24_25"), track.tpcNSigmaPr(), track.tofNSigmaPr());   // Axis_tpcInnerParam ;
-    } else if (IdMethod == 1) {
-      // tpcSignal
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id1_1_Axis_00_05"), track.p(), track.tpcSignal());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id1_1_Axis_02_05"), track.tpcInnerParam(), track.tpcSignal()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id1_1_Axis_03_05"), track.tofExpMom(), track.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id1_2_Axis_00_06"), track.p(), track.beta());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id1_2_Axis_02_06"), track.tpcInnerParam(), track.beta()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id1_2_Axis_03_06"), track.tofExpMom(), track.beta());     // Axis_tofExpMom     ;
-
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id1_3_1_Axis_00_24"), track.p(), track.tpcNSigmaPr());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id1_3_2_Axis_01_24"), track.pt(), track.tpcNSigmaPr());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id1_3_3_Axis_02_24"), track.tpcInnerParam(), track.tpcNSigmaPr()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id1_3_4_Axis_03_24"), track.tofExpMom(), track.tpcNSigmaPr());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id1_3_5_Axis_00_25"), track.p(), track.tofNSigmaPr());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id1_3_6_Axis_01_25"), track.pt(), track.tofNSigmaPr());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id1_3_7_Axis_02_25"), track.tpcInnerParam(), track.tofNSigmaPr()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id1_3_8_Axis_03_25"), track.tofExpMom(), track.tofNSigmaPr());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_13_Pr_Id1_3_9_Axis_24_25"), track.tpcNSigmaPr(), track.tofNSigmaPr());   // Axis_tpcInnerParam ;
-    }
-  }
-
-  template <typename T>
-  void fillElectronQA(T track, int IdMethod)
-  {
-    if (IdMethod == 0) {
-      // tpcSignal
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id0_1_Axis_00_05"), track.p(), track.tpcSignal());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id0_1_Axis_02_05"), track.tpcInnerParam(), track.tpcSignal()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id0_1_Axis_03_05"), track.tofExpMom(), track.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id0_2_Axis_00_06"), track.p(), track.beta());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id0_2_Axis_02_06"), track.tpcInnerParam(), track.beta()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id0_2_Axis_03_06"), track.tofExpMom(), track.beta());     // Axis_tofExpMom     ;
-
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id0_3_1_Axis_00_26"), track.p(), track.tpcNSigmaEl());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id0_3_2_Axis_01_26"), track.pt(), track.tpcNSigmaEl());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id0_3_3_Axis_02_26"), track.tpcInnerParam(), track.tpcNSigmaEl()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id0_3_4_Axis_03_26"), track.tofExpMom(), track.tpcNSigmaEl());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id0_3_5_Axis_00_27"), track.p(), track.tofNSigmaEl());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id0_3_6_Axis_01_27"), track.pt(), track.tofNSigmaEl());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id0_3_7_Axis_02_27"), track.tpcInnerParam(), track.tofNSigmaEl()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id0_3_8_Axis_03_27"), track.tofExpMom(), track.tofNSigmaEl());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id0_3_9_Axis_26_27"), track.tpcNSigmaEl(), track.tofNSigmaEl());   // Axis_tpcInnerParam ;
-    } else if (IdMethod == 1) {
-      // tpcSignal
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id1_1_Axis_00_05"), track.p(), track.tpcSignal());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id1_1_Axis_02_05"), track.tpcInnerParam(), track.tpcSignal()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id1_1_Axis_03_05"), track.tofExpMom(), track.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id1_2_Axis_00_06"), track.p(), track.beta());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id1_2_Axis_02_06"), track.tpcInnerParam(), track.beta()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id1_2_Axis_03_06"), track.tofExpMom(), track.beta());     // Axis_tofExpMom     ;
-
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id1_3_1_Axis_00_26"), track.p(), track.tpcNSigmaEl());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id1_3_2_Axis_01_26"), track.pt(), track.tpcNSigmaEl());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id1_3_3_Axis_02_26"), track.tpcInnerParam(), track.tpcNSigmaEl()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id1_3_4_Axis_03_26"), track.tofExpMom(), track.tpcNSigmaEl());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id1_3_5_Axis_00_27"), track.p(), track.tofNSigmaEl());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id1_3_6_Axis_01_27"), track.pt(), track.tofNSigmaEl());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id1_3_7_Axis_02_27"), track.tpcInnerParam(), track.tofNSigmaEl()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id1_3_8_Axis_03_27"), track.tofExpMom(), track.tofNSigmaEl());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_14_El_Id1_3_9_Axis_26_27"), track.tpcNSigmaEl(), track.tofNSigmaEl());   // Axis_tpcInnerParam ;
-    }
-  }
-
-  template <typename T>
-  void fillDeuteronQA(T track, int IdMethod)
-  {
-    if (IdMethod == 0) {
-      // tpcSignal
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id0_1_Axis_00_05"), track.p(), track.tpcSignal());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id0_1_Axis_02_05"), track.tpcInnerParam(), track.tpcSignal()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id0_1_Axis_03_05"), track.tofExpMom(), track.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id0_2_Axis_00_06"), track.p(), track.beta());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id0_2_Axis_02_06"), track.tpcInnerParam(), track.beta()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id0_2_Axis_03_06"), track.tofExpMom(), track.beta());     // Axis_tofExpMom     ;
-
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id0_3_1_Axis_00_28"), track.p(), track.tpcNSigmaDe());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id0_3_2_Axis_01_28"), track.pt(), track.tpcNSigmaDe());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id0_3_3_Axis_02_28"), track.tpcInnerParam(), track.tpcNSigmaDe()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id0_3_4_Axis_03_28"), track.tofExpMom(), track.tpcNSigmaDe());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id0_3_5_Axis_00_29"), track.p(), track.tofNSigmaDe());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id0_3_6_Axis_01_29"), track.pt(), track.tofNSigmaDe());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id0_3_7_Axis_02_29"), track.tpcInnerParam(), track.tofNSigmaDe()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id0_3_8_Axis_03_29"), track.tofExpMom(), track.tofNSigmaDe());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id0_3_9_Axis_28_29"), track.tpcNSigmaDe(), track.tofNSigmaDe());   // Axis_tpcInnerParam ;
-    } else if (IdMethod == 1) {
-      // tpcSignal
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id1_1_Axis_00_05"), track.p(), track.tpcSignal());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id1_1_Axis_02_05"), track.tpcInnerParam(), track.tpcSignal()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id1_1_Axis_03_05"), track.tofExpMom(), track.tpcSignal());     // Axis_tofExpMom     ;
-      // tofBeta
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id1_2_Axis_00_06"), track.p(), track.beta());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id1_2_Axis_02_06"), track.tpcInnerParam(), track.beta()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id1_2_Axis_03_06"), track.tofExpMom(), track.beta());     // Axis_tofExpMom     ;
-
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id1_3_1_Axis_00_28"), track.p(), track.tpcNSigmaDe());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id1_3_2_Axis_01_28"), track.pt(), track.tpcNSigmaDe());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id1_3_3_Axis_02_28"), track.tpcInnerParam(), track.tpcNSigmaDe()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id1_3_4_Axis_03_28"), track.tofExpMom(), track.tpcNSigmaDe());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id1_3_5_Axis_00_29"), track.p(), track.tofNSigmaDe());             // Axis_p             ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id1_3_6_Axis_01_29"), track.pt(), track.tofNSigmaDe());            // Axis_pt            ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id1_3_7_Axis_02_29"), track.tpcInnerParam(), track.tofNSigmaDe()); // Axis_tpcInnerParam ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id1_3_8_Axis_03_29"), track.tofExpMom(), track.tofNSigmaDe());     // Axis_tofExpMom     ;
-      recoAnalysis.fill(HIST("hAnalysis_15_De_Id1_3_9_Axis_28_29"), track.tpcNSigmaDe(), track.tofNSigmaDe());   // Axis_tpcInnerParam ;
+    if (negPiIdMethod == 0) {
+      fillV0DaughterQA<Mode, kPi, tpcId>(histReg, negDaughterTrack, pdgDB->Mass(2212));
+    } else if (negPiIdMethod == 1) {
+      fillV0DaughterQA<Mode, kPi, tofId>(histReg, negDaughterTrack, pdgDB->Mass(2212));
+    } else if (negPiIdMethod == -1) {
+      fillV0DaughterQA<Mode, kPi, NoId>(histReg, negDaughterTrack, pdgDB->Mass(2212));
     }
   }
 
@@ -2174,246 +1028,199 @@ struct isospin_fluctuation {
                         aod::v0data::dcaV0daughters < v0setting_dcav0dau);
 
   using myCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels,
-                                               aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>; // aod::CentFV0As,
+                                               aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
 
   using myTracks = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::pidTOFbeta, aod::pidTOFmass, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullDe>>;
 
+  using myV0s = soa::Filtered<aod::V0Datas>;
+
   // For manual sliceBy
   Preslice<myTracks> TracksPerCollisionPreslice = o2::aod::track::collisionId;
-  Preslice<aod::V0Datas> V0sPerCollisionPreslice = o2::aod::track::collisionId;
-  Preslice<aod::CascDatas> CascadesPerCollisionPreslice = o2::aod::track::collisionId;
+  Preslice<myV0s> V0sPerCollisionPreslice = o2::aod::track::collisionId;
 
-  int CountDebug = 0;
-  int checker = 0;
-  int iEvent = -1;
-  double lowest = 0;
-  double maximum = 0;
-  int dfcount = 0;
-  bool UnusedError = false;
-  int v0count = 0;
+  // Declaring vectors outside the process to avoid slight overhead for stack allocation and deallocation during each iteration.
+  std::vector<int64_t> K0sPosDauList;
+  std::vector<int64_t> K0sNegDauList;
+
+  // FullDauList
+  std::vector<int64_t> FullDauList;
+
   void process(myCollisions const& collisions,
-               soa::Filtered<aod::V0Datas> const& V0s,
-               myTracks const& tracks) // aod::TracksIU const& FullTrack)
+               myV0s const& V0s,
+               myTracks const& tracks)
   {
 
-    std::vector<int64_t> K0sPosList; // int64_t
-    std::vector<int64_t> K0sNegList; // int64_t
+    K0sPosDauList.clear();
+    K0sNegDauList.clear();
+    FullDauList.clear();
 
-    std::vector<std::vector<int64_t>> K0sPosListWithCollision; // int64_t
-    std::vector<std::vector<int64_t>> K0sNegListWithCollision; // int64_t
+    int posPiIdMethod = -1;
+    int posPrIdMethod = -1;
+    int negPiIdMethod = -1;
+    int negPrIdMethod = -1;
 
-    // iterate over all the v0s of current dataframe
+    bool isK0s = false;
+
+    int v0Tag = 0;
+    int trueV0TagValue = 0;
+    int v0DauCollisionIndexTag = 0;
+
     for (const auto& v0 : V0s) {
-      recoV0s.fill(HIST("hV0s_0_0_01_K0s_Mass_Full"), v0.mK0Short());
-      recoV0s.fill(HIST("hV0s_0_0_02_Lambda_Mass_Full"), v0.mLambda());
-      recoV0s.fill(HIST("hV0s_0_0_03_AntiLambda_Mass_Full"), v0.mAntiLambda());
-
-      // cut on dynamic columns for v0 particles
-      if (v0.v0cosPA() < v0setting_cospa)
-        continue; // collision.posX(), collision.posY(), collision.posZ()
-      if (v0.v0radius() < v0setting_radius)
-        continue;
-
       const auto& posDaughterTrack = v0.posTrack_as<myTracks>();
       const auto& negDaughterTrack = v0.negTrack_as<myTracks>();
 
-      int posIdMethod = -1;
-      int negIdMethod = -1;
+      posPiIdMethod = -1;
+      posPrIdMethod = -1;
+      negPiIdMethod = -1;
+      negPrIdMethod = -1;
+      v0Tag = findV0Tag(posDaughterTrack, negDaughterTrack, posPiIdMethod, posPrIdMethod, negPiIdMethod, negPrIdMethod);
+      v0DauCollisionIndexTag = findCollisionIndexTag(v0, posDaughterTrack, negDaughterTrack);
 
-      int posPiIdMethod = -1;
-      int posPrIdMethod = -1;
-      int negPiIdMethod = -1;
-      int negPrIdMethod = -1;
-      int V0Tag = FindV0Tag(posDaughterTrack, negDaughterTrack, posPiIdMethod, posPrIdMethod, negPiIdMethod, negPrIdMethod);
-      // v0count++;
-      // LOG(info)<<"v0count = "<<v0count<<" ::OUTER:: posIdMethod = "<<posIdMethod<<" :: negIdMethod = "<<negIdMethod;
-      bool isK0s = false;
-      bool isLambda = false;
-      bool isAntiLambda = false;
-
-      if ((V0Tag & 1) == 1)
+      isK0s = false;
+      if ((v0Tag & 1) == 1)
         isK0s = true;
-      if ((V0Tag & 2) == 2)
-        isLambda = true;
-      if ((V0Tag & 4) == 4)
-        isAntiLambda = true;
+      trueV0TagValue = 0;
 
-      if (isLambda == isAntiLambda && isLambda != isAntiLambda) {
-        LOG(info) << " Do Nothing : Just Using the Variables to bypass the errors";
-      }
+      fillV0QA<v0TableFull>(recoV0s, v0, posDaughterTrack, negDaughterTrack, v0Tag, v0DauCollisionIndexTag, posPiIdMethod, negPiIdMethod);
 
-      int TrueV0TagValue = 0;
+      // cut on dynamic columns for v0 particles
+      if (v0.v0cosPA() < v0setting_cospa)
+        continue;
+      if (v0.v0radius() < v0setting_radius)
+        continue;
+
       // K0s Analysis
       if (isK0s) {
-        posIdMethod = posPiIdMethod;
-        negIdMethod = negPiIdMethod;
-        // topological information.
-        recoV0s.fill(HIST("hV0s_0_1_01_K0s_dcapostopv"), v0.dcapostopv());
-        recoV0s.fill(HIST("hV0s_0_1_02_K0s_dcanegtopv"), v0.dcanegtopv());
-        recoV0s.fill(HIST("hV0s_0_1_03_K0s_dcaV0daughters"), v0.dcaV0daughters());
-        recoV0s.fill(HIST("hV0s_0_1_04_K0s_v0cosPA"), v0.v0cosPA());
-        recoV0s.fill(HIST("hV0s_0_1_05_K0s_v0radius"), v0.v0radius());
-
-        recoV0s.fill(HIST("hV0s_0_2_01_K0s_Mass_DynamicCuts"), v0.mK0Short());
-
-        // K0s only using mass cuts, no pt and eta cuts
+        fillV0QA<v0TablePostK0sCheck>(recoV0s, v0, posDaughterTrack, negDaughterTrack, v0Tag, v0DauCollisionIndexTag, posPiIdMethod, negPiIdMethod);
+        // K0s mass cut
         if (mLowK0s < v0.mK0Short() && v0.mK0Short() < mHighK0s) {
-          fillV0_K0sFullInformation(v0, posDaughterTrack, negDaughterTrack, posIdMethod, negIdMethod);
+          fillV0QA<v0TablePostMassCut>(recoV0s, v0, posDaughterTrack, negDaughterTrack, v0Tag, v0DauCollisionIndexTag, posPiIdMethod, negPiIdMethod);
         }
-        // Select Your Kaon Here.
+
+        // Final K0s Selection.
         if (selK0s(v0)) {
-          fillV0_K0sSelectedInformation(v0, posDaughterTrack, negDaughterTrack, posIdMethod, negIdMethod);
-
-          TrueV0TagValue += 1;                                  // nK0s++;
-          K0sPosList.push_back(posDaughterTrack.globalIndex()); // posDaughterTrack.index());
-          K0sNegList.push_back(negDaughterTrack.globalIndex()); // negDaughterTrack.index());
-          K0sPosListWithCollision.push_back({posDaughterTrack.globalIndex(), posDaughterTrack.collisionId()});
-          K0sNegListWithCollision.push_back({negDaughterTrack.globalIndex(), negDaughterTrack.collisionId()});
+          fillV0QA<v0TablePostSelectionCut>(recoV0s, v0, posDaughterTrack, negDaughterTrack, v0Tag, v0DauCollisionIndexTag, posPiIdMethod, negPiIdMethod);
+          trueV0TagValue += 1;
+          K0sPosDauList.push_back(posDaughterTrack.globalIndex());
+          K0sNegDauList.push_back(negDaughterTrack.globalIndex());
         }
-      } // End of K0s loop
-
-      recoV0s.fill(HIST("hV0s_0_0_00_hV0TagCount"), V0Tag);
-      recoV0s.fill(HIST("hV0s_0_0_00_hTrueV0TagCount"), TrueV0TagValue);
+        recoV0s.fill(HIST(histRegDir[v0TablePostSelectionCut]) + HIST("hTrueV0TagCount"), trueV0TagValue); // 001 = Kaon, 010 = Lambda, 100 = AnitLambda
+      } // End of K0s block
     } // End of V0s Loop
 
-    // LOG(info)<<"v0 size = "<<V0s.size();
-    FindRepeatEntries(K0sPosList, recoV0s.get<TH1>(HIST("hV0s_0_4_02_K0s_nCommonPionOfDifferentK0s")));
-    FindRepeatEntries(K0sNegList, recoV0s.get<TH1>(HIST("hV0s_0_4_02_K0s_nCommonPionOfDifferentK0s")));
+    findRepeatedEntries(K0sPosDauList, recoV0s.get<TH1>(HIST(histRegDir[v0TablePostSelectionCut]) + HIST("nCommonPionOfDifferentK0s")));
+    findRepeatedEntries(K0sNegDauList, recoV0s.get<TH1>(HIST(histRegDir[v0TablePostSelectionCut]) + HIST("nCommonPionOfDifferentK0s")));
 
-    std::vector<int64_t> V0PosList;
-    std::vector<int64_t> V0NegList;
+    // Obtain one single new daughter vector to remove double counting
+    FullDauList.insert(FullDauList.end(), K0sPosDauList.begin(), K0sPosDauList.end());
+    FullDauList.insert(FullDauList.end(), K0sNegDauList.begin(), K0sNegDauList.end());
 
-    FillNewListFromOldList(V0PosList, K0sPosList);
-    FillNewListFromOldList(V0NegList, K0sNegList);
+    // Sort and Remove repeated entries
+    std::sort(FullDauList.begin(), FullDauList.end());
+    auto last = std::unique(FullDauList.begin(), FullDauList.end()); // std::unique only moves duplicates to end of the vector
+    FullDauList.erase(last, FullDauList.end());                      // last is the iterator position from where duplicate entries start
 
-    // //Final Track Vectors
-    std::vector<int64_t> PosDauList;
-    std::vector<int64_t> NegDauList;
-
-    FillNewListFromOldList(PosDauList, V0PosList);
-    FillNewListFromOldList(NegDauList, V0NegList);
-
-    // FullDauList
-    std::vector<int64_t> FullDauList;
-    FillNewListFromOldList(FullDauList, PosDauList);
-    FillNewListFromOldList(FullDauList, NegDauList);
-
-    InsertionSortVector(PosDauList);
-    InsertionSortVector(FullDauList);
-
-    for (uint ii = 0; ii < (PosDauList.size() - 1); ii++) {
-      if (PosDauList[ii] > PosDauList[ii + 1]) {
-        LOG(info) << "ERROR:: PosDauList Not in Sequence = " << ii;
-      }
+    // Check sorting
+    if (!std::is_sorted(FullDauList.begin(), FullDauList.end())) {
+      LOG(error) << "FullDauList is unsorted, will give wrong results";
     }
 
-    for (uint ii = 0; ii < (FullDauList.size() - 1); ii++) {
-      if (FullDauList[ii] > FullDauList[ii + 1]) {
-        LOG(info) << "ERROR:: FullDauList Not in Sequence = " << ii;
-      }
-    }
-
+    // Declaring variables outside the loop to avoid slight overhead for stack allocation and deallocation during each iteration.
     uint skippingPosition = 0;
+    int nK0s = 0;
+    int nPiPlus = 0;
+    int nPiMinus = 0;
+    int nKaPlus = 0;
+    int nKaMinus = 0;
+    int nProton = 0;
+    int nPBar = 0;
+    int nElPlus = 0;
+    int nElMinus = 0;
+    int nDePlus = 0;
+    int nDeMinus = 0;
+
+    int nTrack = 0;
+    int nKaon = 0;
+    double CentFT0C = 0;
+
+    int nRejectedPiPlus = 0;
+    int nRejectedPiMinus = 0;
+    int rejectionTag = 0;
+
+    bool TrackIsPion = false;
+    bool TrackIsKaon = false;
+    bool TrackIsProton = false;
+    bool TrackIsElectron = false;
+    bool TrackIsDeuteron = false;
+
+    int TrackIdTag = 0;
+    int PiIdMethod = -1;
+    int KaIdMethod = -1;
+    int PrIdMethod = -1;
+    int ElIdMethod = -1;
+    int DeIdMethod = -1;
+
     for (const auto& collision : collisions) {
-      iEvent++;
-      int nK0s = 0;
-      int nPiPlus = 0;
-      int nPiMinus = 0;
-      int nKaPlus = 0;
-      int nKaMinus = 0;
-      int nProton = 0;
-      int nPBar = 0;
-      int nElPlus = 0;
-      int nElMinus = 0;
-      int nDePlus = 0;
-      int nDeMinus = 0;
 
-      int nTrack = 0;
-      int nPion = 0;
-      int nKaon = 0;
+      nK0s = 0;
+      nPiPlus = 0;
+      nPiMinus = 0;
+      nKaPlus = 0;
+      nKaMinus = 0;
+      nProton = 0;
+      nPBar = 0;
+      nElPlus = 0;
+      nElMinus = 0;
+      nDePlus = 0;
+      nDeMinus = 0;
+      nTrack = 0;
+      nKaon = 0;
 
-      double CentFT0C = collision.centFT0C();
-      recoEvent.fill(HIST("hCentrality"), CentFT0C);
-      recoEvent.fill(HIST("hCollisionCount"), 0.5);
-      recoEvent.fill(HIST("hVertexXRec"), collision.posX());
-      recoEvent.fill(HIST("hVertexYRec"), collision.posY());
-      recoEvent.fill(HIST("hVertexZRec"), collision.posZ());
+      CentFT0C = collision.centFT0C();
 
-      // group tracks, v0s, Cascades manually
+      // group tracks, v0s manually
       const uint64_t collIdx = collision.globalIndex();
       const auto TracksTable_perColl = tracks.sliceBy(TracksPerCollisionPreslice, collIdx);
       const auto V0sTable_perColl = V0s.sliceBy(V0sPerCollisionPreslice, collIdx);
 
-      recoEvent.fill(HIST("hV0Size"), V0sTable_perColl.size());
-
-      nK0s = 0;
-      // centrality dependent mass
       for (const auto& v0 : V0sTable_perColl) {
-        recoK0s.fill(HIST("hK0s_2_00_Mass_Full"), v0.mK0Short());
-        recoLambda.fill(HIST("hLambda_Mass_Full"), v0.mLambda());
-        recoLambda.fill(HIST("hAntiLambda_Mass_Full"), v0.mAntiLambda());
-
-        // cut on dynamic columns for v0 particles
         if (v0.v0cosPA() < v0setting_cospa)
-          continue; // collision.posX(), collision.posY(), collision.posZ()
+          continue; // cut on dynamic columns for v0 particles
         if (v0.v0radius() < v0setting_radius)
           continue;
 
         const auto& posDaughterTrack = v0.posTrack_as<myTracks>();
         const auto& negDaughterTrack = v0.negTrack_as<myTracks>();
 
-        int posIdMethod = -1;
-        int negIdMethod = -1;
-
         bool isK0s = false;
-        bool isLambda = false;
-        bool isAntiLambda = false;
 
-        int posPiIdMethod = -1;
-        int posPrIdMethod = -1;
-        int negPiIdMethod = -1;
-        int negPrIdMethod = -1;
-        int V0Tag = FindV0Tag(posDaughterTrack, negDaughterTrack, posPiIdMethod, posPrIdMethod, negPiIdMethod, negPrIdMethod);
+        posPiIdMethod = -1;
+        posPrIdMethod = -1;
+        negPiIdMethod = -1;
+        negPrIdMethod = -1;
+        v0Tag = findV0Tag(posDaughterTrack, negDaughterTrack, posPiIdMethod, posPrIdMethod, negPiIdMethod, negPrIdMethod);
+        v0DauCollisionIndexTag = findCollisionIndexTag(v0, posDaughterTrack, negDaughterTrack);
 
-        if ((V0Tag & 1) == 1)
+        if ((v0Tag & 1) == 1)
           isK0s = true;
-        if ((V0Tag & 2) == 2)
-          isLambda = true;
-        if ((V0Tag & 4) == 4)
-          isAntiLambda = true;
 
-        if (isLambda == isAntiLambda && isLambda != isAntiLambda) {
-          LOG(info) << " Do Nothing : Just Using the Variables to bypass the errors";
-        }
+        fillV0QA<recoK0sPreSel>(recoK0s, v0, posDaughterTrack, negDaughterTrack, v0Tag, v0DauCollisionIndexTag, posPiIdMethod, negPiIdMethod);
 
         // K0s Analysis
-        if (isK0s) {
-          posIdMethod = posPiIdMethod;
-          negIdMethod = negPiIdMethod;
-          // topological information.
-          recoK0s.fill(HIST("hK0s_1_01_dcapostopv"), v0.dcapostopv());
-          recoK0s.fill(HIST("hK0s_1_02_dcanegtopv"), v0.dcanegtopv());
-          recoK0s.fill(HIST("hK0s_1_03_dcaV0daughters"), v0.dcaV0daughters());
-          recoK0s.fill(HIST("hK0s_1_04_v0cosPA"), v0.v0cosPA());
-          recoK0s.fill(HIST("hK0s_1_05_v0radius"), v0.v0radius());
-
-          recoK0s.fill(HIST("hK0s_2_01_Mass_DynamicCuts"), v0.mK0Short());
-
-          if (selK0s(v0)) {
-            fillK0sSelectedInformation(v0, posDaughterTrack, negDaughterTrack, posIdMethod, negIdMethod);
-            recoK0s.fill(HIST("hK0s_5_01_centFTOC_mK0s"), CentFT0C, v0.mK0Short());
-            nK0s++;
-          }
-        } // End of K0s loop
+        if (isK0s && selK0s(v0)) {
+          fillV0QA<recoK0sPostSel>(recoK0s, v0, posDaughterTrack, negDaughterTrack, v0Tag, v0DauCollisionIndexTag, posPiIdMethod, negPiIdMethod);
+          recoK0s.fill(HIST(histRegDir[recoK0sPostSel]) + HIST("mK0s_vs_centFTOC"), collision.centFT0C(), v0.mK0Short()); // centrality dependent mass
+          nK0s++;
+        } // End of K0s block
       } // End of V0s Loop
 
       nTrack = 0;
-      int nRejectedPiPlus = 0;
-      int nRejectedPiMinus = 0;
+      nRejectedPiPlus = 0;
+      nRejectedPiMinus = 0;
       for (const auto& track : TracksTable_perColl) {
 
-        FillFullTrackQA(track);
-        int rejectionTag = 0;
+        fillTrackQA<recoTrackPreSel>(track);
+        rejectionTag = 0;
         if (!checkTrackSelection(track, FullDauList, skippingPosition, rejectionTag)) {
           if (rejectionTag == 4) {
             if (track.sign() > 0) {
@@ -2423,26 +1230,26 @@ struct isospin_fluctuation {
               nRejectedPiMinus++;
             }
           }
-          recoAnalysis.fill(HIST("hAnalysis_4_RejectedTrack_RejectionTag"), rejectionTag);
+          recoAnalysis.fill(HIST("recoAnalysis/RejectedTrack_RejectionTag"), rejectionTag);
           continue;
         }
 
-        FillSelectedTrackQA(track);
+        fillTrackQA<recoTrackPostSel>(track);
 
         nTrack++;
         // Do Proper Track Identification
-        bool TrackIsPion = false;
-        bool TrackIsKaon = false;
-        bool TrackIsProton = false;
-        bool TrackIsElectron = false;
-        bool TrackIsDeuteron = false;
+        TrackIsPion = false;
+        TrackIsKaon = false;
+        TrackIsProton = false;
+        TrackIsElectron = false;
+        TrackIsDeuteron = false;
 
-        int TrackIdTag = 0;
-        int PiIdMethod = -1;
-        int KaIdMethod = -1;
-        int PrIdMethod = -1;
-        int ElIdMethod = -1;
-        int DeIdMethod = -1;
+        TrackIdTag = 0;
+        PiIdMethod = -1;
+        KaIdMethod = -1;
+        PrIdMethod = -1;
+        ElIdMethod = -1;
+        DeIdMethod = -1;
 
         if (selPion(track, PiIdMethod)) {
           TrackIsPion = true;
@@ -2466,7 +1273,10 @@ struct isospin_fluctuation {
         }
 
         if (TrackIsPion) {
-          fillPionQA(track, PiIdMethod);
+          if (PiIdMethod == 0)
+            fillIdentificationQA<recoAnalysisDir, kPi, tpcId, true>(recoAnalysis, track);
+          if (PiIdMethod == 1)
+            fillIdentificationQA<recoAnalysisDir, kPi, tofId, true>(recoAnalysis, track);
           if (track.sign() > 0) {
             nPiPlus++;
           }
@@ -2475,7 +1285,11 @@ struct isospin_fluctuation {
           }
         }
         if (TrackIsKaon) {
-          fillKaonQA(track, KaIdMethod);
+          if (KaIdMethod == 0)
+            fillIdentificationQA<recoAnalysisDir, kKa, tpcId, true>(recoAnalysis, track);
+          if (KaIdMethod == 1)
+            fillIdentificationQA<recoAnalysisDir, kKa, tofId, true>(recoAnalysis, track);
+
           if (track.sign() > 0) {
             nKaPlus++;
           }
@@ -2484,7 +1298,11 @@ struct isospin_fluctuation {
           }
         }
         if (TrackIsProton) {
-          fillProtonQA(track, PrIdMethod);
+          if (PrIdMethod == 0)
+            fillIdentificationQA<recoAnalysisDir, kPr, tpcId, true>(recoAnalysis, track);
+          if (PrIdMethod == 1)
+            fillIdentificationQA<recoAnalysisDir, kPr, tofId, true>(recoAnalysis, track);
+
           if (track.sign() > 0) {
             nProton++;
           }
@@ -2493,7 +1311,11 @@ struct isospin_fluctuation {
           }
         }
         if (TrackIsElectron) {
-          fillElectronQA(track, ElIdMethod);
+          if (ElIdMethod == 0)
+            fillIdentificationQA<recoAnalysisDir, kEl, tpcId, true>(recoAnalysis, track);
+          if (ElIdMethod == 1)
+            fillIdentificationQA<recoAnalysisDir, kEl, tofId, true>(recoAnalysis, track);
+
           if (track.sign() > 0) {
             nElPlus++;
           }
@@ -2502,7 +1324,11 @@ struct isospin_fluctuation {
           }
         }
         if (TrackIsDeuteron) {
-          fillDeuteronQA(track, DeIdMethod);
+          if (DeIdMethod == 0)
+            fillIdentificationQA<recoAnalysisDir, kDe, tpcId, true>(recoAnalysis, track);
+          if (DeIdMethod == 1)
+            fillIdentificationQA<recoAnalysisDir, kDe, tofId, true>(recoAnalysis, track);
+
           if (track.sign() > 0) {
             nDePlus++;
           }
@@ -2510,99 +1336,66 @@ struct isospin_fluctuation {
             nDeMinus++;
           }
         }
-        // hAnalysis_4_SelectedTrack_IdentificationTag
-        recoAnalysis.fill(HIST("hAnalysis_4_SelectedTrack_IdentificationTag"), TrackIdTag);
+        recoAnalysis.fill(HIST("recoAnalysis/SelectedTrack_IdentificationTag"), TrackIdTag);
       } // track loop ends
 
-      nPion = nPiPlus + nPiMinus;
       nKaon = nKaPlus + nKaMinus;
 
-      recoAnalysis.fill(HIST("hAnalysis_5_Sparse_Full_K0sPiKa"),
-                        CentFT0C,
-                        nTrack,
-                        nK0s,
-                        nRejectedPiPlus,
-                        nRejectedPiMinus,
-                        nPiPlus,
-                        nPiMinus,
-                        nKaPlus,
-                        nKaMinus);
-      recoAnalysis.fill(HIST("hAnalysis_5_Sparse_Full_K0sPrDe"),
-                        CentFT0C,
-                        nTrack,
-                        nK0s,
-                        nRejectedPiPlus,
-                        nRejectedPiMinus,
-                        nProton,
-                        nPBar,
-                        nDePlus,
-                        nDeMinus);
-      recoAnalysis.fill(HIST("hAnalysis_5_Sparse_Full_K0sKaEl"),
-                        CentFT0C,
-                        nTrack,
-                        nK0s,
-                        nRejectedPiPlus,
-                        nRejectedPiMinus,
-                        nKaPlus,
-                        nKaMinus,
-                        nElPlus,
-                        nElMinus);
-      recoAnalysis.fill(HIST("hAnalysis_5_Sparse_Full_PiKaPr"),
-                        CentFT0C,
-                        nTrack,
-                        nRejectedPiPlus,
-                        nRejectedPiMinus,
-                        nPiPlus,
-                        nPiMinus,
-                        nKaPlus,
-                        nKaMinus,
-                        nProton,
-                        nPBar);
-      recoAnalysis.fill(HIST("hAnalysis_5_Sparse_Full_PiElDe"),
-                        CentFT0C,
-                        nTrack,
-                        nRejectedPiPlus,
-                        nRejectedPiMinus,
-                        nPiPlus,
-                        nPiMinus,
-                        nElPlus,
-                        nElMinus,
-                        nDePlus,
-                        nDeMinus);
-      recoAnalysis.fill(HIST("hAnalysis_5_Sparse_Full_KaPrDe"),
-                        CentFT0C,
-                        nTrack,
-                        nRejectedPiPlus,
-                        nRejectedPiMinus,
-                        nKaPlus,
-                        nKaMinus,
-                        nProton,
-                        nPBar,
-                        nDePlus,
-                        nDeMinus);
-      recoAnalysis.fill(HIST("hAnalysis_5_Sparse_Full_PrElDe"),
-                        CentFT0C,
-                        nTrack,
-                        nRejectedPiPlus,
-                        nRejectedPiMinus,
-                        nProton,
-                        nPBar,
-                        nElPlus,
-                        nElMinus,
-                        nDePlus,
-                        nDeMinus);
+      recoAnalysis.fill(HIST("recoAnalysis/Sparse_Full_K0sPiKa"),
+                        CentFT0C, nTrack, nK0s,
+                        nRejectedPiPlus, nRejectedPiMinus,
+                        nPiPlus, nPiMinus, nKaPlus, nKaMinus);
+      recoAnalysis.fill(HIST("recoAnalysis/Sparse_Full_K0sPrDe"),
+                        CentFT0C, nTrack, nK0s,
+                        nRejectedPiPlus, nRejectedPiMinus,
+                        nProton, nPBar, nDePlus, nDeMinus);
+      recoAnalysis.fill(HIST("recoAnalysis/Sparse_Full_K0sKaEl"),
+                        CentFT0C, nTrack, nK0s, nRejectedPiPlus, nRejectedPiMinus,
+                        nKaPlus, nKaMinus, nElPlus, nElMinus);
+      recoAnalysis.fill(HIST("recoAnalysis/Sparse_Full_PiKaPr"),
+                        CentFT0C, nTrack,
+                        nRejectedPiPlus, nRejectedPiMinus,
+                        nPiPlus, nPiMinus, nKaPlus, nKaMinus, nProton, nPBar);
+      recoAnalysis.fill(HIST("recoAnalysis/Sparse_Full_PiElDe"),
+                        CentFT0C, nTrack,
+                        nRejectedPiPlus, nRejectedPiMinus,
+                        nPiPlus, nPiMinus, nElPlus, nElMinus, nDePlus, nDeMinus);
+      recoAnalysis.fill(HIST("recoAnalysis/Sparse_Full_KaPrDe"),
+                        CentFT0C, nTrack,
+                        nRejectedPiPlus, nRejectedPiMinus,
+                        nKaPlus, nKaMinus, nProton, nPBar, nDePlus, nDeMinus);
+      recoAnalysis.fill(HIST("recoAnalysis/Sparse_Full_PrElDe"),
+                        CentFT0C, nTrack,
+                        nRejectedPiPlus, nRejectedPiMinus,
+                        nProton, nPBar, nElPlus, nElMinus, nDePlus, nDeMinus);
 
-      if (nK0s > 0) {
-        recoAnalysis.fill(HIST("hAnalysis_5_Sparse_newDynm_K0s_Ka"),
-                          CentFT0C, nTrack, nK0s, nKaon,
-                          nK0s * nK0s, nKaon * nKaon, nK0s * nKaon);
-        //
-        recoAnalysis.fill(HIST("hAnalysis_5_Sparse_newDynm_Kp_Km"),
-                          CentFT0C, nTrack, nKaPlus, nKaMinus,
-                          nKaPlus * nKaPlus, nKaMinus * nKaMinus, nKaPlus * nKaMinus);
-        //
-      }
-      recoAnalysis.fill(HIST("hTest"), nPion * nPion);
+      recoAnalysis.fill(HIST("recoAnalysis/Sparse_newDynm_K0s_Ka"),
+                        CentFT0C, nTrack, nK0s, nKaon,
+                        nK0s * nK0s, nKaon * nKaon, nK0s * nKaon);
+      recoAnalysis.fill(HIST("recoAnalysis/Sparse_newDynm_Kp_Km"),
+                        CentFT0C, nTrack, nKaPlus, nKaMinus,
+                        nKaPlus * nKaPlus, nKaMinus * nKaMinus, nKaPlus * nKaMinus);
+
+      // Collisions QA
+      recoEvent.fill(HIST("recoEvent/h01_CollisionCount"), 0.5);
+      recoEvent.fill(HIST("recoEvent/h02_VertexXRec"), collision.posX());
+      recoEvent.fill(HIST("recoEvent/h03_VertexYRec"), collision.posY());
+      recoEvent.fill(HIST("recoEvent/h04_VertexZRec"), collision.posZ());
+      recoEvent.fill(HIST("recoEvent/h05_Centrality"), collision.centFT0C());
+      recoEvent.fill(HIST("recoEvent/h06_V0Size"), V0sTable_perColl.size());
+      recoEvent.fill(HIST("recoEvent/h07_TracksSize"), TracksTable_perColl.size());
+      recoEvent.fill(HIST("recoEvent/h08_nTrack"), nTrack);
+      recoEvent.fill(HIST("recoEvent/h09_nK0s"), nK0s);
+      recoEvent.fill(HIST("recoEvent/h10_nPiPlus"), nPiPlus);
+      recoEvent.fill(HIST("recoEvent/h11_nPiMinus"), nPiMinus);
+      recoEvent.fill(HIST("recoEvent/h12_nKaPlus"), nKaPlus);
+      recoEvent.fill(HIST("recoEvent/h13_nKaMinus"), nKaMinus);
+      recoEvent.fill(HIST("recoEvent/h14_nProton"), nProton);
+      recoEvent.fill(HIST("recoEvent/h15_nPBar"), nPBar);
+      recoEvent.fill(HIST("recoEvent/h16_nElPlus"), nElPlus);
+      recoEvent.fill(HIST("recoEvent/h17_nElMinus"), nElMinus);
+      recoEvent.fill(HIST("recoEvent/h18_nDePlus"), nDePlus);
+      recoEvent.fill(HIST("recoEvent/h19_nDeMinus"), nDeMinus);
     } // collision loop ends
   } // Process Function Ends
 };
