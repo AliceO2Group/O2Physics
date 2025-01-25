@@ -18,28 +18,24 @@
 /// \author Suraj Prasad (suraj.prasad@cern.ch)
 
 #include <cmath>
-// #include <tuple>
 #include <vector>
 
-// #include "Framework/ASoAHelpers.h"
+#include <TGraph.h>
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-// #include "Framework/StaticFor.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include <Framework/Configurable.h>
 
-// #include "Common/Core/TrackSelection.h"
-// #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-// #include "ReconstructionDataFormats/Track.h"
-#include "Framework/O2DatabasePDGPlugin.h"
+#include "Common/DataModel/PIDResponse.h"
 
 #include <CommonConstants/MathConstants.h>
-#include <TGraph.h>
 
-#include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/inelGt.h"
 
@@ -137,7 +133,8 @@ struct Lambdak0sflattenicity {
 
   Configurable<int> flattenicityforanalysis{"flattenicityforanalysis", 0,
                                             "Which Flattenicity to be used for analysis, 0 for FV0, 1 for FT0, 2 for FV0+FT0C"};
-
+  Configurable<bool> flattenicityforLossCorrRec{"flattenicityforLossCorrRec", true,
+                                                "Flattenicity from Rec Tracks are used for Signal and Event loss calculations"};
   // Common Configurable parameters for V0 selection
   Configurable<float> v0settingDcav0dau{"v0settingDcav0dau", 1,
                                         "DCA V0 Daughters"};
@@ -252,6 +249,9 @@ struct Lambdak0sflattenicity {
                           {HistType::kTH1D, {vertexZAxis}});
 
       rEventSelection.add("hFlattenicityDistributionMCGen", "hFlattenicityDistributionMCGen",
+                          {HistType::kTH1D, {flatAxis}});
+
+      rEventSelection.add("hFlattenicityDistributionRecMCGen", "hFlattenicityDistributionRecMCGen",
                           {HistType::kTH1D, {flatAxis}});
 
       rEventSelection.add("hFlat_RecoColl_MC", "hFlat_RecoColl_MC", {HistType::kTH1D, {flatAxis}});
@@ -1206,8 +1206,7 @@ struct Lambdak0sflattenicity {
     soa::Join<aod::Collisions, aod::EvSels,
               aod::PVMults>::iterator const& collision,
     soa::Filtered<aod::V0Datas> const& V0s, TrackCandidates const& tracks,
-    soa::Join<aod::BCs, aod::Timestamps> const& /*bcs*/,
-    aod::MFTTracks const& /*mfttracks*/, aod::FT0s const& /*ft0s*/,
+    soa::Join<aod::BCs, aod::Timestamps> const& /*bcs*/, aod::FT0s const& /*ft0s*/,
     aod::FV0As const& /*fv0s*/)
   {
     if (applyEvSel &&
@@ -1363,8 +1362,7 @@ struct Lambdak0sflattenicity {
     soa::Join<aod::Collisions, aod::EvSels,
               aod::PVMults, aod::McCollisionLabels> const& collisions,
     soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>> const& V0s, aod::McCollisions const&, TrackCandidatesMC const& tracks,
-    soa::Join<aod::BCs, aod::Timestamps> const& /*bcs*/,
-    aod::MFTTracks const& /*mfttracks*/, aod::FT0s const& /*ft0s*/,
+    soa::Join<aod::BCs, aod::Timestamps> const& /*bcs*/, aod::FT0s const& /*ft0s*/,
     aod::FV0As const& /*fv0s*/, aod::McParticles const& mcParticles)
   {
     for (const auto& collision : collisions) {
@@ -1547,10 +1545,25 @@ struct Lambdak0sflattenicity {
 
   // Filter posZFilterMC = (nabs(o2::aod::mccollision::posZ) < cutzvertex);
   void processGenMC(
-    o2::aod::McCollision const& mcCollision, const soa::SmallGroups<soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels, aod::PVMults>>& collisions, o2::aod::McParticles const& mcParticles)
+    o2::aod::McCollision const& mcCollision, const soa::SmallGroups<soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels, aod::PVMults>>& collisions, TrackCandidatesMC const& tracks, aod::FT0s const& /*ft0s*/,
+    aod::FV0As const& /*fv0s*/, o2::aod::McParticles const& mcParticles)
   {
-    float flattenicity = estimateFlattenicityFV0MC(mcParticles);
-    rEventSelection.fill(HIST("hFlattenicityDistributionMCGen"), flattenicity);
+
+    float flattenicity;
+    if (flattenicityforLossCorrRec) {
+      float flattenicityRec = 999.0;
+      for (const auto& collision : collisions) {
+        flattenicityRec = estimateFlattenicity(collision, tracks);
+        // printf("FoundFlattenicity, Gen=%f, Rec=%f \n", flattenicity, flattenicityRec);
+      }
+      rEventSelection.fill(HIST("hFlattenicityDistributionRecMCGen"), flattenicityRec);
+      flattenicity = flattenicityRec;
+    } else {
+      float flattenicityGen = estimateFlattenicityFV0MC(mcParticles);
+      rEventSelection.fill(HIST("hFlattenicityDistributionMCGen"), flattenicityGen);
+      flattenicity = flattenicityGen;
+    }
+
     //====================================
     //===== Event Loss Denominator =======
     //====================================
