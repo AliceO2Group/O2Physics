@@ -151,7 +151,7 @@ o2physics_add_dpl_workflow(kaonkaonanalysis
 
 o2physics_add_dpl_workflow(highmasslambda
     SOURCES highmasslambda.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lambdav2
