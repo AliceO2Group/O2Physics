@@ -800,10 +800,8 @@ struct FemtoUniverseProducerTask {
           outputCollision(vtxZ, mult, multNtr, 2, mMagField);
         }
       } else {
-        if (confDoSpher && (!confEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!confEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!confEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))) {
-          outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
-        } else {
-          outputCollision(vtxZ, mult, multNtr, 2, mMagField);
+        if ((!confEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!confEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!confEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))) {
+          outputCollision(vtxZ, mult, multNtr, confDoSpher ? colCuts.computeSphericity(col, tracks) : 2, mMagField);
         }
       }
       colCuts.fillQA(col);
@@ -914,7 +912,11 @@ struct FemtoUniverseProducerTask {
     if (!colCuts.isSelectedRun3(col) || (occupancy < confTPCOccupancyMin || occupancy > confTPCOccupancyMax)) {
       return false;
     } else {
-      if ((col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      if (col.selection_bit(aod::evsel::kNoSameBunchPileup) &&
+          col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
+          col.selection_bit(aod::evsel::kIsGoodITSLayersAll) &&
+          col.selection_bit(aod::evsel::kNoCollInRofStandard) &&
+          col.selection_bit(aod::evsel::kNoHighMultCollInPrevRof)) {
         outputCollision(vtxZ, cent, multNtr, 2, mMagField);
         return true;
       } else {

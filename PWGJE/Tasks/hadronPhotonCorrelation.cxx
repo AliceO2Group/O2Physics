@@ -314,8 +314,8 @@ struct HadronPhotonCorrelation {
 
   /********************************************** DATA ***********************************************/
 
-  void processTrigsReco(JCollision const& collision,
-                        JTracks const& tracks)
+  void processTrigsReco(JetCollision const& collision,
+                        JetTracks const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -339,9 +339,9 @@ struct HadronPhotonCorrelation {
 
   /*********************************************** MC ************************************************/
 
-  void processTrigsMCReco(JCollision const& collision,
-                          Join<JTracks, JMcTrackLbs> const& tracks,
-                          JMcParticles const&)
+  void processTrigsMCReco(JetCollision const& collision,
+                          Join<JetTracks, JMcTrackLbs> const& tracks,
+                          JetParticles const&)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -363,8 +363,8 @@ struct HadronPhotonCorrelation {
   }
   PROCESS_SWITCH(HadronPhotonCorrelation, processTrigsMCReco, "trigger particle mc properties", true);
 
-  void processTrigsMCGen(JMcCollision const&,
-                         JMcParticles const& particles)
+  void processTrigsMCGen(JetMcCollision const&,
+                         JetParticles const& particles)
   {
 
     int nTrigs = 0;
@@ -386,8 +386,8 @@ struct HadronPhotonCorrelation {
   /********************************************** DATA ***********************************************/
   using MyTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
   Preslice<aod::V0Datas> perCol = aod::v0::collisionId;
-  void processPhotonCorrelations(JCollision const& collision,
-                                 JTracks const& tracks,
+  void processPhotonCorrelations(JetCollision const& collision,
+                                 JetTracks const& tracks,
                                  MyTracks const&,
                                  V0Datas const& v0s)
   {
@@ -423,10 +423,10 @@ struct HadronPhotonCorrelation {
   /*********************************************** MC ************************************************/
 
   using MyTracksMC = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
-  void processPhotonCorrelationsMCReco(Join<JCollisions, JCollisionPIs, JMcCollisionLbs>::iterator const& collision_reco,
-                                       JMcCollisions const&,
-                                       JTracks const& tracks_reco,
-                                       JMcParticles const&,
+  void processPhotonCorrelationsMCReco(Join<JetCollisions, JCollisionPIs, JMcCollisionLbs>::iterator const& collision_reco,
+                                       JetMcCollisions const&,
+                                       JetTracks const& tracks_reco,
+                                       JetParticles const&,
                                        MyTracksMC const&,
                                        V0Datas const& v0s)
   {
@@ -460,8 +460,8 @@ struct HadronPhotonCorrelation {
   }
   PROCESS_SWITCH(HadronPhotonCorrelation, processPhotonCorrelationsMCReco, "hadron-photon correlation", true);
 
-  void processPhotonCorrelationsMCGen(JMcCollision const&,
-                                      JMcParticles const& tracks_true)
+  void processPhotonCorrelationsMCGen(JetMcCollision const&,
+                                      JetParticles const& tracks_true)
   {
     int nPhotons = 0;
     for (const auto& track_assoc : tracks_true) {
@@ -506,8 +506,8 @@ struct HadronPhotonCorrelation {
   ****************************************************************************************************/
 
   /********************************************** DATA ***********************************************/
-  void processHadronCorrelations(JCollision const& collision,
-                                 Join<JTracks, pidTPCEl, pidTPCMu> const& tracks)
+  void processHadronCorrelations(JetCollision const& collision,
+                                 Join<JetTracks, pidTPCEl, pidTPCMu> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -543,8 +543,8 @@ struct HadronPhotonCorrelation {
 
   /*********************************************** MC ************************************************/
 
-  void processHadronCorrelationsMCGen(JMcCollision const&,
-                                      JMcParticles const& tracks_true)
+  void processHadronCorrelationsMCGen(JetMcCollision const&,
+                                      JetParticles const& tracks_true)
   {
     int nHadrons = 0;
     for (const auto& track_assoc : tracks_true) {
@@ -575,10 +575,10 @@ struct HadronPhotonCorrelation {
   }
   PROCESS_SWITCH(HadronPhotonCorrelation, processHadronCorrelationsMCGen, "mc hadron-hadron correlation", true);
 
-  void processHadronCorrelationsMCReco(Join<JCollisions, JMcCollisionLbs>::iterator const& collision_reco,
-                                       JMcCollisions const&,
+  void processHadronCorrelationsMCReco(Join<JetCollisions, JMcCollisionLbs>::iterator const& collision_reco,
+                                       JetMcCollisions const&,
                                        Join<JTracks, JMcTrackLbs> const& tracks_reco,
-                                       JMcParticles const&)
+                                       JetParticles const&)
   {
     if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelection)) {
       return;
@@ -635,8 +635,8 @@ struct HadronPhotonCorrelation {
   ****************************************************************************************************/
 
   /********************************************** DATA ***********************************************/
-  void processPionCorrelations(JCollision const& collision,
-                               Join<JTracks, pidTPCPi> const& tracks)
+  void processPionCorrelations(JetCollision const& collision,
+                               Join<JetTracks, pidTPCPi> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -675,8 +675,8 @@ struct HadronPhotonCorrelation {
 
   /*********************************************** MC ************************************************/
 
-  void processPionCorrelationsMCGen(JMcCollision const&,
-                                    JMcParticles const& tracks_true)
+  void processPionCorrelationsMCGen(JetMcCollision const&,
+                                    JetParticles const& tracks_true)
   {
     int nPions = 0;
     for (const auto& track_assoc : tracks_true) {
@@ -703,10 +703,10 @@ struct HadronPhotonCorrelation {
   }
   PROCESS_SWITCH(HadronPhotonCorrelation, processPionCorrelationsMCGen, "mc hadron-pion correlation", true);
 
-  void processPionCorrelationsMCReco(Join<JCollisions, JMcCollisionLbs>::iterator const& collision_reco,
-                                     JMcCollisions const&,
-                                     Join<JTracks, JMcTrackLbs> const& tracks_reco,
-                                     JMcParticles const&)
+  void processPionCorrelationsMCReco(Join<JetCollisions, JMcCollisionLbs>::iterator const& collision_reco,
+                                     JetMcCollisions const&,
+                                     Join<JetTracks, JMcTrackLbs> const& tracks_reco,
+                                     JetParticles const&)
   {
     if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelection)) {
       return;
@@ -750,8 +750,8 @@ struct HadronPhotonCorrelation {
 
   /*********************************************** MC ************************************************/
 
-  void processNeutralCorrelationsMCGen(JMcCollision const&,
-                                       JMcParticles const& tracks_true)
+  void processNeutralCorrelationsMCGen(JetMcCollision const&,
+                                       JetParticles const& tracks_true)
   {
     int nNeutrals = 0;
     for (const auto& track_assoc : tracks_true) {

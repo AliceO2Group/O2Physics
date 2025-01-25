@@ -73,12 +73,29 @@ struct JetHadronRecoil {
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
   Filter eventTrackLevelCuts = nabs(aod::jcollision::posZ) < vertexZCut;
 
+  std::vector<double> ptBinningPart = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0,
+                                       15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0,
+                                       65.0, 70.0, 75.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0,
+                                       140.0, 150.0, 160.0, 180.0, 200.0};
+  std::vector<double> ptBinningDet = {-100.0, -70.0, -60.0, -50.0, -40.0, -35.0, -30.0, -25.0, -20.0, -15.0, -10.0, -5.0,
+                                      0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0,
+                                      15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0,
+                                      65.0, 70.0, 75.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0,
+                                      140.0, 150.0, 160.0, 180.0, 200.0};
+
+  AxisSpec ptAxisDet = {ptBinningDet, "#it{p}_{T,det} (GeV/c)"};
+  AxisSpec ptAxisPart = {ptBinningPart, "#it{p}_{T,part} (GeV/c)"};
+  AxisSpec phiAxisDet = {100, 0.0, o2::constants::math::TwoPI, "#phi_{det}"};
+  AxisSpec phiAxisPart = {100, 0.0, o2::constants::math::TwoPI, "#phi_{part}"};
+  AxisSpec dRAxisDet = {80, 0.0, 0.24, "#Delta R_{det}"};
+  AxisSpec dRAxisPart = {80, 0.0, 0.24, "#Delta R_{part}"};
+
   HistogramRegistry registry{"registry",
                              {{"hNtrig", "number of triggers;trigger type;entries", {HistType::kTH1F, {{2, 0, 2}}}},
                               {"hZvtxSelected", "Z vertex position;Z_{vtx};entries", {HistType::kTH1F, {{80, -20, 20}}}},
                               {"hPtTrack", "Track p_{T};p_{T};entries", {HistType::kTH1F, {{200, 0, 200}}}},
                               {"hEtaTrack", "Track #eta;#eta;entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
-                              {"hPhiTrack", "Track #phi;#phi;entries", {HistType::kTH1F, {{160, -1.0, 7.0}}}},
+                              {"hPhiTrack", "Track #phi;#phi;entries", {HistType::kTH1F, {{100, 0.0, o2::constants::math::TwoPI}}}},
                               {"hReferencePtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, o2::constants::math::TwoPI}, {250, -100, 150}}}},
                               {"hSignalPtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, o2::constants::math::TwoPI}, {250, -100, 150}}}},
                               {"hReferencePt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{250, -100, 150}}}},
@@ -97,35 +114,35 @@ struct JetHadronRecoil {
                               {"hRefEventTriggers", "N_{triggers};events", {HistType::kTH1F, {{10, 0, 10}}}},
                               {"hJetPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{300, -100, 200}}}},
                               {"hJetEta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
-                              {"hJetPhi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{160, -1.0, 7.0}}}},
+                              {"hJetPhi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{100, 0.0, o2::constants::math::TwoPI}}}},
                               {"hPtPart", "Particle p_{T};p_{T};entries", {HistType::kTH1F, {{200, 0, 200}}}},
                               {"hEtaPart", "Particle #eta;#eta;entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
-                              {"hPhiPart", "Particle #phi;#phi;entries", {HistType::kTH1F, {{160, -1.0, 7.0}}}},
-                              {"hDeltaR", "#DeltaR;#DeltaR;#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
-                              {"hDeltaRPart", "Particle #DeltaR;#DeltaR;#frac{1}{N_{jets}}#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
-                              {"hDeltaRpT", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{300, -100, 200}, {50, 0.0, 0.15}}}},
-                              {"hDeltaRpTPart", "Particle jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {50, 0.0, 0.15}}}},
-                              {"hDeltaRSignal", "#DeltaR;#DeltaR;#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
-                              {"hDeltaRSignalPart", "Particle #DeltaR;#DeltaR;#frac{1}{N_{jets}}#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
-                              {"hDeltaRpTSignal", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{300, -100, 200}, {50, 0.0, 0.15}}}},
-                              {"hDeltaRpTSignalPart", "Particle jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {50, 0.0, 0.15}}}},
-                              {"hDeltaRpTDPhiSignal", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{300, -100, 200}, {100, 0, o2::constants::math::TwoPI}, {50, 0.0, 0.15}}}},
-                              {"hDeltaRpTDPhiSignalPart", "Particle jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{200, 0, 200}, {100, 0, o2::constants::math::TwoPI}, {50, 0.0, 0.15}}}},
-                              {"hDeltaRReference", "#DeltaR;#DeltaR;#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
-                              {"hDeltaRPartReference", "Particle #DeltaR;#DeltaR;#frac{1}{N_{jets}}#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
-                              {"hDeltaRpTReference", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{300, -100, 200}, {50, 0.0, 0.15}}}},
-                              {"hDeltaRpTPartReference", "Particle jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {50, 0.0, 0.15}}}},
-                              {"hDeltaRpTDPhiReference", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{300, -100, 200}, {100, 0, o2::constants::math::TwoPI}, {50, 0.0, 0.15}}}},
-                              {"hDeltaRpTDPhiReferencePart", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{200, 0, 200}, {100, 0, o2::constants::math::TwoPI}, {50, 0.0, 0.15}}}},
+                              {"hPhiPart", "Particle #phi;#phi;entries", {HistType::kTH1F, {{100, 0.0, o2::constants::math::TwoPI}}}},
+                              {"hDeltaR", "#DeltaR;#DeltaR;#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{80, 0.0, 0.24}}}},
+                              {"hDeltaRPart", "Particle #DeltaR;#DeltaR;#frac{1}{N_{jets}}#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{80, 0.0, 0.24}}}},
+                              {"hDeltaRpT", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{300, -100, 200}, {80, 0.0, 0.24}}}},
+                              {"hDeltaRpTPart", "Particle jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {80, 0.0, 0.24}}}},
+                              {"hDeltaRSignal", "#DeltaR;#DeltaR;#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{80, 0.0, 0.24}}}},
+                              {"hDeltaRSignalPart", "Particle #DeltaR;#DeltaR;#frac{1}{N_{jets}}#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{80, 0.0, 0.24}}}},
+                              {"hDeltaRpTSignal", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{300, -100, 200}, {80, 0.0, 0.24}}}},
+                              {"hDeltaRpTSignalPart", "Particle jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {80, 0.0, 0.24}}}},
+                              {"hDeltaRpTDPhiSignal", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{300, -100, 200}, {100, 0, o2::constants::math::TwoPI}, {80, 0.0, 0.24}}}},
+                              {"hDeltaRpTDPhiSignalPart", "Particle jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{200, 0, 200}, {100, 0, o2::constants::math::TwoPI}, {80, 0.0, 0.24}}}},
+                              {"hDeltaRReference", "#DeltaR;#DeltaR;#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{80, 0.0, 0.24}}}},
+                              {"hDeltaRPartReference", "Particle #DeltaR;#DeltaR;#frac{1}{N_{jets}}#frac{dN_{jets}}{d#DeltaR}", {HistType::kTH1F, {{80, 0.0, 0.24}}}},
+                              {"hDeltaRpTReference", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{300, -100, 200}, {80, 0.0, 0.24}}}},
+                              {"hDeltaRpTPartReference", "Particle jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{200, 0, 200}, {80, 0.0, 0.24}}}},
+                              {"hDeltaRpTDPhiReference", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{300, -100, 200}, {100, 0, o2::constants::math::TwoPI}, {80, 0.0, 0.24}}}},
+                              {"hDeltaRpTDPhiReferencePart", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{200, 0, 200}, {100, 0, o2::constants::math::TwoPI}, {80, 0.0, 0.24}}}},
                               {"hPtMatched", "p_{T} matching;p_{T,det};p_{T,part}", {HistType::kTH2F, {{300, -100, 200}, {200, 0, 200}}}},
-                              {"hPhiMatched", "#phi matching;#phi_{det};#phi_{part}", {HistType::kTH2F, {{160, -1.0, 7.0}, {160, -1.0, 7.0}}}},
-                              {"hDeltaRMatched", "#DeltaR matching;#DeltaR_{det};#DeltaR_{part}", {HistType::kTH2F, {{50, 0.0, 0.15}, {50, 0.0, 0.15}}}},
+                              {"hPhiMatched", "#phi matching;#phi_{det};#phi_{part}", {HistType::kTH2F, {{100, 0.0, o2::constants::math::TwoPI}, {100, 0.0, o2::constants::math::TwoPI}}}},
+                              {"hDeltaRMatched", "#DeltaR matching;#DeltaR_{det};#DeltaR_{part}", {HistType::kTH2F, {{80, 0.0, 0.24}, {80, 0.0, 0.24}}}},
                               {"hPtMatched1d", "p_{T} matching 1d;p_{T,part}", {HistType::kTH1F, {{200, 0, 200}}}},
-                              {"hDeltaRMatched1d", "#DeltaR matching 1d;#DeltaR_{part}", {HistType::kTH1F, {{50, 0.0, 0.15}}}},
+                              {"hDeltaRMatched1d", "#DeltaR matching 1d;#DeltaR_{part}", {HistType::kTH1F, {{80, 0.0, 0.24}}}},
                               {"hPtResolution", "p_{T} resolution;p_{T,part};Relative Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -5.0, 5.0}}}},
                               {"hPhiResolution", "#phi resolution;#p{T,part};Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -7.0, 7.0}}}},
                               {"hDeltaRResolution", "#DeltaR Resolution;p_{T,part};Resolution", {HistType::kTH2F, {{200, 0, 200}, {1000, -0.15, 0.15}}}},
-                              {"hFullMatching", "Full 6D matching;p_{T,det};p_{T,part};#phi_{det};#phi_{part};#DeltaR_{det};#DeltaR_{part}", {HistType::kTHnSparseD, {{300, -100, 200}, {200, 0, 200}, {160, -1.0, 7.0}, {160, -1.0, 7.0}, {50, 0.0, 0.15}, {50, 0.0, 0.15}}}}}};
+                              {"hFullMatching", "Full 6D matching;p_{T,det};p_{T,part};#phi_{det};#phi_{part};#DeltaR_{det};#DeltaR_{part}", {HistType::kTHnSparseD, {ptAxisDet, ptAxisPart, phiAxisDet, phiAxisPart, dRAxisDet, dRAxisPart}}}}};
 
   int eventSelection = -1;
   int trackSelection = -1;

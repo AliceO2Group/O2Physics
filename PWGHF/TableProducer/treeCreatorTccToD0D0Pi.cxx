@@ -108,8 +108,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCandTccFulls, "AOD", "HFCANDTCCFULL",
-                  full::CollisionId,
+DECLARE_SOA_TABLE(HfCandTccLites, "AOD", "HFCANDTCCLITE",
                   full::PtD1,
                   full::PtD2,
                   full::PtPi,
@@ -161,7 +160,7 @@ DECLARE_SOA_TABLE(HfCandTccFulls, "AOD", "HFCANDTCCFULL",
                   full::NTPCChi2NClSoftPi,
                   full::CentOfCand);
 
-DECLARE_SOA_TABLE(HfCandD0FullEvs, "AOD", "HFCANDD0FULLEV",
+DECLARE_SOA_TABLE(HfCandTccFullEvs, "AOD", "HFCANDTCCFULLEV",
                   full::CollisionId,
                   collision::NumContrib,
                   collision::PosX,
@@ -173,10 +172,10 @@ DECLARE_SOA_TABLE(HfCandD0FullEvs, "AOD", "HFCANDD0FULLEV",
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorTccToD0D0Pi {
-  Produces<o2::aod::HfCandTccFulls> rowCandidateFull;
-  Produces<o2::aod::HfCandD0FullEvs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandTccLites> rowCandidateLite;
+  Produces<o2::aod::HfCandTccFullEvs> rowCandidateFullEvents;
 
-  Configurable<float> ptMinSoftPion{"ptMinSoftPion", 0.0, "Min pt for the softpion"};
+  Configurable<float> ptMinSoftPion{"ptMinSoftPion", 0.0, "Min pt for the soft pion"};
   Configurable<bool> usePionIsGlobalTrackWoDCA{"usePionIsGlobalTrackWoDCA", true, "check isGlobalTrackWoDCA status for pions"};
 
   Configurable<float> softPiEtaMax{"softPiEtaMax", 0.9f, "Soft pion max value for pseudorapidity (abs vale)"};
@@ -273,7 +272,6 @@ struct HfTreeCreatorTccToD0D0Pi {
                           aod::TrackAssoc const& trackIndices,
                           TrkType const& track, aod::BCs const&)
   {
-    // Filling event properties
     for (const auto& candidateD1 : candidates) {
       for (auto candidateD2 = candidateD1 + 1; candidateD2 != candidates.end(); ++candidateD2) {
         for (const auto& trackId : trackIndices) {
@@ -373,8 +371,7 @@ struct HfTreeCreatorTccToD0D0Pi {
             continue;
           }
 
-          rowCandidateFull(
-            candidateD1.collisionId(),
+          rowCandidateLite(
             candidateD1.pt(),
             candidateD2.pt(),
             trackPion.pt(),
@@ -436,8 +433,8 @@ struct HfTreeCreatorTccToD0D0Pi {
                          TracksWPid const& tracks,
                          aod::BCs const& bcs)
   {
+    rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      rowCandidateFullEvents.reserve(collisions.size());
       fillEvent(collision, 0, collision.bc().runNumber());
       auto thisCollId = collision.globalIndex();
       auto candwD0ThisColl = candidates.sliceBy(candsD0PerCollisionWithMl, thisCollId);
@@ -455,8 +452,8 @@ struct HfTreeCreatorTccToD0D0Pi {
                                  TracksWPid const& tracks,
                                  aod::BCs const& bcs)
   {
+    rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      rowCandidateFullEvents.reserve(collisions.size());
       fillEvent(collision, 0, collision.bc().runNumber());
       auto thisCollId = collision.globalIndex();
       auto candwD0ThisColl = candidates.sliceBy(candsD0PerCollisionWithMl, thisCollId);
@@ -474,8 +471,8 @@ struct HfTreeCreatorTccToD0D0Pi {
                                  TracksWPid const& tracks,
                                  aod::BCs const& bcs)
   {
+    rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      rowCandidateFullEvents.reserve(collisions.size());
       fillEvent(collision, 0, collision.bc().runNumber());
       auto thisCollId = collision.globalIndex();
       auto candwD0ThisColl = candidates.sliceBy(candsD0PerCollisionWithMl, thisCollId);

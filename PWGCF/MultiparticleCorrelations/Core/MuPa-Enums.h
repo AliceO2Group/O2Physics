@@ -129,20 +129,30 @@ enum eEventCuts {
   eSelectedEvents,                 // selected events = eNumberOfEvents + eAfter => therefore I do not need a special histogram for it
   eNoSameBunchPileup,              // reject collisions in case of pileup with another collision in the same foundBC (emails from IA on 20240404 and EK on 20240410)
   eIsGoodZvtxFT0vsPV,              // small difference between z-vertex from PV and from FT0 (emails from IA on 20240404 and EK on 20240410)
+                                   // Avoid using kIsGoodZvtxFT0vsPV selection bit for Pb-Pb 2024 apass1, see IA email from 20250115.
+                                   // Therefore, until further notice, use this one in LHC23zzh, but not in LHC24ar and LHC24as
   eIsVertexITSTPC,                 // at least one ITS-TPC track (reject vertices built from ITS-only tracks) (emails from IA on 20240404 and EK on 20240410
   eIsVertexTOFmatched,             // at least one of vertex contributors is matched to TOF
   eIsVertexTRDmatched,             // at least one of vertex contributors is matched to TRD
   eNoCollInTimeRangeStrict,        // rejects a collision if there are other events in dtime +/- 10 μs, see IA Slide 39 in https://indico.cern.ch/event/1462154/
+                                   // 20250122 Per feedback from IA, use this one only as a part of systematic check, and use eNoCollInTimeRangeStandard by default
   eNoCollInTimeRangeStandard,      // rejects a collision if there are other events in dtime +/- 2 μs + additional cuts on multiplicity, see IA Slide 39 in https://indico.cern.ch/event/1462154/
   eNoCollInRofStrict,              // rejects a collision if there are other events within the same ROF (in-ROF pileup), ROF = "ITS Readout Frames",
                                    // see IA Slide 39 in https://indico.cern.ch/event/1462154/
+                                   // 20250122 Per feedback from IA, use this one only as a part of systematic check, and use eNoCollInRofStandard by default
   eNoCollInRofStandard,            // same as previous + additional cuts on multiplicity, see IA Slide 39 in https://indico.cern.ch/event/1462154/
   eNoHighMultCollInPrevRof,        // veto an event if FT0C amplitude in previous ITS ROF is above threshold (default is >5000 a.e. by FT0C), see IA Slide 39 in https://indico.cern.ch/event/1462154/
+                                   // 20250122 Per feedback from IA, use it only in 2023 PbPb data (e.g. eLHC23zzh), in 2024 PbPb data this one has no effect (do not use in eLHC24ar and eLHC24as)
   eIsGoodITSLayer3,                // number of inactive chips on ITS layer 3 is below maximum allowed value
   eIsGoodITSLayer0123,             // numbers of inactive chips on ITS layers 0-3 are below maximum allowed values
   eIsGoodITSLayersAll,             // numbers of inactive chips on all ITS layers are below maximum allowed values
   eOccupancyEstimator,             // the default Occupancy estimator, set via configurable. All supported centrality estimators, for QA, etc, are in enum eOccupancyEstimators
   eMinVertexDistanceFromIP,        // if sqrt(vx^2+vy^2+vz^2) < MinVertexDistanceFromIP, the event is rejected. This way, I remove suspicious events with |vertex| = 0.
+  // ...
+  eCentralityWeights, // used for centrality flattening. Remember that this event cut must be implemented very last,
+                      // therefore I have it separately implemented for Run 3,2,1 in EventCuts() at the very end in each case.
+                      // Use only for small non-uniformity in centrality distribution (e.g. of the biggest dip in distribution is up to 20% compared to uniform part of cent. distribution),
+                      // otherwise this flattening is too costly in terms of statistics.
   eEventCuts_N
 };
 

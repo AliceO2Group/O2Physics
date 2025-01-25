@@ -80,6 +80,7 @@ struct HfTaskDs {
   Configurable<bool> fillPercentiles{"fillPercentiles", true, "Wheter to fill multiplicity axis with percentiles or raw information"};
   Configurable<bool> storeOccupancy{"storeOccupancy", false, "Flag to store occupancy information"};
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
+  Configurable<bool> fillMcBkgHistos{"fillMcBkgHistos", false, "Flag to fill and store histograms for MC background"};
 
   struct : ConfigurableGroup {
     Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
@@ -184,7 +185,6 @@ struct HfTaskDs {
     std::vector<AxisSpec> axesWithNpvMl = {massbins, ptbins, centralitybins, npvcontributorsbins, mlscore0bins, mlscore1bins, mlscore2bins};
     std::vector<AxisSpec> axesGenPrompt = {ptbins, ybins, npvcontributorsbins, centralitybins};
     std::vector<AxisSpec> axesGenFd = {ptbins, ybins, npvcontributorsbins, ptBHad, flagBHad, centralitybins};
-    std::vector<AxisSpec> axesGenBkg = {ptbins, ybins, npvcontributorsbins, centralitybins};
 
     if (storeOccupancy) {
       axes.insert(axes.end(), {occupancybins});
@@ -195,7 +195,6 @@ struct HfTaskDs {
       axesWithNpvMl.insert(axesWithNpvMl.end(), {occupancybins});
       axesGenPrompt.insert(axesGenPrompt.end(), {occupancybins});
       axesGenFd.insert(axesGenFd.end(), {occupancybins});
-      axesGenBkg.insert(axesGenBkg.end(), {occupancybins});
     }
 
     for (auto i = 0; i < DataType::kDataTypes; ++i) {
@@ -208,6 +207,10 @@ struct HfTaskDs {
           histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, axesWithNpv);
         }
       } else if (doprocessDataWithMlAndCentFT0C || doprocessDataWithMlAndCentFT0M || doprocessDataWithMlAndCentNTracksPV || doprocessDataWithMl || doprocessMcWithMlAndCentFT0C || doprocessMcWithMlAndCentFT0M || doprocessMcWithMlAndCentNTracksPV || doprocessMcWithMl) {
+        if (i == DataType::McBkg && !fillMcBkgHistos) {
+          continue;
+        }
+
         if (i == DataType::Data) { // If data do not fill PV contributors in sparse
           histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, axesMl);
         } else if (i == DataType::McDsNonPrompt) { // If data do not fill PV contributors in sparse
@@ -262,9 +265,6 @@ struct HfTaskDs {
         }
         if (i == DataType::McDsNonPrompt || i == DataType::McDplusNonPrompt) {
           histosPtr[i]["hSparseGen"] = registry.add<THnSparse>((folders[i] + "hSparseGen").c_str(), "Thn for generated nonprompt candidates", HistType::kTHnSparseF, axesGenFd);
-        }
-        if (i == DataType::McBkg) {
-          histosPtr[i]["hSparseGen"] = registry.add<THnSparse>((folders[i] + "hSparseGen").c_str(), "Thn for non-matched generated candidates", HistType::kTHnSparseF, axesGenBkg);
         }
       }
     }
@@ -647,7 +647,7 @@ struct HfTaskDs {
         break;
       }
     }
-    if (isBkg) {
+    if (isBkg && fillMcBkgHistos) {
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yDs(candidate)) > yCandRecoMax) {
         return;
       }
@@ -671,12 +671,11 @@ struct HfTaskDs {
   void fillMcGenHistosSparse(CandDsMcGen const& mcParticles,
                              Coll const& recoCollisions)
   {
-
     // MC gen.
     for (const auto& particle : mcParticles) {
-      const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
 
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
+        const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
         if (particle.flagMcDecayChanGen() == decayChannel || (fillDplusMc && particle.flagMcDecayChanGen() == (decayChannel + offsetDplusDecayChannel))) {
           auto pt = particle.pt();
           double y{0.f};
@@ -745,23 +744,6 @@ struct HfTaskDs {
               }
             }
           }
-        }
-      } else { // not matched candidates
-        auto pt = particle.pt();
-        double y = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDS);
-        unsigned maxNumContrib = 0;
-        for (const auto& recCol : recoCollsPerMcColl) {
-          maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
-        }
-        float cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl);
-        float occ{-1.};
-        if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-          occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerMcColl, occEstimator);
-        }
-        if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-          std::get<THnSparsePtr>(histosPtr[DataType::McBkg]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ);
-        } else {
-          std::get<THnSparsePtr>(histosPtr[DataType::McBkg]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent);
         }
       }
     }
