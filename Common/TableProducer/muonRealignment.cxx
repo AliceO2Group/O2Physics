@@ -13,6 +13,8 @@
 /// \brief Task for muon re-alignment at analysis level
 /// \author Chi Zhang <chi.zhang@cern.ch>, CEA-Saclay
 
+#include <filesystem>
+#include <string>
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -37,8 +39,6 @@
 #include "ReconstructionDataFormats/TrackFwd.h"
 #include "Common/DataModel/FwdTrackReAlignTables.h"
 
-#include <filesystem>
-
 using namespace std;
 using namespace o2;
 using namespace o2::framework;
@@ -52,7 +52,7 @@ struct MuonRealignment {
   Produces<aod::StoredFwdTracksReAlign> realignFwdTrks;
   Produces<aod::StoredFwdTrksCovReAlign> realignFwdTrksCov;
 
-  Configurable<string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> geoRefPath{"geoRefPath", "GLO/Config/GeometryAligned", "Path of the reference geometry file"};
   Configurable<std::string> geoNewPath{"geoNewPath", "GLO/Config/GeometryAligned", "Path of the new geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
