@@ -1466,7 +1466,7 @@ struct UpcCandProducer {
                           fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                           fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                           fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A);
+      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, 0, 0, 0, 0, 0);
       eventCandidatesSelsFwd(fitInfo.distClosestBcV0A,
                              fitInfo.distClosestBcT0A,
                              amplitudesT0A,
@@ -1600,28 +1600,59 @@ struct UpcCandProducer {
 
     std::vector<int> selTrackIdsGlobal{};
 
-    // storing n-prong matches
     int32_t candID = 0;
-    auto midIt = bcsMatchedTrIdsMID.begin();
-    for (auto& pair : bcsMatchedTrIdsGlobal) { // candidates with MFT
+
+    for (auto& pair : bcsMatchedTrIdsGlobal) {
       auto globalBC = static_cast<int64_t>(pair.first);
-      const auto& fwdTrackIDs = pair.second;
-      uint32_t nMFTs = fwdTrackIDs.size();
-      if (nMFTs > fNFwdProngs) // too many tracks
+      const auto& fwdTrackIDs = pair.second; // Forward tracks (Global with MFT)
+      if (fwdTrackIDs.size() != 2) {         // ensure we have two MFT tracks
         continue;
-      std::vector<int64_t> trkCandIDs{};
-      const auto& midTrackIDs = midIt->second; // to retrieve corresponding MCH-MID tracks
-      if (nMFTs == fNFwdProngs) {
-        for (auto iMft : fwdTrackIDs) {
-          auto trk = fwdTracks.iteratorAt(iMft);
-          auto trkEta = trk.eta();
-          if (trkEta > fMinEtaMFT && trkEta < fMaxEtaMFT) { // If the track is in the MFT acceptance, store the global track
-            trkCandIDs.insert(trkCandIDs.end(), fwdTrackIDs.begin(), fwdTrackIDs.end());
-          } else { // If the track is not in the MFT acceptance, store the MCH-MID track
-            trkCandIDs.insert(trkCandIDs.end(), midTrackIDs.begin(), midTrackIDs.end());
-          }
-        }
       }
+
+      // find the corresponding MCH-MID tracks
+      auto midIt = std::find_if(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
+                                [globalBC](const auto& midPair) {
+                                  return midPair.first == static_cast<uint64_t>(globalBC);
+                                });
+      const auto* midTrackIDs = (midIt != bcsMatchedTrIdsMID.end()) ? &midIt->second : nullptr;
+
+      // ensure MCH-MID tracks are available
+      if (!midTrackIDs || midTrackIDs->size() != 2) {
+        continue;
+      }
+
+      std::vector<int64_t> trkCandIDs;
+
+      // retrieve global track eta and apply the logic
+      bool firstInAcceptance = false, secondInAcceptance = false;
+
+      const auto& trk1 = fwdTracks.iteratorAt(fwdTrackIDs[0]);
+      const auto& trk2 = fwdTracks.iteratorAt(fwdTrackIDs[1]);
+
+      if (trk1.eta() > fMinEtaMFT && trk1.eta() < fMaxEtaMFT) {
+        firstInAcceptance = true;
+      }
+      if (trk2.eta() > fMinEtaMFT && trk2.eta() < fMaxEtaMFT) {
+        secondInAcceptance = true;
+      }
+
+      // handle the four cases
+      if (!firstInAcceptance && !secondInAcceptance) {
+        // Case 1: Both outside MFT acceptance
+        trkCandIDs.insert(trkCandIDs.end(), midTrackIDs->begin(), midTrackIDs->end());
+      } else if (firstInAcceptance && !secondInAcceptance) {
+        // Case 2: First inside, second outside
+        trkCandIDs.push_back(fwdTrackIDs[0]);    // Keep first global
+        trkCandIDs.push_back((*midTrackIDs)[1]); // Replace second with MCH-MID
+      } else if (!firstInAcceptance && secondInAcceptance) {
+        // Case 3: First outside, second inside
+        trkCandIDs.push_back((*midTrackIDs)[0]); // Replace first with MCH-MID
+        trkCandIDs.push_back(fwdTrackIDs[1]);    // Keep second global
+      } else {
+        // Case 4: Both inside MFT acceptance
+        trkCandIDs.insert(trkCandIDs.end(), fwdTrackIDs.begin(), fwdTrackIDs.end());
+      }
+
       uint64_t closestBcMCH = 0;
       upchelpers::FITInfo fitInfo{};
       fitInfo.timeFT0A = -999.f;
@@ -1724,7 +1755,7 @@ struct UpcCandProducer {
                           fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                           fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                           fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A);
+      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, 0, 0, 0, 0, 0);
       eventCandidatesSelsFwd(fitInfo.distClosestBcV0A,
                              fitInfo.distClosestBcT0A,
                              amplitudesT0A,
@@ -1732,7 +1763,6 @@ struct UpcCandProducer {
                              amplitudesV0A,
                              relBCsV0A);
       candID++;
-      midIt++;
       trkCandIDs.clear();
     }
 

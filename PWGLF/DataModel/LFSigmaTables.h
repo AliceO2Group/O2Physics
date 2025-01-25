@@ -25,19 +25,6 @@
 // Creating output TTree for sigma analysis
 namespace o2::aod
 {
-DECLARE_SOA_TABLE(Sigma0Collisions, "AOD", "SIGMA0COLLISION", //! basic collision properties: position
-                  o2::soa::Index<>, collision::PosX, collision::PosY, collision::PosZ,
-                  cent::CentFT0M, cent::CentFT0A, cent::CentFT0C, cent::CentFV0A);
-
-using Sigma0Collision = Sigma0Collisions::iterator;
-
-namespace sigma0Core
-{
-//______________________________________________________
-// REGULAR COLUMNS FOR INDEXING
-// FOR DERIVED
-DECLARE_SOA_INDEX_COLUMN(Sigma0Collision, sigma0Collision); //!
-} // namespace sigma0Core
 
 // for real data
 namespace sigma0Core
@@ -46,8 +33,8 @@ DECLARE_SOA_COLUMN(SigmapT, sigmapT, float);
 DECLARE_SOA_COLUMN(SigmaMass, sigmaMass, float);
 DECLARE_SOA_COLUMN(SigmaRapidity, sigmaRapidity, float);
 DECLARE_SOA_COLUMN(SigmaOPAngle, sigmaOPAngle, float);
-DECLARE_SOA_COLUMN(SigmaDeltaEta, sigmaDeltaEta, float);
-DECLARE_SOA_COLUMN(SigmaDeltaPhi, sigmaDeltaPhi, float);
+DECLARE_SOA_COLUMN(SigmaCentrality, sigmaCentrality, float);
+
 } // namespace sigma0Core
 
 DECLARE_SOA_TABLE(Sigma0Cores, "AOD", "SIGMA0CORES",
@@ -55,11 +42,7 @@ DECLARE_SOA_TABLE(Sigma0Cores, "AOD", "SIGMA0CORES",
                   sigma0Core::SigmaMass,
                   sigma0Core::SigmaRapidity,
                   sigma0Core::SigmaOPAngle,
-                  sigma0Core::SigmaDeltaEta,
-                  sigma0Core::SigmaDeltaPhi);
-
-DECLARE_SOA_TABLE(Sigma0CollRefs, "AOD", "SIGMA0COLLREF", //! optional table to refer back to a collision
-                  o2::soa::Index<>, sigma0Core::Sigma0CollisionId);
+                  sigma0Core::SigmaCentrality);
 
 // For Photon extra info
 namespace sigmaPhotonExtra
@@ -77,8 +60,10 @@ DECLARE_SOA_COLUMN(PhotonZconv, photonZconv, float);
 DECLARE_SOA_COLUMN(PhotonEta, photonEta, float);
 DECLARE_SOA_COLUMN(PhotonY, photonY, float);
 DECLARE_SOA_COLUMN(PhotonPhi, photonPhi, float);
-DECLARE_SOA_COLUMN(PhotonPosTPCNSigma, photonPosTPCNSigma, float);
-DECLARE_SOA_COLUMN(PhotonNegTPCNSigma, photonNegTPCNSigma, float);
+DECLARE_SOA_COLUMN(PhotonPosTPCNSigmaEl, photonPosTPCNSigmaEl, float);
+DECLARE_SOA_COLUMN(PhotonNegTPCNSigmaEl, photonNegTPCNSigmaEl, float);
+DECLARE_SOA_COLUMN(PhotonPosTPCNSigmaPi, photonPosTPCNSigmaPi, float);
+DECLARE_SOA_COLUMN(PhotonNegTPCNSigmaPi, photonNegTPCNSigmaPi, float);
 DECLARE_SOA_COLUMN(PhotonPosTPCCrossedRows, photonPosTPCCrossedRows, uint8_t);
 DECLARE_SOA_COLUMN(PhotonNegTPCCrossedRows, photonNegTPCCrossedRows, uint8_t);
 DECLARE_SOA_COLUMN(PhotonPosPt, photonPosPt, float);
@@ -111,8 +96,10 @@ DECLARE_SOA_TABLE(SigmaPhotonExtras, "AOD", "SIGMA0PHOTON",
                   sigmaPhotonExtra::PhotonEta,
                   sigmaPhotonExtra::PhotonY,
                   sigmaPhotonExtra::PhotonPhi,
-                  sigmaPhotonExtra::PhotonPosTPCNSigma,
-                  sigmaPhotonExtra::PhotonNegTPCNSigma,
+                  sigmaPhotonExtra::PhotonPosTPCNSigmaEl,
+                  sigmaPhotonExtra::PhotonNegTPCNSigmaEl,
+                  sigmaPhotonExtra::PhotonPosTPCNSigmaPi,
+                  sigmaPhotonExtra::PhotonNegTPCNSigmaPi,
                   sigmaPhotonExtra::PhotonPosTPCCrossedRows,
                   sigmaPhotonExtra::PhotonNegTPCCrossedRows,
                   sigmaPhotonExtra::PhotonPosPt,
@@ -218,24 +205,30 @@ namespace sigmaMCCore
 {
 DECLARE_SOA_COLUMN(IsSigma, isSigma, bool); // TODO: include PDG + IsPhysicalPrimary
 DECLARE_SOA_COLUMN(IsAntiSigma, isAntiSigma, bool);
+DECLARE_SOA_COLUMN(SigmaMCPt, sigmaMCPt, float);
 DECLARE_SOA_COLUMN(PhotonCandPDGCode, photonCandPDGCode, int);
 DECLARE_SOA_COLUMN(PhotonCandPDGCodeMother, photonCandPDGCodeMother, int);
 DECLARE_SOA_COLUMN(IsPhotonCandPrimary, isPhotonCandPrimary, bool);
+DECLARE_SOA_COLUMN(PhotonMCPt, photonMCPt, float);
 DECLARE_SOA_COLUMN(LambdaCandPDGCode, lambdaCandPDGCode, int);
 DECLARE_SOA_COLUMN(LambdaCandPDGCodeMother, lambdaCandPDGCodeMother, int);
 DECLARE_SOA_COLUMN(IsLambdaCandPrimary, isLambdaCandPrimary, bool);
+DECLARE_SOA_COLUMN(LambdaMCPt, lambdaMCPt, float);
 
 } // namespace sigmaMCCore
 
 DECLARE_SOA_TABLE(SigmaMCCores, "AOD", "SIGMA0MCCORES",
                   sigmaMCCore::IsSigma,
                   sigmaMCCore::IsAntiSigma,
+                  sigmaMCCore::SigmaMCPt,
                   sigmaMCCore::PhotonCandPDGCode,
                   sigmaMCCore::PhotonCandPDGCodeMother,
                   sigmaMCCore::IsPhotonCandPrimary,
+                  sigmaMCCore::PhotonMCPt,
                   sigmaMCCore::LambdaCandPDGCode,
                   sigmaMCCore::LambdaCandPDGCodeMother,
-                  sigmaMCCore::IsLambdaCandPrimary);
+                  sigmaMCCore::IsLambdaCandPrimary,
+                  sigmaMCCore::LambdaMCPt);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSIGMATABLES_H_

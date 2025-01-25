@@ -24,6 +24,11 @@ o2physics_add_dpl_workflow(tracks-extra-converter
                     PUBLIC_LINK_LIBRARIES
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(tracks-extra-v002-converter
+                    SOURCES tracksExtraV002Converter.cxx
+                    PUBLIC_LINK_LIBRARIES
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(mft-tracks-converter
                     SOURCES mftTracksConverter.cxx
                     PUBLIC_LINK_LIBRARIES
@@ -74,3 +79,32 @@ o2physics_add_dpl_workflow(multsextra-converter
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(multmcextras-converter
+                    SOURCES multMCExtrasConverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(trackqa-converter
+                    SOURCES trackQAConverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(trackqa-converter-002
+                    SOURCES trackQA002Converter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(run2bcinfos-converter
+                    SOURCES run2bcinfosConverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(run2-tracks-extra-converter
+                    SOURCES run2tracksExtraConverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(run2-tiny-to-full-pid
+                    SOURCES run2TinyToFullPID.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

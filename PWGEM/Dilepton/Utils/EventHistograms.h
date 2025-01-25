@@ -18,7 +18,7 @@ using namespace o2::framework;
 
 namespace o2::aod::pwgem::dilepton::utils::eventhistogram
 {
-const int nbin_ev = 14;
+const int nbin_ev = 21;
 template <const int nmod = -1>
 void addEventHistograms(HistogramRegistry* fRegistry)
 {
@@ -36,8 +36,15 @@ void addEventHistograms(HistogramRegistry* fRegistry)
   hCollisionCounter->GetXaxis()->SetBinLabel(10, "sel8");
   hCollisionCounter->GetXaxis()->SetBinLabel(11, "|Z_{vtx}| < 10 cm");
   hCollisionCounter->GetXaxis()->SetBinLabel(12, "NoCollInTimeRangeStandard");
-  hCollisionCounter->GetXaxis()->SetBinLabel(13, "Calibrated Q vector");
-  hCollisionCounter->GetXaxis()->SetBinLabel(14, "accepted");
+  hCollisionCounter->GetXaxis()->SetBinLabel(13, "NoCollInTimeRangeStrict");
+  hCollisionCounter->GetXaxis()->SetBinLabel(14, "NoCollInRofStandard");
+  hCollisionCounter->GetXaxis()->SetBinLabel(15, "NoCollInRofStrict");
+  hCollisionCounter->GetXaxis()->SetBinLabel(16, "NoHighMultCollInPrevRof");
+  hCollisionCounter->GetXaxis()->SetBinLabel(17, "IsGoodITSLayer3");
+  hCollisionCounter->GetXaxis()->SetBinLabel(18, "IsGoodITSLayer0123");
+  hCollisionCounter->GetXaxis()->SetBinLabel(19, "IsGoodITSLayersAll");
+  hCollisionCounter->GetXaxis()->SetBinLabel(20, "Calibrated Q vector");
+  hCollisionCounter->GetXaxis()->SetBinLabel(21, "accepted");
 
   fRegistry->add("Event/before/hZvtx", "vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
   fRegistry->add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", kTH1F, {{6001, -0.5, 6000.5}}, false);
@@ -158,6 +165,27 @@ void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, co
   }
   if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 12.0);
+  }
+  if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 13.0);
+  }
+  if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 14.0);
+  }
+  if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 15.0);
+  }
+  if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 16.0);
+  }
+  if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3)) {
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 17.0);
+  }
+  if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 18.0);
+  }
+  if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 19.0);
   }
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hZvtx"), collision.posZ());
 

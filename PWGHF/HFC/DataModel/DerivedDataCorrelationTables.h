@@ -26,6 +26,7 @@ DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float); //! Event multiplicity
 DECLARE_SOA_COLUMN(PosZ, posZ, float);                 //! Primary vertex z position
 
 } // namespace hf_collisions_reduced
+
 DECLARE_SOA_TABLE(HfcRedCollisions, "AOD", "HFCREDCOLLISION", //! Table with collision info
                   soa::Index<>,
                   aod::hf_collisions_reduced::Multiplicity,
@@ -44,7 +45,7 @@ DECLARE_SOA_COLUMN(EtaCand, etaCand, float);              //! Eta of the candida
 DECLARE_SOA_COLUMN(PtCand, ptCand, float);                //! Pt of the candidate
 DECLARE_SOA_COLUMN(InvMassDs, invMassDs, float);          //! Invariant mass of Ds candidate
 } // namespace hf_candidate_reduced
-DECLARE_SOA_TABLE(DsCandReduced, "AOD", "DSCANDREDUCED", //! Table with Ds candidate info (rectangular selection)
+DECLARE_SOA_TABLE(DsCandReduceds, "AOD", "DSCANDREDUCED", //! Table with Ds candidate info (rectangular selection)
                   soa::Index<>,
                   aod::hf_candidate_reduced::HfcRedCollisionId,
                   aod::hf_candidate_reduced::PhiCand,
@@ -59,7 +60,7 @@ DECLARE_SOA_COLUMN(EtaAssocTrack, etaAssocTrack, float); //! Eta of the track
 DECLARE_SOA_COLUMN(PhiAssocTrack, phiAssocTrack, float); //! Phi of the track
 DECLARE_SOA_COLUMN(PtAssocTrack, ptAssocTrack, float);   //! Pt of the track
 } // namespace hf_assoc_track_reduced
-DECLARE_SOA_TABLE(AssocTrackRed, "AOD", "ASSOCTRACKRED", //! Table with associated track info
+DECLARE_SOA_TABLE(AssocTrackReds, "AOD", "ASSOCTRACKRED", //! Table with associated track info
                   soa::Index<>,
                   aod::hf_candidate_reduced::HfcRedCollisionId,
                   aod::hf_assoc_track_reduced::PhiAssocTrack,

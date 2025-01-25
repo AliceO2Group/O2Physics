@@ -42,6 +42,10 @@ class EMEventCut : public TNamed
     kNoCollInTimeRangeStrict,
     kNoCollInITSROFStandard,
     kNoCollInITSROFStrict,
+    kNoHighMultCollInPrevRof,
+    kIsGoodITSLayer3,
+    kIsGoodITSLayer0123,
+    kIsGoodITSLayersAll,
     kNCuts
   };
 
@@ -82,6 +86,18 @@ class EMEventCut : public TNamed
       return false;
     }
     if (mRequireNoCollInITSROFStrict && !IsSelected(collision, EMEventCuts::kNoCollInITSROFStrict)) {
+      return false;
+    }
+    if (mRequireNoHighMultCollInPrevRof && !IsSelected(collision, EMEventCuts::kNoHighMultCollInPrevRof)) {
+      return false;
+    }
+    if (mRequireGoodITSLayer3 && !IsSelected(collision, EMEventCuts::kIsGoodITSLayer3)) {
+      return false;
+    }
+    if (mRequireGoodITSLayer0123 && !IsSelected(collision, EMEventCuts::kIsGoodITSLayer0123)) {
+      return false;
+    }
+    if (mRequireGoodITSLayersAll && !IsSelected(collision, EMEventCuts::kIsGoodITSLayersAll)) {
       return false;
     }
     return true;
@@ -127,6 +143,18 @@ class EMEventCut : public TNamed
       case EMEventCuts::kNoCollInITSROFStrict:
         return collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict);
 
+      case EMEventCuts::kNoHighMultCollInPrevRof:
+        return collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof);
+
+      case EMEventCuts::kIsGoodITSLayer3:
+        return collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3);
+
+      case EMEventCuts::kIsGoodITSLayer0123:
+        return collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123);
+
+      case EMEventCuts::kIsGoodITSLayersAll:
+        return collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
+
       default:
         return true;
     }
@@ -145,13 +173,17 @@ class EMEventCut : public TNamed
   void SetRequireNoCollInTimeRangeStrict(bool flag);
   void SetRequireNoCollInITSROFStandard(bool flag);
   void SetRequireNoCollInITSROFStrict(bool flag);
+  void SetRequireNoHighMultCollInPrevRof(bool flag);
+  void SetRequireGoodITSLayer3(bool flag);
+  void SetRequireGoodITSLayer0123(bool flag);
+  void SetRequireGoodITSLayersAll(bool flag);
 
  private:
-  bool mRequireSel8{true};
+  bool mRequireSel8{false};
   bool mRequireFT0AND{true};
   float mMinZvtx{-10.f}, mMaxZvtx{+10.f};
-  bool mRequireNoTFB{true};
-  bool mRequireNoITSROFB{true};
+  bool mRequireNoTFB{false};
+  bool mRequireNoITSROFB{false};
   bool mRequireNoSameBunchPileup{false};
   bool mRequireVertexITSTPC{false};
   bool mRequireGoodZvtxFT0vsPV{false};
@@ -159,6 +191,10 @@ class EMEventCut : public TNamed
   bool mRequireNoCollInTimeRangeStrict{false};
   bool mRequireNoCollInITSROFStandard{false};
   bool mRequireNoCollInITSROFStrict{false};
+  bool mRequireNoHighMultCollInPrevRof{false};
+  bool mRequireGoodITSLayer3{false};
+  bool mRequireGoodITSLayer0123{false};
+  bool mRequireGoodITSLayersAll{false};
 
   ClassDef(EMEventCut, 1);
 };

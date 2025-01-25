@@ -9,12 +9,19 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+/// \file quarkoniaToHyperons.cxx
+/// \brief quarkonia --> hyperon antihyperon analysis task
+///
+/// \author David Dobrigkeit Chinellato <david.dobrigkeit.chinellato@cern.ch>, Austrian Academy of Sciences & SMI
+/// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences & SMI
+//
 // V0 analysis task
 // ================
 //
 // This code loops over a V0Cores table and produces some
 // standard analysis output. It is meant to be run over
 // derived data.
+//
 //
 //    Comments, questions, complaints, suggestions?
 //    Please write to:
@@ -26,13 +33,15 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <map>
+#include <string>
+#include <vector>
 
 #include <TFile.h>
 #include <TH2F.h>
 #include <TProfile.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include <TDatabasePDG.h>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -40,6 +49,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -55,35 +65,44 @@
 #include "Tools/ML/MlResponse.h"
 #include "Tools/ML/model.h"
 
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+
 // constants
-const float ctauXiPDG = 4.91;     // from PDG
-const float ctauOmegaPDG = 2.461; // from PDG
+const float ctauXiPDG = 4.91;     // Xi PDG lifetime
+const float ctauOmegaPDG = 2.461; // Omega PDG lifetime
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using dauMCTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackMCIds, aod::DauTrackTPCPIDs>;
-using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0K0ShortMLScores>;
-// using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0MCCollRefs>;
-using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0CoreMCLabels, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0K0ShortMLScores>;
+using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+using DauMCTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackMCIds, aod::DauTrackTPCPIDs>;
+using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0K0ShortMLScores>;
+// using V0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0MCCollRefs>;
+using V0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0CoreMCLabels, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0K0ShortMLScores>;
 
-using cascadeCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascXiMLScores, aod::CascOmMLScores>;
-using cascadeMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascXiMLScores, aod::CascOmMLScores, aod::CascCoreMCLabels>;
+using CascadeCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascXiMLScores, aod::CascOmMLScores>;
+using CascadeMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascXiMLScores, aod::CascOmMLScores, aod::CascCoreMCLabels>;
 
 // simple checkers, but ensure 64 bit integers
-#define bitset(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
-#define bitcheck(var, nbit) ((var) & (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
+#define BITSET(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
+#define BITCHECK(var, nbit) ((var) & (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 
-struct quarkoniaToHyperons {
+struct QuarkoniaToHyperons {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // master analysis switches
   Configurable<bool> isPP{"isPP", true, "If running on pp collision, switch it on true"};
 
+  // for running over skimmed dataset
+  Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "If running over skimmed data, switch it on true"};
+  Configurable<std::string> cfgSkimmedTrigger{"cfgSkimmedTrigger", "fDoubleXi,fTripleXi,fQuadrupleXi", "(std::string) Comma separated list of triggers of interest"};
+
+  // switch on/off event selections
   Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
+  Configurable<bool> requireTriggerTVX{"requireTriggerTVX", true, "require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level"};
   Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
   Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
   Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "require events with at least one ITS-TPC track"};
@@ -94,9 +113,12 @@ struct quarkoniaToHyperons {
   Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", true, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
   Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
 
+  Configurable<bool> buildK0sK0sPairs{"buildK0sK0sPairs", false, "Build K0s K0s from charmonia decay"};
   Configurable<bool> buildLaLaBarPairs{"buildLaLaBarPairs", false, "Build Lambda antiLambda from charmonia decay"};
   Configurable<bool> buildXiXiBarPairs{"buildXiXiBarPairs", false, "Build Xi antiXi from charmonia decay"};
   Configurable<bool> buildOmOmBarPairs{"buildOmOmBarPairs", false, "Build Omega antiOmega from charmonia decay"};
+
+  Configurable<bool> buildSameSignPairs{"buildSameSignPairs", false, "If true: build same-sign pairs, otherwise consider only opposite-sign pairs"};
 
   // fast check on occupancy
   Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
@@ -137,10 +159,10 @@ struct quarkoniaToHyperons {
     Configurable<bool> requireNegITSonly{"v0Selections.requireNegITSonly", false, "require that negative track is ITSonly (overrides TPC quality)"};
 
     // PID (TPC/TOF)
-    Configurable<float> TpcPidNsigmaCut{"v0Selections.TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
-    Configurable<float> TofPidNsigmaCutLaPr{"v0Selections.TofPidNsigmaCutLaPr", 1e+6, "TofPidNsigmaCutLaPr"};
-    Configurable<float> TofPidNsigmaCutLaPi{"v0Selections.TofPidNsigmaCutLaPi", 1e+6, "TofPidNsigmaCutLaPi"};
-    Configurable<float> TofPidNsigmaCutK0Pi{"v0Selections.TofPidNsigmaCutK0Pi", 1e+6, "TofPidNsigmaCutK0Pi"};
+    Configurable<float> tpcPidNsigmaCut{"v0Selections.tpcPidNsigmaCut", 5, "tpcPidNsigmaCut"};
+    Configurable<float> tofPidNsigmaCutLaPr{"v0Selections.tofPidNsigmaCutLaPr", 1e+6, "tofPidNsigmaCutLaPr"};
+    Configurable<float> tofPidNsigmaCutLaPi{"v0Selections.tofPidNsigmaCutLaPi", 1e+6, "tofPidNsigmaCutLaPi"};
+    Configurable<float> tofPidNsigmaCutK0Pi{"v0Selections.tofPidNsigmaCutK0Pi", 1e+6, "tofPidNsigmaCutK0Pi"};
 
     // PID (TOF)
     Configurable<float> maxDeltaTimeProton{"v0Selections.maxDeltaTimeProton", 1e+9, "check maximum allowed time"};
@@ -185,11 +207,11 @@ struct quarkoniaToHyperons {
     Configurable<bool> requireNegITSonly{"cascSelections.requireNegITSonly", false, "require that negative track is ITSonly (overrides TPC quality)"};
 
     // PID (TPC/TOF)
-    Configurable<float> TpcPidNsigmaCut{"cascSelections.TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
-    Configurable<float> TofPidNsigmaCutLaPr{"cascSelections.TofPidNsigmaCutLaPr", 1e+6, "TofPidNsigmaCutLaPr"};
-    Configurable<float> TofPidNsigmaCutLaPi{"cascSelections.TofPidNsigmaCutLaPi", 1e+6, "TofPidNsigmaCutLaPi"};
-    Configurable<float> TofPidNsigmaCutXiPi{"cascSelections.TofPidNsigmaCutXiPi", 1e+6, "TofPidNsigmaCutXiPi"};
-    Configurable<float> TofPidNsigmaCutOmKa{"cascSelections.TofPidNsigmaCutOmKa", 1e+6, "TofPidNsigmaCutOmKa"};
+    Configurable<float> tpcPidNsigmaCut{"cascSelections.tpcPidNsigmaCut", 5, "tpcPidNsigmaCut"};
+    Configurable<float> tofPidNsigmaCutLaPr{"cascSelections.tofPidNsigmaCutLaPr", 1e+6, "tofPidNsigmaCutLaPr"};
+    Configurable<float> tofPidNsigmaCutLaPi{"cascSelections.tofPidNsigmaCutLaPi", 1e+6, "tofPidNsigmaCutLaPi"};
+    Configurable<float> tofPidNsigmaCutXiPi{"cascSelections.tofPidNsigmaCutXiPi", 1e+6, "tofPidNsigmaCutXiPi"};
+    Configurable<float> tofPidNsigmaCutOmKa{"cascSelections.tofPidNsigmaCutOmKa", 1e+6, "tofPidNsigmaCutOmKa"};
 
     // PID (TOF)
     Configurable<float> maxDeltaTimeProton{"cascSelections.maxDeltaTimeProton", 1e+9, "check maximum allowed time"};
@@ -205,10 +227,10 @@ struct quarkoniaToHyperons {
   // UPC selections
   SGSelector sgSelector;
   struct : ConfigurableGroup {
-    Configurable<float> FV0cut{"upcCuts.FV0cut", 100., "FV0A threshold"};
-    Configurable<float> FT0Acut{"upcCuts.FT0Acut", 200., "FT0A threshold"};
-    Configurable<float> FT0Ccut{"upcCuts.FT0Ccut", 100., "FT0C threshold"};
-    Configurable<float> ZDCcut{"upcCuts.ZDCcut", 10., "ZDC threshold"};
+    Configurable<float> fv0Cut{"upcCuts.fv0Cut", 100., "FV0A threshold"};
+    Configurable<float> ft0aCut{"upcCuts.ft0aCut", 200., "FT0A threshold"};
+    Configurable<float> ft0cCut{"upcCuts.ft0cCut", 100., "FT0C threshold"};
+    Configurable<float> zdcCut{"upcCuts.zdcCut", 10., "ZDC threshold"};
     // Configurable<float> gapSel{"upcCuts.gapSel", 2, "Gap selection"};
   } upcCuts;
 
@@ -255,9 +277,13 @@ struct quarkoniaToHyperons {
     Configurable<std::string> mVtxPath{"ccdbConfigurations.mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   } ccdbConfigurations;
 
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
   int mRunNumber;
   std::map<std::string, std::string> metadata;
+
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   static constexpr float defaultLifetimeCuts[1][2] = {{30., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
@@ -285,6 +311,10 @@ struct quarkoniaToHyperons {
   ConfigurableAxis axisOmegaMass{"axisOmegaMass", {500, 1.670f, 1.675f}, "Omega mass (GeV/#it{c}^{2})"};
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {200, -10.0f, 10.0f}, "N sigma TPC"};
 
+  // AP plot axes
+  ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
+  ConfigurableAxis axisAPQt{"axisAPQt", {220, 0.0f, 0.5f}, "V0 AP alpha"};
+
   // Track quality axes
   ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
   ConfigurableAxis axisITSclus{"axisITSclus", {7, 0.0f, 7.0f}, "N ITS Clusters"};
@@ -298,7 +328,7 @@ struct quarkoniaToHyperons {
   // For manual sliceBy
   PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
 
-  enum selection : uint64_t { selCosPA = 0,
+  enum Selection : uint64_t { selCosPA = 0,
                               selRadius,
                               selRadiusMax,
                               selDCANegToPV,
@@ -370,61 +400,61 @@ struct quarkoniaToHyperons {
   void init(InitContext const&)
   {
     // initialise bit masks
-    maskTopological = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0ToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoV0Radius = (uint64_t(1) << selCosPA) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0ToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoDCANegToPV = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0ToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoDCAPosToPV = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAV0ToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoCosPA = (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0ToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoDCAV0Dau = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0ToPV) | (uint64_t(1) << selRadiusMax);
-    maskTopoNoDCAV0ToPV = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
+    maskTopological = (static_cast<uint64_t>(1) << selCosPA) | (static_cast<uint64_t>(1) << selRadius) | (static_cast<uint64_t>(1) << selDCANegToPV) | (static_cast<uint64_t>(1) << selDCAPosToPV) | (static_cast<uint64_t>(1) << selDCAV0ToPV) | (static_cast<uint64_t>(1) << selDCAV0Dau) | (static_cast<uint64_t>(1) << selRadiusMax);
+    maskTopoNoV0Radius = (static_cast<uint64_t>(1) << selCosPA) | (static_cast<uint64_t>(1) << selDCANegToPV) | (static_cast<uint64_t>(1) << selDCAPosToPV) | (static_cast<uint64_t>(1) << selDCAV0ToPV) | (static_cast<uint64_t>(1) << selDCAV0Dau) | (static_cast<uint64_t>(1) << selRadiusMax);
+    maskTopoNoDCANegToPV = (static_cast<uint64_t>(1) << selCosPA) | (static_cast<uint64_t>(1) << selRadius) | (static_cast<uint64_t>(1) << selDCAPosToPV) | (static_cast<uint64_t>(1) << selDCAV0ToPV) | (static_cast<uint64_t>(1) << selDCAV0Dau) | (static_cast<uint64_t>(1) << selRadiusMax);
+    maskTopoNoDCAPosToPV = (static_cast<uint64_t>(1) << selCosPA) | (static_cast<uint64_t>(1) << selRadius) | (static_cast<uint64_t>(1) << selDCANegToPV) | (static_cast<uint64_t>(1) << selDCAV0ToPV) | (static_cast<uint64_t>(1) << selDCAV0Dau) | (static_cast<uint64_t>(1) << selRadiusMax);
+    maskTopoNoCosPA = (static_cast<uint64_t>(1) << selRadius) | (static_cast<uint64_t>(1) << selDCANegToPV) | (static_cast<uint64_t>(1) << selDCAPosToPV) | (static_cast<uint64_t>(1) << selDCAV0ToPV) | (static_cast<uint64_t>(1) << selDCAV0Dau) | (static_cast<uint64_t>(1) << selRadiusMax);
+    maskTopoNoDCAV0Dau = (static_cast<uint64_t>(1) << selCosPA) | (static_cast<uint64_t>(1) << selRadius) | (static_cast<uint64_t>(1) << selDCANegToPV) | (static_cast<uint64_t>(1) << selDCAPosToPV) | (static_cast<uint64_t>(1) << selDCAV0ToPV) | (static_cast<uint64_t>(1) << selRadiusMax);
+    maskTopoNoDCAV0ToPV = (static_cast<uint64_t>(1) << selCosPA) | (static_cast<uint64_t>(1) << selRadius) | (static_cast<uint64_t>(1) << selDCANegToPV) | (static_cast<uint64_t>(1) << selDCAPosToPV) | (static_cast<uint64_t>(1) << selDCAV0Dau) | (static_cast<uint64_t>(1) << selRadiusMax);
 
-    maskK0ShortSpecific = (uint64_t(1) << selK0ShortRapidity) | (uint64_t(1) << selK0ShortCTau) | (uint64_t(1) << selK0ShortArmenteros) | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selK0ShortMassWindow) | (uint64_t(1) << selLambdaMassRejection);
-    maskLambdaSpecific = (uint64_t(1) << selLambdaRapidity) | (uint64_t(1) << selLambdaCTau) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selLambdaMassWindow) | (uint64_t(1) << selK0ShortMassRejection);
-    maskAntiLambdaSpecific = (uint64_t(1) << selLambdaRapidity) | (uint64_t(1) << selLambdaCTau) | (uint64_t(1) << selConsiderAntiLambda) | (uint64_t(1) << selAntiLambdaMassWindow) | (uint64_t(1) << selK0ShortMassRejection);
+    maskK0ShortSpecific = (static_cast<uint64_t>(1) << selK0ShortRapidity) | (static_cast<uint64_t>(1) << selK0ShortCTau) | (static_cast<uint64_t>(1) << selK0ShortArmenteros) | (static_cast<uint64_t>(1) << selConsiderK0Short) | (static_cast<uint64_t>(1) << selK0ShortMassWindow) | (static_cast<uint64_t>(1) << selLambdaMassRejection);
+    maskLambdaSpecific = (static_cast<uint64_t>(1) << selLambdaRapidity) | (static_cast<uint64_t>(1) << selLambdaCTau) | (static_cast<uint64_t>(1) << selConsiderLambda) | (static_cast<uint64_t>(1) << selLambdaMassWindow) | (static_cast<uint64_t>(1) << selK0ShortMassRejection);
+    maskAntiLambdaSpecific = (static_cast<uint64_t>(1) << selLambdaRapidity) | (static_cast<uint64_t>(1) << selLambdaCTau) | (static_cast<uint64_t>(1) << selConsiderAntiLambda) | (static_cast<uint64_t>(1) << selAntiLambdaMassWindow) | (static_cast<uint64_t>(1) << selK0ShortMassRejection);
 
     // ask for specific TPC/TOF PID selections
     maskTrackProperties = 0;
     if (v0Selections.requirePosITSonly) {
-      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selPosItsOnly) | (uint64_t(1) << selPosGoodITSTrack);
+      maskTrackProperties = maskTrackProperties | (static_cast<uint64_t>(1) << selPosItsOnly) | (static_cast<uint64_t>(1) << selPosGoodITSTrack);
     } else {
-      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selPosGoodTPCTrack) | (uint64_t(1) << selPosGoodITSTrack);
+      maskTrackProperties = maskTrackProperties | (static_cast<uint64_t>(1) << selPosGoodTPCTrack) | (static_cast<uint64_t>(1) << selPosGoodITSTrack);
       // TPC signal is available: ask for positive track PID
-      if (v0Selections.TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
-        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDPositivePion);
-        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDPositiveProton);
-        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDPositivePion);
+      if (v0Selections.tpcPidNsigmaCut < 1e+5) { // safeguard for no cut
+        maskK0ShortSpecific = maskK0ShortSpecific | (static_cast<uint64_t>(1) << selTPCPIDPositivePion);
+        maskLambdaSpecific = maskLambdaSpecific | (static_cast<uint64_t>(1) << selTPCPIDPositiveProton);
+        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << selTPCPIDPositivePion);
       }
       // TOF PID
-      if (v0Selections.TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
-        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaPositivePionK0Short) | (uint64_t(1) << selTOFDeltaTPositivePionK0Short);
-      if (v0Selections.TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
-        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaPositiveProtonLambda) | (uint64_t(1) << selTOFDeltaTPositiveProtonLambda);
-      if (v0Selections.TofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
-        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaPositivePionLambda) | (uint64_t(1) << selTOFDeltaTPositivePionLambda);
+      if (v0Selections.tofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
+        maskK0ShortSpecific = maskK0ShortSpecific | (static_cast<uint64_t>(1) << selTOFNSigmaPositivePionK0Short) | (static_cast<uint64_t>(1) << selTOFDeltaTPositivePionK0Short);
+      if (v0Selections.tofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
+        maskLambdaSpecific = maskLambdaSpecific | (static_cast<uint64_t>(1) << selTOFNSigmaPositiveProtonLambda) | (static_cast<uint64_t>(1) << selTOFDeltaTPositiveProtonLambda);
+      if (v0Selections.tofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
+        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << selTOFNSigmaPositivePionLambda) | (static_cast<uint64_t>(1) << selTOFDeltaTPositivePionLambda);
     }
     if (v0Selections.requireNegITSonly) {
-      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selNegItsOnly) | (uint64_t(1) << selNegGoodITSTrack);
+      maskTrackProperties = maskTrackProperties | (static_cast<uint64_t>(1) << selNegItsOnly) | (static_cast<uint64_t>(1) << selNegGoodITSTrack);
     } else {
-      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selNegGoodTPCTrack) | (uint64_t(1) << selNegGoodITSTrack);
+      maskTrackProperties = maskTrackProperties | (static_cast<uint64_t>(1) << selNegGoodTPCTrack) | (static_cast<uint64_t>(1) << selNegGoodITSTrack);
       // TPC signal is available: ask for negative track PID
-      if (v0Selections.TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
-        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDNegativePion);
-        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDNegativePion);
-        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDNegativeProton);
+      if (v0Selections.tpcPidNsigmaCut < 1e+5) { // safeguard for no cut
+        maskK0ShortSpecific = maskK0ShortSpecific | (static_cast<uint64_t>(1) << selTPCPIDNegativePion);
+        maskLambdaSpecific = maskLambdaSpecific | (static_cast<uint64_t>(1) << selTPCPIDNegativePion);
+        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << selTPCPIDNegativeProton);
       }
       // TOF PID
-      if (v0Selections.TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
-        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaNegativePionK0Short) | (uint64_t(1) << selTOFDeltaTNegativePionK0Short);
-      if (v0Selections.TofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
-        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativePionLambda) | (uint64_t(1) << selTOFDeltaTNegativePionLambda);
-      if (v0Selections.TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
-        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativeProtonLambda) | (uint64_t(1) << selTOFDeltaTNegativeProtonLambda);
+      if (v0Selections.tofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
+        maskK0ShortSpecific = maskK0ShortSpecific | (static_cast<uint64_t>(1) << selTOFNSigmaNegativePionK0Short) | (static_cast<uint64_t>(1) << selTOFDeltaTNegativePionK0Short);
+      if (v0Selections.tofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
+        maskLambdaSpecific = maskLambdaSpecific | (static_cast<uint64_t>(1) << selTOFNSigmaNegativePionLambda) | (static_cast<uint64_t>(1) << selTOFDeltaTNegativePionLambda);
+      if (v0Selections.tofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
+        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << selTOFNSigmaNegativeProtonLambda) | (static_cast<uint64_t>(1) << selTOFDeltaTNegativeProtonLambda);
     }
 
     if (v0Selections.skipTPConly) {
-      maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
-      maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
-      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
+      maskK0ShortSpecific = maskK0ShortSpecific | (static_cast<uint64_t>(1) << selPosNotTPCOnly) | (static_cast<uint64_t>(1) << selNegNotTPCOnly);
+      maskLambdaSpecific = maskLambdaSpecific | (static_cast<uint64_t>(1) << selPosNotTPCOnly) | (static_cast<uint64_t>(1) << selNegNotTPCOnly);
+      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << selPosNotTPCOnly) | (static_cast<uint64_t>(1) << selNegNotTPCOnly);
     }
 
     // Primary particle selection, central to analysis
@@ -440,18 +470,19 @@ struct quarkoniaToHyperons {
     histos.add("hEventSelection", "hEventSelection", kTH1F, {{20, -0.5f, +19.5f}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "kNoTimeFrameBorder");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(6, "kIsVertexITSTPC");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(7, "kIsGoodZvtxFT0vsPV");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "kNoCollInTimeRangeStd");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeNarrow");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "Below min occup.");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "Above max occup.");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(6, "posZ cut");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(7, "kIsVertexITSTPC");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kIsGoodZvtxFT0vsPV");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTOFmatched");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kIsVertexTRDmatched");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "kNoSameBunchPileup");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeStd");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "kNoCollInTimeRangeNarrow");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "Below min occup.");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "Above max occup.");
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
     histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2F, {axisCentrality, axisNch});
@@ -474,6 +505,44 @@ struct quarkoniaToHyperons {
     }
 
     // histograms versus mass
+    if (buildK0sK0sPairs) {
+      histos.add("K0sK0s/h3dMassK0sK0s", "h3dMassK0sK0s", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+      if (!isPP) {
+        // Non-UPC info
+        histos.add("K0sK0s/h3dMassK0sK0sHadronic", "h3dMassK0sK0sHadronic", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        // UPC info
+        histos.add("K0sK0s/h3dMassK0sK0sSGA", "h3dMassK0sK0sSGA", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dMassK0sK0sSGC", "h3dMassK0sK0sSGC", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dMassK0sK0sDG", "h3dMassK0sK0sDG", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+      }
+      histos.add("K0sK0s/h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
+      // QA plot
+      // Candidates after K0s selections
+      histos.add("K0sK0s/K0s/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
+      histos.add("K0sK0s/K0s/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axisDCAtoPV});
+      histos.add("K0sK0s/K0s/hDCAV0Daughters", "hDCAV0Daughters", kTH1F, {axisDCAdau});
+      histos.add("K0sK0s/K0s/hDCAV0ToPV", "hDCAV0ToPV", kTH1F, {axisDCAV0ToPV});
+      histos.add("K0sK0s/K0s/hV0PointingAngle", "hV0PointingAngle", kTH1F, {axisPointingAngle});
+      histos.add("K0sK0s/K0s/hV0Radius", "hV0Radius", kTH1F, {axisRadius});
+      histos.add("K0sK0s/K0s/hV0DecayLength", "hDecayLength", kTH1F, {axisProperLifeTime});
+      histos.add("K0sK0s/K0s/hV0InvMassWindow", "hInvMassWindow", kTH1F, {axisMassWindow});
+      histos.add("K0sK0s/K0s/h2dCompetingMassRej", "h2dCompetingMassRej", kTH2F, {axisLambdaMass, axisK0Mass});
+      histos.add("K0sK0s/K0s/h2dArmenteros", "h2dArmenteros", kTH2F, {axisAPAlpha, axisAPQt});
+      histos.add("K0sK0s/K0s/hPosTPCNsigma", "hPosTPCNsigma", kTH1F, {axisNsigmaTPC});
+      histos.add("K0sK0s/K0s/hNegTPCNsigma", "hNegTPCNsigma", kTH1F, {axisNsigmaTPC});
+      histos.add("K0sK0s/K0s/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+      histos.add("K0sK0s/K0s/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+      if (doMCAssociation) {
+        histos.add("K0sK0s/h3dInvMassTrueEtaC1S", "h3dInvMassTrueEtaC1S", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueJPsi", "h3dInvMassTrueJPsi", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueChiC0", "h3dInvMassTrueChiC0", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueChiC1", "h3dInvMassTrueChiC1", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueHC", "h3dInvMassTrueHC", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueChiC2", "h3dInvMassTrueChiC2", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueEtaC2S", "h3dInvMassTrueEtaC2S", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTruePsi2S", "h3dInvMassTruePsi2S", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
+      }
+    }
     if (buildLaLaBarPairs) {
       histos.add("LaLaBar/h3dMassLaLabar", "h3dMassLaLabar", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
       if (!isPP) {
@@ -484,7 +553,6 @@ struct quarkoniaToHyperons {
         histos.add("LaLaBar/h3dMassLaLabarSGC", "h3dMassLaLabarSGC", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
         histos.add("LaLaBar/h3dMassLaLabarDG", "h3dMassLaLabarDG", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
       }
-      histos.add("LaLaBar/h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
       histos.add("LaLaBar/h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
       histos.add("LaLaBar/h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
       // QA plot
@@ -654,6 +722,11 @@ struct quarkoniaToHyperons {
         histos.add("OmOmBar/h3dInvMassTruePsi2S", "h3dInvMassTruePsi2S", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
       }
     }
+
+    if (cfgSkimmedProcessing) {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
+
     // inspect histogram sizes, please
     histos.print();
   }
@@ -666,6 +739,15 @@ struct quarkoniaToHyperons {
     }
 
     mRunNumber = collision.runNumber();
+    if (cfgSkimmedProcessing) {
+      ccdb->setURL(ccdbConfigurations.ccdburl);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setFatalWhenNull(false);
+
+      zorro.initCCDB(ccdb.service, collision.runNumber(), collision.timestamp(), cfgSkimmedTrigger.value);
+      zorro.populateHistRegistry(histos, collision.runNumber());
+    }
 
     // machine learning initialization if requested
     if (mlConfigurations.calculateK0ShortScores ||
@@ -674,12 +756,12 @@ struct quarkoniaToHyperons {
       int64_t timeStampML = collision.timestamp();
       if (mlConfigurations.timestampCCDB.value != -1)
         timeStampML = mlConfigurations.timestampCCDB.value;
-      LoadMachines(timeStampML);
+      loadMachines(timeStampML);
     }
   }
 
   // function to load models for ML-based classifiers
-  void LoadMachines(int64_t timeStampML)
+  void loadMachines(int64_t timeStampML)
   {
     if (mlConfigurations.loadCustomModelsFromCCDB) {
       ccdbApi.init(ccdbConfigurations.ccdburl);
@@ -723,7 +805,7 @@ struct quarkoniaToHyperons {
   }
 
   template <typename TCollision>
-  bool IsEventAccepted(TCollision collision, bool fillHists)
+  bool isEventAccepted(TCollision collision, bool fillHists)
   // check whether the collision passes our collision selections
   {
     if (fillHists)
@@ -734,11 +816,11 @@ struct quarkoniaToHyperons {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 1 /* sel8 collisions */);
 
-    if (std::abs(collision.posZ()) > 10.f) {
+    if (requireTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 2 /* vertex-Z selected */);
+      histos.fill(HIST("hEventSelection"), 2 /* FT0 vertex (acceptable FT0C-FT0A time difference) collisions */);
 
     if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return false;
@@ -752,58 +834,64 @@ struct quarkoniaToHyperons {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 4 /* Not at TF border */);
 
+    if (std::abs(collision.posZ()) > 10.f) {
+      return false;
+    }
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 5 /* vertex-Z selected */);
+
     if (requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 5 /* Contains at least one ITS-TPC track */);
+      histos.fill(HIST("hEventSelection"), 6 /* Contains at least one ITS-TPC track */);
 
     if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 6 /* PV position consistency check */);
+      histos.fill(HIST("hEventSelection"), 7 /* PV position consistency check */);
 
     if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 7 /* PV with at least one contributor matched with TOF */);
+      histos.fill(HIST("hEventSelection"), 8 /* PV with at least one contributor matched with TOF */);
 
     if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 8 /* PV with at least one contributor matched with TRD */);
+      histos.fill(HIST("hEventSelection"), 9 /* PV with at least one contributor matched with TRD */);
 
     if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 9 /* Not at same bunch pile-up */);
+      histos.fill(HIST("hEventSelection"), 10 /* Not at same bunch pile-up */);
 
     if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 10 /* No other collision within +/- 10 microseconds */);
+      histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 10 microseconds */);
 
     if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 4 microseconds */);
+      histos.fill(HIST("hEventSelection"), 12 /* No other collision within +/- 4 microseconds */);
 
     if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 12 /* Below min occupancy */);
+      histos.fill(HIST("hEventSelection"), 13 /* Below min occupancy */);
     if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 13 /* Above max occupancy */);
+      histos.fill(HIST("hEventSelection"), 14 /* Above max occupancy */);
 
     return true;
   }
@@ -834,7 +922,7 @@ struct quarkoniaToHyperons {
       // 0 --> Single Gap - A side
       // 1 --> Single Gap - C side
       // 2 --> Double Gap - both A & C sides
-      selGapSide = sgSelector.trueGap(collision, upcCuts.FV0cut, upcCuts.FT0Acut, upcCuts.FT0Ccut, upcCuts.ZDCcut);
+      selGapSide = sgSelector.trueGap(collision, upcCuts.fv0Cut, upcCuts.ft0aCut, upcCuts.ft0cCut, upcCuts.zdcCut);
       histos.fill(HIST("hGapSide"), gapSide);
       histos.fill(HIST("hSelGapSide"), selGapSide);
       histos.fill(HIST("hEventCentralityVsSelGapSide"), centrality, selGapSide <= 2 ? selGapSide : -1);
@@ -862,145 +950,145 @@ struct quarkoniaToHyperons {
 
     // v0 radius min/max selections
     if (v0.v0radius() > v0Selections.v0radius)
-      bitset(bitMap, selRadius);
+      BITSET(bitMap, selRadius);
     if (v0.v0radius() < v0Selections.v0radiusMax)
-      bitset(bitMap, selRadiusMax);
+      BITSET(bitMap, selRadiusMax);
     // DCA proton and pion to PV for Lambda and AntiLambda decay hypotheses
-    if (TMath::Abs(v0.dcapostopv()) > v0Selections.dcaprotontopv &&
-        TMath::Abs(v0.dcanegtopv()) > v0Selections.dcapiontopv) {
-      bitset(bitMap, selDCAPosToPV);
-      bitset(bitMap, selDCANegToPV);
-    } else if (TMath::Abs(v0.dcapostopv()) > v0Selections.dcapiontopv &&
-               TMath::Abs(v0.dcanegtopv()) > v0Selections.dcaprotontopv) {
-      bitset(bitMap, selDCAPosToPV);
-      bitset(bitMap, selDCANegToPV);
+    if (std::fabs(v0.dcapostopv()) > v0Selections.dcaprotontopv &&
+        std::fabs(v0.dcanegtopv()) > v0Selections.dcapiontopv) {
+      BITSET(bitMap, selDCAPosToPV);
+      BITSET(bitMap, selDCANegToPV);
+    } else if (std::fabs(v0.dcapostopv()) > v0Selections.dcapiontopv &&
+               std::fabs(v0.dcanegtopv()) > v0Selections.dcaprotontopv) {
+      BITSET(bitMap, selDCAPosToPV);
+      BITSET(bitMap, selDCANegToPV);
     }
     // V0 cosine of pointing angle
     if (v0.v0cosPA() > v0Selections.v0cospa)
-      bitset(bitMap, selCosPA);
+      BITSET(bitMap, selCosPA);
     // DCA between v0 daughters
     if (v0.dcaV0daughters() < v0Selections.dcav0dau)
-      bitset(bitMap, selDCAV0Dau);
+      BITSET(bitMap, selDCAV0Dau);
     // DCA V0 to prim vtx
     if (v0.dcav0topv() > v0Selections.dcav0topv)
-      bitset(bitMap, selDCAV0ToPV);
+      BITSET(bitMap, selDCAV0ToPV);
 
     //
     // rapidity
     //
-    if (TMath::Abs(rapidityLambda) < v0Selections.rapidityCut)
-      bitset(bitMap, selLambdaRapidity);
-    if (TMath::Abs(rapidityK0Short) < v0Selections.rapidityCut)
-      bitset(bitMap, selK0ShortRapidity);
+    if (std::fabs(rapidityLambda) < v0Selections.rapidityCut)
+      BITSET(bitMap, selLambdaRapidity);
+    if (std::fabs(rapidityK0Short) < v0Selections.rapidityCut)
+      BITSET(bitMap, selK0ShortRapidity);
 
     //
     // invariant mass window
     //
-    if (TMath::Abs(v0.mK0Short() - pdgDB->Mass(310)) < v0Selections.v0MassWindow)
-      bitset(bitMap, selK0ShortMassWindow);
-    if (TMath::Abs(v0.mLambda() - pdgDB->Mass(3122)) < v0Selections.v0MassWindow)
-      bitset(bitMap, selLambdaMassWindow);
-    if (TMath::Abs(v0.mAntiLambda() - pdgDB->Mass(3122)) < v0Selections.v0MassWindow)
-      bitset(bitMap, selAntiLambdaMassWindow);
+    if (std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0Selections.v0MassWindow)
+      BITSET(bitMap, selK0ShortMassWindow);
+    if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda0) < v0Selections.v0MassWindow)
+      BITSET(bitMap, selLambdaMassWindow);
+    if (std::fabs(v0.mAntiLambda() - o2::constants::physics::MassLambda0Bar) < v0Selections.v0MassWindow)
+      BITSET(bitMap, selAntiLambdaMassWindow);
 
     //
     // competing mass rejection
     //
-    if (TMath::Abs(v0.mK0Short() - pdgDB->Mass(310)) > v0Selections.compMassRejection)
-      bitset(bitMap, selK0ShortMassRejection);
-    if (TMath::Abs(v0.mLambda() - pdgDB->Mass(3122)) > v0Selections.compMassRejection)
-      bitset(bitMap, selLambdaMassRejection);
+    if (std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) > v0Selections.compMassRejection)
+      BITSET(bitMap, selK0ShortMassRejection);
+    if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda0) > v0Selections.compMassRejection)
+      BITSET(bitMap, selLambdaMassRejection);
 
-    auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
-    auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
+    auto posTrackExtra = v0.template posTrackExtra_as<DauTracks>();
+    auto negTrackExtra = v0.template negTrackExtra_as<DauTracks>();
 
     //
     // ITS quality flags
     //
     if (posTrackExtra.itsNCls() >= v0Selections.minITSclusters)
-      bitset(bitMap, selPosGoodITSTrack);
+      BITSET(bitMap, selPosGoodITSTrack);
     if (negTrackExtra.itsNCls() >= v0Selections.minITSclusters)
-      bitset(bitMap, selNegGoodITSTrack);
+      BITSET(bitMap, selNegGoodITSTrack);
 
     //
     // TPC quality flags
     //
     if (posTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows)
-      bitset(bitMap, selPosGoodTPCTrack);
+      BITSET(bitMap, selPosGoodTPCTrack);
     if (negTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows)
-      bitset(bitMap, selNegGoodTPCTrack);
+      BITSET(bitMap, selNegGoodTPCTrack);
 
     //
     // TPC PID
     //
-    if (fabs(posTrackExtra.tpcNSigmaPi()) < v0Selections.TpcPidNsigmaCut)
-      bitset(bitMap, selTPCPIDPositivePion);
-    if (fabs(posTrackExtra.tpcNSigmaPr()) < v0Selections.TpcPidNsigmaCut)
-      bitset(bitMap, selTPCPIDPositiveProton);
-    if (fabs(negTrackExtra.tpcNSigmaPi()) < v0Selections.TpcPidNsigmaCut)
-      bitset(bitMap, selTPCPIDNegativePion);
-    if (fabs(negTrackExtra.tpcNSigmaPr()) < v0Selections.TpcPidNsigmaCut)
-      bitset(bitMap, selTPCPIDNegativeProton);
+    if (std::fabs(posTrackExtra.tpcNSigmaPi()) < v0Selections.tpcPidNsigmaCut)
+      BITSET(bitMap, selTPCPIDPositivePion);
+    if (std::fabs(posTrackExtra.tpcNSigmaPr()) < v0Selections.tpcPidNsigmaCut)
+      BITSET(bitMap, selTPCPIDPositiveProton);
+    if (std::fabs(negTrackExtra.tpcNSigmaPi()) < v0Selections.tpcPidNsigmaCut)
+      BITSET(bitMap, selTPCPIDNegativePion);
+    if (std::fabs(negTrackExtra.tpcNSigmaPr()) < v0Selections.tpcPidNsigmaCut)
+      BITSET(bitMap, selTPCPIDNegativeProton);
 
     //
     // TOF PID in DeltaT
     // Positive track
-    if (fabs(v0.posTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
-      bitset(bitMap, selTOFDeltaTPositiveProtonLambda);
-    if (fabs(v0.posTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
-      bitset(bitMap, selTOFDeltaTPositivePionLambda);
-    if (fabs(v0.posTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
-      bitset(bitMap, selTOFDeltaTPositivePionK0Short);
+    if (std::fabs(v0.posTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
+      BITSET(bitMap, selTOFDeltaTPositiveProtonLambda);
+    if (std::fabs(v0.posTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
+      BITSET(bitMap, selTOFDeltaTPositivePionLambda);
+    if (std::fabs(v0.posTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
+      BITSET(bitMap, selTOFDeltaTPositivePionK0Short);
     // Negative track
-    if (fabs(v0.negTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
-      bitset(bitMap, selTOFDeltaTNegativeProtonLambda);
-    if (fabs(v0.negTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
-      bitset(bitMap, selTOFDeltaTNegativePionLambda);
-    if (fabs(v0.negTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
-      bitset(bitMap, selTOFDeltaTNegativePionK0Short);
+    if (std::fabs(v0.negTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
+      BITSET(bitMap, selTOFDeltaTNegativeProtonLambda);
+    if (std::fabs(v0.negTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
+      BITSET(bitMap, selTOFDeltaTNegativePionLambda);
+    if (std::fabs(v0.negTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
+      BITSET(bitMap, selTOFDeltaTNegativePionK0Short);
 
     //
     // TOF PID in NSigma
     // Positive track
-    if (fabs(v0.tofNSigmaLaPr()) < v0Selections.TofPidNsigmaCutLaPr)
-      bitset(bitMap, selTOFNSigmaPositiveProtonLambda);
-    if (fabs(v0.tofNSigmaALaPi()) < v0Selections.TofPidNsigmaCutLaPi)
-      bitset(bitMap, selTOFNSigmaPositivePionLambda);
-    if (fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.TofPidNsigmaCutK0Pi)
-      bitset(bitMap, selTOFNSigmaPositivePionK0Short);
+    if (std::fabs(v0.tofNSigmaLaPr()) < v0Selections.tofPidNsigmaCutLaPr)
+      BITSET(bitMap, selTOFNSigmaPositiveProtonLambda);
+    if (std::fabs(v0.tofNSigmaALaPi()) < v0Selections.tofPidNsigmaCutLaPi)
+      BITSET(bitMap, selTOFNSigmaPositivePionLambda);
+    if (std::fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.tofPidNsigmaCutK0Pi)
+      BITSET(bitMap, selTOFNSigmaPositivePionK0Short);
     // Negative track
-    if (fabs(v0.tofNSigmaALaPr()) < v0Selections.TofPidNsigmaCutLaPr)
-      bitset(bitMap, selTOFNSigmaNegativeProtonLambda);
-    if (fabs(v0.tofNSigmaLaPi()) < v0Selections.TofPidNsigmaCutLaPi)
-      bitset(bitMap, selTOFNSigmaNegativePionLambda);
-    if (fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.TofPidNsigmaCutK0Pi)
-      bitset(bitMap, selTOFNSigmaNegativePionK0Short);
+    if (std::fabs(v0.tofNSigmaALaPr()) < v0Selections.tofPidNsigmaCutLaPr)
+      BITSET(bitMap, selTOFNSigmaNegativeProtonLambda);
+    if (std::fabs(v0.tofNSigmaLaPi()) < v0Selections.tofPidNsigmaCutLaPi)
+      BITSET(bitMap, selTOFNSigmaNegativePionLambda);
+    if (std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.tofPidNsigmaCutK0Pi)
+      BITSET(bitMap, selTOFNSigmaNegativePionK0Short);
 
     //
     // ITS only tag
     if (posTrackExtra.tpcCrossedRows() < 1)
-      bitset(bitMap, selPosItsOnly);
+      BITSET(bitMap, selPosItsOnly);
     if (negTrackExtra.tpcCrossedRows() < 1)
-      bitset(bitMap, selNegItsOnly);
+      BITSET(bitMap, selNegItsOnly);
 
     //
     // TPC only tag
     if (posTrackExtra.detectorMap() != o2::aod::track::TPC)
-      bitset(bitMap, selPosNotTPCOnly);
+      BITSET(bitMap, selPosNotTPCOnly);
     if (negTrackExtra.detectorMap() != o2::aod::track::TPC)
-      bitset(bitMap, selNegNotTPCOnly);
+      BITSET(bitMap, selNegNotTPCOnly);
 
     //
     // proper lifetime
     if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < lifetimecut->get("lifetimecutLambda"))
-      bitset(bitMap, selLambdaCTau);
+      BITSET(bitMap, selLambdaCTau);
     if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < lifetimecut->get("lifetimecutK0S"))
-      bitset(bitMap, selK0ShortCTau);
+      BITSET(bitMap, selK0ShortCTau);
 
     //
     // armenteros
-    if (v0.qtarm() * v0Selections.armPodCut > TMath::Abs(v0.alpha()) || v0Selections.armPodCut < 1e-4)
-      bitset(bitMap, selK0ShortArmenteros);
+    if (v0.qtarm() * v0Selections.armPodCut > std::fabs(v0.alpha()) || v0Selections.armPodCut < 1e-4)
+      BITSET(bitMap, selK0ShortArmenteros);
 
     return bitMap;
   }
@@ -1020,14 +1108,14 @@ struct quarkoniaToHyperons {
       return false;
     // DCA proton and pion to PV for Lambda and AntiLambda decay hypotheses
     if (casc.sign() < 0) { // Xi- or Omega- --> positive/negative daughter = proton/pion
-      if (TMath::Abs(casc.dcapostopv()) < cascSelections.dcaprotontopv)
+      if (std::fabs(casc.dcapostopv()) < cascSelections.dcaprotontopv)
         return false;
-      if (TMath::Abs(casc.dcanegtopv()) < cascSelections.dcapiontopv)
+      if (std::fabs(casc.dcanegtopv()) < cascSelections.dcapiontopv)
         return false;
     } else { // Xi+ or Omega+ --> positive/negative daughter = pion/proton
-      if (TMath::Abs(casc.dcapostopv()) < cascSelections.dcapiontopv)
+      if (std::fabs(casc.dcapostopv()) < cascSelections.dcapiontopv)
         return false;
-      if (TMath::Abs(casc.dcanegtopv()) < cascSelections.dcaprotontopv)
+      if (std::fabs(casc.dcanegtopv()) < cascSelections.dcaprotontopv)
         return false;
     }
     // V0 cosine of pointing angle
@@ -1046,13 +1134,13 @@ struct quarkoniaToHyperons {
     if (casc.cascradius() > cascSelections.cascradiusMax)
       return false;
     // DCA bachelor selection
-    if (TMath::Abs(casc.dcabachtopv()) < cascSelections.dcabachtopv)
+    if (std::fabs(casc.dcabachtopv()) < cascSelections.dcabachtopv)
       return false;
     // Bachelor-baryon cosPA selection
     if (casc.bachBaryonCosPA() < cascSelections.bachbaryoncospa)
       return false;
     // DCA bachelor-baryon selection
-    if (TMath::Abs(casc.bachBaryonDCAxyToPV()) < cascSelections.dcaxybachbaryontopv)
+    if (std::fabs(casc.bachBaryonDCAxyToPV()) < cascSelections.dcaxybachbaryontopv)
       return false;
     // casc cosine of pointing angle
     if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < cascSelections.casccospa)
@@ -1064,30 +1152,30 @@ struct quarkoniaToHyperons {
     //
     // rapidity
     //
-    if (TMath::Abs(rapidity) > cascSelections.rapidityCut)
+    if (std::fabs(rapidity) > cascSelections.rapidityCut)
       return false;
 
     //
     // invariant mass window
     //
-    if (TMath::Abs(casc.mLambda() - pdgDB->Mass(3122)) > cascSelections.v0MassWindow)
+    if (std::fabs(casc.mLambda() - o2::constants::physics::MassLambda0) > cascSelections.v0MassWindow)
       return false;
-    if (isXi && TMath::Abs(casc.mXi() - pdgDB->Mass(3312)) > cascSelections.cascMassWindow)
+    if (isXi && std::fabs(casc.mXi() - o2::constants::physics::MassXiMinus) > cascSelections.cascMassWindow)
       return false;
-    if (!isXi && TMath::Abs(casc.mOmega() - pdgDB->Mass(3334)) > cascSelections.cascMassWindow)
+    if (!isXi && std::fabs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) > cascSelections.cascMassWindow)
       return false;
 
     //
     // competing mass rejection
     //
-    if (isXi && TMath::Abs(casc.mOmega() - pdgDB->Mass(3334)) < cascSelections.compMassRejection)
+    if (isXi && std::fabs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < cascSelections.compMassRejection)
       return false;
-    if (!isXi && TMath::Abs(casc.mXi() - pdgDB->Mass(3312)) < cascSelections.compMassRejection)
+    if (!isXi && std::fabs(casc.mXi() - o2::constants::physics::MassXiMinus) < cascSelections.compMassRejection)
       return false;
 
-    auto bachTrackExtra = casc.template bachTrackExtra_as<dauTracks>();
-    auto posTrackExtra = casc.template posTrackExtra_as<dauTracks>();
-    auto negTrackExtra = casc.template negTrackExtra_as<dauTracks>();
+    auto bachTrackExtra = casc.template bachTrackExtra_as<DauTracks>();
+    auto posTrackExtra = casc.template posTrackExtra_as<DauTracks>();
+    auto negTrackExtra = casc.template negTrackExtra_as<DauTracks>();
 
     //
     // ITS quality flags
@@ -1112,19 +1200,19 @@ struct quarkoniaToHyperons {
     //
     // TPC PID
     //
-    if (isXi && fabs(bachTrackExtra.tpcNSigmaPi()) > cascSelections.TpcPidNsigmaCut)
+    if (isXi && std::fabs(bachTrackExtra.tpcNSigmaPi()) > cascSelections.tpcPidNsigmaCut)
       return false;
-    if (!isXi && fabs(bachTrackExtra.tpcNSigmaKa()) > cascSelections.TpcPidNsigmaCut)
+    if (!isXi && std::fabs(bachTrackExtra.tpcNSigmaKa()) > cascSelections.tpcPidNsigmaCut)
       return false;
     if (casc.sign() < 0) { // Xi- or Omega- --> positive/negative daughter = proton/pion
-      if (fabs(posTrackExtra.tpcNSigmaPr()) > cascSelections.TpcPidNsigmaCut)
+      if (std::fabs(posTrackExtra.tpcNSigmaPr()) > cascSelections.tpcPidNsigmaCut)
         return false;
-      if (fabs(negTrackExtra.tpcNSigmaPi()) > cascSelections.TpcPidNsigmaCut)
+      if (std::fabs(negTrackExtra.tpcNSigmaPi()) > cascSelections.tpcPidNsigmaCut)
         return false;
     } else { // Xi+ or Omega+ --> positive/negative daughter = pion/proton
-      if (fabs(posTrackExtra.tpcNSigmaPi()) > cascSelections.TpcPidNsigmaCut)
+      if (std::fabs(posTrackExtra.tpcNSigmaPi()) > cascSelections.tpcPidNsigmaCut)
         return false;
-      if (fabs(negTrackExtra.tpcNSigmaPr()) > cascSelections.TpcPidNsigmaCut)
+      if (std::fabs(negTrackExtra.tpcNSigmaPr()) > cascSelections.tpcPidNsigmaCut)
         return false;
     }
 
@@ -1132,36 +1220,36 @@ struct quarkoniaToHyperons {
     // TOF PID in DeltaT
     // Bachelor track
     if (bachTrackExtra.hasTOF()) {
-      if (isXi && fabs(casc.bachTOFDeltaTXiPi()) > cascSelections.maxDeltaTimePion)
+      if (isXi && std::fabs(casc.bachTOFDeltaTXiPi()) > cascSelections.maxDeltaTimePion)
         return false;
-      if (!isXi && fabs(casc.bachTOFDeltaTOmKa()) > cascSelections.maxDeltaTimeKaon)
+      if (!isXi && std::fabs(casc.bachTOFDeltaTOmKa()) > cascSelections.maxDeltaTimeKaon)
         return false;
     }
     // Positive track
     if (posTrackExtra.hasTOF()) {
       if (casc.sign() < 0) { // Xi- or Omega- --> positive daughter = proton
-        if (isXi && fabs(casc.posTOFDeltaTXiPr()) > cascSelections.maxDeltaTimeProton)
+        if (isXi && std::fabs(casc.posTOFDeltaTXiPr()) > cascSelections.maxDeltaTimeProton)
           return false;
-        if (!isXi && fabs(casc.posTOFDeltaTOmPr()) > cascSelections.maxDeltaTimeProton)
+        if (!isXi && std::fabs(casc.posTOFDeltaTOmPr()) > cascSelections.maxDeltaTimeProton)
           return false;
       } else { // Xi+ or Omega+ --> positive daughter = pion
-        if (isXi && fabs(casc.posTOFDeltaTXiPi()) > cascSelections.maxDeltaTimePion)
+        if (isXi && std::fabs(casc.posTOFDeltaTXiPi()) > cascSelections.maxDeltaTimePion)
           return false;
-        if (!isXi && fabs(casc.posTOFDeltaTOmPi()) > cascSelections.maxDeltaTimePion)
+        if (!isXi && std::fabs(casc.posTOFDeltaTOmPi()) > cascSelections.maxDeltaTimePion)
           return false;
       }
     }
     // Negative track
     if (negTrackExtra.hasTOF()) {
       if (casc.sign() < 0) { // Xi- or Omega- --> negative daughter = pion
-        if (isXi && fabs(casc.negTOFDeltaTXiPi()) > cascSelections.maxDeltaTimePion)
+        if (isXi && std::fabs(casc.negTOFDeltaTXiPi()) > cascSelections.maxDeltaTimePion)
           return false;
-        if (!isXi && fabs(casc.negTOFDeltaTOmPi()) > cascSelections.maxDeltaTimePion)
+        if (!isXi && std::fabs(casc.negTOFDeltaTOmPi()) > cascSelections.maxDeltaTimePion)
           return false;
       } else { // Xi+ or Omega+ --> negative daughter = proton
-        if (isXi && fabs(casc.negTOFDeltaTXiPr()) > cascSelections.maxDeltaTimeProton)
+        if (isXi && std::fabs(casc.negTOFDeltaTXiPr()) > cascSelections.maxDeltaTimeProton)
           return false;
-        if (!isXi && fabs(casc.negTOFDeltaTOmPr()) > cascSelections.maxDeltaTimeProton)
+        if (!isXi && std::fabs(casc.negTOFDeltaTOmPr()) > cascSelections.maxDeltaTimeProton)
           return false;
       }
     }
@@ -1170,36 +1258,36 @@ struct quarkoniaToHyperons {
     // TOF PID in NSigma
     // Bachelor track
     if (bachTrackExtra.hasTOF()) {
-      if (isXi && fabs(casc.tofNSigmaXiPi()) > cascSelections.TofPidNsigmaCutXiPi)
+      if (isXi && std::fabs(casc.tofNSigmaXiPi()) > cascSelections.tofPidNsigmaCutXiPi)
         return false;
-      if (!isXi && fabs(casc.tofNSigmaOmKa()) > cascSelections.TofPidNsigmaCutOmKa)
+      if (!isXi && std::fabs(casc.tofNSigmaOmKa()) > cascSelections.tofPidNsigmaCutOmKa)
         return false;
     }
     // Positive track
     if (posTrackExtra.hasTOF()) {
       if (casc.sign() < 0) { // Xi- or Omega- --> positive daughter = proton
-        if (isXi && fabs(casc.tofNSigmaXiLaPr()) > cascSelections.TofPidNsigmaCutLaPr)
+        if (isXi && std::fabs(casc.tofNSigmaXiLaPr()) > cascSelections.tofPidNsigmaCutLaPr)
           return false;
-        if (!isXi && fabs(casc.tofNSigmaOmLaPr()) > cascSelections.TofPidNsigmaCutLaPr)
+        if (!isXi && std::fabs(casc.tofNSigmaOmLaPr()) > cascSelections.tofPidNsigmaCutLaPr)
           return false;
       } else { // Xi+ or Omega+ --> positive daughter = pion
-        if (isXi && fabs(casc.tofNSigmaXiLaPi()) > cascSelections.TofPidNsigmaCutLaPi)
+        if (isXi && std::fabs(casc.tofNSigmaXiLaPi()) > cascSelections.tofPidNsigmaCutLaPi)
           return false;
-        if (!isXi && fabs(casc.tofNSigmaOmLaPi()) > cascSelections.TofPidNsigmaCutLaPi)
+        if (!isXi && std::fabs(casc.tofNSigmaOmLaPi()) > cascSelections.tofPidNsigmaCutLaPi)
           return false;
       }
     }
     // Negative track
     if (negTrackExtra.hasTOF()) {
       if (casc.sign() < 0) { // Xi- or Omega- --> negative daughter = pion
-        if (isXi && fabs(casc.tofNSigmaXiLaPr()) > cascSelections.TofPidNsigmaCutLaPi)
+        if (isXi && std::fabs(casc.tofNSigmaXiLaPr()) > cascSelections.tofPidNsigmaCutLaPi)
           return false;
-        if (!isXi && fabs(casc.tofNSigmaOmLaPr()) > cascSelections.TofPidNsigmaCutLaPi)
+        if (!isXi && std::fabs(casc.tofNSigmaOmLaPr()) > cascSelections.tofPidNsigmaCutLaPi)
           return false;
       } else { // Xi+ or Omega+ --> negative daughter = proton
-        if (isXi && fabs(casc.tofNSigmaXiLaPi()) > cascSelections.TofPidNsigmaCutLaPr)
+        if (isXi && std::fabs(casc.tofNSigmaXiLaPi()) > cascSelections.tofPidNsigmaCutLaPr)
           return false;
-        if (!isXi && fabs(casc.tofNSigmaOmLaPi()) > cascSelections.TofPidNsigmaCutLaPr)
+        if (!isXi && std::fabs(casc.tofNSigmaOmLaPi()) > cascSelections.tofPidNsigmaCutLaPr)
           return false;
       }
     }
@@ -1249,19 +1337,19 @@ struct quarkoniaToHyperons {
     // check for specific particle species
 
     if (v0.pdgCode() == 310 && v0.pdgCodePositive() == 211 && v0.pdgCodeNegative() == -211) {
-      bitset(bitMap, selConsiderK0Short);
+      BITSET(bitMap, selConsiderK0Short);
       if (v0.isPhysicalPrimary())
-        bitset(bitMap, selPhysPrimK0Short);
+        BITSET(bitMap, selPhysPrimK0Short);
     }
     if (v0.pdgCode() == 3122 && v0.pdgCodePositive() == 2212 && v0.pdgCodeNegative() == -211) {
-      bitset(bitMap, selConsiderLambda);
+      BITSET(bitMap, selConsiderLambda);
       if (v0.isPhysicalPrimary())
-        bitset(bitMap, selPhysPrimLambda);
+        BITSET(bitMap, selPhysPrimLambda);
     }
     if (v0.pdgCode() == -3122 && v0.pdgCodePositive() == 211 && v0.pdgCodeNegative() == -2212) {
-      bitset(bitMap, selConsiderAntiLambda);
+      BITSET(bitMap, selConsiderAntiLambda);
       if (v0.isPhysicalPrimary())
-        bitset(bitMap, selPhysPrimAntiLambda);
+        BITSET(bitMap, selPhysPrimAntiLambda);
     }
     return bitMap;
   }
@@ -1272,7 +1360,7 @@ struct quarkoniaToHyperons {
   }
 
   template <typename TV0>
-  void analyseV0Candidate(TV0 v0, float pt, float /*centrality*/, uint64_t selMap, std::vector<bool>& selK0ShortIndices, std::vector<bool>& selLambdaIndices, std::vector<bool>& selAntiLambdaIndices, int v0TableOffset)
+  void analyseV0Candidate(TV0 v0, float pt, uint64_t selMap, std::vector<bool>& selK0ShortIndices, std::vector<bool>& selLambdaIndices, std::vector<bool>& selAntiLambdaIndices, int v0TableOffset)
   // precalculate this information so that a check is one mask operation, not many
   {
     bool passK0ShortSelections = false;
@@ -1340,30 +1428,73 @@ struct quarkoniaToHyperons {
   { // fill QA information about hyperon - antihyperon pair
     if (type == 0) {
       if constexpr (requires { hyperon.mK0Short(); antiHyperon.mK0Short(); }) { // check if v0 information is available
-        auto posTrackExtraHyperon = hyperon.template posTrackExtra_as<dauTracks>();
-        auto negTrackExtraHyperon = hyperon.template negTrackExtra_as<dauTracks>();
+        auto posTrackExtraHyperon = hyperon.template posTrackExtra_as<DauTracks>();
+        auto negTrackExtraHyperon = hyperon.template negTrackExtra_as<DauTracks>();
 
-        auto posTrackExtraAntiHyperon = antiHyperon.template posTrackExtra_as<dauTracks>();
-        auto negTrackExtraAntiHyperon = antiHyperon.template negTrackExtra_as<dauTracks>();
+        auto posTrackExtraAntiHyperon = antiHyperon.template posTrackExtra_as<DauTracks>();
+        auto negTrackExtraAntiHyperon = antiHyperon.template negTrackExtra_as<DauTracks>();
+
+        float hyperonDecayLength = std::sqrt(std::pow(hyperon.x() - collision.posX(), 2) + std::pow(hyperon.y() - collision.posY(), 2) + std::pow(hyperon.z() - collision.posZ(), 2)) * o2::constants::physics::MassKaonNeutral / (hyperon.p() + 1E-10);
+        float antiHyperonDecayLength = std::sqrt(std::pow(antiHyperon.x() - collision.posX(), 2) + std::pow(antiHyperon.y() - collision.posY(), 2) + std::pow(antiHyperon.z() - collision.posZ(), 2)) * o2::constants::physics::MassKaonNeutral / (antiHyperon.p() + 1E-10);
+
+        // Candidates after K0s selections
+        histos.fill(HIST("K0sK0s/K0s/hPosDCAToPV"), hyperon.dcapostopv());
+        histos.fill(HIST("K0sK0s/K0s/hNegDCAToPV"), hyperon.dcanegtopv());
+        histos.fill(HIST("K0sK0s/K0s/hDCAV0Daughters"), hyperon.dcaV0daughters());
+        histos.fill(HIST("K0sK0s/K0s/hDCAV0ToPV"), hyperon.dcav0topv());
+        histos.fill(HIST("K0sK0s/K0s/hV0PointingAngle"), hyperon.v0cosPA());
+        histos.fill(HIST("K0sK0s/K0s/hV0Radius"), hyperon.v0radius());
+        histos.fill(HIST("K0sK0s/K0s/hV0DecayLength"), hyperonDecayLength);
+        histos.fill(HIST("K0sK0s/K0s/hV0InvMassWindow"), hyperon.mK0Short() - o2::constants::physics::MassK0Short);
+        histos.fill(HIST("K0sK0s/K0s/h2dCompetingMassRej"), hyperon.mLambda(), hyperon.mK0Short());
+        histos.fill(HIST("K0sK0s/K0s/h2dArmenteros"), hyperon.alpha(), hyperon.qtarm()); // cross-check
+        histos.fill(HIST("K0sK0s/K0s/hPosTPCNsigma"), posTrackExtraHyperon.tpcNSigmaPi());
+        histos.fill(HIST("K0sK0s/K0s/hNegTPCNsigma"), negTrackExtraHyperon.tpcNSigmaPi());
+        histos.fill(HIST("K0sK0s/K0s/h2dPositiveITSvsTPCpts"), posTrackExtraHyperon.tpcCrossedRows(), posTrackExtraHyperon.itsNCls());
+        histos.fill(HIST("K0sK0s/K0s/h2dNegativeITSvsTPCpts"), negTrackExtraHyperon.tpcCrossedRows(), negTrackExtraHyperon.itsNCls());
+        // Candidates after K0s selections
+        histos.fill(HIST("K0sK0s/K0s/hPosDCAToPV"), antiHyperon.dcapostopv());
+        histos.fill(HIST("K0sK0s/K0s/hNegDCAToPV"), antiHyperon.dcanegtopv());
+        histos.fill(HIST("K0sK0s/K0s/hDCAV0Daughters"), antiHyperon.dcaV0daughters());
+        histos.fill(HIST("K0sK0s/K0s/hDCAV0ToPV"), antiHyperon.dcav0topv());
+        histos.fill(HIST("K0sK0s/K0s/hV0PointingAngle"), antiHyperon.v0cosPA());
+        histos.fill(HIST("K0sK0s/K0s/hV0Radius"), antiHyperon.v0radius());
+        histos.fill(HIST("K0sK0s/K0s/hV0DecayLength"), antiHyperonDecayLength);
+        histos.fill(HIST("K0sK0s/K0s/hV0InvMassWindow"), antiHyperon.mK0Short() - o2::constants::physics::MassK0Short);
+        histos.fill(HIST("K0sK0s/K0s/h2dCompetingMassRej"), antiHyperon.mLambda(), antiHyperon.mK0Short());
+        histos.fill(HIST("K0sK0s/K0s/h2dArmenteros"), antiHyperon.alpha(), antiHyperon.qtarm()); // cross-check
+        histos.fill(HIST("K0sK0s/K0s/hPosTPCNsigma"), posTrackExtraAntiHyperon.tpcNSigmaPi());
+        histos.fill(HIST("K0sK0s/K0s/hNegTPCNsigma"), negTrackExtraAntiHyperon.tpcNSigmaPi());
+        histos.fill(HIST("K0sK0s/K0s/h2dPositiveITSvsTPCpts"), posTrackExtraAntiHyperon.tpcCrossedRows(), posTrackExtraAntiHyperon.itsNCls());
+        histos.fill(HIST("K0sK0s/K0s/h2dNegativeITSvsTPCpts"), negTrackExtraAntiHyperon.tpcCrossedRows(), negTrackExtraAntiHyperon.itsNCls());
+      }
+    }
+    if (type == 1) {
+      if constexpr (requires { hyperon.mK0Short(); antiHyperon.mK0Short(); }) { // check if v0 information is available
+        auto posTrackExtraHyperon = hyperon.template posTrackExtra_as<DauTracks>();
+        auto negTrackExtraHyperon = hyperon.template negTrackExtra_as<DauTracks>();
+
+        auto posTrackExtraAntiHyperon = antiHyperon.template posTrackExtra_as<DauTracks>();
+        auto negTrackExtraAntiHyperon = antiHyperon.template negTrackExtra_as<DauTracks>();
 
         float hyperonDecayLength = std::sqrt(std::pow(hyperon.x() - collision.posX(), 2) + std::pow(hyperon.y() - collision.posY(), 2) + std::pow(hyperon.z() - collision.posZ(), 2)) * o2::constants::physics::MassLambda0 / (hyperon.p() + 1E-10);
         float antiHyperonDecayLength = std::sqrt(std::pow(antiHyperon.x() - collision.posX(), 2) + std::pow(antiHyperon.y() - collision.posY(), 2) + std::pow(antiHyperon.z() - collision.posZ(), 2)) * o2::constants::physics::MassLambda0 / (antiHyperon.p() + 1E-10);
 
-        // Candidates after Xi selections
+        // Candidates after Lambda selections
         histos.fill(HIST("LaLaBar/Lambda/hPosDCAToPV"), hyperon.dcapostopv());
-        histos.fill(HIST("LaLaBar/Lambda/hNegDCAToPV"), hyperon.dcapostopv());
+        histos.fill(HIST("LaLaBar/Lambda/hNegDCAToPV"), hyperon.dcanegtopv());
         histos.fill(HIST("LaLaBar/Lambda/hDCAV0Daughters"), hyperon.dcaV0daughters());
         histos.fill(HIST("LaLaBar/Lambda/hDCAV0ToPV"), hyperon.dcav0topv());
         histos.fill(HIST("LaLaBar/Lambda/hV0PointingAngle"), hyperon.v0cosPA());
         histos.fill(HIST("LaLaBar/Lambda/hV0Radius"), hyperon.v0radius());
         histos.fill(HIST("LaLaBar/Lambda/hV0DecayLength"), hyperonDecayLength);
-        histos.fill(HIST("LaLaBar/Lambda/hV0InvMassWindow"), hyperon.mLambda() - pdgDB->Mass(3122));
+        histos.fill(HIST("LaLaBar/Lambda/hV0InvMassWindow"), hyperon.mLambda() - o2::constants::physics::MassLambda0);
         histos.fill(HIST("LaLaBar/Lambda/h2dCompetingMassRej"), hyperon.mLambda(), hyperon.mK0Short());
         histos.fill(HIST("LaLaBar/Lambda/hPosTPCNsigma"), posTrackExtraHyperon.tpcNSigmaPr());
         histos.fill(HIST("LaLaBar/Lambda/hNegTPCNsigma"), negTrackExtraHyperon.tpcNSigmaPi());
         histos.fill(HIST("LaLaBar/Lambda/h2dPositiveITSvsTPCpts"), posTrackExtraHyperon.tpcCrossedRows(), posTrackExtraHyperon.itsNCls());
         histos.fill(HIST("LaLaBar/Lambda/h2dNegativeITSvsTPCpts"), negTrackExtraHyperon.tpcCrossedRows(), negTrackExtraHyperon.itsNCls());
-        // Candidates after AntiXi selections
+        // Candidates after AntiLambda selections
         histos.fill(HIST("LaLaBar/AntiLambda/hPosDCAToPV"), antiHyperon.dcapostopv());
         histos.fill(HIST("LaLaBar/AntiLambda/hNegDCAToPV"), antiHyperon.dcapostopv());
         histos.fill(HIST("LaLaBar/AntiLambda/hDCAV0Daughters"), antiHyperon.dcaV0daughters());
@@ -1371,7 +1502,7 @@ struct quarkoniaToHyperons {
         histos.fill(HIST("LaLaBar/AntiLambda/hV0PointingAngle"), antiHyperon.v0cosPA());
         histos.fill(HIST("LaLaBar/AntiLambda/hV0Radius"), antiHyperon.v0radius());
         histos.fill(HIST("LaLaBar/AntiLambda/hV0DecayLength"), antiHyperonDecayLength);
-        histos.fill(HIST("LaLaBar/AntiLambda/hV0InvMassWindow"), antiHyperon.mLambda() - pdgDB->Mass(3122));
+        histos.fill(HIST("LaLaBar/AntiLambda/hV0InvMassWindow"), antiHyperon.mLambda() - o2::constants::physics::MassLambda0);
         histos.fill(HIST("LaLaBar/AntiLambda/h2dCompetingMassRej"), antiHyperon.mLambda(), antiHyperon.mK0Short());
         histos.fill(HIST("LaLaBar/AntiLambda/hPosTPCNsigma"), posTrackExtraAntiHyperon.tpcNSigmaPi());
         histos.fill(HIST("LaLaBar/AntiLambda/hNegTPCNsigma"), negTrackExtraAntiHyperon.tpcNSigmaPr());
@@ -1379,15 +1510,15 @@ struct quarkoniaToHyperons {
         histos.fill(HIST("LaLaBar/AntiLambda/h2dNegativeITSvsTPCpts"), negTrackExtraAntiHyperon.tpcCrossedRows(), negTrackExtraAntiHyperon.itsNCls());
       }
     }
-    if (type == 1) {
+    if (type == 2) {
       if constexpr (requires { hyperon.dcabachtopv(); antiHyperon.dcabachtopv(); }) { // check if Cascade information is available
-        auto bachTrackExtraHyperon = hyperon.template bachTrackExtra_as<dauTracks>();
-        auto posTrackExtraHyperon = hyperon.template posTrackExtra_as<dauTracks>();
-        auto negTrackExtraHyperon = hyperon.template negTrackExtra_as<dauTracks>();
+        auto bachTrackExtraHyperon = hyperon.template bachTrackExtra_as<DauTracks>();
+        auto posTrackExtraHyperon = hyperon.template posTrackExtra_as<DauTracks>();
+        auto negTrackExtraHyperon = hyperon.template negTrackExtra_as<DauTracks>();
 
-        auto bachTrackExtraAntiHyperon = antiHyperon.template bachTrackExtra_as<dauTracks>();
-        auto posTrackExtraAntiHyperon = antiHyperon.template posTrackExtra_as<dauTracks>();
-        auto negTrackExtraAntiHyperon = antiHyperon.template negTrackExtra_as<dauTracks>();
+        auto bachTrackExtraAntiHyperon = antiHyperon.template bachTrackExtra_as<DauTracks>();
+        auto posTrackExtraAntiHyperon = antiHyperon.template posTrackExtra_as<DauTracks>();
+        auto negTrackExtraAntiHyperon = antiHyperon.template negTrackExtra_as<DauTracks>();
 
         float hyperonDecayLength = std::sqrt(std::pow(hyperon.x() - collision.posX(), 2) + std::pow(hyperon.y() - collision.posY(), 2) + std::pow(hyperon.z() - collision.posZ(), 2)) * o2::constants::physics::MassXiMinus / (hyperon.p() + 1E-10);
         float antiHyperonDecayLength = std::sqrt(std::pow(antiHyperon.x() - collision.posX(), 2) + std::pow(antiHyperon.y() - collision.posY(), 2) + std::pow(antiHyperon.z() - collision.posZ(), 2)) * o2::constants::physics::MassXiMinus / (antiHyperon.p() + 1E-10);
@@ -1395,7 +1526,7 @@ struct quarkoniaToHyperons {
         // Candidates after Xi selections
         histos.fill(HIST("XiXiBar/Xi/hBachDCAToPV"), hyperon.dcabachtopv());
         histos.fill(HIST("XiXiBar/Xi/hPosDCAToPV"), hyperon.dcapostopv());
-        histos.fill(HIST("XiXiBar/Xi/hNegDCAToPV"), hyperon.dcapostopv());
+        histos.fill(HIST("XiXiBar/Xi/hNegDCAToPV"), hyperon.dcanegtopv());
         histos.fill(HIST("XiXiBar/Xi/hDCACascDaughters"), hyperon.dcacascdaughters());
         histos.fill(HIST("XiXiBar/Xi/hDCAV0Daughters"), hyperon.dcaV0daughters());
         histos.fill(HIST("XiXiBar/Xi/hDCAV0ToPV"), hyperon.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1404,8 +1535,8 @@ struct quarkoniaToHyperons {
         histos.fill(HIST("XiXiBar/Xi/hCascPointingAngle"), hyperon.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
         histos.fill(HIST("XiXiBar/Xi/hCascRadius"), hyperon.cascradius());
         histos.fill(HIST("XiXiBar/Xi/hCascDecayLength"), hyperonDecayLength);
-        histos.fill(HIST("XiXiBar/Xi/hV0InvMassWindow"), hyperon.mLambda() - pdgDB->Mass(3122));
-        histos.fill(HIST("XiXiBar/Xi/hCascInvMassWindow"), hyperon.mXi() - pdgDB->Mass(3312));
+        histos.fill(HIST("XiXiBar/Xi/hV0InvMassWindow"), hyperon.mLambda() - o2::constants::physics::MassLambda0);
+        histos.fill(HIST("XiXiBar/Xi/hCascInvMassWindow"), hyperon.mXi() - o2::constants::physics::MassXiMinus);
         histos.fill(HIST("XiXiBar/Xi/h2dCompetingMassRej"), hyperon.mXi(), hyperon.mOmega());
         histos.fill(HIST("XiXiBar/Xi/hBachTPCNsigma"), bachTrackExtraHyperon.tpcNSigmaPi());
         histos.fill(HIST("XiXiBar/Xi/hPosTPCNsigma"), posTrackExtraHyperon.tpcNSigmaPr());
@@ -1416,7 +1547,7 @@ struct quarkoniaToHyperons {
         // Candidates after AntiXi selections
         histos.fill(HIST("XiXiBar/AntiXi/hBachDCAToPV"), antiHyperon.dcabachtopv());
         histos.fill(HIST("XiXiBar/AntiXi/hPosDCAToPV"), antiHyperon.dcapostopv());
-        histos.fill(HIST("XiXiBar/AntiXi/hNegDCAToPV"), antiHyperon.dcapostopv());
+        histos.fill(HIST("XiXiBar/AntiXi/hNegDCAToPV"), antiHyperon.dcanegtopv());
         histos.fill(HIST("XiXiBar/AntiXi/hDCACascDaughters"), antiHyperon.dcacascdaughters());
         histos.fill(HIST("XiXiBar/AntiXi/hDCAV0Daughters"), antiHyperon.dcaV0daughters());
         histos.fill(HIST("XiXiBar/AntiXi/hDCAV0ToPV"), antiHyperon.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1425,8 +1556,8 @@ struct quarkoniaToHyperons {
         histos.fill(HIST("XiXiBar/AntiXi/hCascPointingAngle"), antiHyperon.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
         histos.fill(HIST("XiXiBar/AntiXi/hCascRadius"), antiHyperon.cascradius());
         histos.fill(HIST("XiXiBar/AntiXi/hCascDecayLength"), antiHyperonDecayLength);
-        histos.fill(HIST("XiXiBar/AntiXi/hV0InvMassWindow"), antiHyperon.mLambda() - pdgDB->Mass(3122));
-        histos.fill(HIST("XiXiBar/AntiXi/hCascInvMassWindow"), antiHyperon.mXi() - pdgDB->Mass(3312));
+        histos.fill(HIST("XiXiBar/AntiXi/hV0InvMassWindow"), antiHyperon.mLambda() - o2::constants::physics::MassLambda0);
+        histos.fill(HIST("XiXiBar/AntiXi/hCascInvMassWindow"), antiHyperon.mXi() - o2::constants::physics::MassXiMinus);
         histos.fill(HIST("XiXiBar/AntiXi/h2dCompetingMassRej"), antiHyperon.mXi(), antiHyperon.mOmega());
         histos.fill(HIST("XiXiBar/AntiXi/hBachTPCNsigma"), bachTrackExtraAntiHyperon.tpcNSigmaPi());
         histos.fill(HIST("XiXiBar/AntiXi/hPosTPCNsigma"), posTrackExtraAntiHyperon.tpcNSigmaPi());
@@ -1436,15 +1567,15 @@ struct quarkoniaToHyperons {
         histos.fill(HIST("XiXiBar/AntiXi/h2dNegativeITSvsTPCpts"), negTrackExtraAntiHyperon.tpcCrossedRows(), negTrackExtraAntiHyperon.itsNCls());
       }
     }
-    if (type == 2) {
+    if (type == 3) {
       if constexpr (requires { hyperon.dcabachtopv(); antiHyperon.dcabachtopv(); }) { // check if Cascade information is available
-        auto bachTrackExtraHyperon = hyperon.template bachTrackExtra_as<dauTracks>();
-        auto posTrackExtraHyperon = hyperon.template posTrackExtra_as<dauTracks>();
-        auto negTrackExtraHyperon = hyperon.template negTrackExtra_as<dauTracks>();
+        auto bachTrackExtraHyperon = hyperon.template bachTrackExtra_as<DauTracks>();
+        auto posTrackExtraHyperon = hyperon.template posTrackExtra_as<DauTracks>();
+        auto negTrackExtraHyperon = hyperon.template negTrackExtra_as<DauTracks>();
 
-        auto bachTrackExtraAntiHyperon = antiHyperon.template bachTrackExtra_as<dauTracks>();
-        auto posTrackExtraAntiHyperon = antiHyperon.template posTrackExtra_as<dauTracks>();
-        auto negTrackExtraAntiHyperon = antiHyperon.template negTrackExtra_as<dauTracks>();
+        auto bachTrackExtraAntiHyperon = antiHyperon.template bachTrackExtra_as<DauTracks>();
+        auto posTrackExtraAntiHyperon = antiHyperon.template posTrackExtra_as<DauTracks>();
+        auto negTrackExtraAntiHyperon = antiHyperon.template negTrackExtra_as<DauTracks>();
 
         float hyperonDecayLength = std::sqrt(std::pow(hyperon.x() - collision.posX(), 2) + std::pow(hyperon.y() - collision.posY(), 2) + std::pow(hyperon.z() - collision.posZ(), 2)) * o2::constants::physics::MassOmegaMinus / (hyperon.p() + 1E-10);
         float antiHyperonDecayLength = std::sqrt(std::pow(antiHyperon.x() - collision.posX(), 2) + std::pow(antiHyperon.y() - collision.posY(), 2) + std::pow(antiHyperon.z() - collision.posZ(), 2)) * o2::constants::physics::MassOmegaMinus / (antiHyperon.p() + 1E-10);
@@ -1452,7 +1583,7 @@ struct quarkoniaToHyperons {
         // Candidates after Omega selections
         histos.fill(HIST("OmOmBar/Omega/hBachDCAToPV"), hyperon.dcabachtopv());
         histos.fill(HIST("OmOmBar/Omega/hPosDCAToPV"), hyperon.dcapostopv());
-        histos.fill(HIST("OmOmBar/Omega/hNegDCAToPV"), hyperon.dcapostopv());
+        histos.fill(HIST("OmOmBar/Omega/hNegDCAToPV"), hyperon.dcanegtopv());
         histos.fill(HIST("OmOmBar/Omega/hDCACascDaughters"), hyperon.dcacascdaughters());
         histos.fill(HIST("OmOmBar/Omega/hDCAV0Daughters"), hyperon.dcaV0daughters());
         histos.fill(HIST("OmOmBar/Omega/hDCAV0ToPV"), hyperon.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1461,8 +1592,8 @@ struct quarkoniaToHyperons {
         histos.fill(HIST("OmOmBar/Omega/hCascPointingAngle"), hyperon.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
         histos.fill(HIST("OmOmBar/Omega/hCascRadius"), hyperon.cascradius());
         histos.fill(HIST("OmOmBar/Omega/hCascDecayLength"), hyperonDecayLength);
-        histos.fill(HIST("OmOmBar/Omega/hV0InvMassWindow"), hyperon.mLambda() - pdgDB->Mass(3122));
-        histos.fill(HIST("OmOmBar/Omega/hCascInvMassWindow"), hyperon.mOmega() - pdgDB->Mass(3334));
+        histos.fill(HIST("OmOmBar/Omega/hV0InvMassWindow"), hyperon.mLambda() - o2::constants::physics::MassLambda0);
+        histos.fill(HIST("OmOmBar/Omega/hCascInvMassWindow"), hyperon.mOmega() - o2::constants::physics::MassOmegaMinus);
         histos.fill(HIST("OmOmBar/Omega/h2dCompetingMassRej"), hyperon.mXi(), hyperon.mOmega());
         histos.fill(HIST("OmOmBar/Omega/hBachTPCNsigma"), bachTrackExtraHyperon.tpcNSigmaKa());
         histos.fill(HIST("OmOmBar/Omega/hPosTPCNsigma"), posTrackExtraHyperon.tpcNSigmaPr());
@@ -1473,7 +1604,7 @@ struct quarkoniaToHyperons {
         // Candidates after AntiOmega selections
         histos.fill(HIST("OmOmBar/AntiOmega/hBachDCAToPV"), antiHyperon.dcabachtopv());
         histos.fill(HIST("OmOmBar/AntiOmega/hPosDCAToPV"), antiHyperon.dcapostopv());
-        histos.fill(HIST("OmOmBar/AntiOmega/hNegDCAToPV"), antiHyperon.dcapostopv());
+        histos.fill(HIST("OmOmBar/AntiOmega/hNegDCAToPV"), antiHyperon.dcanegtopv());
         histos.fill(HIST("OmOmBar/AntiOmega/hDCACascDaughters"), antiHyperon.dcacascdaughters());
         histos.fill(HIST("OmOmBar/AntiOmega/hDCAV0Daughters"), antiHyperon.dcaV0daughters());
         histos.fill(HIST("OmOmBar/AntiOmega/hDCAV0ToPV"), antiHyperon.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
@@ -1482,8 +1613,8 @@ struct quarkoniaToHyperons {
         histos.fill(HIST("OmOmBar/AntiOmega/hCascPointingAngle"), antiHyperon.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
         histos.fill(HIST("OmOmBar/AntiOmega/hCascRadius"), antiHyperon.cascradius());
         histos.fill(HIST("OmOmBar/AntiOmega/hCascDecayLength"), antiHyperonDecayLength);
-        histos.fill(HIST("OmOmBar/AntiOmega/hV0InvMassWindow"), antiHyperon.mLambda() - pdgDB->Mass(3122));
-        histos.fill(HIST("OmOmBar/AntiOmega/hCascInvMassWindow"), antiHyperon.mOmega() - pdgDB->Mass(3334));
+        histos.fill(HIST("OmOmBar/AntiOmega/hV0InvMassWindow"), antiHyperon.mLambda() - o2::constants::physics::MassLambda0);
+        histos.fill(HIST("OmOmBar/AntiOmega/hCascInvMassWindow"), antiHyperon.mOmega() - o2::constants::physics::MassOmegaMinus);
         histos.fill(HIST("OmOmBar/AntiOmega/h2dCompetingMassRej"), antiHyperon.mXi(), antiHyperon.mOmega());
         histos.fill(HIST("OmOmBar/AntiOmega/hBachTPCNsigma"), bachTrackExtraAntiHyperon.tpcNSigmaKa());
         histos.fill(HIST("OmOmBar/AntiOmega/hPosTPCNsigma"), posTrackExtraAntiHyperon.tpcNSigmaPi());
@@ -1504,16 +1635,18 @@ struct quarkoniaToHyperons {
 
     float invmass = -1;
     if (type == 0)
-      invmass = RecoDecay::m(std::array{std::array{hyperon.px(), hyperon.py(), hyperon.pz()}, std::array{antiHyperon.px(), antiHyperon.py(), antiHyperon.pz()}}, std::array{o2::constants::physics::MassLambda0, o2::constants::physics::MassLambda0Bar});
+      invmass = RecoDecay::m(std::array{std::array{hyperon.px(), hyperon.py(), hyperon.pz()}, std::array{antiHyperon.px(), antiHyperon.py(), antiHyperon.pz()}}, std::array{o2::constants::physics::MassKaonNeutral, o2::constants::physics::MassKaonNeutral});
     if (type == 1)
-      invmass = RecoDecay::m(std::array{std::array{hyperon.px(), hyperon.py(), hyperon.pz()}, std::array{antiHyperon.px(), antiHyperon.py(), antiHyperon.pz()}}, std::array{o2::constants::physics::MassXiMinus, o2::constants::physics::MassXiPlusBar});
+      invmass = RecoDecay::m(std::array{std::array{hyperon.px(), hyperon.py(), hyperon.pz()}, std::array{antiHyperon.px(), antiHyperon.py(), antiHyperon.pz()}}, std::array{o2::constants::physics::MassLambda0, o2::constants::physics::MassLambda0Bar});
     if (type == 2)
+      invmass = RecoDecay::m(std::array{std::array{hyperon.px(), hyperon.py(), hyperon.pz()}, std::array{antiHyperon.px(), antiHyperon.py(), antiHyperon.pz()}}, std::array{o2::constants::physics::MassXiMinus, o2::constants::physics::MassXiPlusBar});
+    if (type == 3)
       invmass = RecoDecay::m(std::array{std::array{hyperon.px(), hyperon.py(), hyperon.pz()}, std::array{antiHyperon.px(), antiHyperon.py(), antiHyperon.pz()}}, std::array{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassOmegaPlusBar});
 
     float rapidity = RecoDecay::y(std::array{hyperon.px() + antiHyperon.px(), hyperon.py() + antiHyperon.py(), hyperon.pz() + antiHyperon.pz()}, invmass);
 
     // rapidity cut on the quarkonium mother
-    if (!doMCAssociation && TMath::Abs(rapidity) > rapidityCut)
+    if (!doMCAssociation && std::fabs(rapidity) > rapidityCut)
       return;
 
     // fillV0sInfo(lambda, antiLambda, centrality);
@@ -1533,7 +1666,63 @@ struct quarkoniaToHyperons {
           float ptmc = RecoDecay::pt(hyperonMC.pxMC() + antiHyperonMC.pxMC(), hyperonMC.pyMC() + antiHyperonMC.pyMC());
           float rapiditymc = RecoDecay::y(std::array{hyperonMC.pxMC() + antiHyperonMC.pxMC(), hyperonMC.pyMC() + antiHyperonMC.pyMC(), hyperonMC.pzMC() + antiHyperonMC.pzMC()}, pdgDB->Mass(hyperonMC.pdgCodeMother()));
 
-          if (TMath::Abs(rapiditymc) > rapidityCut)
+          if (std::fabs(rapiditymc) > rapidityCut)
+            return;
+
+          if (hyperonMC.pdgCodeMother() == 441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // EtaC(1S)
+            histos.fill(HIST("K0sK0s/h3dInvMassTrueEtaC1S"), centrality, ptmc, invmass);
+          }
+          if (hyperonMC.pdgCodeMother() == 443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // J/psi
+            histos.fill(HIST("K0sK0s/h3dInvMassTrueJPsi"), centrality, ptmc, invmass);
+          }
+          if (hyperonMC.pdgCodeMother() == 10441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC0
+            histos.fill(HIST("K0sK0s/h3dInvMassTrueChiC0"), centrality, ptmc, invmass);
+          }
+          if (hyperonMC.pdgCodeMother() == 20443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC1
+            histos.fill(HIST("K0sK0s/h3dInvMassTrueChiC1"), centrality, ptmc, invmass);
+          }
+          if (hyperonMC.pdgCodeMother() == 10443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // hC
+            histos.fill(HIST("K0sK0s/h3dInvMassTrueHC"), centrality, ptmc, invmass);
+          }
+          if (hyperonMC.pdgCodeMother() == 445 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC2
+            histos.fill(HIST("K0sK0s/h3dInvMassTrueChiC2"), centrality, ptmc, invmass);
+          }
+          if (hyperonMC.pdgCodeMother() == 100441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // EtaC(2S)
+            histos.fill(HIST("K0sK0s/h3dInvMassTrueEtaC2S"), centrality, ptmc, invmass);
+          }
+          if (hyperonMC.pdgCodeMother() == 100443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // Psi(2S)
+            histos.fill(HIST("K0sK0s/h3dInvMassTruePsi2S"), centrality, ptmc, invmass);
+          }
+        }
+      }
+
+      histos.fill(HIST("K0sK0s/h3dMassK0sK0s"), centrality, pt, invmass);
+      if (!isPP) { // in case of PbPb data
+        if (gapSide == 0)
+          histos.fill(HIST("K0sK0s/h3dMassK0sK0sSGA"), centrality, pt, invmass);
+        else if (gapSide == 1)
+          histos.fill(HIST("K0sK0s/h3dMassK0sK0sSGC"), centrality, pt, invmass);
+        else if (gapSide == 2)
+          histos.fill(HIST("K0sK0s/h3dMassK0sK0sDG"), centrality, pt, invmass);
+        else
+          histos.fill(HIST("K0sK0s/h3dMassK0sK0sHadronic"), centrality, pt, invmass);
+      }
+      fillQAplot(collision, hyperon, antiHyperon, type);
+    }
+    if (type == 1) {
+      if (doMCAssociation) {
+        if constexpr (requires { hyperon.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>(); }) { // check if MC information is available
+          auto hyperonMC = hyperon.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+          auto antiHyperonMC = antiHyperon.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+
+          if (hyperonMC.pdgCodeMother() != antiHyperonMC.pdgCodeMother()) {
+            return;
+          }
+
+          float ptmc = RecoDecay::pt(hyperonMC.pxMC() + antiHyperonMC.pxMC(), hyperonMC.pyMC() + antiHyperonMC.pyMC());
+          float rapiditymc = RecoDecay::y(std::array{hyperonMC.pxMC() + antiHyperonMC.pxMC(), hyperonMC.pyMC() + antiHyperonMC.pyMC(), hyperonMC.pzMC() + antiHyperonMC.pzMC()}, pdgDB->Mass(hyperonMC.pdgCodeMother()));
+
+          if (std::fabs(rapiditymc) > rapidityCut)
             return;
 
           if (hyperonMC.pdgCodeMother() == 441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // EtaC(1S)
@@ -1574,9 +1763,9 @@ struct quarkoniaToHyperons {
         else
           histos.fill(HIST("LaLaBar/h3dMassLaLabarHadronic"), centrality, pt, invmass);
       }
-      fillQAplot(collision, hyperon, antiHyperon, 0);
+      fillQAplot(collision, hyperon, antiHyperon, type);
     }
-    if (type == 1) {
+    if (type == 2) {
       if (doMCAssociation) {
         if constexpr (requires { hyperon.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>(); }) { // check if MC information is available
           auto hyperonMC = hyperon.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
@@ -1589,7 +1778,7 @@ struct quarkoniaToHyperons {
           float ptmc = RecoDecay::pt(hyperonMC.pxMC() + antiHyperonMC.pxMC(), hyperonMC.pyMC() + antiHyperonMC.pyMC());
           float rapiditymc = RecoDecay::y(std::array{hyperonMC.pxMC() + antiHyperonMC.pxMC(), hyperonMC.pyMC() + antiHyperonMC.pyMC(), hyperonMC.pzMC() + antiHyperonMC.pzMC()}, pdgDB->Mass(hyperonMC.pdgCodeMother()));
 
-          if (TMath::Abs(rapiditymc) > rapidityCut)
+          if (std::fabs(rapiditymc) > rapidityCut)
             return;
 
           if (hyperonMC.pdgCodeMother() == 441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // EtaC(1S)
@@ -1630,9 +1819,9 @@ struct quarkoniaToHyperons {
         else
           histos.fill(HIST("XiXiBar/h3dMassXiXibarHadronic"), centrality, pt, invmass);
       }
-      fillQAplot(collision, hyperon, antiHyperon, 1);
+      fillQAplot(collision, hyperon, antiHyperon, type);
     }
-    if (type == 2) {
+    if (type == 3) {
       if (doMCAssociation) {
         if constexpr (requires { hyperon.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>(); }) { // check if MC information is available
           auto hyperonMC = hyperon.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
@@ -1645,7 +1834,7 @@ struct quarkoniaToHyperons {
           float ptmc = RecoDecay::pt(hyperonMC.pxMC() + antiHyperonMC.pxMC(), hyperonMC.pyMC() + antiHyperonMC.pyMC());
           float rapiditymc = RecoDecay::y(std::array{hyperonMC.pxMC() + antiHyperonMC.pxMC(), hyperonMC.pyMC() + antiHyperonMC.pyMC(), hyperonMC.pzMC() + antiHyperonMC.pzMC()}, pdgDB->Mass(hyperonMC.pdgCodeMother()));
 
-          if (TMath::Abs(rapiditymc) > rapidityCut)
+          if (std::fabs(rapiditymc) > rapidityCut)
             return;
 
           if (hyperonMC.pdgCodeMother() == 100441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // EtaC(2S)
@@ -1668,7 +1857,7 @@ struct quarkoniaToHyperons {
         else
           histos.fill(HIST("OmOmBar/h3dMassOmOmbarHadronic"), centrality, pt, invmass);
       }
-      fillQAplot(collision, hyperon, antiHyperon, 2);
+      fillQAplot(collision, hyperon, antiHyperon, type);
     }
   }
 
@@ -1676,7 +1865,7 @@ struct quarkoniaToHyperons {
   template <typename THyperon>
   bool checkTrackIndices(THyperon hyperon, THyperon antiHyperon)
   {
-    if constexpr (requires { hyperon.template bachTrackExtra_as<dauTracks>(); }) { // cascade case: check if bachelor information is available
+    if constexpr (requires { hyperon.template bachTrackExtra_as<DauTracks>(); }) { // cascade case: check if bachelor information is available
       // check that bachelor track from hyperon is different from daughter tracks of antiHyperon
       if (hyperon.bachTrackExtraId() == antiHyperon.bachTrackExtraId() ||
           hyperon.bachTrackExtraId() == antiHyperon.posTrackExtraId() ||
@@ -1709,14 +1898,14 @@ struct quarkoniaToHyperons {
   void buildHyperonAntiHyperonPairs(TCollision const& collision, THyperons const& fullHyperons, std::vector<bool> selHypIndices, std::vector<bool> selAntiHypIndices, float centrality, uint8_t gapSide, int type)
   {
     // 1st loop over all v0s/cascades
-    for (auto& hyperon : fullHyperons) {
+    for (const auto& hyperon : fullHyperons) {
       // select only v0s matching Lambda selections
       if (!selHypIndices[hyperon.globalIndex() - fullHyperons.offset()]) { // local index needed due to collisions grouping
         continue;
       }
 
       // 2nd loop over all v0s/cascade
-      for (auto& antiHyperon : fullHyperons) {
+      for (const auto& antiHyperon : fullHyperons) {
         // select only v0s matching Anti-Lambda selections
         if (!selAntiHypIndices[antiHyperon.globalIndex() - fullHyperons.offset()]) { // local index needed due to collisions grouping
           continue;
@@ -1742,17 +1931,22 @@ struct quarkoniaToHyperons {
 
   // ______________________________________________________
   // Real data processing - no MC subscription
-  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, v0Candidates const& fullV0s, cascadeCandidates const& fullCascades, dauTracks const&)
+  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, V0Candidates const& fullV0s, CascadeCandidates const& fullCascades, DauTracks const&)
   {
     // Fire up CCDB
-    if ((mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
+    if (cfgSkimmedProcessing ||
+        (mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
         (mlConfigurations.useLambdaScores && mlConfigurations.calculateLambdaScores) ||
         (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores)) {
       initCCDB(collision);
     }
 
-    if (!IsEventAccepted(collision, true)) {
+    if (!isEventAccepted(collision, true)) {
       return;
+    }
+
+    if (cfgSkimmedProcessing) {
+      zorro.isSelected(collision.globalBC()); /// Just let Zorro do the accounting
     }
 
     float centrality = -1;
@@ -1762,11 +1956,11 @@ struct quarkoniaToHyperons {
     // __________________________________________
     // perform main analysis
     //
-    if (buildLaLaBarPairs) { // Look at V0s
+    if (buildK0sK0sPairs || buildLaLaBarPairs) { // Look at V0s
       std::vector<bool> selK0ShortIndices(fullV0s.size());
       std::vector<bool> selLambdaIndices(fullV0s.size());
       std::vector<bool> selAntiLambdaIndices(fullV0s.size());
-      for (auto& v0 : fullV0s) {
+      for (const auto& v0 : fullV0s) {
         if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
           continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
@@ -1776,10 +1970,10 @@ struct quarkoniaToHyperons {
         uint64_t selMap = computeReconstructionBitmap(v0, collision, v0.yLambda(), v0.yK0Short(), v0.pt());
 
         // consider for histograms for all species
-        selMap = selMap | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selConsiderAntiLambda);
-        selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
+        selMap = selMap | (static_cast<uint64_t>(1) << selConsiderK0Short) | (static_cast<uint64_t>(1) << selConsiderLambda) | (static_cast<uint64_t>(1) << selConsiderAntiLambda);
+        selMap = selMap | (static_cast<uint64_t>(1) << selPhysPrimK0Short) | (static_cast<uint64_t>(1) << selPhysPrimLambda) | (static_cast<uint64_t>(1) << selPhysPrimAntiLambda);
 
-        analyseV0Candidate(v0, v0.pt(), centrality, selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices, fullV0s.offset());
+        analyseV0Candidate(v0, v0.pt(), selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices, fullV0s.offset());
       } // end v0 loop
 
       // count the number of K0s, Lambda and AntiLambdas passsing the selections
@@ -1787,15 +1981,33 @@ struct quarkoniaToHyperons {
       int nLambdas = std::count(selLambdaIndices.begin(), selLambdaIndices.end(), true);
       int nAntiLambdas = std::count(selAntiLambdaIndices.begin(), selAntiLambdaIndices.end(), true);
 
-      // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
-      histos.fill(HIST("LaLaBar/h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
-      histos.fill(HIST("LaLaBar/h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
-      histos.fill(HIST("LaLaBar/h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
+      if (buildK0sK0sPairs) {
+        // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
+        histos.fill(HIST("K0sK0s/h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
 
-      // Check the number of Lambdas and antiLambdas
-      // needs at least 1 of each
-      if (nLambdas >= 1 && nAntiLambdas >= 1) {
-        buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 0);
+        // Check the number of K0Short
+        // needs at least 2 to form K0s-K0s pairs
+        if (nK0Shorts >= 2) { // consider K0s K0s pairs
+          buildHyperonAntiHyperonPairs(collision, fullV0s, selK0ShortIndices, selK0ShortIndices, centrality, selGapSide, 0);
+        }
+      }
+
+      if (buildLaLaBarPairs) {
+        // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
+        histos.fill(HIST("LaLaBar/h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
+        histos.fill(HIST("LaLaBar/h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
+
+        // Check the number of Lambdas and antiLambdas
+        // needs at least 1 of each
+        if (!buildSameSignPairs && nLambdas >= 1 && nAntiLambdas >= 1) { // consider Lambda antiLambda pairs
+          buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
+        }
+        if (buildSameSignPairs && nLambdas > 1) { // consider Lambda Lambda pairs
+          buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selLambdaIndices, centrality, selGapSide, 1);
+        }
+        if (buildSameSignPairs && nAntiLambdas > 1) { // consider antiLambda antiLambda pairs
+          buildHyperonAntiHyperonPairs(collision, fullV0s, selAntiLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
+        }
       }
     }
 
@@ -1804,7 +2016,7 @@ struct quarkoniaToHyperons {
       std::vector<bool> selAntiXiIndices(fullCascades.size());
       std::vector<bool> selOmIndices(fullCascades.size());
       std::vector<bool> selAntiOmIndices(fullCascades.size());
-      for (auto& cascade : fullCascades) {
+      for (const auto& cascade : fullCascades) {
         if (std::abs(cascade.negativeeta()) > cascSelections.daughterEtaCut ||
             std::abs(cascade.positiveeta()) > cascSelections.daughterEtaCut ||
             std::abs(cascade.bacheloreta()) > cascSelections.daughterEtaCut)
@@ -1839,8 +2051,14 @@ struct quarkoniaToHyperons {
 
         // Check the number of Lambdas and antiLambdas
         // needs at least 1 of each
-        if (nXis >= 1 && nAntiXis >= 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selAntiXiIndices, centrality, selGapSide, 1);
+        if (!buildSameSignPairs && nXis >= 1 && nAntiXis >= 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selAntiXiIndices, centrality, selGapSide, 2);
+        }
+        if (buildSameSignPairs && nXis > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selXiIndices, centrality, selGapSide, 2);
+        }
+        if (buildSameSignPairs && nAntiXis > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiXiIndices, selAntiXiIndices, centrality, selGapSide, 2);
         }
       }
       if (buildOmOmBarPairs) {
@@ -1849,8 +2067,14 @@ struct quarkoniaToHyperons {
 
         // Check the number of Lambdas and antiLambdas
         // needs at least 1 of each
-        if (nOmegas >= 1 && nAntiOmegas >= 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selAntiOmIndices, centrality, selGapSide, 2);
+        if (!buildSameSignPairs && nOmegas >= 1 && nAntiOmegas >= 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selAntiOmIndices, centrality, selGapSide, 3);
+        }
+        if (buildSameSignPairs && nOmegas > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selOmIndices, centrality, selGapSide, 3);
+        }
+        if (buildSameSignPairs && nAntiOmegas > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiOmIndices, selAntiOmIndices, centrality, selGapSide, 3);
         }
       }
     }
@@ -1858,17 +2082,22 @@ struct quarkoniaToHyperons {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, cascadeMCCandidates const& fullCascades, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels>::iterator const& collision, V0MCCandidates const& fullV0s, CascadeMCCandidates const& fullCascades, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
   {
     // Fire up CCDB
-    if ((mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
+    if (cfgSkimmedProcessing ||
+        (mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
         (mlConfigurations.useLambdaScores && mlConfigurations.calculateLambdaScores) ||
         (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores)) {
       initCCDB(collision);
     }
 
-    if (!IsEventAccepted(collision, true)) {
+    if (!isEventAccepted(collision, true)) {
       return;
+    }
+
+    if (cfgSkimmedProcessing) {
+      zorro.isSelected(collision.globalBC()); /// Just let Zorro do the accounting
     }
 
     float centrality = -1;
@@ -1877,11 +2106,11 @@ struct quarkoniaToHyperons {
 
     // __________________________________________
     // perform main analysis
-    if (buildLaLaBarPairs) { // Look at V0s
+    if (buildK0sK0sPairs || buildLaLaBarPairs) { // Look at V0s
       std::vector<bool> selK0ShortIndices(fullV0s.size());
       std::vector<bool> selLambdaIndices(fullV0s.size());
       std::vector<bool> selAntiLambdaIndices(fullV0s.size());
-      for (auto& v0 : fullV0s) {
+      for (const auto& v0 : fullV0s) {
         if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
           continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
@@ -1894,7 +2123,7 @@ struct quarkoniaToHyperons {
         float ymc = 1e-3;
         if (v0MC.pdgCode() == 310)
           ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
-        else if (TMath::Abs(v0MC.pdgCode()) == 3122)
+        else if (std::fabs(v0MC.pdgCode()) == 3122)
           ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassLambda);
 
         uint64_t selMap = computeReconstructionBitmap(v0, collision, ymc, ymc, ptmc);
@@ -1902,11 +2131,11 @@ struct quarkoniaToHyperons {
 
         // consider only associated candidates if asked to do so, disregard association
         if (!doMCAssociation) {
-          selMap = selMap | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selConsiderAntiLambda);
-          selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
+          selMap = selMap | (static_cast<uint64_t>(1) << selConsiderK0Short) | (static_cast<uint64_t>(1) << selConsiderLambda) | (static_cast<uint64_t>(1) << selConsiderAntiLambda);
+          selMap = selMap | (static_cast<uint64_t>(1) << selPhysPrimK0Short) | (static_cast<uint64_t>(1) << selPhysPrimLambda) | (static_cast<uint64_t>(1) << selPhysPrimAntiLambda);
         }
 
-        analyseV0Candidate(v0, ptmc, centrality, selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices, fullV0s.offset());
+        analyseV0Candidate(v0, ptmc, selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices, fullV0s.offset());
       } // end v0 loop
 
       /// count the number of K0s, Lambda and AntiLambdas passsing the selections
@@ -1914,13 +2143,31 @@ struct quarkoniaToHyperons {
       int nLambdas = std::count(selLambdaIndices.begin(), selLambdaIndices.end(), true);
       int nAntiLambdas = std::count(selAntiLambdaIndices.begin(), selAntiLambdaIndices.end(), true);
 
-      // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
-      histos.fill(HIST("LaLaBar/h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
-      histos.fill(HIST("LaLaBar/h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
-      histos.fill(HIST("LaLaBar/h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
+      if (buildK0sK0sPairs) {
+        // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
+        histos.fill(HIST("K0sK0s/h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
 
-      if (nLambdas >= 1 && nAntiLambdas >= 1) {
-        buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 0);
+        // Check the number of K0Short
+        // needs at least 2 to form K0s-K0s pairs
+        if (nK0Shorts >= 2) { // consider K0s K0s pairs
+          buildHyperonAntiHyperonPairs(collision, fullV0s, selK0ShortIndices, selK0ShortIndices, centrality, selGapSide, 0);
+        }
+      }
+
+      if (buildLaLaBarPairs) {
+        // fill the histograms with the number of reconstructed Lambda/antiLambda per collision
+        histos.fill(HIST("LaLaBar/h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
+        histos.fill(HIST("LaLaBar/h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
+
+        if (!buildSameSignPairs && nLambdas >= 1 && nAntiLambdas >= 1) { // consider Lambda antiLambda pairs
+          buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
+        }
+        if (buildSameSignPairs && nLambdas > 1) { // consider Lambda Lambda pairs
+          buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selLambdaIndices, centrality, selGapSide, 1);
+        }
+        if (buildSameSignPairs && nAntiLambdas > 1) { // consider antiLambda antiLambda pairs
+          buildHyperonAntiHyperonPairs(collision, fullV0s, selAntiLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
+        }
       }
     }
 
@@ -1929,7 +2176,7 @@ struct quarkoniaToHyperons {
       std::vector<bool> selAntiXiIndices(fullCascades.size());
       std::vector<bool> selOmIndices(fullCascades.size());
       std::vector<bool> selAntiOmIndices(fullCascades.size());
-      for (auto& cascade : fullCascades) {
+      for (const auto& cascade : fullCascades) {
         if (std::abs(cascade.negativeeta()) > cascSelections.daughterEtaCut ||
             std::abs(cascade.positiveeta()) > cascSelections.daughterEtaCut ||
             std::abs(cascade.bacheloreta()) > cascSelections.daughterEtaCut)
@@ -1940,11 +2187,10 @@ struct quarkoniaToHyperons {
 
         auto cascadeMC = cascade.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
 
-        // float ptmc = RecoDecay::sqrtSumOfSquares(cascadeMC.pxMC(), cascadeMC.pyMC());
         float ymc = 1e-3;
-        if (TMath::Abs(cascadeMC.pdgCode()) == 3312)
+        if (std::fabs(cascadeMC.pdgCode()) == 3312)
           ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassXiMinus);
-        else if (TMath::Abs(cascadeMC.pdgCode()) == 3334)
+        else if (std::fabs(cascadeMC.pdgCode()) == 3334)
           ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassOmegaMinus);
 
         if (buildXiXiBarPairs) {
@@ -1976,8 +2222,14 @@ struct quarkoniaToHyperons {
 
         // Check the number of Lambdas and antiLambdas
         // needs at least 1 of each
-        if (nXis >= 1 && nAntiXis >= 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selAntiXiIndices, centrality, selGapSide, 1);
+        if (!buildSameSignPairs && nXis >= 1 && nAntiXis >= 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selAntiXiIndices, centrality, selGapSide, 2);
+        }
+        if (buildSameSignPairs && nXis > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selXiIndices, centrality, selGapSide, 2);
+        }
+        if (buildSameSignPairs && nAntiXis > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiXiIndices, selAntiXiIndices, centrality, selGapSide, 2);
         }
       }
       if (buildOmOmBarPairs) {
@@ -1986,19 +2238,25 @@ struct quarkoniaToHyperons {
 
         // Check the number of Lambdas and antiLambdas
         // needs at least 1 of each
-        if (nOmegas >= 1 && nAntiOmegas >= 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selAntiOmIndices, centrality, selGapSide, 2);
+        if (!buildSameSignPairs && nOmegas >= 1 && nAntiOmegas >= 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selAntiOmIndices, centrality, selGapSide, 3);
+        }
+        if (buildSameSignPairs && nOmegas > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selOmIndices, centrality, selGapSide, 3);
+        }
+        if (buildSameSignPairs && nAntiOmegas > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiOmIndices, selAntiOmIndices, centrality, selGapSide, 3);
         }
       }
     }
   }
 
-  PROCESS_SWITCH(quarkoniaToHyperons, processRealData, "process as if real data", true);
-  PROCESS_SWITCH(quarkoniaToHyperons, processMonteCarlo, "process as if MC", false);
+  PROCESS_SWITCH(QuarkoniaToHyperons, processRealData, "process as if real data", true);
+  PROCESS_SWITCH(QuarkoniaToHyperons, processMonteCarlo, "process as if MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<quarkoniaToHyperons>(cfgc)};
+    adaptAnalysisTask<QuarkoniaToHyperons>(cfgc)};
 }

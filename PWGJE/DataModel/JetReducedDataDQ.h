@@ -115,34 +115,36 @@ DECLARE_SOA_COLUMN(DummyDQ, dummyDQ, bool);
 
 } // namespace jdummydq
 DECLARE_SOA_TABLE(JDielectron1Dummys, "AOD", "JDIEL1DUMMY",
-                  o2::soa::Index<>,
                   jdummydq::DummyDQ,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(JDielectron2Dummys, "AOD", "JDIEL2DUMMY",
-                  o2::soa::Index<>,
                   jdummydq::DummyDQ,
                   o2::soa::Marker<2>);
 
 DECLARE_SOA_TABLE(JDielectron3Dummys, "AOD", "JDIEL3DUMMY",
-                  o2::soa::Index<>,
                   jdummydq::DummyDQ,
                   o2::soa::Marker<3>);
 
 DECLARE_SOA_TABLE(JDielectron4Dummys, "AOD", "JDIEL4DUMMY",
-                  o2::soa::Index<>,
                   jdummydq::DummyDQ,
                   o2::soa::Marker<4>);
 
 DECLARE_SOA_TABLE(JDielectron5Dummys, "AOD", "JDIEL5DUMMY",
-                  o2::soa::Index<>,
                   jdummydq::DummyDQ,
                   o2::soa::Marker<5>);
 
 DECLARE_SOA_TABLE(JDielectron6Dummys, "AOD", "JDIEL6DUMMY",
-                  o2::soa::Index<>,
                   jdummydq::DummyDQ,
                   o2::soa::Marker<6>);
+
+DECLARE_SOA_TABLE(JDielectron7Dummys, "AOD", "JDIEL7DUMMY",
+                  jdummydq::DummyDQ,
+                  o2::soa::Marker<7>);
+
+DECLARE_SOA_TABLE(JDielectron8Dummys, "AOD", "JDIEL8DUMMY",
+                  jdummydq::DummyDQ,
+                  o2::soa::Marker<8>);
 
 } // namespace o2::aod
 

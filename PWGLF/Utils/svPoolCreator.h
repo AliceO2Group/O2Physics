@@ -29,7 +29,7 @@ using namespace o2::framework::expressions;
 using std::array;
 using CollBracket = o2::math_utils::Bracket<int>;
 
-constexpr auto bOffsetMax = 241; // track compatibility can never go beyond 6 mus (ITS)
+constexpr uint64_t bOffsetMax = 241; // track compatibility can never go beyond 6 mus (ITS)
 
 struct TrackCand {
   int Idxtr;
@@ -45,9 +45,16 @@ struct SVCand {
 class svPoolCreator
 {
  public:
+  svPoolCreator() = default;
   svPoolCreator(int track0Pdg, int track1Pdg)
     : track0Pdg(track0Pdg), track1Pdg(track1Pdg)
   {
+  }
+
+  void setPDGs(int track0Pdg, int track1Pdg)
+  {
+    this->track0Pdg = track0Pdg;
+    this->track1Pdg = track1Pdg;
   }
 
   void clearPools()
@@ -86,7 +93,8 @@ class svPoolCreator
       return;
     }
     bool isDau0 = pdgHypo == track0Pdg;
-    uint64_t globalBC = -1;
+    constexpr uint64_t BcInvalid = -1;
+    uint64_t globalBC = BcInvalid;
     if (trackCand.has_collision()) {
       if (trackCand.template collision_as<C>().has_bc()) {
         globalBC = trackCand.template collision_as<C>().template bc_as<aod::BCsWithTimestamps>().globalBC();
@@ -97,17 +105,17 @@ class svPoolCreator
           continue;
         }
         if (!ambTrack.has_bc() || ambTrack.bc_as<aod::BCsWithTimestamps>().size() == 0) {
-          globalBC = -1;
+          globalBC = BcInvalid;
           break;
         }
         globalBC = ambTrack.bc_as<aod::BCsWithTimestamps>().begin().globalBC();
         break;
       }
     } else {
-      globalBC = -1;
+      globalBC = BcInvalid;
     }
 
-    if (globalBC == -1) {
+    if (globalBC == BcInvalid) {
       return;
     }
 
@@ -128,11 +136,13 @@ class svPoolCreator
       float collTimeRes2 = collision.collisionTimeRes() * collision.collisionTimeRes();
       uint64_t collBC = collision.template bc_as<aod::BCsWithTimestamps>().globalBC();
       int collIdx = collision.globalIndex();
-      int64_t bcOffset = globalBC - (int64_t)collBC;
-      if (std::abs(bcOffset) > bOffsetMax && bcOffset < 0) {
-        break;
-      } else if (std::abs(bcOffset) > bOffsetMax && bcOffset > 0) {
-        continue;
+      int64_t bcOffset = globalBC - static_cast<int64_t>(collBC);
+      if (static_cast<uint64_t>(std::abs(bcOffset)) > bOffsetMax) {
+        if (bcOffset < 0) {
+          break;
+        } else if (bcOffset > 0) {
+          continue;
+        }
       }
 
       float trackTime{0.};

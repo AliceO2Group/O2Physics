@@ -27,7 +27,11 @@
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "TF1.h"
+
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -37,6 +41,8 @@ using namespace o2::framework::expressions;
 #define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
 struct hstrangecorrelationfilter {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Operational
@@ -44,6 +50,9 @@ struct hstrangecorrelationfilter {
   Configurable<float> strangedEdxNSigmaLoose{"strangedEdxNSigmaLoose", 5, "Nsigmas for strange decay daughters"};
   Configurable<float> strangedEdxNSigma{"strangedEdxNSigma", 4, "Nsigmas for strange decay daughters"};
   Configurable<float> strangedEdxNSigmaTight{"strangedEdxNSigmaTight", 3, "Nsigmas for strange decay daughters"};
+
+  // event filtering
+  Configurable<std::string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
 
   // Trigger particle selections in phase space
   Configurable<float> triggerEtaMin{"triggerEtaCutMin", -0.8, "triggeretamin"};
@@ -54,6 +63,7 @@ struct hstrangecorrelationfilter {
   // Track quality
   Configurable<int> minTPCNCrossedRows{"minTPCNCrossedRows", 70, "Minimum TPC crossed rows"};
   Configurable<bool> triggerRequireITS{"triggerRequireITS", true, "require ITS signal in trigger tracks"};
+  Configurable<bool> assocRequireITS{"assocRequireITS", true, "require ITS signal in assoc tracks"};
   Configurable<int> triggerMaxTPCSharedClusters{"triggerMaxTPCSharedClusters", 200, "maximum number of shared TPC clusters (inclusive)"};
   Configurable<bool> triggerRequireL0{"triggerRequireL0", false, "require ITS L0 cluster for trigger"};
 
@@ -125,22 +135,23 @@ struct hstrangecorrelationfilter {
   Filter preFilterCascade =
     nabs(aod::cascdata::dcapostopv) > dcaPostopv&& nabs(aod::cascdata::dcanegtopv) > dcaNegtopv&& nabs(aod::cascdata::dcabachtopv) > cascadesetting_dcabachtopv&& aod::cascdata::dcaV0daughters < dcaV0dau&& aod::cascdata::dcacascdaughters < cascadesetting_dcacascdau;
 
-  // histogram defined with HistogramRegistry
-  HistogramRegistry registry{
-    "registry",
-    {}};
   using V0LinkedTagged = soa::Join<aod::V0sLinked, aod::V0Tags>;
   using CascadesLinkedTagged = soa::Join<aod::CascadesLinked, aod::CascTags>;
+  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
+  using FullTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
   using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA>;
   using DauTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA, aod::McTrackLabels>;
   // using IDTracks= soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::TOFSignal>; // prepared for Bayesian PID
-  using IDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal, aod::TracksDCA>;
+  using IDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::TOFSignal, aod::TracksDCA>;
+  using IDTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::TOFSignal, aod::TracksDCA, aod::McTrackLabels>;
   using V0DatasWithoutTrackX = soa::Join<aod::V0Indices, aod::V0Cores>;
 
   Produces<aod::TriggerTracks> triggerTrack;
-  Produces<aod::AssocPions> assocPion;
+  Produces<aod::TriggerTrackExtras> triggerTrackExtra;
   Produces<aod::AssocV0s> assocV0;
   Produces<aod::AssocCascades> assocCascades;
+  Produces<aod::AssocHadrons> assocHadrons;
+  Produces<aod::AssocPID> assocPID;
 
   TF1* fK0Mean = new TF1("fK0Mean", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
   TF1* fK0Width = new TF1("fK0Width", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
@@ -151,8 +162,15 @@ struct hstrangecorrelationfilter {
   TF1* fOmegaMean = new TF1("fomegaMean", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
   TF1* fOmegaWidth = new TF1("fomegaWidth", "[0]+[1]*x+[2]*TMath::Exp(-[3]*x)");
 
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+  int mRunNumber;
+
   void init(InitContext const&)
   {
+    zorroSummary.setObject(zorro.getZorroSummary());
+    mRunNumber = -1;
+
     fK0Mean->SetParameters(massParsK0Mean->at(0), massParsK0Mean->at(1), massParsK0Mean->at(2), massParsK0Mean->at(3));
     fK0Width->SetParameters(massParsK0Width->at(0), massParsK0Width->at(1), massParsK0Width->at(2), massParsK0Width->at(3));
     fLambdaMean->SetParameters(massParsLambdaMean->at(0), massParsLambdaMean->at(1), massParsLambdaMean->at(2), massParsLambdaMean->at(3));
@@ -169,6 +187,18 @@ struct hstrangecorrelationfilter {
     histos.add("h3dMassXiPlus", "h3dMassXiPlus", kTH3F, {axisPtQA, axisXiMass, axisMult});
     histos.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
     histos.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
+  }
+
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+
+    zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), zorroMask.value);
+    zorro.populateHistRegistry(histos, bc.runNumber());
+
+    mRunNumber = bc.runNumber();
   }
 
   // reco-level trigger quality checks (N.B.: DCA is filtered, not selected)
@@ -196,9 +226,83 @@ struct hstrangecorrelationfilter {
     }
     return true;
   }
+  template <class TTrack>
+  bool isValidAssocTrack(TTrack assoc)
+  {
+    if (assoc.eta() > assocEtaMax || assoc.eta() < assocEtaMin) {
+      return false;
+    }
+    if (assoc.pt() > assocPtCutMax || assoc.pt() < assocPtCutMin) {
+      return false;
+    }
+    if (assoc.tpcNClsCrossedRows() < minTPCNCrossedRows) {
+      return false; // crossed rows
+    }
+    if (!assoc.hasITS() && assocRequireITS) {
+      return false; // skip, doesn't have ITS signal (skips lots of TPC-only!)
+    }
+
+    // do this only if information is available
+    float nSigmaTPCTOF[8] = {-10, -10, -10, -10, -10, -10, -10, -10};
+    if constexpr (requires { assoc.tofSignal(); }) {
+      if (assoc.tofSignal() > 0) {
+        if (std::sqrt(assoc.tofNSigmaPi() * assoc.tofNSigmaPi() + assoc.tpcNSigmaPi() * assoc.tpcNSigmaPi()) > assocPionNSigmaTPCFOF)
+          return false;
+        if (assoc.tofNSigmaPr() < rejectSigma)
+          return false;
+        if (assoc.tpcNSigmaPr() < rejectSigma)
+          return false;
+        if (assoc.tofNSigmaKa() < rejectSigma)
+          return false;
+        if (assoc.tpcNSigmaKa() < rejectSigma)
+          return false;
+        nSigmaTPCTOF[4] = assoc.tofNSigmaPi();
+        nSigmaTPCTOF[5] = assoc.tofNSigmaKa();
+        nSigmaTPCTOF[6] = assoc.tofNSigmaPr();
+        nSigmaTPCTOF[7] = assoc.tofNSigmaEl();
+      } else {
+        if (assoc.tpcNSigmaPi() > assocPionNSigmaTPCFOF)
+          return false;
+        if (assoc.tpcNSigmaPr() < rejectSigma)
+          return false;
+        if (assoc.tpcNSigmaKa() < rejectSigma)
+          return false;
+      }
+      nSigmaTPCTOF[0] = assoc.tpcNSigmaPi();
+      nSigmaTPCTOF[1] = assoc.tpcNSigmaKa();
+      nSigmaTPCTOF[2] = assoc.tpcNSigmaPr();
+      nSigmaTPCTOF[3] = assoc.tpcNSigmaEl();
+    }
+
+    bool physicalPrimary = false;
+    float origPt = -1;
+    if constexpr (requires { assoc.mcParticle(); }) {
+      if (assoc.has_mcParticle()) {
+        auto mcParticle = assoc.mcParticle();
+        physicalPrimary = mcParticle.isPhysicalPrimary();
+        origPt = mcParticle.pt();
+      }
+    }
+
+    assocHadrons(
+      assoc.collisionId(),
+      physicalPrimary,
+      assoc.globalIndex(),
+      origPt);
+    assocPID(
+      nSigmaTPCTOF[0],
+      nSigmaTPCTOF[1],
+      nSigmaTPCTOF[2],
+      nSigmaTPCTOF[3],
+      nSigmaTPCTOF[4],
+      nSigmaTPCTOF[5],
+      nSigmaTPCTOF[6],
+      nSigmaTPCTOF[7]);
+    return true;
+  }
 
   // for real data processing
-  void processTriggers(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<DauTracks> const& tracks)
+  void processTriggers(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<FullTracks> const& tracks, aod::BCsWithTimestamps const&)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -207,6 +311,14 @@ struct hstrangecorrelationfilter {
     // No need to correlate stuff that's in far collisions
     if (TMath::Abs(collision.posZ()) > 10.0) {
       return;
+    }
+    if (zorroMask.value != "") {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+      if (!zorroSelected) {
+        return;
+      }
     }
 
     /// _________________________________________________
@@ -219,11 +331,12 @@ struct hstrangecorrelationfilter {
         false, // if you decide to check real data for primaries, you'll have a hard time
         track.globalIndex(),
         0);
+      triggerTrackExtra(1);
     }
   }
 
   // for MC processing
-  void processTriggersMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<DauTracksMC> const& tracks, aod::McParticles const&)
+  void processTriggersMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<FullTracksMC> const& tracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -232,6 +345,14 @@ struct hstrangecorrelationfilter {
     // No need to correlate stuff that's in far collisions
     if (TMath::Abs(collision.posZ()) > 10.0) {
       return;
+    }
+    if (zorroMask.value != "") {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+      if (!zorroSelected) {
+        return;
+      }
     }
 
     /// _________________________________________________
@@ -251,10 +372,11 @@ struct hstrangecorrelationfilter {
         physicalPrimary,
         track.globalIndex(),
         origPt);
+      triggerTrackExtra(1);
     }
   }
 
-  void processAssocPions(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<IDTracks> const& tracks)
+  void processAssocPions(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<IDTracks> const& tracks, aod::BCsWithTimestamps const&)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -263,64 +385,25 @@ struct hstrangecorrelationfilter {
     // No need to correlate stuff that's in far collisions
     if (TMath::Abs(collision.posZ()) > 10.0) {
       return;
+    }
+    if (zorroMask.value != "") {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+      if (!zorroSelected) {
+        return;
+      }
     }
 
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if (track.eta() > assocEtaMax || track.eta() < assocEtaMin) {
+      if (!isValidAssocTrack(track))
         continue;
-      }
-      // if (track.sign()= 1 ) {continue;}
-      if (track.pt() > assocPtCutMax || track.pt() < assocPtCutMin) {
-        continue;
-      }
-      if (track.tpcNClsCrossedRows() < minTPCNCrossedRows) {
-        continue; // crossed rows
-      }
-      if (!track.hasITS() && triggerRequireITS) {
-        continue; // skip, doesn't have ITS signal (skips lots of TPC-only!)
-      }
-      // prepared for Bayesian PID
-      //  if (!track.bayesPi() > pionMinBayesProb) {
-      //    continue;
-      //  }
-      //  if (track.bayesPi() < track.bayesPr() || track.bayesPi() < track.bayesKa()){
-      //    continue;
-      //  }
-      //  if (track.tpcNSigmaPi() < assocPionNSigmaTPCFOF){
-      //    continue;
-      //  }
-      //  if (track.tofSignal() > 0 && track.tofNSigmaPi() < assocPionNSigmaTPCFOF){
-      //    continue;
-      //  }
-      if (track.tofSignal() > 0) {
-        if (std::sqrt(track.tofNSigmaPi() * track.tofNSigmaPi() + track.tpcNSigmaPi() * track.tpcNSigmaPi()) > assocPionNSigmaTPCFOF)
-          continue;
-        if (track.tofNSigmaPr() < rejectSigma)
-          continue;
-        if (track.tpcNSigmaPr() < rejectSigma)
-          continue;
-        if (track.tofNSigmaKa() < rejectSigma)
-          continue;
-        if (track.tpcNSigmaKa() < rejectSigma)
-          continue;
-      } else {
-        if (track.tpcNSigmaPi() > assocPionNSigmaTPCFOF)
-          continue;
-        if (track.tpcNSigmaPr() < rejectSigma)
-          continue;
-        if (track.tpcNSigmaKa() < rejectSigma)
-          continue;
-      }
-
-      assocPion(
-        track.collisionId(),
-        track.globalIndex());
     }
   }
 
-  void processV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, DauTracks const&, soa::Filtered<V0DatasWithoutTrackX> const& V0s, V0LinkedTagged const&)
+  void processAssocPionsMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<IDTracksMC> const& tracks, aod::BCsWithTimestamps const&)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -330,6 +413,95 @@ struct hstrangecorrelationfilter {
     if (TMath::Abs(collision.posZ()) > 10.0) {
       return;
     }
+    if (zorroMask.value != "") {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+      if (!zorroSelected) {
+        return;
+      }
+    }
+
+    /// _________________________________________________
+    /// Step 1: Populate table with trigger tracks
+    for (auto const& track : tracks) {
+      if (!isValidAssocTrack(track))
+        continue;
+    }
+  }
+
+  void processAssocHadrons(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<FullTracks> const& tracks, aod::BCsWithTimestamps const&)
+  {
+    // Perform basic event selection
+    if (!collision.sel8()) {
+      return;
+    }
+    // No need to correlate stuff that's in far collisions
+    if (TMath::Abs(collision.posZ()) > 10.0) {
+      return;
+    }
+    if (zorroMask.value != "") {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+      if (!zorroSelected) {
+        return;
+      }
+    }
+
+    /// _________________________________________________
+    /// Step 1: Populate table with trigger tracks
+    for (auto const& track : tracks) {
+      if (!isValidAssocTrack(track))
+        continue;
+    }
+  }
+  void processAssocHadronsMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<FullTracksMC> const& tracks, aod::BCsWithTimestamps const&)
+  {
+    // Perform basic event selection
+    if (!collision.sel8()) {
+      return;
+    }
+    // No need to correlate stuff that's in far collisions
+    if (TMath::Abs(collision.posZ()) > 10.0) {
+      return;
+    }
+    if (zorroMask.value != "") {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+      if (!zorroSelected) {
+        return;
+      }
+    }
+
+    /// _________________________________________________
+    /// Step 1: Populate table with trigger tracks
+    for (auto const& track : tracks) {
+      if (!isValidAssocTrack(track))
+        continue;
+    }
+  }
+
+  void processV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, DauTracks const&, soa::Filtered<V0DatasWithoutTrackX> const& V0s, V0LinkedTagged const&, aod::BCsWithTimestamps const&)
+  {
+    // Perform basic event selection
+    if (!collision.sel8()) {
+      return;
+    }
+    // No need to correlate stuff that's in far collisions
+    if (TMath::Abs(collision.posZ()) > 10.0) {
+      return;
+    }
+    if (zorroMask.value != "") {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+      if (!zorroSelected) {
+        return;
+      }
+    }
+
     /// _________________________________________________
     /// Populate table with associated V0s
     for (auto const& v0 : V0s) {
@@ -402,7 +574,7 @@ struct hstrangecorrelationfilter {
       }
     }
   }
-  void processCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, DauTracks const&, soa::Filtered<V0DatasWithoutTrackX> const& /*V0s*/, soa::Filtered<aod::CascDatas> const& Cascades, aod::V0sLinked const&, CascadesLinkedTagged const&)
+  void processCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, DauTracks const&, soa::Filtered<V0DatasWithoutTrackX> const& /*V0s*/, soa::Filtered<aod::CascDatas> const& Cascades, aod::V0sLinked const&, CascadesLinkedTagged const&, aod::BCsWithTimestamps const&)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -411,6 +583,14 @@ struct hstrangecorrelationfilter {
     // No need to correlate stuff that's in far collisions
     if (TMath::Abs(collision.posZ()) > 10.0) {
       return;
+    }
+    if (zorroMask.value != "") {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      bool zorroSelected = zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+      if (!zorroSelected) {
+        return;
+      }
     }
     /// _________________________________________________
     /// Step 3: Populate table with associated Cascades
@@ -492,8 +672,11 @@ struct hstrangecorrelationfilter {
   PROCESS_SWITCH(hstrangecorrelationfilter, processTriggers, "Produce trigger tables", true);
   PROCESS_SWITCH(hstrangecorrelationfilter, processTriggersMC, "Produce trigger tables for MC", false);
   PROCESS_SWITCH(hstrangecorrelationfilter, processV0s, "Produce associated V0 tables", true);
-  PROCESS_SWITCH(hstrangecorrelationfilter, processAssocPions, "Produce associated Pion tables", true);
+  PROCESS_SWITCH(hstrangecorrelationfilter, processAssocPions, "Produce associated Pion tables", false);
+  PROCESS_SWITCH(hstrangecorrelationfilter, processAssocPionsMC, "Produce associated Pion tables for MC", false);
   PROCESS_SWITCH(hstrangecorrelationfilter, processCascades, "Produce associated cascade tables", true);
+  PROCESS_SWITCH(hstrangecorrelationfilter, processAssocHadrons, "Produce associated Hadron tables", true);
+  PROCESS_SWITCH(hstrangecorrelationfilter, processAssocHadronsMC, "Produce associated Hadron tables for MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -25,6 +25,7 @@
 #include <vector>
 #include <TComplex.h>
 #include <TMath.h>
+#include <cstdio>
 
 // o2Physics includes.
 #include "Framework/AnalysisDataModel.h"
@@ -95,9 +96,14 @@ struct epvector {
   Configurable<bool> useGainCallib{"useGainCallib", true, "use gain calibration"};
   Configurable<bool> useRecentere{"useRecentere", true, "use Recentering"};
   Configurable<bool> useShift{"useShift", false, "use Shift"};
+  Configurable<bool> useShift2{"useShift2", false, "use Shift for others"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/s/skundu/My/Object/test100", "Path to gain calibration"};
   Configurable<std::string> ConfRecentere{"ConfRecentere", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for recentere"};
   Configurable<std::string> ConfShift{"ConfShift", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for Shift"};
+  Configurable<std::string> ConfShiftFT0A{"ConfShiftFT0A", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for Shift FT0A"};
+  Configurable<std::string> ConfShiftTPC{"ConfShiftTPC", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for Shift TPC"};
+  Configurable<std::string> ConfShiftTPCL{"ConfShiftTPCL", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for Shift TPCL"};
+  Configurable<std::string> ConfShiftTPCR{"ConfShiftTPCR", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for Shift TPCR"};
   ConfigurableAxis configAxisCentrality{"configAxisCentrality", {80, 0.0, 80}, "centrality bining"};
   // Event selection cuts - Alex
   TF1* fMultPVCutLow = nullptr;
@@ -108,7 +114,7 @@ struct epvector {
 
   void init(o2::framework::InitContext&)
   {
-    std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
+    std::vector<double> occupancyBinning = {-0.5, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
 
     const AxisSpec centAxis{configAxisCentrality, "V0M (%)"};
     // AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
@@ -166,6 +172,10 @@ struct epvector {
     histos.add("QTPC", "QTPC", kTH3F, {centAxis, qAxis, occupancyAxis});
 
     histos.add("ShiftFT0C", "ShiftFT0C", kTProfile3D, {centAxis, basisAxis, shiftAxis});
+    histos.add("ShiftFT0A", "ShiftFT0A", kTProfile3D, {centAxis, basisAxis, shiftAxis});
+    histos.add("ShiftTPC", "ShiftTPC", kTProfile3D, {centAxis, basisAxis, shiftAxis});
+    histos.add("ShiftTPCL", "ShiftTPCL", kTProfile3D, {centAxis, basisAxis, shiftAxis});
+    histos.add("ShiftTPCR", "ShiftTPCR", kTProfile3D, {centAxis, basisAxis, shiftAxis});
 
     // Event selection cut additional - Alex
     // if (additionalEvsel) {
@@ -254,6 +264,10 @@ struct epvector {
   TProfile* gainprofile;
   TH2D* hrecentere;
   TProfile3D* shiftprofile;
+  TProfile3D* shiftprofile2;
+  TProfile3D* shiftprofile3;
+  TProfile3D* shiftprofile4;
+  TProfile3D* shiftprofile5;
 
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
@@ -361,15 +375,46 @@ struct epvector {
 
       if (useShift && (currentRunNumber != lastRunNumber)) {
         shiftprofile = ccdb->getForTimeStamp<TProfile3D>(ConfShift.value, bc.timestamp());
+        if (useShift2) {
+          shiftprofile2 = ccdb->getForTimeStamp<TProfile3D>(ConfShiftFT0A.value, bc.timestamp());
+          shiftprofile3 = ccdb->getForTimeStamp<TProfile3D>(ConfShiftTPC.value, bc.timestamp());
+          shiftprofile4 = ccdb->getForTimeStamp<TProfile3D>(ConfShiftTPCL.value, bc.timestamp());
+          shiftprofile5 = ccdb->getForTimeStamp<TProfile3D>(ConfShiftTPCR.value, bc.timestamp());
+        }
       }
       if (useShift) {
         auto deltapsiFT0C = 0.0;
+        auto deltapsiFT0A = 0.0;
+        auto deltapsiTPC = 0.0;
+        auto deltapsiTPCL = 0.0;
+        auto deltapsiTPCR = 0.0;
         for (int ishift = 1; ishift <= 10; ishift++) {
           auto coeffshiftxFT0C = shiftprofile->GetBinContent(shiftprofile->FindBin(centrality, 0.5, ishift - 0.5));
           auto coeffshiftyFT0C = shiftprofile->GetBinContent(shiftprofile->FindBin(centrality, 1.5, ishift - 0.5));
           deltapsiFT0C = deltapsiFT0C + ((1 / (1.0 * ishift)) * (-coeffshiftxFT0C * TMath::Cos(ishift * 2.0 * psiFT0C) + coeffshiftyFT0C * TMath::Sin(ishift * 2.0 * psiFT0C)));
+          if (useShift2) {
+            auto coeffshiftxFT0A = shiftprofile2->GetBinContent(shiftprofile2->FindBin(centrality, 0.5, ishift - 0.5));
+            auto coeffshiftyFT0A = shiftprofile2->GetBinContent(shiftprofile2->FindBin(centrality, 1.5, ishift - 0.5));
+
+            auto coeffshiftxTPC = shiftprofile3->GetBinContent(shiftprofile3->FindBin(centrality, 0.5, ishift - 0.5));
+            auto coeffshiftyTPC = shiftprofile3->GetBinContent(shiftprofile3->FindBin(centrality, 1.5, ishift - 0.5));
+
+            auto coeffshiftxTPCL = shiftprofile4->GetBinContent(shiftprofile4->FindBin(centrality, 0.5, ishift - 0.5));
+            auto coeffshiftyTPCL = shiftprofile4->GetBinContent(shiftprofile4->FindBin(centrality, 1.5, ishift - 0.5));
+
+            auto coeffshiftxTPCR = shiftprofile5->GetBinContent(shiftprofile5->FindBin(centrality, 0.5, ishift - 0.5));
+            auto coeffshiftyTPCR = shiftprofile5->GetBinContent(shiftprofile5->FindBin(centrality, 1.5, ishift - 0.5));
+            deltapsiFT0A = deltapsiFT0A + ((1 / (1.0 * ishift)) * (-coeffshiftxFT0A * TMath::Cos(ishift * 2.0 * psiFT0A) + coeffshiftyFT0A * TMath::Sin(ishift * 2.0 * psiFT0A)));
+            deltapsiTPC = deltapsiTPC + ((1 / (1.0 * ishift)) * (-coeffshiftxTPC * TMath::Cos(ishift * 2.0 * psiTPC) + coeffshiftyTPC * TMath::Sin(ishift * 2.0 * psiTPC)));
+            deltapsiTPCL = deltapsiTPCL + ((1 / (1.0 * ishift)) * (-coeffshiftxTPCL * TMath::Cos(ishift * 2.0 * psiTPCL) + coeffshiftyTPCL * TMath::Sin(ishift * 2.0 * psiTPCL)));
+            deltapsiTPCR = deltapsiTPCR + ((1 / (1.0 * ishift)) * (-coeffshiftxTPCR * TMath::Cos(ishift * 2.0 * psiTPCR) + coeffshiftyTPCR * TMath::Sin(ishift * 2.0 * psiTPCR)));
+          }
         }
         psiFT0C = psiFT0C + deltapsiFT0C;
+        psiFT0A = psiFT0A + deltapsiFT0A;
+        psiTPC = psiTPC + deltapsiTPC;
+        psiTPCL = psiTPCL + deltapsiTPCL;
+        psiTPCR = psiTPCR + deltapsiTPCR;
       }
       histos.fill(HIST("QxFT0C"), centrality, qxFT0C);
       histos.fill(HIST("QyFT0C"), centrality, qyFT0C);
@@ -416,6 +461,18 @@ struct epvector {
       for (int ishift = 1; ishift <= 10; ishift++) {
         histos.fill(HIST("ShiftFT0C"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * psiFT0C));
         histos.fill(HIST("ShiftFT0C"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * psiFT0C));
+
+        histos.fill(HIST("ShiftFT0A"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * psiFT0A));
+        histos.fill(HIST("ShiftFT0A"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * psiFT0A));
+
+        histos.fill(HIST("ShiftTPC"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * psiTPC));
+        histos.fill(HIST("ShiftTPC"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * psiTPC));
+
+        histos.fill(HIST("ShiftTPCL"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * psiTPCL));
+        histos.fill(HIST("ShiftTPCL"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * psiTPCL));
+
+        histos.fill(HIST("ShiftTPCR"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * psiTPCR));
+        histos.fill(HIST("ShiftTPCR"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * psiTPCR));
       }
       lastRunNumber = currentRunNumber;
     }

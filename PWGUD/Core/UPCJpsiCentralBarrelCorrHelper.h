@@ -16,21 +16,23 @@
 #ifndef PWGUD_CORE_UPCJPSICENTRALBARRELCORRHELPER_H_
 #define PWGUD_CORE_UPCJPSICENTRALBARRELCORRHELPER_H_
 
+#include <vector>
 #include <algorithm>
 #include "CommonConstants/MathConstants.h"
+#include "random"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace std;
 
-enum ParticleType {
+/*enum ParticleType {
   P_ELECTRON = 0,
   P_MUON = 1,
   P_PROTON = 2
-};
+};*/
 
-template <typename T>
+/*template <typename T>
 int testPIDhypoTPC(T trackPID)
 {
   float nSigmaTPC[3];
@@ -71,7 +73,7 @@ int testPIDhypo(T trackPID)
   } else {
     return -1;
   }
-}
+}*/
 
 float* correlation(TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
 {
@@ -211,6 +213,21 @@ double DeltaPhi(TLorentzVector lv1, TLorentzVector lv2)
 {
   TLorentzVector lv_sum = lv1 + lv2;
   TLorentzVector lv_diff = lv1 - lv2;
+
+  double dp = lv_sum.DeltaPhi(lv_diff);
+
+  return dp;
+}
+
+double DeltaPhiRandom(TLorentzVector lv1, TLorentzVector lv2)
+{
+  std::vector<int> indices = {0, 1};
+  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+  std::shuffle(indices.begin(), indices.end(), std::default_random_engine(seed));
+  std::array<TLorentzVector, 2> arrayLorentz = {lv1, lv2};
+  TLorentzVector lv_sum = arrayLorentz[indices[0]] + arrayLorentz[indices[1]];
+  TLorentzVector lv_diff = arrayLorentz[indices[0]] - arrayLorentz[indices[1]];
+  ;
 
   double dp = lv_sum.DeltaPhi(lv_diff);
 

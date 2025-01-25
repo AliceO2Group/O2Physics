@@ -83,6 +83,11 @@ using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::Trac
                                         aod::pidTPCFullKa, aod::pidTPCFullPr,
                                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                         aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+using MyBarrelTracksWithCovOnlyStdPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
+                                                  aod::pidTPCFullEl, aod::pidTPCFullPi,
+                                                  aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                                  aod::pidTOFFullEl, aod::pidTOFFullPi,
+                                                  aod::pidTOFFullKa, aod::pidTOFFullPr>;
 using MyBarrelTracksWithV0Bits = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
                                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                            aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -123,6 +128,7 @@ constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes:
 // constexpr static uint32_t gkEventFillMapWithCentRun2 = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCentRun2; // Unused variable
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
+constexpr static uint32_t gkTrackFillMapWithCovOnlyStdPID = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
 constexpr static uint32_t gkTrackFillMapWithV0Bits = gkTrackFillMap | VarManager::ObjTypes::TrackV0Bits;
 constexpr static uint32_t gkTrackFillMapWithV0BitsForMaps = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackV0Bits | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackTPCPID;
 constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarManager::ObjTypes::DalitzBits;
@@ -177,9 +183,10 @@ struct TableMaker {
   Configurable<bool> fIsAmbiguous{"cfgIsAmbiguous", false, "Whether we enable QA plots for ambiguous tracks"};
 
   struct : ConfigurableGroup {
-    Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
+    Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro"};
     Configurable<string> fConfigZorroTrigMask{"cfgZorroTriggerMask", "fDiMuon", "DQ Trigger masks: fSingleE,fLMeeIMR,fLMeeHMR,fDiElectron,fSingleMuLow,fSingleMuHigh,fDiMuon"};
     Configurable<bool> fConfigRunZorroSel{"cfgRunZorroSel", false, "Select events with trigger mask"};
+    Configurable<uint64_t> fBcTolerance{"cfgBcTolerance", 100, "Number of BCs of margin for software triggers"};
   } useZorro;
 
   struct : ConfigurableGroup {
@@ -266,14 +273,14 @@ struct TableMaker {
                                context.mOptions.get<bool>("processFullWithCovMultsAndEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithCent") || context.mOptions.get<bool>("processBarrelOnlyWithCovWithCent") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithMults") || context.mOptions.get<bool>("processBarrelOnlyWithCentAndMults") || context.mOptions.get<bool>("processBarrelOnlyWithCovWithCentAndMults") ||
-                               context.mOptions.get<bool>("processBarrelOnlyWithCov") || context.mOptions.get<bool>("processBarrelOnlyWithEventFilter") ||
+                               context.mOptions.get<bool>("processBarrelOnlyWithCov") || context.mOptions.get<bool>("processBarrelOnlyWithCovOnlyStdPID") || context.mOptions.get<bool>("processBarrelOnlyWithEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithMultsAndEventFilter") || context.mOptions.get<bool>("processBarrelOnlyWithCovAndEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits") || context.mOptions.get<bool>("processBarrelOnlyWithV0Bits") || context.mOptions.get<bool>("processBarrelWithDalitzEvent") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithV0BitsAndMaps") || context.mOptions.get<bool>("processAmbiguousBarrelOnly")) ||
                               context.mOptions.get<bool>("processBarrelWithV0AndDalitzEvent") || context.mOptions.get<bool>("processBarrelOnlyWithV0BitsAndMults");
     bool enableMuonHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                              context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCovAndEventFilter") ||
-                             context.mOptions.get<bool>("processFullWithCovMultsAndEventFilter") || context.mOptions.get<bool>("processMuonOnlyWithCovAndCent") ||
+                             context.mOptions.get<bool>("processFullWithCovMultsAndEventFilter") || context.mOptions.get<bool>("processMuonOnlyWithCovAndCentMults") ||
                              context.mOptions.get<bool>("processMuonOnlyWithCov") || context.mOptions.get<bool>("processMuonOnlyWithCovAndEventFilter") || context.mOptions.get<bool>("processAmbiguousMuonOnlyWithCov") ||
                              context.mOptions.get<bool>("processMuonsAndMFT") || context.mOptions.get<bool>("processMuonsAndMFTWithFilter") || context.mOptions.get<bool>("processMuonMLOnly"));
 
@@ -443,9 +450,10 @@ struct TableMaker {
 
     if (useZorro.fConfigRunZorro) {
       zorro.setBaseCCDBPath(useCCDBConfigurations.fConfigCcdbPathZorro.value);
+      zorro.setBCtolerance(useZorro.fBcTolerance);
       zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), useZorro.fConfigZorroTrigMask.value);
       zorro.populateExternalHists(fCurrentRun, reinterpret_cast<TH2D*>(fStatsList->At(3)), reinterpret_cast<TH2D*>(fStatsList->At(4)));
-      bool zorroSel = zorro.isSelected(bc.globalBC(), 100UL, reinterpret_cast<TH2D*>(fStatsList->At(4)));
+      bool zorroSel = zorro.isSelected(bc.globalBC(), useZorro.fBcTolerance, reinterpret_cast<TH2D*>(fStatsList->At(4)));
       if (zorroSel) {
         tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
       }
@@ -492,7 +500,7 @@ struct TableMaker {
       multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
              collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
       multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
-              0, 0, 0.0, 0.0, 0, 0);
+              0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0.0, 0.0);
     }
 
     uint64_t trackFilteringTag = 0;
@@ -612,11 +620,19 @@ struct TableMaker {
           float nSigmaPi = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPi_Corr] : track.tpcNSigmaPi());
           float nSigmaKa = ((fConfigComputeTPCpostCalib && fConfigComputeTPCpostCalibKaon) ? VarManager::fgValues[VarManager::kTPCnSigmaKa_Corr] : track.tpcNSigmaKa());
           float nSigmaPr = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPr_Corr] : track.tpcNSigmaPr());
-          trackBarrelPID(track.tpcSignal(),
-                         nSigmaEl, track.tpcNSigmaMu(), nSigmaPi, nSigmaKa, nSigmaPr,
-                         track.beta(),
-                         track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                         track.trdSignal());
+          if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackPIDExtra)) {
+            trackBarrelPID(track.tpcSignal(),
+                           nSigmaEl, track.tpcNSigmaMu(), nSigmaPi, nSigmaKa, nSigmaPr,
+                           track.beta(),
+                           track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                           track.trdSignal());
+          } else {
+            trackBarrelPID(track.tpcSignal(),
+                           nSigmaEl, -1, nSigmaPi, nSigmaKa, nSigmaPr,
+                           -1,
+                           track.tofNSigmaEl(), -1, track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                           -1);
+          }
         }
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackTPCPID)) {
           trackBarrelPID(track.tpcSignal(), track.tpcNSigmaEl(), -1, track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
@@ -906,9 +922,10 @@ struct TableMaker {
 
     if (useZorro.fConfigRunZorro) {
       zorro.setBaseCCDBPath(useCCDBConfigurations.fConfigCcdbPathZorro.value);
+      zorro.setBCtolerance(useZorro.fBcTolerance);
       zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), useZorro.fConfigZorroTrigMask.value);
       zorro.populateExternalHists(fCurrentRun, reinterpret_cast<TH2D*>(fStatsList->At(3)), reinterpret_cast<TH2D*>(fStatsList->At(4)));
-      bool zorroSel = zorro.isSelected(bc.globalBC(), 100UL, reinterpret_cast<TH2D*>(fStatsList->At(4)));
+      bool zorroSel = zorro.isSelected(bc.globalBC(), useZorro.fBcTolerance, reinterpret_cast<TH2D*>(fStatsList->At(4)));
       if (zorroSel) {
         tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
       }
@@ -950,6 +967,13 @@ struct TableMaker {
       eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
     }
     eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
+    eventInfo(collision.globalIndex());
+    if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
+      multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
+             collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
+      multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
+              0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0.0, 0.0);
+    }
 
     uint64_t trackFilteringTag = 0;
     uint8_t trackTempFilterMap = 0;
@@ -1054,11 +1078,19 @@ struct TableMaker {
           float nSigmaEl = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaEl_Corr] : track.tpcNSigmaEl());
           float nSigmaPi = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPi_Corr] : track.tpcNSigmaPi());
           float nSigmaPr = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPr_Corr] : track.tpcNSigmaPr());
-          trackBarrelPID(track.tpcSignal(),
-                         nSigmaEl, track.tpcNSigmaMu(), nSigmaPi, track.tpcNSigmaKa(), nSigmaPr,
-                         track.beta(),
-                         track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                         track.trdSignal());
+          if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackPIDExtra)) {
+            trackBarrelPID(track.tpcSignal(),
+                           nSigmaEl, track.tpcNSigmaMu(), nSigmaPi, track.tpcNSigmaKa(), nSigmaPr,
+                           track.beta(),
+                           track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                           track.trdSignal());
+          } else {
+            trackBarrelPID(track.tpcSignal(),
+                           nSigmaEl, -1, nSigmaPi, track.tpcNSigmaKa(), nSigmaPr,
+                           -1,
+                           track.tofNSigmaEl(), -1, track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                           -1);
+          }
         }
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackTPCPID)) {
           trackBarrelPID(track.tpcSignal(), track.tpcNSigmaEl(), -1, track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
@@ -1517,6 +1549,13 @@ struct TableMaker {
     fullSkimming<gkEventFillMapWithMult, gkTrackFillMapWithCov, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
+  // Produce barrel tables only, with track cov matrix , only std PID information used ----------------------------------------------------------------------------------------
+  void processBarrelOnlyWithCovOnlyStdPID(MyEventsWithMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                          soa::Filtered<MyBarrelTracksWithCovOnlyStdPID> const& tracksBarrel)
+  {
+    fullSkimming<gkEventFillMapWithMult, gkTrackFillMapWithCovOnlyStdPID, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+  }
+
   // Produce barrel tables only ----------------------------------------------------------------------------------------------------------------
   void processBarrelOnly(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                          soa::Filtered<MyBarrelTracks> const& tracksBarrel)
@@ -1525,10 +1564,10 @@ struct TableMaker {
   }
 
   // Produce muon tables only, with centrality and muon cov matrix -------------------------------------------------------------------------------------------------
-  void processMuonOnlyWithCovAndCent(MyEventsWithCent::iterator const& collision, aod::BCsWithTimestamps const& bcs,
-                                     soa::Filtered<MyMuonsWithCov> const& tracksMuon)
+  void processMuonOnlyWithCovAndCentMults(MyEventsWithCentAndMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                          soa::Filtered<MyMuonsWithCov> const& tracksMuon)
   {
-    fullSkimming<gkEventFillMapWithCent, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
+    fullSkimming<gkEventFillMapWithCentAndMults, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
   }
 
   // Produce muon tables only, with muon cov matrix --------------------------------------------------------------------------------------------
@@ -1586,12 +1625,12 @@ struct TableMaker {
     }
   }
 
-  void processAssociatedMuonOnlyWithCovAndCent(MyEventsWithCent const& collisions, aod::BCsWithTimestamps const& bcs,
-                                               soa::Filtered<MyMuonsCollWithCov> const& tracksMuon, aod::AmbiguousFwdTracks const&, aod::FwdTrackAssoc const& fwdtrackIndices)
+  void processAssociatedMuonOnlyWithCovAndCentMults(MyEventsWithCentAndMults const& collisions, aod::BCsWithTimestamps const& bcs,
+                                                    soa::Filtered<MyMuonsCollWithCov> const& tracksMuon, aod::AmbiguousFwdTracks const&, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
-      fullSkimmingIndices<gkEventFillMapWithCent, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
+      fullSkimmingIndices<gkEventFillMapWithCentAndMults, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
     }
   }
 
@@ -1752,8 +1791,9 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCentAndMults, "Build barrel-only DQ skimmed data model, w/ centrality and multiplicities", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCovWithCentAndMults, "Build barrel-only DQ skimmed data model, w/ centrality and multiplicities and w/ track covariance", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCov, "Build barrel-only DQ skimmed data model, w/ track cov matrix", false);
+  PROCESS_SWITCH(TableMaker, processBarrelOnlyWithCovOnlyStdPID, "Build barrel-only DQ skimmed data model, w/ track cov matrix, only std PID information used", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnly, "Build barrel-only DQ skimmed data model, w/o centrality", false);
-  PROCESS_SWITCH(TableMaker, processMuonOnlyWithCovAndCent, "Build muon-only DQ skimmed data model, w/ centrality and muon cov matrix", false);
+  PROCESS_SWITCH(TableMaker, processMuonOnlyWithCovAndCentMults, "Build muon-only DQ skimmed data model, w/ centrality and muon cov matrix", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithCov, "Build muon-only DQ skimmed data model, w/ muon cov matrix", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithCovAndEventFilter, "Build muon-only DQ skimmed data model, w/ muon cov matrix, w/ event filter", false);
   PROCESS_SWITCH(TableMaker, processMuonMLOnly, "Build muon-only DQ skimmed data model with global muon track by ML matching", false);
@@ -1761,7 +1801,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processAmbiguousMuonOnlyWithCov, "Build muon-only with cov DQ skimmed data model with QA plots for ambiguous muons", false);
   PROCESS_SWITCH(TableMaker, processAmbiguousBarrelOnly, "Build barrel-only DQ skimmed data model with QA plots for ambiguous tracks", false);
   PROCESS_SWITCH(TableMaker, processAssociatedMuonOnlyWithCov, "Build muon-only with cov DQ skimmed data model using track-collision association tables", false);
-  PROCESS_SWITCH(TableMaker, processAssociatedMuonOnlyWithCovAndCent, "Build muon-only with cov DQ skimmed data model using track-collision association tables and centrality", false);
+  PROCESS_SWITCH(TableMaker, processAssociatedMuonOnlyWithCovAndCentMults, "Build muon-only with cov DQ skimmed data model using track-collision association tables and centrality", false);
   PROCESS_SWITCH(TableMaker, processAssociatedMuonOnlyWithCovAndMults, "Build muon-only with cov DQ skimmed data model using track-collision association tables and multiplicity", false);
   PROCESS_SWITCH(TableMaker, processMuonsAndMFT, "Build MFT and muons DQ skimmed data model", false);
   PROCESS_SWITCH(TableMaker, processMuonsAndMFTWithFilter, "Build MFT and muons DQ skimmed data model, w/ event filter", false);

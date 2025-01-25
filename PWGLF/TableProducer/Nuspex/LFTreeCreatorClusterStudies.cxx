@@ -265,8 +265,6 @@ struct LfTreeCreatorClusterStudies {
   std::vector<V0TrackParCov> m_v0TrackParCovs;
 
   o2::vertexing::DCAFitterN<2> m_fitter;
-  o2::pid::tof::Beta<TracksFullIU::iterator> m_responseBeta;
-  o2::pid::tof::Beta<TracksFullIUMc::iterator> m_responseBetaMc;
   o2::aod::ITSResponse m_responseITS;
 
   template <typename T>
@@ -450,15 +448,9 @@ struct LfTreeCreatorClusterStudies {
   template <bool isMC = false, typename T>
   float computeTOFmassDe(const T& candidate)
   {
-    if constexpr (isMC) {
-      float beta = m_responseBetaMc.GetBeta(candidate);
-      beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
-      return candidate.tpcInnerParam() * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
-    } else {
-      float beta = m_responseBeta.GetBeta(candidate);
-      beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
-      return candidate.tpcInnerParam() * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
-    }
+    float beta = o2::pid::tof::Beta::GetBeta(candidate);
+    beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+    return candidate.tpcInnerParam() * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
   }
 
   // =========================================================================================================
@@ -486,20 +478,11 @@ struct LfTreeCreatorClusterStudies {
   template <bool isMC = false, typename T>
   float computeTOFmassHe3(const T& candidate)
   {
-    if constexpr (isMC) {
-      float beta = m_responseBetaMc.GetBeta(candidate);
-      beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
-      bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
-      float correctedTPCinnerParamHe3 = (heliumPID && he3setting_compensatePIDinTracking) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
-      return correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
-    } else {
-      float beta = m_responseBeta.GetBeta(candidate);
-      beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
-      bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
-      float correctedTPCinnerParamHe3 = (heliumPID && he3setting_compensatePIDinTracking) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
-      return correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
-    }
-    return -999.f;
+    float beta = o2::pid::tof::Beta::GetBeta(candidate);
+    beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+    bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
+    float correctedTPCinnerParamHe3 = (heliumPID && he3setting_compensatePIDinTracking) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
+    return correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
   }
 
   // =========================================================================================================

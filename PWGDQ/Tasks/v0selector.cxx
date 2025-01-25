@@ -51,7 +51,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA,
+/*using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA,
+                                aod::pidTPCFullEl, aod::pidTPCFullPi,
+                                aod::pidTPCFullKa, aod::pidTPCFullPr>;*/
+using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                 aod::pidTPCFullEl, aod::pidTPCFullPi,
                                 aod::pidTPCFullKa, aod::pidTPCFullPr>;
 
@@ -158,6 +161,10 @@ struct v0selector {
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
   Configurable<bool> fillhisto{"fillhisto", false, "flag to fill histograms"};
+  // cutNsigmaElTPC, cutNsigmaPiTPC, cutNsigmaPrTPC
+  Configurable<float> cutNsigmaElTPC{"cutNsigmaElTPC", 5.0, "cutNsigmaElTPC"};
+  Configurable<float> cutNsigmaPiTPC{"cutNsigmaPiTPC", 5.0, "cutNsigmaPiTPC"};
+  Configurable<float> cutNsigmaPrTPC{"cutNsigmaPrTPC", 5.0, "cutNsigmaPrTPC"};
 
   HistogramRegistry registry{"registry"};
   void init(o2::framework::InitContext&)
@@ -303,7 +310,7 @@ struct v0selector {
           registry.fill(HIST("hMassGamma"), V0radius, mGamma);
           registry.fill(HIST("hV0Psi"), psipair, mGamma);
         }
-        if (mGamma < v0max_mee && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5 && TMath::Abs(psipair) < maxpsipair) {
+        if (mGamma < v0max_mee && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaEl()) < cutNsigmaElTPC && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaEl()) < cutNsigmaElTPC && TMath::Abs(psipair) < maxpsipair) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kGamma);
           pidmap[V0.negTrackId()] |= (uint8_t(1) << kGamma);
           if (fillhisto) {
@@ -317,7 +324,7 @@ struct v0selector {
           registry.fill(HIST("hMassK0SEta"), V0.eta(), mK0S);
           registry.fill(HIST("hMassK0SPhi"), V0.phi(), mK0S);
         }
-        if ((0.48 < mK0S && mK0S < 0.51) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
+        if ((0.48 < mK0S && mK0S < 0.51) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kK0S);
           pidmap[V0.negTrackId()] |= (uint8_t(1) << kK0S);
         }
@@ -325,7 +332,7 @@ struct v0selector {
         if (fillhisto) {
           registry.fill(HIST("hMassLambda"), V0radius, mLambda);
         }
-        if (v0id == kLambda && (1.110 < mLambda && mLambda < 1.120) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
+        if (v0id == kLambda && (1.110 < mLambda && mLambda < 1.120) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPr()) < cutNsigmaPrTPC && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kLambda);
           pidmap[V0.negTrackId()] |= (uint8_t(1) << kLambda);
         }
@@ -333,7 +340,7 @@ struct v0selector {
         if (fillhisto) {
           registry.fill(HIST("hMassAntiLambda"), V0radius, mAntiLambda);
         }
-        if ((1.110 < mAntiLambda && mAntiLambda < 1.120) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPr()) < 5) {
+        if ((1.110 < mAntiLambda && mAntiLambda < 1.120) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPr()) < cutNsigmaPrTPC) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kAntiLambda);
           pidmap[V0.negTrackId()] |= (uint8_t(1) << kAntiLambda);
         }

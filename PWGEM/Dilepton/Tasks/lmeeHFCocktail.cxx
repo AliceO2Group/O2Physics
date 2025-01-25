@@ -52,6 +52,8 @@ DECLARE_SOA_COLUMN(BQuarkId, bQuarkId, int);
 DECLARE_SOA_COLUMN(CQuarkId, cQuarkId, int);
 DECLARE_SOA_COLUMN(BQuarkOriginId, bQuarkOriginId, int);
 DECLARE_SOA_COLUMN(CQuarkOriginId, cQuarkOriginId, int);
+DECLARE_SOA_COLUMN(BQuarkRap, bQuarkRap, float);
+DECLARE_SOA_COLUMN(CQuarkRap, cQuarkRap, float);
 } // namespace hftable
 DECLARE_SOA_TABLE(HfTable, "AOD", "HFTABLE",
                   hftable::IsHF,
@@ -60,20 +62,46 @@ DECLARE_SOA_TABLE(HfTable, "AOD", "HFTABLE",
                   hftable::BQuarkId,
                   hftable::CQuarkId,
                   hftable::BQuarkOriginId,
-                  hftable::CQuarkOriginId);
+                  hftable::CQuarkOriginId,
+                  hftable::BQuarkRap,
+                  hftable::CQuarkRap);
 } // namespace o2::aod
 
-const char* stageNames[3] = {"gen", "eff", "eff_and_acc"};
+const int Nstages = 3;
+const char* stageNames[Nstages] = {"gen", "meas", "meas_and_acc"};
+// gen: normal weights applied. By default set to 1.
+// meas: normal and efficiency weights applied. By default set to 1.
+// meas_acc: normal, efficiency weights and acceptance cuts applied
+
+template <typename T>
+void doQuark(T& p, std::vector<std::shared_ptr<TH1>> hRapQuark, float ptMin, float etaMax, int pdg)
+{
+  float weight[Nstages] = {p.weight(), p.efficiency() * p.weight(), p.efficiency() * p.weight()};
+  float pt[Nstages] = {p.pt(), p.ptSmeared(), p.ptSmeared()};
+  float eta[Nstages] = {p.eta(), p.etaSmeared(), p.etaSmeared()};
+  float cut_pt[Nstages] = {0., 0., ptMin};
+  float cut_eta[Nstages] = {9999., 99999., etaMax};
+  for (int i = 0; i < Nstages; i++) {
+    if (pt[i] > cut_pt[i] && fabs(eta[i]) < cut_eta[i]) {
+      if (pdg == 4)
+        hRapQuark[i]->Fill(p.cQuarkRap(), weight[i]);
+      else if (pdg == 5)
+        hRapQuark[i]->Fill(p.bQuarkRap(), weight[i]);
+      else
+        hRapQuark[i]->Fill(999., weight[i]);
+    }
+  }
+}
 
 template <typename T>
 void doSingle(T& p, std::vector<std::shared_ptr<TH1>> hEta, std::vector<std::shared_ptr<TH1>> hPt, std::vector<std::shared_ptr<TH2>> hPtEta, float ptMin, float etaMax)
 {
-  float weight[3] = {p.weight(), p.efficiency() * p.weight(), p.efficiency() * p.weight()};
-  float pt[3] = {p.pt(), p.ptSmeared(), p.ptSmeared()};
-  float eta[3] = {p.eta(), p.etaSmeared(), p.etaSmeared()};
-  float cut_pt[3] = {0., 0., ptMin};
-  float cut_eta[3] = {9999., 99999., etaMax};
-  for (int i = 0; i < 3; i++) {
+  float weight[Nstages] = {p.weight(), p.efficiency() * p.weight(), p.efficiency() * p.weight()};
+  float pt[Nstages] = {p.pt(), p.ptSmeared(), p.ptSmeared()};
+  float eta[Nstages] = {p.eta(), p.etaSmeared(), p.etaSmeared()};
+  float cut_pt[Nstages] = {0., 0., ptMin};
+  float cut_eta[Nstages] = {9999., 99999., etaMax};
+  for (int i = 0; i < Nstages; i++) {
     if (pt[i] > cut_pt[i] && fabs(eta[i]) < cut_eta[i]) {
       hEta[i]->Fill(eta[i], weight[i]);
       hPt[i]->Fill(pt[i], weight[i]);
@@ -93,15 +121,15 @@ void doPair(T& p1, T& p2, std::vector<std::shared_ptr<TH1>> hMee, std::vector<st
   ROOT::Math::PtEtaPhiMVector v2_gen(p2.pt(), p2.eta(), p2.phi(), o2::constants::physics::MassElectron);
   ROOT::Math::PtEtaPhiMVector v12_gen = v1_gen + v2_gen;
 
-  double mass[3] = {v12_gen.M(), v12.M(), v12.M()};
-  double pt[3] = {v12_gen.Pt(), v12.Pt(), v12.Pt()};
-  float pt1[3] = {p1.pt(), p1.ptSmeared(), p1.ptSmeared()};
-  float pt2[3] = {p2.pt(), p2.ptSmeared(), p2.ptSmeared()};
-  float eta1[3] = {p1.eta(), p1.etaSmeared(), p1.etaSmeared()};
-  float eta2[3] = {p2.eta(), p2.etaSmeared(), p2.etaSmeared()};
-  float weight[3] = {p1.weight() * p2.weight(), p1.efficiency() * p2.efficiency() * p1.weight() * p2.weight(), p1.efficiency() * p2.efficiency() * p1.weight() * p2.weight()};
-  float cut_pt[3] = {0., 0., ptMin};
-  float cut_eta[3] = {9999., 99999., etaMax};
+  double mass[Nstages] = {v12_gen.M(), v12.M(), v12.M()};
+  double pt[Nstages] = {v12_gen.Pt(), v12.Pt(), v12.Pt()};
+  float pt1[Nstages] = {p1.pt(), p1.ptSmeared(), p1.ptSmeared()};
+  float pt2[Nstages] = {p2.pt(), p2.ptSmeared(), p2.ptSmeared()};
+  float eta1[Nstages] = {p1.eta(), p1.etaSmeared(), p1.etaSmeared()};
+  float eta2[Nstages] = {p2.eta(), p2.etaSmeared(), p2.etaSmeared()};
+  float weight[Nstages] = {p1.weight() * p2.weight(), p1.efficiency() * p2.efficiency() * p1.weight() * p2.weight(), p1.efficiency() * p2.efficiency() * p1.weight() * p2.weight()};
+  float cut_pt[Nstages] = {0., 0., ptMin};
+  float cut_eta[Nstages] = {9999., 99999., etaMax};
 
   float deta = v1.Eta() - v2.Eta();
   float dphi = v1.Phi() - v2.Phi();
@@ -110,7 +138,7 @@ void doPair(T& p1, T& p2, std::vector<std::shared_ptr<TH1>> hMee, std::vector<st
     return;
   }
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < Nstages; i++) {
     if (pt1[i] > cut_pt[i] && pt2[i] > cut_pt[i] && fabs(eta1[i]) < cut_eta[i] && fabs(eta2[i]) < cut_eta[i]) {
       hMee[i]->Fill(mass[i], weight[i]);
       hMeePtee[i]->Fill(mass[i], pt[i], weight[i]);
@@ -119,10 +147,11 @@ void doPair(T& p1, T& p2, std::vector<std::shared_ptr<TH1>> hMee, std::vector<st
 }
 
 struct MyConfigs : ConfigurableGroup {
-  Configurable<float> fConfigPtMin{"cfgPtMin", 0.2, "min. pT"};
-  Configurable<float> fConfigEtaMax{"cfgEtaMax", 0.8, "max. |eta|"};
-  ConfigurableAxis fConfigPtBins{"cfgPtBins", {200, 0.f, 10.f}, "pT binning"};
-  ConfigurableAxis fConfigEtaBins{"cfgEtaBins", {200, -10.f, 10.f}, "eta binning"};
+  Configurable<float> fConfigPtMin{"cfgPtMin", 0.2, "min. pT of single electrons"};
+  Configurable<float> fConfigEtaMax{"cfgEtaMax", 0.8, "max. |eta| of single electrons"};
+  ConfigurableAxis fConfigPtBins{"cfgPtBins", {200, 0.f, 10.f}, "single electron pT binning"};
+  ConfigurableAxis fConfigEtaBins{"cfgEtaBins", {200, -10.f, 10.f}, "single electron eta binning"};
+  ConfigurableAxis fConfigRapBins{"cfgRapBins", {200, -10.f, 10.f}, "Quark rapidity binning"};
   ConfigurableAxis fConfigMeeBins{"cfgMeeBins", {800, 0.f, 8.f}, "Mee binning"};
   ConfigurableAxis fConfigPteeBins{"cfgPteeBins", {400, 0.f, 10.f}, "pTee binning"};
   Configurable<bool> fConfigApplyDEtaDPhi{"cfgApplyDEtaDPhi", false, "flag to apply deta-phi cut"};
@@ -138,7 +167,7 @@ struct lmeehfcocktailprefilter {
     for (auto const& p : mcParticles) {
 
       if (abs(p.pdgCode()) != 11 || o2::mcgenstatus::getHepMCStatusCode(p.statusCode()) != 1 || !p.has_mothers()) {
-        hfTable(EFromHFType::kNoE, -1, -1, -1, -1, -1, -1);
+        hfTable(EFromHFType::kNoE, -1, -1, -1, -1, -1, -1, -999., -999.);
         continue;
       }
 
@@ -159,6 +188,9 @@ struct lmeehfcocktailprefilter {
       int cQuarkOriginId = -1;
       int bQuarkOriginId = -1;
 
+      float bQuarkRap = -999.;
+      float cQuarkRap = -999.;
+
       int isHF = EFromHFType::kNoHFE;
 
       if (direct_beauty_mother) { // b->e
@@ -168,6 +200,7 @@ struct lmeehfcocktailprefilter {
         if (bQuarkId > -1) {
           auto bQuark = mcParticles.iteratorAt(bQuarkId);
           bQuarkOriginId = searchMothers(bQuark, mcParticles, 5, false);
+          bQuarkRap = bQuark.y();
         }
       } else if (bHadronId > -1 && direct_charm_mother) { // b->c->e
         isHF = EFromHFType::kBCE;
@@ -176,12 +209,14 @@ struct lmeehfcocktailprefilter {
         if (bQuarkId > -1) {
           auto bQuark = mcParticles.iteratorAt(bQuarkId);
           bQuarkOriginId = searchMothers(bQuark, mcParticles, 5, false);
+          bQuarkRap = bQuark.y();
         }
         auto cHadron = mcParticles.iteratorAt(cHadronId);
         cQuarkId = searchMothers(cHadron, mcParticles, 4, true);
         if (cQuarkId > -1) {
           auto cQuark = mcParticles.iteratorAt(cQuarkId);
           cQuarkOriginId = searchMothers(cQuark, mcParticles, 4, false);
+          cQuarkRap = cQuark.y();
         }
       } else if (bHadronId < 0 && direct_charm_mother) { // c->e
         isHF = EFromHFType::kCE;
@@ -190,10 +225,11 @@ struct lmeehfcocktailprefilter {
         if (cQuarkId > -1) {
           auto cQuark = mcParticles.iteratorAt(cQuarkId);
           cQuarkOriginId = searchMothers(cQuark, mcParticles, 4, false);
+          cQuarkRap = cQuark.y();
         }
       }
 
-      hfTable(isHF, bHadronId, cHadronId, bQuarkId, cQuarkId, bQuarkOriginId, cQuarkOriginId);
+      hfTable(isHF, bHadronId, cHadronId, bQuarkId, cQuarkId, bQuarkOriginId, cQuarkOriginId, bQuarkRap, cQuarkRap);
     }
   }
 };
@@ -202,6 +238,7 @@ struct lmeehfcocktailbeauty {
 
   HistogramRegistry registry{"registry", {}};
 
+  std::vector<std::vector<std::shared_ptr<TH1>>> hRapQuark;
   std::vector<std::vector<std::shared_ptr<TH1>>> hEta, hPt;
   std::vector<std::vector<std::shared_ptr<TH2>>> hPtEta;
   std::vector<std::shared_ptr<TH1>> hLS_Mee, hULS_Mee;
@@ -224,22 +261,33 @@ struct lmeehfcocktailbeauty {
   {
     registry.add<TH1>("NEvents", "NEvents", HistType::kTH1F, {{1, 0, 1}}, false);
 
-    const char* typeNamesSingle[2] = {"be", "bce"};
-    const char* typeTitlesSingle[2] = {"b->e", "b->c->e"};
+    const int Nchannels = 2;
+    const char* typeNamesSingle[Nchannels] = {"be", "bce"};
+    const char* typeTitlesSingle[Nchannels] = {"b->e", "b->c->e"};
 
-    AxisSpec eta_axis = {myConfigs.fConfigEtaBins, "#eta"};
-    AxisSpec pt_axis = {myConfigs.fConfigPtBins, "#it{p}_{T} (GeV/c)"};
+    AxisSpec rap_axis = {myConfigs.fConfigRapBins, "y_{b}"};
+    AxisSpec eta_axis = {myConfigs.fConfigEtaBins, "#eta_{e}"};
+    AxisSpec pt_axis = {myConfigs.fConfigPtBins, "#it{p}_{T,e} (GeV/c)"};
     AxisSpec mass_axis = {myConfigs.fConfigMeeBins, "m_{ee} (GeV/c^{2})"};
     AxisSpec ptee_axis = {myConfigs.fConfigPteeBins, "#it{p}_{T,ee} (GeV/c)"};
 
+    // quark histograms
+    for (int i = 0; i < Nchannels; i++) {
+      std::vector<std::shared_ptr<TH1>> hRap_temp;
+      for (int j = 0; j < Nstages; j++) {
+        hRap_temp.push_back(registry.add<TH1>(Form("BeautyQuark_Rap_%s_%s", typeNamesSingle[i], stageNames[j]), Form("Rap Beauty Quark %s %s", typeTitlesSingle[i], stageNames[j]), HistType::kTH1F, {rap_axis}, true));
+      }
+      hRapQuark.push_back(hRap_temp);
+    }
+
     // single histograms
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < Nchannels; i++) {
       std::vector<std::shared_ptr<TH1>> hEta_temp, hPt_temp;
       std::vector<std::shared_ptr<TH2>> hPtEta_temp;
-      for (int j = 0; j < 3; j++) {
-        hEta_temp.push_back(registry.add<TH1>(Form("Eta_%s_%s", typeNamesSingle[i], stageNames[j]), Form("Eta %s %s", typeTitlesSingle[i], stageNames[j]), HistType::kTH1F, {eta_axis}, true));
-        hPt_temp.push_back(registry.add<TH1>(Form("Pt_%s_%s", typeNamesSingle[i], stageNames[j]), Form("Pt %s %s", typeTitlesSingle[i], stageNames[j]), HistType::kTH1F, {pt_axis}, true));
-        hPtEta_temp.push_back(registry.add<TH2>(Form("PtEta_%s_%s", typeNamesSingle[i], stageNames[j]), Form("Pt vs. Eta %s %s", typeTitlesSingle[i], stageNames[j]), HistType::kTH2F, {pt_axis, eta_axis}, true));
+      for (int j = 0; j < Nstages; j++) {
+        hEta_temp.push_back(registry.add<TH1>(Form("Electron_Eta_%s_%s", typeNamesSingle[i], stageNames[j]), Form("Single Electron Eta %s %s", typeTitlesSingle[i], stageNames[j]), HistType::kTH1F, {eta_axis}, true));
+        hPt_temp.push_back(registry.add<TH1>(Form("Electron_Pt_%s_%s", typeNamesSingle[i], stageNames[j]), Form("Single Electron Pt %s %s", typeTitlesSingle[i], stageNames[j]), HistType::kTH1F, {pt_axis}, true));
+        hPtEta_temp.push_back(registry.add<TH2>(Form("Electron_PtEta_%s_%s", typeNamesSingle[i], stageNames[j]), Form("Single Electron Pt vs. Eta %s %s", typeTitlesSingle[i], stageNames[j]), HistType::kTH2F, {pt_axis, eta_axis}, true));
       }
       hEta.push_back(hEta_temp);
       hPt.push_back(hPt_temp);
@@ -248,7 +296,7 @@ struct lmeehfcocktailbeauty {
 
     // pair histograms
     // ULS
-    for (int j = 0; j < 3; j++) {
+    for (int j = 0; j < Nstages; j++) {
       hULS_Mee.push_back(registry.add<TH1>(Form("ULS_Mee_%s", stageNames[j]), Form("ULS Mee %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
       hULS_MeePtee.push_back(registry.add<TH2>(Form("ULS_MeePtee_%s", stageNames[j]), Form("ULS Mee vs. Ptee %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
 
@@ -256,7 +304,7 @@ struct lmeehfcocktailbeauty {
       hULS_MeePtee_wPartonicCheck.push_back(registry.add<TH2>(Form("ULS_MeePtee_wPartonicCheck_%s", stageNames[j]), Form("ULS Mee vs. Ptee wPartonicCheck %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
     }
     // LS
-    for (int j = 0; j < 3; j++) {
+    for (int j = 0; j < Nstages; j++) {
       hLS_Mee.push_back(registry.add<TH1>(Form("LS_Mee_%s", stageNames[j]), Form("LS Mee %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
       hLS_MeePtee.push_back(registry.add<TH2>(Form("LS_MeePtee_%s", stageNames[j]), Form("LS Mee vs. Ptee %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
 
@@ -270,6 +318,7 @@ struct lmeehfcocktailbeauty {
     for (auto const& p : mcParticles) {
       int from_quark = p.isHF() - 2;
       doSingle(p, hEta[from_quark], hPt[from_quark], hPtEta[from_quark], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+      doQuark(p, hRapQuark[from_quark], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, 5);
     }
 
     for (auto const& collision : collisions) {
@@ -332,6 +381,7 @@ struct lmeehfcocktailcharm {
 
   HistogramRegistry registry{"registry", {}};
 
+  std::vector<std::shared_ptr<TH1>> hRapQuark;
   std::vector<std::shared_ptr<TH1>> hEta, hPt, hULS_Mee, hLS_Mee;
   std::vector<std::shared_ptr<TH2>> hPtEta, hULS_MeePtee, hLS_MeePtee;
   std::vector<std::shared_ptr<TH1>> hULS_Mee_wPartonicCheck, hLS_Mee_wPartonicCheck;
@@ -354,21 +404,27 @@ struct lmeehfcocktailcharm {
     const char* typeNamesSingle = "ce";
     const char* typeTitlesSingle = "c->e";
 
-    AxisSpec eta_axis = {myConfigs.fConfigEtaBins, "#eta"};
-    AxisSpec pt_axis = {myConfigs.fConfigPtBins, "#it{p}_{T} (GeV/c)"};
+    AxisSpec rap_axis = {myConfigs.fConfigRapBins, "y_{c}"};
+    AxisSpec eta_axis = {myConfigs.fConfigEtaBins, "#eta_{e}"};
+    AxisSpec pt_axis = {myConfigs.fConfigPtBins, "#it{p}_{T,e} (GeV/c)"};
     AxisSpec mass_axis = {myConfigs.fConfigMeeBins, "m_{ee} (GeV/c^{2})"};
     AxisSpec ptee_axis = {myConfigs.fConfigPteeBins, "#it{p}_{T,ee} (GeV/c)"};
 
+    // quark histograms
+    for (int j = 0; j < Nstages; j++) {
+      hRapQuark.push_back(registry.add<TH1>(Form("CharmQuark_Rap_%s_%s", typeNamesSingle, stageNames[j]), Form("Rapidity Charm Quark %s %s", typeTitlesSingle, stageNames[j]), HistType::kTH1F, {rap_axis}, true));
+    }
+
     // single histograms
-    for (int j = 0; j < 3; j++) {
-      hEta.push_back(registry.add<TH1>(Form("Eta_%s_%s", typeNamesSingle, stageNames[j]), Form("Eta %s %s", typeTitlesSingle, stageNames[j]), HistType::kTH1F, {eta_axis}, true));
-      hPt.push_back(registry.add<TH1>(Form("Pt_%s_%s", typeNamesSingle, stageNames[j]), Form("Pt %s %s", typeTitlesSingle, stageNames[j]), HistType::kTH1F, {pt_axis}, true));
-      hPtEta.push_back(registry.add<TH2>(Form("PtEta_%s_%s", typeNamesSingle, stageNames[j]), Form("Pt vs. Eta %s %s", typeTitlesSingle, stageNames[j]), HistType::kTH2F, {pt_axis, eta_axis}, true));
+    for (int j = 0; j < Nstages; j++) {
+      hEta.push_back(registry.add<TH1>(Form("Electron_Eta_%s_%s", typeNamesSingle, stageNames[j]), Form("Single Electron Eta %s %s", typeTitlesSingle, stageNames[j]), HistType::kTH1F, {eta_axis}, true));
+      hPt.push_back(registry.add<TH1>(Form("Electron_Pt_%s_%s", typeNamesSingle, stageNames[j]), Form("Single Electron Pt %s %s", typeTitlesSingle, stageNames[j]), HistType::kTH1F, {pt_axis}, true));
+      hPtEta.push_back(registry.add<TH2>(Form("Electron_PtEta_%s_%s", typeNamesSingle, stageNames[j]), Form("Single Electron Pt vs. Eta %s %s", typeTitlesSingle, stageNames[j]), HistType::kTH2F, {pt_axis, eta_axis}, true));
     }
 
     // pair histograms
     // ULS
-    for (int j = 0; j < 3; j++) {
+    for (int j = 0; j < Nstages; j++) {
       hULS_Mee.push_back(registry.add<TH1>(Form("ULS_Mee_%s", stageNames[j]), Form("ULS Mee %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
       hULS_MeePtee.push_back(registry.add<TH2>(Form("ULS_MeePtee_%s", stageNames[j]), Form("ULS Mee vs Ptee %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
 
@@ -376,7 +432,7 @@ struct lmeehfcocktailcharm {
       hULS_MeePtee_wPartonicCheck.push_back(registry.add<TH2>(Form("ULS_MeePtee_wPartonicCheck_%s", stageNames[j]), Form("ULS Mee vs Ptee wPartonicCheck %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
     }
     // LS
-    for (int j = 0; j < 3; j++) {
+    for (int j = 0; j < Nstages; j++) {
       hLS_Mee.push_back(registry.add<TH1>(Form("LS_Mee_%s", stageNames[j]), Form("LS Mee %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
       hLS_MeePtee.push_back(registry.add<TH2>(Form("LS_MeePtee_%s", stageNames[j]), Form("LS Mee vs Ptee %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
 
@@ -389,6 +445,7 @@ struct lmeehfcocktailcharm {
   {
     for (auto const& p : mcParticles) {
       doSingle(p, hEta, hPt, hPtEta, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+      doQuark(p, hRapQuark, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, 4);
     }
 
     for (auto const& collision : collisions) {

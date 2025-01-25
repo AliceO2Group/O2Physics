@@ -933,7 +933,7 @@ struct nucleiInJets {
     ////////////////////////////////////////
   }
 
-  void processJetTracksData(aod::JCollision const& collision, chargedJetstrack const& chargedjets, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
+  void processJetTracksData(aod::JetCollision const& collision, chargedJetstrack const& chargedjets, soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
   {
 
     if (fabs(collision.posZ()) > 10)
@@ -980,7 +980,7 @@ struct nucleiInJets {
     }
   }
 
-  void processMCGen(o2::aod::JMcCollision const& collision, /*soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JCollisions>> const& recoColls,*/ aod::JMcParticles const& mcParticles, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets)
+  void processMCGen(o2::aod::JetMcCollision const& collision, /*soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JCollisions>> const& recoColls,*/ aod::JetParticles const& mcParticles, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets)
   {
     jetHist.fill(HIST("mcpJet/eventStat"), 0.5);
     jetHist.fill(HIST("mcpJet/eventStat"), 1.5);
@@ -1040,7 +1040,7 @@ struct nucleiInJets {
     } // track
   } // process mc
 
-  void processMCRec(o2::aod::JCollision const& collisionJet, soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks,
+  void processMCRec(o2::aod::JetCollision const& collisionJet, soa::Join<aod::JetTracks, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks,
                     soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, TrackCandidatesMC const&, aod::JetParticles const&)
   {
     jetHist.fill(HIST("mcdJet/eventStat"), 0.5);
@@ -1136,9 +1136,9 @@ struct nucleiInJets {
     } // tracks
   }
 
-  void processRecMatched(aod::JCollision const& collision, JetMCDetTable const& mcdjets,
-                         soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks,
-                         JetMCPartTable const&, TrackCandidatesMC const&, aod::JMcParticles const&)
+  void processRecMatched(aod::JetCollision const& collision, JetMCDetTable const& mcdjets,
+                         soa::Join<aod::JetTracks, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks,
+                         JetMCPartTable const&, TrackCandidatesMC const&, aod::JetParticles const&)
   {
     if (fabs(collision.posZ()) > 10)
       return;
@@ -1220,9 +1220,9 @@ struct nucleiInJets {
   } // process
 
   int nprocessSimJEEvents = 0;
-  void processGenMatched(aod::JMcCollision const& collision,
+  void processGenMatched(aod::JetMcCollision const& collision,
                          /*soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JCollisions>> const& recocolls,*/
-                         JetMCDetTable const&, JetMCPartTable const& mcpjets, aod::JMcParticles const& mcParticles)
+                         JetMCDetTable const&, JetMCPartTable const& mcpjets, aod::JetParticles const& mcParticles)
   {
 
     if (cDebugLevel > 0) {

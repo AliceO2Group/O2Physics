@@ -54,6 +54,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "Common/DataModel/PIDResponseITS.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -66,7 +67,6 @@ struct highmasslambda {
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdg;
-
   // CCDB options
   // Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   // Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
@@ -77,6 +77,7 @@ struct highmasslambda {
   // fill output
   Configurable<bool> fillQA{"fillQA", false, "fillQA"};
   Configurable<bool> useSP{"useSP", false, "useSP"};
+  // Configurable<bool> additionalEvselITS{"additionalEvselITS", true, "additionalEvselITS"};
   Configurable<bool> useSignDCAV0{"useSignDCAV0", true, "useSignDCAV0"};
   Configurable<bool> fillDefault{"fillDefault", false, "fill Occupancy"};
   Configurable<int> cfgOccupancyCut{"cfgOccupancyCut", 2500, "Occupancy cut"};
@@ -88,10 +89,10 @@ struct highmasslambda {
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 50.0f, "Accepted maximum Centrality"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 30.0f, "Accepted minimum Centrality"};
   // proton track cut
-  Configurable<bool> rejectPID{"reject PID", true, "pion, kaon, electron rejection"};
+  Configurable<bool> rejectPID{"rejectPID", true, "pion, kaon, electron rejection"};
   Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.0, "cut TOF beta"};
   Configurable<bool> ispTdifferentialDCA{"ispTdifferentialDCA", true, "is pT differential DCA"};
-  Configurable<bool> isPVContributor{"isPVContributor", true, "is PV contributor"};
+  Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use global track"};
   Configurable<float> confMinRot{"confMinRot", 5.0 * TMath::Pi() / 6.0, "Minimum of rotation"};
   Configurable<float> confMaxRot{"confMaxRot", 7.0 * TMath::Pi() / 6.0, "Maximum of rotation"};
   Configurable<float> confRapidity{"confRapidity", 0.8, "cut on Rapidity"};
@@ -171,7 +172,7 @@ struct highmasslambda {
 
   void init(o2::framework::InitContext&)
   {
-    std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
+    std::vector<double> occupancyBinning = {-0.5, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
     // std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.012, 0.014, 0.016, 0.02, 0.03, 0.05, 0.1, 0.5, 1.0};
     std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.0012, 0.0014, 0.0016, 0.002, 0.0025, 0.003, 0.004, 0.005, 0.006, 0.008, 0.01, 0.015, 0.02, 0.04, 0.05, 0.06, 0.08, 0.1, 0.3, 1.0};
     std::vector<double> ptProtonBinning = {0.2, 0.3, 0.5, 0.6, 0.8, 1.2, 1.4, 1.6, 2.0, 3.0, 4.0, 6.0};
@@ -269,10 +270,10 @@ struct highmasslambda {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (isPVContributor && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster && candidate.itsNClsInnerBarrel() >= 1)) {
+    if (useGlobalTrack && !(candidate.isGlobalTrackWoDCA() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
       return false;
     }
-    if (!isPVContributor && !(candidate.isGlobalTrackWoDCA() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster && candidate.itsNClsInnerBarrel() >= 1)) {
+    if (!useGlobalTrack && !(candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
       return false;
     }
 
@@ -385,81 +386,35 @@ struct highmasslambda {
     return true;
   }
 
-  // TPC TOF
+  // TOF Veto
   template <typename T>
   bool selectionPID1(const T& candidate)
   {
-    if (candidate.tpcInnerParam() < 0.85 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
-      return true;
-    }
-    if (candidate.tpcInnerParam() >= 0.85) {
-      if (candidate.hasTOF()) {
-        if (candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
-          return true;
-        }
+    if (candidate.hasTOF()) {
+      if (candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -nsigmaCutTPC && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
+        return true;
       }
-      if (!candidate.hasTOF()) {
-        if (candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
-          return true;
-        }
+    }
+    if (!candidate.hasTOF()) {
+      if (candidate.tpcNSigmaPr() > -nsigmaCutTPC && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+        return true;
       }
     }
     return false;
   }
 
-  // TOF Veto
+  // TPC TOF
   template <typename T>
   bool selectionPID2(const T& candidate)
   {
-    if (candidate.tpcInnerParam() < 0.85 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+    if (candidate.tpcInnerParam() < 1.0 && candidate.tpcNSigmaPr() > -nsigmaCutTPC && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.tpcInnerParam() >= 0.85 && candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
+    if (candidate.tpcInnerParam() >= 1.0 && candidate.tpcInnerParam() < 2.0 && candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -nsigmaCutTPC && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
       return true;
     }
-    return false;
-  }
-
-  // TOF veto loose
-  template <typename T>
-  bool selectionPID3(const T& candidate)
-  {
-    if (candidate.tpcInnerParam() < 0.85 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+    if (candidate.tpcInnerParam() >= 2.0 && candidate.tpcNSigmaPr() > -nsigmaCutTPC && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
       return true;
-    }
-    if (candidate.tpcInnerParam() >= 0.85) {
-      if (candidate.hasTOF()) {
-        if (candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
-          return true;
-        }
-      }
-      if (!candidate.hasTOF()) {
-        if (candidate.tpcInnerParam() < 1.5 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  // TOF veto very loose
-  template <typename T>
-  bool selectionPID4(const T& candidate)
-  {
-    if (candidate.tpcInnerParam() < 0.85 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
-      return true;
-    }
-    if (candidate.tpcInnerParam() >= 0.85) {
-      if (candidate.hasTOF()) {
-        if (candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
-          return true;
-        }
-      }
-      if (!candidate.hasTOF()) {
-        if (candidate.tpcInnerParam() < 1.8 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
-          return true;
-        }
-      }
     }
     return false;
   }
@@ -560,7 +515,10 @@ struct highmasslambda {
     if (!collision.sel8() || !collision.triggereventep() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return;
     }
-
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      return;
+    }
+    o2::aod::ITSResponse itsResponse;
     auto centrality = collision.centFT0C();
     auto multTPC = collision.multNTracksPV();
     histos.fill(HIST("hFTOCvsTPCNoCut"), centrality, multTPC);
@@ -601,7 +559,6 @@ struct highmasslambda {
       if (!selectionTrack(track1)) {
         continue;
       }
-
       // PID check
       if (PIDstrategy == 0 && !selectionPID1(track1)) {
         continue;
@@ -609,13 +566,9 @@ struct highmasslambda {
       if (PIDstrategy == 1 && !selectionPID2(track1)) {
         continue;
       }
-      if (PIDstrategy == 2 && !selectionPID3(track1)) {
+      if (track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < 2.5)) {
         continue;
       }
-      if (PIDstrategy == 3 && !selectionPID4(track1)) {
-        continue;
-      }
-
       if (track1.hasTOF()) {
         histos.fill(HIST("hNsigmaProtonTOFPre"), track1.tofNSigmaPr(), track1.pt());
       }
@@ -634,7 +587,6 @@ struct highmasslambda {
           histos.fill(HIST("hNsigmaProtonKaonTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
         }
       }
-
       histos.fill(HIST("hMomCorr"), track1.p() / track1.sign(), track1.p() - track1.tpcInnerParam(), centrality);
       histos.fill(HIST("hEta"), track1.eta());
       histos.fill(HIST("hDcaxy"), track1.dcaXY());
@@ -699,7 +651,6 @@ struct highmasslambda {
             histos.fill(HIST("hSparseV2SASameEvent_V2_dcatopv"), Lambdac.M(), Lambdac.Pt(), v2, v0.dcav0topv(), Proton.Pt());
           }
         }
-
         if (fillRotation) {
           for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
             auto anglestart = confMinRot;
@@ -768,6 +719,13 @@ struct highmasslambda {
       if (collision1.bcId() == collision2.bcId()) {
         continue;
       }
+      if (!collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      if (!collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      o2::aod::ITSResponse itsResponse;
       auto centrality = collision1.centFT0C();
       auto psiFT0C = collision1.psiFT0C();
       auto QFT0C = collision1.qFT0C();
@@ -780,21 +738,10 @@ struct highmasslambda {
         continue;
       }
       for (auto& [track1, v0] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+
         if (!selectionTrack(track1)) {
           continue;
         }
-        if (!track1.hasTOF()) {
-          if (rejectPID && !rejectPi(track1)) {
-            continue;
-          }
-          if (rejectPID && !rejectEl(track1)) {
-            continue;
-          }
-          if (rejectPID && !rejectKa(track1)) {
-            continue;
-          }
-        }
-
         // PID check
         if (PIDstrategy == 0 && !selectionPID1(track1)) {
           continue;
@@ -802,13 +749,15 @@ struct highmasslambda {
         if (PIDstrategy == 1 && !selectionPID2(track1)) {
           continue;
         }
-        if (PIDstrategy == 2 && !selectionPID3(track1)) {
-          continue;
-        }
-        if (PIDstrategy == 3 && !selectionPID4(track1)) {
+        if (track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < 2.5)) {
           continue;
         }
 
+        if (!track1.hasTOF()) {
+          if (rejectPID && !rejectEl(track1)) {
+            continue;
+          }
+        }
         if (!SelectionV0(collision2, v0)) {
           continue;
         }
@@ -838,13 +787,6 @@ struct highmasslambda {
         }
         auto anglesign = (v0.x() - collision1.posX()) * v0.px() + (v0.y() - collision1.posY()) * v0.py() + (v0.z() - collision1.posZ()) * v0.pz();
         anglesign = anglesign / TMath::Abs(anglesign);
-        auto dcasum = 0.0;
-        if (useSignDCAV0) {
-          dcasum = anglesign * (v0.dcav0topv()) - track1.dcaXY();
-        }
-        if (!useSignDCAV0) {
-          dcasum = v0.dcav0topv() - track1.dcaXY();
-        }
 
         if (occupancy1 < cfgOccupancyCut && occupancy2 < cfgOccupancyCut && Lambdac.M() > cMinLambdaMass && Lambdac.M() <= cMaxLambdaMass && TMath::Abs(Lambdac.Rapidity()) < confRapidity && Lambdac.Pt() > 2.0 && Lambdac.Pt() <= 6.0) {
           if (fillDefault) {

@@ -164,7 +164,7 @@ struct HfCandidateSelectorBsToDsPiReduced {
       }
 
       if constexpr (withDmesMl) { // we include it in the topological selections
-        if (!hfHelper.selectionDmesMlScoresForB(hfCandBs, cutsDmesMl, binsPtDmesMl)) {
+        if (!hfHelper.selectionDmesMlScoresForBReduced(hfCandBs, cutsDmesMl, binsPtDmesMl)) {
           hfSelBsToDsPiCandidate(statusBsToDsPi);
           if (applyBsMl) {
             hfMlBsToDsPiCandidate(outputMl);

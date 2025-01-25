@@ -32,6 +32,7 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamV0Selection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamCascadeSelection.h"
 
 namespace o2::analysis::femtoDream
 {
@@ -193,6 +194,44 @@ class FemtoDreamCutculator
     }
   }
 
+  /// Specialization of the setSelection function for Cascades
+
+  /// The selection passed to the function is retrieved from the dpl-config.json
+  /// \param obs Observable of the track selection
+  /// \param type Type of the track selection
+  /// \param prefix Prefix which is added to the name of the Configurable
+  void setCascadeSelection(femtoDreamCascadeSelection::CascadeSel obs,
+                           femtoDreamSelection::SelectionType type,
+                           const char* prefix)
+  {
+    auto tmpVec =
+      setSelection(FemtoDreamCascadeSelection::getSelectionName(obs, prefix));
+    if (tmpVec.size() > 0) {
+      mCascadeSel.setSelection(tmpVec, obs, type);
+    }
+  }
+
+  /// Automatically retrieves V0 selections from the dpl-config.json
+  /// \param prefix Prefix which is added to the name of the Configurable
+  void setCascadeSelectionFromFile(const char* prefix)
+  {
+    for (const auto& sel : mConfigTree) {
+      std::string sel_name = sel.first;
+      femtoDreamCascadeSelection::CascadeSel obs;
+      if (sel_name.find(prefix) != std::string::npos) {
+        int index = FemtoDreamCascadeSelection::findSelectionIndex(
+          std::string_view(sel_name), prefix);
+        if (index >= 0) {
+          obs = femtoDreamCascadeSelection::CascadeSel(index);
+        } else {
+          continue;
+        }
+        setCascadeSelection(obs, FemtoDreamCascadeSelection::getSelectionType(obs),
+                            prefix);
+      }
+    }
+  }
+
   /// This function investigates a given selection criterion. The available
   /// options are displayed in the terminal and the bit-wise container is put
   /// together according to the user input \tparam T1 Selection class under
@@ -319,6 +358,8 @@ class FemtoDreamCutculator
       output = iterateSelection(mTrackSel, SysChecks, sign);
     } else if (choice == std::string("V")) {
       output = iterateSelection(mV0Sel, SysChecks, sign);
+    } else if (choice == std::string("C")) {
+      output = iterateSelection(mCascadeSel, SysChecks, sign);
     } else {
       std::cout << "Option " << choice
                 << " not recognized - available options are (T/V)" << std::endl;
@@ -338,22 +379,40 @@ class FemtoDreamCutculator
     std::sort(mPIDValues.begin(), mPIDValues.end(), std::greater<>());
     int Bit = 0;
 
+    std::cout << "Activate ITS PID (only valid for tracks)? (y/n)";
+    std::string choicePID;
+    std::cin >> choicePID;
+
     std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
-    for (std::size_t i = 0; i < mPIDspecies.size(); i++) {
-      for (std::size_t j = 0; j < mPIDValues.size(); j++) {
-        std::cout << "Species " << o2::track::PID::getName(mPIDspecies.at(i)) << " with |NSigma|<" << mPIDValues.at(j) << std::endl;
-        Bit = (2 * mPIDspecies.size() * (mPIDValues.size() - (j + 1)) + 1) + (mPIDspecies.size() - (1 + i)) * 2;
-        std::cout << "Bit for Nsigma TPC: " << (1 << (Bit + 1)) << std::endl;
-        std::cout << "Bit for Nsigma TPCTOF: " << (1 << Bit) << std::endl;
-        std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
+    if (choicePID == std::string("n")) {
+      for (std::size_t i = 0; i < mPIDspecies.size(); i++) {
+        for (std::size_t j = 0; j < mPIDValues.size(); j++) {
+          std::cout << "Species " << o2::track::PID::getName(mPIDspecies.at(i)) << " with |NSigma|<" << mPIDValues.at(j) << std::endl;
+          Bit = (2 * mPIDspecies.size() * (mPIDValues.size() - (j + 1)) + 1) + (mPIDspecies.size() - (1 + i)) * 2;
+          std::cout << "Bit for Nsigma TPC: " << (1 << (Bit + 1)) << std::endl;
+          std::cout << "Bit for Nsigma TPCTOF: " << (1 << Bit) << std::endl;
+          std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
+        }
+        if (SysChecks) {
+          // Seed the random number generator
+          // Select a random element
+          randomIndex = uni(rng);
+          std::cout << "Nsigma TPC: " << mPIDValues[randomIndex] << std::endl;
+          randomIndex = uni(rng);
+          std::cout << "Nsigma TPCTOF: " << mPIDValues[randomIndex] << std::endl;
+        }
       }
-      if (SysChecks) {
-        // Seed the random number generator
-        // Select a random element
-        randomIndex = uni(rng);
-        std::cout << "Nsigma TPC: " << mPIDValues[randomIndex] << std::endl;
-        randomIndex = uni(rng);
-        std::cout << "Nsigma TPCTOF: " << mPIDValues[randomIndex] << std::endl;
+    } else {
+      for (std::size_t i = 0; i < mPIDspecies.size(); i++) {
+        for (std::size_t j = 0; j < mPIDValues.size(); j++) {
+          std::cout << "Species " << o2::track::PID::getName(mPIDspecies.at(i)) << " with |NSigma|<" << mPIDValues.at(j) << std::endl;
+          // Bit = (2 * mPIDspecies.size() * (mPIDValues.size() - (j + 1)) + 1) + (mPIDspecies.size() - (1 + i)) * 2;
+          Bit = (3 * mPIDspecies.size() * (mPIDValues.size() - (j + 1)) + 1) + (mPIDspecies.size() - (1 + i)) * 3;
+          std::cout << "Bit for Nsigma TPC: " << (1 << (Bit + 2)) << std::endl;
+          std::cout << "Bit for Nsigma TPCTOF: " << (1 << (Bit + 1)) << std::endl;
+          std::cout << "Bit for Nsigma ITS: " << (1 << Bit) << std::endl;
+          std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
+        }
       }
     }
   }
@@ -362,6 +421,7 @@ class FemtoDreamCutculator
   boost::property_tree::ptree mConfigTree;     ///< the dpl-config.json buffered into a ptree
   FemtoDreamTrackSelection mTrackSel;          ///< for setting up the bit-wise selection container for tracks
   FemtoDreamV0Selection mV0Sel;                ///< for setting up the bit-wise selection container for V0s
+  FemtoDreamCascadeSelection mCascadeSel;      ///< for setting up the bit-wise selection container for Cascades
   std::vector<o2::track::PID::ID> mPIDspecies; ///< list of particle species for which PID is stored
   std::vector<float> mPIDValues;               ///< list of nsigma values for which PID is stored
 };

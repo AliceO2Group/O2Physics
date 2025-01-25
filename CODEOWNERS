@@ -17,7 +17,7 @@
 /ALICE3 @alibuild @njacazio @hscheid
 /DPG @alibuild @chiarazampolli @alcaliva @catalinristea
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo @altsybee
-/DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio
+/DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio @lbariogl @f3sch
 /DPG/Tasks/TOF @alibuild @noferini @njacazio
 /DPG/Tasks/FT0 @alibuild @afurs
 /EventFiltering @alibuild @mpuccio @lietava
@@ -33,18 +33,18 @@
 /PWGCF/TableProducer @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
 /PWGCF/Tasks         @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
 /PWGDQ @alibuild @iarsene @dsekihat @feisenhu @lucamicheletti93
-/PWGEM @alibuild @mikesas @rbailhac @feisenhu
+/PWGEM @alibuild @feisenhu @dsekihat @ivorobye
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern @dsekihat
-/PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano
+/PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano @zhangbiao-phy
 # PWG-LF
 /PWGLF @alibuild @njacazio @skundu692
 /PWGLF/Tasks/GlobalEventProperties         @alibuild @njacazio @skundu692 @gbencedi @omvazque
 /PWGLF/TableProducer/GlobalEventProperties @alibuild @njacazio @skundu692 @gbencedi @omvazque
 /PWGLF/Tasks/Nuspex         @alibuild @njacazio @skundu692 @fmazzasc @chiarapinto @maciacco
 /PWGLF/TableProducer/Nuspex @alibuild @njacazio @skundu692 @fmazzasc @chiarapinto @maciacco
-/PWGLF/Tasks/Resonances         @alibuild @njacazio @skundu692 @BongHwi @smaff92
-/PWGLF/TableProducer/Resonances @alibuild @njacazio @skundu692 @BongHwi @smaff92
+/PWGLF/Tasks/Resonances         @alibuild @njacazio @skundu692 @dmallick2 @smaff92
+/PWGLF/TableProducer/Resonances @alibuild @njacazio @skundu692 @dmallick2 @smaff92
 /PWGLF/Tasks/Strangeness         @alibuild @njacazio @skundu692 @ercolessi @ChiaraDeMartin95
 /PWGLF/TableProducer/Strangeness @alibuild @njacazio @skundu692 @ercolessi @ChiaraDeMartin95
 

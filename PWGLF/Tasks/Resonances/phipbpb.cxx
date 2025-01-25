@@ -54,6 +54,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "Common/DataModel/PIDResponseITS.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -80,6 +81,7 @@ struct phipbpb {
   Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 3000, "Occupancy cut"};
   // track
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
+  Configurable<bool> additionalEvselITS{"additionalEvselITS", true, "Additional event selcection for ITS"};
   Configurable<bool> removefaketrak{"removefaketrack", true, "Remove fake track from momentum difference"};
   Configurable<float> ConfFakeKaonCut{"ConfFakeKaonCut", 0.1, "Cut based on track from momentum difference"};
   Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use Global track"};
@@ -144,7 +146,7 @@ struct phipbpb {
   void init(o2::framework::InitContext&)
   {
     // std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 3000.0, 6000.0, 50000.0};
-    std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
+    std::vector<double> occupancyBinning = {-0.5, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisCosThetaStar{configThnAxisCosThetaStar, "cos(#vartheta_{OP})"};
@@ -183,6 +185,9 @@ struct phipbpb {
 
     histos.add("hSparseV2SameEventCosDeltaPhi", "hSparseV2SameEventCosDeltaPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
     histos.add("hSparseV2MixedEventCosDeltaPhi", "hSparseV2MixedEventCosDeltaPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+
+    histos.add("hSparseV2SameEventCosDeltaPhiSquare", "hSparseV2SameEventCosDeltaPhiSquare", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+    histos.add("hSparseV2MixedEventCosDeltaPhiSquare", "hSparseV2MixedEventCosDeltaPhiSquare", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
 
     histos.add("hSparseV2SameEventSinDeltaPhi", "hSparseV2SameEventSinDeltaPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
     histos.add("hSparseV2MixedEventSinDeltaPhi", "hSparseV2MixedEventSinDeltaPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
@@ -265,7 +270,7 @@ struct phipbpb {
     if (useGlobalTrack && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
       return false;
     }
-    if (!useGlobalTrack && !(candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster)) {
+    if (!useGlobalTrack && !(candidate.tpcNClsFound() > cfgTPCcluster)) {
       return false;
     }
     return true;
@@ -350,7 +355,7 @@ struct phipbpb {
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
   ConfigurableAxis axisEPAngle{"axisEPAngle", {6, -TMath::Pi() / 2, TMath::Pi() / 2}, "event plane angle"};
-  ConfigurableAxis axisOccup{"axisOccup", {20, 0.0, 40000.0}, "occupancy axis"};
+  ConfigurableAxis axisOccup{"axisOccup", {20, -0.5, 40000.0}, "occupancy axis"};
 
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, o2::aod::evsel::NumTracksInTimeRange>;
   ROOT::Math::PxPyPzMVector PhiMesonMother, KaonPlus, KaonMinus, fourVecDauCM;
@@ -377,11 +382,15 @@ struct phipbpb {
     auto QTPCR = collision.qTPCR();
     auto QTPCL = collision.qTPCL();
     int occupancy = collision.trackOccupancyInTimeRange();
+    o2::aod::ITSResponse itsResponse;
     if (occupancy > cfgCutOccupancy) {
       return;
     }
     histos.fill(HIST("hFTOCvsTPC"), centrality, multTPC);
     if (additionalEvsel && !eventSelected(collision, centrality)) {
+      return;
+    }
+    if (additionalEvselITS && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return;
     }
     histos.fill(HIST("hFTOCvsTPCSelected"), centrality, multTPC);
@@ -420,6 +429,9 @@ struct phipbpb {
       if (!ispTdepPID && !selectionPID(track1)) {
         continue;
       }
+      if (useGlobalTrack && track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < 2.5)) {
+        continue;
+      }
       histos.fill(HIST("hTPCglobalmomcorr"), track1.p() / track1.sign(), track1.p() - track1.tpcInnerParam(), centrality);
       histos.fill(HIST("hEta"), track1.eta());
       histos.fill(HIST("hDcaxy"), track1.dcaXY());
@@ -455,6 +467,9 @@ struct phipbpb {
         if (removefaketrak && isFakeKaon(track2)) {
           continue;
         }
+        if (useGlobalTrack && track2.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) < 2.5)) {
+          continue;
+        }
         KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
         KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
         PhiMesonMother = KaonPlus + KaonMinus;
@@ -465,6 +480,7 @@ struct phipbpb {
         histos.fill(HIST("hpTvsRapidity"), PhiMesonMother.Pt(), PhiMesonMother.Rapidity());
         if (TMath::Abs(PhiMesonMother.Rapidity()) < confRapidity) {
           histos.fill(HIST("hSparseV2SameEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality);
+          histos.fill(HIST("hSparseV2SameEventCosDeltaPhiSquare"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * v2, centrality);
           histos.fill(HIST("hSparseV2SameEventSinDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2sin * QFT0C, centrality);
 
           histos.fill(HIST("hSparseV2SameEventCosPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Cos(2.0 * phimother), centrality);
@@ -503,6 +519,7 @@ struct phipbpb {
       if (collision1.bcId() == collision2.bcId()) {
         continue;
       }
+      o2::aod::ITSResponse itsResponse;
       int occupancy1 = collision1.trackOccupancyInTimeRange();
       int occupancy2 = collision2.trackOccupancyInTimeRange();
       if (occupancy1 > cfgCutOccupancy) {
@@ -521,9 +538,20 @@ struct phipbpb {
       if (additionalEvsel && !eventSelected(collision2, centrality2)) {
         continue;
       }
-
+      if (additionalEvselITS && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      if (additionalEvselITS && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
       for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         if (track1.sign() * track2.sign() > 0) {
+          continue;
+        }
+        if (useGlobalTrack && track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < 2.5)) {
+          continue;
+        }
+        if (useGlobalTrack && track2.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) < 2.5)) {
           continue;
         }
         if (!selectionTrack(track1) || !selectionTrack(track2)) {
@@ -559,6 +587,7 @@ struct phipbpb {
         histos.fill(HIST("hpTvsRapidity"), PhiMesonMother.Pt(), PhiMesonMother.Rapidity());
         if (TMath::Abs(PhiMesonMother.Rapidity()) < confRapidity) {
           histos.fill(HIST("hSparseV2MixedEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality);
+          histos.fill(HIST("hSparseV2MixedEventCosDeltaPhiSquare"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * v2, centrality);
           histos.fill(HIST("hSparseV2MixedEventSinDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2sin * QFT0C, centrality);
         }
         ROOT::Math::Boost boost{PhiMesonMother.BoostToCM()};

@@ -11,7 +11,11 @@
 //
 // Build hypertriton candidates from V0s and tracks
 
+#include <memory>
+#include <string>
 #include <array>
+#include <vector>
+#include <algorithm>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -58,6 +62,7 @@ constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleName{"He3"};
 std::shared_ptr<TH1> hEvents;
+std::shared_ptr<TH1> hEventsZorro;
 std::shared_ptr<TH1> hZvtx;
 std::shared_ptr<TH1> hCentFT0A;
 std::shared_ptr<TH1> hCentFT0C;
@@ -155,8 +160,6 @@ struct hyperRecoTask {
   o2::vertexing::DCAFitterN<2> fitter;
   svPoolCreator svCreator{heDauPdg, 211};
 
-  o2::pid::tof::Beta<TracksFull::iterator> responseBeta;
-
   // daughter masses
   float he3Mass = o2::constants::physics::MassHelium3;
   float he4Mass = o2::constants::physics::MassAlpha;
@@ -245,10 +248,14 @@ struct hyperRecoTask {
     hH4LMassBefSel = qaRegistry.add<TH1>("hH4LMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 3.76, 3.84}});
     hH4LMassTracked = qaRegistry.add<TH1>("hH4LMassTracked", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 3.76, 3.84}});
 
-    hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{3, -0.5, 2.5}});
+    hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "Selected");
-    hEvents->GetXaxis()->SetBinLabel(3, "Zorro He events");
+
+    hEventsZorro = qaRegistry.add<TH1>("hEventsZorro", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
+    hEventsZorro->GetXaxis()->SetBinLabel(1, "Zorro before evsel");
+    hEventsZorro->GetXaxis()->SetBinLabel(2, "Zorro after evsel");
+
     if (doprocessMC) {
       hDecayChannel = qaRegistry.add<TH1>("hDecayChannel", ";Decay channel; ", HistType::kTH1D, {{2, -0.5, 1.5}});
       hDecayChannel->GetXaxis()->SetBinLabel(1, "2-body");
@@ -333,15 +340,25 @@ struct hyperRecoTask {
       initCCDB(bc);
       hEvents->Fill(0.);
 
-      if (!collision.sel8() || std::abs(collision.posZ()) > 10) {
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
         continue;
       }
 
+      bool zorroSelected = false;
       if (cfgSkimmedProcessing) {
-        bool zorroSelected = zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+        // accounting done after ITS border cut, to properly correct with the MC
+        zorroSelected = zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
         if (zorroSelected) {
-          hEvents->Fill(2.);
+          hEventsZorro->Fill(0.);
         }
+      }
+
+      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || std::abs(collision.posZ()) > 10) {
+        continue;
+      }
+
+      if (zorroSelected) {
+        hEventsZorro->Fill(1.);
       }
 
       goodCollision[collision.globalIndex()] = true;
@@ -506,7 +523,7 @@ struct hyperRecoTask {
     hypCand.collisionID = collision.globalIndex();
 
     if (heTrack.hasTOF()) {
-      float beta = responseBeta.GetBeta(heTrack);
+      float beta = o2::pid::tof::Beta::GetBeta(heTrack);
       beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
       hypCand.massTOFHe3 = hypCand.momHe3TPC * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
     }

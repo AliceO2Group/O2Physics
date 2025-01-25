@@ -387,7 +387,7 @@ struct HfTreeCreatorLcToK0sP {
       }
       for (const auto& candidate : recBkg) {
         if (downSampleBkgFactor < 1.) {
-          float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
+          float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
           if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
             continue;
           }
@@ -445,7 +445,7 @@ struct HfTreeCreatorLcToK0sP {
     }
     for (const auto& candidate : candidates) {
       auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
-      double pseudoRndm = bach.pt() * 1000. - (int16_t)(bach.pt() * 1000);
+      double pseudoRndm = bach.pt() * 1000. - static_cast<int16_t>(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
         fillCandidate(candidate, bach, 0, 0);
       }

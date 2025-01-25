@@ -196,6 +196,7 @@ struct cascademcbuilder {
           thisInfo.lxyz[0] = particleForLambdaDecayPosition.vx();
           thisInfo.lxyz[1] = particleForLambdaDecayPosition.vy();
           thisInfo.lxyz[2] = particleForLambdaDecayPosition.vz();
+          thisInfo.pdgCodeV0 = originatingV0.pdgCode();
 
           if (originatingV0.has_mothers()) {
             for (auto& lV0Mother : originatingV0.template mothers_as<aod::McParticles>()) {
