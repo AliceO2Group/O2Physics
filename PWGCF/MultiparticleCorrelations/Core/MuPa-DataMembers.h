@@ -38,7 +38,11 @@ TProfile* fBasePro = NULL; //!<! keeps flags relevant for the whole analysis
 // *) Task configuration:
 struct TaskConfiguration {
   TString fTaskIsConfiguredFromJson = "no";        // the trick to ensure that settings from JSON are taken into account, even if only one configurable is misconfigured, when everything dies silently
-  TString fTaskName = "";                          // task name - this one is used to get the right weights programatically for this analysis
+  TString fTaskName = "";                          // task name - this one is used to get the right weights programatically for this analysis.
+                                                   // If not set, weights are fetched from TDirectoryFile whose name ends with "multiparticle-correlations-a-b" (default)
+                                                   // If set to "someName", weights are fetched from TDirectoryFile whose name ends with "multiparticle-correlations-a-b_someName"
+                                                   // TBI 20250122 Therefore, when running in HL, it's important to configure manually cfTaskName to be exactly the same as subwagon name.
+                                                   //              Can I automate this?
   TString fRunNumber = "";                         // over which run number this task is executed
   Bool_t fRunNumberIsDetermined = kFALSE;          // ensures that run number is determined in process() and propagated to already booked objects only once
   int64_t fRunTime[eRunTime_N] = {0};              // stores permanently start of run, end of run, and run duration
@@ -75,7 +79,8 @@ struct EventByEventQuantities {
   Float_t fReferenceMultiplicity = 0.; // reference multiplicity, calculated outside of my code. Can be "MultTPC", "MultFV0M", etc.
                                        // Use configurable cfReferenceMultiplicityEstimator[eReferenceMultiplicityEstimator]" to define what is this multiplicity, by default it is "TBI 20241123 I do not know yet which estimator is best for ref. mult."
   Float_t fCentrality = 0.;            // event-by-event centrality. Value of the default centrality estimator, set via configurable cfCentralityEstimator
-  Float_t fOccupancy = 0.;             // event-by-event occupancy. Value of the default occupancy estimator, set via configurable cfOccupancyEstimator
+  Float_t fOccupancy = 0.;             // event-by-event occupancy. Value of the default occupancy estimator, set via configurable cfOccupancyEstimator.
+                                       // Remebmer that collision with occupanct 0. shall NOT be rejected, therefore in configurable I set -0.0001 for low edge by default.
   Float_t fInteractionRate = 0.;       // event-by-event interaction rate
   Float_t fCurrentRunDuration = 0.;    // how many seconds after start of run this collision was taken, i.e. seconds after start of run (SOR)
   Float_t fVz = 0.;                    // vertex z position
@@ -285,7 +290,7 @@ struct InternalValidation {
                                                       // Remember that for each real event, I do fnEventsInternalValidation events on-the-fly.
                                                       // Can be used in combination with setting fSequentialBailout > 0.
   UInt_t fnEventsInternalValidation = 0;              // how many on-the-fly events will be sampled for each real event, for internal validation
-  TString* fHarmonicsOptionInternalValidation = NULL; // "constant" or "correlated", see .cxx for full documentation
+  TString* fHarmonicsOptionInternalValidation = NULL; // "constant", "correlated" or "persistent", see .cxx for full documentation
   Bool_t fRescaleWithTheoreticalInput = kFALSE;       // if kTRUE, all measured correlators are rescaled with theoretical input, so that in profiles everything is at 1
   TArrayD* fInternalValidationVnPsin[2] = {NULL};     // 0 = { v1, v2, ... }, 1 = { Psi1, Psi2, ... }
   Int_t fMultRangeInternalValidation[2] = {0, 0};     // min and max values for uniform multiplicity distribution in on-the-fly analysis (convention: min <= M < max)

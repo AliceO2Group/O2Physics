@@ -63,9 +63,9 @@ struct FemtoUniversePairTaskTrackPhi {
 
   Service<o2::framework::O2DatabasePDG> pdgMC;
 
-  using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  Filter trackCutFilter = requireGlobalTrackInFilter();
-  using FilteredFemtoFullParticles = soa::Filtered<FemtoFullParticles>;
+  // using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
+  // Filter trackCutFilter = requireGlobalTrackInFilter();
+  using FilteredFemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
 
   SliceCache cache;
   Preslice<FilteredFemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
@@ -168,9 +168,11 @@ struct FemtoUniversePairTaskTrackPhi {
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 2> trackHistoPartTrack;
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> hMCTruth1;
 
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kPhi, 0> trackHistoPartPhi;
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 2> hMCTruth2;
 
   /// Histogramming for Event
   FemtoUniverseEventHisto eventHisto;
@@ -402,11 +404,11 @@ struct FemtoUniversePairTaskTrackPhi {
 
   void init(InitContext& ic)
   {
-    effConfGroup.hEfficiency1.setObject(new TH1F("Efficiency_part1", "Efficiency origin/generated part1; p_{T} (GeV/c); Efficiency", 100, 0, 4));
-    effConfGroup.hMCTruth1.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, ConfTrack.confTrackPDGCode, false);
+    hMCTruth1.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, ConfTrack.confTrackPDGCode, false);
+    qaRegistry.add("Efficiency/part1", "Efficiency origin/generated part1; p_{T} (GeV/c); Efficiency", kTH1F, {{100, 0, 4}});
 
-    effConfGroup.hEfficiency2.setObject(new TH1F("Efficiency_part2", "Efficiency origin/generated part2; p_{T} (GeV/c); Efficiency", 100, 0, 4));
-    effConfGroup.hMCTruth2.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, 333, false);
+    hMCTruth2.init(&qaRegistry, confBinsTempFitVarpT, confBinsTempFitVarPDG, false, 333, false);
+    qaRegistry.add("Efficiency/part2", "Efficiency origin/generated part2; p_{T} (GeV/c); Efficiency", kTH1F, {{100, 0, 4}});
 
     efficiencyCalculator.init();
     efficiencyCalculator.uploadOnStop(ic);
@@ -673,10 +675,10 @@ struct FemtoUniversePairTaskTrackPhi {
       fillCollision(col);
 
       auto groupMCTruthTrack = partsTrackMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-      efficiencyCalculator.doMCTruth<1>(groupMCTruthTrack);
+      efficiencyCalculator.doMCTruth<1>(hMCTruth1, groupMCTruthTrack);
 
       auto groupMCTruthPhi = partsPhiMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-      efficiencyCalculator.doMCTruth<2>(groupMCTruthPhi);
+      efficiencyCalculator.doMCTruth<2>(hMCTruth2, groupMCTruthPhi);
 
       auto groupMCRecoTrack = partsTrackMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
       auto groupMCRecoPhi = partsPhiMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -688,11 +690,13 @@ struct FemtoUniversePairTaskTrackPhi {
 
     auto truthTrack = qaRegistry.get<TH1>(HIST("MCTruthTracks_one/hPt"));
     auto recoTrack = qaRegistry.get<TH1>(HIST("Tracks_one_MC/hPt"));
-    efficiencyCalculator.calculate<1>(truthTrack, recoTrack);
+    auto effTrack = qaRegistry.get<TH1>(HIST("Efficiency/part1"));
+    efficiencyCalculator.calculate<1>(effTrack, truthTrack, recoTrack);
 
     auto truthPhi = qaRegistry.get<TH1>(HIST("MCTruthTracks_two/hPt"));
     auto recoPhi = qaRegistry.get<TH1>(HIST("Tracks_two_MC/hPt"));
-    efficiencyCalculator.calculate<2>(truthPhi, recoPhi);
+    auto effPhi = qaRegistry.get<TH1>(HIST("Efficiency/part2"));
+    efficiencyCalculator.calculate<2>(effPhi, truthPhi, recoPhi);
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackPhi, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
