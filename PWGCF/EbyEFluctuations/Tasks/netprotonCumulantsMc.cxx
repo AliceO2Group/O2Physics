@@ -60,7 +60,7 @@ namespace o2::aod
 
 namespace gen_ebyecolltable
 {
-DECLARE_SOA_COLUMN(CentralityGen, centralityGen, uint8_t);
+DECLARE_SOA_COLUMN(CentralityGen, centralityGen, float);
 DECLARE_SOA_COLUMN(NetProtNoGen, netProtNoGen, float);   //! net proton no. in an event
 DECLARE_SOA_COLUMN(ProtNoGen, protNoGen, float);         //! proton no. in an event
 DECLARE_SOA_COLUMN(AntiProtNoGen, antiProtNoGen, float); //! antiproton no. in an event
@@ -75,7 +75,7 @@ using ProtGenCollEbyeTable = ProtGenCollEbyeTables::iterator;
 
 namespace rec_ebyecolltable
 {
-DECLARE_SOA_COLUMN(CentralityRec, centralityRec, uint8_t);
+DECLARE_SOA_COLUMN(CentralityRec, centralityRec, float);
 DECLARE_SOA_COLUMN(NetProtNoRec, netProtNoRec, float);   //! net proton no. in an event
 DECLARE_SOA_COLUMN(ProtNoRec, protNoRec, float);         //! proton no. in an event
 DECLARE_SOA_COLUMN(AntiProtNoRec, antiProtNoRec, float); //! antiproton no. in an event
@@ -95,7 +95,7 @@ using ProtRecCollTable = ProtRecCollTables::iterator;
 
 namespace rec_ebyetracktable
 {
-DECLARE_SOA_INDEX_COLUMN(ProtRecCollEbyeTable, protRecCollEbyeTable);
+DECLARE_SOA_INDEX_COLUMN(ProtRecCollTable, protRecCollTable);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Charge, charge, int);
@@ -103,7 +103,7 @@ DECLARE_SOA_COLUMN(Charge, charge, int);
 
 DECLARE_SOA_TABLE(ProtRecCompleteEbyeTables, "AOD", "PROTRECCOMPLETEEBYETABLE",
                   o2::soa::Index<>,
-                  rec_ebyetracktable::ProtRecCollEbyeTableId,
+                  rec_ebyetracktable::ProtRecCollTableId,
                   rec_ebyetracktable::Pt,
                   rec_ebyetracktable::Eta,
                   rec_ebyetracktable::Charge);
