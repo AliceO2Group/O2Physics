@@ -822,12 +822,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("protonPID_TPCnTOF2"));
     cut->AddCut(GetAnalysisCut("protonPVcut"));
     return cut;
-  } 
+  }
 
   if (!nameStr.compare("protonPIDPV2")) {
     cut->AddCut(GetAnalysisCut("protonPID_TPCnTOF2"));
     return cut;
-  } 
+  }
 
   if (!nameStr.compare("PrimaryTrack_DCAz")) {
     cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
