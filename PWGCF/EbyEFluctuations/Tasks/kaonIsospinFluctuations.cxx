@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction
 
-/// \file kaonIsospinFluctuation.cxx
+/// \file kaonIsospinFluctuations.cxx
 /// \brief Kaon Isospin fluctuations
 ///
 /// \author Rahul Verma (rahul.verma@iitb.ac.in) :: Sadhana Dash (sadhana@phy.iitb.ac.in)
@@ -33,7 +33,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics; // for constants
 
-struct KaonIsospinFluctuation {
+struct KaonIsospinFluctuations {
   // Hisogram registry:
   HistogramRegistry recoV0s{"recoV0s", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry recoEvent{"recoEvent", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -1404,5 +1404,5 @@ struct KaonIsospinFluctuation {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<KaonIsospinFluctuation>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<KaonIsospinFluctuations>(cfgc)};
 }
