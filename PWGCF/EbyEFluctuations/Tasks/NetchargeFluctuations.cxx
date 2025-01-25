@@ -17,7 +17,6 @@
 #include "Framework/runDataProcessing.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -39,7 +38,7 @@ using MyCollision = MyCollisions::iterator;
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 using MyTrack = MyTracks::iterator;
 <<<<<<< HEAD
-}
+}//// namespace o2::aod
 =======
 }
 >>>>>>> 03c805b2635be6256d2a2a4ad4e9fa12fbdd067d
