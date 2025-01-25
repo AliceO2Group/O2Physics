@@ -8,8 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \brief  Kaon Isospin fluctuations
+
+/// \file kaonIsospinFluctuation.cxx
+/// \brief Kaon Isospin fluctuations
 ///
 /// \author Rahul Verma (rahul.verma@iitb.ac.in) :: Sadhana Dash (sadhana@phy.iitb.ac.in)
 
@@ -30,8 +31,9 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics; // for constants
 
-struct isospin_fluctuation {
+struct KaonIsospinFluctuation {
   // Hisogram registry:
   HistogramRegistry recoV0s{"recoV0s", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry recoEvent{"recoEvent", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -47,11 +49,11 @@ struct isospin_fluctuation {
   Configurable<float> cutZvertex{"cutZvertex", 10.0f, "Accepted z-vertex range (cm)"};
 
   // Configurable parameters for V0 selection
-  Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.06, "DCA Pos to PV"};
-  Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.06, "DCA Neg to PV"};
-  Configurable<float> v0setting_dcav0dau{"v0setting_dcaV0dau", 1, "DCA V0 Daughters"};
-  Configurable<double> v0setting_cospa{"v0setting_cospa", 0.98, "V0 CosPA"};
-  Configurable<float> v0setting_radius{"v0setting_radius", 0.5, "v0radius"};
+  Configurable<float> v0settingDcaPosToPV{"v0settingDcaPosToPV", 0.06, "DCA Pos to PV"};
+  Configurable<float> v0settingDcaNegToPV{"v0settingDcaNegToPV", 0.06, "DCA Neg to PV"};
+  Configurable<float> v0settingDcaV0Dau{"v0settingDcaV0Dau", 1, "DCA V0 Daughters"};
+  Configurable<double> v0settingCosPA{"v0settingCosPA", 0.98, "V0 CosPA"};
+  Configurable<float> v0settingRadius{"v0settingRadius", 0.5, "v0radius"};
 
   // Configurable K0s  //0.480-0.515 GeV/c2
   Configurable<double> mLowK0s{"mLowK0s", 0.48, "mLowK0s"};
@@ -64,7 +66,7 @@ struct isospin_fluctuation {
     const AxisSpec axisLambdaMass = {200, 1.f, 1.2f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
 
     const AxisSpec axisVertexZ = {30, -15., 15., "vrtx_{Z} [cm]"};
-    const AxisSpec axisCentFT0C = {1020, -1.0, 101.0, "centFT0C(percentile)"};
+    const AxisSpec axiscentFT0C = {1020, -1.0, 101.0, "centFT0C(percentile)"};
 
     const AxisSpec axisP = {200, 0.0f, 10.0f, "#it{p} (GeV/#it{c})"};
     const AxisSpec axisPt = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
@@ -107,37 +109,37 @@ struct isospin_fluctuation {
     const AxisSpec axisParticleCount2 = {260, -10, 250, "particleCount"};
     const AxisSpec axisParticleCount3 = {1060, -10, 1050, "particleCount"};
 
-    HistogramConfigSpec hist_p_dcaXY({HistType::kTH2F, {axisP, axisDcaXY}});
-    HistogramConfigSpec hist_pt_dcaXY({HistType::kTH2F, {axisPt, axisDcaXY}});
-    HistogramConfigSpec hist_tpcInnerParam_dcaXY({HistType::kTH2F, {axisTPCInnerParam, axisDcaXY}});
-    HistogramConfigSpec hist_tofExpMom_dcaXY({HistType::kTH2F, {axisTOFExpMom, axisDcaXY}});
+    HistogramConfigSpec histPDcaXY({HistType::kTH2F, {axisP, axisDcaXY}});
+    HistogramConfigSpec histPtDcaXY({HistType::kTH2F, {axisPt, axisDcaXY}});
+    HistogramConfigSpec histTpcInnerParamDcaXY({HistType::kTH2F, {axisTPCInnerParam, axisDcaXY}});
+    HistogramConfigSpec histTofExpMomDcaXY({HistType::kTH2F, {axisTOFExpMom, axisDcaXY}});
 
-    HistogramConfigSpec hist_p_dcaZ({HistType::kTH2F, {axisP, axisDcaZ}});
-    HistogramConfigSpec hist_pt_dcaZ({HistType::kTH2F, {axisPt, axisDcaZ}});
-    HistogramConfigSpec hist_tpcInnerParam_dcaZ({HistType::kTH2F, {axisTPCInnerParam, axisDcaZ}});
-    HistogramConfigSpec hist_tofExpMom_dcaZ({HistType::kTH2F, {axisTOFExpMom, axisDcaZ}});
+    HistogramConfigSpec histPDcaZ({HistType::kTH2F, {axisP, axisDcaZ}});
+    HistogramConfigSpec histPtDcaZ({HistType::kTH2F, {axisPt, axisDcaZ}});
+    HistogramConfigSpec histTpcInnerParamDcaZ({HistType::kTH2F, {axisTPCInnerParam, axisDcaZ}});
+    HistogramConfigSpec histTofExpMomDcaZ({HistType::kTH2F, {axisTOFExpMom, axisDcaZ}});
 
-    HistogramConfigSpec hist_p_pt({HistType::kTH2F, {axisP, axisPt}});
-    HistogramConfigSpec hist_p_tpcInnerParam({HistType::kTH2F, {axisP, axisTPCInnerParam}});
-    HistogramConfigSpec hist_p_tofExpMom({HistType::kTH2F, {axisP, axisTOFExpMom}});
+    HistogramConfigSpec histPPt({HistType::kTH2F, {axisP, axisPt}});
+    HistogramConfigSpec histPTpcInnerParam({HistType::kTH2F, {axisP, axisTPCInnerParam}});
+    HistogramConfigSpec histPTofExpMom({HistType::kTH2F, {axisP, axisTOFExpMom}});
 
-    HistogramConfigSpec hist_p_tpcSignal({HistType::kTH2F, {axisP, axisTPCSignal}});
-    HistogramConfigSpec hist_tpcInnerParam_tpcSignal({HistType::kTH2F, {axisTPCInnerParam, axisTPCSignal}});
-    HistogramConfigSpec hist_tofExpMom_tpcSignal({HistType::kTH2F, {axisTOFExpMom, axisTPCSignal}});
+    HistogramConfigSpec histPTpcSignal({HistType::kTH2F, {axisP, axisTPCSignal}});
+    HistogramConfigSpec histTpcInnerParamTpcSignal({HistType::kTH2F, {axisTPCInnerParam, axisTPCSignal}});
+    HistogramConfigSpec histTofExpMomTpcSignal({HistType::kTH2F, {axisTOFExpMom, axisTPCSignal}});
 
-    HistogramConfigSpec hist_p_beta({HistType::kTH2F, {axisP, axisTOFBeta}});
-    HistogramConfigSpec hist_tpcInnerParam_beta({HistType::kTH2F, {axisTPCInnerParam, axisTOFBeta}});
-    HistogramConfigSpec hist_tofExpMom_beta({HistType::kTH2F, {axisTOFExpMom, axisTOFBeta}});
+    HistogramConfigSpec histPBeta({HistType::kTH2F, {axisP, axisTOFBeta}});
+    HistogramConfigSpec histTpcInnerParamBeta({HistType::kTH2F, {axisTPCInnerParam, axisTOFBeta}});
+    HistogramConfigSpec histTofExpMomBeta({HistType::kTH2F, {axisTOFExpMom, axisTOFBeta}});
 
-    HistogramConfigSpec hist_p_tpcNSigma({HistType::kTH2F, {axisP, axisTPCNSigma}});
-    HistogramConfigSpec hist_pt_tpcNSigma({HistType::kTH2F, {axisPt, axisTPCNSigma}});
-    HistogramConfigSpec hist_tpcInnerParam_tpcNSigma({HistType::kTH2F, {axisTPCInnerParam, axisTPCNSigma}});
-    HistogramConfigSpec hist_tofExpMom_tpcNSigma({HistType::kTH2F, {axisTOFExpMom, axisTPCNSigma}});
-    HistogramConfigSpec hist_p_tofNSigma({HistType::kTH2F, {axisP, axisTOFNSigma}});
-    HistogramConfigSpec hist_pt_tofNSigma({HistType::kTH2F, {axisPt, axisTOFNSigma}});
-    HistogramConfigSpec hist_tpcInnerParam_tofNSigma({HistType::kTH2F, {axisTPCInnerParam, axisTOFNSigma}});
-    HistogramConfigSpec hist_tofExpMom_tofNSigma({HistType::kTH2F, {axisTOFExpMom, axisTOFNSigma}});
-    HistogramConfigSpec hist_tpcNSigma_tofNSigma({HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
+    HistogramConfigSpec histPTpcNSigma({HistType::kTH2F, {axisP, axisTPCNSigma}});
+    HistogramConfigSpec histPtTpcNSigma({HistType::kTH2F, {axisPt, axisTPCNSigma}});
+    HistogramConfigSpec histTpcInnerParamTpcNSigma({HistType::kTH2F, {axisTPCInnerParam, axisTPCNSigma}});
+    HistogramConfigSpec histTofExpMomTpcNSigma({HistType::kTH2F, {axisTOFExpMom, axisTPCNSigma}});
+    HistogramConfigSpec histPTofNSigma({HistType::kTH2F, {axisP, axisTOFNSigma}});
+    HistogramConfigSpec histPtTofNSigma({HistType::kTH2F, {axisPt, axisTOFNSigma}});
+    HistogramConfigSpec histTpcInnerParamTofNSigma({HistType::kTH2F, {axisTPCInnerParam, axisTOFNSigma}});
+    HistogramConfigSpec histTofExpMomTofNSigma({HistType::kTH2F, {axisTOFExpMom, axisTOFNSigma}});
+    HistogramConfigSpec histTpcNSigmaTofNSigma({HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
 
     recoV0s.add("v0Table/Full/h01_K0s_Mass", "K0s_Mass", {HistType::kTH1F, {axisK0sMass}});
     recoV0s.add("v0Table/Full/h02_Lambda_Mass", "Lambda_Mass", {HistType::kTH1F, {axisLambdaMass}});
@@ -182,27 +184,27 @@ struct isospin_fluctuation {
 
     // K0s-Daughter identification
     // momemtum
-    recoV0s.add("v0Table/Full/Pi/tpcId/h20_p_pt", "p_pt", hist_p_pt);
-    recoV0s.add("v0Table/Full/Pi/tpcId/h21_p_tpcInnerParam", "p_tpcInnerParam", hist_p_tpcInnerParam);
-    recoV0s.add("v0Table/Full/Pi/tpcId/h22_p_tofExpMom", "p_tofExpMom", hist_p_tofExpMom);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h20_p_pt", "p_pt", histPPt);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h21_p_tpcInnerParam", "p_tpcInnerParam", histPTpcInnerParam);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h22_p_tofExpMom", "p_tofExpMom", histPTofExpMom);
     // tpcSignal
-    recoV0s.add("v0Table/Full/Pi/tpcId/h23_p_tpcSignal", "p_tpcSignal", hist_p_tpcSignal);
-    recoV0s.add("v0Table/Full/Pi/tpcId/h24_tpcInnerParam_tpcSignal", "tpcInnerParam_tpcSignal", hist_tpcInnerParam_tpcSignal);
-    recoV0s.add("v0Table/Full/Pi/tpcId/h25_tofExpMom_tpcSignal", "tofExpMom_tpcSignal", hist_tofExpMom_tpcSignal);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h23_p_tpcSignal", "p_tpcSignal", histPTpcSignal);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h24_tpcInnerParam_tpcSignal", "tpcInnerParam_tpcSignal", histTpcInnerParamTpcSignal);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h25_tofExpMom_tpcSignal", "tofExpMom_tpcSignal", histTofExpMomTpcSignal);
     // tofBeta
-    recoV0s.add("v0Table/Full/Pi/tpcId/h26_p_beta", "p_beta", hist_p_beta);
-    recoV0s.add("v0Table/Full/Pi/tpcId/h27_tpcInnerParam_beta", "tpcInnerParam_beta", hist_tpcInnerParam_beta);
-    recoV0s.add("v0Table/Full/Pi/tpcId/h28_tofExpMom_beta", "tofExpMom_beta", hist_tofExpMom_beta);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h26_p_beta", "p_beta", histPBeta);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h27_tpcInnerParam_beta", "tpcInnerParam_beta", histTpcInnerParamBeta);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h28_tofExpMom_beta", "tofExpMom_beta", histTofExpMomBeta);
     // Look at Pion
-    recoV0s.add("v0Table/Full/Pi/tpcId/h29_p_tpcNSigma", "p_tpcNSigma", hist_p_tpcNSigma);
-    recoV0s.add("v0Table/Full/Pi/tpcId/h30_pt_tpcNSigma", "pt_tpcNSigma", hist_pt_tpcNSigma);
-    recoV0s.add("v0Table/Full/Pi/tpcId/h31_tpcInnerParam_tpcNSigma", "tpcInnerParam_tpcNSigma", hist_tpcInnerParam_tpcNSigma);
-    recoV0s.add("v0Table/Full/Pi/tpcId/h32_tofExpMom_tpcNSigma", "tofExpMom_tpcNSigma", hist_tofExpMom_tpcNSigma);
-    recoV0s.add("v0Table/Full/Pi/tpcId/h33_p_tofNSigma", "p_tofNSigma", hist_p_tofNSigma);
-    recoV0s.add("v0Table/Full/Pi/tpcId/h34_pt_tofNSigma", "pt_tofNSigma", hist_pt_tofNSigma);
-    recoV0s.add("v0Table/Full/Pi/tpcId/h35_tpcInnerParam_tofNSigma", "tpcInnerParam_tofNSigma", hist_tpcInnerParam_tofNSigma);
-    recoV0s.add("v0Table/Full/Pi/tpcId/h36_tofExpMom_tofNSigma", "tofExpMom_tofNSigma", hist_tofExpMom_tofNSigma);
-    recoV0s.add("v0Table/Full/Pi/tpcId/h37_tpcNSigma_tofNSigma", "tpcNSigma_tofNSigma", hist_tpcNSigma_tofNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h29_p_tpcNSigma", "p_tpcNSigma", histPTpcNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h30_pt_tpcNSigma", "pt_tpcNSigma", histPtTpcNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h31_tpcInnerParam_tpcNSigma", "tpcInnerParam_tpcNSigma", histTpcInnerParamTpcNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h32_tofExpMom_tpcNSigma", "tofExpMom_tpcNSigma", histTofExpMomTpcNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h33_p_tofNSigma", "p_tofNSigma", histPTofNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h34_pt_tofNSigma", "pt_tofNSigma", histPtTofNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h35_tpcInnerParam_tofNSigma", "tpcInnerParam_tofNSigma", histTpcInnerParamTofNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h36_tofExpMom_tofNSigma", "tofExpMom_tofNSigma", histTofExpMomTofNSigma);
+    recoV0s.add("v0Table/Full/Pi/tpcId/h37_tpcNSigma_tofNSigma", "tpcNSigma_tofNSigma", histTpcNSigmaTofNSigma);
 
     recoV0s.addClone("v0Table/Full/Pi/tpcId/", "v0Table/Full/Pi/tofId/"); // for identification using tof+tpc
     recoV0s.addClone("v0Table/Full/Pi/tpcId/", "v0Table/Full/Pi/NoId/");  // for unidentified case // to observe and debug
@@ -219,7 +221,7 @@ struct isospin_fluctuation {
     recoEvent.add("recoEvent/h02_VertexXRec", "VertexXRec", {HistType::kTH1D, {{1000, -0.2, 0.2}}});
     recoEvent.add("recoEvent/h03_VertexYRec", "VertexYRec", {HistType::kTH1D, {{1000, -0.2, 0.2}}});
     recoEvent.add("recoEvent/h04_VertexZRec", "VertexZRec", {HistType::kTH1F, {axisVertexZ}});
-    recoEvent.add("recoEvent/h05_Centrality", "Centrality", {HistType::kTH1F, {axisCentFT0C}});
+    recoEvent.add("recoEvent/h05_Centrality", "Centrality", {HistType::kTH1F, {axiscentFT0C}});
     recoEvent.add("recoEvent/h06_V0Size", "V0Size", {HistType::kTH1F, {{60, -10, 50}}});
     recoEvent.add("recoEvent/h07_TracksSize", "TracksSize", {HistType::kTH1F, {axisParticleCount2}});
     recoEvent.add("recoEvent/h08_nTrack", "nTrack", {HistType::kTH1F, {axisParticleCount2}});
@@ -279,34 +281,34 @@ struct isospin_fluctuation {
 
     // K0s-Daughter identification
     // momemtum
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h20_p_pt", "p_pt", hist_p_pt);
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h21_p_tpcInnerParam", "p_tpcInnerParam", hist_p_tpcInnerParam);
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h22_p_tofExpMom", "p_tofExpMom", hist_p_tofExpMom);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h20_p_pt", "p_pt", histPPt);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h21_p_tpcInnerParam", "p_tpcInnerParam", histPTpcInnerParam);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h22_p_tofExpMom", "p_tofExpMom", histPTofExpMom);
     // tpcSignal
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h23_p_tpcSignal", "p_tpcSignal", hist_p_tpcSignal);
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h24_tpcInnerParam_tpcSignal", "tpcInnerParam_tpcSignal", hist_tpcInnerParam_tpcSignal);
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h25_tofExpMom_tpcSignal", "tofExpMom_tpcSignal", hist_tofExpMom_tpcSignal);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h23_p_tpcSignal", "p_tpcSignal", histPTpcSignal);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h24_tpcInnerParam_tpcSignal", "tpcInnerParam_tpcSignal", histTpcInnerParamTpcSignal);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h25_tofExpMom_tpcSignal", "tofExpMom_tpcSignal", histTofExpMomTpcSignal);
     // tofBeta
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h26_p_beta", "p_beta", hist_p_beta);
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h27_tpcInnerParam_beta", "tpcInnerParam_beta", hist_tpcInnerParam_beta);
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h28_tofExpMom_beta", "tofExpMom_beta", hist_tofExpMom_beta);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h26_p_beta", "p_beta", histPBeta);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h27_tpcInnerParam_beta", "tpcInnerParam_beta", histTpcInnerParamBeta);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h28_tofExpMom_beta", "tofExpMom_beta", histTofExpMomBeta);
     // Look at Pion
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h29_p_tpcNSigma", "p_tpcNSigma", hist_p_tpcNSigma);
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h30_pt_tpcNSigma", "pt_tpcNSigma", hist_pt_tpcNSigma);
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h31_tpcInnerParam_tpcNSigma", "tpcInnerParam_tpcNSigma", hist_tpcInnerParam_tpcNSigma);
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h32_tofExpMom_tpcNSigma", "tofExpMom_tpcNSigma", hist_tofExpMom_tpcNSigma);
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h33_p_tofNSigma", "p_tofNSigma", hist_p_tofNSigma);
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h34_pt_tofNSigma", "pt_tofNSigma", hist_pt_tofNSigma);
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h35_tpcInnerParam_tofNSigma", "tpcInnerParam_tofNSigma", hist_tpcInnerParam_tofNSigma);
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h36_tofExpMom_tofNSigma", "tofExpMom_tofNSigma", hist_tofExpMom_tofNSigma);
-    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h37_tpcNSigma_tofNSigma", "tpcNSigma_tofNSigma", hist_tpcNSigma_tofNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h29_p_tpcNSigma", "p_tpcNSigma", histPTpcNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h30_pt_tpcNSigma", "pt_tpcNSigma", histPtTpcNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h31_tpcInnerParam_tpcNSigma", "tpcInnerParam_tpcNSigma", histTpcInnerParamTpcNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h32_tofExpMom_tpcNSigma", "tofExpMom_tpcNSigma", histTofExpMomTpcNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h33_p_tofNSigma", "p_tofNSigma", histPTofNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h34_pt_tofNSigma", "pt_tofNSigma", histPtTofNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h35_tpcInnerParam_tofNSigma", "tpcInnerParam_tofNSigma", histTpcInnerParamTofNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h36_tofExpMom_tofNSigma", "tofExpMom_tofNSigma", histTofExpMomTofNSigma);
+    recoK0s.add("recoK0s/PreSel/Pi/tpcId/h37_tpcNSigma_tofNSigma", "tpcNSigma_tofNSigma", histTpcNSigmaTofNSigma);
 
     recoK0s.addClone("recoK0s/PreSel/Pi/tpcId/", "recoK0s/PreSel/Pi/tofId/"); // for identification using tof+tpc
     recoK0s.addClone("recoK0s/PreSel/Pi/tpcId/", "recoK0s/PreSel/Pi/NoId/");  // for unidentified case // to observe and debug
 
     recoK0s.addClone("recoK0s/PreSel/", "recoK0s/PostSel/"); // for unidentified case // to observe and debug
 
-    recoK0s.add("recoK0s/PostSel/mK0s_vs_centFTOC", "mK0s_vs_centFTOC", kTH2F, {axisCentFT0C, axisK0sMass});
+    recoK0s.add("recoK0s/PostSel/mK0s_vs_centFTOC", "mK0s_vs_centFTOC", kTH2F, {axiscentFT0C, axisK0sMass});
 
     // Tracks reconstruction
     // FullTrack
@@ -321,42 +323,42 @@ struct isospin_fluctuation {
     recoTracks.add("recoTracks/PreSel/h09_sign", "sign", {HistType::kTH1D, {axisSign}});
 
     // DcaXY
-    recoTracks.add("recoTracks/PreSel/h10_p_dcaXY", "p_dcaXY", hist_p_dcaXY);
-    recoTracks.add("recoTracks/PreSel/h11_pt_dcaXY", "pt_dcaXY", hist_pt_dcaXY);
-    recoTracks.add("recoTracks/PreSel/h12_tpcInnerParam_dcaXY", "tpcInnerParam_dcaXY", hist_tpcInnerParam_dcaXY);
-    recoTracks.add("recoTracks/PreSel/h13_tofExpMom_dcaXY", "tofExpMom_dcaXY", hist_tofExpMom_dcaXY);
+    recoTracks.add("recoTracks/PreSel/h10_p_dcaXY", "p_dcaXY", histPDcaXY);
+    recoTracks.add("recoTracks/PreSel/h11_pt_dcaXY", "pt_dcaXY", histPtDcaXY);
+    recoTracks.add("recoTracks/PreSel/h12_tpcInnerParam_dcaXY", "tpcInnerParam_dcaXY", histTpcInnerParamDcaXY);
+    recoTracks.add("recoTracks/PreSel/h13_tofExpMom_dcaXY", "tofExpMom_dcaXY", histTofExpMomDcaXY);
 
     // DcaZ
-    recoTracks.add("recoTracks/PreSel/h14_p_dcaZ", "p_dcaZ", hist_p_dcaZ);
-    recoTracks.add("recoTracks/PreSel/h15_pt_dcaZ", "pt_dcaZ", hist_pt_dcaZ);
-    recoTracks.add("recoTracks/PreSel/h16_tpcInnerParam_dcaZ", "tpcInnerParam_dcaZ", hist_tpcInnerParam_dcaZ);
-    recoTracks.add("recoTracks/PreSel/h17_tofExpMom_dcaZ", "tofExpMom_dcaZ", hist_tofExpMom_dcaZ);
+    recoTracks.add("recoTracks/PreSel/h14_p_dcaZ", "p_dcaZ", histPDcaZ);
+    recoTracks.add("recoTracks/PreSel/h15_pt_dcaZ", "pt_dcaZ", histPtDcaZ);
+    recoTracks.add("recoTracks/PreSel/h16_tpcInnerParam_dcaZ", "tpcInnerParam_dcaZ", histTpcInnerParamDcaZ);
+    recoTracks.add("recoTracks/PreSel/h17_tofExpMom_dcaZ", "tofExpMom_dcaZ", histTofExpMomDcaZ);
 
     // momemtum
-    recoTracks.add("recoTracks/PreSel/h20_p_pt", "p_pt", hist_p_pt);
-    recoTracks.add("recoTracks/PreSel/h21_p_tpcInnerParam", "p_tpcInnerParam", hist_p_tpcInnerParam);
-    recoTracks.add("recoTracks/PreSel/h22_p_tofExpMom", "p_tofExpMom", hist_p_tofExpMom);
+    recoTracks.add("recoTracks/PreSel/h20_p_pt", "p_pt", histPPt);
+    recoTracks.add("recoTracks/PreSel/h21_p_tpcInnerParam", "p_tpcInnerParam", histPTpcInnerParam);
+    recoTracks.add("recoTracks/PreSel/h22_p_tofExpMom", "p_tofExpMom", histPTofExpMom);
 
     // tpcSignal
-    recoTracks.add("recoTracks/PreSel/h23_p_tpcSignal", "p_tpcSignal", hist_p_tpcSignal);
-    recoTracks.add("recoTracks/PreSel/h24_tpcInnerParam_tpcSignal", "tpcInnerParam_tpcSignal", hist_tpcInnerParam_tpcSignal);
-    recoTracks.add("recoTracks/PreSel/h25_tofExpMom_tpcSignal", "tofExpMom_tpcSignal", hist_tofExpMom_tpcSignal);
+    recoTracks.add("recoTracks/PreSel/h23_p_tpcSignal", "p_tpcSignal", histPTpcSignal);
+    recoTracks.add("recoTracks/PreSel/h24_tpcInnerParam_tpcSignal", "tpcInnerParam_tpcSignal", histTpcInnerParamTpcSignal);
+    recoTracks.add("recoTracks/PreSel/h25_tofExpMom_tpcSignal", "tofExpMom_tpcSignal", histTofExpMomTpcSignal);
 
     // tofBeta
-    recoTracks.add("recoTracks/PreSel/h26_p_beta", "p_beta", hist_p_beta);
-    recoTracks.add("recoTracks/PreSel/h27_tpcInnerParam_beta", "tpcInnerParam_beta", hist_tpcInnerParam_beta);
-    recoTracks.add("recoTracks/PreSel/h28_tofExpMom_beta", "tofExpMom_beta", hist_tofExpMom_beta);
+    recoTracks.add("recoTracks/PreSel/h26_p_beta", "p_beta", histPBeta);
+    recoTracks.add("recoTracks/PreSel/h27_tpcInnerParam_beta", "tpcInnerParam_beta", histTpcInnerParamBeta);
+    recoTracks.add("recoTracks/PreSel/h28_tofExpMom_beta", "tofExpMom_beta", histTofExpMomBeta);
 
     // Look at Pion
-    recoTracks.add("recoTracks/PreSel/Pi/NoId/h29_p_tpcNSigma", "p_tpcNSigma", hist_p_tpcNSigma);
-    recoTracks.add("recoTracks/PreSel/Pi/NoId/h30_pt_tpcNSigma", "pt_tpcNSigma", hist_pt_tpcNSigma);
-    recoTracks.add("recoTracks/PreSel/Pi/NoId/h31_tpcInnerParam_tpcNSigma", "tpcInnerParam_tpcNSigma", hist_tpcInnerParam_tpcNSigma);
-    recoTracks.add("recoTracks/PreSel/Pi/NoId/h32_tofExpMom_tpcNSigma", "tofExpMom_tpcNSigma", hist_tofExpMom_tpcNSigma);
-    recoTracks.add("recoTracks/PreSel/Pi/NoId/h33_p_tofNSigma", "p_tofNSigma", hist_p_tofNSigma);
-    recoTracks.add("recoTracks/PreSel/Pi/NoId/h34_pt_tofNSigma", "pt_tofNSigma", hist_pt_tofNSigma);
-    recoTracks.add("recoTracks/PreSel/Pi/NoId/h35_tpcInnerParam_tofNSigma", "tpcInnerParam_tofNSigma", hist_tpcInnerParam_tofNSigma);
-    recoTracks.add("recoTracks/PreSel/Pi/NoId/h36_tofExpMom_tofNSigma", "tofExpMom_tofNSigma", hist_tofExpMom_tofNSigma);
-    recoTracks.add("recoTracks/PreSel/Pi/NoId/h37_tpcNSigma_tofNSigma", "tpcNSigma_tofNSigma", hist_tpcNSigma_tofNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h29_p_tpcNSigma", "p_tpcNSigma", histPTpcNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h30_pt_tpcNSigma", "pt_tpcNSigma", histPtTpcNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h31_tpcInnerParam_tpcNSigma", "tpcInnerParam_tpcNSigma", histTpcInnerParamTpcNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h32_tofExpMom_tpcNSigma", "tofExpMom_tpcNSigma", histTofExpMomTpcNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h33_p_tofNSigma", "p_tofNSigma", histPTofNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h34_pt_tofNSigma", "pt_tofNSigma", histPtTofNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h35_tpcInnerParam_tofNSigma", "tpcInnerParam_tofNSigma", histTpcInnerParamTofNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h36_tofExpMom_tofNSigma", "tofExpMom_tofNSigma", histTofExpMomTofNSigma);
+    recoTracks.add("recoTracks/PreSel/Pi/NoId/h37_tpcNSigma_tofNSigma", "tpcNSigma_tofNSigma", histTpcNSigmaTofNSigma);
     // Pion
 
     recoTracks.addClone("recoTracks/PreSel/Pi/", "recoTracks/PreSel/Ka/"); // Kaon
@@ -372,27 +374,27 @@ struct isospin_fluctuation {
 
     // Analysis
     // momemtum
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h20_p_pt", "p_pt", hist_p_pt);
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h21_p_tpcInnerParam", "p_tpcInnerParam", hist_p_tpcInnerParam);
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h22_p_tofExpMom", "p_tofExpMom", hist_p_tofExpMom);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h20_p_pt", "p_pt", histPPt);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h21_p_tpcInnerParam", "p_tpcInnerParam", histPTpcInnerParam);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h22_p_tofExpMom", "p_tofExpMom", histPTofExpMom);
     // tpcSignal
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h23_p_tpcSignal", "p_tpcSignal", hist_p_tpcSignal);
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h24_tpcInnerParam_tpcSignal", "tpcInnerParam_tpcSignal", hist_tpcInnerParam_tpcSignal);
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h25_tofExpMom_tpcSignal", "tofExpMom_tpcSignal", hist_tofExpMom_tpcSignal);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h23_p_tpcSignal", "p_tpcSignal", histPTpcSignal);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h24_tpcInnerParam_tpcSignal", "tpcInnerParam_tpcSignal", histTpcInnerParamTpcSignal);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h25_tofExpMom_tpcSignal", "tofExpMom_tpcSignal", histTofExpMomTpcSignal);
     // tofBeta
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h26_p_beta", "p_beta", hist_p_beta);
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h27_tpcInnerParam_beta", "tpcInnerParam_beta", hist_tpcInnerParam_beta);
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h28_tofExpMom_beta", "tofExpMom_beta", hist_tofExpMom_beta);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h26_p_beta", "p_beta", histPBeta);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h27_tpcInnerParam_beta", "tpcInnerParam_beta", histTpcInnerParamBeta);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h28_tofExpMom_beta", "tofExpMom_beta", histTofExpMomBeta);
     // Pion
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h29_p_tpcNSigma", "p_tpcNSigma", hist_p_tpcNSigma);
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h30_pt_tpcNSigma", "pt_tpcNSigma", hist_pt_tpcNSigma);
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h31_tpcInnerParam_tpcNSigma", "tpcInnerParam_tpcNSigma", hist_tpcInnerParam_tpcNSigma);
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h32_tofExpMom_tpcNSigma", "tofExpMom_tpcNSigma", hist_tofExpMom_tpcNSigma);
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h33_p_tofNSigma", "p_tofNSigma", hist_p_tofNSigma);
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h34_pt_tofNSigma", "pt_tofNSigma", hist_pt_tofNSigma);
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h35_tpcInnerParam_tofNSigma", "tpcInnerParam_tofNSigma", hist_tpcInnerParam_tofNSigma);
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h36_tofExpMom_tofNSigma", "tofExpMom_tofNSigma", hist_tofExpMom_tofNSigma);
-    recoAnalysis.add("recoAnalysis/Pi/tpcId/h37_tpcNSigma_tofNSigma", "tpcNSigma_tofNSigma", hist_tpcNSigma_tofNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h29_p_tpcNSigma", "p_tpcNSigma", histPTpcNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h30_pt_tpcNSigma", "pt_tpcNSigma", histPtTpcNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h31_tpcInnerParam_tpcNSigma", "tpcInnerParam_tpcNSigma", histTpcInnerParamTpcNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h32_tofExpMom_tpcNSigma", "tofExpMom_tpcNSigma", histTofExpMomTpcNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h33_p_tofNSigma", "p_tofNSigma", histPTofNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h34_pt_tofNSigma", "pt_tofNSigma", histPtTofNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h35_tpcInnerParam_tofNSigma", "tpcInnerParam_tofNSigma", histTpcInnerParamTofNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h36_tofExpMom_tofNSigma", "tofExpMom_tofNSigma", histTofExpMomTofNSigma);
+    recoAnalysis.add("recoAnalysis/Pi/tpcId/h37_tpcNSigma_tofNSigma", "tpcNSigma_tofNSigma", histTpcNSigmaTofNSigma);
 
     recoAnalysis.addClone("recoAnalysis/Pi/tpcId/", "recoAnalysis/Pi/tofId/");
     recoAnalysis.addClone("recoAnalysis/Pi/", "recoAnalysis/Ka/"); // Kaon
@@ -403,16 +405,16 @@ struct isospin_fluctuation {
     recoAnalysis.add("recoAnalysis/SelectedTrack_IdentificationTag", "SelectedTrack_IdentificationTag", kTH1D, {{34, -1.5, 32.5, "trackTAG"}});
     recoAnalysis.add("recoAnalysis/RejectedTrack_RejectionTag", "RejectedTrack_RejectionTag", kTH1D, {{16, -1.5, 6.5, "rejectionTAG"}});
 
-    recoAnalysis.add("recoAnalysis/Sparse_Full_K0sPiKa", "Sparse_Full_K0sPiKa", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nK0s"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nPiPlus"}, {500, -1.5, 498.5, "nPiMinus"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}});
-    recoAnalysis.add("recoAnalysis/Sparse_Full_K0sPrDe", "Sparse_Full_K0sPrDe", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nK0s"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nProton"}, {500, -1.5, 498.5, "nPBar"}, {500, -1.5, 498.5, "nDePlus"}, {500, -1.5, 498.5, "nDeMinus"}});
-    recoAnalysis.add("recoAnalysis/Sparse_Full_K0sKaEl", "Sparse_Full_K0sKaEl", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nK0s"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}, {500, -1.5, 498.5, "nElPlus"}, {500, -1.5, 498.5, "nElMinus"}});
-    recoAnalysis.add("recoAnalysis/Sparse_Full_PiKaPr", "Sparse_Full_PiKaPr", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nPiPlus"}, {500, -1.5, 498.5, "nPiMinus"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}, {500, -1.5, 498.5, "nProton"}, {500, -1.5, 498.5, "nPBar"}});
-    recoAnalysis.add("recoAnalysis/Sparse_Full_PiElDe", "Sparse_Full_PiElDe", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nPiPlus"}, {500, -1.5, 498.5, "nPiMinus"}, {500, -1.5, 498.5, "nElPlus"}, {500, -1.5, 498.5, "nElMinus"}, {500, -1.5, 498.5, "nDePlus"}, {500, -1.5, 498.5, "nDeMinus"}});
-    recoAnalysis.add("recoAnalysis/Sparse_Full_KaPrDe", "Sparse_Full_KaPrDe", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}, {500, -1.5, 498.5, "nProton"}, {500, -1.5, 498.5, "nPBar"}, {500, -1.5, 498.5, "nDePlus"}, {500, -1.5, 498.5, "nDeMinus"}});
-    recoAnalysis.add("recoAnalysis/Sparse_Full_PrElDe", "Sparse_Full_PrElDe", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nProton"}, {500, -1.5, 498.5, "nPBar"}, {500, -1.5, 498.5, "nElPlus"}, {500, -1.5, 498.5, "nElMinus"}, {500, -1.5, 498.5, "nDePlus"}, {500, -1.5, 498.5, "nDeMinus"}});
+    recoAnalysis.add("recoAnalysis/Sparse_Full_K0sPiKa", "Sparse_Full_K0sPiKa", kTHnSparseD, {axiscentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nK0s"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nPiPlus"}, {500, -1.5, 498.5, "nPiMinus"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}});
+    recoAnalysis.add("recoAnalysis/Sparse_Full_K0sPrDe", "Sparse_Full_K0sPrDe", kTHnSparseD, {axiscentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nK0s"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nProton"}, {500, -1.5, 498.5, "nPBar"}, {500, -1.5, 498.5, "nDePlus"}, {500, -1.5, 498.5, "nDeMinus"}});
+    recoAnalysis.add("recoAnalysis/Sparse_Full_K0sKaEl", "Sparse_Full_K0sKaEl", kTHnSparseD, {axiscentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nK0s"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}, {500, -1.5, 498.5, "nElPlus"}, {500, -1.5, 498.5, "nElMinus"}});
+    recoAnalysis.add("recoAnalysis/Sparse_Full_PiKaPr", "Sparse_Full_PiKaPr", kTHnSparseD, {axiscentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nPiPlus"}, {500, -1.5, 498.5, "nPiMinus"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}, {500, -1.5, 498.5, "nProton"}, {500, -1.5, 498.5, "nPBar"}});
+    recoAnalysis.add("recoAnalysis/Sparse_Full_PiElDe", "Sparse_Full_PiElDe", kTHnSparseD, {axiscentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nPiPlus"}, {500, -1.5, 498.5, "nPiMinus"}, {500, -1.5, 498.5, "nElPlus"}, {500, -1.5, 498.5, "nElMinus"}, {500, -1.5, 498.5, "nDePlus"}, {500, -1.5, 498.5, "nDeMinus"}});
+    recoAnalysis.add("recoAnalysis/Sparse_Full_KaPrDe", "Sparse_Full_KaPrDe", kTHnSparseD, {axiscentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}, {500, -1.5, 498.5, "nProton"}, {500, -1.5, 498.5, "nPBar"}, {500, -1.5, 498.5, "nDePlus"}, {500, -1.5, 498.5, "nDeMinus"}});
+    recoAnalysis.add("recoAnalysis/Sparse_Full_PrElDe", "Sparse_Full_PrElDe", kTHnSparseD, {axiscentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nRejectedPiPlus"}, {100, -1.5, 98.5, "nRejectedPiMinus"}, {500, -1.5, 498.5, "nProton"}, {500, -1.5, 498.5, "nPBar"}, {500, -1.5, 498.5, "nElPlus"}, {500, -1.5, 498.5, "nElMinus"}, {500, -1.5, 498.5, "nDePlus"}, {500, -1.5, 498.5, "nDeMinus"}});
 
-    recoAnalysis.add("recoAnalysis/Sparse_newDynm_K0s_Ka", "Sparse_newDynm_K0s_Ka", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nK0s"}, {500, -1.5, 498.5, "nKaon"}, {10000, -1.5, 9998.5, "(nK0s)^{2}"}, {250000, -1.5, 249998.5, "(nKaon)^{2}"}, {500, -1.5, 498.5, "(nK0s*nKaon)"}});
-    recoAnalysis.add("recoAnalysis/Sparse_newDynm_Kp_Km", "Sparse_newDynm_Kp_Km", kTHnSparseD, {axisCentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}, {250000, -1.5, 249998.5, "(nKaPlus)^{2}"}, {250000, -1.5, 249998.5, "(nKaMinus)^{2}"}, {250000, -1.5, 249998.5, "(nKaPlus*nKaMinus)"}});
+    recoAnalysis.add("recoAnalysis/Sparse_newDynm_K0s_Ka", "Sparse_newDynm_K0s_Ka", kTHnSparseD, {axiscentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {100, -1.5, 98.5, "nK0s"}, {500, -1.5, 498.5, "nKaon"}, {10000, -1.5, 9998.5, "(nK0s)^{2}"}, {250000, -1.5, 249998.5, "(nKaon)^{2}"}, {500, -1.5, 498.5, "(nK0s*nKaon)"}});
+    recoAnalysis.add("recoAnalysis/Sparse_newDynm_Kp_Km", "Sparse_newDynm_Kp_Km", kTHnSparseD, {axiscentFT0C, {2000, -1.5, 1998.5, "nTrack"}, {500, -1.5, 498.5, "nKaPlus"}, {500, -1.5, 498.5, "nKaMinus"}, {250000, -1.5, 249998.5, "(nKaPlus)^{2}"}, {250000, -1.5, 249998.5, "(nKaMinus)^{2}"}, {250000, -1.5, 249998.5, "(nKaPlus*nKaMinus)"}});
     //
 
     // Printing the Stored Registry information
@@ -433,11 +435,11 @@ struct isospin_fluctuation {
   template <typename T>
   bool selPionTPCInnerParam(T track)
   {
-    if (TMath::Abs(track.tpcNSigmaEl()) > 3.0 && TMath::Abs(track.tpcNSigmaKa()) > 3.0 && TMath::Abs(track.tpcNSigmaPr()) > 3.0 && TMath::Abs(track.tpcNSigmaDe()) > 3.0) {
-      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 0.70 && TMath::Abs(track.tpcNSigmaPi()) < 3.0) {
+    if (std::abs(track.tpcNSigmaEl()) > 3.0 && std::abs(track.tpcNSigmaKa()) > 3.0 && std::abs(track.tpcNSigmaPr()) > 3.0 && std::abs(track.tpcNSigmaDe()) > 3.0) {
+      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 0.70 && std::abs(track.tpcNSigmaPi()) < 3.0) {
         return true;
       }
-      if (0.70 <= track.tpcInnerParam() && TMath::Abs(track.tpcNSigmaPi()) < 2.0) {
+      if (0.70 <= track.tpcInnerParam() && std::abs(track.tpcNSigmaPi()) < 2.0) {
         return true;
       }
     }
@@ -448,11 +450,11 @@ struct isospin_fluctuation {
   bool selKaonTPCInnerParam(T track)
   {
     // p dependent cuts
-    if (TMath::Abs(track.tpcNSigmaEl()) > 3.0 && TMath::Abs(track.tpcNSigmaPi()) > 3.0 && TMath::Abs(track.tpcNSigmaPr()) > 3.0 && TMath::Abs(track.tpcNSigmaDe()) > 3.0) {
-      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 0.70 && TMath::Abs(track.tpcNSigmaKa()) < 3.0) {
+    if (std::abs(track.tpcNSigmaEl()) > 3.0 && std::abs(track.tpcNSigmaPi()) > 3.0 && std::abs(track.tpcNSigmaPr()) > 3.0 && std::abs(track.tpcNSigmaDe()) > 3.0) {
+      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 0.70 && std::abs(track.tpcNSigmaKa()) < 3.0) {
         return true;
       }
-      if (0.70 <= track.tpcInnerParam() && TMath::Abs(track.tpcNSigmaKa()) < 2.0) {
+      if (0.70 <= track.tpcInnerParam() && std::abs(track.tpcNSigmaKa()) < 2.0) {
         return true;
       }
     }
@@ -462,11 +464,11 @@ struct isospin_fluctuation {
   template <typename T>
   bool selProtonTPCInnerParam(T track)
   {
-    if (TMath::Abs(track.tpcNSigmaEl()) > 3.0 && TMath::Abs(track.tpcNSigmaPi()) > 3.0 && TMath::Abs(track.tpcNSigmaKa()) > 3.0 && TMath::Abs(track.tpcNSigmaDe()) > 3.0) {
-      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 1.60 && TMath::Abs(track.tpcNSigmaPr()) < 3.0) {
+    if (std::abs(track.tpcNSigmaEl()) > 3.0 && std::abs(track.tpcNSigmaPi()) > 3.0 && std::abs(track.tpcNSigmaKa()) > 3.0 && std::abs(track.tpcNSigmaDe()) > 3.0) {
+      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 1.60 && std::abs(track.tpcNSigmaPr()) < 3.0) {
         return true;
       }
-      if (1.60 <= track.tpcInnerParam() && TMath::Abs(track.tpcNSigmaPr()) < 2.0) {
+      if (1.60 <= track.tpcInnerParam() && std::abs(track.tpcNSigmaPr()) < 2.0) {
         return true;
       }
     }
@@ -476,11 +478,11 @@ struct isospin_fluctuation {
   template <typename T>
   bool selDeuteronTPCInnerParam(T track)
   {
-    if (TMath::Abs(track.tpcNSigmaEl()) > 3.0 && TMath::Abs(track.tpcNSigmaPi()) > 3.0 && TMath::Abs(track.tpcNSigmaKa()) > 3.0 && TMath::Abs(track.tpcNSigmaPr()) > 3.0) {
-      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 1.80 && TMath::Abs(track.tpcNSigmaDe()) < 3.0) {
+    if (std::abs(track.tpcNSigmaEl()) > 3.0 && std::abs(track.tpcNSigmaPi()) > 3.0 && std::abs(track.tpcNSigmaKa()) > 3.0 && std::abs(track.tpcNSigmaPr()) > 3.0) {
+      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 1.80 && std::abs(track.tpcNSigmaDe()) < 3.0) {
         return true;
       }
-      if (1.80 <= track.tpcInnerParam() && TMath::Abs(track.tpcNSigmaDe()) < 2.0) {
+      if (1.80 <= track.tpcInnerParam() && std::abs(track.tpcNSigmaDe()) < 2.0) {
         return true;
       }
     }
@@ -502,10 +504,10 @@ struct isospin_fluctuation {
   template <typename T>
   bool selPionTOF(T track)
   {
-    if (track.p() <= 0.75 && TMath::Abs(track.tpcNSigmaPi()) < 3.0 && TMath::Abs(track.tofNSigmaPi()) < 3.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0) {
+    if (track.p() <= 0.75 && std::abs(track.tpcNSigmaPi()) < 3.0 && std::abs(track.tofNSigmaPi()) < 3.0 && std::abs(track.tofNSigmaEl()) > 3.0) {
       return true;
     } else if (0.75 < track.p() // after p = 0.75, Pi and Ka lines of nSigma 3.0 will start intersecting
-               && TMath::Abs(track.tpcNSigmaPi()) < 2.0 && TMath::Abs(track.tofNSigmaPi()) < 2.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0 && TMath::Abs(track.tofNSigmaKa()) > 3.0 && TMath::Abs(track.tofNSigmaPr()) > 3.0 && TMath::Abs(track.tofNSigmaDe()) > 3.0) {
+               && std::abs(track.tpcNSigmaPi()) < 2.0 && std::abs(track.tofNSigmaPi()) < 2.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaPr()) > 3.0 && std::abs(track.tofNSigmaDe()) > 3.0) {
       return true;
     }
     return false;
@@ -515,15 +517,15 @@ struct isospin_fluctuation {
   template <typename T>
   bool selKaonTOF(T track)
   {
-    if (track.p() <= 0.75 && TMath::Abs(track.tpcNSigmaKa()) < 3.0 && TMath::Abs(track.tofNSigmaKa()) < 3.0) {
+    if (track.p() <= 0.75 && std::abs(track.tpcNSigmaKa()) < 3.0 && std::abs(track.tofNSigmaKa()) < 3.0) {
       return true;
     }
     if (0.75 < track.p() && track.p() <= 1.30 // after 0.75 Pi and Ka lines of nSigma 3.0 will start intersecting
-        && TMath::Abs(track.tpcNSigmaKa()) < 3.0 && TMath::Abs(track.tofNSigmaKa()) < 3.0 && TMath::Abs(track.tofNSigmaPi()) > 3.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0) {
+        && std::abs(track.tpcNSigmaKa()) < 3.0 && std::abs(track.tofNSigmaKa()) < 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaEl()) > 3.0) {
       return true;
     }
     if (1.30 < track.p() // after 1.30 Pr and Ka lines of nSigma 3.0 will start intersecting
-        && TMath::Abs(track.tpcNSigmaKa()) < 2.0 && TMath::Abs(track.tofNSigmaKa()) < 2.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0 && TMath::Abs(track.tofNSigmaPi()) > 3.0 && TMath::Abs(track.tofNSigmaPr()) > 3.0 && TMath::Abs(track.tofNSigmaDe()) > 3.0) {
+        && std::abs(track.tpcNSigmaKa()) < 2.0 && std::abs(track.tofNSigmaKa()) < 2.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaPr()) > 3.0 && std::abs(track.tofNSigmaDe()) > 3.0) {
       return true;
     }
     return false;
@@ -533,16 +535,16 @@ struct isospin_fluctuation {
   template <typename T>
   bool selProtonTOF(T track)
   {
-    if (track.p() <= 1.30 && TMath::Abs(track.tpcNSigmaPr()) < 3.0 && TMath::Abs(track.tofNSigmaPr()) < 3.0) {
+    if (track.p() <= 1.30 && std::abs(track.tpcNSigmaPr()) < 3.0 && std::abs(track.tofNSigmaPr()) < 3.0) {
       return true;
     }
-    if (1.30 < track.p() && track.p() <= 3.10                                                                                                                                                                                                                 // after 1.30 Pr and Ka lines of nSigma 3.0 will start intersecting
-        && TMath::Abs(track.tpcNSigmaPr()) < 3.0 && TMath::Abs(track.tofNSigmaPr()) < 3.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0 && TMath::Abs(track.tofNSigmaPi()) > 3.0 && TMath::Abs(track.tofNSigmaKa()) > 3.0 && TMath::Abs(track.tofNSigmaDe()) > 3.0 // Some Deuteron contamination is still coming in p dependent cuts
+    if (1.30 < track.p() && track.p() <= 3.10                                                                                                                                                                                                     // after 1.30 Pr and Ka lines of nSigma 3.0 will start intersecting
+        && std::abs(track.tpcNSigmaPr()) < 3.0 && std::abs(track.tofNSigmaPr()) < 3.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaDe()) > 3.0 // Some Deuteron contamination is still coming in p dependent cuts
     ) {
       return true;
     }
     if (3.10 < track.p() // after 3.10 Pr and De lines of nSigma 3.0 will start intersecting
-        && TMath::Abs(track.tpcNSigmaPr()) < 2.0 && TMath::Abs(track.tofNSigmaPr()) < 2.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0 && TMath::Abs(track.tofNSigmaPi()) > 3.0 && TMath::Abs(track.tofNSigmaKa()) > 3.0 && TMath::Abs(track.tofNSigmaDe()) > 3.0) {
+        && std::abs(track.tpcNSigmaPr()) < 2.0 && std::abs(track.tofNSigmaPr()) < 2.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaDe()) > 3.0) {
       return true;
     }
     return false;
@@ -552,11 +554,11 @@ struct isospin_fluctuation {
   template <typename T>
   bool selDeuteronTOF(T track)
   {
-    if (track.p() <= 3.10 && TMath::Abs(track.tpcNSigmaDe()) < 3.0 && TMath::Abs(track.tofNSigmaDe()) < 3.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0 && TMath::Abs(track.tofNSigmaPi()) > 3.0 && TMath::Abs(track.tofNSigmaKa()) > 3.0 && TMath::Abs(track.tofNSigmaPr()) > 3.0) {
+    if (track.p() <= 3.10 && std::abs(track.tpcNSigmaDe()) < 3.0 && std::abs(track.tofNSigmaDe()) < 3.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaPr()) > 3.0) {
       return true;
     }
     if (3.10 < track.p() // after 3.10 De and Pr lines of nSigma 3.0 will start intersecting
-        && TMath::Abs(track.tpcNSigmaDe()) < 2.0 && TMath::Abs(track.tofNSigmaDe()) < 2.0 && TMath::Abs(track.tofNSigmaEl()) > 3.0 && TMath::Abs(track.tofNSigmaPi()) > 3.0 && TMath::Abs(track.tofNSigmaKa()) > 3.0 && TMath::Abs(track.tofNSigmaPr()) > 3.0) {
+        && std::abs(track.tpcNSigmaDe()) < 2.0 && std::abs(track.tofNSigmaDe()) < 2.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaPr()) > 3.0) {
       return true;
     }
     return false;
@@ -567,7 +569,7 @@ struct isospin_fluctuation {
   bool selElectronTOF(T track)
   {
     if (
-      (TMath::Power(track.tpcNSigmaEl(), 2) + TMath::Power(track.tofNSigmaEl(), 2)) < 9.00 && TMath::Abs(track.tofNSigmaPi()) > 3.0 && TMath::Abs(track.tofNSigmaKa()) > 3.0 && TMath::Abs(track.tofNSigmaPr()) > 3.0 && TMath::Abs(track.tofNSigmaDe()) > 3.0) {
+      (std::pow(track.tpcNSigmaEl(), 2) + std::pow(track.tofNSigmaEl(), 2)) < 9.00 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaPr()) > 3.0 && std::abs(track.tofNSigmaDe()) > 3.0) {
       return true;
     }
     return false;
@@ -741,7 +743,7 @@ struct isospin_fluctuation {
   template <typename T>
   bool selK0s(T v0)
   {
-    if (mLowK0s < v0.mK0Short() && v0.mK0Short() < mHighK0s && 0.1 < v0.pt() && v0.pt() < 1.5 && TMath::Abs(v0.rapidity(pdgDB->Mass(310))) < 0.5) {
+    if (mLowK0s < v0.mK0Short() && v0.mK0Short() < mHighK0s && 0.1 < v0.pt() && v0.pt() < 1.5 && std::abs(v0.rapidity(MassK0Short)) < 0.5) {
       return true;
     } else {
       return false;
@@ -772,7 +774,7 @@ struct isospin_fluctuation {
       rejectionTag = 1;
       return false;
     }
-    if (fabs(track.dcaXY()) > 0.2) {
+    if (std::fabs(track.dcaXY()) > 0.2) {
       rejectionTag = 2;
       return false;
     }
@@ -781,12 +783,12 @@ struct isospin_fluctuation {
       return false;
     }
 
-    bool FlagDaughterTrack = false;
+    bool flagDaughterTrack = false;
     if (track.globalIndex() == DauParticleList[skippingPosition]) {
-      FlagDaughterTrack = true;
+      flagDaughterTrack = true;
       skippingPosition++;
     }
-    if (FlagDaughterTrack) {
+    if (flagDaughterTrack) {
       rejectionTag = 4;
       return false;
     }
@@ -797,7 +799,7 @@ struct isospin_fluctuation {
     return true;
   }
 
-  enum histRegEnum {
+  enum HistRegEnum {
     v0TableFull = 0,
     v0TablePostK0sCheck,
     v0TablePostMassCut,
@@ -809,7 +811,7 @@ struct isospin_fluctuation {
     recoAnalysisDir
   };
 
-  static constexpr std::string_view histRegDir[] = {
+  static constexpr std::string_view HistRegDire[] = {
     "v0Table/Full/",
     "v0Table/postK0sCheck/",
     "v0Table/postMassCut/",
@@ -820,7 +822,7 @@ struct isospin_fluctuation {
     "recoTracks/PostSel/",
     "recoAnalysis/"};
 
-  enum pidEnum {
+  enum PidEnum {
     kPi = 0, // dont use kPion, kKaon, as these enumeration
     kKa,     // are already defined in $ROOTSYS/root/include/TPDGCode.h
     kPr,
@@ -828,20 +830,20 @@ struct isospin_fluctuation {
     kDe
   };
 
-  static constexpr std::string_view pidDir[] = {
+  static constexpr std::string_view PidDire[] = {
     "Pi/",
     "Ka/",
     "Pr/",
     "El/",
     "De/"};
 
-  enum detEnum {
+  enum DetEnum {
     tpcId = 0,
     tofId,
     NoId
   };
 
-  static constexpr std::string_view detDir[] = {
+  static constexpr std::string_view DetDire[] = {
     "tpcId/",
     "tofId/",
     "NoId/"};
@@ -878,69 +880,69 @@ struct isospin_fluctuation {
 
     if (fillSignal) {
       // momemtum
-      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h20_p_pt"), track.p(), track.pt());
-      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h21_p_tpcInnerParam"), track.p(), track.tpcInnerParam());
-      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h22_p_tofExpMom"), track.p(), track.tofExpMom());
+      histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h20_p_pt"), track.p(), track.pt());
+      histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h21_p_tpcInnerParam"), track.p(), track.tpcInnerParam());
+      histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h22_p_tofExpMom"), track.p(), track.tofExpMom());
       // tpcSignal
-      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h23_p_tpcSignal"), track.p(), track.tpcSignal());
-      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h24_tpcInnerParam_tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
-      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h25_tofExpMom_tpcSignal"), track.tofExpMom(), track.tpcSignal());
+      histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h23_p_tpcSignal"), track.p(), track.tpcSignal());
+      histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h24_tpcInnerParam_tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
+      histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h25_tofExpMom_tpcSignal"), track.tofExpMom(), track.tpcSignal());
       // tofBeta
-      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h26_p_beta"), track.p(), track.beta());
-      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h27_tpcInnerParam_beta"), track.tpcInnerParam(), track.beta());
-      histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h28_tofExpMom_beta"), track.tofExpMom(), track.beta());
+      histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h26_p_beta"), track.p(), track.beta());
+      histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h27_tpcInnerParam_beta"), track.tpcInnerParam(), track.beta());
+      histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h28_tofExpMom_beta"), track.tofExpMom(), track.beta());
     }
     // NSigma
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h29_p_tpcNSigma"), track.p(), tpcNSigmaVal);
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h30_pt_tpcNSigma"), track.pt(), tpcNSigmaVal);
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h31_tpcInnerParam_tpcNSigma"), track.tpcInnerParam(), tpcNSigmaVal);
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h32_tofExpMom_tpcNSigma"), track.tofExpMom(), tpcNSigmaVal);
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h33_p_tofNSigma"), track.p(), tofNSigmaVal);
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h34_pt_tofNSigma"), track.pt(), tofNSigmaVal);
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h35_tpcInnerParam_tofNSigma"), track.tpcInnerParam(), tofNSigmaVal);
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h36_tofExpMom_tofNSigma"), track.tofExpMom(), tofNSigmaVal);
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h37_tpcNSigma_tofNSigma"), tpcNSigmaVal, tofNSigmaVal);
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h29_p_tpcNSigma"), track.p(), tpcNSigmaVal);
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h30_pt_tpcNSigma"), track.pt(), tpcNSigmaVal);
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h31_tpcInnerParam_tpcNSigma"), track.tpcInnerParam(), tpcNSigmaVal);
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h32_tofExpMom_tpcNSigma"), track.tofExpMom(), tpcNSigmaVal);
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h33_p_tofNSigma"), track.p(), tofNSigmaVal);
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h34_pt_tofNSigma"), track.pt(), tofNSigmaVal);
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h35_tpcInnerParam_tofNSigma"), track.tpcInnerParam(), tofNSigmaVal);
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h36_tofExpMom_tofNSigma"), track.tofExpMom(), tofNSigmaVal);
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h37_tpcNSigma_tofNSigma"), tpcNSigmaVal, tofNSigmaVal);
   }
 
   template <int Mode, typename T>
   void fillTrackQA(T track)
   {
     // FullTrack
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h01_p"), track.p());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h02_pt"), track.pt());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h03_tpcInnerParam"), track.tpcInnerParam());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h04_tofExpMom"), track.tofExpMom());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h05_eta"), track.eta());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h06_phi"), track.phi());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h07_dcaXY"), track.dcaXY());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h08_dcaZ"), track.dcaZ());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h09_sign"), track.sign());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h01_p"), track.p());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h02_pt"), track.pt());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h03_tpcInnerParam"), track.tpcInnerParam());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h04_tofExpMom"), track.tofExpMom());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h05_eta"), track.eta());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h06_phi"), track.phi());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h07_dcaXY"), track.dcaXY());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h08_dcaZ"), track.dcaZ());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h09_sign"), track.sign());
     // DcaXY
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h10_p_dcaXY"), track.p(), track.dcaXY());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h11_pt_dcaXY"), track.pt(), track.dcaXY());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h12_tpcInnerParam_dcaXY"), track.tpcInnerParam(), track.dcaXY());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h13_tofExpMom_dcaXY"), track.tofExpMom(), track.dcaXY());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h10_p_dcaXY"), track.p(), track.dcaXY());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h11_pt_dcaXY"), track.pt(), track.dcaXY());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h12_tpcInnerParam_dcaXY"), track.tpcInnerParam(), track.dcaXY());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h13_tofExpMom_dcaXY"), track.tofExpMom(), track.dcaXY());
 
     // DcaZ
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h14_p_dcaZ"), track.p(), track.dcaZ());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h15_pt_dcaZ"), track.pt(), track.dcaZ());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h16_tpcInnerParam_dcaZ"), track.tpcInnerParam(), track.dcaZ());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h17_tofExpMom_dcaZ"), track.tofExpMom(), track.dcaZ());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h14_p_dcaZ"), track.p(), track.dcaZ());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h15_pt_dcaZ"), track.pt(), track.dcaZ());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h16_tpcInnerParam_dcaZ"), track.tpcInnerParam(), track.dcaZ());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h17_tofExpMom_dcaZ"), track.tofExpMom(), track.dcaZ());
 
     // momemtum
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h20_p_pt"), track.p(), track.pt());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h21_p_tpcInnerParam"), track.p(), track.tpcInnerParam());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h22_p_tofExpMom"), track.p(), track.tofExpMom());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h20_p_pt"), track.p(), track.pt());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h21_p_tpcInnerParam"), track.p(), track.tpcInnerParam());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h22_p_tofExpMom"), track.p(), track.tofExpMom());
 
     // tpcSignal
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h23_p_tpcSignal"), track.p(), track.tpcSignal());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h24_tpcInnerParam_tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h25_tofExpMom_tpcSignal"), track.tofExpMom(), track.tpcSignal());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h23_p_tpcSignal"), track.p(), track.tpcSignal());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h24_tpcInnerParam_tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h25_tofExpMom_tpcSignal"), track.tofExpMom(), track.tpcSignal());
 
     // tofBeta
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h26_p_beta"), track.p(), track.beta());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h27_tpcInnerParam_beta"), track.tpcInnerParam(), track.beta());
-    recoTracks.fill(HIST(histRegDir[Mode]) + HIST("h28_tofExpMom_beta"), track.tofExpMom(), track.beta());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h26_p_beta"), track.p(), track.beta());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h27_tpcInnerParam_beta"), track.tpcInnerParam(), track.beta());
+    recoTracks.fill(HIST(HistRegDire[Mode]) + HIST("h28_tofExpMom_beta"), track.tofExpMom(), track.beta());
 
     fillIdentificationQA<Mode, kPi, NoId, false>(recoTracks, track); // Look at Pion
     fillIdentificationQA<Mode, kKa, NoId, false>(recoTracks, track); // Look at Kaon
@@ -953,23 +955,23 @@ struct isospin_fluctuation {
   void fillV0DaughterQA(H histReg, const T& track, double particleMass)
   {
     // K0s-Daughter Info
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h01_p"), track.p());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h02_pt"), track.pt());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h03_tpcInnerParam"), track.tpcInnerParam());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h04_tofExpMom"), track.tofExpMom());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h05_eta"), track.eta());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h06_phi"), track.phi());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h07_rapidity"), track.rapidity(particleMass));
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h08_isPVContributor"), track.isPVContributor());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h09_isGlobalTrack"), track.isGlobalTrack());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h10_dcaXY"), track.dcaXY());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h11_dcaZ"), track.dcaZ());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h12_p_dcaXY"), track.p(), track.dcaXY());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h13_p_dcaZ"), track.p(), track.dcaZ());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h14_pt_dcaXY"), track.pt(), track.dcaXY());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h15_pt_dcaZ"), track.pt(), track.dcaZ());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h16_dcaXYwide"), track.dcaXY());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST(pidDir[pidMode]) + HIST(detDir[detMode]) + HIST("h17_dcaZwide"), track.dcaZ());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h01_p"), track.p());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h02_pt"), track.pt());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h03_tpcInnerParam"), track.tpcInnerParam());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h04_tofExpMom"), track.tofExpMom());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h05_eta"), track.eta());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h06_phi"), track.phi());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h07_rapidity"), track.rapidity(particleMass));
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h08_isPVContributor"), track.isPVContributor());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h09_isGlobalTrack"), track.isGlobalTrack());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h10_dcaXY"), track.dcaXY());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h11_dcaZ"), track.dcaZ());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h12_p_dcaXY"), track.p(), track.dcaXY());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h13_p_dcaZ"), track.p(), track.dcaZ());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h14_pt_dcaXY"), track.pt(), track.dcaXY());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h15_pt_dcaZ"), track.pt(), track.dcaZ());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h16_dcaXYwide"), track.dcaXY());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST(PidDire[pidMode]) + HIST(DetDire[detMode]) + HIST("h17_dcaZwide"), track.dcaZ());
 
     fillIdentificationQA<Mode, kPi, detMode, true>(histReg, track);
   }
@@ -977,41 +979,41 @@ struct isospin_fluctuation {
   template <int Mode, typename H, typename T, typename U>
   void fillV0QA(H histReg, const T& v0, const U& posDaughterTrack, const U& negDaughterTrack, const int& v0Tag, const int& v0DauCollisionIndexTag, const int& posPiIdMethod, const int& negPiIdMethod)
   {
-    histReg.fill(HIST(histRegDir[Mode]) + HIST("h01_K0s_Mass"), v0.mK0Short());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST("h02_Lambda_Mass"), v0.mLambda());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST("h03_AntiLambda_Mass"), v0.mAntiLambda());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST("h04_v0DaughterCollisionIndexTag"), v0DauCollisionIndexTag);
-    histReg.fill(HIST(histRegDir[Mode]) + HIST("h05_V0Tag"), v0Tag);
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h01_K0s_Mass"), v0.mK0Short());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h02_Lambda_Mass"), v0.mLambda());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h03_AntiLambda_Mass"), v0.mAntiLambda());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h04_v0DaughterCollisionIndexTag"), v0DauCollisionIndexTag);
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h05_V0Tag"), v0Tag);
 
     // Topological Cuts
-    histReg.fill(HIST(histRegDir[Mode]) + HIST("h06_dcapostopv"), v0.dcapostopv());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST("h07_dcanegtopv"), v0.dcanegtopv());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST("h08_dcaV0daughters"), v0.dcaV0daughters());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST("h09_v0cosPA"), v0.v0cosPA());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST("h10_v0radius"), v0.v0radius());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h06_dcapostopv"), v0.dcapostopv());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h07_dcanegtopv"), v0.dcanegtopv());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h08_dcaV0daughters"), v0.dcaV0daughters());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h09_v0cosPA"), v0.v0cosPA());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h10_v0radius"), v0.v0radius());
 
     // K0s-FullInformation
-    histReg.fill(HIST(histRegDir[Mode]) + HIST("h11_mass"), v0.mK0Short());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST("h12_p"), v0.p());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST("h13_pt"), v0.pt());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST("h14_eta"), v0.eta());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST("h15_phi"), v0.phi());
-    histReg.fill(HIST(histRegDir[Mode]) + HIST("h16_rapidity"), v0.rapidity(pdgDB->Mass(310)));
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h11_mass"), v0.mK0Short());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h12_p"), v0.p());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h13_pt"), v0.pt());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h14_eta"), v0.eta());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h15_phi"), v0.phi());
+    histReg.fill(HIST(HistRegDire[Mode]) + HIST("h16_rapidity"), v0.rapidity(MassK0Short));
 
     if (posPiIdMethod == 0) {
-      fillV0DaughterQA<Mode, kPi, tpcId>(histReg, posDaughterTrack, pdgDB->Mass(2212));
+      fillV0DaughterQA<Mode, kPi, tpcId>(histReg, posDaughterTrack, MassProton);
     } else if (posPiIdMethod == 1) {
-      fillV0DaughterQA<Mode, kPi, tofId>(histReg, posDaughterTrack, pdgDB->Mass(2212));
+      fillV0DaughterQA<Mode, kPi, tofId>(histReg, posDaughterTrack, MassProton);
     } else if (posPiIdMethod == -1) {
-      fillV0DaughterQA<Mode, kPi, NoId>(histReg, posDaughterTrack, pdgDB->Mass(2212));
+      fillV0DaughterQA<Mode, kPi, NoId>(histReg, posDaughterTrack, MassProton);
     }
 
     if (negPiIdMethod == 0) {
-      fillV0DaughterQA<Mode, kPi, tpcId>(histReg, negDaughterTrack, pdgDB->Mass(2212));
+      fillV0DaughterQA<Mode, kPi, tpcId>(histReg, negDaughterTrack, MassProton);
     } else if (negPiIdMethod == 1) {
-      fillV0DaughterQA<Mode, kPi, tofId>(histReg, negDaughterTrack, pdgDB->Mass(2212));
+      fillV0DaughterQA<Mode, kPi, tofId>(histReg, negDaughterTrack, MassProton);
     } else if (negPiIdMethod == -1) {
-      fillV0DaughterQA<Mode, kPi, NoId>(histReg, negDaughterTrack, pdgDB->Mass(2212));
+      fillV0DaughterQA<Mode, kPi, NoId>(histReg, negDaughterTrack, MassProton);
     }
   }
 
@@ -1020,39 +1022,39 @@ struct isospin_fluctuation {
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutZvertex);
 
   // Track Filter
-  Filter PtFilter = (o2::aod::track::pt) > 0.15f && (o2::aod::track::pt) < 2.0f;
+  Filter ptFilter = (o2::aod::track::pt) > 0.15f && (o2::aod::track::pt) < 2.0f;
 
   // Filters on V0s
-  Filter preFilterv0 = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv &&
-                        nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
-                        aod::v0data::dcaV0daughters < v0setting_dcav0dau);
+  Filter preFilterv0 = (nabs(aod::v0data::dcapostopv) > v0settingDcaPosToPV &&
+                        nabs(aod::v0data::dcanegtopv) > v0settingDcaNegToPV &&
+                        aod::v0data::dcaV0daughters < v0settingDcaV0Dau);
 
-  using myCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels,
+  using MyCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels,
                                                aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
 
-  using myTracks = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::pidTOFbeta, aod::pidTOFmass, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullDe>>;
+  using MyTracks = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TOFSignal, aod::pidTOFbeta, aod::pidTOFmass, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullDe>>;
 
-  using myV0s = soa::Filtered<aod::V0Datas>;
+  using MyV0s = soa::Filtered<aod::V0Datas>;
 
   // For manual sliceBy
-  Preslice<myTracks> TracksPerCollisionPreslice = o2::aod::track::collisionId;
-  Preslice<myV0s> V0sPerCollisionPreslice = o2::aod::track::collisionId;
+  Preslice<MyTracks> tracksPerCollisionPreslice = o2::aod::track::collisionId;
+  Preslice<MyV0s> v0sPerCollisionPreslice = o2::aod::track::collisionId;
 
   // Declaring vectors outside the process to avoid slight overhead for stack allocation and deallocation during each iteration.
-  std::vector<int64_t> K0sPosDauList;
-  std::vector<int64_t> K0sNegDauList;
+  std::vector<int64_t> k0sPosDauList;
+  std::vector<int64_t> k0sNegDauList;
 
-  // FullDauList
-  std::vector<int64_t> FullDauList;
+  // fullDauList
+  std::vector<int64_t> fullDauList;
 
-  void process(myCollisions const& collisions,
-               myV0s const& V0s,
-               myTracks const& tracks)
+  void process(MyCollisions const& collisions,
+               MyV0s const& V0s,
+               MyTracks const& tracks)
   {
 
-    K0sPosDauList.clear();
-    K0sNegDauList.clear();
-    FullDauList.clear();
+    k0sPosDauList.clear();
+    k0sNegDauList.clear();
+    fullDauList.clear();
 
     int posPiIdMethod = -1;
     int posPrIdMethod = -1;
@@ -1066,8 +1068,8 @@ struct isospin_fluctuation {
     int v0DauCollisionIndexTag = 0;
 
     for (const auto& v0 : V0s) {
-      const auto& posDaughterTrack = v0.posTrack_as<myTracks>();
-      const auto& negDaughterTrack = v0.negTrack_as<myTracks>();
+      const auto& posDaughterTrack = v0.posTrack_as<MyTracks>();
+      const auto& negDaughterTrack = v0.negTrack_as<MyTracks>();
 
       posPiIdMethod = -1;
       posPrIdMethod = -1;
@@ -1084,9 +1086,9 @@ struct isospin_fluctuation {
       fillV0QA<v0TableFull>(recoV0s, v0, posDaughterTrack, negDaughterTrack, v0Tag, v0DauCollisionIndexTag, posPiIdMethod, negPiIdMethod);
 
       // cut on dynamic columns for v0 particles
-      if (v0.v0cosPA() < v0setting_cospa)
+      if (v0.v0cosPA() < v0settingCosPA)
         continue;
-      if (v0.v0radius() < v0setting_radius)
+      if (v0.v0radius() < v0settingRadius)
         continue;
 
       // K0s Analysis
@@ -1101,28 +1103,28 @@ struct isospin_fluctuation {
         if (selK0s(v0)) {
           fillV0QA<v0TablePostSelectionCut>(recoV0s, v0, posDaughterTrack, negDaughterTrack, v0Tag, v0DauCollisionIndexTag, posPiIdMethod, negPiIdMethod);
           trueV0TagValue += 1;
-          K0sPosDauList.push_back(posDaughterTrack.globalIndex());
-          K0sNegDauList.push_back(negDaughterTrack.globalIndex());
+          k0sPosDauList.push_back(posDaughterTrack.globalIndex());
+          k0sNegDauList.push_back(negDaughterTrack.globalIndex());
         }
-        recoV0s.fill(HIST(histRegDir[v0TablePostSelectionCut]) + HIST("hTrueV0TagCount"), trueV0TagValue); // 001 = Kaon, 010 = Lambda, 100 = AnitLambda
+        recoV0s.fill(HIST(HistRegDire[v0TablePostSelectionCut]) + HIST("hTrueV0TagCount"), trueV0TagValue); // 001 = Kaon, 010 = Lambda, 100 = AnitLambda
       } // End of K0s block
     } // End of V0s Loop
 
-    findRepeatedEntries(K0sPosDauList, recoV0s.get<TH1>(HIST(histRegDir[v0TablePostSelectionCut]) + HIST("nCommonPionOfDifferentK0s")));
-    findRepeatedEntries(K0sNegDauList, recoV0s.get<TH1>(HIST(histRegDir[v0TablePostSelectionCut]) + HIST("nCommonPionOfDifferentK0s")));
+    findRepeatedEntries(k0sPosDauList, recoV0s.get<TH1>(HIST(HistRegDire[v0TablePostSelectionCut]) + HIST("nCommonPionOfDifferentK0s")));
+    findRepeatedEntries(k0sNegDauList, recoV0s.get<TH1>(HIST(HistRegDire[v0TablePostSelectionCut]) + HIST("nCommonPionOfDifferentK0s")));
 
     // Obtain one single new daughter vector to remove double counting
-    FullDauList.insert(FullDauList.end(), K0sPosDauList.begin(), K0sPosDauList.end());
-    FullDauList.insert(FullDauList.end(), K0sNegDauList.begin(), K0sNegDauList.end());
+    fullDauList.insert(fullDauList.end(), k0sPosDauList.begin(), k0sPosDauList.end());
+    fullDauList.insert(fullDauList.end(), k0sNegDauList.begin(), k0sNegDauList.end());
 
     // Sort and Remove repeated entries
-    std::sort(FullDauList.begin(), FullDauList.end());
-    auto last = std::unique(FullDauList.begin(), FullDauList.end()); // std::unique only moves duplicates to end of the vector
-    FullDauList.erase(last, FullDauList.end());                      // last is the iterator position from where duplicate entries start
+    std::sort(fullDauList.begin(), fullDauList.end());
+    auto last = std::unique(fullDauList.begin(), fullDauList.end()); // std::unique only moves duplicates to end of the vector
+    fullDauList.erase(last, fullDauList.end());                      // last is the iterator position from where duplicate entries start
 
     // Check sorting
-    if (!std::is_sorted(FullDauList.begin(), FullDauList.end())) {
-      LOG(error) << "FullDauList is unsorted, will give wrong results";
+    if (!std::is_sorted(fullDauList.begin(), fullDauList.end())) {
+      LOG(error) << "fullDauList is unsorted, will give wrong results when v0 and collisions will be checked";
     }
 
     // Declaring variables outside the loop to avoid slight overhead for stack allocation and deallocation during each iteration.
@@ -1141,24 +1143,24 @@ struct isospin_fluctuation {
 
     int nTrack = 0;
     int nKaon = 0;
-    double CentFT0C = 0;
+    double centFT0C = 0;
 
     int nRejectedPiPlus = 0;
     int nRejectedPiMinus = 0;
     int rejectionTag = 0;
 
-    bool TrackIsPion = false;
-    bool TrackIsKaon = false;
-    bool TrackIsProton = false;
-    bool TrackIsElectron = false;
-    bool TrackIsDeuteron = false;
+    bool trackIsPion = false;
+    bool trackIsKaon = false;
+    bool trackIsProton = false;
+    bool trackIsElectron = false;
+    bool trackIsDeuteron = false;
 
-    int TrackIdTag = 0;
-    int PiIdMethod = -1;
-    int KaIdMethod = -1;
-    int PrIdMethod = -1;
-    int ElIdMethod = -1;
-    int DeIdMethod = -1;
+    int trackIdTag = 0;
+    int idMethodPi = -1;
+    int idMethodKa = -1;
+    int idMethodPr = -1;
+    int idMethodEl = -1;
+    int idMethodDe = -1;
 
     for (const auto& collision : collisions) {
 
@@ -1176,21 +1178,21 @@ struct isospin_fluctuation {
       nTrack = 0;
       nKaon = 0;
 
-      CentFT0C = collision.centFT0C();
+      centFT0C = collision.centFT0C();
 
       // group tracks, v0s manually
       const uint64_t collIdx = collision.globalIndex();
-      const auto TracksTable_perColl = tracks.sliceBy(TracksPerCollisionPreslice, collIdx);
-      const auto V0sTable_perColl = V0s.sliceBy(V0sPerCollisionPreslice, collIdx);
+      const auto tracksTablePerColl = tracks.sliceBy(tracksPerCollisionPreslice, collIdx);
+      const auto v0sTablePerColl = V0s.sliceBy(v0sPerCollisionPreslice, collIdx);
 
-      for (const auto& v0 : V0sTable_perColl) {
-        if (v0.v0cosPA() < v0setting_cospa)
+      for (const auto& v0 : v0sTablePerColl) {
+        if (v0.v0cosPA() < v0settingCosPA)
           continue; // cut on dynamic columns for v0 particles
-        if (v0.v0radius() < v0setting_radius)
+        if (v0.v0radius() < v0settingRadius)
           continue;
 
-        const auto& posDaughterTrack = v0.posTrack_as<myTracks>();
-        const auto& negDaughterTrack = v0.negTrack_as<myTracks>();
+        const auto& posDaughterTrack = v0.posTrack_as<MyTracks>();
+        const auto& negDaughterTrack = v0.negTrack_as<MyTracks>();
 
         bool isK0s = false;
 
@@ -1209,7 +1211,7 @@ struct isospin_fluctuation {
         // K0s Analysis
         if (isK0s && selK0s(v0)) {
           fillV0QA<recoK0sPostSel>(recoK0s, v0, posDaughterTrack, negDaughterTrack, v0Tag, v0DauCollisionIndexTag, posPiIdMethod, negPiIdMethod);
-          recoK0s.fill(HIST(histRegDir[recoK0sPostSel]) + HIST("mK0s_vs_centFTOC"), collision.centFT0C(), v0.mK0Short()); // centrality dependent mass
+          recoK0s.fill(HIST(HistRegDire[recoK0sPostSel]) + HIST("mK0s_vs_centFTOC"), collision.centFT0C(), v0.mK0Short()); // centrality dependent mass
           nK0s++;
         } // End of K0s block
       } // End of V0s Loop
@@ -1217,11 +1219,11 @@ struct isospin_fluctuation {
       nTrack = 0;
       nRejectedPiPlus = 0;
       nRejectedPiMinus = 0;
-      for (const auto& track : TracksTable_perColl) {
+      for (const auto& track : tracksTablePerColl) {
 
         fillTrackQA<recoTrackPreSel>(track);
         rejectionTag = 0;
-        if (!checkTrackSelection(track, FullDauList, skippingPosition, rejectionTag)) {
+        if (!checkTrackSelection(track, fullDauList, skippingPosition, rejectionTag)) {
           if (rejectionTag == 4) {
             if (track.sign() > 0) {
               nRejectedPiPlus++;
@@ -1238,44 +1240,44 @@ struct isospin_fluctuation {
 
         nTrack++;
         // Do Proper Track Identification
-        TrackIsPion = false;
-        TrackIsKaon = false;
-        TrackIsProton = false;
-        TrackIsElectron = false;
-        TrackIsDeuteron = false;
+        trackIsPion = false;
+        trackIsKaon = false;
+        trackIsProton = false;
+        trackIsElectron = false;
+        trackIsDeuteron = false;
 
-        TrackIdTag = 0;
-        PiIdMethod = -1;
-        KaIdMethod = -1;
-        PrIdMethod = -1;
-        ElIdMethod = -1;
-        DeIdMethod = -1;
+        trackIdTag = 0;
+        idMethodPi = -1;
+        idMethodKa = -1;
+        idMethodPr = -1;
+        idMethodEl = -1;
+        idMethodDe = -1;
 
-        if (selPion(track, PiIdMethod)) {
-          TrackIsPion = true;
-          TrackIdTag += 1;
+        if (selPion(track, idMethodPi)) {
+          trackIsPion = true;
+          trackIdTag += 1;
         }
-        if (selKaon(track, KaIdMethod)) {
-          TrackIsKaon = true;
-          TrackIdTag += 2;
+        if (selKaon(track, idMethodKa)) {
+          trackIsKaon = true;
+          trackIdTag += 2;
         }
-        if (selProton(track, PrIdMethod)) {
-          TrackIsProton = true;
-          TrackIdTag += 4;
+        if (selProton(track, idMethodPr)) {
+          trackIsProton = true;
+          trackIdTag += 4;
         }
-        if (selElectron(track, ElIdMethod)) {
-          TrackIsElectron = true;
-          TrackIdTag += 8;
+        if (selElectron(track, idMethodEl)) {
+          trackIsElectron = true;
+          trackIdTag += 8;
         }
-        if (selDeuteron(track, DeIdMethod)) {
-          TrackIsDeuteron = true;
-          TrackIdTag += 16;
+        if (selDeuteron(track, idMethodDe)) {
+          trackIsDeuteron = true;
+          trackIdTag += 16;
         }
 
-        if (TrackIsPion) {
-          if (PiIdMethod == 0)
+        if (trackIsPion) {
+          if (idMethodPi == 0)
             fillIdentificationQA<recoAnalysisDir, kPi, tpcId, true>(recoAnalysis, track);
-          if (PiIdMethod == 1)
+          if (idMethodPi == 1)
             fillIdentificationQA<recoAnalysisDir, kPi, tofId, true>(recoAnalysis, track);
           if (track.sign() > 0) {
             nPiPlus++;
@@ -1284,10 +1286,10 @@ struct isospin_fluctuation {
             nPiMinus++;
           }
         }
-        if (TrackIsKaon) {
-          if (KaIdMethod == 0)
+        if (trackIsKaon) {
+          if (idMethodKa == 0)
             fillIdentificationQA<recoAnalysisDir, kKa, tpcId, true>(recoAnalysis, track);
-          if (KaIdMethod == 1)
+          if (idMethodKa == 1)
             fillIdentificationQA<recoAnalysisDir, kKa, tofId, true>(recoAnalysis, track);
 
           if (track.sign() > 0) {
@@ -1297,10 +1299,10 @@ struct isospin_fluctuation {
             nKaMinus++;
           }
         }
-        if (TrackIsProton) {
-          if (PrIdMethod == 0)
+        if (trackIsProton) {
+          if (idMethodPr == 0)
             fillIdentificationQA<recoAnalysisDir, kPr, tpcId, true>(recoAnalysis, track);
-          if (PrIdMethod == 1)
+          if (idMethodPr == 1)
             fillIdentificationQA<recoAnalysisDir, kPr, tofId, true>(recoAnalysis, track);
 
           if (track.sign() > 0) {
@@ -1310,10 +1312,10 @@ struct isospin_fluctuation {
             nPBar++;
           }
         }
-        if (TrackIsElectron) {
-          if (ElIdMethod == 0)
+        if (trackIsElectron) {
+          if (idMethodEl == 0)
             fillIdentificationQA<recoAnalysisDir, kEl, tpcId, true>(recoAnalysis, track);
-          if (ElIdMethod == 1)
+          if (idMethodEl == 1)
             fillIdentificationQA<recoAnalysisDir, kEl, tofId, true>(recoAnalysis, track);
 
           if (track.sign() > 0) {
@@ -1323,10 +1325,10 @@ struct isospin_fluctuation {
             nElMinus++;
           }
         }
-        if (TrackIsDeuteron) {
-          if (DeIdMethod == 0)
+        if (trackIsDeuteron) {
+          if (idMethodDe == 0)
             fillIdentificationQA<recoAnalysisDir, kDe, tpcId, true>(recoAnalysis, track);
-          if (DeIdMethod == 1)
+          if (idMethodDe == 1)
             fillIdentificationQA<recoAnalysisDir, kDe, tofId, true>(recoAnalysis, track);
 
           if (track.sign() > 0) {
@@ -1336,44 +1338,44 @@ struct isospin_fluctuation {
             nDeMinus++;
           }
         }
-        recoAnalysis.fill(HIST("recoAnalysis/SelectedTrack_IdentificationTag"), TrackIdTag);
+        recoAnalysis.fill(HIST("recoAnalysis/SelectedTrack_IdentificationTag"), trackIdTag);
       } // track loop ends
 
       nKaon = nKaPlus + nKaMinus;
 
       recoAnalysis.fill(HIST("recoAnalysis/Sparse_Full_K0sPiKa"),
-                        CentFT0C, nTrack, nK0s,
+                        centFT0C, nTrack, nK0s,
                         nRejectedPiPlus, nRejectedPiMinus,
                         nPiPlus, nPiMinus, nKaPlus, nKaMinus);
       recoAnalysis.fill(HIST("recoAnalysis/Sparse_Full_K0sPrDe"),
-                        CentFT0C, nTrack, nK0s,
+                        centFT0C, nTrack, nK0s,
                         nRejectedPiPlus, nRejectedPiMinus,
                         nProton, nPBar, nDePlus, nDeMinus);
       recoAnalysis.fill(HIST("recoAnalysis/Sparse_Full_K0sKaEl"),
-                        CentFT0C, nTrack, nK0s, nRejectedPiPlus, nRejectedPiMinus,
+                        centFT0C, nTrack, nK0s, nRejectedPiPlus, nRejectedPiMinus,
                         nKaPlus, nKaMinus, nElPlus, nElMinus);
       recoAnalysis.fill(HIST("recoAnalysis/Sparse_Full_PiKaPr"),
-                        CentFT0C, nTrack,
+                        centFT0C, nTrack,
                         nRejectedPiPlus, nRejectedPiMinus,
                         nPiPlus, nPiMinus, nKaPlus, nKaMinus, nProton, nPBar);
       recoAnalysis.fill(HIST("recoAnalysis/Sparse_Full_PiElDe"),
-                        CentFT0C, nTrack,
+                        centFT0C, nTrack,
                         nRejectedPiPlus, nRejectedPiMinus,
                         nPiPlus, nPiMinus, nElPlus, nElMinus, nDePlus, nDeMinus);
       recoAnalysis.fill(HIST("recoAnalysis/Sparse_Full_KaPrDe"),
-                        CentFT0C, nTrack,
+                        centFT0C, nTrack,
                         nRejectedPiPlus, nRejectedPiMinus,
                         nKaPlus, nKaMinus, nProton, nPBar, nDePlus, nDeMinus);
       recoAnalysis.fill(HIST("recoAnalysis/Sparse_Full_PrElDe"),
-                        CentFT0C, nTrack,
+                        centFT0C, nTrack,
                         nRejectedPiPlus, nRejectedPiMinus,
                         nProton, nPBar, nElPlus, nElMinus, nDePlus, nDeMinus);
 
       recoAnalysis.fill(HIST("recoAnalysis/Sparse_newDynm_K0s_Ka"),
-                        CentFT0C, nTrack, nK0s, nKaon,
+                        centFT0C, nTrack, nK0s, nKaon,
                         nK0s * nK0s, nKaon * nKaon, nK0s * nKaon);
       recoAnalysis.fill(HIST("recoAnalysis/Sparse_newDynm_Kp_Km"),
-                        CentFT0C, nTrack, nKaPlus, nKaMinus,
+                        centFT0C, nTrack, nKaPlus, nKaMinus,
                         nKaPlus * nKaPlus, nKaMinus * nKaMinus, nKaPlus * nKaMinus);
 
       // Collisions QA
@@ -1382,8 +1384,8 @@ struct isospin_fluctuation {
       recoEvent.fill(HIST("recoEvent/h03_VertexYRec"), collision.posY());
       recoEvent.fill(HIST("recoEvent/h04_VertexZRec"), collision.posZ());
       recoEvent.fill(HIST("recoEvent/h05_Centrality"), collision.centFT0C());
-      recoEvent.fill(HIST("recoEvent/h06_V0Size"), V0sTable_perColl.size());
-      recoEvent.fill(HIST("recoEvent/h07_TracksSize"), TracksTable_perColl.size());
+      recoEvent.fill(HIST("recoEvent/h06_V0Size"), v0sTablePerColl.size());
+      recoEvent.fill(HIST("recoEvent/h07_TracksSize"), tracksTablePerColl.size());
       recoEvent.fill(HIST("recoEvent/h08_nTrack"), nTrack);
       recoEvent.fill(HIST("recoEvent/h09_nK0s"), nK0s);
       recoEvent.fill(HIST("recoEvent/h10_nPiPlus"), nPiPlus);
@@ -1402,5 +1404,5 @@ struct isospin_fluctuation {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<isospin_fluctuation>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<KaonIsospinFluctuation>(cfgc)};
 }
