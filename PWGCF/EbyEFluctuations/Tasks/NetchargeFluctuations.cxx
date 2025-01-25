@@ -33,72 +33,72 @@ using namespace std;
 
 namespace o2::aod
 {
-  using MyCollisions = soa::Join<aod::Collisions,aod::EvSels,aod::CentRun2V0Ms,aod::Mults>;			                                           
+  using MyCollisions = soa::Join<aod::Collisions,aod::EvSels,aod::CentRun2V0Ms,aod::Mults>;
   using MyCollision = MyCollisions::iterator;
 
   using MyTracks = soa::Join<aod::Tracks,aod::TracksExtra,aod::TracksDCA,aod::TrackSelection>;
   using MyTrack = MyTracks::iterator;
-} 
+}
 
 struct NetchargeFluctuations
 {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
    void init(o2::framework::InitContext&)
        {
-   	AxisSpec vtxZAxis = {100, -20, 20, "Z (cm)"};
-    	AxisSpec dcaAxis = {1000, -100, 100, "DCA_{xy} (cm)"};
-    	AxisSpec dcazAxis = {1000, -100, 100, "DCA_{z} (cm)"};
-    	AxisSpec ptAxis = {40, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"};
-    	AxisSpec etaAxis = {30, -1.5, 1.5, "#eta"};
-    	AxisSpec centAxis = {100, 0., 100., "centrality"};
-    	AxisSpec multAxis = {2000, 0., 2000., "multiplicity"};
+     AxisSpec vtxZAxis = {100, -20, 20, "Z (cm)"};
+      AxisSpec dcaAxis = {1000, -100, 100, "DCA_{xy} (cm)"};
+      AxisSpec dcazAxis = {1000, -100, 100, "DCA_{z} (cm)"};
+      AxisSpec ptAxis = {40, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"};
+      AxisSpec etaAxis = {30, -1.5, 1.5, "#eta"};
+      AxisSpec centAxis = {100, 0., 100., "centrality"};
+      AxisSpec multAxis = {2000, 0., 2000., "multiplicity"};
 
-  	histos.add("hVertexZ_bef",     "", kTH1F, {vtxZAxis});
-    	histos.add("hVertexZ_aft",     "", kTH1F, {vtxZAxis});
-    	histos.add("hVertexZ_aft_sel", "", kTH1D, {vtxZAxis});
-    	histos.add("hDCAxy_bef",       "", kTH1D, {dcaAxis});
-    	histos.add("hDCAxy_aft",       "", kTH1D, {dcaAxis});
-    	histos.add("hDCAz_bef",        "", kTH1D, {dcazAxis});
-    	histos.add("hDCAz_aft",        "", kTH1D, {dcazAxis});
-    	histos.add("hCentrality",      "", kTH1D, {centAxis});
-    	histos.add("hMultiplicity",    "", kTH1D, {multAxis});
-	histos.add("hEta",             "", kTH1F, {etaAxis});
-    	histos.add("hPt",              "", kTH1F, {ptAxis});
+    histos.add("hVertexZ_bef",     "", kTH1F, {vtxZAxis});
+      histos.add("hVertexZ_aft",     "", kTH1F, {vtxZAxis});
+      histos.add("hVertexZ_aft_sel", "", kTH1D, {vtxZAxis});
+      histos.add("hDCAxy_bef",       "", kTH1D, {dcaAxis});
+      histos.add("hDCAxy_aft",       "", kTH1D, {dcaAxis});
+      histos.add("hDCAz_bef",        "", kTH1D, {dcazAxis});
+      histos.add("hDCAz_aft",        "", kTH1D, {dcazAxis});
+      histos.add("hCentrality",      "", kTH1D, {centAxis});
+      histos.add("hMultiplicity",    "", kTH1D, {multAxis});
+  histos.add("hEta",             "", kTH1F, {etaAxis});
+      histos.add("hPt",              "", kTH1F, {ptAxis});
 
         }
 
      void process(aod::MyCollision const& coll, aod::MyTracks const& inputTracks)
   {
-        	histos.fill(HIST("hVertexZ_bef"), coll.posZ()); 
-    
-      	   if (fabs(coll.posZ()) > 10.f)  {return;}
-  		histos.fill(HIST("hVertexZ_aft"), coll.posZ());   
-  
-      	   if (!coll.sel7())  { return;}
-		histos.fill(HIST("hVertexZ_aft_sel"), coll.posZ());  
-       		histos.fill(HIST("hCentrality"), coll.centRun2V0M()); 
- 		histos.fill(HIST("hMultiplicity"), coll.multFV0M()); 
-	
+          histos.fill(HIST("hVertexZ_bef"), coll.posZ());
 
-    for (auto track : inputTracks)  
-      {         
-     	  if (fabs(track.eta()) > 0.8) continue;
-          if (!(track.pt() > 0.2 && track.pt() < 2.)) continue; 
+           if (fabs(coll.posZ()) > 10.f)  {return;}
+      histos.fill(HIST("hVertexZ_aft"), coll.posZ());
 
-      		histos.fill(HIST("hDCAxy_bef"), track.dcaXY()); 
-     		histos.fill(HIST("hDCAz_bef"), track.dcaZ()); 
+           if (!coll.sel7())  { return;}
+    histos.fill(HIST("hVertexZ_aft_sel"), coll.posZ());
+           histos.fill(HIST("hCentrality"), coll.centRun2V0M());
+     histos.fill(HIST("hMultiplicity"), coll.multFV0M());
+
+
+    for (auto track : inputTracks)
+      {
+         if (fabs(track.eta()) > 0.8) continue;
+          if (!(track.pt() > 0.2 && track.pt() < 2.)) continue;
+
+          histos.fill(HIST("hDCAxy_bef"), track.dcaXY());
+         histos.fill(HIST("hDCAz_bef"), track.dcaZ());
 
           if (!track.isGlobalTrack())  continue;
 
-     		histos.fill(HIST("hDCAxy_aft"), track.dcaXY());
-     		histos.fill(HIST("hDCAz_aft"), track.dcaZ());
-     		histos.fill(HIST("hPt"), track.pt());
-     		histos.fill(HIST("hEta"), track.eta()); 
-      }      
-  }     
-};        
+         histos.fill(HIST("hDCAxy_aft"), track.dcaXY());
+         histos.fill(HIST("hDCAz_aft"), track.dcaZ());
+         histos.fill(HIST("hPt"), track.pt());
+         histos.fill(HIST("hEta"), track.eta());
+      }
+  }
+};
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{adaptAnalysisTask<NetchargeFluctuations>(cfgc)};
- 		 return workflow;
+      return workflow;
 }
