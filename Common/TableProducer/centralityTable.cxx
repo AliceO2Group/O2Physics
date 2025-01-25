@@ -181,7 +181,7 @@ struct CentralityTable {
   void init(InitContext& context)
   {
     // If both Run 2 and Run 3 data process flags are enabled then we check the metadata
-    if (autoSetupFromMetadata) {
+    if (autoSetupFromMetadata && metadataInfo.isFullyDefined()) {
       LOG(info) << "Autosetting the processing from the metadata";
       if (doprocessRun2 == true && doprocessRun3 == true) {
         if (metadataInfo.isRun3()) {
