@@ -720,6 +720,7 @@ struct CentralityTable {
 
   // Process switches
   PROCESS_SWITCH(CentralityTable, processRun2, "Provide Run2 calibrated centrality/multiplicity percentiles tables", true);
+  PROCESS_SWITCH(CentralityTable, processRun3Complete, "Provide Run3 calibrated centrality/multiplicity percentiles tables using MFT and global tracks (requires extra subscriptions)", false);
   PROCESS_SWITCH(CentralityTable, processRun3, "Provide Run3 calibrated centrality/multiplicity percentiles tables", false);
   PROCESS_SWITCH(CentralityTable, processRun3FT0, "Provide Run3 calibrated centrality/multiplicity percentiles tables for FT0 only", false);
 };
