@@ -195,7 +195,7 @@ struct chk892flow {
   // Configurable<float> cSecondaryRadiusMin{"cSecondaryRadiusMin", 1.2, "Minimum transverse radius of Secondary"};
   Configurable<float> cSecondaryCosPAMin{"cSecondaryCosPAMin", 0.998, "Mininum cosine pointing angle of Secondary"};
   Configurable<float> cSecondaryDCAtoPVMax{"cSecondaryDCAtoPVMax", 0.4, "Maximum DCA Secondary to PV"};
-  // Configurable<float> cSecondaryProperLifetimeMax{"cSecondaryProperLifetimeMax", 20, "Maximum Secondary Lifetime"};
+  Configurable<float> cSecondaryProperLifetimeMax{"cSecondaryProperLifetimeMax", 20., "Maximum Secondary Lifetime"};
   Configurable<float> cSecondaryparamArmenterosCut{"cSecondaryparamArmenterosCut", 0.2, "parameter for Armenteros Cut"};
   Configurable<float> cSecondaryMassWindow{"cSecondaryMassWindow", 0.03, "Secondary inv mass selciton window"};
 
@@ -592,7 +592,7 @@ struct chk892flow {
     //   auto lRadius = candidate.v0radius();
     auto lDCAtoPV = candidate.dcav0topv();
     auto lCPA = candidate.v0cosPA();
-    //   auto lPropTauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
+    auto lPropTauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
     auto lMk0s = candidate.mK0Short();
 
     if (cfgReturnFlag) {
@@ -636,12 +636,10 @@ struct chk892flow {
           histos.fill(HIST("QA/K0sCutCheck"), 8);
           returnFlag = false;
         }
-        /*
         if (lPropTauK0s > cSecondaryProperLifetimeMax) {
           histos.fill(HIST("QA/K0sCutCheck"), 9);
           returnFlag = false;
         }
-        */
         if (candidate.qtarm() < cSecondaryparamArmenterosCut * std::abs(candidate.alpha())) {
           histos.fill(HIST("QA/K0sCutCheck"), 11);
           returnFlag = false;
@@ -702,12 +700,10 @@ struct chk892flow {
           histos.fill(HIST("QA/K0sCutCheck"), 8);
           return false;
         }
-        /*
         if (lPropTauK0s > cSecondaryProperLifetimeMax) {
           histos.fill(HIST("QA/K0sCutCheck"), 9);
           return false;
         }
-        */
         if (candidate.qtarm() < cSecondaryparamArmenterosCut * std::abs(candidate.alpha())) {
           histos.fill(HIST("QA/K0sCutCheck"), 11);
           return false;
@@ -847,14 +843,14 @@ struct chk892flow {
 
       /// K0s
       auto trkkDauDCA = k0sCand.dcaV0daughters();
-      auto trkkDauDCAPostoPV = k0sCand.dcapostopv();
-      auto trkkDauDCANegtoPV = k0sCand.dcanegtopv();
-      auto trkkpt = k0sCand.pt();
+      //auto trkkDauDCAPostoPV = k0sCand.dcapostopv();
+      //auto trkkDauDCANegtoPV = k0sCand.dcanegtopv();
+      //auto trkkpt = k0sCand.pt();
       auto trkky = k0sCand.yK0Short();
-      auto trkkRadius = k0sCand.v0radius();
+      //auto trkkRadius = k0sCand.v0radius();
       auto trkkDCAtoPV = k0sCand.dcav0topv();
       auto trkkCPA = k0sCand.v0cosPA();
-      auto trkkPropTau = k0sCand.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
+      //auto trkkPropTau = k0sCand.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
       auto trkkMass = k0sCand.mK0Short();
 
       if constexpr (!IsMix) {
