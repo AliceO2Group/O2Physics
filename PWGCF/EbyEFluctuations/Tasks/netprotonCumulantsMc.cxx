@@ -60,7 +60,7 @@ namespace o2::aod
 
 namespace gen_ebyecolltable
 {
-DECLARE_SOA_COLUMN(CentralityGen, centralityGen, uint8_t);
+DECLARE_SOA_COLUMN(CentralityGen, centralityGen, float);
 DECLARE_SOA_COLUMN(NetProtNoGen, netProtNoGen, float);   //! net proton no. in an event
 DECLARE_SOA_COLUMN(ProtNoGen, protNoGen, float);         //! proton no. in an event
 DECLARE_SOA_COLUMN(AntiProtNoGen, antiProtNoGen, float); //! antiproton no. in an event
@@ -75,23 +75,27 @@ using ProtGenCollEbyeTable = ProtGenCollEbyeTables::iterator;
 
 namespace rec_ebyecolltable
 {
-DECLARE_SOA_COLUMN(CentralityRec, centralityRec, uint8_t);
+DECLARE_SOA_COLUMN(CentralityRec, centralityRec, float);
 DECLARE_SOA_COLUMN(NetProtNoRec, netProtNoRec, float);   //! net proton no. in an event
 DECLARE_SOA_COLUMN(ProtNoRec, protNoRec, float);         //! proton no. in an event
 DECLARE_SOA_COLUMN(AntiProtNoRec, antiProtNoRec, float); //! antiproton no. in an event
 } // namespace rec_ebyecolltable
 
 DECLARE_SOA_TABLE(ProtRecCollEbyeTables, "AOD", "PROTRECCOLLEBYETABLE",
-                  o2::soa::Index<>,
                   rec_ebyecolltable::CentralityRec,
                   rec_ebyecolltable::NetProtNoRec,
                   rec_ebyecolltable::ProtNoRec,
                   rec_ebyecolltable::AntiProtNoRec);
 using ProtRecCollEbyeTable = ProtRecCollEbyeTables::iterator;
 
+DECLARE_SOA_TABLE(ProtRecCollTables, "AOD", "PROTRECCOLLTABLE",
+                  o2::soa::Index<>,
+                  rec_ebyecolltable::CentralityRec);
+using ProtRecCollTable = ProtRecCollTables::iterator;
+
 namespace rec_ebyetracktable
 {
-DECLARE_SOA_INDEX_COLUMN(ProtRecCollEbyeTable, protRecCollEbyeTable);
+DECLARE_SOA_INDEX_COLUMN(ProtRecCollTable, protRecCollTable);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Charge, charge, int);
@@ -99,7 +103,7 @@ DECLARE_SOA_COLUMN(Charge, charge, int);
 
 DECLARE_SOA_TABLE(ProtRecCompleteEbyeTables, "AOD", "PROTRECCOMPLETEEBYETABLE",
                   o2::soa::Index<>,
-                  rec_ebyetracktable::ProtRecCollEbyeTableId,
+                  rec_ebyetracktable::ProtRecCollTableId,
                   rec_ebyetracktable::Pt,
                   rec_ebyetracktable::Eta,
                   rec_ebyetracktable::Charge);
@@ -370,6 +374,7 @@ struct NetprotonCumulantsMc {
   PROCESS_SWITCH(NetprotonCumulantsMc, processMCGen, "Process Generated", true);
 
   Produces<aod::ProtRecCollEbyeTables> recEbyeCollisions;             //! MC Rec table creation
+  Produces<aod::ProtRecCollTables> recCollisions;                     //! MC Rec table creation
   Produces<aod::ProtRecCompleteEbyeTables> recEbyeCompleteCollisions; //! MC Rec table creation with tracks
 
   void processMCRec(MyMCRecCollision const& collision, MyMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
@@ -381,6 +386,7 @@ struct NetprotonCumulantsMc {
     histos.fill(HIST("Centrec"), cent);
     histos.fill(HIST("hMC"), 5.5);
     histos.fill(HIST("hZvtx_after_sel"), collision.posZ());
+    recCollisions(cent);
 
     float nProt = 0.0;
     float nAntiprot = 0.0;
@@ -409,7 +415,7 @@ struct NetprotonCumulantsMc {
           trackSelected = selectionPIDnew(track);
 
         if (trackSelected) {
-          recEbyeCompleteCollisions(recEbyeCollisions.lastIndex(), particle.pt(), particle.eta(), track.sign());
+          recEbyeCompleteCollisions(recCollisions.lastIndex(), particle.pt(), particle.eta(), track.sign());
           if (track.sign() > 0) {
             histos.fill(HIST("hrecPtProton"), particle.pt()); //! hist for p rec
             histos.fill(HIST("hrecPtDistProtonVsCentrality"), particle.pt(), cent);
