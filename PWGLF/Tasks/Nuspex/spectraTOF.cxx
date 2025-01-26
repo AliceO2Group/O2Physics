@@ -137,7 +137,8 @@ struct tofSpectra { // o2-linter: disable=name/struct
   Configurable<float> minTPCNClsFound{"minTPCNClsFound", 100.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
   Configurable<bool> makeTHnSparseChoice{"makeTHnSparseChoice", false, "choose if produce thnsparse"}; // RD
   Configurable<bool> enableTPCTOFvsEtaHistograms{"enableTPCTOFvsEtaHistograms", false, "choose if produce TPC tof vs Eta"};
-  Configurable<bool> includeCentralityMC{"includeCentralityMC", true, "choose if include Centrality to MC"};
+  Configurable<bool> includeCentralityMC{"includeCentralityMC", false, "choose if include Centrality to MC"};
+  Configurable<bool> isImpactParam{"isImpactParam", false, "choose if include impactparam to MC"};
   Configurable<bool> enableTPCTOFVsMult{"enableTPCTOFVsMult", false, "Produce TPC-TOF plots vs multiplicity"};
   Configurable<bool> includeCentralityToTracks{"includeCentralityToTracks", false, "choose if include Centrality to tracks"};
 
@@ -1679,7 +1680,7 @@ struct tofSpectra { // o2-linter: disable=name/struct
     float multiplicity = getMultiplicityMC(mcCollision);
     int occupancy = collision.trackOccupancyInTimeRange();
     //************************************RD**************************************************
-    if (includeCentralityMC) {
+    if (isImpactParam) {
       multiplicity = mcCollision.impactParameter();
     }
     //************************************RD**************************************************
@@ -1843,7 +1844,9 @@ struct tofSpectra { // o2-linter: disable=name/struct
     if (!mcParticle.isPhysicalPrimary()) {
       if (mcParticle.getProcess() == 4) {
         if (includeCentralityMC) {
-          histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity, track.dcaXY());
+          if (includeCentralityMC) {
+            histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity, track.dcaXY());
+          }
         } else {
           histos.fill(HIST(hpt_num_str[i]), track.pt(), multiplicity);
         }
@@ -2105,7 +2108,12 @@ struct tofSpectra { // o2-linter: disable=name/struct
         }
         const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
         const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-        const float multiplicity = getMultiplicity(collision);
+        float multiplicity = getMultiplicity(collision);
+        //************************************RD**************************************************
+        if (isImpactParam) {
+          multiplicity = mcCollision.impactParameter();
+        }
+        //************************************RD**************************************************
 
         for (const auto& mcParticle : particlesInCollision) {
 

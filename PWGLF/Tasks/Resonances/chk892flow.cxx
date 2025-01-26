@@ -186,16 +186,16 @@ struct chk892flow {
   Configurable<bool> cSecondaryArmenterosCut{"cSecondaryArmenterosCut", true, "cut on Armenteros-Podolanski graph"};
 
   Configurable<bool> cfgByPassDauPIDSelection{"cfgByPassDauPIDSelection", true, "Bypass Daughters PID selection"};
-  Configurable<float> cSecondaryDauDCAMax{"cSecondaryDauDCAMax", 1., "Maximum DCA Secondary daughters to PV"};
-  Configurable<float> cSecondaryDauPosDCAtoPVMin{"cSecondaryDauPosDCAtoPVMin", 0.0, "Minimum DCA Secondary positive daughters to PV"};
-  Configurable<float> cSecondaryDauNegDCAtoPVMin{"cSecondaryDauNegDCAtoPVMin", 0.0, "Minimum DCA Secondary negative daughters to PV"};
+  Configurable<float> cSecondaryDauDCAMax{"cSecondaryDauDCAMax", 0.2, "Maximum DCA Secondary daughters to PV"};
+  // Configurable<float> cSecondaryDauPosDCAtoPVMin{"cSecondaryDauPosDCAtoPVMin", 0.0, "Minimum DCA Secondary positive daughters to PV"};
+  // Configurable<float> cSecondaryDauNegDCAtoPVMin{"cSecondaryDauNegDCAtoPVMin", 0.0, "Minimum DCA Secondary negative daughters to PV"};
 
-  Configurable<float> cSecondaryPtMin{"cSecondaryPtMin", 0.f, "Minimum transverse momentum of Secondary"};
+  // Configurable<float> cSecondaryPtMin{"cSecondaryPtMin", 0.f, "Minimum transverse momentum of Secondary"};
   Configurable<float> cSecondaryRapidityMax{"cSecondaryRapidityMax", 0.5, "Maximum rapidity of Secondary"};
-  Configurable<float> cSecondaryRadiusMin{"cSecondaryRadiusMin", 1.2, "Minimum transverse radius of Secondary"};
-  Configurable<float> cSecondaryCosPAMin{"cSecondaryCosPAMin", 0.995, "Mininum cosine pointing angle of Secondary"};
-  Configurable<float> cSecondaryDCAtoPVMax{"cSecondaryDCAtoPVMax", 0.3, "Maximum DCA Secondary to PV"};
-  Configurable<float> cSecondaryProperLifetimeMax{"cSecondaryProperLifetimeMax", 20, "Maximum Secondary Lifetime"};
+  // Configurable<float> cSecondaryRadiusMin{"cSecondaryRadiusMin", 1.2, "Minimum transverse radius of Secondary"};
+  Configurable<float> cSecondaryCosPAMin{"cSecondaryCosPAMin", 0.998, "Mininum cosine pointing angle of Secondary"};
+  Configurable<float> cSecondaryDCAtoPVMax{"cSecondaryDCAtoPVMax", 0.4, "Maximum DCA Secondary to PV"};
+  Configurable<float> cSecondaryProperLifetimeMax{"cSecondaryProperLifetimeMax", 20., "Maximum Secondary Lifetime"};
   Configurable<float> cSecondaryparamArmenterosCut{"cSecondaryparamArmenterosCut", 0.2, "parameter for Armenteros Cut"};
   Configurable<float> cSecondaryMassWindow{"cSecondaryMassWindow", 0.03, "Secondary inv mass selciton window"};
 
@@ -339,27 +339,27 @@ struct chk892flow {
 
     // K0s
     histos.add("QA/before/hDauDCASecondary", "DCA of daughters of secondary resonance", HistType::kTH1D, {dcaAxis});
-    histos.add("QA/before/hDauPosDCAtoPVSecondary", "Pos DCA to PV of daughters secondary resonance", HistType::kTH1D, {dcaAxis});
-    histos.add("QA/before/hDauNegDCAtoPVSecondary", "Neg DCA to PV of daughters secondary resonance", HistType::kTH1D, {dcaAxis});
-    histos.add("QA/before/hpT_Secondary", "pT distribution of secondary resonance", HistType::kTH1D, {ptAxisQA});
+    //    histos.add("QA/before/hDauPosDCAtoPVSecondary", "Pos DCA to PV of daughters secondary resonance", HistType::kTH1D, {dcaAxis});
+    //    histos.add("QA/before/hDauNegDCAtoPVSecondary", "Neg DCA to PV of daughters secondary resonance", HistType::kTH1D, {dcaAxis});
+    //    histos.add("QA/before/hpT_Secondary", "pT distribution of secondary resonance", HistType::kTH1D, {ptAxisQA});
     histos.add("QA/before/hy_Secondary", "Rapidity distribution of secondary resonance", HistType::kTH1D, {yAxis});
-    histos.add("QA/before/hRadiusSecondary", "Radius distribution of secondary resonance", HistType::kTH1D, {radiusAxis});
+    //    histos.add("QA/before/hRadiusSecondary", "Radius distribution of secondary resonance", HistType::kTH1D, {radiusAxis});
     histos.add("QA/before/hCPASecondary", "Cosine pointing angle distribution of secondary resonance", HistType::kTH1D, {cpaAxis});
     histos.add("QA/before/hDCAtoPVSecondary", "DCA to PV distribution of secondary resonance", HistType::kTH1D, {dcaAxis});
-    histos.add("QA/before/hPropTauSecondary", "Proper Lifetime distribution of secondary resonance", HistType::kTH1D, {tauAxis});
-    histos.add("QA/before/hPtAsymSecondary", "pT asymmetry distribution of secondary resonance", HistType::kTH1D, {AxisSpec{100, -1, 1, "Pair asymmetry"}});
+    //    histos.add("QA/before/hPropTauSecondary", "Proper Lifetime distribution of secondary resonance", HistType::kTH1D, {tauAxis});
+    //    histos.add("QA/before/hPtAsymSecondary", "pT asymmetry distribution of secondary resonance", HistType::kTH1D, {AxisSpec{100, -1, 1, "Pair asymmetry"}});
     histos.add("QA/before/hInvmassSecondary", "Invariant mass of unlike-sign secondary resonance", HistType::kTH1D, {invMassAxisK0s});
 
     histos.add("QA/after/hDauDCASecondary", "DCA of daughters of secondary resonance", HistType::kTH1D, {dcaAxis});
-    histos.add("QA/after/hDauPosDCAtoPVSecondary", "Pos DCA to PV of daughters secondary resonance", HistType::kTH1D, {dcaAxis});
-    histos.add("QA/after/hDauNegDCAtoPVSecondary", "Neg DCA to PV of daughters secondary resonance", HistType::kTH1D, {dcaAxis});
-    histos.add("QA/after/hpT_Secondary", "pT distribution of secondary resonance", HistType::kTH1D, {ptAxisQA});
+    //    histos.add("QA/after/hDauPosDCAtoPVSecondary", "Pos DCA to PV of daughters secondary resonance", HistType::kTH1D, {dcaAxis});
+    //    histos.add("QA/after/hDauNegDCAtoPVSecondary", "Neg DCA to PV of daughters secondary resonance", HistType::kTH1D, {dcaAxis});
+    //    histos.add("QA/after/hpT_Secondary", "pT distribution of secondary resonance", HistType::kTH1D, {ptAxisQA});
     histos.add("QA/after/hy_Secondary", "Rapidity distribution of secondary resonance", HistType::kTH1D, {yAxis});
-    histos.add("QA/after/hRadiusSecondary", "Radius distribution of secondary resonance", HistType::kTH1D, {radiusAxis});
+    //    histos.add("QA/after/hRadiusSecondary", "Radius distribution of secondary resonance", HistType::kTH1D, {radiusAxis});
     histos.add("QA/after/hCPASecondary", "Cosine pointing angle distribution of secondary resonance", HistType::kTH1D, {cpaAxis});
     histos.add("QA/after/hDCAtoPVSecondary", "DCA to PV distribution of secondary resonance", HistType::kTH1D, {dcaAxis});
-    histos.add("QA/after/hPropTauSecondary", "Proper Lifetime distribution of secondary resonance", HistType::kTH1D, {tauAxis});
-    histos.add("QA/after/hPtAsymSecondary", "pT asymmetry distribution of secondary resonance", HistType::kTH1D, {AxisSpec{100, -1, 1, "Pair asymmetry"}});
+    //    histos.add("QA/after/hPropTauSecondary", "Proper Lifetime distribution of secondary resonance", HistType::kTH1D, {tauAxis});
+    //    histos.add("QA/after/hPtAsymSecondary", "pT asymmetry distribution of secondary resonance", HistType::kTH1D, {AxisSpec{100, -1, 1, "Pair asymmetry"}});
     histos.add("QA/after/hInvmassSecondary", "Invariant mass of unlike-sign secondary resonance", HistType::kTH1D, {invMassAxisK0s});
 
     // Kstar
@@ -585,11 +585,11 @@ struct chk892flow {
   bool selectionK0s(CollisionType const& collision, K0sType const& candidate)
   {
     auto lDauDCA = candidate.dcaV0daughters();
-    auto lDauPosDCAtoPV = candidate.dcapostopv();
-    auto lDauNegDCAtoPV = candidate.dcanegtopv();
-    auto lPt = candidate.pt();
+    //   auto lDauPosDCAtoPV = candidate.dcapostopv();
+    //   auto lDauNegDCAtoPV = candidate.dcanegtopv();
+    //   auto lPt = candidate.pt();
     auto lRapidity = candidate.yK0Short();
-    auto lRadius = candidate.v0radius();
+    //   auto lRadius = candidate.v0radius();
     auto lDCAtoPV = candidate.dcav0topv();
     auto lCPA = candidate.v0cosPA();
     auto lPropTauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
@@ -604,6 +604,7 @@ struct chk892flow {
           histos.fill(HIST("QA/K0sCutCheck"), 1);
           returnFlag = false;
         }
+        /*
         if (lDauPosDCAtoPV < cSecondaryDauPosDCAtoPVMin) {
           histos.fill(HIST("QA/K0sCutCheck"), 2);
           returnFlag = false;
@@ -616,14 +617,17 @@ struct chk892flow {
           histos.fill(HIST("QA/K0sCutCheck"), 4);
           returnFlag = false;
         }
-        if (lRapidity > cSecondaryRapidityMax) {
+        */
+        if (std::fabs(lRapidity) > cSecondaryRapidityMax) {
           histos.fill(HIST("QA/K0sCutCheck"), 5);
           returnFlag = false;
         }
+        /*
         if (lRadius < cSecondaryRadiusMin) {
           histos.fill(HIST("QA/K0sCutCheck"), 6);
           returnFlag = false;
         }
+        */
         if (lDCAtoPV > cSecondaryDCAtoPVMax) {
           histos.fill(HIST("QA/K0sCutCheck"), 7);
           returnFlag = false;
@@ -664,6 +668,7 @@ struct chk892flow {
           histos.fill(HIST("QA/K0sCutCheck"), 1);
           return false;
         }
+        /*
         if (lDauPosDCAtoPV < cSecondaryDauPosDCAtoPVMin) {
           histos.fill(HIST("QA/K0sCutCheck"), 2);
           return false;
@@ -676,14 +681,17 @@ struct chk892flow {
           histos.fill(HIST("QA/K0sCutCheck"), 4);
           return false;
         }
-        if (lRapidity > cSecondaryRapidityMax) {
+        */
+        if (std::fabs(lRapidity) > cSecondaryRapidityMax) {
           histos.fill(HIST("QA/K0sCutCheck"), 5);
           return false;
         }
+        /*
         if (lRadius < cSecondaryRadiusMin) {
           histos.fill(HIST("QA/K0sCutCheck"), 6);
           return false;
         }
+        */
         if (lDCAtoPV > cSecondaryDCAtoPVMax) {
           histos.fill(HIST("QA/K0sCutCheck"), 7);
           return false;
@@ -835,14 +843,14 @@ struct chk892flow {
 
       /// K0s
       auto trkkDauDCA = k0sCand.dcaV0daughters();
-      auto trkkDauDCAPostoPV = k0sCand.dcapostopv();
-      auto trkkDauDCANegtoPV = k0sCand.dcanegtopv();
-      auto trkkpt = k0sCand.pt();
+      // auto trkkDauDCAPostoPV = k0sCand.dcapostopv();
+      // auto trkkDauDCANegtoPV = k0sCand.dcanegtopv();
+      // auto trkkpt = k0sCand.pt();
       auto trkky = k0sCand.yK0Short();
-      auto trkkRadius = k0sCand.v0radius();
+      // auto trkkRadius = k0sCand.v0radius();
       auto trkkDCAtoPV = k0sCand.dcav0topv();
       auto trkkCPA = k0sCand.v0cosPA();
-      auto trkkPropTau = k0sCand.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
+      // auto trkkPropTau = k0sCand.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
       auto trkkMass = k0sCand.mK0Short();
 
       if constexpr (!IsMix) {
@@ -866,15 +874,15 @@ struct chk892flow {
         histos.fill(HIST("QA/before/trknpionDCAz"), negDauTrack.dcaZ());
 
         histos.fill(HIST("QA/before/hDauDCASecondary"), trkkDauDCA);
-        histos.fill(HIST("QA/before/hDauPosDCAtoPVSecondary"), trkkDauDCAPostoPV);
-        histos.fill(HIST("QA/before/hDauNegDCAtoPVSecondary"), trkkDauDCANegtoPV);
+        //        histos.fill(HIST("QA/before/hDauPosDCAtoPVSecondary"), trkkDauDCAPostoPV);
+        //        histos.fill(HIST("QA/before/hDauNegDCAtoPVSecondary"), trkkDauDCANegtoPV);
 
-        histos.fill(HIST("QA/before/hpT_Secondary"), trkkpt);
+        //        histos.fill(HIST("QA/before/hpT_Secondary"), trkkpt);
         histos.fill(HIST("QA/before/hy_Secondary"), trkky);
-        histos.fill(HIST("QA/before/hRadiusSecondary"), trkkRadius);
+        //        histos.fill(HIST("QA/before/hRadiusSecondary"), trkkRadius);
         histos.fill(HIST("QA/before/hDCAtoPVSecondary"), trkkDCAtoPV);
         histos.fill(HIST("QA/before/hCPASecondary"), trkkCPA);
-        histos.fill(HIST("QA/before/hPropTauSecondary"), trkkPropTau);
+        //        histos.fill(HIST("QA/before/hPropTauSecondary"), trkkPropTau);
         histos.fill(HIST("QA/before/hInvmassSecondary"), trkkMass);
       }
 
@@ -909,15 +917,15 @@ struct chk892flow {
         histos.fill(HIST("QA/after/trknpionDCAz"), negDauTrack.dcaZ());
 
         histos.fill(HIST("QA/after/hDauDCASecondary"), trkkDauDCA);
-        histos.fill(HIST("QA/after/hDauPosDCAtoPVSecondary"), trkkDauDCAPostoPV);
-        histos.fill(HIST("QA/after/hDauNegDCAtoPVSecondary"), trkkDauDCANegtoPV);
+        //       histos.fill(HIST("QA/after/hDauPosDCAtoPVSecondary"), trkkDauDCAPostoPV);
+        //       histos.fill(HIST("QA/after/hDauNegDCAtoPVSecondary"), trkkDauDCANegtoPV);
 
-        histos.fill(HIST("QA/after/hpT_Secondary"), trkkpt);
+        //       histos.fill(HIST("QA/after/hpT_Secondary"), trkkpt);
         histos.fill(HIST("QA/after/hy_Secondary"), trkky);
-        histos.fill(HIST("QA/after/hRadiusSecondary"), trkkRadius);
+        //       histos.fill(HIST("QA/after/hRadiusSecondary"), trkkRadius);
         histos.fill(HIST("QA/after/hDCAtoPVSecondary"), trkkDCAtoPV);
         histos.fill(HIST("QA/after/hCPASecondary"), trkkCPA);
-        histos.fill(HIST("QA/after/hPropTauSecondary"), trkkPropTau);
+        //       histos.fill(HIST("QA/after/hPropTauSecondary"), trkkPropTau);
         histos.fill(HIST("QA/after/hInvmassSecondary"), trkkMass);
       }
       k0sIndicies.push_back(k0sCand.index());
