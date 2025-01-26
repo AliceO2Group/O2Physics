@@ -187,8 +187,8 @@ struct CentralityTable {
     if (doprocessRun3FT0 == true) {
       LOG(fatal) << "FT0 only mode is automatically enabled in Run3 mode. Please disable it and enable processRun3.";
     }
-    if (doprocessRun2 == false && doprocessRun3 == false) {
-      LOGF(fatal, "Neither processRun2 nor processRun3 enabled. Please choose one.");
+    if (doprocessRun2 == false && doprocessRun3 == false && doprocessRun3Complete == false) {
+      LOGF(fatal, "Neither processRun2 nor processRun3 nor processRun3Complete enabled. Please choose one.");
     }
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
