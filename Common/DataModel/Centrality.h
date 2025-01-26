@@ -57,8 +57,8 @@ DECLARE_SOA_TABLE(CentNTPVs, "AOD", "CENTNTPV", cent::CentNTPV);          //! Ru
 DECLARE_SOA_TABLE(CentNGlobals, "AOD", "CENTNGLOBAL", cent::CentNGlobal); //! Run 3 NGlobal centrality table
 DECLARE_SOA_TABLE(CentMFTs, "AOD", "CENTMFT", cent::CentMFT);             //! Run 3 MFT tracks centrality table
 
-// Run 3 variant tables 
-DECLARE_SOA_TABLE(CentFT0CVariant1s, "AOD", "CENTFT0Cvar1", cent::CentFT0CVariant1);  //! Run 3 FT0C variant 1
+// Run 3 variant tables
+DECLARE_SOA_TABLE(CentFT0CVariant1s, "AOD", "CENTFT0Cvar1", cent::CentFT0CVariant1); //! Run 3 FT0C variant 1
 
 using CentRun2V0M = CentRun2V0Ms::iterator;
 using CentRun2V0A = CentRun2V0As::iterator;
