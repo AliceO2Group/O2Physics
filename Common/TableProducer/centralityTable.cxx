@@ -42,11 +42,12 @@ static constexpr int kCentFV0As = 6;
 static constexpr int kCentFT0Ms = 7;
 static constexpr int kCentFT0As = 8;
 static constexpr int kCentFT0Cs = 9;
-static constexpr int kCentFDDMs = 10;
-static constexpr int kCentNTPVs = 11;
-static constexpr int kCentNGlobals = 12;
-static constexpr int kCentMFTs = 13;
-static constexpr int nTables = 14;
+static constexpr int kCentFT0CVariant1s = 10;
+static constexpr int kCentFDDMs = 11;
+static constexpr int kCentNTPVs = 12;
+static constexpr int kCentNGlobals = 13;
+static constexpr int kCentMFTs = 14;
+static constexpr int nTables = 15;
 static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{"CentRun2V0Ms",
                                                  "CentRun2V0As",
@@ -58,12 +59,13 @@ static const std::vector<std::string> tableNames{"CentRun2V0Ms",
                                                  "CentFT0Ms",
                                                  "CentFT0As",
                                                  "CentFT0Cs",
+                                                 "CentFT0CVariant1s",
                                                  "CentFDDMs",
                                                  "CentNTPVs",
                                                  "CentNGlobals",
                                                  "CentMFTs"};
 static const std::vector<std::string> parameterNames{"Enable"};
-static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
+static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
 struct CentralityTable {
   Produces<aod::CentRun2V0Ms> centRun2V0M;
@@ -76,6 +78,7 @@ struct CentralityTable {
   Produces<aod::CentFT0Ms> centFT0M;
   Produces<aod::CentFT0As> centFT0A;
   Produces<aod::CentFT0Cs> centFT0C;
+  Produces<aod::CentFT0CVariant1s> centFT0CVariant1;
   Produces<aod::CentFDDMs> centFDDM;
   Produces<aod::CentNTPVs> centNTPV;
   Produces<aod::CentNGlobals> centNGlobals;
@@ -166,6 +169,7 @@ struct CentralityTable {
   calibrationInfo FT0MInfo = calibrationInfo("FT0");
   calibrationInfo FT0AInfo = calibrationInfo("FT0A");
   calibrationInfo FT0CInfo = calibrationInfo("FT0C");
+  calibrationInfo FT0CVariant1Info = calibrationInfo("FT0Cvar1");
   calibrationInfo FDDMInfo = calibrationInfo("FDD");
   calibrationInfo NTPVInfo = calibrationInfo("NTracksPV");
   calibrationInfo NGlobalInfo = calibrationInfo("NGlobal");
@@ -466,6 +470,9 @@ struct CentralityTable {
         case kCentFT0Cs:
           centFT0C.reserve(collisions.size());
           break;
+        case kCentFT0CVariant1s:
+          centFT0CVariant1.reserve(collisions.size());
+          break;
         case kCentFDDMs:
           centFDDM.reserve(collisions.size());
           break;
@@ -519,6 +526,7 @@ struct CentralityTable {
         FT0MInfo.mCalibrationStored = false;
         FT0AInfo.mCalibrationStored = false;
         FT0CInfo.mCalibrationStored = false;
+        FT0CVariant1Info.mCalibrationStored = false;
         FDDMInfo.mCalibrationStored = false;
         NTPVInfo.mCalibrationStored = false;
         NGlobalInfo.mCalibrationStored = false;
@@ -562,6 +570,9 @@ struct CentralityTable {
                 getccdb(FT0AInfo, ccdbConfig.genName);
                 break;
               case kCentFT0Cs:
+                getccdb(FT0CInfo, ccdbConfig.genName);
+                break;
+              case kCentFT0CVariant1s:
                 getccdb(FT0CInfo, ccdbConfig.genName);
                 break;
               case kCentFDDMs:
@@ -670,6 +681,11 @@ struct CentralityTable {
                   histos.fill(HIST("sel8FT0C/MultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
                 }
               }
+            }
+            break;
+          case kCentFT0CVariant1s:
+            if constexpr (enableCentFT0) {
+              populateTable(centFT0CVariant1, FT0CVariant1Info, collision.multZeqFT0C());
             }
             break;
           case kCentFDDMs:
