@@ -2105,7 +2105,12 @@ struct tofSpectra { // o2-linter: disable=name/struct
         }
         const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
         const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-        const float multiplicity = getMultiplicity(collision);
+        float multiplicity = getMultiplicity(collision);
+        //************************************RD**************************************************
+        if (includeCentralityMC) {
+          multiplicity = mcCollision.impactParameter();
+        }
+        //************************************RD**************************************************
 
         for (const auto& mcParticle : particlesInCollision) {
 
