@@ -8,12 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-/// \file chk892flow.cxx
+///
+/// \file Chk892Flow.cxx
 /// \brief Reconstruction of track-track decay resonance candidates
+/// \author Su-Jeong Ji <su-jeong.ji@cern.ch>, Bong-Hwi Lim <Bong-Hwi.Lim@cern.ch>
 ///
-///
-/// \author Su-Jeong Ji <su-jeong.ji@cern.ch>
 
 #include <TH1F.h>
 #include <TH1D.h>
@@ -80,8 +79,8 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
 
-struct chk892flow {
-  enum binType : unsigned int {
+struct Chk892Flow {
+  enum BinType : unsigned int {
     kKstarP = 0,
     kKstarN,
     kKstarP_Mix,
@@ -229,10 +228,10 @@ struct chk892flow {
   float lCentrality;
 
   // PDG code
-  int kPDGK0s = 310;
-  int kPDGK0 = 311;
+  int kPDGK0s = kK0Short;
+  int kPDGK0 = kK0;
   int kKstarPlus = o2::constants::physics::Pdg::kKPlusStar892;
-  int kPiPlus = 211;
+  int kPiPlus = kPiPlus;
 
   void init(o2::framework::InitContext&)
   {
@@ -270,7 +269,7 @@ struct chk892flow {
     AxisSpec mcTypeAxis = {4, 0, 4, "Histogram types"};
 
     // THnSparse
-    AxisSpec axisType = {binType::kTYEnd, 0, binType::kTYEnd, "Type of bin with charge and mix"};
+    AxisSpec axisType = {BinType::kTYEnd, 0, BinType::kTYEnd, "Type of bin with charge and mix"};
     AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
 
     histos.add("QA/K0sCutCheck", "Check K0s cut", HistType::kTH1D, {AxisSpec{12, -0.5, 11.5, "Check"}});
@@ -422,7 +421,7 @@ struct chk892flow {
       histos.add("QAMC/trknpionDCAxy", "DCAxy distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {dcaxyAxis});
       histos.add("QAMC/trknpionDCAz", "DCAz distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {dcazAxis});
 
-      // Secondary Resonance (K0s cand)
+      // Secondary Resonance (K0s candidates)
       histos.add("QAMC/hDauDCASecondary", "DCA of daughters of secondary resonance", HistType::kTH1D, {dcaAxis});
       histos.add("QAMC/hDauPosDCAtoPVSecondary", "Pos DCA to PV of daughters secondary resonance", HistType::kTH1D, {dcaAxis});
       histos.add("QAMC/hDauNegDCAtoPVSecondary", "Neg DCA to PV of daughters secondary resonance", HistType::kTH1D, {dcaAxis});
@@ -542,43 +541,24 @@ struct chk892flow {
   template <typename TrackType>
   bool selectionPIDPion(TrackType const& candidate)
   {
-    bool tpcPIDPassed{false}, tofPIDPassed{false};
+    bool tpcPIDPassed = std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion;
+    bool tofPIDPassed = false;
 
     if (cTPConly) {
+      return tpcPIDPassed;
+    }
 
-      if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
-        tpcPIDPassed = true;
-      } else {
-        return false;
-      }
-      tofPIDPassed = true;
-
+    if (candidate.hasTOF()) {
+      tofPIDPassed = std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion ||
+                     (nsigmaCutCombinedPion > 0 &&
+                      candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() +
+                          candidate.tofNSigmaPi() * candidate.tofNSigmaPi() <
+                        nsigmaCutCombinedPion * nsigmaCutCombinedPion);
     } else {
-
-      if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
-        tpcPIDPassed = true;
-      } else {
-        return false;
-      }
-      if (candidate.hasTOF()) {
-        if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion) {
-          tofPIDPassed = true;
-        }
-        if ((nsigmaCutCombinedPion > 0) && (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi() < nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
-          tofPIDPassed = true;
-        }
-      } else {
-        if (!cTOFVeto) {
-          return false;
-        }
-        tofPIDPassed = true;
-      }
+      tofPIDPassed = cTOFVeto;
     }
 
-    if (tpcPIDPassed && tofPIDPassed) {
-      return true;
-    }
-    return false;
+    return tpcPIDPassed && tofPIDPassed;
   }
 
   template <typename CollisionType, typename K0sType>
@@ -957,7 +937,7 @@ struct chk892flow {
           continue;
 
         if constexpr (!IsMix) {
-          unsigned int typeKstar = bTrack.sign() > 0 ? binType::kKstarP : binType::kKstarN;
+          unsigned int typeKstar = bTrack.sign() > 0 ? BinType::kKstarP : BinType::kKstarN;
 
           histos.fill(HIST("QA/after/KstarRapidity"), lResoKstar.Rapidity());
           histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
@@ -980,7 +960,7 @@ struct chk892flow {
               }
               auto lPhiMinusPsiKstar = RecoDecay::constrainAngle(lResonanceRot.Phi() - lEPDet, 0.0, 1); // constrain angle to range 0, Pi
               auto v2Kstar = std::cos(static_cast<float>(nmode) * lPhiMinusPsiKstar);
-              typeKstar = bTrack.sign() > 0 ? binType::kKstarP_RecRot : binType::kKstarN_RecRot;
+              typeKstar = bTrack.sign() > 0 ? BinType::kKstarP_RecRot : BinType::kKstarN_RecRot;
               histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), v2Kstar);
             }
           }
@@ -997,7 +977,7 @@ struct chk892flow {
   void processDummy(aod::Collisions const&)
   {
   }
-  PROCESS_SWITCH(chk892flow, processDummy, "process Dummy", true);
+  PROCESS_SWITCH(Chk892Flow, processDummy, "process Dummy", true);
 
   // process data
   void processData(EventCandidates::iterator const& collision,
@@ -1014,7 +994,7 @@ struct chk892flow {
 
     fillHistograms<false, false>(collision, tracks, v0s, 2); // second order
   }
-  PROCESS_SWITCH(chk892flow, processData, "Process Event for data without Partitioning", false);
+  PROCESS_SWITCH(Chk892Flow, processData, "Process Event for data without Partitioning", false);
 
   // process MC reconstructed level
   void processMC(EventCandidates::iterator const& collision,
@@ -1026,9 +1006,9 @@ struct chk892flow {
 
     fillHistograms<true, false>(collision, tracks, v0s, 2);
   }
-  PROCESS_SWITCH(chk892flow, processMC, "Process Event for MC", false);
+  PROCESS_SWITCH(Chk892Flow, processMC, "Process Event for MC", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<chk892flow>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<Chk892Flow>(cfgc)};
 }
