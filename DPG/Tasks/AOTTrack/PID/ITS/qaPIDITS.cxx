@@ -141,8 +141,8 @@ struct itsPidQa {
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<LabeledArray<int>> enabledParticle{"enabledParticle",
-                                                {defaultParameters[0], 9, nParameters, tableNames, parameterNames},
-                                                "Produce QA for this species: 0 - no, 1 - yes"};
+                                                  {defaultParameters[0], 9, nParameters, tableNames, parameterNames},
+                                                  "Produce QA for this species: 0 - no, 1 - yes"};
   Configurable<LabeledArray<float>> tofSelection{"tofSelection",
                                                  {defaultPIDSelection[0], 9, nParameters, tableNames, parameterNames},
                                                  "Selection on the TOF nsigma"};
