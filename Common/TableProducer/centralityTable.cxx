@@ -573,7 +573,7 @@ struct CentralityTable {
                 getccdb(FT0CInfo, ccdbConfig.genName);
                 break;
               case kCentFT0CVariant1s:
-                getccdb(FT0CInfo, ccdbConfig.genName);
+                getccdb(FT0CVariant1Info, ccdbConfig.genName);
                 break;
               case kCentFDDMs:
                 getccdb(FDDMInfo, ccdbConfig.genName);
