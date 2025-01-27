@@ -275,7 +275,7 @@ class FemtoDreamCascadeSelection
   int nCascadeTranRadMin;
   int nCascadeTranRadMax;
   int nCascadeDecVtxMax;
-  
+
   int nCascadeV0DCADaughMax;
   int nCascadeV0CPAMin;
   int nCascadeV0TranRadMin;
@@ -291,7 +291,7 @@ class FemtoDreamCascadeSelection
   float fCascadeTranRadMin;
   float fCascadeTranRadMax;
   float fCascadeDecVtxMax;
-  
+
   float fCascadeV0DCADaughMax;
   float fCascadeV0CPAMin;
   float fCascadeV0TranRadMin;
@@ -343,7 +343,6 @@ class FemtoDreamCascadeSelection
 
     }; ///< Map to match a variable with
        ///< its type
-
 
   static constexpr std::string_view mSelectionHelper[kNcascadeSelection] = {
     "Cascade particle sign (+1 or -1)",
@@ -456,7 +455,6 @@ void FemtoDreamCascadeSelection::init(HistogramRegistry* QAregistry, HistogramRe
   nCascadeV0DCAToPVMin = getNSelections(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMin);
   nCascadeV0DCAToPVMax = getNSelections(femtoDreamCascadeSelection::kCascadeV0DCAtoPVMax);
 
-
   fCascadePtMin = getMinimalSelection(femtoDreamCascadeSelection::kCascadePtMin,
                                       femtoDreamSelection::kLowerLimit);
   fCascadePtMax = getMinimalSelection(femtoDreamCascadeSelection::kCascadePtMax,
@@ -508,7 +506,7 @@ bool FemtoDreamCascadeSelection::isSelectedMinimal(Col const& col, Casc const& c
   const float invMass = isCascOmega ? cascade.mOmega() : cascade.mXi();
   // const float invMass = cascade.mXi();
 
-  //LOGF(info, "GG producer: Charge %i", cascade.sign());
+  // LOGF(info, "GG producer: Charge %i", cascade.sign());
   if (invMassLambda < fV0InvMassLowLimit || invMassLambda > fV0InvMassUpLimit) {
     return false;
   }
@@ -599,10 +597,10 @@ std::array<cutContainerType, 8> FemtoDreamCascadeSelection::getCutContainer(Col 
   size_t counter = 0;
 
   float sign = 0.;
-  if (casc.sign()<0){
-   sign = -1.;
-  }else{
-   sign = 1.;
+  if (casc.sign() < 0) {
+    sign = -1.;
+  } else {
+    sign = 1.;
   }
 
   const auto cpaCasc = casc.casccosPA(col.posX(), col.posY(), col.posZ());
