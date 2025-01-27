@@ -694,7 +694,7 @@ struct HfCandidateSelectorToOmegaPi {
   {
     runOmegac0Selector<hf_cand_casc_lf::ConstructMethod::DcaFitter>(candidates, tracks, lfTracks);
   }
-  PROCESS_SWITCH(HfCandidateSelectorToOmegaPi, processOmegac0SelectorWithDCAFitte, "Run Omegac0 to Omega pi selector with only DCA related selection.", false);
+  PROCESS_SWITCH(HfCandidateSelectorToOmegaPi, processOmegac0SelectorWithDCAFitte, "Run Omegac0 to Omega pi selector with only DCA related selection.", true);
 
 }; // end struct
 
