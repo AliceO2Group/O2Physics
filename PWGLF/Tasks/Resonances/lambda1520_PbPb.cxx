@@ -653,7 +653,7 @@ struct lambdaAnalysis_pb {
 
   PROCESS_SWITCH(lambdaAnalysis_pb, processMix, "Process for Mixed Events", false);
 
-  Preslice<aod::ResoTrackDFs> perRColdf = aod::resodaughter::resoCollisionId;
+  Preslice<aod::ResoTrackDFs> perRColdf = aod::resodaughter::resoCollisionDFId;
 
   using resoColDFs = aod::ResoCollisionDFs;
   using resoTrackDFs = aod::ResoTrackDFs;
