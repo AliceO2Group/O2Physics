@@ -14,7 +14,7 @@ o2physics_add_library(PWGJECore
                SOURCES  FastJetUtilities.cxx
                         JetFinder.cxx
                         JetBkgSubUtils.cxx
-               PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib)
+               PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib ONNXRuntime::ONNXRuntime)
 
 o2physics_target_root_dictionary(PWGJECore
               HEADERS JetFinder.h
