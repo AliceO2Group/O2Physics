@@ -655,7 +655,7 @@ struct lambdaAnalysis_pb {
 
   Preslice<aod::ResoTrackDFs> perRColdf = aod::resodaughter::resoCollisionId;
 
-  using resoColDFs = aod::ResoCollisions;
+  using resoColDFs = aod::ResoCollisionDFs;
   using resoTrackDFs = aod::ResoTrackDFs;
 
   void processDatadf(resoColDFs::iterator const& collision, resoTrackDFs const& tracks)
