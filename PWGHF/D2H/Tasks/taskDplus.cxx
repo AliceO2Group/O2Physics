@@ -50,6 +50,7 @@ struct HfTaskDplus {
   Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
   Configurable<bool> storeCentrality{"storeCentrality", false, "Flag to store centrality information"};
   Configurable<bool> storeOccupancy{"storeOccupancy", false, "Flag to store occupancy information"};
+  Configurable<bool> fillMcBkgHistos{"fillMcBkgHistos", false, "Flag to fill and store histograms for MC background"};
 
   HfHelper hfHelper;
 
@@ -200,7 +201,9 @@ struct HfTaskDplus {
       }
       registry.add("hSparseMassPrompt", "THn for Dplus Prompt", HistType::kTHnSparseF, axes);
       registry.add("hSparseMassFD", "THn for Dplus FD", HistType::kTHnSparseF, axesFD);
-      registry.add("hSparseMassBkg", "THn for Dplus Bkg", HistType::kTHnSparseF, axes);
+      if (fillMcBkgHistos) {
+        registry.add("hSparseMassBkg", "THn for Dplus Bkg", HistType::kTHnSparseF, axes);
+      }
       registry.add("hSparseMassNotMatched", "THn for Dplus not matched", HistType::kTHnSparseF, axes);
       registry.add("hSparseMassGenPrompt", "THn for gen Prompt Dplus", HistType::kTHnSparseF, axesGenPrompt);
       registry.add("hSparseMassGenFD", "THn for gen FD Dplus", HistType::kTHnSparseF, axesGenFD);
@@ -282,15 +285,16 @@ struct HfTaskDplus {
           }
 
         } else { // Bkg
-
-          if (storeCentrality && storeOccupancy) {
-            registry.fill(HIST("hSparseMassBkg"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, occupancy);
-          } else if (storeCentrality && !storeOccupancy) {
-            registry.fill(HIST("hSparseMassBkg"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality);
-          } else if (!storeCentrality && storeOccupancy) {
-            registry.fill(HIST("hSparseMassBkg"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
-          } else {
-            registry.fill(HIST("hSparseMassBkg"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
+          if (fillMcBkgHistos) {
+            if (storeCentrality && storeOccupancy) {
+              registry.fill(HIST("hSparseMassBkg"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, occupancy);
+            } else if (storeCentrality && !storeOccupancy) {
+              registry.fill(HIST("hSparseMassBkg"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality);
+            } else if (!storeCentrality && storeOccupancy) {
+              registry.fill(HIST("hSparseMassBkg"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
+            } else {
+              registry.fill(HIST("hSparseMassBkg"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
+            }
           }
         }
       } else {
@@ -482,11 +486,13 @@ struct HfTaskDplus {
         fillHistoMCRec<true>(candidate);
       }
       // Bkg
-      for (const auto& candidate : recoBkgCandidates) {
-        if ((yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax)) {
-          continue;
+      if (fillMcBkgHistos) {
+        for (const auto& candidate : recoBkgCandidates) {
+          if ((yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax)) {
+            continue;
+          }
+          fillHistoMCRec<false>(candidate);
         }
-        fillHistoMCRec<false>(candidate);
       }
     } else {
       for (const auto& candidate : recoDPlusCandidatesWithMl) {
@@ -513,19 +519,21 @@ struct HfTaskDplus {
       // Bkg
       ptBhad = -1;
       flagBHad = -1;
-      for (const auto& candidate : recoBkgCandidatesWithMl) {
-        if ((yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax)) {
-          continue;
+      if (fillMcBkgHistos) {
+        for (const auto& candidate : recoBkgCandidatesWithMl) {
+          if ((yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax)) {
+            continue;
+          }
+          auto collision = candidate.template collision_as<McRecoCollisionsCent>();
+          if (storeCentrality && centEstimator != CentralityEstimator::None) {
+            cent = getCentralityColl(collision, centEstimator);
+          }
+          if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
+            occ = getOccupancyColl(collision, occEstimator);
+          }
+          fillHistoMCRec<false>(candidate);
+          fillSparseML<true, false>(candidate, ptBhad, flagBHad, cent, occ);
         }
-        auto collision = candidate.template collision_as<McRecoCollisionsCent>();
-        if (storeCentrality && centEstimator != CentralityEstimator::None) {
-          cent = getCentralityColl(collision, centEstimator);
-        }
-        if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-          occ = getOccupancyColl(collision, occEstimator);
-        }
-        fillHistoMCRec<false>(candidate);
-        fillSparseML<true, false>(candidate, ptBhad, flagBHad, cent, occ);
       }
     }
   }
