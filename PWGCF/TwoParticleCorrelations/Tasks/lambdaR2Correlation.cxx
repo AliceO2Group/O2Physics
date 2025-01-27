@@ -1119,10 +1119,16 @@ struct LambdaTracksExtProducer {
 struct LambdaR2Correlation {
 
   // Global Configurables
+  Configurable<int> cNPtBins{"cNPtBins", 10, "N pT Bins"};
+  Configurable<float> cMinPt{"cMinPt", 0.8, "pT Min"};
+  Configurable<float> cMaxPt{"cMaxPt", 2.8, "pT Max"};
   Configurable<int> cNRapBins{"cNRapBins", 12, "N Rapidity Bins"};
   Configurable<float> cMinRap{"cMinRap", -0.6, "Minimum Rapidity"};
   Configurable<float> cMaxRap{"cMaxRap", 0.6, "Maximum Rapidity"};
   Configurable<int> cNPhiBins{"cNPhiBins", 64, "N Phi Bins"};
+
+  // Avg Pair Efficiency Factor
+  Configurable<float> cAvgPairEffFactor{"cAvgPairEffFactor", 0.76279, "Avg Pair Eff Correction Factor"};
 
   // Eta/Rap Analysis
   Configurable<bool> cDoEtaAnalysis{"cDoEtaAnalysis", false, "Eta/Rap Analysis Flag"};
@@ -1161,17 +1167,17 @@ struct LambdaR2Correlation {
     const AxisSpec axisCent(105, 0, 105, "FT0M (%)");
     const AxisSpec axisMult(10, 0, 10, "N_{#Lambda}");
     const AxisSpec axisMass(100, 1.06, 1.16, "Inv Mass (GeV/#it{c}^{2})");
-    const AxisSpec axisPt(40, 0, 4.0, "p_{T} (GeV/#it{c})");
-    const AxisSpec axisEta(24, -1.2, 1.2, "#eta");
-    const AxisSpec axisYRap(24, -1.2, 1.2, "y");
+    const AxisSpec axisPt(cNPtBins, cMinPt, cMaxPt, "p_{T} (GeV/#it{c})");
+    const AxisSpec axisEta(cNRapBins, cMinRap, cMaxRap, "#eta");
+    const AxisSpec axisYRap(cNRapBins, cMinRap, cMaxRap, "y");
     const AxisSpec axisRap(cNRapBins, cMinRap, cMaxRap, "rap");
     const AxisSpec axisPhi(cNPhiBins, 0., TwoPI, "#phi (rad)");
     const AxisSpec axisRapPhi(knrapphibins, kminrapphi, kmaxrapphi, "y #phi");
     const AxisSpec axisQinv(100, 0, 10, "q_{inv} (GeV/#it{c})");
 
-    const AxisSpec axisEfPt(20, 0, 4.0, "p_{T}");
-    const AxisSpec axisEfEta(24, -1.2, 1.2, "#eta");
-    const AxisSpec axisEfRap(24, -1.2, 1.2, "y");
+    const AxisSpec axisEfPt(cNPtBins, cMinPt, cMaxPt, "p_{T}");
+    const AxisSpec axisEfEta(cNRapBins, cMinRap, cMaxRap, "#eta");
+    const AxisSpec axisEfRap(cNRapBins, cMinRap, cMaxRap, "y");
     const AxisSpec axisEfPosZ(10, -10., 10., "V_{Z}");
 
     // Create Histograms.
@@ -1182,6 +1188,7 @@ struct LambdaR2Correlation {
     histos.add("Event/Reco/h1i_antilambda_mult", "#bar{#Lambda} - Multiplicity", kTH1I, {axisMult});
 
     // Efficiency Histograms
+    // Single Particle Efficiencies
     histos.add("Reco/Efficiency/h1f_n1_pt_LaP", "#rho_{1}^{#Lambda}", kTH1F, {axisEfPt});
     histos.add("Reco/Efficiency/h1f_n1_pt_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1F, {axisEfPt});
     histos.add("Reco/Efficiency/h2f_n1_pteta_LaP", "#rho_{1}^{#Lambda}", kTH2F, {axisEfPt, axisEfEta});
@@ -1193,7 +1200,15 @@ struct LambdaR2Correlation {
     histos.add("Reco/Efficiency/h3f_n1_ptrapposz_LaP", "#rho_{1}^{#Lambda}", kTH3F, {axisEfPt, axisEfRap, axisEfPosZ});
     histos.add("Reco/Efficiency/h3f_n1_ptrapposz_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH3F, {axisEfPt, axisEfRap, axisEfPosZ});
 
-    // single and two particle densities
+    // Two Particle Efficiencies
+    histos.add("Reco/Efficiency/h2f_n2_ptpt_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH2F, {axisEfPt, axisEfPt});
+    histos.add("Reco/Efficiency/h2f_n2_ptpt_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH2F, {axisEfPt, axisEfPt});
+    histos.add("Reco/Efficiency/h2f_n2_ptpt_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH2F, {axisEfPt, axisEfPt});
+    histos.add("Reco/Efficiency/h4f_n2_ptrapptrap_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTHnSparseF, {axisEfPt, axisEfRap, axisEfPt, axisEfRap});
+    histos.add("Reco/Efficiency/h4f_n2_ptrapptrap_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTHnSparseF, {axisEfPt, axisEfRap, axisEfPt, axisEfRap});
+    histos.add("Reco/Efficiency/h4f_n2_ptrapptrap_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTHnSparseF, {axisEfPt, axisEfRap, axisEfPt, axisEfRap});
+
+    // Single and Two Particle Densities
     // 1D Histograms
     histos.add("Reco/h1d_n1_mass_LaP", "#rho_{1}^{#Lambda}", kTH1D, {axisMass});
     histos.add("Reco/h1d_n1_mass_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisMass});
@@ -1205,6 +1220,14 @@ struct LambdaR2Correlation {
     histos.add("Reco/h1d_n1_rap_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisYRap});
     histos.add("Reco/h1d_n1_phi_LaP", "#rho_{1}^{#Lambda}", kTH1D, {axisPhi});
     histos.add("Reco/h1d_n1_phi_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisPhi});
+
+    // 2D Histograms for pair
+    histos.add("Reco/h2d_n2_ptpt_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH2D, {axisEfPt, axisEfPt});
+    histos.add("Reco/h2d_n2_ptpt_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH2D, {axisEfPt, axisEfPt});
+    histos.add("Reco/h2d_n2_ptpt_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH2D, {axisEfPt, axisEfPt});
+    histos.add("Reco/h2d_n2_raprap_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH2D, {axisEfRap, axisEfRap});
+    histos.add("Reco/h2d_n2_raprap_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH2D, {axisEfRap, axisEfRap});
+    histos.add("Reco/h2d_n2_raprap_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH2D, {axisEfRap, axisEfRap});
 
     // rho1 for R2 deta dphi histograms
     histos.add("Reco/h2d_n1_rapphi_LaP", "#rho_{1}^{#Lambda}", kTH2D, {axisRap, axisPhi});
@@ -1248,7 +1271,11 @@ struct LambdaR2Correlation {
     int phibin1 = static_cast<int>(p1.phi() / phibinwidth);
     int phibin2 = static_cast<int>(p2.phi() / phibinwidth);
 
-    float corfac = p1.corrFact() * p2.corrFact();
+    float corfac = (p1.corrFact() * p2.corrFact()) / cAvgPairEffFactor;
+
+    // QA Histogrms
+    histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_ptpt_") + HIST(SubDirHist[part_pair]), p1.pt(), p2.pt(), corfac);
+    histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_raprap_") + HIST(SubDirHist[part_pair]), p1.rap(), p2.rap(), corfac);
 
     if (rapbin1 >= 0 && rapbin2 >= 0 && phibin1 >= 0 && phibin2 >= 0 && rapbin1 < nrapbins && rapbin2 < nrapbins && phibin1 < nphibins && phibin2 < nphibins) {
 
@@ -1263,6 +1290,10 @@ struct LambdaR2Correlation {
     e = RecoDecay::e(p1.px(), p1.py(), p1.pz(), MassLambda0) - RecoDecay::e(p2.px(), p2.py(), p2.pz(), MassLambda0);
     qinv = std::sqrt(-RecoDecay::m2(q, e));
     histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h1d_n2_qinv_") + HIST(SubDirHist[part_pair]), qinv, corfac);
+
+    // Efficiency Histograms
+    histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("Efficiency/h2f_n2_ptpt_") + HIST(SubDirHist[part_pair]), p1.pt(), p2.pt());
+    histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("Efficiency/h4f_n2_ptrapptrap_") + HIST(SubDirHist[part_pair]), p1.pt(), p1.rap(), p2.pt(), p2.rap());
   }
 
   template <ParticleType part, RecGenType rec_gen, typename C, typename T>
