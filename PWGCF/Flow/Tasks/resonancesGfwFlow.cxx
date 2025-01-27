@@ -141,7 +141,7 @@ struct ResonancesGfwFlow {
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(noLaterThan.value);
 
-    AxisSpec SingleCount = {1, 0, 1};
+    AxisSpec singleCount = {1, 0, 1};
 
     histos.add("hVtxZ", "", {HistType::kTH1D, {axisVertex}});
     histos.add("hMult", "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
@@ -169,7 +169,7 @@ struct ResonancesGfwFlow {
     histos.add("hAntiLambdaPhi", "", {HistType::kTH1D, {axisPhi}});
     histos.add("hAntiLambdaEta", "", {HistType::kTH1D, {axisEta}});
     histos.add("hAntiLambdaMass_sparse", "", {HistType::kTHnSparseF, {{axisLambdaMass, axisPt, axisMultiplicity}}});
-    histos.add("hLambdaCount", "", {HistType::kTH1D, {SingleCount}});
+    histos.add("hLambdaCount", "", {HistType::kTH1D, {singleCount}});
 
     histos.add("PlusTPC_K0", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
     histos.add("MinusTPC_K0", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
@@ -178,7 +178,7 @@ struct ResonancesGfwFlow {
     histos.add("hK0Phi", "", {HistType::kTH1D, {axisPhi}});
     histos.add("hK0Eta", "", {HistType::kTH1D, {axisEta}});
     histos.add("hK0Mass_sparse", "", {HistType::kTHnSparseF, {{axisK0Mass, axisPt, axisMultiplicity}}});
-    histos.add("hK0Count", "", {HistType::kTH1D, {SingleCount}});
+    histos.add("hK0Count", "", {HistType::kTH1D, {singleCount}});
   }
 
   // Cosine pointing angle cut
@@ -281,7 +281,7 @@ struct ResonancesGfwFlow {
   }
 
   template <typename TTrack>
-  bool SelectionV0Daughter(TTrack const& track, int pid) // pid 1: proton, pid 0: pion
+  bool selectionV0Daughter(TTrack const& track, int pid) // pid 1: proton, pid 0: pion
   {
     if (track.tpcNClsFound() < cfgTpcCluster)
       return false;
@@ -296,7 +296,7 @@ struct ResonancesGfwFlow {
   }
 
   template <typename TCollision, typename V0>
-  bool SelectionLambda(TCollision const& collision, V0 const& candidate)
+  bool selectionLambda(TCollision const& collision, V0 const& candidate)
   {
     bool isL = false;  // Is lambda candidate
     bool isAL = false; // Is anti-lambda candidate
@@ -349,11 +349,11 @@ struct ResonancesGfwFlow {
       return false;
 
     if (isL) {
-      if (!SelectionV0Daughter(postrack, 1) || !SelectionV0Daughter(negtrack, 0))
+      if (!selectionV0Daughter(postrack, 1) || !selectionV0Daughter(negtrack, 0))
         return false;
     }
     if (isAL) {
-      if (!SelectionV0Daughter(postrack, 0) || !SelectionV0Daughter(negtrack, 1))
+      if (!selectionV0Daughter(postrack, 0) || !selectionV0Daughter(negtrack, 1))
         return false;
     }
 
@@ -383,7 +383,7 @@ struct ResonancesGfwFlow {
   }
 
   template <typename TCollision, typename V0>
-  bool SelectionK0(TCollision const& collision, V0 const& candidate)
+  bool selectionK0(TCollision const& collision, V0 const& candidate)
   {
     double mk0 = candidate.mK0Short();
 
@@ -420,7 +420,7 @@ struct ResonancesGfwFlow {
     if (cfgUseProperLifetime && candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massK0Short > cfgK0LifeTime)
       return false;
 
-    if (!SelectionV0Daughter(postrack, 0) || !SelectionV0Daughter(negtrack, 0))
+    if (!selectionV0Daughter(postrack, 0) || !selectionV0Daughter(negtrack, 0))
       return false;
 
     // Mass cross check
@@ -469,9 +469,9 @@ struct ResonancesGfwFlow {
     resurrectKaon(posSlicedTracks, negSlicedTracks, kaonPlus, kaonMinus, phiMom, massKaPlus, HIST("hPhiMass_sparse"), cent);
 
     for (auto const& v0s : V0s) {
-      if (SelectionLambda(collision, v0s) == true)
+      if (selectionLambda(collision, v0s) == true)
         histos.fill(HIST("hLambdaCount"), 1);
-      if (SelectionK0(collision, v0s) == true)
+      if (selectionK0(collision, v0s) == true)
         histos.fill(HIST("hK0Count"), 1);
 
     } // End of v0 loop
