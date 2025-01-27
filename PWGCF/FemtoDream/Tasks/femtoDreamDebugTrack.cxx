@@ -61,6 +61,7 @@ struct femtoDreamDebugTrack {
   ConfigurableAxis ConfNsigmaTPCBins{"ConfNsigmaTPCBins", {1600, -8, 8}, "Binning of Nsigma TPC plot"};
   ConfigurableAxis ConfNsigmaTOFBins{"ConfNsigmaTOFBins", {3000, -15, 15}, "Binning of the Nsigma TOF plot"};
   ConfigurableAxis ConfNsigmaTPCTOFBins{"ConfNsigmaTPCTOFBins", {3000, -15, 15}, "Binning of the Nsigma TPC+TOF plot"};
+  ConfigurableAxis ConfNsigmaITSBins{"ConfNsigmaITSBins", {3000, -15, 15}, "Binning of the Nsigma ITS plot"};
   ConfigurableAxis ConfTPCclustersBins{"ConfTPCClustersBins", {163, -0.5, 162.5}, "Binning of TPC found clusters plot"};
   Configurable<int> ConfTempFitVarMomentum{"ConfTempFitVarMomentum", 0, "Momentum used for binning: 0 -> pt; 1 -> preco; 2 -> ptpc"};
   ConfigurableAxis ConfDummy{"ConfDummy", {1, 0, 1}, "Dummy axis for inv mass"};
@@ -101,7 +102,7 @@ struct femtoDreamDebugTrack {
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry, ConfIsMC);
-    trackHisto.init(&qaRegistry, ConfBinmult, ConfBinmultPercentile, ConfBinpT, ConfBineta, ConfBinphi, ConfTempFitVarBins, ConfNsigmaTPCBins, ConfNsigmaTOFBins, ConfNsigmaTPCTOFBins, ConfTPCclustersBins, ConfDummy, ConfIsMC, ConfTrk1_PDGCode.value, true, ConfOptCorrelatedPlots);
+    trackHisto.init(&qaRegistry, ConfBinmult, ConfBinmultPercentile, ConfBinpT, ConfBineta, ConfBinphi, ConfTempFitVarBins, ConfNsigmaTPCBins, ConfNsigmaTOFBins, ConfNsigmaTPCTOFBins, ConfNsigmaITSBins, ConfDummy, ConfIsMC, ConfTrk1_PDGCode.value, true, ConfOptCorrelatedPlots);
   }
 
   /// Porduce QA plots for sigle track selection in FemtoDream framework

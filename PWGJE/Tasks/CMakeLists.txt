@@ -26,6 +26,10 @@ o2physics_add_dpl_workflow(emc-vertexselection-qa
                     SOURCES emcVertexSelectionQA.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(emcal-gamma-gamma-bc-wise
+                    SOURCES emcalGammaGammaBcWise.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(emc-pi0-energyscale-calib
                     SOURCES emcalPi0EnergyScaleCalib.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
