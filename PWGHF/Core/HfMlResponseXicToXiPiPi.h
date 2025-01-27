@@ -144,7 +144,7 @@ class HfMlResponseXicToXiPiPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTofPiFromXicPlus1);
         CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTofBachelorPi);
         CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTofPiFromLambda);
-        CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTofPrFromLambda); 
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTofPrFromLambda);
       }
     }
 
