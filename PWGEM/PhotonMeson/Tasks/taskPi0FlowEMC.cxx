@@ -689,7 +689,7 @@ struct TaskPi0FlowEMC {
           if (mesonConfig.enableTanThetadPhi) {
             float dTheta = photon1.Theta() - photon3.Theta();
             float dPhi = photon1.Phi() - photon3.Phi();
-            if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+            if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
               registry.fill(HIST("hSparseBkgFlow"), mother1.M(), mother1.Pt(), cent, scalprodCand1);
             }
           } else {
@@ -712,7 +712,7 @@ struct TaskPi0FlowEMC {
           if (mesonConfig.enableTanThetadPhi) {
             float dTheta = photon2.Theta() - photon3.Theta();
             float dPhi = photon2.Phi() - photon3.Phi();
-            if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+            if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
               registry.fill(HIST("hSparseBkgFlow"), mother2.M(), mother2.Pt(), cent, scalprodCand2);
             }
           } else {
@@ -772,7 +772,7 @@ struct TaskPi0FlowEMC {
             if (mesonConfig.enableTanThetadPhi) {
               float dTheta = photon1.Theta() - photon3.Theta();
               float dPhi = photon1.Phi() - photon3.Phi();
-              if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+              if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
                 registry.fill(HIST("hSparseCalibBack"), mother1.M(), mother1.E() / 2., cent);
               }
             } else {
@@ -790,7 +790,7 @@ struct TaskPi0FlowEMC {
             if (mesonConfig.enableTanThetadPhi) {
               float dTheta = photon2.Theta() - photon3.Theta();
               float dPhi = photon2.Phi() - photon3.Phi();
-              if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+              if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
                 registry.fill(HIST("hSparseCalibBack"), mother2.M(), mother2.E() / 2., cent);
               }
             } else {
@@ -1030,7 +1030,7 @@ struct TaskPi0FlowEMC {
           registry.fill(HIST("hTanThetaPhi"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
           registry.fill(HIST("hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
         }
-        if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+        if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
           registry.fill(HIST("hClusterCuts"), 5);
           continue;
         }
