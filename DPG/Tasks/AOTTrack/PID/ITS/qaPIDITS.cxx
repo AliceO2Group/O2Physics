@@ -15,6 +15,9 @@
 /// \brief  Implementation for QA tasks of the ITS PID quantities
 ///
 
+#include <string>
+#include <vector>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
