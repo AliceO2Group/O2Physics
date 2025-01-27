@@ -239,7 +239,7 @@ struct itsPidQa {
                                     aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe,
                                     aod::pidTOFTr, aod::pidTOFHe, aod::pidTOFAl>;
   void process(CollisionCandidate const& collision,
-               TrackCandidates const& tracks)
+               soa::Filtered<TrackCandidates> const& tracks)
   {
     auto tracksWithPid = soa::Attach<TrackCandidates,
                                      aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi,
