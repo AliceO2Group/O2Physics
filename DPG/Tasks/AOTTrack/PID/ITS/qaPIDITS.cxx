@@ -239,7 +239,7 @@ struct itsPidQa {
                                     aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe,
                                     aod::pidTOFTr, aod::pidTOFHe, aod::pidTOFAl>;
   void process(CollisionCandidate const& collision,
-               soa::Filtered<TrackCandidates> const& tracks)
+               TrackCandidates const& tracks)
   {
     auto tracksWithPid = soa::Attach<TrackCandidates,
                                      aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi,
@@ -259,7 +259,9 @@ struct itsPidQa {
     histos.fill(HIST("event/evsel"), 3);
     histos.fill(HIST("event/vertexz"), collision.posZ());
 
+    int nTracks = -1;
     for (const auto& track : tracksWithPid) {
+      nTracks++;
       histos.fill(HIST("event/trackselection"), 1.f);
       if (!track.isGlobalTrack()) { // Skipping non global tracks
         continue;
@@ -305,10 +307,11 @@ struct itsPidQa {
           }
         }
         const float nsigma = nsigmaITS(track, id);
-        if (track.sign() > 0) {
-          hNsigmaPos[id]->Fill(track.p(), nsigma);
+        const auto& t = tracks.iteratorAt(nTracks);
+        if (t.sign() > 0) {
+          hNsigmaPos[id]->Fill(t.p(), nsigma);
         } else {
-          hNsigmaNeg[id]->Fill(track.p(), nsigma);
+          hNsigmaNeg[id]->Fill(t.p(), nsigma);
         }
       }
     }
