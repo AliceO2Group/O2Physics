@@ -43,6 +43,9 @@ static const std::vector<std::string> parameterNames{"enable"};
 static const int defaultParameters[9][nParameters]{{0}, {0}, {1}, {1}, {1}, {0}, {0}, {0}, {0}};
 static const float defaultPIDSelection[9][nParameters]{{-1.f}, {-1.f}, {-1.f}, {-1.f}, {-1.f}, {-1.f}, {-1.f}, {-1.f}, {-1.f}};
 static constexpr int Np = 9;
+bool enableParticle[Np] = {false, false, false,
+                           false, false, false,
+                           false, false, false};
 std::array<std::shared_ptr<TH2>, Np> hNsigmaPos;
 std::array<std::shared_ptr<TH2>, Np> hNsigmaNeg;
 
@@ -137,9 +140,9 @@ struct itsPidQa {
   static constexpr const char* pN[Np] = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  Configurable<LabeledArray<int>> enabledTables{"enabledTables",
-                                                {defaultParameters[0], 9, nParameters, tableNames, parameterNames},
-                                                "Produce QA for this species: 0 - no, 1 - yes"};
+  Configurable<LabeledArray<int>> enabledParticle{"enabledParticle",
+                                                  {defaultParameters[0], 9, nParameters, tableNames, parameterNames},
+                                                  "Produce QA for this species: 0 - no, 1 - yes"};
   Configurable<LabeledArray<float>> tofSelection{"tofSelection",
                                                  {defaultPIDSelection[0], 9, nParameters, tableNames, parameterNames},
                                                  "Selection on the TOF nsigma"};
@@ -214,13 +217,14 @@ struct itsPidQa {
     histos.add("event/p", "", kTH1D, {pAxis});
 
     for (int id = 0; id < 9; id++) {
-      const int f = enabledTables->get(tableNames[id].c_str(), "enable");
+      const int f = enabledParticle->get(tableNames[id].c_str(), "enable");
       if (f != 1) {
         continue;
       }
       // NSigma
       const char* axisTitle = Form("N_{#sigma}^{ITS}(%s)", pT[id]);
       const AxisSpec nSigmaAxis{nSigmaBins, axisTitle};
+      enableParticle[id] = true;
       hNsigmaPos[id] = histos.add<TH2>(Form("nsigmaPos/%s", pN[id]), axisTitle, kTH2F, {pAxis, nSigmaAxis});
       hNsigmaNeg[id] = histos.add<TH2>(Form("nsigmaNeg/%s", pN[id]), axisTitle, kTH2F, {pAxis, nSigmaAxis});
     }
@@ -259,7 +263,9 @@ struct itsPidQa {
     histos.fill(HIST("event/evsel"), 3);
     histos.fill(HIST("event/vertexz"), collision.posZ());
 
+    int nTracks = -1;
     for (const auto& track : tracksWithPid) {
+      nTracks++;
       histos.fill(HIST("event/trackselection"), 1.f);
       if (!track.isGlobalTrack()) { // Skipping non global tracks
         continue;
@@ -299,16 +305,20 @@ struct itsPidQa {
         continue;
       }
       for (o2::track::PID::ID id = 0; id <= o2::track::PID::Last; id++) {
+        if (!enableParticle[id]) {
+          continue;
+        }
         if (applyRapidityCut) {
           if (std::abs(track.rapidity(PID::getMass(id))) > 0.5) {
             continue;
           }
         }
         const float nsigma = nsigmaITS(track, id);
-        if (track.sign() > 0) {
-          hNsigmaPos[id]->Fill(track.p(), nsigma);
+        const auto& t = tracks.iteratorAt(nTracks);
+        if (t.sign() > 0) {
+          hNsigmaPos[id]->Fill(t.p(), nsigma);
         } else {
-          hNsigmaNeg[id]->Fill(track.p(), nsigma);
+          hNsigmaNeg[id]->Fill(t.p(), nsigma);
         }
       }
     }
