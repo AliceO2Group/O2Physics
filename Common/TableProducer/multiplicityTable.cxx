@@ -797,8 +797,8 @@ struct MultiplicityTable {
   }
 
   // Process switches
-  PROCESS_SWITCH(MultiplicityTable, processRun2, "Produce Run 2 multiplicity tables", true);
-  PROCESS_SWITCH(MultiplicityTable, processRun3, "Produce Run 3 multiplicity tables", true);
+  PROCESS_SWITCH(MultiplicityTable, processRun2, "Produce Run 2 multiplicity tables. Autoset if both processRun2 and processRun3 are enabled", true);
+  PROCESS_SWITCH(MultiplicityTable, processRun3, "Produce Run 3 multiplicity tables. Autoset if both processRun2 and processRun3 are enabled", true);
   PROCESS_SWITCH(MultiplicityTable, processGlobalTrackingCounters, "Produce Run 3 global counters", false);
   PROCESS_SWITCH(MultiplicityTable, processMC, "Produce MC multiplicity tables", false);
   PROCESS_SWITCH(MultiplicityTable, processMC2Mults, "Produce MC -> Mult map", false);
