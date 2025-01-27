@@ -686,7 +686,7 @@ struct HfCandidateSelectorToOmegaPi {
   {
     runOmegac0Selector<hf_cand_casc_lf::ConstructMethod::KfParticle>(candidates, tracks, lfTracks);
   }
-  PROCESS_SWITCH(HfCandidateSelectorToOmegaPi, processOmegac0SelectorWithKFParticle, "Run Omegac0 to Omega pi selector with both DCA and KFParticle related selection.", true);
+  PROCESS_SWITCH(HfCandidateSelectorToOmegaPi, processOmegac0SelectorWithKFParticle, "Run Omegac0 to Omega pi selector with both DCA and KFParticle related selection.", false);
 
   void processOmegac0SelectorWithDCAFitte(aod::HfCandToOmegaPi const& candidates,
                                           TracksSel const& tracks,
