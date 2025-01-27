@@ -522,7 +522,7 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.dcaNegToPV(),
           candidate.dcaBachelorToPV(),
           candidate.dcaXYCascToPV(),
-          candidate.dcaXCascToPV(),
+          candidate.dcaZCascToPV(),
           candidate.nSigTpcPiFromXicPlus0(),
           candidate.nSigTpcPiFromXicPlus1(),
           candidate.nSigTpcBachelorPi(),
