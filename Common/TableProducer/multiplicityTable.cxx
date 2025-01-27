@@ -152,9 +152,9 @@ struct MultiplicityTable {
       LOG(info) << "Autosetting the processing from the metadata";
       if (doprocessRun2 == true && doprocessRun3 == true) {
         if (metadataInfo.isRun3()) {
-          doprocessRun2 = false;
+          doprocessRun2.value = false;
         } else {
-          doprocessRun3 = false;
+          doprocessRun3.value = false;
         }
       }
     }
