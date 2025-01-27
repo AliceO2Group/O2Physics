@@ -159,7 +159,7 @@ struct HfCandidateSelectorToOmegaPi {
 
   void init(InitContext const&)
   {
-    std::array<bool, 2> processesSelector = {doprocessOmegac0SelectorWithDCAFitte, doprocessOmegac0SelectorWithKFParticle};
+    std::array<bool, 2> processesSelector = {doprocessOmegac0SelectorWithDCAFitter, doprocessOmegac0SelectorWithKFParticle};
     const int nProcessesSelector = std::accumulate(processesSelector.begin(), processesSelector.end(), 0);
     if (nProcessesSelector != 1) {
       LOGP(fatal, "At most one process function for selector can be enabled at a time.");
