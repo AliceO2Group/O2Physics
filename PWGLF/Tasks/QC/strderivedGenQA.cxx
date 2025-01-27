@@ -88,7 +88,6 @@ struct strderivedGenQA {
     Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds"};
     Configurable<bool> requireNoCollInTimeRangeStrict{"requireNoCollInTimeRangeStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
     Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds"};
-    Configurable<bool> requireNoCollInTimeRangeVzDep{"requireNoCollInTimeRangeVzDep", false, "reject collisions corrupted by the cannibalism, with other collisions with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ"};
     Configurable<bool> requireNoCollInROFStd{"requireNoCollInROFStd", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF with mult. above a certain threshold"};
     Configurable<bool> requireNoCollInROFStrict{"requireNoCollInROFStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF"};
     Configurable<bool> requireINEL0{"requireINEL0", true, "require INEL>0 event selection"};
@@ -199,7 +198,7 @@ struct strderivedGenQA {
     histos.add("Event/hPosZ", "hPosZ", kTH1F, {axisPosZ});
 
     // Event Counters
-    histos.add("Event/hEventProperties", "hEventProperties", kTH1F, {{20, -0.5f, +19.5f}});
+    histos.add("Event/hEventProperties", "hEventProperties", kTH1F, {{20, -0.5f, +18.5f}});
     histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
     histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
@@ -213,9 +212,8 @@ struct strderivedGenQA {
     histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(11, "kNoCollInTimeRangeStd");
     histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeStrict");
     histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(13, "kNoCollInTimeRangeNarrow");
-    histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(14, "kNoCollInTimeRangeVzDep");
-    histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(15, "kNoCollInRofStd");
-    histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStrict");
+    histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(14, "kNoCollInRofStd");
+    histos.get<TH1>(HIST("Event/hEventProperties"))->GetXaxis()->SetBinLabel(15, "kNoCollInRofStrict");
 
     histos.add("Event/hft0cOccupancyInTimeRange", "hft0cOccupancyInTimeRange", kTH1F, {axisFt0cOccupancyInTimeRange});
     histos.add("Event/htrackOccupancyInTimeRange", "htrackOccupancyInTimeRange", kTH1F, {axisTrackOccupancyInTimeRange});
@@ -553,9 +551,6 @@ struct strderivedGenQA {
     if (eventSelections.requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
       return false;
     }
-    if (eventSelections.requireNoCollInTimeRangeVzDep && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeVzDependent)) {
-      return false;
-    }
     if (eventSelections.requireNoCollInROFStd && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return false;
     }
@@ -679,12 +674,10 @@ struct strderivedGenQA {
       histos.fill(HIST("Event/hEventProperties"), 11.);
     if (coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow))
       histos.fill(HIST("Event/hEventProperties"), 12.);
-    if (coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeVzDependent))
-      histos.fill(HIST("Event/hEventProperties"), 13.);
     if (coll.selection_bit(o2::aod::evsel::kNoCollInRofStandard))
-      histos.fill(HIST("Event/hEventProperties"), 14.);
+      histos.fill(HIST("Event/hEventProperties"), 13.);
     if (coll.selection_bit(o2::aod::evsel::kNoCollInRofStrict))
-      histos.fill(HIST("Event/hEventProperties"), 15.);
+      histos.fill(HIST("Event/hEventProperties"), 14.);
 
     histos.fill(HIST("Event/hft0cOccupancyInTimeRange"), coll.ft0cOccupancyInTimeRange());
     histos.fill(HIST("Event/htrackOccupancyInTimeRange"), coll.trackOccupancyInTimeRange());
