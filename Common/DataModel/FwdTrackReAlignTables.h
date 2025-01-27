@@ -41,12 +41,12 @@ DECLARE_SOA_EXTENDED_TABLE(FwdTracksReAlign, StoredFwdTracksReAlign, "FWDTRACKRE
                            aod::fwdtrack::Pt,
                            aod::fwdtrack::P);
 
-DECLARE_SOA_TABLE_FULL(StoredFwdTrksCovReAlign, "FwdTrksCovReAlign", "AOD", "FWDTRKCOVRALIGN", //!
+DECLARE_SOA_TABLE_FULL(StoredFwdTrksCovReAlign, "FwdTrksCovReAlign", "AOD", "FWDTRKCOVREALIGN", //!
                        fwdtrack::SigmaX, fwdtrack::SigmaY, fwdtrack::SigmaPhi, fwdtrack::SigmaTgl, fwdtrack::Sigma1Pt,
                        fwdtrack::RhoXY, fwdtrack::RhoPhiY, fwdtrack::RhoPhiX, fwdtrack::RhoTglX, fwdtrack::RhoTglY,
                        fwdtrack::RhoTglPhi, fwdtrack::Rho1PtX, fwdtrack::Rho1PtY, fwdtrack::Rho1PtPhi, fwdtrack::Rho1PtTgl);
 
-DECLARE_SOA_EXTENDED_TABLE(FwdTrksCovReAlign, StoredFwdTrksCovReAlign, "FWDTRKCOVRALIGN", //!
+DECLARE_SOA_EXTENDED_TABLE(FwdTrksCovReAlign, StoredFwdTrksCovReAlign, "FWDTRKCOVREALIGN", //!
                            aod::fwdtrack::CXX,
                            aod::fwdtrack::CXY,
                            aod::fwdtrack::CYY,
