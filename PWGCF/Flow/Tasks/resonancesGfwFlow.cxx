@@ -40,6 +40,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/PID.h"
@@ -58,7 +59,7 @@ using namespace std;
 struct ResonancesGfwFlow {
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> noLaterThan{"noLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
@@ -67,39 +68,44 @@ struct ResonancesGfwFlow {
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 3.0f, "Maximal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgTpcCluster, int, 70, "Number of TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgTpcNsigmaCut, float, 3.0f, "TPC N-sigma cut for pions, kaons, protons")
   O2_DEFINE_CONFIGURABLE(cfgTofNsigmaCut, float, 3.0f, "TOF N-sigma cut for pions, kaons, protons")
   O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 0.5f, "Minimum pt to use TOF N-sigma")
-
-  O2_DEFINE_CONFIGURABLE(cfgUsePVContributor, bool, true, "Use PV contributor for tracks")
-  O2_DEFINE_CONFIGURABLE(cfgFakePartCut, float, 0.1f, "Maximum difference in measured momentum and TPC inner ring momentum of particle")
-  O2_DEFINE_CONFIGURABLE(cfgTpcCluster, int, 70, "Number of TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgUsePointingAngle, bool, false, "Use Pointing angle for resonances")
-  O2_DEFINE_CONFIGURABLE(cfgPointingAnglePhi, float, 0.04f, "Minimum Pointing angle for Phi")
-  O2_DEFINE_CONFIGURABLE(cfgPointingAngleKo, float, 0.97f, "Minimum Pointing angle for K0")
-  O2_DEFINE_CONFIGURABLE(cfgPointingAngleLambda, float, 0.995f, "Minimum Pointing angle for Lambda")
-  O2_DEFINE_CONFIGURABLE(cfgUseVoRadius, bool, true, "Use V0 radius for particle identification")
-  O2_DEFINE_CONFIGURABLE(cfgVoRadiusMin, float, 0.5f, "Minimum V0 radius in cm")
-  O2_DEFINE_CONFIGURABLE(cfgVoRadiusMax, float, 200.0f, "Maximum V0 radius in cm")
-  O2_DEFINE_CONFIGURABLE(cfgUseProperLifetime, bool, true, "Use proper lifetime for particle identification")
-  O2_DEFINE_CONFIGURABLE(cfgProperLtK0, float, 20.0f, "Minimum lifetime for K0 in cm")
-  O2_DEFINE_CONFIGURABLE(cfgProperLtLambda, float, 30.0f, "Minimum lifetime for Lambda in cm")
-  O2_DEFINE_CONFIGURABLE(cfgUseDCA, bool, true, "Use dca for daughter tracks")
-  O2_DEFINE_CONFIGURABLE(cfgDCAtoPV, float, 0.06f, "Minimum DCA of daughter tracks to primary vertex in cm")
-  O2_DEFINE_CONFIGURABLE(cfgDCABetDaug, int, 1, "Maximum DCA between daughter tracks")
-
-  O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 2.0f, "DCAxy range for tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "DCAz range for tracks")
-  O2_DEFINE_CONFIGURABLE(additionalEvsel, bool, false, "Additional event selcection")
-  O2_DEFINE_CONFIGURABLE(useGlobalTrack, bool, true, "use Global track")
   O2_DEFINE_CONFIGURABLE(cfgITScluster, int, 0, "Number of ITS cluster")
   O2_DEFINE_CONFIGURABLE(cfgCutTOFBeta, float, 0.0, "cut TOF beta")
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancy, int, 3000, "Occupancy cut")
-  O2_DEFINE_CONFIGURABLE(ispTdepPID, bool, true, "pT dependent PID")
-  O2_DEFINE_CONFIGURABLE(removefaketrack, bool, true, "Remove fake track from momentum difference")
-  O2_DEFINE_CONFIGURABLE(confRapidity, float, 0.5, "Rapidity cut")
+  O2_DEFINE_CONFIGURABLE(cfgUseGlobalTrack, bool, true, "use Global track")
+  O2_DEFINE_CONFIGURABLE(cfgFakeKaonCut, float, 0.1f, "Maximum difference in measured momentum and TPC inner ring momentum of particle")
+  O2_DEFINE_CONFIGURABLE(cfgRapidityCut, float, 0.5, "Rapidity cut for the reconstructed particles")
+  O2_DEFINE_CONFIGURABLE(cfgUseCosPA, bool, false, "Use Pointing angle for resonances")
+  O2_DEFINE_CONFIGURABLE(cfgPhiCosPA, float, 0.04f, "Minimum Pointing angle for Phi")
+  O2_DEFINE_CONFIGURABLE(cfgK0CosPA, float, 0.97f, "Minimum Pointing angle for K0")
+  O2_DEFINE_CONFIGURABLE(cfgLambdaCosPA, float, 0.995f, "Minimum Pointing angle for Lambda")
+  O2_DEFINE_CONFIGURABLE(cfgUseV0Radius, bool, true, "Use V0 radius for particle identification")
+  O2_DEFINE_CONFIGURABLE(cfgLambdaRadiusMin, float, 0.5f, "Minimum Lambda radius in cm")
+  O2_DEFINE_CONFIGURABLE(cfgLambdaRadiusMax, float, 200.0f, "Maximum Lambda radius in cm")
+  O2_DEFINE_CONFIGURABLE(cfgK0RadiusMin, float, 0.5f, "Minimum K0 radius in cm")
+  O2_DEFINE_CONFIGURABLE(cfgK0RadiusMax, float, 200.0f, "Maximum K0 radius in cm")
+  O2_DEFINE_CONFIGURABLE(cfgUseProperLifetime, bool, false, "Use proper lifetime for particle identification")
+  O2_DEFINE_CONFIGURABLE(cfgK0LifeTime, float, 20.0f, "Maximum lifetime for K0 in cm")
+  O2_DEFINE_CONFIGURABLE(cfgLambdaLifeTime, float, 30.0f, "Maximum lifetime for Lambda in cm")
+  O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 2.0f, "DCAxy range for tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "DCAz range for tracks")
+  O2_DEFINE_CONFIGURABLE(cfgDCALambdaPosToPVMin, float, 0.1f, "minimum DCA to PV for Lambda positive track")
+  O2_DEFINE_CONFIGURABLE(cfgDCALambdaNegToPVMin, float, 0.25f, "minimum DCA to PV for Lambda negative track")
+  O2_DEFINE_CONFIGURABLE(cfgDCALambdaBetDaug, int, 1, "Maximum DCA between Lambda daughter tracks")
+  O2_DEFINE_CONFIGURABLE(cfgDCAK0PosToPVMin, float, 0.06f, "minimum DCA to PV for K0 positive track")
+  O2_DEFINE_CONFIGURABLE(cfgDCAK0NegToPVMin, float, 0.06f, "minimum DCA to PV for K0 negative track")
+  O2_DEFINE_CONFIGURABLE(cfgDCAK0BetDaug, int, 1, "Maximum DCA between K0 daughter tracks")
+  O2_DEFINE_CONFIGURABLE(cfgMassLambdaMin, float, 1.08f, "minimum lambda mass")
+  O2_DEFINE_CONFIGURABLE(cfgMassLambdaMax, float, 1.15f, "maximum lambda mass")
+  O2_DEFINE_CONFIGURABLE(cfgMassK0Min, float, 0.44f, "minimum K0short mass")
+  O2_DEFINE_CONFIGURABLE(cfgMassK0Max, float, 0.56f, "maximum K0short mass")
+  O2_DEFINE_CONFIGURABLE(cfgUseMCCLambda, bool, false, "Use mass cross check for lambda")
+  O2_DEFINE_CONFIGURABLE(cfgUseMCCK0, bool, false, "Use mass cross check for K0")
 
   // Defining configurable axis
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
@@ -111,7 +117,7 @@ struct ResonancesGfwFlow {
   ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
   ConfigurableAxis axisParticles{"axisParticles", {3, 0, 3}, "axis for different hadrons"};
   ConfigurableAxis axisPhiMass{"axisPhiMass", {50000, 0, 5}, "axis for invariant mass distibution for Phi"};
-  ConfigurableAxis axisKoMass{"axisKoMass", {50000, 0, 5}, "axis for invariant mass distibution for K0"};
+  ConfigurableAxis axisK0Mass{"axisK0Mass", {50000, 0, 5}, "axis for invariant mass distibution for K0"};
   ConfigurableAxis axisLambdaMass{"axisLambdaMass", {50000, 0, 5}, "axis for invariant mass distibution for Lambda"};
   ConfigurableAxis axisTPCsignal{"axisTPCsignal", {10000, 0, 1000}, "axis for TPC signal"};
   ConfigurableAxis axisTOFsignal{"axisTOFsignal", {10000, 0, 1000}, "axis for TOF signal"};
@@ -121,6 +127,7 @@ struct ResonancesGfwFlow {
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
   using AodTracksWithoutBayes = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
+  using V0TrackCandidate = aod::V0Datas;
 
   SliceCache cache;
   Partition<AodTracksWithoutBayes> posTracks = aod::track::signed1Pt > 0.0f;
@@ -128,24 +135,14 @@ struct ResonancesGfwFlow {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  TAxis* fPtAxis;
-  TRandom3* fRndm = new TRandom3(0);
-
-  // Event selection cuts - Alex
-  TF1* fMultPVCutLow = nullptr;
-  TF1* fMultPVCutHigh = nullptr;
-  TF1* fMultCutLow = nullptr;
-  TF1* fMultCutHigh = nullptr;
-  TF1* fMultMultPVCut = nullptr;
-
   void init(InitContext const&)
   {
     ccdb->setURL(ccdbUrl.value);
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(noLaterThan.value);
 
-    histos.add("hPhi", "", {HistType::kTH1D, {axisPhi}});
-    histos.add("hEta", "", {HistType::kTH1D, {axisEta}});
+    AxisSpec SingleCount = {1, 0, 1};
+
     histos.add("hVtxZ", "", {HistType::kTH1D, {axisVertex}});
     histos.add("hMult", "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     histos.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
@@ -154,123 +151,313 @@ struct ResonancesGfwFlow {
     histos.add("KaminusTPC", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
     histos.add("KaplusTOF", "", {HistType::kTH2D, {{axisPt, axisTOFsignal}}});
     histos.add("KaminusTOF", "", {HistType::kTH2D, {{axisPt, axisTOFsignal}}});
+    histos.add("hPhiPhi", "", {HistType::kTH1D, {axisPhi}});
+    histos.add("hPhiEta", "", {HistType::kTH1D, {axisEta}});
     histos.add("hPhiMass_sparse", "", {HistType::kTHnSparseD, {{axisPhiMass, axisPt, axisMultiplicity}}});
 
-    if (additionalEvsel) {
-      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-      fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-      fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x)", 0, 100);
-      fMultCutLow->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x)", 0, 100);
-      fMultCutHigh->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-      fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
-      fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
-    }
+    histos.add("PlusTPC_L", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
+    histos.add("MinusTPC_L", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
+    histos.add("PlusTOF_L", "", {HistType::kTH2D, {{axisPt, axisTOFsignal}}});
+    histos.add("MinusTOF_L", "", {HistType::kTH2D, {{axisPt, axisTOFsignal}}});
+    histos.add("hLambdaPhi", "", {HistType::kTH1D, {axisPhi}});
+    histos.add("hLambdaEta", "", {HistType::kTH1D, {axisEta}});
+    histos.add("hLambdaMass_sparse", "", {HistType::kTHnSparseF, {{axisLambdaMass, axisPt, axisMultiplicity}}});
+    histos.add("PlusTPC_AL", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
+    histos.add("MinusTPC_AL", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
+    histos.add("PlusTOF_AL", "", {HistType::kTH2D, {{axisPt, axisTOFsignal}}});
+    histos.add("MinusTOF_AL", "", {HistType::kTH2D, {{axisPt, axisTOFsignal}}});
+    histos.add("hAntiLambdaPhi", "", {HistType::kTH1D, {axisPhi}});
+    histos.add("hAntiLambdaEta", "", {HistType::kTH1D, {axisEta}});
+    histos.add("hAntiLambdaMass_sparse", "", {HistType::kTHnSparseF, {{axisLambdaMass, axisPt, axisMultiplicity}}});
+    histos.add("hLambdaCount", "", {HistType::kTH1D, {SingleCount}});
+
+    histos.add("PlusTPC_K0", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
+    histos.add("MinusTPC_K0", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
+    histos.add("PlusTOF_K0", "", {HistType::kTH2D, {{axisPt, axisTOFsignal}}});
+    histos.add("MinusTOF_K0", "", {HistType::kTH2D, {{axisPt, axisTOFsignal}}});
+    histos.add("hK0Phi", "", {HistType::kTH1D, {axisPhi}});
+    histos.add("hK0Eta", "", {HistType::kTH1D, {axisEta}});
+    histos.add("hK0Mass_sparse", "", {HistType::kTHnSparseF, {{axisK0Mass, axisPt, axisMultiplicity}}});
+    histos.add("hK0Count", "", {HistType::kTH1D, {SingleCount}});
   }
 
-  // deep angle cut on pair to remove photon conversion
-  template <typename T1, typename T2>
-  bool selectionPair(const T1& candidate1, const T2& candidate2)
+  // Cosine pointing angle cut
+  template <typename TTrack1, typename TTrack2>
+  bool selectionPair(const TTrack1& track1, const TTrack2& track2)
   {
     double pt1, pt2, pz1, pz2, p1, p2, angle;
-    pt1 = candidate1.pt();
-    pt2 = candidate2.pt();
-    pz1 = candidate1.pz();
-    pz2 = candidate2.pz();
-    p1 = candidate1.p();
-    p2 = candidate2.p();
+    pt1 = track1.pt();
+    pt2 = track2.pt();
+    pz1 = track1.pz();
+    pz2 = track2.pz();
+    p1 = track1.p();
+    p2 = track2.p();
     angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
-    if (cfgUsePointingAngle && angle < cfgPointingAnglePhi) {
+    if (cfgUseCosPA && angle < cfgPhiCosPA) {
       return false;
     }
     return true;
   }
 
-  template <typename TCollision>
-  bool eventSelected(TCollision collision, const float& centrality)
-  {
-    auto multNTracksPV = collision.multNTracksPV();
-    if (multNTracksPV < fMultPVCutLow->Eval(centrality))
-      return 0;
-    if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
-      return 0;
-
-    return 1;
-  }
-
-  template <typename T>
-  bool selectionTrack(const T& candidate)
-  {
-    if (useGlobalTrack && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTpcCluster)) {
-      return false;
-    }
-    if (!useGlobalTrack && !(candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster)) {
-      return false;
-    }
-    return true;
-  }
-
-  template <typename T>
-  bool selectionPIDpTdependent(const T& candidate)
-  {
-    if (candidate.pt() < 0.5 && std::abs(candidate.tpcNSigmaKa()) < cfgTpcNsigmaCut) {
-      return true;
-    }
-    if (candidate.pt() >= 0.5 && candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && std::abs(candidate.tpcNSigmaKa()) < cfgTpcNsigmaCut && std::abs(candidate.tofNSigmaKa()) < cfgTofNsigmaCut) {
-      return true;
-    }
-    if (!useGlobalTrack && !candidate.hasTPC()) {
-      return true;
-    }
-    return false;
-  }
-  template <typename T>
-  bool selectionPID(const T& candidate)
-  {
-    if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < cfgTpcNsigmaCut) {
-      return true;
-    }
-    if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && std::abs(candidate.tpcNSigmaKa()) < cfgTpcNsigmaCut && std::abs(candidate.tofNSigmaKa()) < cfgTofNsigmaCut) {
-      return true;
-    }
-    return false;
-  }
-
-  template <typename T>
-  bool isFakeKaon(T const& track)
+  template <typename TTrack>
+  bool isFakeKaon(TTrack const& track)
   {
     const auto pglobal = track.p();
     const auto ptpc = track.tpcInnerParam();
-    if (std::abs(pglobal - ptpc) > cfgFakePartCut) {
+    if (std::abs(pglobal - ptpc) > cfgFakeKaonCut) {
       return true;
     }
     return false;
   }
 
-  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, o2::aod::evsel::NumTracksInTimeRange>;
-  ROOT::Math::PxPyPzMVector phiMom, kaonPlus, kaonminus;
-  double massKaPlus = o2::constants::physics::MassKPlus;
-
-  void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracksWithoutBayes const& tracks)
+  template <typename TTrack>
+  bool selectionTrack(const TTrack& track)
   {
-    if (!collision.sel8() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-      return;
+    if (cfgUseGlobalTrack && !(track.isGlobalTrack() && track.isPVContributor() && track.itsNCls() > cfgITScluster && track.tpcNClsFound() > cfgTpcCluster && track.hasTPC())) {
+      return false;
     }
+    if (!cfgUseGlobalTrack && !(track.isPVContributor() && track.itsNCls() > cfgITScluster && track.hasTPC())) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename TTrack>
+  int getNsigmaPID(TTrack track)
+  {
+    // Computing Nsigma arrays for pion, kaon, and protons
+    std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
+    std::array<float, 3> nSigmaCombined = {std::hypot(track.tpcNSigmaPi(), track.tofNSigmaPi()), std::hypot(track.tpcNSigmaKa(), track.tofNSigmaKa()), std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr())};
+    int pid = -1;
+    float nsigma = cfgTpcNsigmaCut;
+
+    // Choose which nSigma to use
+    std::array<float, 3> nSigmaToUse = (track.pt() >= cfgTofPtCut && track.hasTOF()) ? nSigmaCombined : nSigmaTPC;
+    if (track.pt() >= cfgTofPtCut && !track.hasTOF())
+      return -1;
+
+    // Select particle with the lowest nsigma
+    for (int i = 0; i < 3; ++i) {
+      if (std::abs(nSigmaToUse[i]) < nsigma) {
+        pid = i;
+        nsigma = std::abs(nSigmaToUse[i]);
+      }
+    }
+
+    return pid + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
+  }
+
+  template <typename TTrack, typename vector, char... chars>
+  void resurrectKaon(TTrack trackplus, TTrack trackminus, vector plusdaug, vector minusdaug, vector mom, double plusmass, const ConstStr<chars...>& hist, const double cent)
+  {
+    for (auto const& [partplus, partminus] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(trackplus, trackminus))) {
+      if (getNsigmaPID(partplus) != 2)
+        continue;
+      if (getNsigmaPID(partminus) != 2)
+        continue;
+      if (isFakeKaon(partplus) || isFakeKaon(partminus))
+        continue;
+      if (!selectionPair(partplus, partminus))
+        continue;
+      if (!selectionTrack(partplus) || !selectionTrack(partminus))
+        continue;
+
+      histos.fill(HIST("KaplusTPC"), partplus.pt(), partplus.tpcNSigmaKa());
+      histos.fill(HIST("KaplusTOF"), partplus.pt(), partplus.tofNSigmaKa());
+      histos.fill(HIST("KaminusTPC"), partminus.pt(), partminus.tpcNSigmaKa());
+      histos.fill(HIST("KaminusTOF"), partminus.pt(), partminus.tofNSigmaKa());
+
+      plusdaug = ROOT::Math::PxPyPzMVector(partplus.px(), partplus.py(), partplus.pz(), plusmass);
+      minusdaug = ROOT::Math::PxPyPzMVector(partminus.px(), partminus.py(), partminus.pz(), plusmass);
+      mom = plusdaug + minusdaug;
+
+      if (std::abs(mom.Rapidity()) < cfgRapidityCut) {
+        histos.fill(hist, mom.M(), mom.Pt(), cent);
+        histos.fill(HIST("hPhiPhi"), phiMom.Phi());
+        histos.fill(HIST("hPhiEta"), phiMom.Eta());
+      }
+    }
+    return;
+  }
+
+  template <typename TTrack>
+  bool SelectionV0Daughter(TTrack const& track, int pid) // pid 1: proton, pid 0: pion
+  {
+    if (track.tpcNClsFound() < cfgTpcCluster)
+      return false;
+    if (!track.hasTPC())
+      return false;
+    if (pid == 1 && std::abs(track.tpcNSigmaPr()) > cfgTpcNsigmaCut)
+      return false;
+    if (pid == 0 && std::abs(track.tpcNSigmaPi()) > cfgTpcNsigmaCut)
+      return false;
+
+    return true;
+  }
+
+  template <typename TCollision, typename V0>
+  bool SelectionLambda(TCollision const& collision, V0 const& candidate)
+  {
+    bool isL = false;  // Is lambda candidate
+    bool isAL = false; // Is anti-lambda candidate
+
+    double mlambda = candidate.mLambda();
+    double mantilambda = candidate.mAntiLambda();
+
+    // separate the positive and negative V0 daughters
+    auto postrack = candidate.template posTrack_as<AodTracksWithoutBayes>();
+    auto negtrack = candidate.template negTrack_as<AodTracksWithoutBayes>();
+
+    if (postrack.pt() < 0.15 || negtrack.pt() < 0.15)
+      return false;
+
+    if (mlambda > cfgMassLambdaMin && mlambda < cfgMassLambdaMax)
+      isL = true;
+    if (mantilambda > cfgMassLambdaMin && mantilambda < cfgMassLambdaMax)
+      isAL = true;
+
+    if (!isL && !isAL) {
+      return false;
+    }
+
+    // Rapidity correction
+    if (candidate.yLambda() > 0.5)
+      return false;
+
+    // DCA cuts for lambda and antilambda
+    if (isL) {
+      if (std::abs(candidate.dcapostopv()) < cfgDCALambdaPosToPVMin || std::abs(candidate.dcanegtopv()) < cfgDCALambdaNegToPVMin)
+        return false;
+    }
+    if (isAL) {
+      if (std::abs(candidate.dcapostopv()) < cfgDCALambdaNegToPVMin || std::abs(candidate.dcanegtopv()) < cfgDCALambdaPosToPVMin)
+        return false;
+    }
+    if (std::abs(candidate.dcaV0daughters()) > cfgDCALambdaBetDaug)
+      return false;
+
+    // v0 radius cuts
+    if (cfgUseV0Radius && (candidate.v0radius() < cfgLambdaRadiusMin || candidate.v0radius() > cfgLambdaRadiusMax))
+      return false;
+
+    // cosine pointing angle cuts
+    if (candidate.v0cosPA() < cfgLambdaCosPA)
+      return false;
+
+    // Proper lifetime
+    if (cfgUseProperLifetime && candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda > cfgLambdaLifeTime)
+      return false;
+
+    if (isL) {
+      if (!SelectionV0Daughter(postrack, 1) || !SelectionV0Daughter(negtrack, 0))
+        return false;
+    }
+    if (isAL) {
+      if (!SelectionV0Daughter(postrack, 0) || !SelectionV0Daughter(negtrack, 1))
+        return false;
+    }
+
+    // Mass cross check
+    if (cfgUseMCCLambda && std::abs(massK0Short - 0.497614) < 0.01)
+      return false;
+
+    if (isL) {
+      histos.fill(HIST("hLambdaMass_sparse"), mlambda, candidate.pt(), collision.centFT0C());
+      histos.fill(HIST("hLambdaPhi"), candidate.phi());
+      histos.fill(HIST("hLambdaEta"), candidate.eta());
+      histos.fill(HIST("PlusTPC_L"), postrack.pt(), postrack.tpcNSigmaKa());
+      histos.fill(HIST("PlusTOF_L"), postrack.pt(), postrack.tofNSigmaKa());
+      histos.fill(HIST("MinusTPC_L"), negtrack.pt(), negtrack.tpcNSigmaKa());
+      histos.fill(HIST("MinusTOF_L"), negtrack.pt(), negtrack.tofNSigmaKa());
+    }
+    if (isAL) {
+      histos.fill(HIST("hAntiLambdaMass_sparse"), mantilambda, candidate.pt(), collision.centFT0C());
+      histos.fill(HIST("hAntiLambdaPhi"), candidate.phi());
+      histos.fill(HIST("hAntiLambdaEta"), candidate.eta());
+      histos.fill(HIST("PlusTPC_AL"), postrack.pt(), postrack.tpcNSigmaKa());
+      histos.fill(HIST("PlusTOF_AL"), postrack.pt(), postrack.tofNSigmaKa());
+      histos.fill(HIST("MinusTPC_AL"), negtrack.pt(), negtrack.tpcNSigmaKa());
+      histos.fill(HIST("MinusTOF_AL"), negtrack.pt(), negtrack.tofNSigmaKa());
+    }
+    return true;
+  }
+
+  template <typename TCollision, typename V0>
+  bool SelectionK0(TCollision const& collision, V0 const& candidate)
+  {
+    double mk0 = candidate.mK0Short();
+
+    // separate the positive and negative V0 daughters
+    auto postrack = candidate.template posTrack_as<AodTracksWithoutBayes>();
+    auto negtrack = candidate.template negTrack_as<AodTracksWithoutBayes>();
+
+    if (postrack.pt() < 0.15 || negtrack.pt() < 0.15)
+      return false;
+
+    if (mk0 < cfgMassK0Min && mk0 > cfgMassK0Max)
+      return false;
+
+    // Rapidity correction
+    if (candidate.yK0Short() > 0.5)
+      return false;
+
+    // DCA cuts for K0short
+    if (std::abs(candidate.dcapostopv()) < cfgDCAK0PosToPVMin || std::abs(candidate.dcanegtopv()) < cfgDCAK0NegToPVMin)
+      return false;
+
+    if (std::abs(candidate.dcaV0daughters()) > cfgDCAK0BetDaug)
+      return false;
+
+    // v0 radius cuts
+    if (cfgUseV0Radius && (candidate.v0radius() < cfgK0RadiusMin || candidate.v0radius() > cfgK0RadiusMax))
+      return false;
+
+    // cosine pointing angle cuts
+    if (candidate.v0cosPA() < cfgK0CosPA)
+      return false;
+
+    // Proper lifetime
+    if (cfgUseProperLifetime && candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massK0Short > cfgK0LifeTime)
+      return false;
+
+    if (!SelectionV0Daughter(postrack, 0) || !SelectionV0Daughter(negtrack, 0))
+      return false;
+
+    // Mass cross check
+    if (cfgUseMCCK0 && std::abs(massK0Short - 1.11568) < 0.005)
+      return false;
+    if (cfgUseMCCK0 && std::abs(massK0Short - 1.11568) < 0.005)
+      return false;
+
+    histos.fill(HIST("hK0Mass_sparse"), mk0, candidate.pt(), collision.centFT0C());
+    histos.fill(HIST("hK0Phi"), candidate.phi());
+    histos.fill(HIST("hK0Eta"), candidate.eta());
+    histos.fill(HIST("PlusTPC_K0"), postrack.pt(), postrack.tpcNSigmaKa());
+    histos.fill(HIST("PlusTOF_K0"), postrack.pt(), postrack.tofNSigmaKa());
+    histos.fill(HIST("MinusTPC_K0"), negtrack.pt(), negtrack.tpcNSigmaKa());
+    histos.fill(HIST("MinusTOF_K0"), negtrack.pt(), negtrack.tofNSigmaKa());
+
+    return true;
+  }
+
+  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, o2::aod::evsel::NumTracksInTimeRange>;
+  ROOT::Math::PxPyPzMVector phiMom, kaonPlus, kaonMinus;
+  double massKaPlus = o2::constants::physics::MassKPlus;
+  double massLambda = o2::constants::physics::MassLambda;
+  double massK0Short = o2::constants::physics::MassK0Short;
+
+  void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracksWithoutBayes const& tracks, aod::V0Datas const& V0s)
+  {
+    if (!collision.sel8() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
+      return;
+
+    int occupancy = collision.trackOccupancyInTimeRange();
+    if (occupancy > cfgCutOccupancy)
+      return;
 
     const auto cent = collision.centFT0C();
     int nTot = tracks.size();
     float vtxz = collision.posZ();
-    int occupancy = collision.trackOccupancyInTimeRange();
-
-    if (occupancy > cfgCutOccupancy) {
-      return;
-    }
-
-    if (additionalEvsel && !eventSelected(collision, cent)) {
-      return;
-    }
 
     histos.fill(HIST("hVtxZ"), vtxz);
     histos.fill(HIST("hMult"), nTot);
@@ -279,59 +466,16 @@ struct ResonancesGfwFlow {
     auto posSlicedTracks = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negSlicedTracks = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-    for (auto const& track1 : posSlicedTracks) {
-      // track selection
-      if (!selectionTrack(track1)) {
-        continue;
-      }
-      // PID check
-      if (ispTdepPID && !selectionPIDpTdependent(track1)) {
-        continue;
-      }
-      if (!ispTdepPID && !selectionPID(track1)) {
-        continue;
-      }
-      histos.fill(HIST("KaplusTPC"), track1.pt(), track1.tpcNSigmaKa());
-      histos.fill(HIST("KaplusTOF"), track1.pt(), track1.tofNSigmaKa());
-      auto track1ID = track1.globalIndex();
+    resurrectKaon(posSlicedTracks, negSlicedTracks, kaonPlus, kaonMinus, phiMom, massKaPlus, HIST("hPhiMass_sparse"), cent);
 
-      for (auto const& track2 : negSlicedTracks) {
-        // track selection
-        if (!selectionTrack(track2)) {
-          continue;
-        }
-        // PID check
-        if (ispTdepPID && !selectionPIDpTdependent(track2)) {
-          continue;
-        }
-        if (!ispTdepPID && !selectionPID(track2)) {
-          continue;
-        }
-        auto track2ID = track2.globalIndex();
-        if (track2ID == track1ID) {
-          continue;
-        }
-        if (!selectionPair(track1, track2)) {
-          continue;
-        }
-        if (removefaketrack && isFakeKaon(track1)) {
-          continue;
-        }
-        if (removefaketrack && isFakeKaon(track2)) {
-          continue;
-        }
-        histos.fill(HIST("KaminusTPC"), track2.pt(), track2.tpcNSigmaKa());
-        histos.fill(HIST("KaminusTOF"), track2.pt(), track2.tofNSigmaKa());
-        kaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKaPlus);
-        kaonminus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKaPlus);
-        phiMom = kaonPlus + kaonminus;
-        if (std::abs(phiMom.Rapidity()) < confRapidity) {
-          histos.fill(HIST("hPhiMass_sparse"), phiMom.M(), phiMom.Pt(), cent);
-          histos.fill(HIST("hPhi"), phiMom.Phi());
-          histos.fill(HIST("hEta"), phiMom.Eta());
-        }
-      } //  end of track 2
-    } // end of track 1
+    for (auto const& v0s : V0s) {
+      if (SelectionLambda(collision, v0s) == true)
+        histos.fill(HIST("hLambdaCount"), 1);
+      if (SelectionK0(collision, v0s) == true)
+        histos.fill(HIST("hK0Count"), 1);
+
+    } // End of v0 loop
+
   } // end of process
 };
 
