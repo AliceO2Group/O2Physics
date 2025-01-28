@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+/// \file k0_mixed_events.cxx
 /// \brief Femto3D pair mixing task
 /// \author Sofia Tomassini, Gleb Romanenko, Nicolò Jacazio
 /// \since 31 May 2023
@@ -57,13 +58,13 @@ class ResoPair : public MyFemtoPair
   ResoPair() {}
   ResoPair(trkType const& first, trkType const& second) : MyFemtoPair(first, second)
   {
-    SetPair(first, second);
+    setPair(first, second);
   }
   ResoPair(trkType const& first, trkType const& second, const bool& isidentical) : MyFemtoPair(first, second, isidentical) {}
   bool IsClosePair() const { return MyFemtoPair::IsClosePair(_deta, _dphi, _radius); }
-  void SetEtaDiff(const float deta) { _deta = deta; }
-  void SetPhiStarDiff(const float dphi) { _dphi = dphi; }
-  void SetPair(trkType const& first, trkType const& second)
+  void setEtaDiff(const float deta) { _deta = deta; }
+  void setPhiStarDiff(const float dphi) { _dphi = dphi; }
+  void setPair(trkType const& first, trkType const& second)
   {
     MyFemtoPair::SetPair(first, second);
     lDecayDaughter1.SetPtEtaPhiM(first->pt(), first->eta(), first->phi(), particle_mass(GetPDG1()));
@@ -178,7 +179,7 @@ struct K0MixedEvents {
     Pair->SetIdentical(IsIdentical);
     Pair->SetPDG1(_particlePDG_1);
     Pair->SetPDG2(_particlePDG_2);
-    Pair->SetEtaDiff(1);
+    Pair->setEtaDiff(1);
 
     TPCcuts_1 = std::make_pair(_particlePDG_1, _tpcNSigma_1);
     TOFcuts_1 = std::make_pair(_particlePDG_1, _tofNSigma_1);
@@ -221,7 +222,7 @@ struct K0MixedEvents {
     for (uint32_t ii = 0; ii < tracks.size(); ii++) { // nested loop for all the combinations
       for (uint32_t iii = ii + 1; iii < tracks.size(); iii++) {
 
-        Pair->SetPair(tracks[ii], tracks[iii]);
+        Pair->setPair(tracks[ii], tracks[iii]);
 
         registry.fill(HIST("SEcand"), 1.f);
         if (!Pair->IsClosePair()) {
@@ -241,10 +242,10 @@ struct K0MixedEvents {
   void mixTracks(Type const& tracks1, Type const& tracks2)
   {
     LOG(debug) << "Mixing tracks of two different events";
-    for (auto ii : tracks1) {
-      for (auto iii : tracks2) {
+    for (const auto& ii : tracks1) {
+      for (const auto& iii : tracks2) {
 
-        Pair->SetPair(ii, iii);
+        Pair->setPair(ii, iii);
 
         if constexpr (isSameEvent) {
           registry.fill(HIST("SEcand"), 1.f);
@@ -275,12 +276,12 @@ struct K0MixedEvents {
       LOGF(fatal, "One of passed PDG is 0!!!");
     }
     registry.fill(HIST("Trks"), 2.f, tracks.size());
-    for (auto collision : collisions) {
+    for (const auto& collision : collisions) {
       LOG(debug) << "Collision index " << collision.globalIndex();
       registry.fill(HIST("VTXc"), collision.posZ());
     }
 
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       LOG(debug) << "Track index " << track.singleCollSelId();
       if (track.itsNCls() < _itsNCls) {
         continue;
@@ -390,7 +391,7 @@ struct K0MixedEvents {
       }
     }
 
-    for (auto collision : collisions) {
+    for (const auto& collision : collisions) {
       if (selectedtracks_1.find(collision.globalIndex()) == selectedtracks_1.end()) {
         if (IsIdentical)
           continue;
