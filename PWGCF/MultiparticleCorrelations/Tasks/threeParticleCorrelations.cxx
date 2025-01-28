@@ -680,19 +680,19 @@ struct ThreeParticleCorrelations {
   bool radialDistanceFilter(const V0Cand& v0, const TrackCand& track, double B, bool Mix)
   {
 
-    auto Proton = v0.template posTrack_as<MyFilteredTracks>();
+    auto proton = v0.template posTrack_as<MyFilteredTracks>();
     if (v0Sign(v0) == -1) {
-      Proton = v0.template negTrack_as<MyFilteredTracks>();
+      proton = v0.template negTrack_as<MyFilteredTracks>();
     }
 
-    double dEta = Proton.eta() - track.eta();
+    double dEta = proton.eta() - track.eta();
     if (std::abs(dEta) > 0.02) {
       return kTRUE;
     }
 
     double dPhiStar;
-    double dPhi = Proton.phi() - track.phi();
-    double phaseProton = (-0.3 * B * Proton.sign()) / (2 * Proton.pt());
+    double dPhi = proton.phi() - track.phi();
+    double phaseProton = (-0.3 * B * proton.sign()) / (2 * proton.pt());
     double phaseTrack = (-0.3 * B * track.sign()) / (2 * track.pt());
 
     for (double r = 0.8; r <= 2.5; r += 0.01) {
