@@ -60,7 +60,7 @@ namespace o2::aod
 
 namespace gen_ebyecolltable
 {
-DECLARE_SOA_COLUMN(CentralityGen, centralityGen, uint8_t);
+DECLARE_SOA_COLUMN(CentralityGen, centralityGen, float);
 DECLARE_SOA_COLUMN(NetProtNoGen, netProtNoGen, float);   //! net proton no. in an event
 DECLARE_SOA_COLUMN(ProtNoGen, protNoGen, float);         //! proton no. in an event
 DECLARE_SOA_COLUMN(AntiProtNoGen, antiProtNoGen, float); //! antiproton no. in an event
@@ -75,23 +75,27 @@ using ProtGenCollEbyeTable = ProtGenCollEbyeTables::iterator;
 
 namespace rec_ebyecolltable
 {
-DECLARE_SOA_COLUMN(CentralityRec, centralityRec, uint8_t);
+DECLARE_SOA_COLUMN(CentralityRec, centralityRec, float);
 DECLARE_SOA_COLUMN(NetProtNoRec, netProtNoRec, float);   //! net proton no. in an event
 DECLARE_SOA_COLUMN(ProtNoRec, protNoRec, float);         //! proton no. in an event
 DECLARE_SOA_COLUMN(AntiProtNoRec, antiProtNoRec, float); //! antiproton no. in an event
 } // namespace rec_ebyecolltable
 
 DECLARE_SOA_TABLE(ProtRecCollEbyeTables, "AOD", "PROTRECCOLLEBYETABLE",
-                  o2::soa::Index<>,
                   rec_ebyecolltable::CentralityRec,
                   rec_ebyecolltable::NetProtNoRec,
                   rec_ebyecolltable::ProtNoRec,
                   rec_ebyecolltable::AntiProtNoRec);
 using ProtRecCollEbyeTable = ProtRecCollEbyeTables::iterator;
 
+DECLARE_SOA_TABLE(RecCollTables, "AOD", "RECCOLLTABLE",
+                  o2::soa::Index<>,
+                  rec_ebyecolltable::CentralityRec);
+using RecCollTable = RecCollTables::iterator;
+
 namespace rec_ebyetracktable
 {
-DECLARE_SOA_INDEX_COLUMN(ProtRecCollEbyeTable, protRecCollEbyeTable);
+DECLARE_SOA_INDEX_COLUMN(RecCollTable, recCollTable);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Charge, charge, int);
@@ -99,7 +103,7 @@ DECLARE_SOA_COLUMN(Charge, charge, int);
 
 DECLARE_SOA_TABLE(ProtRecCompleteEbyeTables, "AOD", "PROTRECCOMPLETEEBYETABLE",
                   o2::soa::Index<>,
-                  rec_ebyetracktable::ProtRecCollEbyeTableId,
+                  rec_ebyetracktable::RecCollTableId,
                   rec_ebyetracktable::Pt,
                   rec_ebyetracktable::Eta,
                   rec_ebyetracktable::Charge);
@@ -114,6 +118,8 @@ using namespace o2::framework::expressions;
 struct NetprotonCumulantsMc {
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
+  // MC
+  Configurable<bool> cfgIsMC{"cfgIsMC", true, "Run MC"};
   // tracks
   Configurable<float> cfgCutPtLower{"cfgCutPtLower", 0.2f, "Lower pT cut"};
   Configurable<float> cfgCutPtUpper{"cfgCutPtUpper", 3.0f, "Higher pT cut"};
@@ -137,13 +143,17 @@ struct NetprotonCumulantsMc {
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // Filter command for rec (data/MC)***********
-  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex && (aod::evsel::sel8 == true);
+  // Filter command for rec (data)***********
+  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl) && (aod::track::itsChi2NCl < cfgCutItsChi2NCl) && (aod::track::dcaZ < cfgCutDCAz) && (aod::track::dcaXY < cfgCutDCAxy);
 
   // filtering collisions and tracks for real data***********
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullEl, aod::pidTOFFullEl>>;
+
+  // // Filter command for rec (MC)***********
+  // Filter collisionMcFilter = nabs(aod::collision::posZ) < cfgCutVertex && (aod::evsel::sel8 == true);
+  // Filter trackMcFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl) && (aod::track::itsChi2NCl < cfgCutItsChi2NCl) && (aod::track::dcaZ < cfgCutDCAz) && (aod::track::dcaXY < cfgCutDCAxy);
 
   // filtering collisions and tracks for MC rec data***********
   using MyMCRecCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs, aod::McCollisionLabels>>;
@@ -173,45 +183,25 @@ struct NetprotonCumulantsMc {
     AxisSpec protonAxis = {21, -0.5, 20.5, "proton number"};
     AxisSpec antiprotonAxis = {21, -0.5, 20.5, "antiproton number"};
 
-    // MC event counts
-    histos.add("hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
-
     // histograms for events
     histos.add("hZvtx_after_sel", "Vertex dist. after event selection;Z (cm)", kTH1F, {vtxZAxis});
-    histos.add("Centrec", "MCRec Multiplicity percentile from FT0M (%)", kTH1F, {{100, 0.0, 100.0}});
-    histos.add("Centgen", "MCGen Multiplicity percentile from FT0M (%)", kTH1F, {{100, 0.0, 100.0}});
-
-    // tracks Gen level histograms
-    histos.add("hgenPtAll", "Generated All particles;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
-    histos.add("hgenPtProton", "Generated Protons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
-    histos.add("hgenPtAntiproton", "Generated Antiprotons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
-    histos.add("hgenPhiAll", "Generated All particles;#phi", kTH1F, {{100, 0., 7.}});
-    histos.add("hgenPhiProton", "Generated Protons;#phi", kTH1F, {{100, 0., 7.}});
-    histos.add("hgenPhiAntiproton", "Generated Antiprotons;#phi", kTH1F, {{100, 0., 7.}});
-    histos.add("hgenEtaAll", "Generated All particles;#eta", kTH1F, {{100, -2.01, 2.01}});
-    histos.add("hgenEtaProton", "Generated Proton;#eta", kTH1F, {{100, -2.01, 2.01}});
-    histos.add("hgenEtaAntiproton", "Generated Antiprotons;#eta", kTH1F, {{100, -2.01, 2.01}});
-    histos.add("hgenPtDistProtonVsCentrality", "Generated proton number vs centrality in 2D", kTH2F, {ptAxis, centAxis});
-    histos.add("hgenPtDistAntiprotonVsCentrality", "Generated antiproton number vs centrality in 2D", kTH2F, {ptAxis, centAxis});
-    histos.add("hgenNetProtonVsCentrality", "Generated net-proton number vs centrality in 2D", kTH2F, {netprotonAxis, centAxis});
-    histos.add("hgenProtonVsCentrality", "Generated proton number vs centrality in 2D", kTH2F, {protonAxis, centAxis});
-    histos.add("hgenAntiprotonVsCentrality", "Generated antiproton number vs centrality in 2D", kTH2F, {antiprotonAxis, centAxis});
-    histos.add("hgenProfileTotalProton", "Generated total proton number vs. centrality", kTProfile, {centAxis});
-    histos.add("hgenProfileProton", "Generated proton number vs. centrality", kTProfile, {centAxis});
-    histos.add("hgenProfileAntiproton", "Generated antiproton number vs. centrality", kTProfile, {centAxis});
-
+    histos.add("hCentrec", "MCRec Multiplicity percentile from FT0M (%)", kTH1F, {{100, 0.0, 100.0}});
     // tracks Rec level histograms
     histos.add("hrecPtAll", "Reconstructed All particles;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
     histos.add("hrecPtProton", "Reconstructed Protons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
     histos.add("hrecPtAntiproton", "Reconstructed Antiprotons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
-    histos.add("hrecTruePtProton", "Reconstructed pdgcode verified protons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
-    histos.add("hrecTruePtAntiproton", "Reconstructed pdgcode verified Antiprotons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
     histos.add("hrecPhiAll", "Reconstructed All particles;#phi", kTH1F, {{100, 0., 7.}});
     histos.add("hrecPhiProton", "Reconstructed Protons;#phi", kTH1F, {{100, 0., 7.}});
     histos.add("hrecPhiAntiproton", "Reconstructed Antiprotons;#phi", kTH1F, {{100, 0., 7.}});
     histos.add("hrecEtaAll", "Reconstructed All particles;#eta", kTH1F, {{100, -2.01, 2.01}});
     histos.add("hrecEtaProton", "Reconstructed Proton;#eta", kTH1F, {{100, -2.01, 2.01}});
     histos.add("hrecEtaAntiproton", "Reconstructed Antiprotons;#eta", kTH1F, {{100, -2.01, 2.01}});
+    histos.add("hrecDcaXYAll", "Reconstructed All particles;DCA_{xy} (in cm)", kTH1F, {{400, -2.01, 2.01}});
+    histos.add("hrecDcaXYProton", "Reconstructed Proton;DCA_{xy} (in cm)", kTH1F, {{400, -2.01, 2.01}});
+    histos.add("hrecDcaXYAntiproton", "Reconstructed Antiprotons;DCA_{xy} (in cm)", kTH1F, {{400, -2.01, 2.01}});
+    histos.add("hrecDcaZAll", "Reconstructed All particles;DCA_{z} (in cm)", kTH1F, {{400, -2.01, 2.01}});
+    histos.add("hrecDcaZProton", "Reconstructed Proton;DCA_{z} (in cm)", kTH1F, {{400, -2.0, 2.0}});
+    histos.add("hrecDcaZAntiproton", "Reconstructed Antiprotons;DCA_{z} (in cm)", kTH1F, {{400, -2.0, 2.0}});
     histos.add("hrecPtDistProtonVsCentrality", "Reconstructed proton number vs centrality in 2D", kTH2F, {ptAxis, centAxis});
     histos.add("hrecPtDistAntiprotonVsCentrality", "Reconstructed antiproton number vs centrality in 2D", kTH2F, {ptAxis, centAxis});
     histos.add("hrecNetProtonVsCentrality", "Reconstructed net-proton number vs centrality in 2D", kTH2F, {netprotonAxis, centAxis});
@@ -220,7 +210,42 @@ struct NetprotonCumulantsMc {
     histos.add("hrecProfileTotalProton", "Reconstructed total proton number vs. centrality", kTProfile, {centAxis});
     histos.add("hrecProfileProton", "Reconstructed proton number vs. centrality", kTProfile, {centAxis});
     histos.add("hrecProfileAntiproton", "Reconstructed antiproton number vs. centrality", kTProfile, {centAxis});
+
+    if (cfgIsMC) {
+      // MC event counts
+      histos.add("hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
+      histos.add("hCentgen", "MCGen Multiplicity percentile from FT0M (%)", kTH1F, {{100, 0.0, 100.0}});
+      // tracks Gen level histograms
+      histos.add("hgenPtAll", "Generated All particles;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
+      histos.add("hgenPtProton", "Generated Protons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
+      histos.add("hgenPtAntiproton", "Generated Antiprotons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
+      histos.add("hrecPartPtAll", "Reconstructed All particles filled mcparticle pt;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
+      histos.add("hrecPartPtProton", "Reconstructed Protons filled mcparticle pt;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
+      histos.add("hrecPartPtAntiproton", "Reconstructed Antiprotons filled mcparticle pt;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
+      histos.add("hgenPhiAll", "Generated All particles;#phi", kTH1F, {{100, 0., 7.}});
+      histos.add("hgenPhiProton", "Generated Protons;#phi", kTH1F, {{100, 0., 7.}});
+      histos.add("hgenPhiAntiproton", "Generated Antiprotons;#phi", kTH1F, {{100, 0., 7.}});
+      histos.add("hgenEtaAll", "Generated All particles;#eta", kTH1F, {{100, -2.01, 2.01}});
+      histos.add("hgenEtaProton", "Generated Proton;#eta", kTH1F, {{100, -2.01, 2.01}});
+      histos.add("hgenEtaAntiproton", "Generated Antiprotons;#eta", kTH1F, {{100, -2.01, 2.01}});
+      histos.add("hgenPtDistProtonVsCentrality", "Generated proton number vs centrality in 2D", kTH2F, {ptAxis, centAxis});
+      histos.add("hgenPtDistAntiprotonVsCentrality", "Generated antiproton number vs centrality in 2D", kTH2F, {ptAxis, centAxis});
+      histos.add("hrecTruePtProton", "Reconstructed pdgcode verified protons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
+      histos.add("hrecTruePtAntiproton", "Reconstructed pdgcode verified Antiprotons;#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
+      histos.add("hgenNetProtonVsCentrality", "Generated net-proton number vs centrality in 2D", kTH2F, {netprotonAxis, centAxis});
+      histos.add("hgenProtonVsCentrality", "Generated proton number vs centrality in 2D", kTH2F, {protonAxis, centAxis});
+      histos.add("hgenAntiprotonVsCentrality", "Generated antiproton number vs centrality in 2D", kTH2F, {antiprotonAxis, centAxis});
+      histos.add("hgenProfileTotalProton", "Generated total proton number vs. centrality", kTProfile, {centAxis});
+      histos.add("hgenProfileProton", "Generated proton number vs. centrality", kTProfile, {centAxis});
+      histos.add("hgenProfileAntiproton", "Generated antiproton number vs. centrality", kTProfile, {centAxis});
+    }
   }
+
+  // template <typename T>
+  // bool selectionTrack(const T& candidate)
+  // {
+
+  // }
 
   template <typename T>
   bool selectionPIDold(const T& candidate)
@@ -322,7 +347,7 @@ struct NetprotonCumulantsMc {
       return;
     }
     histos.fill(HIST("hMC"), 4.5);
-    histos.fill(HIST("Centgen"), cent);
+    histos.fill(HIST("hCentgen"), cent);
 
     // creating phi, pt, eta dstribution of generted MC particles
 
@@ -370,17 +395,22 @@ struct NetprotonCumulantsMc {
   PROCESS_SWITCH(NetprotonCumulantsMc, processMCGen, "Process Generated", true);
 
   Produces<aod::ProtRecCollEbyeTables> recEbyeCollisions;             //! MC Rec table creation
+  Produces<aod::RecCollTables> recCollisions;                         //! MC Rec table creation
   Produces<aod::ProtRecCompleteEbyeTables> recEbyeCompleteCollisions; //! MC Rec table creation with tracks
 
   void processMCRec(MyMCRecCollision const& collision, MyMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
   {
+    if (!collision.sel8()) {
+      return;
+    }
     if (!collision.has_mcCollision()) {
       return;
     }
     auto cent = collision.centFT0M();
-    histos.fill(HIST("Centrec"), cent);
+    histos.fill(HIST("hCentrec"), cent);
     histos.fill(HIST("hMC"), 5.5);
     histos.fill(HIST("hZvtx_after_sel"), collision.posZ());
+    recCollisions(cent);
 
     float nProt = 0.0;
     float nAntiprot = 0.0;
@@ -397,10 +427,16 @@ struct NetprotonCumulantsMc {
       }
 
       auto particle = track.mcParticle();
+      if ((particle.pt() < cfgCutPtLower) || (particle.pt() > 5.0f) || (std::abs(particle.eta()) > 0.8f)) {
+        continue;
+      }
       if (particle.isPhysicalPrimary()) {
-        histos.fill(HIST("hrecPtAll"), particle.pt());
+        histos.fill(HIST("hrecPartPtAll"), particle.pt());
+        histos.fill(HIST("hrecPtAll"), track.pt());
         histos.fill(HIST("hrecEtaAll"), particle.eta());
         histos.fill(HIST("hrecPhiAll"), particle.phi());
+        histos.fill(HIST("hrecDcaXYAll"), track.dcaXY());
+        histos.fill(HIST("hrecDcaZAll"), track.dcaZ());
 
         bool trackSelected = false;
         if (cfgPIDchoice == 0)
@@ -409,12 +445,15 @@ struct NetprotonCumulantsMc {
           trackSelected = selectionPIDnew(track);
 
         if (trackSelected) {
-          recEbyeCompleteCollisions(recEbyeCollisions.lastIndex(), particle.pt(), particle.eta(), track.sign());
+          recEbyeCompleteCollisions(recCollisions.lastIndex(), particle.pt(), particle.eta(), track.sign());
           if (track.sign() > 0) {
-            histos.fill(HIST("hrecPtProton"), particle.pt()); //! hist for p rec
+            histos.fill(HIST("hrecPartPtProton"), particle.pt()); //! hist for p rec
+            histos.fill(HIST("hrecPtProton"), track.pt());        //! hist for p rec
             histos.fill(HIST("hrecPtDistProtonVsCentrality"), particle.pt(), cent);
             histos.fill(HIST("hrecEtaProton"), particle.eta());
             histos.fill(HIST("hrecPhiProton"), particle.phi());
+            histos.fill(HIST("hrecDcaXYProton"), track.dcaXY());
+            histos.fill(HIST("hrecDcaZProton"), track.dcaZ());
             if (particle.pt() < cfgCutPtUpper)
               nProt = nProt + 1.0;
             if (particle.pdgCode() == 2212) {
@@ -422,10 +461,13 @@ struct NetprotonCumulantsMc {
             }
           }
           if (track.sign() < 0) {
-            histos.fill(HIST("hrecPtAntiproton"), particle.pt()); //! hist for anti-p rec
+            histos.fill(HIST("hrecPartPtAntiproton"), particle.pt()); //! hist for anti-p rec
+            histos.fill(HIST("hrecPtAntiproton"), track.pt());        //! hist for anti-p rec
             histos.fill(HIST("hrecPtDistAntiprotonVsCentrality"), particle.pt(), cent);
             histos.fill(HIST("hrecEtaAntiproton"), particle.eta());
             histos.fill(HIST("hrecPhiAntiproton"), particle.phi());
+            histos.fill(HIST("hrecDcaXYAntiproton"), track.dcaXY());
+            histos.fill(HIST("hrecDcaZAntiproton"), track.dcaZ());
             if (particle.pt() < cfgCutPtUpper)
               nAntiprot = nAntiprot + 1.0;
             if (particle.pdgCode() == -2212) {
@@ -446,6 +488,70 @@ struct NetprotonCumulantsMc {
     recEbyeCollisions(cent, netProt, nProt, nAntiprot);
   }
   PROCESS_SWITCH(NetprotonCumulantsMc, processMCRec, "Process Generated", true);
+
+  void processDataRec(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
+  {
+    if (!coll.sel8()) {
+      return;
+    }
+
+    histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
+    // variables
+    auto cent = coll.centFT0M();
+    histos.fill(HIST("hCentrec"), cent);
+    recCollisions(cent);
+
+    float nProt = 0.0;
+    float nAntiprot = 0.0;
+
+    // Start of the Monte-Carlo reconstructed tracks
+    for (const auto& track : inputTracks) {
+      if (!track.isPVContributor()) //! track check as used in data
+      {
+        continue;
+      }
+
+      histos.fill(HIST("hrecPtAll"), track.pt());
+      histos.fill(HIST("hrecEtaAll"), track.eta());
+      histos.fill(HIST("hrecPhiAll"), track.phi());
+
+      bool trackSelected = false;
+      if (cfgPIDchoice == 0)
+        trackSelected = selectionPIDold(track);
+      if (cfgPIDchoice == 1)
+        trackSelected = selectionPIDnew(track);
+
+      if (trackSelected) {
+        recEbyeCompleteCollisions(recCollisions.lastIndex(), track.pt(), track.eta(), track.sign());
+        if (track.sign() > 0) {
+          histos.fill(HIST("hrecPtProton"), track.pt()); //! hist for p rec
+          histos.fill(HIST("hrecPtDistProtonVsCentrality"), track.pt(), cent);
+          histos.fill(HIST("hrecEtaProton"), track.eta());
+          histos.fill(HIST("hrecPhiProton"), track.phi());
+          if (track.pt() < cfgCutPtUpper)
+            nProt = nProt + 1.0;
+        }
+        if (track.sign() < 0) {
+          histos.fill(HIST("hrecPtAntiproton"), track.pt()); //! hist for anti-p rec
+          histos.fill(HIST("hrecPtDistAntiprotonVsCentrality"), track.pt(), cent);
+          histos.fill(HIST("hrecEtaAntiproton"), track.eta());
+          histos.fill(HIST("hrecPhiAntiproton"), track.phi());
+          if (track.pt() < cfgCutPtUpper)
+            nAntiprot = nAntiprot + 1.0;
+        }
+      } //! checking PID
+    } //! end track loop
+
+    float netProt = nProt - nAntiprot;
+    histos.fill(HIST("hrecNetProtonVsCentrality"), netProt, cent);
+    histos.fill(HIST("hrecProtonVsCentrality"), nProt, cent);
+    histos.fill(HIST("hrecAntiprotonVsCentrality"), nAntiprot, cent);
+    histos.fill(HIST("hrecProfileTotalProton"), cent, (nProt + nAntiprot));
+    histos.fill(HIST("hrecProfileProton"), cent, nProt);
+    histos.fill(HIST("hrecProfileAntiproton"), cent, nAntiprot);
+    recEbyeCollisions(cent, netProt, nProt, nAntiprot);
+  }
+  PROCESS_SWITCH(NetprotonCumulantsMc, processDataRec, "Process real data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
