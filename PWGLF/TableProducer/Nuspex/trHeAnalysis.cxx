@@ -62,7 +62,7 @@ DECLARE_SOA_COLUMN(TItsChi2NCl, tItsChi2NCl, float);
 DECLARE_SOA_COLUMN(TRigidity, tRigidity, float);
 DECLARE_SOA_COLUMN(TItsClusterSize, tItsClusterSize, float);
 } // namespace h3_data
-DECLARE_SOA_TABLE(H3Data, "AOD", "h3_data", h3_data::TPt, h3_data::TEta,
+DECLARE_SOA_TABLE(h3Data, "AOD", "h3_data", h3_data::TPt, h3_data::TEta,
                   h3_data::TPhi, h3_data::TCharge, h3_data::TH3DeDx,
                   h3_data::TnSigmaTpc, h3_data::TTofSignalH3, h3_data::TDcaXY,
                   h3_data::TDcaZ, h3_data::TSigmaYX, h3_data::TSigmaXYZ,
@@ -92,7 +92,7 @@ DECLARE_SOA_COLUMN(TItsChi2NCl, tItsChi2NCl, float);
 DECLARE_SOA_COLUMN(TRigidity, tRigidity, float);
 DECLARE_SOA_COLUMN(TItsClusterSize, tItsClusterSize, float);
 } // namespace he_data
-DECLARE_SOA_TABLE(HeData, "AOD", "he_data", he_data::TPt, he_data::TEta,
+DECLARE_SOA_TABLE(heData, "AOD", "he_data", he_data::TPt, he_data::TEta,
                   he_data::TPhi, he_data::TCharge, he_data::THeDeDx,
                   he_data::TnSigmaTpc, he_data::TTofSignalHe, he_data::TDcaXY,
                   he_data::TDcaZ, he_data::TSigmaYX, he_data::TSigmaXYZ,
@@ -156,9 +156,9 @@ class Particle
   }
 };
 
-struct trHeAnalysis {
-  Produces<o2::aod::H3Data> H3Data;
-  Produces<o2::aod::HeData> HeData;
+struct TrHeAnalysis {
+  Produces<o2::aod::H3Data> h3Data;
+  Produces<o2::aod::HeData> heData;
   HistogramRegistry histos{
     "Histos",
     {},
@@ -197,7 +197,7 @@ struct trHeAnalysis {
   Configurable<float> cfgCutTpcXRows{"cfgCutTpcXRows", -1.f, "Minimum number of crossed TPC rows"};
   Configurable<float> cfgCutTpcClusters{"cfgCutTpcClusters", 40.f, "Minimum number of found TPC clusters"};
   Configurable<int> nItsLayer{"nItsLayer", 0, "ITS Layer (0-6)"};
-  Configurable<float> cfgCutTpcCrRowToFindableCl{"cfgCutTPCcrRowToFindableCl", 0.8f, "Minimum ratio of crossed rows to findable cluster in TPC"};
+  Configurable<float> cfgCutTpcCrRowToFindableCl{"cfgCutTpcCrRowToFindableCl", 0.8f, "Minimum ratio of crossed rows to findable cluster in TPC"};
   Configurable<float> cfgCutMaxChi2TpcH3{"cfgCutMaxChi2TpcH3", 4.f, "Maximum chi2 per cluster for TPC"};
   Configurable<float> cfgCutMaxChi2ItsH3{"cfgCutMaxChi2ItsH3", 36.f, "Maximum chi2 per cluster for ITS"};
   Configurable<float> cfgCutMaxChi2TpcHe{"cfgCutMaxChi2TpcHe", 4.f, "Maximum chi2 per cluster for TPC"};
@@ -400,7 +400,7 @@ struct trHeAnalysis {
             float tRigidity = track.tpcInnerParam();
             float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
-            H3Data(tPt, tEta, tPhi, tCharge, tH3DeDx, tnSigmaTpc, tTofSignalH3,
+            h3Data(tPt, tEta, tPhi, tCharge, tH3DeDx, tnSigmaTpc, tTofSignalH3,
                    tDcaXY, tDcaZ, tSigmaYX, tSigmaXYZ, tSigmaZ, tnTpcCluster,
                    tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity,
                    tItsClusterSize);
@@ -441,7 +441,7 @@ struct trHeAnalysis {
             float tRigidity = track.tpcInnerParam();
             float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
-            HeData(tPt, tEta, tPhi, tCharge, tHeDeDx, tnSigmaTpc, tTofSignalHe,
+            heData(tPt, tEta, tPhi, tCharge, tHeDeDx, tnSigmaTpc, tTofSignalHe,
                    tDcaXY, tDcaZ, tSigmaYX, tSigmaXYZ, tSigmaZ, tnTpcCluster,
                    tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity,
                    tItsClusterSize);
@@ -539,7 +539,7 @@ struct trHeAnalysis {
             float tRigidity = track.tpcInnerParam();
             float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
-            H3Data(tPt, tEta, tPhi, tCharge, tH3DeDx, tnSigmaTpc, tTofSignalH3,
+            h3Data(tPt, tEta, tPhi, tCharge, tH3DeDx, tnSigmaTpc, tTofSignalH3,
                    tDcaXY, tDcaZ, tSigmaYX, tSigmaXYZ, tSigmaZ, tnTpcCluster,
                    tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity,
                    tItsClusterSize);
@@ -579,7 +579,7 @@ struct trHeAnalysis {
             float tRigidity = track.tpcInnerParam();
             float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
-            HeData(tPt, tEta, tPhi, tCharge, tHeDeDx, tnSigmaTpc, tTofSignalHe,
+            heData(tPt, tEta, tPhi, tCharge, tHeDeDx, tnSigmaTpc, tTofSignalHe,
                    tDcaXY, tDcaZ, tSigmaYX, tSigmaXYZ, tSigmaZ, tnTpcCluster,
                    tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity,
                    tItsClusterSize);
@@ -623,6 +623,6 @@ struct trHeAnalysis {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<trHeAnalysis>(cfgc),
+    adaptAnalysisTask<TrHeAnalysis>(cfgc),
   };
 }
