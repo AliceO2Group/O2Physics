@@ -94,15 +94,15 @@ struct FlowPbpbPikp {
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {80, -5, 5}, "nsigmaTPC axis"};
   ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
   ConfigurableAxis axisParticles{"axisParticles", {3, 0, 3}, "axis for different hadrons"};
-  ConfigurableAxis axisPhiMass{"axisPhiMass", {50000, 0, 5}, "axis for invariant mass distibution for Phi"};
+  ConfigurableAxis axisPhiMass{"axisPhiMass", {10000, 0, 2}, "axis for invariant mass distibution for Phi"};
   ConfigurableAxis axisTPCsignal{"axisTPCsignal", {10000, 0, 1000}, "axis for TPC signal"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter =(nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
-  //using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
-  // using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::pidBayes, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
+  // using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
+  //  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::pidBayes, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
 
   SliceCache cache;
@@ -141,11 +141,8 @@ struct FlowPbpbPikp {
     histos.add("c22_gap08_ka", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c22_gap08_pr", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c24_full", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("KplusTPC", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
-    histos.add("KminusTPC", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
     histos.add("TofTpcNsigma", "", {HistType::kTHnSparseD, {{axisParticles, axisNsigmaTPC, axisNsigmaTOF, axisPt}}});
     histos.add("partCount", "", {HistType::kTHnSparseD, {{axisParticles, axisMultiplicity, axisPt}}});
-    histos.add("hPhiMass_sparse", "", {HistType::kTHnSparseD, {{axisPhiMass, axisPt, axisMultiplicity}}});
 
     o2::framework::AxisSpec axis = axisPt;
     int nPtBins = axis.binEdges.size() - 1;
@@ -229,6 +226,32 @@ struct FlowPbpbPikp {
     KAONS,
     PROTONS
   };
+
+  enum Particles pion = PIONS;
+  enum Particles kaon = KAONS;
+  enum Particles proton = PROTONS;
+
+  template <typename TTrack>
+  int GetNsigmaPID(TTrack track)
+  {
+    // Computing Nsigma arrays for pion, kaon, and protons
+    std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
+    std::array<float, 3> nSigmaCombined = {std::hypot(track.tpcNSigmaPi(), track.tofNSigmaPi()), std::hypot(track.tpcNSigmaKa(), track.tofNSigmaKa()), std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr())};
+    int pid = -1;
+    float nsigma = 3.0;
+
+    // Choose which nSigma to use
+    std::array<float, 3> nSigmaToUse = (track.pt() > 0.4 && track.hasTOF()) ? nSigmaCombined : nSigmaTPC;
+
+    // Select particle with the lowest nsigma
+    for (int i = 0; i < 3; ++i) {
+      if (std::abs(nSigmaToUse[i]) < nsigma) {
+        pid = i;
+        nsigma = std::abs(nSigmaToUse[i]);
+      }
+    }
+    return pid + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
+  }
 
   template <typename TTrack>
   bool isFakeKaon(TTrack track)
@@ -326,6 +349,7 @@ struct FlowPbpbPikp {
   {
     int maxProb[3] = {80, 80, 80};
     int pidID = -1;
+
     std::pair<int, int> idprob = getBayesID(track);
     if (idprob.first == PIONS || idprob.first == KAONS || idprob.first == PROTONS) { // 0 = pion, 1 = kaon, 2 = proton
       pidID = idprob.first;
@@ -349,24 +373,24 @@ struct FlowPbpbPikp {
         continue;
       if (getNsigmaPID(partminus) != 2)
         continue;
-      //if (partplus.globalIndex() == partminus.globalIndex())
-      //  continue;
-      if(isFakeKaon(partplus))
+      // if (partplus.globalIndex() == partminus.globalIndex())
+      //   continue;
+      if (isFakeKaon(partplus))
         continue;
-      if(isFakeKaon(partminus))
+      if (isFakeKaon(partminus))
         continue;
       if (!selectionPair(partplus, partminus))
         continue;
-      if (!selectionTrack(partplus)) 
+      if (!selectionTrack(partplus))
         continue;
-      if (!selectionTrack(partminus)) 
+      if (!selectionTrack(partminus))
         continue;
-      
+
       plusdaug = ROOT::Math::PxPyPzMVector(partplus.px(), partplus.py(), partplus.pz(), plusmass);
       minusdaug = ROOT::Math::PxPyPzMVector(partminus.px(), partminus.py(), partminus.pz(), plusmass);
       mom = plusdaug + minusdaug;
 
-      if(std::abs(mom.Rapidity()) < confRapidity) {
+      if (std::abs(mom.Rapidity()) < confRapidity) {
         histos.fill(hist, mom.M(), mom.Pt(), cent);
       }
     }
@@ -449,7 +473,6 @@ struct FlowPbpbPikp {
     histos.fill(HIST("hMult"), nTot);
     histos.fill(HIST("hCent"), collision.centFT0C());
     fGFW->Clear();
-    
 
     auto posSlicedTracks = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negSlicedTracks = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -457,11 +480,11 @@ struct FlowPbpbPikp {
     float weff = 1, wacc = 1;
     int pidIndex;
 
-    std::cout<<" *************** Event check 7 *************"<<std::endl;
+    histos.fill(HIST("TofTpcNsigma"), pion, track.tpcNSigmaPi(), track.tofNSigmaPi(), pt);
+    histos.fill(HIST("TofTpcNsigma"), kaon, track.tpcNSigmaKa(), track.tofNSigmaKa(), pt);
+    histos.fill(HIST("TofTpcNsigma"), proton, track.tpcNSigmaPr(), track.tofNSigmaPr(), pt);
 
-    resurrectParticle(posSlicedTracks, negSlicedTracks, kplusdaug, kminusdaug, Phimom, massKplus, HIST("hPhiMass_sparse"), cent);
-
-    /*for (auto const& track1 : tracks) {
+    for (auto const& track1 : tracks) {
       double pt = track1.pt();
       histos.fill(HIST("hPhi"), track1.phi());
       histos.fill(HIST("hEta"), track1.eta());
@@ -507,7 +530,7 @@ struct FlowPbpbPikp {
 
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
       fillFC(corrconfigs.at(l_ind), cent, lRandom);
-    }*/
+    }
 
   } // end of process
 };
