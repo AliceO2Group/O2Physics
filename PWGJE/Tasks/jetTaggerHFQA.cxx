@@ -647,7 +647,7 @@ struct JetTaggerHFQA {
   void fillHistogramIPsMCP(T const& mcpjet, float eventWeight = 1.0)
   {
     float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
-    if (mcpjet.pt() > pTHatMaxMCD * pTHat) {
+    if (mcpjet.pt() > pTHatMaxMCP * pTHat) {
       return;
     }
     int jetflavour = mcpjet.origin();
@@ -965,7 +965,7 @@ struct JetTaggerHFQA {
         continue;
       }
       if (!isAcceptedJet<aod::JetParticles>(mcpjet)) {
-        return;
+        continue;
       }
       if (checkMcCollisionIsMatched) {
         auto collisionspermcpjet = collisions.sliceBy(collisionsPerMCPCollision, mcpjet.mcCollisionId());
@@ -979,22 +979,22 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsMCP, "Fill impact parameter imformation for mcp jets", false);
 
-  void processIPsMCPWeighted(soa::Filtered<aod::JetCollisionsMCD> const& collisions, soa::Join<JetTableMCP, aod::ChargedMCParticleLevelJetEventWeights> const& mcpjets, aod::JetParticles const&)
+  void processIPsMCPWeighted(soa::Join<JetTableMCP, aod::ChargedMCParticleLevelJetEventWeights> const& mcpjets, soa::Filtered<aod::JetCollisionsMCD> const& collisions, aod::JetParticles const&)
   {
     for (auto const& mcpjet : mcpjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcpjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
       if (!isAcceptedJet<aod::JetParticles>(mcpjet)) {
-        return;
+        continue;
       }
       if (checkMcCollisionIsMatched) {
         auto collisionspermcpjet = collisions.sliceBy(collisionsPerMCPCollision, mcpjet.mcCollisionId());
         if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelection)) {
           fillHistogramIPsMCP(mcpjet, mcpjet.eventWeight());
-        } else {
-          fillHistogramIPsMCP(mcpjet, mcpjet.eventWeight());
         }
+      } else {
+        fillHistogramIPsMCP(mcpjet, mcpjet.eventWeight());
       }
     }
   }
@@ -1014,7 +1014,7 @@ struct JetTaggerHFQA {
         continue;
       }
       if (!mcdjet.has_matchedJetGeo())
-        return;
+        continue;
       for (auto const& mcpjet : mcdjet.template matchedJetGeo_as<soa::Join<JetTableMCP, JetTableMCPMCD>>()) {
         registry.fill(HIST("h3_jet_pt_jet_pt_part_matchedgeo_flavour"), mcpjet.pt(), mcdjet.pt(), mcdjet.origin());
       }
@@ -1038,8 +1038,15 @@ struct JetTaggerHFQA {
         continue;
       }
       if (!mcdjet.has_matchedJetGeo())
-        return;
+        continue;
+      float pTHat = 10. / (std::pow(mcdjet.eventWeight(), 1.0 / pTHatExponent));
+      if (mcdjet.pt() > pTHatMaxMCD * pTHat) {
+        continue;
+      }
       for (auto const& mcpjet : mcdjet.template matchedJetGeo_as<soa::Join<JetTableMCP, JetTableMCPMCD>>()) {
+        if (mcpjet.pt() > pTHatMaxMCP * pTHat) {
+          continue;
+        }
         registry.fill(HIST("h3_jet_pt_jet_pt_part_matchedgeo_flavour"), mcpjet.pt(), mcdjet.pt(), mcdjet.origin(), mcdjet.eventWeight());
       }
       if (!(doprocessIPsMCD || doprocessIPsMCDWeighted))
