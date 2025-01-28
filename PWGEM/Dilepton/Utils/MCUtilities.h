@@ -46,7 +46,7 @@ int hasFakeMatchITSTPC(TTrack const& track)
 }
 //_______________________________________________________________________
 template <typename TTrack>
-int hasFakeMatchITSTPCTOF(TTrack const& track)
+int hasFakeMatchITSTPCTOF(TTrack const&)
 {
   // track and mctracklabel have to be joined.
   return false;
