@@ -104,7 +104,6 @@ DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONSA", dqanalysisflags::massBc
 // Declarations of various short names
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
 using MyEventsMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
-using MyEventsZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedZdcs>;
 using MyEventsMultExtraZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedZdcs>;
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts>;
 using MyEventsMultExtraSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::EventCuts>;
