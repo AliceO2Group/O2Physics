@@ -8,10 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \brief This task is an empty skeleton that fills a simple eta histogram.
-///        it is meant to be a blank page for further developments.
-/// \author everyone
+//
+// Authors: Omar Vazque,
+// Date: 01.28.2025
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
