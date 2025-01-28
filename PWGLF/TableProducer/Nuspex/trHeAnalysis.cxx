@@ -330,29 +330,29 @@ struct trHeAnalysis {
           histos.fill(HIST("histogram/cuts"), 2);
           continue;
         }
-        if (track.tpcNClsFound() < cfgCutTPCClusters) {
+        if (track.tpcNClsFound() < cfgCutTpcClusters) {
           histos.fill(HIST("histogram/cuts"), 3);
           continue;
         }
-        if (track.itsNCls() < cfgCutITSClusters) {
+        if (track.itsNCls() < cfgCutItsClusters) {
           histos.fill(HIST("histogram/cuts"), 4);
           continue;
         }
-        if (track.tpcNClsCrossedRows() < cfgCutTPCXRows) {
+        if (track.tpcNClsCrossedRows() < cfgCutTpcXRows) {
           histos.fill(HIST("histogram/cuts"), 5);
           continue;
         }
-        if (track.tpcCrossedRowsOverFindableCls() <= cfgCutTPCcrRowToFindableCl) {
+        if (track.tpcCrossedRowsOverFindableCls() <= cfgCutTpcCrRowToFindableCl) {
           histos.fill(HIST("histogram/cuts"), 8);
           continue;
         }
-        if (cfgCutTPCRefit) {
+        if (cfgCutTpcRefit) {
           if (!track.passedTPCRefit()) {
             histos.fill(HIST("histogram/cuts"), 9);
             continue;
           }
         }
-        if (cfgCutITSRefit) {
+        if (cfgCutItsRefit) {
           if (!track.passedITSRefit()) {
             histos.fill(HIST("histogram/cuts"), 10);
             continue;
@@ -368,11 +368,11 @@ struct trHeAnalysis {
         if (enableTr && trRapCut) {
           if (std::abs(getTPCnSigma(track, particles.at(0))) <
               nsigmaTPCvar.nsigmaTPCTr) {
-            if (track.itsChi2NCl() > cfgCutmaxChi2ITSH3) {
+            if (track.itsChi2NCl() > cfgCutMaxChi2ItsH3) {
               histos.fill(HIST("histogram/cuts"), 6);
               continue;
             }
-            if (track.tpcChi2NCl() > cfgCutmaxChi2TPCH3) {
+            if (track.tpcChi2NCl() > cfgCutMaxChi2TpcH3) {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
@@ -409,11 +409,11 @@ struct trHeAnalysis {
         if (enableHe && heRapCut) {
           if (std::abs(getTPCnSigma(track, particles.at(1))) <
               nsigmaTPCvar.nsigmaTPCHe) {
-            if (track.itsChi2NCl() > cfgCutmaxChi2ITSHe) {
+            if (track.itsChi2NCl() > cfgCutMaxChi2ItsHe) {
               histos.fill(HIST("histogram/cuts"), 6);
               continue;
             }
-            if (track.tpcChi2NCl() > cfgCutmaxChi2TPCHe) {
+            if (track.tpcChi2NCl() > cfgCutMaxChi2TpcHe) {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
@@ -470,37 +470,29 @@ struct trHeAnalysis {
           histos.fill(HIST("histogram/cuts"), 2);
           continue;
         }
-        if (track.tpcNClsFound() < cfgCutTPCClusters) {
+        if (track.tpcNClsFound() < cfgCutTpcClusters) {
           histos.fill(HIST("histogram/cuts"), 3);
           continue;
         }
-        if (track.itsNCls() < cfgCutITSClusters) {
+        if (track.itsNCls() < cfgCutItsClusters) {
           histos.fill(HIST("histogram/cuts"), 4);
           continue;
         }
-        if (track.tpcNClsCrossedRows() < cfgCutTPCXRows) {
+        if (track.tpcNClsCrossedRows() < cfgCutTpcXRows) {
           histos.fill(HIST("histogram/cuts"), 5);
           continue;
         }
-        if (track.itsChi2NCl() > cfgCutmaxChi2ITS) {
-          histos.fill(HIST("histogram/cuts"), 6);
-          continue;
-        }
-        if (track.tpcChi2NCl() > cfgCutmaxChi2TPC) {
-          histos.fill(HIST("histogram/cuts"), 7);
-          continue;
-        }
-        if (track.tpcCrossedRowsOverFindableCls() <= cfgCutTPCcrRowToFindableCl) {
+        if (track.tpcCrossedRowsOverFindableCls() <= cfgCutTpcCrRowToFindableCl) {
           histos.fill(HIST("histogram/cuts"), 8);
           continue;
         }
-        if (cfgCutTPCRefit) {
+        if (cfgCutTpcRefit) {
           if (!track.passedTPCRefit()) {
             histos.fill(HIST("histogram/cuts"), 9);
             continue;
           }
         }
-        if (cfgCutITSRefit) {
+        if (cfgCutItsRefit) {
           if (!track.passedITSRefit()) {
             histos.fill(HIST("histogram/cuts"), 10);
             continue;
@@ -515,11 +507,11 @@ struct trHeAnalysis {
                     track.p() / (1.f * track.sign()), track.beta());
         if (enableTr && trRapCut) {
           if (std::abs(track.tpcNSigmaTr()) < nsigmaTPCvar.nsigmaTPCTr) {
-            if (track.itsChi2NCl() > cfgCutmaxChi2ITSH3) {
+            if (track.itsChi2NCl() > cfgCutMaxChi2ItsH3) {
               histos.fill(HIST("histogram/cuts"), 6);
               continue;
             }
-            if (track.tpcChi2NCl() > cfgCutmaxChi2TPCH3) {
+            if (track.tpcChi2NCl() > cfgCutMaxChi2TpcH3) {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
@@ -555,11 +547,11 @@ struct trHeAnalysis {
         }
         if (enableHe && heRapCut) {
           if (std::abs(track.tpcNSigmaHe()) < nsigmaTPCvar.nsigmaTPCHe) {
-            if (track.itsChi2NCl() > cfgCutmaxChi2ITSH3) {
+            if (track.itsChi2NCl() > cfgCutMaxChi2ItsHe) {
               histos.fill(HIST("histogram/cuts"), 6);
               continue;
             }
-            if (track.tpcChi2NCl() > cfgCutmaxChi2TPCH3) {
+            if (track.tpcChi2NCl() > cfgCutMaxChi2TpcHe) {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
