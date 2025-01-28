@@ -95,6 +95,7 @@ struct EmcalCorrectionTask {
   Configurable<bool> useWeightExotic{"useWeightExotic", false, "States if weights should be used for exotic cell cut"};
   Configurable<bool> isMC{"isMC", false, "States if run over MC"};
   Configurable<bool> applyCellTimeCorrection{"applyCellTimeCorrection", true, "apply a correction to the cell time for data and MC: Shift both average cell times to 0 and smear MC time distribution to fit data better"};
+  Configurable<float> trackMinPt{"trackMinPt", 0.3, "Minimum pT for tracks to perform track matching, to reduce computing time. Tracks below a certain pT will be loopers anyway."};
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
@@ -782,6 +783,14 @@ struct EmcalCorrectionTask {
     for (const auto& track : tracks) {
       // TODO only consider tracks in current emcal/dcal acceptanc
       if (!track.isGlobalTrack()) { // only global tracks
+        continue;
+      }
+      // Tracks that do not point to the EMCal/DCal/PHOS get default values of -999
+      // This way we can cut out tracks that do not point to the EMCal+DCal
+      if (track.trackEtaEmcal() < -900 || track.trackPhiEmcal() < -900) {
+        continue;
+      }
+      if (trackMinPt > 0 && track.pt() < trackMinPt) {
         continue;
       }
       nTrack++;

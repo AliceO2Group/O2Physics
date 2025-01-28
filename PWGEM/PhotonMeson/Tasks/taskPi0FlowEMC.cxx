@@ -118,8 +118,8 @@ struct TaskPi0FlowEMC {
     Configurable<bool> cfgRequireEMCHardwareTriggered{"cfgRequireEMCHardwareTriggered", false, "require the EMC to be hardware triggered (kEMC7 or kDMC7)"};
     Configurable<int> cfgTrackOccupancyMin{"cfgTrackOccupancyMin", -1, "min. track occupancy"};
     Configurable<int> cfgTrackOccupancyMax{"cfgTrackOccupancyMax", 1000000000, "max. track occupancy"};
-    Configurable<int> cfgFT0COccupancyMin{"cfgFT0COccupancyMin", -1, "min. FT0C occupancy"};
-    Configurable<int> cfgFT0COccupancyMax{"cfgFT0COccupancyMax", 1000000000, "max. FT0C occupancy"};
+    Configurable<float> cfgFT0COccupancyMin{"cfgFT0COccupancyMin", -1, "min. FT0C occupancy"};
+    Configurable<float> cfgFT0COccupancyMax{"cfgFT0COccupancyMax", 1000000000, "max. FT0C occupancy"};
     Configurable<float> cfgMinCent{"cfgMinCent", 0, "min. centrality (%)"};
     Configurable<float> cfgMaxCent{"cfgMaxCent", 90, "max. centrality (%)"};
     Configurable<bool> onlyKeepWeightedEvents{"onlyKeepWeightedEvents", false, "flag to keep only weighted events (for JJ MCs) and remove all MB events (with weight = 1)"};
@@ -177,14 +177,13 @@ struct TaskPi0FlowEMC {
   int runBefore = -1;
 
   Filter clusterFilter = aod::skimmedcluster::time >= emccuts.cfgEMCminTime && aod::skimmedcluster::time <= emccuts.cfgEMCmaxTime && aod::skimmedcluster::m02 >= emccuts.cfgEMCminM02 && aod::skimmedcluster::m02 <= emccuts.cfgEMCmaxM02 && skimmedcluster::e >= emccuts.cfgEMCminE;
-  Filter collisionFilter = aod::evsel::sel8 && nabs(aod::collision::posZ) <= eventcuts.cfgZvtxMax && aod::evsel::trackOccupancyInTimeRange <= eventcuts.cfgTrackOccupancyMax && aod::evsel::trackOccupancyInTimeRange >= eventcuts.cfgTrackOccupancyMin && aod::evsel::ft0cOccupancyInTimeRange <= eventcuts.cfgFT0COccupancyMax && aod::evsel::ft0cOccupancyInTimeRange >= eventcuts.cfgFT0COccupancyMin;
+  Filter collisionFilter = (nabs(aod::collision::posZ) <= eventcuts.cfgZvtxMax) && (aod::evsel::ft0cOccupancyInTimeRange <= eventcuts.cfgFT0COccupancyMax) && (aod::evsel::ft0cOccupancyInTimeRange >= eventcuts.cfgFT0COccupancyMin);
   using FilteredEMCalPhotons = soa::Filtered<soa::Join<aod::EMCEMEventIds, aod::SkimEMCClusters>>;
   using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::SkimEMCClusters>;
   using FilteredCollsWithQvecs = soa::Filtered<soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>>;
   using CollsWithQvecs = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 
   Preslice<EMCalPhotons> perCollisionEMC = aod::emccluster::emeventId;
-  Preslice<FilteredEMCalPhotons> perCollisionEMCFiltered = aod::emccluster::emeventId;
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
@@ -411,12 +410,14 @@ struct TaskPi0FlowEMC {
   /// \param pt is the transverse momentum of the candidate
   /// \param cent is the centrality of the collision
   /// \param sp is the scalar product
+  template <const int histType>
   void fillThn(float& mass,
                float& pt,
                float& cent,
                float& sp)
   {
-    registry.fill(HIST("hSparsePi0Flow"), mass, pt, cent, sp);
+    static constexpr std::string_view HistTypes[2] = {"hSparsePi0Flow", "hSparseBkgFlow"};
+    registry.fill(HIST(HistTypes[histType]), mass, pt, cent, sp);
   }
 
   /// Get the centrality
@@ -690,7 +691,7 @@ struct TaskPi0FlowEMC {
           if (mesonConfig.enableTanThetadPhi) {
             float dTheta = photon1.Theta() - photon3.Theta();
             float dPhi = photon1.Phi() - photon3.Phi();
-            if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+            if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
               registry.fill(HIST("hSparseBkgFlow"), mother1.M(), mother1.Pt(), cent, scalprodCand1);
             }
           } else {
@@ -713,7 +714,7 @@ struct TaskPi0FlowEMC {
           if (mesonConfig.enableTanThetadPhi) {
             float dTheta = photon2.Theta() - photon3.Theta();
             float dPhi = photon2.Phi() - photon3.Phi();
-            if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+            if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
               registry.fill(HIST("hSparseBkgFlow"), mother2.M(), mother2.Pt(), cent, scalprodCand2);
             }
           } else {
@@ -773,7 +774,7 @@ struct TaskPi0FlowEMC {
             if (mesonConfig.enableTanThetadPhi) {
               float dTheta = photon1.Theta() - photon3.Theta();
               float dPhi = photon1.Phi() - photon3.Phi();
-              if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+              if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
                 registry.fill(HIST("hSparseCalibBack"), mother1.M(), mother1.E() / 2., cent);
               }
             } else {
@@ -791,7 +792,7 @@ struct TaskPi0FlowEMC {
             if (mesonConfig.enableTanThetadPhi) {
               float dTheta = photon2.Theta() - photon3.Theta();
               float dPhi = photon2.Phi() - photon3.Phi();
-              if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+              if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
                 registry.fill(HIST("hSparseCalibBack"), mother2.M(), mother2.E() / 2., cent);
               }
             } else {
@@ -807,6 +808,7 @@ struct TaskPi0FlowEMC {
   /// Compute the scalar product
   /// \param collision is the collision with the Q vector information and event plane
   /// \param meson are the selected candidates
+  template <const int histType>
   void runFlowAnalysis(CollsWithQvecs::iterator const& collision, ROOT::Math::PtEtaPhiMVector const& meson)
   {
     auto [xQVec, yQVec] = getQvec(collision, qvecDetector);
@@ -824,7 +826,7 @@ struct TaskPi0FlowEMC {
       scalprodCand = scalprodCand / h1SPResolution->GetBinContent(h1SPResolution->FindBin(cent + epsilon));
     }
 
-    fillThn(massCand, ptCand, cent, scalprodCand);
+    fillThn<histType>(massCand, ptCand, cent, scalprodCand);
     return;
   }
 
@@ -866,7 +868,7 @@ struct TaskPi0FlowEMC {
         // general event selection
         continue;
       }
-      if (!(eventcuts.cfgTrackOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgTrackOccupancyMax)) {
+      if (!(eventcuts.cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
         // occupancy selection
         continue;
       }
@@ -890,15 +892,15 @@ struct TaskPi0FlowEMC {
 
       if (emccuts.cfgEnableQA) {
         for (const auto& photon : photonsPerCollision) {
-          registry.fill(HIST("hEClusterBefore"), photon.e()); // before cuts
+          registry.fill(HIST("hEClusterBefore"), photon.e());                              // before cuts
           registry.fill(HIST("mesonQA/hClusterEtaPhiBefore"), photon.phi(), photon.eta()); // before cuts
           if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(photon))) {
             continue;
           }
-          if (checkEtaPhi1D(photon.eta(), RecoDecay::constrainAngle(photon.phi())) >= 2) {
+          if (cfgDistanceToEdge.value && (checkEtaPhi1D(photon.eta(), RecoDecay::constrainAngle(photon.phi())) >= 2)) {
             continue;
           }
-          registry.fill(HIST("hEClusterAfter"), photon.e()); // accepted after cuts
+          registry.fill(HIST("hEClusterAfter"), photon.e());                              // accepted after cuts
           registry.fill(HIST("mesonQA/hClusterEtaPhiAfter"), photon.phi(), photon.eta()); // before cuts
         }
       }
@@ -951,7 +953,7 @@ struct TaskPi0FlowEMC {
           continue;
         }
         registry.fill(HIST("hClusterCuts"), 6);
-        runFlowAnalysis(collision, vMeson);
+        runFlowAnalysis<0>(collision, vMeson);
       }
       if (cfgDoRotation) {
         if (nColl % cfgDownsampling.value == 0) {
@@ -984,7 +986,7 @@ struct TaskPi0FlowEMC {
         // general event selection
         continue;
       }
-      if (!(eventcuts.cfgTrackOccupancyMin <= c1.trackOccupancyInTimeRange() && c1.trackOccupancyInTimeRange() < eventcuts.cfgTrackOccupancyMax) || !(eventcuts.cfgTrackOccupancyMin <= c2.trackOccupancyInTimeRange() && c2.trackOccupancyInTimeRange() < eventcuts.cfgTrackOccupancyMax)) {
+      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange() && c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange() && c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
         // occupancy selection
         continue;
       }
@@ -1031,12 +1033,12 @@ struct TaskPi0FlowEMC {
           registry.fill(HIST("hTanThetaPhi"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
           registry.fill(HIST("hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
         }
-        if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+        if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
           registry.fill(HIST("hClusterCuts"), 5);
           continue;
         }
         registry.fill(HIST("hClusterCuts"), 6);
-        runFlowAnalysis(c1, vMeson);
+        runFlowAnalysis<1>(c1, vMeson);
       }
     }
   }
@@ -1050,7 +1052,7 @@ struct TaskPi0FlowEMC {
       // no selection on the centrality is applied on purpose to allow for the resolution study in post-processing
       return;
     }
-    if (!(eventcuts.cfgTrackOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgTrackOccupancyMax)) {
+    if (!(eventcuts.cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
       return;
     }
     float cent = getCentrality(collision);
@@ -1176,7 +1178,7 @@ struct TaskPi0FlowEMC {
         // general event selection
         continue;
       }
-      if (!(eventcuts.cfgTrackOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgTrackOccupancyMax)) {
+      if (!(eventcuts.cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
         // occupancy selection
         continue;
       }
