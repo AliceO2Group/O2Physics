@@ -62,7 +62,7 @@ DECLARE_SOA_COLUMN(TItsChi2NCl, tItsChi2NCl, float);
 DECLARE_SOA_COLUMN(TRigidity, tRigidity, float);
 DECLARE_SOA_COLUMN(TItsClusterSize, tItsClusterSize, float);
 } // namespace h3_data
-DECLARE_SOA_TABLE(h3Data, "AOD", "h3_data", h3_data::TPt, h3_data::TEta,
+DECLARE_SOA_TABLE(H3Data, "AOD", "h3_data", h3_data::TPt, h3_data::TEta,
                   h3_data::TPhi, h3_data::TCharge, h3_data::TH3DeDx,
                   h3_data::TnSigmaTpc, h3_data::TTofSignalH3, h3_data::TDcaXY,
                   h3_data::TDcaZ, h3_data::TSigmaYX, h3_data::TSigmaXYZ,
@@ -92,7 +92,7 @@ DECLARE_SOA_COLUMN(TItsChi2NCl, tItsChi2NCl, float);
 DECLARE_SOA_COLUMN(TRigidity, tRigidity, float);
 DECLARE_SOA_COLUMN(TItsClusterSize, tItsClusterSize, float);
 } // namespace he_data
-DECLARE_SOA_TABLE(heData, "AOD", "he_data", he_data::TPt, he_data::TEta,
+DECLARE_SOA_TABLE(HeData, "AOD", "he_data", he_data::TPt, he_data::TEta,
                   he_data::TPhi, he_data::TCharge, he_data::THeDeDx,
                   he_data::TnSigmaTpc, he_data::TTofSignalHe, he_data::TDcaXY,
                   he_data::TDcaZ, he_data::TSigmaYX, he_data::TSigmaXYZ,
