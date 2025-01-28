@@ -165,6 +165,7 @@ class OnnxModel
   }
 #endif
   int getNumInputNodes() const { return mInputShapes[0][1]; }
+  std::vector<std::vector<int64_t>> getInputShapes() const { return mInputShapes; }
   int getNumOutputNodes() const { return mOutputShapes[0][1]; }
   uint64_t getValidityFrom() const { return validFrom; }
   uint64_t getValidityUntil() const { return validUntil; }
