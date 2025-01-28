@@ -120,7 +120,7 @@ struct singleTrackSelector {
   Filter pFilter = o2::aod::track::p > _min_P&& o2::aod::track::p < _max_P;
   Filter etaFilter = nabs(o2::aod::track::eta) < _eta;
   Filter dcaFilter = ((nabs(o2::aod::track::dcaXY) <= _dcaXY) && (nabs(o2::aod::track::dcaZ) <= _dcaZ)) &&
-                     ((o2::aod::track::dcaXY >= _dcaXYmin) && (o2::aod::track::dcaZ >= _dcaZmin));
+                     ((nabs(o2::aod::track::dcaXY) >= _dcaXYmin) && (nabs(o2::aod::track::dcaZ) >= _dcaZmin));
   Filter tofChi2Filter = o2::aod::track::tofChi2 < _maxTofChi2;
 
   ctpRateFetcher mRateFetcher; // inspired by zdcSP.cxx in PWGLF
