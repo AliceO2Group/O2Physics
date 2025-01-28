@@ -116,7 +116,7 @@ struct NucleiEfficiencyTask {
   Configurable<float> minCentrality{"minCentrality", 0.0, "min Centrality used"};
   Configurable<float> maxCentrality{"maxCentrality", 80.0, "max Centrality used"};
   Configurable<bool> enable_Centrality_cut{"enable_Centrality_cut", true, "enable Centrality cut"};
-  
+
   // Track filter
   Configurable<bool> requireITS{"requireITS", true, "Additional cut on the ITS requirement"};
   Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
@@ -135,15 +135,12 @@ struct NucleiEfficiencyTask {
   Configurable<float> maxDCA_Z{"maxDCA_Z", 2.0f, "max DCA to vertex z"};
   Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", -1, "Last cluster to required in TRD for track selection. -1 does not require any TRD cluster"};
   Configurable<bool> requireGoldenChi2{"requireGoldenChi2", false, "Enable the requirement of GoldenChi2"};
-  
-  
-  
+
   Configurable<bool> calc_cent{"calc_cent", false, "Enable centrality processing"};
-  
+
   Configurable<bool> eta_cut_MC_gen{"eta_cut_MC_gen", true, "Enable eta cut for generated MC"};
   Configurable<bool> use_pT_cut{"use_pT_cut", true, "0: p is used | 1: pT is used"};
-  
-  
+
   Configurable<bool> removeITSROFrameBorder{"removeITSROFrameBorder", false, "Remove TF border"};
   Configurable<bool> removeNoSameBunchPileup{"removeNoSameBunchPileup", false, "Remove TF border"};
   Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", false, "Remove TF border"};
@@ -155,11 +152,16 @@ struct NucleiEfficiencyTask {
   template <typename CollisionType>
   bool isEventSelected(CollisionType const& collision)
   {
-    if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) return false;
-    if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) return false;
-    if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) return false;
-    if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) return false;
-    if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) return false;
+    if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+      return false;
+    if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+      return false;
+    if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      return false;
+    if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC))
+      return false;
+    if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      return false;
     return true;
   }
 
@@ -263,10 +265,12 @@ struct NucleiEfficiencyTask {
   {
     if (event_selection_MC_sel8 && !collision.sel8())
       return;
-    if (collision.posZ() > cfgCutVertex) return;
+    if (collision.posZ() > cfgCutVertex)
+      return;
     MC_recon_reg.fill(HIST("histRecVtxMC"), collision.posZ());
     MC_recon_reg.fill(HIST("histCentrality"), collision.centFT0C());
-    if (!isEventSelected(collision)) return;
+    if (!isEventSelected(collision))
+      return;
 
     for (auto& track : tracks) {
       const auto particle = track.mcParticle();
@@ -360,7 +364,7 @@ struct NucleiEfficiencyTask {
       float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
       float Chi2perClusterTPC = track.tpcChi2NCl();
       float Chi2perClusterITS = track.itsChi2NCl();
-      
+
       bool insideDCAxy = (std::abs(track.dcaXY()) <= (maxDcaXYFactor.value * (0.0105f + 0.0350f / pow(track.pt(), 1.1f))));
 
       if (!(insideDCAxy) || TMath::Abs(track.dcaZ()) > maxDCA_Z || TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2PerClusterTPC || Chi2perClusterTPC < minChi2PerClusterTPC || Chi2perClusterITS > maxChi2PerClusterITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || track.pt() < p_min || track.pt() > p_max)
@@ -369,9 +373,6 @@ struct NucleiEfficiencyTask {
         continue;
       if (requireGoldenChi2 && !(track.passedGoldenChi2()))
         continue;
-      
-
-      
 
       MC_recon_reg.fill(HIST("histPhi"), track.phi(), pdgbin);
       MC_recon_reg.fill(HIST("histEta"), track.eta(), pdgbin);
