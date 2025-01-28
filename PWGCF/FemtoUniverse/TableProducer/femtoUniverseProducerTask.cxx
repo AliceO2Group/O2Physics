@@ -80,8 +80,7 @@ using FemtoFullTracks =
             aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
             aod::pidTPCDe, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
             aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
-using SelectedCandidatesDataMl = 
-  soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
+using SelectedCandidatesDataMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
 
 // using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join
 // table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s>
@@ -303,7 +302,7 @@ struct FemtoUniverseProducerTask {
     Configurable<float> confD0D0barCandEtaCut{"confD0D0barCandEtaCut", 0.8, "max. cand. pseudorapidity"};
     Configurable<bool> storeD0D0barDoubleMassHypo{"storeD0D0barDoubleMassHypo", false, "Store D0/D0bar cand. which pass selection criteria for both, D0 and D0bar"};
     Configurable<bool> applyMLSelD0D0bar{"applyMLSelD0D0bar", false, "Use ML D0/D0bar selection"};
-    Configurable<std::vector<int>> classMlD0D0bar{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
+    Configurable<std::vector<int>> classMlD0D0bar{"classMlD0D0bar", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
   } ConfD0Selection;
 
   HfHelper hfHelper;
@@ -1355,7 +1354,7 @@ struct FemtoUniverseProducerTask {
     double invMassD0bar = 0.0;
     bool isD0D0bar = false;
     std::vector<float> outputMlD0D0bar = {-1., -1., -1.}; // this vector keeps the probabilities from the ML model for D0/D0bar
-    uint8_t daughFlag = 0; // flag = 0 (daugh of D0 or D0bar), 1 (daug of D0), -1 (daugh of D0bar)
+    uint8_t daughFlag = 0;                                // flag = 0 (daugh of D0 or D0bar), 1 (daug of D0), -1 (daugh of D0bar)
 
     for (const auto& hfCand : hfCands) {
 
@@ -1383,7 +1382,7 @@ struct FemtoUniverseProducerTask {
       if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 0) {
         invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
         invMassD0bar = -hfHelper.invMassD0barToKPi(hfCand);
-        if(ConfD0Selection.applyMLSelD0D0bar) {
+        if (ConfD0Selection.applyMLSelD0D0bar) {
           for (unsigned int iClass = 0; iClass < ConfD0Selection.classMlD0D0bar->size(); iClass++) {
             outputMlD0D0bar[iClass] = hfCand.mlProbD0()[ConfD0Selection.classMlD0D0bar->at(iClass)];
           }
@@ -1393,7 +1392,7 @@ struct FemtoUniverseProducerTask {
       } else if (hfCand.isSelD0() == 0 && hfCand.isSelD0bar() == 1) {
         invMassD0 = -hfHelper.invMassD0ToPiK(hfCand);
         invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
-        if(ConfD0Selection.applyMLSelD0D0bar) {
+        if (ConfD0Selection.applyMLSelD0D0bar) {
           for (unsigned int iClass = 0; iClass < ConfD0Selection.classMlD0D0bar->size(); iClass++) {
             outputMlD0D0bar[iClass] = hfCand.mlProbD0bar()[ConfD0Selection.classMlD0D0bar->at(iClass)];
           }
@@ -1461,8 +1460,8 @@ struct FemtoUniverseProducerTask {
                     hfCand.eta(),
                     hfCand.phi(),
                     aod::femtouniverseparticle::ParticleType::kD0,
-                    -999, // cut, CutContainerType
-                    -999, // PID, CutContainerType
+                    -999,               // cut, CutContainerType
+                    -999,               // PID, CutContainerType
                     outputMlD0D0bar[0], // saving only the probaility for store class 1 - background
                     indexChildID,
                     invMassD0,     // D0 mass (mLambda)
@@ -1939,9 +1938,9 @@ struct FemtoUniverseProducerTask {
                  "Provide experimental data for track D0 meson", false);
 
   void processTrackD0DataML(aod::FemtoFullCollision const& col,
-                               aod::BCsWithTimestamps const&,
-                               soa::Filtered<aod::FemtoFullTracks> const& tracks,
-                               aod::SelectedCandidatesDataMl const& candidates)
+                            aod::BCsWithTimestamps const&,
+                            soa::Filtered<aod::FemtoFullTracks> const& tracks,
+                            aod::SelectedCandidatesDataMl const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());

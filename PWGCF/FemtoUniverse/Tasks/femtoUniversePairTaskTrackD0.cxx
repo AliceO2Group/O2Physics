@@ -450,41 +450,73 @@ struct FemtoUniversePairTaskTrackD0 {
     for (auto const& charmCand : groupD0D0barCands) {
       // D0 candidates
       if (charmCand.mLambda() > 0.0f && charmCand.mAntiLambda() < 0.0f) {
-        if (charmCand.tempFitVar() < 0.01) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt001"), charmCand.mLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.015) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt0015"), charmCand.mLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.02) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt002"), charmCand.mLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.025) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt0025"), charmCand.mLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.03) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt003"), charmCand.mLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.04) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt004"), charmCand.mLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.05) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt005"), charmCand.mLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.06) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt006"), charmCand.mLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.07) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt007"), charmCand.mLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.08) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt008"), charmCand.mLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.09) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt009"), charmCand.mLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.1) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt01"), charmCand.mLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.15) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt015"), charmCand.mLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.2) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt02"), charmCand.mLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.25) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt025"), charmCand.mLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.3) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt03"), charmCand.mLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.01)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt001"), charmCand.mLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.015)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt0015"), charmCand.mLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.02)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt002"), charmCand.mLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.025)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt0025"), charmCand.mLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.03)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt003"), charmCand.mLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.04)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt004"), charmCand.mLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.05)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt005"), charmCand.mLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.06)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt006"), charmCand.mLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.07)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt007"), charmCand.mLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.08)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt008"), charmCand.mLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.09)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt009"), charmCand.mLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.1)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt01"), charmCand.mLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.15)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt015"), charmCand.mLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.2)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt02"), charmCand.mLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.25)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt025"), charmCand.mLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.3)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt03"), charmCand.mLambda(), charmCand.pt());
       }
       // DObar candidates
       if (charmCand.mLambda() < 0.0f && charmCand.mAntiLambda() > 0.0f) {
-        if (charmCand.tempFitVar() < 0.01) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt001"), charmCand.mAntiLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.015) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt0015"), charmCand.mAntiLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.02) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt002"), charmCand.mAntiLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.025) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt0025"), charmCand.mAntiLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.03) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt003"), charmCand.mAntiLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.04) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt004"), charmCand.mAntiLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.05) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt005"), charmCand.mAntiLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.06) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt006"), charmCand.mAntiLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.07) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt007"), charmCand.mAntiLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.08) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt008"), charmCand.mAntiLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.09) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt009"), charmCand.mAntiLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.1) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt01"), charmCand.mAntiLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.15) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt015"), charmCand.mAntiLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.2) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt02"), charmCand.mAntiLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.25) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt025"), charmCand.mAntiLambda(), charmCand.pt());
-        if (charmCand.tempFitVar() < 0.3) registry.fill(HIST("D0D0bar_MLSel/hMassVsPt03"), charmCand.mAntiLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.01)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt001"), charmCand.mAntiLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.015)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt0015"), charmCand.mAntiLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.02)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt002"), charmCand.mAntiLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.025)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt0025"), charmCand.mAntiLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.03)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt003"), charmCand.mAntiLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.04)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt004"), charmCand.mAntiLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.05)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt005"), charmCand.mAntiLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.06)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt006"), charmCand.mAntiLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.07)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt007"), charmCand.mAntiLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.08)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt008"), charmCand.mAntiLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.09)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt009"), charmCand.mAntiLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.1)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt01"), charmCand.mAntiLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.15)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt015"), charmCand.mAntiLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.2)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt02"), charmCand.mAntiLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.25)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt025"), charmCand.mAntiLambda(), charmCand.pt());
+        if (charmCand.tempFitVar() < 0.3)
+          registry.fill(HIST("D0D0bar_MLSel/hMassVsPt03"), charmCand.mAntiLambda(), charmCand.pt());
       }
     }
   }
