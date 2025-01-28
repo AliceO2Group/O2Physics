@@ -49,6 +49,7 @@
 
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <TF1.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -60,7 +61,7 @@ using namespace std;
 struct FlowPbpbPikp {
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> noLaterThan{"noLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
@@ -71,8 +72,19 @@ struct FlowPbpbPikp {
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
-  O2_DEFINE_CONFIGURABLE(cfgTpcNsigmaCut, float, 2.0f, "TPC N-sigma cut for pions, kaons, protons")
-  O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 1.8f, "Minimum pt to use TOF N-sigma")
+  O2_DEFINE_CONFIGURABLE(cfgTpcNsigmaCut, float, 3.0f, "TPC N-sigma cut for pions, kaons, protons")
+  O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 0.5f, "Minimum pt to use TOF N-sigma")
+
+  O2_DEFINE_CONFIGURABLE(cfgUseCosPA, bool, false, "Use Pointing angle for resonances")
+  O2_DEFINE_CONFIGURABLE(cfgPhiCosPA, float, 0.04f, "Minimum Pointing angle for Phi")
+  O2_DEFINE_CONFIGURABLE(cfgTpcCluster, int, 70, "Number of TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 2.0f, "DCAxy range for tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "DCAz range for tracks")
+  O2_DEFINE_CONFIGURABLE(useGlobalTrack, bool, true, "use Global track")
+  O2_DEFINE_CONFIGURABLE(cfgITScluster, int, 0, "Number of ITS cluster")
+  O2_DEFINE_CONFIGURABLE(confRapidity, float, 0.5, "Rapidity cut")
+  O2_DEFINE_CONFIGURABLE(cfgCutOccupancy, int, 3000, "Occupancy cut")
+  O2_DEFINE_CONFIGURABLE(additionalEvsel, bool, false, "Additional event selcection")
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -82,15 +94,16 @@ struct FlowPbpbPikp {
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {80, -5, 5}, "nsigmaTPC axis"};
   ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
   ConfigurableAxis axisParticles{"axisParticles", {3, 0, 3}, "axis for different hadrons"};
-  ConfigurableAxis axisPhiMass{"axisPhiMass", {10000, 0, 2}, "axis for invariant mass distibution for Phi"};
+  ConfigurableAxis axisPhiMass{"axisPhiMass", {50000, 0, 5}, "axis for invariant mass distibution for Phi"};
   ConfigurableAxis axisTPCsignal{"axisTPCsignal", {10000, 0, 1000}, "axis for TPC signal"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter =(nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
-  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
+  //using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
   // using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::pidBayes, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
-  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
 
   SliceCache cache;
   Partition<AodTracks> posTracks = aod::track::signed1Pt > 0.0f;
@@ -104,6 +117,13 @@ struct FlowPbpbPikp {
   TAxis* fPtAxis;
   TRandom3* fRndm = new TRandom3(0);
 
+  // Event selection cuts - Alex
+  TF1* fMultPVCutLow = nullptr;
+  TF1* fMultPVCutHigh = nullptr;
+  TF1* fMultCutLow = nullptr;
+  TF1* fMultCutHigh = nullptr;
+  TF1* fMultMultPVCut = nullptr;
+
   void init(InitContext const&)
   {
     ccdb->setURL(ccdbUrl.value);
@@ -116,7 +136,6 @@ struct FlowPbpbPikp {
     histos.add("hMult", "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     histos.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
     histos.add("hPt", "", {HistType::kTH1D, {axisPt}});
-    histos.add("hPhiMass", "", {HistType::kTH1D, {axisPhiMass}});
     histos.add("c22_gap08", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c22_gap08_pi", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c22_gap08_ka", "", {HistType::kTProfile, {axisMultiplicity}});
@@ -126,11 +145,25 @@ struct FlowPbpbPikp {
     histos.add("KminusTPC", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
     histos.add("TofTpcNsigma", "", {HistType::kTHnSparseD, {{axisParticles, axisNsigmaTPC, axisNsigmaTOF, axisPt}}});
     histos.add("partCount", "", {HistType::kTHnSparseD, {{axisParticles, axisMultiplicity, axisPt}}});
+    histos.add("hPhiMass_sparse", "", {HistType::kTHnSparseD, {{axisPhiMass, axisPt, axisMultiplicity}}});
 
     o2::framework::AxisSpec axis = axisPt;
     int nPtBins = axis.binEdges.size() - 1;
     double* ptBins = &(axis.binEdges)[0];
     fPtAxis = new TAxis(nPtBins, ptBins);
+
+    if (additionalEvsel) {
+      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+      fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
+      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+      fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
+      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x)", 0, 100);
+      fMultCutLow->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
+      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x)", 0, 100);
+      fMultCutHigh->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
+      fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
+      fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
+    }
 
     TObjArray* oba = new TObjArray();
     oba->Add(new TNamed("Ch08Gap22", "Ch08Gap22"));
@@ -208,6 +241,48 @@ struct FlowPbpbPikp {
     return false;
   }
 
+  template <typename TCollision>
+  bool eventSelected(TCollision collision, const float& centrality)
+  {
+    auto multNTracksPV = collision.multNTracksPV();
+    if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+      return 0;
+    if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+      return 0;
+
+    return 1;
+  }
+
+  template <typename T>
+  bool selectionTrack(const T& candidate)
+  {
+    if (useGlobalTrack && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTpcCluster)) {
+      return false;
+    }
+    if (!useGlobalTrack && !(candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster)) {
+      return false;
+    }
+    return true;
+  }
+
+  // deep angle cut on pair to remove photon conversion
+  template <typename T1, typename T2>
+  bool selectionPair(const T1& candidate1, const T2& candidate2)
+  {
+    double pt1, pt2, pz1, pz2, p1, p2, angle;
+    pt1 = candidate1.pt();
+    pt2 = candidate2.pt();
+    pz1 = candidate1.pz();
+    pz2 = candidate2.pz();
+    p1 = candidate1.p();
+    p2 = candidate2.p();
+    angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
+    if (cfgUseCosPA && angle < cfgPhiCosPA) {
+      return false;
+    }
+    return true;
+  }
+
   template <typename TTrack>
   int getNsigmaPID(TTrack track)
   {
@@ -267,19 +342,33 @@ struct FlowPbpbPikp {
   }*/
 
   template <typename TTrack, typename vector, char... chars>
-  void resurrectParticle(TTrack trackplus, TTrack trackminus, vector plusdaug, vector minusdaug, vector mom, double plusmass, double minusmass, const ConstStr<chars...>& hist)
+  void resurrectParticle(TTrack trackplus, TTrack trackminus, vector plusdaug, vector minusdaug, vector mom, double plusmass, const ConstStr<chars...>& hist, const double cent)
   {
-    for (auto const& [partplus, partminus] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(trackplus, trackminus))) {
+    for (auto const& [partplus, partminus] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(trackplus, trackminus))) {
       if (getNsigmaPID(partplus) != 2)
         continue;
       if (getNsigmaPID(partminus) != 2)
         continue;
-
+      //if (partplus.globalIndex() == partminus.globalIndex())
+      //  continue;
+      if(isFakeKaon(partplus))
+        continue;
+      if(isFakeKaon(partminus))
+        continue;
+      if (!selectionPair(partplus, partminus))
+        continue;
+      if (!selectionTrack(partplus)) 
+        continue;
+      if (!selectionTrack(partminus)) 
+        continue;
+      
       plusdaug = ROOT::Math::PxPyPzMVector(partplus.px(), partplus.py(), partplus.pz(), plusmass);
-      minusdaug = ROOT::Math::PxPyPzMVector(partminus.px(), partminus.py(), partminus.pz(), minusmass);
+      minusdaug = ROOT::Math::PxPyPzMVector(partminus.px(), partminus.py(), partminus.pz(), plusmass);
       mom = plusdaug + minusdaug;
 
-      histos.fill(hist, mom.M());
+      if(std::abs(mom.Rapidity()) < confRapidity) {
+        histos.fill(hist, mom.M(), mom.Pt(), cent);
+      }
     }
     return;
   }
@@ -335,23 +424,32 @@ struct FlowPbpbPikp {
 
   ROOT::Math::PxPyPzMVector Phimom, kplusdaug, kminusdaug;
   double massKplus = o2::constants::physics::MassKPlus;
-  double massKminus = o2::constants::physics::MassKMinus;
 
   void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
   {
     int nTot = tracks.size();
     if (nTot < 1)
       return;
-    if (!collision.sel8())
+    if (!collision.sel8() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
       return;
-    float lRandom = fRndm->Rndm();
 
+    float lRandom = fRndm->Rndm();
     float vtxz = collision.posZ();
+    const auto cent = collision.centFT0C();
+
+    int occupancy = collision.trackOccupancyInTimeRange();
+
+    if (occupancy > cfgCutOccupancy)
+      return;
+
+    if (additionalEvsel && !eventSelected(collision, cent))
+      return;
+
     histos.fill(HIST("hVtxZ"), vtxz);
     histos.fill(HIST("hMult"), nTot);
     histos.fill(HIST("hCent"), collision.centFT0C());
     fGFW->Clear();
-    const auto cent = collision.centFT0C();
+    
 
     auto posSlicedTracks = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negSlicedTracks = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -359,36 +457,11 @@ struct FlowPbpbPikp {
     float weff = 1, wacc = 1;
     int pidIndex;
 
-    // resurrectParticle(posSlicedTracks, negSlicedTracks, kplusdaug, kminusdaug, Phimom, massKplus, massKminus, HIST("hPhiMass"));
+    std::cout<<" *************** Event check 7 *************"<<std::endl;
 
-    for (auto const& trackA : posSlicedTracks) {
-      if (getNsigmaPID(trackA) != 2)
-        continue;
-      if (isFakeKaon(trackA))
-        continue;
-      auto trackAID = trackA.globalIndex();
+    resurrectParticle(posSlicedTracks, negSlicedTracks, kplusdaug, kminusdaug, Phimom, massKplus, HIST("hPhiMass_sparse"), cent);
 
-      for (auto const& trackB : negSlicedTracks) {
-        auto trackBID = trackB.globalIndex();
-        if (getNsigmaPID(trackB) != 2)
-          continue;
-        if (isFakeKaon(trackB))
-          continue;
-        if (trackAID == trackBID)
-          continue;
-
-        histos.fill(HIST("KplusTPC"), trackA.pt(), trackA.tpcSignal());
-        histos.fill(HIST("KminusTPC"), trackB.pt(), trackB.tpcSignal());
-
-        kplusdaug = ROOT::Math::PxPyPzMVector(trackA.px(), trackA.py(), trackA.pz(), massKplus);
-        kminusdaug = ROOT::Math::PxPyPzMVector(trackB.px(), trackB.py(), trackB.pz(), massKminus);
-        Phimom = kplusdaug + kminusdaug;
-
-        histos.fill(HIST("hPhiMass"), Phimom.M());
-      }
-    }
-
-    for (auto const& track1 : tracks) {
+    /*for (auto const& track1 : tracks) {
       double pt = track1.pt();
       histos.fill(HIST("hPhi"), track1.phi());
       histos.fill(HIST("hEta"), track1.eta());
@@ -434,7 +507,7 @@ struct FlowPbpbPikp {
 
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
       fillFC(corrconfigs.at(l_ind), cent, lRandom);
-    }
+    }*/
 
   } // end of process
 };
