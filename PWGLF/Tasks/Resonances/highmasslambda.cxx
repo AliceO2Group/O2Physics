@@ -170,7 +170,7 @@ struct highmasslambda {
     // std::vector<double> ptLambdaBinning = {2.0, 3.0, 4.0, 5.0, 6.0};
 
     std::vector<double> occupancyBinning = {-0.5, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
-    AxisSpec resAxis = {1600, -16, 16, "Res"};
+    AxisSpec resAxis = {1600, -30, 30, "Res"};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
@@ -212,9 +212,9 @@ struct highmasslambda {
     histos.add("hImpactPar1", "hImpactPar1", kTH1F, {{500, 0.0f, 0.1f}});
     histos.add("hCPA", "hCPA", kTH1F, {{220, -1.1f, 1.1f}});
 
-    histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDCA});
-    histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDCA});
-    histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDCA});
+    histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDCA, thnAxisPtProton});
+    histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDCA, thnAxisPtProton});
+    histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDCA, thnAxisPtProton});
 
     histos.add("hSparseV2SASameEvent_V2_SVX", "hSparseV2SASameEvent_V2_SVX", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDecayLength, thnAxisCPA});
     histos.add("hSparseV2SASameEventRotational_V2_SVX", "hSparseV2SASameEventRotational_SVX", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDecayLength, thnAxisCPA});
@@ -301,6 +301,27 @@ struct highmasslambda {
         return true;
       }
       if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // TPC TOF
+  template <typename T>
+  bool selectionPID3(const T& candidate)
+  {
+    if (candidate.hasTOF() && candidate.tpcInnerParam() > 0.6 && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
+      return true;
+    }
+    if (!candidate.hasTOF()) {
+      if (candidate.tpcInnerParam() < 1.0 && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
+        return true;
+      }
+      if (candidate.tpcInnerParam() >= 1.0 && candidate.tpcInnerParam() < 1.6 && candidate.tpcNSigmaPr() < nsigmaCutTPC && candidate.tpcNSigmaPr() > -1.5) {
+        return true;
+      }
+      if (candidate.tpcInnerParam() >= 1.6 && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
         return true;
       }
     }
@@ -448,6 +469,9 @@ struct highmasslambda {
       if (PIDstrategy == 1 && !selectionPID2(track1)) {
         continue;
       }
+      if (PIDstrategy == 2 && !selectionPID3(track1)) {
+        continue;
+      }
       if (track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < 2.5)) {
         continue;
       }
@@ -490,7 +514,7 @@ struct highmasslambda {
         auto phiminuspsi = GetPhiInRange(Lambdac.Phi() - psiFT0C);
         v2 = TMath::Cos(2.0 * phiminuspsi) * QFT0C;
         if (Lambdac.M() > cMinLambdaMass && Lambdac.M() <= cMaxLambdaMass && TMath::Abs(Lambdac.Rapidity()) < confRapidity && Lambdac.Pt() > 2.0 && Lambdac.Pt() <= 6.0) {
-          histos.fill(HIST("hSparseV2SASameEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()));
+          histos.fill(HIST("hSparseV2SASameEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
         }
         if (fillRotation) {
           for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
@@ -506,7 +530,7 @@ struct highmasslambda {
             auto phiminuspsiRot = GetPhiInRange(LambdacRot.Phi() - psiFT0C);
             v2Rot = TMath::Cos(2.0 * phiminuspsiRot) * QFT0C;
             if (LambdacRot.M() > cMinLambdaMass && LambdacRot.M() <= cMaxLambdaMass && TMath::Abs(LambdacRot.Rapidity()) < confRapidity && LambdacRot.Pt() > 2.0 && LambdacRot.Pt() <= 6.0) {
-              histos.fill(HIST("hSparseV2SASameEventRotational_V2"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, TMath::Abs(track1.dcaXY()));
+              histos.fill(HIST("hSparseV2SASameEventRotational_V2"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, TMath::Abs(track1.dcaXY()), Proton.Pt());
             }
           }
         }
@@ -559,6 +583,9 @@ struct highmasslambda {
         if (PIDstrategy == 1 && !selectionPID2(track1)) {
           continue;
         }
+        if (PIDstrategy == 2 && !selectionPID3(track1)) {
+          continue;
+        }
         if (track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < 2.5)) {
           continue;
         }
@@ -586,7 +613,7 @@ struct highmasslambda {
         auto phiminuspsi = GetPhiInRange(Lambdac.Phi() - psiFT0C);
         v2 = TMath::Cos(2.0 * phiminuspsi) * QFT0C;
         if (occupancy1 < cfgOccupancyCut && occupancy2 < cfgOccupancyCut && Lambdac.M() > cMinLambdaMass && Lambdac.M() <= cMaxLambdaMass && TMath::Abs(Lambdac.Rapidity()) < confRapidity && Lambdac.Pt() > 2.0 && Lambdac.Pt() <= 6.0) {
-          histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()));
+          histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
         }
       }
     }
@@ -655,6 +682,9 @@ struct highmasslambda {
       if (PIDstrategy == 1 && !selectionPID2(track1)) {
         continue;
       }
+      if (PIDstrategy == 2 && !selectionPID3(track1)) {
+        continue;
+      }
       if (track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < 2.5)) {
         continue;
       }
@@ -667,6 +697,7 @@ struct highmasslambda {
       }
       auto track1ID = track1.globalIndex();
       auto trackParCovBach = getTrackParCov(track1);
+      // auto trackParCovBach = getTrackParCov(bach);
 
       for (auto v0 : V0s) {
         if (!SelectionV0(collision, v0)) {
@@ -693,53 +724,84 @@ struct highmasslambda {
           histos.fill(HIST("hInvMassKs0"), v0.mK0Short());
         }
         firstprimarytrack = firstprimarytrack + 1;
-        float v0x, v0y, v0z, v0px, v0py, v0pz;
-        float posTrackX, negTrackX;
-        o2::track::TrackParCov trackParCovV0DaughPos;
-        o2::track::TrackParCov trackParCovV0DaughNeg;
-        trackParCovV0DaughPos = getTrackParCov(postrack); // check that aod::TracksWCov does not need TracksDCA!
-        trackParCovV0DaughNeg = getTrackParCov(negtrack); // check that aod::TracksWCov does not need TracksDCA!
-        posTrackX = v0.posX();
-        negTrackX = v0.negX();
-        v0x = v0.x();
-        v0y = v0.y();
-        v0z = v0.z();
-        const std::array<float, 3> vertexV0 = {v0x, v0y, v0z};
-
-        v0px = v0.px();
-        v0py = v0.py();
-        v0pz = v0.pz();
-        const std::array<float, 3> momentumV0 = {v0px, v0py, v0pz};
-
-        std::array<float, 6> covV0Pos = {0.};
-        for (int i = 0; i < 6; i++) {
-          covV0Pos[i] = v0.positionCovMat()[i];
-        }
-        trackParCovV0DaughPos.propagateTo(posTrackX, bz); // propagate the track to the X closest to the V0 vertex
-        trackParCovV0DaughNeg.propagateTo(negTrackX, bz); // propagate the track to the X closest to the V0 vertex
-
-        // we build the neutral track to then build the cascade
-        // auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg); // build the V0 track (indices for v0 daughters set to 0 for now)
-        auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, covV0Pos, trackParCovV0DaughPos, trackParCovV0DaughNeg); // build the V0 track (indices for v0 daughters set to 0 for now)
+        // LOGF(info, "Before dca fitter");
         std::array<float, 3> pVecV0 = {0., 0., 0.};
         std::array<float, 3> pVecBach = {0., 0., 0.};
         std::array<float, 3> pVecCand = {0., 0., 0.};
+        const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
+        const std::array<float, 3> momentumV0 = {v0.px(), v0.py(), v0.pz()};
+        // we build the neutral track to then build the cascade
+        std::array<float, 21> covV = {0.};
+        constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+        for (int i = 0; i < 6; i++) {
+          covV[MomInd[i]] = v0.momentumCovMat()[i];
+          covV[i] = v0.positionCovMat()[i];
+        }
+        auto trackV0 = o2::track::TrackParCov(vertexV0, momentumV0, covV, 0, true);
+        trackV0.setAbsCharge(0);
+        trackV0.setPID(o2::track::PID::K0);
+
+        int nCand2 = 0;
         try {
-          if (df.process(trackV0, trackParCovBach) == 0) {
-            continue;
-          } else {
-          }
-        } catch (const std::runtime_error& error) {
+          nCand2 = df.process(trackV0, trackParCovBach);
+        } catch (...) {
           continue;
         }
-        df.propagateTracksToVertex();           // propagate the bachelor and V0 to the Lambdac vertex
-        trackV0.getPxPyPzGlo(pVecV0);           // momentum of D0 at the Lambdac vertex
-        trackParCovBach.getPxPyPzGlo(pVecBach); // momentum of proton at the Lambdac vertex
-        pVecCand = RecoDecay::pVec(pVecV0, pVecBach);
-        const auto& secondaryVertex = df.getPCACandidate();
 
-        // get track impact parameters
-        // This modifies track momenta!
+        if (nCand2 == 0) {
+          continue;
+        }
+        df.propagateTracksToVertex();        // propagate the bach and V0 to the Lc vertex
+        df.getTrack(0).getPxPyPzGlo(pVecV0); // take the momentum at the Lc vertex
+        df.getTrack(1).getPxPyPzGlo(pVecBach);
+        // LOGF(info, "after dca fitter");
+
+        /*
+        float v0x, v0y, v0z, v0px, v0py, v0pz;
+        float posTrackX, negTrackX;
+        o2::track::TrackParCov trackParCovV0DaughPos;
+              o2::track::TrackParCov trackParCovV0DaughNeg;
+              trackParCovV0DaughPos = getTrackParCov(postrack); // check that aod::TracksWCov does not need TracksDCA!
+              trackParCovV0DaughNeg = getTrackParCov(negtrack); // check that aod::TracksWCov does not need TracksDCA!
+              posTrackX = v0.posX();
+              negTrackX = v0.negX();
+              v0x = v0.x();
+              v0y = v0.y();
+              v0z = v0.z();
+              const std::array<float, 3> vertexV0 = {v0x, v0y, v0z};
+
+              v0px = v0.px();
+              v0py = v0.py();
+              v0pz = v0.pz();
+              const std::array<float, 3> momentumV0 = {v0px, v0py, v0pz};
+
+              std::array<float, 6> covV0Pos = {0.};
+              for (int i = 0; i < 6; i++) {
+                covV0Pos[i] = v0.positionCovMat()[i];
+              }
+              trackParCovV0DaughPos.propagateTo(posTrackX, bz); // propagate the track to the X closest to the V0 vertex
+              trackParCovV0DaughNeg.propagateTo(negTrackX, bz); // propagate the track to the X closest to the V0 vertex
+
+              // we build the neutral track to then build the cascade
+              // auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg); // build the V0 track (indices for v0 daughters set to 0 for now)
+              auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, covV0Pos, trackParCovV0DaughPos, trackParCovV0DaughNeg); // build the V0 track (indices for v0 daughters set to 0 for now)
+              std::array<float, 3> pVecV0 = {0., 0., 0.};
+              std::array<float, 3> pVecBach = {0., 0., 0.};
+              std::array<float, 3> pVecCand = {0., 0., 0.};
+              try {
+                if (df.process(trackV0, trackParCovBach) == 0) {
+                  continue;
+                } else {
+                }
+              } catch (const std::runtime_error& error) {
+                continue;
+              }
+              df.propagateTracksToVertex();           // propagate the bachelor and V0 to the Lambdac vertex
+              trackV0.getPxPyPzGlo(pVecV0);           // momentum of D0 at the Lambdac vertex
+              trackParCovBach.getPxPyPzGlo(pVecBach); // momentum of proton at the Lambdac vertex
+            */
+
+        const auto& secondaryVertex = df.getPCACandidate();
         auto primaryVertex = getPrimaryVertex(collision);
         o2::dataformats::DCA impactParameter0;
         o2::dataformats::DCA impactParameter1;
