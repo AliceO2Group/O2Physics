@@ -172,7 +172,7 @@ struct sigma0builder {
   void init(InitContext const&)
   {
     // Event Counters
-    histos.add("hEventSelection", "hEventSelection", kTH1F, {{20, -0.5f, +19.5f}});
+    histos.add("hEventSelection", "hEventSelection", kTH1F, {{20, -0.5f, +18.5f}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
@@ -187,15 +187,14 @@ struct sigma0builder {
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeStd");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "kNoCollInTimeRangeStrict");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "kNoCollInTimeRangeNarrow");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "kNoCollInTimeRangeVzDep");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStd");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "kNoCollInRofStrict");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "kNoCollInRofStd");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStrict");
     if (doPPAnalysis) {
-      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "INEL>0");
-      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "INEL>1");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "INEL>0");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "INEL>1");
     } else {
-      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "Below min occup.");
-      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "Above max occup.");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "Below min occup.");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "Above max occup.");
     }
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {axisCentrality});
@@ -356,44 +355,39 @@ struct sigma0builder {
     }
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 13 /* No other collision within +/- 2 microseconds */);
-    if (eventSelections.requireNoCollInTimeRangeVzDep && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeVzDependent)) {
-      return false;
-    }
-    if (fillHists)
-      histos.fill(HIST("hEventSelection"), 14 /* No other collision with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ */);
     if (eventSelections.requireNoCollInROFStd && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 15 /* No other collision within the same ITS ROF with mult. above a certain threshold */);
+      histos.fill(HIST("hEventSelection"), 14 /* No other collision within the same ITS ROF with mult. above a certain threshold */);
     if (eventSelections.requireNoCollInROFStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
       return false;
     }
     if (fillHists)
-      histos.fill(HIST("hEventSelection"), 16 /* No other collision within the same ITS ROF */);
+      histos.fill(HIST("hEventSelection"), 15 /* No other collision within the same ITS ROF */);
     if (doPPAnalysis) { // we are in pp
       if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < 1) {
         return false;
       }
       if (fillHists)
-        histos.fill(HIST("hEventSelection"), 17 /* INEL > 0 */);
+        histos.fill(HIST("hEventSelection"), 16 /* INEL > 0 */);
       if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < 2) {
         return false;
       }
       if (fillHists)
-        histos.fill(HIST("hEventSelection"), 18 /* INEL > 1 */);
+        histos.fill(HIST("hEventSelection"), 17 /* INEL > 1 */);
     } else { // we are in Pb-Pb
       float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
       if (eventSelections.minOccupancy >= 0 && collisionOccupancy < eventSelections.minOccupancy) {
         return false;
       }
       if (fillHists)
-        histos.fill(HIST("hEventSelection"), 17 /* Below min occupancy */);
+        histos.fill(HIST("hEventSelection"), 16 /* Below min occupancy */);
       if (eventSelections.maxOccupancy >= 0 && collisionOccupancy > eventSelections.maxOccupancy) {
         return false;
       }
       if (fillHists)
-        histos.fill(HIST("hEventSelection"), 18 /* Above max occupancy */);
+        histos.fill(HIST("hEventSelection"), 17 /* Above max occupancy */);
     }
     return true;
   }
