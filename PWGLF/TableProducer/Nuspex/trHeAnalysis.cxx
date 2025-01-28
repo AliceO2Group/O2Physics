@@ -182,7 +182,7 @@ struct trHeAnalysis {
   } evselOptions;
 
   Configurable<bool> cfgTPCPidMethod{"cfgTPCPidMethod", false, "Using own or built in bethe parametrization"}; // false for built in
-                                                    
+
   // Set the multiplity event limits
   Configurable<float> cfgLowMultCut{"cfgLowMultCut", 0.0f, "Accepted multiplicity percentage lower limit"};
   Configurable<float> cfgHighMultCut{"cfgHighMultCut", 100.0f, "Accepted multiplicity percentage higher limit"};
@@ -220,7 +220,7 @@ struct trHeAnalysis {
     Configurable<float> nsigmaTPCTr{"nsigmaTPCTr", 5.f, "Value of the Nsigma TPC cut for tritons"};
     Configurable<float> nsigmaTPCHe{"nsigmaTPCHe", 5.f, "Value of the Nsigma TPC cut for helium-3"};
   } nsigmaTPCvar;
-  Configurable<LabeledArray<float>> cfgBetheBlochParams{"cfgBetheBlochParams",{betheBlochDefault[0], nParticles, nBetheParams, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
+  Configurable<LabeledArray<float>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], nParticles, nBetheParams, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
 
   void init(o2::framework::InitContext&)
   {
@@ -402,7 +402,7 @@ struct trHeAnalysis {
               getMeanItsClsSize(track) / std::cosh(track.eta());
             H3Data(tPt, tEta, tPhi, tCharge, tH3DeDx, tnSigmaTpc, tTofSignalH3,
                    tDcaXY, tDcaZ, tSigmaYX, tSigmaXYZ, tSigmaZ, tnTpcCluster,
-                   tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity, 
+                   tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity,
                    tItsClusterSize);
           }
         }
@@ -443,7 +443,7 @@ struct trHeAnalysis {
               getMeanItsClsSize(track) / std::cosh(track.eta());
             HeData(tPt, tEta, tPhi, tCharge, tHeDeDx, tnSigmaTpc, tTofSignalHe,
                    tDcaXY, tDcaZ, tSigmaYX, tSigmaXYZ, tSigmaZ, tnTpcCluster,
-                   tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity, 
+                   tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity,
                    tItsClusterSize);
           }
         }
@@ -549,7 +549,7 @@ struct trHeAnalysis {
               getMeanItsClsSize(track) / std::cosh(track.eta());
             H3Data(tPt, tEta, tPhi, tCharge, tH3DeDx, tnSigmaTpc, tTofSignalH3,
                    tDcaXY, tDcaZ, tSigmaYX, tSigmaXYZ, tSigmaZ, tnTpcCluster,
-                   tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity, 
+                   tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity,
                    tItsClusterSize);
           }
         }
