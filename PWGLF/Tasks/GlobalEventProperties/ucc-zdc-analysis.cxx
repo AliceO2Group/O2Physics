@@ -8,9 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// Authors: Omar Vazque,
-// Date: 01.28.2025
+
+/// \file ucc-zdc-analysis.cxx
+///
+/// \author Omar Vazquez <omar.vazquez.rueda@cern.ch>
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
@@ -50,9 +51,12 @@ struct UCCZDC {
 
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{
-      "histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+    "histos",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject};
 
-  void init(InitContext const&) {
+  void init(InitContext const&)
+  {
     // define axes you want to use
     const AxisSpec axisEvent{3, 0., +3.0, ""};
     const AxisSpec axisEta{30, -1.5, +1.5, "#eta"};
@@ -130,9 +134,10 @@ struct UCCZDC {
   }
 
   void processZdcCollAss(
-      ColEvSels const& cols, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/,
-      aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/,
-      soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const& tracks) {
+    ColEvSels const& cols, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/,
+    aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/,
+    soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const& tracks)
+  {
     for (auto& collision : cols) {
       histos.fill(HIST("hEventCounter"), 0.5);
       if (!collision.sel8()) {
@@ -204,14 +209,16 @@ struct UCCZDC {
         histos.get<TH2>(HIST("debunch"))->Fill(tZNA - tZNC, tZNA + tZNC);
 
         histos.get<TH2>(HIST("ZNvsFV0Acorrel"))
-            ->Fill(multV0A / 100., aZNA + aZNC);
+          ->Fill(multV0A / 100., aZNA + aZNC);
         histos.get<TH2>(HIST("ZNvsFT0correl"))
-            ->Fill((multT0A + multT0C) / 100., aZNC + aZNA);
-      }  // foundBC.has_zdc()
+          ->Fill((multT0A + multT0C) / 100., aZNC + aZNA);
+      } // foundBC.has_zdc()
 
       for (auto& track : tracks) {
-        if (track.tpcNClsCrossedRows() < 70) continue;
-        if (fabs(track.dcaXY()) > 0.2) continue;
+        if (track.tpcNClsCrossedRows() < 70)
+          continue;
+        if (fabs(track.dcaXY()) > 0.2)
+          continue;
 
         histos.fill(HIST("etaHistogram"), track.eta());
       }
@@ -280,6 +287,7 @@ struct UCCZDC {
   //                "Processing ZDC vs. mult. w. collision association", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{adaptAnalysisTask<UCCZDC>(cfgc)};
 }
