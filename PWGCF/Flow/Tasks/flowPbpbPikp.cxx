@@ -51,7 +51,6 @@
 
 #include <TProfile.h>
 #include <TRandom3.h>
-#include <TF1.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -77,6 +76,8 @@ struct FlowPbpbPikp {
   O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, true, "Fill NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgTpcNsigmaCut, float, 2.0f, "TPC N-sigma cut for pions, kaons, protons")
   O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 0.5f, "Minimum pt to use TOF N-sigma")
+  O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 2.0f, "DCAxy range for tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "DCAz range for tracks")
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -92,7 +93,7 @@ struct FlowPbpbPikp {
   Filter trackFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
-  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
+  using AodTracksWithoutBayes = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
 
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -314,25 +315,17 @@ struct FlowPbpbPikp {
     return;
   }
 
-  void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
+  void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracksWithoutBayes const& tracks)
   {
     int nTot = tracks.size();
     if (nTot < 1)
       return;
-    if (!collision.sel8() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
+    if (!collision.sel8())
       return;
 
     float lRandom = fRndm->Rndm();
     float vtxz = collision.posZ();
     const auto cent = collision.centFT0C();
-
-    int occupancy = collision.trackOccupancyInTimeRange();
-
-    if (occupancy > cfgCutOccupancy)
-      return;
-
-    if (additionalEvsel && !eventSelected(collision, cent))
-      return;
 
     histos.fill(HIST("hVtxZ"), vtxz);
     histos.fill(HIST("hMult"), nTot);
