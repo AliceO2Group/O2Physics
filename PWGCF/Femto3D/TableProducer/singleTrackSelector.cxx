@@ -342,7 +342,7 @@ struct singleTrackSelector {
                        aod::BCsWithTimestamps const&)
   {
 
-    const auto &bc = collision.bc_as<aod::BCsWithTimestamps>();
+    const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
     registry.fill(HIST("hNEvents"), 0.5);
