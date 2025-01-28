@@ -16,6 +16,7 @@ infrastructure:
           - '.github/**'
           - '.checkov.yml'
           - '.mega-linter.yml'
+          - '.pre-commit-config.yaml'
           - 'cmake/**'
           - 'CODEOWNERS'
           - 'CPPLINT.cfg'

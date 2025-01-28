@@ -44,7 +44,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using FilteredCollisions = soa::Filtered<aod::SingleCollSels>;
-using FilteredTracks = soa::Filtered<aod::SingleTrackSels>;
+using FilteredTracks = soa::Filtered<aod::SingleTrackSels_v2>; // old tables (v2)
+// using FilteredTracks = soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SinglePIDEls, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDHes>>; // new tables (v3)
 
 typedef std::shared_ptr<FilteredTracks::iterator> trkType;
 typedef std::shared_ptr<FilteredCollisions::iterator> colType;
@@ -151,7 +152,7 @@ struct K0MixedEvents {
   Filter pFilter = o2::aod::singletrackselector::p > _min_P&& o2::aod::singletrackselector::p < _max_P;
   Filter etaFilter = nabs(o2::aod::singletrackselector::eta) < _eta;
   Filter tpcTrkFilter = o2::aod::singletrackselector::tpcNClsFound >= _tpcNClsFound && o2::aod::singletrackselector::tpcNClsShared <= (uint8_t)_tpcNClsShared;
-  Filter itsNClsFilter = o2::aod::singletrackselector::itsNCls >= (uint8_t)_itsNCls;
+  // Filter itsNClsFilter = o2::aod::singletrackselector::itsNCls >= (uint8_t)_itsNCls;
 
   Filter vertexFilter = nabs(o2::aod::singletrackselector::posZ) < _vertexZ;
 
@@ -282,6 +283,9 @@ struct K0MixedEvents {
 
     for (auto track : tracks) {
       LOG(debug) << "Track index " << track.singleCollSelId();
+      if (track.itsNCls() < _itsNCls) {
+        continue;
+      }
       if (track.itsChi2NCl() > _itsChi2NCl) {
         continue;
       }

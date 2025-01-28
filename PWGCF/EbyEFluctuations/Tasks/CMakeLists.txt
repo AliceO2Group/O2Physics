@@ -43,3 +43,13 @@ o2physics_add_dpl_workflow(factorial-moments
                     SOURCES FactorialMomentsTask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(netproton-cumulants-mc
+                    SOURCES netprotonCumulantsMc.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(kaon-isospin-fluctuations
+                    SOURCES kaonIsospinFluctuations.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)

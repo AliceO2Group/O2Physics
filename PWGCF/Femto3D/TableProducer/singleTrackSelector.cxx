@@ -100,11 +100,16 @@ struct singleTrackSelector {
   Produces<o2::aod::SingleCollExtras> tableRowCollExtra;
   Produces<o2::aod::SingleTrackSels> tableRow;
   Produces<o2::aod::SingleTrkExtras> tableRowExtra;
+
   Produces<o2::aod::SinglePIDEls> tableRowPIDEl;
-  Produces<o2::aod::SinglePIDsITSPi> tableRowPIDITSPi;
-  Produces<o2::aod::SinglePIDsITSKa> tableRowPIDITSKa;
-  Produces<o2::aod::SinglePIDsITSPr> tableRowPIDITSPr;
+  Produces<o2::aod::SinglePIDPis> tableRowPIDPi;
+  Produces<o2::aod::SinglePIDKas> tableRowPIDKa;
+  Produces<o2::aod::SinglePIDPrs> tableRowPIDPr;
+  Produces<o2::aod::SinglePIDDes> tableRowPIDDe;
+  Produces<o2::aod::SinglePIDHes> tableRowPIDHe;
+
   Produces<o2::aod::SingleTrkMCs> tableRowMC;
+  // Produces<o2::aod::SingleTrkMCExtras> tableRowMCExtra;
 
   Filter eventFilter = (applyEvSel.node() == 0) ||
                        ((applyEvSel.node() == 1) && (aod::evsel::sel7 == true)) ||
@@ -237,26 +242,29 @@ struct singleTrackSelector {
                    singletrackselector::packSymmetric<singletrackselector::binning::dca>(track.dcaZ()),
                    singletrackselector::packInTable<singletrackselector::binning::chi2>(track.tpcChi2NCl()),
                    singletrackselector::packInTable<singletrackselector::binning::chi2>(track.itsChi2NCl()),
-                   singletrackselector::packInTable<singletrackselector::binning::rowsOverFindable>(track.tpcCrossedRowsOverFindableCls()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaPi()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaPi()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaKa()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaKa()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaPr()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaPr()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaDe()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaDe()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaHe()),
-                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaHe()));
+                   singletrackselector::packInTable<singletrackselector::binning::rowsOverFindable>(track.tpcCrossedRowsOverFindableCls()));
 
           tableRowExtra(track.tpcInnerParam(),
                         track.tpcSignal(),
                         track.beta());
 
-          tableRowPIDEl(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaEl()));
-          tableRowPIDITSPi(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.itsNSigmaPi()));
-          tableRowPIDITSKa(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.itsNSigmaKa()));
-          tableRowPIDITSPr(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.itsNSigmaPr()));
+          tableRowPIDEl(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaEl()),
+                        singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaEl()));
+
+          tableRowPIDPi(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaPi()),
+                        singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaPi()));
+
+          tableRowPIDKa(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaKa()),
+                        singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaKa()));
+
+          tableRowPIDPr(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaPr()),
+                        singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaPr()));
+
+          tableRowPIDDe(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaDe()),
+                        singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaDe()));
+
+          tableRowPIDHe(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaHe()),
+                        singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaHe()));
 
           if constexpr (isMC) {
             int origin = -1;
@@ -277,6 +285,10 @@ struct singleTrackSelector {
                        track.mcParticle().p(),
                        track.mcParticle().eta(),
                        track.mcParticle().phi());
+
+            // tableRowMCExtra(track.mcParticle().vx(),
+            //                 track.mcParticle().vy(),
+            //                 track.mcParticle().vz());
           }
           break; // break the loop with particlesToKeep after the 'if' condition is satisfied -- don't want double entries
         }
@@ -288,10 +300,6 @@ struct singleTrackSelector {
                        aod::BCsWithTimestamps const&)
   {
 
-    auto tracksWithITSPid = soa::Attach<Trks,
-                                        aod::pidits::ITSNSigmaPi,
-                                        aod::pidits::ITSNSigmaKa,
-                                        aod::pidits::ITSNSigmaPr>(tracks);
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
@@ -320,7 +328,7 @@ struct singleTrackSelector {
                    collision.posZ(),
                    d_bz);
 
-      fillTrackTables<false>(tracksWithITSPid);
+      fillTrackTables<false>(tracks);
     }
   }
   PROCESS_SWITCH(singleTrackSelector, processDataRun2, "process data Run2", false);
@@ -329,10 +337,7 @@ struct singleTrackSelector {
                        soa::Filtered<Trks> const& tracks,
                        aod::BCsWithTimestamps const&)
   {
-    auto tracksWithITSPid = soa::Attach<Trks,
-                                        aod::pidits::ITSNSigmaPi,
-                                        aod::pidits::ITSNSigmaKa,
-                                        aod::pidits::ITSNSigmaPr>(tracks);
+
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
@@ -403,7 +408,7 @@ struct singleTrackSelector {
                         hadronicRate,
                         occupancy);
 
-      fillTrackTables<false>(tracksWithITSPid);
+      fillTrackTables<false>(tracks);
     }
   }
   PROCESS_SWITCH(singleTrackSelector, processDataRun3, "process data Run3", true);
@@ -413,10 +418,6 @@ struct singleTrackSelector {
                      aod::McParticles const&, aod::BCsWithTimestamps const&)
   {
 
-    auto tracksWithITSPid = soa::Attach<soa::Join<Trks, aod::McTrackLabels>,
-                                        aod::pidits::ITSNSigmaPi,
-                                        aod::pidits::ITSNSigmaKa,
-                                        aod::pidits::ITSNSigmaPr>(tracks);
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
@@ -444,7 +445,7 @@ struct singleTrackSelector {
                    collision.posZ(),
                    d_bz);
 
-      fillTrackTables<true>(tracksWithITSPid);
+      fillTrackTables<true>(tracks);
     }
   }
   PROCESS_SWITCH(singleTrackSelector, processMCRun2, "process MC Run2", false);
@@ -454,10 +455,7 @@ struct singleTrackSelector {
                      aod::McParticles const& mcParticles,
                      aod::BCsWithTimestamps const&)
   {
-    auto tracksWithITSPid = soa::Attach<soa::Join<Trks, aod::McTrackLabels>,
-                                        aod::pidits::ITSNSigmaPi,
-                                        aod::pidits::ITSNSigmaKa,
-                                        aod::pidits::ITSNSigmaPr>(tracks);
+
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     double hadronicRate = 0.;
@@ -519,7 +517,7 @@ struct singleTrackSelector {
                         hadronicRate,
                         occupancy);
 
-      fillTrackTables<true>(tracksWithITSPid);
+      fillTrackTables<true>(tracks);
 
       if (!enable_gen_info) {
         return;

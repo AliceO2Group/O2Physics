@@ -75,6 +75,7 @@ struct JetSubstructureHFTask {
   std::vector<float> pairEnergyVec;
   std::vector<float> pairThetaVec;
   float angularity;
+  float leadingConstituentPt;
 
   HistogramRegistry registry;
   void init(InitContext const&)
@@ -217,10 +218,17 @@ struct JetSubstructureHFTask {
   void jetSubstructureSimple(T const& jet, U const& /*tracks*/, V const& /*candidates*/)
   {
     angularity = 0.0;
+    leadingConstituentPt = 0.0;
     for (auto& candidate : jet.template candidates_as<V>()) {
+      if (candidate.pt() >= leadingConstituentPt) {
+        leadingConstituentPt = candidate.pt();
+      }
       angularity += std::pow(candidate.pt(), kappa) * std::pow(jetutilities::deltaR(jet, candidate), alpha);
     }
     for (auto& constituent : jet.template tracks_as<U>()) {
+      if (constituent.pt() >= leadingConstituentPt) {
+        leadingConstituentPt = constituent.pt();
+      }
       angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
     }
     angularity /= (jet.pt() * (jet.r() / 100.f));
@@ -240,7 +248,7 @@ struct JetSubstructureHFTask {
     jetReclustering<false, isSubtracted>(jet);
     jetPairing(jet, tracks, candidates);
     jetSubstructureSimple(jet, tracks, candidates);
-    outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairPtVec, pairEnergyVec, pairThetaVec, angularity);
+    outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairPtVec, pairEnergyVec, pairThetaVec, angularity, leadingConstituentPt);
   }
 
   void processChargedJetsData(typename JetTableData::iterator const& jet,
@@ -282,7 +290,7 @@ struct JetSubstructureHFTask {
     jetReclustering<true, false>(jet);
     jetPairing(jet, particles, candidates);
     jetSubstructureSimple(jet, particles, candidates);
-    jetSubstructureMCPTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairPtVec, pairEnergyVec, pairThetaVec, angularity);
+    jetSubstructureMCPTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairPtVec, pairEnergyVec, pairThetaVec, angularity, leadingConstituentPt);
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processChargedJetsMCP, "HF jet substructure on MC particle level", false);
 };
