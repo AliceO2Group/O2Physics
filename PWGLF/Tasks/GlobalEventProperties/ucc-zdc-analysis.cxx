@@ -9,10 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file ucc-zdc-analysis.cxx
-///
-/// \author Omar Vazquez <omar.vazquez.rueda@cern.ch>
-
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/TrackSelection.h"
