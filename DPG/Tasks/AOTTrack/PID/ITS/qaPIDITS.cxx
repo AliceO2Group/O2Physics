@@ -312,8 +312,9 @@ struct itsPidQa {
       histos.fill(HIST("event/length"), track.length());
       histos.fill(HIST("event/pt"), track.pt());
       histos.fill(HIST("event/p"), track.p());
-      histos.fill(HIST("event/averageClusterSize"), track.pt(), averageClusterSize(track));
-      histos.fill(HIST("event/averageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(track));
+      const auto& t = tracks.iteratorAt(nTracks);
+      histos.fill(HIST("event/averageClusterSize"), track.pt(), averageClusterSize(t));
+      histos.fill(HIST("event/averageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(t));
       bool discard = false;
       for (int id = 0; id < 9; id++) {
         if (std::abs(nsigmaTPC(track, id)) > tpcSelValues[id]) {
@@ -326,8 +327,8 @@ struct itsPidQa {
       if (discard) {
         continue;
       }
-      histos.fill(HIST("event/SelectedAverageClusterSize"), track.pt(), averageClusterSize(track));
-      histos.fill(HIST("event/SelectedAverageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(track));
+      histos.fill(HIST("event/SelectedAverageClusterSize"), track.pt(), averageClusterSize(t));
+      histos.fill(HIST("event/SelectedAverageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(t));
 
       for (o2::track::PID::ID id = 0; id <= o2::track::PID::Last; id++) {
         if (!enableParticle[id]) {
@@ -339,7 +340,6 @@ struct itsPidQa {
           }
         }
         const float nsigma = nsigmaITS(track, id);
-        const auto& t = tracks.iteratorAt(nTracks);
         if (t.sign() > 0) {
           hNsigmaPos[id]->Fill(t.p(), nsigma);
         } else {
