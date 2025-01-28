@@ -116,15 +116,6 @@ struct UCCZDC {
                 {{{nBinsTDC, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZEM}}}});
     histos.add("debunch", "ZN sum vs. ZN diff.",
                {HistType::kTH2F, {{{240, -12., 12.}, {240, -12., 12.}}}});
-    // histos.add("centroidZNA", "ZNA centroid",
-    //            {HistType::kTH2F, {{{350, -1.75, 1.75}, {350,
-    //            -1.75, 1.75}}}});
-
-    // if (processZdcCollAss) {
-    //   histos.add("centroidZNC", "ZNC centroid",
-    //              {HistType::kTH2F, {{{350, -1.75, 1.75}, {350,
-    //              -1.75, 1.75}}}});
-    // }
     histos.add("ZNvsFV0Acorrel", "ZNvsFV0Acorrel",
                {HistType::kTH2F,
                 {{{nBinsFit, 0., MaxMultFV0}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
@@ -226,65 +217,6 @@ struct UCCZDC {
   }
   PROCESS_SWITCH(UCCZDC, processZdcCollAss,
                  "Processing ZDC w. collision association", true);
-
-  // void processZdcCorrela(
-  //     soa::Join<aod::Collisions, aod::EvSels>::iterator const& coll,
-  //     BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/,
-  //     aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/,
-  //     aod::FDDs const& /*fdds*/) {
-  //   const auto& foundBC = coll.foundBC_as<BCsRun3>();
-  //
-  //   // FT0
-  //   float multT0A = 0.;
-  //   float multT0C = 0.;
-  //   if (foundBC.has_ft0()) {
-  //     for (auto amplitude : foundBC.ft0().amplitudeA()) {
-  //       multT0A += amplitude;
-  //     }
-  //     for (auto amplitude : foundBC.ft0().amplitudeC()) {
-  //       multT0C += amplitude;
-  //     }
-  //   } else {
-  //     multT0A = multT0C = -999;
-  //   }
-  //   // FV0
-  //   float multV0A = 0;
-  //   if (foundBC.has_fv0a()) {
-  //     for (auto amplitude : foundBC.fv0a().amplitude()) {
-  //       multV0A += amplitude;
-  //     }
-  //   } else {
-  //     multV0A = -999;
-  //   }
-  //   // FDD
-  //   float multFDA = 0;
-  //   float multFDC = 0;
-  //   if (foundBC.has_fdd()) {
-  //     auto const& fdd = foundBC.fdd();
-  //     for (auto const& amplitude : fdd.chargeA()) {
-  //       multFDA += amplitude;
-  //     }
-  //     for (auto const& amplitude : fdd.chargeC()) {
-  //       multFDC += amplitude;
-  //     }
-  //   } else {
-  //     multFDA = multFDC = -999;
-  //   }
-  //
-  //   if (foundBC.has_zdc()) {
-  //     const auto& zdcread = foundBC.zdc();
-  //     auto aZNA = zdcread.amplitudeZNA();
-  //     auto aZNC = zdcread.amplitudeZNC();
-  //     histos.get<TH2>(HIST("ZNvsFV0Acorrel"))
-  //         ->Fill(multV0A / 100., aZNA + aZNC);
-  //     histos.get<TH2>(HIST("ZNvsFT0correl"))
-  //         ->Fill((multT0A + multT0C) / 100., aZNC + aZNA);
-  //     histos.get<TH2>(HIST("ZNvsFDDcorrel"))
-  //         ->Fill(multFDC + multFDA, aZNC + aZNA);
-  //   }
-  // }
-  // PROCESS_SWITCH(UCCZDC, processZdcCorrela,
-  //                "Processing ZDC vs. mult. w. collision association", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
