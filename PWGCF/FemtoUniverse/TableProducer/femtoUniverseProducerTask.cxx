@@ -299,6 +299,9 @@ struct FemtoUniverseProducerTask {
   struct : o2::framework::ConfigurableGroup {
     Configurable<float> confD0D0barCandMaxY{"confD0D0barCandMaxY", -1., "max. cand. rapidity"};
     Configurable<float> confD0D0barCandEtaCut{"confD0D0barCandEtaCut", 0.8, "max. cand. pseudorapidity"};
+    Configurable<bool> storeD0D0barDoubleMassHypo{"storeD0D0barDoubleMassHypo", false, "Store D0/D0bar cand. which pass selection criteria for both, D0 and D0bar"};
+    Configurable<bool> applyMLSelD0D0bar{"applyMLSelD0D0bar", false, "Use ML D0/D0bar selection"};
+    Configurable<std::vector<int>> classMlD0D0bar{"classMlD0D0bar", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
   } ConfD0Selection;
 
   HfHelper hfHelper;
@@ -458,10 +461,10 @@ struct FemtoUniverseProducerTask {
 
   void init(InitContext&)
   {
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackV0CentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data || doprocessTrackDataCentPP) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent || doprocessTrackCentRun3DataMC) == false) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackD0DataML || doprocessTrackCentRun2Data || doprocessTrackV0CentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data || doprocessTrackDataCentPP) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent || doprocessTrackCentRun3DataMC) == false) {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackV0CentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data || doprocessTrackDataCentPP) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent || doprocessTrackCentRun3DataMC) == true) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackD0DataML || doprocessTrackCentRun2Data || doprocessTrackV0CentRun2Data || doprocessTrackCentRun3Data || doprocessV0CentRun3Data || doprocessCascadeCentRun3Data || doprocessTrackDataCentPP) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent || doprocessTrackCentRun3DataMC) == true) {
       LOGF(fatal,
            "Cannot enable process Data and process MC at the same time. "
            "Please choose one.");
@@ -1253,8 +1256,13 @@ struct FemtoUniverseProducerTask {
       } else if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 1) {
         invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
         invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
-        isD0D0bar = true;
-        daughFlag = 0;
+        if (ConfD0Selection.storeD0D0barDoubleMassHypo) {
+          isD0D0bar = true;
+          daughFlag = 0;
+        } else {
+          isD0D0bar = false;
+          daughFlag = 0;
+        }
       } else {
         invMassD0 = 0.0;
         invMassD0bar = 0.0;
@@ -1308,7 +1316,141 @@ struct FemtoUniverseProducerTask {
                     aod::femtouniverseparticle::ParticleType::kD0,
                     -999, // cut, CutContainerType
                     -999, // PID, CutContainerType
+                    -999.,
+                    indexChildID,
+                    invMassD0,     // D0 mass (mLambda)
+                    invMassD0bar); // D0bar mass (mAntiLambda)
+
+        if (confIsDebug) {
+          fillDebugParticle<false, true, false>(postrack); // QA for positive daughter
+          fillDebugParticle<false, true, false>(negtrack); // QA for negative daughter
+          fillDebugParticle<false, true, false>(hfCand);   // QA for D0/D0bar
+        }
+        if constexpr (isMC) {
+          fillMCParticle(hfCand, o2::aod::femtouniverseparticle::ParticleType::kD0);
+        }
+      }
+    }
+  }
+
+  template <bool isMC, typename HfCandidate, typename TrackType, typename CollisionType>
+  void fillD0D0barUsingML(CollisionType const&, TrackType const&, HfCandidate const& hfCands)
+  {
+    std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
+    std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
+    double invMassD0 = 0.0;
+    double invMassD0bar = 0.0;
+    bool isD0D0bar = false;
+    std::vector<float> outputMlD0D0bar = {-1., -1., -1.}; // this vector keeps the probabilities from the ML model for D0/D0bar
+    uint8_t daughFlag = 0;                                // flag = 0 (daugh of D0 or D0bar), 1 (daug of D0), -1 (daugh of D0bar)
+
+    for (const auto& hfCand : hfCands) {
+
+      if (!(hfCand.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        continue;
+      }
+
+      if (ConfD0Selection.confD0D0barCandMaxY >= 0. && std::abs(hfHelper.yD0(hfCand)) > ConfD0Selection.confD0D0barCandMaxY) {
+        continue;
+      }
+
+      if (std::abs(hfCand.eta()) > ConfD0Selection.confD0D0barCandEtaCut) {
+        continue;
+      }
+
+      // int postrackID = hfCand.prong0().globalIndex();
+      int postrackID = hfCand.prong0Id(); // Index to first prong
+      int rowInPrimaryTrackTablePos = -1;
+      rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
+      childIDs[0] = rowInPrimaryTrackTablePos;
+      childIDs[1] = 0;
+      auto postrack = hfCand.template prong0_as<TrackType>();
+      auto negtrack = hfCand.template prong1_as<TrackType>();
+
+      if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 0) {
+        invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
+        invMassD0bar = -hfHelper.invMassD0barToKPi(hfCand);
+        if (ConfD0Selection.applyMLSelD0D0bar) {
+          for (unsigned int iClass = 0; iClass < ConfD0Selection.classMlD0D0bar->size(); iClass++) {
+            outputMlD0D0bar[iClass] = hfCand.mlProbD0()[ConfD0Selection.classMlD0D0bar->at(iClass)];
+          }
+        }
+        isD0D0bar = true;
+        daughFlag = 1;
+      } else if (hfCand.isSelD0() == 0 && hfCand.isSelD0bar() == 1) {
+        invMassD0 = -hfHelper.invMassD0ToPiK(hfCand);
+        invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
+        if (ConfD0Selection.applyMLSelD0D0bar) {
+          for (unsigned int iClass = 0; iClass < ConfD0Selection.classMlD0D0bar->size(); iClass++) {
+            outputMlD0D0bar[iClass] = hfCand.mlProbD0bar()[ConfD0Selection.classMlD0D0bar->at(iClass)];
+          }
+        }
+        isD0D0bar = true;
+        daughFlag = -1;
+      } else if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 1) {
+        invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
+        invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
+        if (ConfD0Selection.storeD0D0barDoubleMassHypo) {
+          isD0D0bar = true;
+          daughFlag = 0;
+        } else {
+          isD0D0bar = false;
+          daughFlag = 0;
+        }
+      } else {
+        invMassD0 = 0.0;
+        invMassD0bar = 0.0;
+        isD0D0bar = false;
+      }
+
+      if (isD0D0bar) {
+        outputParts(outputCollision.lastIndex(),
+                    hfCand.ptProng0(),
+                    RecoDecay::eta(std::array{hfCand.pxProng0(), hfCand.pyProng0(), hfCand.pzProng0()}), // eta
+                    RecoDecay::phi(hfCand.pxProng0(), hfCand.pyProng0()),                                // phi
+                    aod::femtouniverseparticle::ParticleType::kD0Child,
+                    -999, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kPosCuts),
+                    -999, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kPosPID),
                     -999,
+                    childIDs,
+                    postrack.sign(), // D0 mass -> positive daughter of D0/D0bar
+                    daughFlag);      // D0bar mass -> sign that the daugh is from D0 or D0 decay
+        const int rowOfPosTrack = outputParts.lastIndex();
+        if constexpr (isMC) {
+          fillMCParticle(postrack, o2::aod::femtouniverseparticle::ParticleType::kD0Child);
+        }
+        // int negtrackID = hfCand.prong1().globalIndex();
+        int negtrackID = hfCand.prong1Id();
+        int rowInPrimaryTrackTableNeg = -1;
+        rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
+        childIDs[0] = 0;
+        childIDs[1] = rowInPrimaryTrackTableNeg;
+
+        outputParts(outputCollision.lastIndex(),
+                    hfCand.ptProng1(),
+                    RecoDecay::eta(std::array{hfCand.pxProng1(), hfCand.pyProng1(), hfCand.pzProng1()}), // eta
+                    RecoDecay::phi(hfCand.pxProng1(), hfCand.pyProng1()),                                // phi
+                    aod::femtouniverseparticle::ParticleType::kD0Child,
+                    -999, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegCuts),
+                    -999, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegPID),
+                    -999,
+                    childIDs,
+                    negtrack.sign(), // negative daughter of D0/D0bar
+                    daughFlag);      // sign that the daugh is from D0 or D0 decay
+        const int rowOfNegTrack = outputParts.lastIndex();
+        if constexpr (isMC) {
+          fillMCParticle(negtrack, o2::aod::femtouniverseparticle::ParticleType::kD0Child);
+        }
+        std::vector<int> indexChildID = {rowOfPosTrack, rowOfNegTrack};
+
+        outputParts(outputCollision.lastIndex(),
+                    hfCand.pt(),
+                    hfCand.eta(),
+                    hfCand.phi(),
+                    aod::femtouniverseparticle::ParticleType::kD0,
+                    -999,               // cut, CutContainerType
+                    -999,               // PID, CutContainerType
+                    outputMlD0D0bar[0], // saving only the probaility for store class 1 - background
                     indexChildID,
                     invMassD0,     // D0 mass (mLambda)
                     invMassD0bar); // D0bar mass (mAntiLambda)
@@ -1782,6 +1924,23 @@ struct FemtoUniverseProducerTask {
   }
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTrackD0mesonData,
                  "Provide experimental data for track D0 meson", false);
+
+  void processTrackD0DataML(aod::FemtoFullCollision const& col,
+                            aod::BCsWithTimestamps const&,
+                            soa::Filtered<aod::FemtoFullTracks> const& tracks,
+                            soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0> const& candidates)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    const auto colcheck = fillCollisions<false>(col, tracks);
+    if (colcheck) {
+      fillTracks<false>(tracks);
+      fillD0D0barUsingML<false>(col, tracks, candidates);
+    }
+  }
+  PROCESS_SWITCH(FemtoUniverseProducerTask, processTrackD0DataML,
+                 "Provide experimental data for track D0 meson using ML selection for D0s", false);
 
   void processTrackMCTruth(aod::McCollision const&,
                            soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
