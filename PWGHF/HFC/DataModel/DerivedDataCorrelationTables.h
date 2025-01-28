@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file DerivedDataCorrelations.h
+/// \file DerivedDataCorrelationTables.h
 /// \brief Tables for producing derived data for correlation analysis
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 
@@ -40,10 +40,10 @@ using HfcRedCollision = HfcRedCollisions::iterator;
 namespace hf_candidate_reduced
 {
 DECLARE_SOA_INDEX_COLUMN(HfcRedCollision, hfcRedCollision); //! ReducedCollision index
-DECLARE_SOA_COLUMN(PhiCand, phiCand, float);              //! Phi of the candidate
-DECLARE_SOA_COLUMN(EtaCand, etaCand, float);              //! Eta of the candidate
-DECLARE_SOA_COLUMN(PtCand, ptCand, float);                //! Pt of the candidate
-DECLARE_SOA_COLUMN(InvMassDs, invMassDs, float);          //! Invariant mass of Ds candidate
+DECLARE_SOA_COLUMN(PhiCand, phiCand, float);                //! Phi of the candidate
+DECLARE_SOA_COLUMN(EtaCand, etaCand, float);                //! Eta of the candidate
+DECLARE_SOA_COLUMN(PtCand, ptCand, float);                  //! Pt of the candidate
+DECLARE_SOA_COLUMN(InvMassDs, invMassDs, float);            //! Invariant mass of Ds candidate
 } // namespace hf_candidate_reduced
 DECLARE_SOA_TABLE(DsCandReduceds, "AOD", "DSCANDREDUCED", //! Table with Ds candidate info (rectangular selection)
                   soa::Index<>,

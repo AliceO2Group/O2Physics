@@ -183,7 +183,7 @@ struct HfTreeCreatorXic0ToXiPiKf {
         candidate.kfptPiFromXic(),
         candidate.kfptXic(),
         candidate.cosThetaStarPiFromXic(),
-        candidate.ctauXic(),
+        candidate.cTauXic(),
         candidate.etaCharmBaryon(),
         candidate.v0Ndf(),
         candidate.cascNdf(),

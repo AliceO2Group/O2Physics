@@ -49,7 +49,7 @@ double getDeltaPhi(double phiHadron, double phiD)
   return RecoDecay::constrainAngle(phiHadron - phiD, -o2::constants::math::PIHalf);
 }
 
-const int nPtBinsMassAndEfficiency = o2::analysis::hf_cuts_d0_to_pi_k::nBinsPt;
+const int nPtBinsMassAndEfficiency = o2::analysis::hf_cuts_d0_to_pi_k::NBinsPt;
 const double efficiencyDmesonDefault[nPtBinsMassAndEfficiency] = {};
 auto vecEfficiencyDmeson = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + nPtBinsMassAndEfficiency};
 
@@ -676,8 +676,8 @@ struct HfCorrelatorD0Hadrons {
                           poolBin,
                           correlationStatus);
         entryD0HadronRecoInfo(massD0, massD0, 0); // dummy info
-      }                                           // end inner loop (Tracks)
-    }                                             // end outer loop (D0)
+      } // end inner loop (Tracks)
+    } // end outer loop (D0)
   }
 
   PROCESS_SWITCH(HfCorrelatorD0Hadrons, processMcGen, "Process MC Gen mode", false);

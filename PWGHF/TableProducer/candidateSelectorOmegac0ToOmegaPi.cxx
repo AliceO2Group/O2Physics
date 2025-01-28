@@ -434,7 +434,7 @@ struct HfCandidateSelectorToOmegaPi {
           }
 
           // Omegac ctau selsection
-          if (candidate.ctauOmegac() > cTauOmegacMax) {
+          if (candidate.cTauOmegac() > cTauOmegacMax) {
             resultSelections = false;
             registry.fill(HIST("hSelctauOmegac"), 0);
           } else {

@@ -343,7 +343,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
         candidate.kfptPiFromOmegac(),
         candidate.kfptOmegac(),
         candidate.cosThetaStarPiFromOmegac(),
-        candidate.ctauOmegac(),
+        candidate.cTauOmegac(),
         candidate.etaCharmBaryon(),
         candidate.v0Ndf(),
         candidate.cascNdf(),

@@ -84,7 +84,7 @@ struct HfCandidateSelectorJpsi {
   Configurable<double> nSigmaRichCombinedTofMax{"nSigmaRichCombinedTofMax", 5., "Nsigma cut on RICH combined with TOF"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_e_e::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_jpsi_to_e_e::cuts[0], hf_cuts_jpsi_to_e_e::nBinsPt, hf_cuts_jpsi_to_e_e::nCutVars, hf_cuts_jpsi_to_e_e::labelsPt, hf_cuts_jpsi_to_e_e::labelsCutVar}, "Jpsi candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_jpsi_to_e_e::Cuts[0], hf_cuts_jpsi_to_e_e::NBinsPt, hf_cuts_jpsi_to_e_e::NCutVars, hf_cuts_jpsi_to_e_e::labelsPt, hf_cuts_jpsi_to_e_e::labelsCutVar}, "Jpsi candidate selection per pT bin"};
 
   HfHelper hfHelper;
   TrackSelectorEl selectorElectron;
