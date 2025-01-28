@@ -9340,7 +9340,7 @@ TComplex Recursion(int n, int* harmonic, int mult = 1, int skip = 0)
 
   if (mult == 1)
     return c - c2;
-  return c - double(mult) * c2;
+  return c - static_cast<double>(mult) * c2;
 
 } // TComplex Recursion(int n, int* harmonic, int mult = 1, int skip = 0)
 
