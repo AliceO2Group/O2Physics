@@ -247,7 +247,7 @@ struct HfTaskDirectedFlowCharmHadrons {
           case DecayChannel::D0ToPiK:
             massCand = hfHelper.invMassD0ToPiK(candidate);
             rapCand = hfHelper.yD0(candidate);
-            sign = 1;
+            sign = candidate.isSelD0bar() ? 3 : 1; // 3: reflected D0bar, 1: pure D0 excluding reflected D0bar
             if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
                 outputMl[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
@@ -256,7 +256,7 @@ struct HfTaskDirectedFlowCharmHadrons {
           case DecayChannel::D0ToKPi:
             massCand = hfHelper.invMassD0barToKPi(candidate);
             rapCand = hfHelper.yD0(candidate);
-            sign = -1;
+            sign = candidate.isSelD0() ? 3 : 2; // 3: reflected D0, 2: pure D0bar excluding reflected D0
             if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
                 outputMl[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];

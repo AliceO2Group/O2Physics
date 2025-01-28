@@ -145,7 +145,7 @@ struct EmcalQC {
     defineEMEventCut();
 
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
-    auto hEMCCollisionCounter = fRegistry.add<TH1>("Event/hEMCCollisionCounter", "Number of collisions after event cuts", HistType::kTH1F, {{7, 0.5, 7.5}}, false);
+    auto hEMCCollisionCounter = fRegistry.add<TH1>("Event/hEMCCollisionCounter", "Number of collisions after event cuts", HistType::kTH1D, {{7, 0.5, 7.5}}, false);
     hEMCCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
     hEMCCollisionCounter->GetXaxis()->SetBinLabel(2, "+TVX");         // TVX
     hEMCCollisionCounter->GetXaxis()->SetBinLabel(3, "+|z|<10cm");    // TVX with z < 10cm
@@ -167,17 +167,17 @@ struct EmcalQC {
       }
 
       fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 1);
-      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      if (!eventcuts.cfgRequireFT0AND || collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 2);
         if (std::abs(collision.posZ()) < eventcuts.cfgZvtxMax) {
           fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 3);
-          if (collision.sel8()) {
+          if (!eventcuts.cfgRequireSel8 || collision.sel8()) {
             fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 4);
-            if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+            if (!eventcuts.cfgRequireGoodZvtxFT0vsPV || collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
               fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 5);
-              if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+              if (!eventcuts.cfgRequireNoSameBunchPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
                 fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 6);
-                if (collision.alias_bit(kTVXinEMC))
+                if (!eventcuts.cfgRequireEMCReadoutInMB || collision.alias_bit(kTVXinEMC))
                   fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 7);
               }
             }

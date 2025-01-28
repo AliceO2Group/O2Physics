@@ -43,7 +43,7 @@ using BinningTypeDerived = ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ,
 struct HfCorrelatorDsHadronsReduced {
   Produces<aod::DsHadronPair> entryDsHadronPair;
   Produces<aod::DsHadronRecoInfo> entryDsHadronRecoInfo;
-  Produces<aod::DsHadronGenInfo> entryDsHadronGenInfo;
+  // Produces<aod::DsHadronGenInfo> entryDsHadronGenInfo;
 
   Configurable<bool> fillHistoData{"fillHistoData", true, "Flag for filling histograms in data processes"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
@@ -109,7 +109,7 @@ struct HfCorrelatorDsHadronsReduced {
                           pAssoc.ptAssocTrack(),
                           poolBin);
         entryDsHadronRecoInfo(cand.invMassDs(), false, false);
-        entryDsHadronGenInfo(false, false, 0);
+        // entryDsHadronGenInfo(false, false, 0);
       }
     }
   }

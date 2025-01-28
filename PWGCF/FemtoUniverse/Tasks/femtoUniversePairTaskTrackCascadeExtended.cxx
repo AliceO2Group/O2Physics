@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file femtoUniversePairTaskTrackCascadeExtended.cxx
-/// \brief Task for cascade QA; in the future: for cascade correlations
+/// \brief Task for cascade correlations and QA
 /// \author Barbara Chytla, WUT Warsaw, barbara.chytla@cern.ch
 /// \author Shirajum Monira, WUT Warsaw, shirajum.monira@cern.ch
 // o2-linter: disable=name/workflow-file
@@ -28,26 +28,22 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUtils.h"
+#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 
 using namespace o2;
 using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::analysis::femtoUniverse;
+using namespace o2::analysis::femto_universe;
 using namespace o2::aod::pidutils;
 
 struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/struct
 
+  Service<o2::framework::O2DatabasePDG> pdgMC;
   SliceCache cache;
   using FemtoFullParticles = soa::Join<aod::FDCascParticles, aod::FDExtParticles>;
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
-
-  Configurable<float> confZVertexCut{"ConfZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"}; // o2-linter: disable=name/configurable
-
-  Filter collisionFilter = (nabs(aod::collision::posZ) < confZVertexCut);
-  using FilteredFDCollisions = soa::Filtered<o2::aod::FDCollisions>;
-  using FilteredFDCollision = FilteredFDCollisions::iterator;
 
   ConfigurableAxis confChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};               // o2-linter: disable=name/configurable
   ConfigurableAxis confChildTempFitVarBins{"ConfChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"}; // o2-linter: disable=name/configurable
@@ -58,7 +54,11 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   Configurable<float> confNSigmaTPCPion{"NSigmaTPCPion", 4, "NSigmaTPCPion"};       // o2-linter: disable=name/configurable
   Configurable<float> confNSigmaTPCProton{"NSigmaTPCProton", 4, "NSigmaTPCProton"}; // o2-linter: disable=name/configurable
 
-  // configs for correlation part
+  /// applying narrow cut
+  Configurable<float> confZVertexCut{"ConfZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"}; // o2-linter: disable=name/configurable
+  Configurable<float> confEta{"ConfEta", 0.8, "Eta cut for the global track"};                    // o2-linter: disable=name/configurable
+
+  // configurations for correlation part
   Configurable<int> confTrackChoicePartOne{"ConfTrackChoicePartOne", 0, "0:Proton, 1:Pion, 2:Kaon"};                                                             // o2-linter: disable=name/configurable
   Configurable<int> confTrkPDGCodePartOne{"ConfTrkPDGCodePartOne", 2212, "Particle 1 (Track) - PDG code"};                                                       // o2-linter: disable=name/configurable
   Configurable<int> confCascType1{"ConfCascType1", 0, "select one of the V0s (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for track-cascade combination"};   // o2-linter: disable=name/configurable
@@ -82,15 +82,22 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   Configurable<int> confPhiBins{"ConfPhiBins", 29, "Number of phi bins in deta dphi"};                                                                                                                                                   // o2-linter: disable=name/configurable
   Configurable<bool> confIsMC{"ConfIsMC", false, "Enable additional Histograms in the case of a MonteCarlo Run"};                                                                                                                        // o2-linter: disable=name/configurable
   Configurable<bool> confUse3D{"ConfUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};                                                                // o2-linter: disable=name/configurable
-  ConfigurableAxis confVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};                                                                                // o2-linter: disable=name/configurable
-  ConfigurableAxis confTrkTempFitVarpTBins{"ConfTrkTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};                                                                                                      // o2-linter: disable=name/configurable
-  ConfigurableAxis confTrkTempFitVarBins{"ConfTrkDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};                                                                                       // o2-linter: disable=name/configurable
+  Configurable<bool> confUseCent{"confUseCent", false, "Use centrality in place of multiplicity"};
+  ConfigurableAxis confVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"}; // o2-linter: disable=name/configurable
+  ConfigurableAxis confTrkTempFitVarpTBins{"ConfTrkTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};                       // o2-linter: disable=name/configurable
+  ConfigurableAxis confTrkTempFitVarBins{"ConfTrkDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};        // o2-linter: disable=name/configurable
+
+  Filter collisionFilter = (nabs(aod::collision::posZ) < confZVertexCut);
+  using FilteredFDCollisions = soa::Filtered<o2::aod::FdCollisions>;
+  using FilteredFDCollision = FilteredFDCollisions::iterator;
 
   /// Partition for particle 1 (track)
-  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == confChargePart1) && (aod::femtouniverseparticle::pt < confHPtPart1) && (aod::femtouniverseparticle::pt > confLPtPart1);
+  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < confHPtPart1) && (aod::femtouniverseparticle::pt > confLPtPart1);
+  Partition<FemtoFullParticles> partsOneMCgen = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < confHPtPart1) && (aod::femtouniverseparticle::pt > confLPtPart1);
 
   /// Partition for particle 2 (cascade)
   Partition<FemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade)) && (aod::femtouniverseparticle::pt < confHPtPart2) && (aod::femtouniverseparticle::pt > confLPtPart2);
+  Partition<FemtoFullParticles> partsTwoMCgen = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < confHPtPart2) && (aod::femtouniverseparticle::pt > confLPtPart2);
 
   /// Partition for cascades
   Partition<FemtoFullParticles> cascs = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kCascade));
@@ -105,9 +112,13 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kCascadeBachelor, 0> bachHistos;
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kCascade, 0> cascQAHistos;
 
-  FemtoUniverseContainer<femtoUniverseContainer::EventType::same, femtoUniverseContainer::Observable::kstar> sameEventCont;
-  FemtoUniverseContainer<femtoUniverseContainer::EventType::mixed, femtoUniverseContainer::Observable::kstar> mixedEventCont;
+  /// Histogramming for Event
+  FemtoUniverseEventHisto eventHisto;
+
+  FemtoUniverseContainer<femto_universe_container::EventType::same, femto_universe_container::Observable::kstar> sameEventCont;
+  FemtoUniverseContainer<femto_universe_container::EventType::mixed, femto_universe_container::Observable::kstar> mixedEventCont;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kCascade> pairCleaner;
+  FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kCascade> pairCleanerCasc;
 
   HistogramRegistry rXiQA{"xi", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -189,6 +200,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
     rXiQA.add("hDcaBachtoPV", "hDcaBachtoPV", {HistType::kTH1F, {aDCAToPVAxis}});
     rXiQA.add("hDcaV0toPV", "hDcaV0toPV", {HistType::kTH1F, {aDCAToPVAxis}});
 
+    eventHisto.init(&qaRegistry);
     qaRegistry.add("Tracks_pos/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     qaRegistry.add("Tracks_pos/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     qaRegistry.add("Tracks_neg/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
@@ -273,6 +285,10 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
+    eventHisto.fillQA(col);
+
+    const int multCol = confUseCent ? col.multV0M() : col.multNtr();
+
     for (const auto& part : groupPartsTwo) {
       if (!invMCascade(part.mLambda(), part.mAntiLambda()))
         continue;
@@ -328,7 +344,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
       if (!isParticleTPC(posChild, CascChildTable[confCascType1][0]) || !isParticleTPC(negChild, CascChildTable[confCascType1][1]) || !isParticleTPC(bachelor, CascChildTable[confCascType1][2]))
         continue;
 
-      sameEventCont.setPair<false>(p1, p2, col.multNtr(), confUse3D, 1.0f);
+      sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processSameEvent, "Enable processing same event for track - cascade", false);
@@ -336,6 +352,10 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   void processSameEventCasc(const FilteredFDCollision& col, const FemtoFullParticles& parts)
   {
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+
+    eventHisto.fillQA(col);
+
+    const int multCol = confUseCent ? col.multV0M() : col.multNtr();
 
     for (const auto& part : groupPartsTwo) {
       if (!invMCascade(part.mLambda(), part.mAntiLambda()))
@@ -366,7 +386,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
       if (!invMCascade(p2.mLambda(), p2.mAntiLambda()))
         return;
       // track cleaning
-      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+      if (!pairCleanerCasc.isCleanPair(p1, p2, parts)) {
         return;
       }
       const auto& posChild1 = parts.iteratorAt(p1.index() - 3);
@@ -382,7 +402,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
       if (!isParticleTPC(posChild2, CascChildTable[confCascType2][0]) || !isParticleTPC(negChild2, CascChildTable[confCascType2][1]) || !isParticleTPC(bachelor2, CascChildTable[confCascType2][2]))
         return;
 
-      sameEventCont.setPair<false>(p1, p2, col.multNtr(), confUse3D, 1.0f);
+      sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
     };
     if (confCascType1 == confCascType2) {
       /// Now build the combinations for identical cascades
@@ -403,6 +423,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+      const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();
 
       auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
@@ -432,7 +453,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
           continue;
         }
 
-        mixedEventCont.setPair<false>(p1, p2, collision1.multNtr(), confUse3D, 1.0f);
+        mixedEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
       }
     }
   }
@@ -443,6 +464,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+      const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();
 
       auto groupPartsOne = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
@@ -474,15 +496,84 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
         if (!isParticleTPC(posChild2, CascChildTable[confCascType2][0]) || !isParticleTPC(negChild2, CascChildTable[confCascType2][1]) || !isParticleTPC(bachelor2, CascChildTable[confCascType2][2]))
           return;
         // track cleaning
-        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+        if (!pairCleanerCasc.isCleanPair(p1, p2, parts)) {
           continue;
         }
 
-        mixedEventCont.setPair<false>(p1, p2, collision1.multNtr(), confUse3D, 1.0f);
+        mixedEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
       }
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processMixedEventCasc, "Enable processing mixed event for cascade - cascade", false);
+  // MC truth
+  void processSameEventMCgen(const FilteredFDCollision& col, [[maybe_unused]] const FemtoFullParticles& parts)
+  {
+    auto groupPartsOne = partsOneMCgen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwoMCgen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+
+    eventHisto.fillQA(col);
+
+    for (const auto& part : groupPartsTwo) {
+      int pdgCode = static_cast<int>(part.pidCut());
+      if ((confCascType1 == 0 && pdgCode != 3334) || (confCascType1 == 2 && pdgCode != -3334) || (confCascType1 == 1 && pdgCode != 3312) || (confCascType1 == 3 && pdgCode != -3312))
+        continue;
+
+      cascQAHistos.fillQA<false, true>(part);
+
+      for (const auto& part : groupPartsOne) {
+        int pdgCode = static_cast<int>(part.pidCut());
+        if (pdgCode != confTrkPDGCodePartOne)
+          continue;
+        const auto& pdgTrackParticle = pdgMC->GetParticle(pdgCode);
+        if (!pdgTrackParticle) {
+          continue;
+        }
+
+        if (pdgTrackParticle->Charge() > 0) {
+          trackHistoPartOnePos.fillQA<false, false>(part);
+        } else if (pdgTrackParticle->Charge() < 0) {
+          trackHistoPartOneNeg.fillQA<false, false>(part);
+        }
+      }
+
+      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        if (static_cast<int>(p1.pidCut()) != confTrkPDGCodePartOne)
+          continue;
+        int pdgCodeCasc = static_cast<int>(p2.pidCut());
+        if ((confCascType1 == 0 && pdgCodeCasc != 3334) || (confCascType1 == 2 && pdgCodeCasc != -3334) || (confCascType1 == 1 && pdgCodeCasc != 3312) || (confCascType1 == 3 && pdgCodeCasc != -3312))
+          continue;
+        sameEventCont.setPair<false>(p1, p2, col.multNtr(), confUse3D, 1.0f);
+      }
+    }
+  }
+  PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processSameEventMCgen, "Enable processing same event MC truth for track - cascade", false);
+
+  void processMixedEventMCgen(const FilteredFDCollisions& cols, [[maybe_unused]] const FemtoFullParticles& parts)
+  {
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
+
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+
+      auto groupPartsOne = partsOneMCgen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsTwoMCgen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+
+      const auto& magFieldTesla1 = collision1.magField();
+      const auto& magFieldTesla2 = collision2.magField();
+
+      if (magFieldTesla1 != magFieldTesla2) {
+        continue;
+      }
+      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        if (static_cast<int>(p1.pidCut()) != confTrkPDGCodePartOne)
+          continue;
+        int pdgCodeCasc = static_cast<int>(p2.pidCut());
+        if ((confCascType1 == 0 && pdgCodeCasc != 3334) || (confCascType1 == 2 && pdgCodeCasc != -3334) || (confCascType1 == 1 && pdgCodeCasc != 3312) || (confCascType1 == 3 && pdgCodeCasc != -3312))
+          continue;
+        mixedEventCont.setPair<false>(p1, p2, collision1.multNtr(), confUse3D, 1.0f);
+      }
+    }
+  }
+  PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processMixedEventMCgen, "Enable processing mixed event MC truth for track - cascade", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

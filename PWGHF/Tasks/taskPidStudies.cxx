@@ -49,8 +49,8 @@ DECLARE_SOA_COLUMN(MassAntiLambda, massAntiLambda, float); //! Candidate mass
 DECLARE_SOA_COLUMN(Pt, pt, float);                         //! Transverse momentum of the candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtPos, ptPos, float);                   //! Transverse momentum of positive track (GeV/c)
 DECLARE_SOA_COLUMN(PtNeg, ptNeg, float);                   //! Transverse momentum of negative track (GeV/c)
-DECLARE_SOA_COLUMN(TpcInnerParPos, tpcInnerParPos, float); //! Momentum of positive track at inner wall of TPC (GeV/c)
-DECLARE_SOA_COLUMN(TpcInnerParNeg, tpcInnerParNeg, float); //! Momentum of negative track at inner wall of TPC (GeV/c)
+DECLARE_SOA_COLUMN(PtPosTpc, ptPosTpc, float);             //! Transverse Momentum of positive track at inner wall of TPC (GeV/c)
+DECLARE_SOA_COLUMN(PtNegTpc, ptNegTpc, float);             //! Transverse Momentum of negative track at inner wall of TPC (GeV/c)
 DECLARE_SOA_COLUMN(Radius, radius, float);                 //! Radius
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                       //! Cosine of pointing angle
 DECLARE_SOA_COLUMN(DcaV0Daughters, dcaV0Daughters, float); //! DCA between V0 daughters
@@ -69,8 +69,8 @@ DECLARE_SOA_COLUMN(QtArm, qtArm, float);                   //! Armenteros Qt
 // Cascades
 DECLARE_SOA_COLUMN(MassOmega, massOmega, float);             //! Candidate mass
 DECLARE_SOA_COLUMN(MassXi, massXi, float);                   //! Candidate mass
-DECLARE_SOA_COLUMN(BachPt, bachPt, float);                   //! Transverse momentum of the bachelor (GeV/c)
-DECLARE_SOA_COLUMN(TpcInnerParBach, tpcInnerParBach, float); //! Transverse momentum of the bachelor (GeV/c)
+DECLARE_SOA_COLUMN(PtBach, ptBach, float);                   //! Transverse momentum of the bachelor (GeV/c)
+DECLARE_SOA_COLUMN(PtBachTpc, ptBachTpc, float);             //! Transverse momentum of the bachelor at inner wall of TPC (GeV/c)
 DECLARE_SOA_COLUMN(MLambda, mLambda, float);                 //! Daughter lambda mass (GeV/c^2)
 DECLARE_SOA_COLUMN(V0cosPA, v0cosPA, float);                 //! V0 CPA
 DECLARE_SOA_COLUMN(CascCosPa, cascCosPa, float);             //! Cascade CPA
@@ -92,8 +92,8 @@ DECLARE_SOA_TABLE(PidV0s, "AOD", "PIDV0S", //! Table with PID information
                   pid_studies::Pt,
                   pid_studies::PtPos,
                   pid_studies::PtNeg,
-                  pid_studies::TpcInnerParPos,
-                  pid_studies::TpcInnerParNeg,
+                  pid_studies::PtPosTpc,
+                  pid_studies::PtNegTpc,
                   pid_studies::Radius,
                   pid_studies::Cpa,
                   pid_studies::DcaV0Daughters,
@@ -117,8 +117,8 @@ DECLARE_SOA_TABLE(PidV0s, "AOD", "PIDV0S", //! Table with PID information
 DECLARE_SOA_TABLE(PidCascades, "AOD", "PIDCASCADES", //! Table with PID information
                   pid_studies::MassOmega,
                   pid_studies::Pt,
-                  pid_studies::BachPt,
-                  pid_studies::TpcInnerParBach,
+                  pid_studies::PtBach,
+                  pid_studies::PtBachTpc,
                   pid_studies::Radius,
                   pid_studies::MLambda,
                   pid_studies::V0cosPA,
@@ -146,6 +146,10 @@ struct HfTaskPidStudies {
   Configurable<float> massOmegaMin{"massOmegaMin", 1.5, "Minimum mass for omega"};
   Configurable<float> massOmegaMax{"massOmegaMax", 1.8, "Maximum mass for omega"};
   Configurable<float> radiusMax{"radiusMax", 2.3, "Maximum decay radius (cm)"};
+  Configurable<float> cosPaMin{"cosPaMin", 0.98, "Minimum cosine of pointing angle"};
+  Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 0.2, "Maximum DCA among the V0 daughters (cm)"};
+  Configurable<float> dcaV0ToPvMax{"dcaV0ToPvMax", 0.2, "Maximum DCA of the V0 from the primary vertex (cm)"};
+  Configurable<float> cosPaV0Min{"cosPaV0Min", 0.95, "Minimum cosine of pointing angle for V0 stemming from cascade decays"};
   Configurable<float> qtArmenterosMinForK0{"qtArmenterosMinForK0", 0.12, "Minimum Armenteros' qt for K0"};
   Configurable<float> qtArmenterosMaxForLambda{"qtArmenterosMaxForLambda", 0.12, "Minimum Armenteros' qt for (anti)Lambda"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to keep"};
@@ -184,8 +188,8 @@ struct HfTaskPidStudies {
         candidate.pt(),
         posTrack.pt(),
         negTrack.pt(),
-        posTrack.tpcInnerParam(),
-        negTrack.tpcInnerParam(),
+        posTrack.tpcInnerParam() / std::cosh(candidate.positiveeta()),
+        negTrack.tpcInnerParam() / std::cosh(candidate.negativeeta()),
         candidate.v0radius(),
         candidate.v0cosPA(),
         candidate.dcaV0daughters(),
@@ -211,7 +215,7 @@ struct HfTaskPidStudies {
         candidate.mOmega(),
         candidate.pt(),
         candidate.bachelorpt(),
-        bachTrack.tpcInnerParam(),
+        bachTrack.tpcInnerParam() / std::cosh(candidate.bacheloreta()),
         candidate.cascradius(),
         candidate.mLambda(),
         candidate.v0cosPA(coll.posX(), coll.posY(), coll.posZ()),
@@ -282,6 +286,15 @@ struct HfTaskPidStudies {
     if (v0.v0radius() > radiusMax) {
       return false;
     }
+    if (v0.v0cosPA() < cosPaMin) {
+      return false;
+    }
+    if (v0.dcaV0daughters() > dcaV0DaughtersMax) {
+      return false;
+    }
+    if (v0.dcav0topv() > dcaV0ToPvMax) {
+      return false;
+    }
     return true;
   }
 
@@ -298,6 +311,15 @@ struct HfTaskPidStudies {
     if (v0.v0radius() > radiusMax) {
       return false;
     }
+    if (v0.v0cosPA() < cosPaMin) {
+      return false;
+    }
+    if (v0.dcaV0daughters() > dcaV0DaughtersMax) {
+      return false;
+    }
+    if (v0.dcav0topv() > dcaV0ToPvMax) {
+      return false;
+    }
     return true;
   }
 
@@ -311,6 +333,19 @@ struct HfTaskPidStudies {
       return false;
     }
     if (casc.cascradius() > radiusMax) {
+      return false;
+    }
+    const auto& coll = casc.template collision_as<CollSels>();
+    if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < cosPaMin) {
+      return false;
+    }
+    if (casc.dcaV0daughters() > dcaV0DaughtersMax) {
+      return false;
+    }
+    if (casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ()) > dcaV0ToPvMax) {
+      return false;
+    }
+    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < cosPaV0Min) {
       return false;
     }
     return true;

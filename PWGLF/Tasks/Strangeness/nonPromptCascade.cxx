@@ -188,14 +188,13 @@ struct NonPromptCascadeTask {
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> cfgGRPmagPath{"cfgGRPmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> cfgGRPpath{"cfgGRPpath", "GLO/GRP/GRP", "Path of the grp file"};
 
   Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 70, "Minimum number of TPC clusters"};
   Configurable<LabeledArray<float>> cfgCutsPID{"particlesCutsPID", {cutsPID[0], nParticles, nCutsPID, particlesNames, cutsNames}, "Nuclei PID selections"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber = 0;
-  float bz = 0.f;
+  float mBz = 0.f;
 
   HistogramRegistry registry{
     "registry",
@@ -250,31 +249,24 @@ struct NonPromptCascadeTask {
       return;
     }
     mRunNumber = bc.runNumber();
-    auto timestamp = bc.timestamp();
 
-    if (o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(cfgGRPpath, timestamp)) {
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      bz = grpo->getNominalL3Field();
-    } else if (o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(cfgGRPmagPath, timestamp)) {
+    if (o2::parameters::GRPMagField* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(cfgGRPmagPath, mRunNumber)) {
       o2::base::Propagator::initFieldFromGRP(grpmag);
-      bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(debug) << "bz = " << bz;
-    } else {
-      LOG(fatal) << "Got nullptr from CCDB for path " << cfgGRPmagPath << " of object GRPMagField and " << cfgGRPpath << " of object GRPObject for timestamp " << timestamp;
+      mBz = static_cast<float>(grpmag->getNominalL3Field());
+    }
+
+    if (static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value) == o2::base::Propagator::MatCorrType::USEMatCorrLUT) {
+      auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForRun<o2::base::MatLayerCylSet>("GLO/Param/MatLUT", mRunNumber));
+      o2::base::Propagator::Instance(true)->setMatLUT(lut);
     }
   }
 
   void init(InitContext const&)
   {
     ccdb->setURL(ccdbUrl);
-    ccdb->setFatalWhenNull(false);
+    ccdb->setFatalWhenNull(true);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-
-    if (static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value) == o2::base::Propagator::MatCorrType::USEMatCorrLUT) {
-      auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
-      o2::base::Propagator::Instance(true)->setMatLUT(lut);
-    }
 
     std::vector<double> ptBinning = {0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 2.8, 3.2, 3.6, 4.0, 4.4, 4.8, 5.2, 5.6, 6.0};
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
@@ -306,7 +298,7 @@ struct NonPromptCascadeTask {
     auto trackCovTrk = getTrackParCov(track);
     o2::dataformats::DCA impactParameterTrk;
 
-    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovTrk, bz, 2.f, matCorr, &impactParameterTrk)) {
+    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovTrk, mBz, 2.f, matCorr, &impactParameterTrk)) {
       if (protonTrack.hasTPC() && pionTrack.hasTPC()) {
         if (isOmega) {
           registry.fill(HIST("h_dca_Omega"), std::sqrt(impactParameterTrk.getR2()));
@@ -336,7 +328,7 @@ struct NonPromptCascadeTask {
 
     auto trackCovBach = getTrackParCov(bachelor);
     o2::dataformats::DCA impactParameterBach;
-    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovBach, bz, 2.f, matCorr, &impactParameterBach)) {
+    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovBach, mBz, 2.f, matCorr, &impactParameterBach)) {
       if (isOmega) {
         if (bachelor.sign() < 0) {
           registry.fill(HIST("h_bachdcaxyM_Omega"), impactParameterBach.getY());
@@ -363,7 +355,7 @@ struct NonPromptCascadeTask {
 
     auto trackCovNtrack = getTrackParCov(pionTrack);
     o2::dataformats::DCA impactParameterPiontrack;
-    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovNtrack, bz, 2.f, matCorr, &impactParameterPiontrack)) {
+    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovNtrack, mBz, 2.f, matCorr, &impactParameterPiontrack)) {
       if (isOmega) {
         registry.fill(HIST("h_ntrackdcavspt_Omega"), impactParameterPiontrack.getY(), pionTrack.pt());
       }
@@ -372,7 +364,7 @@ struct NonPromptCascadeTask {
 
     auto trackCovPtrack = getTrackParCov(protonTrack);
     o2::dataformats::DCA impactParameterProtontrack;
-    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovPtrack, bz, 2.f, matCorr, &impactParameterProtontrack)) {
+    if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovPtrack, mBz, 2.f, matCorr, &impactParameterProtontrack)) {
       if (isOmega) {
         registry.fill(HIST("h_ptrackdcavspt_Omega"), impactParameterProtontrack.getY(), protonTrack.pt());
       }
@@ -400,7 +392,7 @@ struct NonPromptCascadeTask {
       const auto primaryVertex = getPrimaryVertex(collision);
 
       o2::vertexing::DCAFitterN<2> df2;
-      df2.setBz(bz);
+      df2.setBz(mBz);
       df2.setPropagateToPCA(propToDCA);
       df2.setMaxR(maxR);
       df2.setMaxDZIni(maxDZIni);

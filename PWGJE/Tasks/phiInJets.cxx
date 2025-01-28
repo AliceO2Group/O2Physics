@@ -573,7 +573,7 @@ struct phiInJets {
   /////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
   int nEvents = 0;
-  void processJetTracks(aod::JCollision const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedjets, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
+  void processJetTracks(aod::JetCollision const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedjets, soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
   {
     if (cDebugLevel > 0) {
       nEvents++;
@@ -655,10 +655,10 @@ struct phiInJets {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPi, aod::pidTOFPi>;
-  using myCompleteJetTracks = soa::Join<aod::JTracks, aod::JTrackPIs, aod::McTrackLabels>;
+  using myCompleteJetTracks = soa::Join<aod::JetTracks, aod::JTrackPIs, aod::McTrackLabels>;
   int nJEEvents = 0;
   int nprocessRecEvents = 0;
-  void processRec(o2::aod::JCollision const& collision, myCompleteJetTracks const& tracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const&, myCompleteTracks const& /*originalTracks*/)
+  void processRec(o2::aod::JetCollision const& collision, myCompleteJetTracks const& tracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const&, myCompleteTracks const& /*originalTracks*/)
   {
     if (cDebugLevel > 0) {
       nprocessRecEvents++;
@@ -884,7 +884,7 @@ struct phiInJets {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   int nprocessSimEvents = 0;
   //  Preslice<aod::JCollisions> slice = o2::aod::JCollision::collisionId;
-  void processSim(o2::aod::JMcCollision const& collision, soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JCollisions>> const& recocolls, aod::JMcParticles const& mcParticles, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets)
+  void processSim(o2::aod::JetMcCollision const& collision, soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JetCollisions>> const& recocolls, aod::JetParticles const& mcParticles, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets)
   {
     if (cDebugLevel > 0) {
       nprocessSimEvents++;
@@ -966,12 +966,12 @@ struct phiInJets {
           // if we check for Phi
           if (!cfgIsKstar) {
             if (mcParticle.has_daughters())
-              for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>())
+              for (auto& dgth : mcParticle.daughters_as<aod::JetParticles>())
                 if (fabs(dgth.pdgCode()) != 321)
                   skip = true;
           } else {
             if (mcParticle.has_daughters())
-              for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>())
+              for (auto& dgth : mcParticle.daughters_as<aod::JetParticles>())
                 if (fabs(dgth.pdgCode()) != 321 || fabs(dgth.pdgCode()) != 211)
                   skip = true;
           }
@@ -993,7 +993,7 @@ struct phiInJets {
             double etadiff = mcp_eta[i] - lResonance.Eta();
             double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
             if (mcParticle.has_daughters()) {
-              for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>()) {
+              for (auto& dgth : mcParticle.daughters_as<aod::JetParticles>()) {
                 double phidiff_K = TVector2::Phi_mpi_pi(mcp_phi[i] - dgth.phi());
                 double etadiff_K = mcp_eta[i] - dgth.eta();
                 double R_K = TMath::Sqrt((etadiff_K * etadiff_K) + (phidiff_K * phidiff_K));
@@ -1057,13 +1057,13 @@ struct phiInJets {
   using JetMCDTable = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>;
 
   int nprocessSimJEEvents = 0;
-  void processMatchedGen(aod::JMcCollision const& collision,
-                         soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JCollisions>> const& recocolls,
+  void processMatchedGen(aod::JetMcCollision const& collision,
+                         soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JetCollisions>> const& recocolls,
                          JetMCDTable const& /*mcdjets*/,
                          JetMCPTable const& mcpjets,
                          myCompleteJetTracks const& tracks,
                          myCompleteTracks const&,
-                         aod::JMcParticles const& mcParticles,
+                         aod::JetParticles const& mcParticles,
                          aod::McParticles const&)
 
   {
@@ -1160,7 +1160,7 @@ struct phiInJets {
         // if we check for Phi
         if (!cfgIsKstar) {
           if (mcParticle.has_daughters()) {
-            for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>()) {
+            for (auto& dgth : mcParticle.daughters_as<aod::JetParticles>()) {
               if (fabs(dgth.pdgCode()) != 321) {
                 skip = true;
                 break;
@@ -1195,11 +1195,11 @@ struct phiInJets {
                   }
                 } // index check
               }   // track loop
-            }     // mc daughter loop
+            } // mc daughter loop
           }       // check if particle has daughters
         } else {  // check for kstar
           if (mcParticle.has_daughters())
-            for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>())
+            for (auto& dgth : mcParticle.daughters_as<aod::JetParticles>())
               if (fabs(dgth.pdgCode()) != 321 || fabs(dgth.pdgCode()) != 211)
                 skip = true;
         }
@@ -1298,7 +1298,7 @@ struct phiInJets {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   int nprocessRecJEEvents = 0;
   //  void processMatchedRec(o2::aod::JCollision const& collision, myCompleteJetTracks const& tracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const&, myCompleteTracks const& originalTracks)
-  void processMatchedRec(aod::JCollision const& collision,
+  void processMatchedRec(aod::JetCollision const& collision,
                          JetMCDTable const& mcdjets,
                          JetMCPTable const&,
                          myCompleteJetTracks const& tracks,

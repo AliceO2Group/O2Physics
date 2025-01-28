@@ -119,6 +119,8 @@ struct HigherMassResonances {
   // Configurable for MC
   Configurable<bool> allGenCollisions{"allGenCollisions", true, "To fill all generated collisions for the signal loss calculations"};
   Configurable<bool> cTVXEvsel{"cTVXEvsel", true, "Triggger selection"};
+  Configurable<int> selectMCparticles{"selectMCparticles", 1, "0: f0(1710), 1: f2(1525), 2: a2(1320), 3: f0(1370), 4: f0(1500)"};
+  std::vector<int> pdgCodes = {10331, 335, 115, 10221, 9030221};
 
   // output THnSparses
   Configurable<bool> activateTHnSparseCosThStarHelicity{"activateTHnSparseCosThStarHelicity", false, "Activate the THnSparse with cosThStar w.r.t. helicity axis"};
@@ -1014,7 +1016,7 @@ struct HigherMassResonances {
       //   std::cout << "PDG code mother " << mcParticle.pdgCode() << std::endl;
       // }
       // counter++;
-      if (std::abs(mcParticle.pdgCode()) != 10331) // f2(1525), f0(1710)
+      if (std::abs(mcParticle.pdgCode()) != pdgCodes[selectMCparticles]) // f2(1525), f0(1710)
       {
         continue;
       }
@@ -1055,7 +1057,7 @@ struct HigherMassResonances {
   int counter2 = 0;
   int eventCounter = 0;
   std::vector<int> gindex1, gindex2;
-  void processRec(EventCandidatesMC::iterator const& collision, V0TrackCandidatesMC const& V0s, aod::McParticles const&, aod::McCollisions const& /*mcCollisions*/)
+  void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const&, V0TrackCandidatesMC const& V0s, aod::McParticles const&, aod::McCollisions const& /*mcCollisions*/)
   {
 
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
@@ -1181,7 +1183,7 @@ struct HigherMassResonances {
             // if (counter2 < 1e4)
             //   std::cout << "Mother2 pdg code: " << motpdgs2 << " p_{T} " << mothertrack2.pt() << "Global index " << mothertrack1.globalIndex() << " event " << eventCounter << std::endl;
 
-            if (mothertrack1.pdgCode() != 10331) {
+            if (mothertrack1.pdgCode() != pdgCodes[selectMCparticles]) {
               continue;
             }
             hMChists.fill(HIST("events_checkrec"), 15.5);

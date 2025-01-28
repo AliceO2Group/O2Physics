@@ -149,8 +149,8 @@ struct HfCorrelatorDsHadrons {
   Configurable<bool> fillHistoMcRec{"fillHistoMcRec", true, "Flag for filling histograms in MC Rec processes"};
   Configurable<bool> fillHistoMcGen{"fillHistoMcGen", true, "Flag for filling histograms in MC Gen processes"};
   Configurable<bool> removeCollWSplitVtx{"removeCollWSplitVtx", false, "Flag for rejecting the splitted collisions"};
-  Configurable<bool> useSel8{"useSel8", true, "Flag for applying sel8 for collision selection"};
-  Configurable<bool> selNoSameBunchPileUpColl{"selNoSameBunchPileUpColl", true, "Flag for rejecting the collisions associated with the same bunch crossing"};
+  Configurable<bool> useSel8{"useSel8", true, "Flag for applying sel8 for collision selection (used only in MC processes)"};
+  Configurable<bool> selNoSameBunchPileUpColl{"selNoSameBunchPileUpColl", true, "Flag for rejecting the collisions associated with the same bunch crossing (used only in MC processes)"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds (avoid the case of flag = 0, no outputMlScore)"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
   Configurable<int> decayChannel{"decayChannel", 1, "Decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
@@ -417,7 +417,7 @@ struct HfCorrelatorDsHadrons {
                             track.pt(),
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToKKPi(candidate), false, false);
-          entryDsHadronGenInfo(false, false, 0);
+          // entryDsHadronGenInfo(false, false, 0);
           entryDsHadronMlInfo(outputMl[0], outputMl[2]);
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
@@ -427,7 +427,7 @@ struct HfCorrelatorDsHadrons {
                             track.pt(),
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToPiKK(candidate), false, false);
-          entryDsHadronGenInfo(false, false, 0);
+          // entryDsHadronGenInfo(false, false, 0);
           entryDsHadronMlInfo(outputMl[0], outputMl[2]);
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
         }
@@ -688,8 +688,8 @@ struct HfCorrelatorDsHadrons {
               entryDsHadronRecoInfo(MassDS, true, isDecayChan);
               entryDsHadronGenInfo(isDsPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
             }
-          }
-        }
+          } // end loop generated particles
+        } // end loop generated Ds
       } // end loop reconstructed collision
     }   // end loop generated collision
   }
@@ -706,7 +706,7 @@ struct HfCorrelatorDsHadrons {
       auto tracksThisColl = tracks.sliceBy(trackIndicesPerCollision, thisCollId);
 
       // Ds fill histograms and Ds candidates information stored
-      for (const auto& candidate : candidates) {
+      for (const auto& candidate : candsDsThisColl) {
         // candidate selected
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
           candReduced(hfcReducedCollisionIndex, candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToKKPi(candidate));
@@ -716,7 +716,7 @@ struct HfCorrelatorDsHadrons {
       }
 
       // tracks information
-      for (const auto& track : tracks) {
+      for (const auto& track : tracksThisColl) {
         if (!track.isGlobalTrackWoDCA()) {
           continue;
         }
@@ -742,7 +742,7 @@ struct HfCorrelatorDsHadrons {
       int indexHfcReducedCollision = collReduced.lastIndex() + 1;
 
       // Ds fill histograms and Ds candidates information stored
-      for (const auto& candidate : candidates) {
+      for (const auto& candidate : candsDsThisColl) {
         // candidate selected
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
           candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToKKPi(candidate));
@@ -752,7 +752,7 @@ struct HfCorrelatorDsHadrons {
       }
 
       // tracks information
-      for (const auto& track : tracks) {
+      for (const auto& track : tracksThisColl) {
         if (!track.isGlobalTrackWoDCA()) {
           continue;
         }
@@ -808,7 +808,7 @@ struct HfCorrelatorDsHadrons {
                             pAssoc.pt(),
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToKKPi(cand), false, false);
-          entryDsHadronGenInfo(false, false, 0);
+          // entryDsHadronGenInfo(false, false, 0);
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = cand.mlProbDsToKKPi()[classMl->at(iclass)];
           }
@@ -822,7 +822,7 @@ struct HfCorrelatorDsHadrons {
                             pAssoc.pt(),
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToPiKK(cand), false, false);
-          entryDsHadronGenInfo(false, false, 0);
+          // entryDsHadronGenInfo(false, false, 0);
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = cand.mlProbDsToPiKK()[classMl->at(iclass)];
           }

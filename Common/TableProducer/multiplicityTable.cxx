@@ -79,6 +79,7 @@ static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1},
 struct MultiplicityTable {
   SliceCache cache;
   Produces<aod::FV0Mults> tableFV0;             // 0
+  Produces<aod::FV0AOuterMults> tableFV0AOuter; // 0-bis (produced with FV0)
   Produces<aod::FT0Mults> tableFT0;             // 1
   Produces<aod::FDDMults> tableFDD;             // 2
   Produces<aod::ZDCMults> tableZDC;             // 3
@@ -133,6 +134,7 @@ struct MultiplicityTable {
   TProfile* hVtxZFT0A;
   TProfile* hVtxZFT0C;
   TProfile* hVtxZFDDA;
+
   TProfile* hVtxZFDDC;
   TProfile* hVtxZNTracks;
   std::vector<int> mEnabledTables; // Vector of enabled tables
@@ -159,6 +161,7 @@ struct MultiplicityTable {
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
     }
+
     bool tEnabled[nTables] = {false};
     for (int i = 0; i < nTables; i++) {
       int f = enabledTables->get(tableNames[i].c_str(), "Enable");
@@ -307,6 +310,7 @@ struct MultiplicityTable {
       switch (i) {
         case kFV0Mults: // FV0
           tableFV0.reserve(collisions.size());
+          tableFV0AOuter.reserve(collisions.size());
           break;
         case kFT0Mults: // FT0
           tableFT0.reserve(collisions.size());
@@ -354,6 +358,7 @@ struct MultiplicityTable {
 
     // Initializing multiplicity values
     float multFV0A = 0.f;
+    float multFV0AOuter = 0.f;
     float multFV0C = 0.f;
     float multFT0A = 0.f;
     float multFT0C = 0.f;
@@ -429,18 +434,25 @@ struct MultiplicityTable {
           case kFV0Mults: // FV0
           {
             multFV0A = 0.f;
+            multFV0AOuter = 0.f;
             multFV0C = 0.f;
             // using FV0 row index from event selection task
             if (collision.has_foundFV0()) {
               const auto& fv0 = collision.foundFV0();
-              for (auto amplitude : fv0.amplitude()) {
+              for (size_t ii = 0; ii < fv0.amplitude().size(); ii++) {
+                auto amplitude = fv0.amplitude()[ii];
+                auto channel = fv0.channel()[ii];
                 multFV0A += amplitude;
+                if (channel > 7) {
+                  multFV0AOuter += amplitude;
+                }
               }
             } else {
               multFV0A = -999.f;
               multFV0C = -999.f;
             }
             tableFV0(multFV0A, multFV0C);
+            tableFV0AOuter(multFV0AOuter);
             LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f", multFV0A, multFV0C);
           } break;
           case kFT0Mults: // FT0
