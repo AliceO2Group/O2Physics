@@ -102,6 +102,7 @@ struct derivedlambdakzeroanalysis {
 
     Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position"};
 
+    Configurable<bool> useEvtSelInDenomEff{"useEvtSelInDenomEff", false, "Consider event selections in the recoed <-> gen collision association for the denominator (or numerator) of the acc. x eff. (or signal loss)?"};
     Configurable<bool> useFT0CbasedOccupancy{"useFT0CbasedOccupancy", false, "Use sum of FT0-C amplitudes for estimating occupancy? (if not, use track-based definition)"};
     // fast check on occupancy
     Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
@@ -1596,6 +1597,13 @@ struct derivedlambdakzeroanalysis {
       int biggestNContribs = -1;
       int bestCollisionIndex = -1;
       for (auto const& collision : groupedCollisions) {
+        // consider event selections in the recoed <-> gen collision association, for the denominator (or numerator) of the efficiency (or signal loss)?
+        if (eventSelections.useEvtSelInDenomEff) {
+          if (!IsEventAccepted(collision, false)) {
+            continue;
+          }
+        }
+
         if (biggestNContribs < collision.multPVTotalContributors()) {
           biggestNContribs = collision.multPVTotalContributors();
           bestCollisionIndex = collision.globalIndex();
