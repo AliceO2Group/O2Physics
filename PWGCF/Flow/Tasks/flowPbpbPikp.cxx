@@ -49,6 +49,7 @@
 
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <TMath.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -82,8 +83,11 @@ struct FlowPbpbPikp {
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {80, -5, 5}, "nsigmaTPC axis"};
   ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
   ConfigurableAxis axisParticles{"axisParticles", {3, 0, 3}, "axis for different hadrons"};
+<<<<<<< HEAD:PWGCF/Flow/Tasks/flowPbpbPikp.cxx
   ConfigurableAxis axisPhiMass{"axisPhiMass", {10000, 0, 2}, "axis for invariant mass distibution for Phi"};
   ConfigurableAxis axisTPCsignal{"axisTPCsignal", {10000, 0, 1000}, "axis for TPC signal"};
+=======
+>>>>>>> 76682af4a6 (Recommiting the generic frmework pid code):PWGCF/Flow/Tasks/FlowPbPbpikp.cxx
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
@@ -122,11 +126,16 @@ struct FlowPbpbPikp {
     histos.add("c22_gap08_ka", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c22_gap08_pr", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c24_full", "", {HistType::kTProfile, {axisMultiplicity}});
+<<<<<<< HEAD:PWGCF/Flow/Tasks/flowPbpbPikp.cxx
     histos.add("KplusTPC", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
     histos.add("KminusTPC", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
     histos.add("TofTpcNsigma", "", {HistType::kTHnSparseD, {{axisParticles, axisNsigmaTPC, axisNsigmaTOF, axisPt}}});
     histos.add("partCount", "", {HistType::kTHnSparseD, {{axisParticles, axisMultiplicity, axisPt}}});
 
+=======
+    histos.add("TofTpcNsigma", "", {HistType::kTHnSparseD, {{axisParticles, axisNsigmaTPC, axisNsigmaTOF, axisPt}}});
+    histos.add("partCount", "", {HistType::kTHnSparseD, {{axisParticles, axisMultiplicity, axisPt}}});
+>>>>>>> 76682af4a6 (Recommiting the generic frmework pid code):PWGCF/Flow/Tasks/FlowPbPbpikp.cxx
     o2::framework::AxisSpec axis = axisPt;
     int nPtBins = axis.binEdges.size() - 1;
     double* ptBins = &(axis.binEdges)[0];
@@ -146,8 +155,13 @@ struct FlowPbpbPikp {
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Pr08Gap22_pt_%i", i + 1), "Pr08Gap22_pTDiff"));
     oba->Add(new TNamed("ChFull24", "ChFull24"));
+<<<<<<< HEAD:PWGCF/Flow/Tasks/flowPbpbPikp.cxx
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("ChFull24_pt_%i", i + 1), "ChFull24_pTDiff"));
+=======
+    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("ChFull24_pt_%i", i + 1), "ChFull24_pTDiff"));
+>>>>>>> 76682af4a6 (Recommiting the generic frmework pid code):PWGCF/Flow/Tasks/FlowPbPbpikp.cxx
 
     fFC->SetName("FlowContainer");
     fFC->SetXAxis(fPtAxis);
@@ -156,9 +170,13 @@ struct FlowPbpbPikp {
 
     fGFW->AddRegion("refN08", -0.8, -0.4, 1, 1);
     fGFW->AddRegion("refP08", 0.4, 0.8, 1, 1);
+<<<<<<< HEAD:PWGCF/Flow/Tasks/flowPbpbPikp.cxx
     fGFW->AddRegion("full", -0.8, 0.8, 1, 512);
     fGFW->AddRegion("poi", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 1024);
     fGFW->AddRegion("ol", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2048);
+=======
+    fGFW->AddRegion("full", -0.8, 0.8, 1, 512);
+>>>>>>> 76682af4a6 (Recommiting the generic frmework pid code):PWGCF/Flow/Tasks/FlowPbPbpikp.cxx
 
     // charged parts
     fGFW->AddRegion("poiN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 128);
@@ -197,6 +215,35 @@ struct FlowPbpbPikp {
     PROTONS
   };
 
+<<<<<<< HEAD:PWGCF/Flow/Tasks/flowPbpbPikp.cxx
+=======
+  enum Particles pion = PIONS;
+  enum Particles kaon = KAONS;
+  enum Particles proton = PROTONS;
+
+  template <typename TTrack>
+  int GetNsigmaPID(TTrack track)
+  {
+    // Computing Nsigma arrays for pion, kaon, and protons
+    std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
+    std::array<float, 3> nSigmaCombined = {std::hypot(track.tpcNSigmaPi(), track.tofNSigmaPi()), std::hypot(track.tpcNSigmaKa(), track.tofNSigmaKa()), std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr())};
+    int pid = -1;
+    float nsigma = 3.0;
+
+    // Choose which nSigma to use
+    std::array<float, 3> nSigmaToUse = (track.pt() > 0.4 && track.hasTOF()) ? nSigmaCombined : nSigmaTPC;
+
+    // Select particle with the lowest nsigma
+    for (int i = 0; i < 3; ++i) {
+      if (std::abs(nSigmaToUse[i]) < nsigma) {
+        pid = i;
+        nsigma = std::abs(nSigmaToUse[i]);
+      }
+    }
+    return pid + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
+  }
+
+>>>>>>> 76682af4a6 (Recommiting the generic frmework pid code):PWGCF/Flow/Tasks/FlowPbPbpikp.cxx
   template <typename TTrack>
   bool isFakeKaon(TTrack track)
   {
@@ -251,8 +298,13 @@ struct FlowPbpbPikp {
   {
     int maxProb[3] = {80, 80, 80};
     int pidID = -1;
+<<<<<<< HEAD:PWGCF/Flow/Tasks/flowPbpbPikp.cxx
     std::pair<int, int> idprob = getBayesID(track);
     if (idprob.first == PIONS || idprob.first == KAONS || idprob.first == PROTONS) { // 0 = pion, 1 = kaon, 2 = proton
+=======
+    std::pair<int, int> idprob = GetBayesID(track);
+    if (idprob.first == pion || idprob.first == kaon || idprob.first == proton) { // 0 = pion, 1 = kaon, 2 = proton
+>>>>>>> 76682af4a6 (Recommiting the generic frmework pid code):PWGCF/Flow/Tasks/FlowPbPbpikp.cxx
       pidID = idprob.first;
       float nsigmaTPC[3] = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
       if (idprob.second > maxProb[pidID]) {
@@ -359,7 +411,13 @@ struct FlowPbpbPikp {
     float weff = 1, wacc = 1;
     int pidIndex;
 
+<<<<<<< HEAD:PWGCF/Flow/Tasks/flowPbpbPikp.cxx
     // resurrectParticle(posSlicedTracks, negSlicedTracks, kplusdaug, kminusdaug, Phimom, massKplus, massKminus, HIST("hPhiMass"));
+=======
+    histos.fill(HIST("TofTpcNsigma"), pion, track.tpcNSigmaPi(), track.tofNSigmaPi(), pt);
+    histos.fill(HIST("TofTpcNsigma"), kaon, track.tpcNSigmaKa(), track.tofNSigmaKa(), pt);
+    histos.fill(HIST("TofTpcNsigma"), proton, track.tpcNSigmaPr(), track.tofNSigmaPr(), pt);
+>>>>>>> 76682af4a6 (Recommiting the generic frmework pid code):PWGCF/Flow/Tasks/FlowPbPbpikp.cxx
 
     for (auto const& trackA : posSlicedTracks) {
       if (getNsigmaPID(trackA) != 2)
@@ -368,6 +426,7 @@ struct FlowPbpbPikp {
         continue;
       auto trackAID = trackA.globalIndex();
 
+<<<<<<< HEAD:PWGCF/Flow/Tasks/flowPbpbPikp.cxx
       for (auto const& trackB : negSlicedTracks) {
         auto trackBID = trackB.globalIndex();
         if (getNsigmaPID(trackB) != 2)
@@ -385,6 +444,24 @@ struct FlowPbpbPikp {
         Phimom = kplusdaug + kminusdaug;
 
         histos.fill(HIST("hPhiMass"), Phimom.M());
+=======
+      // pidIndex = GetBayesPIDIndex(track);
+      pidIndex = GetNsigmaPID(track);
+      if (WithinPtRef)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1);
+      if (WithinPtPOI)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 128);
+      if (WithinPtPOI && WithinPtRef)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 256);
+      fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 512);
+
+      if (pidIndex) {
+        histos.fill(HIST("partCount"), pidIndex - 1, cent, pt);
+        if (WithinPtPOI)
+          fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1 << (pidIndex));
+        if (WithinPtPOI && WithinPtRef)
+          fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1 << (pidIndex + 3));
+>>>>>>> 76682af4a6 (Recommiting the generic frmework pid code):PWGCF/Flow/Tasks/FlowPbPbpikp.cxx
       }
     }
 
@@ -441,5 +518,10 @@ struct FlowPbpbPikp {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+<<<<<<< HEAD:PWGCF/Flow/Tasks/flowPbpbPikp.cxx
   return WorkflowSpec{adaptAnalysisTask<FlowPbpbPikp>(cfgc)};
 }
+=======
+  return WorkflowSpec{adaptAnalysisTask<GfwPidflow>(cfgc)};
+}
+>>>>>>> 76682af4a6 (Recommiting the generic frmework pid code):PWGCF/Flow/Tasks/FlowPbPbpikp.cxx
