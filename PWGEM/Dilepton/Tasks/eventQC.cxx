@@ -124,11 +124,11 @@ struct eventQC {
 
   struct : ConfigurableGroup {
     std::string prefix = "v0cut_group";
-    Configurable<float> cfg_min_mass_k0s{"cfg_min_mass_k0s", 0.49, "min mass for K0S"};
-    Configurable<float> cfg_max_mass_k0s{"cfg_max_mass_k0s", 0.50, "max mass for K0S"};
+    Configurable<float> cfg_min_mass_k0s{"cfg_min_mass_k0s", 0.490, "min mass for K0S"};
+    Configurable<float> cfg_max_mass_k0s{"cfg_max_mass_k0s", 0.505, "max mass for K0S"};
     Configurable<float> cfg_min_cospa_v0hadron{"cfg_min_cospa_v0hadron", 0.999, "min cospa for v0hadron"};
     Configurable<float> cfg_max_pca_v0hadron{"cfg_max_pca_v0hadron", 0.5, "max distance between 2 legs for v0hadron"};
-    Configurable<float> cfg_min_radius_v0hadron{"cfg_min_radius_v0hadron", 0.1, "min rxy for v0hadron"};
+    Configurable<float> cfg_min_radius_v0hadron{"cfg_min_radius_v0hadron", 1.0, "min rxy for v0hadron"};
     Configurable<float> cfg_max_kfchi2{"cfg_max_kfchi2", 1e+10, "max kfchi2 for PCM"};
     Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
     Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
@@ -136,12 +136,16 @@ struct eventQC {
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
-    Configurable<float> cfg_max_chi2tof{"cfg_max_chi2tof", 0.1, "max chi2 for TOF"};
+    Configurable<float> cfg_max_chi2tof{"cfg_max_chi2tof", 1.0, "max chi2 for TOF"};
     Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY for v0 legs in cm"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -4, "min n sigma e in TPC"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +4, "max n sigma e in TPC"};
     Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -4, "min n sigma pi in TPC"};
     Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +4, "max n sigma pi in TPC"};
+    Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -2, "min n sigma el in TOF"};
+    Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +2, "max n sigma el in TOF"};
+    Configurable<float> cfg_min_TOFNsigmaPi{"cfg_min_TOFNsigmaPi", -2, "min n sigma pi in TOF"};
+    Configurable<float> cfg_max_TOFNsigmaPi{"cfg_max_TOFNsigmaPi", +2, "max n sigma pi in TOF"};
   } v0cuts;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -950,20 +954,30 @@ struct eventQC {
             if (std::fabs(pos.dcaXY()) < v0cuts.cfg_min_dcaxy_v0leg || std::fabs(neg.dcaXY()) < v0cuts.cfg_min_dcaxy_v0leg) {
               continue;
             }
-            if (pos.tpcNSigmaPi() < v0cuts.cfg_min_TPCNsigmaPi || v0cuts.cfg_max_TPCNsigmaPi < pos.tpcNSigmaPi()) {
-              continue;
-            }
-            if (neg.tpcNSigmaPi() < v0cuts.cfg_min_TPCNsigmaPi || v0cuts.cfg_max_TPCNsigmaPi < neg.tpcNSigmaPi()) {
-              continue;
-            }
 
-            fRegistry.fill(HIST("V0/K0S/pion/hTPCdEdx"), pos.tpcInnerParam(), pos.tpcSignal());
-            fRegistry.fill(HIST("V0/K0S/pion/hTPCNsigmaEl"), pos.tpcInnerParam(), pos.tpcNSigmaEl());
-            fRegistry.fill(HIST("V0/K0S/pion/hTPCNsigmaPi"), pos.tpcInnerParam(), pos.tpcNSigmaPi());
-            fRegistry.fill(HIST("V0/K0S/pion/hTPCdEdx"), neg.tpcInnerParam(), neg.tpcSignal());
-            fRegistry.fill(HIST("V0/K0S/pion/hTPCNsigmaEl"), neg.tpcInnerParam(), neg.tpcNSigmaEl());
-            fRegistry.fill(HIST("V0/K0S/pion/hTPCNsigmaPi"), neg.tpcInnerParam(), neg.tpcNSigmaPi());
-          }
+            // if (pos.tpcNSigmaPi() < v0cuts.cfg_min_TPCNsigmaPi || v0cuts.cfg_max_TPCNsigmaPi < pos.tpcNSigmaPi()) {
+            //   continue;
+            // }
+            // if (neg.tpcNSigmaPi() < v0cuts.cfg_min_TPCNsigmaPi || v0cuts.cfg_max_TPCNsigmaPi < neg.tpcNSigmaPi()) {
+            //   continue;
+            // }
+
+            bool isTPCOK_pos = pos.hasTPC() && v0cuts.cfg_min_TPCNsigmaPi < pos.tpcNSigmaPi() && pos.tpcNSigmaPi() < v0cuts.cfg_max_TPCNsigmaPi;
+            bool isTPCOK_neg = neg.hasTPC() && v0cuts.cfg_min_TPCNsigmaPi < neg.tpcNSigmaPi() && neg.tpcNSigmaPi() < v0cuts.cfg_max_TPCNsigmaPi;
+            bool isTOFOK_pos = pos.hasTOF() && pos.tofChi2() < v0cuts.cfg_max_chi2tof && v0cuts.cfg_min_TOFNsigmaPi < pos.tofNSigmaPi() && pos.tofNSigmaPi() < v0cuts.cfg_max_TOFNsigmaPi;
+            bool isTOFOK_neg = neg.hasTOF() && neg.tofChi2() < v0cuts.cfg_max_chi2tof && v0cuts.cfg_min_TOFNsigmaPi < neg.tofNSigmaPi() && neg.tofNSigmaPi() < v0cuts.cfg_max_TOFNsigmaPi;
+
+            if (isTPCOK_neg && isTOFOK_neg) { // K0S is tagged by neg and pos is probe.
+              fRegistry.fill(HIST("V0/K0S/pion/hTPCdEdx"), pos.tpcInnerParam(), pos.tpcSignal());
+              fRegistry.fill(HIST("V0/K0S/pion/hTPCNsigmaEl"), pos.tpcInnerParam(), pos.tpcNSigmaEl());
+              fRegistry.fill(HIST("V0/K0S/pion/hTPCNsigmaPi"), pos.tpcInnerParam(), pos.tpcNSigmaPi());
+            }
+            if (isTPCOK_pos && isTOFOK_pos) { // K0S is tagged by pos and neg is probe.
+              fRegistry.fill(HIST("V0/K0S/pion/hTPCdEdx"), neg.tpcInnerParam(), neg.tpcSignal());
+              fRegistry.fill(HIST("V0/K0S/pion/hTPCNsigmaEl"), neg.tpcInnerParam(), neg.tpcNSigmaEl());
+              fRegistry.fill(HIST("V0/K0S/pion/hTPCNsigmaPi"), neg.tpcInnerParam(), neg.tpcNSigmaPi());
+            }
+          } // end of K0S
         } // end of v0hadron loop
 
         auto v0photons_per_coll = v0photons.sliceBy(perCol_pcm, collision.globalIndex());
@@ -975,10 +989,10 @@ struct eventQC {
           fRegistry.fill(HIST("V0/Photon/hMass"), v0photon.mGamma(), v0photon.pt());
           fRegistry.fill(HIST("V0/Photon/hXY"), v0photon.vx(), v0photon.vy());
           fRegistry.fill(HIST("V0/Photon/hChi2"), v0photon.v0radius(), v0photon.chiSquareNDF());
-          auto pos = v0photon.template posTrack_as<TV0Legs>();
-          auto neg = v0photon.template negTrack_as<TV0Legs>();
-          // auto pos = tracks.rawIteratorAt(pos_v0leg.trackId());
-          // auto neg = tracks.rawIteratorAt(neg_v0leg.trackId());
+          auto pos_v0leg = v0photon.template posTrack_as<TV0Legs>();
+          auto neg_v0leg = v0photon.template negTrack_as<TV0Legs>();
+          auto pos = tracks.rawIteratorAt(pos_v0leg.trackId());
+          auto neg = tracks.rawIteratorAt(neg_v0leg.trackId());
 
           if (!isSelectedV0Leg(pos) || !isSelectedV0Leg(neg)) {
             continue;
@@ -986,19 +1000,29 @@ struct eventQC {
           if (std::fabs(pos.dcaXY()) < v0cuts.cfg_min_dcaxy_v0leg || std::fabs(neg.dcaXY()) < v0cuts.cfg_min_dcaxy_v0leg) {
             continue;
           }
-          if (pos.tpcNSigmaEl() < v0cuts.cfg_min_TPCNsigmaEl || v0cuts.cfg_max_TPCNsigmaEl < pos.tpcNSigmaEl()) {
-            continue;
-          }
-          if (neg.tpcNSigmaEl() < v0cuts.cfg_min_TPCNsigmaEl || v0cuts.cfg_max_TPCNsigmaEl < neg.tpcNSigmaEl()) {
-            continue;
-          }
 
-          fRegistry.fill(HIST("V0/Photon/electron/hTPCdEdx"), pos.tpcInnerParam(), pos.tpcSignal());
-          fRegistry.fill(HIST("V0/Photon/electron/hTPCNsigmaEl"), pos.tpcInnerParam(), pos.tpcNSigmaEl());
-          fRegistry.fill(HIST("V0/Photon/electron/hTPCNsigmaPi"), pos.tpcInnerParam(), pos.tpcNSigmaPi());
-          fRegistry.fill(HIST("V0/Photon/electron/hTPCdEdx"), neg.tpcInnerParam(), neg.tpcSignal());
-          fRegistry.fill(HIST("V0/Photon/electron/hTPCNsigmaEl"), neg.tpcInnerParam(), neg.tpcNSigmaEl());
-          fRegistry.fill(HIST("V0/Photon/electron/hTPCNsigmaPi"), neg.tpcInnerParam(), neg.tpcNSigmaPi());
+          // if (pos.tpcNSigmaEl() < v0cuts.cfg_min_TPCNsigmaEl || v0cuts.cfg_max_TPCNsigmaEl < pos.tpcNSigmaEl()) {
+          //   continue;
+          // }
+          // if (neg.tpcNSigmaEl() < v0cuts.cfg_min_TPCNsigmaEl || v0cuts.cfg_max_TPCNsigmaEl < neg.tpcNSigmaEl()) {
+          //   continue;
+          // }
+
+          bool isTPCOK_pos = pos.hasTPC() && v0cuts.cfg_min_TPCNsigmaEl < pos.tpcNSigmaEl() && pos.tpcNSigmaEl() < v0cuts.cfg_max_TPCNsigmaEl;
+          bool isTPCOK_neg = neg.hasTPC() && v0cuts.cfg_min_TPCNsigmaEl < neg.tpcNSigmaEl() && neg.tpcNSigmaEl() < v0cuts.cfg_max_TPCNsigmaEl;
+          bool isTOFOK_pos = pos.hasTOF() && pos.tofChi2() < v0cuts.cfg_max_chi2tof && v0cuts.cfg_min_TOFNsigmaEl < pos.tofNSigmaEl() && pos.tofNSigmaEl() < v0cuts.cfg_max_TOFNsigmaEl;
+          bool isTOFOK_neg = neg.hasTOF() && neg.tofChi2() < v0cuts.cfg_max_chi2tof && v0cuts.cfg_min_TOFNsigmaEl < neg.tofNSigmaEl() && neg.tofNSigmaEl() < v0cuts.cfg_max_TOFNsigmaEl;
+
+          if (isTPCOK_neg && isTOFOK_neg) { // photon conversion is tagged by neg and pos is probe.
+            fRegistry.fill(HIST("V0/Photon/electron/hTPCdEdx"), pos.tpcInnerParam(), pos.tpcSignal());
+            fRegistry.fill(HIST("V0/Photon/electron/hTPCNsigmaEl"), pos.tpcInnerParam(), pos.tpcNSigmaEl());
+            fRegistry.fill(HIST("V0/Photon/electron/hTPCNsigmaPi"), pos.tpcInnerParam(), pos.tpcNSigmaPi());
+          }
+          if (isTPCOK_pos && isTOFOK_pos) { // photon conversion is tagged by pos and neg is probe.
+            fRegistry.fill(HIST("V0/Photon/electron/hTPCdEdx"), neg.tpcInnerParam(), neg.tpcSignal());
+            fRegistry.fill(HIST("V0/Photon/electron/hTPCNsigmaEl"), neg.tpcInnerParam(), neg.tpcNSigmaEl());
+            fRegistry.fill(HIST("V0/Photon/electron/hTPCNsigmaPi"), neg.tpcInnerParam(), neg.tpcNSigmaPi());
+          }
         } // end of v0photon loop
       } // end of V0 PID
     } // end of collision loop
