@@ -225,25 +225,25 @@ struct trHeAnalysis {
     "cfgCutTPCcrRowToFindableCl", 0.8f,
     "Minimum ratio of crossed rows to findable cluster in TPC"};
   Configurable<float> cfgCutmaxChi2TPCH3{"cfgCutmaxChi2TPC", 4.f,
-                                       "Maximum chi2 per cluster for TPC"};
+                                         "Maximum chi2 per cluster for TPC"};
   Configurable<float> cfgCutmaxChi2ITSH3{"cfgCutmaxChi2ITS", 36.f,
-                                       "Maximum chi2 per cluster for ITS"};
+                                         "Maximum chi2 per cluster for ITS"};
   Configurable<float> cfgCutmaxChi2TPCHe{"cfgCutmaxChi2TPCHe", 4.f,
-                                       "Maximum chi2 per cluster for TPC"};
+                                         "Maximum chi2 per cluster for TPC"};
   Configurable<float> cfgCutmaxChi2ITSHe{"cfgCutmaxChi2ITSHe", 36.f,
-                                       "Maximum chi2 per cluster for ITS"};
+                                         "Maximum chi2 per cluster for ITS"};
   Configurable<bool> cfgCutTPCRefit{"cfgCutTPCRefit", 1,
-                                       "Maximum chi2 per cluster for TPC"};
+                                    "Maximum chi2 per cluster for TPC"};
   Configurable<bool> cfgCutITSRefit{"cfgCutITSRefit", 1,
-                                       "Maximum chi2 per cluster for ITS"};
+                                    "Maximum chi2 per cluster for ITS"};
   Configurable<float> cfgCutmaxItsClusterSizeHe{"cfgCutmaxItsClusterSizeHe", 4.f,
-                                       "Maximum chi2 per cluster for TPC"};
+                                                "Maximum chi2 per cluster for TPC"};
   Configurable<float> cfgCutminItsClusterSizeHe{"cfgCutminItsClusterSizeHe", 1.f,
-                                       "Maximum chi2 per cluster for ITS"};
+                                                "Maximum chi2 per cluster for ITS"};
   Configurable<float> cfgCutmaxItsClusterSizeH3{"cfgCutmaxItsClusterSizeH3", 4.f,
-                                       "Maximum chi2 per cluster for TPC"};
+                                                "Maximum chi2 per cluster for TPC"};
   Configurable<float> cfgCutminItsClusterSizeH3{"cfgCutminItsClusterSizeH3", 1.f,
-                                       "Maximum chi2 per cluster for ITS"};
+                                                "Maximum chi2 per cluster for ITS"};
   // Set the kinematic and PID cuts for tracks
   struct : ConfigurableGroup {
     Configurable<float> pCut{
@@ -395,14 +395,14 @@ struct trHeAnalysis {
           continue;
         }
         if (cfgCutTPCRefit) {
-          if (!track.passedTPCRefit()) { 
-            histos.fill(HIST("histogram/cuts"), 9); 
+          if (!track.passedTPCRefit()) {
+            histos.fill(HIST("histogram/cuts"), 9);
             continue;
           }
         }
-        if (cfgCutITSRefit) { 
-          if (!track.passedITSRefit()) { 
-            histos.fill(HIST("histogram/cuts"), 10); 
+        if (cfgCutITSRefit) {
+          if (!track.passedITSRefit()) {
+            histos.fill(HIST("histogram/cuts"), 10);
             continue;
           }
         }
@@ -543,14 +543,14 @@ struct trHeAnalysis {
           continue;
         }
         if (cfgCutTPCRefit) {
-          if (!track.passedTPCRefit()) { 
-            histos.fill(HIST("histogram/cuts"), 9); 
+          if (!track.passedTPCRefit()) {
+            histos.fill(HIST("histogram/cuts"), 9);
             continue;
           }
         }
-        if (cfgCutITSRefit) { 
-          if (!track.passedITSRefit()) { 
-            histos.fill(HIST("histogram/cuts"), 10); 
+        if (cfgCutITSRefit) {
+          if (!track.passedITSRefit()) {
+            histos.fill(HIST("histogram/cuts"), 10);
             continue;
           }
         }
