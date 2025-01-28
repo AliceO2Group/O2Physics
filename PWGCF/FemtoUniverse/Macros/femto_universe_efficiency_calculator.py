@@ -136,12 +136,12 @@ if len(histos_to_upload) == 0:
     print("[-] Exiting, since there is nothing to upload", file=sys.stderr)
     sys.exit(0)
 
-# upload object to ccdb
-timestamp_start = int(time.time() * 1000)
-timestamp_end = timestamp_start + args.ccdb_lifetime
-
+# upload objects to ccdb
 try:
     for idx, key in enumerate(histos_to_upload):
+        timestamp_start = int(time.time() * 1000)
+        timestamp_end = timestamp_start + args.ccdb_lifetime
+
         print(f"[↑] Uploading {key} to CCDB ... ", file=sys.stderr, end="")
         upload_cmd = [
             "o2-ccdb-upload",
