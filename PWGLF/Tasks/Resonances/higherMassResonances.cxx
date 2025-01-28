@@ -1084,7 +1084,7 @@ struct HigherMassResonances {
       return;
     }
     hMChists.fill(HIST("events_checkrec"), 1.5);
-    // if (std::abs(collision.mcCollision().posZ()) > cutzvertex || !collision.sel8()) {
+    // // if (std::abs(collision.mcCollision().posZ()) > cutzvertex || !collision.sel8()) {
     if (std::abs(collision.mcCollision().posZ()) > cutzvertex) {
       return;
     }
