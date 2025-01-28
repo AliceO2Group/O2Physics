@@ -80,7 +80,6 @@ using FemtoFullTracks =
             aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
             aod::pidTPCDe, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
             aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
-using SelectedCandidatesDataMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
 
 // using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join
 // table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s>
@@ -1940,7 +1939,7 @@ struct FemtoUniverseProducerTask {
   void processTrackD0DataML(aod::FemtoFullCollision const& col,
                             aod::BCsWithTimestamps const&,
                             soa::Filtered<aod::FemtoFullTracks> const& tracks,
-                            aod::SelectedCandidatesDataMl const& candidates)
+                            soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0> const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
