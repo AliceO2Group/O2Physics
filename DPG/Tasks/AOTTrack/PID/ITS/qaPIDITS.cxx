@@ -326,8 +326,8 @@ struct itsPidQa {
       if (discard) {
         continue;
       }
-      histos.fill(HIST("event/SelectedAverageClusterSize"), t.pt(), averageClusterSize(t));
-      histos.fill(HIST("event/SelectedAverageClusterSizePerCoslInv"), t.pt(), averageClusterSizePerCoslInv(t));
+      histos.fill(HIST("event/SelectedAverageClusterSize"), track.pt(), averageClusterSize(track));
+      histos.fill(HIST("event/SelectedAverageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(track));
 
       for (o2::track::PID::ID id = 0; id <= o2::track::PID::Last; id++) {
         if (!enableParticle[id]) {
