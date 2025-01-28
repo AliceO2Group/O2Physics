@@ -87,7 +87,10 @@ struct k892analysis_PbPb {
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
   Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"};          // PV Contriuibutor
-
+  Configurable<bool> cfgUseITSTPCrefit{"cfgUseITSTPCrefit", true, "Use ITS and TPC refit"};  
+  Configurable<float> cfgITSChi2Ncl{"cfgITSChi2Ncl", 999.0, "ITS Chi2/NCl"};
+  Configurable<float> cfgTPCChi2Ncl{"cfgTPCChi2Ncl", 999.0, "TPC Chi2/NCl"};
+  
   Configurable<float> cfgCutPT{"cfgCutPT", 0.2, "PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
@@ -180,10 +183,14 @@ struct k892analysis_PbPb {
 
     if (additionalQAplots) {
       // TPC ncluster distirbutions
-      histos.add("TPCncluster/TPCnclusterpi", "TPC ncluster distribution", kTH1F, {{160, 0, 160, "TPC nCluster"}});
-      histos.add("TPCncluster/TPCnclusterka", "TPC ncluster distribution", kTH1F, {{160, 0, 160, "TPC nCluster"}});
-      histos.add("TPCncluster/TPCnclusterPhipi", "TPC ncluster vs phi", kTH2F, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}});
-      histos.add("TPCncluster/TPCnclusterPhika", "TPC ncluster vs phi", kTH2F, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}});
+      histos.add("Ncluster/TPCnclusterpi", "TPC ncluster distribution", kTH1F, {{160, 0, 160, "TPC nCluster"}});
+      histos.add("Ncluster/TPCnclusterka", "TPC ncluster distribution", kTH1F, {{160, 0, 160, "TPC nCluster"}});
+      histos.add("Ncluster/TPCnclusterPhipi", "TPC ncluster vs phi", kTH2F, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}});
+      histos.add("Ncluster/TPCnclusterPhika", "TPC ncluster vs phi", kTH2F, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}});
+		  
+      histos.add("Ncluster/TPCChi2ncluster", "TPC Chi2ncluster distribution", kTH1F, {{100, 0, 10, "TPC Chi2nCluster"}});
+      histos.add("Ncluster/ITSChi2ncluster", "ITS Chi2ncluster distribution", kTH1F, {{100, 0, 40, "ITS Chi2nCluster"}});
+      histos.add("Ncluster/ITSncluster", "ITS  ncluster distribution", kTH1F, {{10, 0, 10, "ITS nCluster"}});
     }
 
     // DCA QA
@@ -275,6 +282,10 @@ struct k892analysis_PbPb {
       return false;
     if (track.tpcNClsFound() < cfgTPCcluster)
       return false;
+    if (track.itsChi2NCl() > cfgITSChi2Ncl)
+      return false;
+    if (track.tpcChi2NCl() > cfgTPCChi2Ncl)
+      return false;
     if (track.tpcCrossedRowsOverFindableCls() < cfgRatioTPCRowsOverFindableCls)
       return false;
     if (cfgPVContributor && !track.isPVContributor())
@@ -285,7 +296,9 @@ struct k892analysis_PbPb {
       return false;
     if (cfgGlobalTrack && !track.isGlobalTrack())
       return false;
-
+    if(cfgUseITSTPCrefit && (!(o2::aod::track::ITSrefit) || !(o2::aod::track::TPCrefit)))
+      return false;
+    
     return true;
   }
 
@@ -406,10 +419,13 @@ struct k892analysis_PbPb {
 
       if (additionalQAplots && !IsMix && !IsRot) {
         // TPCncluster distributions
-        histos.fill(HIST("TPCncluster/TPCnclusterpi"), trk1.tpcNClsFound());
-        histos.fill(HIST("TPCncluster/TPCnclusterka"), trk2.tpcNClsFound());
-        histos.fill(HIST("TPCncluster/TPCnclusterPhipi"), trk1.tpcNClsFound(), trk1.phi());
-        histos.fill(HIST("TPCncluster/TPCnclusterPhika"), trk2.tpcNClsFound(), trk2.phi());
+        histos.fill(HIST("Ncluster/TPCnclusterpi"), trk1.tpcNClsFound());
+        histos.fill(HIST("Ncluster/TPCnclusterka"), trk2.tpcNClsFound());
+        histos.fill(HIST("Ncluster/TPCnclusterPhipi"), trk1.tpcNClsFound(), trk1.phi());
+        histos.fill(HIST("Ncluster/TPCnclusterPhika"), trk2.tpcNClsFound(), trk2.phi());
+        histos.fill(HIST("Ncluster/TPCChi2ncluster"), trk1.tpcChi2NCl());
+        histos.fill(HIST("Ncluster/ITSChi2ncluster"), trk1.itsChi2NCl());
+	histos.fill(HIST("Ncluster/ITSncluster"), trk1.itsNCls());
       }
 
       if constexpr (!IsMix && !IsRot) {
