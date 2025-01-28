@@ -243,7 +243,7 @@ struct MuonRealignment {
 
       if (fUseRemoteGeometry) {
         LOGF(info, "Loading new aligned geometry from CCDB no later than %d", nolaterthanNew.value);
-        ccdb->setCreatedNotAfter(nolaterthanNew.value);
+        ccdb->setCreatedNotAfter(nolaterthanNew.value); // make sure this timestamp can be resolved regarding the reference one
         geoNew = ccdb->getForTimeStamp<TGeoManager>(geoNewPath, bc.timestamp());
         ccdb->clearCache(geoNewPath);
         if (geoNew != nullptr) {
