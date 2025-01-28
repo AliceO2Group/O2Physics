@@ -91,13 +91,13 @@ struct K0MixedEvents {
   /// Construct a registry object with direct declaration
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Configurable<float> _min_P{"min_P", 0.0, "lower mometum limit"};
-  Configurable<float> _max_P{"max_P", 100.0, "upper mometum limit"};
+  Configurable<std::pair<float, float>> momentumCut{"momentumCut", std::pair<float, float>{0.f, 100.f}, "[min., max.] momentum range to keep candidates within"};
+  Configurable<std::pair<float, float>> dcaxyCut{"dcaxyCut", std::pair<float, float>{-100.f, 100.f}, "[min., max.] dcaXY range to keep candidates within"};
+  Configurable<std::pair<float, float>> dcazCut{"dcazCut", std::pair<float, float>{-100.f, 100.f}, "[min., max.] dcaZ range to keep candidates within"};
+  Configurable<std::pair<float, float>> dcaxyExclusionCut{"dcaxyExclusionCut", std::pair<float, float>{100.f, -100.f}, "[min., max.] dcaXY range to discard candidates within"};
+  Configurable<std::pair<float, float>> dcazExclusionCut{"dcazExclusionCut", std::pair<float, float>{100.f, -100.f}, "[min., max.] dcaZ range to discard candidates within"};
+
   Configurable<float> _eta{"eta", 100.0, "abs eta value limit"};
-  Configurable<float> _dcaXY{"dcaXY", 1000.0, "abs dcaXY value limit"};
-  Configurable<float> _dcaXYmin{"dcaXYmin", -0.1, "abs dcaXY min. value limit"};
-  Configurable<float> _dcaZ{"dcaZ", 1000.0, "abs dcaZ value limit"};
-  Configurable<float> _dcaZmin{"dcaZmin", -0.1, "abs dcaZ min. value limit"};
   Configurable<int16_t> _tpcNClsFound{"minTpcNClsFound", 0, "minimum allowed number of TPC clasters"};
   Configurable<float> _tpcChi2NCl{"tpcChi2NCl", 100.0, "upper limit for chi2 value of a fit over TPC clasters"};
   Configurable<float> _tpcCrossedRowsOverFindableCls{"tpcCrossedRowsOverFindableCls", 0, "lower limit of TPC CrossedRows/FindableCls value"};
@@ -149,7 +149,7 @@ struct K0MixedEvents {
 
   std::unique_ptr<ResoPair> Pair = std::make_unique<ResoPair>();
 
-  Filter pFilter = o2::aod::singletrackselector::p > _min_P&& o2::aod::singletrackselector::p < _max_P;
+  Filter pFilter = o2::aod::singletrackselector::p > momentumCut.value.first&& o2::aod::singletrackselector::p < momentumCut.value.second;
   Filter etaFilter = nabs(o2::aod::singletrackselector::eta) < _eta;
   Filter tpcTrkFilter = o2::aod::singletrackselector::tpcNClsFound >= _tpcNClsFound && o2::aod::singletrackselector::tpcNClsShared <= (uint8_t)_tpcNClsShared;
   // Filter itsNClsFilter = o2::aod::singletrackselector::itsNCls >= (uint8_t)_itsNCls;
@@ -295,10 +295,28 @@ struct K0MixedEvents {
       if (track.tpcCrossedRowsOverFindableCls() < _tpcCrossedRowsOverFindableCls) {
         continue;
       }
-      if (track.dcaXY() < _dcaXYmin || track.dcaXY() > _dcaXY) {
+      if (track.dcaXY() < dcaxyCut.value.first) {
         continue;
       }
-      if (track.dcaZ() < _dcaZmin || track.dcaZ() > _dcaZ) {
+      if (track.dcaXY() > dcaxyCut.value.second) {
+        continue;
+      }
+      if (track.dcaXY() > dcaxyExclusionCut.value.first) {
+        continue;
+      }
+      if (track.dcaXY() < dcaxyExclusionCut.value.second) {
+        continue;
+      }
+      if (track.dcaZ() < dcazCut.value.first) {
+        continue;
+      }
+      if (track.dcaZ() > dcazCut.value.second) {
+        continue;
+      }
+      if (track.dcaZ() > dcazExclusionCut.value.first) {
+        continue;
+      }
+      if (track.dcaZ() < dcazExclusionCut.value.second) {
         continue;
       }
 
