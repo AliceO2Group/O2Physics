@@ -296,7 +296,7 @@ struct NonPromptCascadeTask {
   {
     const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value);
     auto trackCovTrk = getTrackParCov(track);
-    o2::dataformats::DCA impactParameterTrk;
+    o2::dataformats::DCA impactParameterTrk{-999.f, -999.f};
 
     if (o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackCovTrk, mBz, 2.f, matCorr, &impactParameterTrk)) {
       if (protonTrack.hasTPC() && pionTrack.hasTPC()) {
