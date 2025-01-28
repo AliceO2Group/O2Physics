@@ -313,17 +313,15 @@ struct FemtoUniversePairTaskTrackTrackExtended {
     return false;
   }
 
-  void init(InitContext& ic)
+  void init()
   {
-    qaRegistry.add("Efficiency/part1", "Efficiency origin/generated part1; p_{T} (GeV/c); Efficiency", kTH1F, {{100, 0, 4}});
-    hMCTruth1.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, trackonefilter.confPDGCodePartOne, false);
-    if (!confIsSame) {
-      qaRegistry.add("Efficiency/part2", "Efficiency origin/generated part2; p_{T} (GeV/c); Efficiency", kTH1F, {{100, 0, 4}});
-      hMCTruth2.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, tracktwofilter.confPDGCodePartTwo, false);
+    if (effConfGroup.confEfficiencyDoMCTruth) {
+      hMCTruth1.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, trackonefilter.confPDGCodePartOne, false);
+      if (!confIsSame) {
+        hMCTruth2.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, tracktwofilter.confPDGCodePartTwo, false);
+      }
     }
-
     efficiencyCalculator.init();
-    efficiencyCalculator.uploadOnStop(ic);
 
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, twotracksconfigs.confIsMC, trackonefilter.confPDGCodePartOne, true); // last true = isDebug
@@ -468,9 +466,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           continue;
         }
 
-        float weight = efficiencyCalculator.getWeight<1>(p1);
+        float weight = efficiencyCalculator.getWeight(ParticleNo::ONE, p1);
         if (!confIsSame) {
-          weight *= efficiencyCalculator.getWeight<2>(p2);
+          weight *= efficiencyCalculator.getWeight(ParticleNo::TWO, p2);
         }
 
         if (swpart)
@@ -529,9 +527,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           continue;
         }
 
-        float weight = efficiencyCalculator.getWeight<1>(p1);
+        float weight = efficiencyCalculator.getWeight(ParticleNo::ONE, p1);
         if (!confIsSame) {
-          weight *= efficiencyCalculator.getWeight<2>(p2);
+          weight *= efficiencyCalculator.getWeight(ParticleNo::TWO, p2);
         }
 
         sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, weight);
@@ -558,38 +556,24 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// \param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processSameEventMC(const o2::aod::FdCollisions& cols,
+  void processSameEventMC(const o2::aod::FdCollision& col,
                           const soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
                           const o2::aod::FdMCParticles&)
   {
-    for (const auto& col : cols) {
-      fillCollision(col);
+    fillCollision(col);
 
-      auto groupMCTruth1 = partsOneMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-      efficiencyCalculator.doMCTruth<1>(hMCTruth1, groupMCTruth1);
-
-      if (!confIsSame) {
-        auto groupMCTruth2 = partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-        efficiencyCalculator.doMCTruth<2>(hMCTruth2, groupMCTruth2);
-      }
-
-      auto groupMCReco1 = partsOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-      auto groupMCReco2 = partsTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-
-      doSameEvent<true>(groupMCReco1, groupMCReco2, parts, col.magField(), col.multNtr());
-    }
-
-    auto hTruth1 = qaRegistry.get<TH1>(HIST("MCTruthTracks_one/hPt"));
-    auto hReco1 = qaRegistry.get<TH1>(HIST("Tracks_one_MC/hPt"));
-    auto hEff1 = qaRegistry.get<TH1>(HIST("Efficiency/part1"));
-    efficiencyCalculator.calculate<1>(hEff1, hTruth1, hReco1);
+    auto groupMCTruth1 = partsOneMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    efficiencyCalculator.doMCTruth<1>(hMCTruth1, groupMCTruth1);
 
     if (!confIsSame) {
-      auto hTruth2 = qaRegistry.get<TH1>(HIST("MCTruthTracks_two/hPt"));
-      auto hReco2 = qaRegistry.get<TH1>(HIST("Tracks_two_MC/hPt"));
-      auto hEff2 = qaRegistry.get<TH1>(HIST("Efficiency/part2"));
-      efficiencyCalculator.calculate<2>(hEff2, hTruth2, hReco2);
+      auto groupMCTruth2 = partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+      efficiencyCalculator.doMCTruth<2>(hMCTruth2, groupMCTruth2);
     }
+
+    auto groupMCReco1 = partsOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupMCReco2 = partsTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+
+    doSameEvent<true>(groupMCReco1, groupMCReco2, parts, col.magField(), col.multNtr());
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackTrackExtended, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
@@ -651,9 +635,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
         }
       }
 
-      float weight = efficiencyCalculator.getWeight<1>(p1);
+      float weight = efficiencyCalculator.getWeight(ParticleNo::ONE, p1);
       if (!confIsSame) {
-        weight *= efficiencyCalculator.getWeight<2>(p2);
+        weight *= efficiencyCalculator.getWeight(ParticleNo::TWO, p2);
       }
 
       if (swpart)
