@@ -174,184 +174,6 @@ struct trHeAnalysis {
                               "Flag to enable triton analysis."};
   Configurable<bool> enableHe{"enableHe", true,
                               "Flag to enable helium-3 analysis."};
-
-  ConfigurableAxis binsPt{"binsPt",
-                          {VARIABLE_WIDTH,
-                           0.0,
-                           0.05,
-                           0.1,
-                           0.15,
-                           0.2,
-                           0.25,
-                           0.3,
-                           0.35,
-                           0.4,
-                           0.425,
-                           0.45,
-                           0.475,
-                           0.5,
-                           0.5125,
-                           0.525,
-                           0.5375,
-                           0.55,
-                           0.5625,
-                           0.575,
-                           0.5875,
-                           0.6,
-                           0.6125,
-                           0.625,
-                           0.6375,
-                           0.65,
-                           0.6625,
-                           0.675,
-                           0.6875,
-                           0.7,
-                           0.7125,
-                           0.725,
-                           0.7375,
-                           0.75,
-                           0.7625,
-                           0.775,
-                           0.7875,
-                           0.8,
-                           0.8125,
-                           0.825,
-                           0.8375,
-                           0.85,
-                           0.8625,
-                           0.875,
-                           0.8875,
-                           0.9,
-                           0.9125,
-                           0.925,
-                           0.9375,
-                           0.95,
-                           0.9625,
-                           0.975,
-                           0.9875,
-                           1.0,
-                           1.0125,
-                           1.025,
-                           1.0375,
-                           1.05,
-                           1.0625,
-                           1.075,
-                           1.0875,
-                           1.1,
-                           1.1125,
-                           1.125,
-                           1.1375,
-                           1.15,
-                           1.1625,
-                           1.175,
-                           1.1875,
-                           1.2,
-                           1.2125,
-                           1.225,
-                           1.2375,
-                           1.25,
-                           1.2625,
-                           1.275,
-                           1.2875,
-                           1.3,
-                           1.3125,
-                           1.325,
-                           1.3375,
-                           1.35,
-                           1.3625,
-                           1.375,
-                           1.3875,
-                           1.4,
-                           1.4125,
-                           1.425,
-                           1.4375,
-                           1.45,
-                           1.4625,
-                           1.475,
-                           1.4875,
-                           1.5,
-                           1.5125,
-                           1.525,
-                           1.5375,
-                           1.55,
-                           1.5625,
-                           1.575,
-                           1.5875,
-                           1.6,
-                           1.6125,
-                           1.625,
-                           1.6375,
-                           1.65,
-                           1.6625,
-                           1.675,
-                           1.6875,
-                           1.7,
-                           1.7125,
-                           1.725,
-                           1.7375,
-                           1.75,
-                           1.7625,
-                           1.775,
-                           1.7875,
-                           1.8,
-                           1.8125,
-                           1.825,
-                           1.8375,
-                           1.85,
-                           1.8625,
-                           1.875,
-                           1.8875,
-                           1.9,
-                           1.9125,
-                           1.925,
-                           1.9375,
-                           1.95,
-                           1.9625,
-                           1.975,
-                           1.9875,
-                           2.0,
-                           2.0625,
-                           2.125,
-                           2.1875,
-                           2.25,
-                           2.3125,
-                           2.375,
-                           2.4375,
-                           2.5,
-                           2.625,
-                           2.75,
-                           2.875,
-                           3.0,
-                           3.25,
-                           3.5,
-                           3.75,
-                           4.0,
-                           4.5,
-                           5.0,
-                           6.0,
-                           7.0,
-                           8.0},
-                          ""};
-  ConfigurableAxis binsPtHe{"binsPtHe",
-                            {VARIABLE_WIDTH, 1.0, 1.25, 1.50, 1.75, 2.0, 2.25,
-                             2.50, 2.75, 3.0, 3.25, 3.50, 3.75, 4.0, 4.50, 5.0,
-                             6.0, 7.0, 8.0},
-                            ""};
-  ConfigurableAxis binsPtZHe{"binsPtZHe",
-                             {VARIABLE_WIDTH, 0.5, 0.625, 0.75, 0.875, 1.0,
-                              1.125, 1.25, 1.375, 1.5, 1.625, 1.75, 1.875, 2.0,
-                              2.25, 2.5, 3.0, 3.5, 4.0},
-                             ""};
-  ConfigurableAxis binsPtTr{"binsPtTr",
-                            {VARIABLE_WIDTH, 1.0, 1.25, 1.50, 1.75, 2.0, 2.25,
-                             2.50, 2.75, 3.0, 3.25, 3.50, 3.75, 4.0, 4.50, 5.0,
-                             6.0, 7.0, 8.0},
-                            ""};
-  ConfigurableAxis binsPtZTr{"binsPtZTr",
-                             {VARIABLE_WIDTH, 0.5, 0.625, 0.75, 0.875, 1.0,
-                              1.125, 1.25, 1.375, 1.5, 1.625, 1.75, 1.875, 2.0,
-                              2.25, 2.5, 3.0, 3.5, 4.0},
-                             ""};
   ConfigurableAxis binsDeDx{"binsDeDx", {600, 0.f, 3000.f}, ""};
   ConfigurableAxis binsBeta{"binsBeta", {120, 0.0, 1.2}, ""};
   ConfigurableAxis binsDca{"binsDca", {400, -1.f, 1.f}, ""};
@@ -402,11 +224,26 @@ struct trHeAnalysis {
   Configurable<float> cfgCutTPCcrRowToFindableCl{
     "cfgCutTPCcrRowToFindableCl", 0.8f,
     "Minimum ratio of crossed rows to findable cluster in TPC"};
-  Configurable<float> cfgCutmaxChi2TPC{"cfgCutmaxChi2TPC", 4.f,
+  Configurable<float> cfgCutmaxChi2TPCH3{"cfgCutmaxChi2TPC", 4.f,
                                        "Maximum chi2 per cluster for TPC"};
-  Configurable<float> cfgCutmaxChi2ITS{"cfgCutmaxChi2ITS", 36.f,
+  Configurable<float> cfgCutmaxChi2ITSH3{"cfgCutmaxChi2ITS", 36.f,
                                        "Maximum chi2 per cluster for ITS"};
-
+  Configurable<float> cfgCutmaxChi2TPCHe{"cfgCutmaxChi2TPCHe", 4.f,
+                                       "Maximum chi2 per cluster for TPC"};
+  Configurable<float> cfgCutmaxChi2ITSHe{"cfgCutmaxChi2ITSHe", 36.f,
+                                       "Maximum chi2 per cluster for ITS"};
+  Configurable<bool> cfgCutTPCRefit{"cfgCutTPCRefit", 1,
+                                       "Maximum chi2 per cluster for TPC"};
+  Configurable<bool> cfgCutITSRefit{"cfgCutITSRefit", 1,
+                                       "Maximum chi2 per cluster for ITS"};
+  Configurable<float> cfgCutmaxItsClusterSizeHe{"cfgCutmaxItsClusterSizeHe", 4.f,
+                                       "Maximum chi2 per cluster for TPC"};
+  Configurable<float> cfgCutminItsClusterSizeHe{"cfgCutminItsClusterSizeHe", 1.f,
+                                       "Maximum chi2 per cluster for ITS"};
+  Configurable<float> cfgCutmaxItsClusterSizeH3{"cfgCutmaxItsClusterSizeH3", 4.f,
+                                       "Maximum chi2 per cluster for TPC"};
+  Configurable<float> cfgCutminItsClusterSizeH3{"cfgCutminItsClusterSizeH3", 1.f,
+                                       "Maximum chi2 per cluster for ITS"};
   // Set the kinematic and PID cuts for tracks
   struct : ConfigurableGroup {
     Configurable<float> pCut{
@@ -435,12 +272,6 @@ struct trHeAnalysis {
 
   void init(o2::framework::InitContext&)
   {
-    const AxisSpec pAxis{binsPt, "#it{p} (GeV/#it{c})"};
-    const AxisSpec ptAxis{binsPt, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec ptHeAxis{binsPtHe, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec ptZHeAxis{binsPtZHe, "#it{p}_{T}/z (GeV/#it{c})"};
-    const AxisSpec ptTrAxis{binsPtTr, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec ptZTrAxis{binsPtZTr, "#it{p}_{T}/z (GeV/#it{c})"};
     const AxisSpec dedxAxis{binsDeDx, "d#it{E}/d#it{x} A.U."};
     const AxisSpec betaAxis{binsBeta, "TOF #beta"};
     const AxisSpec dcaxyAxis{binsDca, "DCAxy (cm)"};
@@ -490,17 +321,19 @@ struct trHeAnalysis {
     h->GetXaxis()->SetBinLabel(6, "Sel8 cut");
     h->GetXaxis()->SetBinLabel(7, "Z-vert Cut");
     histos.add<TH1>("histogram/cuts", "cuts", HistType::kTH1D,
-                    {{9, -0.5, 8.5}});
-    auto h_cuts = histos.get<TH1>(HIST("histogram/cuts"));
-    h_cuts->GetXaxis()->SetBinLabel(1, "total");
-    h_cuts->GetXaxis()->SetBinLabel(2, "p cut");
-    h_cuts->GetXaxis()->SetBinLabel(3, "eta cut");
-    h_cuts->GetXaxis()->SetBinLabel(4, "TPC cluster");
-    h_cuts->GetXaxis()->SetBinLabel(5, "ITS clsuter");
-    h_cuts->GetXaxis()->SetBinLabel(6, "TPC crossed rows");
-    h_cuts->GetXaxis()->SetBinLabel(7, "max chi2 ITS");
-    h_cuts->GetXaxis()->SetBinLabel(8, "max chi2 TPC");
-    h_cuts->GetXaxis()->SetBinLabel(9, "crossed rows over findable cluster");
+                    {{11, -0.5, 10.5}});
+    auto hCuts = histos.get<TH1>(HIST("histogram/cuts"));
+    hCuts->GetXaxis()->SetBinLabel(1, "total");
+    hCuts->GetXaxis()->SetBinLabel(2, "p cut");
+    hCuts->GetXaxis()->SetBinLabel(3, "eta cut");
+    hCuts->GetXaxis()->SetBinLabel(4, "TPC cluster");
+    hCuts->GetXaxis()->SetBinLabel(5, "ITS clsuter");
+    hCuts->GetXaxis()->SetBinLabel(6, "TPC crossed rows");
+    hCuts->GetXaxis()->SetBinLabel(7, "max chi2 ITS");
+    hCuts->GetXaxis()->SetBinLabel(8, "max chi2 TPC");
+    hCuts->GetXaxis()->SetBinLabel(9, "crossed rows over findable cluster");
+    hCuts->GetXaxis()->SetBinLabel(9, "TPC refit");
+    hCuts->GetXaxis()->SetBinLabel(9, "ITS refit");
     for (int i = 0; i < nParticles; i++) {
       particles.push_back(Particle(particleNames.at(i), particlePdgCodes.at(i),
                                    particleMasses.at(i), particleCharge.at(i),
@@ -557,17 +390,21 @@ struct trHeAnalysis {
           histos.fill(HIST("histogram/cuts"), 5);
           continue;
         }
-        if (track.itsChi2NCl() > cfgCutmaxChi2ITS) {
-          histos.fill(HIST("histogram/cuts"), 6);
-          continue;
-        }
-        if (track.tpcChi2NCl() > cfgCutmaxChi2TPC) {
-          histos.fill(HIST("histogram/cuts"), 7);
-          continue;
-        }
         if (track.tpcCrossedRowsOverFindableCls() <= cfgCutTPCcrRowToFindableCl) {
           histos.fill(HIST("histogram/cuts"), 8);
           continue;
+        }
+        if (cfgCutTPCRefit) {
+          if (!track.passedTPCRefit()) { 
+            histos.fill(HIST("histogram/cuts"), 9); 
+            continue;
+          }
+        }
+        if (cfgCutITSRefit) { 
+          if (!track.passedITSRefit()) { 
+            histos.fill(HIST("histogram/cuts"), 10); 
+            continue;
+          }
         }
         histos.fill(HIST("histogram/pT"), track.pt());
         histos.fill(HIST("histogram/p"), track.p());
@@ -579,6 +416,14 @@ struct trHeAnalysis {
         if (enableTr && trRapCut) {
           if (std::abs(getTPCnSigma(track, particles.at(0))) <
               nsigmaTPCvar.nsigmaTPCTr) {
+            if (track.itsChi2NCl() > cfgCutmaxChi2ITSH3) {
+              histos.fill(HIST("histogram/cuts"), 6);
+              continue;
+            }
+            if (track.tpcChi2NCl() > cfgCutmaxChi2TPCH3) {
+              histos.fill(HIST("histogram/cuts"), 7);
+              continue;
+            }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
                         track.tpcInnerParam() / (1.f * track.sign()),
                         track.tpcSignal());
@@ -600,8 +445,6 @@ struct trHeAnalysis {
             int TnItsCluster = track.itsNCls();
             float TTpcChi2NCl = track.tpcChi2NCl();
             float TItsChi2NCl = track.itsChi2NCl();
-            bool TPassedTpcRefit = track.passedTPCRefit();
-            bool TPassedItsRefit = track.passedITSRefit();
             float TRigidity = track.tpcInnerParam();
             float TItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
@@ -614,6 +457,14 @@ struct trHeAnalysis {
         if (enableHe && heRapCut) {
           if (std::abs(getTPCnSigma(track, particles.at(1))) <
               nsigmaTPCvar.nsigmaTPCHe) {
+            if (track.itsChi2NCl() > cfgCutmaxChi2ITSHe) {
+              histos.fill(HIST("histogram/cuts"), 6);
+              continue;
+            }
+            if (track.tpcChi2NCl() > cfgCutmaxChi2TPCHe) {
+              histos.fill(HIST("histogram/cuts"), 7);
+              continue;
+            }
             histos.fill(HIST("histogram/He/He-TPCsignVsTPCmomentum"),
                         track.tpcInnerParam() / (2.f * track.sign()),
                         track.tpcSignal());
@@ -622,7 +473,7 @@ struct trHeAnalysis {
             float TPt = track.pt();
             float TEta = track.eta();
             float TPhi = track.phi();
-            int8_t TCharge = track.sign();
+            int8_t TCharge = 2.f * track.sign();
             float THeDeDx = track.tpcSignal();
             float TnSigmaTpc = track.tpcNSigmaHe();
             float TTofSignalHe = track.mass();
@@ -635,8 +486,6 @@ struct trHeAnalysis {
             int TnItsCluster = track.itsNCls();
             float TTpcChi2NCl = track.tpcChi2NCl();
             float TItsChi2NCl = track.itsChi2NCl();
-            bool TPassedTpcRefit = track.passedTPCRefit();
-            bool TPassedItsRefit = track.passedITSRefit();
             float TRigidity = track.tpcInnerParam();
             float TItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
@@ -693,6 +542,18 @@ struct trHeAnalysis {
           histos.fill(HIST("histogram/cuts"), 8);
           continue;
         }
+        if (cfgCutTPCRefit) {
+          if (!track.passedTPCRefit()) { 
+            histos.fill(HIST("histogram/cuts"), 9); 
+            continue;
+          }
+        }
+        if (cfgCutITSRefit) { 
+          if (!track.passedITSRefit()) { 
+            histos.fill(HIST("histogram/cuts"), 10); 
+            continue;
+          }
+        }
         histos.fill(HIST("histogram/pT"), track.pt());
         histos.fill(HIST("histogram/p"), track.p());
         histos.fill(HIST("histogram/TPCsignVsTPCmomentum"),
@@ -702,6 +563,14 @@ struct trHeAnalysis {
                     track.p() / (1.f * track.sign()), track.beta());
         if (enableTr && trRapCut) {
           if (std::abs(track.tpcNSigmaTr()) < nsigmaTPCvar.nsigmaTPCTr) {
+            if (track.itsChi2NCl() > cfgCutmaxChi2ITSH3) {
+              histos.fill(HIST("histogram/cuts"), 6);
+              continue;
+            }
+            if (track.tpcChi2NCl() > cfgCutmaxChi2TPCH3) {
+              histos.fill(HIST("histogram/cuts"), 7);
+              continue;
+            }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
                         track.tpcInnerParam() / (1.f * track.sign()),
                         track.tpcSignal());
@@ -723,8 +592,6 @@ struct trHeAnalysis {
             int TnItsCluster = track.itsNCls();
             float TTpcChi2NCl = track.tpcChi2NCl();
             float TItsChi2NCl = track.itsChi2NCl();
-            bool TPassedTpcRefit = track.passedTPCRefit();
-            bool TPassedItsRefit = track.passedITSRefit();
             float TRigidity = track.tpcInnerParam();
             float TItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
@@ -736,6 +603,14 @@ struct trHeAnalysis {
         }
         if (enableHe && heRapCut) {
           if (std::abs(track.tpcNSigmaHe()) < nsigmaTPCvar.nsigmaTPCHe) {
+            if (track.itsChi2NCl() > cfgCutmaxChi2ITSH3) {
+              histos.fill(HIST("histogram/cuts"), 6);
+              continue;
+            }
+            if (track.tpcChi2NCl() > cfgCutmaxChi2TPCH3) {
+              histos.fill(HIST("histogram/cuts"), 7);
+              continue;
+            }
             histos.fill(HIST("histogram/He/He-TPCsignVsTPCmomentum"),
                         track.tpcInnerParam() / (2.f * track.sign()),
                         track.tpcSignal());
@@ -744,7 +619,7 @@ struct trHeAnalysis {
             float TPt = track.pt();
             float TEta = track.eta();
             float TPhi = track.phi();
-            int8_t TCharge = track.sign();
+            int8_t TCharge = 2.f * track.sign();
             float THeDeDx = track.tpcSignal();
             float TnSigmaTpc = track.tpcNSigmaHe();
             float TTofSignalHe = track.mass();
@@ -757,8 +632,6 @@ struct trHeAnalysis {
             int TnItsCluster = track.itsNCls();
             float TTpcChi2NCl = track.tpcChi2NCl();
             float TItsChi2NCl = track.itsChi2NCl();
-            bool TPassedTpcRefit = track.passedTPCRefit();
-            bool TPassedItsRefit = track.passedITSRefit();
             float TRigidity = track.tpcInnerParam();
             float TItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
