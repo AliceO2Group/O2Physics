@@ -44,8 +44,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using FilteredCollisions = soa::Filtered<aod::SingleCollSels>;
-using FilteredTracks = soa::Filtered<aod::SingleTrackSels_v2>; // old tables (v2)
-// using FilteredTracks = soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SinglePIDEls, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDHes>>; // new tables (v3)
+using FilteredTracks = soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SinglePIDEls, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDHes>>;
 
 typedef std::shared_ptr<FilteredTracks::iterator> trkType;
 typedef std::shared_ptr<FilteredCollisions::iterator> colType;
