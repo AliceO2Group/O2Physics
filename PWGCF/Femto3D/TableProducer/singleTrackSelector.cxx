@@ -266,7 +266,7 @@ struct singleTrackSelector {
 
           tableRowPIDTr(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaTr()),
                         singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaTr()));
-                        
+
           tableRowPIDHe(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaHe()),
                         singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaHe()));
 
