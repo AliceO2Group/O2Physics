@@ -152,7 +152,7 @@ struct HfCandidateCreator3Prong {
       LOGP(fatal, "At least one particle specie should be enabled for the creation.");
     }
 
-    if(createLc && createXic && applyInvMassConstraint) {
+    if (createLc && createXic && applyInvMassConstraint) {
       LOGP(fatal, "Unable to apply invariant mass constraint due to ambiguity of mass hypothesis: only one of Lc and Xic can be reconstructed.");
     }
 
@@ -496,7 +496,7 @@ struct HfCandidateCreator3Prong {
 
       const float chi2topo = kfCalculateChi2ToPrimaryVertex(kfCandPKPi, kfpV);
 
-      if(applyTopoConstraint) { // constraints applied after chi2topo getter - to preserve unbiased value of chi2topo
+      if (applyTopoConstraint) { // constraints applied after chi2topo getter - to preserve unbiased value of chi2topo
         kfCandPKPi.SetProductionVertex(KFPV);
         kfCandPiKP.SetProductionVertex(KFPV);
         kfCandPiKPi.SetProductionVertex(KFPV);
@@ -522,12 +522,12 @@ struct HfCandidateCreator3Prong {
       const float massKPi = kfPairKPi.GetMass();
       const float massPiK = kfPairPiK.GetMass();
 
-      if(applyInvMassConstraint) { // constraints applied after minv getters - to preserve unbiased values of minv
-        kfCandPKPi.SetNonLinearMassConstraint(createLc ? MassLambdaCPlus : MassXiCPlus);
-        kfCandPiKP.SetNonLinearMassConstraint(createLc ? MassLambdaCPlus : MassXiCPlus);
-        kfCandPiKPi.SetNonLinearMassConstraint(MassDPlus);
-        kfCandKKPi.SetNonLinearMassConstraint(MassDS);
-        kfCandPiKK.SetNonLinearMassConstraint(MassDS);
+      if (applyInvMassConstraint) { // constraints applied after minv getters - to preserve unbiased values of minv
+        kfCandPKPi.SetNonlinearMassConstraint(createLc ? MassLambdaCPlus : MassXiCPlus);
+        kfCandPiKP.SetNonlinearMassConstraint(createLc ? MassLambdaCPlus : MassXiCPlus);
+        kfCandPiKPi.SetNonlinearMassConstraint(MassDPlus);
+        kfCandKKPi.SetNonlinearMassConstraint(MassDS);
+        kfCandPiKK.SetNonlinearMassConstraint(MassDS);
       }
 
       const float chi2geo = kfCandPKPi.Chi2() / kfCandPKPi.NDF();

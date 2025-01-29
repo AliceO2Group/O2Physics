@@ -224,20 +224,22 @@ struct HfCandidateSelectorLc {
       }
     }
 
-    if (reconstructionType == aod::hf_cand::VertexerType::KfParticle && applyKfCuts) {
-      // candidate chi2geo of the triplet of prongs
-      if (candidate.kfChi2Geo() > kfCuts->get(pTBin, "kfChi2Geo")) {
-        return false;
-      }
+    if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+      if (applyKfCuts) {
+        // candidate chi2geo of the triplet of prongs
+        if (candidate.kfChi2Geo() > kfCuts->get(pTBin, "kfChi2Geo")) {
+          return false;
+        }
 
-      // candidate's decay point separation from the PV in terms of its error
-      if (candidate.kfDecayLength() / candidate.kfDecayLengthError() < kfCuts->get(pTBin, "kfLdL")) {
-        return false;
-      }
+        // candidate's decay point separation from the PV in terms of its error
+        if (candidate.kfDecayLength() / candidate.kfDecayLengthError() < kfCuts->get(pTBin, "kfLdL")) {
+          return false;
+        }
 
-      // candidate's chi2 to the PV
-      if (candidate.kfChi2Topo() > kfCuts->get(pTBin, "kfChi2Topo")) {
-        return false;
+        // candidate's chi2 to the PV
+        if (candidate.kfChi2Topo() > kfCuts->get(pTBin, "kfChi2Topo")) {
+          return false;
+        }
       }
     }
 
@@ -301,77 +303,78 @@ struct HfCandidateSelectorLc {
       }
     }
 
-    if (reconstructionType == aod::hf_cand::VertexerType::KfParticle && applyKfCuts) {
+    if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+      if (applyKfCuts) {
+        const float chi2PrimProng0 = candidate.kfChi2PrimProng0();
+        const float chi2PrimProng1 = candidate.kfChi2PrimProng1();
+        const float chi2PrimProng2 = candidate.kfChi2PrimProng2();
 
-      const float chi2PrimProng0 = candidate.kfChi2PrimProng0();
-      const float chi2PrimProng1 = candidate.kfChi2PrimProng1();
-      const float chi2PrimProng2 = candidate.kfChi2PrimProng2();
+        const float chi2GeoProng1Prong2 = candidate.kfChi2GeoProng1Prong2();
+        const float chi2GeoProng0Prong2 = candidate.kfChi2GeoProng0Prong2();
+        const float chi2GeoProng0Prong1 = candidate.kfChi2GeoProng0Prong1();
 
-      const float chi2GeoProng1Prong2 = candidate.kfGeoProng1Prong2();
-      const float chi2GeoProng0Prong2 = candidate.kfGeoProng0Prong2();
-      const float chi2GeoProng0Prong1 = candidate.kfGeoProng0Prong1();
+        const float dcaProng1Prong2 = candidate.kfDcaProng1Prong2();
+        const float dcaProng0Prong2 = candidate.kfDcaProng0Prong2();
+        const float dcaProng0Prong1 = candidate.kfDcaProng0Prong1();
 
-      const float dcaProng1Prong2 = candidate.kfDcaProng1Prong2();
-      const float dcaProng0Prong2 = candidate.kfDcaProng0Prong2();
-      const float dcaProng0Prong1 = candidate.kfDcaProng0Prong1();
+        const double cutChi2PrimPr = kfCuts->get(pTBin, "kfChi2PrimPr");
+        const double cutChi2PrimKa = kfCuts->get(pTBin, "kfChi2PrimKa");
+        const double cutChi2PrimPi = kfCuts->get(pTBin, "kfChi2PrimPi");
 
-      const double cutChi2PrimPr = kfCuts->get(pTBin, "kfChi2PrimPr");
-      const double cutChi2PrimKa = kfCuts->get(pTBin, "kfChi2PrimKa");
-      const double cutChi2PrimPi = kfCuts->get(pTBin, "kfChi2PrimPi");
+        const double cutChi2GeoKaPi = kfCuts->get(pTBin, "kfChi2GeoKaPi");
+        const double cutChi2GeoPrPi = kfCuts->get(pTBin, "kfChi2GeoPrPi");
+        const double cutChi2GeoPrKa = kfCuts->get(pTBin, "kfChi2GeoPrKa");
 
-      const double cutChi2GeoKaPi = kfCuts->get(pTBin, "kfChi2GeoKaPi");
-      const double cutChi2GeoPrPi = kfCuts->get(pTBin, "kfChi2GeoPrPi");
-      const double cutChi2GeoPrKa = kfCuts->get(pTBin, "kfChi2GeoPrKa");
+        const double cutDcaKaPi = kfCuts->get(pTBin, "kfDcaKaPi");
+        const double cutDcaPrPi = kfCuts->get(pTBin, "kfDcaPrPi");
+        const double cutDcaPrKa = kfCuts->get(pTBin, "kfDcaPrKa");
 
-      const double cutDcaKaPi = kfCuts->get(pTBin, "kfDcaKaPi");
-      const double cutDcaPrPi = kfCuts->get(pTBin, "kfDcaPrPi");
-      const double cutDcaPrKa = kfCuts->get(pTBin, "kfDcaPrKa");
+        // kaon's chi2 to the PV
+        if (chi2PrimProng1 < cutChi2PrimKa) {
+          return false;
+        }
 
-      // kaon's chi2 to the PV
-      if (chi2PrimProng1 < cutChi2PrimKa) {
-        return false;
-      }
+        // chi2geo between proton and pion
+        if (chi2GeoProng0Prong2 > cutChi2GeoPrPi) {
+          return false;
+        }
 
-      // chi2geo between proton and pion
-      if (chi2GeoProng0Prong2 > cutChi2GeoPrPi) {
-        return false;
-      }
+        // dca between proton and pion
+        if (dcaProng0Prong2 > cutDcaPrPi) {
+          return false;
+        }
 
-      // dca between proton and pion
-      if (dcaProng0Prong2 > cutDcaPrPi) {
-        return false;
-      }
+        const bool isPKPi = trackProton.globalIndex() == candidate.prong0Id();
 
-      const bool isPKPi = trackProton.globalIndex() == candidate.prong0Id();
+        // 0-th prong chi2 to the PV
+        if (chi2PrimProng0 < (isPKPi ? cutChi2PrimPr : cutChi2PrimPi)) {
+          return false;
+        }
 
-      // 0-th prong chi2 to the PV
-      if (chi2PrimProng0 < (isPKPi ? cutChi2PrimPr : cutChi2PrimPi)) {
-        return false;
-      }
+        // 2-nd prong chi2 to the PV
+        if (chi2PrimProng2 < (isPKPi ? cutChi2PrimPi : cutChi2PrimPr)) {
+          return false;
+        }
 
-      // 2-nd prong chi2 to the PV
-      if (chi2PrimProng2 < (isPKPi ? cutChi2PrimPi : cutChi2PrimPr)) {
-        return false;
-      }
+        // chi2geo between 1-st and 2-nd prongs
+        if (chi2GeoProng1Prong2 > (isPKPi ? cutChi2GeoKaPi : cutChi2GeoPrKa)) {
+          return false;
+        }
 
-      // chi2geo between 1-st and 2-nd prongs
-      if (chi2GeoProng1Prong2 > (isPKPi ? cutChi2GeoKaPi : cutChi2GeoPrKa)) {
-        return false;
-      }
+        // chi2geo between 0-th and 1-st prongs
+        if (chi2GeoProng0Prong1 > (isPKPi ? cutChi2GeoPrKa : cutChi2GeoKaPi)) {
+          return false;
+        }
 
-      // chi2geo between 0-th and 1-st prongs
-      if (chi2GeoProng0Prong1 > (isPKPi ? cutChi2GeoPrKa : cutChi2GeoKaPi)) {
-        return false;
-      }
+        // dca between 1-st and 2-nd prongs
+        if (dcaProng1Prong2 > (isPKPi ? cutDcaKaPi : cutDcaPrKa)) {
+          return false;
+        }
 
-      // dca between 1-st and 2-nd prongs
-      if (dcaProng1Prong2 > (isPKPi ? cutDcaKaPi : cutDcaPrKa)) {
-        return false;
-      }
-
-      // dca between 0-th and 1-st prongs
-      if (dcaProng0Prong1 > (isPKPi ? cutDcaPrKa : cutDcaKaPi)) {
-        return false;
+        // dca between 0-th and 1-st prongs
+        if (dcaProng0Prong1 > (isPKPi ? cutDcaPrKa : cutDcaKaPi)) {
+          return false;
+        }
       }
     }
 
@@ -455,7 +458,7 @@ struct HfCandidateSelectorLc {
       }
 
       // conjugate-independent topological selection
-      if (!selectionTopol(candidate)) {
+      if (!selectionTopol<reconstructionType>(candidate)) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         if (applyMl) {
           hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
