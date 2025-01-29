@@ -176,7 +176,7 @@ struct itsPidQa {
     return o2::aod::ITSResponse::averageClusterSize(track.itsClusterSizes());
   }
 
-  float averageClusterSizePerCoslInv(uint32_t itsClusterSizes, float eta) { return averageClusterSize(itsClusterSizes) * std::cosh(eta); }
+  float averageClusterSizePerCoslInv(uint32_t itsClusterSizes, float eta) { return o2::aod::ITSResponse::averageClusterSize(itsClusterSizes) * std::cosh(eta); }
 
   template <typename TrackType>
   float averageClusterSizePerCoslInv(const TrackType& track)
@@ -327,7 +327,7 @@ struct itsPidQa {
       if (discard) {
         continue;
       }
-      histos.fill(HIST("event/SelectedAverageClusterSize"), track.pt(), averageClusterSize(t));
+      histos.fill(HIST("event/SelectedAverageClusterSize"), track.pt(), averageClusterSizeTrk(t));
       histos.fill(HIST("event/SelectedAverageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(t));
 
       for (o2::track::PID::ID id = 0; id <= o2::track::PID::Last; id++) {
