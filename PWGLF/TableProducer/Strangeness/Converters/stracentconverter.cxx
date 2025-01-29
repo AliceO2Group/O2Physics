@@ -27,7 +27,9 @@ struct stracentconverter {
                     values.centFT0A(),
                     values.centFT0C(),
                     values.centFV0A(),
-                    -999. /*dummy FT0Cvariant1 value*/);
+                    -999., /*dummy FT0Cvariant1 value*/
+                    -999., /*dummy MFT value*/
+                    -999. /*dummy NGlobal value*/);
     }
   }
 };
