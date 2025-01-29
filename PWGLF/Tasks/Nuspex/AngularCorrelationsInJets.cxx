@@ -28,6 +28,9 @@
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/Jet.h"
 
 #include "fastjet/PseudoJet.hh"
 #include "fastjet/AreaDefinition.hh"
@@ -144,6 +147,17 @@ struct AngularCorrelationsInJets {
                             nabs(aod::track::dcaXY) < maxDCAxy &&
                             nabs(aod::track::dcaZ) < maxDCAz &&
                             nabs(aod::track::eta) < maxEta); // add more preliminary cuts to filter if possible
+  Filter collisionFilter = (nabs(aod::jcollision::posZ) < vertexZCut);
+  Filter trackCuts = (aod::jtrack::pt > trackPtMin &&
+                      aod::jtrack::pt < trackPtMax &&
+                      aod::jtrack::eta > trackEtaMin &&
+                      aod::jtrack::eta < trackEtaMax);
+  Filter partCuts = (aod::jmcparticle::pt >= trackPtMin &&
+                     aod::jmcparticle::pt < trackPtMax);
+  Filter jetFilter = (aod::jet::pt >= jetPtMin &&
+                      aod::jet::pt <= jetPtMax &&
+                      aod::jet::eta < jetEtaMax - aod::jet::r / 100.f &&
+                      aod::jet::eta > jetEtaMin + aod::jet::r / 100.f);
 
   Preslice<FullTracksRun2> perCollisionFullTracksRun2 = o2::aod::track::collisionId;
   Preslice<FullTracksRun3> perCollisionFullTracksRun3 = o2::aod::track::collisionId;
@@ -165,6 +179,8 @@ struct AngularCorrelationsInJets {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    eventSelection = jetderiveddatautilities::initialiseEventSelection("sel8");
 
     // Counters
     registryData.add("hNumberOfEvents", "Number of events", HistType::kTH1I, {{1, 0, 1}});
@@ -1319,6 +1335,23 @@ struct AngularCorrelationsInJets {
     }
   }
   PROCESS_SWITCH(AngularCorrelationsInJets, processRun3, "process Run 3 data", false);
+
+  // using JetTracksMCDwID = soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>;
+
+  void processRun3revised(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs>>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& allJets, soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs> const& jtracks, /* soa::Join<aod::Collisions, aod::EvSels> const&, */ soa::Filtered<FullTracksRun3> const&)
+  {
+    registryData.fill(HIST("hEventProtocol"), 0);
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
+      return
+    registryData.fill(HIST("hNumberOfEvents"), 0);
+    registryData.fill(HIST("hEventProtocol"), 1);
+
+    // for (const auto& jet : allJets) {
+    //   fillHistogramsRevised(jet, jtracks);
+    //   // maybe do jet analysis in 1 function, correlation in another
+    }
+  }
+  PROCESS_SWITCH(AngularCorrelationsInJets, processRun3revised, "process Run 3 data w jet tables", false);
 
   void processMCRun2(McCollisions const& collisions, soa::Filtered<McTracksRun2> const& tracks, BCsWithRun2Info const&, aod::McParticles&, aod::McCollisions const&)
   {
