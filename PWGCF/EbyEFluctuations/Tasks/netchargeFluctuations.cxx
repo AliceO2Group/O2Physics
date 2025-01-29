@@ -35,7 +35,7 @@ using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::T
 using MyTrack = MyTracks::iterator;
 } // namespace o2::aod
 
-struct netchargeFluctuations {
+struct NetchargeFluctuations {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(o2::framework::InitContext&)
   {
@@ -76,7 +76,7 @@ struct netchargeFluctuations {
     histos.fill(HIST("hCentrality"), coll.centRun2V0M());
     histos.fill(HIST("hMultiplicity"), coll.multFV0M());
 
-    for (const auto track : inputTracks) {
+    for (auto const& track : inputTracks) {
       if (std::fabs(track.eta()) > 0.8)
         continue;
       if (!(track.pt() > 0.2 && track.pt() < 2.))
@@ -97,6 +97,6 @@ struct netchargeFluctuations {
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<netchargeFluctuations>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<NetchargeFluctuations>(cfgc)};
   return workflow;
 }
