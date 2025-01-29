@@ -155,7 +155,7 @@ struct K0MixedEvents {
   // Filter itsNClsFilter = o2::aod::singletrackselector::itsNCls >= (uint8_t)_itsNCls;
 
   Filter vertexFilter = nabs(o2::aod::singletrackselector::posZ) < _vertexZ;
-  Filter multPercentileFilter = o2::aod::singletrackselector::multPercentile > multPercentileCut.value.first&& o2::aod::singletrackselector::multPercentile < multPercentileCut.value.second;
+  Filter multPercentileFilter = o2::aod::singletrackselector::multPerc > multPercentileCut.value.first&& o2::aod::singletrackselector::multPerc < multPercentileCut.value.second;
 
   const char* pdgToSymbol(const int pdg)
   {
@@ -220,10 +220,10 @@ struct K0MixedEvents {
   { // template for identical particles from the same collision
 
     LOG(debug) << "Mixing tracks of the same event";
-    for (uint32_t ii = 0; ii < tracks.size(); ii++) { // nested loop for all the combinations
-      for (uint32_t iii = ii + 1; iii < tracks.size(); iii++) {
+    for (uint32_t trk1 = 0; trk1 < tracks.size(); trk1++) { // nested loop for all the combinations
+      for (uint32_t trk2 = trk1 + 1; trk2 < tracks.size(); trk2++) {
 
-        Pair->setPair(tracks[ii], tracks[iii]);
+        Pair->setPair(tracks[trk1], tracks[trk2]);
 
         registry.fill(HIST("SEcand"), 1.f);
         if (!Pair->isClosePair()) {
@@ -243,10 +243,10 @@ struct K0MixedEvents {
   void mixTracks(Type const& tracks1, Type const& tracks2)
   {
     LOG(debug) << "Mixing tracks of two different events";
-    for (const auto& ii : tracks1) {
-      for (const auto& iii : tracks2) {
+    for (const auto trk1 : tracks1) {
+      for (const auto trk2 : tracks2) {
 
-        Pair->setPair(ii, iii);
+        Pair->setPair(trk1, trk2);
 
         if constexpr (isSameEvent) {
           registry.fill(HIST("SEcand"), 1.f);
@@ -277,12 +277,12 @@ struct K0MixedEvents {
       LOGF(fatal, "One of passed PDG is 0!!!");
     }
     registry.fill(HIST("Trks"), 2.f, tracks.size());
-    for (const auto& collision : collisions) {
+    for (const auto collision : collisions) {
       LOG(debug) << "Collision index " << collision.globalIndex();
       registry.fill(HIST("VTXc"), collision.posZ());
     }
 
-    for (const auto& track : tracks) {
+    for (const auto track : tracks) {
       LOG(debug) << "Track index " << track.singleCollSelId();
       if (track.itsNCls() < _itsNCls) {
         continue;
@@ -323,10 +323,10 @@ struct K0MixedEvents {
 
       registry.fill(HIST("Trks"), 1);
       const auto& col = track.singleCollSel_as<FilteredCollisions>();
-      registry.fill(HIST("VTX"), vtxZ);
+      registry.fill(HIST("VTX"), col.posZ());
       if (std::abs(col.posZ()) > _vertexZ)
         continue;
-      if (col.multPercentile() > multPercentileCut.value.second || col.multPercentile() < multPercentileCut.value.first)
+      if (col.multPerc() > multPercentileCut.value.second || col.multPerc() < multPercentileCut.value.first)
         continue;
       registry.fill(HIST("eta"), track.pt(), track.eta());
       if (std::abs(track.rapidity(particle_mass(_particlePDG_1))) > _maxy) {
@@ -394,7 +394,7 @@ struct K0MixedEvents {
       }
     }
 
-    for (const auto& collision : collisions) {
+    for (const auto collision : collisions) {
       if (selectedtracks_1.find(collision.globalIndex()) == selectedtracks_1.end()) {
         if (IsIdentical)
           continue;
