@@ -171,7 +171,7 @@ struct itsPidQa {
   Configurable<bool> fillTHnSparses{"fillTHnSparses", false, "Flag to fill multidimensional histograms for nsigma vs pt, eta, Ncls"};
 
   template <typename TrackType>
-  float averageClusterSize(const TrackType& track)
+  float averageClusterSizeTrk(const TrackType& track)
   {
     return o2::aod::ITSResponse::averageClusterSize(track.itsClusterSizes());
   }
@@ -313,7 +313,7 @@ struct itsPidQa {
       histos.fill(HIST("event/pt"), track.pt());
       histos.fill(HIST("event/p"), track.p());
       const auto& t = tracks.iteratorAt(nTracks);
-      histos.fill(HIST("event/averageClusterSize"), track.pt(), averageClusterSize(t));
+      histos.fill(HIST("event/averageClusterSize"), track.pt(), averageClusterSizeTrk(t));
       histos.fill(HIST("event/averageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(t));
       bool discard = false;
       for (int id = 0; id < 9; id++) {
