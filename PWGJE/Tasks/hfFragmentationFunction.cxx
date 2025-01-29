@@ -232,7 +232,8 @@ struct HfFragmentationFunctionTask {
 
   void processDataChargedSubstructure(aod::JetCollision const& collision,
                                       soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents> const& jets,
-                                      aod::CandidatesD0Data const&)
+                                      aod::CandidatesD0Data const&,
+                                      aod::JetTracks const&)
   {
     // apply event selection and fill histograms for sanity check
     registry.fill(HIST("h_collision_counter"), 2.0);
