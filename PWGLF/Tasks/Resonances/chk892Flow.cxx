@@ -548,8 +548,8 @@ struct Chk892Flow {
   bool selectionK0s(CollisionType const& collision, K0sType const& candidate)
   {
     auto lDauDCA = candidate.dcaV0daughters();
-    auto lDauPosDCAtoPV = candidate.dcapostopv();
-    auto lDauNegDCAtoPV = candidate.dcanegtopv();
+    auto lDauPosDCAtoPV = std::abs(candidate.dcapostopv());
+    auto lDauNegDCAtoPV = std::abs(candidate.dcanegtopv());
     auto lPt = candidate.pt();
     auto lRapidity = candidate.yK0Short();
     auto lRadius = candidate.v0radius();
