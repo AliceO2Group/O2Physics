@@ -114,12 +114,12 @@ class EfficiencyCalculator
     if (partNo - 1 < config->confEfficiencyCCDBLabels->size()) {
       metadata["label"] = config->confEfficiencyCCDBLabels.value[partNo - 1];
     }
-    if (config->confCCDBTrainNumber >= 0) {
-      metadata["trainNumber"] = config->confCCDBTrainNumber;
+    if (config->confCCDBTrainNumber > 0) {
+      metadata["trainNumber"] = std::to_string(config->confCCDBTrainNumber);
     }
 
     auto timestamp = partNo - 1 < config->confEfficiencyCCDBTimestamps->size()
-                       ? config->confEfficiencyCCDBTimestamps.value[partNo - 1]
+                       ? static_cast<int64_t>(config->confEfficiencyCCDBTimestamps.value[partNo - 1])
                        : -1;
 
     auto hEff = ccdb.getSpecific<TH1>(config->confCCDBPath, timestamp, metadata);
