@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file uccZdcAnalysis.cxx
+/// \file uccZdc.cxx
 ///
 /// \brief task for analysis of UCC with the ZDC
 /// \author Omar Vazquez (omar.vazquez.rueda@cern.ch)
@@ -39,7 +39,7 @@ using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels,
                           aod::Run3MatchedToBCSparse>;
 
-struct uccZdc {
+struct UccZdc {
   // Configurables, binning
   Configurable<int> nBinsAmp{"nBinsAmp", 1025, "nbinsAmp"};
   Configurable<float> maxZN{"maxZN", 4099.5, "Max ZN signal"};
@@ -210,18 +210,18 @@ struct uccZdc {
       for (const auto& track : tracks) {
         if (track.tpcNClsCrossedRows() < 70)
           continue;
-        if (fabs(track.dcaXY()) > 0.2)
+        if (std::fabs(track.dcaXY()) > 0.2)
           continue;
 
         histos.fill(HIST("etaHistogram"), track.eta());
       }
     }
   }
-  PROCESS_SWITCH(uccZdc, processZdcCollAss,
+  PROCESS_SWITCH(UccZdc, processZdcCollAss,
                  "Processing ZDC w. collision association", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<uccZdc>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<UccZdc>(cfgc)};
 }
