@@ -1338,7 +1338,7 @@ struct AngularCorrelationsInJets {
 
   // using JetTracksMCDwID = soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>;
 
-  void processRun3revised(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs>>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& allJets, soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs> const& jtracks, /* soa::Join<aod::Collisions, aod::EvSels> const&, */ soa::Filtered<FullTracksRun3> const&)
+  /* void processRun3revised(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs>>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& allJets, soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs> const& jtracks, /* soa::Join<aod::Collisions, aod::EvSels> const&, */ soa::Filtered<FullTracksRun3> const&)
   {
     registryData.fill(HIST("hEventProtocol"), 0);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
@@ -1346,12 +1346,12 @@ struct AngularCorrelationsInJets {
     registryData.fill(HIST("hNumberOfEvents"), 0);
     registryData.fill(HIST("hEventProtocol"), 1);
 
-    // for (const auto& jet : allJets) {
-    //   fillHistogramsRevised(jet, jtracks);
-    //   // maybe do jet analysis in 1 function, correlation in another
-    // }
+    for (const auto& jet : allJets) {
+      fillHistogramsRevised(jet, jtracks);
+      // maybe do jet analysis in 1 function, correlation in another
+    }
   }
-  PROCESS_SWITCH(AngularCorrelationsInJets, processRun3revised, "process Run 3 data w jet tables", false);
+  PROCESS_SWITCH(AngularCorrelationsInJets, processRun3revised, "process Run 3 data w jet tables", false); */
 
   void processMCRun2(McCollisions const& collisions, soa::Filtered<McTracksRun2> const& tracks, BCsWithRun2Info const&, aod::McParticles&, aod::McCollisions const&)
   {
