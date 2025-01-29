@@ -119,6 +119,7 @@ struct FemtoUniversePairTaskTrackPhi {
     Configurable<int> confTrackSign{"confTrackSign", 1, "Track sign"};
     Configurable<bool> confTrackIsIdentified{"confTrackIsIdentified", true, "Enable PID for the track"};
     Configurable<bool> confTrackIsRejected{"confTrackIsRejected", true, "Enable PID rejection for the track other species than the identified one."};
+    Configurable<float> confTrackPtPIDLimit{"confTrackPtPIDLimit", 0.5, "Momentum threshold for change of the PID method (from using TPC to TPC and TOF)."};
     Configurable<float> confTrackPtLowLimit{"confTrackPtLowLimit", 0.5, "Lower limit of the hadron pT."};
     Configurable<float> confTrackPtHighLimit{"confTrackPtHighLimit", 2.5, "Higher limit of the hadron pT."};
   } ConfTrack;
@@ -225,13 +226,13 @@ struct FemtoUniversePairTaskTrackPhi {
   // PID for protons
   bool isProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
   {
-    if (mom < 0.5) {
+    if (mom < ConfTrack.confTrackPtPIDLimit.value) {
       if (std::abs(nsigmaTPCPr) < ConfBothTracks.confPIDProtonNsigmaTPC.value) {
         return true;
       } else {
         return false;
       }
-    } else if (mom > 0.4) {
+    } else if (mom > ConfTrack.confTrackPtPIDLimit.value) {
       if (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.confPIDProtonNsigmaCombined.value) {
         return true;
       } else {
