@@ -1016,6 +1016,153 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     }
   }
 
+  // Magnus composite cuts -----------------------------------------------------------------------------------------------------------------
+
+  AnalysisCompositeCut* magnus_PID111 = new AnalysisCompositeCut("magnus_PID111", "");
+  magnus_PID111->AddCut(GetAnalysisCut("pidJpsi_magnus_ele1"));
+  magnus_PID111->AddCut(GetAnalysisCut("pidJpsi_magnus_pion1"));
+  magnus_PID111->AddCut(GetAnalysisCut("pidJpsi_magnus_prot1"));
+  if (!nameStr.compare("MagnussOptimization111")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID111);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID211 = new AnalysisCompositeCut("magnus_PID211", "");
+  magnus_PID211->AddCut(GetAnalysisCut("pidJpsi_magnus_ele2"));
+  magnus_PID211->AddCut(GetAnalysisCut("pidJpsi_magnus_pion1"));
+  magnus_PID211->AddCut(GetAnalysisCut("pidJpsi_magnus_prot1"));
+  if (!nameStr.compare("MagnussOptimization211")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID211);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID311 = new AnalysisCompositeCut("magnus_PID311", "");
+  magnus_PID311->AddCut(GetAnalysisCut("pidJpsi_magnus_ele3"));
+  magnus_PID311->AddCut(GetAnalysisCut("pidJpsi_magnus_pion1"));
+  magnus_PID311->AddCut(GetAnalysisCut("pidJpsi_magnus_prot1"));
+  if (!nameStr.compare("MagnussOptimization311")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID311);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID121 = new AnalysisCompositeCut("magnus_PID121", "");
+  magnus_PID121->AddCut(GetAnalysisCut("pidJpsi_magnus_ele1"));
+  magnus_PID121->AddCut(GetAnalysisCut("pidJpsi_magnus_pion2"));
+  magnus_PID121->AddCut(GetAnalysisCut("pidJpsi_magnus_prot1"));
+  if (!nameStr.compare("MagnussOptimization121")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID121);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID112 = new AnalysisCompositeCut("magnus_PID112", "");
+  magnus_PID112->AddCut(GetAnalysisCut("pidJpsi_magnus_ele1"));
+  magnus_PID112->AddCut(GetAnalysisCut("pidJpsi_magnus_pion1"));
+  magnus_PID112->AddCut(GetAnalysisCut("pidJpsi_magnus_prot2"));
+  if (!nameStr.compare("MagnussOptimization112")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID112);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID122 = new AnalysisCompositeCut("magnus_PID122", "");
+  magnus_PID122->AddCut(GetAnalysisCut("pidJpsi_magnus_ele1"));
+  magnus_PID122->AddCut(GetAnalysisCut("pidJpsi_magnus_pion2"));
+  magnus_PID122->AddCut(GetAnalysisCut("pidJpsi_magnus_prot2"));
+  if (!nameStr.compare("MagnussOptimization122")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID122);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID222 = new AnalysisCompositeCut("magnus_PID222", "");
+  magnus_PID222->AddCut(GetAnalysisCut("pidJpsi_magnus_ele2"));
+  magnus_PID222->AddCut(GetAnalysisCut("pidJpsi_magnus_pion2"));
+  magnus_PID222->AddCut(GetAnalysisCut("pidJpsi_magnus_prot2"));
+  if (!nameStr.compare("MagnussOptimization222")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID222);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID212 = new AnalysisCompositeCut("magnus_PID212", "");
+  magnus_PID212->AddCut(GetAnalysisCut("pidJpsi_magnus_ele2"));
+  magnus_PID212->AddCut(GetAnalysisCut("pidJpsi_magnus_pion1"));
+  magnus_PID212->AddCut(GetAnalysisCut("pidJpsi_magnus_prot2"));
+  if (!nameStr.compare("MagnussOptimization212")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID212);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID221 = new AnalysisCompositeCut("magnus_PID221", "");
+  magnus_PID221->AddCut(GetAnalysisCut("pidJpsi_magnus_ele2"));
+  magnus_PID221->AddCut(GetAnalysisCut("pidJpsi_magnus_pion2"));
+  magnus_PID221->AddCut(GetAnalysisCut("pidJpsi_magnus_prot1"));
+  if (!nameStr.compare("MagnussOptimization221")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID221);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID321 = new AnalysisCompositeCut("magnus_PID321", "");
+  magnus_PID321->AddCut(GetAnalysisCut("pidJpsi_magnus_ele3"));
+  magnus_PID321->AddCut(GetAnalysisCut("pidJpsi_magnus_pion2"));
+  magnus_PID321->AddCut(GetAnalysisCut("pidJpsi_magnus_prot1"));
+  if (!nameStr.compare("MagnussOptimization321")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID321);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID312 = new AnalysisCompositeCut("magnus_PID312", "");
+  magnus_PID312->AddCut(GetAnalysisCut("pidJpsi_magnus_ele3"));
+  magnus_PID312->AddCut(GetAnalysisCut("pidJpsi_magnus_pion1"));
+  magnus_PID312->AddCut(GetAnalysisCut("pidJpsi_magnus_prot2"));
+  if (!nameStr.compare("MagnussOptimization312")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID312);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID322 = new AnalysisCompositeCut("magnus_PID322", "");
+  magnus_PID322->AddCut(GetAnalysisCut("pidJpsi_magnus_ele1"));
+  magnus_PID322->AddCut(GetAnalysisCut("pidJpsi_magnus_pion2"));
+  magnus_PID322->AddCut(GetAnalysisCut("pidJpsi_magnus_prot2"));
+  if (!nameStr.compare("MagnussOptimization322")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID322);
+    return cut;
+  }
+  //-------------------------------------------------------------------------------------------------------
+
   //---------------------------------------------------------------
   // Cuts for the selection of legs from dalitz decay
   //
@@ -3466,7 +3613,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("eventStandardSel8")) {
+  if (!nameStr.compare("eventStandardSel8")) { // kIsSel8 = kIsTriggerTVX && kNoITSROFrameBorder && kNoTimeFrameBorder
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
     return cut;
@@ -3479,14 +3626,14 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("eventStandardSel8NoTFBorder")) {
+  if (!nameStr.compare("eventStandardSel8NoTFBorder")) { // Redundant w.r.t. eventStandardSel8, to be removed
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
     cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
     return cut;
   }
 
-  if (!nameStr.compare("eventStandardSel8NoTFBNoITSROFB")) {
+  if (!nameStr.compare("eventStandardSel8NoTFBNoITSROFB")) { // Redundant w.r.t. eventStandardSel8, to be removed
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
     cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
@@ -3509,6 +3656,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kIsNoITSROFBorder, 0.5, 1.5);
     cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
     cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardSel8PbPbQualityGoodITSLayersAll")) { // kIsSel8 = kIsTriggerTVX && kNoITSROFrameBorder && kNoTimeFrameBorder
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoITSROFBorder, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsGoodITSLayersAll, 0.5, 1.5);
     return cut;
   }
 
@@ -3616,6 +3774,25 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
     cut->AddCut(VarManager::kIsVertexITSTPC, 0.5, 1.5);
     cut->AddCut(VarManager::kIsVertexTOFmatched, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardSel8PbPbMultCorr")) {
+    TF1* fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
+    fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
+    TF1* fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
+    fMultPVCutHigh->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
+
+    TF1* fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+    fMultCutLow->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
+    TF1* fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+    fMultCutHigh->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
+    cut->AddCut(VarManager::kVtxNcontribReal, fMultPVCutLow, fMultPVCutHigh, false, VarManager::kCentFT0C, 0.0, 100.0, false);
+    cut->AddCut(VarManager::kMultA, fMultCutLow, fMultCutHigh, false, VarManager::kCentFT0C, 0.0, 100.0, false);
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
     return cut;
   }
 
@@ -4419,6 +4596,39 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnSigmaEl, -2.0, 4.0);
     return cut;
   }
+
+  // Magnus cuts ----------------------------------------------------------
+
+  if (!nameStr.compare("pidJpsi_magnus_ele1")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 4.0);
+    return cut;
+  }
+  if (!nameStr.compare("pidJpsi_magnus_ele2")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -2.0, 4.0);
+    return cut;
+  }
+  if (!nameStr.compare("pidJpsi_magnus_ele3")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -1.0, 4.0);
+    return cut;
+  }
+  if (!nameStr.compare("pidJpsi_magnus_prot1")) {
+    cut->AddCut(VarManager::kTPCnSigmaPr, 3.0, 1000.0);
+    return cut;
+  }
+  if (!nameStr.compare("pidJpsi_magnus_prot2")) {
+    cut->AddCut(VarManager::kTPCnSigmaPr, 3.5, 1000.0);
+    return cut;
+  }
+  if (!nameStr.compare("pidJpsi_magnus_pion1")) {
+    cut->AddCut(VarManager::kTPCnSigmaPi, 3.0, 1000.0);
+    return cut;
+  }
+  if (!nameStr.compare("pidJpsi_magnus_pion2")) {
+    cut->AddCut(VarManager::kTPCnSigmaPi, 3.5, 1000.0);
+    return cut;
+  }
+
+  // ----------------------------------------------------------------------------------
 
   if (!nameStr.compare("standardPrimaryTrackDCAz")) {
     cut->AddCut(VarManager::kTrackDCAxy, -3.0, 3.0);

@@ -26,12 +26,14 @@ using namespace o2::framework;
 
 // *) Run 3:
 using BCs_Run3 = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>; // TBI 20241126 under testing
-// Remark 1: I have already timestamp in workflow, due to track-propagation. With Run3MatchedToBCSparse, I can use bc.has_zdc()
+// Remark 1: I have already timestamp in workflow, due to track-propagation. With Run3MatchedToBCSparse, I can use bc.has_zdc() TBI 20250112 is this redundant, I nowhere use bc.has_zdc()
 // Remark 2: For consistency with notation below, drop _Run3 and instead use _Run2 and _Run1
 
 // using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::MultsGlobal, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>; // TBI 20241209 validating "MultsGlobal"
-//  for using collision.multNTracksGlobal()
-using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
+//  for using collision.multNTracksGlobal() TBI 20250128 do i still need this?
+using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
+// TBI 20250128 I can't join here directly aod::CentNGlobals, see email from DDC from 20250127 if this one requires a special treatment
+//              See in https://github.com/AliceO2Group/O2Physics/blob/master/Common/DataModel/Centrality.h how centrality tables are named exactly
 using CollisionRec = soa::Join<aod::Collisions, EventSelection>::iterator; // use in json "isMC": "true" for "event-selection-task"
 using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection>::iterator;
 // using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::MultsExtraMC, EventSelection>::iterator; // TBI 20241210 validating "MultsExtraMC" for multMCNParticlesEta08
@@ -111,7 +113,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     // *) Trick to avoid name clashes, part 2;
 
     // *) Trick to avoid name clashes, part 1:
-    Bool_t oldHistAddStatus = TH1::AddDirectoryStatus();
+    bool oldHistAddStatus = TH1::AddDirectoryStatus();
     TH1::AddDirectory(kFALSE);
 
     // *) Default configuration, booking, binning and cuts:
@@ -187,7 +189,6 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // A) Process only reconstructed data:
-  //  void processRec(CollisionRec const& collision, aod::BCs const&, TracksRec const& tracks)
   void processRec(CollisionRec const& collision, BCs_Run3 const& bcs, TracksRec const& tracks)
   {
     // Remark: Do not use here LOGF(fatal, ...) or LOGF(info, ...), because their stdout/stderr is suppressed. Use them in regular member functions instead.

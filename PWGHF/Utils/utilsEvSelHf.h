@@ -345,6 +345,10 @@ struct HfEventSelectionMc {
   // histogram names
   static constexpr char nameHistGenCollisionsCent[] = "hGenCollisionsCent";
   std::shared_ptr<TH1> hGenCollisionsCent;
+  static constexpr char nameHistRecCollisionsCentMc[] = "hRecCollisionsCentMc";
+  std::shared_ptr<TH1> hRecCollisionsCentMc;
+  static constexpr char nameHistNSplitVertices[] = "hNSplitVertices";
+  std::shared_ptr<TH1> hNSplitVertices;
   static constexpr char nameHistParticles[] = "hParticles";
   std::shared_ptr<TH1> hParticles;
 
@@ -353,6 +357,8 @@ struct HfEventSelectionMc {
   void addHistograms(o2::framework::HistogramRegistry& registry)
   {
     hGenCollisionsCent = registry.add<TH1>(nameHistGenCollisionsCent, "HF event counter;T0M;# of generated collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
+    hRecCollisionsCentMc = registry.add<TH1>(nameHistRecCollisionsCentMc, "HF event counter;T0M;# of reconstructed collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
+    hNSplitVertices = registry.add<TH1>(nameHistNSplitVertices, "HF split vertices counter;;# of reconstructed collisions per mc collision", {o2::framework::HistType::kTH1D, {{4, 1., 5.}}});
     hParticles = registry.add<TH1>(nameHistParticles, "HF particle counter;;# of accepted particles", {o2::framework::HistType::kTH1D, {axisEvents}});
     // Puts labels on the collision monitoring histogram.
     setEventRejectionLabels(hParticles);
@@ -428,18 +434,28 @@ struct HfEventSelectionMc {
   /// \param collision analysed collision
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
   template <o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
-  void fillHistograms(Coll const& mcCollision, const uint16_t rejectionMask)
+  void fillHistograms(Coll const& mcCollision, const uint16_t rejectionMask, int nSplitColl = 0)
   {
-    if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
-      hGenCollisionsCent->Fill(mcCollision.centFT0M());
-    }
     hParticles->Fill(EventRejection::None);
+
+    if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
+      if (!TESTBIT(rejectionMask, EventRejection::TimeFrameBorderCut) && !TESTBIT(rejectionMask, EventRejection::ItsRofBorderCut) && !TESTBIT(rejectionMask, EventRejection::PositionZ)) {
+        hGenCollisionsCent->Fill(mcCollision.centFT0M());
+      }
+    }
 
     for (std::size_t reason = 1; reason < EventRejection::NEventRejection; reason++) {
       if (TESTBIT(rejectionMask, reason)) {
         return;
       }
       hParticles->Fill(reason);
+    }
+
+    if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
+      hNSplitVertices->Fill(nSplitColl);
+      for (int nColl = 0; nColl < nSplitColl; nColl++) {
+        hRecCollisionsCentMc->Fill(mcCollision.centFT0M());
+      }
     }
   }
 };

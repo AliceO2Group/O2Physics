@@ -12,6 +12,7 @@
 /// \file candidateSelectorToOmegaPi.cxx
 /// \brief Omegac0 → Omega Pi selection task
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
+/// \author Ruiqi Yin <ruiqi.yin@cern.ch>, Fudan University
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
@@ -124,6 +125,27 @@ struct HfCandidateSelectorToOmegaPi {
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- charm baryon"};
   Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 36, "Maximum value of chi2 fit over ITS clusters for pi <- charm baryon"};
 
+  // KF selection
+  Configurable<bool> applyKFpreselections{"applyKFpreselections", false, "Apply KFParticle related rejection"};
+  Configurable<bool> applyCompetingCascRejection{"applyCompetingCascRejection", false, "Apply competing Xi(for Omegac0) rejection"};
+  Configurable<float> cascadeRejMassWindow{"cascadeRejMassWindow", 0.01, "competing Xi(for Omegac0) rejection mass window"};
+  Configurable<float> v0LdlMin{"v0LdlMin", 3., "Minimum value of l/dl of V0"}; // l/dl and Chi2 are to be determined
+  Configurable<float> cascLdlMin{"cascLdlMin", 1., "Minimum value of l/dl of casc"};
+  Configurable<float> omegacLdlMax{"omegacLdlMax", 5., "Maximum value of l/dl of Omegac"};
+  Configurable<float> cTauOmegacMax{"cTauOmegacMax", 0.4, "lifetime τ of Omegac"};
+  Configurable<float> v0Chi2OverNdfMax{"v0Chi2OverNdfMax", 100., "Maximum chi2Geo/NDF of V0"};
+  Configurable<float> cascChi2OverNdfMax{"cascChi2OverNdfMax", 100., "Maximum chi2Geo/NDF of casc"};
+  Configurable<float> omegacChi2OverNdfMax{"omegacChi2OverNdfMax", 100., "Maximum chi2Geo/NDF of Omegac"};
+  Configurable<float> chi2TopoV0ToCascMax{"chi2TopoV0ToCascMax", 100., "Maximum chi2Topo/NDF of V0ToCas"};
+  Configurable<float> chi2TopoOmegacToPvMax{"chi2TopoOmegacToPvMax", 100., "Maximum chi2Topo/NDF of OmegacToPv"};
+  Configurable<float> chi2TopoCascToOmegacMax{"chi2TopoCascToOmegacMax", 100., "Maximum chi2Topo/NDF of CascToOmegac"};
+  Configurable<float> chi2TopoCascToPvMax{"chi2TopoCascToPvMax", 100., "Maximum chi2Topo/NDF of CascToPv"};
+  Configurable<float> decayLenXYOmegacMax{"decayLenXYOmegacMax", 1.5, "Maximum decay lengthXY of Omegac"};
+  Configurable<float> decayLenXYCascMin{"decayLenXYCascMin", 1., "Minimum decay lengthXY of Cascade"};
+  Configurable<float> decayLenXYLambdaMin{"decayLenXYLambdaMin", 0., "Minimum decay lengthXY of V0"};
+  Configurable<float> cosPaCascToOmegacMin{"cosPaCascToOmegacMin", 0.995, "Minimum cosPA of cascade<-Omegac"};
+  Configurable<float> cosPaV0ToCascMin{"cosPaV0ToCascMin", 0.99, "Minimum cosPA of V0<-cascade"};
+
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
   TrackSelectorKa selectorKaon;
@@ -133,10 +155,16 @@ struct HfCandidateSelectorToOmegaPi {
 
   HistogramRegistry registry{"registry"}; // for QA of selections
 
-  OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.3, 3.1)};
+  OutputObj<TH1D> hInvMassCharmBaryon{TH1D("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.3, 3.1)};
 
   void init(InitContext const&)
   {
+    std::array<bool, 2> processesSelector = {doprocessOmegac0SelectorWithDCAFitter, doprocessOmegac0SelectorWithKFParticle};
+    const int nProcessesSelector = std::accumulate(processesSelector.begin(), processesSelector.end(), 0);
+    if (nProcessesSelector != 1) {
+      LOGP(fatal, "At most one process function for selector can be enabled at a time.");
+    }
+
     selectorPion.setRangePtTpc(ptPiPidTpcMin, ptPiPidTpcMax);
     selectorPion.setRangeNSigmaTpc(-nSigmaTpcPiMax, nSigmaTpcPiMax);
     selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedPiMax, nSigmaTpcCombinedPiMax);
@@ -160,43 +188,53 @@ struct HfCandidateSelectorToOmegaPi {
 
     const AxisSpec axisSel{2, -0.5, 1.5, "status"};
 
-    registry.add("hSelPID", "hSelPID;status;entries", {HistType::kTH1F, {{12, 0., 12.}}});
-    registry.add("hStatusCheck", "Check consecutive selections status;status;entries", {HistType::kTH1F, {{12, 0., 12.}}});
+    registry.add("hSelPID", "hSelPID;status;entries", {HistType::kTH1D, {{12, 0., 12.}}});
+    registry.add("hStatusCheck", "Check consecutive selections status;status;entries", {HistType::kTH1D, {{12, 0., 12.}}});
 
     // for QA of the selections (bin 0 -> candidates that did not pass the selection, bin 1 -> candidates that passed the selection)
-    registry.add("hSelSignDec", "hSelSignDec;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelEtaPosV0Dau", "hSelEtaPosV0Dau;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelEtaNegV0Dau", "hSelEtaNegV0Dau;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelEtaKaFromCasc", "hSelEtaKaFromCasc;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelEtaPiFromCharm", "hSelEtaPiFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelRadCasc", "hSelRadCasc;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelRadV0", "hSelRadV0;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelCosPACasc", "hSelCosPACasc;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelCosPAV0", "hSelCosPAV0;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelDCACascDau", "hSelDCACascDau;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelDCAV0Dau", "hSelDCAV0Dau;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelDCACharmDau", "hSelDCACharmDau;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelDCAXYPrimPi", "hSelDCAXYPrimPi;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelDCAZPrimPi", "hSelDCAZPrimPi;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelDCAXYCasc", "hSelDCAXYCasc;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelDCAZCasc", "hSelDCAZCasc;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelPtKaFromCasc", "hSelPtKaFromCasc;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelPtPiFromCharm", "hSelPtPiFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelTPCQualityPiFromCharm", "hSelTPCQualityPiFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelTPCQualityPiFromLam", "hSelTPCQualityPiFromLam;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelTPCQualityPrFromLam", "hSelTPCQualityPrFromLam;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelTPCQualityKaFromCasc", "hSelTPCQualityKaFromCasc;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelITSQualityPiFromCharm", "hSelITSQualityPiFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelMassLam", "hSelMassLam;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelMassCasc", "hSelMassCasc;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelMassCharmBaryon", "hSelMassCharmBaryon;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelDcaXYToPvV0Daughters", "hSelDcaXYToPvV0Daughters;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelDcaXYToPvKaFromCasc", "hSelDcaXYToPvKaFromCasc;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelSignDec", "hSelSignDec;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelEtaPosV0Dau", "hSelEtaPosV0Dau;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelEtaNegV0Dau", "hSelEtaNegV0Dau;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelEtaKaFromCasc", "hSelEtaKaFromCasc;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelEtaPiFromCharm", "hSelEtaPiFromCharm;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelRadCasc", "hSelRadCasc;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelRadV0", "hSelRadV0;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelCosPACasc", "hSelCosPACasc;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelCosPAV0", "hSelCosPAV0;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelDCACascDau", "hSelDCACascDau;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelDCAV0Dau", "hSelDCAV0Dau;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelDCACharmDau", "hSelDCACharmDau;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelDCAXYPrimPi", "hSelDCAXYPrimPi;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelDCAZPrimPi", "hSelDCAZPrimPi;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelDCAXYCasc", "hSelDCAXYCasc;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelDCAZCasc", "hSelDCAZCasc;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelPtKaFromCasc", "hSelPtKaFromCasc;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelPtPiFromCharm", "hSelPtPiFromCharm;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelTPCQualityPiFromCharm", "hSelTPCQualityPiFromCharm;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelTPCQualityPiFromLam", "hSelTPCQualityPiFromLam;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelTPCQualityPrFromLam", "hSelTPCQualityPrFromLam;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelTPCQualityKaFromCasc", "hSelTPCQualityKaFromCasc;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelITSQualityPiFromCharm", "hSelITSQualityPiFromCharm;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelMassLam", "hSelMassLam;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelMassCasc", "hSelMassCasc;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelMassCharmBaryon", "hSelMassCharmBaryon;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelDcaXYToPvV0Daughters", "hSelDcaXYToPvV0Daughters;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelDcaXYToPvKaFromCasc", "hSelDcaXYToPvKaFromCasc;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelCompetingCasc", "hSelCompetingCasc;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelKFstatus", "hSelKFstatus;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelV0_Casc_Omegacldl", "hSelV0_Casc_Omegacldl;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelctauOmegac", "hSelctauOmegac;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelChi2GeooverNDFV0_Casc_Omegac", "hSelChi2GeooverNDFV0_Casc_Omegac;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelChi2TopooverNDFV0_Casc_Omegac", "hSelChi2TopooverNDFV0_Casc_Omegac;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSeldecayLenXYOmegac_Casc_V0", "hSeldecayLenXYOmegac_Casc_V0;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hSelcosPaCascToOmegac_V0ToCasc", "hSelcosPaCascToOmegac_V0ToCasc;status;entries", {HistType::kTH1D, {axisSel}});
+    registry.add("hInvMassXiMinus_rej_cut", "hInvMassXiMinus_rej_cut", kTH1D, {{1000, 1.25f, 1.65f}});
   }
 
-  void process(aod::HfCandToOmegaPi const& candidates,
-               TracksSel const& tracks,
-               TracksSelLf const& lfTracks)
+  template <int ConstructMethod, typename Candidates>
+  void runOmegac0Selector(const Candidates& candidates,
+                          TracksSel const& tracks,
+                          TracksSelLf const& lfTracks)
   {
     // looping over charm baryon candidates
     for (const auto& candidate : candidates) {
@@ -364,6 +402,81 @@ struct HfCandidateSelectorToOmegaPi {
         registry.fill(HIST("hSelPtPiFromCharm"), 0);
       } else {
         registry.fill(HIST("hSelPtPiFromCharm"), 1);
+      }
+
+      if constexpr (ConstructMethod == hf_cand_casc_lf::ConstructMethod::KfParticle) {
+        // KFParticle Preselections(kfsel)
+        if (applyKFpreselections) {
+
+          bool inputKF = false;
+          if (resultSelections) {
+            inputKF = true;
+            registry.fill(HIST("hSelKFstatus"), 0);
+          }
+
+          //  Competing Ξ rejection(KF)  Try to reject cases in which the candidate has a an inv. mass compatibler to Xi (bachelor pion) instead of Omega (bachelor kaon)
+          if (applyCompetingCascRejection) {
+            if (std::abs(candidate.cascRejectInvmass() - o2::constants::physics::MassXiMinus) < cascadeRejMassWindow) {
+              resultSelections = false;
+              registry.fill(HIST("hSelCompetingCasc"), 0);
+            } else {
+              registry.fill(HIST("hSelCompetingCasc"), 1);
+              registry.fill(HIST("hInvMassXiMinus_rej_cut"), candidate.cascRejectInvmass());
+            }
+          }
+
+          // v0&Casc&Omegac ldl selection
+          if ((candidate.v0ldl() < v0LdlMin) || (candidate.cascldl() < cascLdlMin) || (candidate.omegacldl() > omegacLdlMax)) {
+            resultSelections = false;
+            registry.fill(HIST("hSelV0_Casc_Omegacldl"), 0);
+          } else {
+            registry.fill(HIST("hSelV0_Casc_Omegacldl"), 1);
+          }
+
+          // Omegac ctau selsection
+          if (candidate.ctauOmegac() > cTauOmegacMax) {
+            resultSelections = false;
+            registry.fill(HIST("hSelctauOmegac"), 0);
+          } else {
+            registry.fill(HIST("hSelctauOmegac"), 1);
+          }
+
+          // Chi2Geo/NDF V0&Casc&Omegac selection
+          if ((candidate.v0Chi2OverNdf() > v0Chi2OverNdfMax) || (candidate.cascChi2OverNdf() > cascChi2OverNdfMax) || (candidate.omegacChi2OverNdf() > omegacChi2OverNdfMax)) {
+            resultSelections = false;
+            registry.fill(HIST("hSelChi2GeooverNDFV0_Casc_Omegac"), 0);
+          } else {
+            registry.fill(HIST("hSelChi2GeooverNDFV0_Casc_Omegac"), 1);
+          }
+
+          // Chi2Topo/NDF (chi2TopoV0ToCasc chi2TopoOmegacToPv chi2TopoCascToOmegac chi2TopoCascToPv) selection  (???????????/NDF of which particle????????)
+          if ((candidate.chi2TopoV0ToCasc() > chi2TopoV0ToCascMax) || (candidate.chi2TopoOmegacToPv() > chi2TopoOmegacToPvMax) || (candidate.chi2TopoCascToOmegac() > chi2TopoCascToOmegacMax) || (candidate.chi2TopoCascToPv() > chi2TopoCascToPvMax)) {
+            resultSelections = false;
+            registry.fill(HIST("hSelChi2TopooverNDFV0_Casc_Omegac"), 0);
+          } else {
+            registry.fill(HIST("hSelChi2TopooverNDFV0_Casc_Omegac"), 1);
+          }
+
+          // DecaylengthXY of Omegac&Casc&V0 selection
+          if ((std::abs(candidate.decayLenXYOmegac()) > decayLenXYOmegacMax) || (std::abs(candidate.decayLenXYCasc()) < decayLenXYCascMin) || (std::abs(candidate.decayLenXYLambda()) < decayLenXYLambdaMin)) {
+            resultSelections = false;
+            registry.fill(HIST("hSeldecayLenXYOmegac_Casc_V0"), 0);
+          } else {
+            registry.fill(HIST("hSeldecayLenXYOmegac_Casc_V0"), 1);
+          }
+
+          // KFPA cut cosPaCascToOmegac cosPaV0ToCasc
+          if ((candidate.cosPaCascToOmegac() < cosPaCascToOmegacMin) || (candidate.cosPaV0ToCasc() < cosPaV0ToCascMin)) {
+            resultSelections = false;
+            registry.fill(HIST("hSelcosPaCascToOmegac_V0ToCasc"), 0);
+          } else {
+            registry.fill(HIST("hSelcosPaCascToOmegac_V0ToCasc"), 1);
+          }
+
+          if (resultSelections && inputKF) {
+            registry.fill(HIST("hSelKFstatus"), 1);
+          }
+        }
       }
 
       //  TPC clusters selections
@@ -566,7 +679,24 @@ struct HfCandidateSelectorToOmegaPi {
       }
     }
   } // end process
-};  // end struct
+
+  void processOmegac0SelectorWithKFParticle(soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf> const& candidates,
+                                            TracksSel const& tracks,
+                                            TracksSelLf const& lfTracks)
+  {
+    runOmegac0Selector<hf_cand_casc_lf::ConstructMethod::KfParticle>(candidates, tracks, lfTracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorToOmegaPi, processOmegac0SelectorWithKFParticle, "Run Omegac0 to Omega pi selector with both DCA and KFParticle related selection.", false);
+
+  void processOmegac0SelectorWithDCAFitter(aod::HfCandToOmegaPi const& candidates,
+                                           TracksSel const& tracks,
+                                           TracksSelLf const& lfTracks)
+  {
+    runOmegac0Selector<hf_cand_casc_lf::ConstructMethod::DcaFitter>(candidates, tracks, lfTracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorToOmegaPi, processOmegac0SelectorWithDCAFitter, "Run Omegac0 to Omega pi selector with only DCA related selection.", true);
+
+}; // end struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

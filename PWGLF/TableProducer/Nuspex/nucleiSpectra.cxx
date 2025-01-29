@@ -109,13 +109,15 @@ struct NucleusCandidateFlow {
   float centFT0A;
   float centFT0C;
   float psiFT0A;
-  float multFT0A;
   float psiFT0C;
-  float multFT0C;
   float psiTPC;
   float psiTPCl;
   float psiTPCr;
-  int multTPC;
+  float qFT0A;
+  float qFT0C;
+  float qTPC;
+  float qTPCl;
+  float qTPCr;
 };
 
 namespace nuclei
@@ -318,7 +320,7 @@ struct nucleiSpectra {
   // Flow analysis
   using CollWithEP = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::EPCalibrationTables>::iterator;
 
-  using CollWithQvec = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs>::iterator;
+  using CollWithQvec = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBTots, aod::QvectorBPoss, aod::QvectorBNegs>::iterator;
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -456,9 +458,11 @@ struct nucleiSpectra {
     }
 
     if (doprocessMatching) {
+      std::vector<double> occBins{-0.5, 499.5, 999.5, 1999.5, 2999.5, 3999.5, 4999.5, 10000., 50000.};
+      AxisSpec occAxis{occBins, "Occupancy"};
       for (int iC{0}; iC < 2; ++iC) {
         nuclei::hMatchingStudy[iC] = spectra.add<THnSparse>(fmt::format("hMatchingStudy{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;n#sigma_{ITS};n#sigma{TPC};n#sigma_{TOF};Centrality", HistType::kTHnSparseF, {{20, 1., 9.}, {10, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {50, -5., 5.}, {50, -5., 5.}, {50, 0., 1.}, {8, 0., 80.}});
-        nuclei::hMatchingStudyHadrons[iC] = spectra.add<THn>(fmt::format("hMatchingStudyHadrons{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;Centrality;Track type", HistType::kTHnF, {{23, 0.4, 5.}, {20, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {8, 0., 80.}, {2, -0.5, 1.5}});
+        nuclei::hMatchingStudyHadrons[iC] = spectra.add<THn>(fmt::format("hMatchingStudyHadrons{}", nuclei::matter[iC]).data(), ";#it{p}_{T};#phi;#eta;Centrality;Track type; Occupancy", HistType::kTHnF, {{23, 0.4, 5.}, {20, 0., o2::constants::math::TwoPI}, {10, -1., 1.}, {8, 0., 80.}, {2, -0.5, 1.5}, occAxis});
       }
     }
 
@@ -675,13 +679,16 @@ struct nucleiSpectra {
             collision.centFT0A(),
             collision.centFT0C(),
             collision.psiFT0A(),
-            collision.multFT0A(),
             collision.psiFT0C(),
-            collision.multFT0C(),
             collision.psiTPC(),
             collision.psiTPCL(),
             collision.psiTPCR(),
-            collision.multTPC()});
+            collision.qFT0A(),
+            collision.qFT0C(),
+            collision.qTPC(),
+            collision.qTPCL(),
+            collision.qTPCR(),
+          });
         } else if constexpr (std::is_same<Tcoll, CollWithQvec>::value) {
           nuclei::candidates_flow.emplace_back(NucleusCandidateFlow{
             collision.centFV0A(),
@@ -689,13 +696,15 @@ struct nucleiSpectra {
             collision.centFT0A(),
             collision.centFT0C(),
             computeEventPlane(collision.qvecFT0AIm(), collision.qvecFT0ARe()),
-            collision.multFT0A(),
             computeEventPlane(collision.qvecFT0CIm(), collision.qvecFT0CRe()),
-            collision.multFT0C(),
-            -999.,
+            computeEventPlane(collision.qvecBTotIm(), collision.qvecBTotRe()),
             computeEventPlane(collision.qvecBNegIm(), collision.qvecBNegRe()),
             computeEventPlane(collision.qvecBPosIm(), collision.qvecBPosRe()),
-            collision.multTPC()});
+            collision.sumAmplFT0A(),
+            collision.sumAmplFT0C(),
+            static_cast<float>(collision.nTrkBTot()),
+            static_cast<float>(collision.nTrkBNeg()),
+            static_cast<float>(collision.nTrkBPos())});
         }
         if (fillTree) {
           if (flag & BIT(2)) {
@@ -762,7 +771,7 @@ struct nucleiSpectra {
       }
     }
     for (auto& c : nuclei::candidates_flow) {
-      nucleiTableFlow(c.centFV0A, c.centFT0M, c.centFT0A, c.centFT0C, c.psiFT0A, c.multFT0A, c.psiFT0C, c.multFT0C, c.psiTPC, c.psiTPCl, c.psiTPCr, c.multTPC);
+      nucleiTableFlow(c.centFV0A, c.centFT0M, c.centFT0A, c.centFT0C, c.psiFT0A, c.psiFT0C, c.psiTPC, c.psiTPCl, c.psiTPCr, c.qFT0A, c.qFT0C, c.qTPC, c.qTPCl, c.qTPCr);
     }
   }
   PROCESS_SWITCH(nucleiSpectra, processDataFlow, "Data analysis with flow", false);
@@ -791,7 +800,7 @@ struct nucleiSpectra {
       }
     }
     for (auto& c : nuclei::candidates_flow) {
-      nucleiTableFlow(c.centFV0A, c.centFT0M, c.centFT0A, c.centFT0C, c.psiFT0A, c.multFT0A, c.psiFT0C, c.multFT0C, c.psiTPC, c.psiTPCl, c.psiTPCr, c.multTPC);
+      nucleiTableFlow(c.centFV0A, c.centFT0M, c.centFT0A, c.centFT0C, c.psiFT0A, c.psiFT0C, c.psiTPC, c.psiTPCl, c.psiTPCr, c.qFT0A, c.qFT0C, c.qTPC, c.qTPCl, c.qTPCr);
     }
   }
   PROCESS_SWITCH(nucleiSpectra, processDataFlowAlternative, "Data analysis with flow - alternative framework", false);
@@ -911,7 +920,7 @@ struct nucleiSpectra {
       int iC = track.signed1Pt() > 0;
       const float pt = track.pt();
       const float phi = 2.f * RecoDecay::constrainAngle(track.phi() - collision.psiFT0C(), 0.f, 2);
-      nuclei::hMatchingStudyHadrons[iC]->Fill(pt, phi, track.eta(), centrality, track.hasTPC());
+      nuclei::hMatchingStudyHadrons[iC]->Fill(pt, phi, track.eta(), centrality, track.hasTPC(), collision.trackOccupancyInTimeRange());
       if (itsResponse.nSigmaITS<o2::track::PID::Helium3>(track) > -1.) {
         nuclei::hMatchingStudy[iC]->Fill(pt * 2, phi, track.eta(), itsResponse.nSigmaITS<o2::track::PID::Helium3>(track), nSigmaTPC, o2::pid::tof::Beta::GetBeta(track), centrality);
       }
