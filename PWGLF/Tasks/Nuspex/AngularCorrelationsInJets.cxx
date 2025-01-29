@@ -1349,7 +1349,7 @@ struct AngularCorrelationsInJets {
     // for (const auto& jet : allJets) {
     //   fillHistogramsRevised(jet, jtracks);
     //   // maybe do jet analysis in 1 function, correlation in another
-    }
+    // }
   }
   PROCESS_SWITCH(AngularCorrelationsInJets, processRun3revised, "process Run 3 data w jet tables", false);
 
