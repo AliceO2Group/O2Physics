@@ -185,7 +185,10 @@ struct NetprotonCumulantsMc {
     AxisSpec netprotonAxis = {41, -20.5, 20.5, "net-proton number"};
     AxisSpec protonAxis = {21, -0.5, 20.5, "proton number"};
     AxisSpec antiprotonAxis = {21, -0.5, 20.5, "antiproton number"};
-    AxisSpec subsampleAxis = {cfgNSubsample, 0, cfgNSubsample, "subsample no."};
+
+    auto noSubsample = (int)cfgNSubsample;
+    float maxSubsample = 1.0*noSubsample;
+    AxisSpec subsampleAxis = {noSubsample, 0.0, maxSubsample, "subsample no."};
 
     // histograms for events
     histos.add("hZvtx_after_sel", "Vertex dist. after event selection;Z (cm)", kTH1F, {vtxZAxis});
