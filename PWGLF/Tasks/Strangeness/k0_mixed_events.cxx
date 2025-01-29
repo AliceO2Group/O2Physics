@@ -61,9 +61,9 @@ class ResoPair : public MyFemtoPair
     setPair(first, second);
   }
   ResoPair(trkType const& first, trkType const& second, const bool& isidentical) : MyFemtoPair(first, second, isidentical) {}
-  bool IsClosePair() const { return MyFemtoPair::IsClosePair(_deta, _dphi, _radius); }
-  void setEtaDiff(const float deta) { _deta = deta; }
-  void setPhiStarDiff(const float dphi) { _dphi = dphi; }
+  bool isClosePair() const { return MyFemtoPair::IsClosePair(mDeltaEta, mDeltaPhi, mRadius); }
+  void setEtaDiff(const float deta) { mDeltaEta = deta; }
+  void setPhiStarDiff(const float dphi) { mDeltaPhi = dphi; }
   void setPair(trkType const& first, trkType const& second)
   {
     MyFemtoPair::SetPair(first, second);
@@ -71,26 +71,25 @@ class ResoPair : public MyFemtoPair
     lDecayDaughter2.SetPtEtaPhiM(second->pt(), second->eta(), second->phi(), particle_mass(GetPDG2()));
     lResonance = lDecayDaughter1 + lDecayDaughter2;
   }
-  float GetInvMass() const
+  float getInvMass() const
   {
     // LOG(info) << "Mass = " << lResonance.M() << " 1 " << lDecayDaughter1.M() << " 2 " << lDecayDaughter2.M();
     return lResonance.M();
   }
-  float GetPt() const { return lResonance.Pt(); }
-  float GetRapidity() const { return lResonance.Rapidity(); }
+  float getPt() const { return lResonance.Pt(); }
+  float getRapidity() const { return lResonance.Rapidity(); }
 
  private:
   TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
-  float _deta = 0.01;
-  float _dphi = 0.01;
-  float _radius = 1.2;
+  float mDeltaEta = 0.01;
+  float mDeltaPhi = 0.01;
+  float mRadius = 1.2;
 };
 
 struct K0MixedEvents {
-  // using allinfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPr, aod::TOFSignal, aod::TracksDCA, aod::pidTOFFullPr, aod::pidTOFbeta, aod::pidTOFFullKa, aod::pidTPCFullKa, aod::pidTOFFullDe, aod::pidTPCFullDe>; // aod::pidTPCPr
-  /// Construct a registry object with direct declaration
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  Configurable<std::pair<float, float>> multPercentileCut{"multPercentileCut", std::pair<float, float>{-100.f, 1000.f}, "[min., max.] centrality range to keep events within"};
   Configurable<std::pair<float, float>> momentumCut{"momentumCut", std::pair<float, float>{0.f, 100.f}, "[min., max.] momentum range to keep candidates within"};
   Configurable<std::pair<float, float>> dcaxyCut{"dcaxyCut", std::pair<float, float>{-100.f, 100.f}, "[min., max.] dcaXY range to keep candidates within"};
   Configurable<std::pair<float, float>> dcazCut{"dcazCut", std::pair<float, float>{-100.f, 100.f}, "[min., max.] dcaZ range to keep candidates within"};
@@ -152,9 +151,11 @@ struct K0MixedEvents {
   Filter pFilter = o2::aod::singletrackselector::p > momentumCut.value.first&& o2::aod::singletrackselector::p < momentumCut.value.second;
   Filter etaFilter = nabs(o2::aod::singletrackselector::eta) < _eta;
   Filter tpcTrkFilter = o2::aod::singletrackselector::tpcNClsFound >= _tpcNClsFound && o2::aod::singletrackselector::tpcNClsShared <= (uint8_t)_tpcNClsShared;
+
   // Filter itsNClsFilter = o2::aod::singletrackselector::itsNCls >= (uint8_t)_itsNCls;
 
   Filter vertexFilter = nabs(o2::aod::singletrackselector::posZ) < _vertexZ;
+  Filter multPercentileFilter = o2::aod::singletrackselector::multPercentile > multPercentileCut.value.first&& o2::aod::singletrackselector::multPercentile < multPercentileCut.value.second;
 
   const char* pdgToSymbol(const int pdg)
   {
@@ -225,15 +226,15 @@ struct K0MixedEvents {
         Pair->setPair(tracks[ii], tracks[iii]);
 
         registry.fill(HIST("SEcand"), 1.f);
-        if (!Pair->IsClosePair()) {
+        if (!Pair->isClosePair()) {
           continue;
         }
-        if (std::abs(Pair->GetRapidity()) > 0.5f) {
+        if (std::abs(Pair->getRapidity()) > 0.5f) {
           continue;
         }
         registry.fill(HIST("SEcand"), 2.f);
-        registry.fill(HIST("SE"), Pair->GetInvMass());                    // close pair rejection and fillig the SE histo
-        registry.fill(HIST("SEvsPt"), Pair->GetInvMass(), Pair->GetPt()); // close pair rejection and fillig the SE histo
+        registry.fill(HIST("SE"), Pair->getInvMass());                    // close pair rejection and fillig the SE histo
+        registry.fill(HIST("SEvsPt"), Pair->getInvMass(), Pair->getPt()); // close pair rejection and fillig the SE histo
       }
     }
   }
@@ -250,19 +251,19 @@ struct K0MixedEvents {
         if constexpr (isSameEvent) {
           registry.fill(HIST("SEcand"), 1.f);
         }
-        if (!Pair->IsClosePair()) {
+        if (!Pair->isClosePair()) {
           continue;
         }
-        if (std::abs(Pair->GetRapidity()) > 0.5f) {
+        if (std::abs(Pair->getRapidity()) > 0.5f) {
           continue;
         }
         if constexpr (isSameEvent) {
           registry.fill(HIST("SEcand"), 2.f);
-          registry.fill(HIST("SE"), Pair->GetInvMass());
-          registry.fill(HIST("SEvsPt"), Pair->GetInvMass(), Pair->GetPt());
+          registry.fill(HIST("SE"), Pair->getInvMass());
+          registry.fill(HIST("SEvsPt"), Pair->getInvMass(), Pair->getPt());
         } else {
-          registry.fill(HIST("ME"), Pair->GetInvMass());
-          registry.fill(HIST("MEvsPt"), Pair->GetInvMass(), Pair->GetPt());
+          registry.fill(HIST("ME"), Pair->getInvMass());
+          registry.fill(HIST("MEvsPt"), Pair->getInvMass(), Pair->getPt());
         }
       }
     }
@@ -321,9 +322,11 @@ struct K0MixedEvents {
       }
 
       registry.fill(HIST("Trks"), 1);
-      const float vtxZ = track.singleCollSel_as<FilteredCollisions>().posZ();
+      const auto& col = track.singleCollSel_as<FilteredCollisions>();
       registry.fill(HIST("VTX"), vtxZ);
-      if (std::abs(vtxZ) > _vertexZ)
+      if (std::abs(col.posZ()) > _vertexZ)
+        continue;
+      if (col.multPercentile() > multPercentileCut.value.second || col.multPercentile() < multPercentileCut.value.first)
         continue;
       registry.fill(HIST("eta"), track.pt(), track.eta());
       if (std::abs(track.rapidity(particle_mass(_particlePDG_1))) > _maxy) {
