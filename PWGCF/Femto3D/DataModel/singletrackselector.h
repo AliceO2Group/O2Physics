@@ -357,6 +357,7 @@ DECLARE_SOA_TABLE(SingleTrackSels_v3, "AOD", "SINGLETRACKSEL", // Table of the v
                   o2::aod::pidits::ITSNSigmaKaImp<singletrackselector::ITSclusterSizes, singletrackselector::P, singletrackselector::Eta>,
                   o2::aod::pidits::ITSNSigmaPrImp<singletrackselector::ITSclusterSizes, singletrackselector::P, singletrackselector::Eta>,
                   o2::aod::pidits::ITSNSigmaDeImp<singletrackselector::ITSclusterSizes, singletrackselector::P, singletrackselector::Eta>,
+                  o2::aod::pidits::ITSNSigmaTrImp<singletrackselector::ITSclusterSizes, singletrackselector::P, singletrackselector::Eta>,
                   o2::aod::pidits::ITSNSigmaHeImp<singletrackselector::ITSclusterSizes, singletrackselector::P, singletrackselector::Eta>);
 
 DECLARE_SOA_TABLE_VERSIONED(SingleTrackSels_v2, "AOD", "SINGLETRACKSEL2", 2, // Table of the variables for single track selection.
