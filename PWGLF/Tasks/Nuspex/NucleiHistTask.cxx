@@ -1455,7 +1455,7 @@ struct NucleiHistTask {
   PROCESS_SWITCH(NucleiHistTask, processMCreco, "process reconstructed MC", false);
 
   void processMCdca(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
-                     aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
+                    aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
 
     if (event_selection_MC_sel8 && !collisions.sel8())
@@ -1530,10 +1530,10 @@ struct NucleiHistTask {
           pdgbin = -1;
           break;
       }
-      
+
       if (lorentzVector_particle_MC.Rapidity() < yMin || lorentzVector_particle_MC.Rapidity() > yMax)
         continue;
-      
+
       MC_DCA.fill(HIST("histEta"), track.eta(), pdgbin);
 
       if (particle.isPhysicalPrimary()) {
