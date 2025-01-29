@@ -735,7 +735,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       // Check whether the charm baryon is non-prompt (from a b quark).
       if (flag != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRecXicPlus);
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false);
       }
 
       rowMcMatchRec(flag, debug, origin);
@@ -754,14 +754,20 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
         debug = 1;
         // Xi- -> Lambda pi
         auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
+        // Find Xi- from Xi(1530) -> Xi pi in case of resonant decay
+        RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
+        if (arrDaughIndex.size() == 2) {
+            auto cascStarMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
+            if(RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascStarMC, +3324, std::array{+kXiMinus, +kPiPlus}, true)){
+                cascMC = mcParticles.rawIteratorAt(cascStarMC.daughtersIds().front());
+            }
+        }
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascMC, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true)) {
           debug = 2;
           // Lambda -> p pi
           auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
           if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, v0MC, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
             debug = 3;
-
-            RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
             if (arrDaughIndex.size() == 2) {
               for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
                 auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
@@ -781,7 +787,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
 
       // Check whether the charm baryon is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false);
       }
 
       rowMcMatchGen(flag, debug, origin);
