@@ -313,7 +313,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
     return false;
   }
 
-  void init()
+  void init(InitContext&)
   {
     if (effConfGroup.confEfficiencyDoMCTruth) {
       hMCTruth1.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, trackonefilter.confPDGCodePartOne, false);
