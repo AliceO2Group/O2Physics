@@ -158,7 +158,7 @@ struct HeavyIonMultiplicity {
   Configurable<bool> IsApplyCentFT0C{"IsApplyCentFT0C", false, "Centrality based on FT0C"};
   Configurable<bool> IsApplyCentFT0CVariant1{"IsApplyCentFT0Cvariant1", false, "Centrality based on FT0C variant1"};
   Configurable<bool> IsApplyCentFT0M{"IsApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
-  
+
   void init(InitContext const&)
   {
     AxisSpec axisMult = {multHistBin, "Mult", "MultAxis"};
@@ -348,10 +348,10 @@ struct HeavyIonMultiplicity {
       cent = col.centFT0C();
     }
     if (IsApplyCentFT0CVariant1) {
-     cent = col.centFT0CVariant1();
+      cent = col.centFT0CVariant1();
     }
     if (IsApplyCentFT0M) {
-     cent = col.centFT0M();
+      cent = col.centFT0M();
     }
     return cent;
   }
