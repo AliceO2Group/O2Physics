@@ -129,7 +129,7 @@ struct JetSpectraEseTask {
       registry.addClone("hPsi2FT0C", "hEPRectrV2");
       registry.addClone("hPsi2FT0C", "hEPTwistV2");
     }
-    if (doprocessMCParticleLevel) { 
+    if (doprocessMCParticleLevel) {
       LOGF(info, "JetSpectraEseTask::init() - processMCParticleLevel");
       registry.add("hMCPartEventCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
       registry.add("hPartJetPt", "particle level jet pT;#it{p}_{T,jet part} (GeV/#it{c});entries", {HistType::kTH1F, {{jetPtAxis}}});
@@ -151,7 +151,7 @@ struct JetSpectraEseTask {
       registry.add("hMCDMatchedEventCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
       registry.add("hCentralityMult", ";Centrality;entries", {HistType::kTH1F, {{100, 0, 100}}});
       registry.add("hPartJetPtMatch", ";Centrality;#it{p}_{T,jet part} (GeV/#it{c})", {HistType::kTH2F, {{100, 0, 100}, {jetPtAxis}}});
-      registry.add("hPartJetPtMatchSubBkg", ";Centrality;#it{p}_{T,jet part} (GeV/#it{c})", {HistType::kTH2F, {{100, 0, 100},{jetPtAxis}}});
+      registry.add("hPartJetPtMatchSubBkg", ";Centrality;#it{p}_{T,jet part} (GeV/#it{c})", {HistType::kTH2F, {{100, 0, 100}, {jetPtAxis}}});
       registry.add("hPartJetEtaMatch", "particle level jet #eta;#eta_{jet part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
       registry.add("hPartJetPhiMatch", "particle level jet #phi;#phi_{jet part};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
       registry.add("hDetectorJetPt", ";Centrality;#it{p}_{T,jet det} (GeV/#it{c})", {HistType::kTH2F, {{100, 0, 100}, {jetPtAxis}}});
@@ -176,7 +176,6 @@ struct JetSpectraEseTask {
       registry.add("hPsiOccupancy", "Occupancy;#Psi_{2};entries", {HistType::kTH3F, {{100, 0, 100}, {150, -2.5, 2.5}, {occAxis}}});
     }
   }
-  
 
   Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f) && nabs(aod::jet::eta) < 0.9f - jetR;
   Filter colFilter = nabs(aod::jcollision::posZ) < vertexZCut;
@@ -281,13 +280,13 @@ struct JetSpectraEseTask {
   PROCESS_SWITCH(JetSpectraEseTask, processMCParticleLevel, "jets on particle level MC", false);
 
   void processMCDetectorLevel(soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>::iterator const& collision,
-                               ChargedMCDJets const& mcdjets,
-                               aod::JetTracks const&,
-                               aod::JetParticles const&)
+                              ChargedMCDJets const& mcdjets,
+                              aod::JetTracks const&,
+                              aod::JetParticles const&)
   {
     float counter{0.5f};
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
-        return;
+      return;
     registry.fill(HIST("hMCDetEventCounter"), counter++);
 
     if (cfgEvSelOccupancy && !isOccupancyWithin(collision))
@@ -301,7 +300,6 @@ struct JetSpectraEseTask {
       registry.fill(HIST("hDetJetEta"), mcdjet.eta());
       registry.fill(HIST("hDetJetPhi"), mcdjet.phi());
     }
-
   }
   PROCESS_SWITCH(JetSpectraEseTask, processMCDetectorLevel, "jets on detector level", false);
 
