@@ -16,7 +16,7 @@
 using namespace o2;
 using namespace o2::framework;
 
-// Converts Stra Event selections from 000 to 001
+// Converts Stra Cents from 000 to 001
 struct stracentconverter {
   Produces<aod::StraCents_001> straCents_001;
 
