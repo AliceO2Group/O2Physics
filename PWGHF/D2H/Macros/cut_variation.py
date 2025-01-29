@@ -518,7 +518,7 @@ class CutVarMinimiser:
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)
         leg.SetTextSize(0.04)
-        # leg.SetHeader(f"#chi^{{2}}/#it{{ndf}} = {self.chi_2:.2f}/{self.ndf}")
+        leg.SetHeader(f"#chi^{{2}}/#it{{ndf}} = {self.chi_2:.2f}/{self.ndf}")
         leg.AddEntry(hist_raw_yield, "data", "p")
         leg.AddEntry(hist_raw_yield_prompt, "prompt", "f")
         leg.AddEntry(hist_raw_yield_nonprompt, "non-prompt", "f")
