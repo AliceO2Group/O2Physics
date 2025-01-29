@@ -8,8 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-/// \author Omar Vazquez <omar.vazquez.rueda@cern.ch>
+///
+/// \file uccZdcAnalysis.cxx
+///
+/// \brief task for analysis of UCC with the ZDC
+/// \author Omar Vazquez (omar.vazquez.rueda@cern.ch)
+/// \since January 29, 2025
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
@@ -25,6 +29,7 @@
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
 
+using namespace std;
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -34,20 +39,18 @@ using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels,
                           aod::Run3MatchedToBCSparse>;
 
-struct UCCZDC {
-  // Configurable number of bins
+struct uccZdc {
+  // Configurables, binning
   Configurable<int> nBinsAmp{"nBinsAmp", 1025, "nbinsAmp"};
-  Configurable<float> MaxZN{"MaxZN", 4099.5, "Max ZN signal"};
-  Configurable<float> MaxZP{"MaxZP", 3099.5, "Max ZP signal"};
-  Configurable<float> MaxZEM{"MaxZEM", 3099.5, "Max ZEM signal"};
+  Configurable<float> maxZN{"maxZN", 4099.5, "Max ZN signal"};
+  Configurable<float> maxZP{"maxZP", 3099.5, "Max ZP signal"};
+  Configurable<float> maxZEM{"maxZEM", 3099.5, "Max ZEM signal"};
   Configurable<int> nBinsTDC{"nBinsTDC", 480, "nbinsTDC"};
-
   Configurable<int> nBinsFit{"nBinsFit", 1000, "nbinsFit"};
-  Configurable<float> MaxMultFV0{"MaxMultFV0", 3000, "Max FV0 signal"};
-  Configurable<float> MaxMultFT0{"MaxMultFT0", 3000, "Max FT0 signal"};
-  Configurable<float> MaxMultFDD{"MaxMultFDD", 80000, "Max FDD signal"};
+  Configurable<float> maxMultFV0{"maxMultFV0", 3000, "Max FV0 signal"};
+  Configurable<float> maxMultFT0{"maxMultFT0", 3000, "Max FT0 signal"};
 
-  // Histogram registry: an object to hold your histograms
+  // Analysis Histograms: Data
   HistogramRegistry histos{
     "histos",
     {},
@@ -59,67 +62,67 @@ struct UCCZDC {
     const AxisSpec axisEvent{3, 0., +3.0, ""};
     const AxisSpec axisEta{30, -1.5, +1.5, "#eta"};
 
-    // create histograms
+    // Histograms
     histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
     histos.add("hEventCounter", "Event counter", kTH1F, {axisEvent});
     histos.add("ZNAcomm", "; ZNA common energy; Entries",
-               {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZN}}});
+               {HistType::kTH1F, {{nBinsAmp, -0.5, maxZN}}});
     histos.add("ZNCcomm", "; ZNC common energy; Entries",
-               {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZN}}});
+               {HistType::kTH1F, {{nBinsAmp, -0.5, maxZN}}});
     histos.add("ZNAcoll", "ZNAcoll; ZNA amplitude; Entries",
-               {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZN}}});
+               {HistType::kTH1F, {{nBinsAmp, -0.5, maxZN}}});
     histos.add("ZPAcoll", "ZPAcoll; ZPA amplitude; Entries",
-               {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZP}}});
+               {HistType::kTH1F, {{nBinsAmp, -0.5, maxZP}}});
     histos.add("ZNCcoll", "ZNCcoll; ZNC amplitude; Entries",
-               {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZN}}});
+               {HistType::kTH1F, {{nBinsAmp, -0.5, maxZN}}});
     histos.add("ZPCcoll", "ZPCcoll; ZPC amplitude; Entries",
-               {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZP}}});
+               {HistType::kTH1F, {{nBinsAmp, -0.5, maxZP}}});
     histos.add("ZEM1coll", "ZEM1coll; ZEM1 amplitude; Entries",
-               {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZEM}}});
+               {HistType::kTH1F, {{nBinsAmp, -0.5, maxZEM}}});
     histos.add("ZEM2coll", "ZEM2coll; ZEM2 amplitude; Entries",
-               {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZEM}}});
+               {HistType::kTH1F, {{nBinsAmp, -0.5, maxZEM}}});
     histos.add("ZNvsZEMcoll", "ZNvsZEMcoll; ZEM; ZNA+ZNC",
                {HistType::kTH2F,
-                {{{nBinsAmp, -0.5, MaxZEM}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
+                {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
     histos.add("ZNAvsZNCcoll", "ZNAvsZNCcoll; ZNC; ZNA",
                {HistType::kTH2F,
-                {{{nBinsAmp, -0.5, MaxZN}, {nBinsAmp, -0.5, MaxZN}}}});
+                {{{nBinsAmp, -0.5, maxZN}, {nBinsAmp, -0.5, maxZN}}}});
     histos.add("ZPAvsZPCcoll", "ZPAvsZPCcoll; ZPA; ZPC",
                {HistType::kTH2F,
-                {{{nBinsAmp, -0.5, MaxZP}, {nBinsAmp, -0.5, MaxZP}}}});
+                {{{nBinsAmp, -0.5, maxZP}, {nBinsAmp, -0.5, maxZP}}}});
     histos.add("ZNAvsZPAcoll", "ZNAvsZPAcoll; ZPA; ZNA",
                {HistType::kTH2F,
-                {{{nBinsAmp, -0.5, MaxZP}, {nBinsAmp, -0.5, MaxZN}}}});
+                {{{nBinsAmp, -0.5, maxZP}, {nBinsAmp, -0.5, maxZN}}}});
     histos.add("ZNCvsZPCcoll", "ZNCvsZPCcoll; ZPC; ZNC",
                {HistType::kTH2F,
-                {{{nBinsAmp, -0.5, MaxZP}, {nBinsAmp, -0.5, MaxZN}}}});
+                {{{nBinsAmp, -0.5, maxZP}, {nBinsAmp, -0.5, maxZN}}}});
     //
     histos.add("ZNCvstdccoll", "ZNCvstdccoll; time ZNC; ZNC",
                {HistType::kTH2F,
-                {{{nBinsTDC, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZN}}}});
+                {{{nBinsTDC, -13.5, 11.45}, {nBinsAmp, -0.5, maxZN}}}});
     histos.add("ZNAvstdccoll", "ZNAvstdccoll; time ZNA; ZNA",
                {HistType::kTH2F,
-                {{{nBinsTDC, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZN}}}});
+                {{{nBinsTDC, -13.5, 11.45}, {nBinsAmp, -0.5, maxZN}}}});
     histos.add("ZPCvstdccoll", "ZPCvstdccoll; time ZPC; ZPC",
                {HistType::kTH2F,
-                {{{nBinsTDC, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZP}}}});
+                {{{nBinsTDC, -13.5, 11.45}, {nBinsAmp, -0.5, maxZP}}}});
     histos.add("ZPAvstdccoll", "ZPAvstdccoll; time ZPA; ZPA",
                {HistType::kTH2F,
-                {{{nBinsTDC, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZP}}}});
+                {{{nBinsTDC, -13.5, 11.45}, {nBinsAmp, -0.5, maxZP}}}});
     histos.add("ZEM1vstdccoll", "ZEM1vstdccoll; time ZEM1; ZEM1",
                {HistType::kTH2F,
-                {{{nBinsTDC, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZEM}}}});
+                {{{nBinsTDC, -13.5, 11.45}, {nBinsAmp, -0.5, maxZEM}}}});
     histos.add("ZEM2vstdccoll", "ZEM2vstdccoll; time ZEM2; ZEM2",
                {HistType::kTH2F,
-                {{{nBinsTDC, -13.5, 11.45}, {nBinsAmp, -0.5, MaxZEM}}}});
+                {{{nBinsTDC, -13.5, 11.45}, {nBinsAmp, -0.5, maxZEM}}}});
     histos.add("debunch", "ZN sum vs. ZN diff.",
                {HistType::kTH2F, {{{240, -12., 12.}, {240, -12., 12.}}}});
     histos.add("ZNvsFV0Acorrel", "ZNvsFV0Acorrel",
                {HistType::kTH2F,
-                {{{nBinsFit, 0., MaxMultFV0}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
+                {{{nBinsFit, 0., maxMultFV0}, {nBinsAmp, -0.5, 2. * maxZN}}}});
     histos.add("ZNvsFT0correl", "ZNvsFT0correl",
                {HistType::kTH2F,
-                {{{nBinsFit, 0., MaxMultFT0}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
+                {{{nBinsFit, 0., maxMultFT0}, {nBinsAmp, -0.5, 2. * maxZN}}}});
   }
 
   void processZdcCollAss(
@@ -127,7 +130,8 @@ struct UCCZDC {
     aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/,
     soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const& tracks)
   {
-    for (auto& collision : cols) {
+    // Collision loop
+    for (const auto& collision : cols) {
       histos.fill(HIST("hEventCounter"), 0.5);
       if (!collision.sel8()) {
         return;
@@ -157,10 +161,10 @@ struct UCCZDC {
         float multV0A{0.};
 
         if (foundBC.has_ft0()) {
-          for (auto amplitude : foundBC.ft0().amplitudeA()) {
+          for (const auto& amplitude : foundBC.ft0().amplitudeA()) {
             multT0A += amplitude;
           }
-          for (auto amplitude : foundBC.ft0().amplitudeC()) {
+          for (const auto& amplitude : foundBC.ft0().amplitudeC()) {
             multT0C += amplitude;
           }
         } else {
@@ -168,7 +172,7 @@ struct UCCZDC {
         }
 
         if (foundBC.has_fv0a()) {
-          for (auto amplitude : foundBC.fv0a().amplitude()) {
+          for (const auto& amplitude : foundBC.fv0a().amplitude()) {
             multV0A += amplitude;
           }
         } else {
@@ -203,7 +207,7 @@ struct UCCZDC {
           ->Fill((multT0A + multT0C) / 100., aZNC + aZNA);
       } // foundBC.has_zdc()
 
-      for (auto& track : tracks) {
+      for (const auto& track : tracks) {
         if (track.tpcNClsCrossedRows() < 70)
           continue;
         if (fabs(track.dcaXY()) > 0.2)
@@ -213,11 +217,11 @@ struct UCCZDC {
       }
     }
   }
-  PROCESS_SWITCH(UCCZDC, processZdcCollAss,
+  PROCESS_SWITCH(uccZdc, processZdcCollAss,
                  "Processing ZDC w. collision association", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<UCCZDC>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<uccZdc>(cfgc)};
 }
