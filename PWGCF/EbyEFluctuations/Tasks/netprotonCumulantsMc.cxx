@@ -186,8 +186,8 @@ struct NetprotonCumulantsMc {
     AxisSpec protonAxis = {21, -0.5, 20.5, "proton number"};
     AxisSpec antiprotonAxis = {21, -0.5, 20.5, "antiproton number"};
 
-    auto noSubsample = (int)cfgNSubsample;
-    float maxSubsample = 1.0*noSubsample;
+    auto noSubsample = static_cast<int> cfgNSubsample;
+    float maxSubsample = 1.0 * noSubsample;
     AxisSpec subsampleAxis = {noSubsample, 0.0, maxSubsample, "subsample no."};
 
     // histograms for events
