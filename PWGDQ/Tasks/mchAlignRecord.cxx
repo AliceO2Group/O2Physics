@@ -168,7 +168,7 @@ struct mchAlignRecordTask {
       if (DEs.size() != Masks.size()) {
         LOG(fatal) << "Inconsistent size of mask list.";
       }
-      for (int i = 0; i < DEs.size(); i++) {
+      for (int i = 0; i < int(DEs.size()); i++) {
         LOG(info) << Form("%s%d%s%d", "Fixing DE: ", DEs.at(i), " with mask: ", Masks.at(i));
         mAlign.FixDetElem(DEs.at(i), Masks.at(i));
       }
