@@ -1179,9 +1179,9 @@ struct UpcTauRl {
       histos.get<TH1>(HIST("EventTwoTracks/hMotherPhi"))->Fill(mother.Phi());
       histos.get<TH1>(HIST("EventTwoTracks/hMotherRapidity"))->Fill(mother.Rapidity());
       histos.get<TH2>(HIST("EventTwoTracks/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
-      histos.get<TH1>(HIST("EventTwoTracks/hDaughtersEnergyAsymmetry"))->Fill((daug[0].E()-daug[1].E()) / (daug[0].E() + daug[1].E()));
-      histos.get<TH1>(HIST("EventTwoTracks/hDaughtersMomentaAsymmetry"))->Fill((daug[0].P()-daug[1].P()) / (daug[0].P() + daug[1].P()));
-      histos.get<TH1>(HIST("EventTwoTracks/hDaughtersPtAsymmetry"))->Fill((daug[0].Pt()-daug[1].Pt()) / (daug[0].Pt() + daug[1].Pt()));
+      histos.get<TH1>(HIST("EventTwoTracks/hDaughtersEnergyAsymmetry"))->Fill((daug[0].E() - daug[1].E()) / (daug[0].E() + daug[1].E()));
+      histos.get<TH1>(HIST("EventTwoTracks/hDaughtersMomentaAsymmetry"))->Fill((daug[0].P() - daug[1].P()) / (daug[0].P() + daug[1].P()));
+      histos.get<TH1>(HIST("EventTwoTracks/hDaughtersPtAsymmetry"))->Fill((daug[0].Pt() - daug[1].Pt()) / (daug[0].Pt() + daug[1].Pt()));
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
@@ -1411,9 +1411,9 @@ struct UpcTauRl {
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hMotherMassVsAcoplanarity"))->Fill(mother.M(), acoplanarity);
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hElectronPt"))->Fill(electronPt);
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hElectronPtWide"))->Fill(electronPt);
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersEnergyAsymmetry"))->Fill((daug[0].E()-daug[1].E()) / (daug[0].E() + daug[1].E()));
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersMomentaAsymmetry"))->Fill((daug[0].P()-daug[1].P()) / (daug[0].P() + daug[1].P()));
-        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersPtAsymmetry"))->Fill((daug[0].Pt()-daug[1].Pt()) / (daug[0].Pt() + daug[1].Pt()));
+        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersEnergyAsymmetry"))->Fill((daug[0].E() - daug[1].E()) / (daug[0].E() + daug[1].E()));
+        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersMomentaAsymmetry"))->Fill((daug[0].P() - daug[1].P()) / (daug[0].P() + daug[1].P()));
+        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersPtAsymmetry"))->Fill((daug[0].Pt() - daug[1].Pt()) / (daug[0].Pt() + daug[1].Pt()));
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
