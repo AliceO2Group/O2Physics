@@ -939,7 +939,6 @@ struct UpcTauRl {
     return true;
   }
 
-
   template <typename T>
   bool selectedGoodElectron(T const& electronCandidate)
   {
@@ -952,7 +951,7 @@ struct UpcTauRl {
     if (electronCandidate.hasTOF()) {
       if (electronCandidate.tofNSigmaPr() > cutTauEvent.cutMinElectronNsigmaPr && electronCandidate.tofNSigmaPr() < cutTauEvent.cutMaxElectronNsigmaPr)
         return false;
-      if (momentum(electronCandidate.px(), electronCandidate.py(), electronCandidate.pz()) < 1.0){
+      if (momentum(electronCandidate.px(), electronCandidate.py(), electronCandidate.pz()) < 1.0) {
         if (electronCandidate.tofNSigmaKa() > cutTauEvent.cutMinElectronTofNsigmaKa && electronCandidate.tofNSigmaKa() < cutTauEvent.cutMaxElectronTofNsigmaKa)
           return false;
       } else {
@@ -973,7 +972,7 @@ struct UpcTauRl {
     if (pionCandidate.hasTOF()) {
       if (pionCandidate.tofNSigmaPr() > cutTauEvent.cutMinElectronNsigmaPr && pionCandidate.tofNSigmaPr() < cutTauEvent.cutMaxElectronNsigmaPr)
         return false;
-      if (momentum(pionCandidate.px(), pionCandidate.py(), pionCandidate.pz()) < 1.0){
+      if (momentum(pionCandidate.px(), pionCandidate.py(), pionCandidate.pz()) < 1.0) {
         if (pionCandidate.tofNSigmaKa() > cutTauEvent.cutMinElectronTofNsigmaKa && pionCandidate.tofNSigmaKa() < cutTauEvent.cutMaxElectronTofNsigmaKa)
           return false;
       }
@@ -988,10 +987,14 @@ struct UpcTauRl {
     daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
     daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
     if (cutTauEvent.useThresholdsPID) {
-      if (isElectronCandidate(trkDaug1)) daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassElectron, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-      if (isElectronCandidate(trkDaug2)) daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassElectron, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-      if (isMuPionCandidate(trkDaug1)) daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPionCharged, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-      if (isMuPionCandidate(trkDaug2)) daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      if (isElectronCandidate(trkDaug1))
+        daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassElectron, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+      if (isElectronCandidate(trkDaug2))
+        daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassElectron, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      if (isMuPionCandidate(trkDaug1))
+        daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPionCharged, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+      if (isMuPionCandidate(trkDaug2))
+        daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
     }
     mother = daug[0] + daug[1];
     pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPionCharged, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
@@ -1110,11 +1113,11 @@ struct UpcTauRl {
         countPVGTothers++;
       }
       // alternative selection
-      if (isElectronCandidate(track)){
+      if (isElectronCandidate(track)) {
         countPVGTelmupiAlt++;
         countPVGTelectronsAlt++;
       }
-      if (isMuPionCandidate(track)){
+      if (isMuPionCandidate(track)) {
         countPVGTelmupiAlt++;
         countPVGTmupionsAlt++;
       }
@@ -1136,10 +1139,14 @@ struct UpcTauRl {
       daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
       daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       if (cutTauEvent.useThresholdsPID) {
-        if (isElectronCandidate(trkDaug1)) daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassElectron, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-        if (isElectronCandidate(trkDaug2)) daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassElectron, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-        if (isMuPionCandidate(trkDaug1)) daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPionCharged, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-        if (isMuPionCandidate(trkDaug2)) daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+        if (isElectronCandidate(trkDaug1))
+          daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassElectron, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+        if (isElectronCandidate(trkDaug2))
+          daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassElectron, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+        if (isMuPionCandidate(trkDaug1))
+          daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPionCharged, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+        if (isMuPionCandidate(trkDaug2))
+          daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       }
       mother = daug[0] + daug[1];
       pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPionCharged, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
@@ -1367,7 +1374,7 @@ struct UpcTauRl {
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/hInvariantMass"))->Fill(motherOfPiKaon.M());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/hInvariantMassWide"))->Fill(motherOfPiKaon.M());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/hMotherMassVsPt"))->Fill(motherOfPiKaon.M(), motherOfPiKaon.Pt());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/hMotherMassVsElectronP"))->Fill(motherOfPiKaon.M(),electronP);
+        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/hMotherMassVsElectronP"))->Fill(motherOfPiKaon.M(), electronP);
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/hIMKvsIMe"))->Fill(motherOfPiKaon.M(), mother.M());
         if (electronPt < cutTauEvent.cutElectronPt) {
           histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/KstarSelection/eMomentaCutLow/hInvariantMass"))->Fill(motherOfPiKaon.M());
@@ -1390,8 +1397,8 @@ struct UpcTauRl {
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hMotherPhi"))->Fill(mother.Phi());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hMotherRapidity"))->Fill(mother.Rapidity());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hMotherMassVsElectronP"))->Fill(mother.M(),electronP);
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hMotherMassVsAcoplanarity"))->Fill(mother.M(),acoplanarity);
+        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hMotherMassVsElectronP"))->Fill(mother.M(), electronP);
+        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hMotherMassVsAcoplanarity"))->Fill(mother.M(), acoplanarity);
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hElectronPt"))->Fill(electronPt);
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hElectronPtWide"))->Fill(electronPt);
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
@@ -1402,8 +1409,8 @@ struct UpcTauRl {
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersEnergyFractions"))->Fill(electronE / (electronE + mupionE), mupionE / (electronE + mupionE));
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPvsOtherP"))->Fill(electronP, mupionP);
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPwideVsOtherPwide"))->Fill(electronP, mupionP);
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPvsAcoplanarity"))->Fill(electronP,acoplanarity);
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hOtherPvsAcoplanarity"))->Fill(mupionP,acoplanarity);
+        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPvsAcoplanarity"))->Fill(electronP, acoplanarity);
+        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hOtherPvsAcoplanarity"))->Fill(mupionP, acoplanarity);
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPtVsOtherPt"))->Fill(electronPt, mupionPt);
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPhiVsOtherPhi"))->Fill(isElectronCandidate(trkDaug1) ? daug[0].Phi() : daug[1].Phi(), isElectronCandidate(trkDaug1) ? daug[1].Phi() : daug[0].Phi());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronRapVsOtherRap"))->Fill(isElectronCandidate(trkDaug1) ? daug[0].Rapidity() : daug[1].Rapidity(), isElectronCandidate(trkDaug1) ? daug[1].Rapidity() : daug[0].Rapidity());
@@ -1766,11 +1773,11 @@ struct UpcTauRl {
         }
       }
       // alternative selection
-      if (isElectronCandidate(track)){
+      if (isElectronCandidate(track)) {
         countPVGTelmupiAlt++;
         countPVGTelectronsAlt++;
       }
-      if (isMuPionCandidate(track)){
+      if (isMuPionCandidate(track)) {
         countPVGTelmupiAlt++;
         countPVGTmupionsAlt++;
       }
@@ -1787,10 +1794,14 @@ struct UpcTauRl {
         return;
       }
       if (cutTauEvent.useThresholdsPID) {
-        if (isElectronCandidate(trkDaug1)) daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassElectron, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-        if (isElectronCandidate(trkDaug2)) daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassElectron, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-        if (isMuPionCandidate(trkDaug1)) daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPionCharged, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-        if (isMuPionCandidate(trkDaug2)) daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+        if (isElectronCandidate(trkDaug1))
+          daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassElectron, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+        if (isElectronCandidate(trkDaug2))
+          daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassElectron, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+        if (isMuPionCandidate(trkDaug1))
+          daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPionCharged, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+        if (isMuPionCandidate(trkDaug2))
+          daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       }
 
       if (trkDaug1.hasTPC()) {
@@ -1827,10 +1838,14 @@ struct UpcTauRl {
         return;
       }
       if (cutTauEvent.useThresholdsPID) {
-        if (isElectronCandidate(trkDaug1)) daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassElectron, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-        if (isElectronCandidate(trkDaug2)) daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassElectron, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-        if (isMuPionCandidate(trkDaug1)) daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPionCharged, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-        if (isMuPionCandidate(trkDaug2)) daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+        if (isElectronCandidate(trkDaug1))
+          daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassElectron, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+        if (isElectronCandidate(trkDaug2))
+          daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassElectron, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+        if (isMuPionCandidate(trkDaug1))
+          daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPionCharged, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+        if (isMuPionCandidate(trkDaug2))
+          daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       }
 
       if (trkDaug1.hasTPC()) {
@@ -2167,11 +2182,11 @@ struct UpcTauRl {
         }
       }
       // alternative selection
-      if (isElectronCandidate(track)){
+      if (isElectronCandidate(track)) {
         countPVGTelmupiAlt++;
         countPVGTelectronsAlt++;
       }
-      if (isMuPionCandidate(track)){
+      if (isMuPionCandidate(track)) {
         countPVGTelmupiAlt++;
         countPVGTmupionsAlt++;
       }
@@ -2190,10 +2205,14 @@ struct UpcTauRl {
         return;
       }
       if (cutTauEvent.useThresholdsPID) {
-        if (isElectronCandidate(trkDaug1)) daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassElectron, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-        if (isElectronCandidate(trkDaug2)) daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassElectron, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-        if (isMuPionCandidate(trkDaug1)) daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPionCharged, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-        if (isMuPionCandidate(trkDaug2)) daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+        if (isElectronCandidate(trkDaug1))
+          daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassElectron, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+        if (isElectronCandidate(trkDaug2))
+          daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassElectron, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+        if (isMuPionCandidate(trkDaug1))
+          daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassPionCharged, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+        if (isMuPionCandidate(trkDaug2))
+          daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(MassPionCharged, trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       }
       if (trkDaug1.hasTPC() && trkDaug2.hasTPC()) {
 
