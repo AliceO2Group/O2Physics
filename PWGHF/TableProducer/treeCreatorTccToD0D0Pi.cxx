@@ -185,6 +185,7 @@ struct HfTreeCreatorTccToD0D0Pi {
   Configurable<float> softPiDcaXYMax{"softPiDcaXYMax", 0.065, "Soft pion max dcaXY (cm)"};
   Configurable<float> softPiDcaZMax{"softPiDcaZMax", 0.065, "Soft pion max dcaZ (cm)"};
   Configurable<float> deltaMassCanMax{"deltaMassCanMax", 2, "delta candidate max mass (DDPi-D0D0) ((GeV/c2)"};
+  Configurable<float> massCanMax{"massCanMax", 4.0, "candidate max mass (DDPi) ((GeV/c2)"};
 
   HfHelper hfHelper;
   TrackSelection softPiCuts;
@@ -367,7 +368,7 @@ struct HfTreeCreatorTccToD0D0Pi {
           const auto massD0D0Pi = RecoDecay::m(std::move(arrayMomentaDDpi), std::array{MassD0, MassD0, MassPiPlus});
           const auto deltaMassD0D0Pi = massD0D0Pi - (massD01 + massD02);
 
-          if (deltaMassD0D0Pi > deltaMassCanMax) {
+          if (deltaMassD0D0Pi > deltaMassCanMax || massD0D0Pi > massCanMax) {
             continue;
           }
 

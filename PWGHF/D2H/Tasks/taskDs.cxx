@@ -759,6 +759,9 @@ struct HfTaskDs {
     float centrality = evaluateCentralityColl(collision);
     std::get<TH2Ptr>(histosPtr[DataType::Data]["hNPvContribAll"])->Fill(numPvContributors, centrality);
     for (int i = 0; i < DataType::kDataTypes; i++) {
+      if (i == DataType::McBkg && !fillMcBkgHistos) {
+        continue;
+      }
       if (nCandsPerType[i]) {
         std::get<TH2Ptr>(histosPtr[i]["hNPvContribCands"])->Fill(numPvContributors, centrality);
       }
