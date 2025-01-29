@@ -65,7 +65,7 @@ struct HigherMassResonances {
   HistogramRegistry hglue{"hglueball", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry hMChists{"hMChists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-  // PID and QA 
+  // PID and QA
   Configurable<bool> qAv0{"qAv0", false, "qAv0"};
   Configurable<bool> qAPID{"qAPID", true, "qAPID"};
   Configurable<bool> qAv0Daughters{"qAv0Daughters", false, "QA of v0 daughters"};
@@ -77,7 +77,7 @@ struct HigherMassResonances {
   Configurable<bool> globalTracks{"globalTracks", false, "Global tracks"};
   Configurable<bool> hasTPC{"hasTPC", false, "TPC"};
 
-  // Configurable for event selection
+  // Configurables for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<float> cfgETAcut{"cfgETAcut", 0.8f, "Track ETA cut"};
   Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
