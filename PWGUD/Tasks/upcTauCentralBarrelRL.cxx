@@ -155,6 +155,7 @@ struct UpcTauRl {
     ConfigurableAxis zzAxisEta{"zzAxisEta", {50, -1.2, 1.2}, "Pseudorapidity (a.u.)"};
     ConfigurableAxis zzAxisRap{"zzAxisRap", {50, -1.2, 1.2}, "Rapidity (a.u.)"};
     ConfigurableAxis zzAxisFraction{"zzAxisFraction", {500, 0., 1.}, "Fraction (-)"};
+    ConfigurableAxis zzAxisMirrorFraction{"zzAxisMirrorFraction", {500, 0., 1.}, "Fraction (-)"};
     ConfigurableAxis zzAxisAcoplanarity{"zzAxisAcoplanarity", {32, 0.0, o2::constants::math::PI}, "Acoplanarity (rad)"};
     ConfigurableAxis zzAxisCollinearity{"zzAxisCollinearity", {200, 0, 20}, "Collinearity (-)"};
     ConfigurableAxis zzAxisTPCdEdx{"zzAxisTPCdEdx", {2000, 0., 200.}, "TPC dE/dx (a.u.)"};
@@ -370,6 +371,9 @@ struct UpcTauRl {
       histos.add("EventTwoTracks/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPhi});
       histos.add("EventTwoTracks/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisRap});
       histos.add("EventTwoTracks/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisInvMassWide, confAxis.zzAxisPt});
+      histos.add("EventTwoTracks/hDaughtersEnergyAsymmetry", ";(E_{electron} - E_{#mu/#pi}) / (E_{electron} + E_{#mu/#pi});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMirrorFraction});
+      histos.add("EventTwoTracks/hDaughtersMomentaAsymmetry", ";(#it{p}_{electron} - #it{p}_{#mu/#pi}) / (#it{p}_{electron} + #it{p}_{#mu/#pi});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMirrorFraction});
+      histos.add("EventTwoTracks/hDaughtersPtAsymmetry", ";(#it{p_{T}}_{electron} - #it{p_{T}}_{#mu/#pi}) / (#it{p_{T}}_{electron} + #it{p_{T}}_{#mu/#pi});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMirrorFraction});
       histos.add("EventTwoTracks/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisMom});
       histos.add("EventTwoTracks/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMomWide, confAxis.zzAxisMomWide});
       histos.add("EventTwoTracks/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisPt});
@@ -557,6 +561,9 @@ struct UpcTauRl {
       histos.add("EventTwoTracks/ElectronMuPi/hMotherMassVsAcoplanarity", ";Invariant mass (GeV/c^{2});#Delta#phi (rad)", HistType::kTH2D, {confAxis.zzAxisInvMassWide, confAxis.zzAxisAcoplanarity});
       histos.add("EventTwoTracks/ElectronMuPi/hElectronPt", ";Electron #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisPt});
       histos.add("EventTwoTracks/ElectronMuPi/hElectronPtWide", ";Electron #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMomWide});
+      histos.add("EventTwoTracks/ElectronMuPi/hDaughtersEnergyAsymmetry", ";(E_{electron} - E_{#mu/#pi}) / (E_{electron} + E_{#mu/#pi});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMirrorFraction});
+      histos.add("EventTwoTracks/ElectronMuPi/hDaughtersMomentaAsymmetry", ";(#it{p}_{electron} - #it{p}_{#mu/#pi}) / (#it{p}_{electron} + #it{p}_{#mu/#pi});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMirrorFraction});
+      histos.add("EventTwoTracks/ElectronMuPi/hDaughtersPtAsymmetry", ";(#it{p_{T}}_{electron} - #it{p_{T}}_{#mu/#pi}) / (#it{p_{T}}_{electron} + #it{p_{T}}_{#mu/#pi});Number of events (-)", HistType::kTH1D, {confAxis.zzAxisMirrorFraction});
       histos.add("EventTwoTracks/ElectronMuPi/hDaughtersP", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMom, confAxis.zzAxisMom});
       histos.add("EventTwoTracks/ElectronMuPi/hDaughtersPwide", ";Daughter 1 #it{p} (GeV/c);Daughter 2 #it{p} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisMomWide, confAxis.zzAxisMomWide});
       histos.add("EventTwoTracks/ElectronMuPi/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.zzAxisPt, confAxis.zzAxisPt});
@@ -1171,13 +1178,16 @@ struct UpcTauRl {
       histos.get<TH1>(HIST("EventTwoTracks/hMotherPt"))->Fill(mother.Pt());
       histos.get<TH1>(HIST("EventTwoTracks/hMotherPhi"))->Fill(mother.Phi());
       histos.get<TH1>(HIST("EventTwoTracks/hMotherRapidity"))->Fill(mother.Rapidity());
+      histos.get<TH2>(HIST("EventTwoTracks/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
+      histos.get<TH1>(HIST("EventTwoTracks/hDaughtersEnergyAsymmetry"))->Fill((daug[0].E()-daug[1].E()) / (daug[0].E() + daug[1].E()));
+      histos.get<TH1>(HIST("EventTwoTracks/hDaughtersMomentaAsymmetry"))->Fill((daug[0].P()-daug[1].P()) / (daug[0].P() + daug[1].P()));
+      histos.get<TH1>(HIST("EventTwoTracks/hDaughtersPtAsymmetry"))->Fill((daug[0].Pt()-daug[1].Pt()) / (daug[0].Pt() + daug[1].Pt()));
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPhi"))->Fill(daug[0].Phi(), daug[1].Phi());
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersRapidity"))->Fill(daug[0].Rapidity(), daug[1].Rapidity());
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersEnergyFractions"))->Fill(daug[0].E() / (daug[0].E() + daug[1].E()), daug[1].E() / (daug[0].E() + daug[1].E()));
-      histos.get<TH2>(HIST("EventTwoTracks/hMotherMassVsPt"))->Fill(mother.M(), mother.Pt());
       if (motherOfPions.Pt() < 0.2) {
         histos.get<TH1>(HIST("EventTwoTracks/hInvariantMassWideAllPionMassPtCut"))->Fill(motherOfPions.M());
       }
@@ -1401,6 +1411,9 @@ struct UpcTauRl {
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hMotherMassVsAcoplanarity"))->Fill(mother.M(), acoplanarity);
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hElectronPt"))->Fill(electronPt);
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hElectronPtWide"))->Fill(electronPt);
+        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersEnergyAsymmetry"))->Fill((daug[0].E()-daug[1].E()) / (daug[0].E() + daug[1].E()));
+        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersMomentaAsymmetry"))->Fill((daug[0].P()-daug[1].P()) / (daug[0].P() + daug[1].P()));
+        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersPtAsymmetry"))->Fill((daug[0].Pt()-daug[1].Pt()) / (daug[0].Pt() + daug[1].Pt()));
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersP"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersPwide"))->Fill(daug[0].P(), daug[1].P());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
