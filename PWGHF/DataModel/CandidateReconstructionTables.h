@@ -1633,7 +1633,7 @@ DECLARE_SOA_COLUMN(DcaPosToPV, dcaPosToPV, float);
 DECLARE_SOA_COLUMN(DcaNegToPV, dcaNegToPV, float);
 DECLARE_SOA_COLUMN(DcaBachelorToPV, dcaBachelorToPV, float);
 DECLARE_SOA_COLUMN(DcaXYCascToPV, dcaXYCascToPV, float);
-DECLARE_SOA_COLUMN(DcaZCascToPV, dcaXCascToPV, float);
+DECLARE_SOA_COLUMN(DcaZCascToPV, dcaZCascToPV, float);
 // KF specific columns
 DECLARE_SOA_COLUMN(DcaXYPi0Pi1, dcaXYPi0Pi1, float);
 DECLARE_SOA_COLUMN(DcaXYPi0Xi, dcaXYPi0Xi, float);

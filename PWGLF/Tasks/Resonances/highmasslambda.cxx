@@ -727,7 +727,7 @@ struct highmasslambda {
         // LOGF(info, "Before dca fitter");
         std::array<float, 3> pVecV0 = {0., 0., 0.};
         std::array<float, 3> pVecBach = {0., 0., 0.};
-        std::array<float, 3> pVecCand = {0., 0., 0.};
+        // std::array<float, 3> pVecCand = {0., 0., 0.};
         const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
         const std::array<float, 3> momentumV0 = {v0.px(), v0.py(), v0.pz()};
         // we build the neutral track to then build the cascade
