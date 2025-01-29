@@ -151,10 +151,7 @@ struct JetFinderTask {
   void processChargedJets(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                           soa::Filtered<aod::JetTracks> const& tracks)
   {
-    if (doEMCALEventSelectionChargedJets && !jetderiveddatautilities::eventEMCAL(collision)) {
-      return;
-    }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits) || (doEMCALEventSelectionChargedJets && !jetderiveddatautilities::eventEMCAL(collision))) {
       return;
     }
     inputParticles.clear();
@@ -167,10 +164,7 @@ struct JetFinderTask {
   void processChargedEvtWiseSubJets(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                                     soa::Filtered<aod::JetTracksSub> const& tracks)
   {
-    if (doEMCALEventSelectionChargedJets && !jetderiveddatautilities::eventEMCAL(collision)) {
-      return;
-    }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits) || (doEMCALEventSelectionChargedJets && !jetderiveddatautilities::eventEMCAL(collision))) {
       return;
     }
     inputParticles.clear();
