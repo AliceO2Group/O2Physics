@@ -243,8 +243,8 @@ struct K0MixedEvents {
   void mixTracks(Type const& tracks1, Type const& tracks2)
   {
     LOG(debug) << "Mixing tracks of two different events";
-    for (const auto trk1 : tracks1) {
-      for (const auto trk2 : tracks2) {
+    for (auto trk1 : tracks1) {
+      for (auto trk2 : tracks2) {
 
         Pair->setPair(trk1, trk2);
 
@@ -277,12 +277,12 @@ struct K0MixedEvents {
       LOGF(fatal, "One of passed PDG is 0!!!");
     }
     registry.fill(HIST("Trks"), 2.f, tracks.size());
-    for (const auto collision : collisions) {
+    for (auto collision : collisions) {
       LOG(debug) << "Collision index " << collision.globalIndex();
       registry.fill(HIST("VTXc"), collision.posZ());
     }
 
-    for (const auto track : tracks) {
+    for (auto track : tracks) {
       LOG(debug) << "Track index " << track.singleCollSelId();
       if (track.itsNCls() < _itsNCls) {
         continue;
@@ -394,7 +394,7 @@ struct K0MixedEvents {
       }
     }
 
-    for (const auto collision : collisions) {
+    for (auto collision : collisions) {
       if (selectedtracks_1.find(collision.globalIndex()) == selectedtracks_1.end()) {
         if (IsIdentical)
           continue;
