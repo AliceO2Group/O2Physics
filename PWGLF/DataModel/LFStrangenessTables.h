@@ -245,7 +245,7 @@ using StraCent = StraCents::iterator;
 
 namespace stramccollision
 {
-DECLARE_SOA_COLUMN(TotalMultMCParticles, totalMultMCParticles, int); //! total number of MC particles in a 
+DECLARE_SOA_COLUMN(TotalMultMCParticles, totalMultMCParticles, int); //! total number of MC particles in a generated collision
 } // namespace stramccollision
 
 //______________________________________________________
