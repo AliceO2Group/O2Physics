@@ -852,7 +852,7 @@ struct FlowSP {
     if (collisions.size() != 1)
       return;
     float centrality = -1;
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       centrality = collision.centFT0C();
     }
     
@@ -863,7 +863,7 @@ struct FlowSP {
 
     float vtxz = mcCollision.posZ();
 
-    for (auto& track : particles) {
+    for (const auto& track : particles) {
 
       if (!track.isPhysicalPrimary())
         continue;
