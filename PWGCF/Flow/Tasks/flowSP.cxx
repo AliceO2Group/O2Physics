@@ -48,12 +48,12 @@ using namespace o2::framework::expressions;
 
 struct FlowSP {
   // QA Plots
-  O2_DEFINE_CONFIGURABLE(cfgFillEventQA, bool, true, "Fill histograms for event QA"); 
+  O2_DEFINE_CONFIGURABLE(cfgFillEventQA, bool, true, "Fill histograms for event QA");
   // Centrality Estimators -> standard is FT0C
-  O2_DEFINE_CONFIGURABLE(cfgFT0Cvariant1, bool, false, "Set centrality estimator to cfgFT0Cvariant1"); 
-  O2_DEFINE_CONFIGURABLE(cfgFT0M, bool, false, "Set centrality estimator to cfgFT0M"); 
-  O2_DEFINE_CONFIGURABLE(cfgFV0A, bool, false, "Set centrality estimator to cfgFV0A"); 
-  O2_DEFINE_CONFIGURABLE(cfgNGlobal, bool, false, "Set centrality estimator to cfgNGlobal"); 
+  O2_DEFINE_CONFIGURABLE(cfgFT0Cvariant1, bool, false, "Set centrality estimator to cfgFT0Cvariant1");
+  O2_DEFINE_CONFIGURABLE(cfgFT0M, bool, false, "Set centrality estimator to cfgFT0M");
+  O2_DEFINE_CONFIGURABLE(cfgFV0A, bool, false, "Set centrality estimator to cfgFV0A");
+  O2_DEFINE_CONFIGURABLE(cfgNGlobal, bool, false, "Set centrality estimator to cfgNGlobal");
   // Standard selections
   O2_DEFINE_CONFIGURABLE(cfgDCAxy, float, 0.2, "Cut on DCA in the transverse direction (cm)");
   O2_DEFINE_CONFIGURABLE(cfgDCAz, float, 2, "Cut on DCA in the longitudinal direction (cm)");
@@ -88,7 +88,7 @@ struct FlowSP {
   // harmonics for v coefficients
   O2_DEFINE_CONFIGURABLE(cfgHarm, int, 1, "Flow harmonic n for ux and uy: (Cos(n*phi), Sin(n*phi))");
   O2_DEFINE_CONFIGURABLE(cfgHarmMixed, int, 2, "Flow harmonic n for ux and uy in mixed harmonics (MH): (Cos(n*phi), Sin(n*phi))");
-  // settings for CCDB data 
+  // settings for CCDB data
   O2_DEFINE_CONFIGURABLE(cfgLoadAverageQQ, bool, true, "Load average values for QQ (in centrality bins)");
   O2_DEFINE_CONFIGURABLE(cfgCCDBdir, std::string, "Users/c/ckoster/ZDC/LHC23_zzh_pass4_small/meanQQ", "ccdb dir for average QQ values in 1% centrality bins");
   O2_DEFINE_CONFIGURABLE(cfgLoadSPPlaneRes, bool, false, "Load ZDC spectator plane resolution");
@@ -115,7 +115,7 @@ struct FlowSP {
   Service<ccdb::BasicCCDBManager> ccdb;
 
   // from Generic Framework
-  // Adapted to hold weights for: inclusive, positive charged, negative charged 
+  // Adapted to hold weights for: inclusive, positive charged, negative charged
   struct Config {
     std::vector<TH1D*> mEfficiency = {};
     std::vector<GFWWeights*> mAcceptance = {};
@@ -160,10 +160,10 @@ struct FlowSP {
     kNegative
   };
 
-  enum FillType { 
-    kBefore, 
+  enum FillType {
+    kBefore,
     kAfter
-  }; 
+  };
 
   static constexpr std::string_view Charge[] = {"incl/", "pos/", "neg/"};
 
@@ -196,8 +196,8 @@ struct FlowSP {
       fWeightsNEG->Init(true, false);
     }
 
-    if((doprocessData || doprocessMCReco)){
-      if(cfgFillEventQA){
+    if ((doprocessData || doprocessMCReco)) {
+      if (cfgFillEventQA) {
         registry.add("QA/after/hCent", "", {HistType::kTH1D, {axisCent}});
         registry.add("QA/after/pt_phi", "", {HistType::kTH2D, {axisPt, axisPhiMod}});
         registry.add("QA/after/hPt_inclusive", "", {HistType::kTH1D, {axisPt}});
@@ -210,91 +210,91 @@ struct FlowSP {
         registry.add("QA/after/multT0C_centT0C", "", {HistType::kTH2D, {axisCent, t0cAxis}});
       }
 
-      if (doprocessData){
-      registry.add<TH1>("hSPplaneA", "hSPplaneA", kTH1D, {axisPhiPlane});
-      registry.add<TH1>("hSPplaneC", "hSPplaneC", kTH1D, {axisPhiPlane});
-      registry.add<TH1>("hSPplaneFull", "hSPplaneFull", kTH1D, {axisPhiPlane});
+      if (doprocessData) {
+        registry.add<TH1>("hSPplaneA", "hSPplaneA", kTH1D, {axisPhiPlane});
+        registry.add<TH1>("hSPplaneC", "hSPplaneC", kTH1D, {axisPhiPlane});
+        registry.add<TH1>("hSPplaneFull", "hSPplaneFull", kTH1D, {axisPhiPlane});
 
-      registry.add<TProfile>("hCosPhiACosPhiC", "hCosPhiACosPhiC; Centrality(%); #LT Cos(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCent});
-      registry.add<TProfile>("hSinPhiASinPhiC", "hSinPhiASinPhiC; Centrality(%); #LT Sin(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCent});
-      registry.add<TProfile>("hSinPhiACosPhiC", "hSinPhiACosPhiC; Centrality(%); #LT Sin(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCent});
-      registry.add<TProfile>("hCosPhiASinsPhiC", "hCosPhiASinsPhiC; Centrality(%); #LT Cos(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCent});
-      registry.add<TProfile>("hFullEvPlaneRes", "hFullEvPlaneRes; Centrality(%); -#LT Cos(#Psi^{A} - #Psi^{C})#GT ", kTProfile, {axisCent});
+        registry.add<TProfile>("hCosPhiACosPhiC", "hCosPhiACosPhiC; Centrality(%); #LT Cos(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCent});
+        registry.add<TProfile>("hSinPhiASinPhiC", "hSinPhiASinPhiC; Centrality(%); #LT Sin(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCent});
+        registry.add<TProfile>("hSinPhiACosPhiC", "hSinPhiACosPhiC; Centrality(%); #LT Sin(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCent});
+        registry.add<TProfile>("hCosPhiASinsPhiC", "hCosPhiASinsPhiC; Centrality(%); #LT Cos(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCent});
+        registry.add<TProfile>("hFullEvPlaneRes", "hFullEvPlaneRes; Centrality(%); -#LT Cos(#Psi^{A} - #Psi^{C})#GT ", kTProfile, {axisCent});
 
-      // track properties per centrality and per eta, pt bin
-      registry.add<TProfile>("incl/vnAx_eta", "", kTProfile, {axisEtaVn});
-      registry.add<TProfile>("incl/vnAy_eta", "", kTProfile, {axisEtaVn});
-      registry.add<TProfile>("incl/vnCx_eta", "", kTProfile, {axisEtaVn});
-      registry.add<TProfile>("incl/vnCy_eta", "", kTProfile, {axisEtaVn});
-      registry.add<TProfile>("incl/vnC_eta", "", kTProfile, {axisEtaVn});
-      registry.add<TProfile>("incl/vnA_eta", "", kTProfile, {axisEtaVn});
-      registry.add<TProfile>("incl/vnA_eta_EP", "", kTProfile, {axisEtaVn});
-      registry.add<TProfile>("incl/vnC_eta_EP", "", kTProfile, {axisEtaVn});
-      registry.add<TProfile>("incl/vnFull_eta_EP", "", kTProfile, {axisEtaVn});
-      registry.add<TProfile>("incl/vnAxCxUx_eta_MH", "", kTProfile, {axisEtaVn});
-      registry.add<TProfile>("incl/vnAxCyUx_eta_MH", "", kTProfile, {axisEtaVn});
-      registry.add<TProfile>("incl/vnAxCyUy_eta_MH", "", kTProfile, {axisEtaVn});
-      registry.add<TProfile>("incl/vnAyCxUy_eta_MH", "", kTProfile, {axisEtaVn});
+        // track properties per centrality and per eta, pt bin
+        registry.add<TProfile>("incl/vnAx_eta", "", kTProfile, {axisEtaVn});
+        registry.add<TProfile>("incl/vnAy_eta", "", kTProfile, {axisEtaVn});
+        registry.add<TProfile>("incl/vnCx_eta", "", kTProfile, {axisEtaVn});
+        registry.add<TProfile>("incl/vnCy_eta", "", kTProfile, {axisEtaVn});
+        registry.add<TProfile>("incl/vnC_eta", "", kTProfile, {axisEtaVn});
+        registry.add<TProfile>("incl/vnA_eta", "", kTProfile, {axisEtaVn});
+        registry.add<TProfile>("incl/vnA_eta_EP", "", kTProfile, {axisEtaVn});
+        registry.add<TProfile>("incl/vnC_eta_EP", "", kTProfile, {axisEtaVn});
+        registry.add<TProfile>("incl/vnFull_eta_EP", "", kTProfile, {axisEtaVn});
+        registry.add<TProfile>("incl/vnAxCxUx_eta_MH", "", kTProfile, {axisEtaVn});
+        registry.add<TProfile>("incl/vnAxCyUx_eta_MH", "", kTProfile, {axisEtaVn});
+        registry.add<TProfile>("incl/vnAxCyUy_eta_MH", "", kTProfile, {axisEtaVn});
+        registry.add<TProfile>("incl/vnAyCxUy_eta_MH", "", kTProfile, {axisEtaVn});
 
-      registry.add<TProfile>("incl/vnAx_pt", "", kTProfile, {axisPt});
-      registry.add<TProfile>("incl/vnAy_pt", "", kTProfile, {axisPt});
-      registry.add<TProfile>("incl/vnCx_pt", "", kTProfile, {axisPt});
-      registry.add<TProfile>("incl/vnCy_pt", "", kTProfile, {axisPt});
-      registry.add<TProfile>("incl/vnC_pt", "", kTProfile, {axisPt});
-      registry.add<TProfile>("incl/vnA_pt", "", kTProfile, {axisPt});
-      registry.add<TProfile>("incl/vnC_pt_odd", "", kTProfile, {axisPt});
-      registry.add<TProfile>("incl/vnA_pt_odd", "", kTProfile, {axisPt});
-      registry.add<TProfile>("incl/vnA_pt_EP", "", kTProfile, {axisPt});
-      registry.add<TProfile>("incl/vnC_pt_EP", "", kTProfile, {axisPt});
-      registry.add<TProfile>("incl/vnFull_pt_EP", "", kTProfile, {axisPt});
-      registry.add<TProfile>("incl/vnAxCxUx_pt_MH", "", kTProfile, {axisPt});
-      registry.add<TProfile>("incl/vnAxCyUx_pt_MH", "", kTProfile, {axisPt});
-      registry.add<TProfile>("incl/vnAxCyUy_pt_MH", "", kTProfile, {axisPt});
-      registry.add<TProfile>("incl/vnAyCxUy_pt_MH", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnAx_pt", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnAy_pt", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnCx_pt", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnCy_pt", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnC_pt", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnA_pt", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnC_pt_odd", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnA_pt_odd", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnA_pt_EP", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnC_pt_EP", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnFull_pt_EP", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnAxCxUx_pt_MH", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnAxCyUx_pt_MH", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnAxCyUy_pt_MH", "", kTProfile, {axisPt});
+        registry.add<TProfile>("incl/vnAyCxUy_pt_MH", "", kTProfile, {axisPt});
 
-      registry.add<TProfile>("incl/vnC_cent_minEta", "", kTProfile, {axisCent});
-      registry.add<TProfile>("incl/vnA_cent_minEta", "", kTProfile, {axisCent});
-      registry.add<TProfile>("incl/vnC_cent_plusEta", "", kTProfile, {axisCent});
-      registry.add<TProfile>("incl/vnA_cent_plusEta", "", kTProfile, {axisCent});
-      registry.add<TProfile>("incl/vnA_cent_EP", "", kTProfile, {axisCent});
-      registry.add<TProfile>("incl/vnC_cent_EP", "", kTProfile, {axisCent});
-      registry.add<TProfile>("incl/vnFull_cent_EP", "", kTProfile, {axisCent});
-      registry.add<TProfile>("incl/vnAxCxUx_cent_MH", "", kTProfile, {axisCent});
-      registry.add<TProfile>("incl/vnAxCyUx_cent_MH", "", kTProfile, {axisCent});
-      registry.add<TProfile>("incl/vnAxCyUy_cent_MH", "", kTProfile, {axisCent});
-      registry.add<TProfile>("incl/vnAyCxUy_cent_MH", "", kTProfile, {axisCent});
+        registry.add<TProfile>("incl/vnC_cent_minEta", "", kTProfile, {axisCent});
+        registry.add<TProfile>("incl/vnA_cent_minEta", "", kTProfile, {axisCent});
+        registry.add<TProfile>("incl/vnC_cent_plusEta", "", kTProfile, {axisCent});
+        registry.add<TProfile>("incl/vnA_cent_plusEta", "", kTProfile, {axisCent});
+        registry.add<TProfile>("incl/vnA_cent_EP", "", kTProfile, {axisCent});
+        registry.add<TProfile>("incl/vnC_cent_EP", "", kTProfile, {axisCent});
+        registry.add<TProfile>("incl/vnFull_cent_EP", "", kTProfile, {axisCent});
+        registry.add<TProfile>("incl/vnAxCxUx_cent_MH", "", kTProfile, {axisCent});
+        registry.add<TProfile>("incl/vnAxCyUx_cent_MH", "", kTProfile, {axisCent});
+        registry.add<TProfile>("incl/vnAxCyUy_cent_MH", "", kTProfile, {axisCent});
+        registry.add<TProfile>("incl/vnAyCxUy_cent_MH", "", kTProfile, {axisCent});
 
-      registry.add<TProfile>("qAqCX", "", kTProfile, {axisCent});
-      registry.add<TProfile>("qAqCY", "", kTProfile, {axisCent});
-      registry.add<TProfile>("qAqCXY", "", kTProfile, {axisCent});
-      registry.add<TProfile>("qAXqCY", "", kTProfile, {axisCent});
-      registry.add<TProfile>("qAYqCX", "", kTProfile, {axisCent});
+        registry.add<TProfile>("qAqCX", "", kTProfile, {axisCent});
+        registry.add<TProfile>("qAqCY", "", kTProfile, {axisCent});
+        registry.add<TProfile>("qAqCXY", "", kTProfile, {axisCent});
+        registry.add<TProfile>("qAXqCY", "", kTProfile, {axisCent});
+        registry.add<TProfile>("qAYqCX", "", kTProfile, {axisCent});
 
-      if(cfgFillEventQA){
-        registry.add("QA/after/PsiA_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
-        registry.add("QA/after/PsiC_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
-        registry.add("QA/after/PsiFull_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
+        if (cfgFillEventQA) {
+          registry.add("QA/after/PsiA_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
+          registry.add("QA/after/PsiC_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
+          registry.add("QA/after/PsiFull_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
 
-        registry.add("QA/after/PsiA_vs_Vx", "", {HistType::kTH2D, {axisPhiPlane, axisVx}});
-        registry.add("QA/after/PsiC_vs_Vx", "", {HistType::kTH2D, {axisPhiPlane, axisVx}});
-        registry.add("QA/after/PsiFull_vs_Vx", "", {HistType::kTH2D, {axisPhiPlane, axisVx}});
+          registry.add("QA/after/PsiA_vs_Vx", "", {HistType::kTH2D, {axisPhiPlane, axisVx}});
+          registry.add("QA/after/PsiC_vs_Vx", "", {HistType::kTH2D, {axisPhiPlane, axisVx}});
+          registry.add("QA/after/PsiFull_vs_Vx", "", {HistType::kTH2D, {axisPhiPlane, axisVx}});
 
-        registry.add("QA/after/PsiA_vs_Vy", "", {HistType::kTH2D, {axisPhiPlane, axisVy}});
-        registry.add("QA/after/PsiC_vs_Vy", "", {HistType::kTH2D, {axisPhiPlane, axisVy}});
-        registry.add("QA/after/PsiFull_vs_Vy", "", {HistType::kTH2D, {axisPhiPlane, axisVy}});
+          registry.add("QA/after/PsiA_vs_Vy", "", {HistType::kTH2D, {axisPhiPlane, axisVy}});
+          registry.add("QA/after/PsiC_vs_Vy", "", {HistType::kTH2D, {axisPhiPlane, axisVy}});
+          registry.add("QA/after/PsiFull_vs_Vy", "", {HistType::kTH2D, {axisPhiPlane, axisVy}});
 
-        registry.add("QA/after/PsiA_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
-        registry.add("QA/after/PsiC_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
-        registry.add("QA/after/PsiFull_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
+          registry.add("QA/after/PsiA_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
+          registry.add("QA/after/PsiC_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
+          registry.add("QA/after/PsiFull_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
 
-        registry.add("QA/after/CentFT0C_vs_CentFT0Cvariant1", "", {HistType::kTH2D, {axisCent, axisCent}});
-        registry.add("QA/after/CentFT0C_vs_CentFT0M", "", {HistType::kTH2D, {axisCent, axisCent}});
-        registry.add("QA/after/CentFT0C_vs_CentFV0A", "", {HistType::kTH2D, {axisCent, axisCent}});
-        // registry.add("QA/after/CentFT0C_vs_CentNGlobal", "", {HistType::kTH2D, {axisCent, axisCent}}; 
+          registry.add("QA/after/CentFT0C_vs_CentFT0Cvariant1", "", {HistType::kTH2D, {axisCent, axisCent}});
+          registry.add("QA/after/CentFT0C_vs_CentFT0M", "", {HistType::kTH2D, {axisCent, axisCent}});
+          registry.add("QA/after/CentFT0C_vs_CentFV0A", "", {HistType::kTH2D, {axisCent, axisCent}});
+          // registry.add("QA/after/CentFT0C_vs_CentNGlobal", "", {HistType::kTH2D, {axisCent, axisCent}};
+        }
       }
-    }
       registry.addClone("QA/after/", "QA/before/");
-            // track QA for pos, neg, incl
+      // track QA for pos, neg, incl
       registry.add<TH1>("incl/QA/hPt", "", kTH1D, {axisPt});
       registry.add<TH1>("incl/QA/hPhi", "", kTH1D, {axisPhi});
       registry.add<TH1>("incl/QA/hPhiCorrected", "", kTH1D, {axisPhi});
@@ -310,7 +310,6 @@ struct FlowSP {
       registry.add("trackMCGen/before/phi_eta_vtxZ_gen", "", {HistType::kTH3D, {axisPhi, axisEta, axisVz}});
       registry.addClone("trackMCGen/before/", "trackMCGen/after/");
     }
-    
 
     registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_FilteredEvent + 1, "Filtered event");
@@ -556,12 +555,11 @@ struct FlowSP {
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/multV0A_multT0A"), collision.multFT0A(), collision.multFV0A());
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
 
-
     if constexpr (framework::has_type_v<aod::sptablezdc::Vx, typename CollisionObject::all_columns>) {
-      registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0Cvariant1"), collision.centFT0C(), collision.centFT0CVariant1()); 
-      registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0M"), collision.centFT0C(), collision.centFT0M()); 
-      registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFV0A"), collision.centFT0C(), collision.centFV0A()); 
-      // registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentNGlobal"), collision.centFT0C(), collision.centNGlobal()); 
+      registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0Cvariant1"), collision.centFT0C(), collision.centFT0CVariant1());
+      registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0M"), collision.centFT0C(), collision.centFT0M());
+      registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFV0A"), collision.centFT0C(), collision.centFV0A());
+      // registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentNGlobal"), collision.centFT0C(), collision.centNGlobal());
 
       double psiA = 1.0 * std::atan2(collision.qyA(), collision.qxA());
       double psiC = 1.0 * std::atan2(collision.qyC(), collision.qxC());
@@ -656,7 +654,6 @@ struct FlowSP {
     registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAz"), track.dcaZ());
   }
 
-
   void processData(UsedCollisions::iterator const& collision, aod::BCsWithTimestamps const&, UsedTracks const& tracks)
   {
     registry.fill(HIST("hEventCount"), evSel_FilteredEvent);
@@ -675,11 +672,13 @@ struct FlowSP {
 
     float centrality = collision.centFT0C();
 
-    if (cfgFT0Cvariant1) centrality = collision.centFT0CVariant1();
-    if (cfgFT0M) centrality = collision.centFT0M();
-    if (cfgFV0A) centrality = collision.centFV0A();
-    // if (cfgNGlobal) centrality = collision.centNGlobal(); 
-
+    if (cfgFT0Cvariant1)
+      centrality = collision.centFT0CVariant1();
+    if (cfgFT0M)
+      centrality = collision.centFT0M();
+    if (cfgFV0A)
+      centrality = collision.centFV0A();
+    // if (cfgNGlobal) centrality = collision.centNGlobal();
 
     if (!eventSelected(collision, tracks.size(), centrality))
       return;
@@ -724,7 +723,7 @@ struct FlowSP {
 
       double corrQQ = 1., corrQQx = 1., corrQQy = 1.;
 
-      // Load correlations and SP resolution needed for Scalar Product and event plane methods. 
+      // Load correlations and SP resolution needed for Scalar Product and event plane methods.
       // If not loaded set to 1
       if (cfgLoadAverageQQ) {
         TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir.value, bc.timestamp());
@@ -770,7 +769,7 @@ struct FlowSP {
             fWeightsNEG->Fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
         }
 
-        // Set weff and wacc for inclusice, negative and positive hadrons 
+        // Set weff and wacc for inclusice, negative and positive hadrons
         if (!setCurrentParticleWeights(kInclusive, weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
           return;
         if (pos && !setCurrentParticleWeights(kPositive, weffP, waccP, track.phi(), track.eta(), track.pt(), vtxz))
@@ -796,18 +795,18 @@ struct FlowSP {
         double vnFull = std::cos(cfgHarm * (phi - psiFull)) / evPlaneRes;
 
         fillHistograms<kInclusive>(track, wacc, weff, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-        fillTrackQA<kInclusive>(track, vtxz, wacc, weff); 
+        fillTrackQA<kInclusive>(track, vtxz, wacc, weff);
         if (pos) {
           fillHistograms<kPositive>(track, waccP, weffP, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-          fillTrackQA<kPositive>(track, vtxz, wacc, weff); 
+          fillTrackQA<kPositive>(track, vtxz, wacc, weff);
         } else {
           fillHistograms<kNegative>(track, waccN, weffN, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-          fillTrackQA<kNegative>(track, vtxz, wacc, weff); 
+          fillTrackQA<kNegative>(track, vtxz, wacc, weff);
         }
-      }// end of track loop
-    }// end of collision isSelected loop  
+      } // end of track loop
+    } // end of collision isSelected loop
   }
-    PROCESS_SWITCH(FlowSP, processData, "Process analysis for non-derived data", true);
+  PROCESS_SWITCH(FlowSP, processData, "Process analysis for non-derived data", true);
 
   void processMCReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
   {
@@ -816,12 +815,12 @@ struct FlowSP {
 
     double vtxz = collision.posZ();
     float centrality = collision.centFT0C();
-    
+
     fillEventQA<kBefore>(collision, tracks);
 
     if (!eventSelected(collision, tracks.size(), centrality))
       return;
-   
+
     fillEventQA<kAfter>(collision, tracks);
 
     for (const auto& track : tracks) {
@@ -840,7 +839,7 @@ struct FlowSP {
 
       registry.fill(HIST("QA/after/hPt_inclusive"), track.pt());
 
-      fillTrackQA<kInclusive>(track, vtxz); 
+      fillTrackQA<kInclusive>(track, vtxz);
 
     } // end of track loop
   }
@@ -855,7 +854,7 @@ struct FlowSP {
     for (const auto& collision : collisions) {
       centrality = collision.centFT0C();
     }
-    
+
     if (particles.size() < 1)
       return;
     if (centrality < cfgCentMin || centrality > cfgCentMax)
@@ -868,16 +867,14 @@ struct FlowSP {
       if (!track.isPhysicalPrimary())
         continue;
 
-      registry.fill(HIST("trackMCGen/before/pt_gen_incl"), track.pt() );
+      registry.fill(HIST("trackMCGen/before/pt_gen_incl"), track.pt());
       registry.fill(HIST("trackMCGen/before/phi_eta_vtxZ_gen"), track.phi(), track.eta(), vtxz);
 
-      if (track.eta() < -cfgEta|| track.eta() > cfgEta || track.pt() < cfgPtmin || track.pt() > cfgPtmax)
+      if (track.eta() < -cfgEta || track.eta() > cfgEta || track.pt() < cfgPtmin || track.pt() > cfgPtmax)
         return;
-      
-      registry.fill(HIST("trackMCGen/after/pt_gen_incl"), track.pt() );
+
+      registry.fill(HIST("trackMCGen/after/pt_gen_incl"), track.pt());
       registry.fill(HIST("trackMCGen/after/phi_eta_vtxZ_gen"), track.phi(), track.eta(), vtxz);
-
-
     }
   }
   PROCESS_SWITCH(FlowSP, processMCGen, "Process analysis for MC generated events", false);
