@@ -9,7 +9,6 @@
 #granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-<<<<<<< HEAD
 o2physics_add_dpl_workflow(meanpt - fluctuations
                                       SOURCES MeanptFluctuations.cxx
                                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
@@ -37,54 +36,3 @@ o2physics_add_dpl_workflow(meanpt - fluctuations
                                                        SOURCES netchargeFluctuations.cxx
                                                          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                                                            COMPONENT_NAME Analysis)
-=======
-o2physics_add_dpl_workflow(meanpt-fluctuations
-                    SOURCES MeanptFluctuations.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(mean-pt-fluc-id
-                    SOURCES meanPtFlucId.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(netproton-cumulants
-                    SOURCES NetProtonCumulants.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(identified-meanpt-fluctuations
-                    SOURCES IdentifiedMeanPtFluctuations.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(robust-fluctuation-observables
-                    SOURCES RobustFluctuationObservables.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(v0pt-pp-task
-                    SOURCES Diff_pT_fluct_PID.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(factorial-moments
-                    SOURCES FactorialMomentsTask.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(netcharge-fluctuations
-                    SOURCES netchargeFluctuations.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                    COMPONENT_NAME Analysis)
-                    
-o2physics_add_dpl_workflow(netproton-cumulants-mc
-                    SOURCES netprotonCumulantsMc.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(kaon-isospin-fluctuations
-                    SOURCES kaonIsospinFluctuations.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                    COMPONENT_NAME Analysis)
->>>>>>> 013d1282d190a611730781730e49cf0f9a188cd1
