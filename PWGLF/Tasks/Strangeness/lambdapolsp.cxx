@@ -109,7 +109,8 @@ struct lambdapolsp {
   Configurable<float> ConfV0TranRadV0Min{"ConfV0TranRadV0Min", 1.5f, "Minimum transverse radius"};
   Configurable<float> ConfV0TranRadV0Max{"ConfV0TranRadV0Max", 100.f, "Maximum transverse radius"};
   Configurable<double> cMaxV0DCA{"cMaxV0DCA", 1.2, "Maximum V0 DCA to PV"};
-  Configurable<double> cMinV0DCA{"cMinV0DCA", 0.05, "Minimum V0 daughters DCA to PV"};
+  Configurable<double> cMinV0DCAPr{"cMinV0DCAPr", 0.05, "Minimum V0 daughters DCA to PV for Pr"};
+  Configurable<double> cMinV0DCAPi{"cMinV0DCAPi", 0.05, "Minimum V0 daughters DCA to PV for Pi"};
   Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 20, "Maximum V0 life time"};
 
   // config for V0 daughters
@@ -310,12 +311,6 @@ struct lambdapolsp {
     if (pT < ConfV0PtMin) {
       return false;
     }
-    if (TMath::Abs(candidate.dcapostopv()) < cMinV0DCA) {
-      return false;
-    }
-    if (TMath::Abs(candidate.dcanegtopv()) < cMinV0DCA) {
-      return false;
-    }
     if (dcaDaughv0 > ConfV0DCADaughMax) {
       return false;
     }
@@ -368,6 +363,13 @@ struct lambdapolsp {
       return false; // doesn´t pass antilambda pT sels
     }
     if (std::abs(candidate.positiveeta()) > ConfDaughEta || std::abs(candidate.negativeeta()) > ConfDaughEta) {
+      return false;
+    }
+
+    if (pid == 0 && (candidate.dcapostopv() < cMinV0DCAPr || candidate.dcanegtopv() < cMinV0DCAPi)) {
+      return false;
+    }
+    if (pid == 1 && (candidate.dcapostopv() < cMinV0DCAPi || candidate.dcanegtopv() < cMinV0DCAPr)) {
       return false;
     }
 
@@ -451,14 +453,12 @@ struct lambdapolsp {
   void fillHistograms(bool tag1, bool tag2, const ROOT::Math::PxPyPzMVector& particle,
                       const ROOT::Math::PxPyPzMVector& daughter,
                       double psiZDCC, double psiZDCA, double centrality,
-                      double candmass, double candpt, double candeta, double angle)
+                      double candmass, double candpt, double candeta)
   {
 
     ROOT::Math::Boost boost{particle.BoostToCM()};
     auto fourVecDauCM = boost(daughter);
     auto phiangle = TMath::ATan2(fourVecDauCM.Py(), fourVecDauCM.Px());
-    if (angle < -1) {
-    }
     auto phiminuspsiC = GetPhiInRange(phiangle - psiZDCC);
     auto phiminuspsiA = GetPhiInRange(phiangle - psiZDCA);
     auto cosThetaStar = fourVecDauCM.Pz() / fourVecDauCM.P();
@@ -492,9 +492,9 @@ struct lambdapolsp {
     }
   }
 
+  /*
   double calculateAngleBetweenLorentzVectors(const ROOT::Math::PxPyPzMVector& vec1,
-                                             const ROOT::Math::PxPyPzMVector& vec2)
-  {
+               const ROOT::Math::PxPyPzMVector& vec2) {
     // Extract spatial momenta (3D vectors)
     ROOT::Math::XYZVector momentum1 = vec1.Vect();
     ROOT::Math::XYZVector momentum2 = vec2.Vect();
@@ -518,12 +518,13 @@ struct lambdapolsp {
     // Calculate and return the angle in radians
     return cosTheta;
   }
+  */
 
   ROOT::Math::PxPyPzMVector Lambda, AntiLambda, Lambdadummy, AntiLambdadummy, Proton, Pion, AntiProton, AntiPion, fourVecDauCM;
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY;
   double phiangle = 0.0;
-  double angleLambda = 0.0;
-  double angleAntiLambda = 0.0;
+  // double angleLambda=0.0;
+  // double angleAntiLambda=0.0;
   double massLambda = o2::constants::physics::MassLambda;
   double massPr = o2::constants::physics::MassProton;
   double massPi = o2::constants::physics::MassPionCharged;
@@ -715,13 +716,13 @@ struct lambdapolsp {
           Proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
           AntiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
           Lambdadummy = Proton + AntiPion;
-          angleLambda = calculateAngleBetweenLorentzVectors(Proton, AntiPion);
+          // angleLambda = calculateAngleBetweenLorentzVectors(Proton, AntiPion);
         }
         if (aLambdaTag) {
           AntiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
           Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
           AntiLambdadummy = AntiProton + Pion;
-          angleAntiLambda = calculateAngleBetweenLorentzVectors(AntiProton, Pion);
+          // angleAntiLambda = calculateAngleBetweenLorentzVectors(AntiProton, Pion);
         }
 
         if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
@@ -737,14 +738,14 @@ struct lambdapolsp {
         if (LambdaTag) {
           Lambda = Proton + AntiPion;
           tagb = 0;
-          fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, centrality, v0.mLambda(), v0.pt(), v0.eta(), angleLambda);
+          fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, centrality, v0.mLambda(), v0.pt(), v0.eta());
         }
 
         tagb = aLambdaTag;
         if (aLambdaTag) {
           AntiLambda = AntiProton + Pion;
           taga = 0;
-          fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), angleAntiLambda);
+          fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, centrality, v0.mAntiLambda(), v0.pt(), v0.eta());
         }
       }
     }
@@ -815,13 +816,13 @@ struct lambdapolsp {
         Proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
         AntiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
         Lambdadummy = Proton + AntiPion;
-        angleLambda = calculateAngleBetweenLorentzVectors(Proton, AntiPion);
+        // angleLambda = calculateAngleBetweenLorentzVectors(Proton, AntiPion);
       }
       if (aLambdaTag) {
         AntiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
         Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
         AntiLambdadummy = AntiProton + Pion;
-        angleAntiLambda = calculateAngleBetweenLorentzVectors(AntiProton, Pion);
+        // angleAntiLambda = calculateAngleBetweenLorentzVectors(AntiProton, Pion);
       }
 
       if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
@@ -835,7 +836,7 @@ struct lambdapolsp {
         Lambda = Proton + AntiPion;
         tagb = 0;
         fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, centrality,
-                       v0.mLambda(), v0.pt(), v0.eta(), angleLambda);
+                       v0.mLambda(), v0.pt(), v0.eta());
       }
 
       tagb = aLambdaTag;
@@ -843,7 +844,7 @@ struct lambdapolsp {
         AntiLambda = AntiProton + Pion;
         taga = 0;
         fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, centrality,
-                       v0.mAntiLambda(), v0.pt(), v0.eta(), angleAntiLambda);
+                       v0.mAntiLambda(), v0.pt(), v0.eta());
       }
     } // end loop over V0s
   }
