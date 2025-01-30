@@ -52,7 +52,6 @@ using namespace o2::aod;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 
-
 using MyCollisions = Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 using MyCollision = MyCollisions::iterator;
 
@@ -130,7 +129,7 @@ struct CreateResolutionMap {
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1e+10, "max dca XY for single track in cm"};
     Configurable<float> cfg_min_rabs{"cfg_min_rabs", 17.6, "min Radius at the absorber end"};
     Configurable<float> cfg_max_rabs{"cfg_max_rabs", 89.5, "max Radius at the absorber end"};
-    //Configurable<bool> cfg_enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
+    // Configurable<bool> cfg_enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
   } muoncuts;
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
