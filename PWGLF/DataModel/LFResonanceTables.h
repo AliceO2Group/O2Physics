@@ -140,6 +140,7 @@ namespace resodaughter
 {
 
 DECLARE_SOA_INDEX_COLUMN(ResoCollision, resoCollision);
+DECLARE_SOA_INDEX_COLUMN(ResoCollisionDF, resoCollisionDF);
 DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Trk");       //!
 DECLARE_SOA_INDEX_COLUMN_FULL(V0, v0, int, V0s, "_V0");                 //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Cascade, cascade, int, Cascades, "_Cas"); //!
@@ -254,7 +255,7 @@ using ResoTrack = ResoTracks::iterator;
 // For DF mixing study
 DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDFs",
                   o2::soa::Index<>,
-                  resodaughter::ResoCollisionId,
+                  resodaughter::ResoCollisionDFId,
                   resodaughter::TrackId,
                   resodaughter::Pt,
                   resodaughter::Px,

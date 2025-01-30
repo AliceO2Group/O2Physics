@@ -243,6 +243,11 @@ using StraStamps = StraStamps_001;
 using StraCollision = StraCollisions::iterator;
 using StraCent = StraCents::iterator;
 
+namespace stramccollision
+{
+DECLARE_SOA_COLUMN(TotalMultMCParticles, totalMultMCParticles, int); //! total number of MC particles in a generated collision
+} // namespace stramccollision
+
 //______________________________________________________
 // for correlating information with MC
 // also allows for collision association cross-checks
@@ -253,11 +258,14 @@ DECLARE_SOA_TABLE_VERSIONED(StraMCCollisions_001, "AOD", "STRAMCCOLLISION", 1, /
                             o2::soa::Index<>, mccollision::PosX, mccollision::PosY, mccollision::PosZ,
                             mccollision::ImpactParameter, mccollision::EventPlaneAngle);
 using StraMCCollisions = StraMCCollisions_001;
-
-DECLARE_SOA_TABLE(StraMCCollMults, "AOD", "STRAMCCOLLMULTS", //! MC collision multiplicities
-                  mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, o2::soa::Marker<2>);
-
 using StraMCCollision = StraMCCollisions::iterator;
+
+DECLARE_SOA_TABLE(StraMCCollMults_000, "AOD", "STRAMCCOLLMULTS", //! MC collision multiplicities
+                  mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, o2::soa::Marker<2>);
+DECLARE_SOA_TABLE_VERSIONED(StraMCCollMults_001, "AOD", "STRAMCCOLLMULTS", 1, //! MC collision multiplicities
+                            mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, stramccollision::TotalMultMCParticles);
+
+using StraMCCollMults = StraMCCollMults_001;
 
 namespace dautrack
 {

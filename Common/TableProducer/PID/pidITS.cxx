@@ -43,17 +43,16 @@ using namespace o2::track;
 MetadataHelper metadataInfo;
 
 static constexpr int nCases = 2;
-static constexpr int nParameters = 9;
+static constexpr int nParameters = 12;
 static const std::vector<std::string> casesNames{"Data", "MC"};
 static const std::vector<std::string> parameterNames{"RespITSPar1", "RespITSPar2", "RespITSPar3",
                                                      "RespITSPar1_Z2", "RespITSPar2_Z2", "RespITSPar3_Z2",
-                                                     "ResolutionPar1", "ResolutionPar2", "ResolutionPar3"};
-static constexpr float defaultParameters[nCases][nParameters]{{0.903, 2.014, 2.440,
-                                                               2.8752, 1.1246, 5.0259,
-                                                               0.2431, -0.3293, 1.533},
-                                                              {0.903, 2.014, 2.440,
-                                                               2.8752, 1.1246, 5.0259,
-                                                               0.2431, -0.3293, 1.533}};
+                                                     "ResolutionPar1", "ResolutionPar2", "ResolutionPar3",
+                                                     "ResolutionPar1_Z2", "ResolutionPar2_Z2", "ResolutionPar3_Z2"};
+
+static constexpr float defaultParameters[nCases][nParameters] = {
+  {1.18941, 1.53792, 1.69961, 2.35117, 1.80347, 5.14355, 1.94669e-01, -2.08616e-01, 1.30753, 8.74371e-02, -1.82804, 5.06449e-01},
+  {1.18941, 1.53792, 1.69961, 2.35117, 1.80347, 5.14355, 1.94669e-01, -2.08616e-01, 1.30753, 8.74371e-02, -1.82804, 5.06449e-01}};
 
 /// Task to produce the ITS PID information for each particle species
 /// The parametrization is: [p0/(bg)**p1 + p2] being bg = p/m. Different parametrizations are used for He3 and Alpha particles.
@@ -90,7 +89,10 @@ struct itsPid {
                                           itsParams->get(key, "RespITSPar3_Z2"),
                                           itsParams->get(key, "ResolutionPar1"),
                                           itsParams->get(key, "ResolutionPar2"),
-                                          itsParams->get(key, "ResolutionPar3"));
+                                          itsParams->get(key, "ResolutionPar3"),
+                                          itsParams->get(key, "ResolutionPar1_Z2"),
+                                          itsParams->get(key, "ResolutionPar2_Z2"),
+                                          itsParams->get(key, "ResolutionPar3_Z2"));
     }
   }
 
