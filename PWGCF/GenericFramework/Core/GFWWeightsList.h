@@ -38,21 +38,16 @@ class GFWWeightsList : public TNamed
   GFWWeights* getPIDGFWWeightsByName(const char* weightName, int pidIndex);
   void addPIDGFWWeightsByRun(int runNumber, int nPtBins, double* ptBins, double ptrefup, bool addData = kTRUE, bool addMC = kTRUE);
   GFWWeights* getPIDGFWWeightsByRun(int runNumber, int pidIndex);
-  void printRuns()
-  {
-    for (auto& el : runNumberPIDMap)
-      printf("%i\n", el.first);
-  }
+  void PrintRuns() { for(auto &el : runNumberPIDMap) printf("%i\n",el.first); }
 
   TObjArray* getList() const { return list; }
   Long64_t Merge(TCollection* collist);
-
  private:
   TObjArray* list;
   std::vector<std::string> species = {"_ref", "_ch", "_pi", "_ka", "_pr"}; //!
   std::map<int, GFWWeights*> runNumberMap;
-  std::map<int, std::vector<GFWWeights*>> runNumberPIDMap;
-  void addArray(TObjArray* target, TObjArray* source);
+  std::map<int,std::vector<GFWWeights*>> runNumberPIDMap;
+  void AddArray(TObjArray* target, TObjArray* source);
 
   ClassDef(GFWWeightsList, 1);
 };

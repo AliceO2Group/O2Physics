@@ -257,8 +257,8 @@ struct FlowTask {
     fPtAxis = new TAxis(nPtBins, ptBins);
 
     if (cfgOutputNUAWeights) {
-      fWeights->setPtBins(nPtBins, ptBins);
-      fWeights->init(true, false);
+      fWeights->SetPtBins(nPtBins, ptBins);
+      fWeights->Init(true, false);
     }
 
     TList* groupNUAWeightlist = new TList();
@@ -274,8 +274,8 @@ struct FlowTask {
         else
           groupweight = new GFWWeights(Form("groupweight_last"));
 
-        groupweight->setPtBins(nPtBins, ptBins);
-        groupweight->init(true, false);
+        groupweight->SetPtBins(nPtBins, ptBins);
+        groupweight->Init(true, false);
         groupNUAWeightlist->Add(groupweight);
         std::shared_ptr<GFWWeights> sharePtrGroupWeight(groupweight);
         groupNUAWeightPtr[i] = sharePtrGroupWeight;
@@ -534,14 +534,14 @@ struct FlowTask {
     weight_nue = 1. / eff;
     if (cfgAcceptanceGroupUse) {
       if (mGroupAcceptanceList && mGroupAcceptanceList->At(groupNUAIndex)) {
-        weight_nua = reinterpret_cast<GFWWeights*>(mGroupAcceptanceList->At(groupNUAIndex))->getNUA(phi, eta, vtxz);
+        weight_nua = reinterpret_cast<GFWWeights*>(mGroupAcceptanceList->At(groupNUAIndex))->GetNUA(phi, eta, vtxz);
       } else {
         weight_nua = 1;
       }
       return true;
     }
     if (mAcceptance)
-      weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
+      weight_nua = mAcceptance->GetNUA(phi, eta, vtxz);
     else
       weight_nua = 1;
     return true;
@@ -783,18 +783,18 @@ struct FlowTask {
       if (cfgOutputNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
           if (withinPtRef)
-            fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+            fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
         } else {
-          fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+          fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
         }
       }
       if (cfgOutputGroupNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
           if (withinPtRef) {
-            groupNUAWeightPtr[groupNUAIndex]->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+            groupNUAWeightPtr[groupNUAIndex]->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
           }
         } else {
-          groupNUAWeightPtr[groupNUAIndex]->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+          groupNUAWeightPtr[groupNUAIndex]->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
         }
       }
       if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz, groupNUAIndex))

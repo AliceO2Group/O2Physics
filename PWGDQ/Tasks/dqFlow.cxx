@@ -189,7 +189,7 @@ struct DQEventQvector {
     fPtAxis = new TAxis(ptbins, &ptbinning[0]);
     if (fConfigFillWeights) {
       // fWeights->SetPtBins(ptbins, &ptbinning[0]); // in the default case, it will accept everything
-      fWeights->init(true, false); // true for data, false for MC
+      fWeights->Init(true, false); // true for data, false for MC
     }
 
     // Reference flow
@@ -383,7 +383,7 @@ struct DQEventQvector {
 
       // Fill weights for Q-vector correction: this should be enabled for a first run to get weights
       if (fConfigFillWeights) {
-        fWeights->fill(track.phi(), track.eta(), collision.posZ(), track.pt(), centrality, 0);
+        fWeights->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), centrality, 0);
       }
 
       if (cfg.mEfficiency) {
@@ -396,7 +396,7 @@ struct DQEventQvector {
       }
       weff = 1. / weff;
       if (cfg.mAcceptance) {
-        wacc = cfg.mAcceptance->getNUA(track.phi(), track.eta(), collision.posZ());
+        wacc = cfg.mAcceptance->GetNUA(track.phi(), track.eta(), collision.posZ());
       } else {
         wacc = 1.0;
       }

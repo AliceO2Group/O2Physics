@@ -327,7 +327,7 @@ struct FlowRunbyRun {
             LOGF(fatal, "Could not find the weight for run %d", runNumber);
             return;
           }
-          weight->fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
+          weight->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
         }
       }
     }
