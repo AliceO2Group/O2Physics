@@ -366,10 +366,10 @@ struct lambdapolsp {
       return false;
     }
 
-    if (pid == 0 && (candidate.dcapostopv() < cMinV0DCAPr || candidate.dcanegtopv() < cMinV0DCAPi)) {
+    if (pid == 0 && (TMath::Abs(candidate.dcapostopv()) < cMinV0DCAPr || TMath::Abs(candidate.dcanegtopv()) < cMinV0DCAPi)) {
       return false;
     }
-    if (pid == 1 && (candidate.dcapostopv() < cMinV0DCAPi || candidate.dcanegtopv() < cMinV0DCAPr)) {
+    if (pid == 1 && (TMath::Abs(candidate.dcapostopv()) < cMinV0DCAPi || TMath::Abs(candidate.dcanegtopv()) < cMinV0DCAPr)) {
       return false;
     }
 
