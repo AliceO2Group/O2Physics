@@ -70,9 +70,12 @@ class CollisonCuts
     mApplyZvertexTimedifference = false;
     mApplyPileupRejection = false;
     mApplyNoITSROBorderCut = false;
+    mApplyCollInTimeRangeNarrow = false;
     mApplyCollInTimeRangeStandard = false;
     mtrackOccupancyInTimeRangeMax = trackOccupancyInTimeRangeMax;
     mtrackOccupancyInTimeRangeMin = trackOccupancyInTimeRangeMin;
+    mApplyRun2AliEventCuts = true;
+    mApplyRun2INELgtZERO = false;
   }
 
   /// Initializes histograms for the task
@@ -113,8 +116,27 @@ class CollisonCuts
   /// Print some debug information
   void printCuts()
   {
-    LOGF(info, "Debug information for Collison Cuts \n Max. z-vertex: %f \n Check trigger: %d \n Trigger: %d \n Check offline: %d \n Check Run3: %d \n Trigger TVX selection: %d \n Apply time frame border cut: %d \n Apply ITS-TPC vertex: %d \n Apply Z-vertex time difference: %d \n Apply Pileup rejection: %d \n Apply NoITSRO frame border cut: %d \n Track occupancy in time range max: %d \n Track occupancy in time range min: %d \n Apply NoCollInTimeRangeStandard: %d",
-         mZvtxMax, mCheckTrigger, mTrigger, mCheckOffline, mCheckIsRun3, mTriggerTVXselection, mApplyTFBorderCut, mApplyITSTPCvertex, mApplyZvertexTimedifference, mApplyPileupRejection, mApplyNoITSROBorderCut, mtrackOccupancyInTimeRangeMax, mtrackOccupancyInTimeRangeMin, mApplyCollInTimeRangeStandard);
+    LOGF(info, "Debug information for Collison Cuts");
+    LOGF(info, "Max. z-vertex: %f", mZvtxMax);
+    LOGF(info, "Check trigger: %d", mCheckTrigger);
+    LOGF(info, "Trigger: %d", mTrigger);
+    LOGF(info, "Check offline: %d", mCheckOffline);
+    LOGF(info, "Check Run3: %d", mCheckIsRun3);
+    if (mCheckIsRun3) {
+      LOGF(info, "Trigger TVX selection: %d", mTriggerTVXselection);
+      LOGF(info, "Apply time frame border cut: %d", mApplyTFBorderCut);
+      LOGF(info, "Apply ITS-TPC vertex: %d", mApplyITSTPCvertex);
+      LOGF(info, "Apply NoCollInTimeRangeNarrow: %d", mApplyCollInTimeRangeNarrow);
+      LOGF(info, "Apply Z-vertex time difference: %d", mApplyZvertexTimedifference);
+      LOGF(info, "Apply Pileup rejection: %d", mApplyPileupRejection);
+      LOGF(info, "Apply NoITSRO frame border cut: %d", mApplyNoITSROBorderCut);
+      LOGF(info, "Track occupancy in time range max: %d", mtrackOccupancyInTimeRangeMax);
+      LOGF(info, "Track occupancy in time range min: %d", mtrackOccupancyInTimeRangeMin);
+      LOGF(info, "Apply NoCollInTimeRangeStandard: %d", mApplyCollInTimeRangeStandard);
+    } else {
+      LOGF(info, "Apply Run2 AliEventCuts: %d", mApplyRun2AliEventCuts);
+      LOGF(info, "Apply Run2 INELgtZERO: %d", mApplyRun2INELgtZERO);
+    }
   }
 
   /// Set MB selection
@@ -128,6 +150,9 @@ class CollisonCuts
 
   /// Set the ITS-TPC matching cut
   void setApplyITSTPCvertex(bool applyITSTPCvertex) { mApplyITSTPCvertex = applyITSTPCvertex; }
+
+  /// Set the NoCollInTimeRangeNarrow cut
+  void setApplyCollInTimeRangeNarrow(bool applyCollInTimeRangeNarrow) { mApplyCollInTimeRangeNarrow = applyCollInTimeRangeNarrow; }
 
   /// Set the Z-vertex time difference cut
   void setApplyZvertexTimedifference(bool applyZvertexTimedifference) { mApplyZvertexTimedifference = applyZvertexTimedifference; }
@@ -144,9 +169,14 @@ class CollisonCuts
     mtrackOccupancyInTimeRangeMax = trackOccupancyInTimeRangeMax;
     mtrackOccupancyInTimeRangeMin = trackOccupancyInTimeRangeMin;
   }
-
   /// Set the NoCollInTimeRangeStandard cut
   void setApplyCollInTimeRangeStandard(bool applyCollInTimeRangeStandard) { mApplyCollInTimeRangeStandard = applyCollInTimeRangeStandard; }
+
+  /// Set the Run2 AliEventCuts cut
+  void setApplyRun2AliEventCuts(bool applyRun2AliEventCuts) { mApplyRun2AliEventCuts = applyRun2AliEventCuts; }
+
+  /// Set the Run2 INELgtZERO cut
+  void setApplyRun2INELgtZERO(bool applyRun2INELgtZERO) { mApplyRun2INELgtZERO = applyRun2INELgtZERO; }
 
   /// Check whether the collisions fulfills the specified selections
   /// \tparam T type of the collision
@@ -195,6 +225,10 @@ class CollisonCuts
         LOGF(debug, "Pileup rejection failed");
         return false;
       }
+      if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow) && mApplyCollInTimeRangeNarrow) {
+        LOGF(debug, "NoCollInTimeRangeNarrow selection failed");
+        return false;
+      }
       mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagBunchPileup);
       if (!col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) && mApplyZvertexTimedifference) {
         LOGF(debug, "Z-vertex time difference cut failed");
@@ -220,11 +254,16 @@ class CollisonCuts
         return false;
       }
       auto bc = col.template bc_as<BCsWithRun2Info>();
-      if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted))) {
+      if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)) && !mApplyRun2AliEventCuts) {
         LOGF(debug, "Offline selection failed (AliEventCuts)");
         return false;
       }
-      mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagTrigerTVX);
+      mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagSel8);
+      if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kINELgtZERO)) && !mApplyRun2INELgtZERO) {
+        LOGF(debug, "INELgtZERO selection failed");
+        return false;
+      }
+      mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kAllpassed);
     }
     if (mCheckTrigger && !col.alias_bit(mTrigger)) {
       LOGF(debug, "Trigger selection failed");
@@ -286,10 +325,13 @@ class CollisonCuts
   bool mInitialTriggerScan = false;                               ///< Check trigger when the event is first selected
   bool mApplyTFBorderCut = false;                                 ///< Apply time frame border cut
   bool mApplyITSTPCvertex = false;                                ///< Apply at least one ITS-TPC track for vertexing
+  bool mApplyCollInTimeRangeNarrow = false;                       ///< Apply NoCollInTimeRangeNarrow selection
   bool mApplyZvertexTimedifference = false;                       ///< removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference.
   bool mApplyPileupRejection = false;                             ///< Pileup rejection
   bool mApplyNoITSROBorderCut = false;                            ///< Apply NoITSRO frame border cut
   bool mApplyCollInTimeRangeStandard = false;                     ///< Apply NoCollInTimeRangeStandard selection
+  bool mApplyRun2AliEventCuts = true;                             ///< Apply Run2 AliEventCuts
+  bool mApplyRun2INELgtZERO = false;                              ///< Apply Run2 INELgtZERO selection
   int mTrigger = kINT7;                                           ///< Trigger to check for
   float mZvtxMax = 999.f;                                         ///< Maximal deviation from nominal z-vertex (cm)
   int mtrackOccupancyInTimeRangeMax = -1;                         ///< Maximum trackOccupancyInTimeRange cut (-1 no cut)
