@@ -15,7 +15,6 @@
 /// \brief  one object to hold a list of GFWWeights objects,
 
 #include <utility>
-#include <cstdio>
 #include "GFWWeightsList.h"
 
 GFWWeightsList::GFWWeightsList() : TNamed("", ""), list(0)

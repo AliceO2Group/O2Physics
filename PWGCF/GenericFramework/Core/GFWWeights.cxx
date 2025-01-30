@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include "GFWWeights.h"
+#include <cstdio>
 
 GFWWeights::GFWWeights() : TNamed("", ""),
                            fDataFilled(kFALSE),

@@ -17,6 +17,9 @@
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWWEIGHTSLIST_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_GFWWEIGHTSLIST_H_
 #include <map>
+#include <cstdio>
+#include <string>
+#include <vector>
 
 #include "Framework/Logger.h"
 
