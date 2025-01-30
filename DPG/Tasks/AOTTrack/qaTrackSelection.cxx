@@ -125,7 +125,7 @@ struct QaTrackCuts {
       customTrackCuts.SetRequireGoldenChi2(requireGoldenChi2.value);
       customTrackCuts.SetMaxChi2PerClusterTPC(maxChi2PerClusterTPC.value);
       customTrackCuts.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
-      if (abs(maxDcaXYFactor.value - 1.f) > 1e-6) { // No DCAxy cut will be used, this is done via the member function of the task
+      if (std::abs(maxDcaXYFactor.value - 1.f) > 1e-6) { // No DCAxy cut will be used, this is done via the member function of the task
         customTrackCuts.SetMaxDcaXYPtDep([](float /*pt*/) { return 10000.f; });
       }
       customTrackCuts.SetMaxDcaZ(maxDcaZ.value);

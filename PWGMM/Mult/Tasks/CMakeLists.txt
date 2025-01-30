@@ -35,7 +35,7 @@ o2physics_add_dpl_workflow(dndeta-mft
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dndeta-mft-pbpb
-                    SOURCES dndeta-mft-pbpb.cxx
+                    SOURCES dndetaMFTPbPb.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

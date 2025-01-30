@@ -167,17 +167,17 @@ struct EmcalQC {
       }
 
       fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 1);
-      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      if (!eventcuts.cfgRequireFT0AND || collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 2);
         if (std::abs(collision.posZ()) < eventcuts.cfgZvtxMax) {
           fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 3);
-          if (collision.sel8()) {
+          if (!eventcuts.cfgRequireSel8 || collision.sel8()) {
             fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 4);
-            if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+            if (!eventcuts.cfgRequireGoodZvtxFT0vsPV || collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
               fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 5);
-              if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+              if (!eventcuts.cfgRequireNoSameBunchPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
                 fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 6);
-                if (collision.alias_bit(kTVXinEMC))
+                if (!eventcuts.cfgRequireEMCReadoutInMB || collision.alias_bit(kTVXinEMC))
                   fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 7);
               }
             }

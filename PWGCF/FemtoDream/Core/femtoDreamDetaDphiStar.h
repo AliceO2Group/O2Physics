@@ -64,7 +64,7 @@ class FemtoDreamDetaDphiStar
     radiiTPC = radiiTPCtoCut;
     fillQA = fillTHSparse;
 
-    if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
+    if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && (mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack || mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child)) {
       std::string dirName = static_cast<std::string>(dirNames[0]);
       histdetadpi[0][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][0]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
       histdetadpi[0][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][0]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
@@ -116,6 +116,24 @@ class FemtoDreamDetaDphiStar
         }
       }
     }
+    if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
+      for (int i = 0; i < 3; i++) {
+        std::string dirName = static_cast<std::string>(dirNames[3]);
+        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        if (plotForEveryRadii) {
+          for (int j = 0; j < 9; j++) {
+            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+          }
+        }
+        if (fillQA) {
+          histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
+          histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
+        }
+      }
+    }
   }
   ///  Check if pair is close or not
   template <typename Part1, typename Part2, typename Parts>
@@ -123,11 +141,12 @@ class FemtoDreamDetaDphiStar
   {
     magfield = lmagfield;
 
-    if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
+    if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && (mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack || mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child)) {
       /// Track-Track combination
       // check if provided particles are in agreement with the class instantiation
-      if (part1.partType() != o2::aod::femtodreamparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtodreamparticle::ParticleType::kTrack) {
-        LOG(fatal) << "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide kTrack,kTrack candidates.";
+      if (part1.partType() != o2::aod::femtodreamparticle::ParticleType::kTrack || !(part2.partType() == o2::aod::femtodreamparticle::ParticleType::kTrack || part2.partType() == o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child)) { // hotfix to use the CPR
+        // LOG(fatal) << "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide kTrack,kTrack candidates.";
+        LOGF(fatal, "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide kTrack,kTrack candidates. Currently: %i", part2.partType());
         return false;
       }
       auto deta = part1.eta() - part2.eta();
@@ -376,6 +395,85 @@ class FemtoDreamDetaDphiStar
 
       return pass;
 
+    } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
+      /// Track-V0 combination
+      // check if provided particles are in agreement with the class instantiation
+      if (part1.partType() != o2::aod::femtodreamparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtodreamparticle::ParticleType::kCascade) {
+        LOG(fatal) << "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide kTrack,kV0 candidates.";
+        return false;
+      }
+
+      bool pass = false;
+      for (int i = 0; i < 3; i++) {
+        int indexOfDaughter;
+        if (isMixedEventLambda) {
+          indexOfDaughter = part2.globalIndex() - 3 + i;
+        } else {
+          indexOfDaughter = part2.index() - 3 + i;
+        }
+        auto daughter = particles.begin() + indexOfDaughter;
+        auto deta = part1.eta() - daughter.eta();
+        auto dphi_AT_PV = part1.phi() - daughter.phi();
+        auto dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC(daughter, radiiTPC);
+        bool sameCharge = false;
+        auto dphiAvg = AveragePhiStar(part1, *daughter, i, &sameCharge);
+        if (Q3 == 999) {
+          histdetadpi[i][0]->Fill(deta, dphiAvg);
+          histdetadpi[i][2]->Fill(deta, dphi_AT_PV);
+          if (fillQA) {
+            histdetadpi_eta[i]->Fill(deta, dphiAvg, part1.eta(), daughter.eta());
+            histdetadpi_phi[i]->Fill(deta, dphiAvg, part1.phi(), daughter.phi());
+          }
+        } else if (Q3 < upperQ3LimitForPlotting) {
+          histdetadpi[i][0]->Fill(deta, dphiAvg);
+          histdetadpi[i][2]->Fill(deta, dphi_AT_PV);
+          if (fillQA) {
+            histdetadpi_eta[i]->Fill(deta, dphiAvg, part1.eta(), daughter.eta());
+            histdetadpi_phi[i]->Fill(deta, dphiAvg, part1.phi(), daughter.phi());
+          }
+        }
+        if (sameCharge) {
+          if (atWhichRadiiToSelect == 1) {
+            if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+              pass = true;
+            } else {
+              if (Q3 == 999) {
+                histdetadpi[i][1]->Fill(deta, dphiAvg);
+                histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+              } else if (Q3 < upperQ3LimitForPlotting) {
+                histdetadpi[i][1]->Fill(deta, dphiAvg);
+                histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+              }
+            }
+
+          } else if (atWhichRadiiToSelect == 0) {
+            if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+              pass = true;
+            } else {
+              if (Q3 == 999) {
+                histdetadpi[i][1]->Fill(deta, dphiAvg);
+                histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+              } else if (Q3 < upperQ3LimitForPlotting) {
+                histdetadpi[i][1]->Fill(deta, dphiAvg);
+                histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+              }
+            }
+          } else if (atWhichRadiiToSelect == 2) {
+            if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+              pass = true;
+            } else {
+              if (Q3 == 999) {
+                histdetadpi[i][1]->Fill(deta, dphiAvg);
+                histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+              } else if (Q3 < upperQ3LimitForPlotting) {
+                histdetadpi[i][1]->Fill(deta, dphiAvg);
+                histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+              }
+            }
+          }
+        }
+      }
+      return pass;
     } else {
       LOG(fatal) << "FemtoDreamPairCleaner: Combination of objects not defined - quitting!";
       return false;
@@ -385,14 +483,14 @@ class FemtoDreamDetaDphiStar
  private:
   HistogramRegistry* mHistogramRegistry = nullptr;   ///< For main output
   HistogramRegistry* mHistogramRegistryQA = nullptr; ///< For QA output
-  static constexpr std::string_view dirNames[3] = {"kTrack_kTrack/", "kTrack_kV0/", "kTrack_kCharmHadron/"};
+  static constexpr std::string_view dirNames[4] = {"kTrack_kTrack/", "kTrack_kV0/", "kTrack_kCharmHadron/", "kTrack_kCascade/"};
 
   static constexpr std::string_view histNameSEorME[3] = {"_SEandME", "_SE", "_ME"};
 
-  static constexpr std::string_view histNames[2][3] = {{"detadphidetadphi0Before_0", "detadphidetadphi0Before_1", "detadphidetadphi0Before_2"},
-                                                       {"detadphidetadphi0After_0", "detadphidetadphi0After_1", "detadphidetadphi0After_2"}};
+  static constexpr std::string_view histNames[2][4] = {{"detadphidetadphi0Before_0", "detadphidetadphi0Before_1", "detadphidetadphi0Before_2", "detadphidetadphi0Before_3"},
+                                                       {"detadphidetadphi0After_0", "detadphidetadphi0After_1", "detadphidetadphi0After_2", "detadphidetadphi0After_3"}};
 
-  static constexpr std::string_view histNamesRadii[3][9] = {
+  static constexpr std::string_view histNamesRadii[4][9] = {
     {"detadphidetadphi0Before_0_0", "detadphidetadphi0Before_0_1", "detadphidetadphi0Before_0_2",
      "detadphidetadphi0Before_0_3", "detadphidetadphi0Before_0_4", "detadphidetadphi0Before_0_5",
      "detadphidetadphi0Before_0_6", "detadphidetadphi0Before_0_7", "detadphidetadphi0Before_0_8"},
@@ -401,7 +499,10 @@ class FemtoDreamDetaDphiStar
      "detadphidetadphi0Before_1_6", "detadphidetadphi0Before_1_7", "detadphidetadphi0Before_1_8"},
     {"detadphidetadphi0Before_2_0", "detadphidetadphi0Before_2_1", "detadphidetadphi0Before_2_2",
      "detadphidetadphi0Before_2_3", "detadphidetadphi0Before_2_4", "detadphidetadphi0Before_2_5",
-     "detadphidetadphi0Before_2_6", "detadphidetadphi0Before_2_7", "detadphidetadphi0Before_2_8"}};
+     "detadphidetadphi0Before_2_6", "detadphidetadphi0Before_2_7", "detadphidetadphi0Before_2_8"},
+    {"detadphidetadphi0Before_3_0", "detadphidetadphi0Before_3_1", "detadphidetadphi0Before_3_2",
+     "detadphidetadphi0Before_3_3", "detadphidetadphi0Before_3_4", "detadphidetadphi0Before_3_5",
+     "detadphidetadphi0Before_3_6", "detadphidetadphi0Before_3_7", "detadphidetadphi0Before_3_8"}};
 
   static constexpr o2::aod::femtodreamparticle::ParticleType mPartOneType = partOne; ///< Type of particle 1
   static constexpr o2::aod::femtodreamparticle::ParticleType mPartTwoType = partTwo; ///< Type of particle 2

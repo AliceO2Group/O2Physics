@@ -474,7 +474,7 @@ struct HfTaskBsReduced {
       }
     }
     if (fillTree) {
-      float pseudoRndm = ptDs * 1000. - (int64_t)(ptDs * 1000);
+      float pseudoRndm = ptDs * 1000. - static_cast<int64_t>(ptDs * 1000);
       if (flagMcMatchRec != 0 || (((doMc && fillBackground) || !doMc) && (ptCandBs >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor))) {
         float prong0MlScoreBkg = -1.;
         float prong0MlScorePrompt = -1.;

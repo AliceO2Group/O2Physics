@@ -41,12 +41,14 @@
 #include "MCHTracking/TrackExtrap.h"
 #include "MCHTracking/TrackParam.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
+#include "PWGEM/Dilepton/Utils/MCUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
 using namespace o2::soa;
+using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 
 using MyCollisions = Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 using MyCollision = MyCollisions::iterator;
@@ -76,6 +78,10 @@ struct CreateResolutionMap {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<int> cfgEventGeneratorType{"cfgEventGeneratorType", -1, "if positive, select event generator type. i.e. gap or signal"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<bool> cfg_require_true_mc_collision_association{"cfg_require_true_mc_collision_association", true, "flag to require true mc collision association"};
+  Configurable<bool> cfg_reject_fake_match_its_tpc{"cfg_reject_fake_match_its_tpc", false, "flag to reject fake match between ITS-TPC"};
+  // Configurable<bool> cfg_reject_fake_match_its_tpc_tof{"cfg_reject_fake_match_its_tpc_tof", false, "flag to reject fake match between ITS-TPC-TOF"};
+  Configurable<bool> cfg_reject_fake_match_mft_mch{"cfg_reject_fake_match_mft_mch", false, "flag to reject fake match between MFT-MCH"};
 
   ConfigurableAxis ConfPtGenBins{"ConfPtGenBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.80, 2.90, 3.00, 3.10, 3.20, 3.30, 3.40, 3.50, 3.60, 3.70, 3.80, 3.90, 4.00, 4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 8.50, 9.00, 9.50, 10.00, 11.00, 12.00, 13.00, 14.00, 15.00, 16.00, 17.00, 18.00, 19.00, 20.00}, "gen. pT bins for output histograms"};
   ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0, 10, 30, 50, 110}, "centrality (%) bins for output histograms"};
@@ -327,6 +333,10 @@ struct CreateResolutionMap {
       return false;
     }
 
+    if (cfg_reject_fake_match_mft_mch && muon.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && o2::aod::pwgem::dilepton::utils::mcutil::hasFakeMatchMFTMCH(muon)) {
+      return false;
+    }
+
     auto mctrack = muon.template mcParticle_as<aod::McParticles>();
     if (muon.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
       registry.fill(HIST("StandaloneMuon/hs_reso"), centrality, mctrack.pt(), mctrack.eta(), mctrack.phi(), -mctrack.pdgCode() / 13, (mctrack.pt() - pt) / mctrack.pt(), mctrack.eta() - eta, mctrack.phi() - phi);
@@ -393,13 +403,17 @@ struct CreateResolutionMap {
           continue;
         }
         auto mctrack = track.template mcParticle_as<aod::McParticles>();
-        if (mctrack.mcCollisionId() != collision.mcCollisionId()) {
+        if (cfg_require_true_mc_collision_association && mctrack.mcCollisionId() != collision.mcCollisionId()) {
           continue;
         }
         if (abs(mctrack.pdgCode()) != 11 || !(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
           continue;
         }
         if (!checkTrack(track)) {
+          continue;
+        }
+
+        if (cfg_reject_fake_match_its_tpc && o2::aod::pwgem::dilepton::utils::mcutil::hasFakeMatchITSTPC(track)) {
           continue;
         }
 
@@ -422,7 +436,7 @@ struct CreateResolutionMap {
           continue;
         }
         auto mctrack = muon.template mcParticle_as<aod::McParticles>();
-        if (mctrack.mcCollisionId() != collision.mcCollisionId()) {
+        if (cfg_require_true_mc_collision_association && mctrack.mcCollisionId() != collision.mcCollisionId()) {
           continue;
         }
         if (abs(mctrack.pdgCode()) != 13 || !(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
@@ -438,7 +452,7 @@ struct CreateResolutionMap {
           continue;
         }
         auto mctrack = muon.template mcParticle_as<aod::McParticles>();
-        if (mctrack.mcCollisionId() != collision.mcCollisionId()) {
+        if (cfg_require_true_mc_collision_association && mctrack.mcCollisionId() != collision.mcCollisionId()) {
           continue;
         }
         if (abs(mctrack.pdgCode()) != 13 || !(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
