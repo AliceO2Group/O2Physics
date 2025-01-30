@@ -237,7 +237,7 @@ struct LfV0qaanalysis {
           TMath::Abs(v0.negTrack_as<DauTracks>().eta()) < etadau) {
 
         // Fill table
-        myv0s(v0.globalIndex(), v0.pt(), v0.yLambda(), v0.yK0Short(),
+        myv0s(v0.pt(), v0.yLambda(), v0.yK0Short(),
               v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
               v0.v0radius(), v0.v0cosPA(),
               v0.dcapostopv(), v0.dcanegtopv(), v0.dcaV0daughters(),
@@ -363,7 +363,7 @@ struct LfV0qaanalysis {
         ) {
 
           // Fill table
-          myv0s(v0.globalIndex(), v0.pt(), v0.yLambda(), v0.yK0Short(),
+          myv0s(v0.pt(), v0.yLambda(), v0.yK0Short(),
                 v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
                 v0.v0radius(), v0.v0cosPA(),
                 v0.dcapostopv(), v0.dcanegtopv(), v0.dcaV0daughters(),

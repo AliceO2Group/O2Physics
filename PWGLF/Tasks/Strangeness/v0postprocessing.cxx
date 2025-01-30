@@ -44,6 +44,7 @@ struct v0postprocessing {
   Configurable<float> ntpcsigma{"ntpcsigma", 5, "N sigma TPC"};
   Configurable<float> ntpcsigmaMC{"ntpcsigmaMC", 100, "N sigma TPC for MC"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
+  Configurable<float> minITShits{"minITShits", 2, "min ITS hits"};
   Configurable<bool> isMC{"isMC", 1, "isMC"};
   Configurable<bool> evSel{"evSel", 1, "evSel"};
   Configurable<bool> hasTOF2Leg{"hasTOF2Leg", 0, "hasTOF2Leg"};
@@ -130,6 +131,10 @@ struct v0postprocessing {
       if (TMath::Abs(candidate.v0poseta()) > etadau)
         continue;
       if (TMath::Abs(candidate.v0negeta()) > etadau)
+        continue;
+      if (TMath::Abs(candidate.v0positshits()) < minITShits)
+        continue;
+      if (TMath::Abs(candidate.v0negitshits()) < minITShits)
         continue;
       if (TMath::Abs(candidate.v0dcanegtopv()) < dcanegtopv)
         continue;
@@ -244,7 +249,7 @@ struct v0postprocessing {
             TMath::Abs(candidate.masslambda() - o2::constants::physics::MassLambda0) > v0rejK0s &&
             TMath::Abs(candidate.ntpcsigmanegpi()) <= ntpcsigmaMC &&
             TMath::Abs(candidate.ntpcsigmapospi()) <= ntpcsigmaMC &&
-            (candidate.pdgcode() == 310)) {
+            (candidate.pdgcode() == 310) && candidate.isdauk0short()) {
 
           registry.fill(HIST("hArmenterosPodolanski"), candidate.alpha(), candidate.qtarm());
 
@@ -275,7 +280,7 @@ struct v0postprocessing {
           if (TMath::Abs(candidate.ntpcsigmanegpi()) <= ntpcsigmaMC && TMath::Abs(candidate.ntpcsigmapospr()) <= ntpcsigmaMC &&
               candidate.ctaulambda() < ctauLambda &&
               TMath::Abs(candidate.masslambda() - o2::constants::physics::MassLambda0) < 0.075 &&
-              candidate.pdgcode() == 3122) {
+              candidate.pdgcode() == 3122 && candidate.isdaulambda()) {
 
             registry.fill(HIST("hMassLambda_MC"), candidate.masslambda());
             registry.fill(HIST("hMassVsPtLambda_MC"), candidate.v0pt(), candidate.multft0m(), candidate.masslambda());
@@ -295,7 +300,7 @@ struct v0postprocessing {
           if (TMath::Abs(candidate.ntpcsigmanegpr()) <= ntpcsigmaMC && TMath::Abs(candidate.ntpcsigmapospi()) <= ntpcsigmaMC &&
               candidate.ctauantilambda() < ctauLambda &&
               TMath::Abs(candidate.massantilambda() - o2::constants::physics::MassLambda0) < 0.075 &&
-              candidate.pdgcode() == -3122) {
+              candidate.pdgcode() == -3122 && candidate.isdauantilambda()) {
 
             registry.fill(HIST("hMassAntiLambda_MC"), candidate.massantilambda());
             registry.fill(HIST("hMassVsPtAntiLambda_MC"), candidate.v0pt(), candidate.multft0m(), candidate.massantilambda());
