@@ -99,9 +99,12 @@ struct ResonanceInitializer {
   Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", false, "Evt sel: triggerTVX selection (MB)"};
   Configurable<bool> cfgEvtTFBorderCut{"cfgEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
   Configurable<bool> cfgEvtUseITSTPCvertex{"cfgEvtUseITSTPCvertex", false, "Evt sel: use at lease on ITS-TPC track for vertexing"};
+  Configurable<bool> cfgEvtCollInTimeRangeNarrow{"cfgEvtCollInTimeRangeNarrow", false, "Evt sel: apply NoCollInTimeRangeNarrow"};
   Configurable<bool> cfgEvtZvertexTimedifference{"cfgEvtZvertexTimedifference", false, "Evt sel: apply Z-vertex time difference"};
   Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", false, "Evt sel: apply pileup rejection"};
   Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
+  Configurable<bool> cfgEvtRun2AliEventCuts{"cfgEvtRun2AliEventCuts", true, "Evt sel: apply Run2 AliEventCuts"};
+  Configurable<bool> cfgEvtRun2INELgtZERO{"cfgEvtRun2INELgtZERO", false, "Evt sel: apply Run2 INELgtZERO"};
 
   Configurable<std::string> cfgMultName{"cfgMultName", "FT0M", "The name of multiplicity estimator"};
 
@@ -969,9 +972,12 @@ struct ResonanceInitializer {
     colCuts.setTriggerTVX(cfgEvtTriggerTVXSel);
     colCuts.setApplyTFBorderCut(cfgEvtTFBorderCut);
     colCuts.setApplyITSTPCvertex(cfgEvtUseITSTPCvertex);
+    colCuts.setApplyCollInTimeRangeNarrow(cfgEvtCollInTimeRangeNarrow);
     colCuts.setApplyZvertexTimedifference(cfgEvtZvertexTimedifference);
     colCuts.setApplyPileupRejection(cfgEvtPileupRejection);
     colCuts.setApplyNoITSROBorderCut(cfgEvtNoITSROBorderCut);
+    colCuts.setApplyRun2AliEventCuts(cfgEvtRun2AliEventCuts);
+    colCuts.setApplyRun2INELgtZERO(cfgEvtRun2INELgtZERO);
     if (!cfgBypassCCDB) {
       ccdb->setURL(ccdbURL.value);
       ccdb->setCaching(true);
@@ -1043,7 +1049,7 @@ struct ResonanceInitializer {
     LOGF(info, "Bz set to %f for run: ", dBz, mRunNumber);
   }
 
-  void processDummy(ResoRun2Events const& /*collisions*/)
+  void processDummy(aod::Collisions const& /*collisions*/)
   {
   }
   PROCESS_SWITCH(ResonanceInitializer, processDummy, "Process for dummy", true);
