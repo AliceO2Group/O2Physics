@@ -459,7 +459,7 @@ struct tofSpectra {
       histos.add("MC/fake/neg", "Fake negative tracks", kTH1D, {ptAxis});
       histos.add("MC/no_collision/pos", "No collision pos track", kTH1D, {ptAxis});
       histos.add("MC/no_collision/neg", "No collision neg track", kTH1D, {ptAxis});
-      if(isImpactParam){
+    if(isImpactParam){
         histos.add("MC/withPID/pi/pos/prm/pt/num", "recons. MC #pi^{+}", kTHnSparseD, {ptAxis, impParamAxis});
         histos.add("MC/withPID/pi/neg/prm/pt/num", "recons. MC #pi^{-}", kTHnSparseD, {ptAxis, impParamAxis});
         histos.add("MC/withPID/ka/pos/prm/pt/num", "recons. MC K^{+}", kTHnSparseD, {ptAxis, impParamAxis});
