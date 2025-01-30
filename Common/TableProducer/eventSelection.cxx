@@ -16,6 +16,7 @@
 
 #include <vector>
 #include <map>
+#include <string>
 
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
@@ -80,13 +81,13 @@ struct BcSelectionTask {
   bool isPP = 1;                         // default value
   TriggerAliases* aliases = nullptr;
   EventSelectionParams* par = nullptr;
+  std::map<uint64_t, uint32_t>* mapRCT = nullptr;
   std::map<int64_t, std::vector<int16_t>> mapInactiveChips; // number of inactive chips vs orbit per layer
   int64_t prevOrbitForInactiveChips = 0;                    // cached next stored orbit in the inactive chip map
   int64_t nextOrbitForInactiveChips = 0;                    // cached previous stored orbit in the inactive chip map
   bool isGoodITSLayer3 = true;                              // default value
   bool isGoodITSLayer0123 = true;                           // default value
   bool isGoodITSLayersAll = true;                           // default value
-
   void init(InitContext&)
   {
     if (metadataInfo.isFullyDefined() && !doprocessRun2 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
@@ -242,8 +243,9 @@ struct BcSelectionTask {
         histos.get<TH1>(HIST("hCounterTVX"))->Fill(Form("%d", bc.runNumber()), 1);
       }
 
+      uint32_t rct = 0;
       // Fill bc selection columns
-      bcsel(alias, selection, foundFT0, foundFV0, foundFDD, foundZDC);
+      bcsel(alias, selection, rct, foundFT0, foundFV0, foundFDD, foundZDC);
     }
   }
   PROCESS_SWITCH(BcSelectionTask, processRun2, "Process Run2 event selection", true);
@@ -311,6 +313,18 @@ struct BcSelectionTask {
           }
         } // loop over vector of inactive chip ids
       } // loop over orbits
+
+      // QC info
+      std::map<std::string, std::string> metadata;
+      metadata["run"] = Form("%d", run);
+      ccdb->setFatalWhenNull(0);
+      mapRCT = ccdb->getSpecific<std::map<uint64_t, uint32_t>>("Users/j/jian/RCT", ts, metadata);
+      ccdb->setFatalWhenNull(1);
+      if (mapRCT == nullptr) {
+        LOGP(info, "rct object missing... inserting dummy rct flags");
+        mapRCT = new std::map<uint64_t, uint32_t>;
+        mapRCT->insert(std::pair<uint64_t, uint32_t>(sorTimestamp, 0));
+      }
     }
 
     // map from GlobalBC to BcId needed to find triggerBc
@@ -326,6 +340,13 @@ struct BcSelectionTask {
 
     // bc loop
     for (auto bc : bcs) { // o2-linter: disable=const-ref-in-for-loop
+      // store rct flags
+      auto itrct = mapRCT->upper_bound(bc.timestamp());
+      if (itrct != mapRCT->begin())
+        itrct--;
+      uint32_t rct = itrct->second;
+      LOGP(debug, "sor={} eor={} ts={} rct={}", sorTimestamp, eorTimestamp, bc.timestamp(), rct);
+
       uint32_t alias{0};
       // workaround for pp2022 (trigger info is shifted by -294 bcs)
       int32_t triggerBcId = mapGlobalBCtoBcId[bc.globalBC() + triggerBcShift];
@@ -424,7 +445,7 @@ struct BcSelectionTask {
         LOGP(debug, "prev inactive chips: {} {} {} {} {} {} {}", vPrevInactiveChips[0], vPrevInactiveChips[1], vPrevInactiveChips[2], vPrevInactiveChips[3], vPrevInactiveChips[4], vPrevInactiveChips[5], vPrevInactiveChips[6]);
         isGoodITSLayer3 = vPrevInactiveChips[3] <= maxInactiveChipsPerLayer->at(3) && vNextInactiveChips[3] <= maxInactiveChipsPerLayer->at(3);
         isGoodITSLayer0123 = true;
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 4; i++) {
           isGoodITSLayer0123 &= vPrevInactiveChips[i] <= maxInactiveChipsPerLayer->at(i) && vNextInactiveChips[i] <= maxInactiveChipsPerLayer->at(i);
         }
         isGoodITSLayersAll = true;
@@ -506,7 +527,7 @@ struct BcSelectionTask {
       }
 
       // Fill bc selection columns
-      bcsel(alias, selection, foundFT0, foundFV0, foundFDD, foundZDC);
+      bcsel(alias, selection, rct, foundFT0, foundFV0, foundFDD, foundZDC);
     }
   }
   PROCESS_SWITCH(BcSelectionTask, processRun3, "Process Run3 event selection", false);
@@ -677,6 +698,9 @@ struct EventSelectionTask {
     selection |= (spdClusters < par->fSPDClsVsTklA + nTkl * par->fSPDClsVsTklB) ? BIT(kNoSPDClsVsTklBG) : 0;
     selection |= !(nTkl < 6 && multV0C012 > par->fV0C012vsTklA + nTkl * par->fV0C012vsTklB) ? BIT(kNoV0C012vsTklBG) : 0;
 
+    // copy rct flags from bcsel table
+    uint32_t rct = bc.rct_raw();
+
     // apply int7-like selections
     bool sel7 = 1;
     for (int i = 0; i < kNsel; i++) {
@@ -702,7 +726,7 @@ struct EventSelectionTask {
       }
     }
 
-    evsel(alias, selection, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, 0, 0, 0);
+    evsel(alias, selection, rct, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, 0, 0, 0);
   }
   PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
@@ -757,7 +781,8 @@ struct EventSelectionTask {
         int32_t foundFDD = bc.foundFDDId();
         int32_t foundZDC = bc.foundZDCId();
         int bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
-        evsel(bc.alias_raw(), bc.selection_raw(), kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, bcInTF, -1, -1);
+        uint32_t rct = 0;
+        evsel(bc.alias_raw(), bc.selection_raw(), rct, kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, bcInTF, -1, -1);
       }
       return;
     }
@@ -1171,6 +1196,9 @@ struct EventSelectionTask {
       selection |= (vNoCollInSameRofStandard[colIndex] && vNoCollInSameRofWithCloseVz[colIndex]) ? BIT(kNoCollInRofStandard) : 0;
       selection |= vNoHighMultCollInPrevRof[colIndex] ? BIT(kNoHighMultCollInPrevRof) : 0;
 
+      // copy rct flags from bcsel table
+      uint32_t rct = bc.rct_raw();
+
       // apply int7-like selections
       bool sel7 = 0;
 
@@ -1190,7 +1218,7 @@ struct EventSelectionTask {
 
       int bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
 
-      evsel(alias, selection, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, bcInTF,
+      evsel(alias, selection, rct, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, bcInTF,
             vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
     }
   }

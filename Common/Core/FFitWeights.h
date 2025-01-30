@@ -41,22 +41,23 @@ class FFitWeights : public TNamed
   explicit FFitWeights(const char* name);
   ~FFitWeights();
 
-  void Init();
-  void Fill(float centrality, float qn, int nh, const char* pf = "");
-  TObjArray* GetDataArray() { return fW_data; }
+  void init();
+  void fillWeights(float centrality, float qn, int nh, const char* pf = "");
+  TObjArray* getDataArray() { return fW_data; }
 
-  void SetCentBin(int bin) { CentBin = bin; }
-  void SetBinAxis(int bin, float min, float max)
+  void setCentBin(int bin) { CentBin = bin; }
+  void setBinAxis(int bin, float min, float max)
   {
     qAxis = new TAxis(bin, min, max);
   }
-  TAxis* GetqVecAx() { return qAxis; }
+  TAxis* getqVecAx() { return qAxis; }
 
   Long64_t Merge(TCollection* collist);
-  void qSelectionSpline(std::vector<int> nhv, std::vector<std::string> stv);
-  float EvalSplines(float centr, const float& dqn, const int nh, const char* pf = "");
-  void SetResolution(int res) { nResolution = res; }
-  void SetQnType(std::vector<std::pair<int, std::string>> qninp) { qnTYPE = qninp; }
+  void qSelection(std::vector<int> nhv, std::vector<std::string> stv);
+  float eval(float centr, const float& dqn, const int nh, const char* pf = "");
+  void setResolution(int res) { nResolution = res; }
+  int getResolution() const { return nResolution; }
+  void setQnType(std::vector<std::pair<int, std::string>> qninp) { qnTYPE = qninp; }
 
  private:
   TObjArray* fW_data;
@@ -67,15 +68,15 @@ class FFitWeights : public TNamed
 
   std::vector<std::pair<int, std::string>> qnTYPE;
 
-  const char* GetQName(const int nh, const char* pf = "")
+  const char* getQName(const int nh, const char* pf = "")
   {
     return Form("q%i%s", nh, pf);
   };
-  const char* GetAxisName(const int nh, const char* pf = "")
+  const char* getAxisName(const int nh, const char* pf = "")
   {
     return Form(";Centrality;q_{%i}^{%s}", nh, pf);
   };
-  void AddArray(TObjArray* targ, TObjArray* sour);
+  void addArray(TObjArray* targ, TObjArray* sour);
 
   ClassDef(FFitWeights, 1); // calibration class
 };

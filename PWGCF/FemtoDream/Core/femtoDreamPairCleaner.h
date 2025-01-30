@@ -85,6 +85,19 @@ class FemtoDreamPairCleaner
         return true;
       }
       return false;
+    } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
+      /// Track-Cascade combination
+      if (part2.partType() != o2::aod::femtodreamparticle::ParticleType::kCascade) {
+        LOG(fatal) << "FemtoDreamPairCleaner: passed arguments don't agree with FemtoDreamPairCleaner instantiation! Please provide second argument kCascade candidate.";
+        return false;
+      }
+      const auto& posChild = particles.iteratorAt(part2.index() - 3);
+      const auto& negChild = particles.iteratorAt(part2.index() - 2);
+      const auto& bachChild = particles.iteratorAt(part2.index() - 1);
+      if (part1.index() != posChild.childrenIds()[0] && part1.index() != negChild.childrenIds()[1] && part1.index() != bachChild.childrenIds()[2]) {
+        return true;
+      }
+      return false;
     } else {
       LOG(fatal) << "FemtoDreamPairCleaner: Combination of objects not defined - quitting!";
       return false;

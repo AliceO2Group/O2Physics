@@ -522,7 +522,7 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.dcaNegToPV(),
           candidate.dcaBachelorToPV(),
           candidate.dcaXYCascToPV(),
-          candidate.dcaXCascToPV(),
+          candidate.dcaZCascToPV(),
           candidate.nSigTpcPiFromXicPlus0(),
           candidate.nSigTpcPiFromXicPlus1(),
           candidate.nSigTpcBachelorPi(),
@@ -856,25 +856,25 @@ struct HfTreeCreatorXicToXiPiPi {
       if (indexRecXicPlus == -1) {
         continue;
       }
-      auto XicPlusGen = particles.rawIteratorAt(indexRecXicPlus);
-      origin = RecoDecay::getCharmHadronOrigin(particles, XicPlusGen, true);
+      auto particleXicPlusGen = particles.rawIteratorAt(indexRecXicPlus);
+      origin = RecoDecay::getCharmHadronOrigin(particles, particleXicPlusGen, true);
 
       // get MC collision
-      auto mcCollision = XicPlusGen.mcCollision_as<aod::McCollisions>();
+      auto mcCollision = particleXicPlusGen.mcCollision_as<aod::McCollisions>();
 
       // get XicPlus daughters as MC particle
-      RecoDecay::getDaughters(XicPlusGen, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
-      auto XicPlusDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
+      RecoDecay::getDaughters(particleXicPlusGen, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
+      auto daugh0XicPlus = particles.rawIteratorAt(arrDaughIndex[0]);
 
       // calculate residuals and pulls
-      float pResidual = candidate.p() - XicPlusGen.p();
-      float ptResidual = candidate.pt() - XicPlusGen.pt();
+      float pResidual = candidate.p() - particleXicPlusGen.p();
+      float ptResidual = candidate.pt() - particleXicPlusGen.pt();
       pvResiduals[0] = candidate.posX() - mcCollision.posX();
       pvResiduals[1] = candidate.posY() - mcCollision.posY();
       pvResiduals[2] = candidate.posZ() - mcCollision.posZ();
-      svResiduals[0] = candidate.xSecondaryVertex() - XicPlusDaugh0.vx();
-      svResiduals[1] = candidate.ySecondaryVertex() - XicPlusDaugh0.vy();
-      svResiduals[2] = candidate.zSecondaryVertex() - XicPlusDaugh0.vz();
+      svResiduals[0] = candidate.xSecondaryVertex() - daugh0XicPlus.vx();
+      svResiduals[1] = candidate.ySecondaryVertex() - daugh0XicPlus.vy();
+      svResiduals[2] = candidate.zSecondaryVertex() - daugh0XicPlus.vz();
       try {
         pvPulls[0] = pvResiduals[0] / candidate.xPvErr();
         pvPulls[1] = pvResiduals[1] / candidate.yPvErr();

@@ -69,6 +69,8 @@ DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
+DECLARE_SOA_COLUMN(Weight, weight, float);
+DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int);
 DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
 DECLARE_SOA_COLUMN(TrackOccupancyInTimeRange, trackOccupancyInTimeRange, int);
@@ -106,6 +108,10 @@ DECLARE_SOA_TABLE_STAGED(JCollisions, "JCOLLISION",
 
 using JCollision = JCollisions::iterator;
 using StoredJCollision = StoredJCollisions::iterator;
+
+DECLARE_SOA_TABLE_STAGED(JCollisionMcInfos, "JCOLLISIONMCINFO",
+                         jcollision::Weight,
+                         jcollision::SubGeneratorId);
 
 DECLARE_SOA_TABLE_STAGED(JEMCCollisionLbs, "JEMCCOLLISIONLB",
                          jcollision::IsAmbiguous,
@@ -149,13 +155,15 @@ DECLARE_SOA_COLUMN(PosX, posX, float);
 DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(Weight, weight, float);
+DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int);
 } // namespace jmccollision
 DECLARE_SOA_TABLE_STAGED(JMcCollisions, "JMCCOLLISION",
                          o2::soa::Index<>,
                          jmccollision::PosX,
                          jmccollision::PosY,
                          jmccollision::PosZ,
-                         jmccollision::Weight);
+                         jmccollision::Weight,
+                         jmccollision::SubGeneratorId);
 
 using JMcCollision = JMcCollisions::iterator;
 using StoredJMcCollision = StoredJMcCollisions::iterator;

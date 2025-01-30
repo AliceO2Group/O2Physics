@@ -447,6 +447,7 @@ struct NucleiHistTask {
     MC_recon_reg.add("histTofNsigmaDataAl", "TOF nSigma (^{4}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
     MC_recon_reg.add("histTofNsigmaDataaAl", "TOF nSigma (^{4}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
 
+    MC_DCA.add("histEta", "#eta", HistType::kTH2F, {{204, -2.01, 2.01}, PDGBINNING});
     MC_DCA.add("histDCA_prim", "DCA xy", HistType::kTH3F, {ptAxis, {250, -0.5, 0.5, "dca"}, PDGBINNING});
     MC_DCA.add("histDCAz_prim", "DCA z", HistType::kTH3F, {ptAxis, {1000, -2.0, 2.0, "dca"}, PDGBINNING});
     MC_DCA.add("histDCA_weak", "DCA xy", HistType::kTH3F, {ptAxis, {250, -0.5, 0.5, "dca"}, PDGBINNING});
@@ -497,12 +498,37 @@ struct NucleiHistTask {
   Configurable<bool> requireGoldenChi2{"requireGoldenChi2", false, "Enable the requirement of GoldenChi2"};
   Configurable<bool> event_selection_sel8{"event_selection_sel8", true, "Enable sel8 event selection"};
   Configurable<bool> event_selection_MC_sel8{"event_selection_MC_sel8", true, "Enable sel8 event selection in MC processing"};
+  Configurable<bool> require_PhysicalPrimary_MC_reco{"require_PhysicalPrimary_MC_reco", true, "Enable PhysicalPrimary selection in reconstructed MC processing"};
   Configurable<bool> require_PhysicalPrimary_MC_gen{"require_PhysicalPrimary_MC_gen", true, "Enable PhysicalPrimary selection in generated MC processing"};
   Configurable<bool> removeITSROFrameBorder{"removeITSROFrameBorder", false, "Remove TF border"};
   Configurable<bool> removeNoSameBunchPileup{"removeNoSameBunchPileup", false, "Remove TF border"};
   Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", false, "Remove TF border"};
   Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "Remove TF border"};
   Configurable<bool> removeNoTimeFrameBorder{"removeNoTimeFrameBorder", false, "Remove TF border"};
+
+  TF1* Particle_Tpc_nSigma_shift = 0;
+  Configurable<bool> enable_pT_shift_tpc_nSigma{"enable_pT_shift_tpc_nSigma", false, "Enable Data TPC nSigma recentering by TF1"};
+  Configurable<std::vector<float>> parShiftPt{"parShiftPt", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "Parameters for pT shift."};
+
+  TF1* Pion_Tpc_nSigma_shift = 0;
+  TF1* Proton_Tpc_nSigma_shift = 0;
+  TF1* Deuteron_Tpc_nSigma_shift = 0;
+  TF1* Triton_Tpc_nSigma_shift = 0;
+  TF1* He3_Tpc_nSigma_shift = 0;
+  TF1* He4_Tpc_nSigma_shift = 0;
+
+  Configurable<bool> enable_pT_shift_pion_tpc_nSigma{"enable_pT_shift_pion_tpc_nSigma", false, "Enable MC Pi plus TPC nSigma recentering by TF1"};
+  Configurable<bool> enable_pT_shift_proton_tpc_nSigma{"enable_pT_shift_proton_tpc_nSigma", false, "Enable MC Proton TPC nSigma recentering by TF1"};
+  Configurable<bool> enable_pT_shift_deuteron_tpc_nSigma{"enable_pT_shift_deuteron_tpc_nSigma", false, "Enable MC Deuteron TPC nSigma recentering by TF1"};
+  Configurable<bool> enable_pT_shift_triton_tpc_nSigma{"enable_pT_shift_triton_tpc_nSigma", false, "Enable MC Triton TPC nSigma recentering by TF1"};
+  Configurable<bool> enable_pT_shift_He3_tpc_nSigma{"enable_pT_shift_He3_tpc_nSigma", false, "Enable MC Helium-3 TPC nSigma recentering by TF1"};
+  Configurable<bool> enable_pT_shift_He4_tpc_nSigma{"enable_pT_shift_He4_tpc_nSigma", false, "Enable MC Helium-4 TPC nSigma recentering by TF1"};
+  Configurable<std::vector<float>> parShiftPtPion{"parShiftPtPion", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Pi plus pT shift."};
+  Configurable<std::vector<float>> parShiftPtProton{"parShiftPtProton", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Proton pT shift."};
+  Configurable<std::vector<float>> parShiftPtDeuteron{"parShiftPtDeuteron", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Deuteron pT shift."};
+  Configurable<std::vector<float>> parShiftPtTriton{"parShiftPtTriton", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Triton pT shift."};
+  Configurable<std::vector<float>> parShiftPtHe3{"parShiftPtHe3", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Helium-3 pT shift."};
+  Configurable<std::vector<float>> parShiftPtHe4{"parShiftPtHe4", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Alpha pT shift."};
 
   //***********************************************************************************
 
@@ -612,6 +638,12 @@ struct NucleiHistTask {
 
     if (!isEventSelected(event))
       return;
+
+    if (enable_pT_shift_tpc_nSigma) {
+      Particle_Tpc_nSigma_shift = new TF1("Particle_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPt;
+      Particle_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
     for (auto track : tracks) {
 
       float TPCnSigma_particle = -100;
@@ -673,6 +705,11 @@ struct NucleiHistTask {
         default:
           continue;
           break;
+      }
+
+      if (enable_pT_shift_tpc_nSigma) {
+        float nSigma_shift = Particle_Tpc_nSigma_shift->Eval(momentum);
+        TPCnSigma_particle -= nSigma_shift;
       }
 
       histTrackcuts_data_particle->AddBinContent(1);
@@ -804,6 +841,13 @@ struct NucleiHistTask {
   {
     if (!isEventSelected(event))
       return;
+
+    if (enable_pT_shift_tpc_nSigma) {
+      Particle_Tpc_nSigma_shift = new TF1("Particle_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPt;
+      Particle_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+
     if (event_selection_sel8 && event.sel8())
       spectra_reg.fill(HIST("histCentrality"), event.centFT0C());
     if (!event_selection_sel8)
@@ -872,6 +916,11 @@ struct NucleiHistTask {
         default:
           continue;
           break;
+      }
+
+      if (enable_pT_shift_tpc_nSigma) {
+        float nSigma_shift = Particle_Tpc_nSigma_shift->Eval(momentum);
+        TPCnSigma_particle -= nSigma_shift;
       }
 
       spectra_reg.fill(HIST("histEtaWithOverFlow"), track.eta());
@@ -1128,151 +1177,122 @@ struct NucleiHistTask {
     if (!isEventSelected(collisions))
       return;
 
+    if (enable_pT_shift_pion_tpc_nSigma) {
+      Pion_Tpc_nSigma_shift = new TF1("Pion_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtPion;
+      Pion_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+    if (enable_pT_shift_proton_tpc_nSigma) {
+      Proton_Tpc_nSigma_shift = new TF1("Proton_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtProton;
+      Proton_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+    if (enable_pT_shift_deuteron_tpc_nSigma) {
+      Deuteron_Tpc_nSigma_shift = new TF1("Deuteron_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtDeuteron;
+      Deuteron_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+    if (enable_pT_shift_triton_tpc_nSigma) {
+      Triton_Tpc_nSigma_shift = new TF1("Triton_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtTriton;
+      Triton_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+    if (enable_pT_shift_He3_tpc_nSigma) {
+      He3_Tpc_nSigma_shift = new TF1("He3_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtHe3;
+      He3_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+    if (enable_pT_shift_He4_tpc_nSigma) {
+      He4_Tpc_nSigma_shift = new TF1("He4_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtHe4;
+      He4_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+
     for (auto& track : tracks) {
       histTrackcuts_MC->AddBinContent(1);
       const auto particle = track.mcParticle();
 
       int pdgbin = 0;
+      TLorentzVector lorentzVector_particle_MC{};
       switch (particle.pdgCode()) {
         case +211:
           pdgbin = 0;
+          histPDG_reco->AddBinContent(1);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
           break;
         case -211:
           pdgbin = 1;
+          histPDG_reco->AddBinContent(2);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
           break;
         case +321:
           pdgbin = 2;
+          histPDG_reco->AddBinContent(3);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
           break;
         case -321:
           pdgbin = 3;
+          histPDG_reco->AddBinContent(4);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
           break;
         case +2212:
           pdgbin = 4;
+          histPDG_reco->AddBinContent(5);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
           break;
         case -2212:
           pdgbin = 5;
+          histPDG_reco->AddBinContent(6);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
           break;
         case +1000010020:
           pdgbin = 6;
+          histPDG_reco->AddBinContent(7);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
           break;
         case -1000010020:
           pdgbin = 7;
+          histPDG_reco->AddBinContent(8);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
           break;
         case +1000010030:
           pdgbin = 8;
+          histPDG_reco->AddBinContent(9);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
           break;
         case -1000010030:
           pdgbin = 9;
+          histPDG_reco->AddBinContent(10);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
           break;
         case +1000020030:
           pdgbin = 10;
+          histPDG_reco->AddBinContent(11);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
           break;
         case -1000020030:
           pdgbin = 11;
+          histPDG_reco->AddBinContent(12);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
           break;
         case +1000020040:
           pdgbin = 12;
+          histPDG_reco->AddBinContent(13);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
           break;
         case -1000020040:
           pdgbin = 13;
+          histPDG_reco->AddBinContent(14);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
           break;
         default:
           pdgbin = -1;
           break;
       }
 
-      if (particle.isPhysicalPrimary()) {
-        if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
-          MC_DCA.fill(HIST("histDCA_prim"), track.pt() * 2.0, track.dcaXY(), pdgbin);
-          MC_DCA.fill(HIST("histDCAz_prim"), track.pt() * 2.0, track.dcaZ(), pdgbin);
-        } else {
-          MC_DCA.fill(HIST("histDCA_prim"), track.pt(), track.dcaXY(), pdgbin);
-          MC_DCA.fill(HIST("histDCAz_prim"), track.pt(), track.dcaZ(), pdgbin);
-        }
-      } else if (particle.has_mothers()) {
-        if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
-          MC_DCA.fill(HIST("histDCA_weak"), track.pt() * 2.0, track.dcaXY(), pdgbin);
-          MC_DCA.fill(HIST("histDCAz_weak"), track.pt() * 2.0, track.dcaZ(), pdgbin);
-        } else {
-          MC_DCA.fill(HIST("histDCA_weak"), track.pt(), track.dcaXY(), pdgbin);
-          MC_DCA.fill(HIST("histDCAz_weak"), track.pt(), track.dcaZ(), pdgbin);
-        }
-      } else {
-        if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
-          MC_DCA.fill(HIST("histDCA_mat"), track.pt() * 2.0, track.dcaXY(), pdgbin);
-          MC_DCA.fill(HIST("histDCAz_mat"), track.pt() * 2.0, track.dcaZ(), pdgbin);
-        } else {
-          MC_DCA.fill(HIST("histDCA_mat"), track.pt(), track.dcaXY(), pdgbin);
-          MC_DCA.fill(HIST("histDCAz_mat"), track.pt(), track.dcaZ(), pdgbin);
-        }
-      }
-
-      if (!particle.isPhysicalPrimary())
+      if (require_PhysicalPrimary_MC_reco && !particle.isPhysicalPrimary())
         continue;
       histTrackcuts_MC->AddBinContent(2);
-      TLorentzVector lorentzVector_particle_MC{};
-
-      switch (particle.pdgCode()) {
-        case +211:
-          histPDG_reco->AddBinContent(1);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
-          break;
-        case -211:
-          histPDG_reco->AddBinContent(2);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
-          break;
-        case +321:
-          histPDG_reco->AddBinContent(3);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
-          break;
-        case -321:
-          histPDG_reco->AddBinContent(4);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
-          break;
-        case +2212:
-          histPDG_reco->AddBinContent(5);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
-          break;
-        case -2212:
-          histPDG_reco->AddBinContent(6);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
-          break;
-        case +1000010020:
-          histPDG_reco->AddBinContent(7);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
-          break;
-        case -1000010020:
-          histPDG_reco->AddBinContent(8);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
-          break;
-        case +1000010030:
-          histPDG_reco->AddBinContent(9);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
-          break;
-        case -1000010030:
-          histPDG_reco->AddBinContent(10);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
-          break;
-        case +1000020030:
-          histPDG_reco->AddBinContent(11);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
-          break;
-        case -1000020030:
-          histPDG_reco->AddBinContent(12);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
-          break;
-        case +1000020040:
-          histPDG_reco->AddBinContent(13);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
-          break;
-        case -1000020040:
-          histPDG_reco->AddBinContent(14);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
-          break;
-        default:
-          continue;
-          break;
-      }
 
       if (lorentzVector_particle_MC.Rapidity() < yMin || lorentzVector_particle_MC.Rapidity() > yMax)
         continue;
@@ -1352,6 +1372,31 @@ struct NucleiHistTask {
       float nSigmaHe3 = track.tpcNSigmaHe();
       float nSigmaHe4 = track.tpcNSigmaAl();
 
+      if (enable_pT_shift_pion_tpc_nSigma) {
+        float nSigmaPion_shift = Pion_Tpc_nSigma_shift->Eval(track.pt());
+        nSigmaPion -= nSigmaPion_shift;
+      }
+      if (enable_pT_shift_proton_tpc_nSigma) {
+        float nSigmaProton_shift = Proton_Tpc_nSigma_shift->Eval(track.pt());
+        nSigmaProton -= nSigmaProton_shift;
+      }
+      if (enable_pT_shift_deuteron_tpc_nSigma) {
+        float nSigmaDeuteron_shift = Deuteron_Tpc_nSigma_shift->Eval(track.pt());
+        nSigmaDeuteron -= nSigmaDeuteron_shift;
+      }
+      if (enable_pT_shift_triton_tpc_nSigma) {
+        float nSigmaTriton_shift = Triton_Tpc_nSigma_shift->Eval(track.pt());
+        nSigmaTriton -= nSigmaTriton_shift;
+      }
+      if (enable_pT_shift_He3_tpc_nSigma) {
+        float nSigmaHe3_shift = He3_Tpc_nSigma_shift->Eval(track.pt() * 2.0);
+        nSigmaHe3 -= nSigmaHe3_shift;
+      }
+      if (enable_pT_shift_He4_tpc_nSigma) {
+        float nSigmaHe4_shift = He4_Tpc_nSigma_shift->Eval(track.pt() * 2.0);
+        nSigmaHe4 -= nSigmaHe4_shift;
+      }
+
       if (track.sign() > 0) {
         MC_recon_reg.fill(HIST("histTpcNsigmaDataPi"), track.pt(), nSigmaPion);
         MC_recon_reg.fill(HIST("histTpcNsigmaDataPr"), track.pt(), nSigmaProton);
@@ -1408,6 +1453,117 @@ struct NucleiHistTask {
     }
   }
   PROCESS_SWITCH(NucleiHistTask, processMCreco, "process reconstructed MC", false);
+
+  void processMCdca(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
+                    aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
+  {
+
+    if (event_selection_MC_sel8 && !collisions.sel8())
+      return;
+    if (!isEventSelected(collisions))
+      return;
+
+    for (auto& track : tracks) {
+      histTrackcuts_MC->AddBinContent(1);
+      const auto particle = track.mcParticle();
+
+      int pdgbin = 0;
+      TLorentzVector lorentzVector_particle_MC{};
+      switch (particle.pdgCode()) {
+        case +211:
+          pdgbin = 0;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
+          break;
+        case -211:
+          pdgbin = 1;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
+          break;
+        case +321:
+          pdgbin = 2;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
+          break;
+        case -321:
+          pdgbin = 3;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
+          break;
+        case +2212:
+          pdgbin = 4;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
+          break;
+        case -2212:
+          pdgbin = 5;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
+          break;
+        case +1000010020:
+          pdgbin = 6;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
+          break;
+        case -1000010020:
+          pdgbin = 7;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
+          break;
+        case +1000010030:
+          pdgbin = 8;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
+          break;
+        case -1000010030:
+          pdgbin = 9;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
+          break;
+        case +1000020030:
+          pdgbin = 10;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
+          break;
+        case -1000020030:
+          pdgbin = 11;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
+          break;
+        case +1000020040:
+          pdgbin = 12;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
+          break;
+        case -1000020040:
+          pdgbin = 13;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
+          break;
+        default:
+          pdgbin = -1;
+          break;
+      }
+
+      if (lorentzVector_particle_MC.Rapidity() < yMin || lorentzVector_particle_MC.Rapidity() > yMax)
+        continue;
+
+      MC_DCA.fill(HIST("histEta"), track.eta(), pdgbin);
+
+      if (particle.isPhysicalPrimary()) {
+        if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
+          MC_DCA.fill(HIST("histDCA_prim"), track.pt() * 2.0, track.dcaXY(), pdgbin);
+          MC_DCA.fill(HIST("histDCAz_prim"), track.pt() * 2.0, track.dcaZ(), pdgbin);
+        } else {
+          MC_DCA.fill(HIST("histDCA_prim"), track.pt(), track.dcaXY(), pdgbin);
+          MC_DCA.fill(HIST("histDCAz_prim"), track.pt(), track.dcaZ(), pdgbin);
+        }
+      } else if (particle.getProcess() == 4) {
+        if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
+          MC_DCA.fill(HIST("histDCA_weak"), track.pt() * 2.0, track.dcaXY(), pdgbin);
+          MC_DCA.fill(HIST("histDCAz_weak"), track.pt() * 2.0, track.dcaZ(), pdgbin);
+        } else {
+          MC_DCA.fill(HIST("histDCA_weak"), track.pt(), track.dcaXY(), pdgbin);
+          MC_DCA.fill(HIST("histDCAz_weak"), track.pt(), track.dcaZ(), pdgbin);
+        }
+      } else if (particle.getProcess() == 23) {
+        if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
+          MC_DCA.fill(HIST("histDCA_mat"), track.pt() * 2.0, track.dcaXY(), pdgbin);
+          MC_DCA.fill(HIST("histDCAz_mat"), track.pt() * 2.0, track.dcaZ(), pdgbin);
+        } else {
+          MC_DCA.fill(HIST("histDCA_mat"), track.pt(), track.dcaXY(), pdgbin);
+          MC_DCA.fill(HIST("histDCAz_mat"), track.pt(), track.dcaZ(), pdgbin);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(NucleiHistTask, processMCdca, "process MC DCA", false);
 };
 
 //***********************************************************************************

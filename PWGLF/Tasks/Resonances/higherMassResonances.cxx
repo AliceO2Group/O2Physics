@@ -77,7 +77,7 @@ struct HigherMassResonances {
   Configurable<bool> globalTracks{"globalTracks", false, "Global tracks"};
   Configurable<bool> hasTPC{"hasTPC", false, "TPC"};
 
-  // Configurable for event selection
+  // Configurables for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<float> cfgETAcut{"cfgETAcut", 0.8f, "Track ETA cut"};
   Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
@@ -119,6 +119,8 @@ struct HigherMassResonances {
   // Configurable for MC
   Configurable<bool> allGenCollisions{"allGenCollisions", true, "To fill all generated collisions for the signal loss calculations"};
   Configurable<bool> cTVXEvsel{"cTVXEvsel", true, "Triggger selection"};
+  Configurable<int> selectMCparticles{"selectMCparticles", 1, "0: f0(1710), 1: f2(1525), 2: a2(1320), 3: f0(1370), 4: f0(1500)"};
+  std::vector<int> pdgCodes = {10331, 335, 115, 10221, 9030221};
 
   // output THnSparses
   Configurable<bool> activateTHnSparseCosThStarHelicity{"activateTHnSparseCosThStarHelicity", false, "Activate the THnSparse with cosThStar w.r.t. helicity axis"};
@@ -131,7 +133,7 @@ struct HigherMassResonances {
   Configurable<bool> rapidityks{"rapidityks", true, "rapidity cut on K0s"};
   Configurable<bool> applyCompetingcut{"applyCompetingcut", false, "Competing cascade rejection cut"};
   Configurable<float> competingcascrejlambda{"competingcascrejlambda", 0.005, "rejecting competing cascade lambda"};
-  Configurable<float> competingcascrejlambdaanti{"competingcascrejlambdaanti", 0.005, "rejecting competing cascade anti-lambda"}; // If one of the pions is misidentified as a proton, then instead of Ks we reconstruct lambda, therefore the competing cascade rejection cut is applied in which if the reconstrcted mass of a pion and proton (which we are assuming to be misidentified as proton) is close to lambda or anti-lambda, then the track is rejected.
+  Configurable<float> competingcascrejlambdaanti{"competingcascrejlambdaanti", 0.005, "rejecting competing cascade anti-lambda"}; // If one of the pions is misidentified as a proton, then instead of Ks we reconstruct lambda, therefore the competing cascade rejection cut is applied in which if the reconstrcted mass of a pion and proton (which we are assuming to be misidentified as proton) is close to lambda or anti-lambda, then the track is rejected
   Configurable<int> tpcCrossedrows{"tpcCrossedrows", 70, "TPC crossed rows"};
   Configurable<float> tpcCrossedrowsOverfcls{"tpcCrossedrowsOverfcls", 0.8, "TPC crossed rows over findable clusters"};
 
@@ -281,12 +283,18 @@ struct HigherMassResonances {
     // For MC
     hMChists.add("events_check", "No. of events in the generated MC", kTH1I, {{20, 0, 20}});
     hMChists.add("events_checkrec", "No. of events in the reconstructed MC", kTH1I, {{20, 0, 20}});
-    hMChists.add("Genf1710", "Gen f_{0}(1710)", kTH1F, {ptAxis});
-    hMChists.add("Recf1710_pt1", "Rec f_{0}(1710) p_{T}", kTH1F, {ptAxis});
-    hMChists.add("Recf1710_pt2", "Rec f_{0}(1710) p_{T}", kTH1F, {ptAxis});
+    hMChists.add("Genf1710", "Gen f_{0}(1710)", kTHnSparseF, {multiplicityAxis, ptAxis});
+    hMChists.add("Recf1710_pt1", "Rec f_{0}(1710) p_{T}", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis});
+    hMChists.add("Recf1710_pt2", "Rec f_{0}(1710) p_{T}", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis});
     hMChists.add("Recf1710_p", "Rec f_{0}(1710) p", kTH1F, {ptAxis});
     hMChists.add("Recf1710_mass", "Rec f_{0}(1710) mass", kTH1F, {glueballMassAxis});
     hMChists.add("Genf1710_mass", "Gen f_{0}(1710) mass", kTH1F, {glueballMassAxis});
+    hMChists.add("GenEta", "Gen Eta", kTH1F, {{100, -1.0f, 1.0f}});
+    hMChists.add("GenPhi", "Gen Phi", kTH1F, {{70, 0.0f, 7.0f}});
+    hMChists.add("GenRapidity", "Gen Rapidity", kTH1F, {{100, -1.0f, 1.0f}});
+    hMChists.add("RecEta", "Rec Eta", kTH1F, {{100, -1.0f, 1.0f}});
+    hMChists.add("RecPhi", "Rec Phi", kTH1F, {{70, 0.0f, 7.0f}});
+    hMChists.add("RecRapidity", "Rec Rapidity", kTH1F, {{100, -1.0f, 1.0f}});
     hMChists.add("MC_mult", "Multiplicity in MC", kTH1F, {multiplicityAxis});
     hMChists.add("MC_mult_after_event_sel", "Multiplicity in MC", kTH1F, {multiplicityAxis});
 
@@ -545,7 +553,7 @@ struct HigherMassResonances {
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
   using V0TrackCandidate = aod::V0Datas;
   // For Monte Carlo
-  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
+  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::McTrackLabels>>;
   using V0TrackCandidatesMC = soa::Join<aod::V0Datas, aod::McV0Labels>;
 
@@ -961,6 +969,7 @@ struct HigherMassResonances {
   PROCESS_SWITCH(HigherMassResonances, processME, "mixed event process", true);
 
   int counter = 0;
+  // float multiplicity_gen = 0.0;
   void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
     TLorentzVector genvec;
@@ -982,6 +991,7 @@ struct HigherMassResonances {
 
     std::vector<int64_t> selectedEvents(collisions.size());
     int nevts = 0;
+    float multiplicity_gen = 0.0;
     for (const auto& collision : collisions) {
       if (std::abs(collision.mcCollision().posZ()) > cutzvertex) {
         continue;
@@ -994,15 +1004,17 @@ struct HigherMassResonances {
         continue;
       }
 
+      multiplicity_gen = collision.centFT0M();
+
       selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
     }
     selectedEvents.resize(nevts);
     hMChists.fill(HIST("events_check"), 3.5);
-    // const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
+    const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
 
-    // if (!allGenCollisions && !evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
-    //   return;
-    // }
+    if (!allGenCollisions && !evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
+      return;
+    }
     hMChists.fill(HIST("events_check"), 4.5);
     for (const auto& mcParticle : mcParticles) {
       if (std::abs(mcParticle.y()) >= 0.5) {
@@ -1014,7 +1026,7 @@ struct HigherMassResonances {
       //   std::cout << "PDG code mother " << mcParticle.pdgCode() << std::endl;
       // }
       // counter++;
-      if (std::abs(mcParticle.pdgCode()) != 10331) // f2(1525), f0(1710)
+      if (std::abs(mcParticle.pdgCode()) != pdgCodes[selectMCparticles]) // f2(1525), f0(1710)
       {
         continue;
       }
@@ -1045,8 +1057,11 @@ struct HigherMassResonances {
       }
       if (passKs) {
         genvec.SetPtEtaPhiE(mcParticle.pt(), mcParticle.eta(), mcParticle.phi(), mcParticle.e());
-        hMChists.fill(HIST("Genf1710"), mcParticle.pt());
         hMChists.fill(HIST("Genf1710_mass"), genvec.M());
+        hMChists.fill(HIST("Genf1710"), multiplicity_gen, mcParticle.pt());
+        hMChists.fill(HIST("GenRapidity"), genvec.Rapidity());
+        hMChists.fill(HIST("GenPhi"), genvec.Phi());
+        hMChists.fill(HIST("GenEta"), genvec.Eta());
       }
     }
   }
@@ -1069,7 +1084,7 @@ struct HigherMassResonances {
       return;
     }
     hMChists.fill(HIST("events_checkrec"), 1.5);
-    // if (std::abs(collision.mcCollision().posZ()) > cutzvertex || !collision.sel8()) {
+    // // if (std::abs(collision.mcCollision().posZ()) > cutzvertex || !collision.sel8()) {
     if (std::abs(collision.mcCollision().posZ()) > cutzvertex) {
       return;
     }
@@ -1181,7 +1196,7 @@ struct HigherMassResonances {
             // if (counter2 < 1e4)
             //   std::cout << "Mother2 pdg code: " << motpdgs2 << " p_{T} " << mothertrack2.pt() << "Global index " << mothertrack1.globalIndex() << " event " << eventCounter << std::endl;
 
-            if (mothertrack1.pdgCode() != 10331) {
+            if (mothertrack1.pdgCode() != pdgCodes[selectMCparticles]) {
               continue;
             }
             hMChists.fill(HIST("events_checkrec"), 15.5);
@@ -1222,9 +1237,13 @@ struct HigherMassResonances {
 
             hMChists.fill(HIST("Recf1710_p"), motherP);
             hMChists.fill(HIST("Recf1710_mass"), recMass);
-            hMChists.fill(HIST("Recf1710_pt1"), mothertrack1.pt());
+            hMChists.fill(HIST("Recf1710_pt1"), multiplicity, mothertrack1.pt(), recMass);
             // hMChists.fill(HIST("Genf1710_mass"), genMass);
-            hMChists.fill(HIST("Recf1710_pt2"), lResonance.Pt());
+            hMChists.fill(HIST("Recf1710_pt2"), multiplicity, lResonance.Pt(), recMass);
+
+            hMChists.fill(HIST("RecRapidity"), mothertrack1.y());
+            hMChists.fill(HIST("RecPhi"), mothertrack1.phi());
+            hMChists.fill(HIST("RecEta"), mothertrack1.eta());
           }
           gindex2.clear();
         }
