@@ -564,8 +564,8 @@ struct strangederivedbuilder {
       // count total MC multiplicity in generated collision
       // reproduces what is done here:
       // https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/multiplicityTable.cxx#L654
-      int totalMult = 0; 
-      for (const auto& mcPart : mcParticles ) {
+      int totalMult = 0;
+      for (const auto& mcPart : mcParticles) {
         if (!mcPart.isPhysicalPrimary()) {
           continue;
         }

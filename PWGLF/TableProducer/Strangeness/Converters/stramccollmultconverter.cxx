@@ -23,11 +23,11 @@ struct stramccollmultconverter {
   void process(aod::StraMCCollMults_000 const& straMCcolls)
   {
     for (auto& straMCcoll : straMCcolls) {
-      straMCCollMults_001(straMCcoll.multMCFT0A(), 
-                          straMCcoll.multMCFT0C(), 
-                          straMCcoll.multMCNParticlesEta05(), 
-                          straMCcoll.multMCNParticlesEta08(), 
-                          straMCcoll.multMCNParticlesEta10(), 
+      straMCCollMults_001(straMCcoll.multMCFT0A(),
+                          straMCcoll.multMCFT0C(),
+                          straMCcoll.multMCNParticlesEta05(),
+                          straMCcoll.multMCNParticlesEta08(),
+                          straMCcoll.multMCNParticlesEta10(),
                           -1 /* dummy value for totalMultMCParticles */);
     }
   }
