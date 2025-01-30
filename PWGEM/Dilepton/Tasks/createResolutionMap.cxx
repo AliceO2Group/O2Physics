@@ -41,6 +41,8 @@
 #include "MCHTracking/TrackExtrap.h"
 #include "MCHTracking/TrackParam.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
+
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
 
 using namespace o2;
@@ -49,6 +51,7 @@ using namespace o2::framework::expressions;
 using namespace o2::aod;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::dilepton::utils::mcutil;
+
 
 using MyCollisions = Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 using MyCollision = MyCollisions::iterator;
@@ -110,6 +113,7 @@ struct CreateResolutionMap {
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 0.3, "max dca XY for single track in cm"};
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 0.3, "max dca Z for single track in cm"};
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", false, "flag to require ITS ib 1st hit"};
+    Configurable<bool> cfg_enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
   } electroncuts;
 
   struct : ConfigurableGroup {
@@ -126,6 +130,7 @@ struct CreateResolutionMap {
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1e+10, "max dca XY for single track in cm"};
     Configurable<float> cfg_min_rabs{"cfg_min_rabs", 17.6, "min Radius at the absorber end"};
     Configurable<float> cfg_max_rabs{"cfg_max_rabs", 89.5, "max Radius at the absorber end"};
+    //Configurable<bool> cfg_enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
   } muoncuts;
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -369,6 +374,7 @@ struct CreateResolutionMap {
   using MyFilteredCollisionsCent = soa::Filtered<MyCollisionsCent>;
 
   Filter trackFilter_mid = o2::aod::track::pt > electroncuts.cfg_min_pt_track&& electroncuts.cfg_min_eta_track < o2::aod::track::eta&& o2::aod::track::eta < electroncuts.cfg_max_eta_track&& o2::aod::track::tpcChi2NCl < electroncuts.cfg_max_chi2tpc&& o2::aod::track::itsChi2NCl < electroncuts.cfg_max_chi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true && nabs(o2::aod::track::dcaXY) < electroncuts.cfg_max_dcaxy&& nabs(o2::aod::track::dcaZ) < electroncuts.cfg_max_dcaz;
+  Filter ttcaFilter_electron = ifnode(electroncuts.cfg_enableTTCA.node(), o2::aod::emprimaryelectron::isAssociatedToMPC == true || o2::aod::emprimaryelectron::isAssociatedToMPC == false, o2::aod::emprimaryelectron::isAssociatedToMPC == true);
   using MyFilteredMCTracks = soa::Filtered<MyMCTracks>;
 
   Partition<MyMCFwdTracks> sa_muons = o2::aod::fwdtrack::trackType == uint8_t(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack); // MCH-MID
