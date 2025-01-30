@@ -43,7 +43,6 @@
 #include "Framework/StaticFor.h"
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 #include "PWGCF/Femto3D/Core/femto3dPairTask.h"
-#include "PWGLF/DataModel/mcCentrality.h"
 
 using namespace o2;
 using namespace o2::soa;
