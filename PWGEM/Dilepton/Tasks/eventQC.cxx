@@ -124,8 +124,12 @@ struct eventQC {
 
   struct : ConfigurableGroup {
     std::string prefix = "v0cut_group";
+    Configurable<float> cfg_min_mass_photon{"cfg_min_mass_photon", 0.0, "min mass for photon rejection"};
+    Configurable<float> cfg_max_mass_photon{"cfg_max_mass_photon", 0.1, "max mass for photon rejection"};
     Configurable<float> cfg_min_mass_k0s{"cfg_min_mass_k0s", 0.490, "min mass for K0S"};
     Configurable<float> cfg_max_mass_k0s{"cfg_max_mass_k0s", 0.505, "max mass for K0S"};
+    Configurable<float> cfg_min_mass_lambda{"cfg_min_mass_lambda", 1.11, "min mass for Lambda rejection"};
+    Configurable<float> cfg_max_mass_lambda{"cfg_max_mass_lambda", 1.12, "max mass for Lambda rejection"};
     Configurable<float> cfg_min_cospa_v0hadron{"cfg_min_cospa_v0hadron", 0.999, "min cospa for v0hadron"};
     Configurable<float> cfg_max_pca_v0hadron{"cfg_max_pca_v0hadron", 0.5, "max distance between 2 legs for v0hadron"};
     Configurable<float> cfg_min_radius_v0hadron{"cfg_min_radius_v0hadron", 1.0, "min rxy for v0hadron"};
@@ -357,8 +361,9 @@ struct eventQC {
     fRegistry.add("V0/K0S/pion/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -10, +10}}, false);
 
     fRegistry.add("V0/K0S/hMass", "mass vs. p_{T} of K^{0}_{S}", kTH2F, {{200, 0.4, 0.6}, {100, 0, 10}}, false);
-    // fRegistry.add("V0/Lambda/hMass", "mass vs. p_{T} of #Lambda", kTH2F, {{100, 1.08, 1.18}, {100, 0, 10}}, false);
-    // fRegistry.add("V0/AntiLambda/hMass", "mass vs. p_{T} of #bar{#Lambda}", kTH2F, {{100, 1.08, 1.18}, {100, 0, 10}}, false);
+    fRegistry.add("V0/Lambda/hMass", "mass vs. p_{T} of #Lambda", kTH2F, {{100, 1.08, 1.18}, {100, 0, 10}}, false);
+    fRegistry.add("V0/AntiLambda/hMass", "mass vs. p_{T} of #bar{#Lambda}", kTH2F, {{100, 1.08, 1.18}, {100, 0, 10}}, false);
+    fRegistry.add("V0/GammaTMP/hMass", "mass vs. p_{T} of #gamma", kTH2F, {{100, 0.0, 0.1}, {100, 0, 10}}, false);
 
     fRegistry.add("V0/Photon/hMass", "mass vs. p_{T}", kTH2F, {{100, 0, 0.1}, {100, 0, 10}}, false);
     fRegistry.add("V0/Photon/hChi2", "radius vs. KF chi2", kTH2F, {{100, 0, 100}, {100, 0, 100}}, false);
@@ -939,9 +944,19 @@ struct eventQC {
           fRegistry.fill(HIST("V0/hRadius"), v0hadron.v0radius());
 
           fRegistry.fill(HIST("V0/K0S/hMass"), v0hadron.mK0Short(), v0hadron.pt());
-          // fRegistry.fill(HIST("V0/Lambda/hMass"), v0hadron.mLambda(), v0hadron.pt());
-          // fRegistry.fill(HIST("V0/AntiLambda/hMass"), v0hadron.mAntiLambda(), v0hadron.pt());
           if (v0cuts.cfg_min_mass_k0s < v0hadron.mK0Short() && v0hadron.mK0Short() < v0cuts.cfg_max_mass_k0s) { // K0S
+            fRegistry.fill(HIST("V0/GammaTMP/hMass"), v0hadron.mGamma(), v0hadron.pt());
+            fRegistry.fill(HIST("V0/Lambda/hMass"), v0hadron.mLambda(), v0hadron.pt());
+            fRegistry.fill(HIST("V0/AntiLambda/hMass"), v0hadron.mAntiLambda(), v0hadron.pt());
+            if (v0cuts.cfg_min_mass_lambda < v0hadron.mLambda() && v0hadron.mLambda() < v0cuts.cfg_max_mass_lambda) { // Lambda rejection
+              continue;
+            }
+            if (v0cuts.cfg_min_mass_lambda < v0hadron.mAntiLambda() && v0hadron.mAntiLambda() < v0cuts.cfg_max_mass_lambda) { // AntiLambda rejection
+              continue;
+            }
+            if (v0cuts.cfg_min_mass_photon < v0hadron.mGamma() && v0hadron.mGamma() < v0cuts.cfg_max_mass_photon) { // photon conversion rejection
+              continue;
+            }
 
             auto pos = tracks.rawIteratorAt(v0hadron.posTrackId());
             auto neg = tracks.rawIteratorAt(v0hadron.negTrackId());

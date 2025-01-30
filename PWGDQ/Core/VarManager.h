@@ -1510,6 +1510,7 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultNTracksITSTPC] = event.multNTracksITSTPC();
     values[kMultAllTracksTPCOnly] = event.multAllTracksTPCOnly();
     values[kMultAllTracksITSTPC] = event.multAllTracksITSTPC();
+    values[kTrackOccupancyInTimeRange] = event.trackOccupancyInTimeRange();
     if constexpr ((fillMap & ReducedEventMultExtra) > 0) {
       values[kNTPCcontribLongA] = event.nTPCoccupContribLongA();
       values[kNTPCcontribLongC] = event.nTPCoccupContribLongC();

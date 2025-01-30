@@ -100,9 +100,12 @@ struct ResonanceModuleInitializer {
   Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", false, "Evt sel: triggerTVX selection (MB)"};
   Configurable<bool> cfgEvtTFBorderCut{"cfgEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
   Configurable<bool> cfgEvtUseITSTPCvertex{"cfgEvtUseITSTPCvertex", false, "Evt sel: use at lease on ITS-TPC track for vertexing"};
+  Configurable<bool> cfgEvtCollInTimeRangeNarrow{"cfgEvtCollInTimeRangeNarrow", false, "Evt sel: apply NoCollInTimeRangeNarrow"};
   Configurable<bool> cfgEvtZvertexTimedifference{"cfgEvtZvertexTimedifference", false, "Evt sel: apply Z-vertex time difference"};
   Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", false, "Evt sel: apply pileup rejection"};
   Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
+  Configurable<bool> cfgEvtRun2AliEventCuts{"cfgEvtRun2AliEventCuts", true, "Evt sel: apply Run2 AliEventCuts"};
+  Configurable<bool> cfgEvtRun2INELgtZERO{"cfgEvtRun2INELgtZERO", false, "Evt sel: apply Run2 INELgtZERO"};
 
   // Spherocity configuration
   Configurable<int> cfgTrackSphMin{"cfgTrackSphMin", 10, "Number of tracks for Spherocity Calculation"};
@@ -160,9 +163,12 @@ struct ResonanceModuleInitializer {
     colCuts.setTriggerTVX(cfgEvtTriggerTVXSel);
     colCuts.setApplyTFBorderCut(cfgEvtTFBorderCut);
     colCuts.setApplyITSTPCvertex(cfgEvtUseITSTPCvertex);
+    colCuts.setApplyCollInTimeRangeNarrow(cfgEvtCollInTimeRangeNarrow);
     colCuts.setApplyZvertexTimedifference(cfgEvtZvertexTimedifference);
     colCuts.setApplyPileupRejection(cfgEvtPileupRejection);
     colCuts.setApplyNoITSROBorderCut(cfgEvtNoITSROBorderCut);
+    colCuts.setApplyRun2AliEventCuts(cfgEvtRun2AliEventCuts);
+    colCuts.setApplyRun2INELgtZERO(cfgEvtRun2INELgtZERO);
 
     // Configure CCDB access if not bypassed
     if (!cfgBypassCCDB) {
