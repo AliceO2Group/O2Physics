@@ -935,6 +935,7 @@ DECLARE_SOA_TABLE(DileptonTrackTrackCandidates, "AOD", "RTDQUADPLET", //!
                   dileptonTrackTrackCandidate::DeltaQ,
                   dileptonTrackTrackCandidate::R1,
                   dileptonTrackTrackCandidate::R2,
+                  dileptonTrackTrackCandidate::R,
                   dileptonTrackTrackCandidate::DileptonMass,
                   dileptonTrackTrackCandidate::DileptonPt,
                   dileptonTrackTrackCandidate::DileptonEta,
