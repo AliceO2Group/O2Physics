@@ -70,7 +70,7 @@ DECLARE_SOA_COLUMN(NeutronClass, neutronClass, int);
 DECLARE_SOA_COLUMN(TotalCharge, totalCharge, int);
 // store things for reconstruction of lorentz vectors
 DECLARE_SOA_COLUMN(RhoPt, rhoPt, float);
-DECLARE_SOA_COLUMN(RhoEta, rhoEta, float);
+DECLARE_SOA_COLUMN(RhoY, rhoY, float);
 DECLARE_SOA_COLUMN(RhoPhi, rhoPhi, float);
 DECLARE_SOA_COLUMN(RhoM, rhoM, float);
 // other stuff
@@ -95,7 +95,7 @@ DECLARE_SOA_TABLE(Tree, "AOD", "TREE",
                   tree::PosX, tree::PosY, tree::PosZ, tree::TotalFT0AmplitudeA, tree::TotalFT0AmplitudeC, tree::TotalFV0AmplitudeA, tree::TotalFDDAmplitudeA, tree::TotalFDDAmplitudeC,
                   tree::TimeFT0A, tree::TimeFT0C, tree::TimeFV0A, tree::TimeFDDA, tree::TimeFDDC,
                   tree::EnergyCommonZNA, tree::EnergyCommonZNC, tree::TimeZNA, tree::TimeZNC, tree::NeutronClass,
-                  tree::TotalCharge, tree::RhoPt, tree::RhoEta, tree::RhoPhi, tree::RhoM, tree::RhoPhiRandom, tree::RhoPhiCharge,
+                  tree::TotalCharge, tree::RhoPt, tree::RhoY, tree::RhoPhi, tree::RhoM, tree::RhoPhiRandom, tree::RhoPhiCharge,
                   tree::TrackSign, tree::TrackPt, tree::TrackEta, tree::TrackPhi, tree::TrackM, tree::TrackPiPID, tree::TrackElPID, tree::TrackDcaXY, tree::TrackDcaZ, tree::TrackTpcSignal);
 } // namespace o2::aod
 
@@ -776,7 +776,7 @@ struct upcRhoAnalysis {
          collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
          collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
          collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC(), neutronClass,
-         totalCharge, pT, system.Eta(), system.Phi(), mass, phiRandom, phiCharge,
+         totalCharge, pT, rapidity, system.Phi(), mass, phiRandom, phiCharge,
          trackSigns, trackPts, trackEtas, trackPhis, trackMs, trackPiPIDs, trackElPIDs, trackDcaXYs, trackDcaZs, trackTpcSignals);
     // fill raw histograms according to the total charge
     switch (totalCharge) {
