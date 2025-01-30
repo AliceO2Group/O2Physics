@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+/// \file k0_mixed_events.cxx
 /// \brief Femto3D pair mixing task
 /// \author Sofia Tomassini, Gleb Romanenko, Nicolò Jacazio
 /// \since 31 May 2023
@@ -57,46 +58,45 @@ class ResoPair : public MyFemtoPair
   ResoPair() {}
   ResoPair(trkType const& first, trkType const& second) : MyFemtoPair(first, second)
   {
-    SetPair(first, second);
+    setPair(first, second);
   }
   ResoPair(trkType const& first, trkType const& second, const bool& isidentical) : MyFemtoPair(first, second, isidentical) {}
-  bool IsClosePair() const { return MyFemtoPair::IsClosePair(_deta, _dphi, _radius); }
-  void SetEtaDiff(const float deta) { _deta = deta; }
-  void SetPhiStarDiff(const float dphi) { _dphi = dphi; }
-  void SetPair(trkType const& first, trkType const& second)
+  bool isClosePair() const { return MyFemtoPair::IsClosePair(mDeltaEta, mDeltaPhi, mRadius); }
+  void setEtaDiff(const float deta) { mDeltaEta = deta; }
+  void setPhiStarDiff(const float dphi) { mDeltaPhi = dphi; }
+  void setPair(trkType const& first, trkType const& second)
   {
     MyFemtoPair::SetPair(first, second);
     lDecayDaughter1.SetPtEtaPhiM(first->pt(), first->eta(), first->phi(), particle_mass(GetPDG1()));
     lDecayDaughter2.SetPtEtaPhiM(second->pt(), second->eta(), second->phi(), particle_mass(GetPDG2()));
     lResonance = lDecayDaughter1 + lDecayDaughter2;
   }
-  float GetInvMass() const
+  float getInvMass() const
   {
     // LOG(info) << "Mass = " << lResonance.M() << " 1 " << lDecayDaughter1.M() << " 2 " << lDecayDaughter2.M();
     return lResonance.M();
   }
-  float GetPt() const { return lResonance.Pt(); }
-  float GetRapidity() const { return lResonance.Rapidity(); }
+  float getPt() const { return lResonance.Pt(); }
+  float getRapidity() const { return lResonance.Rapidity(); }
 
  private:
   TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
-  float _deta = 0.01;
-  float _dphi = 0.01;
-  float _radius = 1.2;
+  float mDeltaEta = 0.01;
+  float mDeltaPhi = 0.01;
+  float mRadius = 1.2;
 };
 
 struct K0MixedEvents {
-  // using allinfo = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPr, aod::TOFSignal, aod::TracksDCA, aod::pidTOFFullPr, aod::pidTOFbeta, aod::pidTOFFullKa, aod::pidTPCFullKa, aod::pidTOFFullDe, aod::pidTPCFullDe>; // aod::pidTPCPr
-  /// Construct a registry object with direct declaration
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Configurable<float> _min_P{"min_P", 0.0, "lower mometum limit"};
-  Configurable<float> _max_P{"max_P", 100.0, "upper mometum limit"};
+  Configurable<std::pair<float, float>> multPercentileCut{"multPercentileCut", std::pair<float, float>{-100.f, 1000.f}, "[min., max.] centrality range to keep events within"};
+  Configurable<std::pair<float, float>> momentumCut{"momentumCut", std::pair<float, float>{0.f, 100.f}, "[min., max.] momentum range to keep candidates within"};
+  Configurable<std::pair<float, float>> dcaxyCut{"dcaxyCut", std::pair<float, float>{-100.f, 100.f}, "[min., max.] dcaXY range to keep candidates within"};
+  Configurable<std::pair<float, float>> dcazCut{"dcazCut", std::pair<float, float>{-100.f, 100.f}, "[min., max.] dcaZ range to keep candidates within"};
+  Configurable<std::pair<float, float>> dcaxyExclusionCut{"dcaxyExclusionCut", std::pair<float, float>{100.f, -100.f}, "[min., max.] dcaXY range to discard candidates within"};
+  Configurable<std::pair<float, float>> dcazExclusionCut{"dcazExclusionCut", std::pair<float, float>{100.f, -100.f}, "[min., max.] dcaZ range to discard candidates within"};
+
   Configurable<float> _eta{"eta", 100.0, "abs eta value limit"};
-  Configurable<float> _dcaXY{"dcaXY", 1000.0, "abs dcaXY value limit"};
-  Configurable<float> _dcaXYmin{"dcaXYmin", -0.1, "abs dcaXY min. value limit"};
-  Configurable<float> _dcaZ{"dcaZ", 1000.0, "abs dcaZ value limit"};
-  Configurable<float> _dcaZmin{"dcaZmin", -0.1, "abs dcaZ min. value limit"};
   Configurable<int16_t> _tpcNClsFound{"minTpcNClsFound", 0, "minimum allowed number of TPC clasters"};
   Configurable<float> _tpcChi2NCl{"tpcChi2NCl", 100.0, "upper limit for chi2 value of a fit over TPC clasters"};
   Configurable<float> _tpcCrossedRowsOverFindableCls{"tpcCrossedRowsOverFindableCls", 0, "lower limit of TPC CrossedRows/FindableCls value"};
@@ -148,12 +148,14 @@ struct K0MixedEvents {
 
   std::unique_ptr<ResoPair> Pair = std::make_unique<ResoPair>();
 
-  Filter pFilter = o2::aod::singletrackselector::p > _min_P&& o2::aod::singletrackselector::p < _max_P;
+  Filter pFilter = o2::aod::singletrackselector::p > momentumCut.value.first&& o2::aod::singletrackselector::p < momentumCut.value.second;
   Filter etaFilter = nabs(o2::aod::singletrackselector::eta) < _eta;
   Filter tpcTrkFilter = o2::aod::singletrackselector::tpcNClsFound >= _tpcNClsFound && o2::aod::singletrackselector::tpcNClsShared <= (uint8_t)_tpcNClsShared;
+
   // Filter itsNClsFilter = o2::aod::singletrackselector::itsNCls >= (uint8_t)_itsNCls;
 
   Filter vertexFilter = nabs(o2::aod::singletrackselector::posZ) < _vertexZ;
+  Filter multPercentileFilter = o2::aod::singletrackselector::multPerc > multPercentileCut.value.first&& o2::aod::singletrackselector::multPerc < multPercentileCut.value.second;
 
   const char* pdgToSymbol(const int pdg)
   {
@@ -178,7 +180,7 @@ struct K0MixedEvents {
     Pair->SetIdentical(IsIdentical);
     Pair->SetPDG1(_particlePDG_1);
     Pair->SetPDG2(_particlePDG_2);
-    Pair->SetEtaDiff(1);
+    Pair->setEtaDiff(1);
 
     TPCcuts_1 = std::make_pair(_particlePDG_1, _tpcNSigma_1);
     TOFcuts_1 = std::make_pair(_particlePDG_1, _tofNSigma_1);
@@ -218,21 +220,21 @@ struct K0MixedEvents {
   { // template for identical particles from the same collision
 
     LOG(debug) << "Mixing tracks of the same event";
-    for (uint32_t ii = 0; ii < tracks.size(); ii++) { // nested loop for all the combinations
-      for (uint32_t iii = ii + 1; iii < tracks.size(); iii++) {
+    for (uint32_t trk1 = 0; trk1 < tracks.size(); trk1++) { // nested loop for all the combinations
+      for (uint32_t trk2 = trk1 + 1; trk2 < tracks.size(); trk2++) {
 
-        Pair->SetPair(tracks[ii], tracks[iii]);
+        Pair->setPair(tracks[trk1], tracks[trk2]);
 
         registry.fill(HIST("SEcand"), 1.f);
-        if (!Pair->IsClosePair()) {
+        if (!Pair->isClosePair()) {
           continue;
         }
-        if (std::abs(Pair->GetRapidity()) > 0.5f) {
+        if (std::abs(Pair->getRapidity()) > 0.5f) {
           continue;
         }
         registry.fill(HIST("SEcand"), 2.f);
-        registry.fill(HIST("SE"), Pair->GetInvMass());                    // close pair rejection and fillig the SE histo
-        registry.fill(HIST("SEvsPt"), Pair->GetInvMass(), Pair->GetPt()); // close pair rejection and fillig the SE histo
+        registry.fill(HIST("SE"), Pair->getInvMass());                    // close pair rejection and fillig the SE histo
+        registry.fill(HIST("SEvsPt"), Pair->getInvMass(), Pair->getPt()); // close pair rejection and fillig the SE histo
       }
     }
   }
@@ -241,27 +243,27 @@ struct K0MixedEvents {
   void mixTracks(Type const& tracks1, Type const& tracks2)
   {
     LOG(debug) << "Mixing tracks of two different events";
-    for (auto ii : tracks1) {
-      for (auto iii : tracks2) {
+    for (auto trk1 : tracks1) {
+      for (auto trk2 : tracks2) {
 
-        Pair->SetPair(ii, iii);
+        Pair->setPair(trk1, trk2);
 
         if constexpr (isSameEvent) {
           registry.fill(HIST("SEcand"), 1.f);
         }
-        if (!Pair->IsClosePair()) {
+        if (!Pair->isClosePair()) {
           continue;
         }
-        if (std::abs(Pair->GetRapidity()) > 0.5f) {
+        if (std::abs(Pair->getRapidity()) > 0.5f) {
           continue;
         }
         if constexpr (isSameEvent) {
           registry.fill(HIST("SEcand"), 2.f);
-          registry.fill(HIST("SE"), Pair->GetInvMass());
-          registry.fill(HIST("SEvsPt"), Pair->GetInvMass(), Pair->GetPt());
+          registry.fill(HIST("SE"), Pair->getInvMass());
+          registry.fill(HIST("SEvsPt"), Pair->getInvMass(), Pair->getPt());
         } else {
-          registry.fill(HIST("ME"), Pair->GetInvMass());
-          registry.fill(HIST("MEvsPt"), Pair->GetInvMass(), Pair->GetPt());
+          registry.fill(HIST("ME"), Pair->getInvMass());
+          registry.fill(HIST("MEvsPt"), Pair->getInvMass(), Pair->getPt());
         }
       }
     }
@@ -294,17 +296,37 @@ struct K0MixedEvents {
       if (track.tpcCrossedRowsOverFindableCls() < _tpcCrossedRowsOverFindableCls) {
         continue;
       }
-      if (track.dcaXY() < _dcaXYmin || track.dcaXY() > _dcaXY) {
+      if (track.dcaXY() < dcaxyCut.value.first) {
         continue;
       }
-      if (track.dcaZ() < _dcaZmin || track.dcaZ() > _dcaZ) {
+      if (track.dcaXY() > dcaxyCut.value.second) {
+        continue;
+      }
+      if (track.dcaXY() > dcaxyExclusionCut.value.first) {
+        continue;
+      }
+      if (track.dcaXY() < dcaxyExclusionCut.value.second) {
+        continue;
+      }
+      if (track.dcaZ() < dcazCut.value.first) {
+        continue;
+      }
+      if (track.dcaZ() > dcazCut.value.second) {
+        continue;
+      }
+      if (track.dcaZ() > dcazExclusionCut.value.first) {
+        continue;
+      }
+      if (track.dcaZ() < dcazExclusionCut.value.second) {
         continue;
       }
 
       registry.fill(HIST("Trks"), 1);
-      const float vtxZ = track.singleCollSel_as<FilteredCollisions>().posZ();
-      registry.fill(HIST("VTX"), vtxZ);
-      if (std::abs(vtxZ) > _vertexZ)
+      const auto& col = track.singleCollSel_as<FilteredCollisions>();
+      registry.fill(HIST("VTX"), col.posZ());
+      if (std::abs(col.posZ()) > _vertexZ)
+        continue;
+      if (col.multPerc() > multPercentileCut.value.second || col.multPerc() < multPercentileCut.value.first)
         continue;
       registry.fill(HIST("eta"), track.pt(), track.eta());
       if (std::abs(track.rapidity(particle_mass(_particlePDG_1))) > _maxy) {

@@ -121,7 +121,7 @@ struct singleTrackSelector {
   Filter pFilter = o2::aod::track::p > _min_P&& o2::aod::track::p < _max_P;
   Filter etaFilter = nabs(o2::aod::track::eta) < _eta;
   Filter dcaFilter = ((nabs(o2::aod::track::dcaXY) <= _dcaXY) && (nabs(o2::aod::track::dcaZ) <= _dcaZ)) &&
-                     ((o2::aod::track::dcaXY >= _dcaXYmin) && (o2::aod::track::dcaZ >= _dcaZmin));
+                     ((nabs(o2::aod::track::dcaXY) >= _dcaXYmin) && (nabs(o2::aod::track::dcaZ) >= _dcaZmin));
   Filter tofChi2Filter = o2::aod::track::tofChi2 < _maxTofChi2;
 
   ctpRateFetcher mRateFetcher; // inspired by zdcSP.cxx in PWGLF
@@ -148,11 +148,13 @@ struct singleTrackSelector {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    if (applySkimming) {
-      registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{2, 0.f, 2.f}}});
-      registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
-      registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "Skimmed");
-    }
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{2, 0.f, 2.f}}});
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "Skimmed");
+
+    registry.add("hNTracks", "hNTracks", {HistType::kTH1D, {{2, 0.f, 2.f}}});
+    registry.get<TH1>(HIST("hNTracks"))->GetXaxis()->SetBinLabel(1, "All");
+    registry.get<TH1>(HIST("hNTracks"))->GetXaxis()->SetBinLabel(2, "Selected");
 
     if (enable_gen_info) {
       registry.add("hNEvents_MCGen", "hNEvents_MCGen", {HistType::kTH1F, {{1, 0.f, 1.f}}});
@@ -205,6 +207,7 @@ struct singleTrackSelector {
     bool skip_track = false; // flag used for track rejection
 
     for (auto& track : tracks) {
+      registry.fill(HIST("hNTracks"), 0.5);
       if constexpr (isMC) {
         if (!track.has_mcParticle())
           continue;
@@ -224,6 +227,7 @@ struct singleTrackSelector {
 
       if (skip_track)
         continue;
+      registry.fill(HIST("hNTracks"), 1.5);
 
       for (auto ii : particlesToKeep)
         if (o2::aod::singletrackselector::TPCselection(track, std::make_pair(ii, keepWithinNsigmaTPC))) {
@@ -342,17 +346,16 @@ struct singleTrackSelector {
                        aod::BCsWithTimestamps const&)
   {
 
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
+    registry.fill(HIST("hNEvents"), 0.5);
     if (applySkimming) {
-      registry.fill(HIST("hNEvents"), 0.5);
-      bool zorroSelected = zorro.isSelected(bc.globalBC());
-      if (!zorroSelected) {
+      if (!zorro.isSelected(bc.globalBC())) {
         return;
       }
-      registry.fill(HIST("hNEvents"), 1.5);
     }
+    registry.fill(HIST("hNEvents"), 1.5);
 
     double hadronicRate = 0.;
     if (fetchRate) {

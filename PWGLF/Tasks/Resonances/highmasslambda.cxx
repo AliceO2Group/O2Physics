@@ -170,7 +170,7 @@ struct highmasslambda {
     // std::vector<double> ptLambdaBinning = {2.0, 3.0, 4.0, 5.0, 6.0};
 
     std::vector<double> occupancyBinning = {-0.5, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
-    AxisSpec resAxis = {1600, -16, 16, "Res"};
+    AxisSpec resAxis = {1600, -30, 30, "Res"};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
@@ -212,9 +212,9 @@ struct highmasslambda {
     histos.add("hImpactPar1", "hImpactPar1", kTH1F, {{500, 0.0f, 0.1f}});
     histos.add("hCPA", "hCPA", kTH1F, {{220, -1.1f, 1.1f}});
 
-    histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDCA});
-    histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDCA});
-    histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDCA});
+    histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDCA, thnAxisPtProton});
+    histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDCA, thnAxisPtProton});
+    histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDCA, thnAxisPtProton});
 
     histos.add("hSparseV2SASameEvent_V2_SVX", "hSparseV2SASameEvent_V2_SVX", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDecayLength, thnAxisCPA});
     histos.add("hSparseV2SASameEventRotational_V2_SVX", "hSparseV2SASameEventRotational_SVX", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDecayLength, thnAxisCPA});
@@ -248,19 +248,19 @@ struct highmasslambda {
     if (!(candidate.isGlobalTrackWoDCA() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
       return false;
     }
-    if (candidate.pt() > 0.0 && candidate.pt() < 0.5 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin1) {
+    if (candidate.pt() > 0.0 && candidate.pt() < 0.5 && std::abs(candidate.dcaXY()) < cfgCutDCAxymin1) {
       return false;
     }
-    if (candidate.pt() >= 0.5 && candidate.pt() < 1.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin2) {
+    if (candidate.pt() >= 0.5 && candidate.pt() < 1.0 && std::abs(candidate.dcaXY()) < cfgCutDCAxymin2) {
       return false;
     }
-    if (candidate.pt() >= 1.0 && candidate.pt() < 1.5 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin3) {
+    if (candidate.pt() >= 1.0 && candidate.pt() < 1.5 && std::abs(candidate.dcaXY()) < cfgCutDCAxymin3) {
       return false;
     }
-    if (candidate.pt() >= 1.5 && candidate.pt() < 2.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin4) {
+    if (candidate.pt() >= 1.5 && candidate.pt() < 2.0 && std::abs(candidate.dcaXY()) < cfgCutDCAxymin4) {
       return false;
     }
-    if (candidate.pt() >= 2.0 && candidate.pt() < 10000000.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin5) {
+    if (candidate.pt() >= 2.0 && candidate.pt() < 10000000.0 && std::abs(candidate.dcaXY()) < cfgCutDCAxymin5) {
       return false;
     }
     return true;
@@ -271,15 +271,15 @@ struct highmasslambda {
   bool selectionPID1(const T& candidate)
   {
     if (candidate.hasTOF()) {
-      if (candidate.p() < 0.5 && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
+      if (candidate.p() < 0.5 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
         return true;
       }
-      if (candidate.p() >= 0.5 && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
+      if (candidate.p() >= 0.5 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
         return true;
       }
     }
     if (!candidate.hasTOF()) {
-      if (TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
+      if (std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
         return true;
       }
     }
@@ -290,17 +290,67 @@ struct highmasslambda {
   template <typename T>
   bool selectionPID2(const T& candidate)
   {
-    if (candidate.tpcInnerParam() < 1.0 && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
+    if (candidate.pt() < 0.7 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.tpcInnerParam() >= 1.0 && candidate.tpcInnerParam() < 2.0 && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC && candidate.hasTOF() && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
-      return true;
-    }
-    if (candidate.tpcInnerParam() >= 2.0) {
-      if (candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
+    if (candidate.pt() >= 0.7 && candidate.pt() < 1.4) {
+      if (candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
         return true;
       }
-      if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
+      if (!candidate.hasTOF()) {
+        if (candidate.pt() >= 0.7 && candidate.pt() < 0.8 && candidate.tpcNSigmaPr() > -1.8 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+          return true;
+        }
+        if (candidate.pt() >= 0.8 && candidate.pt() < 0.9 && candidate.tpcNSigmaPr() > -1.7 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+          return true;
+        }
+        if (candidate.pt() >= 0.9 && candidate.pt() < 1.0 && candidate.tpcNSigmaPr() > -1.6 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+          return true;
+        }
+        if (candidate.pt() >= 1.0 && candidate.pt() < 1.4 && candidate.tpcNSigmaPr() > -1.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+          return true;
+        }
+      }
+    }
+    if (candidate.pt() >= 1.4) {
+      if (candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
+        return true;
+      }
+      if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // TPC TOF
+  template <typename T>
+  bool selectionPID3(const T& candidate)
+  {
+    if (candidate.pt() < 0.7 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
+      return true;
+    }
+    if (candidate.pt() >= 0.7 && candidate.pt() < 1.8) {
+      if (candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
+        return true;
+      }
+      if (!candidate.hasTOF()) {
+        if (candidate.pt() >= 0.7 && candidate.pt() < 0.8 && candidate.tpcNSigmaPr() > -1.8 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+          return true;
+        }
+        if (candidate.pt() >= 0.8 && candidate.pt() < 0.9 && candidate.tpcNSigmaPr() > -1.7 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+          return true;
+        }
+        if (candidate.pt() >= 0.9 && candidate.pt() < 1.0 && candidate.tpcNSigmaPr() > -1.6 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+          return true;
+        }
+      }
+    }
+    if (candidate.pt() >= 1.8) {
+      if (candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
+        return true;
+      }
+      if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
         return true;
       }
     }
@@ -310,13 +360,13 @@ struct highmasslambda {
   template <typename Collision, typename V0>
   bool SelectionV0(Collision const& collision, V0 const& candidate)
   {
-    if (TMath::Abs(candidate.dcav0topv()) > cMaxV0DCA) {
+    if (std::abs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
     const float pT = candidate.pt();
     const std::vector<float> decVtx = {candidate.x(), candidate.y(), candidate.z()};
     const float tranRad = candidate.v0radius();
-    const double dcaDaughv0 = TMath::Abs(candidate.dcaV0daughters());
+    const double dcaDaughv0 = std::abs(candidate.dcaV0daughters());
     const double cpav0 = candidate.v0cosPA();
 
     float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass(); // FIXME: Get from the common header
@@ -338,7 +388,7 @@ struct highmasslambda {
     if (tranRad > ConfV0TranRadV0Max) {
       return false;
     }
-    if (TMath::Abs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
+    if (std::abs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
       return false;
     }
     return true;
@@ -357,19 +407,19 @@ struct highmasslambda {
     if (charge > 0 && sign < 0) {
       return false;
     }
-    if (TMath::Abs(eta) > 0.8) {
+    if (std::abs(eta) > 0.8) {
       return false;
     }
-    if (TMath::Abs(pt) < 0.15) {
+    if (std::abs(pt) < 0.15) {
       return false;
     }
     if (tpcNClsF < 50) {
       return false;
     }
-    if (TMath::Abs(dcaXY) < ConfDaughDCAMin) {
+    if (std::abs(dcaXY) < ConfDaughDCAMin) {
       return false;
     }
-    if (TMath::Abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
+    if (std::abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
       return false;
     }
     return true;
@@ -399,10 +449,10 @@ struct highmasslambda {
   double v2, v2Rot;
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, AllTrackCandidates const&, ResoV0s const& V0s, aod::BCs const&)
   {
-    if (!collision.sel8() || !collision.triggereventep() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    if (!collision.sel8() || !collision.triggereventep() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return;
     }
-    if (additionalEvSel && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (additionalEvSel && (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
       return;
     }
     o2::aod::ITSResponse itsResponse;
@@ -440,6 +490,9 @@ struct highmasslambda {
       if (!selectionTrack(track1)) {
         continue;
       }
+      if (!(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < 3.0)) {
+        continue;
+      }
       histos.fill(HIST("hNsigmaProtonTPCPre"), track1.tpcNSigmaPr(), track1.pt());
       // PID check
       if (PIDstrategy == 0 && !selectionPID1(track1)) {
@@ -448,7 +501,7 @@ struct highmasslambda {
       if (PIDstrategy == 1 && !selectionPID2(track1)) {
         continue;
       }
-      if (track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < 2.5)) {
+      if (PIDstrategy == 2 && !selectionPID3(track1)) {
         continue;
       }
       histos.fill(HIST("hEta"), track1.eta());
@@ -489,8 +542,8 @@ struct highmasslambda {
         Lambdac = Proton + Kshort;
         auto phiminuspsi = GetPhiInRange(Lambdac.Phi() - psiFT0C);
         v2 = TMath::Cos(2.0 * phiminuspsi) * QFT0C;
-        if (Lambdac.M() > cMinLambdaMass && Lambdac.M() <= cMaxLambdaMass && TMath::Abs(Lambdac.Rapidity()) < confRapidity && Lambdac.Pt() > 2.0 && Lambdac.Pt() <= 6.0) {
-          histos.fill(HIST("hSparseV2SASameEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()));
+        if (Lambdac.M() > cMinLambdaMass && Lambdac.M() <= cMaxLambdaMass && std::abs(Lambdac.Rapidity()) < confRapidity && Lambdac.Pt() > 2.0 && Lambdac.Pt() <= 6.0) {
+          histos.fill(HIST("hSparseV2SASameEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt());
         }
         if (fillRotation) {
           for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
@@ -505,8 +558,8 @@ struct highmasslambda {
             LambdacRot = Proton + KshortRot;
             auto phiminuspsiRot = GetPhiInRange(LambdacRot.Phi() - psiFT0C);
             v2Rot = TMath::Cos(2.0 * phiminuspsiRot) * QFT0C;
-            if (LambdacRot.M() > cMinLambdaMass && LambdacRot.M() <= cMaxLambdaMass && TMath::Abs(LambdacRot.Rapidity()) < confRapidity && LambdacRot.Pt() > 2.0 && LambdacRot.Pt() <= 6.0) {
-              histos.fill(HIST("hSparseV2SASameEventRotational_V2"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, TMath::Abs(track1.dcaXY()));
+            if (LambdacRot.M() > cMinLambdaMass && LambdacRot.M() <= cMaxLambdaMass && std::abs(LambdacRot.Rapidity()) < confRapidity && LambdacRot.Pt() > 2.0 && LambdacRot.Pt() <= 6.0) {
+              histos.fill(HIST("hSparseV2SASameEventRotational_V2"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, std::abs(track1.dcaXY()), Proton.Pt());
             }
           }
         }
@@ -520,11 +573,17 @@ struct highmasslambda {
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
     Pair<EventCandidates, TrackCandidates, ResoV0s, BinningTypeVertexContributor> pairs{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksV0sTuple, &cache}; // -1 is the number of the bin to skip
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
-      if (!collision1.sel8() || !collision1.triggereventep() || !collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-        continue;
+      if (!collision1.sel8() || !collision1.triggereventep() || !collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        return;
       }
-      if (!collision2.sel8() || !collision2.triggereventep() || !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-        continue;
+      if (additionalEvSel && (!collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+        return;
+      }
+      if (!collision2.sel8() || !collision2.triggereventep() || !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        return;
+      }
+      if (additionalEvSel && (!collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) || !collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+        return;
       }
       if (collision1.bcId() == collision2.bcId()) {
         continue;
@@ -552,6 +611,10 @@ struct highmasslambda {
         if (!selectionTrack(track1)) {
           continue;
         }
+        if (!(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < 3.0)) {
+          continue;
+        }
+
         // PID check
         if (PIDstrategy == 0 && !selectionPID1(track1)) {
           continue;
@@ -559,7 +622,7 @@ struct highmasslambda {
         if (PIDstrategy == 1 && !selectionPID2(track1)) {
           continue;
         }
-        if (track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < 2.5)) {
+        if (PIDstrategy == 2 && !selectionPID3(track1)) {
           continue;
         }
 
@@ -580,13 +643,13 @@ struct highmasslambda {
         if (Lambdac.Pt() > 6.0 || Lambdac.Pt() < 2.0) {
           continue;
         }
-        if (TMath::Abs(Lambdac.Rapidity()) > confRapidity) {
+        if (std::abs(Lambdac.Rapidity()) > confRapidity) {
           continue;
         }
         auto phiminuspsi = GetPhiInRange(Lambdac.Phi() - psiFT0C);
         v2 = TMath::Cos(2.0 * phiminuspsi) * QFT0C;
-        if (occupancy1 < cfgOccupancyCut && occupancy2 < cfgOccupancyCut && Lambdac.M() > cMinLambdaMass && Lambdac.M() <= cMaxLambdaMass && TMath::Abs(Lambdac.Rapidity()) < confRapidity && Lambdac.Pt() > 2.0 && Lambdac.Pt() <= 6.0) {
-          histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()));
+        if (occupancy1 < cfgOccupancyCut && occupancy2 < cfgOccupancyCut && Lambdac.M() > cMinLambdaMass && Lambdac.M() <= cMaxLambdaMass && std::abs(Lambdac.Rapidity()) < confRapidity && Lambdac.Pt() > 2.0 && Lambdac.Pt() <= 6.0) {
+          histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt());
         }
       }
     }
@@ -594,13 +657,12 @@ struct highmasslambda {
   PROCESS_SWITCH(highmasslambda, processMixedEventOpti, "Process Mixed event new", false);
   void processSameEventSvx(EventCandidates::iterator const& collision, TrackCandidatesSvx const& tracks, AllTrackCandidatesSvx const&, ResoV0sSvx const& V0s, aod::BCsWithTimestamps const&)
   {
-    if (!collision.sel8() || !collision.triggereventep() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    if (!collision.sel8() || !collision.triggereventep() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return;
     }
-    if (additionalEvSel && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (additionalEvSel && (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
       return;
     }
-
     /// Set the magnetic field from ccdb.
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
@@ -647,6 +709,10 @@ struct highmasslambda {
       if (!selectionTrack(track1)) {
         continue;
       }
+      if (!(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < 3.0)) {
+        continue;
+      }
+
       histos.fill(HIST("hNsigmaProtonTPCPre"), track1.tpcNSigmaPr(), track1.pt());
       // PID check
       if (PIDstrategy == 0 && !selectionPID1(track1)) {
@@ -655,7 +721,7 @@ struct highmasslambda {
       if (PIDstrategy == 1 && !selectionPID2(track1)) {
         continue;
       }
-      if (track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < 2.5)) {
+      if (PIDstrategy == 2 && !selectionPID3(track1)) {
         continue;
       }
       histos.fill(HIST("hEta"), track1.eta());
@@ -667,6 +733,7 @@ struct highmasslambda {
       }
       auto track1ID = track1.globalIndex();
       auto trackParCovBach = getTrackParCov(track1);
+      // auto trackParCovBach = getTrackParCov(bach);
 
       for (auto v0 : V0s) {
         if (!SelectionV0(collision, v0)) {
@@ -693,53 +760,84 @@ struct highmasslambda {
           histos.fill(HIST("hInvMassKs0"), v0.mK0Short());
         }
         firstprimarytrack = firstprimarytrack + 1;
+        // LOGF(info, "Before dca fitter");
+        std::array<float, 3> pVecV0 = {0., 0., 0.};
+        std::array<float, 3> pVecBach = {0., 0., 0.};
+        // std::array<float, 3> pVecCand = {0., 0., 0.};
+        const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
+        const std::array<float, 3> momentumV0 = {v0.px(), v0.py(), v0.pz()};
+        // we build the neutral track to then build the cascade
+        std::array<float, 21> covV = {0.};
+        constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+        for (int i = 0; i < 6; i++) {
+          covV[MomInd[i]] = v0.momentumCovMat()[i];
+          covV[i] = v0.positionCovMat()[i];
+        }
+        auto trackV0 = o2::track::TrackParCov(vertexV0, momentumV0, covV, 0, true);
+        trackV0.setAbsCharge(0);
+        trackV0.setPID(o2::track::PID::K0);
+
+        int nCand2 = 0;
+        try {
+          nCand2 = df.process(trackV0, trackParCovBach);
+        } catch (...) {
+          continue;
+        }
+
+        if (nCand2 == 0) {
+          continue;
+        }
+        df.propagateTracksToVertex();        // propagate the bach and V0 to the Lc vertex
+        df.getTrack(0).getPxPyPzGlo(pVecV0); // take the momentum at the Lc vertex
+        df.getTrack(1).getPxPyPzGlo(pVecBach);
+        // LOGF(info, "after dca fitter");
+
+        /*
         float v0x, v0y, v0z, v0px, v0py, v0pz;
         float posTrackX, negTrackX;
         o2::track::TrackParCov trackParCovV0DaughPos;
-        o2::track::TrackParCov trackParCovV0DaughNeg;
-        trackParCovV0DaughPos = getTrackParCov(postrack); // check that aod::TracksWCov does not need TracksDCA!
-        trackParCovV0DaughNeg = getTrackParCov(negtrack); // check that aod::TracksWCov does not need TracksDCA!
-        posTrackX = v0.posX();
-        negTrackX = v0.negX();
-        v0x = v0.x();
-        v0y = v0.y();
-        v0z = v0.z();
-        const std::array<float, 3> vertexV0 = {v0x, v0y, v0z};
+              o2::track::TrackParCov trackParCovV0DaughNeg;
+              trackParCovV0DaughPos = getTrackParCov(postrack); // check that aod::TracksWCov does not need TracksDCA!
+              trackParCovV0DaughNeg = getTrackParCov(negtrack); // check that aod::TracksWCov does not need TracksDCA!
+              posTrackX = v0.posX();
+              negTrackX = v0.negX();
+              v0x = v0.x();
+              v0y = v0.y();
+              v0z = v0.z();
+              const std::array<float, 3> vertexV0 = {v0x, v0y, v0z};
 
-        v0px = v0.px();
-        v0py = v0.py();
-        v0pz = v0.pz();
-        const std::array<float, 3> momentumV0 = {v0px, v0py, v0pz};
+              v0px = v0.px();
+              v0py = v0.py();
+              v0pz = v0.pz();
+              const std::array<float, 3> momentumV0 = {v0px, v0py, v0pz};
 
-        std::array<float, 6> covV0Pos = {0.};
-        for (int i = 0; i < 6; i++) {
-          covV0Pos[i] = v0.positionCovMat()[i];
-        }
-        trackParCovV0DaughPos.propagateTo(posTrackX, bz); // propagate the track to the X closest to the V0 vertex
-        trackParCovV0DaughNeg.propagateTo(negTrackX, bz); // propagate the track to the X closest to the V0 vertex
+              std::array<float, 6> covV0Pos = {0.};
+              for (int i = 0; i < 6; i++) {
+                covV0Pos[i] = v0.positionCovMat()[i];
+              }
+              trackParCovV0DaughPos.propagateTo(posTrackX, bz); // propagate the track to the X closest to the V0 vertex
+              trackParCovV0DaughNeg.propagateTo(negTrackX, bz); // propagate the track to the X closest to the V0 vertex
 
-        // we build the neutral track to then build the cascade
-        // auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg); // build the V0 track (indices for v0 daughters set to 0 for now)
-        auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, covV0Pos, trackParCovV0DaughPos, trackParCovV0DaughNeg); // build the V0 track (indices for v0 daughters set to 0 for now)
-        std::array<float, 3> pVecV0 = {0., 0., 0.};
-        std::array<float, 3> pVecBach = {0., 0., 0.};
-        std::array<float, 3> pVecCand = {0., 0., 0.};
-        try {
-          if (df.process(trackV0, trackParCovBach) == 0) {
-            continue;
-          } else {
-          }
-        } catch (const std::runtime_error& error) {
-          continue;
-        }
-        df.propagateTracksToVertex();           // propagate the bachelor and V0 to the Lambdac vertex
-        trackV0.getPxPyPzGlo(pVecV0);           // momentum of D0 at the Lambdac vertex
-        trackParCovBach.getPxPyPzGlo(pVecBach); // momentum of proton at the Lambdac vertex
-        pVecCand = RecoDecay::pVec(pVecV0, pVecBach);
+              // we build the neutral track to then build the cascade
+              // auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg); // build the V0 track (indices for v0 daughters set to 0 for now)
+              auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, covV0Pos, trackParCovV0DaughPos, trackParCovV0DaughNeg); // build the V0 track (indices for v0 daughters set to 0 for now)
+              std::array<float, 3> pVecV0 = {0., 0., 0.};
+              std::array<float, 3> pVecBach = {0., 0., 0.};
+              std::array<float, 3> pVecCand = {0., 0., 0.};
+              try {
+                if (df.process(trackV0, trackParCovBach) == 0) {
+                  continue;
+                } else {
+                }
+              } catch (const std::runtime_error& error) {
+                continue;
+              }
+              df.propagateTracksToVertex();           // propagate the bachelor and V0 to the Lambdac vertex
+              trackV0.getPxPyPzGlo(pVecV0);           // momentum of D0 at the Lambdac vertex
+              trackParCovBach.getPxPyPzGlo(pVecBach); // momentum of proton at the Lambdac vertex
+            */
+
         const auto& secondaryVertex = df.getPCACandidate();
-
-        // get track impact parameters
-        // This modifies track momenta!
         auto primaryVertex = getPrimaryVertex(collision);
         o2::dataformats::DCA impactParameter0;
         o2::dataformats::DCA impactParameter1;
@@ -780,7 +878,7 @@ struct highmasslambda {
           continue;
         }
 
-        if (Lambdac.M() > cMinLambdaMass && Lambdac.M() <= cMaxLambdaMass && TMath::Abs(Lambdac.Rapidity()) < confRapidity && Lambdac.Pt() > 2.0 && Lambdac.Pt() <= 6.0) {
+        if (Lambdac.M() > cMinLambdaMass && Lambdac.M() <= cMaxLambdaMass && std::abs(Lambdac.Rapidity()) < confRapidity && Lambdac.Pt() > 2.0 && Lambdac.Pt() <= 6.0) {
           histos.fill(HIST("hSparseV2SASameEvent_V2_SVX"), Lambdac.M(), Lambdac.Pt(), v2, decaylengthxy, CPAlambdac);
         }
         if (fillRotation) {
@@ -796,7 +894,7 @@ struct highmasslambda {
             LambdacRot = Proton + KshortRot;
             auto phiminuspsiRot = GetPhiInRange(LambdacRot.Phi() - psiFT0C);
             v2Rot = TMath::Cos(2.0 * phiminuspsiRot) * QFT0C;
-            if (LambdacRot.M() > cMinLambdaMass && LambdacRot.M() <= cMaxLambdaMass && TMath::Abs(LambdacRot.Rapidity()) < confRapidity && LambdacRot.Pt() > 2.0 && LambdacRot.Pt() <= 6.0) {
+            if (LambdacRot.M() > cMinLambdaMass && LambdacRot.M() <= cMaxLambdaMass && std::abs(LambdacRot.Rapidity()) < confRapidity && LambdacRot.Pt() > 2.0 && LambdacRot.Pt() <= 6.0) {
               histos.fill(HIST("hSparseV2SASameEventRotational_V2_SVX"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, decaylengthxy, CPAlambdac);
             }
           }
