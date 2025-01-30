@@ -42,6 +42,7 @@ struct flowTest {
 
   ConfigurableAxis axisB{"axisB", {100, 0.0f, 20.0f}, ""};
   ConfigurableAxis axisPhi{"axisPhi", {100, 0.0f, 2.0f * TMath::Pi()}, ""};
+  ConfigurableAxis axisNch{"axisNch", {300, 0.0f, 3000.0f}, "Nch in |eta|<0.8"};
 
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f}, "pt axis"};
 
@@ -49,6 +50,7 @@ struct flowTest {
   {
     // pT histograms
     histos.add<TH1>("hImpactParameter", "hImpactParameter", HistType::kTH1D, {axisB});
+    histos.add<TH2>("hNchVsImpactParameter", "hNchVsImpactParameter", HistType::kTH2D, {axisB, axisNch});
     histos.add<TH1>("hEventPlaneAngle", "hEventPlaneAngle", HistType::kTH1D, {axisPhi});
     histos.add<TH2>("hPtVsPhiGenerated", "hPtVsPhiGenerated", HistType::kTH2D, {axisPhi, axisPt});
     histos.add<TH2>("hPtVsPhiGlobal", "hPtVsPhiGlobal", HistType::kTH2D, {axisPhi, axisPt});
@@ -80,6 +82,8 @@ struct flowTest {
     if (evPhi < 0)
       evPhi += 2. * TMath::Pi();
 
+    long nCh = 0;
+
     if (imp > minB && imp < maxB) {
       // event within range
       histos.fill(HIST("hImpactParameter"), imp);
@@ -103,6 +107,8 @@ struct flowTest {
           deltaPhi -= 2. * TMath::Pi();
         histos.fill(HIST("hPtVsPhiGenerated"), deltaPhi, mcParticle.pt());
         histos.fill(HIST("hBVsPtVsPhiGenerated"), imp, deltaPhi, mcParticle.pt());
+
+        nCh++;
 
         bool validGlobal = false;
         bool validTrack = false;
@@ -146,94 +152,75 @@ struct flowTest {
           histos.fill(HIST("hBVsPtVsPhiITSABTrack"), imp, deltaPhi, mcParticle.pt());
       }
     }
+    histos.fill(HIST("hNchVsImpactParameter"), imp, nCh);
   }
 
   using LabeledCascades = soa::Join<aod::CascDataExt, aod::McCascLabels>;
 
-  void processCascade(aod::McParticles const& mcParticles, LabeledCascades const& cascades, recoTracks const&, aod::McCollisions const&)
+  void processCascade(aod::McParticle const& mcParticle, soa::SmallGroups<LabeledCascades> const& cascades, recoTracks const&, aod::McCollisions const&)
   {
-    std::vector<bool> isRecoed;
-    isRecoed.resize(mcParticles.size(), false);
-    for (auto const& cascade : cascades) {
-      if (cascade.has_mcParticle()) {
-        isRecoed[cascade.mcParticleId()] = true;
-      }
-    }
+    auto mcCollision = mcParticle.mcCollision();
+    float imp = mcCollision.impactParameter();
 
-    for (auto const& mcParticle : mcParticles) {
-      auto mcCollision = mcParticle.mcCollision();
-      float imp = mcCollision.impactParameter();
+    int pdgCode = TMath::Abs(mcParticle.pdgCode());
+    if (pdgCode != 3312 && pdgCode != 3334)
+      return;
 
-      int pdgCode = TMath::Abs(mcParticle.pdgCode());
-      if (pdgCode != 3312 && pdgCode != 3334)
-        return;
+    if (!mcParticle.isPhysicalPrimary())
+      return;
+    if (TMath::Abs(mcParticle.eta()) > 0.8)
+      return;
 
-      if (!mcParticle.isPhysicalPrimary())
-        return;
-      if (TMath::Abs(mcParticle.eta()) > 0.8)
-        return;
+    float deltaPhi = mcParticle.phi() - mcCollision.eventPlaneAngle();
+    if (deltaPhi < 0)
+      deltaPhi += 2. * TMath::Pi();
+    if (deltaPhi > 2. * TMath::Pi())
+      deltaPhi -= 2. * TMath::Pi();
+    if (pdgCode == 3312)
+      histos.fill(HIST("hBVsPtVsPhiGeneratedXi"), imp, deltaPhi, mcParticle.pt());
+    if (pdgCode == 3334)
+      histos.fill(HIST("hBVsPtVsPhiGeneratedOmega"), imp, deltaPhi, mcParticle.pt());
 
-      float deltaPhi = mcParticle.phi() - mcCollision.eventPlaneAngle();
-      if (deltaPhi < 0)
-        deltaPhi += 2. * TMath::Pi();
-      if (deltaPhi > 2. * TMath::Pi())
-        deltaPhi -= 2. * TMath::Pi();
+    if (cascades.size() > 0) {
       if (pdgCode == 3312)
-        histos.fill(HIST("hBVsPtVsPhiGeneratedXi"), imp, deltaPhi, mcParticle.pt());
+        histos.fill(HIST("hBVsPtVsPhiGlobalXi"), imp, deltaPhi, mcParticle.pt());
       if (pdgCode == 3334)
-        histos.fill(HIST("hBVsPtVsPhiGeneratedOmega"), imp, deltaPhi, mcParticle.pt());
-
-      if (isRecoed[mcParticle.globalIndex()]) {
-        if (pdgCode == 3312)
-          histos.fill(HIST("hBVsPtVsPhiGlobalXi"), imp, deltaPhi, mcParticle.pt());
-        if (pdgCode == 3334)
-          histos.fill(HIST("hBVsPtVsPhiGlobalOmega"), imp, deltaPhi, mcParticle.pt());
-      }
+        histos.fill(HIST("hBVsPtVsPhiGlobalOmega"), imp, deltaPhi, mcParticle.pt());
     }
   }
   PROCESS_SWITCH(flowTest, processCascade, "Process cascades", true);
 
   using LabeledV0s = soa::Join<aod::V0Datas, aod::McV0Labels>;
 
-  void processV0s(aod::McParticles const& mcParticles, LabeledV0s const& v0s, recoTracks const&, aod::McCollisions const&)
+  void processV0s(aod::McParticle const& mcParticle, soa::SmallGroups<LabeledV0s> const& v0s, recoTracks const&, aod::McCollisions const&)
   {
-    std::vector<bool> isRecoed;
-    isRecoed.resize(mcParticles.size(), false);
-    for (auto const& v0 : v0s) {
-      if (v0.has_mcParticle()) {
-        isRecoed[v0.mcParticleId()] = true;
-      }
-    }
+    auto mcCollision = mcParticle.mcCollision();
+    float imp = mcCollision.impactParameter();
 
-    for (auto const& mcParticle : mcParticles) {
-      auto mcCollision = mcParticle.mcCollision();
-      float imp = mcCollision.impactParameter();
+    int pdgCode = TMath::Abs(mcParticle.pdgCode());
+    if (pdgCode != 310 && pdgCode != 3122)
+      return;
 
-      int pdgCode = TMath::Abs(mcParticle.pdgCode());
-      if (pdgCode != 310 && pdgCode != 3122)
-        return;
+    if (!mcParticle.isPhysicalPrimary())
+      return;
+    if (TMath::Abs(mcParticle.eta()) > 0.8)
+      return;
 
-      if (!mcParticle.isPhysicalPrimary())
-        return;
-      if (TMath::Abs(mcParticle.eta()) > 0.8)
-        return;
+    float deltaPhi = mcParticle.phi() - mcCollision.eventPlaneAngle();
+    if (deltaPhi < 0)
+      deltaPhi += 2. * TMath::Pi();
+    if (deltaPhi > 2. * TMath::Pi())
+      deltaPhi -= 2. * TMath::Pi();
+    if (pdgCode == 310)
+      histos.fill(HIST("hBVsPtVsPhiGeneratedK0Short"), imp, deltaPhi, mcParticle.pt());
+    if (pdgCode == 3122)
+      histos.fill(HIST("hBVsPtVsPhiGeneratedLambda"), imp, deltaPhi, mcParticle.pt());
 
-      float deltaPhi = mcParticle.phi() - mcCollision.eventPlaneAngle();
-      if (deltaPhi < 0)
-        deltaPhi += 2. * TMath::Pi();
-      if (deltaPhi > 2. * TMath::Pi())
-        deltaPhi -= 2. * TMath::Pi();
+    if (v0s.size() > 0) {
       if (pdgCode == 310)
-        histos.fill(HIST("hBVsPtVsPhiGeneratedK0Short"), imp, deltaPhi, mcParticle.pt());
+        histos.fill(HIST("hBVsPtVsPhiGlobalK0Short"), imp, deltaPhi, mcParticle.pt());
       if (pdgCode == 3122)
-        histos.fill(HIST("hBVsPtVsPhiGeneratedLambda"), imp, deltaPhi, mcParticle.pt());
-
-      if (isRecoed[mcParticle.globalIndex()]) {
-        if (pdgCode == 310)
-          histos.fill(HIST("hBVsPtVsPhiGlobalK0Short"), imp, deltaPhi, mcParticle.pt());
-        if (pdgCode == 3122)
-          histos.fill(HIST("hBVsPtVsPhiGlobalLambda"), imp, deltaPhi, mcParticle.pt());
-      }
+        histos.fill(HIST("hBVsPtVsPhiGlobalLambda"), imp, deltaPhi, mcParticle.pt());
     }
   }
   PROCESS_SWITCH(flowTest, processV0s, "Process V0s", true);

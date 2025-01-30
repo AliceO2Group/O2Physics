@@ -16,6 +16,9 @@
 /// \author Henrique J C Zanoli <henrique.zanoli@cern.ch>, Utrecht University
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 
+#include <utility>
+#include <vector>
+
 #include <TEfficiency.h>
 #include <TList.h>
 #include <TPDGCode.h>

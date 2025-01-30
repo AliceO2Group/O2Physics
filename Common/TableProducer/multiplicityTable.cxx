@@ -162,18 +162,6 @@ struct MultiplicityTable {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
     }
 
-    // exploratory
-    auto& workflows = context.services().get<o2::framework::RunningWorkflowInfo const>();
-    for (auto const& device : workflows.devices) {
-      for (auto const& input : device.inputs) {
-        // input.print();
-        TString devNam = device.name.c_str();
-        TString inBin = input.matcher.binding.c_str();
-        // TString subSpec = input.matcher.subspec.c_str();
-        LOGF(info, Form("device %s input binding %s subspec", devNam.Data(), inBin.Data()));
-      }
-    }
-
     bool tEnabled[nTables] = {false};
     for (int i = 0; i < nTables; i++) {
       int f = enabledTables->get(tableNames[i].c_str(), "Enable");

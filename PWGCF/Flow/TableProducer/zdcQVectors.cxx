@@ -102,6 +102,7 @@ std::vector<double> e(8, 0.);    // calibrated energies (a1, a2, a3, a4, c1, c2,
 //  Define variables needed to do the recentring steps.
 double centrality = 0;
 int runnumber = 0;
+int lastRunNumber = 0;
 std::vector<double> v(3, 0); // vx, vy, vz
 bool isSelected = true;
 
@@ -383,6 +384,10 @@ struct ZdcQVectors {
   {
     // iteration = 0 (Energy calibration) -> step 0 only
     // iteration 1,2,3,4,5 = recentering -> 5 steps per iteration (1x 4D + 4x 1D)
+
+    if (cal.calibfilesLoaded[iteration][step])
+      return;
+
     if (ccdb_dir.empty() == false) {
 
       cal.calibList[iteration][step] = ccdb->getForTimeStamp<TList>(ccdb_dir, timestamp);
@@ -542,6 +547,12 @@ struct ZdcQVectors {
     v[2] = collision.posZ();
     centrality = cent;
     runnumber = foundBC.runNumber();
+
+    // load new calibrations for new runs only
+    if (runnumber != lastRunNumber) {
+      cal.calibfilesLoaded = std::vector<std::vector<bool>>(7, std::vector<bool>(8, false));
+      lastRunNumber = runnumber;
+    }
 
     const auto& zdcCol = foundBC.zdc();
 
