@@ -376,16 +376,16 @@ struct FlowGFWOmegaXi {
 
     // fWeight output
     if (cfgOutputNUAWeights) {
-      fWeightsREF->SetPtBins(nPtBins, &(axisPt.binEdges)[0]);
-      fWeightsREF->Init(true, false);
-      fWeightsK0s->SetPtBins(nPtBins, &(axisPt.binEdges)[0]);
-      fWeightsK0s->Init(true, false);
-      fWeightsLambda->SetPtBins(nPtBins, &(axisPt.binEdges)[0]);
-      fWeightsLambda->Init(true, false);
-      fWeightsXi->SetPtBins(nPtBins, &(axisPt.binEdges)[0]);
-      fWeightsXi->Init(true, false);
-      fWeightsOmega->SetPtBins(nPtBins, &(axisPt.binEdges)[0]);
-      fWeightsOmega->Init(true, false);
+      fWeightsREF->setPtBins(nPtBins, &(axisPt.binEdges)[0]);
+      fWeightsREF->init(true, false);
+      fWeightsK0s->setPtBins(nPtBins, &(axisPt.binEdges)[0]);
+      fWeightsK0s->init(true, false);
+      fWeightsLambda->setPtBins(nPtBins, &(axisPt.binEdges)[0]);
+      fWeightsLambda->init(true, false);
+      fWeightsXi->setPtBins(nPtBins, &(axisPt.binEdges)[0]);
+      fWeightsXi->init(true, false);
+      fWeightsOmega->setPtBins(nPtBins, &(axisPt.binEdges)[0]);
+      fWeightsOmega->init(true, false);
     }
   }
 
@@ -565,7 +565,7 @@ struct FlowGFWOmegaXi {
       return false;
     weight_nue = 1. / eff;
     if (mAcceptance.size() == 5)
-      weight_nua = mAcceptance[ispecies]->GetNUA(track.phi(), track.eta(), vtxz);
+      weight_nua = mAcceptance[ispecies]->getNUA(track.phi(), track.eta(), vtxz);
     else
       weight_nua = 1;
     return true;
@@ -681,7 +681,7 @@ struct FlowGFWOmegaXi {
         fGFW->Fill(track.eta(), ptbin, track.phi(), wacc * weff, 32);
       }
       if (cfgOutputNUAWeights)
-        fWeightsREF->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+        fWeightsREF->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
     }
     // fill GFW of V0 flow
     for (const auto& v0 : V0s) {
@@ -767,7 +767,7 @@ struct FlowGFWOmegaXi {
         registry.fill(HIST("hEtaPhiVtxzPOIK0s"), v0.phi(), v0.eta(), vtxz, wacc);
         fGFW->Fill(v0.eta(), fV0PtAxis->FindBin(v0.pt()) - 1 + ((fK0sMass->FindBin(v0.mK0Short()) - 1) * nV0PtBins), v0.phi(), wacc * weff, 8);
         if (cfgOutputNUAWeights)
-          fWeightsK0s->Fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
+          fWeightsK0s->fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
       }
       if (isLambda) {
         candNum[1] = candNum[1] + 1;
@@ -775,7 +775,7 @@ struct FlowGFWOmegaXi {
         registry.fill(HIST("hEtaPhiVtxzPOILambda"), v0.phi(), v0.eta(), vtxz, wacc);
         fGFW->Fill(v0.eta(), fV0PtAxis->FindBin(v0.pt()) - 1 + ((fLambdaMass->FindBin(v0.mLambda()) - 1) * nV0PtBins), v0.phi(), wacc * weff, 16);
         if (cfgOutputNUAWeights)
-          fWeightsLambda->Fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
+          fWeightsLambda->fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
       }
     }
     // fill GFW of casc flow
@@ -861,7 +861,7 @@ struct FlowGFWOmegaXi {
         registry.fill(HIST("InvMassOmega"), casc.pt(), casc.mOmega(), casc.eta(), cent);
         fGFW->Fill(casc.eta(), fXiPtAxis->FindBin(casc.pt()) - 1 + ((fOmegaMass->FindBin(casc.mOmega()) - 1) * nXiPtBins), casc.phi(), wacc * weff, 4);
         if (cfgOutputNUAWeights)
-          fWeightsOmega->Fill(casc.phi(), casc.eta(), vtxz, casc.pt(), cent, 0);
+          fWeightsOmega->fill(casc.phi(), casc.eta(), vtxz, casc.pt(), cent, 0);
       }
       if (isXi) {
         candNum[2] = candNum[2] + 1;
@@ -869,7 +869,7 @@ struct FlowGFWOmegaXi {
         registry.fill(HIST("InvMassXi"), casc.pt(), casc.mXi(), casc.eta(), cent);
         fGFW->Fill(casc.eta(), fXiPtAxis->FindBin(casc.pt()) - 1 + ((fXiMass->FindBin(casc.mXi()) - 1) * nXiPtBins), casc.phi(), wacc * weff, 2);
         if (cfgOutputNUAWeights)
-          fWeightsXi->Fill(casc.phi(), casc.eta(), vtxz, casc.pt(), cent, 0);
+          fWeightsXi->fill(casc.phi(), casc.eta(), vtxz, casc.pt(), cent, 0);
       }
     }
     for (int i = 0; i < 4; i++) {
