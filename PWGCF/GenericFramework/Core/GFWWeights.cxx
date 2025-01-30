@@ -470,3 +470,12 @@ TH1D* GFWWeights::GetEfficiency(double etamin, double etamax, double vzmin, doub
   delete den1d;
   return num1d;
 }
+void GFWWeights::MergeWeights(GFWWeights* other){
+  if (!fW_data) {
+    fW_data = new TObjArray();
+    fW_data->SetName("Weights_Data");
+    fW_data->SetOwner(kTRUE);
+  }
+  AddArray(fW_data, other->GetDataArray());
+  return;
+}

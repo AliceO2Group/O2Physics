@@ -52,6 +52,7 @@ class GFWWeights : public TNamed
   void OverwriteNUA();
   TH1D* GetdNdPhi();
   TH1D* GetEfficiency(double etamin, double etamax, double vzmin, double vzmax);
+  void MergeWeights(GFWWeights* other);
 
  private:
   bool fDataFilled;
