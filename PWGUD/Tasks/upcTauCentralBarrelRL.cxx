@@ -1716,7 +1716,7 @@ struct UpcTauRl {
         vecPVidx.push_back(track.index());
         if (hypothesisID == P_ELECTRON) {
           countPVGTelectrons++;
-          if (!cutTauEvent.useThresholdsPID){
+          if (!cutTauEvent.useThresholdsPID) {
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tpcSignal());
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCsignalVsPt"))->Fill(track.pt(), track.tpcSignal());
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz), track.tpcSignal());
@@ -1756,7 +1756,7 @@ struct UpcTauRl {
           }
         } else {
           countPVGTpions++;
-          if (!cutTauEvent.useThresholdsPID){
+          if (!cutTauEvent.useThresholdsPID) {
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tpcSignal());
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCsignalVsPt"))->Fill(track.pt(), track.tpcSignal());
             histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz), track.tpcSignal());
@@ -1790,7 +1790,7 @@ struct UpcTauRl {
         countPVGTelmupiAlt++;
         countPVGTelectronsAlt++;
         vecPVnewPIDidx.push_back(track.index());
-        if (cutTauEvent.useThresholdsPID){
+        if (cutTauEvent.useThresholdsPID) {
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tpcSignal());
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCsignalVsPt"))->Fill(track.pt(), track.tpcSignal());
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz), track.tpcSignal());
@@ -1814,7 +1814,7 @@ struct UpcTauRl {
         countPVGTelmupiAlt++;
         countPVGTmupionsAlt++;
         vecPVnewPIDidx.push_back(track.index());
-        if (cutTauEvent.useThresholdsPID){
+        if (cutTauEvent.useThresholdsPID) {
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tpcSignal());
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCsignalVsPt"))->Fill(track.pt(), track.tpcSignal());
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz), track.tpcSignal());
