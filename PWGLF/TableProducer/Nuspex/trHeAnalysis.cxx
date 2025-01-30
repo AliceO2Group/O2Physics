@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file TrHeAnalysis.cxx
+/// \file trHeAnalysis.cxx
 ///
 /// \brief Triton and Helion Analysis on pp Data
 ///
