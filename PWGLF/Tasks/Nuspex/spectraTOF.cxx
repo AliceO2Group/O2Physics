@@ -459,7 +459,7 @@ struct tofSpectra {
       histos.add("MC/fake/neg", "Fake negative tracks", kTH1D, {ptAxis});
       histos.add("MC/no_collision/pos", "No collision pos track", kTH1D, {ptAxis});
       histos.add("MC/no_collision/neg", "No collision neg track", kTH1D, {ptAxis});
-    if (isImpactParam){
+      if (isImpactParam) {
         histos.add("MC/withPID/pi/pos/prm/pt/num", "recons. MC #pi^{+}", kTHnSparseD, {ptAxis, impParamAxis});
         histos.add("MC/withPID/pi/neg/prm/pt/num", "recons. MC #pi^{-}", kTHnSparseD, {ptAxis, impParamAxis});
         histos.add("MC/withPID/ka/pos/prm/pt/num", "recons. MC K^{+}", kTHnSparseD, {ptAxis, impParamAxis});
@@ -484,7 +484,7 @@ struct tofSpectra {
         histos.add("MC/withPID/ka/neg/prm/pt/numtof", "recons. MC K^{-}", kTHnSparseD, {ptAxis, impParamAxis});
         histos.add("MC/withPID/pr/pos/prm/pt/numtof", "recons. MC p", kTHnSparseD, {ptAxis, impParamAxis});
         histos.add("MC/withPID/pr/neg/prm/pt/numtof", "recons. MC #bar{p}", kTHnSparseD, {ptAxis, impParamAxis});
-        } else {
+      } else {
         histos.add("MC/withPID/pi/pos/prm/pt/num", "recons. MC #pi^{+}", kTHnSparseD, {ptAxis, multAxis});
         histos.add("MC/withPID/pi/neg/prm/pt/num", "recons. MC #pi^{-}", kTHnSparseD, {ptAxis, multAxis});
         histos.add("MC/withPID/ka/pos/prm/pt/num", "recons. MC K^{+}", kTHnSparseD, {ptAxis, multAxis});
@@ -509,7 +509,7 @@ struct tofSpectra {
         histos.add("MC/withPID/ka/neg/prm/pt/numtof", "recons. MC K^{-}", kTHnSparseD, {ptAxis, multAxis});
         histos.add("MC/withPID/pr/pos/prm/pt/numtof", "recons. MC p", kTHnSparseD, {ptAxis, multAxis});
         histos.add("MC/withPID/pr/neg/prm/pt/numtof", "recons. MC #bar{p}", kTHnSparseD, {ptAxis, multAxis});
-        }
+      }
       if (doprocessMCgen) {
         histos.add("MC/test/pi/pos/prm/pt/den", "generated MC #pi^{+}", kTHnSparseD, {ptAxis, impParamAxis});
         histos.add("MC/test/pi/neg/prm/pt/den", "generated MC #pi^{-}", kTHnSparseD, {ptAxis, impParamAxis});
@@ -664,22 +664,22 @@ struct tofSpectra {
         if (includeCentralityMC) {
           //*************************************RD**********************************************
 
-          if (isImpactParam){
-          histos.add(hpt_num_prm[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, impParamAxis, dcaXyAxis, occupancyAxis});
-          histos.add(hpt_num_str[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, impParamAxis, dcaXyAxis});
-          histos.add(hpt_num_mat[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, impParamAxis, dcaXyAxis});
+          if (isImpactParam) {
+            histos.add(hpt_num_prm[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, impParamAxis, dcaXyAxis, occupancyAxis});
+            histos.add(hpt_num_str[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, impParamAxis, dcaXyAxis});
+            histos.add(hpt_num_mat[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, impParamAxis, dcaXyAxis});
 
-          histos.add(hpt_numtof_prm[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, impParamAxis, dcaXyAxis, occupancyAxis});
-          histos.add(hpt_numtof_str[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, impParamAxis, dcaXyAxis});
-          histos.add(hpt_numtof_mat[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, impParamAxis, dcaXyAxis});
+            histos.add(hpt_numtof_prm[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, impParamAxis, dcaXyAxis, occupancyAxis});
+            histos.add(hpt_numtof_str[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, impParamAxis, dcaXyAxis});
+            histos.add(hpt_numtof_mat[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, impParamAxis, dcaXyAxis});
           } else {
-          histos.add(hpt_num_prm[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, dcaXyAxis, occupancyAxis});
-          histos.add(hpt_num_str[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
-          histos.add(hpt_num_mat[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+            histos.add(hpt_num_prm[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, dcaXyAxis, occupancyAxis});
+            histos.add(hpt_num_str[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+            histos.add(hpt_num_mat[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
 
-          histos.add(hpt_numtof_prm[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, dcaXyAxis, occupancyAxis});
-          histos.add(hpt_numtof_str[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
-          histos.add(hpt_numtof_mat[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+            histos.add(hpt_numtof_prm[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, dcaXyAxis, occupancyAxis});
+            histos.add(hpt_numtof_str[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+            histos.add(hpt_numtof_mat[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
           }
 
           histos.add(hpt_numtofgoodmatch_prm[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
@@ -1544,22 +1544,22 @@ struct tofSpectra {
   } // end of the process function
   PROCESS_SWITCH(tofSpectra, processDerived, "Derived data processor", false);
 
-#define makeProcessFunction(processorName, inputPid, particleId, isFull, tofTable, tpcTable)                                     \
-  void process##processorName##inputPid(CollisionCandidates::iterator const& collision,                                          \
-                                        soa::Join<TrackCandidates,                                                               \
-                                                  aod::pid##tofTable##inputPid,                                                  \
-                                                  aod::pid##tpcTable##inputPid> const& tracks)                                   \
-  {                                                                                                                              \
-    if (!isEventSelected<false, false>(collision)) {                                                                             \
-      return;                                                                                                                    \
-    }                                                                                                                            \
-    for (const auto& track : tracks) {                                                                                           \
-      if (!isTrackSelected<false>(track, collision)) {                                                                           \
-        continue;                                                                                                                \
-      }                                                                                                                          \
-      fillParticleHistos<isFull, PID::particleId>(track, collision);                                                             \
-    }                                                                                                                            \
-  }                                                                                                                              \
+#define makeProcessFunction(processorName, inputPid, particleId, isFull, tofTable, tpcTable)   \
+  void process##processorName##inputPid(CollisionCandidates::iterator const& collision,        \
+                                        soa::Join<TrackCandidates,                             \
+                                                  aod::pid##tofTable##inputPid,                \
+                                                  aod::pid##tpcTable##inputPid> const& tracks) \
+  {                                                                                            \
+    if (!isEventSelected<false, false>(collision)) {                                           \
+      return;                                                                                  \
+    }                                                                                          \
+    for (const auto& track : tracks) {                                                         \
+      if (!isTrackSelected<false>(track, collision)) {                                         \
+        continue;                                                                              \
+      }                                                                                        \
+      fillParticleHistos<isFull, PID::particleId>(track, collision);                           \
+    }                                                                                          \
+  }                                                                                            \
   PROCESS_SWITCH(tofSpectra, process##processorName##inputPid, Form("Process for the %s hypothesis from %s tables", #particleId, #processorName), false);
 
 // Full tables
@@ -1929,136 +1929,136 @@ struct tofSpectra {
     } else {
       if (includeCentralityMC) {
         if (isImpactParam) {
-      histos.fill(HIST(hpt_num_prm[i]), track.pt(), impParam, track.dcaXY(), occupancy);
-      } else {
-        histos.fill(HIST(hpt_num_prm[i]), track.pt(), multiplicity, track.dcaXY(), occupancy);
+          histos.fill(HIST(hpt_num_prm[i]), track.pt(), impParam, track.dcaXY(), occupancy);
+        } else {
+          histos.fill(HIST(hpt_num_prm[i]), track.pt(), multiplicity, track.dcaXY(), occupancy);
         }
       } else {
         histos.fill(HIST(hpt_num_prm[i]), track.pt(), multiplicity);
       }
       if (isPionTPC || isKaonTPC || isProtonTPC) {
-                if (pdgCode == 2212) {
-                if (isImpactParam) {
-                    histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num"), track.pt(), impParam);
-                if (!mcParticle.isPhysicalPrimary()) {
-                if (mcParticle.getProcess() == 4) {
-                  histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num_str"), track.pt(), impParam);
-                      } else {
-                     histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num_mat"), track.pt(), impParam);
-                      }
-                     }
-                    } else {
-                    histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num"), track.pt(), multiplicity);
-                    if (!mcParticle.isPhysicalPrimary()) {
-                if (mcParticle.getProcess() == 4) {
-                  histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num_str"), track.pt(), multiplicity);
-                      } else {
-                     histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num_mat"), track.pt(), multiplicity);
-                      }
-                     }
-                    }
-                } else if (pdgCode == -2212) {
-                    if (isImpactParam) {
-                    histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num"), track.pt(), impParam);
-                    if (!mcParticle.isPhysicalPrimary()) {
-                if (mcParticle.getProcess() == 4) {
-                  histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num_str"), track.pt(), impParam);
-                      } else {
-                     histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num_mat"), track.pt(), impParam);
-                      }
-                     }
-                    } else {
-                    histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num"), track.pt(), multiplicity);
-                    if (!mcParticle.isPhysicalPrimary()) {
-                if (mcParticle.getProcess() == 4) {
-                  histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num_str"), track.pt(), multiplicity);
-                      } else {
-                     histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num_mat"), track.pt(), multiplicity);
-                      }
-                     }
-                    }
-                } else if (pdgCode == 211) {
-                    if (isImpactParam) {
-                    histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num"), track.pt(), impParam);
-                    if (!mcParticle.isPhysicalPrimary()) {
-                if (mcParticle.getProcess() == 4) {
-                  histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num_str"), track.pt(), impParam);
-                      } else {
-                     histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num_mat"), track.pt(), impParam);
-                      }
-                     }
-                    } else {
-                    histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num"), track.pt(), multiplicity);
-                    if (!mcParticle.isPhysicalPrimary()) {
-                if (mcParticle.getProcess() == 4) {
-                  histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num_str"), track.pt(), multiplicity);
-                      } else {
-                     histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num_mat"), track.pt(), multiplicity);
-                      }
-                     }
-                    }
-                } else if (pdgCode == -211) {
-                    if (isImpactParam) {
-                    histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num"), track.pt(), impParam);
-                    if (!mcParticle.isPhysicalPrimary()) {
-                if (mcParticle.getProcess() == 4) {
-                  histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num_str"), track.pt(), impParam);
-                      } else {
-                     histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num_mat"), track.pt(), impParam);
-                      }
-                     }
-                    } else {
-                    histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num"), track.pt(), multiplicity);
-                    if (!mcParticle.isPhysicalPrimary()) {
-                if (mcParticle.getProcess() == 4) {
-                  histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num_str"), track.pt(), multiplicity);
-                      } else {
-                     histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num_mat"), track.pt(), multiplicity);
-                      }
-                     }
-                    }
-                } else if (pdgCode == 321) {
-                    if (isImpactParam) {
-                    histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num"), track.pt(), impParam);
-                    if (!mcParticle.isPhysicalPrimary()) {
-                if (mcParticle.getProcess() == 4) {
-                  histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num_str"), track.pt(), impParam);
-                      } else {
-                     histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num_mat"), track.pt(), impParam);
-                      }
-                     }
-                    } else {
-                    histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num"), track.pt(), multiplicity);
-                    if (!mcParticle.isPhysicalPrimary()) {
-                if (mcParticle.getProcess() == 4) {
-                  histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num_str"), track.pt(), multiplicity);
-                      } else {
-                     histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num_mat"), track.pt(), multiplicity);
-                      }
-                     }
-                    }
-                } else if (pdgCode == -321) {
-                    if (isImpactParam) {
-                    histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num"), track.pt(), impParam);
-                    if (!mcParticle.isPhysicalPrimary()) {
-                if (mcParticle.getProcess() == 4) {
-                  histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num_str"), track.pt(), impParam);
-                      } else {
-                     histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num_mat"), track.pt(), impParam);
-                      }
-                     }
-                    } else {
-                    histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num"), track.pt(), multiplicity);
-                    if (!mcParticle.isPhysicalPrimary()) {
-                if (mcParticle.getProcess() == 4) {
-                  histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num_str"), track.pt(), multiplicity);
-                      } else {
-                     histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num_mat"), track.pt(), multiplicity);
-                      }
-                     }
-                    }
-                }
+        if (pdgCode == 2212) {
+          if (isImpactParam) {
+            histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num"), track.pt(), impParam);
+            if (!mcParticle.isPhysicalPrimary()) {
+              if (mcParticle.getProcess() == 4) {
+                histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num_str"), track.pt(), impParam);
+              } else {
+                histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num_mat"), track.pt(), impParam);
+              }
             }
+          } else {
+            histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num"), track.pt(), multiplicity);
+            if (!mcParticle.isPhysicalPrimary()) {
+              if (mcParticle.getProcess() == 4) {
+                histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num_str"), track.pt(), multiplicity);
+              } else {
+                histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num_mat"), track.pt(), multiplicity);
+              }
+            }
+          }
+        } else if (pdgCode == -2212) {
+          if (isImpactParam) {
+            histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num"), track.pt(), impParam);
+            if (!mcParticle.isPhysicalPrimary()) {
+              if (mcParticle.getProcess() == 4) {
+                histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num_str"), track.pt(), impParam);
+              } else {
+                histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num_mat"), track.pt(), impParam);
+              }
+            }
+          } else {
+            histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num"), track.pt(), multiplicity);
+            if (!mcParticle.isPhysicalPrimary()) {
+              if (mcParticle.getProcess() == 4) {
+                histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num_str"), track.pt(), multiplicity);
+              } else {
+                histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num_mat"), track.pt(), multiplicity);
+              }
+            }
+          }
+        } else if (pdgCode == 211) {
+          if (isImpactParam) {
+            histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num"), track.pt(), impParam);
+            if (!mcParticle.isPhysicalPrimary()) {
+              if (mcParticle.getProcess() == 4) {
+                histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num_str"), track.pt(), impParam);
+              } else {
+                histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num_mat"), track.pt(), impParam);
+              }
+            }
+          } else {
+            histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num"), track.pt(), multiplicity);
+            if (!mcParticle.isPhysicalPrimary()) {
+              if (mcParticle.getProcess() == 4) {
+                histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num_str"), track.pt(), multiplicity);
+              } else {
+                histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num_mat"), track.pt(), multiplicity);
+              }
+            }
+          }
+        } else if (pdgCode == -211) {
+          if (isImpactParam) {
+            histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num"), track.pt(), impParam);
+            if (!mcParticle.isPhysicalPrimary()) {
+              if (mcParticle.getProcess() == 4) {
+                histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num_str"), track.pt(), impParam);
+              } else {
+                histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num_mat"), track.pt(), impParam);
+              }
+            }
+          } else {
+            histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num"), track.pt(), multiplicity);
+            if (!mcParticle.isPhysicalPrimary()) {
+              if (mcParticle.getProcess() == 4) {
+                histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num_str"), track.pt(), multiplicity);
+              } else {
+                histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num_mat"), track.pt(), multiplicity);
+              }
+            }
+          }
+        } else if (pdgCode == 321) {
+          if (isImpactParam) {
+            histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num"), track.pt(), impParam);
+            if (!mcParticle.isPhysicalPrimary()) {
+              if (mcParticle.getProcess() == 4) {
+                histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num_str"), track.pt(), impParam);
+              } else {
+                histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num_mat"), track.pt(), impParam);
+              }
+            }
+          } else {
+            histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num"), track.pt(), multiplicity);
+            if (!mcParticle.isPhysicalPrimary()) {
+              if (mcParticle.getProcess() == 4) {
+                histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num_str"), track.pt(), multiplicity);
+              } else {
+                histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num_mat"), track.pt(), multiplicity);
+              }
+            }
+          }
+        } else if (pdgCode == -321) {
+          if (isImpactParam) {
+            histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num"), track.pt(), impParam);
+            if (!mcParticle.isPhysicalPrimary()) {
+              if (mcParticle.getProcess() == 4) {
+                histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num_str"), track.pt(), impParam);
+              } else {
+                histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num_mat"), track.pt(), impParam);
+              }
+            }
+          } else {
+            histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num"), track.pt(), multiplicity);
+            if (!mcParticle.isPhysicalPrimary()) {
+              if (mcParticle.getProcess() == 4) {
+                histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num_str"), track.pt(), multiplicity);
+              } else {
+                histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num_mat"), track.pt(), multiplicity);
+              }
+            }
+          }
+        }
+      }
       if (track.hasTRD() && trkselOptions.lastRequiredTrdCluster > 0) {
         int lastLayer = 0;
         for (int l = 7; l >= 0; l--) {
@@ -2073,49 +2073,49 @@ struct tofSpectra {
       }
       if (track.hasTOF()) {
         if (isPionTOF || isKaonTOF || isProtonTOF) {
-                if (pdgCode == 2212) {
-                    if (isImpactParam) {
-                    histos.fill(HIST("MC/withPID/pr/pos/prm/pt/numtof"), track.pt(), impParam);
-                    } else {
-                    histos.fill(HIST("MC/withPID/pr/pos/prm/pt/numtof"), track.pt(), multiplicity);
-                    }
-                } else if (pdgCode == -2212) {
-                    if (isImpactParam) {
-                    histos.fill(HIST("MC/withPID/pr/neg/prm/pt/numtof"), track.pt(), impParam);
-                    } else {
-                    histos.fill(HIST("MC/withPID/pr/neg/prm/pt/numtof"), track.pt(), multiplicity);
-                    }
-                } else if (pdgCode == 211) {
-                    if (isImpactParam) {
-                    histos.fill(HIST("MC/withPID/pi/pos/prm/pt/numtof"), track.pt(), impParam);
-                    } else {
-                    histos.fill(HIST("MC/withPID/pi/pos/prm/pt/numtof"), track.pt(), multiplicity);
-                    }
-                } else if (pdgCode == -211) {
-                    if (isImpactParam) {
-                    histos.fill(HIST("MC/withPID/pi/neg/prm/pt/numtof"), track.pt(), impParam);
-                    } else {
-                    histos.fill(HIST("MC/withPID/pi/neg/prm/pt/numtof"), track.pt(), multiplicity);
-                    }
-                } else if (pdgCode == 321) {
-                    if (isImpactParam) {
-                    histos.fill(HIST("MC/withPID/ka/pos/prm/pt/numtof"), track.pt(), impParam);
-                    } else {
-                    histos.fill(HIST("MC/withPID/ka/pos/prm/pt/numtof"), track.pt(), multiplicity);
-                    }
-                } else if (pdgCode == -321) {
-                    if (isImpactParam) {
-                    histos.fill(HIST("MC/withPID/ka/neg/prm/pt/numtof"), track.pt(), impParam);
-                    } else {
-                    histos.fill(HIST("MC/withPID/ka/neg/prm/pt/numtof"), track.pt(), multiplicity);
-                    }
-                }
+          if (pdgCode == 2212) {
+            if (isImpactParam) {
+              histos.fill(HIST("MC/withPID/pr/pos/prm/pt/numtof"), track.pt(), impParam);
+            } else {
+              histos.fill(HIST("MC/withPID/pr/pos/prm/pt/numtof"), track.pt(), multiplicity);
             }
+          } else if (pdgCode == -2212) {
+            if (isImpactParam) {
+              histos.fill(HIST("MC/withPID/pr/neg/prm/pt/numtof"), track.pt(), impParam);
+            } else {
+              histos.fill(HIST("MC/withPID/pr/neg/prm/pt/numtof"), track.pt(), multiplicity);
+            }
+          } else if (pdgCode == 211) {
+            if (isImpactParam) {
+              histos.fill(HIST("MC/withPID/pi/pos/prm/pt/numtof"), track.pt(), impParam);
+            } else {
+              histos.fill(HIST("MC/withPID/pi/pos/prm/pt/numtof"), track.pt(), multiplicity);
+            }
+          } else if (pdgCode == -211) {
+            if (isImpactParam) {
+              histos.fill(HIST("MC/withPID/pi/neg/prm/pt/numtof"), track.pt(), impParam);
+            } else {
+              histos.fill(HIST("MC/withPID/pi/neg/prm/pt/numtof"), track.pt(), multiplicity);
+            }
+          } else if (pdgCode == 321) {
+            if (isImpactParam) {
+              histos.fill(HIST("MC/withPID/ka/pos/prm/pt/numtof"), track.pt(), impParam);
+            } else {
+              histos.fill(HIST("MC/withPID/ka/pos/prm/pt/numtof"), track.pt(), multiplicity);
+            }
+          } else if (pdgCode == -321) {
+            if (isImpactParam) {
+              histos.fill(HIST("MC/withPID/ka/neg/prm/pt/numtof"), track.pt(), impParam);
+            } else {
+              histos.fill(HIST("MC/withPID/ka/neg/prm/pt/numtof"), track.pt(), multiplicity);
+            }
+          }
+        }
         if (includeCentralityMC) {
           if (isImpactParam) {
-          histos.fill(HIST(hpt_numtof_prm[i]), track.pt(), impParam, track.dcaXY(), occupancy);
-        } else {
-          histos.fill(HIST(hpt_numtof_prm[i]), track.pt(), multiplicity, track.dcaXY(), occupancy);
+            histos.fill(HIST(hpt_numtof_prm[i]), track.pt(), impParam, track.dcaXY(), occupancy);
+          } else {
+            histos.fill(HIST(hpt_numtof_prm[i]), track.pt(), multiplicity, track.dcaXY(), occupancy);
           }
         } else {
           histos.fill(HIST(hpt_numtof_prm[i]), track.pt(), multiplicity);
