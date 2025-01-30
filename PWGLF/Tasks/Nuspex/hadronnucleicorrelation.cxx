@@ -1294,10 +1294,10 @@ struct hadronnucleicorrelation {
         continue;
       }
 
-      if (particle.pdgCode() == pdgProton) {
+      if (particle.pdgCode() == pdgDeuteron) {
         selectedparticlesMC_d[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
       }
-      if (particle.pdgCode() == -pdgProton) {
+      if (particle.pdgCode() == -pdgDeuteron) {
         selectedparticlesMC_antid[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
       }
       if (particle.pdgCode() == pdgProton) {
