@@ -459,7 +459,7 @@ struct tofSpectra {
       histos.add("MC/fake/neg", "Fake negative tracks", kTH1D, {ptAxis});
       histos.add("MC/no_collision/pos", "No collision pos track", kTH1D, {ptAxis});
       histos.add("MC/no_collision/neg", "No collision neg track", kTH1D, {ptAxis});
-      if(isImpactParam){
+    if (isImpactParam){
         histos.add("MC/withPID/pi/pos/prm/pt/num", "recons. MC #pi^{+}", kTHnSparseD, {ptAxis, impParamAxis});
         histos.add("MC/withPID/pi/neg/prm/pt/num", "recons. MC #pi^{-}", kTHnSparseD, {ptAxis, impParamAxis});
         histos.add("MC/withPID/ka/pos/prm/pt/num", "recons. MC K^{+}", kTHnSparseD, {ptAxis, impParamAxis});
@@ -1944,7 +1944,7 @@ struct tofSpectra {
                 if (mcParticle.getProcess() == 4) {
                   histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num_str"), track.pt(), impParam);
                       } else {
-                     histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num_mat"), track.pt(), impParam); 
+                     histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num_mat"), track.pt(), impParam);
                       }
                      }
                     } else {
@@ -1953,7 +1953,7 @@ struct tofSpectra {
                 if (mcParticle.getProcess() == 4) {
                   histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num_str"), track.pt(), multiplicity);
                       } else {
-                     histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num_mat"), track.pt(), multiplicity); 
+                     histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num_mat"), track.pt(), multiplicity);
                       }
                      }
                     }
@@ -1964,7 +1964,7 @@ struct tofSpectra {
                 if (mcParticle.getProcess() == 4) {
                   histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num_str"), track.pt(), impParam);
                       } else {
-                     histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num_mat"), track.pt(), impParam); 
+                     histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num_mat"), track.pt(), impParam);
                       }
                      }
                     } else {
@@ -1973,7 +1973,7 @@ struct tofSpectra {
                 if (mcParticle.getProcess() == 4) {
                   histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num_str"), track.pt(), multiplicity);
                       } else {
-                     histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num_mat"), track.pt(), multiplicity); 
+                     histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num_mat"), track.pt(), multiplicity);
                       }
                      }
                     }
@@ -1984,7 +1984,7 @@ struct tofSpectra {
                 if (mcParticle.getProcess() == 4) {
                   histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num_str"), track.pt(), impParam);
                       } else {
-                     histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num_mat"), track.pt(), impParam); 
+                     histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num_mat"), track.pt(), impParam);
                       }
                      }
                     } else {
@@ -1993,7 +1993,7 @@ struct tofSpectra {
                 if (mcParticle.getProcess() == 4) {
                   histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num_str"), track.pt(), multiplicity);
                       } else {
-                     histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num_mat"), track.pt(), multiplicity); 
+                     histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num_mat"), track.pt(), multiplicity);
                       }
                      }
                     }
@@ -2004,7 +2004,7 @@ struct tofSpectra {
                 if (mcParticle.getProcess() == 4) {
                   histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num_str"), track.pt(), impParam);
                       } else {
-                     histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num_mat"), track.pt(), impParam); 
+                     histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num_mat"), track.pt(), impParam);
                       }
                      }
                     } else {
@@ -2013,7 +2013,7 @@ struct tofSpectra {
                 if (mcParticle.getProcess() == 4) {
                   histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num_str"), track.pt(), multiplicity);
                       } else {
-                     histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num_mat"), track.pt(), multiplicity); 
+                     histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num_mat"), track.pt(), multiplicity);
                       }
                      }
                     }
@@ -2024,7 +2024,7 @@ struct tofSpectra {
                 if (mcParticle.getProcess() == 4) {
                   histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num_str"), track.pt(), impParam);
                       } else {
-                     histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num_mat"), track.pt(), impParam); 
+                     histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num_mat"), track.pt(), impParam);
                       }
                      }
                     } else {
@@ -2033,7 +2033,7 @@ struct tofSpectra {
                 if (mcParticle.getProcess() == 4) {
                   histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num_str"), track.pt(), multiplicity);
                       } else {
-                     histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num_mat"), track.pt(), multiplicity); 
+                     histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num_mat"), track.pt(), multiplicity);
                       }
                      }
                     }
@@ -2044,7 +2044,7 @@ struct tofSpectra {
                 if (mcParticle.getProcess() == 4) {
                   histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num_str"), track.pt(), impParam);
                       } else {
-                     histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num_mat"), track.pt(), impParam); 
+                     histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num_mat"), track.pt(), impParam);
                       }
                      }
                     } else {
@@ -2053,7 +2053,7 @@ struct tofSpectra {
                 if (mcParticle.getProcess() == 4) {
                   histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num_str"), track.pt(), multiplicity);
                       } else {
-                     histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num_mat"), track.pt(), multiplicity); 
+                     histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num_mat"), track.pt(), multiplicity);
                       }
                      }
                     }
