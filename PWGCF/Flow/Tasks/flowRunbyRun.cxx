@@ -329,8 +329,6 @@ struct FlowRunbyRun {
           }
           weight->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
         }
-<<<<<<< HEAD
-=======
       } else {
         GFWWeights* weight = fGFWWeightsList->getGFWWeightsByRun(runNumber);
         if (!weight) {
@@ -338,7 +336,6 @@ struct FlowRunbyRun {
           return;
         }
         weight->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
->>>>>>> 46e49ec08 (Revert "O2 Linter")
       }
     }
 
