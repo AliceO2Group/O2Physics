@@ -327,8 +327,18 @@ struct FlowRunbyRun {
             LOGF(fatal, "Could not find the weight for run %d", runNumber);
             return;
           }
-          weight->fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
+          weight->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
         }
+<<<<<<< HEAD
+=======
+      } else {
+        GFWWeights* weight = fGFWWeightsList->getGFWWeightsByRun(runNumber);
+        if (!weight) {
+          LOGF(fatal, "Could not find the weight for run %d", runNumber);
+          return;
+        }
+        weight->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
+>>>>>>> 46e49ec08 (Revert "O2 Linter")
       }
     }
 

@@ -53,15 +53,15 @@ void GFWWeightsList::addGFWWeightsByName(const char* weightName, int nPtBins, do
     return;
   }
   GFWWeights* weight = new GFWWeights(weightName);
-  weight->setPtBins(nPtBins, ptBins);
-  weight->init(addData, addMC);
+  weight->SetPtBins(nPtBins, ptBins);
+  weight->Init(addData, addMC);
   list->Add(weight);
 }
 
 GFWWeights* GFWWeightsList::getGFWWeightsByName(const char* weightName)
 {
   if (!list) {
-    LOGF(error, "weight list is not initialized\n");
+    printf("Error: weight list is not initialized\n");
     return nullptr;
   }
   return reinterpret_cast<GFWWeights*>(list->FindObject(weightName));
@@ -76,8 +76,8 @@ void GFWWeightsList::addGFWWeightsByRun(int runNumber, int nPtBins, double* ptBi
     return;
   }
   GFWWeights* weight = new GFWWeights(Form("weight_%d", runNumber));
-  weight->setPtBins(nPtBins, ptBins);
-  weight->init(addData, addMC);
+  weight->SetPtBins(nPtBins, ptBins);
+  weight->Init(addData, addMC);
   list->Add(weight);
   runNumberMap.insert(std::make_pair(runNumber, weight));
 }
@@ -85,11 +85,11 @@ void GFWWeightsList::addGFWWeightsByRun(int runNumber, int nPtBins, double* ptBi
 GFWWeights* GFWWeightsList::getGFWWeightsByRun(int runNumber)
 {
   if (!list) {
-    LOGF(error, "weight list is not initialized\n");
+    printf("Error: weight list is not initialized\n");
     return nullptr;
   }
   if (!runNumberMap.contains(runNumber)) {
-    LOGF(error, "weight for run %d is not found\n", runNumber);
+    printf("Error: weight for run %d is not found\n", runNumber);
     return nullptr;
   }
   return runNumberMap.at(runNumber);
@@ -105,28 +105,26 @@ void GFWWeightsList::addPIDGFWWeightsByName(const char* weightName, int nPtBins,
   auto it = std::find(ptbins.begin(), ptbins.end(), ptrefup);
   std::vector<double> refpt(ptbins.begin(), it + 1);
 
-  for (auto& type : species) {
-    if (reinterpret_cast<GFWWeights*>(list->FindObject((static_cast<std::string>(weightName) + type).c_str()))) {
+  for(auto & type : species){
+    if (reinterpret_cast<GFWWeights*>(list->FindObject((static_cast<std::string>(weightName)+type).c_str()))) {
       continue;
     }
-    GFWWeights* weight = new GFWWeights(Form("%s", (static_cast<std::string>(weightName) + type).c_str()));
-    if (!type.compare("_ref"))
-      weight->setPtBins(refpt.size() - 1, &(refpt[0]));
-    else
-      weight->setPtBins(nPtBins, ptBins);
-    weight->init(addData, addMC);
+    GFWWeights* weight = new GFWWeights(Form("%s",(static_cast<std::string>(weightName)+type).c_str()));
+    if(!type.compare("_ref")) weight->SetPtBins(refpt.size() - 1, &(refpt[0]));
+    else weight->SetPtBins(nPtBins, ptBins);
+    weight->Init(addData, addMC);
     list->Add(weight);
   }
 }
 GFWWeights* GFWWeightsList::getPIDGFWWeightsByName(const char* weightName, int pidIndex)
 {
-  if (static_cast<size_t>(pidIndex) >= species.size())
+  if(static_cast<size_t>(pidIndex) >= species.size())
     return nullptr;
   if (!list) {
-    LOGF(error, "weight list is not initialized\n");
+    printf("Error: weight list is not initialized\n");
     return nullptr;
   }
-  return reinterpret_cast<GFWWeights*>(list->FindObject((static_cast<std::string>(weightName) + species[pidIndex]).c_str()));
+  return reinterpret_cast<GFWWeights*>(list->FindObject((static_cast<std::string>(weightName)+species[pidIndex]).c_str()));
 }
 void GFWWeightsList::addPIDGFWWeightsByRun(int runNumber, int nPtBins, double* ptBins, double ptrefup, bool addData, bool addMC)
 {
@@ -134,24 +132,21 @@ void GFWWeightsList::addPIDGFWWeightsByRun(int runNumber, int nPtBins, double* p
     init("weightList");
   }
 
-  if (runNumberPIDMap.contains(runNumber))
-    return;
+  if (runNumberPIDMap.contains(runNumber)) return;
   std::vector<double> ptbins(ptBins, ptBins + nPtBins + 1);
   auto it = std::find(ptbins.begin(), ptbins.end(), ptrefup);
   std::vector<double> refpt(ptbins.begin(), it + 1);
 
   std::vector<GFWWeights*> weights;
-  for (auto& type : species) {
+  for(auto & type : species){
     GFWWeights* weight = new GFWWeights(Form("weight_%d%s", runNumber, type.c_str()));
-    if (!type.compare("_ref"))
-      weight->setPtBins(refpt.size() - 1, &(refpt[0]));
-    else
-      weight->setPtBins(nPtBins, ptBins);
-    weight->init(addData, addMC);
+    if(!type.compare("_ref")) weight->SetPtBins(refpt.size() - 1, &(refpt[0]));
+    else weight->SetPtBins(nPtBins, ptBins);
+    weight->Init(addData, addMC);
     list->Add(weight);
     weights.push_back(weight);
   }
-  LOGF(info, "Adding weights for run %d\n", runNumber);
+  printf("Adding weights for run %d\n",runNumber);
   runNumberPIDMap.insert(std::make_pair(runNumber, weights));
   return;
 }
@@ -159,17 +154,18 @@ void GFWWeightsList::addPIDGFWWeightsByRun(int runNumber, int nPtBins, double* p
 GFWWeights* GFWWeightsList::getPIDGFWWeightsByRun(int runNumber, int pidIndex)
 {
   if (!list) {
-    LOGF(error, "weight list is not initialized\n");
+    printf("Error: weight list is not initialized\n");
     return nullptr;
   }
   if (!runNumberPIDMap.contains(runNumber)) {
-    LOGF(error, "PID weights for run %d is not found\n", runNumber);
+    printf("Error: PID weights for run %d is not found\n", runNumber);
     return nullptr;
   }
   return runNumberPIDMap.at(runNumber)[pidIndex];
 }
 Long64_t GFWWeightsList::Merge(TCollection* collist)
 {
+  printf("Merging weight lists!\n");
   Long64_t nmerged = 0;
   if (!list) {
     list = new TObjArray();
@@ -179,12 +175,12 @@ Long64_t GFWWeightsList::Merge(TCollection* collist)
   TIter allWeights(collist);
   GFWWeightsList* lWeight = 0;
   while ((lWeight = (reinterpret_cast<GFWWeightsList*>(allWeights())))) {
-    addArray(list, lWeight->getList());
+    AddArray(list, lWeight->getList());
     nmerged++;
   }
   return nmerged;
 }
-void GFWWeightsList::addArray(TObjArray* target, TObjArray* source)
+void GFWWeightsList::AddArray(TObjArray* target, TObjArray* source)
 {
   if (!source) {
     return;
@@ -196,7 +192,7 @@ void GFWWeightsList::addArray(TObjArray* target, TObjArray* source)
       targw = reinterpret_cast<GFWWeights*>(sourw->Clone(sourw->GetName()));
       target->Add(targw);
     } else {
-      targw->mergeWeights(sourw);
+      targw->MergeWeights(sourw);
     }
   }
 };

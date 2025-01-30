@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include "GFWWeights.h"
-
+#include "TMath.h"
 GFWWeights::GFWWeights() : TNamed("", ""),
                            fDataFilled(kFALSE),
                            fMCFilled(kFALSE),
@@ -44,7 +44,7 @@ GFWWeights::~GFWWeights()
   if (fbinsPt)
     delete[] fbinsPt;
 };
-void GFWWeights::setPtBins(int Nbins, double* bins)
+void GFWWeights::SetPtBins(int Nbins, double* bins)
 {
   if (fbinsPt)
     delete[] fbinsPt;
@@ -53,7 +53,7 @@ void GFWWeights::setPtBins(int Nbins, double* bins)
   for (int i = 0; i <= fNbinsPt; ++i)
     fbinsPt[i] = bins[i];
 };
-void GFWWeights::init(bool AddData, bool AddMC)
+void GFWWeights::Init(bool AddData, bool AddMC)
 {
   if (!fbinsPt) { // If pT bins not initialized, set to default (-1 to 1e6) to accept everything
     fNbinsPt = 1;
@@ -65,8 +65,8 @@ void GFWWeights::init(bool AddData, bool AddMC)
     fW_data = new TObjArray();
     fW_data->SetName("GFWWeights_Data");
     fW_data->SetOwner(kTRUE);
-    const char* tnd = getBinName(0, 0, Form("data_%s", this->GetName()));
-    fW_data->Add(new TH3D(tnd, ";#varphi;#eta;v_{z}", 60, 0, TwoPI, 64, -1.6, 1.6, 40, -10, 10));
+    const char* tnd = GetBinName(0, 0, Form("data_%s", this->GetName()));
+    fW_data->Add(new TH3D(tnd, ";#varphi;#eta;v_{z}", 60, 0, TMath::TwoPi(), 64, -1.6, 1.6, 40, -10, 10));
     fDataFilled = kTRUE;
   }
   if (AddMC) {
@@ -76,8 +76,8 @@ void GFWWeights::init(bool AddData, bool AddMC)
     fW_mcgen->SetName("GFWWeights_MCGen");
     fW_mcrec->SetOwner(kTRUE);
     fW_mcgen->SetOwner(kTRUE);
-    const char* tnr = getBinName(0, 0, "mcrec"); // all integrated over cent. anyway
-    const char* tng = getBinName(0, 0, "mcgen"); // all integrated over cent. anyway
+    const char* tnr = GetBinName(0, 0, "mcrec"); // all integrated over cent. anyway
+    const char* tng = GetBinName(0, 0, "mcgen"); // all integrated over cent. anyway
     fW_mcrec->Add(new TH3D(tnr, ";#it{p}_{T};#eta;v_{z}", fNbinsPt, 0, 20, 64, -1.6, 1.6, 40, -10, 10));
     fW_mcgen->Add(new TH3D(tng, ";#it{p}_{T};#eta;v_{z}", fNbinsPt, 0, 20, 64, -1.6, 1.6, 40, -10, 10));
     reinterpret_cast<TH3D*>(fW_mcrec->At(fW_mcrec->GetEntries() - 1))->GetXaxis()->Set(fNbinsPt, fbinsPt);
@@ -86,7 +86,7 @@ void GFWWeights::init(bool AddData, bool AddMC)
   }
 };
 
-void GFWWeights::fill(double phi, double eta, double vz, double pt, double /*cent*/, int htype, double weight)
+void GFWWeights::Fill(double phi, double eta, double vz, double pt, double /*cent*/, int htype, double weight)
 {
   TObjArray* tar = 0;
   const char* pf = "";
@@ -104,15 +104,15 @@ void GFWWeights::fill(double phi, double eta, double vz, double pt, double /*cen
   }
   if (!tar)
     return;
-  TH3D* th3 = reinterpret_cast<TH3D*>(tar->FindObject(getBinName(0, 0, pf))); // pT bin 0, V0M bin 0, since all integrated
+  TH3D* th3 = reinterpret_cast<TH3D*>(tar->FindObject(GetBinName(0, 0, pf))); // pT bin 0, V0M bin 0, since all integrated
   if (!th3) {
     if (!htype)
-      tar->Add(new TH3D(getBinName(0, 0, pf), ";#varphi;#eta;v_{z}", 60, 0, TwoPI, 64, -1.6, 1.6, 40, -10, 10)); // 0,0 since all integrated
+      tar->Add(new TH3D(GetBinName(0, 0, pf), ";#varphi;#eta;v_{z}", 60, 0, TMath::TwoPi(), 64, -1.6, 1.6, 40, -10, 10)); // 0,0 since all integrated
     th3 = reinterpret_cast<TH3D*>(tar->At(tar->GetEntries() - 1));
   }
   th3->Fill(htype ? pt : phi, eta, vz, weight);
 };
-double GFWWeights::getWeight(double phi, double eta, double vz, double pt, double /*cent*/, int htype)
+double GFWWeights::GetWeight(double phi, double eta, double vz, double pt, double /*cent*/, int htype)
 {
   TObjArray* tar = 0;
   const char* pf = "";
@@ -130,7 +130,7 @@ double GFWWeights::getWeight(double phi, double eta, double vz, double pt, doubl
   }
   if (!tar)
     return 1;
-  TH3D* th3 = reinterpret_cast<TH3D*>(tar->FindObject(getBinName(0, 0, pf)));
+  TH3D* th3 = reinterpret_cast<TH3D*>(tar->FindObject(GetBinName(0, 0, pf)));
   if (!th3)
     return 1; //-1;
   int xind = th3->GetXaxis()->FindBin(htype ? pt : phi);
@@ -141,10 +141,10 @@ double GFWWeights::getWeight(double phi, double eta, double vz, double pt, doubl
     return 1. / weight;
   return 1;
 };
-double GFWWeights::getNUA(double phi, double eta, double vz)
+double GFWWeights::GetNUA(double phi, double eta, double vz)
 {
   if (!fAccInt)
-    createNUA();
+    CreateNUA();
   int xind = fAccInt->GetXaxis()->FindBin(phi);
   int etaind = fAccInt->GetYaxis()->FindBin(eta);
   int vzind = fAccInt->GetZaxis()->FindBin(vz);
@@ -153,10 +153,10 @@ double GFWWeights::getNUA(double phi, double eta, double vz)
     return 1. / weight;
   return 1;
 }
-double GFWWeights::getNUE(double pt, double eta, double vz)
+double GFWWeights::GetNUE(double pt, double eta, double vz)
 {
   if (!fEffInt)
-    createNUE();
+    CreateNUE();
   int xind = fEffInt->GetXaxis()->FindBin(pt);
   int etaind = fEffInt->GetYaxis()->FindBin(eta);
   int vzind = fEffInt->GetZaxis()->FindBin(vz);
@@ -165,7 +165,7 @@ double GFWWeights::getNUE(double pt, double eta, double vz)
     return 1. / weight;
   return 1;
 }
-double GFWWeights::findMax(TH3D* inh, int& ix, int& iy, int& iz)
+double GFWWeights::FindMax(TH3D* inh, int& ix, int& iy, int& iz)
 {
   double maxv = inh->GetBinContent(1, 1, 1);
   for (int i = 1; i <= inh->GetNbinsX(); i++)
@@ -179,10 +179,10 @@ double GFWWeights::findMax(TH3D* inh, int& ix, int& iy, int& iz)
         }
   return maxv;
 };
-void GFWWeights::mcToEfficiency()
+void GFWWeights::MCToEfficiency()
 {
   if (fW_mcgen->GetEntries() < 1) {
-    LOGF(info, "MC gen. array empty. This is probably because effs. have been calculated and the generated particle histograms have been cleared out!\n");
+    printf("MC gen. array empty. This is probably because effs. have been calculated and the generated particle histograms have been cleared out!\n");
     return;
   }
   for (int i = 0; i < fW_mcrec->GetEntries(); i++) {
@@ -194,7 +194,7 @@ void GFWWeights::mcToEfficiency()
   }
   fW_mcgen->Clear();
 };
-void GFWWeights::rebinNUA(int nX, int nY, int nZ)
+void GFWWeights::RebinNUA(int nX, int nY, int nZ)
 {
   if (fW_data->GetEntries() < 1)
     return;
@@ -204,10 +204,10 @@ void GFWWeights::rebinNUA(int nX, int nY, int nZ)
     reinterpret_cast<TH3D*>(fW_data->At(i))->RebinZ(nZ);
   }
 };
-void GFWWeights::createNUA(bool IntegrateOverCentAndPt)
+void GFWWeights::CreateNUA(bool IntegrateOverCentAndPt)
 {
   if (!IntegrateOverCentAndPt) {
-    LOGF(info, "Method is outdated! NUA is integrated over centrality and pT. Quit now, or the behaviour will be bad\n");
+    printf("Method is outdated! NUA is integrated over centrality and pT. Quit now, or the behaviour will be bad\n");
     return;
   }
   TH1D* h1;
@@ -240,7 +240,7 @@ void GFWWeights::createNUA(bool IntegrateOverCentAndPt)
     return;
   }
 };
-TH1D* GFWWeights::getdNdPhi()
+TH1D* GFWWeights::GetdNdPhi()
 {
   TH3D* temph = reinterpret_cast<TH3D*>(fW_data->At(0)->Clone("tempH3"));
   TH1D* reth = reinterpret_cast<TH1D*>(temph->Project3D("x"));
@@ -257,10 +257,10 @@ TH1D* GFWWeights::getdNdPhi()
   }
   return reth;
 }
-void GFWWeights::createNUE(bool IntegrateOverCentrality)
+void GFWWeights::CreateNUE(bool IntegrateOverCentrality)
 {
   if (!IntegrateOverCentrality) {
-    LOGF(info, "Method is outdated! NUE is integrated over centrality. Quit now, or the behaviour will be bad\n");
+    printf("Method is outdated! NUE is integrated over centrality. Quit now, or the behaviour will be bad\n");
     return;
   }
   TH3D* num = 0;
@@ -281,7 +281,7 @@ void GFWWeights::createNUE(bool IntegrateOverCentrality)
     return;
   }
 };
-void GFWWeights::readAndMerge(TString filelinks, TString listName, bool addData, bool addRec, bool addGen)
+void GFWWeights::ReadAndMerge(TString filelinks, TString listName, bool addData, bool addRec, bool addGen)
 {
   FILE* flist = fopen(filelinks.Data(), "r");
   char str[150];
@@ -290,7 +290,7 @@ void GFWWeights::readAndMerge(TString filelinks, TString listName, bool addData,
     nFiles++;
   rewind(flist);
   if (nFiles == 0) {
-    LOGF(info, "No files to read!\n");
+    printf("No files to read!\n");
     return;
   }
   if (!fW_data && addData) {
@@ -314,31 +314,31 @@ void GFWWeights::readAndMerge(TString filelinks, TString listName, bool addData,
     (void)retVal;
     tf = new TFile(str, "READ");
     if (tf->IsZombie()) {
-      LOGF(warning, "Could not open file %s!\n", str);
+      printf("Could not open file %s!\n", str);
       tf->Close();
       continue;
     }
     TList* tl = reinterpret_cast<TList*>(tf->Get(listName.Data()));
     GFWWeights* tw = reinterpret_cast<GFWWeights*>(tl->FindObject(this->GetName()));
     if (!tw) {
-      LOGF(warning, "Could not fetch weights object from %s\n", str);
+      printf("Could not fetch weights object from %s\n", str);
       tf->Close();
       continue;
     }
     if (addData)
-      addArray(fW_data, tw->getDataArray());
+      AddArray(fW_data, tw->GetDataArray());
     if (addRec)
-      addArray(fW_mcrec, tw->getRecArray());
+      AddArray(fW_mcrec, tw->GetRecArray());
     if (addGen)
-      addArray(fW_mcgen, tw->getGenArray());
+      AddArray(fW_mcgen, tw->GetGenArray());
     tf->Close();
     delete tw;
   }
 };
-void GFWWeights::addArray(TObjArray* targ, TObjArray* sour)
+void GFWWeights::AddArray(TObjArray* targ, TObjArray* sour)
 {
   if (!sour) {
-    LOGF(info, "Source array does not exist!\n");
+    printf("Source array does not exist!\n");
     return;
   }
   for (int i = 0; i < sour->GetEntries(); i++) {
@@ -353,10 +353,10 @@ void GFWWeights::addArray(TObjArray* targ, TObjArray* sour)
     }
   }
 };
-void GFWWeights::overwriteNUA()
+void GFWWeights::OverwriteNUA()
 {
   if (!fAccInt)
-    createNUA();
+    CreateNUA();
   TString ts(fW_data->At(0)->GetName());
   TH3D* trash = reinterpret_cast<TH3D*>(fW_data->RemoveAt(0));
   delete trash;
@@ -384,29 +384,29 @@ Long64_t GFWWeights::Merge(TCollection* collist)
   GFWWeights* l_w = 0;
   TIter all_w(collist);
   while ((l_w = (reinterpret_cast<GFWWeights*>(all_w())))) {
-    addArray(fW_data, l_w->getDataArray());
-    addArray(fW_mcrec, l_w->getRecArray());
-    addArray(fW_mcgen, l_w->getGenArray());
+    AddArray(fW_data, l_w->GetDataArray());
+    AddArray(fW_mcrec, l_w->GetRecArray());
+    AddArray(fW_mcgen, l_w->GetGenArray());
     nmerged++;
   }
   return nmerged;
 };
-TH1D* GFWWeights::getIntegratedEfficiencyHist()
+TH1D* GFWWeights::GetIntegratedEfficiencyHist()
 {
   if (!fW_mcgen) {
-    LOGF(warning, "MCGen array does not exist!\n");
+    printf("MCGen array does not exist!\n");
     return 0;
   }
   if (!fW_mcrec) {
-    LOGF(warning, "MCRec array does not exist!\n");
+    printf("MCRec array does not exist!\n");
     return 0;
   }
   if (!fW_mcgen->GetEntries()) {
-    LOGF(warning, "MCGen array is empty!\n");
+    printf("MCGen array is empty!\n");
     return 0;
   }
   if (!fW_mcrec->GetEntries()) {
-    LOGF(warning, "MCRec array is empty!\n");
+    printf("MCRec array is empty!\n");
     return 0;
   }
   TH3D* num = reinterpret_cast<TH3D*>(fW_mcrec->At(0)->Clone("Numerator"));
@@ -426,25 +426,25 @@ TH1D* GFWWeights::getIntegratedEfficiencyHist()
   delete den1d;
   return num1d;
 }
-bool GFWWeights::calculateIntegratedEff()
+bool GFWWeights::CalculateIntegratedEff()
 {
   if (fIntEff)
     delete fIntEff;
-  fIntEff = getIntegratedEfficiencyHist();
+  fIntEff = GetIntegratedEfficiencyHist();
   if (!fIntEff) {
     return kFALSE;
   }
   fIntEff->SetName("IntegratedEfficiency");
   return kTRUE;
 }
-double GFWWeights::getIntegratedEfficiency(double pt)
+double GFWWeights::GetIntegratedEfficiency(double pt)
 {
   if (!fIntEff)
-    if (!calculateIntegratedEff())
+    if (!CalculateIntegratedEff())
       return 0;
   return fIntEff->GetBinContent(fIntEff->FindBin(pt));
 }
-TH1D* GFWWeights::getEfficiency(double etamin, double etamax, double vzmin, double vzmax)
+TH1D* GFWWeights::GetEfficiency(double etamin, double etamax, double vzmin, double vzmax)
 {
   TH3D* num = reinterpret_cast<TH3D*>(fW_mcrec->At(0)->Clone("Numerator"));
   for (int i = 1; i < fW_mcrec->GetEntries(); i++)
@@ -470,13 +470,12 @@ TH1D* GFWWeights::getEfficiency(double etamin, double etamax, double vzmin, doub
   delete den1d;
   return num1d;
 }
-void GFWWeights::mergeWeights(GFWWeights* other)
-{
+void GFWWeights::MergeWeights(GFWWeights* other){
   if (!fW_data) {
     fW_data = new TObjArray();
     fW_data->SetName("Weights_Data");
     fW_data->SetOwner(kTRUE);
   }
-  addArray(fW_data, other->getDataArray());
+  AddArray(fW_data, other->GetDataArray());
   return;
 }

@@ -80,7 +80,7 @@ GFWCorrConfigs configs;
 
 using namespace o2::analysis::genericframework;
 
-struct FlowGenericFramework {
+struct GenericFramework {
 
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgMpar, int, 8, "Highest order of pt-pt correlations")
@@ -385,15 +385,11 @@ struct FlowGenericFramework {
     double wacc = 1;
     if (cfg.mAcceptance) {
       if (cfgUsePID) {
-        if (cfgRunByRunWeights)
-          wacc = cfg.mAcceptance->getPIDGFWWeightsByRun(lastRun, index)->getNUA(track.phi(), track.eta(), vtxz);
-        else
-          wacc = cfg.mAcceptance->getPIDGFWWeightsByName("weight", index)->getNUA(track.phi(), track.eta(), vtxz);
+        if(cfgRunByRunWeights) wacc = cfg.mAcceptance->getPIDGFWWeightsByRun(lastRun,index)->GetNUA(track.phi(), track.eta(), vtxz);
+        else wacc = cfg.mAcceptance->getPIDGFWWeightsByName("weight",index)->GetNUA(track.phi(), track.eta(), vtxz);
       } else {
-        if (cfgRunByRunWeights)
-          wacc = cfg.mAcceptance->getGFWWeightsByRun(lastRun)->getNUA(track.phi(), track.eta(), vtxz);
-        else
-          wacc = cfg.mAcceptance->getGFWWeightsByName("weight")->getNUA(track.phi(), track.eta(), vtxz);
+        if(cfgRunByRunWeights) wacc = cfg.mAcceptance->getGFWWeightsByRun(lastRun)->GetNUA(track.phi(), track.eta(), vtxz);
+        else wacc = cfg.mAcceptance->getGFWWeightsByName("weight")->GetNUA(track.phi(), track.eta(), vtxz);
       }
     }
     return wacc;
@@ -516,7 +512,7 @@ struct FlowGenericFramework {
     if (vtxz > vtxZup || vtxz < vtxZlow)
       return 0;
 
-    if (cfgMultCut) {
+    if(cfgMultCut){
       if (multNTracksPV < fMultPVCutLow->Eval(centrality))
         return 0;
       if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
@@ -580,20 +576,20 @@ struct FlowGenericFramework {
       bool withinPtRef = (ptreflow < track.pt()) && (track.pt() < ptrefup);                          // within RF pT range
       if (cfgRunByRunWeights) {
         if (withinPtRef && !pid_index)
-          fWeightList->getPIDGFWWeightsByRun(run, pid_index)->fill(track.phi(), track.eta(), vtxz, track.pt(), multcent, 0); // pt-subset of charged particles for ref flow
+          fWeightList->getPIDGFWWeightsByRun(run,pid_index)->Fill(track.phi(), track.eta(), vtxz, track.pt(), multcent, 0); // pt-subset of charged particles for ref flow
         if (withinPtPOI)
-          fWeightList->getPIDGFWWeightsByRun(run, pid_index + 1)->fill(track.phi(), track.eta(), vtxz, track.pt(), multcent, 0); // charged and id'ed particle weights
+          fWeightList->getPIDGFWWeightsByRun(run,pid_index+1)->Fill(track.phi(), track.eta(), vtxz, track.pt(), multcent, 0); // charged and id'ed particle weights
       } else {
         if (withinPtRef && !pid_index)
-          fWeightList->getPIDGFWWeightsByName("weight", pid_index)->fill(track.phi(), track.eta(), vtxz, track.pt(), multcent, 0); // pt-subset of charged particles for ref flow
+          fWeightList->getPIDGFWWeightsByName("weight",pid_index)->Fill(track.phi(), track.eta(), vtxz, track.pt(), multcent, 0); // pt-subset of charged particles for ref flow
         if (withinPtPOI)
-          fWeightList->getPIDGFWWeightsByName("weight", pid_index + 1)->fill(track.phi(), track.eta(), vtxz, track.pt(), multcent, 0); // charged and id'ed particle weights
+          fWeightList->getPIDGFWWeightsByName("weight",pid_index+1)->Fill(track.phi(), track.eta(), vtxz, track.pt(), multcent, 0); // charged and id'ed particle weights
       }
     } else {
       if (cfgRunByRunWeights)
-        fWeightList->getGFWWeightsByRun(lastRun)->fill(track.phi(), track.eta(), vtxz, track.pt(), multcent, 0);
+        fWeightList->getGFWWeightsByRun(lastRun)->Fill(track.phi(), track.eta(), vtxz, track.pt(), multcent, 0);
       else
-        fWeightList->getGFWWeightsByName("weight")->fill(track.phi(), track.eta(), vtxz, track.pt(), multcent, 0);
+        fWeightList->getGFWWeightsByName("weight")->Fill(track.phi(), track.eta(), vtxz, track.pt(), multcent, 0);
     }
     return;
   }
@@ -601,9 +597,9 @@ struct FlowGenericFramework {
   void createRunByRunWeights(int run)
   {
     if (cfgUsePID) {
-      fWeightList->addPIDGFWWeightsByRun(run, fPtAxis->GetNbins(), &ptbinning[0], ptrefup, true, false);
+      fWeightList->addPIDGFWWeightsByRun(run,fPtAxis->GetNbins(),&ptbinning[0],ptrefup,true,false);
     } else {
-      fWeightList->addGFWWeightsByRun(run, fPtAxis->GetNbins(), &ptbinning[0], true, false);
+      fWeightList->addGFWWeightsByRun(run,fPtAxis->GetNbins(),&ptbinning[0],true,false);
     }
     return;
   }
@@ -778,7 +774,7 @@ struct FlowGenericFramework {
       if (!withinPtPOI && !withinPtRef)
         return;
       double waccRef = (dt == kGen) ? 1. : getAcceptance(track, vtxz, 0);
-      double waccPOI = (dt == kGen) ? 1. : withinPtPOI ? getAcceptance(track, vtxz, pid_index + 1)
+      double waccPOI = (dt == kGen) ? 1. : withinPtPOI ? getAcceptance(track, vtxz, pid_index+1)
                                                        : getAcceptance(track, vtxz, 0); //
       if (withinPtRef && withinPtPOI && pid_index)
         waccRef = waccPOI; // if particle is both (then it's overlap), override ref with POI
@@ -810,7 +806,7 @@ struct FlowGenericFramework {
       registry.fill(HIST("MCGen/") + HIST(FillTimeName[ft]) + HIST("pt_gen"), track.pt());
     } else {
       double wacc = getAcceptance(track, vtxz, 0);
-      registry.fill(HIST("trackQA/") + HIST(FillTimeName[ft]) + HIST("phi_eta_vtxZ"), track.phi(), track.eta(), vtxz, (ft == kAfter) ? wacc : 1.0);
+      registry.fill(HIST("trackQA/") + HIST(FillTimeName[ft]) + HIST("phi_eta_vtxZ"), track.phi(), track.eta(), vtxz, (ft == kAfter)?wacc:1.0);
       registry.fill(HIST("trackQA/") + HIST(FillTimeName[ft]) + HIST("pt_dcaXY_dcaZ"), track.pt(), track.dcaXY(), track.dcaZ());
       if (ft == kAfter) {
         registry.fill(HIST("trackQA/") + HIST(FillTimeName[ft]) + HIST("pt_ref"), track.pt());
@@ -869,7 +865,7 @@ struct FlowGenericFramework {
     auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
     processCollision<kReco>(collision, tracks, centrality, field, run);
   }
-  PROCESS_SWITCH(FlowGenericFramework, processData, "Process analysis for non-derived data", true);
+  PROCESS_SWITCH(GenericFramework, processData, "Process analysis for non-derived data", true);
 
   void processMCReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
   {
@@ -895,7 +891,7 @@ struct FlowGenericFramework {
     auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
     processCollision<kReco>(collision, tracks, centrality, field, run);
   }
-  PROCESS_SWITCH(FlowGenericFramework, processMCReco, "Process analysis for MC reconstructed events", false);
+  PROCESS_SWITCH(GenericFramework, processMCReco, "Process analysis for MC reconstructed events", false);
 
   Filter mcCollFilter = nabs(aod::mccollision::posZ) < cfgVtxZ;
   void processMCGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs>> const& collisions, aod::McParticles const& particles)
@@ -908,7 +904,7 @@ struct FlowGenericFramework {
     }
     processCollision<kGen>(mcCollision, particles, centrality, -999, 0);
   }
-  PROCESS_SWITCH(FlowGenericFramework, processMCGen, "Process analysis for MC generated events", false);
+  PROCESS_SWITCH(GenericFramework, processMCGen, "Process analysis for MC generated events", false);
 
   void processRun2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentRun2V0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
   {
@@ -922,17 +918,17 @@ struct FlowGenericFramework {
     if (!collision.sel7())
       return;
     const auto centrality = collision.centRun2V0M();
-    if (!cfgFillWeights)
-      loadCorrections(bc);
+    if(!cfgFillWeights)
+       loadCorrections(bc);
     auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
     processCollision<kReco>(collision, tracks, centrality, field, run);
   }
-  PROCESS_SWITCH(FlowGenericFramework, processRun2, "Process analysis for Run 2 converted data", false);
+  PROCESS_SWITCH(GenericFramework, processRun2, "Process analysis for Run 2 converted data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<FlowGenericFramework>(cfgc),
+    adaptAnalysisTask<GenericFramework>(cfgc),
   };
 }
