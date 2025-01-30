@@ -410,12 +410,14 @@ struct TaskPi0FlowEMC {
   /// \param pt is the transverse momentum of the candidate
   /// \param cent is the centrality of the collision
   /// \param sp is the scalar product
+  template <const int histType>
   void fillThn(float& mass,
                float& pt,
                float& cent,
                float& sp)
   {
-    registry.fill(HIST("hSparsePi0Flow"), mass, pt, cent, sp);
+    static constexpr std::string_view HistTypes[2] = {"hSparsePi0Flow", "hSparseBkgFlow"};
+    registry.fill(HIST(HistTypes[histType]), mass, pt, cent, sp);
   }
 
   /// Get the centrality
@@ -689,7 +691,7 @@ struct TaskPi0FlowEMC {
           if (mesonConfig.enableTanThetadPhi) {
             float dTheta = photon1.Theta() - photon3.Theta();
             float dPhi = photon1.Phi() - photon3.Phi();
-            if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+            if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
               registry.fill(HIST("hSparseBkgFlow"), mother1.M(), mother1.Pt(), cent, scalprodCand1);
             }
           } else {
@@ -712,7 +714,7 @@ struct TaskPi0FlowEMC {
           if (mesonConfig.enableTanThetadPhi) {
             float dTheta = photon2.Theta() - photon3.Theta();
             float dPhi = photon2.Phi() - photon3.Phi();
-            if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+            if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
               registry.fill(HIST("hSparseBkgFlow"), mother2.M(), mother2.Pt(), cent, scalprodCand2);
             }
           } else {
@@ -772,7 +774,7 @@ struct TaskPi0FlowEMC {
             if (mesonConfig.enableTanThetadPhi) {
               float dTheta = photon1.Theta() - photon3.Theta();
               float dPhi = photon1.Phi() - photon3.Phi();
-              if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+              if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
                 registry.fill(HIST("hSparseCalibBack"), mother1.M(), mother1.E() / 2., cent);
               }
             } else {
@@ -790,7 +792,7 @@ struct TaskPi0FlowEMC {
             if (mesonConfig.enableTanThetadPhi) {
               float dTheta = photon2.Theta() - photon3.Theta();
               float dPhi = photon2.Phi() - photon3.Phi();
-              if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+              if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
                 registry.fill(HIST("hSparseCalibBack"), mother2.M(), mother2.E() / 2., cent);
               }
             } else {
@@ -806,6 +808,7 @@ struct TaskPi0FlowEMC {
   /// Compute the scalar product
   /// \param collision is the collision with the Q vector information and event plane
   /// \param meson are the selected candidates
+  template <const int histType>
   void runFlowAnalysis(CollsWithQvecs::iterator const& collision, ROOT::Math::PtEtaPhiMVector const& meson)
   {
     auto [xQVec, yQVec] = getQvec(collision, qvecDetector);
@@ -823,7 +826,7 @@ struct TaskPi0FlowEMC {
       scalprodCand = scalprodCand / h1SPResolution->GetBinContent(h1SPResolution->FindBin(cent + epsilon));
     }
 
-    fillThn(massCand, ptCand, cent, scalprodCand);
+    fillThn<histType>(massCand, ptCand, cent, scalprodCand);
     return;
   }
 
@@ -950,7 +953,7 @@ struct TaskPi0FlowEMC {
           continue;
         }
         registry.fill(HIST("hClusterCuts"), 6);
-        runFlowAnalysis(collision, vMeson);
+        runFlowAnalysis<0>(collision, vMeson);
       }
       if (cfgDoRotation) {
         if (nColl % cfgDownsampling.value == 0) {
@@ -1030,12 +1033,12 @@ struct TaskPi0FlowEMC {
           registry.fill(HIST("hTanThetaPhi"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
           registry.fill(HIST("hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
         }
-        if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
+        if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
           registry.fill(HIST("hClusterCuts"), 5);
           continue;
         }
         registry.fill(HIST("hClusterCuts"), 6);
-        runFlowAnalysis(c1, vMeson);
+        runFlowAnalysis<1>(c1, vMeson);
       }
     }
   }

@@ -201,11 +201,11 @@ struct CentralityTable {
       if (f == 1) {
         if (tableNames[i].find("Run2") != std::string::npos) {
           if (doprocessRun3) {
-            LOGF(fatal, "Cannot enable Run2 tables in Run3 mode. Please check and disable them.");
+            LOG(fatal) << "Cannot enable Run2 table `" << tableNames[i] << "` while running in Run3 mode. Please check and disable them.";
           }
         } else {
           if (doprocessRun2) {
-            LOGF(fatal, "Cannot enable Run3 tables in Run2 mode. Please check and disable them.");
+            LOG(fatal) << "Cannot enable Run3 table `" << tableNames[i] << "` while running in Run2 mode. Please check and disable them.";
           }
         }
         isTableEnabled[i] = true;
@@ -573,7 +573,7 @@ struct CentralityTable {
                 getccdb(FT0CInfo, ccdbConfig.genName);
                 break;
               case kCentFT0CVariant1s:
-                getccdb(FT0CInfo, ccdbConfig.genName);
+                getccdb(FT0CVariant1Info, ccdbConfig.genName);
                 break;
               case kCentFDDMs:
                 getccdb(FDDMInfo, ccdbConfig.genName);
