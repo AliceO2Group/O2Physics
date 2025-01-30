@@ -15,13 +15,15 @@
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
 #include <array>
+#include <vector>
 
-#include "Common/Core/RecoDecay.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+
+#include "Common/Core/RecoDecay.h"
 
 using namespace o2;
 using namespace o2::aod;

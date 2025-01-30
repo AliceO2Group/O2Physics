@@ -138,7 +138,7 @@ struct HfElectronSelectionWithTpcEmcal {
   using McTableTracks = soa::Join<TableTracks, aod::McTrackLabels>;
   using McTableEmcals = soa::Join<o2::aod::EMCALClusters, aod::EMCALMCClusters>;
 
-  Filter CollisionFilter = nabs(aod::collision::posZ) < zPvPosMax && aod::collision::numContrib > (uint16_t)1;
+  Filter CollisionFilter = nabs(aod::collision::posZ) < zPvPosMax && aod::collision::numContrib > static_cast<uint16_t>(1);
   PresliceUnsorted<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalmatchedtrack::trackId;
 
   HistogramConfigSpec hEmcClusterEnergySpec{HistType::kTH1F, {{300, 0.0, 30.0}}};
@@ -366,7 +366,7 @@ struct HfElectronSelectionWithTpcEmcal {
         }
 
         isEMcal = true;
-        std::cout << " electron id  in selection" << electronId << std::endl;
+        // std::cout << " electron id  in selection" << electronId << std::endl; // FIXME: Use LOG
         electronSel(matchTrack.collisionId(), electronId, etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
                     eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
       }

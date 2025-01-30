@@ -256,6 +256,19 @@ bool IsConversionPointInAcceptance(TMCPhoton const& mcphoton, const float max_r_
   return true;
 }
 //_______________________________________________________________________
+template <typename TMCParticle, typename TMCParticles>
+bool isGammaGammaDecay(TMCParticle mcParticle, TMCParticles mcParticles)
+{
+  auto daughtersIds = mcParticle.daughtersIds();
+  if (daughtersIds.size() != 2)
+    return false;
+  for (auto& daughterId : daughtersIds) {
+    if (mcParticles.iteratorAt(daughterId).pdgCode() != 22)
+      return false;
+  }
+  return true;
+}
+//_______________________________________________________________________
 } // namespace o2::aod::pwgem::photonmeson::utils::mcutil
 //_______________________________________________________________________
 //_______________________________________________________________________

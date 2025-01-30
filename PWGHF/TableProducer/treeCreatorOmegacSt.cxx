@@ -14,7 +14,10 @@
 ///
 /// \author Jochen Klein
 
-#include <TDatabasePDG.h>
+#include <map>
+#include <memory>
+#include <string>
+
 #include <TPDGCode.h>
 
 #include "CCDB/BasicCCDBManager.h"

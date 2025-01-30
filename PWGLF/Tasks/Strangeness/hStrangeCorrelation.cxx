@@ -476,31 +476,33 @@ struct correlateStrangeness {
       }
     }
   }
-
-  void fillCorrelationsHadron(aod::TriggerTracks const& triggers, aod::AssocHadrons const& assocs, bool mixing, float pvz, float mult, int /*indexAssoc*/)
+  template <typename TTriggers, typename THadrons>
+  void fillCorrelationsHadron(TTriggers const& triggers, THadrons const& assocs, bool mixing, float pvz, float mult)
   {
 
     for (auto& triggerTrack : triggers) {
       if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
         continue;
-      auto trigg = triggerTrack.track_as<TracksComplete>();
+      auto trigg = triggerTrack.template track_as<TracksComplete>();
       if (!isValidTrigger(trigg))
         continue;
 
-      static_for<7, 8>([&](auto i) {
-      constexpr int index = i.value;
-      if (bitcheck(doCorrelation, i)) {
-      if (!mixing)
-        histos.fill(HIST("sameEvent/TriggerParticles") + HIST(particlenames[index]), trigg.pt(), mult);
+      if (!mixing) {
+        if constexpr (requires { triggerTrack.extra(); })
+          histos.fill(HIST("sameEvent/TriggerParticlesPion"), trigg.pt(), mult);
+        else
+          histos.fill(HIST("sameEvent/TriggerParticlesHadron"), trigg.pt(), mult);
+      }
       for (auto& assocTrack : assocs) {
-        auto assoc = assocTrack.track_as<TracksComplete>();
-
-
+        auto assoc = assocTrack.template track_as<TracksComplete>();
 
         //---] removing autocorrelations [---
         if (doAutocorrelationRejection) {
           if (trigg.globalIndex() == assoc.globalIndex()) {
-            histos.fill(HIST("hNumberOfRejectedPairs") + HIST(particlenames[index]), 0.5);
+            if constexpr (requires { assocTrack.nSigmaTPCPi(); })
+              histos.fill(HIST("hNumberOfRejectedPairsPion"), 0.5);
+            else
+              histos.fill(HIST("hNumberOfRejectedPairsHadron"), 0.5);
             continue;
           }
         }
@@ -522,12 +524,20 @@ struct correlateStrangeness {
         if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
           continue;
 
-        if (!mixing)
-          histos.fill(HIST("sameEvent/Signal/") + HIST(particlenames[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
-        else
-          histos.fill(HIST("mixedEvent/Signal/") + HIST(particlenames[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
+        if (!mixing) {
+          if constexpr (requires { assocTrack.nSigmaTPCPi(); }) {
+            histos.fill(HIST("sameEvent/Signal/Pion"), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
+          } else {
+            histos.fill(HIST("sameEvent/Signal/Hadron"), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
+          }
+        } else {
+          if constexpr (requires { assocTrack.nSigmaTPCPi(); }) {
+            histos.fill(HIST("mixedEvent/Signal/Pion"), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
+          } else {
+            histos.fill(HIST("mixedEvent/Signal/Hadron"), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult);
+          }
+        }
       }
-    } });
     }
   }
 
@@ -733,11 +743,6 @@ struct correlateStrangeness {
     histos.add("hNumberOfRejectedPairsCascades", "hNumberOfRejectedPairsCascades", kTH1F, {{1, 0, 1}});
     histos.add("hNumberOfRejectedPairsPion", "hNumberOfRejectedPairsPion", kTH1F, {{1, 0, 1}});
 
-    histos.add("sameEvent/TriggerParticlesHadron", "TriggersHadron", kTH2F, {axisPtQA, axisMult});
-    histos.add("sameEvent/TriggerParticlesV0", "TriggersV0", kTH2F, {axisPtQA, axisMult});
-    histos.add("sameEvent/TriggerParticlesCascade", "TriggersCascade", kTH2F, {axisPtQA, axisMult});
-    histos.add("sameEvent/TriggerParticlesPion", "TriggersPion", kTH2F, {axisPtQA, axisMult});
-
     // mixing QA
     histos.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{140, -0.5, 139.5}});
     histos.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{140, -0.5, 139.5}});
@@ -783,6 +788,14 @@ struct correlateStrangeness {
     if (doprocessMixedEventHV0s || doprocessMixedEventHCascades || doprocessMixedEventHPions || doprocessMixedEventHHadrons) {
       histos.addClone("sameEvent/", "mixedEvent/");
     }
+    if (doprocessSameEventHHadrons)
+      histos.add("sameEvent/TriggerParticlesHadron", "TriggersHadron", kTH2F, {axisPtQA, axisMult});
+    if (doprocessSameEventHV0s)
+      histos.add("sameEvent/TriggerParticlesV0", "TriggersV0", kTH2F, {axisPtQA, axisMult});
+    if (doprocessSameEventHCascades)
+      histos.add("sameEvent/TriggerParticlesCascade", "TriggersCascade", kTH2F, {axisPtQA, axisMult});
+    if (doprocessSameEventHPions)
+      histos.add("sameEvent/TriggerParticlesPion", "TriggersPion", kTH2F, {axisPtQA, axisMult});
 
     // MC generated plots
     if (doprocessMCGenerated) {
@@ -928,7 +941,7 @@ struct correlateStrangeness {
 
     // ________________________________________________
     // Do hadron - hadron correlations
-    fillCorrelationsHadron(triggerTracks, assocHadrons, false, collision.posZ(), collision.centFT0M(), 7);
+    fillCorrelationsHadron(triggerTracks, assocHadrons, false, collision.posZ(), collision.centFT0M());
   }
 
   void processSameEventHV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision,
@@ -1114,7 +1127,7 @@ struct correlateStrangeness {
     fillCorrelationsCascade(triggerTracks, associatedCascades, false, collision.posX(), collision.posY(), collision.posZ(), collision.centFT0M());
   }
   void processSameEventHPions(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision,
-                              aod::AssocHadrons const& associatedPions, aod::TriggerTracks const& triggerTracks,
+                              soa::Join<aod::AssocHadrons, aod::AssocPID> const& associatedPions, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks,
                               TracksComplete const&, aod::BCsWithTimestamps const&)
   {
     // ________________________________________________
@@ -1155,7 +1168,7 @@ struct correlateStrangeness {
 
     // ________________________________________________
     // Do hadron - Pion correlations
-    fillCorrelationsHadron(triggerTracks, associatedPions, false, collision.posZ(), collision.centFT0M(), 8);
+    fillCorrelationsHadron(triggerTracks, associatedPions, false, collision.posZ(), collision.centFT0M());
   }
 
   void processMixedEventHHadrons(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions,
@@ -1193,7 +1206,7 @@ struct correlateStrangeness {
       auto slicedAssocHadrons = assocHadrons.sliceBy(collisionSliceHadrons, collision2.globalIndex());
       // ________________________________________________
       // Do hadron - hadron correlations
-      fillCorrelationsHadron(slicedTriggerTracks, slicedAssocHadrons, true, collision1.posZ(), collision1.centFT0M(), 7);
+      fillCorrelationsHadron(slicedTriggerTracks, slicedAssocHadrons, true, collision1.posZ(), collision1.centFT0M());
     }
   }
 
@@ -1281,7 +1294,7 @@ struct correlateStrangeness {
     }
   }
   void processMixedEventHPions(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions,
-                               aod::AssocHadrons const& assocPions, aod::TriggerTracks const& triggerTracks,
+                               soa::Join<aod::AssocHadrons, aod::AssocPID> const& assocPions, soa::Join<aod::TriggerTracks, aod::TriggerTrackExtras> const& triggerTracks,
                                TracksComplete const&)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, mixingParameter, -1, collisions, collisions)) {
@@ -1315,7 +1328,7 @@ struct correlateStrangeness {
       auto slicedAssocPions = assocPions.sliceBy(collisionSliceHadrons, collision2.globalIndex());
       // ________________________________________________
       // Do hadron - cascade correlations
-      fillCorrelationsHadron(slicedTriggerTracks, slicedAssocPions, true, collision1.posZ(), collision1.centFT0M(), 8);
+      fillCorrelationsHadron(slicedTriggerTracks, slicedAssocPions, true, collision1.posZ(), collision1.centFT0M());
     }
   }
 

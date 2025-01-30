@@ -90,10 +90,12 @@ namespace femtodreamparticle
 {
 /// Distinuishes the different particle types
 enum ParticleType {
-  kTrack,           //! Track
-  kV0,              //! V0
-  kV0Child,         //! Child track of a V0
-  kCascade,         //! Cascade
+  kTrack,   //! Track
+  kV0,      //! V0
+  kV0Child, //! Child track of a V0
+  kCascade, //! Cascade
+  kCascadeV0,
+  kCascadeV0Child,
   kCascadeBachelor, //! Bachelor track of a cascade
   kCharmHadron,     //! Bachelor track of a cascade
   kNParticleTypes   //! Number of particle types
@@ -105,19 +107,20 @@ enum MomentumType {
   kPtpc   //! momentum at the inner wall of the TPC (useful for PID plots)
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor", "CharmHadron"}; //! Naming of the different particle types
-static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA"};
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron"}; //! Naming of the different particle types
+static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA"};
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
 enum TrackType {
-  kNoChild,    //! Not a V0 child
+  kNoChild,    //! Not any child
   kPosChild,   //! Positive V0 child
   kNegChild,   //! Negative V0 child
+  kBachelor,   //! Bachelor Cascade child
   kNTrackTypes //! Number of child types
 };
 
-static constexpr std::string_view TrackTypeName[kNTrackTypes] = {"Trk", "Pos", "Neg"}; //! Naming of the different particle types
+static constexpr std::string_view TrackTypeName[kNTrackTypes] = {"Trk", "Pos", "Neg", "Bach"}; //! Naming of the different particle types
 
 DECLARE_SOA_INDEX_COLUMN(FDCollision, fdCollision);
 DECLARE_SOA_COLUMN(Pt, pt, float);                       //! p_T (GeV/c)
