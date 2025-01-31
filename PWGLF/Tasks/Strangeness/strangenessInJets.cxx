@@ -12,7 +12,7 @@
 /// \file strangenessInJets.cxx
 ///
 /// \brief task for analysis of strangeness in jets
-/// \author Alberto Caliva (alberto.caliva@cern.ch), Francesca Ercolessi (francesca.ercolessi@cern.ch)
+/// \author Alberto Caliva (alberto.caliva@cern.ch), Francesca Ercolessi (francesca.ercolessi@cern.ch), Nicolò Jacazio (nicolo.jacazio@cern.ch)
 /// \since May 22, 2024
 
 #include <TLorentzVector.h>
@@ -132,6 +132,10 @@ struct StrangenessInJets {
   Configurable<std::string> histoNameWeightLambdaUe{"histoNameWeightLambdaUe", "", "reweighting histogram: lambda in ue"};
   Configurable<std::string> histoNameWeightAntilambdaJet{"histoNameWeightAntilambdaJet", "", "reweighting histogram: antilambda in jet"};
   Configurable<std::string> histoNameWeightAntilambdaUe{"histoNameWeightAntilambdaUe", "", "reweighting histogram: antilambda in ue"};
+  Configurable<std::string> histoNameWeightsXiInJet{"histoNameWeightsXiInJet", "", "reweighting histogram: xi in jet"};
+  Configurable<std::string> histoNameWeightsXiInUe{"histoNameWeightsXiInUe", "", "reweighting histogram: xi in ue"};
+  Configurable<std::string> histoNameWeightsAntiXiInJet{"histoNameWeightsAntiXiInJet", "", "reweighting histogram: antixi in jet"};
+  Configurable<std::string> histoNameWeightsAntiXiInUe{"histoNameWeightsAntiXiInUe", "", "reweighting histogram: antixi in ue"};
 
   // Two-dimensional weights
   TH2F* twodWeightsPiplusJet = nullptr;
@@ -144,6 +148,10 @@ struct StrangenessInJets {
   TH2F* twodWeightsLambdaUe;
   TH2F* twodWeightsAntilambdaJet;
   TH2F* twodWeightsAntilambdaUe;
+  TH1F* weightsXiInJet;
+  TH1F* weightsXiInUe;
+  TH1F* weightsAntiXiInJet;
+  TH1F* weightsAntiXiInUe;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
@@ -162,7 +170,7 @@ struct StrangenessInJets {
     ccdb->setFatalWhenNull(false);
 
     if (applyReweighting) {
-      getReweightingHistograms(ccdb, TString(pathToFile), TString(histoNameWeightK0Jet), TString(histoNameWeightK0Ue), TString(histoNameWeightLambdaJet), TString(histoNameWeightLambdaUe), TString(histoNameWeightAntilambdaJet), TString(histoNameWeightAntilambdaUe));
+      getReweightingHistograms(ccdb, TString(pathToFile), TString(histoNameWeightK0Jet), TString(histoNameWeightK0Ue), TString(histoNameWeightLambdaJet), TString(histoNameWeightLambdaUe), TString(histoNameWeightAntilambdaJet), TString(histoNameWeightAntilambdaUe), TString(histoNameWeightsXiInJet), TString(histoNameWeightsXiInUe), TString(histoNameWeightsAntiXiInJet), TString(histoNameWeightsAntiXiInUe));
     } else {
       twodWeightsK0Jet = nullptr;
       twodWeightsK0Ue = nullptr;
@@ -170,6 +178,10 @@ struct StrangenessInJets {
       twodWeightsLambdaUe = nullptr;
       twodWeightsAntilambdaJet = nullptr;
       twodWeightsAntilambdaUe = nullptr;
+      weightsXiInJet = nullptr;
+      weightsXiInUe = nullptr;
+      weightsAntiXiInJet = nullptr;
+      weightsAntiXiInUe = nullptr;
     }
 
     // Event Counters
@@ -280,6 +292,12 @@ struct StrangenessInJets {
       registryMC.add("K0s_reconstructed_incl", "K0s_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
       registryMC.add("Lambda_reconstructed_incl", "Lambda_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
       registryMC.add("AntiLambda_reconstructed_incl", "AntiLambda_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
+
+      // Histograms for secondary lambda in jet and UE
+      registryMC.add("Secondary_Lambda_InJet", "Secondary_Lambda_InJet", HistType::kTH1F, ptAxis);
+      registryMC.add("Secondary_Lambda_InUe", "Secondary_Lambda_InUe", HistType::kTH1F, ptAxis);
+      registryMC.add("Secondary_AntiLambda_InJet", "Secondary_AntiLambda_InJet", HistType::kTH1F, ptAxis);
+      registryMC.add("Secondary_AntiLambda_InUe", "Secondary_AntiLambda_InUe", HistType::kTH1F, ptAxis);
 
       // Histograms for 2d reweighting (pion)
       registryMC.add("pi_plus_eta_pt_jet", "pi_plus_eta_pt_jet", HistType::kTH2F, {ptAxisPi, etaAxis});
@@ -874,7 +892,7 @@ struct StrangenessInJets {
     return false;
   }
 
-  void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histname_k0_jet, TString histname_k0_ue, TString histname_lambda_jet, TString histname_lambda_ue, TString histname_antilambda_jet, TString histname_antilambda_ue)
+  void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histname_k0_jet, TString histname_k0_ue, TString histname_lambda_jet, TString histname_lambda_ue, TString histname_antilambda_jet, TString histname_antilambda_ue, TString histname_xi_jet, TString histname_xi_ue, TString histname_antixi_jet, TString histname_antixi_ue)
   {
     TList* l = ccdbObj->get<TList>(filepath.Data());
     if (!l) {
@@ -930,12 +948,34 @@ struct StrangenessInJets {
       return;
     }
 
+    // Secondary Lambda
+    if (histname_xi_jet.value != "") {
+      weightsXiInJet = ccdbObj->get<TH2F>(filepath.Data());
+      LOG(info) << "Getting weight histogram for Xi in jet from " << histname_xi_jet.value;
+    }
+    if (histname_xi_ue.value != "") {
+      weightsXiInUe = ccdbObj->get<TH2F>(filepath.Data());
+      LOG(info) << "Getting weight histogram for Xi in ue from " << histname_xi_ue.value;
+    }
+    if (histname_antixi_jet.value != "") {
+      weightsAntiXiInJet = ccdbObj->get<TH2F>(filepath.Data());
+      LOG(info) << "Getting weight histogram for antiXi in jet from " << histname_antixi_jet.value;
+    }
+    if (histname_antixi_ue.value != "") {
+      weightsAntiXiInUe = ccdbObj->get<TH2F>(filepath.Data());
+      LOG(info) << "Getting weight histogram for antiXi in ue from " << histname_antixi_ue.value;
+    }
+
     LOGP(info, "Opened histogram {}", Form("%s", histname_k0_jet.Data()));
     LOGP(info, "Opened histogram {}", Form("%s", histname_k0_ue.Data()));
     LOGP(info, "Opened histogram {}", Form("%s", histname_lambda_jet.Data()));
     LOGP(info, "Opened histogram {}", Form("%s", histname_lambda_ue.Data()));
     LOGP(info, "Opened histogram {}", Form("%s", histname_antilambda_jet.Data()));
     LOGP(info, "Opened histogram {}", Form("%s", histname_antilambda_ue.Data()));
+    LOGP(info, "Opened histogram {}", Form("%s", histname_xi_jet.Data()));
+    LOGP(info, "Opened histogram {}", Form("%s", histname_xi_ue.Data()));
+    LOGP(info, "Opened histogram {}", Form("%s", histname_antixi_jet.Data()));
+    LOGP(info, "Opened histogram {}", Form("%s", histname_antixi_ue.Data()));
   }
 
   void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, StrHadronDaughterTracks const& tracks)
@@ -1101,7 +1141,13 @@ struct StrangenessInJets {
       for (int j = 0; j < static_cast<int>(jet.size()); j++) {
         if (isSelected[j] == 0 || i == j)
           continue;
+        if (overlap(jet[i], jet[j], rJet))
+          nOverlaps++;
         if (overlap(jet[i], ue1[j], rJet) || overlap(jet[i], ue2[j], rJet))
+          nOverlaps++;
+        if (overlap(ue1[i], ue1[j], rJet) || overlap(ue1[i], ue2[j], rJet))
+          nOverlaps++;
+        if (overlap(ue2[i], ue2[j], rJet))
           nOverlaps++;
       }
     }
@@ -1464,6 +1510,53 @@ struct StrangenessInJets {
         if (pdgParent == 0)
           continue;
 
+        // Generated Momentum of V0
+        TVector3 momentumPos(posParticle.px(), posParticle.py(), posParticle.pz());
+        TVector3 momentumNeg(negParticle.px(), negParticle.py(), negParticle.pz());
+        TVector3 momentumV0 = momentumPos + momentumNeg;
+
+        // Feed-down for lambda
+        if (passedLambdaSelection(v0, pos, neg) && pdgParent == 3122) {
+          if (!isPhysPrim) {
+            double wSecLambdaInJet(1.0);
+            double wSecLambdaInUe(1.0);
+
+            int idMother = posParticle.mother0Id();
+            auto mother = mcParticles.iteratorAt(idMother);
+            int idGrandMother = mother.mother0Id();
+            auto grandMother = mcParticles.iteratorAt(idGrandMother);
+            int ibinXiInJet = weightsXiInJet->GetXaxis()->FindBin(grandMother.pt());
+            int ibinXiInUe = weightsXiInUe->GetXaxis()->FindBin(grandMother.pt());
+            if (std::fabs(grandMother.pdgCode()) == 3312 || std::fabs(grandMother.pdgCode()) == 3322) {
+              wSecLambdaInJet = weightsXiInJet->GetBinContent(ibinXiInJet);
+              wSecLambdaInUe = weightsXiInUe->GetBinContent(ibinXiInUe);
+            }
+            registryMC.fill(HIST("Secondary_Lambda_InJet"), v0.pt(), wSecLambdaInJet);
+            registryMC.fill(HIST("Secondary_Lambda_InUe"), v0.pt(), wSecLambdaInUe);
+          }
+        }
+
+        // Feed-down for antilambda
+        if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == -3122) {
+          if (!isPhysPrim) {
+            double wSecAntiLambdaInJet(1.0);
+            double wSecAntiLambdaInUe(1.0);
+
+            int idMother = posParticle.mother0Id();
+            auto mother = mcParticles.iteratorAt(idMother);
+            int idGrandMother = mother.mother0Id();
+            auto grandMother = mcParticles.iteratorAt(idGrandMother);
+            int ibinAntiXiInJet = weightsAntiXiInJet->GetXaxis()->FindBin(grandMother.pt());
+            int ibinAntiXiInUe = weightsAntiXiInUe->GetXaxis()->FindBin(grandMother.pt());
+            if (std::fabs(grandMother.pdgCode()) == 3312 || std::fabs(grandMother.pdgCode()) == 3322) {
+              wSecAntiLambdaInJet = weightsAntiXiInJet->GetBinContent(ibinAntiXiInJet);
+              wSecAntiLambdaInUe = weightsAntiXiInUe->GetBinContent(ibinAntiXiInUe);
+            }
+            registryMC.fill(HIST("Secondary_AntiLambda_InJet"), v0.pt(), wSecAntiLambdaInJet);
+            registryMC.fill(HIST("Secondary_AntiLambda_InUe"), v0.pt(), wSecAntiLambdaInUe);
+          }
+        }
+
         if (passedK0ShortSelection(v0, pos, neg) && pdgParent == 310) {
           registryMC.fill(HIST("K0s_reconstructed_incl"), multiplicity, v0.pt());
         }
@@ -1475,11 +1568,6 @@ struct StrangenessInJets {
         }
         if (!isPhysPrim)
           continue;
-
-        // Momentum of V0
-        TVector3 momentumPos(posParticle.px(), posParticle.py(), posParticle.pz());
-        TVector3 momentumNeg(negParticle.px(), negParticle.py(), negParticle.pz());
-        TVector3 momentumV0 = momentumPos + momentumNeg;
 
         double wK0jet(1.0), wK0Ue(1.0), wLambdaJet(1.0), wLambdaUe(1.0), wAntilambdaJet(1.0), wAntilambdaUe(1.0);
         if (applyReweighting) {
