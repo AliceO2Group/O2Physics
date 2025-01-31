@@ -1196,7 +1196,7 @@ struct LambdaR2Correlation {
     const AxisSpec axisRapPhi(knrapphibins, kminrapphi, kmaxrapphi, "y #phi");
     const AxisSpec axisQinv(100, 0, 10, "q_{inv} (GeV/#it{c})");
     const AxisSpec axisDRap(2 * cNRapBins - 1., 2 * cMinRap, 2 * cMaxRap, "#Deltay");
-    const AxisSpec axisDPhi(cNPhiBins, -TwoPI / 4., (3. * TwoPI) / 4., "#Delta#varphi");
+    const AxisSpec axisDPhi(cNPhiBins, -PIHalf, 3. * PIHalf, "#Delta#varphi");
 
     const AxisSpec axisEfPt(cNPtBins, cMinPt, cMaxPt, "p_{T}");
     const AxisSpec axisEfRap(cNRapBins, cMinRap, cMaxRap, "y");
@@ -1380,7 +1380,7 @@ struct LambdaR2Correlation {
     float corrFact = p1.corrFact() * p2.corrFact();
 
     dRap = p1.rap() - p2.rap();
-    dPhi = RecoDecay::constrainAngle((p1.phi() - p2.phi()), -TwoPI / 4.);
+    dPhi = RecoDecay::constrainAngle((p1.phi() - p2.phi()), -PIHalf);
     q = RecoDecay::p((p1.px() - p2.px()), (p1.py() - p2.py()), (p1.pz() - p2.pz()));
     e = RecoDecay::e(p1.px(), p1.py(), p1.pz(), MassLambda0) - RecoDecay::e(p2.px(), p2.py(), p2.pz(), MassLambda0);
     qinv = std::sqrt(-RecoDecay::m2(q, e));
