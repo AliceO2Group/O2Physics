@@ -21,6 +21,9 @@
 #include <TMath.h>
 
 #include <stdexcept>
+#include <algorithm>
+#include <string>
+#include <vector>
 
 namespace o2::aod::qualitysel
 {
@@ -74,31 +77,32 @@ enum QualitySelectionFlags {
   kNQualitySelectionFlags
 };
 
-// Helper class to allow appending new elements to a vector of QualitySelectionFlags
-class QualitySelection : public std::vector<QualitySelectionFlags>
-{
- public:
-  QualitySelection& operator+=(const std::initializer_list<QualitySelectionFlags>& l)
-  {
-    insert(end(), l.begin(), l.end());
-    return (*this);
-  }
-
-  QualitySelection& operator+=(const std::vector<QualitySelectionFlags>& v)
-  {
-    insert(end(), v.begin(), v.end());
-    return (*this);
-  }
-};
-
 template <typename T>
-concept HasDetectorQuality = requires(T a, int bit) {
+concept HasDetectorQuality = requires(T a, int bit)
+{
   { a.qc_bit(bit) } -> std::convertible_to<bool>;
 };
 
 class QualityFlagsChecker
 {
- public:
+  // Helper class to allow appending new elements to a vector of QualitySelectionFlags
+  class QualitySelection: public std::vector<QualitySelectionFlags>
+  {
+  public:
+    QualitySelection& operator+=(const std::initializer_list<QualitySelectionFlags>& l)
+    {
+      insert(end(), l.begin(), l.end());
+      return (*this);
+    }
+
+    QualitySelection& operator+=(const std::vector<QualitySelectionFlags>& v)
+    {
+      insert(end(), v.begin(), v.end());
+      return (*this);
+    }
+  };
+
+public:
   QualityFlagsChecker() = default;
 
   // construct the object from an initializer list, like this:
@@ -109,7 +113,7 @@ class QualityFlagsChecker
   }
 
   // construct the object from a vector of QualitySelectionFlags
-  QualityFlagsChecker(const std::vector<QualitySelectionFlags> bitsToCheck) : vBitsToCheck(bitsToCheck) {}
+  explicit QualityFlagsChecker(const std::vector<QualitySelectionFlags> bitsToCheck) : vBitsToCheck(bitsToCheck) {}
 
   // Construct the object from one of the pre-defined official runlist selections.
   // The label parameter can take the following values:
@@ -122,12 +126,12 @@ class QualityFlagsChecker
   // The checkZDC boolean flag controls whether to iclude the ZDC quality in all the pre-defined selections (for Pb-Pb data)
   // The treatLimitedAcceptanceAsBad boolean flag controls whether "LimitedAcceptanceMCReproducible" flags should be
   // treated as Bad and the corresponding events excluded
-  QualityFlagsChecker(const std::string& label, bool checkZDC = false, bool treatLimitedAcceptanceAsBad = false)
+  QualityFlagsChecker(const std::string& label, bool checkZDC = false, bool treatLimitedAcceptanceAsBad = false)  // o2-linter: disable=runtime/explicit
   {
     initialize(label, checkZDC, treatLimitedAcceptanceAsBad);
   }
 
-  QualityFlagsChecker(const char* label, bool checkZDC = false, bool treatLimitedAcceptanceAsBad = false)
+  QualityFlagsChecker(const char* label, bool checkZDC = false, bool treatLimitedAcceptanceAsBad = false)  // o2-linter: disable=runtime/explicit
   {
     initialize(std::string(label), checkZDC, treatLimitedAcceptanceAsBad);
   }
@@ -137,9 +141,9 @@ class QualityFlagsChecker
     QualitySelection bitsToCheck;
 
     if (label == "CBT") {
-      bitsToCheck += {kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID};
+      bitsToCheck += { kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID };
       if (treatLimitedAcceptanceAsBad) {
-        bitsToCheck += {kITSLimAccMCRepr, kTPCLimAccMCRepr};
+        bitsToCheck += { kITSLimAccMCRepr, kTPCLimAccMCRepr };
       }
     }
 
@@ -179,7 +183,7 @@ class QualityFlagsChecker
     }
 
     if (checkZDC) {
-      bitsToCheck += {kZDCBad};
+      bitsToCheck += { kZDCBad };
     }
 
     vBitsToCheck = bitsToCheck;
@@ -188,7 +192,7 @@ class QualityFlagsChecker
   bool checkTable(const HasDetectorQuality auto& table)
   {
     if (vBitsToCheck.empty()) {
-      throw std::out_of_range("QualityFlagsChecker with empty QualitySelectionFlags bits vector");
+      throw std::out_of_range ("QualityFlagsChecker with empty QualitySelectionFlags bits vector");
     }
 
     for (auto bit : vBitsToCheck) {
@@ -199,12 +203,12 @@ class QualityFlagsChecker
     return true;
   }
 
-  bool operator()(const HasDetectorQuality auto& table)
+  bool operator ()(const HasDetectorQuality auto& table)
   {
     return checkTable(table);
   }
 
- private:
+private:
   std::vector<QualitySelectionFlags> vBitsToCheck;
 };
 
