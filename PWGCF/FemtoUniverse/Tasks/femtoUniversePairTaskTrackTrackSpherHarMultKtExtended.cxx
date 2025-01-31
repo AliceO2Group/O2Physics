@@ -546,8 +546,8 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// process function for to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processSameEvent(FilteredFDCollision& col,
-                        FilteredFemtoFullParticles& parts)
+  void processSameEvent(FilteredFDCollision const& col,
+                        FilteredFemtoFullParticles const& parts)
   {
     fillCollision(col, ConfIsCent);
 
@@ -586,9 +586,9 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// \param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processSameEventMC(o2::aod::FdCollision& col,
-                          soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
-                          o2::aod::FdMCParticles&)
+  void processSameEventMC(o2::aod::FdCollision const& col,
+                          soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels> const& parts,
+                          o2::aod::FdMCParticles const&)
   {
     fillCollision(col, ConfIsCent);
 
@@ -693,8 +693,8 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// process function for to call doMixedEvent with Data
   /// @param cols subscribe to the collisions table (Data)
   /// @param parts subscribe to the femtoUniverseParticleTable
-  void processMixedEventCent(FilteredFDCollisions& cols,
-                             FilteredFemtoFullParticles& parts)
+  void processMixedEventCent(FilteredFDCollisions const& cols,
+                             FilteredFemtoFullParticles const& parts)
   {
     randgen = new TRandom2(0);
 
@@ -733,8 +733,8 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// process function for to call doMixedEvent with Data
   /// @param cols subscribe to the collisions table (Data)
   /// @param parts subscribe to the femtoUniverseParticleTable
-  void processMixedEventNtr(FilteredFDCollisions& cols,
-                            FilteredFemtoFullParticles& parts)
+  void processMixedEventNtr(FilteredFDCollisions const& cols,
+                            FilteredFemtoFullParticles const& parts)
   {
     randgen = new TRandom2(0);
 
@@ -773,8 +773,8 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// process function for to fill covariance histograms
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processCov(soa::Filtered<o2::aod::FdCollisions>::iterator& /*col*/,
-                  FilteredFemtoFullParticles& /*parts*/)
+  void processCov(soa::Filtered<o2::aod::FdCollisions>::iterator const& /*col*/,
+                  FilteredFemtoFullParticles const& /*parts*/)
   {
     int JMax = (ConfLMax + 1) * (ConfLMax + 1);
     if (cfgProcessMM) {
@@ -794,9 +794,9 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processMixedEventMCCent(o2::aod::FdCollisions& cols,
-                               soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
-                               o2::aod::FdMCParticles&)
+  void processMixedEventMCCent(o2::aod::FdCollisions const& cols,
+                               soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels> const& parts,
+                               o2::aod::FdMCParticles const&)
   {
     randgen = new TRandom2(0);
 
@@ -838,9 +838,9 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processMixedEventMCNtr(o2::aod::FdCollisions& cols,
-                              soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
-                              o2::aod::FdMCParticles&)
+  void processMixedEventMCNtr(o2::aod::FdCollisions const& cols,
+                              soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels> const& parts,
+                              o2::aod::FdMCParticles const&)
   {
     randgen = new TRandom2(0);
 
