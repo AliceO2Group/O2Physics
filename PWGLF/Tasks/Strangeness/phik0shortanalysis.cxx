@@ -216,7 +216,7 @@ struct Phik0shortanalysis {
     // Event information
     dataEventHist.add("hVertexZ", "hVertexZ", kTH1F, {vertexZAxis});
     dataEventHist.add("hMultiplicityPercent", "Multiplicity Percentile", kTH1F, {multAxis});
-    dataEventHist.add("hMultiplicityPercentWithPhi", "Multiplicity Percentile in Events with a Phi Candidate", kTH1F, {binnedmultAxis});
+    dataEventHist.add("hMultiplicityPercentWithPhi", "Multiplicity Percentile in Events with a Phi Candidate", kTH1F, {multAxis});
 
     // Number of MC events per selection for Rec and Gen
     mcEventHist.add("hRecMCEventSelection", "hRecMCEventSelection", kTH1F, {{8, -0.5f, 7.5f}});
