@@ -90,7 +90,7 @@ DECLARE_SOA_COLUMN(Lxyee, lxyee, float);
 DECLARE_SOA_COLUMN(Lzee, lzee, float);
 DECLARE_SOA_COLUMN(AmbiguousInBunchPairs, AmbiguousJpsiPairsInBunch, bool);
 DECLARE_SOA_COLUMN(AmbiguousOutOfBunchPairs, AmbiguousJpsiPairsOutOfBunch, bool);
-DECLARE_SOA_COLUMN(Corrassoc, corrassoc, bool);  
+DECLARE_SOA_COLUMN(Corrassoc, corrassoc, bool);
 } // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);                                                            //!  joinable to ReducedEvents
@@ -1698,7 +1698,7 @@ struct AnalysisSameEventPairing {
         bool isCorrect_pair = false;
         if (isCorrectAssoc_leg1 && isCorrectAssoc_leg2)
           isCorrect_pair = true;
-        
+
         for (int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
