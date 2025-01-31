@@ -757,10 +757,10 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
         // Find Xi- from Xi(1530) -> Xi pi in case of resonant decay
         RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
         if (arrDaughIndex.size() == 2) {
-            auto cascStarMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-            if(RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascStarMC, +3324, std::array{+kXiMinus, +kPiPlus}, true)){
-                cascMC = mcParticles.rawIteratorAt(cascStarMC.daughtersIds().front());
-            }
+          auto cascStarMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascStarMC, +3324, std::array{+kXiMinus, +kPiPlus}, true)) {
+            cascMC = mcParticles.rawIteratorAt(cascStarMC.daughtersIds().front());
+          }
         }
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascMC, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true)) {
           debug = 2;
