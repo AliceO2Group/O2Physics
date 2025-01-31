@@ -950,24 +950,24 @@ struct StrangenessInJets {
 
     // Secondary Lambda
     weightsXiInJet = static_cast<TH1F*>(l->FindObject(Form("%s", histname_xi_jet.Data())));
-    if (histname_xi_jet.value != "") {
-      weightsXiInJet = ccdbObj->get<TH1F>(filepath.Data());
-      LOG(info) << "Getting weight histogram for Xi in jet from " << histname_xi_jet.value;
+    if (!weightsXiInJet) {
+      LOGP(error, "Could not open histogram {}", Form("%s", histname_xi_jet.Data()));
+      return;
     }
     weightsXiInUe = static_cast<TH1F*>(l->FindObject(Form("%s", histname_xi_ue.Data())));
-    if (histname_xi_ue.value != "") {
-      weightsXiInUe = ccdbObj->get<TH1F>(filepath.Data());
-      LOG(info) << "Getting weight histogram for Xi in ue from " << histname_xi_ue.value;
+    if (!weightsXiInUe) {
+      LOGP(error, "Could not open histogram {}", Form("%s", histname_xi_ue.Data()));
+      return;
     }
     weightsAntiXiInJet = static_cast<TH1F*>(l->FindObject(Form("%s", histname_antixi_jet.Data())));
-    if (histname_antixi_jet.value != "") {
-      weightsAntiXiInJet = ccdbObj->get<TH1F>(filepath.Data());
-      LOG(info) << "Getting weight histogram for antiXi in jet from " << histname_antixi_jet.value;
+    if (!weightsAntiXiInJet) {
+      LOGP(error, "Could not open histogram {}", Form("%s", histname_antixi_jet.Data()));
+      return;
     }
     weightsAntiXiInUe = static_cast<TH1F*>(l->FindObject(Form("%s", histname_antixi_ue.Data())));
-    if (histname_antixi_ue.value != "") {
-      weightsAntiXiInUe = ccdbObj->get<TH1F>(filepath.Data());
-      LOG(info) << "Getting weight histogram for antiXi in ue from " << histname_antixi_ue.value;
+    if (!weightsAntiXiInUe) {
+      LOGP(error, "Could not open histogram {}", Form("%s", histname_antixi_ue.Data()));
+      return;
     }
 
     LOGP(info, "Opened histogram {}", Form("%s", histname_k0_jet.Data()));
