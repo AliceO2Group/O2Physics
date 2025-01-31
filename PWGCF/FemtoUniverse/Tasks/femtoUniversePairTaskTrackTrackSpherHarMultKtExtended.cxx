@@ -769,7 +769,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     }
     delete randgen;
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processMixedEventNtr, "Enable processing mixed events for centrality", true);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processMixedEventNtr, "Enable processing mixed events for centrality", false);
 
   /// process function for to fill covariance histograms
   /// \param col subscribe to the collision table (Data)
@@ -789,7 +789,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       mixedEventMultCont.fillMultkTCov(femto_universe_sh_container::EventType::mixed, JMax);
     }
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processCov, "Enable processing same event covariance", true);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processCov, "Enable processing same event covariance", false);
 
   /// brief process function for to call doMixedEvent with Monte Carlo
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
