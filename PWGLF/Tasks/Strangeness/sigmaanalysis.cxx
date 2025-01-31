@@ -66,6 +66,7 @@ struct sigmaanalysis {
   Configurable<bool> fselLambdaTPCPID{"fselLambdaTPCPID", true, "Flag to select lambda-like candidates using TPC NSigma."};
   Configurable<bool> fselLambdaTOFPID{"fselLambdaTOFPID", true, "Flag to select lambda-like candidates using TOF NSigma."};
   Configurable<bool> fLambdaTPCTOFQA{"fLambdaTPCTOFQA", false, "Flag to fill histos for Lambda TPC+TOF PID studies."};
+  Configurable<bool> doMCAssociation{"doMCAssociation", false, "Flag to process only signal candidates. Use only with processMonteCarlo!"};
 
   // For ML Selection
   Configurable<float> Gamma_MLThreshold{"Gamma_MLThreshold", 0.1, "Decision Threshold value to select gammas"};
@@ -132,8 +133,10 @@ struct sigmaanalysis {
   ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
   ConfigurableAxis axisAPQt{"axisAPQt", {220, 0.0f, 0.5f}, "V0 AP alpha"};
 
-  // Track quality axes
+  // Track quality and PID axes
   ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
+  ConfigurableAxis axisTPCNSigma{"axisTPCNSigma", {120, -30, 30}, "TPC NSigma"};
+  ConfigurableAxis axisTOFNSigma{"axisTOFNSigma", {120, -30, 30}, "TOF NSigma"};
 
   // topological variable QA axes
   ConfigurableAxis axisRadius{"axisRadius", {240, 0.0f, 120.0f}, "V0 radius (cm)"};
@@ -225,10 +228,10 @@ struct sigmaanalysis {
     histos.add("GeneralQA/hLambdaNegTPCCR", "hLambdaNegTPCCR", kTH1F, {axisTPCrows});
     histos.add("GeneralQA/hSigmaY", "hSigmaY", kTH1F, {axisRapidity});
     histos.add("GeneralQA/hSigmaOPAngle", "hSigmaOPAngle", kTH1F, {{140, 0.0f, +7.0f}});
-    histos.add("GeneralQA/h2dTPCvsTOFNSigma_LambdaPr", "h2dTPCvsTOFNSigma_LambdaPr", {HistType::kTH2F, {{120, -30, 30}, {120, -30, 30}}});
-    histos.add("GeneralQA/h2dTPCvsTOFNSigma_LambdaPi", "h2dTPCvsTOFNSigma_LambdaPi", {HistType::kTH2F, {{120, -30, 30}, {120, -30, 30}}});
-    histos.add("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPr", "h2dTPCvsTOFNSigma_ALambdaPr", {HistType::kTH2F, {{120, -30, 30}, {120, -30, 30}}});
-    histos.add("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPi", "h2dTPCvsTOFNSigma_ALambdaPi", {HistType::kTH2F, {{120, -30, 30}, {120, -30, 30}}});
+    histos.add("GeneralQA/h2dTPCvsTOFNSigma_LambdaPr", "h2dTPCvsTOFNSigma_LambdaPr", {HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
+    histos.add("GeneralQA/h2dTPCvsTOFNSigma_LambdaPi", "h2dTPCvsTOFNSigma_LambdaPi", {HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
+    histos.add("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPr", "h2dTPCvsTOFNSigma_ALambdaPr", {HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
+    histos.add("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPi", "h2dTPCvsTOFNSigma_ALambdaPi", {HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
 
     histos.add("GeneralQA/hPhotonMassSelected", "hPhotonMassSelected", kTH1F, {axisPhotonMass});
     histos.add("GeneralQA/hLambdaMassSelected", "hLambdaMassSelected", kTH1F, {axisLambdaMass});
@@ -299,10 +302,10 @@ struct sigmaanalysis {
       histos.add("MC/hPtSigmaCand_AfterSel", "hPtSigmaCand_AfterSel", kTH1F, {axisPt});
 
       // TPC vs TOF N Sigmas distributions
-      histos.add("MC/h3dTPCvsTOFNSigma_LambdaPr", "h3dTPCvsTOFNSigma_LambdaPr", kTH3F, {{120, -30, 30}, {120, -30, 30}, axisPt});
-      histos.add("MC/h3dTPCvsTOFNSigma_LambdaPi", "h3dTPCvsTOFNSigma_LambdaPi", kTH3F, {{120, -30, 30}, {120, -30, 30}, axisPt});
-      histos.add("MC/h3dTPCvsTOFNSigma_TrueLambdaPr", "h3dTPCvsTOFNSigma_TrueLambdaPr", kTH3F, {{120, -30, 30}, {120, -30, 30}, axisPt});
-      histos.add("MC/h3dTPCvsTOFNSigma_TrueLambdaPi", "h3dTPCvsTOFNSigma_TrueLambdaPi", kTH3F, {{120, -30, 30}, {120, -30, 30}, axisPt});
+      histos.add("MC/h3dTPCvsTOFNSigma_LambdaPr", "h3dTPCvsTOFNSigma_LambdaPr", kTH3F, {axisTPCNSigma, axisTOFNSigma, axisPt});
+      histos.add("MC/h3dTPCvsTOFNSigma_LambdaPi", "h3dTPCvsTOFNSigma_LambdaPi", kTH3F, {axisTPCNSigma, axisTOFNSigma, axisPt});
+      histos.add("MC/h3dTPCvsTOFNSigma_TrueLambdaPr", "h3dTPCvsTOFNSigma_TrueLambdaPr", kTH3F, {axisTPCNSigma, axisTOFNSigma, axisPt});
+      histos.add("MC/h3dTPCvsTOFNSigma_TrueLambdaPi", "h3dTPCvsTOFNSigma_TrueLambdaPi", kTH3F, {axisTPCNSigma, axisTOFNSigma, axisPt});
 
       // QA of PID selections:
       //// TPC PID
@@ -399,7 +402,7 @@ struct sigmaanalysis {
       float photonRZLineCut = TMath::Abs(cand.photonZconv()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-PhotonMaxDauEta))) - PhotonLineCutZ0;
       histos.fill(HIST("GeneralQA/hPhotonZ"), cand.photonZconv());
       histos.fill(HIST("GeneralQA/h2dRZCut"), cand.photonRadius(), photonRZLineCut);
-      histos.fill(HIST("GeneralQA/h2dRZPlane"), cand.photonRadius(), cand.photonZconv());
+      histos.fill(HIST("GeneralQA/h2dRZPlane"), cand.photonZconv(), cand.photonRadius());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 11.);
       if ((TMath::Abs(cand.photonRadius()) < photonRZLineCut) || (TMath::Abs(cand.photonZconv()) > PhotonMaxZ))
         return false;
@@ -525,6 +528,11 @@ struct sigmaanalysis {
   void processMonteCarlo(V0MCSigmas const& v0s)
   {
     for (auto& sigma : v0s) { // selecting Sigma0-like candidates
+
+      if (doMCAssociation && !(sigma.isSigma() || sigma.isAntiSigma())) {
+        continue;
+      }
+
       // selecting Sigma0-like candidates
       histos.fill(HIST("MC/h2dArmenterosBeforeSel"), sigma.photonAlpha(), sigma.photonQt());
       histos.fill(HIST("MC/h2dArmenterosBeforeSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
@@ -541,10 +549,10 @@ struct sigmaanalysis {
       histos.fill(HIST("MC/hPtGammaCand_BeforeSel"), sigma.photonPt());
       histos.fill(HIST("MC/hPtLambdaCand_BeforeSel"), sigma.lambdaPt());
       histos.fill(HIST("MC/hPtSigmaCand_BeforeSel"), sigma.sigmapT());
-
-      if (!processSigmaCandidate(sigma))
+      
+      if (!processSigmaCandidate(sigma)) 
         continue;
-
+        
       histos.fill(HIST("MC/hPtGammaCand_AfterSel"), sigma.photonPt());
       histos.fill(HIST("MC/hPtSigmaCand_AfterSel"), sigma.sigmapT());
 
@@ -587,7 +595,16 @@ struct sigmaanalysis {
       // Fake Gamma x Fake Lambda
       if ((sigma.photonCandPDGCode() != 22) && (sigma.lambdaCandPDGCode() != 3122) && (sigma.lambdaCandPDGCode() != -3122))
         histos.fill(HIST("MC/h2dPtVsMassSigma_FakeDaughters"), sigma.sigmapT(), sigma.sigmaMass());
-
+      
+      if (sigma.lambdaAlpha() > 0) {
+        // PID selections
+        histos.fill(HIST("GeneralQA/h2dTPCvsTOFNSigma_LambdaPr"), sigma.lambdaPosPrTPCNSigma(), sigma.lambdaPrTOFNSigma());
+        histos.fill(HIST("GeneralQA/h2dTPCvsTOFNSigma_LambdaPi"), sigma.lambdaNegPiTPCNSigma(), sigma.lambdaPiTOFNSigma());
+      }
+      else{
+        histos.fill(HIST("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPr"), sigma.lambdaNegPrTPCNSigma(), sigma.aLambdaPrTOFNSigma());
+        histos.fill(HIST("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPi"), sigma.lambdaPosPiTPCNSigma(), sigma.aLambdaPiTOFNSigma());
+      }
       // MC association (signal study)
       if (sigma.isSigma() || sigma.isAntiSigma()) {
         histos.fill(HIST("MC/h2dPtVsMassSigma_SignalOnly"), sigma.sigmapT(), sigma.sigmaMass());
