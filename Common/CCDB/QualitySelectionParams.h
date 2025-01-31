@@ -125,12 +125,12 @@ class QualityFlagsChecker
   // The checkZDC boolean flag controls whether to iclude the ZDC quality in all the pre-defined selections (for Pb-Pb data)
   // The treatLimitedAcceptanceAsBad boolean flag controls whether "LimitedAcceptanceMCReproducible" flags should be
   // treated as Bad and the corresponding events excluded
-  QualityFlagsChecker(const std::string& label, bool checkZDC = false, bool treatLimitedAcceptanceAsBad = false) // linter: disable=runtime/explicit
+  QualityFlagsChecker(const std::string& label, bool checkZDC = false, bool treatLimitedAcceptanceAsBad = false) // NOLINT(runtime/explicit)
   {
     initialize(label, checkZDC, treatLimitedAcceptanceAsBad);
   }
 
-  QualityFlagsChecker(const char* label, bool checkZDC = false, bool treatLimitedAcceptanceAsBad = false) // linter: disable=runtime/explicit
+  QualityFlagsChecker(const char* label, bool checkZDC = false, bool treatLimitedAcceptanceAsBad = false) // NOLINT(runtime/explicit)
   {
     initialize(std::string(label), checkZDC, treatLimitedAcceptanceAsBad);
   }
