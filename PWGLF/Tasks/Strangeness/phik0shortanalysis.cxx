@@ -790,6 +790,8 @@ struct Phik0shortanalysis {
       if (cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
         continue;
 
+      dataPhiK0SHist.fill(HIST("h3K0SRapidityData"), multiplicity, v0.pt(), v0.yK0Short());
+
       if (std::abs(v0.yK0Short()) > cfgYAcceptance)
         continue;
 
@@ -860,6 +862,8 @@ struct Phik0shortanalysis {
       // Pion selection
       if (!selectionPion<true>(track))
         continue;
+
+      dataPhiPionHist.fill(HIST("h3PiRapidityData"), multiplicity, track.pt(), track.rapidity(massPi));
 
       if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
         continue;
