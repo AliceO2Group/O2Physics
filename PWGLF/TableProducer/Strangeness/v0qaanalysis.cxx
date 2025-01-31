@@ -141,7 +141,7 @@ struct LfV0qaanalysis {
   Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", 1, "Is No ITS Readout Frame Border"};
   Configurable<bool> isVertexTOFmatched{"isVertexTOFmatched", 0, "Is Vertex TOF matched"};
   Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", 0, "isGoodZvtxFT0vsPV"};
-  onfigurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
+  Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
 
   // V0 selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.97, "V0 CosPA"};
