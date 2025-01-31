@@ -47,17 +47,19 @@ struct RhoEstimatorTask {
   Configurable<float> trackPtMax{"trackPtMax", 1000.0, "maximum track pT"};
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum track eta"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
-  Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
-  Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
+  Configurable<float> trackPhiMin{"trackPhiMin", -99.0, "minimum track phi"};
+  Configurable<float> trackPhiMax{"trackPhiMax", 99.0, "maximum track phi"};
   Configurable<double> trackingEfficiency{"trackingEfficiency", 1.0, "tracking efficiency applied to jet finding"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
   Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
 
+  Configurable<int> jetAlgorithm{"jetAlgorithm", 0, "jet clustering algorithm. 0 = kT, 1 = C/A, 2 = Anti-kT"};
+  Configurable<int> jetRecombScheme{"jetRecombScheme", 0, "jet recombination scheme. 0 = E-scheme, 1 = pT-scheme, 2 = pT2-scheme"};
   Configurable<float> bkgjetR{"bkgjetR", 0.2, "jet resolution parameter for determining background density"};
-  Configurable<float> bkgEtaMin{"bkgEtaMin", -0.9, "minimim pseudorapidity for determining background density"};
-  Configurable<float> bkgEtaMax{"bkgEtaMax", 0.9, "maximum pseudorapidity for determining background density"};
-  Configurable<float> bkgPhiMin{"bkgPhiMin", 0., "minimim phi for determining background density"};
+  Configurable<float> bkgEtaMin{"bkgEtaMin", -0.7, "minimim pseudorapidity for determining background density"};
+  Configurable<float> bkgEtaMax{"bkgEtaMax", 0.7, "maximum pseudorapidity for determining background density"};
+  Configurable<float> bkgPhiMin{"bkgPhiMin", -99.0, "minimim phi for determining background density"};
   Configurable<float> bkgPhiMax{"bkgPhiMax", 99.0, "maximum phi for determining background density"};
   Configurable<bool> doSparse{"doSparse", false, "perfom sparse estimation"};
 
@@ -74,6 +76,7 @@ struct RhoEstimatorTask {
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
     particleSelection = static_cast<std::string>(particleSelections);
 
+    bkgSub.setJetAlgorithmAndScheme(static_cast<fastjet::JetAlgorithm>(static_cast<int>(jetAlgorithm)), static_cast<fastjet::RecombinationScheme>(static_cast<int>(jetRecombScheme)));
     bkgSub.setJetBkgR(bkgjetR);
     bkgSub.setEtaMinMax(bkgEtaMin, bkgEtaMax);
     if (bkgPhiMax > 98.0) {
