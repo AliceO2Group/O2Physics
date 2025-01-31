@@ -306,7 +306,7 @@ struct FlowGFWPbPb {
       return;
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1)
+      if (std::abs(val) < 1)
         registry.fill(tarName, cent, val, dnx);
       return;
     }
@@ -321,7 +321,7 @@ struct FlowGFWPbPb {
       return;
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1) {
+      if (std::abs(val) < 1) {
         tarName->Fill(cent, val, dnx);
       }
       return;
@@ -337,7 +337,7 @@ struct FlowGFWPbPb {
       return;
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1)
+      if (std::abs(val) < 1)
         fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
       return;
     }
@@ -346,7 +346,7 @@ struct FlowGFWPbPb {
       if (dnx == 0)
         continue;
       val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1)
+      if (std::abs(val) < 1)
         fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
     }
     return;
