@@ -435,7 +435,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
       float covMatrixPV[6];
       kfpVertex.GetCovarianceMatrix(covMatrixPV);
-      KFParticle KFPV(kfpVertex); // for calculation of DCAs to PV
+      KFParticle kfPv(kfpVertex); // for calculation of DCAs to PV
 
       // convert pion tracks into KFParticle object
       KFPTrack kfpTrackCharmBachelor0 = createKFPTrackFromTrack(trackCharmBachelor0);
@@ -470,9 +470,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       float chi2GeoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
 
       // topological constraint of Xic to PV
-      float chi2topoXicPlusToPVBeforeConstraint = kfXicPlus.GetDeviationFromVertex(KFPV);
+      float chi2topoXicPlusToPVBeforeConstraint = kfXicPlus.GetDeviationFromVertex(kfPv);
       KFParticle kfXicPlusToPV = kfXicPlus;
-      kfXicPlusToPV.SetProductionVertex(KFPV);
+      kfXicPlusToPV.SetProductionVertex(kfPv);
       float chi2topoXicPlusToPV = kfXicPlusToPV.GetChi2() / kfXicPlusToPV.GetNDF();
       if (constrainXicPlusToPv) {
         kfXicPlus = kfXicPlusToPV;
@@ -518,9 +518,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       float impactParameterPi0XY = 0., errImpactParameterPi0XY = 0.;
       float impactParameterPi1XY = 0., errImpactParameterPi1XY = 0.;
       float impactParameterXiXY = 0., errImpactParameterXiXY = 0.;
-      kfCharmBachelor0.GetDistanceFromVertexXY(KFPV, impactParameterPi0XY, errImpactParameterPi0XY);
-      kfCharmBachelor1.GetDistanceFromVertexXY(KFPV, impactParameterPi1XY, errImpactParameterPi1XY);
-      kfXi.GetDistanceFromVertexXY(KFPV, impactParameterXiXY, errImpactParameterXiXY);
+      kfCharmBachelor0.GetDistanceFromVertexXY(kfPv, impactParameterPi0XY, errImpactParameterPi0XY);
+      kfCharmBachelor1.GetDistanceFromVertexXY(kfPv, impactParameterPi1XY, errImpactParameterPi1XY);
+      kfXi.GetDistanceFromVertexXY(kfPv, impactParameterXiXY, errImpactParameterXiXY);
 
       // calculate cosine of pointing angle
       std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
@@ -618,7 +618,7 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       //------------------------------fill candidate table rows--------------------------------------
       rowCandidateBase(collision.globalIndex(),
-                       KFPV.GetX(), KFPV.GetY(), KFPV.GetZ(),
+                       kfPv.GetX(), kfPv.GetY(), kfPv.GetZ(),
                        std::sqrt(covMatrixPV[0]), std::sqrt(covMatrixPV[2]), std::sqrt(covMatrixPV[5]),
                        /*3-prong specific columns*/
                        rowTrackIndexXicPlus.cascadeId(), rowTrackIndexXicPlus.prong0Id(), rowTrackIndexXicPlus.prong1Id(),
