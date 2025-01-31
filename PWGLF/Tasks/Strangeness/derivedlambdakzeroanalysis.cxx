@@ -1619,7 +1619,7 @@ struct derivedlambdakzeroanalysis {
       if (eventSelections.applyZVtxSelOnMCPV && std::abs(mcCollision.posZ()) > eventSelections.maxZVtxPosition) {
         continue;
       }
-      if (doPPAnalysis) { // we are in pp 
+      if (doPPAnalysis) { // we are in pp
         if (eventSelections.requireINEL0 && mcCollision.multMCNParticlesEta10() < 1) {
           continue;
         }
@@ -1888,7 +1888,7 @@ struct derivedlambdakzeroanalysis {
       if (eventSelections.applyZVtxSelOnMCPV && std::abs(mcCollision.posZ()) > eventSelections.maxZVtxPosition) {
         continue;
       }
-      if (doPPAnalysis) { // we are in pp 
+      if (doPPAnalysis) { // we are in pp
         if (eventSelections.requireINEL0 && mcCollision.multMCNParticlesEta10() < 1) {
           continue;
         }
