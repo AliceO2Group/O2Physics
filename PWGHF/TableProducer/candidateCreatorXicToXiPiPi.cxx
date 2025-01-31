@@ -17,7 +17,7 @@
 /// \author Jinjoo Seo <jseo@cern.ch>, Heidelberg University
 
 #ifndef HomogeneousField
-#define HomogeneousField
+#define HomogeneousField // o2-linter: disable=[name/macro]
 #endif
 
 #include <string>
