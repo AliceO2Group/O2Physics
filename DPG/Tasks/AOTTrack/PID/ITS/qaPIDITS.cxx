@@ -8,7 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
 ///
 /// \file   qaPIDITS.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
@@ -163,13 +162,27 @@ struct itsPidQa {
   ConfigurableAxis deltaBins{"deltaBins", {200, -1000.f, 1000.f}, "Binning in Delta (dEdx - expected dEdx)"};
   ConfigurableAxis expSigmaBins{"expSigmaBins", {200, 0.f, 200.f}, "Binning in expected Sigma"};
   ConfigurableAxis nSigmaBins{"nSigmaBins", {401, -10.025f, 10.025f}, "Binning in NSigma"};
-  ConfigurableAxis dEdxBins{"dEdxBins", {5000, 0.f, 5000.f}, "Binning in dE/dx"};
+  ConfigurableAxis avClsBins{"avClsBins", {200, 0, 20}, "Binning in average cluster size"};
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
   Configurable<bool> enableDeDxPlot{"enableDeDxPlot", true, "Enables the dEdx plot (reduces memory footprint if off)"};
   Configurable<int16_t> minTPCNcls{"minTPCNcls", 0, "Minimum number or TPC Clusters for tracks"};
   ConfigurableAxis tpcNclsBins{"tpcNclsBins", {16, 0, 160}, "Binning in number of clusters in TPC"};
   Configurable<bool> fillTHnSparses{"fillTHnSparses", false, "Flag to fill multidimensional histograms for nsigma vs pt, eta, Ncls"};
+
+  template <typename TrackType>
+  float averageClusterSizeTrk(const TrackType& track)
+  {
+    return o2::aod::ITSResponse::averageClusterSize(track.itsClusterSizes());
+  }
+
+  float averageClusterSizePerCoslInv(uint32_t itsClusterSizes, float eta) { return o2::aod::ITSResponse::averageClusterSize(itsClusterSizes) * std::cosh(eta); }
+
+  template <typename TrackType>
+  float averageClusterSizePerCoslInv(const TrackType& track)
+  {
+    return averageClusterSizePerCoslInv(track.itsClusterSizes(), track.eta());
+  }
 
   void init(o2::framework::InitContext&)
   {
@@ -183,8 +196,9 @@ struct itsPidQa {
       ptAxis.makeLogarithmic();
       pAxis.makeLogarithmic();
     }
-    const AxisSpec dedxAxis{dEdxBins, "d#it{E}/d#it{x} Arb. units"};
     const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
+    const AxisSpec avClsAxis{avClsBins, "<ITS Cls. Size>"};
+    const AxisSpec avClsEffAxis{avClsBins, "<ITS Cls. Size> / cosh(#eta)"};
 
     // Event properties
     auto h = histos.add<TH1>("event/evsel", "", kTH1D, {{10, 0.5, 10.5, "Ev. Sel."}});
@@ -231,6 +245,10 @@ struct itsPidQa {
       hNsigmaPos[id] = histos.add<TH2>(Form("nsigmaPos/%s", pN[id]), axisTitle, kTH2F, {pAxis, nSigmaAxis});
       hNsigmaNeg[id] = histos.add<TH2>(Form("nsigmaNeg/%s", pN[id]), axisTitle, kTH2F, {pAxis, nSigmaAxis});
     }
+    histos.add("event/averageClusterSize", "", kTH2F, {ptAxis, avClsAxis});
+    histos.add("event/averageClusterSizePerCoslInv", "", kTH2F, {ptAxis, avClsEffAxis});
+    histos.add("event/SelectedAverageClusterSize", "", kTH2F, {ptAxis, avClsAxis});
+    histos.add("event/SelectedAverageClusterSizePerCoslInv", "", kTH2F, {ptAxis, avClsEffAxis});
     LOG(info) << "QA PID ITS histograms:";
     histos.print();
   }
@@ -294,7 +312,9 @@ struct itsPidQa {
       histos.fill(HIST("event/length"), track.length());
       histos.fill(HIST("event/pt"), track.pt());
       histos.fill(HIST("event/p"), track.p());
-
+      const auto& t = tracks.iteratorAt(nTracks);
+      histos.fill(HIST("event/averageClusterSize"), track.pt(), averageClusterSizeTrk(t));
+      histos.fill(HIST("event/averageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(t));
       bool discard = false;
       for (int id = 0; id < 9; id++) {
         if (std::abs(nsigmaTPC(track, id)) > tpcSelValues[id]) {
@@ -307,6 +327,9 @@ struct itsPidQa {
       if (discard) {
         continue;
       }
+      histos.fill(HIST("event/SelectedAverageClusterSize"), track.pt(), averageClusterSizeTrk(t));
+      histos.fill(HIST("event/SelectedAverageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(t));
+
       for (o2::track::PID::ID id = 0; id <= o2::track::PID::Last; id++) {
         if (!enableParticle[id]) {
           continue;
@@ -317,7 +340,6 @@ struct itsPidQa {
           }
         }
         const float nsigma = nsigmaITS(track, id);
-        const auto& t = tracks.iteratorAt(nTracks);
         if (t.sign() > 0) {
           hNsigmaPos[id]->Fill(t.p(), nsigma);
         } else {
