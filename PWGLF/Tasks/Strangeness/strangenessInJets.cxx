@@ -294,10 +294,10 @@ struct StrangenessInJets {
       registryMC.add("AntiLambda_reconstructed_incl", "AntiLambda_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
 
       // Histograms for secondary lambda in jet and UE
-      registryMC.add("Secondary_Lambda_InJet", "Secondary_Lambda_InJet", HistType::kTH1F, ptAxis);
-      registryMC.add("Secondary_Lambda_InUe", "Secondary_Lambda_InUe", HistType::kTH1F, ptAxis);
-      registryMC.add("Secondary_AntiLambda_InJet", "Secondary_AntiLambda_InJet", HistType::kTH1F, ptAxis);
-      registryMC.add("Secondary_AntiLambda_InUe", "Secondary_AntiLambda_InUe", HistType::kTH1F, ptAxis);
+      registryMC.add("Secondary_Lambda_InJet", "Secondary_Lambda_InJet", HistType::kTH1F, {ptAxis});
+      registryMC.add("Secondary_Lambda_InUe", "Secondary_Lambda_InUe", HistType::kTH1F, {ptAxis});
+      registryMC.add("Secondary_AntiLambda_InJet", "Secondary_AntiLambda_InJet", HistType::kTH1F, {ptAxis});
+      registryMC.add("Secondary_AntiLambda_InUe", "Secondary_AntiLambda_InUe", HistType::kTH1F, {ptAxis});
 
       // Histograms for 2d reweighting (pion)
       registryMC.add("pi_plus_eta_pt_jet", "pi_plus_eta_pt_jet", HistType::kTH2F, {ptAxisPi, etaAxis});
@@ -950,19 +950,19 @@ struct StrangenessInJets {
 
     // Secondary Lambda
     if (histname_xi_jet.value != "") {
-      weightsXiInJet = ccdbObj->get<TH2F>(filepath.Data());
+      weightsXiInJet = ccdbObj->get<TH1F>(filepath.Data());
       LOG(info) << "Getting weight histogram for Xi in jet from " << histname_xi_jet.value;
     }
     if (histname_xi_ue.value != "") {
-      weightsXiInUe = ccdbObj->get<TH2F>(filepath.Data());
+      weightsXiInUe = ccdbObj->get<TH1F>(filepath.Data());
       LOG(info) << "Getting weight histogram for Xi in ue from " << histname_xi_ue.value;
     }
     if (histname_antixi_jet.value != "") {
-      weightsAntiXiInJet = ccdbObj->get<TH2F>(filepath.Data());
+      weightsAntiXiInJet = ccdbObj->get<TH1F>(filepath.Data());
       LOG(info) << "Getting weight histogram for antiXi in jet from " << histname_antixi_jet.value;
     }
     if (histname_antixi_ue.value != "") {
-      weightsAntiXiInUe = ccdbObj->get<TH2F>(filepath.Data());
+      weightsAntiXiInUe = ccdbObj->get<TH1F>(filepath.Data());
       LOG(info) << "Getting weight histogram for antiXi in ue from " << histname_antixi_ue.value;
     }
 
