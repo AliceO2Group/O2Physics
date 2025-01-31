@@ -224,17 +224,13 @@ struct V0PtInvMassPlots {
       const auto& posDaughterTrack = v0.posTrack_as<DaughterTracks>();
       const auto& negDaughterTrack = v0.negTrack_as<DaughterTracks>();
       // Armenteros-Podolandski Plot Values
-      Double_t pv0 = std::sqrt((v0.px() * v0.px()) + (v0.py() * v0.py()) + (v0.pz() * v0.pz()));
-      Double_t pposdauparallelv0 = ((v0.posTrack_as<DaughterTracks>().px() * v0.px()) + (v0.posTrack_as<DaughterTracks>().py() * v0.py()) + (v0.posTrack_as<DaughterTracks>().pz() * v0.pz())) / pv0;
-      Double_t pnegdauparallelv0 = ((v0.negTrack_as<DaughterTracks>().px() * v0.px()) + (v0.negTrack_as<DaughterTracks>().py() * v0.py()) + (v0.negTrack_as<DaughterTracks>().pz() * v0.pz())) / pv0;
-      Double_t qValueposdau = std::sqrt(((v0.posTrack_as<DaughterTracks>().px() * v0.posTrack_as<DaughterTracks>().px()) + (v0.posTrack_as<DaughterTracks>().py() * v0.posTrack_as<DaughterTracks>().py()) + (v0.posTrack_as<DaughterTracks>().pz() * v0.posTrack_as<DaughterTracks>().pz())) - (pposdauparallelv0 * pposdauparallelv0));
-      Double_t qValuenegdau = std::sqrt(((v0.negTrack_as<DaughterTracks>().px() * v0.negTrack_as<DaughterTracks>().px()) + (v0.negTrack_as<DaughterTracks>().py() * v0.negTrack_as<DaughterTracks>().py()) + (v0.negTrack_as<DaughterTracks>().pz() * v0.negTrack_as<DaughterTracks>().pz())) - (pnegdauparallelv0 * pnegdauparallelv0));
-      // Double_t qValue = std::sqrt(qValueposdau + qValuenegdau);
-      Double_t plpos = (v0.posTrack_as<DaughterTracks>().px() * v0.px() / pv0) + (v0.posTrack_as<DaughterTracks>().py() * v0.py() / pv0) + (v0.posTrack_as<DaughterTracks>().pz() * v0.pz() / pv0);
-      Double_t plneg = (v0.negTrack_as<DaughterTracks>().px() * v0.px() / pv0) + (v0.negTrack_as<DaughterTracks>().py() * v0.py() / pv0) + (v0.negTrack_as<DaughterTracks>().pz() * v0.pz() / pv0);
-      Double_t aValue = (plpos - plneg) / (plpos + plneg);
-      rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlot"), aValue, qValueposdau);
-      rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlot"), aValue, qValuenegdau);
+      double pv0 = std::sqrt((v0.px() * v0.px()) + (v0.py() * v0.py()) + (v0.pz() * v0.pz()));
+      double pposdauparallelv0 = ((v0.posTrack_as<DaughterTracks>().px() * v0.px()) + (v0.posTrack_as<DaughterTracks>().py() * v0.py()) + (v0.posTrack_as<DaughterTracks>().pz() * v0.pz())) / pv0;
+      double qValue = std::sqrt(((v0.posTrack_as<DaughterTracks>().px() * v0.posTrack_as<DaughterTracks>().px()) + (v0.posTrack_as<DaughterTracks>().py() * v0.posTrack_as<DaughterTracks>().py()) + (v0.posTrack_as<DaughterTracks>().pz() * v0.posTrack_as<DaughterTracks>().pz())) - (pposdauparallelv0 * pposdauparallelv0));
+      double plpos = (v0.posTrack_as<DaughterTracks>().px() * v0.px() / pv0) + (v0.posTrack_as<DaughterTracks>().py() * v0.py() / pv0) + (v0.posTrack_as<DaughterTracks>().pz() * v0.pz() / pv0);
+      double plneg = (v0.negTrack_as<DaughterTracks>().px() * v0.px() / pv0) + (v0.negTrack_as<DaughterTracks>().py() * v0.py() / pv0) + (v0.negTrack_as<DaughterTracks>().pz() * v0.pz() / pv0);
+      double aValue = (plpos - plneg) / (plpos + plneg);
+      rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlot"), aValue, qValue);
       rPtAnalysis.fill(HIST("hVertexZRec"), collision.posZ());
       rPtAnalysis.fill(HIST("hV0PtAll"), v0.pt());
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
@@ -257,8 +253,7 @@ struct V0PtInvMassPlots {
                     rPtAnalysis.fill(HIST("hK0shEtaNegDau"), v0.negTrack_as<DaughterTracks>().eta());
                     rPtAnalysis.fill(HIST("hK0shEtaDaughters"), v0.negTrack_as<DaughterTracks>().eta());
                     rPtAnalysis.fill(HIST("hK0shEtaDaughters"), v0.posTrack_as<DaughterTracks>().eta());
-                    rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotK0Short"), aValue, qValueposdau);
-                    rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotK0Short"), aValue, qValuenegdau);
+                    rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotK0Short"), aValue, qValue);
                     for (int i = 0; i < 20; i++) {
                       // getting the pt value in #_# for and converting it to a number #.# for use, we get two values which correspond to the range of each bin
                       std::string pt1 = pthistos::kaonptbins[i];                // getting the lower string-value of the bin
@@ -290,8 +285,7 @@ struct V0PtInvMassPlots {
                   rPtAnalysis.fill(HIST("hLambdaReconstructedPtSpectrum"), v0.pt());
                   rPtAnalysis.fill(HIST("hLambdaEtaDaughters"), v0.negTrack_as<DaughterTracks>().eta());
                   rPtAnalysis.fill(HIST("hLambdaEtaDaughters"), v0.posTrack_as<DaughterTracks>().eta());
-                  rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotLambda"), aValue, qValueposdau);
-                  rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotLambda"), aValue, qValuenegdau);
+                  rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotLambda"), aValue, qValue);
                   for (int i = 0; i < 20; i++) {
                     // same as above with kzerosh we fill the 20 lambda namespace histograms within their Pt range
                     std::string pt1 = pthistos::lambdaPtBins[i];
@@ -322,8 +316,7 @@ struct V0PtInvMassPlots {
                   rPtAnalysis.fill(HIST("hAntilambdaReconstructedPtSpectrum"), v0.pt());
                   rPtAnalysis.fill(HIST("hAntiLambdaEtaDaughters"), v0.negTrack_as<DaughterTracks>().eta());
                   rPtAnalysis.fill(HIST("hAntiLambdaEtaDaughters"), v0.posTrack_as<DaughterTracks>().eta());
-                  rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotAntiLambda"), aValue, qValueposdau);
-                  rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotAntiLambda"), aValue, qValuenegdau);
+                  rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotAntiLambda"), aValue, qValue);
                   for (int i = 0; i < 20; i++) {
                     // same as above with kzerosh and lambda we fill the 20 anti-lambda namespace histograms within their Pt range
                     std::string pt1 = pthistos::antiLambdaPtBins[i];
@@ -357,17 +350,13 @@ struct V0PtInvMassPlots {
       const auto& posDaughterTrack = v0.posTrack_as<DaughterTracks>();
       const auto& negDaughterTrack = v0.negTrack_as<DaughterTracks>();
       // Armenteros-Podolandski Plot Values
-      Double_t pv0 = std::sqrt((v0.px() * v0.px()) + (v0.py() * v0.py()) + (v0.pz() * v0.pz()));
-      Double_t pposdauparallelv0 = ((v0.posTrack_as<DaughterTracks>().px() * v0.px()) + (v0.posTrack_as<DaughterTracks>().py() * v0.py()) + (v0.posTrack_as<DaughterTracks>().pz() * v0.pz())) / pv0;
-      Double_t pnegdauparallelv0 = ((v0.negTrack_as<DaughterTracks>().px() * v0.px()) + (v0.negTrack_as<DaughterTracks>().py() * v0.py()) + (v0.negTrack_as<DaughterTracks>().pz() * v0.pz())) / pv0;
-      Double_t qValueposdau = std::sqrt(((v0.posTrack_as<DaughterTracks>().px() * v0.posTrack_as<DaughterTracks>().px()) + (v0.posTrack_as<DaughterTracks>().py() * v0.posTrack_as<DaughterTracks>().py()) + (v0.posTrack_as<DaughterTracks>().pz() * v0.posTrack_as<DaughterTracks>().pz())) - (pposdauparallelv0 * pposdauparallelv0));
-      Double_t qValuenegdau = std::sqrt(((v0.negTrack_as<DaughterTracks>().px() * v0.negTrack_as<DaughterTracks>().px()) + (v0.negTrack_as<DaughterTracks>().py() * v0.negTrack_as<DaughterTracks>().py()) + (v0.negTrack_as<DaughterTracks>().pz() * v0.negTrack_as<DaughterTracks>().pz())) - (pnegdauparallelv0 * pnegdauparallelv0));
-      // Double_t qValue = std::sqrt(qValueposdau + qValuenegdau);
-      Double_t plpos = (v0.posTrack_as<DaughterTracks>().px() * v0.px() / pv0) + (v0.posTrack_as<DaughterTracks>().py() * v0.py() / pv0) + (v0.posTrack_as<DaughterTracks>().pz() * v0.pz() / pv0);
-      Double_t plneg = (v0.negTrack_as<DaughterTracks>().px() * v0.px() / pv0) + (v0.negTrack_as<DaughterTracks>().py() * v0.py() / pv0) + (v0.negTrack_as<DaughterTracks>().pz() * v0.pz() / pv0);
-      Double_t aValue = (plpos - plneg) / (plpos + plneg);
-      rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlot"), aValue, qValueposdau);
-      rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlot"), aValue, qValuenegdau);
+      double pv0 = std::sqrt((v0.px() * v0.px()) + (v0.py() * v0.py()) + (v0.pz() * v0.pz()));
+      double pposdauparallelv0 = ((v0.posTrack_as<DaughterTracks>().px() * v0.px()) + (v0.posTrack_as<DaughterTracks>().py() * v0.py()) + (v0.posTrack_as<DaughterTracks>().pz() * v0.pz())) / pv0;
+      double qValue = std::sqrt(((v0.posTrack_as<DaughterTracks>().px() * v0.posTrack_as<DaughterTracks>().px()) + (v0.posTrack_as<DaughterTracks>().py() * v0.posTrack_as<DaughterTracks>().py()) + (v0.posTrack_as<DaughterTracks>().pz() * v0.posTrack_as<DaughterTracks>().pz())) - (pposdauparallelv0 * pposdauparallelv0));
+      double plpos = (v0.posTrack_as<DaughterTracks>().px() * v0.px() / pv0) + (v0.posTrack_as<DaughterTracks>().py() * v0.py() / pv0) + (v0.posTrack_as<DaughterTracks>().pz() * v0.pz() / pv0);
+      double plneg = (v0.negTrack_as<DaughterTracks>().px() * v0.px() / pv0) + (v0.negTrack_as<DaughterTracks>().py() * v0.py() / pv0) + (v0.negTrack_as<DaughterTracks>().pz() * v0.pz() / pv0);
+      double aValue = (plpos - plneg) / (plpos + plneg);
+      rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlot"), aValue, qValue);
       rPtAnalysis.fill(HIST("hVertexZRec"), collision.posZ());
       rPtAnalysis.fill(HIST("hV0PtAll"), v0.pt());
       if (std::abs(v0.posTrack_as<DaughterTracks>().eta()) < etadau && std::abs(v0.negTrack_as<DaughterTracks>().eta()) < etadau) { // daughters pseudorapidity cut
@@ -392,8 +381,7 @@ struct V0PtInvMassPlots {
                 rPtAnalysis.fill(HIST("hK0shEtaNegDau"), v0.negTrack_as<DaughterTracks>().eta());
                 rPtAnalysis.fill(HIST("hK0shEtaDaughters"), v0.negTrack_as<DaughterTracks>().eta());
                 rPtAnalysis.fill(HIST("hK0shEtaDaughters"), v0.posTrack_as<DaughterTracks>().eta());
-                rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotK0Short"), aValue, qValueposdau);
-                rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotK0Short"), aValue, qValuenegdau);
+                rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotK0Short"), aValue, qValue);
                 for (int i = 0; i < 20; i++) { // same as above MC-process we fill the namespace histos with the kaon invariant mass of the particle within the pt range of the histo
                   std::string pt1 = pthistos::kaonptbins[i];
                   std::string pt2 = pthistos::kaonptbins[i + 1];
@@ -426,8 +414,7 @@ struct V0PtInvMassPlots {
                 rPtAnalysis.fill(HIST("hMassLambdaAllAfterCuts"), v0.mLambda());
                 rPtAnalysis.fill(HIST("hLambdaEtaDaughters"), v0.negTrack_as<DaughterTracks>().eta());
                 rPtAnalysis.fill(HIST("hLambdaEtaDaughters"), v0.posTrack_as<DaughterTracks>().eta());
-                rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotLambda"), aValue, qValueposdau);
-                rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotLambda"), aValue, qValuenegdau);
+                rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotLambda"), aValue, qValue);
                 for (int i = 0; i < 20; i++) { // same as above MC-process we fill the namespace histos with the lambda invariant mass of the particle within the pt range of the histo
                   std::string pt1 = pthistos::lambdaPtBins[i];
                   std::string pt2 = pthistos::lambdaPtBins[i + 1];
@@ -460,8 +447,7 @@ struct V0PtInvMassPlots {
                 rPtAnalysis.fill(HIST("hMassAntilambdaAllAfterCuts"), v0.mAntiLambda());
                 rPtAnalysis.fill(HIST("hAntiLambdaEtaDaughters"), v0.negTrack_as<DaughterTracks>().eta());
                 rPtAnalysis.fill(HIST("hAntiLambdaEtaDaughters"), v0.posTrack_as<DaughterTracks>().eta());
-                rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotAntiLambda"), aValue, qValueposdau);
-                rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotAntiLambda"), aValue, qValuenegdau);
+                rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotAntiLambda"), aValue, qValue);
                 for (int i = 0; i < 20; i++) { // same as above MC-process we fill the namespace histos with the antilambda invariant mass of the particle within the pt range of the histo
                   std::string pt1 = pthistos::antiLambdaPtBins[i];
                   std::string pt2 = pthistos::antiLambdaPtBins[i + 1];
