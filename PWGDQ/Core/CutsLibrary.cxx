@@ -4534,6 +4534,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCncls, 90, 161);
     cut->AddCut(VarManager::kTPCnclsCR, 70, 161);
     return cut;
+  }
   
   if (!nameStr.compare("pidbasic")) {
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
