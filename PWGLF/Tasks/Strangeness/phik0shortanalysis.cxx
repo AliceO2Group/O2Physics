@@ -283,6 +283,9 @@ struct Phik0shortanalysis {
     dataPhiK0SHist.add("h4PhiK0SSEFCut", "2D Invariant mass of Phi and K0Short for Same Event Deltay < FirstCut", kTHnSparseF, {binnedmultAxis, binnedptK0SAxis, massK0SAxis, sigmassPhiAxis});
     dataPhiK0SHist.add("h4PhiK0SSESCut", "2D Invariant mass of Phi and K0Short for Same Event Deltay < SecondCut", kTHnSparseF, {binnedmultAxis, binnedptK0SAxis, massK0SAxis, sigmassPhiAxis});
 
+    // K0S rapidity in Data
+    dataPhiK0SHist.add("h3K0SRapidityData", "K0Short rapidity for Data", kTH3F, {binnedmultAxis, binnedptK0SAxis, yAxis});
+
     // RecMC K0S coupled to Phi
     mcPhiK0SHist.add("h3RecMCPhiK0SInc", "RecoMC K0Short coupled to Phi Inclusive", kTH3F, {binnedmultAxis, binnedptK0SAxis, massK0SAxis});
     mcPhiK0SHist.add("h3RecMCPhiK0SFCut", "RecoMC K0Short coupled to Phi Deltay < FirstCut", kTH3F, {binnedmultAxis, binnedptK0SAxis, massK0SAxis});
@@ -306,6 +309,9 @@ struct Phik0shortanalysis {
     dataPhiPionHist.add("h5PhiPiSEInc", "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Inclusive", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
     dataPhiPionHist.add("h5PhiPiSEFCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Deltay < FirstCut", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
     dataPhiPionHist.add("h5PhiPiSESCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Deltay < SecondCut", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
+
+    // Pion rapidity in Data
+    dataPhiPionHist.add("h3PiRapidityData", "Pion rapidity for Data", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
 
     // RecMC Pion coupled to Phi with TPC
     mcPhiPionHist.add("h3RecMCPhiPiTPCInc", "RecoMC Pion coupled to Phi with TPC Inclusive", kTH3F, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}});
