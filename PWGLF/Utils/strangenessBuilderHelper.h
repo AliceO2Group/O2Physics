@@ -145,6 +145,14 @@ class strangenessBuilderHelper
     fitter.setUseAbsDCA(true);
     fitter.setWeightedFinalPCA(false);
 
+    v0selections.minCrossedRows = -1; 
+    v0selections.dcanegtopv = -1.0f;
+    v0selections.dcapostopv = -1.0f;
+    v0selections.v0cospa = -2; 
+    v0selections.dcav0dau = 1e+6;
+    v0selections.v0radius = 0.0f; 
+    v0selections.maxDaughterEta = 2.0;
+
     // LUT has to be loaded later
     lut = nullptr;
     fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrLUT);
@@ -160,6 +168,14 @@ class strangenessBuilderHelper
                         bool useCollinearFit = false,
                         bool calculateCovariance = false)
   {
+    // verify track quality 
+    if(positiveTrack.tpcNClsCrossedRows() < v0selections.minCrossedRows){ 
+      return false;
+    }
+    if(negativeTrack.tpcNClsCrossedRows() < v0selections.minCrossedRows){ 
+      return false;
+    }
+
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
     gpu::gpustd::array<float, 2> dcaInfo;
 
@@ -167,9 +183,17 @@ class strangenessBuilderHelper
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     v0.positiveDCAxy = dcaInfo[0];
 
+    if(v0.positiveDCAxy < v0selections.dcanegtopv){ 
+      return false;
+    }
+
     auto negTrackPar = getTrackPar(negativeTrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     v0.negativeDCAxy = dcaInfo[0];
+
+    if(v0.negativeDCAxy < v0selections.dcanegtopv){ 
+      return false;
+    }
 
     o2::track::TrackParCov positiveTrackParam = getTrackParCov(positiveTrack);
     o2::track::TrackParCov negativeTrackParam = getTrackParCov(negativeTrack);
@@ -201,12 +225,25 @@ class strangenessBuilderHelper
       v0.position[i] = vtx[i];
     }
 
+    if(std::hypot(v0.position[0], v0.position[1]) < v0selections.v0radius){ 
+      return false;
+    }
+
     v0.daughterDCA = TMath::Sqrt(fitter.getChi2AtPCACandidate());
-    v0.pointingAngle = TMath::ACos(RecoDecay::cpa(
+
+    if(v0.daughterDCA > v0selections.dcav0dau){ 
+      return false;
+    }
+
+    double cosPA = RecoDecay::cpa(
       std::array{collision.posX(), collision.posY(), collision.posZ()},
       std::array{v0.position[0], v0.position[1], v0.position[2]},
-      std::array{v0.positiveMomentum[0] + v0.negativeMomentum[0], v0.positiveMomentum[1] + v0.negativeMomentum[1], v0.positiveMomentum[2] + v0.negativeMomentum[2]}));
+      std::array{v0.positiveMomentum[0] + v0.negativeMomentum[0], v0.positiveMomentum[1] + v0.negativeMomentum[1], v0.positiveMomentum[2] + v0.negativeMomentum[2]});
+    if(cosPA < v0selections.v0cospa){ 
+      return false;
+    }
 
+    v0.pointingAngle = TMath::ACos(cosPA);
     v0.dcaXY = CalculateDCAStraightToPV(
       v0.position[0], v0.position[1], v0.position[2],
       v0.positiveMomentum[0] + v0.negativeMomentum[0],
@@ -719,6 +756,17 @@ class strangenessBuilderHelper
 
   v0candidate v0;           // storage for V0 candidate properties
   cascadeCandidate cascade; // storage for cascade candidate properties
+
+  // v0 candidate criteria 
+  struct {
+    int minCrossedRows;
+    float dcanegtopv;
+    float dcapostopv;
+    double v0cospa;
+    float dcav0dau;
+    float v0radius;
+    float maxDaughterEta;
+  } v0selections;
 
  private:
   // internal helper to calculate DCAxy of a straight line to a given PV analytically
