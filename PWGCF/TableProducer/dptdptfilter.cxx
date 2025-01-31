@@ -1208,8 +1208,7 @@ struct DptDptFilterTracks {
   /* the aim is to fill the structure of the generated particles  */
   /* that were reconstructed                                      */
   template <typename passedtracks>
-  void filterTracksSpecial(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions,
-                           passedtracks const& tracks)
+  void filterTracksSpecial(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const&, passedtracks const& tracks)
   {
     /* do check for special adjustments */
     getCCDBInformation();
