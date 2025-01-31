@@ -669,8 +669,8 @@ struct sigma0builder {
     float fPhotonPsiPair = gamma.psipair();
     int fPhotonPosITSCls = posTrackGamma.itsNCls();
     int fPhotonNegITSCls = negTrackGamma.itsNCls();
-    uint32_t fPhotonPosITSClSize = posTrackGamma.itsClusterSizes();
-    uint32_t fPhotonNegITSClSize = negTrackGamma.itsClusterSizes();
+    float fPhotonPosITSChi2PerNcl = posTrackGamma.itsChi2PerNcl();
+    float fPhotonNegITSChi2PerNcl = negTrackGamma.itsChi2PerNcl();
     uint8_t fPhotonV0Type = gamma.v0Type();
 
     // Lambda
@@ -712,8 +712,8 @@ struct sigma0builder {
     float fLambdaNegPiY = RecoDecay::y(std::array{lambda.pxneg(), lambda.pyneg(), lambda.pzneg()}, o2::constants::physics::MassPionCharged);
     int fLambdaPosITSCls = posTrackLambda.itsNCls();
     int fLambdaNegITSCls = negTrackLambda.itsNCls();
-    uint32_t fLambdaPosITSClSize = posTrackLambda.itsClusterSizes();
-    uint32_t fLambdaNegITSClSize = negTrackLambda.itsClusterSizes();
+    float fLambdaPosITSChi2PerNcl = posTrackLambda.itsChi2PerNcl();
+    float fLambdaNegITSChi2PerNcl = negTrackLambda.itsChi2PerNcl();
     uint8_t fLambdaV0Type = lambda.v0Type();
 
     // Sigma0 candidate properties
@@ -738,7 +738,7 @@ struct sigma0builder {
                       fPhotonEta, fPhotonY, fPhotonPhi, fPhotonPosTPCNSigmaEl, fPhotonNegTPCNSigmaEl, fPhotonPosTPCNSigmaPi, fPhotonNegTPCNSigmaPi, fPhotonPosTPCCrossedRows,
                       fPhotonNegTPCCrossedRows, fPhotonPosPt, fPhotonNegPt, fPhotonPosEta,
                       fPhotonNegEta, fPhotonPosY, fPhotonNegY, fPhotonPsiPair,
-                      fPhotonPosITSCls, fPhotonNegITSCls, fPhotonPosITSClSize, fPhotonNegITSClSize,
+                      fPhotonPosITSCls, fPhotonNegITSCls, fPhotonPosITSChi2PerNcl, fPhotonNegITSChi2PerNcl,
                       fPhotonV0Type, GammaBDTScore);
 
     sigmaLambdaExtras(fLambdaPt, fLambdaMass, fAntiLambdaMass, fLambdaQt, fLambdaAlpha,
@@ -748,7 +748,7 @@ struct sigma0builder {
                       fLambdaPrTOFNSigma, fLambdaPiTOFNSigma, fALambdaPrTOFNSigma, fALambdaPiTOFNSigma,
                       fLambdaPosTPCCrossedRows, fLambdaNegTPCCrossedRows, fLambdaPosPt, fLambdaNegPt, fLambdaPosEta,
                       fLambdaNegEta, fLambdaPosPrY, fLambdaPosPiY, fLambdaNegPrY, fLambdaNegPiY,
-                      fLambdaPosITSCls, fLambdaNegITSCls, fLambdaPosITSClSize, fLambdaNegITSClSize,
+                      fLambdaPosITSCls, fLambdaNegITSCls, fLambdaPosITSChi2PerNcl, fLambdaNegITSChi2PerNcl,
                       fLambdaV0Type, LambdaBDTScore, AntiLambdaBDTScore);
   }
 
@@ -811,6 +811,10 @@ struct sigma0builder {
         for (auto& lambda : V0Table_thisCollision) { // selecting lambdas from Sigma0
           if (!lambda.has_v0MCCore())
             continue;
+
+          if (lambda.v0Type() != 1){ // safeguard to avoid TPC-only photons
+            continue;
+          }
 
           auto lambdaMC = lambda.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
 
@@ -895,6 +899,10 @@ struct sigma0builder {
           if (doPi0QA)                               // Pi0 QA study
             runPi0QA(gamma, lambda);
 
+          if (lambda.v0Type() != 1){ // safeguard to avoid TPC-only photons
+            continue;
+          }
+          
           // Sigma0 candidate properties
           std::array<float, 3> pVecPhotons{gamma.px(), gamma.py(), gamma.pz()};
           std::array<float, 3> pVecLambda{lambda.px(), lambda.py(), lambda.pz()};
