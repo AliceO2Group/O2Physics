@@ -53,12 +53,12 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::track;
 using namespace o2::aod::evsel;
 
-using CollisionDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms>;
+using CollisionDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals, aod::CentMFTs>;
 using TrackDataTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 using FilTrackDataTable = soa::Filtered<TrackDataTable>;
 using CollisionMCTrueTable = aod::McCollisions;
 using TrackMCTrueTable = aod::McParticles;
-using CollisionMCRecTable = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms>>;
+using CollisionMCRecTable = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals, aod::CentMFTs>>;
 using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>;
 using FilTrackMCRecTable = soa::Filtered<TrackMCRecTable>;
 using v0trackcandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
@@ -156,8 +156,10 @@ struct HeavyIonMultiplicity {
   Configurable<bool> IsApplyNoHighMultCollInPrevRof{"IsApplyNoHighMultCollInPrevRof", true, "Enable NoHighMultCollInPrevRof cut"};
   Configurable<bool> IsApplyFT0CbasedOccupancy{"IsApplyFT0CbasedOccupancy", true, "Enable FT0CbasedOccupancy cut"};
   Configurable<bool> IsApplyCentFT0C{"IsApplyCentFT0C", false, "Centrality based on FT0C"};
-  Configurable<bool> IsApplyCentFT0CVariant1{"IsApplyCentFT0Cvariant1", false, "Centrality based on FT0C variant1"};
+  Configurable<bool> IsApplyCentFT0CVariant1{"IsApplyCentFT0CVariant1", false, "Centrality based on FT0C variant1"};
   Configurable<bool> IsApplyCentFT0M{"IsApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
+  Configurable<bool> IsApplyCentNGlobal{"IsApplyCentNGlobal", false, "Centrality based on global tracks"};
+  Configurable<bool> IsApplyCentMFT{"IsApplyCentMFT", false, "Centrality based on MFT tracks"};
 
   void init(InitContext const&)
   {
@@ -352,6 +354,12 @@ struct HeavyIonMultiplicity {
     }
     if (IsApplyCentFT0M) {
       cent = col.centFT0M();
+    }
+    if (IsApplyCentNGlobal) {
+      cent = col.centNGlobal();
+    }
+    if (IsApplyCentMFT) {
+      cent = col.centMFT();
     }
     return cent;
   }

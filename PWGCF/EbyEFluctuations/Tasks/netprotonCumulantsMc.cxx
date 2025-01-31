@@ -217,6 +217,9 @@ struct NetprotonCumulantsMc {
     histos.add("hrecProfileTotalProton", "Reconstructed total proton number vs. centrality", kTProfile, {centAxis});
     histos.add("hrecProfileProton", "Reconstructed proton number vs. centrality", kTProfile, {centAxis});
     histos.add("hrecProfileAntiproton", "Reconstructed antiproton number vs. centrality", kTProfile, {centAxis});
+    histos.add("hCorrProfileTotalProton", "Eff. Corrected total proton number vs. centrality", kTProfile, {centAxis});
+    histos.add("hCorrProfileProton", "Eff. Corrected proton number vs. centrality", kTProfile, {centAxis});
+    histos.add("hCorrProfileAntiproton", "Eff. Corrected antiproton number vs. centrality", kTProfile, {centAxis});
 
     if (cfgIsCalculateCentral) {
       // uncorrected
@@ -1131,6 +1134,9 @@ struct NetprotonCumulantsMc {
     histos.fill(HIST("hrecProfileTotalProton"), cent, (nProt + nAntiprot));
     histos.fill(HIST("hrecProfileProton"), cent, nProt);
     histos.fill(HIST("hrecProfileAntiproton"), cent, nAntiprot);
+    histos.fill(HIST("hCorrProfileTotalProton"), cent, (powerEffProt[1] + powerEffAntiprot[1]));
+    histos.fill(HIST("hCorrProfileProton"), cent, powerEffProt[1]);
+    histos.fill(HIST("hCorrProfileAntiproton"), cent, powerEffAntiprot[1]);
     recEbyeCollisions(cent, netProt, nProt, nAntiprot);
 
     // Calculating q_{r,s} as required

@@ -902,8 +902,8 @@ struct highmasslambda {
             auto anglestep = (angleend - anglestart) / (1.0 * (nBkgRotations - 1));
             auto rotangle = anglestart + nrotbkg * anglestep;
             histos.fill(HIST("hRotation"), rotangle);
-            auto rotKaonPx = Kshort.px() * std::cos(rotangle) - Kshort.py() * std::sin(rotangle);
-            auto rotKaonPy = Kshort.px() * std::sin(rotangle) + Kshort.py() * std::cos(rotangle);
+            float rotKaonPx = Kshort.px() * std::cos(rotangle) - Kshort.py() * std::sin(rotangle);
+            float rotKaonPy = Kshort.px() * std::sin(rotangle) + Kshort.py() * std::cos(rotangle);
             ////////// DCA fitter ////////////////
             // LOGF(info, "Before dca fitter");
             std::array<float, 3> pVecV0rot = {0., 0., 0.};
@@ -939,7 +939,7 @@ struct highmasslambda {
             double decaylengthyrot = secondaryVertexrot[1] - collision.posY();
             double decaylengthzrot = secondaryVertexrot[2] - collision.posZ();
             double decaylengthrot = TMath::Sqrt(decaylengthxrot * decaylengthxrot + decaylengthyrot * decaylengthyrot + decaylengthzrot * decaylengthzrot);
-            double decaylengthxyrot = TMath::Sqrt(decaylengthxrot * decaylengthxrot + decaylengthyrot * decaylengthyrot);
+            // double decaylengthxyrot = TMath::Sqrt(decaylengthxrot * decaylengthxrot + decaylengthyrot * decaylengthyrot);
             double anglesignrot = decaylengthxrot * LambdacRot.Px() + decaylengthyrot * LambdacRot.Py() + decaylengthzrot * LambdacRot.Pz();
             double CPAlambdacrot = anglesignrot / (decaylengthrot * LambdacRot.P());
             if (LambdacRot.M() > cMinLambdaMass && LambdacRot.M() <= cMaxLambdaMass && std::abs(LambdacRot.Rapidity()) < confRapidity && LambdacRot.Pt() > 1.0 && LambdacRot.Pt() <= 6.0) {
