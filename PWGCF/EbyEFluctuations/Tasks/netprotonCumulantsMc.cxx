@@ -217,6 +217,9 @@ struct NetprotonCumulantsMc {
     histos.add("hrecProfileTotalProton", "Reconstructed total proton number vs. centrality", kTProfile, {centAxis});
     histos.add("hrecProfileProton", "Reconstructed proton number vs. centrality", kTProfile, {centAxis});
     histos.add("hrecProfileAntiproton", "Reconstructed antiproton number vs. centrality", kTProfile, {centAxis});
+    histos.add("hCorrProfileTotalProton", "Eff. Corrected total proton number vs. centrality", kTProfile, {centAxis});
+    histos.add("hCorrProfileProton", "Eff. Corrected proton number vs. centrality", kTProfile, {centAxis});
+    histos.add("hCorrProfileAntiproton", "Eff. Corrected antiproton number vs. centrality", kTProfile, {centAxis});
 
     if (cfgIsCalculateCentral) {
       // uncorrected
@@ -813,6 +816,11 @@ struct NetprotonCumulantsMc {
   template <typename T>
   bool selectionPIDnew(const T& candidate)
   {
+    // electron rejection
+    if (candidate.tpcNSigmaEl() > -3.0f && candidate.tpcNSigmaEl() < 5.0f && std::abs(candidate.tpcNSigmaPi()) > 3.0f && std::abs(candidate.tpcNSigmaKa()) > 3.0f && std::abs(candidate.tpcNSigmaPr()) > 3.0f) {
+      return false;
+    }
+
     //! if pt < threshold
     if (candidate.pt() > 0.2f && candidate.pt() <= cfgCutPtUpperTPC) {
       if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaPi()) > cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaKa()) > cfgnSigmaCutTPC) {
@@ -1067,6 +1075,9 @@ struct NetprotonCumulantsMc {
       {
         continue;
       }
+      if ((track.pt() < cfgCutPtLower) || (track.pt() > 5.0f) || (std::abs(track.eta()) > 0.8f)) {
+        continue;
+      }
 
       histos.fill(HIST("hrecPtAll"), track.pt());
       histos.fill(HIST("hrecEtaAll"), track.eta());
@@ -1131,6 +1142,9 @@ struct NetprotonCumulantsMc {
     histos.fill(HIST("hrecProfileTotalProton"), cent, (nProt + nAntiprot));
     histos.fill(HIST("hrecProfileProton"), cent, nProt);
     histos.fill(HIST("hrecProfileAntiproton"), cent, nAntiprot);
+    histos.fill(HIST("hCorrProfileTotalProton"), cent, (powerEffProt[1] + powerEffAntiprot[1]));
+    histos.fill(HIST("hCorrProfileProton"), cent, powerEffProt[1]);
+    histos.fill(HIST("hCorrProfileAntiproton"), cent, powerEffAntiprot[1]);
     recEbyeCollisions(cent, netProt, nProt, nAntiprot);
 
     // Calculating q_{r,s} as required
