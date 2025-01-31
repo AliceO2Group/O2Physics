@@ -80,7 +80,7 @@ struct JetFinderQATask {
   std::vector<bool> filledJetR_High;
   std::vector<double> jetRadiiValues;
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
   std::vector<double> jetPtBins;
@@ -88,7 +88,7 @@ struct JetFinderQATask {
 
   void init(o2::framework::InitContext&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
     jetRadiiValues = (std::vector<double>)jetRadii;
 
@@ -611,7 +611,7 @@ struct JetFinderQATask {
   template <typename T, typename U, typename V>
   void randomCone(T const& collision, U const& jets, V const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
@@ -854,7 +854,7 @@ struct JetFinderQATask {
     }
     if (checkMcCollisionIsMatched) {
       auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
-      if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelection)) {
+      if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits)) {
         fillMCPHistograms(jet);
       }
     } else {
@@ -879,7 +879,7 @@ struct JetFinderQATask {
     }
     if (checkMcCollisionIsMatched) {
       auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
-      if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelection)) {
+      if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits)) {
         fillMCPHistograms(jet, jet.eventWeight());
       }
     } else {
@@ -946,7 +946,7 @@ struct JetFinderQATask {
       return;
     }
     registry.fill(HIST("h_collision_trigger_events"), 1.5); // all events with z vertex cut
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collision_trigger_events"), 2.5); // events with sel8()
@@ -1071,7 +1071,7 @@ struct JetFinderQATask {
     }
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
@@ -1095,7 +1095,7 @@ struct JetFinderQATask {
     }
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
@@ -1115,7 +1115,7 @@ struct JetFinderQATask {
     if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
@@ -1134,7 +1134,7 @@ struct JetFinderQATask {
     if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {

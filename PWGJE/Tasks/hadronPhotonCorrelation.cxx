@@ -18,6 +18,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
@@ -115,7 +116,7 @@ struct HadronPhotonCorrelation {
     return dphi;
   }
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
   void init(o2::framework::InitContext&)
@@ -125,7 +126,7 @@ struct HadronPhotonCorrelation {
     ptMinAssoc = axisPtAssoc->at(1);
     ptMaxAssoc = axisPtAssoc->back();
 
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     // Generated histograms
@@ -317,7 +318,7 @@ struct HadronPhotonCorrelation {
   void processTrigsReco(JetCollision const& collision,
                         JetTracks const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
 
@@ -343,7 +344,7 @@ struct HadronPhotonCorrelation {
                           Join<JetTracks, JMcTrackLbs> const& tracks,
                           JetParticles const&)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
 
@@ -391,7 +392,7 @@ struct HadronPhotonCorrelation {
                                  MyTracks const&,
                                  V0Datas const& v0s)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
 
@@ -430,7 +431,7 @@ struct HadronPhotonCorrelation {
                                        MyTracksMC const&,
                                        V0Datas const& v0s)
   {
-    if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelectionBits)) {
       return;
     }
 
@@ -509,7 +510,7 @@ struct HadronPhotonCorrelation {
   void processHadronCorrelations(JetCollision const& collision,
                                  Join<JetTracks, pidTPCEl, pidTPCMu> const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
 
@@ -580,7 +581,7 @@ struct HadronPhotonCorrelation {
                                        Join<JTracks, JMcTrackLbs> const& tracks_reco,
                                        JetParticles const&)
   {
-    if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelectionBits)) {
       return;
     }
 
@@ -638,7 +639,7 @@ struct HadronPhotonCorrelation {
   void processPionCorrelations(JetCollision const& collision,
                                Join<JetTracks, pidTPCPi> const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
 
@@ -708,7 +709,7 @@ struct HadronPhotonCorrelation {
                                      Join<JetTracks, JMcTrackLbs> const& tracks_reco,
                                      JetParticles const&)
   {
-    if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelectionBits)) {
       return;
     }
 
