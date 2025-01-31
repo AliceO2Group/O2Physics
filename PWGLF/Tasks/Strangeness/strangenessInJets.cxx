@@ -949,18 +949,22 @@ struct StrangenessInJets {
     }
 
     // Secondary Lambda
+    weightsXiInJet = static_cast<TH1F*>(l->FindObject(Form("%s", histname_xi_jet.Data())));
     if (histname_xi_jet.value != "") {
       weightsXiInJet = ccdbObj->get<TH1F>(filepath.Data());
       LOG(info) << "Getting weight histogram for Xi in jet from " << histname_xi_jet.value;
     }
+    weightsXiInUe = static_cast<TH1F*>(l->FindObject(Form("%s", histname_xi_ue.Data())));
     if (histname_xi_ue.value != "") {
       weightsXiInUe = ccdbObj->get<TH1F>(filepath.Data());
       LOG(info) << "Getting weight histogram for Xi in ue from " << histname_xi_ue.value;
     }
+    weightsAntiXiInJet = static_cast<TH1F*>(l->FindObject(Form("%s", histname_antixi_jet.Data())));
     if (histname_antixi_jet.value != "") {
       weightsAntiXiInJet = ccdbObj->get<TH1F>(filepath.Data());
       LOG(info) << "Getting weight histogram for antiXi in jet from " << histname_antixi_jet.value;
     }
+    weightsAntiXiInUe = static_cast<TH1F*>(l->FindObject(Form("%s", histname_antixi_ue.Data())));
     if (histname_antixi_ue.value != "") {
       weightsAntiXiInUe = ccdbObj->get<TH1F>(filepath.Data());
       LOG(info) << "Getting weight histogram for antiXi in ue from " << histname_antixi_ue.value;
@@ -1541,9 +1545,9 @@ struct StrangenessInJets {
             double wSecAntiLambdaInJet(1.0);
             double wSecAntiLambdaInUe(1.0);
 
-            int idMother = posParticle.mother0Id();
+            int idMother = posParticle.mothersIds()[0];
             auto mother = mcParticles.iteratorAt(idMother);
-            int idGrandMother = mother.mother0Id();
+            int idGrandMother = mother.mothersIds()[0];
             auto grandMother = mcParticles.iteratorAt(idGrandMother);
             int ibinAntiXiInJet = weightsAntiXiInJet->GetXaxis()->FindBin(grandMother.pt());
             int ibinAntiXiInUe = weightsAntiXiInUe->GetXaxis()->FindBin(grandMother.pt());
