@@ -781,7 +781,7 @@ struct eventQC {
   template <typename TCollision>
   bool isSelectedEvent(TCollision const& collision)
   {
-    if (!collision.sel8()) {
+    if (eventcuts.cfgRequireSel8 && !collision.sel8()) {
       return false;
     }
 
