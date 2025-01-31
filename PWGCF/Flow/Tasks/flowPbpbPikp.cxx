@@ -70,10 +70,14 @@ struct FlowPbpbPikp {
   O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 3.0f, "Maximal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
+  O2_DEFINE_CONFIGURABLE(cfgTpcCluster, int, 70, "Number of TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, true, "Fill NUA weights")
+  O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
+  O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
+  O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgTpcNsigmaCut, float, 2.0f, "TPC N-sigma cut for pions, kaons, protons")
   O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 0.5f, "Minimum pt to use TOF N-sigma")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 2.0f, "DCAxy range for tracks")
@@ -133,6 +137,10 @@ struct FlowPbpbPikp {
     fPtAxis = new TAxis(nPtBins, ptBins);
 
     TObjArray* oba = new TObjArray();
+    oba->Add(new TNamed("ChFull22", "ChFull22"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("ChFull22_pt_%i", i + 1), "ChFull22_pTDiff"));
+
     oba->Add(new TNamed("Ch08Gap22", "Ch08Gap22"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Ch08Gap22_pt_%i", i + 1), "Ch08Gap22_pTDiff"));
@@ -145,9 +153,23 @@ struct FlowPbpbPikp {
     oba->Add(new TNamed("Pr08Gap22", "Pr08Gap22"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Pr08Gap22_pt_%i", i + 1), "Pr08Gap22_pTDiff"));
+
     oba->Add(new TNamed("ChFull24", "ChFull24"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("ChFull24_pt_%i", i + 1), "ChFull24_pTDiff"));
+
+    oba->Add(new TNamed("Ch08Gap24", "Ch08Gap24"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Ch08Gap24_pt_%i", i + 1), "Ch08Gap24_pTDiff"));
+    oba->Add(new TNamed("Pi08Gap24", "Pi08Gap24"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Pi08Gap24_pt_%i", i + 1), "Pi08Gap24_pTDiff"));
+    oba->Add(new TNamed("Ka08Gap24", "Ka08Gap24"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Ka08Gap24_pt_%i", i + 1), "Ka08Gap24_pTDiff"));
+    oba->Add(new TNamed("Pr08Gap24", "Pr08Gap24"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Pr08Gap24_pt_%i", i + 1), "Pr08Gap24_pTDiff"));
 
     fFC->SetName("FlowContainer");
     fFC->SetXAxis(fPtAxis);
@@ -177,6 +199,8 @@ struct FlowPbpbPikp {
     fGFW->AddRegion("poiNpr", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 8);
     fGFW->AddRegion("olNpr", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 64);
 
+    // reference particles
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ch08Gap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Pi08Gap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ka08Gap22", kFALSE));
@@ -187,6 +211,8 @@ struct FlowPbpbPikp {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "Ka08Gap24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "Pr08Gap24", kFALSE));
 
+    // pt differential pois
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poi full | ol {2 -2}", "ChFull22", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN refN08 | olN {2} refP08 {-2}", "Ch08Gap22", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNpi refN08 | olNpi {2} refP08 {-2}", "Pi08Gap22", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNk refN08 | olNk {2} refP08 {-2}", "Ka08Gap22", kTRUE));
