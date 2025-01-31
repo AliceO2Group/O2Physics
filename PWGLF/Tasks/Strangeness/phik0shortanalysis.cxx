@@ -371,8 +371,10 @@ struct Phik0shortanalysis {
     mcK0SHist.add("h2K0SGenMC", "K0Short for GenMC", kTH2F, {binnedmultAxis, binnedptK0SAxis});
     mcK0SHist.add("h2K0SGenMCAssocReco", "K0Short for GenMC Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptK0SAxis});
 
-    // Rapidity smearing matrix for K0S
+    // Rapidity smearing matrix for K0S and rapidity in GenMC
     mcK0SHist.add("h4K0SRapiditySmearing", "Rapidity Smearing Matrix for K0Short", kTHnSparseF, {binnedmultAxis, binnedptK0SAxis, yAxis, yAxis});
+
+    mcK0SHist.add("h3K0SRapidityGenMC", "Rapidity for K0Short for GenMC", kTH3F, {binnedmultAxis, binnedptK0SAxis, yAxis});
 
     // MCPion invariant mass and GenMC Pion for computing efficiencies
     mcPionHist.add("h3RecMCPiTPC", "RecoMC Pion for Efficiency with TPC", kTH3F, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}});
@@ -381,8 +383,10 @@ struct Phik0shortanalysis {
     mcPionHist.add("h2PiGenMC", "Pion for GenMC", kTH2F, {binnedmultAxis, binnedptPiAxis});
     mcPionHist.add("h2PiGenMCAssocReco", "Pion for GenMC Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
 
-    // Rapidity smearing matrix for Pion
+    // Rapidity smearing matrix for Pion and rapidity in GenMC
     mcPionHist.add("h4PiRapiditySmearing", "Rapidity Smearing Matrix for Pion", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, yAxis, yAxis});
+
+    mcPionHist.add("h3PiRapidityGenMC", "Rapidity for Pion for GenMC", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
   }
 
   // Event selection and QA filling
@@ -1648,6 +1652,9 @@ struct Phik0shortanalysis {
         continue;
       if (!mcParticle1.isPhysicalPrimary())
         continue;
+
+      mcK0SHist.fill(HIST("h3K0SRapidityGenMC"), genmultiplicity, mcParticle1.pt(), mcParticle1.y());
+
       if (std::abs(mcParticle1.y()) > cfgYAcceptance)
         continue;
 
@@ -1728,6 +1735,9 @@ struct Phik0shortanalysis {
         continue;
       if (!mcParticle1.isPhysicalPrimary())
         continue;
+
+      mcPionHist.fill(HIST("h3PiRapidityGenMC"), genmultiplicity, mcParticle1.pt(), mcParticle1.y());
+
       if (std::abs(mcParticle1.y()) > cfgYAcceptance)
         continue;
 
