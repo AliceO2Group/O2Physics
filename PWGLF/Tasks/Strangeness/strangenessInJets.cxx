@@ -1520,10 +1520,9 @@ struct StrangenessInJets {
           if (!isPhysPrim) {
             double wSecLambdaInJet(1.0);
             double wSecLambdaInUe(1.0);
-
-            int idMother = posParticle.mother0Id();
+            int idMother = posParticle.mothersIds()[0];
             auto mother = mcParticles.iteratorAt(idMother);
-            int idGrandMother = mother.mother0Id();
+            int idGrandMother = mother.mothersIds()[0];
             auto grandMother = mcParticles.iteratorAt(idGrandMother);
             int ibinXiInJet = weightsXiInJet->GetXaxis()->FindBin(grandMother.pt());
             int ibinXiInUe = weightsXiInUe->GetXaxis()->FindBin(grandMother.pt());
