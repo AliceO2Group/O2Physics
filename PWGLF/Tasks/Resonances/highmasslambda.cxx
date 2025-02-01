@@ -201,6 +201,7 @@ struct highmasslambda {
     histos.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{1000, -0.5f, 0.5f}});
     histos.add("hDcaz", "Dcaz distribution", kTH1F, {{1000, -0.5f, 0.5f}});
+    histos.add("hNsigmaProtonITS", "NsigmaProton ITS distribution", kTH2F, {{100, -5.0f, 5.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonTPC", "NsigmaProton TPC distribution", kTH2F, {{100, -5.0f, 5.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonTOF", "NsigmaProton TOF distribution", kTH2F, {{1000, -50.0f, 50.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonTPCPre", "NsigmaProton TPC distribution Pre sel", kTH2F, {{1000, -50.0f, 50.0f}, {60, 0.0f, 6.0f}});
@@ -622,6 +623,7 @@ struct highmasslambda {
       if (!selectionTrack(track1)) {
         continue;
       }
+      histos.fill(HIST("hNsigmaProtonITS"), itsResponse.nSigmaITS<o2::track::PID::Proton>(track1), track1.pt());
       if (track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -nsigmaCutITS && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < nsigmaCutITS)) {
         continue;
       }
@@ -866,6 +868,7 @@ struct highmasslambda {
       if (!selectionTrack(track1)) {
         continue;
       }
+      histos.fill(HIST("hNsigmaProtonITS"), itsResponse.nSigmaITS<o2::track::PID::Proton>(track1), track1.pt());
       if (track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) > -nsigmaCutITS && itsResponse.nSigmaITS<o2::track::PID::Proton>(track1) < nsigmaCutITS)) {
         continue;
       }
