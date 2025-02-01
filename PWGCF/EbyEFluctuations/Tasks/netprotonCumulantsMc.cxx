@@ -816,6 +816,11 @@ struct NetprotonCumulantsMc {
   template <typename T>
   bool selectionPIDnew(const T& candidate)
   {
+    // electron rejection
+    if (candidate.tpcNSigmaEl() > -3.0f && candidate.tpcNSigmaEl() < 5.0f && std::abs(candidate.tpcNSigmaPi()) > 3.0f && std::abs(candidate.tpcNSigmaKa()) > 3.0f && std::abs(candidate.tpcNSigmaPr()) > 3.0f) {
+      return false;
+    }
+
     //! if pt < threshold
     if (candidate.pt() > 0.2f && candidate.pt() <= cfgCutPtUpperTPC) {
       if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaPi()) > cfgnSigmaCutTPC && std::abs(candidate.tpcNSigmaKa()) > cfgnSigmaCutTPC) {
@@ -1068,6 +1073,9 @@ struct NetprotonCumulantsMc {
     for (const auto& track : inputTracks) {
       if (!track.isPVContributor()) //! track check as used in data
       {
+        continue;
+      }
+      if ((track.pt() < cfgCutPtLower) || (track.pt() > 5.0f) || (std::abs(track.eta()) > 0.8f)) {
         continue;
       }
 
