@@ -12,6 +12,11 @@
 /// \brief write relevant information for dalitz ee analysis to an AO2D.root file. This file is then the only necessary input to perform pcm analysis.
 /// \author daiki.sekihata@cern.ch
 
+#include <string>
+#include <map>
+#include <utility>
+#include <vector>
+
 #include "Math/Vector4D.h"
 #include "Math/SMatrix.h"
 
@@ -212,7 +217,7 @@ struct skimmerPrimaryMuon {
       dcaXYinSigma = 999.f;
     } else {
       float chi2 = (dcaX * dcaX * cYY + dcaY * dcaY * cXX - 2. * dcaX * dcaY * cXY) / det;
-      dcaXYinSigma = std::sqrt(std::abs(chi2) / 2.); // in sigma
+      dcaXYinSigma = std::sqrt(std::fabs(chi2) / 2.); // in sigma
     }
 
     fRegistry.fill(HIST("Track/hMuonType"), track.trackType());

@@ -1106,16 +1106,16 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_y_cosThetaCS_phiCS", "", 4, varsrapCS, binsy, xminy, xmaxy, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-vp")) {
-        int varspTCS[3] = {VarManager::kMass, VarManager::kPt, VarManager::kPhiVP};
-        int varsrapCS[3] = {VarManager::kMass, VarManager::kRap, VarManager::kPhiVP};
-        int binspT[3] = {100, 20, 24};
-        int binsy[3] = {100, 10, 24};
-        double xminpT[3] = {1., 0., 0.};
-        double xmaxpT[3] = {5., 20., +3.14};
-        double xminy[3] = {1., 2.5, 0.};
-        double xmaxy[3] = {5., 4.0, +3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_phiVP", "", 3, varspTCS, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_y_phiVP", "", 3, varsrapCS, binsy, xminy, xmaxy, 0, -1, kFALSE);
+        int varspTVP[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosPhiVP, VarManager::kPhiVP};
+        int varsrapVP[4] = {VarManager::kMass, VarManager::kRap, VarManager::kCosPhiVP, VarManager::kPhiVP};
+        int binspT[4] = {100, 20, 24, 24};
+        int binsy[4] = {100, 10, 24, 24};
+        double xminpT[4] = {1., 0., -1., 0.};
+        double xmaxpT[4] = {5., 20., 1., +3.14};
+        double xminy[4] = {1., 2.5, -1., 0.};
+        double xmaxy[4] = {5., 4.0, 1., +3.14};
+        hm->AddHistogram(histClass, "Mass_Pt_phiVP", "", 4, varspTVP, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_y_phiVP", "", 4, varsrapVP, binsy, xminy, xmaxy, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-rap")) {
         int vars[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kRap};
@@ -1153,18 +1153,18 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaCS_lowmass", "", 5, varsCSpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-vp-pbpb")) {
-        int varsHEpbpb[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kPhiVP};
-        int binspT[4] = {150, 30, 10, 24};
-        double xminpT[4] = {2., 0., 0, 0.};
-        double xmaxpT[4] = {5., 3., 100, 3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_Cent_phiVP", "", 4, varsHEpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+        int varsVPpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosPhiVP, VarManager::kPhiVP};
+        int binspT[5] = {150, 30, 10, 24, 24};
+        double xminpT[5] = {2., 0., 0, -1., 0.};
+        double xmaxpT[5] = {5., 3., 100, 1., 3.14};
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_phiVP", "", 5, varsVPpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-lowmass-vp-pbpb")) {
-        int varsHEpbpb[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kPhiVP};
-        int binspT[4] = {200, 30, 10, 24};
-        double xminpT[4] = {0.2, 0., 0, 0.};
-        double xmaxpT[4] = {1.2, 3., 100, 3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_Cent_phiVP_lowmass", "", 4, varsHEpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+        int varsVPpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosPhiVP, VarManager::kPhiVP};
+        int binspT[5] = {200, 30, 10, 24, 24};
+        double xminpT[5] = {0.2, 0., 0, -1., 0.};
+        double xmaxpT[5] = {1.2, 3., 100, 1., 3.14};
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_phiVP_lowmass", "", 5, varsVPpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-rap-polarization-he-pbpb")) {
         int varsHEpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaHE, VarManager::kRap};
@@ -1247,13 +1247,13 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
       if (subGroupStr.Contains("flow-dimuon")) {
         int varV2[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kU2Q2, VarManager::kCos2DeltaPhi};
-        int varV3[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kU3Q3, VarManager::kCos3DeltaPhi};
+        // int varV3[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kU3Q3, VarManager::kCos3DeltaPhi}; // removed temporarily
 
         int bins[6] = {250, 60, 6, 18, 200, 40};
         double minBins[6] = {0.0, 0.0, 2.5, 0.0, -10.0, -2.0};
         double maxBins[6] = {5.0, 30.0, 4.0, 90.0, 10.0, 2.0};
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V2", "", 6, varV2, bins, minBins, maxBins, 0, -1, kTRUE);
-        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V3", "", 6, varV3, bins, minBins, maxBins, 0, -1, kTRUE);
+        // hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V3", "", 6, varV3, bins, minBins, maxBins, 0, -1, kTRUE); // removed temporarily
       }
       if (subGroupStr.Contains("flow-ccdb")) {
         hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V2SPwR", "Mass_Pt_CentFT0C_V2SPwR", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV2SP, VarManager::kWV2SP);
@@ -1290,13 +1290,13 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
       if (subGroupStr.Contains("res-flow-dimuon")) {
         int varV2[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kR2SP_AB, VarManager::kR2EP_AB};
-        int varV3[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kR3SP, VarManager::kR3EP};
+        // int varV3[6] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kR3SP, VarManager::kR3EP}; // removed temporarily
 
         int bins[6] = {125, 60, 6, 18, 200, 40};
         double minBins[6] = {0.0, 0.0, 2.5, 0.0, -10.0, -2.0};
         double maxBins[6] = {5.0, 30.0, 4.0, 90.0, 10.0, 2.0};
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_R2", "", 6, varV2, bins, minBins, maxBins, 0, -1, kTRUE);
-        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_R3", "", 6, varV3, bins, minBins, maxBins, 0, -1, kTRUE);
+        // hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_R3", "", 6, varV3, bins, minBins, maxBins, 0, -1, kTRUE); // removed temporarily
       }
       if (subGroupStr.Contains("z-boson")) {
         hm->AddHistogram(histClass, "MassZboson", "", false, 240, 20.0, 140.0, VarManager::kMass);

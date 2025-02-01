@@ -672,8 +672,9 @@ void DptDptFilter::processGeneratorLevel(aod::McCollision const& mccollision,
       if (tmpcollision.mcCollisionId() == mccollision.globalIndex()) {
         typename AllCollisions::iterator const& collision = allcollisions.iteratorAt(tmpcollision.globalIndex());
         if (isEventSelected(collision, defaultcent)) {
-          fhTrueVertexZAA->Fill((mccollision.posZ()));
-          processGenerated(mccollision, mcparticles, defaultcent);
+          if (processGenerated(mccollision, mcparticles, defaultcent)) {
+            fhTrueVertexZAA->Fill((mccollision.posZ()));
+          }
           processed = true;
           break; /* TODO: only processing the first reconstructed accepted collision */
         }
@@ -800,6 +801,8 @@ struct DptDptFilterTracks {
   Service<o2::framework::O2DatabasePDG> fPDG;
   PIDSpeciesSelection pidselector;
   bool checkAmbiguousTracks = false;
+
+  std::vector<bool> particleReconstructed;
 
   void init(InitContext& initContext)
   {
@@ -1201,6 +1204,26 @@ struct DptDptFilterTracks {
          tracks.size());
   }
 
+  /* filter the tracks but not creating the filtered tracks table */
+  /* the aim is to fill the structure of the generated particles  */
+  /* that were reconstructed                                      */
+  template <typename passedtracks>
+  void filterTracksSpecial(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const&, passedtracks const& tracks)
+  {
+    /* do check for special adjustments */
+    getCCDBInformation();
+
+    for (auto const& track : tracks) {
+      int8_t pid = -1;
+      if (track.has_collision() && (track.template collision_as<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>()).collisionaccepted()) {
+        pid = selectTrack<kNODEBUG, soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>(track);
+        if (!(pid < 0)) {
+          particleReconstructed[track.mcParticleId()] = true;
+        }
+      }
+    }
+  }
+
   /* TODO: for the time being the full derived data is still not supported  */
   /* for doing that we need to get the index of the associated mc collision */
   void filterParticles(soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo> const& gencollisions, aod::McParticles const& particles)
@@ -1230,6 +1253,59 @@ struct DptDptFilterTracks {
           pid = selectParticle(particle, mccollision);
           if (!(pid < 0)) {
             acceptedparticles++;
+          }
+        }
+      } else {
+        if ((particle.mcCollisionId() == 0) && traceCollId0) {
+          LOGF(DPTDPTFILTERLOGTRACKS, "Particle %d with fractional charge or equal to zero", particle.globalIndex());
+        }
+      }
+      if (!fullDerivedData) {
+        gentracksinfo(pid);
+      }
+    }
+    LOGF(DPTDPTFILTERLOGCOLLISIONS,
+         "Processed %d accepted generated collisions out of a total of %d with  %d accepted particles out of a "
+         "total of %d",
+         acceptedcollisions,
+         gencollisions.size(),
+         acceptedparticles,
+         particles.size());
+  }
+
+  /* we produce the derived particle table incoporating only the particles that were accepted but not were reconstructed */
+  void filterParticlesSpecial(soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo> const& gencollisions, aod::McParticles const& particles)
+  {
+    using namespace dptdptfilter;
+
+    int acceptedparticles = 0;
+    int acceptedcollisions = 0;
+    if (!fullDerivedData) {
+      gentracksinfo.reserve(particles.size());
+    }
+
+    for (auto const& gencoll : gencollisions) {
+      if (gencoll.collisionaccepted()) {
+        acceptedcollisions++;
+      }
+    }
+
+    for (auto const& particle : particles) {
+      int8_t pid = -1;
+      auto pdgpart = fPDG->GetParticle(particle.pdgCode());
+      float charge = pdgpart != nullptr ? getCharge(pdgpart->Charge()) : 0;
+
+      if (charge != 0) {
+        if (particle.has_mcCollision() && (particle.template mcCollision_as<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>()).collisionaccepted()) {
+          auto mccollision = particle.template mcCollision_as<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>();
+          pid = selectParticle(particle, mccollision);
+          if (!(pid < 0)) {
+            if (particleReconstructed[particle.globalIndex()]) {
+              /* the particle was reconstructed and accepted, reject it */
+              pid = -1;
+            } else {
+              acceptedparticles++;
+            }
           }
         }
       } else {
@@ -1339,6 +1415,16 @@ struct DptDptFilterTracks {
     filterParticles(gencollisions, particles);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterGenerated, "Generated particles filtering", true)
+
+  void filterGeneratedNotReconstructedWithPID(soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo> const& gencollisions, aod::McParticles const& particles,
+                                              soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevel const& tracks)
+  {
+    particleReconstructed.resize(particles.size());
+    filterTracksSpecial(collisions, tracks);
+    filterParticlesSpecial(gencollisions, particles);
+    particleReconstructed.clear();
+  }
+  PROCESS_SWITCH(DptDptFilterTracks, filterGeneratedNotReconstructedWithPID, "Generated particles filtering", false)
 };
 
 template <StrongDebugging outdebug, typename TrackObject>
