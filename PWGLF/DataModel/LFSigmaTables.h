@@ -123,7 +123,8 @@ DECLARE_SOA_COLUMN(LambdaPt, lambdaPt, float);
 DECLARE_SOA_COLUMN(LambdaMass, lambdaMass, float);
 DECLARE_SOA_COLUMN(AntiLambdaMass, antilambdaMass, float);
 DECLARE_SOA_COLUMN(LambdaQt, lambdaQt, float);
-DECLARE_SOA_COLUMN(LambdaAlpha, lambdaAlpha, float);
+DECLARE_SOA_COLUMN(LambdaAlpha, lambdaAlpha, float); 
+DECLARE_SOA_COLUMN(LambdaLifeTime, lambdaLifeTime, float);
 DECLARE_SOA_COLUMN(LambdaRadius, lambdaRadius, float);
 DECLARE_SOA_COLUMN(LambdaCosPA, lambdaCosPA, float);
 DECLARE_SOA_COLUMN(LambdaDCADau, lambdaDCADau, float);
@@ -166,6 +167,7 @@ DECLARE_SOA_TABLE(SigmaLambdaExtras, "AOD", "SIGMA0LAMBDA",
                   sigmaLambdaExtra::AntiLambdaMass,
                   sigmaLambdaExtra::LambdaQt,
                   sigmaLambdaExtra::LambdaAlpha,
+                  sigmaLambdaExtra::LambdaLifeTime,
                   sigmaLambdaExtra::LambdaRadius,
                   sigmaLambdaExtra::LambdaCosPA,
                   sigmaLambdaExtra::LambdaDCADau,

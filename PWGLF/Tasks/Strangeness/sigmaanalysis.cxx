@@ -85,6 +85,7 @@ struct sigmaanalysis {
   Configurable<float> LambdaMinAlpha{"LambdaMinAlpha", 0.25, "Min lambda alpha absolute value (AP plot)"};
   Configurable<float> LambdaMaxAlpha{"LambdaMaxAlpha", 1.0, "Max lambda alpha absolute value (AP plot)"};
   Configurable<float> LambdaMinv0cospa{"LambdaMinv0cospa", 0.95, "Min V0 CosPA"};
+  Configurable<float> LambdaMaxLifeTime{"LambdaMaxLifeTime", 30, "Max lifetime"};
   Configurable<float> LambdaWindow{"LambdaWindow", 0.015, "Mass window around expected (in GeV/c2)"};
   Configurable<float> LambdaMaxRap{"LambdaMaxRap", 0.8, "Max lambda rapidity"};
   Configurable<float> LambdaMaxDauEta{"LambdaMaxDauEta", 0.8, "Max pseudorapidity of daughter tracks"};
@@ -136,12 +137,13 @@ struct sigmaanalysis {
   ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
   ConfigurableAxis axisAPQt{"axisAPQt", {220, 0.0f, 0.5f}, "V0 AP alpha"};
 
-  // Track quality and PID axes
+  // Track quality, PID and other axes
   ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
   ConfigurableAxis axisNCls{"axisNCls", {8, -0.5, 7.5}, "NCls"};
   ConfigurableAxis axisChi2PerNcl{"axisChi2PerNcl", {80, -40, 40}, "Chi2 Per Ncl"};
   ConfigurableAxis axisTPCNSigma{"axisTPCNSigma", {120, -30, 30}, "TPC NSigma"};
   ConfigurableAxis axisTOFNSigma{"axisTOFNSigma", {120, -30, 30}, "TOF NSigma"};
+  ConfigurableAxis axisLifetime{"axisLifetime", {200, 0, 200}, "Chi2 Per Ncl"};
 
   // topological variable QA axes
   ConfigurableAxis axisRadius{"axisRadius", {240, 0.0f, 120.0f}, "V0 radius (cm)"};
@@ -149,7 +151,7 @@ struct sigmaanalysis {
   ConfigurableAxis axisDCAdau{"axisDCAdau", {50, 0.0f, 5.0f}, "DCA (cm)"};
   ConfigurableAxis axisCosPA{"axisCosPA", {200, 0.5f, 1.0f}, "Cosine of pointing angle"};
   ConfigurableAxis axisPsiPair{"axisPsiPair", {500, -5.0f, 5.0f}, "Psipair for photons"};
-  ConfigurableAxis axisCandSel{"axisCandSel", {29, -0.5f, +28.5f}, "Candidate Selection"};
+  ConfigurableAxis axisCandSel{"axisCandSel", {30, -0.5f, +29.5f}, "Candidate Selection"};
 
   // ML
   ConfigurableAxis MLProb{"MLOutput", {100, 0.0f, 1.0f}, ""};
@@ -189,8 +191,9 @@ struct sigmaanalysis {
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(24, "Lambda Y/Eta Cuts");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(25, "Lambda TPCCrossedRows Cut");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(26, "Lambda ITSNCls");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(27, "Sigma Y Cut");
-    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(28, "Lambda/ALambda PID Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(27, "Lambda Lifetime");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(28, "Sigma Y Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(29, "Lambda/ALambda PID Cut");
 
     // Photon Selection QA histos
     histos.add("GeneralQA/hPhotonMass", "hPhotonMass", kTH1F, {axisPhotonMass});
@@ -236,6 +239,7 @@ struct sigmaanalysis {
     histos.add("GeneralQA/hLambdaNegITSCls", "hLambdaNegITSCls", kTH1F, {axisNCls});
     histos.add("GeneralQA/hLambdaPosChi2PerNc", "hLambdaPosChi2PerNc", kTH1F, {axisChi2PerNcl});
     histos.add("GeneralQA/hLambdaNegChi2PerNc", "hLambdaNegChi2PerNc", kTH1F, {axisChi2PerNcl});
+    histos.add("GeneralQA/hLambdaLifeTime", "hLambdaLifeTime", kTH1F, {axisLifetime});
     histos.add("GeneralQA/hSigmaY", "hSigmaY", kTH1F, {axisRapidity});
     histos.add("GeneralQA/hSigmaOPAngle", "hSigmaOPAngle", kTH1F, {{140, 0.0f, +7.0f}});
     histos.add("GeneralQA/h2dTPCvsTOFNSigma_LambdaPr", "h2dTPCvsTOFNSigma_LambdaPr", {HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
@@ -485,12 +489,16 @@ struct sigmaanalysis {
         return false;
       if (cand.lambdaNegITSCls() < LambdaMinITSclusters && (!LambdaRejectNegITSafterburner || negIsFromAfterburner))
         return false;      
-      histos.fill(HIST("GeneralQA/hSigmaY"), cand.sigmaRapidity());
+      histos.fill(HIST("GeneralQA/hLambdaLifeTime"), cand.lambdaLifeTime());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 26.);
+      if (cand.lambdaLifeTime() > LambdaMaxLifeTime)
+        return false;
+      histos.fill(HIST("GeneralQA/hSigmaY"), cand.sigmaRapidity());
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 27.);
       if (TMath::Abs(cand.sigmaRapidity()) > SigmaMaxRap)
         return false;
       histos.fill(HIST("GeneralQA/hSigmaOPAngle"), cand.sigmaOPAngle());
-      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 27.);
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 28.);
     }
     return true;
   }
@@ -688,7 +696,7 @@ struct sigmaanalysis {
         histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.photonAlpha(), sigma.photonQt());
         histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
         histos.fill(HIST("GeneralQA/hLambdaMassSelected"), sigma.lambdaMass());
-        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 28.);
+        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 29.);
         histos.fill(HIST("Sigma0/hMassSigma0"), sigma.sigmaMass());
         histos.fill(HIST("Sigma0/hPtSigma0"), sigma.sigmapT());
         histos.fill(HIST("Sigma0/hRapiditySigma0"), sigma.sigmaRapidity());
@@ -705,7 +713,7 @@ struct sigmaanalysis {
         histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.photonAlpha(), sigma.photonQt());
         histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
         histos.fill(HIST("GeneralQA/hAntiLambdaMassSelected"), sigma.antilambdaMass());
-        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 28.);
+        histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 29.);
         histos.fill(HIST("AntiSigma0/hMassAntiSigma0"), sigma.sigmaMass());
         histos.fill(HIST("AntiSigma0/hPtAntiSigma0"), sigma.sigmapT());
         histos.fill(HIST("AntiSigma0/hRapidityAntiSigma0"), sigma.sigmaRapidity());

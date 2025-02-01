@@ -682,6 +682,7 @@ struct sigma0builder {
     float fAntiLambdaMass = lambda.mAntiLambda();
     float fLambdaQt = lambda.qtarm();
     float fLambdaAlpha = lambda.alpha();
+    float fLambdaLifeTime = lambda.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * o2::constants::physics::MassLambda0;
     float fLambdaRadius = lambda.v0radius();
     float fLambdaCosPA = lambda.v0cosPA();
     float fLambdaDCADau = lambda.dcaV0daughters();
@@ -741,7 +742,7 @@ struct sigma0builder {
                       fPhotonPosITSCls, fPhotonNegITSCls, fPhotonPosITSChi2PerNcl, fPhotonNegITSChi2PerNcl,
                       fPhotonV0Type, GammaBDTScore);
 
-    sigmaLambdaExtras(fLambdaPt, fLambdaMass, fAntiLambdaMass, fLambdaQt, fLambdaAlpha,
+    sigmaLambdaExtras(fLambdaPt, fLambdaMass, fAntiLambdaMass, fLambdaQt, fLambdaAlpha, fLambdaLifeTime, 
                       fLambdaRadius, fLambdaCosPA, fLambdaDCADau, fLambdaDCANegPV,
                       fLambdaDCAPosPV, fLambdaEta, fLambdaY, fLambdaPhi, fLambdaPosPrTPCNSigma,
                       fLambdaPosPiTPCNSigma, fLambdaNegPrTPCNSigma, fLambdaNegPiTPCNSigma,
