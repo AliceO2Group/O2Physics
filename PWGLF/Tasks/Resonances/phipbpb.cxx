@@ -844,7 +844,7 @@ struct phipbpb {
     if (evPhi < 0)
       evPhi += 2. * TMath::Pi();
 
-    long nCh = 0;
+    int nCh = 0;
 
     if (centclass > 0 && centclass < 80) {
       // event within range
