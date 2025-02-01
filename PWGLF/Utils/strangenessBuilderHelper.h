@@ -183,7 +183,7 @@ class strangenessBuilderHelper
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     v0.positiveDCAxy = dcaInfo[0];
 
-    if(v0.positiveDCAxy < v0selections.dcanegtopv){ 
+    if(std::fabs(v0.positiveDCAxy) < v0selections.dcanegtopv){ 
       return false;
     }
 
@@ -191,7 +191,7 @@ class strangenessBuilderHelper
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     v0.negativeDCAxy = dcaInfo[0];
 
-    if(v0.negativeDCAxy < v0selections.dcanegtopv){ 
+    if(std::fabs(v0.negativeDCAxy) < v0selections.dcanegtopv){ 
       return false;
     }
 
@@ -358,7 +358,7 @@ class strangenessBuilderHelper
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     cascade.bachelorDCAxy = dcaInfo[0];
 
-    if(cascade.bachelorDCAxy < cascadeselections.dcabachtopv){ 
+    if(std::fabs(cascade.bachelorDCAxy) < cascadeselections.dcabachtopv){ 
       return false;
     }
 
@@ -557,7 +557,7 @@ class strangenessBuilderHelper
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackParCovForDCA, 2.f, fitter.getMatCorrType(), &dcaInfo);
     cascade.negativeDCAxy = dcaInfo[0];
 
-    if(cascade.bachelorDCAxy < cascadeselections.dcabachtopv){ 
+    if(std::fabs(cascade.bachelorDCAxy) < cascadeselections.dcabachtopv){ 
       return false;
     }
 
