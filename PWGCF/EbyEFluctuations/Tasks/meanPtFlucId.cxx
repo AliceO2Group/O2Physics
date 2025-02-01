@@ -602,11 +602,6 @@ struct MeanPtFlucId {
     double centFT0C = 0;
 
     for (const auto& track : tracks) {
-      //////multiplicity in |eta| < 0.8 range////////
-      // if(std::abs(track.eta()) < 0.8)
-      //   nTPC++;
-      /////////////////////////////////////
-
       hist.fill(HIST("QA/before/h_Eta"), track.eta());
       hist.fill(HIST("QA/before/h_Phi"), track.phi());
       hist.fill(HIST("QA/before/h_Pt"), track.pt());
