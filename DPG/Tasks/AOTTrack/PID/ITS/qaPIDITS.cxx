@@ -8,12 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
 ///
 /// \file   qaPIDITS.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Implementation for QA tasks of the ITS PID quantities
 ///
+
+#include <string>
+#include <vector>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -43,6 +45,9 @@ static const std::vector<std::string> parameterNames{"enable"};
 static const int defaultParameters[9][nParameters]{{0}, {0}, {1}, {1}, {1}, {0}, {0}, {0}, {0}};
 static const float defaultPIDSelection[9][nParameters]{{-1.f}, {-1.f}, {-1.f}, {-1.f}, {-1.f}, {-1.f}, {-1.f}, {-1.f}, {-1.f}};
 static constexpr int Np = 9;
+bool enableParticle[Np] = {false, false, false,
+                           false, false, false,
+                           false, false, false};
 std::array<std::shared_ptr<TH2>, Np> hNsigmaPos;
 std::array<std::shared_ptr<TH2>, Np> hNsigmaNeg;
 
@@ -137,9 +142,9 @@ struct itsPidQa {
   static constexpr const char* pN[Np] = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  Configurable<LabeledArray<int>> enabledTables{"enabledTables",
-                                                {defaultParameters[0], 9, nParameters, tableNames, parameterNames},
-                                                "Produce QA for this species: 0 - no, 1 - yes"};
+  Configurable<LabeledArray<int>> enabledParticle{"enabledParticle",
+                                                  {defaultParameters[0], 9, nParameters, tableNames, parameterNames},
+                                                  "Produce QA for this species: 0 - no, 1 - yes"};
   Configurable<LabeledArray<float>> tofSelection{"tofSelection",
                                                  {defaultPIDSelection[0], 9, nParameters, tableNames, parameterNames},
                                                  "Selection on the TOF nsigma"};
@@ -157,13 +162,27 @@ struct itsPidQa {
   ConfigurableAxis deltaBins{"deltaBins", {200, -1000.f, 1000.f}, "Binning in Delta (dEdx - expected dEdx)"};
   ConfigurableAxis expSigmaBins{"expSigmaBins", {200, 0.f, 200.f}, "Binning in expected Sigma"};
   ConfigurableAxis nSigmaBins{"nSigmaBins", {401, -10.025f, 10.025f}, "Binning in NSigma"};
-  ConfigurableAxis dEdxBins{"dEdxBins", {5000, 0.f, 5000.f}, "Binning in dE/dx"};
+  ConfigurableAxis avClsBins{"avClsBins", {200, 0, 20}, "Binning in average cluster size"};
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
   Configurable<bool> enableDeDxPlot{"enableDeDxPlot", true, "Enables the dEdx plot (reduces memory footprint if off)"};
   Configurable<int16_t> minTPCNcls{"minTPCNcls", 0, "Minimum number or TPC Clusters for tracks"};
   ConfigurableAxis tpcNclsBins{"tpcNclsBins", {16, 0, 160}, "Binning in number of clusters in TPC"};
   Configurable<bool> fillTHnSparses{"fillTHnSparses", false, "Flag to fill multidimensional histograms for nsigma vs pt, eta, Ncls"};
+
+  template <typename TrackType>
+  float averageClusterSizeTrk(const TrackType& track)
+  {
+    return o2::aod::ITSResponse::averageClusterSize(track.itsClusterSizes());
+  }
+
+  float averageClusterSizePerCoslInv(uint32_t itsClusterSizes, float eta) { return o2::aod::ITSResponse::averageClusterSize(itsClusterSizes) * std::cosh(eta); }
+
+  template <typename TrackType>
+  float averageClusterSizePerCoslInv(const TrackType& track)
+  {
+    return averageClusterSizePerCoslInv(track.itsClusterSizes(), track.eta());
+  }
 
   void init(o2::framework::InitContext&)
   {
@@ -177,8 +196,9 @@ struct itsPidQa {
       ptAxis.makeLogarithmic();
       pAxis.makeLogarithmic();
     }
-    const AxisSpec dedxAxis{dEdxBins, "d#it{E}/d#it{x} Arb. units"};
     const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
+    const AxisSpec avClsAxis{avClsBins, "<ITS Cls. Size>"};
+    const AxisSpec avClsEffAxis{avClsBins, "<ITS Cls. Size> / cosh(#eta)"};
 
     // Event properties
     auto h = histos.add<TH1>("event/evsel", "", kTH1D, {{10, 0.5, 10.5, "Ev. Sel."}});
@@ -214,16 +234,21 @@ struct itsPidQa {
     histos.add("event/p", "", kTH1D, {pAxis});
 
     for (int id = 0; id < 9; id++) {
-      const int f = enabledTables->get(tableNames[id].c_str(), "enable");
+      const int f = enabledParticle->get(tableNames[id].c_str(), "enable");
       if (f != 1) {
         continue;
       }
       // NSigma
       const char* axisTitle = Form("N_{#sigma}^{ITS}(%s)", pT[id]);
       const AxisSpec nSigmaAxis{nSigmaBins, axisTitle};
+      enableParticle[id] = true;
       hNsigmaPos[id] = histos.add<TH2>(Form("nsigmaPos/%s", pN[id]), axisTitle, kTH2F, {pAxis, nSigmaAxis});
       hNsigmaNeg[id] = histos.add<TH2>(Form("nsigmaNeg/%s", pN[id]), axisTitle, kTH2F, {pAxis, nSigmaAxis});
     }
+    histos.add("event/averageClusterSize", "", kTH2F, {ptAxis, avClsAxis});
+    histos.add("event/averageClusterSizePerCoslInv", "", kTH2F, {ptAxis, avClsEffAxis});
+    histos.add("event/SelectedAverageClusterSize", "", kTH2F, {ptAxis, avClsAxis});
+    histos.add("event/SelectedAverageClusterSizePerCoslInv", "", kTH2F, {ptAxis, avClsEffAxis});
     LOG(info) << "QA PID ITS histograms:";
     histos.print();
   }
@@ -259,7 +284,9 @@ struct itsPidQa {
     histos.fill(HIST("event/evsel"), 3);
     histos.fill(HIST("event/vertexz"), collision.posZ());
 
+    int nTracks = -1;
     for (const auto& track : tracksWithPid) {
+      nTracks++;
       histos.fill(HIST("event/trackselection"), 1.f);
       if (!track.isGlobalTrack()) { // Skipping non global tracks
         continue;
@@ -285,7 +312,9 @@ struct itsPidQa {
       histos.fill(HIST("event/length"), track.length());
       histos.fill(HIST("event/pt"), track.pt());
       histos.fill(HIST("event/p"), track.p());
-
+      const auto& t = tracks.iteratorAt(nTracks);
+      histos.fill(HIST("event/averageClusterSize"), track.pt(), averageClusterSizeTrk(track));
+      histos.fill(HIST("event/averageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(track));
       bool discard = false;
       for (int id = 0; id < 9; id++) {
         if (std::abs(nsigmaTPC(track, id)) > tpcSelValues[id]) {
@@ -298,17 +327,23 @@ struct itsPidQa {
       if (discard) {
         continue;
       }
+      histos.fill(HIST("event/SelectedAverageClusterSize"), track.pt(), averageClusterSizeTrk(track));
+      histos.fill(HIST("event/SelectedAverageClusterSizePerCoslInv"), track.pt(), averageClusterSizePerCoslInv(track));
+
       for (o2::track::PID::ID id = 0; id <= o2::track::PID::Last; id++) {
+        if (!enableParticle[id]) {
+          continue;
+        }
         if (applyRapidityCut) {
           if (std::abs(track.rapidity(PID::getMass(id))) > 0.5) {
             continue;
           }
         }
         const float nsigma = nsigmaITS(track, id);
-        if (track.sign() > 0) {
-          hNsigmaPos[id]->Fill(track.p(), nsigma);
+        if (t.sign() > 0) {
+          hNsigmaPos[id]->Fill(t.p(), nsigma);
         } else {
-          hNsigmaNeg[id]->Fill(track.p(), nsigma);
+          hNsigmaNeg[id]->Fill(t.p(), nsigma);
         }
       }
     }

@@ -627,6 +627,7 @@ class VarManager : public TObject
     kCosThetaCS,
     kPhiHE,
     kPhiCS,
+    kCosPhiVP,
     kPhiVP,
     kDeltaPhiPair2,
     kDeltaEtaPair2,
@@ -1510,6 +1511,7 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultNTracksITSTPC] = event.multNTracksITSTPC();
     values[kMultAllTracksTPCOnly] = event.multAllTracksTPCOnly();
     values[kMultAllTracksITSTPC] = event.multAllTracksITSTPC();
+    values[kTrackOccupancyInTimeRange] = event.trackOccupancyInTimeRange();
     if constexpr ((fillMap & ReducedEventMultExtra) > 0) {
       values[kNTPCcontribLongA] = event.nTPCoccupContribLongA();
       values[kNTPCcontribLongC] = event.nTPCoccupContribLongC();
@@ -4414,6 +4416,7 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   auto vDimu = (t1.sign() > 0 ? ROOT::Math::XYZVectorF(v1_vp.Px(), v1_vp.Py(), v1_vp.Pz()).Cross(ROOT::Math::XYZVectorF(v2_vp.Px(), v2_vp.Py(), v2_vp.Pz()))
                               : ROOT::Math::XYZVectorF(v2_vp.Px(), v2_vp.Py(), v2_vp.Pz()).Cross(ROOT::Math::XYZVectorF(v1_vp.Px(), v1_vp.Py(), v1_vp.Pz())));
   auto vRef = p12_vp.Cross(p12_vp_projXZ);
+  values[kCosPhiVP] = vDimu.Dot(vRef) / (vRef.R() * vDimu.R());
   values[kPhiVP] = std::acos(vDimu.Dot(vRef) / (vRef.R() * vDimu.R()));
 }
 

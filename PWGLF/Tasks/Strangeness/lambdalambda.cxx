@@ -125,11 +125,11 @@ struct lambdalambda {
   Configurable<bool> cfgEffCor{"cfgEffCor", false, "flag to apply efficiency correction"};
   Configurable<std::string> cfgEffCorPath{"cfgEffCorPath", "", "path for pseudo efficiency correction"};
 
-  Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
+  Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 10, "Number of mixed events per event"};
 
   ConfigurableAxis massAxis{"massAxis", {110, 2.22, 2.33}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "Transverse momentum bins"};
-  ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100}, "Centrality interval"};
+  ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0, 10, 20, 50, 100}, "Centrality interval"};
   ConfigurableAxis vertexAxis{"vertexAxis", {10, -10, 10}, "vertex axis for mixing"};
 
   ConfigurableAxis RadiusAxis{"RadiusAxis", {100, 0, 5}, "radius of v0v0"};
@@ -483,6 +483,9 @@ struct lambdalambda {
         continue;
       if (!eventSelected(c2))
         continue;
+      if (c1.bcId() == c2.bcId())
+        continue;
+
       FillHistograms(c1, c2, tracks1, tracks2);
     }
   }

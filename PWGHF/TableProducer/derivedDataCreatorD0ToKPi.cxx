@@ -126,8 +126,8 @@ struct HfDerivedDataCreatorD0ToKPi {
 
   void init(InitContext const&)
   {
-    std::array<bool, 16> doprocess{doprocessDataWithDCAFitterN, doprocessDataWithKFParticle, doprocessMcWithDCAFitterSig, doprocessMcWithDCAFitterBkg, doprocessMcWithDCAFitterAll, doprocessMcWithKFParticleSig, doprocessMcWithKFParticleBkg, doprocessMcWithKFParticleAll,
-                                   doprocessDataWithDCAFitterNMl, doprocessDataWithKFParticleMl, doprocessMcWithDCAFitterMlSig, doprocessMcWithDCAFitterMlBkg, doprocessMcWithDCAFitterMlAll, doprocessMcWithKFParticleMlSig, doprocessMcWithKFParticleMlBkg, doprocessMcWithKFParticleMlAll};
+    std::array<bool, 17> doprocess{doprocessDataWithDCAFitterN, doprocessDataWithKFParticle, doprocessMcWithDCAFitterSig, doprocessMcWithDCAFitterBkg, doprocessMcWithDCAFitterAll, doprocessMcWithKFParticleSig, doprocessMcWithKFParticleBkg, doprocessMcWithKFParticleAll,
+                                   doprocessDataWithDCAFitterNMl, doprocessDataWithKFParticleMl, doprocessMcWithDCAFitterMlSig, doprocessMcWithDCAFitterMlBkg, doprocessMcWithDCAFitterMlAll, doprocessMcWithKFParticleMlSig, doprocessMcWithKFParticleMlBkg, doprocessMcWithKFParticleMlAll, doprocessMcGenOnly};
     if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }

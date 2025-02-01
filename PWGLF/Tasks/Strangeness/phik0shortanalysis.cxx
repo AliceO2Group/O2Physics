@@ -141,6 +141,9 @@ struct Phik0shortanalysis {
   // Configurable for RecMC
   Configurable<bool> cfgiskNoITSROFrameBorder{"cfgiskNoITSROFrameBorder", false, "kNoITSROFrameBorder request on RecMC collisions"};
 
+  // Configurable for MC closure
+  Configurable<bool> cfgisGenMCForClosure{"cfgisGenMCForClosure", false, "isGenMCForClosure"};
+
   // Constants
   double massKa = o2::constants::physics::MassKPlus;
   double massPi = o2::constants::physics::MassPiPlus;
@@ -213,6 +216,7 @@ struct Phik0shortanalysis {
     // Event information
     dataEventHist.add("hVertexZ", "hVertexZ", kTH1F, {vertexZAxis});
     dataEventHist.add("hMultiplicityPercent", "Multiplicity Percentile", kTH1F, {multAxis});
+    dataEventHist.add("hMultiplicityPercentWithPhi", "Multiplicity Percentile in Events with a Phi Candidate", kTH1F, {multAxis});
 
     // Number of MC events per selection for Rec and Gen
     mcEventHist.add("hRecMCEventSelection", "hRecMCEventSelection", kTH1F, {{8, -0.5f, 7.5f}});
@@ -280,6 +284,9 @@ struct Phik0shortanalysis {
     dataPhiK0SHist.add("h4PhiK0SSEFCut", "2D Invariant mass of Phi and K0Short for Same Event Deltay < FirstCut", kTHnSparseF, {binnedmultAxis, binnedptK0SAxis, massK0SAxis, sigmassPhiAxis});
     dataPhiK0SHist.add("h4PhiK0SSESCut", "2D Invariant mass of Phi and K0Short for Same Event Deltay < SecondCut", kTHnSparseF, {binnedmultAxis, binnedptK0SAxis, massK0SAxis, sigmassPhiAxis});
 
+    // K0S rapidity in Data
+    dataPhiK0SHist.add("h3K0SRapidityData", "K0Short rapidity for Data", kTH3F, {binnedmultAxis, binnedptK0SAxis, yAxis});
+
     // RecMC K0S coupled to Phi
     mcPhiK0SHist.add("h3RecMCPhiK0SInc", "RecoMC K0Short coupled to Phi Inclusive", kTH3F, {binnedmultAxis, binnedptK0SAxis, massK0SAxis});
     mcPhiK0SHist.add("h3RecMCPhiK0SFCut", "RecoMC K0Short coupled to Phi Deltay < FirstCut", kTH3F, {binnedmultAxis, binnedptK0SAxis, massK0SAxis});
@@ -303,6 +310,9 @@ struct Phik0shortanalysis {
     dataPhiPionHist.add("h5PhiPiSEInc", "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Inclusive", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
     dataPhiPionHist.add("h5PhiPiSEFCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Deltay < FirstCut", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
     dataPhiPionHist.add("h5PhiPiSESCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Deltay < SecondCut", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
+
+    // Pion rapidity in Data
+    dataPhiPionHist.add("h3PiRapidityData", "Pion rapidity for Data", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
 
     // RecMC Pion coupled to Phi with TPC
     mcPhiPionHist.add("h3RecMCPhiPiTPCInc", "RecoMC Pion coupled to Phi with TPC Inclusive", kTH3F, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}});
@@ -368,8 +378,10 @@ struct Phik0shortanalysis {
     mcK0SHist.add("h2K0SGenMC", "K0Short for GenMC", kTH2F, {binnedmultAxis, binnedptK0SAxis});
     mcK0SHist.add("h2K0SGenMCAssocReco", "K0Short for GenMC Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptK0SAxis});
 
-    // Rapidity smearing matrix for K0S
+    // Rapidity smearing matrix for K0S and rapidity in GenMC
     mcK0SHist.add("h4K0SRapiditySmearing", "Rapidity Smearing Matrix for K0Short", kTHnSparseF, {binnedmultAxis, binnedptK0SAxis, yAxis, yAxis});
+
+    mcK0SHist.add("h3K0SRapidityGenMC", "Rapidity for K0Short for GenMC", kTH3F, {binnedmultAxis, binnedptK0SAxis, yAxis});
 
     // MCPion invariant mass and GenMC Pion for computing efficiencies
     mcPionHist.add("h3RecMCPiTPC", "RecoMC Pion for Efficiency with TPC", kTH3F, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}});
@@ -378,8 +390,10 @@ struct Phik0shortanalysis {
     mcPionHist.add("h2PiGenMC", "Pion for GenMC", kTH2F, {binnedmultAxis, binnedptPiAxis});
     mcPionHist.add("h2PiGenMCAssocReco", "Pion for GenMC Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
 
-    // Rapidity smearing matrix for Pion
+    // Rapidity smearing matrix for Pion and rapidity in GenMC
     mcPionHist.add("h4PiRapiditySmearing", "Rapidity Smearing Matrix for Pion", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, yAxis, yAxis});
+
+    mcPionHist.add("h3PiRapidityGenMC", "Rapidity for Pion for GenMC", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
   }
 
   // Event selection and QA filling
@@ -677,6 +691,7 @@ struct Phik0shortanalysis {
 
         if (!isCountedPhi) {
           dataEventHist.fill(HIST("hEventSelection"), 4); // at least a Phi candidate in the event
+          dataEventHist.fill(HIST("hMultiplicityPercentWithPhi"), multiplicity);
           isCountedPhi = true;
         }
 
@@ -783,6 +798,8 @@ struct Phik0shortanalysis {
       if (cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
         continue;
 
+      dataPhiK0SHist.fill(HIST("h3K0SRapidityData"), multiplicity, v0.pt(), v0.yK0Short());
+
       if (std::abs(v0.yK0Short()) > cfgYAcceptance)
         continue;
 
@@ -853,6 +870,8 @@ struct Phik0shortanalysis {
       // Pion selection
       if (!selectionPion<true>(track))
         continue;
+
+      dataPhiPionHist.fill(HIST("h3PiRapidityData"), multiplicity, track.pt(), track.rapidity(massPi));
 
       if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
         continue;
@@ -1645,6 +1664,9 @@ struct Phik0shortanalysis {
         continue;
       if (!mcParticle1.isPhysicalPrimary())
         continue;
+
+      mcK0SHist.fill(HIST("h3K0SRapidityGenMC"), genmultiplicity, mcParticle1.pt(), mcParticle1.y());
+
       if (std::abs(mcParticle1.y()) > cfgYAcceptance)
         continue;
 
@@ -1657,6 +1679,20 @@ struct Phik0shortanalysis {
       for (const auto& mcParticle2 : mcParticles) {
         if (mcParticle2.pdgCode() != 333)
           continue;
+        if (cfgisGenMCForClosure) {
+          auto kDaughters = mcParticle2.daughters_as<aod::McParticles>();
+          if (kDaughters.size() != 2)
+            continue;
+          bool isPosKaon = false, isNegKaon = false;
+          for (const auto& kDaughter : kDaughters) {
+            if (kDaughter.pdgCode() == 321)
+              isPosKaon = true;
+            if (kDaughter.pdgCode() == -321)
+              isNegKaon = true;
+          }
+          if (!isPosKaon || !isNegKaon)
+            continue;
+        }
 
         if (std::abs(mcParticle2.y()) > cfgYAcceptance)
           continue;
@@ -1711,6 +1747,9 @@ struct Phik0shortanalysis {
         continue;
       if (!mcParticle1.isPhysicalPrimary())
         continue;
+
+      mcPionHist.fill(HIST("h3PiRapidityGenMC"), genmultiplicity, mcParticle1.pt(), mcParticle1.y());
+
       if (std::abs(mcParticle1.y()) > cfgYAcceptance)
         continue;
 
@@ -1723,6 +1762,20 @@ struct Phik0shortanalysis {
       for (const auto& mcParticle2 : mcParticles) {
         if (mcParticle2.pdgCode() != 333)
           continue;
+        if (cfgisGenMCForClosure) {
+          auto kDaughters = mcParticle2.daughters_as<aod::McParticles>();
+          if (kDaughters.size() != 2)
+            continue;
+          bool isPosKaon = false, isNegKaon = false;
+          for (const auto& kDaughter : kDaughters) {
+            if (kDaughter.pdgCode() == 321)
+              isPosKaon = true;
+            if (kDaughter.pdgCode() == -321)
+              isNegKaon = true;
+          }
+          if (!isPosKaon || !isNegKaon)
+            continue;
+        }
 
         if (std::abs(mcParticle2.y()) > cfgYAcceptance)
           continue;
